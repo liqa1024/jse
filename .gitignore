@@ -1,0 +1,7 @@
+.*
+__*
+
+build
+bin/*.jar
+
+!.gitignore

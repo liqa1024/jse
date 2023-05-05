@@ -1,0 +1,79 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+group = "com.guan"
+version = "0.1"
+
+repositories {
+    maven {
+        name = "enonic"
+        url = "https://repo.enonic.com/public/"
+    }
+    mavenCentral()
+}
+
+sourceSets {
+    main {java {srcDirs = ['src/main/java']}; resources {srcDirs = ['src/main/resources']}}
+    test {java {srcDirs = ['src/test/java']}; resources {srcDirs = ['src/test/resources', 'example']}} // 将 example 包含到测试的资源文件中
+}
+
+compileJava {
+    options.encoding = "UTF-8"
+}
+compileTestJava {
+    options.encoding = "UTF-8"
+}
+
+tasks.register('runBenchmark', JavaExec) {
+    jvmArgs("-Xmx6144m") // 设置最大内存
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.guan.test.ParBenchmark'
+}
+tasks.register('runKMC', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.guan.test.TestKMC'
+}
+
+
+dependencies {
+    compileOnly('org.jetbrains:annotations:24.0.1')             // debug
+    
+    implementation('org.codehaus.groovy:groovy:3.0.17')         // 用于直接执行 groovy 脚本而不需要安装 groovy
+    
+//  implementation('org.apache.commons:commons-pool2:2.11.1')   // 对象池, bad ideal
+    implementation('com.google.common:google-collect:0.5')      // in enonic，实现更加简单的容器初始化
+//  implementation('org.apache.commons:commons-math3:3.6.1')    // 矩阵计算库，不好用
+    implementation('org.apache.commons:commons-csv:1.10.0')     // csv 格式读写
+    implementation('net.jafama:jafama:2.3.2')                   // 牺牲精度快速计算 exp，sin 等
+    implementation('com.jcraft:jsch:0.1.55')                    // 用于支持 ssh 连接
+    implementation('com.jcraft:jzlib:1.1.3')                    // ssh 压缩传输，并且提供压缩指令支持
+    implementation('com.googlecode.json-simple:json-simple:1.1')// 小的 json 读写支持
+}
+
+shadowJar {
+    // 指定输出的 jar 文件名，默认输出所有的工具包
+    archiveFileName.set('jTool-all.jar')
+    
+    // 指定主要运行类
+    manifest {attributes 'Main-Class': 'com.guan.Main'}
+    
+    // 重命名使用的第三方库，避免命名冲突（不鼓励直接使用）
+    relocate('org.apache.commons', 'shade.org.apache.commons')
+    relocate('assets.org.apache.commons', 'assets.shade.org.apache.commons')
+    relocate('com.google.common', 'shade.com.google.common')
+    relocate('net.jafama', 'shade.net.jafama')
+    relocate('com.jcraft.jsch', 'shade.com.jcraft.jsch')
+    relocate('com.jcraft.jzlib', 'shade.com.jcraft.jzlib')
+    relocate('org.json.simple', 'shade.org.json.simple')
+    // 暂定不重命名 groovy 相关名称，避免 asm 错误，也方便 groovy 脚本直接使用 groovy 相关部分
+    
+    // 修改目标文件夹
+    destinationDirectory = file('./bin')
+}
+
+build {
+    dependsOn shadowJar
+    jar.enabled = false
+}
