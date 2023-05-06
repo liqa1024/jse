@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.*;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -64,10 +65,6 @@ public class UT {
     
     public static class Tasks {
         /**
-         * @author liqa
-         * merge two tasks into one task
-         */
-        /**
          * Merge two tasks into one task
          * @author liqa
          * @param aTask1 the first Task will call
@@ -117,32 +114,31 @@ public class UT {
     
     public static class Hack {
         
-        public static TaskCall<?> toTaskCall_(Class<?> aClazz, final @Nullable Object aInstance, String aMethodName, Object... aArgs) {
+        public static TaskCall<?> getTaskCallOfMethod_(Class<?> aClazz, final @Nullable Object aInstance, String aMethodName, Object... aArgs) {
             final Object[] fArgs = (aArgs == null) ? new Object[0] : aArgs;
-            Class<?>[] tParameterTypes = new Class<?>[fArgs.length];
-            for (int i = 0; i < fArgs.length; ++i) tParameterTypes[i] = fArgs[i].getClass();
-            final Method m = findMethod(aClazz, aMethodName, tParameterTypes);
+            final Method m = findMethod_(aClazz, aMethodName, fArgs);
             if (m == null) throw new RuntimeException("No such method: " + aMethodName);
-            convertArgs(fArgs, m.getParameterTypes());
+            convertArgs_(fArgs, m.getParameterTypes());
             return new TaskCall<>(() -> m.invoke(aInstance, fArgs));
         }
-        public static TaskCall<?> toTaskCallStatic(String aClassName, String aMethodName, Object... aArgs) {
+        public static TaskCall<?> getTaskCallOfStaticMethod(String aClassName, String aMethodName, Object... aArgs) {
             Class<?> tClass;
             try {tClass = Class.forName(aClassName);} catch (ClassNotFoundException e) {throw new RuntimeException(e);}
-            return toTaskCall_(tClass, null, aMethodName, aArgs);
+            return getTaskCallOfMethod_(tClass, null, aMethodName, aArgs);
         }
-        public static TaskRun     toTaskRunStatic (              String aClassName, String aMethodName, Object... aArgs) {return TaskRun.get(toTaskCallStatic(aClassName, aMethodName, aArgs));}
-        public static Task        toTaskStatic    (              String aClassName, String aMethodName, Object... aArgs) {return Task   .get(toTaskCallStatic(aClassName, aMethodName, aArgs));}
-        public static TaskCall<?> toTaskCall      (final @NotNull Object aInstance, String aMethodName, Object... aArgs) {return toTaskCall_(aInstance.getClass(), aInstance, aMethodName, aArgs);}
-        public static TaskRun     toTaskRun       (final @NotNull Object aInstance, String aMethodName, Object... aArgs) {return TaskRun.get(toTaskCall(aInstance, aMethodName, aArgs));}
-        public static Task        toTask          (final @NotNull Object aInstance, String aMethodName, Object... aArgs) {return Task   .get(toTaskCall(aInstance, aMethodName, aArgs));}
+        public static TaskRun     getTaskRunOfStaticMethod (              String aClassName, String aMethodName, Object... aArgs) {return TaskRun.get(getTaskCallOfStaticMethod(aClassName, aMethodName, aArgs));}
+        public static Task        getTaskOfStaticMethod    (              String aClassName, String aMethodName, Object... aArgs) {return Task   .get(getTaskCallOfStaticMethod(aClassName, aMethodName, aArgs));}
+        public static TaskCall<?> getTaskCallOfMethod      (final @NotNull Object aInstance, String aMethodName, Object... aArgs) {return getTaskCallOfMethod_(aInstance.getClass(), aInstance, aMethodName, aArgs);}
+        public static TaskRun     getTaskRunOfMethod       (final @NotNull Object aInstance, String aMethodName, Object... aArgs) {return TaskRun.get(getTaskCallOfMethod(aInstance, aMethodName, aArgs));}
+        public static Task        getTaskOfMethod          (final @NotNull Object aInstance, String aMethodName, Object... aArgs) {return Task   .get(getTaskCallOfMethod(aInstance, aMethodName, aArgs));}
         
-        private static Method findMethod(Class<?> aClazz, String aMethodName, Class<?>[] aParameterTypes) {
-            for (Method tMethod : aClazz.getMethods()) if (tMethod.getName().equals(aMethodName)) {
+        public static Method findMethod_(Class<?> aClazz, String aMethodName, Object @NotNull... aArgs) {
+            Method[] tAllMethods = aClazz.getMethods();
+            for (Method tMethod : tAllMethods) if (tMethod.getName().equals(aMethodName)) {
                 Class<?>[] tParameterTypes = tMethod.getParameterTypes();
-                if (tParameterTypes.length != aParameterTypes.length) continue;
+                if (tParameterTypes.length != aArgs.length) continue;
                 boolean tResult = true;
-                for (int i = 0; i < tParameterTypes.length; i++) if (!compatible(tParameterTypes[i], aParameterTypes[i])) {
+                for (int i = 0; i < tParameterTypes.length; i++) if (!compatible(aArgs[i], tParameterTypes[i])) {
                     tResult = false;
                     break;
                 }
@@ -150,17 +146,30 @@ public class UT {
             }
             return null;
         }
-        private static boolean compatible(Class<?> aClazz1, Class<?> aClazz2) {
-            // 首先统一转换成 Wrapper 的类型
-            aClazz1 = toWrapperType(aClazz1);
-            aClazz2 = toWrapperType(aClazz2);
-            // 数字都相互兼容（仅限基本类型数字）
-            if (   (aClazz1==Double.class || aClazz1==Integer.class || aClazz1==Long.class || aClazz1==Float.class || aClazz1==Byte.class || aClazz1==Short.class)
-                && (aClazz2==Double.class || aClazz2==Integer.class || aClazz2==Long.class || aClazz2==Float.class || aClazz2==Byte.class || aClazz2==Short.class)) return true;
-            // 一般情况
-            return aClazz1 == aClazz2;
+        public static Constructor<?> findConstructor_(Class<?> aClazz, Object @NotNull... aArgs) {
+            Constructor<?>[] tAllConstructors = aClazz.getConstructors();
+            for (Constructor<?> tConstructor : tAllConstructors) {
+                Class<?>[] tParameterTypes = tConstructor.getParameterTypes();
+                if (tParameterTypes.length != aArgs.length) continue;
+                boolean tResult = true;
+                for (int i = 0; i < tParameterTypes.length; i++) if (!compatible(aArgs[i], tParameterTypes[i])) {
+                    tResult = false;
+                    break;
+                }
+                if (tResult) return tConstructor;
+            }
+            return null;
         }
-        private static void convertArgs(Object[] rArgs, Class<?>[] aParameterTypes) {
+        @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+        private static boolean compatible(Object aArg, Class<?> aMethodParameterType) {
+            // 首先统一转换成 Wrapper 的类型
+            aMethodParameterType = toWrapperType(aMethodParameterType);
+            // 数字都相互兼容（仅限基本类型数字）
+            if ((aArg instanceof Number) && (aMethodParameterType==Double.class || aMethodParameterType==Integer.class || aMethodParameterType==Long.class || aMethodParameterType==Float.class || aMethodParameterType==Byte.class || aMethodParameterType==Short.class)) return true;
+            // 一般情况，参数 instanceof 参数种类即可
+            return aMethodParameterType.isInstance(aArg);
+        }
+        public static void convertArgs_(Object[] rArgs, Class<?>[] aParameterTypes) {
             for (int i = 0; i < aParameterTypes.length; i++) {
                 Class<?> tArgClazz = rArgs[i].getClass();
                 Class<?> tParClazz = toWrapperType(aParameterTypes[i]); // 注意需要转换成 Wrapper 的类型

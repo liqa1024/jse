@@ -73,31 +73,6 @@ public class ParBenchmark {
         tPT.shutdown();
     }
     
-    /** 使用 toTaskCall 来实现并行的一个例子 */
-    private static void runTask() throws ExecutionException, InterruptedException {
-        final int tThreadNum = 4;
-        
-        Lmpdat tLmpdat;
-        try {tLmpdat = Lmpdat.read_(UT.IO.readAllLines(UT.IO.getResource(ParBenchmark.class, "data-1").openStream()).toArray(new String[0]));} catch (IOException e) {throw new RuntimeException(e);}
-        MonatomicParameterCalculator[] MPCs = new MonatomicParameterCalculator[tThreadNum];
-        for (int i = 0; i < tThreadNum; ++i) MPCs[i] = tLmpdat.getMonatomicParameterCalculator();
-        
-        ExecutorService tPool = Executors.newFixedThreadPool(tThreadNum);
-        Future<?>[] tTasks = new Future<?>[tThreadNum];
-        List<double[][]> tResults = new ArrayList<>(tThreadNum);
-        
-        UT.Timer.tic();
-        for (int i = 0; i < tThreadNum; ++i) tTasks[i] = tPool.submit(UT.Hack.toTaskCall(MPCs[i], "calRDF", 1000, 60.0));
-        for (Future<?> tTask : tTasks) tResults.add((double[][]) tTask.get());
-        UT.Timer.toc("Multi Thread");
-        
-        UT.Timer.tic();
-        MPCs[0].calRDF(1000, 60.0);
-        UT.Timer.toc("Single Thread");
-        
-        tPool.shutdown();
-    }
-    
     
     /** An example to use parfor */
     private static void runParfor() {
@@ -112,7 +87,7 @@ public class ParBenchmark {
     }
     
     public static void main(String[] args) throws Exception {
-        runTask();
+        runMPC();
     }
     
 }

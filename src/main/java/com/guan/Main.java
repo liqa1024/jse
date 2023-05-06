@@ -1,7 +1,7 @@
 package com.guan;
 
 
-import com.guan.script.ScriptRunner;
+import com.guan.code.SP;
 
 /**
  * @author liqa
@@ -15,10 +15,9 @@ public class Main {
         String tValue = aArgs[0];
         if (!tValue.startsWith("-")) {
             // 默认执行脚本文件
-            ScriptRunner tRunner = new  ScriptRunner();
             String[] tArgs = new String[aArgs.length-1];
             if (tArgs.length > 0) System.arraycopy(aArgs, 1, tArgs, 0, tArgs.length);
-            tRunner.run(tValue, tArgs);
+            SP.run(tValue, tArgs);
             return;
         }
         // 一般行为
@@ -30,13 +29,11 @@ public class Main {
         if (tArgs.length > 0) System.arraycopy(aArgs, 2, tArgs, 0, tArgs.length);
         switch (tOption) {
         case "-t": case "-text": {
-            ScriptRunner tRunner = new  ScriptRunner();
-            tRunner.runText(tValue, tArgs);
+            SP.runText(tValue, tArgs);
             break;
         }
         case "-f": case "-file": {
-            ScriptRunner tRunner = new  ScriptRunner();
-            tRunner.runScript(tValue, tArgs);
+            SP.runScript(tValue, tArgs);
             break;
         }
         default: {

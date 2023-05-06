@@ -35,12 +35,17 @@ tasks.register('runKMC', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.guan.test.TestKMC'
 }
+tasks.register('runScript', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.guan.test.TestScript'
+}
 
 
 dependencies {
     compileOnly('org.jetbrains:annotations:24.0.1')             // debug
+    compileOnly files("lib/jmi.jar")                            // matlab jmi 兼容支持
     
-    implementation('org.codehaus.groovy:groovy:3.0.17')         // 用于直接执行 groovy 脚本而不需要安装 groovy
+    implementation('org.apache.groovy:groovy:4.0.11')           // 用于直接执行 groovy 脚本而不需要安装 groovy
     
 //  implementation('org.apache.commons:commons-pool2:2.11.1')   // 对象池, bad ideal
     implementation('com.google.common:google-collect:0.5')      // in enonic，实现更加简单的容器初始化
@@ -67,7 +72,7 @@ shadowJar {
     relocate('com.jcraft.jsch', 'shade.com.jcraft.jsch')
     relocate('com.jcraft.jzlib', 'shade.com.jcraft.jzlib')
     relocate('org.json.simple', 'shade.org.json.simple')
-    // 暂定不重命名 groovy 相关名称，避免 asm 错误，也方便 groovy 脚本直接使用 groovy 相关部分
+    // 不重命名 groovy 相关名称，避免 asm 错误，也方便 groovy 脚本直接使用 groovy 相关部分
     
     // 修改目标文件夹
     destinationDirectory = file('./bin')

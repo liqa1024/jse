@@ -16,6 +16,6 @@ public class MethodThreadPool extends AbstractThreadPoolContainer<IExecutorEX> {
     public MethodThreadPool(int aThreadNum) {super(ExecutorsEX.newFixedThreadPool(Math.max(aThreadNum, 1)));}
     
     // 提交任务
-    public Future<?> submit(@NotNull Object aInstance, String aMethodName, Object... aArgs) {assert mPool!=null; return mPool.submit(UT.Hack.toTaskCall(aInstance, aMethodName, aArgs));}
-    public Future<?> submitStatic(String aClassName, String aMethodName, Object... aArgs) {assert mPool!=null; return mPool.submit(UT.Hack.toTaskCallStatic(aClassName, aMethodName, aArgs));}
+    public Future<?> submit(@NotNull Object aInstance, String aMethodName, Object... aArgs) {assert mPool!=null; return mPool.submit(UT.Hack.getTaskOfMethod(aInstance, aMethodName, aArgs));}
+    public Future<?> submitStatic(String aClassName, String aMethodName, Object... aArgs) {assert mPool!=null; return mPool.submit(UT.Hack.getTaskOfStaticMethod(aClassName, aMethodName, aArgs));}
 }
