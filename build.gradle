@@ -53,7 +53,7 @@ shadowJar {
     // 不重命名 groovy 相关名称，避免 asm 错误，也方便 groovy 脚本直接使用 groovy 相关部分
     
     // 修改目标文件夹，打包后添加到子项目中
-    destinationDirectory = file('./release/java')
+    destinationDirectory = file('./release/lib')
 }
 
 build {

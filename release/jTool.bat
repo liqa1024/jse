@@ -14,6 +14,14 @@ for %%i in (%SCRIPT_DIR%include\jTool-*.jar) do (
     set "JAR_LOCATION=%%i"
     goto :foundJar
 )
+for %%i in (%SCRIPT_DIR%lib\jTool-*.jar) do (
+    set "JAR_LOCATION=%%i"
+    goto :foundJar
+)
+for %%i in (%SCRIPT_DIR%libs\jTool-*.jar) do (
+    set "JAR_LOCATION=%%i"
+    goto :foundJar
+)
 for %%i in (%SCRIPT_DIR%jar\jTool-*.jar) do (
     set "JAR_LOCATION=%%i"
     goto :foundJar

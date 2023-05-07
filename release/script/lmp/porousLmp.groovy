@@ -1,4 +1,4 @@
-package lmp.script
+package lmp
 
 // import jTool classes
 import com.guan.atom.Generator;

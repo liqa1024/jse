@@ -30,6 +30,22 @@ for i in "$SCRIPT_DIR"/include/jTool-*.jar; do
 done
 fi
 if [ -z "$JAR_LOCATION" ]; then
+for i in "$SCRIPT_DIR"/lib/jTool-*.jar; do
+    if [ -e "$i" ]; then
+    JAR_LOCATION="$i"
+    break
+    fi
+done
+fi
+if [ -z "$JAR_LOCATION" ]; then
+for i in "$SCRIPT_DIR"/libs/jTool-*.jar; do
+    if [ -e "$i" ]; then
+    JAR_LOCATION="$i"
+    break
+    fi
+done
+fi
+if [ -z "$JAR_LOCATION" ]; then
 for i in "$SCRIPT_DIR"/jar/jTool-*.jar; do
     if [ -e "$i" ]; then
     JAR_LOCATION="$i"
