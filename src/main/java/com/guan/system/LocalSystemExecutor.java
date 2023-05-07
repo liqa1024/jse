@@ -25,9 +25,8 @@ public class LocalSystemExecutor extends AbstractThreadPoolContainer<IExecutorEX
     @Override public int system_NO(String aCommand) {return system(aCommand, (PrintStream)null);}
     @Override public int system(String aCommand) {return system(aCommand, System.out);}
     @Override public int system(String aCommand, String aOutFilePath) {
-        aOutFilePath = UT.IO.toAbsolutePath(aOutFilePath);
         PrintStream tFilePS;
-        try {tFilePS = new PrintStream(Files.newOutputStream(Paths.get(aOutFilePath)));} catch (IOException e) {throw new RuntimeException(e);}
+        try {tFilePS = UT.IO.toPrintStream(aOutFilePath);} catch (IOException e) {throw new RuntimeException(e);}
         int tExitValue = system(aCommand, tFilePS);
         tFilePS.close(); // 记得关闭输出文件
         return tExitValue;

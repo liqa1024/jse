@@ -7,8 +7,6 @@ import groovy.json.JsonBuilder;
 import groovy.json.JsonSlurper;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -52,47 +50,43 @@ public final class ServerSLURM {
     
     /// hooks, 修改这个来实现重写，我也不知道这个方法是不是合理
     // 发生内部参数改变都需要调用一下这个函数
+    @SuppressWarnings("CanBeFinal")
     Runnable doMemberChange = this::saveToMirror_; // 这样可以使得任何修改都会实时存储，可以处理意外杀死的情况
     
     /// 保存到文件以及从文件加载
     public void save(String aFilePath) throws Exception {save(aFilePath, null);}
     @SuppressWarnings("rawtypes")
     public static ServerSLURM load(String aFilePath) throws Exception {
-        aFilePath = UT.IO.toAbsolutePath(aFilePath); // 同样需要处理相对路径的问题
-        FileReader tFile = new FileReader(aFilePath);
-        Map tJson = (Map) (new JsonSlurper()).parse(tFile);
-        tFile.close();
+        Reader tReader = UT.IO.toReader(aFilePath);
+        Map tJson = (Map) (new JsonSlurper()).parse(tReader);
+        tReader.close();
         return load(tJson);
     }
     // 带有密码的读写
-    @SuppressWarnings({"ResultOfMethodCallIgnored", "rawtypes"})
+    @SuppressWarnings("rawtypes")
     public void save(String aFilePath, String aKey) throws Exception {
-        // 同样需要处理相对路径的问题
-        aFilePath = UT.IO.toAbsolutePath(aFilePath);
         // 保存到 json
         Map rJson = new LinkedHashMap();
         save(rJson);
         // slurm 由于有自动保存的功能，需要先备份旧的文件
-        File tFile = new File(aFilePath);
-        if (tFile.exists()) Files.copy(tFile.toPath(), new File(aFilePath+".bak").toPath(), StandardCopyOption.REPLACE_EXISTING);
+        if (UT.IO.isFile(aFilePath)) UT.IO.copy(aFilePath, aFilePath+".bak", StandardCopyOption.REPLACE_EXISTING);
         // 开始写入
         JsonBuilder tJsonBuilder = new JsonBuilder(rJson);
         if (aKey != null && !aKey.isEmpty()) {
             Encryptor tEncryptor = new Encryptor(aKey);
-            Files.write(Paths.get(aFilePath), tEncryptor.getData(tJsonBuilder.toString()));
+            UT.IO.write(aFilePath, tEncryptor.getData(tJsonBuilder.toString()));
         } else {
-            FileWriter tFileWriter = new FileWriter(aFilePath);
-            tJsonBuilder.writeTo(tFileWriter);
-            tFileWriter.close();
+            Writer tWriter = UT.IO.toWriter(aFilePath);
+            tJsonBuilder.writeTo(tWriter);
+            tWriter.close();
         }
         // 写入完成删除备份文件
-        if (tFile.exists()) new File(aFilePath+".bak").delete();
+        if (UT.IO.isFile(aFilePath)) UT.IO.delete(aFilePath+".bak");
     }
     @SuppressWarnings("rawtypes")
     public static ServerSLURM load(String aFilePath, String aKey) throws Exception {
-        aFilePath = UT.IO.toAbsolutePath(aFilePath); // 同样需要处理相对路径的问题
         Decryptor tDecryptor = new Decryptor(aKey);
-        Map tJson = (Map) (new JsonSlurper()).parseText(tDecryptor.get(Files.readAllBytes(Paths.get(aFilePath))));
+        Map tJson = (Map) (new JsonSlurper()).parseText(tDecryptor.get(UT.IO.readAllBytes(aFilePath)));
         return load(tJson);
     }
     // 偏向于内部使用的保存到 json 和从 json 读取

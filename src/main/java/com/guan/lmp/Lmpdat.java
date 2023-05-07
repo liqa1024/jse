@@ -3,14 +3,12 @@ package com.guan.lmp;
 import com.google.common.collect.Maps;
 import com.guan.atom.AbstractAtomData;
 import com.guan.atom.IHasAtomData;
-import com.guan.math.MathEX;
 import com.guan.code.UT;
+import com.guan.math.MathEX;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -173,10 +171,7 @@ public class Lmpdat extends AbstractAtomData {
      * @return 读取得到的 Lmpdat 对象，如果文件不完整会直接返回 null
      * @throws IOException 如果读取失败
      */
-    public static Lmpdat read(String aFilePath) throws IOException {
-        aFilePath = UT.IO.toAbsolutePath(aFilePath); // 同样需要处理相对路径的问题
-        return read_(Files.readAllLines(Paths.get(aFilePath)).toArray(new String[0]));
-    }
+    public static Lmpdat read(String aFilePath) throws IOException {return read_(UT.IO.readAllLines(aFilePath));}
     public static Lmpdat read_(String[] aLines) {
         
         int tAtomNum;
@@ -279,7 +274,6 @@ public class Lmpdat extends AbstractAtomData {
         lines.add(String.format("%6d %6d %10.5g %10.5g %10.5g", (int)subAtomData[0], (int)subAtomData[1], subAtomData[2], subAtomData[3], subAtomData[4]));
         lines.add("");
         
-        aFilePath = UT.IO.toAbsolutePath(aFilePath); // 同样需要处理相对路径的问题
-        Files.write(Paths.get(aFilePath), lines);
+        UT.IO.write(aFilePath, lines);
     }
 }

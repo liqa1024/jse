@@ -1,13 +1,12 @@
 package com.guan.kmc;
 
 
-import com.guan.math.MathEX;
 import com.guan.code.UT;
+import com.guan.math.MathEX;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Random;
 
 import static java.nio.file.StandardOpenOption.*;
@@ -148,8 +147,7 @@ public class BiTrapSimple {
     public void run(int aStep, int aOutStep,                   boolean aAppend) {run(aStep, aOutStep, System.out, aAppend);}
     public void run(int aStep, int aOutStep, String aFilePath                 ) throws IOException {run(aStep, aOutStep, aFilePath, false);}
     public void run(int aStep, int aOutStep, String aFilePath, boolean aAppend) throws IOException {
-        aFilePath = UT.IO.toAbsolutePath(aFilePath);
-        PrintStream tFilePS = new PrintStream(Files.newOutputStream(Paths.get(aFilePath), CREATE, aAppend ? APPEND : TRUNCATE_EXISTING));
+        PrintStream tFilePS = UT.IO.toPrintStream(aFilePath, CREATE, aAppend ? APPEND : TRUNCATE_EXISTING);
         run(aStep, aOutStep, tFilePS, aAppend);
         tFilePS.close();
     }

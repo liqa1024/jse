@@ -9,8 +9,6 @@ import groovy.json.JsonBuilder;
 import groovy.json.JsonSlurper;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -48,35 +46,31 @@ public final class ServerSSH {
     /// 保存到文件以及从文件加载
     @SuppressWarnings("rawtypes")
     public void save(String aFilePath) throws IOException {
-        aFilePath = UT.IO.toAbsolutePath(aFilePath); // 同样需要处理相对路径的问题
         Map rJson = new LinkedHashMap();
         save(rJson);
-        FileWriter tFile = new FileWriter(aFilePath);
-        (new JsonBuilder(rJson)).writeTo(tFile);
-        tFile.close();
+        Writer tWriter = UT.IO.toWriter(aFilePath);
+        (new JsonBuilder(rJson)).writeTo(tWriter);
+        tWriter.close();
     }
     @SuppressWarnings("rawtypes")
     public static ServerSSH load(String aFilePath) throws Exception {
-        aFilePath = UT.IO.toAbsolutePath(aFilePath); // 同样需要处理相对路径的问题
-        FileReader tFile = new FileReader(aFilePath);
-        Map tJson = (Map) (new JsonSlurper()).parse(tFile);
-        tFile.close();
+        Reader tReader = UT.IO.toReader(aFilePath);
+        Map tJson = (Map) (new JsonSlurper()).parse(tReader);
+        tReader.close();
         return load(tJson);
     }
     // 带有密码的读写
     @SuppressWarnings("rawtypes")
     public void save(String aFilePath, String aKey) throws Exception {
-        aFilePath = UT.IO.toAbsolutePath(aFilePath); // 同样需要处理相对路径的问题
         Map rJson = new LinkedHashMap();
         save(rJson);
         Encryptor tEncryptor = new Encryptor(aKey);
-        Files.write(Paths.get(aFilePath), tEncryptor.getData((new JsonBuilder(rJson)).toString()));
+        UT.IO.write(aFilePath, tEncryptor.getData((new JsonBuilder(rJson)).toString()));
     }
     @SuppressWarnings("rawtypes")
     public static ServerSSH load(String aFilePath, String aKey) throws Exception {
-        aFilePath = UT.IO.toAbsolutePath(aFilePath); // 同样需要处理相对路径的问题
         Decryptor tDecryptor = new Decryptor(aKey);
-        Map tJson = (Map) (new JsonSlurper()).parseText(tDecryptor.get(Files.readAllBytes(Paths.get(aFilePath))));
+        Map tJson = (Map) (new JsonSlurper()).parseText(tDecryptor.get(UT.IO.readAllBytes(aFilePath)));
         return load(tJson);
     }
     // 偏向于内部使用的保存到 json 和从 json 读取
@@ -282,7 +276,7 @@ public final class ServerSSH {
         // 获取输入流并且输出到命令行，期间会挂起程序
         InputStream tIn = tChannelExec.getInputStream();
         tChannelExec.connect();
-        BufferedReader tReader = new BufferedReader(new InputStreamReader(tIn));
+        BufferedReader tReader = UT.IO.toReader(tIn);
         String tLine;
         while ((tLine = tReader.readLine()) != null) System.out.println(tLine);
         // 最后关闭通道
@@ -318,7 +312,7 @@ public final class ServerSSH {
         // 递归子文件夹传输文件
         (new RecurseLocalDir(this, aDir) {
             @Override public boolean initRemoteDir(String aRemoteDir) {return makeDir_(tChannelSftp, aRemoteDir);}
-            @Override public void doFile(File aLocalFile, String aRemoteDir) {try {tChannelSftp.put(aLocalFile.getPath(), aRemoteDir);} catch (SftpException ignored) {}}
+            @Override public void doFile(String aLocalFile, String aRemoteDir) {try {tChannelSftp.put(aLocalFile, aRemoteDir);} catch (SftpException ignored) {}}
         }).run();
         // 最后关闭通道
         tChannelSftp.disconnect();
@@ -338,7 +332,7 @@ public final class ServerSSH {
         if (!aDir.isEmpty() && !aDir.endsWith("/")) aDir += "/";
         // 递归子文件夹传输文件
         (new RecurseRemoteDir(this, aDir, tChannelSftp){
-            @Override public boolean initLocalDir(String aLocalDir) {File tFile = new File(aLocalDir); return tFile.isDirectory() || tFile.mkdirs();}
+            @Override public boolean initLocalDir(String aLocalDir) {return UT.IO.mkdir(aLocalDir);}
             @Override public void doFile(String aRemoteFile, String aLocalDir) {try {tChannelSftp.get(aRemoteFile, aLocalDir);} catch (SftpException ignored) {}}
         }).run();
         // 最后关闭通道
@@ -437,8 +431,8 @@ public final class ServerSSH {
         ChannelSftp tChannelSftp = (ChannelSftp) session().openChannel("sftp");
         tChannelSftp.connect();
         // 检测文件路径是否合法
-        File tLocalFile = new File(mLocalWorkingDir+aFilePath);
-        if (!tLocalFile.isFile()) throw new RuntimeException("Invalid File Path: "+aFilePath);
+        String tLocalFile = mLocalWorkingDir+aFilePath;
+        if (!UT.IO.isFile(tLocalFile)) throw new RuntimeException("Invalid File Path: "+aFilePath);
         // 创建目标文件夹
         String tRemoteDir = mRemoteWorkingDir;
         int tEndIdx = aFilePath.lastIndexOf("/");
@@ -446,8 +440,8 @@ public final class ServerSSH {
             tRemoteDir += aFilePath.substring(0, tEndIdx+1);
             if (!ServerSSH.makeDir_(tChannelSftp, tRemoteDir)) throw new RuntimeException("Fail when create remote dir: " + tRemoteDir);
         }
-        // 上传脚本
-        tChannelSftp.put(tLocalFile.getPath(), tRemoteDir);
+        // 上传文件
+        tChannelSftp.put(tLocalFile, tRemoteDir);
         // 最后关闭通道
         tChannelSftp.disconnect();
     }
@@ -455,7 +449,7 @@ public final class ServerSSH {
     public Task task_getFile(final String aFilePath) {return new SerializableTask(() -> {getFile(aFilePath); return true;}) {
         @Override public String toString() {return String.format("%s{%s}", Type.GET_FILE.name(), aFilePath);}
     };}
-    public void getFile(String aFilePath) throws JSchException, SftpException {
+    public void getFile(String aFilePath) throws JSchException, SftpException, IOException {
         // 会尝试一次重新连接
         if (!isConnecting()) connect();
         // 获取文件传输通道
@@ -469,10 +463,9 @@ public final class ServerSSH {
         int tEndIdx = aFilePath.lastIndexOf("/");
         if (tEndIdx > 0) { // 否则不用创建，认为 mLocalWorkingDir 已经存在
             tLocalDir += aFilePath.substring(0, tEndIdx+1);
-            File tFile = new File(tLocalDir);
-            if (!tFile.isDirectory() && !tFile.mkdirs()) throw new RuntimeException("Fail when create local dir: "+tLocalDir);
+            if (!UT.IO.mkdir(tLocalDir)) throw new RuntimeException("Fail when create local dir: "+tLocalDir);
         }
-        // 上传脚本
+        // 下载文件
         tChannelSftp.get(tRemoteDir, tLocalDir);
         // 最后关闭通道
         tChannelSftp.disconnect();
@@ -510,7 +503,7 @@ public final class ServerSSH {
         // 递归子文件夹传输文件
         (new RecurseLocalDir(this, aDir) {
             @Override public boolean initRemoteDir(String aRemoteDir) {return makeDir_(tChannelSftp, aRemoteDir);}
-            @Override public void doFile(File aLocalFile, String aRemoteDir) {tSftpPool.submit(aChannelSftp -> {try {aChannelSftp.put(aLocalFile.getPath(), aRemoteDir);} catch (SftpException ignored) {}});}
+            @Override public void doFile(String aLocalFile, String aRemoteDir) {tSftpPool.submit(aChannelSftp -> {try {aChannelSftp.put(aLocalFile, aRemoteDir);} catch (SftpException ignored) {}});}
         }).run();
         // 最后关闭通道
         tChannelSftp.disconnect();
@@ -532,7 +525,7 @@ public final class ServerSSH {
         if (!aDir.isEmpty() && !aDir.endsWith("/")) aDir += "/";
         // 递归子文件夹传输文件
         (new RecurseRemoteDir(this, aDir, tChannelSftp){
-            @Override public boolean initLocalDir(String aLocalDir) {File tFile = new File(aLocalDir); return tFile.isDirectory() || tFile.mkdirs();}
+            @Override public boolean initLocalDir(String aLocalDir) {return UT.IO.mkdir(aLocalDir);}
             @Override public void doFile(String aRemoteFile, String aLocalDir) {tSftpPool.submit(aChannelSftp -> {try {aChannelSftp.get(aRemoteFile, aLocalDir);} catch (SftpException ignored) {}});}
         }).run();
         // 最后关闭通道
@@ -582,7 +575,7 @@ public final class ServerSSH {
         // 递归子文件夹传输文件
         (new RecurseLocalDir(this, "") {
             @Override public boolean initRemoteDir(String aRemoteDir) {return makeDir_(tChannelSftp, aRemoteDir);}
-            @Override public void doFile(File aLocalFile, String aRemoteDir) {tSftpPool.submit(aChannelSftp -> {try {aChannelSftp.put(aLocalFile.getPath(), aRemoteDir);} catch (SftpException ignored) {}});}
+            @Override public void doFile(String aLocalFile, String aRemoteDir) {tSftpPool.submit(aChannelSftp -> {try {aChannelSftp.put(aLocalFile, aRemoteDir);} catch (SftpException ignored) {}});}
             @Override public boolean dirFilter(String aLocalDirName) {return !aLocalDirName.startsWith(".") && !aLocalDirName.startsWith("_");}
             @Override public boolean fileFilter(String aLocalFileName) {return !aLocalFileName.startsWith(".") && !aLocalFileName.startsWith("_");}
         }).run();
@@ -610,7 +603,7 @@ public final class ServerSSH {
         tChannelSftp.connect();
         // 递归子文件夹传输文件
         (new RecurseRemoteDir(this, "", tChannelSftp) {
-            @Override public boolean initLocalDir(String aLocalDir) {File tFile = new File(aLocalDir); return tFile.isDirectory() || tFile.mkdirs();}
+            @Override public boolean initLocalDir(String aLocalDir) {return UT.IO.mkdir(aLocalDir);}
             @Override public void doFile(String aRemoteFile, String aLocalDir) {tSftpPool.submit(aChannelSftp -> {try {aChannelSftp.get(aRemoteFile, aLocalDir);} catch (SftpException ignored) {}});}
             @Override public boolean dirFilter(String aRemoteDirName) {return !aRemoteDirName.startsWith(".") && !aRemoteDirName.startsWith("_");}
             @Override public boolean fileFilter(String aRemoteFileName) {return !aRemoteFileName.startsWith(".") && !aRemoteFileName.startsWith("_");}
@@ -691,24 +684,26 @@ public final class ServerSSH {
         public RecurseLocalDir(ServerSSH aSSH, String aDir, boolean aCheckDirValid) {mSSH = aSSH; mDir = aDir; mCheckDirValid = aCheckDirValid;}
         
         @Override public void run() {
-            File tLocalDir = new File(mSSH.mLocalWorkingDir + mDir);
-            if (!tLocalDir.isDirectory()) {if (mCheckDirValid) throw new RuntimeException("Invalid Dir: " + mDir); return;}
+            String tLocalDir = mSSH.mLocalWorkingDir + mDir;
+            if (!UT.IO.isDir(tLocalDir)) {if (mCheckDirValid) throw new RuntimeException("Invalid Dir: " + mDir); return;}
             doDir(tLocalDir, mSSH.mRemoteWorkingDir + mDir);
         }
-        private void doDir(File aLocalDir, String aRemoteDir) {
-            File[] tLocalFiles = aLocalDir.listFiles();
+        private void doDir(String aLocalDir, String aRemoteDir) {
+            String[] tLocalFiles = UT.IO.list(aLocalDir);
             if (tLocalFiles == null) return;
-            if (initRemoteDir(aRemoteDir)) for (File tFile : tLocalFiles) {
-                if (tFile.isDirectory()) {if (dirFilter(tFile.getName()))  doDir(tFile, aRemoteDir+tFile.getName()+"/");}
-                else if (tFile.isFile()) {if (fileFilter(tFile.getName())) doFile(tFile, aRemoteDir);}
+            if (initRemoteDir(aRemoteDir)) for (String tName : tLocalFiles) {
+                if (tName==null || tName.isEmpty() || tName.equals(".") || tName.equals("..")) continue;
+                String tFileOrDir = aLocalDir+tName;
+                if (UT.IO.isDir(tFileOrDir)) {if (dirFilter(tName)) doDir(tFileOrDir+"/", aRemoteDir+tName+"/");}
+                else if (UT.IO.isFile(tFileOrDir)) {if (fileFilter(tName)) doFile(tFileOrDir, aRemoteDir);}
             }
             doDirFinal(aLocalDir, aRemoteDir);
         }
         
         // stuff to override
         public boolean initRemoteDir(String aRemoteDir) {return true;} // 开始遍历本地文件夹之前初始化对应的远程文件夹，返回 false 则表示此远程文件夹初始失败，不会进行后续的遍历此文件夹操作
-        public void doFile(File aLocalFile, String aRemoteDir) {/**/} // 对于此本地文件夹内的文件进行操作
-        public void doDirFinal(File aLocalDir, String aRemoteDir) {/**/} // 最后对此本地文件夹进行操作
+        public void doFile(String aLocalFile, String aRemoteDir) {/**/} // 对于此本地文件夹内的文件进行操作
+        public void doDirFinal(String aLocalDir, String aRemoteDir) {/**/} // 最后对此本地文件夹进行操作
         public boolean dirFilter(String aLocalDirName) {return true;} // 文件夹过滤器，返回 true 才会执行后续操作
         public boolean fileFilter(String aLocalFileName) {return true;} // 文件过滤器，返回 true 才会执行后续操作
     }
@@ -732,9 +727,10 @@ public final class ServerSSH {
             try {tRemoteFiles = mChannelSftp.ls(aRemoteDir);} catch (SftpException ignored) {}
             if (tRemoteFiles == null) return;
             if (initLocalDir(aLocalDir)) for (ChannelSftp.LsEntry tFile : tRemoteFiles) {
-                if (tFile.getFilename().equals(".") || tFile.getFilename().equals("..")) continue;
-                if (tFile.getAttrs().isDir()) {if (dirFilter(tFile.getFilename())) doDir(aRemoteDir+tFile.getFilename()+"/", aLocalDir+tFile.getFilename()+"/");}
-                else {if (fileFilter(tFile.getFilename())) doFile(aRemoteDir+tFile.getFilename(), aLocalDir);}
+                String tName = tFile.getFilename();
+                if (tName==null || tName.isEmpty() || tName.equals(".") || tName.equals("..")) continue;
+                if (tFile.getAttrs().isDir()) {if (dirFilter(tName)) doDir(aRemoteDir+tName+"/", aLocalDir+tName+"/");}
+                else {if (fileFilter(tName)) doFile(aRemoteDir+tName, aLocalDir);}
             }
             doDirFinal(aRemoteDir, aLocalDir);
         }

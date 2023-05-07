@@ -16,12 +16,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.nio.file.*;
+import java.util.*;
 
 /**
  * @author liqa
@@ -245,14 +241,95 @@ public class UT {
     
     public static class IO {
         /**
-         * Make a directory and support create nested directories.
+         * Wrapper of {@link Files}.write
          * @author liqa
-         * @param aDir the directory will be made
-         * @return true if the directory already exists or the creation is successful, and false if it fails
+         * @param aFilePath File to write
+         * @param aLines Iterable String or String[]
+         * @throws IOException when fail
          */
-        public static boolean mkdir(String aDir) {
-            File tFile = new File(toAbsolutePath(aDir)); return tFile.isDirectory() || tFile.mkdirs();
+        public static void write(String aFilePath, String[] aLines, OpenOption... aOptions) throws IOException {Files.write(toAbsolutePath_(aFilePath), Arrays.asList(aLines), aOptions);}
+        public static void write(String aFilePath, Iterable<? extends CharSequence> aLines, OpenOption... aOptions) throws IOException {Files.write(toAbsolutePath_(aFilePath), aLines, aOptions);}
+        public static void write(String aFilePath, byte[] aData, OpenOption... aOptions) throws IOException {Files.write(toAbsolutePath_(aFilePath), aData, aOptions);}
+        public static void write(String aFilePath, String aText, OpenOption... aOptions) throws IOException {Files.write(toAbsolutePath_(aFilePath), Collections.singletonList(aText), aOptions);}
+        /**
+         * Wrapper of {@link Files}.readAllBytes
+         * @author liqa
+         * @param aFilePath File to read
+         * @return array of byte
+         * @throws IOException when fail
+         */
+        public static byte[] readAllBytes(String aFilePath) throws IOException {return Files.readAllBytes(toAbsolutePath_(aFilePath));}
+        /**
+         * Wrapper of {@link Files}.readAllLines
+         * @author liqa
+         * @param aFilePath File to read
+         * @return lines of String
+         * @throws IOException when fail
+         */
+        public static String[] readAllLines(String aFilePath) throws IOException {return readAllLines_(aFilePath).toArray(new String[0]);}
+        public static List<String> readAllLines_(String aFilePath) throws IOException {return Files.readAllLines(toAbsolutePath_(aFilePath));}
+        /**
+         * read all lines of the InputStream
+         * @author liqa
+         */
+        public static String[] readAllLines(InputStream aInputStream) throws IOException {return readAllLines_(aInputStream).toArray(new String[0]);}
+        public static List<String> readAllLines_(InputStream aInputStream) throws IOException {
+            try (BufferedReader tReader = toReader(aInputStream)) {
+                List<String> lines = new ArrayList<>();
+                String tLine;
+                while ((tLine = tReader.readLine()) != null) lines.add(tLine);
+                return lines;
+            }
         }
+        
+        /**
+         * remove the Directory, will remove the subdirectories recursively
+         * @author liqa
+         * @param aDir the Directory will be removed
+         */
+        public static void rmdir(String aDir) throws IOException {removeDir(aDir);}
+        public static void removeDir(String aDir) throws IOException {
+            if (!aDir.isEmpty() && !aDir.endsWith("/") && !aDir.endsWith("\\")) aDir += "/";
+            if (!exists(aDir)) return;
+            removeDir_(aDir);
+        }
+        public static void removeDir_(String aDir) throws IOException {
+            String[] tFiles = UT.IO.list(aDir);
+            if (tFiles == null) return;
+            for (String tName : tFiles) {
+                if (tName==null || tName.isEmpty() || tName.equals(".") || tName.equals("..")) continue;
+                String tFileOrDir = aDir+tName;
+                if (UT.IO.isDir(tFileOrDir)) {removeDir_(tFileOrDir+"/");}
+                else if (UT.IO.isFile(tFileOrDir)) {delete(tFileOrDir);}
+            }
+            delete(aDir);
+        }
+        
+        /** useful methods, wrapper of {@link Files} stuffs */
+        public static boolean mkdir(String aDir) {return makeDir(aDir);} // can mkdir nested
+        public static boolean makeDir(String aDir) {try {Files.createDirectories(toAbsolutePath_(aDir)); return true;} catch (IOException e) {return false;}} // can mkdir nested
+        public static boolean isDir(String aDir) {return Files.isDirectory(toAbsolutePath_(aDir));}
+        public static boolean isFile(String aFilePath) {return Files.isRegularFile(toAbsolutePath_(aFilePath));}
+        public static boolean exists(String aPath) {return Files.exists(toAbsolutePath_(aPath));}
+        public static void delete(String aPath) throws IOException {Files.deleteIfExists(toAbsolutePath_(aPath));} // can delete not exist path
+        public static void copy(String aSourcePath, String aTargetPath, CopyOption... aOptions) throws IOException {Files.copy(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath), aOptions);}
+        public static void move(String aSourcePath, String aTargetPath, CopyOption... aOptions) throws IOException {Files.move(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath), aOptions);}
+        public static String[] list(String aDir) {return toFile(aDir).list();} // use the File.list not Files.list to get the simple result
+        
+        /** output stuffs */
+        public static PrintStream    toPrintStream (String aFilePath, OpenOption... aOptions) throws IOException {return new PrintStream(toOutputStream(aFilePath, aOptions));}
+        public static OutputStream   toOutputStream(String aFilePath, OpenOption... aOptions) throws IOException {return Files.newOutputStream(UT.IO.toAbsolutePath_(aFilePath), aOptions);}
+        public static BufferedWriter toWriter      (String aFilePath, OpenOption... aOptions) throws IOException {return Files.newBufferedWriter(UT.IO.toAbsolutePath_(aFilePath), aOptions);}
+        public static BufferedWriter toWriter      (OutputStream aOutputStream) {return new BufferedWriter(new OutputStreamWriter(aOutputStream));}
+        
+        /** input stuffs */
+        public static InputStream    toInputStream(String aFilePath) throws IOException {return Files.newInputStream(UT.IO.toAbsolutePath_(aFilePath));}
+        public static BufferedReader toReader     (String aFilePath) throws IOException {return Files.newBufferedReader(UT.IO.toAbsolutePath_(aFilePath));}
+        public static BufferedReader toReader     (InputStream aInputStream) {return new BufferedReader(new InputStreamReader(aInputStream));}
+        
+        /** misc stuffs */
+        public static File toFile(String aFilePath) {return toAbsolutePath_(aFilePath).toFile();}
+        
         
         /**
          * convert double[] to String[] for printRecord usage
@@ -281,9 +358,8 @@ public class UT {
          * @param aHeads optional headers for the title
          */
         public static void data2csv(double[][] aData, String aFilePath, String... aHeads) {
-            aFilePath = toAbsolutePath(aFilePath);
             CSVFormat tCSVFormat = (aHeads != null && aHeads.length == aData[0].length) ? CSVFormat.DEFAULT.builder().setHeader(aHeads).build() : CSVFormat.DEFAULT;
-            try (CSVPrinter tPrinter = new CSVPrinter(new FileWriter(aFilePath), tCSVFormat)) {
+            try (CSVPrinter tPrinter = new CSVPrinter(toWriter(aFilePath), tCSVFormat)) {
                 for (double[] subData : aData) tPrinter.printRecord((Object[]) data2str(subData));
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -296,8 +372,7 @@ public class UT {
          * @return matrix data (or with String[] head in Pair if use csv2dataWithHand)
          */
         public static double[][] csv2data(String aFilePath) {
-            aFilePath = toAbsolutePath(aFilePath);
-            try (CSVParser tParser = CSVParser.parse(new File(aFilePath), StandardCharsets.UTF_8, CSVFormat.DEFAULT)) {
+            try (CSVParser tParser = CSVParser.parse(toAbsolutePath_(aFilePath), StandardCharsets.UTF_8, CSVFormat.DEFAULT)) {
                 List<double[]> tData = new ArrayList<>();
                 boolean tIsHead = true;
                 for (CSVRecord tCSVRecord : tParser) {
@@ -341,19 +416,6 @@ public class UT {
             }
         }
         
-        
-        /**
-         * read all lines of the InputStream
-         * @author liqa
-         */
-        public static List<String> readAllLines(InputStream aInputStream) throws IOException {
-            try (BufferedReader tReader = new BufferedReader(new InputStreamReader(aInputStream))) {
-                List<String> lines = new ArrayList<>();
-                String tLine;
-                while ((tLine = tReader.readLine()) != null) lines.add(tLine);
-                return lines;
-            }
-        }
         
         /**
          * get URL of the resource
@@ -405,8 +467,8 @@ public class UT {
          * @param aPath string path, can be relative or absolute
          * @return the Right absolute path
          */
-        public static String toAbsolutePath(String aPath) {return WORKING_PATH.resolve(aPath).toString();}
-        
+        public static String toAbsolutePath(String aPath) {return toAbsolutePath_(aPath).toString();}
+        public static Path toAbsolutePath_(String aPath) {return WORKING_PATH.resolve(aPath);}
         
         // reset the working dir to correct value
         private static Path WORKING_PATH = null;

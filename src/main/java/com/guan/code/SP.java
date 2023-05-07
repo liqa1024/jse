@@ -3,7 +3,6 @@ package com.guan.code;
 import groovy.lang.*;
 import org.codehaus.groovy.runtime.InvokerHelper;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -30,7 +29,7 @@ public class SP {
     /** 创建脚本类的实例 */
     public synchronized static ScriptObject newInstance(String aScriptPath, Object... aArgs) throws Exception {
         // 获取脚本的类，底层自动进行了缓存，并且在文件修改时会自动更新
-        Class<?> tScriptClass = CLASS_LOADER.parseClass(new File(UT.IO.toAbsolutePath(aScriptPath)));
+        Class<?> tScriptClass = CLASS_LOADER.parseClass(UT.IO.toFile(aScriptPath));
         // 获取 ScriptClass 的实例
         return newInstance_(tScriptClass, aArgs);
     }
@@ -51,14 +50,14 @@ public class SP {
     }
     public synchronized static TaskCall<?> getTaskOfScript(String aScriptPath, String... aArgs) throws IOException {
         // 获取脚本的类，底层自动进行了缓存
-        Class<?> tScriptClass = CLASS_LOADER.parseClass(new File(UT.IO.toAbsolutePath(aScriptPath)));
+        Class<?> tScriptClass = CLASS_LOADER.parseClass(UT.IO.toFile(aScriptPath));
         // 获取 ScriptClass 的执行 Task
         return getTaskOfScript_(tScriptClass, aArgs);
     }
     /** 注意是脚本中的方法或者是类中静态方法，成员方法可以获取对象后直接用 {@link UT.Hack}.getTaskOfMethod */
     public synchronized static TaskCall<?> getTaskOfScriptMethod(String aScriptPath, final String aMethodName, Object... aArgs) throws IOException {
         // 获取脚本的类，底层自动进行了缓存
-        Class<?> tScriptClass = CLASS_LOADER.parseClass(new File(UT.IO.toAbsolutePath(aScriptPath)));
+        Class<?> tScriptClass = CLASS_LOADER.parseClass(UT.IO.toFile(aScriptPath));
         // 获取 ScriptClass 中具体方法的 Task
         return getTaskOfScriptMethod_(tScriptClass, aMethodName, aArgs);
     }

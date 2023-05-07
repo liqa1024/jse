@@ -16,6 +16,7 @@ import static com.guan.code.CS.SP;
  * @author liqa
  * <p> 一些预设的 lammps 输入文件，包含附加的额外输入文件以及输出文件 </p>
  */
+@SuppressWarnings("SameParameterValue")
 public enum IN {
       INIT_MELT_NPT_Cu   ("init-melt-NPT-Cu"             , SP, "vInDataPath", "lmp/data/CuFCC108.lmpdat", SP, "vOutRestartPath", ".temp/lmp/restart/melt-init-Cu108"   )
     , INIT_MELT_SC_NPT_Cu("init-melt-supercooling-NPT-Cu", SP, "vInDataPath", "lmp/data/CuFCC108.lmpdat", SP, "vOutRestartPath", ".temp/lmp/restart/melt-sc-init-Cu108")

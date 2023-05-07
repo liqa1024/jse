@@ -4,13 +4,11 @@ import com.google.common.collect.ImmutableMapBuilder;
 import com.guan.atom.AbstractAtomData;
 import com.guan.atom.AbstractMultiFrameAtomData;
 import com.guan.atom.IHasAtomData;
-import com.guan.math.MathEX;
 import com.guan.code.UT;
+import com.guan.math.MathEX;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -312,10 +310,7 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
      * @return 读取得到的 Lammpstrj 对象，如果文件不完整的帧会跳过
      * @throws IOException 如果读取失败
      */
-    public static Lammpstrj read(String aFilePath) throws IOException {
-        aFilePath = UT.IO.toAbsolutePath(aFilePath); // 同样需要处理相对路径的问题
-        return read_(Files.readAllLines(Paths.get(aFilePath)).toArray(new String[0]));
-    }
+    public static Lammpstrj read(String aFilePath) throws IOException {return read_(UT.IO.readAllLines(aFilePath));}
     public static Lammpstrj read_(String[] aLines) {
         List<SubLammpstrj> rLammpstrj = new ArrayList<>();
         
@@ -398,7 +393,6 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
         }
         lines.add("");
         
-        aFilePath = UT.IO.toAbsolutePath(aFilePath); // 同样需要处理相对路径的问题
-        Files.write(Paths.get(aFilePath), lines);
+        UT.IO.write(aFilePath, lines);
     }
 }
