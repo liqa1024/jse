@@ -135,30 +135,21 @@ public class UT {
         public static Method findMethod_(Class<?> aClazz, String aMethodName, Object @NotNull... aArgs) {
             Method[] tAllMethods = aClazz.getMethods();
             for (Method tMethod : tAllMethods) if (tMethod.getName().equals(aMethodName)) {
-                Class<?>[] tParameterTypes = tMethod.getParameterTypes();
-                if (tParameterTypes.length != aArgs.length) continue;
-                boolean tResult = true;
-                for (int i = 0; i < tParameterTypes.length; i++) if (!compatible(aArgs[i], tParameterTypes[i])) {
-                    tResult = false;
-                    break;
-                }
-                if (tResult) return tMethod;
+                if (compatible(aArgs, tMethod.getParameterTypes())) return tMethod;
             }
             return null;
         }
         public static Constructor<?> findConstructor_(Class<?> aClazz, Object @NotNull... aArgs) {
             Constructor<?>[] tAllConstructors = aClazz.getConstructors();
             for (Constructor<?> tConstructor : tAllConstructors) {
-                Class<?>[] tParameterTypes = tConstructor.getParameterTypes();
-                if (tParameterTypes.length != aArgs.length) continue;
-                boolean tResult = true;
-                for (int i = 0; i < tParameterTypes.length; i++) if (!compatible(aArgs[i], tParameterTypes[i])) {
-                    tResult = false;
-                    break;
-                }
-                if (tResult) return tConstructor;
+                if (compatible(aArgs, tConstructor.getParameterTypes())) return tConstructor;
             }
             return null;
+        }
+        private static boolean compatible(Object[] aArgs, Class<?>[] aMethodParameterTypes) {
+            if (aArgs.length != aMethodParameterTypes.length) return false;
+            for (int i = 0; i < aArgs.length; i++) if (!compatible(aArgs[i], aMethodParameterTypes[i])) return false;
+            return true;
         }
         @SuppressWarnings("BooleanMethodIsAlwaysInverted")
         private static boolean compatible(Object aArg, Class<?> aMethodParameterType) {
@@ -253,6 +244,16 @@ public class UT {
     }
     
     public static class IO {
+        /**
+         * Make a directory and support create nested directories.
+         * @author liqa
+         * @param aDir the directory will be made
+         * @return true if the directory already exists or the creation is successful, and false if it fails
+         */
+        public static boolean mkdir(String aDir) {
+            File tFile = new File(toAbsolutePath(aDir)); return tFile.isDirectory() || tFile.mkdirs();
+        }
+        
         /**
          * convert double[] to String[] for printRecord usage
          * @author liqa
