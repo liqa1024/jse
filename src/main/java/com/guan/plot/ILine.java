@@ -3,7 +3,7 @@ package com.guan.plot;
 import java.awt.*;
 
 import static com.guan.code.CS.COLOR_NULL;
-import static com.guan.code.CS.color_;
+import static com.guan.code.CS.COLOR_;
 import static java.awt.Color.*;
 
 /**
@@ -15,7 +15,7 @@ public interface ILine {
     /** 通用方法，用来减少重复代码 */
     class Util {
         /** 全局常量记录默认值 */
-        public final static Color DEFAULT_COLOR = color_(0);
+        public final static Color DEFAULT_COLOR = COLOR_(0);
         public final static LineType DEFAULT_LINE_TYPE = LineType.SOLID;
         public final static MarkerType DEFAULT_MARKER_TYPE = MarkerType.NULL;
         public final static double DEFAULT_LINE_WIDTH = 2.0;

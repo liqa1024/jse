@@ -1,6 +1,6 @@
 package com.guan.lmp;
 
-import com.google.common.collect.ImmutableMapBuilder;
+import com.google.common.collect.ImmutableMap;
 import com.guan.atom.AbstractAtomData;
 import com.guan.atom.AbstractMultiFrameAtomData;
 import com.guan.atom.IHasAtomData;
@@ -61,7 +61,7 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             mAtomDataKeys = aAtomDataKeys;
             mAtomData = aAtomData;
             
-            ImmutableMapBuilder<String, Integer> tMapBuilder = new ImmutableMapBuilder<>();
+            ImmutableMap.Builder<String, Integer> tMapBuilder = new ImmutableMap.Builder<>();
             String tKeyX = "x";
             String tKeyY = "y";
             String tKeyZ = "z";
@@ -73,7 +73,7 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
                 if (tKey.equals("y") || tKey.equals("ys") || tKey.equals("yu") || tKey.equals("ysu")) {tKeyY = tKey; mYCol = i;}
                 if (tKey.equals("z") || tKey.equals("zs") || tKey.equals("zu") || tKey.equals("zsu")) {tKeyZ = tKey; mZCol = i;}
             }
-            mKey2Idx = tMapBuilder.getMap();
+            mKey2Idx = tMapBuilder.build();
             
             if      (tKeyX.equals("x"  ) && tKeyY.equals("y"  ) && tKeyZ.equals("z"  )) mXYZType = XYZType.NORMAL;
             else if (tKeyX.equals("xs" ) && tKeyY.equals("ys" ) && tKeyZ.equals("zs" )) mXYZType = XYZType.SCALED;

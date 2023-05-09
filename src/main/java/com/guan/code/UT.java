@@ -1,7 +1,7 @@
 package com.guan.code;
 
 import com.google.common.collect.BiMap;
-import com.google.common.collect.ImmutableBiMapBuilder;
+import com.google.common.collect.ImmutableBiMap;
 import com.guan.ssh.SerializableTask;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -195,7 +195,7 @@ public class UT {
             Class<?> tWrapper = PRIMITIVE_TO_WRAPPER.get(aClazz);
             return tWrapper == null ? aClazz : tWrapper;
         }
-        public static final @Unmodifiable BiMap<Class<?>, Class<?>> PRIMITIVE_TO_WRAPPER = (new ImmutableBiMapBuilder<Class<?>, Class<?>>())
+        public static final @Unmodifiable BiMap<Class<?>, Class<?>> PRIMITIVE_TO_WRAPPER = (new ImmutableBiMap.Builder<Class<?>, Class<?>>())
             .put(boolean.class,   Boolean.class)
             .put(   byte.class,      Byte.class)
             .put(   char.class, Character.class)
@@ -204,7 +204,7 @@ public class UT {
             .put(   long.class,      Long.class)
             .put(  float.class,     Float.class)
             .put( double.class,    Double.class)
-            .getBiMap();
+            .build();
     }
     
     public static class Timer {

@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import static com.guan.code.CS.color_;
+import static com.guan.code.CS.COLOR_;
 
 /**
  * @author liqa
@@ -32,7 +32,7 @@ public class PlotterJFree implements IPlotter {
         Paint mPaint;
         LineJFree(int aID) {
             mID = aID;
-            mPaint = color_(aID);
+            mPaint = COLOR_(aID);
             mLineRender.setSeriesPaint(mID, mPaint);
             
             // 设置默认的线型，为了避免一些问题不在构造函数中调用自己的一些多态的方法

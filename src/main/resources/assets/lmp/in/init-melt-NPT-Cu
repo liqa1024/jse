@@ -6,17 +6,18 @@ variable        vRunStep        equal   200000
 variable        vThermoStep     equal   10000
 variable        vSeed           equal   4587281
 variable        vInDataPath     string  lmp/data/CuFCC108.lmpdat
-variable        vOutRestartPath string  .temp/lmp/restart/melt-init-Cu108
+variable        vOutRestartPath string  lmp/.temp/restart/melt-Cu108-init
 
 
 units           metal
 boundary        p p p
 
 read_data       ${vInDataPath}
+timestep        0.002
 
 pair_style      lj/cut  3.6
-pair_coeff      1 1 0.167 2.314  3.6
-timestep        0.002
+pair_coeff      1 1 0.167 2.314 3.6
+
 velocity        all create ${vT} ${vSeed} dist gaussian mom yes rot yes
 
 thermo          ${vThermoStep}

@@ -1,6 +1,6 @@
 package com.guan.lmp;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableMap;
 import com.guan.atom.AbstractAtomData;
 import com.guan.atom.IHasAtomData;
 import com.guan.code.UT;
@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public class Lmpdat extends AbstractAtomData {
     private final static String[] ATOM_DATA_KEYS = IHasAtomData.Util.STD_ATOM_DATA_KEYS;
-    private final static Map<String, Integer> KEY2IDX = Maps.immutableMap("id", 0, "type", 1, "x", 2, "y", 3, "z", 4);
+    private final static Map<String, Integer> KEY2IDX = ImmutableMap.of("id", 0, "type", 1, "x", 2, "y", 3, "z", 4);
     private final static int[] ATOM_DATA_XYZ = new int[] {2, 3, 4};
     private final static int[] ATOM_DATA_XYZID = new int[] {2, 3, 4, 0};
     private final static int TYPE_COL = 1;
