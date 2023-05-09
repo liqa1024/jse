@@ -25,6 +25,8 @@ dependencies {
     implementation('org.apache.groovy:groovy:4.0.11')           // 用于直接执行 groovy 脚本而不需要安装 groovy
     implementation('org.apache.groovy:groovy-json:4.0.11')      // 直接使用 groovy 的 json 包来支持 json，可以让 groovy 脚本使用原生的 json 功能
     
+    implementation('org.jfree:jfreechart:1.5.4')                // 简单的绘图支持
+    
 //  implementation('org.apache.commons:commons-pool2:2.11.1')   // 对象池, bad ideal，即使需要也应该自己实现一个简单的实例
     implementation('com.google.common:google-collect:0.5')      // in enonic，实现更加简单的容器初始化
 //  implementation('org.apache.commons:commons-math3:3.6.1')    // 矩阵计算库，不好用
@@ -51,6 +53,7 @@ shadowJar {
     relocate('com.jcraft.jzlib', 'shade.com.jcraft.jzlib')
 //  relocate('org.json.simple', 'shade.org.json.simple')
     // 不重命名 groovy 相关名称，避免 asm 错误，也方便 groovy 脚本直接使用 groovy 相关部分
+    // 不重命名 jfreechart 相关名称，用于方便直接使用
     
     // 修改目标文件夹，打包后添加到子项目中
     destinationDirectory = file('./release/lib')

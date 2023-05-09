@@ -1,3 +1,4 @@
+package test
 // import jTool classes
 import com.guan.code.UT;
 import com.guan.ssh.ServerSSH;

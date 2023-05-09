@@ -1305,6 +1305,8 @@ public class MathEX {
         public static double sin(double aValue) {return FastMath.sin(aValue);}
         public static double cos(double aValue) {return FastMath.cos(aValue);}
         public static double tan(double aValue) {return FastMath.tan(aValue);}
+        
+        public static double pow(double aValue, double aPower) {return FastMath.pow(aValue, aPower);}
     }
     
     

@@ -27,20 +27,28 @@ public class UT {
     
     public static class Code {
         /**
+         * {@link Arrays}.asList for double[]
+         * @author liqa
+         * @param aData the input double[]
+         * @return the list format of double[]
+         */
+        public static List<Double> asList(final double[] aData) {
+            return new AbstractList<Double>() {
+                @Override public Double get(int index) {return aData[index];}
+                @Override public Double set(int index, Double element) {return aData[index] = element;}
+                @Override public int size() {return aData.length;}
+            };
+        }
+        
+        /**
          * the range function similar to python
          * <p> only support in aStep > 0 for now </p>
          * @author liqa
          * @param aStart the start value, include
          * @param aStop the stop position, exclude
+         * @param aStep the step of Iteration
          * @return A iterable container
          */
-        public static Iterable<Integer> range(int aStart, int aStop           ) {return range(aStart, aStop, 1);}
-        public static Iterable<Integer> range(int aStart, int aStop, int aStep) {
-            aStep = Math.max(aStep, 1);
-            aStop = Math.max(aStop, aStart);
-            return range_(aStart, aStop, aStep);
-        }
-        public static Iterable<Integer> range_(final int aStart, final int aStop) {return range_(aStart, aStop, 1);}
         public static Iterable<Integer> range_(final int aStart, final int aStop, final int aStep) {
             return () -> new Iterator<Integer>() {
                 int mIdx = aStart;
@@ -56,6 +64,15 @@ public class UT {
                     throw new NoSuchElementException();
                 }
             };
+        }
+        public static Iterable<Integer> range_(            int aSize           ) {return range_(0, aSize);}
+        public static Iterable<Integer> range_(int aStart, int aStop           ) {return range_(aStart, aStop, 1);}
+        public static Iterable<Integer> range (            int aSize           ) {return range(0, aSize);}
+        public static Iterable<Integer> range (int aStart, int aStop           ) {return range(aStart, aStop, 1);}
+        public static Iterable<Integer> range (int aStart, int aStop, int aStep) {
+            aStep = Math.max(aStep, 1);
+            aStop = Math.max(aStop, aStart);
+            return range_(aStart, aStop, aStep);
         }
     }
     

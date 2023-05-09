@@ -3,6 +3,7 @@ package com.guan.code;
 import com.google.common.collect.ImmutableMapBuilder;
 import org.jetbrains.annotations.Unmodifiable;
 
+import java.awt.*;
 import java.util.Map;
 import java.util.Random;
 
@@ -24,4 +25,22 @@ public class CS {
         .put("Cu", 63.546)
         .put("Zr", 91.224)
         .getMap();
+    
+    /** colors used for plot */
+    private static final Color[] COLORS = new Color[] {
+        new Color(0  , 0  , 0  ),
+        new Color(255, 51 , 0  ),
+        new Color(76 , 178, 0  ),
+        new Color(51 , 102, 204),
+        new Color(178, 0  , 178),
+        new Color(204, 153, 0  ),
+        new Color(0  , 178, 153),
+    };
+    public static final Color COLOR_NULL = new Color(255, 255, 255, 0);
+    
+    public static Color color_(int aIdx) {return COLORS[aIdx%COLORS.length];}
+    public static double[] color(int aIdx) {
+        Color tColor = color_(aIdx);
+        return new double[] {tColor.getRed()/255.0, tColor.getGreen()/255.0, tColor.getBlue()/255.0};
+    }
 }
