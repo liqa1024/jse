@@ -2,6 +2,7 @@ package com.guan.code;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
+import com.guan.math.functional.IOperator1Full;
 import com.guan.ssh.SerializableTask;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -18,6 +19,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * @author liqa
@@ -26,6 +28,66 @@ import java.util.*;
 public class UT {
     
     public static class Code {
+        
+        
+        /**
+         * map Iterable< T > to Iterable< R > like {@link Stream}.map
+         * @author liqa
+         */
+        public static <R, T> Iterable<R> map(final Iterable<T> aIterable, final IOperator1Full<? extends R, ? super T> aOpt) {
+            return () -> new Iterator<R>() {
+                final Iterator<T> mIt = aIterable.iterator();
+                @Override public boolean hasNext() {
+                    return mIt.hasNext();
+                }
+                @Override public R next() {
+                    if (hasNext()) {
+                        return aOpt.cal(mIt.next());
+                    }
+                    throw new NoSuchElementException();
+                }
+            };
+        }
+        
+        
+        /**
+         * Convert nested Iterable to a single one
+         * @author liqa
+         */
+        public static <T> Iterable<T> toIterable(final Iterable<? extends Iterable<T>> aNestIterable) {
+            return () -> new Iterator<T>() {
+                private final Iterator<? extends Iterable<T>> mParentIt = aNestIterable.iterator();
+                private Iterator<T> mIt = mParentIt.hasNext() ? mParentIt.next().iterator() : null;
+                private T mNext = null;
+                
+                @Override public boolean hasNext() {
+                    if (mIt == null) return false;
+                    while (true) {
+                        if (mNext != null) return true;
+                        if (mIt.hasNext()) {
+                            mNext = mIt.next();
+                            continue;
+                        }
+                        if (mParentIt.hasNext()) {
+                            mIt = mParentIt.next().iterator();
+                            mNext = null;
+                            continue;
+                        }
+                        return false;
+                    }
+                }
+                @Override public T next() {
+                    if (hasNext()) {
+                        T tNext = mNext;
+                        mNext = null; // 设置 mNext 非法表示此时不再有 Next
+                        return tNext;
+                    }
+                    throw new NoSuchElementException();
+                }
+            };
+        }
+        
+        
         /**
          * {@link Arrays}.asList for double[]
          * @author liqa

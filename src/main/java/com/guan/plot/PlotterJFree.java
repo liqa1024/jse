@@ -1,5 +1,7 @@
 package com.guan.plot;
 
+import com.guan.code.UT;
+import com.guan.math.MathEX;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartFrame;
 import org.jfree.chart.JFreeChart;
@@ -25,13 +27,20 @@ import static com.guan.code.CS.COLOR_;
 /**
  * @author liqa
  * <p> 基于 JFreeChart 实现的 plot 类 </p>
+ * <p> 暂不考虑对数坐标的情况 </p>
  */
 public class PlotterJFree implements IPlotter {
     protected class LineJFree extends AbstractLine {
         final int mID;
+        final String mName;
+        final Iterable<Double> mX, mY;
         Paint mPaint;
-        LineJFree(int aID) {
+        
+        LineJFree(int aID, Iterable<? extends Number> aX, Iterable  <? extends Number> aY, String aName) {
             mID = aID;
+            mName = aName;
+            mX = UT.Code.map(aX, Number::doubleValue);
+            mY = UT.Code.map(aY, Number::doubleValue);
             mPaint = COLOR_(aID);
             mLineRender.setSeriesPaint(mID, mPaint);
             
@@ -152,8 +161,68 @@ public class PlotterJFree implements IPlotter {
     @Override public IPlotter yLabel(String aYLabel) {mYAxis.setLabel(aYLabel); return this;}
     
     /** 设置绘制范围 */
-    @Override public IPlotter xRange(double aMin, double aMax) {mXAxis.setRange(aMin, aMax); return this;}
-    @Override public IPlotter yRange(double aMin, double aMax) {mYAxis.setRange(aMin, aMax); return this;}
+    @Override public IPlotter xRange(double aMin, double aMax) {
+        // 先进行设置范围，非法返回会自动报错
+        mXAxis.setRange(aMin, aMax);
+        // 设置绘制范围后，需要手动调整绘制区域外的数据，因为 JFree 不会对此优化，从而可能会导致卡死的问题
+        updateSeries_(aMin, Double.NEGATIVE_INFINITY, aMax, Double.POSITIVE_INFINITY);
+        return this;
+    }
+    @Override public IPlotter yRange(double aMin, double aMax) {
+        // 先进行设置范围，非法返回会自动报错
+        mYAxis.setRange(aMin, aMax);
+        // 设置绘制范围后，需要手动调整绘制区域外的数据，因为 JFree 不会对此优化，从而可能会导致卡死的问题
+        updateSeries_(Double.NEGATIVE_INFINITY, aMin, Double.POSITIVE_INFINITY, aMax);
+        return this;
+    }
+    @Override public IPlotter axis(double aXMin, double aXMax, double aYMin, double aYMax) {
+        // 先进行设置范围，非法返回会自动报错
+        mXAxis.setRange(aXMin, aXMax);
+        mYAxis.setRange(aYMin, aYMax);
+        // 设置绘制范围后，需要手动调整绘制区域外的数据，因为 JFree 不会对此优化，从而可能会导致卡死的问题
+        updateSeries_(aXMin, aYMin, aXMax, aYMax);
+        return this;
+    }
+    /** 内部使用，根据输入的 box 边界来更新数据，因为 JFree 不会对此优化，从而可能会导致卡死的问题 */
+    private void updateSeries_(double aBoxXMin, double aBoxYMin, double aBoxXMax, double aBoxYMax) {
+        // 用来保证不会出现刚好在边界情况
+        double tSizeX = aBoxXMax - aBoxXMin; tSizeX *= 0.9975432489542136;
+        double tSizeY = aBoxYMax - aBoxYMin; tSizeY *= 0.9986214753294532;
+        aBoxXMin -= tSizeX; aBoxXMax += tSizeX;
+        aBoxYMin -= tSizeY; aBoxYMax += tSizeY;
+        // 直接遍历全部重设数据，因为可能会有多次调整范围的问题；直接清空旧的序列然后重新覆盖，操作会比较直接
+        mLinesData.removeAllSeries();
+        for (LineJFree tLine : mLines) {
+            // 创建新的序列
+            XYSeries tSeries = new XYSeries(tLine.mName, false, true);
+            // 遍历获取新的值
+            double tX0 = Double.NaN;
+            double tY0 = Double.NaN;
+            Iterator<Double> itx = tLine.mX.iterator();
+            Iterator<Double> ity = tLine.mY.iterator();
+            while (itx.hasNext() && ity.hasNext()) {
+                double tX = itx.next();
+                double tY = ity.next();
+                // 检测位置是否合法，合法则直接添加，不合法则添加边界值或者 NaN
+                if (tX>aBoxXMin && tX<aBoxXMax && tY>aBoxYMin && tY<aBoxYMax) {
+                    tSeries.add(tX, tY);
+                } else //noinspection StatementWithEmptyBody
+                if (Double.isNaN(tX0) || Double.isNaN(tY0)) {
+                    // 没有上一个值 NaN 则这个值不进行添加
+                } else {
+                    // 上一个值在范围内则只需要添加一个边界点
+                    double[][] tInterPoints = MathEX.Graph.interRayBox2D_(aBoxXMin, aBoxYMin,  aBoxXMax, aBoxYMax, tX0, tY0, tX, tY);
+                    // 遍历添加，不添加非法值
+                    if (tInterPoints != null) for (double[] tXY : tInterPoints) tSeries.add(tXY[0], tXY[1]);
+                }
+                tX0 = tX;
+                tY0 = tY;
+            }
+            // 添加修改绘制数据后的序列
+            mLinesData.addSeries(tSeries);
+        }
+    }
+    
     
     /** 设置 tick 间隔 */
     @Override public IPlotter xTick(double aTick) {((NumberAxis)mXAxis).setTickUnit(new NumberTickUnit(aTick)); return this;}
@@ -161,21 +230,16 @@ public class PlotterJFree implements IPlotter {
     
     /** 添加绘制数据 */
     @Override
-    public ILine plot(Iterable<? extends Number> aX, Iterable<? extends Number> aY, String aName) {
+    public ILine plot(Iterable<? extends Number> aX, Iterable  <? extends Number> aY, String aName) {
         // 创建数据
         XYSeries tSeries = new XYSeries(aName, false, true); // 不做排序以及允许重复数值
         Iterator<? extends Number> itx = aX.iterator();
         Iterator<? extends Number> ity = aY.iterator();
-        while (itx.hasNext() && ity.hasNext()) {
-            // 需要将过大的值改为 NaN
-            Number tX = itx.next();
-            Number tY = ity.next();
-            tSeries.add(tX, tY);
-        }
+        while (itx.hasNext() && ity.hasNext()) tSeries.add(itx.next(), ity.next());
         // 添加数据
         mLinesData.addSeries(tSeries);
         // 创建曲线
-        LineJFree tLine = new LineJFree(mLines.size());
+        LineJFree tLine = new LineJFree(mLines.size(), aX, aY, aName);
         mLines.add(tLine);
         
         // 返回 LineJFree

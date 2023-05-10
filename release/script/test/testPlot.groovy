@@ -6,7 +6,7 @@ import com.guan.plot.Plotters;
 
 /** 测试直接在 java 上绘图 */
 // 获取数据
-x = MathEX.Func.sequence(-1.0, 0.1, 20);
+x = MathEX.Func.sequence(-1.0, 0.1, 21);
 sinx = MathEX.Vec.mapDo(x, v -> MathEX.Fast.sin(v*MathEX.PI));
 cosx = MathEX.Vec.mapDo(x, v -> MathEX.Fast.cos(v*MathEX.PI));
 nsinx= MathEX.Vec.mapDo(x, v ->-MathEX.Fast.sin(v*MathEX.PI));
@@ -34,7 +34,7 @@ line4.lineType('-' ).markerType('d').markerColor('m');
 plt.xLabel('x');
 plt.yLabel('y');
 plt.tick(0.2);
-plt.axis(-1.0, 1.0);
+plt.axis(-1.1, 1.1);
 
 // 显示结果
 fig = plt.show();

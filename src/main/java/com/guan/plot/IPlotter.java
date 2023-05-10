@@ -30,6 +30,7 @@ public interface IPlotter {
     default ILine plot(                               Collection<? extends Number> aY, String aName) {return plot(UT.Code.range_(aY.size()), aY, aName);}
             ILine plot(Iterable<? extends Number> aX, Iterable  <? extends Number> aY, String aName);
     
+    
     /** 显示结果 */
     default IFigure show() {return show("figure");}
     IFigure show(String aName);
