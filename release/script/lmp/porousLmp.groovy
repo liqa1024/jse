@@ -22,6 +22,7 @@ static IHasAtomData genAtomData(double cellSize=3.61, int replicate=20, double m
     
     // 记得关闭生成器，释放资源
     GEN.shutdown();
+    GEN.awaitTermination();
     
     return atomData;
 }

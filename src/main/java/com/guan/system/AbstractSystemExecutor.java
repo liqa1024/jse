@@ -7,7 +7,10 @@ import com.guan.parallel.IExecutorEX;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Future;
 
 public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExecutorEX> implements ISystemExecutor {
@@ -30,6 +33,17 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
     @Override public Future<Integer> submitSystem   (final String aCommand                                             , final IHasIOFiles aIOFiles) {return pool().submit(() -> system   (aCommand, aIOFiles));}
     @Override public Future<Integer> submitSystem   (final String aCommand, final String      aOutFilePath             , final IHasIOFiles aIOFiles) {return pool().submit(() -> system   (aCommand, aOutFilePath, aIOFiles));}
     @Override public Future<Integer> submitSystem   (final String aCommand, final @Nullable PrintStream aOutPrintStream, final IHasIOFiles aIOFiles) {return pool().submit(() -> system   (aCommand, aOutPrintStream, aIOFiles));}
+    
+    @Override public List<String> system_str(String aCommand) {final List<String> rList = new ArrayList<>(); system(aCommand, toListPS(rList)); return rList;}
+    @Override public List<String> system_str(String aCommand, IHasIOFiles aIOFiles) {final List<String> rList = new ArrayList<>(); system(aCommand, toListPS(rList), aIOFiles); return rList;}
+    @Override public Future<List<String>> submitSystem_str(final String aCommand) {return pool().submit(() -> system_str(aCommand));}
+    @Override public Future<List<String>> submitSystem_str(final String aCommand, IHasIOFiles aIOFiles) {return pool().submit(() -> system_str(aCommand, aIOFiles));}
+    
+    /** only support println */
+    private static PrintStream toListPS(final List<String> rList) {return new PrintStream(NL_OUT) {@Override public void println(@Nullable String s) {rList.add(s);}};}
+    private final static OutputStream NL_OUT = new OutputStream() {@Override public void write(int b) {/**/}};
+    
+    
     
     /** stuff to override */
     public abstract int system(String aCommand, @Nullable PrintStream aOutPrintStream);

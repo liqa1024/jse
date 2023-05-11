@@ -3,6 +3,13 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
+java {
+    // 暂定版本为 jdk 1.8，使用过高的版本会因为弃用的函数而报错
+    // 未来可能会因为 simd 的需求使用更高的版本
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
 repositories {
     mavenCentral()
 }

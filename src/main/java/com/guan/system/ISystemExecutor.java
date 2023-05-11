@@ -2,12 +2,12 @@ package com.guan.system;
 
 
 import com.guan.code.IHasIOFiles;
-import com.guan.code.UT;
 import com.guan.parallel.IHasThreadPool;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.List;
 import java.util.concurrent.Future;
 
 /**
@@ -36,4 +36,10 @@ public interface ISystemExecutor extends IHasThreadPool {
     Future<Integer> submitSystem   (String aCommand                                       , IHasIOFiles aIOFiles);
     Future<Integer> submitSystem   (String aCommand, String      aOutFilePath             , IHasIOFiles aIOFiles);
     Future<Integer> submitSystem   (String aCommand, @Nullable PrintStream aOutPrintStream, IHasIOFiles aIOFiles);
+    
+    /** 获取字符串输出而不是退出代码 */
+    List<String> system_str(String aCommand);
+    List<String> system_str(String aCommand, IHasIOFiles aIOFiles);
+    Future<List<String>> submitSystem_str(String aCommand);
+    Future<List<String>> submitSystem_str(String aCommand, IHasIOFiles aIOFiles);
 }
