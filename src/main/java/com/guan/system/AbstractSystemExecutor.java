@@ -12,9 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 
+
+/**
+ * @author liqa
+ * <p> 将一般实现放入抽象类中，因为 submit 一定需要在 pool 中使用，如果直接嵌套文件的输入流会在写入前就关闭 </p>
+ */
 public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExecutorEX> implements ISystemExecutor {
     protected AbstractSystemExecutor(int aThreadNum) {super(newPool(aThreadNum));}
-    protected AbstractSystemExecutor() {this(1);}
     
     
     @Override public int system_NO(String aCommand                                           ) {return system(aCommand, (IPrintln)null);} // No Output

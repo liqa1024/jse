@@ -12,7 +12,7 @@ import java.util.Set;
 
 /**
  * @author liqa
- * <p> 输入文件 IInFile 的默认实现 </p>
+ * <p> 输入文件 IInFile 的默认实现，自身文件的 key 为 {@code "<self>"} </p>
  * <p> 由于 Map 需要的接口更多，因此继承 AbstractMap 来减少重复代码的数量 </p>
  */
 public abstract class AbstractInFile extends AbstractMap<String, Object> implements IInFile {
@@ -42,5 +42,11 @@ public abstract class AbstractInFile extends AbstractMap<String, Object> impleme
     @Override public final void clear() {mSettings.clear();}
     
     /** IInFile stuffs */
-    public abstract void write(String aPath) throws IOException;
+    public final void write(String aPath) throws IOException {
+        write_(aPath);
+        setIFiles("<self>", aPath);
+    }
+    
+    /** stuff to override */
+    protected abstract void write_(String aPath) throws IOException;
 }

@@ -2,8 +2,12 @@ package com.guan.code;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
+import com.guan.io.Decryptor;
+import com.guan.io.Encryptor;
 import com.guan.math.functional.IOperator1Full;
 import com.guan.ssh.SerializableTask;
+import groovy.json.JsonBuilder;
+import groovy.json.JsonSlurper;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
@@ -30,6 +34,26 @@ import static com.guan.code.CS.ZL_OBJ;
 public class UT {
     
     public static class Code {
+        
+        /**
+         * Get the value in the map according to the order of the keys
+         * @author liqa
+         */
+        public static Object get(Map<?, ?> aMap, Object... aKeys) {
+            if (aKeys == null) return null;
+            for (Object tKey : aKeys) if (aMap.containsKey(tKey)) return aMap.get(tKey);
+            return null;
+        }
+        /**
+         * Get the value in the map according to the order of the keys and with default value
+         * @author liqa
+         */
+        public static Object getWithDefault(Map<?, ?> aMap, Object aDefaultValue, Object... aKeys) {
+            if (aKeys == null) return aDefaultValue;
+            for (Object tKey : aKeys) if (aMap.containsKey(tKey)) return aMap.get(tKey);
+            return aDefaultValue;
+        }
+        
         
         /**
          * merge two array into one List
@@ -507,6 +531,31 @@ public class UT {
         
         
         /**
+         * convert between json and map, Encryption support
+         * @author liqa
+         */
+        public static Map<?, ?> json2map(String aFilePath) throws IOException {
+            try (Reader tReader = IO.toReader(aFilePath)) {
+                return (Map<?, ?>) (new JsonSlurper()).parse(tReader);
+            }
+        }
+        public static void map2json(Map<?, ?> aMap, String aFilePath) throws IOException {
+            try (Writer tWriter = IO.toWriter(aFilePath)) {
+                (new JsonBuilder(aMap)).writeTo(tWriter);
+            }
+        }
+        public static Map<?, ?> json2map(String aFilePath, String aKey) throws Exception {
+            Decryptor tDecryptor = new Decryptor(aKey);
+            return (Map<?, ?>) (new JsonSlurper()).parseText(tDecryptor.get(UT.IO.readAllBytes(aFilePath)));
+        }
+        public static void map2json(Map<?, ?> aMap, String aFilePath, String aKey) throws Exception {
+            Encryptor tEncryptor = new Encryptor(aKey);
+            UT.IO.write(aFilePath, tEncryptor.getData((new JsonBuilder(aMap)).toString()));
+        }
+        
+        
+        
+        /**
          * convert double[] to String[] for printRecord usage
          * @author liqa
          */
@@ -532,12 +581,10 @@ public class UT {
          * @param aFilePath csv file path to be saved
          * @param aHeads optional headers for the title
          */
-        public static void data2csv(double[][] aData, String aFilePath, String... aHeads) {
+        public static void data2csv(double[][] aData, String aFilePath, String... aHeads) throws IOException {
             CSVFormat tCSVFormat = (aHeads != null && aHeads.length == aData[0].length) ? CSVFormat.DEFAULT.builder().setHeader(aHeads).build() : CSVFormat.DEFAULT;
             try (CSVPrinter tPrinter = new CSVPrinter(toWriter(aFilePath), tCSVFormat)) {
                 for (double[] subData : aData) tPrinter.printRecord((Object[]) data2str(subData));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
             }
         }
         /**
@@ -546,7 +593,7 @@ public class UT {
          * @param aFilePath csv file path to read
          * @return matrix data (or with String[] head in Pair if use csv2dataWithHand)
          */
-        public static double[][] csv2data(String aFilePath) {
+        public static double[][] csv2data(String aFilePath) throws IOException {
             try (CSVParser tParser = CSVParser.parse(toAbsolutePath_(aFilePath), StandardCharsets.UTF_8, CSVFormat.DEFAULT)) {
                 List<double[]> tData = new ArrayList<>();
                 boolean tIsHead = true;
@@ -561,8 +608,6 @@ public class UT {
                     }
                 }
                 return tData.toArray(new double[0][]);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
             }
         }
         public static Pair<double[][], String[]> csv2dataWithHand(String aFilePath) {

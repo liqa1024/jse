@@ -1,16 +1,17 @@
 package com.guan.ssh;
 
-import com.guan.io.Decryptor;
-import com.guan.io.Encryptor;
 import com.guan.code.Task;
 import com.guan.code.UT;
+import com.guan.parallel.AbstractHasThreadPool;
+import com.guan.parallel.IExecutorEX;
+import com.guan.system.SSHSystemExecutor;
 import com.jcraft.jsch.*;
-import groovy.json.JsonBuilder;
-import groovy.json.JsonSlurper;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.*;
+
 
 /**
  * @author liqa
@@ -19,6 +20,8 @@ import java.util.concurrent.*;
  * <p> 提供提交指令，断开自动重连，同步目标文件夹等功能 </p>
  * <p> 由于免密登录只支持经典的 openssh 密钥（即需要生成时加上 -m pem），因此还提供密码登录的支持，
  * 但依旧不建议使用密码登录，因为会在代码中出现明文密码 </p>
+ * <p>
+ * <p> 不建议直接使用，现在对此基本停止维护，请改为使用更加成熟的 {@link SSHSystemExecutor} </p>
  */
 @SuppressWarnings({"UnusedReturnValue", "BusyWait"})
 public final class ServerSSH {
@@ -48,15 +51,11 @@ public final class ServerSSH {
     public void save(String aFilePath) throws IOException {
         Map rJson = new LinkedHashMap();
         save(rJson);
-        Writer tWriter = UT.IO.toWriter(aFilePath);
-        (new JsonBuilder(rJson)).writeTo(tWriter);
-        tWriter.close();
+        UT.IO.map2json(rJson, aFilePath);
     }
     @SuppressWarnings("rawtypes")
     public static ServerSSH load(String aFilePath) throws Exception {
-        Reader tReader = UT.IO.toReader(aFilePath);
-        Map tJson = (Map) (new JsonSlurper()).parse(tReader);
-        tReader.close();
+        Map tJson = UT.IO.json2map(aFilePath);
         return load(tJson);
     }
     // 带有密码的读写
@@ -64,13 +63,11 @@ public final class ServerSSH {
     public void save(String aFilePath, String aKey) throws Exception {
         Map rJson = new LinkedHashMap();
         save(rJson);
-        Encryptor tEncryptor = new Encryptor(aKey);
-        UT.IO.write(aFilePath, tEncryptor.getData((new JsonBuilder(rJson)).toString()));
+        UT.IO.map2json(rJson, aFilePath, aKey);
     }
     @SuppressWarnings("rawtypes")
     public static ServerSSH load(String aFilePath, String aKey) throws Exception {
-        Decryptor tDecryptor = new Decryptor(aKey);
-        Map tJson = (Map) (new JsonSlurper()).parseText(tDecryptor.get(UT.IO.readAllBytes(aFilePath)));
+        Map tJson = UT.IO.json2map(aFilePath, aKey);
         return load(tJson);
     }
     // 偏向于内部使用的保存到 json 和从 json 读取
@@ -98,26 +95,26 @@ public final class ServerSSH {
     }
     @SuppressWarnings("rawtypes")
     public static ServerSSH load(Map aJson) throws Exception {
-        String aUsername = (String) aJson.get("Username");
-        String aHostname = (String) aJson.get("Hostname");
-        int aPort = ((Number) aJson.get("Port")).intValue();
+        String aUsername = (String) UT.Code.get(aJson, "Username", "username", "user", "u");
+        String aHostname = (String) UT.Code.get(aJson, "Hostname", "hostname", "host", "h");
+        int aPort = ((Number) UT.Code.getWithDefault(aJson, 22, "Port", "port", "p")).intValue();
         
-        String aLocalWorkingDir = null;
-        String aRemoteWorkingDir = null;
-        String aPassword = null;
-        String aKeyPath = null;
-        if (aJson.containsKey("LocalWorkingDir"))  aLocalWorkingDir  = (String) aJson.get("LocalWorkingDir");
-        if (aJson.containsKey("RemoteWorkingDir")) aRemoteWorkingDir = (String) aJson.get("RemoteWorkingDir");
-        if (aJson.containsKey("Password"))         aPassword         = (String) aJson.get("Password");
-        if (aJson.containsKey("KeyPath"))          aKeyPath          = (String) aJson.get("KeyPath");
+        String aLocalWorkingDir  = (String) UT.Code.get(aJson, "LocalWorkingDir", "localworkingdir", "lwd");
+        String aRemoteWorkingDir = (String) UT.Code.get(aJson, "RemoteWorkingDir", "remoteworkingdir", "rwd", "wd");
+        String aPassword         = (String) UT.Code.get(aJson, "Password", "password", "pw");
+        String aKeyPath          = (String) UT.Code.get(aJson, "KeyPath", "keypath", "key", "k");
+        
         
         ServerSSH rServerSSH;
         if (aPassword!=null) rServerSSH = getPassword(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPort, aPassword);
         else if (aKeyPath!=null) rServerSSH = getKey(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPort, aKeyPath);
         else rServerSSH = get(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPort);
         
-        if (aJson.containsKey("CompressLevel")) rServerSSH.setCompressionLevel(((Number) aJson.get("CompressLevel")).intValue());
-        if (aJson.containsKey("BeforeCommand")) rServerSSH.setBeforeSystem((String) aJson.get("BeforeCommand"));
+        Object tCompressLevel = UT.Code.get(aJson, "CompressLevel", "compresslevel", "cl");
+        Object tBeforeCommand = UT.Code.get(aJson, "BeforeCommand", "beforecommand", "bcommand", "bc");
+        
+        if (tCompressLevel != null) rServerSSH.setCompressionLevel(((Number)tCompressLevel).intValue());
+        if (tBeforeCommand != null) rServerSSH.setBeforeSystem((String)tBeforeCommand);
         
         return rServerSSH;
     }
@@ -471,6 +468,130 @@ public final class ServerSSH {
         tChannelSftp.disconnect();
     }
     
+    
+    /**
+     * 上传下载多个文件，主要使用的 ssh 方法，一次传输多个文件不用重新连接，创建通道等。
+     * 由于是重新写的，会更加注意错误出现后的通道自动关闭，原本没有在源码中使用的方法不再维护
+     * @author liqa
+     */
+    public void putFiles(Iterable<String> aFilePaths) throws JSchException, SftpException {
+        ChannelSftp tChannelSftp = null;
+        try {
+            // 会尝试一次重新连接
+            if (!isConnecting()) connect();
+            // 获取文件传输通道
+            tChannelSftp = (ChannelSftp) session().openChannel("sftp");
+            tChannelSftp.connect();
+            for (String tFilePath : aFilePaths) {
+                // 检测文件路径是否合法
+                String tLocalFile = mLocalWorkingDir+tFilePath;
+                if (!UT.IO.isFile(tLocalFile)) throw new RuntimeException("Invalid File Path: "+tFilePath);
+                // 创建目标文件夹
+                String tRemoteDir = mRemoteWorkingDir;
+                int tEndIdx = tFilePath.lastIndexOf("/");
+                if (tEndIdx > 0) { // 否则不用创建，认为 mRemoteWorkingDir 已经存在
+                    tRemoteDir += tFilePath.substring(0, tEndIdx+1);
+                    if (!ServerSSH.makeDir_(tChannelSftp, tRemoteDir)) throw new RuntimeException("Fail when create remote dir: " + tRemoteDir);
+                }
+                // 上传文件
+                tChannelSftp.put(tLocalFile, tRemoteDir);
+            }
+        } finally {
+            // 最后关闭通道
+            if (tChannelSftp != null) tChannelSftp.disconnect();
+        }
+    }
+    public void getFiles(Iterable<String> aFilePaths) throws JSchException, SftpException {
+        ChannelSftp tChannelSftp = null;
+        try {
+            // 会尝试一次重新连接
+            if (!isConnecting()) connect();
+            // 获取文件传输通道
+            tChannelSftp = (ChannelSftp) session().openChannel("sftp");
+            tChannelSftp.connect();
+            for (String tFilePath : aFilePaths) {
+                // 检测文件路径是否合法
+                String tRemoteDir = mRemoteWorkingDir + tFilePath;
+                if (!isFile_(tChannelSftp, tRemoteDir)) throw new RuntimeException("Invalid File Path: " + tFilePath);
+                // 创建目标文件夹
+                String tLocalDir = mLocalWorkingDir;
+                int tEndIdx = tFilePath.lastIndexOf("/");
+                if (tEndIdx > 0) { // 否则不用创建，认为 mLocalWorkingDir 已经存在
+                    tLocalDir += tFilePath.substring(0, tEndIdx + 1);
+                    if (!UT.IO.mkdir(tLocalDir)) throw new RuntimeException("Fail when create local dir: " + tLocalDir);
+                }
+                // 下载文件
+                tChannelSftp.get(tRemoteDir, tLocalDir);
+            }
+        } finally {
+            // 最后关闭通道
+            if (tChannelSftp != null) tChannelSftp.disconnect();
+        }
+    }
+    /** 并行版本 */
+    public void putFiles(Iterable<String> aFilePaths, int aThreadNumber) throws JSchException, InterruptedException {
+        SftpPool tSftpPool = null;
+        try {
+            // 创建并发线程池，会自动尝试重新连接
+            tSftpPool = new SftpPool(this, aThreadNumber);
+            for (final String tFilePath : aFilePaths) {
+                tSftpPool.submit(aChannelSftp -> {
+                    // 检测文件路径是否合法
+                    String tLocalFile = mLocalWorkingDir+tFilePath;
+                    if (!UT.IO.isFile(tLocalFile)) throw new RuntimeException("Invalid File Path: "+tFilePath);
+                    // 创建目标文件夹
+                    String tRemoteDir = mRemoteWorkingDir;
+                    int tEndIdx = tFilePath.lastIndexOf("/");
+                    if (tEndIdx > 0) { // 否则不用创建，认为 mRemoteWorkingDir 已经存在
+                        tRemoteDir += tFilePath.substring(0, tEndIdx+1);
+                        if (!ServerSSH.makeDir_(aChannelSftp, tRemoteDir)) throw new RuntimeException("Fail when create remote dir: " + tRemoteDir);
+                    }
+                    // 上传文件
+                    try {aChannelSftp.put(tLocalFile, tRemoteDir);} catch (SftpException e) {throw new RuntimeException(e);}
+                });
+            }
+            // 等待执关闭线程池后等待执行完毕
+            tSftpPool.shutdown();
+            tSftpPool.awaitTermination();
+        } finally {
+            // 最后关闭通道
+            if (tSftpPool != null && !tSftpPool.isTerminated()) tSftpPool.shutdownNow();
+        }
+    }
+    public void getFiles(Iterable<String> aFilePaths, int aThreadNumber) throws JSchException, InterruptedException {
+        SftpPool tSftpPool = null;
+        try {
+            // 创建并发线程池，会自动尝试重新连接
+            tSftpPool = new SftpPool(this, aThreadNumber);
+            
+            for (final String tFilePath : aFilePaths) {
+                tSftpPool.submit(aChannelSftp -> {
+                    // 检测文件路径是否合法
+                    String tRemoteDir = mRemoteWorkingDir + tFilePath;
+                    if (!isFile_(aChannelSftp, tRemoteDir)) throw new RuntimeException("Invalid File Path: " + tFilePath);
+                    // 创建目标文件夹
+                    String tLocalDir = mLocalWorkingDir;
+                    int tEndIdx = tFilePath.lastIndexOf("/");
+                    if (tEndIdx > 0) { // 否则不用创建，认为 mLocalWorkingDir 已经存在
+                        tLocalDir += tFilePath.substring(0, tEndIdx + 1);
+                        if (!UT.IO.mkdir(tLocalDir)) throw new RuntimeException("Fail when create local dir: " + tLocalDir);
+                    }
+                    // 下载文件
+                    try {aChannelSftp.get(tRemoteDir, tLocalDir);} catch (SftpException e) {throw new RuntimeException(e);}
+                });
+            }
+            // 等待执关闭线程池后等待执行完毕
+            tSftpPool.shutdown();
+            tSftpPool.awaitTermination();
+        } finally {
+            // 最后关闭通道
+            if (tSftpPool != null && !tSftpPool.isTerminated()) tSftpPool.shutdownNow();
+        }
+    }
+    
+    
+    
+    
     // 判断输入是否是远程服务器的文件
     public boolean isFile(String aPath) throws JSchException {
         if (mDead) throw new RuntimeException("Can NOT use isFile from a Dead SSH.");
@@ -745,21 +866,19 @@ public final class ServerSSH {
     
     /// 并发部分
     // 类似线程池的 Sftp 通道，可以重写实现提交任务并且并发的上传和下载
-    static class SftpPool {
+    static class SftpPool extends AbstractHasThreadPool<IExecutorEX> {
         interface ISftpTask {void doTask(ChannelSftp aChannelSftp);}
         private final LinkedList<ISftpTask> mTaskList = new LinkedList<>();
-        private final ExecutorService mPool;
         private boolean mDead = false;
         
         SftpPool(ServerSSH aSSH, int aThreadNumber) throws JSchException {
+            super(newPool(aThreadNumber));
             // 会尝试一次重新连接
             if (!aSSH.isConnecting()) aSSH.connect();
-            // 初始化线程池
-            mPool = Executors.newFixedThreadPool(aThreadNumber);
             // 提交长期任务
             for (int i = 0; i < aThreadNumber; ++i) {
                 final ChannelSftp tChannelSftp = (ChannelSftp) aSSH.session().openChannel("sftp");
-                mPool.execute(() -> {
+                pool().execute(() -> {
                     try {tChannelSftp.connect();} catch (JSchException e) {tChannelSftp.disconnect(); throw new RuntimeException(e);}
                     // 每个 Sftp 都从 mTaskList 中竞争获取 task 并执行
                     while (true) {
@@ -778,34 +897,20 @@ public final class ServerSSH {
             }
         }
         
-        void shutdown() {mDead = true; mPool.shutdown();}
-        boolean awaitTermination() throws InterruptedException {return mPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);}
+        @Override public void shutdown() {mDead = true; super.shutdown();}
+        @Override public void shutdownNow() {
+            shutdown();
+            synchronized (mTaskList) {mTaskList.clear();}
+            try {awaitTermination();} catch (InterruptedException ignored) {}
+        }
+        
         void submit(ISftpTask aSftpTask) {
             if (mDead) throw new RuntimeException("Can NOT submit tasks to a Dead SftpPool.");
             synchronized (mTaskList) {mTaskList.addLast(aSftpTask);}
         }
     }
     // 由于一个 channel 只能执行一个指令，这里直接使用线程池来实现 system 的并发，接口和 SystemThreadPool 保持一致
-    public SystemPool pool(int aThreadNumber) {if (mDead) throw new RuntimeException("Can NOT get pool from a Dead SSH."); return new SystemPool(aThreadNumber);}
-    class SystemPool {
-        private final ThreadPoolExecutor mPool;
-        
-        public SystemPool(int aThreadNumber) {
-            mPool = new ThreadPoolExecutor(aThreadNumber, aThreadNumber, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
-        }
-        public Future<?> submitSystem(String aCommand) {
-            return mPool.submit(() -> {try {system(aCommand);} catch (JSchException | IOException e) {throw new RuntimeException(e);}});
-        }
-        public void waitUntilDone() throws InterruptedException {
-            while (mPool.getActiveCount() > 0 || mPool.getQueue().size() > 0) Thread.sleep(200);
-        }
-        public int getTaskNumber() {
-            return mPool.getActiveCount() + mPool.getQueue().size();
-        }
-        
-        public void shutdown() {mPool.shutdown();}
-        public List<Runnable> shutdownNow() {return mPool.shutdownNow();}
-    }
+    @Deprecated public SSHSystemExecutor pool(int aThreadNumber) {if (mDead) throw new RuntimeException("Can NOT get pool from a Dead SSH."); return SSHSystemExecutor.get_(aThreadNumber, this);}
     
     // 手动加载 UT，会自动重新设置工作目录，会在调用静态函数 get 或者 load 时自动加载保证路径的正确性
     static {UT.IO.init();}

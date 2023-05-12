@@ -1,14 +1,15 @@
 package com.guan.ssh;
 
-import com.guan.code.*;
-import com.guan.io.Decryptor;
-import com.guan.io.Encryptor;
+import com.guan.code.Pair;
+import com.guan.code.Task;
+import com.guan.code.UT;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSchException;
-import groovy.json.JsonBuilder;
-import groovy.json.JsonSlurper;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -59,9 +60,7 @@ public final class ServerSLURM {
     public void save(String aFilePath) throws Exception {save(aFilePath, null);}
     @SuppressWarnings("rawtypes")
     public static ServerSLURM load(String aFilePath) throws Exception {
-        Reader tReader = UT.IO.toReader(aFilePath);
-        Map tJson = (Map) (new JsonSlurper()).parse(tReader);
-        tReader.close();
+        Map tJson = UT.IO.json2map(aFilePath);
         return load(tJson);
     }
     // 带有密码的读写
@@ -73,22 +72,17 @@ public final class ServerSLURM {
         // slurm 由于有自动保存的功能，需要先备份旧的文件
         if (UT.IO.isFile(aFilePath)) UT.IO.copy(aFilePath, aFilePath+".bak", StandardCopyOption.REPLACE_EXISTING);
         // 开始写入
-        JsonBuilder tJsonBuilder = new JsonBuilder(rJson);
         if (aKey != null && !aKey.isEmpty()) {
-            Encryptor tEncryptor = new Encryptor(aKey);
-            UT.IO.write(aFilePath, tEncryptor.getData(tJsonBuilder.toString()));
+            UT.IO.map2json(rJson, aFilePath, aKey);
         } else {
-            Writer tWriter = UT.IO.toWriter(aFilePath);
-            tJsonBuilder.writeTo(tWriter);
-            tWriter.close();
+            UT.IO.map2json(rJson, aFilePath);
         }
         // 写入完成删除备份文件
         if (UT.IO.isFile(aFilePath)) UT.IO.delete(aFilePath+".bak");
     }
     @SuppressWarnings("rawtypes")
     public static ServerSLURM load(String aFilePath, String aKey) throws Exception {
-        Decryptor tDecryptor = new Decryptor(aKey);
-        Map tJson = (Map) (new JsonSlurper()).parseText(tDecryptor.get(UT.IO.readAllBytes(aFilePath)));
+        Map tJson = UT.IO.json2map(aFilePath, aKey);
         return load(tJson);
     }
     // 偏向于内部使用的保存到 json 和从 json 读取

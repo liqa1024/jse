@@ -16,7 +16,7 @@ import java.util.Map;
  */
 public abstract class AbstractInFileJson extends AbstractInFile {
     @SuppressWarnings({"rawtypes", "unchecked"})
-    @Override public final void write(String aPath) throws IOException {
+    @Override public final void write_(String aPath) throws IOException {
         Map rJson;
         try (Reader tInFile = getInFileReader()) {
             rJson = (Map) (new JsonSlurper()).parse(tInFile);

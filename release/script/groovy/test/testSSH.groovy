@@ -27,6 +27,9 @@ UT.IO.rmdir('.temp/test1');
 ssh.getDir('.temp/test1');
 UT.Timer.toc('put and get');
 
+/** 保存 ssh 到文件 */
+ssh.save('.SECRET/ssh.json');
+
 
 /** 关闭 ssh */
 ssh.shutdown();

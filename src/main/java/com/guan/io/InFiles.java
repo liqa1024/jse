@@ -32,12 +32,21 @@ public class InFiles {
         
         /** Map stuffs */
         @NotNull @Override public final Set<Entry<String, Object>> entrySet() {return ZL_SETTING.entrySet();}
+        
+        /** IInFile stuffs */
+        public final void write(String aPath) throws IOException {
+            write_(aPath);
+            setIFiles("<self>", aPath);
+        }
+        
+        /** stuff to override */
+        protected abstract void write_(String aPath) throws IOException;
     }
     
     
     public static IInFile lmp(String aLmpInFilePath) {return LmpIn.custom(aLmpInFilePath);}
     public static IInFile json(final String aJsonFilePath) {return new AbstractInFileJson() {@Override protected Reader getInFileReader() throws IOException {return UT.IO.toReader(aJsonFilePath);}};}
-    public static IInFile immutable(final String aInFilePath) {return new ImmutableInFile() {@Override public void write(String aPath) throws IOException {UT.IO.copy(aInFilePath, aPath);}};}
+    public static IInFile immutable(final String aInFilePath) {return new ImmutableInFile() {@Override public void write_(String aPath) throws IOException {UT.IO.copy(aInFilePath, aPath);}};}
     
     /** 默认行为 */
     @Deprecated public static IInFile get(String aInFilePath) {return immutable(aInFilePath);}

@@ -12,17 +12,17 @@ import java.io.BufferedReader;
  * <p> SystemExecutor 的一般实现，直接在本地运行，默认输出在 System.out </p>
  */
 public class LocalSystemExecutor extends AbstractSystemExecutor {
-    public LocalSystemExecutor(int aThreadNum) {super(aThreadNum);}
-    public LocalSystemExecutor() {super();}
+    public LocalSystemExecutor(int aThreadNum) {super(aThreadNum); mRuntime = Runtime.getRuntime();}
+    public LocalSystemExecutor() {this(1);}
+    final Runtime mRuntime;
+    
     
     @Override public int system(String aCommand, @Nullable IPrintln aPrintln) {
         int tExitValue;
         Process tProcess = null;
         try {
-            // 获取 Runtime 实例
-            Runtime tRuntime = Runtime.getRuntime();
             // 执行指令
-            tProcess = tRuntime.exec(aCommand);
+            tProcess = mRuntime.exec(aCommand);
             // 读取执行的输出（由于内部会对输出自动 buffer，获取 stream 和执行的顺序不重要）
             if (aPrintln != null) try (BufferedReader tReader = UT.IO.toReader(tProcess.getInputStream())) {
                 String tLine;

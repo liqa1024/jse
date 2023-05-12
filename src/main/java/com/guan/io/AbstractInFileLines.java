@@ -13,7 +13,7 @@ import java.util.List;
  * <p> 按照一行一个参数和属性格式的输入文件 </p>
  */
 public abstract class AbstractInFileLines extends AbstractInFile {
-    @Override public final void write(String aPath) throws IOException {
+    @Override public final void write_(String aPath) throws IOException {
         List<String> rLines = new ArrayList<>();
         try (BufferedReader tInFile = getInFileReader()) {
             String tLine;
