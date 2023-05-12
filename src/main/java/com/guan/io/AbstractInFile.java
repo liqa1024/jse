@@ -4,10 +4,7 @@ package com.guan.io;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 /**
@@ -26,8 +23,8 @@ public abstract class AbstractInFile extends AbstractMap<String, Object> impleme
     
     
     /** IOFile stuffs */
-    @Override public final Iterable<String> getIFiles(String aIFileKey) {return mIOFile.getIFiles(aIFileKey);}
-    @Override public final Iterable<String> getOFiles(String aOFileKey) {return mIOFile.getOFiles(aOFileKey);}
+    @Override public final List<String> getIFiles(String aIFileKey) {return mIOFile.getIFiles(aIFileKey);}
+    @Override public final List<String> getOFiles(String aOFileKey) {return mIOFile.getOFiles(aOFileKey);}
     @Override public final Iterable<String> getIFiles() {return mIOFile.getIFiles();}
     @Override public final Iterable<String> getOFiles() {return mIOFile.getOFiles();}
     @Override public final IHasIOFiles setIFiles(String aIFileKey1, String aIFilePath1, Object... aElse) {mIOFile.setIFiles(aIFileKey1, aIFilePath1, aElse); return this;}

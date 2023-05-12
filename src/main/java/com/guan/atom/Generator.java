@@ -53,7 +53,7 @@ public class Generator extends AbstractHasThreadPool<ParforThreadPool> {
      * @return 返回由此创建的 atomData
      */
     public IHasAtomData atomDataFCC(double aCellSize, int aReplicateX, int aReplicateY, int aReplicateZ) {
-        if (mDead) throw new RuntimeException("This Generator is dead");
+        if (mDead) throwRuntimeException("This Generator is dead");
         
         final double[] tBoxHi = new double[] {aCellSize*aReplicateX, aCellSize*aReplicateY, aCellSize*aReplicateZ};
         final double[][] tAtomData = new double[4*aReplicateX*aReplicateY*aReplicateZ][];
@@ -87,7 +87,7 @@ public class Generator extends AbstractHasThreadPool<ParforThreadPool> {
      * @return 过滤后的 AtomData
      */
     public IHasAtomData filterAtomData(IOperator1Full<Boolean, double[]> aFilter, final IHasAtomData aAtomData) {
-        if (mDead) throw new RuntimeException("This Generator is dead");
+        if (mDead) throwRuntimeException("This Generator is dead");
         
         double[][] oAtomData = aAtomData.atomData();
         List<double[]> rAtomData = new ArrayList<>(oAtomData.length);
@@ -112,7 +112,7 @@ public class Generator extends AbstractHasThreadPool<ParforThreadPool> {
      * @return 过滤后的 AtomData
      */
     public IHasAtomData filterFunc3AtomData(final IOperator1Full<Boolean, Double> aFilter, final Func3 aFunc3, final IHasAtomData aAtomData) {
-        if (mDead) throw new RuntimeException("This Generator is dead");
+        if (mDead) throwRuntimeException("This Generator is dead");
         
         // 获取 xyz 的下标
         int[] tIdxXYZ = aAtomData.xyzCol();
@@ -173,7 +173,7 @@ public class Generator extends AbstractHasThreadPool<ParforThreadPool> {
      * @return 返回最终得到的 u
      */
     public Func3 porousCahnHilliard(IOperator1<Double> aDfu, double aTheta, final Func3 aInitU, double aDt, int aSteps) {
-        if (mDead) throw new RuntimeException("This Generator is dead");
+        if (mDead) throwRuntimeException("This Generator is dead");
         
         final double tTheta2 = aTheta*aTheta;
         final int tBlockSize = aInitU.Nx()*aInitU.Ny();

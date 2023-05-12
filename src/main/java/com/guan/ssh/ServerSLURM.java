@@ -382,7 +382,7 @@ public final class ServerSLURM {
             // 如果被杀死则直接结束（优先级最高）
             if (mKilled) break;
             // 由于检测任务是否完成也需要发送指令，简单起见这里直接限制提交频率为 0.5s 一次（默认）
-            try {Thread.sleep(mSleepTime);} catch (InterruptedException e) {e.printStackTrace(); break;}
+            try {Thread.sleep(mSleepTime);} catch (InterruptedException e) {UT.Code.printStackTrace(e); break;}
             // 如果已经暂停则直接跳过
             if (mPause) continue;
             // 开始提交任务相关事项，现在统一使用一个 this 锁来简化逻辑
@@ -466,7 +466,7 @@ public final class ServerSLURM {
             }
         }
         // 最后关闭 SSH 通道
-        mSSH.shutdown();
+        mSSH.close();
     }
     
     // 从 aChannelExec 中获取任务号，返回小于零的值表示获取失败。会在内部开启通道来获得输出，因此获取完成后会直接关闭通道

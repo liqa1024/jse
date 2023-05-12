@@ -7,10 +7,10 @@ import groovy.json.JsonSlurper
 
 
 /** 创建 ssh */
-var SSH_INFO = (new JsonSlurper()).parse(UT.IO.toReader('.SECRET/SSH_INFO.json'));
+SSH_INFO = UT.IO.json2map('.SECRET/SSH_INFO.json');
 ssh = ServerSSH.get(SSH_INFO.csrc.wd as String, SSH_INFO.csrc.username as String, SSH_INFO.csrc.hostname as String);
 
-/** 上传整个项目文件夹 */
+/** 上传整个项目文件夹（不需要重复上传） */
 UT.Timer.tic();
 ssh.putWorkingDir();
 UT.Timer.toc('put working dir');
@@ -32,4 +32,4 @@ ssh.save('.SECRET/ssh.json');
 
 
 /** 关闭 ssh */
-ssh.shutdown();
+ssh.close();

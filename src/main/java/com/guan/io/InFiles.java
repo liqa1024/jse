@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.AbstractMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,8 +24,8 @@ public class InFiles {
         public ImmutableInFile() {mIOFile = new IOFiles();}
         
         /** IOFile stuffs */
-        @Override public final Iterable<String> getIFiles(String aIFileKey) {return mIOFile.getIFiles(aIFileKey);}
-        @Override public final Iterable<String> getOFiles(String aOFileKey) {return mIOFile.getOFiles(aOFileKey);}
+        @Override public final List<String> getIFiles(String aIFileKey) {return mIOFile.getIFiles(aIFileKey);}
+        @Override public final List<String> getOFiles(String aOFileKey) {return mIOFile.getOFiles(aOFileKey);}
         @Override public final Iterable<String> getIFiles() {return mIOFile.getIFiles();}
         @Override public final Iterable<String> getOFiles() {return mIOFile.getOFiles();}
         @Override public final IHasIOFiles setIFiles(String aIFileKey1, String aIFilePath1, Object... aElse) {mIOFile.setIFiles(aIFileKey1, aIFilePath1, aElse); return this;}

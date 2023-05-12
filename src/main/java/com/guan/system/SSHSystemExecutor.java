@@ -4,9 +4,11 @@ import com.guan.code.UT;
 import com.guan.io.IHasIOFiles;
 import com.guan.ssh.ServerSSH;
 import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSchException;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
+import java.io.PrintStream;
 import java.util.Map;
 
 
@@ -15,11 +17,16 @@ import java.util.Map;
  * <p> 在 ssh 服务器上执行指令的简单实现 </p>
  */
 public class SSHSystemExecutor extends AbstractSystemExecutor {
-    @Deprecated public static SSHSystemExecutor get_(int aThreadNum, ServerSSH aSSH) {return new SSHSystemExecutor(aThreadNum, 2, aSSH);}
+    @Deprecated public static SSHSystemExecutor get_(int aThreadNum, ServerSSH aSSH) throws JSchException {return new SSHSystemExecutor(aThreadNum, 2, aSSH);}
     
     final ServerSSH mSSH;
     int mIOThreadNum;
-    SSHSystemExecutor(int aThreadNum, int aIOThreadNum, ServerSSH aSSH) {super(aThreadNum); mIOThreadNum = aIOThreadNum; mSSH = aSSH;}
+    SSHSystemExecutor(int aThreadNum, int aIOThreadNum, ServerSSH aSSH) throws JSchException {
+        super(aThreadNum);
+        mIOThreadNum = aIOThreadNum; mSSH = aSSH;
+        // 需要初始化一下远程的工作目录，只需要创建目录即可，因为原本 ssh 设计时不是这样初始化的
+        mSSH.makeDir(".");
+    }
     
     /**
      * 为了简化初始化参数设定的构造函数，使用 json 或者 Map 的输入来进行初始化（类似 python 的方式）
@@ -54,7 +61,7 @@ public class SSHSystemExecutor extends AbstractSystemExecutor {
      *   "RemoteWorkingDir" > "remoteworkingdir" > "rwd" > "wd"
      *   "BeforeCommand" > "beforecommand" > "bcommand" > "bc"
      * </pre>
-     * 参数 "ThreadNumber" 未选定时默认为 1，参数 "IOThreadNumber" 未选定时默认为 2，"Port" 未选定时默认为 22，
+     * 参数 "ThreadNumber" 未选定时默认为 1，参数 "IOThreadNumber" 未选定时默认为 1，"Port" 未选定时默认为 22，
      * "Password" 未选定时使用 publicKey 密钥认证，"KeyPath" 未选定时使用默认路径的密钥，
      * "CompressLevel" 未选定时不开启压缩，"LocalWorkingDir" 未选定时使用程序运行路径，
      * "RemoteWorkingDir" 未选定时使用 ssh 登录所在的路径
@@ -73,7 +80,7 @@ public class SSHSystemExecutor extends AbstractSystemExecutor {
     public final static String[] THREAD_NUMBER_KEYS = {"ThreadNumber", "threadnumber", "ThreadNum", "threadnum", "nThreads", "nthreads", "n"};
     public final static String[] IO_THREAD_NUMBER_KEYS = {"IOThreadNumber", "iothreadnumber", "IOThreadNum", "iothreadnum", "ion"};
     public static int getThreadNum(Map<?, ?> aArgs) {return ((Number)UT.Code.getWithDefault(aArgs, 1, (Object[])THREAD_NUMBER_KEYS)).intValue();}
-    public static int getIOThreadNum(Map<?, ?> aArgs) {return ((Number)UT.Code.getWithDefault(aArgs, 2, (Object[])IO_THREAD_NUMBER_KEYS)).intValue();}
+    public static int getIOThreadNum(Map<?, ?> aArgs) {return ((Number)UT.Code.getWithDefault(aArgs, 1, (Object[])IO_THREAD_NUMBER_KEYS)).intValue();}
     
     
     
@@ -98,7 +105,8 @@ public class SSHSystemExecutor extends AbstractSystemExecutor {
             // 获取退出代码
             tExitValue = tChannel.getExitStatus();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            tExitValue = -1;
+            UT.Code.printStackTrace(e);
         } finally {
             if (tChannel != null) tChannel.disconnect();
         }
@@ -106,15 +114,15 @@ public class SSHSystemExecutor extends AbstractSystemExecutor {
     }
     @Override public int system(String aCommand, @Nullable IPrintln aPrintln, IHasIOFiles aIOFiles) {
         // 带有输入输出的需要先上传输入文件
-        try {mSSH.putFiles(aIOFiles.getIFiles());} catch (Exception e) {throw new RuntimeException(e);}
+        try {if (mIOThreadNum>1) mSSH.putFiles(aIOFiles.getIFiles(), mIOThreadNum); else mSSH.putFiles(aIOFiles.getIFiles());} catch (Exception e) {UT.Code.printStackTrace(e); return -1;}
         // 然后执行命令
         int tExitValue = system(aCommand, aPrintln);
         // 带有输入输出的还需要在执行完成后下载文件
-        try {mSSH.getFiles(aIOFiles.getOFiles());} catch (Exception e) {throw new RuntimeException(e);}
+        try {if (mIOThreadNum>1) mSSH.getFiles(aIOFiles.getOFiles(), mIOThreadNum); else mSSH.getFiles(aIOFiles.getOFiles());} catch (Exception e) {UT.Code.printStackTrace(e); return -1;}
         return tExitValue;
     }
     
     /** 需要重写 shutdown 方法将内部 ssh 的关闭包含进去 */
-    @Override public void shutdown() {mSSH.shutdown(); super.shutdown();}
-    @Override public void shutdownNow() {mSSH.shutdown(); super.shutdownNow();}
+    @Override public void shutdown() {mSSH.close(); super.shutdown();}
+    @Override public void shutdownNow() {mSSH.close(); super.shutdownNow();}
 }

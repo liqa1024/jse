@@ -45,9 +45,9 @@ static void main(String[] args) {
     var dump = Dump.fromAtomData(atomData);
     
     // 保存之前先创建文件夹
-    UT.IO.mkdir('groovy.lmp/.temp');
+    UT.IO.mkdir('lmp/.temp');
     // 保存成文本
-    lmpdat.write('groovy.lmp/.temp/porous.lmpdat'); println('The porous Lmpdat has been saved to groovy.lmp/.temp/porous.lmpdat');
-    dump.write('groovy.lmp/.temp/porous.lammpstrj'); println('The porous Dump has been saved to groovy.lmp/.temp/porous.lammpstrj');
+    lmpdat.write('lmp/.temp/porous.lmpdat'); println('The porous Lmpdat has been saved to lmp/.temp/porous.lmpdat');
+    dump.write('lmp/.temp/porous.lammpstrj'); println('The porous Dump has been saved to lmp/.temp/porous.lammpstrj');
 }
 

@@ -1,0 +1,45 @@
+package test
+
+import com.guan.code.UT
+import com.guan.io.IOFiles
+import com.guan.plot.Plotters
+import com.guan.system.SSH
+import obj.GUT;
+
+import static com.guan.math.MathEX.Mat
+
+
+
+/** 测试新的更加易用的 SSH */
+
+// 创建 ssh
+SSH_INFO = UT.IO.json2map('.SECRET/SSH_INFO.json');
+ssh = new SSH(SSH_INFO.csrc as Map); // 新的可以直接通过 Map 来构建
+
+// 发送指令
+ssh.system('echo 1 > 1.txt');
+ssh.system('ls');
+
+
+// 复杂指令（在服务器上计算 gr，带有输入输出，后续会使用 ProgramExecutor 来实现，这里展示直接使用 SystemExecutor 来实现通用的）
+// 由于需要使用 jTool 本身来计算，如果没有初始化需要首先使用这个指令初始化一下 ssh 上的 jTool 环境
+//GUT.initJToolEnv(ssh);
+
+// 构造涉及的输入输出文件，包含计算 RDF 的脚本，输入的 data 文件和计算完成后输出的 csv 文件，key 可以随便取
+ioFiles = (new IOFiles()).i('<self>', 'script/groovy/test/testRDF.groovy', 'data', 'lmp/data/data-glass').o('csv', 'lmp/.temp/rdf.csv');
+// 提交指令
+ssh.system("./jTool -f ${ioFiles.i('<self>').get(0)}", ioFiles); // 通过 key 来获取注册的文件名
+
+// 关闭 ssh
+ssh.shutdown();
+ssh.awaitTermination();
+
+// 此时已经自动下载完成输出文件，直接读取即可
+gr = UT.IO.csv2data(ioFiles.o('csv').get(0));
+// 绘制 gr
+plt = Plotters.get();
+plt.plot(Mat.getColumn(gr, 1), Mat.getColumn(gr, 0), 'RDF');
+plt.show();
+
+
+

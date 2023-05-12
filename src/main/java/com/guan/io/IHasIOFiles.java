@@ -1,9 +1,11 @@
 package com.guan.io;
 
+import java.util.List;
+
 public interface IHasIOFiles {
     /** 获取输入输出的文件路径 */
-    Iterable<String> getIFiles(String aIFileKey);
-    Iterable<String> getOFiles(String aOFileKey);
+    List<String> getIFiles(String aIFileKey);
+    List<String> getOFiles(String aOFileKey);
     Iterable<String> getIFiles();
     Iterable<String> getOFiles();
     
@@ -27,8 +29,8 @@ public interface IHasIOFiles {
     default IHasIOFiles setOFiles(String aOFileKey1, String aOFilePath1, int aStart1, int aEnd1) {return setOFiles(aOFileKey1, aOFilePath1, new Object[] {aStart1, aEnd1});}
     
     
-    @Deprecated default Iterable<String> i(String aIFileKey) {return getIFiles(aIFileKey);}
-    @Deprecated default Iterable<String> o(String aOFileKey) {return getOFiles(aOFileKey);}
+    @Deprecated default List<String> i(String aIFileKey) {return getIFiles(aIFileKey);}
+    @Deprecated default List<String> o(String aOFileKey) {return getOFiles(aOFileKey);}
     @Deprecated default Iterable<String> i() {return getIFiles();}
     @Deprecated default Iterable<String> o() {return getOFiles();}
     

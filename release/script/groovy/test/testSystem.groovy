@@ -1,8 +1,8 @@
 package test
 
+import obj.Terminal
 import com.guan.code.UT
 import com.guan.system.WSL
-import system.Terminal
 
 
 /** 测试系统指令执行的接口 */
@@ -52,7 +52,6 @@ terminal.echo 654321
 
 println("成员调用时会替换下划线为空格");
 println(terminal.echo_321);
-
 
 
 // 最后记得关闭
