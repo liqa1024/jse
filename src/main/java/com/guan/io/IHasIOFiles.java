@@ -2,39 +2,36 @@ package com.guan.io;
 
 import java.util.List;
 
+@SuppressWarnings("UnusedReturnValue")
 public interface IHasIOFiles {
     /** 获取输入输出的文件路径 */
-    default String getIFile(String aIFileKey) {return getIFiles(aIFileKey).get(0);}
-    default String getOFile(String aOFileKey) {return getOFiles(aOFileKey).get(0);}
-    default String getIFile(String aIFileKey, int aIndex) {return getIFiles(aIFileKey).get(aIndex);}
-    default String getOFile(String aOFileKey, int aIndex) {return getOFiles(aOFileKey).get(aIndex);}
+    String getIFile(String aIFileKey);
+    String getOFile(String aOFileKey);
+    String getIFile(String aIFileKey, int aIndex);
+    String getOFile(String aOFileKey, int aIndex);
     List<String> getIFiles(String aIFileKey);
     List<String> getOFiles(String aOFileKey);
     Iterable<String> getIFiles();
     Iterable<String> getOFiles();
+    Iterable<String> getIFileKeys();
+    Iterable<String> getOFileKeys();
     
     
     /**
-     * 用于设置已有的 IO 文件的接口，和 put 不同的是：
-     * <p> 1. 如果 key 没有则不会添加 </p>
-     * <p> 2. 如果设置只指定了路径而没有指定多少个，则会修改路径名称而不会覆盖个数的设定 </p>
-     * <p> 3. 支持只给定数量的设定，从而只会调整数量 </p>
-     * <p> 4. 因此，如果什么都不指定，则会设置对应的路径变成单一路径 </p>
+     * 用于设置已有的 IO 文件的接口，为了方便调用逻辑为直接设置主要的属性，
+     * 不受 hook 的影响，因此主要是内部使用
      * @author liqa
      */
-    IHasIOFiles setIFile(String aIFileKey, String aIFilePath                      );
-    IHasIOFiles setIFile(String aIFileKey, String aIFilePath, int aStart, int aEnd);
-    IHasIOFiles setIFile(String aIFileKey,                    int aStart, int aEnd);
-    IHasIOFiles setIFile(String aIFileKeySetToSinglePath                          );
-    IHasIOFiles setOFile(String aOFileKey, String aOFilePath                      );
-    IHasIOFiles setOFile(String aOFileKey, String aOFilePath, int aStart, int aEnd);
-    IHasIOFiles setOFile(String aOFileKey,                    int aStart, int aEnd);
-    IHasIOFiles setOFile(String aOFileKeySetToSinglePath                          );
-    default IHasIOFiles setIFile(String aIFileKey, String aIFilePath, int aMultiple) {return setIFile(aIFileKey, aIFilePath, 0, aMultiple);}
-    default IHasIOFiles setIFile(String aIFileKey,                    int aMultiple) {return setIFile(aIFileKey, 0, aMultiple);}
-    default IHasIOFiles setOFile(String aOFileKey, String aOFilePath, int aMultiple) {return setOFile(aOFileKey, aOFilePath, 0, aMultiple);}
-    default IHasIOFiles setOFile(String aOFileKey,                    int aMultiple) {return setOFile(aOFileKey, 0, aMultiple);}
-    
+    IHasIOFiles setIFilePath    (String aIFileKey, String aIFilePath);
+    IHasIOFiles setIFileSingle  (String aIFileKey                   );
+    IHasIOFiles setIFileStart   (String aIFileKey, int aStart       );
+    IHasIOFiles setIFileEnd     (String aIFileKey, int aEnd         );
+    IHasIOFiles setIFileMultiple(String aIFileKey, int aMultiple    );
+    IHasIOFiles setOFilePath    (String aOFileKey, String aOFilePath);
+    IHasIOFiles setOFileSingle  (String aOFileKey                   );
+    IHasIOFiles setOFileStart   (String aOFileKey, int aStart       );
+    IHasIOFiles setOFileEnd     (String aOFileKey, int aEnd         );
+    IHasIOFiles setOFileMultiple(String aOFileKey, int aMultiple    );
     
     /**
      * 添加输入输出的文件路径，返回自身方便链式调用，
@@ -46,14 +43,14 @@ public interface IHasIOFiles {
      * 注意这里由于是 java，约定默认 start 为 0，且 end 是不包含的，和其他的使用到 start 和 end 的操作保持一致
      * @author liqa
      */
-            IHasIOFiles putIFiles(String aIFileKey1, String aIFilePath1, Object... aElse       );
-    default IHasIOFiles putIFiles(String aIFileKey1, String aIFilePath1                        ) {return putIFiles(aIFileKey1, aIFilePath1, new Object[0]                );}
-    default IHasIOFiles putIFiles(String aIFileKey1, String aIFilePath1, int aMultiple1        ) {return putIFiles(aIFileKey1, aIFilePath1, new Object[] {aMultiple1    });}
-    default IHasIOFiles putIFiles(String aIFileKey1, String aIFilePath1, int aStart1, int aEnd1) {return putIFiles(aIFileKey1, aIFilePath1, new Object[] {aStart1, aEnd1});}
-            IHasIOFiles putOFiles(String aOFileKey1, String aOFilePath1, Object... aElse       );
-    default IHasIOFiles putOFiles(String aOFileKey1, String aOFilePath1                        ) {return putOFiles(aOFileKey1, aOFilePath1, new Object[0]                );}
-    default IHasIOFiles putOFiles(String aOFileKey1, String aOFilePath1, int aMultiple1        ) {return putOFiles(aOFileKey1, aOFilePath1, new Object[] {aMultiple1    });}
-    default IHasIOFiles putOFiles(String aOFileKey1, String aOFilePath1, int aStart1, int aEnd1) {return putOFiles(aOFileKey1, aOFilePath1, new Object[] {aStart1, aEnd1});}
+    IHasIOFiles putIFiles(String aIFileKey1, String aIFilePath1, Object... aElse       );
+    IHasIOFiles putIFiles(String aIFileKey1, String aIFilePath1                        );
+    IHasIOFiles putIFiles(String aIFileKey1, String aIFilePath1, int aMultiple1        );
+    IHasIOFiles putIFiles(String aIFileKey1, String aIFilePath1, int aStart1, int aEnd1);
+    IHasIOFiles putOFiles(String aOFileKey1, String aOFilePath1, Object... aElse       );
+    IHasIOFiles putOFiles(String aOFileKey1, String aOFilePath1                        );
+    IHasIOFiles putOFiles(String aOFileKey1, String aOFilePath1, int aMultiple1        );
+    IHasIOFiles putOFiles(String aOFileKey1, String aOFilePath1, int aStart1, int aEnd1);
     
     
     @Deprecated default String i(String aIFileKey, int aIndex) {return getIFile(aIFileKey, aIndex);}
@@ -63,12 +60,12 @@ public interface IHasIOFiles {
     @Deprecated default Iterable<String> i() {return getIFiles();}
     @Deprecated default Iterable<String> o() {return getOFiles();}
     
-    @Deprecated default IHasIOFiles i(String aIFileKey1, String aIFilePath1, Object... aElse       ) {return putIFiles(aIFileKey1, aIFilePath1, aElse);}
-    @Deprecated default IHasIOFiles i(String aIFileKey1, String aIFilePath1                        ) {return putIFiles(aIFileKey1, aIFilePath1                );}
-    @Deprecated default IHasIOFiles i(String aIFileKey1, String aIFilePath1, int aMultiple1        ) {return putIFiles(aIFileKey1, aIFilePath1, aMultiple1    );}
-    @Deprecated default IHasIOFiles i(String aIFileKey1, String aIFilePath1, int aStart1, int aEnd1) {return putIFiles(aIFileKey1, aIFilePath1, aStart1, aEnd1);}
-    @Deprecated default IHasIOFiles o(String aOFileKey1, String aOFilePath1, Object... aElse       ) {return putOFiles(aOFileKey1, aOFilePath1, aElse);}
-    @Deprecated default IHasIOFiles o(String aOFileKey1, String aOFilePath1                        ) {return putOFiles(aOFileKey1, aOFilePath1                );}
-    @Deprecated default IHasIOFiles o(String aOFileKey1, String aOFilePath1, int aMultiple1        ) {return putOFiles(aOFileKey1, aOFilePath1, aMultiple1    );}
-    @Deprecated default IHasIOFiles o(String aOFileKey1, String aOFilePath1, int aStart1, int aEnd1) {return putOFiles(aOFileKey1, aOFilePath1, aStart1, aEnd1);}
+    @Deprecated IHasIOFiles i(String aIFileKey1, String aIFilePath1, Object... aElse       );
+    @Deprecated IHasIOFiles i(String aIFileKey1, String aIFilePath1                        );
+    @Deprecated IHasIOFiles i(String aIFileKey1, String aIFilePath1, int aMultiple1        );
+    @Deprecated IHasIOFiles i(String aIFileKey1, String aIFilePath1, int aStart1, int aEnd1);
+    @Deprecated IHasIOFiles o(String aOFileKey1, String aOFilePath1, Object... aElse       );
+    @Deprecated IHasIOFiles o(String aOFileKey1, String aOFilePath1                        );
+    @Deprecated IHasIOFiles o(String aOFileKey1, String aOFilePath1, int aMultiple1        );
+    @Deprecated IHasIOFiles o(String aOFileKey1, String aOFilePath1, int aStart1, int aEnd1);
 }

@@ -61,7 +61,7 @@ public class LmpIn extends AbstractInFileLines {
     public static LmpIn custom(String aLmpInPath) {return new LmpIn(aLmpInPath);}
     
     public static LmpIn INIT_MELT_NPT_Cu   () {LmpIn tLmpIn = new LmpIn("init-melt-NPT-Cu"   , true); tLmpIn.putIFiles("vInDataPath"    , "lmp/data/CuFCC108.lmpdat"         ).putOFiles("vOutRestartPath", "lmp/.temp/restart/melt-Cu108-init"); return tLmpIn;}
-    public static LmpIn RESTART_MELT_NPT_Cu() {LmpIn tLmpIn = new LmpIn("restart-melt-NPT-Cu", true); tLmpIn.putIFiles("vInRestartPath" , "lmp/.temp/restart/melt-Cu108-init").putOFiles("vOutRestartPath", "lmp/.temp/restart/melt-Cu108", 5); return tLmpIn;}
+    public static LmpIn RESTART_MELT_NPT_Cu() {LmpIn tLmpIn = new LmpIn("restart-melt-NPT-Cu", true); tLmpIn.putIFiles("vInRestartPath" , "lmp/.temp/restart/melt-Cu108-init").putOFiles("vOutRestartPath", "lmp/.temp/restart/melt-Cu108", 5).hookIOFilesStart("vBeginIdx", "vOutRestartPath").hookIOFileEnd("vEndIdx", "vOutRestartPath"); return tLmpIn;}
     
     /** 默认行为 */
     @Deprecated public static LmpIn get(String aLmpInPath) {return custom(aLmpInPath);}

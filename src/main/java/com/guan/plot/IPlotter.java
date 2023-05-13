@@ -51,12 +51,12 @@ public interface IPlotter {
     IPlotter xRange(double aMin, double aMax);
     IPlotter yRange(double aMin, double aMax);
     default IPlotter axis(double aMin, double aMax) {return axis(aMin, aMax, aMin, aMax);}
-    default IPlotter axis(double aXMin, double aXMax, double aYMin, double aYMax) {xRange(aXMin, aXMax); return yRange(aYMin, aYMax);}
+    default IPlotter axis(double aXMin, double aXMax, double aYMin, double aYMax) {return xRange(aXMin, aXMax).yRange(aYMin, aYMax);}
     @Deprecated default IPlotter axis(double[] aAxis) {return axis(aAxis[0], aAxis[1], aAxis[2], aAxis[3]);}
     
     /** 设置 tick 间隔 */
     IPlotter xTick(double aTick);
     IPlotter yTick(double aTick);
     default IPlotter tick(double aTick) {return tick(aTick, aTick);}
-    default IPlotter tick(double aXTick, double aYTick) {xTick(aXTick); return yTick(aYTick);}
+    default IPlotter tick(double aXTick, double aYTick) {return xTick(aXTick).yTick(aYTick);}
 }
