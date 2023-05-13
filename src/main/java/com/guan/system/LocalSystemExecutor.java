@@ -34,7 +34,7 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
             tExitValue = tProcess.waitFor();
         } catch (Exception e) {
             tExitValue = -1;
-            UT.Code.printStackTrace(e);
+            e.printStackTrace();
         } finally {
             // 无论程序如何结束都停止进程
             if (tProcess != null) tProcess.destroyForcibly();

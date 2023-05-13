@@ -25,7 +25,10 @@ import java.util.concurrent.Callable;
  * <p> 不建议直接使用，现在对此基本停止维护，请改为使用更加成熟的 {@link SSHSystemExecutor} </p>
  */
 @SuppressWarnings({"UnusedReturnValue", "BusyWait"})
-public final class ServerSSH {
+public final class ServerSSH implements AutoCloseable {
+    /** AutoClosable stuffs */
+    @Deprecated public void close() {shutdown();}
+    
     // 本地和远程的工作目录
     private String mLocalWorkingDir_;
     private String mRemoteWorkingDir_;
@@ -41,7 +44,7 @@ public final class ServerSSH {
     // 在 system 之前执行的指令
     private String mBeforeCommand = null;
     // 记录是否已经被关闭
-    private boolean mDead = false;
+    private volatile boolean mDead = false;
     
     /// hooks, 修改这个来实现重写，我也不知道这个方法是不是合理
     // 发生内部参数改变都需要调用一下这个函数
@@ -121,48 +124,48 @@ public final class ServerSSH {
     }
     
     /// 构造函数以及获取方式（用来区分私钥登录以及密码登录）
-    private ServerSSH(String aUsername, String aHostname, int aPort) {
+    private ServerSSH(String aUsername, String aHostname, int aPort) throws JSchException {
         mJsch = new JSch();
-        try {mSession = mJsch.getSession(aUsername, aHostname, aPort);} catch (JSchException e) {UT.Code.printStackTrace(e);}
+        mSession = mJsch.getSession(aUsername, aHostname, aPort);
         session().setConfig("StrictHostKeyChecking", "no");
     }
     // 不提供密码则认为是私钥登录，提供密码则认为是密码登录，可能存在歧义的情况则会有 getPassword 方法专门指明
-    public static ServerSSH get        (String aUsername, String aHostname                             ) {return get        (aUsername, aHostname, 22);}
-    public static ServerSSH get        (String aUsername, String aHostname, int aPort                  ) {return getKey     (aUsername, aHostname, aPort, System.getProperty("user.home")+"/.ssh/id_rsa");}
-    public static ServerSSH get        (String aUsername, String aHostname, int aPort, String aPassword) {return getPassword(aUsername, aHostname, aPort, aPassword);}
-    public static ServerSSH getPassword(String aUsername, String aHostname,            String aPassword) {return getPassword(aUsername, aHostname, 22, aPassword);}
-    public static ServerSSH getPassword(String aUsername, String aHostname, int aPort, String aPassword) {return getPassword(null, aUsername, aHostname, aPort, aPassword);}
-    public static ServerSSH getKey     (String aUsername, String aHostname,            String aKeyPath ) {return getKey     (aUsername, aHostname, 22, aKeyPath);}
-    public static ServerSSH getKey     (String aUsername, String aHostname, int aPort, String aKeyPath ) {return getKey     (null, aUsername, aHostname, aPort, aKeyPath);}
+    public static ServerSSH get        (String aUsername, String aHostname                             ) throws JSchException {return get        (aUsername, aHostname, 22);}
+    public static ServerSSH get        (String aUsername, String aHostname, int aPort                  ) throws JSchException {return getKey     (aUsername, aHostname, aPort, System.getProperty("user.home")+"/.ssh/id_rsa");}
+    public static ServerSSH get        (String aUsername, String aHostname, int aPort, String aPassword) throws JSchException {return getPassword(aUsername, aHostname, aPort, aPassword);}
+    public static ServerSSH getPassword(String aUsername, String aHostname,            String aPassword) throws JSchException {return getPassword(aUsername, aHostname, 22, aPassword);}
+    public static ServerSSH getPassword(String aUsername, String aHostname, int aPort, String aPassword) throws JSchException {return getPassword(null, aUsername, aHostname, aPort, aPassword);}
+    public static ServerSSH getKey     (String aUsername, String aHostname,            String aKeyPath ) throws JSchException {return getKey     (aUsername, aHostname, 22, aKeyPath);}
+    public static ServerSSH getKey     (String aUsername, String aHostname, int aPort, String aKeyPath ) throws JSchException {return getKey     (null, aUsername, aHostname, aPort, aKeyPath);}
     
-    public static ServerSSH get        (String aRemoteWorkingDir, String aUsername, String aHostname                             ) {return get        (aRemoteWorkingDir, aUsername, aHostname, 22);}
-    public static ServerSSH get        (String aRemoteWorkingDir, String aUsername, String aHostname, int aPort                  ) {return getKey     (aRemoteWorkingDir, aUsername, aHostname, aPort, System.getProperty("user.home")+"/.ssh/id_rsa");}
-    public static ServerSSH get        (String aRemoteWorkingDir, String aUsername, String aHostname, int aPort, String aPassword) {return getPassword(aRemoteWorkingDir, aUsername, aHostname, aPort, aPassword);}
-    public static ServerSSH getPassword(String aRemoteWorkingDir, String aUsername, String aHostname,            String aPassword) {return getPassword(aRemoteWorkingDir, aUsername, aHostname, 22, aPassword);}
-    public static ServerSSH getPassword(String aRemoteWorkingDir, String aUsername, String aHostname, int aPort, String aPassword) {return getPassword(null, aRemoteWorkingDir, aUsername, aHostname, aPort, aPassword);}
-    public static ServerSSH getKey     (String aRemoteWorkingDir, String aUsername, String aHostname,            String aKeyPath ) {return getKey     (aRemoteWorkingDir, aUsername, aHostname, 22, aKeyPath);}
-    public static ServerSSH getKey     (String aRemoteWorkingDir, String aUsername, String aHostname, int aPort, String aKeyPath ) {return getKey     (null, aRemoteWorkingDir, aUsername, aHostname, aPort, aKeyPath);}
+    public static ServerSSH get        (String aRemoteWorkingDir, String aUsername, String aHostname                             ) throws JSchException {return get        (aRemoteWorkingDir, aUsername, aHostname, 22);}
+    public static ServerSSH get        (String aRemoteWorkingDir, String aUsername, String aHostname, int aPort                  ) throws JSchException {return getKey     (aRemoteWorkingDir, aUsername, aHostname, aPort, System.getProperty("user.home")+"/.ssh/id_rsa");}
+    public static ServerSSH get        (String aRemoteWorkingDir, String aUsername, String aHostname, int aPort, String aPassword) throws JSchException {return getPassword(aRemoteWorkingDir, aUsername, aHostname, aPort, aPassword);}
+    public static ServerSSH getPassword(String aRemoteWorkingDir, String aUsername, String aHostname,            String aPassword) throws JSchException {return getPassword(aRemoteWorkingDir, aUsername, aHostname, 22, aPassword);}
+    public static ServerSSH getPassword(String aRemoteWorkingDir, String aUsername, String aHostname, int aPort, String aPassword) throws JSchException {return getPassword(null, aRemoteWorkingDir, aUsername, aHostname, aPort, aPassword);}
+    public static ServerSSH getKey     (String aRemoteWorkingDir, String aUsername, String aHostname,            String aKeyPath ) throws JSchException {return getKey     (aRemoteWorkingDir, aUsername, aHostname, 22, aKeyPath);}
+    public static ServerSSH getKey     (String aRemoteWorkingDir, String aUsername, String aHostname, int aPort, String aKeyPath ) throws JSchException {return getKey     (null, aRemoteWorkingDir, aUsername, aHostname, aPort, aKeyPath);}
     
-    public static ServerSSH get        (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname                             ) {return get        (aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, 22);}
-    public static ServerSSH get        (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname, int aPort                  ) {return getKey     (aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPort, System.getProperty("user.home")+"/.ssh/id_rsa");}
-    public static ServerSSH get        (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname,            String aPassword) {return getPassword(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPassword);}
-    public static ServerSSH get        (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname, int aPort, String aPassword) {return getPassword(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPort, aPassword);}
-    public static ServerSSH getPassword(String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname,            String aPassword) {return getPassword(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, 22, aPassword);}
-    public static ServerSSH getPassword(String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname, int aPort, String aPassword) {
+    public static ServerSSH get        (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname                             ) throws JSchException {return get        (aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, 22);}
+    public static ServerSSH get        (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname, int aPort                  ) throws JSchException {return getKey     (aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPort, System.getProperty("user.home")+"/.ssh/id_rsa");}
+    public static ServerSSH get        (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname,            String aPassword) throws JSchException {return getPassword(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPassword);}
+    public static ServerSSH get        (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname, int aPort, String aPassword) throws JSchException {return getPassword(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPort, aPassword);}
+    public static ServerSSH getPassword(String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname,            String aPassword) throws JSchException {return getPassword(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, 22, aPassword);}
+    public static ServerSSH getPassword(String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname, int aPort, String aPassword) throws JSchException {
         ServerSSH rServerSSH = new ServerSSH(aUsername, aHostname, aPort).setLocalWorkingDir(aLocalWorkingDir).setRemoteWorkingDir(aRemoteWorkingDir);
         rServerSSH.mSession.setPassword(aPassword);
         rServerSSH.mPassword = aPassword;
         rServerSSH.mSession.setConfig("PreferredAuthentications", "password");
-        try {rServerSSH.mSession.connect();} catch (JSchException e) {UT.Code.printStackTrace(e);}
+        try {rServerSSH.mSession.connect();} catch (JSchException e) {e.printStackTrace();}
         return rServerSSH;
     }
-    public static ServerSSH getKey     (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname,            String aKeyPath) {return getKey(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, 22, aKeyPath);}
-    public static ServerSSH getKey     (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname, int aPort, String aKeyPath) {
+    public static ServerSSH getKey     (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname,            String aKeyPath) throws JSchException {return getKey(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, 22, aKeyPath);}
+    public static ServerSSH getKey     (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname, int aPort, String aKeyPath) throws JSchException {
         ServerSSH rServerSSH = new ServerSSH(aUsername, aHostname, aPort).setLocalWorkingDir(aLocalWorkingDir).setRemoteWorkingDir(aRemoteWorkingDir);
-        try {rServerSSH.mJsch.addIdentity(aKeyPath);} catch (JSchException e) {UT.Code.printStackTrace(e);}
+        try {rServerSSH.mJsch.addIdentity(aKeyPath);} catch (JSchException e) {e.printStackTrace();}
         rServerSSH.mKeyPath = aKeyPath;
         rServerSSH.mSession.setConfig("PreferredAuthentications", "publickey");
-        try {rServerSSH.mSession.connect();} catch (JSchException e) {UT.Code.printStackTrace(e);}
+        try {rServerSSH.mSession.connect();} catch (JSchException e) {e.printStackTrace();}
         return rServerSSH;
     }
     // 修改本地路径和远程路径
@@ -288,7 +291,7 @@ public final class ServerSSH {
         // 获取执行指令的频道
         ChannelExec tChannelExec = (ChannelExec) session().openChannel("exec");
         tChannelExec.setInputStream(null);
-        tChannelExec.setErrStream(System.err);
+        tChannelExec.setErrStream(System.err, true); // 注意一定要设置不要关闭，啊，意外关闭其实是不好检测的啊
         if (mBeforeCommand != null && !mBeforeCommand.isEmpty()) aCommand = String.format("%s;%s", mBeforeCommand, aCommand);
         aCommand = String.format("cd %s;%s", mRemoteWorkingDir, aCommand); // 所有指令都会先 cd 到 mRemoteWorkingDir 再执行
         tChannelExec.setCommand(aCommand);
@@ -872,7 +875,7 @@ public final class ServerSSH {
     static class SftpPool extends AbstractHasThreadPool<IExecutorEX> {
         interface ISftpTask {void doTask(ChannelSftp aChannelSftp) throws Exception;}
         private final LinkedList<ISftpTask> mTaskList = new LinkedList<>();
-        private boolean mDead = false;
+        private volatile boolean mDead = false;
         
         SftpPool(ServerSSH aSSH, int aThreadNumber) throws JSchException {
             super(newPool(aThreadNumber));
@@ -897,7 +900,7 @@ public final class ServerSSH {
                             }
                         }
                     } catch (Exception e) {
-                        UT.Code.printStackTrace(e);
+                        e.printStackTrace();
                     } finally {
                         // 最后关闭通道
                         tChannelSftp.disconnect();
@@ -914,7 +917,7 @@ public final class ServerSSH {
         }
         
         void submit(ISftpTask aSftpTask) {
-            if (mDead) throwRuntimeException("Can NOT submit tasks to a Dead SftpPool.");
+            if (mDead) throw new RuntimeException("Can NOT submit tasks to a Dead SftpPool.");
             synchronized (mTaskList) {mTaskList.addLast(aSftpTask);}
         }
     }

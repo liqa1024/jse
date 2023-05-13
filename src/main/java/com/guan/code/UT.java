@@ -34,10 +34,6 @@ import static com.guan.code.CS.ZL_OBJ;
 public class UT {
     
     public static class Code {
-        
-        public static void printStackTrace(Exception e) {e.printStackTrace(System.out);}
-        
-        
         /**
          * Get the value in the map according to the order of the keys
          * @author liqa

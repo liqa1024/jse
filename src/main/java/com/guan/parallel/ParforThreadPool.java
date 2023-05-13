@@ -57,7 +57,7 @@ public class ParforThreadPool extends AbstractHasThreadPool<IExecutorEX> {
     public void parfor(                       int aSize, final IParforTaskWithID aTaskWithID) {parfor(0, 1, aSize, aTaskWithID);}
     public void parfor(int aStart,            int aEnd , final IParforTaskWithID aTaskWithID) {parfor(aStart, 1, aEnd, aTaskWithID);}
     public void parfor(int aStart, int aStep, int aEnd , final IParforTaskWithID aTaskWithID) {
-        if (mDead) throwRuntimeException("This ParforThreadPool is dead");
+        if (mDead) throw new RuntimeException("This ParforThreadPool is dead");
         // 只支持正方向的迭代输入
         aStep = Math.max(aStep, 1);
         aEnd = Math.max(aEnd, aStart);
@@ -69,7 +69,7 @@ public class ParforThreadPool extends AbstractHasThreadPool<IExecutorEX> {
     public void parfor_(                                   final int aSize, final IParforTaskWithID aTaskWithID) {parfor_(0, 1, aSize, aTaskWithID);}
     public void parfor_(final int aStart,                  final int aEnd , final IParforTaskWithID aTaskWithID) {parfor_(aStart, 1, aEnd, aTaskWithID);}
     public void parfor_(final int aStart, final int aStep, final int aEnd , final IParforTaskWithID aTaskWithID) {
-        if (mDead) throwRuntimeException("This ParforThreadPool is dead");
+        if (mDead) throw new RuntimeException("This ParforThreadPool is dead");
         // 串行的情况
         if (nThreads() <= 1) {
             for (int i = aStart; i < aEnd; i += aStep) aTaskWithID.run(i, 0);

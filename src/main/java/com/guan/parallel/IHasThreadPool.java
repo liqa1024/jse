@@ -4,7 +4,7 @@ package com.guan.parallel;
  * @author liqa
  * <p> 用来统一管理包含 ThreadPool 的类 </p>
  */
-public interface IHasThreadPool {
+public interface IHasThreadPool extends AutoCloseable {
     void shutdown();
     void shutdownNow();
     boolean isShutdown();
@@ -16,4 +16,7 @@ public interface IHasThreadPool {
     int nThreads();
     
     @Deprecated default int getTaskNumber() {return nTasks();}
+    
+    /** AutoClosable stuffs */
+    @Deprecated default void close() {shutdown();}
 }

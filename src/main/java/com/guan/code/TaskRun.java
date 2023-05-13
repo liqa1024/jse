@@ -12,5 +12,5 @@ public class TaskRun implements Runnable {
     
     @Override public void run() {mRun.run();}
     
-    public static TaskRun get(final Callable<?> aCall) {return new TaskRun(() -> {try {aCall.call();} catch (Exception e) {UT.Code.printStackTrace(e);}});}
+    public static TaskRun get(final Callable<?> aCall) {return new TaskRun(() -> {try {aCall.call();} catch (Exception e) {e.printStackTrace();}});}
 }

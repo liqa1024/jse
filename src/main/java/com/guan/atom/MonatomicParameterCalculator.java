@@ -94,7 +94,7 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
      * @return gr 以及对应横坐标 r 构成的矩阵，排成两列，gr 在前 r 在后
      */
     public double[][] calRDF(int aN, final double aRMax) {
-        if (mDead) throwRuntimeException("This Calculator is dead");
+        if (mDead) throw new RuntimeException("This Calculator is dead");
         
         final double dr = aRMax/aN;
         final double[] r = Func.sequence(0.0, dr, aN);
@@ -136,7 +136,7 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
      * @return gr 以及对应横坐标 r 构成的矩阵，排成两列，gr 在前 r 在后
      */
     public double[][] calRDF_AB(double[][]                   aAtomDataXYZ, int aN, final double aRMax, boolean aShifted) {
-        if (mDead) throwRuntimeException("This Calculator is dead");
+        if (mDead) throw new RuntimeException("This Calculator is dead");
         
         // 处理数据平移的问题，如果未经过平移，则认为输入的数据需要经过同样的平移
         if (!aShifted) {
@@ -183,7 +183,7 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
      * @return gr 以及对应横坐标 r 构成的矩阵，排成两列，gr 在前 r 在后
      */
     public double[][] calRDF_G(int aN, final double aRMax, int aSigmaMul) {
-        if (mDead) throwRuntimeException("This Calculator is dead");
+        if (mDead) throw new RuntimeException("This Calculator is dead");
         
         final int tRangN = aSigmaMul*G_RANG;
         final int tN = aN-tRangN;
@@ -232,7 +232,7 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
     public double[][] calRDF_AB_G(double[][]                   aAtomDataXYZ, int aN, final double aRMax               ) {return calRDF_AB_G(aAtomDataXYZ, aN, aRMax, 4);}
     public double[][] calRDF_AB_G(double[][]                   aAtomDataXYZ, int aN, final double aRMax, int aSigmaMul) {return calRDF_AB_G(aAtomDataXYZ, aN, aRMax, aSigmaMul, mBoxLo==null);} // 如果 mBoxLo==null 则创建 MPC 的数据是已经经过平移的，则认为输入的 aAtomDataXYZ 也是已经经过平移的
     public double[][] calRDF_AB_G(double[][]                   aAtomDataXYZ, int aN, final double aRMax, int aSigmaMul, boolean aShifted) {
-        if (mDead) throwRuntimeException("This Calculator is dead");
+        if (mDead) throw new RuntimeException("This Calculator is dead");
         
         // 处理数据平移的问题，如果未经过平移，则认为输入的数据需要经过同样的平移
         if (!aShifted) {
@@ -295,7 +295,7 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
      * @return Sq 以及对应横坐标 q 构成的矩阵，排成两列，Sq 在前 q 在后
      */
     public double[][] calSF(double aQMax, int aN, final double aRMax, double aQMin) {
-        if (mDead) throwRuntimeException("This Calculator is dead");
+        if (mDead) throw new RuntimeException("This Calculator is dead");
         
         final double dq = (aQMax-aQMin)/aN;
         final double[] q = Func.sequence(aQMin+dq, dq, aN);
@@ -338,7 +338,7 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
      * @return Sq 以及对应横坐标 q 构成的矩阵，排成两列，Sq 在前 q 在后
      */
     public double[][] calSF_AB(double[][]                   aAtomDataXYZ, double aQMax, int aN, final double aRMax, double aQMin, boolean aShifted) {
-        if (mDead) throwRuntimeException("This Calculator is dead");
+        if (mDead) throw new RuntimeException("This Calculator is dead");
         
         // 处理数据平移的问题，如果未经过平移，则认为输入的数据需要经过同样的平移
         if (!aShifted) {

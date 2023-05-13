@@ -48,9 +48,4 @@ public abstract class AbstractHasThreadPool<TP extends IHasThreadPool> implement
     @Override public void waitUntilDone() throws InterruptedException {mPool.waitUntilDone();}
     @Override public int nTasks() {return mPool.nTasks();}
     @Override public int nThreads() {return mPool.nThreads();}
-    
-    
-    /** 内部有线程池的抛出 Runtime 错误之前一定要注意关闭自身，尽量不直接抛出 RuntimeException */
-    protected final void throwRuntimeException(Exception e) {shutdown(); throw new RuntimeException(e);}
-    protected final void throwRuntimeException(String msg) {shutdown(); throw new RuntimeException(msg);}
 }

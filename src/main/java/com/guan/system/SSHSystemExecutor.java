@@ -105,7 +105,7 @@ public class SSHSystemExecutor extends AbstractSystemExecutor {
             tExitValue = tChannel.getExitStatus();
         } catch (Exception e) {
             tExitValue = -1;
-            UT.Code.printStackTrace(e);
+            e.printStackTrace();
         } finally {
             if (tChannel != null) tChannel.disconnect();
         }
@@ -113,11 +113,11 @@ public class SSHSystemExecutor extends AbstractSystemExecutor {
     }
     @Override public int system(String aCommand, @Nullable IPrintln aPrintln, IHasIOFiles aIOFiles) {
         // 带有输入输出的需要先上传输入文件
-        try {if (mIOThreadNum>1) mSSH.putFiles(aIOFiles.getIFiles(), mIOThreadNum); else mSSH.putFiles(aIOFiles.getIFiles());} catch (Exception e) {UT.Code.printStackTrace(e); return -1;}
+        try {if (mIOThreadNum>1) mSSH.putFiles(aIOFiles.getIFiles(), mIOThreadNum); else mSSH.putFiles(aIOFiles.getIFiles());} catch (Exception e) {e.printStackTrace(); return -1;}
         // 然后执行命令
         int tExitValue = system(aCommand, aPrintln);
         // 带有输入输出的还需要在执行完成后下载文件
-        try {if (mIOThreadNum>1) mSSH.getFiles(aIOFiles.getOFiles(), mIOThreadNum); else mSSH.getFiles(aIOFiles.getOFiles());} catch (Exception e) {UT.Code.printStackTrace(e); return -1;}
+        try {if (mIOThreadNum>1) mSSH.getFiles(aIOFiles.getOFiles(), mIOThreadNum); else mSSH.getFiles(aIOFiles.getOFiles());} catch (Exception e) {e.printStackTrace(); return -1;}
         return tExitValue;
     }
     
