@@ -5,9 +5,11 @@ import com.guan.io.IHasIOFiles;
 import com.guan.ssh.ServerSSH;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.SftpException;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.Map;
 
 
@@ -16,15 +18,21 @@ import java.util.Map;
  * <p> 在 ssh 服务器上执行指令的简单实现 </p>
  */
 public class SSHSystemExecutor extends AbstractSystemExecutor {
-    @Deprecated public static SSHSystemExecutor get_(int aThreadNum, ServerSSH aSSH) throws JSchException {return new SSHSystemExecutor(aThreadNum, 2, aSSH);}
+    @Deprecated public static SSHSystemExecutor get_(int aThreadNum, ServerSSH aSSH) throws Exception {return new SSHSystemExecutor(aThreadNum, 2, aSSH);}
     
     final ServerSSH mSSH;
     int mIOThreadNum;
-    SSHSystemExecutor(int aThreadNum, int aIOThreadNum, ServerSSH aSSH) throws JSchException {
+    SSHSystemExecutor(int aThreadNum, int aIOThreadNum, ServerSSH aSSH) throws Exception {
         super(aThreadNum);
         mIOThreadNum = aIOThreadNum; mSSH = aSSH;
         // 需要初始化一下远程的工作目录，只需要创建目录即可，因为原本 ssh 设计时不是这样初始化的
-        mSSH.makeDir(".");
+        // 注意初始化失败时需要抛出异常并且执行关闭操作
+        try {
+            mSSH.makeDir(".");
+        } catch (Exception e) {
+            this.shutdown(); // 构造函数中不调用多态方法
+            throw e;
+        }
     }
     
     /**
@@ -86,7 +94,7 @@ public class SSHSystemExecutor extends AbstractSystemExecutor {
     /** 通过 ssh 直接执行命令 */
     @SuppressWarnings("BusyWait")
     @Override public int system(String aCommand, @Nullable IPrintln aPrintln) {
-        int tExitValue;
+        int tExitValue = -1;
         ChannelExec tChannel = null;
         try {
             tChannel = mSSH.systemChannel(aCommand);
@@ -104,7 +112,6 @@ public class SSHSystemExecutor extends AbstractSystemExecutor {
             // 获取退出代码
             tExitValue = tChannel.getExitStatus();
         } catch (Exception e) {
-            tExitValue = -1;
             e.printStackTrace();
         } finally {
             if (tChannel != null) tChannel.disconnect();
@@ -117,7 +124,7 @@ public class SSHSystemExecutor extends AbstractSystemExecutor {
         // 然后执行命令
         int tExitValue = system(aCommand, aPrintln);
         // 带有输入输出的还需要在执行完成后下载文件
-        try {if (mIOThreadNum>1) mSSH.getFiles(aIOFiles.getOFiles(), mIOThreadNum); else mSSH.getFiles(aIOFiles.getOFiles());} catch (Exception e) {e.printStackTrace(); return -1;}
+        try {if (mIOThreadNum>1) mSSH.getFiles(aIOFiles.getOFiles(), mIOThreadNum); else mSSH.getFiles(aIOFiles.getOFiles());} catch (Exception e) {e.printStackTrace(); return tExitValue==0 ? -1 : tExitValue;}
         return tExitValue;
     }
     

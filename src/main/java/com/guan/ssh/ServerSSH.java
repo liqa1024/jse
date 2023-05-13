@@ -109,16 +109,22 @@ public final class ServerSSH implements AutoCloseable {
         String aKeyPath          = (String) UT.Code.get(aJson, "KeyPath", "keypath", "key", "k");
         
         
-        ServerSSH rServerSSH;
-        if (aPassword!=null) rServerSSH = getPassword(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPort, aPassword);
-        else if (aKeyPath!=null) rServerSSH = getKey(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPort, aKeyPath);
-        else rServerSSH = get(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPort);
-        
-        Object tCompressLevel = UT.Code.get(aJson, "CompressLevel", "compresslevel", "cl");
-        Object tBeforeCommand = UT.Code.get(aJson, "BeforeCommand", "beforecommand", "bcommand", "bc");
-        
-        if (tCompressLevel != null) rServerSSH.setCompressionLevel(((Number)tCompressLevel).intValue());
-        if (tBeforeCommand != null) rServerSSH.setBeforeSystem((String)tBeforeCommand);
+        ServerSSH rServerSSH = null;
+        try {
+            if (aPassword!=null) rServerSSH = getPassword(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPort, aPassword);
+            else if (aKeyPath!=null) rServerSSH = getKey(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPort, aKeyPath);
+            else rServerSSH = get(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, aPort);
+            
+            Object tCompressLevel = UT.Code.get(aJson, "CompressLevel", "compresslevel", "cl");
+            Object tBeforeCommand = UT.Code.get(aJson, "BeforeCommand", "beforecommand", "bcommand", "bc");
+            
+            if (tCompressLevel != null) rServerSSH.setCompressionLevel(((Number)tCompressLevel).intValue());
+            if (tBeforeCommand != null) rServerSSH.setBeforeSystem((String)tBeforeCommand);
+        } catch (Exception e) {
+            // 获取失败会自动关闭
+            if (rServerSSH != null) rServerSSH.shutdown();
+            throw e;
+        }
         
         return rServerSSH;
     }
@@ -922,7 +928,7 @@ public final class ServerSSH implements AutoCloseable {
         }
     }
     // 由于一个 channel 只能执行一个指令，这里直接使用线程池来实现 system 的并发，接口和 SystemThreadPool 保持一致
-    @Deprecated public SSHSystemExecutor pool(int aThreadNumber) throws JSchException {if (mDead) throw new RuntimeException("Can NOT get pool from a Dead SSH."); return SSHSystemExecutor.get_(aThreadNumber, this);}
+    @Deprecated public SSHSystemExecutor pool(int aThreadNumber) throws Exception {if (mDead) throw new RuntimeException("Can NOT get pool from a Dead SSH."); return SSHSystemExecutor.get_(aThreadNumber, this);}
     
     // 手动加载 UT，会自动重新设置工作目录，会在调用静态函数 get 或者 load 时自动加载保证路径的正确性
     static {UT.IO.init();}

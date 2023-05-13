@@ -312,13 +312,13 @@ public class UT {
             convertArgs_(fArgs, m.getParameterTypes());
             return new TaskCall<>(() -> m.invoke(aInstance, fArgs));
         }
-        public static TaskCall<Object> getTaskCallOfStaticMethod(String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException {
+        public static TaskCall<Object> getTaskCallOfStaticMethod(String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException, ClassNotFoundException {
             Class<?> tClass;
-            try {tClass = Class.forName(aClassName);} catch (ClassNotFoundException e) {throw new RuntimeException(e);}
+            tClass = Class.forName(aClassName);
             return getTaskCallOfMethod_(tClass, null, aMethodName, aArgs);
         }
-        public static TaskRun          getTaskRunOfStaticMethod (              String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException {return TaskRun.get(getTaskCallOfStaticMethod(aClassName, aMethodName, aArgs));}
-        public static Task             getTaskOfStaticMethod    (              String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException {return Task   .get(getTaskCallOfStaticMethod(aClassName, aMethodName, aArgs));}
+        public static TaskRun          getTaskRunOfStaticMethod (              String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException, ClassNotFoundException {return TaskRun.get(getTaskCallOfStaticMethod(aClassName, aMethodName, aArgs));}
+        public static Task             getTaskOfStaticMethod    (              String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException, ClassNotFoundException {return Task   .get(getTaskCallOfStaticMethod(aClassName, aMethodName, aArgs));}
         public static TaskCall<Object> getTaskCallOfMethod      (final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {return getTaskCallOfMethod_(aInstance.getClass(), aInstance, aMethodName, aArgs);}
         public static TaskRun          getTaskRunOfMethod       (final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {return TaskRun.get(getTaskCallOfMethod(aInstance, aMethodName, aArgs));}
         public static Task             getTaskOfMethod          (final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {return Task   .get(getTaskCallOfMethod(aInstance, aMethodName, aArgs));}
@@ -609,9 +609,8 @@ public class UT {
                 return tData.toArray(new double[0][]);
             }
         }
-        public static Pair<double[][], String[]> csv2dataWithHand(String aFilePath) {
-            aFilePath = toAbsolutePath(aFilePath);
-            try (CSVParser tParser = CSVParser.parse(new File(aFilePath), StandardCharsets.UTF_8, CSVFormat.DEFAULT)) {
+        public static Pair<double[][], String[]> csv2dataWithHand(String aFilePath) throws IOException {
+            try (CSVParser tParser = CSVParser.parse(toAbsolutePath_(aFilePath), StandardCharsets.UTF_8, CSVFormat.DEFAULT)) {
                 List<double[]> tData = new ArrayList<>();
                 String[] tHand = null;
                 boolean tIsHead = true;
@@ -630,8 +629,6 @@ public class UT {
                     }
                 }
                 return new Pair<>(tData.toArray(new double[0][]), tHand);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
             }
         }
         
