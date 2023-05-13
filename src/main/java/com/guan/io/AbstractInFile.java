@@ -20,16 +20,16 @@ public abstract class AbstractInFile extends AbstractMap<String, Object> impleme
     private final IHasIOFiles mIOFiles;
     private final Map<String, Object> mSettings;
     /** Hooks */
-    private final BiMap<String, String> mHooksMultiple;
-    private final BiMap<String, String> mHooksStart;
-    private final BiMap<String, String> mHooksEnd;
+    private final BiMap<String, String> mIOFileMultipleKeys;
+    private final BiMap<String, String> mIOFileStartKeys;
+    private final BiMap<String, String> mIOFileEndKeys;
     
     protected AbstractInFile(Map<String, Object> aSettings) {
         mIOFiles = new IOFiles();
         mSettings = aSettings;
-        mHooksMultiple = HashBiMap.create();
-        mHooksStart = HashBiMap.create();
-        mHooksEnd = HashBiMap.create();
+        mIOFileMultipleKeys = HashBiMap.create();
+        mIOFileStartKeys = HashBiMap.create();
+        mIOFileEndKeys = HashBiMap.create();
     }
     public AbstractInFile() {this(new HashMap<>());}
     
@@ -104,9 +104,9 @@ public abstract class AbstractInFile extends AbstractMap<String, Object> impleme
     
     
     /** IInFile stuffs */
-    @Override public final AbstractInFile hookIOFilesMultiple(String aSettingKey, String aIOFilesKey) {mHooksMultiple.put(aSettingKey, aIOFilesKey); updateSetting_(aSettingKey); return this;}
-    @Override public final AbstractInFile hookIOFilesStart(String aSettingKey, String aIOFilesKey) {mHooksStart.put(aSettingKey, aIOFilesKey); updateSetting_(aSettingKey); return this;}
-    @Override public final AbstractInFile hookIOFileEnd(String aSettingKey, String aIOFilesKey) {mHooksEnd.put(aSettingKey, aIOFilesKey); updateSetting_(aSettingKey); return this;}
+    @Override public final AbstractInFile setIOFilesMultipleKey(String aSettingKey, String aIOFilesKey) {mIOFileMultipleKeys.put(aSettingKey, aIOFilesKey); updateSetting_(aSettingKey); return this;}
+    @Override public final AbstractInFile setIOFilesStartKey(String aSettingKey, String aIOFilesKey) {mIOFileStartKeys.put(aSettingKey, aIOFilesKey); updateSetting_(aSettingKey); return this;}
+    @Override public final AbstractInFile setIOFileEndKey(String aSettingKey, String aIOFilesKey) {mIOFileEndKeys.put(aSettingKey, aIOFilesKey); updateSetting_(aSettingKey); return this;}
     
     
     
@@ -120,18 +120,18 @@ public abstract class AbstractInFile extends AbstractMap<String, Object> impleme
             setOFilePath(aSettingKey, (String)tValue);
         }
         // 获取对应的 hook 设定，冲突时不做优先级保证
-        if (tValue instanceof Number) if (mHooksMultiple.containsKey(aSettingKey)) {
-            String tIOKey = mHooksMultiple.get(aSettingKey);
+        if (tValue instanceof Number) if (mIOFileMultipleKeys.containsKey(aSettingKey)) {
+            String tIOKey = mIOFileMultipleKeys.get(aSettingKey);
             setIFileMultiple(tIOKey, ((Number)tValue).intValue());
             setOFileMultiple(tIOKey, ((Number)tValue).intValue());
         }
-        if (tValue instanceof Number) if (mHooksStart.containsKey(aSettingKey)) {
-            String tIOKey = mHooksStart.get(aSettingKey);
+        if (tValue instanceof Number) if (mIOFileStartKeys.containsKey(aSettingKey)) {
+            String tIOKey = mIOFileStartKeys.get(aSettingKey);
             setIFileStart(tIOKey, ((Number)tValue).intValue());
             setOFileStart(tIOKey, ((Number)tValue).intValue());
         }
-        if (tValue instanceof Number) if (mHooksEnd.containsKey(aSettingKey)) {
-            String tIOKey = mHooksEnd.get(aSettingKey);
+        if (tValue instanceof Number) if (mIOFileEndKeys.containsKey(aSettingKey)) {
+            String tIOKey = mIOFileEndKeys.get(aSettingKey);
             setIFileEnd(tIOKey, ((Number)tValue).intValue());
             setOFileEnd(tIOKey, ((Number)tValue).intValue());
         }
@@ -143,18 +143,18 @@ public abstract class AbstractInFile extends AbstractMap<String, Object> impleme
             if (tValue instanceof String) setIFilePath(aIFileKey, (String)tValue);
         }
         // 然后更新其他的 hooks
-        if (mHooksMultiple.containsValue(aIFileKey)) {
-            String tSettingKey = mHooksMultiple.inverse().get(aIFileKey);
+        if (mIOFileMultipleKeys.containsValue(aIFileKey)) {
+            String tSettingKey = mIOFileMultipleKeys.inverse().get(aIFileKey);
             Object tValue = get(tSettingKey);
             if (tValue instanceof Number) setIFileMultiple(aIFileKey, ((Number)tValue).intValue());
         }
-        if (mHooksStart.containsValue(aIFileKey)) {
-            String tSettingKey = mHooksStart.inverse().get(aIFileKey);
+        if (mIOFileStartKeys.containsValue(aIFileKey)) {
+            String tSettingKey = mIOFileStartKeys.inverse().get(aIFileKey);
             Object tValue = get(tSettingKey);
             if (tValue instanceof Number) setIFileStart(aIFileKey, ((Number)tValue).intValue());
         }
-        if (mHooksEnd.containsValue(aIFileKey)) {
-            String tSettingKey = mHooksEnd.inverse().get(aIFileKey);
+        if (mIOFileEndKeys.containsValue(aIFileKey)) {
+            String tSettingKey = mIOFileEndKeys.inverse().get(aIFileKey);
             Object tValue = get(tSettingKey);
             if (tValue instanceof Number) setIFileEnd(aIFileKey, ((Number)tValue).intValue());
         }
@@ -166,18 +166,18 @@ public abstract class AbstractInFile extends AbstractMap<String, Object> impleme
             if (tValue instanceof String) setOFilePath(aOFileKey, (String)tValue);
         }
         // 然后更新其他的 hooks
-        if (mHooksMultiple.containsValue(aOFileKey)) {
-            String tSettingKey = mHooksMultiple.inverse().get(aOFileKey);
+        if (mIOFileMultipleKeys.containsValue(aOFileKey)) {
+            String tSettingKey = mIOFileMultipleKeys.inverse().get(aOFileKey);
             Object tValue = get(tSettingKey);
             if (tValue instanceof Number) setOFileMultiple(aOFileKey, ((Number)tValue).intValue());
         }
-        if (mHooksStart.containsValue(aOFileKey)) {
-            String tSettingKey = mHooksStart.inverse().get(aOFileKey);
+        if (mIOFileStartKeys.containsValue(aOFileKey)) {
+            String tSettingKey = mIOFileStartKeys.inverse().get(aOFileKey);
             Object tValue = get(tSettingKey);
             if (tValue instanceof Number) setOFileStart(aOFileKey, ((Number)tValue).intValue());
         }
-        if (mHooksEnd.containsValue(aOFileKey)) {
-            String tSettingKey = mHooksEnd.inverse().get(aOFileKey);
+        if (mIOFileEndKeys.containsValue(aOFileKey)) {
+            String tSettingKey = mIOFileEndKeys.inverse().get(aOFileKey);
             Object tValue = get(tSettingKey);
             if (tValue instanceof Number) setOFileEnd(aOFileKey, ((Number)tValue).intValue());
         }

@@ -11,11 +11,12 @@ import java.util.Map;
  * 原则上内部自带一个 setting 到 IOFiles 内部文件路径的 hook，
  * 即如果设置的是 String 格式则会自动检测 IOFiles 中对应的路径来同步修改 </p>
  */
+@SuppressWarnings("UnusedReturnValue")
 public interface IInFile extends IHasIOFiles, Map<String, Object> {
-    /** 添加基于 Map 的 hooks，使用 aSettingKey 检索 Map 的值来修改指定的值 */
-    IInFile hookIOFilesMultiple(String aSettingKey, String aIOFilesKey);
-    IInFile hookIOFilesStart(String aSettingKey, String aIOFilesKey);
-    IInFile hookIOFileEnd(String aSettingKey, String aIOFilesKey);
+    /** 设置 IOFile 的其他属性在 settings 中的 key，会添加一个 hook，在任何一方修改时检索 setting 的值来同步 */
+    IInFile setIOFilesMultipleKey(String aSettingKey, String aIOFilesKey);
+    IInFile setIOFilesStartKey(String aSettingKey, String aIOFilesKey);
+    IInFile setIOFileEndKey(String aSettingKey, String aIOFilesKey);
     
     
     /** 提供将设置的属性应用到输入文件，然后写成文件的接口 */
