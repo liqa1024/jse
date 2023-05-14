@@ -2,7 +2,7 @@ package com.guan.ssh;
 
 import com.guan.code.Task;
 import com.guan.code.UT;
-import com.guan.parallel.AbstractHasThreadPool;
+import com.guan.parallel.ExecutorsEX;
 import com.guan.parallel.IExecutorEX;
 import com.guan.system.SSHSystemExecutor;
 import com.jcraft.jsch.*;
@@ -565,7 +565,7 @@ public final class ServerSSH implements AutoCloseable {
             tSftpPool.awaitTermination();
         } finally {
             // 最后关闭通道，不奢求立刻关闭
-            if (tSftpPool != null && !tSftpPool.isShutdown()) tSftpPool.shutdown();
+            if (tSftpPool != null) tSftpPool.shutdown();
         }
     }
     public void getFiles(Iterable<String> aFilePaths, int aThreadNumber) throws JSchException, InterruptedException {
@@ -595,7 +595,7 @@ public final class ServerSSH implements AutoCloseable {
             tSftpPool.awaitTermination();
         } finally {
             // 最后关闭通道，不奢求立刻关闭
-            if (tSftpPool != null && !tSftpPool.isShutdown()) tSftpPool.shutdown();
+            if (tSftpPool != null) tSftpPool.shutdown();
         }
     }
     
@@ -878,49 +878,51 @@ public final class ServerSSH implements AutoCloseable {
     
     /// 并发部分
     // 类似线程池的 Sftp 通道，可以重写实现提交任务并且并发的上传和下载
-    static class SftpPool extends AbstractHasThreadPool<IExecutorEX> {
+    static class SftpPool {
         interface ISftpTask {void doTask(ChannelSftp aChannelSftp) throws Exception;}
         private final LinkedList<ISftpTask> mTaskList = new LinkedList<>();
         private volatile boolean mDead = false;
+        private final IExecutorEX mPool;
         
         SftpPool(ServerSSH aSSH, int aThreadNumber) throws JSchException {
-            super(newPool(aThreadNumber));
-            // 会尝试一次重新连接
-            if (!aSSH.isConnecting()) aSSH.connect();
-            // 提交长期任务
-            for (int i = 0; i < aThreadNumber; ++i) {
-                final ChannelSftp tChannelSftp = (ChannelSftp) aSSH.session().openChannel("sftp");
-                pool().execute(() -> {
-                    try {
-                        tChannelSftp.connect();
-                        // 每个 Sftp 都从 mTaskList 中竞争获取 task 并执行
-                        while (true) {
-                            ISftpTask tTask;
-                            synchronized (mTaskList) {tTask = mTaskList.pollFirst();}
-                            if (tTask != null) {
-                                tTask.doTask(tChannelSftp);
-                            } else {
-                                if (mDead) break;
-                                // 否则继续等待任务输入
-                                Thread.sleep(50);
+            mPool = ExecutorsEX.newFixedThreadPool(aThreadNumber);
+            try {
+                // 会尝试一次重新连接
+                if (!aSSH.isConnecting()) aSSH.connect();
+                // 提交长期任务
+                for (int i = 0; i < aThreadNumber; ++i) {
+                    final ChannelSftp tChannelSftp = (ChannelSftp) aSSH.session().openChannel("sftp");
+                    mPool.execute(() -> {
+                        try {
+                            tChannelSftp.connect();
+                            // 每个 Sftp 都从 mTaskList 中竞争获取 task 并执行
+                            while (true) {
+                                ISftpTask tTask;
+                                synchronized (mTaskList) {tTask = mTaskList.pollFirst();}
+                                if (tTask != null) {
+                                    tTask.doTask(tChannelSftp);
+                                } else {
+                                    if (mDead) break;
+                                    // 否则继续等待任务输入
+                                    Thread.sleep(50);
+                                }
                             }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } finally {
+                            // 最后关闭通道
+                            tChannelSftp.disconnect();
                         }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    } finally {
-                        // 最后关闭通道
-                        tChannelSftp.disconnect();
-                    }
-                });
+                    });
+                }
+            } catch (JSchException e) {
+                this.shutdown();
+                throw e;
             }
         }
         
-        @Override public void shutdown() {mDead = true; super.shutdown();}
-        @Override public void shutdownNow() {
-            shutdown();
-            synchronized (mTaskList) {mTaskList.clear();}
-            try {awaitTermination();} catch (InterruptedException ignored) {}
-        }
+        public void shutdown() {mDead = true; mPool.shutdown();}
+        public void awaitTermination() throws InterruptedException {mPool.awaitTermination();}
         
         void submit(ISftpTask aSftpTask) {
             if (mDead) throw new RuntimeException("Can NOT submit tasks to a Dead SftpPool.");

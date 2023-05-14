@@ -3,16 +3,30 @@ package com.guan.io;
 
 import com.guan.code.UT;
 
-import java.util.AbstractList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author liqa
  * <p> IHasIOFiles 的默认实现 </p>
  */
 public class IOFiles implements IHasIOFiles {
+    /** 全部遍历一次保证一定会值拷贝，String 也不会被修改因此不用考虑进一步值拷贝 */
+    @Override public final IOFiles copy() {
+        IOFiles rIOFiles = new IOFiles();
+        for (Map.Entry<String, List<String>> tEntry : mIFiles.entrySet()) {
+            List<String> tFileList = tEntry.getValue();
+            List<String> rFileList = new ArrayList<>(tFileList.size());
+            rFileList.addAll(tFileList);
+            rIOFiles.mIFiles.put(tEntry.getKey(), rFileList);
+        }
+        for (Map.Entry<String, List<String>> tEntry : mOFiles.entrySet()) {
+            List<String> tFileList = tEntry.getValue();
+            List<String> rFileList = new ArrayList<>(tFileList.size());
+            rFileList.addAll(tFileList);
+            rIOFiles.mOFiles.put(tEntry.getKey(), rFileList);
+        }
+        return rIOFiles;
+    }
     
     /** 重写实现自定义的 AbstractFilePathList */
     protected List<String> toFilePathList(final String aFileKey, final String aFilePath) {return toFilePathList(aFileKey, aFilePath, 0, -1);}

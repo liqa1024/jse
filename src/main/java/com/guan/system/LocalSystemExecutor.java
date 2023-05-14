@@ -6,10 +6,12 @@ import com.guan.code.UT;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
+import java.util.List;
+import java.util.concurrent.Future;
 
 /**
  * @author liqa
- * <p> SystemExecutor 的一般实现，直接在本地运行，默认输出在 System.out </p>
+ * <p> SystemExecutor 的一般实现，直接在本地运行 </p>
  */
 public class LocalSystemExecutor extends AbstractSystemExecutor {
     public LocalSystemExecutor(int aThreadNum) {super(aThreadNum); mRuntime = Runtime.getRuntime();}
@@ -44,4 +46,11 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
     
     /** 对于本地的带有 IOFiles 的没有区别 */
     @Override public int system(String aCommand, @Nullable IPrintln aPrintln, IHasIOFiles aIOFiles) {return system(aCommand, aPrintln);}
+    
+    
+    /** 对于本地直接忽略 IHasIOFiles */
+    @Override public Future<Integer> submitSystem_NO(final String aCommand                            , IHasIOFiles aIOFiles) {return submitSystem_NO(aCommand);}
+    @Override public Future<Integer> submitSystem   (final String aCommand                            , IHasIOFiles aIOFiles) {return submitSystem(aCommand);}
+    @Override public Future<Integer> submitSystem   (final String aCommand, final String aOutFilePath , IHasIOFiles aIOFiles) {return submitSystem(aCommand, aOutFilePath);}
+    @Override public Future<List<String>> submitSystem_str(final String aCommand, IHasIOFiles aIOFiles) {return submitSystem_str(aCommand);}
 }

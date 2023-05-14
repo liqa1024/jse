@@ -4,6 +4,10 @@ import java.util.List;
 
 @SuppressWarnings("UnusedReturnValue")
 public interface IHasIOFiles {
+    /** 提供一个拷贝方法解决引用返回值的问题 */
+    IHasIOFiles copy();
+    
+    
     /** 获取输入输出的文件路径 */
     String getIFile(String aIFileKey);
     String getOFile(String aOFileKey);

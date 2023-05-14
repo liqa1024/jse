@@ -15,7 +15,7 @@ import java.util.concurrent.Future;
 
 /**
  * @author liqa
- * <p> 将一般实现放入抽象类中，因为 submit 一定需要在 pool 中使用，如果直接嵌套文件的输入流会在写入前就关闭 </p>
+ * <p> 将一般实现放入抽象类中，因为 submit 一定需要在 pool 中使用，如果直接嵌套文件的输入流会在写入前就关闭，默认输出在 System.out </p>
  */
 public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExecutorEX> implements ISystemExecutor {
     protected AbstractSystemExecutor(int aThreadNum) {super(newPool(aThreadNum));}
@@ -27,19 +27,15 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
     @Override public int system_NO(String aCommand                     , IHasIOFiles aIOFiles) {return system(aCommand, (IPrintln)null, aIOFiles);} // No Output
     @Override public int system   (String aCommand                     , IHasIOFiles aIOFiles) {return system(aCommand, System.out::println, aIOFiles);}
     @Override public int system   (String aCommand, String aOutFilePath, IHasIOFiles aIOFiles) throws IOException {try (final PrintStream tFilePS = UT.IO.toPrintStream(aOutFilePath)) {return system(aCommand, tFilePS::println, aIOFiles);}}
+    @Override public List<String> system_str(String aCommand) {final List<String> rList = new ArrayList<>(); system(aCommand, rList::add); return rList;}
+    @Override public List<String> system_str(String aCommand, IHasIOFiles aIOFiles) {final List<String> rList = new ArrayList<>(); system(aCommand, rList::add, aIOFiles); return rList;}
     
     
     @Override public Future<Integer> submitSystem_NO(final String aCommand                                                        ) {return pool().submit(() -> system_NO(aCommand));}
     @Override public Future<Integer> submitSystem   (final String aCommand                                                        ) {return pool().submit(() -> system   (aCommand));}
     @Override public Future<Integer> submitSystem   (final String aCommand, final String aOutFilePath                             ) {return pool().submit(() -> system   (aCommand, aOutFilePath));}
-    @Override public Future<Integer> submitSystem_NO(final String aCommand                            , final IHasIOFiles aIOFiles) {return pool().submit(() -> system_NO(aCommand, aIOFiles));}
-    @Override public Future<Integer> submitSystem   (final String aCommand                            , final IHasIOFiles aIOFiles) {return pool().submit(() -> system   (aCommand, aIOFiles));}
-    @Override public Future<Integer> submitSystem   (final String aCommand, final String aOutFilePath , final IHasIOFiles aIOFiles) {return pool().submit(() -> system   (aCommand, aOutFilePath, aIOFiles));}
-    
-    @Override public List<String> system_str(String aCommand) {final List<String> rList = new ArrayList<>(); system(aCommand, rList::add); return rList;}
-    @Override public List<String> system_str(String aCommand, IHasIOFiles aIOFiles) {final List<String> rList = new ArrayList<>(); system(aCommand, rList::add, aIOFiles); return rList;}
     @Override public Future<List<String>> submitSystem_str(final String aCommand) {return pool().submit(() -> system_str(aCommand));}
-    @Override public Future<List<String>> submitSystem_str(final String aCommand, IHasIOFiles aIOFiles) {return pool().submit(() -> system_str(aCommand, aIOFiles));}
+    
     
     /** only support println */
     @FunctionalInterface protected interface IPrintln {void println(String aLine);}

@@ -30,8 +30,8 @@ public abstract class AbstractInFile extends AbstractMap<String, Object> impleme
         mIOFileStartKeys = HashBiMap.create();
         mIOFileEndKeys = HashBiMap.create();
         
-        // 重写这这个方法来增加参数同步的 hook
         mIOFiles = new IOFiles() {
+            /** 重写这这个方法来增加参数同步的 hook */
             @Override protected List<String> toFilePathList(final String aFileKey, final String aFilePath, final int aStart, final int aEnd) {
                 return new AbstractFilePathList() {
                     /** start 和 end 的优先度高于 multiple */
@@ -71,6 +71,8 @@ public abstract class AbstractInFile extends AbstractMap<String, Object> impleme
     
     
     /** IOFile stuffs */
+    @Override public final IHasIOFiles copy() {return mIOFiles.copy();}
+    
     @Override public final AbstractInFile putIFiles(String aIFileKey1, String aIFilePath1, Object... aElse) {mIOFiles.putIFiles(aIFileKey1, aIFilePath1, aElse); return this;}
     @Override public final AbstractInFile putOFiles(String aOFileKey1, String aOFilePath1, Object... aElse) {mIOFiles.putOFiles(aOFileKey1, aOFilePath1, aElse); return this;}
     

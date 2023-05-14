@@ -14,7 +14,7 @@ import java.util.Map;
  * @author liqa
  * <p> 在 ssh 服务器上执行指令的简单实现 </p>
  */
-public class SSHSystemExecutor extends AbstractSystemExecutor {
+public class SSHSystemExecutor extends RemoteSystemExecutor {
     @Deprecated public static SSHSystemExecutor get_(int aThreadNum, ServerSSH aSSH) throws Exception {return new SSHSystemExecutor(aThreadNum, 2, aSSH);}
     
     final ServerSSH mSSH;
@@ -124,6 +124,7 @@ public class SSHSystemExecutor extends AbstractSystemExecutor {
         try {if (mIOThreadNum>1) mSSH.getFiles(aIOFiles.getOFiles(), mIOThreadNum); else mSSH.getFiles(aIOFiles.getOFiles());} catch (Exception e) {e.printStackTrace(); return tExitValue==0 ? -1 : tExitValue;}
         return tExitValue;
     }
+    
     
     /** 需要重写 shutdown 方法将内部 ssh 的关闭包含进去 */
     @Override public void shutdown() {mSSH.shutdown(); super.shutdown();}
