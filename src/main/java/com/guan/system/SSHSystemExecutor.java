@@ -50,7 +50,7 @@ public class SSHSystemExecutor extends RemoteSystemExecutor {
      *   "BeforeCommand": "${commandBeforeAnyCommand}"
      * }
      * </code></pre>
-     * 其中名称大小写敏感（因为实现起来会降低代码一致性），但是存在简写，简写优先级为：
+     * 其中名称大小写敏感（因为实现起来比较麻烦），但是存在简写，简写优先级为：
      * <pre>
      *   "ThreadNumber" > "threadnumber" > "ThreadNum" > "threadnum" > "nThreads" > "nthreads" > "n"
      *   "IOThreadNumber" > "iothreadnumber" > "IOThreadNum" > "iothreadnum" > "ion"
@@ -70,15 +70,9 @@ public class SSHSystemExecutor extends RemoteSystemExecutor {
      * "RemoteWorkingDir" 未选定时使用 ssh 登录所在的路径
      * @author liqa
      */
-    public SSHSystemExecutor(                                  Map<?, ?> aArgs              ) throws Exception {this(getThreadNum(aArgs), getIOThreadNum(aArgs), ServerSSH.load(aArgs));}
-    public SSHSystemExecutor(                                  String aFilePath             ) throws Exception {this(UT.IO.json2map(aFilePath));}
-    public SSHSystemExecutor(                                  String aFilePath, String aKey) throws Exception {this(UT.IO.json2map(aFilePath, aKey));}
-    public SSHSystemExecutor(int aThreadNum,                   Map<?, ?> aArgs              ) throws Exception {this(aThreadNum, getIOThreadNum(aArgs), ServerSSH.load(aArgs));}
-    public SSHSystemExecutor(int aThreadNum,                   String aFilePath             ) throws Exception {this(aThreadNum, UT.IO.json2map(aFilePath));}
-    public SSHSystemExecutor(int aThreadNum,                   String aFilePath, String aKey) throws Exception {this(aThreadNum, UT.IO.json2map(aFilePath, aKey));}
-    public SSHSystemExecutor(int aThreadNum, int aIOThreadNum, Map<?, ?> aArgs              ) throws Exception {this(aThreadNum, aIOThreadNum, ServerSSH.load(aArgs));}
-    public SSHSystemExecutor(int aThreadNum, int aIOThreadNum, String aFilePath             ) throws Exception {this(aThreadNum, aIOThreadNum, UT.IO.json2map(aFilePath));}
-    public SSHSystemExecutor(int aThreadNum, int aIOThreadNum, String aFilePath, String aKey) throws Exception {this(aThreadNum, aIOThreadNum, UT.IO.json2map(aFilePath, aKey));}
+    public SSHSystemExecutor(                                  Map<?, ?> aArgs) throws Exception {this(getThreadNum(aArgs), getIOThreadNum(aArgs), ServerSSH.load(aArgs));}
+    public SSHSystemExecutor(int aThreadNum,                   Map<?, ?> aArgs) throws Exception {this(aThreadNum, getIOThreadNum(aArgs), ServerSSH.load(aArgs));}
+    public SSHSystemExecutor(int aThreadNum, int aIOThreadNum, Map<?, ?> aArgs) throws Exception {this(aThreadNum, aIOThreadNum, ServerSSH.load(aArgs));}
     
     public final static String[] THREAD_NUMBER_KEYS = {"ThreadNumber", "threadnumber", "ThreadNum", "threadnum", "nThreads", "nthreads", "n"};
     public final static String[] IO_THREAD_NUMBER_KEYS = {"IOThreadNumber", "iothreadnumber", "IOThreadNum", "iothreadnum", "ion"};
