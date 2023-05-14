@@ -41,9 +41,9 @@ ssh.system("./jTool -f ${ioFiles.i('<self>')}", ioFiles); // 通过 key 来获�
 ssh.shutdown();
 
 // 此时已经自动下载完成输出文件，直接读取即可
-gr = UT.IO.csv2data(ioFiles.o('csv'));
+gr = UT.IO.csv2table(ioFiles.o('csv'));
 // 绘制 gr
 plt = Plotters.get();
-plt.plot(Mat.getColumn(gr, 1), Mat.getColumn(gr, 0), 'RDF');
+plt.plot(gr.r, gr.gr, 'RDF');
 plt.show();
 

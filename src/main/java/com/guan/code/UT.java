@@ -4,14 +4,11 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.guan.io.Decryptor;
 import com.guan.io.Encryptor;
+import com.guan.math.Table;
 import com.guan.math.functional.IOperator1Full;
 import com.guan.ssh.SerializableTask;
 import groovy.json.JsonBuilder;
 import groovy.json.JsonSlurper;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVPrinter;
-import org.apache.commons.csv.CSVRecord;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -20,7 +17,6 @@ import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Stream;
@@ -432,6 +428,17 @@ public class UT {
         }
         
         
+        /**
+         * Splits a string separated by comma(",") characters into multiple strings
+         * <p> will automatically ignores multiple spaces </p>
+         * @author liqa
+         * @param aStr input string
+         * @return the split sting in array
+         */
+        public static String[] splitComma(String aStr) {
+            return aStr.replaceAll("\\s+","").split(",");
+        }
+        
     }
     
     public static class IO {
@@ -581,54 +588,75 @@ public class UT {
          * @param aHeads optional headers for the title
          */
         public static void data2csv(double[][] aData, String aFilePath, String... aHeads) throws IOException {
-            CSVFormat tCSVFormat = (aHeads != null && aHeads.length == aData[0].length) ? CSVFormat.DEFAULT.builder().setHeader(aHeads).build() : CSVFormat.DEFAULT;
-            try (CSVPrinter tPrinter = new CSVPrinter(toWriter(aFilePath), tCSVFormat)) {
-                for (double[] subData : aData) tPrinter.printRecord((Object[]) data2str(subData));
+            try (PrintStream tPrinter = toPrintStream(aFilePath)) {
+                if (aHeads!=null && aHeads.length>0) tPrinter.println(String.join(",", aHeads));
+                for (double[] subData : aData) tPrinter.println(String.join(",", data2str(subData)));
             }
         }
         /**
          * read matrix data from csv file
          * @author liqa
          * @param aFilePath csv file path to read
-         * @return matrix data (or with String[] head in Pair if use csv2dataWithHand)
+         * @return matrix data
          */
         public static double[][] csv2data(String aFilePath) throws IOException {
-            try (CSVParser tParser = CSVParser.parse(toAbsolutePath_(aFilePath), StandardCharsets.UTF_8, CSVFormat.DEFAULT)) {
+            try (BufferedReader tReader = toReader(aFilePath)) {
                 List<double[]> tData = new ArrayList<>();
                 boolean tIsHead = true;
-                for (CSVRecord tCSVRecord : tParser) {
+                String tLine;
+                while ((tLine = tReader.readLine()) != null) {
+                    String[] tTokens = Texts.splitComma(tLine);
                     if (tIsHead) {
                         double[] tFirstData = null;
-                        try {tFirstData = str2data(tCSVRecord.values());} catch (Exception ignored) {} // 直接看能否成功粘贴
-                        if (tFirstData != null) tData.add(str2data(tCSVRecord.values()));
+                        try {tFirstData = str2data(tTokens);} catch (Exception ignored) {} // 直接看能否成功粘贴
+                        if (tFirstData != null) tData.add(tFirstData);
                         tIsHead = false;
                     } else {
-                        tData.add(str2data(tCSVRecord.values()));
+                        tData.add(str2data(tTokens));
                     }
                 }
                 return tData.toArray(new double[0][]);
             }
         }
-        public static Pair<double[][], String[]> csv2dataWithHand(String aFilePath) throws IOException {
-            try (CSVParser tParser = CSVParser.parse(toAbsolutePath_(aFilePath), StandardCharsets.UTF_8, CSVFormat.DEFAULT)) {
+        
+        
+        /**
+         * save table to csv file
+         * @author liqa
+         * @param aTable the Table to be saved
+         * @param aFilePath csv file path to be saved
+         */
+        public static void table2csv(Table aTable, String aFilePath) throws IOException {
+            try (PrintStream tPrinter = toPrintStream(aFilePath)) {
+                if (!aTable.noHand()) tPrinter.println(String.join(",", aTable.keySet()));
+                for (List<Double> subData : aTable.rows()) tPrinter.println(String.join(",", Code.map(subData, Object::toString)));
+            }
+        }
+        /**
+         * read table from csv file
+         * @author liqa
+         * @param aFilePath csv file path to read
+         * @return table with hand
+         */
+        public static Table csv2table(String aFilePath) throws IOException {
+            try (BufferedReader tReader = toReader(aFilePath)) {
                 List<double[]> tData = new ArrayList<>();
                 String[] tHand = null;
                 boolean tIsHead = true;
-                for (CSVRecord tCSVRecord : tParser) {
+                String tLine;
+                while ((tLine = tReader.readLine()) != null) {
+                    String[] tTokens = Texts.splitComma(tLine);
                     if (tIsHead) {
-                        tHand = tCSVRecord.values();
                         double[] tFirstData = null;
-                        try {tFirstData = str2data(tHand);} catch (Exception ignored) {} // 直接看能否成功粘贴
-                        if (tFirstData != null) {
-                            tData.add(str2data(tCSVRecord.values()));
-                            tHand = null;
-                        }
+                        try {tFirstData = str2data(tTokens);} catch (Exception ignored) {} // 直接看能否成功粘贴
+                        if (tFirstData != null) tData.add(tFirstData);
+                        else tHand = tTokens;
                         tIsHead = false;
                     } else {
-                        tData.add(str2data(tCSVRecord.values()));
+                        tData.add(str2data(tTokens));
                     }
                 }
-                return new Pair<>(tData.toArray(new double[0][]), tHand);
+                return new Table(tHand, tData);
             }
         }
         
