@@ -13,6 +13,7 @@ import java.util.concurrent.Future;
  * <p> 通用的系统指令执行器接口，实现类似 matlab 的 system 指令功能，
  * 在此基础上增加了类似 Executor 的功能，可以后台运行等 </p>
  */
+@SuppressWarnings("UnusedReturnValue")
 public interface ISystemExecutor extends IHasThreadPool {
     int system_NO(String aCommand                     ); // No Output
     int system   (String aCommand                     );

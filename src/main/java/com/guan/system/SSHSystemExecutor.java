@@ -39,6 +39,7 @@ public class SSHSystemExecutor extends RemoteSystemExecutor {
      * {
      *   "ThreadNumber": ${integerNumberOfThreadNumberForSubmitSystemUse},
      *   "IOThreadNumber": ${integerNumberOfThreadNumberForPutAndGetFilesUse},
+     *
      *   "Username": "${yourUserName}",
      *   "Hostname": "${ipOfHost}",
      *   "Port": ${integerNumberOfPort},
@@ -54,6 +55,7 @@ public class SSHSystemExecutor extends RemoteSystemExecutor {
      * <pre>
      *   "ThreadNumber" > "threadnumber" > "ThreadNum" > "threadnum" > "nThreads" > "nthreads" > "n"
      *   "IOThreadNumber" > "iothreadnumber" > "IOThreadNum" > "iothreadnum" > "ion"
+     *
      *   "Username" > "username" > "user" > "u"
      *   "Hostname" > "hostname" > "host" > "h"
      *   "Port" > "port" > "p"
@@ -84,6 +86,7 @@ public class SSHSystemExecutor extends RemoteSystemExecutor {
     /** 通过 ssh 直接执行命令 */
     @SuppressWarnings("BusyWait")
     @Override public int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln) {
+        if (isShutdown()) throw new RuntimeException("Can NOT do system from this Dead Executor.");
         int tExitValue = -1;
         ChannelExec tChannel = null;
         try (IPrintln tPrintln = aPrintln.get()) {

@@ -9,6 +9,7 @@ import java.util.concurrent.*;
 public abstract class AbstractHasThreadPool<TP extends IHasThreadPool> implements IHasThreadPool {
     /** 提供一个可选的线程池供子类选择 */
     protected static IExecutorEX newPool(int nThreads) {return ExecutorsEX.newFixedThreadPool(Math.max(nThreads, 1));}
+    protected static IExecutorEX newSingle() {return ExecutorsEX.newSingleThreadExecutor();}
     /** 串行线程池的默认实现，设定上不能关闭，从而可以实现复用 */
     protected final static IExecutorEX SERIAL_EXECUTOR = new IExecutorEX() {
         @Override public void execute(Runnable aRun) {aRun.run();}

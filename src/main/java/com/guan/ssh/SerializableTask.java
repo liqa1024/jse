@@ -3,6 +3,7 @@ package com.guan.ssh;
 import com.guan.code.Pair;
 import com.guan.code.Task;
 import com.guan.code.UT;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.concurrent.Callable;
  * @author liqa
  * <p> 可以序列化的 Task，目前仅用于 ssh 端的一些 task 的读写上 </p>
  */
+@ApiStatus.Obsolete
 public class SerializableTask extends Task {
     public SerializableTask(Callable<Boolean> aCall) {super(aCall);}
     /** override to get serialized string */

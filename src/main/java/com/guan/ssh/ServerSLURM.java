@@ -5,6 +5,7 @@ import com.guan.code.Task;
 import com.guan.code.UT;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSchException;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit;
  * <p> 与 SSH 不同，可以把本身当作一个 SystemThreadPool </p>
  * <p> 相比 SSH 多一个 mMaxJobNumber 参数限制同时运行的任务数 </p>
  */
+@ApiStatus.Obsolete
 @SuppressWarnings({"UnusedReturnValue", "BusyWait"})
 public final class ServerSLURM {
     static final int DEFAULT_TOLERANT = 3;

@@ -3,6 +3,7 @@ package com.guan.code;
 import com.google.common.collect.ImmutableMap;
 import org.jetbrains.annotations.Unmodifiable;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -23,7 +24,6 @@ public class CS {
     public final static Object[] ZL_OBJ = new Object[0];
     public final static double[][] ZL_MAT = new double[0][];
     public final static double[]   ZL_VEC = new double[0];
-    
     
     /** Relative atomic mass in this project */
     public static final @Unmodifiable Map<String, Double> MASS = (new ImmutableMap.Builder<String, Double>())

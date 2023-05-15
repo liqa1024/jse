@@ -6,6 +6,7 @@ import com.guan.parallel.ExecutorsEX;
 import com.guan.parallel.IExecutorEX;
 import com.guan.system.SSHSystemExecutor;
 import com.jcraft.jsch.*;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,6 +25,7 @@ import java.util.concurrent.Callable;
  * <p>
  * <p> 不建议直接使用，现在对此基本停止维护，请改为使用更加成熟的 {@link SSHSystemExecutor} </p>
  */
+@ApiStatus.Obsolete
 @SuppressWarnings({"UnusedReturnValue", "BusyWait"})
 public final class ServerSSH implements AutoCloseable {
     /** AutoClosable stuffs */

@@ -6,7 +6,6 @@ import com.guan.plot.Plotters
 import com.guan.system.SSH
 import obj.GUT;
 
-import static com.guan.math.MathEX.Mat
 
 
 /** 测试新的更加易用的 SSH */

@@ -21,6 +21,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static com.guan.code.CS.RANDOM;
 import static com.guan.code.CS.ZL_OBJ;
 
 /**
@@ -30,6 +31,18 @@ import static com.guan.code.CS.ZL_OBJ;
 public class UT {
     
     public static class Code {
+        
+        /**
+         * Get the random id in URL and Filename safe Base64, 8 length
+         * @author liqa
+         */
+        public static String randID() {
+            byte[] rBytes = new byte[6];
+            RANDOM.nextBytes(rBytes);
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(rBytes);
+        }
+        
+        
         /**
          * Get the value in the map according to the order of the keys
          * @author liqa
