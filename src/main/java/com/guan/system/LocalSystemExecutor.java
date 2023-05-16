@@ -74,5 +74,5 @@ public class LocalSystemExecutor extends AbstractThreadPoolSystemExecutor {
     /** 对于本地的带有 IOFiles 的没有区别 */
     @Override public int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln, IHasIOFiles aIOFiles) {return system_(aCommand, aPrintln);}
     @Override protected Future<Integer> submitSystem_(String aCommand, @NotNull IPrintlnSupplier aPrintln, IHasIOFiles aIOFiles) {return submitSystem_(aCommand, aPrintln);}
-    @Override public Future<Integer> batchSubmit_(Iterable<String> aCommands, IHasIOFiles aIOFiles) {return batchSubmit_(aCommands);}
+    @Override public Future<List<Integer>> batchSubmit_(Iterable<String> aCommands, IHasIOFiles aIOFiles) {return batchSubmit_(aCommands);}
 }

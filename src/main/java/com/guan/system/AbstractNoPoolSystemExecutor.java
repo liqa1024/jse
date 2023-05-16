@@ -308,9 +308,8 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
     
     
     /** 批量任务直接遍历提交 */
-    
     private final LinkedList<Pair<List<String>, MergedIOFiles>> mBatchCommandsIOFiles = new LinkedList<>();
-    @Override public final Future<Integer> getSubmit() {
+    @Override public final ListFutureJob getSubmit() {
         if (mDead) throw new RuntimeException("Can NOT getSubmit from this Dead Executor.");
         // 遍历提交
         List<IFutureJob> rFutures = new ArrayList<>(mBatchCommandsIOFiles.size());
@@ -330,8 +329,8 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
         }
         // 清空队列
         mBatchCommandsIOFiles.clear();
-        // 使用 UT.Code.mergeAll 来管理 Future
-        return UT.Code.mergeAll(rFutures, (r, v) -> ((r==null || r==0) ? v : r));
+        // 使用专门的 ListFutureJob 来管理 Future，可以保留更多的信息
+        return new ListFutureJob(rFutures);
     }
     @Override public final void putSubmit(String aCommand) {putSubmit(aCommand, EPT_IOF);}
     @Override public final void putSubmit(String aCommand, IHasIOFiles aIOFiles) {

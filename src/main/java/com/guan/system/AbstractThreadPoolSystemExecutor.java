@@ -54,8 +54,8 @@ public abstract class AbstractThreadPoolSystemExecutor extends AbstractHasThread
     /** 批量任务直接遍历提交，使用 UT.Code.mergeAll 来管理 Future */
     private List<String> mBatchCommands = new ArrayList<>();
     private MergedIOFiles mBatchIOFiles = new MergedIOFiles();
-    @Override public final Future<Integer> getSubmit() {
-        Future<Integer> tFuture = batchSubmit_(mBatchCommands, mBatchIOFiles);
+    @Override public final Future<List<Integer>> getSubmit() {
+        Future<List<Integer>> tFuture = batchSubmit_(mBatchCommands, mBatchIOFiles);
         mBatchCommands = new ArrayList<>();
         mBatchIOFiles = new MergedIOFiles();
         return tFuture;
@@ -67,10 +67,10 @@ public abstract class AbstractThreadPoolSystemExecutor extends AbstractHasThread
         mBatchCommands.add(aCommand);
         mBatchIOFiles.merge(aIOFiles);
     }
-    protected final Future<Integer> batchSubmit_(Iterable<String> aCommands) {
+    protected final Future<List<Integer>> batchSubmit_(Iterable<String> aCommands) {
         List<Future<Integer>> rFutures = new ArrayList<>();
         for (String tCommand : aCommands) rFutures.add(submitSystem(tCommand));
-        return UT.Code.mergeAll(rFutures, (r, v) -> ((r==null || r==0) ? v : r));
+        return UT.Code.mergeAll(rFutures);
     }
     
     
@@ -112,5 +112,5 @@ public abstract class AbstractThreadPoolSystemExecutor extends AbstractHasThread
     protected abstract int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln, IHasIOFiles aIOFiles);
     protected abstract Future<Integer> submitSystem_(String aCommand, @NotNull IPrintlnSupplier aPrintln);
     protected abstract Future<Integer> submitSystem_(String aCommand, @NotNull IPrintlnSupplier aPrintln, IHasIOFiles aIOFiles);
-    protected abstract Future<Integer> batchSubmit_(Iterable<String> aCommands, IHasIOFiles aIOFiles);
+    protected abstract Future<List<Integer>> batchSubmit_(Iterable<String> aCommands, IHasIOFiles aIOFiles);
 }

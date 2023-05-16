@@ -3,11 +3,13 @@ package com.guan.code;
 import com.google.common.collect.ImmutableMap;
 import com.guan.io.IHasIOFiles;
 import com.guan.io.IOFiles;
+import com.guan.parallel.CompletedFuture;
 import com.guan.system.CompletedFutureJob;
 import com.guan.system.IFutureJob;
 
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 /**
  * @author liqa
@@ -33,6 +35,7 @@ public class CS {
     /** SystemExecutor Stuffs */
     public final static IHasIOFiles EPT_IOF = new IOFiles();
     public final static IFutureJob ERR_FUTURE = new CompletedFutureJob(-1);
+    public final static Future<List<Integer>> ERR_FUTURES = new CompletedFuture<>(Collections.singletonList(-1));
     
     
     /** Relative atomic mass in this project */

@@ -17,7 +17,7 @@ import java.util.concurrent.Future;
  * 在此基础上增加了类似 Executor 的功能，可以后台运行等 </p>
  */
 @SuppressWarnings("UnusedReturnValue")
-public interface ISystemExecutor extends IHasThreadPool, IBatchSubmit<Integer, String>, IBatchSubmit2<Integer, String, IHasIOFiles> {
+public interface ISystemExecutor extends IHasThreadPool, IBatchSubmit<List<Integer>, String>, IBatchSubmit2<List<Integer>, String, IHasIOFiles> {
     /** 用来处理各种程序因为输出的目录不存在而报错的情况，方便在任何位置直接创建目录或者移除目录 */
     boolean makeDir(String aDir);
     @VisibleForTesting default boolean mkdir(String aDir) {return makeDir(aDir);}
@@ -41,8 +41,8 @@ public interface ISystemExecutor extends IHasThreadPool, IBatchSubmit<Integer, S
     Future<Integer> submitSystem(String aCommand                     , IHasIOFiles aIOFiles);
     Future<Integer> submitSystem(String aCommand, String aOutFilePath, IHasIOFiles aIOFiles);
     
-    /** BatchSubmit stuffs，不获取输出，不保证 Future 获取到的退出码是正确的 */
-    Future<Integer> getSubmit();
+    /** BatchSubmit stuffs，不获取输出，Future 获取到的退出码数组大小不一定是 put 的总数（可能会发生合并）*/
+    Future<List<Integer>> getSubmit();
     void putSubmit(String aCommand);
     void putSubmit(String aCommand, IHasIOFiles aIOFiles);
     

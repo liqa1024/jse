@@ -156,12 +156,11 @@ public class UT {
             };
         }
         /**
-         * merge {@code Iterable<Future<T>> to single Future<R>} in All logic,
-         * aOpt: (R, T) -> R, will do stat calculation of the Futures, first R is null
+         * merge {@code Iterable<Future<T>> to single Future<List<T>>} in All logic
          * @author liqa
          */
-        public static <R, T> Future<R> mergeAll(final Iterable<? extends Future<T>> aFutures, final IOperator2Full<? extends R, ? super R, ? super T> aOpt) {
-            return new Future<R>() {
+        public static <T> Future<List<T>> mergeAll(final Iterable<? extends Future<T>> aFutures) {
+            return new Future<List<T>>() {
                 @Override public boolean cancel(boolean mayInterruptIfRunning) {
                     for (Future<T> tFuture : aFutures) if (!tFuture.cancel(mayInterruptIfRunning)) return false;
                     return true;
@@ -174,14 +173,14 @@ public class UT {
                     for (Future<T> tFuture : aFutures) if (!tFuture.isDone()) return false;
                     return true;
                 }
-                @Override public R get() throws InterruptedException, ExecutionException {
-                    R tOut = null;
-                    for (Future<T> tFuture : aFutures) tOut = aOpt.cal(tOut, tFuture.get());
+                @Override public List<T> get() throws InterruptedException, ExecutionException {
+                    List<T> tOut = new ArrayList<>();
+                    for (Future<T> tFuture : aFutures) tOut.add(tFuture.get());
                     return tOut;
                 }
-                @Override public R get(long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-                    R tOut = null;
-                    for (Future<T> tFuture : aFutures) tOut = aOpt.cal(tOut, tFuture.get(timeout, unit));
+                @Override public List<T> get(long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+                    List<T> tOut = new ArrayList<>();
+                    for (Future<T> tFuture : aFutures) tOut.add(tFuture.get(timeout, unit));
                     return tOut;
                 }
             };

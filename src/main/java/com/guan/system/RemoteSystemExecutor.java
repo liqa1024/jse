@@ -5,10 +5,12 @@ import com.guan.io.IHasIOFiles;
 import com.guan.parallel.IExecutorEX;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
-import static com.guan.code.CS.ERR_FUTURE;
+import static com.guan.code.CS.ERR_FUTURES;
 
 /**
  * @author liqa
@@ -29,15 +31,15 @@ public abstract class RemoteSystemExecutor extends AbstractThreadPoolSystemExecu
         try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {e.printStackTrace(); return tExitValue==0 ? -1 : tExitValue;}
         return tExitValue;
     }
-    @Override protected Future<Integer> batchSubmit_(Iterable<String> aCommands, final IHasIOFiles aIOFiles) {
-        try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {e.printStackTrace(); return ERR_FUTURE;}
-        Future<Integer> tFuture = batchSubmit_(aCommands);
+    @Override protected Future<List<Integer>> batchSubmit_(Iterable<String> aCommands, final IHasIOFiles aIOFiles) {
+        try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {e.printStackTrace(); return ERR_FUTURES;}
+        Future<List<Integer>> tFuture = batchSubmit_(aCommands);
         // 由于下载文件是必要的，因此使用这个方法来在 tFuture 完成时下载
         return CompletableFuture.supplyAsync(() -> {
-            int tExitValue = -1;
-            try {tExitValue = tFuture.get();} catch (Exception e) {e.printStackTrace();}
-            try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {e.printStackTrace(); return tExitValue==0 ? -1 : tExitValue;}
-            return tExitValue;
+            List<Integer> tExitValues = Collections.singletonList(-1);
+            try {tExitValues = tFuture.get();} catch (Exception e) {e.printStackTrace();}
+            try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {e.printStackTrace();}
+            return tExitValues;
         });
     }
     
