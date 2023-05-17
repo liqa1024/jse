@@ -14,7 +14,7 @@ UT.IO.mkdir('.temp');
 
 // 创建 ssh
 SSH_INFO = UT.IO.json2map('.SECRET/SSH_INFO.json');
-ssh = new SSH(SSH_INFO.csrc as Map); // 新的可以直接通过 Map 来构建
+ssh = new SSH(SSH_INFO); // 新的可以直接通过 Map 来构建
 
 // 发送指令
 ssh.system('echo 1 > 1.txt');

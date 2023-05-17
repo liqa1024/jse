@@ -1,5 +1,6 @@
 package com.guan.atom;
 
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,6 +9,25 @@ import java.util.List;
  * <p> 通用的拥有原子数据的类使用的接口，主要用于相互转换 </p>
  */
 public interface IHasAtomData extends IHasOrthogonalXYZ, IHasOrthogonalXYZID {
+    /** 由于旧代码比较多，这里直接提供一个接口来获取 list 的 Atom 而不大量修改旧的逻辑；当然这也不是什么高效的实现，只用于方便外部使用 */
+    default List<IAtom> atomList() {
+        return new AbstractList<IAtom>() {
+            private final double[][] mAtomDataXYZ = orthogonalXYZ();
+            @Override public IAtom get(int index) {
+                return new IAtom() {
+                    @Override public double[] xyz() {return mAtomDataXYZ[index];}
+                    @Override public int type() {return (int)atomData()[index][typeCol()];}
+                    @Override public int id() {return (int)atomData()[index][idCol()];}
+                    
+                    @Override public boolean hasXYZ() {return xCol()>=0 && yCol()>=0 && zCol()>=0;}
+                    @Override public boolean hasType() {return typeCol()>=0;}
+                    @Override public boolean hasID() {return idCol()>=0;}
+                };
+            }
+            @Override public int size() {return atomNum();}
+        };
+    }
+    
     int atomNum();
     int atomTypeNum();
     String[] atomDataKeys();
@@ -47,8 +67,6 @@ public interface IHasAtomData extends IHasOrthogonalXYZ, IHasOrthogonalXYZID {
     IHasOrthogonalXYZID getIHasOrthogonalXYZID(int aType);
     
     class Util {
-        public final static String[] STD_ATOM_DATA_KEYS = new String[] {"id", "type", "x", "y", "z"}; // 标准 AtomData 包含信息格式为 id type x y z，和 Lmpdat 保持一致
-        
         public static double[][] toStandardAtomData(IHasAtomData aHasAtomData) {
             // 一般的将 IHasAtomData 转换成标准 AtomData 的方法，一定要求是正交的 XYZ 才能作为输入的数据，只有 id，type 和 xyz 信息
             List<double[]> rAtomDataList = new ArrayList<>(aHasAtomData.atomNum());

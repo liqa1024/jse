@@ -8,9 +8,12 @@ import com.guan.parallel.AbstractHasThreadPool;
 import com.guan.parallel.ParforThreadPool;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.guan.code.CS.ATOM_DATA_KEYS_XYZ;
 import static com.guan.code.CS.BOX_ZERO;
 import static com.guan.math.MathEX.*;
 
@@ -20,8 +23,6 @@ import static com.guan.math.MathEX.*;
  * <p> 此类线程不安全，但不同实例间线程安全 </p>
  */
 public class Generator extends AbstractHasThreadPool<ParforThreadPool> {
-    private final static String[] ATOM_DATA_KEYS_XYZ = new String[] {"x", "y", "z"};
-    
     /** IThreadPoolContainer stuffs */
     private volatile boolean mDead = false;
     @Override public void shutdown() {mDead = true; super.shutdown();}
@@ -78,20 +79,107 @@ public class Generator extends AbstractHasThreadPool<ParforThreadPool> {
     public IHasAtomData atomDataFCC(double aCellSize, int aReplicate) {return atomDataFCC(aCellSize, aReplicate, aReplicate, aReplicate);}
     
     
+    
+    /**
+     * 根据通用的过滤器 aFilter 来过滤 aAtomData，修改粒子的种类。
+     * 注意永远都会进行一次值拷贝，并且当没有 type 项时会在最前面增加一项 type
+     * @author liqa
+     * @param aFilter 自定义的过滤器，输入 {@link IAtom}，返回过滤后的 type
+     * @param aAtomData 需要过滤的 aAtomData
+     * @return 过滤后的 AtomData
+     */
+    public IHasAtomData typeFilterAtomData(IOperator1Full<Integer, IAtom> aFilter, final IHasAtomData aAtomData) {
+        if (mDead) throw new RuntimeException("This Generator is dead");
+        
+        // 先获取 type 列
+        int tTypeCol = aAtomData.typeCol();
+        
+        double[][] oAtomData = aAtomData.atomData();
+        List<double[]> rAtomData = new ArrayList<>(oAtomData.length);
+        List<IAtom> tListAtom = aAtomData.atomList();
+        int tAtomTypeNum = aAtomData.atomTypeNum();
+        for (int i = 0; i < oAtomData.length; ++i) {
+            // 更新粒子种类数目
+            int tType = aFilter.cal(tListAtom.get(i));
+            if (tType > tAtomTypeNum) tAtomTypeNum = tType;
+            // 设置修改种类后的结果
+            double[] oData = oAtomData[i];
+            double[] tData;
+            if (tTypeCol < 0) {
+                tData = new double[oData.length+1];
+                tData[0] = tType;
+                System.arraycopy(oData, 0, tData, 1, oData.length);
+            } else {
+                tData = new double[oData.length];
+                System.arraycopy(oData, 0, tData, 0, oData.length);
+                tData[tTypeCol] = tType;
+            }
+            rAtomData.add(tData);
+        }
+        final double[][] tAtomData = rAtomData.toArray(new double[0][]);
+        final String[] tAtomDataKeys;
+        if (tTypeCol < 0) {
+            String[] oAtomDataKeys = aAtomData.atomDataKeys();
+            tAtomDataKeys = new String[oAtomDataKeys.length+1];
+            tAtomDataKeys[0] = "type";
+            System.arraycopy(oAtomDataKeys, 0, tAtomDataKeys, 1, oAtomDataKeys.length);
+        } else {
+            tAtomDataKeys = aAtomData.atomDataKeys();
+        }
+        final int fAtomTypeNum = tAtomTypeNum;
+        
+        return new AbstractAtomData() {
+            @Override public String[] atomDataKeys() {return tAtomDataKeys;}
+            @Override public double[][] atomData() {return tAtomData;}
+            @Override public double[] boxLo() {return aAtomData.boxLo();}
+            @Override public double[] boxHi() {return aAtomData.boxHi();}
+            @Override public int atomTypeNum() {return fAtomTypeNum;}
+        };
+    }
+    
+    /**
+     * 根据给定的权重来随机修改原子种类，主要用于创建合金的初始结构
+     * @author liqa
+     */
+    public IHasAtomData typeFilterWeightAtomData(final IHasAtomData aAtomData, double... aTypeWeights) {
+        // 特殊输入直接输出
+        if (aTypeWeights == null || aTypeWeights.length == 0) return aAtomData;
+        double tTotWeight = Vec.sum(aTypeWeights);
+        if (tTotWeight <= 0.0) return aAtomData;
+        
+        int tAtomNum = aAtomData.atomNum();
+        // 获得对应原子种类的 List
+        final List<Integer> tTypeList = new ArrayList<>(tAtomNum+aTypeWeights.length);
+        for (int tType = 1; tType <= aTypeWeights.length; ++tType) {
+            // 计算这种种类的粒子数目
+            long tSteps = Math.round((aTypeWeights[tType-1] / tTotWeight) * tAtomNum);
+            for (int i = 0; i < tSteps; ++i) tTypeList.add(tType);
+        }
+        // 简单处理，如果数量不够则添加最后一种种类
+        while (tTypeList.size() < tAtomNum) tTypeList.add(aTypeWeights.length);
+        // 随机打乱这些种类标记
+        Collections.shuffle(tTypeList, mRNG);
+        // 使用 typeFilter 获取种类修改后的 AtomData
+        final AtomicInteger idx = new AtomicInteger();
+        return typeFilterAtomData(atom -> tTypeList.get(idx.getAndIncrement()), aAtomData);
+    }
+    
+    
     /**
      * 根据通用的过滤器 aFilter 来过滤 aAtomData，移除不满足 Filter 的粒子。
      * 注意返回的内容都是 aAtomData 的引用，因此如果需要修改还需要手动进行值拷贝
      * @author liqa
-     * @param aFilter 自定义的过滤器，输入 double[] 为 AtomData 的完整一行，返回是否保留
+     * @param aFilter 自定义的过滤器，输入 {@link IAtom}，返回是否保留
      * @param aAtomData 需要过滤的 aAtomData
      * @return 过滤后的 AtomData
      */
-    public IHasAtomData filterAtomData(IOperator1Full<Boolean, double[]> aFilter, final IHasAtomData aAtomData) {
+    public IHasAtomData filterAtomData(IOperator1Full<Boolean, IAtom> aFilter, final IHasAtomData aAtomData) {
         if (mDead) throw new RuntimeException("This Generator is dead");
         
         double[][] oAtomData = aAtomData.atomData();
         List<double[]> rAtomData = new ArrayList<>(oAtomData.length);
-        for (double[] subData : oAtomData) if (aFilter.cal(subData)) rAtomData.add(subData);
+        List<IAtom> tListAtom = aAtomData.atomList();
+        for (int i = 0; i < oAtomData.length; ++i) if (aFilter.cal(tListAtom.get(i))) rAtomData.add(oAtomData[i]);
         final double[][] tAtomData = rAtomData.toArray(new double[0][]);
         
         return new AbstractAtomData() {
@@ -99,6 +187,7 @@ public class Generator extends AbstractHasThreadPool<ParforThreadPool> {
             @Override public double[][] atomData() {return tAtomData;}
             @Override public double[] boxLo() {return aAtomData.boxLo();}
             @Override public double[] boxHi() {return aAtomData.boxHi();}
+            @Override public int atomTypeNum() {return aAtomData.atomTypeNum();}
         };
     }
     
@@ -114,18 +203,15 @@ public class Generator extends AbstractHasThreadPool<ParforThreadPool> {
     public IHasAtomData filterFunc3AtomData(final IOperator1Full<Boolean, Double> aFilter, final Func3 aFunc3, final IHasAtomData aAtomData) {
         if (mDead) throw new RuntimeException("This Generator is dead");
         
-        // 获取 xyz 的下标
-        int[] tIdxXYZ = aAtomData.xyzCol();
-        final int tX = tIdxXYZ[0], tY = tIdxXYZ[1], tZ = tIdxXYZ[2];
         // 获取边界，会进行缩放将 aAtomData 的边界和 Func3 的边界对上
         final double[] tBoxLo = aAtomData.boxLo(), tBoxHi = aAtomData.boxHi();
         final double tX0 = aFunc3.x0()                , tY0 = aFunc3.y0()                , tZ0 = aFunc3.z0()                ;
         final double tXe = tX0+aFunc3.dx()*aFunc3.Nx(), tYe = tY0+aFunc3.dy()*aFunc3.Ny(), tZe = tZ0+aFunc3.dz()*aFunc3.Nz();
         // 需要使用考虑了 pbc 的 subs，因为正边界处的插值需要考虑 pbc
-        return filterAtomData(subAtomData -> aFilter.cal(aFunc3.subsPBC(
-            (subAtomData[tX]-tBoxLo[0])/(tBoxHi[0]-tBoxLo[0])*(tXe-tX0) + tX0,
-            (subAtomData[tY]-tBoxLo[1])/(tBoxHi[1]-tBoxLo[1])*(tYe-tY0) + tY0,
-            (subAtomData[tZ]-tBoxLo[2])/(tBoxHi[2]-tBoxLo[2])*(tZe-tZ0) + tZ0)), aAtomData);
+        return filterAtomData(atom -> aFilter.cal(aFunc3.subsPBC(
+            (atom.x()-tBoxLo[0])/(tBoxHi[0]-tBoxLo[0])*(tXe-tX0) + tX0,
+            (atom.y()-tBoxLo[1])/(tBoxHi[1]-tBoxLo[1])*(tYe-tY0) + tY0,
+            (atom.z()-tBoxLo[2])/(tBoxHi[2]-tBoxLo[2])*(tZe-tZ0) + tZ0)), aAtomData);
     }
     /**
      * 预设的一种阈值的 filter，只有当对应的 Func3 大于阈值 aThreshold 才会保留

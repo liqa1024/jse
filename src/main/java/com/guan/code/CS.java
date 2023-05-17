@@ -24,7 +24,13 @@ public class CS {
     public static final double[] BOX_ONE  = new double[] {1.0, 1.0, 1.0};
     public static final double[] BOX_ZERO = new double[] {0.0, 0.0, 0.0};
     
+    /** AtomData stuffs */
+    public final static String[] ATOM_DATA_KEYS_XYZ = new String[] {"x", "y", "z"};
+    public final static String[] ATOM_DATA_KEYS_ID_TYPE_XYZ = new String[] {"id", "type", "x", "y", "z"};
+    public final static String[] STD_ATOM_DATA_KEYS = ATOM_DATA_KEYS_ID_TYPE_XYZ; // 标准 AtomData 包含信息格式为 id type x y z，和 Lmpdat 保持一致
+    
     /** const arrays */
+    public final static String[] ZL_STR = new String[0];
     public final static Object[] ZL_OBJ = new Object[0];
     public final static double[][] ZL_MAT = new double[0][];
     public final static double[]   ZL_VEC = new double[0];

@@ -14,6 +14,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import static com.guan.code.CS.ATOM_DATA_KEYS_ID_TYPE_XYZ;
+
 /**
  * @author liqa
  * <p> lammps 使用 write_data 写出的数据格式 </p>
@@ -23,7 +25,7 @@ import java.util.Map;
  * <p> 所有成员都是只读的，即使目前没有硬性限制 </p>
  */
 public class Lmpdat extends AbstractAtomData {
-    private final static String[] ATOM_DATA_KEYS = IHasAtomData.Util.STD_ATOM_DATA_KEYS;
+    private final static String[] ATOM_DATA_KEYS = ATOM_DATA_KEYS_ID_TYPE_XYZ;
     private final static Map<String, Integer> KEY2IDX = ImmutableMap.of("id", 0, "type", 1, "x", 2, "y", 3, "z", 4);
     private final static int[] ATOM_DATA_XYZ = new int[] {2, 3, 4};
     private final static int[] ATOM_DATA_XYZID = new int[] {2, 3, 4, 0};

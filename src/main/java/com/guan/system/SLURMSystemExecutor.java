@@ -24,10 +24,8 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
     public final static String WORKING_DIR = ".temp/%n/";
     public final static String SPLIT_NODE_SCRIPT_PATH = WORKING_DIR+"splitNodeList.sh";
     public final static String BATCHED_SCRIPT_DIR = WORKING_DIR+"batched/";
-    public final static String DEFAULT_OUTFILE_DIR = ".slurm/out/";
-    public final static String DEFAULT_OUTFILE_PATH = DEFAULT_OUTFILE_DIR+"%i-%n";
-    
-    private int mCurrentJobIdx = 0;
+    public final static String DEFAULT_OUTFILE_DIR = ".temp/slurm/";
+    public final static String DEFAULT_OUTFILE_PATH = DEFAULT_OUTFILE_DIR+"out-%i-%n";
     
     /// 构造函数部分
     private final String mWorkingDir, mSplitNodeScriptPath, mBatchedScriptDir;
@@ -177,8 +175,7 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
     @Override protected @NotNull String defaultOutFilePath() {return DEFAULT_OUTFILE_PATH;}
     @Override protected @NotNull String toRealOutFilePath(String aOutFilePath) {
         // 对输出文件路径提供一个简单的解码，这里只支持自定义的一些写法而不是 slurm 中的写法（无法简单获取到 slurm 的其他信息）
-        // 并且任务计数也放在这里，因此不能保证任务数是有意义的，仅保证是不同的
-        return aOutFilePath.replaceAll("%n", mUniqueJobName).replaceAll("%i", String.valueOf(mCurrentJobIdx++));
+        return aOutFilePath.replaceAll("%n", mUniqueJobName).replaceAll("%i", String.valueOf(jobNumber()));
     }
     /** run 使用 srun 指令，submit 使用 sbatch 指令，内部提交一个运行 srun 的脚本 */
     @Override protected String getRunCommand(String aCommand, @NotNull String aOutFilePath) {

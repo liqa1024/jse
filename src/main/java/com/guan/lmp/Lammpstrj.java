@@ -14,6 +14,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import static com.guan.code.CS.STD_ATOM_DATA_KEYS;
+
 /**
  * @author liqa
  * <p> lammps 使用 dump 输出的数据格式 </p>
@@ -285,7 +287,7 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
         } else {
             // 一般的情况，注意标签也要改为默认标签
             tAtomData = IHasAtomData.Util.toStandardAtomData(aHasAtomData);
-            tAtomDataKeys = IHasAtomData.Util.STD_ATOM_DATA_KEYS;
+            tAtomDataKeys = STD_ATOM_DATA_KEYS;
         }
         return new SubLammpstrj(aTimeStep, BOX_BOUND, new Box(aHasAtomData.boxLo(), aHasAtomData.boxHi()), tAtomDataKeys, tAtomData);
     }

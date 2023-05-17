@@ -14,7 +14,7 @@ inPath = 'lmp/.temp/in-lmp';
 
 // 创建 slurm，可以这样覆盖设定的工作区间和使用核心数
 SSH_INFO = UT.IO.json2map('.SECRET/SSH_INFO.json');
-slurm = new SLURM('debug', 20, 20, SSH_INFO.csrc as Map);
+slurm = new SLURM('debug', 20, 20, SSH_INFO);
 
 
 // 获取 LmpIn 文件

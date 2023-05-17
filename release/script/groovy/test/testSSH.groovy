@@ -6,7 +6,7 @@ import com.guan.ssh.ServerSSH;
 
 /** 创建 ssh */
 SSH_INFO = UT.IO.json2map('.SECRET/SSH_INFO.json');
-ssh = ServerSSH.load(SSH_INFO.csrc as Map);
+ssh = ServerSSH.load(SSH_INFO);
 
 /** 上传整个项目文件夹（不需要重复上传） */
 UT.Timer.tic();

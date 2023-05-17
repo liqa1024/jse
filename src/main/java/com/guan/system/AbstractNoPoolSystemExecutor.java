@@ -143,6 +143,9 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
     }
     
     
+    
+    private int mJobNumber = 0;
+    protected int jobNumber() {return mJobNumber;}
     /** 需要专门自定义实现一个 Future，返回的是这个指令最终的退出代码，注意保持只有一个锁来防止死锁 */
     protected class FutureJob implements IFutureJob {
         private String mSubmitCommand;
@@ -150,6 +153,7 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
         protected FutureJob(String aSubmitCommand, Iterable<String> aOFiles) {
             mSubmitCommand = aSubmitCommand;
             mOFiles = aOFiles;
+            ++mJobNumber;
         }
         
         /** 获取这个任务的状态 */
@@ -320,6 +324,8 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
             String tBatchedCommand = tCommands.size()>1 ? getBatchSubmitCommand(tCommands, tIOFiles) : getSubmitCommand(tCommands.get(0), toRealOutFilePath(defaultOutFilePath()));
             // 上传输入文件，上传文件部分是串行的
             try {putFiles(tIOFiles.getIFiles());} catch (Exception e) {e.printStackTrace(); rFutures.add(ERR_FUTURE); continue;}
+            // 支持获取 BatchedCommand 失败的情况
+            if (tBatchedCommand == null) System.err.println("ERROR: Fail in GetBatchedCommand, still try to get the output files, so you may also receive the IOException");
             // 获取 FutureJob
             FutureJob tFutureJob = new FutureJob(tBatchedCommand, tIOFiles.getOFiles());
             // 为了逻辑上简单，这里统一先加入排队
