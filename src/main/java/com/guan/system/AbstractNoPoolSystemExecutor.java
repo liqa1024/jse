@@ -6,6 +6,7 @@ import com.guan.code.Pair;
 import com.guan.code.UT;
 import com.guan.io.IHasIOFiles;
 import com.guan.io.IOFiles;
+import com.guan.io.ISavable;
 import com.guan.io.MergedIOFiles;
 import com.guan.parallel.AbstractHasThreadPool;
 import com.guan.parallel.IExecutorEX;
@@ -54,11 +55,11 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
     private volatile boolean mPause = false; // 可以暂停任务的提交
     private volatile boolean mKilled = false; // 直接强制杀死提交进程
     
-    @Override public final void shutdown() {shutdown_();}
-    @Override public final void shutdownNow() {cancelThis(); shutdown_();}
+    @Override public final void shutdown() {if (!isShutdown()) shutdown_();}
+    @Override public final void shutdownNow() {cancelThis(); if (!isShutdown()) shutdown_();}
     @Override public boolean isShutdown() {return mDead;}
     
-    @Override public final synchronized int nTasks() {return mQueuedJobList.size() + mJobList.size();}
+    @Override public final synchronized int nJobs() {return mQueuedJobList.size() + mJobList.size();}
     @Override public final int nThreads() {return mParallelNum;}
     
     protected void shutdown_() {
@@ -72,14 +73,77 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
         mJobList.clear();
     }
     
-    /// TODO 额外添加的一些接口，用于后续设置镜像的实现
+    
+    /** ILongTimeJobPool stuffs，这样方便子类实现 */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    protected synchronized void saveQueuedJobList(Map rSaveTo) {
+        if (!mQueuedJobList.isEmpty()) {
+            List<Map> rList = new ArrayList<>();
+            for (FutureJob tFutureJob : mQueuedJobList) {
+                Map rMap = new LinkedHashMap();
+                tFutureJob.save(rMap);
+                rList.add(rMap);
+            }
+            rSaveTo.put("QueuedJobList", rList);
+        }
+    }
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    protected synchronized void saveJobList(Map rSaveTo) {
+        if (!mJobList.isEmpty()) {
+            List<Map> rList = new ArrayList<>();
+            for (Map.Entry<FutureJob, Integer> tEntry : mJobList.entrySet()) {
+                Map rMap = new LinkedHashMap();
+                rMap.put("JobID", tEntry.getValue());
+                tEntry.getKey().save(rMap);
+                rList.add(rMap);
+            }
+            rSaveTo.put("JobList", rList);
+        }
+    }
+    protected synchronized void loadQueuedJobList(Map<?, ?> aLoadFrom) {
+        if (aLoadFrom.containsKey("QueuedJobList")) {
+            List<?> tList = (List<?>) aLoadFrom.get("QueuedJobList");
+            for (Object tObj : tList) mQueuedJobList.add(loadFutureJob((Map<?, ?>) tObj));
+        }
+    }
+    protected synchronized void loadJobList(Map<?, ?> aLoadFrom) {
+        if (aLoadFrom.containsKey("JobList")) {
+            List<?> tList = (List<?>) aLoadFrom.get("JobList");
+            for (Object tObj : tList) {
+                Map<?, ?> tMap = (Map<?, ?>) tObj;
+                mJobList.put(loadFutureJob(tMap), ((Number)tMap.get("JobID")).intValue());
+            }
+        }
+    }
+    private FutureJob loadFutureJob(Map<?, ?> aLoadFrom) {
+        String aSubmitCommand = (String)aLoadFrom.get("SubmitCommand");
+        List<String> aOFiles = new ArrayList<>();
+        List<?> tList = (List<?>)aLoadFrom.get("OFiles");
+        if (tList != null) for (Object tObj : tList) aOFiles.add((String)tObj);
+        return new FutureJob(aSubmitCommand, aOFiles);
+    }
+    protected void setJobNumber(int aJobNumber) {mJobNumber = aJobNumber;}
+    @ApiStatus.Internal
+    @SuppressWarnings("RedundantIfStatement")
+    public synchronized boolean killRecommended() {
+        // 如果还没检测任务队列则还不能 kill
+        if (!mChecked) return false;
+        // 正在执行的任务数达到最大并行数或者没有排队的任务时建议 kill
+        if (mQueuedJobList.isEmpty()) return true;
+        if (mJobList.size() >= mParallelNum) return true;
+        return false;
+    }
     /** 设置暂停，会挂起直到获得这个对象的锁，这样在外部调用后确实已经暂停，而在内部使用时不容易出现死锁 */
+    @ApiStatus.Internal
     public final synchronized void pause() {mPause = true;}
+    @ApiStatus.Internal
     public final void unpause() {mPause = false;}
     /** 直接杀死这个对象，类似于系统层面的杀死进程，会直接关闭提交任务并且放弃监管远程服务器的任务而不是取消这些任务，从而使得 mirror 的内容冻结 */
+    @ApiStatus.Internal
     public final void kill() {
+        if (mKilled) return;
         kill_();
-        Runtime.getRuntime().addShutdownHook(mHook);
+        Runtime.getRuntime().removeShutdownHook(mHook);
     }
     private void kill_() {
         // 会先暂停保证正在进行的任务已经完成提交，保证镜像文件不会被这个对象再次修改
@@ -89,6 +153,9 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
         pool().shutdown();
     }
     
+    
+    
+    private boolean mChecked = false; // 用来标记内部任务队列是否有经过服务器检测
     /** 还是采用一样的写法，提价一个长期任务不断手动监控任务完成情况 */
     @SuppressWarnings("BusyWait")
     private void keepSubmitFromList_() {
@@ -136,6 +203,7 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
                         tFutureJob.done(-1); // 此时依旧会尝试下载输出文件
                     }
                 }
+                mChecked = true; // 标记已经经过了检测
             }
         }
         // 在这里关闭内部的 EXE
@@ -147,13 +215,22 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
     private int mJobNumber = 0;
     protected int jobNumber() {return mJobNumber;}
     /** 需要专门自定义实现一个 Future，返回的是这个指令最终的退出代码，注意保持只有一个锁来防止死锁 */
-    protected class FutureJob implements IFutureJob {
+    protected class FutureJob implements IFutureJob, ISavable {
         private String mSubmitCommand;
         private Iterable<String> mOFiles;
         protected FutureJob(String aSubmitCommand, Iterable<String> aOFiles) {
             mSubmitCommand = aSubmitCommand;
             mOFiles = aOFiles;
             ++mJobNumber;
+        }
+        
+        @Override
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        public void save(Map rSaveTo) {
+            if (mSubmitCommand != null) rSaveTo.put("SubmitCommand", mSubmitCommand);
+            List<String> rList = new ArrayList<>();
+            for (String tOFile : mOFiles) rList.add(tOFile);
+            if (!rList.isEmpty()) rSaveTo.put("OFiles", rList);
         }
         
         /** 获取这个任务的状态 */

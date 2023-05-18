@@ -29,7 +29,7 @@ public abstract class AbstractHasThreadPool<TP extends IHasThreadPool> implement
         @Override public boolean isTerminated() {return false;}
         @Override public void awaitTermination() {/**/}
         @Override public void waitUntilDone() {/**/}
-        @Override public int nTasks() {return 0;}
+        @Override public int nJobs() {return 0;}
         @Override public int nThreads() {return 1;}
     };
     
@@ -47,6 +47,6 @@ public abstract class AbstractHasThreadPool<TP extends IHasThreadPool> implement
     @Override public void awaitTermination() throws InterruptedException {mPool.awaitTermination();}
     
     @Override public void waitUntilDone() throws InterruptedException {mPool.waitUntilDone();}
-    @Override public int nTasks() {return mPool.nTasks();}
+    @Override public int nJobs() {return mPool.nJobs();}
     @Override public int nThreads() {return mPool.nThreads();}
 }

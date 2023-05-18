@@ -4,7 +4,9 @@ package com.guan.system;
 import com.guan.code.UT;
 import com.guan.io.IHasIOFiles;
 import com.guan.io.IOFiles;
+import com.guan.jobs.ILongTimeJobPool;
 import com.guan.math.MathEX;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,7 +21,7 @@ import static com.guan.code.CS.*;
  * @author liqa
  * <p> 一般的 SLURM 实现，基于 SSH 的远程 Executor，因此针对的是使用 SSH 连接的远程 SLURM 服务器 </p>
  */
-public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemExecutor> {
+public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemExecutor> implements ILongTimeJobPool {
     /** 一些目录设定， %n: unique job name, %i: index of job，注意只有 OUTFILE_PATH 支持 %i */
     public final static String SPLIT_NODE_SCRIPT_PATH = WORKING_DIR+"splitNodeList.sh";
     public final static String BATCHED_SCRIPT_DIR = WORKING_DIR+"batched/";
@@ -38,6 +40,7 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
     private final String mSqueueName;
     SLURMSystemExecutor(SSHSystemExecutor aSystemExecutor, int aParallelNum, long aSleepTime, String aUniqueJobName, @Nullable String aPartition, int aTaskNum, int aMaxTaskNumPerNode, int aMaxNodeNum, @Nullable String aSqueueName) throws Exception {
         super(aSystemExecutor, aParallelNum);
+        // 其余的初始化
         mSleepTime = aSleepTime;
         mUniqueJobName = aUniqueJobName;
         mPartition = aPartition;
@@ -71,6 +74,50 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
         this.removeDir(mWorkingDir);
         // 需要在父类 shutdown 之前，因为之后 ssh 就关闭了
         super.shutdown_();
+    }
+    
+    
+    /** 保存参数部分，和输入格式完全一直，需要增加 mQueuedJobList 和 mJobList 的保存 */
+    @ApiStatus.Internal
+    @SuppressWarnings({"rawtypes", "unchecked", "SuspiciousIndentAfterControlStatement"})
+    @Override public void save(Map rSaveTo) {
+        // 保存前先暂停
+        pause();
+        // 先保存内部 SSH
+        mEXE.save(rSaveTo);
+        // 保存自身的额外参数
+        if (mParallelNum > 1)
+        rSaveTo.put("ParallelNumber", mParallelNum);
+        rSaveTo.put("SleepTime", mSleepTime);
+        rSaveTo.put("JobName", mUniqueJobName);
+        if (mPartition != null && !mPartition.isEmpty())
+        rSaveTo.put("Partition", mPartition);
+        if (mTaskNum != 1)
+        rSaveTo.put("TaskNumber", mTaskNum);
+        rSaveTo.put("MaxTaskNumberPerNode", mMaxTaskNumPerNode);
+        rSaveTo.put("MaxNodeNumber", mMaxNodeNum);
+        if (!mSqueueName.equals(mEXE.mSSH.session().getUserName()))
+        rSaveTo.put("SqueueName", mSqueueName);
+        rSaveTo.put("JobNumber", jobNumber());
+        // 保存 mQueuedJobList 和 mJobList
+        saveQueuedJobList(rSaveTo);
+        saveJobList(rSaveTo);
+        // 保存完毕不自动解除暂停，保证文件一致性
+    }
+    
+    /** 内部使用的完整 load 的方法，除了可以输入的设置属性，还会加载 mQueuedJobList，mJobList 等 */
+    @ApiStatus.Internal
+    public static SLURMSystemExecutor load(Map<?, ?> aLoadFrom) throws Exception {
+        SLURMSystemExecutor rSLURM = new SLURMSystemExecutor(aLoadFrom);
+        // 首先立刻暂停，进行其余属性的加载
+        rSLURM.pause();
+        // 加载这些属性
+        rSLURM.loadQueuedJobList(aLoadFrom);
+        rSLURM.loadJobList(aLoadFrom);
+        rSLURM.setJobNumber(((Number)aLoadFrom.get("JobNumber")).intValue());
+        // 解除暂停
+        rSLURM.unpause();
+        return rSLURM;
     }
     
     

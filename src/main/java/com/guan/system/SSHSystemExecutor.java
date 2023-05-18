@@ -1,8 +1,10 @@
 package com.guan.system;
 
 import com.guan.code.UT;
+import com.guan.io.ISavable;
 import com.guan.ssh.ServerSSH;
 import com.jcraft.jsch.ChannelExec;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
@@ -14,7 +16,7 @@ import java.util.Map;
  * @author liqa
  * <p> 在 ssh 服务器上执行指令的简单实现 </p>
  */
-public class SSHSystemExecutor extends RemoteSystemExecutor {
+public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable {
     @Deprecated public static SSHSystemExecutor get_(int aThreadNum, ServerSSH aSSH) throws Exception {return new SSHSystemExecutor(aThreadNum, 2, aSSH);}
     
     final ServerSSH mSSH;
@@ -36,6 +38,20 @@ public class SSHSystemExecutor extends RemoteSystemExecutor {
             throw new IOException("Fail in Init makeDir");
         }
     }
+    
+    
+    
+    /** 保存参数部分，和输入格式完全一直 */
+    @ApiStatus.Internal
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Override public void save(Map rSaveTo) {
+        // 先保存内部 SSH
+        mSSH.save(rSaveTo);
+        // 注意如果是默认值则不要保存
+        if (mIOThreadNum > 0) rSaveTo.put("IOThreadNumber", mIOThreadNum);
+        if (pool() != SERIAL_EXECUTOR) rSaveTo.put("ThreadNumber", nThreads());
+    }
+    
     
     /**
      * 为了简化初始化参数设定的构造函数，使用 json 或者 Map 的输入来进行初始化（类似 python 的方式）

@@ -1,7 +1,8 @@
-package com.guan.code;
+package com.guan.jobs;
 
 
-import java.io.IOException;
+import com.guan.code.UT;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,7 +44,7 @@ public class StepJobManager {
             return STEP_JOB;
         }
         /** 结束组装，并且开始任务 */
-        public void finish(Runnable aFinishDo) throws IOException {
+        public void finish(Runnable aFinishDo) throws Exception {
             // 首先创建工作目录
             UT.IO.makeDir(mWorkingDir);
             // 检测记录工作进度的文件是否存在，如果不存在说明需要从头开始
@@ -53,7 +54,7 @@ public class StepJobManager {
             } else {
                 tStep = 0;
             }
-            if (tStep == mJobList.size()) {
+            if (tStep == mConnectorList.size()) {
                 // 步骤是最终步，执行最终的任务，并删除文件
                 aFinishDo.run();
                 UT.IO.delete(mStepFile);
@@ -68,7 +69,7 @@ public class StepJobManager {
         }
         
         public StepJob then() {return then(()->{});}
-        public void finish() throws IOException {finish(()->{});}
+        public void finish() throws Exception {finish(()->{});}
     }
     
     /** 开始组装 */

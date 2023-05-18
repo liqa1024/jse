@@ -1471,6 +1471,23 @@ public class MathEX {
     
     /// utils operations
     public static class Code {
+        /** Translates Amount of aUnit1 to Amount of aUnit2. */
+        public static long units(long aAmount, long aOriginalUnit, long aTargetUnit, boolean aRoundUp) {
+            if (aTargetUnit == 0) return 0;
+            if (aOriginalUnit == aTargetUnit || aOriginalUnit == 0) return aAmount;
+            if (aOriginalUnit %   aTargetUnit == 0) {aOriginalUnit /=   aTargetUnit;   aTargetUnit = 1;} else
+            if (aTargetUnit   % aOriginalUnit == 0) {  aTargetUnit /= aOriginalUnit; aOriginalUnit = 1;}
+            return Math.max(0, ((aAmount * aTargetUnit) / aOriginalUnit) + (aRoundUp && (aAmount * aTargetUnit) % aOriginalUnit > 0 ? 1 : 0));
+        }
+        public static int units(int aAmount, int aOriginalUnit, int aTargetUnit, boolean aRoundUp) {
+            if (aTargetUnit == 0) return 0;
+            if (aOriginalUnit == aTargetUnit || aOriginalUnit == 0) return aAmount;
+            if (aOriginalUnit %   aTargetUnit == 0) {aOriginalUnit /=   aTargetUnit;   aTargetUnit = 1;} else
+            if (aTargetUnit   % aOriginalUnit == 0) {  aTargetUnit /= aOriginalUnit; aOriginalUnit = 1;}
+            return Math.max(0, ((aAmount * aTargetUnit) / aOriginalUnit) + (aRoundUp && (aAmount * aTargetUnit) % aOriginalUnit > 0 ? 1 : 0));
+        }
+        
+        
         /**
          * Divides but rounds up.
          */

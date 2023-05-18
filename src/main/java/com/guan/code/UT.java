@@ -6,7 +6,6 @@ import com.guan.io.Decryptor;
 import com.guan.io.Encryptor;
 import com.guan.math.Table;
 import com.guan.math.functional.IOperator1Full;
-import com.guan.math.functional.IOperator2Full;
 import com.guan.ssh.SerializableTask;
 import groovy.json.JsonBuilder;
 import groovy.json.JsonSlurper;

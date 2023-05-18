@@ -20,7 +20,7 @@ public class ExecutorsEX {
         @Override public boolean isTerminated() {return mPool.isTerminated();}
         @SuppressWarnings("ResultOfMethodCallIgnored") @Override public void awaitTermination() throws InterruptedException {mPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);}
         @SuppressWarnings("BusyWait") @Override public void waitUntilDone() throws InterruptedException {while (mPool.getActiveCount() > 0 || mPool.getQueue().size() > 0) Thread.sleep(100);}
-        @Override public int nTasks() {return mPool.getActiveCount() + mPool.getQueue().size();}
+        @Override public int nJobs() {return mPool.getActiveCount() + mPool.getQueue().size();}
     }
     
     

@@ -14,10 +14,10 @@ public interface IHasThreadPool extends AutoCloseable {
     void awaitTermination() throws InterruptedException;
     
     void waitUntilDone() throws InterruptedException;
-    int nTasks();
+    int nJobs();
     int nThreads();
     
-    @VisibleForTesting default int getTaskNumber() {return nTasks();}
+    @VisibleForTesting default int getTaskNumber() {return nJobs();}
     
     /** AutoClosable stuffs */
     @VisibleForTesting default void close() {shutdown();}
