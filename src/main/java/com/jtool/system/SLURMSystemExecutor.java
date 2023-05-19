@@ -54,7 +54,7 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
         mBatchedScriptDir = BATCHED_SCRIPT_DIR.replaceAll("%n", mUniqueJobName);
         // 注意初始化失败时需要抛出异常并且执行关闭操作
         if (!(this.makeDir(mWorkingDir) && this.makeDir(mBatchedScriptDir) && this.makeDir(DEFAULT_OUTFILE_DIR))) {
-            this.shutdown(); // 构造函数中不调用多态方法
+            this.shutdown();
             throw new IOException("Fail in Init makeDir");
         }
         // 从资源文件中创建已经准备好的 SplitNodeScript
@@ -69,11 +69,9 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
             throw e;
         }
     }
-    @Override protected void shutdown_() {
+    @Override protected void shutdownFinal() {
         // 顺便删除自己的临时工作目录
-        this.removeDir(mWorkingDir);
-        // 需要在父类 shutdown 之前，因为之后 ssh 就关闭了
-        super.shutdown_();
+        removeDir(mWorkingDir);
     }
     
     
@@ -233,7 +231,7 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
         rRunCommand.add("--job-name");          rRunCommand.add(mUniqueJobName);
         rRunCommand.add("--ntasks");            rRunCommand.add(String.valueOf(mTaskNum));
         rRunCommand.add("--ntasks-per-node");   rRunCommand.add(String.valueOf(mMaxTaskNumPerNode));
-        rRunCommand.add("--wait");              rRunCommand.add("1000000");
+//      rRunCommand.add("--wait");              rRunCommand.add("1000000"); // 正常提交任务不需要修改 wait，可以防止任务报错后一直卡住
         rRunCommand.add("--output");            rRunCommand.add(aOutFilePath);
         if (mPartition != null && !mPartition.isEmpty()) {
         rRunCommand.add("--partition");         rRunCommand.add(mPartition);
@@ -249,7 +247,7 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
         rRunCommand.add("srun");
         rRunCommand.add("--ntasks");            rRunCommand.add(String.valueOf(mTaskNum));
         rRunCommand.add("--ntasks-per-node");   rRunCommand.add(String.valueOf(mMaxTaskNumPerNode));
-        rRunCommand.add("--wait");              rRunCommand.add("1000000");
+//      rRunCommand.add("--wait");              rRunCommand.add("1000000"); // 正常提交任务不需要修改 wait，可以防止任务报错后一直卡住
         rRunCommand.add(aCommand);
         // 组装提交指令
         List<String> rSubmitCommand = new ArrayList<>();
@@ -326,7 +324,7 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
         rRunCommand.add("srun");
         rRunCommand.add("--ntasks");            rRunCommand.add(String.valueOf(tNodeNum)); // 任务数为节点数
         rRunCommand.add("--ntasks-per-node");   rRunCommand.add("1"); // 每节点任务为 1
-        rRunCommand.add("--wait");              rRunCommand.add("1000000");
+        rRunCommand.add("--wait");              rRunCommand.add("1000000"); // 打包任务一定要 wait，不同节点上的任务时长会不同，需要相互等待
         rRunCommand.add("bash");                rRunCommand.add(tBatchedScriptPath); // 使用 bash 指令来执行脚本，避免权限问题
         // 组装提交指令
         List<String> rSubmitCommand = new ArrayList<>();

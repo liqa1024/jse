@@ -68,6 +68,10 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
         mJobList.clear();
     }
     
+    /** stuff to override */
+    protected void shutdownFinal() {/**/}
+    protected void killFinal() {/**/}
+    
     
     /** ILongTimeJobPool stuffs，这样方便子类实现 */
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -196,7 +200,9 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
                 mChecked = true; // 标记已经经过了检测
             }
         }
-        // 在这里关闭内部的 EXE
+        // 在这里执行最后的关闭，例如关闭内部的 EXE 等
+        if (mKilled) killFinal();
+        else shutdownFinal();
         mEXE.shutdown();
     }
     
