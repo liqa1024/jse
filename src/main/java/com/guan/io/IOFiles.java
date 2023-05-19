@@ -29,9 +29,9 @@ public class IOFiles implements IHasIOFiles {
         return rIOFiles;
     }
     
-    /** 重写实现自定义的 AbstractFilePathList */
-    protected List<String> toFilePathList(final String aFileKey, final String aFilePath) {return FilePaths.get(aFilePath);}
-    protected List<String> toFilePathList(final String aFileKey, final String aFilePath, final int aMultiple) {return FilePaths.get(aFilePath, aMultiple);}
+    /** 重写实现自定义的 AbstractFilePathList，注意要嵌套使用方便重写 */
+    protected List<String> toFilePathList(final String aFileKey, final String aFilePath) {return toFilePathList(aFileKey, aFilePath, 0, -1);}
+    protected List<String> toFilePathList(final String aFileKey, final String aFilePath, final int aMultiple) {return toFilePathList(aFileKey, aFilePath, 0, aMultiple);}
     protected List<String> toFilePathList(final String aFileKey, final String aFilePath, final int aStart, final int aEnd) {return FilePaths.get(aFilePath, aStart, aEnd);}
     
     

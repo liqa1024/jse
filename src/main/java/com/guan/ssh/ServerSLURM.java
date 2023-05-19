@@ -11,7 +11,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,7 +71,7 @@ public final class ServerSLURM {
         Map rJson = new LinkedHashMap();
         save(rJson);
         // slurm 由于有自动保存的功能，需要先备份旧的文件
-        if (UT.IO.isFile(aFilePath)) UT.IO.copy(aFilePath, aFilePath+".bak", StandardCopyOption.REPLACE_EXISTING);
+        if (UT.IO.isFile(aFilePath)) UT.IO.copy(aFilePath, aFilePath+".bak");
         // 开始写入
         if (aKey != null && !aKey.isEmpty()) {
             UT.IO.map2json(rJson, aFilePath, aKey);

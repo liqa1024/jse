@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import static com.guan.code.CS.RANDOM;
 import static com.guan.code.CS.ZL_OBJ;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /**
  * @author liqa
@@ -579,8 +580,8 @@ public class UT {
         public static boolean isFile(String aFilePath) {return Files.isRegularFile(toAbsolutePath_(aFilePath));}
         public static boolean exists(String aPath) {return Files.exists(toAbsolutePath_(aPath));}
         public static void delete(String aPath) throws IOException {Files.deleteIfExists(toAbsolutePath_(aPath));} // can delete not exist path
-        public static void copy(String aSourcePath, String aTargetPath, CopyOption... aOptions) throws IOException {Files.copy(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath), aOptions);}
-        public static void move(String aSourcePath, String aTargetPath, CopyOption... aOptions) throws IOException {Files.move(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath), aOptions);}
+        public static void copy(String aSourcePath, String aTargetPath) throws IOException {Files.copy(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath), REPLACE_EXISTING);}
+        public static void move(String aSourcePath, String aTargetPath) throws IOException {Files.move(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath), REPLACE_EXISTING);}
         public static String[] list(String aDir) {return toFile(aDir).list();} // use the File.list not Files.list to get the simple result
         
         /** output stuffs */
