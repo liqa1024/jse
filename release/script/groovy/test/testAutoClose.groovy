@@ -1,7 +1,7 @@
 package test
 
-import com.guan.code.UT
-import com.guan.system.SSH
+import com.jtool.code.UT
+import com.jtool.system.SSH
 
 /** 自动关闭带有线程池的一些资源，理论上这种写法更加严谨，但是这里不做要求 */
 

@@ -1,7 +1,7 @@
 package test
 // import jTool classes
-import com.guan.code.UT;
-import com.guan.ssh.ServerSSH;
+import com.jtool.code.UT;
+import com.jtool.ssh.ServerSSH;
 
 
 /** 创建 ssh */

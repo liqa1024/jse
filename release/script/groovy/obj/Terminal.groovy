@@ -1,8 +1,8 @@
 package obj
 
-import com.guan.code.UT
-import com.guan.system.ISystemExecutor
-import com.guan.system.Local
+import com.jtool.code.UT
+import com.jtool.system.ISystemExecutor
+import com.jtool.system.Local
 
 /**
  * 用来实现在 Groovy 中像调用方法一样调用系统指令

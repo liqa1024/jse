@@ -1,8 +1,8 @@
 package test
 
-import com.guan.code.UT
-import com.guan.lmp.LmpIn
-import com.guan.system.SLURM
+import com.jtool.code.UT
+import com.jtool.lmp.LmpIn
+import com.jtool.system.SLURM
 
 
 /** 测试使用 SLURM 运行 lammps，以后会有 LmpRunner 直接执行 */

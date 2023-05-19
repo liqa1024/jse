@@ -1,7 +1,7 @@
 package test
 
-import com.guan.math.MathEX;
-import com.guan.plot.Plotters;
+import com.jtool.math.MathEX;
+import com.jtool.plot.Plotters;
 
 
 /** 测试直接在 java 上绘图 */

@@ -1,8 +1,8 @@
 package test
 
-import com.guan.code.UT
-import com.guan.system.SLURM
-import com.guan.system.SSH
+import com.jtool.code.UT
+import com.jtool.system.SLURM
+import com.jtool.system.SSH
 
 
 /** 测试新的更加易用的 SLURM */

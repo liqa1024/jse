@@ -1,8 +1,8 @@
 package test
 
 import obj.Terminal
-import com.guan.code.UT
-import com.guan.system.WSL
+import com.jtool.code.UT
+import com.jtool.system.WSL
 
 
 /** 测试系统指令执行的接口 */

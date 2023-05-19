@@ -46,7 +46,7 @@ shadowJar {
     archiveFileName.set('jTool-all.jar')
     
     // 指定主要运行类
-    manifest {attributes 'Main-Class': 'com.guan.Main'}
+    manifest {attributes 'Main-Class': 'com.jtool.Main'}
     
     // 重命名使用的第三方库，避免命名冲突（不鼓励直接使用，因为可能会变动）
     relocate('org.apache.commons', 'shade.org.apache.commons')

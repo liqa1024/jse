@@ -1,7 +1,7 @@
 package test
 
-import com.guan.code.UT
-import com.guan.lmp.LmpIn
+import com.jtool.code.UT
+import com.jtool.lmp.LmpIn
 
 
 /** 测试 lammps 输入文件相关 */
