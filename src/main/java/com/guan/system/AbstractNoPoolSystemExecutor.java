@@ -33,7 +33,6 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
     protected final int mParallelNum;
     protected final LinkedList<FutureJob> mQueuedJobList;
     protected final Map<FutureJob, Integer> mJobList;
-    private final Thread mHook; // ShutdownHook
     
     protected AbstractNoPoolSystemExecutor(T aSystemExecutor, int aParallelNum) {
         super(newSingle());
@@ -44,9 +43,6 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
         
         // 提交长期任务
         pool().execute(this::keepSubmitFromList_);
-        // 在 JVM 意外关闭时手动执行杀死 kill
-        mHook = new Thread(this::kill_);
-        Runtime.getRuntime().addShutdownHook(mHook);
     }
     
     
@@ -65,7 +61,6 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
     protected void shutdown_() {
         mDead = true;
         pool().shutdown();
-        Runtime.getRuntime().removeShutdownHook(mHook);
     }
     protected final synchronized void cancelThis() {
         mQueuedJobList.clear();
@@ -142,17 +137,12 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
     @ApiStatus.Internal
     public final void kill() {
         if (mKilled) return;
-        kill_();
-        Runtime.getRuntime().removeShutdownHook(mHook);
-    }
-    private void kill_() {
         // 会先暂停保证正在进行的任务已经完成提交，保证镜像文件不会被这个对象再次修改
         pause();
         mKilled = true;
         mDead = true;
         pool().shutdown();
     }
-    
     
     
     private boolean mChecked = false; // 用来标记内部任务队列是否有经过服务器检测

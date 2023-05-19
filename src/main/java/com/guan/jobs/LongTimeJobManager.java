@@ -16,24 +16,35 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> {
     private final String mWorkingDir;
     private final String mStepFile;
     private final String mJobPoolFile;
+    private final String mShutdownFile;
     
     private final List<Supplier<T>>   mJobPoolList;
     private final List<IInputTask<T>> mJobsDoneList;
     private final List<Runnable>      mConnectorList;
     
     private final ILoader<T> mLongTimeJobPoolLoader;
+    private final boolean mWaitUntilDone;
+    
+    private final Thread mHook; // ShutdownHook
     
     /** 需要给定一个加载 TimeJobSupplier 的反序列化器 */
-    public LongTimeJobManager(String aUniqueName, ILoader<T> aLongTimeJobPoolLoader) {
+    public LongTimeJobManager(String aUniqueName, ILoader<T> aLongTimeJobPoolLoader) {this(aUniqueName, aLongTimeJobPoolLoader, false);}
+    public LongTimeJobManager(String aUniqueName, ILoader<T> aLongTimeJobPoolLoader, boolean aWaitUntilDone) {
         mWorkingDir = WORKING_DIR.replaceAll("%n", "LTJM@"+aUniqueName);
         mStepFile = mWorkingDir+"step";
         mJobPoolFile = mWorkingDir + "jobpool";
+        mShutdownFile = mWorkingDir + "shutdown";
         
         mJobPoolList = new ArrayList<>();
         mJobsDoneList = new ArrayList<>();
         mConnectorList = new ArrayList<>();
         
         mLongTimeJobPoolLoader = aLongTimeJobPoolLoader;
+        mWaitUntilDone = aWaitUntilDone;
+        
+        // 在 JVM 意外关闭时手动执行杀死 kill
+        mHook = new Thread(this::shutdown_);
+        Runtime.getRuntime().addShutdownHook(mHook);
     }
     
     @FunctionalInterface public interface IInputTask<V> {void run(V in);}
@@ -88,6 +99,7 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> {
                 tJobPool = mJobPoolList.get(tStep).get();
             }
             // 等待直到建议终止或者任务完成
+            int idx = 0;
             while (true) {
                 // 任务完成则可以删除旧的 json 文件，并且执行后续操作
                 if (tJobPool.nJobs() == 0) {
@@ -98,21 +110,36 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> {
                     // 增加步骤，更新步骤文件
                     ++tStep;
                     UT.IO.write(mStepFile, String.valueOf(tStep));
-                    // 跳出循环
-                    break;
+                    // 正常退出则会执行 shutdown
+                    tJobPool.shutdown();
+                    // 直接退出
+                    return;
                 }
                 // 建议终止则进行保存操作，然后终止监控
-                if (tJobPool.killRecommended()) {
+                if (mDead || (!mWaitUntilDone && tJobPool.killRecommended())) {
                     Map rJobPoolArgs = new LinkedHashMap();
                     tJobPool.save(rJobPoolArgs);
                     UT.IO.map2json(rJobPoolArgs, mJobPoolFile);
-                    // 跳出循环
-                    break;
+                    // 杀死则会执行 kill
+                    tJobPool.kill();
+                    // 直接退出
+                    return;
+                }
+                // 每秒检测一次 shutdown 文件看是否手动关闭
+                if (idx % 10 == 9) {
+                    if (!UT.IO.isFile(mShutdownFile)) {
+                        UT.IO.write(mShutdownFile, "0");
+                    } else {
+                        int tValue = Integer.parseInt(UT.IO.readAllLines_(mShutdownFile).get(0));
+                        if (tValue != 0) {
+                            UT.IO.delete(mShutdownFile); // 关闭前记得先删掉这个文件
+                            shutdown();
+                        }
+                    }
                 }
                 Thread.sleep(100);
+                ++idx;
             }
-            // 最后记得关闭 tJobPool
-            tJobPool.kill();
         }
         
         public InitJobPool then() {return then(()->{});}
@@ -126,4 +153,14 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> {
     }
     public InitJobPool init() {return init(()->{});}
     
+    
+    /** 外部用来手动关闭这个 Manager 的接口 */
+    private volatile boolean mDead = false;
+    public boolean isShutdown() {return mDead;}
+    public void shutdown() {
+        if (isShutdown()) return;
+        shutdown_();
+        Runtime.getRuntime().removeShutdownHook(mHook);
+    }
+    protected void shutdown_() {mDead = true;}
 }

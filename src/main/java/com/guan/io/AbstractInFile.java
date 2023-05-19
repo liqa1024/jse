@@ -62,8 +62,8 @@ public abstract class AbstractInFile extends AbstractMap<String, Object> impleme
                     @Override public String filePath() {
                         String tFilePath = aFilePath;
                         if (mSettings.containsKey(aFileKey)) {
-                            Object tValue = mSettings.get(aFileKey);
-                            if (tValue instanceof String) tFilePath = (String)tValue;
+                            // 注意 String 输入不一定真的是 String，这样可以兼容任何输入
+                            tFilePath = String.valueOf(mSettings.get(aFileKey));
                         }
                         return tFilePath;
                     }

@@ -2,8 +2,6 @@ package com.guan.system;
 
 
 import com.guan.io.IHasIOFiles;
-import com.guan.parallel.IBatchSubmit;
-import com.guan.parallel.IBatchSubmit2;
 import com.guan.parallel.IHasThreadPool;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -17,7 +15,7 @@ import java.util.concurrent.Future;
  * 在此基础上增加了类似 Executor 的功能，可以后台运行等 </p>
  */
 @SuppressWarnings("UnusedReturnValue")
-public interface ISystemExecutor extends IHasThreadPool, IBatchSubmit<List<Integer>, String>, IBatchSubmit2<List<Integer>, String, IHasIOFiles> {
+public interface ISystemExecutor extends IHasThreadPool {
     /** 用来处理各种程序因为输出的目录不存在而报错的情况，方便在任何位置直接创建目录或者移除目录 */
     boolean makeDir(String aDir);
     @VisibleForTesting default boolean mkdir(String aDir) {return makeDir(aDir);}
