@@ -54,14 +54,14 @@
 
 IntelliJ IDEA 中会有代码补全提示以及正确的高亮，因此更推荐使用。第一次打开可能需要设置 jdk 的路径：
 $$
-\begin{align*}
-&\text{右上角“文件”}\longrightarrow 
+\begin{array}{c}
+\text{右上角“文件”}\longrightarrow 
 \text{项目结构}\longrightarrow 
 \text{左边栏选择“项目设置-项目”}\longrightarrow \\
-&\text{SDK 选择本地安装的 JDK1.8}\longrightarrow 
+\text{SDK 选择本地安装的 JDK1.8}\longrightarrow 
 \text{语言级别：8 - lambda、类型注解等}\longrightarrow
 \text{右下角“确定”}
-\end{align*}
+\end{array}
 $$
 
 
