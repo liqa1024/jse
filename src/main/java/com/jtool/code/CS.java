@@ -1,5 +1,6 @@
 package com.jtool.code;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.jtool.io.IHasIOFiles;
 import com.jtool.io.IOFiles;
@@ -44,7 +45,7 @@ public class CS {
     public final static IHasIOFiles EPT_IOF = new IOFiles();
     public final static IFutureJob ERR_FUTURE = new CompletedFutureJob(-1);
     public final static Future<List<Integer>> ERR_FUTURES = new CompletedFuture<>(Collections.singletonList(-1));
-    
+    public final static Future<List<String>> EPT_STR_FUTURE = new CompletedFuture<>(ImmutableList.of());
     
     /** Relative atomic mass in this project */
     public static final Map<String, Double> MASS = (new ImmutableMap.Builder<String, Double>())

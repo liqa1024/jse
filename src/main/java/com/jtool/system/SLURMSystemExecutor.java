@@ -222,7 +222,10 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
         return aOutFilePath.replaceAll("%n", mUniqueJobName).replaceAll("%i", String.valueOf(jobNumber()));
     }
     /** run 使用 srun 指令，submit 使用 sbatch 指令，内部提交一个运行 srun 的脚本 */
-    @Override protected String getRunCommand(String aCommand, @NotNull String aOutFilePath) {
+    @Override protected @Nullable String getRunCommand(String aCommand, @NotNull String aOutFilePath) {
+        // 对于空指令专门优化，不执行组装
+        if (aCommand == null || aCommand.isEmpty()) return null;
+        
         int tNodeNum = MathEX.Code.divup(mTaskNum, mMaxTaskNumPerNode);
         // 组装指令
         List<String> rRunCommand = new ArrayList<>();
@@ -240,7 +243,10 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
         // 获得指令
         return String.join(" ", rRunCommand);
     }
-    @Override protected String getSubmitCommand(String aCommand, @NotNull String aOutFilePath) {
+    @Override protected @Nullable String getSubmitCommand(String aCommand, @NotNull String aOutFilePath) {
+        // 对于空指令专门优化，不执行组装
+        if (aCommand == null || aCommand.isEmpty()) return null;
+        
         int tNodeNum = MathEX.Code.divup(mTaskNum, mMaxTaskNumPerNode);
         // 组装运行指令
         List<String> rRunCommand = new ArrayList<>();
@@ -264,6 +270,8 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
         return String.join(" ", rSubmitCommand);
     }
     @Override protected @Nullable String getBatchSubmitCommand(List<String> aCommands, IHasIOFiles aIOFiles) {
+        // 由于空指令不会加入 List，因此不需要进行判断
+        
         // 批量提交的指令，会将多个指令打包成一个单一的指令，用于突破服务器的用户任务数上限
         // 原理为，使用 sbatch 提交一个 srun，sbatch 指定需要的节点数，srun 指定使用和节点数一样的核心，并指定每个节点一个核心，
         // srun 执行打包的脚本，在脚本中根据具体的 SLURM_PROCID 来获取自己的分组，使用 srun 来执行子任务，

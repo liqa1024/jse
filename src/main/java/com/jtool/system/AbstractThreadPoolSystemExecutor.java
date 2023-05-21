@@ -61,10 +61,12 @@ public abstract class AbstractThreadPoolSystemExecutor extends AbstractHasThread
         return tFuture;
     }
     @Override public final void putBatchSystem(String aCommand) {
-        mBatchCommands.add(aCommand);
+        // 对于空指令专门优化，不添加到队列
+        if (aCommand != null && !aCommand.isEmpty()) mBatchCommands.add(aCommand);
     }
     @Override public final void putBatchSystem(String aCommand, IHasIOFiles aIOFiles) {
-        mBatchCommands.add(aCommand);
+        // 对于空指令专门优化，不添加到队列
+        if (aCommand != null && !aCommand.isEmpty()) mBatchCommands.add(aCommand);
         mBatchIOFiles.merge(aIOFiles);
     }
     protected final Future<List<Integer>> batchSubmit_(Iterable<String> aCommands) {

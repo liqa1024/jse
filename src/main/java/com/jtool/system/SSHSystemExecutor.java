@@ -128,6 +128,9 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
     @SuppressWarnings("BusyWait")
     @Override public int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln) {
         if (isShutdown()) throw new RuntimeException("Can NOT do system from this Dead Executor.");
+        // 对于空指令专门优化，不执行操作
+        if (aCommand == null || aCommand.isEmpty()) return -1;
+        
         int tExitValue = -1;
         ChannelExec tChannel = null;
         try (IPrintln tPrintln = aPrintln.get()) {
