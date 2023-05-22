@@ -1,4 +1,4 @@
-package com.jtool.math.functional;
+package com.jtool.math.operator;
 
 @FunctionalInterface
 public interface IOperator1Full<R, T> {

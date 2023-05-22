@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableBiMap;
 import com.jtool.io.Decryptor;
 import com.jtool.io.Encryptor;
 import com.jtool.math.Table;
-import com.jtool.math.functional.IOperator1Full;
+import com.jtool.math.operator.IOperator1Full;
 import com.jtool.ssh.SerializableTask;
 import groovy.json.JsonBuilder;
 import groovy.json.JsonSlurper;
@@ -275,10 +275,76 @@ public class UT {
         public static List<Double> asList(final double[] aData) {
             return new AbstractList<Double>() {
                 @Override public Double get(int index) {return aData[index];}
-                @Override public Double set(int index, Double element) {return aData[index] = element;}
+                @Override public Double set(int index, Double element) {
+                    double oValue = aData[index];
+                    aData[index] = element;
+                    return oValue;
+                }
                 @Override public int size() {return aData.length;}
             };
         }
+        /**
+         * {@link Arrays}.asList for int[]
+         * @author liqa
+         * @param aData the input int[]
+         * @return the list format of int[]
+         */
+        public static List<Integer> asList(final int[] aData) {
+            return new AbstractList<Integer>() {
+                @Override public Integer get(int index) {return aData[index];}
+                @Override public Integer set(int index, Integer element) {
+                    int oValue = aData[index];
+                    aData[index] = element;
+                    return oValue;
+                }
+                @Override public int size() {return aData.length;}
+            };
+        }
+        /**
+         * {@link Arrays}.asList for boolean[]
+         * @author liqa
+         * @param aData the input boolean[]
+         * @return the list format of boolean[]
+         */
+        public static List<Boolean> asList(final boolean[] aData) {
+            return new AbstractList<Boolean>() {
+                @Override public Boolean get(int index) {return aData[index];}
+                @Override public Boolean set(int index, Boolean element) {
+                    boolean oValue = aData[index];
+                    aData[index] = element;
+                    return oValue;
+                }
+                @Override public int size() {return aData.length;}
+            };
+        }
+        
+        /**
+         * Convert {@code Collection<Number>} to double[]
+         * @author liqa
+         */
+        public static double[] toData(Collection<? extends Number> aList) {
+            double[] rData = new double[aList.size()];
+            int tIdx = 0;
+            for (Number tValue : aList) {
+                rData[tIdx] = tValue.doubleValue();
+                ++tIdx;
+            }
+            return rData;
+        }
+        /**
+         * Convert {@code Collection<Collection<Number>>} to double[][]
+         * @author liqa
+         */
+        public static double[][] toMat(Collection<? extends Collection<? extends Number>> aMatrix) {
+            double[][] rMat = new double[aMatrix.size()][];
+            int tIdx = 0;
+            for (Collection<? extends Number> tList : aMatrix) {
+                rMat[tIdx] = toData(tList);
+                ++tIdx;
+            }
+            return rMat;
+        }
+        
         
         /**
          * the range function similar to python

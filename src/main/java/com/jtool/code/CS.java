@@ -26,6 +26,12 @@ public class CS {
     
     public final static String WORKING_DIR = ".temp/%n/";
     
+    
+    /** MathEX stuffs */
+    public enum SliceType {ALL}
+    public final static SliceType ALL = SliceType.ALL;
+    
+    
     /** AtomData stuffs */
     public final static String[] ATOM_DATA_KEYS_XYZ = new String[] {"x", "y", "z"};
     public final static String[] ATOM_DATA_KEYS_ID_TYPE_XYZ = new String[] {"id", "type", "x", "y", "z"};

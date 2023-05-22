@@ -2,12 +2,12 @@ package com.jtool.math;
 
 import com.jtool.atom.MonatomicParameterCalculator;
 import com.jtool.code.Pair;
-import com.jtool.math.functional.IOperator1;
-import com.jtool.math.functional.IOperator2;
-import com.jtool.math.functional.IOperator2Full;
-import com.jtool.math.numerical.Func1;
-import com.jtool.math.numerical.Func2;
-import com.jtool.math.numerical.Func3;
+import com.jtool.math.operator.IOperator1;
+import com.jtool.math.operator.IOperator2;
+import com.jtool.math.operator.IOperator2Full;
+import com.jtool.math.function.Func1;
+import com.jtool.math.function.Func2;
+import com.jtool.math.function.Func3;
 import com.jtool.parallel.ParforThreadPool;
 import net.jafama.FastMath;
 

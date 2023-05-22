@@ -1,7 +1,7 @@
-package com.jtool.math.numerical;
+package com.jtool.math.function;
 
 import com.jtool.math.MathEX;
-import com.jtool.math.functional.IOperator1;
+import com.jtool.math.operator.IOperator1;
 
 /**
  * @author liqa

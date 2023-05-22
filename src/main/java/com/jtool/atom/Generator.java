@@ -1,9 +1,9 @@
 package com.jtool.atom;
 
 import com.jtool.math.MathEX;
-import com.jtool.math.functional.IOperator1;
-import com.jtool.math.functional.IOperator1Full;
-import com.jtool.math.numerical.Func3;
+import com.jtool.math.operator.IOperator1;
+import com.jtool.math.operator.IOperator1Full;
+import com.jtool.math.function.Func3;
 import com.jtool.parallel.AbstractHasThreadPool;
 import com.jtool.parallel.ParforThreadPool;
 
@@ -85,10 +85,11 @@ public class Generator extends AbstractHasThreadPool<ParforThreadPool> {
      * 注意永远都会进行一次值拷贝，并且当没有 type 项时会在最前面增加一项 type
      * @author liqa
      * @param aAtomData 需要过滤的 aAtomData
+     * @param aMinTypeNum 建议最小的种类数目
      * @param aFilter 自定义的过滤器，输入 {@link IAtom}，返回过滤后的 type
      * @return 过滤后的 AtomData
      */
-    public IHasAtomData typeFilterAtomData(final IHasAtomData aAtomData, IOperator1Full<Integer, IAtom> aFilter) {
+    public IHasAtomData typeFilterAtomData(final IHasAtomData aAtomData, int aMinTypeNum, IOperator1Full<Integer, IAtom> aFilter) {
         if (mDead) throw new RuntimeException("This Generator is dead");
         
         // 先获取 type 列
@@ -97,7 +98,7 @@ public class Generator extends AbstractHasThreadPool<ParforThreadPool> {
         double[][] oAtomData = aAtomData.atomData();
         List<double[]> rAtomData = new ArrayList<>(oAtomData.length);
         List<IAtom> tListAtom = aAtomData.atomList();
-        int tAtomTypeNum = aAtomData.atomTypeNum();
+        int tAtomTypeNum = Math.max(aMinTypeNum, aAtomData.atomTypeNum());
         for (int i = 0; i < oAtomData.length; ++i) {
             // 更新粒子种类数目
             int tType = aFilter.cal(tListAtom.get(i));
@@ -136,6 +137,7 @@ public class Generator extends AbstractHasThreadPool<ParforThreadPool> {
             @Override public int atomTypeNum() {return fAtomTypeNum;}
         };
     }
+    public IHasAtomData typeFilterAtomData(final IHasAtomData aAtomData, IOperator1Full<Integer, IAtom> aFilter) {return typeFilterAtomData(aAtomData, 1, aFilter);}
     
     /**
      * 根据给定的权重来随机修改原子种类，主要用于创建合金的初始结构
@@ -161,7 +163,7 @@ public class Generator extends AbstractHasThreadPool<ParforThreadPool> {
         Collections.shuffle(tTypeList, mRNG);
         // 使用 typeFilter 获取种类修改后的 AtomData
         final AtomicInteger idx = new AtomicInteger();
-        return typeFilterAtomData(aAtomData, atom -> tTypeList.get(idx.getAndIncrement()));
+        return typeFilterAtomData(aAtomData, aTypeWeights.length, atom -> tTypeList.get(idx.getAndIncrement()));
     }
     
     

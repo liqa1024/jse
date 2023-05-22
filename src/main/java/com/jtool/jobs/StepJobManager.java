@@ -19,12 +19,15 @@ public class StepJobManager {
     private final String mStepFile;
     private final List<Runnable> mJobList;
     private final List<Runnable> mConnectorList;
+    private final int mForceStep;
     
-    public StepJobManager(String aUniqueName) {
+    public StepJobManager(String aUniqueName) {this(aUniqueName, -1);}
+    public StepJobManager(String aUniqueName, int aForceStep) {
         mWorkingDir = WORKING_DIR.replaceAll("%n", "SJM@"+aUniqueName);
         mStepFile = mWorkingDir+"step";
         mJobList = new ArrayList<>();
         mConnectorList = new ArrayList<>();
+        mForceStep = aForceStep;
     }
     
     
@@ -49,6 +52,9 @@ public class StepJobManager {
             UT.IO.makeDir(mWorkingDir);
             // 检测记录工作进度的文件是否存在，如果不存在说明需要从头开始
             int tStep;
+            if (mForceStep >= 0) {
+                tStep = mForceStep;
+            } else
             if (UT.IO.isFile(mStepFile)) {
                 tStep = Integer.parseInt(UT.IO.readAllLines_(mStepFile).get(0));
             } else {
