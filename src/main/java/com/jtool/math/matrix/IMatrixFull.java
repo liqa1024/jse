@@ -1,9 +1,7 @@
 package com.jtool.math.matrix;
 
 import com.jtool.code.CS.SliceType;
-import com.jtool.math.IDataGenerator1;
-import com.jtool.math.IDataGenerator2;
-import com.jtool.math.IDataSlicer2;
+import com.jtool.math.vector.IVectorGenerator;
 import com.jtool.math.vector.IVector;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -17,16 +15,16 @@ import java.util.List;
 public interface IMatrixFull<T extends Number, M extends IMatrix<T>, V extends IVector<T>> extends IMatrix<T> {
     
     /** 获得基于自身的向量生成器，生成按列排布的向量 */
-    IDataGenerator1<V> generatorVec();
+    IVectorGenerator<V> generatorVec();
     
     /** 获得基于自身的矩阵生成器，方便构造相同大小的同样的矩阵 */
-    IDataGenerator2<M> generatorMat();
-    @VisibleForTesting default IDataGenerator2<M> gen() {return generatorMat();}
-    @VisibleForTesting default IDataGenerator1<V> genVec() {return generatorVec();}
+    IMatrixGenerator<M> generatorMat();
+    @VisibleForTesting default IMatrixGenerator<M> gen() {return generatorMat();}
+    @VisibleForTesting default IVectorGenerator<V> genVec() {return generatorVec();}
     
     /** 切片操作，默认返回新的矩阵，refSlicer 则会返回引用的切片结果 */
-    IDataSlicer2<M, V> slicer();
-    IDataSlicer2<IMatrix<T>, IVector<T>> refSlicer();
+    IMatrixSlicer<M, V> slicer();
+    IMatrixSlicer<IMatrix<T>, IVector<T>> refSlicer();
     
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting M call(List<Integer> aSelectedRows, List<Integer> aSelectedCols);

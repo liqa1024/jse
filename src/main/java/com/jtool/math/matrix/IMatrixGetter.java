@@ -1,5 +1,6 @@
 package com.jtool.math.matrix;
 
+@FunctionalInterface
 public interface IMatrixGetter<T extends Number> {
-    T get_(int aRow, int aCol);
+    T get(int aRow, int aCol);
 }

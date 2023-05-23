@@ -1,13 +1,10 @@
 package com.jtool.math.matrix;
 
 import com.jtool.code.CS.SliceType;
-import com.jtool.math.IDataGenerator1;
-import com.jtool.math.IDataGenerator2;
-import com.jtool.math.IDataSlicer2;
-import com.jtool.math.operator.IOperator1Full;
-import com.jtool.math.operator.IOperator2Full;
 import com.jtool.math.vector.AbstractVector;
 import com.jtool.math.vector.IVector;
+import com.jtool.math.vector.IVectorGenerator;
+import com.jtool.math.vector.IVectorGetter;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
@@ -20,11 +17,11 @@ import java.util.concurrent.Callable;
  */
 public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>, V extends IVector<T>> extends AbstractMatrix<T> implements IMatrixFull<T, M, V> {
     /** 矩阵生成器的一般实现，主要实现一些重复的接口 */
-    protected class MatrixGenerator implements IDataGenerator2<M> {
+    protected class MatrixGenerator implements IMatrixGenerator<M> {
         @Override public M ones() {return ones(rowNumber(), columnNumber());}
         @Override public M zeros() {return zeros(rowNumber(), columnNumber());}
         @Override public M from(Callable<? extends Number> aCall) {return from(rowNumber(), columnNumber(), aCall);}
-        @Override public M from(IOperator2Full<? extends Number, Integer, Integer> aOpt) {return from(rowNumber(), columnNumber(), aOpt);}
+        @Override public M from(IMatrixGetter<? extends Number> aMatrixGetter) {return from(rowNumber(), columnNumber(), aMatrixGetter);}
         
         @Override public M same() {return from(AbstractMatrixFull.this::get_);}
         @Override public M ones(int aRowNum, int aColNum) {
@@ -38,17 +35,17 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
         @Override public M from(int aRowNum, int aColNum, Callable<? extends Number> aCall) {
             return from(aRowNum, aColNum, (row, col) -> {try {return aCall.call();} catch (Exception e) {throw new RuntimeException(e);}});
         }
-        @Override public M from(int aRowNum, int aColNum, IOperator2Full<? extends Number, Integer, Integer> aOpt) {
+        @Override public M from(int aRowNum, int aColNum, IMatrixGetter<? extends Number> aMatrixGetter) {
             M rMatrix = newZeros(aRowNum, aColNum);
-            rMatrix.fillWith(aOpt);
+            rMatrix.fillWith(aMatrixGetter);
             return rMatrix;
         }
     }
-    protected class VectorGenerator implements IDataGenerator1<V> {
+    protected class VectorGenerator implements IVectorGenerator<V> {
         @Override public V ones() {return ones(rowNumber()*columnNumber());}
         @Override public V zeros() {return zeros(rowNumber()*columnNumber());}
         @Override public V from(Callable<? extends Number> aCall) {return from(rowNumber()*columnNumber(), aCall);}
-        @Override public V from(IOperator1Full<? extends Number, Integer> aOpt) {return from(rowNumber()*columnNumber(), aOpt);}
+        @Override public V from(IVectorGetter<? extends Number> aVectorGetter) {return from(rowNumber()*columnNumber(), aVectorGetter);}
         /** 转为 Vector 需要按照列排列 */
         @Override public V same() {int tRowNum = rowNumber(); return from(i -> get_(i%tRowNum, i/tRowNum));}
         
@@ -63,20 +60,20 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
         @Override public V from(int aSize, Callable<? extends Number> aCall) {
             return from(aSize, i -> {try {return aCall.call();} catch (Exception e) {throw new RuntimeException(e);}});
         }
-        @Override public V from(int aSize, IOperator1Full<? extends Number, Integer> aOpt) {
+        @Override public V from(int aSize, IVectorGetter<? extends Number> aVectorGetter) {
             V rVector = newZeros(aSize);
-            rVector.fillWith(aOpt);
+            rVector.fillWith(aVectorGetter);
             return rVector;
         }
     }
     
-    @Override public IDataGenerator1<V> generatorVec() {return new VectorGenerator();}
-    @Override public IDataGenerator2<M> generatorMat() {return new MatrixGenerator();}
+    @Override public IVectorGenerator<V> generatorVec() {return new VectorGenerator();}
+    @Override public IMatrixGenerator<M> generatorMat() {return new MatrixGenerator();}
     
     
     /** 切片操作，默认返回新的矩阵，refSlicer 则会返回引用的切片结果 */
-    @Override public IDataSlicer2<M, V> slicer() {
-        return new IDataSlicer2<M, V>() {
+    @Override public IMatrixSlicer<M, V> slicer() {
+        return new IMatrixSlicer<M, V>() {
             @Override public V getIL(final int aSelectedRow, final List<Integer> aSelectedCols) {return generatorVec().from(aSelectedCols.size(), i -> AbstractMatrixFull.this.get(aSelectedRow, aSelectedCols.get(i)));}
             @Override public V getLI(final List<Integer> aSelectedRows, final int aSelectedCol) {return generatorVec().from(aSelectedRows.size(), i -> AbstractMatrixFull.this.get(aSelectedRows.get(i), aSelectedCol));}
             @Override public V getIA(final int aSelectedRow) {return generatorVec().from(columnNumber(), col -> AbstractMatrixFull.this.get(aSelectedRow, col));}
@@ -88,8 +85,8 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
             @Override public M getAA() {return generatorMat().same();}
         };
     }
-    @Override public IDataSlicer2<IMatrix<T>, IVector<T>> refSlicer() {
-        return new IDataSlicer2<IMatrix<T>, IVector<T>>() {
+    @Override public IMatrixSlicer<IMatrix<T>, IVector<T>> refSlicer() {
+        return new IMatrixSlicer<IMatrix<T>, IVector<T>>() {
             @Override public IVector<T> getIL(final int aSelectedRow, final List<Integer> aSelectedCols) {
                 return new AbstractVector<T>() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */

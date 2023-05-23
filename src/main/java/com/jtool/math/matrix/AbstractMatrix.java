@@ -1,7 +1,6 @@
 package com.jtool.math.matrix;
 
 import com.jtool.code.UT;
-import com.jtool.math.operator.IOperator2Full;
 import com.jtool.math.vector.AbstractVector;
 import com.jtool.math.vector.IVector;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -53,11 +52,10 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
             ++row;
         }
     }
-    @Override public void fillWith(IMatrix<? extends Number> aMatrix) {fillWith(aMatrix::get);}
-    @Override public void fillWith(IOperator2Full<? extends Number, Integer, Integer> aOpt) {
+    @Override public void fillWith(IMatrixGetter<? extends Number> aMatrixGetter) {
         int tRowNum = rowNumber();
         int tColNum = columnNumber();
-        for (int col = 0; col < tColNum; ++col) for (int row = 0; row < tRowNum; ++row) set_(row, col, aOpt.cal(row, col));
+        for (int col = 0; col < tColNum; ++col) for (int row = 0; row < tRowNum; ++row) set_(row, col, aMatrixGetter.get(row, col));
     }
     
     @Override public T get(int aRow, int aCol) {

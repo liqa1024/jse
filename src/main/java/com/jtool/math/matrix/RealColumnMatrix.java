@@ -1,13 +1,13 @@
 package com.jtool.math.matrix;
 
-import com.jtool.math.IDataGenerator1;
-import com.jtool.math.IDataGenerator2;
-import com.jtool.math.operator.IOperator2Full;
+import com.jtool.math.vector.IVectorGenerator;
 import com.jtool.math.vector.AbstractVector;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.RealVector;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
 
 
 /**
@@ -100,12 +100,12 @@ public class RealColumnMatrix extends AbstractMatrixFull<Double, RealColumnMatri
     
     /** 重写这些接口来加速批量填充过程 */
     @Override public void fill(Number aValue) {Arrays.fill(mData, aValue.doubleValue());}
-    @Override public void fillWith(IOperator2Full<? extends Number, Integer, Integer> aOpt) {
+    @Override public void fillWith(IMatrixGetter<? extends Number> aMatrixGetter) {
         int tRowNum = rowNumber();
         int tColNum = columnNumber();
         int i = 0;
         for (int col = 0; col < tColNum; ++col) for (int row = 0; row < tRowNum; ++row) {
-            mData[i] = aOpt.cal(row, col).doubleValue();
+            mData[i] = aMatrixGetter.get(row, col).doubleValue();
             ++i;
         }
     }
@@ -114,7 +114,7 @@ public class RealColumnMatrix extends AbstractMatrixFull<Double, RealColumnMatri
     /** IGenerator stuffs，重写 same 接口专门优化 */
     @Override protected RealColumnMatrix newZeros(int aRowNum, int aColNum) {return RealColumnMatrix.zeros(aRowNum, aColNum);}
     @Override protected RealVector newZeros(int aSize) {return RealVector.zeros(aSize);}
-    @Override public IDataGenerator2<RealColumnMatrix> generatorMat() {
+    @Override public IMatrixGenerator<RealColumnMatrix> generatorMat() {
         return new MatrixGenerator() {
             @Override public RealColumnMatrix same() {
                 double[] rData = new double[mData.length];
@@ -123,7 +123,7 @@ public class RealColumnMatrix extends AbstractMatrixFull<Double, RealColumnMatri
             }
         };
     }
-    @Override public IDataGenerator1<RealVector> generatorVec() {
+    @Override public IVectorGenerator<RealVector> generatorVec() {
         return new VectorGenerator() {
             @Override public RealVector same() {
                 double[] rData = new double[mData.length];

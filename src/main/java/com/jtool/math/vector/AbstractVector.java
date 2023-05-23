@@ -1,7 +1,6 @@
 package com.jtool.math.vector;
 
 import com.jtool.code.UT;
-import com.jtool.math.operator.IOperator1Full;
 
 import java.util.AbstractList;
 import java.util.Iterator;
@@ -20,18 +19,18 @@ public abstract class AbstractVector<T extends Number> extends AbstractList<T> i
         int tSize = size();
         for (int i = 0; i < tSize; ++i) set_(i, aValue);
     }
-    @Override public void fillWith(Iterable<? extends Number> aVec) {
+    @Override public void fillWith(Iterable<? extends Number> aList) {
         int tSize = size();
-        Iterator<? extends Number> tIt = aVec.iterator();
+        Iterator<? extends Number> tIt = aList.iterator();
         int i = 0;
         while (i < tSize && tIt.hasNext()) {
             set_(i, tIt.next());
             ++i;
         }
     }
-    @Override public void fillWith(IOperator1Full<? extends Number, Integer> aOpt) {
+    @Override public void fillWith(IVectorGetter<? extends Number> aVectorGetter) {
         int tSize = size();
-        for (int i = 0; i < tSize; ++i) set_(i, aOpt.cal(i));
+        for (int i = 0; i < tSize; ++i) set_(i, aVectorGetter.get(i));
     }
     
     @Override public T get(int aIdx) {

@@ -10,14 +10,14 @@ import java.util.List;
  * <p> 通用的向量接口，使用泛型来方便实现任意数据类型的向量 </p>
  * <p> 直接继承 List 方便使用 </p>
  */
-public interface IVector<T extends Number> extends List<T> {
+public interface IVector<T extends Number> extends List<T>, IVectorGetter<T> {
     /** 转为兼容性更好的 double[] */
     double[] vec();
     
     /** 批量修改的接口 */
     void fill(Number aValue);
-    void fillWith(Iterable<? extends Number> aVec);
-    void fillWith(IOperator1Full<? extends Number, Integer> aOpt);
+    void fillWith(Iterable<? extends Number> aList);
+    void fillWith(IVectorGetter<? extends Number> aVectorGetter);
     
     /** 访问和修改部分，自带的接口；注意 set 已经被 List 占用，这里为了逻辑统一依旧提供一个自己的重载版本 */
     T get_(int aIdx);
