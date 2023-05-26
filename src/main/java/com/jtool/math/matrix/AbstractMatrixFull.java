@@ -1,12 +1,14 @@
 package com.jtool.math.matrix;
 
 import com.jtool.code.CS.SliceType;
+import com.jtool.code.ISetIterator;
 import com.jtool.math.vector.AbstractVector;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.IVectorGenerator;
 import com.jtool.math.vector.IVectorGetter;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.Iterator;
 import java.util.List;
 
 
@@ -21,7 +23,7 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
         @Override public M zeros() {return zeros(rowNumber(), columnNumber());}
         @Override public M from(IMatrixGetter<? extends Number> aMatrixGetter) {return from(rowNumber(), columnNumber(), aMatrixGetter);}
         
-        @Override public M same() {return from(AbstractMatrixFull.this::get_);}
+        @Override public M same() {return from(AbstractMatrixFull.this);}
         @Override public M ones(int aRowNum, int aColNum) {
             M rMatrix = newZeros(aRowNum, aColNum);
             rMatrix.fill(1);
@@ -40,8 +42,17 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
         @Override public V ones() {return ones(rowNumber()*columnNumber());}
         @Override public V zeros() {return zeros(rowNumber()*columnNumber());}
         @Override public V from(IVectorGetter<? extends Number> aVectorGetter) {return from(rowNumber()*columnNumber(), aVectorGetter);}
-        /** 转为 Vector 需要按照列排列 */
-        @Override public V same() {int tRowNum = rowNumber(); return from(i -> get_(i%tRowNum, i/tRowNum));}
+        /** 转为 Vector 会按照 Iterator 的顺序排列，也就按列排列 */
+        @Override public V same() {
+            V rVector = zeros();
+            final ISetIterator<T, Number> si = rVector.setIterator();
+            final Iterator<T> mi = iterator();
+            while (si.hasNext()) {
+                si.next();
+                si.set(mi.next());
+            }
+            return rVector;
+        }
         
         @Override public V ones(int aSize) {
             V rVector = newZeros(aSize);

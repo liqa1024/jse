@@ -14,7 +14,7 @@ import java.util.function.UnaryOperator;
  * @param <S> 用于设置的输入类型
  */
 public interface IFatIterable<T, TE, E extends S, S> extends Iterable<E> {
-    Iterator<? extends TE> iterator(T aContainer);
+    Iterator<? extends TE> iteratorOf(T aContainer);
     ISetIterator<E, S> setIterator();
     
     default void replaceAll(UnaryOperator<E> operator) {

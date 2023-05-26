@@ -12,7 +12,7 @@ import java.util.Arrays;
  * @author liqa
  * <p> 矩阵一般实现，按照列排序 </p>
  */
-public class RealColumnMatrix extends DoubleArrayMatrix<RealColumnMatrix, RealVector> {
+public final class RealColumnMatrix extends DoubleArrayMatrix<RealColumnMatrix, RealVector> {
     /** 提供默认的创建 */
     public static RealColumnMatrix ones(int aSize) {return ones(aSize, aSize);}
     public static RealColumnMatrix ones(int aRowNum, int aColNum) {
@@ -53,8 +53,8 @@ public class RealColumnMatrix extends DoubleArrayMatrix<RealColumnMatrix, RealVe
     @Override protected RealColumnMatrix this_() {return this;}
     @Override public RealColumnMatrix newShell() {return new RealColumnMatrix(mRowNum, mColNum, null);}
     @Override public double[] getIfHasSameOrderData(Object aObj) {
-        // 只有同样是 RealColumnMatrix 才会返回 mData
-        if (aObj instanceof RealColumnMatrix) return ((RealColumnMatrix)aObj).mData;
+        // 只有同样是 RealColumnMatrix 并且行数相同才会返回 mData
+        if (aObj instanceof RealColumnMatrix && ((RealColumnMatrix)aObj).mRowNum == mRowNum) return ((RealColumnMatrix)aObj).mData;
         return null;
     }
     
@@ -76,24 +76,16 @@ public class RealColumnMatrix extends DoubleArrayMatrix<RealColumnMatrix, RealVe
         };
     }
     
-    
     /** Optimize stuffs，重写 same 接口专门优化拷贝部分 */
-    @Override public IMatrixGenerator<RealColumnMatrix> generatorMat() {
-        return new MatrixGenerator() {
-            @Override public RealColumnMatrix same() {
-                double[] rData = new double[mData.length];
-                System.arraycopy(mData, 0, rData, 0, mData.length);
-                return new RealColumnMatrix(mRowNum, mColNum, rData);
-            }
-        };
-    }
     @Override public IVectorGenerator<RealVector> generatorVec() {
         return new VectorGenerator() {
-            @Override public RealVector same() {
-                double[] rData = new double[mData.length];
-                System.arraycopy(mData, 0, rData, 0, mData.length);
-                return new RealVector(rData);
+                @Override public RealVector same() {
+                RealVector rVector = zeros();
+                System.arraycopy(mData, 0, rVector.getData(), rVector.shiftSize(), rVector.dataSize());
+                return rVector;
             }
         };
     }
+    
+    /** TODO Optimize stuffs，重写迭代器来提高遍历速度 */
 }

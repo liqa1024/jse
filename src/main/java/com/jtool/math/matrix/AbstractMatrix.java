@@ -30,11 +30,11 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
     }
     
     /** Iterator stuffs */
-    @Override public Iterator<T> colIterator() {
+    @Override public Iterator<T> colIterator(final int aCol) {
         return new Iterator<T>() {
             private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
-            private int mCol = 0;
+            private int mCol = aCol;
             private int mRow = 0;
             @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public T next() {
@@ -51,12 +51,12 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
             }
         };
     }
-    @Override public Iterator<T> rowIterator() {
+    @Override public Iterator<T> rowIterator(final int aRow) {
         return new Iterator<T>() {
             private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
             private int mCol = 0;
-            private int mRow = 0;
+            private int mRow = aRow;
             @Override public boolean hasNext() {return mRow < mRowNum;}
             @Override public T next() {
                 if (hasNext()) {
@@ -72,11 +72,11 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
             }
         };
     }
-    @Override public ISetIterator<T, Number> colSetIterator() {
+    @Override public ISetIterator<T, Number> colSetIterator(final int aCol) {
         return new ISetIterator<T, Number>() {
             private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
-            private int mCol = 0, oCol = -1;
+            private int mCol = aCol, oCol = aCol;
             private int mRow = 0, oRow = -1;
             @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public void set(Number e) {
@@ -98,12 +98,12 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
             }
         };
     }
-    @Override public ISetIterator<T, Number> rowSetIterator() {
+    @Override public ISetIterator<T, Number> rowSetIterator(final int aRow) {
         return new ISetIterator<T, Number>() {
             private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
             private int mCol = 0, oCol = -1;
-            private int mRow = 0, oRow = -1;
+            private int mRow = aRow, oRow = aRow;
             @Override public boolean hasNext() {return mRow < mRowNum;}
             @Override public void set(Number e) {
                 if (oCol < 0) throw new IllegalStateException();
@@ -124,12 +124,12 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
             }
         };
     }
-    @Override public Iterator<? extends Number> colIterator(final IMatrixGetter<? extends Number> aContainer) {
-        if (aContainer instanceof IMatrix) return ((IMatrix<?>)aContainer).colIterator();
+    @Override public Iterator<? extends Number> colIteratorOf(final int aCol, final IMatrixGetter<? extends Number> aContainer) {
+        if (aContainer instanceof IMatrix) return ((IMatrix<?>)aContainer).colIterator(aCol);
         return new Iterator<Number>() {
             private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
-            private int mCol = 0;
+            private int mCol = aCol;
             private int mRow = 0;
             @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public Number next() {
@@ -146,13 +146,13 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
             }
         };
     }
-    @Override public Iterator<? extends Number> rowIterator(final IMatrixGetter<? extends Number> aContainer) {
-        if (aContainer instanceof IMatrix) return ((IMatrix<?>)aContainer).rowIterator();
+    @Override public Iterator<? extends Number> rowIteratorOf(final int aRow, final IMatrixGetter<? extends Number> aContainer) {
+        if (aContainer instanceof IMatrix) return ((IMatrix<?>)aContainer).rowIterator(aRow);
         return new Iterator<Number>() {
             private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
             private int mCol = 0;
-            private int mRow = 0;
+            private int mRow = aRow;
             @Override public boolean hasNext() {return mRow < mRowNum;}
             @Override public Number next() {
                 if (hasNext()) {
@@ -197,7 +197,7 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
     }
     @Override public void fillWith(IMatrixGetter<? extends Number> aMatrixGetter) {
         final ISetIterator<T, Number> si = setIterator();
-        final Iterator<? extends Number> it = iterator(aMatrixGetter);
+        final Iterator<? extends Number> it = iteratorOf(aMatrixGetter);
         while (si.hasNext()) {
             si.next();
             si.set(it.next());

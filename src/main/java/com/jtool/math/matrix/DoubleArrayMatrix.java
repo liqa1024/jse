@@ -18,6 +18,7 @@ public abstract class DoubleArrayMatrix<M extends DoubleArrayMatrix<?, ?>, V ext
     /** DataShell stuffs */
     @Override public void setData2this(double[] aData) {mData = aData;}
     @Override public double[] getData() {return mData;}
+    @Override public int dataSize() {return columnNumber()*rowNumber();}
     
     
     protected class DoubleArrayMatrixOperation extends DoubleArrayOperation<M, IMatrixGetter<? extends Number>> implements IMatrixOperation<M, Double> {
@@ -25,12 +26,27 @@ public abstract class DoubleArrayMatrix<M extends DoubleArrayMatrix<?, ?>, V ext
         @Override protected M newInstance_() {return generatorMat().zeros();}
     }
     
+    /** 矩阵运算实现 */
+    @Override public IMatrixOperation<M, Double> operation() {return new DoubleArrayMatrixOperation();}
+    
     /** Optimize stuffs，重写这些接口来加速批量填充过程 */
     @Override public void fill(Number aValue) {Arrays.fill(mData, aValue.doubleValue());}
     
-    
-    /** 矩阵运算实现 */
-    @Override public IMatrixOperation<M, Double> operation() {return new DoubleArrayMatrixOperation();}
+    /** Optimize stuffs，重写 same 接口专门优化拷贝部分 */
+    @Override public IMatrixGenerator<M> generatorMat() {
+        return new MatrixGenerator() {
+                @Override public M same() {
+                M rMatrix = zeros();
+                double[] rData = getIfHasSameOrderData(rMatrix);
+                if (rData != null) {
+                    System.arraycopy(getData(), shiftSize(), rData, rMatrix.shiftSize(), rMatrix.dataSize());
+                } else {
+                    rMatrix.fillWith(DoubleArrayMatrix.this);
+                }
+                return rMatrix;
+            }
+        };
+    }
     
     /** stuff to override */
     protected abstract M this_();

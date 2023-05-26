@@ -16,14 +16,20 @@ import java.util.List;
 public interface IMatrix<T extends Number> extends IMatrixGetter<T>, IFatIterable<IMatrixGetter<? extends Number>, Number, T, Number> {
     /** Iterable stuffs，指定直接遍历按照列方向，暂时不提供 fastIter 相关操作，需要效率可以使用 fillWith，内部对专门的类重写遍历顺序 */
     default Iterator<T> iterator() {return colIterator();}
-    Iterator<T> colIterator();
-    Iterator<T> rowIterator();
+    default Iterator<T> colIterator() {return colIterator(0);}
+    default Iterator<T> rowIterator() {return rowIterator(0);}
+    Iterator<T> colIterator(int aCol);
+    Iterator<T> rowIterator(int aRow);
     default ISetIterator<T, Number> setIterator() {return colSetIterator();}
-    ISetIterator<T, Number> colSetIterator();
-    ISetIterator<T, Number> rowSetIterator();
-    default Iterator<? extends Number> iterator(IMatrixGetter<? extends Number> aContainer) {return colIterator(aContainer);}
-    Iterator<? extends Number> colIterator(IMatrixGetter<? extends Number> aContainer);
-    Iterator<? extends Number> rowIterator(IMatrixGetter<? extends Number> aContainer);
+    default ISetIterator<T, Number> colSetIterator() {return colSetIterator(0);}
+    default ISetIterator<T, Number> rowSetIterator() {return rowSetIterator(0);}
+    ISetIterator<T, Number> colSetIterator(int aCol);
+    ISetIterator<T, Number> rowSetIterator(int aRow);
+    default Iterator<? extends Number> iteratorOf(IMatrixGetter<? extends Number> aContainer) {return colIteratorOf(aContainer);}
+    default Iterator<? extends Number> colIteratorOf(IMatrixGetter<? extends Number> aContainer) {return colIteratorOf(0, aContainer);}
+    default Iterator<? extends Number> rowIteratorOf(IMatrixGetter<? extends Number> aContainer) {return rowIteratorOf(0, aContainer);}
+    Iterator<? extends Number> colIteratorOf(int aCol, IMatrixGetter<? extends Number> aContainer);
+    Iterator<? extends Number> rowIteratorOf(int aRow, IMatrixGetter<? extends Number> aContainer);
     
     
     interface ISize {

@@ -92,8 +92,8 @@ public abstract class AbstractDataOperation<R extends IFatIterable<? super T, N,
     
     protected void ebeDo2Dest_(T aLHS, T aRHS, R rDest, IOperator2<E> aOpt) {
         final ISetIterator<? extends E, ? super E> si = rDest.setIterator();
-        final Iterator<? extends N> li = rDest.iterator(aLHS);
-        final Iterator<? extends N> ri = rDest.iterator(aRHS);
+        final Iterator<? extends N> li = rDest.iteratorOf(aLHS);
+        final Iterator<? extends N> ri = rDest.iteratorOf(aRHS);
         while (si.hasNext()) {
             si.next();
             si.set(aOpt.cal(upcast_(li.next()), upcast_(ri.next())));
@@ -101,7 +101,7 @@ public abstract class AbstractDataOperation<R extends IFatIterable<? super T, N,
     }
     protected void mapDo2Dest_(T aLHS, R rDest, IOperator1<E> aOpt) {
         final ISetIterator<? extends E, ? super E> si = rDest.setIterator();
-        final Iterator<? extends N> li = rDest.iterator(aLHS);
+        final Iterator<? extends N> li = rDest.iteratorOf(aLHS);
         while (si.hasNext()) {
             si.next();
             si.set(aOpt.cal(upcast_(li.next())));
@@ -109,7 +109,7 @@ public abstract class AbstractDataOperation<R extends IFatIterable<? super T, N,
     }
     protected void ebeDo2this_(R rThis, T aRHS, IOperator2<E> aOpt) {
         final ISetIterator<? extends E, ? super E> si = rThis.setIterator();
-        final Iterator<? extends N> ri = rThis.iterator(aRHS);
+        final Iterator<? extends N> ri = rThis.iteratorOf(aRHS);
         while (si.hasNext()) {
             si.set(aOpt.cal(si.next(), upcast_(ri.next())));
         }
