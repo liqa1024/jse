@@ -24,14 +24,16 @@ public abstract class AbstractVectorFull<T extends Number, V extends IVector<T>>
     
     /** 切片操作，默认返回新的矩阵，refSlicer 则会返回引用的切片结果 */
     @Override public IVectorSlicer<V> slicer() {
-        return new IVectorSlicer<V>() {
-            @Override public V getL(final List<Integer> aIndices) {return generator().from(aIndices.size(), i -> AbstractVectorFull.this.get(aIndices.get(i)));}
-            @Override public V getA() {return generator().same();}
+        return new AbstractVectorSlicer<V>() {
+            @Override protected V getL(final List<Integer> aIndices) {return generator().from(aIndices.size(), i -> AbstractVectorFull.this.get(aIndices.get(i)));}
+            @Override protected V getA() {return generator().same();}
+            
+            @Override protected Iterator<? extends Number> thisIterator_() {return iterator();}
         };
     }
     @Override public IVectorSlicer<IVector<T>> refSlicer() {
-        return new IVectorSlicer<IVector<T>>() {
-            @Override public IVector<T> getL(final List<Integer> aIndices) {
+        return new AbstractVectorSlicer<IVector<T>>() {
+            @Override protected IVector<T> getL(final List<Integer> aIndices) {
                 return new AbstractVector<T>() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public T get_(int aIdx) {return AbstractVectorFull.this.get(aIndices.get(aIdx));}
@@ -40,7 +42,9 @@ public abstract class AbstractVectorFull<T extends Number, V extends IVector<T>>
                     @Override public int size() {return aIndices.size();}
                 };
             }
-            @Override public IVector<T> getA() {return AbstractVectorFull.this;}
+            @Override protected IVector<T> getA() {return AbstractVectorFull.this;}
+            
+            @Override protected Iterator<? extends Number> thisIterator_() {return iterator();}
         };
     }
     

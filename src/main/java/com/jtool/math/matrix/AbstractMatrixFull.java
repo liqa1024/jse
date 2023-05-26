@@ -27,26 +27,29 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
     }
     
     @Override public IVectorGenerator<V> generatorVec() {return new VectorGenerator();}
-    @Override public IMatrixGenerator<M> generatorMat() {return new MatrixGenerator();}
+    @Override public IMatrixGenerator<M> generator() {return new MatrixGenerator();}
     
     
     /** 切片操作，默认返回新的矩阵，refSlicer 则会返回引用的切片结果 */
     @Override public IMatrixSlicer<M, V> slicer() {
-        return new IMatrixSlicer<M, V>() {
-            @Override public V getIL(final int aSelectedRow, final List<Integer> aSelectedCols) {return generatorVec().from(aSelectedCols.size(), i -> AbstractMatrixFull.this.get(aSelectedRow, aSelectedCols.get(i)));}
-            @Override public V getLI(final List<Integer> aSelectedRows, final int aSelectedCol) {return generatorVec().from(aSelectedRows.size(), i -> AbstractMatrixFull.this.get(aSelectedRows.get(i), aSelectedCol));}
-            @Override public V getIA(final int aSelectedRow) {return generatorVec().from(columnNumber(), col -> AbstractMatrixFull.this.get(aSelectedRow, col));}
-            @Override public V getAI(final int aSelectedCol) {return generatorVec().from(rowNumber()   , row -> AbstractMatrixFull.this.get(row, aSelectedCol));}
+        return new AbstractMatrixSlicer<M, V>() {
+            @Override protected V getIL(final int aSelectedRow, final List<Integer> aSelectedCols) {return generatorVec().from(aSelectedCols.size(), i -> AbstractMatrixFull.this.get(aSelectedRow, aSelectedCols.get(i)));}
+            @Override protected V getLI(final List<Integer> aSelectedRows, final int aSelectedCol) {return generatorVec().from(aSelectedRows.size(), i -> AbstractMatrixFull.this.get(aSelectedRows.get(i), aSelectedCol));}
+            @Override protected V getIA(final int aSelectedRow) {return generatorVec().from(columnNumber(), col -> AbstractMatrixFull.this.get(aSelectedRow, col));}
+            @Override protected V getAI(final int aSelectedCol) {return generatorVec().from(rowNumber()   , row -> AbstractMatrixFull.this.get(row, aSelectedCol));}
             
-            @Override public M getLL(final List<Integer> aSelectedRows, final List<Integer> aSelectedCols) {return generatorMat().from(aSelectedRows.size(), aSelectedCols.size(), (row, col) -> AbstractMatrixFull.this.get(aSelectedRows.get(row), aSelectedCols.get(col)));}
-            @Override public M getLA(final List<Integer> aSelectedRows) {return generatorMat().from(aSelectedRows.size(), columnNumber()      , (row, col) -> AbstractMatrixFull.this.get(aSelectedRows.get(row), col));}
-            @Override public M getAL(final List<Integer> aSelectedCols) {return generatorMat().from(rowNumber()         , aSelectedCols.size(), (row, col) -> AbstractMatrixFull.this.get(row, aSelectedCols.get(col)));}
-            @Override public M getAA() {return generatorMat().same();}
+            @Override protected M getLL(final List<Integer> aSelectedRows, final List<Integer> aSelectedCols) {return generator().from(aSelectedRows.size(), aSelectedCols.size(), (row, col) -> AbstractMatrixFull.this.get(aSelectedRows.get(row), aSelectedCols.get(col)));}
+            @Override protected M getLA(final List<Integer> aSelectedRows) {return generator().from(aSelectedRows.size(), columnNumber()      , (row, col) -> AbstractMatrixFull.this.get(aSelectedRows.get(row), col));}
+            @Override protected M getAL(final List<Integer> aSelectedCols) {return generator().from(rowNumber()         , aSelectedCols.size(), (row, col) -> AbstractMatrixFull.this.get(row, aSelectedCols.get(col)));}
+            @Override protected M getAA() {return generator().same();}
+            
+            @Override protected List<IVector<T>> thisRows_() {return rows();}
+            @Override protected List<IVector<T>> thisCols_() {return cols();}
         };
     }
     @Override public IMatrixSlicer<IMatrix<T>, IVector<T>> refSlicer() {
-        return new IMatrixSlicer<IMatrix<T>, IVector<T>>() {
-            @Override public IVector<T> getIL(final int aSelectedRow, final List<Integer> aSelectedCols) {
+        return new AbstractMatrixSlicer<IMatrix<T>, IVector<T>>() {
+            @Override protected IVector<T> getIL(final int aSelectedRow, final List<Integer> aSelectedCols) {
                 return new AbstractVector<T>() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public T get_(int aIdx) {return AbstractMatrixFull.this.get(aSelectedRow, aSelectedCols.get(aIdx));}
@@ -55,7 +58,7 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
                     @Override public int size() {return aSelectedCols.size();}
                 };
             }
-            @Override public IVector<T> getLI(final List<Integer> aSelectedRows, final int aSelectedCol) {
+            @Override protected IVector<T> getLI(final List<Integer> aSelectedRows, final int aSelectedCol) {
                 return new AbstractVector<T>() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public T get_(int aIdx) {return AbstractMatrixFull.this.get(aSelectedRows.get(aIdx), aSelectedCol);}
@@ -64,7 +67,7 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
                     @Override public int size() {return aSelectedRows.size();}
                 };
             }
-            @Override public IVector<T> getIA(final int aSelectedRow) {
+            @Override protected IVector<T> getIA(final int aSelectedRow) {
                 return new AbstractVector<T>() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public T get_(int aCol) {return AbstractMatrixFull.this.get(aSelectedRow, aCol);}
@@ -73,7 +76,7 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
                     @Override public int size() {return columnNumber();}
                 };
             }
-            @Override public IVector<T> getAI(final int aSelectedCol) {
+            @Override protected IVector<T> getAI(final int aSelectedCol) {
                 return new AbstractVector<T>() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public T get_(int aRow) {return AbstractMatrixFull.this.get(aRow, aSelectedCol);}
@@ -83,7 +86,7 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
                 };
             }
             
-            @Override public IMatrix<T> getLL(final List<Integer> aSelectedRows, final List<Integer> aSelectedCols) {
+            @Override protected IMatrix<T> getLL(final List<Integer> aSelectedRows, final List<Integer> aSelectedCols) {
                 return new AbstractMatrix<T>() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public T get_(int aRow, int aCol) {return AbstractMatrixFull.this.get(aSelectedRows.get(aRow), aSelectedCols.get(aCol));}
@@ -93,7 +96,7 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
                     @Override public int columnNumber() {return aSelectedCols.size();}
                 };
             }
-            @Override public IMatrix<T> getLA(final List<Integer> aSelectedRows) {
+            @Override protected IMatrix<T> getLA(final List<Integer> aSelectedRows) {
                 return new AbstractMatrix<T>() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public T get_(int aRow, int aCol) {return AbstractMatrixFull.this.get(aSelectedRows.get(aRow), aCol);}
@@ -103,7 +106,7 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
                     @Override public int columnNumber() {return AbstractMatrixFull.this.columnNumber();}
                 };
             }
-            @Override public IMatrix<T> getAL(final List<Integer> aSelectedCols) {
+            @Override protected IMatrix<T> getAL(final List<Integer> aSelectedCols) {
                 return new AbstractMatrix<T>() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public T get_(int aRow, int aCol) {return AbstractMatrixFull.this.get(aRow, aSelectedCols.get(aCol));}
@@ -113,7 +116,10 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
                     @Override public int columnNumber() {return aSelectedCols.size();}
                 };
             }
-            @Override public IMatrix<T> getAA() {return AbstractMatrixFull.this;}
+            @Override protected IMatrix<T> getAA() {return AbstractMatrixFull.this;}
+            
+            @Override protected List<IVector<T>> thisRows_() {return rows();}
+            @Override protected List<IVector<T>> thisCols_() {return cols();}
         };
     }
     
@@ -194,6 +200,7 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
     
     /** stuff to override */
     public abstract IMatrixOperation<M, T> operation();
+    public abstract IVectorOperation<V, T> operationVec();
     
     protected abstract M newZeros(int aRowNum, int aColNum);
     protected abstract V newZeros(int aSize);

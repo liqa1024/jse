@@ -3,6 +3,7 @@ package com.jtool.math.matrix;
 import com.jtool.code.CS.SliceType;
 import com.jtool.math.vector.IVectorGenerator;
 import com.jtool.math.vector.IVector;
+import com.jtool.math.vector.IVectorOperation;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -13,14 +14,12 @@ import java.util.List;
  * <p> 在原本的矩阵接口上扩展更多高级功能 </p>
  */
 public interface IMatrixFull<T extends Number, M extends IMatrix<T>, V extends IVector<T>> extends IMatrix<T> {
-    
-    /** 获得基于自身的向量生成器，生成按列排布的向量 */
+    /** 获得基于自身的矩阵生成器，方便构造相同大小的同样的矩阵 */
+    IMatrixGenerator<M> generator();
+    @VisibleForTesting default IMatrixGenerator<M> gen() {return generator();}
+    /** 还需要包含一个向量的生成器方便一些操作 */
     IVectorGenerator<V> generatorVec();
     @VisibleForTesting default IVectorGenerator<V> genVec() {return generatorVec();}
-    
-    /** 获得基于自身的矩阵生成器，方便构造相同大小的同样的矩阵 */
-    IMatrixGenerator<M> generatorMat();
-    @VisibleForTesting default IMatrixGenerator<M> gen() {return generatorMat();}
     
     /** 切片操作，默认返回新的矩阵，refSlicer 则会返回引用的切片结果 */
     IMatrixSlicer<M, V> slicer();
@@ -30,7 +29,9 @@ public interface IMatrixFull<T extends Number, M extends IMatrix<T>, V extends I
     IMatrixOperation<M, T> operation();
     @VisibleForTesting default IMatrixOperation<M, T> opt() {return operation();}
 //    IMatrixOperation<IMatrixGetterFull<M, T>, T> refOperation(); // 由于代码量的问题，暂时不去实现这个功能，等到实现到并行的时候有这个需求再考虑
-    
+    /** 还需要包含一个向量的运算操作方便一些操作 */
+    IVectorOperation<V, T> operationVec();
+    @VisibleForTesting default IVectorOperation<V, T> optVec() {return operationVec();}
     
     /** Groovy 的部分，增加矩阵基本的运算操作，由于不能重载 += 之类的变成向自身操作，因此会充斥着值拷贝，因此不推荐重性能的场景使用 */
     @VisibleForTesting M plus       (Number aRHS);

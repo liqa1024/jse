@@ -7,7 +7,7 @@ import com.jtool.math.IDataShell;
 
 
 /**
- * 对于内部含有 double[] 的数据的运算做专门的优化，方便编译器做 SIMD 的相关优化
+ * 对于内部含有 double[] 的数据的运算做专门优化，方便编译器做 SIMD 的相关优化
  * @author liqa
  */
 public abstract class DoubleArrayOperation<R extends IFatIterable<? super T, Number, Double, Number> & IDataShell<?, double[]>, T> extends RealDataOperation<R, T> {
