@@ -39,7 +39,7 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
             @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public T next() {
                 if (hasNext()) {
-                    T tNext = get_(mCol, mRow);
+                    T tNext = get_(mRow, mCol);
                     ++mRow;
                     if (mRow == mRowNum) {
                         mRow = 0;
@@ -60,7 +60,7 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
             @Override public boolean hasNext() {return mRow < mRowNum;}
             @Override public T next() {
                 if (hasNext()) {
-                    T tNext = get_(mCol, mRow);
+                    T tNext = get_(mRow, mCol);
                     ++mCol;
                     if (mCol == mColNum) {
                         mCol = 0;
@@ -81,7 +81,7 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
             @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public void set(Number e) {
                 if (oRow < 0) throw new IllegalStateException();
-                set_(oCol, oRow, e);
+                set_(oRow, oCol, e);
             }
             @Override public T next() {
                 if (hasNext()) {
@@ -92,7 +92,7 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
                         mRow = 0;
                         ++mCol;
                     }
-                    return get_(oCol, oRow);
+                    return get_(oRow, oCol);
                 }
                 throw new NoSuchElementException();
             }
@@ -107,7 +107,7 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
             @Override public boolean hasNext() {return mRow < mRowNum;}
             @Override public void set(Number e) {
                 if (oCol < 0) throw new IllegalStateException();
-                set_(oCol, oRow, e);
+                set_(oRow, oCol, e);
             }
             @Override public T next() {
                 if (hasNext()) {
@@ -118,7 +118,7 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
                         mCol = 0;
                         ++mRow;
                     }
-                    return get_(oCol, oRow);
+                    return get_(oRow, oCol);
                 }
                 throw new NoSuchElementException();
             }
@@ -134,7 +134,7 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
             @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public Number next() {
                 if (hasNext()) {
-                    Number tNext = aContainer.get(mCol, mRow);
+                    Number tNext = aContainer.get(mRow, mCol);
                     ++mRow;
                     if (mRow == mRowNum) {
                         mRow = 0;
@@ -156,7 +156,7 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
             @Override public boolean hasNext() {return mRow < mRowNum;}
             @Override public Number next() {
                 if (hasNext()) {
-                    Number tNext = aContainer.get(mCol, mRow);
+                    Number tNext = aContainer.get(mRow, mCol);
                     ++mCol;
                     if (mCol == mColNum) {
                         mCol = 0;
