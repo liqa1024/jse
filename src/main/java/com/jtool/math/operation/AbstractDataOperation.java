@@ -12,7 +12,7 @@ import java.util.Iterator;
  * 对于运算操作的一般实现，主要用于减少重复代码
  * @author liqa
  */
-public abstract class AbstractDataOperation<R extends IFatIterable<? super T, N, ? extends E, ? super E>, T, E extends N, N> implements IDataOperation<R, T, E, N> {
+public abstract class AbstractDataOperation<R extends IFatIterable<? super T, N, E, N>, T, E extends N, N> implements IDataOperation<R, T, E, N> {
     /** add, minus, multiply, divide stuffs */
     @Override final public R ebeAdd       (T aLHS, T aRHS) {R r = newInstance_(); ebeAdd2Dest_        (aLHS, aRHS, r); return r;}
     @Override final public R ebeMinus     (T aLHS, T aRHS) {R r = newInstance_(); ebeMinus2Dest_      (aLHS, aRHS, r); return r;}
@@ -91,7 +91,7 @@ public abstract class AbstractDataOperation<R extends IFatIterable<? super T, N,
     
     
     protected void ebeDo2Dest_(T aLHS, T aRHS, R rDest, IOperator2<E> aOpt) {
-        final ISetIterator<? extends E, ? super E> si = rDest.setIterator();
+        final ISetIterator<E, N> si = rDest.setIterator();
         final Iterator<? extends N> li = rDest.iteratorOf(aLHS);
         final Iterator<? extends N> ri = rDest.iteratorOf(aRHS);
         while (si.hasNext()) {
@@ -100,7 +100,7 @@ public abstract class AbstractDataOperation<R extends IFatIterable<? super T, N,
         }
     }
     protected void mapDo2Dest_(T aLHS, R rDest, IOperator1<E> aOpt) {
-        final ISetIterator<? extends E, ? super E> si = rDest.setIterator();
+        final ISetIterator<E, N> si = rDest.setIterator();
         final Iterator<? extends N> li = rDest.iteratorOf(aLHS);
         while (si.hasNext()) {
             si.next();
@@ -108,14 +108,14 @@ public abstract class AbstractDataOperation<R extends IFatIterable<? super T, N,
         }
     }
     protected void ebeDo2this_(R rThis, T aRHS, IOperator2<E> aOpt) {
-        final ISetIterator<? extends E, ? super E> si = rThis.setIterator();
+        final ISetIterator<E, N> si = rThis.setIterator();
         final Iterator<? extends N> ri = rThis.iteratorOf(aRHS);
         while (si.hasNext()) {
             si.set(aOpt.cal(si.next(), upcast_(ri.next())));
         }
     }
     protected void mapDo2this_(R rThis, IOperator1<E> aOpt) {
-        final ISetIterator<? extends E, ? super E> si = rThis.setIterator();
+        final ISetIterator<E, N> si = rThis.setIterator();
         while (si.hasNext()) {
             si.set(aOpt.cal(si.next()));
         }

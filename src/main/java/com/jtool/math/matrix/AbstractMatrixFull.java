@@ -1,11 +1,7 @@
 package com.jtool.math.matrix;
 
 import com.jtool.code.CS.SliceType;
-import com.jtool.code.ISetIterator;
-import com.jtool.math.vector.AbstractVector;
-import com.jtool.math.vector.IVector;
-import com.jtool.math.vector.IVectorGenerator;
-import com.jtool.math.vector.IVectorGetter;
+import com.jtool.math.vector.*;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Iterator;
@@ -18,55 +14,16 @@ import java.util.List;
  */
 public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>, V extends IVector<T>> extends AbstractMatrix<T> implements IMatrixFull<T, M, V> {
     /** 矩阵生成器的一般实现，主要实现一些重复的接口 */
-    protected class MatrixGenerator implements IMatrixGenerator<M> {
-        @Override public M ones() {return ones(rowNumber(), columnNumber());}
-        @Override public M zeros() {return zeros(rowNumber(), columnNumber());}
-        @Override public M from(IMatrixGetter<? extends Number> aMatrixGetter) {return from(rowNumber(), columnNumber(), aMatrixGetter);}
-        
-        @Override public M same() {return from(AbstractMatrixFull.this);}
-        @Override public M ones(int aRowNum, int aColNum) {
-            M rMatrix = newZeros(aRowNum, aColNum);
-            rMatrix.fill(1);
-            return rMatrix;
-        }
-        @Override public M zeros(int aRowNum, int aColNum) {
-            return newZeros(aRowNum, aColNum);
-        }
-        @Override public M from(int aRowNum, int aColNum, IMatrixGetter<? extends Number> aMatrixGetter) {
-            M rMatrix = newZeros(aRowNum, aColNum);
-            rMatrix.fillWith(aMatrixGetter);
-            return rMatrix;
-        }
+    protected class MatrixGenerator extends AbstractMatrixGenerator<T, M> {
+        @Override protected Iterator<T> thisIterator_() {return iterator();}
+        @Override protected int thisRowNumber_() {return rowNumber();}
+        @Override protected int thisColumnNumber_() {return columnNumber();}
+        @Override public M zeros(int aRowNum, int aColNum) {return newZeros(aRowNum, aColNum);}
     }
-    protected class VectorGenerator implements IVectorGenerator<V> {
-        @Override public V ones() {return ones(rowNumber()*columnNumber());}
-        @Override public V zeros() {return zeros(rowNumber()*columnNumber());}
-        @Override public V from(IVectorGetter<? extends Number> aVectorGetter) {return from(rowNumber()*columnNumber(), aVectorGetter);}
-        /** 转为 Vector 会按照 Iterator 的顺序排列，也就按列排列 */
-        @Override public V same() {
-            V rVector = zeros();
-            final ISetIterator<T, Number> si = rVector.setIterator();
-            final Iterator<T> mi = iterator();
-            while (si.hasNext()) {
-                si.next();
-                si.set(mi.next());
-            }
-            return rVector;
-        }
-        
-        @Override public V ones(int aSize) {
-            V rVector = newZeros(aSize);
-            rVector.fill(1);
-            return rVector;
-        }
-        @Override public V zeros(int aSize) {
-            return newZeros(aSize);
-        }
-        @Override public V from(int aSize, IVectorGetter<? extends Number> aVectorGetter) {
-            V rVector = newZeros(aSize);
-            rVector.fillWith(aVectorGetter);
-            return rVector;
-        }
+    protected class VectorGenerator extends AbstractVectorGenerator<T, V> {
+        @Override protected Iterator<T> thisIterator_() {return iterator();}
+        @Override protected int thisSize_() {return rowNumber()*columnNumber();}
+        @Override public V zeros(int aSize) {return newZeros(aSize);}
     }
     
     @Override public IVectorGenerator<V> generatorVec() {return new VectorGenerator();}
@@ -182,9 +139,9 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
         @Override public V getAt(List<Integer> aSelectedCols) {return slicer().get(mRow, aSelectedCols);}
         
         @Override public void putAt(SliceType aSelectedCols, Number aValue) {refSlicer().get(mRow, aSelectedCols).fill(aValue);}
-        @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Number> aVec) {refSlicer().get(mRow, aSelectedCols).fillWith(aVec);}
+        @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Number> aVec) {refSlicer().get(mRow, aSelectedCols).fill(aVec);}
         @Override public void putAt(List<Integer> aSelectedCols, Number aValue) {refSlicer().get(mRow, aSelectedCols).fill(aValue);}
-        @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Number> aVec) {refSlicer().get(mRow, aSelectedCols).fillWith(aVec);}
+        @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Number> aVec) {refSlicer().get(mRow, aSelectedCols).fill(aVec);}
     }
     protected class MatrixRowsA_ implements IMatrixRows_<T, V, M> {
         protected final SliceType mSelectedRows;
@@ -195,12 +152,12 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
         @Override public M getAt(List<Integer> aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         
         @Override public void putAt(int aCol, Number aValue) {refSlicer().get(mSelectedRows, aCol).fill(aValue);}
-        @Override public void putAt(int aCol, Iterable<? extends Number> aVec) {refSlicer().get(mSelectedRows, aCol).fillWith(aVec);}
+        @Override public void putAt(int aCol, Iterable<? extends Number> aVec) {refSlicer().get(mSelectedRows, aCol).fill(aVec);}
         @Override public void putAt(SliceType aSelectedCols, Number aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
-        @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWith(aRows);}
+        @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
         @Override public void putAt(SliceType aSelectedCols, IMatrix<? extends Number> aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fillWith(aMatrix);}
         @Override public void putAt(List<Integer> aSelectedCols, Number aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
-        @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWith(aRows);}
+        @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
         @Override public void putAt(List<Integer> aSelectedCols, IMatrix<? extends Number> aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fillWith(aMatrix);}
     }
     protected class MatrixRowsL_ implements IMatrixRows_<T, V, M> {
@@ -212,12 +169,12 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
         @Override public M getAt(List<Integer> aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         
         @Override public void putAt(int aCol, Number aValue) {refSlicer().get(mSelectedRows, aCol).fill(aValue);}
-        @Override public void putAt(int aCol, Iterable<? extends Number> aVec) {refSlicer().get(mSelectedRows, aCol).fillWith(aVec);}
+        @Override public void putAt(int aCol, Iterable<? extends Number> aVec) {refSlicer().get(mSelectedRows, aCol).fill(aVec);}
         @Override public void putAt(SliceType aSelectedCols, Number aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
-        @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWith(aRows);}
+        @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
         @Override public void putAt(SliceType aSelectedCols, IMatrix<? extends Number> aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fillWith(aMatrix);}
         @Override public void putAt(List<Integer> aSelectedCols, Number aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
-        @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWith(aRows);}
+        @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
         @Override public void putAt(List<Integer> aSelectedCols, IMatrix<? extends Number> aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fillWith(aMatrix);}
     }
     

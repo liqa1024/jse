@@ -181,17 +181,17 @@ public abstract class AbstractMatrix<T extends Number> implements IMatrix<T> {
             si.set(aValue);
         }
     }
-    @Override public void fillWith(final double[][] aMat) {fillWith((row, col) -> aMat[row][col]);}
-    @Override public void fillWith(Iterable<? extends Iterable<? extends Number>> aRows) {
+    @Override public void fill(final double[][] aMat) {fillWith((row, col) -> aMat[row][col]);}
+    @Override public void fill(Iterable<? extends Iterable<? extends Number>> aRows) {
         Iterator<? extends Iterable<? extends Number>> tRowIt = aRows.iterator();
         List<IVector<T>> rRows = rows();
         for (IVector<T> rRow : rRows) {
             Iterable<? extends Number> tRow = tRowIt.next();
-            Iterator<? extends Number> tIt = tRow.iterator();
+            Iterator<? extends Number> it = tRow.iterator();
             ISetIterator<T, Number> si = rRow.setIterator();
             while (si.hasNext()) {
                 si.next();
-                si.set(tIt.next());
+                si.set(it.next());
             }
         }
     }

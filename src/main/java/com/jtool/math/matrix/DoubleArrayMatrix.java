@@ -3,6 +3,7 @@ package com.jtool.math.matrix;
 import com.jtool.math.IDataShell;
 import com.jtool.math.operation.DoubleArrayOperation;
 import com.jtool.math.vector.IVector;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
@@ -51,5 +52,5 @@ public abstract class DoubleArrayMatrix<M extends DoubleArrayMatrix<?, ?>, V ext
     /** stuff to override */
     protected abstract M this_();
     public abstract M newShell();
-    public abstract double[] getIfHasSameOrderData(Object aObj);
+    public abstract double @Nullable[] getIfHasSameOrderData(Object aObj);
 }

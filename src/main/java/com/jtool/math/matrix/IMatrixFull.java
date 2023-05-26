@@ -26,7 +26,7 @@ public interface IMatrixFull<T extends Number, M extends IMatrix<T>, V extends I
     IMatrixSlicer<M, V> slicer();
     IMatrixSlicer<IMatrix<T>, IVector<T>> refSlicer();
     
-    /** 矩阵的运算操作，默认返回新的矩阵，refOperation 则会返回引用计算结果 */
+    /** 矩阵的运算操作，默认返回新的矩阵 */
     IMatrixOperation<M, T> operation();
     @VisibleForTesting default IMatrixOperation<M, T> opt() {return operation();}
 //    IMatrixOperation<IMatrixGetterFull<M, T>, T> refOperation(); // 由于代码量的问题，暂时不去实现这个功能，等到实现到并行的时候有这个需求再考虑

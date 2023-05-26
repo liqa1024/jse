@@ -42,8 +42,8 @@ public interface IMatrix<T extends Number> extends IMatrixGetter<T>, IFatIterabl
     
     /** 批量修改的接口 */
     void fill(Number aValue);
-    void fillWith(double[][] aMat);
-    void fillWith(Iterable<? extends Iterable<? extends Number>> aRows);
+    void fill(double[][] aMat);
+    void fill(Iterable<? extends Iterable<? extends Number>> aRows);
     void fillWith(IMatrixGetter<? extends Number> aMatrixGetter);
     
     /** 访问和修改部分，自带的接口 */

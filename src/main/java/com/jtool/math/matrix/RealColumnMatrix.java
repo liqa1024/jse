@@ -1,11 +1,12 @@
 package com.jtool.math.matrix;
 
-import com.jtool.math.vector.AbstractVector;
-import com.jtool.math.vector.IVector;
-import com.jtool.math.vector.IVectorGenerator;
-import com.jtool.math.vector.RealVector;
+import com.jtool.code.ISetIterator;
+import com.jtool.math.vector.*;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 
 /**
@@ -52,7 +53,7 @@ public final class RealColumnMatrix extends DoubleArrayMatrix<RealColumnMatrix, 
     
     @Override protected RealColumnMatrix this_() {return this;}
     @Override public RealColumnMatrix newShell() {return new RealColumnMatrix(mRowNum, mColNum, null);}
-    @Override public double[] getIfHasSameOrderData(Object aObj) {
+    @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {
         // 只有同样是 RealColumnMatrix 并且行数相同才会返回 mData
         if (aObj instanceof RealColumnMatrix && ((RealColumnMatrix)aObj).mRowNum == mRowNum) return ((RealColumnMatrix)aObj).mData;
         return null;
@@ -62,21 +63,10 @@ public final class RealColumnMatrix extends DoubleArrayMatrix<RealColumnMatrix, 
     /** Optimize stuffs，重写这个提高列向的索引速度 */
     @Override public IVector<Double> col(final int aCol) {
         if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
-        return new AbstractVector<Double>() {
-            private final int mShift = aCol*mRowNum;
-            @Override public Double get_(int aIdx) {return mData[aIdx + mShift];}
-            @Override public void set_(int aIdx, Number aValue) {mData[aIdx + mShift] = aValue.doubleValue();}
-            @Override public Double getAndSet_(int aIdx, Number aValue) {
-                int tIdx = aIdx + mShift;
-                Double oValue = mData[tIdx];
-                mData[tIdx] = aValue.doubleValue();
-                return oValue;
-            }
-            @Override public int size() {return mRowNum;}
-        };
+        return new ShiftRealVector(mRowNum, aCol*mRowNum, mData);
     }
     
-    /** Optimize stuffs，重写 same 接口专门优化拷贝部分 */
+    /** Optimize stuffs，重写 Vector 的 same 接口专门优化拷贝部分 */
     @Override public IVectorGenerator<RealVector> generatorVec() {
         return new VectorGenerator() {
                 @Override public RealVector same() {
@@ -87,5 +77,83 @@ public final class RealColumnMatrix extends DoubleArrayMatrix<RealColumnMatrix, 
         };
     }
     
-    /** TODO Optimize stuffs，重写迭代器来提高遍历速度 */
+    /** Optimize stuffs，重写迭代器来提高遍历速度 */
+    @Override public Iterator<Double> colIterator(final int aCol) {
+        return new Iterator<Double>() {
+            private final int mSize = mRowNum * mColNum;
+            private int mIdx = aCol*mRowNum;
+            @Override public boolean hasNext() {return mIdx < mSize;}
+            @Override public Double next() {
+                if (hasNext()) {
+                    Double tNext = mData[mIdx];
+                    ++mIdx;
+                    return tNext;
+                }
+                throw new NoSuchElementException();
+            }
+        };
+    }
+    @Override public Iterator<Double> rowIterator(final int aRow) {
+        return new Iterator<Double>() {
+            private final int mSize = mRowNum * mColNum;
+            private int mRow = aRow;
+            private int mIdx = mRow;
+            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public Double next() {
+                if (hasNext()) {
+                    Double tNext = mData[mIdx];
+                    mIdx += mRowNum;
+                    if (mIdx >= mSize) {
+                        ++mRow;
+                        mIdx = mRow;
+                    }
+                    return tNext;
+                }
+                throw new NoSuchElementException();
+            }
+        };
+    }
+    @Override public ISetIterator<Double, Number> colSetIterator(final int aCol) {
+        return new ISetIterator<Double, Number>() {
+            private final int mSize = mRowNum * mColNum;
+            private int mIdx = aCol*mRowNum, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mSize;}
+            @Override public void set(Number e) {
+                if (oIdx < 0) throw new IllegalStateException();
+                mData[oIdx] = e.doubleValue();
+            }
+            @Override public Double next() {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                    return mData[oIdx];
+                }
+                throw new NoSuchElementException();
+            }
+        };
+    }
+    @Override public ISetIterator<Double, Number> rowSetIterator(final int aRow) {
+        return new ISetIterator<Double, Number>() {
+            private final int mSize = mRowNum * mColNum;
+            private int mRow = aRow;
+            private int mIdx = mRow, oIdx = -1;
+            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public void set(Number e) {
+                if (oIdx < 0) throw new IllegalStateException();
+                mData[oIdx] = e.doubleValue();
+            }
+            @Override public Double next() {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    mIdx += mRowNum;
+                    if (mIdx >= mSize) {
+                        ++mRow;
+                        mIdx = mRow;
+                    }
+                    return mData[oIdx];
+                }
+                throw new NoSuchElementException();
+            }
+        };
+    }
 }
