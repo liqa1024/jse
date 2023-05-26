@@ -118,6 +118,20 @@ public abstract class AbstractMatrixFull<T extends Number, M extends IMatrix<T>,
     }
     
     
+    
+    /** Groovy 的部分，增加矩阵基本的运算操作，由于不能重载 += 之类的变成向自身操作，因此会充斥着值拷贝，因此不推荐重性能的场景使用 */
+    @VisibleForTesting @Override public M plus       (Number aRHS) {return operation().mapAdd       (this, aRHS);}
+    @VisibleForTesting @Override public M minus      (Number aRHS) {return operation().mapMinus     (this, aRHS);}
+    @VisibleForTesting @Override public M multiply   (Number aRHS) {return operation().mapMultiply  (this, aRHS);}
+    @VisibleForTesting @Override public M div        (Number aRHS) {return operation().mapDivide    (this, aRHS);}
+    @VisibleForTesting @Override public M mod        (Number aRHS) {return operation().mapMod       (this, aRHS);}
+    
+    @VisibleForTesting @Override public M plus      (IMatrixGetter<? extends Number> aRHS) {return operation().ebeAdd       (this, aRHS);}
+    @VisibleForTesting @Override public M minus     (IMatrixGetter<? extends Number> aRHS) {return operation().ebeMinus     (this, aRHS);}
+    @VisibleForTesting @Override public M multiply  (IMatrixGetter<? extends Number> aRHS) {return operation().ebeMultiply  (this, aRHS);}
+    @VisibleForTesting @Override public M div       (IMatrixGetter<? extends Number> aRHS) {return operation().ebeDivide    (this, aRHS);}
+    @VisibleForTesting @Override public M mod       (IMatrixGetter<? extends Number> aRHS) {return operation().ebeMod       (this, aRHS);}
+    
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public M call(List<Integer> aSelectedRows, List<Integer> aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
     @VisibleForTesting @Override public M call(SliceType     aSelectedRows, List<Integer> aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}

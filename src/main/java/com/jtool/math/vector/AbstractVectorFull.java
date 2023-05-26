@@ -45,6 +45,19 @@ public abstract class AbstractVectorFull<T extends Number, V extends IVector<T>>
     }
     
     
+    /** Groovy 的部分，增加向量基本的运算操作，由于不能重载 += 之类的变成向自身操作，因此会充斥着值拷贝，因此不推荐重性能的场景使用 */
+    @VisibleForTesting @Override public V plus      (Number aRHS) {return operation().mapAdd        (this, aRHS);}
+    @VisibleForTesting @Override public V minus     (Number aRHS) {return operation().mapMinus      (this, aRHS);}
+    @VisibleForTesting @Override public V multiply  (Number aRHS) {return operation().mapMultiply   (this, aRHS);}
+    @VisibleForTesting @Override public V div       (Number aRHS) {return operation().mapDivide     (this, aRHS);}
+    @VisibleForTesting @Override public V mod       (Number aRHS) {return operation().mapMod        (this, aRHS);}
+    
+    @VisibleForTesting @Override public V plus      (IVectorGetter<? extends Number> aRHS) {return operation().ebeAdd       (this, aRHS);}
+    @VisibleForTesting @Override public V minus     (IVectorGetter<? extends Number> aRHS) {return operation().ebeMinus     (this, aRHS);}
+    @VisibleForTesting @Override public V multiply  (IVectorGetter<? extends Number> aRHS) {return operation().ebeMultiply  (this, aRHS);}
+    @VisibleForTesting @Override public V div       (IVectorGetter<? extends Number> aRHS) {return operation().ebeDivide    (this, aRHS);}
+    @VisibleForTesting @Override public V mod       (IVectorGetter<? extends Number> aRHS) {return operation().ebeMod       (this, aRHS);}
+    
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public V call(List<Integer> aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public V call(SliceType     aIndices) {return slicer().get(aIndices);}

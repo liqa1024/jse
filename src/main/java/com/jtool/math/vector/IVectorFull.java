@@ -23,6 +23,19 @@ public interface IVectorFull<T extends Number, V extends IVector<T>> extends IVe
     @VisibleForTesting default IVectorOperation<V, T> opt() {return operation();}
     
     
+    /** Groovy 的部分，增加向量基本的运算操作，由于不能重载 += 之类的变成向自身操作，因此会充斥着值拷贝，因此不推荐重性能的场景使用 */
+    @VisibleForTesting V plus       (Number aRHS);
+    @VisibleForTesting V minus      (Number aRHS);
+    @VisibleForTesting V multiply   (Number aRHS);
+    @VisibleForTesting V div        (Number aRHS);
+    @VisibleForTesting V mod        (Number aRHS);
+    
+    @VisibleForTesting V plus       (IVectorGetter<? extends Number> aRHS);
+    @VisibleForTesting V minus      (IVectorGetter<? extends Number> aRHS);
+    @VisibleForTesting V multiply   (IVectorGetter<? extends Number> aRHS);
+    @VisibleForTesting V div        (IVectorGetter<? extends Number> aRHS);
+    @VisibleForTesting V mod        (IVectorGetter<? extends Number> aRHS);
+    
     /** Groovy 的部分，增加向量切片操作 */
     @VisibleForTesting V call(List<Integer> aIndices);
     @VisibleForTesting V call(SliceType     aIndices);

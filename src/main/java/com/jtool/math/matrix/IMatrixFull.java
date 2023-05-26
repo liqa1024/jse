@@ -32,6 +32,19 @@ public interface IMatrixFull<T extends Number, M extends IMatrix<T>, V extends I
 //    IMatrixOperation<IMatrixGetterFull<M, T>, T> refOperation(); // 由于代码量的问题，暂时不去实现这个功能，等到实现到并行的时候有这个需求再考虑
     
     
+    /** Groovy 的部分，增加矩阵基本的运算操作，由于不能重载 += 之类的变成向自身操作，因此会充斥着值拷贝，因此不推荐重性能的场景使用 */
+    @VisibleForTesting M plus       (Number aRHS);
+    @VisibleForTesting M minus      (Number aRHS);
+    @VisibleForTesting M multiply   (Number aRHS);
+    @VisibleForTesting M div        (Number aRHS);
+    @VisibleForTesting M mod        (Number aRHS);
+    
+    @VisibleForTesting M plus       (IMatrixGetter<? extends Number> aRHS);
+    @VisibleForTesting M minus      (IMatrixGetter<? extends Number> aRHS);
+    @VisibleForTesting M multiply   (IMatrixGetter<? extends Number> aRHS);
+    @VisibleForTesting M div        (IMatrixGetter<? extends Number> aRHS);
+    @VisibleForTesting M mod        (IMatrixGetter<? extends Number> aRHS);
+    
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting M call(List<Integer> aSelectedRows, List<Integer> aSelectedCols);
     @VisibleForTesting M call(SliceType     aSelectedRows, List<Integer> aSelectedCols);
