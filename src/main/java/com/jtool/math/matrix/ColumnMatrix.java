@@ -87,8 +87,9 @@ public final class ColumnMatrix extends DoubleArrayMatrix<ColumnMatrix, Vector> 
                     Double tNext = mData[mIdx];
                     ++mIdx;
                     return tNext;
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
             }
         };
     }
@@ -107,8 +108,9 @@ public final class ColumnMatrix extends DoubleArrayMatrix<ColumnMatrix, Vector> 
                         mIdx = mRow;
                     }
                     return tNext;
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
             }
         };
     }
@@ -126,8 +128,30 @@ public final class ColumnMatrix extends DoubleArrayMatrix<ColumnMatrix, Vector> 
                     oIdx = mIdx;
                     ++mIdx;
                     return mData[oIdx];
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(Double e) {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                    mData[oIdx] = e;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public Double getNextAndSet(Double e) {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                    double oValue = mData[oIdx];
+                    mData[oIdx] = e;
+                    return oValue;
+                } else {
+                    throw new NoSuchElementException();
+                }
             }
         };
     }
@@ -150,8 +174,38 @@ public final class ColumnMatrix extends DoubleArrayMatrix<ColumnMatrix, Vector> 
                         mIdx = mRow;
                     }
                     return mData[oIdx];
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(Double e) {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    mIdx += mRowNum;
+                    if (mIdx >= mSize) {
+                        ++mRow;
+                        mIdx = mRow;
+                    }
+                    mData[oIdx] = e;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public Double getNextAndSet(Double e) {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    mIdx += mRowNum;
+                    if (mIdx >= mSize) {
+                        ++mRow;
+                        mIdx = mRow;
+                    }
+                    double oValue = mData[oIdx];
+                    mData[oIdx] = e;
+                    return oValue;
+                } else {
+                    throw new NoSuchElementException();
+                }
             }
         };
     }

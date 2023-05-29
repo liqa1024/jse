@@ -12,11 +12,11 @@ import java.util.Collection;
  */
 public abstract class AbstractMultiFrameTable<T extends ITable> extends AbstractList<T> implements ITable {
     /** ITable stuffs */
-    @Override public boolean noHand() {return defaultFrame().noHand();}
-    @Override public Collection<String> hands() {return defaultFrame().hands();}
-    @Override public IVector get(String aHand) {return defaultFrame().get(aHand);}
-    @Override public boolean containsHand(String aHand) {return defaultFrame().containsHand(aHand);}
-    @Override public boolean setHand(String aOldHand, String aNewHand) {return defaultFrame().setHand(aOldHand, aNewHand);}
+    @Override public boolean noHead() {return defaultFrame().noHead();}
+    @Override public Collection<String> heads() {return defaultFrame().heads();}
+    @Override public IVector get(String aHead) {return defaultFrame().get(aHead);}
+    @Override public boolean containsHead(String aHead) {return defaultFrame().containsHead(aHead);}
+    @Override public boolean setHead(String aOldHead, String aNewHead) {return defaultFrame().setHead(aOldHead, aNewHead);}
     
     /** stuff to override */
     public T defaultFrame() {return get(0);}

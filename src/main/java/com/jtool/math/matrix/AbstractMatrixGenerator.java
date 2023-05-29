@@ -16,10 +16,7 @@ public abstract class AbstractMatrixGenerator<M extends IMatrixFull<?, ?>> imple
         M rMatrix = zeros();
         final ISetIterator<Double> si = rMatrix.setIterator();
         final Iterator<Double> it = thisIterator_();
-        while (si.hasNext()) {
-            si.next();
-            si.set(it.next());
-        }
+        while (si.hasNext()) si.nextAndSet(it.next());
         return rMatrix;
     }
     @Override public M ones(int aRowNum, int aColNum) {

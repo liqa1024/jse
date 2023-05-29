@@ -33,8 +33,9 @@ public abstract class AbstractVectorFull<V extends IVectorFull<?>> implements IV
                     double tNext = get_(mIdx);
                     ++mIdx;
                     return tNext;
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
             }
         };
     }
@@ -52,8 +53,30 @@ public abstract class AbstractVectorFull<V extends IVectorFull<?>> implements IV
                     oIdx = mIdx;
                     ++mIdx;
                     return get_(oIdx);
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(Double e) {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                    set_(oIdx, e);
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public Double getNextAndSet(Double e) {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                    double oValue = get_(oIdx);
+                    set_(oIdx, e);
+                    return oValue;
+                } else {
+                    throw new NoSuchElementException();
+                }
             }
         };
     }
@@ -68,8 +91,9 @@ public abstract class AbstractVectorFull<V extends IVectorFull<?>> implements IV
                     double tNext = aContainer.get(mIdx);
                     ++mIdx;
                     return tNext;
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
             }
         };
     }
@@ -82,27 +106,18 @@ public abstract class AbstractVectorFull<V extends IVectorFull<?>> implements IV
     /** 批量修改的接口 */
     @Override public void fill(double aValue) {
         final ISetIterator<Double> si = setIterator();
-        while (si.hasNext()) {
-            si.next();
-            si.set(aValue);
-        }
+        while (si.hasNext()) si.nextAndSet(aValue);
     }
     @Override public void fill(double[] aVec) {fill(i -> aVec[i]);}
     @Override public void fill(Iterable<? extends Number> aList) {
         final ISetIterator<Double> si = setIterator();
         final Iterator<? extends Number> it = aList.iterator();
-        while (si.hasNext()) {
-            si.next();
-            si.set(it.next().doubleValue());
-        }
+        while (si.hasNext()) si.nextAndSet(it.next().doubleValue());
     }
     @Override public void fill(IVectorGetter aVectorGetter) {
         final ISetIterator<Double> si = setIterator();
         final Iterator<Double> it = iteratorOf(aVectorGetter);
-        while (si.hasNext()) {
-            si.next();
-            si.set(it.next());
-        }
+        while (si.hasNext()) si.nextAndSet(it.next());
     }
     
     @Override public double get(int aIdx) {

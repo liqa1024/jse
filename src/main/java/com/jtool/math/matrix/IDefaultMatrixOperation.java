@@ -1,6 +1,7 @@
 package com.jtool.math.matrix;
 
 
+import com.jtool.code.ISetIterator;
 import com.jtool.math.vector.IVectorFull;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -11,10 +12,10 @@ import java.util.Iterator;
  * 但是由于多继承的问题，为了避免重复代码，依旧放在接口中
  * @author liqa
  */
-public interface IDefaultMatrixOperation<M extends IMatrixFull<?, ?>, MS extends IMatrixFull<?, V>, V extends IVectorFull<?>> extends IMatrixOperation<M, V> {
-    /** 这里改为直接用迭代器遍历实现而不去调用对应向量的运算，中庸的优化程度 */
+public interface IDefaultMatrixOperation<M extends IMatrixFull<?, ?>, MS extends IMatrixFull<M, V>, V extends IVectorFull<?>> extends IMatrixOperation<M, V> {
+    /** 这里改为直接用迭代器遍历实现而不去调用对应向量的运算，中等的优化程度 */
     default V sumOfCols() {
-        final MS tThis = thisInstance_();
+        final MS tThis = thisMatrix_();
         
         final Iterator<Double> it = tThis.colIterator();
         final int tColNum = tThis.columnNumber();
@@ -28,7 +29,7 @@ public interface IDefaultMatrixOperation<M extends IMatrixFull<?, ?>, MS extends
         return rVector;
     }
     default V sumOfRows() {
-        final MS tThis = thisInstance_();
+        final MS tThis = thisMatrix_();
         
         final Iterator<Double> it = tThis.rowIterator();
         final int tColNum = tThis.columnNumber();
@@ -43,7 +44,7 @@ public interface IDefaultMatrixOperation<M extends IMatrixFull<?, ?>, MS extends
     }
     
     default V meanOfCols() {
-        final MS tThis = thisInstance_();
+        final MS tThis = thisMatrix_();
         
         final Iterator<Double> it = tThis.colIterator();
         final int tColNum = tThis.columnNumber();
@@ -57,7 +58,7 @@ public interface IDefaultMatrixOperation<M extends IMatrixFull<?, ?>, MS extends
         return rVector;
     }
     default V meanOfRows() {
-        final MS tThis = thisInstance_();
+        final MS tThis = thisMatrix_();
         
         final Iterator<Double> it = tThis.rowIterator();
         final int tColNum = tThis.columnNumber();
@@ -71,6 +72,16 @@ public interface IDefaultMatrixOperation<M extends IMatrixFull<?, ?>, MS extends
         return rVector;
     }
     
+    default M transpose() {
+        final MS tThis = thisMatrix_();
+        final M rMatrix = tThis.generator().zeros(tThis.columnNumber(), tThis.rowNumber());
+        
+        final Iterator<Double> it = tThis.colIterator();
+        final ISetIterator<Double> si = rMatrix.rowSetIterator();
+        while(it.hasNext()) si.nextAndSet(it.next());
+        return rMatrix;
+    }
+    
     /** stuff to override */
-    @ApiStatus.Internal MS thisInstance_();
+    @ApiStatus.Internal MS thisMatrix_();
 }

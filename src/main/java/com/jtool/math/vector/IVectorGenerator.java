@@ -14,4 +14,9 @@ public interface IVectorGenerator<V extends IVectorGetter> extends IDataGenerato
     V ones(int aSize);
     V zeros(int aSize);
     V from(int aSize, IVectorGetter aVectorGetter);
+    
+    /** 增加一些 Vector 特有的生成 */
+    V sequence(double aStart, double aEnd);
+    V sequence(double aStart, double aStep, double aEnd);
+    V sequence_(double aStart, double aStep, int aN);
 }

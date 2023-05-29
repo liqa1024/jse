@@ -8,6 +8,7 @@ public abstract class AbstractVector extends AbstractVectorFull<Vector> implemen
     @Override public final IVectorOperation<Vector> operation() {
         return new AbstractVectorOperation<Vector, AbstractVector>() {
             @Override protected AbstractVector thisInstance_() {return AbstractVector.this;}
+            @Override public AbstractVector thisVector_() {return AbstractVector.this;}
             /** 通过输入来获取需要的大小 */
             @Override protected Vector newInstance_(IVectorGetter aData) {
                 if (aData instanceof IVectorFull) return Vector.zeros(((IVectorFull<?>)aData).size());

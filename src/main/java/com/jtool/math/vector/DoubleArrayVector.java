@@ -20,8 +20,9 @@ public abstract class DoubleArrayVector<V extends DoubleArrayVector<?>> extends 
     @Override public int dataSize() {return size();}
     
     
-    protected class DoubleArrayVectorOperation extends DoubleArrayOperation<DoubleArrayVector<?>, V, DoubleArrayVector<?>, IVectorGetter> implements IVectorOperation<V> {
-        @Override protected DoubleArrayVector<?> thisInstance_() {return DoubleArrayVector.this;}
+    protected class DoubleArrayVectorOperation extends DoubleArrayOperation<DoubleArrayVector<?>, V, DoubleArrayVector<V>, IVectorGetter> implements IDefaultVectorOperation<V, DoubleArrayVector<V>> {
+        @Override protected DoubleArrayVector<V> thisInstance_() {return DoubleArrayVector.this;}
+        @Override public DoubleArrayVector<V> thisVector_() {return DoubleArrayVector.this;}
         /** 通过输入来获取需要的大小 */
         @Override protected V newInstance_(IVectorGetter aData) {
             if (aData instanceof IVectorFull) return newZeros(((IVectorFull<?>)aData).size());

@@ -48,8 +48,9 @@ public class RandomStartList<T> implements Iterable<T> {
                     T tNext = mNext;
                     mNext = null;
                     return tNext;
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
             }
         };
     }

@@ -122,31 +122,21 @@ public abstract class AbstractDataOperation<RS extends IHasLotIterator<? super T
         final ISetIterator<Double> si = rDest.setIterator();
         final Iterator<Double> li = rDest.iteratorOf(aLHS);
         final Iterator<Double> ri = rDest.iteratorOf(aRHS);
-        while (si.hasNext()) {
-            si.next();
-            si.set(aOpt.cal(li.next(), ri.next()));
-        }
+        while (si.hasNext()) si.nextAndSet(aOpt.cal(li.next(), ri.next()));
     }
     protected void mapDo2Dest_(T aLHS, RS rDest, IOperator1<Double> aOpt) {
         final ISetIterator<Double> si = rDest.setIterator();
         final Iterator<Double> li = rDest.iteratorOf(aLHS);
-        while (si.hasNext()) {
-            si.next();
-            si.set(aOpt.cal(li.next()));
-        }
+        while (si.hasNext()) si.nextAndSet(aOpt.cal(li.next()));
     }
     protected void ebeDo2this_(RS rThis, T aRHS, IOperator2<Double> aOpt) {
         final ISetIterator<Double> si = rThis.setIterator();
         final Iterator<Double> ri = rThis.iteratorOf(aRHS);
-        while (si.hasNext()) {
-            si.set(aOpt.cal(si.next(), ri.next()));
-        }
+        while (si.hasNext()) si.set(aOpt.cal(si.next(), ri.next()));
     }
     protected void mapDo2this_(RS rThis, IOperator1<Double> aOpt) {
         final ISetIterator<Double> si = rThis.setIterator();
-        while (si.hasNext()) {
-            si.set(aOpt.cal(si.next()));
-        }
+        while (si.hasNext()) si.set(aOpt.cal(si.next()));
     }
     
     // 方便起见这里直接认为自身类型就是 R，如果遇到不是的再考虑

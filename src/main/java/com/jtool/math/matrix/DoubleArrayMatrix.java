@@ -22,8 +22,9 @@ public abstract class DoubleArrayMatrix<M extends DoubleArrayMatrix<?, ?>, V ext
     @Override public int dataSize() {return columnNumber()*rowNumber();}
     
     
-    protected class DoubleArrayMatrixOperation extends DoubleArrayOperation<DoubleArrayMatrix<?, ?>, M, DoubleArrayMatrix<?, V>, IMatrixGetter> implements IDefaultMatrixOperation<M, DoubleArrayMatrix<?, V>, V> {
-        @Override public DoubleArrayMatrix<?, V> thisInstance_() {return DoubleArrayMatrix.this;}
+    protected class DoubleArrayMatrixOperation extends DoubleArrayOperation<DoubleArrayMatrix<?, ?>, M, DoubleArrayMatrix<M, V>, IMatrixGetter> implements IDefaultMatrixOperation<M, DoubleArrayMatrix<M, V>, V> {
+        @Override protected DoubleArrayMatrix<M, V> thisInstance_() {return DoubleArrayMatrix.this;}
+        @Override public DoubleArrayMatrix<M, V> thisMatrix_() {return DoubleArrayMatrix.this;}
         /** 通过输入来获取需要的大小 */
         @Override protected M newInstance_(IMatrixGetter aData) {
             if (aData instanceof IMatrixFull) {

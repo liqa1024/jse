@@ -210,8 +210,9 @@ class LinkedCell<Atom extends IHasXYZ> {
                 ReturnType tNext = mNext;
                 mNext = null; // 设置 mNext 非法表示此时不再有 Next
                 return tNext;
+            } else {
+                throw new NoSuchElementException();
             }
-            throw new NoSuchElementException();
         }
     }
 }

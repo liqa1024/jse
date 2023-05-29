@@ -209,8 +209,9 @@ public class UT {
                 @Override public R next() {
                     if (hasNext()) {
                         return aOpt.cal(mIt.next());
+                    } else {
+                        throw new NoSuchElementException();
                     }
-                    throw new NoSuchElementException();
                 }
             };
         }
@@ -267,8 +268,9 @@ public class UT {
                         T tNext = mNext;
                         mNext = null; // 设置 mNext 非法表示此时不再有 Next
                         return tNext;
+                    } else {
+                        throw new NoSuchElementException();
                     }
-                    throw new NoSuchElementException();
                 }
             };
         }
@@ -339,15 +341,33 @@ public class UT {
             }
             return rData;
         }
+        public static double[] toData(int aSize, Iterable<? extends Number> aList) {
+            double[] rData = new double[aSize];
+            int tIdx = 0;
+            for (Number tValue : aList) {
+                rData[tIdx] = tValue.doubleValue();
+                ++tIdx;
+            }
+            return rData;
+        }
         /**
          * Convert {@code Collection<Collection<Number>>} to double[][]
          * @author liqa
          */
-        public static double[][] toMat(Collection<? extends Collection<? extends Number>> aMatrix) {
-            double[][] rMat = new double[aMatrix.size()][];
+        public static double[][] toMat(Collection<? extends Collection<? extends Number>> aRows) {
+            double[][] rMat = new double[aRows.size()][];
             int tIdx = 0;
-            for (Collection<? extends Number> tList : aMatrix) {
-                rMat[tIdx] = toData(tList);
+            for (Collection<? extends Number> tRow : aRows) {
+                rMat[tIdx] = toData(tRow);
+                ++tIdx;
+            }
+            return rMat;
+        }
+        public static double[][] toMat(int aRowNum, int aColNum, Iterable<? extends Iterable<? extends Number>> aRows) {
+            double[][] rMat = new double[aRowNum][];
+            int tIdx = 0;
+            for (Iterable<? extends Number> tRow : aRows) {
+                rMat[tIdx] = toData(aColNum, tRow);
                 ++tIdx;
             }
             return rMat;
@@ -374,8 +394,9 @@ public class UT {
                         int tIdx = mIdx;
                         mIdx += aStep;
                         return tIdx;
+                    } else {
+                        throw new NoSuchElementException();
                     }
-                    throw new NoSuchElementException();
                 }
             };
         }
@@ -770,7 +791,7 @@ public class UT {
          */
         public static void table2csv(Table aTable, String aFilePath) throws IOException {
             try (PrintStream tPrinter = toPrintStream(aFilePath)) {
-                if (!aTable.noHand()) tPrinter.println(String.join(",", aTable.hands()));
+                if (!aTable.noHead()) tPrinter.println(String.join(",", aTable.heads()));
                 for (IVector subData : aTable.rows()) tPrinter.println(String.join(",", Code.map(subData.iterable(), Object::toString)));
             }
         }

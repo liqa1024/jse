@@ -47,8 +47,9 @@ public abstract class AbstractMatrixFull<M extends IMatrixFull<?, ?>, V extends 
                         ++mCol;
                     }
                     return tNext;
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
             }
         };
     }
@@ -68,8 +69,9 @@ public abstract class AbstractMatrixFull<M extends IMatrixFull<?, ?>, V extends 
                         ++mRow;
                     }
                     return tNext;
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
             }
         };
     }
@@ -94,8 +96,40 @@ public abstract class AbstractMatrixFull<M extends IMatrixFull<?, ?>, V extends 
                         ++mCol;
                     }
                     return get_(oRow, oCol);
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(Double e) {
+                if (hasNext()) {
+                    oCol = mCol;
+                    oRow = mRow;
+                    ++mRow;
+                    if (mRow == mRowNum) {
+                        mRow = 0;
+                        ++mCol;
+                    }
+                    set_(oRow, oCol, e);
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public Double getNextAndSet(Double e) {
+                if (hasNext()) {
+                    oCol = mCol;
+                    oRow = mRow;
+                    ++mRow;
+                    if (mRow == mRowNum) {
+                        mRow = 0;
+                        ++mCol;
+                    }
+                    double oValue = get_(oRow, oCol);
+                    set_(oRow, oCol, e);
+                    return oValue;
+                } else {
+                    throw new NoSuchElementException();
+                }
             }
         };
     }
@@ -120,8 +154,40 @@ public abstract class AbstractMatrixFull<M extends IMatrixFull<?, ?>, V extends 
                         ++mRow;
                     }
                     return get_(oRow, oCol);
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(Double e) {
+                if (hasNext()) {
+                    oCol = mCol;
+                    oRow = mRow;
+                    ++mCol;
+                    if (mCol == mColNum) {
+                        mCol = 0;
+                        ++mRow;
+                    }
+                    set_(oRow, oCol, e);
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public Double getNextAndSet(Double e) {
+                if (hasNext()) {
+                    oCol = mCol;
+                    oRow = mRow;
+                    ++mCol;
+                    if (mCol == mColNum) {
+                        mCol = 0;
+                        ++mRow;
+                    }
+                    double oValue = get_(oRow, oCol);
+                    set_(oRow, oCol, e);
+                    return oValue;
+                } else {
+                    throw new NoSuchElementException();
+                }
             }
         };
     }
@@ -142,8 +208,9 @@ public abstract class AbstractMatrixFull<M extends IMatrixFull<?, ?>, V extends 
                         ++mCol;
                     }
                     return tNext;
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
             }
         };
     }
@@ -164,8 +231,9 @@ public abstract class AbstractMatrixFull<M extends IMatrixFull<?, ?>, V extends 
                         ++mRow;
                     }
                     return tNext;
+                } else {
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
             }
         };
     }
@@ -177,25 +245,26 @@ public abstract class AbstractMatrixFull<M extends IMatrixFull<?, ?>, V extends 
     /** 批量修改的接口，现在统一使用迭代器来填充 */
     @Override public void fill(double aValue) {
         final ISetIterator<Double> si = setIterator();
-        while (si.hasNext()) {
-            si.next();
-            si.set(aValue);
-        }
+        while (si.hasNext()) si.nextAndSet(aValue);
     }
     @Override public void fill(final double[][] aMat) {fill((row, col) -> aMat[row][col]);}
-    @Override public void fill(Iterable<? extends Iterable<? extends Number>> aRows) {
+    @Override public void fill(IMatrixGetter aMatrixGetter) {
+        final ISetIterator<Double> si = setIterator();
+        final Iterator<Double> it = iteratorOf(aMatrixGetter);
+        while (si.hasNext()) si.nextAndSet(it.next());
+    }
+    @Override public void fillWithRows(Iterable<? extends Iterable<? extends Number>> aRows) {
         final Iterator<? extends Iterable<? extends Number>> tRowIt = aRows.iterator();
         final List<IVector> rRows = rows();
         for (IVector rRow : rRows) rRow.fill(tRowIt.next());
     }
-    @Override public void fill(IMatrixGetter aMatrixGetter) {
-        final ISetIterator<Double> si = setIterator();
-        final Iterator<Double> it = iteratorOf(aMatrixGetter);
-        while (si.hasNext()) {
-            si.next();
-            si.set(it.next());
-        }
+    @Override public void fillWithCols(Iterable<? extends Iterable<? extends Number>> aCols) {
+        final Iterator<? extends Iterable<? extends Number>> tColIt = aCols.iterator();
+        final List<IVector> rCols = cols();
+        for (IVector rCol : rCols) rCol.fill(tColIt.next());
     }
+    
+    
     @Override public double get(int aRow, int aCol) {
         if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
         return get_(aRow, aCol);

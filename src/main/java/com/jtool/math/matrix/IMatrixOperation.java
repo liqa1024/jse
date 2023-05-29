@@ -3,6 +3,7 @@ package com.jtool.math.matrix;
 
 import com.jtool.math.operation.IDataOperation;
 import com.jtool.math.vector.IVectorGetter;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * 任意的矩阵的运算
@@ -16,4 +17,7 @@ public interface IMatrixOperation<M extends IMatrixGetter, V extends IVectorGett
     V sumOfRows();
     V meanOfCols();
     V meanOfRows();
+    
+    M transpose();
+    @VisibleForTesting default M T() {return transpose();}
 }
