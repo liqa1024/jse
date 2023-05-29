@@ -9,7 +9,17 @@ import org.jetbrains.annotations.ApiStatus;
  * @author liqa
  */
 public interface IDefaultVectorOperation<V extends IVectorFull<?>, VS extends IVectorFull<V>> extends IVectorOperation<V> {
-    /**/
+    /** 向量的一些额外的运算 */
+    default V reverse() {return thisVector_().generator().from(refReverse());}
+    default IVectorFull<?> refReverse() {
+        return new AbstractVector() {
+            private final VS mThis = thisVector_();
+            @Override public double get_(int aIdx) {return mThis.get_(mThis.size()-1-aIdx);}
+            @Override public void set_(int aIdx, double aValue) {mThis.set_(mThis.size()-1-aIdx, aValue);}
+            @Override public double getAndSet_(int aIdx, double aValue) {return mThis.getAndSet_(mThis.size()-1-aIdx, aValue);}
+            @Override public int size() {return mThis.size();}
+        };
+    }
     
     /** stuff to override */
     @ApiStatus.Internal VS thisVector_();

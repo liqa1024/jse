@@ -20,4 +20,7 @@ public interface IMatrixOperation<M extends IMatrixGetter, V extends IVectorGett
     
     M transpose();
     @VisibleForTesting default M T() {return transpose();}
+    
+    IMatrixFull<?, ?> refTranspose();
+    @VisibleForTesting default IMatrixFull<?, ?> refT() {return refTranspose();}
 }

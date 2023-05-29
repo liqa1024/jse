@@ -46,6 +46,15 @@ public final class Vector extends DoubleArrayVector<Vector> implements IVector {
     }
     
     
+    /** Optimize stuffs，引用反转直接返回 {@link ReverseVector} */
+    @Override public DoubleArrayVectorOperation operation() {
+        return new DoubleArrayVectorOperation() {
+            @Override public ReverseVector refReverse() {
+                return new ReverseVector(mSize, mData);
+            }
+        };
+    }
+    
     /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式） */
     @Override public Iterator<Double> iterator() {
         return new Iterator<Double>() {

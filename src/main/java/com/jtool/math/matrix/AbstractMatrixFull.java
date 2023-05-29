@@ -449,35 +449,37 @@ public abstract class AbstractMatrixFull<M extends IMatrixFull<?, ?>, V extends 
     @VisibleForTesting @Override public V call(List<Integer> aSelectedRows, int           aSelectedCol ) {return slicer().get(aSelectedRows, aSelectedCol );}
     @VisibleForTesting @Override public V call(SliceType     aSelectedRows, int           aSelectedCol ) {return slicer().get(aSelectedRows, aSelectedCol );}
     
-    @VisibleForTesting @Override public IMatrixRow_<V> getAt(int aRow) {return new MatrixRow_(aRow);}
     @VisibleForTesting @Override public IMatrixRows_<V, M> getAt(SliceType aSelectedRows) {return new MatrixRowsA_(aSelectedRows);}
     @VisibleForTesting @Override public IMatrixRows_<V, M> getAt(List<Integer> aSelectedRows)  {return new MatrixRowsL_(aSelectedRows);}
+    
+    /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
+    @VisibleForTesting @Override public IMatrixRow_<V> getAt(int aRow) {return new MatrixRow_((aRow < 0) ? (rowNumber()+aRow) : aRow);}
     
     protected class MatrixRow_ implements IMatrixRow_<V> {
         protected final int mRow;
         protected MatrixRow_(int aRow) {mRow = aRow;}
         
-        @Override public double getAt(int aCol) {return get(mRow, aCol);}
         @Override public V getAt(SliceType aSelectedCols) {return slicer().get(mRow, aSelectedCols);}
         @Override public V getAt(List<Integer> aSelectedCols) {return slicer().get(mRow, aSelectedCols);}
         
-        @Override public void putAt(int aCol, double aValue) {set(mRow, aCol, aValue);}
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mRow, aSelectedCols).fill(aValue);}
         @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Number> aList) {refSlicer().get(mRow, aSelectedCols).fill(aList);}
         @Override public void putAt(SliceType aSelectedCols, IVectorGetter aVector) {refSlicer().get(mRow, aSelectedCols).fill(aVector);}
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mRow, aSelectedCols).fill(aValue);}
         @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Number> aList) {refSlicer().get(mRow, aSelectedCols).fill(aList);}
         @Override public void putAt(List<Integer> aSelectedCols, IVectorGetter aVector) {refSlicer().get(mRow, aSelectedCols).fill(aVector);}
+        
+        /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
+        @Override public double getAt(int aCol) {return get(mRow, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
+        @Override public void putAt(int aCol, double aValue) {set(mRow, (aCol < 0) ? (columnNumber()+aCol) : aCol, aValue);}
     }
     protected class MatrixRowsA_ implements IMatrixRows_<V, M> {
         protected final SliceType mSelectedRows;
         protected MatrixRowsA_(SliceType aSelectedRows) {mSelectedRows = aSelectedRows;}
         
-        @Override public V getAt(int aCol) {return slicer().get(mSelectedRows, aCol);}
         @Override public M getAt(SliceType aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         @Override public M getAt(List<Integer> aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         
-        @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, aCol).fill(aValue);}
         @Override public void putAt(int aCol, Iterable<? extends Number> aList) {refSlicer().get(mSelectedRows, aCol).fill(aList);}
         @Override public void putAt(int aCol, IVectorGetter aVector) {refSlicer().get(mSelectedRows, aCol).fill(aVector);}
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
@@ -486,16 +488,18 @@ public abstract class AbstractMatrixFull<M extends IMatrixFull<?, ?>, V extends 
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
         @Override public void putAt(List<Integer> aSelectedCols, IMatrixGetter aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        
+        /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
+        @Override public V getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
+        @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol).fill(aValue);}
     }
     protected class MatrixRowsL_ implements IMatrixRows_<V, M> {
         protected final List<Integer> mSelectedRows;
         protected MatrixRowsL_(List<Integer> aSelectedRows) {mSelectedRows = aSelectedRows;}
         
-        @Override public V getAt(int aCol) {return slicer().get(mSelectedRows, aCol);}
         @Override public M getAt(SliceType aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         @Override public M getAt(List<Integer> aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         
-        @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, aCol).fill(aValue);}
         @Override public void putAt(int aCol, Iterable<? extends Number> aList) {refSlicer().get(mSelectedRows, aCol).fill(aList);}
         @Override public void putAt(int aCol, IVectorGetter aVector) {refSlicer().get(mSelectedRows, aCol).fill(aVector);}
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
@@ -504,6 +508,10 @@ public abstract class AbstractMatrixFull<M extends IMatrixFull<?, ?>, V extends 
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
         @Override public void putAt(List<Integer> aSelectedCols, IMatrixGetter aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        
+        /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
+        @Override public V getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
+        @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol).fill(aValue);}
     }
     
     /** stuff to override */

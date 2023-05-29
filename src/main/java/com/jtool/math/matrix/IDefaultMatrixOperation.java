@@ -72,14 +72,16 @@ public interface IDefaultMatrixOperation<M extends IMatrixFull<?, ?>, MS extends
         return rVector;
     }
     
-    default M transpose() {
-        final MS tThis = thisMatrix_();
-        final M rMatrix = tThis.generator().zeros(tThis.columnNumber(), tThis.rowNumber());
-        
-        final Iterator<Double> it = tThis.colIterator();
-        final ISetIterator<Double> si = rMatrix.rowSetIterator();
-        while(it.hasNext()) si.nextAndSet(it.next());
-        return rMatrix;
+    default M transpose() {return thisMatrix_().generator().from(refTranspose());}
+    default IMatrixFull<?, ?> refTranspose() {
+        return new AbstractMatrix() {
+            private final MS mThis = thisMatrix_();
+            @Override public double get_(int aRow, int aCol) {return mThis.get_(aCol, aRow);}
+            @Override public void set_(int aRow, int aCol, double aValue)  {mThis.set_(aCol, aRow, aValue);}
+            @Override public double getAndSet_(int aRow, int aCol, double aValue) {return mThis.getAndSet_(aCol, aRow, aValue);}
+            @Override public int rowNumber() {return mThis.columnNumber();}
+            @Override public int columnNumber() {return mThis.rowNumber();}
+        };
     }
     
     /** stuff to override */

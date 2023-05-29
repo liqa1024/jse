@@ -3,49 +3,49 @@ package com.jtool.math.vector;
 import com.jtool.code.ISetIterator;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
  * @author liqa
- * <p> 支持将内部的 double[] 进行平移访问的 Vector，理论拥有和 {@link Vector} 几乎一样的性能 </p>
- * <p> 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link Vector} </p>
+ * <p> 反向检索数组的向量，注意有经过 shift，因此检索的数组区间是 shift ~ size()+shift-1 </p>
+ * <p> 由于是反向检索的，由于优化内部实际许多操作会是反向进行的 </p>
+ * <p> 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link ReverseVector} </p>
  */
-public final class ShiftVector extends DoubleArrayVector<Vector> implements IVector {
+public final class ShiftReverseVector extends DoubleArrayVector<ReverseVector> {
     private final int mSize;
     private final int mShift;
-    public ShiftVector(int aSize, int aShift, double[] aData) {super(aData); mSize = aSize; mShift = aShift;}
-    public ShiftVector(int aShift, double[] aData) {this(aData.length-aShift, aShift, aData);}
+    private final int totShift;
+    public ShiftReverseVector(int aSize, int aShift, double[] aData) {super(aData); mSize = aSize; mShift = aShift; totShift = mSize-1+mShift;}
+    public ShiftReverseVector(int aShift, double[] aData) {this(aData.length-aShift, aShift, aData);}
     
     /** IVector stuffs */
-    @Override public double get_(int aIdx) {return mData[aIdx + mShift];}
-    @Override public void set_(int aIdx, double aValue) {mData[aIdx + mShift] = aValue;}
+    @Override public double get_(int aIdx) {return mData[totShift-aIdx];}
+    @Override public void set_(int aIdx, double aValue) {mData[totShift-aIdx] = aValue;}
     @Override public double getAndSet_(int aIdx, double aValue) {
-        aIdx += mShift;
+        aIdx = totShift-aIdx;
         double oValue = mData[aIdx];
         mData[aIdx] = aValue;
         return oValue;
     }
     @Override public int size() {return mSize;}
     
-    @Override protected Vector newZeros(int aSize) {return Vector.zeros(aSize);}
+    @Override protected ReverseVector newZeros(int aSize) {return ReverseVector.zeros(aSize);}
     
-    @Override public ShiftVector newShell() {return new ShiftVector(mSize, mShift, null);}
+    @Override public ShiftReverseVector newShell() {return new ShiftReverseVector(mSize, mShift, null);}
     @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {
-        if (aObj instanceof Vector) return ((Vector)aObj).mData;
-        if (aObj instanceof ShiftVector) return ((ShiftVector)aObj).mData;
-        if (aObj instanceof double[]) return (double[])aObj;
+        if (aObj instanceof ReverseVector) return ((ReverseVector)aObj).mData;
+        if (aObj instanceof ShiftReverseVector) return ((ShiftReverseVector)aObj).mData;
         return null;
     }
-    /** 需要指定平移的距离保证优化运算的正确性 */
-    @Override public int shiftSize() {return mShift;}
     
     
-    /** Optimize stuffs，引用反转直接返回 {@link ShiftReverseVector} */
+    /** Optimize stuffs，引用反转直接返回 {@link ShiftVector} */
     @Override public DoubleArrayVectorOperation operation() {
         return new DoubleArrayVectorOperation() {
-            @Override public ShiftReverseVector refReverse() {
-                return new ShiftReverseVector(mSize, mShift, mData);
+            @Override public ShiftVector refReverse() {
+                return new ShiftVector(mSize, mShift, mData);
             }
         };
     }
@@ -53,13 +53,12 @@ public final class ShiftVector extends DoubleArrayVector<Vector> implements IVec
     /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式） */
     @Override public Iterator<Double> iterator() {
         return new Iterator<Double>() {
-            private final int mEnd = mSize + mShift;
-            private int mIdx = mShift;
-            @Override public boolean hasNext() {return mIdx < mEnd;}
+            private int mIdx = totShift;
+            @Override public boolean hasNext() {return mIdx >= mShift;}
             @Override public Double next() {
                 if (hasNext()) {
                     Double tNext = mData[mIdx];
-                    ++mIdx;
+                    --mIdx;
                     return tNext;
                 } else {
                     throw new NoSuchElementException();
@@ -69,9 +68,8 @@ public final class ShiftVector extends DoubleArrayVector<Vector> implements IVec
     }
     @Override public ISetIterator<Double> setIterator() {
         return new ISetIterator<Double>() {
-            private final int mEnd = mSize + mShift;
-            private int mIdx = mShift, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mEnd;}
+            private int mIdx = totShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx >= mShift;}
             @Override public void set(Double e) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = e;
@@ -79,7 +77,7 @@ public final class ShiftVector extends DoubleArrayVector<Vector> implements IVec
             @Override public Double next() {
                 if (hasNext()) {
                     oIdx = mIdx;
-                    ++mIdx;
+                    --mIdx;
                     return mData[oIdx];
                 } else {
                     throw new NoSuchElementException();
@@ -89,7 +87,7 @@ public final class ShiftVector extends DoubleArrayVector<Vector> implements IVec
             @Override public void nextAndSet(Double e) {
                 if (hasNext()) {
                     oIdx = mIdx;
-                    ++mIdx;
+                    --mIdx;
                     mData[oIdx] = e;
                 } else {
                     throw new NoSuchElementException();
@@ -98,7 +96,7 @@ public final class ShiftVector extends DoubleArrayVector<Vector> implements IVec
             @Override public Double getNextAndSet(Double e) {
                 if (hasNext()) {
                     oIdx = mIdx;
-                    ++mIdx;
+                    --mIdx;
                     double oValue = mData[oIdx];
                     mData[oIdx] = e;
                     return oValue;

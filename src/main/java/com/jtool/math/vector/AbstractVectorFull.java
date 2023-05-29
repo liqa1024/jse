@@ -197,17 +197,19 @@ public abstract class AbstractVectorFull<V extends IVectorFull<?>> implements IV
     @VisibleForTesting @Override public V call(List<Integer> aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public V call(SliceType     aIndices) {return slicer().get(aIndices);}
     
-    @VisibleForTesting @Override public double getAt(int aIdx) {return get(aIdx);}
     @VisibleForTesting @Override public V getAt(List<Integer> aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public V getAt(SliceType     aIndices) {return slicer().get(aIndices);}
     
-    @VisibleForTesting @Override public void putAt(int aIdx, double aValue) {set(aIdx, aValue);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, IVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
     @VisibleForTesting @Override public void putAt(SliceType     aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(SliceType     aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
     @VisibleForTesting @Override public void putAt(SliceType     aIndices, IVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    
+    /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
+    @VisibleForTesting @Override public double getAt(int aIdx) {return get((aIdx < 0) ? (size()+aIdx) : aIdx);}
+    @VisibleForTesting @Override public void putAt(int aIdx, double aValue) {set((aIdx < 0) ? (size()+aIdx) : aIdx, aValue);}
     
     
     /** stuff to override */
