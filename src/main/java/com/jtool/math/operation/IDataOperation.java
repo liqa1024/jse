@@ -49,6 +49,9 @@ public interface IDataOperation<R, T> {
     void mapLMod2this       (double aRHS);
     void mapDo2this         (IOperator1<Double> aOpt);
     
+    void mapFill2this       (double aRHS);
+    void ebeFill2this       (T aRHS);
+    
     double sum();
     double mean();
 }

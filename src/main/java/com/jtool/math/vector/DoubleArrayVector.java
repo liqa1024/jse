@@ -39,7 +39,6 @@ public abstract class DoubleArrayVector<V extends DoubleArrayVector<?>> extends 
     @Override public DoubleArrayVectorOperation operation() {return new DoubleArrayVectorOperation();}
     
     /** Optimize stuffs，重写这些接口来加速批量填充过程 */
-    @Override public void fill(double aValue) {Arrays.fill(mData, aValue);}
     @Override public void fill(double[] aVec) {System.arraycopy(aVec, 0, getData(), shiftSize(), dataSize());}
     
     /** Optimize stuffs，重写 same 接口专门优化拷贝部分 */

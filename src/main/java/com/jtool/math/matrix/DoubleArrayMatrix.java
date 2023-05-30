@@ -2,10 +2,8 @@ package com.jtool.math.matrix;
 
 import com.jtool.math.IDataShell;
 import com.jtool.math.operation.DoubleArrayOperation;
-import com.jtool.math.vector.*;
+import com.jtool.math.vector.IVectorFull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Arrays;
 
 /**
  * @author liqa
@@ -49,8 +47,6 @@ public abstract class DoubleArrayMatrix<M extends DoubleArrayMatrix<?, ?>, V ext
     /** 矩阵运算实现 */
     @Override public DoubleArrayMatrixOperation operation() {return new DoubleArrayMatrixOperation();}
     
-    /** Optimize stuffs，重写这些接口来加速批量填充过程 */
-    @Override public void fill(double aValue) {Arrays.fill(mData, aValue);}
     
     /** Optimize stuffs，重写 same 接口专门优化拷贝部分 */
     @Override public IMatrixGenerator<M> generator() {

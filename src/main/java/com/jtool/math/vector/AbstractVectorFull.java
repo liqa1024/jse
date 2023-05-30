@@ -104,20 +104,21 @@ public abstract class AbstractVectorFull<V extends IVectorFull<?>> implements IV
     
     
     /** 批量修改的接口 */
-    @Override public void fill(double aValue) {
+    @Override public final void fill(double aValue) {operation().mapFill2this(aValue);}
+    @Override public final void fill(IVectorGetter aVectorGetter) {operation().ebeFill2this(aVectorGetter);}
+    
+    @Override public void fill(double[] aVec) {
         final ISetIterator<Double> si = setIterator();
-        while (si.hasNext()) si.nextAndSet(aValue);
+        int idx = 0;
+        while (si.hasNext()) {
+            si.nextAndSet(aVec[idx]);
+            ++idx;
+        }
     }
-    @Override public void fill(double[] aVec) {fill(i -> aVec[i]);}
     @Override public void fill(Iterable<? extends Number> aList) {
         final ISetIterator<Double> si = setIterator();
         final Iterator<? extends Number> it = aList.iterator();
         while (si.hasNext()) si.nextAndSet(it.next().doubleValue());
-    }
-    @Override public void fill(IVectorGetter aVectorGetter) {
-        final ISetIterator<Double> si = setIterator();
-        final Iterator<Double> it = iteratorOf(aVectorGetter);
-        while (si.hasNext()) si.nextAndSet(it.next());
     }
     
     @Override public double get(int aIdx) {

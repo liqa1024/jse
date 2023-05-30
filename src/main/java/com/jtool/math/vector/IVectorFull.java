@@ -36,9 +36,9 @@ public interface IVectorFull<V extends IVectorGetter> extends IVectorGetter, IHa
     
     /** 批量修改的接口 */
     void fill(double aValue);
+    void fill(IVectorGetter aVectorGetter);
     void fill(double[] aVec);
     void fill(Iterable<? extends Number> aList);
-    void fill(IVectorGetter aVectorGetter);
     
     /** 访问和修改部分，自带的接口 */
     double get_(int aIdx);

@@ -392,6 +392,22 @@ public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T,
     }
     
     
+    @Override protected void mapFill2this_(RS rThis, double aRHS) {
+        final double[] rData = rThis.getData();
+        final int rShift = rThis.shiftSize();
+        final int rEnd = rThis.dataSize() + rShift;
+        for (int i = rShift; i < rEnd; ++i) rData[i] = aRHS; // 注意在指定区域外不能填充，因此不能使用 Arrays.fill
+    }
+    @Override protected void ebeFill2this_(RS rThis, T aRHS) {
+        final double[] tData = rThis.getIfHasSameOrderData(aRHS);
+        if (tData != null) {
+            System.arraycopy(tData, IDataShell.shiftSize(aRHS), rThis.getData(), rThis.shiftSize(), rThis.dataSize());
+        } else {
+            super.ebeFill2this_(rThis, aRHS);
+        }
+    }
+    
+    
     
     /** stat stuff */
     protected double sumOfThis_(RS tThis) {

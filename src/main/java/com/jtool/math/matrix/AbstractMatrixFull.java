@@ -243,25 +243,38 @@ public abstract class AbstractMatrixFull<M extends IMatrixFull<?, ?>, V extends 
     @Override public double[][] mat() {return UT.Code.toMat(asList());}
     
     /** 批量修改的接口，现在统一使用迭代器来填充 */
-    @Override public void fill(double aValue) {
-        final ISetIterator<Double> si = setIterator();
-        while (si.hasNext()) si.nextAndSet(aValue);
-    }
-    @Override public void fill(final double[][] aMat) {fill((row, col) -> aMat[row][col]);}
-    @Override public void fill(IMatrixGetter aMatrixGetter) {
-        final ISetIterator<Double> si = setIterator();
-        final Iterator<Double> it = iteratorOf(aMatrixGetter);
-        while (si.hasNext()) si.nextAndSet(it.next());
+    @Override public final void fill(double aValue) {operation().mapFill2this(aValue);}
+    @Override public final void fill(IMatrixGetter aMatrixGetter) {operation().ebeFill2this(aMatrixGetter);}
+    
+    /** 同样这里改为直接用迭代器遍历实现而不去调用对应向量的运算，中等的优化程度 */
+    @Override public void fill(final double[][] aMat) {
+        final ISetIterator<Double> si = rowSetIterator();
+        final int tRowNum = rowNumber();
+        final int tColNum = columnNumber();
+        for (int row = 0; row < tRowNum; ++row) {
+            final double[] tRow = aMat[row];
+            for (int col = 0; col < tColNum; ++col) si.nextAndSet(tRow[col]);
+        }
     }
     @Override public void fillWithRows(Iterable<? extends Iterable<? extends Number>> aRows) {
-        final Iterator<? extends Iterable<? extends Number>> tRowIt = aRows.iterator();
-        final List<IVector> rRows = rows();
-        for (IVector rRow : rRows) rRow.fill(tRowIt.next());
+        final Iterator<? extends Iterable<? extends Number>> tRowsIt = aRows.iterator();
+        final ISetIterator<Double> si = rowSetIterator();
+        final int tRowNum = rowNumber();
+        final int tColNum = columnNumber();
+        for (int row = 0; row < tRowNum; ++row) {
+            final Iterator<? extends Number> tRowIt = tRowsIt.next().iterator();
+            for (int col = 0; col < tColNum; ++col) si.nextAndSet(tRowIt.next().doubleValue());
+        }
     }
     @Override public void fillWithCols(Iterable<? extends Iterable<? extends Number>> aCols) {
-        final Iterator<? extends Iterable<? extends Number>> tColIt = aCols.iterator();
-        final List<IVector> rCols = cols();
-        for (IVector rCol : rCols) rCol.fill(tColIt.next());
+        final Iterator<? extends Iterable<? extends Number>> tColsIt = aCols.iterator();
+        final ISetIterator<Double> si = colSetIterator();
+        final int tRowNum = rowNumber();
+        final int tColNum = columnNumber();
+        for (int col = 0; col < tColNum; ++col) {
+            final Iterator<? extends Number> tColIt = tColsIt.next().iterator();
+            for (int row = 0; row < tRowNum; ++row) si.nextAndSet(tColIt.next().doubleValue());
+        }
     }
     
     

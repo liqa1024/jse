@@ -56,9 +56,9 @@ public interface IMatrixFull<M extends IMatrixGetter, V extends IVectorGetter> e
     
     /** 批量修改的接口 */
     void fill(double aValue);
+    void fill(IMatrixGetter aMatrixGetter);
     void fill(double[][] aMat);
     default void fill(Iterable<? extends Iterable<? extends Number>> aRows) {fillWithRows(aRows);}
-    void fill(IMatrixGetter aMatrixGetter);
     void fillWithRows(Iterable<? extends Iterable<? extends Number>> aRows);
     void fillWithCols(Iterable<? extends Iterable<? extends Number>> aCols);
     

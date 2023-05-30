@@ -1,7 +1,6 @@
 package com.jtool.math.matrix;
 
 
-import com.jtool.code.ISetIterator;
 import com.jtool.math.vector.IVectorFull;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -18,8 +17,8 @@ public interface IDefaultMatrixOperation<M extends IMatrixFull<?, ?>, MS extends
         final MS tThis = thisMatrix_();
         
         final Iterator<Double> it = tThis.colIterator();
-        final int tColNum = tThis.columnNumber();
         final int tRowNum = tThis.rowNumber();
+        final int tColNum = tThis.columnNumber();
         V rVector = tThis.generatorVec().zeros(tColNum);
         for (int col = 0; col < tColNum; ++col) {
             double rSum = 0.0;
@@ -32,8 +31,8 @@ public interface IDefaultMatrixOperation<M extends IMatrixFull<?, ?>, MS extends
         final MS tThis = thisMatrix_();
         
         final Iterator<Double> it = tThis.rowIterator();
-        final int tColNum = tThis.columnNumber();
         final int tRowNum = tThis.rowNumber();
+        final int tColNum = tThis.columnNumber();
         V rVector = tThis.generatorVec().zeros(tRowNum);
         for (int row = 0; row < tRowNum; ++row) {
             double rSum = 0.0;
@@ -47,8 +46,8 @@ public interface IDefaultMatrixOperation<M extends IMatrixFull<?, ?>, MS extends
         final MS tThis = thisMatrix_();
         
         final Iterator<Double> it = tThis.colIterator();
-        final int tColNum = tThis.columnNumber();
         final int tRowNum = tThis.rowNumber();
+        final int tColNum = tThis.columnNumber();
         V rVector = tThis.generatorVec().zeros(tColNum);
         for (int col = 0; col < tColNum; ++col) {
             double rSum = 0.0;
@@ -61,8 +60,8 @@ public interface IDefaultMatrixOperation<M extends IMatrixFull<?, ?>, MS extends
         final MS tThis = thisMatrix_();
         
         final Iterator<Double> it = tThis.rowIterator();
-        final int tColNum = tThis.columnNumber();
         final int tRowNum = tThis.rowNumber();
+        final int tColNum = tThis.columnNumber();
         V rVector = tThis.generatorVec().zeros(tRowNum);
         for (int row = 0; row < tRowNum; ++row) {
             double rSum = 0.0;

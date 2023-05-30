@@ -58,6 +58,8 @@ public abstract class AbstractDataOperation<RS extends IHasLotIterator<? super T
     @Override public final void ebeDo2this(T aRHS, IOperator2<Double> aOpt) {ebeDo2this_(thisInstance_(), aRHS, aOpt);}
     @Override public final void mapDo2this(IOperator1<Double> aOpt) {mapDo2this_(thisInstance_(), aOpt);}
     
+    @Override public final void mapFill2this(double aRHS) {mapFill2this_(thisInstance_(), aRHS);}
+    @Override public final void ebeFill2this(T aRHS) {ebeFill2this_(thisInstance_(), aRHS);}
     
     /** stat stuff */
     @Override public final double sum() {return sumOfThis_(thisInstance_());}
@@ -137,6 +139,16 @@ public abstract class AbstractDataOperation<RS extends IHasLotIterator<? super T
     protected void mapDo2this_(RS rThis, IOperator1<Double> aOpt) {
         final ISetIterator<Double> si = rThis.setIterator();
         while (si.hasNext()) si.set(aOpt.cal(si.next()));
+    }
+    
+    protected void mapFill2this_(RS rThis, double aRHS) {
+        final ISetIterator<Double> si = rThis.setIterator();
+        while (si.hasNext()) si.nextAndSet(aRHS);
+    }
+    protected void ebeFill2this_(RS rThis, T aRHS) {
+        final ISetIterator<Double> si = rThis.setIterator();
+        final Iterator<Double> ri = rThis.iteratorOf(aRHS);
+        while (si.hasNext()) si.nextAndSet(ri.next());
     }
     
     // 方便起见这里直接认为自身类型就是 R，如果遇到不是的再考虑
