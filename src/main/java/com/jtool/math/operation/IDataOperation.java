@@ -54,4 +54,6 @@ public interface IDataOperation<R, T> {
     
     double sum();
     double mean();
+    double max();
+    double min();
 }

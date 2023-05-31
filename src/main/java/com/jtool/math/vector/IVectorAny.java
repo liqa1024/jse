@@ -15,29 +15,29 @@ import java.util.NoSuchElementException;
  * <p> 可自定义获取的向量类型的向量类 </p>
  * <p> 简单起见默认都是实向量，返回类型 double，而如果涉及复向量则会提供额外的接口获取复数部分 </p>
  */
-public interface IVectorFull<V extends IVectorGetter> extends IVectorGetter, IHasLotIterator<IVectorGetter, Double> {
+public interface IVectorAny<V extends IVectorGetter> extends IVectorGetter, IHasLotIterator<IVectorGetter, Double> {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
     Iterator<Double> iterator();
     ISetIterator<Double> setIterator();
     Iterator<Double> iteratorOf(IVectorGetter aContainer);
     
-    default Iterable<Double> iterable() {return IVectorFull.this::iterator;}
+    default Iterable<Double> iterable() {return IVectorAny.this::iterator;}
     default List<Double> asList() {
         return new AbstractList<Double>() {
-            @Override public Double get(int index) {return IVectorFull.this.get(index);}
+            @Override public Double get(int index) {return IVectorAny.this.get(index);}
             @Override public Double set(int index, Double element) {return getAndSet(index, element);}
-            @Override public int size() {return IVectorFull.this.size();}
+            @Override public int size() {return IVectorAny.this.size();}
         };
     }
     
     
     /** 转为兼容性更好的 double[] */
-    double[] vec();
+    double[] data();
     
     /** 批量修改的接口 */
     void fill(double aValue);
     void fill(IVectorGetter aVectorGetter);
-    void fill(double[] aVec);
+    void fill(double[] aData);
     void fill(Iterable<? extends Number> aList);
     
     /** 访问和修改部分，自带的接口 */
@@ -64,6 +64,8 @@ public interface IVectorFull<V extends IVectorGetter> extends IVectorGetter, IHa
     /** 获得基于自身的向量生成器，生成按列排布的向量 */
     IVectorGenerator<V> generator();
     @VisibleForTesting default IVectorGenerator<V> gen() {return generator();}
+    
+    V copy();
     
     /** 切片操作，默认返回新的向量，refSlicer 则会返回引用的切片结果 */
     IVectorSlicer<V> slicer();

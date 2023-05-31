@@ -13,7 +13,7 @@ import java.util.NoSuchElementException;
  * @author liqa
  * <p> 通用的向量类，由于默认实现比较复杂，并且涉及到重写 Object 的成员，因此部分方法放入抽象类中 </p>
  */
-public abstract class AbstractVectorFull<V extends IVectorFull<?>> implements IVectorFull<V> {
+public abstract class AbstractVectorAny<V extends IVectorAny<?>> implements IVectorAny<V> {
     /** print */
     @Override public String toString() {
         StringBuilder rStr  = new StringBuilder();
@@ -81,7 +81,7 @@ public abstract class AbstractVectorFull<V extends IVectorFull<?>> implements IV
         };
     }
     @Override public Iterator<Double> iteratorOf(final IVectorGetter aContainer) {
-        if (aContainer instanceof IVectorFull) return ((IVectorFull<?>)aContainer).iterator();
+        if (aContainer instanceof IVectorAny) return ((IVectorAny<?>)aContainer).iterator();
         return new Iterator<Double>() {
             private final int mSize = size();
             private int mIdx = 0;
@@ -100,18 +100,18 @@ public abstract class AbstractVectorFull<V extends IVectorFull<?>> implements IV
     
     
     /** 转为兼容性更好的 double[] */
-    @Override public double[] vec() {return UT.Code.toData(asList());}
+    @Override public double[] data() {return UT.Code.toData(asList());}
     
     
     /** 批量修改的接口 */
     @Override public final void fill(double aValue) {operation().mapFill2this(aValue);}
     @Override public final void fill(IVectorGetter aVectorGetter) {operation().ebeFill2this(aVectorGetter);}
     
-    @Override public void fill(double[] aVec) {
+    @Override public void fill(double[] aData) {
         final ISetIterator<Double> si = setIterator();
         int idx = 0;
         while (si.hasNext()) {
-            si.nextAndSet(aVec[idx]);
+            si.nextAndSet(aData[idx]);
             ++idx;
         }
     }
@@ -144,11 +144,13 @@ public abstract class AbstractVectorFull<V extends IVectorFull<?>> implements IV
     
     @Override public IVectorGenerator<V> generator() {return new VectorGenerator();}
     
+    @Override public final V copy() {return generator().same();}
+    
     
     /** 切片操作，默认返回新的向量，refSlicer 则会返回引用的切片结果 */
     @Override public IVectorSlicer<V> slicer() {
         return new AbstractVectorSlicer<V>() {
-            @Override protected V getL(final List<Integer> aIndices) {return generator().from(aIndices.size(), i -> AbstractVectorFull.this.get(aIndices.get(i)));}
+            @Override protected V getL(final List<Integer> aIndices) {return generator().from(aIndices.size(), i -> AbstractVectorAny.this.get(aIndices.get(i)));}
             @Override protected V getA() {return generator().same();}
             
             @Override protected Iterator<Double> thisIterator_() {return iterator();}
@@ -159,19 +161,19 @@ public abstract class AbstractVectorFull<V extends IVectorFull<?>> implements IV
             @Override protected IVector getL(final List<Integer> aIndices) {
                 return new AbstractVector() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
-                    @Override public double get_(int aIdx) {return AbstractVectorFull.this.get(aIndices.get(aIdx));}
-                    @Override public void set_(int aIdx, double aValue) {AbstractVectorFull.this.set(aIndices.get(aIdx), aValue);}
-                    @Override public double getAndSet_(int aIdx, double aValue) {return AbstractVectorFull.this.getAndSet(aIndices.get(aIdx), aValue);}
+                    @Override public double get_(int aIdx) {return AbstractVectorAny.this.get(aIndices.get(aIdx));}
+                    @Override public void set_(int aIdx, double aValue) {AbstractVectorAny.this.set(aIndices.get(aIdx), aValue);}
+                    @Override public double getAndSet_(int aIdx, double aValue) {return AbstractVectorAny.this.getAndSet(aIndices.get(aIdx), aValue);}
                     @Override public int size() {return aIndices.size();}
                 };
             }
             @Override protected IVector getA() {
                 return new AbstractVector() {
                     /** 对于全部切片，则不再需要二次边界检查 */
-                    @Override public double get_(int aIdx) {return AbstractVectorFull.this.get_(aIdx);}
-                    @Override public void set_(int aIdx, double aValue) {AbstractVectorFull.this.set_(aIdx, aValue);}
-                    @Override public double getAndSet_(int aIdx, double aValue) {return AbstractVectorFull.this.getAndSet_(aIdx, aValue);}
-                    @Override public int size() {return AbstractVectorFull.this.size();}
+                    @Override public double get_(int aIdx) {return AbstractVectorAny.this.get_(aIdx);}
+                    @Override public void set_(int aIdx, double aValue) {AbstractVectorAny.this.set_(aIdx, aValue);}
+                    @Override public double getAndSet_(int aIdx, double aValue) {return AbstractVectorAny.this.getAndSet_(aIdx, aValue);}
+                    @Override public int size() {return AbstractVectorAny.this.size();}
                 };
             }
             

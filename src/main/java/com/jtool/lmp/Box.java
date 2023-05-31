@@ -1,5 +1,7 @@
 package com.jtool.lmp;
 
+import com.jtool.atom.IHasXYZ;
+import com.jtool.atom.XYZ;
 import com.jtool.math.MathEX;
 import org.jetbrains.annotations.NotNull;
 
@@ -7,34 +9,33 @@ import static com.jtool.code.CS.BOX_ONE;
 import static com.jtool.code.CS.BOX_ZERO;
 
 /**
- * @author liqa
  * lammps 格式的模拟盒信息
+ * @author liqa
  */
 public class Box {
-    final double @NotNull[] mBoxLo, mBoxHi;
+    final @NotNull XYZ mBoxLo, mBoxHi;
     
     public Box() {this(BOX_ONE);}
     public Box(double aSize) {this(aSize, aSize, aSize);}
-    public Box(double aX, double aY, double aZ) {this(BOX_ZERO, new double[] {aX, aY, aZ});}
-    public Box(double aXlo, double aXhi, double aYlo, double aYhi, double aZlo, double aZhi) {this(new double[] {aXlo, aYlo, aZlo}, new double[] {aXhi, aYhi, aZhi});}
-    public Box(double[] aBox) {this(BOX_ZERO, aBox);}
-    public Box(double @NotNull[] aBoxLo, double @NotNull[] aBoxHi) {
-        mBoxLo = aBoxLo; mBoxHi = aBoxHi;
-    }
+    public Box(double aX, double aY, double aZ) {this(BOX_ZERO, new XYZ(aX, aY, aZ));}
+    public Box(double aXlo, double aXhi, double aYlo, double aYhi, double aZlo, double aZhi) {this(new XYZ(aXlo, aYlo, aZlo), new XYZ(aXhi, aYhi, aZhi));}
+    public Box(@NotNull XYZ aBox) {this(BOX_ZERO, aBox);}
+    public Box(@NotNull XYZ aBoxLo, @NotNull XYZ aBoxHi) {mBoxLo = aBoxLo; mBoxHi = aBoxHi;}
+    public Box(@NotNull IHasXYZ aBoxLo, @NotNull IHasXYZ aBoxHi) {this(new XYZ(aBoxLo), new XYZ(aBoxHi));}
     
     /// 获取属性
-    public double xlo() {return mBoxLo[0];}
-    public double xhi() {return mBoxHi[0];}
-    public double ylo() {return mBoxLo[1];}
-    public double yhi() {return mBoxHi[1];}
-    public double zlo() {return mBoxLo[2];}
-    public double zhi() {return mBoxHi[2];}
-    public double[] boxLo() {return mBoxLo;}
-    public double[] boxHi() {return mBoxHi;}
+    public double xlo() {return mBoxLo.mX;}
+    public double xhi() {return mBoxHi.mX;}
+    public double ylo() {return mBoxLo.mY;}
+    public double yhi() {return mBoxHi.mY;}
+    public double zlo() {return mBoxLo.mZ;}
+    public double zhi() {return mBoxHi.mZ;}
+    public XYZ boxLo() {return mBoxLo;}
+    public XYZ boxHi() {return mBoxHi;}
     public boolean isShifted() {return mBoxLo==BOX_ZERO;}
-    public double @NotNull[] shiftedBox() {return mBoxHi==BOX_ONE ? BOX_ONE : (mBoxLo==BOX_ZERO ? mBoxHi : new double[]{mBoxHi[0]-mBoxLo[0], mBoxHi[1]-mBoxLo[1], mBoxHi[2]-mBoxLo[2]});}
+    public @NotNull XYZ shiftedBox() {return mBoxHi==BOX_ONE ? BOX_ONE : (mBoxLo==BOX_ZERO ? mBoxHi : mBoxHi.minus(mBoxHi));}
     
-    public Box copy() {return new Box(mBoxLo==BOX_ZERO?BOX_ZERO:MathEX.Vec.copy(mBoxLo), mBoxHi==BOX_ONE?BOX_ONE:MathEX.Vec.copy(mBoxHi));}
+    public Box copy() {return new Box(mBoxLo==BOX_ZERO ? BOX_ZERO : new XYZ(mBoxLo), mBoxHi==BOX_ONE ? BOX_ONE : new XYZ(mBoxHi));}
     
     // stuff to override
     protected Type type() {return Type.NORMAL;}

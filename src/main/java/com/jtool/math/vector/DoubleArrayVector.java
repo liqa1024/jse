@@ -4,13 +4,11 @@ import com.jtool.math.IDataShell;
 import com.jtool.math.operation.DoubleArrayOperation;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-
 /**
  * @author liqa
  * <p> 内部存储 double[] 的向量，会加速相关的运算 </p>
  */
-public abstract class DoubleArrayVector<V extends DoubleArrayVector<?>> extends AbstractVectorFull<V> implements IDataShell<double[]> {
+public abstract class DoubleArrayVector<V extends DoubleArrayVector<?>> extends AbstractVectorAny<V> implements IDataShell<double[]> {
     protected double[] mData;
     protected DoubleArrayVector(double[] aData) {mData = aData;}
     
@@ -25,12 +23,12 @@ public abstract class DoubleArrayVector<V extends DoubleArrayVector<?>> extends 
         @Override public DoubleArrayVector<V> thisVector_() {return DoubleArrayVector.this;}
         /** 通过输入来获取需要的大小 */
         @Override protected V newInstance_(IVectorGetter aData) {
-            if (aData instanceof IVectorFull) return newZeros(((IVectorFull<?>)aData).size());
+            if (aData instanceof IVectorAny) return newZeros(((IVectorAny<?>)aData).size());
             return newZeros(size());
         }
         @Override protected V newInstance_(IVectorGetter aData1, IVectorGetter aData2) {
-            if (aData1 instanceof IVectorFull) return newZeros(((IVectorFull<?>)aData1).size());
-            if (aData2 instanceof IVectorFull) return newZeros(((IVectorFull<?>)aData2).size());
+            if (aData1 instanceof IVectorAny) return newZeros(((IVectorAny<?>)aData1).size());
+            if (aData2 instanceof IVectorAny) return newZeros(((IVectorAny<?>)aData2).size());
             return newZeros(size());
         }
     }
@@ -39,7 +37,7 @@ public abstract class DoubleArrayVector<V extends DoubleArrayVector<?>> extends 
     @Override public DoubleArrayVectorOperation operation() {return new DoubleArrayVectorOperation();}
     
     /** Optimize stuffs，重写这些接口来加速批量填充过程 */
-    @Override public void fill(double[] aVec) {System.arraycopy(aVec, 0, getData(), shiftSize(), dataSize());}
+    @Override public void fill(double[] aData) {System.arraycopy(aData, 0, getData(), shiftSize(), dataSize());}
     
     /** Optimize stuffs，重写 same 接口专门优化拷贝部分 */
     @Override public IVectorGenerator<V> generator() {

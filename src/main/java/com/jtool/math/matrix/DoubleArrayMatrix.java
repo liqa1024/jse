@@ -2,7 +2,7 @@ package com.jtool.math.matrix;
 
 import com.jtool.math.IDataShell;
 import com.jtool.math.operation.DoubleArrayOperation;
-import com.jtool.math.vector.IVectorFull;
+import com.jtool.math.vector.IVectorAny;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
  * <p> 内部存储 double[] 的矩阵，会加速相关的运算 </p>
  * <p> 由于没有需要的实现，暂时略去中间的 RealMatrix 这一层 </p>
  */
-public abstract class DoubleArrayMatrix<M extends DoubleArrayMatrix<?, ?>, V extends IVectorFull<?>> extends AbstractMatrixFull<M, V> implements IDataShell<double[]> {
+public abstract class DoubleArrayMatrix<M extends DoubleArrayMatrix<?, ?>, V extends IVectorAny<?>> extends AbstractMatrixAny<M, V> implements IDataShell<double[]> {
     protected double[] mData;
     protected DoubleArrayMatrix(double[] aData) {mData = aData;}
     
@@ -25,19 +25,19 @@ public abstract class DoubleArrayMatrix<M extends DoubleArrayMatrix<?, ?>, V ext
         @Override public DoubleArrayMatrix<M, V> thisMatrix_() {return DoubleArrayMatrix.this;}
         /** 通过输入来获取需要的大小 */
         @Override protected M newInstance_(IMatrixGetter aData) {
-            if (aData instanceof IMatrixFull) {
-                IMatrixFull<?, ?> tMatrix = (IMatrixFull<?, ?>)aData;
+            if (aData instanceof IMatrixAny) {
+                IMatrixAny<?, ?> tMatrix = (IMatrixAny<?, ?>)aData;
                 return newZeros_(tMatrix.rowNumber(), tMatrix.columnNumber());
             }
             return newZeros_(rowNumber(), columnNumber());
         }
         @Override protected M newInstance_(IMatrixGetter aData1, IMatrixGetter aData2) {
-            if (aData1 instanceof IMatrixFull) {
-                IMatrixFull<?, ?> tMatrix = (IMatrixFull<?, ?>)aData1;
+            if (aData1 instanceof IMatrixAny) {
+                IMatrixAny<?, ?> tMatrix = (IMatrixAny<?, ?>)aData1;
                 return newZeros_(tMatrix.rowNumber(), tMatrix.columnNumber());
             }
-            if (aData2 instanceof IMatrixFull) {
-                IMatrixFull<?, ?> tMatrix = (IMatrixFull<?, ?>)aData2;
+            if (aData2 instanceof IMatrixAny) {
+                IMatrixAny<?, ?> tMatrix = (IMatrixAny<?, ?>)aData2;
                 return newZeros_(tMatrix.rowNumber(), tMatrix.columnNumber());
             }
             return newZeros_(rowNumber(), columnNumber());

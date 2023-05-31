@@ -7,7 +7,7 @@ import java.util.Iterator;
 /**
  * 矩阵生成器的一般实现，主要实现一些重复的接口
  */
-public abstract class AbstractMatrixGenerator<M extends IMatrixFull<?, ?>> implements IMatrixGenerator<M> {
+public abstract class AbstractMatrixGenerator<M extends IMatrixAny<?, ?>> implements IMatrixGenerator<M> {
     @Override public M ones() {return ones(thisRowNumber_(), thisColumnNumber_());}
     @Override public M zeros() {return zeros(thisRowNumber_(), thisColumnNumber_());}
     @Override public M from(IMatrixGetter aMatrixGetter) {return from(thisRowNumber_(), thisColumnNumber_(), aMatrixGetter);}

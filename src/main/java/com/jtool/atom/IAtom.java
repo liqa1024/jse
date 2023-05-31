@@ -1,10 +1,10 @@
 package com.jtool.atom;
 
-public interface IAtom extends IHasXYZ {
-    double[] xyz();
-    int type();
+/** 现在认为原子无论怎样都会拥有这些属性 */
+public interface IAtom extends IHasXYZID {
+    double x();
+    double y();
+    double z();
     int id();
-    
-    boolean hasType();
-    boolean hasID();
+    int type();
 }

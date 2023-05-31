@@ -1,6 +1,8 @@
 package com.jtool.math.vector;
 
 
+import com.jtool.code.UT;
+
 import java.util.Collection;
 
 /**
@@ -19,7 +21,7 @@ public class Vectors {
         rVector.fill(aVectorGetter);
         return rVector;
     }
-    public static IVector from(IVectorFull<?> aVector) {
+    public static IVector from(IVectorAny<?> aVector) {
         if (aVector instanceof Vector) {
             return ((Vector)aVector).generator().same();
         } else {
@@ -36,6 +38,11 @@ public class Vectors {
     }
     public static IVector from(Collection<? extends Number> aList) {
         IVector rVector = zeros(aList.size());
+        rVector.fill(aList);
+        return rVector;
+    }
+    public static IVector from(double[] aList) {
+        IVector rVector = zeros(aList.length);
         rVector.fill(aList);
         return rVector;
     }

@@ -5,6 +5,8 @@ import com.jtool.code.operator.IOperator1;
 import com.jtool.code.operator.IOperator2;
 import com.jtool.math.IDataShell;
 
+import java.util.Iterator;
+
 
 /**
  * 对于内部含有 double[] 的数据的运算做专门优化，方便编译器做 SIMD 的相关优化
@@ -428,5 +430,29 @@ public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T,
         double rSum = 0.0;
         for (int i = tShift; i < tEnd; ++i) rSum = tData[i];
         return rSum / (double)tSize;
+    }
+    protected double maxOfThis_(RS tThis) {
+        final double[] tData = tThis.getData();
+        final int tShift = tThis.shiftSize();
+        final int tEnd = tThis.dataSize() + tShift;
+        
+        double rMax = Double.NEGATIVE_INFINITY;
+        for (int i = tShift; i < tEnd; ++i) {
+            double tValue = tData[i];
+            if (tValue > rMax) rMax = tValue;
+        }
+        return rMax;
+    }
+    protected double minOfThis_(RS tThis) {
+        final double[] tData = tThis.getData();
+        final int tShift = tThis.shiftSize();
+        final int tEnd = tThis.dataSize() + tShift;
+        
+        double rMin = Double.POSITIVE_INFINITY;
+        for (int i = tShift; i < tEnd; ++i) {
+            double tValue = tData[i];
+            if (tValue < rMin) rMin = tValue;
+        }
+        return rMin;
     }
 }

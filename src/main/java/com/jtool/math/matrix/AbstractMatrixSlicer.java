@@ -28,25 +28,28 @@ public abstract class AbstractMatrixSlicer<M extends IMatrixGetter, V extends IV
     final static String ROL_MSG = "SelectedRows Must be a Filter or int[] or List<Integer> or ALL";
     
     /** 支持过滤器输入，代替没有 {@code List<Boolean>} 的缺陷 */
-    @Override public final M get(IRowFilter    aSelectedRows, int[]         aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final M get(IRowFilter    aSelectedRows, List<Integer> aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final M get(IRowFilter    aSelectedRows, SliceType     aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final V get(IRowFilter    aSelectedRows, int           aSelectedCol ) {return get(F2L(aSelectedRows), aSelectedCol );}
-    @Override public final M get(int[]         aSelectedRows, IColFilter    aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final M get(List<Integer> aSelectedRows, IColFilter    aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final M get(SliceType     aSelectedRows, IColFilter    aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final V get(int           aSelectedRow , IColFilter    aSelectedCols) {return get(aSelectedRow , F2L(aSelectedCols));}
-    @Override public final M get(IRowFilter    aSelectedRows, IColFilter    aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
+    @Override public final M get(IRowFilter          aSelectedRows, int[]         aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
+    @Override public final M get(IRowFilter          aSelectedRows, List<Integer> aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
+    @Override public final M get(IRowFilter          aSelectedRows, SliceType     aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
+    @Override public final V get(IRowFilter          aSelectedRows, int           aSelectedCol ) {return get(F2L(aSelectedRows), aSelectedCol );}
+    @Override public final M get(IRowFilterWithIndex aSelectedRows, int[]         aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
+    @Override public final M get(IRowFilterWithIndex aSelectedRows, List<Integer> aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
+    @Override public final M get(IRowFilterWithIndex aSelectedRows, SliceType     aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
+    @Override public final V get(IRowFilterWithIndex aSelectedRows, int           aSelectedCol ) {return get(F2L(aSelectedRows), aSelectedCol );}
     
-    @Override public final M get(IRowFilterWithIndex aSelectedRows, int[]               aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final M get(IRowFilterWithIndex aSelectedRows, List<Integer>       aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final M get(IRowFilterWithIndex aSelectedRows, SliceType           aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final V get(IRowFilterWithIndex aSelectedRows, int                 aSelectedCol ) {return get(F2L(aSelectedRows), aSelectedCol );}
-    @Override public final M get(int[]               aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final M get(List<Integer>       aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final M get(SliceType           aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final V get(int                 aSelectedRow , IColFilterWithIndex aSelectedCols) {return get(aSelectedRow , F2L(aSelectedCols));}
-    @Override public final M get(IRowFilter          aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
+    @Override public final M get(int[]         aSelectedRows, IColFilter          aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
+    @Override public final M get(List<Integer> aSelectedRows, IColFilter          aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
+    @Override public final M get(SliceType     aSelectedRows, IColFilter          aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
+    @Override public final V get(int           aSelectedRow , IColFilter          aSelectedCols) {return get(aSelectedRow , F2L(aSelectedCols));}
+    @Override public final M get(int[]         aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
+    @Override public final M get(List<Integer> aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
+    @Override public final M get(SliceType     aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
+    @Override public final V get(int           aSelectedRow , IColFilterWithIndex aSelectedCols) {return get(aSelectedRow , F2L(aSelectedCols));}
+    
+    @Override public final M get(IRowFilter          aSelectedRows, IColFilter          aSelectedCols) {return get(F2L(aSelectedRows), F2L(aSelectedCols));}
+    @Override public final M get(IRowFilterWithIndex aSelectedRows, IColFilter          aSelectedCols) {return get(F2L(aSelectedRows), F2L(aSelectedCols));}
+    @Override public final M get(IRowFilter          aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(F2L(aSelectedRows), F2L(aSelectedCols));}
+    @Override public final M get(IRowFilterWithIndex aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(F2L(aSelectedRows), F2L(aSelectedCols));}
     
     List<Integer> F2L(IRowFilter aSelectedRows) {
         List<Integer> rSelectedRows = new ArrayList<>();

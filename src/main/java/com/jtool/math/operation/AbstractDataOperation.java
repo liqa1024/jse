@@ -64,6 +64,8 @@ public abstract class AbstractDataOperation<RS extends IHasLotIterator<? super T
     /** stat stuff */
     @Override public final double sum() {return sumOfThis_(thisInstance_());}
     @Override public final double mean() {return meanOfThis_(thisInstance_());}
+    @Override public final double max() {return maxOfThis_(thisInstance_());}
+    @Override public final double min() {return minOfThis_(thisInstance_());}
     
     
     /** 默认实现没做任何优化，重写来进行优化 */
@@ -82,6 +84,24 @@ public abstract class AbstractDataOperation<RS extends IHasLotIterator<? super T
             ++tNum;
         }
         return rSum / tNum;
+    }
+    protected double maxOfThis_(RS tThis) {
+        double rMax = Double.NEGATIVE_INFINITY;
+        final Iterator<Double> it = tThis.iterator();
+        while (it.hasNext()) {
+            double tValue = it.next();
+            if (tValue > rMax) rMax = tValue;
+        }
+        return rMax;
+    }
+    protected double minOfThis_(RS tThis) {
+        double rMin = Double.POSITIVE_INFINITY;
+        final Iterator<Double> it = tThis.iterator();
+        while (it.hasNext()) {
+            double tValue = it.next();
+            if (tValue < rMin) rMin = tValue;
+        }
+        return rMin;
     }
     
     @SuppressWarnings("Convert2MethodRef")

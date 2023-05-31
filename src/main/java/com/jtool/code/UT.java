@@ -6,11 +6,11 @@ import com.jtool.code.operator.IOperator1Full;
 import com.jtool.io.Decryptor;
 import com.jtool.io.Encryptor;
 import com.jtool.math.matrix.IMatrix;
-import com.jtool.math.matrix.IMatrixFull;
+import com.jtool.math.matrix.IMatrixAny;
 import com.jtool.math.matrix.Matrices;
 import com.jtool.math.table.Table;
 import com.jtool.math.vector.IVector;
-import com.jtool.math.vector.IVectorFull;
+import com.jtool.math.vector.IVectorAny;
 import com.jtool.ssh.SerializableTask;
 import groovy.json.JsonBuilder;
 import groovy.json.JsonSlurper;
@@ -258,6 +258,39 @@ public class UT {
                         if (mParentIt.hasNext()) {
                             mIt = mParentIt.next().iterator();
                             mNext = null;
+                            continue;
+                        }
+                        return false;
+                    }
+                }
+                @Override public T next() {
+                    if (hasNext()) {
+                        T tNext = mNext;
+                        mNext = null; // 设置 mNext 非法表示此时不再有 Next
+                        return tNext;
+                    } else {
+                        throw new NoSuchElementException();
+                    }
+                }
+            };
+        }
+        
+        /**
+         * filter the input Iterable
+         * @author liqa
+         */
+        public static <T> Iterable<T> filterIterable(final Iterable<? extends T> aIterable, final IOperator1Full<Boolean, ? super T> aFilter) {
+            return () -> new Iterator<T>() {
+                private final Iterator<? extends T> mIt = aIterable.iterator();
+                private T mNext = null;
+                
+                @Override public boolean hasNext() {
+                    while (true) {
+                        if (mNext != null) return true;
+                        if (mIt.hasNext()) {
+                            mNext = mIt.next();
+                            // 过滤器不通过则设为 null 跳过
+                            if (!aFilter.cal(mNext)) mNext = null;
                             continue;
                         }
                         return false;
@@ -756,18 +789,18 @@ public class UT {
                 for (double[] subData : aData) tPrinter.println(String.join(",", data2str(subData)));
             }
         }
-        public static void data2csv(IMatrixFull<?,?> aData, String aFilePath, String... aHeads) throws IOException {
+        public static void data2csv(IMatrixAny<?,?> aData, String aFilePath, String... aHeads) throws IOException {
             try (PrintStream tPrinter = toPrintStream(aFilePath)) {
                 if (aHeads!=null && aHeads.length>0) tPrinter.println(String.join(",", aHeads));
                 for (IVector subData : aData.rows()) tPrinter.println(String.join(",", Code.map(subData.iterable(), Object::toString)));
             }
         }
-        public static void data2csv(IVectorFull<?> aData, String aFilePath) throws IOException {
+        public static void data2csv(IVectorAny<?> aData, String aFilePath) throws IOException {
             try (PrintStream tPrinter = toPrintStream(aFilePath)) {
                 for (Double subData : aData.iterable()) tPrinter.println(subData);
             }
         }
-        public static void data2csv(IVectorFull<?> aData, String aFilePath, String aHead) throws IOException {
+        public static void data2csv(IVectorAny<?> aData, String aFilePath, String aHead) throws IOException {
             try (PrintStream tPrinter = toPrintStream(aFilePath)) {
                 tPrinter.println(aHead);
                 for (Double subData : aData.iterable()) tPrinter.println(subData);
@@ -780,7 +813,7 @@ public class UT {
          * @param aFilePath csv file path to read
          * @return a matrix
          */
-        public static IMatrix csv2data(String aFilePath) throws IOException {return Matrices.from(csv2table(aFilePath));}
+        public static IMatrix csv2data(String aFilePath) throws IOException {return Matrices.from(csv2table(aFilePath).matrix());}
         
         
         /**

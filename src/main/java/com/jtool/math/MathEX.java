@@ -1,5 +1,6 @@
 package com.jtool.math;
 
+import com.jtool.atom.IHasXYZ;
 import com.jtool.atom.MonatomicParameterCalculator;
 import com.jtool.code.Pair;
 import com.jtool.code.operator.IOperator1;

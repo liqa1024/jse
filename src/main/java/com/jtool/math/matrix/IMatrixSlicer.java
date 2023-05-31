@@ -39,23 +39,26 @@ public interface IMatrixSlicer<M extends IMatrixGetter, V extends IVectorGetter>
     @FunctionalInterface interface IColFilter          {boolean accept(IVectorGetter aCol);}
     @FunctionalInterface interface IColFilterWithIndex {boolean accept(IVectorGetter aCol, int aIndex);}
     
-    M get(IRowFilter    aSelectedRows, int[]         aSelectedCols);
-    M get(IRowFilter    aSelectedRows, List<Integer> aSelectedCols);
-    M get(IRowFilter    aSelectedRows, SliceType     aSelectedCols);
-    V get(IRowFilter    aSelectedRows, int           aSelectedCol );
-    M get(int[]         aSelectedRows, IColFilter    aSelectedCols);
-    M get(List<Integer> aSelectedRows, IColFilter    aSelectedCols);
-    M get(SliceType     aSelectedRows, IColFilter    aSelectedCols);
-    V get(int           aSelectedRow , IColFilter    aSelectedCols);
-    M get(IRowFilter    aSelectedRows, IColFilter    aSelectedCols);
+    M get(IRowFilter          aSelectedRows, int[]         aSelectedCols);
+    M get(IRowFilter          aSelectedRows, List<Integer> aSelectedCols);
+    M get(IRowFilter          aSelectedRows, SliceType     aSelectedCols);
+    V get(IRowFilter          aSelectedRows, int           aSelectedCol );
+    M get(IRowFilterWithIndex aSelectedRows, int[]         aSelectedCols);
+    M get(IRowFilterWithIndex aSelectedRows, List<Integer> aSelectedCols);
+    M get(IRowFilterWithIndex aSelectedRows, SliceType     aSelectedCols);
+    V get(IRowFilterWithIndex aSelectedRows, int           aSelectedCol );
     
-    M get(IRowFilterWithIndex aSelectedRows, int[]               aSelectedCols);
-    M get(IRowFilterWithIndex aSelectedRows, List<Integer>       aSelectedCols);
-    M get(IRowFilterWithIndex aSelectedRows, SliceType           aSelectedCols);
-    V get(IRowFilterWithIndex aSelectedRows, int                 aSelectedCol );
-    M get(int[]               aSelectedRows, IColFilterWithIndex aSelectedCols);
-    M get(List<Integer>       aSelectedRows, IColFilterWithIndex aSelectedCols);
-    M get(SliceType           aSelectedRows, IColFilterWithIndex aSelectedCols);
-    V get(int                 aSelectedRow , IColFilterWithIndex aSelectedCols);
+    M get(int[]         aSelectedRows, IColFilter          aSelectedCols);
+    M get(List<Integer> aSelectedRows, IColFilter          aSelectedCols);
+    M get(SliceType     aSelectedRows, IColFilter          aSelectedCols);
+    V get(int           aSelectedRow , IColFilter          aSelectedCols);
+    M get(int[]         aSelectedRows, IColFilterWithIndex aSelectedCols);
+    M get(List<Integer> aSelectedRows, IColFilterWithIndex aSelectedCols);
+    M get(SliceType     aSelectedRows, IColFilterWithIndex aSelectedCols);
+    V get(int           aSelectedRow , IColFilterWithIndex aSelectedCols);
+    
+    M get(IRowFilter          aSelectedRows, IColFilter          aSelectedCols);
+    M get(IRowFilterWithIndex aSelectedRows, IColFilter          aSelectedCols);
     M get(IRowFilter          aSelectedRows, IColFilterWithIndex aSelectedCols);
+    M get(IRowFilterWithIndex aSelectedRows, IColFilterWithIndex aSelectedCols);
 }

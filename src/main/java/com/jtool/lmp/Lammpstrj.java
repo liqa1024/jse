@@ -1,20 +1,21 @@
 package com.jtool.lmp;
 
-import com.google.common.collect.ImmutableMap;
-import com.jtool.atom.AbstractAtomData;
-import com.jtool.atom.AbstractMultiFrameAtomData;
-import com.jtool.atom.IHasAtomData;
+import com.jtool.atom.*;
 import com.jtool.code.UT;
-import com.jtool.math.MathEX;
-import org.jetbrains.annotations.Nullable;
+import com.jtool.math.matrix.AbstractMatrix;
+import com.jtool.math.matrix.IMatrix;
+import com.jtool.math.table.AbstractTable;
+import com.jtool.math.table.ITable;
+import com.jtool.math.table.Table;
+import com.jtool.math.vector.IVector;
 
 import java.io.IOException;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
-import static com.jtool.code.CS.STD_ATOM_DATA_KEYS;
+import static com.jtool.code.CS.*;
 
 /**
  * @author liqa
@@ -46,72 +47,59 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
         private final long mTimeStep;
         private final String[] mBoxBounds;
         private final Box mBox;
-        private final String[] mAtomDataKeys;
-        private final double[][] mAtomData;
+        private final ITable mAtomData;
         private final int mAtomTypeNum;
         
         private int mTypeCol = -1;
-        private final Map<String, Integer> mKey2Idx;
+        private int mIDCol = -1;
         private int mXCol = -1, mYCol = -1, mZCol = -1;
-        private final XYZType mXYZType;
-        private final XYZType @Nullable[] mXYZTypeDetail;
+        private final XYZType mXType, mYType, mZType;
         
-        public SubLammpstrj(long aTimeStep, String[] aBoxBounds, Box aBox, String[] aAtomDataKeys, double[][] aAtomData) {
+        
+        public SubLammpstrj(long aTimeStep, String[] aBoxBounds, Box aBox, ITable aAtomData) {
             mTimeStep = aTimeStep;
             mBoxBounds = aBoxBounds;
             mBox = aBox;
-            mAtomDataKeys = aAtomDataKeys;
             mAtomData = aAtomData;
             
-            ImmutableMap.Builder<String, Integer> tMapBuilder = new ImmutableMap.Builder<>();
             String tKeyX = "x";
             String tKeyY = "y";
             String tKeyZ = "z";
-            for (int i = 0; i < mAtomDataKeys.length; ++i) {
-                String tKey = mAtomDataKeys[i];
-                tMapBuilder.put(tKey, i);
+            for (int i = 0; i < aAtomData.columnNumber(); ++i) {
+                String tKey = aAtomData.getHead(i);
                 if (tKey.equals("type")) mTypeCol = i;
+                if (tKey.equals("id")) mIDCol = i;
                 if (tKey.equals("x") || tKey.equals("xs") || tKey.equals("xu") || tKey.equals("xsu")) {tKeyX = tKey; mXCol = i;}
                 if (tKey.equals("y") || tKey.equals("ys") || tKey.equals("yu") || tKey.equals("ysu")) {tKeyY = tKey; mYCol = i;}
                 if (tKey.equals("z") || tKey.equals("zs") || tKey.equals("zu") || tKey.equals("zsu")) {tKeyZ = tKey; mZCol = i;}
             }
-            mKey2Idx = tMapBuilder.build();
             
-            if      (tKeyX.equals("x"  ) && tKeyY.equals("y"  ) && tKeyZ.equals("z"  )) mXYZType = XYZType.NORMAL;
-            else if (tKeyX.equals("xs" ) && tKeyY.equals("ys" ) && tKeyZ.equals("zs" )) mXYZType = XYZType.SCALED;
-            else if (tKeyX.equals("xu" ) && tKeyY.equals("yu" ) && tKeyZ.equals("zu" )) mXYZType = XYZType.UNWRAPPED;
-            else if (tKeyX.equals("xsu") && tKeyY.equals("ysu") && tKeyZ.equals("zsu")) mXYZType = XYZType.SCALED_UNWRAPPED;
-            else mXYZType = XYZType.MIXED;
-            
-            if (mXYZType == XYZType.MIXED) {
-                mXYZTypeDetail = new XYZType[3];
-                switch (tKeyX) {
-                case "x"  : {mXYZTypeDetail[0] = XYZType.NORMAL;             break;}
-                case "xs" : {mXYZTypeDetail[0] = XYZType.SCALED;             break;}
-                case "xu" : {mXYZTypeDetail[0] = XYZType.UNWRAPPED;          break;}
-                case "xsu": {mXYZTypeDetail[0] = XYZType.SCALED_UNWRAPPED;   break;}
-                }
-                switch (tKeyY) {
-                case "y"  : {mXYZTypeDetail[1] = XYZType.NORMAL;             break;}
-                case "ys" : {mXYZTypeDetail[1] = XYZType.SCALED;             break;}
-                case "yu" : {mXYZTypeDetail[1] = XYZType.UNWRAPPED;          break;}
-                case "ysu": {mXYZTypeDetail[1] = XYZType.SCALED_UNWRAPPED;   break;}
-                }
-                switch (tKeyZ) {
-                case "z"  : {mXYZTypeDetail[2] = XYZType.NORMAL;             break;}
-                case "zs" : {mXYZTypeDetail[2] = XYZType.SCALED;             break;}
-                case "zu" : {mXYZTypeDetail[2] = XYZType.UNWRAPPED;          break;}
-                case "zsu": {mXYZTypeDetail[2] = XYZType.SCALED_UNWRAPPED;   break;}
-                }
-            } else {
-                mXYZTypeDetail = null;
+            switch (tKeyX) {
+            case "x"  : {mXType = XYZType.NORMAL;             break;}
+            case "xs" : {mXType = XYZType.SCALED;             break;}
+            case "xu" : {mXType = XYZType.UNWRAPPED;          break;}
+            case "xsu": {mXType = XYZType.SCALED_UNWRAPPED;   break;}
+            default: throw new RuntimeException();
+            }
+            switch (tKeyY) {
+            case "y"  : {mYType = XYZType.NORMAL;             break;}
+            case "ys" : {mYType = XYZType.SCALED;             break;}
+            case "yu" : {mYType = XYZType.UNWRAPPED;          break;}
+            case "ysu": {mYType = XYZType.SCALED_UNWRAPPED;   break;}
+            default: throw new RuntimeException();
+            }
+            switch (tKeyZ) {
+            case "z"  : {mZType = XYZType.NORMAL;             break;}
+            case "zs" : {mZType = XYZType.SCALED;             break;}
+            case "zu" : {mZType = XYZType.UNWRAPPED;          break;}
+            case "zsu": {mZType = XYZType.SCALED_UNWRAPPED;   break;}
+            default: throw new RuntimeException();
             }
             
             // 对于 dump，mAtomTypeNum 只能手动遍历统计
             int tAtomTypeNum = 1;
-            if (mTypeCol >= 0) for (double[] subAtomData : mAtomData) {
-                int tType = (int)subAtomData[mTypeCol];
-                if (tType > tAtomTypeNum) tAtomTypeNum = tType;
+            if (mTypeCol >= 0) {
+                tAtomTypeNum = (int)mAtomData.col(mTypeCol).operation().max();
             }
             mAtomTypeNum = tAtomTypeNum;
         }
@@ -121,7 +109,6 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             , SCALED
             , UNWRAPPED
             , SCALED_UNWRAPPED
-            , MIXED
         }
         
         // dump 额外的属性
@@ -129,124 +116,121 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
         public String[] boxBounds() {return mBoxBounds;}
         public Box box() {return mBox;}
         
-        /** AbstractAtomData stuffs */
-        @Override public int atomTypeNum() {return mAtomTypeNum;}
-        @Override public String[] atomDataKeys() {return mAtomDataKeys;}
-        @Override public double[][] atomData() {return mAtomData;}
-        @Override public double[] boxLo() {return mBox.boxLo();}
-        @Override public double[] boxHi() {return mBox.boxHi();}
-        
-        /** 重写这个方法来对于不同格式的 xyz dump 都能直接使用 */
-        @Override public int xCol() {return mXCol;}
-        @Override public int yCol() {return mYCol;}
-        @Override public int zCol() {return mZCol;}
-        @Override public double[][] toOrthogonalXYZ_(double[][] aAtomDataXYZ) {
-            switch (mXYZType) {
-            case NORMAL: {return aAtomDataXYZ;}
+        /** 内部方法，用于从一行的数据获取合适的 x，y，z 数据 */
+        private double getX_(IVector aRow) {
+            if (mXCol < 0) throw new RuntimeException("No X data in this Lammpstrj");
+            double tX = aRow.get_(mXCol);
+            switch (mXType) {
+            case NORMAL: {
+                return tX;
+            }
             case SCALED: {
-                // 由于需要修改，根据约定先进行值拷贝
-                aAtomDataXYZ = MathEX.Mat.copy(aAtomDataXYZ);
-                // 根据 Box 重新缩放
-                MathEX.XYZ.unscaleAtomDataXYZ(aAtomDataXYZ, mBox.boxLo(), mBox.boxHi());
-                return aAtomDataXYZ;
+                double tBoxLoX = mBox.xlo();
+                double tBoxX = mBox.xhi() - tBoxLoX;
+                return tBoxLoX + tX*tBoxX;
             }
             case UNWRAPPED: {
-                // 由于需要修改，根据约定先进行值拷贝
-                aAtomDataXYZ = MathEX.Mat.copy(aAtomDataXYZ);
-                // 根据 Box 进行 wrap
-                MathEX.XYZ.wrapAtomDataXYZ(aAtomDataXYZ, mBox.boxLo(), mBox.boxHi());
-                return aAtomDataXYZ;
+                double tBoxLoX = mBox.xlo();
+                double tBoxHiX = mBox.xhi();
+                double tBoxX = tBoxHiX - tBoxLoX;
+                if      (tX <  tBoxLoX) {while (tX <  tBoxLoX) tX += tBoxX;}
+                else if (tX >= tBoxHiX) {while (tX >= tBoxHiX) tX -= tBoxX;}
+                return tX;
             }
             case SCALED_UNWRAPPED: {
-                // 由于需要修改，根据约定先进行值拷贝
-                aAtomDataXYZ = MathEX.Mat.copy(aAtomDataXYZ);
-                // 先进行 wrap
-                MathEX.XYZ.wrapScaledAtomDataXYZ(aAtomDataXYZ);
-                // 再根据 Box 重新缩放
-                MathEX.XYZ.unscaleAtomDataXYZ(aAtomDataXYZ, mBox.boxLo(), mBox.boxHi());
-                return aAtomDataXYZ;
-            }
-            case MIXED: {
-                assert mXYZTypeDetail != null;
-                // 由于需要修改，根据约定先进行值拷贝
-                aAtomDataXYZ = MathEX.Mat.copy(aAtomDataXYZ);
-                // 混合情况直接手动遍历实现
-                double tBoxLoX = mBox.xlo(), tBoxLoY = mBox.ylo(), tBoxLoZ = mBox.zlo();
-                double tBoxHiX = mBox.xhi(), tBoxHiY = mBox.yhi(), tBoxHiZ = mBox.zhi();
-                double tBoxX = tBoxHiX-tBoxLoX, tBoxY = tBoxHiY-tBoxLoY, tBoxZ = tBoxHiZ-tBoxLoZ;
-                XYZType tXType = mXYZTypeDetail[0], tYType = mXYZTypeDetail[1], tZType = mXYZTypeDetail[2];
-                for (double[] rXYZ : aAtomDataXYZ) {
-                    switch (tXType) {
-                    case NORMAL: default: break;
-                    case SCALED: {
-                        rXYZ[0] *= tBoxX; rXYZ[0] += tBoxLoX;
-                        break;
-                    }
-                    case UNWRAPPED: {
-                        double tX = rXYZ[0];
-                        if      (tX <  tBoxLoX) {while (rXYZ[0] <  tBoxLoX) rXYZ[0] += tBoxX;}
-                        else if (tX >= tBoxHiX) {while (rXYZ[0] >= tBoxHiX) rXYZ[0] -= tBoxX;}
-                        break;
-                    }
-                    case SCALED_UNWRAPPED: {
-                        double tX = rXYZ[0];
-                        if      (tX <  0.0) {while (rXYZ[0] <  0.0) ++rXYZ[0];}
-                        else if (tX >= 1.0) {while (rXYZ[0] >= 1.0) --rXYZ[0];}
-                        rXYZ[0] *= tBoxX; rXYZ[0] += tBoxLoX;
-                        break;
-                    }}
-                    switch (tYType) {
-                    case NORMAL: default: break;
-                    case SCALED: {
-                        rXYZ[1] *= tBoxY; rXYZ[1] += tBoxLoY;
-                        break;
-                    }
-                    case UNWRAPPED: {
-                        double tY = rXYZ[1];
-                        if      (tY <  tBoxLoY) {while (rXYZ[1] <  tBoxLoY) rXYZ[1] += tBoxY;}
-                        else if (tY >= tBoxHiY) {while (rXYZ[1] >= tBoxHiY) rXYZ[1] -= tBoxY;}
-                        break;
-                    }
-                    case SCALED_UNWRAPPED: {
-                        double tY = rXYZ[1];
-                        if      (tY <  0.0) {while (rXYZ[1] <  0.0) ++rXYZ[1];}
-                        else if (tY >= 1.0) {while (rXYZ[1] >= 1.0) --rXYZ[1];}
-                        rXYZ[1] *= tBoxY; rXYZ[1] += tBoxLoY;
-                        break;
-                    }}
-                    switch (tZType) {
-                    case NORMAL: default: break;
-                    case SCALED: {
-                        rXYZ[2] *= tBoxZ; rXYZ[2] += tBoxLoZ;
-                        break;
-                    }
-                    case UNWRAPPED: {
-                        double tZ = rXYZ[2];
-                        if      (tZ <  tBoxLoZ) {while (rXYZ[2] <  tBoxLoZ) rXYZ[2] += tBoxZ;}
-                        else if (tZ >= tBoxHiZ) {while (rXYZ[2] >= tBoxHiZ) rXYZ[2] -= tBoxZ;}
-                        break;
-                    }
-                    case SCALED_UNWRAPPED: {
-                        double tZ = rXYZ[2];
-                        if      (tZ <  0.0) {while (rXYZ[2] <  0.0) ++rXYZ[2];}
-                        else if (tZ >= 1.0) {while (rXYZ[2] >= 1.0) --rXYZ[2];}
-                        rXYZ[2] *= tBoxZ; rXYZ[2] += tBoxLoZ;
-                        break;
-                    }}
-                }
-                return aAtomDataXYZ;
+                if      (tX <  0.0) {while (tX <  0.0) ++tX;}
+                else if (tX >= 1.0) {while (tX >= 1.0) --tX;}
+                double tBoxLoX = mBox.xlo();
+                double tBoxX = mBox.xhi() - tBoxLoX;
+                return tBoxLoX + tX*tBoxX;
             }
             default: throw new RuntimeException();
             }
         }
-        @Override public double[][] toOrthogonalXYZID_(double[][] aAtomDataXYZID) {return toOrthogonalXYZ_(aAtomDataXYZID);} // 由于前 0-2 列一样都是 xyz，因此操作可以通用
-        
-        /** 重写来优化索引过程 */
-        @Override public int typeCol() {return mTypeCol;}
-        @Override public int key2idx(String aKey) {
-            Integer tIdx = mKey2Idx.get(aKey);
-            return tIdx==null ? -1 : tIdx;
+        private double getY_(IVector aRow) {
+            if (mYCol < 0) throw new RuntimeException("No Y data in this Lammpstrj");
+            double tY = aRow.get_(mYCol);
+            switch (mYType) {
+            case NORMAL: {
+                return tY;
+            }
+            case SCALED: {
+                double tBoxLoY = mBox.ylo();
+                double tBoxY = mBox.yhi() - tBoxLoY;
+                return tBoxLoY + tY*tBoxY;
+            }
+            case UNWRAPPED: {
+                double tBoxLoY = mBox.ylo();
+                double tBoxHiY = mBox.yhi();
+                double tBoxY = tBoxHiY - tBoxLoY;
+                if      (tY <  tBoxLoY) {while (tY <  tBoxLoY) tY += tBoxY;}
+                else if (tY >= tBoxHiY) {while (tY >= tBoxHiY) tY -= tBoxY;}
+                return tY;
+            }
+            case SCALED_UNWRAPPED: {
+                if      (tY <  0.0) {while (tY <  0.0) ++tY;}
+                else if (tY >= 1.0) {while (tY >= 1.0) --tY;}
+                double tBoxLoY = mBox.ylo();
+                double tBoxY = mBox.yhi() - tBoxLoY;
+                return tBoxLoY + tY*tBoxY;
+            }
+            default: throw new RuntimeException();
+            }
         }
+        private double getZ_(IVector aRow) {
+            if (mZCol < 0) throw new RuntimeException("No Z data in this Lammpstrj");
+            double tZ = aRow.get_(mZCol);
+            switch (mZType) {
+            case NORMAL: {
+                return tZ;
+            }
+            case SCALED: {
+                double tBoxLoZ = mBox.zlo();
+                double tBoxZ = mBox.zhi() - tBoxLoZ;
+                return tBoxLoZ + tZ*tBoxZ;
+            }
+            case UNWRAPPED: {
+                double tBoxLoZ = mBox.zlo();
+                double tBoxHiZ = mBox.zhi();
+                double tBoxZ = tBoxHiZ - tBoxLoZ;
+                if      (tZ <  tBoxLoZ) {while (tZ <  tBoxLoZ) tZ += tBoxZ;}
+                else if (tZ >= tBoxHiZ) {while (tZ >= tBoxHiZ) tZ -= tBoxZ;}
+                return tZ;
+            }
+            case SCALED_UNWRAPPED: {
+                if      (tZ <  0.0) {while (tZ <  0.0) ++tZ;}
+                else if (tZ >= 1.0) {while (tZ >= 1.0) --tZ;}
+                double tBoxLoZ = mBox.zlo();
+                double tBoxZ = mBox.zhi() - tBoxLoZ;
+                return tBoxLoZ + tZ*tBoxZ;
+            }
+            default: throw new RuntimeException();
+            }
+        }
+        
+        /** AbstractAtomData stuffs */
+        @Override public List<IAtom> atoms() {
+            return new AbstractList<IAtom>() {
+                @Override public IAtom get(final int index) {
+                    return new IAtom() {
+                        private final IVector mRow = mAtomData.row(index);
+                        @Override public double x() {return getX_(mRow);}
+                        @Override public double y() {return getY_(mRow);}
+                        @Override public double z() {return getZ_(mRow);}
+                        
+                        /** 如果没有 id 数据则 id 为顺序位置 +1 */
+                        @Override public int id() {return (mIDCol < 0) ? index+1 : (int)mRow.get_(mIDCol);}
+                        /** 如果没有 type 数据则 type 都为 1 */
+                        @Override public int type() {return (mTypeCol < 0) ? 1 : (int)mRow.get_(mTypeCol);}
+                    };
+                }
+                @Override public int size() {return mAtomData.rowNumber();}
+            };
+        }
+        @Override public IHasXYZ boxLo() {return mBox.boxLo();}
+        @Override public IHasXYZ boxHi() {return mBox.boxHi();}
+        @Override public int atomNum() {return mAtomData.rowNumber();}
+        @Override public int atomTypeNum() {return mAtomTypeNum;}
     }
     
     
@@ -275,21 +259,18 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
         return new Lammpstrj(rLammpstrj);
     }
     static SubLammpstrj fromAtomData_(IHasAtomData aHasAtomData, long aTimeStep) {
-        // 粒子数据，可以是任意格式
-        double[][] tAtomData;
-        String[] tAtomDataKeys;
-        int tAtomTypeNum = aHasAtomData.atomTypeNum();
         // 根据输入的 aHasAtomData 类型来具体判断需要如何获取 rAtomData
-        if (aHasAtomData instanceof SubLammpstrj || aHasAtomData instanceof Lammpstrj) {
+        if (aHasAtomData instanceof Lammpstrj) {
+            return fromAtomData_(((Lammpstrj)aHasAtomData).defaultFrame(), aTimeStep);
+        } else
+        if (aHasAtomData instanceof SubLammpstrj) {
             // SubLammpstrj 则直接获取即可（专门优化，保留排序，具体坐标的形式，对应的标签等，注意时间步会抹除）
-            tAtomData = aHasAtomData.atomData();
-            tAtomDataKeys = aHasAtomData.atomDataKeys();
+            SubLammpstrj tSubLammpstrj = (SubLammpstrj)aHasAtomData;
+            return new SubLammpstrj(aTimeStep, BOX_BOUND, tSubLammpstrj.mBox.copy(), tSubLammpstrj.mAtomData);
         } else {
-            // 一般的情况，注意标签也要改为默认标签
-            tAtomData = IHasAtomData.Util.toStandardAtomData(aHasAtomData);
-            tAtomDataKeys = STD_ATOM_DATA_KEYS;
+            // 一般的情况，通过 dataSTD 来创建，注意这里认为获取时已经经过了值拷贝，因此不再需要 copy
+            return new SubLammpstrj(aTimeStep, BOX_BOUND, new Box(aHasAtomData.boxLo(), aHasAtomData.boxHi()), aHasAtomData.dataSTD());
         }
-        return new SubLammpstrj(aTimeStep, BOX_BOUND, new Box(aHasAtomData.boxLo(), aHasAtomData.boxHi()), tAtomDataKeys, tAtomData);
     }
     /** 对于 matlab 调用的兼容 */
     public static Lammpstrj fromAtomData_compat(Object... aHasAtomDataArray) {
@@ -324,7 +305,7 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             String[] aBoxBounds;
             Box aBox;
             String[] aAtomDataKeys;
-            double[][] aAtomData;
+            List<double[]> aAtomData;
             
             // 读取时间步数
             idx = UT.Texts.findLineContaining(aLines, idx, "ITEM: TIMESTEP"); ++idx;
@@ -358,15 +339,15 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             System.arraycopy(tTokens, 2, aAtomDataKeys, 0, aAtomDataKeys.length);
             ++idx;
             if (idx+tAtomNum > aLines.length) break;
-            aAtomData = new double[tAtomNum][aAtomDataKeys.length];
+            aAtomData = new ArrayList<>(tAtomNum);
             for (int i = 0; i < tAtomNum; ++i) {
                 tTokens = UT.Texts.splitBlank(aLines[idx]);
-                aAtomData[i] = UT.IO.str2data(tTokens);
+                aAtomData.add(UT.IO.str2data(tTokens));
                 ++idx;
             }
             
             // 创建 SubLammpstrj 并附加到 rLammpstrj 中
-            rLammpstrj.add(new SubLammpstrj(aTimeStep, aBoxBounds, aBox, aAtomDataKeys, aAtomData));
+            rLammpstrj.add(new SubLammpstrj(aTimeStep, aBoxBounds, aBox, new Table(aAtomDataKeys, aAtomData)));
         }
         return new Lammpstrj(rLammpstrj);
     }
@@ -389,9 +370,9 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             lines.add(String.format("%f %f", tSubLammpstrj.box().xlo(), tSubLammpstrj.box().xhi()));
             lines.add(String.format("%f %f", tSubLammpstrj.box().ylo(), tSubLammpstrj.box().yhi()));
             lines.add(String.format("%f %f", tSubLammpstrj.box().zlo(), tSubLammpstrj.box().zhi()));
-            lines.add(String.format("ITEM: ATOMS %s", String.join(" ", tSubLammpstrj.atomDataKeys())));
-            for (double[] subAtomData : tSubLammpstrj.atomData())
-            lines.add(String.join(" ", UT.IO.data2str(subAtomData)));
+            lines.add(String.format("ITEM: ATOMS %s", String.join(" ", tSubLammpstrj.mAtomData.heads())));
+            for (IVector subAtomData : tSubLammpstrj.mAtomData.rows())
+            lines.add(String.join(" ", UT.Code.map(subAtomData.iterable(), Object::toString)));
         }
         lines.add("");
         

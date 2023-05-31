@@ -11,5 +11,5 @@ import com.jtool.math.operation.IDataOperation;
 public interface IVectorOperation<V extends IVectorGetter> extends IDataOperation<V, IVectorGetter> {
     /** 向量的一些额外的运算 */
     V reverse();
-    IVectorFull<?> refReverse();
+    IVectorAny<?> refReverse();
 }

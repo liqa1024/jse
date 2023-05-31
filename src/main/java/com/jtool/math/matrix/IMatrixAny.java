@@ -18,7 +18,7 @@ import java.util.List;
  * <p> 可自定义获取的矩阵类型的矩阵类 </p>
  * <p> 简单起见默认都是实矩阵，返回类型 double，而如果涉及复矩阵则会提供额外的接口获取复数部分 </p>
  */
-public interface IMatrixFull<M extends IMatrixGetter, V extends IVectorGetter> extends IMatrixGetter, IHasLotIterator<IMatrixGetter, Double> {
+public interface IMatrixAny<M extends IMatrixGetter, V extends IVectorGetter> extends IMatrixGetter, IHasLotIterator<IMatrixGetter, Double> {
     /** Iterable stuffs，未指定直接遍历按照列方向；虽然不继承 Iterable 但是会提供相关的直接获取的接口方便使用 */
     default Iterator<Double> iterator() {return colIterator();}
     default Iterator<Double> colIterator() {return colIterator(0);}
@@ -36,7 +36,7 @@ public interface IMatrixFull<M extends IMatrixGetter, V extends IVectorGetter> e
     Iterator<Double> colIteratorOf(int aCol, IMatrixGetter aContainer);
     Iterator<Double> rowIteratorOf(int aRow, IMatrixGetter aContainer);
     
-    default Iterable<Double> iterable() {return IMatrixFull.this::iterator;}
+    default Iterable<Double> iterable() {return IMatrixAny.this::iterator;}
     default List<List<Double>> asList() {
         return new AbstractList<List<Double>>() {
             private final List<IVector> mRows = rows();
@@ -51,13 +51,13 @@ public interface IMatrixFull<M extends IMatrixGetter, V extends IVectorGetter> e
         int col();
     }
     
-    /** 转为兼容性更好的 double[][]，默认直接使用 rows 转为 double[][] */
-    double[][] mat();
+    /** 转为兼容性更好的 double[][] */
+    double[][] data();
     
     /** 批量修改的接口 */
     void fill(double aValue);
     void fill(IMatrixGetter aMatrixGetter);
-    void fill(double[][] aMat);
+    void fill(double[][] aData);
     default void fill(Iterable<? extends Iterable<? extends Number>> aRows) {fillWithRows(aRows);}
     void fillWithRows(Iterable<? extends Iterable<? extends Number>> aRows);
     void fillWithCols(Iterable<? extends Iterable<? extends Number>> aCols);
@@ -78,9 +78,9 @@ public interface IMatrixFull<M extends IMatrixGetter, V extends IVectorGetter> e
     
     
     List<IVector> rows();
-    IVector row(final int aRow);
+    IVector row(int aRow);
     List<IVector> cols();
-    IVector col(final int aCol);
+    IVector col(int aCol);
     
     
     
@@ -90,6 +90,8 @@ public interface IMatrixFull<M extends IMatrixGetter, V extends IVectorGetter> e
     /** 还需要包含一个向量的生成器方便一些操作 */
     IVectorGenerator<V> generatorVec();
     @VisibleForTesting default IVectorGenerator<V> genVec() {return generatorVec();}
+    
+    M copy();
     
     /** 切片操作，默认返回新的矩阵，refSlicer 则会返回引用的切片结果 */
     IMatrixSlicer<M, V> slicer();

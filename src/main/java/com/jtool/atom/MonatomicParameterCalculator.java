@@ -34,9 +34,9 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
     
     public void shutdown_() {mDead = true; mAtomDataXYZ = null; super.shutdown(); mNL.shutdown_();}
     
-    public MonatomicParameterCalculator(IHasOrthogonalXYZ aHasOrthogonalXYZ                                  ) {this(aHasOrthogonalXYZ, 1);}
-    public MonatomicParameterCalculator(IHasOrthogonalXYZ aHasOrthogonalXYZ, int aThreadNum                  ) {this(aHasOrthogonalXYZ, aThreadNum, 2.0);}
-    public MonatomicParameterCalculator(IHasOrthogonalXYZ aHasOrthogonalXYZ, int aThreadNum, double aCellStep) {this(aHasOrthogonalXYZ.orthogonalXYZ(), aHasOrthogonalXYZ.boxLo(), aHasOrthogonalXYZ.boxHi(), aThreadNum, aCellStep);}
+    public MonatomicParameterCalculator(IOrthogonalXYZData aHasOrthogonalXYZ) {this(aHasOrthogonalXYZ, 1);}
+    public MonatomicParameterCalculator(IOrthogonalXYZData aHasOrthogonalXYZ, int aThreadNum) {this(aHasOrthogonalXYZ, aThreadNum, 2.0);}
+    public MonatomicParameterCalculator(IOrthogonalXYZData aHasOrthogonalXYZ, int aThreadNum, double aCellStep) {this(aHasOrthogonalXYZ.orthogonalXYZ(), aHasOrthogonalXYZ.boxLo(), aHasOrthogonalXYZ.boxHi(), aThreadNum, aCellStep);}
     public MonatomicParameterCalculator(double[][] aAtomDataXYZ                                                  ) {this(aAtomDataXYZ, BOX_ONE);}
     public MonatomicParameterCalculator(double[][] aAtomDataXYZ, double[] aBox                                   ) {this(aAtomDataXYZ, BOX_ZERO, aBox);}
     public MonatomicParameterCalculator(double[][] aAtomDataXYZ, double[] aBoxLo, double[] aBoxHi                ) {this(aAtomDataXYZ, aBoxLo, aBoxHi, 1);}

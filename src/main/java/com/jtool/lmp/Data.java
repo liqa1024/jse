@@ -1,12 +1,11 @@
 package com.jtool.lmp;
 
+import com.jtool.math.table.ITable;
+import com.jtool.math.vector.IVector;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 @VisibleForTesting
 public final class Data extends Lmpdat {
-    public Data(int aAtomTypeNum, Box aBox, double @Nullable [] aMasses, double[][] aAtomData) {super(aAtomTypeNum, aBox, aMasses, aAtomData);}
-    public Data(int aAtomTypeNum, Box aBox, double[][] aAtomData) {super(aAtomTypeNum, aBox, aAtomData);}
-    public Data(int aAtomTypeNum, double[] aBox, double @Nullable [] aMasses, double[][] aAtomData) {super(aAtomTypeNum, aBox, aMasses, aAtomData);}
-    public Data(int aAtomTypeNum, double[] aBoxLo, double[] aBoxHi, double @Nullable [] aMasses, double[][] aAtomData) {super(aAtomTypeNum, aBoxLo, aBoxHi, aMasses, aAtomData);}
+    Data(int aAtomTypeNum, Box aBox, @Nullable IVector aMasses, ITable aAtomData) {super(aAtomTypeNum, aBox, aMasses, aAtomData);}
 }

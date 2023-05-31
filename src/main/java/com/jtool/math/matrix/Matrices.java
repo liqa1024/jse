@@ -21,7 +21,7 @@ public class Matrices {
         rMatrix.fill(aMatrixGetter);
         return rMatrix;
     }
-    public static IMatrix from(IMatrixFull<?, ?> aMatrix) {
+    public static IMatrix from(IMatrixAny<?, ?> aMatrix) {
         if (aMatrix instanceof ColumnMatrix) {
             return ((ColumnMatrix) aMatrix).generator().same();
         } else {

@@ -1,40 +1,37 @@
 package com.jtool.lmp;
 
-import com.google.common.collect.ImmutableMap;
 import com.jtool.atom.AbstractAtomData;
+import com.jtool.atom.IAtom;
 import com.jtool.atom.IHasAtomData;
+import com.jtool.atom.XYZ;
 import com.jtool.code.UT;
 import com.jtool.math.MathEX;
-import org.jetbrains.annotations.NotNull;
+import com.jtool.math.table.ITable;
+import com.jtool.math.table.Table;
+import com.jtool.math.vector.IVector;
+import com.jtool.math.vector.Vectors;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
-import static com.jtool.code.CS.ATOM_DATA_KEYS_ID_TYPE_XYZ;
+import static com.jtool.code.CS.*;
 
 /**
  * @author liqa
- * <p> lammps 使用 write_data 写出的数据格式 </p>
+ * <p> lammps 使用 write_data 写出的数据格式，头的顺序也是本程序的标准原子格式 </p>
  * <p> 包含读取写出的文本文件的格式 </p>
  * <p> 暂时不支持键和键角等信息 </p>
  * <p> 暂时不支持速度信息 </p>
- * <p> 所有成员都是只读的，即使目前没有硬性限制 </p>
+ * <p> 直接获取到的所有数据都是引用，因此外部可以直接进行修改 </p>
  */
 public class Lmpdat extends AbstractAtomData {
-    private final static String[] ATOM_DATA_KEYS = ATOM_DATA_KEYS_ID_TYPE_XYZ;
-    private final static Map<String, Integer> KEY2IDX = ImmutableMap.of("id", 0, "type", 1, "x", 2, "y", 3, "z", 4);
-    private final static int[] ATOM_DATA_XYZ = new int[] {2, 3, 4};
-    private final static int[] ATOM_DATA_XYZID = new int[] {2, 3, 4, 0};
-    private final static int TYPE_COL = 1;
-    
-    private final int mAtomTypeNum;
+    private int mAtomTypeNum;
     private Box mBox;
-    private final double @Nullable[] mMasses;
-    private final double[][] mAtomData;
+    private @Nullable IVector mMasses;
+    private final ITable mAtomData;
     
     /**
      * 直接根据数据创建 Lmpdat
@@ -43,18 +40,25 @@ public class Lmpdat extends AbstractAtomData {
      * @param aMasses 原子的质量
      * @param aAtomData 原子数据组成的矩阵（必须）
      */
-    public Lmpdat(int aAtomTypeNum, Box aBox, double @Nullable[] aMasses, double[][] aAtomData) {
-        mAtomTypeNum = aAtomTypeNum;
+    Lmpdat(int aAtomTypeNum, Box aBox, @Nullable IVector aMasses, ITable aAtomData) {
         mBox = aBox;
         mMasses = aMasses;
         mAtomData = aAtomData;
+        // 会根据 aMasses 的长度自适应调整原子种类数目
+        mAtomTypeNum = aMasses==null ? aAtomTypeNum : Math.max(aAtomTypeNum, aMasses.size());
     }
-    public Lmpdat(int aAtomTypeNum, Box aBox, double[][] aAtomData) {this(aAtomTypeNum, aBox, null, aAtomData);}
-    public Lmpdat(int aAtomTypeNum, double[] aBox, double @Nullable[] aMasses, double[][] aAtomData) {this(aAtomTypeNum, new Box(aBox), aMasses, aAtomData);}
-    public Lmpdat(int aAtomTypeNum, double[] aBoxLo, double[] aBoxHi, double @Nullable[] aMasses, double[][] aAtomData) {this(aAtomTypeNum, new Box(aBoxLo, aBoxHi), aMasses, aAtomData);}
     
     
     /// 参数修改
+    /**
+     * 修改一些属性来方便调整最终输出的 data 文件
+     * @return 返回自身来支持链式调用
+     */
+    public Lmpdat setMasses(double[] aMasses) {return setMasses(Vectors.from(aMasses));}
+    public Lmpdat setMasses(Collection<? extends Number> aMasses) {return setMasses(Vectors.from(aMasses));}
+    public Lmpdat setMasses(IVector aMasses) {mMasses = aMasses; return this;}
+    public Lmpdat setAtomTypeNum(int aAtomTypeNum) {mAtomTypeNum = aAtomTypeNum; return this;}
+    
     /**
      * 修改模拟盒类型
      * @return 返回自身来支持链式调用
@@ -81,19 +85,26 @@ public class Lmpdat extends AbstractAtomData {
     public Lmpdat setDenseNormalized() {
         if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("setDenseNormalized is temporarily support NORMAL Box only");
         
-        double[] oShiftedBox = mBox.shiftedBox();
-        double tScale = MathEX.Fast.cbrt(MathEX.Vec.product(oShiftedBox) / mAtomData.length);
+        XYZ oShiftedBox = mBox.shiftedBox();
+        double tScale = MathEX.Fast.cbrt(oShiftedBox.product() / atomNum());
         tScale = 1.0 / tScale;
         
         // 从逻辑上考虑，这里不对原本数据做值拷贝
         double tXlo = mBox.xlo(), tYlo = mBox.ylo(), tZlo = mBox.zlo();
-        for (int i = 0; i < mAtomData.length; ++i) {
-            mAtomData[i][2] -= tXlo; mAtomData[i][2] *= tScale;
-            mAtomData[i][3] -= tYlo; mAtomData[i][3] *= tScale;
-            mAtomData[i][4] -= tZlo; mAtomData[i][4] *= tScale;
-        }
+        // TODO 等移除复杂的泛型后临时变量改为 operation
+        IVector
+        tCol = mAtomData.col(STD_X_COL);
+        tCol.operation().mapMinus2this(tXlo);
+        tCol.operation().mapMultiply2this(tScale);
+        tCol = mAtomData.col(STD_Y_COL);
+        tCol.operation().mapMinus2this(tYlo);
+        tCol.operation().mapMultiply2this(tScale);
+        tCol = mAtomData.col(STD_Z_COL);
+        tCol.operation().mapMinus2this(tZlo);
+        tCol.operation().mapMultiply2this(tScale);
+        
         // box 还是会重新创建，因为 box 的值这里约定是严格的常量，可以避免一些问题
-        mBox = new Box(oShiftedBox[0]*tScale, oShiftedBox[1]*tScale, oShiftedBox[2]*tScale);
+        mBox = new Box(oShiftedBox.multiply(tScale));
         
         return this;
     }
@@ -101,69 +112,43 @@ public class Lmpdat extends AbstractAtomData {
     
     /// 获取属性
     public Box box() {return mBox;}
-    public double[] masses() {return mMasses;}
-    public double   mass(int aType) {return mMasses!=null ? mMasses[aType-1] : Double.NaN;}
+    public IVector masses() {return mMasses;}
+    public double mass(int aType) {return mMasses!=null ? mMasses.get(aType-1) : Double.NaN;}
     
-    /** 重写来获取各种属性 */
+    
+    /** AbstractAtomData stuffs */
+    @Override public List<IAtom> atoms() {
+        // 注意如果是斜方的模拟盒则不能获取到正交的原子数据
+        if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("Atoms is temporarily support NORMAL Box only");
+        return new TableAtoms(mAtomData);
+    }
+    @Override public XYZ boxLo() {return mBox.boxLo();}
+    @Override public XYZ boxHi() {return mBox.boxHi();}
+    @Override public int atomNum() {return mAtomData.rowNumber();}
     @Override public int atomTypeNum() {return mAtomTypeNum;}
-    @Override public String[] atomDataKeys() {return ATOM_DATA_KEYS;}
-    @Override public double[][] atomData() {return mAtomData;}
     
-    // 重写表明对于斜的 box 不支持正交 XYZ 的相关操作
-    @Override public double[][] toOrthogonalXYZ_(double[][] aAtomDataXYZ) {
-        if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("OrthogonalXYZ temporarily support NORMAL Box only");
-        return super.toOrthogonalXYZ_(aAtomDataXYZ);
-    }
-    @Override public double[][] toOrthogonalXYZID_(double[][] aAtomDataXYZID) {
-        if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("OrthogonalXYZID temporarily support NORMAL Box only");
-        return super.toOrthogonalXYZID_(aAtomDataXYZID);
-    }
-    @Override public double[] boxLo() {
-        if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("OrthogonalXYZ temporarily support NORMAL Box only");
-        return mBox.boxLo();
-    }
-    @Override public double[] boxHi() {
-        if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("OrthogonalXYZ temporarily support NORMAL Box only");
-        return mBox.boxHi();
-    }
-    /** 重写来优化查找过程 */
-    public int typeCol() {return TYPE_COL;}
-    public int key2idx(String aKey) {Integer tIdx = KEY2IDX.get(aKey); return tIdx != null ? tIdx : -1;}
-    public int @NotNull[] xyzCol() {return ATOM_DATA_XYZ;}
-    public int @NotNull[] xyzidCol() {return ATOM_DATA_XYZID;}
     
     
     /// 创建 Lmpdat
     /** 拷贝一份 Lmpdat，为了简洁还是只保留 copy 一种方法 */
-    public Lmpdat copy() {return new Lmpdat(mAtomTypeNum, mBox.copy(), mMasses==null?null:MathEX.Vec.copy(mMasses), MathEX.Mat.copy(mAtomData));}
+    public Lmpdat copy() {return new Lmpdat(mAtomTypeNum, mBox.copy(), mMasses==null?null:mMasses.copy(), mAtomData.copy());}
     
     /** 从 IHasAtomData 来创建，一般来说 Lmpdat 需要一个额外的质量信息 */
-    public static Lmpdat fromAtomData(IHasAtomData aHasAtomData) {return fromAtomData(aHasAtomData, (double[])null);}
-    public static Lmpdat fromAtomData(IHasAtomData aHasAtomData, double[] aMasses) {
-        // 粒子数据，需要符合 lmpdat 的格式
-        double[][] tAtomData;
-        int tAtomTypeNum = aHasAtomData.atomTypeNum();
+    public static Lmpdat fromAtomData(IHasAtomData aHasAtomData) {return fromAtomData(aHasAtomData, (IVector)null);}
+    public static Lmpdat fromAtomData(IHasAtomData aHasAtomData, IVector aMasses) {
         // 根据输入的 aHasAtomData 类型来具体判断需要如何获取 rAtomData
         if (aHasAtomData instanceof Lmpdat) {
-            // Lmpdat 则直接获取即可（专门优化，保留排序）
-            if (((Lmpdat)aHasAtomData).box().type() != Box.Type.NORMAL) throw new RuntimeException("fromAtomData for Lmpdat temporarily support NORMAL Box only");
-            tAtomData = aHasAtomData.atomData();
+            // Lmpdat 则直接获取即可（专门优化，保留完整模拟盒信息）
+            Lmpdat tLmpdat = (Lmpdat)aHasAtomData;
+            return new Lmpdat(tLmpdat.atomTypeNum(), tLmpdat.mBox.copy(), aMasses, tLmpdat.mAtomData.copy());
         } else {
-            // 一般的情况
-            tAtomData = IHasAtomData.Util.toStandardAtomData(aHasAtomData);
+            // 一般的情况，通过 dataSTD 来创建，注意这里认为获取时已经经过了值拷贝，因此不再需要 copy
+            return new Lmpdat(aHasAtomData.atomTypeNum(), new Box(aHasAtomData.boxLo(), aHasAtomData.boxHi()), aMasses, aHasAtomData.dataSTD());
         }
-        return new Lmpdat(tAtomTypeNum, aHasAtomData.boxLo(), aHasAtomData.boxHi(), aMasses, tAtomData);
     }
     /** 兼容 Groovy 的乱七八糟的数字数组 */
-    public static Lmpdat fromAtomData(IHasAtomData aHasAtomData, Collection<? extends Number> aMasses) {
-        double[] tMasses = new double[aMasses.size()];
-        int tIdx = 0;
-        for (Number tMass : aMasses) {
-            tMasses[tIdx] = tMass.doubleValue();
-            ++tIdx;
-        }
-        return fromAtomData(aHasAtomData, tMasses);
-    }
+    public static Lmpdat fromAtomData(IHasAtomData aHasAtomData, Collection<? extends Number> aMasses) {return fromAtomData(aHasAtomData, Vectors.from(aMasses));}
+    public static Lmpdat fromAtomData(IHasAtomData aHasAtomData, double[] aMasses) {return fromAtomData(aHasAtomData, Vectors.from(aMasses));}
     
     
     /// 文件读写
@@ -179,8 +164,8 @@ public class Lmpdat extends AbstractAtomData {
         int tAtomNum;
         int aAtomTypeNum;
         Box aBox;
-        double[] aMasses;
-        double[][] aAtomData;
+        IVector aMasses;
+        List<double[]> aAtomData;
         
         int idx = 0;
         int tIdx; String[] tTokens;
@@ -215,10 +200,10 @@ public class Lmpdat extends AbstractAtomData {
             idx = tIdx;
             ++idx; // 中间有一个空行
             if (idx+aAtomTypeNum > aLines.length) return null;
-            aMasses = new double[aAtomTypeNum];
+            aMasses = Vectors.zeros(aAtomTypeNum);
             for (int i = 0; i < aAtomTypeNum; ++i) {
                 tTokens = UT.Texts.splitBlank(aLines[idx]);
-                aMasses[Integer.parseInt(tTokens[0])-1] = Double.parseDouble(tTokens[1]);
+                aMasses.set(Integer.parseInt(tTokens[0])-1, Double.parseDouble(tTokens[1]));
                 ++idx;
             }
         } else {
@@ -229,15 +214,15 @@ public class Lmpdat extends AbstractAtomData {
         idx = UT.Texts.findLineContaining(aLines, idx, "Atoms"); ++idx;
         ++idx; // 中间有一个空行
         if (idx+tAtomNum > aLines.length) return null;
-        aAtomData = new double[tAtomNum][ATOM_DATA_KEYS.length];
+        aAtomData = new ArrayList<>(tAtomNum);
         for (int i = 0; i < tAtomNum; ++i) {
             tTokens = UT.Texts.splitBlank(aLines[idx]);
-            aAtomData[i] = UT.IO.str2data(tTokens);
+            aAtomData.add(UT.IO.str2data(tTokens));
             ++idx;
         }
         
         // 返回 lmpdat
-        return new Lmpdat(aAtomTypeNum, aBox, aMasses, aAtomData);
+        return new Lmpdat(aAtomTypeNum, aBox, aMasses, new Table(STD_ATOM_DATA_KEYS, aAtomData));
     }
     
     /**
@@ -251,7 +236,7 @@ public class Lmpdat extends AbstractAtomData {
         
         lines.add("LAMMPS data file generated by jTool");
         lines.add("");
-        lines.add(String.format("%6d atoms", mAtomData.length));
+        lines.add(String.format("%6d atoms", atomNum()));
         lines.add("");
         lines.add(String.format("%6d atom types", mAtomTypeNum));
         lines.add("");
@@ -267,13 +252,13 @@ public class Lmpdat extends AbstractAtomData {
         lines.add("Masses");
         lines.add("");
         for (int i = 0; i < mAtomTypeNum; ++i)
-        lines.add(String.format("%6d %10.5g", i+1, mMasses[i]));
+        lines.add(String.format("%6d %10.5g", i+1, mMasses.get(i)));
         }
         lines.add("");
         lines.add("Atoms");
         lines.add("");
-        for (double[] subAtomData : mAtomData)
-        lines.add(String.format("%6d %6d %10.5g %10.5g %10.5g", (int)subAtomData[0], (int)subAtomData[1], subAtomData[2], subAtomData[3], subAtomData[4]));
+        for (IVector subAtomData : mAtomData.rows())
+        lines.add(String.format("%6d %6d %10.5g %10.5g %10.5g", (int)subAtomData.get_(0), (int)subAtomData.get_(1), subAtomData.get_(2), subAtomData.get_(3), subAtomData.get_(4)));
         lines.add("");
         
         UT.IO.write(aFilePath, lines);

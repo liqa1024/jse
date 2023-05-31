@@ -7,7 +7,7 @@ import java.util.Iterator;
 /**
  * 向量生成器的一般实现，主要实现一些重复的接口
  */
-public abstract class AbstractVectorGenerator<V extends IVectorFull<?>> implements IVectorGenerator<V> {
+public abstract class AbstractVectorGenerator<V extends IVectorAny<?>> implements IVectorGenerator<V> {
     @Override public V ones() {return ones(thisSize_());}
     @Override public V zeros() {return zeros(thisSize_());}
     @Override public V from(IVectorGetter aVectorGetter) {return from(thisSize_(), aVectorGetter);}

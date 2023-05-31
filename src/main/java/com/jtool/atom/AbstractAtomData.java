@@ -1,8 +1,15 @@
 package com.jtool.atom;
 
-import com.jtool.math.MathEX;
-import org.jetbrains.annotations.NotNull;
+import com.jtool.code.UT;
+import com.jtool.math.table.ITable;
+import com.jtool.math.table.Table;
 import org.jetbrains.annotations.VisibleForTesting;
+
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.jtool.code.CS.*;
 
 /**
  * @author liqa
@@ -10,106 +17,81 @@ import org.jetbrains.annotations.VisibleForTesting;
  */
 public abstract class AbstractAtomData implements IHasAtomData {
     /** stuff to override */
-    @Override public abstract String[] atomDataKeys();
-    @Override public abstract double[][] atomData();
-    @Override public abstract double[] boxLo();
-    @Override public abstract double[] boxHi();
-    @Override public int atomTypeNum() {return 1;}
+    public abstract Iterable<IAtom> atoms();
+    public abstract IHasXYZ boxLo();
+    public abstract IHasXYZ boxHi();
+    public abstract int atomNum();
+    public abstract int atomTypeNum();
     
-    /** override to optimize */
-    @Override public int key2idx(String aKey) {
-        String[] tKeys = atomDataKeys();
-        for (int i = 0; i < tKeys.length; ++i) if (tKeys[i].equals(aKey)) return i;
-        return -1;
+    
+    /** 直接使用过滤器过滤掉不符合的种类 */
+    @Override public Iterable<IAtom> atoms(final int aType) {return UT.Code.filterIterable(atoms(), atom -> atom.type()==aType);}
+    
+    /** 会利用 atomNum() 来得到初始的容量 */
+    @Override public ITable dataXYZ() {
+        List<double[]> rData = new ArrayList<>(atomNum());
+        for (IAtom tAtom : atoms()) rData.add(new double[] {tAtom.x(), tAtom.y(), tAtom.z()});
+        return new Table(ATOM_DATA_KEYS_XYZ, rData);
     }
-    @Override public int @NotNull[] xyzCol() {
-        int[] tXYZCol = new int[3];
-        int
-        tIdx = xCol(); if (tIdx < 0) throw new RuntimeException("Do NOT has 'x' in this AtomData");
-        tXYZCol[0] = tIdx;
-        tIdx = yCol(); if (tIdx < 0) throw new RuntimeException("Do NOT has 'y' in this AtomData");
-        tXYZCol[1] = tIdx;
-        tIdx = zCol(); if (tIdx < 0) throw new RuntimeException("Do NOT has 'z' in this AtomData");
-        tXYZCol[2] = tIdx;
-        return tXYZCol;
+    @Override public ITable dataXYZ(int aType) {
+        List<double[]> rData = new ArrayList<>();
+        for (IAtom tAtom : atoms(aType)) rData.add(new double[] {tAtom.x(), tAtom.y(), tAtom.z()});
+        return new Table(ATOM_DATA_KEYS_XYZ, rData);
     }
-    @Override public int @NotNull[] xyzidCol() {
-        int[] tXYZIDCol = new int[4];
-        int
-        tIdx = xCol();  if (tIdx < 0) throw new RuntimeException("Do NOT has 'x' in this AtomData");
-        tXYZIDCol[0] = tIdx;
-        tIdx = yCol();  if (tIdx < 0) throw new RuntimeException("Do NOT has 'y' in this AtomData");
-        tXYZIDCol[1] = tIdx;
-        tIdx = zCol();  if (tIdx < 0) throw new RuntimeException("Do NOT has 'z' in this AtomData");
-        tXYZIDCol[2] = tIdx;
-        tIdx = idCol(); if (tIdx < 0) throw new RuntimeException("Do NOT has 'id' in this AtomData");
-        tXYZIDCol[3] = tIdx;
-        return tXYZIDCol;
+    @Override public ITable dataXYZID() {
+        List<double[]> rData = new ArrayList<>(atomNum());
+        for (IAtom tAtom : atoms()) rData.add(new double[] {tAtom.x(), tAtom.y(), tAtom.z(), tAtom.id()});
+        return new Table(ATOM_DATA_KEYS_XYZID, rData);
     }
-    
-    @Override public int idCol()   {return key2idx("id");}
-    @Override public int typeCol() {return key2idx("type");}
-    @Override public int xCol()    {return key2idx("x");}
-    @Override public int yCol()    {return key2idx("y");}
-    @Override public int zCol()    {return key2idx("z");}
-    
-    
-    /** 默认的实现 */
-    @Override public final int atomNum() {return atomData().length;}
-    @Override public final double[][] atomData(final int aType)      {final int tTypeCol = typeCol(); return tTypeCol < 0 ? atomData() : MathEX.Mat.getSubMatrix(atomData(), aRow -> aRow[tTypeCol] == aType, MathEX.Mat.ALL);}
-    @Override public final double[]   atomData(String aKey)          {return MathEX.Mat.getColumn(atomData(), MathEX.Mat.ALL, key2idx(aKey));}
-    @Override public final double[][] atomDataXYZ()                  {return MathEX.Mat.getSubMatrix(atomData(), MathEX.Mat.ALL, xyzCol());}
-    @Override public final double[][] atomDataXYZ(final int aType)   {final int tTypeCol = typeCol(); return tTypeCol < 0 ? MathEX.Mat.getSubMatrix(atomData(), MathEX.Mat.ALL, xyzCol()) : MathEX.Mat.getSubMatrix(atomData(), aRow -> aRow[tTypeCol] == aType, xyzCol());}
-    @Override public final double[][] atomDataXYZID()                {return MathEX.Mat.getSubMatrix(atomData(), MathEX.Mat.ALL, xyzidCol());}
-    @Override public final double[][] atomDataXYZID(final int aType) {final int tTypeCol = typeCol(); return tTypeCol < 0 ? MathEX.Mat.getSubMatrix(atomData(), MathEX.Mat.ALL, xyzidCol()) : MathEX.Mat.getSubMatrix(atomData(), aRow -> aRow[tTypeCol] == aType, xyzidCol());}
-    
-    /** OrthogonalXYZ stuffs */
-    public double[][] toOrthogonalXYZ_(double[][] aAtomDataXYZ) {return aAtomDataXYZ;} // 重写来对非正交的 aAtomDataXYZ 正交化
-    @Override public double volume() {
-        double[] tBoxLo = boxLo();
-        double[] tBoxHi = boxHi();
-        if (tBoxHi == null) return 1.0;
-        if (tBoxLo == null) return tBoxHi[0]*tBoxHi[1]*tBoxHi[2];
-        return (tBoxHi[0]-tBoxLo[0])*(tBoxHi[1]-tBoxLo[1])*(tBoxHi[2]-tBoxLo[2]);
+    @Override public ITable dataXYZID(int aType) {
+        List<double[]> rData = new ArrayList<>();
+        for (IAtom tAtom : atoms(aType)) rData.add(new double[] {tAtom.x(), tAtom.y(), tAtom.z(), tAtom.id()});
+        return new Table(ATOM_DATA_KEYS_XYZID, rData);
     }
-    @Override public final double[][] orthogonalXYZ() {return toOrthogonalXYZ_(atomDataXYZ());}
-    @Override public final double[][] orthogonalXYZ(final int aType) {return toOrthogonalXYZ_(atomDataXYZ(aType));}
-    @Override public final IHasOrthogonalXYZ getIHasOrthogonalXYZ() {return this;}
-    @Override public final IHasOrthogonalXYZ getIHasOrthogonalXYZ(final int aType) {
-        return new IHasOrthogonalXYZ() {
-            @Override public double[][] orthogonalXYZ() {return AbstractAtomData.this.orthogonalXYZ(aType);}
-            @Override public double[] boxLo() {return AbstractAtomData.this.boxLo();}
-            @Override public double[] boxHi() {return AbstractAtomData.this.boxHi();}
-        };
+    @Override public ITable dataSTD() {
+        List<double[]> rData = new ArrayList<>(atomNum());
+        for (IAtom tAtom : atoms()) rData.add(new double[] {tAtom.id(), tAtom.type(), tAtom.x(), tAtom.y(), tAtom.z()});
+        return new Table(STD_ATOM_DATA_KEYS, rData);
     }
-    
-    /** OrthogonalXYZID stuffs */
-    public double[][] toOrthogonalXYZID_(double[][] aAtomDataXYZID) {return aAtomDataXYZID;} // 重写来对非正交的 aAtomDataXYZ 正交化
-    @Override public final double[][] orthogonalXYZID() {return toOrthogonalXYZID_(atomDataXYZID());}
-    @Override public final double[][] orthogonalXYZID(final int aType) {return toOrthogonalXYZID_(atomDataXYZID(aType));}
-    @Override public final IHasOrthogonalXYZID getIHasOrthogonalXYZID() {return this;}
-    @Override public final IHasOrthogonalXYZID getIHasOrthogonalXYZID(final int aType) {
-        return new IHasOrthogonalXYZID() {
-            @Override public double[][] orthogonalXYZID() {return AbstractAtomData.this.orthogonalXYZID(aType);}
-            @Override public double[] boxLo() {return AbstractAtomData.this.boxLo();}
-            @Override public double[] boxHi() {return AbstractAtomData.this.boxHi();}
-        };
+    @Override public ITable dataSTD(int aType) {
+        List<double[]> rData = new ArrayList<>();
+        for (IAtom tAtom : atoms(aType)) rData.add(new double[] {tAtom.id(), tAtom.type(), tAtom.x(), tAtom.y(), tAtom.z()});
+        return new Table(STD_ATOM_DATA_KEYS, rData);
     }
     
     
-    /// 实用功能
+    /** 用来方便子类直接使用 */
+    protected static class TableAtoms extends AbstractList<IAtom> {
+        protected final ITable mTable;
+        public TableAtoms(ITable aTable) {mTable = aTable;}
+        
+        @Override public IAtom get(final int index) {
+            return new IAtom() {
+                @Override public double x() {return mTable.get(index, "x");}
+                @Override public double y() {return mTable.get(index, "y");}
+                @Override public double z() {return mTable.get(index, "z");}
+                
+                @Override public int id() {return (int)mTable.get(index, "id");}
+                @Override public int type() {return (int)mTable.get(index, "type");}
+            };
+        }
+        @Override public int size() {return mTable.rowNumber();}
+    }
+    
+    
+    /// 实用功能，这里依旧保留这种写法
     /**
      * 获取单原子参数的计算器，支持使用 MPC 的简写来调用
      * @param aType 指定此值来获取只有这个种类的原子的单原子计算器，用于计算只考虑一种元素的一些参数
      * @param aThreadNum 执行 MPC 的线程数目
      * @return 获取到的 MPC
      */
-    public MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType, int aThreadNum) {return new MonatomicParameterCalculator(getIHasOrthogonalXYZ(aType), aThreadNum);}
-    public MonatomicParameterCalculator getMonatomicParameterCalculator    (                         ) {return new MonatomicParameterCalculator(getIHasOrthogonalXYZ()                 );}
-    public MonatomicParameterCalculator getMonatomicParameterCalculator    (           int aThreadNum) {return new MonatomicParameterCalculator(getIHasOrthogonalXYZ()     , aThreadNum);}
-    public MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType                ) {return new MonatomicParameterCalculator(getIHasOrthogonalXYZ(aType)            );}
-    @VisibleForTesting public MonatomicParameterCalculator getMPC          (                         ) {return new MonatomicParameterCalculator(getIHasOrthogonalXYZ()                 );}
-    @VisibleForTesting public MonatomicParameterCalculator getMPC          (           int aThreadNum) {return new MonatomicParameterCalculator(getIHasOrthogonalXYZ()     , aThreadNum);}
-    @VisibleForTesting public MonatomicParameterCalculator getTypeMPC      (int aType                ) {return new MonatomicParameterCalculator(getIHasOrthogonalXYZ(aType)            );}
-    @VisibleForTesting public MonatomicParameterCalculator getTypeMPC      (int aType, int aThreadNum) {return new MonatomicParameterCalculator(getIHasOrthogonalXYZ(aType), aThreadNum);}
+    public MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType, int aThreadNum) {return new MonatomicParameterCalculator(atoms(aType), aThreadNum);}
+    public MonatomicParameterCalculator getMonatomicParameterCalculator    (                         ) {return new MonatomicParameterCalculator(atoms()                 );}
+    public MonatomicParameterCalculator getMonatomicParameterCalculator    (           int aThreadNum) {return new MonatomicParameterCalculator(atoms()     , aThreadNum);}
+    public MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType                ) {return new MonatomicParameterCalculator(atoms(aType)            );}
+    @VisibleForTesting public MonatomicParameterCalculator getMPC          (                         ) {return new MonatomicParameterCalculator(atoms()                 );}
+    @VisibleForTesting public MonatomicParameterCalculator getMPC          (           int aThreadNum) {return new MonatomicParameterCalculator(atoms()     , aThreadNum);}
+    @VisibleForTesting public MonatomicParameterCalculator getTypeMPC      (int aType                ) {return new MonatomicParameterCalculator(atoms(aType)            );}
+    @VisibleForTesting public MonatomicParameterCalculator getTypeMPC      (int aType, int aThreadNum) {return new MonatomicParameterCalculator(atoms(aType), aThreadNum);}
 }
