@@ -1,6 +1,7 @@
 package com.jtool.atom;
 
 import com.jtool.math.table.ITable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * @author liqa
@@ -29,4 +30,22 @@ public interface IHasAtomData {
     /** 获取模拟盒信息的接口 */
     IHasXYZ boxLo();
     IHasXYZ boxHi();
+    double volume();
+    
+    
+    /// 实用功能，这里依旧保留这种写法
+    /**
+     * 获取单原子参数的计算器，支持使用 MPC 的简写来调用
+     * @param aType 指定此值来获取只有这个种类的原子的单原子计算器，用于计算只考虑一种元素的一些参数
+     * @param aThreadNum 执行 MPC 的线程数目
+     * @return 获取到的 MPC
+     */
+    default MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType, int aThreadNum) {return new MonatomicParameterCalculator(atoms(aType), boxLo(), boxHi(), aThreadNum);}
+    default MonatomicParameterCalculator getMonatomicParameterCalculator    (                         ) {return new MonatomicParameterCalculator(atoms()     , boxLo(), boxHi()            );}
+    default MonatomicParameterCalculator getMonatomicParameterCalculator    (           int aThreadNum) {return new MonatomicParameterCalculator(atoms()     , boxLo(), boxHi(), aThreadNum);}
+    default MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType                ) {return new MonatomicParameterCalculator(atoms(aType), boxLo(), boxHi()            );}
+    @VisibleForTesting default MonatomicParameterCalculator getMPC          (                         ) {return new MonatomicParameterCalculator(atoms()     , boxLo(), boxHi()            );}
+    @VisibleForTesting default MonatomicParameterCalculator getMPC          (           int aThreadNum) {return new MonatomicParameterCalculator(atoms()     , boxLo(), boxHi(), aThreadNum);}
+    @VisibleForTesting default MonatomicParameterCalculator getTypeMPC      (int aType                ) {return new MonatomicParameterCalculator(atoms(aType), boxLo(), boxHi()            );}
+    @VisibleForTesting default MonatomicParameterCalculator getTypeMPC      (int aType, int aThreadNum) {return new MonatomicParameterCalculator(atoms(aType), boxLo(), boxHi(), aThreadNum);}
 }

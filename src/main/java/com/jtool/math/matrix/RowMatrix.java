@@ -76,6 +76,14 @@ public final class RowMatrix extends DoubleArrayMatrix<RowMatrix, Vector> {
         };
     }
     
+    /** Optimize stuffs，重写加速这些操作 */
+    @Override public void increment_(int aRow, int aCol) {++mData[aCol + aRow*mColNum];}
+    @Override public double getAndIncrement_(int aRow, int aCol) {return mData[aCol + aRow*mColNum]++;}
+    @Override public double incrementAndGet_(int aRow, int aCol) {return ++mData[aCol + aRow*mColNum];}
+    @Override public void decrement_(int aRow, int aCol) {--mData[aCol + aRow*mColNum];}
+    @Override public double getAndDecrement_(int aRow, int aCol) {return mData[aCol + aRow*mColNum]--;}
+    @Override public double decrementAndGet_(int aRow, int aCol) {return --mData[aCol + aRow*mColNum];}
+    
     
     /** Optimize stuffs，重写迭代器来提高遍历速度 */
     @Override public Iterator<Double> colIterator(final int aCol) {

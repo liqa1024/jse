@@ -1,14 +1,11 @@
 package com.jtool.atom;
 
-import com.jtool.math.MathEX;
 import com.jtool.code.Pair;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 /**
  * @author liqa
@@ -20,17 +17,17 @@ import java.util.NoSuchElementException;
 class LinkedCell<A extends IHasXYZ> {
     final @Unmodifiable List<List<A>> mCells;
     final int mSizeX, mSizeY, mSizeZ;
-    final double[] mCellBox;
-    final double[] mBox;
+    final XYZ mCellBox;
+    final XYZ mBox;
     
     final double mMaxDis; // 此 cell 能使用的最大的近邻距离
     
     // 指定三维的分划份数来初始化
-    LinkedCell(A[] aAtoms, double[] aBox, int aSizeX, int aSizeY, int aSizeZ) {
+    LinkedCell(A[] aAtoms, XYZ aBox, int aSizeX, int aSizeY, int aSizeZ) {
         mSizeX = aSizeX; mSizeY = aSizeY; mSizeZ = aSizeZ;
         mBox = aBox;
-        mCellBox = new double[]{mBox[0] / (double) mSizeX, mBox[1] / (double) mSizeY, mBox[2] / (double) mSizeZ};
-        mMaxDis = MathEX.Vec.min(mCellBox);
+        mCellBox = mBox.div(mSizeX, mSizeY, mSizeZ);
+        mMaxDis = mCellBox.min();
         // 初始化 cell
         int tSize = aSizeX * aSizeY * aSizeZ;
         int tCellCap = (int) Math.ceil(2.0 * aAtoms.length / (double) tSize);
@@ -38,10 +35,9 @@ class LinkedCell<A extends IHasXYZ> {
         for (int i = 0; i < tSize; ++i) mCells.add(new ArrayList<>(tCellCap));
         // 遍历添加 Atom
         for (A tAtom : aAtoms) {
-            double[] tXYZ = tAtom.xyz();
-            int i = (int) Math.floor(tXYZ[0] / mCellBox[0]); if (i >= mSizeX) continue;
-            int j = (int) Math.floor(tXYZ[1] / mCellBox[1]); if (j >= mSizeY) continue;
-            int k = (int) Math.floor(tXYZ[2] / mCellBox[2]); if (k >= mSizeZ) continue;
+            int i = (int) Math.floor(tAtom.x() / mCellBox.mX); if (i >= mSizeX) continue;
+            int j = (int) Math.floor(tAtom.y() / mCellBox.mY); if (j >= mSizeY) continue;
+            int k = (int) Math.floor(tAtom.z() / mCellBox.mZ); if (k >= mSizeZ) continue;
             add(i, j, k, tAtom);
         }
     }
@@ -52,28 +48,28 @@ class LinkedCell<A extends IHasXYZ> {
     void add(int i, int j, int k, A aAtom) {mCells.get(idx(i, j, k)).add(aAtom);}
     // 获取任意 ijk 的 link，自动判断是否是镜像的并计算镜像的附加值
     Link<A> link(int i, int j, int k) {
-        double[] tDirection = new double[3];
+        double tDirX = 0.0, tDirY = 0.0, tDirZ = 0.0;
         boolean tIsMirror = false;
         
-        if (i >= mSizeX) {tIsMirror = true; i -= mSizeX; tDirection[0] =  mBox[0];}
-        else if (i < 0)  {tIsMirror = true; i += mSizeX; tDirection[0] = -mBox[0];}
+        if (i >= mSizeX) {tIsMirror = true; i -= mSizeX; tDirX =  mBox.mX;}
+        else if (i < 0)  {tIsMirror = true; i += mSizeX; tDirX = -mBox.mX;}
         
-        if (j >= mSizeY) {tIsMirror = true; j -= mSizeY; tDirection[1] =  mBox[1];}
-        else if (j < 0)  {tIsMirror = true; j += mSizeY; tDirection[1] = -mBox[1];}
+        if (j >= mSizeY) {tIsMirror = true; j -= mSizeY; tDirY =  mBox.mY;}
+        else if (j < 0)  {tIsMirror = true; j += mSizeY; tDirY = -mBox.mY;}
         
-        if (k >= mSizeZ) {tIsMirror = true; k -= mSizeZ; tDirection[2] =  mBox[2];}
-        else if (k < 0)  {tIsMirror = true; k += mSizeZ; tDirection[2] = -mBox[2];}
+        if (k >= mSizeZ) {tIsMirror = true; k -= mSizeZ; tDirZ =  mBox.mZ;}
+        else if (k < 0)  {tIsMirror = true; k += mSizeZ; tDirZ = -mBox.mZ;}
         
-        return tIsMirror ? new Link<>(cell(i, j, k), tDirection) : new Link<>(cell(i, j, k));
+        return tIsMirror ? new Link<>(cell(i, j, k), new XYZ(tDirX, tDirY, tDirZ)) : new Link<>(cell(i, j, k));
     }
     
     // 获取的接口
     public @Unmodifiable List<A> cell(int i, int j, int k) {return mCells.get(idx(i, j, k));}
-    public @Unmodifiable List<A> cell(double[] aXYZ) {return cell((int) Math.floor(aXYZ[0] / mCellBox[0]), (int) Math.floor(aXYZ[1] / mCellBox[1]), (int) Math.floor(aXYZ[2] / mCellBox[2]));}
+    public @Unmodifiable List<A> cell(IHasXYZ aXYZ) {return cell((int) Math.floor(aXYZ.x() / mCellBox.mX), (int) Math.floor(aXYZ.y() / mCellBox.mY), (int) Math.floor(aXYZ.z() / mCellBox.mZ));}
     
     // links 缓存
     private final ThreadLocal<Pair<Integer, List<Link<A>>>> mLinksTemp = ThreadLocal.withInitial(() -> new Pair<>(-1, null));
-    public @Unmodifiable List<Link<A>> links(double[] aXYZ) {return links((int) Math.floor(aXYZ[0] / mCellBox[0]), (int) Math.floor(aXYZ[1] / mCellBox[1]), (int) Math.floor(aXYZ[2] / mCellBox[2]));}
+    public @Unmodifiable List<Link<A>> links(IHasXYZ aXYZ) {return links((int) Math.floor(aXYZ.x() / mCellBox.mX), (int) Math.floor(aXYZ.y() / mCellBox.mY), (int) Math.floor(aXYZ.z() / mCellBox.mZ));}
     public @Unmodifiable List<Link<A>> links(int i, int j, int k) {
         int tIdx = idx(i, j, k);
         Pair<Integer, List<Link<A>>> tLinksTemp = mLinksTemp.get();
@@ -111,108 +107,34 @@ class LinkedCell<A extends IHasXYZ> {
         return rLinkList;
     }
     
-    // 最常见的实现，返回在 rMax 返回内的所有粒子对应的镜像的坐标 XYZ 以及距离 Dis 组成的四位数组
-    public class NeighborListItr extends Itr<double[]> {
-        final double[] aXYZ; final double aRMax;
-        public NeighborListItr(final double[] aXYZ, final double aRMax) {
-            super(aXYZ);
-            this.aXYZ = aXYZ; this.aRMax = aRMax;
-        }
-        @Override public double[] getNext(A aNextAtom, Link<A> aLink) {
-            double[] tXYZ = aNextAtom.xyz();
-            double[] tMirrorXYZ_Dis = new double[4];
-            tMirrorXYZ_Dis[0] = (aLink.mDirection == null || aLink.mDirection[0] == 0) ? tXYZ[0] : tXYZ[0] + aLink.mDirection[0];
-            tMirrorXYZ_Dis[1] = (aLink.mDirection == null || aLink.mDirection[1] == 0) ? tXYZ[1] : tXYZ[1] + aLink.mDirection[1];
-            tMirrorXYZ_Dis[2] = (aLink.mDirection == null || aLink.mDirection[2] == 0) ? tXYZ[2] : tXYZ[2] + aLink.mDirection[2];
-            tMirrorXYZ_Dis[3] = MathEX.XYZ.distance(tMirrorXYZ_Dis, aXYZ);
-            return tMirrorXYZ_Dis[3] > aRMax ? null : tMirrorXYZ_Dis;
-        }
-    }
-    public Iterable<double[]> getNeighborList(final double[] aXYZ, final double aRMax) {
-        if (aRMax > mMaxDis) throw new RuntimeException("This cell cannot be used for the RMax: "+aRMax+", max: "+mMaxDis);
-        return getNeighborList_(aXYZ, aRMax);
-    }
-    public Iterable<double[]> getNeighborList_(final double[] aXYZ, final double aRMax) {
-        return () -> new NeighborListItr(aXYZ, aRMax);
-    }
-    
     
     // Link 类，多存储一个 mDirection 来标记镜像偏移，避免重复创建对象
-    public static class Link<Atom extends IHasXYZ>  {
-        final @Unmodifiable List<Atom> mCell;
-        final double @Nullable [] mDirection;
-        Link(List<Atom> aSubCell) {this(aSubCell, null);}
-        Link(List<Atom> aSubCell, double @Nullable [] aDirection) {
+    public static final class Link<A extends IHasXYZ>  {
+        private final @Unmodifiable List<A> mCell;
+        private final @Nullable XYZ mDirection;
+        private Link(List<A> aSubCell) {this(aSubCell, null);}
+        private Link(List<A> aSubCell, @Nullable XYZ aDirection) {
             mCell = aSubCell;
             mDirection = aDirection;
         }
-        public @Unmodifiable List<Atom> cell() {return mCell;}
-        public boolean isMirror() {return mDirection != null;}
-        public double[] direction() {return mDirection;}
+        public boolean isMirror() {return mDirection!=null;}
+        public XYZ direction() {return mDirection;}
+        /** 带有 mDirection 的计算距离，方便外部使用并且避免对象的创建，注意 To 是在此 link 中的，而 From 是原始的 */
+        public double distance(XYZ aFrom, XYZ aTo) {
+            if (mDirection != null) {
+                return aFrom.distance(aTo.mX + mDirection.mX, aTo.mY + mDirection.mY, aTo.mZ + mDirection.mZ);
+            } else {
+                return aFrom.distance(aTo);
+            }
+        }
     }
     
-    // 遍历 Links 的迭代器，重写实现自定义功能
-    public abstract class Itr<ReturnType> implements Iterator<ReturnType> {
-        private final Iterator<Link<A>> mLinksIt;
-        private Link<A> mLink;
-        private Iterator<A> mCellIt;
-        
-        public Itr(int i, int j, int k) {this(links(i, j, k));}
-        public Itr(double[] aXYZ) {this(links(aXYZ));}
-        private Itr(Iterable<Link<A>> aLinks) {
-            mLinksIt = aLinks.iterator();
-            mLink = mLinksIt.next(); // links 一定有 27 个元素，因此这个永远合法
-            mCellIt = mLink.mCell.iterator();
-        }
-        
-        private A mNextAtom = null;
-        private ReturnType mNext = null;
-        
-        /**
-         * stuff to override
-         */
-        public boolean isValid(A aNextAtom) {return true;}
-        public abstract ReturnType getNext(A aNextAtom, Link<A> aLink); // 返回 null 表示获取失败，直接检测下一个
-        
-        // 让 mNext 合法，如果失败返回 false
-        private boolean validNext() {
-            if (mNext != null) return true;
-            if (mNextAtom == null) return false;
-            if (!isValid(mNextAtom)) {
-                mNextAtom = null; // 设置 mNextXYZ_ID 非法保证只检测一次是否合法
-                return false;
-            }
-            mNext = getNext(mNextAtom, mLink);
-            mNextAtom = null; // 获取完成后，mNextXYZ_ID 非法
-            return mNext != null;
-        }
-        
-        @Override
-        public final boolean hasNext() {
-            while (true) {
-                if (validNext()) return true;
-                if (mCellIt.hasNext()) {
-                    mNextAtom = mCellIt.next();
-                    continue;
-                }
-                if (mLinksIt.hasNext()) {
-                    mLink = mLinksIt.next();
-                    mCellIt = mLink.mCell.iterator();
-                    mNextAtom = null;
-                    continue;
-                }
-                return false;
-            }
-        }
-        @Override
-        public final ReturnType next() {
-            if (hasNext()) {
-                ReturnType tNext = mNext;
-                mNext = null; // 设置 mNext 非法表示此时不再有 Next
-                return tNext;
-            } else {
-                throw new NoSuchElementException();
-            }
-        }
+    @FunctionalInterface
+    public interface ILinkedCellDo<A extends IHasXYZ> {
+        void run(A aAtom, Link<A> aLink);
+    }
+    /** 现在改为 for-each 的形式来避免单一返回值的问题 */
+    public void forEachNeighbor(IHasXYZ aXYZ, ILinkedCellDo<A> aLinkedCellDo) {
+        for (Link<A> tLink : links(aXYZ)) for (A tAtom : tLink.mCell) aLinkedCellDo.run(tAtom, tLink);
     }
 }

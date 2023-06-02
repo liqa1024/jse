@@ -76,6 +76,20 @@ public interface IMatrixAny<M extends IMatrixGetter, V extends IVectorGetter> ex
     default @VisibleForTesting int nrows() {return rowNumber();}
     default @VisibleForTesting int ncols() {return columnNumber();}
     
+    /** 发现还需要这些操作 */
+    void increment_(int aRow, int aCol);
+    double getAndIncrement_(int aRow, int aCol);
+    double incrementAndGet_(int aRow, int aCol);
+    void decrement_(int aRow, int aCol);
+    double getAndDecrement_(int aRow, int aCol);
+    double decrementAndGet_(int aRow, int aCol);
+    
+    void increment(int aRow, int aCol);
+    double getAndIncrement(int aRow, int aCol);
+    double incrementAndGet(int aRow, int aCol);
+    void decrement(int aRow, int aCol);
+    double getAndDecrement(int aRow, int aCol);
+    double decrementAndGet(int aRow, int aCol);
     
     List<IVector> rows();
     IVector row(int aRow);

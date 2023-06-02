@@ -85,6 +85,14 @@ public final class ColumnMatrix extends DoubleArrayMatrix<ColumnMatrix, Vector> 
         };
     }
     
+    /** Optimize stuffs，重写加速这些操作 */
+    @Override public void increment_(int aRow, int aCol) {++mData[aRow + aCol*mRowNum];}
+    @Override public double getAndIncrement_(int aRow, int aCol) {return mData[aRow + aCol*mRowNum]++;}
+    @Override public double incrementAndGet_(int aRow, int aCol) {return ++mData[aRow + aCol*mRowNum];}
+    @Override public void decrement_(int aRow, int aCol) {--mData[aRow + aCol*mRowNum];}
+    @Override public double getAndDecrement_(int aRow, int aCol) {return mData[aRow + aCol*mRowNum]--;}
+    @Override public double decrementAndGet_(int aRow, int aCol) {return --mData[aRow + aCol*mRowNum];}
+    
     /** Optimize stuffs，重写迭代器来提高遍历速度 */
     @Override public Iterator<Double> colIterator(final int aCol) {
         return new Iterator<Double>() {

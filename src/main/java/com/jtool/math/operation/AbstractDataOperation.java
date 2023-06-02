@@ -18,38 +18,38 @@ import java.util.Iterator;
  */
 public abstract class AbstractDataOperation<RS extends IHasLotIterator<? super T, Double>, R extends RS, S extends RS, T> implements IDataOperation<R, T> {
     /** add, minus, multiply, divide stuffs */
-    @Override final public R ebeAdd       (T aLHS, T aRHS) {R r = newInstance_(aLHS, aRHS); ebeAdd2Dest_        (aLHS, aRHS, r); return r;}
-    @Override final public R ebeMinus     (T aLHS, T aRHS) {R r = newInstance_(aLHS, aRHS); ebeMinus2Dest_      (aLHS, aRHS, r); return r;}
-    @Override final public R ebeMultiply  (T aLHS, T aRHS) {R r = newInstance_(aLHS, aRHS); ebeMultiply2Dest_   (aLHS, aRHS, r); return r;}
-    @Override final public R ebeDivide    (T aLHS, T aRHS) {R r = newInstance_(aLHS, aRHS); ebeDivide2Dest_     (aLHS, aRHS, r); return r;}
-    @Override final public R ebeMod       (T aLHS, T aRHS) {R r = newInstance_(aLHS, aRHS); ebeMod2Dest_        (aLHS, aRHS, r); return r;}
+    @Override final public R ebePlus    (T aLHS, T aRHS) {R r = newInstance_(aLHS, aRHS); ebePlus2Dest_     (aLHS, aRHS, r); return r;}
+    @Override final public R ebeMinus   (T aLHS, T aRHS) {R r = newInstance_(aLHS, aRHS); ebeMinus2Dest_    (aLHS, aRHS, r); return r;}
+    @Override final public R ebeMultiply(T aLHS, T aRHS) {R r = newInstance_(aLHS, aRHS); ebeMultiply2Dest_ (aLHS, aRHS, r); return r;}
+    @Override final public R ebeDiv     (T aLHS, T aRHS) {R r = newInstance_(aLHS, aRHS); ebeDiv2Dest_      (aLHS, aRHS, r); return r;}
+    @Override final public R ebeMod     (T aLHS, T aRHS) {R r = newInstance_(aLHS, aRHS); ebeMod2Dest_      (aLHS, aRHS, r); return r;}
     
-    @Override final public R mapAdd       (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapAdd2Dest_     (aLHS, aRHS, r); return r;}
-    @Override final public R mapMinus     (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapMinus2Dest_   (aLHS, aRHS, r); return r;}
-    @Override final public R mapLMinus    (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapLMinus2Dest_  (aLHS, aRHS, r); return r;}
-    @Override final public R mapMultiply  (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapMultiply2Dest_(aLHS, aRHS, r); return r;}
-    @Override final public R mapDivide    (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapDivide2Dest_  (aLHS, aRHS, r); return r;}
-    @Override final public R mapLDivide   (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapLDivide2Dest_ (aLHS, aRHS, r); return r;}
-    @Override final public R mapMod       (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapMod2Dest_     (aLHS, aRHS, r); return r;}
-    @Override final public R mapLMod      (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapLMod2Dest_    (aLHS, aRHS, r); return r;}
+    @Override final public R mapPlus    (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapPlus2Dest_      (aLHS, aRHS, r); return r;}
+    @Override final public R mapMinus   (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapMinus2Dest_     (aLHS, aRHS, r); return r;}
+    @Override final public R mapLMinus  (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapLMinus2Dest_    (aLHS, aRHS, r); return r;}
+    @Override final public R mapMultiply(T aLHS, double aRHS) {R r = newInstance_(aLHS); mapMultiply2Dest_  (aLHS, aRHS, r); return r;}
+    @Override final public R mapDiv     (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapDivide2Dest_    (aLHS, aRHS, r); return r;}
+    @Override final public R mapLDiv    (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapLDivide2Dest_   (aLHS, aRHS, r); return r;}
+    @Override final public R mapMod     (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapMod2Dest_       (aLHS, aRHS, r); return r;}
+    @Override final public R mapLMod    (T aLHS, double aRHS) {R r = newInstance_(aLHS); mapLMod2Dest_      (aLHS, aRHS, r); return r;}
     
-    @Override public final void ebeAdd2this       (T aRHS) {ebeAdd2this_      (thisInstance_(), aRHS);}
-    @Override public final void ebeMinus2this     (T aRHS) {ebeMinus2this_    (thisInstance_(), aRHS);}
-    @Override public final void ebeLMinus2this    (T aRHS) {ebeLMinus2this_   (thisInstance_(), aRHS);}
-    @Override public final void ebeMultiply2this  (T aRHS) {ebeMultiply2this_ (thisInstance_(), aRHS);}
-    @Override public final void ebeDivide2this    (T aRHS) {ebeDivide2this_   (thisInstance_(), aRHS);}
-    @Override public final void ebeLDivide2this   (T aRHS) {ebeLDivide2this_  (thisInstance_(), aRHS);}
-    @Override public final void ebeMod2this       (T aRHS) {ebeMod2this_      (thisInstance_(), aRHS);}
-    @Override public final void ebeLMod2this      (T aRHS) {ebeLMod2this_     (thisInstance_(), aRHS);}
+    @Override public final void ebePlus2this    (T aRHS) {ebePlus2this_     (thisInstance_(), aRHS);}
+    @Override public final void ebeMinus2this   (T aRHS) {ebeMinus2this_    (thisInstance_(), aRHS);}
+    @Override public final void ebeLMinus2this  (T aRHS) {ebeLMinus2this_   (thisInstance_(), aRHS);}
+    @Override public final void ebeMultiply2this(T aRHS) {ebeMultiply2this_ (thisInstance_(), aRHS);}
+    @Override public final void ebeDiv2this     (T aRHS) {ebeDiv2this_      (thisInstance_(), aRHS);}
+    @Override public final void ebeLDiv2this    (T aRHS) {ebeLDiv2this_     (thisInstance_(), aRHS);}
+    @Override public final void ebeMod2this     (T aRHS) {ebeMod2this_      (thisInstance_(), aRHS);}
+    @Override public final void ebeLMod2this    (T aRHS) {ebeLMod2this_     (thisInstance_(), aRHS);}
     
-    @Override public final void mapAdd2this       (double aRHS) {mapAdd2this_      (thisInstance_(), aRHS);}
-    @Override public final void mapMinus2this     (double aRHS) {mapMinus2this_    (thisInstance_(), aRHS);}
-    @Override public final void mapLMinus2this    (double aRHS) {mapLMinus2this_   (thisInstance_(), aRHS);}
-    @Override public final void mapMultiply2this  (double aRHS) {mapMultiply2this_ (thisInstance_(), aRHS);}
-    @Override public final void mapDivide2this    (double aRHS) {mapDivide2this_   (thisInstance_(), aRHS);}
-    @Override public final void mapLDivide2this   (double aRHS) {mapLDivide2this_  (thisInstance_(), aRHS);}
-    @Override public final void mapMod2this       (double aRHS) {mapMod2this_      (thisInstance_(), aRHS);}
-    @Override public final void mapLMod2this      (double aRHS) {mapLMod2this_     (thisInstance_(), aRHS);}
+    @Override public final void mapPlus2this    (double aRHS) {mapPlus2this_    (thisInstance_(), aRHS);}
+    @Override public final void mapMinus2this   (double aRHS) {mapMinus2this_   (thisInstance_(), aRHS);}
+    @Override public final void mapLMinus2this  (double aRHS) {mapLMinus2this_  (thisInstance_(), aRHS);}
+    @Override public final void mapMultiply2this(double aRHS) {mapMultiply2this_(thisInstance_(), aRHS);}
+    @Override public final void mapDiv2this     (double aRHS) {mapDiv2this_     (thisInstance_(), aRHS);}
+    @Override public final void mapLDiv2this    (double aRHS) {mapLDiv2this_    (thisInstance_(), aRHS);}
+    @Override public final void mapMod2this     (double aRHS) {mapMod2this_     (thisInstance_(), aRHS);}
+    @Override public final void mapLMod2this    (double aRHS) {mapLMod2this_    (thisInstance_(), aRHS);}
     
     
     /** do stuff */
@@ -105,39 +105,39 @@ public abstract class AbstractDataOperation<RS extends IHasLotIterator<? super T
     }
     
     @SuppressWarnings("Convert2MethodRef")
-    protected void ebeAdd2Dest_        (T aLHS, T aRHS, RS rDest) {ebeDo2Dest_(aLHS, aRHS, rDest, (lhs, rhs) -> (lhs + rhs));}
-    protected void ebeMinus2Dest_      (T aLHS, T aRHS, RS rDest) {ebeDo2Dest_(aLHS, aRHS, rDest, (lhs, rhs) -> (lhs - rhs));}
-    protected void ebeMultiply2Dest_   (T aLHS, T aRHS, RS rDest) {ebeDo2Dest_(aLHS, aRHS, rDest, (lhs, rhs) -> (lhs * rhs));}
-    protected void ebeDivide2Dest_     (T aLHS, T aRHS, RS rDest) {ebeDo2Dest_(aLHS, aRHS, rDest, (lhs, rhs) -> (lhs / rhs));}
-    protected void ebeMod2Dest_        (T aLHS, T aRHS, RS rDest) {ebeDo2Dest_(aLHS, aRHS, rDest, (lhs, rhs) -> (lhs % rhs));}
+    protected void ebePlus2Dest_    (T aLHS, T aRHS, RS rDest) {ebeDo2Dest_(aLHS, aRHS, rDest, (lhs, rhs) -> (lhs + rhs));}
+    protected void ebeMinus2Dest_   (T aLHS, T aRHS, RS rDest) {ebeDo2Dest_(aLHS, aRHS, rDest, (lhs, rhs) -> (lhs - rhs));}
+    protected void ebeMultiply2Dest_(T aLHS, T aRHS, RS rDest) {ebeDo2Dest_(aLHS, aRHS, rDest, (lhs, rhs) -> (lhs * rhs));}
+    protected void ebeDiv2Dest_     (T aLHS, T aRHS, RS rDest) {ebeDo2Dest_(aLHS, aRHS, rDest, (lhs, rhs) -> (lhs / rhs));}
+    protected void ebeMod2Dest_     (T aLHS, T aRHS, RS rDest) {ebeDo2Dest_(aLHS, aRHS, rDest, (lhs, rhs) -> (lhs % rhs));}
     
-    protected void mapAdd2Dest_        (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (lhs + aRHS));}
-    protected void mapMinus2Dest_      (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (lhs - aRHS));}
-    protected void mapLMinus2Dest_     (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (aRHS - lhs));}
-    protected void mapMultiply2Dest_   (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (lhs * aRHS));}
-    protected void mapDivide2Dest_     (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (lhs / aRHS));}
-    protected void mapLDivide2Dest_    (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (aRHS / lhs));}
-    protected void mapMod2Dest_        (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (lhs % aRHS));}
-    protected void mapLMod2Dest_       (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (aRHS % lhs));}
+    protected void mapPlus2Dest_    (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (lhs + aRHS));}
+    protected void mapMinus2Dest_   (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (lhs - aRHS));}
+    protected void mapLMinus2Dest_  (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (aRHS - lhs));}
+    protected void mapMultiply2Dest_(T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (lhs * aRHS));}
+    protected void mapDivide2Dest_  (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (lhs / aRHS));}
+    protected void mapLDivide2Dest_ (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (aRHS / lhs));}
+    protected void mapMod2Dest_     (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (lhs % aRHS));}
+    protected void mapLMod2Dest_    (T aLHS, double aRHS, RS rDest) {mapDo2Dest_(aLHS, rDest, lhs -> (aRHS % lhs));}
     
     @SuppressWarnings("Convert2MethodRef")
-    protected void ebeAdd2this_        (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (lhs + rhs));}
-    protected void ebeMinus2this_      (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (lhs - rhs));}
-    protected void ebeLMinus2this_     (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (rhs - lhs));}
-    protected void ebeMultiply2this_   (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (lhs * rhs));}
-    protected void ebeDivide2this_     (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (lhs / rhs));}
-    protected void ebeLDivide2this_    (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (rhs / lhs));}
-    protected void ebeMod2this_        (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (lhs % rhs));}
-    protected void ebeLMod2this_       (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (rhs % lhs));}
+    protected void ebePlus2this_    (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (lhs + rhs));}
+    protected void ebeMinus2this_   (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (lhs - rhs));}
+    protected void ebeLMinus2this_  (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (rhs - lhs));}
+    protected void ebeMultiply2this_(RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (lhs * rhs));}
+    protected void ebeDiv2this_     (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (lhs / rhs));}
+    protected void ebeLDiv2this_    (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (rhs / lhs));}
+    protected void ebeMod2this_     (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (lhs % rhs));}
+    protected void ebeLMod2this_    (RS rThis, T aRHS) {ebeDo2this_(rThis, aRHS, (lhs, rhs) -> (rhs % lhs));}
     
-    protected void mapAdd2this_        (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (lhs + aRHS));}
-    protected void mapMinus2this_      (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (lhs - aRHS));}
-    protected void mapLMinus2this_     (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (aRHS - lhs));}
-    protected void mapMultiply2this_   (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (lhs * aRHS));}
-    protected void mapDivide2this_     (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (lhs / aRHS));}
-    protected void mapLDivide2this_    (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (aRHS / lhs));}
-    protected void mapMod2this_        (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (lhs % aRHS));}
-    protected void mapLMod2this_       (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (aRHS % lhs));}
+    protected void mapPlus2this_    (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (lhs + aRHS));}
+    protected void mapMinus2this_   (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (lhs - aRHS));}
+    protected void mapLMinus2this_  (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (aRHS - lhs));}
+    protected void mapMultiply2this_(RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (lhs * aRHS));}
+    protected void mapDiv2this_     (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (lhs / aRHS));}
+    protected void mapLDiv2this_    (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (aRHS / lhs));}
+    protected void mapMod2this_     (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (lhs % aRHS));}
+    protected void mapLMod2this_    (RS rThis, double aRHS) {mapDo2this_(rThis, lhs -> (aRHS % lhs));}
     
     
     protected void ebeDo2Dest_(T aLHS, T aRHS, RS rDest, IOperator2<Double> aOpt) {

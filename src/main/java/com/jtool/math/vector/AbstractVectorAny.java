@@ -134,6 +134,64 @@ public abstract class AbstractVectorAny<V extends IVectorAny<?>> implements IVec
         set_(aIdx, aValue);
     }
     
+    @Override public void increment_(int aIdx) {
+        double tValue = get_(aIdx);
+        ++tValue;
+        set_(aIdx, tValue);
+    }
+    @Override public double getAndIncrement_(int aIdx) {
+        double tValue = get_(aIdx);
+        set_(aIdx, tValue+1);
+        return tValue;
+    }
+    @Override public double incrementAndGet_(int aIdx) {
+        double tValue = get_(aIdx);
+        ++tValue;
+        set_(aIdx, tValue);
+        return tValue;
+    }
+    @Override public void decrement_(int aIdx) {
+        double tValue = get_(aIdx);
+        --tValue;
+        set_(aIdx, tValue);
+    }
+    @Override public double getAndDecrement_(int aIdx) {
+        double tValue = get_(aIdx);
+        set_(aIdx, tValue-1);
+        return tValue;
+    }
+    @Override public double decrementAndGet_(int aIdx) {
+        double tValue = get_(aIdx);
+        --tValue;
+        set_(aIdx, tValue);
+        return tValue;
+    }
+    
+    @Override public void increment(int aIdx) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        increment_(aIdx);
+    }
+    @Override public double getAndIncrement(int aIdx) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        return getAndIncrement_(aIdx);
+    }
+    @Override public double incrementAndGet(int aIdx) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        return incrementAndGet_(aIdx);
+    }
+    @Override public void decrement(int aIdx) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        decrement_(aIdx);
+    }
+    @Override public double getAndDecrement(int aIdx) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        return getAndDecrement_(aIdx);
+    }
+    @Override public double decrementAndGet(int aIdx) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        return decrementAndGet_(aIdx);
+    }
+    
     
     /** 向量生成器部分 */
     protected class VectorGenerator extends AbstractVectorGenerator<V> {
@@ -183,16 +241,16 @@ public abstract class AbstractVectorAny<V extends IVectorAny<?>> implements IVec
     
     
     /** Groovy 的部分，增加向量基本的运算操作，由于不能重载 += 之类的变成向自身操作，因此会充斥着值拷贝，因此不推荐重性能的场景使用 */
-    @VisibleForTesting @Override public V plus      (double aRHS) {return operation().mapAdd        (this, aRHS);}
+    @VisibleForTesting @Override public V plus      (double aRHS) {return operation().mapPlus       (this, aRHS);}
     @VisibleForTesting @Override public V minus     (double aRHS) {return operation().mapMinus      (this, aRHS);}
     @VisibleForTesting @Override public V multiply  (double aRHS) {return operation().mapMultiply   (this, aRHS);}
-    @VisibleForTesting @Override public V div       (double aRHS) {return operation().mapDivide     (this, aRHS);}
+    @VisibleForTesting @Override public V div       (double aRHS) {return operation().mapDiv        (this, aRHS);}
     @VisibleForTesting @Override public V mod       (double aRHS) {return operation().mapMod        (this, aRHS);}
     
-    @VisibleForTesting @Override public V plus      (IVectorGetter aRHS) {return operation().ebeAdd       (this, aRHS);}
+    @VisibleForTesting @Override public V plus      (IVectorGetter aRHS) {return operation().ebePlus      (this, aRHS);}
     @VisibleForTesting @Override public V minus     (IVectorGetter aRHS) {return operation().ebeMinus     (this, aRHS);}
     @VisibleForTesting @Override public V multiply  (IVectorGetter aRHS) {return operation().ebeMultiply  (this, aRHS);}
-    @VisibleForTesting @Override public V div       (IVectorGetter aRHS) {return operation().ebeDivide    (this, aRHS);}
+    @VisibleForTesting @Override public V div       (IVectorGetter aRHS) {return operation().ebeDiv       (this, aRHS);}
     @VisibleForTesting @Override public V mod       (IVectorGetter aRHS) {return operation().ebeMod       (this, aRHS);}
     
     /** Groovy 的部分，增加矩阵切片操作 */

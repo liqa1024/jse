@@ -3,7 +3,8 @@ package com.jtool.atom;
 import com.jtool.math.MathEX;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -20,15 +21,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class NeighborListGetter {
     // 用于 LinkedCell 使用
     private static class XYZ_IDX implements IHasXYZ {
-        final double[] mXYZ;
+        final XYZ mXYZ;
         final int mIDX;
-        public XYZ_IDX(double[] aXYZ, int aIDX) {mXYZ = aXYZ; mIDX = aIDX;}
-        @Override public double[] xyz() {return mXYZ;}
+        public XYZ_IDX(XYZ aXYZ, int aIDX) {mXYZ = aXYZ; mIDX = aIDX;}
+        @Override public double x() {return mXYZ.mX;}
+        @Override public double y() {return mXYZ.mY;}
+        @Override public double z() {return mXYZ.mZ;}
     }
     
     
     private XYZ_IDX[] mAtomDataXYZ_IDX;
-    private final double[] mBox;
+    private final XYZ mBox;
     private final int mAtomNum;
     private final double mMinBox;
     private final double mCellStep;
@@ -38,7 +41,7 @@ public class NeighborListGetter {
     // 提供一个手动关闭的方法
     private volatile boolean mDead = false;
     public void shutdown() {shutdown_(); System.gc();}
-    public void shutdown_() {mDead = true;mAtomDataXYZ_IDX = null; mLinkedCells.clear();}
+    public void shutdown_() {mDead = true; mAtomDataXYZ_IDX = null; mLinkedCells.clear();}
     
     public double getCellStep() {return mCellStep;}
     
@@ -48,14 +51,14 @@ public class NeighborListGetter {
     private final Lock mWL = mRWL.writeLock();
     
     // NL 只支持已经经过平移的数据
-    public NeighborListGetter(double[][] aAtomDataXYZ, double[] aBox) {this(aAtomDataXYZ, aBox, 2.0);}
-    public NeighborListGetter(double[][] aAtomDataXYZ, double[] aBox, double aCellStep) {
+    public NeighborListGetter(XYZ[] aAtomDataXYZ, XYZ aBox) {this(aAtomDataXYZ, aBox, 2.0);}
+    public NeighborListGetter(XYZ[] aAtomDataXYZ, XYZ aBox, double aCellStep) {
         mAtomNum = aAtomDataXYZ.length;
         
         mAtomDataXYZ_IDX = new XYZ_IDX[mAtomNum];
         for (int i = 0; i < mAtomNum; ++i) mAtomDataXYZ_IDX[i] = new XYZ_IDX(aAtomDataXYZ[i], i);
         mBox = aBox;
-        mMinBox = MathEX.Vec.min(mBox);
+        mMinBox = mBox.min();
         mCellStep = Math.max(aCellStep, 1.1);
     }
     
@@ -93,9 +96,9 @@ public class NeighborListGetter {
         if (tMinMulti < 0) {
             int tDiv = MathEX.Code.floorPower(-tMinMulti, mCellStep);
             double tCellLength = mMinBox / (double)tDiv;
-            int aSizeX = Math.max((int)Math.floor(mBox[0] / tCellLength), tDiv); // 可以避免舍入误差的问题
-            int aSizeY = Math.max((int)Math.floor(mBox[1] / tCellLength), tDiv);
-            int aSizeZ = Math.max((int)Math.floor(mBox[2] / tCellLength), tDiv);
+            int aSizeX = Math.max((int)Math.floor(mBox.mX / tCellLength), tDiv); // 可以避免舍入误差的问题
+            int aSizeY = Math.max((int)Math.floor(mBox.mY / tCellLength), tDiv);
+            int aSizeZ = Math.max((int)Math.floor(mBox.mZ / tCellLength), tDiv);
             tLinkedCell = new LinkedCell<>(mAtomDataXYZ_IDX, mBox, aSizeX, aSizeY, aSizeZ);
             mLinkedCells.put(-tDiv, tLinkedCell);
         }
@@ -103,14 +106,14 @@ public class NeighborListGetter {
         else {
             int tMul = MathEX.Code.ceilPower(tMinMulti, mCellStep);
             double tCellLength = mMinBox * tMul;
-            int aSizeX = (int)Math.floor(mBox[0] / tCellLength);
-            int aSizeY = (int)Math.floor(mBox[1] / tCellLength);
-            int aSizeZ = (int)Math.floor(mBox[2] / tCellLength);
+            int aSizeX = (int)Math.floor(mBox.mX / tCellLength);
+            int aSizeY = (int)Math.floor(mBox.mY / tCellLength);
+            int aSizeZ = (int)Math.floor(mBox.mZ / tCellLength);
             // 对于为 0 的则是需要扩展的，统计扩展数目
             int tMulX = 1, tMulY = 1, tMulZ = 1;
-            if (aSizeX == 0) {aSizeX = 1; tMulX = (int)Math.ceil(tCellLength / mBox[0]);}
-            if (aSizeY == 0) {aSizeY = 1; tMulY = (int)Math.ceil(tCellLength / mBox[1]);}
-            if (aSizeZ == 0) {aSizeZ = 1; tMulZ = (int)Math.ceil(tCellLength / mBox[2]);}
+            if (aSizeX == 0) {aSizeX = 1; tMulX = (int)Math.ceil(tCellLength / mBox.mX);}
+            if (aSizeY == 0) {aSizeY = 1; tMulY = (int)Math.ceil(tCellLength / mBox.mY);}
+            if (aSizeZ == 0) {aSizeZ = 1; tMulZ = (int)Math.ceil(tCellLength / mBox.mZ);}
             int tExpendAtomNum = mAtomNum*tMulX*tMulY*tMulZ;
             if (tExpendAtomNum == mAtomNum) {
                 tLinkedCell = new LinkedCell<>(mAtomDataXYZ_IDX, mBox, aSizeX, aSizeY, aSizeZ);
@@ -119,15 +122,16 @@ public class NeighborListGetter {
                 XYZ_IDX[] tExpendAtomDataXYZ_IDX = new XYZ_IDX[tExpendAtomNum];
                 int tIdx = 0;
                 for (int i = 0; i < tMulX; ++i) for (int j = 0; j < tMulY; ++j) for (int k = 0; k < tMulZ; ++k) for (int l = 0; l < mAtomNum; ++l) {
-                    double[] aXYZ = new double[3];
-                    double[] tXYZ = mAtomDataXYZ_IDX[l].mXYZ;
-                    aXYZ[0] = i==0 ? tXYZ[0] : tXYZ[0] + mBox[0]*i;
-                    aXYZ[1] = j==0 ? tXYZ[1] : tXYZ[1] + mBox[1]*j;
-                    aXYZ[2] = k==0 ? tXYZ[2] : tXYZ[2] + mBox[2]*k;
+                    XYZ tXYZ = mAtomDataXYZ_IDX[l].mXYZ;
+                    XYZ aXYZ = new XYZ(
+                        i==0 ? tXYZ.mX : tXYZ.mX + mBox.mX*i,
+                        j==0 ? tXYZ.mY : tXYZ.mY + mBox.mY*j,
+                        k==0 ? tXYZ.mZ : tXYZ.mZ + mBox.mZ*k
+                    );
                     tExpendAtomDataXYZ_IDX[tIdx] = new XYZ_IDX(aXYZ, mAtomDataXYZ_IDX[l].mIDX);
                     ++tIdx;
                 }
-                tLinkedCell = new LinkedCell<>(tExpendAtomDataXYZ_IDX, new double[] {mBox[0] * tMulX, mBox[1] * tMulY, mBox[2] * tMulZ}, aSizeX, aSizeY, aSizeZ);
+                tLinkedCell = new LinkedCell<>(tExpendAtomDataXYZ_IDX, mBox.multiply(tMulX, tMulY, tMulZ), aSizeX, aSizeY, aSizeZ);
                 mLinkedCells.put(tMul, tLinkedCell);
             }
         }
@@ -137,102 +141,106 @@ public class NeighborListGetter {
         return tLinkedCell;
     }
     
+    
+    
+    @FunctionalInterface public interface IXYZDo {void run(double aX, double aY, double aZ);}
+    @FunctionalInterface public interface IDisDo {void run(double aDis);}
+    
     /**
-     * 获取位于 aIDX 的 XYZ 在 aRMax 半径范围内的近邻粒子列表
-     * <p> 指定 aHalf 则只会考虑一半的粒子（index > aIDX） </p>
+     * 现在统一改为 for-each 的形式，首先提供一个完全通用的方法遍历所有的近邻；
+     * 注意输入的 aRMaxNeed 只保证在这个半径内所有近邻都会遍历到，不会保证这个半径外的原子不会被遍历
      * @author liqa
      * @param aIDX 中心粒子的 index
-     * @param aRMax 近邻半径
-     * @return Iterable 的容器，支持 for-each 遍历并且避免重复值拷贝
+     * @param aRMaxNeed 需要的近邻半径
+     * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子
      */
-    public Iterable<double[]> get_IDX(final int aIDX, final double aRMax                     ) {return get_IDX(aIDX, aRMax, false);}
-    public Iterable<double[]> get_IDX(final int aIDX, final double aRMax, final boolean aHalf) {
+    public void forEachNeighbor(final int aIDX, double aRMaxNeed, final boolean aHalf, final IXYZDo aXYZDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
-        // 获取 XYZ
-        final double[] aXYZ = mAtomDataXYZ_IDX[aIDX].mXYZ;
-        // 返回满足要求的容器
-        return () -> getProperLinkedCell(aRMax).new NeighborListItr(aXYZ, aRMax) {
-            // 重写这部分实现排除相同 id 或者只考虑一半的 id
-            @Override public boolean isValid(XYZ_IDX aNextAtom) {
-                if (aHalf) {return aNextAtom.mIDX >  aIDX;}
-                else       {return aNextAtom.mIDX != aIDX;}
+        getProperLinkedCell(aRMaxNeed).forEachNeighbor(mAtomDataXYZ_IDX[aIDX].mXYZ, (xyz_idx, link) -> {
+            if (link.isMirror()) {
+                // 如果是镜像的，则会保留相同的 idx 的情况
+                if (aHalf) {
+                    if (xyz_idx.mIDX <= aIDX) {
+                        XYZ tDir = link.direction();
+                        aXYZDo.run(xyz_idx.mXYZ.mX+tDir.mX, xyz_idx.mXYZ.mY+tDir.mY, xyz_idx.mXYZ.mZ+tDir.mZ);
+                    }
+                } else {
+                    XYZ tDir = link.direction();
+                    aXYZDo.run(xyz_idx.mXYZ.mX+tDir.mX, xyz_idx.mXYZ.mY+tDir.mY, xyz_idx.mXYZ.mZ+tDir.mZ);
+                }
+            } else {
+                // 如果不是镜像的，则不会保留相同的 idx 的情况
+                if (aHalf) {
+                    if (xyz_idx.mIDX <  aIDX) aXYZDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ);
+                } else {
+                    if (xyz_idx.mIDX != aIDX) aXYZDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ);
+                }
             }
-        };
+        });
     }
-    
-    /**
-     * 获取位于 aXYZ 在 aRMax 半径范围内的近邻粒子列表
-     * <p> 由于没有 ID 信息，不会排除相同粒子 </p>
-     * @author liqa
-     * @param aXYZ 中心的坐标
-     * @param aRMax 近邻半径
-     * @return Iterable 的容器，支持 for-each 遍历并且避免重复值拷贝
-     */
-    public Iterable<double[]> get_XYZ(final double[] aXYZ, final double aRMax) {
+    public void forEachNeighbor(XYZ aXYZ, double aRMaxNeed, final IXYZDo aXYZDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
-        // 返回满足要求的容器，这里直接返回即可
-        return getProperLinkedCell(aRMax).getNeighborList_(aXYZ, aRMax);
+        
+        getProperLinkedCell(aRMaxNeed).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
+            if (link.isMirror()) {
+                XYZ tDir = link.direction();
+                aXYZDo.run(xyz_idx.mXYZ.mX+tDir.mX, xyz_idx.mXYZ.mY+tDir.mY, xyz_idx.mXYZ.mZ+tDir.mZ);
+            } else {
+                aXYZDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ);
+            }
+        });
     }
-    
+
     
     /**
-     * 获取位于 aIDX 的 XYZ 在曼哈顿距离为 aRMax 范围内的近邻粒子列表
-     * <p> 指定 aHalf 则只会考虑一半的粒子（index > aIDX） </p>
-     * <p> MHT: ManHaTtan distance </p>
+     * 现在统一改为 for-each 的形式，再提供专门的遍历近邻距离的方法；
+     * 注意这里输入的 aRMax 会保证完全遍历所有在这个距离内的粒子，并且不会遍历到超过此距离的粒子
      * @author liqa
      * @param aIDX 中心粒子的 index
-     * @param aRMax 近邻半径
-     * @return Iterable 的容器，支持 for-each 遍历并且避免重复值拷贝
+     * @param aRMax 最大的近邻半径
+     * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子
      */
-    public Iterable<double[]> getMHT_IDX(final int aIDX, final double aRMax                     ) {return getMHT_IDX(aIDX, aRMax, false);}
-    public Iterable<double[]> getMHT_IDX(final int aIDX, final double aRMax, final boolean aHalf) {
+    public void forEachNeighborDis(final int aIDX, final double aRMax, final boolean aHalf, final IDisDo aDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
-        // 获取 XYZ
-        final double[] aXYZ = mAtomDataXYZ_IDX[aIDX].mXYZ;
-        // 返回满足要求的容器
-        return () -> getProperLinkedCell(aRMax).new Itr<double[]>(aXYZ) {
-            // 重写这部分实现排除相同 id 或者只考虑一半的 id
-            @Override public boolean isValid(XYZ_IDX aNextAtom) {
-                if (aHalf) {return aNextAtom.mIDX >  aIDX;}
-                else       {return aNextAtom.mIDX != aIDX;}
+        final XYZ aXYZ = mAtomDataXYZ_IDX[aIDX].mXYZ;
+        
+        getProperLinkedCell(aRMax).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
+            if (link.isMirror()) {
+                // 如果是镜像的，则会保留相同的 idx 的情况
+                if (aHalf) {
+                    if (xyz_idx.mIDX <= aIDX) {
+                        double tDis = link.distance(aXYZ, xyz_idx.mXYZ);
+                        if (tDis < aRMax) aDisDo.run(tDis);
+                    }
+                } else {
+                    double tDis = link.distance(aXYZ, xyz_idx.mXYZ);
+                    if (tDis < aRMax) aDisDo.run(tDis);
+                }
+            } else {
+                // 如果不是镜像的，则不会保留相同的 idx 的情况
+                if (aHalf) {
+                    if (xyz_idx.mIDX < aIDX) {
+                        double tDis = aXYZ.distance(xyz_idx.mXYZ);
+                        if (tDis < aRMax) aDisDo.run(tDis);
+                    }
+                } else {
+                    if (xyz_idx.mIDX != aIDX) {
+                        double tDis = aXYZ.distance(xyz_idx.mXYZ);
+                        if (tDis < aRMax) aDisDo.run(tDis);
+                    }
+                }
             }
-            @Override public double[] getNext(XYZ_IDX aNextAtom, LinkedCell.Link<XYZ_IDX> aLink) {
-                double[] tXYZ = aNextAtom.xyz();
-                double[] tMirrorXYZ = new double[3];
-                tMirrorXYZ[0] = (aLink.mDirection == null || aLink.mDirection[0] == 0) ? tXYZ[0] : tXYZ[0] + aLink.mDirection[0];
-                tMirrorXYZ[1] = (aLink.mDirection == null || aLink.mDirection[1] == 0) ? tXYZ[1] : tXYZ[1] + aLink.mDirection[1];
-                tMirrorXYZ[2] = (aLink.mDirection == null || aLink.mDirection[2] == 0) ? tXYZ[2] : tXYZ[2] + aLink.mDirection[2];
-                double tMHT = Math.abs(tMirrorXYZ[0] - aXYZ[0]) + Math.abs(tMirrorXYZ[1] - aXYZ[1]) + Math.abs(tMirrorXYZ[2] - aXYZ[2]);
-                return tMHT > aRMax ? null : tMirrorXYZ;
-            }
-        };
+        });
     }
-    
-    /**
-     * 获取位于 aXYZ 在曼哈顿距离为 aRMax 范围内的近邻粒子列表
-     * <p> 由于没有 ID 信息，不会排除相同粒子 </p>
-     * <p> MHT: ManHaTtan distance </p>
-     * @author liqa
-     * @param aXYZ 中心的坐标
-     * @param aRMax 近邻半径
-     * @return Iterable 的容器，支持 for-each 遍历并且避免重复值拷贝
-     */
-    public Iterable<double[]> getMHT_XYZ(final double[] aXYZ, final double aRMax) {
+    public void forEachNeighborDis(final XYZ aXYZ, final double aRMax, final IDisDo aDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
-        // 返回满足要求的容器
-        return () -> getProperLinkedCell(aRMax).new Itr<double[]>(aXYZ) {
-            @Override public double[] getNext(XYZ_IDX aNextAtom, LinkedCell.Link<XYZ_IDX> aLink) {
-                double[] tXYZ = aNextAtom.xyz();
-                double[] tMirrorXYZ = new double[3];
-                tMirrorXYZ[0] = (aLink.mDirection == null || aLink.mDirection[0] == 0) ? tXYZ[0] : tXYZ[0] + aLink.mDirection[0];
-                tMirrorXYZ[1] = (aLink.mDirection == null || aLink.mDirection[1] == 0) ? tXYZ[1] : tXYZ[1] + aLink.mDirection[1];
-                tMirrorXYZ[2] = (aLink.mDirection == null || aLink.mDirection[2] == 0) ? tXYZ[2] : tXYZ[2] + aLink.mDirection[2];
-                double tMHT = Math.abs(tMirrorXYZ[0] - aXYZ[0]) + Math.abs(tMirrorXYZ[1] - aXYZ[1]) + Math.abs(tMirrorXYZ[2] - aXYZ[2]);
-                return tMHT > aRMax ? null : tMirrorXYZ;
-            }
-        };
+        
+        getProperLinkedCell(aRMax).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
+            double tDis = link.isMirror() ? link.distance(aXYZ, xyz_idx.mXYZ) : aXYZ.distance(xyz_idx.mXYZ);
+            if (tDis < aRMax) aDisDo.run(tDis);
+        });
     }
     
 }

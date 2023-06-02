@@ -2,9 +2,6 @@ package com.jtool.lmp;
 
 import com.jtool.atom.*;
 import com.jtool.code.UT;
-import com.jtool.math.matrix.AbstractMatrix;
-import com.jtool.math.matrix.IMatrix;
-import com.jtool.math.table.AbstractTable;
 import com.jtool.math.table.ITable;
 import com.jtool.math.table.Table;
 import com.jtool.math.vector.IVector;
@@ -14,8 +11,6 @@ import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import static com.jtool.code.CS.*;
 
 /**
  * @author liqa
@@ -231,6 +226,8 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
         @Override public IHasXYZ boxHi() {return mBox.boxHi();}
         @Override public int atomNum() {return mAtomData.rowNumber();}
         @Override public int atomTypeNum() {return mAtomTypeNum;}
+        
+        @Override public double volume() {return mBox.shiftedBox().product();}
     }
     
     

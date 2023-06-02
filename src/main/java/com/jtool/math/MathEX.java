@@ -1,22 +1,18 @@
 package com.jtool.math;
 
-import com.jtool.atom.IHasXYZ;
-import com.jtool.atom.MonatomicParameterCalculator;
 import com.jtool.code.Pair;
 import com.jtool.code.operator.IOperator1;
 import com.jtool.code.operator.IOperator2;
 import com.jtool.code.operator.IOperator2Full;
-import com.jtool.math.function.Func1;
 import com.jtool.math.function.Func2;
 import com.jtool.math.function.Func3;
+import com.jtool.math.function.IFunc1;
+import com.jtool.math.function.ZeroBoundSymmetryFunc1;
 import com.jtool.parallel.ParforThreadPool;
 import net.jafama.FastMath;
 import org.jetbrains.annotations.ApiStatus;
 
-import java.util.Arrays;
-
 import static com.jtool.code.CS.ZL_MAT;
-import static com.jtool.code.CS.ZL_VEC;
 
 
 /**
@@ -514,424 +510,6 @@ public class MathEX {
     }
     
     
-    @ApiStatus.Obsolete
-    public static class Mat {
-        /// Matrix operations
-        public static double sum(double[][] aMatrix) {
-            double tOut = 0.0;
-            for (double[] tRows : aMatrix) for (double tData : tRows) tOut += tData;
-            return tOut;
-        }
-        public static double[] sum(double[][] aMatrix, int aDimension) {
-            if (aDimension == 0) {
-                double[] tOut = new double[aMatrix[0].length];
-                for (double[] tRows : aMatrix) for (int i = 0; i < tOut.length; ++i) tOut[i] += tRows[i];
-                return tOut;
-            } else
-            if (aDimension == 1) {
-                double[] tOut = new double[aMatrix.length];
-                for (int i = 0; i < tOut.length; ++i) for (double tData : aMatrix[i]) tOut[i] += tData;
-                return tOut;
-            } else {
-                throw new RuntimeException("Invalid Dimension: "+aDimension);
-            }
-        }
-        public static double[] sum2Dest(double[][] rDest) {
-            double[] tOut = rDest[0];
-            for (int i = 1; i < rDest.length; ++i) {
-                double[] tRows = rDest[i];
-                for (int j = 0; j < tOut.length; ++j) tOut[j] += tRows[j];
-            }
-            return tOut;
-        }
-        
-        public static double[][] transpose(double[][] aMatrix) {
-            int oRowNum = aMatrix.length;
-            int oColNum = aMatrix[0].length;
-            double[][] tTransposed = new double[oColNum][oRowNum];
-            for (int i = 0; i < oRowNum; ++i) {
-                double[] tRows = aMatrix[i];
-                for (int j = 0; j < oColNum; ++j) tTransposed[j][i] = tRows[j];
-            }
-            return tTransposed;
-        }
-        
-        public static double[][] copy(double[][] aMatrix) {
-            double[][] tOut = new double[aMatrix.length][aMatrix[0].length];
-            for (int i = 0; i < aMatrix.length; ++i) System.arraycopy(aMatrix[i], 0, tOut[i], 0, aMatrix[i].length);
-            return tOut;
-        }
-        
-        
-        /// Matrix Slice
-        private enum SliceType {
-              ALL
-            , NONE
-        }
-        public final static SliceType ALL = SliceType.ALL;
-        /**
-         * @author liqa
-         * <p> Vector Slice Similar to Matlab </p>
-         */
-        @FunctionalInterface public interface IRowFilter {boolean accept(final double[] aRow);}
-        @FunctionalInterface public interface IColFilter {boolean accept(final RealMatrixColumn aCol);}
-        private static boolean[] filter2bool(double[][] aMatrix, IRowFilter aSelectedRows) {
-            boolean[] tSelectedRows = new boolean[aMatrix.length];
-            for (int i = 0; i < tSelectedRows.length; ++i) tSelectedRows[i] = aSelectedRows.accept(aMatrix[i]);
-            return tSelectedRows;
-        }
-        private static boolean[] filter2bool(double[][] aMatrix, IColFilter aSelectedColumns) {
-            boolean[] tSelectedColumns = new boolean[aMatrix[0].length];
-            for (int i = 0; i < tSelectedColumns.length; ++i) tSelectedColumns[i] = aSelectedColumns.accept(new RealMatrixColumn(aMatrix, i));
-            return tSelectedColumns;
-        }
-        public static double[][] getSubMatrix(double[][] aMatrix, SliceType  aSelectedRows, IColFilter aSelectedColumns) {return getSubMatrix(aMatrix, aSelectedRows, filter2bool(aMatrix, aSelectedColumns));}
-        public static double[][] getSubMatrix(double[][] aMatrix, boolean[]  aSelectedRows, IColFilter aSelectedColumns) {return getSubMatrix(aMatrix, aSelectedRows, filter2bool(aMatrix, aSelectedColumns));}
-        public static double[][] getSubMatrix(double[][] aMatrix, int[]      aSelectedRows, IColFilter aSelectedColumns) {return getSubMatrix(aMatrix, aSelectedRows, filter2bool(aMatrix, aSelectedColumns));}
-        public static double[][] getSubMatrix(double[][] aMatrix, IRowFilter aSelectedRows, SliceType  aSelectedColumns) {return getSubMatrix(aMatrix, filter2bool(aMatrix, aSelectedRows), aSelectedColumns);}
-        public static double[][] getSubMatrix(double[][] aMatrix, IRowFilter aSelectedRows, boolean[]  aSelectedColumns) {return getSubMatrix(aMatrix, filter2bool(aMatrix, aSelectedRows), aSelectedColumns);}
-        public static double[][] getSubMatrix(double[][] aMatrix, IRowFilter aSelectedRows, int[]      aSelectedColumns) {return getSubMatrix(aMatrix, filter2bool(aMatrix, aSelectedRows), aSelectedColumns);}
-        public static double[][] getSubMatrix(double[][] aMatrix, IRowFilter aSelectedRows, IColFilter aSelectedColumns) {return getSubMatrix(aMatrix, filter2bool(aMatrix, aSelectedRows), filter2bool(aMatrix, aSelectedColumns));}
-        public static double[][] getSubMatrix(double[][] aMatrix, SliceType aSelectedRows, SliceType aSelectedColumns) {
-            if (aSelectedRows != ALL) return ZL_MAT;
-            int subRowNum = aMatrix.length;
-            if (aSelectedColumns != ALL) return new double[subRowNum][0];
-            int subColNum = aMatrix[0].length;
-            
-            double[][] subMatrix = new double[subRowNum][subColNum];
-            
-            for (int subRow = 0; subRow < subColNum; ++subRow) {
-                System.arraycopy(aMatrix[subRow], 0, subMatrix[subRow], 0, subColNum);
-            }
-            return subMatrix;
-        }
-        public static double[][] getSubMatrix(double[][] aMatrix, SliceType aSelectedRows, boolean[] aSelectedColumns) {
-            if (aSelectedRows != ALL) return ZL_MAT;
-            int subRowNum = aMatrix.length;
-            int tColNum = aMatrix[0].length;
-            int subColNum = Math.min(Vec.count(aSelectedColumns), tColNum);
-            
-            double[][] subMatrix = new double[subRowNum][subColNum];
-            
-            for (int subRow = 0; subRow < subRowNum; ++subRow) {
-                double[] tRows = aMatrix[subRow];
-                double[] subRows = subMatrix[subRow];
-                
-                int subCol = 0;
-                for (int col = 0; col < tColNum; ++col) if (aSelectedColumns[col]) {
-                    subRows[subCol] = tRows[col];
-                    ++subCol;
-                }
-            }
-            return subMatrix;
-        }
-        public static double[][] getSubMatrix(double[][] aMatrix, boolean[] aSelectedRows, SliceType aSelectedColumns) {
-            int tRowNum = aMatrix.length;
-            int subRowNum = Math.min(Vec.count(aSelectedRows), tRowNum);
-            if (aSelectedColumns != ALL) return new double[subRowNum][0];
-            int subColNum = aMatrix[0].length;
-            
-            double[][] subMatrix = new double[subRowNum][subColNum];
-            
-            int subRow = 0;
-            for (int row = 0; row < tRowNum; ++row) if (aSelectedRows[row]) {
-                double[] tRows = aMatrix[row];
-                double[] subRows = subMatrix[subRow];
-                ++subRow;
-                
-                System.arraycopy(tRows, 0, subRows, 0, subColNum);
-            }
-            return subMatrix;
-        }
-        public static double[][] getSubMatrix(double[][] aMatrix, boolean[] aSelectedRows, boolean[] aSelectedColumns) {
-            int tRowNum = aMatrix.length;
-            int tColNum = aMatrix[0].length;
-            int subRowNum = Math.min(Vec.count(aSelectedRows   ), tRowNum);
-            int subColNum = Math.min(Vec.count(aSelectedColumns), tColNum);
-            
-            double[][] subMatrix = new double[subRowNum][subColNum];
-            
-            int subRow = 0;
-            for (int row = 0; row < tRowNum; ++row) if (aSelectedRows[row]) {
-                double[] tRows = aMatrix[row];
-                double[] subRows = subMatrix[subRow];
-                ++subRow;
-                
-                int subCol = 0;
-                for (int col = 0; col < tColNum; ++col) if (aSelectedColumns[col]) {
-                    subRows[subCol] = tRows[col];
-                    ++subCol;
-                }
-            }
-            return subMatrix;
-        }
-        public static double[][] getSubMatrix(double[][] aMatrix, SliceType aSelectedRows, int[] aSelectedColumns) {
-            if (aSelectedRows != ALL) return ZL_MAT;
-            int subRowNum = aMatrix.length;
-            int subColNum = Math.min(aSelectedColumns.length, aMatrix[0].length);
-            
-            double[][] subMatrix = new double[subRowNum][subColNum];
-            
-            for (int subRow = 0; subRow < subRowNum; ++subRow) {
-                double[] tRows = aMatrix[subRow];
-                double[] subRows = subMatrix[subRow];
-                
-                for (int subCol = 0; subCol < subColNum; ++subCol) subRows[subCol] = tRows[aSelectedColumns[subCol]];
-            }
-            return subMatrix;
-        }
-        public static double[][] getSubMatrix(double[][] aMatrix, int[] aSelectedRows, SliceType aSelectedColumns) {
-            int subRowNum = Math.min(aSelectedRows.length, aMatrix.length);
-            if (aSelectedColumns != ALL) return new double[subRowNum][0];
-            int subColNum = aMatrix[0].length;
-            
-            double[][] subMatrix = new double[subRowNum][subColNum];
-            
-            for (int subRow = 0; subRow < subRowNum; ++subRow) {
-                double[] tRows = aMatrix[aSelectedRows[subRow]];
-                double[] subRows = subMatrix[subRow];
-                
-                System.arraycopy(tRows, 0, subRows, 0, subColNum);
-            }
-            return subMatrix;
-        }
-        public static double[][] getSubMatrix(double[][] aMatrix, boolean[] aSelectedRows, int[] aSelectedColumns) {
-            int tRowNum = aMatrix.length;
-            int subRowNum = Math.min(Vec.count(aSelectedRows), tRowNum);
-            int subColNum = Math.min(aSelectedColumns.length, aMatrix[0].length);
-            
-            double[][] subMatrix = new double[subRowNum][subColNum];
-            
-            int subRow = 0;
-            for (int row = 0; row < tRowNum; ++row) if (aSelectedRows[row]) {
-                double[] tRows = aMatrix[row];
-                double[] subRows = subMatrix[subRow];
-                ++subRow;
-                
-                for (int subCol = 0; subCol < subColNum; ++subCol) subRows[subCol] = tRows[aSelectedColumns[subCol]];
-            }
-            return subMatrix;
-        }
-        public static double[][] getSubMatrix(double[][] aMatrix, int[] aSelectedRows, boolean[] aSelectedColumns) {
-            int subRowNum = Math.min(aSelectedRows   .length, aMatrix   .length);
-            int tColNum = aMatrix[0].length;
-            int subColNum = Math.min(Vec.count(aSelectedColumns), tColNum);
-            
-            double[][] subMatrix = new double[subRowNum][subColNum];
-            
-            for (int subRow = 0; subRow < subRowNum; ++subRow) {
-                double[] tRows = aMatrix[aSelectedRows[subRow]];
-                double[] subRows = subMatrix[subRow];
-                
-                int subCol = 0;
-                for (int col = 0; col < tColNum; ++col) if (aSelectedColumns[col]) {
-                    subRows[subCol] = tRows[col];
-                    ++subCol;
-                }
-            }
-            return subMatrix;
-        }
-        public static double[][] getSubMatrix(double[][] aMatrix, int[] aSelectedRows, int[] aSelectedColumns) {
-            int subRowNum = Math.min(aSelectedRows   .length, aMatrix   .length);
-            int subColNum = Math.min(aSelectedColumns.length, aMatrix[0].length);
-            
-            double[][] subMatrix = new double[subRowNum][subColNum];
-            
-            for (int subRow = 0; subRow < subRowNum; ++subRow) {
-                double[] tRows = aMatrix[aSelectedRows[subRow]];
-                double[] subRows = subMatrix[subRow];
-                
-                for (int subCol = 0; subCol < subColNum; ++subCol) subRows[subCol] = tRows[aSelectedColumns[subCol]];
-            }
-            return subMatrix;
-        }
-        
-        public static double[] getColumn(double[][] aMatrix, int aSelectedColumn) {return getColumn(aMatrix, ALL, aSelectedColumn);}
-        public static double[] getColumn(double[][] aMatrix, SliceType aSelectedRows, int aSelectedColumn) {
-            if (aSelectedRows != ALL) return ZL_VEC;
-            int subRowNum = aMatrix.length;
-            
-            double[] subColumn = new double[subRowNum];
-            
-            for (int subRow = 0; subRow < subRowNum; ++subRow) subColumn[subRow] = aMatrix[subRow][aSelectedColumn];
-            return subColumn;
-        }
-        public static double[] getColumn(double[][] aMatrix, boolean[] aSelectedRows, int aSelectedColumn) {
-            int tRowNum = aMatrix.length;
-            int subRowNum = Math.min(Vec.count(aSelectedRows), tRowNum);
-            
-            double[] subColumn = new double[subRowNum];
-            
-            int subRow = 0;
-            for (int row = 0; row < tRowNum; ++row) if (aSelectedRows[row]) {
-                subColumn[subRow] = aMatrix[row][aSelectedColumn];
-                ++subRow;
-            }
-            return subColumn;
-        }
-        public static double[] getColumn(double[][] aMatrix, int[] aSelectedRows, int aSelectedColumn) {
-            int subRowNum = Math.min(aSelectedRows.length, aMatrix.length);
-            
-            double[] subColumn = new double[subRowNum];
-            
-            for (int subRow = 0; subRow < subRowNum; ++subRow) subColumn[subRow] = aMatrix[aSelectedRows[subRow]][aSelectedColumn];
-            return subColumn;
-        }
-        public static double[] getRow(double[][] aMatrix, int aSelectedRow) {return getRow(aMatrix, aSelectedRow, ALL);}
-        public static double[] getRow(double[][] aMatrix, int aSelectedRow, SliceType aSelectedColumns) {
-            if (aSelectedColumns != ALL) return ZL_VEC;
-            int subColNum = aMatrix[0].length;
-            
-            double[] subRow = new double[subColNum];
-            
-            double[] tRows = aMatrix[aSelectedRow];
-            System.arraycopy(tRows, 0, subRow, 0, subColNum);
-            return subRow;
-        }
-        public static double[] getRow(double[][] aMatrix, int aSelectedRow, boolean[] aSelectedColumns) {
-            int tColNum = aMatrix[0].length;
-            int subColNum = Math.min(Vec.count(aSelectedColumns), tColNum);
-            
-            double[] subRow = new double[subColNum];
-            
-            double[] tRows = aMatrix[aSelectedRow];
-            int subCol = 0;
-            for (int col = 0; col < tColNum; ++col) if (aSelectedColumns[col]) {
-                subRow[subCol] = tRows[col];
-                ++subCol;
-            }
-            return subRow;
-        }
-        public static double[] getRow(double[][] aMatrix, int aSelectedRow, int[] aSelectedColumns) {
-            int subColNum = Math.min(aSelectedColumns.length, aMatrix[0].length);
-            
-            double[] subRow = new double[subColNum];
-            
-            double[] tRows = aMatrix[aSelectedRow];
-            
-            for (int subCol = 0; subCol < subColNum; ++subCol) subRow[subCol] = tRows[aSelectedColumns[subCol]];
-            return subRow;
-        }
-    }
-    
-    public static class XYZ {
-        /**
-         * Get distance of two double[3] with no objects creation in the heap
-         * @author liqa
-         * @param aXYZ1 fist double[3]
-         * @param aXYZ2 second double[3]
-         * @return the distance of aXYZ1 and aXYZ2
-         */
-        public static double distance(double[] aXYZ1, double[] aXYZ2) {
-            double tX = aXYZ1[0] - aXYZ2[0];
-            double tY = aXYZ1[1] - aXYZ2[1];
-            double tZ = aXYZ1[2] - aXYZ2[2];
-            return Fast.sqrt(tX * tX + tY * tY + tZ * tZ);
-        }
-        /**
-         * Get dotProduct of two double[3] with no objects creation in the heap
-         * @author liqa
-         * @param aXYZ1 fist double[3]
-         * @param aXYZ2 second double[3]
-         * @return the dotProduct of aXYZ1 and aXYZ2
-         */
-        public static double dot(double[] aXYZ1, double[] aXYZ2) {return aXYZ1[0] * aXYZ2[0] + aXYZ1[1] * aXYZ2[1] + aXYZ1[2] * aXYZ2[2];}
-        
-        /**
-         * Shift AtomDataXYZ by using aBoxLo
-         * @author liqa
-         * @param rAtomDataXYZ input AtomDataXYZ that will be shifted
-         * @param aBoxLo the lower bound of box to shift
-         */
-        public static void shiftAtomDataXYZ(double[][] rAtomDataXYZ, double[] aBoxLo) {shiftAtomDataXYZ(rAtomDataXYZ, aBoxLo[0], aBoxLo[1], aBoxLo[2]);}
-        public static void shiftAtomDataXYZ(double[][] rAtomDataXYZ, double aXlo, double aYlo, double aZlo) {
-            for (int i = 0; i < rAtomDataXYZ.length; ++i) {
-                rAtomDataXYZ[i][0] = rAtomDataXYZ[i][0] - aXlo;
-                rAtomDataXYZ[i][1] = rAtomDataXYZ[i][1] - aYlo;
-                rAtomDataXYZ[i][2] = rAtomDataXYZ[i][2] - aZlo;
-            }
-        }
-        
-        /**
-         * Wrap ONCE XYZ in rAtomDataXYZ that exceeds aBox (caused by the calculation accuracy of LAMMPS)
-         * @param rAtomDataXYZ input AtomDataXYZ that will be wrapped
-         * @param aBox the size of the box (so the data and box need to be shifted)
-         */
-        public static void wrapOnceAtomDataXYZ(double[][] rAtomDataXYZ, double[] aBox) {
-            double tBoxX = aBox[0], tBoxY = aBox[1], tBoxZ = aBox[2];
-            for (double[] rXYZ : rAtomDataXYZ) {
-                double tX = rXYZ[0];
-                if      (tX <  0.0  ) rXYZ[0] += tBoxX;
-                else if (tX >= tBoxX) rXYZ[0] -= tBoxX;
-                double tY = rXYZ[1];
-                if      (tY <  0.0  ) rXYZ[1] += tBoxY;
-                else if (tY >= tBoxY) rXYZ[1] -= tBoxY;
-                double tZ = rXYZ[2];
-                if      (tZ <  0.0  ) rXYZ[2] += tBoxZ;
-                else if (tZ >= tBoxZ) rXYZ[2] -= tBoxZ;
-            }
-        }
-        
-        /**
-         * Wrap XYZ in rUnwrappedAtomDataXYZ that exceeds aBox (Used specifically unwrapped data)
-         * @param rUnwrappedAtomDataXYZ input AtomDataXYZ that will be wrapped
-         * @param aBoxLo the lower bound of the box
-         * @param aBoxHi the lower bound of the box
-         */
-        public static void wrapAtomDataXYZ(double[][] rUnwrappedAtomDataXYZ, double[] aBoxLo, double[] aBoxHi) {
-            double tBoxLoX = aBoxLo[0], tBoxLoY = aBoxLo[1], tBoxLoZ = aBoxLo[2];
-            double tBoxHiX = aBoxHi[0], tBoxHiY = aBoxHi[1], tBoxHiZ = aBoxHi[2];
-            double tBoxX = tBoxHiX-tBoxLoX, tBoxY = tBoxHiY-tBoxLoY, tBoxZ = tBoxHiZ-tBoxLoZ;
-            for (double[] rXYZ : rUnwrappedAtomDataXYZ) {
-                double tX = rXYZ[0];
-                if      (tX <  tBoxLoX) {while (rXYZ[0] <  tBoxLoX) rXYZ[0] += tBoxX;}
-                else if (tX >= tBoxHiX) {while (rXYZ[0] >= tBoxHiX) rXYZ[0] -= tBoxX;}
-                double tY = rXYZ[1];
-                if      (tY <  tBoxLoY) {while (rXYZ[1] <  tBoxLoY) rXYZ[1] += tBoxY;}
-                else if (tY >= tBoxHiY) {while (rXYZ[1] >= tBoxHiY) rXYZ[1] -= tBoxY;}
-                double tZ = rXYZ[2];
-                if      (tZ <  tBoxLoZ) {while (rXYZ[2] <  tBoxLoZ) rXYZ[2] += tBoxZ;}
-                else if (tZ >= tBoxHiZ) {while (rXYZ[2] >= tBoxHiZ) rXYZ[2] -= tBoxZ;}
-            }
-        }
-        
-        /**
-         * Wrap XYZ in rUnwrappedScaledAtomDataXYZ that exceeds aBox (Used specifically unwrapped-scaled data)
-         * @param rUnwrappedScaledAtomDataXYZ input AtomDataXYZ that will be wrapped
-         */
-        public static void wrapScaledAtomDataXYZ(double[][] rUnwrappedScaledAtomDataXYZ) {
-            for (double[] rXYZ : rUnwrappedScaledAtomDataXYZ) {
-                double tX = rXYZ[0];
-                if      (tX <  0.0) {while (rXYZ[0] <  0.0) ++rXYZ[0];}
-                else if (tX >= 1.0) {while (rXYZ[0] >= 1.0) --rXYZ[0];}
-                double tY = rXYZ[1];
-                if      (tY <  0.0) {while (rXYZ[1] <  0.0) ++rXYZ[1];}
-                else if (tY >= 1.0) {while (rXYZ[1] >= 1.0) --rXYZ[1];}
-                double tZ = rXYZ[2];
-                if      (tZ <  0.0) {while (rXYZ[2] <  0.0) ++rXYZ[2];}
-                else if (tZ >= 1.0) {while (rXYZ[2] >= 1.0) --rXYZ[2];}
-            }
-        }
-        
-        /**
-         * Unscale XYZ in rScaledAtomDataXYZ  (Used specifically scaled data)
-         * @param rScaledAtomDataXYZ input AtomDataXYZ that will be unscaled
-         * @param aBoxLo the lower bound of the box
-         * @param aBoxHi the lower bound of the box
-         */
-        public static void unscaleAtomDataXYZ(double[][] rScaledAtomDataXYZ, double[] aBoxLo, double[] aBoxHi) {
-            double tBoxLoX = aBoxLo[0], tBoxLoY = aBoxLo[1], tBoxLoZ = aBoxLo[2];
-            double tBoxX = aBoxHi[0]-tBoxLoX, tBoxY = aBoxHi[1]-tBoxLoY, tBoxZ = aBoxHi[2]-tBoxLoZ;
-            for (double[] rXYZ : rScaledAtomDataXYZ) {
-                rXYZ[0] *= tBoxX; rXYZ[0] += tBoxLoX;
-                rXYZ[1] *= tBoxY; rXYZ[1] += tBoxLoY;
-                rXYZ[2] *= tBoxZ; rXYZ[2] += tBoxLoZ;
-            }
-        }
-    }
-    
-    
-    
     /** a Parfor ThreadPool for MathEX usage */
     public static class Par {
         private static ParforThreadPool POOL = new ParforThreadPool(1);
@@ -1101,26 +679,6 @@ public class MathEX {
     /// Special functions (in vector) or its operations
     public static class Func {
         /**
-         * Get the aN length sequence from aStart in aStep,
-         * the result will like start:step:end in matlab
-         * and end = start + aStep*(aN-1).
-         * @author liqa
-         * @param aStart the start position, include
-         * @param aStep step of the sequence
-         * @param aN length of the sequence
-         * @return the sequence
-         */
-        public static double[] sequence     (double aStart, double aStep, int aN) {return sequence2Dest(aStart, aStep, new double[aN]);}
-        public static double[] sequence2Dest(double aStart, double aStep, double[] rDest) {return sequence2Dest(aStart, aStep, rDest, 0, rDest.length);}
-        public static double[] sequence2Dest(double aStart, double aStep, double[] rDest, int aDestPos, int aLength) {
-            rDest[aDestPos] = aStart;
-            for (int i = aDestPos+1; i < aDestPos+aLength; ++i) {
-                rDest[i] = rDest[i-1] + aStep;
-            }
-            return rDest;
-        }
-        
-        /**
          * Linear Interpolation like in matlab
          * @param aX1 left x
          * @param aX2 right x
@@ -1143,117 +701,29 @@ public class MathEX {
          * @author liqa
          * @param aSigma the standard deviation of the Gaussian distribution
          * @param aMu the mean value of the Gaussian distribution
-         * @param aX the input x vector, or use deltaG2Dest then rDest will be replaced by the output
+         * @param aResolution the Resolution of the Function1, dx == aSigma/aResolution
          * @return the Dirac Delta function δ(x-mu) in the Gaussian form
          */
-        public static double[] deltaG     (double aSigma, final double aMu, double[] aX) {return deltaG2Dest(aSigma, aMu, Arrays.copyOf(aX, aX.length));}
-        public static double[] deltaG2Dest(double aSigma, final double aMu, double[] rDest) {return deltaG2Dest(aSigma, aMu, rDest, 0, rDest.length);}
-        public static double[] deltaG2Dest(double aSigma, final double aMu, double[] rDest, int aDestPos, int aLength) {
+        public static IFunc1 deltaG(double aSigma, final double aMu, double aResolution) {
             final double tXMul = -1.0 / (2.0*aSigma*aSigma);
             final double tYMul =  1.0 / (Fast.sqrt(2.0*PI) * aSigma);
             
-            return Vec.mapDo2Dest(rDest, x -> {
-                x = x-aMu;
+            return new ZeroBoundSymmetryFunc1(aMu, aSigma/aResolution, (int)Math.round(aResolution*G_RANG), x -> {
+                x -= aMu;
                 return Fast.exp(x * x * tXMul) * tYMul;
-            }, aDestPos, aLength);
+            });
         }
+        public final static int G_RANG = 6;
         
-        /**
-         * convert RDF (radial distribution function, g(r))
-         * to SF (structural factor, S(q)), same format in {@link MonatomicParameterCalculator}
-         * @author liqa
-         * @param aGr the matrix form of g(r)
-         * @param aRou the atom number density
-         * @param aN the split number of output
-         * @param aQMax the max q of output S(q)
-         * @param aQMin the min q of output S(q)
-         * @return the structural factor, S(q)
-         */
-        public static double[][] RDF2SF (double[][] aGr,              double aRou, int aN, double aQMax, double aQMin) {aGr = Mat.transpose(aGr); return RDF2SF_(aGr[0], aGr[1], aRou, aN, aQMax, aQMin);}
-        public static double[][] RDF2SF (double[][] aGr,              double aRou                                    ) {aGr = Mat.transpose(aGr); return RDF2SF_(aGr[0], aGr[1], aRou);}
-        public static double[][] RDF2SF (double[][] aGr,              double aRou, int aN                            ) {aGr = Mat.transpose(aGr); return RDF2SF_(aGr[0], aGr[1], aRou, aN);}
-        public static double[][] RDF2SF (double[][] aGr,              double aRou, int aN, double aQMax              ) {aGr = Mat.transpose(aGr); return RDF2SF_(aGr[0], aGr[1], aRou, aN, aQMax);}
-        public static double[][] RDF2SF_(double[]   aGr, double[] aR, double aRou                                    ) {return RDF2SF_(aGr, aR, aRou, 100);}
-        public static double[][] RDF2SF_(double[]   aGr, double[] aR, double aRou, int aN                            ) {double tRPeek = aR[Vec.maxWithIdx(aGr).second]; return RDF2SF_(aGr, aR, aRou, aN, 2.0*PI/tRPeek * 6.0, 2.0*PI/tRPeek * 0.4);}
-        public static double[][] RDF2SF_(double[]   aGr, double[] aR, double aRou, int aN, double aQMax              ) {double tRPeek = aR[Vec.maxWithIdx(aGr).second]; return RDF2SF_(aGr, aR, aRou, aN, aQMax, 2.0*PI/tRPeek * 0.4);}
-        public static double[][] RDF2SF_(double[]   aGr, double[] aR, double aRou, int aN, double aQMax, double aQMin) {
-            double dq = (aQMax-aQMin)/aN;
-            double[] q = Func.sequence(aQMin+dq, dq, aN);
-            
-            double[] Sq = new double[aN];
-            
-            double tFrontMul = 4.0*PI*aRou;
-            for (int i = 0; i < aN; ++i) {
-                final double tQ = q[i];
-                Sq[i] = 1.0 + tFrontMul * convolve((gr, r) -> (r * (gr-1.0) * Fast.sin(tQ*r)), aGr, aR) / tQ;
-            }
-            
-            return Mat.transpose(new double[][] {Vec.merge(0.0, Sq), Vec.merge(aQMin, q)});
-        }
-        /**
-         * convert SF to RDF, same format in {@link MonatomicParameterCalculator}
-         * @author liqa
-         * @param aSq the matrix form of S(q)
-         * @param aRou the atom number density
-         * @param aN the split number of output
-         * @param aRMax the max r of output g(r)
-         * @param aRMin the min r of output g(r)
-         * @return the radial distribution function, g(r)
-         */
-        public static double[][] SF2RDF (double[][] aSq,              double aRou, int aN, double aRMax, double aRMin) {aSq = Mat.transpose(aSq); return SF2RDF_(aSq[0], aSq[1], aRou, aN, aRMax, aRMin);}
-        public static double[][] SF2RDF (double[][] aSq,              double aRou                                    ) {aSq = Mat.transpose(aSq); return SF2RDF_(aSq[0], aSq[1], aRou);}
-        public static double[][] SF2RDF (double[][] aSq,              double aRou, int aN                            ) {aSq = Mat.transpose(aSq); return SF2RDF_(aSq[0], aSq[1], aRou, aN);}
-        public static double[][] SF2RDF (double[][] aSq,              double aRou, int aN, double aRMax              ) {aSq = Mat.transpose(aSq); return SF2RDF_(aSq[0], aSq[1], aRou, aN, aRMax);}
-        public static double[][] SF2RDF_(double[]   aSq, double[] aQ, double aRou                                    ) {return SF2RDF_(aSq, aQ, aRou, 100);}
-        public static double[][] SF2RDF_(double[]   aSq, double[] aQ, double aRou, int aN                            ) {double tQPeek = aQ[Vec.maxWithIdx(aSq).second]; return SF2RDF_(aSq, aQ, aRou, aN, 2.0*PI/tQPeek * 6.0, 2.0*PI/tQPeek * 0.4);}
-        public static double[][] SF2RDF_(double[]   aSq, double[] aQ, double aRou, int aN, double aRMax              ) {double tQPeek = aQ[Vec.maxWithIdx(aSq).second]; return SF2RDF_(aSq, aQ, aRou, aN, aRMax, 2.0*PI/tQPeek * 0.4);}
-        public static double[][] SF2RDF_(double[]   aSq, double[] aQ, double aRou, int aN, double aRMax, double aRMin) {
-            double dr = (aRMax-aRMin)/aN;
-            double[] r = Func.sequence(aRMin+dr, dr, aN);
-            
-            double[] gr = new double[aN];
-            
-            double tFrontMul = 1.0/(2.0*PI*PI*aRou);
-            for (int i = 0; i < aN; ++i) {
-                final double tR = r[i];
-                gr[i] = 1.0 + tFrontMul * convolve((Sq, q) -> (q * (Sq-1.0) * Fast.sin(q*tR)), aSq, aQ) / tR;
-            }
-            
-            return Mat.transpose(new double[][] {Vec.merge(0.0, gr), Vec.merge(aRMin, r)});
-        }
         
         
         /**
          * get the numerical laplacian of the input numerical function in PBC,
          * Δf(x_i) = (f(x_{i-1}) + f(x_{i+1}) - 2f(x_i)) / (δx^2)
          * @author liqa
-         * @param aFunc input numerical function, can be double[], Func1, aFunc2 or aFunc3
+         * @param aFunc2 input numerical function, can be double[], Func1, aFunc2 or aFunc3
          * @return the numerical laplacian of the function (in PBC)
          */
-        public static double[] laplacian(double[] aFunc, double aDx) {return laplacian2Dest(aFunc, aDx, new double[aFunc.length]);}
-        public static double[] laplacian2Dest(double[] aFunc, double aDx, double[] rDest) {
-            int tNx = aFunc.length;
-            double tDx2 = aDx*aDx;
-            for (int i = 0; i < tNx; ++i) {
-                int imm = i-1; if (imm <  0  ) imm += tNx;
-                int ipp = i+1; if (ipp >= tNx) ipp -= tNx;
-                
-                rDest[i] = (aFunc[imm] + aFunc[ipp] - 2*aFunc[i]) / tDx2;
-            }
-            return rDest;
-        }
-        public static Func1 laplacian(Func1 aFunc1) {return laplacian2Dest(aFunc1, aFunc1.shell().setData(new double[aFunc1.data().length]));}
-        public static Func1 laplacian2Dest(Func1 aFunc1, Func1 rDest) {
-            int tNx = aFunc1.Nx();
-            double tDx2 = aFunc1.dx()*aFunc1.dx();
-            for (int i = 0; i < tNx; ++i) {
-                int imm = i-1; if (imm <  0  ) imm += tNx;
-                int ipp = i+1; if (ipp >= tNx) ipp -= tNx;
-                
-                rDest.set(i, (aFunc1.get_(imm) + aFunc1.get_(ipp) - 2*aFunc1.get_(i)) / tDx2);
-            }
-            return rDest;
-        }
         public static Func2 laplacian(Func2 aFunc2) {return laplacian2Dest(aFunc2, aFunc2.shell().setData(new double[aFunc2.data().length]));}
         public static Func2 laplacian2Dest(Func2 aFunc2, Func2 rDest) {
             int tNx = aFunc2.Nx();
@@ -1475,6 +945,28 @@ public class MathEX {
     
     /// utils operations
     public static class Code {
+        /** double compare */
+        public static boolean numericEqual(double aLHS, double aRHS) {
+            double tNorm = Math.abs(aLHS) + Math.abs(aRHS);
+            if (tNorm < Double.MIN_NORMAL * EPS_MUL) return true; // 两个值都为零的情况，比这个值更小时乘以 epsilon() 会失效
+            double tDiff = Math.abs(aLHS - aRHS);
+            return tDiff <= tNorm * DBL_EPSILON * EPS_MUL;
+        }
+        public static boolean numericGreater(double aLHS, double aRHS) {
+            double tNorm = Math.abs(aLHS) + Math.abs(aRHS);
+            if (tNorm < Double.MIN_NORMAL * EPS_MUL) return false; // 两个值都为零的情况，比这个值更小时乘以 epsilon() 会失效
+            return aLHS - aRHS > tNorm * DBL_EPSILON * EPS_MUL;
+        }
+        public static boolean numericLess(double aLHS, double aRHS) {
+            double tNorm = Math.abs(aLHS) + Math.abs(aRHS);
+            if (tNorm < Double.MIN_NORMAL * EPS_MUL) return false; // 两个值都为零的情况，比这个值更小时乘以 epsilon() 会失效
+            return aRHS - aLHS > tNorm * DBL_EPSILON * EPS_MUL;
+        }
+        public final static int EPS_MUL = 8;
+        /** {@link FastMath} will has lower accuracy */
+        public final static double DBL_EPSILON = 1.0e-12;
+        
+        
         /** Translates Amount of aUnit1 to Amount of aUnit2. */
         public static long units(long aAmount, long aOriginalUnit, long aTargetUnit, boolean aRoundUp) {
             if (aTargetUnit == 0) return 0;

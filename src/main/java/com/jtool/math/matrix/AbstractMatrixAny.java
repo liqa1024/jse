@@ -329,6 +329,64 @@ public abstract class AbstractMatrixAny<M extends IMatrixAny<?, ?>, V extends IV
         };
     }
     
+    @Override public void increment_(int aRow, int aCol) {
+        double tValue = get_(aRow, aCol);
+        ++tValue;
+        set_(aRow, aCol, tValue);
+    }
+    @Override public double getAndIncrement_(int aRow, int aCol) {
+        double tValue = get_(aRow, aCol);
+        set_(aRow, aCol, tValue+1);
+        return tValue;
+    }
+    @Override public double incrementAndGet_(int aRow, int aCol) {
+        double tValue = get_(aRow, aCol);
+        ++tValue;
+        set_(aRow, aCol, tValue);
+        return tValue;
+    }
+    @Override public void decrement_(int aRow, int aCol) {
+        double tValue = get_(aRow, aCol);
+        --tValue;
+        set_(aRow, aCol, tValue);
+    }
+    @Override public double getAndDecrement_(int aRow, int aCol) {
+        double tValue = get_(aRow, aCol);
+        set_(aRow, aCol, tValue-1);
+        return tValue;
+    }
+    @Override public double decrementAndGet_(int aRow, int aCol) {
+        double tValue = get_(aRow, aCol);
+        --tValue;
+        set_(aRow, aCol, tValue);
+        return tValue;
+    }
+    
+    @Override public void increment(int aRow, int aCol) {
+        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
+        increment_(aRow, aCol);
+    }
+    @Override public double getAndIncrement(int aRow, int aCol) {
+        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
+        return getAndIncrement_(aRow, aCol);
+    }
+    @Override public double incrementAndGet(int aRow, int aCol) {
+        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
+        return incrementAndGet_(aRow, aCol);
+    }
+    @Override public void decrement(int aRow, int aCol) {
+        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
+        decrement_(aRow, aCol);
+    }
+    @Override public double getAndDecrement(int aRow, int aCol) {
+        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
+        return getAndDecrement_(aRow, aCol);
+    }
+    @Override public double decrementAndGet(int aRow, int aCol) {
+        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
+        return decrementAndGet_(aRow, aCol);
+    }
+    
     
     
     /** 矩阵生成器的一般实现，主要实现一些重复的接口 */
@@ -441,16 +499,16 @@ public abstract class AbstractMatrixAny<M extends IMatrixAny<?, ?>, V extends IV
     
     
     /** Groovy 的部分，增加矩阵基本的运算操作，由于不能重载 += 之类的变成向自身操作，因此会充斥着值拷贝，因此不推荐重性能的场景使用 */
-    @VisibleForTesting @Override public M plus       (double aRHS) {return operation().mapAdd       (this, aRHS);}
+    @VisibleForTesting @Override public M plus       (double aRHS) {return operation().mapPlus      (this, aRHS);}
     @VisibleForTesting @Override public M minus      (double aRHS) {return operation().mapMinus     (this, aRHS);}
     @VisibleForTesting @Override public M multiply   (double aRHS) {return operation().mapMultiply  (this, aRHS);}
-    @VisibleForTesting @Override public M div        (double aRHS) {return operation().mapDivide    (this, aRHS);}
+    @VisibleForTesting @Override public M div        (double aRHS) {return operation().mapDiv       (this, aRHS);}
     @VisibleForTesting @Override public M mod        (double aRHS) {return operation().mapMod       (this, aRHS);}
     
-    @VisibleForTesting @Override public M plus      (IMatrixGetter aRHS) {return operation().ebeAdd       (this, aRHS);}
+    @VisibleForTesting @Override public M plus      (IMatrixGetter aRHS) {return operation().ebePlus      (this, aRHS);}
     @VisibleForTesting @Override public M minus     (IMatrixGetter aRHS) {return operation().ebeMinus     (this, aRHS);}
     @VisibleForTesting @Override public M multiply  (IMatrixGetter aRHS) {return operation().ebeMultiply  (this, aRHS);}
-    @VisibleForTesting @Override public M div       (IMatrixGetter aRHS) {return operation().ebeDivide    (this, aRHS);}
+    @VisibleForTesting @Override public M div       (IMatrixGetter aRHS) {return operation().ebeDiv       (this, aRHS);}
     @VisibleForTesting @Override public M mod       (IMatrixGetter aRHS) {return operation().ebeMod       (this, aRHS);}
     
     /** Groovy 的部分，增加矩阵切片操作 */

@@ -50,6 +50,13 @@ public final class ShiftVector extends DoubleArrayVector<Vector> implements IVec
         };
     }
     
+    @Override public void increment_(int aIdx) {++mData[aIdx + mShift];}
+    @Override public double getAndIncrement_(int aIdx) {return mData[aIdx + mShift]++;}
+    @Override public double incrementAndGet_(int aIdx) {return ++mData[aIdx + mShift];}
+    @Override public void decrement_(int aIdx) {--mData[aIdx + mShift];}
+    @Override public double getAndDecrement_(int aIdx) {return mData[aIdx + mShift]--;}
+    @Override public double decrementAndGet_(int aIdx) {return --mData[aIdx + mShift];}
+    
     /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式） */
     @Override public Iterator<Double> iterator() {
         return new Iterator<Double>() {

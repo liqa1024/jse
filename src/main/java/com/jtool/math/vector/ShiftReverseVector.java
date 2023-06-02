@@ -50,6 +50,14 @@ public final class ShiftReverseVector extends DoubleArrayVector<ReverseVector> {
         };
     }
     
+    /** Optimize stuffs，重写加速这些操作 */
+    @Override public void increment_(int aIdx) {++mData[totShift-aIdx];}
+    @Override public double getAndIncrement_(int aIdx) {return mData[totShift-aIdx]++;}
+    @Override public double incrementAndGet_(int aIdx) {return ++mData[totShift-aIdx];}
+    @Override public void decrement_(int aIdx) {--mData[totShift-aIdx];}
+    @Override public double getAndDecrement_(int aIdx) {return mData[totShift-aIdx]--;}
+    @Override public double decrementAndGet_(int aIdx) {return --mData[totShift-aIdx];}
+    
     /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式） */
     @Override public Iterator<Double> iterator() {
         return new Iterator<Double>() {

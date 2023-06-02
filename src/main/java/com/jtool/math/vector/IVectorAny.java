@@ -61,6 +61,22 @@ public interface IVectorAny<V extends IVectorGetter> extends IVectorGetter, IHas
         else return get(0);
     }
     
+    /** 发现还需要这些操作 */
+    void increment_(int aIdx);
+    double getAndIncrement_(int aIdx);
+    double incrementAndGet_(int aIdx);
+    void decrement_(int aIdx);
+    double getAndDecrement_(int aIdx);
+    double decrementAndGet_(int aIdx);
+    
+    void increment(int aIdx);
+    double getAndIncrement(int aIdx);
+    double incrementAndGet(int aIdx);
+    void decrement(int aIdx);
+    double getAndDecrement(int aIdx);
+    double decrementAndGet(int aIdx);
+    
+    
     /** 获得基于自身的向量生成器，生成按列排布的向量 */
     IVectorGenerator<V> generator();
     @VisibleForTesting default IVectorGenerator<V> gen() {return generator();}

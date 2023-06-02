@@ -126,7 +126,11 @@ public class Lmpdat extends AbstractAtomData {
     @Override public XYZ boxHi() {return mBox.boxHi();}
     @Override public int atomNum() {return mAtomData.rowNumber();}
     @Override public int atomTypeNum() {return mAtomTypeNum;}
-    
+    @Override public double volume() {
+        // 注意如果是斜方的模拟盒则不能获取到模拟盒体积
+        if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("Volume is temporarily support NORMAL Box only");
+        return mBox.shiftedBox().product();
+    }
     
     
     /// 创建 Lmpdat

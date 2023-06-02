@@ -1,25 +1,60 @@
 package com.jtool.atom;
 
+import com.jtool.math.MathEX;
+
 public interface IHasXYZ {
     double x();
     double y();
     double z();
     
     /** 提供一些运算，由于 XYZ 本身就很轻量，为了避免方法调用的损失，并且让实现起来比较简单，这里不增加中间层 operation */
-    default double product() {
-        return x() * y() * z();
+    default double product() {return x() * y() * z();}
+    default double min() {return Math.min(Math.min(x(), y()), z());}
+    default double max() {return Math.max(Math.max(x(), y()), z());}
+    
+    /** 使用和 Groovy 重载运算符相同的名称，可以顺便实现重载运算符操作 */
+    default IHasXYZ plus(IHasXYZ aRHS) {return new XYZ(x()+aRHS.x(), y()+aRHS.y(), z()+aRHS.z());}
+    default IHasXYZ plus(double aX, double aY, double aZ) {return new XYZ(x()+aX, y()+aY, z()+aZ);}
+    default IHasXYZ plus(double aRHS) {return new XYZ(x()+aRHS, y()+aRHS, z()+aRHS);}
+    
+    default IHasXYZ minus(IHasXYZ aRHS) {return new XYZ(x()-aRHS.x(), y()-aRHS.y(), z()-aRHS.z());}
+    default IHasXYZ minus(double aX, double aY, double aZ) {return new XYZ(x()-aX, y()-aY, z()-aZ);}
+    default IHasXYZ minus(double aRHS) {return new XYZ(x()-aRHS, y()-aRHS, z()-aRHS);}
+    
+    default IHasXYZ multiply(IHasXYZ aRHS) {return new XYZ(x()*aRHS.x(), y()*aRHS.y(), z()*aRHS.z());}
+    default IHasXYZ multiply(double aX, double aY, double aZ) {return new XYZ(x()*aX, y()*aY, z()*aZ);}
+    default IHasXYZ multiply(double aRHS) {return new XYZ(x()*aRHS, y()*aRHS, z()*aRHS);}
+    
+    default IHasXYZ div(IHasXYZ aRHS) {return new XYZ(x()/aRHS.x(), y()/aRHS.y(), z()/aRHS.z());}
+    default IHasXYZ div(double aX, double aY, double aZ) {return new XYZ(x()/aX, y()/aY, z()/aZ);}
+    default IHasXYZ div(double aRHS) {return new XYZ(x()/aRHS, y()/aRHS, z()/aRHS);}
+    
+    
+    
+    default double distance(IHasXYZ aRHS) {
+        double tX = x() - aRHS.x();
+        double tY = y() - aRHS.y();
+        double tZ = z() - aRHS.z();
+        return MathEX.Fast.sqrt(tX*tX + tY*tY + tZ*tZ);
     }
-    default IHasXYZ minus(IHasXYZ aRHS) {
-        return new XYZ(x()-aRHS.x(), y()-aRHS.y(), z()-aRHS.z());
-    }
-    default IHasXYZ minus(double aX, double aY, double aZ) {
-        return new XYZ(x()-aX, y()-aY, z()-aZ);
-    }
-    default IHasXYZ minus(double aRHS) {
-        return new XYZ(x()-aRHS, y()-aRHS, z()-aRHS);
+    default double distance(double aX, double aY, double aZ) {
+        aX -= x();
+        aY -= y();
+        aZ -= z();
+        return MathEX.Fast.sqrt(aX*aX + aY*aY + aZ*aZ);
     }
     
-    default IHasXYZ multiply(double aRHS) {
-        return new XYZ(x()*aRHS, y()*aRHS, z()*aRHS);
+    /**
+     * MHT: ManHaTtan distance
+     * 曼哈顿距离
+     */
+    default double distanceMHT(IHasXYZ aRHS) {
+        return Math.abs(x() - aRHS.x()) + Math.abs(y() - aRHS.y()) + Math.abs(z() - aRHS.z());
+    }
+    default double distanceMHT(double aX, double aY, double aZ) {
+        aX -= x();
+        aY -= y();
+        aZ -= z();
+        return Math.abs(aX) + Math.abs(aY) + Math.abs(aZ);
     }
 }

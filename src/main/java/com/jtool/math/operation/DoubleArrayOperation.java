@@ -5,8 +5,6 @@ import com.jtool.code.operator.IOperator1;
 import com.jtool.code.operator.IOperator2;
 import com.jtool.math.IDataShell;
 
-import java.util.Iterator;
-
 
 /**
  * 对于内部含有 double[] 的数据的运算做专门优化，方便编译器做 SIMD 的相关优化
@@ -14,7 +12,7 @@ import java.util.Iterator;
  */
 public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>, R extends RS, S extends RS, T> extends AbstractDataOperation<RS, R, S, T> {
     /** add, minus, multiply, divide stuffs */
-    @Override protected void ebeAdd2Dest_(T aLHS, T aRHS, RS rDest) {
+    @Override protected void ebePlus2Dest_(T aLHS, T aRHS, RS rDest) {
         final double[] tData1 = rDest.getIfHasSameOrderData(aLHS);
         final double[] tData2 = rDest.getIfHasSameOrderData(aRHS);
         if (tData1 != null && tData2 != null) {
@@ -31,7 +29,7 @@ public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T,
                 else for (int i = rShift, j = tShift1, k = tShift2; i < rEnd; ++i, ++j, ++k) rData[i] = tData1[j] + tData2[k];
             }
         } else {
-            super.ebeAdd2Dest_(aLHS, aRHS, rDest);
+            super.ebePlus2Dest_(aLHS, aRHS, rDest);
         }
     }
     @Override protected void ebeMinus2Dest_(T aLHS, T aRHS, RS rDest) {
@@ -74,7 +72,7 @@ public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T,
             super.ebeMultiply2Dest_(aLHS, aRHS, rDest);
         }
     }
-    @Override protected void ebeDivide2Dest_(T aLHS, T aRHS, RS rDest) {
+    @Override protected void ebeDiv2Dest_(T aLHS, T aRHS, RS rDest) {
         final double[] tData1 = rDest.getIfHasSameOrderData(aLHS);
         final double[] tData2 = rDest.getIfHasSameOrderData(aRHS);
         if (tData1 != null && tData2 != null) {
@@ -91,7 +89,7 @@ public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T,
                 else for (int i = rShift, j = tShift1, k = tShift2; i < rEnd; ++i, ++j, ++k) rData[i] = tData1[j] / tData2[k];
             }
         } else {
-            super.ebeDivide2Dest_(aLHS, aRHS, rDest);
+            super.ebeDiv2Dest_(aLHS, aRHS, rDest);
         }
     }
     @Override protected void ebeMod2Dest_(T aLHS, T aRHS, RS rDest) {
@@ -116,7 +114,7 @@ public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T,
     }
     
     
-    @Override protected void mapAdd2Dest_(T aLHS, double aRHS, RS rDest) {
+    @Override protected void mapPlus2Dest_(T aLHS, double aRHS, RS rDest) {
         final double[] tData = rDest.getIfHasSameOrderData(aLHS);
         if (tData != null) {
             final double[] rData = rDest.getData();
@@ -126,7 +124,7 @@ public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T,
             if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = tData[i] + aRHS;
             else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = tData[j] + aRHS;
         } else {
-            super.mapAdd2Dest_(aLHS, aRHS, rDest);
+            super.mapPlus2Dest_(aLHS, aRHS, rDest);
         }
     }
     @Override protected void mapMinus2Dest_(T aLHS, double aRHS, RS rDest) {
@@ -222,7 +220,7 @@ public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T,
     }
     
     
-    @Override protected void ebeAdd2this_(RS rThis, T aRHS) {
+    @Override protected void ebePlus2this_(RS rThis, T aRHS) {
         final double[] tData = rThis.getIfHasSameOrderData(aRHS);
         if (tData != null) {
             final double[] rData = rThis.getData();
@@ -232,7 +230,7 @@ public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T,
             if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] += tData[i];
             else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] += tData[j];
         } else {
-            super.ebeAdd2this_(rThis, aRHS);
+            super.ebePlus2this_(rThis, aRHS);
         }
     }
     @Override protected void ebeMinus2this_(RS rThis, T aRHS) {
@@ -274,7 +272,7 @@ public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T,
             super.ebeMultiply2this_(rThis, aRHS);
         }
     }
-    @Override protected void ebeDivide2this_(RS rThis, T aRHS) {
+    @Override protected void ebeDiv2this_(RS rThis, T aRHS) {
         final double[] tData = rThis.getIfHasSameOrderData(aRHS);
         if (tData != null) {
             final double[] rData = rThis.getData();
@@ -284,10 +282,10 @@ public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T,
             if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] /= tData[i];
             else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] /= tData[j];
         } else {
-            super.ebeDivide2this_(rThis, aRHS);
+            super.ebeDiv2this_(rThis, aRHS);
         }
     }
-    @Override protected void ebeLDivide2this_(RS rThis, T aRHS) {
+    @Override protected void ebeLDiv2this_(RS rThis, T aRHS) {
         final double[] tData = rThis.getIfHasSameOrderData(aRHS);
         if (tData != null) {
             final double[] rData = rThis.getData();
@@ -297,7 +295,7 @@ public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T,
             if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = tData[i] / rData[i];
             else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = tData[j] / rData[i];
         } else {
-            super.ebeLDivide2this_(rThis, aRHS);
+            super.ebeLDiv2this_(rThis, aRHS);
         }
     }
     @Override protected void ebeMod2this_(RS rThis, T aRHS) {
@@ -328,12 +326,12 @@ public abstract class DoubleArrayOperation<RS extends IHasLotIterator<? super T,
     }
     
     
-    @Override protected void mapAdd2this_       (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] += aRHS;}
+    @Override protected void mapPlus2this_      (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] += aRHS;}
     @Override protected void mapMinus2this_     (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] -= aRHS;}
     @Override protected void mapLMinus2this_    (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] = aRHS - rData[i];}
     @Override protected void mapMultiply2this_  (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] *= aRHS;}
-    @Override protected void mapDivide2this_    (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] /= aRHS;}
-    @Override protected void mapLDivide2this_   (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] = aRHS / rData[i];}
+    @Override protected void mapDiv2this_       (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] /= aRHS;}
+    @Override protected void mapLDiv2this_      (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] = aRHS / rData[i];}
     @Override protected void mapMod2this_       (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] %= aRHS;}
     @Override protected void mapLMod2this_      (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] = aRHS % rData[i];}
     

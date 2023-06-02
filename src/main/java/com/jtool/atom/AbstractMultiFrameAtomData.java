@@ -1,7 +1,6 @@
 package com.jtool.atom;
 
 import com.jtool.math.table.ITable;
-import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.AbstractList;
 
@@ -28,14 +27,5 @@ public abstract class AbstractMultiFrameAtomData<T extends IHasAtomData> extends
     @Override public final int              atomTypeNum ()          {return defaultFrame().atomTypeNum();}
     @Override public final IHasXYZ          boxLo       ()          {return defaultFrame().boxLo();}
     @Override public final IHasXYZ          boxHi       ()          {return defaultFrame().boxHi();}
-    
-    
-    public MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType, int aThreadNum) {return new MonatomicParameterCalculator(atoms(aType), aThreadNum);}
-    public MonatomicParameterCalculator getMonatomicParameterCalculator    (                         ) {return new MonatomicParameterCalculator(atoms()                 );}
-    public MonatomicParameterCalculator getMonatomicParameterCalculator    (           int aThreadNum) {return new MonatomicParameterCalculator(atoms()     , aThreadNum);}
-    public MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType                ) {return new MonatomicParameterCalculator(atoms(aType)            );}
-    @VisibleForTesting public MonatomicParameterCalculator getMPC          (                         ) {return new MonatomicParameterCalculator(atoms()                 );}
-    @VisibleForTesting public MonatomicParameterCalculator getMPC          (           int aThreadNum) {return new MonatomicParameterCalculator(atoms()     , aThreadNum);}
-    @VisibleForTesting public MonatomicParameterCalculator getTypeMPC      (int aType                ) {return new MonatomicParameterCalculator(atoms(aType)            );}
-    @VisibleForTesting public MonatomicParameterCalculator getTypeMPC      (int aType, int aThreadNum) {return new MonatomicParameterCalculator(atoms(aType), aThreadNum);}
+    @Override public final double           volume      ()          {return defaultFrame().volume();}
 }

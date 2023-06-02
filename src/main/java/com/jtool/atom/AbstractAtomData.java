@@ -3,7 +3,6 @@ package com.jtool.atom;
 import com.jtool.code.UT;
 import com.jtool.math.table.ITable;
 import com.jtool.math.table.Table;
-import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -23,9 +22,11 @@ public abstract class AbstractAtomData implements IHasAtomData {
     public abstract int atomNum();
     public abstract int atomTypeNum();
     
+    @Override public double volume() {return boxHi().minus(boxLo()).product();}
+    
     
     /** 直接使用过滤器过滤掉不符合的种类 */
-    @Override public Iterable<IAtom> atoms(final int aType) {return UT.Code.filterIterable(atoms(), atom -> atom.type()==aType);}
+    @Override public Iterable<IAtom> atoms(final int aType) {return UT.Code.filter(atoms(), atom -> atom.type()==aType);}
     
     /** 会利用 atomNum() 来得到初始的容量 */
     @Override public ITable dataXYZ() {
@@ -77,21 +78,4 @@ public abstract class AbstractAtomData implements IHasAtomData {
         }
         @Override public int size() {return mTable.rowNumber();}
     }
-    
-    
-    /// 实用功能，这里依旧保留这种写法
-    /**
-     * 获取单原子参数的计算器，支持使用 MPC 的简写来调用
-     * @param aType 指定此值来获取只有这个种类的原子的单原子计算器，用于计算只考虑一种元素的一些参数
-     * @param aThreadNum 执行 MPC 的线程数目
-     * @return 获取到的 MPC
-     */
-    public MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType, int aThreadNum) {return new MonatomicParameterCalculator(atoms(aType), aThreadNum);}
-    public MonatomicParameterCalculator getMonatomicParameterCalculator    (                         ) {return new MonatomicParameterCalculator(atoms()                 );}
-    public MonatomicParameterCalculator getMonatomicParameterCalculator    (           int aThreadNum) {return new MonatomicParameterCalculator(atoms()     , aThreadNum);}
-    public MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType                ) {return new MonatomicParameterCalculator(atoms(aType)            );}
-    @VisibleForTesting public MonatomicParameterCalculator getMPC          (                         ) {return new MonatomicParameterCalculator(atoms()                 );}
-    @VisibleForTesting public MonatomicParameterCalculator getMPC          (           int aThreadNum) {return new MonatomicParameterCalculator(atoms()     , aThreadNum);}
-    @VisibleForTesting public MonatomicParameterCalculator getTypeMPC      (int aType                ) {return new MonatomicParameterCalculator(atoms(aType)            );}
-    @VisibleForTesting public MonatomicParameterCalculator getTypeMPC      (int aType, int aThreadNum) {return new MonatomicParameterCalculator(atoms(aType), aThreadNum);}
 }

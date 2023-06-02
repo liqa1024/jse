@@ -41,9 +41,9 @@ public class Vectors {
         rVector.fill(aList);
         return rVector;
     }
-    public static IVector from(double[] aList) {
-        IVector rVector = zeros(aList.length);
-        rVector.fill(aList);
+    public static IVector from(double[] aData) {
+        IVector rVector = zeros(aData.length);
+        rVector.fill(aData);
         return rVector;
     }
 }

@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableBiMap;
 import com.jtool.code.operator.IOperator1Full;
 import com.jtool.io.Decryptor;
 import com.jtool.io.Encryptor;
+import com.jtool.math.function.IFunc1;
 import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.matrix.IMatrixAny;
 import com.jtool.math.matrix.Matrices;
@@ -195,7 +196,38 @@ public class UT {
         }
         
         
-        
+        /**
+         * filter the input Iterable
+         * @author liqa
+         */
+        public static <T> Iterable<T> filter(final Iterable<? extends T> aIterable, final IOperator1Full<Boolean, ? super T> aFilter) {
+            return () -> new Iterator<T>() {
+                private final Iterator<? extends T> mIt = aIterable.iterator();
+                private T mNext = null;
+                
+                @Override public boolean hasNext() {
+                    while (true) {
+                        if (mNext != null) return true;
+                        if (mIt.hasNext()) {
+                            mNext = mIt.next();
+                            // 过滤器不通过则设为 null 跳过
+                            if (!aFilter.cal(mNext)) mNext = null;
+                            continue;
+                        }
+                        return false;
+                    }
+                }
+                @Override public T next() {
+                    if (hasNext()) {
+                        T tNext = mNext;
+                        mNext = null; // 设置 mNext 非法表示此时不再有 Next
+                        return tNext;
+                    } else {
+                        throw new NoSuchElementException();
+                    }
+                }
+            };
+        }
         /**
          * map {@code Iterable<T> to Iterable<R>} like {@link Stream}.map
          * @author liqa
@@ -258,39 +290,6 @@ public class UT {
                         if (mParentIt.hasNext()) {
                             mIt = mParentIt.next().iterator();
                             mNext = null;
-                            continue;
-                        }
-                        return false;
-                    }
-                }
-                @Override public T next() {
-                    if (hasNext()) {
-                        T tNext = mNext;
-                        mNext = null; // 设置 mNext 非法表示此时不再有 Next
-                        return tNext;
-                    } else {
-                        throw new NoSuchElementException();
-                    }
-                }
-            };
-        }
-        
-        /**
-         * filter the input Iterable
-         * @author liqa
-         */
-        public static <T> Iterable<T> filterIterable(final Iterable<? extends T> aIterable, final IOperator1Full<Boolean, ? super T> aFilter) {
-            return () -> new Iterator<T>() {
-                private final Iterator<? extends T> mIt = aIterable.iterator();
-                private T mNext = null;
-                
-                @Override public boolean hasNext() {
-                    while (true) {
-                        if (mNext != null) return true;
-                        if (mIt.hasNext()) {
-                            mNext = mIt.next();
-                            // 过滤器不通过则设为 null 跳过
-                            if (!aFilter.cal(mNext)) mNext = null;
                             continue;
                         }
                         return false;
@@ -792,7 +791,7 @@ public class UT {
         public static void data2csv(IMatrixAny<?,?> aData, String aFilePath, String... aHeads) throws IOException {
             try (PrintStream tPrinter = toPrintStream(aFilePath)) {
                 if (aHeads!=null && aHeads.length>0) tPrinter.println(String.join(",", aHeads));
-                for (IVector subData : aData.rows()) tPrinter.println(String.join(",", Code.map(subData.iterable(), Object::toString)));
+                for (IVector subData : aData.rows()) tPrinter.println(String.join(",", Code.map(subData.iterable(), String::valueOf)));
             }
         }
         public static void data2csv(IVectorAny<?> aData, String aFilePath) throws IOException {
@@ -804,6 +803,19 @@ public class UT {
             try (PrintStream tPrinter = toPrintStream(aFilePath)) {
                 tPrinter.println(aHead);
                 for (Double subData : aData.iterable()) tPrinter.println(subData);
+            }
+        }
+        public static void data2csv(IFunc1 aFunc, String aFilePath, String... aHeads) throws IOException {
+            try (PrintStream tPrinter = toPrintStream(aFilePath)) {
+                if (aHeads!=null && aHeads.length>0) tPrinter.println(String.join(",", aHeads));
+                else tPrinter.println(String.join(",", "f", "x"));
+                
+                IVector tX = aFunc.x();
+                IVector tY = aFunc.f();
+                int tN = aFunc.Nx();
+                for (int i = 0; i < tN; ++i) {
+                    tPrinter.println(String.join(",", String.valueOf(tY.get_(i)), String.valueOf(tX.get_(i))));
+                }
             }
         }
         
@@ -825,7 +837,7 @@ public class UT {
         public static void table2csv(Table aTable, String aFilePath) throws IOException {
             try (PrintStream tPrinter = toPrintStream(aFilePath)) {
                 if (!aTable.noHead()) tPrinter.println(String.join(",", aTable.heads()));
-                for (IVector subData : aTable.rows()) tPrinter.println(String.join(",", Code.map(subData.iterable(), Object::toString)));
+                for (IVector subData : aTable.rows()) tPrinter.println(String.join(",", Code.map(subData.iterable(), String::valueOf)));
             }
         }
         /**
