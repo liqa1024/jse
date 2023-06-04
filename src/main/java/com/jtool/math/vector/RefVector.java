@@ -10,6 +10,10 @@ public abstract class RefVector extends AbstractVector {
     /** stuff to override */
     public abstract double get_(int aIdx);
     @Override public void set_(int aIdx, double aValue) {throw new UnsupportedOperationException("set");}
-    @Override public double getAndSet_(int aIdx, double aValue) {throw new UnsupportedOperationException("set");}
+    @Override public double getAndSet_(int aIdx, double aValue) {
+        double oValue = get_(aIdx);
+        set_(aIdx, aValue);
+        return oValue;
+    }
     public abstract int size();
 }

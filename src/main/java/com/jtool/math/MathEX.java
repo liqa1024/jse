@@ -724,7 +724,9 @@ public class MathEX {
          * @param aFunc2 input numerical function, can be double[], Func1, aFunc2 or aFunc3
          * @return the numerical laplacian of the function (in PBC)
          */
+        @ApiStatus.Obsolete
         public static Func2 laplacian(Func2 aFunc2) {return laplacian2Dest(aFunc2, aFunc2.shell().setData(new double[aFunc2.data().length]));}
+        @ApiStatus.Obsolete
         public static Func2 laplacian2Dest(Func2 aFunc2, Func2 rDest) {
             int tNx = aFunc2.Nx();
             int tNy = aFunc2.Ny();
@@ -741,7 +743,9 @@ public class MathEX {
             }
             return rDest;
         }
+        @ApiStatus.Obsolete
         public static Func3 laplacian(Func3 aFunc3) {return laplacian2Dest(aFunc3, aFunc3.shell().setData(new double[aFunc3.data().length]));}
+        @ApiStatus.Obsolete
         public static Func3 laplacian2Dest(final Func3 aFunc3, final Func3 rDest) {
             final int tNx = aFunc3.Nx();
             final int tNy = aFunc3.Ny();
@@ -765,7 +769,9 @@ public class MathEX {
         }
         
         /** parallel support for 3d laplacian */
+        @ApiStatus.Obsolete
         public static Func3 parlaplacian2Dest(final Func3 aFunc3, final Func3 rDest) {return parlaplacian2Dest(Par.POOL, aFunc3, rDest);}
+        @ApiStatus.Obsolete
         public static Func3 parlaplacian2Dest(ParforThreadPool aPool, final Func3 aFunc3, final Func3 rDest) {
             final int tNx = aFunc3.Nx();
             final int tNy = aFunc3.Ny();
@@ -804,6 +810,7 @@ public class MathEX {
          * @param aSteps the step number of this iteration
          * @return the array of solution y(x) in default, or the single value of y(last) = y(aStartX+aDx*aSteps) if use "odeLast"
          */
+        @ApiStatus.Obsolete
         public static double[] odeEuler(IOperator2<Double> aFunc2, double aStartY, double aStartX, double aDx, int aSteps) {
             double[] tResult = new double[aSteps+1];
             tResult[0] = aStartY;
@@ -814,6 +821,7 @@ public class MathEX {
             }
             return tResult;
         }
+        @ApiStatus.Obsolete
         public static double odeLastEuler(IOperator2<Double> aFunc2, double aStartY, double aStartX, double aDx, int aSteps) {
             double tResult = aStartY;
             double tX = aStartX;
@@ -823,6 +831,7 @@ public class MathEX {
             }
             return tResult;
         }
+        @ApiStatus.Obsolete
         public static double[][] odeEuler(IOperator2Full<double[], double[], Double> aFunc2, double[] aStartY, double aStartX, final double aDx, int aSteps) {
             double[][] tResult = new double[aSteps+1][];
             tResult[0] = aStartY;
@@ -834,6 +843,7 @@ public class MathEX {
             return tResult;
         }
         /** 利用上 aDestFunc2 产生的临时变量 */
+        @ApiStatus.Obsolete
         public static double[][] ode2DestEuler(IOperator2Full<double[], double[], Double> aDestFunc2, double[] aStartY, double aStartX, final double aDx, int aSteps) {
             double[][] tResult = new double[aSteps+1][];
             tResult[0] = aStartY;
@@ -844,6 +854,7 @@ public class MathEX {
             }
             return tResult;
         }
+        @ApiStatus.Obsolete
         public static double[] odeLastEuler(IOperator2Full<double[], double[], Double> aFunc2, double[] aStartY, double aStartX, final double aDx, int aSteps) {
             double[] tResult = Vec.copy(aStartY);
             double tX = aStartX;
@@ -853,11 +864,11 @@ public class MathEX {
             }
             return tResult;
         }
-        public static double[]   odeEuler         (IOperator2<Double> aFunc2, double aStartY, double aDx, int aSteps) {return odeEuler    (aFunc2, aStartY, 0.0, aDx, aSteps);}
-        public static double     odeLastEuler     (IOperator2<Double> aFunc2, double aStartY, double aDx, int aSteps) {return odeLastEuler(aFunc2, aStartY, 0.0, aDx, aSteps);}
-        public static double[][] odeEuler         (IOperator2Full<double[], double[], Double> aFunc2    , double[] aStartY, double aDx, int aSteps) {return odeEuler         (aFunc2    , aStartY, 0.0, aDx, aSteps);}
-        public static double[][] ode2DestEuler    (IOperator2Full<double[], double[], Double> aDestFunc2, double[] aStartY, double aDx, int aSteps) {return ode2DestEuler    (aDestFunc2, aStartY, 0.0, aDx, aSteps);}
-        public static double[]   odeLastEuler     (IOperator2Full<double[], double[], Double> aFunc2    , double[] aStartY, double aDx, int aSteps) {return odeLastEuler     (aFunc2    , aStartY, 0.0, aDx, aSteps);}
+        @ApiStatus.Obsolete public static double[]   odeEuler         (IOperator2<Double> aFunc2, double aStartY, double aDx, int aSteps) {return odeEuler    (aFunc2, aStartY, 0.0, aDx, aSteps);}
+        @ApiStatus.Obsolete public static double     odeLastEuler     (IOperator2<Double> aFunc2, double aStartY, double aDx, int aSteps) {return odeLastEuler(aFunc2, aStartY, 0.0, aDx, aSteps);}
+        @ApiStatus.Obsolete public static double[][] odeEuler         (IOperator2Full<double[], double[], Double> aFunc2    , double[] aStartY, double aDx, int aSteps) {return odeEuler         (aFunc2    , aStartY, 0.0, aDx, aSteps);}
+        @ApiStatus.Obsolete public static double[][] ode2DestEuler    (IOperator2Full<double[], double[], Double> aDestFunc2, double[] aStartY, double aDx, int aSteps) {return ode2DestEuler    (aDestFunc2, aStartY, 0.0, aDx, aSteps);}
+        @ApiStatus.Obsolete public static double[]   odeLastEuler     (IOperator2Full<double[], double[], Double> aFunc2    , double[] aStartY, double aDx, int aSteps) {return odeLastEuler     (aFunc2    , aStartY, 0.0, aDx, aSteps);}
         
         
         /**
@@ -869,6 +880,7 @@ public class MathEX {
          * @param aX the vector of x
          * @return convolution result
          */
+        @Deprecated @ApiStatus.ScheduledForRemoval
         public static double convolve(IOperator2<Double> aConv, double[] aY, double[] aX) {
             double pX = aX[0];
             double pC = aConv.cal(aY[0], pX); // note that y is before x
@@ -889,6 +901,7 @@ public class MathEX {
          * @author liqa
          * @return the integral result
          */
+        @Deprecated @ApiStatus.ScheduledForRemoval
         public static double integral(IOperator1<Double> aFunc, double aStartX, double aDx, int aN) {
             double tX = aStartX;
             double pY = aFunc.cal(tX);
@@ -901,6 +914,7 @@ public class MathEX {
             }
             return tResult;
         }
+        @Deprecated @ApiStatus.ScheduledForRemoval
         public static double integral(IOperator1<Double> aFunc, double[] aX) {
             double pX = aX[0];
             double pY = aFunc.cal(pX);
@@ -914,11 +928,13 @@ public class MathEX {
             }
             return tResult;
         }
+        @Deprecated @ApiStatus.ScheduledForRemoval
         public static double integral(double[] aY, double aDx) {
             double tResult = 0.0;
             for (int i = 1; i < aY.length; ++i) tResult += (aDx/2.0)*(aY[i] + aY[i-1]);
             return tResult;
         }
+        @Deprecated @ApiStatus.ScheduledForRemoval
         public static double integral(double[] aY, double[] aX) {
             double tResult = 0.0;
             for (int i = 1; i < aY.length; ++i) tResult += ((aX[i]-aX[i-1])/2.0)*(aY[i] + aY[i-1]);

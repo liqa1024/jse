@@ -426,10 +426,8 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
     public IFunc1 RDF2SF(IFunc1 aGr, double aRou, int aN, double aQMax, double aQMin) {
         double dq = (aQMax-aQMin)/aN;
         
-        IFunc1 Sq = new FixBoundFunc1(aQMin, dq, aN+1, aGr.operation()
-            .refConvolveFull((gr, r, q) -> (r * (gr-1.0) * Fast.sin(q*r) / q)))
-            .setBound(0.0, 1.0);
-        
+        IFunc1 Sq = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
+        Sq.fill(aGr.operation().refConvolveFull((gr, r, q) -> (r * (gr-1.0) * Fast.sin(q*r) / q)));
         Sq.f().operation().mapMultiply2this(4.0*PI*aRou);
         Sq.f().operation().mapPlus2this(1.0);
         
@@ -455,10 +453,8 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
     public IFunc1 SF2RDF(IFunc1 aSq, double aRou, int aN, double aRMax, double aRMin) {
         double dr = (aRMax-aRMin)/aN;
         
-        IFunc1 gr = new FixBoundFunc1(aRMin, dr, aN+1, aSq.operation()
-            .refConvolveFull((Sq, q, r) -> (q * (Sq-1.0) * Fast.sin(q*r) / r)))
-            .setBound(0.0, 1.0);
-        
+        IFunc1 gr = FixBoundFunc1.zeros(aRMin, dr, aN+1).setBound(0.0, 1.0);
+        gr.fill(aSq.operation().refConvolveFull((Sq, q, r) -> (q * (Sq-1.0) * Fast.sin(q*r) / r)));
         gr.f().operation().mapMultiply2this(1.0/(2.0*PI*PI*aRou));
         gr.f().operation().mapPlus2this(1.0);
         
