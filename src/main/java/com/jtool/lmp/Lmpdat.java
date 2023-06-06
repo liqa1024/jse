@@ -157,7 +157,7 @@ public class Lmpdat extends AbstractAtomData {
     
     /// 文件读写
     /**
-     * 从文件 lammps 输出的文件中读取来实现初始化
+     * 从 lammps 输出的 data 文件中读取来实现初始化
      * @param aFilePath lammps 输出的 data 文件路径
      * @return 读取得到的 Lmpdat 对象，如果文件不完整会直接返回 null
      * @throws IOException 如果读取失败
@@ -262,7 +262,7 @@ public class Lmpdat extends AbstractAtomData {
         lines.add("Atoms");
         lines.add("");
         for (IVector subAtomData : mAtomData.rows())
-        lines.add(String.format("%6d %6d %10.5g %10.5g %10.5g", (int)subAtomData.get_(0), (int)subAtomData.get_(1), subAtomData.get_(2), subAtomData.get_(3), subAtomData.get_(4)));
+        lines.add(String.format("%6d %6d %10.5g %10.5g %10.5g", (int)subAtomData.get(0), (int)subAtomData.get(1), subAtomData.get(2), subAtomData.get(3), subAtomData.get(4)));
         lines.add("");
         
         UT.IO.write(aFilePath, lines);

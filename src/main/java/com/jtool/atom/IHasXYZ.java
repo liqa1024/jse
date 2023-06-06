@@ -1,6 +1,11 @@
 package com.jtool.atom;
 
 import com.jtool.math.MathEX;
+import com.jtool.math.vector.IVector;
+import com.jtool.math.vector.RefVector;
+
+import java.util.AbstractList;
+import java.util.List;
 
 public interface IHasXYZ {
     double x();
@@ -8,6 +13,34 @@ public interface IHasXYZ {
     double z();
     
     /** 提供一些运算，由于 XYZ 本身就很轻量，为了避免方法调用的损失，并且让实现起来比较简单，这里不增加中间层 operation */
+    default double[] data() {return new double[] {x(), y(), z()};}
+    default IVector asVec() {
+        return new RefVector() {
+            @Override public double get_(int aIdx) {
+                switch(aIdx) {
+                case 0: return x();
+                case 1: return y();
+                case 2: return z();
+                default: throw new RuntimeException();
+                }
+            }
+            @Override public int size() {return 3;}
+        };
+    }
+    default List<Double> asList() {
+        return new AbstractList<Double>() {
+            @Override public Double get(int index) {
+                switch(index) {
+                case 0: return x();
+                case 1: return y();
+                case 2: return z();
+                default: throw new IndexOutOfBoundsException(String.format("Index: %d", index));
+                }
+            }
+            @Override public int size() {return 3;}
+        };
+    }
+    
     default double product() {return x() * y() * z();}
     default double min() {return Math.min(Math.min(x(), y()), z());}
     default double max() {return Math.max(Math.max(x(), y()), z());}

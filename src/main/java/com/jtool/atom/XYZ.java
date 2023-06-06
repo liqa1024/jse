@@ -1,6 +1,7 @@
 package com.jtool.atom;
 
 import com.jtool.math.MathEX;
+import com.jtool.math.vector.IVector;
 
 /**
  * {@link IHasXYZ} 的一般实现，考虑到效率这里可以直接访问内部成员，从而避免多态函数调用的损失
@@ -16,6 +17,9 @@ public final class XYZ implements IHasXYZ {
     }
     public XYZ(XYZ aXYZ) {
         mX = aXYZ.mX; mY = aXYZ.mY; mZ = aXYZ.mZ;
+    }
+    public XYZ(IVector aXYZ) {
+        mX = aXYZ.get(0); mY = aXYZ.get(1); mZ = aXYZ.get(2);
     }
     
     @Override public double x() {return mX;}
@@ -33,6 +37,7 @@ public final class XYZ implements IHasXYZ {
     /** 使用重载而不是 instanceof，即只优化可以在编译期间判断的情况 */
     public XYZ plus(XYZ aRHS) {return new XYZ(mX+aRHS.mX, mY+aRHS.mY, mZ+aRHS.mZ);}
     public void plus2this(XYZ aRHS) {mX += aRHS.mX; mY += aRHS.mY; mZ += aRHS.mZ;}
+    public void plus2this(double aRHS) {mX += aRHS; mY += aRHS; mZ += aRHS;}
     
     @Override public XYZ minus(IHasXYZ aRHS) {return new XYZ(mX-aRHS.x(), mY-aRHS.y(), mZ-aRHS.z());}
     @Override public XYZ minus(double aX, double aY, double aZ) {return new XYZ(mX-aX, mY-aY, mZ-aZ);}
@@ -40,6 +45,7 @@ public final class XYZ implements IHasXYZ {
     /** 使用重载而不是 instanceof，即只优化可以在编译期间判断的情况 */
     public XYZ minus(XYZ aRHS) {return new XYZ(mX-aRHS.mX, mY-aRHS.mY, mZ-aRHS.mZ);}
     public void minus2this(XYZ aRHS) {mX -= aRHS.mX; mY -= aRHS.mY; mZ -= aRHS.mZ;}
+    public void minus2this(double aRHS) {mX -= aRHS; mY -= aRHS; mZ -= aRHS;}
     
     @Override public XYZ multiply(IHasXYZ aRHS) {return new XYZ(mX*aRHS.x(), mY*aRHS.y(), mZ*aRHS.z());}
     @Override public XYZ multiply(double aX, double aY, double aZ) {return new XYZ(mX*aX, mY*aY, mZ*aZ);}
@@ -47,6 +53,7 @@ public final class XYZ implements IHasXYZ {
     /** 使用重载而不是 instanceof，即只优化可以在编译期间判断的情况 */
     public XYZ multiply(XYZ aRHS) {return new XYZ(mX*aRHS.mX, mY*aRHS.mY, mZ*aRHS.mZ);}
     public void multiply2this(XYZ aRHS) {mX *= aRHS.mX; mY *= aRHS.mY; mZ *= aRHS.mZ;}
+    public void multiply2this(double aRHS) {mX *= aRHS; mY *= aRHS; mZ *= aRHS;}
     
     @Override public XYZ div(IHasXYZ aRHS) {return new XYZ(mX/aRHS.x(), mY/aRHS.y(), mZ/aRHS.z());}
     @Override public XYZ div(double aX, double aY, double aZ) {return new XYZ(mX/aX, mY/aY, mZ/aZ);}
@@ -54,7 +61,7 @@ public final class XYZ implements IHasXYZ {
     /** 使用重载而不是 instanceof，即只优化可以在编译期间判断的情况 */
     public XYZ div(XYZ aRHS) {return new XYZ(mX/aRHS.mX, mY/aRHS.mY, mZ/aRHS.mZ);}
     public void divide2this(XYZ aRHS) {mX /= aRHS.mX; mY /= aRHS.mY; mZ /= aRHS.mZ;}
-    
+    public void divide2this(double aRHS) {mX /= aRHS; mY /= aRHS; mZ /= aRHS;}
     
     
     @Override public double distance(IHasXYZ aRHS) {

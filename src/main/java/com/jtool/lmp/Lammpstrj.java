@@ -214,9 +214,9 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
                         @Override public double z() {return getZ_(mRow);}
                         
                         /** 如果没有 id 数据则 id 为顺序位置 +1 */
-                        @Override public int id() {return (mIDCol < 0) ? index+1 : (int)mRow.get_(mIDCol);}
+                        @Override public int id() {return (mIDCol < 0) ? index+1 : (int)mRow.get(mIDCol);}
                         /** 如果没有 type 数据则 type 都为 1 */
-                        @Override public int type() {return (mTypeCol < 0) ? 1 : (int)mRow.get_(mTypeCol);}
+                        @Override public int type() {return (mTypeCol < 0) ? 1 : (int)mRow.get(mTypeCol);}
                     };
                 }
                 @Override public int size() {return mAtomData.rowNumber();}

@@ -1,5 +1,8 @@
 package com.jtool.math.matrix;
 
+import com.jtool.math.vector.IVector;
+import com.jtool.math.vector.IVectorGetter;
+
 import java.util.Collection;
 
 /**
@@ -14,6 +17,24 @@ public class Matrices {
     public static IMatrix zeros(int aSize) {return ColumnMatrix.zeros(aSize);}
     public static IMatrix zeros(int aRowNum, int aColNum) {return ColumnMatrix.zeros(aRowNum, aColNum);}
     
+    
+    public static IMatrix diag(IVector aVector) {return diag(aVector.size(), aVector);}
+    public static IMatrix diag(int aSize, IVectorGetter aVector) {
+        IMatrix rMatrix = zeros(aSize, aSize);
+        rMatrix.operation().refDiag().fill(aVector);
+        return rMatrix;
+    }
+    public static IMatrix diag(Collection<? extends Number> aList) {return diag(aList.size(), aList);}
+    public static IMatrix diag(int aSize, Iterable<? extends Number> aList) {
+        IMatrix rMatrix = zeros(aSize, aSize);
+        rMatrix.operation().refDiag().fill(aList);
+        return rMatrix;
+    }
+    public static IMatrix diag(double... aDiags) {
+        IMatrix rMatrix = zeros(aDiags.length, aDiags.length);
+        rMatrix.operation().refDiag().fill(aDiags);
+        return rMatrix;
+    }
     
     public static IMatrix from(int aSize, IMatrixGetter aMatrixGetter) {return from(aSize, aSize, aMatrixGetter);}
     public static IMatrix from(int aRowNum, int aColNum, IMatrixGetter aMatrixGetter) {

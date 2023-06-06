@@ -2,7 +2,7 @@ package atom
 
 import com.jtool.atom.Generator
 import com.jtool.code.UT
-import com.jtool.lmp.Lmpdat
+import com.jtool.vasp.POSCAR
 
 import static com.jtool.code.UT.Code.*
 
@@ -27,11 +27,11 @@ final int batchSize = 10;
 // 需要先创建输出文件夹
 UT.IO.mkdir(outDataDir);
 
-// 读取初始结构（lmpdat 格式）
-def oldLmpdat = Lmpdat.read(inDataPath);
+// 读取初始结构（POSCAR 格式）
+def oldPos = POSCAR.read(inDataPath);
 
 // 获取 Bi 的数目
-int BiNum = oldLmpdat.atoms(1).size();
+int BiNum = oldPos.atomNum('Bi');
 // 获取每一层 Bi 的数目
 int BiLayerNum = Math.round(BiNum / 4) as int;
 
@@ -56,7 +56,7 @@ for (i in range(batchSize)) {
     
     
     // 使用生成器获取替换原子种类的结构
-    def filtered = GEN.typeFilterAtomData(oldLmpdat, 6, {atom ->
+    def filtered = GEN.typeFilterAtomData(oldPos, 6, {atom ->
         if (atom.type() == 1) {
             if (atom.z() > z23) {
                 // 如果是前两层，保留一半的 Bi
@@ -71,10 +71,10 @@ for (i in range(batchSize)) {
         return atom.type();
     });
     
-    // 将结构转换成 Lmpdat
-    def newLmpdat = Lmpdat.fromAtomData(filtered);
+    // 将结构转换成 POSCAR，标注元素种类
+    def newPos = POSCAR.fromAtomData(filtered, 'Bi', 'O', 'Ti', 'La', 'Sm', 'Nb');
     
-    newLmpdat.write("${outDataDir}${outDataName}-$i");
+    newPos.write("${outDataDir}${outDataName}-$i");
 }
 
 // 最后关闭生成器

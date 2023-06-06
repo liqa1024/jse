@@ -2,8 +2,10 @@ package com.jtool.math.matrix;
 
 import com.jtool.code.operator.IOperator1;
 import com.jtool.code.operator.IOperator2;
+import com.jtool.math.MathEX;
 import com.jtool.math.operation.DATA;
 import com.jtool.math.vector.IVector;
+import com.jtool.math.vector.RefVector;
 
 import java.util.Iterator;
 
@@ -126,6 +128,30 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             @Override public double getAndSet_(int aRow, int aCol, double aValue) {return mThis.getAndSet_(aCol, aRow, aValue);}
             @Override public int rowNumber() {return mThis.columnNumber();}
             @Override public int columnNumber() {return mThis.rowNumber();}
+        };
+    }
+    
+    @Override public boolean isDiag() {
+        final IMatrix tThis = thisMatrix_();
+        
+        final Iterator<Double> it = tThis.colIterator();
+        final int tRowNum = tThis.rowNumber();
+        final int tColNum = tThis.columnNumber();
+        for (int col = 0; col < tColNum; ++col) for (int row = 0; row < tRowNum; ++row) {
+            double tValue = it.next();
+            if (col != row) if (tValue != 0.0) return false;
+        }
+        return true;
+    }
+    
+    @Override public IVector diag() {return thisMatrix_().generatorVec().from(refDiag());}
+    @Override public IVector refDiag() {
+        return new RefVector() {
+            private final IMatrix mThis = thisMatrix_();
+            @Override public double get_(int aIdx) {return mThis.get_(aIdx, aIdx);}
+            @Override public void set_(int aIdx, double aValue)  {mThis.set_(aIdx, aIdx, aValue);}
+            @Override public double getAndSet_(int aIdx, double aValue) {return mThis.getAndSet_(aIdx, aIdx, aValue);}
+            @Override public int size() {return Math.min(mThis.columnNumber(), mThis.rowNumber());}
         };
     }
     

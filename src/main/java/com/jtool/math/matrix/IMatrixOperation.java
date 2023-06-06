@@ -69,4 +69,9 @@ public interface IMatrixOperation {
     
     IMatrix refTranspose();
     @VisibleForTesting default IMatrix refT() {return refTranspose();}
+    
+    boolean isDiag();
+    
+    IVector diag();
+    IVector refDiag();
 }
