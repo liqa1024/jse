@@ -5,12 +5,12 @@ import groovy.lang.MetaClass;
 
 /**
  * @author liqa
- * <p> Script Object for matlab usage </p>
+ * <p> Groovy Script Object for matlab usage </p>
  * <p> Now is a wrapper of {@link GroovyObject} </p>
  */
-public class ScriptObject implements GroovyObject {
+public class ScriptObjectGroovy implements IScriptObject {
     private final GroovyObject mObj;
-    public ScriptObject(GroovyObject aObj) {mObj = aObj;}
+    public ScriptObjectGroovy(GroovyObject aObj) {mObj = aObj;}
     
     @Override public Object invokeMethod(String name, Object args) {return mObj.invokeMethod(name, args);}
     @Override public Object getProperty(String propertyName) {return mObj.getProperty(propertyName);}

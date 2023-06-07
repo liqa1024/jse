@@ -28,6 +28,8 @@ dependencies {
     implementation('org.apache.groovy:groovy-json:4.0.11')          // 直接使用 groovy 的 json 包来支持 json，可以让 groovy 脚本使用原生的 json 功能
 //  implementation('org.apache.groovy:groovy-yaml:4.0.11')          // groovy 的 yaml，暂时没有用到，并且这个包有些复杂，所以不提供支持
     
+    implementation('black.ninia:jep:4.1.1')                         // 调用 python 代码支持，需要系统有需要的 python 环境，并且需要初始化，因此这里不作为主要代码的使用
+    
     implementation('org.jfree:jfreechart:1.5.4')                    // 简单的绘图支持
     
 //  implementation('org.apache.commons:commons-pool2:2.11.1')       // 对象池, bad ideal，即使需要也应该自己实现一个简单的实例

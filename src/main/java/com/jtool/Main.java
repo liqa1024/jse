@@ -17,7 +17,7 @@ public class Main {
             // 默认执行脚本文件
             String[] tArgs = new String[aArgs.length-1];
             if (tArgs.length > 0) System.arraycopy(aArgs, 1, tArgs, 0, tArgs.length);
-            SP.run(tValue, tArgs);
+            SP.Groovy.run(tValue, tArgs);
             return;
         }
         // 一般行为
@@ -29,11 +29,11 @@ public class Main {
         if (tArgs.length > 0) System.arraycopy(aArgs, 2, tArgs, 0, tArgs.length);
         switch (tOption) {
         case "-t": case "-text": {
-            SP.runText(tValue, tArgs);
+            SP.Groovy.runText(tValue, tArgs);
             break;
         }
         case "-f": case "-file": {
-            SP.runScript(tValue, tArgs);
+            SP.Groovy.runScript(tValue, tArgs);
             break;
         }
         default: {
