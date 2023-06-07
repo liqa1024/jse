@@ -13,12 +13,12 @@ public class ScriptObjectPython implements IScriptObject {
     private final PyObject mPyObj;
     public ScriptObjectPython(PyObject aPyObj) {mPyObj = aPyObj;}
     
-    @Override public Object invokeMethod(String name, Object args) {return mPyObj.getAttr(name, PyCallable.class).call(args);}
+    @Override public Object invokeMethod(String name, Object args) {return mPyObj.getAttr(name, PyCallable.class).call((Object[])args);}
     @Override public Object getProperty(String propertyName) {return mPyObj.getAttr(propertyName);}
     @Override public void setProperty(String propertyName, Object newValue) {mPyObj.setAttr(propertyName, newValue);}
     
     
-    private MetaClass mDelegate = InvokerHelper.getMetaClass(PyObject.class);
+    private MetaClass mDelegate = InvokerHelper.getMetaClass(getClass());
     @Override public MetaClass getMetaClass() {return mDelegate;}
     @Override public void setMetaClass(MetaClass metaClass) {mDelegate = metaClass;}
 }

@@ -1,10 +1,7 @@
 package com.jtool.code;
 
 import groovy.lang.*;
-import jep.Interpreter;
-import jep.JepConfig;
-import jep.JepException;
-import jep.SharedInterpreter;
+import jep.*;
 import jep.python.PyObject;
 import org.codehaus.groovy.runtime.InvokerHelper;
 
@@ -174,9 +171,9 @@ public class SP {
         public synchronized static Object invoke(String aMethodName, Object[] aArgs, Map<String, Object> aMapArgs) throws JepException {return JEP_INTERP.invoke(aMethodName, aArgs, aMapArgs);}
         public synchronized static void importModule(String aPyModuleName) throws JepException {JEP_INTERP.exec("import "+aPyModuleName);}
         /** 创建 Python 实例，这里同样外套一层 */
-        public synchronized static IScriptObject newInstance(String aClassName, Object... aArgs) throws JepException {return new ScriptObjectPython((PyObject)JEP_INTERP.invoke(aClassName+".__init__", aArgs));}
-        public synchronized static IScriptObject newInstance(String aClassName, Map<String, Object> aMapArgs) throws JepException {return new ScriptObjectPython((PyObject)JEP_INTERP.invoke(aClassName+".__init__", aMapArgs));}
-        public synchronized static IScriptObject newInstance(String aClassName, Object[] aArgs, Map<String, Object> aMapArgs) throws JepException {return new ScriptObjectPython((PyObject)JEP_INTERP.invoke(aClassName+".__init__", aArgs, aMapArgs));}
+        public synchronized static IScriptObject newInstance(String aClassName, Object... aArgs) throws JepException {return new ScriptObjectPython((PyObject)JEP_INTERP.invoke(aClassName, aArgs));}
+        public synchronized static IScriptObject newInstance(String aClassName, Map<String, Object> aMapArgs) throws JepException {return new ScriptObjectPython((PyObject)JEP_INTERP.invoke(aClassName, aMapArgs));}
+        public synchronized static IScriptObject newInstance(String aClassName, Object[] aArgs, Map<String, Object> aMapArgs) throws JepException {return new ScriptObjectPython((PyObject)JEP_INTERP.invoke(aClassName, aArgs, aMapArgs));}
         
         /** 提供一个手动关闭 JEP_INTERP 的接口 */
         public synchronized static void close() throws JepException {if (JEP_INTERP != null) {JEP_INTERP.close(); JEP_INTERP = null;}}
@@ -190,8 +187,15 @@ public class SP {
         static {
             // 手动加载 UT，会自动重新设置工作目录，会在调用静态函数 get 或者 load 时自动加载保证路径的正确性
             UT.IO.init();
+            // 设置 Jep 非 java 库的路径，只考虑 windows 和 linux，TODO：应该没有迁移性，到时候还是需要临时编译
+            MainInterpreter.setJepLibraryPath(UT.IO.toAbsolutePath(System.getProperty("os.name").toLowerCase().contains("windows") ? "lib/jep.dll" : "lib/jep.so"));
             // 配置 Jep，这里只能配置一次
-            SharedInterpreter.setConfig(new JepConfig().setIncludePath("script/python/"));
+            SharedInterpreter.setConfig(new JepConfig()
+                .addIncludePaths(UT.IO.toAbsolutePath("script/python/"))
+                .addIncludePaths(UT.IO.toAbsolutePath("lib/"))
+                .setClassLoader(SP.class.getClassLoader())
+                .redirectStdout(System.out)
+                .redirectStdErr(System.err));
             // 初始化 JEP_INTERP
             initInterpreter_();
             // 在 JVM 关闭时关闭 JEP_INTERP
