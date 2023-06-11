@@ -5,10 +5,10 @@ import com.jtool.rareevent.IPathGenerator
 
 
 /**
- * 用来测试 FFS 准确性的简单实例，只有两个状态（+1，-1），
+ * 用来测试 FFS 准确性的另一种实例，更加倾向于回到 0，
  * 计算最终结果到达某个数字的概率
  */
-class BiEvent {
+class AsymmetryWalk {
     static class Point {
         final int value;
         Point(int value) {this.value = value;}
@@ -26,14 +26,23 @@ class BiEvent {
         private final def RNG = new Random();
         PathGenerator(int pathLen) {this.pathLen = pathLen;}
         
-        @Override List<PointWithTime> pathInit() {
+        @Override
+        List<PointWithTime> pathInit() {
             return pathFrom(new PointWithTime(0, 0));
         }
         @Override List<PointWithTime> pathFrom(PointWithTime point) {
             def path = new ArrayList<PointWithTime>(pathLen);
             path.add(point);
             for (_ in 1..<pathLen) {
-                point = new PointWithTime(point.value + (RNG.nextInt(2)*2-1), point.time+1);
+                double increaseProb = 1.0 / (1.0+point.value);
+                if (RNG.nextDouble() < increaseProb) {
+                    point = new PointWithTime(point.value+1, point.time+1);
+                } else
+                if (point.value > 0) {
+                    point = new PointWithTime(point.value-1, point.time+1);
+                } else {
+                    point = new PointWithTime(point.value, point.time+1);
+                }
                 path.add(point);
             }
             return path;
@@ -43,8 +52,7 @@ class BiEvent {
     
     static class ParameterCalculator implements IParameterCalculator<Point> {
         @Override double lambdaOf(Point point) {
-            return Math.abs(point.value);
+            return point.value;
         }
     }
-    
 }
