@@ -293,14 +293,15 @@ public final class ServerSSH implements AutoCloseable {
         tChannelExec.disconnect();
     }
     // 提交命令的获取指令频道的结构，主要是内部使用，需要手动连接和关闭
-    public ChannelExec systemChannel(String aCommand) throws JSchException {
+    public ChannelExec systemChannel(String aCommand) throws JSchException {return systemChannel(aCommand, false);}
+    public ChannelExec systemChannel(String aCommand, boolean aNoERROutput) throws JSchException {
         if (mDead) throw new RuntimeException("Can NOT get systemChannel from a Dead SSH.");
         // 会尝试一次重新连接
         if (!isConnecting()) connect();
         // 获取执行指令的频道
         ChannelExec tChannelExec = (ChannelExec) session().openChannel("exec");
         tChannelExec.setInputStream(null);
-        tChannelExec.setErrStream(System.err, true); // 注意一定要设置不要关闭，啊，意外关闭其实是不好检测的啊
+        if (!aNoERROutput) tChannelExec.setErrStream(System.err, true); // 注意一定要设置不要关闭，啊，意外关闭其实是不好检测的啊
         if (mBeforeCommand != null && !mBeforeCommand.isEmpty()) aCommand = String.format("%s;%s", mBeforeCommand, aCommand);
         aCommand = String.format("cd %s;%s", mRemoteWorkingDir, aCommand); // 所有指令都会先 cd 到 mRemoteWorkingDir 再执行
         tChannelExec.setCommand(aCommand);

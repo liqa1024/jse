@@ -22,9 +22,11 @@ import java.util.function.Supplier;
 public abstract class AbstractThreadPoolSystemExecutor extends AbstractHasThreadPool<IExecutorEX> implements ISystemExecutor {
     protected AbstractThreadPoolSystemExecutor(IExecutorEX aPool) {super(aPool);}
     
-    private boolean mNoConsoleOutput = false;
-    @Override public final ISystemExecutor setNoConsoleOutput(boolean aNoConsoleOutput) {mNoConsoleOutput = aNoConsoleOutput; return this;}
-    @Override public final boolean noConsoleOutput() {return mNoConsoleOutput;}
+    private boolean mNoSTDOutput = false, mNoERROutput = false;
+    @Override public final ISystemExecutor setNoSTDOutput(boolean aNoSTDOutput) {mNoSTDOutput = aNoSTDOutput; return this;}
+    @Override public final boolean noSTDOutput() {return mNoSTDOutput;}
+    @Override public final ISystemExecutor setNoERROutput(boolean aNoERROutput) {mNoERROutput = aNoERROutput; return this;}
+    @Override public final boolean noERROutput() {return mNoERROutput;}
     
     
     @Override public final int system(String aCommand                                                 ) {return system_(aCommand, this::outPrintln);}

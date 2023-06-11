@@ -47,16 +47,24 @@ public class LocalSystemExecutor extends AbstractThreadPoolSystemExecutor {
             final Process fProcess = tProcess;
             new Thread(() -> {
                 try (BufferedReader tErrReader = UT.IO.toReader(fProcess.getErrorStream())) {
+                    boolean tERROutPut = !noERROutput();
+                    // 对于 Process，由于内部已经有 buffered 输出流，因此必须要获取输出流并遍历，避免发生流死锁
                     String tLine;
-                    while ((tLine = tErrReader.readLine()) != null) System.err.println(tLine);
+                    while ((tLine = tErrReader.readLine()) != null) {
+                        if (tERROutPut) System.err.println(tLine);
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }).start();
             // 读取执行的输出（由于内部会对输出自动 buffer，获取 stream 和执行的顺序不重要）
-            if (!noConsoleOutput()) try (BufferedReader tOutReader = UT.IO.toReader(fProcess.getInputStream())) {
+            try (BufferedReader tOutReader = UT.IO.toReader(fProcess.getInputStream())) {
+                boolean tSTDOutPut = !noSTDOutput();
+                // 对于 Process，由于内部已经有 buffered 输出流，因此必须要获取输出流并遍历，避免发生流死锁
                 String tLine;
-                while ((tLine = tOutReader.readLine()) != null) tPrintln.println(tLine);
+                while ((tLine = tOutReader.readLine()) != null) {
+                    if (tSTDOutPut) tPrintln.println(tLine);
+                }
             }
             // 等待执行完成
             tExitValue = fProcess.waitFor();

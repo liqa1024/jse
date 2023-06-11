@@ -368,7 +368,7 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
         }
         if (tValid) return rJobIDs;
         // 不合法时会输出不合法的结果，由于这个操作是长期的且是允许的，因此可以通过 noConsoleOutput 抑制
-        if (!noConsoleOutput()) {
+        if (!noSTDOutput()) {
             System.err.println("WARNING: getRunningJobIDsFromSystem Fail, it is usually the network issue, the output from the remote server:");
             for (String tLine : tLines) if (!tLine.equals("END")) System.err.println(tLine);
         }
@@ -389,7 +389,7 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
         }
         if (tValid) return true; // 不一定真的成功取消了，但是这里还是返回 true
         // 失败时输出失败的结果，由于这个操作是允许的，因此可以通过 noConsoleOutput 抑制
-        if (!noConsoleOutput()) {
+        if (!noSTDOutput()) {
             System.err.println("WARNING: cancelJobFromSystem Fail, the output from the remote server:");
             for (String tLine : tLines) if (!tLine.equals("END")) System.err.println(tLine);
         }

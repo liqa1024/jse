@@ -134,10 +134,11 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
         int tExitValue = -1;
         ChannelExec tChannel = null;
         try (IPrintln tPrintln = aPrintln.get()) {
-            tChannel = mSSH.systemChannel(aCommand);
-            if (noConsoleOutput()) {
+            tChannel = mSSH.systemChannel(aCommand, noERROutput());
+            if (noSTDOutput()) {
                 tChannel.connect();
             } else {
+                // 由于 jsch 的输入流是临时创建的，因此可以不去获取输入流来避免流死锁
                 try (BufferedReader tReader = UT.IO.toReader(tChannel.getInputStream())) {
                     tChannel.connect();
                     String tLine;

@@ -1,5 +1,8 @@
 package com.jtool.code;
 
+import com.jtool.system.ISystemExecutor;
+import com.jtool.system.LocalSystemExecutor;
+import com.jtool.system.PowerShellSystemExecutor;
 import groovy.lang.*;
 import jep.*;
 import jep.python.PyObject;
@@ -187,8 +190,8 @@ public class SP {
         static {
             // 手动加载 UT，会自动重新设置工作目录，会在调用静态函数 get 或者 load 时自动加载保证路径的正确性
             UT.IO.init();
-            // 设置 Jep 非 java 库的路径，只考虑 windows 和 linux，TODO：应该没有迁移性，到时候还是需要临时编译
-            MainInterpreter.setJepLibraryPath(UT.IO.toAbsolutePath(System.getProperty("os.name").toLowerCase().contains("windows") ? "lib/jep.dll" : "lib/jep.so"));
+            // 设置 Jep 非 java 库的路径，考虑到 WSL，windows 和 linux 使用不同的名称
+            initJepLib_(System.getProperty("os.name").toLowerCase().contains("windows"));
             // 配置 Jep，这里只能配置一次
             SharedInterpreter.setConfig(new JepConfig()
                 .addIncludePaths(UT.IO.toAbsolutePath("script/python/"))
@@ -205,5 +208,56 @@ public class SP {
         }
         /** 初始化内部的 JEP_INTERP，主要用于减少重复代码 */
         private synchronized static void initInterpreter_() {JEP_INTERP = new SharedInterpreter();}
+        /** 初始化 JEP 需要使用的外部库，需要平台至少拥有 python3 环境 */
+        private synchronized static void initJepLib_(boolean aIsWindows) {
+            // 考虑到 WSL，windows 和 linux 使用不同的名称
+            String tLibPath = aIsWindows ? "lib/jep.dll" : "lib/jep.so";
+            // 如果不存在则需要重新通过源码编译
+            if (!UT.IO.isFile(tLibPath)) {
+                System.out.println("JEP INIT INFO: Jep libraries not found. Compiling from source code...");
+                // 首先获取源码路径，这里只检测 jep 开头的文件夹
+                String[] tList = UT.IO.list(".src/");
+                String tJepDirName = null;
+                for (String tName : tList) if (tName.contains("jep")) {
+                    tJepDirName = tName;
+                }
+                if (tJepDirName == null) throw new RuntimeException("JEP INIT ERROR: No Jep source code in .src");
+                // 直接通过系统指令来编译 Jep 的库，windows 下使用 powershell 统一指令
+                try (ISystemExecutor tEXE = aIsWindows ? new PowerShellSystemExecutor() : new LocalSystemExecutor()) {
+                    tEXE.setNoSTDOutput().setNoERROutput();
+                    tEXE.system(String.format("cd .src/%s; python setup.py clean", tJepDirName)); // 编译之前先移除旧的结果
+                    tEXE.system(String.format("cd .src/%s; python setup.py build", tJepDirName));
+                }
+                // 获取 build 目录下的 lib 文件夹
+                tList = UT.IO.list(String.format(".src/%s/build", tJepDirName));
+                String tJepLibDirName = null;
+                for (String tName : tList) if (tName.contains("lib")) {
+                    tJepLibDirName = tName;
+                }
+                if (tJepLibDirName == null) throw new RuntimeException(String.format("JEP BUILD ERROR: No Jep lib in .src/%s/build", tJepDirName));
+                // 获取 lib 文件夹下的 lib 名称
+                tList = UT.IO.list(String.format(".src/%s/build/%s/jep", tJepDirName, tJepLibDirName));
+                String tJepLibName = null;
+                for (String tName : tList) if (tName.contains("jep") && (tName.endsWith(".dll") || tName.endsWith(".so") || tName.endsWith(".jnilib"))) {
+                    tJepLibName = tName;
+                }
+                if (tJepLibName == null) throw new RuntimeException(String.format("JEP BUILD ERROR: No Jep lib in .src/%s/build/%s/jep", tJepDirName, tJepLibDirName));
+                try {
+                    // 将 build 的输出拷贝到 lib 目录下
+                    UT.IO.copy(String.format(".src/%s/build/%s/jep/%s", tJepDirName, tJepLibDirName, tJepLibName), tLibPath);
+                    // 顺便拷贝生成的 python 源码
+                    UT.IO.makeDir("lib/jep");
+                    tList = UT.IO.list(String.format(".src/%s/build/%s/jep", tJepDirName, tJepLibDirName));
+                    for (String tName : tList) if (tName.endsWith(".py")) {
+                        UT.IO.copy(String.format(".src/%s/build/%s/jep/%s", tJepDirName, tJepLibDirName, tName), String.format("lib/jep/%s", tName));
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                System.out.println("JEP INIT INFO: Jep libraries successfully installed.");
+            }
+            // 设置路径
+            MainInterpreter.setJepLibraryPath(UT.IO.toAbsolutePath(tLibPath));
+        }
     }
 }

@@ -23,9 +23,12 @@ public interface ISystemExecutor extends IHasThreadPool {
     @VisibleForTesting @ApiStatus.Internal default boolean rmdir(String aDir) {return removeDir(aDir);}
     
     /** 砍掉原本的 _NO 接口，改为直接设置是否输出到控制台 */
-    default ISystemExecutor setNoConsoleOutput() {return setNoConsoleOutput(true);}
-    ISystemExecutor setNoConsoleOutput(boolean aNoConsoleOutput);
-    boolean noConsoleOutput();
+    default ISystemExecutor setNoSTDOutput() {return setNoSTDOutput(true);}
+    ISystemExecutor setNoSTDOutput(boolean aNoSTDOutput);
+    boolean noSTDOutput();
+    default ISystemExecutor setNoERROutput() {return setNoERROutput(true);}
+    ISystemExecutor setNoERROutput(boolean aNoERROutput);
+    boolean noERROutput();
     
     int system(String aCommand                     );
     int system(String aCommand, String aOutFilePath);

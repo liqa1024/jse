@@ -46,6 +46,6 @@ ssh.shutdown();
 gr = UT.IO.csv2table(ioFiles.o('csv'));
 // 绘制 gr
 plt = Plotters.get();
-plt.plot(gr.r, gr.gr, 'RDF');
+plt.plot(gr['r'], gr['gr'], 'RDF');
 plt.show();
 

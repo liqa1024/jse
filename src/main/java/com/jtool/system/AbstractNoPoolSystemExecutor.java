@@ -251,7 +251,7 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
             int tJobID = getJobIDFromSystem(tOutList);
             if (tJobID > 0) {
                 // 如果提交成功则输出到 out
-                if (!mEXE.noConsoleOutput()) for (String tLine : tOutList) System.out.println(tLine);
+                if (!mEXE.noSTDOutput()) for (String tLine : tOutList) System.out.println(tLine);
             } else {
                 // 提交不成功则输出到 err，并且不考虑 NoOutput
                 System.err.println("ERROR: submitSystemCommand Fail, the submit command is:");
@@ -322,8 +322,10 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
     
     
     /** ISystemExecutor stuffs */
-    @Override public final ISystemExecutor setNoConsoleOutput(boolean aNoConsoleOutput) {mEXE.setNoConsoleOutput(aNoConsoleOutput); return this;}
-    @Override public final boolean noConsoleOutput() {return mEXE.noConsoleOutput();}
+    @Override public final ISystemExecutor setNoSTDOutput(boolean aNoSTDOutput) {mEXE.setNoSTDOutput(aNoSTDOutput); return this;}
+    @Override public final boolean noSTDOutput() {return mEXE.noSTDOutput();}
+    @Override public final ISystemExecutor setNoERROutput(boolean aNoERROutput) {mEXE.setNoERROutput(aNoERROutput); return this;}
+    @Override public final boolean noERROutput() {return mEXE.noERROutput();}
     
     @Override public final boolean makeDir(String aDir) {return mEXE.makeDir(aDir);}
     @Override public final boolean removeDir(String aDir) {return mEXE.removeDir(aDir);}

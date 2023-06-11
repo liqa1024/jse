@@ -70,3 +70,26 @@ build {
     dependsOn shadowJar
     jar.enabled = false
 }
+
+
+
+import java.nio.file.Files
+tasks.register('downloadJepSrc', Copy) {
+    // 配置 Copy 任务，下载源码 zip 然后解压到指定位置
+    from {
+        def url = new URL('https://github.com/ninia/jep/archive/v4.1.1.zip')
+        def zipFile = file('./release/.temp/jep-4.1.1.zip')
+        // 如果不存在则需要下载，否则不用重新下载
+        if (!zipFile.isFile()) {
+            Files.createDirectories(file('./release/.temp').toPath())
+            Files.copy(url.openStream(), zipFile.toPath())
+        }
+        zipTree(zipFile)
+    }
+    into {
+        file('./release/.src')
+    }
+    // 设置任务的描述信息
+    description('Download Jep source code from GitHub')
+}
+
