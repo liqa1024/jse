@@ -50,8 +50,8 @@ public final class RowMatrix extends DoubleArrayMatrix {
     @Override public int rowNumber() {return mRowNum;}
     @Override public int columnNumber() {return mColNum;}
     
-    @Override protected RowMatrix newZeros_(int aRowNum, int aColNum) {return RowMatrix.zeros(aRowNum, aColNum);}
-    @Override protected Vector newZeros_(int aSize) {return Vector.zeros(aSize);}
+    @Override public RowMatrix newZeros(int aRowNum, int aColNum) {return RowMatrix.zeros(aRowNum, aColNum);}
+    @Override public Vector newZerosVec(int aSize) {return Vector.zeros(aSize);}
     
     @Override public RowMatrix newShell() {return new RowMatrix(mRowNum, mColNum, null);}
     @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {

@@ -67,7 +67,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         final Iterator<Double> it = tThis.colIterator();
         final int tRowNum = tThis.rowNumber();
         final int tColNum = tThis.columnNumber();
-        IVector rVector = tThis.generatorVec().zeros(tColNum);
+        IVector rVector = tThis.newZerosVec(tColNum);
         for (int col = 0; col < tColNum; ++col) {
             double rSum = 0.0;
             for (int row = 0; row < tRowNum; ++row) rSum += it.next();
@@ -81,7 +81,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         final Iterator<Double> it = tThis.rowIterator();
         final int tRowNum = tThis.rowNumber();
         final int tColNum = tThis.columnNumber();
-        IVector rVector = tThis.generatorVec().zeros(tRowNum);
+        IVector rVector = tThis.newZerosVec(tRowNum);
         for (int row = 0; row < tRowNum; ++row) {
             double rSum = 0.0;
             for (int col = 0; col < tColNum; ++col) rSum += it.next();
@@ -96,7 +96,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         final Iterator<Double> it = tThis.colIterator();
         final int tRowNum = tThis.rowNumber();
         final int tColNum = tThis.columnNumber();
-        IVector rVector = tThis.generatorVec().zeros(tColNum);
+        IVector rVector = tThis.newZerosVec(tColNum);
         for (int col = 0; col < tColNum; ++col) {
             double rSum = 0.0;
             for (int row = 0; row < tRowNum; ++row) rSum += it.next();
@@ -110,7 +110,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         final Iterator<Double> it = tThis.rowIterator();
         final int tRowNum = tThis.rowNumber();
         final int tColNum = tThis.columnNumber();
-        IVector rVector = tThis.generatorVec().zeros(tRowNum);
+        IVector rVector = tThis.newZerosVec(tRowNum);
         for (int row = 0; row < tRowNum; ++row) {
             double rSum = 0.0;
             for (int col = 0; col < tColNum; ++col) rSum += it.next();
@@ -119,7 +119,12 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         return rVector;
     }
     
-    @Override public IMatrix transpose() {return thisMatrix_().generator().from(refTranspose());}
+    @Override public IMatrix transpose() {
+        IMatrix tMatrix = refTranspose();
+        IMatrix rMatrix = thisMatrix_().newZeros(tMatrix.rowNumber(), tMatrix.columnNumber());
+        rMatrix.fill(rMatrix);
+        return rMatrix;
+    }
     @Override public IMatrix refTranspose() {
         return new RefMatrix() {
             private final IMatrix mThis = thisMatrix_();
@@ -144,7 +149,12 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         return true;
     }
     
-    @Override public IVector diag() {return thisMatrix_().generatorVec().from(refDiag());}
+    @Override public IVector diag() {
+        IVector tVector = refDiag();
+        IVector rVector = thisMatrix_().newZerosVec(tVector.size());
+        rVector.fill(tVector);
+        return rVector;
+    }
     @Override public IVector refDiag() {
         return new RefVector() {
             private final IMatrix mThis = thisMatrix_();

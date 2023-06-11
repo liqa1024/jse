@@ -58,7 +58,12 @@ public abstract class AbstractVectorOperation implements IVectorOperation {
     
     
     /** 向量的一些额外的运算 */
-    @Override public IVector reverse() {return thisVector_().generator().from(refReverse());}
+    @Override public IVector reverse() {
+        IVector tVector = refReverse();
+        IVector rVector = thisVector_().newZeros(tVector.size());
+        rVector.fill(tVector);
+        return rVector;
+    }
     @Override public IVector refReverse() {
         return new RefVector() {
             private final IVector mThis = thisVector_();

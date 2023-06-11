@@ -30,7 +30,7 @@ public final class ShiftReverseVector extends DoubleArrayVector {
     }
     @Override public int size() {return mSize;}
     
-    @Override protected ReverseVector newZeros_(int aSize) {return ReverseVector.zeros(aSize);}
+    @Override public ReverseVector newZeros(int aSize) {return ReverseVector.zeros(aSize);}
     
     @Override public ShiftReverseVector newShell() {return new ShiftReverseVector(mSize, mShift, null);}
     @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {

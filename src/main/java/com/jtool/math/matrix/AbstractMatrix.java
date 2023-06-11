@@ -389,37 +389,27 @@ public abstract class AbstractMatrix implements IMatrix {
     
     
     
-    /** 矩阵生成器的一般实现，主要实现一些重复的接口 */
-    protected class MatrixGenerator extends AbstractMatrixGenerator {
-        @Override protected Iterator<Double> thisIterator_() {return iterator();}
-        @Override protected int thisRowNumber_() {return rowNumber();}
-        @Override protected int thisColumnNumber_() {return columnNumber();}
-        @Override public IMatrix zeros(int aRowNum, int aColNum) {return newZeros_(aRowNum, aColNum);}
+    @Override public IMatrix copy() {
+        IMatrix rMatrix = newZeros();
+        final ISetIterator<Double> si = rMatrix.setIterator();
+        final Iterator<Double> it = iterator();
+        while (si.hasNext()) si.nextAndSet(it.next());
+        return rMatrix;
     }
-    protected class VectorGenerator extends AbstractVectorGenerator {
-        @Override protected Iterator<Double> thisIterator_() {return iterator();}
-        @Override protected int thisSize_() {return rowNumber()*columnNumber();}
-        @Override public IVector zeros(int aSize) {return newZeros_(aSize);}
-    }
-    
-    @Override public IVectorGenerator generatorVec() {return new VectorGenerator();}
-    @Override public IMatrixGenerator generator() {return new MatrixGenerator();}
-    
-    @Override public final IMatrix copy() {return generator().same();}
     
     
     /** 切片操作，默认返回新的矩阵，refSlicer 则会返回引用的切片结果 */
     @Override public IMatrixSlicer slicer() {
         return new AbstractMatrixSlicer() {
-            @Override protected IVector getIL(final int aSelectedRow, final List<Integer> aSelectedCols) {return generatorVec().from(aSelectedCols.size(), i -> AbstractMatrix.this.get(aSelectedRow, aSelectedCols.get(i)));}
-            @Override protected IVector getLI(final List<Integer> aSelectedRows, final int aSelectedCol) {return generatorVec().from(aSelectedRows.size(), i -> AbstractMatrix.this.get(aSelectedRows.get(i), aSelectedCol));}
-            @Override protected IVector getIA(final int aSelectedRow) {return generatorVec().from(columnNumber(), col -> AbstractMatrix.this.get(aSelectedRow, col));}
-            @Override protected IVector getAI(final int aSelectedCol) {return generatorVec().from(rowNumber()   , row -> AbstractMatrix.this.get(row, aSelectedCol));}
+            @Override protected IVector getIL(final int aSelectedRow, final List<Integer> aSelectedCols) {IVector rVector = newZerosVec(aSelectedCols.size()); rVector.fill(i -> AbstractMatrix.this.get(aSelectedRow, aSelectedCols.get(i))); return rVector;}
+            @Override protected IVector getLI(final List<Integer> aSelectedRows, final int aSelectedCol) {IVector rVector = newZerosVec(aSelectedRows.size()); rVector.fill(i -> AbstractMatrix.this.get(aSelectedRows.get(i), aSelectedCol)); return rVector;}
+            @Override protected IVector getIA(final int aSelectedRow) {IVector rVector = newZerosVec(columnNumber()); rVector.fill(col -> AbstractMatrix.this.get(aSelectedRow, col)); return rVector;}
+            @Override protected IVector getAI(final int aSelectedCol) {IVector rVector = newZerosVec(rowNumber()   ); rVector.fill(row -> AbstractMatrix.this.get(row, aSelectedCol)); return rVector;}
             
-            @Override protected IMatrix getLL(final List<Integer> aSelectedRows, final List<Integer> aSelectedCols) {return generator().from(aSelectedRows.size(), aSelectedCols.size(), (row, col) -> AbstractMatrix.this.get(aSelectedRows.get(row), aSelectedCols.get(col)));}
-            @Override protected IMatrix getLA(final List<Integer> aSelectedRows) {return generator().from(aSelectedRows.size(), columnNumber()      , (row, col) -> AbstractMatrix.this.get(aSelectedRows.get(row), col));}
-            @Override protected IMatrix getAL(final List<Integer> aSelectedCols) {return generator().from(rowNumber()         , aSelectedCols.size(), (row, col) -> AbstractMatrix.this.get(row, aSelectedCols.get(col)));}
-            @Override protected IMatrix getAA() {return generator().same();}
+            @Override protected IMatrix getLL(final List<Integer> aSelectedRows, final List<Integer> aSelectedCols) {IMatrix rMatrix = newZeros(aSelectedRows.size(), aSelectedCols.size()); rMatrix.fill((row, col) -> AbstractMatrix.this.get(aSelectedRows.get(row), aSelectedCols.get(col))); return rMatrix;}
+            @Override protected IMatrix getLA(final List<Integer> aSelectedRows) {IMatrix rMatrix = newZeros(aSelectedRows.size(), columnNumber()      ); rMatrix.fill((row, col) -> AbstractMatrix.this.get(aSelectedRows.get(row), col)); return rMatrix;}
+            @Override protected IMatrix getAL(final List<Integer> aSelectedCols) {IMatrix rMatrix = newZeros(rowNumber()         , aSelectedCols.size()); rMatrix.fill((row, col) -> AbstractMatrix.this.get(row, aSelectedCols.get(col))); return rMatrix;}
+            @Override protected IMatrix getAA() {return copy();}
             
             @Override protected List<IVector> thisRows_() {return rows();}
             @Override protected List<IVector> thisCols_() {return cols();}
@@ -500,7 +490,7 @@ public abstract class AbstractMatrix implements IMatrix {
     @Override public IMatrixOperation operation() {
         return new AbstractMatrixOperation() {
             @Override protected IMatrix thisMatrix_() {return AbstractMatrix.this;}
-            @Override protected IMatrix newMatrix_(ISize aSize) {return newZeros_(aSize.row(), aSize.col());}
+            @Override protected IMatrix newMatrix_(ISize aSize) {return newZeros(aSize.row(), aSize.col());}
         };
     }
     
@@ -600,9 +590,8 @@ public abstract class AbstractMatrix implements IMatrix {
     public abstract double getAndSet_(int aRow, int aCol, double aValue); // 返回修改前的值
     public abstract int rowNumber();
     public abstract int columnNumber();
+    public abstract IMatrix newZeros(int aRowNum, int aColNum);
+    public abstract IVector newZerosVec(int aSize);
     
     protected String toString_(double aValue) {return String.format(" %8.4g", aValue);}
-    
-    protected abstract IMatrix newZeros_(int aRowNum, int aColNum);
-    protected abstract IVector newZeros_(int aSize);
 }

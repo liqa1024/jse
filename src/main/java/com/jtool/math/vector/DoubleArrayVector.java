@@ -19,7 +19,7 @@ public abstract class DoubleArrayVector extends AbstractVector implements IDataS
     
     protected class DoubleArrayVectorOperation_ extends DoubleArrayVectorOperation {
         @Override protected DoubleArrayVector thisVector_() {return DoubleArrayVector.this;}
-        @Override protected DoubleArrayVector newVector_(int aSize) {return newZeros_(aSize);}
+        @Override protected DoubleArrayVector newVector_(int aSize) {return newZeros(aSize);}
     }
     
     /** 向量运算实现 */
@@ -28,24 +28,21 @@ public abstract class DoubleArrayVector extends AbstractVector implements IDataS
     /** Optimize stuffs，重写这些接口来加速批量填充过程 */
     @Override public void fill(double[] aData) {System.arraycopy(aData, 0, getData(), shiftSize(), dataSize());}
     
-    /** Optimize stuffs，重写 same 接口专门优化拷贝部分 */
-    @Override public IVectorGenerator generator() {
-        return new VectorGenerator() {
-            @Override public IVector same() {
-                IVector rVector = zeros();
-                double[] rData = getIfHasSameOrderData(rVector);
-                if (rData != null) {
-                    System.arraycopy(getData(), shiftSize(), rData, IDataShell.shiftSize(rVector), IDataShell.dataSize(rVector));
-                } else {
-                    rVector.fill(DoubleArrayVector.this);
-                }
-                return rVector;
-            }
-        };
+    /** Optimize stuffs，重写 copy 接口专门优化拷贝部分 */
+    @Override public IVector copy() {
+        IVector rVector = newZeros();
+        double[] rData = getIfHasSameOrderData(rVector);
+        if (rData != null) {
+            System.arraycopy(getData(), shiftSize(), rData, IDataShell.shiftSize(rVector), IDataShell.dataSize(rVector));
+        } else {
+            rVector.fill(DoubleArrayVector.this);
+        }
+        return rVector;
     }
     
+    
     /** stuff to override */
-    protected abstract DoubleArrayVector newZeros_(int aSize);
+    public abstract DoubleArrayVector newZeros(int aSize);
     public abstract DoubleArrayVector newShell();
     public abstract double @Nullable[] getIfHasSameOrderData(Object aObj);
 }

@@ -8,8 +8,8 @@ import com.jtool.math.vector.Vector;
  * @author liqa
  */
 public abstract class RefMatrix extends AbstractMatrix {
-    @Override protected final IMatrix newZeros_(int aRowNum, int aColNum) {return ColumnMatrix.zeros(aRowNum, aColNum);}
-    @Override protected final IVector newZeros_(int aSize) {return Vector.zeros(aSize);}
+    @Override public final IMatrix newZeros(int aRowNum, int aColNum) {return ColumnMatrix.zeros(aRowNum, aColNum);}
+    @Override public final IVector newZerosVec(int aSize) {return Vector.zeros(aSize);}
     
     /** stuff to override */
     public abstract double get_(int aRow, int aCol);

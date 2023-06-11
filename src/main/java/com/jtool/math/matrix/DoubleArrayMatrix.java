@@ -20,31 +20,27 @@ public abstract class DoubleArrayMatrix extends AbstractMatrix implements IDataS
     
     protected class DoubleArrayMatrixOperation_ extends DoubleArrayMatrixOperation {
         @Override protected DoubleArrayMatrix thisMatrix_() {return DoubleArrayMatrix.this;}
-        @Override protected DoubleArrayMatrix newMatrix_(ISize aSize) {return newZeros_(aSize.row(), aSize.col());}
+        @Override protected DoubleArrayMatrix newMatrix_(ISize aSize) {return newZeros(aSize.row(), aSize.col());}
     }
     
     /** 矩阵运算实现 */
     @Override public IMatrixOperation operation() {return new DoubleArrayMatrixOperation_();}
     
     
-    /** Optimize stuffs，重写 same 接口专门优化拷贝部分 */
-    @Override public IMatrixGenerator generator() {
-        return new MatrixGenerator() {
-            @Override public IMatrix same() {
-                IMatrix rMatrix = zeros();
-                final double[] rData = getIfHasSameOrderData(rMatrix);
-                if (rData != null) {
-                    System.arraycopy(getData(), shiftSize(), rData, IDataShell.shiftSize(rMatrix), IDataShell.dataSize(rMatrix));
-                } else {
-                    rMatrix.fill(DoubleArrayMatrix.this);
-                }
-                return rMatrix;
-            }
-        };
+    /** Optimize stuffs，重写 copy 接口专门优化拷贝部分 */
+    @Override public IMatrix copy() {
+        IMatrix rMatrix = newZeros();
+        final double[] rData = getIfHasSameOrderData(rMatrix);
+        if (rData != null) {
+            System.arraycopy(getData(), shiftSize(), rData, IDataShell.shiftSize(rMatrix), IDataShell.dataSize(rMatrix));
+        } else {
+            rMatrix.fill(DoubleArrayMatrix.this);
+        }
+        return rMatrix;
     }
     
     /** stuff to override */
-    protected abstract DoubleArrayMatrix newZeros_(int aRowNum, int aColNum);
+    public abstract DoubleArrayMatrix newZeros(int aRowNum, int aColNum);
     public abstract DoubleArrayMatrix newShell();
     public abstract double @Nullable[] getIfHasSameOrderData(Object aObj);
 }

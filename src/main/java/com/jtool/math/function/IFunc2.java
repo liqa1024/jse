@@ -1,6 +1,5 @@
 package com.jtool.math.function;
 
-import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.vector.IVector;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -13,7 +12,7 @@ public interface IFunc2 extends IFunc2Subs {
     /** 获取所有数据方便外部使用或者进行运算 */
     IVector x();
     IVector y();
-    IMatrix f();
+    IVector f();
     
     /** 拷贝的接口 */
     IFunc2 copy();

@@ -1,7 +1,7 @@
 package com.jtool.math.vector;
 
 
-import com.jtool.code.UT;
+import com.jtool.code.ISetIterator;
 
 import java.util.Collection;
 
@@ -23,7 +23,7 @@ public class Vectors {
     }
     public static IVector from(IVector aVector) {
         if (aVector instanceof Vector) {
-            return aVector.generator().same();
+            return aVector.copy();
         } else {
             IVector rVector = zeros(aVector.size());
             rVector.fill(aVector);
@@ -44,6 +44,23 @@ public class Vectors {
     public static IVector from(double[] aData) {
         IVector rVector = zeros(aData.length);
         rVector.fill(aData);
+        return rVector;
+    }
+    
+    
+    /** Vector 特有的构造 */
+    public static IVector sequence(double aStart, double aStep, double aEnd) {
+        int tSize = (int)Math.floor((aEnd-aStart)/aStep) + 1;
+        return sequenceByStep(aStart, aStep, tSize);
+    }
+    public static IVector sequenceByStep(double aStart, double aStep, int aN) {
+        final IVector rVector = zeros(aN);
+        final ISetIterator<Double> si = rVector.setIterator();
+        double tValue = aStart;
+        while (si.hasNext()) {
+            si.nextAndSet(tValue);
+            tValue += aStep;
+        }
         return rVector;
     }
 }

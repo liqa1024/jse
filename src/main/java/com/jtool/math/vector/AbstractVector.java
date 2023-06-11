@@ -193,23 +193,20 @@ public abstract class AbstractVector implements IVector {
     }
     
     
-    /** 向量生成器部分 */
-    protected class VectorGenerator extends AbstractVectorGenerator {
-        @Override protected Iterator<Double> thisIterator_() {return iterator();}
-        @Override protected int thisSize_() {return size();}
-        @Override public IVector zeros(int aSize) {return newZeros_(aSize);}
+    @Override public IVector copy() {
+        IVector rVector = newZeros();
+        final ISetIterator<Double> si = rVector.setIterator();
+        final Iterator<Double> it = iterator();
+        while (si.hasNext()) si.nextAndSet(it.next());
+        return rVector;
     }
-    
-    @Override public IVectorGenerator generator() {return new VectorGenerator();}
-    
-    @Override public final IVector copy() {return generator().same();}
     
     
     /** 切片操作，默认返回新的向量，refSlicer 则会返回引用的切片结果 */
     @Override public IVectorSlicer slicer() {
         return new AbstractVectorSlicer() {
-            @Override protected IVector getL(final List<Integer> aIndices) {return generator().from(aIndices.size(), i -> AbstractVector.this.get(aIndices.get(i)));}
-            @Override protected IVector getA() {return generator().same();}
+            @Override protected IVector getL(final List<Integer> aIndices) {IVector rVector = newZeros(aIndices.size()); rVector.fill(i -> AbstractVector.this.get(aIndices.get(i))); return rVector;}
+            @Override protected IVector getA() {return copy();}
             
             @Override protected Iterator<Double> thisIterator_() {return iterator();}
         };
@@ -244,7 +241,7 @@ public abstract class AbstractVector implements IVector {
     @Override public IVectorOperation operation() {
         return new AbstractVectorOperation() {
             @Override protected IVector thisVector_() {return AbstractVector.this;}
-            @Override protected IVector newVector_(int aSize) {return newZeros_(aSize);}
+            @Override protected IVector newVector_(int aSize) {return newZeros(aSize);}
         };
     }
     
@@ -287,7 +284,7 @@ public abstract class AbstractVector implements IVector {
     public abstract void set_(int aIdx, double aValue);
     public abstract double getAndSet_(int aIdx, double aValue);
     public abstract int size();
-    protected abstract IVector newZeros_(int aSize);
+    public abstract IVector newZeros(int aSize);
     
     protected String toString_(double aValue) {return String.format(" %8.4g", aValue);}
 }

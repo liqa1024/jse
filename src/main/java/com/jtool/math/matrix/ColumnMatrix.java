@@ -48,8 +48,8 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
     @Override public int rowNumber() {return mRowNum;}
     @Override public int columnNumber() {return mColNum;}
     
-    @Override protected ColumnMatrix newZeros_(int aRowNum, int aColNum) {return ColumnMatrix.zeros(aRowNum, aColNum);}
-    @Override protected Vector newZeros_(int aSize) {return Vector.zeros(aSize);}
+    @Override public ColumnMatrix newZeros(int aRowNum, int aColNum) {return ColumnMatrix.zeros(aRowNum, aColNum);}
+    @Override public Vector newZerosVec(int aSize) {return Vector.zeros(aSize);}
     
     @Override public ColumnMatrix newShell() {return new ColumnMatrix(mRowNum, mColNum, null);}
     @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {
@@ -70,17 +70,6 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
         return new DoubleArrayMatrixOperation_() {
             @Override public RowMatrix refTranspose() {
                 return new RowMatrix(mRowNum, mColNum, mData);
-            }
-        };
-    }
-    
-    /** Optimize stuffs，重写 Vector 的 same 接口专门优化拷贝部分 */
-    @Override public IVectorGenerator generatorVec() {
-        return new VectorGenerator() {
-            @Override public IVector same() {
-                Vector rVector = newZeros_(mRowNum*mColNum);
-                System.arraycopy(mData, 0, rVector.getData(), rVector.shiftSize(), rVector.dataSize());
-                return rVector;
             }
         };
     }

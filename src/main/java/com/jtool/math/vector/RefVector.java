@@ -5,7 +5,7 @@ package com.jtool.math.vector;
  * @author liqa
  */
 public abstract class RefVector extends AbstractVector {
-    @Override protected final IVector newZeros_(int aSize) {return Vector.zeros(aSize);}
+    @Override public final IVector newZeros(int aSize) {return Vector.zeros(aSize);}
     
     /** stuff to override */
     public abstract double get_(int aIdx);

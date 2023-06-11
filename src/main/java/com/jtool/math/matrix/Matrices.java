@@ -18,24 +18,6 @@ public class Matrices {
     public static IMatrix zeros(int aRowNum, int aColNum) {return ColumnMatrix.zeros(aRowNum, aColNum);}
     
     
-    public static IMatrix diag(IVector aVector) {return diag(aVector.size(), aVector);}
-    public static IMatrix diag(int aSize, IVectorGetter aVector) {
-        IMatrix rMatrix = zeros(aSize, aSize);
-        rMatrix.operation().refDiag().fill(aVector);
-        return rMatrix;
-    }
-    public static IMatrix diag(Collection<? extends Number> aList) {return diag(aList.size(), aList);}
-    public static IMatrix diag(int aSize, Iterable<? extends Number> aList) {
-        IMatrix rMatrix = zeros(aSize, aSize);
-        rMatrix.operation().refDiag().fill(aList);
-        return rMatrix;
-    }
-    public static IMatrix diag(double... aDiags) {
-        IMatrix rMatrix = zeros(aDiags.length, aDiags.length);
-        rMatrix.operation().refDiag().fill(aDiags);
-        return rMatrix;
-    }
-    
     public static IMatrix from(int aSize, IMatrixGetter aMatrixGetter) {return from(aSize, aSize, aMatrixGetter);}
     public static IMatrix from(int aRowNum, int aColNum, IMatrixGetter aMatrixGetter) {
         IMatrix rMatrix = zeros(aRowNum, aColNum);
@@ -44,7 +26,7 @@ public class Matrices {
     }
     public static IMatrix from(IMatrix aMatrix) {
         if (aMatrix instanceof ColumnMatrix) {
-            return aMatrix.generator().same();
+            return aMatrix.copy();
         } else {
             IMatrix rMatrix = zeros(aMatrix.rowNumber(), aMatrix.columnNumber());
             rMatrix.fill(aMatrix);
@@ -81,6 +63,26 @@ public class Matrices {
         int tColNum = aCols.size();
         IMatrix rMatrix = zeros(tRowNum, tColNum);
         rMatrix.fillWithCols(aCols);
+        return rMatrix;
+    }
+    
+    
+    /** Matrix 特有的构造 */
+    public static IMatrix diag(IVector aVector) {return diag(aVector.size(), aVector);}
+    public static IMatrix diag(int aSize, IVectorGetter aVector) {
+        IMatrix rMatrix = zeros(aSize, aSize);
+        rMatrix.operation().refDiag().fill(aVector);
+        return rMatrix;
+    }
+    public static IMatrix diag(Collection<? extends Number> aList) {return diag(aList.size(), aList);}
+    public static IMatrix diag(int aSize, Iterable<? extends Number> aList) {
+        IMatrix rMatrix = zeros(aSize, aSize);
+        rMatrix.operation().refDiag().fill(aList);
+        return rMatrix;
+    }
+    public static IMatrix diag(double... aDiags) {
+        IMatrix rMatrix = zeros(aDiags.length, aDiags.length);
+        rMatrix.operation().refDiag().fill(aDiags);
         return rMatrix;
     }
 }

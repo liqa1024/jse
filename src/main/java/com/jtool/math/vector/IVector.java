@@ -76,9 +76,9 @@ public interface IVector extends IVectorGetter, IHasLotIterator<IVectorGetter, D
     double decrementAndGet(int aIdx);
     
     
-    /** 获得基于自身的向量生成器，生成按列排布的向量 */
-    IVectorGenerator generator();
-    @VisibleForTesting default IVectorGenerator gen() {return generator();}
+    /** 现在不再提供生成器，只提供直接创建相同类型的全零的向量的接口，特殊矩阵的创建请使用 {@link Vectors} */
+    default IVector newZeros() {return newZeros(size());}
+    IVector newZeros(int aSize);
     
     IVector copy();
     

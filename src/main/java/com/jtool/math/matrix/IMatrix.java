@@ -4,8 +4,8 @@ import com.jtool.code.CS.SliceType;
 import com.jtool.code.IHasLotIterator;
 import com.jtool.code.ISetIterator;
 import com.jtool.math.vector.IVector;
-import com.jtool.math.vector.IVectorGenerator;
 import com.jtool.math.vector.IVectorGetter;
+import com.jtool.math.vector.RefVector;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -42,6 +42,15 @@ public interface IMatrix extends IMatrixGetter, IHasLotIterator<IMatrixGetter, D
             private final List<IVector> mRows = rows();
             @Override public List<Double> get(int aRow) {return mRows.get(aRow).asList();}
             @Override public int size() {return mRows.size();}
+        };
+    }
+    default IVector asVec() {
+        return new RefVector() {
+            private final int mRowNum = rowNumber(), mColNum = columnNumber();
+            @Override public double get_(int aIdx) {return IMatrix.this.get_(aIdx%mRowNum, aIdx/mRowNum);}
+            @Override public void set_(int aIdx, double aValue) {IMatrix.this.set_(aIdx%mRowNum, aIdx/mRowNum, aValue);}
+            @Override public double getAndSet_(int aIdx, double aValue) {return IMatrix.this.getAndSet_(aIdx%mRowNum, aIdx/mRowNum, aValue);}
+            @Override public int size() {return mRowNum * mColNum;}
         };
     }
     
@@ -98,12 +107,10 @@ public interface IMatrix extends IMatrixGetter, IHasLotIterator<IMatrixGetter, D
     
     
     
-    /** 获得基于自身的矩阵生成器，方便构造相同大小的同样的矩阵 */
-    IMatrixGenerator generator();
-    @VisibleForTesting default IMatrixGenerator gen() {return generator();}
-    /** 还需要包含一个向量的生成器方便一些操作 */
-    IVectorGenerator generatorVec();
-    @VisibleForTesting default IVectorGenerator genVec() {return generatorVec();}
+    /** 现在不再提供生成器，只提供直接创建相同类型的全零的矩阵的接口，特殊矩阵的创建请使用 {@link Matrices} */
+    default IMatrix newZeros() {return newZeros(rowNumber(), columnNumber());}
+    IMatrix newZeros(int aRowNum, int aColNum);
+    IVector newZerosVec(int aSize);
     
     IMatrix copy();
     

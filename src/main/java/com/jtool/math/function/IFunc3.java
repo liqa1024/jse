@@ -1,11 +1,9 @@
 package com.jtool.math.function;
 
-import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.vector.IVector;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.util.List;
 
 /**
  * @author liqa
@@ -16,7 +14,7 @@ public interface IFunc3 extends IFunc3Subs {
     IVector x();
     IVector y();
     IVector z();
-    List<IMatrix> f();
+    IVector f();
     
     /** 拷贝的接口 */
     IFunc3 copy();
