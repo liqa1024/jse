@@ -1,13 +1,13 @@
 package com.jtool.math.vector;
 
 import com.jtool.code.CS.SliceType;
-import com.jtool.code.IHasLotIterator;
-import com.jtool.code.ISetIterator;
+import com.jtool.code.iterator.IDoubleIterator;
+import com.jtool.code.iterator.IDoubleSetIterator;
+import com.jtool.code.iterator.IDoubleSetOnlyIterator;
 import com.jtool.code.operator.IDoubleOperator1;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.AbstractList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -15,13 +15,14 @@ import java.util.NoSuchElementException;
  * @author liqa
  * <p> 简单起见默认都是实向量，返回类型 double，而如果涉及复向量则会提供额外的接口获取复数部分 </p>
  */
-public interface IVector extends IVectorGetter, IVectorSetter, IHasLotIterator<IVectorGetter, Double> {
+public interface IVector extends IVectorGetter, IVectorSetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
-    Iterator<Double> iterator();
-    ISetIterator<Double> setIterator();
-    Iterator<Double> iteratorOf(IVectorGetter aContainer);
+    IDoubleIterator iterator();
+    IDoubleSetIterator setIterator();
+    IDoubleIterator iteratorOf(IVectorGetter aContainer);
+    IDoubleSetOnlyIterator setIteratorOf(IVectorSetter aContainer);
     
-    default Iterable<Double> iterable() {return IVector.this::iterator;}
+    default Iterable<Double> iterable() {return () -> iterator().toIterator();}
     default List<Double> asList() {
         return new AbstractList<Double>() {
             @Override public Double get(int index) {return IVector.this.get(index);}

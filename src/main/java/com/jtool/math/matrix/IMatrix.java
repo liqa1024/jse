@@ -1,8 +1,9 @@
 package com.jtool.math.matrix;
 
 import com.jtool.code.CS.SliceType;
-import com.jtool.code.IHasLotIterator;
-import com.jtool.code.ISetIterator;
+import com.jtool.code.iterator.IDoubleIterator;
+import com.jtool.code.iterator.IDoubleSetIterator;
+import com.jtool.code.iterator.IDoubleSetOnlyIterator;
 import com.jtool.code.operator.IDoubleOperator1;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.IVectorGetter;
@@ -11,7 +12,6 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.AbstractList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -19,25 +19,30 @@ import java.util.List;
  * <p> 可自定义获取的矩阵类型的矩阵类 </p>
  * <p> 简单起见默认都是实矩阵，返回类型 double，而如果涉及复矩阵则会提供额外的接口获取复数部分 </p>
  */
-public interface IMatrix extends IMatrixGetter, IMatrixSetter, IHasLotIterator<IMatrixGetter, Double> {
+public interface IMatrix extends IMatrixGetter, IMatrixSetter {
     /** Iterable stuffs，未指定直接遍历按照列方向；虽然不继承 Iterable 但是会提供相关的直接获取的接口方便使用 */
-    default Iterator<Double> iterator() {return colIterator();}
-    default Iterator<Double> colIterator() {return colIterator(0);}
-    default Iterator<Double> rowIterator() {return rowIterator(0);}
-    Iterator<Double> colIterator(int aCol);
-    Iterator<Double> rowIterator(int aRow);
-    default ISetIterator<Double> setIterator() {return colSetIterator();}
-    default ISetIterator<Double> colSetIterator() {return colSetIterator(0);}
-    default ISetIterator<Double> rowSetIterator() {return rowSetIterator(0);}
-    ISetIterator<Double> colSetIterator(int aCol);
-    ISetIterator<Double> rowSetIterator(int aRow);
-    default Iterator<Double> iteratorOf(IMatrixGetter aContainer) {return colIteratorOf(aContainer);}
-    default Iterator<Double> colIteratorOf(IMatrixGetter aContainer) {return colIteratorOf(0, aContainer);}
-    default Iterator<Double> rowIteratorOf(IMatrixGetter aContainer) {return rowIteratorOf(0, aContainer);}
-    Iterator<Double> colIteratorOf(int aCol, IMatrixGetter aContainer);
-    Iterator<Double> rowIteratorOf(int aRow, IMatrixGetter aContainer);
+    default IDoubleIterator iterator() {return colIterator();}
+    default IDoubleIterator colIterator() {return colIterator(0);}
+    default IDoubleIterator rowIterator() {return rowIterator(0);}
+    IDoubleIterator colIterator(int aCol);
+    IDoubleIterator rowIterator(int aRow);
+    default IDoubleSetIterator setIterator() {return colSetIterator();}
+    default IDoubleSetIterator colSetIterator() {return colSetIterator(0);}
+    default IDoubleSetIterator rowSetIterator() {return rowSetIterator(0);}
+    IDoubleSetIterator colSetIterator(int aCol);
+    IDoubleSetIterator rowSetIterator(int aRow);
+    default IDoubleIterator iteratorOf(IMatrixGetter aContainer) {return colIteratorOf(aContainer);}
+    default IDoubleIterator colIteratorOf(IMatrixGetter aContainer) {return colIteratorOf(0, aContainer);}
+    default IDoubleIterator rowIteratorOf(IMatrixGetter aContainer) {return rowIteratorOf(0, aContainer);}
+    IDoubleIterator colIteratorOf(int aCol, IMatrixGetter aContainer);
+    IDoubleIterator rowIteratorOf(int aRow, IMatrixGetter aContainer);
+    default IDoubleSetOnlyIterator setIteratorOf(IMatrixSetter aContainer) {return colSetIteratorOf(aContainer);}
+    default IDoubleSetOnlyIterator colSetIteratorOf(IMatrixSetter aContainer) {return colSetIteratorOf(0, aContainer);}
+    default IDoubleSetOnlyIterator rowSetIteratorOf(IMatrixSetter aContainer) {return rowSetIteratorOf(0, aContainer);}
+    IDoubleSetOnlyIterator colSetIteratorOf(int aCol, IMatrixSetter aContainer);
+    IDoubleSetOnlyIterator rowSetIteratorOf(int aRow, IMatrixSetter aContainer);
     
-    default Iterable<Double> iterable() {return IMatrix.this::iterator;}
+    default Iterable<Double> iterable() {return () -> iterator().toIterator();}
     default List<List<Double>> asList() {
         return new AbstractList<List<Double>>() {
             private final List<IVector> mRows = rows();

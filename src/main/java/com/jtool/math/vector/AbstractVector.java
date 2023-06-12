@@ -1,8 +1,10 @@
 package com.jtool.math.vector;
 
 import com.jtool.code.CS.SliceType;
-import com.jtool.code.ISetIterator;
 import com.jtool.code.UT;
+import com.jtool.code.iterator.IDoubleIterator;
+import com.jtool.code.iterator.IDoubleSetIterator;
+import com.jtool.code.iterator.IDoubleSetOnlyIterator;
 import com.jtool.code.operator.IDoubleOperator1;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -18,18 +20,20 @@ public abstract class AbstractVector implements IVector {
     /** print */
     @Override public String toString() {
         StringBuilder rStr  = new StringBuilder();
-        final Iterator<Double> it = iterator();
+        rStr.append(String.format("%d-length Vector:", size()));
+        rStr.append("\n");
+        final IDoubleIterator it = iterator();
         while (it.hasNext()) rStr.append(toString_(it.next()));
         return rStr.toString();
     }
     
     /** Iterator stuffs */
-    @Override public Iterator<Double> iterator() {
-        return new Iterator<Double>() {
+    @Override public IDoubleIterator iterator() {
+        return new IDoubleIterator() {
             private final int mSize = size();
             private int mIdx = 0;
             @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public Double next() {
+            @Override public double next() {
                 if (hasNext()) {
                     double tNext = get_(mIdx);
                     ++mIdx;
@@ -40,16 +44,16 @@ public abstract class AbstractVector implements IVector {
             }
         };
     }
-    @Override public ISetIterator<Double> setIterator() {
-        return new ISetIterator<Double>() {
+    @Override public IDoubleSetIterator setIterator() {
+        return new IDoubleSetIterator() {
             private final int mSize = size();
             private int mIdx = 0, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public void set(Double e) {
+            @Override public void set(double aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
-                set_(oIdx, e);
+                set_(oIdx, aValue);
             }
-            @Override public Double next() {
+            @Override public double next() {
                 if (hasNext()) {
                     oIdx = mIdx;
                     ++mIdx;
@@ -58,22 +62,30 @@ public abstract class AbstractVector implements IVector {
                     throw new NoSuchElementException();
                 }
             }
-            /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(Double e) {
+            @Override public void nextOnly() {
                 if (hasNext()) {
                     oIdx = mIdx;
                     ++mIdx;
-                    set_(oIdx, e);
                 } else {
                     throw new NoSuchElementException();
                 }
             }
-            @Override public Double getNextAndSet(Double e) {
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(double aValue) {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                    set_(oIdx, aValue);
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public double getNextAndSet(double aValue) {
                 if (hasNext()) {
                     oIdx = mIdx;
                     ++mIdx;
                     double oValue = get_(oIdx);
-                    set_(oIdx, e);
+                    set_(oIdx, aValue);
                     return oValue;
                 } else {
                     throw new NoSuchElementException();
@@ -81,17 +93,47 @@ public abstract class AbstractVector implements IVector {
             }
         };
     }
-    @Override public Iterator<Double> iteratorOf(final IVectorGetter aContainer) {
+    @Override public IDoubleIterator iteratorOf(final IVectorGetter aContainer) {
         if (aContainer instanceof IVector) return ((IVector)aContainer).iterator();
-        return new Iterator<Double>() {
+        return new IDoubleIterator() {
             private final int mSize = size();
             private int mIdx = 0;
             @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public Double next() {
+            @Override public double next() {
                 if (hasNext()) {
                     double tNext = aContainer.get(mIdx);
                     ++mIdx;
                     return tNext;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IDoubleSetOnlyIterator setIteratorOf(final IVectorSetter aContainer) {
+        if (aContainer instanceof IVector) return ((IVector)aContainer).setIterator();
+        return new IDoubleSetOnlyIterator() {
+            private final int mSize = size();
+            private int mIdx = 0, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mSize;}
+            @Override public void set(double aValue) {
+                if (oIdx < 0) throw new IllegalStateException();
+                aContainer.set(oIdx, aValue);
+            }
+            @Override public void nextOnly() {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(double aValue) {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                    aContainer.set(oIdx, aValue);
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -109,7 +151,7 @@ public abstract class AbstractVector implements IVector {
     @Override public final void fill(IVectorGetter aVectorGetter) {operation().ebeFill2this(aVectorGetter);}
     
     @Override public void fill(double[] aData) {
-        final ISetIterator<Double> si = setIterator();
+        final IDoubleSetIterator si = setIterator();
         int idx = 0;
         while (si.hasNext()) {
             si.nextAndSet(aData[idx]);
@@ -117,7 +159,7 @@ public abstract class AbstractVector implements IVector {
         }
     }
     @Override public void fill(Iterable<? extends Number> aList) {
-        final ISetIterator<Double> si = setIterator();
+        final IDoubleSetIterator si = setIterator();
         final Iterator<? extends Number> it = aList.iterator();
         while (si.hasNext()) si.nextAndSet(it.next().doubleValue());
     }
@@ -253,8 +295,8 @@ public abstract class AbstractVector implements IVector {
     
     @Override public IVector copy() {
         IVector rVector = newZeros();
-        final ISetIterator<Double> si = rVector.setIterator();
-        final Iterator<Double> it = iterator();
+        final IDoubleSetIterator si = rVector.setIterator();
+        final IDoubleIterator it = iterator();
         while (si.hasNext()) si.nextAndSet(it.next());
         return rVector;
     }
@@ -266,7 +308,7 @@ public abstract class AbstractVector implements IVector {
             @Override protected IVector getL(final List<Integer> aIndices) {IVector rVector = newZeros(aIndices.size()); rVector.fill(i -> AbstractVector.this.get(aIndices.get(i))); return rVector;}
             @Override protected IVector getA() {return copy();}
             
-            @Override protected Iterator<Double> thisIterator_() {return iterator();}
+            @Override protected IDoubleIterator thisIterator_() {return iterator();}
         };
     }
     @Override public IVectorSlicer refSlicer() {
@@ -290,7 +332,7 @@ public abstract class AbstractVector implements IVector {
                 };
             }
             
-            @Override protected Iterator<Double> thisIterator_() {return iterator();}
+            @Override protected IDoubleIterator thisIterator_() {return iterator();}
         };
     }
     

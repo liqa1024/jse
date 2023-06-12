@@ -1,10 +1,10 @@
 package com.jtool.math.vector;
 
-import com.jtool.code.ISetIterator;
+import com.jtool.code.iterator.IDoubleIterator;
+import com.jtool.code.iterator.IDoubleSetIterator;
 import com.jtool.code.operator.IDoubleOperator1;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
@@ -92,14 +92,14 @@ public final class ShiftVector extends DoubleArrayVector {
     }
     
     /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式） */
-    @Override public Iterator<Double> iterator() {
-        return new Iterator<Double>() {
+    @Override public IDoubleIterator iterator() {
+        return new IDoubleIterator() {
             private final int mEnd = mSize + mShift;
             private int mIdx = mShift;
             @Override public boolean hasNext() {return mIdx < mEnd;}
-            @Override public Double next() {
+            @Override public double next() {
                 if (hasNext()) {
-                    Double tNext = mData[mIdx];
+                    double tNext = mData[mIdx];
                     ++mIdx;
                     return tNext;
                 } else {
@@ -108,16 +108,16 @@ public final class ShiftVector extends DoubleArrayVector {
             }
         };
     }
-    @Override public ISetIterator<Double> setIterator() {
-        return new ISetIterator<Double>() {
+    @Override public IDoubleSetIterator setIterator() {
+        return new IDoubleSetIterator() {
             private final int mEnd = mSize + mShift;
             private int mIdx = mShift, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mEnd;}
-            @Override public void set(Double e) {
+            @Override public void set(double aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
-                mData[oIdx] = e;
+                mData[oIdx] = aValue;
             }
-            @Override public Double next() {
+            @Override public double next() {
                 if (hasNext()) {
                     oIdx = mIdx;
                     ++mIdx;
@@ -126,22 +126,30 @@ public final class ShiftVector extends DoubleArrayVector {
                     throw new NoSuchElementException();
                 }
             }
-            /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(Double e) {
+            @Override public void nextOnly() {
                 if (hasNext()) {
                     oIdx = mIdx;
                     ++mIdx;
-                    mData[oIdx] = e;
                 } else {
                     throw new NoSuchElementException();
                 }
             }
-            @Override public Double getNextAndSet(Double e) {
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(double aValue) {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                    mData[oIdx] = aValue;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public double getNextAndSet(double aValue) {
                 if (hasNext()) {
                     oIdx = mIdx;
                     ++mIdx;
                     double oValue = mData[oIdx];
-                    mData[oIdx] = e;
+                    mData[oIdx] = aValue;
                     return oValue;
                 } else {
                     throw new NoSuchElementException();

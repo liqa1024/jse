@@ -1,9 +1,7 @@
 package com.jtool.math.operation;
 
-import com.jtool.code.IHasLotIterator;
 import com.jtool.code.operator.IDoubleOperator1;
 import com.jtool.code.operator.IDoubleOperator2;
-import com.jtool.math.IDataShell;
 
 
 /**
@@ -14,452 +12,228 @@ public class ARRAY {
     private ARRAY() {}
     
     /** add, minus, multiply, divide stuffs */
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebePlus2Dest_(T aLHS, T aRHS, RS rDest) {
-        final double[] tData1 = rDest.getIfHasSameOrderData(aLHS);
-        final double[] tData2 = rDest.getIfHasSameOrderData(aRHS);
-        if (tData1 != null && tData2 != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift1 = IDataShell.shiftSize(aLHS);
-            final int tShift2 = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift1) {
-                if (rShift == tShift2) for (int i = rShift; i < rEnd; ++i) rData[i] = tData1[i] + tData2[i];
-                else for (int i = rShift, k = tShift2; i < rEnd; ++i, ++k) rData[i] = tData1[i] + tData2[k];
-            } else {
-                if (rShift == tShift2) for (int i = rShift, j = tShift1; i < rEnd; ++i, ++j) rData[i] = tData1[j] + tData2[i];
-                else for (int i = rShift, j = tShift1, k = tShift2; i < rEnd; ++i, ++j, ++k) rData[i] = tData1[j] + tData2[k];
-            }
+    public static void ebePlus2Dest_(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) {
+            if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] + aDataR[i];
+            else for (int i = rShift, k = aShiftR; i < rEnd; ++i, ++k) rDest[i] = aDataL[i] + aDataR[k];
         } else {
-            DATA.ebePlus2Dest_(aLHS, aRHS, rDest);
+            if (rShift == aShiftR) for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] + aDataR[i];
+            else for (int i = rShift, j = aShiftL, k = aShiftR; i < rEnd; ++i, ++j, ++k) rDest[i] = aDataL[j] + aDataR[k];
         }
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeMinus2Dest_(T aLHS, T aRHS, RS rDest) {
-        final double[] tData1 = rDest.getIfHasSameOrderData(aLHS);
-        final double[] tData2 = rDest.getIfHasSameOrderData(aRHS);
-        if (tData1 != null && tData2 != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift1 = IDataShell.shiftSize(aLHS);
-            final int tShift2 = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift1) {
-                if (rShift == tShift2) for (int i = rShift; i < rEnd; ++i) rData[i] = tData1[i] - tData2[i];
-                else for (int i = rShift, k = tShift2; i < rEnd; ++i, ++k) rData[i] = tData1[i] - tData2[k];
-            } else {
-                if (rShift == tShift2) for (int i = rShift, j = tShift1; i < rEnd; ++i, ++j) rData[i] = tData1[j] - tData2[i];
-                else for (int i = rShift, j = tShift1, k = tShift2; i < rEnd; ++i, ++j, ++k) rData[i] = tData1[j] - tData2[k];
-            }
+    public static void ebeMinus2Dest_(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) {
+            if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] - aDataR[i];
+            else for (int i = rShift, k = aShiftR; i < rEnd; ++i, ++k) rDest[i] = aDataL[i] - aDataR[k];
         } else {
-            DATA.ebeMinus2Dest_(aLHS, aRHS, rDest);
+            if (rShift == aShiftR) for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] - aDataR[i];
+            else for (int i = rShift, j = aShiftL, k = aShiftR; i < rEnd; ++i, ++j, ++k) rDest[i] = aDataL[j] - aDataR[k];
         }
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeMultiply2Dest_(T aLHS, T aRHS, RS rDest) {
-        final double[] tData1 = rDest.getIfHasSameOrderData(aLHS);
-        final double[] tData2 = rDest.getIfHasSameOrderData(aRHS);
-        if (tData1 != null && tData2 != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift1 = IDataShell.shiftSize(aLHS);
-            final int tShift2 = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift1) {
-                if (rShift == tShift2) for (int i = rShift; i < rEnd; ++i) rData[i] = tData1[i] * tData2[i];
-                else for (int i = rShift, k = tShift2; i < rEnd; ++i, ++k) rData[i] = tData1[i] * tData2[k];
-            } else {
-                if (rShift == tShift2) for (int i = rShift, j = tShift1; i < rEnd; ++i, ++j) rData[i] = tData1[j] * tData2[i];
-                else for (int i = rShift, j = tShift1, k = tShift2; i < rEnd; ++i, ++j, ++k) rData[i] = tData1[j] * tData2[k];
-            }
+    public static void ebeMultiply2Dest_(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) {
+            if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] * aDataR[i];
+            else for (int i = rShift, k = aShiftR; i < rEnd; ++i, ++k) rDest[i] = aDataL[i] * aDataR[k];
         } else {
-            DATA.ebeMultiply2Dest_(aLHS, aRHS, rDest);
+            if (rShift == aShiftR) for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] * aDataR[i];
+            else for (int i = rShift, j = aShiftL, k = aShiftR; i < rEnd; ++i, ++j, ++k) rDest[i] = aDataL[j] * aDataR[k];
         }
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeDiv2Dest_(T aLHS, T aRHS, RS rDest) {
-        final double[] tData1 = rDest.getIfHasSameOrderData(aLHS);
-        final double[] tData2 = rDest.getIfHasSameOrderData(aRHS);
-        if (tData1 != null && tData2 != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift1 = IDataShell.shiftSize(aLHS);
-            final int tShift2 = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift1) {
-                if (rShift == tShift2) for (int i = rShift; i < rEnd; ++i) rData[i] = tData1[i] / tData2[i];
-                else for (int i = rShift, k = tShift2; i < rEnd; ++i, ++k) rData[i] = tData1[i] / tData2[k];
-            } else {
-                if (rShift == tShift2) for (int i = rShift, j = tShift1; i < rEnd; ++i, ++j) rData[i] = tData1[j] / tData2[i];
-                else for (int i = rShift, j = tShift1, k = tShift2; i < rEnd; ++i, ++j, ++k) rData[i] = tData1[j] / tData2[k];
-            }
+    public static void ebeDiv2Dest_(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) {
+            if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] / aDataR[i];
+            else for (int i = rShift, k = aShiftR; i < rEnd; ++i, ++k) rDest[i] = aDataL[i] / aDataR[k];
         } else {
-            DATA.ebeDiv2Dest_(aLHS, aRHS, rDest);
+            if (rShift == aShiftR) for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] / aDataR[i];
+            else for (int i = rShift, j = aShiftL, k = aShiftR; i < rEnd; ++i, ++j, ++k) rDest[i] = aDataL[j] / aDataR[k];
         }
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeMod2Dest_(T aLHS, T aRHS, RS rDest) {
-        final double[] tData1 = rDest.getIfHasSameOrderData(aLHS);
-        final double[] tData2 = rDest.getIfHasSameOrderData(aRHS);
-        if (tData1 != null && tData2 != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift1 = IDataShell.shiftSize(aLHS);
-            final int tShift2 = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift1) {
-                if (rShift == tShift2) for (int i = rShift; i < rEnd; ++i) rData[i] = tData1[i] % tData2[i];
-                else for (int i = rShift, k = tShift2; i < rEnd; ++i, ++k) rData[i] = tData1[i] % tData2[k];
-            } else {
-                if (rShift == tShift2) for (int i = rShift, j = tShift1; i < rEnd; ++i, ++j) rData[i] = tData1[j] % tData2[i];
-                else for (int i = rShift, j = tShift1, k = tShift2; i < rEnd; ++i, ++j, ++k) rData[i] = tData1[j] % tData2[k];
-            }
+    public static void ebeMod2Dest_(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) {
+            if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] % aDataR[i];
+            else for (int i = rShift, k = aShiftR; i < rEnd; ++i, ++k) rDest[i] = aDataL[i] % aDataR[k];
         } else {
-            DATA.ebeMod2Dest_(aLHS, aRHS, rDest);
+            if (rShift == aShiftR) for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] % aDataR[i];
+            else for (int i = rShift, j = aShiftL, k = aShiftR; i < rEnd; ++i, ++j, ++k) rDest[i] = aDataL[j] % aDataR[k];
         }
     }
     
     
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void mapPlus2Dest_(T aLHS, double aRHS, RS rDest) {
-        final double[] tData = rDest.getIfHasSameOrderData(aLHS);
-        if (tData != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aLHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = tData[i] + aRHS;
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = tData[j] + aRHS;
-        } else {
-            DATA.mapPlus2Dest_(aLHS, aRHS, rDest);
-        }
+    public static void mapPlus2Dest_(double[] aDataL, int aShiftL, double aRHS, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] + aRHS;
+        else for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] + aRHS;
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void mapMinus2Dest_(T aLHS, double aRHS, RS rDest) {
-        final double[] tData = rDest.getIfHasSameOrderData(aLHS);
-        if (tData != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aLHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = tData[i] - aRHS;
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = tData[j] - aRHS;
-        } else {
-            DATA.mapMinus2Dest_(aLHS, aRHS, rDest);
-        }
+    public static void mapMinus2Dest_(double[] aDataL, int aShiftL, double aRHS, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] - aRHS;
+        else for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] - aRHS;
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void mapLMinus2Dest_(T aLHS, double aRHS, RS rDest) {
-        final double[] tData = rDest.getIfHasSameOrderData(aLHS);
-        if (tData != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aLHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = aRHS - tData[i];
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = aRHS - tData[j];
-        } else {
-            DATA.mapLMinus2Dest_(aLHS, aRHS, rDest);
-        }
+    public static void mapLMinus2Dest_(double[] aDataL, int aShiftL, double aRHS, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) for (int i = rShift; i < rEnd; ++i) rDest[i] = aRHS - aDataL[i];
+        else for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aRHS - aDataL[j];
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void mapMultiply2Dest_(T aLHS, double aRHS, RS rDest) {
-        final double[] tData = rDest.getIfHasSameOrderData(aLHS);
-        if (tData != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aLHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = tData[i] * aRHS;
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = tData[j] * aRHS;
-        } else {
-            DATA.mapMultiply2Dest_(aLHS, aRHS, rDest);
-        }
+    public static void mapMultiply2Dest_(double[] aDataL, int aShiftL, double aRHS, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] * aRHS;
+        else for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] * aRHS;
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void mapDiv2Dest_(T aLHS, double aRHS, RS rDest) {
-        final double[] tData = rDest.getIfHasSameOrderData(aLHS);
-        if (tData != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aLHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = tData[i] / aRHS;
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = tData[j] / aRHS;
-        } else {
-            DATA.mapDiv2Dest_(aLHS, aRHS, rDest);
-        }
+    public static void mapDiv2Dest_(double[] aDataL, int aShiftL, double aRHS, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] / aRHS;
+        else for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] / aRHS;
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void mapLDiv2Dest_(T aLHS, double aRHS, RS rDest) {
-        final double[] tData = rDest.getIfHasSameOrderData(aLHS);
-        if (tData != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aLHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = aRHS / tData[i];
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = aRHS / tData[j];
-        } else {
-            DATA.mapLDiv2Dest_(aLHS, aRHS, rDest);
-        }
+    public static void mapLDiv2Dest_(double[] aDataL, int aShiftL, double aRHS, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) for (int i = rShift; i < rEnd; ++i) rDest[i] = aRHS / aDataL[i];
+        else for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aRHS / aDataL[j];
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void mapMod2Dest_(T aLHS, double aRHS, RS rDest) {
-        final double[] tData = rDest.getIfHasSameOrderData(aLHS);
-        if (tData != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aLHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = tData[i] % aRHS;
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = tData[j] % aRHS;
-        } else {
-            DATA.mapMod2Dest_(aLHS, aRHS, rDest);
-        }
+    public static void mapMod2Dest_(double[] aDataL, int aShiftL, double aRHS, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] % aRHS;
+        else for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] % aRHS;
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void mapLMod2Dest_(T aLHS, double aRHS, RS rDest) {
-        final double[] tData = rDest.getIfHasSameOrderData(aLHS);
-        if (tData != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aLHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = aRHS % tData[i];
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = aRHS % tData[j];
-        } else {
-            DATA.mapLMod2Dest_(aLHS, aRHS, rDest);
-        }
+    public static void mapLMod2Dest_(double[] aDataL, int aShiftL, double aRHS, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) for (int i = rShift; i < rEnd; ++i) rDest[i] = aRHS % aDataL[i];
+        else for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aRHS % aDataL[j];
     }
     
     
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebePlus2this_(RS rThis, T aRHS) {
-        final double[] tData = rThis.getIfHasSameOrderData(aRHS);
-        if (tData != null) {
-            final double[] rData = rThis.getData();
-            final int rShift = rThis.shiftSize();
-            final int rEnd = rThis.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] += tData[i];
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] += tData[j];
-        } else {
-            DATA.ebePlus2this_(rThis, aRHS);
-        }
+    public static void ebePlus2this_(double[] rThis, int rShift, double[] aDataR, int aShiftR, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] += aDataR[i];
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] += aDataR[j];
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeMinus2this_(RS rThis, T aRHS) {
-        final double[] tData = rThis.getIfHasSameOrderData(aRHS);
-        if (tData != null) {
-            final double[] rData = rThis.getData();
-            final int rShift = rThis.shiftSize();
-            final int rEnd = rThis.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] -= tData[i];
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] -= tData[j];
-        } else {
-            DATA.ebeMinus2this_(rThis, aRHS);
-        }
+    public static void ebeMinus2this_(double[] rThis, int rShift, double[] aDataR, int aShiftR, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] -= aDataR[i];
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] -= aDataR[j];
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeLMinus2this_(RS rThis, T aRHS) {
-        final double[] tData = rThis.getIfHasSameOrderData(aRHS);
-        if (tData != null) {
-            final double[] rData = rThis.getData();
-            final int rShift = rThis.shiftSize();
-            final int rEnd = rThis.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = tData[i] - rData[i];
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = tData[j] - rData[i];
-        } else {
-            DATA.ebeLMinus2this_(rThis, aRHS);
-        }
+    public static void ebeLMinus2this_(double[] rThis, int rShift, double[] aDataR, int aShiftR, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] = aDataR[i] - rThis[i];
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] = aDataR[j] - rThis[i];
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeMultiply2this_(RS rThis, T aRHS) {
-        final double[] tData = rThis.getIfHasSameOrderData(aRHS);
-        if (tData != null) {
-            final double[] rData = rThis.getData();
-            final int rShift = rThis.shiftSize();
-            final int rEnd = rThis.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] *= tData[i];
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] *= tData[j];
-        } else {
-            DATA.ebeMultiply2this_(rThis, aRHS);
-        }
+    public static void ebeMultiply2this_(double[] rThis, int rShift, double[] aDataR, int aShiftR, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] *= aDataR[i];
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] *= aDataR[j];
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeDiv2this_(RS rThis, T aRHS) {
-        final double[] tData = rThis.getIfHasSameOrderData(aRHS);
-        if (tData != null) {
-            final double[] rData = rThis.getData();
-            final int rShift = rThis.shiftSize();
-            final int rEnd = rThis.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] /= tData[i];
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] /= tData[j];
-        } else {
-            DATA.ebeDiv2this_(rThis, aRHS);
-        }
+    public static void ebeDiv2this_(double[] rThis, int rShift, double[] aDataR, int aShiftR, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] /= aDataR[i];
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] /= aDataR[j];
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeLDiv2this_(RS rThis, T aRHS) {
-        final double[] tData = rThis.getIfHasSameOrderData(aRHS);
-        if (tData != null) {
-            final double[] rData = rThis.getData();
-            final int rShift = rThis.shiftSize();
-            final int rEnd = rThis.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = tData[i] / rData[i];
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = tData[j] / rData[i];
-        } else {
-            DATA.ebeLDiv2this_(rThis, aRHS);
-        }
+    public static void ebeLDiv2this_(double[] rThis, int rShift, double[] aDataR, int aShiftR, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] = aDataR[i] / rThis[i];
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] = aDataR[j] / rThis[i];
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeMod2this_(RS rThis, T aRHS) {
-        final double[] tData = rThis.getIfHasSameOrderData(aRHS);
-        if (tData != null) {
-            final double[] rData = rThis.getData();
-            final int rShift = rThis.shiftSize();
-            final int rEnd = rThis.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] %= tData[i];
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] %= tData[j];
-        } else {
-            DATA.ebeMod2this_(rThis, aRHS);
-        }
+    public static void ebeMod2this_(double[] rThis, int rShift, double[] aDataR, int aShiftR, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] %= aDataR[i];
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] %= aDataR[j];
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeLMod2this_(RS rThis, T aRHS) {
-        final double[] tData = rThis.getIfHasSameOrderData(aRHS);
-        if (tData != null) {
-            final double[] rData = rThis.getData();
-            final int rShift = rThis.shiftSize();
-            final int rEnd = rThis.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = tData[i] % rData[i];
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = tData[j] % rData[i];
-        } else {
-            DATA.ebeLMod2this_(rThis, aRHS);
-        }
+    public static void ebeLMod2this_(double[] rThis, int rShift, double[] aDataR, int aShiftR, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] = aDataR[i] % rThis[i];
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] = aDataR[j] % rThis[i];
     }
     
     
-    public static <RS extends IDataShell<double[]>> void mapPlus2this_    (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] += aRHS;}
-    public static <RS extends IDataShell<double[]>> void mapMinus2this_   (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] -= aRHS;}
-    public static <RS extends IDataShell<double[]>> void mapLMinus2this_  (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] = aRHS - rData[i];}
-    public static <RS extends IDataShell<double[]>> void mapMultiply2this_(RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] *= aRHS;}
-    public static <RS extends IDataShell<double[]>> void mapDiv2this_     (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] /= aRHS;}
-    public static <RS extends IDataShell<double[]>> void mapLDiv2this_    (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] = aRHS / rData[i];}
-    public static <RS extends IDataShell<double[]>> void mapMod2this_     (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] %= aRHS;}
-    public static <RS extends IDataShell<double[]>> void mapLMod2this_    (RS rThis, double aRHS) {final double[] rData = rThis.getData(); final int rShift = rThis.shiftSize(); final int rEnd = rThis.dataSize() + rShift; for (int i = rShift; i < rEnd; ++i) rData[i] = aRHS % rData[i];}
+    public static void mapPlus2this_    (double[] rThis, int rShift, double aRHS, int aLength) {final int rEnd = aLength + rShift; for (int i = rShift; i < rEnd; ++i) rThis[i] += aRHS          ;}
+    public static void mapMinus2this_   (double[] rThis, int rShift, double aRHS, int aLength) {final int rEnd = aLength + rShift; for (int i = rShift; i < rEnd; ++i) rThis[i] -= aRHS          ;}
+    public static void mapLMinus2this_  (double[] rThis, int rShift, double aRHS, int aLength) {final int rEnd = aLength + rShift; for (int i = rShift; i < rEnd; ++i) rThis[i] = aRHS - rThis[i];}
+    public static void mapMultiply2this_(double[] rThis, int rShift, double aRHS, int aLength) {final int rEnd = aLength + rShift; for (int i = rShift; i < rEnd; ++i) rThis[i] *= aRHS          ;}
+    public static void mapDiv2this_     (double[] rThis, int rShift, double aRHS, int aLength) {final int rEnd = aLength + rShift; for (int i = rShift; i < rEnd; ++i) rThis[i] /= aRHS          ;}
+    public static void mapLDiv2this_    (double[] rThis, int rShift, double aRHS, int aLength) {final int rEnd = aLength + rShift; for (int i = rShift; i < rEnd; ++i) rThis[i] = aRHS / rThis[i];}
+    public static void mapMod2this_     (double[] rThis, int rShift, double aRHS, int aLength) {final int rEnd = aLength + rShift; for (int i = rShift; i < rEnd; ++i) rThis[i] %= aRHS          ;}
+    public static void mapLMod2this_    (double[] rThis, int rShift, double aRHS, int aLength) {final int rEnd = aLength + rShift; for (int i = rShift; i < rEnd; ++i) rThis[i] = aRHS % rThis[i];}
     
     
     
     /** do stuff */
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeDo2Dest_(T aLHS, T aRHS, RS rDest, IDoubleOperator2 aOpt) {
-        final double[] tData1 = rDest.getIfHasSameOrderData(aLHS);
-        final double[] tData2 = rDest.getIfHasSameOrderData(aRHS);
-        if (tData1 != null && tData2 != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift1 = IDataShell.shiftSize(aLHS);
-            final int tShift2 = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift1) {
-                if (rShift == tShift2) for (int i = rShift; i < rEnd; ++i) rData[i] = aOpt.cal(tData1[i], tData2[i]);
-                else for (int i = rShift, k = tShift2; i < rEnd; ++i, ++k) rData[i] = aOpt.cal(tData1[i], tData2[k]);
-            } else {
-                if (rShift == tShift2) for (int i = rShift, j = tShift1; i < rEnd; ++i, ++j) rData[i] = aOpt.cal(tData1[j], tData2[i]);
-                else for (int i = rShift, j = tShift1, k = tShift2; i < rEnd; ++i, ++j, ++k) rData[i] = aOpt.cal(tData1[j], tData2[k]);
-            }
+    public static void ebeDo2Dest_(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, double[] rDest, int rShift, int aLength, IDoubleOperator2 aOpt) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) {
+            if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rDest[i] = aOpt.cal(aDataL[i], aDataR[i]);
+            else for (int i = rShift, k = aShiftR; i < rEnd; ++i, ++k) rDest[i] = aOpt.cal(aDataL[i], aDataR[k]);
         } else {
-            DATA .ebeDo2Dest_(aLHS, aRHS, rDest, aOpt);
+            if (rShift == aShiftR) for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aOpt.cal(aDataL[j], aDataR[i]);
+            else for (int i = rShift, j = aShiftL, k = aShiftR; i < rEnd; ++i, ++j, ++k) rDest[i] = aOpt.cal(aDataL[j], aDataR[k]);
         }
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void mapDo2Dest_(T aLHS, RS rDest, IDoubleOperator1 aOpt) {
-        final double[] tData = rDest.getIfHasSameOrderData(aLHS);
-        if (tData != null) {
-            final double[] rData = rDest.getData();
-            final int rShift = rDest.shiftSize();
-            final int rEnd = rDest.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aLHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = aOpt.cal(tData[i]);
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = aOpt.cal(tData[j]);
-        } else {
-            DATA.mapDo2Dest_(aLHS, rDest, aOpt);
-        }
+    public static void mapDo2Dest_(double[] aDataL, int aShiftL, double[] rDest, int rShift, int aLength, IDoubleOperator1 aOpt) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) for (int i = rShift; i < rEnd; ++i) rDest[i] = aOpt.cal(aDataL[i]);
+        else for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aOpt.cal(aDataL[j]);
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeDo2this_(RS rThis, T aRHS, IDoubleOperator2 aOpt) {
-        final double[] tData = rThis.getIfHasSameOrderData(aRHS);
-        if (tData != null) {
-            final double[] rData = rThis.getData();
-            final int rShift = rThis.shiftSize();
-            final int rEnd = rThis.dataSize() + rShift;
-            final int tShift = IDataShell.shiftSize(aRHS);
-            if (rShift == tShift) for (int i = rShift; i < rEnd; ++i) rData[i] = aOpt.cal(rData[i], tData[i]);
-            else for (int i = rShift, j = tShift; i < rEnd; ++i, ++j) rData[i] = aOpt.cal(rData[i], tData[j]);
-        } else {
-            DATA.ebeDo2this_(rThis, aRHS, aOpt);
-        }
+    public static void ebeDo2this_(double[] rThis, int rShift, double[] aDataR, int aShiftR, int aLength, IDoubleOperator2 aOpt) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] = aOpt.cal(rThis[i], aDataR[i]);
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] = aOpt.cal(rThis[i], aDataR[j]);
     }
-    public static <RS extends IDataShell<double[]>> void mapDo2this_(RS rThis, IDoubleOperator1 aOpt) {
-        final double[] rData = rThis.getData();
-        final int rShift = rThis.shiftSize();
-        final int rEnd = rThis.dataSize() + rShift;
-        for (int i = rShift; i < rEnd; ++i) rData[i] = aOpt.cal(rData[i]);
+    public static void mapDo2this_(double[] rThis, int rShift, int aLength, IDoubleOperator1 aOpt) {
+        final int rEnd = aLength + rShift;
+        for (int i = rShift; i < rEnd; ++i) rThis[i] = aOpt.cal(rThis[i]);
     }
     
     
-    public static <RS extends IDataShell<double[]>> void mapFill2this_(RS rThis, double aRHS) {
-        final double[] rData = rThis.getData();
-        final int rShift = rThis.shiftSize();
-        final int rEnd = rThis.dataSize() + rShift;
-        for (int i = rShift; i < rEnd; ++i) rData[i] = aRHS; // 注意在指定区域外不能填充，因此不能使用 Arrays.fill
+    public static void mapFill2this_(double[] rThis, int rShift, double aRHS, int aLength) {
+        final int rEnd = aLength + rShift;
+        for (int i = rShift; i < rEnd; ++i) rThis[i] = aRHS; // 注意在指定区域外不能填充，因此不能使用 Arrays.fill
     }
-    public static <T, RS extends IHasLotIterator<? super T, Double> & IDataShell<double[]>> void ebeFill2this_(RS rThis, T aRHS) {
-        final double[] tData = rThis.getIfHasSameOrderData(aRHS);
-        if (tData != null) {
-            System.arraycopy(tData, IDataShell.shiftSize(aRHS), rThis.getData(), rThis.shiftSize(), rThis.dataSize());
-        } else {
-            DATA.ebeFill2this_(rThis, aRHS);
-        }
+    public static void ebeFill2this_(double[] rThis, int rShift, double[] aDataR, int aShiftR, int aLength) {
+        System.arraycopy(aDataR, aShiftR, rThis, rShift, aLength);
     }
     
     
     
     /** stat stuff */
-    public static <RS extends IDataShell<double[]>> double sumOfThis_(RS tThis) {
-        final double[] tData = tThis.getData();
-        final int tShift = tThis.shiftSize();
-        final int tEnd = tThis.dataSize() + tShift;
+    public static double sumOfThis_(double[] aThis, int aShift, int aLength) {
+        final int tEnd = aLength + aShift;
         
         double rSum = 0.0;
-        for (int i = tShift; i < tEnd; ++i) rSum += tData[i];
+        for (int i = aShift; i < tEnd; ++i) rSum += aThis[i];
         return rSum;
     }
-    public static <RS extends IDataShell<double[]>> double meanOfThis_(RS tThis) {
-        final double[] tData = tThis.getData();
-        final int tShift = tThis.shiftSize();
-        final int tSize = tThis.dataSize();
-        final int tEnd = tSize + tShift;
+    public static double meanOfThis_(double[] aThis, int aShift, int aLength) {
+        final int tEnd = aLength + aShift;
         
         double rSum = 0.0;
-        for (int i = tShift; i < tEnd; ++i) rSum += tData[i];
-        return rSum / (double)tSize;
+        for (int i = aShift; i < tEnd; ++i) rSum += aThis[i];
+        return rSum / (double)aLength;
     }
-    public static <RS extends IDataShell<double[]>> double productOfThis_(RS tThis) {
-        final double[] tData = tThis.getData();
-        final int tShift = tThis.shiftSize();
-        final int tEnd = tThis.dataSize() + tShift;
+    public static double productOfThis_(double[] aThis, int aShift, int aLength) {
+        final int tEnd = aLength + aShift;
         
         double rProduct = 1.0;
-        for (int i = tShift; i < tEnd; ++i) rProduct *= tData[i];
+        for (int i = aShift; i < tEnd; ++i) rProduct *= aThis[i];
         return rProduct;
     }
-    public static <RS extends IDataShell<double[]>> double maxOfThis_(RS tThis) {
-        final double[] tData = tThis.getData();
-        final int tShift = tThis.shiftSize();
-        final int tEnd = tThis.dataSize() + tShift;
+    public static double maxOfThis_(double[] aThis, int aShift, int aLength) {
+        final int tEnd = aLength + aShift;
         
         double rMax = Double.NEGATIVE_INFINITY;
-        for (int i = tShift; i < tEnd; ++i) {
-            double tValue = tData[i];
+        for (int i = aShift; i < tEnd; ++i) {
+            double tValue = aThis[i];
             if (tValue > rMax) rMax = tValue;
         }
         return rMax;
     }
-    public static <RS extends IDataShell<double[]>> double minOfThis_(RS tThis) {
-        final double[] tData = tThis.getData();
-        final int tShift = tThis.shiftSize();
-        final int tEnd = tThis.dataSize() + tShift;
+    public static double minOfThis_(double[] aThis, int aShift, int aLength) {
+        final int tEnd = aLength + aShift;
         
         double rMin = Double.POSITIVE_INFINITY;
-        for (int i = tShift; i < tEnd; ++i) {
-            double tValue = tData[i];
+        for (int i = aShift; i < tEnd; ++i) {
+            double tValue = aThis[i];
             if (tValue < rMin) rMin = tValue;
         }
         return rMin;

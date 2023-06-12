@@ -2,9 +2,9 @@ package com.jtool.math.vector;
 
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.UT;
+import com.jtool.code.iterator.IDoubleIterator;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public abstract class AbstractVectorSlicer implements IVectorSlicer {
@@ -20,7 +20,7 @@ public abstract class AbstractVectorSlicer implements IVectorSlicer {
     
     List<Integer> F2L(IFilter aIndices) {
         List<Integer> rIndices = new ArrayList<>();
-        Iterator<Double> it = thisIterator_();
+        IDoubleIterator it = thisIterator_();
         int idx = 0;
         while (it.hasNext()) {
             if (aIndices.accept(it.next())) rIndices.add(idx);
@@ -30,7 +30,7 @@ public abstract class AbstractVectorSlicer implements IVectorSlicer {
     }
     List<Integer> F2L(IFilterWithIndex aIndices) {
         List<Integer> rIndices = new ArrayList<>();
-        Iterator<Double> it = thisIterator_();
+        IDoubleIterator it = thisIterator_();
         int idx = 0;
         while (it.hasNext()) {
             if (aIndices.accept(it.next(), idx)) rIndices.add(idx);
@@ -44,5 +44,5 @@ public abstract class AbstractVectorSlicer implements IVectorSlicer {
     protected abstract IVector getL(List<Integer> aIndices);
     protected abstract IVector getA();
     
-    protected abstract Iterator<Double> thisIterator_();
+    protected abstract IDoubleIterator thisIterator_();
 }

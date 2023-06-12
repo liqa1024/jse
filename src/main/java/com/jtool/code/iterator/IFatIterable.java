@@ -1,4 +1,4 @@
-package com.jtool.code;
+package com.jtool.code.iterator;
 
 import java.util.Iterator;
 

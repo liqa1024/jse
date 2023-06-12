@@ -2,6 +2,7 @@ package com.jtool.math.function;
 
 
 import com.jtool.math.IDataShell;
+import com.jtool.math.matrix.DoubleArrayMatrix;
 import com.jtool.math.operation.ARRAY;
 import com.jtool.math.vector.IVectorSetter;
 
@@ -12,43 +13,38 @@ import com.jtool.math.vector.IVectorSetter;
  */
 public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     /** 通用的运算 */
-    @Override public void mapPlus2this(double aRHS) {ARRAY.mapPlus2this_(thisFunc1_(), aRHS);}
+    @Override public void mapPlus2this(double aRHS) {DoubleArrayFunc1 rFunc1 = thisFunc1_(); ARRAY.mapPlus2this_(rFunc1.mData, 0, aRHS, rFunc1.Nx());}
+    
     
     @Override public void ebePlus2this(IFunc1Subs aRHS) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        final int tNx = rThis.Nx();
-        final double[] tData = rThis.getIfHasSameOrderData(aRHS);
-        if (tData != null) {
+        DoubleArrayFunc1 rFunc1 = thisFunc1_();
+        final int tNx = rFunc1.Nx();
+        final double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
+        if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            final int tShift = IDataShell.shiftSize(aRHS);
-            if (tShift == 0) for (int i = 0; i < tNx; ++i) rThis.mData[i] += tData[i];
-            else for (int i = 0, j = tShift; i < tNx; ++i, ++j) rThis.mData[i] += tData[j];
+            ARRAY.ebePlus2this_(rFunc1.mData, 0, tDataR, IDataShell.shiftSize(aRHS), tNx);
         } else
         if (aRHS instanceof IZeroBoundFunc1) {
             // 对于零边界的特殊优化
             IZeroBoundFunc1 tRHS = (IZeroBoundFunc1)aRHS;
-            final int tStart = Math.max((int)Math.floor((tRHS.zeroBoundL() - rThis.mX0)/rThis.mDx), 0);
-            final int tEnd = Math.min((int)Math.ceil((tRHS.zeroBoundR() - rThis.mX0)/rThis.mDx) + 1, tNx);
-            for (int i = tStart; i < tEnd; ++i) rThis.mData[i] += aRHS.subs(rThis.getX(i));
+            final int tStart = Math.max((int)Math.floor((tRHS.zeroBoundL() - rFunc1.mX0)/rFunc1.mDx), 0);
+            final int tEnd = Math.min((int)Math.ceil((tRHS.zeroBoundR() - rFunc1.mX0)/rFunc1.mDx) + 1, tNx);
+            for (int i = tStart; i < tEnd; ++i) rFunc1.mData[i] += aRHS.subs(rFunc1.getX(i));
         } else {
-            for (int i = 0; i < tNx; ++i) rThis.mData[i] += aRHS.subs(rThis.getX(i));
+            for (int i = 0; i < tNx; ++i) rFunc1.mData[i] += aRHS.subs(rFunc1.getX(i));
         }
     }
     
-    @Override public void mapFill2this(double aRHS) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        final int tNx = rThis.Nx();
-        for (int i = 0; i < tNx; ++i) rThis.mData[i] = aRHS; // 注意在指定区域外不能填充，因此不能使用 Arrays.fill
-    }
+    @Override public void mapFill2this(double aRHS) {DoubleArrayFunc1 rFunc1 = thisFunc1_(); ARRAY.mapFill2this_(rFunc1.mData, 0, aRHS, rFunc1.Nx());}
     @Override public void ebeFill2this(IFunc1Subs aRHS) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        final int tNx = rThis.Nx();
-        final double[] tData = rThis.getIfHasSameOrderData(aRHS);
-        if (tData != null) {
+        DoubleArrayFunc1 rFunc1 = thisFunc1_();
+        final int tNx = rFunc1.Nx();
+        final double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
+        if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            System.arraycopy(tData, IDataShell.shiftSize(aRHS), rThis.mData, 0, tNx);
+            ARRAY.ebeFill2this_(rFunc1.mData, 0, tDataR, IDataShell.shiftSize(aRHS), rFunc1.Nx());
         } else {
-            for (int i = 0; i < tNx; ++i) rThis.mData[i] = aRHS.subs(rThis.getX(i));
+            for (int i = 0; i < tNx; ++i) rFunc1.mData[i] = aRHS.subs(rFunc1.getX(i));
         }
     }
     

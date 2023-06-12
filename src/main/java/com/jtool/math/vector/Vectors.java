@@ -1,7 +1,7 @@
 package com.jtool.math.vector;
 
 
-import com.jtool.code.ISetIterator;
+import com.jtool.code.iterator.IDoubleSetIterator;
 
 import java.util.Collection;
 
@@ -55,7 +55,7 @@ public class Vectors {
     }
     public static IVector sequenceByStep(double aStart, double aStep, int aN) {
         final IVector rVector = zeros(aN);
-        final ISetIterator<Double> si = rVector.setIterator();
+        final IDoubleSetIterator si = rVector.setIterator();
         double tValue = aStart;
         while (si.hasNext()) {
             si.nextAndSet(tValue);
