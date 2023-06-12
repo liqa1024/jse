@@ -92,16 +92,16 @@ public class Lmpdat extends AbstractAtomData {
         
         // 从逻辑上考虑，这里不对原本数据做值拷贝
         double tXlo = mBox.xlo(), tYlo = mBox.ylo(), tZlo = mBox.zlo();
-        IVectorOperation
-        tOpt = mAtomData.col(STD_X_COL).operation();
-        tOpt.mapMinus2this(tXlo);
-        tOpt.mapMultiply2this(tScale);
-        tOpt = mAtomData.col(STD_Y_COL).operation();
-        tOpt.mapMinus2this(tYlo);
-        tOpt.mapMultiply2this(tScale);
-        tOpt = mAtomData.col(STD_Z_COL).operation();
-        tOpt.mapMinus2this(tZlo);
-        tOpt.mapMultiply2this(tScale);
+        IVector
+        tCol = mAtomData.col(STD_X_COL);
+        tCol.minus2this(tXlo);
+        tCol.multiply2this(tScale);
+        tCol = mAtomData.col(STD_Y_COL);
+        tCol.minus2this(tYlo);
+        tCol.multiply2this(tScale);
+        tCol = mAtomData.col(STD_Z_COL);
+        tCol.minus2this(tZlo);
+        tCol.multiply2this(tScale);
         
         // box 还是会重新创建，因为 box 的值这里约定是严格的常量，可以避免一些问题
         mBox = new Box(oShiftedBox.multiply(tScale));

@@ -1,13 +1,15 @@
 package com.jtool.math.function;
 
 import com.jtool.math.vector.IVector;
+import com.jtool.math.vector.IVectorGetter;
+import com.jtool.math.vector.IVectorSetter;
 import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * @author liqa
  * <p> 通用的数值函数接口，一维输入（f(x)）</p>
  */
-public interface IFunc1 extends IFunc1Subs {
+public interface IFunc1 extends IFunc1Subs, IVectorGetter, IVectorSetter {
     /** 获取所有数据方便外部使用或者进行运算 */
     IVector x();
     IVector f();
@@ -42,6 +44,10 @@ public interface IFunc1 extends IFunc1Subs {
     IFunc1Operation operation();
     @VisibleForTesting default IFunc1Operation opt() {return operation();}
     
+    
+    /** 注意这些 2this 操作并没有重载 groovy 中的 += 之类的运算符 */
+    default void plus2this      (double aRHS)     {operation().mapPlus2this     (aRHS);}
+    default void plus2this      (IFunc1Subs aRHS) {operation().ebePlus2this     (aRHS);}
     
     /** Groovy 的部分，重载一些运算符方便操作；圆括号为 x 值查找，方括号为索引查找 */
     @VisibleForTesting default double call(double aX) {return subs(aX);}

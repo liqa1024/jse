@@ -3,6 +3,7 @@ package com.jtool.math.matrix;
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.ISetIterator;
 import com.jtool.code.UT;
+import com.jtool.code.operator.IOperator1;
 import com.jtool.math.vector.*;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -361,6 +362,38 @@ public abstract class AbstractMatrix implements IMatrix {
         set_(aRow, aCol, tValue);
         return tValue;
     }
+    @Override public void add_(int aRow, int aCol, double aDelta) {
+        double tValue = get_(aRow, aCol);
+        tValue += aDelta;
+        set_(aRow, aCol, tValue);
+    }
+    @Override public double getAndAdd_(int aRow, int aCol, double aDelta) {
+        double tValue = get_(aRow, aCol);
+        set_(aRow, aCol, tValue+aDelta);
+        return tValue;
+    }
+    @Override public double addAndGet_(int aRow, int aCol, double aDelta) {
+        double tValue = get_(aRow, aCol);
+        tValue += aDelta;
+        set_(aRow, aCol, tValue);
+        return tValue;
+    }
+    @Override public void update_(int aRow, int aCol, IOperator1<Double> aOpt) {
+        double tValue = get_(aRow, aCol);
+        tValue = aOpt.cal(tValue);
+        set_(aRow, aCol, tValue);
+    }
+    @Override public double getAndUpdate_(int aRow, int aCol, IOperator1<Double> aOpt) {
+        double tValue = get_(aRow, aCol);
+        set_(aRow, aCol, aOpt.cal(tValue));
+        return tValue;
+    }
+    @Override public double updateAndGet_(int aRow, int aCol, IOperator1<Double> aOpt) {
+        double tValue = get_(aRow, aCol);
+        tValue = aOpt.cal(tValue);
+        set_(aRow, aCol, tValue);
+        return tValue;
+    }
     
     @Override public void increment(int aRow, int aCol) {
         if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
@@ -385,6 +418,30 @@ public abstract class AbstractMatrix implements IMatrix {
     @Override public double decrementAndGet(int aRow, int aCol) {
         if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
         return decrementAndGet_(aRow, aCol);
+    }
+    @Override public void add(int aRow, int aCol, double aDelta) {
+        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
+        add_(aRow, aCol, aDelta);
+    }
+    @Override public double getAndAdd(int aRow, int aCol, double aDelta) {
+        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
+        return getAndAdd_(aRow, aCol, aDelta);
+    }
+    @Override public double addAndGet(int aRow, int aCol, double aDelta) {
+        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
+        return addAndGet_(aRow, aCol, aDelta);
+    }
+    @Override public void update(int aRow, int aCol, IOperator1<Double> aOpt) {
+        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
+        update_(aRow, aCol, aOpt);
+    }
+    @Override public double getAndUpdate(int aRow, int aCol, IOperator1<Double> aOpt) {
+        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
+        return getAndUpdate_(aRow, aCol, aOpt);
+    }
+    @Override public double updateAndGet(int aRow, int aCol, IOperator1<Double> aOpt) {
+        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
+        return updateAndGet_(aRow, aCol, aOpt);
     }
     
     
@@ -495,39 +552,51 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     
     
-    /** Groovy 的部分，增加矩阵基本的运算操作，由于不能重载 += 之类的变成向自身操作，因此会充斥着值拷贝，因此不推荐重性能的场景使用 */
-    @VisibleForTesting @Override public IMatrix plus    (double aRHS) {return operation().mapPlus      (this, aRHS);}
-    @VisibleForTesting @Override public IMatrix minus   (double aRHS) {return operation().mapMinus     (this, aRHS);}
-    @VisibleForTesting @Override public IMatrix multiply(double aRHS) {return operation().mapMultiply  (this, aRHS);}
-    @VisibleForTesting @Override public IMatrix div     (double aRHS) {return operation().mapDiv       (this, aRHS);}
-    @VisibleForTesting @Override public IMatrix mod     (double aRHS) {return operation().mapMod       (this, aRHS);}
+    /** Groovy 的部分，增加矩阵基本的运算操作 */
+    @Override public final IMatrix plus     (double aRHS) {return operation().mapPlus       (this, aRHS);}
+    @Override public final IMatrix minus    (double aRHS) {return operation().mapMinus      (this, aRHS);}
+    @Override public final IMatrix multiply (double aRHS) {return operation().mapMultiply   (this, aRHS);}
+    @Override public final IMatrix div      (double aRHS) {return operation().mapDiv        (this, aRHS);}
+    @Override public final IMatrix mod      (double aRHS) {return operation().mapMod        (this, aRHS);}
     
-    @VisibleForTesting @Override public IMatrix plus    (IMatrixGetter aRHS) {return operation().ebePlus      (this, aRHS);}
-    @VisibleForTesting @Override public IMatrix minus   (IMatrixGetter aRHS) {return operation().ebeMinus     (this, aRHS);}
-    @VisibleForTesting @Override public IMatrix multiply(IMatrixGetter aRHS) {return operation().ebeMultiply  (this, aRHS);}
-    @VisibleForTesting @Override public IMatrix div     (IMatrixGetter aRHS) {return operation().ebeDiv       (this, aRHS);}
-    @VisibleForTesting @Override public IMatrix mod     (IMatrixGetter aRHS) {return operation().ebeMod       (this, aRHS);}
+    @Override public final IMatrix plus     (IMatrixGetter aRHS) {return operation().ebePlus    (this, aRHS);}
+    @Override public final IMatrix minus    (IMatrixGetter aRHS) {return operation().ebeMinus   (this, aRHS);}
+    @Override public final IMatrix multiply (IMatrixGetter aRHS) {return operation().ebeMultiply(this, aRHS);}
+    @Override public final IMatrix div      (IMatrixGetter aRHS) {return operation().ebeDiv     (this, aRHS);}
+    @Override public final IMatrix mod      (IMatrixGetter aRHS) {return operation().ebeMod     (this, aRHS);}
+    
+    @Override public final void plus2this       (double aRHS) {operation().mapPlus2this     (aRHS);}
+    @Override public final void minus2this      (double aRHS) {operation().mapMinus2this    (aRHS);}
+    @Override public final void multiply2this   (double aRHS) {operation().mapMultiply2this (aRHS);}
+    @Override public final void div2this        (double aRHS) {operation().mapDiv2this      (aRHS);}
+    @Override public final void mod2this        (double aRHS) {operation().mapMod2this      (aRHS);}
+    
+    @Override public final void plus2this       (IMatrixGetter aRHS) {operation().ebePlus2this      (aRHS);}
+    @Override public final void minus2this      (IMatrixGetter aRHS) {operation().ebeMinus2this     (aRHS);}
+    @Override public final void multiply2this   (IMatrixGetter aRHS) {operation().ebeMultiply2this  (aRHS);}
+    @Override public final void div2this        (IMatrixGetter aRHS) {operation().ebeDiv2this       (aRHS);}
+    @Override public final void mod2this        (IMatrixGetter aRHS) {operation().ebeMod2this       (aRHS);}
     
     /** Groovy 的部分，增加矩阵切片操作 */
-    @VisibleForTesting @Override public double call(int aRow, int aCol) {return get(aRow, aCol);}
-    @VisibleForTesting @Override public IMatrix call(List<Integer> aSelectedRows, List<Integer> aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
-    @VisibleForTesting @Override public IMatrix call(SliceType     aSelectedRows, List<Integer> aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
-    @VisibleForTesting @Override public IMatrix call(List<Integer> aSelectedRows, SliceType     aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
-    @VisibleForTesting @Override public IMatrix call(SliceType     aSelectedRows, SliceType     aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
-    @VisibleForTesting @Override public IVector call(int           aSelectedRow , List<Integer> aSelectedCols) {return slicer().get(aSelectedRow , aSelectedCols);}
-    @VisibleForTesting @Override public IVector call(int           aSelectedRow , SliceType     aSelectedCols) {return slicer().get(aSelectedRow , aSelectedCols);}
-    @VisibleForTesting @Override public IVector call(List<Integer> aSelectedRows, int           aSelectedCol ) {return slicer().get(aSelectedRows, aSelectedCol );}
-    @VisibleForTesting @Override public IVector call(SliceType     aSelectedRows, int           aSelectedCol ) {return slicer().get(aSelectedRows, aSelectedCol );}
+    @VisibleForTesting @Override public final double call(int aRow, int aCol) {return get(aRow, aCol);}
+    @VisibleForTesting @Override public final IMatrix call(List<Integer> aSelectedRows, List<Integer> aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(SliceType     aSelectedRows, List<Integer> aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(List<Integer> aSelectedRows, SliceType     aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(SliceType     aSelectedRows, SliceType     aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IVector call(int           aSelectedRow , List<Integer> aSelectedCols) {return slicer().get(aSelectedRow , aSelectedCols);}
+    @VisibleForTesting @Override public final IVector call(int           aSelectedRow , SliceType     aSelectedCols) {return slicer().get(aSelectedRow , aSelectedCols);}
+    @VisibleForTesting @Override public final IVector call(List<Integer> aSelectedRows, int           aSelectedCol ) {return slicer().get(aSelectedRows, aSelectedCol );}
+    @VisibleForTesting @Override public final IVector call(SliceType     aSelectedRows, int           aSelectedCol ) {return slicer().get(aSelectedRows, aSelectedCol );}
     
-    @VisibleForTesting @Override public IMatrixRows_ getAt(SliceType aSelectedRows) {return new MatrixRowsA_(aSelectedRows);}
-    @VisibleForTesting @Override public IMatrixRows_ getAt(List<Integer> aSelectedRows)  {return new MatrixRowsL_(aSelectedRows);}
+    @VisibleForTesting @Override public final IMatrixRows_ getAt(SliceType aSelectedRows) {return new MatrixRowsA_(aSelectedRows);}
+    @VisibleForTesting @Override public final IMatrixRows_ getAt(List<Integer> aSelectedRows)  {return new MatrixRowsL_(aSelectedRows);}
     
     /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
-    @VisibleForTesting @Override public IMatrixRow_ getAt(int aRow) {return new MatrixRow_((aRow < 0) ? (rowNumber()+aRow) : aRow);}
+    @VisibleForTesting @Override public final IMatrixRow_ getAt(int aRow) {return new MatrixRow_((aRow < 0) ? (rowNumber()+aRow) : aRow);}
     
-    protected class MatrixRow_ implements IMatrixRow_ {
-        protected final int mRow;
-        protected MatrixRow_(int aRow) {mRow = aRow;}
+    private class MatrixRow_ implements IMatrixRow_ {
+        private final int mRow;
+        private MatrixRow_(int aRow) {mRow = aRow;}
         
         @Override public IVector getAt(SliceType aSelectedCols) {return slicer().get(mRow, aSelectedCols);}
         @Override public IVector getAt(List<Integer> aSelectedCols) {return slicer().get(mRow, aSelectedCols);}
@@ -543,9 +612,9 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public double getAt(int aCol) {return get(mRow, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
         @Override public void putAt(int aCol, double aValue) {set(mRow, (aCol < 0) ? (columnNumber()+aCol) : aCol, aValue);}
     }
-    protected class MatrixRowsA_ implements IMatrixRows_ {
-        protected final SliceType mSelectedRows;
-        protected MatrixRowsA_(SliceType aSelectedRows) {mSelectedRows = aSelectedRows;}
+    private class MatrixRowsA_ implements IMatrixRows_ {
+        private final SliceType mSelectedRows;
+        private MatrixRowsA_(SliceType aSelectedRows) {mSelectedRows = aSelectedRows;}
         
         @Override public IMatrix getAt(SliceType aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         @Override public IMatrix getAt(List<Integer> aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
@@ -563,9 +632,9 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public IVector getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
         @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol).fill(aValue);}
     }
-    protected class MatrixRowsL_ implements IMatrixRows_ {
-        protected final List<Integer> mSelectedRows;
-        protected MatrixRowsL_(List<Integer> aSelectedRows) {mSelectedRows = aSelectedRows;}
+    private class MatrixRowsL_ implements IMatrixRows_ {
+        private final List<Integer> mSelectedRows;
+        private MatrixRowsL_(List<Integer> aSelectedRows) {mSelectedRows = aSelectedRows;}
         
         @Override public IMatrix getAt(SliceType aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         @Override public IMatrix getAt(List<Integer> aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}

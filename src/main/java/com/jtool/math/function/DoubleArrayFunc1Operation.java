@@ -3,6 +3,7 @@ package com.jtool.math.function;
 
 import com.jtool.math.IDataShell;
 import com.jtool.math.operation.ARRAY;
+import com.jtool.math.vector.IVectorSetter;
 
 /**
  * 针对包含 double[] 的函数的运算，这里更进一步是针对 {@link DoubleArrayFunc1} 的运算。
@@ -59,7 +60,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
         laplacian2Dest(tOut);
         return tOut;
     }
-    @Override public void laplacian2Dest(IFunc1 rDest) {
+    @Override public void laplacian2Dest(IVectorSetter rDest) {
         DoubleArrayFunc1 rThis = thisFunc1_();
         int tNx = rThis.Nx();
         double tDx2 = rThis.mDx*rThis.mDx;
@@ -69,7 +70,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
             int ipp = i+1;
             double tFpp = (ipp >= tNx) ? rThis.getOutR_(ipp) : rThis.mData[ipp];
             
-            rDest.set_(i, (tFmm + tFpp - 2*rThis.mData[i]) / tDx2);
+            rDest.set(i, (tFmm + tFpp - 2*rThis.mData[i]) / tDx2);
         }
     }
     

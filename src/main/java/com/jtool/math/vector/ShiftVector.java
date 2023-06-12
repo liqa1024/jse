@@ -1,6 +1,7 @@
 package com.jtool.math.vector;
 
 import com.jtool.code.ISetIterator;
+import com.jtool.code.operator.IOperator1;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
@@ -50,12 +51,45 @@ public final class ShiftVector extends DoubleArrayVector {
         };
     }
     
+    /** Optimize stuffs，重写加速这些操作 */
     @Override public void increment_(int aIdx) {++mData[aIdx + mShift];}
     @Override public double getAndIncrement_(int aIdx) {return mData[aIdx + mShift]++;}
     @Override public double incrementAndGet_(int aIdx) {return ++mData[aIdx + mShift];}
     @Override public void decrement_(int aIdx) {--mData[aIdx + mShift];}
     @Override public double getAndDecrement_(int aIdx) {return mData[aIdx + mShift]--;}
     @Override public double decrementAndGet_(int aIdx) {return --mData[aIdx + mShift];}
+    
+    @Override public void add_(int aIdx, double aDelta) {mData[aIdx + mShift] += aDelta;}
+    @Override public double getAndAdd_(int aIdx, double aDelta) {
+        aIdx += mShift;
+        double tValue = mData[aIdx];
+        mData[aIdx] += aDelta;
+        return tValue;
+    }
+    @Override public double addAndGet_(int aIdx, double aDelta) {
+        aIdx += mShift;
+        double tValue = mData[aIdx];
+        tValue += aDelta;
+        mData[aIdx] = tValue;
+        return tValue;
+    }
+    @Override public void update_(int aIdx, IOperator1<Double> aOpt) {
+        aIdx += mShift;
+        mData[aIdx] = aOpt.cal(mData[aIdx]);
+    }
+    @Override public double getAndUpdate_(int aIdx, IOperator1<Double> aOpt) {
+        aIdx += mShift;
+        double tValue = mData[aIdx];
+        mData[aIdx] = aOpt.cal(tValue);
+        return tValue;
+    }
+    @Override public double updateAndGet_(int aIdx, IOperator1<Double> aOpt) {
+        aIdx += mShift;
+        double tValue = mData[aIdx];
+        tValue = aOpt.cal(tValue);
+        mData[aIdx] = tValue;
+        return tValue;
+    }
     
     /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式） */
     @Override public Iterator<Double> iterator() {

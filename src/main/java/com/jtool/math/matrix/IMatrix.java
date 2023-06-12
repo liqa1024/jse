@@ -3,6 +3,7 @@ package com.jtool.math.matrix;
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.IHasLotIterator;
 import com.jtool.code.ISetIterator;
+import com.jtool.code.operator.IOperator1;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.IVectorGetter;
 import com.jtool.math.vector.RefVector;
@@ -18,7 +19,7 @@ import java.util.List;
  * <p> 可自定义获取的矩阵类型的矩阵类 </p>
  * <p> 简单起见默认都是实矩阵，返回类型 double，而如果涉及复矩阵则会提供额外的接口获取复数部分 </p>
  */
-public interface IMatrix extends IMatrixGetter, IHasLotIterator<IMatrixGetter, Double> {
+public interface IMatrix extends IMatrixGetter, IMatrixSetter, IHasLotIterator<IMatrixGetter, Double> {
     /** Iterable stuffs，未指定直接遍历按照列方向；虽然不继承 Iterable 但是会提供相关的直接获取的接口方便使用 */
     default Iterator<Double> iterator() {return colIterator();}
     default Iterator<Double> colIterator() {return colIterator(0);}
@@ -85,13 +86,19 @@ public interface IMatrix extends IMatrixGetter, IHasLotIterator<IMatrixGetter, D
     default @VisibleForTesting int nrows() {return rowNumber();}
     default @VisibleForTesting int ncols() {return columnNumber();}
     
-    /** 发现还需要这些操作 */
+    /** 附加一些额外的单元素操作，放在这里而不是 operation 因为这些方法理论和 set，get 之类的处于同样地位  */
     void increment_(int aRow, int aCol);
     double getAndIncrement_(int aRow, int aCol);
     double incrementAndGet_(int aRow, int aCol);
     void decrement_(int aRow, int aCol);
     double getAndDecrement_(int aRow, int aCol);
     double decrementAndGet_(int aRow, int aCol);
+    void add_(int aRow, int aCol, double aDelta);
+    double getAndAdd_(int aRow, int aCol, double aDelta);
+    double addAndGet_(int aRow, int aCol, double aDelta);
+    void update_(int aRow, int aCol, IOperator1<Double> aOpt);
+    double getAndUpdate_(int aRow, int aCol, IOperator1<Double> aOpt);
+    double updateAndGet_(int aRow, int aCol, IOperator1<Double> aOpt);
     
     void increment(int aRow, int aCol);
     double getAndIncrement(int aRow, int aCol);
@@ -99,6 +106,13 @@ public interface IMatrix extends IMatrixGetter, IHasLotIterator<IMatrixGetter, D
     void decrement(int aRow, int aCol);
     double getAndDecrement(int aRow, int aCol);
     double decrementAndGet(int aRow, int aCol);
+    void add(int aRow, int aCol, double aDelta);
+    double getAndAdd(int aRow, int aCol, double aDelta);
+    double addAndGet(int aRow, int aCol, double aDelta);
+    void update(int aRow, int aCol, IOperator1<Double> aOpt);
+    double getAndUpdate(int aRow, int aCol, IOperator1<Double> aOpt);
+    double updateAndGet(int aRow, int aCol, IOperator1<Double> aOpt);
+    
     
     List<IVector> rows();
     IVector row(int aRow);
@@ -122,18 +136,32 @@ public interface IMatrix extends IMatrixGetter, IHasLotIterator<IMatrixGetter, D
     IMatrixOperation operation();
     @VisibleForTesting default IMatrixOperation opt() {return operation();}
     
-    /** Groovy 的部分，增加矩阵基本的运算操作，由于不能重载 += 之类的变成向自身操作，因此会充斥着值拷贝，因此不推荐重性能的场景使用 */
-    @VisibleForTesting IMatrix plus     (double aRHS);
-    @VisibleForTesting IMatrix minus    (double aRHS);
-    @VisibleForTesting IMatrix multiply (double aRHS);
-    @VisibleForTesting IMatrix div      (double aRHS);
-    @VisibleForTesting IMatrix mod      (double aRHS);
+    /** Groovy 的部分，增加矩阵基本的运算操作，现在也归入内部使用 */
+    IMatrix plus     (double aRHS);
+    IMatrix minus    (double aRHS);
+    IMatrix multiply (double aRHS);
+    IMatrix div      (double aRHS);
+    IMatrix mod      (double aRHS);
     
-    @VisibleForTesting IMatrix plus     (IMatrixGetter aRHS);
-    @VisibleForTesting IMatrix minus    (IMatrixGetter aRHS);
-    @VisibleForTesting IMatrix multiply (IMatrixGetter aRHS);
-    @VisibleForTesting IMatrix div      (IMatrixGetter aRHS);
-    @VisibleForTesting IMatrix mod      (IMatrixGetter aRHS);
+    IMatrix plus     (IMatrixGetter aRHS);
+    IMatrix minus    (IMatrixGetter aRHS);
+    IMatrix multiply (IMatrixGetter aRHS);
+    IMatrix div      (IMatrixGetter aRHS);
+    IMatrix mod      (IMatrixGetter aRHS);
+    
+    /** 注意这些 2this 操作并没有重载 groovy 中的 += 之类的运算符 */
+    void plus2this      (double aRHS);
+    void minus2this     (double aRHS);
+    void multiply2this  (double aRHS);
+    void div2this       (double aRHS);
+    void mod2this       (double aRHS);
+    
+    void plus2this      (IMatrixGetter aRHS);
+    void minus2this     (IMatrixGetter aRHS);
+    void multiply2this  (IMatrixGetter aRHS);
+    void div2this       (IMatrixGetter aRHS);
+    void mod2this       (IMatrixGetter aRHS);
+    
     
     /** Groovy 的部分，重载一些运算符方便操作 */
     @VisibleForTesting double call(int aRow, int aCol);

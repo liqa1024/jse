@@ -1,6 +1,8 @@
 package com.jtool.math.function;
 
 
+import com.jtool.math.vector.IVectorSetter;
+
 /**
  * 任意一维数值函数的运算
  * @author liqa
@@ -16,7 +18,7 @@ public interface IFunc1Operation {
     
     /** 函数特有的运算 */
     IFunc1Subs laplacian();
-    void laplacian2Dest(IFunc1 rDest);
+    void laplacian2Dest(IVectorSetter rDest);
     
     /**
      * 卷积运算，通过输入的卷积核来对自身函数进行卷积运算，输出得到的结果

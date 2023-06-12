@@ -160,7 +160,7 @@ public class ForwardFluxSampling<T> implements Runnable {
             while (mPointsOnLambda.size() < mN0) {
                 // 随机选取一个初始点获取之后的路径，并统计结果
                 T tPointI = oPointsOnLambda.get(mRNG.nextInt(oPointsOnLambda.size()));
-                mStep2PointNum.set_(i, mStep2PointNum.get_(i) + statLambda2Next_(tPointI, tLambda));
+                mStep2PointNum.add_(i, statLambda2Next_(tPointI, tLambda));
                 ++tMi;
             }
             // 获取概率统计结果

@@ -3,6 +3,7 @@ package com.jtool.math.vector;
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.IHasLotIterator;
 import com.jtool.code.ISetIterator;
+import com.jtool.code.operator.IOperator1;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.AbstractList;
@@ -14,7 +15,7 @@ import java.util.NoSuchElementException;
  * @author liqa
  * <p> 简单起见默认都是实向量，返回类型 double，而如果涉及复向量则会提供额外的接口获取复数部分 </p>
  */
-public interface IVector extends IVectorGetter, IHasLotIterator<IVectorGetter, Double> {
+public interface IVector extends IVectorGetter, IVectorSetter, IHasLotIterator<IVectorGetter, Double> {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
     Iterator<Double> iterator();
     ISetIterator<Double> setIterator();
@@ -60,13 +61,19 @@ public interface IVector extends IVectorGetter, IHasLotIterator<IVectorGetter, D
         else return get(0);
     }
     
-    /** 发现还需要这些操作 */
+    /** 附加一些额外的单元素操作，放在这里而不是 operation 因为这些方法理论和 set，get 之类的处于同样地位 */
     void increment_(int aIdx);
     double getAndIncrement_(int aIdx);
     double incrementAndGet_(int aIdx);
     void decrement_(int aIdx);
     double getAndDecrement_(int aIdx);
     double decrementAndGet_(int aIdx);
+    void add_(int aIdx, double aDelta);
+    double getAndAdd_(int aIdx, double aDelta);
+    double addAndGet_(int aIdx, double aDelta);
+    void update_(int aIdx, IOperator1<Double> aOpt);
+    double getAndUpdate_(int aIdx, IOperator1<Double> aOpt);
+    double updateAndGet_(int aIdx, IOperator1<Double> aOpt);
     
     void increment(int aIdx);
     double getAndIncrement(int aIdx);
@@ -74,6 +81,12 @@ public interface IVector extends IVectorGetter, IHasLotIterator<IVectorGetter, D
     void decrement(int aIdx);
     double getAndDecrement(int aIdx);
     double decrementAndGet(int aIdx);
+    void add(int aIdx, double aDelta);
+    double getAndAdd(int aIdx, double aDelta);
+    double addAndGet(int aIdx, double aDelta);
+    void update(int aIdx, IOperator1<Double> aOpt);
+    double getAndUpdate(int aIdx, IOperator1<Double> aOpt);
+    double updateAndGet(int aIdx, IOperator1<Double> aOpt);
     
     
     /** 现在不再提供生成器，只提供直接创建相同类型的全零的向量的接口，特殊矩阵的创建请使用 {@link Vectors} */
@@ -91,18 +104,31 @@ public interface IVector extends IVectorGetter, IHasLotIterator<IVectorGetter, D
     @VisibleForTesting default IVectorOperation opt() {return operation();}
     
     
-    /** Groovy 的部分，增加向量基本的运算操作，由于不能重载 += 之类的变成向自身操作，因此会充斥着值拷贝，因此不推荐重性能的场景使用 */
-    @VisibleForTesting IVector plus     (double aRHS);
-    @VisibleForTesting IVector minus    (double aRHS);
-    @VisibleForTesting IVector multiply (double aRHS);
-    @VisibleForTesting IVector div      (double aRHS);
-    @VisibleForTesting IVector mod      (double aRHS);
+    /** Groovy 的部分，增加向量基本的运算操作，现在也归入内部使用 */
+    IVector plus     (double aRHS);
+    IVector minus    (double aRHS);
+    IVector multiply (double aRHS);
+    IVector div      (double aRHS);
+    IVector mod      (double aRHS);
     
-    @VisibleForTesting IVector plus     (IVectorGetter aRHS);
-    @VisibleForTesting IVector minus    (IVectorGetter aRHS);
-    @VisibleForTesting IVector multiply (IVectorGetter aRHS);
-    @VisibleForTesting IVector div      (IVectorGetter aRHS);
-    @VisibleForTesting IVector mod      (IVectorGetter aRHS);
+    IVector plus     (IVectorGetter aRHS);
+    IVector minus    (IVectorGetter aRHS);
+    IVector multiply (IVectorGetter aRHS);
+    IVector div      (IVectorGetter aRHS);
+    IVector mod      (IVectorGetter aRHS);
+    
+    /** 注意这些 2this 操作并没有重载 groovy 中的 += 之类的运算符 */
+    void plus2this      (double aRHS);
+    void minus2this     (double aRHS);
+    void multiply2this  (double aRHS);
+    void div2this       (double aRHS);
+    void mod2this       (double aRHS);
+    
+    void plus2this      (IVectorGetter aRHS);
+    void minus2this     (IVectorGetter aRHS);
+    void multiply2this  (IVectorGetter aRHS);
+    void div2this       (IVectorGetter aRHS);
+    void mod2this       (IVectorGetter aRHS);
     
     /** Groovy 的部分，增加向量切片操作 */
     @VisibleForTesting double call(int aIdx);

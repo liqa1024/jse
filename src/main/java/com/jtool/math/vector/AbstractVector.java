@@ -3,6 +3,7 @@ package com.jtool.math.vector;
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.ISetIterator;
 import com.jtool.code.UT;
+import com.jtool.code.operator.IOperator1;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Iterator;
@@ -166,6 +167,38 @@ public abstract class AbstractVector implements IVector {
         set_(aIdx, tValue);
         return tValue;
     }
+    @Override public void add_(int aIdx, double aDelta) {
+        double tValue = get_(aIdx);
+        tValue += aDelta;
+        set_(aIdx, tValue);
+    }
+    @Override public double getAndAdd_(int aIdx, double aDelta) {
+        double tValue = get_(aIdx);
+        set_(aIdx, tValue+aDelta);
+        return tValue;
+    }
+    @Override public double addAndGet_(int aIdx, double aDelta) {
+        double tValue = get_(aIdx);
+        tValue += aDelta;
+        set_(aIdx, tValue);
+        return tValue;
+    }
+    @Override public void update_(int aIdx, IOperator1<Double> aOpt) {
+        double tValue = get_(aIdx);
+        tValue = aOpt.cal(tValue);
+        set_(aIdx, tValue);
+    }
+    @Override public double getAndUpdate_(int aIdx, IOperator1<Double> aOpt) {
+        double tValue = get_(aIdx);
+        set_(aIdx, aOpt.cal(tValue));
+        return tValue;
+    }
+    @Override public double updateAndGet_(int aIdx, IOperator1<Double> aOpt) {
+        double tValue = get_(aIdx);
+        tValue = aOpt.cal(tValue);
+        set_(aIdx, tValue);
+        return tValue;
+    }
     
     @Override public void increment(int aIdx) {
         if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
@@ -191,6 +224,31 @@ public abstract class AbstractVector implements IVector {
         if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
         return decrementAndGet_(aIdx);
     }
+    @Override public void add(int aIdx, double aDelta) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        add_(aIdx, aDelta);
+    }
+    @Override public double getAndAdd(int aIdx, double aDelta) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        return getAndAdd_(aIdx, aDelta);
+    }
+    @Override public double addAndGet(int aIdx, double aDelta) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        return addAndGet_(aIdx, aDelta);
+    }
+    @Override public void update(int aIdx, IOperator1<Double> aOpt) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        update_(aIdx, aOpt);
+    }
+    @Override public double getAndUpdate(int aIdx, IOperator1<Double> aOpt) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        return getAndUpdate_(aIdx, aOpt);
+    }
+    @Override public double updateAndGet(int aIdx, IOperator1<Double> aOpt) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        return updateAndGet_(aIdx, aOpt);
+    }
+    
     
     
     @Override public IVector copy() {
@@ -246,18 +304,30 @@ public abstract class AbstractVector implements IVector {
     }
     
     
-    /** Groovy 的部分，增加向量基本的运算操作，由于不能重载 += 之类的变成向自身操作，因此会充斥着值拷贝，因此不推荐重性能的场景使用 */
-    @VisibleForTesting @Override public IVector plus      (double aRHS) {return operation().mapPlus       (this, aRHS);}
-    @VisibleForTesting @Override public IVector minus     (double aRHS) {return operation().mapMinus      (this, aRHS);}
-    @VisibleForTesting @Override public IVector multiply  (double aRHS) {return operation().mapMultiply   (this, aRHS);}
-    @VisibleForTesting @Override public IVector div       (double aRHS) {return operation().mapDiv        (this, aRHS);}
-    @VisibleForTesting @Override public IVector mod       (double aRHS) {return operation().mapMod        (this, aRHS);}
+    /** Groovy 的部分，增加向量基本的运算操作 */
+    @Override public IVector plus       (double aRHS) {return operation().mapPlus       (this, aRHS);}
+    @Override public IVector minus      (double aRHS) {return operation().mapMinus      (this, aRHS);}
+    @Override public IVector multiply   (double aRHS) {return operation().mapMultiply   (this, aRHS);}
+    @Override public IVector div        (double aRHS) {return operation().mapDiv        (this, aRHS);}
+    @Override public IVector mod        (double aRHS) {return operation().mapMod        (this, aRHS);}
     
-    @VisibleForTesting @Override public IVector plus      (IVectorGetter aRHS) {return operation().ebePlus      (this, aRHS);}
-    @VisibleForTesting @Override public IVector minus     (IVectorGetter aRHS) {return operation().ebeMinus     (this, aRHS);}
-    @VisibleForTesting @Override public IVector multiply  (IVectorGetter aRHS) {return operation().ebeMultiply  (this, aRHS);}
-    @VisibleForTesting @Override public IVector div       (IVectorGetter aRHS) {return operation().ebeDiv       (this, aRHS);}
-    @VisibleForTesting @Override public IVector mod       (IVectorGetter aRHS) {return operation().ebeMod       (this, aRHS);}
+    @Override public IVector plus       (IVectorGetter aRHS) {return operation().ebePlus    (this, aRHS);}
+    @Override public IVector minus      (IVectorGetter aRHS) {return operation().ebeMinus   (this, aRHS);}
+    @Override public IVector multiply   (IVectorGetter aRHS) {return operation().ebeMultiply(this, aRHS);}
+    @Override public IVector div        (IVectorGetter aRHS) {return operation().ebeDiv     (this, aRHS);}
+    @Override public IVector mod        (IVectorGetter aRHS) {return operation().ebeMod     (this, aRHS);}
+    
+    @Override public final void plus2this       (double aRHS) {operation().mapPlus2this     (aRHS);}
+    @Override public final void minus2this      (double aRHS) {operation().mapMinus2this    (aRHS);}
+    @Override public final void multiply2this   (double aRHS) {operation().mapMultiply2this (aRHS);}
+    @Override public final void div2this        (double aRHS) {operation().mapDiv2this      (aRHS);}
+    @Override public final void mod2this        (double aRHS) {operation().mapMod2this      (aRHS);}
+    
+    @Override public final void plus2this       (IVectorGetter aRHS) {operation().ebePlus2this      (aRHS);}
+    @Override public final void minus2this      (IVectorGetter aRHS) {operation().ebeMinus2this     (aRHS);}
+    @Override public final void multiply2this   (IVectorGetter aRHS) {operation().ebeMultiply2this  (aRHS);}
+    @Override public final void div2this        (IVectorGetter aRHS) {operation().ebeDiv2this       (aRHS);}
+    @Override public final void mod2this        (IVectorGetter aRHS) {operation().ebeMod2this       (aRHS);}
     
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public double call(int aIdx) {return get(aIdx);}

@@ -1,5 +1,7 @@
 package com.jtool.math.function;
 
+import com.jtool.math.matrix.IMatrixGetter;
+import com.jtool.math.matrix.IMatrixSetter;
 import com.jtool.math.vector.IVector;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -8,7 +10,7 @@ import org.jetbrains.annotations.VisibleForTesting;
  * @author liqa
  * <p> 通用的数值函数接口，二维输入（f(x,y)）</p>
  */
-public interface IFunc2 extends IFunc2Subs {
+public interface IFunc2 extends IFunc2Subs, IMatrixGetter, IMatrixSetter {
     /** 获取所有数据方便外部使用或者进行运算 */
     IVector x();
     IVector y();

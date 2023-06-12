@@ -1,6 +1,7 @@
 package com.jtool.math.matrix;
 
 import com.jtool.code.ISetIterator;
+import com.jtool.code.operator.IOperator1;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.ShiftVector;
 import com.jtool.math.vector.Vector;
@@ -83,6 +84,38 @@ public final class RowMatrix extends DoubleArrayMatrix {
     @Override public void decrement_(int aRow, int aCol) {--mData[aCol + aRow*mColNum];}
     @Override public double getAndDecrement_(int aRow, int aCol) {return mData[aCol + aRow*mColNum]--;}
     @Override public double decrementAndGet_(int aRow, int aCol) {return --mData[aCol + aRow*mColNum];}
+    
+    @Override public void add_(int aRow, int aCol, double aDelta) {mData[aCol + aRow*mColNum] += aDelta;}
+    @Override public double getAndAdd_(int aRow, int aCol, double aDelta) {
+        int tIdx = aCol + aRow*mColNum;
+        double tValue = mData[tIdx];
+        mData[tIdx] += aDelta;
+        return tValue;
+    }
+    @Override public double addAndGet_(int aRow, int aCol, double aDelta) {
+        int tIdx = aCol + aRow*mColNum;
+        double tValue = mData[tIdx];
+        tValue += aDelta;
+        mData[tIdx] = tValue;
+        return tValue;
+    }
+    @Override public void update_(int aRow, int aCol, IOperator1<Double> aOpt) {
+        int tIdx = aCol + aRow*mColNum;
+        mData[tIdx] = aOpt.cal(mData[tIdx]);
+    }
+    @Override public double getAndUpdate_(int aRow, int aCol, IOperator1<Double> aOpt) {
+        int tIdx = aCol + aRow*mColNum;
+        double tValue = mData[tIdx];
+        mData[tIdx] = aOpt.cal(tValue);
+        return tValue;
+    }
+    @Override public double updateAndGet_(int aRow, int aCol, IOperator1<Double> aOpt) {
+        int tIdx = aCol + aRow*mColNum;
+        double tValue = mData[tIdx];
+        tValue = aOpt.cal(tValue);
+        mData[tIdx] = tValue;
+        return tValue;
+    }
     
     
     /** Optimize stuffs，重写迭代器来提高遍历速度 */

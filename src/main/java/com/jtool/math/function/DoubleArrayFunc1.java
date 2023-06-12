@@ -65,7 +65,7 @@ public abstract class DoubleArrayFunc1 implements IFunc1, IDataShell<double[]> {
             @Override public int size() {return Nx();}
         };
     }
-    @Override public final IVector f() {return new Vector(mData);}
+    @Override public final IVector f() {return new Vector(Nx(), mData);}
     
     
     /** 批量修改的接口 */
