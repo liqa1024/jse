@@ -7,7 +7,6 @@ import com.jtool.code.iterator.IDoubleSetOnlyIterator;
 import com.jtool.code.operator.IDoubleOperator1;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.util.AbstractList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -23,13 +22,7 @@ public interface IVector extends IVectorGetter, IVectorSetter {
     IDoubleSetOnlyIterator setIteratorOf(IVectorSetter aContainer);
     
     default Iterable<Double> iterable() {return () -> iterator().toIterator();}
-    default List<Double> asList() {
-        return new AbstractList<Double>() {
-            @Override public Double get(int index) {return IVector.this.get(index);}
-            @Override public Double set(int index, Double element) {return getAndSet(index, element);}
-            @Override public int size() {return IVector.this.size();}
-        };
-    }
+    List<Double> asList();
     
     
     /** 转为兼容性更好的 double[] */

@@ -7,11 +7,9 @@ import com.jtool.code.iterator.IDoubleSetOnlyIterator;
 import com.jtool.code.operator.IDoubleOperator1;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.IVectorGetter;
-import com.jtool.math.vector.RefVector;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.util.AbstractList;
 import java.util.List;
 
 /**
@@ -20,46 +18,32 @@ import java.util.List;
  * <p> 简单起见默认都是实矩阵，返回类型 double，而如果涉及复矩阵则会提供额外的接口获取复数部分 </p>
  */
 public interface IMatrix extends IMatrixGetter, IMatrixSetter {
-    /** Iterable stuffs，未指定直接遍历按照列方向；虽然不继承 Iterable 但是会提供相关的直接获取的接口方便使用 */
-    default IDoubleIterator iterator() {return colIterator();}
-    default IDoubleIterator colIterator() {return colIterator(0);}
-    default IDoubleIterator rowIterator() {return rowIterator(0);}
+    /** Iterable stuffs，现在指定具体行列会仅遍历此行或者列，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便使用 */
+    IDoubleIterator colIterator();
+    IDoubleIterator rowIterator();
     IDoubleIterator colIterator(int aCol);
     IDoubleIterator rowIterator(int aRow);
-    default IDoubleSetIterator setIterator() {return colSetIterator();}
-    default IDoubleSetIterator colSetIterator() {return colSetIterator(0);}
-    default IDoubleSetIterator rowSetIterator() {return rowSetIterator(0);}
+    IDoubleSetIterator colSetIterator();
+    IDoubleSetIterator rowSetIterator();
     IDoubleSetIterator colSetIterator(int aCol);
     IDoubleSetIterator rowSetIterator(int aRow);
-    default IDoubleIterator iteratorOf(IMatrixGetter aContainer) {return colIteratorOf(aContainer);}
-    default IDoubleIterator colIteratorOf(IMatrixGetter aContainer) {return colIteratorOf(0, aContainer);}
-    default IDoubleIterator rowIteratorOf(IMatrixGetter aContainer) {return rowIteratorOf(0, aContainer);}
+    IDoubleIterator colIteratorOf(IMatrixGetter aContainer);
+    IDoubleIterator rowIteratorOf(IMatrixGetter aContainer);
     IDoubleIterator colIteratorOf(int aCol, IMatrixGetter aContainer);
     IDoubleIterator rowIteratorOf(int aRow, IMatrixGetter aContainer);
-    default IDoubleSetOnlyIterator setIteratorOf(IMatrixSetter aContainer) {return colSetIteratorOf(aContainer);}
-    default IDoubleSetOnlyIterator colSetIteratorOf(IMatrixSetter aContainer) {return colSetIteratorOf(0, aContainer);}
-    default IDoubleSetOnlyIterator rowSetIteratorOf(IMatrixSetter aContainer) {return rowSetIteratorOf(0, aContainer);}
+    IDoubleSetOnlyIterator colSetIteratorOf(IMatrixSetter aContainer);
+    IDoubleSetOnlyIterator rowSetIteratorOf(IMatrixSetter aContainer);
     IDoubleSetOnlyIterator colSetIteratorOf(int aCol, IMatrixSetter aContainer);
     IDoubleSetOnlyIterator rowSetIteratorOf(int aRow, IMatrixSetter aContainer);
     
-    default Iterable<Double> iterable() {return () -> iterator().toIterator();}
-    default List<List<Double>> asList() {
-        return new AbstractList<List<Double>>() {
-            private final List<IVector> mRows = rows();
-            @Override public List<Double> get(int aRow) {return mRows.get(aRow).asList();}
-            @Override public int size() {return mRows.size();}
-        };
-    }
-    default IVector asVec() {
-        return new RefVector() {
-            private final int mRowNum = rowNumber(), mColNum = columnNumber();
-            @Override public double get_(int aIdx) {return IMatrix.this.get_(aIdx%mRowNum, aIdx/mRowNum);}
-            @Override public void set_(int aIdx, double aValue) {IMatrix.this.set_(aIdx%mRowNum, aIdx/mRowNum, aValue);}
-            @Override public double getAndSet_(int aIdx, double aValue) {return IMatrix.this.getAndSet_(aIdx%mRowNum, aIdx/mRowNum, aValue);}
-            @Override public int size() {return mRowNum * mColNum;}
-        };
-    }
+    default Iterable<Double> colIterable() {return () -> colIterator().toIterator();}
+    default Iterable<Double> rowIterable() {return () -> rowIterator().toIterator();}
     
+    List<List<Double>> asListCols();
+    List<List<Double>> asListRows();
+    
+    IVector asVecCol();
+    IVector asVecRow();
     
     interface ISize {
         int row();

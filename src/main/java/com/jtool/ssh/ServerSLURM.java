@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * <p> 相比 SSH 多一个 mMaxJobNumber 参数限制同时运行的任务数 </p>
  */
 @Deprecated
-@SuppressWarnings({"UnusedReturnValue", "BusyWait"})
+@SuppressWarnings({"UnusedReturnValue", "BusyWait", "deprecation", "RedundantSuppression"})
 public final class ServerSLURM {
     static final int DEFAULT_TOLERANT = 3;
     

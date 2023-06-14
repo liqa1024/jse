@@ -2,11 +2,9 @@ package test
 
 import com.jtool.math.matrix.Matrices
 
-def mat = Matrices.from(5, {col, row -> (col*10 + row) as double;});
+def mat = Matrices.from(5, {row, col -> (row*10 + col) as double;});
 
 println(mat);
-println(mat.row(1));
-println(mat.row(1).opt().refReverse());
-println(mat.opt().refT().row(1));
-println(mat.opt().refT().row(1).opt().refReverse());
-
+println(mat.refSlicer().diag());
+println(mat.refSlicer().diag(1));
+println(mat.refSlicer().diag(-1));

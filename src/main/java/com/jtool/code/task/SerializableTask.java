@@ -13,7 +13,7 @@ import java.util.concurrent.Callable;
  * <p> 可以序列化的 Task，目前仅用于 ssh 端的一些 task 的读写上 </p>
  */
 @Deprecated
-@SuppressWarnings("DeprecatedIsStillUsed")
+@SuppressWarnings({"DeprecatedIsStillUsed", "deprecation", "RedundantSuppression"})
 public class SerializableTask extends Task {
     public SerializableTask(Callable<Boolean> aCall) {super(aCall);}
     

@@ -33,21 +33,54 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     
     /** Iterator stuffs */
-    @Override public IDoubleIterator colIterator(final int aCol) {
+    @Override public IDoubleIterator colIterator() {
         return new IDoubleIterator() {
             private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
-            private int mCol = aCol;
+            private int mCol = 0;
             private int mRow = 0;
             @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public double next() {
                 if (hasNext()) {
                     double tNext = get_(mRow, mCol);
                     ++mRow;
-                    if (mRow == mRowNum) {
-                        mRow = 0;
-                        ++mCol;
-                    }
+                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
+                    return tNext;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IDoubleIterator rowIterator() {
+        return new IDoubleIterator() {
+            private final int mColNum = columnNumber();
+            private final int mRowNum = rowNumber();
+            private int mCol = 0;
+            private int mRow = 0;
+            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public double next() {
+                if (hasNext()) {
+                    double tNext = get_(mRow, mCol);
+                    ++mCol;
+                    if (mCol == mColNum) {mCol = 0; ++mRow;}
+                    return tNext;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IDoubleIterator colIterator(final int aCol) {
+        if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
+        return new IDoubleIterator() {
+            private final int mRowNum = rowNumber();
+            private int mRow = 0;
+            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public double next() {
+                if (hasNext()) {
+                    double tNext = get_(mRow, aCol);
+                    ++mRow;
                     return tNext;
                 } else {
                     throw new NoSuchElementException();
@@ -56,20 +89,15 @@ public abstract class AbstractMatrix implements IMatrix {
         };
     }
     @Override public IDoubleIterator rowIterator(final int aRow) {
+        if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
         return new IDoubleIterator() {
             private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
             private int mCol = 0;
-            private int mRow = aRow;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public double next() {
                 if (hasNext()) {
-                    double tNext = get_(mRow, mCol);
+                    double tNext = get_(aRow, mCol);
                     ++mCol;
-                    if (mCol == mColNum) {
-                        mCol = 0;
-                        ++mRow;
-                    }
                     return tNext;
                 } else {
                     throw new NoSuchElementException();
@@ -77,11 +105,11 @@ public abstract class AbstractMatrix implements IMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator colSetIterator(final int aCol) {
+    @Override public IDoubleSetIterator colSetIterator() {
         return new IDoubleSetIterator() {
             private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
-            private int mCol = aCol, oCol = aCol;
+            private int mCol = 0, oCol = -1;
             private int mRow = 0, oRow = -1;
             @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public void set(double aValue) {
@@ -90,13 +118,9 @@ public abstract class AbstractMatrix implements IMatrix {
             }
             @Override public double next() {
                 if (hasNext()) {
-                    oCol = mCol;
-                    oRow = mRow;
+                    oCol = mCol; oRow = mRow;
                     ++mRow;
-                    if (mRow == mRowNum) {
-                        mRow = 0;
-                        ++mCol;
-                    }
+                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
                     return get_(oRow, oCol);
                 } else {
                     throw new NoSuchElementException();
@@ -104,13 +128,9 @@ public abstract class AbstractMatrix implements IMatrix {
             }
             @Override public void nextOnly() {
                 if (hasNext()) {
-                    oCol = mCol;
-                    oRow = mRow;
+                    oCol = mCol; oRow = mRow;
                     ++mRow;
-                    if (mRow == mRowNum) {
-                        mRow = 0;
-                        ++mCol;
-                    }
+                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -118,13 +138,9 @@ public abstract class AbstractMatrix implements IMatrix {
             /** 高性能接口重写来进行专门优化 */
             @Override public void nextAndSet(double aValue) {
                 if (hasNext()) {
-                    oCol = mCol;
-                    oRow = mRow;
+                    oCol = mCol; oRow = mRow;
                     ++mRow;
-                    if (mRow == mRowNum) {
-                        mRow = 0;
-                        ++mCol;
-                    }
+                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
                     set_(oRow, oCol, aValue);
                 } else {
                     throw new NoSuchElementException();
@@ -132,13 +148,9 @@ public abstract class AbstractMatrix implements IMatrix {
             }
             @Override public double getNextAndSet(double aValue) {
                 if (hasNext()) {
-                    oCol = mCol;
-                    oRow = mRow;
+                    oCol = mCol; oRow = mRow;
                     ++mRow;
-                    if (mRow == mRowNum) {
-                        mRow = 0;
-                        ++mCol;
-                    }
+                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
                     double oValue = get_(oRow, oCol);
                     set_(oRow, oCol, aValue);
                     return oValue;
@@ -148,12 +160,12 @@ public abstract class AbstractMatrix implements IMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator rowSetIterator(final int aRow) {
+    @Override public IDoubleSetIterator rowSetIterator() {
         return new IDoubleSetIterator() {
             private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
             private int mCol = 0, oCol = -1;
-            private int mRow = aRow, oRow = aRow;
+            private int mRow = 0, oRow = -1;
             @Override public boolean hasNext() {return mRow < mRowNum;}
             @Override public void set(double aValue) {
                 if (oCol < 0) throw new IllegalStateException();
@@ -161,13 +173,9 @@ public abstract class AbstractMatrix implements IMatrix {
             }
             @Override public double next() {
                 if (hasNext()) {
-                    oCol = mCol;
-                    oRow = mRow;
+                    oCol = mCol; oRow = mRow;
                     ++mCol;
-                    if (mCol == mColNum) {
-                        mCol = 0;
-                        ++mRow;
-                    }
+                    if (mCol == mColNum) {mCol = 0; ++mRow;}
                     return get_(oRow, oCol);
                 } else {
                     throw new NoSuchElementException();
@@ -175,13 +183,9 @@ public abstract class AbstractMatrix implements IMatrix {
             }
             @Override public void nextOnly() {
                 if (hasNext()) {
-                    oCol = mCol;
-                    oRow = mRow;
+                    oCol = mCol; oRow = mRow;
                     ++mCol;
-                    if (mCol == mColNum) {
-                        mCol = 0;
-                        ++mRow;
-                    }
+                    if (mCol == mColNum) {mCol = 0; ++mRow;}
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -189,13 +193,9 @@ public abstract class AbstractMatrix implements IMatrix {
             /** 高性能接口重写来进行专门优化 */
             @Override public void nextAndSet(double aValue) {
                 if (hasNext()) {
-                    oCol = mCol;
-                    oRow = mRow;
+                    oCol = mCol; oRow = mRow;
                     ++mCol;
-                    if (mCol == mColNum) {
-                        mCol = 0;
-                        ++mRow;
-                    }
+                    if (mCol == mColNum) {mCol = 0; ++mRow;}
                     set_(oRow, oCol, aValue);
                 } else {
                     throw new NoSuchElementException();
@@ -203,16 +203,144 @@ public abstract class AbstractMatrix implements IMatrix {
             }
             @Override public double getNextAndSet(double aValue) {
                 if (hasNext()) {
-                    oCol = mCol;
-                    oRow = mRow;
+                    oCol = mCol; oRow = mRow;
                     ++mCol;
-                    if (mCol == mColNum) {
-                        mCol = 0;
-                        ++mRow;
-                    }
+                    if (mCol == mColNum) {mCol = 0; ++mRow;}
                     double oValue = get_(oRow, oCol);
                     set_(oRow, oCol, aValue);
                     return oValue;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IDoubleSetIterator colSetIterator(final int aCol) {
+        if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
+        return new IDoubleSetIterator() {
+            private final int mRowNum = rowNumber();
+            private int mRow = 0, oRow = -1;
+            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public void set(double aValue) {
+                if (oRow < 0) throw new IllegalStateException();
+                set_(oRow, aCol, aValue);
+            }
+            @Override public double next() {
+                if (hasNext()) {
+                    oRow = mRow; ++mRow;
+                    return get_(oRow, aCol);
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public void nextOnly() {
+                if (hasNext()) {
+                    oRow = mRow; ++mRow;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(double aValue) {
+                if (hasNext()) {
+                    oRow = mRow; ++mRow;
+                    set_(oRow, aCol, aValue);
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public double getNextAndSet(double aValue) {
+                if (hasNext()) {
+                    oRow = mRow; ++mRow;
+                    double oValue = get_(oRow, aCol);
+                    set_(oRow, aCol, aValue);
+                    return oValue;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IDoubleSetIterator rowSetIterator(final int aRow) {
+        if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
+        return new IDoubleSetIterator() {
+            private final int mColNum = columnNumber();
+            private int mCol = 0, oCol = -1;
+            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public void set(double aValue) {
+                if (oCol < 0) throw new IllegalStateException();
+                set_(aRow, oCol, aValue);
+            }
+            @Override public double next() {
+                if (hasNext()) {
+                    oCol = mCol; ++mCol;
+                    return get_(aRow, oCol);
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public void nextOnly() {
+                if (hasNext()) {
+                    oCol = mCol; ++mCol;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(double aValue) {
+                if (hasNext()) {
+                    oCol = mCol; ++mCol;
+                    set_(aRow, oCol, aValue);
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public double getNextAndSet(double aValue) {
+                if (hasNext()) {
+                    oCol = mCol; ++mCol;
+                    double oValue = get_(aRow, oCol);
+                    set_(aRow, oCol, aValue);
+                    return oValue;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IDoubleIterator colIteratorOf(final IMatrixGetter aContainer) {
+        if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).colIterator();
+        return new IDoubleIterator() {
+            private final int mColNum = columnNumber();
+            private final int mRowNum = rowNumber();
+            private int mCol = 0;
+            private int mRow = 0;
+            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public double next() {
+                if (hasNext()) {
+                    double tNext = aContainer.get(mRow, mCol);
+                    ++mRow;
+                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
+                    return tNext;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IDoubleIterator rowIteratorOf(final IMatrixGetter aContainer) {
+        if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).rowIterator();
+        return new IDoubleIterator() {
+            private final int mColNum = columnNumber();
+            private final int mRowNum = rowNumber();
+            private int mCol = 0;
+            private int mRow = 0;
+            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public double next() {
+                if (hasNext()) {
+                    double tNext = aContainer.get(mRow, mCol);
+                    ++mCol;
+                    if (mCol == mColNum) {mCol = 0; ++mRow;}
+                    return tNext;
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -222,19 +350,13 @@ public abstract class AbstractMatrix implements IMatrix {
     @Override public IDoubleIterator colIteratorOf(final int aCol, final IMatrixGetter aContainer) {
         if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).colIterator(aCol);
         return new IDoubleIterator() {
-            private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
-            private int mCol = aCol;
             private int mRow = 0;
-            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public boolean hasNext() {return mRow < mRowNum;}
             @Override public double next() {
                 if (hasNext()) {
-                    double tNext = aContainer.get(mRow, mCol);
+                    double tNext = aContainer.get(mRow, aCol);
                     ++mRow;
-                    if (mRow == mRowNum) {
-                        mRow = 0;
-                        ++mCol;
-                    }
                     return tNext;
                 } else {
                     throw new NoSuchElementException();
@@ -246,19 +368,81 @@ public abstract class AbstractMatrix implements IMatrix {
         if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).rowIterator(aRow);
         return new IDoubleIterator() {
             private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
             private int mCol = 0;
-            private int mRow = aRow;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public double next() {
                 if (hasNext()) {
-                    double tNext = aContainer.get(mRow, mCol);
+                    double tNext = aContainer.get(aRow, mCol);
                     ++mCol;
-                    if (mCol == mColNum) {
-                        mCol = 0;
-                        ++mRow;
-                    }
                     return tNext;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IDoubleSetOnlyIterator colSetIteratorOf(final IMatrixSetter aContainer) {
+        if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).colSetIterator();
+        return new IDoubleSetOnlyIterator() {
+            private final int mColNum = columnNumber();
+            private final int mRowNum = rowNumber();
+            private int mCol = 0, oCol = -1;
+            private int mRow = 0, oRow = -1;
+            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public void set(double aValue) {
+                if (oRow < 0) throw new IllegalStateException();
+                aContainer.set(oRow, oCol, aValue);
+            }
+            @Override public void nextOnly() {
+                if (hasNext()) {
+                    oCol = mCol; oRow = mRow;
+                    ++mRow;
+                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(double aValue) {
+                if (hasNext()) {
+                    oCol = mCol; oRow = mRow;
+                    ++mRow;
+                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
+                    aContainer.set(oRow, oCol, aValue);
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IDoubleSetOnlyIterator rowSetIteratorOf(final IMatrixSetter aContainer) {
+        if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).rowSetIterator();
+        return new IDoubleSetOnlyIterator() {
+            private final int mColNum = columnNumber();
+            private final int mRowNum = rowNumber();
+            private int mCol = 0, oCol = -1;
+            private int mRow = 0, oRow = -1;
+            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public void set(double aValue) {
+                if (oCol < 0) throw new IllegalStateException();
+                aContainer.set(oRow, oCol, aValue);
+            }
+            @Override public void nextOnly() {
+                if (hasNext()) {
+                    oCol = mCol; oRow = mRow;
+                    ++mCol;
+                    if (mCol == mColNum) {mCol = 0; ++mRow;}
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(double aValue) {
+                if (hasNext()) {
+                    oCol = mCol; oRow = mRow;
+                    ++mCol;
+                    if (mCol == mColNum) {mCol = 0; ++mRow;}
+                    aContainer.set(oRow, oCol, aValue);
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -268,24 +452,16 @@ public abstract class AbstractMatrix implements IMatrix {
     @Override public IDoubleSetOnlyIterator colSetIteratorOf(final int aCol, final IMatrixSetter aContainer) {
         if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).colSetIterator(aCol);
         return new IDoubleSetOnlyIterator() {
-            private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
-            private int mCol = aCol, oCol = aCol;
             private int mRow = 0, oRow = -1;
-            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public boolean hasNext() {return mRow < mRowNum;}
             @Override public void set(double aValue) {
                 if (oRow < 0) throw new IllegalStateException();
-                aContainer.set(oRow, oCol, aValue);
+                aContainer.set(oRow, aCol, aValue);
             }
             @Override public void nextOnly() {
                 if (hasNext()) {
-                    oCol = mCol;
-                    oRow = mRow;
-                    ++mRow;
-                    if (mRow == mRowNum) {
-                        mRow = 0;
-                        ++mCol;
-                    }
+                    oRow = mRow; ++mRow;
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -293,14 +469,8 @@ public abstract class AbstractMatrix implements IMatrix {
             /** 高性能接口重写来进行专门优化 */
             @Override public void nextAndSet(double aValue) {
                 if (hasNext()) {
-                    oCol = mCol;
-                    oRow = mRow;
-                    ++mRow;
-                    if (mRow == mRowNum) {
-                        mRow = 0;
-                        ++mCol;
-                    }
-                    aContainer.set(oRow, oCol, aValue);
+                    oRow = mRow; ++mRow;
+                    aContainer.set(oRow, aCol, aValue);
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -311,23 +481,15 @@ public abstract class AbstractMatrix implements IMatrix {
         if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).rowSetIterator(aRow);
         return new IDoubleSetOnlyIterator() {
             private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
             private int mCol = 0, oCol = -1;
-            private int mRow = aRow, oRow = aRow;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public void set(double aValue) {
                 if (oCol < 0) throw new IllegalStateException();
-                aContainer.set(oRow, oCol, aValue);
+                aContainer.set(aRow, oCol, aValue);
             }
             @Override public void nextOnly() {
                 if (hasNext()) {
-                    oCol = mCol;
-                    oRow = mRow;
-                    ++mCol;
-                    if (mCol == mColNum) {
-                        mCol = 0;
-                        ++mRow;
-                    }
+                    oCol = mCol; ++mCol;
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -335,14 +497,8 @@ public abstract class AbstractMatrix implements IMatrix {
             /** 高性能接口重写来进行专门优化 */
             @Override public void nextAndSet(double aValue) {
                 if (hasNext()) {
-                    oCol = mCol;
-                    oRow = mRow;
-                    ++mCol;
-                    if (mCol == mColNum) {
-                        mCol = 0;
-                        ++mRow;
-                    }
-                    aContainer.set(oRow, oCol, aValue);
+                    oCol = mCol; ++mCol;
+                    aContainer.set(aRow, oCol, aValue);
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -350,9 +506,35 @@ public abstract class AbstractMatrix implements IMatrix {
         };
     }
     
+    /** 转换为其他类型 */
+    @Override public List<List<Double>> asListCols() {return UT.Code.map(cols(), IVector::asList);}
+    @Override public List<List<Double>> asListRows() {return UT.Code.map(rows(), IVector::asList);}
+    @Override public IVector asVecCol() {
+        return new RefVector() {
+            private final int mRowNum = rowNumber(), mColNum = columnNumber();
+            @Override public double get_(int aIdx) {return AbstractMatrix.this.get_(aIdx%mRowNum, aIdx/mRowNum);}
+            @Override public void set_(int aIdx, double aValue) {AbstractMatrix.this.set_(aIdx%mRowNum, aIdx/mRowNum, aValue);}
+            @Override public double getAndSet_(int aIdx, double aValue) {return AbstractMatrix.this.getAndSet_(aIdx%mRowNum, aIdx/mRowNum, aValue);}
+            @Override public int size() {return mRowNum * mColNum;}
+            @Override public IDoubleIterator iterator() {return colIterator();}
+            @Override public IDoubleSetIterator setIterator() {return colSetIterator();}
+        };
+    }
+    @Override public IVector asVecRow() {
+        return new RefVector() {
+            private final int mRowNum = rowNumber(), mColNum = columnNumber();
+            @Override public double get_(int aIdx) {return AbstractMatrix.this.get_(aIdx/mColNum, aIdx%mColNum);}
+            @Override public void set_(int aIdx, double aValue) {AbstractMatrix.this.set_(aIdx/mColNum, aIdx%mColNum, aValue);}
+            @Override public double getAndSet_(int aIdx, double aValue) {return AbstractMatrix.this.getAndSet_(aIdx/mColNum, aIdx%mColNum, aValue);}
+            @Override public int size() {return mRowNum * mColNum;}
+            @Override public IDoubleIterator iterator() {return rowIterator();}
+            @Override public IDoubleSetIterator setIterator() {return rowSetIterator();}
+        };
+    }
     
-    /** 转为兼容性更好的 double[][]，默认直接使用 asList 转为 double[][] */
-    @Override public double[][] data() {return UT.Code.toMat(asList());}
+    
+    /** 转为兼容性更好的 double[][]，默认直接使用 asListRow 转为 double[][] */
+    @Override public double[][] data() {return UT.Code.toMat(asListRows());}
     
     /** 批量修改的接口，现在统一使用迭代器来填充 */
     @Override public final void fill(double aValue) {operation().mapFill2this(aValue);}
@@ -423,6 +605,8 @@ public abstract class AbstractMatrix implements IMatrix {
             @Override public void set_(int aIdx, double aValue) {AbstractMatrix.this.set_(aRow, aIdx, aValue);}
             @Override public double getAndSet_(int aIdx, double aValue) {return AbstractMatrix.this.getAndSet_(aRow, aIdx, aValue);}
             @Override public int size() {return columnNumber();}
+            @Override public IDoubleIterator iterator() {return rowIterator(aRow);}
+            @Override public IDoubleSetIterator setIterator() {return rowSetIterator(aRow);}
         };
     }
     @Override public List<IVector> cols() {
@@ -438,6 +622,8 @@ public abstract class AbstractMatrix implements IMatrix {
             @Override public void set_(int aIdx, double aValue) {AbstractMatrix.this.set_(aIdx, aCol, aValue);}
             @Override public double getAndSet_(int aIdx, double aValue) {return AbstractMatrix.this.getAndSet_(aIdx, aCol, aValue);}
             @Override public int size() {return rowNumber();}
+            @Override public IDoubleIterator iterator() {return colIterator(aCol);}
+            @Override public IDoubleSetIterator setIterator() {return colSetIterator(aCol);}
         };
     }
     
@@ -559,8 +745,8 @@ public abstract class AbstractMatrix implements IMatrix {
     
     @Override public IMatrix copy() {
         IMatrix rMatrix = newZeros();
-        final IDoubleSetIterator si = rMatrix.setIterator();
-        final IDoubleIterator it = iterator();
+        final IDoubleSetIterator si = rMatrix.colSetIterator();
+        final IDoubleIterator it = colIterator();
         while (si.hasNext()) si.nextAndSet(it.next());
         return rMatrix;
     }
@@ -676,10 +862,10 @@ public abstract class AbstractMatrix implements IMatrix {
                 } else
                 if (aShift < 0) {
                     return new RefVector() {
-                        @Override public double get_(int aIdx) {return AbstractMatrix.this.get_(aIdx, aIdx-aShift);}
-                        @Override public void set_(int aIdx, double aValue)  {AbstractMatrix.this.set_(aIdx, aIdx-aShift, aValue);}
-                        @Override public double getAndSet_(int aIdx, double aValue) {return AbstractMatrix.this.getAndSet_(aIdx, aIdx-aShift, aValue);}
-                        @Override public int size() {return Math.min(rowNumber(), columnNumber()+aShift);}
+                        @Override public double get_(int aIdx) {return AbstractMatrix.this.get_(aIdx-aShift, aIdx);}
+                        @Override public void set_(int aIdx, double aValue)  {AbstractMatrix.this.set_(aIdx-aShift, aIdx, aValue);}
+                        @Override public double getAndSet_(int aIdx, double aValue) {return AbstractMatrix.this.getAndSet_(aIdx-aShift, aIdx, aValue);}
+                        @Override public int size() {return Math.min(rowNumber()+aShift, columnNumber());}
                     };
                 } else {
                     return new RefVector() {

@@ -68,6 +68,9 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
         return new ShiftVector(mRowNum, aCol*mRowNum, mData);
     }
     
+    /** Optimize stuffs，列向展开的向量直接返回 */
+    @Override public IVector asVecCol() {return new Vector(mRowNum*mColNum, mData);}
+    
     /** Optimize stuffs，引用转置直接返回 {@link RowMatrix} */
     @Override public IMatrixOperation operation() {
         return new DoubleArrayMatrixOperation_() {
@@ -118,11 +121,46 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
     }
     
     /** Optimize stuffs，重写迭代器来提高遍历速度 */
-    @Override public IDoubleIterator colIterator(final int aCol) {
+    @Override public IDoubleIterator colIterator() {
         return new IDoubleIterator() {
             private final int mSize = mRowNum * mColNum;
-            private int mIdx = aCol*mRowNum;
+            private int mIdx = 0;
             @Override public boolean hasNext() {return mIdx < mSize;}
+            @Override public double next() {
+                if (hasNext()) {
+                    double tNext = mData[mIdx];
+                    ++mIdx;
+                    return tNext;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IDoubleIterator rowIterator() {
+        return new IDoubleIterator() {
+            private final int mSize = mRowNum * mColNum;
+            private int mRow = 0;
+            private int mIdx = mRow;
+            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public double next() {
+                if (hasNext()) {
+                    double tNext = mData[mIdx];
+                    mIdx += mRowNum;
+                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    return tNext;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IDoubleIterator colIterator(final int aCol) {
+        if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
+        return new IDoubleIterator() {
+            private final int mEnd = (aCol+1)*mRowNum;
+            private int mIdx = aCol*mRowNum;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public double next() {
                 if (hasNext()) {
                     double tNext = mData[mIdx];
@@ -135,19 +173,15 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public IDoubleIterator rowIterator(final int aRow) {
+        if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
         return new IDoubleIterator() {
             private final int mSize = mRowNum * mColNum;
-            private int mRow = aRow;
-            private int mIdx = mRow;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            private int mIdx = aRow;
+            @Override public boolean hasNext() {return mIdx < mSize;}
             @Override public double next() {
                 if (hasNext()) {
                     double tNext = mData[mIdx];
                     mIdx += mRowNum;
-                    if (mIdx >= mSize) {
-                        ++mRow;
-                        mIdx = mRow;
-                    }
                     return tNext;
                 } else {
                     throw new NoSuchElementException();
@@ -155,10 +189,10 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator colSetIterator(final int aCol) {
+    @Override public IDoubleSetIterator colSetIterator() {
         return new IDoubleSetIterator() {
             private final int mSize = mRowNum * mColNum;
-            private int mIdx = aCol*mRowNum, oIdx = -1;
+            private int mIdx = 0, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mSize;}
             @Override public void set(double aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
@@ -166,8 +200,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             }
             @Override public double next() {
                 if (hasNext()) {
-                    oIdx = mIdx;
-                    ++mIdx;
+                    oIdx = mIdx; ++mIdx;
                     return mData[oIdx];
                 } else {
                     throw new NoSuchElementException();
@@ -175,8 +208,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             }
             @Override public void nextOnly() {
                 if (hasNext()) {
-                    oIdx = mIdx;
-                    ++mIdx;
+                    oIdx = mIdx; ++mIdx;
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -184,8 +216,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             /** 高性能接口重写来进行专门优化 */
             @Override public void nextAndSet(double aValue) {
                 if (hasNext()) {
-                    oIdx = mIdx;
-                    ++mIdx;
+                    oIdx = mIdx; ++mIdx;
                     mData[oIdx] = aValue;
                 } else {
                     throw new NoSuchElementException();
@@ -193,8 +224,103 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             }
             @Override public double getNextAndSet(double aValue) {
                 if (hasNext()) {
-                    oIdx = mIdx;
-                    ++mIdx;
+                    oIdx = mIdx; ++mIdx;
+                    double oValue = mData[oIdx];
+                    mData[oIdx] = aValue;
+                    return oValue;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IDoubleSetIterator rowSetIterator() {
+        return new IDoubleSetIterator() {
+            private final int mSize = mRowNum * mColNum;
+            private int mRow = 0;
+            private int mIdx = mRow, oIdx = -1;
+            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public void set(double aValue) {
+                if (oIdx < 0) throw new IllegalStateException();
+                mData[oIdx] = aValue;
+            }
+            @Override public double next() {
+                if (hasNext()) {
+                    oIdx = mIdx; mIdx += mRowNum;
+                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    return mData[oIdx];
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public void nextOnly() {
+                if (hasNext()) {
+                    oIdx = mIdx; mIdx += mRowNum;
+                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(double aValue) {
+                if (hasNext()) {
+                    oIdx = mIdx; mIdx += mRowNum;
+                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    mData[oIdx] = aValue;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public double getNextAndSet(double aValue) {
+                if (hasNext()) {
+                    oIdx = mIdx; mIdx += mRowNum;
+                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    double oValue = mData[oIdx];
+                    mData[oIdx] = aValue;
+                    return oValue;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IDoubleSetIterator colSetIterator(final int aCol) {
+        if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
+        return new IDoubleSetIterator() {
+            private final int mEnd = (aCol+1)*mColNum;
+            private int mIdx = aCol*mRowNum, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
+            @Override public void set(double aValue) {
+                if (oIdx < 0) throw new IllegalStateException();
+                mData[oIdx] = aValue;
+            }
+            @Override public double next() {
+                if (hasNext()) {
+                    oIdx = mIdx; ++mIdx;
+                    return mData[oIdx];
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public void nextOnly() {
+                if (hasNext()) {
+                    oIdx = mIdx; ++mIdx;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(double aValue) {
+                if (hasNext()) {
+                    oIdx = mIdx; ++mIdx;
+                    mData[oIdx] = aValue;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public double getNextAndSet(double aValue) {
+                if (hasNext()) {
+                    oIdx = mIdx; ++mIdx;
                     double oValue = mData[oIdx];
                     mData[oIdx] = aValue;
                     return oValue;
@@ -205,23 +331,18 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public IDoubleSetIterator rowSetIterator(final int aRow) {
+        if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
         return new IDoubleSetIterator() {
             private final int mSize = mRowNum * mColNum;
-            private int mRow = aRow;
-            private int mIdx = mRow, oIdx = -1;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            private int mIdx = aRow, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mSize;}
             @Override public void set(double aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;
             }
             @Override public double next() {
                 if (hasNext()) {
-                    oIdx = mIdx;
-                    mIdx += mRowNum;
-                    if (mIdx >= mSize) {
-                        ++mRow;
-                        mIdx = mRow;
-                    }
+                    oIdx = mIdx; mIdx += mRowNum;
                     return mData[oIdx];
                 } else {
                     throw new NoSuchElementException();
@@ -229,12 +350,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             }
             @Override public void nextOnly() {
                 if (hasNext()) {
-                    oIdx = mIdx;
-                    mIdx += mRowNum;
-                    if (mIdx >= mSize) {
-                        ++mRow;
-                        mIdx = mRow;
-                    }
+                    oIdx = mIdx; mIdx += mRowNum;
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -242,12 +358,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             /** 高性能接口重写来进行专门优化 */
             @Override public void nextAndSet(double aValue) {
                 if (hasNext()) {
-                    oIdx = mIdx;
-                    mIdx += mRowNum;
-                    if (mIdx >= mSize) {
-                        ++mRow;
-                        mIdx = mRow;
-                    }
+                    oIdx = mIdx; mIdx += mRowNum;
                     mData[oIdx] = aValue;
                 } else {
                     throw new NoSuchElementException();
@@ -255,12 +366,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             }
             @Override public double getNextAndSet(double aValue) {
                 if (hasNext()) {
-                    oIdx = mIdx;
-                    mIdx += mRowNum;
-                    if (mIdx >= mSize) {
-                        ++mRow;
-                        mIdx = mRow;
-                    }
+                    oIdx = mIdx; mIdx += mRowNum;
                     double oValue = mData[oIdx];
                     mData[oIdx] = aValue;
                     return oValue;

@@ -3,7 +3,6 @@ package com.jtool.code;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.jtool.code.operator.IOperator1;
-import com.jtool.code.task.Task;
 import com.jtool.code.task.TaskCall;
 import com.jtool.code.task.TaskRun;
 import com.jtool.math.function.IFunc1;
@@ -246,6 +245,12 @@ public class UT {
                 }
             };
         }
+        public static <R, T> List<R> map(final List<T> aList, final IOperator1<? extends R, ? super T> aOpt) {
+            return new AbstractList<R>() {
+                @Override public R get(int index) {return aOpt.cal(aList.get(index));}
+                @Override public int size() {return aList.size();}
+            };
+        }
         public static <R, T> List<R> map(final T[] aArray, final IOperator1<? extends R, ? super T> aOpt) {
             return new AbstractList<R>() {
                 @Override public R get(int index) {return aOpt.cal(aArray[index]);}
@@ -459,8 +464,6 @@ public class UT {
         public static TaskRun          getRunnableOfStaticMethod(              String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException, ClassNotFoundException {return TaskRun.of(getCallableOfStaticMethod(aClassName, aMethodName, aArgs));}
         public static TaskCall<Object> getCallableOfMethod      (final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {return getCallableOfMethod_(aInstance.getClass(), aInstance, aMethodName, aArgs);}
         public static TaskRun          getRunnableOfMethod      (final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {return TaskRun.of(getCallableOfMethod(aInstance, aMethodName, aArgs));}
-        @Deprecated public static Task getTaskOfStaticMethod    (              String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException, ClassNotFoundException {return Task.of(getCallableOfStaticMethod(aClassName, aMethodName, aArgs));}
-        @Deprecated public static Task getTaskOfMethod          (final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {return Task.of(getCallableOfMethod(aInstance, aMethodName, aArgs));}
         
         public static Method findMethod_(Class<?> aClazz, String aMethodName, Object @NotNull... aArgs) {
             Method[] tAllMethods = aClazz.getMethods();

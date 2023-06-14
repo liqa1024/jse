@@ -8,6 +8,7 @@ import com.jtool.code.iterator.IDoubleSetOnlyIterator;
 import com.jtool.code.operator.IDoubleOperator1;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.AbstractList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -141,6 +142,15 @@ public abstract class AbstractVector implements IVector {
         };
     }
     
+    /** 转换为其他类型 */
+    @Override public List<Double> asList() {
+        return new AbstractList<Double>() {
+            @Override public Double get(int index) {return AbstractVector.this.get(index);}
+            @Override public Double set(int index, Double element) {return getAndSet(index, element);}
+            @Override public int size() {return AbstractVector.this.size();}
+            @Override public Iterator<Double> iterator() {return AbstractVector.this.iterator().toIterator();}
+        };
+    }
     
     /** 转为兼容性更好的 double[] */
     @Override public double[] data() {return UT.Code.toData(asList());}

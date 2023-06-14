@@ -9,7 +9,7 @@ import java.util.concurrent.Callable;
  * <p> General task for this project </p>
  */
 @Deprecated
-@SuppressWarnings("DeprecatedIsStillUsed")
+@SuppressWarnings({"DeprecatedIsStillUsed", "deprecation", "RedundantSuppression"})
 public class Task extends TaskCall<Boolean> {
     public Task(Callable<Boolean> aCall) {super(aCall);}
     
