@@ -1,8 +1,6 @@
 package com.jtool.code.task;
 
 import com.jtool.code.collection.Pair;
-import com.jtool.ssh.ServerSLURM;
-import com.jtool.ssh.ServerSSH;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,10 +59,6 @@ public class SerializableTask extends Task {
         switch (tKey) {
         case MERGE:
             return mergeTask(fromString(aTaskCreator, tValue[0]), fromString(aTaskCreator, tValue[1]));
-        case SLURM_CANCEL_ALL: case CANCEL_ALL:
-        case SLURM_CANCEL_THIS: case CANCEL_THIS:
-        case SLURM_SUBMIT_SYSTEM: case SLURM_SUBMIT_BASH: case SLURM_SUBMIT_SRUN: case SLURM_SUBMIT_SRUN_BASH:
-            return fromString_(aTaskCreator, (aTaskCreator instanceof ServerSLURM) ? (ServerSLURM)aTaskCreator : null, tKey, tValue);
         case SYSTEM:
         case PUT_DIR:     case GET_DIR:     case CLEAR_DIR:
         case PUT_DIR_PAR: case GET_DIR_PAR: case CLEAR_DIR_PAR:
@@ -74,33 +68,13 @@ public class SerializableTask extends Task {
         case PUT_WORKING_DIR:   case PUT_WORKING_DIR_PAR:
         case GET_WORKING_DIR:   case GET_WORKING_DIR_PAR:
         case CLEAR_WORKING_DIR: case CLEAR_WORKING_DIR_PAR:
-            return fromString_(aTaskCreator, (aTaskCreator instanceof ServerSLURM) ? ((ServerSLURM)aTaskCreator).ssh() : (aTaskCreator instanceof ServerSSH) ? (ServerSSH)aTaskCreator : null, tKey, tValue);
+            return fromString_(aTaskCreator, (aTaskCreator instanceof com.jtool.ssh.ServerSSH) ? (com.jtool.ssh.ServerSSH)aTaskCreator : null, tKey, tValue);
         case NULL: default:
             return null;
         }
     }
     
-    static Task fromString_(final Object aTaskCreator, ServerSLURM aSLURM, Type aKey, String... aValues) {
-        if (aSLURM == null) return null;
-        switch (aKey) {
-        case SLURM_CANCEL_ALL: case CANCEL_ALL:
-            return aSLURM.task_cancelAll();
-        case SLURM_CANCEL_THIS: case CANCEL_THIS:
-            return aSLURM.task_cancelThis();
-        case SLURM_SUBMIT_SYSTEM:
-            return aSLURM.task_submitSystem     (fromString(aTaskCreator, aValues[0]), fromString(aTaskCreator, aValues[1]), aValues[2], aValues[3], Integer.parseInt(aValues[4]), aValues[5]);
-        case SLURM_SUBMIT_BASH:
-            return aSLURM.task_submitBash       (fromString(aTaskCreator, aValues[0]), fromString(aTaskCreator, aValues[1]), aValues[2], aValues[3], Integer.parseInt(aValues[4]), aValues[5]);
-        case SLURM_SUBMIT_SRUN:
-            return aSLURM.task_submitSrun       (fromString(aTaskCreator, aValues[0]), fromString(aTaskCreator, aValues[1]), aValues[2], aValues[3], Integer.parseInt(aValues[4]), Integer.parseInt(aValues[5]), aValues[6]);
-        case SLURM_SUBMIT_SRUN_BASH:
-            return aSLURM.task_submitSrunBash   (fromString(aTaskCreator, aValues[0]), fromString(aTaskCreator, aValues[1]), aValues[2], aValues[3], Integer.parseInt(aValues[4]), Integer.parseInt(aValues[5]), aValues[6]);
-        default:
-            return null;
-        }
-    }
-    
-    static Task fromString_(final Object aTaskCreator, ServerSSH aSSH, Type aKey, String... aValues) {
+    static Task fromString_(final Object aTaskCreator, com.jtool.ssh.ServerSSH aSSH, Type aKey, String... aValues) {
         if (aSSH == null) return null;
         switch (aKey) {
         case SYSTEM:

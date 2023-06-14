@@ -1,10 +1,6 @@
 package com.jtool.ssh;
 
-import com.jtool.code.task.SerializableTask;
-import com.jtool.code.task.Task;
 import com.jtool.code.UT;
-import com.jtool.iofile.Decryptor;
-import com.jtool.iofile.Encryptor;
 import com.jtool.parallel.ExecutorsEX;
 import com.jtool.parallel.IExecutorEX;
 import com.jtool.system.SSHSystemExecutor;
@@ -74,12 +70,12 @@ public final class ServerSSH implements AutoCloseable {
     public void save(String aFilePath, String aKey) throws Exception {
         Map rJson = new LinkedHashMap();
         save(rJson);
-        Encryptor tEncryptor = new Encryptor(aKey);
+        com.jtool.iofile.Encryptor tEncryptor = new com.jtool.iofile.Encryptor(aKey);
         UT.IO.write(aFilePath, tEncryptor.getData((new JsonBuilder(rJson)).toString()));
     }
     @SuppressWarnings("rawtypes")
     public static ServerSSH load(String aFilePath, String aKey) throws Exception {
-        Decryptor tDecryptor = new Decryptor(aKey);
+        com.jtool.iofile.Decryptor tDecryptor = new com.jtool.iofile.Decryptor(aKey);
         Map tJson = (Map) (new JsonSlurper()).parseText(tDecryptor.get(UT.IO.readAllBytes(aFilePath)));
         return load(tJson);
     }
@@ -282,7 +278,7 @@ public final class ServerSSH implements AutoCloseable {
     
     /// 实用方法
     // 提交命令
-    public Task task_system(final String aCommand) {return new SerializableTask(() -> {system(aCommand); return true;}) {
+    public com.jtool.code.task.Task task_system(final String aCommand) {return new com.jtool.code.task.SerializableTask(() -> {system(aCommand); return true;}) {
         @Override public String toString() {return String.format("%s{%s}", Type.SYSTEM.name(), aCommand);}
     };}
     public void system(String aCommand) throws JSchException, IOException {
@@ -314,7 +310,7 @@ public final class ServerSSH implements AutoCloseable {
         return tChannelExec;
     }
     // 上传目录到服务器
-    public Task task_putDir(final String aDir) {return new SerializableTask(() -> {putDir(aDir); return true;}) {
+    public com.jtool.code.task.Task task_putDir(final String aDir) {return new com.jtool.code.task.SerializableTask(() -> {putDir(aDir); return true;}) {
         @Override public String toString() {return String.format("%s{%s}", Type.PUT_DIR.name(), aDir);}
     };}
     public void putDir(String aDir) throws JSchException, IOException, SftpException {
@@ -335,7 +331,7 @@ public final class ServerSSH implements AutoCloseable {
         tChannelSftp.disconnect();
     }
     // 从服务器下载目录
-    public Task task_getDir(final String aDir) {return new SerializableTask(() -> {getDir(aDir); return true;}) {
+    public com.jtool.code.task.Task task_getDir(final String aDir) {return new com.jtool.code.task.SerializableTask(() -> {getDir(aDir); return true;}) {
         @Override public String toString() {return String.format("%s{%s}", Type.GET_DIR.name(), aDir);}
     };}
     public void getDir(String aDir) throws JSchException, IOException {
@@ -356,7 +352,7 @@ public final class ServerSSH implements AutoCloseable {
         tChannelSftp.disconnect();
     }
     // 清空服务器的文件夹内容，但是不删除文件夹
-    public Task task_clearDir(final String aDir) {return new SerializableTask(() -> {clearDir(aDir); return true;}) {
+    public com.jtool.code.task.Task task_clearDir(final String aDir) {return new com.jtool.code.task.SerializableTask(() -> {clearDir(aDir); return true;}) {
         @Override public String toString() {return String.format("%s{%s}", Type.CLEAR_DIR.name(), aDir);}
     };}
     public void clearDir(String aDir) throws JSchException, IOException {
@@ -376,8 +372,8 @@ public final class ServerSSH implements AutoCloseable {
         tChannelSftp.disconnect();
     }
     // 递归删除远程服务器的文件夹
-    public Task task_rmdir(final String aDir) {return task_removeDir(aDir);}
-    public Task task_removeDir(final String aDir) {return new SerializableTask(() -> {rmdir(aDir); return true;}) {
+    public com.jtool.code.task.Task task_rmdir(final String aDir) {return task_removeDir(aDir);}
+    public com.jtool.code.task.Task task_removeDir(final String aDir) {return new com.jtool.code.task.SerializableTask(() -> {rmdir(aDir); return true;}) {
         @Override public String toString() {return String.format("%s{%s}", Type.REMOVE_DIR.name(), aDir);}
     };}
     public void rmdir(String aDir) throws JSchException, IOException {removeDir(aDir);}
@@ -399,8 +395,8 @@ public final class ServerSSH implements AutoCloseable {
         tChannelSftp.disconnect();
     }
     // 在远程服务器创建文件夹，支持跨文件夹创建文件夹。不同于一般的 mkdir，这里如果原本的目录存在会返回 true
-    public Task task_mkdir(final String aDir) {return task_makeDir(aDir);}
-    public Task task_makeDir(final String aDir) {return new SerializableTask(() -> {mkdir(aDir); return true;}) {
+    public com.jtool.code.task.Task task_mkdir(final String aDir) {return task_makeDir(aDir);}
+    public com.jtool.code.task.Task task_makeDir(final String aDir) {return new com.jtool.code.task.SerializableTask(() -> {mkdir(aDir); return true;}) {
         @Override public String toString() {return String.format("%s{%s}", Type.MAKE_DIR.name(), aDir);}
     };}
     public void mkdir(String aDir) throws JSchException, SftpException {makeDir(aDir);}
@@ -437,7 +433,7 @@ public final class ServerSSH implements AutoCloseable {
         return tOut;
     }
     // 上传单个文件
-    public Task task_putFile(final String aFilePath) {return new SerializableTask(() -> {putFile(aFilePath); return true;}) {
+    public com.jtool.code.task.Task task_putFile(final String aFilePath) {return new com.jtool.code.task.SerializableTask(() -> {putFile(aFilePath); return true;}) {
         @Override public String toString() {return String.format("%s{%s}", Type.PUT_FILE.name(), aFilePath);}
     };}
     public void putFile(String aFilePath) throws JSchException, SftpException, IOException {
@@ -462,7 +458,7 @@ public final class ServerSSH implements AutoCloseable {
         tChannelSftp.disconnect();
     }
     // 下载单个文件
-    public Task task_getFile(final String aFilePath) {return new SerializableTask(() -> {getFile(aFilePath); return true;}) {
+    public com.jtool.code.task.Task task_getFile(final String aFilePath) {return new com.jtool.code.task.SerializableTask(() -> {getFile(aFilePath); return true;}) {
         @Override public String toString() {return String.format("%s{%s}", Type.GET_FILE.name(), aFilePath);}
     };}
     public void getFile(String aFilePath) throws JSchException, SftpException, IOException {
@@ -627,7 +623,7 @@ public final class ServerSSH implements AutoCloseable {
     }
     
     // 上传目录到服务器的并发版本，理论会更快
-    public Task task_putDir(final String aDir, final int aThreadNumber) {return new SerializableTask(() -> {putDir(aDir, aThreadNumber); return true;}) {
+    public com.jtool.code.task.Task task_putDir(final String aDir, final int aThreadNumber) {return new com.jtool.code.task.SerializableTask(() -> {putDir(aDir, aThreadNumber); return true;}) {
         @Override public String toString() {return String.format("%s{%s:%d}", Type.PUT_DIR_PAR.name(), aDir, aThreadNumber);}
     };}
     public void putDir(String aDir, int aThreadNumber) throws JSchException, InterruptedException, IOException, SftpException {
@@ -650,7 +646,7 @@ public final class ServerSSH implements AutoCloseable {
         tSftpPool.awaitTermination();
     }
     // 从服务器下载目录的并发版本，理论会更快
-    public Task task_getDir(final String aDir, final int aThreadNumber) {return new SerializableTask(() -> {getDir(aDir, aThreadNumber); return true;}) {
+    public com.jtool.code.task.Task task_getDir(final String aDir, final int aThreadNumber) {return new com.jtool.code.task.SerializableTask(() -> {getDir(aDir, aThreadNumber); return true;}) {
         @Override public String toString() {return String.format("%s{%s:%d}", Type.GET_DIR_PAR.name(), aDir, aThreadNumber);}
     };}
     public void getDir(String aDir, int aThreadNumber) throws JSchException, InterruptedException, IOException {
@@ -673,7 +669,7 @@ public final class ServerSSH implements AutoCloseable {
         tSftpPool.awaitTermination();
     }
     // 清空服务器的文件夹内容的并发版本，理论会更快
-    public Task task_clearDir(final String aDir, final int aThreadNumber) {return new SerializableTask(() -> {clearDir(aDir, aThreadNumber); return true;}) {
+    public com.jtool.code.task.Task task_clearDir(final String aDir, final int aThreadNumber) {return new com.jtool.code.task.SerializableTask(() -> {clearDir(aDir, aThreadNumber); return true;}) {
         @Override public String toString() {return String.format("%s{%s:%d}", Type.CLEAR_DIR_PAR.name(), aDir, aThreadNumber);}
     };}
     public void clearDir(String aDir, int aThreadNumber) throws JSchException, InterruptedException, IOException {
@@ -695,10 +691,10 @@ public final class ServerSSH implements AutoCloseable {
         tSftpPool.awaitTermination();
     }
     // 上传整个工作目录到服务器，过滤掉 '.'，'_' 开头的文件和文件夹，只提供并行版本
-    public Task task_putWorkingDir() {return new SerializableTask(() -> {putWorkingDir(); return true;}) {
+    public com.jtool.code.task.Task task_putWorkingDir() {return new com.jtool.code.task.SerializableTask(() -> {putWorkingDir(); return true;}) {
         @Override public String toString() {return Type.PUT_WORKING_DIR.name();}
     };}
-    public Task task_putWorkingDir(final int aThreadNumber) {return new SerializableTask(() -> {putWorkingDir(aThreadNumber); return true;}) {
+    public com.jtool.code.task.Task task_putWorkingDir(final int aThreadNumber) {return new com.jtool.code.task.SerializableTask(() -> {putWorkingDir(aThreadNumber); return true;}) {
         @Override public String toString() {return String.format("%s{%d}", Type.PUT_WORKING_DIR_PAR.name(), aThreadNumber);}
     };}
     public void putWorkingDir() throws JSchException, InterruptedException, IOException, SftpException {putWorkingDir(4);}
@@ -724,10 +720,10 @@ public final class ServerSSH implements AutoCloseable {
         tSftpPool.awaitTermination();
     }
     // 从服务器下载整个工作目录到本地，过滤掉 '.'，'_' 开头的文件和文件夹，只提供并行版本
-    public Task task_getWorkingDir() {return new SerializableTask(() -> {getWorkingDir(); return true;}) {
+    public com.jtool.code.task.Task task_getWorkingDir() {return new com.jtool.code.task.SerializableTask(() -> {getWorkingDir(); return true;}) {
         @Override public String toString() {return Type.GET_WORKING_DIR.name();}
     };}
-    public Task task_getWorkingDir(final int aThreadNumber) {return new SerializableTask(() -> {getWorkingDir(aThreadNumber); return true;}) {
+    public com.jtool.code.task.Task task_getWorkingDir(final int aThreadNumber) {return new com.jtool.code.task.SerializableTask(() -> {getWorkingDir(aThreadNumber); return true;}) {
         @Override public String toString() {return String.format("%s{%d}", Type.GET_WORKING_DIR_PAR.name(), aThreadNumber);}
     };}
     public void getWorkingDir() throws JSchException, InterruptedException, IOException {getWorkingDir(4);}
@@ -753,10 +749,10 @@ public final class ServerSSH implements AutoCloseable {
         tSftpPool.awaitTermination();
     }
     // 清空整个远程服务器的工作区，注意会删除文件夹，等价于 rmdir(".");
-    public Task task_clearWorkingDir() {return new SerializableTask(() -> {clearWorkingDir(); return true;}) {
+    public com.jtool.code.task.Task task_clearWorkingDir() {return new com.jtool.code.task.SerializableTask(() -> {clearWorkingDir(); return true;}) {
         @Override public String toString() {return Type.CLEAR_WORKING_DIR.name();}
     };}
-    public Task task_clearWorkingDir(final int aThreadNumber) {return new SerializableTask(() -> {clearWorkingDir(aThreadNumber); return true;}) {
+    public com.jtool.code.task.Task task_clearWorkingDir(final int aThreadNumber) {return new com.jtool.code.task.SerializableTask(() -> {clearWorkingDir(aThreadNumber); return true;}) {
         @Override public String toString() {return String.format("%s{%d}", Type.CLEAR_WORKING_DIR_PAR.name(), aThreadNumber);}
     };}
     public void clearWorkingDir() throws JSchException, InterruptedException, IOException {clearWorkingDir(4);}
