@@ -106,10 +106,8 @@ public class Thermo extends AbstractMultiFrameTable<Table> {
         // 超过一个则写入文件夹，会自动分析路径名称创建合适的文件夹名称
         if (mTables.length > 1) {
             if (aFilePath.endsWith(".csv")) aFilePath = aFilePath.substring(0, aFilePath.length()-4);
-            if (UT.IO.makeDir(aFilePath)) {
-                for (int i = 0; i < mTables.length; ++i) {
-                    UT.IO.table2csv(mTables[i], aFilePath+"/thermo-"+i+".csv");
-                }
+            for (int i = 0; i < mTables.length; ++i) {
+                UT.IO.table2csv(mTables[i], aFilePath+"/thermo-"+i+".csv");
             }
             if (!aNoOutput) System.out.println("Thermos have been saved to the directory: "+aFilePath);
         } else

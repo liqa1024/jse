@@ -27,7 +27,7 @@ import java.util.concurrent.Callable;
  * <p> 不建议直接使用，现在对此基本停止维护，请改为使用更加成熟的 {@link SSHSystemExecutor} </p>
  */
 @ApiStatus.Obsolete
-@SuppressWarnings({"UnusedReturnValue", "BusyWait"})
+@SuppressWarnings({"UnusedReturnValue", "BusyWait", "deprecation"})
 public final class ServerSSH implements AutoCloseable {
     /** AutoClosable stuffs */
     @VisibleForTesting public void close() {shutdown();}
@@ -311,7 +311,7 @@ public final class ServerSSH implements AutoCloseable {
     public Task task_putDir(final String aDir) {return new SerializableTask(() -> {putDir(aDir); return true;}) {
         @Override public String toString() {return String.format("%s{%s}", Type.PUT_DIR.name(), aDir);}
     };}
-    public void putDir(String aDir) throws JSchException, IOException {
+    public void putDir(String aDir) throws JSchException, IOException, SftpException {
         if (mDead) throw new RuntimeException("Can NOT putDir from a Dead SSH.");
         // 会尝试一次重新连接
         if (!isConnecting()) connect();
@@ -322,7 +322,7 @@ public final class ServerSSH implements AutoCloseable {
         if (!aDir.isEmpty() && !aDir.endsWith("/")) aDir += "/";
         // 递归子文件夹传输文件
         (new RecurseLocalDir(this, aDir) {
-            @Override public boolean initRemoteDir(String aRemoteDir) {return makeDir_(tChannelSftp, aRemoteDir);}
+            @Override public void initRemoteDir(String aRemoteDir) throws SftpException {makeDir_(tChannelSftp, aRemoteDir);}
             @Override public void doFile(String aLocalFile, String aRemoteDir) {try {tChannelSftp.put(aLocalFile, aRemoteDir);} catch (SftpException ignored) {}}
         }).call();
         // 最后关闭通道
@@ -343,7 +343,7 @@ public final class ServerSSH implements AutoCloseable {
         if (!aDir.isEmpty() && !aDir.endsWith("/")) aDir += "/";
         // 递归子文件夹传输文件
         (new RecurseRemoteDir(this, aDir, tChannelSftp){
-            @Override public boolean initLocalDir(String aLocalDir) {return UT.IO.makeDir(aLocalDir);}
+            @Override public void initLocalDir(String aLocalDir) throws IOException {UT.IO.makeDir(aLocalDir);}
             @Override public void doFile(String aRemoteFile, String aLocalDir) {try {tChannelSftp.get(aRemoteFile, aLocalDir);} catch (SftpException ignored) {}}
         }).call();
         // 最后关闭通道
@@ -394,11 +394,11 @@ public final class ServerSSH implements AutoCloseable {
     }
     // 在远程服务器创建文件夹，支持跨文件夹创建文件夹。不同于一般的 mkdir，这里如果原本的目录存在会返回 true
     public Task task_mkdir(final String aDir) {return task_makeDir(aDir);}
-    public Task task_makeDir(final String aDir) {return new SerializableTask(() -> mkdir(aDir)) {
+    public Task task_makeDir(final String aDir) {return new SerializableTask(() -> {mkdir(aDir); return true;}) {
         @Override public String toString() {return String.format("%s{%s}", Type.MAKE_DIR.name(), aDir);}
     };}
-    public boolean mkdir(String aDir) throws JSchException {return makeDir(aDir);}
-    public boolean makeDir(String aDir) throws JSchException {
+    public void mkdir(String aDir) throws JSchException, SftpException {makeDir(aDir);}
+    public void makeDir(String aDir) throws JSchException, SftpException {
         if (mDead) throw new RuntimeException("Can NOT mkdir from a Dead SSH.");
         // 会尝试一次重新连接
         if (!isConnecting()) connect();
@@ -409,10 +409,9 @@ public final class ServerSSH implements AutoCloseable {
         if (!aDir.isEmpty() && !aDir.endsWith("/")) aDir += "/";
         String tRemoteDir = mRemoteWorkingDir+aDir;
         // 创建文件夹
-        boolean tSuc = makeDir_(tChannelSftp, tRemoteDir);
+        makeDir_(tChannelSftp, tRemoteDir);
         // 最后关闭通道
         tChannelSftp.disconnect();
-        return tSuc;
     }
     // 判断输入是否是远程服务器的文件夹
     public boolean isDir(String aDir) throws JSchException {
@@ -449,7 +448,7 @@ public final class ServerSSH implements AutoCloseable {
         int tEndIdx = aFilePath.lastIndexOf("/");
         if (tEndIdx > 0) { // 否则不用创建，认为 mRemoteWorkingDir 已经存在
             tRemoteDir += aFilePath.substring(0, tEndIdx+1);
-            if (!ServerSSH.makeDir_(tChannelSftp, tRemoteDir)) throw new IOException("Fail when create remote dir: " + tRemoteDir);
+            ServerSSH.makeDir_(tChannelSftp, tRemoteDir);
         }
         // 上传文件
         tChannelSftp.put(tLocalFile, tRemoteDir);
@@ -474,7 +473,7 @@ public final class ServerSSH implements AutoCloseable {
         int tEndIdx = aFilePath.lastIndexOf("/");
         if (tEndIdx > 0) { // 否则不用创建，认为 mLocalWorkingDir 已经存在
             tLocalDir += aFilePath.substring(0, tEndIdx+1);
-            if (!UT.IO.makeDir(tLocalDir)) throw new IOException("Fail when create local dir: "+tLocalDir);
+            UT.IO.makeDir(tLocalDir);
         }
         // 下载文件
         tChannelSftp.get(tRemoteDir, tLocalDir);
@@ -505,7 +504,7 @@ public final class ServerSSH implements AutoCloseable {
                 int tEndIdx = tFilePath.lastIndexOf("/");
                 if (tEndIdx > 0) { // 否则不用创建，认为 mRemoteWorkingDir 已经存在
                     tRemoteDir += tFilePath.substring(0, tEndIdx+1);
-                    if (!ServerSSH.makeDir_(tChannelSftp, tRemoteDir)) throw new IOException("Fail when create remote dir: " + tRemoteDir);
+                    ServerSSH.makeDir_(tChannelSftp, tRemoteDir);
                 }
                 // 上传文件
                 tChannelSftp.put(tLocalFile, tRemoteDir);
@@ -532,7 +531,7 @@ public final class ServerSSH implements AutoCloseable {
                 int tEndIdx = tFilePath.lastIndexOf("/");
                 if (tEndIdx > 0) { // 否则不用创建，认为 mLocalWorkingDir 已经存在
                     tLocalDir += tFilePath.substring(0, tEndIdx + 1);
-                    if (!UT.IO.makeDir(tLocalDir)) throw new IOException("Fail when create local dir: " + tLocalDir);
+                    UT.IO.makeDir(tLocalDir);
                 }
                 // 下载文件
                 tChannelSftp.get(tRemoteDir, tLocalDir);
@@ -558,7 +557,7 @@ public final class ServerSSH implements AutoCloseable {
                     int tEndIdx = tFilePath.lastIndexOf("/");
                     if (tEndIdx > 0) { // 否则不用创建，认为 mRemoteWorkingDir 已经存在
                         tRemoteDir += tFilePath.substring(0, tEndIdx+1);
-                        if (!ServerSSH.makeDir_(aChannelSftp, tRemoteDir)) throw new IOException("Fail when create remote dir: " + tRemoteDir);
+                        ServerSSH.makeDir_(aChannelSftp, tRemoteDir);
                     }
                     // 上传文件
                     aChannelSftp.put(tLocalFile, tRemoteDir);
@@ -587,7 +586,7 @@ public final class ServerSSH implements AutoCloseable {
                     int tEndIdx = tFilePath.lastIndexOf("/");
                     if (tEndIdx > 0) { // 否则不用创建，认为 mLocalWorkingDir 已经存在
                         tLocalDir += tFilePath.substring(0, tEndIdx + 1);
-                        if (!UT.IO.makeDir(tLocalDir)) throw new IOException("Fail when create local dir: " + tLocalDir);
+                        UT.IO.makeDir(tLocalDir);
                     }
                     // 下载文件
                     aChannelSftp.get(tRemoteDir, tLocalDir);
@@ -625,7 +624,7 @@ public final class ServerSSH implements AutoCloseable {
     public Task task_putDir(final String aDir, final int aThreadNumber) {return new SerializableTask(() -> {putDir(aDir, aThreadNumber); return true;}) {
         @Override public String toString() {return String.format("%s{%s:%d}", Type.PUT_DIR_PAR.name(), aDir, aThreadNumber);}
     };}
-    public void putDir(String aDir, int aThreadNumber) throws JSchException, InterruptedException, IOException {
+    public void putDir(String aDir, int aThreadNumber) throws JSchException, InterruptedException, IOException, SftpException {
         if (mDead) throw new RuntimeException("Can NOT putDir from a Dead SSH.");
         // 创建并发线程池，会自动尝试重新连接
         final SftpPool tSftpPool = new SftpPool(this, aThreadNumber);
@@ -636,7 +635,7 @@ public final class ServerSSH implements AutoCloseable {
         if (!aDir.isEmpty() && !aDir.endsWith("/")) aDir += "/";
         // 递归子文件夹传输文件
         (new RecurseLocalDir(this, aDir) {
-            @Override public boolean initRemoteDir(String aRemoteDir) {return makeDir_(tChannelSftp, aRemoteDir);}
+            @Override public void initRemoteDir(String aRemoteDir) throws SftpException {makeDir_(tChannelSftp, aRemoteDir);}
             @Override public void doFile(String aLocalFile, String aRemoteDir) {tSftpPool.submit(aChannelSftp -> {try {aChannelSftp.put(aLocalFile, aRemoteDir);} catch (SftpException ignored) {}});}
         }).call();
         // 最后关闭通道
@@ -659,7 +658,7 @@ public final class ServerSSH implements AutoCloseable {
         if (!aDir.isEmpty() && !aDir.endsWith("/")) aDir += "/";
         // 递归子文件夹传输文件
         (new RecurseRemoteDir(this, aDir, tChannelSftp){
-            @Override public boolean initLocalDir(String aLocalDir) {return UT.IO.makeDir(aLocalDir);}
+            @Override public void initLocalDir(String aLocalDir) throws IOException {UT.IO.makeDir(aLocalDir);}
             @Override public void doFile(String aRemoteFile, String aLocalDir) {tSftpPool.submit(aChannelSftp -> {try {aChannelSftp.get(aRemoteFile, aLocalDir);} catch (SftpException ignored) {}});}
         }).call();
         // 最后关闭通道
@@ -696,8 +695,8 @@ public final class ServerSSH implements AutoCloseable {
     public Task task_putWorkingDir(final int aThreadNumber) {return new SerializableTask(() -> {putWorkingDir(aThreadNumber); return true;}) {
         @Override public String toString() {return String.format("%s{%d}", Type.PUT_WORKING_DIR_PAR.name(), aThreadNumber);}
     };}
-    public void putWorkingDir() throws JSchException, InterruptedException, IOException {putWorkingDir(4);}
-    public void putWorkingDir(int aThreadNumber) throws JSchException, InterruptedException, IOException {
+    public void putWorkingDir() throws JSchException, InterruptedException, IOException, SftpException {putWorkingDir(4);}
+    public void putWorkingDir(int aThreadNumber) throws JSchException, InterruptedException, IOException, SftpException {
         if (mDead) throw new RuntimeException("Can NOT putWorkingDir from a Dead SSH.");
         // 如果本地目录是用户目录（获取工作目录失败）则禁止此操作
         if (UT.IO.samePath(mLocalWorkingDir, System.getProperty("user.home")) || mLocalWorkingDir.equals("/")) throw new IOException("Can NOT putWorkingDir when LocalWorkingDir is: \""+mLocalWorkingDir+"\"");
@@ -708,7 +707,7 @@ public final class ServerSSH implements AutoCloseable {
         tChannelSftp.connect();
         // 递归子文件夹传输文件
         (new RecurseLocalDir(this, "") {
-            @Override public boolean initRemoteDir(String aRemoteDir) {return makeDir_(tChannelSftp, aRemoteDir);}
+            @Override public void initRemoteDir(String aRemoteDir) throws SftpException {makeDir_(tChannelSftp, aRemoteDir);}
             @Override public void doFile(String aLocalFile, String aRemoteDir) {tSftpPool.submit(aChannelSftp -> {try {aChannelSftp.put(aLocalFile, aRemoteDir);} catch (SftpException ignored) {}});}
             @Override public boolean dirFilter(String aLocalDirName) {return !aLocalDirName.startsWith(".") && !aLocalDirName.startsWith("_");}
             @Override public boolean fileFilter(String aLocalFileName) {return !aLocalFileName.startsWith(".") && !aLocalFileName.startsWith("_");}
@@ -737,7 +736,7 @@ public final class ServerSSH implements AutoCloseable {
         tChannelSftp.connect();
         // 递归子文件夹传输文件
         (new RecurseRemoteDir(this, "", tChannelSftp) {
-            @Override public boolean initLocalDir(String aLocalDir) {return UT.IO.makeDir(aLocalDir);}
+            @Override public void initLocalDir(String aLocalDir) throws IOException {UT.IO.makeDir(aLocalDir);}
             @Override public void doFile(String aRemoteFile, String aLocalDir) {tSftpPool.submit(aChannelSftp -> {try {aChannelSftp.get(aRemoteFile, aLocalDir);} catch (SftpException ignored) {}});}
             @Override public boolean dirFilter(String aRemoteDirName) {return !aRemoteDirName.startsWith(".") && !aRemoteDirName.startsWith("_");}
             @Override public boolean fileFilter(String aRemoteFileName) {return !aRemoteFileName.startsWith(".") && !aRemoteFileName.startsWith("_");}
@@ -795,19 +794,17 @@ public final class ServerSSH implements AutoCloseable {
         return tAttrs != null && !tAttrs.isDir();
     }
     // 在远程服务器创建文件夹，实现跨文件夹创建文件夹。不同于一般的 mkdir，这里如果原本的目录存在会返回 true（主要是为了编程和使用的方便）
-    static boolean makeDir_(ChannelSftp aChannelSftp, String aDir) {
-        if (isDir_(aChannelSftp, aDir)) return true;
+    static void makeDir_(ChannelSftp aChannelSftp, String aDir) throws SftpException {
+        if (isDir_(aChannelSftp, aDir)) return;
         // 如果目录不存在，则需要创建目录
-        boolean tSuc = true;
         int tEndIdx = aDir.lastIndexOf("/", aDir.length()-2);
         if (tEndIdx > 0) {
             String tParent = aDir.substring(0, tEndIdx+1);
             // 递归创建上级目录
-            tSuc = makeDir_(aChannelSftp, tParent);
+            makeDir_(aChannelSftp, tParent);
         }
         // 创建当前目录
-        try {aChannelSftp.mkdir(aDir);} catch (SftpException e) {return false;}
-        return tSuc;
+        aChannelSftp.mkdir(aDir);
     }
     // 内部实用类，递归的对本地文件夹进行操作，会同时记录对应的远程目录，减少重复代码
     static class RecurseLocalDir implements Callable<Void> {
@@ -817,16 +814,17 @@ public final class ServerSSH implements AutoCloseable {
         public RecurseLocalDir(ServerSSH aSSH, String aDir) {this(aSSH, aDir, true);}
         public RecurseLocalDir(ServerSSH aSSH, String aDir, boolean aCheckDirValid) {mSSH = aSSH; mDir = aDir; mCheckDirValid = aCheckDirValid;}
         
-        @Override public Void call() throws IOException {
+        @Override public Void call() throws IOException, SftpException {
             String tLocalDir = mSSH.mLocalWorkingDir + mDir;
             if (!UT.IO.isDir(tLocalDir)) {if (mCheckDirValid) throw new IOException("Invalid Dir: " + mDir); return null;}
             doDir(tLocalDir, mSSH.mRemoteWorkingDir + mDir);
             return null;
         }
-        private void doDir(String aLocalDir, String aRemoteDir) {
+        private void doDir(String aLocalDir, String aRemoteDir) throws SftpException {
             String[] tLocalFiles = UT.IO.list(aLocalDir);
             if (tLocalFiles == null) return;
-            if (initRemoteDir(aRemoteDir)) for (String tName : tLocalFiles) {
+            initRemoteDir(aRemoteDir);
+            for (String tName : tLocalFiles) {
                 if (tName==null || tName.isEmpty() || tName.equals(".") || tName.equals("..")) continue;
                 String tFileOrDir = aLocalDir+tName;
                 if (UT.IO.isDir(tFileOrDir)) {if (dirFilter(tName)) doDir(tFileOrDir+"/", aRemoteDir+tName+"/");}
@@ -836,7 +834,7 @@ public final class ServerSSH implements AutoCloseable {
         }
         
         // stuff to override
-        public boolean initRemoteDir(String aRemoteDir) {return true;} // 开始遍历本地文件夹之前初始化对应的远程文件夹，返回 false 则表示此远程文件夹初始失败，不会进行后续的遍历此文件夹操作
+        public void initRemoteDir(String aRemoteDir) throws SftpException {/**/} // 开始遍历本地文件夹之前初始化对应的远程文件夹，返回 false 则表示此远程文件夹初始失败，不会进行后续的遍历此文件夹操作
         public void doFile(String aLocalFile, String aRemoteDir) {/**/} // 对于此本地文件夹内的文件进行操作
         public void doDirFinal(String aLocalDir, String aRemoteDir) {/**/} // 最后对此本地文件夹进行操作
         public boolean dirFilter(String aLocalDirName) {return true;} // 文件夹过滤器，返回 true 才会执行后续操作
@@ -858,11 +856,12 @@ public final class ServerSSH implements AutoCloseable {
             return null;
         }
         @SuppressWarnings("unchecked")
-        private void doDir(String aRemoteDir, String aLocalDir) {
+        private void doDir(String aRemoteDir, String aLocalDir) throws IOException {
             Vector<ChannelSftp.LsEntry> tRemoteFiles = null;
             try {tRemoteFiles = mChannelSftp.ls(aRemoteDir);} catch (SftpException ignored) {}
             if (tRemoteFiles == null) return;
-            if (initLocalDir(aLocalDir)) for (ChannelSftp.LsEntry tFile : tRemoteFiles) {
+            initLocalDir(aLocalDir);
+            for (ChannelSftp.LsEntry tFile : tRemoteFiles) {
                 String tName = tFile.getFilename();
                 if (tName==null || tName.isEmpty() || tName.equals(".") || tName.equals("..")) continue;
                 if (tFile.getAttrs().isDir()) {if (dirFilter(tName)) doDir(aRemoteDir+tName+"/", aLocalDir+tName+"/");}
@@ -872,7 +871,7 @@ public final class ServerSSH implements AutoCloseable {
         }
         
         // stuff to override
-        public boolean initLocalDir(String aLocalDir) {return true;} // 开始遍历远程文件夹之前初始化对应的本地文件夹，返回 false 则表示此本地文件夹初始失败，不会进行后续的遍历此文件夹操作
+        public void initLocalDir(String aLocalDir) throws IOException {/**/} // 开始遍历远程文件夹之前初始化对应的本地文件夹，返回 false 则表示此本地文件夹初始失败，不会进行后续的遍历此文件夹操作
         public void doFile(String aRemoteFile, String aLocalDir) {/**/} // 对于此远程文件夹内的文件进行操作
         public void doDirFinal(String aRemoteDir, String aLocalDir) {/**/} // 最后对此远程文件夹进行操作
         public boolean dirFilter(String aRemoteDirName) {return true;} // 文件夹过滤器，返回 true 才会执行后续操作

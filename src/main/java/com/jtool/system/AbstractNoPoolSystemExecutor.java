@@ -327,8 +327,8 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
     @Override public final ISystemExecutor setNoERROutput(boolean aNoERROutput) {mEXE.setNoERROutput(aNoERROutput); return this;}
     @Override public final boolean noERROutput() {return mEXE.noERROutput();}
     
-    @Override public final boolean makeDir(String aDir) {return mEXE.makeDir(aDir);}
-    @Override public final boolean removeDir(String aDir) {return mEXE.removeDir(aDir);}
+    @Override public final void makeDir(String aDir) throws Exception {mEXE.makeDir(aDir);}
+    @Override public final void removeDir(String aDir) throws Exception {mEXE.removeDir(aDir);}
     
     @Override public final int system(String aCommand                                           ) {return system(aCommand, defaultOutFilePath());}
     @Override public final int system(String aCommand,                      IHasIOFiles aIOFiles) {return system(aCommand, defaultOutFilePath(), aIOFiles);}

@@ -13,6 +13,7 @@ import java.security.MessageDigest;
  * @author liqa
  * 将 String 或者数据进行加密或者解密的类
  */
+@Deprecated
 public class Decryptor {
     private final Cipher mCipher;
     

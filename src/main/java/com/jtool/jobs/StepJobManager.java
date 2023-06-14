@@ -15,7 +15,6 @@ import static com.jtool.code.CS.WORKING_DIR;
  * <p> 每次运行都会执行个 then() 和其下一个 doJob()，然后会在下一个 then() 之前停止 </p>
  */
 public class StepJobManager {
-    private final String mWorkingDir;
     private final String mStepFile;
     private final List<Runnable> mJobList;
     private final List<Runnable> mConnectorList;
@@ -23,8 +22,8 @@ public class StepJobManager {
     
     public StepJobManager(String aUniqueName) {this(aUniqueName, -1);}
     public StepJobManager(String aUniqueName, int aForceStep) {
-        mWorkingDir = WORKING_DIR.replaceAll("%n", "SJM@"+aUniqueName);
-        mStepFile = mWorkingDir+"step";
+        String tWorkingDir = WORKING_DIR.replaceAll("%n", "SJM@" + aUniqueName);
+        mStepFile = tWorkingDir +"step";
         mJobList = new ArrayList<>();
         mConnectorList = new ArrayList<>();
         mForceStep = aForceStep;
@@ -48,8 +47,6 @@ public class StepJobManager {
         }
         /** 结束组装，并且开始任务 */
         public void finish(Runnable aFinishDo) throws Exception {
-            // 首先创建工作目录
-            UT.IO.makeDir(mWorkingDir);
             // 检测记录工作进度的文件是否存在，如果不存在说明需要从头开始
             int tStep;
             if (mForceStep >= 0) {

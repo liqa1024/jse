@@ -13,7 +13,6 @@ import static com.jtool.code.CS.WORKING_DIR;
  * <p> 长时任务的管理器，可以规范化超长时间的，可以中断的，任务的写法 </p>
  */
 public class LongTimeJobManager<T extends ILongTimeJobPool> {
-    private final String mWorkingDir;
     private final String mStepFile;
     private final String mJobPoolFile;
     private final String mShutdownFile;
@@ -30,10 +29,10 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> {
     /** 需要给定一个加载 TimeJobSupplier 的反序列化器 */
     public LongTimeJobManager(String aUniqueName, ILoader<T> aLongTimeJobPoolLoader) {this(aUniqueName, aLongTimeJobPoolLoader, false);}
     public LongTimeJobManager(String aUniqueName, ILoader<T> aLongTimeJobPoolLoader, boolean aWaitUntilDone) {
-        mWorkingDir = WORKING_DIR.replaceAll("%n", "LTJM@"+aUniqueName);
-        mStepFile = mWorkingDir+"step";
-        mJobPoolFile = mWorkingDir + "jobpool";
-        mShutdownFile = mWorkingDir + "shutdown";
+        String tWorkingDir = WORKING_DIR.replaceAll("%n", "LTJM@" + aUniqueName);
+        mStepFile = tWorkingDir +"step";
+        mJobPoolFile = tWorkingDir + "jobpool";
+        mShutdownFile = tWorkingDir + "shutdown";
         
         mJobPoolList = new ArrayList<>();
         mJobsDoneList = new ArrayList<>();
@@ -73,8 +72,6 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> {
         /** 结束组装，并且开始任务 */
         @SuppressWarnings({"BusyWait", "rawtypes"})
         public void finish(Runnable aFinishDo) throws Exception {
-            // 首先创建工作目录
-            UT.IO.makeDir(mWorkingDir);
             // 检测记录工作进度的文件是否存在，如果不存在说明需要从头开始
             int tStep;
             if (UT.IO.isFile(mStepFile)) {

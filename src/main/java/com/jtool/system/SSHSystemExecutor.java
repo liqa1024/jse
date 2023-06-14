@@ -1,14 +1,13 @@
 package com.jtool.system;
 
+import com.jcraft.jsch.ChannelExec;
 import com.jtool.code.UT;
 import com.jtool.iofile.ISavable;
 import com.jtool.ssh.ServerSSH;
-import com.jcraft.jsch.ChannelExec;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.util.Map;
 
 
@@ -26,16 +25,11 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
         mIOThreadNum = aIOThreadNum; mSSH = aSSH;
         // 需要初始化一下远程的工作目录，只需要创建目录即可，因为原本 ssh 设计时不是这样初始化的
         // 注意初始化失败时需要抛出异常并且执行关闭操作
-        boolean tSuc;
         try {
-            tSuc = mSSH.makeDir(".");
+            mSSH.makeDir(".");
         } catch (Exception e) {
             this.shutdown(); // 构造函数中不调用多态方法
             throw e;
-        }
-        if (!tSuc) {
-            this.shutdown(); // 构造函数中不调用多态方法
-            throw new IOException("Fail in Init makeDir");
         }
     }
     
@@ -105,23 +99,13 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
     
     
     /** SSH 需要使用 ssh 来创建，并且会本地同步创建 */
-    @Override public final boolean makeDir(String aDir) {
-        try {
-            return UT.IO.makeDir(aDir) && mSSH.makeDir(aDir);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    @Override public final void makeDir(String aDir) throws Exception {
+        UT.IO.makeDir(aDir);
+        mSSH.makeDir(aDir);
     }
-    @Override public final boolean removeDir(String aDir) {
-        try {
-            UT.IO.removeDir(aDir);
-            mSSH.removeDir(aDir);
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    @Override public final void removeDir(String aDir) throws Exception {
+        UT.IO.removeDir(aDir);
+        mSSH.removeDir(aDir);
     }
     
     /** 通过 ssh 直接执行命令 */

@@ -23,16 +23,8 @@ public class LocalSystemExecutor extends AbstractThreadPoolSystemExecutor {
     final Runtime mRuntime;
     
     /** 本地则在本地创建目录即可 */
-    @Override public final boolean makeDir(String aDir) {return UT.IO.makeDir(aDir);}
-    @Override public final boolean removeDir(String aDir) {
-        try {
-            UT.IO.removeDir(aDir);
-            return true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
+    @Override public final void makeDir(String aDir) throws IOException {UT.IO.makeDir(aDir);}
+    @Override public final void removeDir(String aDir) throws IOException {UT.IO.removeDir(aDir);}
     
     @Override public int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln) {
         // 对于空指令专门优化，不执行操作

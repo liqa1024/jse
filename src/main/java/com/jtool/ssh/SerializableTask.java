@@ -3,7 +3,6 @@ package com.jtool.ssh;
 import com.jtool.code.Pair;
 import com.jtool.code.Task;
 import com.jtool.code.UT;
-import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +12,8 @@ import java.util.concurrent.Callable;
  * @author liqa
  * <p> 可以序列化的 Task，目前仅用于 ssh 端的一些 task 的读写上 </p>
  */
-@ApiStatus.Obsolete
+@SuppressWarnings("DeprecatedIsStillUsed")
+@Deprecated
 public class SerializableTask extends Task {
     public SerializableTask(Callable<Boolean> aCall) {super(aCall);}
     /** override to get serialized string */

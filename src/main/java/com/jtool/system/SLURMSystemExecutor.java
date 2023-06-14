@@ -11,7 +11,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 
@@ -51,9 +50,13 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
         mSplitNodeScriptPath = SPLIT_NODE_SCRIPT_PATH.replaceAll("%n", mUniqueJobName);
         mBatchedScriptDir = BATCHED_SCRIPT_DIR.replaceAll("%n", mUniqueJobName);
         // 注意初始化失败时需要抛出异常并且执行关闭操作
-        if (!(this.makeDir(mWorkingDir) && this.makeDir(mBatchedScriptDir) && this.makeDir(DEFAULT_OUTFILE_DIR))) {
+        try {
+            this.makeDir(mWorkingDir);
+            this.makeDir(mBatchedScriptDir);
+            this.makeDir(DEFAULT_OUTFILE_DIR);
+        } catch (Exception e) {
             this.shutdown();
-            throw new IOException("Fail in Init makeDir");
+            throw e;
         }
         // 从资源文件中创建已经准备好的 SplitNodeScript
         try (BufferedReader tReader = UT.IO.toReader(UT.IO.getResource("slurm/splitNodeList.sh")); PrintStream tPS = UT.IO.toPrintStream(mSplitNodeScriptPath)) {
@@ -69,7 +72,7 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
     }
     @Override protected void shutdownFinal() {
         // 顺便删除自己的临时工作目录
-        removeDir(mWorkingDir);
+        try {removeDir(mWorkingDir);} catch (Exception ignored) {}
     }
     
     

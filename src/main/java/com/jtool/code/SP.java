@@ -7,8 +7,6 @@ import com.jtool.system.LocalSystemExecutor;
 import com.jtool.system.PowerShellSystemExecutor;
 import groovy.lang.*;
 import jep.*;
-import jep.python.PyCallable;
-import jep.python.PyObject;
 import org.codehaus.groovy.runtime.InvokerHelper;
 
 import java.io.IOException;
@@ -22,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.jtool.code.CS.IS_WINDOWS;
+import static com.jtool.code.CS.WORKING_DIR;
 import static org.codehaus.groovy.runtime.InvokerHelper.MAIN_METHOD_NAME;
 
 /**
@@ -196,8 +195,8 @@ public class SP {
         public synchronized static void importModule(String aModuleName) throws JepException {JEP_INTERP.exec("import "+aModuleName);}
         /** 创建 Python 实例，这里可以直接将类名当作函数调用即可 */
         public synchronized static Object newInstance(String aClassName, Object... aArgs) throws JepException {return invoke(aClassName, aArgs);}
-        /** 提供一个方便访问静态方法的 gateway，由于 jep 没有提供相关接口这里直接使用字符串的形式来实现 */
-        public synchronized static Object gateway(final String aClassName) throws JepException {
+        /** 提供一个方便直接访问类型的接口，由于 jep 没有提供相关接口这里直接使用字符串的形式来实现 */
+        public synchronized static Object getClass(final String aClassName) throws JepException {
             return new GroovyObject() {
                 @Override public Object invokeMethod(String name, Object args) throws JepException {return invoke(aClassName+"."+name, (Object[])args);}
                 @Override public Object getProperty(String propertyName) throws JepException {return getValue(aClassName+"."+propertyName);}
@@ -278,7 +277,6 @@ public class SP {
             }
             // 不提供强制仅下载源码的选项，因为很多下载的源码都不能编译成功
             // 设置目标路径
-            UT.IO.makeDir(PYPKG_DIR);
             rCommand.add("--dest"); rCommand.add(String.format("\"%s\"", PYPKG_DIR));
             // 设置需要的包名
             rCommand.add(String.format("\"%s\"", aRequirement));
@@ -336,50 +334,55 @@ public class SP {
                 System.out.println("JEP INIT INFO: jep source code downloading finished");
             }
             // 解压 jep 包到临时目录，如果已经存在则直接情况此目录
+            String tWorkingDir = WORKING_DIR.replaceAll("%n", "jep-src");
             try {
-                UT.IO.removeDir(".temp/jep-src/");
-                UT.IO.zip2dir(tJepZipPath, ".temp/jep-src/");
+                UT.IO.removeDir(tWorkingDir);
+                UT.IO.zip2dir(tJepZipPath, tWorkingDir);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
             // 安装 jep 包，这里直接通过 setup.py 来安装
             System.out.println("JEP INIT INFO: Installing jep from source code...");
             // 首先获取源码路径，这里直接检测 jep 开头的文件夹
-            String[] tList = UT.IO.list(".temp/jep-src/");
-            String tJepDirName = null;
+            String[] tList = UT.IO.list(tWorkingDir);
+            String tJepDir = null;
             for (String tName : tList) if (tName.contains("jep")) {
-                tJepDirName = tName;
+                tJepDir = tName;
             }
-            if (tJepDirName == null) throw new RuntimeException("JEP INIT ERROR: No Jep source code in .temp/jep-src/");
+            if (tJepDir == null) throw new RuntimeException("JEP INIT ERROR: No Jep source code in "+tWorkingDir);
+            tJepDir = tWorkingDir+tJepDir+"/";
             // 直接通过系统指令来编译 Jep 的库，windows 下使用 powershell 统一指令
             try (ISystemExecutor tEXE = IS_WINDOWS ? new PowerShellSystemExecutor() : new LocalSystemExecutor()) {
                 tEXE.setNoSTDOutput().setNoERROutput();
-                tEXE.system(String.format("cd .temp/jep-src/%s; python setup.py build", tJepDirName));
+                tEXE.system(String.format("cd %s; python setup.py build", tJepDir));
             }
             // 获取 build 目录下的 lib 文件夹
-            tList = UT.IO.list(String.format(".temp/jep-src/%s/build/", tJepDirName));
-            String tJepLibDirName = null;
+            String tJepBuildDir = tJepDir+"build/";
+            tList = UT.IO.list(tJepBuildDir);
+            String tJepLibDir = null;
             for (String tName : tList) if (tName.contains("lib")) {
-                tJepLibDirName = tName;
+                tJepLibDir = tName;
             }
-            if (tJepLibDirName == null) throw new RuntimeException(String.format("JEP BUILD ERROR: No Jep lib in .temp/jep-src/%s/build/", tJepDirName));
+            if (tJepLibDir == null) throw new RuntimeException("JEP BUILD ERROR: No Jep lib in "+tJepBuildDir);
+            tJepLibDir = tJepBuildDir+tJepLibDir+"/jep/";
             // 获取 lib 文件夹下的 lib 名称
-            tList = UT.IO.list(String.format(".temp/jep-src/%s/build/%s/jep/", tJepDirName, tJepLibDirName));
-            String tJepLibName = null;
+            tList = UT.IO.list(tJepLibDir);
+            String tJepLibPath = null;
             for (String tName : tList) if (tName.contains("jep") && (tName.endsWith(".dll") || tName.endsWith(".so") || tName.endsWith(".jnilib"))) {
-                tJepLibName = tName;
+                tJepLibPath = tName;
             }
-            if (tJepLibName == null) throw new RuntimeException(String.format("JEP BUILD ERROR: No Jep lib in .temp/jep-src/%s/build/%s/jep/", tJepDirName, tJepLibDirName));
+            if (tJepLibPath == null) throw new RuntimeException("JEP BUILD ERROR: No Jep lib in "+tJepLibDir);
+            tJepLibPath = tJepLibDir+tJepLibPath;
             try {
                 // 将 build 的输出拷贝到 lib 目录下
-                UT.IO.copy(String.format(".temp/jep-src/%s/build/%s/jep/%s", tJepDirName, tJepLibDirName, tJepLibName), JEPLIB_PATH);
+                UT.IO.copy(tJepLibPath, JEPLIB_PATH);
                 // 顺便拷贝生成的 python 脚本
-                tList = UT.IO.list(String.format(".temp/jep-src/%s/build/%s/jep/", tJepDirName, tJepLibDirName));
+                tList = UT.IO.list(tJepLibDir);
                 for (String tName : tList) if (tName.endsWith(".py")) {
-                    UT.IO.copy(String.format(".temp/jep-src/%s/build/%s/jep/%s", tJepDirName, tJepLibDirName, tName), JEPLIB_DIR+tName);
+                    UT.IO.copy(tJepLibDir+tName, JEPLIB_DIR+tName);
                 }
                 // 完事后移除临时解压得到的源码
-                UT.IO.removeDir(".temp/jep-src/");
+                UT.IO.removeDir(tWorkingDir);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

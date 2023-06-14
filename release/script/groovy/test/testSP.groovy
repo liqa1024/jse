@@ -27,10 +27,10 @@ import com.jtool.math.vector.Vectors
 
 
 /** ase 库的使用 */
-//SP.Python.installAse();
+SP.Python.installAse();
 SP.Python.runText('from ase import Atoms');
 double a = 3.55;
-def Atoms = SP.Python.gateway('Atoms');
+def Atoms = SP.Python.getClass('Atoms');
 def atoms = Atoms('Ni4',
                   [cell: [MathEX.Fast.sqrt(2.0) * a, MathEX.Fast.sqrt(2.0) * a, 1.0, 90, 90, 120] as double[],
                    pbc: [1, 1, 0] as double[],

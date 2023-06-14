@@ -17,10 +17,10 @@ import java.util.concurrent.Future;
 @SuppressWarnings("UnusedReturnValue")
 public interface ISystemExecutor extends IHasThreadPool {
     /** 用来处理各种程序因为输出的目录不存在而报错的情况，方便在任何位置直接创建目录或者移除目录 */
-    boolean makeDir(String aDir);
-    @VisibleForTesting default boolean mkdir(String aDir) {return makeDir(aDir);}
-    @ApiStatus.Internal boolean removeDir(String aDir);
-    @VisibleForTesting @ApiStatus.Internal default boolean rmdir(String aDir) {return removeDir(aDir);}
+    void makeDir(String aDir) throws Exception;
+    @VisibleForTesting default void mkdir(String aDir) throws Exception {makeDir(aDir);}
+    @ApiStatus.Internal void removeDir(String aDir) throws Exception;
+    @VisibleForTesting @ApiStatus.Internal default void rmdir(String aDir) throws Exception {removeDir(aDir);}
     
     /** 砍掉原本的 _NO 接口，改为直接设置是否输出到控制台 */
     default ISystemExecutor setNoSTDOutput() {return setNoSTDOutput(true);}
