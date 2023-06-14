@@ -10,7 +10,7 @@ public class WSLSystemExecutor extends LocalSystemExecutor {
     public WSLSystemExecutor(int aThreadNum) {super(aThreadNum);}
     public WSLSystemExecutor() {super();}
     
-    @Override public int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln) {
+    @Override protected int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln) {
         // 对于空指令专门优化，不执行操作
         if (aCommand == null || aCommand.isEmpty()) return -1;
         

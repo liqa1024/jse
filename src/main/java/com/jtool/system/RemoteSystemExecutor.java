@@ -25,7 +25,7 @@ public abstract class RemoteSystemExecutor extends AbstractThreadPoolSystemExecu
     
     
     /** 一般的远程 system 实现，需要上传和下载文件 */
-    @Override public final int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln, IHasIOFiles aIOFiles) {
+    @Override protected final int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln, IHasIOFiles aIOFiles) {
         try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {e.printStackTrace(); return -1;}
         int tExitValue = system_(aCommand, aPrintln);
         try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {e.printStackTrace(); return tExitValue==0 ? -1 : tExitValue;}
@@ -50,5 +50,5 @@ public abstract class RemoteSystemExecutor extends AbstractThreadPoolSystemExecu
     /** stuff to override */
     protected abstract void putFiles(Iterable<String> aFiles) throws Exception;
     protected abstract void getFiles(Iterable<String> aFiles) throws Exception;
-    public abstract int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln);
+    protected abstract int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln);
 }

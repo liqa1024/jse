@@ -3,7 +3,7 @@ package com.jtool.system;
 import com.jcraft.jsch.ChannelExec;
 import com.jtool.code.UT;
 import com.jtool.iofile.ISavable;
-import com.jtool.ssh.ServerSSH;
+import com.jtool.ssh.SSHCore;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,11 +16,9 @@ import java.util.Map;
  * <p> 在 ssh 服务器上执行指令的简单实现 </p>
  */
 public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable {
-    @Deprecated public static SSHSystemExecutor get_(int aThreadNum, ServerSSH aSSH) throws Exception {return new SSHSystemExecutor(aThreadNum, 2, aSSH);}
-    
-    final ServerSSH mSSH;
+    final SSHCore mSSH;
     int mIOThreadNum;
-    SSHSystemExecutor(int aThreadNum, int aIOThreadNum, ServerSSH aSSH) throws Exception {
+    SSHSystemExecutor(int aThreadNum, int aIOThreadNum, SSHCore aSSH) throws Exception {
         super(aThreadNum>0 ? newPool(aThreadNum) : SERIAL_EXECUTOR);
         mIOThreadNum = aIOThreadNum; mSSH = aSSH;
         // 需要初始化一下远程的工作目录，只需要创建目录即可，因为原本 ssh 设计时不是这样初始化的
@@ -32,7 +30,6 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
             throw e;
         }
     }
-    
     
     
     /** 保存参数部分，和输入格式完全一直 */
@@ -88,9 +85,9 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
      * "RemoteWorkingDir" 未选定时使用 ssh 登录所在的路径
      * @author liqa
      */
-    public SSHSystemExecutor(                                  Map<?, ?> aArgs) throws Exception {this(getThreadNum(aArgs), getIOThreadNum(aArgs), ServerSSH.load(aArgs));}
-    public SSHSystemExecutor(int aThreadNum,                   Map<?, ?> aArgs) throws Exception {this(aThreadNum, getIOThreadNum(aArgs), ServerSSH.load(aArgs));}
-    public SSHSystemExecutor(int aThreadNum, int aIOThreadNum, Map<?, ?> aArgs) throws Exception {this(aThreadNum, aIOThreadNum, ServerSSH.load(aArgs));}
+    public SSHSystemExecutor(                                  Map<?, ?> aArgs) throws Exception {this(getThreadNum(aArgs), getIOThreadNum(aArgs), SSHCore.load(aArgs));}
+    public SSHSystemExecutor(int aThreadNum,                   Map<?, ?> aArgs) throws Exception {this(aThreadNum, getIOThreadNum(aArgs), SSHCore.load(aArgs));}
+    public SSHSystemExecutor(int aThreadNum, int aIOThreadNum, Map<?, ?> aArgs) throws Exception {this(aThreadNum, aIOThreadNum, SSHCore.load(aArgs));}
     
     public final static String[] THREAD_NUMBER_KEYS = {"ThreadNumber", "threadnumber", "ThreadNum", "threadnum", "nThreads", "nthreads", "n"};
     public final static String[] IO_THREAD_NUMBER_KEYS = {"IOThreadNumber", "iothreadnumber", "IOThreadNum", "iothreadnum", "ion"};
@@ -110,7 +107,7 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
     
     /** 通过 ssh 直接执行命令 */
     @SuppressWarnings("BusyWait")
-    @Override public int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln) {
+    @Override protected int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln) {
         if (isShutdown()) throw new RuntimeException("Can NOT do system from this Dead Executor.");
         // 对于空指令专门优化，不执行操作
         if (aCommand == null || aCommand.isEmpty()) return -1;

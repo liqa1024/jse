@@ -8,3 +8,6 @@ println(mat);
 println(mat.refSlicer().diag());
 println(mat.refSlicer().diag(1));
 println(mat.refSlicer().diag(-1));
+
+println(mat.opt().meanOfRows());
+println(mat.opt().meanOfCols());

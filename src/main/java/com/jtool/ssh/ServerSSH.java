@@ -11,7 +11,6 @@ import com.jtool.system.SSHSystemExecutor;
 import com.jcraft.jsch.*;
 import groovy.json.JsonBuilder;
 import groovy.json.JsonSlurper;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.BufferedReader;
@@ -31,8 +30,8 @@ import java.util.concurrent.Callable;
  * <p>
  * <p> 不建议直接使用，现在对此基本停止维护，请改为使用更加成熟的 {@link SSHSystemExecutor} </p>
  */
-@ApiStatus.Obsolete
-@SuppressWarnings({"UnusedReturnValue", "BusyWait", "deprecation"})
+@Deprecated
+@SuppressWarnings({"UnusedReturnValue", "BusyWait"})
 public final class ServerSSH implements AutoCloseable {
     /** AutoClosable stuffs */
     @VisibleForTesting public void close() {shutdown();}
@@ -938,8 +937,6 @@ public final class ServerSSH implements AutoCloseable {
             synchronized (mTaskList) {mTaskList.addLast(aSftpTask);}
         }
     }
-    // 由于一个 channel 只能执行一个指令，这里直接使用线程池来实现 system 的并发，接口和 SystemThreadPool 保持一致
-    @Deprecated public SSHSystemExecutor pool(int aThreadNumber) throws Exception {if (mDead) throw new RuntimeException("Can NOT get pool from a Dead SSH."); return SSHSystemExecutor.get_(aThreadNumber, this);}
     
     // 手动加载 UT，会自动重新设置工作目录，会在调用静态函数 get 或者 load 时自动加载保证路径的正确性
     static {UT.IO.init();}

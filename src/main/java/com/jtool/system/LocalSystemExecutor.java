@@ -26,7 +26,7 @@ public class LocalSystemExecutor extends AbstractThreadPoolSystemExecutor {
     @Override public final void makeDir(String aDir) throws IOException {UT.IO.makeDir(aDir);}
     @Override public final void removeDir(String aDir) throws IOException {UT.IO.removeDir(aDir);}
     
-    @Override public int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln) {
+    @Override protected int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln) {
         // 对于空指令专门优化，不执行操作
         if (aCommand == null || aCommand.isEmpty()) return -1;
         

@@ -10,6 +10,7 @@ import com.jtool.iofile.Decryptor;
 import com.jtool.iofile.Encryptor;
 import groovy.json.JsonBuilder;
 import groovy.json.JsonSlurper;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,8 +27,8 @@ import java.util.concurrent.TimeUnit;
  * <p> 与 SSH 不同，可以把本身当作一个 SystemThreadPool </p>
  * <p> 相比 SSH 多一个 mMaxJobNumber 参数限制同时运行的任务数 </p>
  */
-@Deprecated
-@SuppressWarnings({"UnusedReturnValue", "BusyWait", "deprecation", "RedundantSuppression"})
+@Deprecated @ApiStatus.ScheduledForRemoval
+@SuppressWarnings({"UnusedReturnValue", "BusyWait"})
 public final class ServerSLURM {
     static final int DEFAULT_TOLERANT = 3;
     

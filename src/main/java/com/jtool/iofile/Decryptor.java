@@ -14,7 +14,6 @@ import java.security.MessageDigest;
  * 将 String 或者数据进行加密或者解密的类
  */
 @Deprecated
-@SuppressWarnings("DeprecatedIsStillUsed")
 public class Decryptor {
     private final Cipher mCipher;
     

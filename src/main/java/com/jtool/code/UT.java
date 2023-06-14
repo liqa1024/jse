@@ -640,10 +640,10 @@ public class UT {
         @VisibleForTesting public static void rmdir(String aDir) throws IOException {removeDir(aDir);}
         public static void removeDir(String aDir) throws IOException {
             if (!aDir.isEmpty() && !aDir.endsWith("/") && !aDir.endsWith("\\")) aDir += "/";
-            if (!exists(aDir)) return;
+            if (!isDir(aDir)) return;
             removeDir_(aDir);
         }
-        public static void removeDir_(String aDir) throws IOException {
+        private static void removeDir_(String aDir) throws IOException {
             String[] tFiles = UT.IO.list(aDir);
             if (tFiles == null) return;
             for (String tName : tFiles) {
