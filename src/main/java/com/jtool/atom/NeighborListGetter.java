@@ -4,6 +4,7 @@ import com.jtool.math.MathEX;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -143,104 +144,192 @@ public class NeighborListGetter {
     
     
     
-    @FunctionalInterface public interface IXYZDo {void run(double aX, double aY, double aZ);}
+    @FunctionalInterface public interface IXYZIdxDisDo {void run(double aX, double aY, double aZ, int aIdx, double aDis);}
     @FunctionalInterface public interface IDisDo {void run(double aDis);}
     
     /**
      * 现在统一改为 for-each 的形式，首先提供一个完全通用的方法遍历所有的近邻；
-     * 注意输入的 aRMaxNeed 只保证在这个半径内所有近邻都会遍历到，不会保证这个半径外的原子不会被遍历
-     * @author liqa
-     * @param aIDX 中心粒子的 index
-     * @param aRMaxNeed 需要的近邻半径
-     * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子
-     */
-    public void forEachNeighbor(final int aIDX, double aRMaxNeed, final boolean aHalf, final IXYZDo aXYZDo) {
-        if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
-        
-        getProperLinkedCell(aRMaxNeed).forEachNeighbor(mAtomDataXYZ_IDX[aIDX].mXYZ, (xyz_idx, link) -> {
-            if (link.isMirror()) {
-                // 如果是镜像的，则会保留相同的 idx 的情况
-                if (aHalf) {
-                    if (xyz_idx.mIDX <= aIDX) {
-                        XYZ tDir = link.direction();
-                        aXYZDo.run(xyz_idx.mXYZ.mX+tDir.mX, xyz_idx.mXYZ.mY+tDir.mY, xyz_idx.mXYZ.mZ+tDir.mZ);
-                    }
-                } else {
-                    XYZ tDir = link.direction();
-                    aXYZDo.run(xyz_idx.mXYZ.mX+tDir.mX, xyz_idx.mXYZ.mY+tDir.mY, xyz_idx.mXYZ.mZ+tDir.mZ);
-                }
-            } else {
-                // 如果不是镜像的，则不会保留相同的 idx 的情况
-                if (aHalf) {
-                    if (xyz_idx.mIDX <  aIDX) aXYZDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ);
-                } else {
-                    if (xyz_idx.mIDX != aIDX) aXYZDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ);
-                }
-            }
-        });
-    }
-    public void forEachNeighbor(XYZ aXYZ, double aRMaxNeed, final IXYZDo aXYZDo) {
-        if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
-        
-        getProperLinkedCell(aRMaxNeed).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
-            if (link.isMirror()) {
-                XYZ tDir = link.direction();
-                aXYZDo.run(xyz_idx.mXYZ.mX+tDir.mX, xyz_idx.mXYZ.mY+tDir.mY, xyz_idx.mXYZ.mZ+tDir.mZ);
-            } else {
-                aXYZDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ);
-            }
-        });
-    }
-
-    
-    /**
-     * 现在统一改为 for-each 的形式，再提供专门的遍历近邻距离的方法；
-     * 注意这里输入的 aRMax 会保证完全遍历所有在这个距离内的粒子，并且不会遍历到超过此距离的粒子
+     * 这里输入的 aRMax 会保证完全遍历所有在这个距离内的粒子，并且不会遍历到超过此距离的粒子
      * @author liqa
      * @param aIDX 中心粒子的 index
      * @param aRMax 最大的近邻半径
      * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子
      */
-    public void forEachNeighborDis(final int aIDX, final double aRMax, final boolean aHalf, final IDisDo aDisDo) {
+    public void forEachNeighbor(final int aIDX, final double aRMax, final boolean aHalf, final IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
         final XYZ aXYZ = mAtomDataXYZ_IDX[aIDX].mXYZ;
-        
         getProperLinkedCell(aRMax).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
             if (link.isMirror()) {
                 // 如果是镜像的，则会保留相同的 idx 的情况
                 if (aHalf) {
                     if (xyz_idx.mIDX <= aIDX) {
-                        double tDis = link.distance(aXYZ, xyz_idx.mXYZ);
-                        if (tDis < aRMax) aDisDo.run(tDis);
+                        XYZ tDir = link.direction();
+                        double tX = xyz_idx.mXYZ.mX + tDir.mX;
+                        double tY = xyz_idx.mXYZ.mY + tDir.mY;
+                        double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
+                        double tDis = aXYZ.distance(tX, tY, tZ);
+                        if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
                     }
                 } else {
-                    double tDis = link.distance(aXYZ, xyz_idx.mXYZ);
-                    if (tDis < aRMax) aDisDo.run(tDis);
+                    XYZ tDir = link.direction();
+                    double tX = xyz_idx.mXYZ.mX + tDir.mX;
+                    double tY = xyz_idx.mXYZ.mY + tDir.mY;
+                    double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
+                    double tDis = aXYZ.distance(tX, tY, tZ);
+                    if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
                 }
             } else {
                 // 如果不是镜像的，则不会保留相同的 idx 的情况
                 if (aHalf) {
-                    if (xyz_idx.mIDX < aIDX) {
+                    if (xyz_idx.mIDX <  aIDX) {
                         double tDis = aXYZ.distance(xyz_idx.mXYZ);
-                        if (tDis < aRMax) aDisDo.run(tDis);
+                        if (tDis < aRMax) aXYZIdxDisDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ, xyz_idx.mIDX, tDis);
                     }
                 } else {
                     if (xyz_idx.mIDX != aIDX) {
                         double tDis = aXYZ.distance(xyz_idx.mXYZ);
-                        if (tDis < aRMax) aDisDo.run(tDis);
+                        if (tDis < aRMax) aXYZIdxDisDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ, xyz_idx.mIDX, tDis);
                     }
                 }
             }
         });
     }
-    public void forEachNeighborDis(final XYZ aXYZ, final double aRMax, final IDisDo aDisDo) {
+    public void forEachNeighbor(final XYZ aXYZ, final double aRMax, final IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
         getProperLinkedCell(aRMax).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
-            double tDis = link.isMirror() ? link.distance(aXYZ, xyz_idx.mXYZ) : aXYZ.distance(xyz_idx.mXYZ);
-            if (tDis < aRMax) aDisDo.run(tDis);
+            if (link.isMirror()) {
+                XYZ tDir = link.direction();
+                double tX = xyz_idx.mXYZ.mX + tDir.mX;
+                double tY = xyz_idx.mXYZ.mY + tDir.mY;
+                double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
+                double tDis = aXYZ.distance(tX, tY, tZ);
+                if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
+            } else {
+                double tDis = aXYZ.distance(xyz_idx.mXYZ);
+                if (tDis < aRMax) aXYZIdxDisDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ, xyz_idx.mIDX, tDis);
+            }
         });
     }
     
+    /**
+     * 现在统一改为 for-each 的形式，再提供使用曼哈顿距离作为判据的方法；
+     * 这里输入的 aRMaxMHT 会保证完全遍历所有在这个距离内的粒子，并且不会遍历到超过此距离的粒子（曼哈顿距离）
+     * <p>
+     * MHT: ManHaTtan distance
+     * @author liqa
+     * @param aIDX 中心粒子的 index
+     * @param aRMaxMHT 最大的近邻半径，曼哈顿距离
+     * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子
+     */
+    public void forEachNeighborMHT(final int aIDX, final double aRMaxMHT, final boolean aHalf, final IXYZIdxDisDo aXYZIdxDisDo) {
+        if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
+        
+        final XYZ aXYZ = mAtomDataXYZ_IDX[aIDX].mXYZ;
+        getProperLinkedCell(aRMaxMHT).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
+            if (link.isMirror()) {
+                // 如果是镜像的，则会保留相同的 idx 的情况
+                if (aHalf) {
+                    if (xyz_idx.mIDX <= aIDX) {
+                        XYZ tDir = link.direction();
+                        double tX = xyz_idx.mXYZ.mX + tDir.mX;
+                        double tY = xyz_idx.mXYZ.mY + tDir.mY;
+                        double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
+                        double tDisMHT = aXYZ.distanceMHT(tX, tY, tZ);
+                        if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDisMHT);
+                    }
+                } else {
+                    XYZ tDir = link.direction();
+                    double tX = xyz_idx.mXYZ.mX + tDir.mX;
+                    double tY = xyz_idx.mXYZ.mY + tDir.mY;
+                    double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
+                    double tDisMHT = aXYZ.distanceMHT(tX, tY, tZ);
+                    if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDisMHT);
+                }
+            } else {
+                // 如果不是镜像的，则不会保留相同的 idx 的情况
+                if (aHalf) {
+                    if (xyz_idx.mIDX < aIDX) {
+                        double tDisMHT = aXYZ.distanceMHT(xyz_idx.mXYZ);
+                        if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ, xyz_idx.mIDX, tDisMHT);
+                    }
+                } else {
+                    if (xyz_idx.mIDX != aIDX) {
+                        double tDisMHT = aXYZ.distanceMHT(xyz_idx.mXYZ);
+                        if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ, xyz_idx.mIDX, tDisMHT);
+                    }
+                }
+            }
+        });
+    }
+    public void forEachNeighborMHT(final XYZ aXYZ, final double aRMaxMHT, final IXYZIdxDisDo aXYZIdxDisDo) {
+        if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
+        
+        getProperLinkedCell(aRMaxMHT).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
+            if (link.isMirror()) {
+                XYZ tDir = link.direction();
+                double tX = xyz_idx.mXYZ.mX + tDir.mX;
+                double tY = xyz_idx.mXYZ.mY + tDir.mY;
+                double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
+                double tDisMHT = aXYZ.distanceMHT(tX, tY, tZ);
+                if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDisMHT);
+            } else {
+                double tDisMHT = aXYZ.distanceMHT(xyz_idx.mXYZ);
+                if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ, xyz_idx.mIDX, tDisMHT);
+            }
+        });
+    }
+    
+    
+    
+    /**
+     * 现在统一改为 for-each 的形式，提供一个限制近邻数目的方法，
+     * 会自适应调整需要的半径，尽量避免临时变量的创建
+     * <p>
+     * 固定原子数目时不会进行 Half 判断，为了保证实际遍历的原子数目永远为输入的数目
+     * @author liqa
+     * @param aIDX 中心粒子的 index
+     * @param aNN Neighbor list Number，需要的近邻数目
+     */
+    public void forEachNeighborNN(final int aIDX, final int aNN, double aRMaxBegin, final IXYZIdxDisDo aXYZIdxDisDo) {
+        if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
+        
+        final XYZ aXYZ = mAtomDataXYZ_IDX[aIDX].mXYZ;
+        final NavigableMap<Double, XYZ_IDX> rNeighborList = new TreeMap<>(); // 考虑到大部分都不会是镜像的，因此这样更加简洁
+        double tRMax = aRMaxBegin;
+        while (rNeighborList.size() < aNN) {
+            // 构造前先清空
+            rNeighborList.clear();
+            // 获取对应的 linkedCell，改用最大的距离作为实际的 RMax
+            LinkedCell<XYZ_IDX> tLinkedCell = getProperLinkedCell(tRMax);
+            final double fRMax = tLinkedCell.mMaxDis;
+            // 计算下一步需要的 tRMax，这样设置保证下一次搜寻一定 fRMax 会更大
+            tRMax = fRMax * mCellStep;
+            // 遍历近邻添加到 rNeighborList，注意必须要小于 fRMax 才是合法的
+            tLinkedCell.forEachNeighbor(aXYZ, (xyz_idx, link) -> {
+                if (link.isMirror()) {
+                    // 如果是镜像的，则会保留相同的 idx 的情况
+                    XYZ tXYZ = xyz_idx.mXYZ.plus(link.direction());
+                    double tDis = aXYZ.distance(tXYZ);
+                    if (tDis < fRMax) rNeighborList.put(tDis, new XYZ_IDX(tXYZ, xyz_idx.mIDX));
+                } else {
+                    // 如果不是镜像的，则不会保留相同的 idx 的情况
+                    if (xyz_idx.mIDX != aIDX) {
+                        double tDis = aXYZ.distance(xyz_idx.mXYZ);
+                        if (tDis < fRMax) rNeighborList.put(tDis, xyz_idx);
+                    }
+                }
+                // 如果超过了需要的大小则移除最后的元素，可以降低插入的复杂度
+                if (rNeighborList.size() > aNN) {
+                    rNeighborList.pollLastEntry();
+                }
+            });
+        }
+        // 如果达到要求则直接遍历
+        for (Map.Entry<Double, XYZ_IDX> tEntry : rNeighborList.entrySet()) {
+            XYZ_IDX tXYZIdx = tEntry.getValue();
+            aXYZIdxDisDo.run(tXYZIdx.mXYZ.mX, tXYZIdx.mXYZ.mY, tXYZIdx.mXYZ.mZ, tXYZIdx.mIDX, tEntry.getKey());
+        }
+    }
 }

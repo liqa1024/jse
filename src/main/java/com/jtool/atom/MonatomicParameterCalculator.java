@@ -1,7 +1,12 @@
 package com.jtool.atom;
 
+import com.jtool.math.ComplexDouble;
 import com.jtool.math.function.FixBoundFunc1;
+import com.jtool.math.function.Func1;
 import com.jtool.math.function.IFunc1;
+import com.jtool.math.function.IZeroBoundFunc1;
+import com.jtool.math.matrix.IMatrix;
+import com.jtool.math.matrix.Matrices;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.Vectors;
 import com.jtool.parallel.AbstractHasThreadPool;
@@ -143,7 +148,7 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(mAtomNum, (i, threadID) -> {
-            mNL.forEachNeighborDis(i, aRMax - dr*0.5, true, dis -> {
+            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dis) -> {
                 int tIdx = (int) Math.ceil((dis - dr*0.5) / dr);
                 if (tIdx > 0 && tIdx < aN) dn[threadID].increment_(tIdx);
             });
@@ -182,7 +187,7 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(aAtomDataXYZ.length, (i, threadID) -> {
-            mNL.forEachNeighborDis(aAtomDataXYZ[i], aRMax - dr*0.5, dis -> {
+            mNL.forEachNeighbor(aAtomDataXYZ[i], aRMax - dr*0.5, (x, y, z, idx, dis) -> {
                 int tIdx = (int) Math.ceil((dis - dr*0.5) / dr);
                 if (tIdx > 0 && tIdx < aN) dn[threadID].increment_(tIdx);
             });
@@ -221,19 +226,19 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
         final double dr = aRMax/aN;
-        // 需要增加一个额外的偏移保证外部边界的统计正确性
-        final double tRShift = dr * aSigmaMul * Func.G_RANG;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
         final IFunc1[] dn = new IFunc1[nThreads()];
         for (int i = 0; i < dn.length; ++i) dn[i] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
         
         // 并行需要线程数个独立的 DeltaG
-        final IFunc1[] tDeltaG = new IFunc1[nThreads()];
-        for (int i = 0; i < tDeltaG.length; ++i) tDeltaG[i] = Func.deltaG(dr*aSigmaMul, 0.0, aSigmaMul);
+        final IZeroBoundFunc1[] tDeltaG = new IZeroBoundFunc1[nThreads()];
+        for (int i = 0; i < tDeltaG.length; ++i) tDeltaG[i] = Func1.deltaG(dr*aSigmaMul, 0.0, aSigmaMul);
+        // 需要增加一个额外的偏移保证外部边界的统计正确性
+        final double tRShift = tDeltaG[0].zeroBoundR();
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(mAtomNum, (i, threadID) -> {
-            mNL.forEachNeighborDis(i, aRMax+tRShift, true, dis -> {
+            mNL.forEachNeighbor(i, aRMax+tRShift, true, (x, y, z, idx, dis) -> {
                 tDeltaG[threadID].setX0(dis);
                 dn[threadID].plus2this(tDeltaG[threadID]);
             });
@@ -259,19 +264,19 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
         final double dr = aRMax/aN;
-        // 需要增加一个额外的偏移保证外部边界的统计正确性
-        final double tRShift = dr * aSigmaMul * Func.G_RANG;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
         final IFunc1[] dn = new IFunc1[nThreads()];
         for (int i = 0; i < dn.length; ++i) dn[i] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
         
         // 并行需要线程数个独立的 DeltaG
-        final IFunc1[] tDeltaG = new IFunc1[nThreads()];
-        for (int i = 0; i < tDeltaG.length; ++i) tDeltaG[i] = Func.deltaG(dr*aSigmaMul, 0.0, aSigmaMul);
+        final IZeroBoundFunc1[] tDeltaG = new IZeroBoundFunc1[nThreads()];
+        for (int i = 0; i < tDeltaG.length; ++i) tDeltaG[i] = Func1.deltaG(dr*aSigmaMul, 0.0, aSigmaMul);
+        // 需要增加一个额外的偏移保证外部边界的统计正确性
+        final double tRShift = tDeltaG[0].zeroBoundR();
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(aAtomDataXYZ.length, (i, threadID) -> {
-            mNL.forEachNeighborDis(aAtomDataXYZ[i], aRMax+tRShift, dis -> {
+            mNL.forEachNeighbor(aAtomDataXYZ[i], aRMax+tRShift, (x, y, z, idx, dis) -> {
                 tDeltaG[threadID].setX0(dis);
                 dn[threadID].plus2this(tDeltaG[threadID]);
             });
@@ -313,33 +318,26 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
         
         final double dq = (aQMax-aQMin)/aN;
         // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
-        final IVector[] tHq = new IVector[nThreads()];
-        for (int i = 0; i < tHq.length; ++i) tHq[i] = Vectors.zeros(aN);
+        final IFunc1[] Hq = new IFunc1[nThreads()];
+        for (int i = 0; i < Hq.length; ++i) Hq[i] = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
         
         // 使用 mNL 的通用获取近邻的方法，因为 SF 需要使用方形半径内的所有距离（曼哈顿距离）
-        // 并且由于从 RDF 转换的方式效果更好，这种方法效果一般，因此不专门提供方法
         pool().parfor(mAtomNum, (i, threadID) -> {
-            mNL.forEachNeighbor(i, aRMax, true, (x, y, z) -> {
-                XYZ cXYZ = mAtomDataXYZ[i];
-                if (cXYZ.distanceMHT(x, y, z) < aRMax) {
-                    double dis = cXYZ.distance(x, y, z);
-                    tHq[threadID].plus2this(idx -> {
-                        double q = aQMin+dq + idx*dq;
-                        return Fast.sin(q*dis) / (q*dis);
-                    });
-                }
+            final XYZ cXYZ = mAtomDataXYZ[i];
+            mNL.forEachNeighborMHT(i, aRMax, true, (x, y, z, idx, disMHT) -> {
+                double dis = cXYZ.distance(x, y, z);
+                Hq[threadID].plus2this(q -> Fast.sin(q*dis)/(q*dis));
             });
         });
         
         // 获取结果
-        IVector Hq = tHq[0];
-        for (int i = 1; i < tHq.length; ++i) Hq.plus2this(tHq[i]);
-        Hq.div2this(mAtomNum*0.5);
-        Hq.plus2this(1.0);
+        IFunc1 Sq = Hq[0];
+        for (int i = 1; i < Hq.length; ++i) Sq.plus2this(Hq[i]);
+        Sq.div2this(mAtomNum*0.5);
+        Sq.plus2this(1.0);
         
-        // 获取并补充截断数据
-        IFunc1 Sq = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
-        for (int i = 0; i < aN; ++i) Sq.set_(i+1, Hq.get_(i));
+        // 修复截断数据
+        Sq.set_(0, 0.0);
         // 输出
         return Sq;
     }
@@ -364,33 +362,26 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
         
         final double dq = (aQMax-aQMin)/aN;
         // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
-        final IVector[] tHq = new IVector[nThreads()];
-        for (int i = 0; i < tHq.length; ++i) tHq[i] = Vectors.zeros(aN);
+        final IFunc1[] Hq = new IFunc1[nThreads()];
+        for (int i = 0; i < Hq.length; ++i) Hq[i] = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
         
         // 使用 mNL 的通用获取近邻的方法，因为 SF 需要使用方形半径内的所有距离（曼哈顿距离）
-        // 并且由于从 RDF 转换的方式效果更好，这种方法效果一般，因此不专门提供方法
         pool().parfor(aAtomDataXYZ.length, (i, threadID) -> {
             final XYZ cXYZ = aAtomDataXYZ[i];
-            mNL.forEachNeighbor(cXYZ, aRMax, (x, y, z) -> {
-                if (cXYZ.distanceMHT(x, y, z) < aRMax) {
-                    double dis = cXYZ.distance(x, y, z);
-                    tHq[threadID].plus2this(idx -> {
-                        double q = aQMin+dq + idx*dq;
-                        return Fast.sin(q*dis) / (q*dis);
-                    });
-                }
+            mNL.forEachNeighborMHT(cXYZ, aRMax, (x, y, z, idx, disMHT) -> {
+                double dis = cXYZ.distance(x, y, z);
+                Hq[threadID].plus2this(q -> Fast.sin(q*dis)/(q*dis));
             });
         });
         
         // 获取结果
-        IVector Hq = tHq[0];
-        for (int i = 1; i < tHq.length; ++i) Hq.plus2this(tHq[i]);
-        Hq.div2this(Fast.sqrt(mAtomNum*aAtomDataXYZ.length));
-        Hq.plus2this(1.0);
+        IFunc1 Sq = Hq[0];
+        for (int i = 1; i < Hq.length; ++i) Sq.plus2this(Hq[i]);
+        Sq.div2this(Fast.sqrt(mAtomNum*aAtomDataXYZ.length));
+        Sq.plus2this(1.0);
         
-        // 获取并补充截断数据
-        IFunc1 Sq = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
-        for (int i = 0; i < aN; ++i) Sq.set_(i+1, Hq.get_(i));
+        // 修复截断数据
+        Sq.set_(0, 0.0);
         // 输出
         return Sq;
     }
@@ -461,4 +452,88 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
     public IFunc1 SF2RDF(IFunc1 aSq, double aRou                      ) {return SF2RDF(aSq, aRou, 160);}
     public IFunc1 SF2RDF(IFunc1 aSq                                   ) {return SF2RDF(aSq, mRou);}
     
+    
+    /**
+     * 计算所有粒子的 AOOP（Averaged local bond Orientational Order Parameters），
+     * 输出结果为按照输入原子顺序排列的向量；
+     * <p>
+     * Reference: <a href="https://doi.org/10.1063/1.2977970">
+     * Accurate determination of crystal structures based on averaged local bond order parameters</a>
+     * @author liqa
+     * @param aL 计算具体 q 值的下标，即 q4: l = 4, q6: l = 6
+     * @param aNN Neighbor list Number，统计的近邻数目，默认为 12
+     * @param aRMaxBegin 初始用来搜索近邻的半径，越小搜索的目标越少，可能会更快，
+     * 但过小会达不到 aNN，从而会内部增大此半径重新搜索，此时耗时不会进一步降低。默认为一倍单位长度
+     * @return ql 组成的向量
+     */
+    public IVector calAOOP(final int aL, final int aNN, final double aRMaxBegin) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
+        // 先遍历一次计算所有的球谐函数 Y（复数）以及记录对应的近邻列表
+        // 由于目前还没有实现复数运算，再搭一套复数库工作量较大，这里暂时使用两个实向量来存储
+        final IMatrix tYAllReal = Matrices.zeros(mAtomNum, aL+aL+1);
+        final IMatrix tYAllImag = Matrices.zeros(mAtomNum, aL+aL+1);
+        @SuppressWarnings("unchecked")
+        final List<Integer>[] tNNListAll = new List[mAtomNum]; // 注意不能使用 List<xxx> 然后在 parfor 中 add，因为线程不安全
+        
+        // 遍历计算 YMean
+        pool().parfor(mAtomNum, (i, threadID) -> {
+            final XYZ cXYZ = mAtomDataXYZ[i];
+            final List<Integer> rNNList = new ArrayList<>(aNN);
+            mNL.forEachNeighborNN(i, aNN, aRMaxBegin, (x, y, z, idx, dis) -> {
+                // 计算角度
+                double dx = x - cXYZ.mX;
+                double dy = y - cXYZ.mY;
+                double dz = z - cXYZ.mZ;
+                
+                double theta = Fast.acos(dz / dis);
+                double disXY = Fast.sqrt(dx*dx + dy*dy);
+                double phi = (dy > 0) ? Fast.acos(dx / disXY) : (2.0*PI - Fast.acos(dx / disXY));
+                
+                // 计算 Y 并累加
+                for (int tM = -aL; tM <= aL; ++tM) {
+                    ComplexDouble tY = Func.sphericalHarmonics_(aL, tM, theta, phi);
+                    tYAllReal.add_(i, tM+aL, tY.real);
+                    tYAllImag.add_(i, tM+aL, tY.imag);
+                }
+                
+                // 顺便统计近邻列表
+                rNNList.add(idx);
+            });
+            // 汇总近邻列表
+            tNNListAll[i] = rNNList;
+        });
+        
+        // 先根据近邻数平均
+        tYAllReal.operation().mapDiv2this(aNN);
+        tYAllImag.operation().mapDiv2this(aNN);
+        
+        // 在近邻的基础上再进行一次平均
+        IVector ql = Vectors.zeros(mAtomNum);
+        for (int i = 0; i < mAtomNum; ++i) {
+            double rSum = 0.0;
+            // 对于每个 m 分别累加
+            for (int tM = -aL; tM <= aL; ++tM) {
+                int tCol = tM+aL;
+                // 先累加自身
+                double tYReal = tYAllReal.get_(i, tCol);
+                double tYImag = tYAllImag.get_(i, tCol);
+                // 再累加近邻
+                tYReal += tYAllReal.refSlicer().get(tNNListAll[i], tCol).operation().sum();
+                tYImag += tYAllImag.refSlicer().get(tNNListAll[i], tCol).operation().sum();
+                // 求平均
+                tYReal /= aNN+1;
+                tYImag /= aNN+1;
+                // 最后求模量添加到 rSum
+                rSum += tYReal*tYReal + tYImag*tYImag;
+            }
+            // 使用这个公式设置 ql
+            ql.set_(i, 4.0*PI*rSum/(double)(aL+aL+1));
+        }
+        
+        // 返回最终计算结果
+        return ql;
+    }
+    public IVector calAOOP(int aL, int aNN) {return calAOOP(aL, aNN, mUnitLen);}
+    public IVector calAOOP(int aL         ) {return calAOOP(aL, 12);}
 }

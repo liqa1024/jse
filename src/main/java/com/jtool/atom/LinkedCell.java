@@ -119,14 +119,6 @@ class LinkedCell<A extends IHasXYZ> {
         }
         public boolean isMirror() {return mDirection!=null;}
         public XYZ direction() {return mDirection;}
-        /** 带有 mDirection 的计算距离，方便外部使用并且避免对象的创建，注意 To 是在此 link 中的，而 From 是原始的 */
-        public double distance(XYZ aFrom, XYZ aTo) {
-            if (mDirection != null) {
-                return aFrom.distance(aTo.mX + mDirection.mX, aTo.mY + mDirection.mY, aTo.mZ + mDirection.mZ);
-            } else {
-                return aFrom.distance(aTo);
-            }
-        }
     }
     
     @FunctionalInterface

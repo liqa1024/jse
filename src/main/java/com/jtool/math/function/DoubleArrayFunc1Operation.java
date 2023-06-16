@@ -248,8 +248,8 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
             if (aRHS instanceof IZeroBoundFunc1) {
                 // 对于零边界的特殊优化，只需要运算一部分
                 IZeroBoundFunc1 tRHS = (IZeroBoundFunc1)aRHS;
-                tStart = Math.max((int)Math.floor((tRHS.zeroBoundL() - rFunc1.mX0)/rFunc1.mDx), 0);
-                tEnd = Math.min((int)Math.ceil((tRHS.zeroBoundR() - rFunc1.mX0)/rFunc1.mDx) + 1, tNx);
+                tStart = Math.max((int)Math.floor((tRHS.zeroBoundL() - rFunc1.x0())/rFunc1.dx()), 0);
+                tEnd = Math.min((int)Math.ceil((tRHS.zeroBoundR() - rFunc1.x0())/rFunc1.dx()) + 1, tNx);
             } else {
                 tStart = 0; tEnd = tNx;
             }
@@ -269,8 +269,8 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
             if (aRHS instanceof IZeroBoundFunc1) {
                 // 对于零边界的特殊优化，只需要运算一部分
                 IZeroBoundFunc1 tRHS = (IZeroBoundFunc1)aRHS;
-                tStart = Math.max((int)Math.floor((tRHS.zeroBoundL() - rFunc1.mX0)/rFunc1.mDx), 0);
-                tEnd = Math.min((int)Math.ceil((tRHS.zeroBoundR() - rFunc1.mX0)/rFunc1.mDx) + 1, tNx);
+                tStart = Math.max((int)Math.floor((tRHS.zeroBoundL() - rFunc1.x0())/rFunc1.dx()), 0);
+                tEnd = Math.min((int)Math.ceil((tRHS.zeroBoundR() - rFunc1.x0())/rFunc1.dx()) + 1, tNx);
             } else {
                 tStart = 0; tEnd = tNx;
             }
@@ -431,7 +431,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     /** 边界外的结果不保证正确性 */
     @Override public IFunc1 laplacian() {
         DoubleArrayFunc1 tFunc1 = thisFunc1_();
-        IFunc1 rFunc1 = newFunc1_(tFunc1.mX0, tFunc1.mDx, tFunc1.Nx());
+        IFunc1 rFunc1 = newFunc1_(tFunc1.x0(), tFunc1.dx(), tFunc1.Nx());
         laplacian2Dest(rFunc1);
         return rFunc1;
     }
@@ -439,7 +439,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     @Override public void laplacian2Dest(IVectorSetter rDest) {
         DoubleArrayFunc1 tFunc1 = thisFunc1_();
         int tNx = tFunc1.Nx();
-        double tDx2 = tFunc1.mDx * tFunc1.mDx;
+        double tDx2 = tFunc1.dx() * tFunc1.dx();
         for (int i = 0; i < tNx; ++i) {
             int imm = i-1;
             double tFmm = (imm < 0) ? tFunc1.getOutL_(imm) : tFunc1.get_(imm);
@@ -457,15 +457,15 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
             return new ZeroBoundFunc1(tConv.y0(), tConv.dy(), tConv.Ny(), refConvolve(aConv));
         } else {
             DoubleArrayFunc1 tFunc1 = thisFunc1_();
-            return new ZeroBoundFunc1(tFunc1.mX0, tFunc1.mDx, tFunc1.Nx(), refConvolve(aConv));
+            return new ZeroBoundFunc1(tFunc1.x0(), tFunc1.dx(), tFunc1.Nx(), refConvolve(aConv));
         }
     }
     @Override public IFunc1Subs refConvolve(IFunc2Subs aConv) {
         final DoubleArrayFunc1 tFunc1 = thisFunc1_();
         return k -> {
-            double pC = aConv.subs(tFunc1.mX0, k) * tFunc1.get_(0);
+            double pC = aConv.subs(tFunc1.x0(), k) * tFunc1.get_(0);
             double tResult = 0.0;
-            double tDx2 = tFunc1.mDx/2.0;
+            double tDx2 = tFunc1.dx()/2.0;
             int tNx = tFunc1.Nx();
             for (int i = 1; i < tNx; ++i) {
                 double tC = aConv.subs(tFunc1.getX(i), k) * tFunc1.get_(i);
@@ -485,7 +485,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
             return new ZeroBoundFunc1(tConv.z0(), tConv.dz(), tConv.Nz(), refConvolveFull(aConv));
         } else {
             DoubleArrayFunc1 tFunc1 = thisFunc1_();
-            return new ZeroBoundFunc1(tFunc1.mX0, tFunc1.mDx, tFunc1.Nx(), refConvolveFull(aConv));
+            return new ZeroBoundFunc1(tFunc1.x0(), tFunc1.dx(), tFunc1.Nx(), refConvolveFull(aConv));
         }
     }
     @SuppressWarnings("SuspiciousNameCombination")
@@ -494,7 +494,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
         return k -> {
             double pC = aConv.subs(tFunc1.get_(0), tFunc1.mX0, k);
             double tResult = 0.0;
-            double tDx2 = tFunc1.mDx/2.0;
+            double tDx2 = tFunc1.dx()/2.0;
             int tNx = tFunc1.Nx();
             for (int i = 1; i < tNx; ++i) {
                 double tC = aConv.subs(tFunc1.get_(i), tFunc1.getX(i), k);
@@ -543,7 +543,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     /** 由于函数实际是没有边界的，因此默认的精度根据自身来而不会考虑输入 */
     private DoubleArrayFunc1 newFunc1_() {
         final DoubleArrayFunc1 tFunc1 = thisFunc1_();
-        return newFunc1_(tFunc1.mX0, tFunc1.mDx, tFunc1.Nx());
+        return newFunc1_(tFunc1.x0(), tFunc1.dx(), tFunc1.Nx());
     }
     
     /** stuff to override */

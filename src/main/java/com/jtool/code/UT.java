@@ -463,9 +463,9 @@ public class UT {
             tClass = Class.forName(aClassName);
             return getCallableOfMethod_(tClass, null, aMethodName, aArgs);
         }
-        public static TaskRun          getRunnableOfStaticMethod(              String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException, ClassNotFoundException {return TaskRun.of(getCallableOfStaticMethod(aClassName, aMethodName, aArgs));}
+        public static TaskRun          getRunnableOfStaticMethod(              String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException, ClassNotFoundException {return getCallableOfStaticMethod(aClassName, aMethodName, aArgs).toRunnable();}
         public static TaskCall<Object> getCallableOfMethod      (final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {return getCallableOfMethod_(aInstance.getClass(), aInstance, aMethodName, aArgs);}
-        public static TaskRun          getRunnableOfMethod      (final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {return TaskRun.of(getCallableOfMethod(aInstance, aMethodName, aArgs));}
+        public static TaskRun          getRunnableOfMethod      (final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {return getCallableOfMethod(aInstance, aMethodName, aArgs).toRunnable();}
         
         public static Method findMethod_(Class<?> aClazz, String aMethodName, Object @NotNull... aArgs) {
             Method[] tAllMethods = aClazz.getMethods();

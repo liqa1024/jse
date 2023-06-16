@@ -33,8 +33,6 @@ UT.Timer.toc("FT");
 // 计算完毕关闭 MPC
 mpc.shutdown();
 
-// 保存之前先创建文件夹
-UT.IO.mkdir('lmp/.temp');
 // 输出为 csv 文件
 UT.IO.data2csv(gr, 'lmp/.temp/gr.csv');
 UT.IO.data2csv(Sq, 'lmp/.temp/Sq.csv');

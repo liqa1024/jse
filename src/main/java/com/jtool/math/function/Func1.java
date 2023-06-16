@@ -1,5 +1,7 @@
 package com.jtool.math.function;
 
+import com.jtool.math.MathEX;
+
 import java.util.Collection;
 
 /**
@@ -39,4 +41,29 @@ public class Func1 {
         rFunc.fill(aData);
         return rFunc;
     }
+    
+    
+    /**
+     * Get the Dirac Delta function δ(x-mu) in the Gaussian form,
+     * result will in [-aDx*aN, aDx*aN], so out.length == 2*N+1
+     * <p>
+     * Optimized for vector operations
+     * <p>
+     * 为了保证 MathEX.Func 中都为直接返回函数值的特殊函数，直接获取数值函数的方法统一移动到这里
+     * @author liqa
+     * @param aSigma the standard deviation of the Gaussian distribution
+     * @param aMu the mean value of the Gaussian distribution
+     * @param aResolution the Resolution of the Function1, dx == aSigma/aResolution
+     * @return the Dirac Delta function δ(x-mu) in the Gaussian form
+     */
+    public static IZeroBoundFunc1 deltaG(double aSigma, final double aMu, double aResolution) {
+        final double tXMul = -1.0 / (2.0*aSigma*aSigma);
+        final double tYMul =  1.0 / (MathEX.Fast.sqrt(2.0*MathEX.PI) * aSigma);
+        
+        return new ZeroBoundSymmetryFunc1(aMu, aSigma/aResolution, (int)Math.round(aResolution*G_RANG), x -> {
+            x -= aMu;
+            return MathEX.Fast.exp(x * x * tXMul) * tYMul;
+        });
+    }
+    private final static int G_RANG = 6;
 }

@@ -1,13 +1,12 @@
 package test
 
+import com.jtool.math.MathEX
 import com.jtool.math.matrix.Matrices
 
-def mat = Matrices.from(5, {row, col -> (row*10 + col) as double;});
+// 测试一下 Legendre 多项式的正确性
 
-println(mat);
-println(mat.refSlicer().diag());
-println(mat.refSlicer().diag(1));
-println(mat.refSlicer().diag(-1));
+def P = Matrices.from(3, {row, col ->
+    MathEX.Func.legendre(2, row, col*0.1);
+})
 
-println(mat.opt().meanOfRows());
-println(mat.opt().meanOfCols());
+println(P);

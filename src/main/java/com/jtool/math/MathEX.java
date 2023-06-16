@@ -4,11 +4,11 @@ import com.jtool.code.collection.Pair;
 import com.jtool.code.operator.*;
 import com.jtool.math.function.Func2;
 import com.jtool.math.function.Func3;
-import com.jtool.math.function.IFunc1;
-import com.jtool.math.function.ZeroBoundSymmetryFunc1;
 import com.jtool.parallel.ParforThreadPool;
 import net.jafama.FastMath;
 import org.jetbrains.annotations.ApiStatus;
+
+import java.util.*;
 
 import static com.jtool.code.CS.ZL_MAT;
 
@@ -508,7 +508,7 @@ public class MathEX {
     }
     
     
-    /** a Parfor ThreadPool for MathEX usage */
+    /// a Parfor ThreadPool for MathEX usage
     public static class Par {
         private static ParforThreadPool POOL = new ParforThreadPool(1);
         public static void setThreadNum(int aThreadNum) {POOL.shutdown(); POOL = new ParforThreadPool(aThreadNum);}
@@ -674,10 +674,12 @@ public class MathEX {
         }
     }
     
-    /// Special functions (in vector) or its operations
+    
+    /// Special functions
     public static class Func {
         /**
          * Linear Interpolation like in matlab
+         * @author liqa
          * @param aX1 left x
          * @param aX2 right x
          * @param aF1 left f(x1)
@@ -693,25 +695,70 @@ public class MathEX {
         }
         
         /**
-         * Get the Dirac Delta function δ(x-mu) in the Gaussian form,
-         * result will in [-aDx*aN, aDx*aN], so out.length == 2*N+1
-         * <p> Optimized for vector operations </p>
+         * 输出球谐（Spherical Harmonics）函数，定义同北大数理方法教材
          * @author liqa
-         * @param aSigma the standard deviation of the Gaussian distribution
-         * @param aMu the mean value of the Gaussian distribution
-         * @param aResolution the Resolution of the Function1, dx == aSigma/aResolution
-         * @return the Dirac Delta function δ(x-mu) in the Gaussian form
+         * @param aL 球谐函数参数 l，非负整数
+         * @param aM 球谐函数参数 m，整数，-l ~ l
+         * @param aTheta 球坐标下径向方向与 z 轴的角度
+         * @param aPhi 球坐标下径向方向在 xy 平面投影下和 x 轴的角度
+         * @return 球谐函数值，复数
          */
-        public static IFunc1 deltaG(double aSigma, final double aMu, double aResolution) {
-            final double tXMul = -1.0 / (2.0*aSigma*aSigma);
-            final double tYMul =  1.0 / (Fast.sqrt(2.0*PI) * aSigma);
+        public static ComplexDouble sphericalHarmonics(int aL, int aM, double aTheta, double aPhi) {
+            // 判断输入是否合法
+            if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
+            if (Math.abs(aM) > aL) throw new IllegalArgumentException("Input m MUST be in range -l ~ l, input: "+aM);
             
-            return new ZeroBoundSymmetryFunc1(aMu, aSigma/aResolution, (int)Math.round(aResolution*G_RANG), x -> {
-                x -= aMu;
-                return Fast.exp(x * x * tXMul) * tYMul;
-            });
+            return sphericalHarmonics_(aL, aM, aTheta, aPhi);
         }
-        public final static int G_RANG = 6;
+        public static ComplexDouble sphericalHarmonics_(int aL, int aM, double aTheta, double aPhi) {
+            int tAbsM = Math.abs(aM);
+            
+            // 计算前系数（实数部分）
+            double rFront = 1.0;
+            for (int i = aL-tAbsM+1, tEnd = aL+tAbsM; i <= tEnd; ++i) rFront *= i;
+            rFront = 1.0 / rFront;
+            rFront *= aL+aL+1;
+            rFront /= 4*PI;
+            rFront = Fast.sqrt(rFront);
+            // 计算连带 Legendre 多项式部分
+            rFront *= legendre_(aL, tAbsM, Fast.cos(aTheta));
+            // 返回结果，实部虚部分开计算
+            return new ComplexDouble(rFront*Fast.cos(aM*aPhi), rFront*Fast.sin(aM*aPhi));
+        }
+        
+        /**
+         * 输出连带 Legendre 多项式函数，定义同 matlab 的 legendre
+         * @author liqa
+         * @param aL 连带 Legendre 多项式参数 l，非负整数
+         * @param aM 连带 Legendre 多项式参数 m，非负整数，m <= l
+         * @return 计算结果，实数
+         */
+        public static double legendre(int aL, int aM, double aX) {
+            // 判断输入是否合法
+            if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
+            if (aM < 0 || aM > aL) throw new IllegalArgumentException("Input m MUST be in range 0 ~ l, input: "+aM);
+            
+            return legendre_(aL, aM, aX);
+        }
+        public static double legendre_(int aL, int aM, double aX) {
+            // 直接采用递推关系递归计算
+            int tGreater = aL - aM;
+            if (tGreater == 0) {
+                if (aM == 0) return 1.0;
+                double tPmm = Fast.pow(1.0 - aX*aX, aM*0.5);
+                if ((aM&1)==1) tPmm = -tPmm;
+                for (int i = 3, tEnd = aM+aM-1; i <= tEnd; i+=2) tPmm *= i;
+                return tPmm;
+            } else
+            if (tGreater == 1) {
+                return (aL+aL-1)*aX*legendre_(aL-1, aM, aX);
+            } else {
+                return ((aL+aL-1)*aX*legendre_(aL-1, aM, aX) - (aL+aM-1)*legendre_(aL-2, aM, aX)) / (double)tGreater;
+            }
+        }
+        
+        
+        
         
         
         
@@ -953,7 +1000,49 @@ public class MathEX {
         public static double cos(double aValue) {return FastMath.cos(aValue);}
         public static double tan(double aValue) {return FastMath.tan(aValue);}
         
+        public static double asin(double aValue) {return FastMath.asin(aValue);}
+        public static double acos(double aValue) {return FastMath.acos(aValue);}
+        public static double atan(double aValue) {return FastMath.atan(aValue);}
+        
         public static double pow(double aValue, double aPower) {return FastMath.pow(aValue, aPower);}
+    }
+    
+    
+    /// advance operations
+    public static class Adv {
+        /**
+         * General method to get clusters by using Breadth-First Search
+         * @author liqa
+         * @param aPoints all points should be considered
+         * @param aNeighborListGetter get the neighbor list of the giving point
+         * @return list of cluster
+         * @param <T> type of the point
+         */
+        public static <T> List<List<T>> getClustersBFS(Iterable<? extends T> aPoints, IOperator1<? extends Iterable<? extends T>, ? super T> aNeighborListGetter) {
+            List<List<T>> rClusters = new ArrayList<>();
+            Set<T> tVisited = new HashSet<>();
+            
+            Queue<T> tQueue = new LinkedList<>();
+            for (T tPoint : aPoints) if (!tVisited.contains(tPoint)) {
+                List<T> subCluster = new ArrayList<>();
+//              tQueue.clear(); // 由于后面会遍历移除，因此此时 tQueue 永远为空
+                
+                tQueue.offer(tPoint);
+                tVisited.add(tPoint);
+                
+                while (!tQueue.isEmpty()) {
+                    T currentPoint = tQueue.poll();
+                    subCluster.add(currentPoint);
+                    
+                    for (T tNeighbor : aNeighborListGetter.cal(currentPoint)) if (!tVisited.contains(tNeighbor)) {
+                        tQueue.offer(tNeighbor);
+                        tVisited.add(tNeighbor);
+                    }
+                }
+                rClusters.add(subCluster);
+            }
+            return rClusters;
+        }
     }
     
     
