@@ -4,7 +4,6 @@ import com.jtool.math.MathEX;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -278,57 +277,5 @@ public class NeighborListGetter {
                 if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ, xyz_idx.mIDX, tDisMHT);
             }
         });
-    }
-    
-    
-    
-    /**
-     * 现在统一改为 for-each 的形式，提供一个限制近邻数目的方法，
-     * 会自适应调整需要的半径，尽量避免临时变量的创建
-     * <p>
-     * 固定原子数目时不会进行 Half 判断，为了保证实际遍历的原子数目永远为输入的数目
-     * @author liqa
-     * @param aIDX 中心粒子的 index
-     * @param aNN Neighbor list Number，需要的近邻数目
-     */
-    public void forEachNeighborNN(final int aIDX, final int aNN, double aRMaxBegin, final IXYZIdxDisDo aXYZIdxDisDo) {
-        if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
-        
-        final XYZ aXYZ = mAtomDataXYZ_IDX[aIDX].mXYZ;
-        final NavigableMap<Double, XYZ_IDX> rNeighborList = new TreeMap<>(); // 考虑到大部分都不会是镜像的，因此这样更加简洁
-        double tRMax = aRMaxBegin;
-        while (rNeighborList.size() < aNN) {
-            // 构造前先清空
-            rNeighborList.clear();
-            // 获取对应的 linkedCell，改用最大的距离作为实际的 RMax
-            LinkedCell<XYZ_IDX> tLinkedCell = getProperLinkedCell(tRMax);
-            final double fRMax = tLinkedCell.mMaxDis;
-            // 计算下一步需要的 tRMax，这样设置保证下一次搜寻一定 fRMax 会更大
-            tRMax = fRMax * mCellStep;
-            // 遍历近邻添加到 rNeighborList，注意必须要小于 fRMax 才是合法的
-            tLinkedCell.forEachNeighbor(aXYZ, (xyz_idx, link) -> {
-                if (link.isMirror()) {
-                    // 如果是镜像的，则会保留相同的 idx 的情况
-                    XYZ tXYZ = xyz_idx.mXYZ.plus(link.direction());
-                    double tDis = aXYZ.distance(tXYZ);
-                    if (tDis < fRMax) rNeighborList.put(tDis, new XYZ_IDX(tXYZ, xyz_idx.mIDX));
-                } else {
-                    // 如果不是镜像的，则不会保留相同的 idx 的情况
-                    if (xyz_idx.mIDX != aIDX) {
-                        double tDis = aXYZ.distance(xyz_idx.mXYZ);
-                        if (tDis < fRMax) rNeighborList.put(tDis, xyz_idx);
-                    }
-                }
-                // 如果超过了需要的大小则移除最后的元素，可以降低插入的复杂度
-                if (rNeighborList.size() > aNN) {
-                    rNeighborList.pollLastEntry();
-                }
-            });
-        }
-        // 如果达到要求则直接遍历
-        for (Map.Entry<Double, XYZ_IDX> tEntry : rNeighborList.entrySet()) {
-            XYZ_IDX tXYZIdx = tEntry.getValue();
-            aXYZIdxDisDo.run(tXYZIdx.mXYZ.mX, tXYZIdx.mXYZ.mY, tXYZIdx.mXYZ.mZ, tXYZIdx.mIDX, tEntry.getKey());
-        }
     }
 }

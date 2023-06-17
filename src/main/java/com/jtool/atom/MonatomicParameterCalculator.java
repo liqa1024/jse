@@ -461,26 +461,25 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
      * Accurate determination of crystal structures based on averaged local bond order parameters</a>
      * @author liqa
      * @param aL 计算具体 q 值的下标，即 q4: l = 4, q6: l = 6
-     * @param aNN Neighbor list Number，统计的近邻数目，默认为 12
-     * @param aRMaxBegin 初始用来搜索近邻的半径，越小搜索的目标越少，可能会更快，
-     * 但过小会达不到 aNN，从而会内部增大此半径重新搜索，此时耗时不会进一步降低。默认为 1.5 倍单位长度
+     * @param aRNearest 用来搜索的最近邻半径。默认为 1.423 倍单位长度（此定义下默认和参考文献一致）
      * @return ql 组成的向量
      */
-    public IVector calAOOP(final int aL, final int aNN, final double aRMaxBegin) {
+    public IVector calAOOP(final int aL, final double aRNearest) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
-        // 先遍历一次计算所有的球谐函数 Y（复数）以及记录对应的近邻列表
+        // 先遍历一次计算所有的 qlm（复数）以及记录对应的近邻列表
         // 由于目前还没有实现复数运算，再搭一套复数库工作量较大，这里暂时使用两个实向量来存储
-        final IMatrix tYAllReal = Matrices.zeros(mAtomNum, aL+aL+1);
-        final IMatrix tYAllImag = Matrices.zeros(mAtomNum, aL+aL+1);
+        final IMatrix qlmReal = Matrices.zeros(mAtomNum, aL+aL+1);
+        final IMatrix qlmImag = Matrices.zeros(mAtomNum, aL+aL+1);
         @SuppressWarnings("unchecked")
         final List<Integer>[] tNNListAll = new List[mAtomNum]; // 注意不能使用 List<xxx> 然后在 parfor 中 add，因为线程不安全
         
-        // 遍历计算 YMean
+        // 遍历计算 qlm
         pool().parfor(mAtomNum, (i, threadID) -> {
             final XYZ cXYZ = mAtomDataXYZ[i];
-            final List<Integer> rNNList = new ArrayList<>(aNN);
-            mNL.forEachNeighborNN(i, aNN, aRMaxBegin, (x, y, z, idx, dis) -> {
+            final List<Integer> rNNList = new ArrayList<>();
+            // 注意这里所有近邻都进行一次统计，暂不考虑一半的优化
+            mNL.forEachNeighbor(i, aRNearest, false, (x, y, z, idx, dis) -> {
                 // 计算角度
                 double dx = x - cXYZ.mX;
                 double dy = y - cXYZ.mY;
@@ -493,20 +492,19 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
                 // 计算 Y 并累加
                 for (int tM = -aL; tM <= aL; ++tM) {
                     ComplexDouble tY = Func.sphericalHarmonics_(aL, tM, theta, phi);
-                    tYAllReal.add_(i, tM+aL, tY.real);
-                    tYAllImag.add_(i, tM+aL, tY.imag);
+                    qlmReal.add_(i, tM+aL, tY.real);
+                    qlmImag.add_(i, tM+aL, tY.imag);
                 }
                 
                 // 顺便统计近邻列表
                 rNNList.add(idx);
             });
+            // 根据近邻数平均得到 qlm
+            qlmReal.row(i).operation().mapDiv2this(rNNList.size());
+            qlmImag.row(i).operation().mapDiv2this(rNNList.size());
             // 汇总近邻列表
             tNNListAll[i] = rNNList;
         });
-        
-        // 先根据近邻数平均
-        tYAllReal.operation().mapDiv2this(aNN);
-        tYAllImag.operation().mapDiv2this(aNN);
         
         // 在近邻的基础上再进行一次平均
         IVector ql = Vectors.zeros(mAtomNum);
@@ -516,24 +514,24 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
             for (int tM = -aL; tM <= aL; ++tM) {
                 int tCol = tM+aL;
                 // 先累加自身
-                double tYReal = tYAllReal.get_(i, tCol);
-                double tYImag = tYAllImag.get_(i, tCol);
+                double qlReal = qlmReal.get_(i, tCol);
+                double qlImag = qlmImag.get_(i, tCol);
                 // 再累加近邻
-                tYReal += tYAllReal.refSlicer().get(tNNListAll[i], tCol).operation().sum();
-                tYImag += tYAllImag.refSlicer().get(tNNListAll[i], tCol).operation().sum();
-                // 求平均
-                tYReal /= aNN+1;
-                tYImag /= aNN+1;
+                qlReal += qlmReal.refSlicer().get(tNNListAll[i], tCol).operation().sum();
+                qlImag += qlmImag.refSlicer().get(tNNListAll[i], tCol).operation().sum();
+                // 求“平均”
+                double tNN = tNNListAll[i].size();
+                qlReal /= tNN;
+                qlImag /= tNN;
                 // 最后求模量添加到 rSum
-                rSum += tYReal*tYReal + tYImag*tYImag;
+                rSum += qlReal*qlReal + qlImag*qlImag;
             }
             // 使用这个公式设置 ql
-            ql.set_(i, 4.0*PI*rSum/(double)(aL+aL+1));
+            ql.set_(i, Fast.sqrt(4.0*PI*rSum/(double)(aL+aL+1)));
         }
         
         // 返回最终计算结果
         return ql;
     }
-    public IVector calAOOP(int aL, int aNN) {return calAOOP(aL, aNN, mUnitLen*1.5);}
-    public IVector calAOOP(int aL         ) {return calAOOP(aL, 12);}
+    public IVector calAOOP(int aL) {return calAOOP(aL, mUnitLen*1.423);}
 }
