@@ -1,12 +1,12 @@
 package test
 
-import com.jtool.math.MathEX
-import com.jtool.math.matrix.Matrices
+import com.jtool.code.UT
+import com.jtool.system.SSH
 
-// 测试一下 Legendre 多项式的正确性
+// 测试一下远程删除文件夹失败的问题
+def ssh = new SSH(UT.IO.json2map('.SECRET/SSH_INFO.json'));
 
-def P = Matrices.from(3, {row, col ->
-    MathEX.Func.legendre(2, row, col*0.1);
-})
+ssh.rmdir('.temp/jTool@6ydvWO2h');
 
-println(P);
+ssh.shutdown();
+

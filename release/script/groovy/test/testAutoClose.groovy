@@ -6,7 +6,7 @@ import com.jtool.system.SSH
 /** 自动关闭带有线程池的一些资源，理论上这种写法更加严谨，但是这里不做要求 */
 
 // 支持 java 的 try-with-resources 语法来使用这些类，可以在退出语句块时自动关闭
-try (var ssh = new SSH(UT.IO.json2map('.SECRET/SSH_INFO.json').csrc as Map)) {
+try (var ssh = new SSH(UT.IO.json2map('.SECRET/SSH_INFO.json'))) {
     // 任意的发送指令等等任务
     ssh.system('echo 123');
     

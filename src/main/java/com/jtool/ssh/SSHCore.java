@@ -235,10 +235,11 @@ public final class SSHCore implements AutoCloseable {
             tChannelSftp.connect();
             if (aDir.equals(".")) aDir = "";
             if (!aDir.isEmpty() && !aDir.endsWith("/")) aDir += "/";
+            String tRemoteDir = mRemoteWorkingDir+aDir;
             // 如果没有此文件夹则直接退出
-            if (!isDir_(tChannelSftp, aDir)) return;
+            if (!isDir_(tChannelSftp, tRemoteDir)) return;
             // 递归子文件夹来删除
-            removeDir_(tChannelSftp, aDir);
+            removeDir_(tChannelSftp, tRemoteDir);
         } finally {
             // 最后关闭通道
             if (tChannelSftp != null) tChannelSftp.disconnect();
