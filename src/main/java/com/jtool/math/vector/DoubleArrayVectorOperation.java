@@ -198,11 +198,12 @@ public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation
         else DATA.ebeFill2this_(rVector.setIterator(), rVector.iteratorOf(aRHS));
     }
     
-    @Override public double sum    () {DoubleArrayVector rVector = thisVector_(); return ARRAY.sumOfThis_       (rVector.getData(), rVector.shiftSize(), rVector.dataSize());}
-    @Override public double mean   () {DoubleArrayVector rVector = thisVector_(); return ARRAY.meanOfThis_      (rVector.getData(), rVector.shiftSize(), rVector.dataSize());}
-    @Override public double product() {DoubleArrayVector rVector = thisVector_(); return ARRAY.productOfThis_   (rVector.getData(), rVector.shiftSize(), rVector.dataSize());}
-    @Override public double max    () {DoubleArrayVector rVector = thisVector_(); return ARRAY.maxOfThis_       (rVector.getData(), rVector.shiftSize(), rVector.dataSize());}
-    @Override public double min    () {DoubleArrayVector rVector = thisVector_(); return ARRAY.minOfThis_       (rVector.getData(), rVector.shiftSize(), rVector.dataSize());}
+    @Override public double sum    ()                      {DoubleArrayVector rVector = thisVector_(); return ARRAY.sumOfThis_       (rVector.getData(), rVector.shiftSize(), rVector.dataSize()      );}
+    @Override public double mean   ()                      {DoubleArrayVector rVector = thisVector_(); return ARRAY.meanOfThis_      (rVector.getData(), rVector.shiftSize(), rVector.dataSize()      );}
+    @Override public double product()                      {DoubleArrayVector rVector = thisVector_(); return ARRAY.productOfThis_   (rVector.getData(), rVector.shiftSize(), rVector.dataSize()      );}
+    @Override public double max    ()                      {DoubleArrayVector rVector = thisVector_(); return ARRAY.maxOfThis_       (rVector.getData(), rVector.shiftSize(), rVector.dataSize()      );}
+    @Override public double min    ()                      {DoubleArrayVector rVector = thisVector_(); return ARRAY.minOfThis_       (rVector.getData(), rVector.shiftSize(), rVector.dataSize()      );}
+    @Override public double stat   (IDoubleOperator2 aOpt) {DoubleArrayVector rVector = thisVector_(); return ARRAY.statOfThis_      (rVector.getData(), rVector.shiftSize(), rVector.dataSize(), aOpt);}
     
     
     /** stuff to override */

@@ -1,5 +1,6 @@
 package com.jtool.math.vector;
 
+import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.operator.IDoubleOperator1;
 import com.jtool.code.operator.IDoubleOperator2;
 import com.jtool.math.operation.DATA;
@@ -50,12 +51,12 @@ public abstract class AbstractVectorOperation implements IVectorOperation {
     @Override public void mapFill2this      (double aRHS) {DATA.mapFill2this_(thisVector_().setIterator(), aRHS);}
     @Override public void ebeFill2this      (IVectorGetter aRHS) {IVector rVector = thisVector_(); DATA.ebeFill2this_(rVector.setIterator(), rVector.iteratorOf(aRHS));}
     
-    @Override public double sum ()    {return DATA.sumOfThis_    (thisVector_().iterator());}
-    @Override public double mean()    {return DATA.meanOfThis_   (thisVector_().iterator());}
-    @Override public double product() {return DATA.productOfThis_(thisVector_().iterator());}
-    @Override public double max ()    {return DATA.maxOfThis_    (thisVector_().iterator());}
-    @Override public double min ()    {return DATA.minOfThis_    (thisVector_().iterator());}
-    
+    @Override public double sum    ()                      {return DATA.sumOfThis_    (thisVector_().iterator()      );}
+    @Override public double mean   ()                      {return DATA.meanOfThis_   (thisVector_().iterator()      );}
+    @Override public double product()                      {return DATA.productOfThis_(thisVector_().iterator()      );}
+    @Override public double max    ()                      {return DATA.maxOfThis_    (thisVector_().iterator()      );}
+    @Override public double min    ()                      {return DATA.minOfThis_    (thisVector_().iterator()      );}
+    @Override public double stat   (IDoubleOperator2 aOpt) {return DATA.statOfThis_   (thisVector_().iterator(), aOpt);}
     
     /** 向量的一些额外的运算 */
     @Override public IVector reverse() {

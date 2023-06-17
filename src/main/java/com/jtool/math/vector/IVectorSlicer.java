@@ -1,6 +1,7 @@
 package com.jtool.math.vector;
 
 import com.jtool.code.CS.SliceType;
+import com.jtool.code.filter.IIndexFilter;
 
 import java.util.List;
 
@@ -19,8 +20,5 @@ public interface IVectorSlicer {
     IVector get(SliceType     aIndices);
     
     /** 支持过滤器输入，代替没有 {@code List<Boolean>} 的缺陷 */
-    @FunctionalInterface interface IFilter {boolean accept(double aValue);}
-    @FunctionalInterface interface IFilterWithIndex {boolean accept(double aValue, int aIndex);}
-    IVector get(IFilter          aIndices);
-    IVector get(IFilterWithIndex aIndices);
+    IVector get(IIndexFilter aIndices);
 }

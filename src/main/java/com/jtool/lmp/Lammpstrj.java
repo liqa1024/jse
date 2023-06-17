@@ -291,12 +291,12 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
      * @throws IOException 如果读取失败
      */
     public static Lammpstrj read(String aFilePath) throws IOException {return read_(UT.IO.readAllLines(aFilePath));}
-    public static Lammpstrj read_(String[] aLines) {
+    public static Lammpstrj read_(List<String> aLines) {
         List<SubLammpstrj> rLammpstrj = new ArrayList<>();
         
         int idx = 0;
         String[] tTokens;
-        while (idx < aLines.length) {
+        while (idx < aLines.size()) {
             long aTimeStep;
             int tAtomNum;
             String[] aBoxBounds;
@@ -306,39 +306,39 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             
             // 读取时间步数
             idx = UT.Texts.findLineContaining(aLines, idx, "ITEM: TIMESTEP"); ++idx;
-            if (idx >= aLines.length) break;
-            tTokens = UT.Texts.splitBlank(aLines[idx]);
+            if (idx >= aLines.size()) break;
+            tTokens = UT.Texts.splitBlank(aLines.get(idx));
             aTimeStep = Long.parseLong(tTokens[0]);
             // 读取原子总数
             idx = UT.Texts.findLineContaining(aLines, idx, "ITEM: NUMBER OF ATOMS"); ++idx;
-            if (idx >= aLines.length) break;
-            tTokens = UT.Texts.splitBlank(aLines[idx]);
+            if (idx >= aLines.size()) break;
+            tTokens = UT.Texts.splitBlank(aLines.get(idx));
             tAtomNum = Integer.parseInt(tTokens[0]);
             // 读取模拟盒信息
             idx = UT.Texts.findLineContaining(aLines, idx, "ITEM: BOX BOUNDS");
-            if (idx >= aLines.length) break;
-            tTokens = UT.Texts.splitBlank(aLines[idx]);
+            if (idx >= aLines.size()) break;
+            tTokens = UT.Texts.splitBlank(aLines.get(idx));
             aBoxBounds = new String[] {tTokens[3], tTokens[4], tTokens[5]};
-            ++idx; tTokens = UT.Texts.splitBlank(aLines[idx]);
+            ++idx; tTokens = UT.Texts.splitBlank(aLines.get(idx));
             double aXlo = Double.parseDouble(tTokens[0]); double aXhi = Double.parseDouble(tTokens[1]);
-            ++idx; tTokens = UT.Texts.splitBlank(aLines[idx]);
+            ++idx; tTokens = UT.Texts.splitBlank(aLines.get(idx));
             double aYlo = Double.parseDouble(tTokens[0]); double aYhi = Double.parseDouble(tTokens[1]);
-            ++idx; tTokens = UT.Texts.splitBlank(aLines[idx]);
+            ++idx; tTokens = UT.Texts.splitBlank(aLines.get(idx));
             double aZlo = Double.parseDouble(tTokens[0]); double aZhi = Double.parseDouble(tTokens[1]);
             // 这里暂不考虑斜方模拟盒
             aBox = new Box(aXlo, aXhi, aYlo, aYhi, aZlo, aZhi);
             
             // 读取原子信息
             idx = UT.Texts.findLineContaining(aLines, idx, "ITEM: ATOMS");
-            if (idx >= aLines.length) break;
-            tTokens = UT.Texts.splitBlank(aLines[idx]);
+            if (idx >= aLines.size()) break;
+            tTokens = UT.Texts.splitBlank(aLines.get(idx));
             aAtomDataKeys = new String[tTokens.length-2];
             System.arraycopy(tTokens, 2, aAtomDataKeys, 0, aAtomDataKeys.length);
             ++idx;
-            if (idx+tAtomNum > aLines.length) break;
+            if (idx+tAtomNum > aLines.size()) break;
             aAtomData = new ArrayList<>(tAtomNum);
             for (int i = 0; i < tAtomNum; ++i) {
-                tTokens = UT.Texts.splitBlank(aLines[idx]);
+                tTokens = UT.Texts.splitBlank(aLines.get(idx));
                 aAtomData.add(UT.IO.str2data(tTokens));
                 ++idx;
             }

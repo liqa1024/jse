@@ -2,6 +2,7 @@ package com.jtool.math.vector;
 
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.UT;
+import com.jtool.code.filter.IIndexFilter;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
 import com.jtool.code.iterator.IDoubleSetOnlyIterator;
@@ -318,7 +319,7 @@ public abstract class AbstractVector implements IVector {
             @Override protected IVector getL(final List<Integer> aIndices) {IVector rVector = newZeros(aIndices.size()); rVector.fill(i -> AbstractVector.this.get(aIndices.get(i))); return rVector;}
             @Override protected IVector getA() {return copy();}
             
-            @Override protected IDoubleIterator thisIterator_() {return iterator();}
+            @Override protected int thisSize_() {return size();}
         };
     }
     @Override public IVectorSlicer refSlicer() {
@@ -342,7 +343,7 @@ public abstract class AbstractVector implements IVector {
                 };
             }
             
-            @Override protected IDoubleIterator thisIterator_() {return iterator();}
+            @Override protected int thisSize_() {return size();}
         };
     }
     
@@ -388,6 +389,7 @@ public abstract class AbstractVector implements IVector {
     
     @VisibleForTesting @Override public IVector getAt(List<Integer> aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public IVector getAt(SliceType     aIndices) {return slicer().get(aIndices);}
+    @VisibleForTesting @Override public IVector getAt(IIndexFilter  aIndices) {return slicer().get(aIndices);}
     
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
@@ -395,6 +397,9 @@ public abstract class AbstractVector implements IVector {
     @VisibleForTesting @Override public void putAt(SliceType     aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(SliceType     aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
     @VisibleForTesting @Override public void putAt(SliceType     aIndices, IVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
+    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
+    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, IVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
     
     /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
     @VisibleForTesting @Override public double getAt(int aIdx) {return get((aIdx < 0) ? (size()+aIdx) : aIdx);}

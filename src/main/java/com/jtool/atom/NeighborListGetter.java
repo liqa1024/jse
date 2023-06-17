@@ -145,7 +145,6 @@ public class NeighborListGetter {
     
     
     @FunctionalInterface public interface IXYZIdxDisDo {void run(double aX, double aY, double aZ, int aIdx, double aDis);}
-    @FunctionalInterface public interface IDisDo {void run(double aDis);}
     
     /**
      * 现在统一改为 for-each 的形式，首先提供一个完全通用的方法遍历所有的近邻；

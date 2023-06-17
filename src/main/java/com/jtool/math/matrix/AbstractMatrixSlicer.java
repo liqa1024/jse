@@ -2,7 +2,7 @@ package com.jtool.math.matrix;
 
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.UT;
-import com.jtool.math.vector.IVectorGetter;
+import com.jtool.code.filter.IIndexFilter;
 import com.jtool.math.vector.IVector;
 
 import java.util.ArrayList;
@@ -29,71 +29,18 @@ public abstract class AbstractMatrixSlicer implements IMatrixSlicer {
     final static String ROL_MSG = "SelectedRows Must be a Filter or int[] or List<Integer> or ALL";
     
     /** 支持过滤器输入，代替没有 {@code List<Boolean>} 的缺陷 */
-    @Override public final IMatrix get(IRowFilter          aSelectedRows, int[]         aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final IMatrix get(IRowFilter          aSelectedRows, List<Integer> aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final IMatrix get(IRowFilter          aSelectedRows, SliceType     aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final IVector get(IRowFilter          aSelectedRows, int           aSelectedCol ) {return get(F2L(aSelectedRows), aSelectedCol );}
-    @Override public final IMatrix get(IRowFilterWithIndex aSelectedRows, int[]         aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final IMatrix get(IRowFilterWithIndex aSelectedRows, List<Integer> aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final IMatrix get(IRowFilterWithIndex aSelectedRows, SliceType     aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final IVector get(IRowFilterWithIndex aSelectedRows, int           aSelectedCol ) {return get(F2L(aSelectedRows), aSelectedCol );}
-    
-    @Override public final IMatrix get(int[]         aSelectedRows, IColFilter          aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final IMatrix get(List<Integer> aSelectedRows, IColFilter          aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final IMatrix get(SliceType     aSelectedRows, IColFilter          aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final IVector get(int           aSelectedRow , IColFilter          aSelectedCols) {return get(aSelectedRow , F2L(aSelectedCols));}
-    @Override public final IMatrix get(int[]         aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final IMatrix get(List<Integer> aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final IMatrix get(SliceType     aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final IVector get(int           aSelectedRow , IColFilterWithIndex aSelectedCols) {return get(aSelectedRow , F2L(aSelectedCols));}
-    
-    @Override public final IMatrix get(IRowFilter          aSelectedRows, IColFilter          aSelectedCols) {return get(F2L(aSelectedRows), F2L(aSelectedCols));}
-    @Override public final IMatrix get(IRowFilterWithIndex aSelectedRows, IColFilter          aSelectedCols) {return get(F2L(aSelectedRows), F2L(aSelectedCols));}
-    @Override public final IMatrix get(IRowFilter          aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(F2L(aSelectedRows), F2L(aSelectedCols));}
-    @Override public final IMatrix get(IRowFilterWithIndex aSelectedRows, IColFilterWithIndex aSelectedCols) {return get(F2L(aSelectedRows), F2L(aSelectedCols));}
+    @Override public final IMatrix get(IIndexFilter  aSelectedRows, int[]         aSelectedCols) {return get(IIndexFilter.filter(thisRowNum_(), aSelectedRows), aSelectedCols);}
+    @Override public final IMatrix get(IIndexFilter  aSelectedRows, List<Integer> aSelectedCols) {return get(IIndexFilter.filter(thisRowNum_(), aSelectedRows), aSelectedCols);}
+    @Override public final IMatrix get(IIndexFilter  aSelectedRows, SliceType     aSelectedCols) {return get(IIndexFilter.filter(thisRowNum_(), aSelectedRows), aSelectedCols);}
+    @Override public final IVector get(IIndexFilter  aSelectedRows, int           aSelectedCol ) {return get(IIndexFilter.filter(thisRowNum_(), aSelectedRows), aSelectedCol);}
+    @Override public final IMatrix get(int[]         aSelectedRows, IIndexFilter  aSelectedCols) {return get(aSelectedRows, IIndexFilter.filter(thisColNum_(), aSelectedCols));}
+    @Override public final IMatrix get(List<Integer> aSelectedRows, IIndexFilter  aSelectedCols) {return get(aSelectedRows, IIndexFilter.filter(thisColNum_(), aSelectedCols));}
+    @Override public final IMatrix get(SliceType     aSelectedRows, IIndexFilter  aSelectedCols) {return get(aSelectedRows, IIndexFilter.filter(thisColNum_(), aSelectedCols));}
+    @Override public final IVector get(int           aSelectedRow , IIndexFilter  aSelectedCols) {return get(aSelectedRow , IIndexFilter.filter(thisColNum_(), aSelectedCols));}
+    @Override public final IMatrix get(IIndexFilter  aSelectedRows, IIndexFilter  aSelectedCols) {return get(IIndexFilter.filter(thisRowNum_(), aSelectedRows), IIndexFilter.filter(thisColNum_(), aSelectedCols));}
     
     @Override public final IVector diag() {return diag(0);}
     
-    List<Integer> F2L(IRowFilter aSelectedRows) {
-        List<Integer> rSelectedRows = new ArrayList<>();
-        List<? extends IVectorGetter> tRows = thisRows_();
-        int row = 0;
-        for (IVectorGetter tRow : tRows) {
-            if (aSelectedRows.accept(tRow)) rSelectedRows.add(row);
-            ++row;
-        }
-        return rSelectedRows;
-    }
-    List<Integer> F2L(IColFilter aSelectedCols) {
-        List<Integer> rSelectedCols = new ArrayList<>();
-        List<? extends IVectorGetter> tCols = thisCols_();
-        int col = 0;
-        for (IVectorGetter tCol : tCols) {
-            if (aSelectedCols.accept(tCol)) rSelectedCols.add(col);
-            ++col;
-        }
-        return rSelectedCols;
-    }
-    List<Integer> F2L(IRowFilterWithIndex aSelectedRows) {
-        List<Integer> rSelectedRows = new ArrayList<>();
-        List<? extends IVectorGetter> tRows = thisRows_();
-        int row = 0;
-        for (IVectorGetter tRow : tRows) {
-            if (aSelectedRows.accept(tRow, row)) rSelectedRows.add(row);
-            ++row;
-        }
-        return rSelectedRows;
-    }
-    List<Integer> F2L(IColFilterWithIndex aSelectedCols) {
-        List<Integer> rSelectedCols = new ArrayList<>();
-        List<? extends IVectorGetter> tCols = thisCols_();
-        int col = 0;
-        for (IVectorGetter tCol : tCols) {
-            if (aSelectedCols.accept(tCol, col)) rSelectedCols.add(col);
-            ++col;
-        }
-        return rSelectedCols;
-    }
     
     /** stuff to override */
     protected abstract IVector getIL(int aSelectedRow, List<Integer> aSelectedCols);
@@ -106,6 +53,6 @@ public abstract class AbstractMatrixSlicer implements IMatrixSlicer {
     protected abstract IMatrix getAA();
     public abstract IVector diag(int aShift);
     
-    protected abstract List<? extends IVectorGetter> thisRows_();
-    protected abstract List<? extends IVectorGetter> thisCols_();
+    protected abstract int thisRowNum_();
+    protected abstract int thisColNum_();
 }

@@ -14,6 +14,7 @@ nThreads = 2;
 data = Lmpdat.read('lmp/data/data-glass');
 // 获取 MPC 计算单原子数据
 mpc = data.getMPC(nThreads);
+
 // 计算 RDF
 UT.Timer.tic();
 gr = mpc.calRDF();

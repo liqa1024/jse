@@ -9,7 +9,6 @@ import com.jtool.math.MathEX;
 import com.jtool.math.table.ITable;
 import com.jtool.math.table.Table;
 import com.jtool.math.vector.IVector;
-import com.jtool.math.vector.IVectorOperation;
 import com.jtool.math.vector.Vectors;
 import org.jetbrains.annotations.Nullable;
 
@@ -163,7 +162,7 @@ public class Lmpdat extends AbstractAtomData {
      * @throws IOException 如果读取失败
      */
     public static Lmpdat read(String aFilePath) throws IOException {return read_(UT.IO.readAllLines(aFilePath));}
-    public static Lmpdat read_(String[] aLines) {
+    public static Lmpdat read_(List<String> aLines) {
         
         int tAtomNum;
         int aAtomTypeNum;
@@ -176,23 +175,23 @@ public class Lmpdat extends AbstractAtomData {
         // 跳过第一行
         ++idx;
         // 读取原子数目
-        idx = UT.Texts.findLineContaining(aLines, idx, "atoms"); if (idx >= aLines.length) return null; tTokens = UT.Texts.splitBlank(aLines[idx]);
+        idx = UT.Texts.findLineContaining(aLines, idx, "atoms"); if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
         tAtomNum = Integer.parseInt(tTokens[0]);
         // 读取原子种类数目
-        idx = UT.Texts.findLineContaining(aLines, idx, "atom types"); if (idx >= aLines.length) return null; tTokens = UT.Texts.splitBlank(aLines[idx]);
+        idx = UT.Texts.findLineContaining(aLines, idx, "atom types"); if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
         aAtomTypeNum = Integer.parseInt(tTokens[0]);
         // 读取模拟盒信息
-        idx = UT.Texts.findLineContaining(aLines, idx, "xlo xhi"); if (idx >= aLines.length) return null; tTokens = UT.Texts.splitBlank(aLines[idx]);
+        idx = UT.Texts.findLineContaining(aLines, idx, "xlo xhi"); if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
         double aXlo = Double.parseDouble(tTokens[0]); double aXhi = Double.parseDouble(tTokens[1]);
-        idx = UT.Texts.findLineContaining(aLines, idx, "ylo yhi"); if (idx >= aLines.length) return null; tTokens = UT.Texts.splitBlank(aLines[idx]);
+        idx = UT.Texts.findLineContaining(aLines, idx, "ylo yhi"); if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
         double aYlo = Double.parseDouble(tTokens[0]); double aYhi = Double.parseDouble(tTokens[1]);
-        idx = UT.Texts.findLineContaining(aLines, idx, "zlo zhi"); if (idx >= aLines.length) return null; tTokens = UT.Texts.splitBlank(aLines[idx]);
+        idx = UT.Texts.findLineContaining(aLines, idx, "zlo zhi"); if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
         double aZlo = Double.parseDouble(tTokens[0]); double aZhi = Double.parseDouble(tTokens[1]);
         // 兼容可能的斜方模拟盒
         tIdx = UT.Texts.findLineContaining(aLines, idx, "xy xz yz");
-        if (tIdx < aLines.length) {
+        if (tIdx < aLines.size()) {
             idx = tIdx;
-            tTokens = UT.Texts.splitBlank(aLines[idx]);
+            tTokens = UT.Texts.splitBlank(aLines.get(idx));
             aBox = new BoxPrism(aXlo, aXhi, aYlo, aYhi, aZlo, aZhi, Double.parseDouble(tTokens[0]), Double.parseDouble(tTokens[1]), Double.parseDouble(tTokens[2]));
         } else {
             aBox = new Box(aXlo, aXhi, aYlo, aYhi, aZlo, aZhi);
@@ -200,13 +199,13 @@ public class Lmpdat extends AbstractAtomData {
         
         // 读取可能的质量信息
         tIdx = UT.Texts.findLineContaining(aLines, idx, "Masses"); ++tIdx;
-        if (tIdx < aLines.length) {
+        if (tIdx < aLines.size()) {
             idx = tIdx;
             ++idx; // 中间有一个空行
-            if (idx+aAtomTypeNum > aLines.length) return null;
+            if (idx+aAtomTypeNum > aLines.size()) return null;
             aMasses = Vectors.zeros(aAtomTypeNum);
             for (int i = 0; i < aAtomTypeNum; ++i) {
-                tTokens = UT.Texts.splitBlank(aLines[idx]);
+                tTokens = UT.Texts.splitBlank(aLines.get(idx));
                 aMasses.set(Integer.parseInt(tTokens[0])-1, Double.parseDouble(tTokens[1]));
                 ++idx;
             }
@@ -217,10 +216,10 @@ public class Lmpdat extends AbstractAtomData {
         // 获取原子坐标信息
         idx = UT.Texts.findLineContaining(aLines, idx, "Atoms"); ++idx;
         ++idx; // 中间有一个空行
-        if (idx+tAtomNum > aLines.length) return null;
+        if (idx+tAtomNum > aLines.size()) return null;
         aAtomData = new ArrayList<>(tAtomNum);
         for (int i = 0; i < tAtomNum; ++i) {
-            tTokens = UT.Texts.splitBlank(aLines[idx]);
+            tTokens = UT.Texts.splitBlank(aLines.get(idx));
             aAtomData.add(UT.IO.str2data(tTokens));
             ++idx;
         }

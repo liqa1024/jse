@@ -1,6 +1,7 @@
 package com.jtool.math.vector;
 
 import com.jtool.code.CS.SliceType;
+import com.jtool.code.filter.IIndexFilter;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
 import com.jtool.code.iterator.IDoubleSetOnlyIterator;
@@ -134,10 +135,14 @@ public interface IVector extends IVectorGetter, IVectorSetter {
     
     @VisibleForTesting IVector getAt(List<Integer> aIndices);
     @VisibleForTesting IVector getAt(SliceType     aIndices);
+    @VisibleForTesting IVector getAt(IIndexFilter  aIndices);
     @VisibleForTesting void putAt(List<Integer> aIndices, double aValue);
     @VisibleForTesting void putAt(List<Integer> aIndices, Iterable<? extends Number> aList);
     @VisibleForTesting void putAt(List<Integer> aIndices, IVectorGetter aVector);
     @VisibleForTesting void putAt(SliceType     aIndices, double aValue);
     @VisibleForTesting void putAt(SliceType     aIndices, Iterable<? extends Number> aList);
     @VisibleForTesting void putAt(SliceType     aIndices, IVectorGetter aVector);
+    @VisibleForTesting void putAt(IIndexFilter  aIndices, double aValue);
+    @VisibleForTesting void putAt(IIndexFilter  aIndices, Iterable<? extends Number> aList);
+    @VisibleForTesting void putAt(IIndexFilter  aIndices, IVectorGetter aVector);
 }

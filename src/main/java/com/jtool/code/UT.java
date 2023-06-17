@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -555,10 +556,10 @@ public class UT {
          * @param aContainStr a string to find in aLines
          * @return the idx of aLines which contains aContainStr, or aLines.length if not find
          */
-        public static int findLineContaining(String[] aLines, int aStartIdx, String aContainStr) {
+        public static int findLineContaining(List<String> aLines, int aStartIdx, String aContainStr) {
             int tIdx = aStartIdx;
-            while (tIdx < aLines.length) {
-                if (aLines[tIdx].contains(aContainStr)) break;
+            while (tIdx < aLines.size()) {
+                if (aLines.get(tIdx).contains(aContainStr)) break;
                 ++tIdx;
             }
             return tIdx;
@@ -647,25 +648,28 @@ public class UT {
          */
         public static byte[] readAllBytes(String aFilePath) throws IOException {return Files.readAllBytes(toAbsolutePath_(aFilePath));}
         /**
-         * Wrapper of {@link Files}.readAllLines
+         * read all lines of the File
+         * <p>
+         * Optimized for large file reads
          * @author liqa
          * @param aFilePath File to read
          * @return lines of String
          * @throws IOException when fail
          */
-        public static String[] readAllLines(String aFilePath) throws IOException {return readAllLines_(aFilePath).toArray(new String[0]);}
-        public static List<String> readAllLines_(String aFilePath) throws IOException {return Files.readAllLines(toAbsolutePath_(aFilePath));}
+        public static List<String> readAllLines(String aFilePath) throws IOException {
+            try (Stream<String> tLines = Files.lines(toAbsolutePath_(aFilePath))) {
+                return tLines.parallel().collect(Collectors.toList());
+            }
+        }
         /**
          * read all lines of the InputStream
+         * <p>
+         * Optimized for large file reads
          * @author liqa
          */
-        public static String[] readAllLines(InputStream aInputStream) throws IOException {return readAllLines_(aInputStream).toArray(new String[0]);}
-        public static List<String> readAllLines_(InputStream aInputStream) throws IOException {
-            try (BufferedReader tReader = toReader(aInputStream)) {
-                List<String> lines = new ArrayList<>();
-                String tLine;
-                while ((tLine = tReader.readLine()) != null) lines.add(tLine);
-                return lines;
+        public static List<String> readAllLines(InputStream aInputStream) {
+            try (Stream<String> tLines = toReader(aInputStream).lines()) {
+                return tLines.parallel().collect(Collectors.toList());
             }
         }
         

@@ -22,13 +22,15 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> {
     private final List<Runnable>      mConnectorList;
     
     private final ILoader<T> mLongTimeJobPoolLoader;
+    private final int mForceStep;
     private final boolean mWaitUntilDone;
     
     private final Thread mHook; // ShutdownHook
     
     /** 需要给定一个加载 TimeJobSupplier 的反序列化器 */
     public LongTimeJobManager(String aUniqueName, ILoader<T> aLongTimeJobPoolLoader) {this(aUniqueName, aLongTimeJobPoolLoader, false);}
-    public LongTimeJobManager(String aUniqueName, ILoader<T> aLongTimeJobPoolLoader, boolean aWaitUntilDone) {
+    public LongTimeJobManager(String aUniqueName, ILoader<T> aLongTimeJobPoolLoader, boolean aWaitUntilDone) {this(aUniqueName, aLongTimeJobPoolLoader, aWaitUntilDone, -1);}
+    public LongTimeJobManager(String aUniqueName, ILoader<T> aLongTimeJobPoolLoader, boolean aWaitUntilDone, int aForceStep) {
         String tWorkingDir = WORKING_DIR.replaceAll("%n", "LTJM@" + aUniqueName);
         mStepFile = tWorkingDir +"step";
         mJobPoolFile = tWorkingDir + "jobpool";
@@ -39,6 +41,7 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> {
         mConnectorList = new ArrayList<>();
         
         mLongTimeJobPoolLoader = aLongTimeJobPoolLoader;
+        mForceStep = aForceStep;
         mWaitUntilDone = aWaitUntilDone;
         
         // 在 JVM 意外关闭时手动执行杀死 kill
@@ -74,8 +77,11 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> {
         public void finish(Runnable aFinishDo) throws Exception {
             // 检测记录工作进度的文件是否存在，如果不存在说明需要从头开始
             int tStep;
+            if (mForceStep >= 0) {
+                tStep = mForceStep;
+            } else
             if (UT.IO.isFile(mStepFile)) {
-                tStep = Integer.parseInt(UT.IO.readAllLines_(mStepFile).get(0));
+                tStep = Integer.parseInt(UT.IO.readAllLines(mStepFile).get(0));
             } else {
                 tStep = 0;
             }
@@ -127,7 +133,7 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> {
                     if (!UT.IO.isFile(mShutdownFile)) {
                         UT.IO.write(mShutdownFile, "0");
                     } else {
-                        int tValue = Integer.parseInt(UT.IO.readAllLines_(mShutdownFile).get(0));
+                        int tValue = Integer.parseInt(UT.IO.readAllLines(mShutdownFile).get(0));
                         if (tValue != 0) {
                             UT.IO.delete(mShutdownFile); // 关闭前记得先删掉这个文件
                             shutdown();

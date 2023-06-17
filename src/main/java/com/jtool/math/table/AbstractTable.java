@@ -3,7 +3,6 @@ package com.jtool.math.table;
 
 import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.vector.IVector;
-import com.jtool.math.vector.IVectorGetter;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -95,11 +94,9 @@ public abstract class AbstractTable implements ITable {
             }
             @Override protected ITable getAA() {return Tables.from(matrix(), copyHeads_());}
             
-            @Override protected List<? extends IVectorGetter> thisRows_() {return rows();}
-            @Override protected List<? extends IVectorGetter> thisCols_() {return cols();}
-            
+            @Override protected int thisRowNum_() {return rowNumber();}
             @Override protected int head2col_(String aHead) {return getColumn(aHead);}
-            @Override protected String col2head_(int aCol) {return getHead(aCol);}
+            @Override protected Iterable<String> thisHeads_() {return heads();}
         };
     }
     @Override public ITableSlicer refSlicer() {
@@ -119,11 +116,9 @@ public abstract class AbstractTable implements ITable {
             
             @Override protected ITable getAA() {return AbstractTable.this;}
             
-            @Override protected List<? extends IVectorGetter> thisRows_() {return rows();}
-            @Override protected List<? extends IVectorGetter> thisCols_() {return cols();}
-            
+            @Override protected int thisRowNum_() {return rowNumber();}
             @Override protected int head2col_(String aHead) {return getColumn(aHead);}
-            @Override protected String col2head_(int aCol) {return getHead(aCol);}
+            @Override protected Iterable<String> thisHeads_() {return heads();}
         };
     }
     

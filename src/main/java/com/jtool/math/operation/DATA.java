@@ -113,4 +113,9 @@ public class DATA {
         }
         return rMin;
     }
+    @ApiStatus.Internal public static double statOfThis_(IDoubleIterator tThis, IDoubleOperator2 aOpt) {
+        double tOut = Double.NaN;
+        while (tThis.hasNext()) tOut = aOpt.cal(tOut, tThis.next());
+        return tOut;
+    }
 }

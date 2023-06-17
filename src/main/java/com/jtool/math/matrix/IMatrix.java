@@ -1,6 +1,7 @@
 package com.jtool.math.matrix;
 
 import com.jtool.code.CS.SliceType;
+import com.jtool.code.filter.IIndexFilter;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
 import com.jtool.code.iterator.IDoubleSetOnlyIterator;
@@ -166,6 +167,7 @@ public interface IMatrix extends IMatrixGetter, IMatrixSetter {
     @VisibleForTesting IMatrixRow_ getAt(int aRow);
     @VisibleForTesting IMatrixRows_ getAt(SliceType aSelectedRows);
     @VisibleForTesting IMatrixRows_ getAt(List<Integer> aSelectedRows);
+    @VisibleForTesting IMatrixRows_ getAt(IIndexFilter aSelectedRows);
     
     /** 用来实现矩阵双重方括号索引，并且约束只能使用两个括号 */
     @ApiStatus.Internal interface IMatrixRow_ {
@@ -174,17 +176,22 @@ public interface IMatrix extends IMatrixGetter, IMatrixSetter {
         
         @VisibleForTesting IVector getAt(SliceType aSelectedCols);
         @VisibleForTesting IVector getAt(List<Integer> aSelectedCols);
+        @VisibleForTesting IVector getAt(IIndexFilter  aSelectedCols);
         @VisibleForTesting void putAt(SliceType aSelectedCols, double aValue);
         @VisibleForTesting void putAt(SliceType aSelectedCols, Iterable<? extends Number> aList);
         @VisibleForTesting void putAt(SliceType aSelectedCols, IVectorGetter aVector);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, double aValue);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, Iterable<? extends Number> aList);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, IVectorGetter aVector);
+        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, double aValue);
+        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, Iterable<? extends Number> aList);
+        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, IVectorGetter aVector);
     }
     @ApiStatus.Internal interface IMatrixRows_ {
         @VisibleForTesting IVector getAt(int aCol);
         @VisibleForTesting IMatrix getAt(SliceType aSelectedCols);
         @VisibleForTesting IMatrix getAt(List<Integer> aSelectedCols);
+        @VisibleForTesting IMatrix getAt(IIndexFilter  aSelectedCols);
         @VisibleForTesting void putAt(int aCol, double aValue);
         @VisibleForTesting void putAt(int aCol, Iterable<? extends Number> aList);
         @VisibleForTesting void putAt(int aCol, IVectorGetter aVector);
@@ -194,5 +201,8 @@ public interface IMatrix extends IMatrixGetter, IMatrixSetter {
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, double aValue);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, IMatrixGetter aMatrix);
+        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, double aValue);
+        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows);
+        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, IMatrixGetter aMatrix);
     }
 }

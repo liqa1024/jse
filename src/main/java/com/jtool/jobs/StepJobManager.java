@@ -53,7 +53,7 @@ public class StepJobManager {
                 tStep = mForceStep;
             } else
             if (UT.IO.isFile(mStepFile)) {
-                tStep = Integer.parseInt(UT.IO.readAllLines_(mStepFile).get(0));
+                tStep = Integer.parseInt(UT.IO.readAllLines(mStepFile).get(0));
             } else {
                 tStep = 0;
             }

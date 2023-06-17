@@ -153,8 +153,8 @@ public class POSCAR extends AbstractAtomData {
      * @throws IOException 如果读取失败
      */
     public static POSCAR read(String aFilePath) throws IOException {return read_(UT.IO.readAllLines(aFilePath));}
-    public static POSCAR read_(String[] aLines) {
-        if (aLines.length == 0) return null;
+    public static POSCAR read_(List<String> aLines) {
+        if (aLines.size() == 0) return null;
         
         String aDataName;
         IMatrix aBox;
@@ -167,36 +167,36 @@ public class POSCAR extends AbstractAtomData {
         int idx = 0;
         String[] tTokens;
         // 第一行为 DataName
-        aDataName = aLines[idx];
+        aDataName = aLines.get(idx);
         // 读取模拟盒信息
-        ++idx; if (idx >= aLines.length) return null; tTokens = UT.Texts.splitBlank(aLines[idx]);
+        ++idx; if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
         aBoxScale = Double.parseDouble(tTokens[0]);
         aBox = Matrices.zeros(3);
-        ++idx; if (idx >= aLines.length) return null; tTokens = UT.Texts.splitBlank(aLines[idx]);
+        ++idx; if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
         aBox.row(0).fill(UT.IO.str2data(tTokens));
-        ++idx; if (idx >= aLines.length) return null; tTokens = UT.Texts.splitBlank(aLines[idx]);
+        ++idx; if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
         aBox.row(1).fill(UT.IO.str2data(tTokens));
-        ++idx; if (idx >= aLines.length) return null; tTokens = UT.Texts.splitBlank(aLines[idx]);
+        ++idx; if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
         aBox.row(2).fill(UT.IO.str2data(tTokens));
         // 读取原子种类和对应数目的信息
-        ++idx; if (idx >= aLines.length) return null; tTokens = UT.Texts.splitBlank(aLines[idx]);
+        ++idx; if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
         aAtomTypes = tTokens;
-        ++idx; if (idx >= aLines.length) return null; tTokens = UT.Texts.splitBlank(aLines[idx]);
+        ++idx; if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
         aAtomNumbers = Vectors.from(UT.Code.map(tTokens, Integer::parseInt));
         // 可选的注释行
-        ++idx; if (idx >= aLines.length) return null;
-        if (aLines[idx].equals("Selective dynamics")) {
-        aSelectiveDynamics = true; ++idx; if (idx >= aLines.length) return null;
+        ++idx; if (idx >= aLines.size()) return null;
+        if (aLines.get(idx).equals("Selective dynamics")) {
+        aSelectiveDynamics = true; ++idx; if (idx >= aLines.size()) return null;
         }
         // 目前只支持 Direct
-        if (!aLines[idx].equals("Direct")) throw new RuntimeException("Can ONLY read Direct POSCAR temporarily");
+        if (!aLines.get(idx).equals("Direct")) throw new RuntimeException("Can ONLY read Direct POSCAR temporarily");
         // 读取原子数据
-        ++idx; if (idx >= aLines.length) return null;
+        ++idx; if (idx >= aLines.size()) return null;
         int tAtomNum = (int)aAtomNumbers.operation().sum();
-        if (idx+tAtomNum > aLines.length) return null;
+        if (idx+tAtomNum > aLines.size()) return null;
         aDirect = Matrices.zeros(tAtomNum, 3);
         for (int i = 0; i < tAtomNum; ++i) {
-            tTokens = UT.Texts.splitBlank(aLines[idx]);
+            tTokens = UT.Texts.splitBlank(aLines.get(idx));
             aDirect.row(i).fill(UT.IO.str2data(tTokens));
             ++idx;
         }

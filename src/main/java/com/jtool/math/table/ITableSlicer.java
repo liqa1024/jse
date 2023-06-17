@@ -1,6 +1,8 @@
 package com.jtool.math.table;
 
 import com.jtool.code.CS.SliceType;
+import com.jtool.code.filter.IFilter;
+import com.jtool.code.filter.IIndexFilter;
 import com.jtool.math.vector.IVectorGetter;
 
 import java.util.List;
@@ -43,31 +45,13 @@ public interface ITableSlicer {
     ITable get(int           aSelectedRow , String        aSelectedCol );
     
     /** 支持过滤器输入，代替没有 {@code List<Boolean>，List<String>} 的缺陷 */
-    @FunctionalInterface interface IRowFilter          {boolean accept(IVectorGetter aRow);}
-    @FunctionalInterface interface IRowFilterWithIndex {boolean accept(IVectorGetter aRow, int aIndex);}
-    @FunctionalInterface interface IColFilter          {boolean accept(IVectorGetter aCol);}
-    @FunctionalInterface interface IColFilterWithHead  {boolean accept(IVectorGetter aCol, String aHead);}
-    
-    ITable get(IRowFilter          aSelectedRows, int[]         aSelectedCols);
-    ITable get(IRowFilter          aSelectedRows, List<Integer> aSelectedCols);
-    ITable get(IRowFilter          aSelectedRows, SliceType     aSelectedCols);
-    ITable get(IRowFilter          aSelectedRows, int           aSelectedCol );
-    ITable get(IRowFilterWithIndex aSelectedRows, int[]         aSelectedCols);
-    ITable get(IRowFilterWithIndex aSelectedRows, List<Integer> aSelectedCols);
-    ITable get(IRowFilterWithIndex aSelectedRows, SliceType     aSelectedCols);
-    ITable get(IRowFilterWithIndex aSelectedRows, int           aSelectedCol );
-    
-    ITable get(int[]         aSelectedRows, IColFilter          aSelectedCols);
-    ITable get(List<Integer> aSelectedRows, IColFilter          aSelectedCols);
-    ITable get(SliceType     aSelectedRows, IColFilter          aSelectedCols);
-    ITable get(int           aSelectedRow , IColFilter          aSelectedCols);
-    ITable get(int[]         aSelectedRows, IColFilterWithHead  aSelectedCols);
-    ITable get(List<Integer> aSelectedRows, IColFilterWithHead  aSelectedCols);
-    ITable get(SliceType     aSelectedRows, IColFilterWithHead  aSelectedCols);
-    ITable get(int           aSelectedRow , IColFilterWithHead  aSelectedCols);
-    
-    ITable get(IRowFilter          aSelectedRows, IColFilter          aSelectedCols);
-    ITable get(IRowFilterWithIndex aSelectedRows, IColFilter          aSelectedCols);
-    ITable get(IRowFilter          aSelectedRows, IColFilterWithHead  aSelectedCols);
-    ITable get(IRowFilterWithIndex aSelectedRows, IColFilterWithHead  aSelectedCols);
+    ITable get(IIndexFilter  aSelectedRows, int[]           aSelectedCols);
+    ITable get(IIndexFilter  aSelectedRows, List<Integer>   aSelectedCols);
+    ITable get(IIndexFilter  aSelectedRows, SliceType       aSelectedCols);
+    ITable get(IIndexFilter  aSelectedRows, int             aSelectedCol );
+    ITable get(int[]         aSelectedRows, IFilter<String> aSelectedCols);
+    ITable get(List<Integer> aSelectedRows, IFilter<String> aSelectedCols);
+    ITable get(SliceType     aSelectedRows, IFilter<String> aSelectedCols);
+    ITable get(int           aSelectedRow , IFilter<String> aSelectedCols);
+    ITable get(IIndexFilter  aSelectedRows, IFilter<String> aSelectedCols);
 }

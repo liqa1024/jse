@@ -3,9 +3,11 @@ package com.jtool.math.table;
 import com.google.common.collect.ImmutableList;
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.UT;
-import com.jtool.math.vector.IVectorGetter;
+import com.jtool.code.filter.IFilter;
+import com.jtool.code.filter.IIndexFilter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -40,30 +42,18 @@ public abstract class AbstractTableSlicer implements ITableSlicer {
     final static String ROL_MSG = "SelectedRows Must be a Filter or int[] or List<Integer> or ALL";
     
     /** 支持过滤器输入，代替没有 {@code List<Boolean>} 的缺陷 */
-    @Override public final ITable get(IRowFilter          aSelectedRows, int[]         aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final ITable get(IRowFilter          aSelectedRows, List<Integer> aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final ITable get(IRowFilter          aSelectedRows, SliceType     aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final ITable get(IRowFilter          aSelectedRows, int           aSelectedCol ) {return get(F2L(aSelectedRows), aSelectedCol );}
-    @Override public final ITable get(IRowFilterWithIndex aSelectedRows, int[]         aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final ITable get(IRowFilterWithIndex aSelectedRows, List<Integer> aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final ITable get(IRowFilterWithIndex aSelectedRows, SliceType     aSelectedCols) {return get(F2L(aSelectedRows), aSelectedCols);}
-    @Override public final ITable get(IRowFilterWithIndex aSelectedRows, int           aSelectedCol ) {return get(F2L(aSelectedRows), aSelectedCol );}
+    @Override public final ITable get(IIndexFilter  aSelectedRows, int[]           aSelectedCols) {return get(IIndexFilter.filter(thisRowNum_(), aSelectedRows), aSelectedCols);}
+    @Override public final ITable get(IIndexFilter  aSelectedRows, List<Integer>   aSelectedCols) {return get(IIndexFilter.filter(thisRowNum_(), aSelectedRows), aSelectedCols);}
+    @Override public final ITable get(IIndexFilter  aSelectedRows, SliceType       aSelectedCols) {return get(IIndexFilter.filter(thisRowNum_(), aSelectedRows), aSelectedCols);}
+    @Override public final ITable get(IIndexFilter  aSelectedRows, int             aSelectedCol ) {return get(IIndexFilter.filter(thisRowNum_(), aSelectedRows), aSelectedCol );}
+    @Override public final ITable get(int[]         aSelectedRows, IFilter<String> aSelectedCols) {return get(aSelectedRows, S2L(IFilter.filter(thisHeads_(), aSelectedCols)));}
+    @Override public final ITable get(List<Integer> aSelectedRows, IFilter<String> aSelectedCols) {return get(aSelectedRows, S2L(IFilter.filter(thisHeads_(), aSelectedCols)));}
+    @Override public final ITable get(SliceType     aSelectedRows, IFilter<String> aSelectedCols) {return get(aSelectedRows, S2L(IFilter.filter(thisHeads_(), aSelectedCols)));}
+    @Override public final ITable get(int           aSelectedRow , IFilter<String> aSelectedCols) {return get(aSelectedRow , S2L(IFilter.filter(thisHeads_(), aSelectedCols)));}
+    @Override public final ITable get(IIndexFilter  aSelectedRows, IFilter<String> aSelectedCols) {return get(IIndexFilter.filter(thisRowNum_(), aSelectedRows), S2L(IFilter.filter(thisHeads_(), aSelectedCols)));}
     
-    @Override public final ITable get(int[]         aSelectedRows, IColFilter          aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final ITable get(List<Integer> aSelectedRows, IColFilter          aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final ITable get(SliceType     aSelectedRows, IColFilter          aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final ITable get(int           aSelectedRow , IColFilter          aSelectedCols) {return get(aSelectedRow , F2L(aSelectedCols));}
-    @Override public final ITable get(int[]         aSelectedRows, IColFilterWithHead  aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final ITable get(List<Integer> aSelectedRows, IColFilterWithHead  aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final ITable get(SliceType     aSelectedRows, IColFilterWithHead  aSelectedCols) {return get(aSelectedRows, F2L(aSelectedCols));}
-    @Override public final ITable get(int           aSelectedRow , IColFilterWithHead  aSelectedCols) {return get(aSelectedRow , F2L(aSelectedCols));}
-    
-    @Override public final ITable get(IRowFilter          aSelectedRows, IColFilter          aSelectedCols) {return get(F2L(aSelectedRows), F2L(aSelectedCols));}
-    @Override public final ITable get(IRowFilterWithIndex aSelectedRows, IColFilter          aSelectedCols) {return get(F2L(aSelectedRows), F2L(aSelectedCols));}
-    @Override public final ITable get(IRowFilter          aSelectedRows, IColFilterWithHead  aSelectedCols) {return get(F2L(aSelectedRows), F2L(aSelectedCols));}
-    @Override public final ITable get(IRowFilterWithIndex aSelectedRows, IColFilterWithHead  aSelectedCols) {return get(F2L(aSelectedRows), F2L(aSelectedCols));}
-    
-    List<Integer> S2L(String[] aSelectedCols) {
+    private List<Integer> S2L(String[] aSelectedCols) {return S2L(Arrays.asList(aSelectedCols));}
+    private List<Integer> S2L(Iterable<String> aSelectedCols) {
         List<Integer> rSelectedCols = new ArrayList<>();
         for (String tHead : aSelectedCols) {
             int tCol = head2col_(tHead);
@@ -71,50 +61,9 @@ public abstract class AbstractTableSlicer implements ITableSlicer {
         }
         return rSelectedCols;
     }
-    List<Integer> S2L(String aSelectedCol) {
+    private List<Integer> S2L(String aSelectedCol) {
         int tCol = head2col_(aSelectedCol);
         return tCol >= 0 ? Collections.singletonList(tCol) : ImmutableList.of();
-    }
-    
-    List<Integer> F2L(IRowFilter aSelectedRows) {
-        List<Integer> rSelectedRows = new ArrayList<>();
-        List<? extends IVectorGetter> tRows = thisRows_();
-        int row = 0;
-        for (IVectorGetter tRow : tRows) {
-            if (aSelectedRows.accept(tRow)) rSelectedRows.add(row);
-            ++row;
-        }
-        return rSelectedRows;
-    }
-    List<Integer> F2L(IColFilter aSelectedCols) {
-        List<Integer> rSelectedCols = new ArrayList<>();
-        List<? extends IVectorGetter> tCols = thisCols_();
-        int col = 0;
-        for (IVectorGetter tCol : tCols) {
-            if (aSelectedCols.accept(tCol)) rSelectedCols.add(col);
-            ++col;
-        }
-        return rSelectedCols;
-    }
-    List<Integer> F2L(IRowFilterWithIndex aSelectedRows) {
-        List<Integer> rSelectedRows = new ArrayList<>();
-        List<? extends IVectorGetter> tRows = thisRows_();
-        int row = 0;
-        for (IVectorGetter tRow : tRows) {
-            if (aSelectedRows.accept(tRow, row)) rSelectedRows.add(row);
-            ++row;
-        }
-        return rSelectedRows;
-    }
-    List<Integer> F2L(IColFilterWithHead aSelectedCols) {
-        List<Integer> rSelectedCols = new ArrayList<>();
-        List<? extends IVectorGetter> tCols = thisCols_();
-        int col = 0;
-        for (IVectorGetter tCol : tCols) {
-            if (aSelectedCols.accept(tCol, col2head_(col))) rSelectedCols.add(col);
-            ++col;
-        }
-        return rSelectedCols;
     }
     
     /** stuff to override */
@@ -123,8 +72,7 @@ public abstract class AbstractTableSlicer implements ITableSlicer {
     protected abstract ITable getAL(List<Integer> aSelectedCols);
     protected abstract ITable getAA();
     
-    protected abstract List<? extends IVectorGetter> thisRows_();
-    protected abstract List<? extends IVectorGetter> thisCols_();
+    protected abstract int thisRowNum_();
     protected abstract int head2col_(String aHead);
-    protected abstract String col2head_(int aCol);
+    protected abstract Iterable<String> thisHeads_();
 }

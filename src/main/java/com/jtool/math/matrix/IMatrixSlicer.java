@@ -1,6 +1,7 @@
 package com.jtool.math.matrix;
 
 import com.jtool.code.CS.SliceType;
+import com.jtool.code.filter.IIndexFilter;
 import com.jtool.math.vector.IVectorGetter;
 import com.jtool.math.vector.IVector;
 
@@ -33,33 +34,15 @@ public interface IMatrixSlicer {
     IVector get(SliceType     aSelectedRows, int           aSelectedCol );
     
     /** 支持过滤器输入，代替没有 {@code List<Boolean>} 的缺陷 */
-    @FunctionalInterface interface IRowFilter          {boolean accept(IVectorGetter aRow);}
-    @FunctionalInterface interface IRowFilterWithIndex {boolean accept(IVectorGetter aRow, int aIndex);}
-    @FunctionalInterface interface IColFilter          {boolean accept(IVectorGetter aCol);}
-    @FunctionalInterface interface IColFilterWithIndex {boolean accept(IVectorGetter aCol, int aIndex);}
-    
-    IMatrix get(IRowFilter          aSelectedRows, int[]         aSelectedCols);
-    IMatrix get(IRowFilter          aSelectedRows, List<Integer> aSelectedCols);
-    IMatrix get(IRowFilter          aSelectedRows, SliceType     aSelectedCols);
-    IVector get(IRowFilter          aSelectedRows, int           aSelectedCol );
-    IMatrix get(IRowFilterWithIndex aSelectedRows, int[]         aSelectedCols);
-    IMatrix get(IRowFilterWithIndex aSelectedRows, List<Integer> aSelectedCols);
-    IMatrix get(IRowFilterWithIndex aSelectedRows, SliceType     aSelectedCols);
-    IVector get(IRowFilterWithIndex aSelectedRows, int           aSelectedCol );
-    
-    IMatrix get(int[]         aSelectedRows, IColFilter          aSelectedCols);
-    IMatrix get(List<Integer> aSelectedRows, IColFilter          aSelectedCols);
-    IMatrix get(SliceType     aSelectedRows, IColFilter          aSelectedCols);
-    IVector get(int           aSelectedRow , IColFilter          aSelectedCols);
-    IMatrix get(int[]         aSelectedRows, IColFilterWithIndex aSelectedCols);
-    IMatrix get(List<Integer> aSelectedRows, IColFilterWithIndex aSelectedCols);
-    IMatrix get(SliceType     aSelectedRows, IColFilterWithIndex aSelectedCols);
-    IVector get(int           aSelectedRow , IColFilterWithIndex aSelectedCols);
-    
-    IMatrix get(IRowFilter          aSelectedRows, IColFilter          aSelectedCols);
-    IMatrix get(IRowFilterWithIndex aSelectedRows, IColFilter          aSelectedCols);
-    IMatrix get(IRowFilter          aSelectedRows, IColFilterWithIndex aSelectedCols);
-    IMatrix get(IRowFilterWithIndex aSelectedRows, IColFilterWithIndex aSelectedCols);
+    IMatrix get(IIndexFilter  aSelectedRows, int[]         aSelectedCols);
+    IMatrix get(IIndexFilter  aSelectedRows, List<Integer> aSelectedCols);
+    IMatrix get(IIndexFilter  aSelectedRows, SliceType     aSelectedCols);
+    IVector get(IIndexFilter  aSelectedRows, int           aSelectedCol );
+    IMatrix get(int[]         aSelectedRows, IIndexFilter  aSelectedCols);
+    IMatrix get(List<Integer> aSelectedRows, IIndexFilter  aSelectedCols);
+    IMatrix get(SliceType     aSelectedRows, IIndexFilter  aSelectedCols);
+    IVector get(int           aSelectedRow , IIndexFilter  aSelectedCols);
+    IMatrix get(IIndexFilter  aSelectedRows, IIndexFilter  aSelectedCols);
     
     /** 现在获取对角放在切片操作中 */
     IVector diag();

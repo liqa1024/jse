@@ -66,27 +66,27 @@ public class Thermo extends AbstractMultiFrameTable<Table> {
      * @throws IOException 如果读取失败
      */
     public static Thermo read(String aFilePath) throws IOException {return read_(UT.IO.readAllLines(aFilePath));}
-    public static Thermo read_(String[] aLines) {
+    public static Thermo read_(List<String> aLines) {
         List<Table> rThermo = new ArrayList<>();
         
         int idx = 0, endIdx;
         String[] tTokens;
-        while (idx < aLines.length) {
+        while (idx < aLines.size()) {
             // 跳转到 "Per MPI rank memory allocation" 后面的 "Step" 行，也就是需要 thermo 中包含 step 项
             idx = UT.Texts.findLineContaining(aLines, idx, "Per MPI rank memory allocation");
             idx = UT.Texts.findLineContaining(aLines, idx, "Step");
-            if (idx >= aLines.length) break;
+            if (idx >= aLines.size()) break;
             // 获取种类的 key
-            tTokens = UT.Texts.splitBlank(aLines[idx]);
+            tTokens = UT.Texts.splitBlank(aLines.get(idx));
             String[] aHands = tTokens;
             ++idx;
             // 获取结束的位置
             endIdx = UT.Texts.findLineContaining(aLines, idx, "Loop time of");
-            if (endIdx >= aLines.length) break;
+            if (endIdx >= aLines.size()) break;
             List<double[]> aData = new ArrayList<>(endIdx - idx);
             // 读取数据
             for (; idx < endIdx; ++idx) {
-                tTokens = UT.Texts.splitBlank(aLines[idx]);
+                tTokens = UT.Texts.splitBlank(aLines.get(idx));
                 aData.add(UT.IO.str2data(tTokens));
             }
             // 创建 Table 并附加到 rThermo 中

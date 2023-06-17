@@ -55,6 +55,7 @@ public interface IVectorOperation {
     double product();
     double max();
     double min();
+    double stat(IDoubleOperator2 aOpt);
     
     
     /** 向量的一些额外的运算 */

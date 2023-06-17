@@ -463,7 +463,7 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
      * @param aL 计算具体 q 值的下标，即 q4: l = 4, q6: l = 6
      * @param aNN Neighbor list Number，统计的近邻数目，默认为 12
      * @param aRMaxBegin 初始用来搜索近邻的半径，越小搜索的目标越少，可能会更快，
-     * 但过小会达不到 aNN，从而会内部增大此半径重新搜索，此时耗时不会进一步降低。默认为一倍单位长度
+     * 但过小会达不到 aNN，从而会内部增大此半径重新搜索，此时耗时不会进一步降低。默认为 1.5 倍单位长度
      * @return ql 组成的向量
      */
     public IVector calAOOP(final int aL, final int aNN, final double aRMaxBegin) {
@@ -534,6 +534,6 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
         // 返回最终计算结果
         return ql;
     }
-    public IVector calAOOP(int aL, int aNN) {return calAOOP(aL, aNN, mUnitLen);}
+    public IVector calAOOP(int aL, int aNN) {return calAOOP(aL, aNN, mUnitLen*1.5);}
     public IVector calAOOP(int aL         ) {return calAOOP(aL, 12);}
 }

@@ -238,4 +238,11 @@ public class ARRAY {
         }
         return rMin;
     }
+    public static double statOfThis_(double[] aThis, int aShift, int aLength, IDoubleOperator2 aOpt) {
+        final int tEnd = aLength + aShift;
+        
+        double tOut = Double.NaN;
+        for (int i = aShift; i < tEnd; ++i) tOut = aOpt.cal(tOut, aThis[i]);
+        return tOut;
+    }
 }

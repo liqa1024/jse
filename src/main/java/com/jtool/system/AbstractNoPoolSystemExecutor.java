@@ -339,7 +339,7 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
         String tFilePath = toRealOutFilePath(defaultOutFilePath());
         system_(aCommand, tFilePath, new IOFiles().putOFiles(OUTPUT_FILE_KEY, tFilePath));
         try {
-            return UT.IO.readAllLines_(tFilePath);
+            return UT.IO.readAllLines(tFilePath);
         } catch (IOException e) {
             e.printStackTrace();
             return ImmutableList.of();
@@ -350,7 +350,7 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
         system_(aCommand, tFilePath, (aCommand==null || aCommand.isEmpty()) ? aIOFiles.copy() : aIOFiles.copy().putOFiles(OUTPUT_FILE_KEY, tFilePath));
         if (aCommand==null || aCommand.isEmpty()) return ImmutableList.of();
         try {
-            return UT.IO.readAllLines_(tFilePath);
+            return UT.IO.readAllLines(tFilePath);
         } catch (IOException e) {
             e.printStackTrace();
             return ImmutableList.of();
@@ -367,7 +367,7 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
         final Future<Integer> tSystemTask = submitSystem_(aCommand, tFilePath, new IOFiles().putOFiles(OUTPUT_FILE_KEY, tFilePath));
         return UT.Code.map(tSystemTask, v -> {
             try {
-                return UT.IO.readAllLines_(tFilePath);
+                return UT.IO.readAllLines(tFilePath);
             } catch (IOException e) {
                 e.printStackTrace();
                 return ImmutableList.of();
@@ -380,7 +380,7 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
         if (aCommand==null || aCommand.isEmpty()) return EPT_STR_FUTURE;
         return UT.Code.map(tSystemTask, v -> {
             try {
-                return UT.IO.readAllLines_(tFilePath);
+                return UT.IO.readAllLines(tFilePath);
             } catch (IOException e) {
                 e.printStackTrace();
                 return ImmutableList.of();
