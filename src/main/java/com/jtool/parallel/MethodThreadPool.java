@@ -16,6 +16,6 @@ public class MethodThreadPool extends AbstractHasThreadPool<IExecutorEX> {
     public MethodThreadPool(int aThreadNum) {super(newPool(aThreadNum));}
     
     // 提交任务
-    public Future<Object> submit(@NotNull Object aInstance, String aMethodName, Object... aArgs) {try {return pool().submit(UT.Hack.getCallableOfMethod(aInstance, aMethodName, aArgs));} catch (NoSuchMethodException e) {e.printStackTrace(); return null;}}
-    public Future<Object> submitStatic(String aClassName, String aMethodName, Object... aArgs) {try {return pool().submit(UT.Hack.getCallableOfStaticMethod(aClassName, aMethodName, aArgs));} catch (NoSuchMethodException | ClassNotFoundException e) {e.printStackTrace(); return null;}}
+    public Future<Object> submit(@NotNull Object aInstance, String aMethodName, Object... aArgs) {try {return pool().submit(UT.Hack.getCallableOfMethod(aInstance, aMethodName, aArgs));} catch (NoSuchMethodException e) {throw new RuntimeException(e);}}
+    public Future<Object> submitStatic(String aClassName, String aMethodName, Object... aArgs) {try {return pool().submit(UT.Hack.getCallableOfStaticMethod(aClassName, aMethodName, aArgs));} catch (NoSuchMethodException | ClassNotFoundException e) {throw new RuntimeException(e);}}
 }

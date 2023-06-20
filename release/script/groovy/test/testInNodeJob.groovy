@@ -12,7 +12,7 @@ import obj.GUT;
 def ssh = new SSH(UT.IO.json2map('.SECRET/SSH_INFO.json'));
 
 // 由于需要使用 jTool 本身来计算，如果没有初始化需要首先使用这个指令初始化一下 ssh 上的 jTool 环境
-//GUT.initJToolEnv(ssh);
+GUT.initJToolEnv(ssh);
 
 def ioFiles = (new IOFiles())
     .i('<self>', 'script/groovy/run/inNodeJob.groovy');

@@ -62,6 +62,7 @@ public class LmpIn extends AbstractInFileLines {
     public static LmpIn custom(String aLmpInPath) {return new LmpIn(aLmpInPath);}
     
     public static LmpIn INIT_MELT_NPT_Cu   () {LmpIn tLmpIn = new LmpIn("init-melt-NPT-Cu"   , true); tLmpIn.putIFiles("vInDataPath"    , "lmp/data/CuFCC108.lmpdat"         ).putOFiles("vOutRestartPath", "lmp/.temp/restart/melt-Cu108-init"); return tLmpIn;}
+    public static LmpIn DUMP_MELT_NPT_Cu   () {LmpIn tLmpIn = new LmpIn("dump-melt-NPT-Cu"   , true); tLmpIn.putIFiles("vInDataPath"    , "lmp/data/Cu108.lmpdat"            ).putOFiles("vDumpPath"      , "lmp/.temp/dump/Cu108.lammpstrj"   ); return tLmpIn;}
     public static LmpIn RESTART_MELT_NPT_Cu() {LmpIn tLmpIn = new LmpIn("restart-melt-NPT-Cu", true); tLmpIn.putIFiles("vInRestartPath" , "lmp/.temp/restart/melt-Cu108-init").putOFiles("vOutRestartPath", "lmp/.temp/restart/melt-Cu108", 5).setIOFilesStartKey("vBeginIdx", "vOutRestartPath").setIOFileEndKey("vEndIdx", "vOutRestartPath"); return tLmpIn;}
     
     /** 默认行为 */

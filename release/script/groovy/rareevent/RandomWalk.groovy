@@ -26,9 +26,9 @@ class RandomWalk {
         private final def RNG = new Random();
         PathGenerator(int pathLen) {this.pathLen = pathLen;}
         
-        @Override List<PointWithTime> pathInit() {
-            return pathFrom(new PointWithTime(0, 0));
-        }
+        
+        @Override PointWithTime initPoint() {return new PointWithTime(0, 0);}
+        
         @Override List<PointWithTime> pathFrom(PointWithTime point) {
             def path = new ArrayList<PointWithTime>(pathLen);
             path.add(point);

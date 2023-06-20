@@ -11,9 +11,9 @@ import com.jtool.atom.IHasAtomData;
  * @param <T> 路径上每个点的类型，对于 lammps 模拟则是原子结构信息 {@link IHasAtomData}
  */
 public interface IPathGenerator<T> {
-    /** 获取初始化路径，不需要任何输入参数 */
-    Iterable<T> pathInit();
-    /** 获取从给定位置开始的路径，注意这里约定获取到的路径的第一个点是 aStart */
+    /** 获取初始点，不需要任何输入参数 */
+    T initPoint();
+    /** 获取从给定位置开始的路径，注意这里约定获取到的路径的第一个点是 aStart（或等价于 aStart）*/
     Iterable<T> pathFrom(T aStart);
     /** 获取指定点的时间，用来采样方法需要据此获得反应速率 */
     double timeOf(T aPoint);

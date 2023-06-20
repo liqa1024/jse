@@ -12,5 +12,5 @@ public class TaskCall<T> implements Callable<T> {
     
     @Override public T call() throws Exception {return mCall.call();}
     
-    public TaskRun toRunnable() {return new TaskRun(() -> {try {call();} catch (Exception e) {e.printStackTrace();}});}
+    public TaskRun toRunnable() {return new TaskRun(() -> {try {call();} catch (Exception e) {throw new RuntimeException(e);}});}
 }

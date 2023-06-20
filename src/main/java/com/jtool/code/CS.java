@@ -34,6 +34,7 @@ public class CS {
     public final static String WORKING_DIR = ".temp/%n/";
     
     public final static boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("windows");
+    public final static String NO_LOG = IS_WINDOWS ? "NUL" : "/dev/null";
     
     
     /** MathEX stuffs */

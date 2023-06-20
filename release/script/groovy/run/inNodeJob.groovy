@@ -8,7 +8,7 @@ import com.jtool.system.InternalSLURM
 def exe = new InternalSLURM(4);
 
 // 高压测试，直接跑大量的 sleepEcho
-UT.IO.write('sleepEchoIn.sh', '#!/bin/bash\nsleep 10s\necho "${1}"');
+UT.IO.write('sleepEchoIn.sh', '#!/bin/bash\nsleep 5s\necho "${1}"');
 exe.system("chmod 777 sleepEchoIn.sh");
 
 for (i in 0..<100) {

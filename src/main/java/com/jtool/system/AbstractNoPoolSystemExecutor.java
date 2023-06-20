@@ -121,7 +121,7 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
         if (tList != null) for (Object tObj : tList) aOFiles.add((String)tObj);
         return new FutureJob(aSubmitCommand, aOFiles);
     }
-    protected void setJobNumber(int aJobNumber) {mJobNumber = aJobNumber;}
+    protected synchronized void setJobNumber(int aJobNumber) {mJobNumber = aJobNumber;}
     @ApiStatus.Internal
     @SuppressWarnings("RedundantIfStatement")
     public synchronized boolean killRecommended() {
@@ -209,7 +209,8 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
     
     
     private int mJobNumber = 0;
-    protected int jobNumber() {return mJobNumber;}
+    protected synchronized int jobNumber() {return mJobNumber;}
+    protected synchronized void increaseJobNumber() {++mJobNumber;}
     /** 需要专门自定义实现一个 Future，返回的是这个指令最终的退出代码，注意保持只有一个锁来防止死锁 */
     protected class FutureJob implements IFutureJob, ISavable {
         private String mSubmitCommand;
@@ -217,7 +218,7 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
         protected FutureJob(String aSubmitCommand, Iterable<String> aOFiles) {
             mSubmitCommand = aSubmitCommand;
             mOFiles = aOFiles;
-            ++mJobNumber;
+            increaseJobNumber();
         }
         
         @Override
@@ -392,7 +393,7 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
     
     /** 批量任务直接遍历提交 */
     private final LinkedList<Pair<List<String>, MergedIOFiles>> mBatchCommandsIOFiles = new LinkedList<>();
-    @Override public final ListFutureJob submitBatchSystem() {
+    @Override public final synchronized ListFutureJob submitBatchSystem() {
         if (mDead) throw new RuntimeException("Can NOT getSubmit from this Dead Executor.");
         // 遍历提交
         List<IFutureJob> rFutures = new ArrayList<>(mBatchCommandsIOFiles.size());
@@ -421,8 +422,8 @@ public abstract class AbstractNoPoolSystemExecutor<T extends ISystemExecutor> ex
         // 使用专门的 ListFutureJob 来管理 Future，可以保留更多的信息
         return new ListFutureJob(rFutures);
     }
-    @Override public final void putBatchSystem(String aCommand) {putBatchSystem(aCommand, EPT_IOF);}
-    @Override public final void putBatchSystem(String aCommand, IHasIOFiles aIOFiles) {
+    @Override public final synchronized void putBatchSystem(String aCommand) {putBatchSystem(aCommand, EPT_IOF);}
+    @Override public final synchronized void putBatchSystem(String aCommand, IHasIOFiles aIOFiles) {
         if (mDead) throw new RuntimeException("Can NOT putSubmit from this Dead Executor.");
         Pair<List<String>, MergedIOFiles> tPair = mBatchCommandsIOFiles.peekLast();
         if (tPair==null || tPair.first.size()>=maxBatchSize()) {

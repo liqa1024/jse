@@ -111,6 +111,7 @@ public class SLURMSystemExecutor extends AbstractNoPoolSystemExecutor<SSHSystemE
         // 加载这些属性
         rSLURM.loadQueuedJobList(aLoadFrom);
         rSLURM.loadJobList(aLoadFrom);
+        // 需要最后重新设置 jobNumber，因为创建任务列表时会顺便修改内部的 jobNumber
         rSLURM.setJobNumber(((Number)aLoadFrom.get("JobNumber")).intValue());
         // 解除暂停
         rSLURM.unpause();
