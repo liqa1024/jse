@@ -48,7 +48,7 @@ public class DumpPathGenerator implements IPathGenerator<SubLammpstrj>, AutoClos
      * @param aPairStyle lammps 输入文件使用的势场类型
      * @param aPairCoeff lammps 输入文件使用的势场参数
      * @param aTimestep 每步的实际时间步长，影响输入文件和统计使用的时间，最终时间单位和输入文件的 unit 一致，默认为 0.002
-     * @param aDumpStep 每隔多少模拟步输出一个 dump，默认为 4
+     * @param aDumpStep 每隔多少模拟步输出一个 dump，默认为 10
      * @param aPathLength 一次创建的路径的长度，默认为 20
      */
     public DumpPathGenerator(ISystemExecutor aEXE, String aLmpExe, IHasAtomData aInitAtomData, Collection<? extends Number> aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, int aPathLength) {
@@ -75,7 +75,7 @@ public class DumpPathGenerator implements IPathGenerator<SubLammpstrj>, AutoClos
         this(aEXE, aLmpExe, aInitAtomData, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, 20);
     }
     public DumpPathGenerator(ISystemExecutor aEXE, String aLmpExe, IHasAtomData aInitAtomData, Collection<? extends Number> aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep) {
-        this(aEXE, aLmpExe, aInitAtomData, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, 4);
+        this(aEXE, aLmpExe, aInitAtomData, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, 10);
     }
     public DumpPathGenerator(ISystemExecutor aEXE, String aLmpExe, IHasAtomData aInitAtomData, Collection<? extends Number> aMesses, double aTemperature, String aPairStyle, String aPairCoeff) {
         this(aEXE, aLmpExe, aInitAtomData, aMesses, aTemperature, aPairStyle, aPairCoeff, 0.002);

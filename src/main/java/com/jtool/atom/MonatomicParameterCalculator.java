@@ -8,7 +8,7 @@ import com.jtool.math.function.Func1;
 import com.jtool.math.function.IFunc1;
 import com.jtool.math.function.IZeroBoundFunc1;
 import com.jtool.math.matrix.IMatrix;
-import com.jtool.math.matrix.Matrices;
+import com.jtool.math.matrix.RowMatrix;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.Vectors;
 import com.jtool.parallel.AbstractHasThreadPool;
@@ -469,8 +469,8 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
      */
     public Pair<Pair<IMatrix, IMatrix>, INeighborListGetter> calYlmMeanAndGetNeighborList(final int aL, final double aRNearest) {
         // 由于目前还没有实现复数运算，再搭一套复数库工作量较大，这里暂时使用两个实向量来存储
-        final IMatrix qlmReal = Matrices.zeros(mAtomNum, aL+aL+1);
-        final IMatrix qlmImag = Matrices.zeros(mAtomNum, aL+aL+1);
+        final IMatrix qlmReal = RowMatrix.zeros(mAtomNum, aL+aL+1);
+        final IMatrix qlmImag = RowMatrix.zeros(mAtomNum, aL+aL+1);
         @SuppressWarnings("unchecked")
         final List<Integer>[] tNNListAll = new List[mAtomNum]; // 注意不能使用 List<xxx> 然后在 parfor 中 add，因为线程不安全
         
@@ -500,8 +500,8 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
                 rNNList.add(idx);
             });
             // 根据近邻数平均得到 qlm
-            qlmReal.row(i).operation().mapDiv2this(rNNList.size());
-            qlmImag.row(i).operation().mapDiv2this(rNNList.size());
+            qlmReal.row(i).div2this(rNNList.size());
+            qlmImag.row(i).div2this(rNNList.size());
             // 汇总近邻列表
             tNNListAll[i] = rNNList;
         });
@@ -523,19 +523,21 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
      * @return Ql 组成的向量
      */
     public IVector calOOP(int aL, double aRNearest) {return calOOP(calYlmMean(aL, aRNearest));}
-    public IVector calOOP(int aL) {return calOOP(calYlmMean(aL));}
+    public IVector calOOP(int aL                  ) {return calOOP(calYlmMean(aL));}
     /** 直接使用近邻球谐函数平均来计算的版本，一般是内部使用 */
     public IVector calOOP(Pair<IMatrix, IMatrix> aYlmMean) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
-        int l = (aYlmMean.first.columnNumber()-1) / 2;
+        final IMatrix qlmReal = aYlmMean.first;
+        final IMatrix qlmImag = aYlmMean.second;
+        int l = (qlmReal.columnNumber()-1) / 2;
         
         // 直接求和
         IVector Ql = Vectors.zeros(mAtomNum);
         for (int i = 0; i < mAtomNum; ++i) {
             // 这里直接迭代器遍历即可
-            IDoubleIterator itReal = aYlmMean.first.rowIterator(i);
-            IDoubleIterator itImag = aYlmMean.second.rowIterator(i);
+            IDoubleIterator itReal = qlmReal.rowIterator(i);
+            IDoubleIterator itImag = qlmImag.rowIterator(i);
             // 对于每个 m 分别累加模量
             double rSum = 0.0;
             while (itReal.hasNext()) {
@@ -564,7 +566,7 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
      * @return ql 组成的向量
      */
     public IVector calAOOP(int aL, double aRNearest) {Pair<Pair<IMatrix, IMatrix>, INeighborListGetter> tPair = calYlmMeanAndGetNeighborList(aL, aRNearest); return calAOOP(tPair.first, tPair.second);}
-    public IVector calAOOP(int aL) {Pair<Pair<IMatrix, IMatrix>, INeighborListGetter> tPair = calYlmMeanAndGetNeighborList(aL); return calAOOP(tPair.first, tPair.second);}
+    public IVector calAOOP(int aL                  ) {Pair<Pair<IMatrix, IMatrix>, INeighborListGetter> tPair = calYlmMeanAndGetNeighborList(aL); return calAOOP(tPair.first, tPair.second);}
     /** 直接使用近邻球谐函数平均和近邻列表来计算的版本，一般是内部使用 */
     public IVector calAOOP(Pair<IMatrix, IMatrix> aYlmMean, INeighborListGetter aNeighborListGetter) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
@@ -619,20 +621,21 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
      * @param aSolidThreshold 用来根据最近邻原子中，连接数超过此值则认为是固体的阈值，默认为 7
      * @return 最后判断得到是否是固体组成的逻辑向量
      */
-    public IVector checkSolidQ6(double aRNearest, double aConnectThreshold, int aSolidThreshold) {
+    public IVector checkSolidQ6(double aRNearest, double aConnectThreshold, int aSolidThreshold) {Pair<Pair<IMatrix, IMatrix>, INeighborListGetter> tPair = calYlmMeanAndGetNeighborList(6, aRNearest); return checkSolidYlmMean(tPair.first, tPair.second, aConnectThreshold, aSolidThreshold);}
+    public IVector checkSolidQ6(double aRNearest                                               ) {Pair<Pair<IMatrix, IMatrix>, INeighborListGetter> tPair = calYlmMeanAndGetNeighborList(6, aRNearest); return checkSolidYlmMean(tPair.first, tPair.second);}
+    public IVector checkSolidQ6(                                                               ) {Pair<Pair<IMatrix, IMatrix>, INeighborListGetter> tPair = calYlmMeanAndGetNeighborList(6); return checkSolidYlmMean(tPair.first, tPair.second);}
+    /** 直接使用近邻球谐函数平均和近邻列表来计算的版本，一般是内部使用 */
+    public IVector checkSolidYlmMean(Pair<IMatrix, IMatrix> aYlmMean, INeighborListGetter aNeighborListGetter, double aConnectThreshold, int aSolidThreshold) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
-        // 先计算所有的 q6m（复数）以及记录对应的近邻列表
-        Pair<Pair<IMatrix, IMatrix>, INeighborListGetter> tPair = calYlmMeanAndGetNeighborList(6, aRNearest);
-        IMatrix q6mReal = tPair.first.first;
-        IMatrix q6mImag = tPair.first.second;
-        INeighborListGetter tNeighborListGetter = tPair.second;
+        final IMatrix qlmReal = aYlmMean.first;
+        final IMatrix qlmImag = aYlmMean.second;
         
-        // 注意需要先对 q6m 归一化
+        // 注意需要先对 qlm 归一化
         for (int i = 0; i < mAtomNum; ++i) {
             // 这里直接迭代器遍历即可
-            IDoubleIterator itReal = q6mReal.rowIterator(i);
-            IDoubleIterator itImag = q6mImag.rowIterator(i);
+            IDoubleIterator itReal = qlmReal.rowIterator(i);
+            IDoubleIterator itImag = qlmImag.rowIterator(i);
             // 对于每个 m 分别累加模量
             double rMod = 0.0;
             while (itReal.hasNext()) {
@@ -643,44 +646,45 @@ public class MonatomicParameterCalculator extends AbstractHasThreadPool<ParforTh
             // 计算模量
             rMod = Fast.sqrt(rMod);
             // 实部虚部都除以此值来归一化
-            q6mReal.row(i).div2this(rMod);
-            q6mImag.row(i).div2this(rMod);
+            qlmReal.row(i).div2this(rMod);
+            qlmImag.row(i).div2this(rMod);
         }
         
-        // 计算近邻上 q6m 的标量积，根据标量积来判断是否是固体
-        IVector isSolid = Vectors.zeros(mAtomNum);
+        // 计算近邻上 qlm 的标量积，根据标量积来判断是否是固体
+        IVector rIsSolid = Vectors.zeros(mAtomNum);
         for (int i = 0; i < mAtomNum; ++i) {
             // 获取近邻列表
-            List<Integer> tNeighborList = tNeighborListGetter.get(i);
+            List<Integer> tNeighborList = aNeighborListGetter.get(i);
             // 遍历近邻计算连接数
             int tConnectCount = 0;
             for (int j : tNeighborList) {
+                // 同样可以用迭代器遍历
+                IDoubleIterator itiReal = qlmReal.rowIterator(i);
+                IDoubleIterator itiImag = qlmImag.rowIterator(i);
+                IDoubleIterator itjReal = qlmReal.rowIterator(j);
+                IDoubleIterator itjImag = qlmImag.rowIterator(j);
                 // 计算标量积，计算后只考虑模量
                 double SijReal = 0.0;
                 double SijImag = 0.0;
-                for (int tM = -6; tM <= 6; ++tM) {
-                    int tCol = tM+6;
+                while (itiReal.hasNext()) {
+                    double qlmiReal = itiReal.next();
+                    double qlmiImag = itiImag.next();
+                    double qlmjReal = itjReal.next();
+                    double qlmjImag = itjImag.next();
                     
-                    double q6miReal = q6mReal.get_(i, tCol);
-                    double q6miImag = q6mImag.get_(i, tCol);
-                    double q6mjReal = q6mReal.get_(j, tCol);
-                    double q6mjImag = q6mImag.get_(j, tCol);
-                    
-                    SijReal += q6miReal*q6mjReal + q6miImag*q6mjImag;
-                    SijImag += q6miImag*q6mjReal - q6miReal*q6mjImag;
+                    SijReal += qlmiReal*qlmjReal + qlmiImag*qlmjImag;
+                    SijImag += qlmiImag*qlmjReal - qlmiReal*qlmjImag;
                 }
                 double Sij = Fast.sqrt(SijReal*SijReal + SijImag*SijImag);
                 // 根据输入的参数判断是否连接
                 if (Sij > aConnectThreshold) ++tConnectCount;
             }
             // 根据连接数判断是否是类固体
-            if (tConnectCount > aSolidThreshold) isSolid.set_(i, 1);
+            if (tConnectCount > aSolidThreshold) rIsSolid.set_(i, 1);
         }
         
         // 返回最终计算结果
-        return isSolid;
+        return rIsSolid;
     }
-    public IVector checkSolidQ6(final double aRNearest, double aConnectThreshold) {return checkSolidQ6(aRNearest, aConnectThreshold, 7);}
-    public IVector checkSolidQ6(final double aRNearest                          ) {return checkSolidQ6(aRNearest, 0.5);}
-    public IVector checkSolidQ6(                                                ) {return checkSolidQ6(mUnitLen*1.423);}
+    public IVector checkSolidYlmMean(Pair<IMatrix, IMatrix> aYlmMean, INeighborListGetter aNeighborListGetter) {return checkSolidYlmMean(aYlmMean, aNeighborListGetter, 0.5, 7);}
 }
