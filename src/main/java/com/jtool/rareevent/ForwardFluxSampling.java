@@ -108,77 +108,78 @@ public class ForwardFluxSampling<T> implements Runnable, IAutoShutdown {
     private int statA2Lambda0_() {
         int tStep1PointNum = 0;
         // 获取初始路径的迭代器
-        ITimeAndParameterIterator<T> tPathInit = mFullPathGenerator.fullPathInit();
-        T tPoint;
-        double tLambda;
-        // 不再需要检测 hasNext，内部保证永远都有 next
-        while (mPointsOnLambda.size() < mN0) {
-            // 首先找到到达 A 的起始位置，一般来说直接初始化的点都会在 A，但是不一定
-            Point tRoot;
-            while (true) {
-                tPoint = tPathInit.next();
-                ++tStep1PointNum;
-                // 检测是否到达 A
-                tLambda = tPathInit.lambda();
-                if (tLambda <= mSurfaceA) {
-                    // 记录根节点
-                    tRoot = new Point(tPoint);
-                    break;
+        try (ITimeAndParameterIterator<T> tPathInit = mFullPathGenerator.fullPathInit()) {
+            T tPoint;
+            double tLambda;
+            // 不再需要检测 hasNext，内部保证永远都有 next
+            while (mPointsOnLambda.size() < mN0) {
+                // 首先找到到达 A 的起始位置，一般来说直接初始化的点都会在 A，但是不一定
+                Point tRoot;
+                while (true) {
+                    tPoint = tPathInit.next();
+                    ++tStep1PointNum;
+                    // 检测是否到达 A
+                    tLambda = tPathInit.lambda();
+                    if (tLambda <= mSurfaceA) {
+                        // 记录根节点
+                        tRoot = new Point(tPoint);
+                        break;
+                    }
+                    // 如果到达 B 则重新回到 A，这里直接 return 来实现
+                    if (tLambda >= mSurfaces.last()) {
+                        // 重设路径之前记得先保存旧的时间
+                        mTotTime0 += tPathInit.timeConsumed();
+                        return tStep1PointNum;
+                    }
                 }
-                // 如果到达 B 则重新回到 A，这里使用重新获取 PathInit 来实现，这样保证永远都会回到 A
-                if (tLambda >= mSurfaces.last()) {
-                    // 重设路径之前记得先保存旧的时间
-                    mTotTime0 += tPathInit.timeConsumed();
-                    tPathInit = mFullPathGenerator.fullPathInit();
+                // 找到起始点后开始记录穿过 λ0 的点
+                while (true) {
+                    tPoint = tPathInit.next();
+                    ++tStep1PointNum;
+                    // 判断是否有穿过 λ0
+                    tLambda = tPathInit.lambda();
+                    if (tLambda >= mSurfaces.first()) {
+                        // 如果有穿过 λ0 则需要记录这些点
+                        mPointsOnLambda.add(new Point(tRoot, tPoint));
+                        break;
+                    }
                 }
+                // 跳出后回到最初，需要一直查找下次重新到达 A 才开始统计
             }
-            // 找到起始点后开始记录穿过 λ0 的点
-            while (true) {
-                tPoint = tPathInit.next();
-                ++tStep1PointNum;
-                // 判断是否有穿过 λ0
-                tLambda = tPathInit.lambda();
-                if (tLambda >= mSurfaces.first()) {
-                    // 如果有穿过 λ0 则需要记录这些点
-                    mPointsOnLambda.add(new Point(tRoot, tPoint));
-                    break;
-                }
-            }
-            // 跳出后回到最初，需要一直查找下次重新到达 A 才开始统计
+            // 最后统计所有的耗时
+            mTotTime0 += tPathInit.timeConsumed();
+            return tStep1PointNum;
         }
-        // 最后统计所有的耗时
-        mTotTime0 += tPathInit.timeConsumed();
-        return tStep1PointNum;
     }
     
     /** 统计一个路径所有的从 λi 第一次到达 λi+1 的点 */
     private int statLambda2Next_(Point aStart, double aLambdaNext) {
         int tStep2PointNum = 0;
         // 获取从 aStart 开始的路径的迭代器
-        ITimeAndParameterIterator<T> tPathFrom = mFullPathGenerator.fullPathFrom(aStart.value);
-        
-        T tPoint;
-        double tLambda;
-        // 不再需要检测 hasNext，内部保证永远都有 next
-        while (true) {
-            tPoint = tPathFrom.next();
-            ++tStep2PointNum;
-            tLambda = tPathFrom.lambda();
-            // 判断是否穿过了 λi+1
-            if (tLambda >= aLambdaNext) {
-                // 如果有穿过 λi+1 则需要记录这些点
-                mPointsOnLambda.add(new Point(aStart, tPoint));
-                break;
+        try (ITimeAndParameterIterator<T> tPathFrom = mFullPathGenerator.fullPathFrom(aStart.value)) {
+            T tPoint;
+            double tLambda;
+            // 不再需要检测 hasNext，内部保证永远都有 next
+            while (true) {
+                tPoint = tPathFrom.next();
+                ++tStep2PointNum;
+                tLambda = tPathFrom.lambda();
+                // 判断是否穿过了 λi+1
+                if (tLambda >= aLambdaNext) {
+                    // 如果有穿过 λi+1 则需要记录这些点
+                    mPointsOnLambda.add(new Point(aStart, tPoint));
+                    break;
+                }
+                // 判断是否穿过了 A
+                if (tLambda <= mSurfaceA) {
+                    // 穿过 A 直接跳过结束这个路径即可
+                    break;
+                }
             }
-            // 判断是否穿过了 A
-            if (tLambda <= mSurfaceA) {
-                // 穿过 A 直接跳过结束这个路径即可
-                break;
-            }
+            // 此时如果路径没有结束，还可以继续统计，即一个路径可以包含多个从 A 到 λi+1，或者包含之后的 λi+1 到 λi+2 等信息
+            // 对于 FFS 的采样方式，考虑到存储这些路径需要的空间，这里不去做这些操作
+            return tStep2PointNum;
         }
-        // 此时如果路径没有结束，还可以继续统计，即一个路径可以包含多个从 A 到 λi+1，或者包含之后的 λi+1 到 λi+2 等信息
-        // 对于 FFS 的采样方式，考虑到存储这些路径需要的空间，这里不去做这些操作
-        return tStep2PointNum;
     }
     
     
@@ -190,7 +191,9 @@ public class ForwardFluxSampling<T> implements Runnable, IAutoShutdown {
         // 实际分为两个过程，第一个过程首先统计轨迹通量（flux of trajectories）
         if (mStep < 0) {
             // 统计从 A 到达 λ0，运行直到达到次数超过 mN0
-            mStep1PointNum += statA2Lambda0_();
+            while (mPointsOnLambda.size() < mN0) {
+                mStep1PointNum += statA2Lambda0_();
+            }
             // 获取第一个过程的统计结果
             mK0 = mPointsOnLambda.size() / mTotTime0;
             // 第一个过程完成

@@ -3,13 +3,11 @@ package com.jtool.rareevent;
 import com.jtool.atom.IHasAtomData;
 import com.jtool.parallel.AbstractHasThreadPool;
 import com.jtool.parallel.IExecutorEX;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 /**
@@ -41,38 +39,35 @@ public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
     
     private class BufferedIterator extends AbstractHasThreadPool<IExecutorEX> implements ITimeAndParameterIterator<T> {
         /** 路径部分 */
-        private @NotNull Future<List<T>> mBufferPathGetter;
-        private List<T> mBufferPath = null;
         private Iterator<T> mPathIt = null;
-        private T mNext = null;
+        private T mNext;
         /** 时间部分 */
         private double mStartTime = Double.NaN;
         private double mTimeConsumed = 0.0;
         /** 参数部分 */
         private Iterator<T> mParameterIt = null;
         private final @Nullable LinkedList<Future<Double>> mBufferParameterGetter;
-        private final int mBufferSize;
+        private int mBufferSize = 0;
         
         
         /** 创建时进行初始化，初始化第一个 mBufferPathGetter */
         public BufferedIterator(T aStart) {
             super(mParameterThreadNum>0 ? newPool(mParameterThreadNum) : SERIAL_EXECUTOR);
             mBufferParameterGetter = mParameterThreadNum>0 ? new LinkedList<>() : null;
-            mBufferSize = mParameterThreadNum>0 ? mParameterThreadNum*2 : 0;
-            mBufferPathGetter = CompletableFuture.supplyAsync(() -> mPathGenerator.pathFrom(aStart));
+            if (mParameterThreadNum > 0) mBufferSize = 1; // bufferSize 从 1 开始
+            mNext = aStart;
         }
         
         /** 内部使用，初始化 mBuffer，会同时初始化 mNext，mStartTime，并累加 mTimeConsumed */
         private void validNextBuffer_() {
-            // 如果有 Next 则累加花费的时间，因为下一个路径的时间可能会不连续
-            if (mNext != null) mTimeConsumed += mPathGenerator.timeOf(mNext) - mStartTime;
+            // 如果有设置初始时间则累加花费的时间，因为下一个路径的时间可能会不连续
+            if (!Double.isNaN(mStartTime)) mTimeConsumed += mPathGenerator.timeOf(mNext) - mStartTime;
+            List<T> tBufferPath;
             do {
-                // 先获取结果，等待任务完成，保证只有一个路径只有一个线程计算路径
-                try {mBufferPath = mBufferPathGetter.get();} catch (Exception e) {throw new RuntimeException(e);}
-                // 然后提前提交下一个路径计算
-                mBufferPathGetter = CompletableFuture.supplyAsync(() -> mPathGenerator.pathFrom(mBufferPath.get(mBufferPath.size()-1)));
+                // 获取路径
+                tBufferPath = mPathGenerator.pathFrom(mNext);
                 // 更新路径迭代器
-                mPathIt = mBufferPath.iterator();
+                mPathIt = tBufferPath.iterator();
                 // 由于存在约定，一定有一个 next，跳过
                 mNext = mPathIt.next();
                 // 如果 mBuffer 只有这一个元素则是非法的，重新获取
@@ -82,7 +77,7 @@ public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
             
             // 更新参数迭代器
             if (mBufferParameterGetter != null) {
-                mParameterIt = mBufferPath.iterator();
+                mParameterIt = tBufferPath.iterator();
                 // 提交后台参数计算任务
                 mBufferParameterGetter.clear();
                 for (int i = 0; i < mBufferSize && mParameterIt.hasNext(); ++i) {
@@ -105,20 +100,25 @@ public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
             // 此时也需要更新参数迭代器并且持续提交任务
             if (mBufferParameterGetter != null) {
                 mBufferParameterGetter.removeFirst();
-                if (mParameterIt.hasNext()) mBufferParameterGetter.addLast(pool().submit(() -> mParameterCalculator.lambdaOf(mParameterIt.next())));
+                // 提交后台任务直到达到 mBufferSize
+                while (mBufferParameterGetter.size()<mBufferSize && mParameterIt.hasNext()) {
+                    mBufferParameterGetter.addLast(pool().submit(() -> mParameterCalculator.lambdaOf(mParameterIt.next())));
+                }
+                // 先提交后逐步增加 mBufferSize，保证前两步都是一次计算 1 个
+                if (mBufferSize < mParameterThreadNum+1) ++mBufferSize;
             }
             return mNext;
         }
         
         /** 获取当前位置点从初始开始消耗的时间，如果没有调用过 next 则会抛出错误 */
         @Override public double timeConsumed() {
-            if (mNext == null) throw new IllegalStateException();
+            if (Double.isNaN(mStartTime)) throw new IllegalStateException();
             return mTimeConsumed + (mPathGenerator.timeOf(mNext) - mStartTime);
         }
         
         /** 获取当前位置点的参数 λ */
         @Override public double lambda() {
-            if (mNext == null) throw new IllegalStateException();
+            if (mPathIt == null) throw new IllegalStateException();
             if (mBufferParameterGetter != null) {
                 try {return mBufferParameterGetter.getFirst().get();} catch (Exception e) {throw new RuntimeException(e);}
             } else {
