@@ -14,7 +14,11 @@ public class Vectors {
     
     public static IVector ones(int aSize) {return Vector.ones(aSize);}
     public static IVector zeros(int aSize) {return Vector.zeros(aSize);}
-    
+    public static IVector NaN(int aSize) {
+        IVector rVector = zeros(aSize);
+        rVector.fill(Double.NaN);
+        return rVector;
+    }
     
     public static IVector from(int aSize, IVectorGetter aVectorGetter) {
         IVector rVector = zeros(aSize);

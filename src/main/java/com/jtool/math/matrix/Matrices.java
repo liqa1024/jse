@@ -16,7 +16,12 @@ public class Matrices {
     public static IMatrix ones(int aRowNum, int aColNum) {return ColumnMatrix.ones(aRowNum, aColNum);}
     public static IMatrix zeros(int aSize) {return ColumnMatrix.zeros(aSize);}
     public static IMatrix zeros(int aRowNum, int aColNum) {return ColumnMatrix.zeros(aRowNum, aColNum);}
-    
+    public static IMatrix NaN(int aSize) {return NaN(aSize, aSize);}
+    public static IMatrix NaN(int aRowNum, int aColNum) {
+        IMatrix rMatrix = zeros(aRowNum, aColNum);
+        rMatrix.fill(Double.NaN);
+        return rMatrix;
+    }
     
     public static IMatrix from(int aSize, IMatrixGetter aMatrixGetter) {return from(aSize, aSize, aMatrixGetter);}
     public static IMatrix from(int aRowNum, int aColNum, IMatrixGetter aMatrixGetter) {

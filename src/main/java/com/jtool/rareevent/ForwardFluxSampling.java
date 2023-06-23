@@ -68,7 +68,7 @@ public class ForwardFluxSampling<T> implements Runnable, IAutoShutdown {
         // 计算过程需要的量的初始化
         mN = mSurfaces.size() - 1;
         mStep2PointNum = Vectors.zeros(mN);
-        mPi = Vectors.zeros(mN);
+        mPi = Vectors.NaN(mN);
     }
     
     
