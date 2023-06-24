@@ -2,6 +2,7 @@ package com.jtool;
 
 
 import com.jtool.code.SP;
+import com.jtool.code.UT;
 
 /**
  * @author liqa
@@ -36,6 +37,15 @@ public class Main {
             SP.Groovy.runScript(tValue, tArgs);
             break;
         }
+        case "-i": case "-invoke": {
+            int tLastDot = tValue.lastIndexOf(".");
+            if (tLastDot < 0) {
+                System.err.println("ERROR: Invalid method name: " + tValue);
+                return;
+            }
+            UT.Hack.getRunnableOfStaticMethod(tValue.substring(0, tLastDot), tValue.substring(tLastDot+1), (Object[])tArgs).run();
+            break;
+        }
         default: {
             printHelp();
             break;
@@ -50,6 +60,7 @@ public class Main {
         System.out.println("The options can be:");
         System.out.println("    -t -text    Run the groovy text script");
         System.out.println("    -f -file    Run the groovy file script (default behavior when left blank)");
+        System.out.println("    -i -invoke  Invoke the internal java static method directly");
         System.out.println("    -? -help    Print help message");
         System.out.println();
         System.out.println("You can also using another scripting language such as MATLAB or Python with Py4J and import jTool-*.jar");

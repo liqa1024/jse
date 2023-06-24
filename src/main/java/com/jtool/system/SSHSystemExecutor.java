@@ -89,10 +89,8 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
     public SSHSystemExecutor(int aThreadNum,                   Map<?, ?> aArgs) throws Exception {this(aThreadNum, getIOThreadNum(aArgs), SSHCore.load(aArgs));}
     public SSHSystemExecutor(int aThreadNum, int aIOThreadNum, Map<?, ?> aArgs) throws Exception {this(aThreadNum, aIOThreadNum, SSHCore.load(aArgs));}
     
-    public final static String[] THREAD_NUMBER_KEYS = {"ThreadNumber", "threadnumber", "ThreadNum", "threadnum", "nThreads", "nthreads", "n"};
-    public final static String[] IO_THREAD_NUMBER_KEYS = {"IOThreadNumber", "iothreadnumber", "IOThreadNum", "iothreadnum", "ion"};
-    public static int getThreadNum(Map<?, ?> aArgs) {return ((Number)UT.Code.getWithDefault(aArgs, -1, (Object[])THREAD_NUMBER_KEYS)).intValue();}
-    public static int getIOThreadNum(Map<?, ?> aArgs) {return ((Number)UT.Code.getWithDefault(aArgs, -1, (Object[])IO_THREAD_NUMBER_KEYS)).intValue();}
+    public static int getThreadNum  (Map<?, ?> aArgs) {return ((Number)UT.Code.getWithDefault(aArgs, -1, "ThreadNumber", "threadnumber", "ThreadNum", "threadnum", "nThreads", "nthreads", "n")).intValue();}
+    public static int getIOThreadNum(Map<?, ?> aArgs) {return ((Number)UT.Code.getWithDefault(aArgs, -1, "IOThreadNumber", "iothreadnumber", "IOThreadNum", "iothreadnum", "ion")).intValue();}
     
     
     /** SSH 需要使用 ssh 来创建，并且会本地同步创建 */

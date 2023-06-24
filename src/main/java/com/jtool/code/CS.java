@@ -7,8 +7,8 @@ import com.jtool.atom.XYZ;
 import com.jtool.iofile.IHasIOFiles;
 import com.jtool.iofile.IOFiles;
 import com.jtool.parallel.CompletedFuture;
-import com.jtool.system.CompletedFutureJob;
-import com.jtool.system.IFutureJob;
+import com.jtool.system.*;
+import org.zeromq.ZContext;
 
 import java.util.*;
 import java.util.concurrent.Future;
@@ -57,20 +57,30 @@ public class CS {
     public final static Object[] ZL_OBJ = new Object[0];
     public final static double[][] ZL_MAT = new double[0][];
     public final static double[]   ZL_VEC = new double[0];
+    public final static byte[] ZL_BYTE = new byte[0];
     
     /** IOFiles Keys */
     public final static String OUTPUT_FILE_KEY = "<out>", INFILE_SELF_KEY = "<self>", OFILE_KEY = "<o>", IFILE_KEY = "<i>", LMP_LOG_KEY = "<lmp>";
-    
-    
-    /** SystemExecutor Stuffs */
-    public final static IHasIOFiles EPT_IOF = new IOFiles();
-    public final static IFutureJob ERR_FUTURE = new CompletedFutureJob(-1);
-    public final static Future<List<Integer>> ERR_FUTURES = new CompletedFuture<>(Collections.singletonList(-1));
-    public final static Future<List<String>> EPT_STR_FUTURE = new CompletedFuture<>(ImmutableList.of());
     
     /** Relative atomic mass in this project */
     public final static Map<String, Double> MASS = (new ImmutableMap.Builder<String, Double>())
         .put("Cu", 63.546)
         .put("Zr", 91.224)
         .build();
+    
+    /** SystemExecutor Stuffs */
+    public final static IHasIOFiles EPT_IOF = new IOFiles();
+    public final static IFutureJob ERR_FUTURE = new CompletedFutureJob(-1);
+    public final static Future<List<Integer>> ERR_FUTURES = new CompletedFuture<>(Collections.singletonList(-1));
+    public final static Future<List<String>> EPT_STR_FUTURE = new CompletedFuture<>(ImmutableList.of());
+    public final static ISystemExecutor EXE;
+    static {
+        // 先手动加载 UT，会自动重新设置工作目录，保证路径的正确性
+        UT.IO.init();
+        // 创建默认 EXE，无内部线程池，windows 下使用 powershell 统一指令，且默认不进行输出
+        EXE = IS_WINDOWS ? new PowerShellSystemExecutor() : new LocalSystemExecutor();
+        EXE.setNoSTDOutput().setNoERROutput();
+        // 在 JVM 关闭时关闭 EXE
+        Runtime.getRuntime().addShutdownHook(new Thread(EXE::shutdown));
+    }
 }

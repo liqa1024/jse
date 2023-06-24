@@ -4,8 +4,6 @@ import com.jtool.code.script.ScriptObjectGroovy;
 import com.jtool.code.script.ScriptObjectPython;
 import com.jtool.code.task.TaskCall;
 import com.jtool.system.ISystemExecutor;
-import com.jtool.system.LocalSystemExecutor;
-import com.jtool.system.PowerShellSystemExecutor;
 import groovy.lang.*;
 import jep.*;
 import org.codehaus.groovy.runtime.InvokerHelper;
@@ -20,8 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.jtool.code.CS.IS_WINDOWS;
-import static com.jtool.code.CS.WORKING_DIR;
+import static com.jtool.code.CS.*;
 import static org.codehaus.groovy.runtime.InvokerHelper.MAIN_METHOD_NAME;
 
 /**
@@ -90,7 +87,7 @@ public class SP {
             return ScriptObjectGroovy.of(tConstructor.newInstance(aArgs));
         }
         public synchronized static TaskCall<?> getCallableOfScript_(final Class<?> aScriptClass, String... aArgs) {
-            final Object[] fArgs = (aArgs == null) ? new Object[0] : aArgs;
+            final String[] fArgs = (aArgs == null) ? new String[0] : aArgs;
             // 和 runScriptOrMainOrTestOrRunnable 保持一样的逻辑，不过现在是线程安全的了，不考虑 Test 和 Runnable 的情况
             if (Script.class.isAssignableFrom(aScriptClass)) {
                 // 这样保证 tContext 是干净的
@@ -282,10 +279,8 @@ public class SP {
             // 设置需要的包名
             rCommand.add(String.format("\"%s\"", aRequirement));
             
-            // 直接通过系统指令执行 pip 来下载，windows 下使用 powershell 统一指令
-            try (ISystemExecutor tEXE = IS_WINDOWS ? new PowerShellSystemExecutor() : new LocalSystemExecutor()) {
-                tEXE.system(String.join(" ", rCommand));
-            }
+            // 直接通过系统指令执行 pip 来下载
+            EXE.system(String.join(" ", rCommand));
         }
         public static void downloadPackage(String aRequirement, String aPlatform, String aPythonVersion) {downloadPackage(aRequirement, false, aPlatform, aPythonVersion);}
         public static void downloadPackage(String aRequirement, String aPlatform) {downloadPackage(aRequirement, aPlatform, null);}
@@ -311,10 +306,8 @@ public class SP {
             // 设置需要的包名
             rCommand.add(String.format("\"%s\"", aRequirement));
             
-            // 直接通过系统指令执行 pip 来下载，windows 下使用 powershell 统一指令
-            try (ISystemExecutor tEXE = IS_WINDOWS ? new PowerShellSystemExecutor() : new LocalSystemExecutor()) {
-                tEXE.system(String.join(" ", rCommand));
-            }
+            // 直接通过系统指令执行 pip 来下载
+            EXE.system(String.join(" ", rCommand));
         }
         public static void installPackage(String aRequirement, boolean aIncludeDep) {installPackage(aRequirement, aIncludeDep, false);}
         public static void installPackage(String aRequirement) {installPackage(aRequirement, false);}
@@ -352,11 +345,8 @@ public class SP {
             }
             if (tJepDir == null) throw new RuntimeException("JEP INIT ERROR: No Jep source code in "+tWorkingDir);
             tJepDir = tWorkingDir+tJepDir+"/";
-            // 直接通过系统指令来编译 Jep 的库，windows 下使用 powershell 统一指令
-            try (ISystemExecutor tEXE = IS_WINDOWS ? new PowerShellSystemExecutor() : new LocalSystemExecutor()) {
-                tEXE.setNoSTDOutput().setNoERROutput();
-                tEXE.system(String.format("cd %s; python setup.py build", tJepDir));
-            }
+            // 直接通过系统指令来编译 Jep 的库
+            EXE.system(String.format("cd %s; python setup.py build", tJepDir));
             // 获取 build 目录下的 lib 文件夹
             String tJepBuildDir = tJepDir+"build/";
             tList = UT.IO.list(tJepBuildDir);
@@ -407,6 +397,7 @@ public class SP {
             // 安装 ase 包
             System.out.println("ASE INIT INFO: Installing ase from package...");
             installPackage("ase==3.22.1");
+            System.out.println("ASE INIT INFO: ase Installing finished");
         }
     }
 }

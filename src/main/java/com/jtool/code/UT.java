@@ -2,6 +2,7 @@ package com.jtool.code;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
+import com.jtool.atom.*;
 import com.jtool.code.operator.IOperator1;
 import com.jtool.code.task.TaskCall;
 import com.jtool.code.task.TaskRun;
@@ -552,6 +553,95 @@ public class UT {
         }
     }
     
+    /** 序列化和反序列化的一些方法 */
+    public static class Serial {
+        public final static int LONG_LEN = 8, DOUBLE_LEN = LONG_LEN;
+        
+        public static void long2bytes(long aL, byte[] rBytes, final int aPos) {
+            for (int i = aPos; i < aPos+8; ++i) {
+                rBytes[i] = (byte)(aL & 0xff);
+                aL >>= 8;
+            }
+        }
+        public static long bytes2long(byte[] aBytes, final int aPos) {
+            long rL = 0;
+            for (int i = aPos+7; i >= aPos; --i) {
+                rL <<= 8;
+                rL |= (aBytes[i] & 0xff);
+            }
+            return rL;
+        }
+        public static void double2bytes(double aD, byte[] rBytes, final int aPos) {long2bytes(Double.doubleToRawLongBits(aD), rBytes, aPos);}
+        public static double bytes2double(byte[] aBytes, final int aPos) {return Double.longBitsToDouble(bytes2long(aBytes, aPos));}
+        
+        
+        public static byte[] str2bytes(String aStr) {return aStr.getBytes(StandardCharsets.UTF_8);}
+        public static String bytes2str(byte[] aBytes) {return new String(aBytes, StandardCharsets.UTF_8);}
+        
+        public static byte[] long2bytes(long aL) {
+            byte[] rBytes = new byte[DOUBLE_LEN];
+            long2bytes(aL, rBytes, 0);
+            return rBytes;
+        }
+        public static long bytes2long(byte[] aBytes) {
+            return bytes2long(aBytes, 0);
+        }
+        
+        public static byte[] double2bytes(double aD) {return long2bytes(Double.doubleToRawLongBits(aD));}
+        public static double bytes2double(byte[] aBytes) {return Double.longBitsToDouble(bytes2long(aBytes));}
+        
+        /** {@link IHasAtomData} 的序列化和反序列化 */
+        public static byte[] atomDataXYZ2bytes(IHasAtomData aAtomData) {
+            byte[] rBytes = new byte[DOUBLE_LEN*3*2 + DOUBLE_LEN*3*aAtomData.atomNum()];
+            int tIdx = 0;
+            // 模拟盒数据
+            IHasXYZ tBoxLo = aAtomData.boxLo();
+            double2bytes(tBoxLo.x(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            double2bytes(tBoxLo.y(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            double2bytes(tBoxLo.z(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            IHasXYZ tBoxHi = aAtomData.boxHi();
+            double2bytes(tBoxHi.x(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            double2bytes(tBoxHi.y(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            double2bytes(tBoxHi.z(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            // 原子数据
+            for (IAtom tAtom : aAtomData.atoms()) {
+                double2bytes(tAtom.x(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+                double2bytes(tAtom.y(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+                double2bytes(tAtom.z(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            }
+            return rBytes;
+        }
+        public static IHasAtomData bytes2atomDataXYZ(byte[] aBytes) {
+            double tX, tY, tZ;
+            int tIdx = 0;
+            // 获取模拟盒数据
+            tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+            tY = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+            tZ = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+            final XYZ tBoxLo = new XYZ(tX, tY, tZ);
+            tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+            tY = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+            tZ = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+            final XYZ tBoxHi = new XYZ(tX, tY, tZ);
+            // 获取原子数据，这里只有 XYZ 数据
+            final int tAtomNum = aBytes.length/(DOUBLE_LEN*3) - 2;
+            final List<IAtom> rAtoms = new ArrayList<>(tAtomNum);
+            for (int tID = 1; tID <= tAtomNum; ++tID) {
+                tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+                tY = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+                tZ = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+                rAtoms.add(new Atom(tX, tY, tZ, tID));
+            }
+            // 返回结果
+            return new AbstractAtomData() {
+                @Override public List<IAtom> atoms() {return rAtoms;}
+                @Override public IHasXYZ boxLo() {return tBoxLo;}
+                @Override public IHasXYZ boxHi() {return tBoxHi;}
+                @Override public int atomNum() {return tAtomNum;}
+                @Override public int atomTypeNum() {return 1;}
+            };
+        }
+    }
     
     public static class Texts {
         /**
