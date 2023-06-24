@@ -2,9 +2,11 @@ package com.jtool.rareevent;
 
 
 import com.jtool.atom.IHasAtomData;
+import com.jtool.parallel.AbstractHasThreadPool;
 import com.jtool.parallel.IAutoShutdown;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.Vectors;
+import com.jtool.parallel.ParforThreadPool;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -15,7 +17,7 @@ import java.util.*;
  * @author liqa
  * @param <T> 路径上每个点的类型，对于 lammps 模拟则是原子结构信息 {@link IHasAtomData}
  */
-public class ForwardFluxSampling<T> implements Runnable, IAutoShutdown {
+public class ForwardFluxSampling<T> extends AbstractHasThreadPool<ParforThreadPool> implements Runnable, IAutoShutdown {
     private final static double DEFAULT_MIN_PROB = 0.05;
     
     private final BufferedFullPathGenerator<T> mFullPathGenerator;
@@ -34,17 +36,22 @@ public class ForwardFluxSampling<T> implements Runnable, IAutoShutdown {
      * @author liqa
      * @param aPathGenerator 任意的路径生成器
      * @param aParameterCalculator 对于路径上一个点的 λ 的计算器
+     * @param aThreadNum FFS 的并行数，默认为 1，不开启并行
      * @param aSurfaceA 对于 A 有一个专门的分界面，因为需要频繁使用因此专门拿出来，要求 A <= λ0
      * @param aSurfaces 分割相空间的分界面，有 λ0 < λ1 < λ2 < ... < λn == B
      * @param aN0 每个界面的统计数目
      */
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, double aSurfaceA,                      IVector aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), aSurfaceA, Vectors.from(aSurfaces), aN0);}
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, double aSurfaceA, Collection<? extends Number> aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), aSurfaceA, Vectors.from(aSurfaces), aN0);}
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, double aSurfaceA,                     double[] aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, int aThreadNum, double aSurfaceA,                      IVector aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), aThreadNum, aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, int aThreadNum, double aSurfaceA, Collection<? extends Number> aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), aThreadNum, aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, int aThreadNum, double aSurfaceA,                     double[] aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), aThreadNum, aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator,                 double aSurfaceA,                      IVector aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), 1, aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator,                 double aSurfaceA, Collection<? extends Number> aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), 1, aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator,                 double aSurfaceA,                     double[] aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), 1, aSurfaceA, Vectors.from(aSurfaces), aN0);}
     
-    ForwardFluxSampling(BufferedFullPathGenerator<T> aFullPathGenerator, double aSurfaceA, IVector aSurfaces, int aN0) {
-        mFullPathGenerator = aFullPathGenerator;
+    ForwardFluxSampling(BufferedFullPathGenerator<T> aFullPathGenerator, int aThreadNum, double aSurfaceA, IVector aSurfaces, int aN0) {
+        super(new ParforThreadPool(aThreadNum));
         
+        mFullPathGenerator = aFullPathGenerator;
         mSurfaceA = aSurfaceA;
         // 检查界面输入是否合法
         if (aSurfaces.isEmpty()) throw new IllegalArgumentException("Surfaces Must at least have one element");
@@ -108,7 +115,8 @@ public class ForwardFluxSampling<T> implements Runnable, IAutoShutdown {
             T tPoint;
             double tLambda;
             // 不再需要检测 hasNext，内部保证永远都有 next
-            while (mPointsOnLambda.size() < mN0) {
+            while (true) {
+                synchronized (this) {if (mPointsOnLambda.size() >= mN0) break;}
                 // 首先找到到达 A 的起始位置，一般来说直接初始化的点都会在 A，但是不一定
                 Point tRoot;
                 while (true) {
@@ -124,7 +132,7 @@ public class ForwardFluxSampling<T> implements Runnable, IAutoShutdown {
                     // 如果到达 B 则重新回到 A，这里直接 return 来实现
                     if (tLambda >= mSurfaces.last()) {
                         // 重设路径之前记得先保存旧的时间
-                        mTotTime0 += tPathInit.timeConsumed();
+                        synchronized (this) {mTotTime0 += tPathInit.timeConsumed();}
                         return tStep1PointNum;
                     }
                 }
@@ -136,14 +144,14 @@ public class ForwardFluxSampling<T> implements Runnable, IAutoShutdown {
                     tLambda = tPathInit.lambda();
                     if (tLambda >= mSurfaces.first()) {
                         // 如果有穿过 λ0 则需要记录这些点
-                        mPointsOnLambda.add(new Point(tRoot, tPoint));
+                        synchronized (this) {mPointsOnLambda.add(new Point(tRoot, tPoint));}
                         break;
                     }
                 }
                 // 跳出后回到最初，需要一直查找下次重新到达 A 才开始统计
             }
             // 最后统计所有的耗时
-            mTotTime0 += tPathInit.timeConsumed();
+            synchronized (this) {mTotTime0 += tPathInit.timeConsumed();}
             return tStep1PointNum;
         }
     }
@@ -163,7 +171,7 @@ public class ForwardFluxSampling<T> implements Runnable, IAutoShutdown {
                 // 判断是否穿过了 λi+1
                 if (tLambda >= aLambdaNext) {
                     // 如果有穿过 λi+1 则需要记录这些点
-                    mPointsOnLambda.add(new Point(aStart, tPoint));
+                    synchronized (this) {mPointsOnLambda.add(new Point(aStart, tPoint));}
                     break;
                 }
                 // 判断是否穿过了 A
@@ -187,9 +195,10 @@ public class ForwardFluxSampling<T> implements Runnable, IAutoShutdown {
         // 实际分为两个过程，第一个过程首先统计轨迹通量（flux of trajectories）
         if (mStep < 0) {
             // 统计从 A 到达 λ0，运行直到达到次数超过 mN0
-            while (mPointsOnLambda.size() < mN0) {
-                mStep1PointNum += statA2Lambda0_();
-            }
+            pool().parwhile(() -> mPointsOnLambda.size()<mN0, () -> {
+                int tStep1PointNum = statA2Lambda0_();
+                synchronized (this) {mStep1PointNum += tStep1PointNum;}
+            });
             // 获取第一个过程的统计结果
             mK0 = mPointsOnLambda.size() / mTotTime0;
             // 第一个过程完成
@@ -202,23 +211,25 @@ public class ForwardFluxSampling<T> implements Runnable, IAutoShutdown {
             oPointsOnLambda = mPointsOnLambda;
             mPointsOnLambda = tPointsOnLambda; mPointsOnLambda.clear();
             // 获取 Mi
-            int tMi = 0;
-            while (mPointsOnLambda.size() < mN0) {
+            final int[] tMi = {0};
+            pool().parwhile(() -> (mPointsOnLambda.size()<mN0 && !mFinished), () -> {
                 // 随机选取一个初始点获取之后的路径，并统计结果
                 Point tPointI = oPointsOnLambda.get(mRNG.nextInt(oPointsOnLambda.size()));
-                mStep2PointNum.add_(mStep, statLambda2Next_(tPointI, mSurfaces.get_(mStep+1)));
-                ++tMi;
-                // 如果统计得到的概率小于预定值，那么下一步的结果多样性会大大降低，并且统计效率也非常低，这里直接跳出
-                if (tMi > mN0/mMinProb) {
-                    System.err.println("ERROR: P(λi+1|λi) will less than MinProb(= max(0.05, 1/N0) in default) anyway,");
-                    System.err.println("which will seriously reduce the accuracy or efficiency, so the FFS is stopped.");
-                    System.err.println("Try larger N0 or smaller surface distance.");
-                    mFinished = true;
-                    break;
+                int tStep2PointNum = statLambda2Next_(tPointI, mSurfaces.get_(mStep+1));
+                synchronized (this) {
+                    mStep2PointNum.add_(mStep, tStep2PointNum);
+                    ++tMi[0];
+                    // 如果统计得到的概率小于预定值，那么下一步的结果多样性会大大降低，并且统计效率也非常低，这里直接跳出
+                    if (tMi[0] > mN0/mMinProb && !mFinished) {
+                        System.err.println("ERROR: P(λi+1|λi) will less than MinProb(= max(0.05, 1/N0) in default) anyway,");
+                        System.err.println("which will seriously reduce the accuracy or efficiency, so the FFS is stopped.");
+                        System.err.println("Try larger N0 or smaller surface distance.");
+                        mFinished = true;
+                    }
                 }
-            }
+            });
             // 获取概率统计结果
-            mPi.set_(mStep, mPointsOnLambda.size() / (double)tMi);
+            mPi.set_(mStep, mPointsOnLambda.size() / (double)tMi[0]);
             // 第二个过程这一步完成
             ++mStep;
         } else {
@@ -249,5 +260,5 @@ public class ForwardFluxSampling<T> implements Runnable, IAutoShutdown {
     }
     
     /**程序结束时会顺便关闭内部的 mFullPathGenerator，通过切换不同的 mFullPathGenerator 来调整实际输入的生成器是否会顺便关闭 */
-    @Override public void shutdown() {mFullPathGenerator.shutdown();}
+    @Override public void shutdown() {mFullPathGenerator.shutdown(); super.shutdown();}
 }

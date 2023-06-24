@@ -65,9 +65,8 @@ public class ClusterSizeCalculatorMPI implements IParameterCalculator<IHasAtomDa
     }
     
     /** 内部方法，子进程工作器实际计算参数时使用 */
-    @ApiStatus.Internal
-    public static void workerInit(String aAddress) {
-        try (ClusterSizeCalculator tCal = new ClusterSizeCalculator()) {
+    @ApiStatus.Internal public static void workerInit(String aAddress) {
+        try (final ClusterSizeCalculator tCal = new ClusterSizeCalculator()) {
             MPI.abstractWorkerInit(aAddress, input -> UT.Serial.double2bytes(tCal.lambdaOf(UT.Serial.bytes2atomDataXYZ(input))));
         }
     }

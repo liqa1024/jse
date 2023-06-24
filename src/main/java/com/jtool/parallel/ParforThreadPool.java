@@ -47,9 +47,9 @@ public class ParforThreadPool extends AbstractHasThreadPool<IExecutorEX> {
      * 现在不再支持设置具体的 start 和 end </p>
      * <p> 支持每个线程写入到独立的内存而不需要额外加锁 </p>
      */
-    @ApiStatus.Internal public void parfor(final int aSize, final Runnable          aTask      ) {if (aTask instanceof Closure) parforGroovy(aSize, (Closure<?>)aTask); else parfor(aSize, (i, threadID) -> aTask.run());}
-    @ApiStatus.Internal public void parfor(final int aSize, final IParforTask       aTask      ) {parfor(aSize, (i, threadID) -> aTask.run(i));}
-    @ApiStatus.Internal public void parfor(final int aSize, final IParforTaskWithID aTaskWithID) {
+    public void parfor(final int aSize, final Runnable          aTask      ) {if (aTask instanceof Closure) parforGroovy(aSize, (Closure<?>)aTask); else parfor(aSize, (i, threadID) -> aTask.run());}
+    public void parfor(final int aSize, final IParforTask       aTask      ) {parfor(aSize, (i, threadID) -> aTask.run(i));}
+    public void parfor(final int aSize, final IParforTaskWithID aTaskWithID) {
         if (mDead) throw new RuntimeException("This ParforThreadPool is dead");
         if (aSize <= 0) return;
         // 串行的情况
@@ -84,9 +84,9 @@ public class ParforThreadPool extends AbstractHasThreadPool<IExecutorEX> {
             try {tLatch.await();} catch (InterruptedException ignored) {} // 使用 CountDownLatch 来等待线程池工作完成
         }
     }
-    @ApiStatus.Internal public void parfor(final int aSize, final int aBatchSize, final Runnable          aTask      ) {if (aTask instanceof Closure) parforGroovy(aSize, aBatchSize, (Closure<?>)aTask); else parfor(aSize, aBatchSize, (i, threadID) -> aTask.run());}
-    @ApiStatus.Internal public void parfor(final int aSize, final int aBatchSize, final IParforTask       aTask      ) {parfor(aSize, aBatchSize, (i, threadID) -> aTask.run(i));}
-    @ApiStatus.Internal public void parfor(final int aSize, final int aBatchSize, final IParforTaskWithID aTaskWithID) {
+    public void parfor(final int aSize, final int aBatchSize, final Runnable          aTask      ) {if (aTask instanceof Closure) parforGroovy(aSize, aBatchSize, (Closure<?>)aTask); else parfor(aSize, aBatchSize, (i, threadID) -> aTask.run());}
+    public void parfor(final int aSize, final int aBatchSize, final IParforTask       aTask      ) {parfor(aSize, aBatchSize, (i, threadID) -> aTask.run(i));}
+    public void parfor(final int aSize, final int aBatchSize, final IParforTaskWithID aTaskWithID) {
         if (mDead) throw new RuntimeException("This ParforThreadPool is dead");
         if (aSize <= 0) return;
         // 串行的情况
@@ -124,6 +124,42 @@ public class ParforThreadPool extends AbstractHasThreadPool<IExecutorEX> {
         }
     }
     
+    /**
+     * @author liqa
+     * <p> 类似 while (aChecker.noBreak()) </p>
+     * <p> 内部已经对 aChecker 进行了加锁，因此不再需要对其再次加锁 </p>
+     * <p> 由于并行的特性不能保证 while 会立刻停止 </p>
+     * <p> 支持每个线程写入到独立的内存而不需要额外加锁 </p>
+     */
+    public void parwhile(final IParwhileChecker aChecker, final Runnable            aTask      ) {if (aTask instanceof Closure) parwhileGroovy(aChecker, (Closure<?>)aTask); else parwhile(aChecker, (threadID) -> aTask.run());}
+    public void parwhile(final IParwhileChecker aChecker, final IParwhileTaskWithID aTaskWithID) {
+        if (mDead) throw new RuntimeException("This ParforThreadPool is dead");
+        // 串行的情况
+        if (nThreads() <= 1) {
+            while (aChecker.noBreak()) aTaskWithID.run(0);
+        }
+        // 并行的情况，现在默认不进行分组，使用竞争获取任务的思路来获取任务，保证实际创建的线程在 parwhile 任务中不会提前结束，并且可控
+        else synchronized (this) {
+            assert mLocks != null;
+            int tThreadNum = nThreads();
+            final CountDownLatch tLatch = new CountDownLatch(tThreadNum);
+            for (int id = 0; id < tThreadNum; ++id) {
+                final int fId = id;
+                pool().execute(() -> {
+                    mThreadID.set(fId); // 注册 id
+                    mLocks[fId].lock(); // 加锁在结束后进行数据同步
+                    while (true) {
+                        synchronized (aChecker) {if (!aChecker.noBreak()) break;}
+                        aTaskWithID.run(fId);
+                    }
+                    mLocks[fId].unlock();
+                    tLatch.countDown();
+                });
+            }
+            try {tLatch.await();} catch (InterruptedException ignored) {} // 使用 CountDownLatch 来等待线程池工作完成
+        }
+    }
+    
     /** Groovy stuff，使其能够在 groovy 中也能正确调用 */
     public void parforGroovy(int aSize, final Closure<?> aGroovyTask) {
         int tN = aGroovyTask.getMaximumNumberOfParameters();
@@ -143,6 +179,14 @@ public class ParforThreadPool extends AbstractHasThreadPool<IExecutorEX> {
         default: throw new IllegalArgumentException("Parameters Number of parfor Task Must be 0, 1 or 2");
         }
     }
+    public void parwhileGroovy(IParwhileChecker aChecker, final Closure<?> aGroovyTask) {
+        int tN = aGroovyTask.getMaximumNumberOfParameters();
+        switch (tN) {
+        case 0: {parwhile(aChecker, (threadID) -> aGroovyTask.call()); return;}
+        case 1: {parwhile(aChecker, (threadID) -> aGroovyTask.call(threadID)); return;}
+        default: throw new IllegalArgumentException("Parameters Number of parwhile Task Must be 0 or 1");
+        }
+    }
     
     
     /**
@@ -151,4 +195,6 @@ public class ParforThreadPool extends AbstractHasThreadPool<IExecutorEX> {
      */
     @FunctionalInterface public interface IParforTask {void run(int i);}
     @FunctionalInterface public interface IParforTaskWithID {void run(int i, int threadID);}
+    @FunctionalInterface public interface IParwhileChecker {boolean noBreak();}
+    @FunctionalInterface public interface IParwhileTaskWithID {void run(int threadID);}
 }

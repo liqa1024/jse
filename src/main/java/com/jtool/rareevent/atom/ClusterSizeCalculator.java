@@ -20,6 +20,8 @@ import java.util.List;
  * @author liqa
  */
 public class ClusterSizeCalculator implements IParameterCalculator<IHasAtomData> {
+    public ClusterSizeCalculator() {}
+    
     @Override public double lambdaOf(IHasAtomData aPoint) {
         // 进行类固体判断以及获取顺便产生的近邻列表，因此需要使用较为内部的接口
         IVector tIsSolid;
