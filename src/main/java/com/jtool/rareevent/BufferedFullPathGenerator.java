@@ -1,14 +1,9 @@
 package com.jtool.rareevent;
 
 import com.jtool.atom.IHasAtomData;
-import com.jtool.parallel.AbstractHasThreadPool;
-import com.jtool.parallel.IExecutorEX;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Future;
 
 /**
  * 将 {@link IPathGenerator} 使用内部 Buffer 的方法转换成 {@link IFullPathGenerator} 方便使用
@@ -20,15 +15,12 @@ import java.util.concurrent.Future;
 public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
     private final IPathGenerator<T> mPathGenerator;
     private final IParameterCalculator<? super T> mParameterCalculator;
-    private final int mParameterThreadNum;
     private boolean mDoNotClose = false;
     
-    public BufferedFullPathGenerator(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, int aParameterThreadNum) {
+    public BufferedFullPathGenerator(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator) {
         mPathGenerator = aPathGenerator;
         mParameterCalculator = aParameterCalculator;
-        mParameterThreadNum = aParameterThreadNum;
     }
-    public BufferedFullPathGenerator(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator) {this(aPathGenerator, aParameterCalculator, -1);}
     
     /** 是否在关闭此实例时顺便关闭输入的生成器和计算器 */
     public BufferedFullPathGenerator<T> setDoNotClose(boolean aDoNotClose) {mDoNotClose = aDoNotClose; return this;}
@@ -37,26 +29,16 @@ public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
     @Override public ITimeAndParameterIterator<T> fullPathFrom(final T aStart) {return new BufferedIterator(aStart);}
     @Override public ITimeAndParameterIterator<T> fullPathInit() {return fullPathFrom(mPathGenerator.initPoint());}
     
-    private class BufferedIterator extends AbstractHasThreadPool<IExecutorEX> implements ITimeAndParameterIterator<T> {
+    private class BufferedIterator implements ITimeAndParameterIterator<T> {
         /** 路径部分 */
         private Iterator<T> mPathIt = null;
         private T mNext;
         /** 时间部分 */
         private double mStartTime = Double.NaN;
         private double mTimeConsumed = 0.0;
-        /** 参数部分 */
-        private Iterator<T> mParameterIt = null;
-        private final @Nullable LinkedList<Future<Double>> mBufferParameterGetter;
-        private int mBufferSize = 0;
         
-        
-        /** 创建时进行初始化，初始化第一个 mBufferPathGetter */
-        public BufferedIterator(T aStart) {
-            super(mParameterThreadNum>0 ? newPool(mParameterThreadNum) : SERIAL_EXECUTOR);
-            mBufferParameterGetter = mParameterThreadNum>0 ? new LinkedList<>() : null;
-            if (mParameterThreadNum > 0) mBufferSize = 1; // bufferSize 从 1 开始
-            mNext = aStart;
-        }
+        /** 创建时进行初始化 */
+        public BufferedIterator(T aStart) {mNext = aStart;}
         
         /** 内部使用，初始化 mBuffer，会同时初始化 mNext，mStartTime，并累加 mTimeConsumed */
         private void validNextBuffer_() {
@@ -74,16 +56,6 @@ public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
             } while (!mPathIt.hasNext());
             // 更新一下新的开始时间
             mStartTime = mPathGenerator.timeOf(mNext);
-            
-            // 更新参数迭代器
-            if (mBufferParameterGetter != null) {
-                mParameterIt = tBufferPath.iterator();
-                // 提交后台参数计算任务
-                mBufferParameterGetter.clear();
-                for (int i = 0; i < mBufferSize && mParameterIt.hasNext(); ++i) {
-                    mBufferParameterGetter.addLast(pool().submit(() -> mParameterCalculator.lambdaOf(mParameterIt.next())));
-                }
-            }
         }
         
         @Override public T next() {
@@ -97,16 +69,6 @@ public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
                 validNextBuffer_();
             }
             mNext = mPathIt.next();
-            // 此时也需要更新参数迭代器并且持续提交任务
-            if (mBufferParameterGetter != null) {
-                mBufferParameterGetter.removeFirst();
-                // 提交后台任务直到达到 mBufferSize
-                while (mBufferParameterGetter.size()<mBufferSize && mParameterIt.hasNext()) {
-                    mBufferParameterGetter.addLast(pool().submit(() -> mParameterCalculator.lambdaOf(mParameterIt.next())));
-                }
-                // 先提交后逐步增加 mBufferSize，保证前两步都是一次计算 1 个
-                if (mBufferSize < mParameterThreadNum+1) ++mBufferSize;
-            }
             return mNext;
         }
         
@@ -119,11 +81,7 @@ public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
         /** 获取当前位置点的参数 λ */
         @Override public double lambda() {
             if (mPathIt == null) throw new IllegalStateException();
-            if (mBufferParameterGetter != null) {
-                try {return mBufferParameterGetter.getFirst().get();} catch (Exception e) {throw new RuntimeException(e);}
-            } else {
-                return mParameterCalculator.lambdaOf(mNext);
-            }
+            return mParameterCalculator.lambdaOf(mNext);
         }
         
         /** 完整路径永远都有 next */

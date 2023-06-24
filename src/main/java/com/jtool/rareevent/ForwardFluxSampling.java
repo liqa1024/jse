@@ -34,17 +34,13 @@ public class ForwardFluxSampling<T> implements Runnable, IAutoShutdown {
      * @author liqa
      * @param aPathGenerator 任意的路径生成器
      * @param aParameterCalculator 对于路径上一个点的 λ 的计算器
-     * @param aParameterThreadNum 参数计算的并行数目
      * @param aSurfaceA 对于 A 有一个专门的分界面，因为需要频繁使用因此专门拿出来，要求 A <= λ0
      * @param aSurfaces 分割相空间的分界面，有 λ0 < λ1 < λ2 < ... < λn == B
      * @param aN0 每个界面的统计数目
      */
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, int aParameterThreadNum, double aSurfaceA,                      IVector aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator, aParameterThreadNum), aSurfaceA, Vectors.from(aSurfaces), aN0);}
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, int aParameterThreadNum, double aSurfaceA, Collection<? extends Number> aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator, aParameterThreadNum), aSurfaceA, Vectors.from(aSurfaces), aN0);}
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, int aParameterThreadNum, double aSurfaceA,                     double[] aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator, aParameterThreadNum), aSurfaceA, Vectors.from(aSurfaces), aN0);}
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator,                          double aSurfaceA,                      IVector aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator                     ), aSurfaceA, Vectors.from(aSurfaces), aN0);}
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator,                          double aSurfaceA, Collection<? extends Number> aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator                     ), aSurfaceA, Vectors.from(aSurfaces), aN0);}
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator,                          double aSurfaceA,                     double[] aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator                     ), aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, double aSurfaceA,                      IVector aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, double aSurfaceA, Collection<? extends Number> aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, double aSurfaceA,                     double[] aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), aSurfaceA, Vectors.from(aSurfaces), aN0);}
     
     ForwardFluxSampling(BufferedFullPathGenerator<T> aFullPathGenerator, double aSurfaceA, IVector aSurfaces, int aN0) {
         mFullPathGenerator = aFullPathGenerator;
