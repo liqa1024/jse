@@ -14,6 +14,8 @@ import java.util.Map;
 /**
  * MPI 版本的参数计算机，计算体系中的最大的固体团簇的尺寸；
  * 为了使用上的统一，本身不包含线程池，依旧需要使用一个线程池来并行
+ * <p>
+ * TODO 需要将多个 Worker 的写法使用 Boss 专门封装一次
  * @author liqa
  */
 public class ClusterSizeCalculatorMPI implements IParameterCalculator<IHasAtomData> {

@@ -1,7 +1,7 @@
 package com.jtool.system;
 
+import com.jtool.code.CS.Slurm.Resource;
 import com.jtool.code.UT;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,7 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.jtool.code.CS.Slurm.*;
+import static com.jtool.code.CS.Slurm.IS_SLURM;
+import static com.jtool.code.CS.Slurm.RESOURCES_MANAGER;
 import static com.jtool.code.CS.WORKING_DIR;
 
 /**
@@ -18,19 +19,18 @@ import static com.jtool.code.CS.WORKING_DIR;
  * <p> 在 SLURM 内部提交子任务的提交器，主要用于 salloc 或者 sbatch 一个 jTool 任务后，
  * 在提交的 jTool 任务中提交子任务；因此认为此时已经有了 SLURM 的任务环境 </p>
  * <p> 由于是提交子任务的形式，这里依旧使用 java 线程池来提交后台任务 </p>
+ * <p> TODO 同样需要将这个分配逻辑包装一下 </p>
  */
-@ApiStatus.Obsolete
 public class InternalSLURMSystemExecutor extends LocalSystemExecutor {
     private final String mWorkingDir;
-    
-    private final int mTaskNum;
-    private final int mNcmdsPerNode;
-    private final Map<String, Integer> mJobsPerNode;
+    private final Map<Resource, Boolean> mAssignedResources;
     
     /** 线程数现在由每个任务的并行数，申请到的节点数，以及每节点的核心数来确定 */
-    public InternalSLURMSystemExecutor(int aTaskNum, boolean aInternalThreadPool) throws Exception {
-        // 先随便设置一下线程池，因为要先构造父类
-        super();
+    public InternalSLURMSystemExecutor(int aTaskNum, int aParallelNum) throws Exception {
+        // 未来不会限制并行数，因此这里不再提供并行的设置
+        super(SERIAL_EXECUTOR);
+        
+        mAssignedResources = new HashMap<>();
         // 设置一下工作目录
         mWorkingDir = WORKING_DIR.replaceAll("%n", "INTERNAL_SLURM@"+UT.Code.randID());
         // 由于是本地的，这里不需要创建文件夹
@@ -39,29 +39,23 @@ public class InternalSLURMSystemExecutor extends LocalSystemExecutor {
             this.shutdown();
             throw new Exception("InternalSLURM can Only be used in SLURM");
         }
-        // 根据环境变量设置参数
-        mTaskNum = aTaskNum;
-        mJobsPerNode = new HashMap<>();
-        for (String tNode : NODE_LIST) mJobsPerNode.put(tNode, 0);
-        
-        // 根据结果设置线程池，同样需要预留一个核给 srun 本身
-        mNcmdsPerNode = (CORES_PER_NODE-1) / mTaskNum;
-        // 这里不支持跨节点任务管理
-        if (mNcmdsPerNode == 0) {
-            this.shutdown();
-            throw new Exception("Task Number MUST be Less or Equal to Cores-Per-Node - 1 here");
+        for (int i = 0; i < aParallelNum; ++i) {
+            Resource tResource = RESOURCES_MANAGER.assignResource(aTaskNum);
+            // 分配失败直接抛出错误
+            if (tResource == null) {
+                this.shutdown();
+                throw new Exception("Not enough resource in SLURM to assign");
+            }
+            mAssignedResources.put(tResource, false);
         }
-        if (aInternalThreadPool) setPool(newPool(NODE_LIST.size() * mNcmdsPerNode));
-        else setPool(SERIAL_EXECUTOR);
     }
-    public InternalSLURMSystemExecutor(int aTaskNum) throws Exception {this(aTaskNum, false);}
+    public InternalSLURMSystemExecutor(int aTaskNum) throws Exception {this(aTaskNum, 1);}
     
     /** 内部使用的向任务分配节点的方法 */
-    private synchronized @Nullable String assignNode() {
-        for (Map.Entry<String, Integer> tEntry : mJobsPerNode.entrySet()) {
-            int tJobNum = tEntry.getValue();
-            if (tJobNum < mNcmdsPerNode) {
-                tEntry.setValue(tJobNum+1);
+    private synchronized @Nullable Resource assignResource() {
+        for (Map.Entry<Resource, Boolean> tEntry : mAssignedResources.entrySet()) {
+            if (!tEntry.getValue()) {
+                tEntry.setValue(true);
                 return tEntry.getKey();
             }
         }
@@ -69,22 +63,22 @@ public class InternalSLURMSystemExecutor extends LocalSystemExecutor {
         return null;
     }
     /** 内部使用的任务完成归还节点的方法 */
-    private synchronized void returnNode(String aNode) {
-        mJobsPerNode.computeIfPresent(aNode, (node, jobNum) -> jobNum-1);
+    private synchronized void returnResource(Resource aResource) {
+        mAssignedResources.put(aResource, false);
     }
     
     @Override protected int system_(String aCommand, @NotNull IPrintlnSupplier aPrintln) {
         // 对于空指令专门优化，不执行操作
         if (aCommand == null || aCommand.isEmpty()) return -1;
         // 先尝试获取节点
-        String tNode = assignNode();
-        if (tNode == null) {
-            System.err.println("WARNING: Can NOT to assign node for this job temporarily, this job blocks until there are any free node.");
+        Resource tResource = assignResource();
+        if (tResource == null) {
+            System.err.println("WARNING: Can NOT to assign resource for this job temporarily, this job blocks until there are any free resource.");
             System.err.println("It may be caused by too large number of parallels.");
         }
-        while (tNode == null) {
+        while (tResource == null) {
             try {Thread.sleep(100);} catch (InterruptedException e) {e.printStackTrace(); return -1;}
-            tNode = assignNode();
+            tResource = assignResource();
         }
         // 为了兼容性，需要将实际需要执行的脚本写入 bash 后再执行（srun 特有的问题）
         String tTempScriptPath = mWorkingDir+UT.Code.randID()+".sh";
@@ -93,20 +87,21 @@ public class InternalSLURMSystemExecutor extends LocalSystemExecutor {
         // 组装指令
         List<String> rRunCommand = new ArrayList<>();
         rRunCommand.add("srun");
-        rRunCommand.add("--nodelist");          rRunCommand.add(tNode);
-        rRunCommand.add("--nodes");             rRunCommand.add(String.valueOf(1));
-        rRunCommand.add("--ntasks");            rRunCommand.add(String.valueOf(mTaskNum));
-        rRunCommand.add("--ntasks-per-node");   rRunCommand.add(String.valueOf(mTaskNum));
+        rRunCommand.add("--nodelist");          rRunCommand.add(String.join(",", tResource.nodelist));
+        rRunCommand.add("--nodes");             rRunCommand.add(String.valueOf(tResource.nodes));
+        rRunCommand.add("--ntasks");            rRunCommand.add(String.valueOf(tResource.ntasks));
+        rRunCommand.add("--ntasks-per-node");   rRunCommand.add(String.valueOf(tResource.ntasksPerNode));
         rRunCommand.add("bash");                rRunCommand.add(tTempScriptPath); // 使用 bash 执行不需要考虑权限的问题
         // 执行
         int tOut = super.system_(String.join(" ", rRunCommand), aPrintln);
         // 任务完成后需要归还任务
-        returnNode(tNode);
+        returnResource(tResource);
         return tOut;
     }
     
-    /** 程序结束时删除自己的临时工作目录 */
+    /** 程序结束时删除自己的临时工作目录，并归还资源 */
     @Override protected void shutdownFinal() {
-        if (mWorkingDir != null) try {removeDir(mWorkingDir);} catch (Exception ignored) {}
+        try {removeDir(mWorkingDir);} catch (Exception ignored) {}
+        for (Resource tResource : mAssignedResources.keySet()) RESOURCES_MANAGER.returnResource(tResource);
     }
 }

@@ -8,12 +8,15 @@ import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static com.jtool.code.CS.Exec.JAR_PATH;
-import static com.jtool.code.CS.NUL_PRINT_STREAM;
-import static com.jtool.code.CS.ZL_BYTE;
+import static com.jtool.code.CS.*;
+import static com.jtool.code.CS.Slurm.IS_SLURM;
+import static com.jtool.code.CS.Slurm.RESOURCES_MANAGER;
 
 
 /**
@@ -85,7 +88,7 @@ public class MPI {
     }
     
     /** 获取一个特定工作的工作器 */
-    public static Worker getWorkerOf(Class<?> aClazz, String aWorkerInitMethodName) throws NoSuchMethodException {
+    public static Worker getWorkerOf(Class<?> aClazz, String aWorkerInitMethodName) throws Exception {
         // 先创建连接此工作器的连接
         ZMQ.Socket tSocket = CONTEXT.createSocket(SocketType.REQ);
         tSocket.setSendTimeOut(SEND_TIMEOUT);
@@ -93,9 +96,31 @@ public class MPI {
         int tPort = tSocket.bindToRandomPort("tcp://*");
         // 检测方法调用是否合法，为了效率不会检测后续子程序的输出
         String aAddress = "tcp://*:"+tPort;
-        if (UT.Hack.findMethod_(aClazz, aWorkerInitMethodName, aAddress) == null) throw new NoSuchMethodException("No such method: " + aWorkerInitMethodName);
+        if (UT.Hack.findMethod_(aClazz, aWorkerInitMethodName, aAddress) == null) {
+            tSocket.close();
+            throw new NoSuchMethodException("No such method: " + aWorkerInitMethodName);
+        }
+        // 构建指令，对于 SLURM 中的情况特殊处理，需要专门分配资源
+        String tCommand = String.format("java -jar %s -invoke %s.%s %s", JAR_PATH, aClazz.getName(), aWorkerInitMethodName, aAddress);
+        if (IS_SLURM) {
+            // 申请资源
+            Slurm.Resource tResource = RESOURCES_MANAGER.assignResource(1);
+            // 分配失败直接抛出错误
+            if (tResource == null) {
+                tSocket.close();
+                throw new Exception("Not enough resource in SLURM to assign");
+            }
+            List<String> rCommand = new ArrayList<>();
+            rCommand.add("srun");
+            rCommand.add("--nodelist");         rCommand.add(String.join(",", tResource.nodelist));
+            rCommand.add("--nodes");            rCommand.add(String.valueOf(tResource.nodes));
+            rCommand.add("--ntasks");           rCommand.add(String.valueOf(tResource.ntasks));
+            rCommand.add("--ntasks-per-node");  rCommand.add(String.valueOf(tResource.ntasksPerNode));
+            rCommand.add(tCommand);
+            tCommand = String.join(" ", rCommand);
+        }
         // 通过执行指令创建子进程，指定连接到此地址；直接使用 Runtime 创建后台程序，减少资源占用，可以开启更多的进程；为了避免创建过多线程这里不去捕获输入输出流
-        try {Runtime.getRuntime().exec(String.format("java -jar %s -invoke %s.%s %s", JAR_PATH, aClazz.getName(), aWorkerInitMethodName, aAddress));}
+        try {Runtime.getRuntime().exec(tCommand);}
         catch (Exception e) {e.printStackTrace();}
         // 返回 worker
         Worker tWorker = new Worker(tSocket);
