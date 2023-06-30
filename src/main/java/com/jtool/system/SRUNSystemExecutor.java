@@ -19,7 +19,6 @@ import static com.jtool.code.CS.WORKING_DIR;
  * <p> 在 SLURM 内部提交子任务的提交器，主要用于 salloc 或者 sbatch 一个 jTool 任务后，
  * 在提交的 jTool 任务中提交子任务；因此认为此时已经有了 SLURM 的任务环境 </p>
  * <p> 由于是提交子任务的形式，这里依旧使用 java 线程池来提交后台任务 </p>
- * <p> TODO 同样需要将这个分配逻辑包装一下 </p>
  */
 public class SRUNSystemExecutor extends LocalSystemExecutor {
     private final String mWorkingDir;

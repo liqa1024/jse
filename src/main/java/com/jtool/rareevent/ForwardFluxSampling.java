@@ -2,6 +2,7 @@ package com.jtool.rareevent;
 
 
 import com.jtool.atom.IHasAtomData;
+import com.jtool.code.UT;
 import com.jtool.parallel.AbstractHasThreadPool;
 import com.jtool.parallel.IAutoShutdown;
 import com.jtool.math.vector.IVector;
@@ -261,6 +262,9 @@ public class ForwardFluxSampling<T> extends AbstractHasThreadPool<ParforThreadPo
             tPoint = tPoint.parent;
         } while (tPoint != null);
         return rPath;
+    }
+    public List<T> pointsOnLambda() {
+        return UT.Code.map(mPointsOnLambda, point -> point.value);
     }
     
     /**程序结束时会顺便关闭内部的 mFullPathGenerator，通过切换不同的 mFullPathGenerator 来调整实际输入的生成器是否会顺便关闭 */

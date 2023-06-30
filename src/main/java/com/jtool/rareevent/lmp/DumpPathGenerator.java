@@ -89,7 +89,12 @@ public class DumpPathGenerator implements IPathGenerator<SubLammpstrj> {
     
     /** IPathGenerator stuff */
     private int mIdx = 0;
-    @Override public synchronized SubLammpstrj initPoint() {return mInitPoints.get(mIdx++);}
+    @Override public synchronized SubLammpstrj initPoint() {
+        SubLammpstrj tPoint = mInitPoints.get(mIdx);
+        ++mIdx;
+        if (mIdx == mInitPoints.size()) mIdx = 0;
+        return tPoint;
+    }
     @Override public List<SubLammpstrj> pathFrom(SubLammpstrj aStart) {
         try {
             // 由于存在并行，需要在工作目录中创建临时的路径生成的目录

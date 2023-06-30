@@ -241,8 +241,11 @@ public class UT {
          * @author liqa
          */
         public static <R, T> Iterable<R> map(final Iterable<T> aIterable, final IOperator1<? extends R, ? super T> aOpt) {
-            return () -> new Iterator<R>() {
-                final Iterator<T> mIt = aIterable.iterator();
+            return () -> map(aIterable.iterator(), aOpt);
+        }
+        public static <R, T> Iterator<R> map(final Iterator<T> aIterator, final IOperator1<? extends R, ? super T> aOpt) {
+            return new Iterator<R>() {
+                final Iterator<T> mIt = aIterator;
                 @Override public boolean hasNext() {
                     return mIt.hasNext();
                 }
@@ -259,6 +262,7 @@ public class UT {
             return new AbstractList<R>() {
                 @Override public R get(int index) {return aOpt.cal(aList.get(index));}
                 @Override public int size() {return aList.size();}
+                @Override public Iterator<R> iterator() {return map(aList.iterator(), aOpt);}
             };
         }
         public static <R, T> List<R> map(final T[] aArray, final IOperator1<? extends R, ? super T> aOpt) {
