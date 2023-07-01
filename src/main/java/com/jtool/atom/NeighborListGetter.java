@@ -3,7 +3,9 @@ package com.jtool.atom;
 import com.jtool.math.MathEX;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -30,7 +32,7 @@ public class NeighborListGetter {
     }
     
     
-    private XYZ_IDX[] mAtomDataXYZ_IDX;
+    private XYZ[] mAtomDataXYZ;
     private final XYZ mBox;
     private final int mAtomNum;
     private final double mMinBox;
@@ -41,7 +43,7 @@ public class NeighborListGetter {
     // 提供一个手动关闭的方法
     private volatile boolean mDead = false;
     public void shutdown() {shutdown_(); System.gc();}
-    public void shutdown_() {mDead = true; mAtomDataXYZ_IDX = null; mLinkedCells.clear();}
+    public void shutdown_() {mDead = true; mAtomDataXYZ = null; mLinkedCells.clear();}
     
     public double getCellStep() {return mCellStep;}
     
@@ -54,9 +56,7 @@ public class NeighborListGetter {
     public NeighborListGetter(XYZ[] aAtomDataXYZ, XYZ aBox) {this(aAtomDataXYZ, aBox, 2.0);}
     public NeighborListGetter(XYZ[] aAtomDataXYZ, XYZ aBox, double aCellStep) {
         mAtomNum = aAtomDataXYZ.length;
-        
-        mAtomDataXYZ_IDX = new XYZ_IDX[mAtomNum];
-        for (int i = 0; i < mAtomNum; ++i) mAtomDataXYZ_IDX[i] = new XYZ_IDX(aAtomDataXYZ[i], i);
+        mAtomDataXYZ = aAtomDataXYZ;
         mBox = aBox;
         mMinBox = mBox.min();
         mCellStep = Math.max(aCellStep, 1.1);
@@ -99,7 +99,7 @@ public class NeighborListGetter {
             int aSizeX = Math.max((int)Math.floor(mBox.mX / tCellLength), tDiv); // 可以避免舍入误差的问题
             int aSizeY = Math.max((int)Math.floor(mBox.mY / tCellLength), tDiv);
             int aSizeZ = Math.max((int)Math.floor(mBox.mZ / tCellLength), tDiv);
-            tLinkedCell = new LinkedCell<>(mAtomDataXYZ_IDX, mBox, aSizeX, aSizeY, aSizeZ);
+            tLinkedCell = new LinkedCell<>(toXYZ_IDX(mAtomDataXYZ), mBox, aSizeX, aSizeY, aSizeZ);
             mLinkedCells.put(-tDiv, tLinkedCell);
         }
         // 再处理需要扩展的情况
@@ -110,28 +110,16 @@ public class NeighborListGetter {
             int aSizeY = (int)Math.floor(mBox.mY / tCellLength);
             int aSizeZ = (int)Math.floor(mBox.mZ / tCellLength);
             // 对于为 0 的则是需要扩展的，统计扩展数目
-            int tMulX = 1, tMulY = 1, tMulZ = 1;
-            if (aSizeX == 0) {aSizeX = 1; tMulX = (int)Math.ceil(tCellLength / mBox.mX);}
-            if (aSizeY == 0) {aSizeY = 1; tMulY = (int)Math.ceil(tCellLength / mBox.mY);}
-            if (aSizeZ == 0) {aSizeZ = 1; tMulZ = (int)Math.ceil(tCellLength / mBox.mZ);}
-            int tExpendAtomNum = mAtomNum*tMulX*tMulY*tMulZ;
+            int aMulX = 1, aMulY = 1, aMulZ = 1;
+            if (aSizeX == 0) {aSizeX = 1; aMulX = (int)Math.ceil(tCellLength / mBox.mX);}
+            if (aSizeY == 0) {aSizeY = 1; aMulY = (int)Math.ceil(tCellLength / mBox.mY);}
+            if (aSizeZ == 0) {aSizeZ = 1; aMulZ = (int)Math.ceil(tCellLength / mBox.mZ);}
+            int tExpendAtomNum = mAtomNum*aMulX*aMulY*aMulZ;
             if (tExpendAtomNum == mAtomNum) {
-                tLinkedCell = new LinkedCell<>(mAtomDataXYZ_IDX, mBox, aSizeX, aSizeY, aSizeZ);
+                tLinkedCell = new LinkedCell<>(toXYZ_IDX(mAtomDataXYZ), mBox, aSizeX, aSizeY, aSizeZ);
                 mLinkedCells.put(tMul, tLinkedCell);
             } else {
-                XYZ_IDX[] tExpendAtomDataXYZ_IDX = new XYZ_IDX[tExpendAtomNum];
-                int tIdx = 0;
-                for (int i = 0; i < tMulX; ++i) for (int j = 0; j < tMulY; ++j) for (int k = 0; k < tMulZ; ++k) for (int l = 0; l < mAtomNum; ++l) {
-                    XYZ tXYZ = mAtomDataXYZ_IDX[l].mXYZ;
-                    XYZ aXYZ = new XYZ(
-                        i==0 ? tXYZ.mX : tXYZ.mX + mBox.mX*i,
-                        j==0 ? tXYZ.mY : tXYZ.mY + mBox.mY*j,
-                        k==0 ? tXYZ.mZ : tXYZ.mZ + mBox.mZ*k
-                    );
-                    tExpendAtomDataXYZ_IDX[tIdx] = new XYZ_IDX(aXYZ, mAtomDataXYZ_IDX[l].mIDX);
-                    ++tIdx;
-                }
-                tLinkedCell = new LinkedCell<>(tExpendAtomDataXYZ_IDX, mBox.multiply(tMulX, tMulY, tMulZ), aSizeX, aSizeY, aSizeZ);
+                tLinkedCell = new LinkedCell<>(toXYZ_IDX(mAtomDataXYZ, mBox, aMulX, aMulY, aMulZ), mBox.multiply(aMulX, aMulY, aMulZ), aSizeX, aSizeY, aSizeZ);
                 mLinkedCells.put(tMul, tLinkedCell);
             }
         }
@@ -139,6 +127,59 @@ public class NeighborListGetter {
         
         // 最后返回近邻
         return tLinkedCell;
+    }
+    
+    /** 内部实用方法 */
+    private static Iterable<XYZ_IDX> toXYZ_IDX(final XYZ[] aAtomDataXYZ) {
+        return () -> new Iterator<XYZ_IDX>() {
+            private final int mSize = aAtomDataXYZ.length;
+            int mIdx = 0;
+            @Override public boolean hasNext() {return mIdx < mSize;}
+            @Override public XYZ_IDX next() {
+                if (hasNext()) {
+                    XYZ_IDX tNext = new XYZ_IDX(aAtomDataXYZ[mIdx], mIdx);
+                    ++mIdx;
+                    return tNext;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    private static Iterable<XYZ_IDX> toXYZ_IDX(final XYZ[] aAtomDataXYZ, final XYZ aBox, final int aMulX, final int aMulY, final int aMulZ) {
+        return () -> new Iterator<XYZ_IDX>() {
+            private final int mSize = aAtomDataXYZ.length;
+            int mIdx = 0;
+            int i = 0, j = 0, k = 0;
+            @Override public boolean hasNext() {return k < aMulZ;}
+            @Override public XYZ_IDX next() {
+                if (hasNext()) {
+                    XYZ tXYZ = aAtomDataXYZ[mIdx];
+                    XYZ aXYZ = new XYZ(
+                        i==0 ? tXYZ.mX : tXYZ.mX + aBox.mX*i,
+                        j==0 ? tXYZ.mY : tXYZ.mY + aBox.mY*j,
+                        k==0 ? tXYZ.mZ : tXYZ.mZ + aBox.mZ*k
+                    );
+                    XYZ_IDX tNext = new XYZ_IDX(aXYZ, mIdx);
+                    ++mIdx;
+                    if (mIdx == mSize) {
+                        mIdx = 0;
+                        ++i;
+                        if (i == aMulX) {
+                            i = 0;
+                            ++j;
+                            if (j == aMulY) {
+                                j = 0;
+                                ++k;
+                            }
+                        }
+                    }
+                    return tNext;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
     }
     
     
@@ -156,7 +197,7 @@ public class NeighborListGetter {
     public void forEachNeighbor(final int aIDX, final double aRMax, final boolean aHalf, final IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
-        final XYZ aXYZ = mAtomDataXYZ_IDX[aIDX].mXYZ;
+        final XYZ aXYZ = mAtomDataXYZ[aIDX];
         getProperLinkedCell(aRMax).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
             if (link.isMirror()) {
                 // 如果是镜像的，则会保留相同的 idx 的情况
@@ -224,7 +265,7 @@ public class NeighborListGetter {
     public void forEachNeighborMHT(final int aIDX, final double aRMaxMHT, final boolean aHalf, final IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
-        final XYZ aXYZ = mAtomDataXYZ_IDX[aIDX].mXYZ;
+        final XYZ aXYZ = mAtomDataXYZ[aIDX];
         getProperLinkedCell(aRMaxMHT).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
             if (link.isMirror()) {
                 // 如果是镜像的，则会保留相同的 idx 的情况

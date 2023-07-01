@@ -23,16 +23,15 @@ final class LinkedCell<A extends IHasXYZ> {
     final double mMaxDis; // 此 cell 能使用的最大的近邻距离
     
     // 指定三维的分划份数来初始化
-    LinkedCell(A[] aAtoms, XYZ aBox, int aSizeX, int aSizeY, int aSizeZ) {
+    LinkedCell(Iterable<? extends A> aAtoms, XYZ aBox, int aSizeX, int aSizeY, int aSizeZ) {
         mSizeX = aSizeX; mSizeY = aSizeY; mSizeZ = aSizeZ;
         mBox = aBox;
         mCellBox = mBox.div(mSizeX, mSizeY, mSizeZ);
         mMaxDis = mCellBox.min();
         // 初始化 cell
         int tSize = aSizeX * aSizeY * aSizeZ;
-        int tCellCap = (int) Math.ceil(2.0 * aAtoms.length / (double) tSize);
         mCells = new ArrayList<>(tSize);
-        for (int i = 0; i < tSize; ++i) mCells.add(new ArrayList<>(tCellCap));
+        for (int i = 0; i < tSize; ++i) mCells.add(new ArrayList<>());
         // 遍历添加 Atom
         for (A tAtom : aAtoms) {
             int i = (int) Math.floor(tAtom.x() / mCellBox.mX); if (i >= mSizeX) continue;
