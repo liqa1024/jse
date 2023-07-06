@@ -3,6 +3,7 @@ package com.jtool.code;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.jtool.atom.*;
+import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.code.operator.IOperator1;
 import com.jtool.code.task.TaskCall;
 import com.jtool.code.task.TaskRun;
@@ -95,26 +96,26 @@ public class UT {
          */
         public static List<Object> merge(final Object[] aBefore, Object... aAfter) {
             final Object[] fAfter = aAfter==null ? ZL_OBJ : aAfter;
-            return new AbstractList<Object>() {
+            return new AbstractRandomAccessList<Object>() {
                 @Override public Object get(int index) {return index<aBefore.length ? aBefore[index] : fAfter[index-aBefore.length];}
                 @Override public int size() {return aBefore.length+fAfter.length;}
             };
         }
         public static List<Object> mergeBefore(final Object[] aAfter, Object... aBefore) {
             final Object[] fBefore = aBefore==null ? ZL_OBJ : aBefore;
-            return new AbstractList<Object>() {
+            return new AbstractRandomAccessList<Object>() {
                 @Override public Object get(int index) {return index<fBefore.length ? fBefore[index] : aAfter[index-fBefore.length];}
                 @Override public int size() {return fBefore.length+aAfter.length;}
             };
         }
         public static List<Object> merge(final Object aBefore0, final Object[] aAfter) {
-            return new AbstractList<Object>() {
+            return new AbstractRandomAccessList<Object>() {
                 @Override public Object get(int index) {return index<1 ? aBefore0 : aAfter[index-1];}
                 @Override public int size() {return aAfter.length+1;}
             };
         }
         public static List<Object> merge(final Object aBefore0, final Object aBefore1, final Object[] aAfter) {
-            return new AbstractList<Object>() {
+            return new AbstractRandomAccessList<Object>() {
                 @Override public Object get(int index) {
                     switch (index) {
                     case 0: return aBefore0;
@@ -126,7 +127,7 @@ public class UT {
             };
         }
         public static List<Object> merge(final Object aBefore0, final Object aBefore1, final Object aBefore2, final Object[] aAfter) {
-            return new AbstractList<Object>() {
+            return new AbstractRandomAccessList<Object>() {
                 @Override public Object get(int index) {
                     switch (index) {
                     case 0: return aBefore0;
@@ -139,7 +140,7 @@ public class UT {
             };
         }
         public static List<Object> merge(final Object[] aBefore, final Object aAfter0) {
-            return new AbstractList<Object>() {
+            return new AbstractRandomAccessList<Object>() {
                 @Override public Object get(int index) {
                     int tRest = index-aBefore.length;
                     return tRest==0 ? aAfter0 : aBefore[index];
@@ -148,7 +149,7 @@ public class UT {
             };
         }
         public static List<Object> merge(final Object[] aBefore, final Object aAfter0, final Object aAfter1) {
-            return new AbstractList<Object>() {
+            return new AbstractRandomAccessList<Object>() {
                 @Override public Object get(int index) {
                     int tRest = index-aBefore.length;
                     switch (tRest) {
@@ -161,7 +162,7 @@ public class UT {
             };
         }
         public static List<Object> merge(final Object[] aBefore, final Object aAfter0, final Object aAfter1, final Object aAfter2) {
-            return new AbstractList<Object>() {
+            return new AbstractRandomAccessList<Object>() {
                 @Override public Object get(int index) {
                     int tRest = index-aBefore.length;
                     switch (tRest) {
@@ -210,9 +211,9 @@ public class UT {
          * filter the input Iterable
          * @author liqa
          */
-        public static <T> Iterable<T> filter(final Iterable<? extends T> aIterable, final IOperator1<Boolean, ? super T> aFilter) {
+        public static <T> Iterable<T> filter(final Iterable<T> aIterable, final IOperator1<Boolean, ? super T> aFilter) {
             return () -> new Iterator<T>() {
-                private final Iterator<? extends T> mIt = aIterable.iterator();
+                private final Iterator<T> mIt = aIterable.iterator();
                 private T mNext = null;
                 
                 @Override public boolean hasNext() {
@@ -260,15 +261,21 @@ public class UT {
                 }
             };
         }
+        public static <R, T> Collection<R> map(final Collection<T> aCollection, final IOperator1<? extends R, ? super T> aOpt) {
+            return new AbstractCollection<R>() {
+                @Override public Iterator<R> iterator() {return map(aCollection.iterator(), aOpt);}
+                @Override public int size() {return aCollection.size();}
+            };
+        }
         public static <R, T> List<R> map(final List<T> aList, final IOperator1<? extends R, ? super T> aOpt) {
-            return new AbstractList<R>() {
+            return new AbstractRandomAccessList<R>() {
                 @Override public R get(int index) {return aOpt.cal(aList.get(index));}
                 @Override public int size() {return aList.size();}
                 @Override public Iterator<R> iterator() {return map(aList.iterator(), aOpt);}
             };
         }
         public static <R, T> List<R> map(final T[] aArray, final IOperator1<? extends R, ? super T> aOpt) {
-            return new AbstractList<R>() {
+            return new AbstractRandomAccessList<R>() {
                 @Override public R get(int index) {return aOpt.cal(aArray[index]);}
                 @Override public int size() {return aArray.length;}
             };
@@ -327,6 +334,45 @@ public class UT {
             };
         }
         
+        /**
+         * Convert Iterable to a Collection to use size()
+         * @author liqa
+         */
+        public static <T> Collection<T> toCollection(final Iterable<T> aIterable) {
+            if (aIterable instanceof Collection) return (Collection<T>)aIterable;
+            List<T> rList = new ArrayList<>();
+            for (T tEntry : aIterable) rList.add(tEntry);
+            return rList;
+        }
+        /**
+         * Convert Iterable to a List to use size() and get(i)
+         * @author liqa
+         */
+        public static <T> List<T> toList(final Iterable<T> aIterable) {
+            // 注意由于约定，需要能够随机访问才会直接转换，否则依旧会重新构造
+            if ((aIterable instanceof List) & (aIterable instanceof RandomAccess)) return (List<T>)aIterable;
+            List<T> rList = new ArrayList<>();
+            for (T tEntry : aIterable) rList.add(tEntry);
+            return rList;
+        }
+        
+        /**
+         * Convert IHasXYZ to XYZ to optimise
+         * @author liqa
+         */
+        public static XYZ toXYZ(IHasXYZ aXYZ) {
+            return (aXYZ instanceof XYZ) ? (XYZ)aXYZ : new XYZ(aXYZ);
+        }
+        /**
+         * Convert IHasXYZ to XYZ for box usage
+         * @author liqa
+         */
+        public static XYZ toBOX(IHasXYZ aXYZ) {
+            if (aXYZ == BOX_ONE) return BOX_ONE;
+            if (aXYZ == BOX_ZERO) return BOX_ZERO;
+            return toXYZ(aXYZ);
+        }
+        
         
         /**
          * {@link Arrays}.asList for double[]
@@ -335,7 +381,7 @@ public class UT {
          * @return the list format of double[]
          */
         public static List<Double> asList(final double[] aData) {
-            return new AbstractList<Double>() {
+            return new AbstractRandomAccessList<Double>() {
                 @Override public Double get(int index) {return aData[index];}
                 @Override public Double set(int index, Double element) {
                     double oValue = aData[index];
@@ -352,7 +398,7 @@ public class UT {
          * @return the list format of int[]
          */
         public static List<Integer> asList(final int[] aData) {
-            return new AbstractList<Integer>() {
+            return new AbstractRandomAccessList<Integer>() {
                 @Override public Integer get(int index) {return aData[index];}
                 @Override public Integer set(int index, Integer element) {
                     int oValue = aData[index];
@@ -369,7 +415,7 @@ public class UT {
          * @return the list format of boolean[]
          */
         public static List<Boolean> asList(final boolean[] aData) {
-            return new AbstractList<Boolean>() {
+            return new AbstractRandomAccessList<Boolean>() {
                 @Override public Boolean get(int index) {return aData[index];}
                 @Override public Boolean set(int index, Boolean element) {
                     boolean oValue = aData[index];

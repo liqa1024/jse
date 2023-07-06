@@ -3,6 +3,7 @@ package com.jtool.vasp;
 
 import com.jtool.atom.*;
 import com.jtool.code.UT;
+import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.matrix.Matrices;
 import com.jtool.math.matrix.RowMatrix;
@@ -79,7 +80,7 @@ public class POSCAR extends AbstractAtomData {
         // 暂时没功夫研究矩阵表示的晶格在斜方情况下原子坐标是怎么样的
         // 并且这里还需要将其转换成正交的情况，因为参数计算相关优化都需要在正交情况下实现
         if (!mIsDiagBox) throw new RuntimeException("Atoms is temporarily support Diagonal Box only");
-        return new AbstractList<IAtom>() {
+        return new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(final int index) {
                 return new IAtom() {
                     @Override public double x() {return mDirect.get(index, 0)*mBox.get(0, 0)*mBoxScale;}

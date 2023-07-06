@@ -1,14 +1,14 @@
 package com.jtool.atom;
 
+import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.math.table.ITable;
 
-import java.util.AbstractList;
 
 /**
  * @author liqa
  * <p> 抽象的拥有多个帧的原子数据的类，方便子类实现接口 </p>
  */
-public abstract class AbstractMultiFrameAtomData<T extends IHasAtomData> extends AbstractList<T> implements IHasAtomData {
+public abstract class AbstractMultiFrameAtomData<T extends IHasAtomData> extends AbstractRandomAccessList<T> implements IHasAtomData {
     /** AbstractList stuffs */
     @Override public abstract int size();
     @Override public abstract T get(int index);

@@ -1,15 +1,11 @@
 package com.jtool.atom;
 
 import com.jtool.code.UT;
+import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.matrix.RowMatrix;
 import com.jtool.math.table.ITable;
 import com.jtool.math.table.Table;
-import com.jtool.math.table.Tables;
-
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.jtool.code.CS.*;
 
@@ -107,7 +103,7 @@ public abstract class AbstractAtomData implements IHasAtomData {
     
     
     /** 用来方便子类直接使用 */
-    protected static class TableAtoms extends AbstractList<IAtom> {
+    protected static class TableAtoms extends AbstractRandomAccessList<IAtom> {
         protected final ITable mTable;
         public TableAtoms(ITable aTable) {mTable = aTable;}
         

@@ -1,9 +1,9 @@
 package com.jtool.system;
 
 
+import com.jtool.code.collection.AbstractRandomAccessList;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -15,7 +15,7 @@ import java.util.concurrent.TimeoutException;
  * 为提交任务的 Future 提供一个统一的接口，可以获取到更多信息
  * @author liqa
  */
-public class ListFutureJob extends AbstractList<IFutureJob> implements Future<List<Integer>> {
+public class ListFutureJob extends AbstractRandomAccessList<IFutureJob> implements Future<List<Integer>> {
     private final List<IFutureJob> mListFutureJob;
     public ListFutureJob(List<IFutureJob> aListFutureJob) {mListFutureJob = aListFutureJob;}
     
@@ -48,13 +48,13 @@ public class ListFutureJob extends AbstractList<IFutureJob> implements Future<Li
     
     /** Future Job stuff */
     public List<IFutureJob.StateType> state() {
-        return new AbstractList<IFutureJob.StateType>() {
+        return new AbstractRandomAccessList<IFutureJob.StateType>() {
             @Override public IFutureJob.StateType get(int index) {return mListFutureJob.get(index).state();}
             @Override public int size() {return mListFutureJob.size();}
         };
     }
     public List<Integer> jobID() {
-        return new AbstractList<Integer>() {
+        return new AbstractRandomAccessList<Integer>() {
             @Override public Integer get(int index) {return mListFutureJob.get(index).jobID();}
             @Override public int size() {return mListFutureJob.size();}
         };

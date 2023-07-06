@@ -239,7 +239,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
     @Override public IDoubleSetIterator colSetIterator(final int aCol) {
         if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
         return new IDoubleSetIterator() {
-            private final int mEnd = (aCol+1)*mColNum;
+            private final int mEnd = (aCol+1)*mRowNum;
             private int mIdx = aCol*mRowNum, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(double aValue) {

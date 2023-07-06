@@ -1,15 +1,16 @@
 package com.jtool.atom;
 
 import com.jtool.math.MathEX;
+import com.jtool.parallel.IAutoShutdown;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static com.jtool.code.UT.Code.toXYZ;
 
 /**
  * @author liqa
@@ -20,19 +21,19 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * <p> 所有成员都是只读的，即使目前没有硬性限制 </p>
  * <p> 此类线程安全，包括多个线程同时访问同一个实例 </p>
  */
-public class NeighborListGetter {
+public class NeighborListGetter implements IAutoShutdown {
     // 用于 LinkedCell 使用
     private static class XYZ_IDX implements IHasXYZ {
-        final XYZ mXYZ;
         final int mIDX;
-        public XYZ_IDX(XYZ aXYZ, int aIDX) {mXYZ = aXYZ; mIDX = aIDX;}
-        @Override public double x() {return mXYZ.mX;}
-        @Override public double y() {return mXYZ.mY;}
-        @Override public double z() {return mXYZ.mZ;}
+        final IHasXYZ mXYZ;
+        public XYZ_IDX(IHasXYZ aXYZ, int aIDX) {mXYZ = aXYZ; mIDX = aIDX;}
+        @Override public double x() {return mXYZ.x();}
+        @Override public double y() {return mXYZ.y();}
+        @Override public double z() {return mXYZ.z();}
     }
     
     
-    private XYZ[] mAtomDataXYZ;
+    private final @Unmodifiable List<? extends IHasXYZ> mAtomDataXYZ;
     private final XYZ mBox;
     private final int mAtomNum;
     private final double mMinBox;
@@ -42,8 +43,7 @@ public class NeighborListGetter {
     
     // 提供一个手动关闭的方法
     private volatile boolean mDead = false;
-    public void shutdown() {shutdown_(); System.gc();}
-    public void shutdown_() {mDead = true; mAtomDataXYZ = null; mLinkedCells.clear();}
+    @Override public void shutdown() {mDead = true; mLinkedCells.clear();}
     
     public double getCellStep() {return mCellStep;}
     
@@ -53,9 +53,9 @@ public class NeighborListGetter {
     private final Lock mWL = mRWL.writeLock();
     
     // NL 只支持已经经过平移的数据
-    public NeighborListGetter(XYZ[] aAtomDataXYZ, XYZ aBox) {this(aAtomDataXYZ, aBox, 2.0);}
-    public NeighborListGetter(XYZ[] aAtomDataXYZ, XYZ aBox, double aCellStep) {
-        mAtomNum = aAtomDataXYZ.length;
+    public NeighborListGetter(List<? extends IHasXYZ> aAtomDataXYZ, XYZ aBox) {this(aAtomDataXYZ, aBox, 2.0);}
+    public NeighborListGetter(List<? extends IHasXYZ> aAtomDataXYZ, XYZ aBox, double aCellStep) {
+        mAtomNum = aAtomDataXYZ.size();
         mAtomDataXYZ = aAtomDataXYZ;
         mBox = aBox;
         mMinBox = mBox.min();
@@ -130,14 +130,14 @@ public class NeighborListGetter {
     }
     
     /** 内部实用方法 */
-    private static Iterable<XYZ_IDX> toXYZ_IDX(final XYZ[] aAtomDataXYZ) {
+    private static Iterable<XYZ_IDX> toXYZ_IDX(final List<? extends IHasXYZ> aAtomDataXYZ) {
         return () -> new Iterator<XYZ_IDX>() {
-            private final int mSize = aAtomDataXYZ.length;
+            private final int mSize = aAtomDataXYZ.size();
             int mIdx = 0;
             @Override public boolean hasNext() {return mIdx < mSize;}
             @Override public XYZ_IDX next() {
                 if (hasNext()) {
-                    XYZ_IDX tNext = new XYZ_IDX(aAtomDataXYZ[mIdx], mIdx);
+                    XYZ_IDX tNext = new XYZ_IDX(aAtomDataXYZ.get(mIdx), mIdx);
                     ++mIdx;
                     return tNext;
                 } else {
@@ -146,19 +146,19 @@ public class NeighborListGetter {
             }
         };
     }
-    private static Iterable<XYZ_IDX> toXYZ_IDX(final XYZ[] aAtomDataXYZ, final XYZ aBox, final int aMulX, final int aMulY, final int aMulZ) {
+    private static Iterable<XYZ_IDX> toXYZ_IDX(final List<? extends IHasXYZ> aAtomDataXYZ, final XYZ aBox, final int aMulX, final int aMulY, final int aMulZ) {
         return () -> new Iterator<XYZ_IDX>() {
-            private final int mSize = aAtomDataXYZ.length;
+            private final int mSize = aAtomDataXYZ.size();
             int mIdx = 0;
             int i = 0, j = 0, k = 0;
             @Override public boolean hasNext() {return k < aMulZ;}
             @Override public XYZ_IDX next() {
                 if (hasNext()) {
-                    XYZ tXYZ = aAtomDataXYZ[mIdx];
-                    XYZ aXYZ = new XYZ(
-                        i==0 ? tXYZ.mX : tXYZ.mX + aBox.mX*i,
-                        j==0 ? tXYZ.mY : tXYZ.mY + aBox.mY*j,
-                        k==0 ? tXYZ.mZ : tXYZ.mZ + aBox.mZ*k
+                    final IHasXYZ tXYZ = aAtomDataXYZ.get(mIdx);
+                    IHasXYZ aXYZ = new XYZ(
+                        i==0 ? tXYZ.x() : tXYZ.x() + aBox.mX*i,
+                        j==0 ? tXYZ.y() : tXYZ.y() + aBox.mY*j,
+                        k==0 ? tXYZ.z() : tXYZ.z() + aBox.mZ*k
                     );
                     XYZ_IDX tNext = new XYZ_IDX(aXYZ, mIdx);
                     ++mIdx;
@@ -197,57 +197,67 @@ public class NeighborListGetter {
     public void forEachNeighbor(final int aIDX, final double aRMax, final boolean aHalf, final IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
-        final XYZ aXYZ = mAtomDataXYZ[aIDX];
-        getProperLinkedCell(aRMax).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
+        final XYZ cXYZ = toXYZ(mAtomDataXYZ.get(aIDX));
+        getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (xyz_idx, link) -> {
             if (link.isMirror()) {
                 // 如果是镜像的，则会保留相同的 idx 的情况
                 if (aHalf) {
                     if (xyz_idx.mIDX <= aIDX) {
                         XYZ tDir = link.direction();
-                        double tX = xyz_idx.mXYZ.mX + tDir.mX;
-                        double tY = xyz_idx.mXYZ.mY + tDir.mY;
-                        double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
-                        double tDis = aXYZ.distance(tX, tY, tZ);
+                        double tX = xyz_idx.mXYZ.x() + tDir.mX;
+                        double tY = xyz_idx.mXYZ.y() + tDir.mY;
+                        double tZ = xyz_idx.mXYZ.z() + tDir.mZ;
+                        double tDis = cXYZ.distance(tX, tY, tZ);
                         if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
                     }
                 } else {
                     XYZ tDir = link.direction();
-                    double tX = xyz_idx.mXYZ.mX + tDir.mX;
-                    double tY = xyz_idx.mXYZ.mY + tDir.mY;
-                    double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
-                    double tDis = aXYZ.distance(tX, tY, tZ);
+                    double tX = xyz_idx.mXYZ.x() + tDir.mX;
+                    double tY = xyz_idx.mXYZ.y() + tDir.mY;
+                    double tZ = xyz_idx.mXYZ.z() + tDir.mZ;
+                    double tDis = cXYZ.distance(tX, tY, tZ);
                     if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
                 }
             } else {
                 // 如果不是镜像的，则不会保留相同的 idx 的情况
                 if (aHalf) {
                     if (xyz_idx.mIDX <  aIDX) {
-                        double tDis = aXYZ.distance(xyz_idx.mXYZ);
-                        if (tDis < aRMax) aXYZIdxDisDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ, xyz_idx.mIDX, tDis);
+                        double tX = xyz_idx.mXYZ.x();
+                        double tY = xyz_idx.mXYZ.y();
+                        double tZ = xyz_idx.mXYZ.z();
+                        double tDis = cXYZ.distance(tX, tY, tZ);
+                        if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
                     }
                 } else {
                     if (xyz_idx.mIDX != aIDX) {
-                        double tDis = aXYZ.distance(xyz_idx.mXYZ);
-                        if (tDis < aRMax) aXYZIdxDisDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ, xyz_idx.mIDX, tDis);
+                        double tX = xyz_idx.mXYZ.x();
+                        double tY = xyz_idx.mXYZ.y();
+                        double tZ = xyz_idx.mXYZ.z();
+                        double tDis = cXYZ.distance(tX, tY, tZ);
+                        if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
                     }
                 }
             }
         });
     }
-    public void forEachNeighbor(final XYZ aXYZ, final double aRMax, final IXYZIdxDisDo aXYZIdxDisDo) {
+    public void forEachNeighbor(IHasXYZ aXYZ, final double aRMax, final IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
-        getProperLinkedCell(aRMax).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
+        final XYZ cXYZ = toXYZ(aXYZ);
+        getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (xyz_idx, link) -> {
             if (link.isMirror()) {
                 XYZ tDir = link.direction();
-                double tX = xyz_idx.mXYZ.mX + tDir.mX;
-                double tY = xyz_idx.mXYZ.mY + tDir.mY;
-                double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
-                double tDis = aXYZ.distance(tX, tY, tZ);
+                double tX = xyz_idx.mXYZ.x() + tDir.mX;
+                double tY = xyz_idx.mXYZ.y() + tDir.mY;
+                double tZ = xyz_idx.mXYZ.z() + tDir.mZ;
+                double tDis = cXYZ.distance(tX, tY, tZ);
                 if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
             } else {
-                double tDis = aXYZ.distance(xyz_idx.mXYZ);
-                if (tDis < aRMax) aXYZIdxDisDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ, xyz_idx.mIDX, tDis);
+                double tX = xyz_idx.mXYZ.x();
+                double tY = xyz_idx.mXYZ.y();
+                double tZ = xyz_idx.mXYZ.z();
+                double tDis = cXYZ.distance(tX, tY, tZ);
+                if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
             }
         });
     }
@@ -265,57 +275,67 @@ public class NeighborListGetter {
     public void forEachNeighborMHT(final int aIDX, final double aRMaxMHT, final boolean aHalf, final IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
-        final XYZ aXYZ = mAtomDataXYZ[aIDX];
-        getProperLinkedCell(aRMaxMHT).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
+        final XYZ cXYZ = toXYZ(mAtomDataXYZ.get(aIDX));
+        getProperLinkedCell(aRMaxMHT).forEachNeighbor(cXYZ, (xyz_idx, link) -> {
             if (link.isMirror()) {
                 // 如果是镜像的，则会保留相同的 idx 的情况
                 if (aHalf) {
                     if (xyz_idx.mIDX <= aIDX) {
                         XYZ tDir = link.direction();
-                        double tX = xyz_idx.mXYZ.mX + tDir.mX;
-                        double tY = xyz_idx.mXYZ.mY + tDir.mY;
-                        double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
-                        double tDisMHT = aXYZ.distanceMHT(tX, tY, tZ);
+                        double tX = xyz_idx.mXYZ.x() + tDir.mX;
+                        double tY = xyz_idx.mXYZ.y() + tDir.mY;
+                        double tZ = xyz_idx.mXYZ.z() + tDir.mZ;
+                        double tDisMHT = cXYZ.distanceMHT(tX, tY, tZ);
                         if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDisMHT);
                     }
                 } else {
                     XYZ tDir = link.direction();
-                    double tX = xyz_idx.mXYZ.mX + tDir.mX;
-                    double tY = xyz_idx.mXYZ.mY + tDir.mY;
-                    double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
-                    double tDisMHT = aXYZ.distanceMHT(tX, tY, tZ);
+                    double tX = xyz_idx.mXYZ.x() + tDir.mX;
+                    double tY = xyz_idx.mXYZ.y() + tDir.mY;
+                    double tZ = xyz_idx.mXYZ.z() + tDir.mZ;
+                    double tDisMHT = cXYZ.distanceMHT(tX, tY, tZ);
                     if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDisMHT);
                 }
             } else {
                 // 如果不是镜像的，则不会保留相同的 idx 的情况
                 if (aHalf) {
                     if (xyz_idx.mIDX < aIDX) {
-                        double tDisMHT = aXYZ.distanceMHT(xyz_idx.mXYZ);
-                        if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ, xyz_idx.mIDX, tDisMHT);
+                        double tX = xyz_idx.mXYZ.x();
+                        double tY = xyz_idx.mXYZ.y();
+                        double tZ = xyz_idx.mXYZ.z();
+                        double tDisMHT = cXYZ.distanceMHT(tX, tY, tZ);
+                        if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDisMHT);
                     }
                 } else {
                     if (xyz_idx.mIDX != aIDX) {
-                        double tDisMHT = aXYZ.distanceMHT(xyz_idx.mXYZ);
-                        if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ, xyz_idx.mIDX, tDisMHT);
+                        double tX = xyz_idx.mXYZ.x();
+                        double tY = xyz_idx.mXYZ.y();
+                        double tZ = xyz_idx.mXYZ.z();
+                        double tDisMHT = cXYZ.distanceMHT(tX, tY, tZ);
+                        if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDisMHT);
                     }
                 }
             }
         });
     }
-    public void forEachNeighborMHT(final XYZ aXYZ, final double aRMaxMHT, final IXYZIdxDisDo aXYZIdxDisDo) {
+    public void forEachNeighborMHT(final IHasXYZ aXYZ, final double aRMaxMHT, final IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
-        getProperLinkedCell(aRMaxMHT).forEachNeighbor(aXYZ, (xyz_idx, link) -> {
+        final XYZ cXYZ = toXYZ(aXYZ);
+        getProperLinkedCell(aRMaxMHT).forEachNeighbor(cXYZ, (xyz_idx, link) -> {
             if (link.isMirror()) {
                 XYZ tDir = link.direction();
-                double tX = xyz_idx.mXYZ.mX + tDir.mX;
-                double tY = xyz_idx.mXYZ.mY + tDir.mY;
-                double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
-                double tDisMHT = aXYZ.distanceMHT(tX, tY, tZ);
+                double tX = xyz_idx.mXYZ.x() + tDir.mX;
+                double tY = xyz_idx.mXYZ.y() + tDir.mY;
+                double tZ = xyz_idx.mXYZ.z() + tDir.mZ;
+                double tDisMHT = cXYZ.distanceMHT(tX, tY, tZ);
                 if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDisMHT);
             } else {
-                double tDisMHT = aXYZ.distanceMHT(xyz_idx.mXYZ);
-                if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(xyz_idx.mXYZ.mX, xyz_idx.mXYZ.mY, xyz_idx.mXYZ.mZ, xyz_idx.mIDX, tDisMHT);
+                double tX = xyz_idx.mXYZ.x();
+                double tY = xyz_idx.mXYZ.y();
+                double tZ = xyz_idx.mXYZ.z();
+                double tDisMHT = cXYZ.distanceMHT(tX, tY, tZ);
+                if (tDisMHT < aRMaxMHT) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDisMHT);
             }
         });
     }

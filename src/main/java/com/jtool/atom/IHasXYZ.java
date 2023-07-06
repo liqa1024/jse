@@ -1,10 +1,10 @@
 package com.jtool.atom;
 
+import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.math.MathEX;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.RefVector;
 
-import java.util.AbstractList;
 import java.util.List;
 
 public interface IHasXYZ {
@@ -28,7 +28,7 @@ public interface IHasXYZ {
         };
     }
     default List<Double> asList() {
-        return new AbstractList<Double>() {
+        return new AbstractRandomAccessList<Double>() {
             @Override public Double get(int index) {
                 switch(index) {
                 case 0: return x();

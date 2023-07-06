@@ -1,9 +1,9 @@
 package com.jtool.math.table;
 
+import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.vector.IVector;
 
-import java.util.AbstractList;
 import java.util.Collection;
 import java.util.List;
 
@@ -12,7 +12,7 @@ import java.util.List;
  * <p> 抽象的拥有多个帧的列表的类，方便子类实现接口 </p>
  * <p> 注意这里每一帧的 Table 都是完全独立的，继承 ITable 只是为了方便只有一帧的情况直接使用 </p>
  */
-public abstract class AbstractMultiFrameTable<T extends ITable> extends AbstractList<T> implements ITable {
+public abstract class AbstractMultiFrameTable<T extends ITable> extends AbstractRandomAccessList<T> implements ITable {
     /** ITable stuffs */
     @Override public double[][] data() {return defaultFrame().data();}
     @Override public boolean noHead() {return defaultFrame().noHead();}

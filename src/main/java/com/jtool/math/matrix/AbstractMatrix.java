@@ -1,6 +1,7 @@
 package com.jtool.math.matrix;
 
 import com.jtool.code.CS.SliceType;
+import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.code.filter.IIndexFilter;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
@@ -10,7 +11,6 @@ import com.jtool.code.operator.IDoubleOperator1;
 import com.jtool.math.vector.*;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.util.AbstractList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -550,7 +550,7 @@ public abstract class AbstractMatrix implements IMatrix {
     
     
     @Override public List<IVector> rows() {
-        return new AbstractList<IVector>() {
+        return new AbstractRandomAccessList<IVector>() {
             @Override public int size() {return rowNumber();}
             @Override public IVector get(int aRow) {return row(aRow);}
         };
@@ -567,7 +567,7 @@ public abstract class AbstractMatrix implements IMatrix {
         };
     }
     @Override public List<IVector> cols() {
-        return new AbstractList<IVector>() {
+        return new AbstractRandomAccessList<IVector>() {
             @Override public int size() {return columnNumber();}
             @Override public IVector get(int aCol) {return col(aCol);}
         };

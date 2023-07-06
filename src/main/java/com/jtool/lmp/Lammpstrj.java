@@ -2,6 +2,7 @@ package com.jtool.lmp;
 
 import com.jtool.atom.*;
 import com.jtool.code.UT;
+import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.matrix.RowMatrix;
 import com.jtool.math.table.ITable;
@@ -9,7 +10,6 @@ import com.jtool.math.table.Table;
 import com.jtool.math.vector.IVector;
 
 import java.io.IOException;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -212,7 +212,7 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
         
         /** AbstractAtomData stuffs */
         @Override public List<IAtom> atoms() {
-            return new AbstractList<IAtom>() {
+            return new AbstractRandomAccessList<IAtom>() {
                 @Override public IAtom get(final int index) {
                     return new IAtom() {
                         private final IVector mRow = mAtomData.row(index);

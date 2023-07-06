@@ -2,12 +2,16 @@ package test
 
 import com.jtool.math.matrix.Matrices
 
-def mat = Matrices.from(5, {row, col -> (row*10 + col) as double;});
+def mat = Matrices.from(5, 3, {row, col -> (row*10 + col) as double;});
 
 println(mat);
-println(mat.refSlicer().diag());
-println(mat.refSlicer().diag(1));
-println(mat.refSlicer().diag(-1));
+println(mat.col(0));
+println(mat.col(1));
 
-println(mat.opt().meanOfRows());
-println(mat.opt().meanOfCols());
+def si = mat.colSetIterator(1);
+while (si.hasNext()) {
+    double v = si.next();
+    if (v >= 20) si.set(v-20);
+}
+
+println(mat);

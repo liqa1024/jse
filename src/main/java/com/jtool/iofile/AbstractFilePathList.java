@@ -1,12 +1,12 @@
 package com.jtool.iofile;
 
-import java.util.AbstractList;
+import com.jtool.code.collection.AbstractRandomAccessList;
 
 /**
  * @author liqa
  * <p> 完全抽象的文件路径列表类，用来指定使用的文件路径名称格式，所有属性使用函数实现来方便重写 </p>
  */
-public abstract class AbstractFilePathList extends AbstractList<String> {
+public abstract class AbstractFilePathList extends AbstractRandomAccessList<String> {
     public abstract int start();
     public abstract int end();
     public abstract String filePath();

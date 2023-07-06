@@ -2,6 +2,7 @@ package com.jtool.math.vector;
 
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.UT;
+import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.code.filter.IIndexFilter;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
@@ -9,7 +10,6 @@ import com.jtool.code.iterator.IDoubleSetOnlyIterator;
 import com.jtool.code.operator.IDoubleOperator1;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.util.AbstractList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -134,7 +134,7 @@ public abstract class AbstractVector implements IVector {
     
     /** 转换为其他类型 */
     @Override public List<Double> asList() {
-        return new AbstractList<Double>() {
+        return new AbstractRandomAccessList<Double>() {
             @Override public Double get(int index) {return AbstractVector.this.get(index);}
             @Override public Double set(int index, Double element) {return getAndSet(index, element);}
             @Override public int size() {return AbstractVector.this.size();}

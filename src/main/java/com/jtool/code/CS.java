@@ -32,11 +32,6 @@ public class CS {
     
     public final static XYZ BOX_ONE  = new XYZ(1.0, 1.0, 1.0);
     public final static XYZ BOX_ZERO = new XYZ(0.0, 0.0, 0.0);
-    public static XYZ TO_BOX(IHasXYZ aXYZ) {
-        if (aXYZ == BOX_ONE) return BOX_ONE;
-        if (aXYZ == BOX_ZERO) return BOX_ZERO;
-        return new XYZ(aXYZ);
-    }
     
     public final static String WORKING_DIR = ".temp/%n/";
     
