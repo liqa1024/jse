@@ -66,16 +66,16 @@ public class Lmpdat extends AbstractAtomData {
      * @return 返回自身来支持链式调用
      */
     public Lmpdat setBoxNormal() {
-        if (mBox.type() != Box.Type.NORMAL) mBox = new Box(mBox.mBoxLo, mBox.mBoxHi);
+        if (mBox.type() != Box.Type.NORMAL) mBox = new Box(mBox);
         return this;
     }
     public Lmpdat setBoxPrism() {
         if (mBox.type() != Box.Type.PRISM) {
             if (mBox instanceof BoxPrism) {
                 BoxPrism oBox = (BoxPrism)mBox;
-                mBox = new BoxPrism(oBox.mBoxLo, oBox.mBoxHi, oBox.mXY, oBox.mXZ, oBox.mYZ);
+                mBox = new BoxPrism(oBox);
             } else {
-                mBox = new BoxPrism(mBox.mBoxLo, mBox.mBoxHi, 0.0, 0.0, 0.0);
+                mBox = new BoxPrism(mBox, 0.0, 0.0, 0.0);
             }
         }
         return this;
@@ -249,7 +249,7 @@ public class Lmpdat extends AbstractAtomData {
         lines.add(String.format("%10.5g %10.5g zlo zhi", mBox.zlo(), mBox.zhi()));
         if (mBox instanceof BoxPrism) {
         BoxPrism tBox = (BoxPrism)mBox;
-        lines.add(String.format("%10.5g %10.5g %10.5g xy xz yz", tBox.mXY, tBox.mXZ, tBox.mYZ));
+        lines.add(String.format("%10.5g %10.5g %10.5g xy xz yz", tBox.xy(), tBox.xz(), tBox.yz()));
         }
         if (mMasses != null) {
         lines.add("");

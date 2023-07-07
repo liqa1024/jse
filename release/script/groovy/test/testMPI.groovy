@@ -5,6 +5,7 @@ import com.jtool.lmp.Dump
 import com.jtool.math.vector.Vectors
 import com.jtool.parallel.ParforThreadPool
 import com.jtool.plot.Plotters
+import com.jtool.rareevent.atom.ClusterSizeCalculator
 import com.jtool.rareevent.atom.ClusterSizeCalculatorMPI
 
 import static com.jtool.code.UT.Code.*
@@ -27,7 +28,7 @@ def crystalSize = Vectors.zeros(dump.size());
 
 
 // 获取计算器，然后同样直接 parfor 并行
-try (def cal = new ClusterSizeCalculatorMPI(processNum); def pool = new ParforThreadPool(processNum)) {
+try (def cal = new ClusterSizeCalculator(); def pool = new ParforThreadPool(processNum)) {
     // 并行提交任务并获取结果
     pool.parfor(dump.size()) {int i ->
         crystalSize[i] = cal.lambdaOf(dump[i]);

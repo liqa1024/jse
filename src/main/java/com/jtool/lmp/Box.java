@@ -12,7 +12,7 @@ import static com.jtool.code.UT.Code.toBOX;
  * @author liqa
  */
 public class Box {
-    final @NotNull XYZ mBoxLo, mBoxHi;
+    private final @NotNull XYZ mBoxLo, mBoxHi;
     
     public Box() {this(BOX_ONE);}
     public Box(double aSize) {this(aSize, aSize, aSize);}
@@ -21,6 +21,7 @@ public class Box {
     public Box(@NotNull IHasXYZ aBox) {this(BOX_ZERO, aBox);}
     public Box(@NotNull IHasXYZ aBoxLo, @NotNull IHasXYZ aBoxHi) {this(toBOX(aBoxLo), toBOX(aBoxHi));}
     public Box(@NotNull XYZ aBoxLo, @NotNull XYZ aBoxHi) {mBoxLo = aBoxLo; mBoxHi = aBoxHi;}
+    public Box(Box aBox) {this(toBOX(aBox.mBoxLo), toBOX(aBox.mBoxHi));}
     
     /// 获取属性
     public double xlo() {return mBoxLo.mX;}
@@ -34,7 +35,7 @@ public class Box {
     public boolean isShifted() {return mBoxLo==BOX_ZERO;}
     public @NotNull XYZ shiftedBox() {return mBoxHi==BOX_ONE ? BOX_ONE : (mBoxLo==BOX_ZERO ? mBoxHi : mBoxHi.minus(mBoxLo));}
     
-    public Box copy() {return new Box(mBoxLo==BOX_ZERO ? BOX_ZERO : new XYZ(mBoxLo), mBoxHi==BOX_ONE ? BOX_ONE : new XYZ(mBoxHi));}
+    public Box copy() {return new Box(this);}
     
     // stuff to override
     protected Type type() {return Type.NORMAL;}
