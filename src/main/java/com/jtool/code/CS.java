@@ -104,6 +104,7 @@ public class CS {
         public final static int NTASKS;
         public final static int CORES_PER_NODE;
         public final static int CORES_PER_TASK;
+        public final static int MAX_STEP_COUNT;
         public final static List<String> NODE_LIST;
         public final static ResourcesManager RESOURCES_MANAGER;
         
@@ -111,11 +112,14 @@ public class CS {
         /** slurm 的资源分配器，所有 slurm 资源申请统一先走这层防止资源分配失败 */
         public final static class ResourcesManager {
             private final Map<String, Integer> mAllResources;
+            private int mRestStepCount;
             private ResourcesManager() {
                 mAllResources = new HashMap<>();
                 for (String tNode : NODE_LIST) mAllResources.put(tNode, CORES_PER_NODE);
                 // 第一个节点有一个核已经分配给主进程
                 mAllResources.computeIfPresent(NODE_LIST.get(0), (node, cores) -> cores-CORES_PER_TASK);
+                // 移除自身消耗的作业步，预留 100 步给外部使用
+                mRestStepCount = MAX_STEP_COUNT - 100;
             }
             /** 根据需要的核心数来分配核心，返回节点和对应的可用核心数 */
             public synchronized @Nullable Resource assignResource(final int aTaskNum) {
@@ -177,13 +181,30 @@ public class CS {
                     mAllResources.computeIfPresent(tNode, (node, cores) -> cores+tThisNodeNTasks);
                 }
             }
+            
+            /** 获取提交作业步的指令 */
+            public synchronized @Nullable String creatJobStep(Resource aResource, String aCommand) {
+                // 超过作业步限制直接禁止分配
+                --mRestStepCount;
+                if (mRestStepCount < 0) {mRestStepCount = 0; return null;}
+                
+                List<String> rCommand = new ArrayList<>();
+                rCommand.add("srun");
+                rCommand.add("--nodelist");         rCommand.add(String.join(",", aResource.nodelist));
+                rCommand.add("--nodes");            rCommand.add(String.valueOf(aResource.nodes));
+                rCommand.add("--ntasks");           rCommand.add(String.valueOf(aResource.ntasks));
+                rCommand.add("--ntasks-per-node");  rCommand.add(String.valueOf(aResource.ntasksPerNode));
+                rCommand.add("--cpus-per-task");    rCommand.add(String.valueOf(1));
+                rCommand.add(aCommand);
+                return String.join(" ", rCommand);
+            }
         }
         /** slurm 的资源结构，限制很多已经尽力 */
         public final static class Resource {
-            public final @Unmodifiable List<String> nodelist;
-            public final int nodes;
-            public final int ntasks;
-            public final int ntasksPerNode;
+            private final @Unmodifiable List<String> nodelist;
+            private final int nodes;
+            private final int ntasks;
+            private final int ntasksPerNode;
             private final int[] ntasksPerNodeList; // internal usage
             
             private Resource(@Unmodifiable List<String> nodelist, int nodes, int ntasks, int ntasksPerNode, int[] ntasksPerNodeList) {
@@ -223,6 +244,9 @@ public class CS {
                 String tRawCoresPerTask = System.getenv("SLURM_CPUS_PER_TASK");
                 CORES_PER_TASK = tRawCoresPerTask==null ? 1 : Integer.parseInt(tRawCoresPerTask);
                 
+                // 单个任务的作业步限制，不能获取，默认为此值
+                MAX_STEP_COUNT = 40000;
+                
                 // 获取节点列表
                 NODE_LIST = ImmutableList.copyOf(UT.Texts.splitNodeList(System.getenv("SLURM_NODELIST")));
                 
@@ -231,6 +255,7 @@ public class CS {
                 NTASKS = -1;
                 CORES_PER_NODE = -1;
                 CORES_PER_TASK = -1;
+                MAX_STEP_COUNT = -1;
                 NODE_LIST = null;
                 RESOURCES_MANAGER = null;
             }

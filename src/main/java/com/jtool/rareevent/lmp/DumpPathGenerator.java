@@ -119,7 +119,8 @@ public class DumpPathGenerator implements IPathGenerator<SubLammpstrj> {
             rCommand.add(mLmpExe);
             rCommand.add("-in"); rCommand.add(tLmpInPath);
             // 执行指令
-            mEXE.system(String.join(" ", rCommand), tIOFiles);
+            int tExitValue = mEXE.system(String.join(" ", rCommand), tIOFiles);
+            if (tExitValue != 0) throw new Exception("LAMMPS run Failed, Exit Value: "+tExitValue);
             // 理论现在已经获取到了 dump 文件，读取
             Lammpstrj tDump = Lammpstrj.read(tLmpDumpPath);
             // 返回之前，先删除临时文件夹

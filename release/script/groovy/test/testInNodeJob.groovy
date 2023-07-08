@@ -17,8 +17,8 @@ GUT.initJToolEnv(ssh);
 def ioFiles = (new IOFiles())
     .i('<self>', 'script/groovy/run/inNodeJob.groovy');
 // 提交指令
-ssh.system("salloc --nodes 2 --partition debug ./jTool -f ${ioFiles.i('<self>')}", ioFiles); // 通过 key 来获取注册的文件名
-//ssh.system("echo -e '#!/bin/bash\n./jTool -f ${ioFiles.i('<self>')}' | sbatch --nodes 2 --partition debug", ioFiles); // 通过 key 来获取注册的文件名
+//ssh.system("srun -N 1 -n 1 -o out -c 6 ./jTool ${ioFiles.i('<self>')}", ioFiles); // 通过 key 来获取注册的文件名
+ssh.system("echo -e '#!/bin/bash\\nsrun -n 1 -c 6 ./jTool ${ioFiles.i('<self>')}' | sbatch -N 1 -p debug", ioFiles); // 通过 key 来获取注册的文件名
 
 // 关闭 ssh
 ssh.shutdown();

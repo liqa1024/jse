@@ -31,12 +31,12 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
         
         mAssignedResources = new HashMap<>();
         // 设置一下工作目录
-        mWorkingDir = WORKING_DIR.replaceAll("%n", "INTERNAL_SLURM@"+UT.Code.randID());
+        mWorkingDir = WORKING_DIR.replaceAll("%n", "SRUN@"+UT.Code.randID());
         // 由于是本地的，这里不需要创建文件夹
         // 仅 slurm 可用
         if (!IS_SLURM) {
             this.shutdown();
-            throw new Exception("InternalSLURM can Only be used in SLURM");
+            throw new Exception("SRUN can Only be used in SLURM");
         }
         for (int i = 0; i < aParallelNum; ++i) {
             Resource tResource = RESOURCES_MANAGER.assignResource(aTaskNum);
@@ -83,17 +83,12 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
         String tTempScriptPath = mWorkingDir+UT.Code.randID()+".sh";
         try {UT.IO.write(tTempScriptPath, "#!/bin/bash\n"+aCommand);}
         catch (Exception e) {e.printStackTrace(); return -1;}
-        // 组装指令
-        List<String> rCommand = new ArrayList<>();
-        rCommand.add("srun");
-        rCommand.add("--nodelist");         rCommand.add(String.join(",", tResource.nodelist));
-        rCommand.add("--nodes");            rCommand.add(String.valueOf(tResource.nodes));
-        rCommand.add("--ntasks");           rCommand.add(String.valueOf(tResource.ntasks));
-        rCommand.add("--ntasks-per-node");  rCommand.add(String.valueOf(tResource.ntasksPerNode));
-        rCommand.add("--cpus-per-task");    rCommand.add(String.valueOf(1));
-        rCommand.add("bash");               rCommand.add(tTempScriptPath); // 使用 bash 执行不需要考虑权限的问题
-        // 执行
-        int tOut = super.system_(String.join(" ", rCommand), aPrintln);
+        // 获取提交指令
+        String tCommand = RESOURCES_MANAGER.creatJobStep(tResource, "bash "+tTempScriptPath); // 使用 bash 执行不需要考虑权限的问题
+        // 获取指令失败直接输出错误
+        int tOut;
+        if (tCommand == null) {System.err.println("ERROR: Create SLURM job step Failed"); tOut = -1;}
+        else {tOut = super.system_(tCommand, aPrintln);}
         // 任务完成后需要归还任务
         returnResource(tResource);
         return tOut;

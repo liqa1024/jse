@@ -110,15 +110,10 @@ public class MPI {
                 tSocket.close();
                 throw new Exception("Not enough resource in SLURM to assign");
             }
-            List<String> rCommand = new ArrayList<>();
-            rCommand.add("srun");
-            rCommand.add("--nodelist");         rCommand.add(String.join(",", tResource.nodelist));
-            rCommand.add("--nodes");            rCommand.add(String.valueOf(tResource.nodes));
-            rCommand.add("--ntasks");           rCommand.add(String.valueOf(tResource.ntasks));
-            rCommand.add("--ntasks-per-node");  rCommand.add(String.valueOf(tResource.ntasksPerNode));
-            rCommand.add("--cpus-per-task");    rCommand.add(String.valueOf(1));
-            rCommand.add(tCommand);
-            tCommand = String.join(" ", rCommand);
+            // 获取提交指令
+            tCommand = RESOURCES_MANAGER.creatJobStep(tResource, tCommand);
+            // 获取指令失败直接抛出错误
+            if (tCommand == null) throw new Exception("Create SLURM job step Failed");
         }
         // 通过执行指令创建子进程，指定连接到此地址；直接使用 Runtime 创建后台程序，减少资源占用，可以开启更多的进程；为了避免创建过多线程这里不去捕获输入输出流
         try {Runtime.getRuntime().exec(tCommand);}
