@@ -1,5 +1,6 @@
 package test
 
+import com.jtool.code.SP
 import com.jtool.code.UT
 import com.jtool.iofile.InFiles
 import com.jtool.lmp.Dump
@@ -10,12 +11,9 @@ import com.jtool.plot.Plotters
 import com.jtool.system.SSH
 import com.jtool.vasp.POSCAR
 
-// 测试 csv 读取
-def gr = UT.IO.csv2table('lmp/.temp/gr.csv');
+// 测试脚本调用中参数
+SP.Groovy.run('script/groovy/run/runScript.groovy', '123', '456');
 
-plt = Plotters.get();
-plt.plot(gr['x'], gr['f'], 'g(r)');
-plt.show();
 
 //// 尝试使用 lammps 计算
 //def lmpIn = LmpIn.custom('lmp/in/cal-OOP');

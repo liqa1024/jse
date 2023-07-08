@@ -39,6 +39,8 @@ public class CS {
     public final static String NO_LOG_WIN = "NUL";
     public final static String NO_LOG = IS_WINDOWS ? NO_LOG_WIN : NO_LOG_LINUX;
     
+    public final static int DEFAULT_THREAD_NUM = MathEX.Code.divup(Runtime.getRuntime().availableProcessors(), 2);
+    
     
     /** MathEX stuffs */
     public enum SliceType {ALL}
