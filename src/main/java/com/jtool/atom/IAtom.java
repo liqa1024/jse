@@ -7,4 +7,8 @@ public interface IAtom extends IHasXYZID {
     double z();
     int id();
     int type();
+    
+    default double vx() {return 0.0;}
+    default double vy() {return 0.0;}
+    default double vz() {return 0.0;}
 }

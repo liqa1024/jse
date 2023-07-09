@@ -16,6 +16,12 @@ public interface IHasAtomData {
     ITable dataXYZID(int aType);
     ITable dataSTD();
     ITable dataSTD(int aType);
+    ITable dataAll();
+    ITable dataAll(int aType);
+    /** 获取速度数据, vx, vy, vz */
+    ITable dataVelocities();
+    ITable dataVelocities(int aType);
+    boolean hasVelocities();
     
     
     /** 改为直接获取 {@link IAtom} 的容器 */

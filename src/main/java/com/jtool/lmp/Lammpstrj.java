@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static com.jtool.code.CS.*;
+
 /**
  * @author liqa
  * <p> lammps 使用 dump 输出的数据格式 </p>
@@ -53,6 +55,7 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
         private int mTypeCol = -1;
         private int mIDCol = -1;
         private int mXCol = -1, mYCol = -1, mZCol = -1;
+        private int mVXCol = -1, mVYCol = -1, mVZCol = -1;
         private final XYZType mXType, mYType, mZType;
         
         /** 提供直接转为表格的接口 */
@@ -74,6 +77,9 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
                 if (tKey.equals("x") || tKey.equals("xs") || tKey.equals("xu") || tKey.equals("xsu")) {tKeyX = tKey; mXCol = i;}
                 if (tKey.equals("y") || tKey.equals("ys") || tKey.equals("yu") || tKey.equals("ysu")) {tKeyY = tKey; mYCol = i;}
                 if (tKey.equals("z") || tKey.equals("zs") || tKey.equals("zu") || tKey.equals("zsu")) {tKeyZ = tKey; mZCol = i;}
+                if (tKey.equals("vx")) {mVXCol = i;}
+                if (tKey.equals("vy")) {mVYCol = i;}
+                if (tKey.equals("vz")) {mVZCol = i;}
             }
             
             switch (tKeyX) {
@@ -209,8 +215,12 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             default: throw new RuntimeException();
             }
         }
+        private double getVX_(IVector aRow) {return mVXCol<0 ? 0.0 : aRow.get_(mVXCol);}
+        private double getVY_(IVector aRow) {return mVYCol<0 ? 0.0 : aRow.get_(mVYCol);}
+        private double getVZ_(IVector aRow) {return mVZCol<0 ? 0.0 : aRow.get_(mVZCol);}
         
         /** AbstractAtomData stuffs */
+        @Override public boolean hasVelocities() {return mVXCol>=0 && mVYCol>=0 && mVZCol>=0;}
         @Override public List<IAtom> atoms() {
             return new AbstractRandomAccessList<IAtom>() {
                 @Override public IAtom get(final int index) {
@@ -221,9 +231,13 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
                         @Override public double z() {return getZ_(mRow);}
                         
                         /** 如果没有 id 数据则 id 为顺序位置 +1 */
-                        @Override public int id() {return (mIDCol < 0) ? index+1 : (int)mRow.get(mIDCol);}
+                        @Override public int id() {return mIDCol<0 ? index+1 : (int)mRow.get(mIDCol);}
                         /** 如果没有 type 数据则 type 都为 1 */
-                        @Override public int type() {return (mTypeCol < 0) ? 1 : (int)mRow.get(mTypeCol);}
+                        @Override public int type() {return mTypeCol<0 ? 1 : (int)mRow.get(mTypeCol);}
+                        
+                        @Override public double vx() {return getVX_(mRow);}
+                        @Override public double vy() {return getVY_(mRow);}
+                        @Override public double vz() {return getVZ_(mRow);}
                     };
                 }
                 @Override public int size() {return mAtomData.rowNumber();}
@@ -272,8 +286,8 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             SubLammpstrj tSubLammpstrj = (SubLammpstrj)aHasAtomData;
             return new SubLammpstrj(aTimeStep, BOX_BOUND, tSubLammpstrj.mBox.copy(), tSubLammpstrj.mAtomData);
         } else {
-            // 一般的情况，通过 dataSTD 来创建，注意这里认为获取时已经经过了值拷贝，因此不再需要 copy
-            return new SubLammpstrj(aTimeStep, BOX_BOUND, new Box(aHasAtomData.boxLo(), aHasAtomData.boxHi()), aHasAtomData.dataSTD());
+            // 一般的情况，通过 dataXXX 来创建，注意这里认为获取时已经经过了值拷贝，因此不再需要 copy
+            return new SubLammpstrj(aTimeStep, BOX_BOUND, new Box(aHasAtomData.boxLo(), aHasAtomData.boxHi()), aHasAtomData.hasVelocities()?aHasAtomData.dataAll():aHasAtomData.dataSTD());
         }
     }
     /** 对于 matlab 调用的兼容 */

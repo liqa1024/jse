@@ -36,11 +36,7 @@ public abstract class AbstractTable implements ITable {
         }
     }
     
-    private String[] copyHeads_() {
-        String[] tOut = new String[mHeads.length];
-        System.arraycopy(mHeads, 0, tOut, 0, tOut.length);
-        return tOut;
-    }
+    private String[] copyHeads_() {return Arrays.copyOf(mHeads, mHeads.length);}
     private String[] copyHeads_(List<Integer> aIndices) {
         String[] tOut = new String[aIndices.size()];
         for (int i = 0; i < tOut.length; ++i) tOut[i] = mHeads[aIndices.get(i)];
