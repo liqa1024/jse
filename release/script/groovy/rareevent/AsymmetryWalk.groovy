@@ -22,15 +22,22 @@ class AsymmetryWalk {
     
     
     static class PathGenerator implements IPathGenerator<PointWithTime> {
-        private final int pathLen;
+        private final int pathLen, pathGap;
         private final def RNG = new Random();
-        PathGenerator(int pathLen) {this.pathLen = pathLen;}
+        PathGenerator(int pathLen, int pathGap) {this.pathLen = pathLen; this.pathGap = pathGap;}
+        PathGenerator(int pathLen) {this(pathLen, 1);}
         
         @Override PointWithTime initPoint() {return new PointWithTime(0, 0);}
         @Override List<PointWithTime> pathFrom(PointWithTime point) {
             def path = new ArrayList<PointWithTime>(pathLen);
             path.add(point);
-            for (_ in 1..<pathLen) {
+            for (i in 1..<pathLen*pathGap) {
+                // 有一定概率不动，不增加时间，不影响结果
+                if (RNG.nextDouble() < 0.1) {
+                    if (i%pathGap == 0) path.add(point);
+                    continue;
+                }
+                
                 double increaseProb = 1.0 / (1.0+point.value);
                 if (RNG.nextDouble() < increaseProb) {
                     point = new PointWithTime(point.value+1, point.time+1);
@@ -40,7 +47,7 @@ class AsymmetryWalk {
                 } else {
                     point = new PointWithTime(point.value, point.time+1);
                 }
-                path.add(point);
+                if (i%pathGap == 0) path.add(point);
             }
             return path;
         }

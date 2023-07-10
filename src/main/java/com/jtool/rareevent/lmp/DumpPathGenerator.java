@@ -25,7 +25,7 @@ import static com.jtool.code.CS.*;
  * 特别注意方法的线程安全要求
  * @author liqa
  */
-public class DumpPathGenerator implements IPathGenerator<SubLammpstrj> {
+public class DumpPathGenerator implements IPathGenerator<IHasAtomData> {
     private final String mWorkingDir;
     
     private final Random mRNG = new Random();
@@ -95,7 +95,7 @@ public class DumpPathGenerator implements IPathGenerator<SubLammpstrj> {
         if (mIdx == mInitPoints.size()) mIdx = 0;
         return tPoint;
     }
-    @Override public List<SubLammpstrj> pathFrom(SubLammpstrj aStart) {
+    @Override public List<SubLammpstrj> pathFrom(IHasAtomData aStart) {
         try {
             // 由于存在并行，需要在工作目录中创建临时的路径生成的目录
             String tLmpDir = mWorkingDir+"LMP@"+UT.Code.randID()+"/";
@@ -134,7 +134,7 @@ public class DumpPathGenerator implements IPathGenerator<SubLammpstrj> {
         }
     }
     
-    @Override public double timeOf(SubLammpstrj aPoint) {return aPoint.timeStep() * mTimestep;}
+    @Override public double timeOf(IHasAtomData aPoint) {return (aPoint instanceof SubLammpstrj) ? ((SubLammpstrj)aPoint).timeStep()*mTimestep : 0.0;}
     
     
     /** 程序结束时删除自己的临时工作目录，并且会关闭 EXE */

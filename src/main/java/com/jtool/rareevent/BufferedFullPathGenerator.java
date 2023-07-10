@@ -33,7 +33,7 @@ public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
         /** 专门优化第一次调用，不去创建路径，因为可能直接满足条件 */
         private boolean mIsFirst = true;
         /** 路径部分 */
-        private Iterator<T> mPathIt = null;
+        private Iterator<? extends T> mPathIt = null;
         private T mNext;
         /** 时间部分 */
         private double mStartTime = Double.NaN;
@@ -46,7 +46,7 @@ public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
         private void validNextBuffer_() {
             // 如果有设置初始时间则累加花费的时间，因为下一个路径的时间可能会不连续
             if (!Double.isNaN(mStartTime)) mTimeConsumed += mPathGenerator.timeOf(mNext) - mStartTime;
-            List<T> tBufferPath;
+            List<? extends T> tBufferPath;
             do {
                 // 获取路径
                 tBufferPath = mPathGenerator.pathFrom(mNext);

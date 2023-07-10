@@ -17,7 +17,7 @@ public interface IPathGenerator<T> extends IAutoShutdown {
     /** 获取初始点，不需要任何输入参数 */
     T initPoint();
     /** 获取从给定位置开始的路径，注意这里约定获取到的路径的第一个点是 aStart（或等价于 aStart）*/
-    List<T> pathFrom(T aStart);
+    List<? extends T> pathFrom(T aStart);
     /** 获取指定点的时间，用来采样方法需要据此获得反应速率 */
     double timeOf(T aPoint);
 }
