@@ -12,12 +12,10 @@ import com.jtool.math.vector.Vectors;
 import com.jtool.rareevent.IPathGenerator;
 import com.jtool.system.ISystemExecutor;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
-import static com.jtool.code.CS.*;
+import static com.jtool.code.CS.MAX_SEED;
+import static com.jtool.code.CS.WORKING_DIR;
 
 
 /**
@@ -95,10 +93,10 @@ public class DumpPathGenerator implements IPathGenerator<IHasAtomData> {
         if (mIdx == mInitPoints.size()) mIdx = 0;
         return tPoint;
     }
-    @Override public List<SubLammpstrj> pathFrom(IHasAtomData aStart) {
+    @Override public List<? extends IHasAtomData> pathFrom(IHasAtomData aStart) {
+        // 由于存在并行，需要在工作目录中创建临时的路径生成的目录
+        String tLmpDir = mWorkingDir+"LMP@"+UT.Code.randID()+"/";
         try {
-            // 由于存在并行，需要在工作目录中创建临时的路径生成的目录
-            String tLmpDir = mWorkingDir+"LMP@"+UT.Code.randID()+"/";
             // 一些路径的初始化
             String tLmpInPath = tLmpDir+"in";
             String tLmpDataPath = tLmpDir+"data";
@@ -120,17 +118,17 @@ public class DumpPathGenerator implements IPathGenerator<IHasAtomData> {
             rCommand.add("-in"); rCommand.add(tLmpInPath);
             // 执行指令
             int tExitValue = mEXE.system(String.join(" ", rCommand), tIOFiles);
-            if (tExitValue != 0) throw new Exception("LAMMPS run Failed, Exit Value: "+tExitValue);
-            // 理论现在已经获取到了 dump 文件，读取
-            Lammpstrj tDump = Lammpstrj.read(tLmpDumpPath);
-            // 返回之前，先删除临时文件夹
-            UT.IO.removeDir(tLmpDir);
-            // 返回结果
-            return tDump;
+            // 失败还是直接报错，因为增加容忍度代码较复杂
+            if (tExitValue != 0) throw new RuntimeException("LAMMPS run Failed, Exit Value: "+tExitValue);
+            // 理论现在已经获取到了 dump 文件，读取并返回结果
+            return Lammpstrj.read(tLmpDumpPath);
         } catch (Exception e) {
             // 还是抛出 RuntimeException，这样至少 try-with-resources 的写法能正常的捕获错误
             // 之前被 err 流意外关闭误导，实际 RuntimeException 还是需要抛出一下
             throw new RuntimeException(e);
+        } finally {
+            // 最后删除临时文件夹
+            try {UT.IO.removeDir(tLmpDir);} catch (Exception ignored) {}
         }
     }
     

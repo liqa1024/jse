@@ -391,7 +391,6 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             for (IVector subAtomData : tSubLammpstrj.mAtomData.rows())
             lines.add(String.join(" ", UT.Code.map(subAtomData.iterable(), Object::toString)));
         }
-        lines.add("");
         
         UT.IO.write(aFilePath, lines);
     }

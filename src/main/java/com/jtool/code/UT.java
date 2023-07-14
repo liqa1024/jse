@@ -4,6 +4,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.jtool.atom.*;
 import com.jtool.code.collection.AbstractRandomAccessList;
+import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.operator.IOperator1;
 import com.jtool.code.task.TaskCall;
 import com.jtool.code.task.TaskRun;
@@ -1033,15 +1034,28 @@ public class UT {
                 for (IVector subData : aData.rows()) tPrinter.println(String.join(",", Code.map(subData.iterable(), String::valueOf)));
             }
         }
+        public static void data2csv(Iterable<? extends Number> aData, String aFilePath) throws IOException {
+            try (PrintStream tPrinter = toPrintStream(aFilePath)) {
+                for (Number subData : aData) tPrinter.println(subData);
+            }
+        }
+        public static void data2csv(Iterable<? extends Number> aData, String aFilePath, String aHead) throws IOException {
+            try (PrintStream tPrinter = toPrintStream(aFilePath)) {
+                tPrinter.println(aHead);
+                for (Number subData : aData) tPrinter.println(subData);
+            }
+        }
         public static void data2csv(IVector aData, String aFilePath) throws IOException {
             try (PrintStream tPrinter = toPrintStream(aFilePath)) {
-                for (Double subData : aData.iterable()) tPrinter.println(subData);
+                IDoubleIterator it = aData.iterator();
+                while (it.hasNext()) tPrinter.println(it.next());
             }
         }
         public static void data2csv(IVector aData, String aFilePath, String aHead) throws IOException {
             try (PrintStream tPrinter = toPrintStream(aFilePath)) {
                 tPrinter.println(aHead);
-                for (Double subData : aData.iterable()) tPrinter.println(subData);
+                IDoubleIterator it = aData.iterator();
+                while (it.hasNext()) tPrinter.println(it.next());
             }
         }
         public static void data2csv(IFunc1 aFunc, String aFilePath, String... aHeads) throws IOException {

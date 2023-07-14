@@ -227,7 +227,6 @@ public class POSCAR extends AbstractAtomData {
         lines.add("Direct");
         for (IVector subDirect : mDirect.rows())
         lines.add(String.format("%16.10g    %16.10g    %16.10g", subDirect.get(0), subDirect.get(1), subDirect.get(2)));
-        lines.add("");
         
         UT.IO.write(aFilePath, lines);
     }

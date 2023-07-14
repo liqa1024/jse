@@ -40,7 +40,7 @@ while (!FFS.finished()) {
     FFS.run();
     println("prob = ${FFS.getProb(i++)}");
 }
-UT.Timer.toc("1, k = ${FFS.getK()}, step1PointNum = ${FFS.step1PointNum()}, totPointNum = ${FFS.totalPointNum()},");
+UT.Timer.toc("1, k = ${FFS.getK()}, totPointNum = ${FFS.totalPointNum()}, totPathNum = ${FFS.totalPathNum()},");
 
 FFS.shutdown();
 FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, (10..100).step(5), N0).setMinProb(0.0001);
@@ -53,7 +53,7 @@ while (!FFS.finished()) {
     FFS.run();
     println("prob = ${FFS.getProb(i++)}");
 }
-UT.Timer.toc("2, k = ${FFS.getK()}, step1PointNum = ${FFS.step1PointNum()}, totPointNum = ${FFS.totalPointNum()},");
+UT.Timer.toc("2, k = ${FFS.getK()}, totPointNum = ${FFS.totalPointNum()}, totPathNum = ${FFS.totalPathNum()},");
 
 FFS.shutdown();
 FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, (10..100).step(2), N0).setMinProb(0.0001);
@@ -66,7 +66,7 @@ while (!FFS.finished()) {
     FFS.run();
     println("prob = ${FFS.getProb(i++)}");
 }
-UT.Timer.toc("2, k = ${FFS.getK()}, step1PointNum = ${FFS.step1PointNum()}, totPointNum = ${FFS.totalPointNum()},");
+UT.Timer.toc("2, k = ${FFS.getK()}, totPointNum = ${FFS.totalPointNum()}, totPathNum = ${FFS.totalPathNum()},");
 
 FFS.shutdown();
 FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, 10..100, N0).setMinProb(0.0001);
@@ -79,6 +79,6 @@ while (!FFS.finished()) {
     FFS.run();
     println("prob = ${FFS.getProb(i++)}");
 }
-UT.Timer.toc("3, k = ${FFS.getK()}, step1PointNum = ${FFS.step1PointNum()}, totPointNum = ${FFS.totalPointNum()},");
+UT.Timer.toc("3, k = ${FFS.getK()}, totPointNum = ${FFS.totalPointNum()}, totPathNum = ${FFS.totalPathNum()},");
 
 FFS.shutdown();

@@ -321,7 +321,6 @@ public class Lmpdat extends AbstractAtomData {
         for (int i = 0; i < atomNum(); ++i)
         lines.add(String.format("%6d %10.5g %10.5g %10.5g", (int)mAtomData.get(i,STD_ID_COL), mVelocities.get(i,STD_VX_COL), mVelocities.get(i,STD_VY_COL), mVelocities.get(i,STD_VZ_COL)));
         }
-        lines.add("");
         
         UT.IO.write(aFilePath, lines);
     }
