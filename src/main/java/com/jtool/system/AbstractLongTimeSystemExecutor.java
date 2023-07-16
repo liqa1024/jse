@@ -364,6 +364,8 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
     
     @Override public final void makeDir(String aDir) throws Exception {mEXE.makeDir(aDir);}
     @Override public final void removeDir(String aDir) throws Exception {mEXE.removeDir(aDir);}
+    @Override public final void delete(String aPath) throws Exception {mEXE.delete(aPath);}
+    @Override public final boolean isFile(String aFilePath) throws Exception {return mEXE.isFile(aFilePath);}
     
     @Override public final int system(String aCommand                                           ) {return system(aCommand, defaultOutFilePath());}
     @Override public final int system(String aCommand,                      IHasIOFiles aIOFiles) {return system(aCommand, defaultOutFilePath(), aIOFiles);}
@@ -507,9 +509,9 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
     /** 用来控制检测频率，ms */
     protected long sleepTime() {return 500;}
     
-    /** 因为上传和下载已经分开，因此需要子类重写这两个函数来实现提交任务部分的文件上传下载（而对于本地不需要同步的则可以不重写）*/
-    protected void putFiles(Iterable<String> aFiles) throws Exception {/**/}
-    protected void getFiles(Iterable<String> aFiles) throws Exception {/**/}
+    @Override public final void putFiles(Iterable<String> aFiles) throws Exception {mEXE.putFiles(aFiles);}
+    @Override public final void getFiles(Iterable<String> aFiles) throws Exception {mEXE.getFiles(aFiles);}
+    @Override public final boolean needSyncIOFiles() {return mEXE.needSyncIOFiles();}
     
     /** 提供向系统提交任务所需要的指令，为了简化代码不支持不进行输出的情况，除了默认的输出路径，还是使用 str 直接获取输出时使用的临时文件路径 */
     protected abstract @NotNull String defaultOutFilePath();

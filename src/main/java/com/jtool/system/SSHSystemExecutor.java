@@ -99,6 +99,13 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
         UT.IO.removeDir(aDir);
         mSSH.removeDir(aDir);
     }
+    @Override public final void delete(String aPath) throws Exception {
+        UT.IO.delete(aPath);
+        mSSH.delete(aPath);
+    }
+    @Override public final boolean isFile(String aFilePath) throws Exception {
+        return mSSH.isFile(aFilePath);
+    }
     
     /** 通过 ssh 直接执行命令 */
     @Override protected Future<Integer> submitSystem__(String aCommand, @NotNull IPrintlnSupplier aPrintln) {
@@ -201,10 +208,10 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
     }
     
     
-    @Override protected final void putFiles(Iterable<String> aFiles) throws Exception {
+    @Override public final void putFiles(Iterable<String> aFiles) throws Exception {
         if (mIOThreadNum>0) mSSH.putFiles(aFiles, mIOThreadNum); else mSSH.putFiles(aFiles);
     }
-    @Override protected final void getFiles(Iterable<String> aFiles) throws Exception {
+    @Override public final void getFiles(Iterable<String> aFiles) throws Exception {
         if (mIOThreadNum>0) mSSH.getFiles(aFiles, mIOThreadNum); else mSSH.getFiles(aFiles);
     }
     /** 需要重写 shutdownFinal 方法将内部 ssh 的关闭包含进去 */

@@ -202,9 +202,6 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
     
     @Override protected long sleepTime() {return mSleepTime;}
     
-    @Override protected void putFiles(Iterable<String> aFiles) throws Exception {mEXE.putFiles(aFiles);}
-    @Override protected void getFiles(Iterable<String> aFiles) throws Exception {mEXE.getFiles(aFiles);}
-    
     /** 这里固定 SLURM 默认的输出路径 */
     @Override protected @NotNull String defaultOutFilePath() {return DEFAULT_OUTFILE_PATH;}
     @Override protected @NotNull String toRealOutFilePath(String aOutFilePath) {

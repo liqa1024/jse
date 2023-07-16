@@ -61,6 +61,7 @@ public class LmpIn extends AbstractInFileLines {
     /** 提供常用的获取 LmpIn 实例的接口 */
     public static LmpIn custom(String aLmpInPath) {return new LmpIn(aLmpInPath);}
     
+    public static LmpIn LONG_TIME          () {return new LmpIn("long-time", true);}
     public static LmpIn INIT_MELT_NPT_Cu   () {LmpIn tLmpIn = new LmpIn("init-melt-NPT-Cu"   , true); tLmpIn.putIFiles("vInDataPath"    , "lmp/data/CuFCC108.lmpdat"         ).putOFiles("vOutRestartPath", "lmp/.temp/restart/melt-Cu108-init"); return tLmpIn;}
     public static LmpIn DATA_MELT_NPT_Cu   () {LmpIn tLmpIn = new LmpIn("data-melt-NPT-Cu"   , true); tLmpIn.putIFiles("vInDataPath"    , "lmp/.temp/data-in-Cu108"          ).putOFiles("vOutDataPath"   , "lmp/.temp/data-out-Cu108"         ); return tLmpIn;}
     public static LmpIn DUMP_MELT_NPT_Cu   () {LmpIn tLmpIn = new LmpIn("dump-melt-NPT-Cu"   , true); tLmpIn.putIFiles("vInDataPath"    , "lmp/data/Cu108.lmpdat"            ).putOFiles("vDumpPath"      , "lmp/.temp/dump/Cu108.lammpstrj"   ); return tLmpIn;}

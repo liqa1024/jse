@@ -82,7 +82,7 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
         // 为了兼容性，需要将实际需要执行的脚本写入 bash 后再执行（srun 特有的问题）
         String tTempScriptPath = mWorkingDir+UT.Code.randID()+".sh";
         try {UT.IO.write(tTempScriptPath, "#!/bin/bash\n"+aCommand);}
-        catch (Exception e) {e.printStackTrace(); return ERR_FUTURE;}
+        catch (Exception e) {e.printStackTrace(); returnResource(tResource); return ERR_FUTURE;}
         // 获取提交指令
         String tCommand = RESOURCES_MANAGER.creatJobStep(tResource, "bash "+tTempScriptPath); // 使用 bash 执行不需要考虑权限的问题
         // 获取指令失败直接输出错误

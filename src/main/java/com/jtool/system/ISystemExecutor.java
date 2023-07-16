@@ -6,6 +6,8 @@ import com.jtool.parallel.IHasThreadPool;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -23,6 +25,13 @@ public interface ISystemExecutor extends IHasThreadPool {
     @VisibleForTesting default void mkdir(String aDir) throws Exception {makeDir(aDir);}
     @ApiStatus.Internal void removeDir(String aDir) throws Exception;
     @VisibleForTesting @ApiStatus.Internal default void rmdir(String aDir) throws Exception {removeDir(aDir);}
+    void delete(String aPath) throws Exception;
+    boolean isFile(String aFilePath) throws Exception;
+    /** 单独的上传和下载的操作，用于方便使用 */
+    void putFiles(Iterable<String> aFiles) throws Exception;
+    void getFiles(Iterable<String> aFiles) throws Exception;
+    boolean needSyncIOFiles();
+    
     
     /** 砍掉原本的 _NO 接口，改为直接设置是否输出到控制台 */
     default ISystemExecutor setNoSTDOutput() {return setNoSTDOutput(true);}

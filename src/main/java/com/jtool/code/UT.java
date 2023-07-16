@@ -177,6 +177,24 @@ public class UT {
                 @Override public int size() {return aBefore.length+3;}
             };
         }
+        public static <T> Iterable<T> merge(final T aBefore0, final Iterable<? extends T> aAfter) {
+            return () -> new Iterator<T>() {
+                private final Iterator<? extends T> mIt = aAfter.iterator();
+                private boolean mFirst = true;
+                @Override public boolean hasNext() {
+                    if (mFirst) return true;
+                    return mIt.hasNext();
+                }
+                @Override public T next() {
+                    if (mFirst) {
+                        mFirst = false;
+                        return aBefore0;
+                    } else {
+                        return mIt.next();
+                    }
+                }
+            };
+        }
         
         
         /**

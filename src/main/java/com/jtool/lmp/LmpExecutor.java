@@ -1,0 +1,87 @@
+package com.jtool.lmp;
+
+import com.jtool.code.UT;
+import com.jtool.iofile.IHasIOFiles;
+import com.jtool.iofile.IInFile;
+import com.jtool.system.ISystemExecutor;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import static com.jtool.code.CS.Exec.EXE;
+import static com.jtool.code.CS.WORKING_DIR;
+
+/**
+ * 一般的 lammps 运行器实现，使用输入的 ISystemExecutor 来执行
+ * @author liqa
+ */
+public final class LmpExecutor implements ILmpExecutor {
+    private final String mWorkingDir;
+    
+    private final ISystemExecutor mEXE;
+    private final String mLmpExe;
+    private final @Nullable String mLogPath;
+    
+    private boolean mDoNotClose = false;
+    
+    public LmpExecutor(ISystemExecutor aEXE, String aLmpExe, @Nullable String aLogPath) {
+        mEXE = aEXE;
+        mLmpExe = aLmpExe;
+        mLogPath = aLogPath;
+        // 最后设置一下工作目录
+        mWorkingDir = WORKING_DIR.replaceAll("%n", "LMP@"+UT.Code.randID());
+    }
+    public LmpExecutor(String aLmpExe, @Nullable String aLogPath) {this(EXE, aLmpExe, aLogPath); mDoNotClose = true;}
+    public LmpExecutor(String aLmpExe) {this(aLmpExe, null);}
+    public LmpExecutor(ISystemExecutor aEXE, String aLmpExe) {this(aEXE, aLmpExe, null);}
+    
+    /** 是否在关闭此实例时顺便关闭内部 exe */
+    public LmpExecutor setDoNotClose(boolean aDoNotClose) {mDoNotClose = aDoNotClose; return this;}
+    
+    @Override public ISystemExecutor exec() {return mEXE;}
+    
+    
+    @Override public int run(String aInFile, IHasIOFiles aIOFiles) {
+        // 注意到 lammps 本身输出时不能自动创建文件夹，因此需要手动先合法化输出文件夹
+        Set<String> rODirs = new HashSet<>();
+        for (String aOFile : aIOFiles.getOFiles()) {
+            int tEndIdx = aOFile.lastIndexOf("/");
+            if (tEndIdx > 0) rODirs.add(aOFile.substring(0, tEndIdx+1));
+        }
+        try {for (String aODir : rODirs) mEXE.makeDir(aODir);}
+        catch (Exception e) {e.printStackTrace(); return -1;}
+        // 组装指令
+        String tCommand = mLmpExe + " -in " + aInFile;
+        // 执行指令
+        return mLogPath==null ? mEXE.system(tCommand, aIOFiles) : mEXE.system(tCommand, mLogPath, aIOFiles);
+    }
+    @Override public int run(IInFile aInFile) {
+        // 由于存在并行，需要在工作目录中创建临时输入文件
+        String tLmpInPath = mWorkingDir+"IN@"+UT.Code.randID();
+        try {
+            // 输入文件初始化
+            aInFile.write(tLmpInPath);
+            // 执行指令
+            return run(tLmpInPath, aInFile);
+        } catch (Exception e) {
+            e.printStackTrace(); return -1;
+        } finally {
+            try {
+                UT.IO.delete(tLmpInPath);
+                mEXE.delete(tLmpInPath);
+            } catch (Exception ignored) {}
+        }
+    }
+    
+    /** 程序结束时删除自己的临时工作目录，并且会关闭 EXE */
+    @Override public void shutdown() {
+        try {
+            UT.IO.removeDir(mWorkingDir);
+            mEXE.removeDir(mWorkingDir);
+        } catch (Exception ignored) {}
+        if (!mDoNotClose) {
+            mEXE.shutdown();
+        }
+    }
+}

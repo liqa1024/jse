@@ -11,9 +11,9 @@ import java.util.concurrent.Future;
 public abstract class RemoteSystemExecutor extends AbstractSystemExecutor {
     public RemoteSystemExecutor() {super();}
     
-    protected final boolean needSyncIOFiles() {return true;}
+    public final boolean needSyncIOFiles() {return true;}
     /** stuff to override */
     protected abstract Future<Integer> submitSystem__(String aCommand, @NotNull IPrintlnSupplier aPrintln);
-    protected abstract void putFiles(Iterable<String> aFiles) throws Exception;
-    protected abstract void getFiles(Iterable<String> aFiles) throws Exception;
+    public abstract void putFiles(Iterable<String> aFiles) throws Exception;
+    public abstract void getFiles(Iterable<String> aFiles) throws Exception;
 }

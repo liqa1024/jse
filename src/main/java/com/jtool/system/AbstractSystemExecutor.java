@@ -353,7 +353,7 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
     /** stuff to override */
     protected void shutdownFinal() {/**/}
     protected abstract Future<Integer> submitSystem__(String aCommand, @NotNull IPrintlnSupplier aPrintln);
-    protected abstract void putFiles(Iterable<String> aFiles) throws Exception;
-    protected abstract void getFiles(Iterable<String> aFiles) throws Exception;
-    protected abstract boolean needSyncIOFiles();
+    public abstract void putFiles(Iterable<String> aFiles) throws Exception;
+    public abstract void getFiles(Iterable<String> aFiles) throws Exception;
+    public abstract boolean needSyncIOFiles();
 }

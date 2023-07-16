@@ -299,7 +299,45 @@ public final class SSHCore implements IAutoShutdown {
             // 最后关闭通道
             if (tChannelSftp != null) tChannelSftp.disconnect();
         }
-
+    }
+    /** 删除一个远程服务器的文件 */
+    public void delete(String aPath) throws Exception {
+        if (mDead) throw new RuntimeException("Can NOT use delete from a Dead SSH.");
+        // 会尝试一次重新连接
+        if (!isConnecting()) connect();
+        // 获取文件传输通道
+        ChannelSftp tChannelSftp = null;
+        try {
+            tChannelSftp = (ChannelSftp) session().openChannel("sftp");
+            tChannelSftp.connect();
+            String tRemotePath = mRemoteWorkingDir+aPath;
+            // 移除文件
+            delete_(tChannelSftp, tRemotePath);
+        } finally {
+            // 最后关闭通道
+            if (tChannelSftp != null) tChannelSftp.disconnect();
+        }
+    }
+    /** 合法化一个路径 */
+    public void validPath(String aPath) throws Exception  {
+        if (mDead) throw new RuntimeException("Can NOT use validPath from a Dead SSH.");
+        // 会尝试一次重新连接
+        if (!isConnecting()) connect();
+        // 获取文件传输通道
+        ChannelSftp tChannelSftp = null;
+        try {
+            tChannelSftp = (ChannelSftp) session().openChannel("sftp");
+            tChannelSftp.connect();
+            String tRemoteDir = mRemoteWorkingDir;
+            int tEndIdx = aPath.lastIndexOf("/");
+            if (tEndIdx > 0) { // 否则不用创建，认为 mRemoteWorkingDir 已经存在
+                tRemoteDir += aPath.substring(0, tEndIdx+1);
+                makeDir_(tChannelSftp, tRemoteDir);
+            }
+        } finally {
+            // 最后关闭通道
+            if (tChannelSftp != null) tChannelSftp.disconnect();
+        }
     }
     
     
@@ -435,6 +473,12 @@ public final class SSHCore implements IAutoShutdown {
         SftpATTRS tAttrs = null;
         try {tAttrs = aChannelSftp.stat(aPath);} catch (SftpException ignored) {}
         return tAttrs != null && !tAttrs.isDir();
+    }
+    /** 判断是否是文件，无论是什么情况报错都返回 false */
+    private static void delete_(ChannelSftp aChannelSftp, String aPath) throws Exception {
+        SftpATTRS tAttrs = null;
+        try {tAttrs = aChannelSftp.stat(aPath);} catch (SftpException ignored) {}
+        if (tAttrs != null && !tAttrs.isDir()) aChannelSftp.rm(aPath);
     }
     /** 在远程服务器创建文件夹，实现跨文件夹创建文件夹 */
     private static void makeDir_(ChannelSftp aChannelSftp, String aDir) throws Exception {
