@@ -77,7 +77,7 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
     public LongTimeLmpExecutor setFileSystemWaitTime(long aFileSystemWaitTime) {mFileSystemWaitTime = aFileSystemWaitTime; return this;}
     
     @Override public ISystemExecutor exec() {return mEXE;}
-    
+    private void printStackTrace(Throwable aThrowable) {if (!mEXE.noERROutput()) aThrowable.printStackTrace();}
     
     /** 内部使用的向任务分配资源的方法 */
     private synchronized @Nullable Pair<String, Future<Integer>> assignLmp_() {
@@ -115,11 +115,11 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
         // 先尝试获取资源
         Pair<String, Future<Integer>> tLmp;
         try {tLmp = assignLmp();}
-        catch (InterruptedException e) {e.printStackTrace(); return -1;}
+        catch (InterruptedException e) {printStackTrace(e); return -1;}
         // 拷贝到需要的 in 文件位置
         try {UT.IO.copy(aInFile, tLmp.first+"in");}
         catch (Exception e) {
-            e.printStackTrace();
+            printStackTrace(e);
             // 出错则归还资源
             returnLmp(tLmp);
             return -1;
@@ -130,11 +130,11 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
         // 先尝试获取资源
         Pair<String, Future<Integer>> tLmp;
         try {tLmp = assignLmp();}
-        catch (InterruptedException e) {e.printStackTrace(); return -1;}
+        catch (InterruptedException e) {printStackTrace(e); return -1;}
         // 输入文件初始化
         try {aInFile.write(tLmp.first+"in");}
         catch (Exception e) {
-            e.printStackTrace();
+            printStackTrace(e);
             // 出错则归还资源
             returnLmp(tLmp);
             return -1;
@@ -169,7 +169,7 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
             // 执行完成后下载输出文件
             if (mEXE.needSyncIOFiles()) mEXE.getFiles(aIOFiles.getOFiles());
         } catch (Exception e) {
-            e.printStackTrace();
+            printStackTrace(e);
             return -1;
         } finally {
             // 无论怎样归还资源

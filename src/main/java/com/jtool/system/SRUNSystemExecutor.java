@@ -70,29 +70,27 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
         if (aCommand == null || aCommand.isEmpty()) return SUC_FUTURE;
         // 先尝试获取节点
         Resource tResource = assignResource();
-        if (tResource == null) {
+        if (tResource == null && !noERROutput()) {
             System.err.println("WARNING: Can NOT to assign resource for this job temporarily, this job blocks until there are any free resource.");
             System.err.println("It may be caused by too large number of parallels.");
         }
         while (tResource == null) {
             // 这个错误是由于手动中断抛出的，因此要立刻抛出 RuntimeException 终止，由外部的 try-with-resources 实现资源回收
-            // SRUN 不支持排队提交，因此如果主线程不允许中断则直接报错
-            try {Thread.sleep(100);} catch (InterruptedException e) {throw new RuntimeException(e);}
+            try {Thread.sleep(100);}
+            catch (InterruptedException e) {printStackTrace(e); return ERR_FUTURE;}
             tResource = assignResource();
         }
         // 为了兼容性，需要将实际需要执行的脚本写入 bash 后再执行（srun 特有的问题）
         String tTempScriptPath = mWorkingDir+UT.Code.randID()+".sh";
         try {UT.IO.write(tTempScriptPath, "#!/bin/bash\n"+aCommand);}
-        catch (Exception e) {e.printStackTrace(); returnResource(tResource); return ERR_FUTURE;}
+        catch (Exception e) {printStackTrace(e); returnResource(tResource); return ERR_FUTURE;}
         // 获取提交指令
         String tCommand = RESOURCES_MANAGER.creatJobStep(tResource, "bash "+tTempScriptPath); // 使用 bash 执行不需要考虑权限的问题
         // 获取指令失败直接输出错误
-        Future<Integer> tOut;
-        if (tCommand == null) {System.err.println("ERROR: Create SLURM job step Failed"); tOut = ERR_FUTURE;}
-        else {tOut = super.submitSystem__(tCommand, aPrintln);}
+        if (tCommand == null) {System.err.println("ERROR: Create SLURM job step Failed"); returnResource(tResource); return ERR_FUTURE;}
         // 任务完成后需要归还任务
         final Resource fResource = tResource;
-        return toSystemFuture(tOut, () -> returnResource(fResource));
+        return toSystemFuture(super.submitSystem__(tCommand, aPrintln), () -> returnResource(fResource));
     }
     
     /** 程序结束时删除自己的临时工作目录，并归还资源 */

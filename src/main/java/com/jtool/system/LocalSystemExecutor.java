@@ -36,7 +36,7 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
             // 执行指令
             Process tProcess;
             try {tProcess = Runtime.getRuntime().exec(aCommand);}
-            catch (Exception e) {e.printStackTrace(); tProcess = null;}
+            catch (Exception e) {printStackTrace(e); tProcess = null;}
             mProcess = tProcess;
             if (mProcess == null) {
                 mErrTask = null;
@@ -53,7 +53,7 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
                         if (tERROutPut) System.err.println(tLine);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    printStackTrace(e);
                 }
             });
             // 读取执行的输出
@@ -66,7 +66,7 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
                         if (tSTDOutPut) tPrintln.println(tLine);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    printStackTrace(e);
                 }
             });
         }

@@ -40,6 +40,8 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
     @Override public final ISystemExecutor setNoERROutput(boolean aNoERROutput) {mNoERROutput = aNoERROutput; return this;}
     @Override public final boolean noERROutput() {return mNoERROutput;}
     
+    protected final void printStackTrace(Throwable aThrowable) {if (!mNoERROutput) aThrowable.printStackTrace();}
+    
     
     @Override public final int system(String aCommand                                                 ) {return system_(aCommand, this::outPrintln);}
     @Override public final int system(String aCommand, final String aOutFilePath                      ) {return system_(aCommand, () -> filePrintln(aOutFilePath));}
@@ -57,8 +59,8 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
         if (mDead) throw new RuntimeException("Can NOT do system from this Dead Executor.");
         if (aCommand==null || aCommand.isEmpty()) {
             if (needSyncIOFiles()) synchronized (this) {
-                try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {e.printStackTrace(); return ImmutableList.of();}
-                try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {e.printStackTrace(); return ImmutableList.of();}
+                try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {printStackTrace(e); return ImmutableList.of();}
+                try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {printStackTrace(e); return ImmutableList.of();}
             }
             return ImmutableList.of();
         }
@@ -83,8 +85,8 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
         if (mDead) throw new RuntimeException("Can NOT submitSystem from this Dead Executor.");
         if (aCommand==null || aCommand.isEmpty()) {
             if (needSyncIOFiles()) synchronized (this) {
-                try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {e.printStackTrace(); return EPT_STR_FUTURE;}
-                try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {e.printStackTrace(); return EPT_STR_FUTURE;}
+                try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {printStackTrace(e); return EPT_STR_FUTURE;}
+                try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {printStackTrace(e); return EPT_STR_FUTURE;}
             }
             return EPT_STR_FUTURE;
         }
@@ -98,7 +100,7 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
     private MergedIOFiles mBatchIOFiles = new MergedIOFiles();
     @Override public final synchronized Future<List<Integer>> submitBatchSystem() {
         if (needSyncIOFiles()) {
-            try {putFiles(mBatchIOFiles.getIFiles());} catch (Exception e) {e.printStackTrace(); return ERR_FUTURES;}
+            try {putFiles(mBatchIOFiles.getIFiles());} catch (Exception e) {printStackTrace(e); return ERR_FUTURES;}
         }
         List<Future<Integer>> rSystems = new ArrayList<>();
         for (String tCommand : mBatchCommands) rSystems.add(submitSystem__(tCommand, this::outPrintln));
@@ -111,7 +113,7 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
             tBatchSystem = toSystemFuture(tBatchSystem, exitValues -> {
                 if (exitValues == null) return null;
                 try {getFiles(tOFiles);}
-                catch (Exception e) {e.printStackTrace();}
+                catch (Exception e) {printStackTrace(e);}
                 return exitValues;
             });
         }
@@ -149,7 +151,7 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
         try {
            tFilePS = UT.IO.toPrintStream(aFilePath);
         } catch (IOException e) {
-            e.printStackTrace();
+            printStackTrace(e);
             return null;
         }
         return new IPrintln() {
@@ -247,7 +249,7 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            printStackTrace(e);
         } finally {
             // 在这里执行最后的关闭
             shutdownFinal();
@@ -277,7 +279,7 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
         try {
             tExitValue = submitSystem_(aCommand, aPrintln).get();
         } catch (Exception e) {
-            e.printStackTrace();
+            printStackTrace(e);
             tExitValue = -1;
         }
         return tExitValue;
@@ -286,8 +288,8 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
         if (mDead) throw new RuntimeException("Can NOT do system from this Dead Executor.");
         if (aCommand==null || aCommand.isEmpty()) {
             if (needSyncIOFiles()) synchronized (this) {
-                try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {e.printStackTrace(); return -1;}
-                try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {e.printStackTrace(); return -1;}
+                try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {printStackTrace(e); return -1;}
+                try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {printStackTrace(e); return -1;}
             }
             return 0;
         }
@@ -297,7 +299,7 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
             tExitValue = submitSystem_(aCommand, aPrintln).get();
             if (needSyncIOFiles()) synchronized (this) {getFiles(aIOFiles.getOFiles());}
         } catch (Exception e) {
-            e.printStackTrace();
+            printStackTrace(e);
             tExitValue = tExitValue==0 ? -1 : tExitValue;
         }
         return tExitValue;
@@ -313,13 +315,13 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
         if (mDead) throw new RuntimeException("Can NOT submitSystem from this Dead Executor.");
         if (aCommand==null || aCommand.isEmpty()) {
             if (needSyncIOFiles()) synchronized (this) {
-                try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {e.printStackTrace(); return ERR_FUTURE;}
-                try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {e.printStackTrace(); return ERR_FUTURE;}
+                try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {printStackTrace(e); return ERR_FUTURE;}
+                try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {printStackTrace(e); return ERR_FUTURE;}
             }
             return SUC_FUTURE;
         }
         if (needSyncIOFiles()) synchronized (this) {
-            try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {e.printStackTrace(); return ERR_FUTURE;}
+            try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {printStackTrace(e); return ERR_FUTURE;}
         }
         SystemFuture<Integer> tSystem = toSystemFuture(submitSystem__(aCommand, aPrintln));
         // 如果下载文件是必要的，使用这个方法来在 tFuture 完成时自动下载附加文件
@@ -332,7 +334,7 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
                 try {
                     getFiles(tOFiles);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    printStackTrace(e);
                     exitValue = -1;
                 }
                 return exitValue;

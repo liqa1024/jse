@@ -40,6 +40,7 @@ public final class LmpExecutor implements ILmpExecutor {
     public LmpExecutor setDoNotClose(boolean aDoNotClose) {mDoNotClose = aDoNotClose; return this;}
     
     @Override public ISystemExecutor exec() {return mEXE;}
+    private void printStackTrace(Throwable aThrowable) {if (!mEXE.noERROutput()) aThrowable.printStackTrace();}
     
     
     @Override public int run(String aInFile, IHasIOFiles aIOFiles) {
@@ -50,7 +51,7 @@ public final class LmpExecutor implements ILmpExecutor {
             if (tEndIdx > 0) rODirs.add(aOFile.substring(0, tEndIdx+1));
         }
         try {for (String aODir : rODirs) mEXE.makeDir(aODir);}
-        catch (Exception e) {e.printStackTrace(); return -1;}
+        catch (Exception e) {printStackTrace(e); return -1;}
         // 组装指令
         String tCommand = mLmpExe + " -in " + aInFile;
         // 执行指令
@@ -65,7 +66,7 @@ public final class LmpExecutor implements ILmpExecutor {
             // 执行指令
             return run(tLmpInPath, aInFile);
         } catch (Exception e) {
-            e.printStackTrace(); return -1;
+            printStackTrace(e); return -1;
         } finally {
             try {
                 UT.IO.delete(tLmpInPath);

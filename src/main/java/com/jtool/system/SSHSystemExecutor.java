@@ -125,7 +125,7 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
             // 执行指令
             ChannelExec tChannelExec;
             try {tChannelExec = mSSH.systemChannel(aCommand, noERROutput());}
-            catch (Exception e) {e.printStackTrace(); tChannelExec = null;}
+            catch (Exception e) {printStackTrace(e); tChannelExec = null;}
             mChannelExec = tChannelExec;
             if (mChannelExec == null) {
                 mOutTask = null;
@@ -137,7 +137,7 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
                 try {
                     mChannelExec.connect();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    printStackTrace(e);
                     // 发生错误则断开连接
                     if (mChannelExec.isConnected() && !mChannelExec.isClosed() && !mChannelExec.isEOF()) {
                         try {mChannelExec.sendSignal("2");} catch (Exception ignored) {}
@@ -152,7 +152,7 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
                         String tLine;
                         while ((tLine = tReader.readLine()) != null) tPrintln.println(tLine);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        printStackTrace(e);
                         // 发生错误则断开连接
                         if (mChannelExec.isConnected() && !mChannelExec.isClosed() && !mChannelExec.isEOF()) {
                             try {mChannelExec.sendSignal("2");} catch (Exception ignored) {}

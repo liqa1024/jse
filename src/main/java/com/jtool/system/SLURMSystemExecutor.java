@@ -352,7 +352,7 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
         try {
             UT.IO.write(tBatchedScriptPath, rScriptLines);
         } catch (Exception e) {
-            e.printStackTrace();
+            printStackTrace(e);
             return null;
         }
         // 附加脚本文件到输入文件
