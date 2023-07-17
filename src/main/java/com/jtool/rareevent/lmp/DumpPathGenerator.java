@@ -25,6 +25,8 @@ import static com.jtool.code.CS.WORKING_DIR;
  * @author liqa
  */
 public class DumpPathGenerator implements IPathGenerator<IHasAtomData> {
+    private final static int TOLERANT = 10;
+    
     private final String mWorkingDir;
     
     private final Random mRNG = new Random();
@@ -35,6 +37,7 @@ public class DumpPathGenerator implements IPathGenerator<IHasAtomData> {
     private final IVector mMesses;
     
     private boolean mDoNotClose = false;
+    private int mTolerant = TOLERANT;
     
     /**
      * 创建一个输出 dump 路径的生成器
@@ -117,14 +120,20 @@ public class DumpPathGenerator implements IPathGenerator<IHasAtomData> {
             }
             // 运行 lammps
             int tExitValue = mLMP.run(tLmpInPath, tIOFiles);
-            // 失败还是直接报错，因为增加容忍度代码较复杂
-            if (tExitValue != 0) throw new RuntimeException("LAMMPS run Failed, Exit Value: "+tExitValue);
+            // 这里失败直接报错，后续会捕获到
+            if (tExitValue != 0) throw new Exception("LAMMPS run Failed, Exit Value: "+tExitValue);
             // 理论现在已经获取到了 dump 文件，读取并返回结果
-            return Lammpstrj.read(tLmpDumpPath);
+            Lammpstrj tLammpstrj = Lammpstrj.read(tLmpDumpPath);
+            // 获取成功，重置容忍
+            synchronized (this) {mTolerant = TOLERANT;}
+            return tLammpstrj;
         } catch (Exception e) {
-            // 还是抛出 RuntimeException，这样至少 try-with-resources 的写法能正常的捕获错误
-            // 之前被 err 流意外关闭误导，实际 RuntimeException 还是需要抛出一下
-            throw new RuntimeException(e);
+            // 出错了则减去容忍，重复失败才真正抛出错误
+            synchronized (this) {
+                --mTolerant;
+                if (mTolerant < 0) throw new RuntimeException(e);
+                else return Collections.singletonList(aStart);
+            }
         } finally {
             // 最后删除临时文件夹
             try {

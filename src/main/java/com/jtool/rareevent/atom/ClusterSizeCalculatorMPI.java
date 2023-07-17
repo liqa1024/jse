@@ -57,7 +57,7 @@ public class ClusterSizeCalculatorMPI implements IParameterCalculator<IHasAtomDa
             System.err.println("It may be caused by too large number of parallels.");
         }
         while (tWorker == null) {
-            try {Thread.sleep(20);} catch (InterruptedException e) {e.printStackTrace(); return -1;}
+            try {Thread.sleep(20);} catch (InterruptedException e) {throw new RuntimeException(e);}
             tWorker = assignWorker();
         }
         // 获取结果

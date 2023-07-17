@@ -13,10 +13,8 @@ import com.jtool.system.WSL
 import com.jtool.vasp.POSCAR
 
 
-try (def ssh = new SSH(UT.IO.json2map('.SECRET/SSH_INFO.json'))) {
-    def task = ssh.submitSystem('sleep 10s; echo 1');
-    task.cancel(true);
-    ssh.waitUntilDone();
+try (def wsl = new WSL()) {
+    wsl.system('java');
 }
 
 //// 测试脚本调用中参数

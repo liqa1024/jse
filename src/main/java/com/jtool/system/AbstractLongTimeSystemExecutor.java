@@ -230,7 +230,7 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
                 }
             }
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         } finally {
             // 在这里执行最后的关闭，例如关闭内部的 EXE 等
             if (mKilled) killFinal();

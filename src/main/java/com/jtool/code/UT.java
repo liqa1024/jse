@@ -585,7 +585,7 @@ public class UT {
                     for (int i = 0; i < TRY_TIMES; ++i) {
                         if (!mThread.isAlive()) {mCancelled = true; mFinished = true; return true;}
                         try {Thread.sleep(SLEEP_TIME);}
-                        catch (InterruptedException e) {throw new RuntimeException(e);}
+                        catch (InterruptedException e) {return false;}
                     }
                 }
                 return false;

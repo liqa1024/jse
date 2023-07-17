@@ -76,6 +76,7 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
         }
         while (tResource == null) {
             // 这个错误是由于手动中断抛出的，因此要立刻抛出 RuntimeException 终止，由外部的 try-with-resources 实现资源回收
+            // SRUN 不支持排队提交，因此如果主线程不允许中断则直接报错
             try {Thread.sleep(100);} catch (InterruptedException e) {throw new RuntimeException(e);}
             tResource = assignResource();
         }

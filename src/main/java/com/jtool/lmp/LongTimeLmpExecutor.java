@@ -19,17 +19,21 @@ import static com.jtool.code.CS.WORKING_DIR;
  * @author liqa
  */
 public final class LongTimeLmpExecutor implements ILmpExecutor {
+    private final static long DEFAULT_FILE_SYSTEM_WAIT_TIME = 0;
+    
     private final String mWorkingDir;
     
     private final Map<Pair<String, Future<Integer>>, Boolean> mLongTimeLmps;
     private final ISystemExecutor mEXE;
     
     private boolean mDoNotClose;
+    private long mFileSystemWaitTime;
     
     public LongTimeLmpExecutor(ISystemExecutor aEXE, boolean aDoNotClose, String aLmpExe, @Nullable String aLogPath, int aMaxParallelNum) throws Exception {
         mEXE = aEXE;
         mDoNotClose = aDoNotClose;
         mLongTimeLmps = new HashMap<>();
+        mFileSystemWaitTime = DEFAULT_FILE_SYSTEM_WAIT_TIME;
         // 设置一下工作目录
         mWorkingDir = WORKING_DIR.replaceAll("%n", "LTLMP@"+UT.Code.randID());
         // 提交长时的 lammps 任务
@@ -70,6 +74,7 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
     
     /** 是否在关闭此实例时顺便关闭内部 exe */
     public LongTimeLmpExecutor setDoNotClose(boolean aDoNotClose) {mDoNotClose = aDoNotClose; return this;}
+    public LongTimeLmpExecutor setFileSystemWaitTime(long aFileSystemWaitTime) {mFileSystemWaitTime = aFileSystemWaitTime; return this;}
     
     @Override public ISystemExecutor exec() {return mEXE;}
     
@@ -90,7 +95,7 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
         mLongTimeLmps.put(aLmp, false);
     }
     
-    private @NotNull Pair<String, Future<Integer>> assignLmp() {
+    private @NotNull Pair<String, Future<Integer>> assignLmp() throws InterruptedException {
         // 先尝试获取资源
         Pair<String, Future<Integer>> tLmp = assignLmp_();
         if (tLmp == null) {
@@ -98,8 +103,7 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
             System.err.println("It may be caused by too large number of parallels.");
         }
         while (tLmp == null) {
-            // 这个错误是由于手动中断抛出的，因此要立刻抛出 RuntimeException 终止，由外部的 try-with-resources 实现资源回收
-            try {Thread.sleep(100);} catch (InterruptedException e) {throw new RuntimeException(e);}
+            Thread.sleep(100);
             tLmp = assignLmp_();
         }
         return tLmp;
@@ -109,7 +113,9 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
     /** 运行则直接通过将输入文件放入指定目录来实现 */
     @Override public int run(String aInFile, IHasIOFiles aIOFiles) {
         // 先尝试获取资源
-        Pair<String, Future<Integer>> tLmp = assignLmp();
+        Pair<String, Future<Integer>> tLmp;
+        try {tLmp = assignLmp();}
+        catch (InterruptedException e) {e.printStackTrace(); return -1;}
         // 拷贝到需要的 in 文件位置
         try {UT.IO.copy(aInFile, tLmp.first+"in");}
         catch (Exception e) {
@@ -122,7 +128,9 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
     }
     @Override public int run(IInFile aInFile) {
         // 先尝试获取资源
-        Pair<String, Future<Integer>> tLmp = assignLmp();
+        Pair<String, Future<Integer>> tLmp;
+        try {tLmp = assignLmp();}
+        catch (InterruptedException e) {e.printStackTrace(); return -1;}
         // 输入文件初始化
         try {aInFile.write(tLmp.first+"in");}
         catch (Exception e) {
@@ -154,12 +162,12 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
             String tLmpInPath = aLmp.first+"in";
             // 向目录放入 in 文件，需要这样操作
             if (mEXE.needSyncIOFiles()) mEXE.putFiles(UT.Code.merge(tLmpInPath, aIOFiles.getIFiles()));
-            // 等待执行完成
+            // 等待执行完成，注意对于特殊系统，需要设置等待时间等待文件系统同步
+            if (mFileSystemWaitTime > 0) Thread.sleep(mFileSystemWaitTime);
             while (mEXE.isFile(tLmpInPath)) Thread.sleep(100);
+            if (mFileSystemWaitTime > 0) Thread.sleep(mFileSystemWaitTime);
             // 执行完成后下载输出文件
             if (mEXE.needSyncIOFiles()) mEXE.getFiles(aIOFiles.getOFiles());
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         } catch (Exception e) {
             e.printStackTrace();
             return -1;

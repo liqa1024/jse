@@ -84,7 +84,9 @@ public class ParforThreadPool extends AbstractHasThreadPool<IExecutorEX> {
                     tLatch.countDown();
                 });
             }
-            try {tLatch.await();} catch (InterruptedException ignored) {} // 使用 CountDownLatch 来等待线程池工作完成
+            // 使用 CountDownLatch 来等待线程池工作完成
+            try {tLatch.await();}
+            catch (InterruptedException e) {if (tThrowable.get()==null) tThrowable.set(e);}
             // 如果有错误需要抛出
             if (tThrowable.get() != null) throw new RuntimeException(tThrowable.get());
         }
@@ -126,7 +128,9 @@ public class ParforThreadPool extends AbstractHasThreadPool<IExecutorEX> {
                     tLatch.countDown();
                 });
             }
-            try {tLatch.await();} catch (InterruptedException ignored) {} // 使用 CountDownLatch 来等待线程池工作完成
+            // 使用 CountDownLatch 来等待线程池工作完成
+            try {tLatch.await();}
+            catch (InterruptedException e) {if (tThrowable.get()==null) tThrowable.set(e);}
             // 如果有错误需要抛出
             if (tThrowable.get() != null) throw new RuntimeException(tThrowable.get());
         }

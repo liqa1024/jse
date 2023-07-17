@@ -197,15 +197,12 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
         private void doFinal() {
             if (mDoFinal != null && !isCancelled() && isDone()) synchronized (AbstractSystemExecutor.this) {
                 if (mDoFinal == null) return;
-                Exception tException = null;
                 if (!mValidOut) {
-                    try {mOut = mFuture.get();}
-                    catch (Exception e) {tException = e;}
+                    try {mOut = mFuture.get();} catch (Exception ignored) {}
                     mValidOut = true;
                 }
                 for (IOperator1<T, T> tDo : mDoFinal) mOut = tDo.cal(mOut);
                 mDoFinal = null;
-                if (tException != null) throw new RuntimeException(tException);
             }
         }
     }
@@ -249,8 +246,8 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
                     }
                 }
             }
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             // 在这里执行最后的关闭
             shutdownFinal();
@@ -279,8 +276,6 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
         int tExitValue;
         try {
             tExitValue = submitSystem_(aCommand, aPrintln).get();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         } catch (Exception e) {
             e.printStackTrace();
             tExitValue = -1;
@@ -301,8 +296,6 @@ public abstract class AbstractSystemExecutor extends AbstractHasThreadPool<IExec
             if (needSyncIOFiles()) synchronized (this) {putFiles(aIOFiles.getIFiles());}
             tExitValue = submitSystem_(aCommand, aPrintln).get();
             if (needSyncIOFiles()) synchronized (this) {getFiles(aIOFiles.getOFiles());}
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         } catch (Exception e) {
             e.printStackTrace();
             tExitValue = tExitValue==0 ? -1 : tExitValue;
