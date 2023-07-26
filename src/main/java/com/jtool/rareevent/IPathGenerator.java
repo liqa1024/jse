@@ -20,4 +20,6 @@ public interface IPathGenerator<T> extends IAutoShutdown {
     List<? extends T> pathFrom(T aStart);
     /** 获取指定点的时间，用来采样方法需要据此获得反应速率 */
     double timeOf(T aPoint);
+    /** 获取精简一个点的数据，用于减少内存占用，也可以用于区分一条路径上继续和从存储的点继续两种不同的情况；对于lammps则需要返回没有速率的点来重新分配速率 */
+    default T reducedPoint(T aPoint) {return aPoint;}
 }

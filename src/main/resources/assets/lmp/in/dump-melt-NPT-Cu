@@ -27,7 +27,7 @@ thermo          ${vThermoStep}
 thermo_style    custom step temp press vol pe ke etotal enthalpy
 thermo_modify   flush yes
 
-dump            1 all custom ${vDumpStep} ${vDumpPath} id type x y z
+dump            1 all custom ${vDumpStep} ${vDumpPath} id type x y z vx vy vz
 
 fix             1 all npt temp ${vT} ${vT} ${vCooldownTdamp} iso ${vP} ${vP} 2
 run             ${vRunStep}

@@ -1,7 +1,11 @@
 package com.jtool.rareevent.lmp;
 
+import com.jtool.atom.AbstractAtomData;
+import com.jtool.atom.IAtom;
 import com.jtool.atom.IHasAtomData;
+import com.jtool.atom.IHasXYZ;
 import com.jtool.code.UT;
+import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.iofile.IHasIOFiles;
 import com.jtool.iofile.IInFile;
 import com.jtool.lmp.ILmpExecutor;
@@ -9,14 +13,15 @@ import com.jtool.lmp.Lammpstrj;
 import com.jtool.lmp.Lammpstrj.SubLammpstrj;
 import com.jtool.lmp.LmpIn;
 import com.jtool.lmp.Lmpdat;
+import com.jtool.math.matrix.IMatrix;
+import com.jtool.math.matrix.Matrices;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.Vectors;
 import com.jtool.rareevent.IPathGenerator;
 
 import java.util.*;
 
-import static com.jtool.code.CS.MAX_SEED;
-import static com.jtool.code.CS.WORKING_DIR;
+import static com.jtool.code.CS.*;
 
 
 /**
@@ -112,7 +117,9 @@ public class DumpPathGenerator implements IPathGenerator<IHasAtomData> {
             // 设置输入 data 路径和输出 dump 路径，考虑要线程安全这里要串行设置并且设置完成后拷贝结果
             IHasIOFiles tIOFiles;
             synchronized (this) {
-                mGenDumpIn.put("vSeed", mRNG.nextInt(MAX_SEED)); // 需要有不同的初始速度
+                // 如果此点不带有速度则需要有不同的随机初始速度，否则不需要分配速度
+                if (aStart.hasVelocities()) mGenDumpIn.put("velocity", REMOVE);
+                else mGenDumpIn.put("vSeed", mRNG.nextInt(MAX_SEED));
                 mGenDumpIn.put("vInDataPath", tLmpDataPath);
                 mGenDumpIn.put("vDumpPath", tLmpDumpPath);
                 mGenDumpIn.write(tLmpInPath);
@@ -144,6 +151,39 @@ public class DumpPathGenerator implements IPathGenerator<IHasAtomData> {
     }
     
     @Override public double timeOf(IHasAtomData aPoint) {return (aPoint instanceof SubLammpstrj) ? ((SubLammpstrj)aPoint).timeStep()*mTimestep : 0.0;}
+    
+    @Override public IHasAtomData reducedPoint(final IHasAtomData aPoint) {
+        // 遍历拷贝数据，只需要坐标和种类数据
+        final IMatrix rData = Matrices.zeros(aPoint.atomNum(), ATOM_DATA_KEYS_TYPE_XYZ.length);
+        int row = 0;
+        for (IAtom tAtom : aPoint.atoms()) {
+            rData.set_(row, TYPE_XYZ_TYPE_COL, tAtom.type());
+            rData.set_(row, TYPE_XYZ_X_COL, tAtom.x());
+            rData.set_(row, TYPE_XYZ_Y_COL, tAtom.y());
+            rData.set_(row, TYPE_XYZ_Z_COL, tAtom.z());
+            ++row;
+        }
+        return new AbstractAtomData() {
+            @Override public List<IAtom> atoms() {
+                return new AbstractRandomAccessList<IAtom>() {
+                    @Override public IAtom get(int index) {
+                        return new IAtom() {
+                            @Override public double x() {return rData.get(index, TYPE_XYZ_X_COL);}
+                            @Override public double y() {return rData.get(index, TYPE_XYZ_Y_COL);}
+                            @Override public double z() {return rData.get(index, TYPE_XYZ_Z_COL);}
+                            @Override public int id() {return index+1;}
+                            @Override public int type() {return (int)rData.get(index, TYPE_XYZ_TYPE_COL);}
+                        };
+                    }
+                    @Override public int size() {return aPoint.atomNum();}
+                };
+            }
+            @Override public IHasXYZ boxLo() {return aPoint.boxLo();}
+            @Override public IHasXYZ boxHi() {return aPoint.boxHi();}
+            @Override public int atomNum() {return aPoint.atomNum();}
+            @Override public int atomTypeNum() {return aPoint.atomTypeNum();}
+        };
+    }
     
     
     /** 程序结束时删除自己的临时工作目录，并且会关闭 EXE */

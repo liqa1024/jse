@@ -48,7 +48,7 @@ public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
             if (!Double.isNaN(mStartTime)) mTimeConsumed += mPathGenerator.timeOf(mNext) - mStartTime;
             List<? extends T> tBufferPath;
             do {
-                // 获取路径
+                // 获取路径，这里都使用原始的点
                 tBufferPath = mPathGenerator.pathFrom(mNext);
                 // 更新路径迭代器
                 mPathIt = tBufferPath.iterator();
@@ -60,18 +60,19 @@ public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
             mStartTime = mPathGenerator.timeOf(mNext);
         }
         
+        /** 这里获取到的点需要是精简的 */
         @Override public T next() {
             // 第一次调用特殊优化，直接返回
             if (mIsFirst) {
                 mIsFirst = false;
-                return mNext;
+                return mPathGenerator.reducedPoint(mNext);
             }
             // 一般操作直接合法化后 next
             if (mPathIt==null || !mPathIt.hasNext()) {
                 validNextBuffer_();
             }
             mNext = mPathIt.next();
-            return mNext;
+            return mPathGenerator.reducedPoint(mNext);
         }
         
         /** 获取当前位置点从初始开始消耗的时间，如果没有调用过 next 则会抛出错误 */
