@@ -39,4 +39,4 @@ if not defined JAR_LOCATION (
 )
 
 @REM 执行 jTool.jar
-java -jar "%JAR_LOCATION%" %*
+java -Dfile.encoding=UTF-8 -jar "%JAR_LOCATION%" %*

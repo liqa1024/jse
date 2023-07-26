@@ -1,0 +1,33 @@
+log             none
+
+variable        vT              equal   2000
+variable        vTCooldown      equal   1
+variable        vP              equal   0.0
+variable        vTimestep       equal   0.002
+variable        vCooldownTdamp  equal   0.2
+variable        vCooldownStep   equal   100000
+variable        vThermoStep     equal   10000
+variable        vSeed           equal   4587281
+variable        vInDataPath     string  lmp/.temp/data-in-Cu108
+variable        vOutDataPath    string  lmp/.temp/data-out-Cu108
+
+
+units           metal
+boundary        p p p
+
+read_data       ${vInDataPath}
+timestep        ${vTimestep}
+
+pair_style      lj/cut  3.6
+pair_coeff      1 1 0.167 2.314 3.6
+
+velocity        all create ${vT} ${vSeed} dist gaussian mom yes rot yes
+
+thermo          ${vThermoStep}
+thermo_style    custom step temp press vol pe ke etotal enthalpy
+thermo_modify   flush yes
+
+fix             1 all npt temp ${vT} ${vTCooldown} ${vCooldownTdamp} iso ${vP} ${vP} 2
+run             ${vCooldownStep}
+
+write_data      ${vOutDataPath}
