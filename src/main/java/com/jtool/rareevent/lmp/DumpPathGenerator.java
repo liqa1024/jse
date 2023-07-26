@@ -72,7 +72,8 @@ public class DumpPathGenerator implements IPathGenerator<IHasAtomData> {
     
     DumpPathGenerator(ILmpExecutor aLMP, Iterable<? extends IHasAtomData> aInitAtomDataList, IVector aMesses, IInFile aGenDumpIn, double aTimestep) {
         mLMP = aLMP;
-        mInitPoints = Lammpstrj.fromAtomData(aInitAtomDataList);
+        // 初始点也需要移除速度，保证会从不同路径开始
+        mInitPoints = Lammpstrj.fromAtomData(UT.Code.map(aInitAtomDataList, this::reducedPoint));
         mTimestep = aTimestep;
         mMesses = aMesses;
         mGenDumpIn = aGenDumpIn;
@@ -153,6 +154,8 @@ public class DumpPathGenerator implements IPathGenerator<IHasAtomData> {
     @Override public double timeOf(IHasAtomData aPoint) {return (aPoint instanceof SubLammpstrj) ? ((SubLammpstrj)aPoint).timeStep()*mTimestep : 0.0;}
     
     @Override public IHasAtomData reducedPoint(final IHasAtomData aPoint) {
+        // 如果本来就没有速率则不需要执行此操作
+        if (!aPoint.hasVelocities()) return aPoint;
         // 遍历拷贝数据，只需要坐标和种类数据
         final IMatrix rData = Matrices.zeros(aPoint.atomNum(), ATOM_DATA_KEYS_TYPE_XYZ.length);
         int row = 0;

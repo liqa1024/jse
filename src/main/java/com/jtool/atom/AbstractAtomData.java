@@ -24,6 +24,9 @@ public abstract class AbstractAtomData implements IHasAtomData {
     
     @Override public double volume() {return boxHi().minus(boxLo()).prod();}
     
+    @Override public final IAtomDataFilter filter() {return new AbstractAtomDataFilter() {
+        @Override protected IHasAtomData thisAtomData_() {return AbstractAtomData.this;}
+    };}
     
     /** 直接使用过滤器过滤掉不符合的种类 */
     @Override public Iterable<IAtom> atoms(final int aType) {return UT.Code.filter(atoms(), atom -> atom.type()==aType);}

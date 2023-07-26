@@ -59,13 +59,13 @@ public class UT {
          * Get the random seed for lammps usage
          * @author liqa
          */
-        public synchronized static int randSeed() {return RANDOM.nextInt(MAX_SEED);}
+        public static int randSeed() {return RANDOM.nextInt(MAX_SEED);}
         
         /**
          * Get the random id in URL and Filename safe Base64, 8 length
          * @author liqa
          */
-        public synchronized static String randID() {
+        public static String randID() {
             byte[] rBytes = new byte[6];
             RANDOM.nextBytes(rBytes);
             return Base64.getUrlEncoder().withoutPadding().encodeToString(rBytes);

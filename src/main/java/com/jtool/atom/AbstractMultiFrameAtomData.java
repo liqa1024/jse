@@ -33,4 +33,5 @@ public abstract class AbstractMultiFrameAtomData<T extends IHasAtomData> extends
     @Override public final IHasXYZ          boxLo           ()          {return defaultFrame().boxLo();}
     @Override public final IHasXYZ          boxHi           ()          {return defaultFrame().boxHi();}
     @Override public final double           volume          ()          {return defaultFrame().volume();}
+    @Override public final IAtomDataFilter  filter          ()          {return defaultFrame().filter();}
 }

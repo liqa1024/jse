@@ -38,6 +38,9 @@ public interface IHasAtomData {
     IHasXYZ boxHi();
     double volume();
     
+    /** 返回原子数据过滤器，现在不再使用专门的 Generator */
+    IAtomDataFilter filter();
+    
     
     /// 实用功能，这里依旧保留这种写法
     /**

@@ -10,6 +10,7 @@ import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.Vectors;
 import com.jtool.parallel.AbstractHasThreadPool;
 import com.jtool.parallel.ParforThreadPool;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,6 +27,7 @@ import static com.jtool.math.MathEX.Vec;
  * <p> 特定原子结构的生成器 </p>
  * <p> 此类线程不安全，但不同实例间线程安全 </p>
  */
+@ApiStatus.Obsolete
 public class Generator extends AbstractHasThreadPool<ParforThreadPool> {
     /** IThreadPoolContainer stuffs */
     private volatile boolean mDead = false;
