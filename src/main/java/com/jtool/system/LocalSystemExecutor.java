@@ -48,8 +48,8 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
             }
             // 使用另外两个线程读取错误流和输出流（由于内部会对输出自动 buffer，获取 stream 和执行的顺序不重要）
             mErrTask = UT.Par.runAsync(() -> {
+                boolean tERROutPut = !noERROutput();
                 try (BufferedReader tErrReader = UT.IO.toReader(mProcess.getErrorStream())) {
-                    boolean tERROutPut = !noERROutput();
                     // 对于 Process，由于内部已经有 buffered 输出流，因此必须要获取输出流并遍历，避免发生流死锁
                     String tLine;
                     while ((tLine = tErrReader.readLine()) != null) {
@@ -61,8 +61,8 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
             });
             // 读取执行的输出
             mOutTask = UT.Par.runAsync(() -> {
-                try (BufferedReader tOutReader = UT.IO.toReader(mProcess.getInputStream()); IPrintln tPrintln = aPrintln.get()) {
-                    boolean tSTDOutPut = !noSTDOutput();
+                boolean tSTDOutPut = !noSTDOutput();
+                try (BufferedReader tOutReader = UT.IO.toReader(mProcess.getInputStream()); IPrintln tPrintln = tSTDOutPut ? aPrintln.get() : NUL_PRINTLN) {
                     // 对于 Process，由于内部已经有 buffered 输出流，因此必须要获取输出流并遍历，避免发生流死锁
                     String tLine;
                     while ((tLine = tOutReader.readLine()) != null) {

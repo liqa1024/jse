@@ -6,7 +6,6 @@ import com.jtool.parallel.ExecutorsEX;
 import com.jtool.parallel.IAutoShutdown;
 import com.jtool.parallel.IExecutorEX;
 
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Vector;
@@ -357,18 +356,19 @@ public final class SSHCore implements IAutoShutdown {
             tChannelSftp = (ChannelSftp) session().openChannel("sftp");
             tChannelSftp.connect();
             for (String tFilePath : aFilePaths) if (tFilePath!=null && !tFilePath.isEmpty()) {
-                // 检测文件路径是否合法
+                // 检测文件路径是否合法，这里非法路径直接跳过
                 String tLocalFile = mLocalWorkingDir+tFilePath;
-                if (!UT.IO.isFile(tLocalFile)) throw new IOException("Invalid File Path: "+tFilePath);
-                // 创建目标文件夹
-                String tRemoteDir = mRemoteWorkingDir;
-                int tEndIdx = tFilePath.lastIndexOf("/");
-                if (tEndIdx > 0) { // 否则不用创建，认为 mRemoteWorkingDir 已经存在
-                    tRemoteDir += tFilePath.substring(0, tEndIdx+1);
-                    makeDir_(tChannelSftp, tRemoteDir);
+                if (UT.IO.isFile(tLocalFile)) {
+                    // 创建目标文件夹
+                    String tRemoteDir = mRemoteWorkingDir;
+                    int tEndIdx = tFilePath.lastIndexOf("/");
+                    if (tEndIdx > 0) { // 否则不用创建，认为 mRemoteWorkingDir 已经存在
+                        tRemoteDir += tFilePath.substring(0, tEndIdx + 1);
+                        makeDir_(tChannelSftp, tRemoteDir);
+                    }
+                    // 上传文件
+                    tChannelSftp.put(tLocalFile, tRemoteDir);
                 }
-                // 上传文件
-                tChannelSftp.put(tLocalFile, tRemoteDir);
             }
         } finally {
             // 最后关闭通道
@@ -384,18 +384,19 @@ public final class SSHCore implements IAutoShutdown {
             tChannelSftp = (ChannelSftp) session().openChannel("sftp");
             tChannelSftp.connect();
             for (String tFilePath : aFilePaths) if (tFilePath!=null && !tFilePath.isEmpty()) {
-                // 检测文件路径是否合法
+                // 检测文件路径是否合法，这里非法路径直接跳过
                 String tRemoteDir = mRemoteWorkingDir + tFilePath;
-                if (!isFile_(tChannelSftp, tRemoteDir)) throw new IOException("Invalid File Path: " + tFilePath);
-                // 创建目标文件夹
-                String tLocalDir = mLocalWorkingDir;
-                int tEndIdx = tFilePath.lastIndexOf("/");
-                if (tEndIdx > 0) { // 否则不用创建，认为 mLocalWorkingDir 已经存在
-                    tLocalDir += tFilePath.substring(0, tEndIdx + 1);
-                    UT.IO.makeDir(tLocalDir);
+                if (isFile_(tChannelSftp, tRemoteDir)) {
+                    // 创建目标文件夹
+                    String tLocalDir = mLocalWorkingDir;
+                    int tEndIdx = tFilePath.lastIndexOf("/");
+                    if (tEndIdx > 0) { // 否则不用创建，认为 mLocalWorkingDir 已经存在
+                        tLocalDir += tFilePath.substring(0, tEndIdx + 1);
+                        UT.IO.makeDir(tLocalDir);
+                    }
+                    // 下载文件
+                    tChannelSftp.get(tRemoteDir, tLocalDir);
                 }
-                // 下载文件
-                tChannelSftp.get(tRemoteDir, tLocalDir);
             }
         } finally {
             // 最后关闭通道
@@ -410,18 +411,19 @@ public final class SSHCore implements IAutoShutdown {
             tSftpPool = new SftpPool(this, aThreadNumber);
             for (final String tFilePath : aFilePaths) if (tFilePath!=null && !tFilePath.isEmpty()) {
                 tSftpPool.submit(aChannelSftp -> {
-                    // 检测文件路径是否合法
+                    // 检测文件路径是否合法，这里非法路径直接跳过
                     String tLocalFile = mLocalWorkingDir+tFilePath;
-                    if (!UT.IO.isFile(tLocalFile)) throw new IOException("Invalid File Path: "+tFilePath);
-                    // 创建目标文件夹
-                    String tRemoteDir = mRemoteWorkingDir;
-                    int tEndIdx = tFilePath.lastIndexOf("/");
-                    if (tEndIdx > 0) { // 否则不用创建，认为 mRemoteWorkingDir 已经存在
-                        tRemoteDir += tFilePath.substring(0, tEndIdx+1);
-                        SSHCore.makeDir_(aChannelSftp, tRemoteDir);
+                    if (UT.IO.isFile(tLocalFile)) {
+                        // 创建目标文件夹
+                        String tRemoteDir = mRemoteWorkingDir;
+                        int tEndIdx = tFilePath.lastIndexOf("/");
+                        if (tEndIdx > 0) { // 否则不用创建，认为 mRemoteWorkingDir 已经存在
+                            tRemoteDir += tFilePath.substring(0, tEndIdx + 1);
+                            SSHCore.makeDir_(aChannelSftp, tRemoteDir);
+                        }
+                        // 上传文件
+                        aChannelSftp.put(tLocalFile, tRemoteDir);
                     }
-                    // 上传文件
-                    aChannelSftp.put(tLocalFile, tRemoteDir);
                 });
             }
             // 等待执关闭线程池后等待执行完毕
@@ -439,18 +441,19 @@ public final class SSHCore implements IAutoShutdown {
             tSftpPool = new SftpPool(this, aThreadNumber);
             for (final String tFilePath : aFilePaths) if (tFilePath!=null && !tFilePath.isEmpty()) {
                 tSftpPool.submit(aChannelSftp -> {
-                    // 检测文件路径是否合法
+                    // 检测文件路径是否合法，这里非法路径直接跳过
                     String tRemoteDir = mRemoteWorkingDir + tFilePath;
-                    if (!isFile_(aChannelSftp, tRemoteDir)) throw new IOException("Invalid File Path: " + tFilePath);
-                    // 创建目标文件夹
-                    String tLocalDir = mLocalWorkingDir;
-                    int tEndIdx = tFilePath.lastIndexOf("/");
-                    if (tEndIdx > 0) { // 否则不用创建，认为 mLocalWorkingDir 已经存在
-                        tLocalDir += tFilePath.substring(0, tEndIdx + 1);
-                        UT.IO.makeDir(tLocalDir);
+                    if (isFile_(aChannelSftp, tRemoteDir)) {
+                        // 创建目标文件夹
+                        String tLocalDir = mLocalWorkingDir;
+                        int tEndIdx = tFilePath.lastIndexOf("/");
+                        if (tEndIdx > 0) { // 否则不用创建，认为 mLocalWorkingDir 已经存在
+                            tLocalDir += tFilePath.substring(0, tEndIdx + 1);
+                            UT.IO.makeDir(tLocalDir);
+                        }
+                        // 下载文件
+                        aChannelSftp.get(tRemoteDir, tLocalDir);
                     }
-                    // 下载文件
-                    aChannelSftp.get(tRemoteDir, tLocalDir);
                 });
             }
             // 等待执关闭线程池后等待执行完毕

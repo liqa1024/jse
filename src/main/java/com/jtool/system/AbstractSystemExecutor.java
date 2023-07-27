@@ -138,28 +138,31 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
     protected interface IPrintln extends AutoCloseable {void println(String aLine); void close();}
     /** submit 相关需要使用 supplier，只在需要输入的时候进行创建 */
     @FunctionalInterface protected interface IPrintlnSupplier extends Supplier<IPrintln> {@NotNull IPrintln get();}
-    /** 不使用静态方法方便子类重写 */
-    protected IPrintln outPrintln() {
+    protected final static IPrintln NUL_PRINTLN = new IPrintln() {
+        @Override public void println(String aLine) {/**/}
+        @Override public void close() {/**/}
+    };
+    private IPrintln outPrintln() {
         return new IPrintln() {
             @Override public void println(String aLine) {System.out.println(aLine);}
             @Override public void close() {/**/}
         };
     }
     @SuppressWarnings("resource")
-    protected IPrintln filePrintln(String aFilePath) {
+    private IPrintln filePrintln(String aFilePath) {
         final PrintStream tFilePS;
         try {
            tFilePS = UT.IO.toPrintStream(aFilePath);
         } catch (IOException e) {
             printStackTrace(e);
-            return null;
+            return NUL_PRINTLN;
         }
         return new IPrintln() {
             @Override public void println(String aLine) {tFilePS.println(aLine);}
             @Override public void close() {tFilePS.close();}
         };
     }
-    protected IPrintln listPrintln(final List<String> aList) {
+    private IPrintln listPrintln(final List<String> aList) {
         return new IPrintln() {
             @Override public void println(String aLine) {aList.add(aLine);}
             @Override public void close() {/**/}

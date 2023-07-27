@@ -16,9 +16,8 @@ import static com.jtool.code.CS.*;
 /**
  * @author liqa
  * <p> 一般的 SLURM 实现，基于 SSH 的远程 Executor，因此针对的是使用 SSH 连接的远程 SLURM 服务器 </p>
- * <p> 为了代码简洁，禁止输出依旧会创建文件 </p>
+ * <p> 由于实现起来较为复杂，这里不考虑执行后再次展开的情况，以及运行 jTool 本身的使用 -c 指定单任务多核的情况 </p>
  */
-@ApiStatus.Obsolete
 public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSystemExecutor> {
     /** 一些目录设定， %n: unique job name, %i: index of job，注意只有 OUTFILE_PATH 支持 %i */
     public final static String SPLIT_NODE_SCRIPT_PATH = WORKING_DIR+"splitNodeList.sh";
@@ -48,15 +47,6 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
         mWorkingDir = WORKING_DIR.replaceAll("%n", mUniqueJobName);
         mSplitNodeScriptPath = SPLIT_NODE_SCRIPT_PATH.replaceAll("%n", mUniqueJobName);
         mBatchedScriptDir = BATCHED_SCRIPT_DIR.replaceAll("%n", mUniqueJobName);
-        // 注意初始化失败时需要抛出异常并且执行关闭操作
-        try {
-            this.makeDir(mWorkingDir);
-            this.makeDir(mBatchedScriptDir);
-            this.makeDir(DEFAULT_OUTFILE_DIR);
-        } catch (Exception e) {
-            this.shutdown();
-            throw e;
-        }
         // 从资源文件中创建已经准备好的 SplitNodeScript
         try {
             UT.IO.copy(UT.IO.getResource("slurm/splitNodeList.sh"), mSplitNodeScriptPath);
@@ -194,7 +184,6 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
     
     
     
-    
     /** AbstractLongTimeSystemExecutor stuffs */
     @Override protected int maxBatchSize() {
         // 根据 mTaskNum 和 mMaxTaskNumPerNode 来决定最大的一组的大小
@@ -227,11 +216,6 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
 //      rRunCommand.add("--wait");              rRunCommand.add("1000000"); // 正常提交任务不需要修改 wait，可以防止任务报错后一直卡住
         if (noSTDOutput()) {
             if (noERROutput()) {
-                // 所有输出都关闭，依旧需要创建文件
-                rRunCommand.addFirst(";");
-                rRunCommand.addFirst(aOutFilePath);
-                rRunCommand.addFirst(">");
-                rRunCommand.addFirst(":");
                 // 关闭输出
                 rRunCommand.add("--output");            rRunCommand.add(NO_LOG_LINUX);
             } else {
@@ -277,11 +261,6 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
         rSubmitCommand.add("--job-name");           rSubmitCommand.add(mUniqueJobName);
         if (noSTDOutput()) {
             if (noERROutput()) {
-                // 所有输出都关闭，依旧需要创建文件
-                rSubmitCommand.addFirst(";");
-                rSubmitCommand.addFirst(aOutFilePath);
-                rSubmitCommand.addFirst(">");
-                rSubmitCommand.addFirst(":");
                 // 关闭输出
                 rSubmitCommand.add("--output");         rSubmitCommand.add(NO_LOG_LINUX);
             } else {
@@ -378,7 +357,7 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
         rSubmitCommand.add("--job-name");           rSubmitCommand.add(mUniqueJobName);
         if (noSTDOutput()) {
             if (noERROutput()) {
-                // 关闭输出，由于此时下载可控，则不需要创建文件
+                // 关闭输出
                 rSubmitCommand.add("--output");         rSubmitCommand.add(NO_LOG_LINUX);
             } else {
                 // 只关闭标准输出

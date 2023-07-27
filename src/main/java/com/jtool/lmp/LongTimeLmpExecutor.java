@@ -23,6 +23,9 @@ import static com.jtool.code.CS.WORKING_DIR;
 public final class LongTimeLmpExecutor extends AbstractHasAutoShutdown implements ILmpExecutor {
     private final static long DEFAULT_FILE_SYSTEM_WAIT_TIME = 0;
     private final static int TOLERANT = 3;
+    /** 一些目录设定， %n: unique job name, %i: index of lammps，注意只有 OUTFILE_PATH 支持 %i */
+    public final static String DEFAULT_OUTFILE_DIR = ".temp/ltlmp/";
+    public final static String DEFAULT_OUTFILE_PATH = DEFAULT_OUTFILE_DIR+"out-%i-%n";
     
     private final String mWorkingDir;
     
@@ -33,7 +36,7 @@ public final class LongTimeLmpExecutor extends AbstractHasAutoShutdown implement
     private long mFileSystemWaitTime;
     private long mSleepTime;
     
-    public LongTimeLmpExecutor(ISystemExecutor aEXE, boolean aDoNotShutdown, String aLmpExe, @Nullable String aLogPath, int aMaxParallelNum) throws Exception {
+    public LongTimeLmpExecutor(ISystemExecutor aEXE, boolean aDoNotShutdown, String aLmpExe, @NotNull String aLogPath, int aMaxParallelNum) throws Exception {
         mEXE = aEXE;
         setDoNotShutdown_(aDoNotShutdown);
         mLmpExe = aLmpExe;
@@ -41,7 +44,9 @@ public final class LongTimeLmpExecutor extends AbstractHasAutoShutdown implement
         mFileSystemWaitTime = DEFAULT_FILE_SYSTEM_WAIT_TIME;
         mSleepTime = FILE_SYSTEM_SLEEP_TIME;
         // 设置一下工作目录
-        mWorkingDir = WORKING_DIR.replaceAll("%n", "LTLMP@"+UT.Code.randID());
+        String tUniqueJobName = "LTLMP@"+UT.Code.randID();
+        mWorkingDir = WORKING_DIR.replaceAll("%n", tUniqueJobName);
+        aLogPath = aLogPath.replaceAll("%n", tUniqueJobName);
         // 提交长时的 lammps 任务
         IInFile tLongTimeInFile = LmpIn.LONG_TIME();
         try {
@@ -57,25 +62,25 @@ public final class LongTimeLmpExecutor extends AbstractHasAutoShutdown implement
                 tLongTimeInFile.write(tLongTimeInPath);
                 // 组装指令
                 String tCommand = mLmpExe + " -in " + tLongTimeInPath;
-                // 运行，内部保证会考虑到 tLongTimeInFile 易失的问题
-                Future<Integer> tLongTimeLmpTask = aLogPath==null ? mEXE.submitSystem(tCommand, tLongTimeInFile) : mEXE.submitSystem(tCommand, aMaxParallelNum>1 ? aLogPath+"-"+i : aLogPath, tLongTimeInFile);
+                // 运行，内部保证会考虑到 tLongTimeInFile 易失的问题；对于 longtime 的，默认情况同 slurm 会输出到文件而不是控制台
+                Future<Integer> tLongTimeLmpTask = mEXE.submitSystem(tCommand, aLogPath.replaceAll("%i", String.valueOf(i)), tLongTimeInFile);
                 // 设置资源
                 mLongTimeLmps.put(new Pair<>(tLongTimeLmpDir, tLongTimeLmpTask), false);
             }
         } catch (Exception e) {
-            // 虽然这样后续即使设置了不要关闭也会关闭，不很好处理因此不考虑
+            // 虽然这样后续即使设置了不要关闭也会关闭，但也不很好处理因此不考虑
             this.shutdown();
             throw e;
         }
     }
     public LongTimeLmpExecutor(ISystemExecutor aEXE, String aLmpExe, String aLogPath, int aMaxParallelNum) throws Exception {this(aEXE, false, aLmpExe, aLogPath, aMaxParallelNum);}
-    public LongTimeLmpExecutor(ISystemExecutor aEXE, String aLmpExe,                  int aMaxParallelNum) throws Exception {this(aEXE, aLmpExe, null, aMaxParallelNum);}
+    public LongTimeLmpExecutor(ISystemExecutor aEXE, String aLmpExe,                  int aMaxParallelNum) throws Exception {this(aEXE, aLmpExe, DEFAULT_OUTFILE_PATH, aMaxParallelNum);}
     public LongTimeLmpExecutor(ISystemExecutor aEXE, String aLmpExe, String aLogPath                     ) throws Exception {this(aEXE, aLmpExe, aLogPath, 1);}
-    public LongTimeLmpExecutor(ISystemExecutor aEXE, String aLmpExe                                      ) throws Exception {this(aEXE, aLmpExe, null);}
+    public LongTimeLmpExecutor(ISystemExecutor aEXE, String aLmpExe                                      ) throws Exception {this(aEXE, aLmpExe, DEFAULT_OUTFILE_PATH);}
     public LongTimeLmpExecutor(                      String aLmpExe, String aLogPath, int aMaxParallelNum) throws Exception {this(EXE, true, aLmpExe, aLogPath, aMaxParallelNum);}
-    public LongTimeLmpExecutor(                      String aLmpExe,                  int aMaxParallelNum) throws Exception {this(aLmpExe, null, aMaxParallelNum);}
+    public LongTimeLmpExecutor(                      String aLmpExe,                  int aMaxParallelNum) throws Exception {this(aLmpExe, DEFAULT_OUTFILE_PATH, aMaxParallelNum);}
     public LongTimeLmpExecutor(                      String aLmpExe, String aLogPath                     ) throws Exception {this(aLmpExe, aLogPath, 1);}
-    public LongTimeLmpExecutor(                      String aLmpExe                                      ) throws Exception {this(aLmpExe, null);}
+    public LongTimeLmpExecutor(                      String aLmpExe                                      ) throws Exception {this(aLmpExe, DEFAULT_OUTFILE_PATH);}
     
     
     /** 是否在关闭此实例时顺便关闭内部 exe */
