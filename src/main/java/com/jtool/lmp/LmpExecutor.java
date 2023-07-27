@@ -3,6 +3,7 @@ package com.jtool.lmp;
 import com.jtool.code.UT;
 import com.jtool.iofile.IHasIOFiles;
 import com.jtool.iofile.IInFile;
+import com.jtool.parallel.AbstractHasAutoShutdown;
 import com.jtool.system.ISystemExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,14 +17,12 @@ import static com.jtool.code.CS.WORKING_DIR;
  * 一般的 lammps 运行器实现，使用输入的 ISystemExecutor 来执行
  * @author liqa
  */
-public final class LmpExecutor implements ILmpExecutor {
+public final class LmpExecutor extends AbstractHasAutoShutdown implements ILmpExecutor {
     private final String mWorkingDir;
     
     private final ISystemExecutor mEXE;
     private final String mLmpExe;
     private final @Nullable String mLogPath;
-    
-    private boolean mDoNotClose = false;
     
     public LmpExecutor(ISystemExecutor aEXE, String aLmpExe, @Nullable String aLogPath) {
         mEXE = aEXE;
@@ -32,12 +31,12 @@ public final class LmpExecutor implements ILmpExecutor {
         // 最后设置一下工作目录
         mWorkingDir = WORKING_DIR.replaceAll("%n", "LMP@"+UT.Code.randID());
     }
-    public LmpExecutor(String aLmpExe, @Nullable String aLogPath) {this(EXE, aLmpExe, aLogPath); mDoNotClose = true;}
+    public LmpExecutor(String aLmpExe, @Nullable String aLogPath) {this(EXE, aLmpExe, aLogPath); setDoNotShutdown_(true);}
     public LmpExecutor(String aLmpExe) {this(aLmpExe, null);}
     public LmpExecutor(ISystemExecutor aEXE, String aLmpExe) {this(aEXE, aLmpExe, null);}
     
     /** 是否在关闭此实例时顺便关闭内部 exe */
-    public LmpExecutor setDoNotClose(boolean aDoNotClose) {mDoNotClose = aDoNotClose; return this;}
+    public LmpExecutor setDoNotShutdown(boolean aDoNotShutdown) {setDoNotShutdown_(aDoNotShutdown); return this;}
     
     @Override public ISystemExecutor exec() {return mEXE;}
     private void printStackTrace(Throwable aThrowable) {if (!mEXE.noERROutput()) aThrowable.printStackTrace();}
@@ -79,14 +78,14 @@ public final class LmpExecutor implements ILmpExecutor {
     
     /** 程序结束时删除自己的临时工作目录，并且会关闭 EXE */
     private volatile boolean mDead = false;
-    @Override public void shutdown() {
+    @Override protected void shutdown_() {
         mDead = true;
         try {
             UT.IO.removeDir(mWorkingDir);
             if (mEXE.needSyncIOFiles()) mEXE.removeDir(mWorkingDir);
         } catch (Exception ignored) {}
-        if (!mDoNotClose) {
-            mEXE.shutdown();
-        }
+    }
+    @Override protected void shutdownInternal_() {
+        mEXE.shutdown();
     }
 }

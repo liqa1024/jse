@@ -4,6 +4,7 @@ import com.jtool.code.UT;
 import com.jtool.code.collection.Pair;
 import com.jtool.iofile.IHasIOFiles;
 import com.jtool.iofile.IInFile;
+import com.jtool.parallel.AbstractHasAutoShutdown;
 import com.jtool.system.ISystemExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,7 +20,7 @@ import static com.jtool.code.CS.WORKING_DIR;
  * 长时的 lammps 运行器，开启一个长时挂起的 lammps 程序来运行，可以绕过 system 指令限制
  * @author liqa
  */
-public final class LongTimeLmpExecutor implements ILmpExecutor {
+public final class LongTimeLmpExecutor extends AbstractHasAutoShutdown implements ILmpExecutor {
     private final static long DEFAULT_FILE_SYSTEM_WAIT_TIME = 0;
     private final static int TOLERANT = 3;
     
@@ -29,13 +30,12 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
     private final ISystemExecutor mEXE;
     private final String mLmpExe; // 仅用于重启长时 lammps
     
-    private boolean mDoNotClose;
     private long mFileSystemWaitTime;
     private long mSleepTime;
     
-    public LongTimeLmpExecutor(ISystemExecutor aEXE, boolean aDoNotClose, String aLmpExe, @Nullable String aLogPath, int aMaxParallelNum) throws Exception {
+    public LongTimeLmpExecutor(ISystemExecutor aEXE, boolean aDoNotShutdown, String aLmpExe, @Nullable String aLogPath, int aMaxParallelNum) throws Exception {
         mEXE = aEXE;
-        mDoNotClose = aDoNotClose;
+        setDoNotShutdown_(aDoNotShutdown);
         mLmpExe = aLmpExe;
         mLongTimeLmps = new HashMap<>();
         mFileSystemWaitTime = DEFAULT_FILE_SYSTEM_WAIT_TIME;
@@ -79,7 +79,7 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
     
     
     /** 是否在关闭此实例时顺便关闭内部 exe */
-    public LongTimeLmpExecutor setDoNotClose(boolean aDoNotClose) {mDoNotClose = aDoNotClose; return this;}
+    public LongTimeLmpExecutor setDoNotShutdown(boolean aDoNotShutdown) {setDoNotShutdown_(aDoNotShutdown); return this;}
     public LongTimeLmpExecutor setFileSystemWaitTime(long aFileSystemWaitTime) {mFileSystemWaitTime = aFileSystemWaitTime; return this;}
     public LongTimeLmpExecutor setSleepTime(long aSleepTime) {mSleepTime = aSleepTime; return this;}
     
@@ -222,7 +222,7 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
     
     /** 程序结束时删除自己的临时工作目录，并且会结束 lammps，关闭 EXE */
     private volatile boolean mDead = false;
-    @Override public void shutdown() {
+    @Override protected void shutdown_() {
         mDead = true;
         for (Pair<String, Future<Integer>> tPair : mLongTimeLmps.keySet()) {
             String tShutdownPath = tPair.first+"shutdown";
@@ -235,8 +235,8 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
             UT.IO.removeDir(mWorkingDir);
             if (mEXE.needSyncIOFiles()) mEXE.removeDir(mWorkingDir);
         } catch (Exception ignored) {}
-        if (!mDoNotClose) {
-            mEXE.shutdown();
-        }
+    }
+    @Override protected void shutdownInternal_() {
+        mEXE.shutdown();
     }
 }

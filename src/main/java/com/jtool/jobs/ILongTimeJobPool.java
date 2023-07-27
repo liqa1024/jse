@@ -12,6 +12,4 @@ public interface ILongTimeJobPool extends IJobPool, ISavable {
     boolean killRecommended();
     /** 直接终止的接口 */
     void kill();
-    /** 正常关闭的接口 */
-    void shutdown();
 }

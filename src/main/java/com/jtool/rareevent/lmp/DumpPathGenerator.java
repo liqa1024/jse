@@ -17,6 +17,7 @@ import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.matrix.Matrices;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.Vectors;
+import com.jtool.parallel.AbstractHasAutoShutdown;
 import com.jtool.rareevent.IPathGenerator;
 
 import java.util.*;
@@ -29,7 +30,7 @@ import static com.jtool.code.CS.*;
  * 特别注意方法的线程安全要求
  * @author liqa
  */
-public class DumpPathGenerator implements IPathGenerator<IAtomData> {
+public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathGenerator<IAtomData> {
     private final static int TOLERANT = 3;
     
     private final String mWorkingDir;
@@ -41,7 +42,6 @@ public class DumpPathGenerator implements IPathGenerator<IAtomData> {
     private final double mTimestep;
     private final IVector mMesses;
     
-    private boolean mDoNotClose = false;
     private int mTolerant = TOLERANT;
     
     /**
@@ -94,7 +94,7 @@ public class DumpPathGenerator implements IPathGenerator<IAtomData> {
     }
     
     /** 是否在关闭此实例时顺便关闭内部 exe */
-    public DumpPathGenerator setDoNotClose(boolean aDoNotClose) {mDoNotClose = aDoNotClose; return this;}
+    public DumpPathGenerator setDoNotShutdown(boolean aDoNotShutdown) {setDoNotShutdown_(aDoNotShutdown); return this;}
     
     
     /** IPathGenerator stuff */
@@ -190,13 +190,13 @@ public class DumpPathGenerator implements IPathGenerator<IAtomData> {
     
     
     /** 程序结束时删除自己的临时工作目录，并且会关闭 EXE */
-    @Override public void shutdown() {
+    @Override protected void shutdown_() {
         try {
             UT.IO.removeDir(mWorkingDir);
             if (mLMP.exec().needSyncIOFiles()) mLMP.exec().removeDir(mWorkingDir);
         } catch (Exception ignored) {}
-        if (!mDoNotClose) {
-            mLMP.shutdown();
-        }
+    }
+    @Override protected void shutdownInternal_() {
+        mLMP.shutdown();
     }
 }

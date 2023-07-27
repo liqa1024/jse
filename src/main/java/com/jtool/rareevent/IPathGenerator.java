@@ -13,7 +13,7 @@ import java.util.List;
  * @author liqa
  * @param <T> 路径上每个点的类型，对于 lammps 模拟则是原子结构信息 {@link IAtomData}
  */
-public interface IPathGenerator<T> extends IAutoShutdown {
+public interface IPathGenerator<T> {
     /** 获取初始点，不需要任何输入参数 */
     T initPoint();
     /** 获取从给定位置开始的路径，注意这里约定获取到的路径的第一个点是 aStart（或等价于 aStart）*/

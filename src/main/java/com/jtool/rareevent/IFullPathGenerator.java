@@ -13,7 +13,7 @@ import com.jtool.parallel.IAutoShutdown;
  * @author liqa
  * @param <T> 获取到点的类型，对于 lammps 模拟则是原子结构信息 {@link IAtomData}
  */
-public interface IFullPathGenerator<T> extends IAutoShutdown {
+public interface IFullPathGenerator<T> {
     /** 由于路径具有随机性，不能返回可以重复访问的 Iterable */
     ITimeAndParameterIterator<T> fullPathInit();
     ITimeAndParameterIterator<T> fullPathFrom(T aStart);

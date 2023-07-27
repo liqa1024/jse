@@ -12,6 +12,6 @@ import com.jtool.parallel.IAutoShutdown;
  * @author liqa
  * @param <T> 点的类型，对于 lammps 模拟则是原子结构信息 {@link IAtomData}
  */
-public interface IParameterCalculator<T> extends IAutoShutdown {
+public interface IParameterCalculator<T> {
     double lambdaOf(T aPoint);
 }

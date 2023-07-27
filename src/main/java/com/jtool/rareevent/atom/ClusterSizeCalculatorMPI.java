@@ -2,6 +2,7 @@ package com.jtool.rareevent.atom;
 
 import com.jtool.atom.IAtomData;
 import com.jtool.code.UT;
+import com.jtool.parallel.IAutoShutdown;
 import com.jtool.parallel.MPI;
 import com.jtool.rareevent.IParameterCalculator;
 import org.jetbrains.annotations.ApiStatus;
@@ -21,7 +22,7 @@ import static com.jtool.code.CS.FILE_SYSTEM_SLEEP_TIME;
  * @author liqa
  */
 @Deprecated
-public class ClusterSizeCalculatorMPI implements IParameterCalculator<IAtomData> {
+public class ClusterSizeCalculatorMPI implements IParameterCalculator<IAtomData>, IAutoShutdown {
     /** 所有的 Worker，第二个值记录是否正在工作 */
     private final Map<MPI.Worker, Boolean> mWorkers = new HashMap<>();
     /** 构造函数，指定进程数 */
@@ -76,8 +77,7 @@ public class ClusterSizeCalculatorMPI implements IParameterCalculator<IAtomData>
     
     /** 内部方法，子进程工作器实际计算参数时使用 */
     @ApiStatus.Internal public static void workerInit(String aAddress) {
-        try (final ClusterSizeCalculator tCal = new ClusterSizeCalculator()) {
-            MPI.abstractWorkerInit(aAddress, input -> UT.Serial.double2bytes(tCal.lambdaOf(UT.Serial.bytes2atomDataXYZ(input))));
-        }
+        final ClusterSizeCalculator tCal = new ClusterSizeCalculator();
+        MPI.abstractWorkerInit(aAddress, input -> UT.Serial.double2bytes(tCal.lambdaOf(UT.Serial.bytes2atomDataXYZ(input))));
     }
 }

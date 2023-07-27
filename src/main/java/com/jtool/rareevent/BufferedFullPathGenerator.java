@@ -1,6 +1,8 @@
 package com.jtool.rareevent;
 
 import com.jtool.atom.IAtomData;
+import com.jtool.parallel.AbstractHasAutoShutdown;
+import com.jtool.parallel.IAutoShutdown;
 
 import java.util.Iterator;
 import java.util.List;
@@ -12,10 +14,9 @@ import java.util.List;
  * @author liqa
  * @param <T> 获取到点的类型，对于 lammps 模拟则是原子结构信息 {@link IAtomData}
  */
-public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
+public class BufferedFullPathGenerator<T> extends AbstractHasAutoShutdown implements IFullPathGenerator<T> {
     private final IPathGenerator<T> mPathGenerator;
     private final IParameterCalculator<? super T> mParameterCalculator;
-    private boolean mDoNotClose = false;
     
     public BufferedFullPathGenerator(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator) {
         mPathGenerator = aPathGenerator;
@@ -23,7 +24,7 @@ public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
     }
     
     /** 是否在关闭此实例时顺便关闭输入的生成器和计算器 */
-    public BufferedFullPathGenerator<T> setDoNotClose(boolean aDoNotClose) {mDoNotClose = aDoNotClose; return this;}
+    public BufferedFullPathGenerator<T> setDoNotShutdown(boolean aDoNotShutdown) {setDoNotShutdown_(aDoNotShutdown); return this;}
     
     /** 这里还是保持一致，第一个值为 aStart（或等价于 aStart）*/
     @Override public ITimeAndParameterIterator<T> fullPathFrom(final T aStart) {return new BufferedIterator(aStart);}
@@ -93,12 +94,9 @@ public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
     }
     
     
-    
     /** 默认程序结束时会顺便关闭内部的 mPathGenerator, mParameterCalculator */
-    @Override public void shutdown() {
-        if (!mDoNotClose) {
-            mPathGenerator.shutdown();
-            mParameterCalculator.shutdown();
-        }
+    @Override protected void shutdownInternal_() {
+        if (mPathGenerator instanceof IAutoShutdown) ((IAutoShutdown)mPathGenerator).shutdown();
+        if (mParameterCalculator instanceof IAutoShutdown) ((IAutoShutdown)mParameterCalculator).shutdown();
     }
 }
