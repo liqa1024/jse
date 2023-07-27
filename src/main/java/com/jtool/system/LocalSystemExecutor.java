@@ -23,6 +23,7 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
     @Override public final void removeDir(String aDir) throws IOException {UT.IO.removeDir(aDir);}
     @Override public final void delete(String aPath) throws Exception {UT.IO.delete(aPath);}
     @Override public final boolean isFile(String aFilePath) {return UT.IO.isFile(aFilePath);}
+    @Override public final boolean isDir(String aDir) {return UT.IO.isDir(aDir);}
     
     @Override protected Future<Integer> submitSystem__(String aCommand, @NotNull IPrintlnSupplier aPrintln) {
         return new LocalSystemFuture(aCommand, aPrintln);

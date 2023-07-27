@@ -370,6 +370,7 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
     @Override public final void removeDir(String aDir) throws Exception {mEXE.removeDir(aDir);}
     @Override public final void delete(String aPath) throws Exception {mEXE.delete(aPath);}
     @Override public final boolean isFile(String aFilePath) throws Exception {return mEXE.isFile(aFilePath);}
+    @Override public final boolean isDir(String aDir) throws Exception {return mEXE.isDir(aDir);}
     
     @Override public final int system(String aCommand                                           ) {return system(aCommand, defaultOutFilePath());}
     @Override public final int system(String aCommand,                      IHasIOFiles aIOFiles) {return system(aCommand, defaultOutFilePath(), aIOFiles);}

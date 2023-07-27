@@ -146,7 +146,7 @@ public class DumpPathGenerator implements IPathGenerator<IHasAtomData> {
             // 最后删除临时文件夹
             try {
                 UT.IO.removeDir(tLmpDir);
-                mLMP.exec().removeDir(tLmpDir);
+                if (mLMP.exec().needSyncIOFiles()) mLMP.exec().removeDir(tLmpDir);
             } catch (Exception ignored) {}
         }
     }
@@ -193,7 +193,7 @@ public class DumpPathGenerator implements IPathGenerator<IHasAtomData> {
     @Override public void shutdown() {
         try {
             UT.IO.removeDir(mWorkingDir);
-            mLMP.exec().removeDir(mWorkingDir);
+            if (mLMP.exec().needSyncIOFiles()) mLMP.exec().removeDir(mWorkingDir);
         } catch (Exception ignored) {}
         if (!mDoNotClose) {
             mLMP.shutdown();

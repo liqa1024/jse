@@ -92,22 +92,12 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
     public static int getIOThreadNum(Map<?, ?> aArgs) {return ((Number)UT.Code.getWithDefault(aArgs, -1, "IOThreadNumber", "iothreadnumber", "IOThreadNum", "iothreadnum", "ion")).intValue();}
     
     
-    /** SSH 需要使用 ssh 来创建，并且会本地同步创建 */
-    @Override public final void makeDir(String aDir) throws Exception {
-        UT.IO.makeDir(aDir);
-        mSSH.makeDir(aDir);
-    }
-    @Override public final void removeDir(String aDir) throws Exception {
-        UT.IO.removeDir(aDir);
-        mSSH.removeDir(aDir);
-    }
-    @Override public final void delete(String aPath) throws Exception {
-        UT.IO.delete(aPath);
-        mSSH.delete(aPath);
-    }
-    @Override public final boolean isFile(String aFilePath) throws Exception {
-        return mSSH.isFile(aFilePath);
-    }
+    /** SSH 需要使用 ssh 来创建，现在不会本地同步创建 */
+    @Override public final void makeDir(String aDir) throws Exception {mSSH.makeDir(aDir);}
+    @Override public final void removeDir(String aDir) throws Exception {mSSH.removeDir(aDir);}
+    @Override public final void delete(String aPath) throws Exception {mSSH.delete(aPath);}
+    @Override public final boolean isFile(String aFilePath) throws Exception {return mSSH.isFile(aFilePath);}
+    @Override public final boolean isDir(String aDir) throws Exception {return mSSH.isDir(aDir);}
     
     /** 通过 ssh 直接执行命令 */
     @Override protected Future<Integer> submitSystem__(String aCommand, @NotNull IPrintlnSupplier aPrintln) {

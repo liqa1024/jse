@@ -21,11 +21,13 @@ import static com.jtool.code.CS.WORKING_DIR;
  */
 public final class LongTimeLmpExecutor implements ILmpExecutor {
     private final static long DEFAULT_FILE_SYSTEM_WAIT_TIME = 0;
+    private final static int TOLERANT = 3;
     
     private final String mWorkingDir;
     
     private final Map<Pair<String, Future<Integer>>, Boolean> mLongTimeLmps;
     private final ISystemExecutor mEXE;
+    private final String mLmpExe; // 仅用于重启长时 lammps
     
     private boolean mDoNotClose;
     private long mFileSystemWaitTime;
@@ -34,6 +36,7 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
     public LongTimeLmpExecutor(ISystemExecutor aEXE, boolean aDoNotClose, String aLmpExe, @Nullable String aLogPath, int aMaxParallelNum) throws Exception {
         mEXE = aEXE;
         mDoNotClose = aDoNotClose;
+        mLmpExe = aLmpExe;
         mLongTimeLmps = new HashMap<>();
         mFileSystemWaitTime = DEFAULT_FILE_SYSTEM_WAIT_TIME;
         mSleepTime = FILE_SYSTEM_SLEEP_TIME;
@@ -53,7 +56,7 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
                 // 输出为 in 文件
                 tLongTimeInFile.write(tLongTimeInPath);
                 // 组装指令
-                String tCommand = aLmpExe + " -in " + tLongTimeInPath;
+                String tCommand = mLmpExe + " -in " + tLongTimeInPath;
                 // 运行，内部保证会考虑到 tLongTimeInFile 易失的问题
                 Future<Integer> tLongTimeLmpTask = aLogPath==null ? mEXE.submitSystem(tCommand, tLongTimeInFile) : mEXE.submitSystem(tCommand, aMaxParallelNum>1 ? aLogPath+"-"+i : aLogPath, tLongTimeInFile);
                 // 设置资源
@@ -116,6 +119,7 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
     
     /** 运行则直接通过将输入文件放入指定目录来实现 */
     @Override public int run(String aInFile, IHasIOFiles aIOFiles) {
+        if (mDead) throw new RuntimeException("Can NOT run from this Dead LmpExecutor.");
         // 先尝试获取资源
         Pair<String, Future<Integer>> tLmp;
         try {tLmp = assignLmp();}
@@ -131,6 +135,7 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
         return run_(tLmp, aIOFiles);
     }
     @Override public int run(IInFile aInFile) {
+        if (mDead) throw new RuntimeException("Can NOT run from this Dead LmpExecutor.");
         // 先尝试获取资源
         Pair<String, Future<Integer>> tLmp;
         try {tLmp = assignLmp();}
@@ -148,16 +153,6 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
     }
     @SuppressWarnings("BusyWait")
     private int run_(Pair<String, Future<Integer>> aLmp, IHasIOFiles aIOFiles) {
-        // 检测 lammps 程序是否存活，如果不在了则直接报错
-        if (aLmp.second.isDone()) {
-            if (!mEXE.noERROutput()) {
-                int tExitValue;
-                try {tExitValue = aLmp.second.get();} catch (Exception e) {tExitValue = -1;}
-                System.err.println("ERROR: Long-Time Lammps in '"+aLmp.first+"' Dead Unexpectedly, exit value: "+tExitValue);
-            }
-            returnLmp(aLmp);
-            return -1;
-        }
         try {
             // 注意到 lammps 本身输出时不能自动创建文件夹，因此需要手动先合法化输出文件夹
             Set<String> rODirs = new HashSet<>();
@@ -172,7 +167,43 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
             if (mEXE.needSyncIOFiles()) mEXE.putFiles(UT.Code.merge(tLmpInPath, aIOFiles.getIFiles()));
             // 等待执行完成，注意对于特殊系统，需要设置等待时间等待文件系统同步
             if (mFileSystemWaitTime > 0) Thread.sleep(mFileSystemWaitTime);
-            while (mEXE.isFile(tLmpInPath)) Thread.sleep(mSleepTime);
+            int tTolerant = TOLERANT;
+            while (mEXE.isFile(tLmpInPath)) {
+                // 每次都检查一下 lammps 进程是否存活，如果挂了则需要重启（带有容忍度）
+                if (aLmp.second.isDone()) {
+                    --tTolerant;
+                    if (!mEXE.noERROutput()) {
+                        int tExitValue;
+                        try {tExitValue = aLmp.second.get();} catch (Exception e) {tExitValue = -1;}
+                        System.err.println("WARNING: Long-Time Lammps in '"+aLmp.first+"' Dead Unexpectedly, exit value: "+tExitValue+", try to run again...");
+                        System.err.println("WARNING: Note that rerunning Lammps will NOT have log file.");
+                        if (tTolerant < 0) System.err.println("ERROR: Long-Time Lammps in '"+aLmp.first+"' Dead Unexpectedly more than "+TOLERANT+" times");
+                    }
+                    if (tTolerant < 0) {
+                        // 无法重启的 lammps 依旧直接归还，下次运行依旧会再次尝试重启，只是这个运行会失败
+                        returnLmp(aLmp);
+                        return -1;
+                    } else {
+                        // 尝试重启，移除 shutdown 文件（如果存在），并重新拷贝输入文件（可能被意外删除）
+                        String tLmpShutdownPath = aLmp.first+"shutdown";
+                        if (mEXE.isFile(tLmpShutdownPath)) {
+                            mEXE.delete(tLmpShutdownPath);
+                        } else if (mEXE.isDir(tLmpShutdownPath)) {
+                            mEXE.removeDir(tLmpShutdownPath);
+                        }
+                        IInFile tLongTimeInFile = LmpIn.LONG_TIME();
+                        String tLmpMainPath = aLmp.first+"main";
+                        tLongTimeInFile.put("vBufferPath", aLmp.first+"buffer");
+                        tLongTimeInFile.put("vInPath", tLmpInPath);
+                        tLongTimeInFile.put("vShutdownPath", tLmpShutdownPath);
+                        tLongTimeInFile.write(tLmpMainPath);
+                        String tCommand = mLmpExe + " -in " + tLmpMainPath;
+                        // 重新指定程序 future，方便起见重新开始的程序不再记录 log，因为目前 api 下会直接覆盖掉原本 log
+                        aLmp.second = mEXE.submitSystem(tCommand, tLongTimeInFile);
+                    }
+                }
+                Thread.sleep(mSleepTime);
+            }
             if (mFileSystemWaitTime > 0) Thread.sleep(mFileSystemWaitTime);
             // 执行完成后下载输出文件
             if (mEXE.needSyncIOFiles()) mEXE.getFiles(aIOFiles.getOFiles());
@@ -190,7 +221,9 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
     
     
     /** 程序结束时删除自己的临时工作目录，并且会结束 lammps，关闭 EXE */
+    private volatile boolean mDead = false;
     @Override public void shutdown() {
+        mDead = true;
         for (Pair<String, Future<Integer>> tPair : mLongTimeLmps.keySet()) {
             String tShutdownPath = tPair.first+"shutdown";
             try {
@@ -200,7 +233,7 @@ public final class LongTimeLmpExecutor implements ILmpExecutor {
         }
         try {
             UT.IO.removeDir(mWorkingDir);
-            mEXE.removeDir(mWorkingDir);
+            if (mEXE.needSyncIOFiles()) mEXE.removeDir(mWorkingDir);
         } catch (Exception ignored) {}
         if (!mDoNotClose) {
             mEXE.shutdown();

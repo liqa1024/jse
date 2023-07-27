@@ -25,6 +25,7 @@ public interface ISystemExecutor extends IHasThreadPool {
     @VisibleForTesting @ApiStatus.Internal default void rmdir(String aDir) throws Exception {removeDir(aDir);}
     void delete(String aPath) throws Exception;
     boolean isFile(String aFilePath) throws Exception;
+    boolean isDir(String aDir) throws Exception;
     /** 单独的上传和下载的操作，用于方便使用 */
     void putFiles(Iterable<String> aFiles) throws Exception;
     void getFiles(Iterable<String> aFiles) throws Exception;

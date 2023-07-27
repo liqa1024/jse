@@ -94,7 +94,10 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
     
     /** 程序结束时删除自己的临时工作目录，并归还资源 */
     @Override protected void shutdownFinal() {
-        try {removeDir(mWorkingDir);} catch (Exception ignored) {}
+        try {
+            UT.IO.removeDir(mWorkingDir);
+            if (needSyncIOFiles()) removeDir(mWorkingDir);
+        } catch (Exception ignored) {}
         for (Resource tResource : mAssignedResources.keySet()) RESOURCES_MANAGER.returnResource(tResource);
     }
 }

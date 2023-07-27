@@ -44,6 +44,7 @@ public final class LmpExecutor implements ILmpExecutor {
     
     
     @Override public int run(String aInFile, IHasIOFiles aIOFiles) {
+        if (mDead) throw new RuntimeException("Can NOT run from this Dead LmpExecutor.");
         // 注意到 lammps 本身输出时不能自动创建文件夹，因此需要手动先合法化输出文件夹
         Set<String> rODirs = new HashSet<>();
         for (String aOFile : aIOFiles.getOFiles()) {
@@ -58,6 +59,7 @@ public final class LmpExecutor implements ILmpExecutor {
         return mLogPath==null ? mEXE.system(tCommand, aIOFiles) : mEXE.system(tCommand, mLogPath, aIOFiles);
     }
     @Override public int run(IInFile aInFile) {
+        if (mDead) throw new RuntimeException("Can NOT run from this Dead LmpExecutor.");
         // 由于存在并行，需要在工作目录中创建临时输入文件
         String tLmpInPath = mWorkingDir+"IN@"+UT.Code.randID();
         try {
@@ -70,16 +72,18 @@ public final class LmpExecutor implements ILmpExecutor {
         } finally {
             try {
                 UT.IO.delete(tLmpInPath);
-                mEXE.delete(tLmpInPath);
+                if (mEXE.needSyncIOFiles()) mEXE.delete(tLmpInPath);
             } catch (Exception ignored) {}
         }
     }
     
     /** 程序结束时删除自己的临时工作目录，并且会关闭 EXE */
+    private volatile boolean mDead = false;
     @Override public void shutdown() {
+        mDead = true;
         try {
             UT.IO.removeDir(mWorkingDir);
-            mEXE.removeDir(mWorkingDir);
+            if (mEXE.needSyncIOFiles()) mEXE.removeDir(mWorkingDir);
         } catch (Exception ignored) {}
         if (!mDoNotClose) {
             mEXE.shutdown();

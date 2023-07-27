@@ -75,7 +75,10 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
     }
     @Override protected void shutdownFinal() {
         // 顺便删除自己的临时工作目录
-        try {removeDir(mWorkingDir);} catch (Exception ignored) {}
+        try {
+            UT.IO.removeDir(mWorkingDir);
+            if (needSyncIOFiles()) removeDir(mWorkingDir);
+        } catch (Exception ignored) {}
     }
     
     
