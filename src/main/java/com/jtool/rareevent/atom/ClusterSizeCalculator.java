@@ -2,7 +2,7 @@ package com.jtool.rareevent.atom;
 
 import com.jtool.atom.IAtomData;
 import com.jtool.atom.MonatomicParameterCalculator;
-import com.jtool.code.UT;
+import com.jtool.code.filter.IFilter;
 import com.jtool.code.filter.IIndexFilter;
 import com.jtool.math.MathEX;
 import com.jtool.math.vector.ILogicalVector;
@@ -22,12 +22,8 @@ public class ClusterSizeCalculator implements IParameterCalculator<IAtomData> {
         // 进行类固体判断
         try (final MonatomicParameterCalculator tMPC = aPoint.getMPC()) {
             final ILogicalVector tIsSolid = tMPC.checkSolidQ6();
-            // 获取所有需要考虑的原子列表
-            List<Integer> rSolidList = IIndexFilter.filter(tIsSolid.size(), tIsSolid);
-            // 如果没有需要考虑的则结果为 0.0
-            if (rSolidList.isEmpty()) return 0.0;
             // 使用 getClustersBFS 获取所有的团簇
-            List<List<Integer>> tClusters = MathEX.Adv.getClustersBFS(rSolidList, i -> UT.Code.filter(tMPC.getNeighborList(i), tIsSolid::get_));
+            List<List<Integer>> tClusters = MathEX.Adv.getClustersBFS(IIndexFilter.filter(tIsSolid.size(), tIsSolid), i -> IFilter.filter(tMPC.getNeighborList(i), tIsSolid::get_));
             // 遍历团簇统计 lambda
             double rLambda = 0.0;
             for (List<Integer> subCluster : tClusters) {

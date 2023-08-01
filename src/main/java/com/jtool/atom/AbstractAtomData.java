@@ -1,6 +1,6 @@
 package com.jtool.atom;
 
-import com.jtool.code.UT;
+import com.jtool.code.filter.IFilter;
 import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.matrix.RowMatrix;
 import com.jtool.math.table.ITable;
@@ -29,7 +29,7 @@ public abstract class AbstractAtomData implements IAtomData {
     };}
     
     /** 直接使用过滤器过滤掉不符合的种类 */
-    @Override public Iterable<IAtom> atoms(final int aType) {return UT.Code.filter(atoms(), atom -> atom.type()==aType);}
+    @Override public Iterable<IAtom> atoms(final int aType) {return IFilter.filter(atoms(), atom -> atom.type()==aType);}
     
     /** 会利用 atomNum() 来得到初始的容量 */
     @Override public ITable dataXYZ() {

@@ -10,16 +10,14 @@ import java.util.List;
 public interface IDoubleFilter {
     boolean accept(double aD);
     
-    /** 提供一个通用的执行过滤的接口 */
-    static List<Double> filter(Iterable<? extends Number> aList, IDoubleFilter aFilter) {
-        List<Double> rList = new ArrayList<>();
-        for (Number tNumber : aList) {
-            double tValue = tNumber.doubleValue();
-            if (aFilter.accept(tValue)) rList.add(tValue);
-        }
-        return rList;
+    /**
+     * 提供通用的执行过滤的接口
+     * @author liqa
+     */
+    static Iterable<? extends Number> filter(Iterable<? extends Number> aList, IDoubleFilter aFilter) {
+        return IFilter.filter(aList, v -> aFilter.accept(v.doubleValue()));
     }
-    static IVector filter(IVector aVector, IDoubleFilter aFilter) {
+    static IVector fixedFilter(IVector aVector, IDoubleFilter aFilter) {
         List<Double> rList = new ArrayList<>();
         for (double tValue : aVector.iterable()) if (aFilter.accept(tValue)) rList.add(tValue);
         return Vectors.from(rList);

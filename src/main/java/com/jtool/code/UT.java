@@ -4,6 +4,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.jtool.atom.*;
 import com.jtool.code.collection.AbstractRandomAccessList;
+import com.jtool.code.filter.IFilter;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.operator.IOperator1;
 import com.jtool.code.task.TaskCall;
@@ -21,10 +22,7 @@ import groovy.json.JsonBuilder;
 import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
 import org.apache.groovy.json.internal.CharScanner;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
-import org.jetbrains.annotations.VisibleForTesting;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -357,34 +355,9 @@ public class UT {
          * filter the input Iterable
          * @author liqa
          */
-        public static <T> Iterable<T> filter(final Iterable<T> aIterable, final IOperator1<Boolean, ? super T> aFilter) {
-            return () -> new Iterator<T>() {
-                private final Iterator<T> mIt = aIterable.iterator();
-                private T mNext = null;
-                
-                @Override public boolean hasNext() {
-                    while (true) {
-                        if (mNext != null) return true;
-                        if (mIt.hasNext()) {
-                            mNext = mIt.next();
-                            // 过滤器不通过则设为 null 跳过
-                            if (!aFilter.cal(mNext)) mNext = null;
-                            continue;
-                        }
-                        return false;
-                    }
-                }
-                @Override public T next() {
-                    if (hasNext()) {
-                        T tNext = mNext;
-                        mNext = null; // 设置 mNext 非法表示此时不再有 Next
-                        return tNext;
-                    } else {
-                        throw new NoSuchElementException();
-                    }
-                }
-            };
-        }
+        @Deprecated
+        public static <T> Iterable<T> filter(final Iterable<T> aIterable, final IFilter<? super T> aFilter) {return IFilter.filter(aIterable, aFilter);}
+        
         /**
          * map {@code Iterable<T> to Iterable<R>} like {@link Stream}.map
          * @author liqa
