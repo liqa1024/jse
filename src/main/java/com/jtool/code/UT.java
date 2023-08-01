@@ -527,51 +527,6 @@ public class UT {
             };
         }
         
-        /**
-         * Convert {@code Collection<Number>} to double[]
-         * @author liqa
-         */
-        public static double[] toData(Collection<? extends Number> aList) {
-            double[] rData = new double[aList.size()];
-            int tIdx = 0;
-            for (Number tValue : aList) {
-                rData[tIdx] = tValue.doubleValue();
-                ++tIdx;
-            }
-            return rData;
-        }
-        public static double[] toData(int aSize, Iterable<? extends Number> aList) {
-            double[] rData = new double[aSize];
-            int tIdx = 0;
-            for (Number tValue : aList) {
-                rData[tIdx] = tValue.doubleValue();
-                ++tIdx;
-            }
-            return rData;
-        }
-        /**
-         * Convert {@code Collection<Collection<Number>>} to double[][]
-         * @author liqa
-         */
-        public static double[][] toMat(Collection<? extends Collection<? extends Number>> aRows) {
-            double[][] rMat = new double[aRows.size()][];
-            int tIdx = 0;
-            for (Collection<? extends Number> tRow : aRows) {
-                rMat[tIdx] = toData(tRow);
-                ++tIdx;
-            }
-            return rMat;
-        }
-        public static double[][] toMat(int aRowNum, int aColNum, Iterable<? extends Iterable<? extends Number>> aRows) {
-            double[][] rMat = new double[aRowNum][];
-            int tIdx = 0;
-            for (Iterable<? extends Number> tRow : aRows) {
-                rMat[tIdx] = toData(aColNum, tRow);
-                ++tIdx;
-            }
-            return rMat;
-        }
-        
         
         /**
          * the range function similar to python

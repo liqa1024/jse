@@ -1,7 +1,6 @@
 package com.jtool.math.vector;
 
 import com.jtool.code.CS.SliceType;
-import com.jtool.code.UT;
 import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.code.filter.IIndexFilter;
 import com.jtool.code.iterator.IDoubleIterator;
@@ -143,7 +142,13 @@ public abstract class AbstractVector implements IVector {
     }
     
     /** 转为兼容性更好的 double[] */
-    @Override public double[] data() {return UT.Code.toData(asList());}
+    @Override public double[] data() {
+        final int tSize = size();
+        double[] rData = new double[tSize];
+        final IDoubleIterator it = iterator();
+        for (int i = 0; i < tSize; ++i) rData[i] = it.next();
+        return rData;
+    }
     
     
     /** 批量修改的接口 */
@@ -253,11 +258,9 @@ public abstract class AbstractVector implements IVector {
     
     
     
-    @Override public IVector copy() {
+    @Override public final IVector copy() {
         IVector rVector = newZeros();
-        final IDoubleSetIterator si = rVector.setIterator();
-        final IDoubleIterator it = iterator();
-        while (si.hasNext()) si.nextAndSet(it.next());
+        rVector.fill(this);
         return rVector;
     }
     

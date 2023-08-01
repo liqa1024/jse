@@ -1,5 +1,7 @@
 package com.jtool.math.operation;
 
+import com.jtool.code.operator.IBooleanOperator1;
+import com.jtool.code.operator.IBooleanOperator2;
 import com.jtool.code.operator.IDoubleOperator1;
 import com.jtool.code.operator.IDoubleOperator2;
 
@@ -10,6 +12,138 @@ import com.jtool.code.operator.IDoubleOperator2;
  */
 public class ARRAY {
     private ARRAY() {}
+    
+    /** logical stuffs */
+    public static void ebeAnd2Dest_(boolean[] aDataL, int aShiftL, boolean[] aDataR, int aShiftR, boolean[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) {
+            if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] && aDataR[i];
+            else for (int i = rShift, k = aShiftR; i < rEnd; ++i, ++k) rDest[i] = aDataL[i] && aDataR[k];
+        } else {
+            if (rShift == aShiftR) for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] && aDataR[i];
+            else for (int i = rShift, j = aShiftL, k = aShiftR; i < rEnd; ++i, ++j, ++k) rDest[i] = aDataL[j] && aDataR[k];
+        }
+    }
+    public static void ebeOr2Dest_(boolean[] aDataL, int aShiftL, boolean[] aDataR, int aShiftR, boolean[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) {
+            if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] || aDataR[i];
+            else for (int i = rShift, k = aShiftR; i < rEnd; ++i, ++k) rDest[i] = aDataL[i] || aDataR[k];
+        } else {
+            if (rShift == aShiftR) for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] || aDataR[i];
+            else for (int i = rShift, j = aShiftL, k = aShiftR; i < rEnd; ++i, ++j, ++k) rDest[i] = aDataL[j] || aDataR[k];
+        }
+    }
+    public static void ebeXor2Dest_(boolean[] aDataL, int aShiftL, boolean[] aDataR, int aShiftR, boolean[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) {
+            if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] ^ aDataR[i];
+            else for (int i = rShift, k = aShiftR; i < rEnd; ++i, ++k) rDest[i] = aDataL[i] ^ aDataR[k];
+        } else {
+            if (rShift == aShiftR) for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] ^ aDataR[i];
+            else for (int i = rShift, j = aShiftL, k = aShiftR; i < rEnd; ++i, ++j, ++k) rDest[i] = aDataL[j] ^ aDataR[k];
+        }
+    }
+    
+    
+    public static void mapAnd2Dest_(boolean[] aDataL, int aShiftL, boolean aRHS, boolean[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] && aRHS;
+        else for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] && aRHS;
+    }
+    public static void mapOr2Dest_(boolean[] aDataL, int aShiftL, boolean aRHS, boolean[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] || aRHS;
+        else for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] || aRHS;
+    }
+    public static void mapXor2Dest_(boolean[] aDataL, int aShiftL, boolean aRHS, boolean[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) for (int i = rShift; i < rEnd; ++i) rDest[i] = aDataL[i] ^ aRHS;
+        else for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aDataL[j] ^ aRHS;
+    }
+    
+    
+    public static void ebeAnd2this_(boolean[] rThis, int rShift, boolean[] aDataR, int aShiftR, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] &= aDataR[i];
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] &= aDataR[j];
+    }
+    public static void ebeOr2this_(boolean[] rThis, int rShift, boolean[] aDataR, int aShiftR, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] |= aDataR[i];
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] |= aDataR[j];
+    }
+    public static void ebeXor2this_(boolean[] rThis, int rShift, boolean[] aDataR, int aShiftR, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] ^= aDataR[i];
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] ^= aDataR[j];
+    }
+    
+    
+    public static void mapAnd2this_     (boolean[] rThis, int rShift, boolean aRHS, int aLength) {final int rEnd = aLength + rShift; for (int i = rShift; i < rEnd; ++i) rThis[i] &= aRHS;}
+    public static void mapOr2this_      (boolean[] rThis, int rShift, boolean aRHS, int aLength) {final int rEnd = aLength + rShift; for (int i = rShift; i < rEnd; ++i) rThis[i] |= aRHS;}
+    public static void mapXor2this_     (boolean[] rThis, int rShift, boolean aRHS, int aLength) {final int rEnd = aLength + rShift; for (int i = rShift; i < rEnd; ++i) rThis[i] ^= aRHS;}
+    
+    
+    public static void not2Dest_(boolean[] aData, int aShift, boolean[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShift) for (int i = rShift; i < rEnd; ++i) rDest[i] = !aData[i];
+        else for (int i = rShift, j = aShift; i < rEnd; ++i, ++j) rDest[i] = !aData[j];
+    }
+    public static void not2this_(boolean[] rThis, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        for (int i = rShift; i < rEnd; ++i) rThis[i] = !rThis[i];
+    }
+    
+    public static boolean allOfThis_(boolean[] aThis, int aShift, int aLength) {
+        final int tEnd = aLength + aShift;
+        
+        for (int i = aShift; i < tEnd; ++i) {
+            if (!aThis[i]) return false;
+        }
+        return true;
+    }
+    public static boolean anyOfThis_(boolean[] aThis, int aShift, int aLength) {
+        final int tEnd = aLength + aShift;
+        
+        for (int i = aShift; i < tEnd; ++i) {
+            if (aThis[i]) return true;
+        }
+        return false;
+    }
+    public static int countOfThis_(boolean[] aThis, int aShift, int aLength) {
+        final int tEnd = aLength + aShift;
+        
+        int rCount = 0;
+        for (int i = aShift; i < tEnd; ++i) {
+            if (aThis[i]) ++rCount;
+        }
+        return rCount;
+    }
+    
+    public static void cumall2Dest_(boolean[] aThis, int aShift, boolean[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        
+        boolean rAll = true;
+        if (rShift == aShift) {for (int i = rShift; i < rEnd; ++i) {rAll &= aThis[i]; rDest[i] = rAll;}}
+        else {for (int i = rShift, j = aShift; i < rEnd; ++i, ++j) {rAll &= aThis[j]; rDest[i] = rAll;}}
+    }
+    public static void cumany2Dest_(boolean[] aThis, int aShift, boolean[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        
+        boolean rAny = false;
+        if (rShift == aShift) {for (int i = rShift; i < rEnd; ++i) {rAny |= aThis[i]; rDest[i] = rAny;}}
+        else {for (int i = rShift, j = aShift; i < rEnd; ++i, ++j) {rAny |= aThis[j]; rDest[i] = rAny;}}
+    }
+    public static void cumcount2Dest_(boolean[] aThis, int aShift, double[] rDest, int rShift, int aLength) {
+        final int rEnd = aLength + rShift;
+        
+        int rCount = 0;
+        if (rShift == aShift) {for (int i = rShift; i < rEnd; ++i) {if (aThis[i]) ++rCount; rDest[i] = rCount;}}
+        else {for (int i = rShift, j = aShift; i < rEnd; ++i, ++j) {if (aThis[j]) ++rCount; rDest[i] = rCount;}}
+    }
+    
+    
     
     /** add, minus, multiply, divide stuffs */
     public static void ebePlus2Dest_(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, double[] rDest, int rShift, int aLength) {
@@ -185,6 +319,31 @@ public class ARRAY {
         for (int i = rShift; i < rEnd; ++i) rThis[i] = aOpt.cal(rThis[i]);
     }
     
+    public static void ebeDo2Dest_(boolean[] aDataL, int aShiftL, boolean[] aDataR, int aShiftR, boolean[] rDest, int rShift, int aLength, IBooleanOperator2 aOpt) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) {
+            if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rDest[i] = aOpt.cal(aDataL[i], aDataR[i]);
+            else for (int i = rShift, k = aShiftR; i < rEnd; ++i, ++k) rDest[i] = aOpt.cal(aDataL[i], aDataR[k]);
+        } else {
+            if (rShift == aShiftR) for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aOpt.cal(aDataL[j], aDataR[i]);
+            else for (int i = rShift, j = aShiftL, k = aShiftR; i < rEnd; ++i, ++j, ++k) rDest[i] = aOpt.cal(aDataL[j], aDataR[k]);
+        }
+    }
+    public static void mapDo2Dest_(boolean[] aDataL, int aShiftL, boolean[] rDest, int rShift, int aLength, IBooleanOperator1 aOpt) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftL) for (int i = rShift; i < rEnd; ++i) rDest[i] = aOpt.cal(aDataL[i]);
+        else for (int i = rShift, j = aShiftL; i < rEnd; ++i, ++j) rDest[i] = aOpt.cal(aDataL[j]);
+    }
+    public static void ebeDo2this_(boolean[] rThis, int rShift, boolean[] aDataR, int aShiftR, int aLength, IBooleanOperator2 aOpt) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] = aOpt.cal(rThis[i], aDataR[i]);
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] = aOpt.cal(rThis[i], aDataR[j]);
+    }
+    public static void mapDo2this_(boolean[] rThis, int rShift, int aLength, IBooleanOperator1 aOpt) {
+        final int rEnd = aLength + rShift;
+        for (int i = rShift; i < rEnd; ++i) rThis[i] = aOpt.cal(rThis[i]);
+    }
+    
     
     public static void mapFill2this_(double[] rThis, int rShift, double aRHS, int aLength) {
         final int rEnd = aLength + rShift;
@@ -194,6 +353,13 @@ public class ARRAY {
         System.arraycopy(aDataR, aShiftR, rThis, rShift, aLength);
     }
     
+    public static void mapFill2this_(boolean[] rThis, int rShift, boolean aRHS, int aLength) {
+        final int rEnd = aLength + rShift;
+        for (int i = rShift; i < rEnd; ++i) rThis[i] = aRHS; // 注意在指定区域外不能填充，因此不能使用 Arrays.fill
+    }
+    public static void ebeFill2this_(boolean[] rThis, int rShift, boolean[] aDataR, int aShiftR, int aLength) {
+        System.arraycopy(aDataR, aShiftR, rThis, rShift, aLength);
+    }
     
     
     /** stat stuff */

@@ -85,7 +85,7 @@ public interface IComplexVector extends IComplexVectorGetter, IComplexVectorSett
     double getAndUpdate(int aIdx, IComplexDoubleOperator1 aOpt);
     
     
-    /** 现在不再提供生成器，只提供直接创建相同类型的全零的向量的接口，特殊矩阵的创建请使用 {@link Vectors} */
+    /** 现在不再提供生成器，只提供直接创建相同类型的全零的向量的接口，特殊向量的创建请使用 {@link Vectors} */
     default IComplexVector newZeros() {return newZeros(size());}
     IComplexVector newZeros(int aSize);
     

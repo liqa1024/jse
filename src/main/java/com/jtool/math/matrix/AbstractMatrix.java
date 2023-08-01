@@ -491,7 +491,17 @@ public abstract class AbstractMatrix implements IMatrix {
     
     
     /** 转为兼容性更好的 double[][]，默认直接使用 asListRow 转为 double[][] */
-    @Override public double[][] data() {return UT.Code.toMat(asListRows());}
+    @Override public double[][] data() {
+        final int tRowNum = rowNumber();
+        final int tColNum = columnNumber();
+        double[][] rMat = new double[tRowNum][tColNum];
+        final IDoubleIterator it = rowIterator();
+        for (int row = 0; row < tRowNum; ++row) {
+            final double[] tRow = rMat[row];
+            for (int col = 0; col < tColNum; ++col) tRow[col] = it.next();
+        }
+        return rMat;
+    }
     
     /** 批量修改的接口，现在统一使用迭代器来填充 */
     @Override public final void fill(double aValue) {operation().mapFill2this(aValue);}
@@ -605,11 +615,9 @@ public abstract class AbstractMatrix implements IMatrix {
     
     
     
-    @Override public IMatrix copy() {
+    @Override public final IMatrix copy() {
         IMatrix rMatrix = newZeros();
-        final IDoubleSetIterator si = rMatrix.colSetIterator();
-        final IDoubleIterator it = colIterator();
-        while (si.hasNext()) si.nextAndSet(it.next());
+        rMatrix.fill(this);
         return rMatrix;
     }
     

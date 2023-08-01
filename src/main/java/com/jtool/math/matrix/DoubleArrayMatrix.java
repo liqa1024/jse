@@ -27,18 +27,6 @@ public abstract class DoubleArrayMatrix extends AbstractMatrix implements IDataS
     @Override public IMatrixOperation operation() {return new DoubleArrayMatrixOperation_();}
     
     
-    /** Optimize stuffs，重写 copy 接口专门优化拷贝部分 */
-    @Override public IMatrix copy() {
-        IMatrix rMatrix = newZeros();
-        final double[] rData = getIfHasSameOrderData(rMatrix);
-        if (rData != null) {
-            System.arraycopy(getData(), shiftSize(), rData, IDataShell.shiftSize(rMatrix), IDataShell.dataSize(rMatrix));
-        } else {
-            rMatrix.fill(DoubleArrayMatrix.this);
-        }
-        return rMatrix;
-    }
-    
     /** stuff to override */
     public abstract DoubleArrayMatrix newZeros(int aRowNum, int aColNum);
     public abstract DoubleArrayMatrix newShell();

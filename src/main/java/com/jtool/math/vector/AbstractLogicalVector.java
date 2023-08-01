@@ -1,0 +1,331 @@
+package com.jtool.math.vector;
+
+import com.jtool.code.CS.SliceType;
+import com.jtool.code.collection.AbstractRandomAccessList;
+import com.jtool.code.filter.IIndexFilter;
+import com.jtool.code.iterator.*;
+import com.jtool.code.operator.IBooleanOperator1;
+import org.jetbrains.annotations.VisibleForTesting;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+
+/**
+ * @author liqa
+ * <p> 通用的逻辑向量类，由于默认实现比较复杂，并且涉及到重写 Object 的成员，因此部分方法放入抽象类中 </p>
+ */
+public abstract class AbstractLogicalVector implements ILogicalVector {
+    /** print */
+    @Override public String toString() {
+        StringBuilder rStr  = new StringBuilder();
+        rStr.append(String.format("%d-length Logical Vector:", size()));
+        rStr.append("\n");
+        final IBooleanIterator it = iterator();
+        while (it.hasNext()) rStr.append(toString_(it.next()));
+        return rStr.toString();
+    }
+    
+    /** Iterator stuffs */
+    @Override public IBooleanIterator iterator() {
+        return new IBooleanIterator() {
+            private final int mSize = size();
+            private int mIdx = 0;
+            @Override public boolean hasNext() {return mIdx < mSize;}
+            @Override public boolean next() {
+                if (hasNext()) {
+                    boolean tNext = get_(mIdx);
+                    ++mIdx;
+                    return tNext;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IBooleanSetIterator setIterator() {
+        return new IBooleanSetIterator() {
+            private final int mSize = size();
+            private int mIdx = 0, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mSize;}
+            @Override public void set(boolean aValue) {
+                if (oIdx < 0) throw new IllegalStateException();
+                set_(oIdx, aValue);
+            }
+            @Override public boolean next() {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                    return get_(oIdx);
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public void nextOnly() {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(boolean aValue) {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                    set_(oIdx, aValue);
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IBooleanIterator iteratorOf(final ILogicalVectorGetter aContainer) {
+        if (aContainer instanceof ILogicalVector) return ((ILogicalVector)aContainer).iterator();
+        return new IBooleanIterator() {
+            private final int mSize = size();
+            private int mIdx = 0;
+            @Override public boolean hasNext() {return mIdx < mSize;}
+            @Override public boolean next() {
+                if (hasNext()) {
+                    boolean tNext = aContainer.get(mIdx);
+                    ++mIdx;
+                    return tNext;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    @Override public IBooleanSetOnlyIterator setIteratorOf(final ILogicalVectorSetter aContainer) {
+        if (aContainer instanceof ILogicalVector) return ((ILogicalVector)aContainer).setIterator();
+        return new IBooleanSetOnlyIterator() {
+            private final int mSize = size();
+            private int mIdx = 0, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mSize;}
+            @Override public void set(boolean aValue) {
+                if (oIdx < 0) throw new IllegalStateException();
+                aContainer.set(oIdx, aValue);
+            }
+            @Override public void nextOnly() {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            /** 高性能接口重写来进行专门优化 */
+            @Override public void nextAndSet(boolean aValue) {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                    aContainer.set(oIdx, aValue);
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    
+    /** 转换为其他类型 */
+    @Override public List<Boolean> asList() {
+        return new AbstractRandomAccessList<Boolean>() {
+            @Override public Boolean get(int index) {return AbstractLogicalVector.this.get(index);}
+            @Override public Boolean set(int index, Boolean element) {return getAndSet(index, element);}
+            @Override public int size() {return AbstractLogicalVector.this.size();}
+            @Override public Iterator<Boolean> iterator() {return AbstractLogicalVector.this.iterator().toIterator();}
+        };
+    }
+    
+    /** 转为兼容性更好的 boolean[] */
+    @Override public boolean[] data() {
+        final int tSize = size();
+        boolean[] rData = new boolean[tSize];
+        final IBooleanIterator it = iterator();
+        for (int i = 0; i < tSize; ++i) rData[i] = it.next();
+        return rData;
+    }
+    
+    
+    /** 批量修改的接口 */
+    @Override public final void fill(boolean aValue) {operation().mapFill2this(aValue);}
+    @Override public final void fill(ILogicalVectorGetter aVectorGetter) {operation().ebeFill2this(aVectorGetter);}
+    
+    @Override public void fill(boolean[] aData) {
+        final IBooleanSetIterator si = setIterator();
+        int idx = 0;
+        while (si.hasNext()) {
+            si.nextAndSet(aData[idx]);
+            ++idx;
+        }
+    }
+    @Override public void fill(Iterable<Boolean> aList) {
+        final IBooleanSetIterator si = setIterator();
+        final Iterator<Boolean> it = aList.iterator();
+        while (si.hasNext()) si.nextAndSet(it.next());
+    }
+    
+    @Override public boolean get(int aIdx) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        return get_(aIdx);
+    }
+    @Override public boolean getAndSet(int aIdx, boolean aValue) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        return getAndSet_(aIdx, aValue);
+    }
+    @Override public void set(int aIdx, boolean aValue) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        set_(aIdx, aValue);
+    }
+    
+    @Override public void flip_(int aIdx) {
+        set_(aIdx, !get_(aIdx));
+    }
+    @Override public boolean getAndFlip_(int aIdx) {
+        boolean tValue = get_(aIdx);
+        set_(aIdx, !tValue);
+        return tValue;
+    }
+    @Override public void update_(int aIdx, IBooleanOperator1 aOpt) {
+        boolean tValue = get_(aIdx);
+        tValue = aOpt.cal(tValue);
+        set_(aIdx, tValue);
+    }
+    @Override public boolean getAndUpdate_(int aIdx, IBooleanOperator1 aOpt) {
+        boolean tValue = get_(aIdx);
+        set_(aIdx, aOpt.cal(tValue));
+        return tValue;
+    }
+    
+    @Override public void flip(int aIdx) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        flip_(aIdx);
+    }
+    @Override public boolean getAndFlip(int aIdx) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        return getAndFlip_(aIdx);
+    }
+    @Override public void update(int aIdx, IBooleanOperator1 aOpt) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        update_(aIdx, aOpt);
+    }
+    @Override public boolean getAndUpdate(int aIdx, IBooleanOperator1 aOpt) {
+        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        return getAndUpdate_(aIdx, aOpt);
+    }
+    
+    
+    
+    @Override public final ILogicalVector copy() {
+        ILogicalVector rVector = newZeros();
+        rVector.fill(this);
+        return rVector;
+    }
+    
+    
+    /** 切片操作，默认返回新的向量，refSlicer 则会返回引用的切片结果 */
+    @Override public ILogicalVectorSlicer slicer() {
+        return new AbstractLogicalVectorSlicer() {
+            @Override protected ILogicalVector getL(final List<Integer> aIndices) {ILogicalVector rVector = newZeros(aIndices.size()); rVector.fill(i -> AbstractLogicalVector.this.get(aIndices.get(i))); return rVector;}
+            @Override protected ILogicalVector getA() {return copy();}
+            
+            @Override protected int thisSize_() {return size();}
+        };
+    }
+    @Override public ILogicalVectorSlicer refSlicer() {
+        return new AbstractLogicalVectorSlicer() {
+            @Override protected ILogicalVector getL(final List<Integer> aIndices) {
+                return new RefLogicalVector() {
+                    /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
+                    @Override public boolean get_(int aIdx) {return AbstractLogicalVector.this.get(aIndices.get(aIdx));}
+                    @Override public void set_(int aIdx, boolean aValue) {AbstractLogicalVector.this.set(aIndices.get(aIdx), aValue);}
+                    @Override public boolean getAndSet_(int aIdx, boolean aValue) {return AbstractLogicalVector.this.getAndSet(aIndices.get(aIdx), aValue);}
+                    @Override public int size() {return aIndices.size();}
+                };
+            }
+            @Override protected ILogicalVector getA() {
+                return new RefLogicalVector() {
+                    /** 对于全部切片，则不再需要二次边界检查 */
+                    @Override public boolean get_(int aIdx) {return AbstractLogicalVector.this.get_(aIdx);}
+                    @Override public void set_(int aIdx, boolean aValue) {AbstractLogicalVector.this.set_(aIdx, aValue);}
+                    @Override public boolean getAndSet_(int aIdx, boolean aValue) {return AbstractLogicalVector.this.getAndSet_(aIdx, aValue);}
+                    @Override public int size() {return AbstractLogicalVector.this.size();}
+                };
+            }
+            
+            @Override protected int thisSize_() {return size();}
+        };
+    }
+    
+    
+    /** 向量的运算器 */
+    @Override public ILogicalVectorOperation operation() {
+        return new AbstractLogicalVectorOperation() {
+            @Override protected ILogicalVector thisVector_() {return AbstractLogicalVector.this;}
+            @Override protected ILogicalVector newVector_(int aSize) {return newZeros(aSize);}
+        };
+    }
+    
+    
+    /** Groovy 的部分，增加向量基本的运算操作 */
+    @Override public ILogicalVector and (boolean aRHS) {return operation().mapAnd(this, aRHS);}
+    @Override public ILogicalVector or  (boolean aRHS) {return operation().mapOr (this, aRHS);}
+    @Override public ILogicalVector xor (boolean aRHS) {return operation().mapXor(this, aRHS);}
+    
+    @Override public ILogicalVector and (ILogicalVectorGetter aRHS) {return operation().ebeAnd(this, aRHS);}
+    @Override public ILogicalVector or  (ILogicalVectorGetter aRHS) {return operation().ebeOr (this, aRHS);}
+    @Override public ILogicalVector xor (ILogicalVectorGetter aRHS) {return operation().ebeXor(this, aRHS);}
+    @Override public ILogicalVector not () {return operation().not(this);}
+    
+    @Override public final void and2this(boolean aRHS) {operation().mapAnd2this(aRHS);}
+    @Override public final void or2this (boolean aRHS) {operation().mapOr2this (aRHS);}
+    @Override public final void xor2this(boolean aRHS) {operation().mapXor2this(aRHS);}
+    
+    @Override public final void and2this(ILogicalVectorGetter aRHS) {operation().ebeAnd2this(aRHS);}
+    @Override public final void or2this (ILogicalVectorGetter aRHS) {operation().ebeOr2this (aRHS);}
+    @Override public final void xor2this(ILogicalVectorGetter aRHS) {operation().ebeXor2this(aRHS);}
+    @Override public final void not2this() {operation().not2this();}
+    
+     @Override public final boolean all  () {return operation().all  ();}
+     @Override public final boolean any  () {return operation().any  ();}
+     @Override public final int     count() {return operation().count();}
+    
+     @Override public final ILogicalVector cumall  () {return operation().cumall  ();}
+     @Override public final ILogicalVector cumany  () {return operation().cumany  ();}
+     @Override public final IVector        cumcount() {return operation().cumcount();}
+    
+    /** Groovy 的部分，增加矩阵切片操作 */
+    @VisibleForTesting @Override public boolean call(int aIdx) {return get(aIdx);}
+    @VisibleForTesting @Override public ILogicalVector call(List<Integer> aIndices) {return slicer().get(aIndices);}
+    @VisibleForTesting @Override public ILogicalVector call(SliceType     aIndices) {return slicer().get(aIndices);}
+    
+    @VisibleForTesting @Override public ILogicalVector getAt(List<Integer> aIndices) {return slicer().get(aIndices);}
+    @VisibleForTesting @Override public ILogicalVector getAt(SliceType     aIndices) {return slicer().get(aIndices);}
+    @VisibleForTesting @Override public ILogicalVector getAt(IIndexFilter  aIndices) {return slicer().get(aIndices);}
+    
+    @VisibleForTesting @Override public void putAt(List<Integer> aIndices, boolean aValue) {refSlicer().get(aIndices).fill(aValue);}
+    @VisibleForTesting @Override public void putAt(List<Integer> aIndices, Iterable<Boolean> aList) {refSlicer().get(aIndices).fill(aList);}
+    @VisibleForTesting @Override public void putAt(List<Integer> aIndices, ILogicalVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(SliceType     aIndices, boolean aValue) {refSlicer().get(aIndices).fill(aValue);}
+    @VisibleForTesting @Override public void putAt(SliceType     aIndices, Iterable<Boolean> aList) {refSlicer().get(aIndices).fill(aList);}
+    @VisibleForTesting @Override public void putAt(SliceType     aIndices, ILogicalVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, boolean aValue) {refSlicer().get(aIndices).fill(aValue);}
+    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, Iterable<Boolean> aList) {refSlicer().get(aIndices).fill(aList);}
+    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, ILogicalVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    
+    /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
+    @VisibleForTesting @Override public boolean getAt(int aIdx) {return get((aIdx < 0) ? (size()+aIdx) : aIdx);}
+    @VisibleForTesting @Override public void putAt(int aIdx, boolean aValue) {set((aIdx < 0) ? (size()+aIdx) : aIdx, aValue);}
+    
+    
+    /** stuff to override */
+    public abstract boolean get_(int aIdx);
+    public abstract void set_(int aIdx, boolean aValue);
+    public abstract boolean getAndSet_(int aIdx, boolean aValue);
+    public abstract int size();
+    public abstract ILogicalVector newZeros(int aSize);
+    
+    protected String toString_(boolean aValue) {return " "+(aValue?"T":"F");}
+}

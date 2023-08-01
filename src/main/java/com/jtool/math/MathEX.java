@@ -6,7 +6,6 @@ import com.jtool.math.function.Func2;
 import com.jtool.math.function.Func3;
 import com.jtool.parallel.ParforThreadPool;
 import net.jafama.FastMath;
-import org.apache.groovy.json.internal.CharScanner;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.*;
