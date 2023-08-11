@@ -1,9 +1,6 @@
 package test
 
 import com.jtool.code.UT
-import com.jtool.math.vector.Vectors
-import com.jtool.plot.Plotters
-import com.jtool.rareevent.BufferedFullPathGenerator
 import com.jtool.rareevent.ForwardFluxSampling
 import rareevent.ClusterGrowth
 
@@ -20,7 +17,7 @@ def biCal = new ClusterGrowth.ParameterCalculator();
 
 
 
-def FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, (10..100).step(2), N0);
+def FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, (10..100).step(2), N0).setPruningProb(0.5).setPruningThreshold(2);
 
 UT.Timer.tic();
 FFS.run();
@@ -28,14 +25,14 @@ println("k0 = ${FFS.getK0()}");
 i = 0;
 while (!FFS.finished()) {
     FFS.run();
-    println("prob = ${FFS.getProb(i++)}");
+    println("i = ${i}, prob = ${FFS.getProb(i++)}");
 }
 UT.Timer.toc("all, k = ${FFS.getK()}, step1PointNum = ${FFS.step1PointNum()}, totPointNum = ${FFS.totalPointNum()},");
 
 FFS.shutdown();
 
 
-FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, (10..50).step(2), N0);
+FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, (10..50).step(2), N0).setPruningProb(0.5).setPruningThreshold(2);
 
 UT.Timer.tic();
 FFS.run();
@@ -43,10 +40,9 @@ println("k0 = ${FFS.getK0()}");
 i = 0;
 while (!FFS.finished()) {
     FFS.run();
-    println("prob = ${FFS.getProb(i++)}");
+    println("i = ${i}, prob = ${FFS.getProb(i++)}");
 }
-double k = FFS.getK();
-UT.Timer.toc("restart 1, k = ${k}, step1PointNum = ${FFS.step1PointNum()}, totPointNum = ${FFS.totalPointNum()},");
+UT.Timer.toc("restart 1, k = ${FFS.getK()}, step1PointNum = ${FFS.step1PointNum()}, totPointNum = ${FFS.totalPointNum()},");
 
 UT.IO.data2csv(UT.Code.map(FFS.pointsOnLambda(), p -> p.value), '.temp/FFS-points');
 UT.IO.map2json(FFS.restData(), '.temp/FFS-restdata');
@@ -54,18 +50,16 @@ UT.IO.map2json(FFS.restData(), '.temp/FFS-restdata');
 FFS.shutdown();
 
 def pointsValue = UT.IO.csv2data('.temp/FFS-points');
-FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, (50..100).step(2), N0).setStep(0, UT.Code.map(pointsValue.col(0).asList(), value -> new ClusterGrowth.Point(value as int, 0)), UT.IO.json2map('.temp/FFS-restdata'));
+FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, (40..100).step(2), N0).setPruningProb(0.5).setPruningThreshold(2)
+    .setStep(5, UT.Code.map(pointsValue.col(0).asList(), value -> new ClusterGrowth.Point(value as int, 0)), UT.IO.json2map('.temp/FFS-restdata'));
 
 UT.Timer.tic();
-FFS.run();
 println("k0 = ${FFS.getK0()}");
-i = 0;
+i = 5;
 while (!FFS.finished()) {
     FFS.run();
-    double prob = FFS.getProb(i++);
-    k *= prob;
-    println("prob = ${prob}");
+    println("i = ${i}, prob = ${FFS.getProb(i++)}");
 }
-UT.Timer.toc("restart 2, k = ${k}, step1PointNum = ${FFS.step1PointNum()}, totPointNum = ${FFS.totalPointNum()},");
+UT.Timer.toc("restart 2, k = ${FFS.getK()}, step1PointNum = ${FFS.step1PointNum()}, totPointNum = ${FFS.totalPointNum()},");
 
 FFS.shutdown();

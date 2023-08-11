@@ -3,6 +3,7 @@ package com.jtool.rareevent;
 
 import com.jtool.atom.IAtomData;
 import com.jtool.code.UT;
+import com.jtool.math.MathEX;
 import com.jtool.math.vector.ILogicalVector;
 import com.jtool.math.vector.LogicalVector;
 import com.jtool.parallel.AbstractThreadPool;
@@ -107,6 +108,61 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     public ForwardFluxSampling<T> setDoNotShutdown(boolean aDoNotShutdown) {mFullPathGenerator.setDoNotShutdown(aDoNotShutdown); return this;}
     /** 可以从中间开始，此时则会直接跳过第一步（对于合法输入）*/
     public ForwardFluxSampling<T> setStep(int aStep, Iterable<? extends T> aPointsOnLambda, Map<?, ?> aRestData) {
+        // 对于输入的合法性进行检测（界面需要兼容，这里只考虑现在省略了一些开头的界面以及完全不省略的情况）
+        boolean tSurfaceCompat = true;
+        if (aRestData.containsKey("surfaceA")) {
+            double tSurfaceA = ((Number)aRestData.get("surfaceA")).doubleValue();
+            if (!MathEX.Code.numericEqual(mSurfaceA, tSurfaceA)) {
+                System.err.println("WARNING: surfaceA from restData("+tSurfaceA+") is not equal to the value from this instance("+mSurfaceA+")!!!");
+                tSurfaceCompat = false;
+            }
+        } else {
+            tSurfaceCompat = false;
+        }
+        // 设置一些已有的概率值
+        if (tSurfaceCompat && aRestData.containsKey("surfaces") && aRestData.containsKey("prob")) {
+            // 方便起见，这里不检查界面输入的合法性
+            List<?> tSurfaces = (List<?>)aRestData.get("surfaces");
+            List<?> tPi = (List<?>)aRestData.get("prob");
+            // 统计可能省略的界面
+            double tP0 = 1.0;
+            double tLambda0 = mSurfaces.first();
+            final Iterator<?> si = tSurfaces.iterator();
+            final Iterator<?> pi = tPi.iterator();
+            while (si.hasNext()) {
+                double tSurface = ((Number)si.next()).doubleValue();
+                if (MathEX.Code.numericEqual(tSurface, tLambda0)) {
+                    // 现在已经将省略的界面对齐，跳出循环
+                    break;
+                } else {
+                    // 此界面被省略，累计概率到 k0
+                    if (MathEX.Code.numericLess(tSurface, tLambda0) && pi.hasNext()) {
+                        tP0 *= ((Number)pi.next()).doubleValue();
+                    } else {
+                        System.err.println("WARNING: surfaces from restData is NOT compatible with the surfaces from this instance!!!");
+                        tSurfaceCompat = false;
+                        break;
+                    }
+                }
+            }
+            // 设置 k0
+            if (tSurfaceCompat && aRestData.containsKey("k0")) {
+                mK0 = ((Number)aRestData.get("k0")).doubleValue() * tP0;
+            }
+            // 设置概率
+            if (tSurfaceCompat) {
+                for (int i = 0; i < mN && pi.hasNext() && si.hasNext(); ++i) {
+                    if (MathEX.Code.numericEqual(((Number)si.next()).doubleValue(), mSurfaces.get_(i+1))) {
+                        mPi.set_(i, ((Number)pi.next()).doubleValue());
+                    } else {
+                        System.err.println("WARNING: surfaces from restData is NOT compatible with the surfaces from this instance!!!");
+                        tSurfaceCompat = false;
+                        break;
+                    }
+                }
+            }
+        }
+        // 设置此步的点以及附加属性
         mStep = aStep;
         mPointsOnLambda.clear();
         List<?> tLambdas = (List<?>)aRestData.get("lambdas");
@@ -455,6 +511,10 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         Map rSaveTo = new HashMap();
         rSaveTo.put("lambdas", UT.Code.map(mPointsOnLambda, point -> point.lambda));
         rSaveTo.put("multiples", UT.Code.map(mPointsOnLambda, point -> point.multiple));
+        rSaveTo.put("k0", mK0);
+        rSaveTo.put("prob", mPi.asList());
+        rSaveTo.put("surfaceA", mSurfaceA);
+        rSaveTo.put("surfaces", mSurfaces.asList());
         return rSaveTo;
     }
     
