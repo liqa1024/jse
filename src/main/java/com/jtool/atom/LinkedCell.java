@@ -15,15 +15,17 @@ import java.util.List;
  * <p> 此类线程安全，包括多个线程同时访问同一个实例 </p>
  */
 final class LinkedCell<A extends IXYZ> {
-    final @Unmodifiable List<List<A>> mCells;
-    final int mSizeX, mSizeY, mSizeZ;
-    final XYZ mCellBox;
-    final XYZ mBox;
+    private final @Unmodifiable List<List<A>> mCells;
+    private final int mSizeX, mSizeY, mSizeZ;
+    private final XYZ mCellBox;
+    private final XYZ mBox;
     
-    final double mMaxDis; // 此 cell 能使用的最大的近邻距离
+    private final double mMaxDis; // 此 cell 能使用的最大的近邻距离
+    
+    public double maxDis() {return mMaxDis;}
     
     // 指定三维的分划份数来初始化
-    LinkedCell(Iterable<? extends A> aAtoms, XYZ aBox, int aSizeX, int aSizeY, int aSizeZ) {
+    public LinkedCell(Iterable<? extends A> aAtoms, XYZ aBox, int aSizeX, int aSizeY, int aSizeZ) {
         mSizeX = aSizeX; mSizeY = aSizeY; mSizeZ = aSizeZ;
         mBox = aBox;
         mCellBox = mBox.div(mSizeX, mSizeY, mSizeZ);
@@ -40,13 +42,13 @@ final class LinkedCell<A extends IXYZ> {
             add(i, j, k, tAtom);
         }
     }
-    int idx(int i, int j, int k) {
+    private int idx(int i, int j, int k) {
         if (i<0 || i>=mSizeX || j<0 || j>=mSizeY || k<0 || k>=mSizeZ) throw new IndexOutOfBoundsException(String.format("Index: (%d, %d, %d)", i, j, k));
         return (i + mSizeX*j + mSizeX*mSizeY*k);
     }
-    void add(int i, int j, int k, A aAtom) {mCells.get(idx(i, j, k)).add(aAtom);}
+    private void add(int i, int j, int k, A aAtom) {mCells.get(idx(i, j, k)).add(aAtom);}
     // 获取任意 ijk 的 link，自动判断是否是镜像的并计算镜像的附加值
-    Link<A> link(int i, int j, int k) {
+    private Link<A> link(int i, int j, int k) {
         double tDirX = 0.0, tDirY = 0.0, tDirZ = 0.0;
         boolean tIsMirror = false;
         

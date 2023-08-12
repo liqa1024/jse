@@ -466,8 +466,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      */
     public List<Integer> getNeighborList(int aIdx, double aRMax) {
         final List<Integer> rNeighborList = new ArrayList<>();
-        // 为了外部用起来简单这里返回所有近邻而不是一半
-        mNL.forEachNeighbor(aIdx, aRMax, false, (x, y, z, idx, dis) -> rNeighborList.add(idx));
+        mNL.forEachNeighbor(aIdx, aRMax, (x, y, z, idx, dis) -> rNeighborList.add(idx));
         return rNeighborList;
     }
     public List<Integer> getNeighborList(int aIdx) {return getNeighborList(aIdx, mUnitLen*R_NEAREST_MUL);}

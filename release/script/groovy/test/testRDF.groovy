@@ -17,10 +17,7 @@ mpc = data.getMPC(nThreads);
 
 // 计算 RDF
 UT.Timer.tic();
-gr = mpc.calRDF(1000, 50);
-UT.Timer.toc("${nThreads} threads, RDF");
-UT.Timer.tic();
-gr = mpc.calRDF(1000, 50);
+gr = mpc.calRDF();
 UT.Timer.toc("${nThreads} threads, RDF");
 
 // 计算 SF
