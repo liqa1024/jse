@@ -121,7 +121,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         }
         // 设置一些已有的概率值
         if (tSurfaceCompat && aRestData.containsKey("surfaces") && aRestData.containsKey("prob")) {
-            // 方便起见，这里不检查界面输入的合法性
+            // 方便起见，这里不检查界面输入的合法性，也不考虑 nan 的情况（直接设置即可，因为原本也都是 nan）
             List<?> tSurfaces = (List<?>)aRestData.get("surfaces");
             List<?> tPi = (List<?>)aRestData.get("prob");
             // 统计可能省略的界面
@@ -156,6 +156,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                         mPi.set_(i, ((Number)pi.next()).doubleValue());
                     } else {
                         System.err.println("WARNING: surfaces from restData is NOT compatible with the surfaces from this instance!!!");
+                        //noinspection UnusedAssignment
                         tSurfaceCompat = false;
                         break;
                     }
@@ -392,21 +393,27 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     /** 一个简单的实现 */
     private int mStep = -1; // 记录运行的步骤，i
     private boolean mFinished = false;
+    private boolean mStepFinished = true; // 标记此步骤是否正常完成结束而不是中断或者正在运行中
     public void run() {
         if (mFinished) return;
         // 实际分为两个过程，第一个过程首先统计轨迹通量（flux of trajectories）
         if (mStep < 0) {
+            mStepFinished = false;
             // 统计从 A 到达 λ0，运行直到达到次数超过 mN0*mStep1Mul
             pool().parwhile(() -> mPointsOnLambda.size()<mN0*mStep1Mul, this::statA2Lambda0_);
             // 获取第一个过程的统计结果
             mK0 = mPointsOnLambda.size() / mTotTime0;
-            // 第一个过程完成
-            mStep = 0;
-            if (mStep >= mN) mFinished = true;
+            // 第一个过程完成（前提没有在运行过程中中断）
+            if (!mFinished) {
+                mStepFinished = true;
+                mStep = 0;
+                if (mStep >= mN) mFinished = true;
+            }
             return;
         }
         // 第二个过程会从 λi 上的点随机选取运行直到到达 λi+1 或者返回 A，注意依旧需要将耗时增加到 mTotTime 中
         if (mStep < mN) {
+            mStepFinished = false;
             // 截断过小的值，使用 TreeMap 记录最小的值的索引，保证截断符合约束
             double rCutoffValue = 0.0;
             NavigableMap<Double, Integer> rCutoffIndex = new TreeMap<>();
@@ -458,12 +465,16 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             for (Point tPoint : mPointsOnLambda) tPoint.multiple /= rMean;
             // 获取概率统计结果
             mPi.set_(mStep, mNipp / mMi);
-            // 第二个过程这一步完成
-            ++mStep;
-            if (mStep >= mN) mFinished = true;
+            // 第二个过程这一步完成（前提没有在运行过程中中断）
+            if (!mFinished) {
+                mStepFinished = true;
+                ++mStep;
+                if (mStep >= mN) mFinished = true;
+            }
         }
     }
     public boolean finished() {return mFinished;}
+    public boolean stepFinished() {return mStepFinished;}
     
     /** 获取结果的接口 */
     public double getProb(int aIdx) {return mPi.get(aIdx);}

@@ -16,14 +16,14 @@ import static com.jtool.code.CS.R_NEAREST_MUL;
  * @author liqa
  */
 public class ClusterSizeCalculator implements IParameterCalculator<IAtomData> {
-    private final double mRNearest;
-    public ClusterSizeCalculator(double aRNearest) {mRNearest = aRNearest;}
-    public ClusterSizeCalculator() {this(-1);}
+    private final double mRNearestMul;
+    public ClusterSizeCalculator(double aRNearestMul) {mRNearestMul = aRNearestMul;}
+    public ClusterSizeCalculator() {this(R_NEAREST_MUL);}
     
     @Override public double lambdaOf(IAtomData aPoint) {
         // 进行类固体判断
         try (final MonatomicParameterCalculator tMPC = aPoint.getMPC()) {
-            final double tRNearest = mRNearest<=0.0 ? tMPC.unitLen()*R_NEAREST_MUL : mRNearest;
+            final double tRNearest = tMPC.unitLen()*mRNearestMul;
             final ILogicalVector tIsSolid = tMPC.checkSolidQ6(tRNearest);
             // 使用 getClustersBFS 获取所有的团簇
             List<List<Integer>> tClusters = MathEX.Adv.getClustersBFS(tIsSolid.filter(tIsSolid.size()),i -> tIsSolid.filter(tMPC.getNeighborList(i, tRNearest)));
