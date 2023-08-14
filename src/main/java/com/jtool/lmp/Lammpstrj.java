@@ -23,11 +23,13 @@ import java.util.List;
  * <p> 所有成员都是只读的，即使目前没有硬性限制 </p>
  */
 public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj> {
-    private static final String[] BOX_BOUND = {"pp", "pp", "pp"};
+    private final static String[] BOX_BOUND = {"pp", "pp", "pp"};
+    private final static SubLammpstrj[] ZL_DATA = new SubLammpstrj[0];
     
     private final SubLammpstrj[] mData;
     
-    public Lammpstrj(SubLammpstrj... aData) {mData = aData==null ? new SubLammpstrj[0] : aData;}
+    public Lammpstrj() {mData = ZL_DATA;}
+    public Lammpstrj(SubLammpstrj... aData) {mData = aData==null ? ZL_DATA : aData;}
     public Lammpstrj(Collection<SubLammpstrj> aData) {mData = aData.toArray(new SubLammpstrj[0]);}
     
     /** AbstractList stuffs */
@@ -251,52 +253,53 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
     
     
     /// 创建 Lammpstrj
-    /** 从 IHasAtomData 来创建，对于 Lammpstrj 可以支持容器的 aHasAtomData */
-    public static Lammpstrj fromAtomData(IAtomData... aHasAtomDataArray) {
-        if (aHasAtomDataArray == null || aHasAtomDataArray.length == 0) return new Lammpstrj();
+    /** 从 IAtomData 来创建，对于 Lammpstrj 可以支持容器的 aAtomData */
+    public static Lammpstrj fromAtomData(IAtomData aAtomData) {
+        return new Lammpstrj(fromAtomData_(aAtomData, 0));
+    }
+    public static Lammpstrj fromAtomData(IAtomData... aAtomDataArray) {
+        if (aAtomDataArray == null || aAtomDataArray.length == 0) return new Lammpstrj();
+        
+        SubLammpstrj[] rData = new SubLammpstrj[aAtomDataArray.length];
+        for (int i = 0; i < aAtomDataArray.length; ++i) {
+            rData[i] = fromAtomData_(aAtomDataArray[i], i);
+        }
+        return new Lammpstrj(rData);
+    }
+    public static Lammpstrj fromAtomData(Iterable<? extends IAtomData> aAtomDataList) {
+        if (aAtomDataList == null) return new Lammpstrj();
         
         List<SubLammpstrj> rLammpstrj = new ArrayList<>();
-        int tTimeStep = 0;
-        for (IAtomData subHasAtomData : aHasAtomDataArray) {
-            rLammpstrj.add(fromAtomData_(subHasAtomData, tTimeStep));
-            ++tTimeStep;
+        int i = 0;
+        for (IAtomData subAtomData : aAtomDataList) {
+            rLammpstrj.add(fromAtomData_(subAtomData, i));
+            ++i;
         }
         return new Lammpstrj(rLammpstrj);
     }
-    public static Lammpstrj fromAtomData(Iterable<? extends IAtomData> aHasAtomDataList) {
-        if (aHasAtomDataList == null) return new Lammpstrj();
-        
-        List<SubLammpstrj> rLammpstrj = new ArrayList<>();
-        int tTimeStep = 0;
-        for (IAtomData subHasAtomData : aHasAtomDataList) {
-            rLammpstrj.add(fromAtomData_(subHasAtomData, tTimeStep));
-            ++tTimeStep;
-        }
-        return new Lammpstrj(rLammpstrj);
-    }
-    static SubLammpstrj fromAtomData_(IAtomData aHasAtomData, long aTimeStep) {
-        // 根据输入的 aHasAtomData 类型来具体判断需要如何获取 rAtomData
-        if (aHasAtomData instanceof Lammpstrj) {
-            return fromAtomData_(((Lammpstrj)aHasAtomData).defaultFrame(), aTimeStep);
+    static SubLammpstrj fromAtomData_(IAtomData aAtomData, long aTimeStep) {
+        // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
+        if (aAtomData instanceof Lammpstrj) {
+            return fromAtomData_(((Lammpstrj)aAtomData).defaultFrame(), aTimeStep);
         } else
-        if (aHasAtomData instanceof SubLammpstrj) {
+        if (aAtomData instanceof SubLammpstrj) {
             // SubLammpstrj 则直接获取即可（专门优化，保留排序，具体坐标的形式，对应的标签等，注意时间步会抹除）
-            SubLammpstrj tSubLammpstrj = (SubLammpstrj)aHasAtomData;
+            SubLammpstrj tSubLammpstrj = (SubLammpstrj)aAtomData;
             return new SubLammpstrj(aTimeStep, BOX_BOUND, tSubLammpstrj.mBox.copy(), tSubLammpstrj.mAtomData);
         } else {
             // 一般的情况，通过 dataXXX 来创建，注意这里认为获取时已经经过了值拷贝，因此不再需要 copy
-            return new SubLammpstrj(aTimeStep, BOX_BOUND, new Box(aHasAtomData.boxLo(), aHasAtomData.boxHi()), aHasAtomData.hasVelocities()?aHasAtomData.dataAll():aHasAtomData.dataSTD());
+            return new SubLammpstrj(aTimeStep, BOX_BOUND, new Box(aAtomData.boxLo(), aAtomData.boxHi()), aAtomData.hasVelocities()?aAtomData.dataAll():aAtomData.dataSTD());
         }
     }
     /** 对于 matlab 调用的兼容 */
-    public static Lammpstrj fromAtomData_compat(Object... aHasAtomDataArray) {
-        if (aHasAtomDataArray == null || aHasAtomDataArray.length == 0) return new Lammpstrj();
+    public static Lammpstrj fromAtomData_compat(Object... aAtomDataArray) {
+        if (aAtomDataArray == null || aAtomDataArray.length == 0) return new Lammpstrj();
         
         List<SubLammpstrj> rLammpstrj = new ArrayList<>();
-        int tTimeStep = 0;
-        for (Object subHasAtomData : aHasAtomDataArray) if (subHasAtomData instanceof IAtomData) {
-            rLammpstrj.add(fromAtomData_((IAtomData)subHasAtomData, tTimeStep));
-            ++tTimeStep;
+        int i = 0;
+        for (Object subAtomData : aAtomDataArray) if (subAtomData instanceof IAtomData) {
+            rLammpstrj.add(fromAtomData_((IAtomData)subAtomData, i));
+            ++i;
         }
         return new Lammpstrj(rLammpstrj);
     }

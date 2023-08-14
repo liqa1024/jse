@@ -164,21 +164,21 @@ public class Lmpdat extends AbstractAtomData {
     /** 拷贝一份 Lmpdat，为了简洁还是只保留 copy 一种方法 */
     public Lmpdat copy() {return new Lmpdat(mAtomTypeNum, mBox.copy(), mMasses==null?null:mMasses.copy(), mAtomData.copy(), mVelocities==null?null:mVelocities.copy());}
     
-    /** 从 IHasAtomData 来创建，一般来说 Lmpdat 需要一个额外的质量信息 */
-    public static Lmpdat fromAtomData(IAtomData aHasAtomData) {return fromAtomData_(aHasAtomData, null);}
-    public static Lmpdat fromAtomData(IAtomData aHasAtomData, IVector aMasses) {return fromAtomData_(aHasAtomData, Vectors.from(aMasses));}
-    public static Lmpdat fromAtomData(IAtomData aHasAtomData, Collection<? extends Number> aMasses) {return fromAtomData_(aHasAtomData, Vectors.from(aMasses));}
-    public static Lmpdat fromAtomData(IAtomData aHasAtomData, double[] aMasses) {return fromAtomData_(aHasAtomData, Vectors.from(aMasses));}
+    /** 从 IAtomData 来创建，一般来说 Lmpdat 需要一个额外的质量信息 */
+    public static Lmpdat fromAtomData(IAtomData aAtomData) {return fromAtomData_(aAtomData, null);}
+    public static Lmpdat fromAtomData(IAtomData aAtomData, IVector aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
+    public static Lmpdat fromAtomData(IAtomData aAtomData, Collection<? extends Number> aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
+    public static Lmpdat fromAtomData(IAtomData aAtomData, double[] aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
     
-    public static Lmpdat fromAtomData_(IAtomData aHasAtomData, IVector aMasses) {
-        // 根据输入的 aHasAtomData 类型来具体判断需要如何获取 rAtomData
-        if (aHasAtomData instanceof Lmpdat) {
+    public static Lmpdat fromAtomData_(IAtomData aAtomData, IVector aMasses) {
+        // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
+        if (aAtomData instanceof Lmpdat) {
             // Lmpdat 则直接获取即可（专门优化，保留完整模拟盒信息）
-            Lmpdat tLmpdat = (Lmpdat)aHasAtomData;
+            Lmpdat tLmpdat = (Lmpdat)aAtomData;
             return new Lmpdat(tLmpdat.atomTypeNum(), tLmpdat.mBox.copy(), aMasses, tLmpdat.mAtomData.copy(), tLmpdat.mVelocities==null?null:tLmpdat.mVelocities.copy());
         } else {
             // 一般的情况，通过 dataSTD 来创建，注意这里认为获取时已经经过了值拷贝，因此不再需要 copy
-            return new Lmpdat(aHasAtomData.atomTypeNum(), new Box(aHasAtomData.boxLo(), aHasAtomData.boxHi()), aMasses, aHasAtomData.dataSTD().matrix(), aHasAtomData.hasVelocities()?aHasAtomData.dataVelocities().matrix():null);
+            return new Lmpdat(aAtomData.atomTypeNum(), new Box(aAtomData.boxLo(), aAtomData.boxHi()), aMasses, aAtomData.dataSTD().matrix(), aAtomData.hasVelocities()?aAtomData.dataVelocities().matrix():null);
         }
     }
     

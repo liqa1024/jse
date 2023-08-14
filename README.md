@@ -17,7 +17,7 @@
 - **丰富的第三方库**：[Maven 仓库](https://mvnrepository.com/) 中有大量的 java 的第三方库可供使用，
   可以避免重复造轮子
 - **成熟的项目管理工具**：[Gradle](https://gradle.org/) 或者 [Maven](https://maven.apache.org/)
-  工具现在可以非常方便的管理项目，（相比 C++ 中的 cmake）完全不用担心其他人无法成功完成编译
+  工具现在可以非常方便的管理项目，（相比 C++ 中的 cmake）不需要担心其他人无法成功完成编译
 
 
 # 如何使用
@@ -26,7 +26,39 @@
 
 需要系统拥有 jdk，目前仅对 jdk8 进行适配，可以从 [这里](https://mirrors.tuna.tsinghua.edu.cn/Adoptium/) 下载 Adoptium 版本的 jdk，或者从 [这里](https://www.oracle.com/java/technologies/downloads/#java8) 下载 oracle 版本的 jdk
 
-## 1. 使用 Groovy 脚本（推荐）
+
+## 1. 使用 python
+在 python 中，需要使用第三方库来使用调用 java 代码，例如使用 [py4j](https://www.py4j.org/)：
+```python
+from py4j.java_gateway import JavaGateway
+GATEWAY = JavaGateway.launch_gateway(classpath='lib/jTool-all.jar')
+```
+创建了一个 `GATEWAY`，然后这样导入 java 的类，例如 lammps 的相关类 `Lmpdat` 和 `Dump`：
+```python
+Lmpdat = GATEWAY.jvm.com.jtool.lmp.Lmpdat
+Dump = GATEWAY.jvm.com.jtool.lmp.Dump
+```
+之后就像使用一个 python 的内部类一样使用上述 `Lmpdat` 和 `Dump` 类，
+例如读取 lammps 的 data 文件并转换成 dump 文件输出：
+```python
+lmpdat = Lmpdat.read('path/to/lammps/data/file')
+dump = Dump.fromAtomData(lmpdat)
+dump.write('path/to/lammps/dump/file')
+```
+最后记得关闭 GATEWAY：
+```python
+GATEWAY.shutdown()
+```
+
+注意默认情况下 py4j 不会输出 java 的信息到控制台，可以在创建 `GATEWAY` 时重新定向输出流来解决这个问题：
+```python
+import sys
+from py4j.java_gateway import JavaGateway
+GATEWAY = JavaGateway.launch_gateway(classpath='lib/jTool-all.jar', redirect_stdout=sys.stdout)
+```
+
+
+## 2. 使用 Groovy 脚本（推荐）
 [Groovy](http://www.groovy-lang.org/) 是一款原生支持 java 的脚本语言，并且也提供了很多很方便的语法糖
 （具体可以参考 [这篇文章](https://zhuanlan.zhihu.com/p/257969931)），因此本工具包原生支持 Groovy
 
@@ -44,11 +76,11 @@
 
 也支持编辑器下运行，项目文件夹中提供了一些默认的配置。
 
-### 1.1 在 VScode 中
+### 2.1 在 VScode 中
 提供了一个默认的运行和调试 `jTool-RunCurrentScript` 可以直接运行当前打开的脚本，底层也是直接调用的
 `./jTool` 指令，因此输出会在控制台部分。
 
-### 1.2 在 IntelliJ IDEA 中（推荐）
+### 2.2 在 IntelliJ IDEA 中（推荐）
 也提供了一个运行配置 `jTool-RunCurrentScript`（请不要使用自带的运行当前脚本，因为本项目实际不依赖 Groovy），
 底层使用的直接运行 jar 包，因此会有更加准确的调试。
 
@@ -65,8 +97,8 @@ $$
 $$
 
 
-## 2. 使用 Matlab
-在 matlab 中，首先需要导入 java 路径：
+## 3. 使用 Matlab
+在 matlab 中，首先需要导入 java 包的路径：
 ```matlab
 javaaddpath('lib/jTool-all.jar');
 ```
@@ -75,9 +107,11 @@ javaaddpath('lib/jTool-all.jar');
 ```matlab
 import com.jtool.lmp.*
 ```
-从而使用其中的 `Lmpdat` 类来读取 lammps 的 data 文件：
+同样对于上述读取 lammps 的 data 文件并转换成 dump 文件：
 ```matlab
 lmpdat = Lmpdat.read('path/to/lammps/data/file');
+dump = Dump.fromAtomData(lmpdat);
+dump.write('path/to/lammps/dump/file');
 ```
 处理完成后最后记得移除 java 路径：
 ```matlab
@@ -93,23 +127,9 @@ rmjpath('lib/jTool-all.jar');
 ```
 
 
-## 2. 使用 python
-在 python 中，需要使用第三方库来使用调用 java 代码，例如使用 [py4j](https://www.py4j.org/)：
-```python
-from py4j.java_gateway import JavaGateway
-GATEWAY = JavaGateway.launch_gateway(classpath='lib/jTool-all.jar')
-Lmpdat = GATEWAY.jvm.com.jtool.lmp.Lmpdat
-```
-之后就像使用一个 python 的内部类一样使用即可，
-最后记得关闭 GATEWAY：
-```python
-GATEWAY.shutdown()
-```
-
-
 
 # 代码部分
-本项目使用 [Gradle](https://gradle.org/) 进行管理，在这里可以不安装 Gradle
+本项目使用 [Gradle](https://gradle.org/) 进行管理（不需要安装 Gradle）
 
 运行 `./gradlew build` 即可进行编译，默认会将 jar 文件输出到 `release/lib` 文件夹
 
