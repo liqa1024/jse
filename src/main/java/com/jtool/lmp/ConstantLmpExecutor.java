@@ -12,10 +12,10 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
+import static com.jtool.code.CS.*;
 import static com.jtool.code.CS.Exec.EXE;
-import static com.jtool.code.CS.FILE_SYSTEM_SLEEP_TIME;
-import static com.jtool.code.CS.WORKING_DIR;
 
 /**
  * 长时的 lammps 运行器，开启一个长时挂起的 lammps 程序来运行，可以绕过 system 指令限制
@@ -232,12 +232,17 @@ public final class ConstantLmpExecutor extends AbstractHasAutoShutdown implement
     private volatile boolean mDead = false;
     @Override protected void shutdown_() {
         mDead = true;
-        for (Pair<String, Future<Integer>> tPair : mConstantLmpProcess.keySet()) {
-            String tShutdownPath = tPair.first+"shutdown";
+        for (Pair<String, Future<Integer>> tLMP : mConstantLmpProcess.keySet()) {
+            String tShutdownPath = tLMP.first+"shutdown";
             try {
                 UT.IO.write(tShutdownPath, "");
                 if (mEXE.needSyncIOFiles()) mEXE.putFiles(Collections.singleton(tShutdownPath));
             } catch (Exception ignored) {}
+        }
+        // 注意需要等待程序结束后再删除文件夹，如果没有结束则手动强制结束
+        for (Pair<String, Future<Integer>> tLMP : mConstantLmpProcess.keySet()) {
+            try {tLMP.second.get(FILE_SYSTEM_TIMEOUT, TimeUnit.MILLISECONDS);}
+            catch (Exception e) {tLMP.second.cancel(true);}
         }
         try {
             UT.IO.removeDir(mWorkingDir);
