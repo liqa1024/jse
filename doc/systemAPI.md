@@ -11,6 +11,7 @@
 # API 文档
 
 目前通用的任务提交器（[ISystemExecutor](../src/main/java/com/jtool/system/ISystemExecutor.java)）提供了这些接口：
+
 | 方法 | 输入 | 输出 | 说明 |
 | ---- | ---- | ---- | ---- |
 | `system(command, [outFilePath], [IOFiles])` | `command`: String，系统指令<br>`outFilePath`: String，可选，输出到文件的路径<br>`IOFiles`: [IIOFiles](../src/main/java/com/jtool/iofile/IIOFiles.java)，可选，指令附带的输入输出文件 | 退出值 `exitValue`，int | 使用此任务提交器运行一个系统指令，<br>系统指令不保证和直接在控制台中执行效果一致，<br>一般不指定输出文件则会将输出输出到控制台，<br>关于附加输入输出文件参考 [SSH 任务提交器](systemSSH.md) 中的说明。 |
@@ -22,9 +23,13 @@
 
 
 --------------------------------
+
+<br>
+
 而 [ISystemExecutor](../src/main/java/com/jtool/system/ISystemExecutor.java)
 又继承了 [IThreadPool](../src/main/java/com/jtool/parallel/IThreadPool.java)，
 对应接口在这里的含义为：
+
 | 方法                  | 说明 |
 | --------------------- | ---- |
 | `shutdown()`          | 关闭此任务提交器，禁止再次提交指令，等待提交的后台指令全部运行完成后释放资源，详见 [关闭任务提交器](system.md#关闭任务提交器) |
@@ -38,8 +43,12 @@
 
 
 --------------------------------
+
+<br>
+
 所有的任务提交器位于 [com.jtool.system](../src/main/java/com/jtool/system)，
 目前的各种任务提交器和说明如下：
+
 | 名称                       | 简写      | 参数 | 说明 |
 | -------------------------- | --------- | ---- | ---- |
 | `LocalSystemExecutor`      | `Local`   | 无   | 本地的任务提交器，相当于 `Runtime.exec(command)` |
