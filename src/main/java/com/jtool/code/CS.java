@@ -76,7 +76,7 @@ public class CS {
     public final static int STD_ID_COL = 0, STD_TYPE_COL = 1, STD_X_COL = 2, STD_Y_COL = 3, STD_Z_COL = 4;
     public final static int STD_VX_COL = 0, STD_VY_COL = 1, STD_VZ_COL = 2;
     
-    public final static double R_NEAREST_MUL = 1.423;
+    public final static double R_NEAREST_MUL = 1.5;
     
     /** const arrays */
     public final static String[] ZL_STR = new String[0];

@@ -272,6 +272,109 @@ public class NeighborListGetter implements IShutdownable {
         });
     }
     
+    /**
+     * 现在统一改为 for-each 的形式，再提供两个通用方法来限制最大近邻数目；
+     * 这里输入的 aRMax 会保证完全遍历所有在这个距离内的粒子，并且不会遍历到超过此距离的粒子；
+     * 这里输入的 aNnn 会选取最多这个数目的最近的原子（如果开启了 aHalf 则实际的结果会小于此值，顺序为先限制 aNnn 再取 aHalf）
+     * <p>
+     * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
+     * @author liqa
+     * @param aIDX 中心粒子的 index
+     * @param aRMax 最大的近邻半径
+     * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）
+     * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子
+     * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据
+     */
+    void forEachNeighbor_(final int aIDX, final double aRMax, final int aNnn, boolean aHalf, final boolean aMHT, IXYZIdxDisDo aXYZIdxDisDo) {
+        if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
+        
+        // 特殊输入处理，直接回到没有限制的情况
+        if (aNnn <= 0) forEachNeighbor_(aIDX, aRMax, aHalf, aMHT, aXYZIdxDisDo);
+        
+        // 先遍历所有经历统计出最近的列表
+        final NavigableMap<Double, XYZ_IDX> rNN = new TreeMap<>();
+        final XYZ cXYZ = mAtomDataXYZ[aIDX];
+        getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (xyz_idx, link) -> {
+            if (link.isMirror()) {
+                // 如果是镜像的，则会保留相同的 idx 的情况
+                XYZ tXYZ = xyz_idx.mXYZ.plus(link.direction());
+                double tDis = aMHT ? cXYZ.distanceMHT(tXYZ) : cXYZ.distance(tXYZ);
+                if (tDis < aRMax) {
+                    // 一次添加一个并此时检测容量然后移除一个
+                    rNN.put(tDis, new XYZ_IDX(tXYZ, xyz_idx.mIDX));
+                    if (rNN.size() > aNnn) rNN.pollLastEntry();
+                }
+            } else {
+                // 如果不是镜像的，则不会保留相同的 idx 的情况
+                if (xyz_idx.mIDX != aIDX) {
+                    double tDis = aMHT ? cXYZ.distanceMHT(xyz_idx.mXYZ) : cXYZ.distance(xyz_idx.mXYZ);
+                    if (tDis < aRMax) {
+                        // 一次添加一个并此时检测容量然后移除一个
+                        rNN.put(tDis, xyz_idx);
+                        if (rNN.size() > aNnn) rNN.pollLastEntry();
+                    }
+                }
+            }
+            
+        });
+        // 然后直接遍历得到的近邻列表，由于上面已经处理好了相同 idx 的情况，这里可以直接保留相同 idx 即可
+        for (Map.Entry<Double, XYZ_IDX> tEntry : rNN.entrySet()) {
+            XYZ_IDX tXYZ_IDX = tEntry.getValue();
+            if (aHalf) {
+                if (tXYZ_IDX.mIDX <= aIDX) {
+                    aXYZIdxDisDo.run(tXYZ_IDX.mXYZ.mX, tXYZ_IDX.mXYZ.mY, tXYZ_IDX.mXYZ.mZ, tXYZ_IDX.mIDX, tEntry.getKey());
+                }
+            } else {
+                aXYZIdxDisDo.run(tXYZ_IDX.mXYZ.mX, tXYZ_IDX.mXYZ.mY, tXYZ_IDX.mXYZ.mZ, tXYZ_IDX.mIDX, tEntry.getKey());
+            }
+        }
+    }
+    
+    /**
+     * 现在统一改为 for-each 的形式，再提供两个通用方法来限制最大近邻数目；
+     * 这里输入的 aRMax 会保证完全遍历所有在这个距离内的粒子，并且不会遍历到超过此距离的粒子；
+     * 这里输入的 aNnn 会选取最多这个数目的最近的原子（如果开启了 aHalf 则实际的结果会小于此值，顺序为先限制 aNnn 再取 aHalf）
+     * <p>
+     * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
+     * @author liqa
+     * @param aXYZ 中心粒子的位置
+     * @param aRMax 最大的近邻半径
+     * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）
+     * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据
+     */
+    void forEachNeighbor_(IXYZ aXYZ, final double aRMax, final int aNnn, final boolean aMHT, final IXYZIdxDisDo aXYZIdxDisDo) {
+        if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
+        
+        // 特殊输入处理，直接回到没有限制的情况
+        if (aNnn <= 0) forEachNeighbor_(aXYZ, aRMax, aMHT, aXYZIdxDisDo);
+        
+        // 先遍历所有经历统计出最近的列表
+        final NavigableMap<Double, XYZ_IDX> rNN = new TreeMap<>();
+        final XYZ cXYZ = toXYZ(aXYZ);
+        getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (xyz_idx, link) -> {
+            if (link.isMirror()) {
+                XYZ tXYZ = xyz_idx.mXYZ.plus(link.direction());
+                double tDis = aMHT ? cXYZ.distanceMHT(tXYZ) : cXYZ.distance(tXYZ);
+                if (tDis < aRMax) {
+                    // 一次添加一个并此时检测容量然后移除一个
+                    rNN.put(tDis, new XYZ_IDX(tXYZ, xyz_idx.mIDX));
+                    if (rNN.size() > aNnn) rNN.pollLastEntry();
+                }
+            } else {
+                double tDis = aMHT ? cXYZ.distanceMHT(xyz_idx.mXYZ) : cXYZ.distance(xyz_idx.mXYZ);
+                if (tDis < aRMax) {
+                    // 一次添加一个并此时检测容量然后移除一个
+                    rNN.put(tDis, xyz_idx);
+                    if (rNN.size() > aNnn) rNN.pollLastEntry();
+                }
+            }
+        });
+        // 然后直接遍历得到的近邻列表
+        for (Map.Entry<Double, XYZ_IDX> tEntry : rNN.entrySet()) {
+            XYZ_IDX tXYZ_IDX = tEntry.getValue();
+            aXYZIdxDisDo.run(tXYZ_IDX.mXYZ.mX, tXYZ_IDX.mXYZ.mY, tXYZ_IDX.mXYZ.mZ, tXYZ_IDX.mIDX, tEntry.getKey());
+        }
+    }
     
     
     /**
@@ -282,9 +385,16 @@ public class NeighborListGetter implements IShutdownable {
      * @param aRMax 最大的近邻半径
      * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子（默认为 false）
      */
-    public void forEachNeighbor(int aIDX, double aRMax, boolean aHalf, final IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor_(aIDX, aRMax, aHalf, false, aXYZIdxDisDo);}
-    public void forEachNeighbor(int aIDX, double aRMax, final IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor(aIDX, aRMax, false, aXYZIdxDisDo);}
-    public void forEachNeighbor(IXYZ aXYZ, double aRMax, final IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor_(aXYZ, aRMax, false, aXYZIdxDisDo);}
+    public void forEachNeighbor(int  aIDX, double aRMax, boolean aHalf, IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor_(aIDX, aRMax, aHalf, false, aXYZIdxDisDo);}
+    public void forEachNeighbor(int  aIDX, double aRMax, IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor(aIDX, aRMax, false, aXYZIdxDisDo);}
+    public void forEachNeighbor(IXYZ aXYZ, double aRMax, IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor_(aXYZ, aRMax, false, aXYZIdxDisDo);}
+    /**
+     * 增加的限制最大近邻数目的遍历方法
+     * @author liqa
+     */
+    public void forEachNeighbor(int  aIDX, double aRMax, int aNnn, boolean aHalf, IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor_(aIDX, aRMax, aNnn, aHalf, false, aXYZIdxDisDo);}
+    public void forEachNeighbor(int  aIDX, double aRMax, int aNnn, IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor(aIDX, aRMax, aNnn, false, aXYZIdxDisDo);}
+    public void forEachNeighbor(IXYZ aXYZ, double aRMax, int aNnn, IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor_(aXYZ, aRMax, aNnn, false, aXYZIdxDisDo);}
     
     
     /**
@@ -297,7 +407,14 @@ public class NeighborListGetter implements IShutdownable {
      * @param aRMaxMHT 最大的近邻半径，曼哈顿距离
      * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子（默认为 false）
      */
-    public void forEachNeighborMHT(int aIDX, double aRMaxMHT, boolean aHalf, final IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor_(aIDX, aRMaxMHT, aHalf, true, aXYZIdxDisDo);}
-    public void forEachNeighborMHT(int aIDX, double aRMaxMHT, final IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighborMHT(aIDX, aRMaxMHT, false, aXYZIdxDisDo);}
-    public void forEachNeighborMHT(IXYZ aXYZ, double aRMaxMHT, final IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor_(aXYZ, aRMaxMHT, true, aXYZIdxDisDo);}
+    public void forEachNeighborMHT(int  aIDX, double aRMaxMHT, boolean aHalf, IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor_(aIDX, aRMaxMHT, aHalf, true, aXYZIdxDisDo);}
+    public void forEachNeighborMHT(int  aIDX, double aRMaxMHT, IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighborMHT(aIDX, aRMaxMHT, false, aXYZIdxDisDo);}
+    public void forEachNeighborMHT(IXYZ aXYZ, double aRMaxMHT, IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor_(aXYZ, aRMaxMHT, true, aXYZIdxDisDo);}
+    /**
+     * 增加的限制最大近邻数目的遍历方法
+     * @author liqa
+     */
+    public void forEachNeighborMHT(int  aIDX, double aRMax, int aNnn, boolean aHalf, IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor_(aIDX, aRMax, aNnn, aHalf, true, aXYZIdxDisDo);}
+    public void forEachNeighborMHT(int  aIDX, double aRMax, int aNnn, IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighborMHT(aIDX, aRMax, aNnn, false, aXYZIdxDisDo);}
+    public void forEachNeighborMHT(IXYZ aXYZ, double aRMax, int aNnn, IXYZIdxDisDo aXYZIdxDisDo) {forEachNeighbor_(aXYZ, aRMax, aNnn, true, aXYZIdxDisDo);}
 }

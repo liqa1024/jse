@@ -18,12 +18,12 @@ mpc_G = data_G.getMPC(nThreads);
 
 // 计算 q6
 UT.Timer.tic();
-q6_G = mpc_G.calAOOP(6);
+q6_G = mpc_G.calAOOP(6, mpc_G.unitLen()*2.0, 12);
 UT.Timer.toc("${nThreads} threads, q6");
 
 // 计算 q4
 UT.Timer.tic();
-q4_G = mpc_G.calAOOP(4);
+q4_G = mpc_G.calAOOP(4, mpc_G.unitLen()*2.0, 12);
 UT.Timer.toc("${nThreads} threads, q4");
 
 // 计算完毕关闭 MPC
@@ -37,12 +37,12 @@ mpc_C = data_C.getMPC(nThreads);
 
 // 计算 q6
 UT.Timer.tic();
-q6_C = mpc_C.calAOOP(6);
+q6_C = mpc_C.calAOOP(6, mpc_G.unitLen()*2.0, 12);
 UT.Timer.toc("${nThreads} threads, q6");
 
 // 计算 q4
 UT.Timer.tic();
-q4_C = mpc_C.calAOOP(4);
+q4_C = mpc_C.calAOOP(4, mpc_G.unitLen()*2.0, 12);
 UT.Timer.toc("${nThreads} threads, q4");
 
 // 计算完毕关闭 MPC

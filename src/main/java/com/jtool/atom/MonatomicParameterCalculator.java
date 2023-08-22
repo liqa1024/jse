@@ -464,26 +464,29 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * 直接获取近邻列表的 api，不包括自身
      * @author liqa
      */
-    public List<Integer> getNeighborList(int aIdx, double aRMax) {
+    public List<Integer> getNeighborList(int aIdx, double aRMax, int aNnn) {
         final List<Integer> rNeighborList = new ArrayList<>();
-        mNL.forEachNeighbor(aIdx, aRMax, (x, y, z, idx, dis) -> rNeighborList.add(idx));
+        mNL.forEachNeighbor(aIdx, aRMax, aNnn, (x, y, z, idx, dis) -> rNeighborList.add(idx));
         return rNeighborList;
     }
-    public List<Integer> getNeighborList(int aIdx) {return getNeighborList(aIdx, mUnitLen*R_NEAREST_MUL);}
+    public List<Integer> getNeighborList(int aIdx, double aRMax) {return getNeighborList(aIdx, aRMax, -1);}
+    public List<Integer> getNeighborList(int aIdx              ) {return getNeighborList(aIdx, mUnitLen*R_NEAREST_MUL);}
     
-    @FunctionalInterface public interface INeighborListGetter {List<Integer> get(int aIdx);}
     
     /**
      * 计算所有粒子的近邻球谐函数的平均，即 qlm；
      * 返回一个复数矩阵，行为原子，列为 m
      * <p>
+     * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
+     * <p>
      * 主要用于内部使用
      * @author liqa
      * @param aL 计算具体 q 值的下标，即 q4: l = 4, q6: l = 6
-     * @param aRNearest 用来搜索的最近邻半径。默认为 R_NEAREST_MUL 倍单位长度（此定义下默认和参考文献一致）
+     * @param aRNearest 用来搜索的最近邻半径。默认为 R_NEAREST_MUL 倍单位长度
+     * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）。默认不做限制
      * @return qlm 组成的矩阵，以及近邻列表
      */
-    public Pair<IMatrix, IMatrix> calYlmMean(final int aL, final double aRNearest) {
+    public Pair<IMatrix, IMatrix> calYlmMean(final int aL, double aRNearest, int aNnn) {
         // 由于目前还没有实现复数运算，再搭一套复数库工作量较大，这里暂时使用两个实向量来存储，TODO 后续直接用复向量来存储
         IMatrix qlmReal = RowMatrix.zeros(mAtomNum, aL+aL+1);
         IMatrix qlmImag = RowMatrix.zeros(mAtomNum, aL+aL+1);
@@ -498,7 +501,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             final IVector qlmiImag = qlmImag.row(i);
             // 同样采用一半的优化
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearest, true, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(fI, aRNearest, aNnn, true, (x, y, z, idx, dis) -> {
                 // 计算角度
                 double dx = x - cXYZ.mX;
                 double dy = y - cXYZ.mY;
@@ -542,21 +545,25 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         return new Pair<>(qlmReal, qlmImag);
     }
-    public Pair<IMatrix, IMatrix> calYlmMean(int aL) {return calYlmMean(aL, mUnitLen*R_NEAREST_MUL);}
+    public Pair<IMatrix, IMatrix> calYlmMean(int aL, double aRNearest) {return calYlmMean(aL, aRNearest, -1);}
+    public Pair<IMatrix, IMatrix> calYlmMean(int aL                  ) {return calYlmMean(aL, mUnitLen*R_NEAREST_MUL);}
     
     
     /**
      * 计算所有粒子的原始的 OOP（local bond Orientational Order Parameters），
      * 输出结果为按照输入原子顺序排列的向量；
+     * <p>
+     * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
      * @author liqa
      * @param aL 计算具体 Q 值的下标，即 Q4: l = 4, Q6: l = 6
-     * @param aRNearest 用来搜索的最近邻半径。默认为 R_NEAREST_MUL 倍单位长度（此定义下默认和参考文献一致）
+     * @param aRNearest 用来搜索的最近邻半径。默认为 R_NEAREST_MUL 倍单位长度
+     * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）。默认不做限制
      * @return Ql 组成的向量
      */
-    public IVector calOOP(int aL, double aRNearest) {
+    public IVector calOOP(int aL, double aRNearest, int aNnn) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
-        Pair<IMatrix, IMatrix> tYlmMean = calYlmMean(aL, aRNearest);
+        Pair<IMatrix, IMatrix> tYlmMean = calYlmMean(aL, aRNearest, aNnn);
         IMatrix qlmReal = tYlmMean.first;
         IMatrix qlmImag = tYlmMean.second;
         
@@ -572,25 +579,29 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 返回最终计算结果
         return Ql;
     }
-    public IVector calOOP(int aL) {return calOOP(aL, mUnitLen*R_NEAREST_MUL);}
+    public IVector calOOP(int aL, double aRNearest) {return calOOP(aL, aRNearest, -1);}
+    public IVector calOOP(int aL                  ) {return calOOP(aL, mUnitLen*R_NEAREST_MUL);}
     
     
     /**
      * 计算所有粒子的 AOOP（Averaged local bond Orientational Order Parameters），
      * 输出结果为按照输入原子顺序排列的向量；
      * <p>
+     * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
+     * <p>
      * Reference: <a href="https://doi.org/10.1063/1.2977970">
      * Accurate determination of crystal structures based on averaged local bond order parameters</a>
      * @author liqa
      * @param aL 计算具体 q 值的下标，即 q4: l = 4, q6: l = 6
-     * @param aRNearest 用来搜索的最近邻半径。默认为 R_NEAREST_MUL 倍单位长度（此定义下默认和参考文献一致）
+     * @param aRNearest 用来搜索的最近邻半径。默认为 R_NEAREST_MUL 倍单位长度
+     * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）。默认不做限制
      * @return ql 组成的向量
      */
     
-    public IVector calAOOP(int aL, double aRNearest) {
+    public IVector calAOOP(int aL, double aRNearest, int aNnn) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
-        Pair<IMatrix, IMatrix> tYlmMean = calYlmMean(aL, aRNearest);
+        Pair<IMatrix, IMatrix> tYlmMean = calYlmMean(aL, aRNearest, aNnn);
         IMatrix qlmReal = tYlmMean.first;
         IMatrix qlmImag = tYlmMean.second;
         
@@ -598,7 +609,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         IVector ql = Vectors.zeros(mAtomNum);
         for (int i = 0; i < mAtomNum; ++i) {
             // 直接获取完整近邻列表，这里只遍历一半没有意义
-            List<Integer> tNeighborList = getNeighborList(i, aRNearest);
+            List<Integer> tNeighborList = getNeighborList(i, aRNearest, aNnn);
             // 对于每个 m 分别累加
             double rSum = 0.0;
             for (int tM = -aL; tM <= aL; ++tM) {
@@ -623,7 +634,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 返回最终计算结果
         return ql;
     }
-    public IVector calAOOP(int aL) {return calAOOP(aL, mUnitLen*R_NEAREST_MUL);}
+    public IVector calAOOP(int aL, double aRNearest) {return calAOOP(aL, aRNearest, -1);}
+    public IVector calAOOP(int aL                  ) {return calAOOP(aL, mUnitLen*R_NEAREST_MUL);}
     
     
     
@@ -631,20 +643,23 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * 通过 bond order parameter（Q6）来检测结构中类似固体的部分，
      * 输出结果为按照输入原子顺序排列的布尔向量，true 表示判断为类似固体；
      * <p>
+     * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
+     * <p>
      * Reference: <a href="https://doi.org/10.1063/1.2977970">
      * Accurate determination of crystal structures based on averaged local bond order parameters</a>
      * <p>
      * 效果不理想，不知是什么原因，暂时不使用
      * @author liqa
-     * @param aRNearest 用来搜索的最近邻半径。默认为 R_NEAREST_MUL 倍单位长度（此定义下默认和参考文献一致）
+     * @param aRNearest 用来搜索的最近邻半径。默认为 R_NEAREST_MUL 倍单位长度
+     * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）。默认不做限制
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值，默认为 0.5
      * @param aSolidThreshold 用来根据最近邻原子中，连接数超过此值则认为是固体的阈值，默认为 7
      * @return 最后判断得到是否是固体组成的逻辑向量
      */
-    public ILogicalVector checkSolidQ6(double aRNearest, double aConnectThreshold, int aSolidThreshold) {
+    public ILogicalVector checkSolidQ6(double aRNearest, int aNnn, double aConnectThreshold, int aSolidThreshold) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
-        Pair<IMatrix, IMatrix> tYlmMean = calYlmMean(6, aRNearest);
+        Pair<IMatrix, IMatrix> tYlmMean = calYlmMean(6, aRNearest, aNnn);
         IMatrix qlmReal = tYlmMean.first;
         IMatrix qlmImag = tYlmMean.second;
         // 统计连接数用于判断
@@ -667,7 +682,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             final IVector qlmiImag = qlmImag.row(i);
             // 遍历近邻计算连接数，同样采用一半的优化
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearest, true, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(fI, aRNearest, aNnn, true, (x, y, z, idx, dis) -> {
                 // 统一获取行向量
                 IVector qlmjReal = qlmReal.row(idx);
                 IVector qlmjImag = qlmImag.row(idx);
@@ -687,6 +702,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 根据连接数判断是否是类固体，返回最终计算结果
         return tConnectCount.greater(aSolidThreshold);
     }
-    public ILogicalVector checkSolidQ6(double aRNearest) {return checkSolidQ6(aRNearest, 0.5, 7);}
-    public ILogicalVector checkSolidQ6() {return checkSolidQ6(mUnitLen*R_NEAREST_MUL);}
+    public ILogicalVector checkSolidQ6(double aRNearest,           double aConnectThreshold, int aSolidThreshold) {return checkSolidQ6(aRNearest, -1, aConnectThreshold, aSolidThreshold);}
+    public ILogicalVector checkSolidQ6(double aRNearest, int aNnn                                               ) {return checkSolidQ6(aRNearest, aNnn, 0.5, 7);}
+    public ILogicalVector checkSolidQ6(double aRNearest                                                         ) {return checkSolidQ6(aRNearest, 0.5, 7);}
+    public ILogicalVector checkSolidQ6(                                                                         ) {return checkSolidQ6(mUnitLen*R_NEAREST_MUL);}
 }
