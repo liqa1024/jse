@@ -1,5 +1,6 @@
 package test
 
+import com.jtool.atom.Structures
 import com.jtool.code.UT
 import com.jtool.lmp.Lmpdat
 import com.jtool.plot.Plotters
@@ -7,24 +8,22 @@ import com.jtool.plot.Plotters
 
 /** 测试计算 AOOP */
 
-// 设置线程数
-nThreads = 1;
-
 
 // 首先导入 Lmpdat
 data_G = Lmpdat.read('lmp/data/data-glass');
 // 获取 MPC 计算单原子数据
-mpc_G = data_G.getMPC(nThreads);
+mpc_G = data_G.getMPC();
+println("glass, u: ${mpc_G.unitLen()}");
 
 // 计算 q6
 UT.Timer.tic();
 q6_G = mpc_G.calAOOP(6, mpc_G.unitLen()*2.0, 12);
-UT.Timer.toc("${nThreads} threads, q6");
+UT.Timer.toc("glass, q6");
 
 // 计算 q4
 UT.Timer.tic();
 q4_G = mpc_G.calAOOP(4, mpc_G.unitLen()*2.0, 12);
-UT.Timer.toc("${nThreads} threads, q4");
+UT.Timer.toc("glass, q4");
 
 // 计算完毕关闭 MPC
 mpc_G.shutdown();
@@ -33,17 +32,18 @@ mpc_G.shutdown();
 // 再计算一个结晶的结果
 data_C = Lmpdat.read('lmp/data/data-crystal');
 // 获取 MPC 计算单原子数据
-mpc_C = data_C.getMPC(nThreads);
+mpc_C = data_C.getMPC();
+println("crystal, u: ${mpc_C.unitLen()}");
 
 // 计算 q6
 UT.Timer.tic();
-q6_C = mpc_C.calAOOP(6, mpc_G.unitLen()*2.0, 12);
-UT.Timer.toc("${nThreads} threads, q6");
+q6_C = mpc_C.calAOOP(6, mpc_C.unitLen()*2.0, 12);
+UT.Timer.toc("crystal, q6");
 
 // 计算 q4
 UT.Timer.tic();
-q4_C = mpc_C.calAOOP(4, mpc_G.unitLen()*2.0, 12);
-UT.Timer.toc("${nThreads} threads, q4");
+q4_C = mpc_C.calAOOP(4, mpc_C.unitLen()*2.0, 12);
+UT.Timer.toc("crystal, q4");
 
 // 计算完毕关闭 MPC
 mpc_C.shutdown();
@@ -54,11 +54,38 @@ mpc_C.shutdown();
 //UT.IO.data2csv(q4_G, 'lmp/.temp/q4_G.csv');
 
 
+// 再计算生成的结果
+data_FCC = Structures.FCC(4.0, 10).opt().perturbG(0.25);
+mpc_FCC = data_FCC.getMPC();
+println("FCC, u: ${mpc_FCC.unitLen()}");
+UT.Timer.tic();
+q6_FCC = mpc_FCC.calAOOP(6, mpc_FCC.unitLen()*3.0, 12);
+UT.Timer.toc("FCC, q6");
+UT.Timer.tic();
+q4_FCC = mpc_FCC.calAOOP(4, mpc_FCC.unitLen()*3.0, 12);
+UT.Timer.toc("FCC, q4");
+mpc_FCC.shutdown();
+
+data_BCC = Structures.BCC(4.0, 15).opt().perturbG(0.32);
+mpc_BCC = data_BCC.getMPC();
+println("BCC, u: ${mpc_BCC.unitLen()}");
+UT.Timer.tic();
+q6_BCC = mpc_BCC.calAOOP(6, mpc_BCC.unitLen()*3.0, 12);
+UT.Timer.toc("BCC, q6");
+UT.Timer.tic();
+q4_BCC = mpc_BCC.calAOOP(4, mpc_BCC.unitLen()*3.0, 12);
+UT.Timer.toc("BCC, q4");
+mpc_BCC.shutdown();
+
+
+
 // 使用 Plotter 绘图
 plt = Plotters.get();
 
-plt.plot(q4_G, q6_G).lineType('none').markerType('o').markerSize(4);
-plt.plot(q4_C, q6_C).lineType('none').markerType('o').markerSize(4);
+plt.plot(q4_G  , q6_G  , 'glass'  ).lineType('none').markerType('o').markerSize(4);
+plt.plot(q4_C  , q6_C  , 'crystal').lineType('none').markerType('o').markerSize(4);
+plt.plot(q4_FCC, q6_FCC, 'FCC'    ).lineType('none').markerType('o').markerSize(4);
+plt.plot(q4_BCC, q6_BCC, 'BCC'    ).lineType('none').markerType('o').markerSize(4);
 
 plt.xlabel('q4').ylabel('q6');
 

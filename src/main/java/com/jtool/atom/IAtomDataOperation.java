@@ -3,6 +3,7 @@ package com.jtool.atom;
 
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.Vectors;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Random;
 
@@ -50,4 +51,16 @@ public interface IAtomDataOperation {
         return randomUpdateTypeByWeight(aRandom, Vectors.from(aTypeWeights));
     }
     default IAtomData randomUpdateTypeByWeight(double... aTypeWeights) {return randomUpdateTypeByWeight(RANDOM, aTypeWeights);}
+    
+    /**
+     * 使用高斯分布来随机扰动原子位置
+     * @author liqa
+     * @param aRandom 可选自定义的随机数生成器
+     * @param aSigma 高斯分布的标准差
+     * @return 扰动后的 AtomData
+     */
+    IAtomData randomPerturbXYZByGaussian(Random aRandom, double aSigma);
+    default IAtomData randomPerturbXYZByGaussian(double aSigma) {return randomPerturbXYZByGaussian(RANDOM, aSigma);}
+    @VisibleForTesting default IAtomData perturbG(Random aRandom, double aSigma) {return randomPerturbXYZByGaussian(aRandom, aSigma);}
+    @VisibleForTesting default IAtomData perturbG(double aSigma) {return randomPerturbXYZByGaussian(aSigma);}
 }
