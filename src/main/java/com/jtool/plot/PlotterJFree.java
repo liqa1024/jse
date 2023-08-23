@@ -27,6 +27,7 @@ import java.util.List;
 import static com.jtool.plot.Shapes.*;
 import static com.jtool.plot.Strokes.*;
 import static com.jtool.plot.Colors.COLOR_;
+import static java.awt.Color.*;
 
 
 /**
@@ -107,6 +108,7 @@ public class PlotterJFree implements IPlotter {
         // 内部使用的成员
         mLinesData = new XYSeriesCollection();
         mChart = ChartFactory.createXYLineChart(TITLE, X_LABEL, Y_LABEL, mLinesData);
+        mChart.setBackgroundPaint(WHITE); // 调整背景颜色
         mPlot = mChart.getXYPlot(); // 认定内部的 Plot 是 final 的
         // 默认线型
         mLineRender = new XYLineAndShapeRenderer() {
@@ -126,6 +128,9 @@ public class PlotterJFree implements IPlotter {
         mLineRender.setDrawSeriesLineAsPath(true); // 指定按照路径的方式绘制
         mPlot.setRenderer(mLineRender); // 指定修改后的 renderer
         mPlot.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD); // 修改绘制顺序为常见的顺序
+        mPlot.setBackgroundPaint(WHITE); // 调整背景颜色
+        mPlot.setDomainGridlinePaint(GRAY); // 调整刻度线颜色
+        mPlot.setRangeGridlinePaint(GRAY); // 调整刻度线颜色
         // x，y 轴
         mXAxis = mPlot.getDomainAxis();
         mYAxis = mPlot.getRangeAxis();

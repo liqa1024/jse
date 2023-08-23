@@ -14,12 +14,15 @@ public class Colors {
     /** colors used for plot */
     private static final Color[] COLORS = new Color[] {
         new Color(0  , 0  , 0  ),
-        new Color(255, 51 , 0  ),
-        new Color(76 , 178, 0  ),
-        new Color(51 , 102, 204),
-        new Color(178, 0  , 178),
-        new Color(204, 153, 0  ),
-        new Color(0  , 178, 153),
+        new Color(232, 35 , 0  ),
+        new Color(48 , 183, 0  ),
+        new Color(42 , 77 , 246),
+        new Color(190, 0  , 211),
+        new Color(192, 125, 0  ),
+        new Color(0  , 204, 175),
+        new Color(255, 0  , 132),
+        new Color(243, 85 , 0  ),
+        new Color(116, 23 , 255),
         };
     public static final Color COLOR_NULL = new Color(255, 255, 255, 0);
     

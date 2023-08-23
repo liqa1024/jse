@@ -2,6 +2,7 @@ package com.jtool.atom;
 
 
 import com.jtool.code.collection.AbstractRandomAccessList;
+import com.jtool.math.MathEX;
 
 
 /**
@@ -25,9 +26,30 @@ public class AbstractAtoms {
         return new AtomData(new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(final int index) {
                 return new IAtom() {
-                    @Override public double x() {int i = index/4/aReplicateZ/aReplicateY; double tX = aCellSize*i; return (index%4==1 || index%4==2) ? tX + aCellSize*0.5 : tX;}
-                    @Override public double y() {int j = index/4/aReplicateZ%aReplicateY; double tY = aCellSize*j; return (index%4==1 || index%4==3) ? tY + aCellSize*0.5 : tY;}
-                    @Override public double z() {int k = index/4%aReplicateZ            ; double tZ = aCellSize*k; return (index%4==2 || index%4==3) ? tZ + aCellSize*0.5 : tZ;}
+                    @Override public double x() {
+                        int i = index/4/aReplicateZ/aReplicateY; double tX = aCellSize*i;
+                        switch (index%4) {
+                        case 0: case 3: return tX;
+                        case 1: case 2: return tX + aCellSize*0.5;
+                        default: throw new RuntimeException();
+                        }
+                    }
+                    @Override public double y() {
+                        int j = index/4/aReplicateZ%aReplicateY; double tY = aCellSize*j;
+                        switch (index%4) {
+                        case 0: case 2: return tY;
+                        case 1: case 3: return tY + aCellSize*0.5;
+                        default: throw new RuntimeException();
+                        }
+                    }
+                    @Override public double z() {
+                        int k = index/4%aReplicateZ            ; double tZ = aCellSize*k;
+                        switch (index%4) {
+                        case 0: case 1: return tZ;
+                        case 2: case 3: return tZ + aCellSize*0.5;
+                        default: throw new RuntimeException();
+                        }
+                    }
                     @Override public int id() {return index+1;}
                     @Override public int type() {return 1;}
                 };
@@ -65,6 +87,61 @@ public class AbstractAtoms {
         }, new XYZ(aCellSize*aReplicateX, aCellSize*aReplicateY, aCellSize*aReplicateZ));
     }
     public static IAtomData BCC(double aCellSize, int aReplicate) {return BCC(aCellSize, aReplicate, aReplicate, aReplicate);}
+    
+    /**
+     * 根据给定数据创建 HCP 的 atomData，为了方便使用这里直接返回正交的晶胞
+     * @author liqa
+     * @param aCellSize HCP 晶胞底边六边形的边长 a
+     * @param aCellHeight HCP 晶胞的高度 c（默认为 sqrt(8/3)）
+     * @param aReplicateX x 方向的重复次数
+     * @param aReplicateY Y 方向的重复次数
+     * @param aReplicateZ Z 方向的重复次数
+     * @return 返回由此创建的 atomData
+     */
+    public static IAtomData HCP(final double aCellSize, final double aCellHeight, final int aReplicateX, final int aReplicateY, final int aReplicateZ) {
+        final double tCellSizeY = aCellSize * SQRT3;
+        return new AtomData(new AbstractRandomAccessList<IAtom>() {
+            @Override public IAtom get(final int index) {
+                return new IAtom() {
+                    @Override public double x() {
+                        int i = index/4/aReplicateZ/aReplicateY; double tX = aCellSize  *i;
+                        switch (index%4) {
+                        case 0: case 2: return tX;
+                        case 1: case 3: return tX + aCellSize*0.5;
+                        default: throw new RuntimeException();
+                        }
+                    }
+                    @Override public double y() {
+                        int j = index/4/aReplicateZ%aReplicateY; double tY = tCellSizeY *j;
+                        switch (index%4) {
+                        case 0: return tY;
+                        case 1: return tY + tCellSizeY*0.5;
+                        case 2: return tY + aCellSize*2.0/3.0;
+                        case 3: return tY + tCellSizeY - aCellSize/3.0;
+                        default: throw new RuntimeException();
+                        }
+                    }
+                    @Override public double z() {
+                        int k = index/4%aReplicateZ            ; double tZ = aCellHeight*k;
+                        switch (index%4) {
+                        case 0: case 1: return tZ;
+                        case 2: case 3: return tZ + aCellHeight*0.5;
+                        default: throw new RuntimeException();
+                        }
+                    }
+                    @Override public int id() {return index+1;}
+                    @Override public int type() {return 1;}
+                };
+            }
+            @Override public int size() {
+                return 4*aReplicateX*aReplicateY*aReplicateZ;
+            }
+        }, new XYZ(aCellSize*aReplicateX, tCellSizeY*aReplicateY, aCellHeight*aReplicateZ));
+    }
+    public static IAtomData HCP(double aCellSize,                     int aReplicateX, int aReplicateY, int aReplicateZ) {return HCP(aCellSize, aCellSize*SQRT83, aReplicateX, aReplicateY, aReplicateZ);}
+    public static IAtomData HCP(double aCellSize, double aCellHeight, int aReplicate                                   ) {return HCP(aCellSize, aCellHeight, aReplicate, aReplicate, aReplicate);}
+    public static IAtomData HCP(double aCellSize,                     int aReplicate                                   ) {return HCP(aCellSize, aReplicate, aReplicate, aReplicate);}
+    private final static double SQRT3 = MathEX.Fast.sqrt(3.0), SQRT83 = MathEX.Fast.sqrt(8.0/3.0);
     
     
     /**
