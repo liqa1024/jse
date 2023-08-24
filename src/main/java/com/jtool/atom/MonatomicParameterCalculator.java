@@ -615,28 +615,18 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             double rDiv = qlmReal.row(i).dot() + qlmImag.row(i).dot();
             rDiv = Fast.sqrt(rDiv);
             rDiv = Fast.pow3(rDiv);
-            // 分子需要这样计算，这里只保留实数
+            // 分子需要这样计算，这里只保留实数（虚数部分为 0）
             double rMul = 0.0;
             for (int tM1 = -aL; tM1 <= aL; ++tM1) for (int tM2 = -aL; tM2 <= aL; ++tM2) {
                 int tM3 = -tM1-tM2;
                 if (tM3<=aL && tM3>=-aL) {
-                    // 统一计算前系数
-                    double tFront = Func.wigner3j_(aL, aL, aL, tM1, tM2, tM3);
-                    // 计算乘积，注意复数乘法规则
-                    double tRealL = qlmReal.get_(i, tM1+aL);
-                    double tImagL = qlmImag.get_(i, tM1+aL);
-                    double tRealR = qlmReal.get_(i, tM2+aL);
-                    double tImagR = qlmImag.get_(i, tM2+aL);
-                    double subMulReal = tRealL*tRealR - tImagL*tImagR;
-                    double subMulImag = tRealL*tImagR + tImagL*tRealR;
-                    tRealL = subMulReal;
-                    tImagL = subMulImag;
-                    tRealR = qlmReal.get_(i, tM3+aL);
-                    tImagR = qlmImag.get_(i, tM3+aL);
-                    subMulReal = tRealL*tRealR - tImagL*tImagR;
-                    subMulImag = tRealL*tImagR + tImagL*tRealR;
+                    // 计算乘积，注意使用复数乘法
+                    ComplexDouble subMul = new ComplexDouble(qlmReal.get_(i, tM1+aL), qlmImag.get_(i, tM1+aL));
+                    subMul.multiply2this(qlmReal.get_(i, tM2+aL), qlmImag.get_(i, tM2+aL));
+                    subMul.multiply2this(qlmReal.get_(i, tM3+aL), qlmImag.get_(i, tM3+aL));
+                    subMul.multiply2this(Func.wigner3j_(aL, aL, aL, tM1, tM2, tM3));
                     // 累加到分子，这里只统计实数部分（虚数部分为 0）
-                    rMul += tFront*subMulReal;
+                    rMul += subMul.real;
                 }
             }
             // 最后求模量设置结果
@@ -681,17 +671,13 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             for (int tM = -aL; tM <= aL; ++tM) {
                 int tCol = tM+aL;
                 // 先累加自身
-                double qlmiMeanReal = qlmReal.get_(i, tCol);
-                double qlmiMeanImag = qlmImag.get_(i, tCol);
+                ComplexDouble qlmiMean = new ComplexDouble(qlmReal.get_(i, tCol), qlmImag.get_(i, tCol));
                 // 再累加近邻
-                qlmiMeanReal += qlmReal.refSlicer().get(tNeighborList, tCol).sum();
-                qlmiMeanImag += qlmImag.refSlicer().get(tNeighborList, tCol).sum();
+                qlmiMean.plus2this(qlmReal.refSlicer().get(tNeighborList, tCol).sum(), qlmImag.refSlicer().get(tNeighborList, tCol).sum());
                 // 求“平均”
-                double tNN = tNeighborList.size();
-                qlmiMeanReal /= tNN;
-                qlmiMeanImag /= tNN;
+                qlmiMean.div2this(tNeighborList.size());
                 // 最后求模量添加到 rSum
-                rSum += qlmiMeanReal*qlmiMeanReal + qlmiMeanImag*qlmiMeanImag;
+                rSum += qlmiMean.dot();
             }
             // 使用这个公式设置 ql
             ql.set_(i, Fast.sqrt(4.0*PI*rSum/(double)(aL+aL+1)));
@@ -735,18 +721,14 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             for (int tM = -aL; tM <= aL; ++tM) {
                 int tCol = tM+aL;
                 // 先累加自身
-                double qlmiMeanReal = qlmReal.get_(i, tCol);
-                double qlmiMeanImag = qlmImag.get_(i, tCol);
+                ComplexDouble qlmiMean = new ComplexDouble(qlmReal.get_(i, tCol), qlmImag.get_(i, tCol));
                 // 再累加近邻
-                qlmiMeanReal += qlmReal.refSlicer().get(tNeighborList, tCol).sum();
-                qlmiMeanImag += qlmImag.refSlicer().get(tNeighborList, tCol).sum();
+                qlmiMean.plus2this(qlmReal.refSlicer().get(tNeighborList, tCol).sum(), qlmImag.refSlicer().get(tNeighborList, tCol).sum());
                 // 求“平均”
-                double tNN = tNeighborList.size();
-                qlmiMeanReal /= tNN;
-                qlmiMeanImag /= tNN;
+                qlmiMean.div2this(tNeighborList.size());
                 // 记录结果
-                qlmMeanReal.set_(i, tCol, qlmiMeanReal);
-                qlmMeanImag.set_(i, tCol, qlmiMeanImag);
+                qlmMeanReal.set_(i, tCol, qlmiMean.real);
+                qlmMeanImag.set_(i, tCol, qlmiMean.imag);
             }
         }
         
@@ -757,28 +739,18 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             double rDiv = qlmMeanReal.row(i).dot() + qlmMeanImag.row(i).dot();
             rDiv = Fast.sqrt(rDiv);
             rDiv = Fast.pow3(rDiv);
-            // 分子需要这样计算，这里只保留实数
+            // 分子需要这样计算，这里只保留实数（虚数部分为 0）
             double rMul = 0.0;
             for (int tM1 = -aL; tM1 <= aL; ++tM1) for (int tM2 = -aL; tM2 <= aL; ++tM2) {
                 int tM3 = -tM1-tM2;
                 if (tM3<=aL && tM3>=-aL) {
-                    // 统一计算前系数
-                    double tFront = Func.wigner3j_(aL, aL, aL, tM1, tM2, tM3);
-                    // 计算乘积，注意复数乘法规则
-                    double tRealL = qlmMeanReal.get_(i, tM1+aL);
-                    double tImagL = qlmMeanImag.get_(i, tM1+aL);
-                    double tRealR = qlmMeanReal.get_(i, tM2+aL);
-                    double tImagR = qlmMeanImag.get_(i, tM2+aL);
-                    double subMulReal = tRealL*tRealR - tImagL*tImagR;
-                    double subMulImag = tRealL*tImagR + tImagL*tRealR;
-                    tRealL = subMulReal;
-                    tImagL = subMulImag;
-                    tRealR = qlmMeanReal.get_(i, tM3+aL);
-                    tImagR = qlmMeanImag.get_(i, tM3+aL);
-                    subMulReal = tRealL*tRealR - tImagL*tImagR;
-                    subMulImag = tRealL*tImagR + tImagL*tRealR;
+                    // 计算乘积，注意使用复数乘法
+                    ComplexDouble subMul = new ComplexDouble(qlmMeanReal.get_(i, tM1+aL), qlmMeanImag.get_(i, tM1+aL));
+                    subMul.multiply2this(qlmMeanReal.get_(i, tM2+aL), qlmMeanImag.get_(i, tM2+aL));
+                    subMul.multiply2this(qlmMeanReal.get_(i, tM3+aL), qlmMeanImag.get_(i, tM3+aL));
+                    subMul.multiply2this(Func.wigner3j_(aL, aL, aL, tM1, tM2, tM3));
                     // 累加到分子，这里只统计实数部分（虚数部分为 0）
-                    rMul += tFront*subMulReal;
+                    rMul += subMul.real;
                 }
             }
             // 最后求模量设置结果
@@ -840,12 +812,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 IVector qlmjReal = qlmReal.row(idx);
                 IVector qlmjImag = qlmImag.row(idx);
                 // 计算复向量的点乘
-                double SijReal = qlmiReal.dot(qlmjReal) + qlmiImag.dot(qlmjImag);
-                double SijImag = qlmiImag.dot(qlmjReal) - qlmiReal.dot(qlmjImag);
-                // 取模量来判断
-                double Sij = Fast.sqrt(SijReal*SijReal + SijImag*SijImag);
-                // 根据输入的参数判断是否连接
-                if (Sij > aConnectThreshold) {
+                ComplexDouble Sij = new ComplexDouble(qlmiReal.dot(qlmjReal)+qlmiImag.dot(qlmjImag), qlmiImag.dot(qlmjReal)-qlmiReal.dot(qlmjImag));
+                // 取模量来判断是否连接
+                if (Sij.abs() > aConnectThreshold) {
                     tConnectCount.increment_(fI);
                     tConnectCount.increment_(idx);
                 }
