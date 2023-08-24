@@ -365,7 +365,6 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IFunc1 calSF_AB(final XYZ[] aAtomDataXYZ, double aQMax, int aN, final double aRMax, double aQMin) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
-        
         final double dq = (aQMax-aQMin)/aN;
         // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
         final IFunc1[] Hq = new IFunc1[nThreads()];
@@ -416,6 +415,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * @return the structural factor, S(q)
      */
     public IFunc1 RDF2SF(IFunc1 aGr, double aRou, int aN, double aQMax, double aQMin) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
         double dq = (aQMax-aQMin)/aN;
         
         IFunc1 Sq = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
@@ -443,6 +444,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * @return the radial distribution function, g(r)
      */
     public IFunc1 SF2RDF(IFunc1 aSq, double aRou, int aN, double aRMax, double aRMin) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
         double dr = (aRMax-aRMin)/aN;
         
         IFunc1 gr = FixBoundFunc1.zeros(aRMin, dr, aN+1).setBound(0.0, 1.0);
@@ -465,6 +468,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * @author liqa
      */
     public List<Integer> getNeighborList(int aIdx, double aRMax, int aNnn) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
         final List<Integer> rNeighborList = new ArrayList<>();
         mNL.forEachNeighbor(aIdx, aRMax, aNnn, (x, y, z, idx, dis) -> rNeighborList.add(idx));
         return rNeighborList;
@@ -487,6 +492,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * @return qlm 组成的矩阵，以及近邻列表
      */
     public Pair<IMatrix, IMatrix> calYlmMean(final int aL, double aRNearest, int aNnn) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
+        
         // 由于目前还没有实现复数运算，再搭一套复数库工作量较大，这里暂时使用两个实向量来存储，TODO 后续直接用复向量来存储
         IMatrix qlmReal = RowMatrix.zeros(mAtomNum, aL+aL+1);
         IMatrix qlmImag = RowMatrix.zeros(mAtomNum, aL+aL+1);
@@ -550,7 +558,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     
     
     /**
-     * 计算所有粒子的原始的 BOOP（local Bond Orientational Order Parameters），
+     * 计算所有粒子的原始的 BOOP（local Bond Orientational Order Parameters, Ql），
      * 输出结果为按照输入原子顺序排列的向量；
      * <p>
      * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
@@ -582,8 +590,68 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IVector calBOOP(int aL, double aRNearest) {return calBOOP(aL, aRNearest, -1);}
     public IVector calBOOP(int aL                  ) {return calBOOP(aL, mUnitLen*R_NEAREST_MUL);}
     
+    
     /**
-     * 计算所有粒子的 ABOOP（Averaged local Bond Orientational Order Parameters），
+     * 计算所有粒子的三阶形式的 BOOP（local Bond Orientational Order Parameters, Wl），
+     * 输出结果为按照输入原子顺序排列的向量；
+     * <p>
+     * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
+     * @author liqa
+     * @param aL 计算具体 W 值的下标，即 W4: l = 4, W6: l = 6
+     * @param aRNearest 用来搜索的最近邻半径。默认为 R_NEAREST_MUL 倍单位长度
+     * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）。默认不做限制
+     * @return Wl 组成的向量
+     */
+    public IVector calBOOP3(int aL, double aRNearest, int aNnn) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
+        Pair<IMatrix, IMatrix> tYlmMean = calYlmMean(aL, aRNearest, aNnn);
+        IMatrix qlmReal = tYlmMean.first;
+        IMatrix qlmImag = tYlmMean.second;
+        
+        IVector Wl = Vectors.zeros(mAtomNum);
+        for (int i = 0; i < mAtomNum; ++i) {
+            // 分母为复向量的点乘，等于实部虚部分别点乘
+            double rDiv = qlmReal.row(i).dot() + qlmImag.row(i).dot();
+            rDiv = Fast.sqrt(rDiv);
+            rDiv = Fast.pow3(rDiv);
+            // 分子需要这样计算，这里只保留实数
+            double rMul = 0.0;
+            for (int tM1 = -aL; tM1 <= aL; ++tM1) for (int tM2 = -aL; tM2 <= aL; ++tM2) {
+                int tM3 = -tM1-tM2;
+                if (tM3<=aL && tM3>=-aL) {
+                    // 统一计算前系数
+                    double tFront = Func.wigner3j_(aL, aL, aL, tM1, tM2, tM3);
+                    // 计算乘积，注意复数乘法规则
+                    double tRealL = qlmReal.get_(i, tM1+aL);
+                    double tImagL = qlmImag.get_(i, tM1+aL);
+                    double tRealR = qlmReal.get_(i, tM2+aL);
+                    double tImagR = qlmImag.get_(i, tM2+aL);
+                    double subMulReal = tRealL*tRealR - tImagL*tImagR;
+                    double subMulImag = tRealL*tImagR + tImagL*tRealR;
+                    tRealL = subMulReal;
+                    tImagL = subMulImag;
+                    tRealR = qlmReal.get_(i, tM3+aL);
+                    tImagR = qlmImag.get_(i, tM3+aL);
+                    subMulReal = tRealL*tRealR - tImagL*tImagR;
+                    subMulImag = tRealL*tImagR + tImagL*tRealR;
+                    // 累加到分子，这里只统计实数部分（虚数部分为 0）
+                    rMul += tFront*subMulReal;
+                }
+            }
+            // 最后求模量设置结果
+            Wl.set_(i, rMul/rDiv);
+        }
+        
+        // 返回最终计算结果
+        return Wl;
+    }
+    public IVector calBOOP3(int aL, double aRNearest) {return calBOOP3(aL, aRNearest, -1);}
+    public IVector calBOOP3(int aL                  ) {return calBOOP3(aL, mUnitLen*R_NEAREST_MUL);}
+    
+    
+    /**
+     * 计算所有粒子的 ABOOP（Averaged local Bond Orientational Order Parameters, ql），
      * 输出结果为按照输入原子顺序排列的向量；
      * <p>
      * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
@@ -596,7 +664,6 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）。默认不做限制
      * @return ql 组成的向量
      */
-    
     public IVector calABOOP(int aL, double aRNearest, int aNnn) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
@@ -636,6 +703,93 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IVector calABOOP(int aL, double aRNearest) {return calABOOP(aL, aRNearest, -1);}
     public IVector calABOOP(int aL                  ) {return calABOOP(aL, mUnitLen*R_NEAREST_MUL);}
     
+    
+    /**
+     * 计算所有粒子的三阶形式的 ABOOP（Averaged local Bond Orientational Order Parameters, wl），
+     * 输出结果为按照输入原子顺序排列的向量；
+     * <p>
+     * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
+     * <p>
+     * Reference: <a href="https://doi.org/10.1063/1.2977970">
+     * Accurate determination of crystal structures based on averaged local bond order parameters</a>
+     * @author liqa
+     * @param aL 计算具体 w 值的下标，即 w4: l = 4, w6: l = 6
+     * @param aRNearest 用来搜索的最近邻半径。默认为 R_NEAREST_MUL 倍单位长度
+     * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）。默认不做限制
+     * @return wl 组成的向量
+     */
+    public IVector calABOOP3(int aL, double aRNearest, int aNnn) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
+        Pair<IMatrix, IMatrix> tYlmMean = calYlmMean(aL, aRNearest, aNnn);
+        IMatrix qlmReal = tYlmMean.first;
+        IMatrix qlmImag = tYlmMean.second;
+        
+        // 这里不能再作上面的优化，直接先全部平均一遍
+        IMatrix qlmMeanReal = RowMatrix.zeros(mAtomNum, aL+aL+1);
+        IMatrix qlmMeanImag = RowMatrix.zeros(mAtomNum, aL+aL+1);
+        for (int i = 0; i < mAtomNum; ++i) {
+            // 直接获取完整近邻列表，这里只遍历一半没有意义
+            List<Integer> tNeighborList = getNeighborList(i, aRNearest, aNnn);
+            // 对于每个 m 分别累加
+            for (int tM = -aL; tM <= aL; ++tM) {
+                int tCol = tM+aL;
+                // 先累加自身
+                double qlmiMeanReal = qlmReal.get_(i, tCol);
+                double qlmiMeanImag = qlmImag.get_(i, tCol);
+                // 再累加近邻
+                qlmiMeanReal += qlmReal.refSlicer().get(tNeighborList, tCol).sum();
+                qlmiMeanImag += qlmImag.refSlicer().get(tNeighborList, tCol).sum();
+                // 求“平均”
+                double tNN = tNeighborList.size();
+                qlmiMeanReal /= tNN;
+                qlmiMeanImag /= tNN;
+                // 记录结果
+                qlmMeanReal.set_(i, tCol, qlmiMeanReal);
+                qlmMeanImag.set_(i, tCol, qlmiMeanImag);
+            }
+        }
+        
+        // 计算 wl，这里同样不去考虑减少重复代码
+        IVector wl = Vectors.zeros(mAtomNum);
+        for (int i = 0; i < mAtomNum; ++i) {
+            // 分母为复向量的点乘，等于实部虚部分别点乘
+            double rDiv = qlmMeanReal.row(i).dot() + qlmMeanImag.row(i).dot();
+            rDiv = Fast.sqrt(rDiv);
+            rDiv = Fast.pow3(rDiv);
+            // 分子需要这样计算，这里只保留实数
+            double rMul = 0.0;
+            for (int tM1 = -aL; tM1 <= aL; ++tM1) for (int tM2 = -aL; tM2 <= aL; ++tM2) {
+                int tM3 = -tM1-tM2;
+                if (tM3<=aL && tM3>=-aL) {
+                    // 统一计算前系数
+                    double tFront = Func.wigner3j_(aL, aL, aL, tM1, tM2, tM3);
+                    // 计算乘积，注意复数乘法规则
+                    double tRealL = qlmMeanReal.get_(i, tM1+aL);
+                    double tImagL = qlmMeanImag.get_(i, tM1+aL);
+                    double tRealR = qlmMeanReal.get_(i, tM2+aL);
+                    double tImagR = qlmMeanImag.get_(i, tM2+aL);
+                    double subMulReal = tRealL*tRealR - tImagL*tImagR;
+                    double subMulImag = tRealL*tImagR + tImagL*tRealR;
+                    tRealL = subMulReal;
+                    tImagL = subMulImag;
+                    tRealR = qlmMeanReal.get_(i, tM3+aL);
+                    tImagR = qlmMeanImag.get_(i, tM3+aL);
+                    subMulReal = tRealL*tRealR - tImagL*tImagR;
+                    subMulImag = tRealL*tImagR + tImagL*tRealR;
+                    // 累加到分子，这里只统计实数部分（虚数部分为 0）
+                    rMul += tFront*subMulReal;
+                }
+            }
+            // 最后求模量设置结果
+            wl.set_(i, rMul/rDiv);
+        }
+        
+        // 返回最终计算结果
+        return wl;
+    }
+    public IVector calABOOP3(int aL, double aRNearest) {return calABOOP3(aL, aRNearest, -1);}
+    public IVector calABOOP3(int aL                  ) {return calABOOP3(aL, mUnitLen*R_NEAREST_MUL);}
     
     
     /**

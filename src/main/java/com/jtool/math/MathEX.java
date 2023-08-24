@@ -759,8 +759,84 @@ public class MathEX {
             }
         }
         
+        /**
+         * 计算 Wigner 3-j 符号的结果，这里只考虑整数输入
+         * <p>
+         * Reference: <a href="https://en.wikipedia.org/wiki/3-j_symbol">
+         * 3-j symbol - Wikipedia </a>
+         * @author liqa
+         * @return 计算结果，实数
+         */
+        public static double wigner3j(int aJ1, int aJ2, int aJ3, int aM1, int aM2, int aM3) {
+            // 判断输入是否合法
+            if (aJ1 < 0) throw new IllegalArgumentException("Input j1 MUST be Non-Negative, input: "+aJ1);
+            if (aJ2 < 0) throw new IllegalArgumentException("Input j2 MUST be Non-Negative, input: "+aJ2);
+            if (aJ3 < 0) throw new IllegalArgumentException("Input j3 MUST be Non-Negative, input: "+aJ3);
+            if (aM1 < 0 || aM1 > aJ1) throw new IllegalArgumentException("Input m1 MUST be in range 0 ~ j1, input: "+aM1);
+            if (aM2 < 0 || aM2 > aJ2) throw new IllegalArgumentException("Input m2 MUST be in range 0 ~ j2, input: "+aM2);
+            if (aM3 < 0 || aM3 > aJ3) throw new IllegalArgumentException("Input m3 MUST be in range 0 ~ j3, input: "+aM3);
+            
+            return wigner3j_(aJ1, aJ2, aJ3, aM1, aM2, aM3);
+        }
+        public static double wigner3j_(int aJ1, int aJ2, int aJ3, int aM1, int aM2, int aM3) {
+            // 如果 mi 不满足和为 0 则返回 0
+            if (aM1+aM2+aM3 != 0) return 0.0;
+            
+            // 先计算最后的求和，计算求和范围
+            int tK = Math.max(Math.max(0, aJ2-aJ3-aM1), aJ1-aJ3+aM2);
+            int tN = Math.min(Math.min(aJ1+aJ2-aJ3, aJ1-aM1), aJ2+aM2);
+            // 范围不合法直接返回 0
+            if (tN < tK) return 0.0;
+            // 累加最后的求和
+            double rBack = 0.0;
+            for (int k = tK; k <= tN; ++k) {
+                double tDiv = 1.0;
+                tDiv *= factorial(k);
+                tDiv *= factorial(aJ1+aJ2-aJ3-k);
+                tDiv *= factorial(aJ1-aM1-k);
+                tDiv *= factorial(aJ2+aM2-k);
+                tDiv *= factorial(aJ3-aJ2+aM1+k);
+                tDiv *= factorial(aJ3-aJ1-aM2+k);
+                if ((k&1)==1) tDiv = -tDiv;
+                rBack += (1.0/tDiv);
+            }
+            
+            // 计算前面根式
+            double rFront = 1.0;
+            rFront *= factorial( aJ1+aJ2-aJ3);
+            rFront *= factorial( aJ1-aJ2+aJ3);
+            rFront *= factorial(-aJ1+aJ2+aJ3);
+            rFront /= factorial( aJ1+aJ2+aJ3+1);
+            rFront = Fast.sqrt(rFront);
+            
+            // 计算中间的根式
+            double rMid = 1.0;
+            rMid *= factorial(aJ1-aM1);
+            rMid *= factorial(aJ1+aM1);
+            rMid *= factorial(aJ2-aM2);
+            rMid *= factorial(aJ2+aM2);
+            rMid *= factorial(aJ3-aM3);
+            rMid *= factorial(aJ3+aM3);
+            rMid = Fast.sqrt(rMid);
+            
+            // 最终结果
+            double tResult = rFront*rMid*rBack;
+            if (((aJ1-aJ2-aM3)&1)==1) tResult = -tResult;
+            return tResult;
+        }
         
-        
+        /**
+         * 计算阶乘，返回浮点数避免整型溢出
+         * @author liqa
+         * @return 1 * 2 * 3 * ... * (aN-1) * aN
+         */
+        public static double factorial(int aN) {
+            if (aN < 0) return 0.0;
+            if (aN==0 || aN==1) return 1.0;
+            double rProd = 1.0;
+            for (int i = 2; i <= aN; ++i) rProd *= i;
+            return rProd;
+        }
         
         
         
@@ -994,6 +1070,9 @@ public class MathEX {
     public static class Fast {
         public static double sqrt(double aValue) {return FastMath.sqrt(aValue);}
         public static double cbrt(double aValue) {return FastMath.cbrt(aValue);}
+        
+        public static double pow2(double aValue) {return aValue*aValue;}
+        public static double pow3(double aValue) {return aValue*aValue*aValue;}
         
         public static double exp(double aValue) {return FastMath.exp(aValue);}
         public static double log(double aValue) {return FastMath.log(aValue);}
