@@ -273,88 +273,54 @@ public class NeighborListGetter implements IShutdownable {
     }
     
     /** 使用这个统一的类来管理，可以限制最大元素数目，并专门处理距离完全相同的情况不会抹去 */
-    @SuppressWarnings("unchecked")
     private static class NearestNeighborList {
-        private final NavigableMap<Double, Object> mNN = new TreeMap<>();
-        private int mSize = 0;
+        private static class XYZIdxDis {
+            final XYZ_IDX mXYZ_IDX;
+            final double mDis;
+            XYZIdxDis(XYZ_IDX aXYZ_IDX, double aDis) {mXYZ_IDX = aXYZ_IDX; mDis = aDis;}
+            XYZIdxDis(double aDis, XYZ_IDX aXYZ_IDX) {mXYZ_IDX = aXYZ_IDX; mDis = aDis;}
+        }
+        /** 直接使用 LinkedList 存储来避免距离完全相同的情况 */
+        private final LinkedList<XYZIdxDis> mNNList = new LinkedList<>();
         private final int mNnn;
-        public NearestNeighborList(int aNnn) {mNnn = aNnn;}
+        NearestNeighborList(int aNnn) {mNnn = aNnn;}
         
-        public void put(double aDis, XYZ_IDX aXYZ_IDX) {
-            ++mSize;
-            Object tObj = mNN.get(aDis);
-            if (tObj != null) {
-                // 考虑到距离有可能完全一样，此时需要添加列表
-                if (tObj instanceof List) {
-                    // 如果已经是列表则直接添加
-                    ((List<XYZ_IDX>)tObj).add(aXYZ_IDX);
-                } else {
-                    // 如果不是列表则需要创建
-                    List<XYZ_IDX> tList = new ArrayList<>(2);
-                    mNN.put(aDis, tList);
-                    tList.add((XYZ_IDX)tObj);
-                    tList.add(aXYZ_IDX);
+        void put(double aDis, XYZ_IDX aXYZ_IDX) {
+            // 获取迭代器
+            ListIterator<XYZIdxDis> li = mNNList.listIterator();
+            // 跳转到距离大于或等于 aDis 之前
+            while (li.hasNext()) {
+                double tDis = li.next().mDis;
+                if (tDis >= aDis) {
+                    li.previous(); // 回到这个位置之前，在前面插入
+                    break;
                 }
-            } else {
-                // 一般情况直接添加即可
-                mNN.put(aDis, aXYZ_IDX);
             }
+            // 然后直接进行添加即可
+            li.add(new XYZIdxDis(aDis, aXYZ_IDX));
             // 如果容量超过限制，则移除最后的元素
-            if (mSize > mNnn) {
-                Object tLast = mNN.lastEntry().getValue();
-                if (tLast instanceof List) {
-                    // 如果是列表则直接移除最后的元素
-                    List<XYZ_IDX> tList = (List<XYZ_IDX>)tLast;
-                    tList.remove(tList.size()-1);
-                    // 如果是空则需要从 map 中移除
-                    if (tList.isEmpty()) mNN.pollLastEntry();
-                } else {
-                    // 如果不是列表则直接移除即可
-                    mNN.pollLastEntry();
-                }
-                --mSize;
-            }
+            if (mNNList.size() > mNnn) mNNList.removeLast();
         }
         
         /** 直接使用 for-each 的形式来遍历，并且全部交给这里来实现避免多重转发 */
-        public void forEachNeighbor(int aIDX, boolean aHalf, IXYZIdxDisDo aXYZIdxDisDo) {
-            for (Map.Entry<Double, Object> tEntry : mNN.entrySet()) {
-                double tDis = tEntry.getKey();
-                Object tObj = tEntry.getValue();
-                if (tObj instanceof List) {
-                    for (XYZ_IDX tXYZ_IDX : (List<XYZ_IDX>)tObj) {
-                        if (aHalf) {
-                            if (tXYZ_IDX.mIDX <= aIDX) {
-                                aXYZIdxDisDo.run(tXYZ_IDX.mXYZ.mX, tXYZ_IDX.mXYZ.mY, tXYZ_IDX.mXYZ.mZ, tXYZ_IDX.mIDX, tDis);
-                            }
-                        } else {
-                            aXYZIdxDisDo.run(tXYZ_IDX.mXYZ.mX, tXYZ_IDX.mXYZ.mY, tXYZ_IDX.mXYZ.mZ, tXYZ_IDX.mIDX, tDis);
-                        }
+        void forEachNeighbor(int aIDX, boolean aHalf, IXYZIdxDisDo aXYZIdxDisDo) {
+            for (XYZIdxDis tXYZIdxDis : mNNList) {
+                if (aHalf) {
+                    int tIDX = tXYZIdxDis.mXYZ_IDX.mIDX;
+                    if (tIDX <= aIDX) {
+                        XYZ tXYZ = tXYZIdxDis.mXYZ_IDX.mXYZ;
+                        aXYZIdxDisDo.run(tXYZ.mX, tXYZ.mY, tXYZ.mZ, tIDX, tXYZIdxDis.mDis);
                     }
                 } else {
-                    XYZ_IDX tXYZ_IDX = (XYZ_IDX)tObj;
-                    if (aHalf) {
-                        if (tXYZ_IDX.mIDX <= aIDX) {
-                            aXYZIdxDisDo.run(tXYZ_IDX.mXYZ.mX, tXYZ_IDX.mXYZ.mY, tXYZ_IDX.mXYZ.mZ, tXYZ_IDX.mIDX, tDis);
-                        }
-                    } else {
-                        aXYZIdxDisDo.run(tXYZ_IDX.mXYZ.mX, tXYZ_IDX.mXYZ.mY, tXYZ_IDX.mXYZ.mZ, tXYZ_IDX.mIDX, tDis);
-                    }
+                    XYZ tXYZ = tXYZIdxDis.mXYZ_IDX.mXYZ;
+                    aXYZIdxDisDo.run(tXYZ.mX, tXYZ.mY, tXYZ.mZ, tXYZIdxDis.mXYZ_IDX.mIDX, tXYZIdxDis.mDis);
                 }
             }
         }
-        public void forEachNeighbor(IXYZIdxDisDo aXYZIdxDisDo) {
-            for (Map.Entry<Double, Object> tEntry : mNN.entrySet()) {
-                double tDis = tEntry.getKey();
-                Object tObj = tEntry.getValue();
-                if (tObj instanceof List) {
-                    for (XYZ_IDX tXYZ_IDX : (List<XYZ_IDX>)tObj) {
-                        aXYZIdxDisDo.run(tXYZ_IDX.mXYZ.mX, tXYZ_IDX.mXYZ.mY, tXYZ_IDX.mXYZ.mZ, tXYZ_IDX.mIDX, tDis);
-                    }
-                } else {
-                    XYZ_IDX tXYZ_IDX = (XYZ_IDX)tObj;
-                    aXYZIdxDisDo.run(tXYZ_IDX.mXYZ.mX, tXYZ_IDX.mXYZ.mY, tXYZ_IDX.mXYZ.mZ, tXYZ_IDX.mIDX, tDis);
-                }
+        void forEachNeighbor(IXYZIdxDisDo aXYZIdxDisDo) {
+            for (XYZIdxDis tXYZIdxDis : mNNList) {
+                XYZ tXYZ = tXYZIdxDis.mXYZ_IDX.mXYZ;
+                aXYZIdxDisDo.run(tXYZ.mX, tXYZ.mY, tXYZ.mZ, tXYZIdxDis.mXYZ_IDX.mIDX, tXYZIdxDis.mDis);
             }
         }
     }
