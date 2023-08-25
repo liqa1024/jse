@@ -12,15 +12,15 @@ import com.jtool.vasp.POSCAR
 
 // 首先导入 Lmpdat
 def dataG = Lmpdat.read('lmp/data/data-glass');
-def dataC = Structures.from(POSCAR.read('lmp/data/Zr7Cu10.poscar'), 4).opt().filterType(1).opt().perturbG(0.25);
+def dataC = Lmpdat.read('lmp/data/data-crystal');
 
 // 计算连接数向量
 def connectCountG, connectCountC;
 try (def mpc = dataG.getMPC()) {
-    connectCountG = mpc.calConnectCountABOOP(6, mpc.unitLen()*2.0, 12, 0.80);
+    connectCountG = mpc.calConnectCountABOOP(6, mpc.unitLen()*2.0, 12, 0.83);
 }
 try (def mpc = dataC.getMPC()) {
-    connectCountC = mpc.calConnectCountABOOP(6, mpc.unitLen()*2.0, 12, 0.80);
+    connectCountC = mpc.calConnectCountABOOP(6, mpc.unitLen()*2.0, 12, 0.83);
 }
 
 // 统计结果
@@ -32,6 +32,9 @@ connectCountG.forEach {double count ->
 connectCountC.forEach {double count ->
     distributionC.increment(count as int);
 }
+
+// 计算玻璃中判断为固体的百分比（保证在一个较小的不为零的值，如 0.5%）
+println("solid prob in glass: ${distributionG[7..12].sum() / dataG.atomNum()}")
 
 // 绘制结果
 def plt = Plotters.get();

@@ -1,12 +1,15 @@
 package com.jtool.atom;
 
 
+import com.jtool.code.UT;
 import com.jtool.code.filter.IFilter;
+import com.jtool.code.filter.IIndexFilter;
 import com.jtool.code.functional.IOperator1;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.Vectors;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.List;
 import java.util.Random;
 
 import static com.jtool.code.CS.RANDOM;
@@ -35,6 +38,17 @@ public interface IAtomDataOperation {
      */
     IAtomData filterType(int aType);
     
+    /**
+     * 直接根据 {@code List<Integer>} 来过滤 aAtomData，只保留选定种类的原子
+     * <p>
+     * 直接通过输入的 aIndices 进行引用映射，相当于 {@code refSlice}
+     * @author liqa
+     * @param aIndices 选择保留的原子的下标组成的数组
+     * @return 过滤后的 AtomData
+     */
+    IAtomData filterIndices(List<Integer> aIndices);
+    IAtomData filterIndices(int[] aIndices);
+    IAtomData filterIndices(IIndexFilter aIndices);
     
     
     /**

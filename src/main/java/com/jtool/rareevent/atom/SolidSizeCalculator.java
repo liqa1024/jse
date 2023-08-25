@@ -8,7 +8,7 @@ import static com.jtool.code.CS.R_NEAREST_MUL;
 
 
 /**
- * 一种参数计算机，计算体系中的固体部分的尺寸
+ * 一种参数计算器，计算体系中的固体部分的尺寸
  * @author liqa
  */
 public class SolidSizeCalculator implements IParameterCalculator<IAtomData> {

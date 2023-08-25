@@ -12,10 +12,10 @@ import static com.jtool.code.CS.R_NEAREST_MUL;
 
 
 /**
- * 一种参数计算机，计算体系中的最大的固体团簇的尺寸
+ * 一种参数计算器，计算体系中的最大的固体团簇的尺寸
  * @author liqa
  */
-public class ClusterSizeCalculator implements IParameterCalculator<IAtomData> {
+public final class ClusterSizeCalculator extends AbstractClusterSizeCalculator {
     private final double mQ6CutoffMul, mRClusterMul;
     private final int mNnn;
     
@@ -32,19 +32,6 @@ public class ClusterSizeCalculator implements IParameterCalculator<IAtomData> {
     public ClusterSizeCalculator(double aRNearestMul) {this(aRNearestMul, -1, aRNearestMul);}
     public ClusterSizeCalculator() {this(R_NEAREST_MUL);}
     
-    @Override public double lambdaOf(IAtomData aPoint) {
-        // 进行类固体判断
-        try (final MonatomicParameterCalculator tMPC = aPoint.getMonatomicParameterCalculator()) {
-            final ILogicalVector tIsSolid = tMPC.checkSolidQ6(tMPC.unitLen()*mQ6CutoffMul, mNnn);
-            // 使用 getClustersBFS 获取所有的团簇
-            final double tRCluster = tMPC.unitLen()*mRClusterMul;
-            List<List<Integer>> tClusters = MathEX.Adv.getClustersBFS(tIsSolid.filter(tIsSolid.size()),i -> tIsSolid.filter(tMPC.getNeighborList(i, tRCluster)));
-            // 遍历团簇统计 lambda
-            double rLambda = 0.0;
-            for (List<Integer> subCluster : tClusters) {
-                rLambda = Math.max(rLambda, subCluster.size());
-            }
-            return rLambda;
-        }
-    }
+    @Override protected double getRClusterMul_() {return mRClusterMul;}
+    @Override protected ILogicalVector getIsSolid_(MonatomicParameterCalculator aMPC, IAtomData aPoint) {return aMPC.checkSolidQ6(aMPC.unitLen()*mQ6CutoffMul, mNnn);}
 }
