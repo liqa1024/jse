@@ -21,6 +21,8 @@ import static com.jtool.code.UT.Code.toXYZ;
  * <p> 此类线程安全，包括多个线程同时访问同一个实例 </p>
  */
 public class NeighborListGetter implements IShutdownable {
+    final static double DEFAULT_CELL_STEP = 1.26; // 1.26*1.26*1.26 = 2.00
+    
     // 用于 LinkedCell 使用
     private static class XYZ_IDX implements IXYZ {
         final int mIDX;
@@ -52,7 +54,7 @@ public class NeighborListGetter implements IShutdownable {
     private final Lock mWL = mRWL.writeLock();
     
     // NL 只支持已经经过平移的数据
-    public NeighborListGetter(XYZ[] aAtomDataXYZ, IXYZ aBox) {this(aAtomDataXYZ, aBox, 2.0);}
+    public NeighborListGetter(XYZ[] aAtomDataXYZ, IXYZ aBox) {this(aAtomDataXYZ, aBox, DEFAULT_CELL_STEP);}
     public NeighborListGetter(XYZ[] aAtomDataXYZ, IXYZ aBox, double aCellStep) {
         mAtomNum = aAtomDataXYZ.length;
         mAtomDataXYZ = aAtomDataXYZ;

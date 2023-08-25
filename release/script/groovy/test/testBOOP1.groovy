@@ -9,7 +9,7 @@ import com.jtool.vasp.POSCAR
 
 /** 测试计算 AOOP */
 
-final double cutoffMul = 1.8;
+final double cutoffMul = 2.0;
 final int nnn = 12;
 final double perturbMul = 1.0;
 

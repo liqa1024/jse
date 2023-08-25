@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static com.jtool.atom.NeighborListGetter.DEFAULT_CELL_STEP;
 import static com.jtool.code.CS.*;
 import static com.jtool.code.UT.Code.newBox;
 import static com.jtool.code.UT.Code.toXYZ;
@@ -79,10 +80,10 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public MonatomicParameterCalculator(Iterable<? extends IXYZ> aAtomDataXYZ) {this(aAtomDataXYZ, BOX_ONE);}
     public MonatomicParameterCalculator(Iterable<? extends IXYZ> aAtomDataXYZ, IXYZ aBox) {this(aAtomDataXYZ, BOX_ZERO, aBox);}
     public MonatomicParameterCalculator(Iterable<? extends IXYZ> aAtomDataXYZ, IXYZ aBoxLo, IXYZ aBoxHi) {this(aAtomDataXYZ, aBoxLo, aBoxHi, 1);}
-    public MonatomicParameterCalculator(Iterable<? extends IXYZ> aAtomDataXYZ, IXYZ aBoxLo, IXYZ aBoxHi, int aThreadNum) {this(aAtomDataXYZ, aBoxLo, aBoxHi, aThreadNum, 2.0);}
+    public MonatomicParameterCalculator(Iterable<? extends IXYZ> aAtomDataXYZ, IXYZ aBoxLo, IXYZ aBoxHi, int aThreadNum) {this(aAtomDataXYZ, aBoxLo, aBoxHi, aThreadNum, DEFAULT_CELL_STEP);}
     
     public MonatomicParameterCalculator(IAtomData aAtomData) {this(aAtomData, 1);}
-    public MonatomicParameterCalculator(IAtomData aAtomData, int aThreadNum) {this(aAtomData, aThreadNum, 2.0);}
+    public MonatomicParameterCalculator(IAtomData aAtomData, int aThreadNum) {this(aAtomData, aThreadNum, DEFAULT_CELL_STEP);}
     public MonatomicParameterCalculator(IAtomData aAtomData, int aThreadNum, double aCellStep) {this(UT.Code.toCollection(aAtomData.atomNum(), aAtomData.atoms()), aAtomData.boxLo(), aAtomData.boxHi(), aThreadNum, aCellStep);}
     
     
@@ -513,7 +514,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             // 一次计算一行
             final IVector qlmiReal = qlmReal.row(i);
             final IVector qlmiImag = qlmImag.row(i);
-            // 同样采用一半的优化
+            // 遍历近邻计算 Ylm
             final int fI = i;
             mNL.forEachNeighbor(fI, aRNearest, aNnn, aHalf, (x, y, z, idx, dis) -> {
                 // 计算角度
@@ -525,6 +526,12 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 double disXY = Fast.sqrt(dx*dx + dy*dy);
                 double phi = (dy > 0) ? Fast.acos(dx / disXY) : (2.0*PI - Fast.acos(dx / disXY));
                 
+                // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
+                IVector qlmjReal = null, qlmjImag = null;
+                if (aHalf) {
+                    qlmjReal = qlmReal.row(idx);
+                    qlmjImag = qlmImag.row(idx);
+                }
                 // 计算 Y 并累加，考虑对称性只需要算 m=0~l 的部分
                 for (int tM = 0; tM <= aL; ++tM) {
                     int tCol = tM+aL;
@@ -532,10 +539,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                     qlmiReal.add_(tCol, tY.mReal);
                     qlmiImag.add_(tCol, tY.mImag);
                     // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
-                    IVector qlmjReal = null, qlmjImag = null;
                     if (aHalf) {
-                        qlmjReal = qlmReal.row(idx);
-                        qlmjImag = qlmImag.row(idx);
                         qlmjReal.add_(tCol, tY.mReal);
                         qlmjImag.add_(tCol, tY.mImag);
                     }
@@ -554,7 +558,10 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 
                 // 统计近邻数
                 tNN.increment_(fI);
-                tNN.increment_(idx);
+                // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
+                if (aHalf) {
+                    tNN.increment_(idx);
+                }
             });
         }
         // 根据近邻数平均得到 qlm
@@ -824,7 +831,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             // 统一获取行向量
             final IVector qlmiReal = qlmReal.row(i);
             final IVector qlmiImag = qlmImag.row(i);
-            // 遍历近邻计算连接数，同样采用一半的优化
+            // 遍历近邻计算连接数
             final int fI = i;
             mNL.forEachNeighbor(fI, aRNearest, aNnn, aHalf, (x, y, z, idx, dis) -> {
                 // 统一获取行向量
@@ -836,7 +843,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 if (Sij.abs() > aConnectThreshold) {
                     tConnectCount.increment_(fI);
                     // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
-                    if (aHalf) tConnectCount.increment_(idx);
+                    if (aHalf) {
+                        tConnectCount.increment_(idx);
+                    }
                 }
             });
         }

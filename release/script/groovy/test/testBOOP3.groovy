@@ -17,19 +17,19 @@ mpc = data.getMPC(nThreads);
 
 // 计算 q6
 UT.Timer.tic();
-q6 = mpc.calBOOP(6);
-UT.Timer.toc("${nThreads} threads, q6");
+Q6 = mpc.calBOOP(6);
+UT.Timer.toc("${nThreads} threads, Q6");
 
 // 计算 q4
 UT.Timer.tic();
-q4 = mpc.calBOOP(4);
-UT.Timer.toc("${nThreads} threads, q4");
+Q4 = mpc.calBOOP(4);
+UT.Timer.toc("${nThreads} threads, Q4");
 
 // 计算完毕关闭 MPC
 mpc.shutdown();
 
 
 // 直接输出平均值检验正确性
-println(q6.mean());
-println(q4.mean());
+println(Q6.mean());
+println(Q4.mean());
 
