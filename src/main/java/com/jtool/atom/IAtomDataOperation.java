@@ -1,12 +1,12 @@
 package com.jtool.atom;
 
 
-import com.jtool.code.UT;
 import com.jtool.code.filter.IFilter;
 import com.jtool.code.filter.IIndexFilter;
 import com.jtool.code.functional.IOperator1;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.Vectors;
+import groovy.lang.Closure;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
@@ -60,6 +60,15 @@ public interface IAtomDataOperation {
      */
     IAtomData collect(int aMinTypeNum, IOperator1<? extends IAtom, ? super IAtom> aOperator);
     default IAtomData collect(IOperator1<? extends IAtom, ? super IAtom> aOperator) {return collect(1, aOperator);}
+    /** 兼容 groovy 调用提供一个更容易被检测到的重载方法 */
+    default IAtomData collect(Closure<? extends IAtom> aGroovyTask) {
+        int tN = aGroovyTask.getMaximumNumberOfParameters();
+        switch (tN) {
+        case 0: {return collect(atom -> aGroovyTask.call());}
+        case 1: {return collect(aGroovyTask::call);}
+        default: throw new IllegalArgumentException("Parameters Number of collect Must be 0 or 1");
+        }
+    }
     
     /**
      * 根据给定的权重来随机分配原子种类，主要用于创建合金的初始结构

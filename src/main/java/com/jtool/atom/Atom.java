@@ -30,4 +30,12 @@ public class Atom implements IAtom {
     
     @Override public int id() {return mID;}
     @Override public int type() {return mType;}
+    
+    
+    /** 用于方便链式调用 */
+    public Atom setX(double aX) {mX = aX; return this;}
+    public Atom setY(double aY) {mY = aY; return this;}
+    public Atom setZ(double aZ) {mZ = aZ; return this;}
+    public Atom setID(int aID) {mID = aID; return this;}
+    public Atom setType(int aType) {mType = aType; return this;}
 }
