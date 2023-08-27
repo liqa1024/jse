@@ -36,7 +36,7 @@ UT.Timer.toc();
 
 // 用于计算合金的团簇计算器
 UT.Timer.tic();
-def calMulti = new MultiTypeClusterSizeCalculator().setQ6CutoffMul(2.2).setConnectThreshold(0.86).setSolidThreshold(13);
+def calMulti = new MultiTypeClusterSizeCalculator().setQ6CutoffMul(2.2).setConnectThreshold(0.88).setSolidThreshold(13);
 println("multi glass: ${calMulti.lambdaOf(dataG)}, total: ${dataG.atomNum()}");
 println("multi crystal: ${calMulti.lambdaOf(dataC)}, total: ${dataC.atomNum()}");
 println("multi ffs: ${calMulti.lambdaOf(dataFFS.last())}, total: ${dataFFS.atomNum()}");

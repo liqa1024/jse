@@ -598,8 +598,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         Pair<IMatrix, IMatrix> Qlm = calYlmMean(aL, aRNearest, aNnn);
         IMatrix QlmReal = Qlm.mFirst;
         IMatrix QlmImag = Qlm.mSecond;
-        // 统计近邻数用于求平均
-        final IVector tNN = Vectors.zeros(mAtomNum);
+        // 统计近邻数用于求平均（增加一个自身）
+        final IVector tNN = Vectors.ones(mAtomNum);
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnn<=0;
         

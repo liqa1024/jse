@@ -217,20 +217,32 @@ public class PlotterJFree implements IPlotter {
             double tY0 = Double.NaN;
             Iterator<Double> itx = tLine.mX.iterator();
             Iterator<Double> ity = tLine.mY.iterator();
+            boolean tNeedInterPoint = false;
             while (itx.hasNext() && ity.hasNext()) {
                 double tX = itx.next();
                 double tY = ity.next();
-                // 检测位置是否合法，合法则直接添加，不合法则添加边界值或者 NaN
+                // 检测位置是否合法，合法则直接添加
                 if (tX>aBoxXMin && tX<aBoxXMax && tY>aBoxYMin && tY<aBoxYMax) {
+                    if (tNeedInterPoint) {
+                        // 如果标记需要插入则需要利用上一个点的数据来插入
+                        double[][] tInterPoints = MathEX.Graph.interRayBox2D_(aBoxXMin, aBoxYMin,  aBoxXMax, aBoxYMax, tX0, tY0, tX, tY);
+                        // 遍历添加，不添加非法值
+                        if (tInterPoints != null) for (double[] tXY : tInterPoints) tSeries.add(tXY[0], tXY[1]);
+                    }
+                    // 先插入边界点再插入自身
                     tSeries.add(tX, tY);
-                } else //noinspection StatementWithEmptyBody
-                if (Double.isNaN(tX0) || Double.isNaN(tY0)) {
-                    // 没有上一个值 NaN 则这个值不进行添加
+                    // 这个为合法的点，下一个点不需要插入
+                    tNeedInterPoint = false;
                 } else {
-                    // 上一个值在范围内则只需要添加一个边界点
-                    double[][] tInterPoints = MathEX.Graph.interRayBox2D_(aBoxXMin, aBoxYMin,  aBoxXMax, aBoxYMax, tX0, tY0, tX, tY);
-                    // 遍历添加，不添加非法值
-                    if (tInterPoints != null) for (double[] tXY : tInterPoints) tSeries.add(tXY[0], tXY[1]);
+                    // 没有上一个值 NaN 则这个值不进行添加
+                    if (!Double.isNaN(tX0) && !Double.isNaN(tY0)) {
+                        // 这个点不在氛围内直接添加边界点
+                        double[][] tInterPoints = MathEX.Graph.interRayBox2D_(aBoxXMin, aBoxYMin,  aBoxXMax, aBoxYMax, tX0, tY0, tX, tY);
+                        // 遍历添加，不添加非法值
+                        if (tInterPoints != null) for (double[] tXY : tInterPoints) tSeries.add(tXY[0], tXY[1]);
+                    }
+                    // 这个为超出边界的点，标记下一个点需要插入
+                    tNeedInterPoint = true;
                 }
                 tX0 = tX;
                 tY0 = tY;

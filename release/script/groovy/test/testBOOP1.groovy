@@ -9,7 +9,7 @@ import com.jtool.vasp.POSCAR
 
 /** 测试计算 BOOP */
 
-final double cutoffMul = 2.0;
+final double cutoffMul = 1.5;
 final int nnn = 12;
 final double perturbMul = 1.0;
 
@@ -133,5 +133,6 @@ plt.plot(q4_Zr7Cu10, q6_Zr7Cu10, 'Zr7Cu10').lineType('none').markerType('^').mar
 plt.plot(q4_ZrCu2  , q6_ZrCu2  , 'ZrCu2'  ).lineType('none').markerType('^').markerSize(4);
 
 plt.xlabel('q4').ylabel('q6');
+plt.xTick(0.02).yTick(0.05);
 plt.show();
 

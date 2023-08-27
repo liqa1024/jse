@@ -9,7 +9,7 @@ import com.jtool.vasp.POSCAR
 
 /** 测试计算 BOOP */
 
-final double cutoffMul = 2.0;
+final double cutoffMul = 1.5;
 final int nnn = 12;
 final double perturbMul = 1.0;
 
@@ -127,11 +127,12 @@ plt.plot(q4_G      , w4_G      , 'glass'  ).lineType('none').markerType('o').mar
 plt.plot(q4_FCC    , w4_FCC    , 'FCC'    ).lineType('none').markerType('o').markerSize(4);
 plt.plot(q4_BCC    , w4_BCC    , 'BCC'    ).lineType('none').markerType('o').markerSize(4);
 plt.plot(q4_HCP    , w4_HCP    , 'HCP'    ).lineType('none').markerType('o').markerSize(4);
-plt.plot(q4_MgCu2  , w4_MgCu2  , 'MgCu2'  ).lineType('none').markerType('s').markerSize(4);
-plt.plot(q4_Zr3Cu8 , w4_Zr3Cu8 , 'Zr3Cu8' ).lineType('none').markerType('^').markerSize(4);
-plt.plot(q4_Zr7Cu10, w4_Zr7Cu10, 'Zr7Cu10').lineType('none').markerType('^').markerSize(4);
-plt.plot(q4_ZrCu2  , w4_ZrCu2  , 'ZrCu2'  ).lineType('none').markerType('^').markerSize(4);
+//plt.plot(q4_MgCu2  , w4_MgCu2  , 'MgCu2'  ).lineType('none').markerType('s').markerSize(4);
+//plt.plot(q4_Zr3Cu8 , w4_Zr3Cu8 , 'Zr3Cu8' ).lineType('none').markerType('^').markerSize(4);
+//plt.plot(q4_Zr7Cu10, w4_Zr7Cu10, 'Zr7Cu10').lineType('none').markerType('^').markerSize(4);
+//plt.plot(q4_ZrCu2  , w4_ZrCu2  , 'ZrCu2'  ).lineType('none').markerType('^').markerSize(4);
 
 plt.xlabel('q4').ylabel('w4');
+plt.xTick(0.02).yTick(0.05);
 plt.show();
 
