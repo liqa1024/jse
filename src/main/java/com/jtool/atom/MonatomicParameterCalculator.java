@@ -531,7 +531,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnn<=0;
         
-        // 遍历计算 qlm，由于并行时不好兼顾一半遍历的优化和消除锁，这里暂时不考虑并行（TODO 考虑并行时就直接关闭一半遍历优化，等实现复数向量后再来实现）
+        // 遍历计算 qlm，由于并行时不好兼顾一半遍历的优化和消除锁，这里暂时不考虑并行（TODO 目前决定直接使用数组来存并行的结果）
         for (int i = 0; i < mAtomNum; ++i) {
             final XYZ cXYZ = mAtomDataXYZ[i];
             // 一次计算一行
@@ -696,7 +696,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         IVector Ql = Vectors.zeros(mAtomNum);
         for (int i = 0; i < mAtomNum; ++i) {
             // 直接计算复向量的点乘，等于实部虚部分别点乘
-            double tDot = QlmReal.row(i).dot() + QlmImag.row(i).dot();
+            double tDot = QlmReal.row(i).operation().dot() + QlmImag.row(i).operation().dot();
             // 使用这个公式设置 Ql
             Ql.set_(i, Fast.sqrt(4.0*PI*tDot/(double)(aL+aL+1)));
         }
@@ -729,7 +729,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         IVector Wl = Vectors.zeros(mAtomNum);
         for (int i = 0; i < mAtomNum; ++i) {
             // 分母为复向量的点乘，等于实部虚部分别点乘
-            double rDiv = QlmReal.row(i).dot() + QlmImag.row(i).dot();
+            double rDiv = QlmReal.row(i).operation().dot() + QlmImag.row(i).operation().dot();
             rDiv = Fast.sqrt(rDiv);
             rDiv = Fast.pow3(rDiv);
             // 分子需要这样计算，这里只保留实数（虚数部分为 0）
@@ -784,7 +784,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         IVector ql = Vectors.zeros(mAtomNum);
         for (int i = 0; i < mAtomNum; ++i) {
             // 直接计算复向量的点乘，等于实部虚部分别点乘
-            double tDot = qlmReal.row(i).dot() + qlmImag.row(i).dot();
+            double tDot = qlmReal.row(i).operation().dot() + qlmImag.row(i).operation().dot();
             // 使用这个公式设置 ql
             ql.set_(i, Fast.sqrt(4.0*PI*tDot/(double)(aL+aL+1)));
         }
@@ -824,7 +824,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         IVector wl = Vectors.zeros(mAtomNum);
         for (int i = 0; i < mAtomNum; ++i) {
             // 分母为复向量的点乘，等于实部虚部分别点乘
-            double rDiv = qlmReal.row(i).dot() + qlmImag.row(i).dot();
+            double rDiv = qlmReal.row(i).operation().dot() + qlmImag.row(i).operation().dot();
             rDiv = Fast.sqrt(rDiv);
             rDiv = Fast.pow3(rDiv);
             // 分子需要这样计算，这里只保留实数（虚数部分为 0）
@@ -890,7 +890,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 注意需要先对 Qlm 归一化
         for (int i = 0; i < mAtomNum; ++i) {
             // 计算复向量的模量，等于实部虚部分别点乘相加后开方
-            double tMod = QlmReal.row(i).dot() + QlmImag.row(i).dot();
+            double tMod = QlmReal.row(i).operation().dot() + QlmImag.row(i).operation().dot();
             tMod = Fast.sqrt(tMod);
             // 实部虚部都除以此值来归一化
             QlmReal.row(i).div2this(tMod);
@@ -909,7 +909,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 IVector QlmjReal = QlmReal.row(idx);
                 IVector QlmjImag = QlmImag.row(idx);
                 // 计算复向量的点乘
-                ComplexDouble Sij = new ComplexDouble(QlmiReal.dot(QlmjReal) + QlmiImag.dot(QlmjImag), QlmiImag.dot(QlmjReal) - QlmiReal.dot(QlmjImag));
+                ComplexDouble Sij = new ComplexDouble(QlmiReal.operation().dot(QlmjReal) + QlmiImag.operation().dot(QlmjImag), QlmiImag.operation().dot(QlmjReal) - QlmiReal.operation().dot(QlmjImag));
                 // 取模量来判断是否连接
                 if (Sij.abs() > aConnectThreshold) {
                     tConnectCount.increment_(fI);
@@ -963,7 +963,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 注意需要先对 qlm 归一化
         for (int i = 0; i < mAtomNum; ++i) {
             // 计算复向量的模量，等于实部虚部分别点乘相加后开方
-            double tMod = qlmReal.row(i).dot() + qlmImag.row(i).dot();
+            double tMod = qlmReal.row(i).operation().dot() + qlmImag.row(i).operation().dot();
             tMod = Fast.sqrt(tMod);
             // 实部虚部都除以此值来归一化
             qlmReal.row(i).div2this(tMod);
@@ -982,7 +982,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 IVector qlmjReal = qlmReal.row(idx);
                 IVector qlmjImag = qlmImag.row(idx);
                 // 计算复向量的点乘
-                ComplexDouble Sij = new ComplexDouble(qlmiReal.dot(qlmjReal) + qlmiImag.dot(qlmjImag), qlmiImag.dot(qlmjReal) - qlmiReal.dot(qlmjImag));
+                ComplexDouble Sij = new ComplexDouble(qlmiReal.operation().dot(qlmjReal) + qlmiImag.operation().dot(qlmjImag), qlmiImag.operation().dot(qlmjReal) - qlmiReal.operation().dot(qlmjImag));
                 // 取模量来判断是否连接
                 if (Sij.abs() > aConnectThreshold) {
                     tConnectCount.increment_(fI);

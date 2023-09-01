@@ -49,7 +49,7 @@ mpc_FFS.shutdown();
 def isSolid = data_FFS.getMPC().withCloseable {def mpc -> mpc.calConnectCountABOOP(6, 0.85, mpc.unitLen()*2.20, -1).greaterOrEqual(25)}
 
 
-data_MgCu2 = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'), 4).opt().perturbG(0.25*perturbMul);
+data_MgCu2 = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'), 4).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) data_MgCu2 = data_MgCu2.opt().filterType(2);
 if (onlyZr) data_MgCu2 = data_MgCu2.opt().filterType(1);
 mpc_MgCu2 = data_MgCu2.getMPC();
@@ -62,7 +62,7 @@ q6_MgCu2 = mpc_MgCu2.calABOOP(6, mpc_MgCu2.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("MgCu2, q6");
 mpc_MgCu2.shutdown();
 
-data_ZrCu2 = Structures.from(POSCAR.read('lmp/data/ZrCu2.poscar'), 5).opt().perturbG(0.25*perturbMul);
+data_ZrCu2 = Structures.from(POSCAR.read('lmp/data/ZrCu2.poscar'), 5).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) data_ZrCu2 = data_ZrCu2.opt().filterType(2);
 if (onlyZr) data_ZrCu2 = data_ZrCu2.opt().filterType(1);
 mpc_ZrCu2 = data_ZrCu2.getMPC();

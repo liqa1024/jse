@@ -2,10 +2,9 @@ package com.jtool.math.vector;
 
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.filter.IIndexFilter;
-import com.jtool.code.iterator.IDoubleIterator;
-import com.jtool.code.iterator.IDoubleSetIterator;
-import com.jtool.code.iterator.IDoubleSetOnlyIterator;
-import com.jtool.code.iterator.IHasDoubleIterator;
+import com.jtool.code.functional.IDoubleConsumer1;
+import com.jtool.code.functional.IDoubleSupplier;
+import com.jtool.code.iterator.*;
 import com.jtool.code.functional.IDoubleOperator1;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -16,7 +15,7 @@ import java.util.NoSuchElementException;
  * @author liqa
  * <p> 简单起见默认都是实向量，返回类型 double </p>
  */
-public interface IVector extends IHasDoubleIterator, IVectorGetter, IVectorSetter {
+public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVectorGetter, IVectorSetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
     IDoubleIterator iterator();
     IDoubleSetIterator setIterator();
@@ -24,7 +23,6 @@ public interface IVector extends IHasDoubleIterator, IVectorGetter, IVectorSette
     IDoubleSetOnlyIterator setIteratorOf(IVectorSetter aContainer);
     
     List<Double> asList();
-    
     
     /** 转为兼容性更好的 double[] */
     double[] data();
@@ -34,6 +32,8 @@ public interface IVector extends IHasDoubleIterator, IVectorGetter, IVectorSette
     void fill(IVectorGetter aVectorGetter);
     void fill(double[] aData);
     void fill(Iterable<? extends Number> aList);
+    void assign(IDoubleSupplier aSup);
+    void forEach(IDoubleConsumer1 aCon);
     
     /** 访问和修改部分，自带的接口 */
     double get_(int aIdx);
@@ -123,16 +123,6 @@ public interface IVector extends IHasDoubleIterator, IVectorGetter, IVectorSette
     double prod ();
     double max  ();
     double min  ();
-    
-    IVector cumsum  ();
-    IVector cummean ();
-    IVector cumprod ();
-    IVector cummax  ();
-    IVector cummin  ();
-    
-    double norm ();
-    double dot  (IVectorGetter aRHS);
-    double dot  ();
     
     /** 比较运算，注意特地避开 equals */
     ILogicalVector equal            (IVectorGetter aRHS);

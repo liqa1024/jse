@@ -4,6 +4,7 @@ import com.jtool.code.functional.IDoubleConsumer1;
 
 import java.util.Objects;
 
+@FunctionalInterface
 public interface IHasDoubleIterator {
     IDoubleIterator iterator();
     

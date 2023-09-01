@@ -32,7 +32,7 @@ mpc_G.shutdown();
 
 
 // 再计算生成的结果
-data_FCC = Structures.FCC(4.0, 7).opt().perturbG(0.25*perturbMul);
+data_FCC = Structures.FCC(4.0, 7).opt().perturbXYZ(0.25*perturbMul);
 mpc_FCC = data_FCC.getMPC();
 println("FCC, u: ${mpc_FCC.unitLen()}");
 UT.Timer.tic();
@@ -43,7 +43,7 @@ q6_FCC = mpc_FCC.calABOOP(6, mpc_FCC.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("FCC, q6");
 mpc_FCC.shutdown();
 
-data_BCC = Structures.BCC(4.0, 10).opt().perturbG(0.32*perturbMul);
+data_BCC = Structures.BCC(4.0, 10).opt().perturbXYZ(0.32*perturbMul);
 mpc_BCC = data_BCC.getMPC();
 println("BCC, u: ${mpc_BCC.unitLen()}");
 UT.Timer.tic();
@@ -54,7 +54,7 @@ q6_BCC = mpc_BCC.calABOOP(6, mpc_BCC.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("BCC, q6");
 mpc_BCC.shutdown();
 
-data_HCP = Structures.HCP(4.0, 7).opt().perturbG(0.35*perturbMul);
+data_HCP = Structures.HCP(4.0, 7).opt().perturbXYZ(0.35*perturbMul);
 mpc_HCP = data_HCP.getMPC();
 println("HCP, u: ${mpc_HCP.unitLen()}");
 UT.Timer.tic();
@@ -66,7 +66,7 @@ UT.Timer.toc("HCP, q6");
 mpc_HCP.shutdown();
 
 
-data_MgCu2 = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'), 4).opt().perturbG(0.25*perturbMul);
+data_MgCu2 = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'), 4).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) data_MgCu2 = data_MgCu2.opt().filterType(2);
 if (onlyZr) data_MgCu2 = data_MgCu2.opt().filterType(1);
 mpc_MgCu2 = data_MgCu2.getMPC();
@@ -79,7 +79,7 @@ q6_MgCu2 = mpc_MgCu2.calABOOP(6, mpc_MgCu2.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("MgCu2, q6");
 mpc_MgCu2.shutdown();
 
-data_Zr3Cu8 = Structures.from(POSCAR.read('lmp/data/Zr3Cu8.poscar'), 3).opt().perturbG(0.25*perturbMul);
+data_Zr3Cu8 = Structures.from(POSCAR.read('lmp/data/Zr3Cu8.poscar'), 3).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) data_Zr3Cu8 = data_Zr3Cu8.opt().filterType(2);
 if (onlyZr) data_Zr3Cu8 = data_Zr3Cu8.opt().filterType(1);
 mpc_Zr3Cu8 = data_Zr3Cu8.getMPC();
@@ -92,7 +92,7 @@ q6_Zr3Cu8 = mpc_Zr3Cu8.calABOOP(6, mpc_Zr3Cu8.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("Zr3Cu8, q6");
 mpc_Zr3Cu8.shutdown();
 
-data_Zr7Cu10 = Structures.from(POSCAR.read('lmp/data/Zr7Cu10.poscar'), 3).opt().perturbG(0.25*perturbMul);
+data_Zr7Cu10 = Structures.from(POSCAR.read('lmp/data/Zr7Cu10.poscar'), 3).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) data_Zr7Cu10 = data_Zr7Cu10.opt().filterType(2);
 if (onlyZr) data_Zr7Cu10 = data_Zr7Cu10.opt().filterType(1);
 mpc_Zr7Cu10 = data_Zr7Cu10.getMPC();
@@ -105,7 +105,7 @@ q6_Zr7Cu10 = mpc_Zr7Cu10.calABOOP(6, mpc_Zr7Cu10.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("Zr7Cu10, q6");
 mpc_Zr7Cu10.shutdown();
 
-data_ZrCu2 = Structures.from(POSCAR.read('lmp/data/ZrCu2.poscar'), 5).opt().perturbG(0.25*perturbMul);
+data_ZrCu2 = Structures.from(POSCAR.read('lmp/data/ZrCu2.poscar'), 5).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) data_ZrCu2 = data_ZrCu2.opt().filterType(2);
 if (onlyZr) data_ZrCu2 = data_ZrCu2.opt().filterType(1);
 mpc_ZrCu2 = data_ZrCu2.getMPC();

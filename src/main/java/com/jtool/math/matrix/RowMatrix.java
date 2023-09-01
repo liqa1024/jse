@@ -1,5 +1,7 @@
 package com.jtool.math.matrix;
 
+import com.jtool.code.functional.IDoubleConsumer1;
+import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
 import com.jtool.code.functional.IDoubleOperator1;
@@ -74,6 +76,14 @@ public final class RowMatrix extends DoubleArrayMatrix {
     /** Optimize stuffs，引用转置直接返回 {@link ColumnMatrix} */
     @Override public IMatrixOperation operation() {
         return new DoubleArrayMatrixOperation_() {
+            @Override public void assignRow(IDoubleSupplier aSup) {
+                int rEnd = mRowNum*mColNum;
+                for (int i = 0; i < rEnd; ++i) mData[i] = aSup.get();
+            }
+            @Override public void forEachRow(IDoubleConsumer1 aCon) {
+                int rEnd = mRowNum*mColNum;
+                for (int i = 0; i < rEnd; ++i) aCon.run(mData[i]);
+            }
             @Override public ColumnMatrix refTranspose() {
                 return new ColumnMatrix(mRowNum, mColNum, mData);
             }

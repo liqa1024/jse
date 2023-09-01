@@ -1,7 +1,9 @@
 package com.jtool.math.function;
 
 
+import com.jtool.code.functional.IDoubleConsumer1;
 import com.jtool.code.functional.IDoubleOperator1;
+import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.math.IDataShell;
 import com.jtool.math.MathEX;
 import com.jtool.math.vector.RefVector;
@@ -9,11 +11,10 @@ import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.Vector;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Iterator;
 
 /**
  * @author liqa
- * <p> 内部存储 double[] 的数值函数，这里简单起见略去中间层，并且不考虑 shift 和 reverse 的情况 </p>
+ * <p> 内部存储 double[] 的数值函数，这里简单起见略去中间层，并且不考虑 shift 和 reverse 的情况，甚至不考虑 data 实际长度和使用长度不同的情况 </p>
  * <p> 并且都要求 x 是等间距排列的，主要是为了加速查找过程 </p>
  * <p> 如果完全抽象的实现会非常复杂（包括新的专门用于函数的迭代器，相关运算之类，复杂度会超过矩阵向量库），这里暂不打算实现（至少等矩阵向量库完全成熟稳定） </p>
  */
@@ -69,14 +70,7 @@ public abstract class DoubleArrayFunc1 implements IFunc1, IDataShell<double[]> {
     
     
     /** 批量修改的接口 */
-    @Override public final void fill(double aValue) {operation().mapFill2this(aValue);}
-    @Override public final void fill(IFunc1Subs aFunc1Subs) {operation().ebeFill2this(aFunc1Subs);}
     @Override public final void fill(double[] aData) {System.arraycopy(aData, 0, mData, 0, Nx());}
-    @Override public final void fill(Iterable<? extends Number> aList) {
-        final Iterator<? extends Number> it = aList.iterator();
-        int tNx = Nx();
-        for (int i = 0; i < tNx; ++i) mData[i] = it.next().doubleValue();
-    }
     
     
     /** 获取结果，支持按照索引查找和按照 x 的值来查找 */
@@ -144,6 +138,16 @@ public abstract class DoubleArrayFunc1 implements IFunc1, IDataShell<double[]> {
         @Override protected DoubleArrayFunc1 thisFunc1_() {return DoubleArrayFunc1.this;}
         /** 边界外的结果不保证正确性，这里简单起见统一都使用 ZeroBoundFunc1 来作为返回类型 */
         @Override protected DoubleArrayFunc1 newFunc1_(double aX0, double aDx, int aNx) {return ZeroBoundFunc1.zeros(aX0, aDx, aNx);}
+        
+        /** 暂时将这个遍历优化统一放在这里，因为略去了中间类（主要是略去了 reverse 的情况）*/
+        @Override public void assign(IDoubleSupplier aSup) {
+            final int tN = Nx();
+            for (int i = 0; i < tN; ++i) mData[i] = aSup.get();
+        }
+        @Override public void forEach(IDoubleConsumer1 aCon) {
+            final int tN = Nx();
+            for (int i = 0; i < tN; ++i) aCon.run(mData[i]);
+        }
     }
     
     @Override public IFunc1Operation operation() {return new DoubleArrayFunc1Operation_();}

@@ -3,6 +3,8 @@ package com.jtool.math.matrix;
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.code.filter.IIndexFilter;
+import com.jtool.code.functional.IDoubleConsumer1;
+import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
 import com.jtool.code.UT;
@@ -504,8 +506,8 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     
     /** 批量修改的接口，现在统一使用迭代器来填充 */
-    @Override public final void fill(double aValue) {operation().mapFill2this(aValue);}
-    @Override public final void fill(IMatrixGetter aMatrixGetter) {operation().ebeFill2this(aMatrixGetter);}
+    @Override public final void fill(double aValue) {operation().fill(aValue);}
+    @Override public final void fill(IMatrixGetter aMatrixGetter) {operation().fill(aMatrixGetter);}
     
     /** 同样这里改为直接用迭代器遍历实现而不去调用对应向量的运算，中等的优化程度 */
     @Override public void fill(final double[][] aData) {
@@ -537,6 +539,11 @@ public abstract class AbstractMatrix implements IMatrix {
             for (int row = 0; row < tRowNum; ++row) si.nextAndSet(tColIt.next().doubleValue());
         }
     }
+    
+    @Override public final void assignCol(IDoubleSupplier aSup) {operation().assignCol(aSup);}
+    @Override public final void assignRow(IDoubleSupplier aSup) {operation().assignRow(aSup);}
+    @Override public final void forEachCol(IDoubleConsumer1 aCon) {operation().forEachCol(aCon);}
+    @Override public final void forEachRow(IDoubleConsumer1 aCon) {operation().forEachRow(aCon);}
     
     
     @Override public double get(int aRow, int aCol) {
@@ -762,29 +769,29 @@ public abstract class AbstractMatrix implements IMatrix {
     
     
     /** Groovy 的部分，增加矩阵基本的运算操作 */
-    @Override public final IMatrix plus     (double aRHS) {return operation().mapPlus       (this, aRHS);}
-    @Override public final IMatrix minus    (double aRHS) {return operation().mapMinus      (this, aRHS);}
-    @Override public final IMatrix multiply (double aRHS) {return operation().mapMultiply   (this, aRHS);}
-    @Override public final IMatrix div      (double aRHS) {return operation().mapDiv        (this, aRHS);}
-    @Override public final IMatrix mod      (double aRHS) {return operation().mapMod        (this, aRHS);}
+    @Override public final IMatrix plus         (double aRHS) {return operation().plus    (aRHS);}
+    @Override public final IMatrix minus        (double aRHS) {return operation().minus   (aRHS);}
+    @Override public final IMatrix multiply     (double aRHS) {return operation().multiply(aRHS);}
+    @Override public final IMatrix div          (double aRHS) {return operation().div     (aRHS);}
+    @Override public final IMatrix mod          (double aRHS) {return operation().mod     (aRHS);}
     
-    @Override public final IMatrix plus     (IMatrixGetter aRHS) {return operation().ebePlus    (this, aRHS);}
-    @Override public final IMatrix minus    (IMatrixGetter aRHS) {return operation().ebeMinus   (this, aRHS);}
-    @Override public final IMatrix multiply (IMatrixGetter aRHS) {return operation().ebeMultiply(this, aRHS);}
-    @Override public final IMatrix div      (IMatrixGetter aRHS) {return operation().ebeDiv     (this, aRHS);}
-    @Override public final IMatrix mod      (IMatrixGetter aRHS) {return operation().ebeMod     (this, aRHS);}
+    @Override public final IMatrix plus         (IMatrixGetter aRHS) {return operation().plus    (aRHS);}
+    @Override public final IMatrix minus        (IMatrixGetter aRHS) {return operation().minus   (aRHS);}
+    @Override public final IMatrix multiply     (IMatrixGetter aRHS) {return operation().multiply(aRHS);}
+    @Override public final IMatrix div          (IMatrixGetter aRHS) {return operation().div     (aRHS);}
+    @Override public final IMatrix mod          (IMatrixGetter aRHS) {return operation().mod     (aRHS);}
     
-    @Override public final void plus2this       (double aRHS) {operation().mapPlus2this     (aRHS);}
-    @Override public final void minus2this      (double aRHS) {operation().mapMinus2this    (aRHS);}
-    @Override public final void multiply2this   (double aRHS) {operation().mapMultiply2this (aRHS);}
-    @Override public final void div2this        (double aRHS) {operation().mapDiv2this      (aRHS);}
-    @Override public final void mod2this        (double aRHS) {operation().mapMod2this      (aRHS);}
+    @Override public final void plus2this       (double aRHS) {operation().plus2this    (aRHS);}
+    @Override public final void minus2this      (double aRHS) {operation().minus2this   (aRHS);}
+    @Override public final void multiply2this   (double aRHS) {operation().multiply2this(aRHS);}
+    @Override public final void div2this        (double aRHS) {operation().div2this     (aRHS);}
+    @Override public final void mod2this        (double aRHS) {operation().mod2this     (aRHS);}
     
-    @Override public final void plus2this       (IMatrixGetter aRHS) {operation().ebePlus2this      (aRHS);}
-    @Override public final void minus2this      (IMatrixGetter aRHS) {operation().ebeMinus2this     (aRHS);}
-    @Override public final void multiply2this   (IMatrixGetter aRHS) {operation().ebeMultiply2this  (aRHS);}
-    @Override public final void div2this        (IMatrixGetter aRHS) {operation().ebeDiv2this       (aRHS);}
-    @Override public final void mod2this        (IMatrixGetter aRHS) {operation().ebeMod2this       (aRHS);}
+    @Override public final void plus2this       (IMatrixGetter aRHS) {operation().plus2this    (aRHS);}
+    @Override public final void minus2this      (IMatrixGetter aRHS) {operation().minus2this   (aRHS);}
+    @Override public final void multiply2this   (IMatrixGetter aRHS) {operation().multiply2this(aRHS);}
+    @Override public final void div2this        (IMatrixGetter aRHS) {operation().div2this     (aRHS);}
+    @Override public final void mod2this        (IMatrixGetter aRHS) {operation().mod2this     (aRHS);}
     
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public final double call(int aRow, int aCol) {return get(aRow, aCol);}

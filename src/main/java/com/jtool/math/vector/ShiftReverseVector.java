@@ -1,13 +1,13 @@
 package com.jtool.math.vector;
 
 import com.jtool.code.functional.IDoubleConsumer1;
+import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
 import com.jtool.code.functional.IDoubleOperator1;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.NoSuchElementException;
-import java.util.Objects;
 
 /**
  * @author liqa
@@ -43,15 +43,15 @@ public final class ShiftReverseVector extends DoubleArrayVector {
     }
     
     
-    /** Optimize stuffs，重写加速 for-each 遍历 */
-    @Override public void forEach(IDoubleConsumer1 aCon) {
-        Objects.requireNonNull(aCon);
-        for (int i = totShift; i >= mShift; --i) aCon.run(mData[i]);
-    }
-    
     /** Optimize stuffs，引用反转直接返回 {@link ShiftVector} */
     @Override public IVectorOperation operation() {
         return new DoubleArrayVectorOperation_() {
+            @Override public void assign(IDoubleSupplier aSup) {
+                for (int i = totShift; i >= mShift; --i) mData[i] = aSup.get();
+            }
+            @Override public void forEach(IDoubleConsumer1 aCon) {
+                for (int i = totShift; i >= mShift; --i) aCon.run(mData[i]);
+            }
             @Override public ShiftVector refReverse() {
                 return new ShiftVector(mSize, mShift, mData);
             }

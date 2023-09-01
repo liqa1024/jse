@@ -4,6 +4,7 @@ import com.jtool.code.functional.IBooleanConsumer1;
 
 import java.util.Objects;
 
+@FunctionalInterface
 public interface IHasBooleanIterator {
     IBooleanIterator iterator();
     

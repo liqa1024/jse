@@ -1,10 +1,7 @@
 package com.jtool.math.vector;
 
 
-import com.jtool.code.functional.IChecker;
-import com.jtool.code.functional.IComparator;
-import com.jtool.code.functional.IDoubleOperator1;
-import com.jtool.code.functional.IDoubleOperator2;
+import com.jtool.code.functional.*;
 
 /**
  * 任意的实向量的运算
@@ -12,81 +9,88 @@ import com.jtool.code.functional.IDoubleOperator2;
  */
 public interface IVectorOperation {
     /** 通用的一些运算 */
-    IVector ebePlus         (IVectorGetter aLHS, IVectorGetter aRHS);
-    IVector ebeMinus        (IVectorGetter aLHS, IVectorGetter aRHS);
-    IVector ebeMultiply     (IVectorGetter aLHS, IVectorGetter aRHS);
-    IVector ebeDiv          (IVectorGetter aLHS, IVectorGetter aRHS);
-    IVector ebeMod          (IVectorGetter aLHS, IVectorGetter aRHS);
-    IVector ebeDo           (IVectorGetter aLHS, IVectorGetter aRHS, IDoubleOperator2 aOpt);
+    IVector plus        (IVectorGetter aRHS);
+    IVector minus       (IVectorGetter aRHS);
+    IVector lminus      (IVectorGetter aRHS);
+    IVector multiply    (IVectorGetter aRHS);
+    IVector div         (IVectorGetter aRHS);
+    IVector ldiv        (IVectorGetter aRHS);
+    IVector mod         (IVectorGetter aRHS);
+    IVector lmod        (IVectorGetter aRHS);
+    IVector operate     (IVectorGetter aRHS, IDoubleOperator2 aOpt);
     
-    IVector mapPlus         (IVectorGetter aLHS, double aRHS);
-    IVector mapMinus        (IVectorGetter aLHS, double aRHS);
-    IVector mapLMinus       (IVectorGetter aLHS, double aRHS);
-    IVector mapMultiply     (IVectorGetter aLHS, double aRHS);
-    IVector mapDiv          (IVectorGetter aLHS, double aRHS);
-    IVector mapLDiv         (IVectorGetter aLHS, double aRHS);
-    IVector mapMod          (IVectorGetter aLHS, double aRHS);
-    IVector mapLMod         (IVectorGetter aLHS, double aRHS);
-    IVector mapDo           (IVectorGetter aLHS, IDoubleOperator1 aOpt);
+    IVector plus        (double aRHS);
+    IVector minus       (double aRHS);
+    IVector lminus      (double aRHS);
+    IVector multiply    (double aRHS);
+    IVector div         (double aRHS);
+    IVector ldiv        (double aRHS);
+    IVector mod         (double aRHS);
+    IVector lmod        (double aRHS);
+    IVector map         (IDoubleOperator1 aOpt);
     
-    void ebePlus2this       (IVectorGetter aRHS);
-    void ebeMinus2this      (IVectorGetter aRHS);
-    void ebeLMinus2this     (IVectorGetter aRHS);
-    void ebeMultiply2this   (IVectorGetter aRHS);
-    void ebeDiv2this        (IVectorGetter aRHS);
-    void ebeLDiv2this       (IVectorGetter aRHS);
-    void ebeMod2this        (IVectorGetter aRHS);
-    void ebeLMod2this       (IVectorGetter aRHS);
-    void ebeDo2this         (IVectorGetter aRHS, IDoubleOperator2 aOpt);
+    void plus2this      (IVectorGetter aRHS);
+    void minus2this     (IVectorGetter aRHS);
+    void lminus2this    (IVectorGetter aRHS);
+    void multiply2this  (IVectorGetter aRHS);
+    void div2this       (IVectorGetter aRHS);
+    void ldiv2this      (IVectorGetter aRHS);
+    void mod2this       (IVectorGetter aRHS);
+    void lmod2this      (IVectorGetter aRHS);
+    void operate2this   (IVectorGetter aRHS, IDoubleOperator2 aOpt);
     
-    void mapPlus2this       (double aRHS);
-    void mapMinus2this      (double aRHS);
-    void mapLMinus2this     (double aRHS);
-    void mapMultiply2this   (double aRHS);
-    void mapDiv2this        (double aRHS);
-    void mapLDiv2this       (double aRHS);
-    void mapMod2this        (double aRHS);
-    void mapLMod2this       (double aRHS);
-    void mapDo2this         (IDoubleOperator1 aOpt);
+    void plus2this      (double aRHS);
+    void minus2this     (double aRHS);
+    void lminus2this    (double aRHS);
+    void multiply2this  (double aRHS);
+    void div2this       (double aRHS);
+    void ldiv2this      (double aRHS);
+    void mod2this       (double aRHS);
+    void lmod2this      (double aRHS);
+    void map2this       (IDoubleOperator1 aOpt);
     
-    void mapFill2this       (double aRHS);
-    void ebeFill2this       (IVectorGetter aRHS);
+    /** 这两个方法名默认是作用到自身的，这里为了保持 operation 的使用简洁不在函数名上特殊说明 */
+    void fill           (double aRHS);
+    void fill           (IVectorGetter aRHS);
+    void assign         (IDoubleSupplier aSup);
+    /** 统一提供一个 for-each 运算来减少优化需要的重复代码 */
+    void forEach        (IDoubleConsumer1 aCon);
     
-    double sum();
-    double mean();
-    double prod();
-    double max();
-    double min();
-    double stat(IDoubleOperator2 aOpt);
+    double sum          ();
+    double mean         ();
+    double prod         ();
+    double max          ();
+    double min          ();
+    double stat         (IDoubleOperator2 aOpt);
     
-    IVector cumsum();
-    IVector cummean();
-    IVector cumprod();
-    IVector cummax();
-    IVector cummin();
-    IVector cumstat(IDoubleOperator2 aOpt);
+    IVector cumsum      ();
+    IVector cummean     ();
+    IVector cumprod     ();
+    IVector cummax      ();
+    IVector cummin      ();
+    IVector cumstat     (IDoubleOperator2 aOpt);
     
     /** 获取逻辑结果的运算 */
-    ILogicalVector ebeEqual         (IVectorGetter aLHS, IVectorGetter aRHS);
-    ILogicalVector ebeGreater       (IVectorGetter aLHS, IVectorGetter aRHS);
-    ILogicalVector ebeGreaterOrEqual(IVectorGetter aLHS, IVectorGetter aRHS);
-    ILogicalVector ebeLess          (IVectorGetter aLHS, IVectorGetter aRHS);
-    ILogicalVector ebeLessOrEqual   (IVectorGetter aLHS, IVectorGetter aRHS);
+    ILogicalVector equal            (IVectorGetter aRHS);
+    ILogicalVector greater          (IVectorGetter aRHS);
+    ILogicalVector greaterOrEqual   (IVectorGetter aRHS);
+    ILogicalVector less             (IVectorGetter aRHS);
+    ILogicalVector lessOrEqual      (IVectorGetter aRHS);
     
-    ILogicalVector mapEqual         (IVectorGetter aLHS, double aRHS);
-    ILogicalVector mapGreater       (IVectorGetter aLHS, double aRHS);
-    ILogicalVector mapGreaterOrEqual(IVectorGetter aLHS, double aRHS);
-    ILogicalVector mapLess          (IVectorGetter aLHS, double aRHS);
-    ILogicalVector mapLessOrEqual   (IVectorGetter aLHS, double aRHS);
+    ILogicalVector equal            (double aRHS);
+    ILogicalVector greater          (double aRHS);
+    ILogicalVector greaterOrEqual   (double aRHS);
+    ILogicalVector less             (double aRHS);
+    ILogicalVector lessOrEqual      (double aRHS);
     
-    ILogicalVector compare(IVectorGetter aRHS, IComparator aOpt);
-    ILogicalVector check  (IChecker aOpt);
+    ILogicalVector compare          (IVectorGetter aRHS, IComparator aOpt);
+    ILogicalVector check            (IChecker aOpt);
     
     /** 向量的一些额外的运算 */
-    double dot(IVectorGetter aRHS);
-    double dot2this();
-    double norm();
+    double dot  (IVectorGetter aRHS);
+    double dot  ();
+    double norm ();
     
-    IVector reverse();
-    IVector refReverse();
+    IVector reverse     ();
+    IVector refReverse  ();
 }

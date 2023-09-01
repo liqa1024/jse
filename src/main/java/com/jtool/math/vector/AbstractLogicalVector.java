@@ -3,8 +3,8 @@ package com.jtool.math.vector;
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.code.filter.IIndexFilter;
+import com.jtool.code.functional.*;
 import com.jtool.code.iterator.*;
-import com.jtool.code.functional.IBooleanOperator1;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Iterator;
@@ -149,9 +149,12 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
     
     
     /** 批量修改的接口 */
-    @Override public final void fill(boolean aValue) {operation().mapFill2this(aValue);}
-    @Override public final void fill(ILogicalVectorGetter aVectorGetter) {operation().ebeFill2this(aVectorGetter);}
-    
+    @Override public final void fill(boolean aValue) {operation().fill(aValue);}
+    @Override public final void fill(ILogicalVectorGetter aVectorGetter) {operation().fill(aVectorGetter);}
+    @Override public final void fill(Iterable<Boolean> aList) {
+        final Iterator<Boolean> it = aList.iterator();
+        assign(it::next);
+    }
     @Override public void fill(boolean[] aData) {
         final IBooleanSetIterator si = setIterator();
         int idx = 0;
@@ -160,11 +163,8 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
             ++idx;
         }
     }
-    @Override public void fill(Iterable<Boolean> aList) {
-        final IBooleanSetIterator si = setIterator();
-        final Iterator<Boolean> it = aList.iterator();
-        while (si.hasNext()) si.nextAndSet(it.next());
-    }
+    @Override public final void assign(IBooleanSupplier aSup) {operation().assign(aSup);}
+    @Override public final void forEach(IBooleanConsumer1 aCon) {operation().forEach(aCon);}
     
     @Override public boolean get(int aIdx) {
         if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
@@ -269,31 +269,27 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
     
     
     /** Groovy 的部分，增加向量基本的运算操作 */
-    @Override public ILogicalVector and (boolean aRHS) {return operation().mapAnd(this, aRHS);}
-    @Override public ILogicalVector or  (boolean aRHS) {return operation().mapOr (this, aRHS);}
-    @Override public ILogicalVector xor (boolean aRHS) {return operation().mapXor(this, aRHS);}
+    @Override public ILogicalVector and (boolean aRHS) {return operation().and(aRHS);}
+    @Override public ILogicalVector or  (boolean aRHS) {return operation().or (aRHS);}
+    @Override public ILogicalVector xor (boolean aRHS) {return operation().xor(aRHS);}
     
-    @Override public ILogicalVector and (ILogicalVectorGetter aRHS) {return operation().ebeAnd(this, aRHS);}
-    @Override public ILogicalVector or  (ILogicalVectorGetter aRHS) {return operation().ebeOr (this, aRHS);}
-    @Override public ILogicalVector xor (ILogicalVectorGetter aRHS) {return operation().ebeXor(this, aRHS);}
-    @Override public ILogicalVector not () {return operation().not(this);}
+    @Override public ILogicalVector and (ILogicalVectorGetter aRHS) {return operation().and(aRHS);}
+    @Override public ILogicalVector or  (ILogicalVectorGetter aRHS) {return operation().or (aRHS);}
+    @Override public ILogicalVector xor (ILogicalVectorGetter aRHS) {return operation().xor(aRHS);}
+    @Override public ILogicalVector not () {return operation().not();}
     
-    @Override public final void and2this(boolean aRHS) {operation().mapAnd2this(aRHS);}
-    @Override public final void or2this (boolean aRHS) {operation().mapOr2this (aRHS);}
-    @Override public final void xor2this(boolean aRHS) {operation().mapXor2this(aRHS);}
+    @Override public final void and2this(boolean aRHS) {operation().and2this(aRHS);}
+    @Override public final void or2this (boolean aRHS) {operation().or2this (aRHS);}
+    @Override public final void xor2this(boolean aRHS) {operation().xor2this(aRHS);}
     
-    @Override public final void and2this(ILogicalVectorGetter aRHS) {operation().ebeAnd2this(aRHS);}
-    @Override public final void or2this (ILogicalVectorGetter aRHS) {operation().ebeOr2this (aRHS);}
-    @Override public final void xor2this(ILogicalVectorGetter aRHS) {operation().ebeXor2this(aRHS);}
+    @Override public final void and2this(ILogicalVectorGetter aRHS) {operation().and2this(aRHS);}
+    @Override public final void or2this (ILogicalVectorGetter aRHS) {operation().or2this (aRHS);}
+    @Override public final void xor2this(ILogicalVectorGetter aRHS) {operation().xor2this(aRHS);}
     @Override public final void not2this() {operation().not2this();}
     
      @Override public final boolean all  () {return operation().all  ();}
      @Override public final boolean any  () {return operation().any  ();}
      @Override public final int     count() {return operation().count();}
-    
-     @Override public final ILogicalVector cumall  () {return operation().cumall  ();}
-     @Override public final ILogicalVector cumany  () {return operation().cumany  ();}
-     @Override public final IVector        cumcount() {return operation().cumcount();}
     
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public boolean call(int aIdx) {return get(aIdx);}

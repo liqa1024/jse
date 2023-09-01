@@ -12,7 +12,7 @@ import com.jtool.vasp.POSCAR
 
 // 首先导入 Lmpdat
 def data = Lmpdat.read('lmp/data/data-glass');
-//def data = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'), 4).opt().perturbG(0.15);
+//def data = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'), 4).opt().perturbXYZ(0.15);
 
 
 new StepJobManager('testBOOP4', 1)

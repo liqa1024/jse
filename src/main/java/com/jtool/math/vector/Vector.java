@@ -1,14 +1,15 @@
 package com.jtool.math.vector;
 
 import com.jtool.code.functional.IDoubleConsumer1;
+import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
 import com.jtool.code.functional.IDoubleOperator1;
+import com.jtool.math.operation.ARRAY;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 
 /**
  * @author liqa
@@ -78,15 +79,15 @@ public final class Vector extends DoubleArrayVector {
     }
     
     
-    /** Optimize stuffs，重写加速 for-each 遍历 */
-    @Override public void forEach(IDoubleConsumer1 aCon) {
-        Objects.requireNonNull(aCon);
-        for (int i = 0; i < mSize; ++i) aCon.run(mData[i]);
-    }
-    
     /** Optimize stuffs，引用反转直接返回 {@link ReverseVector} */
     @Override public IVectorOperation operation() {
         return new DoubleArrayVectorOperation_() {
+            @Override public void assign(IDoubleSupplier aSup) {
+                for (int i = 0; i < mSize; ++i) mData[i] = aSup.get();
+            }
+            @Override public void forEach(IDoubleConsumer1 aCon) {
+                for (int i = 0; i < mSize; ++i) aCon.run(mData[i]);
+            }
             @Override public ReverseVector refReverse() {
                 return new ReverseVector(mSize, mData);
             }

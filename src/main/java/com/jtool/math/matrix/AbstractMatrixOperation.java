@@ -1,5 +1,7 @@
 package com.jtool.math.matrix;
 
+import com.jtool.code.functional.IDoubleConsumer1;
+import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.functional.IDoubleOperator1;
 import com.jtool.code.functional.IDoubleOperator2;
@@ -11,50 +13,57 @@ import com.jtool.math.vector.IVector;
  */
 public abstract class AbstractMatrixOperation implements IMatrixOperation {
     /** 通用的一些运算 */
-    @Override public IMatrix ebePlus        (IMatrixGetter aLHS, IMatrixGetter aRHS) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS, aRHS)); DATA.ebePlus2Dest_      (rMatrix.colIteratorOf(aLHS), rMatrix.colIteratorOf(aRHS), rMatrix.colSetIterator()); return rMatrix;}
-    @Override public IMatrix ebeMinus       (IMatrixGetter aLHS, IMatrixGetter aRHS) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS, aRHS)); DATA.ebeMinus2Dest_     (rMatrix.colIteratorOf(aLHS), rMatrix.colIteratorOf(aRHS), rMatrix.colSetIterator()); return rMatrix;}
-    @Override public IMatrix ebeMultiply    (IMatrixGetter aLHS, IMatrixGetter aRHS) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS, aRHS)); DATA.ebeMultiply2Dest_  (rMatrix.colIteratorOf(aLHS), rMatrix.colIteratorOf(aRHS), rMatrix.colSetIterator()); return rMatrix;}
-    @Override public IMatrix ebeDiv         (IMatrixGetter aLHS, IMatrixGetter aRHS) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS, aRHS)); DATA.ebeDiv2Dest_       (rMatrix.colIteratorOf(aLHS), rMatrix.colIteratorOf(aRHS), rMatrix.colSetIterator()); return rMatrix;}
-    @Override public IMatrix ebeMod         (IMatrixGetter aLHS, IMatrixGetter aRHS) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS, aRHS)); DATA.ebeMod2Dest_       (rMatrix.colIteratorOf(aLHS), rMatrix.colIteratorOf(aRHS), rMatrix.colSetIterator()); return rMatrix;}
-    @Override public IMatrix ebeDo          (IMatrixGetter aLHS, IMatrixGetter aRHS, IDoubleOperator2 aOpt) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS, aRHS)); DATA.ebeDo2Dest_(rMatrix.colIteratorOf(aLHS), rMatrix.colIteratorOf(aRHS), rMatrix.colSetIterator(), aOpt); return rMatrix;}
+    @Override public IMatrix plus       (final IMatrixGetter aRHS) {final IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.ebePlus2Dest    (tThis::colIterator, () -> tThis.colIteratorOf(aRHS), rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix minus      (final IMatrixGetter aRHS) {final IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.ebeMinus2Dest   (tThis::colIterator, () -> tThis.colIteratorOf(aRHS), rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix lminus     (final IMatrixGetter aRHS) {final IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.ebeMinus2Dest   (tThis::colIterator, () -> tThis.colIteratorOf(aRHS), rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix multiply   (final IMatrixGetter aRHS) {final IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.ebeMultiply2Dest(tThis::colIterator, () -> tThis.colIteratorOf(aRHS), rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix div        (final IMatrixGetter aRHS) {final IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.ebeDiv2Dest     (tThis::colIterator, () -> tThis.colIteratorOf(aRHS), rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix ldiv       (final IMatrixGetter aRHS) {final IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.ebeDiv2Dest     (tThis::colIterator, () -> tThis.colIteratorOf(aRHS), rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix mod        (final IMatrixGetter aRHS) {final IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.ebeMod2Dest     (tThis::colIterator, () -> tThis.colIteratorOf(aRHS), rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix lmod       (final IMatrixGetter aRHS) {final IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.ebeMod2Dest     (tThis::colIterator, () -> tThis.colIteratorOf(aRHS), rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix operate    (final IMatrixGetter aRHS, IDoubleOperator2 aOpt) {final IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.ebeDo2Dest(tThis::colIterator, () -> tThis.colIteratorOf(aRHS), rMatrix::colSetIterator, aOpt); return rMatrix;}
     
-    @Override public IMatrix mapPlus        (IMatrixGetter aLHS, double aRHS) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS)); DATA.mapPlus2Dest_       (rMatrix.colIteratorOf(aLHS), aRHS, rMatrix.colSetIterator()); return rMatrix;}
-    @Override public IMatrix mapMinus       (IMatrixGetter aLHS, double aRHS) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS)); DATA.mapMinus2Dest_      (rMatrix.colIteratorOf(aLHS), aRHS, rMatrix.colSetIterator()); return rMatrix;}
-    @Override public IMatrix mapLMinus      (IMatrixGetter aLHS, double aRHS) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS)); DATA.mapLMinus2Dest_     (rMatrix.colIteratorOf(aLHS), aRHS, rMatrix.colSetIterator()); return rMatrix;}
-    @Override public IMatrix mapMultiply    (IMatrixGetter aLHS, double aRHS) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS)); DATA.mapMultiply2Dest_   (rMatrix.colIteratorOf(aLHS), aRHS, rMatrix.colSetIterator()); return rMatrix;}
-    @Override public IMatrix mapDiv         (IMatrixGetter aLHS, double aRHS) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS)); DATA.mapDiv2Dest_        (rMatrix.colIteratorOf(aLHS), aRHS, rMatrix.colSetIterator()); return rMatrix;}
-    @Override public IMatrix mapLDiv        (IMatrixGetter aLHS, double aRHS) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS)); DATA.mapLDiv2Dest_       (rMatrix.colIteratorOf(aLHS), aRHS, rMatrix.colSetIterator()); return rMatrix;}
-    @Override public IMatrix mapMod         (IMatrixGetter aLHS, double aRHS) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS)); DATA.mapMod2Dest_        (rMatrix.colIteratorOf(aLHS), aRHS, rMatrix.colSetIterator()); return rMatrix;}
-    @Override public IMatrix mapLMod        (IMatrixGetter aLHS, double aRHS) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS)); DATA.mapLMod2Dest_       (rMatrix.colIteratorOf(aLHS), aRHS, rMatrix.colSetIterator()); return rMatrix;}
-    @Override public IMatrix mapDo          (IMatrixGetter aLHS, IDoubleOperator1 aOpt) {IMatrix rMatrix = newMatrix_(newMatrixSize_(aLHS)); DATA.mapDo2Dest_(rMatrix.colIteratorOf(aLHS), rMatrix.colSetIterator(), aOpt); return rMatrix;}
+    @Override public IMatrix plus       (double aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.mapPlus2Dest    (tThis::colIterator, aRHS, rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix minus      (double aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.mapMinus2Dest   (tThis::colIterator, aRHS, rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix lminus     (double aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.mapLMinus2Dest  (tThis::colIterator, aRHS, rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix multiply   (double aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.mapMultiply2Dest(tThis::colIterator, aRHS, rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix div        (double aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.mapDiv2Dest     (tThis::colIterator, aRHS, rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix ldiv       (double aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.mapLDiv2Dest    (tThis::colIterator, aRHS, rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix mod        (double aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.mapMod2Dest     (tThis::colIterator, aRHS, rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix lmod       (double aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.mapLMod2Dest    (tThis::colIterator, aRHS, rMatrix::colSetIterator); return rMatrix;}
+    @Override public IMatrix map        (IDoubleOperator1 aOpt) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.size()); DATA.mapDo2Dest(tThis::colIterator, rMatrix::colSetIterator, aOpt); return rMatrix;}
     
-    @Override public void ebePlus2this      (IMatrixGetter aRHS) {IMatrix rMatrix = thisMatrix_(); DATA.ebePlus2this_       (rMatrix.colSetIterator(), rMatrix.colIteratorOf(aRHS));}
-    @Override public void ebeMinus2this     (IMatrixGetter aRHS) {IMatrix rMatrix = thisMatrix_(); DATA.ebeMinus2this_      (rMatrix.colSetIterator(), rMatrix.colIteratorOf(aRHS));}
-    @Override public void ebeLMinus2this    (IMatrixGetter aRHS) {IMatrix rMatrix = thisMatrix_(); DATA.ebeLMinus2this_     (rMatrix.colSetIterator(), rMatrix.colIteratorOf(aRHS));}
-    @Override public void ebeMultiply2this  (IMatrixGetter aRHS) {IMatrix rMatrix = thisMatrix_(); DATA.ebeMultiply2this_   (rMatrix.colSetIterator(), rMatrix.colIteratorOf(aRHS));}
-    @Override public void ebeDiv2this       (IMatrixGetter aRHS) {IMatrix rMatrix = thisMatrix_(); DATA.ebeDiv2this_        (rMatrix.colSetIterator(), rMatrix.colIteratorOf(aRHS));}
-    @Override public void ebeLDiv2this      (IMatrixGetter aRHS) {IMatrix rMatrix = thisMatrix_(); DATA.ebeLDiv2this_       (rMatrix.colSetIterator(), rMatrix.colIteratorOf(aRHS));}
-    @Override public void ebeMod2this       (IMatrixGetter aRHS) {IMatrix rMatrix = thisMatrix_(); DATA.ebeMod2this_        (rMatrix.colSetIterator(), rMatrix.colIteratorOf(aRHS));}
-    @Override public void ebeLMod2this      (IMatrixGetter aRHS) {IMatrix rMatrix = thisMatrix_(); DATA.ebeLMod2this_       (rMatrix.colSetIterator(), rMatrix.colIteratorOf(aRHS));}
-    @Override public void ebeDo2this        (IMatrixGetter aRHS, IDoubleOperator2 aOpt) {IMatrix rMatrix = thisMatrix_(); DATA.ebeDo2this_(rMatrix.colSetIterator(), rMatrix.colIteratorOf(aRHS), aOpt);}
+    @Override public void plus2this     (final IMatrixGetter aRHS) {final IMatrix rThis = thisMatrix_(); DATA.ebePlus2This    (rThis::colSetIterator, () -> rThis.colIteratorOf(aRHS));}
+    @Override public void minus2this    (final IMatrixGetter aRHS) {final IMatrix rThis = thisMatrix_(); DATA.ebeMinus2This   (rThis::colSetIterator, () -> rThis.colIteratorOf(aRHS));}
+    @Override public void lminus2this   (final IMatrixGetter aRHS) {final IMatrix rThis = thisMatrix_(); DATA.ebeLMinus2This  (rThis::colSetIterator, () -> rThis.colIteratorOf(aRHS));}
+    @Override public void multiply2this (final IMatrixGetter aRHS) {final IMatrix rThis = thisMatrix_(); DATA.ebeMultiply2This(rThis::colSetIterator, () -> rThis.colIteratorOf(aRHS));}
+    @Override public void div2this      (final IMatrixGetter aRHS) {final IMatrix rThis = thisMatrix_(); DATA.ebeDiv2This     (rThis::colSetIterator, () -> rThis.colIteratorOf(aRHS));}
+    @Override public void ldiv2this     (final IMatrixGetter aRHS) {final IMatrix rThis = thisMatrix_(); DATA.ebeLDiv2This    (rThis::colSetIterator, () -> rThis.colIteratorOf(aRHS));}
+    @Override public void mod2this      (final IMatrixGetter aRHS) {final IMatrix rThis = thisMatrix_(); DATA.ebeMod2This     (rThis::colSetIterator, () -> rThis.colIteratorOf(aRHS));}
+    @Override public void lmod2this     (final IMatrixGetter aRHS) {final IMatrix rThis = thisMatrix_(); DATA.ebeLMod2This    (rThis::colSetIterator, () -> rThis.colIteratorOf(aRHS));}
+    @Override public void operate2this  (final IMatrixGetter aRHS, IDoubleOperator2 aOpt) {final IMatrix rThis = thisMatrix_(); DATA.ebeDo2This(rThis::colSetIterator, () -> rThis.colIteratorOf(aRHS), aOpt);}
     
-    @Override public void mapPlus2this      (double aRHS) {DATA.mapPlus2this_       (thisMatrix_().colSetIterator(), aRHS);}
-    @Override public void mapMinus2this     (double aRHS) {DATA.mapMinus2this_      (thisMatrix_().colSetIterator(), aRHS);}
-    @Override public void mapLMinus2this    (double aRHS) {DATA.mapLMinus2this_     (thisMatrix_().colSetIterator(), aRHS);}
-    @Override public void mapMultiply2this  (double aRHS) {DATA.mapMultiply2this_   (thisMatrix_().colSetIterator(), aRHS);}
-    @Override public void mapDiv2this       (double aRHS) {DATA.mapDiv2this_        (thisMatrix_().colSetIterator(), aRHS);}
-    @Override public void mapLDiv2this      (double aRHS) {DATA.mapLDiv2this_       (thisMatrix_().colSetIterator(), aRHS);}
-    @Override public void mapMod2this       (double aRHS) {DATA.mapMod2this_        (thisMatrix_().colSetIterator(), aRHS);}
-    @Override public void mapLMod2this      (double aRHS) {DATA.mapLMod2this_       (thisMatrix_().colSetIterator(), aRHS);}
-    @Override public void mapDo2this        (IDoubleOperator1 aOpt) {DATA.mapDo2this_(thisMatrix_().colSetIterator(), aOpt);}
+    @Override public void plus2this     (double aRHS) {DATA.mapPlus2This       (thisMatrix_()::colSetIterator, aRHS);}
+    @Override public void minus2this    (double aRHS) {DATA.mapMinus2This      (thisMatrix_()::colSetIterator, aRHS);}
+    @Override public void lminus2this   (double aRHS) {DATA.mapLMinus2This     (thisMatrix_()::colSetIterator, aRHS);}
+    @Override public void multiply2this (double aRHS) {DATA.mapMultiply2This   (thisMatrix_()::colSetIterator, aRHS);}
+    @Override public void div2this      (double aRHS) {DATA.mapDiv2This        (thisMatrix_()::colSetIterator, aRHS);}
+    @Override public void ldiv2this     (double aRHS) {DATA.mapLDiv2This       (thisMatrix_()::colSetIterator, aRHS);}
+    @Override public void mod2this      (double aRHS) {DATA.mapMod2This        (thisMatrix_()::colSetIterator, aRHS);}
+    @Override public void lmod2this     (double aRHS) {DATA.mapLMod2This       (thisMatrix_()::colSetIterator, aRHS);}
+    @Override public void map2this      (IDoubleOperator1 aOpt) {DATA.mapDo2This(thisMatrix_()::colSetIterator, aOpt);}
     
-    @Override public void mapFill2this      (double aRHS) {DATA.mapFill2this_(thisMatrix_().colSetIterator(), aRHS);}
-    @Override public void ebeFill2this      (IMatrixGetter aRHS) {IMatrix rMatrix = thisMatrix_(); DATA.ebeFill2this_(rMatrix.colSetIterator(), rMatrix.colIteratorOf(aRHS));}
+    @Override public void fill          (double aRHS) {DATA.mapFill2This(thisMatrix_()::colSetIterator, aRHS);}
+    @Override public void fill          (final IMatrixGetter aRHS) {final IMatrix rThis = thisMatrix_(); DATA.ebeFill2This(rThis::colSetIterator, () -> rThis.colIteratorOf(aRHS));}
+    @Override public void assignCol     (IDoubleSupplier aSup) {DATA.assign2This(thisMatrix_()::colSetIterator, aSup);}
+    @Override public void assignRow     (IDoubleSupplier aSup) {DATA.assign2This(thisMatrix_()::rowSetIterator, aSup);}
+    @Override public void forEachCol    (IDoubleConsumer1 aCon) {DATA.forEachOfThis(thisMatrix_()::colIterator, aCon);}
+    @Override public void forEachRow    (IDoubleConsumer1 aCon) {DATA.forEachOfThis(thisMatrix_()::rowIterator, aCon);}
     
-    @Override public double sum () {return DATA.sumOfThis_ (thisMatrix_().colSetIterator());}
-    @Override public double mean() {return DATA.meanOfThis_(thisMatrix_().colSetIterator());}
-    @Override public double max () {return DATA.maxOfThis_ (thisMatrix_().colSetIterator());}
-    @Override public double min () {return DATA.minOfThis_ (thisMatrix_().colSetIterator());}
+    @Override public double sum () {return DATA.sumOfThis (thisMatrix_()::colIterator);}
+    @Override public double mean() {return DATA.meanOfThis(thisMatrix_()::colIterator);}
+    @Override public double max () {return DATA.maxOfThis (thisMatrix_()::colIterator);}
+    @Override public double min () {return DATA.minOfThis (thisMatrix_()::colIterator);}
     
     
     /** 这里直接调用对应向量的运算，现在可以利用上所有的优化 */
@@ -130,17 +139,6 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         return true;
     }
     
-    
-    /** 内部实用函数 */
-    protected IMatrix.ISize newMatrixSize_(IMatrixGetter aData) {
-        if (aData instanceof IMatrix) return ((IMatrix)aData).size();
-        return thisMatrix_().size();
-    }
-    protected IMatrix.ISize newMatrixSize_(IMatrixGetter aData1, IMatrixGetter aData2) {
-        if (aData1 instanceof IMatrix) return ((IMatrix)aData1).size();
-        if (aData2 instanceof IMatrix) return ((IMatrix)aData2).size();
-        return thisMatrix_().size();
-    }
     
     /** stuff to override */
     protected abstract IMatrix thisMatrix_();

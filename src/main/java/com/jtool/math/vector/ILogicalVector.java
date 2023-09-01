@@ -2,8 +2,8 @@ package com.jtool.math.vector;
 
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.filter.IIndexFilter;
+import com.jtool.code.functional.*;
 import com.jtool.code.iterator.*;
-import com.jtool.code.functional.IBooleanOperator1;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
@@ -13,7 +13,7 @@ import java.util.NoSuchElementException;
  * @author liqa
  * <p> 专用的逻辑值向量 </p>
  */
-public interface ILogicalVector extends IHasBooleanIterator, ILogicalVectorGetter, ILogicalVectorSetter {
+public interface ILogicalVector extends IHasBooleanIterator, IHasBooleanSetIterator, ILogicalVectorGetter, ILogicalVectorSetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
     IBooleanIterator iterator();
     IBooleanSetIterator setIterator();
@@ -23,7 +23,6 @@ public interface ILogicalVector extends IHasBooleanIterator, ILogicalVectorGette
     default Iterable<Boolean> iterable() {return () -> iterator().toIterator();}
     List<Boolean> asList();
     
-    
     /** 转为兼容性更好的 boolean[] */
     boolean[] data();
     
@@ -32,6 +31,8 @@ public interface ILogicalVector extends IHasBooleanIterator, ILogicalVectorGette
     void fill(ILogicalVectorGetter aVectorGetter);
     void fill(boolean[] aData);
     void fill(Iterable<Boolean> aList);
+    void assign(IBooleanSupplier aSup);
+    void forEach(IBooleanConsumer1 aCon);
     
     /** 访问和修改部分，自带的接口 */
     boolean get_(int aIdx);
@@ -105,10 +106,6 @@ public interface ILogicalVector extends IHasBooleanIterator, ILogicalVectorGette
     boolean all  ();
     boolean any  ();
     int     count();
-    
-    ILogicalVector cumall  ();
-    ILogicalVector cumany  ();
-    IVector        cumcount();
     
     /** Groovy 的部分，增加向量切片操作 */
     @VisibleForTesting boolean call(int aIdx);

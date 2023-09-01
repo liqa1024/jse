@@ -1,48 +1,51 @@
 package com.jtool.math.vector;
 
 
-import com.jtool.code.functional.IBooleanOperator1;
-import com.jtool.code.functional.IBooleanOperator2;
+import com.jtool.code.functional.*;
 
 /**
  * 任意的逻辑向量的运算
  * @author liqa
  */
 public interface ILogicalVectorOperation {
-    ILogicalVector ebeAnd   (ILogicalVectorGetter aLHS, ILogicalVectorGetter aRHS);
-    ILogicalVector ebeOr    (ILogicalVectorGetter aLHS, ILogicalVectorGetter aRHS);
-    ILogicalVector ebeXor   (ILogicalVectorGetter aLHS, ILogicalVectorGetter aRHS);
-    ILogicalVector ebeDo    (ILogicalVectorGetter aLHS, ILogicalVectorGetter aRHS, IBooleanOperator2 aOpt);
+    ILogicalVector and      (ILogicalVectorGetter aRHS);
+    ILogicalVector or       (ILogicalVectorGetter aRHS);
+    ILogicalVector xor      (ILogicalVectorGetter aRHS);
+    ILogicalVector operate  (ILogicalVectorGetter aRHS, IBooleanOperator2 aOpt);
     
-    ILogicalVector mapAnd   (ILogicalVectorGetter aLHS, boolean aRHS);
-    ILogicalVector mapOr    (ILogicalVectorGetter aLHS, boolean aRHS);
-    ILogicalVector mapXor   (ILogicalVectorGetter aLHS, boolean aRHS);
-    ILogicalVector mapDo    (ILogicalVectorGetter aLHS, IBooleanOperator1 aOpt);
+    ILogicalVector and      (boolean aRHS);
+    ILogicalVector or       (boolean aRHS);
+    ILogicalVector xor      (boolean aRHS);
+    ILogicalVector map      (IBooleanOperator1 aOpt);
     
-    void ebeAnd2this    (ILogicalVectorGetter aRHS);
-    void ebeOr2this     (ILogicalVectorGetter aRHS);
-    void ebeXor2this    (ILogicalVectorGetter aRHS);
-    void ebeDo2this     (ILogicalVectorGetter aRHS, IBooleanOperator2 aOpt);
+    void and2this           (ILogicalVectorGetter aRHS);
+    void or2this            (ILogicalVectorGetter aRHS);
+    void xor2this           (ILogicalVectorGetter aRHS);
+    void operate2this       (ILogicalVectorGetter aRHS, IBooleanOperator2 aOpt);
     
-    void mapAnd2this    (boolean aRHS);
-    void mapOr2this     (boolean aRHS);
-    void mapXor2this    (boolean aRHS);
-    void mapDo2this     (IBooleanOperator1 aRHS);
+    void and2this           (boolean aRHS);
+    void or2this            (boolean aRHS);
+    void xor2this           (boolean aRHS);
+    void map2this           (IBooleanOperator1 aRHS);
     
-    ILogicalVector not  (ILogicalVectorGetter aData);
-    void not2this       ();
+    ILogicalVector not      ();
+    void not2this           ();
     
-    void mapFill2this   (boolean aRHS);
-    void ebeFill2this   (ILogicalVectorGetter aRHS);
+    /** 这两个方法名默认是作用到自身的，这里为了保持 operation 的使用简洁不在函数名上特殊说明 */
+    void fill               (boolean aRHS);
+    void fill               (ILogicalVectorGetter aRHS);
+    void assign             (IBooleanSupplier aSup);
+    /** 统一提供一个 for-each 运算来减少优化需要的重复代码 */
+    void forEach            (IBooleanConsumer1 aCon);
     
-    boolean all();
-    boolean any();
-    int count();
+    boolean all             ();
+    boolean any             ();
+    int count               ();
     
-    ILogicalVector cumall();
-    ILogicalVector cumany();
-    IVector cumcount();
+    ILogicalVector cumall   ();
+    ILogicalVector cumany   ();
+    IVector cumcount        ();
     
-    ILogicalVector reverse();
-    ILogicalVector refReverse();
+    ILogicalVector reverse      ();
+    ILogicalVector refReverse   ();
 }

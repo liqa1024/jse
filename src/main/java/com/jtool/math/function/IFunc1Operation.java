@@ -1,10 +1,7 @@
 package com.jtool.math.function;
 
 
-import com.jtool.code.functional.IDoubleOperator1;
-import com.jtool.code.functional.IDoubleOperator2;
-import com.jtool.code.functional.IDoubleOperator3;
-import com.jtool.math.vector.IVectorSetter;
+import com.jtool.code.functional.*;
 
 /**
  * 任意一维数值函数的运算
@@ -12,57 +9,61 @@ import com.jtool.math.vector.IVectorSetter;
  */
 public interface IFunc1Operation {
     /** 通用的运算 */
-    IFunc1 ebePlus          (IFunc1Subs aLHS, IFunc1Subs aRHS);
-    IFunc1 ebeMinus         (IFunc1Subs aLHS, IFunc1Subs aRHS);
-    IFunc1 ebeMultiply      (IFunc1Subs aLHS, IFunc1Subs aRHS);
-    IFunc1 ebeDiv           (IFunc1Subs aLHS, IFunc1Subs aRHS);
-    IFunc1 ebeMod           (IFunc1Subs aLHS, IFunc1Subs aRHS);
-    IFunc1 ebeDo            (IFunc1Subs aLHS, IFunc1Subs aRHS, IDoubleOperator2 aOpt);
+    IFunc1 plus         (IFunc1Subs aRHS);
+    IFunc1 minus        (IFunc1Subs aRHS);
+    IFunc1 lminus       (IFunc1Subs aRHS);
+    IFunc1 multiply     (IFunc1Subs aRHS);
+    IFunc1 div          (IFunc1Subs aRHS);
+    IFunc1 ldiv         (IFunc1Subs aRHS);
+    IFunc1 mod          (IFunc1Subs aRHS);
+    IFunc1 lmod         (IFunc1Subs aRHS);
+    IFunc1 operate      (IFunc1Subs aRHS, IDoubleOperator2 aOpt);
     
-    IFunc1 mapPlus          (IFunc1Subs aLHS, double aRHS);
-    IFunc1 mapMinus         (IFunc1Subs aLHS, double aRHS);
-    IFunc1 mapLMinus        (IFunc1Subs aLHS, double aRHS);
-    IFunc1 mapMultiply      (IFunc1Subs aLHS, double aRHS);
-    IFunc1 mapDiv           (IFunc1Subs aLHS, double aRHS);
-    IFunc1 mapLDiv          (IFunc1Subs aLHS, double aRHS);
-    IFunc1 mapMod           (IFunc1Subs aLHS, double aRHS);
-    IFunc1 mapLMod          (IFunc1Subs aLHS, double aRHS);
-    IFunc1 mapDo            (IFunc1Subs aLHS, IDoubleOperator1 aOpt);
+    IFunc1 plus         (double aRHS);
+    IFunc1 minus        (double aRHS);
+    IFunc1 lminus       (double aRHS);
+    IFunc1 multiply     (double aRHS);
+    IFunc1 div          (double aRHS);
+    IFunc1 ldiv         (double aRHS);
+    IFunc1 mod          (double aRHS);
+    IFunc1 lmod         (double aRHS);
+    IFunc1 map          (IDoubleOperator1 aOpt);
     
-    void ebePlus2this       (IFunc1Subs aRHS);
-    void ebeMinus2this      (IFunc1Subs aRHS);
-    void ebeLMinus2this     (IFunc1Subs aRHS);
-    void ebeMultiply2this   (IFunc1Subs aRHS);
-    void ebeDiv2this        (IFunc1Subs aRHS);
-    void ebeLDiv2this       (IFunc1Subs aRHS);
-    void ebeMod2this        (IFunc1Subs aRHS);
-    void ebeLMod2this       (IFunc1Subs aRHS);
-    void ebeDo2this         (IFunc1Subs aRHS, IDoubleOperator2 aOpt);
+    void plus2this      (IFunc1Subs aRHS);
+    void minus2this     (IFunc1Subs aRHS);
+    void lminus2this    (IFunc1Subs aRHS);
+    void multiply2this  (IFunc1Subs aRHS);
+    void div2this       (IFunc1Subs aRHS);
+    void ldiv2this      (IFunc1Subs aRHS);
+    void mod2this       (IFunc1Subs aRHS);
+    void lmod2this      (IFunc1Subs aRHS);
+    void operate2this   (IFunc1Subs aRHS, IDoubleOperator2 aOpt);
     
-    void mapPlus2this       (double aRHS);
-    void mapMinus2this      (double aRHS);
-    void mapLMinus2this     (double aRHS);
-    void mapMultiply2this   (double aRHS);
-    void mapDiv2this        (double aRHS);
-    void mapLDiv2this       (double aRHS);
-    void mapMod2this        (double aRHS);
-    void mapLMod2this       (double aRHS);
-    void mapDo2this         (IDoubleOperator1 aOpt);
+    void plus2this      (double aRHS);
+    void minus2this     (double aRHS);
+    void lminus2this    (double aRHS);
+    void multiply2this  (double aRHS);
+    void div2this       (double aRHS);
+    void ldiv2this      (double aRHS);
+    void mod2this       (double aRHS);
+    void lmod2this      (double aRHS);
+    void map2this       (IDoubleOperator1 aOpt);
     
-    
-    void mapFill2this       (double aRHS);
-    void ebeFill2this       (IFunc1Subs aRHS);
-    
+    /** 这两个方法名默认是作用到自身的，这里为了保持 operation 的使用简洁不在函数名上特殊说明 */
+    void fill           (double aRHS);
+    void fill           (IFunc1Subs aRHS);
+    void assign         (IDoubleSupplier aSup);
+    /** 统一提供一个 for-each 运算来减少优化需要的重复代码 */
+    void forEach        (IDoubleConsumer1 aCon);
     
     /** 函数特有的运算，最后增加一项 x 的值传入 */
-    IFunc1 ebeDoFull        (IFunc1Subs aLHS, IFunc1Subs aRHS, IDoubleOperator3 aOpt);
-    IFunc1 mapDoFull        (IFunc1Subs aLHS, IDoubleOperator2 aOpt);
-    void ebeDoFull2this     (IFunc1Subs aRHS, IDoubleOperator3 aOpt);
-    void mapDoFull2this     (IDoubleOperator2 aOpt);
+    IFunc1 operateFull      (IFunc1Subs aRHS, IDoubleOperator3 aOpt);
+    IFunc1 mapFull          (IDoubleOperator2 aOpt);
+    void operateFull2this   (IFunc1Subs aRHS, IDoubleOperator3 aOpt);
+    void mapFull2this       (IDoubleOperator2 aOpt);
     
     /** 微分积分运算 */
     IFunc1 laplacian();
-    void laplacian2Dest(IVectorSetter rDest);
     
     /**
      * 卷积运算，通过输入的卷积核来对自身函数进行卷积运算，输出得到的结果

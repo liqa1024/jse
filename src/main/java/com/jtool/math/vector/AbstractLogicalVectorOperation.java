@@ -1,7 +1,6 @@
 package com.jtool.math.vector;
 
-import com.jtool.code.functional.IBooleanOperator1;
-import com.jtool.code.functional.IBooleanOperator2;
+import com.jtool.code.functional.*;
 import com.jtool.math.operation.DATA;
 
 /**
@@ -10,44 +9,46 @@ import com.jtool.math.operation.DATA;
  */
 public abstract class AbstractLogicalVectorOperation implements ILogicalVectorOperation {
     /** 通用的一些运算 */
-    @Override public ILogicalVector ebeAnd  (ILogicalVectorGetter aLHS, ILogicalVectorGetter aRHS) {ILogicalVector rVector = newVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeAnd2Dest_  (rVector.iteratorOf(aLHS), rVector.iteratorOf(aRHS), rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector ebeOr   (ILogicalVectorGetter aLHS, ILogicalVectorGetter aRHS) {ILogicalVector rVector = newVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeOr2Dest_   (rVector.iteratorOf(aLHS), rVector.iteratorOf(aRHS), rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector ebeXor  (ILogicalVectorGetter aLHS, ILogicalVectorGetter aRHS) {ILogicalVector rVector = newVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeXor2Dest_  (rVector.iteratorOf(aLHS), rVector.iteratorOf(aRHS), rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector ebeDo   (ILogicalVectorGetter aLHS, ILogicalVectorGetter aRHS, IBooleanOperator2 aOpt) {ILogicalVector rVector = newVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeDo2Dest_(rVector.iteratorOf(aLHS), rVector.iteratorOf(aRHS), rVector.setIterator(), aOpt); return rVector;}
+    @Override public ILogicalVector and     (final ILogicalVectorGetter aRHS) {final ILogicalVector tThis = thisVector_(); ILogicalVector rVector = newVector_(tThis.size()); DATA.ebeAnd2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector); return rVector;}
+    @Override public ILogicalVector or      (final ILogicalVectorGetter aRHS) {final ILogicalVector tThis = thisVector_(); ILogicalVector rVector = newVector_(tThis.size()); DATA.ebeOr2Dest (tThis, () -> tThis.iteratorOf(aRHS), rVector); return rVector;}
+    @Override public ILogicalVector xor     (final ILogicalVectorGetter aRHS) {final ILogicalVector tThis = thisVector_(); ILogicalVector rVector = newVector_(tThis.size()); DATA.ebeXor2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector); return rVector;}
+    @Override public ILogicalVector operate (final ILogicalVectorGetter aRHS, IBooleanOperator2 aOpt) {final ILogicalVector tThis = thisVector_(); ILogicalVector rVector = newVector_(tThis.size()); DATA.ebeDo2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector, aOpt); return rVector;}
     
-    @Override public ILogicalVector mapAnd  (ILogicalVectorGetter aLHS, boolean aRHS) {ILogicalVector rVector = newVector_(newVectorSize_(aLHS)); DATA.mapAnd2Dest_ (rVector.iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector mapOr   (ILogicalVectorGetter aLHS, boolean aRHS) {ILogicalVector rVector = newVector_(newVectorSize_(aLHS)); DATA.mapOr2Dest_  (rVector.iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector mapXor  (ILogicalVectorGetter aLHS, boolean aRHS) {ILogicalVector rVector = newVector_(newVectorSize_(aLHS)); DATA.mapXor2Dest_ (rVector.iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector mapDo   (ILogicalVectorGetter aLHS, IBooleanOperator1 aOpt) {ILogicalVector rVector = newVector_(newVectorSize_(aLHS)); DATA.mapDo2Dest_(rVector.iteratorOf(aLHS), rVector.setIterator(), aOpt); return rVector;}
+    @Override public ILogicalVector and     (boolean aRHS) {ILogicalVector tThis = thisVector_(); ILogicalVector rVector = newVector_(tThis.size()); DATA.mapAnd2Dest(tThis, aRHS, rVector); return rVector;}
+    @Override public ILogicalVector or      (boolean aRHS) {ILogicalVector tThis = thisVector_(); ILogicalVector rVector = newVector_(tThis.size()); DATA.mapOr2Dest (tThis, aRHS, rVector); return rVector;}
+    @Override public ILogicalVector xor     (boolean aRHS) {ILogicalVector tThis = thisVector_(); ILogicalVector rVector = newVector_(tThis.size()); DATA.mapXor2Dest(tThis, aRHS, rVector); return rVector;}
+    @Override public ILogicalVector map     (IBooleanOperator1 aOpt) {ILogicalVector tThis = thisVector_(); ILogicalVector rVector = newVector_(tThis.size()); DATA.mapDo2Dest(tThis, rVector, aOpt); return rVector;}
     
-    @Override public void ebeAnd2this       (ILogicalVectorGetter aRHS) {ILogicalVector rVector = thisVector_(); DATA.ebeAnd2this_  (rVector.setIterator(), rVector.iteratorOf(aRHS));}
-    @Override public void ebeOr2this        (ILogicalVectorGetter aRHS) {ILogicalVector rVector = thisVector_(); DATA.ebeOr2this_   (rVector.setIterator(), rVector.iteratorOf(aRHS));}
-    @Override public void ebeXor2this       (ILogicalVectorGetter aRHS) {ILogicalVector rVector = thisVector_(); DATA.ebeXor2this_  (rVector.setIterator(), rVector.iteratorOf(aRHS));}
-    @Override public void ebeDo2this        (ILogicalVectorGetter aRHS, IBooleanOperator2 aOpt) {ILogicalVector rVector = thisVector_(); DATA.ebeDo2this_(rVector.setIterator(), rVector.iteratorOf(aRHS), aOpt);}
+    @Override public void and2this          (final ILogicalVectorGetter aRHS) {final ILogicalVector rThis = thisVector_(); DATA.ebeAnd2This(rThis, () -> rThis.iteratorOf(aRHS));}
+    @Override public void or2this           (final ILogicalVectorGetter aRHS) {final ILogicalVector rThis = thisVector_(); DATA.ebeOr2This (rThis, () -> rThis.iteratorOf(aRHS));}
+    @Override public void xor2this          (final ILogicalVectorGetter aRHS) {final ILogicalVector rThis = thisVector_(); DATA.ebeXor2This(rThis, () -> rThis.iteratorOf(aRHS));}
+    @Override public void operate2this      (final ILogicalVectorGetter aRHS, IBooleanOperator2 aOpt) {final ILogicalVector rThis = thisVector_(); DATA.ebeDo2This(rThis, () -> rThis.iteratorOf(aRHS), aOpt);}
     
-    @Override public void mapAnd2this       (boolean aRHS) {DATA.mapAnd2this_   (thisVector_().setIterator(), aRHS);}
-    @Override public void mapOr2this        (boolean aRHS) {DATA.mapOr2this_    (thisVector_().setIterator(), aRHS);}
-    @Override public void mapXor2this       (boolean aRHS) {DATA.mapXor2this_   (thisVector_().setIterator(), aRHS);}
-    @Override public void mapDo2this        (IBooleanOperator1 aOpt) {DATA.mapDo2this_(thisVector_().setIterator(), aOpt);}
+    @Override public void and2this          (boolean aRHS) {DATA.mapAnd2This(thisVector_(), aRHS);}
+    @Override public void or2this           (boolean aRHS) {DATA.mapOr2This (thisVector_(), aRHS);}
+    @Override public void xor2this          (boolean aRHS) {DATA.mapXor2This(thisVector_(), aRHS);}
+    @Override public void map2this          (IBooleanOperator1 aOpt) {DATA.mapDo2This(thisVector_(), aOpt);}
     
-    @Override public ILogicalVector not     (ILogicalVectorGetter aData) {ILogicalVector rVector = newVector_(newVectorSize_(aData)); DATA.not2Dest_(rVector.iteratorOf(aData), rVector.setIterator()); return rVector;}
-    @Override public void not2this          () {DATA.not2this_(thisVector_().setIterator());}
+    @Override public ILogicalVector not     () {ILogicalVector tThis = thisVector_(); ILogicalVector rVector = newVector_(tThis.size()); DATA.not2Dest(tThis, rVector); return rVector;}
+    @Override public void not2this          () {DATA.not2This(thisVector_());}
     
-    @Override public void mapFill2this      (boolean aRHS) {DATA.mapFill2this_(thisVector_().setIterator(), aRHS);}
-    @Override public void ebeFill2this      (ILogicalVectorGetter aRHS) {ILogicalVector rVector = thisVector_(); DATA.ebeFill2this_(rVector.setIterator(), rVector.iteratorOf(aRHS));}
+    @Override public void fill              (boolean aRHS) {DATA.mapFill2This(thisVector_(), aRHS);}
+    @Override public void fill              (final ILogicalVectorGetter aRHS) {final ILogicalVector rThis = thisVector_(); DATA.ebeFill2This(rThis, () -> rThis.iteratorOf(aRHS));}
+    @Override public void assign            (IBooleanSupplier aSup) {DATA.assign2This(thisVector_(), aSup);}
+    @Override public void forEach           (IBooleanConsumer1 aCon) {DATA.forEachOfThis(thisVector_(), aCon);}
     
-    @Override public boolean        all     () {return DATA.allOfThis_  (thisVector_().iterator());}
-    @Override public boolean        any     () {return DATA.anyOfThis_  (thisVector_().iterator());}
-    @Override public int            count   () {return DATA.countOfThis_(thisVector_().iterator());}
+    @Override public boolean        all     () {return DATA.allOfThis  (thisVector_());}
+    @Override public boolean        any     () {return DATA.anyOfThis  (thisVector_());}
+    @Override public int            count   () {return DATA.countOfThis(thisVector_());}
     
-    @Override public ILogicalVector cumall  () {ILogicalVector tThis = thisVector_(); ILogicalVector rVector = newVector_(tThis.size()); DATA.cumall2Dest_  (tThis.iterator(), rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector cumany  () {ILogicalVector tThis = thisVector_(); ILogicalVector rVector = newVector_(tThis.size()); DATA.cumany2Dest_  (tThis.iterator(), rVector.setIterator()); return rVector;}
-    @Override public IVector        cumcount() {ILogicalVector tThis = thisVector_(); IVector    rVector = newRealVector_(tThis.size()); DATA.cumcount2Dest_(tThis.iterator(), rVector.setIterator()); return rVector;}
+    @Override public ILogicalVector cumall  () {ILogicalVector tThis = thisVector_(); ILogicalVector rVector = newVector_(tThis.size()); DATA.cumall2Dest  (tThis, rVector); return rVector;}
+    @Override public ILogicalVector cumany  () {ILogicalVector tThis = thisVector_(); ILogicalVector rVector = newVector_(tThis.size()); DATA.cumany2Dest  (tThis, rVector); return rVector;}
+    @Override public IVector        cumcount() {ILogicalVector tThis = thisVector_(); IVector    rVector = newRealVector_(tThis.size()); DATA.cumcount2Dest(tThis, rVector); return rVector;}
     
     
     @Override public ILogicalVector reverse() {
         ILogicalVector tVector = refReverse();
-        ILogicalVector rVector = thisVector_().newZeros(tVector.size());
+        ILogicalVector rVector = newVector_(tVector.size());
         rVector.fill(tVector);
         return rVector;
     }
@@ -61,16 +62,6 @@ public abstract class AbstractLogicalVectorOperation implements ILogicalVectorOp
         };
     }
     
-    /** 内部实用函数 */
-    protected int newVectorSize_(ILogicalVectorGetter aData) {
-        if (aData instanceof ILogicalVector) return ((ILogicalVector)aData).size();
-        return thisVector_().size();
-    }
-    protected int newVectorSize_(ILogicalVectorGetter aData1, ILogicalVectorGetter aData2) {
-        if (aData1 instanceof ILogicalVector) return ((ILogicalVector)aData1).size();
-        if (aData2 instanceof ILogicalVector) return ((ILogicalVector)aData2).size();
-        return thisVector_().size();
-    }
     
     
     /** stuff to override */

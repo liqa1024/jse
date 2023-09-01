@@ -17,11 +17,11 @@ import com.jtool.vasp.POSCAR
 // 首先导入 Lmpdat
 def dataG = Lmpdat.read('lmp/data/data-glass');
 def dataC = Lmpdat.read('lmp/data/data-crystal');
-def dataFFS = Dump.read('lmp/data/dump-ffs').last();
-def dataMgCu2   = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'   ).opt().assignType {3-it.type()}, 5).opt().perturbG(0.25);
-def dataZr3Cu8  = Structures.from(POSCAR.read('lmp/data/Zr3Cu8.poscar'  ).opt().assignType {3-it.type()}, 3).opt().perturbG(0.25);
-def dataZr7Cu10 = Structures.from(POSCAR.read('lmp/data/Zr7Cu10.poscar' ).opt().assignType {3-it.type()}, 3).opt().perturbG(0.25);
-def dataZrCu2   = Structures.from(POSCAR.read('lmp/data/ZrCu2.poscar'   ).opt().assignType {3-it.type()}, 5).opt().perturbG(0.25);
+def dataFFS = Dump.read('lmp/.ffs-in/dump-0').last();
+def dataMgCu2   = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'   ).opt().mapType {3-it.type()}, 5).opt().perturbXYZ(0.25);
+def dataZr3Cu8  = Structures.from(POSCAR.read('lmp/data/Zr3Cu8.poscar'  ).opt().mapType {3-it.type()}, 3).opt().perturbXYZ(0.25);
+def dataZr7Cu10 = Structures.from(POSCAR.read('lmp/data/Zr7Cu10.poscar' ).opt().mapType {3-it.type()}, 3).opt().perturbXYZ(0.25);
+def dataZrCu2   = Structures.from(POSCAR.read('lmp/data/ZrCu2.poscar'   ).opt().mapType {3-it.type()}, 5).opt().perturbXYZ(0.25);
 
 // 默认的团簇计算器
 UT.Timer.tic();

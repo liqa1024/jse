@@ -34,7 +34,7 @@ public final class ZeroBoundSymmetryFunc1 extends DoubleArrayFunc1 implements IZ
             /** 对称函数的 laplacian 依旧是对称的，可以直接用 */
             @Override public IFunc1 laplacian() {
                 IFunc1 rFunc1 = ZeroBoundSymmetryFunc1.zeros(mX0, mDx, Nx());
-                laplacian2Dest(rFunc1);
+                laplacian2Dest_(rFunc1);
                 return rFunc1;
             }
             

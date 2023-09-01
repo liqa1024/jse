@@ -40,7 +40,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     @Override public IAtomData filterIndices(IIndexFilter aIndices) {return filterIndices(aIndices.fixedFilter(thisAtomData_().atomNum()));}
     
     
-    @Override public IAtomData collect(int aMinTypeNum, IOperator1<? extends IAtom, ? super IAtom> aOperator) {
+    @Override public IAtomData map(int aMinTypeNum, IOperator1<? extends IAtom, ? super IAtom> aOperator) {
         IAtomData tThis = thisAtomData_();
         List<IAtom> rAtoms = new ArrayList<>(tThis.atomNum());
         int tAtomTypeNum = Math.max(aMinTypeNum, tThis.atomTypeNum());
@@ -71,21 +71,21 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
         @Override public double vz() {return mAtom.vz();}
     }
     
-    @Override public IAtomData assignType(int aMinTypeNum, final IOperator1<Integer, ? super IAtom> aOperator) {
-        return collect(aMinTypeNum, atom -> {
+    @Override public IAtomData mapType(int aMinTypeNum, final IOperator1<Integer, ? super IAtom> aOperator) {
+        return map(aMinTypeNum, atom -> {
             final int tType = aOperator.cal(atom);
             return new WrapperAtom(atom) {@Override public int type() {return tType;}};
         });
     }
     
-    @Override public IAtomData randomPerturbXYZByGaussian(final Random aRandom, final double aSigma) {
+    @Override public IAtomData perturbXYZGaussian(final Random aRandom, final double aSigma) {
         // 先获取 box
         IAtomData tThis = thisAtomData_();
         final XYZ tBoxLo = toXYZ(tThis.boxLo());
         final XYZ tBoxHi = toXYZ(tThis.boxHi());
         final XYZ tBox = tBoxHi.minus(tBoxLo);
         // 使用 collect 获取种类修改后的 AtomData，注意周期边界条件
-        return collect(atom -> {
+        return map(atom -> {
             double tX = atom.x() + aRandom.nextGaussian()*aSigma;
             double tY = atom.y() + aRandom.nextGaussian()*aSigma;
             double tZ = atom.z() + aRandom.nextGaussian()*aSigma;
@@ -105,7 +105,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
         });
     }
     
-    @Override public IAtomData randomAssignTypeByWeight(Random aRandom, IVector aTypeWeights) {
+    @Override public IAtomData mapTypeRandom(Random aRandom, IVector aTypeWeights) {
         double tTotWeight = aTypeWeights.sum();
         if (tTotWeight <= 0.0) throw new RuntimeException("TypeWeights Must be Positive");
         
@@ -123,8 +123,8 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
         // 随机打乱这些种类标记
         Collections.shuffle(tTypeList, aRandom);
         final Iterator<Integer> it = tTypeList.iterator();
-        // 使用 mapUpdate 获取种类修改后的 AtomData
-        return assignType(tMaxType, atom -> it.next());
+        // 使用 mapType 获取种类修改后的 AtomData
+        return mapType(tMaxType, atom -> it.next());
     }
     
     /** stuff to override */

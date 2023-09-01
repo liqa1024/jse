@@ -1,7 +1,5 @@
 package atom
 
-import com.jtool.atom.Atom
-import com.jtool.atom.IAtom
 import com.jtool.lmp.Dump
 import com.jtool.rareevent.atom.ABOOPSolidChecker
 import com.jtool.rareevent.atom.MainTypeClusterSizeCalculator
@@ -35,7 +33,7 @@ final def calculator = new MainTypeClusterSizeCalculator(
 def filterDump = dump.parallelStream().map {subDump ->
     def isSolid = subDump.getMPC().withCloseable {calculator.getIsSolid_(it, subDump)}
     int j = 0;
-    subDump.opt().collect {IAtom atom -> isSolid[j++] ? new Atom(atom).setType(atom.type()+2) : atom};
+    subDump.opt().mapType {def atom -> isSolid[j++] ? atom.type()+2 : atom.type()};
 }.collect(Collectors.toList());
 
 Dump.fromAtomDataList(filterDump).write(filterDir+'filter-dump');

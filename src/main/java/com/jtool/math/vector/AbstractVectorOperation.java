@@ -1,10 +1,7 @@
 package com.jtool.math.vector;
 
+import com.jtool.code.functional.*;
 import com.jtool.code.iterator.IDoubleIterator;
-import com.jtool.code.functional.IChecker;
-import com.jtool.code.functional.IComparator;
-import com.jtool.code.functional.IDoubleOperator1;
-import com.jtool.code.functional.IDoubleOperator2;
 import com.jtool.math.MathEX;
 import com.jtool.math.operation.DATA;
 
@@ -14,75 +11,80 @@ import com.jtool.math.operation.DATA;
  */
 public abstract class AbstractVectorOperation implements IVectorOperation {
     /** 通用的一些运算 */
-    @Override public IVector ebePlus        (IVectorGetter aLHS, IVectorGetter aRHS) {IVector rVector = newVector_(newVectorSize_(aLHS, aRHS)); DATA.ebePlus2Dest_      (rVector.iteratorOf(aLHS), rVector.iteratorOf(aRHS), rVector.setIterator()); return rVector;}
-    @Override public IVector ebeMinus       (IVectorGetter aLHS, IVectorGetter aRHS) {IVector rVector = newVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeMinus2Dest_     (rVector.iteratorOf(aLHS), rVector.iteratorOf(aRHS), rVector.setIterator()); return rVector;}
-    @Override public IVector ebeMultiply    (IVectorGetter aLHS, IVectorGetter aRHS) {IVector rVector = newVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeMultiply2Dest_  (rVector.iteratorOf(aLHS), rVector.iteratorOf(aRHS), rVector.setIterator()); return rVector;}
-    @Override public IVector ebeDiv         (IVectorGetter aLHS, IVectorGetter aRHS) {IVector rVector = newVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeDiv2Dest_       (rVector.iteratorOf(aLHS), rVector.iteratorOf(aRHS), rVector.setIterator()); return rVector;}
-    @Override public IVector ebeMod         (IVectorGetter aLHS, IVectorGetter aRHS) {IVector rVector = newVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeMod2Dest_       (rVector.iteratorOf(aLHS), rVector.iteratorOf(aRHS), rVector.setIterator()); return rVector;}
-    @Override public IVector ebeDo          (IVectorGetter aLHS, IVectorGetter aRHS, IDoubleOperator2 aOpt) {IVector rVector = newVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeDo2Dest_(rVector.iteratorOf(aLHS), rVector.iteratorOf(aRHS), rVector.setIterator(), aOpt); return rVector;}
+    @Override public IVector plus       (final IVectorGetter aRHS) {final IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.ebePlus2Dest    (tThis, () -> tThis.iteratorOf(aRHS), rVector); return rVector;}
+    @Override public IVector minus      (final IVectorGetter aRHS) {final IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.ebeMinus2Dest   (tThis, () -> tThis.iteratorOf(aRHS), rVector); return rVector;}
+    @Override public IVector lminus     (final IVectorGetter aRHS) {final IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.ebeMinus2Dest   (() -> tThis.iteratorOf(aRHS), tThis, rVector); return rVector;}
+    @Override public IVector multiply   (final IVectorGetter aRHS) {final IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.ebeMultiply2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector); return rVector;}
+    @Override public IVector div        (final IVectorGetter aRHS) {final IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.ebeDiv2Dest     (tThis, () -> tThis.iteratorOf(aRHS), rVector); return rVector;}
+    @Override public IVector ldiv       (final IVectorGetter aRHS) {final IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.ebeDiv2Dest     (() -> tThis.iteratorOf(aRHS), tThis, rVector); return rVector;}
+    @Override public IVector mod        (final IVectorGetter aRHS) {final IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.ebeMod2Dest     (tThis, () -> tThis.iteratorOf(aRHS), rVector); return rVector;}
+    @Override public IVector lmod       (final IVectorGetter aRHS) {final IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.ebeMod2Dest     (() -> tThis.iteratorOf(aRHS), tThis, rVector); return rVector;}
+    @Override public IVector operate    (final IVectorGetter aRHS, IDoubleOperator2 aOpt) {final IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.ebeDo2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector, aOpt); return rVector;}
     
-    @Override public IVector mapPlus        (IVectorGetter aLHS, double aRHS) {IVector rVector = newVector_(newVectorSize_(aLHS)); DATA.mapPlus2Dest_       (rVector.iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public IVector mapMinus       (IVectorGetter aLHS, double aRHS) {IVector rVector = newVector_(newVectorSize_(aLHS)); DATA.mapMinus2Dest_      (rVector.iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public IVector mapLMinus      (IVectorGetter aLHS, double aRHS) {IVector rVector = newVector_(newVectorSize_(aLHS)); DATA.mapLMinus2Dest_     (rVector.iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public IVector mapMultiply    (IVectorGetter aLHS, double aRHS) {IVector rVector = newVector_(newVectorSize_(aLHS)); DATA.mapMultiply2Dest_   (rVector.iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public IVector mapDiv         (IVectorGetter aLHS, double aRHS) {IVector rVector = newVector_(newVectorSize_(aLHS)); DATA.mapDiv2Dest_        (rVector.iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public IVector mapLDiv        (IVectorGetter aLHS, double aRHS) {IVector rVector = newVector_(newVectorSize_(aLHS)); DATA.mapLDiv2Dest_       (rVector.iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public IVector mapMod         (IVectorGetter aLHS, double aRHS) {IVector rVector = newVector_(newVectorSize_(aLHS)); DATA.mapMod2Dest_        (rVector.iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public IVector mapLMod        (IVectorGetter aLHS, double aRHS) {IVector rVector = newVector_(newVectorSize_(aLHS)); DATA.mapLMod2Dest_       (rVector.iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public IVector mapDo          (IVectorGetter aLHS, IDoubleOperator1 aOpt) {IVector rVector = newVector_(newVectorSize_(aLHS)); DATA.mapDo2Dest_(rVector.iteratorOf(aLHS), rVector.setIterator(), aOpt); return rVector;}
+    @Override public IVector plus       (double aRHS) {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.mapPlus2Dest       (tThis, aRHS, rVector); return rVector;}
+    @Override public IVector minus      (double aRHS) {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.mapMinus2Dest      (tThis, aRHS, rVector); return rVector;}
+    @Override public IVector lminus     (double aRHS) {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.mapLMinus2Dest     (tThis, aRHS, rVector); return rVector;}
+    @Override public IVector multiply   (double aRHS) {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.mapMultiply2Dest   (tThis, aRHS, rVector); return rVector;}
+    @Override public IVector div        (double aRHS) {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.mapDiv2Dest        (tThis, aRHS, rVector); return rVector;}
+    @Override public IVector ldiv       (double aRHS) {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.mapLDiv2Dest       (tThis, aRHS, rVector); return rVector;}
+    @Override public IVector mod        (double aRHS) {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.mapMod2Dest        (tThis, aRHS, rVector); return rVector;}
+    @Override public IVector lmod       (double aRHS) {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.mapLMod2Dest       (tThis, aRHS, rVector); return rVector;}
+    @Override public IVector map        (IDoubleOperator1 aOpt) {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.mapDo2Dest(tThis, rVector, aOpt); return rVector;}
     
-    @Override public void ebePlus2this      (IVectorGetter aRHS) {IVector rVector = thisVector_(); DATA.ebePlus2this_    (rVector.setIterator(), rVector.iteratorOf(aRHS));}
-    @Override public void ebeMinus2this     (IVectorGetter aRHS) {IVector rVector = thisVector_(); DATA.ebeMinus2this_   (rVector.setIterator(), rVector.iteratorOf(aRHS));}
-    @Override public void ebeLMinus2this    (IVectorGetter aRHS) {IVector rVector = thisVector_(); DATA.ebeLMinus2this_  (rVector.setIterator(), rVector.iteratorOf(aRHS));}
-    @Override public void ebeMultiply2this  (IVectorGetter aRHS) {IVector rVector = thisVector_(); DATA.ebeMultiply2this_(rVector.setIterator(), rVector.iteratorOf(aRHS));}
-    @Override public void ebeDiv2this       (IVectorGetter aRHS) {IVector rVector = thisVector_(); DATA.ebeDiv2this_     (rVector.setIterator(), rVector.iteratorOf(aRHS));}
-    @Override public void ebeLDiv2this      (IVectorGetter aRHS) {IVector rVector = thisVector_(); DATA.ebeLDiv2this_    (rVector.setIterator(), rVector.iteratorOf(aRHS));}
-    @Override public void ebeMod2this       (IVectorGetter aRHS) {IVector rVector = thisVector_(); DATA.ebeMod2this_     (rVector.setIterator(), rVector.iteratorOf(aRHS));}
-    @Override public void ebeLMod2this      (IVectorGetter aRHS) {IVector rVector = thisVector_(); DATA.ebeLMod2this_    (rVector.setIterator(), rVector.iteratorOf(aRHS));}
-    @Override public void ebeDo2this        (IVectorGetter aRHS, IDoubleOperator2 aOpt) {IVector rVector = thisVector_(); DATA.ebeDo2this_(rVector.setIterator(), rVector.iteratorOf(aRHS), aOpt);}
+    @Override public void plus2this     (final IVectorGetter aRHS) {final IVector rThis = thisVector_(); DATA.ebePlus2This    (rThis, () -> rThis.iteratorOf(aRHS));}
+    @Override public void minus2this    (final IVectorGetter aRHS) {final IVector rThis = thisVector_(); DATA.ebeMinus2This   (rThis, () -> rThis.iteratorOf(aRHS));}
+    @Override public void lminus2this   (final IVectorGetter aRHS) {final IVector rThis = thisVector_(); DATA.ebeLMinus2This  (rThis, () -> rThis.iteratorOf(aRHS));}
+    @Override public void multiply2this (final IVectorGetter aRHS) {final IVector rThis = thisVector_(); DATA.ebeMultiply2This(rThis, () -> rThis.iteratorOf(aRHS));}
+    @Override public void div2this      (final IVectorGetter aRHS) {final IVector rThis = thisVector_(); DATA.ebeDiv2This     (rThis, () -> rThis.iteratorOf(aRHS));}
+    @Override public void ldiv2this     (final IVectorGetter aRHS) {final IVector rThis = thisVector_(); DATA.ebeLDiv2This    (rThis, () -> rThis.iteratorOf(aRHS));}
+    @Override public void mod2this      (final IVectorGetter aRHS) {final IVector rThis = thisVector_(); DATA.ebeMod2This     (rThis, () -> rThis.iteratorOf(aRHS));}
+    @Override public void lmod2this     (final IVectorGetter aRHS) {final IVector rThis = thisVector_(); DATA.ebeLMod2This    (rThis, () -> rThis.iteratorOf(aRHS));}
+    @Override public void operate2this  (final IVectorGetter aRHS, IDoubleOperator2 aOpt) {final IVector rThis = thisVector_(); DATA.ebeDo2This(rThis, () -> rThis.iteratorOf(aRHS), aOpt);}
     
-    @Override public void mapPlus2this      (double aRHS) {DATA.mapPlus2this_       (thisVector_().setIterator(), aRHS);}
-    @Override public void mapMinus2this     (double aRHS) {DATA.mapMinus2this_      (thisVector_().setIterator(), aRHS);}
-    @Override public void mapLMinus2this    (double aRHS) {DATA.mapLMinus2this_     (thisVector_().setIterator(), aRHS);}
-    @Override public void mapMultiply2this  (double aRHS) {DATA.mapMultiply2this_   (thisVector_().setIterator(), aRHS);}
-    @Override public void mapDiv2this       (double aRHS) {DATA.mapDiv2this_        (thisVector_().setIterator(), aRHS);}
-    @Override public void mapLDiv2this      (double aRHS) {DATA.mapLDiv2this_       (thisVector_().setIterator(), aRHS);}
-    @Override public void mapMod2this       (double aRHS) {DATA.mapMod2this_        (thisVector_().setIterator(), aRHS);}
-    @Override public void mapLMod2this      (double aRHS) {DATA.mapLMod2this_       (thisVector_().setIterator(), aRHS);}
-    @Override public void mapDo2this        (IDoubleOperator1 aOpt) {DATA.mapDo2this_(thisVector_().setIterator(), aOpt);}
+    @Override public void plus2this     (double aRHS) {DATA.mapPlus2This    (thisVector_(), aRHS);}
+    @Override public void minus2this    (double aRHS) {DATA.mapMinus2This   (thisVector_(), aRHS);}
+    @Override public void lminus2this   (double aRHS) {DATA.mapLMinus2This  (thisVector_(), aRHS);}
+    @Override public void multiply2this (double aRHS) {DATA.mapMultiply2This(thisVector_(), aRHS);}
+    @Override public void div2this      (double aRHS) {DATA.mapDiv2This     (thisVector_(), aRHS);}
+    @Override public void ldiv2this     (double aRHS) {DATA.mapLDiv2This    (thisVector_(), aRHS);}
+    @Override public void mod2this      (double aRHS) {DATA.mapMod2This     (thisVector_(), aRHS);}
+    @Override public void lmod2this     (double aRHS) {DATA.mapLMod2This    (thisVector_(), aRHS);}
+    @Override public void map2this      (IDoubleOperator1 aOpt) {DATA.mapDo2This(thisVector_(), aOpt);}
     
-    @Override public void mapFill2this      (double aRHS) {DATA.mapFill2this_(thisVector_().setIterator(), aRHS);}
-    @Override public void ebeFill2this      (IVectorGetter aRHS) {IVector rVector = thisVector_(); DATA.ebeFill2this_(rVector.setIterator(), rVector.iteratorOf(aRHS));}
+    @Override public void fill          (double aRHS) {DATA.mapFill2This(thisVector_(), aRHS);}
+    @Override public void fill          (final IVectorGetter aRHS) {final IVector rThis = thisVector_(); DATA.ebeFill2This(rThis, () -> rThis.iteratorOf(aRHS));}
+    @Override public void assign        (IDoubleSupplier aSup) {DATA.assign2This(thisVector_(), aSup);}
+    @Override public void forEach       (IDoubleConsumer1 aCon) {DATA.forEachOfThis(thisVector_(), aCon);}
     
-    @Override public double sum ()                      {return DATA.sumOfThis_ (thisVector_().iterator()      );}
-    @Override public double mean()                      {return DATA.meanOfThis_(thisVector_().iterator()      );}
-    @Override public double prod()                      {return DATA.prodOfThis_(thisVector_().iterator()      );}
-    @Override public double max ()                      {return DATA.maxOfThis_ (thisVector_().iterator()      );}
-    @Override public double min ()                      {return DATA.minOfThis_ (thisVector_().iterator()      );}
-    @Override public double stat(IDoubleOperator2 aOpt) {return DATA.statOfThis_(thisVector_().iterator(), aOpt);}
+    @Override public double sum ()                      {return DATA.sumOfThis  (thisVector_()      );}
+    @Override public double mean()                      {return DATA.meanOfThis (thisVector_()      );}
+    @Override public double prod()                      {return DATA.prodOfThis (thisVector_()      );}
+    @Override public double max ()                      {return DATA.maxOfThis  (thisVector_()      );}
+    @Override public double min ()                      {return DATA.minOfThis  (thisVector_()      );}
+    @Override public double stat(IDoubleOperator2 aOpt) {return DATA.statOfThis (thisVector_(), aOpt);}
     
-    @Override public IVector cumsum ()                      {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.cumsum2Dest_ (tThis.iterator(), rVector.setIterator()      ); return rVector;}
-    @Override public IVector cummean()                      {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.cummean2Dest_(tThis.iterator(), rVector.setIterator()      ); return rVector;}
-    @Override public IVector cumprod()                      {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.cumprod2Dest_(tThis.iterator(), rVector.setIterator()      ); return rVector;}
-    @Override public IVector cummax ()                      {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.cummax2Dest_ (tThis.iterator(), rVector.setIterator()      ); return rVector;}
-    @Override public IVector cummin ()                      {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.cummin2Dest_ (tThis.iterator(), rVector.setIterator()      ); return rVector;}
-    @Override public IVector cumstat(IDoubleOperator2 aOpt) {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.cumstat2Dest_(tThis.iterator(), rVector.setIterator(), aOpt); return rVector;}
+    @Override public IVector cumsum ()                      {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.cumsum2Dest    (tThis, rVector      ); return rVector;}
+    @Override public IVector cummean()                      {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.cummean2Dest   (tThis, rVector      ); return rVector;}
+    @Override public IVector cumprod()                      {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.cumprod2Dest   (tThis, rVector      ); return rVector;}
+    @Override public IVector cummax ()                      {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.cummax2Dest    (tThis, rVector      ); return rVector;}
+    @Override public IVector cummin ()                      {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.cummin2Dest    (tThis, rVector      ); return rVector;}
+    @Override public IVector cumstat(IDoubleOperator2 aOpt) {IVector tThis = thisVector_(); IVector rVector = newVector_(tThis.size()); DATA.cumstat2Dest   (tThis, rVector, aOpt); return rVector;}
     
     /** 获取逻辑结果的运算 */
-    @Override public ILogicalVector ebeEqual            (IVectorGetter aLHS, IVectorGetter aRHS) {IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeEqual2Dest_            (tThis.iteratorOf(aLHS), tThis.iteratorOf(aRHS), rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector ebeGreater          (IVectorGetter aLHS, IVectorGetter aRHS) {IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeGreater2Dest_          (tThis.iteratorOf(aLHS), tThis.iteratorOf(aRHS), rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector ebeGreaterOrEqual   (IVectorGetter aLHS, IVectorGetter aRHS) {IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeGreaterOrEqual2Dest_   (tThis.iteratorOf(aLHS), tThis.iteratorOf(aRHS), rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector ebeLess             (IVectorGetter aLHS, IVectorGetter aRHS) {IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeLess2Dest_             (tThis.iteratorOf(aLHS), tThis.iteratorOf(aRHS), rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector ebeLessOrEqual      (IVectorGetter aLHS, IVectorGetter aRHS) {IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(newVectorSize_(aLHS, aRHS)); DATA.ebeLessOrEqual2Dest_      (tThis.iteratorOf(aLHS), tThis.iteratorOf(aRHS), rVector.setIterator()); return rVector;}
+    @Override public ILogicalVector equal           (final IVectorGetter aRHS) {final IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(tThis.size()); DATA.ebeEqual2Dest         (tThis, () -> tThis.iteratorOf(aRHS), rVector); return rVector;}
+    @Override public ILogicalVector greater         (final IVectorGetter aRHS) {final IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(tThis.size()); DATA.ebeGreater2Dest       (tThis, () -> tThis.iteratorOf(aRHS), rVector); return rVector;}
+    @Override public ILogicalVector greaterOrEqual  (final IVectorGetter aRHS) {final IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(tThis.size()); DATA.ebeGreaterOrEqual2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector); return rVector;}
+    @Override public ILogicalVector less            (final IVectorGetter aRHS) {final IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(tThis.size()); DATA.ebeLess2Dest          (tThis, () -> tThis.iteratorOf(aRHS), rVector); return rVector;}
+    @Override public ILogicalVector lessOrEqual     (final IVectorGetter aRHS) {final IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(tThis.size()); DATA.ebeLessOrEqual2Dest   (tThis, () -> tThis.iteratorOf(aRHS), rVector); return rVector;}
     
-    @Override public ILogicalVector mapEqual            (IVectorGetter aLHS, double aRHS) {ILogicalVector rVector = newLogicalVector_(newVectorSize_(aLHS)); DATA.mapEqual2Dest_            (thisVector_().iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector mapGreater          (IVectorGetter aLHS, double aRHS) {ILogicalVector rVector = newLogicalVector_(newVectorSize_(aLHS)); DATA.mapGreater2Dest_          (thisVector_().iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector mapGreaterOrEqual   (IVectorGetter aLHS, double aRHS) {ILogicalVector rVector = newLogicalVector_(newVectorSize_(aLHS)); DATA.mapGreaterOrEqual2Dest_   (thisVector_().iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector mapLess             (IVectorGetter aLHS, double aRHS) {ILogicalVector rVector = newLogicalVector_(newVectorSize_(aLHS)); DATA.mapLess2Dest_             (thisVector_().iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
-    @Override public ILogicalVector mapLessOrEqual      (IVectorGetter aLHS, double aRHS) {ILogicalVector rVector = newLogicalVector_(newVectorSize_(aLHS)); DATA.mapLessOrEqual2Dest_      (thisVector_().iteratorOf(aLHS), aRHS, rVector.setIterator()); return rVector;}
+    @Override public ILogicalVector equal           (double aRHS) {IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(tThis.size()); DATA.mapEqual2Dest          (tThis, aRHS, rVector); return rVector;}
+    @Override public ILogicalVector greater         (double aRHS) {IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(tThis.size()); DATA.mapGreater2Dest        (tThis, aRHS, rVector); return rVector;}
+    @Override public ILogicalVector greaterOrEqual  (double aRHS) {IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(tThis.size()); DATA.mapGreaterOrEqual2Dest (tThis, aRHS, rVector); return rVector;}
+    @Override public ILogicalVector less            (double aRHS) {IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(tThis.size()); DATA.mapLess2Dest           (tThis, aRHS, rVector); return rVector;}
+    @Override public ILogicalVector lessOrEqual     (double aRHS) {IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(tThis.size()); DATA.mapLessOrEqual2Dest    (tThis, aRHS, rVector); return rVector;}
     
-    @Override public ILogicalVector compare(IVectorGetter aRHS, IComparator aOpt) {IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(newVectorSize_(aRHS)); DATA.ebeCompare2Dest_(tThis.iterator(), tThis.iteratorOf(aRHS), rVector.setIterator(), aOpt); return rVector;}
-    @Override public ILogicalVector check  (IChecker aOpt) {IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(tThis.size()); DATA.mapCheck2Dest_(tThis.iterator(), rVector.setIterator(), aOpt); return rVector;}
+    @Override public ILogicalVector compare(final IVectorGetter aRHS, IComparator aOpt) {final IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(tThis.size()); DATA.ebeCompare2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector, aOpt); return rVector;}
+    @Override public ILogicalVector check  (IChecker aOpt) {IVector tThis = thisVector_(); ILogicalVector rVector = newLogicalVector_(tThis.size()); DATA.mapCheck2Dest(tThis, rVector, aOpt); return rVector;}
     
     /** 向量的一些额外的运算 */
     @Override public double dot(IVectorGetter aRHS) {
@@ -93,7 +95,7 @@ public abstract class AbstractVectorOperation implements IVectorOperation {
         while (il.hasNext()) rDot += il.next()*ir.next();
         return rDot;
     }
-    @Override public double dot2this() {
+    @Override public double dot() {
         final IDoubleIterator it = thisVector_().iterator();
         double rDot = 0.0;
         while (it.hasNext()) {
@@ -102,11 +104,11 @@ public abstract class AbstractVectorOperation implements IVectorOperation {
         }
         return rDot;
     }
-    @Override public double norm() {return MathEX.Fast.sqrt(dot2this());}
+    @Override public double norm() {return MathEX.Fast.sqrt(dot());}
     
     @Override public IVector reverse() {
         IVector tVector = refReverse();
-        IVector rVector = thisVector_().newZeros(tVector.size());
+        IVector rVector = newVector_(tVector.size());
         rVector.fill(tVector);
         return rVector;
     }
@@ -118,17 +120,6 @@ public abstract class AbstractVectorOperation implements IVectorOperation {
             @Override public double getAndSet_(int aIdx, double aValue) {return mThis.getAndSet_(mThis.size()-1-aIdx, aValue);}
             @Override public int size() {return mThis.size();}
         };
-    }
-    
-    /** 内部实用函数 */
-    protected int newVectorSize_(IVectorGetter aData) {
-        if (aData instanceof IVector) return ((IVector)aData).size();
-        return thisVector_().size();
-    }
-    protected int newVectorSize_(IVectorGetter aData1, IVectorGetter aData2) {
-        if (aData1 instanceof IVector) return ((IVector)aData1).size();
-        if (aData2 instanceof IVector) return ((IVector)aData2).size();
-        return thisVector_().size();
     }
     
     

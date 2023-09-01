@@ -1,10 +1,14 @@
 package com.jtool.math.function;
 
+import com.jtool.code.functional.IDoubleConsumer1;
 import com.jtool.code.functional.IDoubleOperator1;
+import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.IVectorGetter;
 import com.jtool.math.vector.IVectorSetter;
 import org.jetbrains.annotations.VisibleForTesting;
+
+import java.util.Iterator;
 
 /**
  * @author liqa
@@ -16,10 +20,15 @@ public interface IFunc1 extends IFunc1Subs, IVectorGetter, IVectorSetter {
     IVector f();
     
     /** 批量修改的接口 */
-    void fill(double aValue);
-    void fill(IFunc1Subs aFunc1Subs);
     void fill(double[] aData);
-    void fill(Iterable<? extends Number> aList);
+    default void fill(double aValue) {operation().fill(aValue);}
+    default void fill(IFunc1Subs aFunc1Subs) {operation().fill(aFunc1Subs);}
+    default void fill(Iterable<? extends Number> aList) {
+        final Iterator<? extends Number> it = aList.iterator();
+        assign(() -> it.next().doubleValue());
+    }
+    default void assign(IDoubleSupplier aSup) {operation().assign(aSup);}
+    default void forEach(IDoubleConsumer1 aCon) {operation().forEach(aCon);}
     
     /** 拷贝的接口 */
     IFunc1 copy();
@@ -53,30 +62,30 @@ public interface IFunc1 extends IFunc1Subs, IVectorGetter, IVectorSetter {
     
     
     /** Groovy 的部分，增加向量基本的运算操作，现在也归入内部使用 */
-    default IFunc1 plus     (double aRHS) {return operation().mapPlus       (this, aRHS);}
-    default IFunc1 minus    (double aRHS) {return operation().mapMinus      (this, aRHS);}
-    default IFunc1 multiply (double aRHS) {return operation().mapMultiply   (this, aRHS);}
-    default IFunc1 div      (double aRHS) {return operation().mapDiv        (this, aRHS);}
-    default IFunc1 mod      (double aRHS) {return operation().mapMod        (this, aRHS);}
+    default IFunc1 plus     (double aRHS) {return operation().plus    (aRHS);}
+    default IFunc1 minus    (double aRHS) {return operation().minus   (aRHS);}
+    default IFunc1 multiply (double aRHS) {return operation().multiply(aRHS);}
+    default IFunc1 div      (double aRHS) {return operation().div     (aRHS);}
+    default IFunc1 mod      (double aRHS) {return operation().mod     (aRHS);}
     
-    default IFunc1 plus     (IFunc1Subs aRHS) {return operation().ebePlus       (this, aRHS);}
-    default IFunc1 minus    (IFunc1Subs aRHS) {return operation().ebeMinus      (this, aRHS);}
-    default IFunc1 multiply (IFunc1Subs aRHS) {return operation().ebeMultiply   (this, aRHS);}
-    default IFunc1 div      (IFunc1Subs aRHS) {return operation().ebeDiv        (this, aRHS);}
-    default IFunc1 mod      (IFunc1Subs aRHS) {return operation().ebeMod        (this, aRHS);}
+    default IFunc1 plus     (IFunc1Subs aRHS) {return operation().plus    (aRHS);}
+    default IFunc1 minus    (IFunc1Subs aRHS) {return operation().minus   (aRHS);}
+    default IFunc1 multiply (IFunc1Subs aRHS) {return operation().multiply(aRHS);}
+    default IFunc1 div      (IFunc1Subs aRHS) {return operation().div     (aRHS);}
+    default IFunc1 mod      (IFunc1Subs aRHS) {return operation().mod     (aRHS);}
     
     /** 注意这些 2this 操作并没有重载 groovy 中的 += 之类的运算符 */
-    default void plus2this      (double aRHS) {operation().mapPlus2this     (aRHS);}
-    default void minus2this     (double aRHS) {operation().mapMinus2this    (aRHS);}
-    default void multiply2this  (double aRHS) {operation().mapMultiply2this (aRHS);}
-    default void div2this       (double aRHS) {operation().mapDiv2this      (aRHS);}
-    default void mod2this       (double aRHS) {operation().mapMod2this      (aRHS);}
+    default void plus2this      (double aRHS) {operation().plus2this    (aRHS);}
+    default void minus2this     (double aRHS) {operation().minus2this   (aRHS);}
+    default void multiply2this  (double aRHS) {operation().multiply2this(aRHS);}
+    default void div2this       (double aRHS) {operation().div2this     (aRHS);}
+    default void mod2this       (double aRHS) {operation().mod2this     (aRHS);}
     
-    default void plus2this      (IFunc1Subs aRHS) {operation().ebePlus2this     (aRHS);}
-    default void minus2this     (IFunc1Subs aRHS) {operation().ebeMinus2this    (aRHS);}
-    default void multiply2this  (IFunc1Subs aRHS) {operation().ebeMultiply2this (aRHS);}
-    default void div2this       (IFunc1Subs aRHS) {operation().ebeDiv2this      (aRHS);}
-    default void mod2this       (IFunc1Subs aRHS) {operation().ebeMod2this      (aRHS);}
+    default void plus2this      (IFunc1Subs aRHS) {operation().plus2this    (aRHS);}
+    default void minus2this     (IFunc1Subs aRHS) {operation().minus2this   (aRHS);}
+    default void multiply2this  (IFunc1Subs aRHS) {operation().multiply2this(aRHS);}
+    default void div2this       (IFunc1Subs aRHS) {operation().div2this     (aRHS);}
+    default void mod2this       (IFunc1Subs aRHS) {operation().mod2this     (aRHS);}
     
     /** Groovy 的部分，重载一些运算符方便操作；圆括号为 x 值查找，方括号为索引查找 */
     @VisibleForTesting default double call(double aX) {return subs(aX);}

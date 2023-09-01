@@ -1,8 +1,10 @@
 package com.jtool.math.matrix;
 
 
+import com.jtool.code.functional.IDoubleConsumer1;
 import com.jtool.code.functional.IDoubleOperator1;
 import com.jtool.code.functional.IDoubleOperator2;
+import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.math.vector.IVector;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -12,57 +14,65 @@ import org.jetbrains.annotations.VisibleForTesting;
  */
 public interface IMatrixOperation {
     /** 通用的一些运算 */
-    IMatrix ebePlus         (IMatrixGetter aLHS, IMatrixGetter aRHS);
-    IMatrix ebeMinus        (IMatrixGetter aLHS, IMatrixGetter aRHS);
-    IMatrix ebeMultiply     (IMatrixGetter aLHS, IMatrixGetter aRHS);
-    IMatrix ebeDiv          (IMatrixGetter aLHS, IMatrixGetter aRHS);
-    IMatrix ebeMod          (IMatrixGetter aLHS, IMatrixGetter aRHS);
-    IMatrix ebeDo           (IMatrixGetter aLHS, IMatrixGetter aRHS, IDoubleOperator2 aOpt);
+    IMatrix plus        (IMatrixGetter aRHS);
+    IMatrix minus       (IMatrixGetter aRHS);
+    IMatrix lminus      (IMatrixGetter aRHS);
+    IMatrix multiply    (IMatrixGetter aRHS);
+    IMatrix div         (IMatrixGetter aRHS);
+    IMatrix ldiv        (IMatrixGetter aRHS);
+    IMatrix mod         (IMatrixGetter aRHS);
+    IMatrix lmod        (IMatrixGetter aRHS);
+    IMatrix operate     (IMatrixGetter aRHS, IDoubleOperator2 aOpt);
     
-    IMatrix mapPlus         (IMatrixGetter aLHS, double aRHS);
-    IMatrix mapMinus        (IMatrixGetter aLHS, double aRHS);
-    IMatrix mapLMinus       (IMatrixGetter aLHS, double aRHS);
-    IMatrix mapMultiply     (IMatrixGetter aLHS, double aRHS);
-    IMatrix mapDiv          (IMatrixGetter aLHS, double aRHS);
-    IMatrix mapLDiv         (IMatrixGetter aLHS, double aRHS);
-    IMatrix mapMod          (IMatrixGetter aLHS, double aRHS);
-    IMatrix mapLMod         (IMatrixGetter aLHS, double aRHS);
-    IMatrix mapDo           (IMatrixGetter aLHS, IDoubleOperator1 aOpt);
+    IMatrix plus        (double aRHS);
+    IMatrix minus       (double aRHS);
+    IMatrix lminus      (double aRHS);
+    IMatrix multiply    (double aRHS);
+    IMatrix div         (double aRHS);
+    IMatrix ldiv        (double aRHS);
+    IMatrix mod         (double aRHS);
+    IMatrix lmod        (double aRHS);
+    IMatrix map         (IDoubleOperator1 aOpt);
     
-    void ebePlus2this       (IMatrixGetter aRHS);
-    void ebeMinus2this      (IMatrixGetter aRHS);
-    void ebeLMinus2this     (IMatrixGetter aRHS);
-    void ebeMultiply2this   (IMatrixGetter aRHS);
-    void ebeDiv2this        (IMatrixGetter aRHS);
-    void ebeLDiv2this       (IMatrixGetter aRHS);
-    void ebeMod2this        (IMatrixGetter aRHS);
-    void ebeLMod2this       (IMatrixGetter aRHS);
-    void ebeDo2this         (IMatrixGetter aRHS, IDoubleOperator2 aOpt);
+    void plus2this      (IMatrixGetter aRHS);
+    void minus2this     (IMatrixGetter aRHS);
+    void lminus2this    (IMatrixGetter aRHS);
+    void multiply2this  (IMatrixGetter aRHS);
+    void div2this       (IMatrixGetter aRHS);
+    void ldiv2this      (IMatrixGetter aRHS);
+    void mod2this       (IMatrixGetter aRHS);
+    void lmod2this      (IMatrixGetter aRHS);
+    void operate2this   (IMatrixGetter aRHS, IDoubleOperator2 aOpt);
     
-    void mapPlus2this       (double aRHS);
-    void mapMinus2this      (double aRHS);
-    void mapLMinus2this     (double aRHS);
-    void mapMultiply2this   (double aRHS);
-    void mapDiv2this        (double aRHS);
-    void mapLDiv2this       (double aRHS);
-    void mapMod2this        (double aRHS);
-    void mapLMod2this       (double aRHS);
-    void mapDo2this         (IDoubleOperator1 aOpt);
+    void plus2this      (double aRHS);
+    void minus2this     (double aRHS);
+    void lminus2this    (double aRHS);
+    void multiply2this  (double aRHS);
+    void div2this       (double aRHS);
+    void ldiv2this      (double aRHS);
+    void mod2this       (double aRHS);
+    void lmod2this      (double aRHS);
+    void map2this       (IDoubleOperator1 aOpt);
     
-    void mapFill2this       (double aRHS);
-    void ebeFill2this       (IMatrixGetter aRHS);
+    /** 这两个方法名默认是作用到自身的，这里为了保持 operation 的使用简洁不在函数名上特殊说明 */
+    void fill           (double aRHS);
+    void fill           (IMatrixGetter aRHS);
+    void assignCol      (IDoubleSupplier aSup);
+    void assignRow      (IDoubleSupplier aSup);
+    void forEachCol     (IDoubleConsumer1 aCon);
+    void forEachRow     (IDoubleConsumer1 aCon);
     
-    double sum();
-    double mean();
-    double max();
-    double min();
+    double sum          ();
+    double mean         ();
+    double max          ();
+    double min          ();
     
     
     /** 矩阵的一些额外的运算 */
-    IVector sumOfCols();
-    IVector sumOfRows();
-    IVector meanOfCols();
-    IVector meanOfRows();
+    IVector sumOfCols   ();
+    IVector sumOfRows   ();
+    IVector meanOfCols  ();
+    IVector meanOfRows  ();
     
     IMatrix transpose();
     @VisibleForTesting default IMatrix T() {return transpose();}

@@ -6,7 +6,6 @@ import com.jtool.code.filter.IIndexFilter;
 import com.jtool.code.functional.IOperator1;
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.Vectors;
-import groovy.lang.Closure;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
@@ -26,7 +25,7 @@ public interface IAtomDataOperation {
      * 这里会直接过滤一次构造完成过滤后的 List
      * @author liqa
      * @param aFilter 自定义的过滤器，输入 {@link IAtom}，返回是否保留
-     * @return 过滤后的 AtomData
+     * @return 新创建的过滤后的 AtomData
      */
     IAtomData filter(IFilter<IAtom> aFilter);
     
@@ -34,7 +33,7 @@ public interface IAtomDataOperation {
      * 根据原子种类来过滤 aAtomData，只保留选定种类的原子
      * @author liqa
      * @param aType 选择保留的原子种类数
-     * @return 过滤后的 AtomData
+     * @return 新创建的过滤后的 AtomData
      */
     IAtomData filterType(int aType);
     
@@ -44,7 +43,7 @@ public interface IAtomDataOperation {
      * 直接通过输入的 aIndices 进行引用映射，相当于 {@code refSlice}
      * @author liqa
      * @param aIndices 选择保留的原子的下标组成的数组
-     * @return 过滤后的 AtomData
+     * @return 新创建的过滤后的 AtomData
      */
     IAtomData filterIndices(List<Integer> aIndices);
     IAtomData filterIndices(int[] aIndices);
@@ -52,33 +51,24 @@ public interface IAtomDataOperation {
     
     
     /**
-     * 根据通用的原子映射 aOperator 来遍历重新收集原子数据
+     * 根据通用的原子映射 aOperator 来遍历映射修改原子
      * @author liqa
      * @param aMinTypeNum 建议最小的种类数目
      * @param aOperator 自定义的原子映射运算，输入 {@link IAtom} 输出修改后的 {@link IAtom}
-     * @return 更新后的 AtomData
+     * @return 新创建的修改后的 AtomData
      */
-    IAtomData collect(int aMinTypeNum, IOperator1<? extends IAtom, ? super IAtom> aOperator);
-    default IAtomData collect(IOperator1<? extends IAtom, ? super IAtom> aOperator) {return collect(1, aOperator);}
-    /** 兼容 groovy 调用提供一个更容易被检测到的重载方法 */
-    default IAtomData collect(Closure<? extends IAtom> aGroovyTask) {
-        int tN = aGroovyTask.getMaximumNumberOfParameters();
-        switch (tN) {
-        case 0: {return collect(atom -> aGroovyTask.call());}
-        case 1: {return collect(aGroovyTask::call);}
-        default: throw new IllegalArgumentException("Parameters Number of collect Must be 0 or 1");
-        }
-    }
+    IAtomData map(int aMinTypeNum, IOperator1<? extends IAtom, ? super IAtom> aOperator);
+    default IAtomData map(IOperator1<? extends IAtom, ? super IAtom> aOperator) {return map(1, aOperator);}
     
     /**
-     * 根据特殊的原子种类映射 aOperator 来遍历分配原子种类
+     * 根据特殊的原子种类映射 aOperator 来遍历映射修改原子种类
      * @author liqa
      * @param aMinTypeNum 建议最小的种类数目
      * @param aOperator 自定义的原子映射运算，输入 {@link IAtom} 输出应该分配的种类
-     * @return 更新后的 AtomData
+     * @return 新创建的修改后的 AtomData
      */
-    IAtomData assignType(int aMinTypeNum, IOperator1<Integer, ? super IAtom> aOperator);
-    default IAtomData assignType(IOperator1<Integer, ? super IAtom> aOperator) {return assignType(1, aOperator);}
+    IAtomData mapType(int aMinTypeNum, IOperator1<Integer, ? super IAtom> aOperator);
+    default IAtomData mapType(IOperator1<Integer, ? super IAtom> aOperator) {return mapType(1, aOperator);}
     
     
     /**
@@ -86,26 +76,26 @@ public interface IAtomDataOperation {
      * @author liqa
      * @param aRandom 可选自定义的随机数生成器
      * @param aTypeWeights 每个种类的权重
-     * @return 更新后的 AtomData
+     * @return 新创建的修改后的 AtomData
      */
-    IAtomData randomAssignTypeByWeight(Random aRandom, IVector aTypeWeights);
-    default IAtomData randomAssignTypeByWeight(IVector aTypeWeights) {return randomAssignTypeByWeight(RANDOM, aTypeWeights);}
-    default IAtomData randomAssignTypeByWeight(Random aRandom, double... aTypeWeights) {
+    IAtomData mapTypeRandom(Random aRandom, IVector aTypeWeights);
+    default IAtomData mapTypeRandom(IVector aTypeWeights) {return mapTypeRandom(RANDOM, aTypeWeights);}
+    default IAtomData mapTypeRandom(Random aRandom, double... aTypeWeights) {
         // 特殊输入直接抛出错误
         if (aTypeWeights == null || aTypeWeights.length == 0) throw new RuntimeException("TypeWeights Must be not empty");
-        return randomAssignTypeByWeight(aRandom, Vectors.from(aTypeWeights));
+        return mapTypeRandom(aRandom, Vectors.from(aTypeWeights));
     }
-    default IAtomData randomAssignTypeByWeight(double... aTypeWeights) {return randomAssignTypeByWeight(RANDOM, aTypeWeights);}
+    default IAtomData mapTypeRandom(double... aTypeWeights) {return mapTypeRandom(RANDOM, aTypeWeights);}
     
     /**
      * 使用高斯分布来随机扰动原子位置
      * @author liqa
      * @param aRandom 可选自定义的随机数生成器
      * @param aSigma 高斯分布的标准差
-     * @return 扰动后的 AtomData
+     * @return 新创建的扰动后的 AtomData
      */
-    IAtomData randomPerturbXYZByGaussian(Random aRandom, double aSigma);
-    default IAtomData randomPerturbXYZByGaussian(double aSigma) {return randomPerturbXYZByGaussian(RANDOM, aSigma);}
-    @VisibleForTesting default IAtomData perturbG(Random aRandom, double aSigma) {return randomPerturbXYZByGaussian(aRandom, aSigma);}
-    @VisibleForTesting default IAtomData perturbG(double aSigma) {return randomPerturbXYZByGaussian(aSigma);}
+    IAtomData perturbXYZGaussian(Random aRandom, double aSigma);
+    default IAtomData perturbXYZGaussian(double aSigma) {return perturbXYZGaussian(RANDOM, aSigma);}
+    @VisibleForTesting default IAtomData perturbXYZ(Random aRandom, double aSigma) {return perturbXYZGaussian(aRandom, aSigma);}
+    @VisibleForTesting default IAtomData perturbXYZ(double aSigma) {return perturbXYZGaussian(aSigma);}
 }

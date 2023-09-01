@@ -2,6 +2,8 @@ package com.jtool.math.matrix;
 
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.filter.IIndexFilter;
+import com.jtool.code.functional.IDoubleConsumer1;
+import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
 import com.jtool.code.iterator.IDoubleSetOnlyIterator;
@@ -61,6 +63,10 @@ public interface IMatrix extends IMatrixGetter, IMatrixSetter {
     default void fill(Iterable<? extends Iterable<? extends Number>> aRows) {fillWithRows(aRows);}
     void fillWithRows(Iterable<? extends Iterable<? extends Number>> aRows);
     void fillWithCols(Iterable<? extends Iterable<? extends Number>> aCols);
+    void assignCol(IDoubleSupplier aSup);
+    void assignRow(IDoubleSupplier aSup);
+    void forEachCol(IDoubleConsumer1 aCon);
+    void forEachRow(IDoubleConsumer1 aCon);
     
     /** 访问和修改部分，自带的接口 */
     double get_(int aRow, int aCol);

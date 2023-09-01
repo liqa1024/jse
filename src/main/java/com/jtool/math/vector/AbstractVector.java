@@ -3,6 +3,8 @@ package com.jtool.math.vector;
 import com.jtool.code.CS.SliceType;
 import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.code.filter.IIndexFilter;
+import com.jtool.code.functional.IDoubleConsumer1;
+import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
 import com.jtool.code.iterator.IDoubleSetOnlyIterator;
@@ -151,9 +153,12 @@ public abstract class AbstractVector implements IVector {
     
     
     /** 批量修改的接口 */
-    @Override public final void fill(double aValue) {operation().mapFill2this(aValue);}
-    @Override public final void fill(IVectorGetter aVectorGetter) {operation().ebeFill2this(aVectorGetter);}
-    
+    @Override public final void fill(double aValue) {operation().fill(aValue);}
+    @Override public final void fill(IVectorGetter aVectorGetter) {operation().fill(aVectorGetter);}
+    @Override public final void fill(Iterable<? extends Number> aList) {
+        final Iterator<? extends Number> it = aList.iterator();
+        assign(() -> it.next().doubleValue());
+    }
     @Override public void fill(double[] aData) {
         final IDoubleSetIterator si = setIterator();
         int idx = 0;
@@ -162,11 +167,9 @@ public abstract class AbstractVector implements IVector {
             ++idx;
         }
     }
-    @Override public void fill(Iterable<? extends Number> aList) {
-        final IDoubleSetIterator si = setIterator();
-        final Iterator<? extends Number> it = aList.iterator();
-        while (si.hasNext()) si.nextAndSet(it.next().doubleValue());
-    }
+    @Override public final void assign(IDoubleSupplier aSup) {operation().assign(aSup);}
+    @Override public final void forEach(IDoubleConsumer1 aCon) {operation().forEach(aCon);}
+    
     
     @Override public double get(int aIdx) {
         if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
@@ -309,29 +312,29 @@ public abstract class AbstractVector implements IVector {
     
     
     /** Groovy 的部分，增加向量基本的运算操作 */
-    @Override public IVector plus       (double aRHS) {return operation().mapPlus       (this, aRHS);}
-    @Override public IVector minus      (double aRHS) {return operation().mapMinus      (this, aRHS);}
-    @Override public IVector multiply   (double aRHS) {return operation().mapMultiply   (this, aRHS);}
-    @Override public IVector div        (double aRHS) {return operation().mapDiv        (this, aRHS);}
-    @Override public IVector mod        (double aRHS) {return operation().mapMod        (this, aRHS);}
+    @Override public final IVector plus         (double aRHS) {return operation().plus    (aRHS);}
+    @Override public final IVector minus        (double aRHS) {return operation().minus   (aRHS);}
+    @Override public final IVector multiply     (double aRHS) {return operation().multiply(aRHS);}
+    @Override public final IVector div          (double aRHS) {return operation().div     (aRHS);}
+    @Override public final IVector mod          (double aRHS) {return operation().mod     (aRHS);}
     
-    @Override public IVector plus       (IVectorGetter aRHS) {return operation().ebePlus    (this, aRHS);}
-    @Override public IVector minus      (IVectorGetter aRHS) {return operation().ebeMinus   (this, aRHS);}
-    @Override public IVector multiply   (IVectorGetter aRHS) {return operation().ebeMultiply(this, aRHS);}
-    @Override public IVector div        (IVectorGetter aRHS) {return operation().ebeDiv     (this, aRHS);}
-    @Override public IVector mod        (IVectorGetter aRHS) {return operation().ebeMod     (this, aRHS);}
+    @Override public final IVector plus         (IVectorGetter aRHS) {return operation().plus    (aRHS);}
+    @Override public final IVector minus        (IVectorGetter aRHS) {return operation().minus   (aRHS);}
+    @Override public final IVector multiply     (IVectorGetter aRHS) {return operation().multiply(aRHS);}
+    @Override public final IVector div          (IVectorGetter aRHS) {return operation().div     (aRHS);}
+    @Override public final IVector mod          (IVectorGetter aRHS) {return operation().mod     (aRHS);}
     
-    @Override public final void plus2this       (double aRHS) {operation().mapPlus2this     (aRHS);}
-    @Override public final void minus2this      (double aRHS) {operation().mapMinus2this    (aRHS);}
-    @Override public final void multiply2this   (double aRHS) {operation().mapMultiply2this (aRHS);}
-    @Override public final void div2this        (double aRHS) {operation().mapDiv2this      (aRHS);}
-    @Override public final void mod2this        (double aRHS) {operation().mapMod2this      (aRHS);}
+    @Override public final void plus2this       (double aRHS) {operation().plus2this    (aRHS);}
+    @Override public final void minus2this      (double aRHS) {operation().minus2this   (aRHS);}
+    @Override public final void multiply2this   (double aRHS) {operation().multiply2this(aRHS);}
+    @Override public final void div2this        (double aRHS) {operation().div2this     (aRHS);}
+    @Override public final void mod2this        (double aRHS) {operation().mod2this     (aRHS);}
     
-    @Override public final void plus2this       (IVectorGetter aRHS) {operation().ebePlus2this      (aRHS);}
-    @Override public final void minus2this      (IVectorGetter aRHS) {operation().ebeMinus2this     (aRHS);}
-    @Override public final void multiply2this   (IVectorGetter aRHS) {operation().ebeMultiply2this  (aRHS);}
-    @Override public final void div2this        (IVectorGetter aRHS) {operation().ebeDiv2this       (aRHS);}
-    @Override public final void mod2this        (IVectorGetter aRHS) {operation().ebeMod2this       (aRHS);}
+    @Override public final void plus2this       (IVectorGetter aRHS) {operation().plus2this    (aRHS);}
+    @Override public final void minus2this      (IVectorGetter aRHS) {operation().minus2this   (aRHS);}
+    @Override public final void multiply2this   (IVectorGetter aRHS) {operation().multiply2this(aRHS);}
+    @Override public final void div2this        (IVectorGetter aRHS) {operation().div2this     (aRHS);}
+    @Override public final void mod2this        (IVectorGetter aRHS) {operation().mod2this     (aRHS);}
     
     @Override public final double sum   () {return operation().sum  ();}
     @Override public final double mean  () {return operation().mean ();}
@@ -339,27 +342,17 @@ public abstract class AbstractVector implements IVector {
     @Override public final double max   () {return operation().max  ();}
     @Override public final double min   () {return operation().min  ();}
     
-    @Override public final IVector cumsum   () {return operation().cumsum   ();}
-    @Override public final IVector cummean  () {return operation().cummean  ();}
-    @Override public final IVector cumprod  () {return operation().cumprod  ();}
-    @Override public final IVector cummax   () {return operation().cummax   ();}
-    @Override public final IVector cummin   () {return operation().cummin   ();}
+    @Override public final ILogicalVector equal         (IVectorGetter aRHS) {return operation().equal         (aRHS);}
+    @Override public final ILogicalVector greater       (IVectorGetter aRHS) {return operation().greater       (aRHS);}
+    @Override public final ILogicalVector greaterOrEqual(IVectorGetter aRHS) {return operation().greaterOrEqual(aRHS);}
+    @Override public final ILogicalVector less          (IVectorGetter aRHS) {return operation().less          (aRHS);}
+    @Override public final ILogicalVector lessOrEqual   (IVectorGetter aRHS) {return operation().lessOrEqual   (aRHS);}
     
-    @Override public final double norm  ()                   {return operation().norm       ()    ;}
-    @Override public final double dot   (IVectorGetter aRHS) {return operation().dot        (aRHS);}
-    @Override public final double dot   ()                   {return operation().dot2this   ()    ;}
-    
-    @Override public final ILogicalVector equal            (IVectorGetter aRHS) {return operation().ebeEqual         (this, aRHS);}
-    @Override public final ILogicalVector greater          (IVectorGetter aRHS) {return operation().ebeGreater       (this, aRHS);}
-    @Override public final ILogicalVector greaterOrEqual   (IVectorGetter aRHS) {return operation().ebeGreaterOrEqual(this, aRHS);}
-    @Override public final ILogicalVector less             (IVectorGetter aRHS) {return operation().ebeLess          (this, aRHS);}
-    @Override public final ILogicalVector lessOrEqual      (IVectorGetter aRHS) {return operation().ebeLessOrEqual   (this, aRHS);}
-    
-    @Override public final ILogicalVector equal            (double aRHS) {return operation().mapEqual         (this, aRHS);}
-    @Override public final ILogicalVector greater          (double aRHS) {return operation().mapGreater       (this, aRHS);}
-    @Override public final ILogicalVector greaterOrEqual   (double aRHS) {return operation().mapGreaterOrEqual(this, aRHS);}
-    @Override public final ILogicalVector less             (double aRHS) {return operation().mapLess          (this, aRHS);}
-    @Override public final ILogicalVector lessOrEqual      (double aRHS) {return operation().mapLessOrEqual   (this, aRHS);}
+    @Override public final ILogicalVector equal         (double aRHS) {return operation().equal         (aRHS);}
+    @Override public final ILogicalVector greater       (double aRHS) {return operation().greater       (aRHS);}
+    @Override public final ILogicalVector greaterOrEqual(double aRHS) {return operation().greaterOrEqual(aRHS);}
+    @Override public final ILogicalVector less          (double aRHS) {return operation().less          (aRHS);}
+    @Override public final ILogicalVector lessOrEqual   (double aRHS) {return operation().lessOrEqual   (aRHS);}
     
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public double call(int aIdx) {return get(aIdx);}
