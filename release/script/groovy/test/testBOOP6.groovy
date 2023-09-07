@@ -6,9 +6,8 @@ import com.jtool.lmp.Dump
 import com.jtool.lmp.Lmpdat
 import com.jtool.plot.Plotters
 import com.jtool.rareevent.atom.ABOOPSolidChecker
-import com.jtool.rareevent.atom.BOOPSolidChecker
 import com.jtool.rareevent.atom.ClusterSizeCalculator
-import com.jtool.rareevent.atom.MainTypeClusterSizeCalculator
+import com.jtool.rareevent.atom.MultiTypeClusterSizeCalculator
 import com.jtool.vasp.POSCAR
 
 
@@ -38,10 +37,9 @@ UT.Timer.toc();
 
 // 用于计算合金的团簇计算器
 UT.Timer.tic();
-def calMulti = new MainTypeClusterSizeCalculator(
-    new ABOOPSolidChecker().setRNearestMul(2.2).setConnectThreshold(0.83).setSolidThreshold(25),
-    new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.84).setSolidThreshold(7),
-    2
+def calMulti = new MultiTypeClusterSizeCalculator(
+    new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.89).setSolidThreshold(7),
+    [new ABOOPSolidChecker().setRNearestMul(1.8).setConnectThreshold(0.84).setSolidThreshold(13), new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.84).setSolidThreshold(7)]
 );
 println("multi glass: ${calMulti.lambdaOf(dataG)}, total: ${dataG.atomNum()}");
 println("multi crystal: ${calMulti.lambdaOf(dataC)}, total: ${dataC.atomNum()}");

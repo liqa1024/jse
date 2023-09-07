@@ -8,13 +8,13 @@ import com.jtool.plot.Plotters
 
 /** 测试计算 BOOP，测试固液判断的阈值选择 */
 
-final double cutoffMul = 1.8;
+final double cutoffMul = 1.5;
 final int nnn = -1;
 final double connectThreshold = 0.84;
-final int maxConnect = 64;
-final int solidThreshold = 25;
+final int maxConnect = 32;
+final int solidThreshold = 7;
 
-final boolean onlyCu = true;
+final boolean onlyCu = false;
 final boolean onlyZr = false;
 
 
