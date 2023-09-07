@@ -24,6 +24,19 @@ public class AbstractCollections {
     
     public static <T> @Unmodifiable List<T> zl() {return ImmutableList.of();}
     
+    /** 通用的转换方法 */
+    public static <T> List<T> from(final int aSize, final IOperator1<? extends T, Integer> aListGetter) {
+        return new AbstractRandomAccessList<T>() {
+            @Override public T get(int index) {return aListGetter.cal(index);}
+            @Override public int size() {return aSize;}
+        };
+    }
+    public static <T> Collection<T> from(final int aSize, final Iterable<T> aIterable) {
+        return new AbstractCollection<T>() {
+            @Override public Iterator<T> iterator() {return aIterable.iterator();}
+            @Override public int size() {return aSize;}
+        };
+    }
     /**
      * {@link Arrays#asList} for double[]
      * @author liqa

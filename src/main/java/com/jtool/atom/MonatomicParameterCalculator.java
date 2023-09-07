@@ -1,6 +1,5 @@
 package com.jtool.atom;
 
-import com.jtool.code.UT;
 import com.jtool.code.collection.Pair;
 import com.jtool.math.ComplexDouble;
 import com.jtool.math.function.FixBoundFunc1;
@@ -60,7 +59,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * @param aThreadNum MPC 进行计算会使用的线程数
      * @param aCellStep 内部用于加速近邻搜索的 LinkedCell 不同 Cell 大小的步长
      */
-    public MonatomicParameterCalculator(Iterable<? extends IXYZ> aAtomDataXYZ, IXYZ aBoxLo, IXYZ aBoxHi, int aThreadNum, double aCellStep) {
+    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBoxLo, IXYZ aBoxHi, int aThreadNum, double aCellStep) {
         super(new ParforThreadPool(aThreadNum));
         
         // 获取模拟盒数据
@@ -77,24 +76,23 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         mNL = new NeighborListGetter(mAtomDataXYZ, mBox, aCellStep);
     }
-    public MonatomicParameterCalculator(Iterable<? extends IXYZ> aAtomDataXYZ) {this(aAtomDataXYZ, BOX_ONE);}
-    public MonatomicParameterCalculator(Iterable<? extends IXYZ> aAtomDataXYZ, IXYZ aBox) {this(aAtomDataXYZ, BOX_ZERO, aBox);}
-    public MonatomicParameterCalculator(Iterable<? extends IXYZ> aAtomDataXYZ, IXYZ aBoxLo, IXYZ aBoxHi) {this(aAtomDataXYZ, aBoxLo, aBoxHi, 1);}
-    public MonatomicParameterCalculator(Iterable<? extends IXYZ> aAtomDataXYZ, IXYZ aBoxLo, IXYZ aBoxHi, int aThreadNum) {this(aAtomDataXYZ, aBoxLo, aBoxHi, aThreadNum, DEFAULT_CELL_STEP);}
+    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ) {this(aAtomDataXYZ, BOX_ONE);}
+    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox) {this(aAtomDataXYZ, BOX_ZERO, aBox);}
+    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBoxLo, IXYZ aBoxHi) {this(aAtomDataXYZ, aBoxLo, aBoxHi, 1);}
+    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBoxLo, IXYZ aBoxHi, int aThreadNum) {this(aAtomDataXYZ, aBoxLo, aBoxHi, aThreadNum, DEFAULT_CELL_STEP);}
     
     public MonatomicParameterCalculator(IAtomData aAtomData) {this(aAtomData, 1);}
     public MonatomicParameterCalculator(IAtomData aAtomData, int aThreadNum) {this(aAtomData, aThreadNum, DEFAULT_CELL_STEP);}
-    public MonatomicParameterCalculator(IAtomData aAtomData, int aThreadNum, double aCellStep) {this(UT.Code.toCollection(aAtomData.atomNum(), aAtomData.atoms()), aAtomData.boxLo(), aAtomData.boxHi(), aThreadNum, aCellStep);}
+    public MonatomicParameterCalculator(IAtomData aAtomData, int aThreadNum, double aCellStep) {this(aAtomData.atoms(), aAtomData.boxLo(), aAtomData.boxHi(), aThreadNum, aCellStep);}
     
     
     
     /** 内部使用方法，用来将 aAtomDataXYZ 转换成内部存储的格式，并且处理精度问题造成的超出边界问题 */
-    private XYZ[] toValidAtomDataXYZ_(Iterable<? extends IXYZ> aAtomDataXYZ) {
+    private XYZ[] toValidAtomDataXYZ_(Collection<? extends IXYZ> aAtomDataXYZ) {
         // 对传入的数据进行一次值拷贝转为 XYZ[]
-        Collection<? extends IXYZ> tAtomDataXYZ = UT.Code.toCollection(aAtomDataXYZ);
-        XYZ[] tXYZArray = new XYZ[tAtomDataXYZ.size()];
+        XYZ[] tXYZArray = new XYZ[aAtomDataXYZ.size()];
         int tIdx = 0;
-        for (IXYZ tXYZ : tAtomDataXYZ) {
+        for (IXYZ tXYZ : aAtomDataXYZ) {
             tXYZArray[tIdx] = new XYZ(tXYZ); // 注意一定要进行一次值拷贝，因为会进行修改
             ++tIdx;
         }
@@ -216,9 +214,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 输出
         return gr;
     }
-    public IFunc1 calRDF_AB(Iterable<? extends IXYZ>  aAtomDataXYZ) {return calRDF_AB(aAtomDataXYZ, 160);}
-    public IFunc1 calRDF_AB(Iterable<? extends IXYZ>  aAtomDataXYZ, int aN) {return calRDF_AB(aAtomDataXYZ, aN, mUnitLen*6);}
-    public IFunc1 calRDF_AB(Iterable<? extends IXYZ>  aAtomDataXYZ, int aN, final double aRMax) {return calRDF_AB(toValidAtomDataXYZ_(aAtomDataXYZ), aN, aRMax);}
+    public IFunc1 calRDF_AB(Collection<? extends IXYZ>  aAtomDataXYZ) {return calRDF_AB(aAtomDataXYZ, 160);}
+    public IFunc1 calRDF_AB(Collection<? extends IXYZ>  aAtomDataXYZ, int aN) {return calRDF_AB(aAtomDataXYZ, aN, mUnitLen*6);}
+    public IFunc1 calRDF_AB(Collection<? extends IXYZ>  aAtomDataXYZ, int aN, final double aRMax) {return calRDF_AB(toValidAtomDataXYZ_(aAtomDataXYZ), aN, aRMax);}
     public IFunc1 calRDF_AB(MonatomicParameterCalculator aMPC                                    ) {return calRDF_AB(aMPC, 160);}
     public IFunc1 calRDF_AB(MonatomicParameterCalculator aMPC        , int aN                    ) {return calRDF_AB(aMPC, aN, mUnitLen*6);}
     public IFunc1 calRDF_AB(MonatomicParameterCalculator aMPC        , int aN, final double aRMax) {return calRDF_AB(aMPC.mAtomDataXYZ, aN, aRMax);} // aMPC 的 mAtomDataXYZ 都已经经过平移并且合理化
@@ -304,10 +302,10 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 输出
         return gr;
     }
-    public IFunc1 calRDF_AB_G(Iterable<? extends IXYZ>  aAtomDataXYZ) {return calRDF_AB_G(aAtomDataXYZ, 1000);}
-    public IFunc1 calRDF_AB_G(Iterable<? extends IXYZ>  aAtomDataXYZ, int aN) {return calRDF_AB_G(aAtomDataXYZ, aN, mUnitLen*6);}
-    public IFunc1 calRDF_AB_G(Iterable<? extends IXYZ>  aAtomDataXYZ, int aN, final double aRMax) {return calRDF_AB_G(aAtomDataXYZ, aN, aRMax, 4);}
-    public IFunc1 calRDF_AB_G(Iterable<? extends IXYZ>  aAtomDataXYZ, int aN, final double aRMax, int aSigmaMul) {return calRDF_AB_G(toValidAtomDataXYZ_(aAtomDataXYZ), aN, aRMax, aSigmaMul);}
+    public IFunc1 calRDF_AB_G(Collection<? extends IXYZ>  aAtomDataXYZ) {return calRDF_AB_G(aAtomDataXYZ, 1000);}
+    public IFunc1 calRDF_AB_G(Collection<? extends IXYZ>  aAtomDataXYZ, int aN) {return calRDF_AB_G(aAtomDataXYZ, aN, mUnitLen*6);}
+    public IFunc1 calRDF_AB_G(Collection<? extends IXYZ>  aAtomDataXYZ, int aN, final double aRMax) {return calRDF_AB_G(aAtomDataXYZ, aN, aRMax, 4);}
+    public IFunc1 calRDF_AB_G(Collection<? extends IXYZ>  aAtomDataXYZ, int aN, final double aRMax, int aSigmaMul) {return calRDF_AB_G(toValidAtomDataXYZ_(aAtomDataXYZ), aN, aRMax, aSigmaMul);}
     public IFunc1 calRDF_AB_G(MonatomicParameterCalculator aMPC                                                   ) {return calRDF_AB_G(aMPC, 1000);}
     public IFunc1 calRDF_AB_G(MonatomicParameterCalculator aMPC        , int aN                                   ) {return calRDF_AB_G(aMPC, aN, mUnitLen*6);}
     public IFunc1 calRDF_AB_G(MonatomicParameterCalculator aMPC        , int aN, final double aRMax               ) {return calRDF_AB_G(aMPC, aN, aRMax, 4);}
@@ -395,11 +393,11 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 输出
         return Sq;
     }
-    public IFunc1 calSF_AB(Iterable<? extends IXYZ>  aAtomDataXYZ) {return calSF_AB(aAtomDataXYZ, 2.0*PI/mUnitLen * 6.0);}
-    public IFunc1 calSF_AB(Iterable<? extends IXYZ>  aAtomDataXYZ, double aQMax) {return calSF_AB(aAtomDataXYZ, aQMax, 160);}
-    public IFunc1 calSF_AB(Iterable<? extends IXYZ>  aAtomDataXYZ, double aQMax, int aN) {return calSF_AB(aAtomDataXYZ, aQMax, aN, mUnitLen*6);}
-    public IFunc1 calSF_AB(Iterable<? extends IXYZ>  aAtomDataXYZ, double aQMax, int aN, final double aRMax) {return calSF_AB(aAtomDataXYZ, aQMax, aN, aRMax, 2.0*PI/mUnitLen * 0.6);}
-    public IFunc1 calSF_AB(Iterable<? extends IXYZ>  aAtomDataXYZ, double aQMax, int aN, final double aRMax, double aQMin) {return calSF_AB(toValidAtomDataXYZ_(aAtomDataXYZ), aQMax, aN, aRMax, aQMin);}
+    public IFunc1 calSF_AB(Collection<? extends IXYZ>  aAtomDataXYZ) {return calSF_AB(aAtomDataXYZ, 2.0*PI/mUnitLen * 6.0);}
+    public IFunc1 calSF_AB(Collection<? extends IXYZ>  aAtomDataXYZ, double aQMax) {return calSF_AB(aAtomDataXYZ, aQMax, 160);}
+    public IFunc1 calSF_AB(Collection<? extends IXYZ>  aAtomDataXYZ, double aQMax, int aN) {return calSF_AB(aAtomDataXYZ, aQMax, aN, mUnitLen*6);}
+    public IFunc1 calSF_AB(Collection<? extends IXYZ>  aAtomDataXYZ, double aQMax, int aN, final double aRMax) {return calSF_AB(aAtomDataXYZ, aQMax, aN, aRMax, 2.0*PI/mUnitLen * 0.6);}
+    public IFunc1 calSF_AB(Collection<? extends IXYZ>  aAtomDataXYZ, double aQMax, int aN, final double aRMax, double aQMin) {return calSF_AB(toValidAtomDataXYZ_(aAtomDataXYZ), aQMax, aN, aRMax, aQMin);}
     public IFunc1 calSF_AB(MonatomicParameterCalculator aMPC                                                                ) {return calSF_AB(aMPC, 2.0*PI/mUnitLen * 6.0);}
     public IFunc1 calSF_AB(MonatomicParameterCalculator aMPC        , double aQMax                                          ) {return calSF_AB(aMPC, aQMax, 160);}
     public IFunc1 calSF_AB(MonatomicParameterCalculator aMPC        , double aQMax, int aN                                  ) {return calSF_AB(aMPC, aQMax, aN, mUnitLen*6);}

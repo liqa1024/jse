@@ -131,35 +131,19 @@ public class UT {
         @VisibleForTesting public static <R, T> List<R>       map(List<T> aList,             IOperator1<? extends R, ? super T> aOpt) {return AbstractCollections.map(aList, aOpt);}
         @VisibleForTesting public static <R, T> List<R>       map(T[] aArray,                IOperator1<? extends R, ? super T> aOpt) {return AbstractCollections.map(aArray, aOpt);}
         
+        /** 保留这些接口方便外部调用使用 */
+        @VisibleForTesting public static List<Double> asList(final double[] aData) {return AbstractCollections.from(aData);}
+        @VisibleForTesting public static List<Integer> asList(final int[] aData) {return AbstractCollections.from(aData);}
+        @VisibleForTesting public static List<Boolean> asList(final boolean[] aData) {return AbstractCollections.from(aData);}
         
-        /**
-         * Convert Iterable to a Collection to use size()
-         * @author liqa
-         */
-        public static <T> Collection<T> toCollection(final Iterable<T> aIterable) {
-            if (aIterable instanceof Collection) return (Collection<T>)aIterable;
-            List<T> rList = new ArrayList<>();
-            for (T tEntry : aIterable) rList.add(tEntry);
-            return rList;
-        }
-        public static <T> Collection<T> toCollection(final int aSize, final Iterable<T> aIterable) {
-            if (aIterable instanceof Collection && ((Collection<T>)aIterable).size() == aSize) return (Collection<T>)aIterable;
-            return new AbstractCollection<T>() {
-                @Override public Iterator<T> iterator() {return aIterable.iterator();}
-                @Override public int size() {return aSize;}
-            };
-        }
-        /**
-         * Convert Iterable to a List to use size() and get(i)
-         * @author liqa
-         */
-        public static <T> List<T> toList(final Iterable<T> aIterable) {
-            // 注意由于约定，需要能够随机访问才会直接转换，否则依旧会重新构造
-            if ((aIterable instanceof List) & (aIterable instanceof RandomAccess)) return (List<T>)aIterable;
-            List<T> rList = new ArrayList<>();
-            for (T tEntry : aIterable) rList.add(tEntry);
-            return rList;
-        }
+        /** 保留这些接口方便外部调用使用 */
+        @VisibleForTesting public static List<Integer> range_(            int aSize           ) {return AbstractCollections.range_(aSize);}
+        @VisibleForTesting public static List<Integer> range_(int aStart, int aStop           ) {return AbstractCollections.range_(aStart, aStop);}
+        @VisibleForTesting public static List<Integer> range_(int aStart, int aStop, int aStep) {return AbstractCollections.range_(aStart, aStop, aStep);}
+        @VisibleForTesting public static List<Integer> range (            int aSize           ) {return AbstractCollections.range (aSize);}
+        @VisibleForTesting public static List<Integer> range (int aStart, int aStop           ) {return AbstractCollections.range (aStart, aStop);}
+        @VisibleForTesting public static List<Integer> range (int aStart, int aStop, int aStep) {return AbstractCollections.range (aStart, aStop, aStep);}
+        
         
         /**
          * Convert IXYZ to XYZ to optimise, result should be read only!
@@ -177,19 +161,6 @@ public class UT {
             if (aXYZ == BOX_ZERO) return BOX_ZERO;
             return new XYZ(aXYZ);
         }
-        
-        /** 保留这些接口方便外部调用使用 */
-        @VisibleForTesting public static List<Double> asList(final double[] aData) {return AbstractCollections.from(aData);}
-        @VisibleForTesting public static List<Integer> asList(final int[] aData) {return AbstractCollections.from(aData);}
-        @VisibleForTesting public static List<Boolean> asList(final boolean[] aData) {return AbstractCollections.from(aData);}
-        
-        /** 保留这些接口方便外部调用使用 */
-        @VisibleForTesting public static List<Integer> range_(            int aSize           ) {return AbstractCollections.range_(aSize);}
-        @VisibleForTesting public static List<Integer> range_(int aStart, int aStop           ) {return AbstractCollections.range_(aStart, aStop);}
-        @VisibleForTesting public static List<Integer> range_(int aStart, int aStop, int aStep) {return AbstractCollections.range_(aStart, aStop, aStep);}
-        @VisibleForTesting public static List<Integer> range (            int aSize           ) {return AbstractCollections.range (aSize);}
-        @VisibleForTesting public static List<Integer> range (int aStart, int aStop           ) {return AbstractCollections.range (aStart, aStop);}
-        @VisibleForTesting public static List<Integer> range (int aStart, int aStop, int aStep) {return AbstractCollections.range (aStart, aStop, aStep);}
     }
     
     public static class Par {

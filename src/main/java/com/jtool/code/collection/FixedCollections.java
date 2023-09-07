@@ -20,6 +20,9 @@ import java.util.*;
 public class FixedCollections {
     protected FixedCollections() {}
     
+    /** 为了统一格式同样提供一个 zl 方法，但是目前不强制要求使用（目前依旧倾向于直接用 new 创建而不是外套一个专门的静态函数） */
+    @Contract(value = " -> new") public static <T> List<T> zl() {return new ArrayList<>();}
+    
     /**
      * 提供一些常用的 List 初始化
      * <p>
@@ -62,8 +65,7 @@ public class FixedCollections {
         for (boolean tValue : aData) rOut.add(tValue);
         return rOut;
     }
-    /** 为了统一格式同样提供一个 zl 方法，但是目前不强制要求使用（目前依旧倾向于直接用 new 创建而不是外套一个专门的静态函数） */
-    @Contract(value = " -> new") public static <T> List<T> zl() {return new ArrayList<>();}
+    
     
     /**
      * the range function similar to python
