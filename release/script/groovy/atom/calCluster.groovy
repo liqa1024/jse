@@ -4,8 +4,7 @@ import com.jtool.atom.IAtomData
 import com.jtool.code.collection.ArrayLists
 import com.jtool.lmp.Dump
 import com.jtool.rareevent.atom.ABOOPSolidChecker
-import com.jtool.rareevent.atom.BOOPSolidChecker
-import com.jtool.rareevent.atom.MainTypeClusterSizeCalculator
+import com.jtool.rareevent.atom.MultiTypeClusterSizeCalculator
 
 import static com.jtool.code.UT.Par.*
 
@@ -26,11 +25,10 @@ import static com.jtool.code.UT.Par.*
 //}
 final def filterDir = 'lmp/.stableglass-out/';
 
-final def dump = Dump.read('lmp/.stableglass-in/dump');
-final def calculator = new MainTypeClusterSizeCalculator(
-    new ABOOPSolidChecker().setRNearestMul(1.4).setConnectThreshold(0.90).setSolidThreshold(7),
-    new ABOOPSolidChecker().setRNearestMul(1.8).setConnectThreshold(0.86).setSolidThreshold(13),
-    1
+final def dump = Dump.read('lmp/.stableglass-in/dump-fs1');
+final def calculator = new MultiTypeClusterSizeCalculator(
+    new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.89).setSolidThreshold(7),
+    [new ABOOPSolidChecker().setRNearestMul(1.8).setConnectThreshold(0.84).setSolidThreshold(13), new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.84).setSolidThreshold(7)]
 );
 
 List<IAtomData> filterDump = ArrayLists.nulls(dump.size());
@@ -41,5 +39,5 @@ parfor(dump.size()) {int i ->
     filterDump[i] = subDump.opt().mapType {def atom -> isSolid[j++] ? atom.type()+2 : atom.type()};
 }
 
-Dump.fromAtomDataList(filterDump).write(filterDir+'filter-aboop-dump');
+Dump.fromAtomDataList(filterDump).write(filterDir+'filter-dump-fs1');
 

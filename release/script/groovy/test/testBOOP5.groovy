@@ -10,11 +10,11 @@ import com.jtool.vasp.POSCAR
 /** 测试计算 BOOP，测试固液判断的阈值选择 */
 
 final int l = 6;
-final double cutoffMul = 1.5;
+final double cutoffMul = 2.2;
 final int nnn = -1;
-final double connectThreshold = 0.89;
-final int maxConnect = 32;
-final int solidThreshold = 7;
+final double connectThreshold = 0.88;
+final int maxConnect = 64;
+final int solidThreshold = 13;
 
 final boolean onlyCu = false;
 final boolean onlyZr = false;

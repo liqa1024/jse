@@ -721,7 +721,7 @@ public class UT {
         public static void      move    (Path aSourcePath, Path aTargetPath)            throws IOException  {validPath(aTargetPath); Files.move(aSourcePath, aTargetPath, REPLACE_EXISTING);}
         
         /** output stuffs */
-        public static PrintStream    toPrintStream (String aFilePath, OpenOption... aOptions)   throws IOException  {return new PrintStream(toOutputStream(aFilePath, aOptions));}
+        public static PrintStream    toPrintStream (String aFilePath, OpenOption... aOptions)   throws IOException  {return new PrintStream(new BufferedOutputStream(toOutputStream(aFilePath, aOptions)), false, "UTF-8");}
         public static OutputStream   toOutputStream(String aFilePath, OpenOption... aOptions)   throws IOException  {return toOutputStream(UT.IO.toAbsolutePath_(aFilePath), aOptions);}
         public static BufferedWriter toWriter      (String aFilePath, OpenOption... aOptions)   throws IOException  {return toWriter(UT.IO.toAbsolutePath_(aFilePath), aOptions);}
         public static BufferedWriter toWriter      (OutputStream aOutputStream)                                     {return new BufferedWriter(new OutputStreamWriter(aOutputStream, StandardCharsets.UTF_8));}
@@ -793,58 +793,31 @@ public class UT {
          * @param aHeads optional headers for the title
          */
         public static void data2csv(double[][] aData, String aFilePath, String... aHeads) throws IOException {
-            try (PrintStream tPrinter = toPrintStream(aFilePath)) {
-                if (aHeads!=null && aHeads.length>0) tPrinter.println(String.join(",", aHeads));
-                for (double[] subData : aData) tPrinter.println(String.join(",", AbstractCollections.map(AbstractCollections.from(subData), String::valueOf)));
-                if (tPrinter.checkError()) System.err.println("ERROR: Some errors occurred when writing csv");
-            }
+            List<String> rLines = AbstractCollections.map(Arrays.asList(aData), subData -> String.join(",", AbstractCollections.map(AbstractCollections.from(subData), String::valueOf)));
+            if (aHeads!=null && aHeads.length>0) rLines = AbstractCollections.merge(String.join(",", aHeads), rLines);
+            write(aFilePath, rLines);
         }
         public static void data2csv(IMatrix aData, String aFilePath, String... aHeads) throws IOException {
-            try (PrintStream tPrinter = toPrintStream(aFilePath)) {
-                if (aHeads!=null && aHeads.length>0) tPrinter.println(String.join(",", aHeads));
-                for (IVector subData : aData.rows()) tPrinter.println(String.join(",", AbstractCollections.map(subData.iterable(), String::valueOf)));
-                if (tPrinter.checkError()) System.err.println("ERROR: Some errors occurred when writing csv");
-            }
+            List<String> rLines = AbstractCollections.map(aData.rows(), subData -> String.join(",", AbstractCollections.map(subData.iterable(), String::valueOf)));
+            if (aHeads!=null && aHeads.length>0) rLines = AbstractCollections.merge(String.join(",", aHeads), rLines);
+            write(aFilePath, rLines);
         }
         public static void data2csv(Iterable<? extends Number> aData, String aFilePath) throws IOException {
-            try (PrintStream tPrinter = toPrintStream(aFilePath)) {
-                for (Number subData : aData) tPrinter.println(subData);
-                if (tPrinter.checkError()) System.err.println("ERROR: Some errors occurred when writing csv");
-            }
+            write(aFilePath, AbstractCollections.map(aData, String::valueOf));
         }
         public static void data2csv(Iterable<? extends Number> aData, String aFilePath, String aHead) throws IOException {
-            try (PrintStream tPrinter = toPrintStream(aFilePath)) {
-                tPrinter.println(aHead);
-                for (Number subData : aData) tPrinter.println(subData);
-                if (tPrinter.checkError()) System.err.println("ERROR: Some errors occurred when writing csv");
-            }
+            write(aFilePath, AbstractCollections.merge(aHead, AbstractCollections.map(aData, String::valueOf)));
         }
         public static void data2csv(IVector aData, String aFilePath) throws IOException {
-            try (PrintStream tPrinter = toPrintStream(aFilePath)) {
-                aData.forEach(tPrinter::println);
-                if (tPrinter.checkError()) System.err.println("ERROR: Some errors occurred when writing csv");
-            }
+            write(aFilePath, AbstractCollections.map(aData.iterable(), String::valueOf));
         }
         public static void data2csv(IVector aData, String aFilePath, String aHead) throws IOException {
-            try (PrintStream tPrinter = toPrintStream(aFilePath)) {
-                tPrinter.println(aHead);
-                aData.forEach(tPrinter::println);
-                if (tPrinter.checkError()) System.err.println("ERROR: Some errors occurred when writing csv");
-            }
+            write(aFilePath, AbstractCollections.merge(aHead, AbstractCollections.map(aData.iterable(), String::valueOf)));
         }
         public static void data2csv(IFunc1 aFunc, String aFilePath, String... aHeads) throws IOException {
-            try (PrintStream tPrinter = toPrintStream(aFilePath)) {
-                if (aHeads!=null && aHeads.length>0) tPrinter.println(String.join(",", aHeads));
-                else tPrinter.println(String.join(",", "f", "x"));
-                
-                IVector tX = aFunc.x();
-                IVector tY = aFunc.f();
-                int tN = aFunc.Nx();
-                for (int i = 0; i < tN; ++i) {
-                    tPrinter.println(String.join(",", String.valueOf(tY.get_(i)), String.valueOf(tX.get_(i))));
-                }
-                if (tPrinter.checkError()) System.err.println("ERROR: Some errors occurred when writing csv");
-            }
+            List<String> rLines = AbstractCollections.map(AbstractCollections.range(aFunc.Nx()), i -> aFunc.get_(i)+","+aFunc.getX(i));
+            rLines = AbstractCollections.merge((aHeads!=null && aHeads.length>0) ? String.join(",", aHeads) : "f,x", rLines);
+            write(aFilePath, rLines);
         }
         
         /**
@@ -863,11 +836,9 @@ public class UT {
          * @param aFilePath csv file path to be saved
          */
         public static void table2csv(ITable aTable, String aFilePath) throws IOException {
-            try (PrintStream tPrinter = toPrintStream(aFilePath)) {
-                if (!aTable.noHead()) tPrinter.println(String.join(",", aTable.heads()));
-                for (IVector subData : aTable.rows()) tPrinter.println(String.join(",", AbstractCollections.map(subData.iterable(), String::valueOf)));
-                if (tPrinter.checkError()) System.err.println("ERROR: Some errors occurred when writing csv");
-            }
+            List<String> rLines = AbstractCollections.map(aTable.rows(), subData -> String.join(",", AbstractCollections.map(subData.iterable(), String::valueOf)));
+            if (!aTable.noHead()) rLines = AbstractCollections.merge(String.join(",", aTable.heads()), rLines);
+            write(aFilePath, rLines);
         }
         /**
          * read table from csv file

@@ -403,28 +403,27 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
     /**
      * 输出成 lammps 格式的 dump 文件，可以供 OVITO 等软件读取
      * <p>
-     * 改为 {@link PrintStream} 而不是 {@code List<String>} 来避免过多内存占用
+     * 改为 {@link BufferedWriter} 而不是 {@code List<String>} 来避免过多内存占用
      * @author liqa
      * @param aFilePath 需要输出的路径
      * @throws IOException 如果写入文件失败
      */
-    @SuppressWarnings("SuspiciousIndentAfterControlStatement")
     public void write(String aFilePath) throws IOException {
-        try (PrintStream tPrinter = UT.IO.toPrintStream(aFilePath)) {
+        try (BufferedWriter tWriter = UT.IO.toWriter(aFilePath)) {
             for (SubLammpstrj tSubLammpstrj : this) {
-                tPrinter.println("ITEM: TIMESTEP");
-                tPrinter.printf("%d\n", tSubLammpstrj.timeStep());
-                tPrinter.println("ITEM: NUMBER OF ATOMS");
-                tPrinter.printf("%d\n", tSubLammpstrj.atomNum());
-                tPrinter.printf("ITEM: BOX BOUNDS %s\n", String.join(" ", tSubLammpstrj.boxBounds()));
-                tPrinter.printf("%f %f\n", tSubLammpstrj.box().xlo(), tSubLammpstrj.box().xhi());
-                tPrinter.printf("%f %f\n", tSubLammpstrj.box().ylo(), tSubLammpstrj.box().yhi());
-                tPrinter.printf("%f %f\n", tSubLammpstrj.box().zlo(), tSubLammpstrj.box().zhi());
-                tPrinter.printf("ITEM: ATOMS %s\n", String.join(" ", tSubLammpstrj.mAtomData.heads()));
-                for (IVector subAtomData : tSubLammpstrj.mAtomData.rows())
-                tPrinter.println(String.join(" ", AbstractCollections.map(subAtomData.iterable(), Object::toString)));
+                tWriter.write("ITEM: TIMESTEP"); tWriter.newLine();
+                tWriter.write(String.format("%d", tSubLammpstrj.timeStep())); tWriter.newLine();
+                tWriter.write("ITEM: NUMBER OF ATOMS"); tWriter.newLine();
+                tWriter.write(String.format("%d", tSubLammpstrj.atomNum())); tWriter.newLine();
+                tWriter.write(String.format("ITEM: BOX BOUNDS %s", String.join(" ", tSubLammpstrj.boxBounds()))); tWriter.newLine();
+                tWriter.write(String.format("%f %f", tSubLammpstrj.box().xlo(), tSubLammpstrj.box().xhi())); tWriter.newLine();
+                tWriter.write(String.format("%f %f", tSubLammpstrj.box().ylo(), tSubLammpstrj.box().yhi())); tWriter.newLine();
+                tWriter.write(String.format("%f %f", tSubLammpstrj.box().zlo(), tSubLammpstrj.box().zhi())); tWriter.newLine();
+                tWriter.write(String.format("ITEM: ATOMS %s", String.join(" ", tSubLammpstrj.mAtomData.heads()))); tWriter.newLine();
+                for (IVector subAtomData : tSubLammpstrj.mAtomData.rows()) {
+                    tWriter.write(String.join(" ", AbstractCollections.map(subAtomData.iterable(), Object::toString))); tWriter.newLine();
+                }
             }
-            if (tPrinter.checkError()) System.err.println("ERROR: Some errors occurred when writing Lammpstrj");
         }
     }
 }

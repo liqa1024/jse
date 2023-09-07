@@ -9,7 +9,7 @@ import static com.jtool.code.CS.MASS;
 
 
 /** 通用的生成多孔原子结构的方法 */
-static IHasAtomData genAtomData(double cellSize=3.61, int replicate=20, double meshSize=0.1, int steps=50000, int nThreads=4) {
+static IAtomData genAtomData(double cellSize=3.61, int replicate=20, double meshSize=0.1, int steps=50000, int nThreads=4) {
     // 创建生成器，设置并行数
     var GEN = new Generator(nThreads);
     // 使用 Cahn-Hilliard 方程生成随机的多孔结构
