@@ -36,7 +36,7 @@ def biCal = new RandomWalk.ParameterCalculator();
 //UT.Timer.toc("3, k = ${FFS.getK()}, step1PointNum = ${FFS.step1PointNum()}, totPointNum = ${FFS.totalPointNum()},");
 //
 //FFS.shutdown();
-FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, 1..10, N0).setPruningProb(0.5);
+FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, 1..10, N0).setPruningProb(0.3).setPruningThreshold(2);
 
 UT.Timer.tic();
 FFS.run();
@@ -46,6 +46,6 @@ while (!FFS.finished()) {
     FFS.run();
     println("prob = ${FFS.getProb(i++)}");
 }
-UT.Timer.toc("4, k = ${FFS.getK()}, step1PointNum = ${FFS.step1PointNum()}, totPointNum = ${FFS.totalPointNum()},");
+UT.Timer.toc("4, k = ${FFS.getK()}, step1PointNum = ${FFS.step1PointNum()}, step1PathNum = ${FFS.step1PathNum()}, totPointNum = ${FFS.totalPointNum()},");
 
 FFS.shutdown();
