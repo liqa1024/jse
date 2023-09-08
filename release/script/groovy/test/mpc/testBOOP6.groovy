@@ -8,6 +8,7 @@ import com.jtool.plot.Plotters
 import com.jtool.rareevent.atom.ABOOPSolidChecker
 import com.jtool.rareevent.atom.ClusterSizeCalculator
 import com.jtool.rareevent.atom.MultiTypeClusterSizeCalculator
+import com.jtool.rareevent.atom.MultiTypeSolidSizeCalculator
 import com.jtool.vasp.POSCAR
 
 
@@ -37,7 +38,7 @@ UT.Timer.toc();
 
 // 用于计算合金的团簇计算器
 UT.Timer.tic();
-def calMulti = new MultiTypeClusterSizeCalculator(
+def calMulti = new MultiTypeSolidSizeCalculator(
     new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.89).setSolidThreshold(7),
     [new ABOOPSolidChecker().setRNearestMul(1.8).setConnectThreshold(0.84).setSolidThreshold(13), new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.84).setSolidThreshold(7)]
 );

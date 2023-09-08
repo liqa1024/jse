@@ -19,7 +19,7 @@ import java.util.List;
  * 除了会考虑整体，也会只考虑其他种类的来进行判断
  * @author liqa
  */
-public final class MultiTypeClusterSizeCalculator extends AbstractClusterSizeCalculator {
+public class MultiTypeClusterSizeCalculator extends AbstractClusterSizeCalculator {
     private final static double DEFAULT_TYPE_CAL_THRESHOLD = 0.15;
     
     private final ISolidChecker mAllSolidChecker;

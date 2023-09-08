@@ -11,7 +11,7 @@ import com.jtool.math.vector.ILogicalVector;
  * 可自定义固体判据的团簇计算器，可以输入多个 checker 一起判断然后取并集
  * @author liqa
  */
-public final class CustomClusterSizeCalculator extends AbstractClusterSizeCalculator {
+public class CustomClusterSizeCalculator extends AbstractClusterSizeCalculator {
     private final static ISolidChecker[] ZL_CHECKERS = new ISolidChecker[0];
     
     private final ISolidChecker mSolidChecker;
