@@ -23,9 +23,9 @@ import static com.jtool.code.UT.Par.*
 //    int i = 0;
 //    Lmpdat.fromAtomData(data.opt().collect {IAtom atom -> isSolid[i++] ? new Atom(atom).setType(atom.type()+ 3) : atom}).write(filterDir+ 'filter-'+ fileName);
 //}
-final def filterDir = 'lmp/.stableglass-out/';
+final def filterDir = 'lmp/.ffs-out/';
 
-final def dump = Dump.read('lmp/.stableglass-in/dump-fs1');
+final def dump = Dump.read('lmp/.ffs-in/dump-fs1-2');
 final def calculator = new MultiTypeClusterSizeCalculator(
     new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.89).setSolidThreshold(7),
     [new ABOOPSolidChecker().setRNearestMul(1.8).setConnectThreshold(0.84).setSolidThreshold(13), new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.84).setSolidThreshold(7)]
@@ -39,5 +39,5 @@ parfor(dump.size()) {int i ->
     filterDump[i] = subDump.opt().mapType {def atom -> isSolid[j++] ? atom.type()+2 : atom.type()};
 }
 
-Dump.fromAtomDataList(filterDump).write(filterDir+'filter-dump-fs1');
+Dump.fromAtomDataList(filterDump).write(filterDir+'filter-dump-fs1-2');
 

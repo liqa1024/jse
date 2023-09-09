@@ -8,7 +8,6 @@ import com.jtool.plot.Plotters
 import com.jtool.rareevent.atom.ABOOPSolidChecker
 import com.jtool.rareevent.atom.ClusterSizeCalculator
 import com.jtool.rareevent.atom.MultiTypeClusterSizeCalculator
-import com.jtool.rareevent.atom.MultiTypeSolidSizeCalculator
 import com.jtool.vasp.POSCAR
 
 
@@ -18,7 +17,7 @@ import com.jtool.vasp.POSCAR
 // 首先导入 Lmpdat
 def dataG = Lmpdat.read('lmp/data/data-glass');
 def dataC = Lmpdat.read('lmp/data/data-crystal');
-def dataFFS = Dump.read('lmp/.ffs-in/dump-fs1').last();
+def dataFFS = Dump.read('lmp/.ffs-in/dump-fs1-1').last();
 def dataMgCu2   = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'   ).opt().mapType {3-it.type()}, 5).opt().perturbXYZ(0.25);
 def dataZr3Cu8  = Structures.from(POSCAR.read('lmp/data/Zr3Cu8.poscar'  ).opt().mapType {3-it.type()}, 3).opt().perturbXYZ(0.25);
 def dataZr7Cu10 = Structures.from(POSCAR.read('lmp/data/Zr7Cu10.poscar' ).opt().mapType {3-it.type()}, 3).opt().perturbXYZ(0.25);
@@ -38,7 +37,7 @@ UT.Timer.toc();
 
 // 用于计算合金的团簇计算器
 UT.Timer.tic();
-def calMulti = new MultiTypeSolidSizeCalculator(
+def calMulti = new MultiTypeClusterSizeCalculator(
     new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.89).setSolidThreshold(7),
     [new ABOOPSolidChecker().setRNearestMul(1.8).setConnectThreshold(0.84).setSolidThreshold(13), new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.84).setSolidThreshold(7)]
 );

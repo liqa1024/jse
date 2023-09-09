@@ -14,7 +14,7 @@ final double cutoffMul = 2.2;
 final int nnn = -1;
 final double perturbMul = 1.0;
 
-final boolean onlyCu = false;
+final boolean onlyCu = true;
 final boolean onlyZr = false;
 
 
@@ -59,7 +59,7 @@ mpcB2.shutdown();
 
 
 // 再计算生成的结果
-def dataFFS1   = Dump.read('lmp/.ffs-in/dump-fs1').last();
+def dataFFS1   = Dump.read('lmp/.ffs-in/dump-fs1-1').last();
 if (onlyCu) dataFFS1 = dataFFS1.opt().filterType(1);
 if (onlyZr) dataFFS1 = dataFFS1.opt().filterType(2);
 mpcFFS1 = dataFFS1.getMPC();
@@ -72,7 +72,7 @@ q6FFS1 = mpcFFS1.calABOOP(6, mpcFFS1.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("FFS1, q6");
 mpcFFS1.shutdown();
 
-def dataFFS2   = Dump.read('lmp/.ffs-in/dump-fs2').last();
+def dataFFS2   = Dump.read('lmp/.ffs-in/dump-fs1-2').last();
 if (onlyCu) dataFFS2 = dataFFS2.opt().filterType(1);
 if (onlyZr) dataFFS2 = dataFFS2.opt().filterType(2);
 mpcFFS2 = dataFFS2.getMPC();
@@ -109,12 +109,14 @@ plt1.xlabel('q4').ylabel('q6');
 plt1.xTick(0.02).yTick(0.02);
 plt1.show();
 
-//plt2 = Plotters.get();
-//plt2.plot(q4MgCu2   , q6MgCu2   , 'MgCu2').lineType('none').markerType('o').markerSize(4);
-//plt2.plot(q4FFS2    , q6FFS2    , 'FFS2' ).lineType('none').markerType('d').markerSize(5);
-//plt2.xlabel('q4').ylabel('q6');
-//plt2.xTick(0.02).yTick(0.02);
-//plt2.show();
+plt2 = Plotters.get();
+plt2.plot(q4MgCu2   , q6MgCu2   , 'MgCu2'  ).color('r').lineType('none').markerType('o').markerSize(4);
+plt2.plot(q4ZrCu2   , q6ZrCu2   , 'ZrCu2'  ).color('g').lineType('none').markerType('o').markerSize(4);
+plt2.plot(q4B2      , q6B2      , 'B2'     ).color('b').lineType('none').markerType('o').markerSize(4);
+plt2.plot(q4FFS2    , q6FFS2    , 'FFS2'   ).color('k').lineType('none').markerType('^').markerSize(5);
+plt2.xlabel('q4').ylabel('q6');
+plt2.xTick(0.02).yTick(0.02);
+plt2.show();
 
 plt3 = Plotters.get();
 plt3.plot(q4MgCu2   , q6MgCu2   , 'MgCu2'  ).color('r').lineType('none').markerType('o').markerSize(4);
