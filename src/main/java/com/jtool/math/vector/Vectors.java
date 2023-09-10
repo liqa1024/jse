@@ -1,8 +1,11 @@
 package com.jtool.math.vector;
 
 
+import com.jtool.code.collection.NewCollections;
+import com.jtool.code.filter.IDoubleFilter;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
+import com.jtool.code.iterator.IHasDoubleIterator;
 
 import java.util.Collection;
 
@@ -62,6 +65,14 @@ public class Vectors {
         while (itB.hasNext()) si.nextAndSet(itB.next());
         while (itA.hasNext()) si.nextAndSet(itA.next());
         return rVector;
+    }
+    
+    /** 也提供过滤的接口，但是这里使用 vector 的写法，不涉及 {@link IHasDoubleIterator} */
+    public static IVector filter(Iterable<? extends Number> aIterable, IDoubleFilter aFilter) {
+        return NewCollections.filterDouble(aIterable, aFilter);
+    }
+    public static IVector filter(IVector aVector, IDoubleFilter aFilter) {
+        return NewCollections.filterDouble(aVector, aFilter);
     }
     
     

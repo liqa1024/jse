@@ -13,6 +13,11 @@ import java.util.*;
 
 /**
  * 获取固定容器的类，这里获取的结果统一都进行了一次值拷贝
+ * <p>
+ * 为了区分 java 自带的 {@link Collections}，并且 Collections 意思比较抽象，这里起名 NewCollections；
+ * 既表明这是创建新的实例，也表明这是新的工具类。
+ * <p>
+ * 注意一般的创建实例的工具类不会有 New 开头
  * @author liqa
  */
 @SuppressWarnings({"UseBulkOperation", "ManualArrayToCollectionCopy"})
@@ -133,8 +138,14 @@ public class NewCollections {
         for (int i = 0; i < aSize; ++i) if (aFilter.accept(i)) rIndices.add(i);
         return rIndices;
     }
-    public static List<? extends Number> filterDouble(Iterable<? extends Number> aIterable, final IDoubleFilter aFilter) {
-        return filter(aIterable, v -> aFilter.accept(v.doubleValue()));
+    public static IVector filterDouble(Iterable<? extends Number> aIterable, IDoubleFilter aFilter) {
+        Vector.Builder rBuilder = Vector.builder();
+        for (Number tNumber : aIterable) {
+            double tValue = tNumber.doubleValue();
+            if (aFilter.accept(tValue)) rBuilder.add(tValue);
+        }
+        rBuilder.shrinkToFit();
+        return rBuilder.build();
     }
     public static IVector filterDouble(IHasDoubleIterator aIterable, IDoubleFilter aFilter) {
         final Vector.Builder rBuilder = Vector.builder();
