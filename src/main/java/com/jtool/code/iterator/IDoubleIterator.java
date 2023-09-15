@@ -1,5 +1,7 @@
 package com.jtool.code.iterator;
 
+import com.jtool.code.functional.IDoubleConsumer1;
+
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -15,9 +17,9 @@ public interface IDoubleIterator {
     
     /** Iterator default stuffs */
     default void remove() {throw new UnsupportedOperationException("remove");}
-    default void forEachRemaining(Consumer<? super Double> action) {
+    default void forEachRemaining(IDoubleConsumer1 action) {
         Objects.requireNonNull(action);
-        while (hasNext()) action.accept(next());
+        while (hasNext()) action.run(next());
     }
     
     /** convert to Double */
@@ -27,7 +29,7 @@ public interface IDoubleIterator {
             @Override public Double next() {return IDoubleIterator.this.next();}
             
             @Override public void remove() {IDoubleIterator.this.remove();}
-            @Override public void forEachRemaining(Consumer<? super Double> action) {IDoubleIterator.this.forEachRemaining(action);}
+            @Override public void forEachRemaining(Consumer<? super Double> action) {IDoubleIterator.this.forEachRemaining(action::accept);}
         };
     }
 }

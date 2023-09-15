@@ -72,16 +72,6 @@ public abstract class AbstractVector implements IVector {
                     throw new NoSuchElementException();
                 }
             }
-            /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(double aValue) {
-                if (hasNext()) {
-                    oIdx = mIdx;
-                    ++mIdx;
-                    set_(oIdx, aValue);
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
         };
     }
     @Override public IDoubleIterator iteratorOf(final IVectorGetter aContainer) {
@@ -115,16 +105,6 @@ public abstract class AbstractVector implements IVector {
                 if (hasNext()) {
                     oIdx = mIdx;
                     ++mIdx;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-            /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(double aValue) {
-                if (hasNext()) {
-                    oIdx = mIdx;
-                    ++mIdx;
-                    aContainer.set(oIdx, aValue);
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -385,5 +365,5 @@ public abstract class AbstractVector implements IVector {
     public abstract int size();
     public abstract IVector newZeros(int aSize);
     
-    protected String toString_(double aValue) {return String.format(" %8.4g", aValue);}
+    protected String toString_(double aValue) {return String.format("  %8.4g", aValue);}
 }

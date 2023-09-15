@@ -14,7 +14,7 @@ public interface IBooleanSetOnlyIterator {
         set(aValue);
     }
     
-    /** convert to Double */
+    /** convert to Boolean */
     default ISetOnlyIterator<Boolean> toSetOnlyIterator() {
         return new ISetOnlyIterator<Boolean>() {
             @Override public boolean hasNext() {return IBooleanSetOnlyIterator.this.hasNext();}

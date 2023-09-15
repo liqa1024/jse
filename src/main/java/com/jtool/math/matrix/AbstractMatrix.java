@@ -915,5 +915,5 @@ public abstract class AbstractMatrix implements IMatrix {
     public abstract IMatrix newZeros(int aRowNum, int aColNum);
     public abstract IVector newZerosVec(int aSize);
     
-    protected String toString_(double aValue) {return String.format(" %8.4g", aValue);}
+    protected String toString_(double aValue) {return String.format("  %8.4g", aValue);}
 }

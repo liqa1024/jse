@@ -12,6 +12,7 @@ public final class ComplexDouble implements IComplexDouble {
     public ComplexDouble(double aReal, double aImag) {mReal = aReal; mImag = aImag;}
     public ComplexDouble(double aReal              ) {this(aReal, 0.0);}
     public ComplexDouble(                          ) {this(0.0, 0.0);}
+    public ComplexDouble(IComplexDouble aValue     ) {this(aValue.real(), aValue.imag());}
     
     @Override public double real() {return mReal;}
     @Override public double imag() {return mImag;}

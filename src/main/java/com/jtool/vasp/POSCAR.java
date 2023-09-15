@@ -136,7 +136,7 @@ public class POSCAR extends AbstractAtomData {
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
             XYZ tBoxLo = toXYZ(aAtomData.boxLo());
-            XYZ tBox = toXYZ(aAtomData.boxHi().minus(tBoxLo));
+            XYZ tBox = aAtomData.boxHi().minus(tBoxLo);
             
             int tAtomTypeNum = aAtomData.atomTypeNum();
             IVector rAtomNumbers = Vectors.zeros(tAtomTypeNum);

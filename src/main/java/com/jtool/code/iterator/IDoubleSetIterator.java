@@ -7,8 +7,6 @@ import java.util.function.Consumer;
  * @author liqa
  */
 public interface IDoubleSetIterator extends IDoubleIterator, IDoubleSetOnlyIterator {
-    default void nextOnly() {next();}
-    
     /** convert to Double */
     default ISetIterator<Double> toSetIterator() {
         return new ISetIterator<Double>() {
@@ -16,7 +14,7 @@ public interface IDoubleSetIterator extends IDoubleIterator, IDoubleSetOnlyItera
             @Override public Double next() {return IDoubleSetIterator.this.next();}
             
             @Override public void remove() {IDoubleSetIterator.this.remove();}
-            @Override public void forEachRemaining(Consumer<? super Double> action) {IDoubleSetIterator.this.forEachRemaining(action);}
+            @Override public void forEachRemaining(Consumer<? super Double> action) {IDoubleSetIterator.this.forEachRemaining(action::accept);}
             
             @Override public void nextOnly() {IDoubleSetIterator.this.nextOnly();}
             @Override public void set(Double aValue) {IDoubleSetIterator.this.set(aValue);}

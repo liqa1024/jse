@@ -8,5 +8,4 @@ import java.util.Iterator;
  * @author liqa
  */
 public interface ISetIterator<E> extends Iterator<E>, ISetOnlyIterator<E> {
-    default void nextOnly() {next();}
 }

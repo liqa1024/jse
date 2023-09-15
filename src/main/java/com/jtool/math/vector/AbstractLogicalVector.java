@@ -68,16 +68,6 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
                     throw new NoSuchElementException();
                 }
             }
-            /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(boolean aValue) {
-                if (hasNext()) {
-                    oIdx = mIdx;
-                    ++mIdx;
-                    set_(oIdx, aValue);
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
         };
     }
     @Override public IBooleanIterator iteratorOf(final ILogicalVectorGetter aContainer) {
@@ -111,16 +101,6 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
                 if (hasNext()) {
                     oIdx = mIdx;
                     ++mIdx;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-            /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(boolean aValue) {
-                if (hasNext()) {
-                    oIdx = mIdx;
-                    ++mIdx;
-                    aContainer.set(oIdx, aValue);
                 } else {
                     throw new NoSuchElementException();
                 }

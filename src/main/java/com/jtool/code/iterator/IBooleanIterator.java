@@ -1,5 +1,7 @@
 package com.jtool.code.iterator;
 
+import com.jtool.code.functional.IBooleanConsumer1;
+
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -15,19 +17,19 @@ public interface IBooleanIterator {
     
     /** Iterator default stuffs */
     default void remove() {throw new UnsupportedOperationException("remove");}
-    default void forEachRemaining(Consumer<? super Boolean> action) {
-        Objects.requireNonNull(action);
-        while (hasNext()) action.accept(next());
+    default void forEachRemaining(IBooleanConsumer1 aCon) {
+        Objects.requireNonNull(aCon);
+        while (hasNext()) aCon.run(next());
     }
     
-    /** convert to Double */
+    /** convert to Boolean */
     default Iterator<Boolean> toIterator() {
         return new Iterator<Boolean>() {
             @Override public boolean hasNext() {return IBooleanIterator.this.hasNext();}
             @Override public Boolean next() {return IBooleanIterator.this.next();}
             
             @Override public void remove() {IBooleanIterator.this.remove();}
-            @Override public void forEachRemaining(Consumer<? super Boolean> action) {IBooleanIterator.this.forEachRemaining(action);}
+            @Override public void forEachRemaining(Consumer<? super Boolean> action) {IBooleanIterator.this.forEachRemaining(action::accept);}
         };
     }
 }
