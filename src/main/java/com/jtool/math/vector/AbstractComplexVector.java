@@ -86,61 +86,7 @@ public abstract class AbstractComplexVector implements IComplexVector {
             }
         };
     }
-    @Override public IComplexDoubleIterator iteratorOf(final IComplexVectorGetter aContainer) {
-        if (aContainer instanceof IComplexVector) return ((IComplexVector)aContainer).iterator();
-        return new IComplexDoubleIterator() {
-            private final int mSize = size();
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public void nextOnly() {
-                if (hasNext()) {
-                    oIdx = mIdx;
-                    ++mIdx;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-            @Override public double real() {return aContainer.getReal(oIdx);}
-            @Override public double imag() {return aContainer.getImag(oIdx);}
-            
-            /** 重写保证使用此类中的逻辑而不是 IComplexDoubleIterator，虽然默认是一致的 */
-            @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(aContainer.get(oIdx));}
-        };
-    }
-    @Override public IComplexDoubleSetOnlyIterator setIteratorOf(final IComplexVectorSetter aContainer) {
-        if (aContainer instanceof IComplexVector) return ((IComplexVector)aContainer).setIterator();
-        return new IComplexDoubleSetOnlyIterator() {
-            private final int mSize = size();
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public void setReal(double aReal) {
-                if (oIdx < 0) throw new IllegalStateException();
-                aContainer.setReal(oIdx, aReal);
-            }
-            @Override public void setImag(double aImag) {
-                if (oIdx < 0) throw new IllegalStateException();
-                aContainer.setImag(oIdx, aImag);
-            }
-            @Override public void nextOnly() {
-                if (hasNext()) {
-                    oIdx = mIdx;
-                    ++mIdx;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-            
-            /** 重写保证使用此类中的逻辑而不是 IComplexDoubleSetIterator，虽然默认是一致的 */
-            @Override public void set(IComplexDouble aValue) {
-                if (oIdx < 0) throw new IllegalStateException();
-                aContainer.set(oIdx, aValue);
-            }
-            @Override public void set(double aValue) {
-                if (oIdx < 0) throw new IllegalStateException();
-                aContainer.set(oIdx, aValue);
-            }
-        };
-    }
+    
     
     /** 转换为其他类型 */
     @Override public List<ComplexDouble> asList() {
@@ -193,6 +139,10 @@ public abstract class AbstractComplexVector implements IComplexVector {
     @Override public final void fill(double aValue) {operation().fill(aValue);}
     @Override public final void fillReal(double aReal) {real().fill(aReal);}
     @Override public final void fillImag(double aImag) {imag().fill(aImag);}
+    @Override public final void fill(IComplexVector aVector) {operation().fill(aVector);}
+    @Override public final void fill(IVector aVector) {operation().fill(aVector);}
+    @Override public final void fillReal(IVector aRealVector) {real().fill(aRealVector);}
+    @Override public final void fillImag(IVector aImagVector) {imag().fill(aImagVector);}
     @Override public final void fill(IComplexVectorGetter aVectorGetter) {operation().fill(aVectorGetter);}
     @Override public final void fill(IVectorGetter aVectorGetter) {operation().fill(aVectorGetter);}
     @Override public final void fillReal(IVectorGetter aRealGetter) {real().fill(aRealGetter);}
@@ -379,14 +329,14 @@ public abstract class AbstractComplexVector implements IComplexVector {
     @Override public final IComplexVector multiply  (double         aRHS) {return operation().multiply(aRHS);}
     @Override public final IComplexVector div       (double         aRHS) {return operation().div     (aRHS);}
     
-    @Override public final IComplexVector plus      (IComplexVectorGetter aRHS) {return operation().plus    (aRHS);}
-    @Override public final IComplexVector minus     (IComplexVectorGetter aRHS) {return operation().minus   (aRHS);}
-    @Override public final IComplexVector multiply  (IComplexVectorGetter aRHS) {return operation().multiply(aRHS);}
-    @Override public final IComplexVector div       (IComplexVectorGetter aRHS) {return operation().div     (aRHS);}
-    @Override public final IComplexVector plus      (IVectorGetter        aRHS) {return operation().plus    (aRHS);}
-    @Override public final IComplexVector minus     (IVectorGetter        aRHS) {return operation().minus   (aRHS);}
-    @Override public final IComplexVector multiply  (IVectorGetter        aRHS) {return operation().multiply(aRHS);}
-    @Override public final IComplexVector div       (IVectorGetter        aRHS) {return operation().div     (aRHS);}
+    @Override public final IComplexVector plus      (IComplexVector aRHS) {return operation().plus    (aRHS);}
+    @Override public final IComplexVector minus     (IComplexVector aRHS) {return operation().minus   (aRHS);}
+    @Override public final IComplexVector multiply  (IComplexVector aRHS) {return operation().multiply(aRHS);}
+    @Override public final IComplexVector div       (IComplexVector aRHS) {return operation().div     (aRHS);}
+    @Override public final IComplexVector plus      (IVector        aRHS) {return operation().plus    (aRHS);}
+    @Override public final IComplexVector minus     (IVector        aRHS) {return operation().minus   (aRHS);}
+    @Override public final IComplexVector multiply  (IVector        aRHS) {return operation().multiply(aRHS);}
+    @Override public final IComplexVector div       (IVector        aRHS) {return operation().div     (aRHS);}
     
     @Override public final void plus2this       (IComplexDouble aRHS) {operation().plus2this    (aRHS);}
     @Override public final void minus2this      (IComplexDouble aRHS) {operation().minus2this   (aRHS);}
@@ -397,14 +347,14 @@ public abstract class AbstractComplexVector implements IComplexVector {
     @Override public final void multiply2this   (double         aRHS) {operation().multiply2this(aRHS);}
     @Override public final void div2this        (double         aRHS) {operation().div2this     (aRHS);}
     
-    @Override public final void plus2this       (IComplexVectorGetter aRHS) {operation().plus2this    (aRHS);}
-    @Override public final void minus2this      (IComplexVectorGetter aRHS) {operation().minus2this   (aRHS);}
-    @Override public final void multiply2this   (IComplexVectorGetter aRHS) {operation().multiply2this(aRHS);}
-    @Override public final void div2this        (IComplexVectorGetter aRHS) {operation().div2this     (aRHS);}
-    @Override public final void plus2this       (IVectorGetter        aRHS) {operation().plus2this    (aRHS);}
-    @Override public final void minus2this      (IVectorGetter        aRHS) {operation().minus2this   (aRHS);}
-    @Override public final void multiply2this   (IVectorGetter        aRHS) {operation().multiply2this(aRHS);}
-    @Override public final void div2this        (IVectorGetter        aRHS) {operation().div2this     (aRHS);}
+    @Override public final void plus2this       (IComplexVector aRHS) {operation().plus2this    (aRHS);}
+    @Override public final void minus2this      (IComplexVector aRHS) {operation().minus2this   (aRHS);}
+    @Override public final void multiply2this   (IComplexVector aRHS) {operation().multiply2this(aRHS);}
+    @Override public final void div2this        (IComplexVector aRHS) {operation().div2this     (aRHS);}
+    @Override public final void plus2this       (IVector        aRHS) {operation().plus2this    (aRHS);}
+    @Override public final void minus2this      (IVector        aRHS) {operation().minus2this   (aRHS);}
+    @Override public final void multiply2this   (IVector        aRHS) {operation().multiply2this(aRHS);}
+    @Override public final void div2this        (IVector        aRHS) {operation().div2this     (aRHS);}
     
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public ComplexDouble call(int aIdx) {return get(aIdx);}
@@ -418,18 +368,18 @@ public abstract class AbstractComplexVector implements IComplexVector {
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, IComplexDouble aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
-    @VisibleForTesting @Override public void putAt(List<Integer> aIndices, IComplexVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
-    @VisibleForTesting @Override public void putAt(List<Integer> aIndices, IVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(List<Integer> aIndices, IComplexVector aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(List<Integer> aIndices, IVector aVector) {refSlicer().get(aIndices).fill(aVector);}
     @VisibleForTesting @Override public void putAt(SliceType     aIndices, IComplexDouble aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(SliceType     aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(SliceType     aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
-    @VisibleForTesting @Override public void putAt(SliceType     aIndices, IComplexVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
-    @VisibleForTesting @Override public void putAt(SliceType     aIndices, IVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(SliceType     aIndices, IComplexVector aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(SliceType     aIndices, IVector aVector) {refSlicer().get(aIndices).fill(aVector);}
     @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, IComplexDouble aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
-    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, IComplexVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
-    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, IVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, IComplexVector aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, IVector aVector) {refSlicer().get(aIndices).fill(aVector);}
     
     /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
     @VisibleForTesting @Override public ComplexDouble getAt(int aIdx) {return get((aIdx < 0) ? (size()+aIdx) : aIdx);}

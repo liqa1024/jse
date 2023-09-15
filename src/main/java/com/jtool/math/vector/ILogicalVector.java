@@ -13,12 +13,10 @@ import java.util.NoSuchElementException;
  * @author liqa
  * <p> 专用的逻辑值向量 </p>
  */
-public interface ILogicalVector extends IHasBooleanIterator, IHasBooleanSetIterator, ILogicalVectorGetter, ILogicalVectorSetter {
+public interface ILogicalVector extends IHasBooleanIterator, IHasBooleanSetIterator, ILogicalVectorGetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
     IBooleanIterator iterator();
     IBooleanSetIterator setIterator();
-    IBooleanIterator iteratorOf(ILogicalVectorGetter aContainer);
-    IBooleanSetOnlyIterator setIteratorOf(ILogicalVectorSetter aContainer);
     
     default Iterable<Boolean> iterable() {return () -> iterator().toIterator();}
     List<Boolean> asList();
@@ -28,6 +26,7 @@ public interface ILogicalVector extends IHasBooleanIterator, IHasBooleanSetItera
     
     /** 批量修改的接口 */
     void fill(boolean aValue);
+    void fill(ILogicalVector aVector);
     void fill(ILogicalVectorGetter aVectorGetter);
     void fill(boolean[] aData);
     void fill(Iterable<Boolean> aList);
@@ -86,9 +85,9 @@ public interface ILogicalVector extends IHasBooleanIterator, IHasBooleanSetItera
     ILogicalVector or   (boolean aRHS);
     ILogicalVector xor  (boolean aRHS);
     
-    ILogicalVector and  (ILogicalVectorGetter aRHS);
-    ILogicalVector or   (ILogicalVectorGetter aRHS);
-    ILogicalVector xor  (ILogicalVectorGetter aRHS);
+    ILogicalVector and  (ILogicalVector aRHS);
+    ILogicalVector or   (ILogicalVector aRHS);
+    ILogicalVector xor  (ILogicalVector aRHS);
     ILogicalVector not  ();
     @VisibleForTesting default ILogicalVector bitwiseNegate() {return not();}
     
@@ -97,9 +96,9 @@ public interface ILogicalVector extends IHasBooleanIterator, IHasBooleanSetItera
     void or2this    (boolean aRHS);
     void xor2this   (boolean aRHS);
     
-    void and2this   (ILogicalVectorGetter aRHS);
-    void or2this    (ILogicalVectorGetter aRHS);
-    void xor2this   (ILogicalVectorGetter aRHS);
+    void and2this   (ILogicalVector aRHS);
+    void or2this    (ILogicalVector aRHS);
+    void xor2this   (ILogicalVector aRHS);
     void not2this   ();
     
     /** 对于 LogicalVector 将这些统计接口也直接放在这里方便使用 */
@@ -120,11 +119,11 @@ public interface ILogicalVector extends IHasBooleanIterator, IHasBooleanSetItera
     @VisibleForTesting ILogicalVector getAt(IIndexFilter  aIndices);
     @VisibleForTesting void putAt(List<Integer> aIndices, boolean aValue);
     @VisibleForTesting void putAt(List<Integer> aIndices, Iterable<Boolean> aList);
-    @VisibleForTesting void putAt(List<Integer> aIndices, ILogicalVectorGetter aVector);
+    @VisibleForTesting void putAt(List<Integer> aIndices, ILogicalVector aVector);
     @VisibleForTesting void putAt(SliceType     aIndices, boolean aValue);
     @VisibleForTesting void putAt(SliceType     aIndices, Iterable<Boolean> aList);
-    @VisibleForTesting void putAt(SliceType     aIndices, ILogicalVectorGetter aVector);
+    @VisibleForTesting void putAt(SliceType     aIndices, ILogicalVector aVector);
     @VisibleForTesting void putAt(IIndexFilter  aIndices, boolean aValue);
     @VisibleForTesting void putAt(IIndexFilter  aIndices, Iterable<Boolean> aList);
-    @VisibleForTesting void putAt(IIndexFilter  aIndices, ILogicalVectorGetter aVector);
+    @VisibleForTesting void putAt(IIndexFilter  aIndices, ILogicalVector aVector);
 }

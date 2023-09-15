@@ -14,15 +14,15 @@ import org.jetbrains.annotations.VisibleForTesting;
  */
 public interface IMatrixOperation {
     /** 通用的一些运算 */
-    IMatrix plus        (IMatrixGetter aRHS);
-    IMatrix minus       (IMatrixGetter aRHS);
-    IMatrix lminus      (IMatrixGetter aRHS);
-    IMatrix multiply    (IMatrixGetter aRHS);
-    IMatrix div         (IMatrixGetter aRHS);
-    IMatrix ldiv        (IMatrixGetter aRHS);
-    IMatrix mod         (IMatrixGetter aRHS);
-    IMatrix lmod        (IMatrixGetter aRHS);
-    IMatrix operate     (IMatrixGetter aRHS, IDoubleOperator2 aOpt);
+    IMatrix plus        (IMatrix aRHS);
+    IMatrix minus       (IMatrix aRHS);
+    IMatrix lminus      (IMatrix aRHS);
+    IMatrix multiply    (IMatrix aRHS);
+    IMatrix div         (IMatrix aRHS);
+    IMatrix ldiv        (IMatrix aRHS);
+    IMatrix mod         (IMatrix aRHS);
+    IMatrix lmod        (IMatrix aRHS);
+    IMatrix operate     (IMatrix aRHS, IDoubleOperator2 aOpt);
     
     IMatrix plus        (double aRHS);
     IMatrix minus       (double aRHS);
@@ -34,15 +34,15 @@ public interface IMatrixOperation {
     IMatrix lmod        (double aRHS);
     IMatrix map         (IDoubleOperator1 aOpt);
     
-    void plus2this      (IMatrixGetter aRHS);
-    void minus2this     (IMatrixGetter aRHS);
-    void lminus2this    (IMatrixGetter aRHS);
-    void multiply2this  (IMatrixGetter aRHS);
-    void div2this       (IMatrixGetter aRHS);
-    void ldiv2this      (IMatrixGetter aRHS);
-    void mod2this       (IMatrixGetter aRHS);
-    void lmod2this      (IMatrixGetter aRHS);
-    void operate2this   (IMatrixGetter aRHS, IDoubleOperator2 aOpt);
+    void plus2this      (IMatrix aRHS);
+    void minus2this     (IMatrix aRHS);
+    void lminus2this    (IMatrix aRHS);
+    void multiply2this  (IMatrix aRHS);
+    void div2this       (IMatrix aRHS);
+    void ldiv2this      (IMatrix aRHS);
+    void mod2this       (IMatrix aRHS);
+    void lmod2this      (IMatrix aRHS);
+    void operate2this   (IMatrix aRHS, IDoubleOperator2 aOpt);
     
     void plus2this      (double aRHS);
     void minus2this     (double aRHS);
@@ -56,6 +56,7 @@ public interface IMatrixOperation {
     
     /** 这两个方法名默认是作用到自身的，这里为了保持 operation 的使用简洁不在函数名上特殊说明 */
     void fill           (double aRHS);
+    void fill           (IMatrix aRHS);
     void fill           (IMatrixGetter aRHS);
     void assignCol      (IDoubleSupplier aSup);
     void assignRow      (IDoubleSupplier aSup);

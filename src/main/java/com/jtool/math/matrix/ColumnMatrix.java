@@ -76,6 +76,13 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
     /** Optimize stuffs，引用转置直接返回 {@link RowMatrix} */
     @Override public IMatrixOperation operation() {
         return new DoubleArrayMatrixOperation_() {
+            @Override public void fill(IMatrixGetter aRHS) {
+                int idx = 0;
+                for (int col = 0; col < mColNum; ++col) for (int row = 0; row < mRowNum; ++row) {
+                    mData[idx] = aRHS.get(row, col);
+                    ++idx;
+                }
+            }
             @Override public void assignCol(IDoubleSupplier aSup) {
                 int rEnd = mRowNum*mColNum;
                 for (int i = 0; i < rEnd; ++i) mData[i] = aSup.get();
@@ -104,7 +111,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
     
     
     /** Optimize stuffs，重写迭代器来提高遍历速度 */
-    @Override public IDoubleIterator colIterator() {
+    @Override public IDoubleIterator iteratorCol() {
         return new IDoubleIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = 0;
@@ -120,7 +127,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleIterator rowIterator() {
+    @Override public IDoubleIterator iteratorRow() {
         return new IDoubleIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mRow = 0;
@@ -138,7 +145,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleIterator colIterator(final int aCol) {
+    @Override public IDoubleIterator iteratorColAt(final int aCol) {
         if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
         return new IDoubleIterator() {
             private final int mEnd = (aCol+1)*mRowNum;
@@ -155,7 +162,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleIterator rowIterator(final int aRow) {
+    @Override public IDoubleIterator iteratorRowAt(final int aRow) {
         if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
         return new IDoubleIterator() {
             private final int mSize = mRowNum * mColNum;
@@ -172,7 +179,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator colSetIterator() {
+    @Override public IDoubleSetIterator setIteratorCol() {
         return new IDoubleSetIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = 0, oIdx = -1;
@@ -207,7 +214,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator rowSetIterator() {
+    @Override public IDoubleSetIterator setIteratorRow() {
         return new IDoubleSetIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mRow = 0;
@@ -246,7 +253,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator colSetIterator(final int aCol) {
+    @Override public IDoubleSetIterator setIteratorColAt(final int aCol) {
         if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
         return new IDoubleSetIterator() {
             private final int mEnd = (aCol+1)*mRowNum;
@@ -282,7 +289,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator rowSetIterator(final int aRow) {
+    @Override public IDoubleSetIterator setIteratorRowAt(final int aRow) {
         if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
         return new IDoubleSetIterator() {
             private final int mSize = mRowNum * mColNum;

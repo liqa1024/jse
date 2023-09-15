@@ -6,10 +6,8 @@ import com.jtool.code.functional.IDoubleConsumer1;
 import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
-import com.jtool.code.iterator.IDoubleSetOnlyIterator;
 import com.jtool.code.functional.IDoubleOperator1;
 import com.jtool.math.vector.IVector;
-import com.jtool.math.vector.IVectorGetter;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -20,27 +18,19 @@ import java.util.List;
  * <p> 可自定义获取的矩阵类型的矩阵类 </p>
  * <p> 简单起见默认都是实矩阵，返回类型 double，而如果涉及复矩阵则会提供额外的接口获取复数部分 </p>
  */
-public interface IMatrix extends IMatrixGetter, IMatrixSetter {
+public interface IMatrix extends IMatrixGetter {
     /** Iterable stuffs，现在指定具体行列会仅遍历此行或者列，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便使用 */
-    IDoubleIterator colIterator();
-    IDoubleIterator rowIterator();
-    IDoubleIterator colIterator(int aCol);
-    IDoubleIterator rowIterator(int aRow);
-    IDoubleSetIterator colSetIterator();
-    IDoubleSetIterator rowSetIterator();
-    IDoubleSetIterator colSetIterator(int aCol);
-    IDoubleSetIterator rowSetIterator(int aRow);
-    IDoubleIterator colIteratorOf(IMatrixGetter aContainer);
-    IDoubleIterator rowIteratorOf(IMatrixGetter aContainer);
-    IDoubleIterator colIteratorOf(int aCol, IMatrixGetter aContainer);
-    IDoubleIterator rowIteratorOf(int aRow, IMatrixGetter aContainer);
-    IDoubleSetOnlyIterator colSetIteratorOf(IMatrixSetter aContainer);
-    IDoubleSetOnlyIterator rowSetIteratorOf(IMatrixSetter aContainer);
-    IDoubleSetOnlyIterator colSetIteratorOf(int aCol, IMatrixSetter aContainer);
-    IDoubleSetOnlyIterator rowSetIteratorOf(int aRow, IMatrixSetter aContainer);
+    IDoubleIterator iteratorCol();
+    IDoubleIterator iteratorRow();
+    IDoubleIterator iteratorColAt(int aCol);
+    IDoubleIterator iteratorRowAt(int aRow);
+    IDoubleSetIterator setIteratorCol();
+    IDoubleSetIterator setIteratorRow();
+    IDoubleSetIterator setIteratorColAt(int aCol);
+    IDoubleSetIterator setIteratorRowAt(int aRow);
     
-    default Iterable<Double> colIterable() {return () -> colIterator().toIterator();}
-    default Iterable<Double> rowIterable() {return () -> rowIterator().toIterator();}
+    default Iterable<Double> iterableCol() {return () -> iteratorCol().toIterator();}
+    default Iterable<Double> iterableRow() {return () -> iteratorRow().toIterator();}
     
     List<List<Double>> asListCols();
     List<List<Double>> asListRows();
@@ -58,6 +48,7 @@ public interface IMatrix extends IMatrixGetter, IMatrixSetter {
     
     /** 批量修改的接口 */
     void fill(double aValue);
+    void fill(IMatrix aMatrix);
     void fill(IMatrixGetter aMatrixGetter);
     void fill(double[][] aData);
     default void fill(Iterable<? extends Iterable<? extends Number>> aRows) {fillWithRows(aRows);}
@@ -117,11 +108,11 @@ public interface IMatrix extends IMatrixGetter, IMatrixSetter {
     IMatrix div      (double aRHS);
     IMatrix mod      (double aRHS);
     
-    IMatrix plus     (IMatrixGetter aRHS);
-    IMatrix minus    (IMatrixGetter aRHS);
-    IMatrix multiply (IMatrixGetter aRHS);
-    IMatrix div      (IMatrixGetter aRHS);
-    IMatrix mod      (IMatrixGetter aRHS);
+    IMatrix plus     (IMatrix aRHS);
+    IMatrix minus    (IMatrix aRHS);
+    IMatrix multiply (IMatrix aRHS);
+    IMatrix div      (IMatrix aRHS);
+    IMatrix mod      (IMatrix aRHS);
     
     /** 注意这些 2this 操作并没有重载 groovy 中的 += 之类的运算符 */
     void plus2this      (double aRHS);
@@ -130,11 +121,11 @@ public interface IMatrix extends IMatrixGetter, IMatrixSetter {
     void div2this       (double aRHS);
     void mod2this       (double aRHS);
     
-    void plus2this      (IMatrixGetter aRHS);
-    void minus2this     (IMatrixGetter aRHS);
-    void multiply2this  (IMatrixGetter aRHS);
-    void div2this       (IMatrixGetter aRHS);
-    void mod2this       (IMatrixGetter aRHS);
+    void plus2this      (IMatrix aRHS);
+    void minus2this     (IMatrix aRHS);
+    void multiply2this  (IMatrix aRHS);
+    void div2this       (IMatrix aRHS);
+    void mod2this       (IMatrix aRHS);
     
     
     /** Groovy 的部分，重载一些运算符方便操作 */
@@ -163,13 +154,13 @@ public interface IMatrix extends IMatrixGetter, IMatrixSetter {
         @VisibleForTesting IVector getAt(IIndexFilter  aSelectedCols);
         @VisibleForTesting void putAt(SliceType aSelectedCols, double aValue);
         @VisibleForTesting void putAt(SliceType aSelectedCols, Iterable<? extends Number> aList);
-        @VisibleForTesting void putAt(SliceType aSelectedCols, IVectorGetter aVector);
+        @VisibleForTesting void putAt(SliceType aSelectedCols, IVector aVector);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, double aValue);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, Iterable<? extends Number> aList);
-        @VisibleForTesting void putAt(List<Integer> aSelectedCols, IVectorGetter aVector);
+        @VisibleForTesting void putAt(List<Integer> aSelectedCols, IVector aVector);
         @VisibleForTesting void putAt(IIndexFilter aSelectedCols, double aValue);
         @VisibleForTesting void putAt(IIndexFilter aSelectedCols, Iterable<? extends Number> aList);
-        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, IVectorGetter aVector);
+        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, IVector aVector);
     }
     @ApiStatus.Internal interface IMatrixRows_ {
         @VisibleForTesting IVector getAt(int aCol);
@@ -178,15 +169,15 @@ public interface IMatrix extends IMatrixGetter, IMatrixSetter {
         @VisibleForTesting IMatrix getAt(IIndexFilter  aSelectedCols);
         @VisibleForTesting void putAt(int aCol, double aValue);
         @VisibleForTesting void putAt(int aCol, Iterable<? extends Number> aList);
-        @VisibleForTesting void putAt(int aCol, IVectorGetter aVector);
+        @VisibleForTesting void putAt(int aCol, IVector aVector);
         @VisibleForTesting void putAt(SliceType aSelectedCols, double aValue);
         @VisibleForTesting void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows);
-        @VisibleForTesting void putAt(SliceType aSelectedCols, IMatrixGetter aMatrix);
+        @VisibleForTesting void putAt(SliceType aSelectedCols, IMatrix aMatrix);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, double aValue);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows);
-        @VisibleForTesting void putAt(List<Integer> aSelectedCols, IMatrixGetter aMatrix);
+        @VisibleForTesting void putAt(List<Integer> aSelectedCols, IMatrix aMatrix);
         @VisibleForTesting void putAt(IIndexFilter aSelectedCols, double aValue);
         @VisibleForTesting void putAt(IIndexFilter aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows);
-        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, IMatrixGetter aMatrix);
+        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix);
     }
 }

@@ -8,7 +8,6 @@ import com.jtool.code.functional.IDoubleConsumer1;
 import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
-import com.jtool.code.iterator.IDoubleSetOnlyIterator;
 import com.jtool.code.functional.IDoubleOperator1;
 import com.jtool.math.vector.*;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -16,6 +15,8 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+
+import static com.jtool.code.CS.ALL;
 
 
 /**
@@ -36,7 +37,7 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     
     /** Iterator stuffs */
-    @Override public IDoubleIterator colIterator() {
+    @Override public IDoubleIterator iteratorCol() {
         return new IDoubleIterator() {
             private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
@@ -55,7 +56,7 @@ public abstract class AbstractMatrix implements IMatrix {
             }
         };
     }
-    @Override public IDoubleIterator rowIterator() {
+    @Override public IDoubleIterator iteratorRow() {
         return new IDoubleIterator() {
             private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
@@ -74,7 +75,7 @@ public abstract class AbstractMatrix implements IMatrix {
             }
         };
     }
-    @Override public IDoubleIterator colIterator(final int aCol) {
+    @Override public IDoubleIterator iteratorColAt(final int aCol) {
         if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
         return new IDoubleIterator() {
             private final int mRowNum = rowNumber();
@@ -91,7 +92,7 @@ public abstract class AbstractMatrix implements IMatrix {
             }
         };
     }
-    @Override public IDoubleIterator rowIterator(final int aRow) {
+    @Override public IDoubleIterator iteratorRowAt(final int aRow) {
         if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
         return new IDoubleIterator() {
             private final int mColNum = columnNumber();
@@ -108,7 +109,7 @@ public abstract class AbstractMatrix implements IMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator colSetIterator() {
+    @Override public IDoubleSetIterator setIteratorCol() {
         return new IDoubleSetIterator() {
             private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
@@ -151,7 +152,7 @@ public abstract class AbstractMatrix implements IMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator rowSetIterator() {
+    @Override public IDoubleSetIterator setIteratorRow() {
         return new IDoubleSetIterator() {
             private final int mColNum = columnNumber();
             private final int mRowNum = rowNumber();
@@ -194,7 +195,7 @@ public abstract class AbstractMatrix implements IMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator colSetIterator(final int aCol) {
+    @Override public IDoubleSetIterator setIteratorColAt(final int aCol) {
         if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
         return new IDoubleSetIterator() {
             private final int mRowNum = rowNumber();
@@ -230,7 +231,7 @@ public abstract class AbstractMatrix implements IMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator rowSetIterator(final int aRow) {
+    @Override public IDoubleSetIterator setIteratorRowAt(final int aRow) {
         if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
         return new IDoubleSetIterator() {
             private final int mColNum = columnNumber();
@@ -266,204 +267,7 @@ public abstract class AbstractMatrix implements IMatrix {
             }
         };
     }
-    @Override public IDoubleIterator colIteratorOf(final IMatrixGetter aContainer) {
-        if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).colIterator();
-        return new IDoubleIterator() {
-            private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
-            private int mCol = 0;
-            private int mRow = 0;
-            @Override public boolean hasNext() {return mCol < mColNum;}
-            @Override public double next() {
-                if (hasNext()) {
-                    double tNext = aContainer.get(mRow, mCol);
-                    ++mRow;
-                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
-                    return tNext;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
-    @Override public IDoubleIterator rowIteratorOf(final IMatrixGetter aContainer) {
-        if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).rowIterator();
-        return new IDoubleIterator() {
-            private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
-            private int mCol = 0;
-            private int mRow = 0;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
-            @Override public double next() {
-                if (hasNext()) {
-                    double tNext = aContainer.get(mRow, mCol);
-                    ++mCol;
-                    if (mCol == mColNum) {mCol = 0; ++mRow;}
-                    return tNext;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
-    @Override public IDoubleIterator colIteratorOf(final int aCol, final IMatrixGetter aContainer) {
-        if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).colIterator(aCol);
-        return new IDoubleIterator() {
-            private final int mRowNum = rowNumber();
-            private int mRow = 0;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
-            @Override public double next() {
-                if (hasNext()) {
-                    double tNext = aContainer.get(mRow, aCol);
-                    ++mRow;
-                    return tNext;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
-    @Override public IDoubleIterator rowIteratorOf(final int aRow, final IMatrixGetter aContainer) {
-        if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).rowIterator(aRow);
-        return new IDoubleIterator() {
-            private final int mColNum = columnNumber();
-            private int mCol = 0;
-            @Override public boolean hasNext() {return mCol < mColNum;}
-            @Override public double next() {
-                if (hasNext()) {
-                    double tNext = aContainer.get(aRow, mCol);
-                    ++mCol;
-                    return tNext;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
-    @Override public IDoubleSetOnlyIterator colSetIteratorOf(final IMatrixSetter aContainer) {
-        if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).colSetIterator();
-        return new IDoubleSetOnlyIterator() {
-            private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
-            private int mCol = 0, oCol = -1;
-            private int mRow = 0, oRow = -1;
-            @Override public boolean hasNext() {return mCol < mColNum;}
-            @Override public void set(double aValue) {
-                if (oRow < 0) throw new IllegalStateException();
-                aContainer.set(oRow, oCol, aValue);
-            }
-            @Override public void nextOnly() {
-                if (hasNext()) {
-                    oCol = mCol; oRow = mRow;
-                    ++mRow;
-                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-            /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(double aValue) {
-                if (hasNext()) {
-                    oCol = mCol; oRow = mRow;
-                    ++mRow;
-                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
-                    aContainer.set(oRow, oCol, aValue);
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
-    @Override public IDoubleSetOnlyIterator rowSetIteratorOf(final IMatrixSetter aContainer) {
-        if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).rowSetIterator();
-        return new IDoubleSetOnlyIterator() {
-            private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
-            private int mCol = 0, oCol = -1;
-            private int mRow = 0, oRow = -1;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
-            @Override public void set(double aValue) {
-                if (oCol < 0) throw new IllegalStateException();
-                aContainer.set(oRow, oCol, aValue);
-            }
-            @Override public void nextOnly() {
-                if (hasNext()) {
-                    oCol = mCol; oRow = mRow;
-                    ++mCol;
-                    if (mCol == mColNum) {mCol = 0; ++mRow;}
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-            /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(double aValue) {
-                if (hasNext()) {
-                    oCol = mCol; oRow = mRow;
-                    ++mCol;
-                    if (mCol == mColNum) {mCol = 0; ++mRow;}
-                    aContainer.set(oRow, oCol, aValue);
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
-    @Override public IDoubleSetOnlyIterator colSetIteratorOf(final int aCol, final IMatrixSetter aContainer) {
-        if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).colSetIterator(aCol);
-        return new IDoubleSetOnlyIterator() {
-            private final int mRowNum = rowNumber();
-            private int mRow = 0, oRow = -1;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
-            @Override public void set(double aValue) {
-                if (oRow < 0) throw new IllegalStateException();
-                aContainer.set(oRow, aCol, aValue);
-            }
-            @Override public void nextOnly() {
-                if (hasNext()) {
-                    oRow = mRow; ++mRow;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-            /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(double aValue) {
-                if (hasNext()) {
-                    oRow = mRow; ++mRow;
-                    aContainer.set(oRow, aCol, aValue);
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
-    @Override public IDoubleSetOnlyIterator rowSetIteratorOf(final int aRow, final IMatrixSetter aContainer) {
-        if (aContainer instanceof IMatrix) return ((IMatrix)aContainer).rowSetIterator(aRow);
-        return new IDoubleSetOnlyIterator() {
-            private final int mColNum = columnNumber();
-            private int mCol = 0, oCol = -1;
-            @Override public boolean hasNext() {return mCol < mColNum;}
-            @Override public void set(double aValue) {
-                if (oCol < 0) throw new IllegalStateException();
-                aContainer.set(aRow, oCol, aValue);
-            }
-            @Override public void nextOnly() {
-                if (hasNext()) {
-                    oCol = mCol; ++mCol;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-            /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(double aValue) {
-                if (hasNext()) {
-                    oCol = mCol; ++mCol;
-                    aContainer.set(aRow, oCol, aValue);
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
+    
     
     /** 转换为其他类型 */
     @Override public List<List<Double>> asListCols() {return AbstractCollections.map(cols(), IVector::asList);}
@@ -475,8 +279,8 @@ public abstract class AbstractMatrix implements IMatrix {
             @Override public void set_(int aIdx, double aValue) {AbstractMatrix.this.set_(aIdx%mRowNum, aIdx/mRowNum, aValue);}
             @Override public double getAndSet_(int aIdx, double aValue) {return AbstractMatrix.this.getAndSet_(aIdx%mRowNum, aIdx/mRowNum, aValue);}
             @Override public int size() {return mRowNum * mColNum;}
-            @Override public IDoubleIterator iterator() {return colIterator();}
-            @Override public IDoubleSetIterator setIterator() {return colSetIterator();}
+            @Override public IDoubleIterator iterator() {return iteratorCol();}
+            @Override public IDoubleSetIterator setIterator() {return setIteratorCol();}
         };
     }
     @Override public IVector asVecRow() {
@@ -486,8 +290,8 @@ public abstract class AbstractMatrix implements IMatrix {
             @Override public void set_(int aIdx, double aValue) {AbstractMatrix.this.set_(aIdx/mColNum, aIdx%mColNum, aValue);}
             @Override public double getAndSet_(int aIdx, double aValue) {return AbstractMatrix.this.getAndSet_(aIdx/mColNum, aIdx%mColNum, aValue);}
             @Override public int size() {return mRowNum * mColNum;}
-            @Override public IDoubleIterator iterator() {return rowIterator();}
-            @Override public IDoubleSetIterator setIterator() {return rowSetIterator();}
+            @Override public IDoubleIterator iterator() {return iteratorRow();}
+            @Override public IDoubleSetIterator setIterator() {return setIteratorRow();}
         };
     }
     
@@ -497,7 +301,7 @@ public abstract class AbstractMatrix implements IMatrix {
         final int tRowNum = rowNumber();
         final int tColNum = columnNumber();
         double[][] rMat = new double[tRowNum][tColNum];
-        final IDoubleIterator it = rowIterator();
+        final IDoubleIterator it = iteratorRow();
         for (int row = 0; row < tRowNum; ++row) {
             final double[] tRow = rMat[row];
             for (int col = 0; col < tColNum; ++col) tRow[col] = it.next();
@@ -507,11 +311,12 @@ public abstract class AbstractMatrix implements IMatrix {
     
     /** 批量修改的接口，现在统一使用迭代器来填充 */
     @Override public final void fill(double aValue) {operation().fill(aValue);}
+    @Override public final void fill(IMatrix aMatrix) {operation().fill(aMatrix);}
     @Override public final void fill(IMatrixGetter aMatrixGetter) {operation().fill(aMatrixGetter);}
     
     /** 同样这里改为直接用迭代器遍历实现而不去调用对应向量的运算，中等的优化程度 */
     @Override public void fill(final double[][] aData) {
-        final IDoubleSetIterator si = rowSetIterator();
+        final IDoubleSetIterator si = setIteratorRow();
         final int tRowNum = rowNumber();
         final int tColNum = columnNumber();
         for (int row = 0; row < tRowNum; ++row) {
@@ -521,7 +326,7 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     @Override public void fillWithRows(Iterable<? extends Iterable<? extends Number>> aRows) {
         final Iterator<? extends Iterable<? extends Number>> tRowsIt = aRows.iterator();
-        final IDoubleSetIterator si = rowSetIterator();
+        final IDoubleSetIterator si = setIteratorRow();
         final int tRowNum = rowNumber();
         final int tColNum = columnNumber();
         for (int row = 0; row < tRowNum; ++row) {
@@ -531,7 +336,7 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     @Override public void fillWithCols(Iterable<? extends Iterable<? extends Number>> aCols) {
         final Iterator<? extends Iterable<? extends Number>> tColsIt = aCols.iterator();
-        final IDoubleSetIterator si = colSetIterator();
+        final IDoubleSetIterator si = setIteratorCol();
         final int tRowNum = rowNumber();
         final int tColNum = columnNumber();
         for (int col = 0; col < tColNum; ++col) {
@@ -579,8 +384,8 @@ public abstract class AbstractMatrix implements IMatrix {
             @Override public void set_(int aIdx, double aValue) {AbstractMatrix.this.set_(aRow, aIdx, aValue);}
             @Override public double getAndSet_(int aIdx, double aValue) {return AbstractMatrix.this.getAndSet_(aRow, aIdx, aValue);}
             @Override public int size() {return columnNumber();}
-            @Override public IDoubleIterator iterator() {return rowIterator(aRow);}
-            @Override public IDoubleSetIterator setIterator() {return rowSetIterator(aRow);}
+            @Override public IDoubleIterator iterator() {return iteratorRowAt(aRow);}
+            @Override public IDoubleSetIterator setIterator() {return setIteratorRowAt(aRow);}
         };
     }
     @Override public List<IVector> cols() {
@@ -596,8 +401,8 @@ public abstract class AbstractMatrix implements IMatrix {
             @Override public void set_(int aIdx, double aValue) {AbstractMatrix.this.set_(aIdx, aCol, aValue);}
             @Override public double getAndSet_(int aIdx, double aValue) {return AbstractMatrix.this.getAndSet_(aIdx, aCol, aValue);}
             @Override public int size() {return rowNumber();}
-            @Override public IDoubleIterator iterator() {return colIterator(aCol);}
-            @Override public IDoubleSetIterator setIterator() {return colSetIterator(aCol);}
+            @Override public IDoubleIterator iterator() {return iteratorColAt(aCol);}
+            @Override public IDoubleSetIterator setIterator() {return setIteratorColAt(aCol);}
         };
     }
     
@@ -632,14 +437,14 @@ public abstract class AbstractMatrix implements IMatrix {
     /** 切片操作，默认返回新的矩阵，refSlicer 则会返回引用的切片结果 */
     @Override public IMatrixSlicer slicer() {
         return new AbstractMatrixSlicer() {
-            @Override protected IVector getIL(final int aSelectedRow, final List<Integer> aSelectedCols) {IVector rVector = newZerosVec(aSelectedCols.size()); rVector.fill(i -> AbstractMatrix.this.get(aSelectedRow, aSelectedCols.get(i))); return rVector;}
-            @Override protected IVector getLI(final List<Integer> aSelectedRows, final int aSelectedCol) {IVector rVector = newZerosVec(aSelectedRows.size()); rVector.fill(i -> AbstractMatrix.this.get(aSelectedRows.get(i), aSelectedCol)); return rVector;}
-            @Override protected IVector getIA(final int aSelectedRow) {IVector rVector = newZerosVec(columnNumber()); rVector.fill(col -> AbstractMatrix.this.get(aSelectedRow, col)); return rVector;}
-            @Override protected IVector getAI(final int aSelectedCol) {IVector rVector = newZerosVec(rowNumber()   ); rVector.fill(row -> AbstractMatrix.this.get(row, aSelectedCol)); return rVector;}
+            @Override protected IVector getIL(final int aSelectedRow, final List<Integer> aSelectedCols) {IVector rVector = newZerosVec(aSelectedCols.size()); rVector.fill(refSlicer().get(aSelectedRow, aSelectedCols)); return rVector;}
+            @Override protected IVector getLI(final List<Integer> aSelectedRows, final int aSelectedCol) {IVector rVector = newZerosVec(aSelectedRows.size()); rVector.fill(refSlicer().get(aSelectedRows, aSelectedCol)); return rVector;}
+            @Override protected IVector getIA(final int aSelectedRow) {IVector rVector = newZerosVec(columnNumber()); rVector.fill(refSlicer().get(aSelectedRow, ALL)); return rVector;}
+            @Override protected IVector getAI(final int aSelectedCol) {IVector rVector = newZerosVec(rowNumber()   ); rVector.fill(refSlicer().get(ALL, aSelectedCol)); return rVector;}
             
-            @Override protected IMatrix getLL(final List<Integer> aSelectedRows, final List<Integer> aSelectedCols) {IMatrix rMatrix = newZeros(aSelectedRows.size(), aSelectedCols.size()); rMatrix.fill((row, col) -> AbstractMatrix.this.get(aSelectedRows.get(row), aSelectedCols.get(col))); return rMatrix;}
-            @Override protected IMatrix getLA(final List<Integer> aSelectedRows) {IMatrix rMatrix = newZeros(aSelectedRows.size(), columnNumber()      ); rMatrix.fill((row, col) -> AbstractMatrix.this.get(aSelectedRows.get(row), col)); return rMatrix;}
-            @Override protected IMatrix getAL(final List<Integer> aSelectedCols) {IMatrix rMatrix = newZeros(rowNumber()         , aSelectedCols.size()); rMatrix.fill((row, col) -> AbstractMatrix.this.get(row, aSelectedCols.get(col))); return rMatrix;}
+            @Override protected IMatrix getLL(final List<Integer> aSelectedRows, final List<Integer> aSelectedCols) {IMatrix rMatrix = newZeros(aSelectedRows.size(), aSelectedCols.size()); rMatrix.fill(refSlicer().get(aSelectedRows, aSelectedCols)); return rMatrix;}
+            @Override protected IMatrix getLA(final List<Integer> aSelectedRows) {IMatrix rMatrix = newZeros(aSelectedRows.size(), columnNumber()      ); rMatrix.fill(refSlicer().get(aSelectedRows, ALL)); return rMatrix;}
+            @Override protected IMatrix getAL(final List<Integer> aSelectedCols) {IMatrix rMatrix = newZeros(rowNumber()         , aSelectedCols.size()); rMatrix.fill(refSlicer().get(ALL, aSelectedCols)); return rMatrix;}
             @Override protected IMatrix getAA() {return copy();}
             
             @Override public IVector diag(final int aShift) {
@@ -775,11 +580,11 @@ public abstract class AbstractMatrix implements IMatrix {
     @Override public final IMatrix div          (double aRHS) {return operation().div     (aRHS);}
     @Override public final IMatrix mod          (double aRHS) {return operation().mod     (aRHS);}
     
-    @Override public final IMatrix plus         (IMatrixGetter aRHS) {return operation().plus    (aRHS);}
-    @Override public final IMatrix minus        (IMatrixGetter aRHS) {return operation().minus   (aRHS);}
-    @Override public final IMatrix multiply     (IMatrixGetter aRHS) {return operation().multiply(aRHS);}
-    @Override public final IMatrix div          (IMatrixGetter aRHS) {return operation().div     (aRHS);}
-    @Override public final IMatrix mod          (IMatrixGetter aRHS) {return operation().mod     (aRHS);}
+    @Override public final IMatrix plus         (IMatrix aRHS) {return operation().plus    (aRHS);}
+    @Override public final IMatrix minus        (IMatrix aRHS) {return operation().minus   (aRHS);}
+    @Override public final IMatrix multiply     (IMatrix aRHS) {return operation().multiply(aRHS);}
+    @Override public final IMatrix div          (IMatrix aRHS) {return operation().div     (aRHS);}
+    @Override public final IMatrix mod          (IMatrix aRHS) {return operation().mod     (aRHS);}
     
     @Override public final void plus2this       (double aRHS) {operation().plus2this    (aRHS);}
     @Override public final void minus2this      (double aRHS) {operation().minus2this   (aRHS);}
@@ -787,11 +592,11 @@ public abstract class AbstractMatrix implements IMatrix {
     @Override public final void div2this        (double aRHS) {operation().div2this     (aRHS);}
     @Override public final void mod2this        (double aRHS) {operation().mod2this     (aRHS);}
     
-    @Override public final void plus2this       (IMatrixGetter aRHS) {operation().plus2this    (aRHS);}
-    @Override public final void minus2this      (IMatrixGetter aRHS) {operation().minus2this   (aRHS);}
-    @Override public final void multiply2this   (IMatrixGetter aRHS) {operation().multiply2this(aRHS);}
-    @Override public final void div2this        (IMatrixGetter aRHS) {operation().div2this     (aRHS);}
-    @Override public final void mod2this        (IMatrixGetter aRHS) {operation().mod2this     (aRHS);}
+    @Override public final void plus2this       (IMatrix aRHS) {operation().plus2this    (aRHS);}
+    @Override public final void minus2this      (IMatrix aRHS) {operation().minus2this   (aRHS);}
+    @Override public final void multiply2this   (IMatrix aRHS) {operation().multiply2this(aRHS);}
+    @Override public final void div2this        (IMatrix aRHS) {operation().div2this     (aRHS);}
+    @Override public final void mod2this        (IMatrix aRHS) {operation().mod2this     (aRHS);}
     
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public final double call(int aRow, int aCol) {return get(aRow, aCol);}
@@ -821,13 +626,13 @@ public abstract class AbstractMatrix implements IMatrix {
         
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mRow, aSelectedCols).fill(aValue);}
         @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Number> aList) {refSlicer().get(mRow, aSelectedCols).fill(aList);}
-        @Override public void putAt(SliceType aSelectedCols, IVectorGetter aVector) {refSlicer().get(mRow, aSelectedCols).fill(aVector);}
+        @Override public void putAt(SliceType aSelectedCols, IVector aVector) {refSlicer().get(mRow, aSelectedCols).fill(aVector);}
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mRow, aSelectedCols).fill(aValue);}
         @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Number> aList) {refSlicer().get(mRow, aSelectedCols).fill(aList);}
-        @Override public void putAt(List<Integer> aSelectedCols, IVectorGetter aVector) {refSlicer().get(mRow, aSelectedCols).fill(aVector);}
+        @Override public void putAt(List<Integer> aSelectedCols, IVector aVector) {refSlicer().get(mRow, aSelectedCols).fill(aVector);}
         @Override public void putAt(IIndexFilter aSelectedCols, double aValue) {refSlicer().get(mRow, aSelectedCols).fill(aValue);}
         @Override public void putAt(IIndexFilter aSelectedCols, Iterable<? extends Number> aList) {refSlicer().get(mRow, aSelectedCols).fill(aList);}
-        @Override public void putAt(IIndexFilter aSelectedCols, IVectorGetter aVector) {refSlicer().get(mRow, aSelectedCols).fill(aVector);}
+        @Override public void putAt(IIndexFilter aSelectedCols, IVector aVector) {refSlicer().get(mRow, aSelectedCols).fill(aVector);}
         
         /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
         @Override public double getAt(int aCol) {return get(mRow, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
@@ -842,16 +647,16 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public IMatrix getAt(IIndexFilter aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         
         @Override public void putAt(int aCol, Iterable<? extends Number> aList) {refSlicer().get(mSelectedRows, aCol).fill(aList);}
-        @Override public void putAt(int aCol, IVectorGetter aVector) {refSlicer().get(mSelectedRows, aCol).fill(aVector);}
+        @Override public void putAt(int aCol, IVector aVector) {refSlicer().get(mSelectedRows, aCol).fill(aVector);}
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
-        @Override public void putAt(SliceType aSelectedCols, IMatrixGetter aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(SliceType aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
-        @Override public void putAt(List<Integer> aSelectedCols, IMatrixGetter aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(List<Integer> aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(IIndexFilter aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(IIndexFilter aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
-        @Override public void putAt(IIndexFilter aSelectedCols, IMatrixGetter aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         
         /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
         @Override public IVector getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
@@ -866,16 +671,16 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public IMatrix getAt(IIndexFilter aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         
         @Override public void putAt(int aCol, Iterable<? extends Number> aList) {refSlicer().get(mSelectedRows, aCol).fill(aList);}
-        @Override public void putAt(int aCol, IVectorGetter aVector) {refSlicer().get(mSelectedRows, aCol).fill(aVector);}
+        @Override public void putAt(int aCol, IVector aVector) {refSlicer().get(mSelectedRows, aCol).fill(aVector);}
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
-        @Override public void putAt(SliceType aSelectedCols, IMatrixGetter aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(SliceType aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
-        @Override public void putAt(List<Integer> aSelectedCols, IMatrixGetter aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(List<Integer> aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(IIndexFilter aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(IIndexFilter aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
-        @Override public void putAt(IIndexFilter aSelectedCols, IMatrixGetter aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         
         /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
         @Override public IVector getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
@@ -890,16 +695,16 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public IMatrix getAt(IIndexFilter aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         
         @Override public void putAt(int aCol, Iterable<? extends Number> aList) {refSlicer().get(mSelectedRows, aCol).fill(aList);}
-        @Override public void putAt(int aCol, IVectorGetter aVector) {refSlicer().get(mSelectedRows, aCol).fill(aVector);}
+        @Override public void putAt(int aCol, IVector aVector) {refSlicer().get(mSelectedRows, aCol).fill(aVector);}
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
-        @Override public void putAt(SliceType aSelectedCols, IMatrixGetter aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(SliceType aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
-        @Override public void putAt(List<Integer> aSelectedCols, IMatrixGetter aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(List<Integer> aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(IIndexFilter aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(IIndexFilter aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
-        @Override public void putAt(IIndexFilter aSelectedCols, IMatrixGetter aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         
         /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
         @Override public IVector getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol);}

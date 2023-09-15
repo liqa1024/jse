@@ -2,7 +2,6 @@ package com.jtool.math.vector;
 
 
 import com.jtool.code.functional.*;
-import com.jtool.code.iterator.IComplexDoubleSetOnlyIterator;
 import com.jtool.math.ComplexDouble;
 import com.jtool.math.IComplexDouble;
 import groovy.lang.Closure;
@@ -16,22 +15,20 @@ import java.util.function.Supplier;
  * @author liqa
  */
 public interface IComplexVectorOperation {
-    /** 通用的一些运算 */
-    IComplexVector plus     (IComplexVectorGetter aRHS);
-    IComplexVector minus    (IComplexVectorGetter aRHS);
-    IComplexVector lminus   (IComplexVectorGetter aRHS);
-    IComplexVector multiply (IComplexVectorGetter aRHS);
-    IComplexVector div      (IComplexVectorGetter aRHS);
-    IComplexVector ldiv     (IComplexVectorGetter aRHS);
-    IComplexVector operate  (IComplexVectorGetter aRHS, IOperator2<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt);
-    
-    IComplexVector plus     (IVectorGetter aRHS);
-    IComplexVector minus    (IVectorGetter aRHS);
-    IComplexVector lminus   (IVectorGetter aRHS);
-    IComplexVector multiply (IVectorGetter aRHS);
-    IComplexVector div      (IVectorGetter aRHS);
-    IComplexVector ldiv     (IVectorGetter aRHS);
-    IComplexVector operate  (IVectorGetter aRHS, IDoubleOperator2 aOpt);
+    IComplexVector plus     (IComplexVector aRHS);
+    IComplexVector minus    (IComplexVector aRHS);
+    IComplexVector lminus   (IComplexVector aRHS);
+    IComplexVector multiply (IComplexVector aRHS);
+    IComplexVector div      (IComplexVector aRHS);
+    IComplexVector ldiv     (IComplexVector aRHS);
+    IComplexVector operate  (IComplexVector aRHS, IOperator2<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt);
+    IComplexVector plus     (IVector aRHS);
+    IComplexVector minus    (IVector aRHS);
+    IComplexVector lminus   (IVector aRHS);
+    IComplexVector multiply (IVector aRHS);
+    IComplexVector div      (IVector aRHS);
+    IComplexVector ldiv     (IVector aRHS);
+    IComplexVector operate  (IVector aRHS, IOperator2<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt);
     
     IComplexVector plus     (IComplexDouble aRHS);
     IComplexVector minus    (IComplexDouble aRHS);
@@ -39,43 +36,48 @@ public interface IComplexVectorOperation {
     IComplexVector multiply (IComplexDouble aRHS);
     IComplexVector div      (IComplexDouble aRHS);
     IComplexVector ldiv     (IComplexDouble aRHS);
-    IComplexVector map      (IOperator1<? extends IComplexDouble, ? super ComplexDouble> aOpt);
-    
     IComplexVector plus     (double aRHS);
     IComplexVector minus    (double aRHS);
     IComplexVector lminus   (double aRHS);
     IComplexVector multiply (double aRHS);
     IComplexVector div      (double aRHS);
     IComplexVector ldiv     (double aRHS);
-    IComplexVector map      (IDoubleOperator1 aOpt);
+    IComplexVector map      (IOperator1<? extends IComplexDouble, ? super ComplexDouble> aOpt);
     
-    void plus2this          (IComplexVectorGetter aRHS);
-    void minus2this         (IComplexVectorGetter aRHS);
-    void lminus2this        (IComplexVectorGetter aRHS);
-    void multiply2this      (IComplexVectorGetter aRHS);
-    void div2this           (IComplexVectorGetter aRHS);
-    void ldiv2this          (IComplexVectorGetter aRHS);
-    void operate2this       (IComplexVectorGetter aRHS, IOperator2<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt);
+    void plus2this          (IComplexVector aRHS);
+    void minus2this         (IComplexVector aRHS);
+    void lminus2this        (IComplexVector aRHS);
+    void multiply2this      (IComplexVector aRHS);
+    void div2this           (IComplexVector aRHS);
+    void ldiv2this          (IComplexVector aRHS);
+    void operate2this       (IComplexVector aRHS, IOperator2<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt);
+    void plus2this          (IVector aRHS);
+    void minus2this         (IVector aRHS);
+    void lminus2this        (IVector aRHS);
+    void multiply2this      (IVector aRHS);
+    void div2this           (IVector aRHS);
+    void ldiv2this          (IVector aRHS);
+    void operate2this       (IVector aRHS, IOperator2<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt);
     
-    void plus2this          (IVectorGetter aRHS);
-    void minus2this         (IVectorGetter aRHS);
-    void lminus2this        (IVectorGetter aRHS);
-    void multiply2this      (IVectorGetter aRHS);
-    void div2this           (IVectorGetter aRHS);
-    void ldiv2this          (IVectorGetter aRHS);
-    void operate2this       (IVectorGetter aRHS, IDoubleOperator2 aOpt);
-    
+    void plus2this          (IComplexDouble aRHS);
+    void minus2this         (IComplexDouble aRHS);
+    void lminus2this        (IComplexDouble aRHS);
+    void multiply2this      (IComplexDouble aRHS);
+    void div2this           (IComplexDouble aRHS);
+    void ldiv2this          (IComplexDouble aRHS);
     void plus2this          (double aRHS);
     void minus2this         (double aRHS);
     void lminus2this        (double aRHS);
     void multiply2this      (double aRHS);
     void div2this           (double aRHS);
     void ldiv2this          (double aRHS);
-    void map2this           (IDoubleOperator1 aOpt);
+    void map2this           (IOperator1<? extends IComplexDouble, ? super ComplexDouble> aOpt);
     
     /** 这两个方法名默认是作用到自身的，这里为了保持 operation 的使用简洁不在函数名上特殊说明 */
     void fill               (IComplexDouble aRHS);
     void fill               (double aRHS);
+    void fill               (IComplexVector aRHS);
+    void fill               (IVector aRHS);
     void fill               (IComplexVectorGetter aRHS);
     void fill               (IVectorGetter aRHS);
     void assign             (Supplier<? extends IComplexDouble> aSup);
@@ -97,9 +99,9 @@ public interface IComplexVectorOperation {
     IComplexVector cumprod  ();
     IComplexVector cumstat  (IOperator2<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt);
     
-    /** 向量的一些额外的运算 */
-    ComplexDouble dot   (IVectorGetter aRHS);
-    ComplexDouble dot   (IComplexVectorGetter aRHS);
+    /** 这里定义 a.dot(b) = a * b' */
+    ComplexDouble dot   (IComplexVector aRHS);
+    ComplexDouble dot   (IVector aRHS);
     double        dot   ();
     double        norm  ();
     IVector       abs   ();

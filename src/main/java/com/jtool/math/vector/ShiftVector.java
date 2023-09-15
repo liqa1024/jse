@@ -47,6 +47,10 @@ public final class ShiftVector extends DoubleArrayVector {
     /** Optimize stuffs，引用反转直接返回 {@link ShiftReverseVector} */
     @Override public IVectorOperation operation() {
         return new DoubleArrayVectorOperation_() {
+            @Override public void fill(IVectorGetter aRHS) {
+                final int tEnd = mSize + mShift;
+                for (int i = mShift; i < tEnd; ++i) mData[i] = aRHS.get(i);
+            }
             @Override public void assign(IDoubleSupplier aSup) {
                 final int tEnd = mSize + mShift;
                 for (int i = mShift; i < tEnd; ++i) mData[i] = aSup.get();

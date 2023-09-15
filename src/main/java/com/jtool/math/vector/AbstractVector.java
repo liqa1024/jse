@@ -7,7 +7,6 @@ import com.jtool.code.functional.IDoubleConsumer1;
 import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
-import com.jtool.code.iterator.IDoubleSetOnlyIterator;
 import com.jtool.code.functional.IDoubleOperator1;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -74,43 +73,6 @@ public abstract class AbstractVector implements IVector {
             }
         };
     }
-    @Override public IDoubleIterator iteratorOf(final IVectorGetter aContainer) {
-        if (aContainer instanceof IVector) return ((IVector)aContainer).iterator();
-        return new IDoubleIterator() {
-            private final int mSize = size();
-            private int mIdx = 0;
-            @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public double next() {
-                if (hasNext()) {
-                    double tNext = aContainer.get(mIdx);
-                    ++mIdx;
-                    return tNext;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
-    @Override public IDoubleSetOnlyIterator setIteratorOf(final IVectorSetter aContainer) {
-        if (aContainer instanceof IVector) return ((IVector)aContainer).setIterator();
-        return new IDoubleSetOnlyIterator() {
-            private final int mSize = size();
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public void set(double aValue) {
-                if (oIdx < 0) throw new IllegalStateException();
-                aContainer.set(oIdx, aValue);
-            }
-            @Override public void nextOnly() {
-                if (hasNext()) {
-                    oIdx = mIdx;
-                    ++mIdx;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
     
     /** 转换为其他类型 */
     @Override public List<Double> asList() {
@@ -134,6 +96,7 @@ public abstract class AbstractVector implements IVector {
     
     /** 批量修改的接口 */
     @Override public final void fill(double aValue) {operation().fill(aValue);}
+    @Override public final void fill(IVector aVector) {operation().fill(aVector);}
     @Override public final void fill(IVectorGetter aVectorGetter) {operation().fill(aVectorGetter);}
     @Override public final void fill(Iterable<? extends Number> aList) {
         final Iterator<? extends Number> it = aList.iterator();
@@ -250,7 +213,7 @@ public abstract class AbstractVector implements IVector {
     /** 切片操作，默认返回新的向量，refSlicer 则会返回引用的切片结果 */
     @Override public IVectorSlicer slicer() {
         return new AbstractVectorSlicer() {
-            @Override protected IVector getL(final List<Integer> aIndices) {IVector rVector = newZeros(aIndices.size()); rVector.fill(i -> AbstractVector.this.get(aIndices.get(i))); return rVector;}
+            @Override protected IVector getL(final List<Integer> aIndices) {IVector rVector = newZeros(aIndices.size()); rVector.fill(refSlicer().get(aIndices)); return rVector;}
             @Override protected IVector getA() {return copy();}
             
             @Override protected int thisSize_() {return size();}
@@ -298,11 +261,11 @@ public abstract class AbstractVector implements IVector {
     @Override public final IVector div          (double aRHS) {return operation().div     (aRHS);}
     @Override public final IVector mod          (double aRHS) {return operation().mod     (aRHS);}
     
-    @Override public final IVector plus         (IVectorGetter aRHS) {return operation().plus    (aRHS);}
-    @Override public final IVector minus        (IVectorGetter aRHS) {return operation().minus   (aRHS);}
-    @Override public final IVector multiply     (IVectorGetter aRHS) {return operation().multiply(aRHS);}
-    @Override public final IVector div          (IVectorGetter aRHS) {return operation().div     (aRHS);}
-    @Override public final IVector mod          (IVectorGetter aRHS) {return operation().mod     (aRHS);}
+    @Override public final IVector plus         (IVector aRHS) {return operation().plus    (aRHS);}
+    @Override public final IVector minus        (IVector aRHS) {return operation().minus   (aRHS);}
+    @Override public final IVector multiply     (IVector aRHS) {return operation().multiply(aRHS);}
+    @Override public final IVector div          (IVector aRHS) {return operation().div     (aRHS);}
+    @Override public final IVector mod          (IVector aRHS) {return operation().mod     (aRHS);}
     
     @Override public final void plus2this       (double aRHS) {operation().plus2this    (aRHS);}
     @Override public final void minus2this      (double aRHS) {operation().minus2this   (aRHS);}
@@ -310,11 +273,11 @@ public abstract class AbstractVector implements IVector {
     @Override public final void div2this        (double aRHS) {operation().div2this     (aRHS);}
     @Override public final void mod2this        (double aRHS) {operation().mod2this     (aRHS);}
     
-    @Override public final void plus2this       (IVectorGetter aRHS) {operation().plus2this    (aRHS);}
-    @Override public final void minus2this      (IVectorGetter aRHS) {operation().minus2this   (aRHS);}
-    @Override public final void multiply2this   (IVectorGetter aRHS) {operation().multiply2this(aRHS);}
-    @Override public final void div2this        (IVectorGetter aRHS) {operation().div2this     (aRHS);}
-    @Override public final void mod2this        (IVectorGetter aRHS) {operation().mod2this     (aRHS);}
+    @Override public final void plus2this       (IVector aRHS) {operation().plus2this    (aRHS);}
+    @Override public final void minus2this      (IVector aRHS) {operation().minus2this   (aRHS);}
+    @Override public final void multiply2this   (IVector aRHS) {operation().multiply2this(aRHS);}
+    @Override public final void div2this        (IVector aRHS) {operation().div2this     (aRHS);}
+    @Override public final void mod2this        (IVector aRHS) {operation().mod2this     (aRHS);}
     
     @Override public final double sum   () {return operation().sum  ();}
     @Override public final double mean  () {return operation().mean ();}
@@ -322,11 +285,11 @@ public abstract class AbstractVector implements IVector {
     @Override public final double max   () {return operation().max  ();}
     @Override public final double min   () {return operation().min  ();}
     
-    @Override public final ILogicalVector equal         (IVectorGetter aRHS) {return operation().equal         (aRHS);}
-    @Override public final ILogicalVector greater       (IVectorGetter aRHS) {return operation().greater       (aRHS);}
-    @Override public final ILogicalVector greaterOrEqual(IVectorGetter aRHS) {return operation().greaterOrEqual(aRHS);}
-    @Override public final ILogicalVector less          (IVectorGetter aRHS) {return operation().less          (aRHS);}
-    @Override public final ILogicalVector lessOrEqual   (IVectorGetter aRHS) {return operation().lessOrEqual   (aRHS);}
+    @Override public final ILogicalVector equal         (IVector aRHS) {return operation().equal         (aRHS);}
+    @Override public final ILogicalVector greater       (IVector aRHS) {return operation().greater       (aRHS);}
+    @Override public final ILogicalVector greaterOrEqual(IVector aRHS) {return operation().greaterOrEqual(aRHS);}
+    @Override public final ILogicalVector less          (IVector aRHS) {return operation().less          (aRHS);}
+    @Override public final ILogicalVector lessOrEqual   (IVector aRHS) {return operation().lessOrEqual   (aRHS);}
     
     @Override public final ILogicalVector equal         (double aRHS) {return operation().equal         (aRHS);}
     @Override public final ILogicalVector greater       (double aRHS) {return operation().greater       (aRHS);}
@@ -345,13 +308,13 @@ public abstract class AbstractVector implements IVector {
     
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
-    @VisibleForTesting @Override public void putAt(List<Integer> aIndices, IVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(List<Integer> aIndices, IVector aVector) {refSlicer().get(aIndices).fill(aVector);}
     @VisibleForTesting @Override public void putAt(SliceType     aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(SliceType     aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
-    @VisibleForTesting @Override public void putAt(SliceType     aIndices, IVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(SliceType     aIndices, IVector aVector) {refSlicer().get(aIndices).fill(aVector);}
     @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
-    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, IVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, IVector aVector) {refSlicer().get(aIndices).fill(aVector);}
     
     /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
     @VisibleForTesting @Override public double getAt(int aIdx) {return get((aIdx < 0) ? (size()+aIdx) : aIdx);}

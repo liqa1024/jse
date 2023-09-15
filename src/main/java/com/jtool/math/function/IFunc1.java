@@ -4,8 +4,6 @@ import com.jtool.code.functional.IDoubleConsumer1;
 import com.jtool.code.functional.IDoubleOperator1;
 import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.math.vector.IVector;
-import com.jtool.math.vector.IVectorGetter;
-import com.jtool.math.vector.IVectorSetter;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Iterator;
@@ -14,7 +12,7 @@ import java.util.Iterator;
  * @author liqa
  * <p> 通用的数值函数接口，一维输入（f(x)）</p>
  */
-public interface IFunc1 extends IFunc1Subs, IVectorGetter, IVectorSetter {
+public interface IFunc1 extends IFunc1Subs {
     /** 获取所有数据方便外部使用或者进行运算 */
     IVector x();
     IVector f();

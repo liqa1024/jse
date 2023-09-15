@@ -23,13 +23,12 @@ import java.util.function.Supplier;
  * <p> 和 {@link IXYZ} 或者 {@link IAtom} 部分的用法思路不同，
  * 这里直接返回 {@link ComplexDouble} 让其和基本类型一样的使用，不会有引用的属性在里面 </p>
  */
-public interface IComplexVector extends IHasComplexDoubleIterator, IHasComplexDoubleSetIterator, IComplexVectorGetter, IComplexVectorSetter {
+public interface IComplexVector extends IHasComplexDoubleIterator, IHasComplexDoubleSetIterator, IComplexVectorGetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
     IComplexDoubleIterator iterator();
     IComplexDoubleSetIterator setIterator();
-    IComplexDoubleIterator iteratorOf(IComplexVectorGetter aContainer);
-    IComplexDoubleSetOnlyIterator setIteratorOf(IComplexVectorSetter aContainer);
     
+    default Iterable<ComplexDouble> iterable() {return () -> iterator().toIterator();}
     List<ComplexDouble> asList();
     
     /** 获取实部和虚部 */
@@ -44,6 +43,10 @@ public interface IComplexVector extends IHasComplexDoubleIterator, IHasComplexDo
     void fill(double aValue);
     void fillReal(double aReal);
     void fillImag(double aImag);
+    void fill(IComplexVector aVector);
+    void fill(IVector aVector);
+    void fillReal(IVector aRealVector);
+    void fillImag(IVector aImagVector);
     void fill(IComplexVectorGetter aVectorGetter);
     void fill(IVectorGetter aVectorGetter);
     void fillReal(IVectorGetter aRealGetter);
@@ -143,14 +146,14 @@ public interface IComplexVector extends IHasComplexDoubleIterator, IHasComplexDo
     IComplexVector multiply (double aRHS);
     IComplexVector div      (double aRHS);
     
-    IComplexVector plus     (IComplexVectorGetter aRHS);
-    IComplexVector minus    (IComplexVectorGetter aRHS);
-    IComplexVector multiply (IComplexVectorGetter aRHS);
-    IComplexVector div      (IComplexVectorGetter aRHS);
-    IComplexVector plus     (IVectorGetter aRHS);
-    IComplexVector minus    (IVectorGetter aRHS);
-    IComplexVector multiply (IVectorGetter aRHS);
-    IComplexVector div      (IVectorGetter aRHS);
+    IComplexVector plus     (IComplexVector aRHS);
+    IComplexVector minus    (IComplexVector aRHS);
+    IComplexVector multiply (IComplexVector aRHS);
+    IComplexVector div      (IComplexVector aRHS);
+    IComplexVector plus     (IVector aRHS);
+    IComplexVector minus    (IVector aRHS);
+    IComplexVector multiply (IVector aRHS);
+    IComplexVector div      (IVector aRHS);
     
     /** 注意这些 2this 操作并没有重载 groovy 中的 += 之类的运算符 */
     void plus2this      (IComplexDouble aRHS);
@@ -162,14 +165,14 @@ public interface IComplexVector extends IHasComplexDoubleIterator, IHasComplexDo
     void multiply2this  (double aRHS);
     void div2this       (double aRHS);
     
-    void plus2this      (IComplexVectorGetter aRHS);
-    void minus2this     (IComplexVectorGetter aRHS);
-    void multiply2this  (IComplexVectorGetter aRHS);
-    void div2this       (IComplexVectorGetter aRHS);
-    void plus2this      (IVectorGetter aRHS);
-    void minus2this     (IVectorGetter aRHS);
-    void multiply2this  (IVectorGetter aRHS);
-    void div2this       (IVectorGetter aRHS);
+    void plus2this      (IComplexVector aRHS);
+    void minus2this     (IComplexVector aRHS);
+    void multiply2this  (IComplexVector aRHS);
+    void div2this       (IComplexVector aRHS);
+    void plus2this      (IVector aRHS);
+    void minus2this     (IVector aRHS);
+    void multiply2this  (IVector aRHS);
+    void div2this       (IVector aRHS);
     
     /** Groovy 的部分，增加向量切片操作 */
     @VisibleForTesting ComplexDouble call(int aIdx);
@@ -186,16 +189,16 @@ public interface IComplexVector extends IHasComplexDoubleIterator, IHasComplexDo
     @VisibleForTesting void putAt(List<Integer> aIndices, IComplexDouble aValue);
     @VisibleForTesting void putAt(List<Integer> aIndices, double aValue);
     @VisibleForTesting void putAt(List<Integer> aIndices, Iterable<? extends Number> aList);
-    @VisibleForTesting void putAt(List<Integer> aIndices, IVectorGetter aVector);
-    @VisibleForTesting void putAt(List<Integer> aIndices, IComplexVectorGetter aVector);
+    @VisibleForTesting void putAt(List<Integer> aIndices, IVector aVector);
+    @VisibleForTesting void putAt(List<Integer> aIndices, IComplexVector aVector);
     @VisibleForTesting void putAt(SliceType     aIndices, IComplexDouble aValue);
     @VisibleForTesting void putAt(SliceType     aIndices, double aValue);
     @VisibleForTesting void putAt(SliceType     aIndices, Iterable<? extends Number> aList);
-    @VisibleForTesting void putAt(SliceType     aIndices, IVectorGetter aVector);
-    @VisibleForTesting void putAt(SliceType     aIndices, IComplexVectorGetter aVector);
+    @VisibleForTesting void putAt(SliceType     aIndices, IVector aVector);
+    @VisibleForTesting void putAt(SliceType     aIndices, IComplexVector aVector);
     @VisibleForTesting void putAt(IIndexFilter  aIndices, IComplexDouble aValue);
     @VisibleForTesting void putAt(IIndexFilter  aIndices, double aValue);
     @VisibleForTesting void putAt(IIndexFilter  aIndices, Iterable<? extends Number> aList);
-    @VisibleForTesting void putAt(IIndexFilter  aIndices, IVectorGetter aVector);
-    @VisibleForTesting void putAt(IIndexFilter  aIndices, IComplexVectorGetter aVector);
+    @VisibleForTesting void putAt(IIndexFilter  aIndices, IVector aVector);
+    @VisibleForTesting void putAt(IIndexFilter  aIndices, IComplexVector aVector);
 }

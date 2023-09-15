@@ -12,85 +12,85 @@ import com.jtool.math.operation.DATA;
  */
 public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation {
     /** 通用的一些运算 */
-    @Override public IVector plus(final IVectorGetter aRHS) {
+    @Override public IVector plus(IVector aRHS) {
         final DoubleArrayVector tThis = thisVector_();
         DoubleArrayVector rVector = newVector_(tThis.size());
         double[] tDataL = rVector.getIfHasSameOrderData(tThis);
         double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) ARRAY.ebePlus2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rVector.getData(), rVector.shiftSize(), rVector.dataSize());
-        else DATA.ebePlus2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector);
+        else DATA.ebePlus2Dest(tThis, aRHS, rVector);
         return rVector;
     }
-    @Override public IVector minus(final IVectorGetter aRHS) {
+    @Override public IVector minus(IVector aRHS) {
         final DoubleArrayVector tThis = thisVector_();
         DoubleArrayVector rVector = newVector_(tThis.size());
         double[] tDataL = rVector.getIfHasSameOrderData(tThis);
         double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) ARRAY.ebeMinus2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rVector.getData(), rVector.shiftSize(), rVector.dataSize());
-        else DATA.ebeMinus2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector);
+        else DATA.ebeMinus2Dest(tThis, aRHS, rVector);
         return rVector;
     }
-    @Override public IVector lminus(final IVectorGetter aRHS) {
+    @Override public IVector lminus(IVector aRHS) {
         final DoubleArrayVector tThis = thisVector_();
         DoubleArrayVector rVector = newVector_(tThis.size());
         double[] tDataL = rVector.getIfHasSameOrderData(tThis);
         double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) ARRAY.ebeMinus2Dest(tDataR, IDataShell.shiftSize(aRHS), tDataL, tThis.shiftSize(), rVector.getData(), rVector.shiftSize(), rVector.dataSize());
-        else DATA.ebeMinus2Dest(() -> tThis.iteratorOf(aRHS), tThis, rVector);
+        else DATA.ebeMinus2Dest(aRHS, tThis, rVector);
         return rVector;
     }
-    @Override public IVector multiply(final IVectorGetter aRHS) {
+    @Override public IVector multiply(IVector aRHS) {
         final DoubleArrayVector tThis = thisVector_();
         DoubleArrayVector rVector = newVector_(tThis.size());
         double[] tDataL = rVector.getIfHasSameOrderData(tThis);
         double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) ARRAY.ebeMultiply2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rVector.getData(), rVector.shiftSize(), rVector.dataSize());
-        else DATA.ebeMultiply2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector);
+        else DATA.ebeMultiply2Dest(tThis, aRHS, rVector);
         return rVector;
     }
-    @Override public IVector div(final IVectorGetter aRHS) {
+    @Override public IVector div(IVector aRHS) {
         final DoubleArrayVector tThis = thisVector_();
         DoubleArrayVector rVector = newVector_(tThis.size());
         double[] tDataL = rVector.getIfHasSameOrderData(tThis);
         double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) ARRAY.ebeDiv2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rVector.getData(), rVector.shiftSize(), rVector.dataSize());
-        else DATA.ebeDiv2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector);
+        else DATA.ebeDiv2Dest(tThis, aRHS, rVector);
         return rVector;
     }
-    @Override public IVector ldiv(final IVectorGetter aRHS) {
+    @Override public IVector ldiv(IVector aRHS) {
         final DoubleArrayVector tThis = thisVector_();
         DoubleArrayVector rVector = newVector_(tThis.size());
         double[] tDataL = rVector.getIfHasSameOrderData(tThis);
         double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) ARRAY.ebeDiv2Dest(tDataR, IDataShell.shiftSize(aRHS), tDataL, tThis.shiftSize(), rVector.getData(), rVector.shiftSize(), rVector.dataSize());
-        else DATA.ebeDiv2Dest(() -> tThis.iteratorOf(aRHS), tThis, rVector);
+        else DATA.ebeDiv2Dest(aRHS, tThis, rVector);
         return rVector;
     }
-    @Override public IVector mod(final IVectorGetter aRHS) {
+    @Override public IVector mod(IVector aRHS) {
         final DoubleArrayVector tThis = thisVector_();
         DoubleArrayVector rVector = newVector_(tThis.size());
         double[] tDataL = rVector.getIfHasSameOrderData(tThis);
         double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) ARRAY.ebeMod2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rVector.getData(), rVector.shiftSize(), rVector.dataSize());
-        else DATA.ebeMod2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector);
+        else DATA.ebeMod2Dest(tThis, aRHS, rVector);
         return rVector;
     }
-    @Override public IVector lmod(final IVectorGetter aRHS) {
+    @Override public IVector lmod(IVector aRHS) {
         final DoubleArrayVector tThis = thisVector_();
         DoubleArrayVector rVector = newVector_(tThis.size());
         double[] tDataL = rVector.getIfHasSameOrderData(tThis);
         double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) ARRAY.ebeMod2Dest(tDataR, IDataShell.shiftSize(aRHS), tDataL, tThis.shiftSize(), rVector.getData(), rVector.shiftSize(), rVector.dataSize());
-        else DATA.ebeMod2Dest(() -> tThis.iteratorOf(aRHS), tThis, rVector);
+        else DATA.ebeMod2Dest(aRHS, tThis, rVector);
         return rVector;
     }
-    @Override public IVector operate(final IVectorGetter aRHS, IDoubleOperator2 aOpt) {
+    @Override public IVector operate(IVector aRHS, IDoubleOperator2 aOpt) {
         final DoubleArrayVector tThis = thisVector_();
         DoubleArrayVector rVector = newVector_(tThis.size());
         double[] tDataL = rVector.getIfHasSameOrderData(tThis);
         double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) ARRAY.ebeDo2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rVector.getData(), rVector.shiftSize(), rVector.dataSize(), aOpt);
-        else DATA.ebeDo2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector, aOpt);
+        else DATA.ebeDo2Dest(tThis, aRHS, rVector, aOpt);
         return rVector;
     }
     
@@ -167,59 +167,59 @@ public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation
         return rVector;
     }
     
-    @Override public void plus2this(final IVectorGetter aRHS) {
+    @Override public void plus2this(IVector aRHS) {
         final DoubleArrayVector rThis = thisVector_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebePlus2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
-        else DATA.ebePlus2This(rThis, () -> rThis.iteratorOf(aRHS));
+        else DATA.ebePlus2This(rThis, aRHS);
     }
-    @Override public void minus2this(final IVectorGetter aRHS) {
+    @Override public void minus2this(IVector aRHS) {
         final DoubleArrayVector rThis = thisVector_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeMinus2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
-        else DATA.ebeMinus2This(rThis, () -> rThis.iteratorOf(aRHS));
+        else DATA.ebeMinus2This(rThis, aRHS);
     }
-    @Override public void lminus2this(final IVectorGetter aRHS) {
+    @Override public void lminus2this(IVector aRHS) {
         final DoubleArrayVector rThis = thisVector_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeLMinus2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
-        else DATA.ebeLMinus2This(rThis, () -> rThis.iteratorOf(aRHS));
+        else DATA.ebeLMinus2This(rThis, aRHS);
     }
-    @Override public void multiply2this(final IVectorGetter aRHS) {
+    @Override public void multiply2this(IVector aRHS) {
         final DoubleArrayVector rThis = thisVector_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeMultiply2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
-        else DATA.ebeMultiply2This(rThis, () -> rThis.iteratorOf(aRHS));
+        else DATA.ebeMultiply2This(rThis, aRHS);
     }
-    @Override public void div2this(final IVectorGetter aRHS) {
+    @Override public void div2this(IVector aRHS) {
         final DoubleArrayVector rThis = thisVector_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeDiv2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
-        else DATA.ebeDiv2This(rThis, () -> rThis.iteratorOf(aRHS));
+        else DATA.ebeDiv2This(rThis, aRHS);
     }
-    @Override public void ldiv2this(final IVectorGetter aRHS) {
+    @Override public void ldiv2this(IVector aRHS) {
         final DoubleArrayVector rThis = thisVector_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeLDiv2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
-        else DATA.ebeLDiv2This(rThis, () -> rThis.iteratorOf(aRHS));
+        else DATA.ebeLDiv2This(rThis, aRHS);
     }
-    @Override public void mod2this(final IVectorGetter aRHS) {
+    @Override public void mod2this(IVector aRHS) {
         final DoubleArrayVector rThis = thisVector_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeMod2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
-        else DATA.ebeMod2This(rThis, () -> rThis.iteratorOf(aRHS));
+        else DATA.ebeMod2This(rThis, aRHS);
     }
-    @Override public void lmod2this(final IVectorGetter aRHS) {
+    @Override public void lmod2this(IVector aRHS) {
         final DoubleArrayVector rThis = thisVector_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeLMod2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
-        else DATA.ebeLMod2This(rThis, () -> rThis.iteratorOf(aRHS));
+        else DATA.ebeLMod2This(rThis, aRHS);
     }
-    @Override public void operate2this(final IVectorGetter aRHS, IDoubleOperator2 aOpt) {
+    @Override public void operate2this(IVector aRHS, IDoubleOperator2 aOpt) {
         final DoubleArrayVector rThis = thisVector_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeDo2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize(), aOpt);
-        else DATA.ebeDo2This(rThis, () -> rThis.iteratorOf(aRHS), aOpt);
+        else DATA.ebeDo2This(rThis, aRHS, aOpt);
     }
     
     @Override public void plus2this     (double aRHS) {DoubleArrayVector rThis = thisVector_(); ARRAY.mapPlus2This    (rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
@@ -233,11 +233,11 @@ public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation
     @Override public void map2this      (IDoubleOperator1 aOpt) {DoubleArrayVector rThis = thisVector_(); ARRAY.mapDo2This(rThis.getData(), rThis.shiftSize(), rThis.dataSize(), aOpt);}
     
     @Override public void fill          (double aRHS) {DoubleArrayVector rThis = thisVector_(); ARRAY.mapFill2This(rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
-    @Override public void fill          (final IVectorGetter aRHS) {
+    @Override public void fill          (IVector aRHS) {
         final DoubleArrayVector rThis = thisVector_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeFill2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
-        else DATA.ebeFill2This(rThis, () -> rThis.iteratorOf(aRHS));
+        else DATA.ebeFill2This(rThis, aRHS);
     }
     
     @Override public double sum ()                      {DoubleArrayVector tThis = thisVector_(); return ARRAY.sumOfThis (tThis.getData(), tThis.shiftSize(), tThis.dataSize()      );}
@@ -299,7 +299,7 @@ public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation
     
     
     /** 向量的一些额外的运算 */
-    @Override public double dot(IVectorGetter aRHS) {
+    @Override public double dot(IVector aRHS) {
         final DoubleArrayVector tThis = thisVector_();
         final double[] tDataR = tThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {

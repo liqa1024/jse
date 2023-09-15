@@ -15,13 +15,12 @@ import java.util.NoSuchElementException;
  * @author liqa
  * <p> 简单起见默认都是实向量，返回类型 double </p>
  */
-public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVectorGetter, IVectorSetter {
+public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVectorGetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
     IDoubleIterator iterator();
     IDoubleSetIterator setIterator();
-    IDoubleIterator iteratorOf(IVectorGetter aContainer);
-    IDoubleSetOnlyIterator setIteratorOf(IVectorSetter aContainer);
     
+    default Iterable<Double> iterable() {return () -> iterator().toIterator();}
     List<Double> asList();
     
     /** 转为兼容性更好的 double[] */
@@ -29,6 +28,7 @@ public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVec
     
     /** 批量修改的接口 */
     void fill(double aValue);
+    void fill(IVector aVector);
     void fill(IVectorGetter aVectorGetter);
     void fill(double[] aData);
     void fill(Iterable<? extends Number> aList);
@@ -98,11 +98,11 @@ public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVec
     IVector div      (double aRHS);
     IVector mod      (double aRHS);
     
-    IVector plus     (IVectorGetter aRHS);
-    IVector minus    (IVectorGetter aRHS);
-    IVector multiply (IVectorGetter aRHS);
-    IVector div      (IVectorGetter aRHS);
-    IVector mod      (IVectorGetter aRHS);
+    IVector plus     (IVector aRHS);
+    IVector minus    (IVector aRHS);
+    IVector multiply (IVector aRHS);
+    IVector div      (IVector aRHS);
+    IVector mod      (IVector aRHS);
     
     /** 注意这些 2this 操作并没有重载 groovy 中的 += 之类的运算符 */
     void plus2this      (double aRHS);
@@ -111,11 +111,11 @@ public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVec
     void div2this       (double aRHS);
     void mod2this       (double aRHS);
     
-    void plus2this      (IVectorGetter aRHS);
-    void minus2this     (IVectorGetter aRHS);
-    void multiply2this  (IVectorGetter aRHS);
-    void div2this       (IVectorGetter aRHS);
-    void mod2this       (IVectorGetter aRHS);
+    void plus2this      (IVector aRHS);
+    void minus2this     (IVector aRHS);
+    void multiply2this  (IVector aRHS);
+    void div2this       (IVector aRHS);
+    void mod2this       (IVector aRHS);
     
     /** 对于 Vector 将这些统计接口也直接放在这里方便使用 */
     double sum  ();
@@ -125,11 +125,11 @@ public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVec
     double min  ();
     
     /** 比较运算，注意特地避开 equals */
-    ILogicalVector equal            (IVectorGetter aRHS);
-    ILogicalVector greater          (IVectorGetter aRHS);
-    ILogicalVector greaterOrEqual   (IVectorGetter aRHS);
-    ILogicalVector less             (IVectorGetter aRHS);
-    ILogicalVector lessOrEqual      (IVectorGetter aRHS);
+    ILogicalVector equal            (IVector aRHS);
+    ILogicalVector greater          (IVector aRHS);
+    ILogicalVector greaterOrEqual   (IVector aRHS);
+    ILogicalVector less             (IVector aRHS);
+    ILogicalVector lessOrEqual      (IVector aRHS);
     
     ILogicalVector equal            (double aRHS);
     ILogicalVector greater          (double aRHS);
@@ -150,11 +150,11 @@ public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVec
     @VisibleForTesting IVector getAt(IIndexFilter  aIndices);
     @VisibleForTesting void putAt(List<Integer> aIndices, double aValue);
     @VisibleForTesting void putAt(List<Integer> aIndices, Iterable<? extends Number> aList);
-    @VisibleForTesting void putAt(List<Integer> aIndices, IVectorGetter aVector);
+    @VisibleForTesting void putAt(List<Integer> aIndices, IVector aVector);
     @VisibleForTesting void putAt(SliceType     aIndices, double aValue);
     @VisibleForTesting void putAt(SliceType     aIndices, Iterable<? extends Number> aList);
-    @VisibleForTesting void putAt(SliceType     aIndices, IVectorGetter aVector);
+    @VisibleForTesting void putAt(SliceType     aIndices, IVector aVector);
     @VisibleForTesting void putAt(IIndexFilter  aIndices, double aValue);
     @VisibleForTesting void putAt(IIndexFilter  aIndices, Iterable<? extends Number> aList);
-    @VisibleForTesting void putAt(IIndexFilter  aIndices, IVectorGetter aVector);
+    @VisibleForTesting void putAt(IIndexFilter  aIndices, IVector aVector);
 }

@@ -12,40 +12,40 @@ import com.jtool.math.operation.DATA;
  */
 public abstract class BooleanArrayVectorOperation extends AbstractLogicalVectorOperation {
     /** 通用的一些运算 */
-    @Override public ILogicalVector and(final ILogicalVectorGetter aRHS) {
+    @Override public ILogicalVector and(ILogicalVector aRHS) {
         final BooleanArrayVector tThis = thisVector_();
         BooleanArrayVector rVector = newVector_(tThis.size());
         boolean[] tDataL = rVector.getIfHasSameOrderData(tThis);
         boolean[] tDataR = rVector.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) ARRAY.ebeAnd2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rVector.getData(), rVector.shiftSize(), rVector.dataSize());
-        else DATA.ebeAnd2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector);
+        else DATA.ebeAnd2Dest(tThis, aRHS, rVector);
         return rVector;
     }
-    @Override public ILogicalVector or(final ILogicalVectorGetter aRHS) {
+    @Override public ILogicalVector or(ILogicalVector aRHS) {
         final BooleanArrayVector tThis = thisVector_();
         BooleanArrayVector rVector = newVector_(tThis.size());
         boolean[] tDataL = rVector.getIfHasSameOrderData(tThis);
         boolean[] tDataR = rVector.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) ARRAY.ebeOr2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rVector.getData(), rVector.shiftSize(), rVector.dataSize());
-        else DATA.ebeOr2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector);
+        else DATA.ebeOr2Dest(tThis, aRHS, rVector);
         return rVector;
     }
-    @Override public ILogicalVector xor(final ILogicalVectorGetter aRHS) {
+    @Override public ILogicalVector xor(ILogicalVector aRHS) {
         final BooleanArrayVector tThis = thisVector_();
         BooleanArrayVector rVector = newVector_(tThis.size());
         boolean[] tDataL = rVector.getIfHasSameOrderData(tThis);
         boolean[] tDataR = rVector.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) ARRAY.ebeXor2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rVector.getData(), rVector.shiftSize(), rVector.dataSize());
-        else DATA.ebeXor2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector);
+        else DATA.ebeXor2Dest(tThis, aRHS, rVector);
         return rVector;
     }
-    @Override public ILogicalVector operate(final ILogicalVectorGetter aRHS, IBooleanOperator2 aOpt) {
+    @Override public ILogicalVector operate(ILogicalVector aRHS, IBooleanOperator2 aOpt) {
         final BooleanArrayVector tThis = thisVector_();
         BooleanArrayVector rVector = newVector_(tThis.size());
         boolean[] tDataL = rVector.getIfHasSameOrderData(tThis);
         boolean[] tDataR = rVector.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) ARRAY.ebeDo2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rVector.getData(), rVector.shiftSize(), rVector.dataSize(), aOpt);
-        else DATA.ebeDo2Dest(tThis, () -> tThis.iteratorOf(aRHS), rVector, aOpt);
+        else DATA.ebeDo2Dest(tThis, aRHS, rVector, aOpt);
         return rVector;
     }
     
@@ -82,29 +82,29 @@ public abstract class BooleanArrayVectorOperation extends AbstractLogicalVectorO
         return rVector;
     }
     
-    @Override public void and2this(final ILogicalVectorGetter aRHS) {
+    @Override public void and2this(ILogicalVector aRHS) {
         final BooleanArrayVector rThis = thisVector_();
         boolean[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeAnd2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
-        else DATA.ebeAnd2This(rThis, () -> rThis.iteratorOf(aRHS));
+        else DATA.ebeAnd2This(rThis, aRHS);
     }
-    @Override public void or2this(final ILogicalVectorGetter aRHS) {
+    @Override public void or2this(ILogicalVector aRHS) {
         final BooleanArrayVector rThis = thisVector_();
         boolean[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeOr2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
-        else DATA.ebeOr2This(rThis, () -> rThis.iteratorOf(aRHS));
+        else DATA.ebeOr2This(rThis, aRHS);
     }
-    @Override public void xor2this(final ILogicalVectorGetter aRHS) {
+    @Override public void xor2this(ILogicalVector aRHS) {
         final BooleanArrayVector rThis = thisVector_();
         boolean[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeXor2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
-        else DATA.ebeXor2This(rThis, () -> rThis.iteratorOf(aRHS));
+        else DATA.ebeXor2This(rThis, aRHS);
     }
-    @Override public void operate2this(final ILogicalVectorGetter aRHS, IBooleanOperator2 aOpt) {
+    @Override public void operate2this(ILogicalVector aRHS, IBooleanOperator2 aOpt) {
         final BooleanArrayVector rThis = thisVector_();
         boolean[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeDo2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize(), aOpt);
-        else DATA.ebeDo2This(rThis, () -> rThis.iteratorOf(aRHS), aOpt);
+        else DATA.ebeDo2This(rThis, aRHS, aOpt);
     }
     
     @Override public void and2this          (boolean aRHS) {BooleanArrayVector rThis = thisVector_(); ARRAY.mapAnd2This  (rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
@@ -123,11 +123,11 @@ public abstract class BooleanArrayVectorOperation extends AbstractLogicalVectorO
     @Override public void not2this          () {BooleanArrayVector rThis = thisVector_(); ARRAY.not2This(rThis.getData(), rThis.shiftSize(), rThis.dataSize());}
     
     @Override public void fill              (boolean aRHS) {BooleanArrayVector rThis = thisVector_(); ARRAY.mapFill2This(rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
-    @Override public void fill              (final ILogicalVectorGetter aRHS) {
+    @Override public void fill              (ILogicalVector aRHS) {
         final BooleanArrayVector rThis = thisVector_();
         boolean[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeFill2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
-        else DATA.ebeFill2This(rThis, () -> rThis.iteratorOf(aRHS));
+        else DATA.ebeFill2This(rThis, aRHS);
     }
     
     @Override public boolean        all     () {BooleanArrayVector tThis = thisVector_(); return ARRAY.allOfThis  (tThis.getData(), tThis.shiftSize(), tThis.dataSize());}

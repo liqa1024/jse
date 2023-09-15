@@ -77,6 +77,9 @@ public final class LogicalVector extends BooleanArrayVector {
     /** Optimize stuffs，重写加速遍历 */
     @Override public ILogicalVectorOperation operation() {
         return new BooleanArrayVectorOperation_() {
+            @Override public void fill(ILogicalVectorGetter aRHS) {
+                for (int i = 0; i < mSize; ++i) mData[i] = aRHS.get(i);
+            }
             @Override public void assign(IBooleanSupplier aSup) {
                 for (int i = 0; i < mSize; ++i) mData[i] = aSup.get();
             }

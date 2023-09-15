@@ -70,43 +70,6 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
             }
         };
     }
-    @Override public IBooleanIterator iteratorOf(final ILogicalVectorGetter aContainer) {
-        if (aContainer instanceof ILogicalVector) return ((ILogicalVector)aContainer).iterator();
-        return new IBooleanIterator() {
-            private final int mSize = size();
-            private int mIdx = 0;
-            @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public boolean next() {
-                if (hasNext()) {
-                    boolean tNext = aContainer.get(mIdx);
-                    ++mIdx;
-                    return tNext;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
-    @Override public IBooleanSetOnlyIterator setIteratorOf(final ILogicalVectorSetter aContainer) {
-        if (aContainer instanceof ILogicalVector) return ((ILogicalVector)aContainer).setIterator();
-        return new IBooleanSetOnlyIterator() {
-            private final int mSize = size();
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public void set(boolean aValue) {
-                if (oIdx < 0) throw new IllegalStateException();
-                aContainer.set(oIdx, aValue);
-            }
-            @Override public void nextOnly() {
-                if (hasNext()) {
-                    oIdx = mIdx;
-                    ++mIdx;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
     
     /** 转换为其他类型 */
     @Override public List<Boolean> asList() {
@@ -130,6 +93,7 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
     
     /** 批量修改的接口 */
     @Override public final void fill(boolean aValue) {operation().fill(aValue);}
+    @Override public final void fill(ILogicalVector aVector) {operation().fill(aVector);}
     @Override public final void fill(ILogicalVectorGetter aVectorGetter) {operation().fill(aVectorGetter);}
     @Override public final void fill(Iterable<Boolean> aList) {
         final Iterator<Boolean> it = aList.iterator();
@@ -253,18 +217,18 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
     @Override public ILogicalVector or  (boolean aRHS) {return operation().or (aRHS);}
     @Override public ILogicalVector xor (boolean aRHS) {return operation().xor(aRHS);}
     
-    @Override public ILogicalVector and (ILogicalVectorGetter aRHS) {return operation().and(aRHS);}
-    @Override public ILogicalVector or  (ILogicalVectorGetter aRHS) {return operation().or (aRHS);}
-    @Override public ILogicalVector xor (ILogicalVectorGetter aRHS) {return operation().xor(aRHS);}
+    @Override public ILogicalVector and (ILogicalVector aRHS) {return operation().and(aRHS);}
+    @Override public ILogicalVector or  (ILogicalVector aRHS) {return operation().or (aRHS);}
+    @Override public ILogicalVector xor (ILogicalVector aRHS) {return operation().xor(aRHS);}
     @Override public ILogicalVector not () {return operation().not();}
     
     @Override public final void and2this(boolean aRHS) {operation().and2this(aRHS);}
     @Override public final void or2this (boolean aRHS) {operation().or2this (aRHS);}
     @Override public final void xor2this(boolean aRHS) {operation().xor2this(aRHS);}
     
-    @Override public final void and2this(ILogicalVectorGetter aRHS) {operation().and2this(aRHS);}
-    @Override public final void or2this (ILogicalVectorGetter aRHS) {operation().or2this (aRHS);}
-    @Override public final void xor2this(ILogicalVectorGetter aRHS) {operation().xor2this(aRHS);}
+    @Override public final void and2this(ILogicalVector aRHS) {operation().and2this(aRHS);}
+    @Override public final void or2this (ILogicalVector aRHS) {operation().or2this (aRHS);}
+    @Override public final void xor2this(ILogicalVector aRHS) {operation().xor2this(aRHS);}
     @Override public final void not2this() {operation().not2this();}
     
      @Override public final boolean all  () {return operation().all  ();}
@@ -282,13 +246,13 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
     
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, boolean aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, Iterable<Boolean> aList) {refSlicer().get(aIndices).fill(aList);}
-    @VisibleForTesting @Override public void putAt(List<Integer> aIndices, ILogicalVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(List<Integer> aIndices, ILogicalVector aVector) {refSlicer().get(aIndices).fill(aVector);}
     @VisibleForTesting @Override public void putAt(SliceType     aIndices, boolean aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(SliceType     aIndices, Iterable<Boolean> aList) {refSlicer().get(aIndices).fill(aList);}
-    @VisibleForTesting @Override public void putAt(SliceType     aIndices, ILogicalVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(SliceType     aIndices, ILogicalVector aVector) {refSlicer().get(aIndices).fill(aVector);}
     @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, boolean aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, Iterable<Boolean> aList) {refSlicer().get(aIndices).fill(aList);}
-    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, ILogicalVectorGetter aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(IIndexFilter  aIndices, ILogicalVector aVector) {refSlicer().get(aIndices).fill(aVector);}
     
     /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
     @VisibleForTesting @Override public boolean getAt(int aIdx) {return get((aIdx < 0) ? (size()+aIdx) : aIdx);}

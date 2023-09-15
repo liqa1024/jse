@@ -81,6 +81,9 @@ public final class Vector extends DoubleArrayVector {
     /** Optimize stuffs，引用反转直接返回 {@link ReverseVector} */
     @Override public IVectorOperation operation() {
         return new DoubleArrayVectorOperation_() {
+            @Override public void fill(IVectorGetter aRHS) {
+                for (int i = 0; i < mSize; ++i) mData[i] = aRHS.get(i);
+            }
             @Override public void assign(IDoubleSupplier aSup) {
                 for (int i = 0; i < mSize; ++i) mData[i] = aSup.get();
             }
