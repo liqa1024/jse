@@ -404,6 +404,9 @@ public abstract class AbstractComplexVector implements IComplexVector {
     @Override public final void multiply2this   (IVector        aRHS) {operation().multiply2this(aRHS);}
     @Override public final void div2this        (IVector        aRHS) {operation().div2this     (aRHS);}
     
+    @Override public final IComplexVector negative() {return operation().negative();}
+    @Override public final void negative2this() {operation().negative2this();}
+    
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public ComplexDouble call(int aIdx) {return get(aIdx);}
     @VisibleForTesting @Override public IComplexVector call(List<Integer> aIndices) {return slicer().get(aIndices);}
@@ -451,5 +454,5 @@ public abstract class AbstractComplexVector implements IComplexVector {
     public abstract int size();
     public abstract IComplexVector newZeros(int aSize);
     
-    protected String toString_(double aReal, double aImag) {return String.format("   %.4g + %.4gi", aReal, aImag);}
+    protected String toString_(double aReal, double aImag) {return Double.compare(aImag, 0.0)>=0 ? String.format("   %.4g + %.4gi", aReal, aImag) : String.format("   %.4g - %.4gi", aReal, -aImag);}
 }

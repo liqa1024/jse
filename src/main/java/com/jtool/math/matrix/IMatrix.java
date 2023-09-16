@@ -132,6 +132,8 @@ public interface IMatrix extends IMatrixGetter {
     void div2this       (IMatrix aRHS);
     void mod2this       (IMatrix aRHS);
     
+    IMatrix negative();
+    void negative2this();
     
     /** Groovy 的部分，重载一些运算符方便操作 */
     @VisibleForTesting double call(int aRow, int aCol);

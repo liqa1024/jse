@@ -598,6 +598,9 @@ public abstract class AbstractMatrix implements IMatrix {
     @Override public final void div2this        (IMatrix aRHS) {operation().div2this     (aRHS);}
     @Override public final void mod2this        (IMatrix aRHS) {operation().mod2this     (aRHS);}
     
+    @Override public final IMatrix negative() {return operation().negative();}
+    @Override public final void negative2this() {operation().negative2this();}
+    
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public final double call(int aRow, int aCol) {return get(aRow, aCol);}
     @VisibleForTesting @Override public final IMatrix call(List<Integer> aSelectedRows, List<Integer> aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}

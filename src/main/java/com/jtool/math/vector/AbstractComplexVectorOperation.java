@@ -76,6 +76,9 @@ public abstract class AbstractComplexVectorOperation implements IComplexVectorOp
     @Override public void ldiv2this     (double         aRHS) {DATA.mapLDiv2This    (thisVector_(), aRHS);}
     @Override public void map2this      (IOperator1<? extends IComplexDouble, ? super ComplexDouble> aOpt) {DATA.mapDo2This(thisVector_(), aOpt);}
     
+    @Override public IComplexVector negative() {IComplexVector tThis = thisVector_(); IComplexVector rVector = newVector_(tThis.size()); DATA.mapNegative2Dest(tThis, rVector); return rVector;}
+    @Override public void negative2this() {DATA.mapNegative2This(thisVector_());}
+    
     @Override public void fill          (IComplexDouble aRHS) {DATA.mapFill2This(thisVector_(), aRHS);}
     @Override public void fill          (double aRHS) {DATA.mapFill2This(thisVector_(), aRHS);}
     @Override public void fill          (IComplexVector aRHS) {DATA.ebeFill2This(thisVector_(), aRHS);}

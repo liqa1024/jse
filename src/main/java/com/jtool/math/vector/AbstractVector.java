@@ -279,6 +279,9 @@ public abstract class AbstractVector implements IVector {
     @Override public final void div2this        (IVector aRHS) {operation().div2this     (aRHS);}
     @Override public final void mod2this        (IVector aRHS) {operation().mod2this     (aRHS);}
     
+    @Override public final IVector negative() {return operation().negative();}
+    @Override public final void negative2this() {operation().negative2this();}
+    
     @Override public final double sum   () {return operation().sum  ();}
     @Override public final double mean  () {return operation().mean ();}
     @Override public final double prod  () {return operation().prod ();}

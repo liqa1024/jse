@@ -153,6 +153,34 @@ public class DATA {
     public static void mapLMod2This     (IHasDoubleSetIterator rThis, final double aRHS) {mapDo2This(rThis, lhs -> (aRHS % lhs));}
     
     
+    public static void mapNegative2Dest(IHasDoubleIterator aData, IHasDoubleSetOnlyIterator rDest) {
+        final IDoubleIterator it = aData.iterator();
+        rDest.assign(() -> -it.next());
+    }
+    public static void mapNegative2This(IHasDoubleSetIterator rThis) {
+        final IDoubleSetIterator si = rThis.setIterator();
+        while (si.hasNext()) si.set(-si.next());
+    }
+    public static void mapNegative2Dest(IHasComplexDoubleIterator aData, IHasComplexDoubleSetOnlyIterator rDest) {
+        final IComplexDoubleIterator it = aData.iterator();
+        final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
+        while (si.hasNext()) {
+            it.nextOnly();
+            si.nextOnly();
+            si.setReal(-it.real());
+            si.setImag(-it.imag());
+        }
+    }
+    public static void mapNegative2This(IHasComplexDoubleSetIterator rThis) {
+        final IComplexDoubleSetIterator si = rThis.setIterator();
+        while (si.hasNext()) {
+            si.nextOnly();
+            si.setReal(-si.real());
+            si.setImag(-si.imag());
+        }
+    }
+    
+    
     /** complex double stuffs */
     public static void ebePlus2Dest(IHasComplexDoubleIterator aLHS, IHasDoubleIterator aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
         final IComplexDoubleIterator li = aLHS.iterator();

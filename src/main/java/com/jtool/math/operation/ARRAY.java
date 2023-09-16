@@ -270,14 +270,23 @@ public class ARRAY {
     public static void mapMod2This      (double[] rThis, int rShift, double aRHS, int aLength) {final int rEnd = aLength + rShift; for (int i = rShift; i < rEnd; ++i) rThis[i] %= aRHS          ;}
     public static void mapLMod2This     (double[] rThis, int rShift, double aRHS, int aLength) {final int rEnd = aLength + rShift; for (int i = rShift; i < rEnd; ++i) rThis[i] = aRHS % rThis[i];}
     
-    public static void negative2Dest(double[] aData, int aShift, double[] rDest, int rShift, int aLength) {
+    
+    public static void mapNegative2Dest(double[] aData, int aShift, double[] rDest, int rShift, int aLength) {
         final int rEnd = aLength + rShift;
         if (rShift == aShift) for (int i = rShift; i < rEnd; ++i) rDest[i] = -aData[i];
         else for (int i = rShift, j = aShift; i < rEnd; ++i, ++j) rDest[i] = -aData[j];
     }
-    public static void negative2This(double[] rThis, int rShift, int aLength) {
+    public static void mapNegative2This(double[] rThis, int rShift, int aLength) {
         final int rEnd = aLength + rShift;
         for (int i = rShift; i < rEnd; ++i) rThis[i] = -rThis[i];
+    }
+    public static void mapNegative2Dest(double[][] aData, int aShift, double[][] rDest, int rShift, int aLength) {
+        mapNegative2Dest(aData[0], aShift, rDest[0], rShift, aLength);
+        mapNegative2Dest(aData[1], aShift, rDest[1], rShift, aLength);
+    }
+    public static void mapNegative2This(double[][] rThis, int rShift, int aLength) {
+        mapNegative2This(rThis[0], rShift, aLength);
+        mapNegative2This(rThis[1], rShift, aLength);
     }
     
     
@@ -456,7 +465,7 @@ public class ARRAY {
     }
     public static void mapLMinus2Dest(double[][] aDataL, int aShiftL, double aRHS, double[][] rDest, int rShift, int aLength) {
         mapLMinus2Dest(aDataL[0], aShiftL, aRHS, rDest[0], rShift, aLength);
-        negative2Dest(aDataL[1], aShiftL, rDest[0], rShift, aLength);
+        mapNegative2Dest(aDataL[1], aShiftL, rDest[1], rShift, aLength);
     }
     public static void mapMultiply2Dest(double[][] aDataL, int aShiftL, double aRHS, double[][] rDest, int rShift, int aLength) {
         mapMultiply2Dest(aDataL[0], aShiftL, aRHS, rDest[0], rShift, aLength);
@@ -603,7 +612,7 @@ public class ARRAY {
     }
     public static void mapPlus2This     (double[][] rThis, int rShift, double aRHS, int aLength) {mapPlus2This    (rThis[0], rShift, aRHS, aLength);}
     public static void mapMinus2This    (double[][] rThis, int rShift, double aRHS, int aLength) {mapMinus2This   (rThis[0], rShift, aRHS, aLength);}
-    public static void mapLMinus2This   (double[][] rThis, int rShift, double aRHS, int aLength) {mapLMinus2This  (rThis[0], rShift, aRHS, aLength); negative2This   (rThis[1], rShift,       aLength);}
+    public static void mapLMinus2This   (double[][] rThis, int rShift, double aRHS, int aLength) {mapLMinus2This  (rThis[0], rShift, aRHS, aLength); mapNegative2This(rThis[1], rShift,       aLength);}
     public static void mapMultiply2This (double[][] rThis, int rShift, double aRHS, int aLength) {mapMultiply2This(rThis[0], rShift, aRHS, aLength); mapMultiply2This(rThis[1], rShift, aRHS, aLength);}
     public static void mapDiv2This      (double[][] rThis, int rShift, double aRHS, int aLength) {mapDiv2This     (rThis[0], rShift, aRHS, aLength); mapDiv2This     (rThis[1], rShift, aRHS, aLength);}
     public static void mapLDiv2This     (double[][] rThis, int rShift, double aRHS, int aLength) {

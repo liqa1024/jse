@@ -121,6 +121,9 @@ public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVec
     void div2this       (IVector aRHS);
     void mod2this       (IVector aRHS);
     
+    IVector negative();
+    void negative2this();
+    
     /** 对于 Vector 将这些统计接口也直接放在这里方便使用 */
     double sum  ();
     double mean ();

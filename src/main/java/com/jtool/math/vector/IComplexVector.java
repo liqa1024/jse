@@ -184,6 +184,9 @@ public interface IComplexVector extends IHasComplexDoubleIterator, IHasComplexDo
     void multiply2this  (IVector aRHS);
     void div2this       (IVector aRHS);
     
+    IComplexVector negative();
+    void negative2this();
+    
     /** Groovy 的部分，增加向量切片操作 */
     @VisibleForTesting ComplexDouble call(int aIdx);
     @VisibleForTesting ComplexDouble getAt(int aIdx);

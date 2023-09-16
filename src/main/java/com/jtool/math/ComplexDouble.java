@@ -21,7 +21,7 @@ public final class ComplexDouble implements ISettableComplexDouble {
     @Override public void setImag(double aImag) {mImag = aImag;}
     
     /** print */
-    @Override public String toString() {return String.format("%.4g + %.4gi", mReal, mImag);}
+    @Override public String toString() {return Double.compare(mImag, 0.0)>=0 ? String.format("%.4g + %.4gi", mReal, mImag) : String.format("%.4g - %.4gi", mReal, -mImag);}
     
     
     /** 提供一些常见的复数运算 */

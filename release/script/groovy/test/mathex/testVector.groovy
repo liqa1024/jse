@@ -10,3 +10,5 @@ println(vec);
 
 vec.fill {int i -> I*i + 10*i}
 println(vec);
+
+println(-vec);

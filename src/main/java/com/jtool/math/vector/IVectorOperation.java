@@ -49,6 +49,9 @@ public interface IVectorOperation {
     void lmod2this      (double aRHS);
     void map2this       (IDoubleOperator1 aOpt);
     
+    IVector negative();
+    void negative2this();
+    
     /** 这两个方法名默认是作用到自身的，这里为了保持 operation 的使用简洁不在函数名上特殊说明 */
     void fill           (double aRHS);
     void fill           (IVector aRHS);

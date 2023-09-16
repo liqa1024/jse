@@ -242,6 +242,16 @@ public abstract class BiDoubleArrayVectorOperation extends AbstractComplexVector
     @Override public void ldiv2this     (double         aRHS) {BiDoubleArrayVector rThis = thisVector_(); ARRAY.mapLDiv2This    (rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
     @Override public void map2this      (IOperator1<? extends IComplexDouble, ? super ComplexDouble> aOpt) {BiDoubleArrayVector rThis = thisVector_(); ARRAY.mapDo2This(rThis.getData(), rThis.shiftSize(), rThis.dataSize(), aOpt);}
     
+    @Override public IComplexVector negative() {
+        BiDoubleArrayVector tThis = thisVector_();
+        BiDoubleArrayVector rVector = newVector_(tThis.size());
+        double[][] tDataL = rVector.getIfHasSameOrderData(tThis);
+        if (tDataL != null) ARRAY.mapNegative2Dest(tDataL, tThis.shiftSize(), rVector.getData(), rVector.shiftSize(), rVector.dataSize());
+        else DATA.mapNegative2Dest(tThis, rVector);
+        return rVector;
+    }
+    @Override public void negative2this() {BiDoubleArrayVector rThis = thisVector_(); ARRAY.mapNegative2This(rThis.getData(), rThis.shiftSize(), rThis.dataSize());}
+    
     @Override public void fill          (IComplexDouble aRHS) {BiDoubleArrayVector rThis = thisVector_(); ARRAY.mapFill2This(rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
     @Override public void fill          (double aRHS) {BiDoubleArrayVector rThis = thisVector_(); ARRAY.mapFill2This(rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
     @Override public void fill          (IComplexVector aRHS) {
