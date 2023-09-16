@@ -49,7 +49,7 @@ public abstract class AbstractTable implements ITable {
     @Override public String getHead(int aCol) {return mHeads[aCol];}
     @Override public int getColumn(String aHead) {return mHead2Idx.getOrDefault(aHead, -1);}
     
-    @Override public IVector get(String aHead) {return col(mHead2Idx.get(aHead));}
+    @Override public IVector get(String aHead) {return col(aHead);}
     @Override public double get(int aRow, String aHead) {return matrix().get(aRow, mHead2Idx.get(aHead));}
     @Override public boolean containsHead(String aHead) {return mHead2Idx.containsKey(aHead);}
     @Override public boolean setHead(String aOldHead, String aNewHead) {
@@ -68,7 +68,7 @@ public abstract class AbstractTable implements ITable {
     @Override public final List<IVector> rows() {return matrix().rows();}
     @Override public final IVector row(int aRow) {return matrix().row(aRow);}
     @Override public final List<IVector> cols() {return matrix().cols();}
-    @Override public final IVector col(int aCol) {return matrix().col(aCol);}
+    @Override public final IVector col(String aHead) {return matrix().col(mHead2Idx.get(aHead));}
     @Override public final int rowNumber() {return matrix().rowNumber();}
     @Override public final int columnNumber() {return mHeads.length;}
     

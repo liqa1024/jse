@@ -1,7 +1,5 @@
 package atom
 
-import com.jtool.atom.IAtomData
-import com.jtool.code.collection.ArrayLists
 import com.jtool.lmp.Dump
 import com.jtool.rareevent.atom.ABOOPSolidChecker
 import com.jtool.rareevent.atom.MultiTypeClusterSizeCalculator
@@ -31,13 +29,13 @@ final def calculator = new MultiTypeClusterSizeCalculator(
     [new ABOOPSolidChecker().setRNearestMul(1.8).setConnectThreshold(0.84).setSolidThreshold(13), new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.84).setSolidThreshold(7)]
 );
 
-List<IAtomData> filterDump = ArrayLists.nulls(dump.size());
 parfor(dump.size()) {int i ->
     def subDump = dump[i];
     def isSolid = subDump.getMPC().withCloseable {calculator.getIsSolid_(it, subDump)}
     int j = 0;
-    filterDump[i] = subDump.opt().mapType {def atom -> isSolid[j++] ? atom.type()+2 : atom.type()};
+    // 直接这样修改可以减少内存占用，并且减少重复的类型转换
+    dump[i] = subDump.opt().mapType {def atom -> isSolid[j++] ? atom.type()+2 : atom.type()};
 }
 
-Dump.fromAtomDataList(filterDump).write('lmp/.stableglass-out/filter-dump-fs2');
+dump.write('lmp/.stableglass-out/filter-dump-fs2');
 

@@ -71,12 +71,21 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
         @Override public double vy() {return mAtom.vy();}
         @Override public double vz() {return mAtom.vz();}
     }
+    protected final static class TypeWrapperAtom extends WrapperAtom {
+        final int mType;
+        TypeWrapperAtom(IAtom aAtom, int aType) {super(aAtom); mType = aType;}
+        @Override public int type() {return mType;}
+    }
+    protected final static class XYZWrapperAtom extends WrapperAtom {
+        final double mX, mY, mZ;
+        XYZWrapperAtom(IAtom aAtom, double aX, double aY, double aZ) {super(aAtom); mX = aX; mY = aY; mZ = aZ;}
+        @Override public double x() {return mX;}
+        @Override public double y() {return mY;}
+        @Override public double z() {return mZ;}
+    }
     
     @Override public IAtomData mapType(int aMinTypeNum, final IOperator1<Integer, ? super IAtom> aOperator) {
-        return map(aMinTypeNum, atom -> {
-            final int tType = aOperator.cal(atom);
-            return new WrapperAtom(atom) {@Override public int type() {return tType;}};
-        });
+        return map(aMinTypeNum, atom -> new TypeWrapperAtom(atom, aOperator.cal(atom)));
     }
     
     @Override public IAtomData perturbXYZGaussian(final Random aRandom, final double aSigma) {
@@ -97,12 +106,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
             if      (tZ <  tBoxLo.mZ) {tZ += tBox.mZ; while (tZ <  tBoxLo.mZ) tZ += tBox.mZ;}
             else if (tZ >= tBoxHi.mZ) {tZ -= tBox.mZ; while (tZ >= tBoxHi.mZ) tZ -= tBox.mZ;}
             
-            final double fX = tX, fY = tY, fZ = tZ;
-            return new WrapperAtom(atom) {
-                @Override public double x() {return fX;}
-                @Override public double y() {return fY;}
-                @Override public double z() {return fZ;}
-            };
+            return new XYZWrapperAtom(atom, tX, tY, tZ);
         });
     }
     

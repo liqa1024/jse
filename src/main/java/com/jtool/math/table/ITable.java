@@ -25,7 +25,6 @@ public interface ITable {
     IVector get(String aHead);
     double get(int aRow, String aHead);
     boolean containsHead(String aHead);
-    @SuppressWarnings("UnusedReturnValue")
     boolean setHead(String aOldHead, String aNewHead);
     
     /** Matrix like stuffs */
@@ -33,7 +32,7 @@ public interface ITable {
     List<IVector> rows();
     IVector row(int aRow);
     List<IVector> cols();
-    IVector col(int aCol);
+    IVector col(String aHead);
     int rowNumber();
     int columnNumber();
     default @VisibleForTesting int nrows() {return rowNumber();}

@@ -29,7 +29,7 @@ public abstract class AbstractMultiFrameTable<T extends ITable> extends Abstract
     @Override public List<IVector> rows() {return defaultFrame().rows();}
     @Override public IVector row(int aRow) {return defaultFrame().row(aRow);}
     @Override public List<IVector> cols() {return defaultFrame().cols();}
-    @Override public IVector col(int aCol) {return defaultFrame().col(aCol);}
+    @Override public IVector col(String aHead) {return defaultFrame().col(aHead);}
     @Override public int rowNumber() {return defaultFrame().rowNumber();}
     @Override public int columnNumber() {return defaultFrame().columnNumber();}
     

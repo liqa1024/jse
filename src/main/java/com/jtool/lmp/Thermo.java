@@ -37,8 +37,9 @@ public class Thermo extends AbstractMultiFrameTable<ITable> {
     }
     
     /** AbstractList stuffs */
-    @Override public ITable get(int index) {return mTableList.get(index);}
     @Override public int size() {return mTableList.size();}
+    @Override public ITable get(int index) {return mTableList.get(index);}
+    @Override public ITable set(int index, ITable aTable) {return mTableList.set(index, aTable);}
     @Override public boolean add(ITable aTable) {return mTableList.add(aTable);}
     @Override public ITable remove(int aIndex) {return mTableList.remove(aIndex);}
     /** 提供更加易用的添加方法，返回自身支持链式调用 */
