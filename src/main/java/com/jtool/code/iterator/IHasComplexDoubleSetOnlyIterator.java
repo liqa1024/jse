@@ -34,7 +34,6 @@ public interface IHasComplexDoubleSetOnlyIterator {
     }
     /** Groovy stuffs */
     default void assign(Closure<?> aGroovyTask) {
-        if (aGroovyTask.getMaximumNumberOfParameters() != 0) throw new IllegalArgumentException("Parameters Number of assign in IHasComplexDoubleSetOnlyIterator Must be 0");
         final IComplexDoubleSetOnlyIterator si = setIterator();
         while (si.hasNext()) {
             // 直接先执行然后检测类型决定如何设置

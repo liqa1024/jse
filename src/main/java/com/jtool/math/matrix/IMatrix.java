@@ -8,6 +8,7 @@ import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
 import com.jtool.code.functional.IDoubleOperator1;
 import com.jtool.math.vector.IVector;
+import groovy.lang.Closure;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -58,6 +59,10 @@ public interface IMatrix extends IMatrixGetter {
     void assignRow(IDoubleSupplier aSup);
     void forEachCol(IDoubleConsumer1 aCon);
     void forEachRow(IDoubleConsumer1 aCon);
+    /** Groovy stuff */
+    default void fill(final Closure<? extends Number> aGroovyTask) {fill((i, j) -> aGroovyTask.call(i, j).doubleValue());}
+    default void assignCol(final Closure<? extends Number> aGroovyTask) {assignCol(() -> aGroovyTask.call().doubleValue());}
+    default void assignRow(final Closure<? extends Number> aGroovyTask) {assignRow(() -> aGroovyTask.call().doubleValue());}
     
     /** 访问和修改部分，自带的接口 */
     double get_(int aRow, int aCol);

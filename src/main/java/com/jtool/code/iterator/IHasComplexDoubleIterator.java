@@ -56,8 +56,8 @@ public interface IHasComplexDoubleIterator {
     default void forEach(Closure<?> aGroovyTask) {
         int tN = aGroovyTask.getMaximumNumberOfParameters();
         switch (tN) {
-        case 1: forEach(value -> aGroovyTask.call(value));
-        case 2: forEach((real, imag) -> aGroovyTask.call(real, imag));
+        case 1: {forEach(value -> aGroovyTask.call(value)); return;}
+        case 2: {forEach((real, imag) -> aGroovyTask.call(real, imag)); return;}
         default: throw new IllegalArgumentException("Parameters Number of forEach in IHasComplexDoubleIterator Must be 1 or 2");
         }
     }

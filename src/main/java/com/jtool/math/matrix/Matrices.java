@@ -2,6 +2,7 @@ package com.jtool.math.matrix;
 
 import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.IVectorGetter;
+import groovy.lang.Closure;
 
 import java.util.Collection;
 
@@ -38,6 +39,9 @@ public class Matrices {
             return rMatrix;
         }
     }
+    /** Groovy stuff */
+    public static IMatrix from(int aSize, final Closure<? extends Number> aGroovyTask) {return from(aSize, (i, j) -> aGroovyTask.call(i, j).doubleValue());}
+    public static IMatrix from(int aRowNum, int aColNum, final Closure<? extends Number> aGroovyTask) {return from(aRowNum, aColNum, (i, j) -> aGroovyTask.call(i, j).doubleValue());}
     
     /** Matrix 暂时没有相关 Builder，因此不支持 Iterable 构造 */
     public static IMatrix from(Collection<? extends Collection<? extends Number>> aRows) {return fromRows(aRows);}
@@ -70,4 +74,6 @@ public class Matrices {
         rMatrix.refSlicer().diag().fill(aDiags);
         return rMatrix;
     }
+    /** Groovy stuff */
+    public static IMatrix diag(int aSize, final Closure<? extends Number> aGroovyTask) {return diag(aSize, i -> aGroovyTask.call(i).doubleValue());}
 }

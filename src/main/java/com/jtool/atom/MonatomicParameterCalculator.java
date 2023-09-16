@@ -1,14 +1,10 @@
 package com.jtool.atom;
 
-import com.jtool.code.collection.NewCollections;
-import com.jtool.code.collection.Pair;
 import com.jtool.math.ComplexDouble;
 import com.jtool.math.function.FixBoundFunc1;
 import com.jtool.math.function.Func1;
 import com.jtool.math.function.IFunc1;
 import com.jtool.math.function.IZeroBoundFunc1;
-import com.jtool.math.matrix.IMatrix;
-import com.jtool.math.matrix.RowMatrix;
 import com.jtool.math.vector.*;
 import com.jtool.parallel.AbstractThreadPool;
 import com.jtool.parallel.ParforThreadPool;
@@ -563,10 +559,10 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                     if (tM != 0) {
                         tCol = -tM+aL;
                         tY = tY.conj();
-                        Qlmi.add_(tCol,  tY);
+                        Qlmi.add_(tCol, tY);
                         // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
                         if (aHalf) {
-                            Qlmj.add_(tCol,  tY);
+                            Qlmj.add_(tCol, tY);
                         }
                     }
                 }

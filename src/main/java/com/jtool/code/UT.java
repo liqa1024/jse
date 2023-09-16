@@ -179,9 +179,8 @@ public class UT {
          */
         @VisibleForTesting public static void parfor(int aSize, Closure<?> aGroovyTask) {parfor(aSize, DEFAULT_THREAD_NUM, aGroovyTask);}
         @VisibleForTesting public static void parfor(int aSize, int aThreadNum, final Closure<?> aGroovyTask) {
-            int tN = aGroovyTask.getMaximumNumberOfParameters();
-            if (tN > 2) throw new IllegalArgumentException("Parameters Number of parfor Task Must be 0, 1 or 2");
             try (ParforThreadPool tPool = new ParforThreadPool(aThreadNum)) {
+                int tN = aGroovyTask.getMaximumNumberOfParameters();
                 switch (tN) {
                 case 0: {tPool.parfor(aSize, (i, threadID) -> aGroovyTask.call()); return;}
                 case 1: {tPool.parfor(aSize, (i, threadID) -> aGroovyTask.call(i)); return;}
@@ -196,9 +195,8 @@ public class UT {
          */
         @VisibleForTesting public static void parwhile(ParforThreadPool.IParwhileChecker aChecker, Closure<?> aGroovyTask) {parwhile(aChecker, DEFAULT_THREAD_NUM, aGroovyTask);}
         @VisibleForTesting public static void parwhile(ParforThreadPool.IParwhileChecker aChecker, int aThreadNum, final Closure<?> aGroovyTask) {
-            int tN = aGroovyTask.getMaximumNumberOfParameters();
-            if (tN > 1) throw new IllegalArgumentException("Parameters Number of parwhile Task Must be 0 or 1");
             try (ParforThreadPool tPool = new ParforThreadPool(aThreadNum)) {
+                int tN = aGroovyTask.getMaximumNumberOfParameters();
                 switch (tN) {
                 case 0: {tPool.parwhile(aChecker, (threadID) -> aGroovyTask.call()); return;}
                 case 1: {tPool.parwhile(aChecker, (threadID) -> aGroovyTask.call(threadID)); return;}

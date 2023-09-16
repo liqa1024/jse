@@ -649,13 +649,13 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public void putAt(int aCol, Iterable<? extends Number> aList) {refSlicer().get(mSelectedRows, aCol).fill(aList);}
         @Override public void putAt(int aCol, IVector aVector) {refSlicer().get(mSelectedRows, aCol).fill(aVector);}
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
-        @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
+        @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(SliceType aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
-        @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
+        @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(List<Integer> aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(IIndexFilter aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
-        @Override public void putAt(IIndexFilter aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
+        @Override public void putAt(IIndexFilter aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         
         /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
@@ -673,13 +673,13 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public void putAt(int aCol, Iterable<? extends Number> aList) {refSlicer().get(mSelectedRows, aCol).fill(aList);}
         @Override public void putAt(int aCol, IVector aVector) {refSlicer().get(mSelectedRows, aCol).fill(aVector);}
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
-        @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
+        @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(SliceType aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
-        @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
+        @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(List<Integer> aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(IIndexFilter aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
-        @Override public void putAt(IIndexFilter aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
+        @Override public void putAt(IIndexFilter aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         
         /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
@@ -697,13 +697,13 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public void putAt(int aCol, Iterable<? extends Number> aList) {refSlicer().get(mSelectedRows, aCol).fill(aList);}
         @Override public void putAt(int aCol, IVector aVector) {refSlicer().get(mSelectedRows, aCol).fill(aVector);}
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
-        @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
+        @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(SliceType aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
-        @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
+        @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(List<Integer> aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(IIndexFilter aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
-        @Override public void putAt(IIndexFilter aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aRows);}
+        @Override public void putAt(IIndexFilter aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         
         /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
@@ -720,5 +720,5 @@ public abstract class AbstractMatrix implements IMatrix {
     public abstract IMatrix newZeros(int aRowNum, int aColNum);
     public abstract IVector newZerosVec(int aSize);
     
-    protected String toString_(double aValue) {return String.format("  %8.4g", aValue);}
+    protected String toString_(double aValue) {return String.format("   %.4g", aValue);}
 }

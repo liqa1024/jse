@@ -43,8 +43,14 @@ public abstract class AbstractComplexVector implements IComplexVector {
                     throw new NoSuchElementException();
                 }
             }
-            @Override public double real() {return getReal_(oIdx);}
-            @Override public double imag() {return getImag_(oIdx);}
+            @Override public double real() {
+                if (oIdx < 0) throw new IllegalStateException();
+                return getReal_(oIdx);
+            }
+            @Override public double imag() {
+                if (oIdx < 0) throw new IllegalStateException();
+                return getImag_(oIdx);
+            }
             
             /** 重写保证使用此类中的逻辑而不是 IComplexDoubleIterator，虽然是一致的 */
             @Override public ComplexDouble next() {nextOnly(); return get_(oIdx);}
@@ -71,8 +77,14 @@ public abstract class AbstractComplexVector implements IComplexVector {
                     throw new NoSuchElementException();
                 }
             }
-            @Override public double real() {return getReal_(oIdx);}
-            @Override public double imag() {return getImag_(oIdx);}
+            @Override public double real() {
+                if (oIdx < 0) throw new IllegalStateException();
+                return getReal_(oIdx);
+            }
+            @Override public double imag() {
+                if (oIdx < 0) throw new IllegalStateException();
+                return getImag_(oIdx);
+            }
             
             /** 重写保证使用此类中的逻辑而不是 IComplexDoubleSetIterator，虽然是一致的 */
             @Override public ComplexDouble next() {nextOnly(); return get_(oIdx);}
@@ -174,6 +186,9 @@ public abstract class AbstractComplexVector implements IComplexVector {
     @Override public final void forEachReal(IDoubleConsumer1 aCon) {real().forEach(aCon);}
     @Override public final void forEachImag(IDoubleConsumer1 aCon) {imag().forEach(aCon);}
     /** Groovy stuff */
+    @Override public void fill(Closure<?> aGroovyTask) {operation().fill(aGroovyTask);}
+    @Override public void fillReal(Closure<? extends Number> aGroovyTask) {real().fill(aGroovyTask);}
+    @Override public void fillImag(Closure<? extends Number> aGroovyTask) {imag().fill(aGroovyTask);}
     @Override public final void assign(Closure<?> aGroovyTask) {operation().assign(aGroovyTask);}
     @Override public final void forEach(Closure<?> aGroovyTask) {operation().forEach(aGroovyTask);}
     
@@ -436,5 +451,5 @@ public abstract class AbstractComplexVector implements IComplexVector {
     public abstract int size();
     public abstract IComplexVector newZeros(int aSize);
     
-    protected String toString_(double aReal, double aImag) {return String.format("   %8.4g + %8.4gi", aReal, aImag);}
+    protected String toString_(double aReal, double aImag) {return String.format("   %.4g + %.4gi", aReal, aImag);}
 }

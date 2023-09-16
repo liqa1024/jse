@@ -6,6 +6,7 @@ import com.jtool.code.functional.IDoubleConsumer1;
 import com.jtool.code.functional.IDoubleSupplier;
 import com.jtool.code.iterator.*;
 import com.jtool.code.functional.IDoubleOperator1;
+import groovy.lang.Closure;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
@@ -34,6 +35,9 @@ public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVec
     void fill(Iterable<? extends Number> aList);
     void assign(IDoubleSupplier aSup);
     void forEach(IDoubleConsumer1 aCon);
+    /** Groovy stuff */
+    default void fill(final Closure<? extends Number> aGroovyTask) {fill(i -> aGroovyTask.call(i).doubleValue());}
+    default void assign(final Closure<? extends Number> aGroovyTask) {assign(() -> aGroovyTask.call().doubleValue());}
     
     /** 访问和修改部分，自带的接口 */
     double get_(int aIdx);

@@ -86,6 +86,7 @@ public interface IComplexVectorOperation {
     void forEach            (IConsumer1<? super ComplexDouble> aCon);
     void forEach            (IDoubleConsumer2 aCon);
     /** Groovy stuffs */
+    void fill               (Closure<?> aGroovyTask);
     void assign             (Closure<?> aGroovyTask);
     void forEach            (Closure<?> aGroovyTask);
     

@@ -97,8 +97,18 @@ public abstract class AbstractComplexVectorOperation implements IComplexVectorOp
         for (int i = 0; i < tSize; ++i) si.nextAndSet(aRHS.get(i));
     }
     /** Groovy stuffs */
+    @Override public void fill          (Closure<?> aGroovyTask) {
+        final IComplexVector tThis = thisVector_();
+        final IComplexDoubleSetOnlyIterator si = tThis.setIterator();
+        final int tSize = tThis.size();
+        for (int i = 0; i < tSize; ++i) {
+            // 直接先执行然后检测类型决定如何设置
+            Object tObj = aGroovyTask.call(i);
+            if (tObj instanceof IComplexDouble) si.nextAndSet((IComplexDouble)tObj);
+            else if (tObj instanceof Number) si.nextAndSet(((Number)tObj).doubleValue());
+        }
+    }
     @Override public void assign        (Closure<?> aGroovyTask) {
-        if (aGroovyTask.getMaximumNumberOfParameters() != 0) throw new IllegalArgumentException("Parameters Number of assign in ComplexVector Must be 0");
         final IComplexDoubleSetOnlyIterator si = thisVector_().setIterator();
         while (si.hasNext()) {
             // 直接先执行然后检测类型决定如何设置
@@ -110,8 +120,8 @@ public abstract class AbstractComplexVectorOperation implements IComplexVectorOp
     @Override public void forEach       (Closure<?> aGroovyTask) {
         int tN = aGroovyTask.getMaximumNumberOfParameters();
         switch (tN) {
-        case 1: forEach(value -> aGroovyTask.call(value));
-        case 2: forEach((real, imag) -> aGroovyTask.call(real, imag));
+        case 1: {forEach(value -> aGroovyTask.call(value)); return;}
+        case 2: {forEach((real, imag) -> aGroovyTask.call(real, imag)); return;}
         default: throw new IllegalArgumentException("Parameters Number of forEach in ComplexVector Must be 1 or 2");
         }
     }

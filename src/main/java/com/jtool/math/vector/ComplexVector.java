@@ -62,7 +62,7 @@ public final class ComplexVector extends BiDoubleArrayVector {
     
     private final int mSize;
     public ComplexVector(int aSize, double[][] aData) {super(aData); mSize = aSize;}
-    public ComplexVector(double[][] aData) {this(aData.length, aData);}
+    public ComplexVector(double[][] aData) {this(aData[0].length, aData);}
     
     /** IComplexVector stuffs */
     @Override public double getReal_(int aIdx) {return mData[0][aIdx];}
@@ -142,8 +142,24 @@ public final class ComplexVector extends BiDoubleArrayVector {
 //                }
 //            }
 //            /** Groovy stuffs */
+//            @Override public void fill(Closure<?> aGroovyTask) {
+//                final double[] tRealData = mData[0];
+//                final double[] tImagData = mData[1];
+//                for (int i = 0; i < mSize; ++i) {
+//                    // 直接先执行然后检测类型决定如何设置
+//                    Object tObj = aGroovyTask.call(i);
+//                    if (tObj instanceof IComplexDouble) {
+//                        IComplexDouble tValue = (IComplexDouble)tObj;
+//                        tRealData[i] = tValue.real();
+//                        tImagData[i] = tValue.imag();
+//                    } else
+//                    if (tObj instanceof Number) {
+//                        tRealData[i] = ((Number)tObj).doubleValue();
+//                        tImagData[i] = 0.0;
+//                    }
+//                }
+//            }
 //            @Override public void assign(Closure<?> aGroovyTask) {
-//                if (aGroovyTask.getMaximumNumberOfParameters() != 0) throw new IllegalArgumentException("Parameters Number of assign in ComplexVector Must be 0");
 //                final double[] tRealData = mData[0];
 //                final double[] tImagData = mData[1];
 //                for (int i = 0; i < mSize; ++i) {
@@ -220,8 +236,14 @@ public final class ComplexVector extends BiDoubleArrayVector {
                     throw new NoSuchElementException();
                 }
             }
-            @Override public double real() {return mData[0][oIdx];}
-            @Override public double imag() {return mData[1][oIdx];}
+            @Override public double real() {
+                if (oIdx < 0) throw new IllegalStateException();
+                return mData[0][oIdx];
+            }
+            @Override public double imag() {
+                if (oIdx < 0) throw new IllegalStateException();
+                return mData[1][oIdx];
+            }
             
             /** 重写保证使用此类中的逻辑而不是 IComplexDoubleIterator，虽然是一致的 */
             @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}
@@ -247,8 +269,14 @@ public final class ComplexVector extends BiDoubleArrayVector {
                     throw new NoSuchElementException();
                 }
             }
-            @Override public double real() {return mData[0][oIdx];}
-            @Override public double imag() {return mData[1][oIdx];}
+            @Override public double real() {
+                if (oIdx < 0) throw new IllegalStateException();
+                return mData[0][oIdx];
+            }
+            @Override public double imag() {
+                if (oIdx < 0) throw new IllegalStateException();
+                return mData[1][oIdx];
+            }
             
             /** 重写保证使用此类中的逻辑而不是 IComplexDoubleSetIterator，虽然是一致的 */
             @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}

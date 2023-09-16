@@ -23,7 +23,7 @@ public final class XYZ implements IXYZ {
     }
     
     /** print */
-    @Override public String toString() {return String.format("(%8.4g, %8.4g, %8.4g)", mX, mY, mZ);}
+    @Override public String toString() {return String.format("(%.4g, %.4g, %.4g)", mX, mY, mZ);}
     
     
     @Override public double x() {return mX;}

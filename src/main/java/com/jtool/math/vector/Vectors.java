@@ -6,6 +6,7 @@ import com.jtool.code.filter.IDoubleFilter;
 import com.jtool.code.iterator.IDoubleIterator;
 import com.jtool.code.iterator.IDoubleSetIterator;
 import com.jtool.code.iterator.IHasDoubleIterator;
+import groovy.lang.Closure;
 
 import java.util.Collection;
 
@@ -38,6 +39,8 @@ public class Vectors {
             return rVector;
         }
     }
+    /** Groovy stuff */
+    public static IVector from(int aSize, final Closure<? extends Number> aGroovyTask) {return from(aSize, i -> aGroovyTask.call(i).doubleValue());}
     
     public static IVector from(Iterable<? extends Number> aIterable) {
         final Vector.Builder rBuilder = Vector.builder();

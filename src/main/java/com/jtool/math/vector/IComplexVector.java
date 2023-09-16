@@ -66,6 +66,9 @@ public interface IComplexVector extends IHasComplexDoubleIterator, IHasComplexDo
     void forEachReal(IDoubleConsumer1 aCon);
     void forEachImag(IDoubleConsumer1 aCon);
     /** Groovy stuff */
+    void fill(Closure<?> aGroovyTask);
+    void fillReal(Closure<? extends Number> aGroovyTask);
+    void fillImag(Closure<? extends Number> aGroovyTask);
     void assign(Closure<?> aGroovyTask);
     void forEach(Closure<?> aGroovyTask);
     

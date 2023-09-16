@@ -328,5 +328,5 @@ public abstract class AbstractVector implements IVector {
     public abstract int size();
     public abstract IVector newZeros(int aSize);
     
-    protected String toString_(double aValue) {return String.format("  %8.4g", aValue);}
+    protected String toString_(double aValue) {return String.format("   %.4g", aValue);}
 }
