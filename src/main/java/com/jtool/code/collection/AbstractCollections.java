@@ -33,7 +33,7 @@ public class AbstractCollections {
     }
     public static <T> Collection<T> from(final int aSize, final Iterable<T> aIterable) {
         return new AbstractCollection<T>() {
-            @Override public Iterator<T> iterator() {return aIterable.iterator();}
+            @Override public @NotNull Iterator<T> iterator() {return aIterable.iterator();}
             @Override public int size() {return aSize;}
         };
     }
@@ -198,7 +198,7 @@ public class AbstractCollections {
     }
     public static <R, T> Collection<R> map(final Collection<T> aCollection, final IOperator1<? extends R, ? super T> aOpt) {
         return new AbstractCollection<R>() {
-            @Override public Iterator<R> iterator() {return map(aCollection.iterator(), aOpt);}
+            @Override public @NotNull Iterator<R> iterator() {return map(aCollection.iterator(), aOpt);}
             @Override public int size() {return aCollection.size();}
         };
     }
@@ -206,7 +206,7 @@ public class AbstractCollections {
         return new AbstractRandomAccessList<R>() {
             @Override public R get(int index) {return aOpt.cal(aList.get(index));}
             @Override public int size() {return aList.size();}
-            @Override public Iterator<R> iterator() {return map(aList.iterator(), aOpt);}
+            @Override public @NotNull Iterator<R> iterator() {return map(aList.iterator(), aOpt);}
         };
     }
     public static <R, T> List<R> map(final T[] aArray, final IOperator1<? extends R, ? super T> aOpt) {

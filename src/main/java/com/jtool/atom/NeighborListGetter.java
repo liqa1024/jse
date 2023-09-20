@@ -11,6 +11,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static com.jtool.code.CS.ZL_INT;
 import static com.jtool.code.UT.Code.toXYZ;
 
 /**
@@ -22,39 +23,8 @@ import static com.jtool.code.UT.Code.toXYZ;
  * <p> 所有成员都是只读的，即使目前没有硬性限制 </p>
  * <p> 此类线程安全，包括多个线程同时访问同一个实例 </p>
  */
-@SuppressWarnings("rawtypes")
 public class NeighborListGetter implements IShutdownable {
     final static double DEFAULT_CELL_STEP = 1.26; // 1.26*1.26*1.26 = 2.00
-    
-    // 用于 LinkedCell 使用
-    private static class XYZ_IDX implements IXYZ {
-        final int mIDX;
-        final XYZ mXYZ;
-        public XYZ_IDX(XYZ aXYZ, int aIDX) {mXYZ = aXYZ; mIDX = aIDX;}
-        @Override public double x() {return mXYZ.mX;}
-        @Override public double y() {return mXYZ.mY;}
-        @Override public double z() {return mXYZ.mZ;}
-    }
-    
-
-    /** 直接使用 ObjectCachePool 避免重复创建临时变量 */
-    private final static IObjectPool<Map<Integer, List[]>> sAllCellsAllocCache = new ObjectCachePool<>();
-    /** 缓存所有的 Cells 的内存空间 */
-    private Map<Integer, List[]> mAllCellsAlloc;
-    
-    /** 方便使用的获取 Cells 内存空间的方法，线程不安全 */
-    private List[] getCellsAlloc_(int aMul, int aSizeX, int aSizeY, int aSizeZ) {
-        int tSize = aSizeX * aSizeY * aSizeZ;
-        List[] tCellsAlloc = mAllCellsAlloc.get(aMul);
-        if (tCellsAlloc==null || tCellsAlloc.length<tSize) {
-            tCellsAlloc = new List[tSize];
-            for (int i = 0; i < tSize; ++i) tCellsAlloc[i] = new ArrayList<>();
-            // 覆盖原本的缓存值
-            mAllCellsAlloc.put(aMul, tCellsAlloc);
-        }
-        return tCellsAlloc;
-    }
-    
     
     private XYZ[] mAtomDataXYZ;  // 注意 mAtomDataXYZ.length != mAtomNum
     private final XYZ mBox;
@@ -62,14 +32,398 @@ public class NeighborListGetter implements IShutdownable {
     private final double mMinBox;
     private final double mCellStep;
     
-    private final TreeMap<Integer, LinkedCell<XYZ_IDX>> mLinkedCells = new TreeMap<>(); // 记录对应有效近邻半径的 LinkedCell，使用 Integer 只存储倍率（负值表示除法），避免 double 作为 key 的问题
+    private final TreeMap<Integer, ILinkedCell> mLinkedCells = new TreeMap<>(); // 记录对应有效近邻半径的 LinkedCell，使用 Integer 只存储倍率（负值表示除法），避免 double 作为 key 的问题
+    
+    /** NL 只支持已经经过平移的数据，目前暂不支持外部创建 */
+    NeighborListGetter(XYZ[] aAtomDataXYZ, int aAtomNum, IXYZ aBox, double aCellStep) {
+        mAtomDataXYZ = aAtomDataXYZ;
+        mAtomNum = aAtomNum;
+        mBox = toXYZ(aBox); // 仅用于计算，直接转为 XYZ 即可
+        mMinBox = mBox.min();
+        mCellStep = Math.max(aCellStep, 1.1);
+        Map<Integer, Cell[]> tAllCellsAlloc = sAllCellsAllocCache.getObject();
+        mAllCellsAlloc = tAllCellsAlloc==null ? new HashMap<>() : tAllCellsAlloc;
+    }
+    
+    /** 直接使用 ObjectCachePool 避免重复创建临时变量 */
+    private final static IObjectPool<Map<Integer, Cell[]>> sAllCellsAllocCache = new ObjectCachePool<>();
+    /** 缓存所有的 Cells 的内存空间 */
+    private Map<Integer, Cell[]> mAllCellsAlloc;
+    
+    /** 方便使用的获取 Cells 内存空间的方法，线程不安全 */
+    private Cell[] getCellsAlloc_(int aMul, int aSizeX, int aSizeY, int aSizeZ) {
+        int tSize = aSizeX * aSizeY * aSizeZ;
+        Cell[] tCellsAlloc = mAllCellsAlloc.get(aMul);
+        if (tCellsAlloc==null || tCellsAlloc.length<tSize) {
+            tCellsAlloc = new Cell[tSize];
+            for (int i = 0; i < tSize; ++i) tCellsAlloc[i] = new Cell();
+            // 覆盖原本的缓存值
+            mAllCellsAlloc.put(aMul, tCellsAlloc);
+        }
+        return tCellsAlloc;
+    }
+    
+    
+    /** 专用的 Cell 类，内部只存储下标来减少内存占用 */
+    private interface ICell {
+        void forEach(XYZ[] aAtomDataXYZ, ILinkedCell.ILinkedCellDo aLinkedCellDo);
+        void forEach(int aIdx, boolean aHalf, XYZ[] aAtomDataXYZ, ILinkedCell.ILinkedCellDo aLinkedCellDo);
+    }
+    
+    private final static class Cell implements ICell {
+        private int[] mData;
+        private int mSize;
+        private Cell(int aInitDataLength) {mData = new int[aInitDataLength]; mSize = 0;}
+        private Cell() {mData = ZL_INT; mSize = 0;}
+        @Override public void forEach(XYZ[] aAtomDataXYZ, ILinkedCell.ILinkedCellDo aLinkedCellDo) {
+            final int tSize = mSize;
+            for (int i = 0; i < tSize; ++i) {
+                int tIdx = mData[i]; XYZ tXYZ = aAtomDataXYZ[tIdx];
+                aLinkedCellDo.run(tXYZ.mX, tXYZ.mY, tXYZ.mZ, tIdx);
+            }
+        }
+        @Override public void forEach(int aIdx, boolean aHalf, XYZ[] aAtomDataXYZ, ILinkedCell.ILinkedCellDo aLinkedCellDo) {
+            final int tSize = mSize;
+            for (int i = 0; i < tSize; ++i) {
+                int tIdx = mData[i];
+                if (aHalf) {
+                    if (tIdx < aIdx) {
+                        XYZ tXYZ = aAtomDataXYZ[tIdx];
+                        aLinkedCellDo.run(tXYZ.mX, tXYZ.mY, tXYZ.mZ, tIdx);
+                    }
+                } else {
+                    if (tIdx != aIdx) {
+                        XYZ tXYZ = aAtomDataXYZ[tIdx];
+                        aLinkedCellDo.run(tXYZ.mX, tXYZ.mY, tXYZ.mZ, tIdx);
+                    }
+                }
+            }
+        }
+        private void add(int aValue) {
+            if (mData.length == 0) {
+                mData = new int[1];
+            } else
+            if (mData.length <= mSize) {
+                int[] oData = mData;
+                mData = new int[oData.length * 2];
+                System.arraycopy(oData, 0, mData, 0, oData.length);
+            }
+            mData[mSize] = aValue;
+            ++mSize;
+        }
+        private void clear() {mSize = 0;}
+    }
+    
+    private final static class MirrorCell implements ICell {
+        private final Cell mCell;
+        private final double mDirX, mDirY, mDirZ;
+        private MirrorCell(Cell aCell, double aDirX, double aDirY, double aDirZ) {
+            mCell = aCell;
+            mDirX = aDirX; mDirY = aDirY; mDirZ = aDirZ;
+        }
+        @Override public void forEach(XYZ[] aAtomDataXYZ, ILinkedCell.ILinkedCellDo aLinkedCellDo) {
+            final int tSize = mCell.mSize;
+            for (int i = 0; i < tSize; ++i) {
+                int tIdx = mCell.mData[i]; XYZ tXYZ = aAtomDataXYZ[tIdx];
+                aLinkedCellDo.run(tXYZ.mX + mDirX, tXYZ.mY + mDirY, tXYZ.mZ + mDirZ, tIdx);
+            }
+        }
+        /** 对于镜像的不能排除 idx 相同的，而对于 Half 的情况要仔细分析 */
+        @Override public void forEach(int aIdx, boolean aHalf, XYZ[] aAtomDataXYZ, ILinkedCell.ILinkedCellDo aLinkedCellDo) {
+            final int tSize = mCell.mSize;
+            for (int i = 0; i < tSize; ++i) {
+                int tIdx = mCell.mData[i];
+                if (aHalf) {
+                    if (tIdx < aIdx) {
+                        XYZ tXYZ = aAtomDataXYZ[tIdx];
+                        aLinkedCellDo.run(tXYZ.mX + mDirX, tXYZ.mY + mDirY, tXYZ.mZ + mDirZ, tIdx);
+                    } else
+                    if (tIdx == aIdx) {
+                        // 使用这个方法只遍历一半的镜像相等 idx 对象
+                        if ((mDirX>0.0) || (mDirX==0.0 && (mDirY>0.0 || (mDirY==0.0 && mDirZ>0.0)))) {
+                            XYZ tXYZ = aAtomDataXYZ[tIdx];
+                            aLinkedCellDo.run(tXYZ.mX + mDirX, tXYZ.mY + mDirY, tXYZ.mZ + mDirZ, tIdx);
+                        }
+                    }
+                } else {
+                    XYZ tXYZ = aAtomDataXYZ[tIdx];
+                    aLinkedCellDo.run(tXYZ.mX + mDirX, tXYZ.mY + mDirY, tXYZ.mZ + mDirZ, tIdx);
+                }
+            }
+        }
+    }
+    
+    /** 现在 Linked 直接放在内部 */
+    private interface ILinkedCell {
+        @FunctionalInterface interface ILinkedCellDo {
+            void run(double aX, double aY, double aZ, int aIdx);
+        }
+        /** 现在改为 for-each 的形式来避免单一返回值的问题 */
+        void forEachNeighbor(IXYZ aXYZ, ILinkedCellDo aLinkedCellDo);
+        void forEachNeighbor(int aIdx, boolean aHalf, ILinkedCellDo aLinkedCellDo);
+    }
+    
+    /** 一般的 LinkedCell 实现 */
+    private final class LinkedCell implements ILinkedCell {
+        private final Cell[] mCells;
+        private final int mSizeX, mSizeY, mSizeZ;
+        private final XYZ mCellBox;
+        private LinkedCell(int aMul, int aSizeX, int aSizeY, int aSizeZ) {
+            mSizeX = aSizeX; mSizeY = aSizeY; mSizeZ = aSizeZ;
+            mCellBox = mBox.div(mSizeX, mSizeY, mSizeZ);
+            // 初始化 cell
+            mCells = getCellsAlloc_(aMul, aSizeX, aSizeY, aSizeZ);
+            int tSize = aSizeX * aSizeY * aSizeZ;
+            for (int i = 0; i < tSize; ++i) mCells[i].clear(); // 直接清空旧数据即可
+            // 遍历添加 XYZ
+            for (int idx = 0; idx < mAtomNum; ++idx) {
+                XYZ tXYZ = mAtomDataXYZ[idx];
+                int i = (int) Math.floor(tXYZ.mX / mCellBox.mX); if (i >= mSizeX) continue;
+                int j = (int) Math.floor(tXYZ.mY / mCellBox.mY); if (j >= mSizeY) continue;
+                int k = (int) Math.floor(tXYZ.mZ / mCellBox.mZ); if (k >= mSizeZ) continue;
+                mCells[idx(i, j, k)].add(idx);
+            }
+        }
+        private int idx(int i, int j, int k) {
+            if (i<0 || i>=mSizeX || j<0 || j>=mSizeY || k<0 || k>=mSizeZ) throw new IndexOutOfBoundsException(String.format("Index: (%d, %d, %d)", i, j, k));
+            return (i + mSizeX*j + mSizeX*mSizeY*k);
+        }
+        // 获取任意 ijk 的 Cell，自动判断是否是镜像的并计算镜像的附加值
+        private ICell cell(int i, int j, int k) {
+            double tDirX = 0.0, tDirY = 0.0, tDirZ = 0.0;
+            boolean tIsMirror = false;
+            if (i >= mSizeX) {tIsMirror = true; i -= mSizeX; tDirX =  mBox.mX;}
+            else if (i < 0)  {tIsMirror = true; i += mSizeX; tDirX = -mBox.mX;}
+            if (j >= mSizeY) {tIsMirror = true; j -= mSizeY; tDirY =  mBox.mY;}
+            else if (j < 0)  {tIsMirror = true; j += mSizeY; tDirY = -mBox.mY;}
+            if (k >= mSizeZ) {tIsMirror = true; k -= mSizeZ; tDirZ =  mBox.mZ;}
+            else if (k < 0)  {tIsMirror = true; k += mSizeZ; tDirZ = -mBox.mZ;}
+            return tIsMirror ? new MirrorCell(mCells[idx(i, j, k)], tDirX, tDirY, tDirZ) : mCells[idx(i, j, k)];
+        }
+        /** 现在改为 for-each 的形式来避免单一返回值的问题 */
+        @Override public void forEachNeighbor(IXYZ aXYZ, ILinkedCellDo aLinkedCellDo) {
+            final int i = (int) Math.floor(aXYZ.x() / mCellBox.mX);
+            final int j = (int) Math.floor(aXYZ.y() / mCellBox.mY);
+            final int k = (int) Math.floor(aXYZ.z() / mCellBox.mZ);
+            cell(i  , j  , k  ).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j  , k  ).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j  , k  ).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j+1, k  ).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j-1, k  ).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j  , k+1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j  , k-1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j+1, k  ).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j-1, k  ).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j+1, k  ).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j-1, k  ).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j+1, k+1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j+1, k-1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j-1, k+1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j-1, k-1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j  , k+1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j  , k+1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j  , k-1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j  , k-1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j+1, k+1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j+1, k-1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j-1, k+1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j-1, k-1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j+1, k+1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j+1, k-1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j-1, k+1).forEach(mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j-1, k-1).forEach(mAtomDataXYZ, aLinkedCellDo);
+        }
+        @Override public void forEachNeighbor(int aIdx, boolean aHalf, ILinkedCellDo aLinkedCellDo) {
+            if (aIdx >= mAtomNum) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+            final XYZ cXYZ = mAtomDataXYZ[aIdx];
+            final int i = (int) Math.floor(cXYZ.mX / mCellBox.mX);
+            final int j = (int) Math.floor(cXYZ.mY / mCellBox.mY);
+            final int k = (int) Math.floor(cXYZ.mZ / mCellBox.mZ);
+            cell(i  , j  , k  ).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j  , k  ).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j  , k  ).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j+1, k  ).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j-1, k  ).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j  , k+1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j  , k-1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j+1, k  ).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j-1, k  ).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j+1, k  ).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j-1, k  ).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j+1, k+1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j+1, k-1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j-1, k+1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i  , j-1, k-1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j  , k+1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j  , k+1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j  , k-1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j  , k-1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j+1, k+1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j+1, k-1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j-1, k+1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i+1, j-1, k-1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j+1, k+1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j+1, k-1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j-1, k+1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+            cell(i-1, j-1, k-1).forEach(aIdx, aHalf, mAtomDataXYZ, aLinkedCellDo);
+        }
+    }
+    
+    /** 为了保证 LinkedCell 内部的简洁和一致，对于恰好不需要分割以及需要扩展的情况单独讨论 */
+    private final class SingleLinkedCell implements ILinkedCell {
+        /** 调整了遍历顺序让速度更快 */
+        @Override public void forEachNeighbor(IXYZ aXYZ, ILinkedCellDo aLinkedCellDo) {
+            for (int idx = 0; idx < mAtomNum; ++idx) {
+                final XYZ tXYZ = mAtomDataXYZ[idx];
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+            }
+        }
+        @Override public void forEachNeighbor(int aIdx, boolean aHalf, ILinkedCellDo aLinkedCellDo) {
+            if (aIdx >= mAtomNum) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+            // 先统一处理一般情况
+            final int tEnd = aHalf ? aIdx : mAtomNum;
+            for (int idx = 0; idx < tEnd; ++idx) {
+                final XYZ tXYZ = mAtomDataXYZ[idx];
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);
+                aLinkedCellDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+            }
+            if (aHalf) {
+                // Half 时需要这样排除一半 idx 相同的情况
+                final XYZ cXYZ = mAtomDataXYZ[aIdx];
+                aLinkedCellDo.run(cXYZ.mX+mBox.mX, cXYZ.mY        , cXYZ.mZ        , aIdx);
+                aLinkedCellDo.run(cXYZ.mX        , cXYZ.mY+mBox.mY, cXYZ.mZ        , aIdx);
+                aLinkedCellDo.run(cXYZ.mX        , cXYZ.mY        , cXYZ.mZ+mBox.mZ, aIdx);
+                aLinkedCellDo.run(cXYZ.mX+mBox.mX, cXYZ.mY+mBox.mY, cXYZ.mZ        , aIdx);
+                aLinkedCellDo.run(cXYZ.mX+mBox.mX, cXYZ.mY-mBox.mY, cXYZ.mZ        , aIdx);
+                aLinkedCellDo.run(cXYZ.mX        , cXYZ.mY+mBox.mY, cXYZ.mZ+mBox.mZ, aIdx);
+                aLinkedCellDo.run(cXYZ.mX        , cXYZ.mY+mBox.mY, cXYZ.mZ-mBox.mZ, aIdx);
+                aLinkedCellDo.run(cXYZ.mX+mBox.mX, cXYZ.mY        , cXYZ.mZ+mBox.mZ, aIdx);
+                aLinkedCellDo.run(cXYZ.mX+mBox.mX, cXYZ.mY        , cXYZ.mZ-mBox.mZ, aIdx);
+                aLinkedCellDo.run(cXYZ.mX+mBox.mX, cXYZ.mY+mBox.mY, cXYZ.mZ+mBox.mZ, aIdx);
+                aLinkedCellDo.run(cXYZ.mX+mBox.mX, cXYZ.mY+mBox.mY, cXYZ.mZ-mBox.mZ, aIdx);
+                aLinkedCellDo.run(cXYZ.mX+mBox.mX, cXYZ.mY-mBox.mY, cXYZ.mZ+mBox.mZ, aIdx);
+                aLinkedCellDo.run(cXYZ.mX+mBox.mX, cXYZ.mY-mBox.mY, cXYZ.mZ-mBox.mZ, aIdx);
+            }
+        }
+    }
+    private final class ExpandLinkedCell implements ILinkedCell {
+        private final int mMulX, mMulY, mMulZ;
+        private ExpandLinkedCell(int aMulX, int aMulY, int aMulZ) {mMulX = aMulX; mMulY = aMulY; mMulZ = aMulZ;}
+        /** 调整了遍历顺序让速度更快 */
+        @Override public void forEachNeighbor(IXYZ aXYZ, ILinkedCellDo aLinkedCellDo) {
+            for (int idx = 0; idx < mAtomNum; ++idx) {
+                final XYZ tXYZ = mAtomDataXYZ[idx];
+                for (int i = -mMulX; i <= mMulX; ++i) for (int j = -mMulY; j <= mMulY; ++j) for (int k = -mMulZ; k <= mMulZ; ++k) {
+                    aLinkedCellDo.run(
+                        i==0 ? tXYZ.mX : tXYZ.mX + mBox.mX*i,
+                        j==0 ? tXYZ.mY : tXYZ.mY + mBox.mY*j,
+                        k==0 ? tXYZ.mZ : tXYZ.mZ + mBox.mZ*k,
+                        idx);
+                }
+            }
+        }
+        @Override public void forEachNeighbor(int aIdx, boolean aHalf, ILinkedCellDo aLinkedCellDo) {
+            if (aIdx >= mAtomNum) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+            // 先统一处理一般情况
+            final int tEnd = aHalf ? aIdx : mAtomNum;
+            for (int idx = 0; idx < tEnd; ++idx) {
+                final XYZ tXYZ = mAtomDataXYZ[idx];
+                for (int i = -mMulX; i <= mMulX; ++i) for (int j = -mMulY; j <= mMulY; ++j) for (int k = -mMulZ; k <= mMulZ; ++k) {
+                    aLinkedCellDo.run(
+                        i==0 ? tXYZ.mX : tXYZ.mX + mBox.mX*i,
+                        j==0 ? tXYZ.mY : tXYZ.mY + mBox.mY*j,
+                        k==0 ? tXYZ.mZ : tXYZ.mZ + mBox.mZ*k,
+                        idx);
+                }
+            }
+            if (aHalf) {
+                // 扩展情况的 Half 又有所不同，这里需要这样处理 idx 相同的情况
+                final XYZ cXYZ = mAtomDataXYZ[aIdx];
+                // 通过这样的遍历方式排除掉对称的一半
+                for (int i = 1; i <= mMulX; ++i) for (int j = -mMulY; j <= mMulY; ++j) for (int k = -mMulZ; k <= mMulZ; ++k) {
+                    aLinkedCellDo.run(
+                        i==0 ? cXYZ.mX : cXYZ.mX + mBox.mX*i,
+                        j==0 ? cXYZ.mY : cXYZ.mY + mBox.mY*j,
+                        k==0 ? cXYZ.mZ : cXYZ.mZ + mBox.mZ*k,
+                        aIdx);
+                }
+                for (int j = 1; j <= mMulY; ++j) for (int k = -mMulZ; k <= mMulZ; ++k) {
+                    aLinkedCellDo.run(
+                        cXYZ.mX,
+                        j==0 ? cXYZ.mY : cXYZ.mY + mBox.mY*j,
+                        k==0 ? cXYZ.mZ : cXYZ.mZ + mBox.mZ*k,
+                        aIdx);
+                }
+                for (int k = 1; k <= mMulZ; ++k) {
+                    aLinkedCellDo.run(
+                        cXYZ.mX,
+                        cXYZ.mY,
+                        k==0 ? cXYZ.mZ : cXYZ.mZ + mBox.mZ*k,
+                        aIdx);
+                }
+            }
+        }
+    }
+    
+    
     
     // 提供一个手动关闭的方法
     private volatile boolean mDead = false;
     @Override public void shutdown() {
         mDead = true; mLinkedCells.clear(); mAtomDataXYZ = null;
         // 归还 Cells 的内存到缓存，这种写法保证永远能获取到 mAllCellsAlloc 时都是合法的
-        Map<Integer, List[]> oAllCellsAlloc = mAllCellsAlloc;
+        Map<Integer, Cell[]> oAllCellsAlloc = mAllCellsAlloc;
         mAllCellsAlloc = null;
         sAllCellsAllocCache.returnObject(oAllCellsAlloc);
     }
@@ -81,19 +435,8 @@ public class NeighborListGetter implements IShutdownable {
     private final Lock mRL = mRWL.readLock();
     private final Lock mWL = mRWL.writeLock();
     
-    /** NL 只支持已经经过平移的数据，目前暂不支持外部创建 */
-    NeighborListGetter(XYZ[] aAtomDataXYZ, int aAtomNum, IXYZ aBox, double aCellStep) {
-        mAtomDataXYZ = aAtomDataXYZ;
-        mAtomNum = aAtomNum;
-        mBox = toXYZ(aBox); // 仅用于计算，直接转为 XYZ 即可
-        mMinBox = mBox.min();
-        mCellStep = Math.max(aCellStep, 1.1);
-        Map<Integer, List[]> tAllCellsAlloc = sAllCellsAllocCache.getObject();
-        mAllCellsAlloc = tAllCellsAlloc==null ? new HashMap<>() : tAllCellsAlloc;
-    }
     
-    
-    boolean isCeilEntryValid(@Nullable Map.Entry<Integer, LinkedCell<XYZ_IDX>> aCeilEntry, int aMinMulti) {
+    boolean isCeilEntryValid(@Nullable Map.Entry<Integer, ILinkedCell> aCeilEntry, int aMinMulti) {
         if (aCeilEntry == null) return false;
         return (aMinMulti > 0 && aCeilEntry.getKey() < Math.ceil(aMinMulti*mCellStep)) || (aMinMulti < 0 && Math.floor(aCeilEntry.getKey()*mCellStep) < aMinMulti);
     }
@@ -104,12 +447,12 @@ public class NeighborListGetter implements IShutdownable {
      * @param aRMax 这个 LinkedCell 需要考虑的最大半径
      * @return 合适的 LinkedCell
      */
-    LinkedCell<XYZ_IDX> getProperLinkedCell(double aRMax) {
+    ILinkedCell getProperLinkedCell(double aRMax) {
         // 获取需要的最小的 cell 长度倍率
         int tMinMulti = aRMax>mMinBox ? (int)Math.ceil(aRMax/mMinBox) : -(int)Math.floor(mMinBox/aRMax);
         // 尝试获取 LinkedCell
         mRL.lock();
-        Map.Entry<Integer, LinkedCell<XYZ_IDX>>
+        Map.Entry<Integer, ILinkedCell>
         tCeilEntry = mLinkedCells.ceilingEntry(tMinMulti);
         mRL.unlock();
         // 检测是否合适，如果合适则直接返回
@@ -121,95 +464,40 @@ public class NeighborListGetter implements IShutdownable {
         if (isCeilEntryValid(tCeilEntry, tMinMulti)) {mWL.unlock(); return tCeilEntry.getValue();} // 注意跳出前记得释放锁
         
         // 没有则需要开始手动添加
-        LinkedCell<XYZ_IDX> tLinkedCell;
-        // 计算对应 LinkedCell 的参数，先处理不需要扩展的情况
+        ILinkedCell tLinkedCell;
+        // 计算对应 LinkedCell 的参数
         if (tMinMulti < 0) {
+            // 先处理不需要扩展的情况
             int tDiv = MathEX.Code.floorPower(-tMinMulti, mCellStep);
             double tCellLength = mMinBox / (double)tDiv;
             int aSizeX = Math.max((int)Math.floor(mBox.mX / tCellLength), tDiv); // 可以避免舍入误差的问题
             int aSizeY = Math.max((int)Math.floor(mBox.mY / tCellLength), tDiv);
             int aSizeZ = Math.max((int)Math.floor(mBox.mZ / tCellLength), tDiv);
-            tLinkedCell = new LinkedCell<>(toXYZ_IDX(mAtomDataXYZ, mAtomNum), getCellsAlloc_(-tDiv, aSizeX, aSizeY, aSizeZ), mBox, aSizeX, aSizeY, aSizeZ);
-            mLinkedCells.put(-tDiv, tLinkedCell);
-        }
-        // 再处理需要扩展的情况
-        else {
+            // 对于所有方向都不需要分割的情况特殊考虑，使用专门的 linkedCell 避免缓存的使用
+            if (aSizeX==1 && aSizeY==1 && aSizeZ==1) {
+                tLinkedCell = new SingleLinkedCell();
+                mLinkedCells.put(-tDiv, tLinkedCell);
+            } else {
+                tLinkedCell = new LinkedCell(-tDiv, aSizeX, aSizeY, aSizeZ);
+                mLinkedCells.put(-tDiv, tLinkedCell);
+            }
+        } else {
+            // 再处理需要扩展的情况
             int tMul = MathEX.Code.ceilPower(tMinMulti, mCellStep);
             double tCellLength = mMinBox * tMul;
-            int aSizeX = (int)Math.floor(mBox.mX / tCellLength);
-            int aSizeY = (int)Math.floor(mBox.mY / tCellLength);
-            int aSizeZ = (int)Math.floor(mBox.mZ / tCellLength);
-            // 对于为 0 的则是需要扩展的，统计扩展数目
-            int aMulX = 1, aMulY = 1, aMulZ = 1;
-            if (aSizeX == 0) {aSizeX = 1; aMulX = (int)Math.ceil(tCellLength / mBox.mX);}
-            if (aSizeY == 0) {aSizeY = 1; aMulY = (int)Math.ceil(tCellLength / mBox.mY);}
-            if (aSizeZ == 0) {aSizeZ = 1; aMulZ = (int)Math.ceil(tCellLength / mBox.mZ);}
-            int tExpendAtomNum = mAtomNum*aMulX*aMulY*aMulZ;
-            if (tExpendAtomNum == mAtomNum) {
-                tLinkedCell = new LinkedCell<>(toXYZ_IDX(mAtomDataXYZ, mAtomNum), getCellsAlloc_(tMul, aSizeX, aSizeY, aSizeZ), mBox, aSizeX, aSizeY, aSizeZ);
-                mLinkedCells.put(tMul, tLinkedCell);
-            } else {
-                tLinkedCell = new LinkedCell<>(toXYZ_IDX(mAtomDataXYZ, mAtomNum, mBox, aMulX, aMulY, aMulZ), getCellsAlloc_(tMul, aSizeX, aSizeY, aSizeZ), mBox.multiply(aMulX, aMulY, aMulZ), aSizeX, aSizeY, aSizeZ);
-                mLinkedCells.put(tMul, tLinkedCell);
-            }
+            // 统计扩展数目
+            int aMulX = (int)Math.ceil(tCellLength / mBox.mX);
+            int aMulY = (int)Math.ceil(tCellLength / mBox.mY);
+            int aMulZ = (int)Math.ceil(tCellLength / mBox.mZ);
+            // 这里简单起见，统一采用 ExpandLinkedCell 来管理，即使有非常长的边可以进一步分划
+            tLinkedCell = new ExpandLinkedCell(aMulX, aMulY, aMulZ);
+            mLinkedCells.put(tMul, tLinkedCell);
         }
         mWL.unlock();
         
         // 最后返回近邻
         return tLinkedCell;
     }
-    
-    /** 内部实用方法 */
-    private static Iterable<XYZ_IDX> toXYZ_IDX(final XYZ[] aAtomDataXYZ, final int mAtomNum) {
-        return () -> new Iterator<XYZ_IDX>() {
-            int mIdx = 0;
-            @Override public boolean hasNext() {return mIdx < mAtomNum;}
-            @Override public XYZ_IDX next() {
-                if (hasNext()) {
-                    XYZ_IDX tNext = new XYZ_IDX(aAtomDataXYZ[mIdx], mIdx);
-                    ++mIdx;
-                    return tNext;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
-    private static Iterable<XYZ_IDX> toXYZ_IDX(final XYZ[] aAtomDataXYZ, final int mAtomNum, final XYZ aBox, final int aMulX, final int aMulY, final int aMulZ) {
-        return () -> new Iterator<XYZ_IDX>() {
-            int mIdx = 0;
-            int i = 0, j = 0, k = 0;
-            @Override public boolean hasNext() {return k < aMulZ;}
-            @Override public XYZ_IDX next() {
-                if (hasNext()) {
-                    final XYZ tXYZ = aAtomDataXYZ[mIdx];
-                    XYZ aXYZ = new XYZ(
-                        i==0 ? tXYZ.mX : tXYZ.mX + aBox.mX*i,
-                        j==0 ? tXYZ.mY : tXYZ.mY + aBox.mY*j,
-                        k==0 ? tXYZ.mZ : tXYZ.mZ + aBox.mZ*k
-                    );
-                    XYZ_IDX tNext = new XYZ_IDX(aXYZ, mIdx);
-                    ++mIdx;
-                    if (mIdx == mAtomNum) {
-                        mIdx = 0;
-                        ++i;
-                        if (i == aMulX) {
-                            i = 0;
-                            ++j;
-                            if (j == aMulY) {
-                                j = 0;
-                                ++k;
-                            }
-                        }
-                    }
-                    return tNext;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-        };
-    }
-    
     
     
     @FunctionalInterface public interface IXYZIdxDisDo {void run(double aX, double aY, double aZ, int aIdx, double aDis);}
@@ -224,50 +512,14 @@ public class NeighborListGetter implements IShutdownable {
      * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子
      * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据
      */
-     void forEachNeighbor_(final int aIDX, final double aRMax, final boolean aHalf, final boolean aMHT, final IXYZIdxDisDo aXYZIdxDisDo) {
+     void forEachNeighbor_(final int aIDX, final double aRMax, boolean aHalf, final boolean aMHT, final IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
         final XYZ cXYZ = mAtomDataXYZ[aIDX];
-        getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (xyz_idx, link) -> {
-            if (link.isMirror()) {
-                // 如果是镜像的，则会保留相同的 idx 的情况
-                if (aHalf) {
-                    if (xyz_idx.mIDX <= aIDX) {
-                        XYZ tDir = link.direction();
-                        double tX = xyz_idx.mXYZ.mX + tDir.mX;
-                        double tY = xyz_idx.mXYZ.mY + tDir.mY;
-                        double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
-                        double tDis = aMHT ? cXYZ.distanceMHT(tX, tY, tZ) : cXYZ.distance(tX, tY, tZ);
-                        if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
-                    }
-                } else {
-                    XYZ tDir = link.direction();
-                    double tX = xyz_idx.mXYZ.mX + tDir.mX;
-                    double tY = xyz_idx.mXYZ.mY + tDir.mY;
-                    double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
-                    double tDis = aMHT ? cXYZ.distanceMHT(tX, tY, tZ) : cXYZ.distance(tX, tY, tZ);
-                    if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
-                }
-            } else {
-                // 如果不是镜像的，则不会保留相同的 idx 的情况
-                if (aHalf) {
-                    if (xyz_idx.mIDX <  aIDX) {
-                        double tX = xyz_idx.mXYZ.mX;
-                        double tY = xyz_idx.mXYZ.mY;
-                        double tZ = xyz_idx.mXYZ.mZ;
-                        double tDis = aMHT ? cXYZ.distanceMHT(tX, tY, tZ) : cXYZ.distance(tX, tY, tZ);
-                        if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
-                    }
-                } else {
-                    if (xyz_idx.mIDX != aIDX) {
-                        double tX = xyz_idx.mXYZ.mX;
-                        double tY = xyz_idx.mXYZ.mY;
-                        double tZ = xyz_idx.mXYZ.mZ;
-                        double tDis = aMHT ? cXYZ.distanceMHT(tX, tY, tZ) : cXYZ.distance(tX, tY, tZ);
-                        if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
-                    }
-                }
-            }
+        getProperLinkedCell(aRMax).forEachNeighbor(aIDX, aHalf, (x, y, z, idx) -> {
+            // 内部会自动处理 idx 相同以及 half 的情况
+            double tDis = aMHT ? cXYZ.distanceMHT(x, y, z) : cXYZ.distance(x, y, z);
+            if (tDis < aRMax) aXYZIdxDisDo.run(x, y, z, idx, tDis);
         });
     }
     
@@ -283,38 +535,27 @@ public class NeighborListGetter implements IShutdownable {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
         final XYZ cXYZ = toXYZ(aXYZ);
-        getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (xyz_idx, link) -> {
-            if (link.isMirror()) {
-                XYZ tDir = link.direction();
-                double tX = xyz_idx.mXYZ.mX + tDir.mX;
-                double tY = xyz_idx.mXYZ.mY + tDir.mY;
-                double tZ = xyz_idx.mXYZ.mZ + tDir.mZ;
-                double tDis = aMHT ? cXYZ.distanceMHT(tX, tY, tZ) : cXYZ.distance(tX, tY, tZ);
-                if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
-            } else {
-                double tX = xyz_idx.mXYZ.mX;
-                double tY = xyz_idx.mXYZ.mY;
-                double tZ = xyz_idx.mXYZ.mZ;
-                double tDis = aMHT ? cXYZ.distanceMHT(tX, tY, tZ) : cXYZ.distance(tX, tY, tZ);
-                if (tDis < aRMax) aXYZIdxDisDo.run(tX, tY, tZ, xyz_idx.mIDX, tDis);
-            }
+        getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (x, y, z, idx) -> {
+            double tDis = aMHT ? cXYZ.distanceMHT(x, y, z) : cXYZ.distance(x, y, z);
+            if (tDis < aRMax) aXYZIdxDisDo.run(x, y, z, idx, tDis);
         });
     }
     
     /** 使用这个统一的类来管理，可以限制最大元素数目，并专门处理距离完全相同的情况不会抹去 */
     private static class NearestNeighborList {
         private static class XYZIdxDis {
-            final XYZ_IDX mXYZ_IDX;
+            final double mX, mY, mZ;
+            final int mIdx;
             final double mDis;
-            XYZIdxDis(XYZ_IDX aXYZ_IDX, double aDis) {mXYZ_IDX = aXYZ_IDX; mDis = aDis;}
-            XYZIdxDis(double aDis, XYZ_IDX aXYZ_IDX) {mXYZ_IDX = aXYZ_IDX; mDis = aDis;}
+            XYZIdxDis(double aX, double aY, double aZ, int aIdx, double aDis) {mX = aX; mY = aY; mZ = aZ; mIdx = aIdx; mDis = aDis;}
+            XYZIdxDis(double aDis, double aX, double aY, double aZ, int aIdx) {mX = aX; mY = aY; mZ = aZ; mIdx = aIdx; mDis = aDis;}
         }
         /** 直接使用 LinkedList 存储来避免距离完全相同的情况 */
         private final LinkedList<XYZIdxDis> mNNList = new LinkedList<>();
         private final int mNnn;
         NearestNeighborList(int aNnn) {mNnn = aNnn;}
         
-        void put(double aDis, XYZ_IDX aXYZ_IDX) {
+        void put(double aDis, double aX, double aY, double aZ, int aIdx) {
             // 获取迭代器
             ListIterator<XYZIdxDis> li = mNNList.listIterator();
             // 跳转到距离大于或等于 aDis 之前
@@ -326,7 +567,7 @@ public class NeighborListGetter implements IShutdownable {
                 }
             }
             // 然后直接进行添加即可
-            li.add(new XYZIdxDis(aDis, aXYZ_IDX));
+            li.add(new XYZIdxDis(aDis, aX, aY, aZ, aIdx));
             // 如果容量超过限制，则移除最后的元素
             if (mNNList.size() > mNnn) mNNList.removeLast();
         }
@@ -335,21 +576,19 @@ public class NeighborListGetter implements IShutdownable {
         void forEachNeighbor(int aIDX, boolean aHalf, IXYZIdxDisDo aXYZIdxDisDo) {
             for (XYZIdxDis tXYZIdxDis : mNNList) {
                 if (aHalf) {
-                    int tIDX = tXYZIdxDis.mXYZ_IDX.mIDX;
+                    int tIDX = tXYZIdxDis.mIdx;
+                    // 这里对 idx 相同的情况简单处理，因为精确处理较为麻烦且即使精确处理结果也是不对的
                     if (tIDX <= aIDX) {
-                        XYZ tXYZ = tXYZIdxDis.mXYZ_IDX.mXYZ;
-                        aXYZIdxDisDo.run(tXYZ.mX, tXYZ.mY, tXYZ.mZ, tIDX, tXYZIdxDis.mDis);
+                        aXYZIdxDisDo.run(tXYZIdxDis.mX, tXYZIdxDis.mY, tXYZIdxDis.mZ, tIDX, tXYZIdxDis.mDis);
                     }
                 } else {
-                    XYZ tXYZ = tXYZIdxDis.mXYZ_IDX.mXYZ;
-                    aXYZIdxDisDo.run(tXYZ.mX, tXYZ.mY, tXYZ.mZ, tXYZIdxDis.mXYZ_IDX.mIDX, tXYZIdxDis.mDis);
+                    aXYZIdxDisDo.run(tXYZIdxDis.mX, tXYZIdxDis.mY, tXYZIdxDis.mZ, tXYZIdxDis.mIdx, tXYZIdxDis.mDis);
                 }
             }
         }
         void forEachNeighbor(IXYZIdxDisDo aXYZIdxDisDo) {
             for (XYZIdxDis tXYZIdxDis : mNNList) {
-                XYZ tXYZ = tXYZIdxDis.mXYZ_IDX.mXYZ;
-                aXYZIdxDisDo.run(tXYZ.mX, tXYZ.mY, tXYZ.mZ, tXYZIdxDis.mXYZ_IDX.mIDX, tXYZIdxDis.mDis);
+                aXYZIdxDisDo.run(tXYZIdxDis.mX, tXYZIdxDis.mY, tXYZIdxDis.mZ, tXYZIdxDis.mIdx, tXYZIdxDis.mDis);
             }
         }
     }
@@ -381,22 +620,13 @@ public class NeighborListGetter implements IShutdownable {
         // 先遍历所有经历统计出最近的列表
         final NearestNeighborList rNN = new NearestNeighborList(aNnn);
         final XYZ cXYZ = mAtomDataXYZ[aIDX];
-        getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (xyz_idx, link) -> {
-            if (link.isMirror()) {
-                // 如果是镜像的，则会保留相同的 idx 的情况
-                XYZ tXYZ = xyz_idx.mXYZ.plus(link.direction());
-                double tDis = aMHT ? cXYZ.distanceMHT(tXYZ) : cXYZ.distance(tXYZ);
-                if (tDis < aRMax) rNN.put(tDis, new XYZ_IDX(tXYZ, xyz_idx.mIDX));
-            } else {
-                // 如果不是镜像的，则不会保留相同的 idx 的情况
-                if (xyz_idx.mIDX != aIDX) {
-                    double tDis = aMHT ? cXYZ.distanceMHT(xyz_idx.mXYZ) : cXYZ.distance(xyz_idx.mXYZ);
-                    if (tDis < aRMax) rNN.put(tDis, xyz_idx);
-                }
-            }
-            
+        // 这里需要先强制关闭 half 来获取限制最近邻数目的列表
+        getProperLinkedCell(aRMax).forEachNeighbor(aIDX, false, (x, y, z, idx) -> {
+            // 内部会自动处理 idx 相同的情况
+            double tDis = aMHT ? cXYZ.distanceMHT(x, y, z) : cXYZ.distance(x, y, z);
+            if (tDis < aRMax) rNN.put(tDis, x, y, z, idx);
         });
-        // 然后直接遍历得到的近邻列表，由于上面已经处理好了相同 idx 的情况，这里可以直接保留相同 idx 即可
+        // 然后直接遍历得到的近邻列表，这里再手动处理 half 的情况
         rNN.forEachNeighbor(aIDX, aHalf, aXYZIdxDisDo);
     }
     
@@ -424,15 +654,9 @@ public class NeighborListGetter implements IShutdownable {
         // 先遍历所有经历统计出最近的列表
         final NearestNeighborList rNN = new NearestNeighborList(aNnn);
         final XYZ cXYZ = toXYZ(aXYZ);
-        getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (xyz_idx, link) -> {
-            if (link.isMirror()) {
-                XYZ tXYZ = xyz_idx.mXYZ.plus(link.direction());
-                double tDis = aMHT ? cXYZ.distanceMHT(tXYZ) : cXYZ.distance(tXYZ);
-                if (tDis < aRMax) rNN.put(tDis, new XYZ_IDX(tXYZ, xyz_idx.mIDX));
-            } else {
-                double tDis = aMHT ? cXYZ.distanceMHT(xyz_idx.mXYZ) : cXYZ.distance(xyz_idx.mXYZ);
-                if (tDis < aRMax) rNN.put(tDis, xyz_idx);
-            }
+        getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (x, y, z, idx) -> {
+            double tDis = aMHT ? cXYZ.distanceMHT(x, y, z) : cXYZ.distance(x, y, z);
+            if (tDis < aRMax) rNN.put(tDis, x, y, z, idx);
         });
         // 然后直接遍历得到的近邻列表
         rNN.forEachNeighbor(aXYZIdxDisDo);
