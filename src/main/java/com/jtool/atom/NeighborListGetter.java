@@ -40,7 +40,7 @@ public class NeighborListGetter implements IShutdownable {
     /** 直接使用 ObjectCachePool 避免重复创建临时变量 */
     private final static IObjectPool<Map<Integer, List[]>> sAllCellsAllocCache = new ObjectCachePool<>();
     /** 缓存所有的 Cells 的内存空间 */
-    private final Map<Integer, List[]> mAllCellsAlloc;
+    private Map<Integer, List[]> mAllCellsAlloc;
     
     /** 方便使用的获取 Cells 内存空间的方法，线程不安全 */
     private List[] getCellsAlloc_(int aMul, int aSizeX, int aSizeY, int aSizeZ) {
@@ -68,8 +68,10 @@ public class NeighborListGetter implements IShutdownable {
     private volatile boolean mDead = false;
     @Override public void shutdown() {
         mDead = true; mLinkedCells.clear(); mAtomDataXYZ = null;
-        // 归还 Cells 的内存到缓存
-        sAllCellsAllocCache.returnObject(mAllCellsAlloc);
+        // 归还 Cells 的内存到缓存，这种写法保证永远能获取到 mAllCellsAlloc 时都是合法的
+        Map<Integer, List[]> oAllCellsAlloc = mAllCellsAlloc;
+        mAllCellsAlloc = null;
+        sAllCellsAllocCache.returnObject(oAllCellsAlloc);
     }
     
     public double getCellStep() {return mCellStep;}

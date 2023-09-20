@@ -10,6 +10,7 @@ import com.jtool.parallel.AbstractThreadPool;
 import com.jtool.parallel.IObjectPool;
 import com.jtool.parallel.ObjectCachePool;
 import com.jtool.parallel.ParforThreadPool;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -135,8 +136,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         return tXYZArray;
     }
-    private static void returnXYZArray_(XYZ[] aXYZArray) {returnXYZArray_(aXYZArray, false);}
-    private static void returnXYZArray_(XYZ[] aXYZArray, boolean aInternal) {(aInternal ? sXYZArrayCache : sXYZArrayCache2).returnObject(aXYZArray);}
+    private static void returnXYZArray_(XYZ @NotNull[] aXYZArray) {returnXYZArray_(aXYZArray, false);}
+    private static void returnXYZArray_(XYZ @NotNull[] aXYZArray, boolean aInternal) {(aInternal ? sXYZArrayCache : sXYZArrayCache2).returnObject(aXYZArray);}
     
     
     /// 参数设置
@@ -723,8 +724,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         }
         return tComplexVectors;
     }
-    private static void returnComplexVectors_(ComplexVector[] aComplexVectors) {returnComplexVectors_(aComplexVectors, false);}
-    private static void returnComplexVectors_(ComplexVector[] aComplexVectors, boolean aUseTemp2) {(aUseTemp2 ? sComplexVectorsCache2 : sComplexVectorsCache).returnObject(aComplexVectors);}
+    private static void returnComplexVectors_(ComplexVector @NotNull[] aComplexVectors) {returnComplexVectors_(aComplexVectors, false);}
+    private static void returnComplexVectors_(ComplexVector @NotNull[] aComplexVectors, boolean aUseTemp2) {(aUseTemp2 ? sComplexVectorsCache2 : sComplexVectorsCache).returnObject(aComplexVectors);}
     
     /**
      * 计算所有粒子的原始的 BOOP（local Bond Orientational Order Parameters, Ql），
