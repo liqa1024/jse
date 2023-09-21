@@ -218,6 +218,33 @@ public class AbstractCollections {
     
     
     /**
+     * 提供通用切片接口
+     * @author liqa
+     */
+    public static <T> List<T> slice(final List<? extends T> aList, final List<Integer> aIndices) {
+        return new AbstractRandomAccessList<T>() {
+            @Override public T get(int index) {return aList.get(aIndices.get(index));}
+            @Override public int size() {return aIndices.size();}
+        };
+    }
+    public static <T> List<T> slice(List<? extends T> aList, Iterable<Integer> aIndices) {
+        return slice(aList, NewCollections.from(aIndices));
+    }
+    public static <T> List<T> slice(List<? extends T> aList, Collection<Integer> aIndices) {
+        return slice(aList, NewCollections.from(aIndices));
+    }
+    public static <T> List<T> slice(final List<? extends T> aList, final int[] aIndices) {
+        return new AbstractRandomAccessList<T>() {
+            @Override public T get(int index) {return aList.get(aIndices[index]);}
+            @Override public int size() {return aIndices.length;}
+        };
+    }
+    public static <T> List<T> slice(final List<? extends T> aList, IIndexFilter aIndices) {
+        return slice(aList, NewCollections.filterInteger(aList.size(), aIndices));
+    }
+    
+    
+    /**
      * 提供通用的执行过滤的接口
      * @author liqa
      */
@@ -254,10 +281,10 @@ public class AbstractCollections {
             }
         };
     }
-    public static Iterable<Integer> filterIndex(Iterable<Integer> aIndices, IIndexFilter aFilter) {
+    public static Iterable<Integer> filterInteger(Iterable<Integer> aIndices, IIndexFilter aFilter) {
         return filter(aIndices, aFilter::accept);
     }
-    public static Iterable<Integer> filterIndex(final int aSize, final IIndexFilter aFilter) {
+    public static Iterable<Integer> filterInteger(final int aSize, final IIndexFilter aFilter) {
         return () -> new Iterator<Integer>() {
             private int mIdx = 0, mNext = -1;
             

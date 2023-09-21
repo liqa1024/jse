@@ -15,7 +15,7 @@ public abstract class AbstractLogicalVectorSlicer implements ILogicalVectorSlice
     @Override public final ILogicalVector get(SliceType     aIndices) {if (aIndices != SliceType.ALL) throw new IllegalArgumentException(MSG); return getA();}
     
     /** 支持过滤器输入，代替没有 {@code List<Boolean>} 的缺陷 */
-    @Override public final ILogicalVector get(IIndexFilter aIndices) {return get(NewCollections.filterIndex(thisSize_(), aIndices));}
+    @Override public final ILogicalVector get(IIndexFilter aIndices) {return get(NewCollections.filterInteger(thisSize_(), aIndices));}
     
     
     /** stuff to override */

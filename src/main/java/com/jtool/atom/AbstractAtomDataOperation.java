@@ -1,7 +1,6 @@
 package com.jtool.atom;
 
 import com.jtool.code.collection.AbstractCollections;
-import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.code.collection.NewCollections;
 import com.jtool.code.filter.IFilter;
 import com.jtool.code.filter.IIndexFilter;
@@ -14,31 +13,29 @@ import static com.jtool.code.UT.Code.toXYZ;
 
 
 /**
- * 一般的运算器的实现，值拷贝一次并使用 {@code ArrayList<IAtom>} 来存储，尽管这会占据更多的内存
+ * 一般的运算器的实现，默认会值拷贝一次并使用 {@code ArrayList<IAtom>} 来存储，尽管这会占据更多的内存
  * @author liqa
  */
 public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     
     @Override public IAtomData filter(IFilter<IAtom> aFilter) {
         IAtomData tThis = thisAtomData_();
-        List<IAtom> rAtoms = new ArrayList<>();
-        for (IAtom tAtom : tThis.atoms()) if (aFilter.accept(tAtom)) {
-            rAtoms.add(tAtom);
-        }
-        return new AtomData(rAtoms, tThis.atomTypeNum(), tThis.boxLo(), tThis.boxHi(), tThis.hasVelocities());
+        return new AtomData(NewCollections.filter(tThis.atoms(), aFilter), tThis.atomTypeNum(), tThis.box(), tThis.hasVelocities());
     }
     @Override public IAtomData filterType(final int aType) {return filter(atom -> atom.type()==aType);}
     
-    @Override public IAtomData filterIndices(final List<Integer> aIndices) {
+    @Override public IAtomData refSlice(final List<Integer> aIndices) {
         IAtomData tThis = thisAtomData_();
-        final List<IAtom> tThisAtoms = tThis.atoms();
-        return new AtomData(new AbstractRandomAccessList<IAtom>() {
-            @Override public IAtom get(int index) {return tThisAtoms.get(aIndices.get(index));}
-            @Override public int size() {return aIndices.size();}
-        }, tThis.atomTypeNum(), tThis.boxLo(), tThis.boxHi(), tThis.hasVelocities());
+        return new AtomData(AbstractCollections.slice(tThis.atoms(), aIndices), tThis.atomTypeNum(), tThis.box(), tThis.hasVelocities());
     }
-    @Override public IAtomData filterIndices(int[] aIndices) {return filterIndices(AbstractCollections.from(aIndices));}
-    @Override public IAtomData filterIndices(IIndexFilter aIndices) {return filterIndices(NewCollections.filterIndex(thisAtomData_().atomNum(), aIndices));}
+    @Override public IAtomData refSlice(int[] aIndices) {
+        IAtomData tThis = thisAtomData_();
+        return new AtomData(AbstractCollections.slice(tThis.atoms(), aIndices), tThis.atomTypeNum(), tThis.box(), tThis.hasVelocities());
+    }
+    @Override public IAtomData refSlice(IIndexFilter aIndices) {
+        IAtomData tThis = thisAtomData_();
+        return new AtomData(AbstractCollections.slice(tThis.atoms(), aIndices), tThis.atomTypeNum(), tThis.box(), tThis.hasVelocities());
+    }
     
     
     @Override public IAtomData map(int aMinTypeNum, IOperator1<? extends IAtom, ? super IAtom> aOperator) {
@@ -53,7 +50,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
             // 保存修改后的原子
             rAtoms.add(tAtom);
         }
-        return new AtomData(rAtoms, tAtomTypeNum, tThis.boxLo(), tThis.boxHi(), tThis.hasVelocities());
+        return new AtomData(rAtoms, tAtomTypeNum, tThis.box(), tThis.hasVelocities());
     }
     
     /** 减少重复代码，用于内部修改原子个别属性 */
@@ -91,20 +88,18 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     @Override public IAtomData perturbXYZGaussian(final Random aRandom, final double aSigma) {
         // 先获取 box
         IAtomData tThis = thisAtomData_();
-        final XYZ tBoxLo = toXYZ(tThis.boxLo());
-        final XYZ tBoxHi = toXYZ(tThis.boxHi());
-        final XYZ tBox = tBoxHi.minus(tBoxLo);
+        final XYZ tBox = toXYZ(tThis.box());
         // 使用 collect 获取种类修改后的 AtomData，注意周期边界条件
         return map(atom -> {
             double tX = atom.x() + aRandom.nextGaussian()*aSigma;
             double tY = atom.y() + aRandom.nextGaussian()*aSigma;
             double tZ = atom.z() + aRandom.nextGaussian()*aSigma;
-            if      (tX <  tBoxLo.mX) {tX += tBox.mX; while (tX <  tBoxLo.mX) tX += tBox.mX;}
-            else if (tX >= tBoxHi.mX) {tX -= tBox.mX; while (tX >= tBoxHi.mX) tX -= tBox.mX;}
-            if      (tY <  tBoxLo.mY) {tY += tBox.mY; while (tY <  tBoxLo.mY) tY += tBox.mY;}
-            else if (tY >= tBoxHi.mY) {tY -= tBox.mY; while (tY >= tBoxHi.mY) tY -= tBox.mY;}
-            if      (tZ <  tBoxLo.mZ) {tZ += tBox.mZ; while (tZ <  tBoxLo.mZ) tZ += tBox.mZ;}
-            else if (tZ >= tBoxHi.mZ) {tZ -= tBox.mZ; while (tZ >= tBoxHi.mZ) tZ -= tBox.mZ;}
+            if      (tX <  0.0    ) {tX += tBox.mX; while (tX <  0.0    ) tX += tBox.mX;}
+            else if (tX >= tBox.mX) {tX -= tBox.mX; while (tX >= tBox.mX) tX -= tBox.mX;}
+            if      (tY <  0.0    ) {tY += tBox.mY; while (tY <  0.0    ) tY += tBox.mY;}
+            else if (tY >= tBox.mY) {tY -= tBox.mY; while (tY >= tBox.mY) tY -= tBox.mY;}
+            if      (tZ <  0.0    ) {tZ += tBox.mZ; while (tZ <  0.0    ) tZ += tBox.mZ;}
+            else if (tZ >= tBox.mZ) {tZ -= tBox.mZ; while (tZ >= tBox.mZ) tZ -= tBox.mZ;}
             
             return new XYZWrapperAtom(atom, tX, tY, tZ);
         });

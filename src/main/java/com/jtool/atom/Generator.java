@@ -103,7 +103,7 @@ public class Generator extends AbstractThreadPool<ParforThreadPool> {
             rAtoms.add(tAtom);
         }
         
-        return new AtomData(rAtoms, tAtomTypeNum, aAtomData.boxLo(), aAtomData.boxHi());
+        return new AtomData(rAtoms, tAtomTypeNum, aAtomData.box());
     }
     public IAtomData typeFilterAtomData(final IAtomData aAtomData, IOperator1<Integer, IAtom> aFilter) {return typeFilterAtomData(aAtomData, 1, aFilter);}
     
@@ -156,7 +156,7 @@ public class Generator extends AbstractThreadPool<ParforThreadPool> {
             rAtoms.add(tAtom);
         }
         
-        return new AtomData(rAtoms, aAtomData.atomTypeNum(), aAtomData.boxLo(), aAtomData.boxHi(), aAtomData.hasVelocities());
+        return new AtomData(rAtoms, aAtomData.atomTypeNum(), aAtomData.box(), aAtomData.hasVelocities());
     }
     
     /**
@@ -172,14 +172,14 @@ public class Generator extends AbstractThreadPool<ParforThreadPool> {
         if (mDead) throw new RuntimeException("This Generator is dead");
         
         // 获取边界，会进行缩放将 aAtomData 的边界和 Func3 的边界对上
-        final IXYZ tBoxLo = aAtomData.boxLo(), tBoxHi = aAtomData.boxHi();
+        final IXYZ tBox = aAtomData.box();
         final double tX0 = aFunc3.x0()                , tY0 = aFunc3.y0()                , tZ0 = aFunc3.z0()                ;
         final double tXe = tX0+aFunc3.dx()*aFunc3.Nx(), tYe = tY0+aFunc3.dy()*aFunc3.Ny(), tZe = tZ0+aFunc3.dz()*aFunc3.Nz();
         // 需要使用考虑了 pbc 的 subs，因为正边界处的插值需要考虑 pbc
         return filterAtomData(aAtomData, atom -> aFilter.accept(aFunc3.subsPBC(
-            (atom.x()-tBoxLo.x())/(tBoxHi.x()-tBoxLo.x())*(tXe-tX0) + tX0,
-            (atom.y()-tBoxLo.y())/(tBoxHi.y()-tBoxLo.y())*(tYe-tY0) + tY0,
-            (atom.z()-tBoxLo.z())/(tBoxHi.z()-tBoxLo.z())*(tZe-tZ0) + tZ0)));
+            atom.x()/tBox.x()*(tXe-tX0) + tX0,
+            atom.y()/tBox.y()*(tYe-tY0) + tY0,
+            atom.z()/tBox.z()*(tZe-tZ0) + tZ0)));
     }
     /**
      * 预设的一种阈值的 filter，只有当对应的 Func3 大于阈值 aThreshold 才会保留

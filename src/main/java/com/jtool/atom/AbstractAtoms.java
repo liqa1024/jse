@@ -159,9 +159,9 @@ public class AbstractAtoms {
                 final int tLatticeNum = aLattice.atomNum();
                 final IAtom tAtom = aLattice.atoms().get(index%tLatticeNum);
                 return new IAtom() {
-                    @Override public double x() {int i = index/tLatticeNum/aReplicateZ/aReplicateY; double tX = (aLattice.boxHi().x()-aLattice.boxLo().x()) * i; return tX + tAtom.x() - aLattice.boxLo().x();}
-                    @Override public double y() {int j = index/tLatticeNum/aReplicateZ%aReplicateY; double tY = (aLattice.boxHi().y()-aLattice.boxLo().y()) * j; return tY + tAtom.y() - aLattice.boxLo().y();}
-                    @Override public double z() {int k = index/tLatticeNum%aReplicateZ            ; double tZ = (aLattice.boxHi().z()-aLattice.boxLo().z()) * k; return tZ + tAtom.z() - aLattice.boxLo().z();}
+                    @Override public double x() {int i = index/tLatticeNum/aReplicateZ/aReplicateY; double tX = aLattice.box().x() * i; return tX + tAtom.x();}
+                    @Override public double y() {int j = index/tLatticeNum/aReplicateZ%aReplicateY; double tY = aLattice.box().y() * j; return tY + tAtom.y();}
+                    @Override public double z() {int k = index/tLatticeNum%aReplicateZ            ; double tZ = aLattice.box().z() * k; return tZ + tAtom.z();}
                     @Override public int id() {return index+1;} // 为了避免一些奇怪的问题，不保留原本的 id
                     @Override public int type() {return tAtom.type();}
                 };
@@ -170,9 +170,9 @@ public class AbstractAtoms {
                 return aLattice.atomNum()*aReplicateX*aReplicateY*aReplicateZ;
             }
         }, aLattice.atomTypeNum(), new IXYZ() {
-            @Override public double x() {return (aLattice.boxHi().x()-aLattice.boxLo().x()) * aReplicateX;}
-            @Override public double y() {return (aLattice.boxHi().y()-aLattice.boxLo().y()) * aReplicateY;}
-            @Override public double z() {return (aLattice.boxHi().z()-aLattice.boxLo().z()) * aReplicateZ;}
+            @Override public double x() {return aLattice.box().x() * aReplicateX;}
+            @Override public double y() {return aLattice.box().y() * aReplicateY;}
+            @Override public double z() {return aLattice.box().z() * aReplicateZ;}
         });
     }
     public static IAtomData from(IAtomData aLattice, int aReplicate) {return from(aLattice, aReplicate, aReplicate, aReplicate);}

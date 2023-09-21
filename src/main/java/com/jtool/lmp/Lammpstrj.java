@@ -63,7 +63,7 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
     // dump 额外的属性
     public long timeStep() {return defaultFrame().timeStep();}
     public String[] boxBounds() {return defaultFrame().boxBounds();}
-    public Box box() {return defaultFrame().box();}
+    public Box lmpBox() {return defaultFrame().lmpBox();}
     
     /** 提供直接转为表格的接口 */
     public ITable asTable() {return defaultFrame().asTable();}
@@ -137,19 +137,17 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
         // dump 额外的属性
         public long timeStep() {return mTimeStep;}
         public String[] boxBounds() {return mBoxBounds;}
-        public Box box() {return mBox;}
+        public Box lmpBox() {return mBox;}
         
         /** 内部方法，用于从原始的数据获取合适的 x，y，z 数据 */
         private double getX_(double aRawX) {
             double tX = aRawX;
             switch (mXType) {
             case NORMAL: {
-                return tX;
+                return tX-mBox.xlo();
             }
             case SCALED: {
-                double tBoxLoX = mBox.xlo();
-                double tBoxX = mBox.xhi() - tBoxLoX;
-                return tBoxLoX + tX*tBoxX;
+                return tX*(mBox.xhi()-mBox.xlo());
             }
             case UNWRAPPED: {
                 double tBoxLoX = mBox.xlo();
@@ -157,14 +155,12 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
                 double tBoxX = tBoxHiX - tBoxLoX;
                 if      (tX <  tBoxLoX) {while (tX <  tBoxLoX) tX += tBoxX;}
                 else if (tX >= tBoxHiX) {while (tX >= tBoxHiX) tX -= tBoxX;}
-                return tX;
+                return tX-tBoxLoX;
             }
             case SCALED_UNWRAPPED: {
                 if      (tX <  0.0) {while (tX <  0.0) ++tX;}
                 else if (tX >= 1.0) {while (tX >= 1.0) --tX;}
-                double tBoxLoX = mBox.xlo();
-                double tBoxX = mBox.xhi() - tBoxLoX;
-                return tBoxLoX + tX*tBoxX;
+                return tX*(mBox.xhi()-mBox.xlo());
             }
             default: throw new RuntimeException();
             }
@@ -173,12 +169,10 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             double tY = aRawY;
             switch (mYType) {
             case NORMAL: {
-                return tY;
+                return tY-mBox.ylo();
             }
             case SCALED: {
-                double tBoxLoY = mBox.ylo();
-                double tBoxY = mBox.yhi() - tBoxLoY;
-                return tBoxLoY + tY*tBoxY;
+                return tY*(mBox.yhi()-mBox.ylo());
             }
             case UNWRAPPED: {
                 double tBoxLoY = mBox.ylo();
@@ -186,14 +180,12 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
                 double tBoxY = tBoxHiY - tBoxLoY;
                 if      (tY <  tBoxLoY) {while (tY <  tBoxLoY) tY += tBoxY;}
                 else if (tY >= tBoxHiY) {while (tY >= tBoxHiY) tY -= tBoxY;}
-                return tY;
+                return tY-tBoxLoY;
             }
             case SCALED_UNWRAPPED: {
                 if      (tY <  0.0) {while (tY <  0.0) ++tY;}
                 else if (tY >= 1.0) {while (tY >= 1.0) --tY;}
-                double tBoxLoY = mBox.ylo();
-                double tBoxY = mBox.yhi() - tBoxLoY;
-                return tBoxLoY + tY*tBoxY;
+                return tY*(mBox.yhi()-mBox.ylo());
             }
             default: throw new RuntimeException();
             }
@@ -202,12 +194,10 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             double tZ = aRawZ;
             switch (mZType) {
             case NORMAL: {
-                return tZ;
+                return tZ-mBox.zlo();
             }
             case SCALED: {
-                double tBoxLoZ = mBox.zlo();
-                double tBoxZ = mBox.zhi() - tBoxLoZ;
-                return tBoxLoZ + tZ*tBoxZ;
+                return tZ*(mBox.zhi()-mBox.zlo());
             }
             case UNWRAPPED: {
                 double tBoxLoZ = mBox.zlo();
@@ -215,14 +205,12 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
                 double tBoxZ = tBoxHiZ - tBoxLoZ;
                 if      (tZ <  tBoxLoZ) {while (tZ <  tBoxLoZ) tZ += tBoxZ;}
                 else if (tZ >= tBoxHiZ) {while (tZ >= tBoxHiZ) tZ -= tBoxZ;}
-                return tZ;
+                return tZ-tBoxLoZ;
             }
             case SCALED_UNWRAPPED: {
                 if      (tZ <  0.0) {while (tZ <  0.0) ++tZ;}
                 else if (tZ >= 1.0) {while (tZ >= 1.0) --tZ;}
-                double tBoxLoZ = mBox.zlo();
-                double tBoxZ = mBox.zhi() - tBoxLoZ;
-                return tBoxLoZ + tZ*tBoxZ;
+                return tZ*(mBox.zhi()-mBox.zlo());
             }
             default: throw new RuntimeException();
             }
@@ -251,8 +239,7 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
                 @Override public int size() {return mAtomData.rowNumber();}
             };
         }
-        @Override public IXYZ boxLo() {return mBox.boxLo();}
-        @Override public IXYZ boxHi() {return mBox.boxHi();}
+        @Override public IXYZ box() {return mBox.shiftedBox();}
         @Override public int atomNum() {return mAtomData.rowNumber();}
         @Override public int atomTypeNum() {return mAtomTypeNum;}
         
@@ -299,7 +286,7 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             return new SubLammpstrj(aTimeStep, Arrays.copyOf(tSubLammpstrj.mBoxBounds, tSubLammpstrj.mBoxBounds.length), tSubLammpstrj.mBox.copy(), tSubLammpstrj.mAtomData.copy());
         } else {
             // 一般的情况，通过 dataXXX 来创建，注意这里认为获取时已经经过了值拷贝，因此不再需要 copy
-            return new SubLammpstrj(aTimeStep, BOX_BOUND, new Box(aAtomData.boxLo(), aAtomData.boxHi()), aAtomData.hasVelocities()?aAtomData.dataAll():aAtomData.dataSTD());
+            return new SubLammpstrj(aTimeStep, BOX_BOUND, new Box(aAtomData.box()), aAtomData.hasVelocities()?aAtomData.dataAll():aAtomData.dataSTD());
         }
     }
     private static long getTimeStep(IAtomData aAtomData, long aDefault) {
@@ -405,9 +392,9 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
                 tWriter.write("ITEM: NUMBER OF ATOMS"); tWriter.newLine();
                 tWriter.write(String.format("%d", tSubLammpstrj.atomNum())); tWriter.newLine();
                 tWriter.write(String.format("ITEM: BOX BOUNDS %s", String.join(" ", tSubLammpstrj.boxBounds()))); tWriter.newLine();
-                tWriter.write(String.format("%f %f", tSubLammpstrj.box().xlo(), tSubLammpstrj.box().xhi())); tWriter.newLine();
-                tWriter.write(String.format("%f %f", tSubLammpstrj.box().ylo(), tSubLammpstrj.box().yhi())); tWriter.newLine();
-                tWriter.write(String.format("%f %f", tSubLammpstrj.box().zlo(), tSubLammpstrj.box().zhi())); tWriter.newLine();
+                tWriter.write(String.format("%f %f", tSubLammpstrj.mBox.xlo(), tSubLammpstrj.mBox.xhi())); tWriter.newLine();
+                tWriter.write(String.format("%f %f", tSubLammpstrj.mBox.ylo(), tSubLammpstrj.mBox.yhi())); tWriter.newLine();
+                tWriter.write(String.format("%f %f", tSubLammpstrj.mBox.zlo(), tSubLammpstrj.mBox.zhi())); tWriter.newLine();
                 tWriter.write(String.format("ITEM: ATOMS %s", String.join(" ", tSubLammpstrj.mAtomData.heads()))); tWriter.newLine();
                 for (IVector subAtomData : tSubLammpstrj.mAtomData.rows()) {
                     tWriter.write(String.join(" ", AbstractCollections.map(subAtomData.iterable(), Object::toString))); tWriter.newLine();

@@ -83,7 +83,7 @@ public class POSCAR extends AbstractAtomData {
     @Override public List<IAtom> atoms() {
         // 暂时没功夫研究矩阵表示的晶格在斜方情况下原子坐标是怎么样的
         // 并且这里还需要将其转换成正交的情况，因为参数计算相关优化都需要在正交情况下实现
-        if (!mIsDiagBox) throw new RuntimeException("Atoms is temporarily support Diagonal Box only");
+        if (!mIsDiagBox) throw new RuntimeException("atoms is temporarily support Diagonal Box only");
         return new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(final int index) {
                 return new IAtom() {
@@ -100,21 +100,17 @@ public class POSCAR extends AbstractAtomData {
             @Override public int size() {return mDirect.rowNumber();}
         };
     }
-    @Override public IXYZ boxLo() {
-        if (!mIsDiagBox) throw new RuntimeException("boxLo is temporarily support Diagonal Box only");
-        return BOX_ZERO;
-    }
-    @Override public IXYZ boxHi() {
-        if (!mIsDiagBox) throw new RuntimeException("boxHi is temporarily support Diagonal Box only");
-        XYZ tBoxHi = new XYZ(mBox.refSlicer().diag());
-        tBoxHi.multiply2this(mBoxScale);
-        return tBoxHi;
+    @Override public IXYZ box() {
+        if (!mIsDiagBox) throw new RuntimeException("box is temporarily support Diagonal Box only");
+        XYZ tBox = new XYZ(mBox.refSlicer().diag());
+        tBox.multiply2this(mBoxScale);
+        return tBox;
     }
     @Override public int atomNum() {return mDirect.rowNumber();}
     @Override public int atomTypeNum() {return mAtomTypes.length;}
     @Override public double volume() {
         // 注意如果是斜方的模拟盒则不能获取到模拟盒体积
-        if (!mIsDiagBox) throw new RuntimeException("Volume is temporarily support Diagonal Box only");
+        if (!mIsDiagBox) throw new RuntimeException("volume is temporarily support Diagonal Box only");
         return mBox.refSlicer().diag().prod();
     }
     
@@ -135,8 +131,7 @@ public class POSCAR extends AbstractAtomData {
             return new POSCAR(tPOSCAR.mDataName, tPOSCAR.mBox.copy(), tPOSCAR.mBoxScale, aAtomTypes, tPOSCAR.mAtomNumbers, aSelectiveDynamics, tPOSCAR.mDirect.copy());
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
-            XYZ tBoxLo = toXYZ(aAtomData.boxLo());
-            XYZ tBox = aAtomData.boxHi().minus(tBoxLo);
+            XYZ tBox = toXYZ(aAtomData.box());
             
             int tAtomTypeNum = aAtomData.atomTypeNum();
             IVector rAtomNumbers = Vectors.zeros(tAtomTypeNum);
@@ -145,9 +140,9 @@ public class POSCAR extends AbstractAtomData {
             for (int tTypeMM = 0; tTypeMM < tAtomTypeNum; ++tTypeMM) {
                 for (IAtom tAtom : aAtomData.atoms()) if (tAtom.type() == tTypeMM+1) {
                     rAtomNumbers.increment_(tTypeMM);
-                    rDirect.set(tIdx, 0, (tAtom.x()-tBoxLo.mX)/tBox.mX);
-                    rDirect.set(tIdx, 1, (tAtom.y()-tBoxLo.mY)/tBox.mY);
-                    rDirect.set(tIdx, 2, (tAtom.z()-tBoxLo.mZ)/tBox.mZ);
+                    rDirect.set(tIdx, 0, tAtom.x()/tBox.mX);
+                    rDirect.set(tIdx, 1, tAtom.y()/tBox.mY);
+                    rDirect.set(tIdx, 2, tAtom.z()/tBox.mZ);
                     ++tIdx;
                 }
             }
@@ -165,7 +160,7 @@ public class POSCAR extends AbstractAtomData {
      */
     public static POSCAR read(String aFilePath) throws IOException {return read_(UT.IO.readAllLines(aFilePath));}
     public static POSCAR read_(List<String> aLines) {
-        if (aLines.size() == 0) return null;
+        if (aLines.isEmpty()) return null;
         
         String aDataName;
         IMatrix aBox;

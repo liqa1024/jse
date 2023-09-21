@@ -120,7 +120,7 @@ public class Lmpdat extends AbstractAtomData {
     
     
     /// 获取属性
-    public Box box() {return mBox;}
+    public Box lmpBox() {return mBox;}
     public IVector masses() {return mMasses;}
     public double mass(int aType) {return mMasses!=null ? mMasses.get(aType-1) : Double.NaN;}
     
@@ -129,13 +129,13 @@ public class Lmpdat extends AbstractAtomData {
     @Override public boolean hasVelocities() {return mVelocities!=null;}
     @Override public List<IAtom> atoms() {
         // 注意如果是斜方的模拟盒则不能获取到正交的原子数据
-        if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("Atoms is temporarily support NORMAL Box only");
+        if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("atoms is temporarily support NORMAL Box only");
         return new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(final int index) {
                 return new IAtom() {
-                    @Override public double x() {return mAtomData.get(index, STD_X_COL);}
-                    @Override public double y() {return mAtomData.get(index, STD_Y_COL);}
-                    @Override public double z() {return mAtomData.get(index, STD_Z_COL);}
+                    @Override public double x() {return mAtomData.get(index, STD_X_COL)-mBox.xlo();}
+                    @Override public double y() {return mAtomData.get(index, STD_Y_COL)-mBox.ylo();}
+                    @Override public double z() {return mAtomData.get(index, STD_Z_COL)-mBox.zlo();}
                     @Override public int id() {return (int)mAtomData.get(index, STD_ID_COL);}
                     @Override public int type() {return (int)mAtomData.get(index, STD_TYPE_COL);}
                     
@@ -147,13 +147,16 @@ public class Lmpdat extends AbstractAtomData {
             @Override public int size() {return mAtomData.rowNumber();}
         };
     }
-    @Override public IXYZ boxLo() {return mBox.boxLo();}
-    @Override public IXYZ boxHi() {return mBox.boxHi();}
+    @Override public IXYZ box() {
+        // 注意如果是斜方的模拟盒则不能获取到正交的模拟盒数据
+        if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("box is temporarily support NORMAL Box only");
+        return mBox.shiftedBox();
+    }
     @Override public int atomNum() {return mAtomData.rowNumber();}
     @Override public int atomTypeNum() {return mAtomTypeNum;}
     @Override public double volume() {
         // 注意如果是斜方的模拟盒则不能获取到模拟盒体积
-        if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("Volume is temporarily support NORMAL Box only");
+        if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("volume is temporarily support NORMAL Box only");
         return mBox.shiftedBox().prod();
     }
     
@@ -176,7 +179,7 @@ public class Lmpdat extends AbstractAtomData {
             return new Lmpdat(tLmpdat.atomTypeNum(), tLmpdat.mBox.copy(), aMasses, tLmpdat.mAtomData.copy(), tLmpdat.mVelocities==null?null:tLmpdat.mVelocities.copy());
         } else {
             // 一般的情况，通过 dataSTD 来创建，注意这里认为获取时已经经过了值拷贝，因此不再需要 copy
-            return new Lmpdat(aAtomData.atomTypeNum(), new Box(aAtomData.boxLo(), aAtomData.boxHi()), aMasses, aAtomData.dataSTD().matrix(), aAtomData.hasVelocities()?aAtomData.dataVelocities().matrix():null);
+            return new Lmpdat(aAtomData.atomTypeNum(), new Box(aAtomData.box()), aMasses, aAtomData.dataSTD().matrix(), aAtomData.hasVelocities()?aAtomData.dataVelocities().matrix():null);
         }
     }
     
@@ -189,6 +192,7 @@ public class Lmpdat extends AbstractAtomData {
      */
     public static Lmpdat read(String aFilePath) throws IOException {return read_(UT.IO.readAllLines(aFilePath));}
     public static Lmpdat read_(List<String> aLines) {
+        if (aLines.isEmpty()) return null;
         
         int tAtomNum;
         int aAtomTypeNum;

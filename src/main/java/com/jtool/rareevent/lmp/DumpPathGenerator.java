@@ -181,7 +181,7 @@ public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathG
                 };
             }
             @Override public int size() {return tAtomNum;}
-        }, aPoint.atomTypeNum(), aPoint.boxLo(), aPoint.boxHi());
+        }, aPoint.atomTypeNum(), aPoint.box());
     }
     
     

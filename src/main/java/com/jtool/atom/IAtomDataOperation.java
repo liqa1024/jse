@@ -38,16 +38,14 @@ public interface IAtomDataOperation {
     IAtomData filterType(int aType);
     
     /**
-     * 直接根据 {@code List<Integer>} 来过滤 aAtomData，只保留选定种类的原子
-     * <p>
-     * 直接通过输入的 aIndices 进行引用映射，相当于 {@code refSlice}
+     * 直接根据 {@code List<Integer>} 来引用切片 aAtomData，只保留选定种类的原子
      * @author liqa
      * @param aIndices 选择保留的原子的下标组成的数组
-     * @return 新创建的过滤后的 AtomData
+     * @return 新创建的切片后的 AtomData
      */
-    IAtomData filterIndices(List<Integer> aIndices);
-    IAtomData filterIndices(int[] aIndices);
-    IAtomData filterIndices(IIndexFilter aIndices);
+    IAtomData refSlice(List<Integer> aIndices);
+    IAtomData refSlice(int[] aIndices);
+    IAtomData refSlice(IIndexFilter aIndices);
     
     
     /**

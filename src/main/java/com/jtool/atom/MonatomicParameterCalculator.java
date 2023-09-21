@@ -33,7 +33,6 @@ import static com.jtool.math.MathEX.*;
 public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThreadPool> {
     private XYZ[] mAtomDataXYZ; // 注意 mAtomDataXYZ.length != mAtomNum
     private final IXYZ mBox;
-    private final IXYZ mBoxLo; // 用来记录数据是否经过了 shift
     
     private final int mAtomNum;
     private final double mRou; // 粒子数密度
@@ -59,17 +58,15 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     /**
      * 根据输入数据直接创建 MPC
      * @param aAtomDataXYZ 粒子数据，这里只需要知道 xyz 坐标即可
-     * @param aBoxLo 模拟盒的下界，会据此将输入 aAtomDataXYZ 平移
-     * @param aBoxHi 模拟盒的上界
+     * @param aBox 模拟盒大小；现在也统一认为所有输入的原子坐标都经过了 shift
      * @param aThreadNum MPC 进行计算会使用的线程数
      * @param aCellStep 内部用于加速近邻搜索的 LinkedCell 不同 Cell 大小的步长
      */
-    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBoxLo, IXYZ aBoxHi, int aThreadNum, double aCellStep) {
+    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, int aThreadNum, double aCellStep) {
         super(new ParforThreadPool(aThreadNum));
         
         // 获取模拟盒数据
-        mBoxLo = newBox(aBoxLo);
-        mBox   = (aBoxLo==BOX_ZERO) ? newBox(aBoxHi) : aBoxHi.minus(aBoxLo);
+        mBox = newBox(aBox);
         
         // 获取合适的 XYZ[] 数据
         mAtomDataXYZ = getValidAtomDataXYZ_(aAtomDataXYZ, true);
@@ -82,13 +79,12 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox, aCellStep);
     }
     public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ) {this(aAtomDataXYZ, BOX_ONE);}
-    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox) {this(aAtomDataXYZ, BOX_ZERO, aBox);}
-    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBoxLo, IXYZ aBoxHi) {this(aAtomDataXYZ, aBoxLo, aBoxHi, 1);}
-    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBoxLo, IXYZ aBoxHi, int aThreadNum) {this(aAtomDataXYZ, aBoxLo, aBoxHi, aThreadNum, DEFAULT_CELL_STEP);}
+    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox) {this(aAtomDataXYZ, aBox, 1);}
+    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, int aThreadNum) {this(aAtomDataXYZ, aBox, aThreadNum, DEFAULT_CELL_STEP);}
     
     public MonatomicParameterCalculator(IAtomData aAtomData) {this(aAtomData, 1);}
     public MonatomicParameterCalculator(IAtomData aAtomData, int aThreadNum) {this(aAtomData, aThreadNum, DEFAULT_CELL_STEP);}
-    public MonatomicParameterCalculator(IAtomData aAtomData, int aThreadNum, double aCellStep) {this(aAtomData.atoms(), aAtomData.boxLo(), aAtomData.boxHi(), aThreadNum, aCellStep);}
+    public MonatomicParameterCalculator(IAtomData aAtomData, int aThreadNum, double aCellStep) {this(aAtomData.atoms(), aAtomData.box(), aThreadNum, aCellStep);}
     
     
     /** 直接使用 ObjectCachePool 避免重复创建临时变量 */
@@ -114,12 +110,6 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 tXYZArray[tIdx].setXYZ(tXYZ);
                 ++tIdx;
             }
-        }
-        
-        // mBoxLo 不为零则需要将数据 shift
-        if (mBoxLo != BOX_ZERO) {
-            XYZ tBoxLo = toXYZ(mBoxLo);
-            for (int i = 0; i < tSize; ++i) tXYZArray[i].minus2this(tBoxLo);
         }
         
         // 由于 lammps 精度的问题，需要将超出边界的进行平移
@@ -507,8 +497,6 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 为了方便统一拷贝一次输入 XYZ
         XYZ tXYZ = new XYZ(aXYZ);
-        // 注意 mBoxLo 不为零则需要将数据 shift
-        if (mBoxLo != BOX_ZERO) tXYZ.minus2this(toXYZ(mBoxLo));
         // 由于 lammps 精度的问题，需要将超出边界的进行平移
         XYZ tBox = toXYZ(mBox);
         if      (tXYZ.mX <  0.0    ) tXYZ.mX += tBox.mX;

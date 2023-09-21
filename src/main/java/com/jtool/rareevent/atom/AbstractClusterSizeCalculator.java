@@ -32,7 +32,7 @@ public abstract class AbstractClusterSizeCalculator implements IParameterCalcula
             } else {
                 // 使用 getClustersDFS 获取所有的团簇（一般来说会比 BFS 更快，当然这个部分不是瓶颈）
                 final double tRCluster = getRCluster_(tMPC);
-                List<List<Integer>> tClusters = MathEX.Adv.getClustersDFS(AbstractCollections.filterIndex(tIsSolid.size(), tIsSolid), i -> AbstractCollections.filterIndex(tMPC.getNeighborList(i, tRCluster), tIsSolid));
+                List<List<Integer>> tClusters = MathEX.Adv.getClustersDFS(AbstractCollections.filterInteger(tIsSolid.size(), tIsSolid), i -> AbstractCollections.filterInteger(tMPC.getNeighborList(i, tRCluster), tIsSolid));
                 // 遍历团簇统计 lambda，区分 countAll() 和一般只统计最大的逻辑
                 double rLambda = 0.0;
                 double rMax = 0.0;

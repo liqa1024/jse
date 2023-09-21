@@ -29,15 +29,15 @@ public abstract class AbstractMatrixSlicer implements IMatrixSlicer {
     final static String ROL_MSG = "SelectedRows Must be a Filter or int[] or List<Integer> or ALL";
     
     /** 支持过滤器输入，代替没有 {@code List<Boolean>} 的缺陷 */
-    @Override public final IMatrix get(IIndexFilter  aSelectedRows, int[]         aSelectedCols) {return get(NewCollections.filterIndex(thisRowNum_(), aSelectedRows), aSelectedCols);}
-    @Override public final IMatrix get(IIndexFilter  aSelectedRows, List<Integer> aSelectedCols) {return get(NewCollections.filterIndex(thisRowNum_(), aSelectedRows), aSelectedCols);}
-    @Override public final IMatrix get(IIndexFilter  aSelectedRows, SliceType     aSelectedCols) {return get(NewCollections.filterIndex(thisRowNum_(), aSelectedRows), aSelectedCols);}
-    @Override public final IVector get(IIndexFilter  aSelectedRows, int           aSelectedCol ) {return get(NewCollections.filterIndex(thisRowNum_(), aSelectedRows), aSelectedCol);}
-    @Override public final IMatrix get(int[]         aSelectedRows, IIndexFilter  aSelectedCols) {return get(aSelectedRows, NewCollections.filterIndex(thisColNum_(), aSelectedCols));}
-    @Override public final IMatrix get(List<Integer> aSelectedRows, IIndexFilter  aSelectedCols) {return get(aSelectedRows, NewCollections.filterIndex(thisColNum_(), aSelectedCols));}
-    @Override public final IMatrix get(SliceType     aSelectedRows, IIndexFilter  aSelectedCols) {return get(aSelectedRows, NewCollections.filterIndex(thisColNum_(), aSelectedCols));}
-    @Override public final IVector get(int           aSelectedRow , IIndexFilter  aSelectedCols) {return get(aSelectedRow , NewCollections.filterIndex(thisColNum_(), aSelectedCols));}
-    @Override public final IMatrix get(IIndexFilter  aSelectedRows, IIndexFilter  aSelectedCols) {return get(NewCollections.filterIndex(thisRowNum_(), aSelectedRows), NewCollections.filterIndex(thisColNum_(), aSelectedCols));}
+    @Override public final IMatrix get(IIndexFilter  aSelectedRows, int[]         aSelectedCols) {return get(NewCollections.filterInteger(thisRowNum_(), aSelectedRows), aSelectedCols);}
+    @Override public final IMatrix get(IIndexFilter  aSelectedRows, List<Integer> aSelectedCols) {return get(NewCollections.filterInteger(thisRowNum_(), aSelectedRows), aSelectedCols);}
+    @Override public final IMatrix get(IIndexFilter  aSelectedRows, SliceType     aSelectedCols) {return get(NewCollections.filterInteger(thisRowNum_(), aSelectedRows), aSelectedCols);}
+    @Override public final IVector get(IIndexFilter  aSelectedRows, int           aSelectedCol ) {return get(NewCollections.filterInteger(thisRowNum_(), aSelectedRows), aSelectedCol);}
+    @Override public final IMatrix get(int[]         aSelectedRows, IIndexFilter  aSelectedCols) {return get(aSelectedRows, NewCollections.filterInteger(thisColNum_(), aSelectedCols));}
+    @Override public final IMatrix get(List<Integer> aSelectedRows, IIndexFilter  aSelectedCols) {return get(aSelectedRows, NewCollections.filterInteger(thisColNum_(), aSelectedCols));}
+    @Override public final IMatrix get(SliceType     aSelectedRows, IIndexFilter  aSelectedCols) {return get(aSelectedRows, NewCollections.filterInteger(thisColNum_(), aSelectedCols));}
+    @Override public final IVector get(int           aSelectedRow , IIndexFilter  aSelectedCols) {return get(aSelectedRow , NewCollections.filterInteger(thisColNum_(), aSelectedCols));}
+    @Override public final IMatrix get(IIndexFilter  aSelectedRows, IIndexFilter  aSelectedCols) {return get(NewCollections.filterInteger(thisRowNum_(), aSelectedRows), NewCollections.filterInteger(thisColNum_(), aSelectedCols));}
     
     @Override public final IVector diag() {return diag(0);}
     

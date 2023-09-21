@@ -28,9 +28,8 @@ public interface IAtomData {
     int atomTypeNum();
     
     
-    /** 获取模拟盒信息的接口 */
-    IXYZ boxLo();
-    IXYZ boxHi();
+    /** 获取模拟盒信息的接口，现在为了使用方便，移除了 boxLo 的设定 */
+    IXYZ box();
     double volume();
     
     /** 统一提供拷贝接口 */

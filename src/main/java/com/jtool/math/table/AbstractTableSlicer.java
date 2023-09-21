@@ -42,15 +42,15 @@ public abstract class AbstractTableSlicer implements ITableSlicer {
     final static String ROL_MSG = "SelectedRows Must be a Filter or int[] or List<Integer> or ALL";
     
     /** 支持过滤器输入，代替没有 {@code List<Boolean>} 的缺陷 */
-    @Override public final ITable get(IIndexFilter  aSelectedRows, int[]           aSelectedCols) {return get(NewCollections.filterIndex(thisRowNum_(), aSelectedRows), aSelectedCols);}
-    @Override public final ITable get(IIndexFilter  aSelectedRows, List<Integer>   aSelectedCols) {return get(NewCollections.filterIndex(thisRowNum_(), aSelectedRows), aSelectedCols);}
-    @Override public final ITable get(IIndexFilter  aSelectedRows, SliceType       aSelectedCols) {return get(NewCollections.filterIndex(thisRowNum_(), aSelectedRows), aSelectedCols);}
-    @Override public final ITable get(IIndexFilter  aSelectedRows, int             aSelectedCol ) {return get(NewCollections.filterIndex(thisRowNum_(), aSelectedRows), aSelectedCol);}
+    @Override public final ITable get(IIndexFilter  aSelectedRows, int[]           aSelectedCols) {return get(NewCollections.filterInteger(thisRowNum_(), aSelectedRows), aSelectedCols);}
+    @Override public final ITable get(IIndexFilter  aSelectedRows, List<Integer>   aSelectedCols) {return get(NewCollections.filterInteger(thisRowNum_(), aSelectedRows), aSelectedCols);}
+    @Override public final ITable get(IIndexFilter  aSelectedRows, SliceType       aSelectedCols) {return get(NewCollections.filterInteger(thisRowNum_(), aSelectedRows), aSelectedCols);}
+    @Override public final ITable get(IIndexFilter  aSelectedRows, int             aSelectedCol ) {return get(NewCollections.filterInteger(thisRowNum_(), aSelectedRows), aSelectedCol);}
     @Override public final ITable get(int[]         aSelectedRows, IFilter<String> aSelectedCols) {return get(aSelectedRows, S2L(AbstractCollections.filter(thisHeads_(), aSelectedCols)));}
     @Override public final ITable get(List<Integer> aSelectedRows, IFilter<String> aSelectedCols) {return get(aSelectedRows, S2L(AbstractCollections.filter(thisHeads_(), aSelectedCols)));}
     @Override public final ITable get(SliceType     aSelectedRows, IFilter<String> aSelectedCols) {return get(aSelectedRows, S2L(AbstractCollections.filter(thisHeads_(), aSelectedCols)));}
     @Override public final ITable get(int           aSelectedRow , IFilter<String> aSelectedCols) {return get(aSelectedRow , S2L(AbstractCollections.filter(thisHeads_(), aSelectedCols)));}
-    @Override public final ITable get(IIndexFilter  aSelectedRows, IFilter<String> aSelectedCols) {return get(NewCollections.filterIndex(thisRowNum_(), aSelectedRows), S2L(AbstractCollections.filter(thisHeads_(), aSelectedCols)));}
+    @Override public final ITable get(IIndexFilter  aSelectedRows, IFilter<String> aSelectedCols) {return get(NewCollections.filterInteger(thisRowNum_(), aSelectedRows), S2L(AbstractCollections.filter(thisHeads_(), aSelectedCols)));}
     
     private List<Integer> S2L(String[] aSelectedCols) {return S2L(Arrays.asList(aSelectedCols));}
     private List<Integer> S2L(Iterable<String> aSelectedCols) {

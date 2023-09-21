@@ -121,8 +121,8 @@ public class UT {
         
         /** 保留这些接口方便外部调用使用 */
         @VisibleForTesting public static <T> Iterable<T> filter(Iterable<? extends T> aIterable, IFilter<? super T> aFilter) {return AbstractCollections.filter(aIterable, aFilter);}
-        @VisibleForTesting public static Iterable<Integer> filterIndex(Iterable<Integer> aIndices, IIndexFilter aFilter) {return AbstractCollections.filterIndex(aIndices, aFilter);}
-        @VisibleForTesting public static Iterable<Integer> filterIndex(int aSize, IIndexFilter aFilter) {return AbstractCollections.filterIndex(aSize, aFilter);}
+        @VisibleForTesting public static Iterable<Integer> filterInteger(Iterable<Integer> aIndices, IIndexFilter aFilter) {return AbstractCollections.filterInteger(aIndices, aFilter);}
+        @VisibleForTesting public static Iterable<Integer> filterInteger(int aSize, IIndexFilter aFilter) {return AbstractCollections.filterInteger(aSize, aFilter);}
         @VisibleForTesting public static Iterable<? extends Number> filterDouble(Iterable<? extends Number> aIterable, final IDoubleFilter aFilter) {return AbstractCollections.filterDouble(aIterable, aFilter);}
         @VisibleForTesting public static IHasDoubleIterator filterDouble(final IHasDoubleIterator aIterable, final IDoubleFilter aFilter) {return AbstractCollections.filterDouble(aIterable, aFilter);}
         
@@ -458,17 +458,13 @@ public class UT {
         
         /** {@link IAtomData} 的序列化和反序列化 */
         public static byte[] atomDataXYZ2bytes(IAtomData aAtomData) {
-            byte[] rBytes = new byte[DOUBLE_LEN*3*2 + DOUBLE_LEN*3*aAtomData.atomNum()];
+            byte[] rBytes = new byte[DOUBLE_LEN*3 + DOUBLE_LEN*3*aAtomData.atomNum()];
             int tIdx = 0;
             // 模拟盒数据
-            IXYZ tBoxLo = aAtomData.boxLo();
-            double2bytes(tBoxLo.x(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-            double2bytes(tBoxLo.y(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-            double2bytes(tBoxLo.z(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-            IXYZ tBoxHi = aAtomData.boxHi();
-            double2bytes(tBoxHi.x(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-            double2bytes(tBoxHi.y(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-            double2bytes(tBoxHi.z(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            IXYZ tBox = aAtomData.box();
+            double2bytes(tBox.x(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            double2bytes(tBox.y(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            double2bytes(tBox.z(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
             // 原子数据
             for (IAtom tAtom : aAtomData.atoms()) {
                 double2bytes(tAtom.x(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
@@ -484,11 +480,7 @@ public class UT {
             tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
             tY = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
             tZ = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-            XYZ tBoxLo = new XYZ(tX, tY, tZ);
-            tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-            tY = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-            tZ = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-            XYZ tBoxHi = new XYZ(tX, tY, tZ);
+            XYZ tBox = new XYZ(tX, tY, tZ);
             // 获取原子数据，这里只有 XYZ 数据
             int tAtomNum = aBytes.length/(DOUBLE_LEN*3) - 2;
             List<IAtom> rAtoms = new ArrayList<>(tAtomNum);
@@ -499,7 +491,7 @@ public class UT {
                 rAtoms.add(new Atom(tX, tY, tZ, tID));
             }
             // 返回结果
-            return new AtomData(rAtoms, tBoxLo, tBoxHi);
+            return new AtomData(rAtoms, tBox);
         }
     }
     

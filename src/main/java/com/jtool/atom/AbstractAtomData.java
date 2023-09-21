@@ -19,12 +19,11 @@ import static com.jtool.code.UT.Code.newBox;
 public abstract class AbstractAtomData implements IAtomData {
     /** stuff to override */
     public abstract List<IAtom> atoms();
-    public abstract IXYZ boxLo();
-    public abstract IXYZ boxHi();
+    public abstract IXYZ box();
     public abstract int atomNum();
     public abstract int atomTypeNum();
     
-    @Override public double volume() {return boxHi().minus(boxLo()).prod();}
+    @Override public double volume() {return box().prod();}
     
     @Override public final IAtomDataOperation operation() {return new AbstractAtomDataOperation() {
         @Override protected IAtomData thisAtomData_() {return AbstractAtomData.this;}
@@ -102,6 +101,6 @@ public abstract class AbstractAtomData implements IAtomData {
     @Override public AbstractAtomData copy() {
         List<IAtom> rAtoms = new ArrayList<>(atomNum());
         for (IAtom tAtom : atoms()) rAtoms.add(new Atom(tAtom));
-        return new AtomData(rAtoms, atomTypeNum(), newBox(boxLo()), newBox(boxHi()));
+        return new AtomData(rAtoms, atomTypeNum(), newBox(box()));
     }
 }

@@ -122,6 +122,36 @@ public class NewCollections {
     
     
     /**
+     * 提供通用切片接口
+     * @author liqa
+     */
+    public static <T> List<T> slice(List<? extends T> aList, Iterable<Integer> aIndices) {
+        List<T> rList = new ArrayList<>();
+        for (int tIdx : aIndices) rList.add(aList.get(tIdx));
+        return rList;
+    }
+    public static <T> List<T> slice(List<? extends T> aList, Collection<Integer> aIndices) {
+        List<T> rList = new ArrayList<>(aIndices.size());
+        for (int tIdx : aIndices) rList.add(aList.get(tIdx));
+        return rList;
+    }
+    public static <T> List<T> slice(List<? extends T> aList, int[] aIndices) {
+        List<T> rList = new ArrayList<>(aIndices.length);
+        for (int tIdx : aIndices) rList.add(aList.get(tIdx));
+        return rList;
+    }
+    public static <T> List<T> slice(Iterable<? extends T> aIterable, IIndexFilter aIndices) {
+        List<T> rList = new ArrayList<>();
+        int tIdx = 0;
+        for (T tValue : aIterable) {
+            if (aIndices.accept(tIdx)) rList.add(tValue);
+            ++tIdx;
+        }
+        return rList;
+    }
+    
+    
+    /**
      * 提供通用的执行过滤的接口
      * @author liqa
      */
@@ -130,10 +160,10 @@ public class NewCollections {
         for (T tValue : aIterable) if (aFilter.accept(tValue)) rList.add(tValue);
         return rList;
     }
-    public static List<Integer> filterIndex(Iterable<Integer> aIndices, final IIndexFilter aFilter) {
+    public static List<Integer> filterInteger(Iterable<Integer> aIndices, final IIndexFilter aFilter) {
         return filter(aIndices, aFilter::accept);
     }
-    public static List<Integer> filterIndex(int aSize, IIndexFilter aFilter) {
+    public static List<Integer> filterInteger(int aSize, IIndexFilter aFilter) {
         List<Integer> rIndices = new ArrayList<>();
         for (int i = 0; i < aSize; ++i) if (aFilter.accept(i)) rIndices.add(i);
         return rIndices;
