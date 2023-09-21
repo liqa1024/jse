@@ -1,11 +1,12 @@
 package com.jtool.atom;
 
+import com.jtool.code.collection.AbstractRandomAccessList;
+import com.jtool.code.collection.NewCollections;
 import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.matrix.RowMatrix;
 import com.jtool.math.table.ITable;
 import com.jtool.math.table.Table;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -18,15 +19,25 @@ import static com.jtool.code.UT.Code.newBox;
  */
 public abstract class AbstractAtomData implements IAtomData {
     /** stuff to override */
-    public abstract List<IAtom> atoms();
+    public abstract IAtom pickAtom(int aIdx);
     public abstract IXYZ box();
     public abstract int atomNum();
     public abstract int atomTypeNum();
     
+    
+    @Override public List<? extends IAtom> atoms() {
+        return new AbstractRandomAccessList<IAtom>() {
+            @Override public IAtom get(int index) {return pickAtom(index);}
+            @Override public int size() {return atomNum();}
+        };
+    }
+    
     @Override public double volume() {return box().prod();}
     
-    @Override public final IAtomDataOperation operation() {return new AbstractAtomDataOperation() {
+    @Override public IAtomDataOperation operation() {return new AbstractAtomDataOperation() {
         @Override protected IAtomData thisAtomData_() {return AbstractAtomData.this;}
+        @Override protected ISettableAtomData newSameSettableAtomData_() {return newSame_();}
+        @Override protected ISettableAtomData newSettableAtomData_(int aAtomNum) {return newZeros_(aAtomNum);}
     };}
     
     
@@ -97,10 +108,28 @@ public abstract class AbstractAtomData implements IAtomData {
     /** 默认没有速度信息，这样不会在输出时进行输出 */
     @Override public boolean hasVelocities() {return false;}
     
+    
     /**  默认拷贝会直接使用 {@code List<IAtom>} 来存储，尽管这会占据更多的内存并且会抹除速度信息 */
-    @Override public AbstractAtomData copy() {
-        List<IAtom> rAtoms = new ArrayList<>(atomNum());
-        for (IAtom tAtom : atoms()) rAtoms.add(new Atom(tAtom));
-        return new AtomData(rAtoms, atomTypeNum(), newBox(box()));
+    @Override public ISettableAtomData copy() {
+        final boolean tHasVelocities = hasVelocities();
+        return new SettableAtomData(
+            NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (Atom::new)),
+            atomTypeNum(), newBox(box()), tHasVelocities
+        );
+    }
+    /** 这两个方法返回结果要保证一定可以进行修改 */
+    protected ISettableAtomData newSame_() {
+        final boolean tHasVelocities = hasVelocities();
+        return new SettableAtomData(
+            NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (Atom::new)),
+            atomTypeNum(), newBox(box()), tHasVelocities
+        );
+    }
+    protected ISettableAtomData newZeros_(int aAtomNum) {
+        final boolean tHasVelocities = hasVelocities();
+        return new SettableAtomData(
+            NewCollections.from(aAtomNum, tHasVelocities ? (i -> new AtomFull()) : (i -> new Atom())),
+            atomTypeNum(), newBox(box()), tHasVelocities
+        );
     }
 }

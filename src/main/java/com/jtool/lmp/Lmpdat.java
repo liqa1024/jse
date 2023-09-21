@@ -2,7 +2,6 @@ package com.jtool.lmp;
 
 import com.jtool.atom.*;
 import com.jtool.code.UT;
-import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.math.MathEX;
 import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.matrix.RowMatrix;
@@ -23,7 +22,7 @@ import static com.jtool.code.UT.Code.toXYZ;
  * <p> 暂时不支持键和键角等信息 </p>
  * <p> 直接获取到的所有数据都是引用，因此外部可以直接进行修改 </p>
  */
-public class Lmpdat extends AbstractAtomData {
+public class Lmpdat extends AbstractSettableAtomData {
     public final static int LMPDAT_VELOCITY_LENGTH = 4;
     public final static int LMPDAT_ID_COL = 0, LMPDAT_VX_COL = 1, LMPDAT_VY_COL = 2, LMPDAT_VZ_COL = 3;
     
@@ -59,7 +58,7 @@ public class Lmpdat extends AbstractAtomData {
     public Lmpdat setMasses(double[] aMasses) {return setMasses(Vectors.from(aMasses));}
     public Lmpdat setMasses(Collection<? extends Number> aMasses) {return setMasses(Vectors.from(aMasses));}
     public Lmpdat setMasses(IVector aMasses) {mMasses = aMasses; return this;}
-    public Lmpdat setAtomTypeNum(int aAtomTypeNum) {mAtomTypeNum = aAtomTypeNum; return this;}
+    @Override public Lmpdat setAtomTypeNum(int aAtomTypeNum) {mAtomTypeNum = aAtomTypeNum; return this;}
     
     /**
      * 修改模拟盒类型
@@ -127,24 +126,43 @@ public class Lmpdat extends AbstractAtomData {
     
     /** AbstractAtomData stuffs */
     @Override public boolean hasVelocities() {return mVelocities!=null;}
-    @Override public List<IAtom> atoms() {
+    @Override public ISettableAtom pickAtom(final int aIdx) {
         // 注意如果是斜方的模拟盒则不能获取到正交的原子数据
         if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("atoms is temporarily support NORMAL Box only");
-        return new AbstractRandomAccessList<IAtom>() {
-            @Override public IAtom get(final int index) {
-                return new IAtom() {
-                    @Override public double x() {return mAtomData.get(index, STD_X_COL)-mBox.xlo();}
-                    @Override public double y() {return mAtomData.get(index, STD_Y_COL)-mBox.ylo();}
-                    @Override public double z() {return mAtomData.get(index, STD_Z_COL)-mBox.zlo();}
-                    @Override public int id() {return (int)mAtomData.get(index, STD_ID_COL);}
-                    @Override public int type() {return (int)mAtomData.get(index, STD_TYPE_COL);}
-                    
-                    @Override public double vx() {return mVelocities==null?0.0:mVelocities.get(index, STD_VX_COL);}
-                    @Override public double vy() {return mVelocities==null?0.0:mVelocities.get(index, STD_VY_COL);}
-                    @Override public double vz() {return mVelocities==null?0.0:mVelocities.get(index, STD_VZ_COL);}
-                };
+        return new ISettableAtom() {
+            @Override public double x() {return mAtomData.get(aIdx, STD_X_COL)-mBox.xlo();}
+            @Override public double y() {return mAtomData.get(aIdx, STD_Y_COL)-mBox.ylo();}
+            @Override public double z() {return mAtomData.get(aIdx, STD_Z_COL)-mBox.zlo();}
+            @Override public int id() {return (int)mAtomData.get(aIdx, STD_ID_COL);}
+            @Override public int type() {return (int)mAtomData.get(aIdx, STD_TYPE_COL);}
+            
+            @Override public double vx() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VX_COL);}
+            @Override public double vy() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VY_COL);}
+            @Override public double vz() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VZ_COL);}
+            
+            @Override public ISettableAtom setX(double aX) {mAtomData.set(aIdx, STD_X_COL, aX+mBox.xlo()); return this;}
+            @Override public ISettableAtom setY(double aY) {mAtomData.set(aIdx, STD_Y_COL, aY+mBox.ylo()); return this;}
+            @Override public ISettableAtom setZ(double aZ) {mAtomData.set(aIdx, STD_Z_COL, aZ+mBox.zlo()); return this;}
+            @Override public ISettableAtom setID(int aID) {mAtomData.set(aIdx, STD_ID_COL, aID); return this;}
+            @Override public ISettableAtom setType(int aType) {
+                // 对于设置种类需要特殊处理，设置种类同时需要更新内部的原子种类计数
+                mAtomData.set(aIdx, STD_TYPE_COL, aType);
+                if (aType > atomTypeNum()) setAtomTypeNum(aType);
+                return this;
             }
-            @Override public int size() {return mAtomData.rowNumber();}
+            
+            @Override public ISettableAtom setVx(double aVx) {
+                if (mVelocities == null) throw new UnsupportedOperationException("setVx");
+                mVelocities.set(aIdx, STD_VX_COL, aVx); return this;
+            }
+            @Override public ISettableAtom setVy(double aVy) {
+                if (mVelocities == null) throw new UnsupportedOperationException("setVy");
+                mVelocities.set(aIdx, STD_VY_COL, aVy); return this;
+            }
+            @Override public ISettableAtom setVz(double aVz) {
+                if (mVelocities == null) throw new UnsupportedOperationException("setVz");
+                mVelocities.set(aIdx, STD_VZ_COL, aVz); return this;
+            }
         };
     }
     @Override public IXYZ box() {
@@ -164,6 +182,8 @@ public class Lmpdat extends AbstractAtomData {
     /// 创建 Lmpdat
     /** 拷贝一份 Lmpdat，为了简洁还是只保留 copy 一种方法 */
     @Override public Lmpdat copy() {return new Lmpdat(mAtomTypeNum, mBox.copy(), mMasses==null?null:mMasses.copy(), mAtomData.copy(), mVelocities==null?null:mVelocities.copy());}
+    @Override protected Lmpdat newSame_() {return new Lmpdat(mAtomTypeNum, mBox.copy(), mMasses==null?null:mMasses.copy(), mAtomData.copy(), mVelocities==null?null:mVelocities.copy());}
+    @Override protected Lmpdat newZeros_(int aAtomNum) {return new Lmpdat(mAtomTypeNum, mBox.copy(), mMasses==null?null:mMasses.copy(), mAtomData.newZeros(aAtomNum, mAtomData.columnNumber()), mVelocities==null?null:mVelocities.newZeros(aAtomNum, mVelocities.columnNumber()));}
     
     /** 从 IAtomData 来创建，一般来说 Lmpdat 需要一个额外的质量信息 */
     public static Lmpdat fromAtomData(IAtomData aAtomData) {return fromAtomData_(aAtomData, null);}

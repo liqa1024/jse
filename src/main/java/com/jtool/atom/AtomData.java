@@ -4,8 +4,7 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
 
-import static com.jtool.code.CS.BOX_ONE;
-import static com.jtool.code.CS.BOX_ZERO;
+import static com.jtool.code.CS.*;
 
 
 /**
@@ -15,27 +14,26 @@ import static com.jtool.code.CS.BOX_ZERO;
  * <p> 这里所有的输入会直接作为成员，不进行值拷贝 </p>
  */
 public final class AtomData extends AbstractAtomData {
-    private final @Unmodifiable List<IAtom> mAtoms;
+    private final @Unmodifiable List<? extends IAtom> mAtoms;
     private final IXYZ mBox;
     private final int mAtomTypeNum;
     private final boolean mHasVelocities;
     
-    public AtomData(List<IAtom> aAtoms, int aAtomTypeNum, IXYZ aBox, boolean aHasVelocities) {
+    public AtomData(List<? extends IAtom> aAtoms, int aAtomTypeNum, IXYZ aBox, boolean aHasVelocities) {
         mAtoms = aAtoms;
         mBox = aBox;
         mAtomTypeNum = aAtomTypeNum;
         mHasVelocities = aHasVelocities;
     }
-    public AtomData(List<IAtom> aAtoms, int aAtomTypeNum,            boolean aHasVelocities) {this(aAtoms, aAtomTypeNum, BOX_ONE, aHasVelocities);}
-    public AtomData(List<IAtom> aAtoms,                   IXYZ aBox, boolean aHasVelocities) {this(aAtoms, 1, aBox, aHasVelocities);}
-    public AtomData(List<IAtom> aAtoms,                              boolean aHasVelocities) {this(aAtoms, 1, aHasVelocities);}
-    public AtomData(List<IAtom> aAtoms, int aAtomTypeNum, IXYZ aBox                        ) {this(aAtoms, aAtomTypeNum, aBox, false);}
-    public AtomData(List<IAtom> aAtoms, int aAtomTypeNum                                   ) {this(aAtoms, aAtomTypeNum, false);}
-    public AtomData(List<IAtom> aAtoms,                   IXYZ aBox                        ) {this(aAtoms, aBox, false);}
-    public AtomData(List<IAtom> aAtoms                                                       ) {this(aAtoms, false);}
+    public AtomData(List<? extends IAtom> aAtoms, int aAtomTypeNum,            boolean aHasVelocities) {this(aAtoms, aAtomTypeNum, BOX_ONE, aHasVelocities);}
+    public AtomData(List<? extends IAtom> aAtoms,                   IXYZ aBox, boolean aHasVelocities) {this(aAtoms, 1, aBox, aHasVelocities);}
+    public AtomData(List<? extends IAtom> aAtoms,                              boolean aHasVelocities) {this(aAtoms, 1, aHasVelocities);}
+    public AtomData(List<? extends IAtom> aAtoms, int aAtomTypeNum, IXYZ aBox                        ) {this(aAtoms, aAtomTypeNum, aBox, false);}
+    public AtomData(List<? extends IAtom> aAtoms, int aAtomTypeNum                                   ) {this(aAtoms, aAtomTypeNum, false);}
+    public AtomData(List<? extends IAtom> aAtoms,                   IXYZ aBox                        ) {this(aAtoms, aBox, false);}
+    public AtomData(List<? extends IAtom> aAtoms                                                     ) {this(aAtoms, false);}
     
-    
-    @Override public List<IAtom> atoms() {return mAtoms;}
+    @Override public IAtom pickAtom(int aIdx) {return mAtoms.get(aIdx);}
     @Override public IXYZ box() {return mBox;}
     @Override public int atomNum() {return mAtoms.size();}
     @Override public int atomTypeNum() {return mAtomTypeNum;}

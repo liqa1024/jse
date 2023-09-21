@@ -1,6 +1,10 @@
 package com.jtool.atom;
 
-public class Atom implements IAtom {
+/**
+ * 用于一般使用的原子，不含有速度属性减少一定的内存占用
+ * @author liqa
+ */
+public class Atom implements ISettableAtom {
     public double mX, mY, mZ;
     public int mID, mType;
     
@@ -23,6 +27,7 @@ public class Atom implements IAtom {
     public Atom(double aX, double aY, double aZ, int aID) {this(aX, aY, aZ, aID, 1);}
     public Atom(IXYZ aXYZ, int aID) {this(aXYZ, aID, 1);}
     public Atom(IXYZID aXYZID) {this(aXYZID, 1);}
+    public Atom() {this(0.0, 0.0, 0.0, 1, 1);}
     
     @Override public double x() {return mX;}
     @Override public double y() {return mY;}
@@ -32,10 +37,10 @@ public class Atom implements IAtom {
     @Override public int type() {return mType;}
     
     
-    /** 用于方便链式调用 */
-    public Atom setX(double aX) {mX = aX; return this;}
-    public Atom setY(double aY) {mY = aY; return this;}
-    public Atom setZ(double aZ) {mZ = aZ; return this;}
-    public Atom setID(int aID) {mID = aID; return this;}
-    public Atom setType(int aType) {mType = aType; return this;}
+    /** ISettableAtom stuffs */
+    @Override public Atom setX(double aX) {mX = aX; return this;}
+    @Override public Atom setY(double aY) {mY = aY; return this;}
+    @Override public Atom setZ(double aZ) {mZ = aZ; return this;}
+    @Override public Atom setID(int aID) {mID = aID; return this;}
+    @Override public Atom setType(int aType) {mType = aType; return this;}
 }

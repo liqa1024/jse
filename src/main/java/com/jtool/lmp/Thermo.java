@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static com.jtool.code.CS.ZL_STR;
+
 
 /**
  * @author liqa
@@ -96,7 +98,7 @@ public class Thermo extends AbstractMultiFrameTable<ITable> {
                     rTable.addAll(tTable.rows());
                 } else {
                     // 否则则保存合并的结果，并开始下一步
-                    mTableList.add(Tables.fromRows(AbstractCollections.map(rTable, IVector::asList), rHeads.toArray(new String[0])));
+                    mTableList.add(Tables.fromRows(AbstractCollections.map(rTable, IVector::asList), rHeads.toArray(ZL_STR)));
                     rHeads = tTable.heads();
                     rTable = new ArrayList<>(tTable.rows());
                 }
@@ -104,7 +106,7 @@ public class Thermo extends AbstractMultiFrameTable<ITable> {
         }
         // 最后保存最后一步的结果
         if (rHeads != null) {
-            mTableList.add(Tables.fromRows(AbstractCollections.map(rTable, IVector::asList), rHeads.toArray(new String[0])));
+            mTableList.add(Tables.fromRows(AbstractCollections.map(rTable, IVector::asList), rHeads.toArray(ZL_STR)));
         }
     }
     
@@ -203,7 +205,7 @@ public class Thermo extends AbstractMultiFrameTable<ITable> {
             }
             if (!aNoOutput) System.out.println("Thermos have been saved to the directory: "+aFilePath);
         } else
-        if (mTableList.size() > 0) {
+        if (!mTableList.isEmpty()) {
             UT.IO.table2csv(mTableList.get(0), aFilePath);
         }
     }

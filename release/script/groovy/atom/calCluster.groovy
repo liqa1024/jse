@@ -36,7 +36,7 @@ parfor(dump.size()) {int i ->
     def isSolid = subDump.getMPC().withCloseable {calculator.getIsSolid_(it, subDump)}
     int j = 0;
     // 直接这样修改可以减少内存占用，并且减少重复的类型转换
-    dump[i] = subDump.opt().mapType {def atom -> isSolid[j++] ? atom.type()+2 : atom.type()};
+    subDump.opt().mapType2this {def atom -> isSolid[j++] ? atom.type()+2 : atom.type()};
 }
 UT.Timer.toc();
 

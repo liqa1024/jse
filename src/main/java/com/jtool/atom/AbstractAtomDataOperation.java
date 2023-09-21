@@ -18,94 +18,70 @@ import static com.jtool.code.UT.Code.toXYZ;
  */
 public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     
-    @Override public IAtomData filter(IFilter<IAtom> aFilter) {
+    @Override public ISettableAtomData filter(IFilter<IAtom> aFilter) {
         IAtomData tThis = thisAtomData_();
-        return new AtomData(NewCollections.filter(tThis.atoms(), aFilter), tThis.atomTypeNum(), tThis.box(), tThis.hasVelocities());
+        List<IAtom> tFilterAtoms = NewCollections.filter(tThis.atoms(), aFilter);
+        ISettableAtomData rAtomData = newSettableAtomData_(tFilterAtoms.size());
+        for (int i = 0; i < tFilterAtoms.size(); ++i) rAtomData.setAtom(i, tFilterAtoms.get(i));
+        return rAtomData;
     }
-    @Override public IAtomData filterType(final int aType) {return filter(atom -> atom.type()==aType);}
+    @Override public ISettableAtomData filterType(final int aType) {return filter(atom -> atom.type()==aType);}
     
-    @Override public IAtomData refSlice(final List<Integer> aIndices) {
-        IAtomData tThis = thisAtomData_();
-        return new AtomData(AbstractCollections.slice(tThis.atoms(), aIndices), tThis.atomTypeNum(), tThis.box(), tThis.hasVelocities());
-    }
-    @Override public IAtomData refSlice(int[] aIndices) {
-        IAtomData tThis = thisAtomData_();
-        return new AtomData(AbstractCollections.slice(tThis.atoms(), aIndices), tThis.atomTypeNum(), tThis.box(), tThis.hasVelocities());
-    }
-    @Override public IAtomData refSlice(IIndexFilter aIndices) {
-        IAtomData tThis = thisAtomData_();
-        return new AtomData(AbstractCollections.slice(tThis.atoms(), aIndices), tThis.atomTypeNum(), tThis.box(), tThis.hasVelocities());
-    }
+    @Override public IAtomData refSlice(List<Integer> aIndices) {return refAtomData_(AbstractCollections.slice(thisAtomData_().atoms(), aIndices));}
+    @Override public IAtomData refSlice(int[] aIndices) {return refAtomData_(AbstractCollections.slice(thisAtomData_().atoms(), aIndices));}
+    @Override public IAtomData refSlice(IIndexFilter aIndices) {return refAtomData_(AbstractCollections.slice(thisAtomData_().atoms(), aIndices));}
     
     
-    @Override public IAtomData map(int aMinTypeNum, IOperator1<? extends IAtom, ? super IAtom> aOperator) {
-        IAtomData tThis = thisAtomData_();
-        List<IAtom> rAtoms = new ArrayList<>(tThis.atomNum());
-        int tAtomTypeNum = Math.max(aMinTypeNum, tThis.atomTypeNum());
-        for (IAtom oAtom : tThis.atoms()) {
-            IAtom tAtom = aOperator.cal(oAtom);
-            // 更新种类数
-            int tType = tAtom.type();
-            if (tType > tAtomTypeNum) tAtomTypeNum = tType;
-            // 保存修改后的原子
-            rAtoms.add(tAtom);
+    @Override public ISettableAtomData map(int aMinTypeNum, IOperator1<? extends IAtom, ? super IAtom> aOperator) {
+        final IAtomData tThis = thisAtomData_();
+        final int tAtomNum = tThis.atomNum();
+        ISettableAtomData rAtomData = newSettableAtomData_(tAtomNum);
+        for (int i = 0; i < tAtomNum; ++i) {
+            // 保存修改后的原子，现在内部会自动更新种类计数
+            rAtomData.setAtom(i, aOperator.cal(tThis.pickAtom(i)));
         }
-        return new AtomData(rAtoms, tAtomTypeNum, tThis.box(), tThis.hasVelocities());
+        // 这里不进行 try 包含，因为目前这里的实例都是支持的，并且手动指定了 aMinTypeNum 后才会调用，此时设置失败会希望抛出错误
+        if (rAtomData.atomTypeNum() < aMinTypeNum) rAtomData.setAtomTypeNum(aMinTypeNum);
+        return rAtomData;
     }
     
-    /** 减少重复代码，用于内部修改原子个别属性 */
-    protected static class WrapperAtom implements IAtom {
-        protected final IAtom mAtom;
-        protected WrapperAtom(IAtom aAtom) {mAtom = aAtom;}
-        
-        @Override public double x() {return mAtom.x();}
-        @Override public double y() {return mAtom.y();}
-        @Override public double z() {return mAtom.z();}
-        @Override public int id() {return mAtom.id();}
-        @Override public int type() {return mAtom.type();}
-        
-        @Override public double vx() {return mAtom.vx();}
-        @Override public double vy() {return mAtom.vy();}
-        @Override public double vz() {return mAtom.vz();}
-    }
-    protected final static class TypeWrapperAtom extends WrapperAtom {
-        final int mType;
-        TypeWrapperAtom(IAtom aAtom, int aType) {super(aAtom); mType = aType;}
-        @Override public int type() {return mType;}
-    }
-    protected final static class XYZWrapperAtom extends WrapperAtom {
-        final double mX, mY, mZ;
-        XYZWrapperAtom(IAtom aAtom, double aX, double aY, double aZ) {super(aAtom); mX = aX; mY = aY; mZ = aZ;}
-        @Override public double x() {return mX;}
-        @Override public double y() {return mY;}
-        @Override public double z() {return mZ;}
+    
+    @Override public ISettableAtomData mapType(int aMinTypeNum, IOperator1<Integer, ? super IAtom> aOperator) {
+        final IAtomData tThis = thisAtomData_();
+        final int tAtomNum = tThis.atomNum();
+        ISettableAtomData rAtomData = newSameSettableAtomData_();
+        for (int i = 0; i < tAtomNum; ++i) {
+            // 保存修改后的原子，现在内部会自动更新种类计数
+            rAtomData.pickAtom(i).setType(aOperator.cal(tThis.pickAtom(i)));
+        }
+        // 这里不进行 try 包含，因为目前这里的实例都是支持的，并且手动指定了 aMinTypeNum 后才会调用，此时设置失败会希望抛出错误
+        if (rAtomData.atomTypeNum() < aMinTypeNum) rAtomData.setAtomTypeNum(aMinTypeNum);
+        return rAtomData;
     }
     
-    @Override public IAtomData mapType(int aMinTypeNum, final IOperator1<Integer, ? super IAtom> aOperator) {
-        return map(aMinTypeNum, atom -> new TypeWrapperAtom(atom, aOperator.cal(atom)));
-    }
-    
-    @Override public IAtomData perturbXYZGaussian(final Random aRandom, final double aSigma) {
-        // 先获取 box
-        IAtomData tThis = thisAtomData_();
+    @Override public ISettableAtomData perturbXYZGaussian(Random aRandom, double aSigma) {
+        final IAtomData tThis = thisAtomData_();
         final XYZ tBox = toXYZ(tThis.box());
-        // 使用 collect 获取种类修改后的 AtomData，注意周期边界条件
-        return map(atom -> {
-            double tX = atom.x() + aRandom.nextGaussian()*aSigma;
-            double tY = atom.y() + aRandom.nextGaussian()*aSigma;
-            double tZ = atom.z() + aRandom.nextGaussian()*aSigma;
+        final int tAtomNum = tThis.atomNum();
+        ISettableAtomData rAtomData = newSameSettableAtomData_();
+        for (int i = 0; i < tAtomNum; ++i) {
+            IAtom oAtom = tThis.pickAtom(i);
+            double tX = oAtom.x() + aRandom.nextGaussian()*aSigma;
+            double tY = oAtom.y() + aRandom.nextGaussian()*aSigma;
+            double tZ = oAtom.z() + aRandom.nextGaussian()*aSigma;
+            // 注意周期边界条件的处理
             if      (tX <  0.0    ) {tX += tBox.mX; while (tX <  0.0    ) tX += tBox.mX;}
             else if (tX >= tBox.mX) {tX -= tBox.mX; while (tX >= tBox.mX) tX -= tBox.mX;}
             if      (tY <  0.0    ) {tY += tBox.mY; while (tY <  0.0    ) tY += tBox.mY;}
             else if (tY >= tBox.mY) {tY -= tBox.mY; while (tY >= tBox.mY) tY -= tBox.mY;}
             if      (tZ <  0.0    ) {tZ += tBox.mZ; while (tZ <  0.0    ) tZ += tBox.mZ;}
             else if (tZ >= tBox.mZ) {tZ -= tBox.mZ; while (tZ >= tBox.mZ) tZ -= tBox.mZ;}
-            
-            return new XYZWrapperAtom(atom, tX, tY, tZ);
-        });
+            rAtomData.pickAtom(i).setX(tX).setY(tY).setZ(tZ);
+        }
+        return rAtomData;
     }
     
-    @Override public IAtomData mapTypeRandom(Random aRandom, IVector aTypeWeights) {
+    @Override public ISettableAtomData mapTypeRandom(Random aRandom, IVector aTypeWeights) {
         double tTotWeight = aTypeWeights.sum();
         if (tTotWeight <= 0.0) throw new RuntimeException("TypeWeights Must be Positive");
         
@@ -127,6 +103,15 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
         return mapType(tMaxType, atom -> it.next());
     }
     
+    
+    /** 用于方便内部使用 */
+    private IAtomData refAtomData_(List<? extends IAtom> aAtoms) {
+        IAtomData tThis = thisAtomData_();
+        return new AtomData(aAtoms, tThis.atomTypeNum(), tThis.box(), tThis.hasVelocities());
+    }
+    
     /** stuff to override */
     protected abstract IAtomData thisAtomData_();
+    protected abstract ISettableAtomData newSameSettableAtomData_();
+    protected abstract ISettableAtomData newSettableAtomData_(int aAtomNum);
 }

@@ -483,7 +483,7 @@ public class UT {
             XYZ tBox = new XYZ(tX, tY, tZ);
             // 获取原子数据，这里只有 XYZ 数据
             int tAtomNum = aBytes.length/(DOUBLE_LEN*3) - 2;
-            List<IAtom> rAtoms = new ArrayList<>(tAtomNum);
+            List<Atom> rAtoms = new ArrayList<>(tAtomNum);
             for (int tID = 1; tID <= tAtomNum; ++tID) {
                 tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
                 tY = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;

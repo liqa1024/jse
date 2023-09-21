@@ -21,7 +21,9 @@ public interface IAtomData {
     boolean hasVelocities();
     
     /** 改为直接获取 {@link IAtom} 的容器 */
-    List<IAtom> atoms();
+    List<? extends IAtom> atoms();
+    /** 现在统一提供随机访问获取一个原子的接口 */
+    IAtom pickAtom(int aIdx);
     
     /** 保留获取原子总数的接口，但是特定种类的原子数目现在不能直接获取 */
     int atomNum();
@@ -33,7 +35,7 @@ public interface IAtomData {
     double volume();
     
     /** 统一提供拷贝接口 */
-    IAtomData copy();
+    ISettableAtomData copy();
     
     /** 返回原子数据计算器，现在不再使用专门的 Generator */
     IAtomDataOperation operation();

@@ -1,6 +1,5 @@
 package com.jtool.rareevent.atom;
 
-import com.jtool.atom.IAtom;
 import com.jtool.atom.IAtomData;
 import com.jtool.atom.MonatomicParameterCalculator;
 import com.jtool.code.collection.NewCollections;
@@ -48,13 +47,12 @@ public class MultiTypeClusterSizeCalculator extends AbstractClusterSizeCalculato
         // 常量暂存
         final int tTypeNum = aPoint.atomTypeNum();
         final int tAtomNum = aPoint.atomNum();
-        final List<IAtom> tAtoms = aPoint.atoms();
         // 先判断所有的
         ILogicalVector rIsSolid = mAllSolidChecker.checkSolid(aMPC);
         // 手动遍历过滤
         List<List<Integer>> tTypeIndices = NewCollections.from(tTypeNum, i -> new ArrayList<>());
         for (int idx = 0; idx < tAtomNum; ++idx) {
-            tTypeIndices.get(tAtoms.get(idx).type()-1).add(idx);
+            tTypeIndices.get(aPoint.pickAtom(idx).type()-1).add(idx);
         }
         // 再判断某个种类的
         int tMinCalNum = (int)Math.ceil(tAtomNum * mTypeCalThreshold);
@@ -66,8 +64,8 @@ public class MultiTypeClusterSizeCalculator extends AbstractClusterSizeCalculato
                     // 使用 refSlicer 来合并两者结果
                     rIsSolid.refSlicer().get(tTypeIndices.get(tTypeMM)).or2this(tTypeIsSolid);
                     // 周围中有一半的为 solid 则也要设为 solid
-                    for (int idx = 0; idx < tAtomNum; ++idx) if (!rIsSolid.get(idx) && tAtoms.get(idx).type()!=tTypeMM+1) {
-                        List<Integer> tNL = tMPC.getNeighborList(tAtoms.get(idx));
+                    for (int idx = 0; idx < tAtomNum; ++idx) if (!rIsSolid.get(idx) && aPoint.pickAtom(idx).type()!=tTypeMM+1) {
+                        List<Integer> tNL = tMPC.getNeighborList(aPoint.pickAtom(idx));
                         int rTypeSolidNum = 0;
                         for (int i : tNL) if (tTypeIsSolid.get(i)) ++rTypeSolidNum;
                         if (rTypeSolidNum!=0 && rTypeSolidNum+rTypeSolidNum>=tNL.size()) rIsSolid.set(idx, true);

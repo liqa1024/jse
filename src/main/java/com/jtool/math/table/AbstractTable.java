@@ -3,6 +3,7 @@ package com.jtool.math.table;
 
 import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.vector.IVector;
+import com.jtool.math.vector.IVectorGetter;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -44,15 +45,14 @@ public abstract class AbstractTable implements ITable {
     }
     
     /** ITable stuffs */
-    @Override public boolean noHead() {return mNoHead;}
-    @Override public List<String> heads() {return Arrays.asList(mHeads);}
-    @Override public String getHead(int aCol) {return mHeads[aCol];}
-    @Override public int getColumn(String aHead) {return mHead2Idx.getOrDefault(aHead, -1);}
+    @Override public final boolean noHead() {return mNoHead;}
+    @Override public final List<String> heads() {return Arrays.asList(mHeads);}
+    @Override public final String getHead(int aCol) {return mHeads[aCol];}
+    @Override public final int getColumn(String aHead) {return mHead2Idx.getOrDefault(aHead, -1);}
     
-    @Override public IVector get(String aHead) {return col(aHead);}
-    @Override public double get(int aRow, String aHead) {return matrix().get(aRow, mHead2Idx.get(aHead));}
-    @Override public boolean containsHead(String aHead) {return mHead2Idx.containsKey(aHead);}
-    @Override public boolean setHead(String aOldHead, String aNewHead) {
+    @Override public final IVector get(String aHead) {return col(aHead);}
+    @Override public final boolean containsHead(String aHead) {return mHead2Idx.containsKey(aHead);}
+    @Override public final boolean setHead(String aOldHead, String aNewHead) {
         if (mHead2Idx.containsKey(aOldHead) && !mHead2Idx.containsKey(aNewHead)) {
             int tIdx = mHead2Idx.get(aOldHead);
             mHead2Idx.put(aNewHead, tIdx);
@@ -62,9 +62,17 @@ public abstract class AbstractTable implements ITable {
             return false;
         }
     }
-    @Override public double[][] data() {return matrix().data();}
+    @Override public final double[][] data() {return matrix().data();}
     
     /** Matrix like stuffs */
+    @Override public final double get(int aRow, String aHead) {return matrix().get(aRow, mHead2Idx.get(aHead));}
+    @Override public final void set(int aRow, String aHead, double aValue) {matrix().set(aRow, mHead2Idx.get(aHead), aValue);}
+    @Override public final void fill(String aHead, double aValue) {get(aHead).fill(aValue);}
+    @Override public final void fill(String aHead, IVector aVector) {get(aHead).fill(aVector);}
+    @Override public final void fill(String aHead, IVectorGetter aVectorGetter) {get(aHead).fill(aVectorGetter);}
+    @Override public final void fill(String aHead, double[] aData) {get(aHead).fill(aData);}
+    @Override public final void fill(String aHead, Iterable<? extends Number> aList) {get(aHead).fill(aList);}
+    
     @Override public final List<IVector> rows() {return matrix().rows();}
     @Override public final IVector row(int aRow) {return matrix().row(aRow);}
     @Override public final List<IVector> cols() {return matrix().cols();}

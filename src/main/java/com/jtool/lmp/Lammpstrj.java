@@ -3,7 +3,6 @@ package com.jtool.lmp;
 import com.jtool.atom.*;
 import com.jtool.code.UT;
 import com.jtool.code.collection.AbstractCollections;
-import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.code.collection.NewCollections;
 import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.matrix.RowMatrix;
@@ -17,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.jtool.code.CS.ZL_STR;
+
 /**
  * @author liqa
  * <p> lammps 使用 dump 输出的数据格式 </p>
@@ -25,7 +26,7 @@ import java.util.List;
  * 也可直接获取结果（则会直接获取第一个时间帧的结果） </p>
  * <p> 所有成员都是只读的，即使目前没有硬性限制 </p>
  */
-public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj> {
+public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubLammpstrj> {
     private final static String[] BOX_BOUND = {"pp", "pp", "pp"};
     
     private final List<SubLammpstrj> mData;
@@ -69,12 +70,12 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
     public ITable asTable() {return defaultFrame().asTable();}
     
     /** 每个帧的子 Lammpstrj */
-    public static class SubLammpstrj extends AbstractAtomData {
+    public static class SubLammpstrj extends AbstractSettableAtomData {
         private final long mTimeStep;
         private final String[] mBoxBounds;
         private final Box mBox;
         private final ITable mAtomData;
-        private final int mAtomTypeNum;
+        private int mAtomTypeNum;
         
         String mKeyX = null, mKeyY = null, mKeyZ = null;
         private final boolean mHasVelocities;
@@ -140,8 +141,8 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
         public Box lmpBox() {return mBox;}
         
         /** 内部方法，用于从原始的数据获取合适的 x，y，z 数据 */
-        private double getX_(double aRawX) {
-            double tX = aRawX;
+        private double getX_(int aIdx) {
+            double tX = mAtomData.get(aIdx, mKeyX);
             switch (mXType) {
             case NORMAL: {
                 return tX-mBox.xlo();
@@ -165,8 +166,8 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             default: throw new RuntimeException();
             }
         }
-        private double getY_(double aRawY) {
-            double tY = aRawY;
+        private double getY_(int aIdx) {
+            double tY = mAtomData.get(aIdx, mKeyY);
             switch (mYType) {
             case NORMAL: {
                 return tY-mBox.ylo();
@@ -190,8 +191,8 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             default: throw new RuntimeException();
             }
         }
-        private double getZ_(double aRawZ) {
-            double tZ = aRawZ;
+        private double getZ_(int aIdx) {
+            double tZ = mAtomData.get(aIdx, mKeyZ);
             switch (mZType) {
             case NORMAL: {
                 return tZ-mBox.zlo();
@@ -216,36 +217,97 @@ public class Lammpstrj extends AbstractMultiFrameAtomData<Lammpstrj.SubLammpstrj
             }
         }
         
+        /** 内部方法，用于从原始的数据来设置内部 x，y，z 数据 */
+        private void setX_(int aIdx, double aX) {
+            switch (mXType) {
+            case NORMAL: case UNWRAPPED: {
+                mAtomData.set(aIdx, mKeyX, aX+mBox.xlo()); break;
+            }
+            case SCALED: case SCALED_UNWRAPPED: {
+                mAtomData.set(aIdx, mKeyX, aX/(mBox.xhi()-mBox.xlo())); break;
+            }
+            default: throw new RuntimeException();
+            }
+        }
+        private void setY_(int aIdx, double aY) {
+            switch (mYType) {
+            case NORMAL: case UNWRAPPED: {
+                mAtomData.set(aIdx, mKeyY, aY+mBox.ylo()); break;
+            }
+            case SCALED: case SCALED_UNWRAPPED: {
+                mAtomData.set(aIdx, mKeyY, aY/(mBox.yhi()-mBox.ylo())); break;
+            }
+            default: throw new RuntimeException();
+            }
+        }
+        private void setZ_(int aIdx, double aZ) {
+            switch (mZType) {
+            case NORMAL: case UNWRAPPED: {
+                mAtomData.set(aIdx, mKeyZ, aZ+mBox.zlo()); break;
+            }
+            case SCALED: case SCALED_UNWRAPPED: {
+                mAtomData.set(aIdx, mKeyZ, aZ/(mBox.zhi()-mBox.zlo())); break;
+            }
+            default: throw new RuntimeException();
+            }
+        }
+        
+        
         /** AbstractAtomData stuffs */
         @Override public boolean hasVelocities() {return mHasVelocities;}
-        @Override public List<IAtom> atoms() {
-            return new AbstractRandomAccessList<IAtom>() {
-                @Override public IAtom get(final int index) {
-                    return new IAtom() {
-                        @Override public double x() {if (mKeyX==null) throw new RuntimeException("No X data in this Lammpstrj"); return getX_(mAtomData.get(index, mKeyX));}
-                        @Override public double y() {if (mKeyY==null) throw new RuntimeException("No Y data in this Lammpstrj"); return getY_(mAtomData.get(index, mKeyY));}
-                        @Override public double z() {if (mKeyZ==null) throw new RuntimeException("No Z data in this Lammpstrj"); return getZ_(mAtomData.get(index, mKeyZ));}
-                        
-                        /** 如果没有 id 数据则 id 为顺序位置 +1 */
-                        @Override public int id() {return mAtomData.containsHead("id") ? (int)mAtomData.get(index, "id") : index+1;}
-                        /** 如果没有 type 数据则 type 都为 1 */
-                        @Override public int type() {return mAtomData.containsHead("type") ? (int)mAtomData.get(index, "type") : 1;}
-                        
-                        @Override public double vx() {return mAtomData.containsHead("vx") ? mAtomData.get(index, "vx") : 0.0;}
-                        @Override public double vy() {return mAtomData.containsHead("vy") ? mAtomData.get(index, "vy") : 0.0;}
-                        @Override public double vz() {return mAtomData.containsHead("vz") ? mAtomData.get(index, "vz") : 0.0;}
-                    };
+        @Override public ISettableAtom pickAtom(final int aIdx) {
+            return new ISettableAtom() {
+                @Override public double x() {if (mKeyX==null) throw new RuntimeException("No X data in this Lammpstrj"); return getX_(aIdx);}
+                @Override public double y() {if (mKeyY==null) throw new RuntimeException("No Y data in this Lammpstrj"); return getY_(aIdx);}
+                @Override public double z() {if (mKeyZ==null) throw new RuntimeException("No Z data in this Lammpstrj"); return getZ_(aIdx);}
+                
+                /** 如果没有 id 数据则 id 为顺序位置 +1 */
+                @Override public int id() {return mAtomData.containsHead("id") ? (int)mAtomData.get(aIdx, "id") : aIdx+1;}
+                /** 如果没有 type 数据则 type 都为 1 */
+                @Override public int type() {return mAtomData.containsHead("type") ? (int)mAtomData.get(aIdx, "type") : 1;}
+                
+                @Override public double vx() {return mAtomData.containsHead("vx") ? mAtomData.get(aIdx, "vx") : 0.0;}
+                @Override public double vy() {return mAtomData.containsHead("vy") ? mAtomData.get(aIdx, "vy") : 0.0;}
+                @Override public double vz() {return mAtomData.containsHead("vz") ? mAtomData.get(aIdx, "vz") : 0.0;}
+                
+                @Override public ISettableAtom setX(double aX) {if (mKeyX==null) throw new RuntimeException("No X data in this Lammpstrj"); setX_(aIdx, aX); return this;}
+                @Override public ISettableAtom setY(double aY) {if (mKeyY==null) throw new RuntimeException("No Y data in this Lammpstrj"); setY_(aIdx, aY); return this;}
+                @Override public ISettableAtom setZ(double aZ) {if (mKeyZ==null) throw new RuntimeException("No Z data in this Lammpstrj"); setZ_(aIdx, aZ); return this;}
+                @Override public ISettableAtom setID(int aID) {
+                    if (!mAtomData.containsHead("id")) throw new UnsupportedOperationException("setID");
+                    mAtomData.set(aIdx, "id", aID); return this;
                 }
-                @Override public int size() {return mAtomData.rowNumber();}
+                @Override public ISettableAtom setType(int aType) {
+                    if (!mAtomData.containsHead("type")) throw new UnsupportedOperationException("setType");
+                    // 对于设置种类需要特殊处理，设置种类同时需要更新内部的原子种类计数
+                    mAtomData.set(aIdx, "type", aType);
+                    if (aType > atomTypeNum()) setAtomTypeNum(aType);
+                    return this;
+                }
+                
+                @Override public ISettableAtom setVx(double aVx) {
+                    if (!mAtomData.containsHead("vx")) throw new UnsupportedOperationException("setVx");
+                    mAtomData.set(aIdx, "vx", aVx); return this;
+                }
+                @Override public ISettableAtom setVy(double aVy) {
+                    if (!mAtomData.containsHead("vy")) throw new UnsupportedOperationException("setVy");
+                    mAtomData.set(aIdx, "vy", aVy); return this;
+                }
+                @Override public ISettableAtom setVz(double aVz) {
+                    if (!mAtomData.containsHead("vz")) throw new UnsupportedOperationException("setVz");
+                    mAtomData.set(aIdx, "vz", aVz); return this;
+                }
             };
         }
         @Override public IXYZ box() {return mBox.shiftedBox();}
         @Override public int atomNum() {return mAtomData.rowNumber();}
         @Override public int atomTypeNum() {return mAtomTypeNum;}
+        @Override public SubLammpstrj setAtomTypeNum(int aAtomTypeNum) {mAtomTypeNum = aAtomTypeNum; return this;}
         
         @Override public double volume() {return mBox.shiftedBox().prod();}
         
         @Override public SubLammpstrj copy() {return new SubLammpstrj(mTimeStep, Arrays.copyOf(mBoxBounds, mBoxBounds.length), mBox.copy(), mAtomData.copy());}
+        // 由于 SubLammpstrj 不一定全都可以修改，因此不重写另外两个
     }
     
     

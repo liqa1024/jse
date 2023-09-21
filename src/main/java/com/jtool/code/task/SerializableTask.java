@@ -1,10 +1,13 @@
 package com.jtool.code.task;
 
+import com.google.common.collect.ImmutableList;
 import com.jtool.code.collection.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+
+import static com.jtool.code.CS.ZL_STR;
 
 /**
  * @author liqa
@@ -55,7 +58,7 @@ public class SerializableTask extends Task {
     public static Task fromString(final Object aTaskCreator, String aStr) {
         Pair<String, List<String>> tPair = getKeyValue_(aStr);
         Type tKey = Type.valueOf(tPair.mFirst);
-        String[] tValue = tPair.mSecond.toArray(new String[0]);
+        String[] tValue = tPair.mSecond.toArray(ZL_STR);
         switch (tKey) {
         case MERGE:
             return mergeTask(fromString(aTaskCreator, tValue[0]), fromString(aTaskCreator, tValue[1]));
@@ -116,11 +119,10 @@ public class SerializableTask extends Task {
         }
     }
     
-    static final List<String> ZL_STR = new ArrayList<>();
     // deserialize the String in formation "Key{value1:value2:...}"
     static Pair<String, List<String>> getKeyValue_(String aStr) {
         int tValueIdx = aStr.indexOf("{");
-        if (tValueIdx < 0) return new Pair<>(aStr, ZL_STR);
+        if (tValueIdx < 0) return new Pair<>(aStr, ImmutableList.of());
         String tKey = aStr.substring(0, tValueIdx);
         List<String> tValues = new ArrayList<>();
         // 直接遍历查找，注意在括号内部时不需要分割 :

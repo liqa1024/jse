@@ -4,7 +4,6 @@ package com.jtool.vasp;
 import com.jtool.atom.*;
 import com.jtool.code.UT;
 import com.jtool.code.collection.AbstractCollections;
-import com.jtool.code.collection.AbstractRandomAccessList;
 import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.matrix.Matrices;
 import com.jtool.math.matrix.RowMatrix;
@@ -15,7 +14,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.*;
 
-import static com.jtool.code.CS.BOX_ZERO;
 import static com.jtool.code.CS.ZL_STR;
 import static com.jtool.code.UT.Code.toXYZ;
 
@@ -25,7 +23,7 @@ import static com.jtool.code.UT.Code.toXYZ;
  * <p> 包含读取写出的文本文件的格式 </p>
  * <p> 暂时不支持边界条件设置 </p>
  */
-public class POSCAR extends AbstractAtomData {
+public class POSCAR extends AbstractSettableAtomData {
     public final static String DEFAULT_DATA_NAME = "VASP_POSCAR_FROM_JTOOL";
     
     /** POSCAR 只存储每个原子的 xyz 缩放后的矢量 */
@@ -80,24 +78,26 @@ public class POSCAR extends AbstractAtomData {
     public int atomNum(int aType) {return (int)mAtomNumbers.get(aType-1);}
     
     /** AbstractAtomData stuffs */
-    @Override public List<IAtom> atoms() {
+    @Override public ISettableAtom pickAtom(final int aIdx) {
         // 暂时没功夫研究矩阵表示的晶格在斜方情况下原子坐标是怎么样的
         // 并且这里还需要将其转换成正交的情况，因为参数计算相关优化都需要在正交情况下实现
         if (!mIsDiagBox) throw new RuntimeException("atoms is temporarily support Diagonal Box only");
-        return new AbstractRandomAccessList<IAtom>() {
-            @Override public IAtom get(final int index) {
-                return new IAtom() {
-                    @Override public double x() {return mDirect.get(index, 0)*mBox.get(0, 0)*mBoxScale;}
-                    @Override public double y() {return mDirect.get(index, 1)*mBox.get(1, 1)*mBoxScale;}
-                    @Override public double z() {return mDirect.get(index, 2)*mBox.get(2, 2)*mBoxScale;}
-                    
-                    /** 没有 id 数据，id 为顺序位置 +1 */
-                    @Override public int id() {return index+1;}
-                    /** type 需要根据 mIdx2Type 来获取，根据名称顺序给 type 的数字 */
-                    @Override public int type() {return mIdx2Type.higherEntry(index).getValue();}
-                };
-            }
-            @Override public int size() {return mDirect.rowNumber();}
+        return new ISettableAtom() {
+            @Override public double x() {return mDirect.get(aIdx, 0)*mBox.get(0, 0)*mBoxScale;}
+            @Override public double y() {return mDirect.get(aIdx, 1)*mBox.get(1, 1)*mBoxScale;}
+            @Override public double z() {return mDirect.get(aIdx, 2)*mBox.get(2, 2)*mBoxScale;}
+            
+            /** 没有 id 数据，id 为顺序位置 +1 */
+            @Override public int id() {return aIdx+1;}
+            /** type 需要根据 mIdx2Type 来获取，根据名称顺序给 type 的数字 */
+            @Override public int type() {return mIdx2Type.higherEntry(aIdx).getValue();}
+            
+            @Override public ISettableAtom setX(double aX) {mDirect.set(aIdx, 0, aX/(mBox.get(0, 0)*mBoxScale)); return this;}
+            @Override public ISettableAtom setY(double aY) {mDirect.set(aIdx, 1, aY/(mBox.get(1, 1)*mBoxScale)); return this;}
+            @Override public ISettableAtom setZ(double aZ) {mDirect.set(aIdx, 2, aZ/(mBox.get(2, 2)*mBoxScale)); return this;}
+            /** POSCAR 直接不支持设置这两者 */
+            @Override public ISettableAtom setID(int aID) {throw new UnsupportedOperationException("setID");}
+            @Override public ISettableAtom setType(int aType) {throw new UnsupportedOperationException("setType");}
         };
     }
     @Override public IXYZ box() {
@@ -108,6 +108,7 @@ public class POSCAR extends AbstractAtomData {
     }
     @Override public int atomNum() {return mDirect.rowNumber();}
     @Override public int atomTypeNum() {return mAtomTypes.length;}
+    @Override public POSCAR setAtomTypeNum(int aAtomTypeNum) {throw new UnsupportedOperationException("setAtomTypeNum");}
     @Override public double volume() {
         // 注意如果是斜方的模拟盒则不能获取到模拟盒体积
         if (!mIsDiagBox) throw new RuntimeException("volume is temporarily support Diagonal Box only");
@@ -117,7 +118,7 @@ public class POSCAR extends AbstractAtomData {
     
     /** 拷贝一份 POSCAR */
     @Override public POSCAR copy() {return new POSCAR(mDataName, mBox.copy(), mBoxScale, Arrays.copyOf(mAtomTypes, mAtomTypes.length), mAtomNumbers, mSelectiveDynamics, mDirect.copy());}
-    
+    // 由于 POSCAR 不是全都可以修改，因此不重写另外两个
     
     /** 从 IAtomData 来创建，POSCAR 需要额外的原子种类字符串以及额外的是否开启 SelectiveDynamics */
     public static POSCAR fromAtomData(IAtomData aAtomData) {return fromAtomData(aAtomData, ZL_STR);}
