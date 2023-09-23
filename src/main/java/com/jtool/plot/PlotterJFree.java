@@ -5,14 +5,15 @@ import com.jtool.code.collection.AbstractCollections;
 import com.jtool.math.MathEX;
 import org.jetbrains.annotations.Nullable;
 import org.jfree.chart.*;
-import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.axis.NumberTickUnit;
-import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.axis.*;
 import org.jfree.chart.event.RendererChangeEvent;
+import org.jfree.chart.labels.StandardXYToolTipGenerator;
+import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleEdge;
 import org.jfree.chart.ui.RectangleInsets;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -20,6 +21,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Line2D;
+import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -83,6 +85,66 @@ public class PlotterJFree implements IPlotter {
         }
     }
     
+    /** 重写 NumberAxis 的方式修改默认的 tick 间距 */
+    private final static class LargerTickUnitNumberAxis extends NumberAxis {
+        public LargerTickUnitNumberAxis(String label) {super(label);}
+        
+        @Override protected void selectHorizontalAutoTickUnit(Graphics2D g2, Rectangle2D dataArea, RectangleEdge edge) {
+            TickUnit unit = getTickUnit();
+            TickUnitSource tickUnitSource = getStandardTickUnits();
+            
+            double length = getRange().getLength();
+            int count = (int) (length / unit.getSize());
+            if (count < 3 || count > 40) {
+                unit = tickUnitSource.getCeilingTickUnit(length / 10);
+            }
+            
+            TickUnit unit1 = tickUnitSource.getCeilingTickUnit(unit);
+            double tickLabelWidth = estimateMaximumTickLabelWidth(g2, unit1);
+            double unit1Width = lengthToJava2D(unit1.getSize(), dataArea, edge);
+            NumberTickUnit unit2 = (NumberTickUnit) unit1;
+            double guess = ((tickLabelWidth+10.0) / unit1Width) * unit1.getSize(); // 修改这个来增大间距
+            
+            // 直接在这里限制 tick 的数目
+            if (getRange().getLength() > 15.0*guess) guess = getRange().getLength()/15.0;
+            
+            if (Double.isFinite(guess)) {
+                unit2 = (NumberTickUnit) tickUnitSource.getCeilingTickUnit(guess);
+                double unit2Width = lengthToJava2D(unit2.getSize(), dataArea, edge);
+                tickLabelWidth = estimateMaximumTickLabelWidth(g2, unit2);
+                if (tickLabelWidth > unit2Width) {
+                    unit2 = (NumberTickUnit) tickUnitSource.getLargerTickUnit(unit2);
+                }
+            }
+            setTickUnit(unit2, false, false);
+        }
+        
+        @Override protected void selectVerticalAutoTickUnit(Graphics2D g2, Rectangle2D dataArea, RectangleEdge edge) {
+            double tickLabelHeight = estimateMaximumTickLabelHeight(g2);
+            
+            TickUnitSource tickUnits = getStandardTickUnits();
+            TickUnit unit1 = tickUnits.getCeilingTickUnit(getTickUnit());
+            double unitHeight = lengthToJava2D(unit1.getSize(), dataArea, edge);
+            double guess;
+            if (unitHeight > 0) {
+                guess = ((tickLabelHeight+20.0) / unitHeight) * unit1.getSize(); // 修改这个来增大间距
+            } else {
+                guess = getRange().getLength() / 20.0;
+            }
+            // 直接在这里限制 tick 的数目
+            if (getRange().getLength() > 15.0*guess) guess = getRange().getLength()/15.0;
+            
+            NumberTickUnit unit2 = (NumberTickUnit) tickUnits.getCeilingTickUnit(guess);
+            double unit2Height = lengthToJava2D(unit2.getSize(), dataArea, edge);
+            
+            tickLabelHeight = estimateMaximumTickLabelHeight(g2);
+            if (tickLabelHeight > unit2Height) {
+                unit2 = (NumberTickUnit) tickUnits.getLargerTickUnit(unit2);
+            }
+            setTickUnit(unit2, false, false);
+        }
+    }
+    
     
     /** 全局常量记录默认值 */
     public final static String TITLE = null, X_LABEL = null, Y_LABEL = null;
@@ -98,7 +160,7 @@ public class PlotterJFree implements IPlotter {
     final XYSeriesCollection mLinesData;
     final JFreeChart mChart;
     final XYPlot mPlot;
-    final ValueAxis mXAxis, mYAxis;
+    final NumberAxis mXAxis, mYAxis;
     final XYLineAndShapeRenderer mLineRender;
     final List<LineJFree> mLines;
     
@@ -109,11 +171,15 @@ public class PlotterJFree implements IPlotter {
         mLines = new ArrayList<>();
         // 内部使用的成员
         mLinesData = new XYSeriesCollection();
-        mChart = ChartFactory.createXYLineChart(TITLE, X_LABEL, Y_LABEL, mLinesData);
-        mChart.setBackgroundPaint(WHITE); // 调整背景颜色
-        mPlot = mChart.getXYPlot(); // 认定内部的 Plot 是 final 的
-        // 默认线型
-        mLineRender = new XYLineAndShapeRenderer() {
+        
+        // x，y 轴
+        mXAxis = new LargerTickUnitNumberAxis(X_LABEL);
+        mYAxis = new LargerTickUnitNumberAxis(Y_LABEL);
+        // 关闭 autoRange 包含零
+        mXAxis.setAutoRangeIncludesZero(false);
+        mYAxis.setAutoRangeIncludesZero(false);
+        // 线渲染器，默认线型
+        mLineRender = new XYLineAndShapeRenderer(true, true) {
             @Override protected void drawFirstPassShape(Graphics2D g2, int pass, int series, int item, Shape shape) {
                 g2.setStroke(getItemStroke(series, item));
                 g2.setPaint(mLines.get(series).mPaint); // 重写绘制曲线获取颜色的部分
@@ -128,16 +194,22 @@ public class PlotterJFree implements IPlotter {
             }
         };
         mLineRender.setDrawSeriesLineAsPath(true); // 指定按照路径的方式绘制
-        mPlot.setRenderer(mLineRender); // 指定修改后的 renderer
+        // 绘制器
+        mPlot = new XYPlot(mLinesData, mXAxis, mYAxis, mLineRender);
+        mPlot.setOrientation(PlotOrientation.VERTICAL);
         mPlot.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD); // 修改绘制顺序为常见的顺序
+        // 默认开启 tooltips
+        mLineRender.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
+        // 整个图表
+        mChart = new JFreeChart(TITLE, TITLE_FONT, mPlot, true);
+        
+        // 目前是在默认的主题上直接修改
+        ChartFactory.getChartTheme().apply(mChart);
+        mChart.setBackgroundPaint(WHITE); // 调整背景颜色
         mPlot.setBackgroundPaint(WHITE); // 调整背景颜色
         mPlot.setDomainGridlinePaint(GRAY); // 调整刻度线颜色
         mPlot.setRangeGridlinePaint(GRAY); // 调整刻度线颜色
         mPlot.setInsets(new RectangleInsets(10.0, 20.0, 10.0, 40.0)); // 增大默认边框
-        // x，y 轴
-        mXAxis = mPlot.getDomainAxis();
-        mYAxis = mPlot.getRangeAxis();
-        
         // 设置标题字体
         fontTitle(TITLE_FONT);
         // 设置轴标签字体

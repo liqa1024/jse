@@ -119,7 +119,7 @@ public class Shapes {
     }
     
     /** Marker stuffs */
-    enum MarkerType {
+    public enum MarkerType {
           NULL
         , CIRCLE
         , PLUS

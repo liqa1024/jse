@@ -34,8 +34,9 @@ line4.lineType('-' ).markerType('d').markerColor('m');
 // 设置绘制范围，标题
 plt.xLabel('x');
 plt.yLabel('y');
-plt.tick(0.2);
-plt.axis(-1.1, 1.1);
+// 现在自动设置 tick 和 axis 也可以
+//plt.tick(0.2);
+//plt.axis(-1.1, 1.1);
 
 // 显示结果
 fig = plt.show();

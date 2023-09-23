@@ -25,41 +25,41 @@ public class Strokes {
         public Dashed(double aSize) {super(aSize);}
         @Override protected Stroke getStroke(double aSize) {
             float tWidth = (float)aSize;
-            return new BasicStroke(tWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 2.0f, new float[] {tWidth*5.0f, tWidth*2.0f}, 0.0f);
+            return new BasicStroke(tWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 2.0f, new float[] {tWidth*5.0f, tWidth*3.0f}, 0.0f);
         }
     }
     public static class Dotted extends AbstractResizableStroke {
         public Dotted(double aSize) {super(aSize);}
         @Override protected Stroke getStroke(double aSize) {
             float tWidth = (float)aSize;
-            return new BasicStroke(tWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 2.0f, new float[] {tWidth, tWidth*2.0f}, 0.0f);
+            return new BasicStroke(tWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 2.0f, new float[] {tWidth, tWidth*3.0f}, 0.0f);
         }
     }
     public static class DashDotted extends AbstractResizableStroke {
         public DashDotted(double aSize) {super(aSize);}
         @Override protected Stroke getStroke(double aSize) {
             float tWidth = (float)aSize;
-            return new BasicStroke(tWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 2.0f, new float[] {tWidth*5.0f, tWidth*2.0f, tWidth, tWidth*2.0f}, 0.0f);
+            return new BasicStroke(tWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 2.0f, new float[] {tWidth*5.0f, tWidth*3.0f, tWidth, tWidth*3.0f}, 0.0f);
         }
     }
     public static class DashDotDotted extends AbstractResizableStroke {
         public DashDotDotted(double aSize) {super(aSize);}
         @Override protected Stroke getStroke(double aSize) {
             float tWidth = (float)aSize;
-            return new BasicStroke(tWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 2.0f, new float[] {tWidth*4.5f, tWidth*1.5f, tWidth, tWidth*1.5f, tWidth, tWidth*1.5f}, 0.0f);
+            return new BasicStroke(tWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 2.0f, new float[] {tWidth*4.5f, tWidth*2.3f, tWidth, tWidth*2.3f, tWidth, tWidth*2.3f}, 0.0f);
         }
     }
     public static class DashDashDotted extends AbstractResizableStroke {
         public DashDashDotted(double aSize) {super(aSize);}
         @Override protected Stroke getStroke(double aSize) {
             float tWidth = (float)aSize;
-            return new BasicStroke(tWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 2.0f, new float[] {tWidth*3.75f, tWidth*1.5f, tWidth*3.75f, tWidth*1.5f, tWidth, tWidth*1.5f}, 0.0f);
+            return new BasicStroke(tWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 2.0f, new float[] {tWidth*3.75f, tWidth*2.3f, tWidth*3.75f, tWidth*2.3f, tWidth, tWidth*2.3f}, 0.0f);
         }
     }
     
     
     /** Line stuffs */
-    enum LineType {
+    public enum LineType {
           NULL
         , SOLID
         , DASHED
