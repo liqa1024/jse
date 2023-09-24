@@ -17,7 +17,7 @@ import static com.jtool.code.CS.ZL_MAT;
 /**
  * @author liqa
  * <p> Extended mathematical methods </p>
- * <p> The method of using internal Thread Pool is not thread safe when nThreads > 1 </p>
+ * <p> The method of using internal Thread Pool is not thread safe when {@code nThreads > 1} </p>
  */
 @SuppressWarnings("DuplicatedCode")
 public class MathEX {
@@ -732,7 +732,7 @@ public class MathEX {
          * 输出连带 Legendre 多项式函数，定义同 matlab 的 legendre
          * @author liqa
          * @param aL 连带 Legendre 多项式参数 l，非负整数
-         * @param aM 连带 Legendre 多项式参数 m，非负整数，m <= l
+         * @param aM 连带 Legendre 多项式参数 m，非负整数，{@code m <= l}
          * @return 计算结果，实数
          */
         public static double legendre(int aL, int aM, double aX) {

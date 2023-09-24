@@ -531,7 +531,7 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
     protected abstract @Nullable String getSubmitCommand(String aCommand, @NotNull String aOutFilePath);
     protected abstract @Nullable String getBatchSubmitCommand(List<String> aCommands, IIOFiles rIOFiles);
     
-    /** 使用 submit 指令后系统会给出输出，需要使用这个输出来获取对应任务的 ID 用于监控任务是否完成，返回 <= 0 的值代表提交任务失败 */
+    /** 使用 submit 指令后系统会给出输出，需要使用这个输出来获取对应任务的 ID 用于监控任务是否完成，返回小于 0 的值代表提交任务失败 */
     protected abstract int getJobIDFromSystem(List<String> aOutList);
     /** 获取这个对象提交的任务中，正在执行的任务 id 列表，用来监控任务是否完成 */
     protected abstract @Nullable Set<Integer> getRunningJobIDsFromSystem();

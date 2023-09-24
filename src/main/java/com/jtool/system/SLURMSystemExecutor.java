@@ -141,25 +141,25 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
      * </code></pre>
      * 其中名称大小写敏感（因为实现起来比较麻烦），但是存在简写，简写优先级为：
      * <pre>
-     * "ParallelNumber" > "parallelnumber" > "ParallelNum" > "parallelnum" > "pn"
-     * "IOThreadNumber" > "iothreadnumber" > "IOThreadNum" > "iothreadnum" > "ion"
-     * "SleepTime" > "sleeptime" > "stime" > "st"
+     * "ParallelNumber" {@code >} "parallelnumber" {@code >} "ParallelNum" {@code >} "parallelnum" {@code >} "pn"
+     * "IOThreadNumber" {@code >} "iothreadnumber" {@code >} "IOThreadNum" {@code >} "iothreadnum" {@code >} "ion"
+     * "SleepTime" {@code >} "sleeptime" {@code >} "stime" {@code >} "st"
      *
-     * "JobName" > "jobname" > "job-name" > "J"
-     * "Partition" > "partition" > "p"
-     * "TaskNumber" > "tasknumber" > "TaskNum" > "tasknum" > "nTasks" > "ntasks" > "n"
-     * "MaxTaskNumberPerNode" > "maxtasknumberpernode" > "MaxTaskNumPerNode" > "maxtasknumpernode" > "CoresPerNode" > "corespernode" > "ntaskspernode" > "ntasks-per-node"
-     * "MaxNodeNumber" > "maxnodenumber" > "MaxNodeNum" > "maxnodenum" > "nodes" > "N"
+     * "JobName" {@code >} "jobname" {@code >} "job-name" {@code >} "J"
+     * "Partition" {@code >} "partition" {@code >} "p"
+     * "TaskNumber" {@code >} "tasknumber" {@code >} "TaskNum" {@code >} "tasknum" {@code >} "nTasks" {@code >} "ntasks" {@code >} "n"
+     * "MaxTaskNumberPerNode" {@code >} "maxtasknumberpernode" {@code >} "MaxTaskNumPerNode" {@code >} "maxtasknumpernode" {@code >} "CoresPerNode" {@code >} "corespernode" {@code >} "ntaskspernode" {@code >} "ntasks-per-node"
+     * "MaxNodeNumber" {@code >} "maxnodenumber" {@code >} "MaxNodeNum" {@code >} "maxnodenum" {@code >} "nodes" {@code >} "N"
      *
-     * "Username" > "username" > "user" > "u"
-     * "Hostname" > "hostname" > "host" > "h"
-     * "Port" > "port" > "p"
-     * "Password" > "password" > "pw"
-     * "KeyPath" > "keypath" > "key" > "k"
-     * "CompressLevel" > "compresslevel" > "cl"
-     * "LocalWorkingDir" > "localworkingdir" > "lwd"
-     * "RemoteWorkingDir" > "remoteworkingdir" > "rwd" > "wd"
-     * "BeforeCommand" > "beforecommand" > "bcommand" > "bc"
+     * "Username" {@code >} "username" {@code >} "user" {@code >} "u"
+     * "Hostname" {@code >} "hostname" {@code >} "host" {@code >} "h"
+     * "Port" {@code >} "port" {@code >} "p"
+     * "Password" {@code >} "password" {@code >} "pw"
+     * "KeyPath" {@code >} "keypath" {@code >} "key" {@code >} "k"
+     * "CompressLevel" {@code >} "compresslevel" {@code >} "cl"
+     * "LocalWorkingDir" {@code >} "localworkingdir" {@code >} "lwd"
+     * "RemoteWorkingDir" {@code >} "remoteworkingdir" {@code >} "rwd" {@code >} "wd"
+     * "BeforeCommand" {@code >} "beforecommand" {@code >} "bcommand" {@code >} "bc"
      * </pre>
      * 参数 "ParallelNumber" 未选定时默认为 1，参数 "IOThreadNumber" 未选定时不开启并行传输，
      * "SleepTime" 未选定时默认为 500（ms），"NoConsoleOutput" 未选定时默认为 false（即开启输出信息到控制台）
@@ -402,7 +402,7 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
         return String.join(" ", rSubmitCommand);
     }
     
-    /** 使用 submit 指令后系统会给出输出，需要使用这个输出来获取对应任务的 ID 用于监控任务是否完成，返回 <= 0 的值代表提交任务失败 */
+    /** 使用 submit 指令后系统会给出输出，需要使用这个输出来获取对应任务的 ID 用于监控任务是否完成，返回小于 0 的值代表提交任务失败 */
     @Override protected int getJobIDFromSystem(List<String> aOutList) {
         if (aOutList.isEmpty()) return -2;
         String tLine = aOutList.get(0); // 只需要读取一行

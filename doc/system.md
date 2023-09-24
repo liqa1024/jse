@@ -117,7 +117,7 @@ EXE.system('echoecho 555555');
 EXE.setNoSTDOutput(false).setNoERROutput(false);
 ```
 
-> 输出为（注意 Windows 下错误报告会有所不同）：
+> 输出为（注意 Windows 下报错结果会有所不同）：
 > ```
 > 111111
 > /bin/bash: echoecho: command not found
@@ -272,7 +272,7 @@ def exitValue = new PS().withCloseable {def exe -> exe.system('echo 123456')}
 println("exitValue: $exitValue");
 ```
 
-以及可以省略掉变量 `exe` 的创建：
+甚至可以省略掉变量 `exe` 的创建：
 ```groovy
 import com.jtool.system.PS;
 

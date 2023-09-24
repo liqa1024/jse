@@ -99,7 +99,7 @@ public class AbstractCollections {
     
     /**
      * the range function similar to python
-     * <p> only support in aStep > 0 for now </p>
+     * <p> only support in {@code aStep > 0} for now </p>
      * @author liqa
      * @param aStart the start value, include
      * @param aStop the stop position, exclude

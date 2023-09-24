@@ -49,8 +49,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
      * @param aPathGenerator 任意的路径生成器
      * @param aParameterCalculator 对于路径上一个点的 λ 的计算器
      * @param aThreadNum FFS 的并行数，默认为 1，不开启并行
-     * @param aSurfaceA 对于 A 有一个专门的分界面，因为需要频繁使用因此专门拿出来，要求 A <= λ0
-     * @param aSurfaces 分割相空间的分界面，有 λ0 < λ1 < λ2 < ... < λn == B
+     * @param aSurfaceA 对于 A 有一个专门的分界面，因为需要频繁使用因此专门拿出来，要求 {@code A <= λ0}
+     * @param aSurfaces 分割相空间的分界面，有 {@code λ0 < λ1 < λ2 < ... < λn == B}
      * @param aN0 每个界面的统计数目
      */
     public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, int aThreadNum, double aSurfaceA,                      IVector aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), aThreadNum, aSurfaceA, Vectors.from(aSurfaces), aN0);}

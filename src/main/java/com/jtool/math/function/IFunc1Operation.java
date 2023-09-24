@@ -68,9 +68,9 @@ public interface IFunc1Operation {
     /**
      * 卷积运算，通过输入的卷积核来对自身函数进行卷积运算，输出得到的结果
      * <p>
-     * 注意这里卷积核输入格式为 (x, k) -> out，自身函数为 f(x)，经过卷积后得到函数 g(k)
+     * 注意这里卷积核输入格式为 {@code (x, k) -> out}，自身函数为 f(x)，经过卷积后得到函数 g(k)
      * <p>
-     * 执行的卷积运算为：g(k) = int(conv(x, k) * f(x), x);
+     * 执行的卷积运算为：{@code g(k) = int(conv(x, k) * f(x), x)};
      */
     IFunc1 convolve(IFunc2Subs aConv);
     IFunc1Subs refConvolve(IFunc2Subs aConv);
@@ -78,9 +78,9 @@ public interface IFunc1Operation {
     /**
      * 完整的卷积运算，通过输入的卷积核来对自身函数进行卷积运算，输出得到的结果
      * <p>
-     * 注意这里卷积核输入格式为 (f(x), x, k) -> out，自身函数为 f(x)，经过卷积后得到函数 g(k)
+     * 注意这里卷积核输入格式为 {@code (f(x), x, k) -> out}，自身函数为 f(x)，经过卷积后得到函数 g(k)
      * <p>
-     * 执行的卷积运算为：g(k) = int(conv(f(x), x, k), x);
+     * 执行的卷积运算为：{@code g(k) = int(conv(f(x), x, k), x)};
      */
     IFunc1 convolveFull(IFunc3Subs aConv);
     IFunc1Subs refConvolveFull(IFunc3Subs aConv);

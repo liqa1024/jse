@@ -9,24 +9,26 @@
 - 简单跨语言编程支持（python，matlab，java/groovy）
 - 进阶的模拟相关算法（FFS，KMC）
 
-# 为何选择 java
-- **较高性能**：由于经过了编译操作，性能更加接近 C++ 而不是 python 这种脚本语言。并且有成熟的 api 实现并行
-- **高兼容性**：相比 C++，其不受平台和编译器的影响，不用在迁移平台时考虑兼容性的问题
-- **其他语言的兼容性**：在 matlab 中可以原生的兼容 java 程序，在 python 中可以使用类似
-  [py4j](https://www.py4j.org/) 这种库来简单的实现对 java 程序的支持，实际使用体验和原生程序基本没有区别
+<!-- # 为何选择 java
+- **较高性能**：由于经过了编译操作，性能更加接近 C++ 而不是 python 这种脚本语言。并且有成熟的 api 实现并行。
+- **高兼容性**：相比 C++，其不受平台和编译器的影响，不用在迁移平台时考虑兼容性的问题。
+- **其他语言的兼容性**：在 matlab 中可以原生的兼容 java 程序，在 python 中可以使用类似。
+  [py4j](https://www.py4j.org/) 这种库来简单的实现对 java 程序的支持，实际使用体验和原生程序基本没有区别。
 - **成熟的编辑器支持**：[IntelliJ IDEA](https://www.jetbrains.com/idea/) 等编辑器都对 java 提供了成熟的支持，
-  开发会更加高效
+  开发会更加高效。
 - **丰富的第三方库**：[Maven 仓库](https://mvnrepository.com/) 中有大量的 java 的第三方库可供使用，
-  可以避免重复造轮子
+  可以避免重复造轮子。
 - **成熟的项目管理工具**：[Gradle](https://gradle.org/) 或者 [Maven](https://maven.apache.org/)
-  工具现在可以非常方便的管理项目，（相比 C++ 中的 cmake）不需要担心其他人无法成功完成编译
+  工具现在可以非常方便的管理项目，（相比 C++ 中的 cmake）不需要担心其他人无法成功完成编译。 -->
 
 
 # 如何使用
 首先从 [Release](https://github.com/CHanzyLazer/jTool/releases/latest) 
 中下载 `release.zip` 文件，为使用此工具包的项目的一般格式。
 
-需要系统拥有 jdk，目前仅对 jdk8 进行适配，可以从 [这里](https://mirrors.tuna.tsinghua.edu.cn/Adoptium/) 下载 Adoptium 版本的 jdk，或者从 [这里](https://www.oracle.com/java/technologies/downloads/#java8) 下载 oracle 版本的 jdk
+需要系统拥有 jdk，目前仅对 jdk8 进行适配，可以从 [这里](https://mirrors.tuna.tsinghua.edu.cn/Adoptium/)
+下载 Adoptium 版本的 jdk，或者从 [这里](https://www.oracle.com/java/technologies/downloads/#java8)
+下载 oracle 版本的 jdk。
 
 
 ## 0. 项目结构
@@ -68,7 +70,7 @@
 - `lib` 目录存放库文件，默认情况下只会有一个 `jTool-all.jar` 文件。
 
 - `script` 目录存放项目所有的脚本文件，并且如上不同语言分配不同的文件夹。
-  **注意只有放在如上述目录中才能被程序检测到，如对于 groovy 脚本为 `script/groovy/*`，对于 python 脚本为 `script/python/*`。**
+  **注意不同语言只有放在上述目录指定文件夹中才能被程序检测到，如对于 groovy 脚本为 `script/groovy/*`，对于 python 脚本为 `script/python/*`。**
 
 - `lmp` 存放 lammps 相关的数据，例如 lammps 的 data 文件则在 `lmp/data/*`，
   力场文件则在 `lmp/potential/*`（非硬性）。
@@ -79,7 +81,7 @@
 
 
 ## 1. 使用 python
-在 python 中，需要使用第三方库来使用调用 java 代码，例如使用 [py4j](https://www.py4j.org/)：
+在 python 中，可以使用第三方库来使用调用 java 代码，例如使用 [py4j](https://www.py4j.org/)：
 ```python
 from py4j.java_gateway import JavaGateway
 GATEWAY = JavaGateway.launch_gateway(classpath='lib/jTool-all.jar')
@@ -111,9 +113,9 @@ GATEWAY.shutdown()
 
 ## 2. 使用 Groovy 脚本（推荐）
 [Groovy](http://www.groovy-lang.org/) 是一款原生支持 java 的脚本语言，并且也提供了很多很方便的语法糖
-（具体可以参考 [这篇文章](https://zhuanlan.zhihu.com/p/257969931)），因此本工具包原生支持 Groovy
+（具体可以参考 [这篇文章](https://zhuanlan.zhihu.com/p/257969931)），因此本工具包原生支持 Groovy。
 
-> **注意**：本工具包将整个 Groovy 需要的运行库都包含到一起，因此运行 Groovy 脚本**不需要**安装 Groovy。
+> **注意**：本工具包将整个 Groovy 需要的运行库都包含到一起，因此运行 Groovy 脚本**不需要**额外安装 Groovy。
 
 在项目根目录中直接运行：
 ```shell
@@ -203,11 +205,12 @@ javarmpath('lib/jTool-all.jar');
 
 
 # 使用文档
-详细接口介绍参考 [使用文档](doc/contents.md)
+详细接口介绍参考 [使用文档](doc/contents.md)（正在编写），
+也可查看 [自动生成的文档](http://172.16.53.103:2597)（仅中心内可访问）。
 
 
 # 编译项目
-本项目使用 [Gradle](https://gradle.org/) 进行管理（不需要安装 Gradle）
+本项目使用 [Gradle](https://gradle.org/) 进行管理（不需要安装 Gradle）。
 
-运行 `./gradlew build` 即可进行编译，默认会将 jar 文件输出到 `release/lib` 文件夹
+在根目录运行 `./gradlew build` 即可进行编译，默认会将 jar 文件输出到 `release/lib` 文件夹。
 

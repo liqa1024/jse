@@ -42,7 +42,7 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
     
     /**
      * @author liqa
-     * <p> 类似 for (int i = 0; i < aSize; ++i),
+     * <p> 类似 {@code for (int i = 0; i < aSize; ++i)},
      * 现在不再支持设置具体的 start 和 end </p>
      * <p> 支持每个线程写入到独立的内存而不需要额外加锁 </p>
      */

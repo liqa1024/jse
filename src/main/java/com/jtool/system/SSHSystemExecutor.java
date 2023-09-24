@@ -9,7 +9,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -72,17 +71,17 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
      * </code></pre>
      * 其中名称大小写敏感（因为实现起来比较麻烦），但是存在简写，简写优先级为：
      * <pre>
-     *   "IOThreadNumber" > "iothreadnumber" > "IOThreadNum" > "iothreadnum" > "ion"
+     *   "IOThreadNumber" {@code >} "iothreadnumber" {@code >} "IOThreadNum" {@code >} "iothreadnum" {@code >} "ion"
      *
-     *   "Username" > "username" > "user" > "u"
-     *   "Hostname" > "hostname" > "host" > "h"
-     *   "Port" > "port" > "p"
-     *   "Password" > "password" > "pw"
-     *   "KeyPath" > "keypath" > "key" > "k"
-     *   "CompressLevel" > "compresslevel" > "cl"
-     *   "LocalWorkingDir" > "localworkingdir" > "lwd"
-     *   "RemoteWorkingDir" > "remoteworkingdir" > "rwd" > "wd"
-     *   "BeforeCommand" > "beforecommand" > "bcommand" > "bc"
+     *   "Username" {@code >} "username" {@code >} "user" {@code >} "u"
+     *   "Hostname" {@code >} "hostname" {@code >} "host" {@code >} "h"
+     *   "Port" {@code >} "port" {@code >} "p"
+     *   "Password" {@code >} "password" {@code >} "pw"
+     *   "KeyPath" {@code >} "keypath" {@code >} "key" {@code >} "k"
+     *   "CompressLevel" {@code >} "compresslevel" {@code >} "cl"
+     *   "LocalWorkingDir" {@code >} "localworkingdir" {@code >} "lwd"
+     *   "RemoteWorkingDir" {@code >} "remoteworkingdir" {@code >} "rwd" {@code >} "wd"
+     *   "BeforeCommand" {@code >} "beforecommand" {@code >} "bcommand" {@code >} "bc"
      * </pre>
      * 参数 "IOThreadNumber" 未选定时不开启并行传输，"Port" 未选定时默认为 22，
      * "Password" 未选定时使用 publicKey 密钥认证，"KeyPath" 未选定时使用默认路径的密钥，
