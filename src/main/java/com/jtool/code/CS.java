@@ -128,6 +128,8 @@ public class CS {
         .put("Cu", 63.546)
         .put("Zr", 91.224)
         .build();
+    /** Boltzmann constant */
+    public final static double K_B = 0.0000861733262; // eV / K
     
     /** SystemExecutor Stuffs */
     public final static IIOFiles EPT_IOF = new IOFiles();

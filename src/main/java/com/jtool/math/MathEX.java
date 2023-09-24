@@ -22,7 +22,7 @@ import static com.jtool.code.CS.ZL_MAT;
 @SuppressWarnings("DuplicatedCode")
 public class MathEX {
     
-    public static final double PI = Math.PI;
+    public final static double PI = Math.PI;
     
     @ApiStatus.Obsolete
     @SuppressWarnings("UnusedReturnValue")

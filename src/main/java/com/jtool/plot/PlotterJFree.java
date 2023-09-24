@@ -329,8 +329,8 @@ public class PlotterJFree implements IPlotter {
     
     
     /** 设置 tick 间隔 */
-    @Override public IPlotter xTick(double aTick) {((NumberAxis)mXAxis).setTickUnit(new NumberTickUnit(aTick)); return this;}
-    @Override public IPlotter yTick(double aTick) {((NumberAxis)mYAxis).setTickUnit(new NumberTickUnit(aTick)); return this;}
+    @Override public IPlotter xTick(double aTick) {mXAxis.setTickUnit(new NumberTickUnit(aTick)); return this;}
+    @Override public IPlotter yTick(double aTick) {mYAxis.setTickUnit(new NumberTickUnit(aTick)); return this;}
     
     /** 设置绘图的边距 */
     @Override public IPlotter insets(double aTop, double aLeft, double aBottom, double aRight) {mPlot.setInsets(new RectangleInsets(aTop, aLeft, aBottom, aRight)); return this;}
@@ -343,6 +343,7 @@ public class PlotterJFree implements IPlotter {
     @Override public void save(@Nullable String aFilePath, int aWidth, int aHeight) throws IOException {
         if (aFilePath==null || aFilePath.isEmpty()) aFilePath = IPlotter.DEFAULT_FIGURE_NAME;
         if (!aFilePath.endsWith(".png")) aFilePath = aFilePath+".png";
+        UT.IO.validPath(aFilePath); // 注意这里是调用外部接口保存，需要手动合法化路径
         ChartUtils.saveChartAsPNG(UT.IO.toFile(aFilePath), mChart, aWidth, aHeight);
     }
     
@@ -401,6 +402,7 @@ public class PlotterJFree implements IPlotter {
                 synchronized (tFrame.getTreeLock()) {
                     if (aFilePath==null || aFilePath.isEmpty()) aFilePath = tFrame.getTitle();
                     if (!aFilePath.endsWith(".png")) aFilePath = aFilePath+".png";
+                    UT.IO.validPath(aFilePath); // 注意这里是调用外部接口保存，需要手动合法化路径
                     ChartUtils.saveChartAsPNG(UT.IO.toFile(aFilePath), mChart, tPanel.getWidth()-tInset.left-tInset.right, tPanel.getHeight()-tInset.top-tInset.bottom);
                 }
             }
