@@ -1,5 +1,6 @@
 package com.jtool.atom;
 
+import com.jtool.code.functional.IOperator1;
 import com.jtool.math.ComplexDouble;
 import com.jtool.math.function.FixBoundFunc1;
 import com.jtool.math.function.Func1;
@@ -78,13 +79,24 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox, aCellStep);
     }
-    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ) {this(aAtomDataXYZ, BOX_ONE);}
     public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox) {this(aAtomDataXYZ, aBox, 1);}
     public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, int aThreadNum) {this(aAtomDataXYZ, aBox, aThreadNum, DEFAULT_CELL_STEP);}
     
     public MonatomicParameterCalculator(IAtomData aAtomData) {this(aAtomData, 1);}
     public MonatomicParameterCalculator(IAtomData aAtomData, int aThreadNum) {this(aAtomData, aThreadNum, DEFAULT_CELL_STEP);}
     public MonatomicParameterCalculator(IAtomData aAtomData, int aThreadNum, double aCellStep) {this(aAtomData.atoms(), aAtomData.box(), aThreadNum, aCellStep);}
+    
+    /** 主要用于内部使用 */
+    MonatomicParameterCalculator(int aAtomNum, IXYZ aBox, int aThreadNum, IOperator1<XYZ[], XYZ[]> aXYZValidOpt) {
+        super(new ParforThreadPool(aThreadNum));
+        mAtomNum = aAtomNum;
+        mBox = aBox;
+        mAtomDataXYZ = aXYZValidOpt.cal(sXYZArrayCache.getObject());
+        // 计算单位长度供内部使用
+        mRou = mAtomNum / mBox.prod();
+        mUnitLen = Fast.cbrt(1.0/mRou);
+        mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox, DEFAULT_CELL_STEP);
+    }
     
     
     /** 直接使用 ObjectCachePool 避免重复创建临时变量 */

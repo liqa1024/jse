@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.jtool.code.UT.Code.newBox;
 import static com.jtool.math.MathEX.Func;
 import static com.jtool.math.MathEX.Vec;
 
@@ -60,7 +61,7 @@ public class Generator extends AbstractThreadPool<ParforThreadPool> {
     public IAtomData atomDataFCC(double aCellSize, int aReplicateX, int aReplicateY, int aReplicateZ) {
         if (mDead) throw new RuntimeException("This Generator is dead");
         
-        XYZ tBoxHi = new XYZ(aCellSize*aReplicateX, aCellSize*aReplicateY, aCellSize*aReplicateZ);
+        XYZ tBox = new XYZ(aCellSize*aReplicateX, aCellSize*aReplicateY, aCellSize*aReplicateZ);
         List<IAtom> rAtoms = new ArrayList<>(4*aReplicateX*aReplicateY*aReplicateZ);
         
         int tID = 1;
@@ -73,7 +74,7 @@ public class Generator extends AbstractThreadPool<ParforThreadPool> {
             rAtoms.add(new Atom(tX   , tY+tS, tZ+tS, tID)); ++tID;
         }
         
-        return new AtomData(rAtoms, tBoxHi);
+        return new AtomData(rAtoms, tBox);
     }
     public IAtomData atomDataFCC(double aCellSize, int aReplicate) {return atomDataFCC(aCellSize, aReplicate, aReplicate, aReplicate);}
     
@@ -103,7 +104,7 @@ public class Generator extends AbstractThreadPool<ParforThreadPool> {
             rAtoms.add(tAtom);
         }
         
-        return new AtomData(rAtoms, tAtomTypeNum, aAtomData.box());
+        return new AtomData(rAtoms, tAtomTypeNum, newBox(aAtomData.box()));
     }
     public IAtomData typeFilterAtomData(final IAtomData aAtomData, IOperator1<Integer, IAtom> aFilter) {return typeFilterAtomData(aAtomData, 1, aFilter);}
     
@@ -156,7 +157,7 @@ public class Generator extends AbstractThreadPool<ParforThreadPool> {
             rAtoms.add(tAtom);
         }
         
-        return new AtomData(rAtoms, aAtomData.atomTypeNum(), aAtomData.box(), aAtomData.hasVelocities());
+        return new AtomData(rAtoms, aAtomData.atomTypeNum(), newBox(aAtomData.box()), aAtomData.hasVelocities());
     }
     
     /**

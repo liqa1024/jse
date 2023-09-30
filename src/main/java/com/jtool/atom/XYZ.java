@@ -78,8 +78,8 @@ public final class XYZ implements IXYZ {
     @Override public XYZ div(double aRHS) {return new XYZ(mX/aRHS, mY/aRHS, mZ/aRHS);}
     /** 使用重载而不是 instanceof，即只优化可以在编译期间判断的情况 */
     public XYZ div(XYZ aRHS) {return new XYZ(mX/aRHS.mX, mY/aRHS.mY, mZ/aRHS.mZ);}
-    public void divide2this(XYZ aRHS) {mX /= aRHS.mX; mY /= aRHS.mY; mZ /= aRHS.mZ;}
-    public void divide2this(double aRHS) {mX /= aRHS; mY /= aRHS; mZ /= aRHS;}
+    public void div2this(XYZ aRHS) {mX /= aRHS.mX; mY /= aRHS.mY; mZ /= aRHS.mZ;}
+    public void div2this(double aRHS) {mX /= aRHS; mY /= aRHS; mZ /= aRHS;}
     
     
     @Override public double distance(IXYZ aRHS) {

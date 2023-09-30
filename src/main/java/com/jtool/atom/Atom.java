@@ -16,17 +16,13 @@ public class Atom implements ISettableAtom {
         mX = aXYZ.x(); mY = aXYZ.y(); mZ = aXYZ.z();
         mID = aID; mType = aType;
     }
-    public Atom(IXYZID aXYZID, int aType) {
-        mX = aXYZID.x(); mY = aXYZID.y(); mZ = aXYZID.z();
-        mID = aXYZID.id(); mType = aType;
-    }
     public Atom(IAtom aAtom) {
         mX = aAtom.x(); mY = aAtom.y(); mZ = aAtom.z();
         mID = aAtom.id(); mType = aAtom.type();
     }
     public Atom(double aX, double aY, double aZ, int aID) {this(aX, aY, aZ, aID, 1);}
     public Atom(IXYZ aXYZ, int aID) {this(aXYZ, aID, 1);}
-    public Atom(IXYZID aXYZID) {this(aXYZID, 1);}
+    public Atom(IXYZ aXYZ) {this(aXYZ, 1, 1);}
     public Atom() {this(0.0, 0.0, 0.0, 1, 1);}
     
     @Override public double x() {return mX;}

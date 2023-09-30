@@ -24,7 +24,7 @@ import static com.jtool.code.UT.Par.*
 //}
 
 
-final def dump = Dump.read('lmp/.stableglass-in/dump-fs1').appendFile('lmp/.stableglass-in/dump-fs1-c');
+final def dump = Dump.read('lmp/.ffs-in/dump-fs1-new');
 final def calculator = new MultiTypeClusterSizeCalculator(
     new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.89).setSolidThreshold(7),
     [new ABOOPSolidChecker().setRNearestMul(1.8).setConnectThreshold(0.84).setSolidThreshold(13), new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.84).setSolidThreshold(7)]
@@ -40,5 +40,5 @@ parfor(dump.size()) {int i ->
 }
 UT.Timer.toc();
 
-dump.write('lmp/.stableglass-out/filter-dump-fs1');
+dump.write('lmp/.ffs-out/filter-dump-fs1-new');
 

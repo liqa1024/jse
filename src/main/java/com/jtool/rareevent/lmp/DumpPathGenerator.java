@@ -21,6 +21,7 @@ import com.jtool.rareevent.IPathGenerator;
 import java.util.*;
 
 import static com.jtool.code.CS.*;
+import static com.jtool.code.UT.Code.newBox;
 
 
 /**
@@ -171,7 +172,7 @@ public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathG
             ++row;
         }
         return new AtomData(new AbstractRandomAccessList<IAtom>() {
-            @Override public IAtom get(int index) {
+            @Override public IAtom get(final int index) {
                 return new IAtom() {
                     @Override public double x() {return rData.get(index, TYPE_XYZ_X_COL);}
                     @Override public double y() {return rData.get(index, TYPE_XYZ_Y_COL);}
@@ -181,7 +182,7 @@ public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathG
                 };
             }
             @Override public int size() {return tAtomNum;}
-        }, aPoint.atomTypeNum(), aPoint.box());
+        }, aPoint.atomTypeNum(), newBox(aPoint.box()));
     }
     
     
