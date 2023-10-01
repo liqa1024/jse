@@ -39,7 +39,7 @@ public final class LmpExecutor extends AbstractHasAutoShutdown implements ILmpEx
     public LmpExecutor setDoNotShutdown(boolean aDoNotShutdown) {setDoNotShutdown_(aDoNotShutdown); return this;}
     
     @Override public ISystemExecutor exec() {return mEXE;}
-    private void printStackTrace(Throwable aThrowable) {if (!mEXE.noERROutput()) aThrowable.printStackTrace();}
+    private void printStackTrace(Throwable aThrowable) {if (!mEXE.noERROutput()) aThrowable.printStackTrace(System.err);}
     
     
     @Override public int run(String aInFile, IIOFiles aIOFiles) {
@@ -85,7 +85,6 @@ public final class LmpExecutor extends AbstractHasAutoShutdown implements ILmpEx
             if (mEXE.needSyncIOFiles()) mEXE.removeDir(mWorkingDir);
         } catch (Exception ignored) {}
     }
-    @Override protected void shutdownInternal_() {
-        mEXE.shutdown();
-    }
+    @Override protected void shutdownInternal_() {mEXE.shutdown();}
+    @Override protected void closeInternal_() {mEXE.close();}
 }

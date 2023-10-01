@@ -40,7 +40,7 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
     @Override public final ISystemExecutor setNoERROutput(boolean aNoERROutput) {mNoERROutput = aNoERROutput; return this;}
     @Override public final boolean noERROutput() {return mNoERROutput;}
     
-    protected final void printStackTrace(Throwable aThrowable) {if (!mNoERROutput) aThrowable.printStackTrace();}
+    protected final void printStackTrace(Throwable aThrowable) {if (!mNoERROutput) aThrowable.printStackTrace(System.err);}
     
     
     @Override public final int system(String aCommand                                              ) {return system_(aCommand, this::outPrintln);}
@@ -172,7 +172,7 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
     
     
     /** 内部使用的 Future，增加一个完成时的额外操作 */
-    private class SystemFuture<T> implements Future<T> {
+    protected class SystemFuture<T> implements Future<T> {
         private final Future<T> mFuture;
         private SystemFuture(Future<T> aFuture) {mFuture = aFuture;}
         

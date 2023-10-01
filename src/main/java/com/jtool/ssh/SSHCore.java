@@ -544,7 +544,7 @@ public final class SSHCore implements IAutoShutdown {
                                 }
                             }
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            e.printStackTrace(System.err);
                         } finally {
                             // 最后关闭通道
                             tChannelSftp.disconnect();

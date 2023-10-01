@@ -193,7 +193,6 @@ public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathG
             if (mLMP.exec().needSyncIOFiles()) mLMP.exec().removeDir(mWorkingDir);
         } catch (Exception ignored) {}
     }
-    @Override protected void shutdownInternal_() {
-        mLMP.shutdown();
-    }
+    @Override protected void shutdownInternal_() {mLMP.shutdown();}
+    @Override protected void closeInternal_() {mLMP.close();}
 }

@@ -86,7 +86,7 @@ public final class ConstantLmpExecutor extends AbstractHasAutoShutdown implement
     public ConstantLmpExecutor setSleepTime(long aSleepTime) {mSleepTime = aSleepTime; return this;}
     
     @Override public ISystemExecutor exec() {return mEXE;}
-    private void printStackTrace(Throwable aThrowable) {if (!mEXE.noERROutput()) aThrowable.printStackTrace();}
+    private void printStackTrace(Throwable aThrowable) {if (!mEXE.noERROutput()) aThrowable.printStackTrace(System.err);}
     
     private synchronized Future<Integer> submitConstantLmp(IInFile aConstantInFile, String aConstantLmpDir) throws IOException {
         ++mLmpIndex;
@@ -250,7 +250,6 @@ public final class ConstantLmpExecutor extends AbstractHasAutoShutdown implement
             if (mEXE.needSyncIOFiles()) mEXE.removeDir(mWorkingDir);
         } catch (Exception ignored) {}
     }
-    @Override protected void shutdownInternal_() {
-        mEXE.shutdown();
-    }
+    @Override protected void shutdownInternal_() {mEXE.shutdown();}
+    @Override protected void closeInternal_() {mEXE.close();}
 }

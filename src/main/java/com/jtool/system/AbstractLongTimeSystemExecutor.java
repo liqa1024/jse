@@ -363,7 +363,7 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
     @Override public final ISystemExecutor setNoERROutput(boolean aNoERROutput) {mEXE.setNoERROutput(aNoERROutput); return this;}
     @Override public final boolean noERROutput() {return mEXE.noERROutput();}
     
-    protected final void printStackTrace(Throwable aThrowable) {if (!noERROutput()) aThrowable.printStackTrace();}
+    protected final void printStackTrace(Throwable aThrowable) {if (!noERROutput()) aThrowable.printStackTrace(System.err);}
     
     @Override public final void validPath(String aPath) throws Exception {mEXE.validPath(aPath);}
     @Override public final void makeDir(String aDir) throws Exception {mEXE.makeDir(aDir);}

@@ -30,7 +30,7 @@ public class Main {
             tGlobalAutoCloseable = new ArrayList<>(GLOBAL_AUTO_CLOSEABLE);
         }
         for (AutoCloseable tAutoCloseable : tGlobalAutoCloseable) {
-            try {tAutoCloseable.close();} catch (Exception e) {e.printStackTrace();}
+            try {tAutoCloseable.close();} catch (Exception e) {e.printStackTrace(System.err);}
         }
     }
     

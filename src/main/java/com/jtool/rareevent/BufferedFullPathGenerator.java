@@ -99,4 +99,8 @@ public class BufferedFullPathGenerator<T> extends AbstractHasAutoShutdown implem
         if (mPathGenerator instanceof IAutoShutdown) ((IAutoShutdown)mPathGenerator).shutdown();
         if (mParameterCalculator instanceof IAutoShutdown) ((IAutoShutdown)mParameterCalculator).shutdown();
     }
+    @Override protected void closeInternal_() {
+        if (mPathGenerator instanceof AutoCloseable) try {((AutoCloseable)mPathGenerator).close();} catch (Exception ignored) {}
+        if (mParameterCalculator instanceof AutoCloseable) try {((AutoCloseable)mParameterCalculator).close();} catch (Exception ignored) {}
+    }
 }

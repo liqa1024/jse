@@ -12,6 +12,7 @@ import com.jtool.math.vector.Vectors;
 import com.jtool.parallel.IHasAutoShutdown;
 import com.jtool.parallel.ParforThreadPool;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.*;
 
@@ -604,4 +605,6 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     
     /**程序结束时会顺便关闭内部的 mFullPathGenerator，通过切换不同的 mFullPathGenerator 来调整实际输入的生成器是否会顺便关闭 */
     @Override public void shutdown() {super.shutdown(); mFullPathGenerator.shutdown();}
+    /** 注意有些类（如线程池）的 close 逻辑不完全和 shutdown 相同，这里需要专门使用内部的 close */
+    @VisibleForTesting @Override public void close() {super.close(); mFullPathGenerator.close();}
 }

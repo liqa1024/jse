@@ -166,16 +166,16 @@ public final class ServerSSH implements IAutoShutdown {
         rServerSSH.mSession.setPassword(aPassword);
         rServerSSH.mPassword = aPassword;
         rServerSSH.mSession.setConfig("PreferredAuthentications", "password");
-        try {rServerSSH.mSession.connect();} catch (JSchException e) {e.printStackTrace();}
+        try {rServerSSH.mSession.connect();} catch (JSchException e) {e.printStackTrace(System.err);}
         return rServerSSH;
     }
     public static ServerSSH getKey     (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname,            String aKeyPath) throws JSchException {return getKey(aLocalWorkingDir, aRemoteWorkingDir, aUsername, aHostname, 22, aKeyPath);}
     public static ServerSSH getKey     (String aLocalWorkingDir, String aRemoteWorkingDir, String aUsername, String aHostname, int aPort, String aKeyPath) throws JSchException {
         ServerSSH rServerSSH = new ServerSSH(aUsername, aHostname, aPort).setLocalWorkingDir(aLocalWorkingDir).setRemoteWorkingDir(aRemoteWorkingDir);
-        try {rServerSSH.mJsch.addIdentity(aKeyPath);} catch (JSchException e) {e.printStackTrace();}
+        try {rServerSSH.mJsch.addIdentity(aKeyPath);} catch (JSchException e) {e.printStackTrace(System.err);}
         rServerSSH.mKeyPath = aKeyPath;
         rServerSSH.mSession.setConfig("PreferredAuthentications", "publickey");
-        try {rServerSSH.mSession.connect();} catch (JSchException e) {e.printStackTrace();}
+        try {rServerSSH.mSession.connect();} catch (JSchException e) {e.printStackTrace(System.err);}
         return rServerSSH;
     }
     // 修改本地路径和远程路径
@@ -911,7 +911,7 @@ public final class ServerSSH implements IAutoShutdown {
                                 }
                             }
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            e.printStackTrace(System.err);
                         } finally {
                             // 最后关闭通道
                             tChannelSftp.disconnect();
