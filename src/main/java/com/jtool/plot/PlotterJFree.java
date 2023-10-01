@@ -1,7 +1,6 @@
 package com.jtool.plot;
 
 import com.jtool.code.UT;
-import com.jtool.code.collection.AbstractCollections;
 import com.jtool.math.MathEX;
 import org.jetbrains.annotations.Nullable;
 import org.jfree.chart.*;
@@ -15,6 +14,7 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.chart.ui.RectangleEdge;
 import org.jfree.chart.ui.RectangleInsets;
+import org.jfree.data.Range;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
@@ -43,15 +43,15 @@ public final class PlotterJFree implements IPlotter {
     protected class LineJFree extends AbstractLine {
         final int mID;
         final String mName;
-        final Iterable<Double> mX, mY;
+        final Iterable<? extends Number> mX, mY;
         Paint mPaint;
         Shape mLegendLine;
         
         LineJFree(int aID, Iterable<? extends Number> aX, Iterable  <? extends Number> aY, String aName) {
             mID = aID;
             mName = aName;
-            mX = AbstractCollections.map(aX, Number::doubleValue);
-            mY = AbstractCollections.map(aY, Number::doubleValue);
+            mX = aX;
+            mY = aY;
             mPaint = COLOR_(aID);
             mLineRender.setSeriesPaint(mID, mPaint);
             mLegendLine = new Line2D.Double(-super.mLineStroke.getSize()*LEGEND_SIZE, 0.0, super.mLineStroke.getSize()*LEGEND_SIZE, 0.0);
@@ -257,14 +257,14 @@ public final class PlotterJFree implements IPlotter {
         // 先进行设置范围，非法返回会自动报错
         mXAxis.setRange(aMin, aMax);
         // 设置绘制范围后，需要手动调整绘制区域外的数据，因为 JFree 不会对此优化，从而可能会导致卡死的问题
-        updateSeries_(aMin, Double.NEGATIVE_INFINITY, aMax, Double.POSITIVE_INFINITY);
+        updateSeries_();
         return this;
     }
     @Override public IPlotter yRange(double aMin, double aMax) {
         // 先进行设置范围，非法返回会自动报错
         mYAxis.setRange(aMin, aMax);
         // 设置绘制范围后，需要手动调整绘制区域外的数据，因为 JFree 不会对此优化，从而可能会导致卡死的问题
-        updateSeries_(Double.NEGATIVE_INFINITY, aMin, Double.POSITIVE_INFINITY, aMax);
+        updateSeries_();
         return this;
     }
     @Override public IPlotter axis(double aXMin, double aXMax, double aYMin, double aYMax) {
@@ -272,59 +272,78 @@ public final class PlotterJFree implements IPlotter {
         mXAxis.setRange(aXMin, aXMax);
         mYAxis.setRange(aYMin, aYMax);
         // 设置绘制范围后，需要手动调整绘制区域外的数据，因为 JFree 不会对此优化，从而可能会导致卡死的问题
-        updateSeries_(aXMin, aYMin, aXMax, aYMax);
+        updateSeries_();
         return this;
     }
     /** 内部使用，根据输入的 box 边界来更新数据，因为 JFree 不会对此优化，从而可能会导致卡死的问题 */
-    private void updateSeries_(double aBoxXMin, double aBoxYMin, double aBoxXMax, double aBoxYMax) {
-        // 用来保证不会出现刚好在边界情况
-        double tSizeX = aBoxXMax - aBoxXMin; tSizeX *= 0.9975432489542136;
-        double tSizeY = aBoxYMax - aBoxYMin; tSizeY *= 0.9986214753294532;
-        aBoxXMin -= tSizeX; aBoxXMax += tSizeX;
-        aBoxYMin -= tSizeY; aBoxYMax += tSizeY;
+    private void updateSeries_() {
         // 直接遍历全部重设数据，因为可能会有多次调整范围的问题；直接清空旧的序列然后重新覆盖，操作会比较直接
         mLinesData.removeAllSeries();
-        for (LineJFree tLine : mLines) {
-            // 创建新的序列
-            XYSeries tSeries = new XYSeries(tLine.mName, false, true);
-            // 遍历获取新的值
-            double tX0 = Double.NaN;
-            double tY0 = Double.NaN;
-            Iterator<Double> itx = tLine.mX.iterator();
-            Iterator<Double> ity = tLine.mY.iterator();
-            boolean tNeedInterPoint = false;
-            while (itx.hasNext() && ity.hasNext()) {
-                double tX = itx.next();
-                double tY = ity.next();
-                // 检测位置是否合法，合法则直接添加
-                if (tX>aBoxXMin && tX<aBoxXMax && tY>aBoxYMin && tY<aBoxYMax) {
-                    if (tNeedInterPoint) {
-                        // 如果标记需要插入则需要利用上一个点的数据来插入
-                        double[][] tInterPoints = MathEX.Graph.interRayBox2D_(aBoxXMin, aBoxYMin,  aBoxXMax, aBoxYMax, tX0, tY0, tX, tY);
-                        // 遍历添加，不添加非法值
-                        if (tInterPoints != null) for (double[] tXY : tInterPoints) tSeries.add(tXY[0], tXY[1]);
-                    }
-                    // 先插入边界点再插入自身
-                    tSeries.add(tX, tY);
-                    // 这个为合法的点，下一个点不需要插入
-                    tNeedInterPoint = false;
-                } else {
-                    // 没有上一个值 NaN 则这个值不进行添加
-                    if (!Double.isNaN(tX0) && !Double.isNaN(tY0)) {
-                        // 这个点不在氛围内直接添加边界点
-                        double[][] tInterPoints = MathEX.Graph.interRayBox2D_(aBoxXMin, aBoxYMin,  aBoxXMax, aBoxYMax, tX0, tY0, tX, tY);
-                        // 遍历添加，不添加非法值
-                        if (tInterPoints != null) for (double[] tXY : tInterPoints) tSeries.add(tXY[0], tXY[1]);
-                    }
-                    // 这个为超出边界的点，标记下一个点需要插入
-                    tNeedInterPoint = true;
-                }
-                tX0 = tX;
-                tY0 = tY;
-            }
-            // 添加修改绘制数据后的序列
-            mLinesData.addSeries(tSeries);
+        // 添加修改绘制数据后的序列
+        for (LineJFree tLine : mLines) mLinesData.addSeries(getValidXYSeries_(tLine.mX, tLine.mY, tLine.mName));
+    }
+    private XYSeries getValidXYSeries_(Iterable<? extends Number> aX, Iterable<? extends Number> aY, String aName) {
+        double tBoxXMin, tBoxXMax;
+        if (mXAxis.isAutoRange()) {
+            tBoxXMin = Double.NEGATIVE_INFINITY;
+            tBoxXMax = Double.POSITIVE_INFINITY;
+        } else {
+            Range tRange = mXAxis.getRange();
+            tBoxXMin = tRange.getLowerBound();
+            tBoxXMax = tRange.getUpperBound();
         }
+        double tBoxYMin, tBoxYMax;
+        if (mYAxis.isAutoRange()) {
+            tBoxYMin = Double.NEGATIVE_INFINITY;
+            tBoxYMax = Double.POSITIVE_INFINITY;
+        } else {
+            Range tRange = mYAxis.getRange();
+            tBoxYMin = tRange.getLowerBound();
+            tBoxYMax = tRange.getUpperBound();
+        }
+        // 用来保证不会出现刚好在边界情况
+        double tSizeX = tBoxXMax - tBoxXMin; tSizeX *= 0.9975432489542136;
+        double tSizeY = tBoxYMax - tBoxYMin; tSizeY *= 0.9986214753294532;
+        tBoxXMin -= tSizeX; tBoxXMax += tSizeX;
+        tBoxYMin -= tSizeY; tBoxYMax += tSizeY;
+        // 创建新的序列
+        XYSeries rSeries = new XYSeries(aName, false, true); // 不做排序以及允许重复数值
+        // 遍历获取新的值
+        double tX0 = Double.NaN;
+        double tY0 = Double.NaN;
+        Iterator<? extends Number> itx = aX.iterator();
+        Iterator<? extends Number> ity = aY.iterator();
+        boolean tNeedInterPoint = false;
+        while (itx.hasNext() && ity.hasNext()) {
+            double tX = itx.next().doubleValue();
+            double tY = ity.next().doubleValue();
+            // 检测位置是否合法，合法则直接添加
+            if (tX>tBoxXMin && tX<tBoxXMax && tY>tBoxYMin && tY<tBoxYMax) {
+                if (tNeedInterPoint) {
+                    // 如果标记需要插入则需要利用上一个点的数据来插入
+                    double[][] tInterPoints = MathEX.Graph.interRayBox2D_(tBoxXMin, tBoxYMin, tBoxXMax, tBoxYMax, tX0, tY0, tX, tY);
+                    // 遍历添加，不添加非法值
+                    if (tInterPoints != null) for (double[] tXY : tInterPoints) rSeries.add(tXY[0], tXY[1]);
+                }
+                // 先插入边界点再插入自身
+                rSeries.add(tX, tY);
+                // 这个为合法的点，下一个点不需要插入
+                tNeedInterPoint = false;
+            } else {
+                // 没有上一个值 NaN 则这个值不进行添加
+                if (!Double.isNaN(tX0) && !Double.isNaN(tY0)) {
+                    // 这个点不在氛围内直接添加边界点
+                    double[][] tInterPoints = MathEX.Graph.interRayBox2D_(tBoxXMin, tBoxYMin, tBoxXMax, tBoxYMax, tX0, tY0, tX, tY);
+                    // 遍历添加，不添加非法值
+                    if (tInterPoints != null) for (double[] tXY : tInterPoints) rSeries.add(tXY[0], tXY[1]);
+                }
+                // 这个为超出边界的点，标记下一个点需要插入
+                tNeedInterPoint = true;
+            }
+            tX0 = tX;
+            tY0 = tY;
+        }
+        return rSeries;
     }
     
     
@@ -348,18 +367,12 @@ public final class PlotterJFree implements IPlotter {
     }
     
     /** 添加绘制数据 */
-    @Override public ILine plot(Iterable<? extends Number> aX, Iterable  <? extends Number> aY, String aName) {
-        // 创建数据
-        XYSeries tSeries = new XYSeries(aName, false, true); // 不做排序以及允许重复数值
-        Iterator<? extends Number> itx = aX.iterator();
-        Iterator<? extends Number> ity = aY.iterator();
-        while (itx.hasNext() && ity.hasNext()) tSeries.add(itx.next(), ity.next());
+    @Override public ILine plot(Iterable<? extends Number> aX, Iterable<? extends Number> aY, String aName) {
         // 添加数据
-        mLinesData.addSeries(tSeries);
+        mLinesData.addSeries(getValidXYSeries_(aX, aY, aName));
         // 创建曲线
         LineJFree tLine = new LineJFree(mLines.size(), aX, aY, aName);
         mLines.add(tLine);
-        
         // 返回 LineJFree
         return tLine;
     }
@@ -368,24 +381,24 @@ public final class PlotterJFree implements IPlotter {
     @Override public IPlotter xScaleLog() {
         if (!(mXAxis instanceof LogarithmicAxis)) {
             NumberAxis oXAxis = mXAxis;
-            mXAxis = new LogarithmicAxis(oXAxis.getLabel());
+            mXAxis = new LogarithmicAxis(oXAxis.getLabel()); // log 轴的默认 tick 逻辑有点复杂，修改麻烦，这里懒得去弄了
             mXAxis.setAutoRangeIncludesZero(false);
             mXAxis.setLabelFont(oXAxis.getLabelFont());
             mXAxis.setTickLabelFont(oXAxis.getTickLabelFont());
+            if (!oXAxis.isAutoRange()) mXAxis.setRange(oXAxis.getRange());
             mPlot.setDomainAxis(mXAxis);
-            // TODO: 范围设置需要专门更新
         }
         return this;
     }
     @Override public IPlotter yScaleLog() {
         if (!(mYAxis instanceof LogarithmicAxis)) {
             NumberAxis oYAxis = mYAxis;
-            mYAxis = new LogarithmicAxis(oYAxis.getLabel());
+            mYAxis = new LogarithmicAxis(oYAxis.getLabel()); // log 轴的默认 tick 逻辑有点复杂，修改麻烦，这里懒得去弄了
             mYAxis.setAutoRangeIncludesZero(false);
             mYAxis.setLabelFont(oYAxis.getLabelFont());
             mYAxis.setTickLabelFont(oYAxis.getTickLabelFont());
+            if (!oYAxis.isAutoRange()) mYAxis.setRange(oYAxis.getRange());
             mPlot.setRangeAxis(mYAxis);
-            // TODO: 范围设置需要专门更新
         }
         return this;
     }

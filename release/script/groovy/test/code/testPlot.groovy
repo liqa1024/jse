@@ -7,11 +7,11 @@ import com.jtool.plot.Plotters;
 
 /** 测试直接在 java 上绘图 */
 // 获取数据
-x = Vectors.linspace(-1.0, 0.1, 21);
+x = Vectors.linspace(-1.0, 1.0, 21);
 sinx = x.opt().map {v -> MathEX.Fast.sin(v*MathEX.PI)};
 cosx = x.opt().map {v -> MathEX.Fast.cos(v*MathEX.PI)};
 nsinx= x.opt().map {v ->-MathEX.Fast.sin(v*MathEX.PI)};
-theta =  Vectors.linspace(0.0, 0.1*MathEX.PI, 21);
+theta =  Vectors.linspace(0.0, 2.0*MathEX.PI, 21);
 xc = theta.opt().map {v -> MathEX.Fast.cos(v)};
 yc = theta.opt().map {v -> MathEX.Fast.sin(v)};
 

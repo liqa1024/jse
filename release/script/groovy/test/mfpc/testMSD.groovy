@@ -109,10 +109,9 @@ def msdFS2900 = dumpFS2900.getMFPC(timestep, nThreads).withCloseable {it.calMSD(
 UT.Timer.toc("${nThreads} threads, FS2 MSD 900");
 
 def plt = Plotters.get();
-plt.plot(msdFS1   .first(), msdFS1   .second(), 'FS1, 800K').marker('s');
-plt.plot(msdFS2800.first(), msdFS2800.second(), 'FS2, 800K').marker('o');
-plt.plot(msdFS2850.first(), msdFS2850.second(), 'FS2, 850K').marker('^');
-plt.plot(msdFS2900.first(), msdFS2900.second(), 'FS2, 900K').marker('d');
+plt.loglog(msdFS1   .first(), msdFS1   .second(), 'FS1, 800K').marker('s');
+plt.loglog(msdFS2800.first(), msdFS2800.second(), 'FS2, 800K').marker('o');
+plt.loglog(msdFS2850.first(), msdFS2850.second(), 'FS2, 850K').marker('^');
+plt.loglog(msdFS2900.first(), msdFS2900.second(), 'FS2, 900K').marker('d');
 plt.xLabel('time[ps]').yLabel('msd');
-plt.xScaleLog().yScaleLog();
 plt.show();
