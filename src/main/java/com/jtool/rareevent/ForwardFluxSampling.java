@@ -466,6 +466,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     private int mStep = -1; // 记录运行的步骤，i
     private boolean mFinished = false;
     private boolean mStepFinished = true; // 标记此步骤是否正常完成结束而不是中断或者正在运行中
+    @SuppressWarnings("ExtractMethodRecommender")
     public void run() {
         if (mFinished) return;
         // 实际分为两个过程，第一个过程首先统计轨迹通量（flux of trajectories）

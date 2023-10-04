@@ -278,10 +278,11 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
      */
     public Pair<IVector, IVector> calMSD(int aN, double aTimeGap) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
+        if (mFrameNum <= 3) throw new RuntimeException("FrameNum MUST be Greater than 3 for MSD calculation, current: "+mFrameNum);
         
         // 初始化需要计算的变量
         final IVector rMSD = Vectors.zeros(aN);
-        final IVector rTime = Vectors.logspace(mTimestep, mTimestep*mFrameNum*0.8, aN);
+        final IVector rTime = Vectors.logspace(mTimestep*2.0, mTimestep*mFrameNum*0.8, aN);
         
         // 先临时调整时间点到帧数值（不去排除重复值，如果存在）
         rTime.operation().map2this(t -> Math.round(t / mTimestep));
