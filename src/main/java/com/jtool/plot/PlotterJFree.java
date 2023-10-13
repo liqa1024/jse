@@ -28,9 +28,9 @@ import java.util.Iterator;
 import java.util.List;
 
 
+import static com.jtool.plot.Colors.COLOR;
 import static com.jtool.plot.Shapes.*;
 import static com.jtool.plot.Strokes.*;
-import static com.jtool.plot.Colors.COLOR_;
 import static java.awt.Color.*;
 
 
@@ -52,7 +52,7 @@ public final class PlotterJFree implements IPlotter {
             mName = aName;
             mX = aX;
             mY = aY;
-            mPaint = COLOR_(aID);
+            mPaint = COLOR(aID);
             mLineRender.setSeriesPaint(mID, mPaint);
             mLegendLine = new Line2D.Double(-super.mLineStroke.getSize()*LEGEND_SIZE, 0.0, super.mLineStroke.getSize()*LEGEND_SIZE, 0.0);
             

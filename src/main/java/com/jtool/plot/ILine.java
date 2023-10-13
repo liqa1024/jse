@@ -16,7 +16,7 @@ import static com.jtool.plot.Colors.*;
  */
 public interface ILine {
     /** 设置线的各种属性，返回自身方便链式调用 */
-    default ILine color(double[] aColor) {return color(aColor[0], aColor[1], aColor[2]);}
+    default ILine color(int aIdx) {return color(COLOR(aIdx));}
     default ILine color(double aR, double aG, double aB) {return color(new Color((int)Math.round(aR*255), (int)Math.round(aG*255), (int)Math.round(aB*255)));}
     default ILine color(String aColor) {return color(toColor(aColor));}
     ILine color(Paint aPaint);
@@ -32,7 +32,7 @@ public interface ILine {
     ILine lineStroke(Stroke aLineStroke);
     
     
-    default ILine markerColor(double[] aColor) {return markerColor(aColor[0], aColor[1], aColor[2]);}
+    default ILine markerColor(int aIdx) {return markerColor(COLOR(aIdx));}
     default ILine markerColor(double aR, double aG, double aB) {return markerColor(new Color(Math.round(aR*255), Math.round(aG*255), Math.round(aB*255)));}
     default ILine markerColor(String aColor) {return markerColor(toColor(aColor));}
     ILine markerColor(Paint aPaint);

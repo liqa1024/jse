@@ -6,7 +6,6 @@ import com.jtool.lmp.LPC
 import com.jtool.math.MathEX
 import com.jtool.math.table.Tables
 import com.jtool.plot.Plotters
-import com.jtool.system.SSH
 import com.jtool.system.WSL
 
 import static com.jtool.code.CS.*
@@ -25,7 +24,7 @@ final String FS1MSDPath     = 'lmp/.temp/msd-fs1.csv';
 final String FS2MSDPath     = 'lmp/.temp/msd-fs2.csv';
 
 final boolean genData       = false;
-final boolean calMSD        = true;
+final boolean calMSD        = false;
 
 
 if (genData) {
@@ -62,6 +61,12 @@ if (calMSD) {
         table['800-Cu'] = msd800Cu.first();
         table['800-Zr'] = msd800Zr.first();
         
+        subCal = lpc.calMSD(FS1dataPath, 800).setDenseNormalized();
+        msd800Cu = subCal.calType(1);
+        msd800Zr = subCal.calType(2);
+        table['800-Cu-2'] = msd800Cu.first();
+        table['800-Zr-2'] = msd800Zr.first();
+        
         UT.IO.table2csv(table, FS1MSDPath);
     }
     
@@ -85,6 +90,23 @@ if (calMSD) {
         table['900-Cu'] = msd900Cu.first();
         table['900-Zr'] = msd900Zr.first();
         
+        subCal = lpc.calMSD(FS2dataPath, 800).setDenseNormalized();
+        msd800Cu = subCal.calType(1);
+        msd800Zr = subCal.calType(2);
+        subCal = lpc.calMSD(FS2dataPath, 850).setDenseNormalized();
+        msd850Cu = subCal.calType(1);
+        msd850Zr = subCal.calType(2);
+        subCal = lpc.calMSD(FS2dataPath, 900).setDenseNormalized();
+        msd900Cu = subCal.calType(1);
+        msd900Zr = subCal.calType(2);
+        
+        table['800-Cu-2'] = msd800Cu.first();
+        table['800-Zr-2'] = msd800Zr.first();
+        table['850-Cu-2'] = msd850Cu.first();
+        table['850-Zr-2'] = msd850Zr.first();
+        table['900-Cu-2'] = msd900Cu.first();
+        table['900-Zr-2'] = msd900Zr.first();
+        
         UT.IO.table2csv(table, FS2MSDPath);
     }
     UT.Timer.toc('calMSD');
@@ -97,17 +119,25 @@ def msdFS2 = UT.IO.csv2table(FS2MSDPath);
 
 // 绘制
 def plt1 = Plotters.get();
-plt1.loglog(msdFS1['t'], msdFS1['800-Cu'], 'FS1-Cu, 800K').marker('s');
-plt1.loglog(msdFS2['t'], msdFS2['800-Cu'], 'FS2-Cu, 800K').marker('o');
-plt1.loglog(msdFS2['t'], msdFS2['850-Cu'], 'FS2-Cu, 850K').marker('^');
-plt1.loglog(msdFS2['t'], msdFS2['900-Cu'], 'FS2-Cu, 900K').marker('d');
+plt1.loglog(msdFS1['t'], msdFS1['800-Cu']  , 'FS1-Cu, 800K'  ).color(0).marker('s');
+plt1.loglog(msdFS2['t'], msdFS2['800-Cu']  , 'FS2-Cu, 800K'  ).color(1).marker('o');
+plt1.loglog(msdFS2['t'], msdFS2['850-Cu']  , 'FS2-Cu, 850K'  ).color(2).marker('^');
+plt1.loglog(msdFS2['t'], msdFS2['900-Cu']  , 'FS2-Cu, 900K'  ).color(3).marker('d');
+plt1.loglog(msdFS1['t'], msdFS1['800-Cu-2'], 'FS1-Cu-2, 800K').color(0).lineType('--');
+plt1.loglog(msdFS2['t'], msdFS2['800-Cu-2'], 'FS2-Cu-2, 800K').color(1).lineType('--');
+plt1.loglog(msdFS2['t'], msdFS2['850-Cu-2'], 'FS2-Cu-2, 850K').color(2).lineType('--');
+plt1.loglog(msdFS2['t'], msdFS2['900-Cu-2'], 'FS2-Cu-2, 900K').color(3).lineType('--');
 plt1.xLabel('time[ps]').yLabel('msd');
 plt1.show();
 
 def plt2 = Plotters.get();
-plt2.loglog(msdFS1['t'], msdFS1['800-Zr'], 'FS1-Zr, 800K').marker('s');
-plt2.loglog(msdFS2['t'], msdFS2['800-Zr'], 'FS2-Zr, 800K').marker('o');
-plt2.loglog(msdFS2['t'], msdFS2['850-Zr'], 'FS2-Zr, 850K').marker('^');
-plt2.loglog(msdFS2['t'], msdFS2['900-Zr'], 'FS2-Zr, 900K').marker('d');
+plt2.loglog(msdFS1['t'], msdFS1['800-Zr']  , 'FS1-Zr, 800K'  ).color(0).marker('s');
+plt2.loglog(msdFS2['t'], msdFS2['800-Zr']  , 'FS2-Zr, 800K'  ).color(1).marker('o');
+plt2.loglog(msdFS2['t'], msdFS2['850-Zr']  , 'FS2-Zr, 850K'  ).color(2).marker('^');
+plt2.loglog(msdFS2['t'], msdFS2['900-Zr']  , 'FS2-Zr, 900K'  ).color(3).marker('d');
+plt2.loglog(msdFS1['t'], msdFS1['800-Zr-2'], 'FS1-Zr-2, 800K').color(0).lineType('--');
+plt2.loglog(msdFS2['t'], msdFS2['800-Zr-2'], 'FS2-Zr-2, 800K').color(1).lineType('--');
+plt2.loglog(msdFS2['t'], msdFS2['850-Zr-2'], 'FS2-Zr-2, 850K').color(2).lineType('--');
+plt2.loglog(msdFS2['t'], msdFS2['900-Zr-2'], 'FS2-Zr-2, 900K').color(3).lineType('--');
 plt2.xLabel('time[ps]').yLabel('msd');
 plt2.show();

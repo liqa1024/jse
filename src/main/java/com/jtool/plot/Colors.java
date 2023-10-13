@@ -26,13 +26,9 @@ public class Colors {
         };
     public static final Color COLOR_NULL = new Color(255, 255, 255, 0);
     
-    public static Color COLOR_(int aIdx) {return COLORS[aIdx%COLORS.length];}
-    public static double[] COLOR(int aIdx) {
-        Color tColor = COLOR_(aIdx);
-        return new double[] {tColor.getRed()/255.0, tColor.getGreen()/255.0, tColor.getBlue()/255.0};
-    }
+    public static Color COLOR(int aIdx) {return COLORS[aIdx%COLORS.length];}
     private static int sCIdx = 0;
-    public static double[] COLOR() {return COLOR(sCIdx++);}
+    public static Color COLOR() {return COLOR(sCIdx++);}
     
     
     public static Color toColor(String aColor) {
@@ -71,5 +67,5 @@ public class Colors {
     }
     
     /** 全局常量记录默认值 */
-    public final static Color DEFAULT_COLOR = COLOR_(0);
+    public final static Color DEFAULT_COLOR = COLOR(0);
 }
