@@ -1,6 +1,7 @@
 package com.jtool.math.function;
 
 import com.jtool.math.MathEX;
+import com.jtool.math.vector.IVector;
 import com.jtool.math.vector.IVectorGetter;
 
 import java.util.Collection;
@@ -15,6 +16,7 @@ public class Func1 {
     public static IFunc1 ones(double aX0, double aDx, int aNx) {IFunc1 rFunc = zeros(aX0, aDx, aNx); rFunc.fill(1.0); return rFunc;}
     public static IFunc1 zeros(double aX0, double aDx, int aNx) {return PBCFunc1.zeros(aX0, aDx, aNx);}
     public static IFunc1 zeros(int aNx, IVectorGetter aXGetter) {return UnequalIntervalFunc1.zeros(aNx, aXGetter);}
+    public static IFunc1 zeros(IVector aX) {return zeros(aX.size(), aX);}
     
     public static IFunc1 from(double aX0, double aDx, int aNx, IFunc1Subs aFunc1Subs) {
         IFunc1 rFunc = zeros(aX0, aDx, aNx);
@@ -36,10 +38,25 @@ public class Func1 {
         rFunc.fill(aData);
         return rFunc;
     }
-    /** 提供一个非均匀间距的构造 */
+    public static IFunc1 from(double aX0, double aDx, IVector aVector) {
+        IFunc1 rFunc = zeros(aX0, aDx, aVector.size());
+        rFunc.fill(aVector);
+        return rFunc;
+    }
+    /** 提供非均匀间距的构造 */
     public static IFunc1 from(int aNx, IVectorGetter aXGetter, IFunc1Subs aFunc1Subs) {
         IFunc1 rFunc = zeros(aNx, aXGetter);
         rFunc.fill(aFunc1Subs);
+        return rFunc;
+    }
+    public static IFunc1 from(IVector aX, IFunc1Subs aFunc1Subs) {
+        IFunc1 rFunc = zeros(aX);
+        rFunc.fill(aFunc1Subs);
+        return rFunc;
+    }
+    public static IFunc1 from(IVector aX, IVector aF) {
+        IFunc1 rFunc = zeros(aX);
+        rFunc.fill(aF);
         return rFunc;
     }
     

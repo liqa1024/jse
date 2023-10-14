@@ -2,6 +2,7 @@ package com.jtool.math.function;
 
 
 import com.jtool.code.functional.*;
+import com.jtool.math.vector.IVector;
 
 /**
  * 任意一维数值函数的运算
@@ -9,15 +10,15 @@ import com.jtool.code.functional.*;
  */
 public interface IFunc1Operation {
     /** 通用的运算 */
-    IFunc1 plus         (IFunc1Subs aRHS);
-    IFunc1 minus        (IFunc1Subs aRHS);
-    IFunc1 lminus       (IFunc1Subs aRHS);
-    IFunc1 multiply     (IFunc1Subs aRHS);
-    IFunc1 div          (IFunc1Subs aRHS);
-    IFunc1 ldiv         (IFunc1Subs aRHS);
-    IFunc1 mod          (IFunc1Subs aRHS);
-    IFunc1 lmod         (IFunc1Subs aRHS);
-    IFunc1 operate      (IFunc1Subs aRHS, IDoubleOperator2 aOpt);
+    IFunc1 plus         (IFunc1 aRHS);
+    IFunc1 minus        (IFunc1 aRHS);
+    IFunc1 lminus       (IFunc1 aRHS);
+    IFunc1 multiply     (IFunc1 aRHS);
+    IFunc1 div          (IFunc1 aRHS);
+    IFunc1 ldiv         (IFunc1 aRHS);
+    IFunc1 mod          (IFunc1 aRHS);
+    IFunc1 lmod         (IFunc1 aRHS);
+    IFunc1 operate      (IFunc1 aRHS, IDoubleOperator2 aOpt);
     
     IFunc1 plus         (double aRHS);
     IFunc1 minus        (double aRHS);
@@ -29,15 +30,15 @@ public interface IFunc1Operation {
     IFunc1 lmod         (double aRHS);
     IFunc1 map          (IDoubleOperator1 aOpt);
     
-    void plus2this      (IFunc1Subs aRHS);
-    void minus2this     (IFunc1Subs aRHS);
-    void lminus2this    (IFunc1Subs aRHS);
-    void multiply2this  (IFunc1Subs aRHS);
-    void div2this       (IFunc1Subs aRHS);
-    void ldiv2this      (IFunc1Subs aRHS);
-    void mod2this       (IFunc1Subs aRHS);
-    void lmod2this      (IFunc1Subs aRHS);
-    void operate2this   (IFunc1Subs aRHS, IDoubleOperator2 aOpt);
+    void plus2this      (IFunc1 aRHS);
+    void minus2this     (IFunc1 aRHS);
+    void lminus2this    (IFunc1 aRHS);
+    void multiply2this  (IFunc1 aRHS);
+    void div2this       (IFunc1 aRHS);
+    void ldiv2this      (IFunc1 aRHS);
+    void mod2this       (IFunc1 aRHS);
+    void lmod2this      (IFunc1 aRHS);
+    void operate2this   (IFunc1 aRHS, IDoubleOperator2 aOpt);
     
     void plus2this      (double aRHS);
     void minus2this     (double aRHS);
@@ -51,15 +52,17 @@ public interface IFunc1Operation {
     
     /** 这两个方法名默认是作用到自身的，这里为了保持 operation 的使用简洁不在函数名上特殊说明 */
     void fill           (double aRHS);
+    void fill           (IVector aRHS);
+    void fill           (IFunc1 aRHS);
     void fill           (IFunc1Subs aRHS);
     void assign         (IDoubleSupplier aSup);
     /** 统一提供一个 for-each 运算来减少优化需要的重复代码 */
     void forEach        (IDoubleConsumer1 aCon);
     
     /** 函数特有的运算，最后增加一项 x 的值传入 */
-    IFunc1 operateFull      (IFunc1Subs aRHS, IDoubleOperator3 aOpt);
+    IFunc1 operateFull      (IFunc1 aRHS, IDoubleOperator3 aOpt);
     IFunc1 mapFull          (IDoubleOperator2 aOpt);
-    void operateFull2this   (IFunc1Subs aRHS, IDoubleOperator3 aOpt);
+    void operateFull2this   (IFunc1 aRHS, IDoubleOperator3 aOpt);
     void mapFull2this       (IDoubleOperator2 aOpt);
     
     /** 微分积分运算 */

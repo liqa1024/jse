@@ -11,7 +11,7 @@ import com.jtool.math.operation.ARRAY;
  */
 public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
     /** 通用的一些运算 */
-    @Override public IFunc1 plus(IFunc1Subs aRHS) {
+    @Override public IFunc1 plus(IFunc1 aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
         DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
@@ -26,7 +26,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         }
         return rFunc1;
     }
-    @Override public IFunc1 minus(IFunc1Subs aRHS) {
+    @Override public IFunc1 minus(IFunc1 aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
         DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
@@ -41,7 +41,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         }
         return rFunc1;
     }
-    @Override public IFunc1 lminus(IFunc1Subs aRHS) {
+    @Override public IFunc1 lminus(IFunc1 aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
         DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
@@ -56,7 +56,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         }
         return rFunc1;
     }
-    @Override public IFunc1 multiply(IFunc1Subs aRHS) {
+    @Override public IFunc1 multiply(IFunc1 aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
         DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
@@ -71,7 +71,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         }
         return rFunc1;
     }
-    @Override public IFunc1 div(IFunc1Subs aRHS) {
+    @Override public IFunc1 div(IFunc1 aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
         DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
@@ -86,7 +86,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         }
         return rFunc1;
     }
-    @Override public IFunc1 ldiv(IFunc1Subs aRHS) {
+    @Override public IFunc1 ldiv(IFunc1 aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
         DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
@@ -101,7 +101,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         }
         return rFunc1;
     }
-    @Override public IFunc1 mod(IFunc1Subs aRHS) {
+    @Override public IFunc1 mod(IFunc1 aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
         DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
@@ -116,7 +116,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         }
         return rFunc1;
     }
-    @Override public IFunc1 lmod(IFunc1Subs aRHS) {
+    @Override public IFunc1 lmod(IFunc1 aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
         DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
@@ -131,7 +131,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         }
         return rFunc1;
     }
-    @Override public IFunc1 operate(IFunc1Subs aRHS, IDoubleOperator2 aOpt) {
+    @Override public IFunc1 operate(IFunc1 aRHS, IDoubleOperator2 aOpt) {
         DoubleArrayFunc1 tThis = thisFunc1_();
         DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
@@ -274,7 +274,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         return rFunc1;
     }
     
-    @Override public void plus2this(IFunc1Subs aRHS) {
+    @Override public void plus2this(IFunc1 aRHS) {
         DoubleArrayFunc1 rThis = thisFunc1_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
@@ -295,7 +295,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
             for (int i = tStart; i < tEnd; ++i) rThis.set_(i, rThis.get_(i) + aRHS.subs(rThis.getX(i)));
         }
     }
-    @Override public void minus2this(IFunc1Subs aRHS) {
+    @Override public void minus2this(IFunc1 aRHS) {
         DoubleArrayFunc1 rThis = thisFunc1_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
@@ -316,7 +316,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
             for (int i = tStart; i < tEnd; ++i) rThis.set_(i, rThis.get_(i) - aRHS.subs(rThis.getX(i)));
         }
     }
-    @Override public void lminus2this(IFunc1Subs aRHS) {
+    @Override public void lminus2this(IFunc1 aRHS) {
         DoubleArrayFunc1 rThis = thisFunc1_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
@@ -328,7 +328,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
             for (int i = 0; i < tNx; ++i) rThis.set_(i, aRHS.subs(rThis.getX(i)) - rThis.get_(i));
         }
     }
-    @Override public void multiply2this(IFunc1Subs aRHS) {
+    @Override public void multiply2this(IFunc1 aRHS) {
         DoubleArrayFunc1 rThis = thisFunc1_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
@@ -340,7 +340,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
             for (int i = 0; i < tNx; ++i) rThis.set_(i, rThis.get_(i) * aRHS.subs(rThis.getX(i)));
         }
     }
-    @Override public void div2this(IFunc1Subs aRHS) {
+    @Override public void div2this(IFunc1 aRHS) {
         DoubleArrayFunc1 rThis = thisFunc1_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
@@ -352,7 +352,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
             for (int i = 0; i < tNx; ++i) rThis.set_(i, rThis.get_(i) / aRHS.subs(rThis.getX(i)));
         }
     }
-    @Override public void ldiv2this(IFunc1Subs aRHS) {
+    @Override public void ldiv2this(IFunc1 aRHS) {
         DoubleArrayFunc1 rThis = thisFunc1_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
@@ -364,7 +364,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
             for (int i = 0; i < tNx; ++i) rThis.set_(i, aRHS.subs(rThis.getX(i)) / rThis.get_(i));
         }
     }
-    @Override public void mod2this(IFunc1Subs aRHS) {
+    @Override public void mod2this(IFunc1 aRHS) {
         DoubleArrayFunc1 rThis = thisFunc1_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
@@ -376,7 +376,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
             for (int i = 0; i < tNx; ++i) rThis.set_(i, rThis.get_(i) % aRHS.subs(rThis.getX(i)));
         }
     }
-    @Override public void lmod2this(IFunc1Subs aRHS) {
+    @Override public void lmod2this(IFunc1 aRHS) {
         DoubleArrayFunc1 rThis = thisFunc1_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
@@ -388,7 +388,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
             for (int i = 0; i < tNx; ++i) rThis.set_(i, aRHS.subs(rThis.getX(i)) % rThis.get_(i));
         }
     }
-    @Override public void operate2this(IFunc1Subs aRHS, IDoubleOperator2 aOpt) {
+    @Override public void operate2this(IFunc1 aRHS, IDoubleOperator2 aOpt) {
         DoubleArrayFunc1 rThis = thisFunc1_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
@@ -401,7 +401,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         }
     }
     
-    @Override public void fill(IFunc1Subs aRHS) {
+    @Override public void fill(IFunc1 aRHS) {
         DoubleArrayFunc1 rThis = thisFunc1_();
         final double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {

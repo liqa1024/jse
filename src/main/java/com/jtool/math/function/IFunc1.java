@@ -20,6 +20,8 @@ public interface IFunc1 extends IFunc1Subs {
     /** 批量修改的接口 */
     void fill(double[] aData);
     default void fill(double aValue) {operation().fill(aValue);}
+    default void fill(IVector aVector) {operation().fill(aVector);}
+    default void fill(IFunc1 aFunc1) {operation().fill(aFunc1);}
     default void fill(IFunc1Subs aFunc1Subs) {operation().fill(aFunc1Subs);}
     default void fill(Iterable<? extends Number> aList) {
         final Iterator<? extends Number> it = aList.iterator();
@@ -78,11 +80,11 @@ public interface IFunc1 extends IFunc1Subs {
     default IFunc1 div      (double aRHS) {return operation().div     (aRHS);}
     default IFunc1 mod      (double aRHS) {return operation().mod     (aRHS);}
     
-    default IFunc1 plus     (IFunc1Subs aRHS) {return operation().plus    (aRHS);}
-    default IFunc1 minus    (IFunc1Subs aRHS) {return operation().minus   (aRHS);}
-    default IFunc1 multiply (IFunc1Subs aRHS) {return operation().multiply(aRHS);}
-    default IFunc1 div      (IFunc1Subs aRHS) {return operation().div     (aRHS);}
-    default IFunc1 mod      (IFunc1Subs aRHS) {return operation().mod     (aRHS);}
+    default IFunc1 plus     (IFunc1 aRHS) {return operation().plus    (aRHS);}
+    default IFunc1 minus    (IFunc1 aRHS) {return operation().minus   (aRHS);}
+    default IFunc1 multiply (IFunc1 aRHS) {return operation().multiply(aRHS);}
+    default IFunc1 div      (IFunc1 aRHS) {return operation().div     (aRHS);}
+    default IFunc1 mod      (IFunc1 aRHS) {return operation().mod     (aRHS);}
     
     /** 注意这些 2this 操作并没有重载 groovy 中的 += 之类的运算符 */
     default void plus2this      (double aRHS) {operation().plus2this    (aRHS);}
@@ -91,11 +93,11 @@ public interface IFunc1 extends IFunc1Subs {
     default void div2this       (double aRHS) {operation().div2this     (aRHS);}
     default void mod2this       (double aRHS) {operation().mod2this     (aRHS);}
     
-    default void plus2this      (IFunc1Subs aRHS) {operation().plus2this    (aRHS);}
-    default void minus2this     (IFunc1Subs aRHS) {operation().minus2this   (aRHS);}
-    default void multiply2this  (IFunc1Subs aRHS) {operation().multiply2this(aRHS);}
-    default void div2this       (IFunc1Subs aRHS) {operation().div2this     (aRHS);}
-    default void mod2this       (IFunc1Subs aRHS) {operation().mod2this     (aRHS);}
+    default void plus2this      (IFunc1 aRHS) {operation().plus2this    (aRHS);}
+    default void minus2this     (IFunc1 aRHS) {operation().minus2this   (aRHS);}
+    default void multiply2this  (IFunc1 aRHS) {operation().multiply2this(aRHS);}
+    default void div2this       (IFunc1 aRHS) {operation().div2this     (aRHS);}
+    default void mod2this       (IFunc1 aRHS) {operation().mod2this     (aRHS);}
     
     /** Groovy 的部分，重载一些运算符方便操作；圆括号为 x 值查找，方括号为索引查找 */
     @VisibleForTesting default double call(double aX) {return subs(aX);}

@@ -301,7 +301,7 @@ public class LmpParameterCalculator extends AbstractHasAutoShutdown {
         final @Nullable Lammpstrj fShortLammpstrj = tShortLammpstrj; final int fShortN = tShortN;
         final @NotNull  Lammpstrj fLongLammpstrj = tLongLammpstrj; final int fLongN = aN;
         return new ISubCalculator<IFunc1>() {
-            private IFunc1 calMSD_(@Nullable Supplier<MultiFrameParameterCalculator> aShortSupplier, @NotNull Supplier<MultiFrameParameterCalculator> aLongSupplier) {
+            private IFunc1 calMSD_(@Nullable Supplier<@NotNull MultiFrameParameterCalculator> aShortSupplier, @NotNull Supplier<@NotNull MultiFrameParameterCalculator> aLongSupplier) {
                 // 计算短时和长时的 MSD
                 IFunc1 tLongMSD;
                 try (MultiFrameParameterCalculator tLongMFPC = aLongSupplier.get()) {tLongMSD = tLongMFPC.calMSD(fLongN, aTimeGap);}
