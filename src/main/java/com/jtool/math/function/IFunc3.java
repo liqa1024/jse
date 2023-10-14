@@ -36,9 +36,9 @@ public interface IFunc3 extends IFunc3Subs {
     double x0();
     double y0();
     double z0();
-    double dx();
-    double dy();
-    double dz();
+    double dx(int aI);
+    double dy(int aJ);
+    double dz(int aK);
     double getX(int aI);
     double getY(int aJ);
     double getZ(int aK);

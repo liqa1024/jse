@@ -5,7 +5,8 @@ import com.google.common.collect.HashBiMap;
 import com.jtool.code.UT;
 import com.jtool.code.collection.AbstractCollections;
 import com.jtool.code.collection.AbstractRandomAccessList;
-import com.jtool.code.collection.Pair;
+import com.jtool.math.function.Func1;
+import com.jtool.math.function.IFunc1;
 import com.jtool.math.matrix.IMatrix;
 import com.jtool.math.matrix.Matrices;
 import com.jtool.math.vector.IVector;
@@ -271,23 +272,23 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
     /**
      * 计算 MSD (Mean Square Displacement)
      * <p>
-     * TODO: 由于目前 Func1 只支持均匀间距的点，这里暂时直接输出两组向量
      * @author liqa
      * @param aN 需要计算的时间点数目，默认为 20
      * @param aTimeGap 进行平均的时间间隔，认为这个时间间隔后的系统不再相关，默认为 10*mTimestep
      * @param aMaxTime 希望的最高时间，默认为 mTimestep*mFrameNum*0.8，且不会超过此值
      * @return 对应时间下 MSD 的函数（msd 在前，t 在后）
      */
-    public Pair<IVector, IVector> calMSD(int aN, double aTimeGap, double aMaxTime) {
+    public IFunc1 calMSD(int aN, double aTimeGap, double aMaxTime) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         if (mFrameNum <= 3) throw new RuntimeException("FrameNum MUST be Greater than 3 for MSD calculation, current: "+mFrameNum);
         
-        // 初始化需要计算的变量
-        final IVector rMSD = Vectors.zeros(aN);
-        final IVector rTime = Vectors.logspace(mTimestep*2.0, Math.min(mTimestep*mFrameNum*0.8, aMaxTime), aN);
+        // 初始化需要计算的时间序列
+        final IVector tFrames = Vectors.logspace(mTimestep*2.0, Math.min(mTimestep*mFrameNum*0.8, aMaxTime), aN);
+        // 通过时间点计算帧数值（不去排除重复值，如果存在）
+        tFrames.operation().map2this(t -> Math.round(t / mTimestep));
+        // x 坐标为通过帧数计算得到的时间值
+        final IFunc1 rMSD = Func1.zeros(aN, i -> (tFrames.get_(i) * mTimestep));
         
-        // 先临时调整时间点到帧数值（不去排除重复值，如果存在）
-        rTime.operation().map2this(t -> Math.round(t / mTimestep));
         // 获取需要间隔的帧数值
         final int tFrameGap = Math.max(1, (int)Math.round(aTimeGap / mTimestep));
         
@@ -295,7 +296,7 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
         pool().parfor(aN, i -> {
             double rStatNum = 0;
             double rMSDi = 0.0;
-            for (int start = 0, end = (int)rTime.get_(i); end < mFrameNum; start+=tFrameGap, end+=tFrameGap) {
+            for (int start = 0, end = (int)tFrames.get_(i); end < mFrameNum; start+=tFrameGap, end+=tFrameGap) {
                 XYZ[] tStartFrame = mAllAtomDataXYZ[start];
                 XYZ[] tEndFrame = mAllAtomDataXYZ[end];
                 for (int j = 0; j < mAtomNum; ++j) rMSDi += tStartFrame[j].distance2(tEndFrame[j]);
@@ -305,13 +306,10 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
             rMSD.set_(i, rMSDi/rStatNum);
         });
         
-        // 最后将时间点调整回实际时间
-        rTime.multiply2this(mTimestep);
-        
         // 输出结果
-        return new Pair<>(rMSD, rTime);
+        return rMSD;
     }
-    public Pair<IVector, IVector> calMSD(int aN, double aTimeGap) {return calMSD(aN, aTimeGap, mTimestep*mFrameNum*0.8);}
-    public Pair<IVector, IVector> calMSD(int aN) {return calMSD(aN, 10*mTimestep);}
-    public Pair<IVector, IVector> calMSD() {return calMSD(20);}
+    public IFunc1 calMSD(int aN, double aTimeGap) {return calMSD(aN, aTimeGap, mTimestep*mFrameNum*0.8);}
+    public IFunc1 calMSD(int aN) {return calMSD(aN, 10*mTimestep);}
+    public IFunc1 calMSD() {return calMSD(20);}
 }

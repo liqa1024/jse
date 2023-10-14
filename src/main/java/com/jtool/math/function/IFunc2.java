@@ -32,8 +32,8 @@ public interface IFunc2 extends IFunc2Subs {
     int Ny();
     double x0();
     double y0();
-    double dx();
-    double dy();
+    double dx(int aI);
+    double dy(int aJ);
     double getX(int aI);
     double getY(int aJ);
     void setX0(double aNewX0);

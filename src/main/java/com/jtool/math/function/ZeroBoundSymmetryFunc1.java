@@ -8,10 +8,8 @@ public final class ZeroBoundSymmetryFunc1 extends DoubleArrayFunc1 implements IZ
     /** 在这里提供一些常用的构造 */
     public static ZeroBoundSymmetryFunc1 zeros(double aX0, double aDx, int aNx) {return new ZeroBoundSymmetryFunc1(aX0, aDx, new double[aNx]);}
     
-    
     public ZeroBoundSymmetryFunc1(double aX0, double aDx, double[] aF) {super(aX0, aDx, aF);}
     public ZeroBoundSymmetryFunc1(double[] aX, double[] aF) {super(aX, aF);}
-    public ZeroBoundSymmetryFunc1(double aX0, double aDx, int aNx, IFunc1Subs aFunc) {super(aX0, aDx, aNx, aFunc);}
     
     /** DoubleArrayFunc1 stuffs */
     @Override protected double getOutL_(int aI) {

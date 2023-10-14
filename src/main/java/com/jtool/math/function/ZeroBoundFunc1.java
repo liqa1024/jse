@@ -8,10 +8,8 @@ public final class ZeroBoundFunc1 extends DoubleArrayFunc1 implements IZeroBound
     /** 在这里提供一些常用的构造 */
     public static ZeroBoundFunc1 zeros(double aX0, double aDx, int aNx) {return new ZeroBoundFunc1(aX0, aDx, new double[aNx]);}
     
-    
     public ZeroBoundFunc1(double aX0, double aDx, double[] aF) {super(aX0, aDx, aF);}
     public ZeroBoundFunc1(double[] aX, double[] aF) {super(aX, aF);}
-    public ZeroBoundFunc1(double aX0, double aDx, int aNx, IFunc1Subs aFunc) {super(aX0, aDx, aNx, aFunc);}
     
     /** DoubleArrayFunc1 stuffs */
     @Override protected double getOutL_(int aI) {return 0.0;}

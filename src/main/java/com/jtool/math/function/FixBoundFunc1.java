@@ -8,12 +8,10 @@ public final class FixBoundFunc1 extends DoubleArrayFunc1 {
     /** 在这里提供一些常用的构造 */
     public static FixBoundFunc1 zeros(double aX0, double aDx, int aNx) {return new FixBoundFunc1(aX0, aDx, new double[aNx]);}
     
-    
     private double mBoundL, mBoundR;
     
     public FixBoundFunc1(double aX0, double aDx, double[] aF) {super(aX0, aDx, aF); mBoundL = mBoundR = 0.0;}
     public FixBoundFunc1(double[] aX, double[] aF) {super(aX, aF); mBoundL = mBoundR = 0.0;}
-    public FixBoundFunc1(double aX0, double aDx, int aNx, IFunc1Subs aFunc) {super(aX0, aDx, aNx, aFunc); mBoundL = mBoundR = 0.0;}
     
     /** 通过链式调用来设置边界 */
     public FixBoundFunc1 setBound(double aBound) {

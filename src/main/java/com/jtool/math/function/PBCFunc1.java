@@ -10,8 +10,6 @@ public final class PBCFunc1 extends DoubleArrayFunc1 {
     
     public PBCFunc1(double aX0, double aDx, double[] aF) {super(aX0, aDx, aF);}
     public PBCFunc1(double[] aX, double[] aF) {super(aX, aF);}
-    public PBCFunc1(double aX0, double aDx, int aNx, IFunc1Subs aFunc) {super(aX0, aDx, aNx, aFunc);}
-    
     
     /** DoubleArrayFunc1 stuffs */
     @Override protected double getOutL_(int aI) {

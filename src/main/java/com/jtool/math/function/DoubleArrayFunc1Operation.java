@@ -9,11 +9,11 @@ import com.jtool.math.operation.ARRAY;
  * 针对包含 double[] 的函数的运算，这里更进一步是针对 {@link DoubleArrayFunc1} 的运算。
  * @author liqa
  */
-public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
+public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
     /** 通用的一些运算 */
     @Override public IFunc1 plus(IFunc1Subs aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
@@ -28,7 +28,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 minus(IFunc1Subs aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
@@ -43,7 +43,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 lminus(IFunc1Subs aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
@@ -58,7 +58,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 multiply(IFunc1Subs aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
@@ -73,7 +73,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 div(IFunc1Subs aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
@@ -88,7 +88,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 ldiv(IFunc1Subs aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
@@ -103,7 +103,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 mod(IFunc1Subs aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
@@ -118,7 +118,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 lmod(IFunc1Subs aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
@@ -133,7 +133,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 operate(IFunc1Subs aRHS, IDoubleOperator2 aOpt) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
@@ -149,7 +149,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     
     @Override public IFunc1 plus(double aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
@@ -163,7 +163,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 minus(double aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
@@ -177,7 +177,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 lminus(double aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
@@ -191,7 +191,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 multiply(double aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
@@ -205,7 +205,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 div(double aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
@@ -219,7 +219,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 ldiv(double aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
@@ -233,7 +233,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 mod(double aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
@@ -247,7 +247,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 lmod(double aRHS) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
@@ -261,7 +261,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     }
     @Override public IFunc1 map(IDoubleOperator1 aOpt) {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
+        DoubleArrayFunc1 rFunc1 = newFunc1_();
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
@@ -401,18 +401,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
         }
     }
     
-    @Override public void plus2this     (double aRHS) {DoubleArrayFunc1 rThis = thisFunc1_(); ARRAY.mapPlus2This       (rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
-    @Override public void minus2this    (double aRHS) {DoubleArrayFunc1 rThis = thisFunc1_(); ARRAY.mapMinus2This      (rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
-    @Override public void lminus2this   (double aRHS) {DoubleArrayFunc1 rThis = thisFunc1_(); ARRAY.mapLMinus2This     (rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
-    @Override public void multiply2this (double aRHS) {DoubleArrayFunc1 rThis = thisFunc1_(); ARRAY.mapMultiply2This   (rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
-    @Override public void div2this      (double aRHS) {DoubleArrayFunc1 rThis = thisFunc1_(); ARRAY.mapDiv2This        (rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
-    @Override public void ldiv2this     (double aRHS) {DoubleArrayFunc1 rThis = thisFunc1_(); ARRAY.mapLDiv2This       (rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
-    @Override public void mod2this      (double aRHS) {DoubleArrayFunc1 rThis = thisFunc1_(); ARRAY.mapMod2This        (rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
-    @Override public void lmod2this     (double aRHS) {DoubleArrayFunc1 rThis = thisFunc1_(); ARRAY.mapLMod2This       (rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
-    @Override public void map2this      (IDoubleOperator1 aOpt) {DoubleArrayFunc1 rThis = thisFunc1_(); ARRAY.mapDo2This(rThis.getData(), rThis.shiftSize(), rThis.dataSize(), aOpt);}
-    
-    @Override public void fill          (double aRHS) {DoubleArrayFunc1 rThis = thisFunc1_(); ARRAY.mapFill2This(rThis.getData(), rThis.shiftSize(), aRHS, rThis.dataSize());}
-    @Override public void fill          (IFunc1Subs aRHS) {
+    @Override public void fill(IFunc1Subs aRHS) {
         DoubleArrayFunc1 rThis = thisFunc1_();
         final double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
@@ -426,62 +415,13 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
             else for (int i = 0, j = rShift; i < rSize; ++i, ++j) rData[j] += aRHS.subs(rThis.getX(i));
         }
     }
-    @Override public void assign        (IDoubleSupplier aSup) {
-        // 注意不能改变顺序，因此这里不能考虑 double[] 的情况
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        final int tNx = rThis.Nx();
-        for (int i = 0; i < tNx; ++i) rThis.set_(i, aSup.get());
-    }
-    @Override public void forEach       (IDoubleConsumer1 aCon) {
-        // 注意不能改变顺序，因此这里不能考虑 double[] 的情况
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        final int tNx = tThis.Nx();
-        for (int i = 0; i < tNx; ++i) aCon.run(tThis.get_(i));
-    }
     
     
-    
-    /** 函数特有的运算 */
-    @Override public IFunc1 operateFull(IFunc1Subs aRHS, IDoubleOperator3 aOpt) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
-        // 此时不考虑 double[] 的结构，并且这里不对零边界的情况做优化
-        final int tNx = rFunc1.Nx();
-        for (int i = 0; i < tNx; ++i) {
-            double tX = rFunc1.getX(i);
-            rFunc1.set_(i, aOpt.cal(tThis.get_(i), aRHS.subs(tX), tX));
-        }
-        return rFunc1;
-    }
-    @Override public IFunc1 mapFull(IDoubleOperator2 aOpt) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_(tThis.x0(), tThis.dx(), tThis.Nx());
-        // 此时不考虑 double[] 的结构，并且这里不对零边界的情况做优化
-        final int tNx = rFunc1.Nx();
-        for (int i = 0; i < tNx; ++i) rFunc1.set_(i, aOpt.cal(tThis.get_(i), rFunc1.getX(i)));
-        return rFunc1;
-    }
-    @Override public void operateFull2this(IFunc1Subs aRHS, IDoubleOperator3 aOpt) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        // 此时不考虑 double[] 的结构，并且这里不对零边界的情况做优化
-        final int tNx = rThis.Nx();
-        for (int i = 0; i < tNx; ++i) {
-            double tX = rThis.getX(i);
-            rThis.set_(i, aOpt.cal(rThis.get_(i), aRHS.subs(tX), tX));
-        }
-    }
-    @Override public void mapFull2this(IDoubleOperator2 aOpt) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        // 此时不考虑 double[] 的结构，并且这里不对零边界的情况做优化
-        final int tNx = rThis.Nx();
-        for (int i = 0; i < tNx; ++i) rThis.set_(i, aOpt.cal(rThis.get_(i), rThis.getX(i)));
-    }
     
     
     /** 边界外的结果不保证正确性 */
     @Override public IFunc1 laplacian() {
-        DoubleArrayFunc1 tFunc1 = thisFunc1_();
-        IFunc1 rFunc1 = newFunc1_(tFunc1.x0(), tFunc1.dx(), tFunc1.Nx());
+        IFunc1 rFunc1 = newFunc1_();
         laplacian2Dest_(rFunc1);
         return rFunc1;
     }
@@ -502,13 +442,10 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
     
     /** 对于卷积以 refConvolve 为主 */
     @Override public IFunc1 convolve(IFunc2Subs aConv) {
-        if (aConv instanceof IFunc2) {
-            IFunc2 tConv = (IFunc2)aConv;
-            return new ZeroBoundFunc1(tConv.y0(), tConv.dy(), tConv.Ny(), refConvolve(aConv));
-        } else {
-            DoubleArrayFunc1 tFunc1 = thisFunc1_();
-            return new ZeroBoundFunc1(tFunc1.x0(), tFunc1.dx(), tFunc1.Nx(), refConvolve(aConv));
-        }
+        DoubleArrayFunc1 tThis = thisFunc1_();
+        IFunc1 rFunc1 = ZeroBoundFunc1.zeros(tThis.x0(), tThis.dx(), tThis.Nx());
+        rFunc1.fill(refConvolve(aConv));
+        return rFunc1;
     }
     @Override public IFunc1Subs refConvolve(IFunc2Subs aConv) {
         final DoubleArrayFunc1 tThis = thisFunc1_();
@@ -530,19 +467,15 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
         };
     }
     @Override public IFunc1 convolveFull(IFunc3Subs aConv) {
-        if (aConv instanceof IFunc3) {
-            IFunc3 tConv = (IFunc3)aConv;
-            return new ZeroBoundFunc1(tConv.z0(), tConv.dz(), tConv.Nz(), refConvolveFull(aConv));
-        } else {
-            DoubleArrayFunc1 tFunc1 = thisFunc1_();
-            return new ZeroBoundFunc1(tFunc1.x0(), tFunc1.dx(), tFunc1.Nx(), refConvolveFull(aConv));
-        }
+        DoubleArrayFunc1 tThis = thisFunc1_();
+        IFunc1 rFunc1 = ZeroBoundFunc1.zeros(tThis.x0(), tThis.dx(), tThis.Nx());
+        rFunc1.fill(refConvolveFull(aConv));
+        return rFunc1;
     }
-    @SuppressWarnings("SuspiciousNameCombination")
     @Override public IFunc1Subs refConvolveFull(IFunc3Subs aConv) {
         final DoubleArrayFunc1 tThis = thisFunc1_();
         return k -> {
-            double pC = aConv.subs(tThis.get_(0), tThis.mX0, k);
+            double pC = aConv.subs(tThis.get_(0), tThis.x0(), k);
             double tResult = 0.0;
             double tDx2 = tThis.dx()/2.0;
             int tNx = tThis.Nx();
@@ -559,38 +492,7 @@ public abstract class DoubleArrayFunc1Operation implements IFunc1Operation {
         };
     }
     
-    /** 由于是线性插值，因此最大的位置就是对应的 data 值 */
-    @Override public double maxX() {
-        final DoubleArrayFunc1 tThis = thisFunc1_();
-        int tMaxIdx = -1;
-        double tMaxValue = Double.NEGATIVE_INFINITY;
-        int tNx = tThis.Nx();
-        for (int i = 0; i < tNx; ++i) {
-            double tValue = tThis.get_(i);
-            if (tValue > tMaxValue) {
-                tMaxValue = tValue;
-                tMaxIdx = i;
-            }
-        }
-        return tThis.getX(tMaxIdx);
-    }
-    @Override public double minX() {
-        final DoubleArrayFunc1 tThis = thisFunc1_();
-        int tMinIdx = -1;
-        double tMinValue = Double.POSITIVE_INFINITY;
-        int tNx = tThis.Nx();
-        for (int i = 0; i < tNx; ++i) {
-            double tValue = tThis.get_(i);
-            if (tValue < tMinValue) {
-                tMinValue = tValue;
-                tMinIdx = i;
-            }
-        }
-        return tThis.getX(tMinIdx);
-    }
-    
-    
     /** stuff to override */
     protected abstract DoubleArrayFunc1 thisFunc1_();
-    protected abstract DoubleArrayFunc1 newFunc1_(double aX0, double aDx, int aNx);
+    protected abstract DoubleArrayFunc1 newFunc1_();
 }

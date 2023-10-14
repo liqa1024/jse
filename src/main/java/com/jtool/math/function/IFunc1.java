@@ -33,9 +33,15 @@ public interface IFunc1 extends IFunc1Subs {
     
     /** 获取结果，支持按照索引查找和按照 x 的值来查找 */
     double subs(double aX);
-    double get(int aI);
+    default double get(int aI) {
+        if (aI<0 || aI>=Nx()) throw new IndexOutOfBoundsException(String.format("Index: %d", aI));
+        return get_(aI);
+    }
     /** 设置结果，简单起见只允许按照索引来设置 */
-    void set(int aI, double aV);
+    default void set(int aI, double aV) {
+        if (aI<0 || aI>=Nx()) throw new IndexOutOfBoundsException(String.format("Index: %d", aI));
+        set_(aI, aV);
+    }
     
     /** 不进行边界检测的版本，带入 x 的情况永远不会超过边界（周期边界或者固定值），因此只提供索引的情况 */
     double get_(int aI);
@@ -44,15 +50,21 @@ public interface IFunc1 extends IFunc1Subs {
     /** 索引和 x 相互转换的接口 */
     int Nx();
     double x0();
-    double dx();
+    double dx(int aI);
     double getX(int aI);
     void setX0(double aNewX0);
     
     /** 附加一些额外的单元素操作，对于一般的只提供一个 update 的接口 */
     void update_(int aI, IDoubleOperator1 aOpt);
     double getAndUpdate_(int aI, IDoubleOperator1 aOpt);
-    void update(int aI, IDoubleOperator1 aOpt);
-    double getAndUpdate(int aI, IDoubleOperator1 aOpt);
+    default void update(int aI, IDoubleOperator1 aOpt) {
+        if (aI<0 || aI>=Nx()) throw new IndexOutOfBoundsException(String.format("Index: %d", aI));
+        update_(aI, aOpt);
+    }
+    default double getAndUpdate(int aI, IDoubleOperator1 aOpt) {
+        if (aI<0 || aI>=Nx()) throw new IndexOutOfBoundsException(String.format("Index: %d", aI));
+        return getAndUpdate_(aI, aOpt);
+    }
     
     /** 还提供一个给函数专用的运算 */
     IFunc1Operation operation();

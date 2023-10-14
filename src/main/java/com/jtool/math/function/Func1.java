@@ -1,6 +1,7 @@
 package com.jtool.math.function;
 
 import com.jtool.math.MathEX;
+import com.jtool.math.vector.IVectorGetter;
 
 import java.util.Collection;
 
@@ -13,19 +14,13 @@ public class Func1 {
     
     public static IFunc1 ones(double aX0, double aDx, int aNx) {IFunc1 rFunc = zeros(aX0, aDx, aNx); rFunc.fill(1.0); return rFunc;}
     public static IFunc1 zeros(double aX0, double aDx, int aNx) {return PBCFunc1.zeros(aX0, aDx, aNx);}
-    
+    public static IFunc1 zeros(int aNx, IVectorGetter aXGetter) {return UnequalIntervalFunc1.zeros(aNx, aXGetter);}
     
     public static IFunc1 from(double aX0, double aDx, int aNx, IFunc1Subs aFunc1Subs) {
         IFunc1 rFunc = zeros(aX0, aDx, aNx);
         rFunc.fill(aFunc1Subs);
         return rFunc;
     }
-    public static IFunc1 from(IFunc1 aFunc1) {
-        IFunc1 rFunc = zeros(aFunc1.x0(), aFunc1.dx(), aFunc1.Nx());
-        rFunc.fill(aFunc1);
-        return rFunc;
-    }
-    
     public static IFunc1 from(double aX0, double aDx, int aNx, Iterable<? extends Number> aList) {
         IFunc1 rFunc = zeros(aX0, aDx, aNx);
         rFunc.fill(aList);
@@ -41,6 +36,13 @@ public class Func1 {
         rFunc.fill(aData);
         return rFunc;
     }
+    /** 提供一个非均匀间距的构造 */
+    public static IFunc1 from(int aNx, IVectorGetter aXGetter, IFunc1Subs aFunc1Subs) {
+        IFunc1 rFunc = zeros(aNx, aXGetter);
+        rFunc.fill(aFunc1Subs);
+        return rFunc;
+    }
+    
     
     
     /**
@@ -60,10 +62,12 @@ public class Func1 {
         final double tXMul = -1.0 / (2.0*aSigma*aSigma);
         final double tYMul =  1.0 / (MathEX.Fast.sqrt(2.0*MathEX.PI) * aSigma);
         
-        return new ZeroBoundSymmetryFunc1(aMu, aSigma/aResolution, (int)Math.round(aResolution*G_RANG), x -> {
+        IZeroBoundFunc1 rFunc1 = ZeroBoundSymmetryFunc1.zeros(aMu, aSigma/aResolution, (int)Math.round(aResolution*G_RANG));
+        rFunc1.fill(x -> {
             x -= aMu;
             return MathEX.Fast.exp(x * x * tXMul) * tYMul;
         });
+        return rFunc1;
     }
     private final static int G_RANG = 6;
 }
