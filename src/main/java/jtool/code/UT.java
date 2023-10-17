@@ -1012,7 +1012,7 @@ public class UT {
         
         // reset the working dir to correct value
         private static Path WORKING_PATH = null;
-        private static boolean INITIALIZED = false;
+        private static volatile boolean INITIALIZED = false;
         public static void init() {
             if (INITIALIZED) return;
             INITIALIZED = true;

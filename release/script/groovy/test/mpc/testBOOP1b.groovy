@@ -62,31 +62,31 @@ mpcB2.shutdown();
 
 
 // 再计算生成的结果
-def dataFFS1   = Dump.read('lmp/.ffs-in/dump-fs1-new').last();
-if (onlyCu) dataFFS1 = dataFFS1.opt().filterType(1);
-if (onlyZr) dataFFS1 = dataFFS1.opt().filterType(2);
-mpcFFS1 = dataFFS1.getMPC(nThreads);
-println("FFS1, u: ${mpcFFS1.unitLen()}");
-UT.Timer.tic();
-q4FFS1 = mpcFFS1.calABOOP(4, mpcFFS1.unitLen()*cutoffMul, nnn);
-UT.Timer.toc("FFS1, q4");
-UT.Timer.tic();
-q6FFS1 = mpcFFS1.calABOOP(6, mpcFFS1.unitLen()*cutoffMul, nnn);
-UT.Timer.toc("FFS1, q6");
-mpcFFS1.shutdown();
-
-def dataFFS2   = Dump.read('lmp/.ffs-in/dump-fs2-new').last();
-if (onlyCu) dataFFS2 = dataFFS2.opt().filterType(1);
-if (onlyZr) dataFFS2 = dataFFS2.opt().filterType(2);
-mpcFFS2 = dataFFS2.getMPC(nThreads);
-println("FFS2, u: ${mpcFFS2.unitLen()}");
-UT.Timer.tic();
-q4FFS2 = mpcFFS2.calABOOP(4, mpcFFS2.unitLen()*cutoffMul, nnn);
-UT.Timer.toc("FFS2, q4");
-UT.Timer.tic();
-q6FFS2 = mpcFFS2.calABOOP(6, mpcFFS2.unitLen()*cutoffMul, nnn);
-UT.Timer.toc("FFS2, q6");
-mpcFFS2.shutdown();
+//def dataFFS1   = Dump.read('lmp/.ffs-in/dump-fs1-new').last();
+//if (onlyCu) dataFFS1 = dataFFS1.opt().filterType(1);
+//if (onlyZr) dataFFS1 = dataFFS1.opt().filterType(2);
+//mpcFFS1 = dataFFS1.getMPC(nThreads);
+//println("FFS1, u: ${mpcFFS1.unitLen()}");
+//UT.Timer.tic();
+//q4FFS1 = mpcFFS1.calABOOP(4, mpcFFS1.unitLen()*cutoffMul, nnn);
+//UT.Timer.toc("FFS1, q4");
+//UT.Timer.tic();
+//q6FFS1 = mpcFFS1.calABOOP(6, mpcFFS1.unitLen()*cutoffMul, nnn);
+//UT.Timer.toc("FFS1, q6");
+//mpcFFS1.shutdown();
+//
+//def dataFFS2   = Dump.read('lmp/.ffs-in/dump-fs2-new').last();
+//if (onlyCu) dataFFS2 = dataFFS2.opt().filterType(1);
+//if (onlyZr) dataFFS2 = dataFFS2.opt().filterType(2);
+//mpcFFS2 = dataFFS2.getMPC(nThreads);
+//println("FFS2, u: ${mpcFFS2.unitLen()}");
+//UT.Timer.tic();
+//q4FFS2 = mpcFFS2.calABOOP(4, mpcFFS2.unitLen()*cutoffMul, nnn);
+//UT.Timer.toc("FFS2, q4");
+//UT.Timer.tic();
+//q6FFS2 = mpcFFS2.calABOOP(6, mpcFFS2.unitLen()*cutoffMul, nnn);
+//UT.Timer.toc("FFS2, q6");
+//mpcFFS2.shutdown();
 
 def dataMelt   = Lmpdat.read('lmp/.stableglass-in/data-last');
 if (onlyCu) dataMelt = dataMelt.opt().filterType(1);
@@ -116,38 +116,34 @@ mpcMelt.shutdown();
 
 
 // 使用 Plotter 绘图
-plt1 = Plotters.get();
-plt1.plot(q4MgCu2   , q6MgCu2   , 'MgCu2'  ).color('r').lineType('none').markerType('o').markerSize(4);
-plt1.plot(q4ZrCu2   , q6ZrCu2   , 'ZrCu2'  ).color('g').lineType('none').markerType('o').markerSize(4);
-plt1.plot(q4B2      , q6B2      , 'B2'     ).color('b').lineType('none').markerType('o').markerSize(4);
-plt1.plot(q4FFS1    , q6FFS1    , 'FFS1'   ).color('k').lineType('none').markerType('^').markerSize(5);
-plt1.xlabel('q4').ylabel('q6');
-plt1.xTick(0.02).yTick(0.02);
-plt1.show();
-
-plt2 = Plotters.get();
-plt2.plot(q4MgCu2   , q6MgCu2   , 'MgCu2'  ).color('r').lineType('none').markerType('o').markerSize(4);
-plt2.plot(q4ZrCu2   , q6ZrCu2   , 'ZrCu2'  ).color('g').lineType('none').markerType('o').markerSize(4);
-plt2.plot(q4B2      , q6B2      , 'B2'     ).color('b').lineType('none').markerType('o').markerSize(4);
-plt2.plot(q4FFS2    , q6FFS2    , 'FFS2'   ).color('k').lineType('none').markerType('^').markerSize(5);
-plt2.xlabel('q4').ylabel('q6');
-plt2.xTick(0.02).yTick(0.02);
-plt2.show();
+//plt1 = Plotters.get();
+//plt1.plot(q4MgCu2   , q6MgCu2   , 'laves-MgCu2').color(1).lineType('none').markerType('o').markerSize(4);
+//plt1.plot(q4ZrCu2   , q6ZrCu2   , 'ZrCu2'      ).color(2).lineType('none').markerType('o').markerSize(4);
+//plt1.plot(q4B2      , q6B2      , 'B2'         ).color(3).lineType('none').markerType('o').markerSize(4);
+//plt1.plot(q4FFS1    , q6FFS1    , 'FFS1'       ).color(0).lineType('none').markerType('^').markerSize(5);
+//plt1.xlabel('q4').ylabel('q6');
+//plt1.show();
+//
+//plt2 = Plotters.get();
+//plt2.plot(q4MgCu2   , q6MgCu2   , 'laves-MgCu2').color(1).lineType('none').markerType('o').markerSize(4);
+//plt2.plot(q4ZrCu2   , q6ZrCu2   , 'ZrCu2'      ).color(2).lineType('none').markerType('o').markerSize(4);
+//plt2.plot(q4B2      , q6B2      , 'B2'         ).color(3).lineType('none').markerType('o').markerSize(4);
+//plt2.plot(q4FFS2    , q6FFS2    , 'FFS2'       ).color(0).lineType('none').markerType('^').markerSize(5);
+//plt2.xlabel('q4').ylabel('q6');
+//plt2.show();
 
 plt3 = Plotters.get();
-plt3.plot(q4MgCu2   , q6MgCu2   , 'MgCu2'  ).color('r').lineType('none').markerType('o').markerSize(4);
-plt3.plot(q4ZrCu2   , q6ZrCu2   , 'ZrCu2'  ).color('g').lineType('none').markerType('o').markerSize(4);
-plt3.plot(q4B2      , q6B2      , 'B2'     ).color('b').lineType('none').markerType('o').markerSize(4);
-plt3.plot(q4Melt    , q6Melt    , 'melt'   ).color('k').lineType('none').markerType('^').markerSize(5);
+plt3.plot(q4MgCu2   , q6MgCu2   , 'laves-MgCu2').color(1).lineType('none').markerType('o').markerSize(4);
+plt3.plot(q4ZrCu2   , q6ZrCu2   , 'ZrCu2'      ).color(2).lineType('none').markerType('o').markerSize(4);
+plt3.plot(q4B2      , q6B2      , 'B2'         ).color(3).lineType('none').markerType('o').markerSize(4);
+plt3.plot(q4Melt    , q6Melt    , 'melt'       ).color(0).lineType('none').markerType('^').markerSize(5);
 plt3.xlabel('q4').ylabel('q6');
-plt3.xTick(0.02).yTick(0.02);
 plt3.show();
 
 //plt4 = Plotters.get();
-//plt4.plot(q4MgCu2   , q6MgCu2   , 'MgCu2'  ).color('r').lineType('none').markerType('o').markerSize(4);
-//plt4.plot(q4ZrCu2   , q6ZrCu2   , 'ZrCu2'  ).color('g').lineType('none').markerType('o').markerSize(4);
-//plt4.plot(q4B2      , q6B2      , 'B2'     ).color('b').lineType('none').markerType('o').markerSize(4);
-//plt4.plot(q4Melt2   , q6Melt2   , 'melt2'  ).color('k').lineType('none').markerType('^').markerSize(5);
+//plt4.plot(q4MgCu2   , q6MgCu2   , 'laves-MgCu2').color(1).lineType('none').markerType('o').markerSize(4);
+//plt4.plot(q4ZrCu2   , q6ZrCu2   , 'ZrCu2'      ).color(2).lineType('none').markerType('o').markerSize(4);
+//plt4.plot(q4B2      , q6B2      , 'B2'         ).color(3).lineType('none').markerType('o').markerSize(4);
+//plt4.plot(q4Melt2   , q6Melt2   , 'melt2'      ).color(0).lineType('none').markerType('^').markerSize(5);
 //plt4.xlabel('q4').ylabel('q6');
-//plt4.xTick(0.02).yTick(0.02);
 //plt4.show();

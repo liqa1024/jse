@@ -164,9 +164,16 @@ public final class PlotterJFree implements IPlotter {
     private final XYLineAndShapeRenderer mLineRender;
     private final List<LineJFree> mLines;
     
-    
+    private static volatile boolean INITIALIZED = false;
     /** 一些默认的初始设定 */
     public PlotterJFree() {
+        // 先进行通用的初始化
+        if (!INITIALIZED) {
+            INITIALIZED = true;
+            // 禁用自动缩放保证绘制结果一致
+            System.setProperty("sun.java2d.uiScale", "1");
+        }
+        
         // 存储绘制的线
         mLines = new ArrayList<>();
         // 内部使用的成员
