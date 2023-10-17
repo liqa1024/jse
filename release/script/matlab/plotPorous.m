@@ -20,9 +20,9 @@ GEN.shutdown;
 
 
 %% 绘制结构 3D
-x = linspace(fun3Porous.x0, fun3Porous.dx, fun3Porous.Nx+1);
-y = linspace(fun3Porous.y0, fun3Porous.dy, fun3Porous.Ny+1);
-z = linspace(fun3Porous.z0, fun3Porous.dz, fun3Porous.Nz+1);
+x = linspace(fun3Porous.x0, fun3Porous.dx*fun3Porous.Nx, fun3Porous.Nx+1);
+y = linspace(fun3Porous.y0, fun3Porous.dy*fun3Porous.Ny, fun3Porous.Ny+1);
+z = linspace(fun3Porous.z0, fun3Porous.dz*fun3Porous.Nz, fun3Porous.Nz+1);
 [X, Y, Z] = meshgrid(x, y, z);
 
 porous = zeros(fun3Porous.Nx+1, fun3Porous.Ny+1, fun3Porous.Nz+1);

@@ -5,7 +5,7 @@
 - 针对 Lammps 输出文件的读写（data，dump，log）
 - 针对 Lammps 运行的输入文件支持并内置常用的 Lammps 运行方式的实现
 - 通用的原子参量计算（RDF，SF，Q4/Q6/Ql）
-- 其他常见操作（文件读写，读写 json、csv，常见的数学运算，简单的绘图，...）
+- 其他常见操作（文件读写，读写 json、csv、yaml，常见的数学运算，简单的绘图，...）
 - 简单跨语言编程支持（python，matlab，java/groovy）
 - 进阶的模拟相关算法（FFS，KMC）
 
@@ -23,16 +23,18 @@
 
 
 # 如何使用
-首先从 [Release](https://github.com/CHanzyLazer/jtool/releases/latest) 
+首先从 [**Release**](https://github.com/CHanzyLazer/jtool/releases/latest) 
 中下载 `release.zip` 文件，为使用此工具包的项目的一般格式。
 
-需要系统拥有 jdk，目前仅对 jdk8 进行适配，可以从 [这里](https://mirrors.tuna.tsinghua.edu.cn/Adoptium/)
-下载 Adoptium 版本的 jdk，或者从 [这里](https://www.oracle.com/java/technologies/downloads/#java8)
-下载 oracle 版本的 jdk。
+需要系统拥有 jdk，要求版本至少为 jdk8，建议直接使用 jdk17，
+可以从 [**这里**](https://mirrors.tuna.tsinghua.edu.cn/Adoptium/17/jdk/) 下载 Adoptium 版本的 jdk，
+或者从 [**这里**](https://www.oracle.com/java/technologies/downloads/#java17)
+下载 Oracle 版本的 jdk。
 
 
 ## 0. 项目结构
 具体项目结构可以参考 `release.zip` 文件，大致如下：
+
 ```
 └─release
     ├─jtool
@@ -61,6 +63,7 @@
     ├─.run
     └─.vscode
 ```
+
 - `release` 目录作为项目的根目录，所有相对路径都会从这个目录开始，
   并且**所有脚本都需要在这个目录下运行**（即使脚本本身可能不在这个目录）。
 
@@ -82,28 +85,36 @@
 
 ## 1. 使用 python
 在 python 中，可以使用第三方库来使用调用 java 代码，例如使用 [py4j](https://www.py4j.org/)：
+
 ```python
 from py4j.java_gateway import JavaGateway
 GATEWAY = JavaGateway.launch_gateway(classpath='lib/jtool-all.jar')
 ```
+
 创建了一个 `GATEWAY`，然后通过 `GATEWAY` 来 "导入" java 的类，例如 lammps 的相关类 `Lmpdat` 和 `Dump`：
+
 ```python
 Lmpdat = GATEWAY.jvm.jtool.lmp.Lmpdat
 Dump = GATEWAY.jvm.jtool.lmp.Dump
 ```
+
 之后就像使用一个 python 的内部类一样使用上述 `Lmpdat` 和 `Dump` 类，
 例如读取 lammps 的 data 文件并转换成 dump 文件输出：
+
 ```python
 lmpdat = Lmpdat.read('path/to/lammps/data/file')
 dump = Dump.fromAtomData(lmpdat)
 dump.write('path/to/lammps/dump/file')
 ```
+
 最后记得关闭 GATEWAY：
+
 ```python
 GATEWAY.shutdown()
 ```
 
 > **注意**：默认情况下 py4j 不会输出 java 的信息到控制台，可以在创建 `GATEWAY` 时重新定向输出流来解决这个问题：
+> 
 > ```python
 > import sys
 > from py4j.java_gateway import JavaGateway
@@ -118,16 +129,21 @@ GATEWAY.shutdown()
 > **注意**：本工具包将整个 Groovy 需要的运行库都包含到一起，因此运行 Groovy 脚本**不需要**额外安装 Groovy。
 
 在项目根目录中直接运行：
+
 ```shell
 ./jtool -t "print('hello world')"
 ```
+
 即可将输入的文本当作 Groovy 脚本进行执行，也可使用：
+
 ```shell
 ./jtool -f path/to/script.groovy
 ```
+
 直接执行位于 `path/to/script.groovy` 的 Groovy 脚本，在这个情况下 `-f` 参数可以省略
 
 > 上述将 lammps 的 data 文件并转换成 dump 文件的例子在 Groovy 中则是：
+> 
 > ```groovy
 > import jtool.lmp.Lmpdat;
 > import jtool.lmp.Dump;
@@ -136,7 +152,9 @@ GATEWAY.shutdown()
 > dump = Dump.fromAtomData(lmpdat);
 > dump.write('path/to/lammps/dump/file');
 > ```
+> 
 > 可能会更倾向于在一行中完成：
+> 
 > ```groovy
 > import jtool.lmp.*;
 > Dump.fromAtomData(Lmpdat.read('path/to/lammps/data/file')).write('path/to/lammps/dump/file');
@@ -157,26 +175,34 @@ GATEWAY.shutdown()
 也提供了一个运行配置 `jtool-RunCurrentScript`（请不要使用自带的运行当前脚本，因为本项目实际不依赖 Groovy），
 底层使用的直接运行 jar 包，因此会有更加准确的调试。
 
-IntelliJ IDEA 中会有代码补全提示以及正确的高亮，因此更推荐使用。第一次打开可能需要设置 jdk 的路径：
-$$
-\begin{array}{c}
-\text{右上角“文件”}\longrightarrow 
+IntelliJ IDEA 中会有代码补全提示以及正确的高亮，因此更推荐使用。
+第一次打开可能需要设置 jdk 的路径（已经为 IntelliJ 安装了汉化插件）：
+
+```
+左上角“文件” ⟶ 项目结构 ⟶ 左边栏选择“项目设置-项目” ⟶ SDK 选择本地安装的 JDK
+⟶ 语言级别：8 - lambda、类型注解等 ⟶ 右下角“确定”
+```
+
+<!-- $$\begin{align*} &
+\text{左上角“文件”}\longrightarrow 
 \text{项目结构}\longrightarrow 
-\text{左边栏选择“项目设置-项目”}\longrightarrow \\
-\text{SDK 选择本地安装的 JDK1.8}\longrightarrow 
+\text{左边栏选择“项目设置-项目”}\longrightarrow 
+\text{SDK 选择本地安装的 JDK} \\& \longrightarrow
 \text{语言级别：8 - lambda、类型注解等}\longrightarrow
 \text{右下角“确定”}
-\end{array}
-$$
+\end{align*}$$ -->
 
 
 ## 3. 使用 Matlab
 在 matlab 中，首先需要将项目的根目录（`release` 目录）作为工作目录，然后导入 java 包的路径：
+
 ```matlab
 javaaddpath('lib/jtool-all.jar');
 ```
+
 软件包为 `jtool.xxx`，如果希望使用方便可以先进行 import 需要的包，
 例如 lammps 相关的包：
+
 ```matlab
 import jtool.lmp.*
 ```
@@ -184,12 +210,15 @@ import jtool.lmp.*
 > **注意**：matlab 似乎不能直接使用 `import jtool.lmp.Lmpdat` 这种写法来导入单个类
 
 同样对于上述读取 lammps 的 data 文件并转换成 dump 文件：
+
 ```matlab
 lmpdat = Lmpdat.read('path/to/lammps/data/file');
 dump = Dump.fromAtomData(lmpdat);
 dump.write('path/to/lammps/dump/file');
 ```
+
 处理完成后最后记得移除 java 路径：
+
 ```matlab
 clear;
 javarmpath('lib/jtool-all.jar');
@@ -197,11 +226,14 @@ javarmpath('lib/jtool-all.jar');
 
 > **注意**：不能重复导入同一个 java 路径，否则会出现报错（虽然目前看起来不影响使用），
 > 因此实际项目中我会将此方法进行包装，检测避免重复导入，包装后的函数为：
+> 
 > ```matlab
 > addjpath('lib/jtool-all.jar');
 > rmjpath('lib/jtool-all.jar');
 > ```
+> 
 > 两个函数都位于目录 `script/matlab/include`
+> 
 
 
 # 使用文档

@@ -5,9 +5,9 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Base64;
 
 /**
  * @author liqa
@@ -32,7 +32,7 @@ public class Decryptor {
     }
     
     // 将 Base64 字符串转换成 byte[]
-    public byte[] getData(String aStr)  throws IllegalBlockSizeException, BadPaddingException {return getData(DatatypeConverter.parseBase64Binary(aStr));}
+    public byte[] getData(String aStr)  throws IllegalBlockSizeException, BadPaddingException {return getData(Base64.getDecoder().decode(aStr));}
     public byte[] getData(byte[] aData) throws IllegalBlockSizeException, BadPaddingException {return mCipher.doFinal(aData);}
     
     // 将 byte[] 编码成 String

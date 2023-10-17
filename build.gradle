@@ -4,7 +4,7 @@ plugins {
 }
 
 java {
-    // 暂定版本为 jdk 1.8，使用过高的版本会因为弃用的函数而报错
+    // 依旧保持 java8 保证对 matlab 等应用的兼容性
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 }
@@ -30,7 +30,7 @@ dependencies {
     implementation('org.apache.groovy:groovy-json:4.0.15')          // 直接使用 groovy 的 json 包来支持 json，可以让 groovy 脚本使用原生的 json 功能
     implementation('org.apache.groovy:groovy-xml:4.0.15')           // groovy 的 xml
     implementation('org.apache.groovy:groovy-yaml:4.0.15')          // groovy 的 yaml，暂时没有用到，并且这个包有些复杂，所以不提供支持
-//  implementation('jline:jline:2.14.6')                            // groovysh 前置，如果不用到内部方法不需要显式指定
+//  implementation('jline:jline:2.14.6')                            // groovysh 前置，如果不用到内部方法不需要显式导入
     
     implementation('black.ninia:jep:4.1.1')                         // 调用 python 代码支持，需要系统有需要的 python 环境，并且需要初始化，因此这里不作为主要代码的使用
     
