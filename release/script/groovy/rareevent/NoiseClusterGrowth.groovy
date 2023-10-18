@@ -20,21 +20,23 @@ class NoiseClusterGrowth {
     
     
     static class PathGenerator implements IPathGenerator<Point> {
-        private final int pathLen;
-        private final double plusProb, minusProb;
-        private final double noiseProb, noiseScale;
-        private final int skipNum;
-        private final Random RNG = new Random();
-        PathGenerator(int pathLen, double plusProb, double minusProb, double noiseProb, double noiseScale, int skipNum) {
+        final int initValue;
+        final int pathLen;
+        final double plusProb, minusProb;
+        final double noiseProb, noiseScale;
+        final int skipNum;
+        final Random RNG = new Random();
+        PathGenerator(int pathLen, double plusProb, double minusProb, double noiseProb, double noiseScale, int skipNum=1, int initValue=0) {
             this.pathLen = pathLen;
             this.plusProb = plusProb;
             this.minusProb = minusProb;
             this.noiseProb = noiseProb;
             this.noiseScale = noiseScale;
             this.skipNum = skipNum;
+            this.initValue = initValue;
         }
         
-        @Override Point initPoint() {return new Point(0, 0, 0);}
+        @Override Point initPoint() {return new Point(initValue, 0, 0);}
         @Override List<Point> pathFrom(Point point) {
             def path = new ArrayList<Point>(pathLen);
             path.add(point);

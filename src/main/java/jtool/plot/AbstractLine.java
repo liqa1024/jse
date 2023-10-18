@@ -17,8 +17,8 @@ public abstract class AbstractLine implements ILine {
     protected abstract void onLineWidthChange(double aOldLineWidth, double aNewLineWidth);
     protected abstract void onMarkerSizeChange(double aOldMarkerSize, double aNewMarkerSize);
     
-    protected IResizableStroke mLineStroke = DEFAULT_LINE_STROKE;
-    protected IResizableShape mMarkerShape = DEFAULT_MARKER_SHAPE;
+    protected IResizableStroke mLineStroke = toStroke(DEFAULT_LINE_TYPE, DEFAULT_LINE_WIDTH);
+    protected IResizableShape mMarkerShape = toShape(DEFAULT_MARKER_TYPE, DEFAULT_MARKER_SIZE);
     
     protected LineType mLineType = DEFAULT_LINE_TYPE;
     protected MarkerType mMarkerType = DEFAULT_MARKER_TYPE;

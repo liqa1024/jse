@@ -171,5 +171,4 @@ public class Shapes {
     public final static MarkerType DEFAULT_MARKER_TYPE = MarkerType.NULL;
     public final static double DEFAULT_MARKER_SIZE = 12.0;
     public final static IResizableShape NULL_SHAPE = new NullShape(DEFAULT_MARKER_SIZE);
-    public final static IResizableShape DEFAULT_MARKER_SHAPE = toShape(DEFAULT_MARKER_TYPE, DEFAULT_MARKER_SIZE);
 }
