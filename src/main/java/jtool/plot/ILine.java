@@ -14,6 +14,7 @@ import static jtool.plot.Colors.*;
  * <p> {@link IPlotter}.plot 得到的线的对象 </p>
  * <p> 主要用于方便的设置具体某个线的参数 </p>
  */
+@SuppressWarnings("UnusedReturnValue")
 public interface ILine {
     /** 设置线的各种属性，返回自身方便链式调用 */
     default ILine color(int aIdx) {return color(COLOR(aIdx));}

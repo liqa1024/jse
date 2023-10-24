@@ -2,6 +2,7 @@ package jtool.code;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableList;
 import jtool.atom.*;
 import jtool.code.collection.AbstractCollections;
 import jtool.code.filter.IDoubleFilter;
@@ -29,11 +30,11 @@ import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
 import groovy.yaml.YamlBuilder;
 import groovy.yaml.YamlSlurper;
-import jtool.plot.ILine;
-import jtool.plot.IPlotter;
-import jtool.plot.Plotters;
+import jtool.plot.*;
+import jtool.vasp.IVaspCommonData;
 import net.jafama.FastMath;
 import org.apache.groovy.json.internal.CharScanner;
+import org.apache.groovy.util.Maps;
 import org.codehaus.groovy.runtime.DefaultGroovyMethods;
 import org.codehaus.groovy.runtime.StringGroovyMethods;
 import org.jetbrains.annotations.NotNull;
@@ -41,6 +42,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.awt.*;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -51,6 +53,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -1184,6 +1187,71 @@ public class UT {
         public static ILine semilogy(                  double[] aX, Iterable  <? extends Number> aY, String aName) {yScaleLog(); return plot(aX, aY, aName);}
         public static ILine semilogy(                   IVector aX, Iterable  <? extends Number> aY, String aName) {yScaleLog(); return plot(aX, aY, aName);}
         public static ILine semilogy(Iterable<? extends Number> aX, Iterable  <? extends Number> aY, String aName) {yScaleLog(); return plot(aX, aY, aName);}
+        
+        
+        /**
+         * 增加直接绘制 AtomData 的 plot，简单实现，由于参数较多这里使用 Map 作为输入
+         * <p>
+         * 格式为：
+         * <pre><code>
+         * {
+         *   "Types": "${原子种类名称组成的数组}",
+         *   "Colors": "${原子种类对应的颜色}",
+         *   "Sizes": ${原子种类对应的大小},
+         *   "Axis": "${视角轴，x,y,z}",
+         * }
+         * </code></pre>
+         * @author liqa
+         */
+        @SuppressWarnings("unchecked")
+        public static ILine[] plot(IAtomData aAtomData, Map<?, ?> aArgs) {
+            List<?> aTypes = (List<?>)Code.getWithDefault(aArgs, ImmutableList.of(), "Types", "t");
+            List<?> aColors = (List<?>)Code.getWithDefault(aArgs, ImmutableList.of(), "Colors", "c");
+            List<?> aSizes = (List<?>)Code.getWithDefault(aArgs, ImmutableList.of(), "Sizes", "s");
+            String aAxis = String.valueOf(Code.getWithDefault(aArgs, "z", "Axis", "a"));
+            if (!aAxis.equals("x") && !aAxis.equals("y") && !aAxis.equals("z")) aAxis = "z";
+            
+            ILine[] rLines = new ILine[aAtomData.atomTypeNum()];
+            for (int i = 0; i < rLines.length; ++i) {
+                final int tType = i + 1;
+                Iterable<IAtom> tAtoms = AbstractCollections.filter(aAtomData.asList(), atom->atom.type()==tType);
+                switch (aAxis) {
+                case "x": {rLines[i] = PLT.plot(AbstractCollections.map(tAtoms, IAtom::y), AbstractCollections.map(tAtoms, IAtom::z), aTypes.size()>i ? String.valueOf(aTypes.get(i)) : "type "+tType); break;}
+                case "y": {rLines[i] = PLT.plot(AbstractCollections.map(tAtoms, IAtom::x), AbstractCollections.map(tAtoms, IAtom::z), aTypes.size()>i ? String.valueOf(aTypes.get(i)) : "type "+tType); break;}
+                case "z": {rLines[i] = PLT.plot(AbstractCollections.map(tAtoms, IAtom::x), AbstractCollections.map(tAtoms, IAtom::y), aTypes.size()>i ? String.valueOf(aTypes.get(i)) : "type "+tType); break;}
+                }
+                rLines[i].lineType(Strokes.LineType.NULL).markerType(Shapes.MarkerType.CIRCLE);
+                if (aColors.size() <= i) {
+                    rLines[i].color(tType);
+                } else {
+                    Object tColor = aColors.get(i);
+                    if (tColor instanceof Number) {
+                        rLines[i].color(((Number)tColor).intValue());
+                    } else
+                    if (tColor instanceof List) {
+                        List<? extends Number> tColorList = (List<? extends Number>)tColor;
+                        rLines[i].color(tColorList.get(0).doubleValue(), tColorList.get(1).doubleValue(), tColorList.get(2).doubleValue());
+                    } else
+                    if (tColor instanceof Paint) {
+                        rLines[i].color((Paint)tColor);
+                    } else {
+                        rLines[i].color(String.valueOf(tColor));
+                    }
+                }
+                rLines[i].markerSize(aSizes.size()>i ? ((Number)aSizes.get(i)).doubleValue() : 10.0);
+            }
+            switch (aAxis) {
+            case "x": {PLT.xLabel("y").yLabel("z").axis(0.0, aAtomData.box().y(), 0.0, aAtomData.box().z()); break;}
+            case "y": {PLT.xLabel("x").yLabel("z").axis(0.0, aAtomData.box().x(), 0.0, aAtomData.box().z()); break;}
+            case "z": {PLT.xLabel("x").yLabel("y").axis(0.0, aAtomData.box().x(), 0.0, aAtomData.box().y()); break;}
+            }
+            PLT.xScaleLinear().yScaleLinear();
+            PLT.show();
+            return rLines;
+        }
+        public static ILine[] plot(IAtomData aAtomData, String... aAtomTypes) {return plot(aAtomData, Maps.of("Types", AbstractCollections.from(aAtomTypes)));}
+        public static ILine[] plot(IAtomData aAtomData) {return plot(aAtomData, (aAtomData instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomData).atomTypes() : ZL_STR);}
+        
         
         public static void xScaleLog() {PLT.xScaleLog();}
         public static void yScaleLog() {PLT.yScaleLog();}
