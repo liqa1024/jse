@@ -13,6 +13,7 @@ import jtool.code.task.TaskCall;
 import jtool.code.task.TaskRun;
 import jtool.math.ComplexDouble;
 import jtool.math.IComplexDouble;
+import jtool.math.MathEX;
 import jtool.math.function.IFunc1;
 import jtool.math.function.IFunc1Subs;
 import jtool.math.matrix.IMatrix;
@@ -1412,5 +1413,11 @@ public class UT {
         public static IMatrix diag(IVector aVec) {return Matrices.diag(aVec);}
         public static IVector diag(IMatrix aMat) {return aMat.slicer().diag();}
         public static IVector diag(IMatrix aMat, int aShift) {return aMat.slicer().diag(aShift);}
+        
+        
+        /// 已经实现的特殊函数
+        public static double legendre(int aL, int aM, double aX) {return MathEX.Func.legendre(aL, aM, aX);}
+        public static IVector legendre(final int aL, final int aM, IVector aX) {return aX.operation().map(x -> legendre(aL, aM, x));}
+        public static IMatrix legendre(final int aL, final int aM, IMatrix aX) {return aX.operation().map(x -> legendre(aL, aM, x));}
     }
 }
