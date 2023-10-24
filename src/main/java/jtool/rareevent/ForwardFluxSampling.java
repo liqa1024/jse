@@ -2,6 +2,7 @@ package jtool.rareevent;
 
 
 import jtool.atom.IAtomData;
+import jtool.code.UT;
 import jtool.code.collection.AbstractCollections;
 import jtool.math.MathEX;
 import jtool.math.vector.ILogicalVector;
@@ -197,10 +198,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             this.multiple = multiple;
         }
         Point(Point parent) {
-            this(parent, parent.value, parent.lambda);
-        }
-        Point(Point parent, T value, double lambda) {
-            this(parent, value, lambda, parent.multiple);
+            this(parent, parent.value, parent.lambda, parent.multiple);
         }
         Point(T value, double lambda, double multiple) {
             this(null, value, lambda, multiple);
@@ -393,73 +391,67 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 }
                 mMi += tStart.parent.multiple;
                 mNippEff += tStart.parent.multiple;
-                synchronized (this) {
-                    mStep2PointNum.add_(mStep, tStep2PointNum);
-                    mStep2PathNum.set_(mStep, mPathNum);
-                }
+                mStep2PointNum.add_(mStep, tStep2PointNum);
+                mStep2PathNum.set_(mStep, mPathNum);
                 return;
             }
         }
-        // 从 tStart 开始统计到达下一个界面的概率，更高权重的进行更多的统计次数保证结果准确性
-        int tStatTimes = tStart.multiple>2.0 ? (int)Math.min(Math.floor(tStart.multiple), mMaxStatTimes) : 1;
-        double subMul = tStart.multiple / (double)tStatTimes;
-        for (int i = 0; i < tStatTimes; ++i) {
-            // Pruning 相关量需要每次循环重新设置
-            int tPruningIndex = mStep-mPruningThreshold;
-            double tPruningMul = 1.0;
-            
-            // 获取从 tStart 开始的路径的迭代器
-            ITimeAndParameterIterator<T> tPathFrom = mFullPathGenerator.fullPathFrom(tStart.value);
-            // 为了不改变约定，这里直接跳过上面已经经过特殊考虑的第一个相同的点
-            tPathFrom.next();
-            
-            T tRawPoint;
-            double tLambda;
-            // 不再需要检测 hasNext，内部保证永远都有 next
-            while (true) {
-                tRawPoint = tPathFrom.next();
-                ++tStep2PointNum;
-                tLambda = tPathFrom.lambda();
-                // 判断是否穿过了 λi+1
-                if (tLambda >= tLambdaNext) {
-                    // 如果有穿过 λi+1 则需要记录这些点，现在 pruning 的倍率也会记录到这里
+        // 从 tStart 开始统计到达下一个界面的概率
+        // Pruning 相关量
+        int tPruningIndex = mStep-mPruningThreshold;
+        double tPruningMul = 1.0;
+        
+        // 获取从 tStart 开始的路径的迭代器
+        ITimeAndParameterIterator<T> tPathFrom = mFullPathGenerator.fullPathFrom(tStart.value);
+        // 为了不改变约定，这里直接跳过上面已经经过特殊考虑的第一个相同的点
+        tPathFrom.next();
+        
+        T tRawPoint;
+        double tLambda;
+        // 不再需要检测 hasNext，内部保证永远都有 next
+        while (true) {
+            tRawPoint = tPathFrom.next();
+            ++tStep2PointNum;
+            tLambda = tPathFrom.lambda();
+            // 判断是否穿过了 λi+1
+            if (tLambda >= tLambdaNext) {
+                // 如果有穿过 λi+1 则需要记录这些点，现在 pruning 的倍率也会记录到这里
+                synchronized (this) {
+                    mPointsOnLambda.add(new Point(tStart, tRawPoint, tLambda, tStart.multiple*tPruningMul));
+                    mMi += tStart.multiple;
+                    mNippEff += tStart.multiple*tPruningMul;
+                }
+                break;
+            }
+            // 判断是否穿过了 A
+            if (tLambda <= mSurfaceA) {
+                // 穿过 A 直接跳过结束这个路径即可
+                synchronized (this) {
+                    mMi += tStart.multiple;
+                }
+                break;
+            }
+            // 修剪，如果向前则有概率直接中断
+            if (mPruningProb > 0.0 && tPruningIndex >= 0 && tLambda <= mSurfaces.get_(tPruningIndex)) {
+                // 无论如何先减少 tPruningIndex
+                --tPruningIndex;
+                if (mRNG.nextDouble() < mPruningProb) {
+                    // 有 mPruningProb 中断
                     synchronized (this) {
-                        mPointsOnLambda.add(new Point(tStart, tRawPoint, tLambda, subMul*tPruningMul));
-                        mMi += subMul;
-                        mNippEff += subMul*tPruningMul;
+                        mMi += tStart.multiple;
                     }
                     break;
-                }
-                // 判断是否穿过了 A
-                if (tLambda <= mSurfaceA) {
-                    // 穿过 A 直接跳过结束这个路径即可
-                    synchronized (this) {
-                        mMi += subMul;
-                    }
-                    break;
-                }
-                // 修剪，如果向前则有概率直接中断
-                if (mPruningProb > 0.0 && tPruningIndex >= 0 && tLambda <= mSurfaces.get_(tPruningIndex)) {
-                    // 无论如何先减少 tPruningIndex
-                    --tPruningIndex;
-                    if (mRNG.nextDouble() < mPruningProb) {
-                        // 有 mPruningProb 中断
-                        synchronized (this) {
-                            mMi += subMul;
-                        }
-                        break;
-                    } else {
-                        // 否则需要增加权重
-                        tPruningMul /= (1.0 - mPruningProb);
-                    }
+                } else {
+                    // 否则需要增加权重
+                    tPruningMul /= (1.0 - mPruningProb);
                 }
             }
-            // 此时如果路径没有结束，还可以继续统计，即一个路径可以包含多个从 A 到 λi+1，或者包含之后的 λi+1 到 λi+2 等信息
-            // 对于 FFS 的采样方式，考虑到存储这些路径需要的空间，这里不去做这些操作
-            synchronized (this) {
-                mStep2PointNum.add_(mStep, tStep2PointNum);
-                mStep2PathNum.set_(mStep, mPathNum);
-            }
+        }
+        // 此时如果路径没有结束，还可以继续统计，即一个路径可以包含多个从 A 到 λi+1，或者包含之后的 λi+1 到 λi+2 等信息
+        // 对于 FFS 的采样方式，考虑到存储这些路径需要的空间，这里不去做这些操作
+        synchronized (this) {
+            mStep2PointNum.add_(mStep, tStep2PointNum);
+            mStep2PathNum.set_(mStep, mPathNum);
         }
     }
     
@@ -468,7 +460,6 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     private int mStep = -1; // 记录运行的步骤，i
     private boolean mFinished = false;
     private boolean mStepFinished = true; // 标记此步骤是否正常完成结束而不是中断或者正在运行中
-    @SuppressWarnings("ExtractMethodRecommender")
     public void run() {
         if (mFinished) return;
         // 实际分为两个过程，第一个过程首先统计轨迹通量（flux of trajectories）
@@ -491,34 +482,36 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         // 第二个过程会从 λi 上的点随机选取运行直到到达 λi+1 或者返回 A，注意依旧需要将耗时增加到 mTotTime 中
         if (mStep < mN) {
             mStepFinished = false;
-            // 截断过小的值，使用 TreeMap 记录最小的值的索引，保证截断符合约束
+            // 截断过小的值，这里简单起见直接将其按照 multiple 降序排序然后进行截断
+            mPointsOnLambda.sort(Comparator.comparingDouble((Point p) -> p.multiple).reversed());
             double rCutoffValue = 0.0;
-            NavigableMap<Double, Integer> rCutoffIndex = new TreeMap<>();
-            for (int i = 0; i < mPointsOnLambda.size(); ++i) {
-                Point tPoint = mPointsOnLambda.get(i);
-                if (tPoint.multiple < mCutoff) {
-                    rCutoffIndex.put(tPoint.multiple, i);
-                    rCutoffValue += tPoint.multiple;
-                }
-                if (rCutoffValue > mCutoff*mN0 || rCutoffIndex.size()*2 > mN0) {
-                    rCutoffValue -= rCutoffIndex.pollLastEntry().getKey();
-                }
+            while (mPointsOnLambda.size()*2 > mN0) {
+                rCutoffValue += UT.Code.last(mPointsOnLambda).multiple;
+                if (rCutoffValue > mCutoff*mN0) break;
+                UT.Code.removeLast(mPointsOnLambda);
             }
-            // 遍历两次将需要留下的设置到 oPointsOnLambda
+            // 遍历添加到 oPointsOnLambda，现在顺便统一将下一步会开始的点的高权重的点进行拆分，拥有更多次数的统计来得到更好的统计效果
             oPointsOnLambda.clear();
-            if (mPointsOnLambda.size() > mMovedPoints.size()) {
-                // 这里保证 mMovedPoints 长度永远合法
-                mMovedPoints = LogicalVector.zeros(mPointsOnLambda.size()+nThreads());
+            double tLambdaNext = mSurfaces.get_(mStep+1);
+            for (Point tPoint : mPointsOnLambda) {
+                if (tPoint.lambda < tLambdaNext) {
+                    // 减少倍率并增加拷贝样本
+                    int tStatTimes = tPoint.multiple>2.0 ? (int)Math.min(Math.floor(tPoint.multiple), mMaxStatTimes) : 1;
+                    if (tStatTimes > 1) tPoint.multiple /= (double)tStatTimes;
+                    for (int i = 0; i < tStatTimes; ++i) oPointsOnLambda.add(tPoint);
+                } else {
+                    // 正常转移
+                    oPointsOnLambda.add(tPoint);
+                }
             }
-            mMovedPoints.fill(true);
-            for (int index : rCutoffIndex.values()) mMovedPoints.set(index, false);
-            for (int i = 0; i < mPointsOnLambda.size(); ++i) {
-                if (mMovedPoints.get(i)) oPointsOnLambda.add(mPointsOnLambda.get(i));
+            mPointsOnLambda.clear();
+            // 这里保证 mMovedPoints 长度永远合法
+            if (oPointsOnLambda.size() > mMovedPoints.size()) {
+                mMovedPoints = LogicalVector.zeros(oPointsOnLambda.size()+nThreads());
             }
             mMovedPoints.fill(false);
-            mPointsOnLambda.clear();
-            // 打乱顺序
-            Collections.shuffle(oPointsOnLambda, mRNG);
+            // 现在不再打乱顺序打乱顺序
+//            Collections.shuffle(oPointsOnLambda, mRNG);
             
             // 初始化统计量
             mMi = 0; mNippEff = 0; mPathNum = 0;

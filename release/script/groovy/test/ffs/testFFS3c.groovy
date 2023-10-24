@@ -60,7 +60,7 @@ new StepJobManager('testFFS3c', 2)
     def kRef = Vectors.zeros(lambda.size());
     
     def biPathGen = new NoiseClusterGrowth.PathGenerator(10, 0.00050, 0.00050, 0.50, -0.10);
-    def FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*1000);
+    def FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     kNoise[0] = FFS.getK0();
@@ -76,7 +76,7 @@ new StepJobManager('testFFS3c', 2)
     FFS.shutdown();
     
     biPathGen = new NoiseClusterGrowth.PathGenerator(10, 0.00050, 0.00050, 0.10, -0.10);
-    FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*1000);
+    FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     kRef[0] = FFS.getK0();
