@@ -374,13 +374,13 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
     
     @Override public final int system(String aCommand                                        ) {return system(aCommand, defaultOutFilePath());}
     @Override public final int system(String aCommand,                      IIOFiles aIOFiles) {return system(aCommand, defaultOutFilePath(), aIOFiles);}
-    @Override public final int system(String aCommand, String aOutFilePath                   ) {aOutFilePath = toRealOutFilePath(aOutFilePath); return system_(aCommand, aOutFilePath, (aCommand==null || aCommand.isEmpty()) ? EPT_IOF : new IOFiles().putOFiles(OUTPUT_FILE_KEY, aOutFilePath));}
+    @Override public final int system(String aCommand, String aOutFilePath                   ) {aOutFilePath = toRealOutFilePath(aOutFilePath); return system_(aCommand, aOutFilePath, (aCommand==null || aCommand.isEmpty()) ? EPT_IOF : IOFiles.create().putOFiles(OUTPUT_FILE_KEY, aOutFilePath));}
     @Override public final int system(String aCommand, String aOutFilePath, IIOFiles aIOFiles) {aOutFilePath = toRealOutFilePath(aOutFilePath); return system_(aCommand, aOutFilePath, (aCommand==null || aCommand.isEmpty()) ? aIOFiles : aIOFiles.copy().putOFiles(OUTPUT_FILE_KEY, aOutFilePath));}
     @Override public final List<String> system_str(String aCommand) {
         if (mDead) throw new RuntimeException("Can NOT do system from this Dead Executor.");
         if (aCommand==null || aCommand.isEmpty()) return AbstractCollections.zl();
         String tFilePath = toRealOutFilePath(defaultOutFilePath());
-        system_(aCommand, tFilePath, new IOFiles().putOFiles(OUTPUT_FILE_KEY, tFilePath));
+        system_(aCommand, tFilePath, IOFiles.create().putOFiles(OUTPUT_FILE_KEY, tFilePath));
         try {
             return UT.IO.readAllLines(tFilePath);
         } catch (IOException e) {
@@ -403,13 +403,13 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
     
     @Override public final IFutureJob submitSystem(String aCommand                                        ) {return submitSystem(aCommand, defaultOutFilePath());}
     @Override public final IFutureJob submitSystem(String aCommand,                      IIOFiles aIOFiles) {return submitSystem(aCommand, defaultOutFilePath(), aIOFiles);}
-    @Override public final IFutureJob submitSystem(String aCommand, String aOutFilePath                   ) {aOutFilePath = toRealOutFilePath(aOutFilePath); return submitSystem_(aCommand, aOutFilePath, (aCommand==null || aCommand.isEmpty()) ? EPT_IOF : new IOFiles().putOFiles(OUTPUT_FILE_KEY, aOutFilePath));}
+    @Override public final IFutureJob submitSystem(String aCommand, String aOutFilePath                   ) {aOutFilePath = toRealOutFilePath(aOutFilePath); return submitSystem_(aCommand, aOutFilePath, (aCommand==null || aCommand.isEmpty()) ? EPT_IOF : IOFiles.create().putOFiles(OUTPUT_FILE_KEY, aOutFilePath));}
     @Override public final IFutureJob submitSystem(String aCommand, String aOutFilePath, IIOFiles aIOFiles) {aOutFilePath = toRealOutFilePath(aOutFilePath); return submitSystem_(aCommand, aOutFilePath, (aCommand==null || aCommand.isEmpty()) ? aIOFiles.copy(): aIOFiles.copy().putOFiles(OUTPUT_FILE_KEY, aOutFilePath));}
     @Override public final Future<List<String>> submitSystem_str(String aCommand) {
         if (mDead) throw new RuntimeException("Can NOT submitSystem from this Dead Executor.");
         if (aCommand==null || aCommand.isEmpty()) return EPT_STR_FUTURE;
         final String tFilePath = toRealOutFilePath(defaultOutFilePath());
-        final Future<Integer> tSystemTask = submitSystem_(aCommand, tFilePath, new IOFiles().putOFiles(OUTPUT_FILE_KEY, tFilePath));
+        final Future<Integer> tSystemTask = submitSystem_(aCommand, tFilePath, IOFiles.create().putOFiles(OUTPUT_FILE_KEY, tFilePath));
         return UT.Par.map(tSystemTask, v -> {
             try {
                 return UT.IO.readAllLines(tFilePath);

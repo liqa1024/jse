@@ -88,7 +88,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     public int atomNum(int aType) {return (int)mAtomNumbers.get(aType-1);}
     
     public @Override String dataName() {return mDataName;}
-    public @Override String[] atomTypes() {return mAtomTypes;}
+    public @Override String @NotNull[] atomTypes() {return mAtomTypes;}
     public @Override IVector atomNumbers() {return mAtomNumbers;}
     public @Override IMatrix vaspBox() {return mBox;}
     public @Override double vaspBoxScale() {return mBoxScale;}

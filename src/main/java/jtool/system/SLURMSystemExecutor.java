@@ -56,7 +56,7 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
             throw e;
         }
         // 上传脚本文件并设置权限
-        int tExitValue = mEXE.system("chmod 777 "+mSplitNodeScriptPath, new IOFiles().putIFiles(IFILE_KEY, mSplitNodeScriptPath));
+        int tExitValue = mEXE.system("chmod 777 "+mSplitNodeScriptPath, IOFiles.create().putIFiles(IFILE_KEY, mSplitNodeScriptPath));
         if (tExitValue != 0) {
             // 出现任何错误直接抛出错误退出
             this.shutdown();

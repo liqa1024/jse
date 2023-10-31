@@ -1,6 +1,7 @@
 package jtool.iofile;
 
 
+import com.google.common.collect.ImmutableMap;
 import jtool.code.collection.AbstractCollections;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -44,11 +45,17 @@ public class IOFiles implements IIOFiles {
     private final Map<String, List<String>> mIFiles;
     private final Map<String, List<String>> mOFiles; // <FileKey, List<FilePath>>
     
-    public IOFiles() {
-        mIFiles = new HashMap<>();
-        mOFiles = new HashMap<>();
-    }
-    
+    IOFiles(Map<String, List<String>> aIFiles, Map<String, List<String>> aOFiles) {mIFiles = aIFiles; mOFiles = aOFiles;}
+    IOFiles() {this(new HashMap<>(), new HashMap<>());}
+    /**
+     * 现在对于 iofile 统一使用这种方式来获取，这里约定：
+     * 对于实例类内部的静态方法来构造自身的，如果有输入参数，默认行为使用 of；
+     * 对于实例类内部的静态方法来构造自身的，如果没有输入参数，默认行为使用 create；
+     * 对于 xxxs 之类的工具类中的静态方法统一构造的，如果有输入参数，对于默认行为使用 from；
+     * 对于 xxxs 之类的工具类中的静态方法统一构造的，如果没有输入参数，对于默认行为使用 get
+     */
+    public static IOFiles immutable() {return new IOFiles(ImmutableMap.of(), ImmutableMap.of());}
+    public static IOFiles create() {return new IOFiles();}
     
     @Override public List<String> getIFiles(String aIFileKey) {return mIFiles.get(aIFileKey);}
     @Override public List<String> getOFiles(String aOFileKey) {return mOFiles.get(aOFileKey);}

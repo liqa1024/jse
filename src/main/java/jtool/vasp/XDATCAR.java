@@ -31,7 +31,7 @@ import static jtool.code.UT.Code.toXYZ;
 public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implements IVaspCommonData {
     /** 这里统一存放通用数据保证所有帧这些一定是相同的 */
     private final String mDataName;
-    private final String[] mAtomTypes;
+    private final String @NotNull[] mAtomTypes;
     private final IVector mAtomNumbers;
     private final IMatrix mBox;
     private final double mBoxScale;
@@ -84,7 +84,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     public int atomNum(String aKey) {return defaultFrame().atomNum(aKey);}
     public int atomNum(int aType) {return defaultFrame().atomNum(aType);}
     public @Override String dataName() {return mDataName;}
-    public @Override String[] atomTypes() {return mAtomTypes;}
+    public @Override String @NotNull[] atomTypes() {return mAtomTypes;}
     public @Override IVector atomNumbers() {return mAtomNumbers;}
     public @Override IMatrix vaspBox() {return mBox;}
     public @Override double vaspBoxScale() {return mBoxScale;}

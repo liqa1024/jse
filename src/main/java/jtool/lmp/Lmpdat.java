@@ -7,6 +7,7 @@ import jtool.math.matrix.IMatrix;
 import jtool.math.matrix.RowMatrix;
 import jtool.math.vector.IVector;
 import jtool.math.vector.Vectors;
+import jtool.vasp.IVaspCommonData;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -188,8 +189,18 @@ public class Lmpdat extends AbstractSettableAtomData {
     /** 从 IAtomData 来创建，一般来说 Lmpdat 需要一个额外的质量信息 */
     public static Lmpdat fromAtomData(IAtomData aAtomData) {
         @Nullable IVector aMasses = null;
-        if (aAtomData instanceof Lmpdat) aMasses = ((Lmpdat)aAtomData).mMasses;
-        if (aMasses != null) aMasses = aMasses.copy();
+        if (aAtomData instanceof Lmpdat) {
+            aMasses = ((Lmpdat)aAtomData).mMasses;
+            if (aMasses != null) aMasses = aMasses.copy();
+        } else
+        if (aAtomData instanceof IVaspCommonData) {
+            String[] tAtomTypes = ((IVaspCommonData)aAtomData).atomTypes();
+            int tAtomTypeNum = aAtomData.atomTypeNum();
+            if (tAtomTypes.length >= tAtomTypeNum) {
+                aMasses = Vectors.zeros(tAtomTypeNum);
+                for (int i = 0; i < tAtomTypeNum; ++i) aMasses.set_(i, MASS.getOrDefault(tAtomTypes[i], -1.0));
+            }
+        }
         return fromAtomData_(aAtomData, aMasses);
     }
     public static Lmpdat fromAtomData(IAtomData aAtomData, IVector aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
