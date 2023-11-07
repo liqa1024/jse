@@ -10,4 +10,6 @@ public interface IVaspCommonData {
     IVector atomNumbers();
     IMatrix vaspBox();
     double vaspBoxScale();
+    boolean isCartesian();
+    boolean isDiagBox();
 }

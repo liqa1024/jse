@@ -6,7 +6,7 @@ import jtool.system.SSH
 
 
 // 测试 srun 不能及时释放资源的问题
-def ioFiles = (new IOFiles())
+def ioFiles = IOFiles.create()
     .i('<self>', 'script/groovy/run/testSRUN.groovy');
 
 try (def ssh = new SSH(UT.IO.json2map('.SECRET/SSH_INFO.json'));) {

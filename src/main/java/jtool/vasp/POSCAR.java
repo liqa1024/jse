@@ -6,6 +6,7 @@ import com.google.common.collect.Multimap;
 import jtool.atom.*;
 import jtool.code.UT;
 import jtool.code.collection.AbstractCollections;
+import jtool.math.MathEX;
 import jtool.math.matrix.IMatrix;
 import jtool.math.matrix.Matrices;
 import jtool.math.matrix.RowMatrix;
@@ -17,7 +18,6 @@ import java.io.IOException;
 import java.util.*;
 
 import static jtool.code.CS.ZL_STR;
-import static jtool.code.UT.Code.toXYZ;
 
 /**
  * @author liqa
@@ -30,6 +30,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     
     /** POSCAR 只存储每个原子的 xyz 缩放后的矢量 */
     private final IMatrix mDirect;
+    private boolean mIsCartesian; // 如果是 Cartesian 则是没有进行缩放的
     /** POSCAR 特有的属性，系统名称以及每个种类的原子名称 */
     private final String mDataName;
     private final String @NotNull[] mAtomTypes;
@@ -47,8 +48,9 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     /** 用于通过字符获取每个种类的粒子数，考虑了可能有相同 key 的情况 */
     private final Multimap<String, Integer> mKey2Type;
     
-    POSCAR(String aDataName, IMatrix aBox, double aBoxScale, String @NotNull[] aAtomTypes, IVector aAtomNumbers, boolean aSelectiveDynamics, IMatrix aDirect) {
+    POSCAR(String aDataName, IMatrix aBox, double aBoxScale, String @NotNull[] aAtomTypes, IVector aAtomNumbers, boolean aSelectiveDynamics, IMatrix aDirect, boolean aIsCartesian) {
         mDirect = aDirect;
+        mIsCartesian = aIsCartesian;
         mDataName = aDataName;
         mAtomTypes = aAtomTypes;
         mAtomNumbers = aAtomNumbers;
@@ -75,8 +77,8 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         mIsDiagBox = mBox.operation().isDiag();
     }
     /** 用于方便构建，减少重复代码 */
-    POSCAR(IVaspCommonData aVaspCommonData, boolean aSelectiveDynamics, IMatrix aDirect) {
-        this(aVaspCommonData.dataName(), aVaspCommonData.vaspBox(), aVaspCommonData.vaspBoxScale(), aVaspCommonData.atomTypes(), aVaspCommonData.atomNumbers(), aSelectiveDynamics, aDirect);
+    POSCAR(IVaspCommonData aVaspCommonData, boolean aSelectiveDynamics, IMatrix aDirect, boolean aIsCartesian) {
+        this(aVaspCommonData.dataName(), aVaspCommonData.vaspBox(), aVaspCommonData.vaspBoxScale(), aVaspCommonData.atomTypes(), aVaspCommonData.atomNumbers(), aSelectiveDynamics, aDirect, aIsCartesian);
     }
     
     /** 对于 POSCAR 提供额外的实用接口 */
@@ -93,6 +95,30 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     public @Override IMatrix vaspBox() {return mBox;}
     public @Override double vaspBoxScale() {return mBoxScale;}
     public IMatrix direct() {return mDirect;}
+    public @Override boolean isCartesian() {return mIsCartesian;}
+    public @Override boolean isDiagBox() {return mIsDiagBox;}
+    
+    /** Cartesian 和 Direct 来回转换 */
+    public POSCAR setCartesian() {
+        if (mIsCartesian) return this;
+        // 注意如果是斜方的模拟盒则不能进行转换
+        if (!mIsDiagBox) throw new RuntimeException("converting between Cartesian and Direct is temporarily support Diagonal Box only");
+        mDirect.col(0).multiply2this(mBox.get(0, 0));
+        mDirect.col(1).multiply2this(mBox.get(1, 1));
+        mDirect.col(2).multiply2this(mBox.get(2, 2));
+        mIsCartesian = true;
+        return this;
+    }
+    public POSCAR setDirect() {
+        if (!mIsCartesian) return this;
+        // 注意如果是斜方的模拟盒则不能进行转换
+        if (!mIsDiagBox) throw new RuntimeException("converting between Cartesian and Direct is temporarily support Diagonal Box only");
+        mDirect.col(0).div2this(mBox.get(0, 0));
+        mDirect.col(1).div2this(mBox.get(1, 1));
+        mDirect.col(2).div2this(mBox.get(2, 2));
+        mIsCartesian = false;
+        return this;
+    }
     
     /** AbstractAtomData stuffs */
     @Override public ISettableAtom pickAtom(final int aIdx) {
@@ -100,18 +126,18 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         // 并且这里还需要将其转换成正交的情况，因为参数计算相关优化都需要在正交情况下实现
         if (!mIsDiagBox) throw new RuntimeException("atoms is temporarily support Diagonal Box only");
         return new ISettableAtom() {
-            @Override public double x() {return mDirect.get(aIdx, 0)*mBox.get(0, 0)*mBoxScale;}
-            @Override public double y() {return mDirect.get(aIdx, 1)*mBox.get(1, 1)*mBoxScale;}
-            @Override public double z() {return mDirect.get(aIdx, 2)*mBox.get(2, 2)*mBoxScale;}
+            @Override public double x() {return (mIsCartesian ? mDirect.get(aIdx, 0) : mDirect.get(aIdx, 0)*mBox.get(0, 0)) * mBoxScale;}
+            @Override public double y() {return (mIsCartesian ? mDirect.get(aIdx, 1) : mDirect.get(aIdx, 1)*mBox.get(1, 1)) * mBoxScale;}
+            @Override public double z() {return (mIsCartesian ? mDirect.get(aIdx, 2) : mDirect.get(aIdx, 2)*mBox.get(2, 2)) * mBoxScale;}
             
             /** 没有 id 数据，id 为顺序位置 +1 */
             @Override public int id() {return aIdx+1;}
             /** type 需要根据 mIdx2Type 来获取，根据名称顺序给 type 的数字 */
             @Override public int type() {return mIdx2Type.higherEntry(aIdx).getValue();}
             
-            @Override public ISettableAtom setX(double aX) {mDirect.set(aIdx, 0, aX/(mBox.get(0, 0)*mBoxScale)); return this;}
-            @Override public ISettableAtom setY(double aY) {mDirect.set(aIdx, 1, aY/(mBox.get(1, 1)*mBoxScale)); return this;}
-            @Override public ISettableAtom setZ(double aZ) {mDirect.set(aIdx, 2, aZ/(mBox.get(2, 2)*mBoxScale)); return this;}
+            @Override public ISettableAtom setX(double aX) {mDirect.set(aIdx, 0, (mIsCartesian ? aX : aX/mBox.get(0, 0)) / mBoxScale); return this;}
+            @Override public ISettableAtom setY(double aY) {mDirect.set(aIdx, 1, (mIsCartesian ? aY : aY/mBox.get(1, 1)) / mBoxScale); return this;}
+            @Override public ISettableAtom setZ(double aZ) {mDirect.set(aIdx, 2, (mIsCartesian ? aZ : aZ/mBox.get(2, 2)) / mBoxScale); return this;}
             /** POSCAR 直接不支持设置这两者 */
             @Override public ISettableAtom setID(int aID) {throw new UnsupportedOperationException("setID");}
             @Override public ISettableAtom setType(int aType) {throw new UnsupportedOperationException("setType");}
@@ -129,12 +155,12 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     @Override public double volume() {
         // 注意如果是斜方的模拟盒则不能获取到模拟盒体积
         if (!mIsDiagBox) throw new RuntimeException("volume is temporarily support Diagonal Box only");
-        return mBox.refSlicer().diag().prod();
+        return mBox.refSlicer().diag().prod() * MathEX.Fast.pow3(mBoxScale);
     }
     
     
     /** 拷贝一份 POSCAR */
-    @Override public POSCAR copy() {return new POSCAR(mDataName, mBox.copy(), mBoxScale, Arrays.copyOf(mAtomTypes, mAtomTypes.length), mAtomNumbers, mSelectiveDynamics, mDirect.copy());}
+    @Override public POSCAR copy() {return new POSCAR(mDataName, mBox.copy(), mBoxScale, Arrays.copyOf(mAtomTypes, mAtomTypes.length), mAtomNumbers, mSelectiveDynamics, mDirect.copy(), mIsCartesian);}
     // 由于 POSCAR 不是全都可以修改，因此不重写另外两个
     
     /** 从 IAtomData 来创建，POSCAR 需要额外的原子种类字符串以及额外的是否开启 SelectiveDynamics */
@@ -147,11 +173,9 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         if (aAtomData instanceof POSCAR) {
             // POSCAR 则直接获取即可（专门优化，保留完整模拟盒信息等）
             POSCAR tPOSCAR = (POSCAR)aAtomData;
-            return new POSCAR(tPOSCAR.mDataName, tPOSCAR.mBox.copy(), tPOSCAR.mBoxScale, aAtomTypes, tPOSCAR.mAtomNumbers.copy(), aSelectiveDynamics, tPOSCAR.mDirect.copy());
+            return new POSCAR(tPOSCAR.mDataName, tPOSCAR.mBox.copy(), tPOSCAR.mBoxScale, aAtomTypes, tPOSCAR.mAtomNumbers.copy(), aSelectiveDynamics, tPOSCAR.mDirect.copy(), tPOSCAR.mIsCartesian);
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
-            XYZ tBox = toXYZ(aAtomData.box());
-            
             int tAtomTypeNum = aAtomData.atomTypeNum();
             IVector rAtomNumbers = Vectors.zeros(tAtomTypeNum);
             IMatrix rDirect = Matrices.zeros(aAtomData.atomNum(), 3);
@@ -159,13 +183,14 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
             for (int tTypeMM = 0; tTypeMM < tAtomTypeNum; ++tTypeMM) {
                 for (IAtom tAtom : aAtomData.asList()) if (tAtom.type() == tTypeMM+1) {
                     rAtomNumbers.increment_(tTypeMM);
-                    rDirect.set(tIdx, 0, tAtom.x()/tBox.mX);
-                    rDirect.set(tIdx, 1, tAtom.y()/tBox.mY);
-                    rDirect.set(tIdx, 2, tAtom.z()/tBox.mZ);
+                    rDirect.set(tIdx, 0, tAtom.x());
+                    rDirect.set(tIdx, 1, tAtom.y());
+                    rDirect.set(tIdx, 2, tAtom.z());
                     ++tIdx;
                 }
             }
-            return new POSCAR(DEFAULT_DATA_NAME, Matrices.diag(tBox.data()), 1.0, aAtomTypes, rAtomNumbers, aSelectiveDynamics, rDirect);
+            // 现在转换会直接转成 Cartesian 来避免计算中的浮点误差
+            return new POSCAR(DEFAULT_DATA_NAME, Matrices.diag(aAtomData.box().data()), 1.0, aAtomTypes, rAtomNumbers, aSelectiveDynamics, rDirect, true);
         }
     }
     
@@ -188,6 +213,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         IVector aAtomNumbers;
         boolean aSelectiveDynamics = false;
         IMatrix aDirect;
+        boolean aIsCartesian;
         
         int idx = 0;
         String[] tTokens;
@@ -219,9 +245,10 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         if (aLines.get(idx).equalsIgnoreCase("Selective dynamics")) {
         aSelectiveDynamics = true; ++idx; if (idx >= aLines.size()) return null;
         }
-        // 目前只支持 Direct
-        if (!aLines.get(idx).equalsIgnoreCase("Direct")) {
-        throw new RuntimeException("Can ONLY read Direct POSCAR temporarily");
+        // 只支持 Direct 和 Cartesian
+        aIsCartesian = aLines.get(idx).equalsIgnoreCase("Cartesian");
+        if (!aIsCartesian && !aLines.get(idx).equalsIgnoreCase("Direct")) {
+        throw new RuntimeException("Can ONLY read Direct or Cartesian POSCAR");
         }
         // 读取原子数据
         ++idx; if (idx >= aLines.size()) return null;
@@ -234,7 +261,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         }
         
         // 返回 POSCAR
-        return new POSCAR(aDataName, aBox, aBoxScale, aAtomTypes, aAtomNumbers, aSelectiveDynamics, aDirect);
+        return new POSCAR(aDataName, aBox, aBoxScale, aAtomTypes, aAtomNumbers, aSelectiveDynamics, aDirect, aIsCartesian);
     }
     
     /**
@@ -256,7 +283,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         lines.add(String.join(" ", AbstractCollections.map(mAtomNumbers.iterable(), number -> String.format("%6d", number.intValue()))));
         if (mSelectiveDynamics)
         lines.add("Selective dynamics");
-        lines.add("Direct");
+        lines.add(mIsCartesian ? "Cartesian" : "Direct");
         for (IVector subDirect : mDirect.rows())
         lines.add(String.format("%16.10g    %16.10g    %16.10g", subDirect.get(0), subDirect.get(1), subDirect.get(2)));
         

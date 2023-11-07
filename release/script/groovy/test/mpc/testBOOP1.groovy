@@ -121,19 +121,32 @@ q6_ZrCu2 = mpc_ZrCu2.calABOOP(6, mpc_ZrCu2.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("ZrCu2, q6");
 mpc_ZrCu2.shutdown();
 
+data_Zr14Cu51 = POSCAR.read('lmp/data/re_Zr14Cu51.poscar').opt().perturbXYZ(0.25*perturbMul);
+if (onlyCu) data_Zr14Cu51 = data_Zr14Cu51.opt().filterType(2);
+if (onlyZr) data_Zr14Cu51 = data_Zr14Cu51.opt().filterType(1);
+mpc_Zr14Cu51 = data_Zr14Cu51.getMPC(nThreads);
+println("Zr14Cu51, u: ${mpc_Zr14Cu51.unitLen()}");
+UT.Timer.tic();
+q4_Zr14Cu51 = mpc_Zr14Cu51.calABOOP(4, mpc_Zr14Cu51.unitLen()*cutoffMul, nnn);
+UT.Timer.toc("Zr14Cu51, q4");
+UT.Timer.tic();
+q6_Zr14Cu51 = mpc_Zr14Cu51.calABOOP(6, mpc_Zr14Cu51.unitLen()*cutoffMul, nnn);
+UT.Timer.toc("Zr14Cu51, q6");
+mpc_Zr14Cu51.shutdown();
 
 
 // 使用 Plotter 绘图
 plt = Plotters.get();
 
-plt.plot(q4_G      , q6_G      , 'glass'  ).lineType('none').markerType('o').markerSize(4);
-plt.plot(q4_FCC    , q6_FCC    , 'FCC'    ).lineType('none').markerType('o').markerSize(4);
-plt.plot(q4_BCC    , q6_BCC    , 'BCC'    ).lineType('none').markerType('o').markerSize(4);
-plt.plot(q4_HCP    , q6_HCP    , 'HCP'    ).lineType('none').markerType('o').markerSize(4);
-plt.plot(q4_MgCu2  , q6_MgCu2  , 'MgCu2'  ).lineType('none').markerType('s').markerSize(4);
-plt.plot(q4_Zr3Cu8 , q6_Zr3Cu8 , 'Zr3Cu8' ).lineType('none').markerType('^').markerSize(4);
-plt.plot(q4_Zr7Cu10, q6_Zr7Cu10, 'Zr7Cu10').lineType('none').markerType('^').markerSize(4);
-plt.plot(q4_ZrCu2  , q6_ZrCu2  , 'ZrCu2'  ).lineType('none').markerType('^').markerSize(4);
+plt.plot(q4_G       , q6_G       , 'glass'   ).lineType('none').markerType('o').markerSize(4);
+plt.plot(q4_FCC     , q6_FCC     , 'FCC'     ).lineType('none').markerType('o').markerSize(4);
+plt.plot(q4_BCC     , q6_BCC     , 'BCC'     ).lineType('none').markerType('o').markerSize(4);
+plt.plot(q4_HCP     , q6_HCP     , 'HCP'     ).lineType('none').markerType('o').markerSize(4);
+plt.plot(q4_MgCu2   , q6_MgCu2   , 'MgCu2'   ).lineType('none').markerType('s').markerSize(4);
+plt.plot(q4_Zr3Cu8  , q6_Zr3Cu8  , 'Zr3Cu8'  ).lineType('none').markerType('^').markerSize(4);
+plt.plot(q4_Zr7Cu10 , q6_Zr7Cu10 , 'Zr7Cu10' ).lineType('none').markerType('^').markerSize(4);
+plt.plot(q4_ZrCu2   , q6_ZrCu2   , 'ZrCu2'   ).lineType('none').markerType('^').markerSize(4);
+plt.plot(q4_Zr14Cu51, q6_Zr14Cu51, 'Zr14Cu51').lineType('none').markerType('^').markerSize(4);
 
 plt.xlabel('q4').ylabel('q6');
 plt.xTick(0.02).yTick(0.05);

@@ -18,10 +18,11 @@ import jtool.vasp.POSCAR
 def dataG = Lmpdat.read('lmp/data/data-glass');
 def dataC = Lmpdat.read('lmp/data/data-crystal');
 def dataFFS = Dump.read('lmp/.ffs-in/dump-fs1').last();
-def dataMgCu2   = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'   ).opt().mapType {3-it.type()}, 5).opt().perturbXYZ(0.25);
-def dataZr3Cu8  = Structures.from(POSCAR.read('lmp/data/Zr3Cu8.poscar'  ).opt().mapType {3-it.type()}, 3).opt().perturbXYZ(0.25);
-def dataZr7Cu10 = Structures.from(POSCAR.read('lmp/data/Zr7Cu10.poscar' ).opt().mapType {3-it.type()}, 3).opt().perturbXYZ(0.25);
-def dataZrCu2   = Structures.from(POSCAR.read('lmp/data/ZrCu2.poscar'   ).opt().mapType {3-it.type()}, 5).opt().perturbXYZ(0.25);
+def dataMgCu2   = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'      ).opt().mapType {3-it.type()}, 5).opt().perturbXYZ(0.25);
+def dataZr3Cu8  = Structures.from(POSCAR.read('lmp/data/Zr3Cu8.poscar'     ).opt().mapType {3-it.type()}, 3).opt().perturbXYZ(0.25);
+def dataZr7Cu10 = Structures.from(POSCAR.read('lmp/data/Zr7Cu10.poscar'    ).opt().mapType {3-it.type()}, 3).opt().perturbXYZ(0.25);
+def dataZrCu2   = Structures.from(POSCAR.read('lmp/data/ZrCu2.poscar'      ).opt().mapType {3-it.type()}, 5).opt().perturbXYZ(0.25);
+def dataZr14Cu51= Structures.from(POSCAR.read('lmp/data/re_Zr14Cu51.poscar').opt().mapType {3-it.type()}, 2).opt().perturbXYZ(0.25);
 
 // 默认的团簇计算器
 UT.Timer.tic();
@@ -33,6 +34,7 @@ println("default MgCu2: ${cal.lambdaOf(dataMgCu2)}, total: ${dataMgCu2.atomNum()
 println("default Zr3Cu8: ${cal.lambdaOf(dataZr3Cu8)}, total: ${dataZr3Cu8.atomNum()}");
 println("default Zr7Cu10: ${cal.lambdaOf(dataZr7Cu10)}, total: ${dataZr7Cu10.atomNum()}");
 println("default ZrCu2: ${cal.lambdaOf(dataZrCu2)}, total: ${dataZrCu2.atomNum()}");
+println("default Zr14Cu51: ${cal.lambdaOf(dataZr14Cu51)}, total: ${dataZr14Cu51.atomNum()}");
 UT.Timer.toc();
 
 // 用于计算合金的团簇计算器
@@ -48,6 +50,7 @@ println("multi MgCu2: ${calMulti.lambdaOf(dataMgCu2)}, total: ${dataMgCu2.atomNu
 println("multi Zr3Cu8: ${calMulti.lambdaOf(dataZr3Cu8)}, total: ${dataZr3Cu8.atomNum()}");
 println("multi Zr7Cu10: ${calMulti.lambdaOf(dataZr7Cu10)}, total: ${dataZr7Cu10.atomNum()}");
 println("multi ZrCu2: ${calMulti.lambdaOf(dataZrCu2)}, total: ${dataZrCu2.atomNum()}");
+println("multi Zr14Cu51: ${calMulti.lambdaOf(dataZr14Cu51)}, total: ${dataZr14Cu51.atomNum()}");
 UT.Timer.toc();
 
 
