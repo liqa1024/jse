@@ -44,7 +44,6 @@
     ├─script
     │   ├─groovy
     │   │   ├─obj
-    │   │   ├─run
     │   │   ├─test
     │   │   ...
     │   │
@@ -237,8 +236,7 @@ javarmpath('lib/jtool-all.jar');
 
 
 # 使用文档
-详细接口介绍参考 [使用文档](doc/contents.md)（正在编写），
-也可查看 [自动生成的文档](http://172.16.53.103:2597)（仅中心内可访问）。
+详细接口介绍参考 [使用文档](doc/contents.md)（正在编写）。
 
 
 # 编译项目
