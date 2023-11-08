@@ -66,7 +66,9 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     
     /** AbstractList stuffs */
     @Override public int size() {return mDirects.size();}
-    @Override public POSCAR get(int index) {return new POSCAR(this, false, mDirects.get(index), mIsCartesian);}
+    @Override public POSCAR get(int index) {
+        return new POSCAR(this, false, mDirects.get(index), mIsCartesian);
+    }
     @Override public POSCAR set(int index, POSCAR aPOSCAR) {
         // 只有正交的 XDATCAR 才能设置内部元素
         if (!mIsDiagBox) throw new RuntimeException("set is support Diagonal Box only");
@@ -77,7 +79,9 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         if (!mIsDiagBox) throw new RuntimeException("add is support Diagonal Box only");
         return mDirects.add(getDirect_(aPOSCAR, mIsCartesian, mBoxScale));
     }
-    @Override public POSCAR remove(int aIndex) {return new POSCAR(this, false, mDirects.remove(aIndex), mIsCartesian);}
+    @Override public POSCAR remove(int aIndex) {
+        return new POSCAR(this, false, mDirects.remove(aIndex), mIsCartesian);
+    }
     /** 提供更加易用的添加方法，返回自身支持链式调用 */
     public XDATCAR append(IAtomData aAtomData) {
         // 只有正交的 XDATCAR 才能通过 AtomData 设置内部元素

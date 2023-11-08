@@ -17,7 +17,7 @@ final int nnn = 12;
 final double perturbMul = 1.0;
 
 final boolean onlyCu = false;
-final boolean onlyZr = false;
+final boolean onlyZr = true;
 
 // 先计算玻璃态
 data_G = Lmpdat.read('lmp/data/data-glass');
@@ -68,7 +68,6 @@ q6_HCP = mpc_HCP.calABOOP(6, mpc_HCP.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("HCP, q6");
 mpc_HCP.shutdown();
 
-
 data_MgCu2 = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'), 4).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) data_MgCu2 = data_MgCu2.opt().filterType(2);
 if (onlyZr) data_MgCu2 = data_MgCu2.opt().filterType(1);
@@ -82,57 +81,31 @@ q6_MgCu2 = mpc_MgCu2.calABOOP(6, mpc_MgCu2.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("MgCu2, q6");
 mpc_MgCu2.shutdown();
 
-data_Zr3Cu8 = Structures.from(POSCAR.read('lmp/data/Zr3Cu8.poscar'), 3).opt().perturbXYZ(0.25*perturbMul);
-if (onlyCu) data_Zr3Cu8 = data_Zr3Cu8.opt().filterType(2);
-if (onlyZr) data_Zr3Cu8 = data_Zr3Cu8.opt().filterType(1);
-mpc_Zr3Cu8 = data_Zr3Cu8.getMPC(nThreads);
-println("Zr3Cu8, u: ${mpc_Zr3Cu8.unitLen()}");
+data_MgNi2 = Structures.from(POSCAR.read('lmp/data/re_MgNi2.poscar'), 3).opt().perturbXYZ(0.25*perturbMul);
+if (onlyCu) data_MgNi2 = data_MgNi2.opt().filterType(2);
+if (onlyZr) data_MgNi2 = data_MgNi2.opt().filterType(1);
+mpc_MgNi2 = data_MgNi2.getMPC(nThreads);
+println("MgNi2, u: ${mpc_MgNi2.unitLen()}");
 UT.Timer.tic();
-q4_Zr3Cu8 = mpc_Zr3Cu8.calABOOP(4, mpc_Zr3Cu8.unitLen()*cutoffMul, nnn);
-UT.Timer.toc("Zr3Cu8, q4");
+q4_MgNi2 = mpc_MgNi2.calABOOP(4, mpc_MgNi2.unitLen()*cutoffMul, nnn);
+UT.Timer.toc("MgNi2, q4");
 UT.Timer.tic();
-q6_Zr3Cu8 = mpc_Zr3Cu8.calABOOP(6, mpc_Zr3Cu8.unitLen()*cutoffMul, nnn);
-UT.Timer.toc("Zr3Cu8, q6");
-mpc_Zr3Cu8.shutdown();
+q6_MgNi2 = mpc_MgNi2.calABOOP(6, mpc_MgNi2.unitLen()*cutoffMul, nnn);
+UT.Timer.toc("MgNi2, q6");
+mpc_MgNi2.shutdown();
 
-data_Zr7Cu10 = Structures.from(POSCAR.read('lmp/data/Zr7Cu10.poscar'), 3).opt().perturbXYZ(0.25*perturbMul);
-if (onlyCu) data_Zr7Cu10 = data_Zr7Cu10.opt().filterType(2);
-if (onlyZr) data_Zr7Cu10 = data_Zr7Cu10.opt().filterType(1);
-mpc_Zr7Cu10 = data_Zr7Cu10.getMPC(nThreads);
-println("Zr7Cu10, u: ${mpc_Zr7Cu10.unitLen()}");
+data_MgZn2 = Structures.from(POSCAR.read('lmp/data/re_MgZn2.poscar'), 4).opt().perturbXYZ(0.25*perturbMul);
+if (onlyCu) data_MgZn2 = data_MgZn2.opt().filterType(2);
+if (onlyZr) data_MgZn2 = data_MgZn2.opt().filterType(1);
+mpc_MgZn2 = data_MgZn2.getMPC(nThreads);
+println("MgZn2, u: ${mpc_MgZn2.unitLen()}");
 UT.Timer.tic();
-q4_Zr7Cu10 = mpc_Zr7Cu10.calABOOP(4, mpc_Zr7Cu10.unitLen()*cutoffMul, nnn);
-UT.Timer.toc("Zr7Cu10, q4");
+q4_MgZn2 = mpc_MgZn2.calABOOP(4, mpc_MgZn2.unitLen()*cutoffMul, nnn);
+UT.Timer.toc("MgZn2, q4");
 UT.Timer.tic();
-q6_Zr7Cu10 = mpc_Zr7Cu10.calABOOP(6, mpc_Zr7Cu10.unitLen()*cutoffMul, nnn);
-UT.Timer.toc("Zr7Cu10, q6");
-mpc_Zr7Cu10.shutdown();
-
-data_ZrCu2 = Structures.from(POSCAR.read('lmp/data/ZrCu2.poscar'), 5).opt().perturbXYZ(0.25*perturbMul);
-if (onlyCu) data_ZrCu2 = data_ZrCu2.opt().filterType(2);
-if (onlyZr) data_ZrCu2 = data_ZrCu2.opt().filterType(1);
-mpc_ZrCu2 = data_ZrCu2.getMPC(nThreads);
-println("ZrCu2, u: ${mpc_ZrCu2.unitLen()}");
-UT.Timer.tic();
-q4_ZrCu2 = mpc_ZrCu2.calABOOP(4, mpc_ZrCu2.unitLen()*cutoffMul, nnn);
-UT.Timer.toc("ZrCu2, q4");
-UT.Timer.tic();
-q6_ZrCu2 = mpc_ZrCu2.calABOOP(6, mpc_ZrCu2.unitLen()*cutoffMul, nnn);
-UT.Timer.toc("ZrCu2, q6");
-mpc_ZrCu2.shutdown();
-
-data_Zr14Cu51 = Structures.from(POSCAR.read('lmp/data/re_Zr14Cu51.poscar'), 2).opt().perturbXYZ(0.25*perturbMul);
-if (onlyCu) data_Zr14Cu51 = data_Zr14Cu51.opt().filterType(2);
-if (onlyZr) data_Zr14Cu51 = data_Zr14Cu51.opt().filterType(1);
-mpc_Zr14Cu51 = data_Zr14Cu51.getMPC(nThreads);
-println("Zr14Cu51, u: ${mpc_Zr14Cu51.unitLen()}");
-UT.Timer.tic();
-q4_Zr14Cu51 = mpc_Zr14Cu51.calABOOP(4, mpc_Zr14Cu51.unitLen()*cutoffMul, nnn);
-UT.Timer.toc("Zr14Cu51, q4");
-UT.Timer.tic();
-q6_Zr14Cu51 = mpc_Zr14Cu51.calABOOP(6, mpc_Zr14Cu51.unitLen()*cutoffMul, nnn);
-UT.Timer.toc("Zr14Cu51, q6");
-mpc_Zr14Cu51.shutdown();
+q6_MgZn2 = mpc_MgZn2.calABOOP(6, mpc_MgZn2.unitLen()*cutoffMul, nnn);
+UT.Timer.toc("MgZn2, q6");
+mpc_MgZn2.shutdown();
 
 
 // 使用 Plotter 绘图
@@ -143,10 +116,8 @@ plt.plot(q4_FCC     , q6_FCC     , 'FCC'     ).lineType('none').markerType('o').
 plt.plot(q4_BCC     , q6_BCC     , 'BCC'     ).lineType('none').markerType('o').markerSize(4);
 plt.plot(q4_HCP     , q6_HCP     , 'HCP'     ).lineType('none').markerType('o').markerSize(4);
 plt.plot(q4_MgCu2   , q6_MgCu2   , 'MgCu2'   ).lineType('none').markerType('s').markerSize(4);
-plt.plot(q4_Zr3Cu8  , q6_Zr3Cu8  , 'Zr3Cu8'  ).lineType('none').markerType('^').markerSize(4);
-plt.plot(q4_Zr7Cu10 , q6_Zr7Cu10 , 'Zr7Cu10' ).lineType('none').markerType('^').markerSize(4);
-plt.plot(q4_ZrCu2   , q6_ZrCu2   , 'ZrCu2'   ).lineType('none').markerType('^').markerSize(4);
-plt.plot(q4_Zr14Cu51, q6_Zr14Cu51, 'Zr14Cu51').lineType('none').markerType('^').markerSize(4);
+plt.plot(q4_MgNi2   , q6_MgNi2   , 'MgNi2'   ).lineType('none').markerType('d').markerSize(4);
+plt.plot(q4_MgZn2   , q6_MgZn2   , 'MgZn2'   ).lineType('none').markerType('^').markerSize(4);
 
 plt.xlabel('q4').ylabel('q6');
 plt.xTick(0.02).yTick(0.05);
