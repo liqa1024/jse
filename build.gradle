@@ -3,6 +3,8 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
+group = 'com.jtool'
+
 java {
     // 依旧保持 java8 保证对 matlab 等应用的兼容性
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -11,6 +13,7 @@ java {
 
 repositories {
     mavenCentral()
+    maven {url 'https://www.jitpack.io'}
 }
 
 sourceSets {
@@ -25,6 +28,8 @@ compileJava {
 dependencies {
     compileOnly('org.jetbrains:annotations:24.0.1')                 // debug
     
+    implementation('com.github.CHanzyLazer.jToolEX-Voronoi-3D:jtoolex-voronoi:1.0-dev') // jtoolex-voronoi，用于做 voronoi 分析，分离出来避免开源协议限制
+    
     implementation('org.apache.groovy:groovy:4.0.15')               // 用于直接执行 groovy 脚本而不需要安装 groovy
     implementation('org.apache.groovy:groovy-groovysh:4.0.15')      // 用于直接通过命令行交互试的操作
     implementation('org.apache.groovy:groovy-json:4.0.15')          // 直接使用 groovy 的 json 包来支持 json，可以让 groovy 脚本使用原生的 json 功能
@@ -35,7 +40,6 @@ dependencies {
     implementation('black.ninia:jep:4.1.1')                         // 调用 python 代码支持，需要系统有需要的 python 环境，并且需要初始化，因此这里不作为主要代码的使用
     
     implementation('org.zeromq:jeromq:0.5.4')                       // 跨 JVM 并行库，可以支持超算上跨节点并行；虽然 java 标准库也有类似功能，但是这个更加易用
-    
     implementation('org.jfree:jfreechart:1.5.4')                    // 简单的绘图支持
 //  implementation('org.apache.commons:commons-pool2:2.11.1')       // 对象池, bad ideal，即使需要也应该自己实现一个简单的实例
     implementation('com.google.collections:google-collections:1.0') // 实现更加简单的容器初始化
@@ -49,7 +53,8 @@ dependencies {
 
 shadowJar {
     // 指定输出的 jar 文件名，默认输出所有的工具包
-    archiveFileName.set('jtool-all.jar')
+    archiveBaseName = 'jtool'
+    archiveClassifier = 'all'
     
     // 指定主要运行类
     manifest {attributes 'Main-Class': 'jtool.Main'}

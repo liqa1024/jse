@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.util.*;
 
 import static jtool.code.CS.ZL_STR;
-import static jtool.code.UT.Code.toXYZ;
 
 
 /**
@@ -218,7 +217,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
             return getDirect_(((XDATCAR)aAtomData).defaultFrame(), aIsCartesian, aBoxScale);
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
-            XYZ tBox = toXYZ(aAtomData.box());
+            XYZ tBox = XYZ.toXYZ(aAtomData.box());
             
             int tAtomTypeNum = aAtomData.atomTypeNum();
             IMatrix rDirect = Matrices.zeros(aAtomData.atomNum(), 3);

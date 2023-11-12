@@ -181,9 +181,7 @@ public class UT {
          * Convert IXYZ to XYZ to optimise, result should be read only!
          * @author liqa
          */
-        public static XYZ toXYZ(IXYZ aXYZ) {
-            return (aXYZ instanceof XYZ) ? (XYZ)aXYZ : new XYZ(aXYZ);
-        }
+        @VisibleForTesting public static XYZ toXYZ(IXYZ aXYZ) {return XYZ.toXYZ(aXYZ);}
         /**
          * Return new IXYZ for Box usage, consider the constant
          * @author liqa

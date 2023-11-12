@@ -25,13 +25,13 @@ public class AbstractCollections {
     public static <T> @Unmodifiable List<T> zl() {return ImmutableList.of();}
     
     /** 通用的转换方法 */
-    public static <T> List<T> from(final int aSize, final IOperator1<? extends T, Integer> aListGetter) {
+    public static <T> @Unmodifiable List<T> from(final int aSize, final IOperator1<? extends T, Integer> aListGetter) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {return aListGetter.cal(index);}
             @Override public int size() {return aSize;}
         };
     }
-    public static <T> Collection<T> from(final int aSize, final Iterable<T> aIterable) {
+    public static <T> @Unmodifiable Collection<T> from(final int aSize, final Iterable<T> aIterable) {
         return new AbstractCollection<T>() {
             @Override public @NotNull Iterator<T> iterator() {return aIterable.iterator();}
             @Override public int size() {return aSize;}
@@ -106,12 +106,12 @@ public class AbstractCollections {
      * @param aStep the step of Iteration
      * @return A iterable container
      */
-    public static List<Integer> range_(int aStart, int aStop, int aStep) {return new Range(aStart, aStop, aStep);}
-    public static List<Integer> range_(            int aSize           ) {return range_(0, aSize);}
-    public static List<Integer> range_(int aStart, int aStop           ) {return range_(aStart, aStop, 1);}
-    public static List<Integer> range (            int aSize           ) {return range(0, aSize);}
-    public static List<Integer> range (int aStart, int aStop           ) {return range(aStart, aStop, 1);}
-    public static List<Integer> range (int aStart, int aStop, int aStep) {
+    public static @Unmodifiable List<Integer> range_(int aStart, int aStop, int aStep) {return new Range(aStart, aStop, aStep);}
+    public static @Unmodifiable List<Integer> range_(            int aSize           ) {return range_(0, aSize);}
+    public static @Unmodifiable List<Integer> range_(int aStart, int aStop           ) {return range_(aStart, aStop, 1);}
+    public static @Unmodifiable List<Integer> range (            int aSize           ) {return range(0, aSize);}
+    public static @Unmodifiable List<Integer> range (int aStart, int aStop           ) {return range(aStart, aStop, 1);}
+    public static @Unmodifiable List<Integer> range (int aStart, int aStop, int aStep) {
         aStep = Math.max(aStep, 1);
         aStop = Math.max(aStop, aStart);
         return range_(aStart, aStop, aStep);
@@ -178,10 +178,10 @@ public class AbstractCollections {
      * map {@code Iterable<T> to Iterable<R>} like {@link Stream}.map
      * @author liqa
      */
-    public static <R, T> Iterable<R> map(final Iterable<T> aIterable, final IOperator1<? extends R, ? super T> aOpt) {
+    public static <R, T> @Unmodifiable Iterable<R> map(final Iterable<T> aIterable, final IOperator1<? extends R, ? super T> aOpt) {
         return () -> map(aIterable.iterator(), aOpt);
     }
-    public static <R, T> Iterator<R> map(final Iterator<T> aIterator, final IOperator1<? extends R, ? super T> aOpt) {
+    public static <R, T> @Unmodifiable Iterator<R> map(final Iterator<T> aIterator, final IOperator1<? extends R, ? super T> aOpt) {
         return new Iterator<R>() {
             final Iterator<T> mIt = aIterator;
             @Override public boolean hasNext() {
@@ -196,20 +196,20 @@ public class AbstractCollections {
             }
         };
     }
-    public static <R, T> Collection<R> map(final Collection<T> aCollection, final IOperator1<? extends R, ? super T> aOpt) {
+    public static <R, T> @Unmodifiable Collection<R> map(final Collection<T> aCollection, final IOperator1<? extends R, ? super T> aOpt) {
         return new AbstractCollection<R>() {
             @Override public @NotNull Iterator<R> iterator() {return map(aCollection.iterator(), aOpt);}
             @Override public int size() {return aCollection.size();}
         };
     }
-    public static <R, T> List<R> map(final List<T> aList, final IOperator1<? extends R, ? super T> aOpt) {
+    public static <R, T> @Unmodifiable List<R> map(final List<T> aList, final IOperator1<? extends R, ? super T> aOpt) {
         return new AbstractRandomAccessList<R>() {
             @Override public R get(int index) {return aOpt.cal(aList.get(index));}
             @Override public int size() {return aList.size();}
             @Override public @NotNull Iterator<R> iterator() {return map(aList.iterator(), aOpt);}
         };
     }
-    public static <R, T> List<R> map(final T[] aArray, final IOperator1<? extends R, ? super T> aOpt) {
+    public static <R, T> @Unmodifiable List<R> map(final T[] aArray, final IOperator1<? extends R, ? super T> aOpt) {
         return new AbstractRandomAccessList<R>() {
             @Override public R get(int index) {return aOpt.cal(aArray[index]);}
             @Override public int size() {return aArray.length;}
@@ -221,25 +221,25 @@ public class AbstractCollections {
      * 提供通用切片接口
      * @author liqa
      */
-    public static <T> List<T> slice(final List<? extends T> aList, final List<Integer> aIndices) {
+    public static <T> @Unmodifiable List<T> slice(final List<? extends T> aList, final List<Integer> aIndices) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {return aList.get(aIndices.get(index));}
             @Override public int size() {return aIndices.size();}
         };
     }
-    public static <T> List<T> slice(List<? extends T> aList, Iterable<Integer> aIndices) {
+    public static <T> @Unmodifiable List<T> slice(List<? extends T> aList, Iterable<Integer> aIndices) {
         return slice(aList, NewCollections.from(aIndices));
     }
-    public static <T> List<T> slice(List<? extends T> aList, Collection<Integer> aIndices) {
+    public static <T> @Unmodifiable List<T> slice(List<? extends T> aList, Collection<Integer> aIndices) {
         return slice(aList, NewCollections.from(aIndices));
     }
-    public static <T> List<T> slice(final List<? extends T> aList, final int[] aIndices) {
+    public static <T> @Unmodifiable List<T> slice(final List<? extends T> aList, final int[] aIndices) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {return aList.get(aIndices[index]);}
             @Override public int size() {return aIndices.length;}
         };
     }
-    public static <T> List<T> slice(final List<? extends T> aList, IIndexFilter aIndices) {
+    public static <T> @Unmodifiable List<T> slice(final List<? extends T> aList, IIndexFilter aIndices) {
         return slice(aList, NewCollections.filterInteger(aList.size(), aIndices));
     }
     
@@ -248,7 +248,7 @@ public class AbstractCollections {
      * 提供通用的执行过滤的接口
      * @author liqa
      */
-    public static <T> Iterable<T> filter(final Iterable<? extends T> aIterable, final IFilter<? super T> aFilter) {
+    public static <T> @Unmodifiable Iterable<T> filter(final Iterable<? extends T> aIterable, final IFilter<? super T> aFilter) {
         return () -> new Iterator<T>() {
             private final Iterator<? extends T> mIt = aIterable.iterator();
             private boolean mNextValid = false;
@@ -281,10 +281,10 @@ public class AbstractCollections {
             }
         };
     }
-    public static Iterable<Integer> filterInteger(Iterable<Integer> aIndices, IIndexFilter aFilter) {
+    public static @Unmodifiable Iterable<Integer> filterInteger(Iterable<Integer> aIndices, IIndexFilter aFilter) {
         return filter(aIndices, aFilter::accept);
     }
-    public static Iterable<Integer> filterInteger(final int aSize, final IIndexFilter aFilter) {
+    public static @Unmodifiable Iterable<Integer> filterInteger(final int aSize, final IIndexFilter aFilter) {
         return () -> new Iterator<Integer>() {
             private int mIdx = 0, mNext = -1;
             
@@ -311,10 +311,10 @@ public class AbstractCollections {
             }
         };
     }
-    public static Iterable<? extends Number> filterDouble(Iterable<? extends Number> aIterable, final IDoubleFilter aFilter) {
+    public static @Unmodifiable Iterable<? extends Number> filterDouble(Iterable<? extends Number> aIterable, final IDoubleFilter aFilter) {
         return filter(aIterable, v -> aFilter.accept(v.doubleValue()));
     }
-    public static IHasDoubleIterator filterDouble(final IHasDoubleIterator aIterable, final IDoubleFilter aFilter) {
+    public static @Unmodifiable IHasDoubleIterator filterDouble(final IHasDoubleIterator aIterable, final IDoubleFilter aFilter) {
         return () -> new IDoubleIterator() {
             private final IDoubleIterator mIt = aIterable.iterator();
             private boolean mNextValid = false;
@@ -350,19 +350,19 @@ public class AbstractCollections {
      * merge two array into one List
      * @author liqa
      */
-    public static <T> List<T> merge(final T[] aBefore, final T[] aAfter) {
+    public static <T> @Unmodifiable List<T> merge(final T[] aBefore, final T[] aAfter) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {return index<aBefore.length ? aBefore[index] : aAfter[index-aBefore.length];}
             @Override public int size() {return aBefore.length+aAfter.length;}
         };
     }
-    public static <T> List<T> merge(final T aBefore0, final T[] aAfter) {
+    public static <T> @Unmodifiable List<T> merge(final T aBefore0, final T[] aAfter) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {return index<1 ? aBefore0 : aAfter[index-1];}
             @Override public int size() {return aAfter.length+1;}
         };
     }
-    public static <T> List<T> merge(final T aBefore0, final T aBefore1, final T[] aAfter) {
+    public static <T> @Unmodifiable List<T> merge(final T aBefore0, final T aBefore1, final T[] aAfter) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {
                 switch (index) {
@@ -374,7 +374,7 @@ public class AbstractCollections {
             @Override public int size() {return aAfter.length+2;}
         };
     }
-    public static <T> List<T> merge(final T aBefore0, final T aBefore1, final T aBefore2, final T[] aAfter) {
+    public static <T> @Unmodifiable List<T> merge(final T aBefore0, final T aBefore1, final T aBefore2, final T[] aAfter) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {
                 switch (index) {
@@ -387,7 +387,7 @@ public class AbstractCollections {
             @Override public int size() {return aAfter.length+3;}
         };
     }
-    public static <T> List<T> merge(final T[] aBefore, final T aAfter0) {
+    public static <T> @Unmodifiable List<T> merge(final T[] aBefore, final T aAfter0) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {
                 int tRest = index-aBefore.length;
@@ -396,7 +396,7 @@ public class AbstractCollections {
             @Override public int size() {return aBefore.length+1;}
         };
     }
-    public static <T> List<T> merge(final T[] aBefore, final T aAfter0, final T aAfter1) {
+    public static <T> @Unmodifiable List<T> merge(final T[] aBefore, final T aAfter0, final T aAfter1) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {
                 int tRest = index-aBefore.length;
@@ -409,7 +409,7 @@ public class AbstractCollections {
             @Override public int size() {return aBefore.length+2;}
         };
     }
-    public static <T> List<T> merge(final T[] aBefore, final T aAfter0, final T aAfter1, final T aAfter2) {
+    public static <T> @Unmodifiable List<T> merge(final T[] aBefore, final T aAfter0, final T aAfter1, final T aAfter2) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {
                 int tRest = index-aBefore.length;
@@ -423,19 +423,19 @@ public class AbstractCollections {
             @Override public int size() {return aBefore.length+3;}
         };
     }
-    public static <T> List<T> merge(final List<? extends T> aBefore, final List<? extends T> aAfter) {
+    public static <T> @Unmodifiable List<T> merge(final List<? extends T> aBefore, final List<? extends T> aAfter) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {return index<aBefore.size() ? aBefore.get(index) : aAfter.get(index-aBefore.size());}
             @Override public int size() {return aBefore.size()+aAfter.size();}
         };
     }
-    public static <T> List<T> merge(final T aBefore0, final List<? extends T> aAfter) {
+    public static <T> @Unmodifiable List<T> merge(final T aBefore0, final List<? extends T> aAfter) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {return index<1 ? aBefore0 : aAfter.get(index-1);}
             @Override public int size() {return aAfter.size()+1;}
         };
     }
-    public static <T> List<T> merge(final T aBefore0, final T aBefore1, final List<? extends T> aAfter) {
+    public static <T> @Unmodifiable List<T> merge(final T aBefore0, final T aBefore1, final List<? extends T> aAfter) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {
                 switch (index) {
@@ -447,7 +447,7 @@ public class AbstractCollections {
             @Override public int size() {return aAfter.size()+2;}
         };
     }
-    public static <T> List<T> merge(final T aBefore0, final T aBefore1, final T aBefore2, final List<? extends T> aAfter) {
+    public static <T> @Unmodifiable List<T> merge(final T aBefore0, final T aBefore1, final T aBefore2, final List<? extends T> aAfter) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {
                 switch (index) {
@@ -460,7 +460,7 @@ public class AbstractCollections {
             @Override public int size() {return aAfter.size()+3;}
         };
     }
-    public static <T> List<T> merge(final List<? extends T> aBefore, final T aAfter0) {
+    public static <T> @Unmodifiable List<T> merge(final List<? extends T> aBefore, final T aAfter0) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {
                 int tRest = index-aBefore.size();
@@ -469,7 +469,7 @@ public class AbstractCollections {
             @Override public int size() {return aBefore.size()+1;}
         };
     }
-    public static <T> List<T> merge(final List<? extends T> aBefore, final T aAfter0, final T aAfter1) {
+    public static <T> @Unmodifiable List<T> merge(final List<? extends T> aBefore, final T aAfter0, final T aAfter1) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {
                 int tRest = index-aBefore.size();
@@ -482,7 +482,7 @@ public class AbstractCollections {
             @Override public int size() {return aBefore.size()+2;}
         };
     }
-    public static <T> List<T> merge(final List<? extends T> aBefore, final T aAfter0, final T aAfter1, final T aAfter2) {
+    public static <T> @Unmodifiable List<T> merge(final List<? extends T> aBefore, final T aAfter0, final T aAfter1, final T aAfter2) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {
                 int tRest = index-aBefore.size();
@@ -496,7 +496,7 @@ public class AbstractCollections {
             @Override public int size() {return aBefore.size()+3;}
         };
     }
-    public static <T> Iterable<T> merge(final Iterable<? extends T> aBefore, final Iterable<? extends T> aAfter) {
+    public static <T> @Unmodifiable Iterable<T> merge(final Iterable<? extends T> aBefore, final Iterable<? extends T> aAfter) {
         return () -> new Iterator<T>() {
             private final Iterator<? extends T> mItB = aBefore.iterator();
             private final Iterator<? extends T> mItA = aAfter.iterator();
@@ -509,7 +509,7 @@ public class AbstractCollections {
             }
         };
     }
-    public static <T> Iterable<T> merge(final T aBefore0, final Iterable<? extends T> aAfter) {
+    public static <T> @Unmodifiable Iterable<T> merge(final T aBefore0, final Iterable<? extends T> aAfter) {
         return () -> new Iterator<T>() {
             private final Iterator<? extends T> mIt = aAfter.iterator();
             private boolean mFirst = true;
@@ -528,7 +528,7 @@ public class AbstractCollections {
             }
         };
     }
-    public static <T> Iterable<T> merge(final T aBefore0, final T aBefore1, final Iterable<? extends T> aAfter) {
+    public static <T> @Unmodifiable Iterable<T> merge(final T aBefore0, final T aBefore1, final Iterable<? extends T> aAfter) {
         return () -> new Iterator<T>() {
             private final Iterator<? extends T> mIt = aAfter.iterator();
             private int mIndex = -1;
@@ -551,7 +551,7 @@ public class AbstractCollections {
             }
         };
     }
-    public static <T> Iterable<T> merge(final T aBefore0, final T aBefore1, final T aBefore2, final Iterable<? extends T> aAfter) {
+    public static <T> @Unmodifiable Iterable<T> merge(final T aBefore0, final T aBefore1, final T aBefore2, final Iterable<? extends T> aAfter) {
         return () -> new Iterator<T>() {
             private final Iterator<? extends T> mIt = aAfter.iterator();
             private int mIndex = -1;
@@ -575,7 +575,7 @@ public class AbstractCollections {
             }
         };
     }
-    public static <T> Iterable<T> merge(final Iterable<? extends T> aBefore, final T aAfter0) {
+    public static <T> @Unmodifiable Iterable<T> merge(final Iterable<? extends T> aBefore, final T aAfter0) {
         return () -> new Iterator<T>() {
             private final Iterator<? extends T> mIt = aBefore.iterator();
             private boolean mLast = false;
@@ -593,7 +593,7 @@ public class AbstractCollections {
             }
         };
     }
-    public static <T> Iterable<T> merge(final Iterable<? extends T> aBefore, final T aAfter0, final T aAfter1) {
+    public static <T> @Unmodifiable Iterable<T> merge(final Iterable<? extends T> aBefore, final T aAfter0, final T aAfter1) {
         return () -> new Iterator<T>() {
             private final Iterator<? extends T> mIt = aBefore.iterator();
             private int mIndex = -1;
@@ -616,7 +616,7 @@ public class AbstractCollections {
             }
         };
     }
-    public static <T> Iterable<T> merge(final Iterable<? extends T> aBefore, final T aAfter0, final T aAfter1, final T aAfter2) {
+    public static <T> @Unmodifiable Iterable<T> merge(final Iterable<? extends T> aBefore, final T aAfter0, final T aAfter1, final T aAfter2) {
         return () -> new Iterator<T>() {
             private final Iterator<? extends T> mIt = aBefore.iterator();
             private int mIndex = -1;
@@ -644,7 +644,7 @@ public class AbstractCollections {
      * Convert nested Iterable to a single one
      * @author liqa
      */
-    public static <T> Iterable<T> merge(final Iterable<? extends Iterable<? extends T>> aNestIterable) {
+    public static <T> @Unmodifiable Iterable<T> merge(final Iterable<? extends Iterable<? extends T>> aNestIterable) {
         return () -> new Iterator<T>() {
             private final Iterator<? extends Iterable<? extends T>> mParentIt = aNestIterable.iterator();
             private @Nullable Iterator<? extends T> mIt = mParentIt.hasNext() ? mParentIt.next().iterator() : null;

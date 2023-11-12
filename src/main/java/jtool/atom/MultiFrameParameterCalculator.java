@@ -21,7 +21,6 @@ import java.util.*;
 
 import static jtool.code.CS.*;
 import static jtool.code.UT.Code.newBox;
-import static jtool.code.UT.Code.toXYZ;
 
 /**
  * 多帧的单原子参数计算器，自动根据 ID 来进行排序，
@@ -153,7 +152,7 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
     /** 内部使用方法，处理精度问题造成的超出边界问题 */
     private void validXYZArray_(XYZ[] rXYZArray) {
         // 由于 lammps 精度的问题，需要将超出边界的进行平移
-        XYZ tBox = toXYZ(mBox);
+        XYZ tBox = XYZ.toXYZ(mBox);
         for (int i = 0; i < mAtomNum; ++i) {
             XYZ tXYZ = rXYZArray[i];
             if      (tXYZ.mX <  0.0    ) tXYZ.mX += tBox.mX;

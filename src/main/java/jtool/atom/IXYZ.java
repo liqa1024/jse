@@ -1,6 +1,7 @@
 package jtool.atom;
 
 import jtool.code.collection.AbstractRandomAccessList;
+import jtool.math.ComplexDouble;
 import jtool.math.MathEX;
 import jtool.math.vector.IVector;
 import jtool.math.vector.RefVector;
@@ -50,6 +51,16 @@ public interface IXYZ {
     default double prod() {return x() * y() * z();}
     default double min() {return Math.min(Math.min(x(), y()), z());}
     default double max() {return Math.max(Math.max(x(), y()), z());}
+    
+    default XYZ cross(IXYZ aRHS) {return cross(aRHS.x(), aRHS.y(), aRHS.z());}
+    default XYZ cross(double aX, double aY, double aZ) {
+        double tX = x();
+        double tY = y();
+        double tZ = z();
+        return new XYZ(tY*aZ - aY*tZ, tZ*aX - aZ*tX, tX*aY - aX*tY);
+    }
+    default XYZ negative() {return new XYZ(-x(), -y(), -z());}
+    default double norm() {return MathEX.Fast.hypot(x(), y(), z());}
     
     /** 使用和 Groovy 重载运算符相同的名称，可以顺便实现重载运算符操作 */
     default XYZ plus(IXYZ aRHS) {return new XYZ(x()+aRHS.x(), y()+aRHS.y(), z()+aRHS.z());}

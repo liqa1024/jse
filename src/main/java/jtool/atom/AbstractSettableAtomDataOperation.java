@@ -7,7 +7,6 @@ import jtool.math.vector.IVector;
 
 import java.util.*;
 
-import static jtool.code.UT.Code.toXYZ;
 
 public abstract class AbstractSettableAtomDataOperation extends AbstractAtomDataOperation implements ISettableAtomDataOperation {
     
@@ -40,7 +39,7 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
     
     @Override public void perturbXYZGaussian2this(Random aRandom, double aSigma) {
         final ISettableAtomData tThis = thisAtomData_();
-        final XYZ tBox = toXYZ(tThis.box());
+        final XYZ tBox = XYZ.toXYZ(tThis.box());
         final int tAtomNum = tThis.atomNum();
         for (int i = 0; i < tAtomNum; ++i) {
             ISettableAtom tAtom = tThis.pickAtom(i);

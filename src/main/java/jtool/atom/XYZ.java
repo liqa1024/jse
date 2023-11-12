@@ -8,6 +8,14 @@ import jtool.math.vector.IVector;
  * @author liqa
  */
 public final class XYZ implements IXYZ {
+    /**
+     * Convert IXYZ to XYZ to optimise, result should be read only!
+     * @author liqa
+     */
+    public static XYZ toXYZ(IXYZ aXYZ) {
+        return (aXYZ instanceof XYZ) ? (XYZ)aXYZ : new XYZ(aXYZ);
+    }
+    
     public double mX, mY, mZ;
     public XYZ(double aX, double aY, double aZ) {
         mX = aX; mY = aY; mZ = aZ;
@@ -48,6 +56,22 @@ public final class XYZ implements IXYZ {
     @Override public double prod() {return mX * mY * mZ;}
     @Override public double min() {return Math.min(Math.min(mX, mY), mZ);}
     @Override public double max() {return Math.max(Math.max(mX, mY), mZ);}
+    
+    @Override public XYZ cross(double aX, double aY, double aZ) {return new XYZ(mY*aZ - aY*mZ, mZ*aX - aZ*mX, mX*aY - aX*mY);}
+    public XYZ cross(XYZ aRHS) {return cross(aRHS.mX, aRHS.mY, aRHS.mZ);}
+    public void cross2this(IXYZ aRHS) {cross2this(aRHS.x(), aRHS.y(), aRHS.z());}
+    public void cross2this(XYZ aRHS) {cross2this(aRHS.mX, aRHS.mY, aRHS.mZ);}
+    public void cross2this(double aX, double aY, double aZ) {
+        double tX = mX;
+        double tY = mY;
+        double tZ = mZ;
+        mX = tY*aZ - aY*tZ;
+        mY = tZ*aX - aZ*tX;
+        mZ = tX*aY - aX*tY;
+    }
+    @Override public XYZ negative() {return new XYZ(-mX, -mY, -mZ);}
+    public void negative2this() {mX = -mX; mY = -mY; mZ = -mZ;}
+    @Override public double norm() {return MathEX.Fast.hypot(mX, mY, mZ);}
     
     @Override public XYZ plus(IXYZ aRHS) {return new XYZ(mX+aRHS.x(), mY+aRHS.y(), mZ+aRHS.z());}
     @Override public XYZ plus(double aX, double aY, double aZ) {return new XYZ(mX+aX, mY+aY, mZ+aZ);}

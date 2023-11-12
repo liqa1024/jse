@@ -1,11 +1,14 @@
 package jtool.math;
 
 import jtool.Main;
+import jtool.atom.IXYZ;
+import jtool.atom.XYZ;
 import jtool.code.collection.Pair;
 import jtool.code.functional.*;
 import jtool.math.function.Func2;
 import jtool.math.function.Func3;
 import jtool.parallel.ParforThreadPool;
+import jtoolex.voronoi.Geometry;
 import net.jafama.FastMath;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -521,6 +524,13 @@ public class MathEX {
     
     /// Methods of Graph usage
     public static class Graph {
+        
+        /** wrapper of {@link Geometry} stuffs */
+        public static double area(IXYZ aA, IXYZ aB, IXYZ aC) {return Geometry.area(aA, aB, aC);}
+        public static double leftOfPlane(IXYZ aA, IXYZ aB, IXYZ aC, IXYZ aD) {return Geometry.leftOfPlane(aA, aB, aC, aD);}
+        public static double inSphere(IXYZ aA, IXYZ aB, IXYZ aC, IXYZ aD, IXYZ aE) {return Geometry.inSphere(aA, aB, aC, aD, aE);}
+        public static XYZ centerSphere(IXYZ aA, IXYZ aB, IXYZ aC, IXYZ aD) {return Geometry.centerSphere(aA, aB, aC, aD);}
+        
         /**
          * Get all the Intersection Points of the ray between 2D box
          * @author liqa
@@ -656,7 +666,7 @@ public class MathEX {
             }
         }
         
-        public static class PosBox2D {
+        private static class PosBox2D {
             public final static byte IN = 0, XNYM = 1, XPYM = 2, XMYN = 3, XMYP = 4, XNYN = 5, XNYP = 6, XPYN = 7, XPYP = 8, ELSE = 9;
             public final static byte N = 0, L = 1, R = 2, D = 3, U = 4, LD = 5, LU = 6, RD = 7, RU = 8, E = -1;
             

@@ -1,5 +1,6 @@
 package test.code
 
+import jtool.atom.XYZ
 import jtool.code.SP
 import jtool.code.UT
 import jtool.iofile.InFiles
@@ -12,10 +13,11 @@ import jtool.system.SSH
 import jtool.system.WSL
 import jtool.vasp.POSCAR
 
-int a = 1;
-int b = '2' as int;
-println(a + b)
+a = new XYZ(1, 0, 3);
+b = new XYZ(0, 4, 0);
+c = new XYZ(2, 0, 2);
 
+println(MathEX.Graph.area(a, b, c));
 
 //// 测试脚本调用中参数
 //SP.Groovy.run('script/groovy/run/runScript.groovy', '123', '456');

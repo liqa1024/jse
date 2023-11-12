@@ -9,8 +9,6 @@ import jtool.math.vector.IVector;
 
 import java.util.*;
 
-import static jtool.code.UT.Code.toXYZ;
-
 
 /**
  * 一般的运算器的实现，默认会值拷贝一次并使用 {@code ArrayList<IAtom>} 来存储，尽管这会占据更多的内存
@@ -61,7 +59,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     
     @Override public ISettableAtomData perturbXYZGaussian(Random aRandom, double aSigma) {
         final IAtomData tThis = thisAtomData_();
-        final XYZ tBox = toXYZ(tThis.box());
+        final XYZ tBox = XYZ.toXYZ(tThis.box());
         final int tAtomNum = tThis.atomNum();
         ISettableAtomData rAtomData = newSameSettableAtomData_();
         for (int i = 0; i < tAtomNum; ++i) {

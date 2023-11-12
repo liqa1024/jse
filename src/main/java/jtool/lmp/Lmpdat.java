@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static jtool.code.CS.*;
-import static jtool.code.UT.Code.toXYZ;
+
 
 /**
  * @author liqa
@@ -87,7 +87,7 @@ public class Lmpdat extends AbstractSettableAtomData {
     public Lmpdat setDenseNormalized() {
         if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("setDenseNormalized is temporarily support NORMAL Box only");
         
-        XYZ oShiftedBox = toXYZ(mBox.shiftedBox());
+        XYZ oShiftedBox = XYZ.toXYZ(mBox.shiftedBox());
         double tScale = MathEX.Fast.cbrt(oShiftedBox.prod() / atomNum());
         tScale = 1.0 / tScale;
         

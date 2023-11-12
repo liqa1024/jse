@@ -341,7 +341,7 @@ public final class PlotterJFree implements IPlotter {
                     // 如果标记需要插入则需要利用上一个点的数据来插入
                     double[][] tInterPoints = MathEX.Graph.interRayBox2D_(tBoxXMin, tBoxYMin, tBoxXMax, tBoxYMax, tX0, tY0, tX, tY);
                     // 遍历添加，不添加非法值
-                    if (tInterPoints != null) for (double[] tXY : tInterPoints) rSeries.add(tXY[0], tXY[1]);
+                    if (tInterPoints != null) for (double[] tXY : tInterPoints) if (tXY != null) rSeries.add(tXY[0], tXY[1]);
                 }
                 // 先插入边界点再插入自身
                 rSeries.add(tX, tY);
@@ -353,7 +353,7 @@ public final class PlotterJFree implements IPlotter {
                     // 这个点不在氛围内直接添加边界点
                     double[][] tInterPoints = MathEX.Graph.interRayBox2D_(tBoxXMin, tBoxYMin, tBoxXMax, tBoxYMax, tX0, tY0, tX, tY);
                     // 遍历添加，不添加非法值
-                    if (tInterPoints != null) for (double[] tXY : tInterPoints) rSeries.add(tXY[0], tXY[1]);
+                    if (tInterPoints != null) for (double[] tXY : tInterPoints) if (tXY != null) rSeries.add(tXY[0], tXY[1]);
                 }
                 // 这个为超出边界的点，标记下一个点需要插入
                 tNeedInterPoint = true;

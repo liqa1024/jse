@@ -16,8 +16,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.io.*;
 import java.util.*;
 
-import static jtool.code.UT.Code.toXYZ;
-
 
 /**
  * @author liqa
@@ -174,7 +172,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
         
         /** 密度归一化, 返回自身来支持链式调用 */
         public SubLammpstrj setDenseNormalized() {
-            XYZ oShiftedBox = toXYZ(mBox.shiftedBox());
+            XYZ oShiftedBox = XYZ.toXYZ(mBox.shiftedBox());
             double tScale = MathEX.Fast.cbrt(oShiftedBox.prod() / atomNum());
             tScale = 1.0 / tScale;
             
