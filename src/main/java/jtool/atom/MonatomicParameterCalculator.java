@@ -1176,7 +1176,10 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         final int[] idx2voronoi = new int[mAtomNum];
         mNL.forEachCell(aRCutOff, idx -> {
             idx2voronoi[idx] = rBuilder.sizeVertex();
-            rBuilder.insert(mAtomDataXYZ[idx]);
+            // 注意到 MPC shutdown 后，XYZ 值会发生改变，因此要这样输入
+            XYZ tXYZ = mAtomDataXYZ[idx];
+            // 原则上 VoronoiBuilder.insert 内部也会进行一次拷贝避免坐标被意外修改，但是旧版本没有，这样写可以兼顾效率和旧版兼容
+            rBuilder.insert(tXYZ.mX, tXYZ.mY, tXYZ.mZ);
         });
         // 然后增加一些镜像粒子保证 PBC 下的准确性
         mNL.forEachMirrorCell(aRCutOff, (x, y, z, idx) -> rBuilder.insert(x, y, z));
