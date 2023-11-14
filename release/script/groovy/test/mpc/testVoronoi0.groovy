@@ -29,5 +29,3 @@ for (tet in allTet) for (neighbor in tet.neighborTetrahedron()) {
     if (hypot(tet.centerSphere().x()-neighbor.centerSphere().x(), tet.centerSphere().y()-neighbor.centerSphere().y()) > 10.0) continue;
     plot([tet.centerSphere().x(), neighbor.centerSphere().x()], [tet.centerSphere().y(), neighbor.centerSphere().y()]).noLegend().color(1);
 }
-
-

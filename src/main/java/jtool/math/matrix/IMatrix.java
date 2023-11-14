@@ -7,7 +7,6 @@ import jtool.code.functional.IDoubleSupplier;
 import jtool.code.iterator.IDoubleIterator;
 import jtool.code.iterator.IDoubleSetIterator;
 import jtool.code.functional.IDoubleOperator1;
-import jtool.code.iterator.IHasDoubleIterator;
 import jtool.math.vector.IVector;
 import groovy.lang.Closure;
 import org.jetbrains.annotations.ApiStatus;
@@ -174,13 +173,13 @@ public interface IMatrix extends IMatrixGetter {
         @VisibleForTesting void putAt(int aCol, Iterable<? extends Number> aList);
         @VisibleForTesting void putAt(int aCol, IVector aVector);
         @VisibleForTesting void putAt(SliceType aSelectedCols, double aValue);
-        @VisibleForTesting void putAt(SliceType aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows);
+        @VisibleForTesting void putAt(SliceType aSelectedCols, Iterable<?> aRows);
         @VisibleForTesting void putAt(SliceType aSelectedCols, IMatrix aMatrix);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, double aValue);
-        @VisibleForTesting void putAt(List<Integer> aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows);
+        @VisibleForTesting void putAt(List<Integer> aSelectedCols, Iterable<?> aRows);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, IMatrix aMatrix);
         @VisibleForTesting void putAt(IIndexFilter aSelectedCols, double aValue);
-        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, Iterable<? extends Iterable<? extends Number>> aRows);
+        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, Iterable<?> aRows);
         @VisibleForTesting void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix);
     }
 }

@@ -4,6 +4,7 @@ import jtool.code.UT
 import jtool.lmp.Lmpdat
 import jtool.math.table.Tables
 
+import static jtool.code.CS.*
 
 data = Lmpdat.read('lmp/data/data-glass');
 
@@ -11,7 +12,15 @@ UT.Timer.tic();
 voronoi = data.getMPC().withCloseable {it.calVoronoi();}
 UT.Timer.toc('voronoi');
 
-table = Tables.zeros(voronoi.size(), 'i', 'coordination', 'atomicVolume', 'cavityRadius', 'index.3', 'index.4', 'index.5', 'index.6', 'index.7', 'index.8', 'index.9');
+// 现在支持这样访问，不会有性能问题
+table = Tables.zeros(voronoi.size());
+table['i'] = 0..<data.atomNum();
+table['coordination'] = (voronoi*.coordination());
+table['atomicVolume'] = (voronoi*.atomicVolume());
+table['cavityRadius'] = (voronoi*.cavityRadius());
+for (i in 3..9) table["index.$i"] = 0;
+table.asMatrix()[ALL][4..10] = (voronoi*.index());
+
 for (i in 0..<data.atomNum()) {
     def vdata = voronoi[i];
     table['i'][i] = i;
