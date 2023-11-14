@@ -37,26 +37,6 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
         if (tThis.atomTypeNum() < aMinTypeNum) tThis.setAtomTypeNum(aMinTypeNum);
     }
     
-    @Override public void perturbXYZGaussian2this(Random aRandom, double aSigma) {
-        final ISettableAtomData tThis = thisAtomData_();
-        final XYZ tBox = XYZ.toXYZ(tThis.box());
-        final int tAtomNum = tThis.atomNum();
-        for (int i = 0; i < tAtomNum; ++i) {
-            ISettableAtom tAtom = tThis.pickAtom(i);
-            double tX = tAtom.x() + aRandom.nextGaussian()*aSigma;
-            double tY = tAtom.y() + aRandom.nextGaussian()*aSigma;
-            double tZ = tAtom.z() + aRandom.nextGaussian()*aSigma;
-            // 注意周期边界条件的处理
-            if      (tX <  0.0    ) {tX += tBox.mX; while (tX <  0.0    ) tX += tBox.mX;}
-            else if (tX >= tBox.mX) {tX -= tBox.mX; while (tX >= tBox.mX) tX -= tBox.mX;}
-            if      (tY <  0.0    ) {tY += tBox.mY; while (tY <  0.0    ) tY += tBox.mY;}
-            else if (tY >= tBox.mY) {tY -= tBox.mY; while (tY >= tBox.mY) tY -= tBox.mY;}
-            if      (tZ <  0.0    ) {tZ += tBox.mZ; while (tZ <  0.0    ) tZ += tBox.mZ;}
-            else if (tZ >= tBox.mZ) {tZ -= tBox.mZ; while (tZ >= tBox.mZ) tZ -= tBox.mZ;}
-            tAtom.setX(tX).setY(tY).setZ(tZ);
-        }
-    }
-    
     @Override public void mapTypeRandom2this(Random aRandom, IVector aTypeWeights) {
         double tTotWeight = aTypeWeights.sum();
         if (tTotWeight <= 0.0) throw new RuntimeException("TypeWeights Must be Positive");
@@ -77,6 +57,38 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
         final Iterator<Integer> it = tTypeList.iterator();
         // 使用 mapType2this 直接设置
         mapType2this(tMaxType, atom -> it.next());
+    }
+    
+    @Override public void perturbXYZGaussian2this(Random aRandom, double aSigma) {
+        final ISettableAtomData tThis = thisAtomData_();
+        final int tAtomNum = tThis.atomNum();
+        for (int i = 0; i < tAtomNum; ++i) {
+            ISettableAtom tAtom = tThis.pickAtom(i);
+            tAtom.setX(tAtom.x() + aRandom.nextGaussian()*aSigma)
+                 .setY(tAtom.y() + aRandom.nextGaussian()*aSigma)
+                 .setZ(tAtom.z() + aRandom.nextGaussian()*aSigma);
+        }
+        // 注意周期边界条件的处理
+        wrapPBC2this();
+    }
+    
+    @Override public void wrapPBC2this() {
+        final ISettableAtomData tThis = thisAtomData_();
+        final XYZ tBox = XYZ.toXYZ(tThis.box());
+        final int tAtomNum = tThis.atomNum();
+        for (int i = 0; i < tAtomNum; ++i) {
+            ISettableAtom tAtom = tThis.pickAtom(i);
+            double tX = tAtom.x();
+            double tY = tAtom.y();
+            double tZ = tAtom.z();
+            if      (tX <  0.0    ) {tX += tBox.mX; while (tX <  0.0    ) tX += tBox.mX;}
+            else if (tX >= tBox.mX) {tX -= tBox.mX; while (tX >= tBox.mX) tX -= tBox.mX;}
+            if      (tY <  0.0    ) {tY += tBox.mY; while (tY <  0.0    ) tY += tBox.mY;}
+            else if (tY >= tBox.mY) {tY -= tBox.mY; while (tY >= tBox.mY) tY -= tBox.mY;}
+            if      (tZ <  0.0    ) {tZ += tBox.mZ; while (tZ <  0.0    ) tZ += tBox.mZ;}
+            else if (tZ >= tBox.mZ) {tZ -= tBox.mZ; while (tZ >= tBox.mZ) tZ -= tBox.mZ;}
+            tAtom.setX(tX).setY(tY).setZ(tZ);
+        }
     }
     
     

@@ -40,4 +40,7 @@ public interface ISettableAtomDataOperation extends IAtomDataOperation {
     default void perturbXYZGaussian2this(double aSigma) {perturbXYZGaussian2this(RANDOM, aSigma);}
     @VisibleForTesting default void perturbXYZ2this(Random aRandom, double aSigma) {perturbXYZGaussian2this(aRandom, aSigma);}
     @VisibleForTesting default void perturbXYZ2this(double aSigma) {perturbXYZGaussian2this(aSigma);}
+    
+    void wrapPBC2this();
+    @VisibleForTesting default void wrap2this() {wrapPBC2this();}
 }

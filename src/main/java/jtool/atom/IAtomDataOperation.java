@@ -96,4 +96,11 @@ public interface IAtomDataOperation {
     default ISettableAtomData perturbXYZGaussian(double aSigma) {return perturbXYZGaussian(RANDOM, aSigma);}
     @VisibleForTesting default ISettableAtomData perturbXYZ(Random aRandom, double aSigma) {return perturbXYZGaussian(aRandom, aSigma);}
     @VisibleForTesting default ISettableAtomData perturbXYZ(double aSigma) {return perturbXYZGaussian(aSigma);}
+    
+    /**
+     * 使用周期边界条件将出界的原子移动回到盒内
+     * @author liqa
+     */
+    ISettableAtomData wrapPBC();
+    @VisibleForTesting default ISettableAtomData wrap() {return wrapPBC();}
 }
