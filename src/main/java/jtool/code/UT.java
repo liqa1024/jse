@@ -419,7 +419,7 @@ public class UT {
         public static void tic() {sTime = System.currentTimeMillis();}
         public static void toc() {toc("Total");}
         public static void toc(String aMsg) {
-            double elapsedTime = (System.currentTimeMillis() - sTime) / 1000.0;
+            double elapsedTime = toc(true);
             sTime = null;
             
             int hours = (int) java.lang.Math.floor(elapsedTime / 3600.0);
@@ -427,6 +427,7 @@ public class UT {
             double seconds = elapsedTime % 60.0;
             System.out.printf("%s time: %02d hour %02d min %02.2f sec\n", aMsg, hours, minutes, seconds);
         }
+        public static double toc(boolean aFlag) {return (System.currentTimeMillis() - sTime) / 1000.0;}
     }
     
     /** 序列化和反序列化的一些方法 */
