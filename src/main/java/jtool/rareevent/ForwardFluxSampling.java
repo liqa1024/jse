@@ -515,8 +515,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 mMovedPoints = LogicalVector.zeros(oPointsOnLambda.size()+nThreads());
             }
             mMovedPoints.fill(false);
-            // 现在不再打乱顺序
-//            Collections.shuffle(oPointsOnLambda, mRNG);
+            // 还是需要随机打乱一下保证每个点都是平等的，虽然对实际结果应该没有影响
+            Collections.shuffle(oPointsOnLambda, mRNG);
             
             // 初始化统计量
             mMi = 0; mNippEff = 0; mPathNum = 0;

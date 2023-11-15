@@ -19,14 +19,14 @@ fig = figure;
 
 lines = {};
 
-lines{1} = semilogy(table.get('lambda').data, table.get('kNoise').data, '-', 'Color', COLORS(1,:), 'LineWidth', 1.3, 'Marker', 'o', 'MarkerFaceColor', COLORS(1,:));
+lines{1} = semilogy(table.get('lambda').data, table.get('kNoise').data, '-', 'Color', COLORS(1,:), 'LineWidth', 1.3, 'Marker', 'o');
 hold on
-lines{2} = semilogy(table.get('lambda').data, table.get('kRef'  ).data, '-', 'Color', COLORS(2,:), 'LineWidth', 1.3, 'Marker', '^', 'MarkerFaceColor', COLORS(2,:));
+lines{2} = semilogy(table.get('lambda').data, table.get('kRef'  ).data, '-', 'Color', COLORS(2,:), 'LineWidth', 1.3, 'Marker', '^');
 
 
 ylabel('Growth rate k[step^{-1}]'); xlabel('λ');
 legend([lines{:}], {'high noise', 'low noise (reference)'});
-axis([20, 200, 1e-17, 1e-3]);
+axis([20, 200, 1e-20, 1e-3]);
 grid on;
 
 

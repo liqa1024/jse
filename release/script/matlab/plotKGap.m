@@ -19,18 +19,18 @@ fig = figure;
 
 lines = {};
 
-lines{2} = semilogy(table.get('lambda').data, table.get('all'      ).data, '-', 'Color', COLORS(1,:), 'LineWidth', 1.3, 'Marker', 'o', 'MarkerFaceColor', COLORS(1,:));
+lines{2} = semilogy(table.get('lambda').data, table.get('all'      ).data, '-', 'Color', COLORS(1,:), 'LineWidth', 1.3, 'Marker', 'o');
 hold on
-lines{3} = semilogy(table.get('lambda').data, table.get('gap=100'  ).data, '-', 'Color', COLORS(3,:), 'LineWidth', 1.3, 'Marker', 's', 'MarkerFaceColor', COLORS(3,:));
-lines{4} = semilogy(table.get('lambda').data, table.get('gap=1000' ).data, '-', 'Color', COLORS(4,:), 'LineWidth', 1.3, 'Marker', 's', 'MarkerFaceColor', COLORS(4,:));
-lines{5} = semilogy(table.get('lambda').data, table.get('gap=10000').data, '-', 'Color', COLORS(5,:), 'LineWidth', 1.3, 'Marker', 's', 'MarkerFaceColor', COLORS(5,:));
+lines{3} = semilogy(table.get('lambda').data, table.get('gap=100'  ).data, '-', 'Color', COLORS(3,:), 'LineWidth', 1.3, 'Marker', 's');
+lines{4} = semilogy(table.get('lambda').data, table.get('gap=1000' ).data, '-', 'Color', COLORS(4,:), 'LineWidth', 1.3, 'Marker', 's');
+lines{5} = semilogy(table.get('lambda').data, table.get('gap=10000').data, '-', 'Color', COLORS(5,:), 'LineWidth', 1.3, 'Marker', 's');
 
-lines{1} = semilogy(table.get('lambda').data, table.get('kRef'     ).data, '-', 'Color', COLORS(2,:), 'LineWidth', 1.5, 'Marker', '^', 'MarkerFaceColor', COLORS(2,:));
+lines{1} = semilogy(table.get('lambda').data, table.get('kRef'     ).data, '-', 'Color', COLORS(2,:), 'LineWidth', 1.5, 'Marker', '^');
 
 
 ylabel('Growth rate k[step^{-1}]'); xlabel('λ');
 legend([lines{:}], {'reference (low noise)', 'all', 'gap=100', 'gap=1000', 'gap=10000'});
-axis([20, 200, 1e-17, 1e-3]);
+axis([20, 200, 1e-20, 1e-3]);
 grid on;
 
 
