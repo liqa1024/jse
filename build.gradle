@@ -31,7 +31,7 @@ dependencies {
 //    implementation files('.libs/jtoolex-algorithm.jar')           // test use
 //    implementation files('.libs/jtoolex-voronoi.jar')             // test use
     implementation('com.github.CHanzyLazer.jToolEX-Voronoi-3D:jtoolex-algorithm:v1.2-dev') // jtoolex-algorithm，用于 voronoi 计算使用的算法，单独设置依赖可以在需要重写算法后不再包含到代码中
-    implementation('com.github.CHanzyLazer.jToolEX-Voronoi-3D:jtoolex-voronoi:v1.2-dev') // jtoolex-voronoi，用于做 voronoi 分析，分离出来避免开源协议限制
+    implementation('com.github.CHanzyLazer.jToolEX-Voronoi-3D:jtoolex-voronoi:v1.2-dev')   // jtoolex-voronoi，用于做 voronoi 分析，分离出来避免开源协议限制
     
     implementation('org.apache.groovy:groovy:4.0.15')               // 用于直接执行 groovy 脚本而不需要安装 groovy
     implementation('org.apache.groovy:groovy-groovysh:4.0.15')      // 用于直接通过命令行交互试的操作
