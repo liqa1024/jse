@@ -160,6 +160,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     
     
     /// 获取信息
+    public int atomNum() {return mAtomNum;}
     public double unitLen() {return mUnitLen;}
     public double rou() {return mRou;}
     public double rou(MonatomicParameterCalculator aMPC) {return Fast.sqrt(mRou*aMPC.mRou);}

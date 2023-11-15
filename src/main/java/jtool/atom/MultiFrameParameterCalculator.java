@@ -175,6 +175,8 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
     
     
     /// 获取信息
+    public int atomNum() {return mAtomNum;}
+    public int frameNum() {return mFrameNum;}
     public double timestep() {return mTimestep;}
     
     
