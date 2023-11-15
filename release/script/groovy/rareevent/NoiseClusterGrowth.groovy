@@ -43,15 +43,16 @@ class NoiseClusterGrowth {
             for (i in 1..<pathLen*skipNum) {
                 // 晶体直接增长
                 long value = point.value;
-                if (RNG.nextDouble() < plusProb) {
+                def rand = RNG.nextDouble();
+                if (rand < plusProb) {
                     ++value;
                 } else
-                if ((value > 0) && (RNG.nextDouble() < minusProb)) {
+                if ((value > 0) && (rand < minusProb+plusProb)) {
                     --value;
                 }
                 // 噪音变化
                 long valueNoise = point.valueNoise;
-                def rand = RNG.nextDouble();
+                rand = RNG.nextDouble();
                 double scale = MathEX.Fast.pow(Math.abs(valueNoise)+1, noiseScale);
                 boolean positive = valueNoise==0 ? RNG.nextBoolean() : valueNoise>0;
                 if (rand < noiseProb*scale) {

@@ -17,23 +17,30 @@ import rareevent.NoiseClusterGrowth
 int N0 = 100;
 def biCal = new NoiseClusterGrowth.ParameterCalculator();
 
-new StepJobManager('testFFS3c', 3)
+new StepJobManager('testFFS3c', 0)
 .init {println("0. 绘制 lambda 随时间变化曲线");}
 .doJob {
-    def biPathGen = new NoiseClusterGrowth.PathGenerator(2, 0.00045, 0.00050, 0.50, -0.10, 500, 40);
+    def biPathGen = new NoiseClusterGrowth.PathGenerator(2, 0.00045, 0.00050, 0.50, -0.10, 1, 40);
     
     def fullPath = new BufferedFullPathGenerator<>(biPathGen, biCal);
     def pi = fullPath.fullPathInit();
     
-    def sizes = Vectors.zeros(2000);
-    def sizesReal = Vectors.zeros(2000);
+    def sizes = Vectors.zeros(200000);
+    def sizesReal = Vectors.zeros(200000);
     for (i in 0..<sizes.size()) {
         def p = pi.next();
         sizes[i] = pi.lambda();
         sizesReal[i] = p.value;
     }
     
-    def step = Vectors.linsequence(0, biPathGen.skipNum, sizes.size())
+    def step = Vectors.linsequence(0, biPathGen.skipNum, sizes.size());
+    
+    // 正式图片，现在需要存一下 csv
+    def data = Tables.zeros(sizes.size());
+    data['step'] = step;
+    data['sizes'] = sizes;
+    data['sizesReal'] = sizesReal;
+    UT.IO.table2csv(data, '.temp/path-noise-all.csv');
     
     def plt = Plotters.get();
     plt.plot(step, sizes    , 'lambda').color(0);
@@ -42,9 +49,16 @@ new StepJobManager('testFFS3c', 3)
     plt.xlabel('step').ylabel('value');
     plt.show();
     
-    step      = step     [(0..<step     .size()).step(10)];
-    sizes     = sizes    [(0..<sizes    .size()).step(10)];
-    sizesReal = sizesReal[(0..<sizesReal.size()).step(10)];
+    step      = step     [(0..<step     .size()).step(1000)];
+    sizes     = sizes    [(0..<sizes    .size()).step(1000)];
+    sizesReal = sizesReal[(0..<sizesReal.size()).step(1000)];
+    
+    // 正式图片，现在需要存一下 csv
+    data = Tables.zeros(sizes.size());
+    data['step'] = step;
+    data['sizes'] = sizes;
+    data['sizesReal'] = sizesReal;
+    UT.IO.table2csv(data, '.temp/path-noise-gap1000.csv');
     
     def plt2 = Plotters.get();
     plt2.plot(step, sizes    , 'lambda').color(0);
