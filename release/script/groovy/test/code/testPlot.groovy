@@ -36,4 +36,4 @@ title('Title of Test Plot');
 //axis(-1.1, 1.1);
 
 // 保存图片
-save('.temp/testPlot.png', 800, 800);
+save('.temp/testPlot.png', 600, 600);

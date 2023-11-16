@@ -35,6 +35,7 @@ UT.IO.table2csv(table, 'lmp/.temp/voronoi.csv');
 // 读取 ovito 的表并对比
 tabelOvito = UT.IO.csv2table('lmp/.temp/voronoi-ovito.csv');
 
+diffNum = 0;
 for (i in 0..<data.atomNum()) {
     def coordinationErr = table['coordination'][i] - tabelOvito['coordination'][i];
     def index3Err = table['index.3'][i]-tabelOvito['index.3'][i];
@@ -44,6 +45,8 @@ for (i in 0..<data.atomNum()) {
     def index7Err = table['index.7'][i]-tabelOvito['index.7'][i];
     if (coordinationErr!=0 || index3Err!=0 || index4Err!=0 || index5Err!=0 || index6Err!=0 || index7Err!=0) {
         println("i = $i;\t coordinationErr: $coordinationErr;\t indexErr: [$index3Err, $index4Err, $index5Err, $index6Err, $index7Err];\t atomicVolumeErr: ${table['atomicVolume'][i]-tabelOvito['atomicVolume'][i]}");
+        ++diffNum;
     }
 }
+println("Total Diff Number: $diffNum")
 

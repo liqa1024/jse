@@ -54,17 +54,17 @@ def data = dump[0];
 def typeLegend = LogicalVector.zeros(atomTypeNum);
 for (j in atomNum<..0) {
     def type = data.pickAtom(j).type();
-    plt1.plot(1..dump.size(), (allAtomicVolume*.get(j))     , typeLegend[type-1] ? null : "type-$type").color(type).width(type==2 ? 2.5 : 1.7);
-    plt2.plot(1..dump.size(), (neighborCoordination*.get(j)), typeLegend[type-1] ? null : "type-$type").color(type).width(type==2 ? 2.5 : 1.7);
-    plt3.plot((neighborCoordination*.get(j)), (allAtomicVolume*.get(j)), typeLegend[type-1] ? null : "type-$type").lineType('none').color(type).marker(type==1 ? 'o' : 's').size(type==2 ? 12 : 8);
+    plt1.plot(1..dump.size(), (allAtomicVolume*.get(j)), typeLegend[type-1] ? null : "type-$type").color(type).width(type==2 ? 2.5 : 1.7);
+    plt2.plot(1..dump.size(), (allCoordination*.get(j)), typeLegend[type-1] ? null : "type-$type").color(type).width(type==2 ? 2.5 : 1.7);
+    plt3.plot((allCoordination*.get(j)), (allAtomicVolume*.get(j)), typeLegend[type-1] ? null : "type-$type").lineType('none').color(type).marker(type==1 ? 'o' : 's').size(type==2 ? 12 : 8);
     typeLegend[type-1] = true;
 }
 
 plt1.xrange(0, dump.size()+1);
 plt2.xrange(0, dump.size()+1);
 plt1.xlabel('frame').ylabel('atomicVolume');
-plt2.xlabel('frame').ylabel('neighborAtomicVolume');
-plt3.xlabel('neighborCoordination').ylabel('atomicVolume');
+plt2.xlabel('frame').ylabel('coordination');
+plt3.xlabel('coordination').ylabel('atomicVolume');
 plt1.show();
 plt2.show();
 plt3.show();

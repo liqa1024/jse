@@ -58,7 +58,7 @@ public final class PlotterJFree implements IPlotter {
             mLineRender.setSeriesFillPaint(mID, tPaint);
             mLineRender.setSeriesOutlinePaint(mID, tPaint);
             // 设置 mLegendLine，为了避免一些问题不在构造函数中调用自己的一些多态的方法
-            mLegendLine = new Line2D.Double(-super.mLineStroke.getSize()*LEGEND_SIZE, 0.0, super.mLineStroke.getSize()*LEGEND_SIZE, 0.0);
+            mLegendLine = new Line2D.Double(-MathEX.Code.toRange(1.5, 2.5, super.mLineStroke.getSize())*LEGEND_SIZE, 0.0, MathEX.Code.toRange(1.5, 2.5, super.mLineStroke.getSize())*LEGEND_SIZE, 0.0);
             // 设置默认的线型，为了避免一些问题不在构造函数中调用自己的一些多态的方法
             mLineRender.setSeriesStroke(mID, super.mLineStroke);
             mLineRender.setSeriesShape(mID, super.mMarkerShape);
@@ -85,7 +85,7 @@ public final class PlotterJFree implements IPlotter {
         }
         @Override protected void onLineWidthChange(double aOldLineWidth, double aNewLineWidth) {
             // 线宽变化时需要同步调整 Legend 的长度
-            mLegendLine = new Line2D.Double(-aNewLineWidth*LEGEND_SIZE, 0.0, aNewLineWidth*LEGEND_SIZE, 0.0);
+            mLegendLine = new Line2D.Double(-MathEX.Code.toRange(1.5, 2.5, aNewLineWidth)*LEGEND_SIZE, 0.0, MathEX.Code.toRange(1.5, 2.5, aNewLineWidth)*LEGEND_SIZE, 0.0);
             mLineRender.notifyListeners(new RendererChangeEvent(mLineRender));
         }
         @Override protected void onMarkerSizeChange(double aOldMarkerSize, double aNewMarkerSize) {
@@ -163,12 +163,13 @@ public final class PlotterJFree implements IPlotter {
     /** 全局常量记录默认值 */
     public final static String TITLE = null, X_LABEL = null, Y_LABEL = null;
     public final static Font
-          TITLE_FONT  = new Font("Times New Roman", Font.BOLD, 32)
-        , LABEL_FONT  = new Font("Times New Roman", Font.BOLD, 30)
-        , LEGEND_FONT = new Font("Times New Roman", Font.BOLD, 26)
-        , TICK_FONT   = new Font("Times New Roman", Font.BOLD, 24)
+          TITLE_FONT  = new Font("Times New Roman", Font.BOLD, 26)
+        , LABEL_FONT  = new Font("Times New Roman", Font.BOLD, 24)
+        , LEGEND_FONT = new Font("Times New Roman", Font.BOLD, 20)
+        , TICK_FONT   = new Font("Times New Roman", Font.BOLD, 20)
         ;
     public final static double LEGEND_SIZE = 16.0;
+    public final static int WIDTH = 800, HEIGHT = 600;
     
     /** 内部成员 */
     private final XYSeriesCollection mLinesData;
@@ -178,15 +179,9 @@ public final class PlotterJFree implements IPlotter {
     private final XYLineAndShapeRenderer mLineRender;
     private final List<LineJFree> mLines;
     
-    private static volatile boolean INITIALIZED = false;
     /** 一些默认的初始设定 */
     public PlotterJFree() {
-        // 先进行通用的初始化
-        if (!INITIALIZED) {
-            INITIALIZED = true;
-            // 禁用自动缩放保证绘制结果一致
-            System.setProperty("sun.java2d.uiScale", "1");
-        }
+        // 现在不需要固定缩放比
         
         // 存储绘制的线
         mLines = new ArrayList<>();
@@ -391,7 +386,7 @@ public final class PlotterJFree implements IPlotter {
         // 有限走 mCurrentFigure 的 save，避免锁出现问题
         if (mCurrentFigure!=null) {mCurrentFigure.save(aFilePath); return;}
         // 默认保存的大小
-        save(aFilePath, 1024, 768);
+        save(aFilePath, WIDTH, HEIGHT);
     }
     
     /** 添加绘制数据 */
@@ -486,11 +481,12 @@ public final class PlotterJFree implements IPlotter {
         final JFrame tFrame = new JFrame(aName);
         tFrame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         final Insets tInset = new Insets(20, 20, 20, 20);
-        final JPanel tPanel = new ChartPanel(mChart) {
+        final JPanel tPanel = new ChartPanel(mChart, WIDTH, HEIGHT, ChartPanel.DEFAULT_MINIMUM_DRAW_WIDTH, ChartPanel.DEFAULT_MINIMUM_DRAW_HEIGHT, ChartPanel.DEFAULT_MAXIMUM_DRAW_WIDTH, ChartPanel.DEFAULT_MAXIMUM_DRAW_HEIGHT, ChartPanel.DEFAULT_BUFFER_USED, true, true, true, true, true) {
             @Override public Insets getInsets() {return tInset;}
         };
         tPanel.setBackground(WHITE);
         tFrame.setContentPane(tPanel);
+        tFrame.setMinimumSize(new Dimension(300, 300));
         tFrame.pack();
         tFrame.setVisible(true);
         
@@ -500,7 +496,7 @@ public final class PlotterJFree implements IPlotter {
             @Override public void dispose() {tFrame.dispose();}
             
             @Override public IFigure name(String aName) {tFrame.setTitle(aName); return this;}
-            @Override public IFigure size(int aWidth, int aHeight) {synchronized (tFrame.getTreeLock()) {tPanel.setSize(aWidth-tInset.left-tInset.right, aHeight-tInset.top-tInset.bottom); tFrame.setSize(aWidth, aHeight);} return this;}
+            @Override public IFigure size(int aWidth, int aHeight) {synchronized (tFrame.getTreeLock()) {tPanel.setSize(aWidth, aHeight); tFrame.setSize(aWidth+tInset.left+tInset.right, aHeight+tInset.top+tInset.bottom);} return this;}
             @Override public IFigure location(int aX, int aY) {tFrame.setLocation(aX, aY); return this;}
             @Override public IFigure insets(double aTop, double aLeft, double aBottom, double aRight) {
                 synchronized (tFrame.getTreeLock()) {
@@ -525,7 +521,7 @@ public final class PlotterJFree implements IPlotter {
                 }
             }
             @Override public void save(@Nullable String aFilePath) throws IOException {
-                save(aFilePath, tPanel.getWidth()-tInset.left-tInset.right, tPanel.getHeight()-tInset.top-tInset.bottom);
+                save(aFilePath, tPanel.getWidth(), tPanel.getHeight());
             }
         };
         

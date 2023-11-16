@@ -51,5 +51,9 @@ plt.plot(meanCoordination[type.equal(1)], meanAtomicVolume[type.equal(1)], 'type
 plt.xlabel('coordination').ylabel('atomicVolume');
 plt.show();
 
-println(meanAtomicVolume[type.equal(1)]);
+meanAtomicVolume1 = meanAtomicVolume[type.equal(1)];
+meanCoordination1 = meanCoordination[type.equal(1)];
+for (i in 0..<meanAtomicVolume1.size()) if (meanAtomicVolume1[i] < 28.5 && meanCoordination1[i] > 14.5) {
+    println("i = $i, meanAtomicVolume = ${meanAtomicVolume1[i]}, meanCoordination = ${meanCoordination1[i]}");
+}
 

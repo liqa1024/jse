@@ -1137,6 +1137,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         IVoronoiCalculator setNoWarning();
         IVoronoiCalculator setAreaThreshold(double aAreaThreshold);
         IVoronoiCalculator setLengthThreshold(double aLengthThreshold);
+        IVoronoiCalculator setAreaThresholdAbs(double aAreaThresholdAbs);
+        IVoronoiCalculator setLengthThresholdAbs(double aLengthThresholdAbs);
         IVoronoiCalculator setIndexLength(int aIndexLength);
     }
     private static abstract class AbstractVoronoiCalculator extends AbstractRandomAccessList<VoronoiBuilder.IVertex> implements IVoronoiCalculator {
@@ -1146,6 +1148,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         @Override public final AbstractVoronoiCalculator setNoWarning() {mBuilder.setNoWarning(); return this;}
         @Override public final AbstractVoronoiCalculator setAreaThreshold(double aAreaThreshold) {mBuilder.setAreaThreshold(aAreaThreshold); return this;}
         @Override public final AbstractVoronoiCalculator setLengthThreshold(double aLengthThreshold) {mBuilder.setLengthThreshold(aLengthThreshold); return this;}
+        @Override public final AbstractVoronoiCalculator setAreaThresholdAbs(double aAreaThresholdAbs) {mBuilder.setAreaThresholdAbs(aAreaThresholdAbs); return this;}
+        @Override public final AbstractVoronoiCalculator setLengthThresholdAbs(double aLengthThresholdAbs) {mBuilder.setLengthThresholdAbs(aLengthThresholdAbs); return this;}
         @Override public final AbstractVoronoiCalculator setIndexLength(int aIndexLength) {mBuilder.setIndexLength(aIndexLength); return this;}
     }
     

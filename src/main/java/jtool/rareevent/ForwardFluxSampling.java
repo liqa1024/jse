@@ -499,9 +499,9 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             oPointsOnLambda.clear();
             double tLambdaNext = mSurfaces.get_(mStep+1);
             for (Point tPoint : mPointsOnLambda) {
-                if (tPoint.lambda < tLambdaNext) {
+                if (tPoint.lambda<tLambdaNext && tPoint.multiple>2.0) {
                     // 减少倍率并增加拷贝样本
-                    int tStatTimes = tPoint.multiple>2.0 ? (int)Math.min(Math.floor(tPoint.multiple), mMaxStatTimes) : 1;
+                    int tStatTimes = (int)Math.min(Math.floor(tPoint.multiple), mMaxStatTimes);
                     if (tStatTimes > 1) tPoint.multiple /= (double)tStatTimes;
                     for (int i = 0; i < tStatTimes; ++i) oPointsOnLambda.add(tPoint);
                 } else {
