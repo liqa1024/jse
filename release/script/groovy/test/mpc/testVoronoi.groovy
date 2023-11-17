@@ -20,16 +20,6 @@ table['atomicVolume'] = (voronoi*.atomicVolume());
 table['cavityRadius'] = (voronoi*.cavityRadius());
 for (i in 3..9) table["index.$i"] = 0;
 table.asMatrix()[ALL][4..10] = (voronoi*.index());
-
-for (i in 0..<data.atomNum()) {
-    def vdata = voronoi[i];
-    table['i'][i] = i;
-    table['coordination'][i] = vdata.coordination();
-    table['atomicVolume'][i] = vdata.atomicVolume();
-    table['cavityRadius'][i] = vdata.cavityRadius();
-    def index = vdata.index();
-    for (j in 3..9) table["index.$j"][i] = index[j-1];
-};
 UT.IO.table2csv(table, 'lmp/.temp/voronoi.csv');
 
 // 读取 ovito 的表并对比
@@ -48,5 +38,5 @@ for (i in 0..<data.atomNum()) {
         ++diffNum;
     }
 }
-println("Total Diff Number: $diffNum")
+println("Total Diff Number: $diffNum");
 
