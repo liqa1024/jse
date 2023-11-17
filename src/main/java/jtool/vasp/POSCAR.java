@@ -160,7 +160,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     
     
     /** 拷贝一份 POSCAR */
-    @Override public POSCAR copy() {return new POSCAR(mDataName, mBox.copy(), mBoxScale, Arrays.copyOf(mAtomTypes, mAtomTypes.length), mAtomNumbers, mSelectiveDynamics, mDirect.copy(), mIsCartesian);}
+    @Override public POSCAR copy() {return new POSCAR(mDataName, mBox.copy(), mBoxScale, Arrays.copyOf(mAtomTypes, mAtomTypes.length), mAtomNumbers.copy(), mSelectiveDynamics, mDirect.copy(), mIsCartesian);}
     // 由于 POSCAR 不是全都可以修改，因此不重写另外两个
     
     /** 从 IAtomData 来创建，POSCAR 需要额外的原子种类字符串以及额外的是否开启 SelectiveDynamics */
