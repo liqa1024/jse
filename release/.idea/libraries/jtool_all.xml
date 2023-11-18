@@ -6,6 +6,9 @@
     <JAVADOC />
     <SOURCES>
       <root url="jar://$PROJECT_DIR$/src/jtool-src.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/jtoolex-voronoi-v1.5-dev-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/jtoolex-algorithm-v1.5-dev-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/groovy-4.0.15-sources.jar!/" />
     </SOURCES>
   </library>
 </component>

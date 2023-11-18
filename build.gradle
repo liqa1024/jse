@@ -73,15 +73,29 @@ shadowJar {
 tasks.register('sourceJar', Jar) {
     archiveBaseName = 'jtool'
     archiveClassifier = 'src'
-    from sourceSets.main.allSource
+    from(sourceSets.main.allSource)
+    exclude('assets/**')
+    // 添加过滤器来修复 relocate 的问题
+    filter {line ->
+        line = line.replace('com.jcraft.jsch' , 'shade.com.jcraft.jsch')
+        line = line.replace('com.jcraft.jzlib', 'shade.com.jcraft.jzlib')
+        return line
+    }
     
     // 修改目标文件夹，打包后添加到子项目中
     destinationDirectory = file('./release/src')
 }
 
+tasks.register('downloadSource') {
+    // 直接硬编码下载第三方库的源码文件
+    if (!file('./release/src/groovy-4.0.15-sources.jar'             ).exists()) ant.get(src: 'https://repo1.maven.org/maven2/org/apache/groovy/groovy/4.0.15/groovy-4.0.15-sources.jar'                                          , dest: './release/src')
+    if (!file('./release/src/jtoolex-algorithm-v1.5-dev-sources.jar').exists()) ant.get(src: 'https://www.jitpack.io/com/github/CHanzyLazer/jToolEX-Voronoi-3D/jtoolex-algorithm/v1.5-dev/jtoolex-algorithm-v1.5-dev-sources.jar', dest: './release/src')
+    if (!file('./release/src/jtoolex-voronoi-v1.5-dev-sources.jar'  ).exists()) ant.get(src: 'https://www.jitpack.io/com/github/CHanzyLazer/jToolEX-Voronoi-3D/jtoolex-voronoi/v1.5-dev/jtoolex-voronoi-v1.5-dev-sources.jar'    , dest: './release/src')
+}
+
 
 build {
-    dependsOn shadowJar, sourceJar
+    dependsOn shadowJar, sourceJar, downloadSource
     jar.enabled = false
 }
 
