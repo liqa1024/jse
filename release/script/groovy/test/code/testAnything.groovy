@@ -13,11 +13,19 @@ import jtool.system.SSH
 import jtool.system.WSL
 import jtool.vasp.POSCAR
 
-a = new XYZ(1, 0, 3);
-b = new XYZ(0, 4, 0);
-c = new XYZ(2, 0, 2);
+import static jtool.code.UT.Math.*
 
-println(MathEX.Graph.area(a, b, c));
+println(rand());
+println(rand());
+rng(123456);
+println(rand());
+println(new Random(123456).nextDouble());
+
+//a = new XYZ(1, 0, 3);
+//b = new XYZ(0, 4, 0);
+//c = new XYZ(2, 0, 2);
+//
+//println(MathEX.Graph.area(a, b, c));
 
 //// 测试脚本调用中参数
 //SP.Groovy.run('script/groovy/run/runScript.groovy', '123', '456');

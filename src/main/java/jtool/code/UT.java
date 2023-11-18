@@ -35,7 +35,6 @@ import jtool.vasp.IVaspCommonData;
 import me.tongfei.progressbar.ConsoleProgressBarConsumer;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarBuilder;
-import me.tongfei.progressbar.ProgressBarStyle;
 import net.jafama.FastMath;
 import org.apache.groovy.json.internal.CharScanner;
 import org.apache.groovy.util.Maps;
@@ -1464,7 +1463,10 @@ public class UT {
         public static double abs(double aValue) {return java.lang.Math.abs(aValue);}
         public static double min(double aLHS, double aRHS) {return java.lang.Math.min(aLHS, aRHS);}
         public static double max(double aLHS, double aRHS) {return java.lang.Math.max(aLHS, aRHS);}
-        public static double random() {return RANDOM.nextDouble();}
+        public static double rand() {return RANDOM.nextDouble();}
+        public static int randi(int aBound) {return RANDOM.nextInt(aBound);}
+        public static Random rng(long aSeed) {RANDOM.setSeed(aSeed); return RANDOM;}
+        public static Random rng() {return RANDOM;}
         
         
         /// vectors
@@ -1536,7 +1538,8 @@ public class UT {
         public static IVector ones(int aSize) {return Vectors.ones(aSize);}
         public static IVector NaN(int aSize) {return Vectors.NaN(aSize);}
         public static IVector nan(int aSize) {return NaN(aSize);}
-        public static IVector random(int aSize) {IVector rVec = zeros(aSize); rVec.assign(Math::random); return rVec;}
+        public static IVector rand(int aSize) {IVector rVec = zeros(aSize); rVec.assign(Math::rand); return rVec;}
+        public static IVector randi(final int aBound, int aSize) {IVector rVec = zeros(aSize); rVec.assign(()->randi(aBound)); return rVec;}
         public static IVector linsequence(double aStart, double aStep, int aN) {return Vectors.linsequence(aStart, aStep, aN);}
         public static IVector linspace(double aStart, double aEnd, int aN) {return Vectors.linspace(aStart, aEnd, aN);}
         public static IVector logsequence(double aStart, double aStep, int aN) {return Vectors.logsequence(aStart, aStep, aN);}
@@ -1606,7 +1609,8 @@ public class UT {
         public static IMatrix ones(int aRowNum, int ColNum) {return Matrices.ones(aRowNum, ColNum);}
         public static IMatrix NaN(int aRowNum, int ColNum) {return Matrices.NaN(aRowNum, ColNum);}
         public static IMatrix nan(int aRowNum, int ColNum) {return NaN(aRowNum, ColNum);}
-        public static IMatrix random(int aRowNum, int ColNum) {IMatrix rMat = zeros(aRowNum, ColNum); rMat.assignCol(Math::random); return rMat;}
+        public static IMatrix rand(int aRowNum, int ColNum) {IMatrix rMat = zeros(aRowNum, ColNum); rMat.assignCol(Math::rand); return rMat;}
+        public static IMatrix randi(final int aBound, int aRowNum, int ColNum) {IMatrix rMat = zeros(aRowNum, ColNum); rMat.assignCol(()->randi(aBound)); return rMat;}
         public static IMatrix diag(IVector aVec) {return Matrices.diag(aVec);}
         public static IVector diag(IMatrix aMat) {return aMat.slicer().diag();}
         public static IVector diag(IMatrix aMat, int aShift) {return aMat.slicer().diag(aShift);}
