@@ -468,6 +468,8 @@ public final class SSHCore implements IAutoShutdown {
     /** 判断是否是文件夹，无论是什么情况报错都返回 false */
     private static boolean isDir_(ChannelSftp aChannelSftp, String aDir) {
         SftpATTRS tAttrs = null;
+        // 空目录永远存在
+        if (aDir.isEmpty()) return true;
         try {tAttrs = aChannelSftp.stat(aDir);} catch (SftpException ignored) {}
         return tAttrs != null && tAttrs.isDir();
     }
@@ -486,6 +488,7 @@ public final class SSHCore implements IAutoShutdown {
     /** 在远程服务器创建文件夹，实现跨文件夹创建文件夹 */
     private static void makeDir_(ChannelSftp aChannelSftp, String aDir) throws Exception {
         if (isDir_(aChannelSftp, aDir)) return;
+        if (aDir.length() < 2) return;
         // 如果目录不存在，则需要创建目录
         int tEndIdx = aDir.lastIndexOf("/", aDir.length()-2);
         if (tEndIdx > 0) {
