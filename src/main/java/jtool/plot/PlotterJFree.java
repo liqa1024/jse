@@ -27,8 +27,7 @@ import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
 
 
@@ -47,7 +46,7 @@ public final class PlotterJFree implements IPlotter {
     protected class LineJFree extends AbstractLine {
         final int mID;
         final String mName;
-        final Iterable<? extends Number> mX, mY;
+        Iterable<? extends Number> mX, mY;
         Shape mLegendLine;
         
         LineJFree(int aID, Iterable<? extends Number> aX, Iterable  <? extends Number> aY, String aName) {
@@ -181,6 +180,7 @@ public final class PlotterJFree implements IPlotter {
     private NumberAxis mXAxis, mYAxis;
     private final XYLineAndShapeRenderer mLineRender;
     private final List<LineJFree> mLines;
+    private final Map<String, Integer> mName2ID;
     
     /** 一些默认的初始设定 */
     public PlotterJFree() {
@@ -188,6 +188,7 @@ public final class PlotterJFree implements IPlotter {
         
         // 存储绘制的线
         mLines = new ArrayList<>();
+        mName2ID = new HashMap<>();
         // 内部使用的成员
         mLinesData = new XYSeriesCollection();
         
@@ -235,9 +236,9 @@ public final class PlotterJFree implements IPlotter {
                     XYItemRendererState state = renderer.initialise(g2, dataArea, this, dataset, info);
                     int passCount = renderer.getPassCount();
                     SeriesRenderingOrder seriesOrder = getSeriesRenderingOrder();
+                    int seriesCount = dataset.getSeriesCount();
                     if (seriesOrder == SeriesRenderingOrder.REVERSE) {
                         //render series in reverse order
-                        int seriesCount = dataset.getSeriesCount();
                         for (int series = seriesCount - 1; series >= 0; series--) {
                             int firstItem = 0;
                             int lastItem = dataset.getItemCount(series) - 1;
@@ -259,7 +260,6 @@ public final class PlotterJFree implements IPlotter {
                         }
                     } else {
                         //render series in forward order
-                        int seriesCount = dataset.getSeriesCount();
                         for (int series = 0; series < seriesCount; series++) {
                             int firstItem = 0;
                             int lastItem = dataset.getItemCount(series) - 1;
@@ -463,19 +463,35 @@ public final class PlotterJFree implements IPlotter {
     /** 添加绘制数据 */
     @Override public ILine plot(Iterable<? extends Number> aX, Iterable<? extends Number> aY, @Nullable String aName) {
         @NotNull String tName = aName==null ? defaultLineName_() : aName;
-        // 添加数据
-        mLinesData.addSeries(getValidXYSeries_(aX, aY, tName));
-        // 创建曲线
-        LineJFree tLine = new LineJFree(mLines.size(), aX, aY, tName);
-        mLines.add(tLine);
-        // 如果输入名字为 null 则不显示 legend
-        if (aName == null) tLine.noLegend();
+        LineJFree tLine;
+        // 先检测是否有相同名称的，如果有则进行更新数据
+        if (mName2ID.containsKey(tName)) {
+            int tID = mName2ID.get(tName);
+            // 更新数据
+            mLinesData.removeSeries(tID);
+            mLinesData.addSeries(getValidXYSeries_(aX, aY, tName));
+            // 更新曲线
+            tLine = mLines.get(tID);
+            tLine.mX = aX;
+            tLine.mY = aY;
+        } else {
+            int tID = mLines.size();
+            // 添加数据
+            mLinesData.addSeries(getValidXYSeries_(aX, aY, tName));
+            // 创建曲线
+            tLine = new LineJFree(tID, aX, aY, tName);
+            mLines.add(tLine);
+            mName2ID.put(tName, tID);
+            // 如果输入名字为 null 则不显示 legend
+            if (aName == null) tLine.noLegend();
+        }
         // 返回 LineJFree
         return tLine;
     }
     
     @Override public IPlotter clear() {
         mLinesData.removeAllSeries();
+        mName2ID.clear();
         mLines.clear();
         return this;
     }
