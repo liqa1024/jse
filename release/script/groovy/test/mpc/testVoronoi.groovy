@@ -18,8 +18,8 @@ table['i'] = 0..<data.atomNum();
 table['coordination'] = (voronoi*.coordination());
 table['atomicVolume'] = (voronoi*.atomicVolume());
 table['cavityRadius'] = (voronoi*.cavityRadius());
-for (i in 3..9) table["index.$i"] = 0;
-table.asMatrix()[ALL][4..10] = (voronoi*.index());
+for (i in 1..9) table["index.$i"] = 0;
+table.asMatrix()[ALL][4..12] = (voronoi*.index());
 UT.IO.table2csv(table, 'lmp/.temp/voronoi.csv');
 
 // 读取 ovito 的表并对比

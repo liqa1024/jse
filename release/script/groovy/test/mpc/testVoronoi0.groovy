@@ -9,7 +9,7 @@ import static jtool.code.UT.Plot.*
 
 vbuild = new VoronoiBuilder().setNoWarning();
 
-for (i in 0..<40) vbuild.insert(new XYZ(random(), random(), 0.0));
+for (i in 0..<40) vbuild.insert(new XYZ(rand(), rand(), 0.0));
 
 allVertex = vbuild.allVertex();
 allTet = vbuild.allTetrahedron();
