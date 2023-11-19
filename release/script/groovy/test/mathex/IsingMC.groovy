@@ -45,10 +45,10 @@ try (def ISING = new Ising2D(J, H, threadNum)) {
         for (j in 0..<T.size()) {
             ISING.startMonteCarlo(allSpins, round(N[i]*0.1), T[0], false);
             def d = ISING.startMonteCarlo(allSpins, N[i], T[j]);
-            E[i][j] = d.E() / (double)(L[i]*L[i]);
-            M[i][j] = d.M() / (double)(L[i]*L[i]);
-            C[i][j] = (d.E2() - d.E()*d.E()) / (T[j]*T[j]) / (double)(L[i]*L[i]);
-            X[i][j] = (d.M2() - d.M()*d.M()) / (T[j]) / (double)(L[i]*L[i]);
+            E[i][j] = d.E / (double)(L[i]*L[i]);
+            M[i][j] = d.M / (double)(L[i]*L[i]);
+            C[i][j] = (d.E2 - d.E*d.E) / (T[j]*T[j]) / (double)(L[i]*L[i]);
+            X[i][j] = (d.M2 - d.M*d.M) / (T[j]) / (double)(L[i]*L[i]);
             pbar();
         }
     }

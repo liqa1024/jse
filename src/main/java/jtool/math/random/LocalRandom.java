@@ -46,6 +46,7 @@ public class LocalRandom {
         this.seed = initialScramble(seed);
         haveNextNextGaussian = false;
     }
+    public long getSeed() {return seed;}
     
     protected int next(int bits) {
         // 现在不再需要 CAS 来更新 seed
