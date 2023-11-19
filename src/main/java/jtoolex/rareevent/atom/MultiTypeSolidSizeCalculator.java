@@ -1,4 +1,4 @@
-package jtool.rareevent.atom;
+package jtoolex.rareevent.atom;
 
 import org.jetbrains.annotations.Nullable;
 

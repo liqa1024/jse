@@ -1,4 +1,4 @@
-package jtool.rareevent;
+package jtoolex.rareevent;
 
 import jtool.atom.IAtomData;
 import jtool.parallel.AbstractHasAutoShutdown;

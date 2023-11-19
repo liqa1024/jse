@@ -1,4 +1,4 @@
-package jtool.rareevent.atom;
+package jtoolex.rareevent.atom;
 
 /**
  * {@link CustomClusterSizeCalculator} 的 solid 版本

@@ -1,4 +1,4 @@
-package jtool.rareevent;
+package jtoolex.rareevent;
 
 import java.util.Iterator;
 

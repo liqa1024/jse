@@ -1,10 +1,10 @@
-package jtool.rareevent.atom;
+package jtoolex.rareevent.atom;
 
 import jtool.atom.IAtomData;
 import jtool.code.UT;
 import jtool.parallel.IAutoShutdown;
 import jtool.parallel.MPI;
-import jtool.rareevent.IParameterCalculator;
+import jtoolex.rareevent.IParameterCalculator;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 

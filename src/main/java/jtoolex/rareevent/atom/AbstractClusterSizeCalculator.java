@@ -1,11 +1,11 @@
-package jtool.rareevent.atom;
+package jtoolex.rareevent.atom;
 
 import jtool.atom.IAtomData;
 import jtool.atom.MonatomicParameterCalculator;
 import jtool.code.collection.AbstractCollections;
 import jtool.math.MathEX;
 import jtool.math.vector.ILogicalVector;
-import jtool.rareevent.IParameterCalculator;
+import jtoolex.rareevent.IParameterCalculator;
 
 import java.util.List;
 

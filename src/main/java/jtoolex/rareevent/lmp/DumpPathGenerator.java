@@ -1,4 +1,4 @@
-package jtool.rareevent.lmp;
+package jtoolex.rareevent.lmp;
 
 import jtool.atom.*;
 import jtool.code.UT;
@@ -16,7 +16,7 @@ import jtool.math.matrix.Matrices;
 import jtool.math.vector.IVector;
 import jtool.math.vector.Vectors;
 import jtool.parallel.AbstractHasAutoShutdown;
-import jtool.rareevent.IPathGenerator;
+import jtoolex.rareevent.IPathGenerator;
 
 import java.util.*;
 

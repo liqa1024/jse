@@ -1,4 +1,4 @@
-package jtool.rareevent.atom;
+package jtoolex.rareevent.atom;
 
 import jtool.atom.IAtomData;
 import jtool.atom.MonatomicParameterCalculator;
