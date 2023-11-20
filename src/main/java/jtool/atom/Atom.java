@@ -14,15 +14,11 @@ public class Atom implements ISettableAtom {
     }
     public Atom(IXYZ aXYZ, int aID, int aType) {
         mX = aXYZ.x(); mY = aXYZ.y(); mZ = aXYZ.z();
-        mID = aID; mType = aType;
     }
     public Atom(IAtom aAtom) {
         mX = aAtom.x(); mY = aAtom.y(); mZ = aAtom.z();
         mID = aAtom.id(); mType = aAtom.type();
     }
-    public Atom(double aX, double aY, double aZ, int aID) {this(aX, aY, aZ, aID, 1);}
-    public Atom(IXYZ aXYZ, int aID) {this(aXYZ, aID, 1);}
-    public Atom(IXYZ aXYZ) {this(aXYZ, 1, 1);}
     public Atom() {this(0.0, 0.0, 0.0, 1, 1);}
     
     @Override public double x() {return mX;}
@@ -31,7 +27,6 @@ public class Atom implements ISettableAtom {
     
     @Override public int id() {return mID;}
     @Override public int type() {return mType;}
-    
     
     /** ISettableAtom stuffs */
     @Override public Atom setX(double aX) {mX = aX; return this;}

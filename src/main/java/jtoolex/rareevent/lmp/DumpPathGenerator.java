@@ -178,6 +178,7 @@ public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathG
                     @Override public double z() {return rData.get(index, TYPE_XYZ_Z_COL);}
                     @Override public int id() {return index+1;}
                     @Override public int type() {return (int)rData.get(index, TYPE_XYZ_TYPE_COL);}
+                    @Override public int index() {return index;}
                 };
             }
             @Override public int size() {return tAtomNum;}

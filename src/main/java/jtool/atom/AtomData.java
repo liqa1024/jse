@@ -33,7 +33,23 @@ public final class AtomData extends AbstractAtomData {
     public AtomData(List<? extends IAtom> aAtoms,                   IXYZ aBox                        ) {this(aAtoms, aBox, false);}
     public AtomData(List<? extends IAtom> aAtoms                                                     ) {this(aAtoms, false);}
     
-    @Override public IAtom pickAtom(int aIdx) {return mAtoms.get(aIdx);}
+    @Override public IAtom pickAtom(int aIdx) {
+        // 需要包装一层，用于自动复写内部原子的 index 信息
+        final IAtom tAtom = mAtoms.get(aIdx);
+        return new IAtom() {
+            @Override public double x() {return tAtom.x();}
+            @Override public double y() {return tAtom.y();}
+            @Override public double z() {return tAtom.z();}
+            @Override public int id() {return tAtom.id();}
+            @Override public int type() {return tAtom.type();}
+            /** 会复写掉内部的 index 数据 */
+            @Override public int index() {return aIdx;}
+            
+            @Override public double vx() {return tAtom.vx();}
+            @Override public double vy() {return tAtom.vy();}
+            @Override public double vz() {return tAtom.vz();}
+        };
+    }
     @Override public IXYZ box() {return mBox;}
     @Override public int atomNum() {return mAtoms.size();}
     @Override public int atomTypeNum() {return mAtomTypeNum;}

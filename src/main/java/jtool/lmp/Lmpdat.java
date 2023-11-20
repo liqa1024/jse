@@ -136,6 +136,7 @@ public class Lmpdat extends AbstractSettableAtomData {
             @Override public double z() {return mAtomData.get(aIdx, STD_Z_COL)-mBox.zlo();}
             @Override public int id() {return (int)mAtomData.get(aIdx, STD_ID_COL);}
             @Override public int type() {return (int)mAtomData.get(aIdx, STD_TYPE_COL);}
+            @Override public int index() {return aIdx;}
             
             @Override public double vx() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VX_COL);}
             @Override public double vy() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VY_COL);}

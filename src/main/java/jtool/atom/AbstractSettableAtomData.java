@@ -29,8 +29,13 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
     @Override public List<? extends ISettableAtom> asList() {
         return new AbstractRandomAccessList<ISettableAtom>() {
             @Override public ISettableAtom get(int index) {return pickAtom(index);}
-            @Override public ISettableAtom set(int index, ISettableAtom element) {
-                ISettableAtom oAtom = hasVelocities() ? new AtomFull(pickAtom(index)) : new Atom(pickAtom(index));
+            @Override public ISettableAtom set(final int index, ISettableAtom element) {
+                ISettableAtom oAtom = hasVelocities() ?
+                    new AtomFull(pickAtom(index)) {
+                    @Override public int index() {return index;}
+                } : new Atom(pickAtom(index)) {
+                    @Override public int index() {return index;}
+                };
                 setAtom(index, element);
                 return oAtom;
             }

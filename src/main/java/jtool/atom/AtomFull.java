@@ -4,7 +4,7 @@ package jtool.atom;
  * 包含所有属性的原子
  * @author liqa
  */
-public final class AtomFull extends Atom {
+public class AtomFull extends Atom {
     public double mVx, mVy, mVz;
     public AtomFull(IAtom aAtom) {
         super(aAtom);

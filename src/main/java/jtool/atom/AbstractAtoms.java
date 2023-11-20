@@ -52,6 +52,7 @@ public class AbstractAtoms {
                     }
                     @Override public int id() {return index+1;}
                     @Override public int type() {return 1;}
+                    @Override public int index() {return index;}
                 };
             }
             @Override public int size() {
@@ -79,6 +80,7 @@ public class AbstractAtoms {
                     @Override public double z() {int k = index/2%aReplicateZ            ; double tZ = aCellSize*k; return (index%2==1) ? tZ + aCellSize*0.5 : tZ;}
                     @Override public int id() {return index+1;}
                     @Override public int type() {return 1;}
+                    @Override public int index() {return index;}
                 };
             }
             @Override public int size() {
@@ -131,6 +133,7 @@ public class AbstractAtoms {
                     }
                     @Override public int id() {return index+1;}
                     @Override public int type() {return 1;}
+                    @Override public int index() {return index;}
                 };
             }
             @Override public int size() {
@@ -158,12 +161,14 @@ public class AbstractAtoms {
             @Override public IAtom get(final int index) {
                 final int tLatticeNum = aLattice.atomNum();
                 final IAtom tAtom = aLattice.pickAtom(index%tLatticeNum);
+                final int tRepTotal = index/tLatticeNum;
                 return new IAtom() {
-                    @Override public double x() {int i = index/tLatticeNum/aReplicateZ/aReplicateY; double tX = aLattice.box().x() * i; return tX + tAtom.x();}
-                    @Override public double y() {int j = index/tLatticeNum/aReplicateZ%aReplicateY; double tY = aLattice.box().y() * j; return tY + tAtom.y();}
-                    @Override public double z() {int k = index/tLatticeNum%aReplicateZ            ; double tZ = aLattice.box().z() * k; return tZ + tAtom.z();}
-                    @Override public int id() {return index+1;} // 为了避免一些奇怪的问题，不保留原本的 id
+                    @Override public double x() {int i = tRepTotal/aReplicateZ/aReplicateY; double tX = aLattice.box().x() * i; return tX + tAtom.x();}
+                    @Override public double y() {int j = tRepTotal/aReplicateZ%aReplicateY; double tY = aLattice.box().y() * j; return tY + tAtom.y();}
+                    @Override public double z() {int k = tRepTotal%aReplicateZ            ; double tZ = aLattice.box().z() * k; return tZ + tAtom.z();}
+                    @Override public int id() {return tRepTotal*tLatticeNum * tAtom.id();} // 现在会基于原本的 id 进行扩展，这里不考虑特殊的 id 分布问题
                     @Override public int type() {return tAtom.type();}
+                    @Override public int index() {return index;}
                 };
             }
             @Override public int size() {

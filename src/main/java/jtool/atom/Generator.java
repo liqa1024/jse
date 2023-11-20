@@ -3,19 +3,14 @@ package jtool.atom;
 import jtool.code.filter.IDoubleFilter;
 import jtool.code.filter.IFilter;
 import jtool.code.functional.IDoubleOperator1;
-import jtool.code.functional.IOperator1;
 import jtool.math.MathEX;
 import jtool.math.function.Func3;
-import jtool.math.vector.IVector;
-import jtool.math.vector.Vectors;
 import jtool.parallel.AbstractThreadPool;
 import jtool.parallel.ParforThreadPool;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static jtool.code.CS.RANDOM;
 import static jtool.code.UT.Code.newBox;
@@ -49,96 +44,6 @@ public class Generator extends AbstractThreadPool<ParforThreadPool> {
     /** 参数设置 */
     public Generator setThreadNum(int aThreadNum)  {if (aThreadNum!=nThreads()) setPool(new ParforThreadPool(aThreadNum)); return this;}
     
-    
-    /**
-     * 根据给定数据创建 FCC 的 atomData
-     * @author liqa
-     * @param aCellSize FCC 晶胞的晶格常数 a
-     * @param aReplicateX x 方向的重复次数
-     * @param aReplicateY Y 方向的重复次数
-     * @param aReplicateZ Z 方向的重复次数
-     * @return 返回由此创建的 atomData
-     */
-    public IAtomData atomDataFCC(double aCellSize, int aReplicateX, int aReplicateY, int aReplicateZ) {
-        if (mDead) throw new RuntimeException("This Generator is dead");
-        
-        XYZ tBox = new XYZ(aCellSize*aReplicateX, aCellSize*aReplicateY, aCellSize*aReplicateZ);
-        List<IAtom> rAtoms = new ArrayList<>(4*aReplicateX*aReplicateY*aReplicateZ);
-        
-        int tID = 1;
-        for (int i = 0; i < aReplicateX; ++i) for (int j = 0; j < aReplicateY; ++j) for (int k = 0; k < aReplicateZ; ++k) {
-            double tX = aCellSize*i, tY = aCellSize*j, tZ = aCellSize*k;
-            double tS = aCellSize*0.5;
-            rAtoms.add(new Atom(tX   , tY   , tZ   , tID)); ++tID;
-            rAtoms.add(new Atom(tX+tS, tY+tS, tZ   , tID)); ++tID;
-            rAtoms.add(new Atom(tX+tS, tY   , tZ+tS, tID)); ++tID;
-            rAtoms.add(new Atom(tX   , tY+tS, tZ+tS, tID)); ++tID;
-        }
-        
-        return new AtomData(rAtoms, tBox);
-    }
-    public IAtomData atomDataFCC(double aCellSize, int aReplicate) {return atomDataFCC(aCellSize, aReplicate, aReplicate, aReplicate);}
-    
-    
-    
-    /**
-     * 根据通用的过滤器 aFilter 来过滤 aAtomData，修改粒子的种类
-     * @author liqa
-     * @param aAtomData 需要过滤的 aAtomData
-     * @param aMinTypeNum 建议最小的种类数目
-     * @param aFilter 自定义的过滤器，输入 {@link IAtom}，返回过滤后的 type
-     * @return 过滤后的 AtomData
-     */
-    public IAtomData typeFilterAtomData(IAtomData aAtomData, int aMinTypeNum, IOperator1<Integer, IAtom> aFilter) {
-        if (mDead) throw new RuntimeException("This Generator is dead");
-        
-        List<IAtom> rAtoms = new ArrayList<>(aAtomData.atomNum());
-        
-        int tAtomTypeNum = Math.max(aMinTypeNum, aAtomData.atomTypeNum());
-        for (IAtom oAtom : aAtomData.asList()) {
-            Atom tAtom = new Atom(oAtom);
-            // 更新粒子种类数目
-            int tType = aFilter.cal(oAtom);
-            if (tType > tAtomTypeNum) tAtomTypeNum = tType;
-            tAtom.mType = tType;
-            // 保存修改后的原子
-            rAtoms.add(tAtom);
-        }
-        
-        return new AtomData(rAtoms, tAtomTypeNum, newBox(aAtomData.box()));
-    }
-    public IAtomData typeFilterAtomData(final IAtomData aAtomData, IOperator1<Integer, IAtom> aFilter) {return typeFilterAtomData(aAtomData, 1, aFilter);}
-    
-    /**
-     * 根据给定的权重来随机修改原子种类，主要用于创建合金的初始结构
-     * @author liqa
-     */
-    public IAtomData typeFilterWeightAtomData(IAtomData aAtomData, double... aTypeWeights) {
-        // 特殊输入直接输出
-        if (aTypeWeights == null || aTypeWeights.length == 0) return aAtomData;
-        return typeFilterWeightAtomData(aAtomData, Vectors.from(aTypeWeights));
-    }
-    public IAtomData typeFilterWeightAtomData(final IAtomData aAtomData, IVector aTypeWeights) {
-        double tTotWeight = aTypeWeights.sum();
-        if (tTotWeight <= 0.0) return aAtomData;
-        
-        int tAtomNum = aAtomData.atomNum();
-        int tMaxType = aTypeWeights.size();
-        // 获得对应原子种类的 List
-        final List<Integer> tTypeList = new ArrayList<>(tAtomNum+tMaxType);
-        for (int tType = 1; tType <= tMaxType; ++tType) {
-            // 计算这种种类的粒子数目
-            long tSteps = Math.round((aTypeWeights.get_(tType-1) / tTotWeight) * tAtomNum);
-            for (int i = 0; i < tSteps; ++i) tTypeList.add(tType);
-        }
-        // 简单处理，如果数量不够则添加最后一种种类
-        while (tTypeList.size() < tAtomNum) tTypeList.add(tMaxType);
-        // 随机打乱这些种类标记
-        Collections.shuffle(tTypeList, mRNG);
-        // 使用 typeFilter 获取种类修改后的 AtomData
-        final AtomicInteger idx = new AtomicInteger();
-        return typeFilterAtomData(aAtomData, tMaxType, atom -> tTypeList.get(idx.getAndIncrement()));
-    }
     
     
     /**

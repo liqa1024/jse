@@ -193,6 +193,7 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
                     @Override public double z() {return aData.get(index, TYPE_XYZ_Z_COL);}
                     @Override public int id() {return mIndex2Id.get(index);}
                     @Override public int type() {return (int)aData.get(index, TYPE_XYZ_TYPE_COL);}
+                    @Override public int index() {return index;}
                     
                     @Override public ISettableAtom setX(double aX) {aData.set(index, TYPE_XYZ_X_COL, aX); return this;}
                     @Override public ISettableAtom setY(double aY) {aData.set(index, TYPE_XYZ_Y_COL, aY); return this;}

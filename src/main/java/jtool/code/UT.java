@@ -559,7 +559,7 @@ public class UT {
                 tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
                 tY = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
                 tZ = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-                rAtoms.add(new Atom(tX, tY, tZ, tID));
+                rAtoms.add(new Atom(tX, tY, tZ, tID, 1));
             }
             // 返回结果
             return new AtomData(rAtoms, tBox);

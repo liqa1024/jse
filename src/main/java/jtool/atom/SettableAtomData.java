@@ -42,15 +42,18 @@ public final class SettableAtomData extends AbstractSettableAtomData {
             @Override public double z() {return tAtom.z();}
             @Override public int id() {return tAtom.id();}
             @Override public int type() {return tAtom.type();}
+            /** 会复写掉内部的 index 数据 */
+            @Override public int index() {return aIdx;}
             
             @Override public double vx() {return tAtom.vx();}
             @Override public double vy() {return tAtom.vy();}
             @Override public double vz() {return tAtom.vz();}
             
-            @Override public ISettableAtom setX(double aX) {return tAtom.setX(aX);}
-            @Override public ISettableAtom setY(double aY) {return tAtom.setY(aY);}
-            @Override public ISettableAtom setZ(double aZ) {return tAtom.setZ(aZ);}
-            @Override public ISettableAtom setID(int aID) {return tAtom.setID(aID);}
+            /** 注意 return this 和 return tAtom 的区别 */
+            @Override public ISettableAtom setX(double aX) {tAtom.setX(aX); return this;}
+            @Override public ISettableAtom setY(double aY) {tAtom.setY(aY); return this;}
+            @Override public ISettableAtom setZ(double aZ) {tAtom.setZ(aZ); return this;}
+            @Override public ISettableAtom setID(int aID) {tAtom.setID(aID); return this;}
             @Override public ISettableAtom setType(int aType) {
                 // 对于设置种类需要特殊处理，设置种类同时需要更新内部的原子种类计数
                 tAtom.setType(aType);
@@ -58,9 +61,9 @@ public final class SettableAtomData extends AbstractSettableAtomData {
                 return this;
             }
             
-            @Override public ISettableAtom setVx(double aVx) {return tAtom.setVx(aVx);}
-            @Override public ISettableAtom setVy(double aVy) {return tAtom.setVy(aVy);}
-            @Override public ISettableAtom setVz(double aVz) {return tAtom.setVz(aVz);}
+            @Override public ISettableAtom setVx(double aVx) {tAtom.setVx(aVx); return this;}
+            @Override public ISettableAtom setVy(double aVy) {tAtom.setVy(aVy); return this;}
+            @Override public ISettableAtom setVz(double aVz) {tAtom.setVz(aVz); return this;}
         };
     }
     @Override public IXYZ box() {return mBox;}

@@ -134,6 +134,8 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
             @Override public int id() {return aIdx+1;}
             /** type 需要根据 mIdx2Type 来获取，根据名称顺序给 type 的数字 */
             @Override public int type() {return mIdx2Type.higherEntry(aIdx).getValue();}
+            /** TODO: poscar 的 atom 在 setType 后会改变位置 */
+            @Override public int index() {return aIdx;}
             
             @Override public ISettableAtom setX(double aX) {mDirect.set(aIdx, 0, (mIsCartesian ? aX : aX/mBox.get(0, 0)) / mBoxScale); return this;}
             @Override public ISettableAtom setY(double aY) {mDirect.set(aIdx, 1, (mIsCartesian ? aY : aY/mBox.get(1, 1)) / mBoxScale); return this;}

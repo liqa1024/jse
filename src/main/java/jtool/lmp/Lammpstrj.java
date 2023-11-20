@@ -317,6 +317,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
                 @Override public int id() {return mAtomData.containsHead("id") ? (int)mAtomData.get(aIdx, "id") : aIdx+1;}
                 /** 如果没有 type 数据则 type 都为 1 */
                 @Override public int type() {return mAtomData.containsHead("type") ? (int)mAtomData.get(aIdx, "type") : 1;}
+                @Override public int index() {return aIdx;}
                 
                 @Override public double vx() {return mAtomData.containsHead("vx") ? mAtomData.get(aIdx, "vx") : 0.0;}
                 @Override public double vy() {return mAtomData.containsHead("vy") ? mAtomData.get(aIdx, "vy") : 0.0;}

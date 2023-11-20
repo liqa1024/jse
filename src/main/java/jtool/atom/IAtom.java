@@ -7,6 +7,8 @@ public interface IAtom extends IXYZ {
     double z();
     int id();
     int type();
+    /** 增加一项专门用于获取在 AtomData 中的位置，可能存在某些结构在修改后位置会发生改变 */
+    default int index() {return -1;}
     
     default double vx() {return 0.0;}
     default double vy() {return 0.0;}
