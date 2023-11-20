@@ -1,8 +1,12 @@
 package jtool.vasp;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import jtool.atom.*;
 import jtool.code.UT;
 import jtool.code.collection.AbstractCollections;
+import jtool.code.iterator.IDoubleIterator;
+import jtool.code.iterator.IDoubleSetIterator;
 import jtool.math.MathEX;
 import jtool.math.matrix.IMatrix;
 import jtool.math.matrix.Matrices;
@@ -11,6 +15,8 @@ import jtool.math.matrix.RowMatrix;
 import jtool.math.vector.IVector;
 import jtool.math.vector.Vectors;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.BufferedReader;
@@ -32,27 +38,22 @@ import static jtool.code.CS.ZL_STR;
 public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implements IVaspCommonData {
     /** 这里统一存放通用数据保证所有帧这些一定是相同的 */
     private final String mDataName;
-    private final String @NotNull[] mAtomTypes;
-    private final IVector mAtomNumbers;
+    private String @Nullable[] mAtomTypes;
+    private IVector mAtomNumbers;
     private final IMatrix mBox;
     private final double mBoxScale;
     private final boolean mIsDiagBox;
+    /** 保存一份 id 列表，这样在 lmpdat 转为 poscar 时会继续保留 id 信息，XDATCAR 认为不能进行修改 */
+    private final @Nullable IVector mIDs;
+    private final @Nullable @Unmodifiable Map<Integer, Integer> mId2Index; // 原子的 id 转为存储在 AtomDataXYZ 的指标 index
     
     private List<IMatrix> mDirects;
     private boolean mIsCartesian; // 如果是 Cartesian 则是没有进行缩放的
     
-    XDATCAR(String aDataName, IMatrix aBox, double aBoxScale, String @NotNull[] aAtomTypes, IVector aAtomNumbers, IMatrix aFirstDirect, int aInitSize, boolean aIsCartesian) {
-        mDataName = aDataName;
-        mAtomTypes = aAtomTypes;
-        mAtomNumbers = aAtomNumbers;
-        mBox = aBox;
-        mBoxScale = aBoxScale;
-        mDirects = new ArrayList<>(aInitSize);
-        mDirects.add(aFirstDirect);
-        mIsCartesian = aIsCartesian;
-        mIsDiagBox = mBox.operation().isDiag();
-    }
-    XDATCAR(String aDataName, IMatrix aBox, double aBoxScale, String @NotNull[] aAtomTypes, IVector aAtomNumbers, List<IMatrix> aDirects, boolean aIsCartesian) {
+    /** 用于通过字符获取每个种类的粒子数，考虑了可能有相同 key 的情况 */
+    private final @NotNull Multimap<String, Integer> mKey2Type;
+    
+    XDATCAR(String aDataName, IMatrix aBox, double aBoxScale, String @Nullable[] aAtomTypes, IVector aAtomNumbers, List<IMatrix> aDirects, boolean aIsCartesian, @Nullable IVector aIDs) {
         mDataName = aDataName;
         mAtomTypes = aAtomTypes;
         mAtomNumbers = aAtomNumbers;
@@ -60,38 +61,61 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         mBoxScale = aBoxScale;
         mDirects = aDirects;
         mIsCartesian = aIsCartesian;
+        mIDs = aIDs;
+        
+        if (mIDs == null) {
+            mId2Index = null;
+        } else {
+            int tSize = mIDs.size();
+            mId2Index = new HashMap<>(tSize);
+            for (int idx = 0; idx < tSize; ++idx) mId2Index.put((int)mIDs.get(idx), idx);
+        }
+        
+        mKey2Type = ArrayListMultimap.create();
+        if (mAtomTypes != null) {
+            int rType = 0;
+            for (String tKey : mAtomTypes) {
+                ++rType;
+                mKey2Type.put(tKey, rType);
+            }
+        }
+        
         mIsDiagBox = mBox.operation().isDiag();
+    }
+    XDATCAR(String aDataName, IMatrix aBox, double aBoxScale, String @Nullable[] aAtomTypes, IVector aAtomNumbers, IMatrix aFirstDirect, int aInitSize, boolean aIsCartesian, @Nullable IVector aIDs) {
+        this(aDataName, aBox, aBoxScale, aAtomTypes, aAtomNumbers, new ArrayList<>(aInitSize), aIsCartesian, aIDs);
+        mDirects.add(aFirstDirect);
     }
     
     /** AbstractList stuffs */
     @Override public int size() {return mDirects.size();}
     @Override public POSCAR get(int index) {
-        return new POSCAR(this, false, mDirects.get(index), mIsCartesian);
+        return new POSCAR(this, false, mDirects.get(index));
     }
     @Override public POSCAR set(int index, POSCAR aPOSCAR) {
         // 只有正交的 XDATCAR 才能设置内部元素
         if (!mIsDiagBox) throw new RuntimeException("set is support Diagonal Box only");
-        return new POSCAR(this, false, mDirects.set(index, getDirect_(aPOSCAR, mIsCartesian, mBoxScale)), mIsCartesian);
+        return new POSCAR(this, false, mDirects.set(index, getDirect_(aPOSCAR)));
     }
     @Override public boolean add(POSCAR aPOSCAR) {
         // 只有正交的 XDATCAR 才能设置内部元素
         if (!mIsDiagBox) throw new RuntimeException("add is support Diagonal Box only");
-        return mDirects.add(getDirect_(aPOSCAR, mIsCartesian, mBoxScale));
+        return mDirects.add(getDirect_(aPOSCAR));
     }
     @Override public POSCAR remove(int aIndex) {
-        return new POSCAR(this, false, mDirects.remove(aIndex), mIsCartesian);
+        return new POSCAR(this, false, mDirects.remove(aIndex));
     }
     /** 提供更加易用的添加方法，返回自身支持链式调用 */
     public XDATCAR append(IAtomData aAtomData) {
         // 只有正交的 XDATCAR 才能通过 AtomData 设置内部元素
         if (!mIsDiagBox) throw new RuntimeException("append is support Diagonal Box only");
-        mDirects.add(getDirect_(aAtomData, mIsCartesian, mBoxScale));
+        mDirects.add(getDirect_(aAtomData));
         return this;
     }
     public XDATCAR appendList(Iterable<? extends IAtomData> aAtomDataList) {
         // 只有正交的 XDATCAR 才能通过 AtomData 设置内部元素
         if (!mIsDiagBox) throw new RuntimeException("appendList is support Diagonal Box only");
-        for (IAtomData tAtomData : aAtomDataList) mDirects.add(getDirect_(tAtomData, mIsCartesian, mBoxScale));
+        for (IAtomData tAtomData : aAtomDataList) mDirects.add(getDirect_(tAtomData));
         return this;
     }
     public XDATCAR appendFile(String aFilePath) throws IOException {
@@ -104,22 +128,53 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     void set(int aIdx, IAtomData aAtomData) {
         // 只有正交的 XDATCAR 才能通过 AtomData 设置内部元素
         if (!mIsDiagBox) throw new RuntimeException("set is support Diagonal Box only");
-        mDirects.set(aIdx, getDirect_(aAtomData, mIsCartesian, mBoxScale));
+        mDirects.set(aIdx, getDirect_(aAtomData));
     }
     @VisibleForTesting void putAt(int aIdx, IAtomData aAtomData) {set(aIdx, aAtomData);}
     
     
     /** 对于 XDATCAR 提供额外的实用接口 */
-    public int atomNum(String aKey) {return defaultFrame().atomNum(aKey);}
-    public int atomNum(int aType) {return defaultFrame().atomNum(aType);}
+    public int atomNum(String aKey) {
+        int rAtomNum = 0;
+        for (int tType : mKey2Type.get(aKey)) rAtomNum += atomNum(tType);
+        return rAtomNum;
+    }
+    public int atomNum(int aType) {return (int)mAtomNumbers.get(aType-1);}
     public @Override String dataName() {return mDataName;}
-    public @Override String @NotNull[] atomTypes() {return mAtomTypes;}
+    public @Override String @Nullable[] atomTypes() {return mAtomTypes;}
     public @Override IVector atomNumbers() {return mAtomNumbers;}
     public @Override IMatrix vaspBox() {return mBox;}
     public @Override double vaspBoxScale() {return mBoxScale;}
     public List<IMatrix> directs() {return mDirects;}
     public @Override boolean isCartesian() {return mIsCartesian;}
     public @Override boolean isDiagBox() {return mIsDiagBox;}
+    public @Override @Nullable IVector ids() {return mIDs;}
+    
+    
+    /** 支持直接修改 AtomTypes，只会增大种类数，不会减少 */
+    public XDATCAR setAtomTypes(String... aAtomTypes) {
+        if (aAtomTypes==null || aAtomTypes.length==0) {
+            mAtomTypes = null;
+            mKey2Type.clear();
+            return this;
+        }
+        if (mAtomTypes==null || aAtomTypes.length>mAtomTypes.length) mAtomTypes = Arrays.copyOf(aAtomTypes, aAtomTypes.length);
+        else System.arraycopy(aAtomTypes, 0, mAtomTypes, 0, aAtomTypes.length);
+        if (aAtomTypes.length > mAtomNumbers.size()) {
+            IVector oAtomNumbers = mAtomNumbers;
+            mAtomNumbers = Vectors.zeros(aAtomTypes.length);
+            IDoubleIterator it = oAtomNumbers.iterator();
+            IDoubleSetIterator si = mAtomNumbers.setIterator();
+            while (it.hasNext()) si.nextAndSet(it.next());
+        }
+        mKey2Type.clear();
+        int rType = 0;
+        for (String tKey : mAtomTypes) {
+            ++rType;
+            mKey2Type.put(tKey, rType);
+        }
+        return this;
+    }
     
     public XDATCAR setCartesian() {
         if (mIsCartesian) return this;
@@ -168,30 +223,45 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     @Override public XDATCAR copy() {
         List<IMatrix> rDirects = new ArrayList<>(mDirects.size());
         for (IMatrix subDirect : mDirects) rDirects.add(subDirect.copy());
-        return new XDATCAR(mDataName, mBox.copy(), mBoxScale, Arrays.copyOf(mAtomTypes, mAtomTypes.length), mAtomNumbers.copy(), rDirects, mIsCartesian);
+        return new XDATCAR(mDataName, mBox.copy(), mBoxScale, POSCAR.copyTypes(mAtomTypes), mAtomNumbers.copy(), rDirects, mIsCartesian, POSCAR.copyIDs(mIDs));
     }
     
     /// 创建 XDATCAR
     /** 从 IAtomData 来创建，对于 XDATCAR 可以支持容器的 aAtomData */
-    public static XDATCAR fromAtomData(IAtomData aAtomData) {return fromAtomData(aAtomData, (aAtomData instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomData).atomTypes() : ZL_STR);}
+    public static XDATCAR fromAtomData(IAtomData aAtomData) {return fromAtomData(aAtomData, (aAtomData instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomData).atomTypes() : null);}
     public static XDATCAR fromAtomData(IAtomData aAtomData, String... aAtomTypes) {return fromAtomData_(aAtomData, 1, aAtomTypes);}
-    public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList, (aAtomDataList instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomDataList).atomTypes() : ZL_STR);}
+    public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList, (aAtomDataList instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomDataList).atomTypes() : null);}
     public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, String... aAtomTypes) {return fromAtomDataList_(aAtomDataList, 1, aAtomTypes);}
-    public static XDATCAR fromAtomDataList(Collection<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList, (aAtomDataList instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomDataList).atomTypes() : ZL_STR);}
+    public static XDATCAR fromAtomDataList(Collection<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList, (aAtomDataList instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomDataList).atomTypes() : null);}
     public static XDATCAR fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, String... aAtomTypes) {return fromAtomDataList_(aAtomDataList, aAtomDataList.size(), aAtomTypes);}
     static XDATCAR fromAtomData_(IAtomData aAtomData, int aInitSize, String[] aAtomTypes) {
-        if (aAtomTypes == null) aAtomTypes = ZL_STR;
-        if (aAtomTypes.length > 0) aAtomTypes = Arrays.copyOf(aAtomTypes, aAtomTypes.length);
-        // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
-        if (aAtomData instanceof IVaspCommonData) {
-            // IVaspCommonData 则直接获取即可（专门优化，保留完整模拟盒信息等）
-            IVaspCommonData tAtomData = (IVaspCommonData)aAtomData;
-            return new XDATCAR(tAtomData.dataName(), tAtomData.vaspBox().copy(), tAtomData.vaspBoxScale(), aAtomTypes, tAtomData.atomNumbers().copy(), getDirect_(aAtomData, tAtomData.isCartesian(), tAtomData.vaspBoxScale()), aInitSize, tAtomData.isCartesian());
+        // 根据输入的 aAtomData 类型来具体判断需要如何获取 Direct
+        if (aAtomData instanceof POSCAR) {
+            // POSCAR 则直接获取即可（专门优化，保留完整模拟盒信息等）
+            POSCAR tPOSCAR = (POSCAR)aAtomData;
+            return new XDATCAR(tPOSCAR.dataName(), tPOSCAR.vaspBox().copy(), tPOSCAR.vaspBoxScale(), POSCAR.copyTypes(aAtomTypes), tPOSCAR.atomNumbers().copy(), tPOSCAR.direct().copy(), aInitSize, tPOSCAR.isCartesian(), POSCAR.copyIDs(tPOSCAR.ids()));
+        } else
+        if (aAtomData instanceof XDATCAR) {
+            // XDATCAR 则直接获取即可（专门优化，保留完整模拟盒信息等）
+            return fromAtomData_(((XDATCAR)aAtomData).defaultFrame(), aInitSize, aAtomTypes);
         } else {
-            // 一般的情况，需要构造一下 AtomNumbers
-            IVector rAtomNumbers = Vectors.zeros(aAtomData.atomTypeNum());
-            for (IAtom tAtom : aAtomData.asList()) rAtomNumbers.increment_(tAtom.type()-1);
-            return new XDATCAR(POSCAR.DEFAULT_DATA_NAME, Matrices.diag(aAtomData.box().data()), 1.0, aAtomTypes, rAtomNumbers, getDirect_(aAtomData, true, 1.0), aInitSize, true);
+            // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
+            IVector rIDs = Vectors.zeros(aAtomData.atomNum());
+            int tAtomTypeNum = aAtomData.atomTypeNum();
+            IVector rAtomNumbers = Vectors.zeros(tAtomTypeNum);
+            IMatrix rDirect = Matrices.zeros(aAtomData.atomNum(), 3);
+            int tIdx = 0;
+            for (int tTypeMM = 0; tTypeMM < tAtomTypeNum; ++tTypeMM) {
+                for (IAtom tAtom : aAtomData.asList()) if (tAtom.type() == tTypeMM+1) {
+                    rAtomNumbers.increment_(tTypeMM);
+                    rDirect.set(tIdx, 0, tAtom.x());
+                    rDirect.set(tIdx, 1, tAtom.y());
+                    rDirect.set(tIdx, 2, tAtom.z());
+                    rIDs.set(tIdx, tAtom.id());
+                    ++tIdx;
+                }
+            }
+            return new XDATCAR(POSCAR.DEFAULT_DATA_NAME, Matrices.diag(aAtomData.box().data()), 1.0, POSCAR.copyTypes(aAtomTypes), rAtomNumbers, rDirect, aInitSize, true, rIDs);
         }
     }
     static XDATCAR fromAtomDataList_(Iterable<? extends IAtomData> aAtomDataList, int aInitSize, String[] aAtomTypes) {
@@ -205,34 +275,20 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         return rXDATCAR;
     }
     
-    static IMatrix getDirect_(IAtomData aAtomData, boolean aIsCartesian, double aBoxScale) {
-        // 根据输入的 aAtomData 类型来具体判断需要如何获取 Direct
-        if (aAtomData instanceof POSCAR) {
-            // POSCAR 则直接获取即可（专门优化，保留完整模拟盒信息等）
-            POSCAR tPOSCAR = (POSCAR)aAtomData;
-            return refDirect_(tPOSCAR.vaspBox(), tPOSCAR.vaspBoxScale(), aBoxScale, tPOSCAR.direct(), tPOSCAR.isCartesian(), aIsCartesian).copy();
-        } else
-        if (aAtomData instanceof XDATCAR) {
-            // XDATCAR 则直接获取即可（专门优化，保留完整模拟盒信息等）
-            return getDirect_(((XDATCAR)aAtomData).defaultFrame(), aIsCartesian, aBoxScale);
-        } else {
-            // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
-            XYZ tBox = XYZ.toXYZ(aAtomData.box());
-            
-            int tAtomTypeNum = aAtomData.atomTypeNum();
-            IMatrix rDirect = Matrices.zeros(aAtomData.atomNum(), 3);
-            int tIdx = 0;
-            for (int tTypeMM = 0; tTypeMM < tAtomTypeNum; ++tTypeMM) {
-                for (IAtom tAtom : aAtomData.asList()) if (tAtom.type() == tTypeMM+1) {
-                    rDirect.set(tIdx, 0, aIsCartesian ? tAtom.x() : tAtom.x()/tBox.mX);
-                    rDirect.set(tIdx, 1, aIsCartesian ? tAtom.y() : tAtom.y()/tBox.mY);
-                    rDirect.set(tIdx, 2, aIsCartesian ? tAtom.z() : tAtom.z()/tBox.mZ);
-                    ++tIdx;
-                }
-            }
-            rDirect.div2this(aBoxScale);
-            return rDirect;
+    IMatrix getDirect_(IAtomData aAtomData) {
+        // 这里只考虑一般的情况，这里直接遍历 atoms 来创建，
+        // 这里直接按照 mIDs 的顺序进行排序，不考虑 type 发生改变的情况
+        XYZ tBox = XYZ.toXYZ(aAtomData.box());
+        int tAtomNum = aAtomData.atomNum();
+        IMatrix rDirect = Matrices.zeros(tAtomNum, 3);
+        for (IAtom tAtom : aAtomData.asList()) {
+            int tIdx = mId2Index==null ? tAtom.id()-1 : mId2Index.get(tAtom.id());
+            rDirect.set(tIdx, 0, mIsCartesian ? tAtom.x() : tAtom.x()/tBox.mX);
+            rDirect.set(tIdx, 1, mIsCartesian ? tAtom.y() : tAtom.y()/tBox.mY);
+            rDirect.set(tIdx, 2, mIsCartesian ? tAtom.z() : tAtom.z()/tBox.mZ);
         }
+        rDirect.div2this(mBoxScale);
+        return rDirect;
     }
     static IMatrix refDirect_(final IMatrix aBox, double aSrcBoxScale, double aToBoxScale, final IMatrix aDirect, boolean aSrcCartesian, boolean aToCartesian) {
         if (aSrcCartesian==aToCartesian && MathEX.Code.numericEqual(aSrcBoxScale, aToBoxScale)) return aDirect;
@@ -336,7 +392,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
             // 跳过下一个的 Direct configuration，如果没有则终止循环
             tLine = aReader.readLine(); if (tLine == null) break;
         }
-        return new XDATCAR(aDataName, aBox, aBoxScale, aAtomTypes, aAtomNumbers, rDirects, aIsCartesian);
+        return new XDATCAR(aDataName, aBox, aBoxScale, aAtomTypes, aAtomNumbers, rDirects, aIsCartesian, null);
     }
     
     /**
@@ -355,7 +411,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
             tWriteln.writeln(String.format("    %16.10g    %16.10g    %16.10g", mBox.get(0, 0), mBox.get(0, 1), mBox.get(0, 2)));
             tWriteln.writeln(String.format("    %16.10g    %16.10g    %16.10g", mBox.get(1, 0), mBox.get(1, 1), mBox.get(1, 2)));
             tWriteln.writeln(String.format("    %16.10g    %16.10g    %16.10g", mBox.get(2, 0), mBox.get(2, 1), mBox.get(2, 2)));
-            if (mAtomTypes.length!=0) {
+            if (mAtomTypes!=null && mAtomTypes.length!=0) {
             tWriteln.writeln(String.join(" ", AbstractCollections.map(mAtomTypes, type -> String.format("%6s", type))));
             }
             tWriteln.writeln(String.join(" ", AbstractCollections.map(mAtomNumbers.iterable(), number -> String.format("%6d", number.intValue()))));

@@ -134,15 +134,15 @@ public class Ising2D extends AbstractThreadPool<ParforThreadPool> {
                 int j = tRNG.nextInt(tColNum);
                 // 先考虑周期边界条件
                 int ipp = i + 1; if (ipp >= tRowNum) ipp -= tRowNum;
-                int inn = i - 1; if (inn <  0      ) inn += tRowNum;
+                int imm = i - 1; if (imm <  0      ) imm += tRowNum;
                 int jpp = j + 1; if (jpp >= tColNum) jpp -= tColNum;
-                int jnn = j - 1; if (jnn <  0      ) jnn += tColNum;
+                int jmm = j - 1; if (jmm <  0      ) jmm += tColNum;
                 // 获取周围自旋值
                 double tSpinC = tSpins.get(i  , j  );
-                double tSpinL = tSpins.get(inn, j  );
+                double tSpinL = tSpins.get(imm, j  );
                 double tSpinR = tSpins.get(ipp, j  );
                 double tSpinU = tSpins.get(i  , jpp);
-                double tSpinD = tSpins.get(i  , jnn);
+                double tSpinD = tSpins.get(i  , jmm);
                 // 计算翻转前后能量差
                 double dE = -tSpinC * mH;
                 dE += tSpinC*tSpinL * mJ;
