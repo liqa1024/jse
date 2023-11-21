@@ -3,10 +3,12 @@ package jtool.code;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import jtool.Main;
+import jtool.atom.AbstractXYZ;
 import jtool.atom.IXYZ;
 import jtool.code.collection.AbstractCollections;
 import jtool.iofile.IIOFiles;
 import jtool.iofile.IOFiles;
+import jtool.math.AbstractComplexDouble;
 import jtool.math.IComplexDouble;
 import jtool.math.MathEX;
 import jtool.parallel.CompletedFuture;
@@ -35,19 +37,15 @@ public class CS {
     
     public final static Object NULL = null;
     
-    public final static IXYZ BOX_ONE  = new IXYZ() {
+    public final static IXYZ BOX_ONE  = new AbstractXYZ() {
         @Override public double x() {return 1.0;}
         @Override public double y() {return 1.0;}
         @Override public double z() {return 1.0;}
-        /** print */
-        @Override public String toString() {return "(1.0, 1.0, 1.0)";}
     };
-    public final static IXYZ BOX_ZERO = new IXYZ() {
+    public final static IXYZ BOX_ZERO = new AbstractXYZ() {
         @Override public double x() {return 0.0;}
         @Override public double y() {return 0.0;}
         @Override public double z() {return 0.0;}
-        /** print */
-        @Override public String toString() {return "(0.0, 0.0, 0.0)";}
     };
     
     public final static String WORKING_DIR = ".temp/%n/";
@@ -486,11 +484,9 @@ public class CS {
     
     public final static double PI = Math.PI;
     public final static double E = Math.E;
-    public final static IComplexDouble i1 = new IComplexDouble() {
+    public final static IComplexDouble i1 = new AbstractComplexDouble() {
         @Override public double real() {return 0.0;}
         @Override public double imag() {return 1.0;}
-        /** print */
-        @Override public String toString() {return "i";}
     };
     /** Boltzmann constant */
     public final static double K_B = 0.0000861733262; // eV / K

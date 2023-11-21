@@ -11,12 +11,14 @@ poscar = POSCAR.fromAtomData(data);
 poscar.write('lmp/.temp/0.poscar');
 Lmpdat.fromAtomData(poscar).write('lmp/.temp/0.lmpdat');
 
-println('10 -> '+poscar.pickAtom(10).setType(5).index());
+atom = poscar.pickAtom(10);
+println("10 -> ${atom.setType(5).index()}; atom: ${atom}");
 poscar.write('lmp/.temp/1.poscar');
 Lmpdat.fromAtomData(poscar).write('lmp/.temp/1.lmpdat');
 
 
-println('50 -> '+poscar.pickAtom(50).setType(2).index());
+atom = poscar.pickAtom(50);
+println("50 -> ${atom.setType(2).index()}; atom: ${atom}");
 poscar.write('lmp/.temp/2.poscar');
 Lmpdat.fromAtomData(poscar).write('lmp/.temp/2.lmpdat');
 

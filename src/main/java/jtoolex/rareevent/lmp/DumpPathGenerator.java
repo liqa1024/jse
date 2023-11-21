@@ -172,7 +172,7 @@ public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathG
         }
         return new AtomData(new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(final int index) {
-                return new IAtom() {
+                return new AbstractAtom() {
                     @Override public double x() {return rData.get(index, TYPE_XYZ_X_COL);}
                     @Override public double y() {return rData.get(index, TYPE_XYZ_Y_COL);}
                     @Override public double z() {return rData.get(index, TYPE_XYZ_Z_COL);}

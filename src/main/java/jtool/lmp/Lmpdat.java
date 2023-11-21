@@ -130,7 +130,7 @@ public class Lmpdat extends AbstractSettableAtomData {
     @Override public ISettableAtom pickAtom(final int aIdx) {
         // 注意如果是斜方的模拟盒则不能获取到正交的原子数据
         if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("atoms is temporarily support NORMAL Box only");
-        return new ISettableAtom() {
+        return new AbstractSettableAtom() {
             @Override public double x() {return mAtomData.get(aIdx, STD_X_COL)-mBox.xlo();}
             @Override public double y() {return mAtomData.get(aIdx, STD_Y_COL)-mBox.ylo();}
             @Override public double z() {return mAtomData.get(aIdx, STD_Z_COL)-mBox.zlo();}
@@ -141,6 +141,7 @@ public class Lmpdat extends AbstractSettableAtomData {
             @Override public double vx() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VX_COL);}
             @Override public double vy() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VY_COL);}
             @Override public double vz() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VZ_COL);}
+            @Override public boolean hasVelocities() {return mVelocities!=null;}
             
             @Override public ISettableAtom setX(double aX) {mAtomData.set(aIdx, STD_X_COL, aX+mBox.xlo()); return this;}
             @Override public ISettableAtom setY(double aY) {mAtomData.set(aIdx, STD_Y_COL, aY+mBox.ylo()); return this;}

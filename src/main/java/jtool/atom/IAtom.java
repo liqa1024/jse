@@ -13,4 +13,5 @@ public interface IAtom extends IXYZ {
     default double vx() {return 0.0;}
     default double vy() {return 0.0;}
     default double vz() {return 0.0;}
+    default boolean hasVelocities() {return false;}
 }

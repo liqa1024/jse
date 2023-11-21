@@ -187,7 +187,7 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
         return new SettableAtomData(new AbstractRandomAccessList<ISettableAtom>() {
             private final @Unmodifiable BiMap<Integer, Integer> mIndex2Id = mId2Index.inverse();
             @Override public ISettableAtom get(final int index) {
-                return new ISettableAtom() {
+                return new AbstractSettableAtom() {
                     @Override public double x() {return aData.get(index, TYPE_XYZ_X_COL);}
                     @Override public double y() {return aData.get(index, TYPE_XYZ_Y_COL);}
                     @Override public double z() {return aData.get(index, TYPE_XYZ_Z_COL);}

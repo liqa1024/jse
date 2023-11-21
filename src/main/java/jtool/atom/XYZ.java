@@ -7,7 +7,7 @@ import jtool.math.vector.IVector;
  * {@link IXYZ} 的一般实现，考虑到效率这里可以直接访问内部成员，从而避免多态函数调用的损失
  * @author liqa
  */
-public final class XYZ implements IXYZ {
+public final class XYZ extends AbstractXYZ {
     /**
      * Convert IXYZ to XYZ to optimise, result should be read only!
      * @author liqa
@@ -43,9 +43,6 @@ public final class XYZ implements IXYZ {
         mX = aXYZ.mX; mY = aXYZ.mY; mZ = aXYZ.mZ;
         return this;
     }
-    
-    /** print */
-    @Override public String toString() {return String.format("(%.4g, %.4g, %.4g)", mX, mY, mZ);}
     
     
     @Override public double x() {return mX;}

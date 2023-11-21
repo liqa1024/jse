@@ -25,7 +25,7 @@ public class AbstractAtoms {
     public static IAtomData FCC(final double aCellSize, final int aReplicateX, final int aReplicateY, final int aReplicateZ) {
         return new AtomData(new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(final int index) {
-                return new IAtom() {
+                return new AbstractAtom() {
                     @Override public double x() {
                         int i = index/4/aReplicateZ/aReplicateY; double tX = aCellSize*i;
                         switch (index%4) {
@@ -74,7 +74,7 @@ public class AbstractAtoms {
     public static IAtomData BCC(final double aCellSize, final int aReplicateX, final int aReplicateY, final int aReplicateZ) {
         return new AtomData(new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(final int index) {
-                return new IAtom() {
+                return new AbstractAtom() {
                     @Override public double x() {int i = index/2/aReplicateZ/aReplicateY; double tX = aCellSize*i; return (index%2==1) ? tX + aCellSize*0.5 : tX;}
                     @Override public double y() {int j = index/2/aReplicateZ%aReplicateY; double tY = aCellSize*j; return (index%2==1) ? tY + aCellSize*0.5 : tY;}
                     @Override public double z() {int k = index/2%aReplicateZ            ; double tZ = aCellSize*k; return (index%2==1) ? tZ + aCellSize*0.5 : tZ;}
@@ -104,7 +104,7 @@ public class AbstractAtoms {
         final double tCellSizeY = aCellSize * SQRT3;
         return new AtomData(new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(final int index) {
-                return new IAtom() {
+                return new AbstractAtom() {
                     @Override public double x() {
                         int i = index/4/aReplicateZ/aReplicateY; double tX = aCellSize  *i;
                         switch (index%4) {
@@ -162,7 +162,7 @@ public class AbstractAtoms {
                 final int tLatticeNum = aLattice.atomNum();
                 final IAtom tAtom = aLattice.pickAtom(index%tLatticeNum);
                 final int tRepTotal = index/tLatticeNum;
-                return new IAtom() {
+                return new AbstractAtom() {
                     @Override public double x() {int i = tRepTotal/aReplicateZ/aReplicateY; double tX = aLattice.box().x() * i; return tX + tAtom.x();}
                     @Override public double y() {int j = tRepTotal/aReplicateZ%aReplicateY; double tY = aLattice.box().y() * j; return tY + tAtom.y();}
                     @Override public double z() {int k = tRepTotal%aReplicateZ            ; double tZ = aLattice.box().z() * k; return tZ + tAtom.z();}
@@ -174,7 +174,7 @@ public class AbstractAtoms {
             @Override public int size() {
                 return aLattice.atomNum()*aReplicateX*aReplicateY*aReplicateZ;
             }
-        }, aLattice.atomTypeNum(), new IXYZ() {
+        }, aLattice.atomTypeNum(), new AbstractXYZ() {
             @Override public double x() {return aLattice.box().x() * aReplicateX;}
             @Override public double y() {return aLattice.box().y() * aReplicateY;}
             @Override public double z() {return aLattice.box().z() * aReplicateZ;}

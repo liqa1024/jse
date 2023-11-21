@@ -125,7 +125,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
                 if (tKey.equals("y") || tKey.equals("ys") || tKey.equals("yu") || tKey.equals("ysu")) {mKeyY = tKey;}
                 if (tKey.equals("z") || tKey.equals("zs") || tKey.equals("zu") || tKey.equals("zsu")) {mKeyZ = tKey;}
             }
-            mHasVelocities = (mAtomData.containsHead("vx") && mAtomData.containsHead("vy") && mAtomData.containsHead("vz"));
+            mHasVelocities = (mAtomData.containsHead("vx") || mAtomData.containsHead("vy") || mAtomData.containsHead("vz"));
             
             // 对于 dump，mAtomTypeNum 只能手动遍历统计
             int tAtomTypeNum = 1;
@@ -308,7 +308,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
         /** AbstractAtomData stuffs */
         @Override public boolean hasVelocities() {return mHasVelocities;}
         @Override public ISettableAtom pickAtom(final int aIdx) {
-            return new ISettableAtom() {
+            return new AbstractSettableAtom() {
                 @Override public double x() {if (mKeyX==null) throw new RuntimeException("No X data in this Lammpstrj"); return getX_(aIdx);}
                 @Override public double y() {if (mKeyY==null) throw new RuntimeException("No Y data in this Lammpstrj"); return getY_(aIdx);}
                 @Override public double z() {if (mKeyZ==null) throw new RuntimeException("No Z data in this Lammpstrj"); return getZ_(aIdx);}
@@ -322,6 +322,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
                 @Override public double vx() {return mAtomData.containsHead("vx") ? mAtomData.get(aIdx, "vx") : 0.0;}
                 @Override public double vy() {return mAtomData.containsHead("vy") ? mAtomData.get(aIdx, "vy") : 0.0;}
                 @Override public double vz() {return mAtomData.containsHead("vz") ? mAtomData.get(aIdx, "vz") : 0.0;}
+                @Override public boolean hasVelocities() {return mHasVelocities;}
                 
                 @Override public ISettableAtom setX(double aX) {if (mKeyX==null) throw new RuntimeException("No X data in this Lammpstrj"); setX_(aIdx, aX); return this;}
                 @Override public ISettableAtom setY(double aY) {if (mKeyY==null) throw new RuntimeException("No Y data in this Lammpstrj"); setY_(aIdx, aY); return this;}

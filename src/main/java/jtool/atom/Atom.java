@@ -4,7 +4,7 @@ package jtool.atom;
  * 用于一般使用的原子，不含有速度属性减少一定的内存占用
  * @author liqa
  */
-public class Atom implements ISettableAtom {
+public class Atom extends AbstractSettableAtom {
     public double mX, mY, mZ;
     public int mID, mType;
     

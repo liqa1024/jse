@@ -167,7 +167,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         // 暂时没功夫研究矩阵表示的晶格在斜方情况下原子坐标是怎么样的
         // 并且这里还需要将其转换成正交的情况，因为参数计算相关优化都需要在正交情况下实现
         if (!mIsDiagBox) throw new RuntimeException("atoms is temporarily support Diagonal Box only");
-        return new ISettableAtom() {
+        return new AbstractSettableAtom() {
             private int mIdx = aIdx;
             @Override public double x() {return (mIsCartesian ? mDirect.get(mIdx, 0) : mDirect.get(mIdx, 0)*mBox.get(0, 0)) * mBoxScale;}
             @Override public double y() {return (mIsCartesian ? mDirect.get(mIdx, 1) : mDirect.get(mIdx, 1)*mBox.get(1, 1)) * mBoxScale;}

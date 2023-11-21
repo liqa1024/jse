@@ -6,7 +6,7 @@ package jtool.math;
  * 为了使用方便这里不使用常规结构使用的命名规范
  * @author liqa
  */
-public final class ComplexDouble implements ISettableComplexDouble {
+public final class ComplexDouble extends AbstractSettableComplexDouble {
     public double mReal;
     public double mImag;
     public ComplexDouble(double aReal, double aImag) {mReal = aReal; mImag = aImag;}
@@ -20,9 +20,6 @@ public final class ComplexDouble implements ISettableComplexDouble {
     @Override public void setReal(double aReal) {mReal = aReal;}
     @Override public void setImag(double aImag) {mImag = aImag;}
     @Override public void setComplexDouble(double aReal, double aImag) {mReal = aReal; mImag = aImag;}
-    
-    /** print */
-    @Override public String toString() {return Double.compare(mImag, 0.0)>=0 ? String.format("%.4g + %.4gi", mReal, mImag) : String.format("%.4g - %.4gi", mReal, -mImag);}
     
     
     /** 提供一些常见的复数运算 */
