@@ -1,7 +1,7 @@
 package test.ffs
 
 import jtool.code.UT
-import jtool.rareevent.ForwardFluxSampling
+import jtoolex.rareevent.ForwardFluxSampling
 import rareevent.AsymmetryWalk
 
 

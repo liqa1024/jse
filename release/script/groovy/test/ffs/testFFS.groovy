@@ -3,7 +3,7 @@ package test.ffs
 import jtool.code.UT
 import jtool.math.vector.Vectors
 import jtool.plot.Plotters
-import jtool.rareevent.ForwardFluxSampling
+import jtoolex.rareevent.ForwardFluxSampling
 import rareevent.RandomWalk
 
 

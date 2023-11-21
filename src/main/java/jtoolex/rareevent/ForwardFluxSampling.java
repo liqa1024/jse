@@ -38,7 +38,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     private int mStep1Mul; // 过程 1 需要的点的数目的倍数，更高的值可以保证结果有更好的统计性能
     
     private final int mN; // 界面数目-1，即 n
-    private Random mRNG = RANDOM; // 独立的随机数生成器
+    private Random mRNG = RANDOM; // 独立的随机数生成器，随机数生成在这里不是性能瓶颈，并且也较难在并行环境下控制结果一致，因此不使用线程独立的随机数生成器
     
     private int mMaxPathNum; // 用来限制统计时间，（第二个过程）每步统计的最大路径数目，默认为 100 * N0
     private double mCutoff; // 用来将过低权重的点截断，将更多的资源用于统计高权重的点

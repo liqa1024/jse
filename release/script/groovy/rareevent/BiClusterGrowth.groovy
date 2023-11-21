@@ -1,8 +1,8 @@
 package rareevent
 
 import jtool.math.MathEX
-import jtool.rareevent.IParameterCalculator
-import jtool.rareevent.IPathGenerator
+import jtoolex.rareevent.IParameterCalculator
+import jtoolex.rareevent.IPathGenerator
 
 
 /**

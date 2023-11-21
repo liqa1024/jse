@@ -5,8 +5,8 @@ import jtool.jobs.StepJobManager
 import jtool.math.table.Tables
 import jtool.math.vector.Vectors
 import jtool.plot.Plotters
-import jtool.rareevent.BufferedFullPathGenerator
-import jtool.rareevent.ForwardFluxSampling
+import jtoolex.rareevent.BufferedFullPathGenerator
+import jtoolex.rareevent.ForwardFluxSampling
 import rareevent.NoiseClusterGrowth
 
 
@@ -16,8 +16,9 @@ import rareevent.NoiseClusterGrowth
 
 int N0 = 100;
 def biCal = new NoiseClusterGrowth.ParameterCalculator();
+int threadNum = 12;
 
-new StepJobManager('testFFS3c', 0)
+new StepJobManager('testFFS3c', 1)
 .init {println("0. 绘制 lambda 随时间变化曲线");}
 .doJob {
     def biPathGen = new NoiseClusterGrowth.PathGenerator(2, 0.00045, 0.00050, 0.50, -0.10, 1, 40);
@@ -74,7 +75,7 @@ new StepJobManager('testFFS3c', 0)
     def kRef = Vectors.zeros(lambda.size());
     
     def biPathGen = new NoiseClusterGrowth.PathGenerator(10, 0.00045, 0.00050, 0.50, -0.10);
-    def FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setMaxPathNum(N0*1000);
+    def FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     kNoise[0] = FFS.getK0();
@@ -90,7 +91,7 @@ new StepJobManager('testFFS3c', 0)
     FFS.shutdown();
     
     biPathGen = new NoiseClusterGrowth.PathGenerator(10, 0.00045, 0.00050, 0.10, -0.10);
-    FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setMaxPathNum(N0*1000);
+    FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     kRef[0] = FFS.getK0();
@@ -126,7 +127,7 @@ new StepJobManager('testFFS3c', 0)
     def kRef = Vectors.zeros(lambda.size());
     
     def biPathGen = new NoiseClusterGrowth.PathGenerator(100, 0.00045, 0.00050, 0.50, -0.10);
-    def FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*100000);
+    def FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*100000);
     UT.Timer.tic();
     FFS.run();
     k1[0] = FFS.getK0();
@@ -142,7 +143,7 @@ new StepJobManager('testFFS3c', 0)
     FFS.shutdown();
     
     biPathGen = new NoiseClusterGrowth.PathGenerator(2, 0.00045, 0.00050, 0.50, -0.10, 100);
-    FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*100000);
+    FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*100000);
     UT.Timer.tic();
     FFS.run();
     k100[0] = FFS.getK0();
@@ -158,7 +159,7 @@ new StepJobManager('testFFS3c', 0)
     FFS.shutdown();
     
     biPathGen = new NoiseClusterGrowth.PathGenerator(2, 0.00045, 0.00050, 0.50, -0.10, 1000);
-    FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*1000);
+    FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     k1000[0] = FFS.getK0();
@@ -174,7 +175,7 @@ new StepJobManager('testFFS3c', 0)
     FFS.shutdown();
     
     biPathGen = new NoiseClusterGrowth.PathGenerator(2, 0.00045, 0.00050, 0.50, -0.10, 10000);
-    FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*1000);
+    FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     k10000[0] = FFS.getK0();
@@ -191,7 +192,7 @@ new StepJobManager('testFFS3c', 0)
     
     
     biPathGen = new NoiseClusterGrowth.PathGenerator(100, 0.00045, 0.00050, 0.10, -0.10);
-    FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setMaxPathNum(N0*1000);
+    FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     kRef[0] = FFS.getK0();
@@ -233,7 +234,7 @@ new StepJobManager('testFFS3c', 0)
     def kNone = Vectors.zeros(lambda.size());
     
     def biPathGen = new NoiseClusterGrowth.PathGenerator(2, 0.00050, 0.00050, 0.50, -0.10, 5000);
-    def FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(3).setMaxPathNum(N0*1000);
+    def FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(3).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     k3[0] = FFS.getK0();
@@ -249,7 +250,7 @@ new StepJobManager('testFFS3c', 0)
     FFS.shutdown();
     
     biPathGen = new NoiseClusterGrowth.PathGenerator(2, 0.00050, 0.00050, 0.50, -0.10, 5000);
-    FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*1000);
+    FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     k5[0] = FFS.getK0();
@@ -265,7 +266,7 @@ new StepJobManager('testFFS3c', 0)
     FFS.shutdown();
     
     biPathGen = new NoiseClusterGrowth.PathGenerator(2, 0.00050, 0.00050, 0.50, -0.10, 5000);
-    FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(8).setMaxPathNum(N0*1000);
+    FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(8).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     k8[0] = FFS.getK0();
@@ -281,7 +282,7 @@ new StepJobManager('testFFS3c', 0)
     FFS.shutdown();
     
     biPathGen = new NoiseClusterGrowth.PathGenerator(2, 0.00050, 0.00050, 0.50, -0.10, 5000);
-    FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setMaxPathNum(N0*1000);
+    FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     kNone[0] = FFS.getK0();
@@ -321,7 +322,7 @@ new StepJobManager('testFFS3c', 0)
     def kRef  = Vectors.zeros(lambda.size());
     
     def biPathGen = new NoiseClusterGrowth.PathGenerator(2, 0.00040, 0.00050, 0.50, -0.10, 1000);
-    def FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*1000);
+    def FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     kGap[0] = FFS.getK0();
@@ -337,7 +338,7 @@ new StepJobManager('testFFS3c', 0)
     FFS.shutdown();
     
     biPathGen = new NoiseClusterGrowth.PathGenerator(100, 0.00040, 0.00050, 0.50, -0.10);
-    FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0*10).setStep1Mul(10).setMaxPathNum(N0*1000);
+    FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0*10).setStep1Mul(10).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     kBigN[0] = FFS.getK0();
@@ -354,7 +355,7 @@ new StepJobManager('testFFS3c', 0)
     
     def lambda2 = (40..200).step(5);
     biPathGen = new NoiseClusterGrowth.PathGenerator(100, 0.00040, 0.00050, 0.50, -0.10);
-    FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda2, N0).setMaxPathNum(N0*1000);
+    FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda2, N0).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     kBigL[0] = FFS.getK0();
@@ -371,7 +372,7 @@ new StepJobManager('testFFS3c', 0)
     
     
     biPathGen = new NoiseClusterGrowth.PathGenerator(100, 0.00040, 0.00050, 0.10, -0.10);
-    FFS = new ForwardFluxSampling<>(biPathGen, biCal, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*1000);
+    FFS = new ForwardFluxSampling<>(biPathGen, biCal, threadNum, 10, lambda, N0).setPruningProb(0.5).setPruningThreshold(5).setMaxPathNum(N0*1000);
     UT.Timer.tic();
     FFS.run();
     kRef[0] = FFS.getK0();
