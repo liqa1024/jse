@@ -1,8 +1,10 @@
 package jtool.parallel;
 
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -18,8 +20,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * 当线程数为 1 时同一个实例的操作不会加锁 </p>
  */
 public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
+    /** 控制 parfor 的模式，在竞争模式下不同线程分配到的任务是不一定的，而关闭后是一定的，有时需要保证重复运行结果一致 */
+    @VisibleForTesting public static boolean DEFAULT_IS_COMPETITIVE = true;
+    
     private final ThreadLocal<Integer> mThreadID = ThreadLocal.withInitial(() -> -1); // 使用 ThreadLocal 存储每个线程对应的 id，直接避免线程安全的问题
     private final Lock @Nullable[] mLocks; // 用来在并行时给每个线程独立加锁，保证每个线程独立写入的操作的可见性
+    private final boolean mIsCompetitive;
     
     /** IThreadPoolContainer stuffs */
     private volatile boolean mDead = false;
@@ -28,7 +34,7 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
     @Override public boolean isShutdown() {return mDead;}
     @Override public boolean isTerminated() {return mDead;}
     
-    public ParforThreadPool(int aThreadNum) {
+    public ParforThreadPool(int aThreadNum, boolean aIsCompetitive) {
         super(aThreadNum<=1 ? SERIAL_EXECUTOR : newPool(aThreadNum));
         int tThreadNum = Math.max(aThreadNum, 1);
         if (tThreadNum == 1) mLocks = null;
@@ -36,7 +42,10 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
             mLocks = new Lock[tThreadNum];
             for (int i = 0; i < tThreadNum; ++i) mLocks[i] = new ReentrantLock();
         }
+        mIsCompetitive = aIsCompetitive;
     }
+    public ParforThreadPool(int aThreadNum) {this(aThreadNum, DEFAULT_IS_COMPETITIVE);}
+    
     // 提供一些额外接口
     public final int currentThreadID() {return mThreadID.get();}
     
@@ -60,31 +69,52 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
             int tThreadNum = nThreads();
             // 获取错误，保留执行中的错误，并在任意一个线程发生错误时中断
             final AtomicReference<Throwable> tThrowable = new AtomicReference<>(null);
-            // 竞争获取任务
-            final int[] currentIdx = new int[] {0};
             final CountDownLatch tLatch = new CountDownLatch(tThreadNum);
-            for (int id = 0; id < tThreadNum; ++id) {
-                final int fId = id;
-                pool().execute(() -> {
-                    assert mLocks != null;
-                    mLocks[fId].lock(); // 加锁在结束后进行数据同步
-                    mThreadID.set(fId); // 注册 id
-                    while (true) {
-                        if (tThrowable.get() != null) break;
-                        int i;
-                        synchronized (currentIdx) {
-                            i = currentIdx[0];
-                            ++currentIdx[0];
+            if (mIsCompetitive) {
+                // 竞争获取任务
+                final AtomicInteger currentIdx = new AtomicInteger(0);
+                for (int id = 0; id < tThreadNum; ++id) {
+                    final int fId = id;
+                    pool().execute(() -> {
+                        assert mLocks != null;
+                        mLocks[fId].lock(); // 加锁在结束后进行数据同步
+                        mThreadID.set(fId); // 注册 id
+                        while (true) {
+                            if (tThrowable.get() != null) break;
+                            int i, ipp;
+                            // 采用 CAS 自旋锁来避免同步（虽然简单测试下来都没有什么性能损失）
+                            do {
+                                i = currentIdx.get();
+                                ipp = i + 1;
+                            } while (!currentIdx.compareAndSet(i, ipp));
+                            if (i >= aSize) break;
+                            try {aTaskWithID.run(i, fId);}
+                            catch (Throwable e) {tThrowable.set(e); break;}
                         }
-                        if (i >= aSize) break;
-                        try {aTaskWithID.run(i, fId);}
-                        catch (Throwable e) {tThrowable.set(e); break;}
-                    }
-                    mThreadID.remove(); // 结束后注销 id
-                    // 认为不会在其他地方抛出错误，因此不做额外的 try-finally 操作
-                    mLocks[fId].unlock();
-                    tLatch.countDown();
-                });
+                        mThreadID.remove(); // 结束后注销 id
+                        // 认为不会在其他地方抛出错误，因此不做额外的 try-finally 操作
+                        mLocks[fId].unlock();
+                        tLatch.countDown();
+                    });
+                }
+            } else {
+                // 非竞争获取任务
+                for (int id = 0; id < tThreadNum; ++id) {
+                    final int fId = id;
+                    pool().execute(() -> {
+                        assert mLocks != null;
+                        mLocks[fId].lock(); // 加锁在结束后进行数据同步
+                        mThreadID.set(fId); // 注册 id
+                        for (int i = fId; i < aSize; i += tThreadNum) {
+                            try {aTaskWithID.run(i, fId);}
+                            catch (Throwable e) {tThrowable.set(e); break;}
+                        }
+                        mThreadID.remove(); // 结束后注销 id
+                        // 认为不会在其他地方抛出错误，因此不做额外的 try-finally 操作
+                        mLocks[fId].unlock();
+                        tLatch.countDown();
+                    });
+                }
             }
             // 使用 CountDownLatch 来等待线程池工作完成
             try {tLatch.await();}
@@ -104,6 +134,8 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
     public void parwhile(final IParwhileChecker aChecker, final Runnable            aTask      ) {parwhile(aChecker, (threadID) -> aTask.run());}
     public void parwhile(final IParwhileChecker aChecker, final IParwhileTaskWithID aTaskWithID) {
         if (mDead) throw new RuntimeException("This ParforThreadPool is dead");
+        // 特殊情况直接退出
+        if (!aChecker.noBreak()) return;
         // 串行的情况
         if (nThreads() <= 1) {
             while (aChecker.noBreak()) aTaskWithID.run(0);
@@ -114,6 +146,7 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
             // 获取错误，保留执行中的错误，并在任意一个线程发生错误时中断
             final AtomicReference<Throwable> tThrowable = new AtomicReference<>(null);
             final CountDownLatch tLatch = new CountDownLatch(tThreadNum);
+            // parwhile 不存在不竞争的情况
             for (int id = 0; id < tThreadNum; ++id) {
                 final int fId = id;
                 pool().execute(() -> {
