@@ -57,6 +57,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     private double mPruningProb;
     /** 开始进行裁剪的阈值，用来消除噪声的影响，默认为 1（即不添加阈值） */
     private int mPruningThreshold;
+    /** 是否开启第一个过程的剪枝，对于某些特殊情况第一过程剪枝会导致统计出现系统偏差，默认开启 */
+    private boolean mStep1Pruning;
     
     /**
      * 创建一个通用的 FFS 运算器
@@ -100,6 +102,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         mMaxStatTimes = DEFAULT_MAX_STAT_TIMES;
         mPruningProb = 0.0;
         mPruningThreshold = 1;
+        mStep1Pruning = true;
         
         // 计算过程需要的量的初始化
         mN = mSurfaces.size() - 1;
@@ -121,6 +124,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     public ForwardFluxSampling<T> setMaxStatTimes(int aMaxStatTimes) {mMaxStatTimes = Math.max(1, aMaxStatTimes); return this;}
     public ForwardFluxSampling<T> setPruningProb(double aPruningProb) {mPruningProb = MathEX.Code.toRange(0.0, 1.0, aPruningProb); return this;}
     public ForwardFluxSampling<T> setPruningThreshold(int aPruningThreshold) {mPruningThreshold = Math.max(1, aPruningThreshold); return this;}
+    public ForwardFluxSampling<T> setStep1Pruning(boolean aStep1Pruning) {mStep1Pruning = aStep1Pruning; return this;}
+    public ForwardFluxSampling<T> disableStep1Pruning() {return setStep1Pruning(false);}
     /** 是否在关闭此实例时顺便关闭输入的生成器和计算器 */
     @Override public ForwardFluxSampling<T> setDoNotShutdown(boolean aDoNotShutdown) {mFullPathGenerator.setDoNotShutdown(aDoNotShutdown); return this;}
     /** 可以从中间开始，此时则会直接跳过第一步（对于合法输入）*/
@@ -302,7 +307,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                     return null;
                 }
                 // pruning，如果向前则有概率直接中断，这里直接 return null 来标记 pruning 的情况
-                if (mPruningProb > 0.0 && mPruningIndex < mSurfaces.size() && tLambda >= mSurfaces.get_(mPruningIndex)) {
+                if (mStep1Pruning && mPruningProb > 0.0 && mPruningIndex < mSurfaces.size() && tLambda >= mSurfaces.get_(mPruningIndex)) {
                     // 无论如何先增加 mPruningIndex
                     ++mPruningIndex;
                     // 并且更新耗时

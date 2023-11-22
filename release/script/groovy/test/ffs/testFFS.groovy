@@ -21,7 +21,7 @@ def lambda = 1..40;
 def k1 = Vectors.zeros(lambda.size());
 def k2 = Vectors.zeros(lambda.size());
 
-def FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, lambda, N0).setPruningProb(0.5).setPruningThreshold(3);
+def FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, lambda, N0).setPruningProb(0.5).setPruningThreshold(3).disableStep1Pruning();
 UT.Timer.tic();
 FFS.run();
 k1[0] = FFS.getK0();
