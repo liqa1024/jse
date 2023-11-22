@@ -23,7 +23,6 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
     /** 控制 parfor 的模式，在竞争模式下不同线程分配到的任务是不一定的，而关闭后是一定的，有时需要保证重复运行结果一致 */
     @VisibleForTesting public static boolean DEFAULT_IS_COMPETITIVE = true;
     
-    private final ThreadLocal<Integer> mThreadID = ThreadLocal.withInitial(() -> -1); // 使用 ThreadLocal 存储每个线程对应的 id，直接避免线程安全的问题
     private final Lock @Nullable[] mLocks; // 用来在并行时给每个线程独立加锁，保证每个线程独立写入的操作的可见性
     private final boolean mIsCompetitive;
     
@@ -46,8 +45,6 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
     }
     public ParforThreadPool(int aThreadNum) {this(aThreadNum, DEFAULT_IS_COMPETITIVE);}
     
-    // 提供一些额外接口
-    public final int currentThreadID() {return mThreadID.get();}
     
     /**
      * @author liqa
@@ -78,7 +75,6 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
                     pool().execute(() -> {
                         assert mLocks != null;
                         mLocks[fId].lock(); // 加锁在结束后进行数据同步
-                        mThreadID.set(fId); // 注册 id
                         while (true) {
                             if (tThrowable.get() != null) break;
                             int i, ipp;
@@ -91,7 +87,6 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
                             try {aTaskWithID.run(i, fId);}
                             catch (Throwable e) {tThrowable.set(e); break;}
                         }
-                        mThreadID.remove(); // 结束后注销 id
                         // 认为不会在其他地方抛出错误，因此不做额外的 try-finally 操作
                         mLocks[fId].unlock();
                         tLatch.countDown();
@@ -104,12 +99,10 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
                     pool().execute(() -> {
                         assert mLocks != null;
                         mLocks[fId].lock(); // 加锁在结束后进行数据同步
-                        mThreadID.set(fId); // 注册 id
                         for (int i = fId; i < aSize; i += tThreadNum) {
                             try {aTaskWithID.run(i, fId);}
                             catch (Throwable e) {tThrowable.set(e); break;}
                         }
-                        mThreadID.remove(); // 结束后注销 id
                         // 认为不会在其他地方抛出错误，因此不做额外的 try-finally 操作
                         mLocks[fId].unlock();
                         tLatch.countDown();
@@ -152,7 +145,6 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
                 pool().execute(() -> {
                     assert mLocks != null;
                     mLocks[fId].lock(); // 加锁在结束后进行数据同步
-                    mThreadID.set(fId); // 注册 id
                     while (true) {
                         if (tThrowable.get() != null) break;
                         try {
@@ -162,7 +154,6 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
                             tThrowable.set(e); break;
                         }
                     }
-                    mThreadID.remove(); // 结束后注销 id
                     // 认为不会在其他地方抛出错误，因此不做额外的 try-finally 操作
                     mLocks[fId].unlock();
                     tLatch.countDown();
