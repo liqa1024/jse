@@ -18,10 +18,10 @@ int N0 = 100;
 def biCal = new NoiseClusterGrowth.ParameterCalculator();
 int threadNum = 12;
 
-new StepJobManager('testFFS3c', 1)
+new StepJobManager('testFFS3c', 0)
 .init {println("0. 绘制 lambda 随时间变化曲线");}
 .doJob {
-    def biPathGen = new NoiseClusterGrowth.PathGenerator(2, 0.00045, 0.00050, 0.50, -0.10, 1, 40);
+    def biPathGen = new NoiseClusterGrowth.PathGenerator(2, 0.00045, 0.00050, 0.10, -0.10, 1, 40);
     
     def fullPath = new BufferedFullPathGenerator<>(biPathGen, biCal);
     def pi = fullPath.fullPathInit();

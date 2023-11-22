@@ -62,7 +62,7 @@ class NoiseClusterGrowth {
                     if (positive) ++valueNoise;
                     else --valueNoise;
                 } else
-                if (rand >= noiseProb) {
+                if (Math.abs(valueNoise) > 0) {
                     if (positive) --valueNoise;
                     else ++valueNoise;
                 }
