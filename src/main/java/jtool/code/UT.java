@@ -446,7 +446,7 @@ public class UT {
             }
             sProgressBar = new ProgressBarBuilder()
                 .setTaskName(aName).setInitialMax(aN)
-                .setConsumer(new ConsoleProgressBarConsumer(System.out))
+//                .setConsumer(new ConsoleProgressBarConsumer(System.out))
                 .setUpdateIntervalMillis((int)FILE_SYSTEM_SLEEP_TIME_2)
                 .build();
             Main.addGlobalAutoCloseable(sProgressBar);

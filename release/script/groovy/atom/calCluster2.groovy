@@ -8,7 +8,7 @@ import jtoolex.rareevent.atom.MultiTypeClusterSizeCalculator
 import static jtool.code.UT.Par.parfor
 
 
-final def dump = Dump.read('lmp/.stableglass-in/dump-fs1');
+final def dump = Dump.read('lmp/.ffs-in/dump-NiAl');
 final def calculator = new MultiTypeClusterSizeCalculator(
     new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.89).setSolidThreshold(7),
     [new ABOOPSolidChecker().setRNearestMul(1.8).setConnectThreshold(0.84).setSolidThreshold(13), new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.84).setSolidThreshold(7)]
@@ -20,10 +20,10 @@ parfor(dump.size()) {int i ->
     def subDump = dump[i];
     def isSolid = subDump.getMPC().withCloseable {calculator.getIsSolid_(it, subDump)}
     // 现在可以利用 asTable 来直接增加一列
-    subDump.asTable()['isSolid'] = isSolid.asVec();
+    subDump.asTable()['issolid'] = isSolid.asVec();
     UT.Timer.pbar();
 }
 UT.Timer.toc();
 
-dump.write('lmp/.stableglass-out/filter2-dump-fs1');
+dump.write('lmp/.ffs-out/filter2-dump-NiAl');
 
