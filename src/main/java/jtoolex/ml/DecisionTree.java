@@ -4,8 +4,10 @@ package jtoolex.ml;
 import jtool.code.CS;
 import jtool.code.UT;
 import jtool.code.collection.AbstractCollections;
+import jtool.code.collection.DoublePair;
 import jtool.code.collection.NewCollections;
 import jtool.code.filter.IIndexFilter;
+import jtool.math.MathEX;
 import jtool.math.vector.ILogicalVector;
 import jtool.math.vector.IVector;
 import jtool.math.vector.LogicalVector;
@@ -66,6 +68,13 @@ public class DecisionTree {
     }
     
     
+    /** 连续变量的分划策略 */
+    public enum SplitPolicy {
+          RATE_PEAK
+        , UNIFORM
+        , RANDOM
+    }
+    
     /** 决策树使用的构造器 */
     public static class Builder {
         /** 输入训练数据组成的 List（不适用矩阵因为在优化过程中会不断拆分样本） */
@@ -73,7 +82,9 @@ public class DecisionTree {
         /** 输出训练数据 */
         private final ILogicalVector mTrainDataOutput;
         /** 对于连续变量最大的分划次数 */
-        private int mMaxSplit = 16;
+        private int mMaxSplit = 7;
+        /** 连续变量的分划策略 */
+        private SplitPolicy mSplitPolicy = SplitPolicy.RATE_PEAK;
         /** 决策树最大的深度 */
         private int mMaxDepth = 16;
         /** 最小不纯度 */
@@ -99,6 +110,7 @@ public class DecisionTree {
         
         /** 修改参数 */
         public Builder setMaxSplit(int aMaxSplit) {mMaxSplit = Math.max(1, aMaxSplit); return this;}
+        public Builder setSplitPolicy(SplitPolicy aSplitPolicy) {mSplitPolicy = aSplitPolicy; return this;}
         public Builder setMaxDepth(int aMaxDepth) {mMaxDepth = Math.max(1, aMaxDepth); return this;}
         public Builder setMinImpurity(double aMinImpurity) {mMinImpurity = Math.max(0.0, aMinImpurity); return this;}
         public Builder setMinSample(int aMinSample) {mMinSample = Math.max(1, aMinSample); return this;}
@@ -112,10 +124,15 @@ public class DecisionTree {
             @Nullable IVector[] rCharacteristics = new IVector[mInputDim]; // 每个连续变量获取到的分点组成的向量
             for (int i = 0; i < mInputDim; ++i) {
                 // 需要先将值按照从小到大进行排序，并统计 ture 和 false 的数目
-                NavigableMap<Double, Integer> tCountMap = new TreeMap<>();
+                NavigableMap<Double, DoublePair> tCountMap = new TreeMap<>();
                 for (int j = 0; j < mSampleNum; ++j) {
-                    final int subCount = mTrainDataOutput.get(j) ? 1 : -1;
-                    tCountMap.compute(mTrainDataInput.get(j).get(i), (k, v) -> v==null ? subCount : v+subCount);
+                    final boolean tOut = mTrainDataOutput.get(j);
+                    tCountMap.compute(mTrainDataInput.get(j).get(i), (k, pair) -> {
+                        if (pair == null) pair = new DoublePair(0, 0);
+                        if (tOut) ++pair.mFirst;
+                        else ++pair.mSecond;
+                        return pair;
+                    });
                 }
                 // 然后统计所有使得 ture 数目变化较大的点作为分点
                 rCharacteristics[i] = getSplit(tCountMap);
@@ -131,11 +148,9 @@ public class DecisionTree {
             return 2.0 * aProb * (1.0 - aProb);
         }
         
-        /** 统计所有使得结果变化较大的点作为分点，分点价值选取分点左右两分点间所有的 |真样本-假样本| */
-        final @Nullable IVector getSplit(NavigableMap<Double, Integer> aCountMap) {
+        final @Nullable IVector getSplit(NavigableMap<Double, DoublePair> aCountMap) {
             // TreeMap 转为 Vector
             final IVector tKeys = Vectors.from(aCountMap.keySet());
-            final IVector tCounts = Vectors.from(aCountMap.values());
             final int tSize = tKeys.size();
             final int tSizePP = tSize+1;
             final int tSizeMM = tSize-1;
@@ -149,48 +164,86 @@ public class DecisionTree {
                 }
                 return rSplit;
             }
-            // 统计所有待选分划点的变化率，这里区分正负并且增加两端；
-            // 同样简单起见，直接使用随机访问而不是迭代器
-            IVector tSplitRate = Vectors.zeros(tSizePP);
-            for (int i = 1; i < tSize; ++i) {
-                int imm = i - 1;
-                tSplitRate.set(i, (tCounts.get(i) - tCounts.get(imm))/(tKeys.get(i) - tKeys.get(imm)));
-            }
-            // 选取变化率的峰值作为分点；
-            // 同样简单起见，直接使用随机访问而不是迭代器
-            final IVector rSplit = Vectors.NaN(tSizeMM);
-            int rSplitNum = 0;
-            for (int i = 0; i < tSizeMM; ++i) {
-                double tRateL = tSplitRate.get(i);
-                double tRateM = tSplitRate.get(i+1);
-                double tRateR = tSplitRate.get(i+2);
-                if ((tRateM>0.0 && tRateM>=tRateL && tRateM>tRateR) || (tRateM<0.0 && tRateM<=tRateL && tRateM<tRateR)) {
-                    rSplit.set(i, (tKeys.get(i) + tKeys.get(i+1))*0.5);
-                    ++rSplitNum;
+            // 现在有多种分划策略
+            switch (mSplitPolicy) {
+            case UNIFORM: {
+                // 均匀策略直接统计正负样本总数，按照总数均匀分划
+                IVector tCounts = Vectors.from(AbstractCollections.map(aCountMap.values(), pair->pair.mFirst+pair.mSecond));
+                final double tThreshold = tCounts.sum() / (mMaxSplit+1.0);
+                // 构造分划点
+                IVector rSplit = Vectors.zeros(mMaxSplit);
+                int tIdx = 0;
+                double rThreshold = tCounts.first();
+                for (int i = 1; i < tSize; ++i) {
+                    rThreshold += tCounts.get(i);
+                    if (MathEX.Code.numericGreater(rThreshold, tThreshold)) {
+                        rThreshold -= tThreshold;
+                        rSplit.set(tIdx, (tKeys.get(i-1) + tKeys.get(i))*0.5);
+                        ++tIdx;
+                    }
                 }
+                return rSplit;
             }
-            IIndexFilter tSplitIndex = i -> !Double.isNaN(rSplit.get(i));
-            // 为了避免退化的空分划点破坏一致性，这里检测到空则直接返回 null
-            if (rSplitNum == 0) return null;
-            if (rSplitNum <= mMaxSplit) return rSplit.slicer().get(tSplitIndex);
-            // 超过限制则需要移除多余分点，统计分点的权重
-            final IVector rWeight = Vectors.NaN(tSizeMM);
-            rWeight.refSlicer().get(tSplitIndex).fill(0.0);
-            for (int i = 0; i < tSize; ++i) {
-                double tCount = tCounts.get(i);
-                for (int j = 0; j < tSizeMM; ++j) if (tSplitIndex.accept(j)) {
-                    // 右侧分点增加计数，左侧减少计数，得到两侧的计数差值
-                    if (j >= i) rWeight.add(j, tCount);
-                    else rWeight.add(j, -tCount);
+            case RANDOM: {
+                List<Integer> tRandIdx = NewCollections.from(tSizeMM, i->i);
+                Collections.shuffle(tRandIdx, mRNG);
+                tRandIdx = tRandIdx.subList(0, mMaxSplit);
+                tRandIdx.sort(Integer::compareTo);
+                IVector rSplit = Vectors.zeros(mMaxSplit);
+                for (int i = 0; i < mMaxSplit; ++i) {
+                    int j = tRandIdx.get(i);
+                    rSplit.set(i, (tKeys.get(j) + tKeys.get(j+1))*0.5);
                 }
+                return rSplit;
             }
-            final IVector tWeight = rWeight.slicer().get(tSplitIndex);
-            // 权重取绝对值
-            tWeight.operation().map2this(Math::abs);
-            // 排序选取权重最高的 aMaxSplit 个分点
-            List<Integer> rSortedIndex = NewCollections.from(tWeight.size(), i->i);
-            rSortedIndex.sort(Comparator.comparingDouble(tWeight::get).reversed());
-            return rSplit.refSlicer().get(tSplitIndex).slicer().get(rSortedIndex.subList(0, mMaxSplit));
+            case RATE_PEAK: {
+                // 统计所有使得结果变化较大的点作为分点，分点价值选取分点左右两分点间所有的 |真样本-假样本|
+                // 这里简单起见直接将正负统计数合并
+                IVector tCounts = Vectors.from(AbstractCollections.map(aCountMap.values(), pair->pair.mFirst-pair.mSecond));
+                // 同样简单起见，直接使用随机访问而不是迭代器
+                IVector tSplitRate = Vectors.zeros(tSizePP);
+                for (int i = 1; i < tSize; ++i) {
+                    int imm = i - 1;
+                    tSplitRate.set(i, (tCounts.get(i) - tCounts.get(imm))/(tKeys.get(i) - tKeys.get(imm)));
+                }
+                // 选取变化率的峰值作为分点；
+                // 同样简单起见，直接使用随机访问而不是迭代器
+                final IVector rSplit = Vectors.NaN(tSizeMM);
+                int rSplitNum = 0;
+                for (int i = 0; i < tSizeMM; ++i) {
+                    double tRateL = tSplitRate.get(i);
+                    double tRateM = tSplitRate.get(i+1);
+                    double tRateR = tSplitRate.get(i+2);
+                    if ((tRateM>0.0 && tRateM>=tRateL && tRateM>tRateR) || (tRateM<0.0 && tRateM<=tRateL && tRateM<tRateR)) {
+                        rSplit.set(i, (tKeys.get(i) + tKeys.get(i+1))*0.5);
+                        ++rSplitNum;
+                    }
+                }
+                IIndexFilter tSplitIndex = i -> !Double.isNaN(rSplit.get(i));
+                // 为了避免退化的空分划点破坏一致性，这里检测到空则直接返回 null
+                if (rSplitNum == 0) return null;
+                if (rSplitNum <= mMaxSplit) return rSplit.slicer().get(tSplitIndex);
+                // 超过限制则需要移除多余分点，统计分点的权重
+                final IVector rWeight = Vectors.NaN(tSizeMM);
+                rWeight.refSlicer().get(tSplitIndex).fill(0.0);
+                for (int i = 0; i < tSize; ++i) {
+                    double tCount = tCounts.get(i);
+                    for (int j = 0; j < tSizeMM; ++j) if (tSplitIndex.accept(j)) {
+                        // 右侧分点增加计数，左侧减少计数，得到两侧的计数差值
+                        if (j >= i) rWeight.add(j, tCount);
+                        else rWeight.add(j, -tCount);
+                    }
+                }
+                final IVector tWeight = rWeight.slicer().get(tSplitIndex);
+                // 权重取绝对值
+                tWeight.operation().map2this(Math::abs);
+                // 排序选取权重最高的 aMaxSplit 个分点
+                List<Integer> rSortedIndex = NewCollections.from(tWeight.size(), i->i);
+                rSortedIndex.sort(Comparator.comparingDouble(tWeight::get).reversed());
+                return rSplit.refSlicer().get(tSplitIndex).slicer().get(rSortedIndex.subList(0, mMaxSplit));
+            }
+            default: throw new RuntimeException();
+            }
         }
         
         /** 递归方式生成树 */
