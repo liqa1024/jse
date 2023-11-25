@@ -21,7 +21,7 @@ final boolean onlyCu = true;
 final boolean onlyZr = false;
 
 
-dataMgCu2 = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'), 4).opt().perturbXYZ(0.25*perturbMul);
+dataMgCu2 = Structures.from(POSCAR.read('vasp/data/MgCu2.poscar'), 4).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) dataMgCu2 = dataMgCu2.opt().filterType(2);
 if (onlyZr) dataMgCu2 = dataMgCu2.opt().filterType(1);
 mpcMgCu2 = dataMgCu2.getMPC(nThreads);
@@ -34,7 +34,7 @@ q6MgCu2 = mpcMgCu2.calABOOP(6, mpcMgCu2.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("MgCu2, q6");
 mpcMgCu2.shutdown();
 
-dataZrCu2 = Structures.from(POSCAR.read('lmp/data/ZrCu2.poscar'), 5).opt().perturbXYZ(0.25*perturbMul);
+dataZrCu2 = Structures.from(POSCAR.read('vasp/data/ZrCu2.poscar'), 5).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) dataZrCu2 = dataZrCu2.opt().filterType(2);
 if (onlyZr) dataZrCu2 = dataZrCu2.opt().filterType(1);
 mpcZrCu2 = dataZrCu2.getMPC(nThreads);
@@ -47,7 +47,7 @@ q6ZrCu2 = mpcZrCu2.calABOOP(6, mpcZrCu2.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("ZrCu2, q6");
 mpcZrCu2.shutdown();
 
-//dataZr7Cu10 = Structures.from(POSCAR.read('lmp/data/Zr7Cu10.poscar'), 3).opt().perturbXYZ(0.25*perturbMul);
+//dataZr7Cu10 = Structures.from(POSCAR.read('vasp/data/Zr7Cu10.poscar'), 3).opt().perturbXYZ(0.25*perturbMul);
 //if (onlyCu) dataZr7Cu10 = dataZr7Cu10.opt().filterType(2);
 //if (onlyZr) dataZr7Cu10 = dataZr7Cu10.opt().filterType(1);
 //mpcZr7Cu10 = dataZr7Cu10.getMPC(nThreads);
@@ -60,7 +60,7 @@ mpcZrCu2.shutdown();
 //UT.Timer.toc("Zr7Cu10, q6");
 //mpcZr7Cu10.shutdown();
 
-dataB2 = Structures.from(POSCAR.read('lmp/data/ZrCu-B2.poscar'), 8).opt().perturbXYZ(0.25*perturbMul);
+dataB2 = Structures.from(POSCAR.read('vasp/data/ZrCu-B2.poscar'), 8).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) dataB2 = dataB2.opt().filterType(2);
 if (onlyZr) dataB2 = dataB2.opt().filterType(1);
 mpcB2 = dataB2.getMPC(nThreads);

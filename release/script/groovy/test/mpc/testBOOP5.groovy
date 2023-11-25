@@ -33,19 +33,19 @@ def dataFCC     = Structures.FCC(4.0, 8).opt().perturbXYZ(0.25);
 def dataBCC     = Structures.BCC(4.0, 12).opt().perturbXYZ(0.32);
 def dataHCP     = Structures.HCP(4.0, 8).opt().perturbXYZ(0.35);
 
-def dataMgCu2   = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'), 5).opt().perturbXYZ(0.25);
+def dataMgCu2   = Structures.from(POSCAR.read('vasp/data/MgCu2.poscar'), 5).opt().perturbXYZ(0.25);
 if (onlyCu) dataMgCu2 = dataMgCu2.opt().filterType(2);
 if (onlyZr) dataMgCu2 = dataMgCu2.opt().filterType(1);
-def dataZr3Cu8  = Structures.from(POSCAR.read('lmp/data/Zr3Cu8.poscar'), 4).opt().perturbXYZ(0.25);
+def dataZr3Cu8  = Structures.from(POSCAR.read('vasp/data/Zr3Cu8.poscar'), 4).opt().perturbXYZ(0.25);
 if (onlyCu) dataZr3Cu8 = dataZr3Cu8.opt().filterType(2);
 if (onlyZr) dataZr3Cu8 = dataZr3Cu8.opt().filterType(1);
-def dataZr7Cu10 = Structures.from(POSCAR.read('lmp/data/Zr7Cu10.poscar'), 4).opt().perturbXYZ(0.25);
+def dataZr7Cu10 = Structures.from(POSCAR.read('vasp/data/Zr7Cu10.poscar'), 4).opt().perturbXYZ(0.25);
 if (onlyCu) dataZr7Cu10 = dataZr7Cu10.opt().filterType(2);
 if (onlyZr) dataZr7Cu10 = dataZr7Cu10.opt().filterType(1);
-def dataZrCu2   = Structures.from(POSCAR.read('lmp/data/ZrCu2.poscar'), 6).opt().perturbXYZ(0.25);
+def dataZrCu2   = Structures.from(POSCAR.read('vasp/data/ZrCu2.poscar'), 6).opt().perturbXYZ(0.25);
 if (onlyCu) dataZrCu2 = dataZrCu2.opt().filterType(2);
 if (onlyZr) dataZrCu2 = dataZrCu2.opt().filterType(1);
-def dataZr14Cu51= Structures.from(POSCAR.read('lmp/data/re_Zr14Cu51.poscar'), 3).opt().perturbXYZ(0.25);
+def dataZr14Cu51= Structures.from(POSCAR.read('vasp/data/re_Zr14Cu51.poscar'), 3).opt().perturbXYZ(0.25);
 if (onlyCu) dataZr14Cu51 = dataZr14Cu51.opt().filterType(2);
 if (onlyZr) dataZr14Cu51 = dataZr14Cu51.opt().filterType(1);
 

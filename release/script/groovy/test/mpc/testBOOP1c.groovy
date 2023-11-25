@@ -68,7 +68,7 @@ q6_HCP = mpc_HCP.calABOOP(6, mpc_HCP.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("HCP, q6");
 mpc_HCP.shutdown();
 
-data_MgCu2 = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'), 4).opt().perturbXYZ(0.25*perturbMul);
+data_MgCu2 = Structures.from(POSCAR.read('vasp/data/MgCu2.poscar'), 4).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) data_MgCu2 = data_MgCu2.opt().filterType(2);
 if (onlyZr) data_MgCu2 = data_MgCu2.opt().filterType(1);
 mpc_MgCu2 = data_MgCu2.getMPC(nThreads);
@@ -81,7 +81,7 @@ q6_MgCu2 = mpc_MgCu2.calABOOP(6, mpc_MgCu2.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("MgCu2, q6");
 mpc_MgCu2.shutdown();
 
-data_MgNi2 = Structures.from(POSCAR.read('lmp/data/re_MgNi2.poscar'), 3).opt().perturbXYZ(0.25*perturbMul);
+data_MgNi2 = Structures.from(POSCAR.read('vasp/data/re_MgNi2.poscar'), 3).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) data_MgNi2 = data_MgNi2.opt().filterType(2);
 if (onlyZr) data_MgNi2 = data_MgNi2.opt().filterType(1);
 mpc_MgNi2 = data_MgNi2.getMPC(nThreads);
@@ -94,7 +94,7 @@ q6_MgNi2 = mpc_MgNi2.calABOOP(6, mpc_MgNi2.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("MgNi2, q6");
 mpc_MgNi2.shutdown();
 
-data_MgZn2 = Structures.from(POSCAR.read('lmp/data/re_MgZn2.poscar'), 4).opt().perturbXYZ(0.25*perturbMul);
+data_MgZn2 = Structures.from(POSCAR.read('vasp/data/re_MgZn2.poscar'), 4).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) data_MgZn2 = data_MgZn2.opt().filterType(2);
 if (onlyZr) data_MgZn2 = data_MgZn2.opt().filterType(1);
 mpc_MgZn2 = data_MgZn2.getMPC(nThreads);
@@ -107,7 +107,7 @@ q6_MgZn2 = mpc_MgZn2.calABOOP(6, mpc_MgZn2.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("MgZn2, q6");
 mpc_MgZn2.shutdown();
 
-data_ZrCu_Cm = Structures.from(POSCAR.read('lmp/data/re_ZrCu-Cm.poscar'), 2, 1, 1).opt().perturbXYZ(0.25*perturbMul);
+data_ZrCu_Cm = Structures.from(POSCAR.read('vasp/data/re_ZrCu-Cm.poscar'), 2, 1, 1).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) data_ZrCu_Cm = data_ZrCu_Cm.opt().filterType(2);
 if (onlyZr) data_ZrCu_Cm = data_ZrCu_Cm.opt().filterType(1);
 mpc_ZrCu_Cm = data_ZrCu_Cm.getMPC(nThreads);
@@ -120,7 +120,7 @@ q6_ZrCu_Cm = mpc_ZrCu_Cm.calABOOP(6, mpc_ZrCu_Cm.unitLen()*cutoffMul, nnn);
 UT.Timer.toc("ZrCu_Cm, q6");
 mpc_ZrCu_Cm.shutdown();
 
-data_ZrCu_MoB = Structures.from(POSCAR.read('lmp/data/re_ZrCu-MoB-like.poscar'), 4, 1, 4).opt().perturbXYZ(0.25*perturbMul);
+data_ZrCu_MoB = Structures.from(POSCAR.read('vasp/data/re_ZrCu-MoB-like.poscar'), 4, 1, 4).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) data_ZrCu_MoB = data_ZrCu_MoB.opt().filterType(2);
 if (onlyZr) data_ZrCu_MoB = data_ZrCu_MoB.opt().filterType(1);
 mpc_ZrCu_MoB = data_ZrCu_MoB.getMPC(nThreads);

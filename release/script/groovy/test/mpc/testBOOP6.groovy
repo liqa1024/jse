@@ -5,9 +5,9 @@ import jtool.code.UT
 import jtool.lmp.Dump
 import jtool.lmp.Lmpdat
 import jtool.plot.Plotters
-import jtool.rareevent.atom.ABOOPSolidChecker
-import jtool.rareevent.atom.ClusterSizeCalculator
-import jtool.rareevent.atom.MultiTypeClusterSizeCalculator
+import jtoolex.rareevent.atom.ABOOPSolidChecker
+import jtoolex.rareevent.atom.ClusterSizeCalculator
+import jtoolex.rareevent.atom.MultiTypeClusterSizeCalculator
 import jtool.vasp.POSCAR
 
 
@@ -18,11 +18,11 @@ import jtool.vasp.POSCAR
 def dataG = Lmpdat.read('lmp/data/data-glass');
 def dataC = Lmpdat.read('lmp/data/data-crystal');
 def dataFFS = Dump.read('lmp/.ffs-in/dump-fs1').last();
-def dataMgCu2   = Structures.from(POSCAR.read('lmp/data/MgCu2.poscar'      ).opt().mapType {3-it.type()}, 5).opt().perturbXYZ(0.25);
-def dataZr3Cu8  = Structures.from(POSCAR.read('lmp/data/Zr3Cu8.poscar'     ).opt().mapType {3-it.type()}, 3).opt().perturbXYZ(0.25);
-def dataZr7Cu10 = Structures.from(POSCAR.read('lmp/data/Zr7Cu10.poscar'    ).opt().mapType {3-it.type()}, 3).opt().perturbXYZ(0.25);
-def dataZrCu2   = Structures.from(POSCAR.read('lmp/data/ZrCu2.poscar'      ).opt().mapType {3-it.type()}, 5).opt().perturbXYZ(0.25);
-def dataZr14Cu51= Structures.from(POSCAR.read('lmp/data/re_Zr14Cu51.poscar').opt().mapType {3-it.type()}, 2).opt().perturbXYZ(0.25);
+def dataMgCu2   = Structures.from(POSCAR.read('vasp/data/MgCu2.poscar'      ).opt().mapType {3-it.type()}, 5).opt().perturbXYZ(0.25);
+def dataZr3Cu8  = Structures.from(POSCAR.read('vasp/data/Zr3Cu8.poscar'     ).opt().mapType {3-it.type()}, 3).opt().perturbXYZ(0.25);
+def dataZr7Cu10 = Structures.from(POSCAR.read('vasp/data/Zr7Cu10.poscar'    ).opt().mapType {3-it.type()}, 3).opt().perturbXYZ(0.25);
+def dataZrCu2   = Structures.from(POSCAR.read('vasp/data/ZrCu2.poscar'      ).opt().mapType {3-it.type()}, 5).opt().perturbXYZ(0.25);
+def dataZr14Cu51= Structures.from(POSCAR.read('vasp/data/re_Zr14Cu51.poscar').opt().mapType {3-it.type()}, 2).opt().perturbXYZ(0.25);
 
 // 默认的团簇计算器
 UT.Timer.tic();

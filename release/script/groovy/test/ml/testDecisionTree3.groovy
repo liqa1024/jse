@@ -29,7 +29,7 @@ static def readData(String path, List<IVector> dest) {
 def inTrain = new ArrayList<IVector>();
 def outTrain = LogicalVector.builder();
 for (i in 100..300) {
-    readData("lmp/.lll-out/.XDATCAR-out/${i}.dat", inTrain);
+    readData("vasp/.lll-out/.XDATCAR-out/${i}.dat", inTrain);
     // 已知前 20 个为 true
     for (j in 0..<20) outTrain.add(true);
     for (j in 20..<100) outTrain.add(false);
@@ -50,7 +50,7 @@ outTrain = outTrain[totalIndex];
 def inTest = new ArrayList<IVector>();
 def outTest = LogicalVector.builder();
 for (i in 350..390) {
-    readData("lmp/.lll-out/.XDATCAR-out/${i}.dat", inTest);
+    readData("vasp/.lll-out/.XDATCAR-out/${i}.dat", inTest);
     // 已知前 20 个为 true
     for (j in 0..<20) outTest.add(true);
     for (j in 20..<100) outTest.add(false);
