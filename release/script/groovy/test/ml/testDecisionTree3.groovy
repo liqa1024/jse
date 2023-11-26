@@ -2,13 +2,11 @@ package test.ml
 
 import jtool.code.UT
 import jtool.code.collection.ArrayLists
-import jtool.math.matrix.Matrices
 import jtool.math.vector.IVector
 import jtool.math.vector.LogicalVector
 import jtoolex.ml.DecisionTree
 import jtoolex.ml.RandomForest
 
-import static jtool.code.CS.ALL
 import static jtool.code.UT.Plot.axis
 import static jtool.code.UT.Plot.plot
 

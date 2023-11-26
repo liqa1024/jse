@@ -38,7 +38,7 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> {
             @Override protected int getConsiderCharaNumber(int aAllCharaNum) {
                 return Math.max(1, (int)Math.round(MathEX.Fast.sqrt(aAllCharaNum)));
             }
-        }.setMaxSplit(5).setMaxDepth(8).setSplitPolicy(DecisionTree.SplitPolicy.RANDOM);
+        }.setMaxDepth(8);
     }
     
     /** 现在支持设置线程数 */

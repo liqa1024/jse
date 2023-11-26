@@ -82,7 +82,7 @@ public class DecisionTree {
         /** 输出训练数据 */
         private final ILogicalVector mTrainDataOutput;
         /** 对于连续变量最大的分划次数 */
-        private int mMaxSplit = 7;
+        private int mMaxSplit = 5;
         /** 连续变量的分划策略 */
         private SplitPolicy mSplitPolicy = SplitPolicy.RATE_PEAK;
         /** 决策树最大的深度 */
