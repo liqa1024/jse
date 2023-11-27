@@ -3,9 +3,8 @@ package jtool.atom;
 import jtool.code.collection.AbstractRandomAccessList;
 import jtool.code.collection.NewCollections;
 import jtool.math.matrix.IMatrix;
-import jtool.math.matrix.RowMatrix;
-import jtool.math.table.AbstractTable;
 import jtool.math.table.ITable;
+import jtool.math.table.Tables;
 
 import java.util.List;
 
@@ -42,67 +41,72 @@ public abstract class AbstractAtomData implements IAtomData {
     
     /** 会利用 atomNum() 来得到初始的容量 */
     @Override public ITable dataXYZ() {
-        final IMatrix rData = RowMatrix.zeros(atomNum(), ATOM_DATA_KEYS_XYZ.length);
+        ITable rData = Tables.zeros(atomNum(), ATOM_DATA_KEYS_XYZ);
+        IMatrix rMat = rData.asMatrix();
         int row = 0;
         for (IAtom tAtom : asList()) {
-            rData.set_(row, XYZ_X_COL, tAtom.x());
-            rData.set_(row, XYZ_Y_COL, tAtom.y());
-            rData.set_(row, XYZ_Z_COL, tAtom.z());
+            rMat.set_(row, XYZ_X_COL, tAtom.x());
+            rMat.set_(row, XYZ_Y_COL, tAtom.y());
+            rMat.set_(row, XYZ_Z_COL, tAtom.z());
             ++row;
         }
-        return new AbstractTable(ATOM_DATA_KEYS_XYZ) {@Override public IMatrix asMatrix() {return rData;}};
+        return rData;
     }
     @Override public ITable dataXYZID() {
-        final IMatrix rData = RowMatrix.zeros(atomNum(), ATOM_DATA_KEYS_XYZID.length);
+        ITable rData = Tables.zeros(atomNum(), ATOM_DATA_KEYS_XYZID);
+        IMatrix rMat = rData.asMatrix();
         int row = 0;
         for (IAtom tAtom : asList()) {
-            rData.set_(row, XYZID_X_COL, tAtom.x());
-            rData.set_(row, XYZID_Y_COL, tAtom.y());
-            rData.set_(row, XYZID_Z_COL, tAtom.z());
-            rData.set_(row, XYZID_ID_COL, tAtom.id());
+            rMat.set_(row, XYZID_X_COL, tAtom.x());
+            rMat.set_(row, XYZID_Y_COL, tAtom.y());
+            rMat.set_(row, XYZID_Z_COL, tAtom.z());
+            rMat.set_(row, XYZID_ID_COL, tAtom.id());
             ++row;
         }
-        return new AbstractTable(ATOM_DATA_KEYS_XYZID) {@Override public IMatrix asMatrix() {return rData;}};
+        return rData;
     }
     @Override public ITable dataSTD() {
-        final IMatrix rData = RowMatrix.zeros(atomNum(), STD_ATOM_DATA_KEYS.length);
+        ITable rData = Tables.zeros(atomNum(), STD_ATOM_DATA_KEYS);
+        IMatrix rMat = rData.asMatrix();
         int row = 0;
         for (IAtom tAtom : asList()) {
-            rData.set_(row, STD_ID_COL, tAtom.id());
-            rData.set_(row, STD_TYPE_COL, tAtom.type());
-            rData.set_(row, STD_X_COL, tAtom.x());
-            rData.set_(row, STD_Y_COL, tAtom.y());
-            rData.set_(row, STD_Z_COL, tAtom.z());
+            rMat.set_(row, STD_ID_COL, tAtom.id());
+            rMat.set_(row, STD_TYPE_COL, tAtom.type());
+            rMat.set_(row, STD_X_COL, tAtom.x());
+            rMat.set_(row, STD_Y_COL, tAtom.y());
+            rMat.set_(row, STD_Z_COL, tAtom.z());
             ++row;
         }
-        return new AbstractTable(STD_ATOM_DATA_KEYS) {@Override public IMatrix asMatrix() {return rData;}};
+        return rData;
     }
     @Override public ITable dataAll() {
-        final IMatrix rData = RowMatrix.zeros(atomNum(), ALL_ATOM_DATA_KEYS.length);
+        ITable rData = Tables.zeros(atomNum(), ALL_ATOM_DATA_KEYS);
+        IMatrix rMat = rData.asMatrix();
         int row = 0;
         for (IAtom tAtom : asList()) {
-            rData.set_(row, ALL_ID_COL, tAtom.id());
-            rData.set_(row, ALL_TYPE_COL, tAtom.type());
-            rData.set_(row, ALL_X_COL, tAtom.x());
-            rData.set_(row, ALL_Y_COL, tAtom.y());
-            rData.set_(row, ALL_Z_COL, tAtom.z());
-            rData.set_(row, ALL_VX_COL, tAtom.vx());
-            rData.set_(row, ALL_VY_COL, tAtom.vy());
-            rData.set_(row, ALL_VZ_COL, tAtom.vz());
+            rMat.set_(row, ALL_ID_COL, tAtom.id());
+            rMat.set_(row, ALL_TYPE_COL, tAtom.type());
+            rMat.set_(row, ALL_X_COL, tAtom.x());
+            rMat.set_(row, ALL_Y_COL, tAtom.y());
+            rMat.set_(row, ALL_Z_COL, tAtom.z());
+            rMat.set_(row, ALL_VX_COL, tAtom.vx());
+            rMat.set_(row, ALL_VY_COL, tAtom.vy());
+            rMat.set_(row, ALL_VZ_COL, tAtom.vz());
             ++row;
         }
-        return new AbstractTable(ALL_ATOM_DATA_KEYS) {@Override public IMatrix asMatrix() {return rData;}};
+        return rData;
     }
     @Override public ITable dataVelocities() {
-        final IMatrix rData = RowMatrix.zeros(atomNum(), ATOM_DATA_KEYS_VELOCITY.length);
+        ITable rData = Tables.zeros(atomNum(), ATOM_DATA_KEYS_VELOCITY);
+        IMatrix rMat = rData.asMatrix();
         int row = 0;
         for (IAtom tAtom : asList()) {
-            rData.set_(row, STD_VX_COL, tAtom.vx());
-            rData.set_(row, STD_VY_COL, tAtom.vy());
-            rData.set_(row, STD_VZ_COL, tAtom.vz());
+            rMat.set_(row, STD_VX_COL, tAtom.vx());
+            rMat.set_(row, STD_VY_COL, tAtom.vy());
+            rMat.set_(row, STD_VZ_COL, tAtom.vz());
             ++row;
         }
-        return new AbstractTable(ATOM_DATA_KEYS_VELOCITY) {@Override public IMatrix asMatrix() {return rData;}};
+        return rData;
     }
     /** 默认没有速度信息，这样不会在输出时进行输出 */
     @Override public boolean hasVelocities() {return false;}

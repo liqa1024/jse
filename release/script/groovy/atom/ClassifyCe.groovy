@@ -2,10 +2,13 @@ package atom
 
 import jtool.code.SP
 import jtool.code.UT
+import jtool.lmp.Dump
 import jtool.math.matrix.RowMatrix
 import jtool.math.vector.ILogicalVector
 import jtool.math.vector.IVector
 import jtool.math.vector.LogicalVector
+import jtool.math.vector.Vectors
+import jtool.vasp.XDATCAR
 import jtoolex.ml.DecisionTree
 import jtoolex.ml.RandomForest
 
@@ -24,7 +27,7 @@ class ClassifyCe {
     final static def basisCalculator;
     
     /** 计算对应的基，这里暂时使用现有的 python 脚本计算 */
-    static def calBasis(String path, List<Integer> slice, List<IVector> dest) {
+    static int calBasis(String path, List<Integer> slice, List<IVector> dest) {
         // 使用 ase 的读取 xdatcar 方法，读取成 ase 的实例
         // ase 的 api 只支持 slice，很烦，而且看起来没有很好的方法获取 slice
         SP.Python.runText("slicePy = slice(${slice[0]?:'None'}, ${slice[1]?:'None'}, ${slice[2]?:'None'})");
@@ -41,6 +44,16 @@ class ClassifyCe {
             ++len;
         }
         return len;
+    }
+    static int calBasis(String path, List<IVector> dest) {
+        def data = read_vasp_xdatcar(path);
+        // 使用 basisCalculator 来计算基，输出为 numpy 的数组
+        def basis = basisCalculator.evaluate(data);
+        // 获取的是 jep.NDArray，这样获取内部数据，直接转为 IMatrix，这里获取到的是按行排列的
+        double[] basisData = basis.data;
+        int[] basisDim = basis.dimensions;
+        dest.addAll(new RowMatrix(basisDim[0], basisDim[1], basisData).rows());
+        return 1;
     }
     
     static {
@@ -115,6 +128,28 @@ class ClassifyCe {
     
     
     static def main(args) {
+//        trainAndSave();
+        
+        def path = 'vasp/.Ce/40Urandom/1000-40/XDATCAR';
+        
+        def testInput = new ArrayList<IVector>();
+        calBasis(path, [0, null, 1], testInput);
+        
+        // 读取模型并标记分类结果
+        def rf = RandomForest.load(UT.IO.json2map('vasp/.Ce/rf.json'));
+        def dump = Dump.fromAtomDataList(XDATCAR.read(path));
+        for (j in 0..<dump.size()) {
+            def subDump = dump[j];
+            subDump.asTable()['pred'] = Vectors.from(subDump.atomNum(), {int i -> rf.predict(testInput[j*subDump.atomNum()+i])});
+        }
+        rf.shutdown();
+        
+        dump.write('vasp/.Ce-out/40Urandom/1000-40/dump');
+    }
+    
+    
+    
+    static def trainAndSave() {
         // 从给定的训练集和测试集获取数据
         UT.Timer.pbar('Init DataSet', trainSet.size()+testSet.size());
         def trainInput = new ArrayList<IVector>();

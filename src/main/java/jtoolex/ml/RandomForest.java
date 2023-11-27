@@ -48,7 +48,7 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
     public RandomForest setThreadNum(int aThreadNum)  {if (aThreadNum!=nThreads()) setPool(new ParforThreadPool(aThreadNum, true)); return this;}
     
     /** 输入 x 进行进行决策判断 */
-    public boolean makeDecision(final IVector aInput, double aRatio) {
+    public double predict(final IVector aInput) {
         int tThreadNum = nThreads();
         int tTreeNum = mTrees.size();
         int[] rPredTrueNumBuffer = new int[tThreadNum];
@@ -57,11 +57,15 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
         });
         int tPredTrueNum = 0;
         for (int subPredTrueNum : rPredTrueNumBuffer) tPredTrueNum += subPredTrueNum;
-        return tPredTrueNum > tTreeNum*aRatio;
+        return tPredTrueNum / (double)tTreeNum;
+    }
+    public boolean makeDecision(final IVector aInput, double aRatio) {
+        return predict(aInput) > aRatio;
     }
     public boolean makeDecision(IVector aInput) {
         return makeDecision(aInput, 0.5);
     }
+    
     
     
     /** save/load，因为这里转为 map 是引用的，因此不等价于原本的 save 操作 */
