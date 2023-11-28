@@ -7,6 +7,7 @@ import jtool.math.matrix.RowMatrix
 import jtool.math.vector.ILogicalVector
 import jtool.math.vector.IVector
 import jtool.math.vector.LogicalVector
+import jtool.math.vector.Vector
 import jtool.math.vector.Vectors
 import jtool.vasp.XDATCAR
 import jtoolex.ml.DecisionTree
@@ -130,21 +131,66 @@ class ClassifyCe {
     static def main(args) {
 //        trainAndSave();
         
-        def path = 'vasp/.Ce/40Urandom/1000-40/XDATCAR';
+//        classifyXDATCAR('vasp/.Ce/20Urandom/2000-20/XDATCAR', 'vasp/.Ce-out/20Urandom/2000-20/dump');
         
+        compareWithAtomVolume();
+    }
+    
+    
+    
+    static def compareWithAtomVolume() {
+        UT.Timer.pbar('Init DataSet', testSet.size());
         def testInput = new ArrayList<IVector>();
-        calBasis(path, [0, null, 1], testInput);
+        def testOutput= LogicalVector.builder();
+        def atomVolumes = Vector.builder();
+        for (subSet in testSet) {
+            int len = calBasis(subSet.path, subSet.slice, testInput);
+            for (j in 0..<len) {
+                // 加 U 为 true
+                for (i in 0..<subSet.ratio[0]) testOutput.add(true);
+                for (i in 0..<subSet.ratio[1]) testOutput.add(false);
+            }
+            def xdatcar = XDATCAR.read(subSet.path);
+            for (j in ((subSet.slice[0]?:0)..<(subSet.slice[1]?:xdatcar.size())).step(subSet.slice[2]?:1)) {
+                xdatcar[j].getMPC().withCloseable {mpc ->
+                    for (vertex in mpc.calVoronoi()) {
+                        atomVolumes.add(vertex.atomicVolume());
+                    }
+                }
+            }
+            UT.Timer.pbar();
+        }
+        testOutput = testOutput.build();
+        atomVolumes = atomVolumes.build();
         
         // 读取模型并标记分类结果
         def rf = RandomForest.load(UT.IO.json2map('vasp/.Ce/rf.json'));
-        def dump = Dump.fromAtomDataList(XDATCAR.read(path));
+        
+        // 绘制 ROC
+        axis(0, 1, 0, 1);
+        plot([0, 1], [0, 1], null).lineType('--').width(1.0).color(0);
+        
+        plotROC(atomVolumes/atomVolumes.max(), testInput , testOutput, 'atomVolume-test', 1);
+        plotROC(rf                           , testInput , testOutput , 'rf-test'       , 3);
+        
+        rf.shutdown();
+    }
+    
+    
+    static def classifyXDATCAR(String pathIn, String pathOut) {
+        def testInput = new ArrayList<IVector>();
+        calBasis(pathIn, [0, null, 1], testInput);
+        
+        // 读取模型并标记分类结果
+        def rf = RandomForest.load(UT.IO.json2map('vasp/.Ce/rf.json'));
+        def dump = Dump.fromAtomDataList(XDATCAR.read(pathIn));
         for (j in 0..<dump.size()) {
             def subDump = dump[j];
             subDump.asTable()['pred'] = Vectors.from(subDump.atomNum(), {int i -> rf.predict(testInput[j*subDump.atomNum()+i])});
         }
         rf.shutdown();
         
-        dump.write('vasp/.Ce-out/40Urandom/1000-40/dump');
+        dump.write(pathOut);
     }
     
     
@@ -208,7 +254,7 @@ class ClassifyCe {
             def recall = zeros(21);
             def Ne = zeros(21);
             def ratio = linspace(0.0, 1.0, 21);
-            for (j in 0..<20) {
+            for (j in 0..<21) {
                 if (ratio[j] == (double)0.0) {recall[j] = 1.0; Ne[j] = 1.0; continue;}
                 if (ratio[j] == (double)1.0) {recall[j] = 0.0; Ne[j] = 0.0; continue;}
                 int Npp = 0, Nnn = 0, Npn = 0, Nnp = 0;
@@ -228,6 +274,30 @@ class ClassifyCe {
             }
             plot(Ne, recall, "ROC of $name").marker('o').lineType(line).color(color);
             plot([Ne[10]], [recall[10]], null).marker('x').lineType('none').color(color);
+        } else
+        if (decider instanceof IVector) {
+            def recall = zeros(41);
+            def Ne = zeros(41);
+            def ratio = linspace(0.0, 1.0, 41);
+            for (j in 0..<41) {
+                if (ratio[j] == (double)0.0) {recall[j] = 1.0; Ne[j] = 1.0; continue;}
+                if (ratio[j] == (double)1.0) {recall[j] = 0.0; Ne[j] = 0.0; continue;}
+                int Npp = 0, Nnn = 0, Npn = 0, Nnp = 0;
+                for (i in 0..<dataInput.size()) {
+                    boolean real = dataOutput[i];
+                    boolean pred = decider[i] > ratio[j];
+                    if (real) {
+                        if (pred) ++Npp;
+                        else ++Npn;
+                    } else {
+                        if (pred) ++Nnp;
+                        else ++Nnn;
+                    }
+                }
+                recall[j] = Npp / (Npp + Npn);
+                Ne[j] = Nnp / (Nnn + Nnp);
+            }
+            plot(Ne, recall, "ROC of $name").marker('o').lineType(line).color(color);
         } else {
             int Npp = 0, Nnn = 0, Npn = 0, Nnp = 0;
             for (i in 0..<dataInput.size()) {
