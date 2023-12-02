@@ -148,6 +148,5 @@ plt.plot(q4_ZrCu_Cm , q6_ZrCu_Cm , 'ZrCu_Cm' ).filled().lineWidth(1.0).lineType(
 plt.plot(q4_ZrCu_MoB, q6_ZrCu_MoB, 'ZrCu_MoB').filled().lineWidth(1.0).lineType('none').markerType('d').markerSize(4);
 
 plt.xlabel('q4').ylabel('q6');
-plt.xTick(0.02).yTick(0.05);
 plt.show();
 

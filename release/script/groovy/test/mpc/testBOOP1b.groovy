@@ -124,7 +124,6 @@ plt1.plot(q4B2      , q6B2      , 'B2'         ).filled().color(3).lineType('non
 //plt1.plot(q4Zr7Cu10 , q6Zr7Cu10 , 'Cu10Zr7'    ).filled().color(4).lineType('none').markerType('o').markerSize(4);
 plt1.plot(q4FFS1    , q6FFS1    , 'FFS1'       ).filled().color(0).lineType('none').markerType('^').markerSize(5);
 plt1.xlabel('q4').ylabel('q6');
-plt1.xTick(0.02);
 plt1.show();
 
 plt2 = Plotters.get();
@@ -134,7 +133,6 @@ plt2.plot(q4B2      , q6B2      , 'B2'         ).filled().color(3).lineType('non
 //plt2.plot(q4Zr7Cu10 , q6Zr7Cu10 , 'Cu10Zr7'    ).filled().color(4).lineType('none').markerType('o').markerSize(4);
 plt2.plot(q4FFS2    , q6FFS2    , 'FFS2'       ).filled().color(0).lineType('none').markerType('^').markerSize(5);
 plt2.xlabel('q4').ylabel('q6');
-plt2.xTick(0.02);
 plt2.show();
 
 plt3 = Plotters.get();
@@ -144,6 +142,5 @@ plt3.plot(q4B2      , q6B2      , 'B2'         ).filled().color(3).lineType('non
 //plt3.plot(q4Zr7Cu10 , q6Zr7Cu10 , 'Cu10Zr7'    ).filled().color(4).lineType('none').markerType('o').markerSize(4);
 plt3.plot(q4Melt    , q6Melt    , 'melt'       ).filled().color(0).lineType('none').markerType('^').markerSize(5);
 plt3.xlabel('q4').ylabel('q6');
-plt3.xTick(0.02);
 plt3.show();
 

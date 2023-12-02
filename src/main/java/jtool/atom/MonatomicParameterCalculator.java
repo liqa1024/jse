@@ -590,6 +590,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         final ComplexVector[][] rDestPar = new ComplexVector[nThreads()][];
         rDestPar[0] = rDest;
         for (int i = 1; i < rDestPar.length; ++i) rDestPar[i] = getComplexVectors_(mAtomNum, aL+aL+1);
+        // 记得置为 0
+        for (ComplexVector[] tDest : rDestPar) for (ComplexVector subDest : tDest) subDest.fill(0.0);
         // 统计近邻数用于求平均，同样也需要为并行使用数组
         final IVector[] tNNPar = new IVector[nThreads()];
         for (int i = 0; i < tNNPar.length; ++i) tNNPar[i] = Vectors.zeros(mAtomNum);
@@ -673,6 +675,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         if (rDest.length < mAtomNum) throw new IllegalArgumentException("Input row number rDest MUST be GREATER than atomNum("+mAtomNum+"), input: "+rDest.length);
         if (rDest[0].size() != aL+aL+1) throw new IllegalArgumentException("Input column number of rDest MUST be l+l+1("+aL+aL+1+"), input: "+rDest[0].size());
         
+        // 记得置为 0
+        for (IComplexVector subDest : rDest) subDest.fill(0.0);
         // 统计近邻数用于求平均（增加一个自身）
         final IVector tNN = Vectors.ones(mAtomNum);
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
