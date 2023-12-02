@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.util.*;
 
-import static jtool.code.CS.ZL_STR;
+import static jtool.code.CS.*;
 
 /**
  * @author liqa
@@ -39,7 +39,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     private IVector mAtomNumbers;
     /** POSCAR 使用晶格矢量组成的矩阵以及对应的晶格常数来作为边界 */
     private final IMatrix mBox;
-    private final double mBoxScale;
+    private double mBoxScale;
     /** 是否有 Selective dynamics 关键字 */
     public final boolean mSelectiveDynamics;
     /** 保存一份 id 列表，这样在 lmpdat 转为 poscar 时会继续保留 id 信息 */
@@ -138,6 +138,8 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         }
     }
     
+    public POSCAR setBoxScale(double aBoxScale) {mBoxScale = aBoxScale; return this;}
+    
     /** Cartesian 和 Direct 来回转换 */
     public POSCAR setCartesian() {
         if (mIsCartesian) return this;
@@ -159,6 +161,18 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         mDirect.col(1).div2this(mBox.get(1, 1));
         mDirect.col(2).div2this(mBox.get(2, 2));
         mIsCartesian = false;
+        return this;
+    }
+    /** 密度归一化 */
+    public POSCAR setDenseNormalized() {
+        if (mIsRef) throw new RuntimeException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+        // 注意如果是斜方的模拟盒则不能进行转换
+        if (!mIsDiagBox) throw new RuntimeException("setDenseNormalized is temporarily support Diagonal Box only");
+        
+        double tScale = MathEX.Fast.cbrt(volume() / atomNum());
+        // 直接通过调整 boxScale 来实现
+        mBoxScale /= tScale;
+        
         return this;
     }
     
