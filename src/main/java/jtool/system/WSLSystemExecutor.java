@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 public class WSLSystemExecutor extends LocalSystemExecutor {
     public WSLSystemExecutor() {super();}
     
-    private final static String[] WSL_ARGS = {"wsl"};
+    /** wsl 反而不需要使用这种写法，为了简单兼容这里再调用一次 bash */
+    private final static String[] WSL_ARGS = {"wsl", "bash", "-c"};
     @Override protected String @NotNull[] programAndArgs_() {return WSL_ARGS;}
 }

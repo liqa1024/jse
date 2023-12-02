@@ -166,7 +166,7 @@ public class AbstractAtoms {
                     @Override public double x() {int i = tRepTotal/aReplicateZ/aReplicateY; double tX = aLattice.box().x() * i; return tX + tAtom.x();}
                     @Override public double y() {int j = tRepTotal/aReplicateZ%aReplicateY; double tY = aLattice.box().y() * j; return tY + tAtom.y();}
                     @Override public double z() {int k = tRepTotal%aReplicateZ            ; double tZ = aLattice.box().z() * k; return tZ + tAtom.z();}
-                    @Override public int id() {return tRepTotal*tLatticeNum * tAtom.id();} // 现在会基于原本的 id 进行扩展，这里不考虑特殊的 id 分布问题
+                    @Override public int id() {return tRepTotal*tLatticeNum + tAtom.id();} // 现在会基于原本的 id 进行扩展，这里不考虑特殊的 id 分布问题
                     @Override public int type() {return tAtom.type();}
                     @Override public int index() {return index;}
                 };
