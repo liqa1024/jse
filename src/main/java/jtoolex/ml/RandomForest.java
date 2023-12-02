@@ -58,9 +58,8 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
     
     /** 输入 x 进行进行决策判断 */
     public double predict(final IVector aInput) {
-        int tThreadNum = nThreads();
         int tTreeNum = mTrees.size();
-        int[] rPredTrueNumPar = new int[tThreadNum];
+        int[] rPredTrueNumPar = new int[nThreads()];
         pool().parfor(tTreeNum, (i, threadID) -> {
             if (mTrees.get(i).makeDecision(aInput)) ++rPredTrueNumPar[threadID];
         });
@@ -68,13 +67,41 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
         for (int subPredTrueNum : rPredTrueNumPar) tPredTrueNum += subPredTrueNum;
         return tPredTrueNum / (double)tTreeNum;
     }
+    public IVector predict(final @Unmodifiable List<? extends IVector> aInputs) {
+        int tSize = aInputs.size();
+        IVector rPred = Vectors.zeros(tSize);
+        pool().parfor(tSize, i -> {
+            IVector tInput = aInputs.get(i);
+            int rPredTrueNum = 0;
+            for (DecisionTree tTree : mTrees) {
+                if (tTree.makeDecision(tInput)) ++rPredTrueNum;
+            }
+            rPred.set_(i, rPredTrueNum / (double)mTrees.size());
+        });
+        return rPred;
+    }
     public boolean makeDecision(final IVector aInput, double aRatio) {
         return predict(aInput) > aRatio;
     }
     public boolean makeDecision(IVector aInput) {
         return makeDecision(aInput, 0.5);
     }
-    
+    public ILogicalVector makeDecision(final @Unmodifiable List<? extends IVector> aInputs, double aRatio) {
+        int tSize = aInputs.size();
+        ILogicalVector rPred = LogicalVector.zeros(tSize);
+        pool().parfor(tSize, i -> {
+            IVector tInput = aInputs.get(i);
+            int rPredTrueNum = 0;
+            for (DecisionTree tTree : mTrees) {
+                if (tTree.makeDecision(tInput)) ++rPredTrueNum;
+            }
+            if (rPredTrueNum > mTrees.size()*aRatio) rPred.set_(i, true);
+        });
+        return rPred;
+    }
+    public ILogicalVector makeDecision(@Unmodifiable List<? extends IVector> aInputs) {
+        return makeDecision(aInputs, 0.5);
+    }
     
     
     /** save/load，因为这里转为 map 是引用的，因此不等价于原本的 save 操作 */
@@ -119,9 +146,8 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
         // 获取训练需要的样本数
         final int tTrainSampleNum = Math.max(1, (int)Math.round(tSampleNum * aTrainRatio));
         
-        int tThreadNum = nThreads();
         // 为了保证结果可重复，这里统一为每个线程生成一个种子，用于创建 LocalRandom
-        final long[] tSeeds = genSeeds_(tThreadNum, aRNG);
+        final long[] tSeeds = genSeeds_(nThreads(), aRNG);
         // 统一创建好 mTrees 避免并行写入的问题
         mTrees = NewCollections.nulls(aTreeNum);
         

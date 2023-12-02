@@ -224,18 +224,18 @@ class ClassifyCe {
             def recall = zeros(21);
             def Ne = zeros(21);
             def ratio = linspace(0.0, 1.0, 21);
+            def pred = decider.predict(dataInput);
             for (j in 0..<21) {
                 if (ratio[j] == (double)0.0) {recall[j] = 1.0; Ne[j] = 1.0; continue;}
                 if (ratio[j] == (double)1.0) {recall[j] = 0.0; Ne[j] = 0.0; continue;}
                 int Npp = 0, Nnn = 0, Npn = 0, Nnp = 0;
                 for (i in 0..<dataInput.size()) {
                     boolean real = dataOutput[i];
-                    boolean pred = decider.makeDecision(dataInput[i], ratio[j]);
                     if (real) {
-                        if (pred) ++Npp;
+                        if (pred[i] > ratio[j]) ++Npp;
                         else ++Npn;
                     } else {
-                        if (pred) ++Nnp;
+                        if (pred[i] > ratio[j]) ++Nnp;
                         else ++Nnn;
                     }
                 }
