@@ -24,28 +24,30 @@ final int solidThreshold = 7;
 final boolean onlyCu = false;
 final boolean onlyZr = true;
 
+final double perturbMul = 1.0;
+
 
 // 首先导入 Lmpdat
-def dataG       = Lmpdat.read('lmp/data/data-glass');
+def dataG       = Lmpdat.read('lmp/.CuZr/data-nolaves-800');
 if (onlyCu) dataG = dataG.opt().filterType(1);
 if (onlyZr) dataG = dataG.opt().filterType(2);
-def dataFCC     = Structures.FCC(4.0, 8).opt().perturbXYZ(0.25);
-def dataBCC     = Structures.BCC(4.0, 12).opt().perturbXYZ(0.32);
-def dataHCP     = Structures.HCP(4.0, 8).opt().perturbXYZ(0.35);
+def dataFCC     = Structures.FCC(4.0, 8).opt().perturbXYZ(0.25*perturbMul);
+def dataBCC     = Structures.BCC(4.0, 12).opt().perturbXYZ(0.32*perturbMul);
+def dataHCP     = Structures.HCP(4.0, 8).opt().perturbXYZ(0.35*perturbMul);
 
-def dataMgCu2   = Structures.from(POSCAR.read('vasp/data/MgCu2.poscar'), 5).opt().perturbXYZ(0.25);
+def dataMgCu2   = Structures.from(POSCAR.read('vasp/data/MgCu2.poscar'), 5).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) dataMgCu2 = dataMgCu2.opt().filterType(2);
 if (onlyZr) dataMgCu2 = dataMgCu2.opt().filterType(1);
-def dataZr3Cu8  = Structures.from(POSCAR.read('vasp/data/Zr3Cu8.poscar'), 4).opt().perturbXYZ(0.25);
+def dataZr3Cu8  = Structures.from(POSCAR.read('vasp/data/Zr3Cu8.poscar'), 4).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) dataZr3Cu8 = dataZr3Cu8.opt().filterType(2);
 if (onlyZr) dataZr3Cu8 = dataZr3Cu8.opt().filterType(1);
-def dataZr7Cu10 = Structures.from(POSCAR.read('vasp/data/Zr7Cu10.poscar'), 4).opt().perturbXYZ(0.25);
+def dataZr7Cu10 = Structures.from(POSCAR.read('vasp/data/Zr7Cu10.poscar'), 4).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) dataZr7Cu10 = dataZr7Cu10.opt().filterType(2);
 if (onlyZr) dataZr7Cu10 = dataZr7Cu10.opt().filterType(1);
-def dataZrCu2   = Structures.from(POSCAR.read('vasp/data/ZrCu2.poscar'), 6).opt().perturbXYZ(0.25);
+def dataZrCu2   = Structures.from(POSCAR.read('vasp/data/ZrCu2.poscar'), 6).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) dataZrCu2 = dataZrCu2.opt().filterType(2);
 if (onlyZr) dataZrCu2 = dataZrCu2.opt().filterType(1);
-def dataZr14Cu51= Structures.from(POSCAR.read('vasp/data/re_Zr14Cu51.poscar'), 3).opt().perturbXYZ(0.25);
+def dataZr14Cu51= Structures.from(POSCAR.read('vasp/data/re_Zr14Cu51.poscar'), 3).opt().perturbXYZ(0.25*perturbMul);
 if (onlyCu) dataZr14Cu51 = dataZr14Cu51.opt().filterType(2);
 if (onlyZr) dataZr14Cu51 = dataZr14Cu51.opt().filterType(1);
 
@@ -119,7 +121,7 @@ UT.IO.table2csv(data, '.temp/Sij-new-Zr.csv');
 // 绘制结果
 def plt = Plotters.get();
 
-plt.plot(distributionG       , 'glass'       ).marker('o').lineType('-' );
+plt.plot(distributionG       , 'liquid'      ).marker('o').lineType('-' );
 plt.plot(distributionFCC     , 'fcc'         ).marker('s').lineType('--').lineWidth(1.0).markerSize(10.0);
 plt.plot(distributionBCC     , 'bcc'         ).marker('d').lineType('--').lineWidth(1.0).markerSize(10.0);
 plt.plot(distributionHCP     , 'hcp'         ).marker('^').lineType('--').lineWidth(1.0).markerSize(10.0);
@@ -132,6 +134,5 @@ plt.plot([solidThreshold, solidThreshold], [0, 1], "n = ${solidThreshold}").colo
 
 plt.xlabel('connect count, n').ylabel('p(n)');
 plt.axis(0, maxConnect, 0.0, 0.501);
-plt.xTick(4);
 plt.show();
 

@@ -1,0 +1,32 @@
+log             none
+
+variable        vT              equal   2000
+variable        vP              equal   0.0
+variable        vRunStep        equal   50000
+variable        vThermoStep     equal   1000
+variable        vSeed           equal   4587281
+variable        vInDataPath     string  lmp/.temp/data-in-Cu108
+variable        vOutDataPath    string  lmp/.temp/data-out-Cu108
+
+
+units           metal
+boundary        p p p
+
+read_data       ${vInDataPath}
+timestep        0.0002
+
+pair_style      eam/fs
+pair_coeff      * * lmp/.potential/Cu-Zr_2.eam.fs Cu Zr
+
+velocity        all create ${vT} ${vSeed} dist gaussian mom yes rot yes
+
+thermo          ${vThermoStep}
+thermo_style    custom step temp press vol pe ke etotal enthalpy
+thermo_modify   flush yes
+
+fix             1 all nve
+fix             2 all temp/berendsen ${vT} ${vT} 0.2
+fix             3 all press/berendsen iso ${vP} ${vP} 2000.0
+run             ${vRunStep}
+
+write_data      ${vOutDataPath}

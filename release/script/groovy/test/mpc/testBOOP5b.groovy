@@ -68,6 +68,5 @@ plt.plot(distributionMelt2  , 'melt2');
 
 plt.xlabel('connect count, n').ylabel('p(n)');
 plt.axis(0, maxConnect, 0.0, 0.010);
-plt.xTick(4).yTick(0.001);
 plt.show();
 
