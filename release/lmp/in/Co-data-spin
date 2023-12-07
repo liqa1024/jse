@@ -1,0 +1,51 @@
+log             none
+
+variable        vT              equal   300
+variable        vP              equal   0.0
+variable        vRunStep        equal   100000
+variable        vSeed           equal   4587281
+variable        vSeedSpin       equal   21
+variable        vSeedLattice    equal   48279
+variable        vInDataPath     string  lmp/.temp/data-in-Co500
+variable        vOutDataPath    string  lmp/.temp/data-out-Co500
+
+
+units           metal
+atom_style 	    spin
+boundary        p p p
+
+# necessary for the serial algorithm (sametag)
+atom_modify 	map array
+
+timestep        0.0005
+read_data       ${vInDataPath}
+
+pair_style      hybrid/overlay eam/alloy spin/exchange 4.0
+pair_coeff      * * eam/alloy lmp/.potential/Co_PurjaPun_2012.eam.alloy Co
+pair_coeff 	    * * spin/exchange exchange 4.0 0.0446928 0.003496 1.4885
+
+velocity        all create ${vT} ${vSeed} dist gaussian mom yes rot yes
+
+
+# compute and output options
+
+compute 	    out_mag    all spin
+
+variable 	    magx      equal c_out_mag[1]
+variable 	    magy      equal c_out_mag[2]
+variable 	    magz      equal c_out_mag[3]
+variable 	    magnorm   equal c_out_mag[4]
+variable 	    emag      equal c_out_mag[5]
+variable 	    tmag      equal c_out_mag[6]
+
+thermo          1000
+thermo_style    custom step v_magx v_magy v_magz v_magnorm v_emag pe v_tmag temp etotal
+thermo_modify   flush yes
+
+fix 		    1 all precession/spin zeeman 0.0 0.0 0.0 1.0
+fix             2 all langevin/spin ${vT} 0.01 ${vSeedSpin}
+fix             3 all nve/spin lattice moving
+fix             4 all langevin ${vT} ${vT} 0.1 ${vSeedLattice}
+run             ${vRunStep}
+
+write_data      ${vOutDataPath}
