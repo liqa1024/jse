@@ -1,6 +1,7 @@
 log             none
 
 variable        vCutoff         equal   3.8
+variable        vL              equal   6
 variable        vInDataPath     string  lmp/data/CuFCC108.lmpdat
 variable        vDumpPath       string  lmp/.temp/Cu108.lammpstrj
 
@@ -8,12 +9,12 @@ units           metal
 boundary        p p p
 
 read_data       ${vInDataPath}
-timestep        0.002
+timestep        0.00001
 
 pair_style eam/alloy
-pair_coeff * * lmp/potential/ZrCu.lammps.eam Cu Zr
+pair_coeff * * lmp/.potential/ZrCu.lammps.eam Cu Zr
 
-compute Ql all orientorder/atom degrees 1 4 nnn NULL cutoff ${vCutoff}
+compute Ql all orientorder/atom degrees 1 ${vL} nnn NULL cutoff ${vCutoff}
 
 dump 1 all custom 1 ${vDumpPath} id type c_Ql[1]
 run 0
