@@ -2,6 +2,7 @@ package jtool.atom;
 
 import jtool.code.functional.IIntegerConsumer1;
 import jtool.math.MathEX;
+import jtool.math.matrix.IMatrix;
 import jtool.parallel.IObjectPool;
 import jtool.parallel.IShutdownable;
 import jtool.parallel.ThreadLocalObjectCachePool;
@@ -27,7 +28,7 @@ import static jtool.code.CS.ZL_INT;
 public class NeighborListGetter implements IShutdownable {
     final static double DEFAULT_CELL_STEP = 1.26; // 1.26*1.26*1.26 = 2.00
     
-    private XYZ[] mAtomDataXYZ;  // 注意 mAtomDataXYZ.length != mAtomNum
+    private IMatrix mAtomDataXYZ;  // 现在改为 Matrix 存储，每行为一个原子的 xyz 数据
     private final XYZ mBox;
     private final int mAtomNum;
     private final double mMinBox;
@@ -36,7 +37,7 @@ public class NeighborListGetter implements IShutdownable {
     private final TreeMap<Integer, ILinkedCell> mLinkedCells = new TreeMap<>(); // 记录对应有效近邻半径的 LinkedCell，使用 Integer 只存储倍率（负值表示除法），避免 double 作为 key 的问题
     
     /** NL 只支持已经经过平移的数据，目前暂不支持外部创建 */
-    NeighborListGetter(XYZ[] aAtomDataXYZ, int aAtomNum, IXYZ aBox, double aCellStep) {
+    NeighborListGetter(IMatrix aAtomDataXYZ, int aAtomNum, IXYZ aBox, double aCellStep) {
         mAtomDataXYZ = aAtomDataXYZ;
         mAtomNum = aAtomNum;
         mBox = XYZ.toXYZ(aBox); // 仅用于计算，直接转为 XYZ 即可
@@ -66,8 +67,8 @@ public class NeighborListGetter implements IShutdownable {
     
     /** 专用的 Cell 类，内部只存储下标来减少内存占用 */
     private interface ICell {
-        void forEach(XYZ[] aAtomDataXYZ, IXYZIdxDo aXYZIdxDo);
-        void forEach(int aIdx, boolean aHalf, XYZ[] aAtomDataXYZ, IXYZIdxDo aXYZIdxDo);
+        void forEach(IMatrix aAtomDataXYZ, IXYZIdxDo aXYZIdxDo);
+        void forEach(int aIdx, boolean aHalf, IMatrix aAtomDataXYZ, IXYZIdxDo aXYZIdxDo);
     }
     
     private final static class Cell implements ICell {
@@ -79,26 +80,24 @@ public class NeighborListGetter implements IShutdownable {
             final int tSize = mSize;
             for (int i = 0; i < tSize; ++i) aIdxDo.run(mData[i]);
         }
-        @Override public void forEach(XYZ[] aAtomDataXYZ, IXYZIdxDo aXYZIdxDo) {
+        @Override public void forEach(IMatrix aAtomDataXYZ, IXYZIdxDo aXYZIdxDo) {
             final int tSize = mSize;
             for (int i = 0; i < tSize; ++i) {
-                int tIdx = mData[i]; XYZ tXYZ = aAtomDataXYZ[tIdx];
-                aXYZIdxDo.run(tXYZ.mX, tXYZ.mY, tXYZ.mZ, tIdx);
+                int tIdx = mData[i];
+                aXYZIdxDo.run(aAtomDataXYZ.get(tIdx, 0), aAtomDataXYZ.get(tIdx, 1), aAtomDataXYZ.get(tIdx, 2), tIdx);
             }
         }
-        @Override public void forEach(int aIdx, boolean aHalf, XYZ[] aAtomDataXYZ, IXYZIdxDo aXYZIdxDo) {
+        @Override public void forEach(int aIdx, boolean aHalf, IMatrix aAtomDataXYZ, IXYZIdxDo aXYZIdxDo) {
             final int tSize = mSize;
             for (int i = 0; i < tSize; ++i) {
                 int tIdx = mData[i];
                 if (aHalf) {
                     if (tIdx < aIdx) {
-                        XYZ tXYZ = aAtomDataXYZ[tIdx];
-                        aXYZIdxDo.run(tXYZ.mX, tXYZ.mY, tXYZ.mZ, tIdx);
+                        aXYZIdxDo.run(aAtomDataXYZ.get(tIdx, 0), aAtomDataXYZ.get(tIdx, 1), aAtomDataXYZ.get(tIdx, 2), tIdx);
                     }
                 } else {
                     if (tIdx != aIdx) {
-                        XYZ tXYZ = aAtomDataXYZ[tIdx];
-                        aXYZIdxDo.run(tXYZ.mX, tXYZ.mY, tXYZ.mZ, tIdx);
+                        aXYZIdxDo.run(aAtomDataXYZ.get(tIdx, 0), aAtomDataXYZ.get(tIdx, 1), aAtomDataXYZ.get(tIdx, 2), tIdx);
                     }
                 }
             }
@@ -125,33 +124,30 @@ public class NeighborListGetter implements IShutdownable {
             mCell = aCell;
             mDirX = aDirX; mDirY = aDirY; mDirZ = aDirZ;
         }
-        @Override public void forEach(XYZ[] aAtomDataXYZ, IXYZIdxDo aXYZIdxDo) {
+        @Override public void forEach(IMatrix aAtomDataXYZ, IXYZIdxDo aXYZIdxDo) {
             final int tSize = mCell.mSize;
             for (int i = 0; i < tSize; ++i) {
-                int tIdx = mCell.mData[i]; XYZ tXYZ = aAtomDataXYZ[tIdx];
-                aXYZIdxDo.run(tXYZ.mX + mDirX, tXYZ.mY + mDirY, tXYZ.mZ + mDirZ, tIdx);
+                int tIdx = mCell.mData[i];
+                aXYZIdxDo.run(aAtomDataXYZ.get(tIdx, 0) + mDirX, aAtomDataXYZ.get(tIdx, 1) + mDirY, aAtomDataXYZ.get(tIdx, 2) + mDirZ, tIdx);
             }
         }
         /** 对于镜像的不能排除 idx 相同的，而对于 Half 的情况要仔细分析 */
-        @Override public void forEach(int aIdx, boolean aHalf, XYZ[] aAtomDataXYZ, IXYZIdxDo aXYZIdxDo) {
+        @Override public void forEach(int aIdx, boolean aHalf, IMatrix aAtomDataXYZ, IXYZIdxDo aXYZIdxDo) {
             final int tSize = mCell.mSize;
             for (int i = 0; i < tSize; ++i) {
                 int tIdx = mCell.mData[i];
                 if (aHalf) {
                     if (tIdx < aIdx) {
-                        XYZ tXYZ = aAtomDataXYZ[tIdx];
-                        aXYZIdxDo.run(tXYZ.mX + mDirX, tXYZ.mY + mDirY, tXYZ.mZ + mDirZ, tIdx);
+                        aXYZIdxDo.run(aAtomDataXYZ.get(tIdx, 0) + mDirX, aAtomDataXYZ.get(tIdx, 1) + mDirY, aAtomDataXYZ.get(tIdx, 2) + mDirZ, tIdx);
                     } else
                     if (tIdx == aIdx) {
                         // 使用这个方法只遍历一半的镜像相等 idx 对象
                         if ((mDirX>0.0) || (mDirX==0.0 && (mDirY>0.0 || (mDirY==0.0 && mDirZ>0.0)))) {
-                            XYZ tXYZ = aAtomDataXYZ[tIdx];
-                            aXYZIdxDo.run(tXYZ.mX + mDirX, tXYZ.mY + mDirY, tXYZ.mZ + mDirZ, tIdx);
+                            aXYZIdxDo.run(aAtomDataXYZ.get(tIdx, 0) + mDirX, aAtomDataXYZ.get(tIdx, 1) + mDirY, aAtomDataXYZ.get(tIdx, 2) + mDirZ, tIdx);
                         }
                     }
                 } else {
-                    XYZ tXYZ = aAtomDataXYZ[tIdx];
-                    aXYZIdxDo.run(tXYZ.mX + mDirX, tXYZ.mY + mDirY, tXYZ.mZ + mDirZ, tIdx);
+                    aXYZIdxDo.run(aAtomDataXYZ.get(tIdx, 0) + mDirX, aAtomDataXYZ.get(tIdx, 1) + mDirY, aAtomDataXYZ.get(tIdx, 2) + mDirZ, tIdx);
                 }
             }
         }
@@ -180,10 +176,9 @@ public class NeighborListGetter implements IShutdownable {
             for (int i = 0; i < tSize; ++i) mCells[i].clear(); // 直接清空旧数据即可
             // 遍历添加 XYZ
             for (int idx = 0; idx < mAtomNum; ++idx) {
-                XYZ tXYZ = mAtomDataXYZ[idx];
-                int i = (int) Math.floor(tXYZ.mX / mCellBox.mX); if (i >= mSizeX) continue;
-                int j = (int) Math.floor(tXYZ.mY / mCellBox.mY); if (j >= mSizeY) continue;
-                int k = (int) Math.floor(tXYZ.mZ / mCellBox.mZ); if (k >= mSizeZ) continue;
+                int i = (int) Math.floor(mAtomDataXYZ.get(idx, 0) / mCellBox.mX); if (i >= mSizeX) continue;
+                int j = (int) Math.floor(mAtomDataXYZ.get(idx, 1) / mCellBox.mY); if (j >= mSizeY) continue;
+                int k = (int) Math.floor(mAtomDataXYZ.get(idx, 2) / mCellBox.mZ); if (k >= mSizeZ) continue;
                 mCells[idx(i, j, k)].add(idx);
             }
         }
@@ -238,10 +233,9 @@ public class NeighborListGetter implements IShutdownable {
         }
         @Override public void forEachNeighbor(int aIdx, boolean aHalf, IXYZIdxDo aXYZIdxDo) {
             if (aIdx >= mAtomNum) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-            final XYZ cXYZ = mAtomDataXYZ[aIdx];
-            final int i = (int) Math.floor(cXYZ.mX / mCellBox.mX);
-            final int j = (int) Math.floor(cXYZ.mY / mCellBox.mY);
-            final int k = (int) Math.floor(cXYZ.mZ / mCellBox.mZ);
+            final int i = (int) Math.floor(mAtomDataXYZ.get(aIdx, 0) / mCellBox.mX);
+            final int j = (int) Math.floor(mAtomDataXYZ.get(aIdx, 1) / mCellBox.mY);
+            final int k = (int) Math.floor(mAtomDataXYZ.get(aIdx, 2) / mCellBox.mZ);
             cell(i  , j  , k  ).forEach(aIdx, aHalf, mAtomDataXYZ, aXYZIdxDo);
             cell(i+1, j  , k  ).forEach(aIdx, aHalf, mAtomDataXYZ, aXYZIdxDo);
             cell(i-1, j  , k  ).forEach(aIdx, aHalf, mAtomDataXYZ, aXYZIdxDo);
@@ -303,34 +297,36 @@ public class NeighborListGetter implements IShutdownable {
         /** 调整了遍历顺序让速度更快 */
         @Override public void forEachNeighbor(IXYZ aXYZ, IXYZIdxDo aXYZIdxDo) {
             for (int idx = 0; idx < mAtomNum; ++idx) {
-                final XYZ tXYZ = mAtomDataXYZ[idx];
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+                double tX = mAtomDataXYZ.get(idx, 0);
+                double tY = mAtomDataXYZ.get(idx, 1);
+                double tZ = mAtomDataXYZ.get(idx, 2);
+                aXYZIdxDo.run(tX        , tY        , tZ        , idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY        , tZ        , idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY        , tZ        , idx);
+                aXYZIdxDo.run(tX        , tY+mBox.mY, tZ        , idx);
+                aXYZIdxDo.run(tX        , tY-mBox.mY, tZ        , idx);
+                aXYZIdxDo.run(tX        , tY        , tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX        , tY        , tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY+mBox.mY, tZ        , idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY-mBox.mY, tZ        , idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY+mBox.mY, tZ        , idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY-mBox.mY, tZ        , idx);
+                aXYZIdxDo.run(tX        , tY+mBox.mY, tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX        , tY+mBox.mY, tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX        , tY-mBox.mY, tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX        , tY-mBox.mY, tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY        , tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY        , tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY        , tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY        , tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY+mBox.mY, tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY+mBox.mY, tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY-mBox.mY, tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY-mBox.mY, tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY+mBox.mY, tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY+mBox.mY, tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY-mBox.mY, tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY-mBox.mY, tZ-mBox.mZ, idx);
             }
         }
         @Override public void forEachNeighbor(int aIdx, boolean aHalf, IXYZIdxDo aXYZIdxDo) {
@@ -338,51 +334,55 @@ public class NeighborListGetter implements IShutdownable {
             // 先统一处理一般情况
             final int tEnd = aHalf ? aIdx : mAtomNum;
             for (int idx = 0; idx < tEnd; ++idx) {
-                final XYZ tXYZ = mAtomDataXYZ[idx];
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);
-                aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);
+                double tX = mAtomDataXYZ.get(idx, 0);
+                double tY = mAtomDataXYZ.get(idx, 1);
+                double tZ = mAtomDataXYZ.get(idx, 2);
+                aXYZIdxDo.run(tX        , tY        , tZ        , idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY        , tZ        , idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY        , tZ        , idx);
+                aXYZIdxDo.run(tX        , tY+mBox.mY, tZ        , idx);
+                aXYZIdxDo.run(tX        , tY-mBox.mY, tZ        , idx);
+                aXYZIdxDo.run(tX        , tY        , tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX        , tY        , tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY+mBox.mY, tZ        , idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY-mBox.mY, tZ        , idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY+mBox.mY, tZ        , idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY-mBox.mY, tZ        , idx);
+                aXYZIdxDo.run(tX        , tY+mBox.mY, tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX        , tY+mBox.mY, tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX        , tY-mBox.mY, tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX        , tY-mBox.mY, tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY        , tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY        , tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY        , tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY        , tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY+mBox.mY, tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY+mBox.mY, tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY-mBox.mY, tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX+mBox.mX, tY-mBox.mY, tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY+mBox.mY, tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY+mBox.mY, tZ-mBox.mZ, idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY-mBox.mY, tZ+mBox.mZ, idx);
+                aXYZIdxDo.run(tX-mBox.mX, tY-mBox.mY, tZ-mBox.mZ, idx);
             }
             if (aHalf) {
                 // Half 时需要这样排除一半 idx 相同的情况
-                final XYZ cXYZ = mAtomDataXYZ[aIdx];
-                aXYZIdxDo.run(cXYZ.mX+mBox.mX, cXYZ.mY        , cXYZ.mZ        , aIdx);
-                aXYZIdxDo.run(cXYZ.mX        , cXYZ.mY+mBox.mY, cXYZ.mZ        , aIdx);
-                aXYZIdxDo.run(cXYZ.mX        , cXYZ.mY        , cXYZ.mZ+mBox.mZ, aIdx);
-                aXYZIdxDo.run(cXYZ.mX+mBox.mX, cXYZ.mY+mBox.mY, cXYZ.mZ        , aIdx);
-                aXYZIdxDo.run(cXYZ.mX+mBox.mX, cXYZ.mY-mBox.mY, cXYZ.mZ        , aIdx);
-                aXYZIdxDo.run(cXYZ.mX        , cXYZ.mY+mBox.mY, cXYZ.mZ+mBox.mZ, aIdx);
-                aXYZIdxDo.run(cXYZ.mX        , cXYZ.mY+mBox.mY, cXYZ.mZ-mBox.mZ, aIdx);
-                aXYZIdxDo.run(cXYZ.mX+mBox.mX, cXYZ.mY        , cXYZ.mZ+mBox.mZ, aIdx);
-                aXYZIdxDo.run(cXYZ.mX+mBox.mX, cXYZ.mY        , cXYZ.mZ-mBox.mZ, aIdx);
-                aXYZIdxDo.run(cXYZ.mX+mBox.mX, cXYZ.mY+mBox.mY, cXYZ.mZ+mBox.mZ, aIdx);
-                aXYZIdxDo.run(cXYZ.mX+mBox.mX, cXYZ.mY+mBox.mY, cXYZ.mZ-mBox.mZ, aIdx);
-                aXYZIdxDo.run(cXYZ.mX+mBox.mX, cXYZ.mY-mBox.mY, cXYZ.mZ+mBox.mZ, aIdx);
-                aXYZIdxDo.run(cXYZ.mX+mBox.mX, cXYZ.mY-mBox.mY, cXYZ.mZ-mBox.mZ, aIdx);
+                double tX = mAtomDataXYZ.get(aIdx, 0);
+                double tY = mAtomDataXYZ.get(aIdx, 1);
+                double tZ = mAtomDataXYZ.get(aIdx, 2);
+                aXYZIdxDo.run(tX+mBox.mX, tY        , tZ        , aIdx);
+                aXYZIdxDo.run(tX        , tY+mBox.mY, tZ        , aIdx);
+                aXYZIdxDo.run(tX        , tY        , tZ+mBox.mZ, aIdx);
+                aXYZIdxDo.run(tX+mBox.mX, tY+mBox.mY, tZ        , aIdx);
+                aXYZIdxDo.run(tX+mBox.mX, tY-mBox.mY, tZ        , aIdx);
+                aXYZIdxDo.run(tX        , tY+mBox.mY, tZ+mBox.mZ, aIdx);
+                aXYZIdxDo.run(tX        , tY+mBox.mY, tZ-mBox.mZ, aIdx);
+                aXYZIdxDo.run(tX+mBox.mX, tY        , tZ+mBox.mZ, aIdx);
+                aXYZIdxDo.run(tX+mBox.mX, tY        , tZ-mBox.mZ, aIdx);
+                aXYZIdxDo.run(tX+mBox.mX, tY+mBox.mY, tZ+mBox.mZ, aIdx);
+                aXYZIdxDo.run(tX+mBox.mX, tY+mBox.mY, tZ-mBox.mZ, aIdx);
+                aXYZIdxDo.run(tX+mBox.mX, tY-mBox.mY, tZ+mBox.mZ, aIdx);
+                aXYZIdxDo.run(tX+mBox.mX, tY-mBox.mY, tZ-mBox.mZ, aIdx);
             }
         }
         @Override public void forEachCell(IIntegerConsumer1 aIdxDo) {
@@ -390,32 +390,32 @@ public class NeighborListGetter implements IShutdownable {
         }
         @Override public void forEachMirrorCell(IXYZIdxDo aXYZIdxDo) {
             // 不是最优顺序，不过不重要
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ        , idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ        , idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ        , idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ        , idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX        , tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ+mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY        , tXYZ.mZ-mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX+mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ+mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY+mBox.mY, tXYZ.mZ-mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ+mBox.mZ, idx);}
-            for (int idx = 0; idx < mAtomNum; ++idx) {final XYZ tXYZ = mAtomDataXYZ[idx]; aXYZIdxDo.run(tXYZ.mX-mBox.mX, tXYZ.mY-mBox.mY, tXYZ.mZ-mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)+mBox.mX, mAtomDataXYZ.get(idx, 1)        , mAtomDataXYZ.get(idx, 2)        , idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)-mBox.mX, mAtomDataXYZ.get(idx, 1)        , mAtomDataXYZ.get(idx, 2)        , idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)        , mAtomDataXYZ.get(idx, 1)+mBox.mY, mAtomDataXYZ.get(idx, 2)        , idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)        , mAtomDataXYZ.get(idx, 1)-mBox.mY, mAtomDataXYZ.get(idx, 2)        , idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)        , mAtomDataXYZ.get(idx, 1)        , mAtomDataXYZ.get(idx, 2)+mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)        , mAtomDataXYZ.get(idx, 1)        , mAtomDataXYZ.get(idx, 2)-mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)+mBox.mX, mAtomDataXYZ.get(idx, 1)+mBox.mY, mAtomDataXYZ.get(idx, 2)        , idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)+mBox.mX, mAtomDataXYZ.get(idx, 1)-mBox.mY, mAtomDataXYZ.get(idx, 2)        , idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)-mBox.mX, mAtomDataXYZ.get(idx, 1)+mBox.mY, mAtomDataXYZ.get(idx, 2)        , idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)-mBox.mX, mAtomDataXYZ.get(idx, 1)-mBox.mY, mAtomDataXYZ.get(idx, 2)        , idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)        , mAtomDataXYZ.get(idx, 1)+mBox.mY, mAtomDataXYZ.get(idx, 2)+mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)        , mAtomDataXYZ.get(idx, 1)+mBox.mY, mAtomDataXYZ.get(idx, 2)-mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)        , mAtomDataXYZ.get(idx, 1)-mBox.mY, mAtomDataXYZ.get(idx, 2)+mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)        , mAtomDataXYZ.get(idx, 1)-mBox.mY, mAtomDataXYZ.get(idx, 2)-mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)+mBox.mX, mAtomDataXYZ.get(idx, 1)        , mAtomDataXYZ.get(idx, 2)+mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)-mBox.mX, mAtomDataXYZ.get(idx, 1)        , mAtomDataXYZ.get(idx, 2)+mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)+mBox.mX, mAtomDataXYZ.get(idx, 1)        , mAtomDataXYZ.get(idx, 2)-mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)-mBox.mX, mAtomDataXYZ.get(idx, 1)        , mAtomDataXYZ.get(idx, 2)-mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)+mBox.mX, mAtomDataXYZ.get(idx, 1)+mBox.mY, mAtomDataXYZ.get(idx, 2)+mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)+mBox.mX, mAtomDataXYZ.get(idx, 1)+mBox.mY, mAtomDataXYZ.get(idx, 2)-mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)+mBox.mX, mAtomDataXYZ.get(idx, 1)-mBox.mY, mAtomDataXYZ.get(idx, 2)+mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)+mBox.mX, mAtomDataXYZ.get(idx, 1)-mBox.mY, mAtomDataXYZ.get(idx, 2)-mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)-mBox.mX, mAtomDataXYZ.get(idx, 1)+mBox.mY, mAtomDataXYZ.get(idx, 2)+mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)-mBox.mX, mAtomDataXYZ.get(idx, 1)+mBox.mY, mAtomDataXYZ.get(idx, 2)-mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)-mBox.mX, mAtomDataXYZ.get(idx, 1)-mBox.mY, mAtomDataXYZ.get(idx, 2)+mBox.mZ, idx);}
+            for (int idx = 0; idx < mAtomNum; ++idx) {aXYZIdxDo.run(mAtomDataXYZ.get(idx, 0)-mBox.mX, mAtomDataXYZ.get(idx, 1)-mBox.mY, mAtomDataXYZ.get(idx, 2)-mBox.mZ, idx);}
         }
     }
     private final class ExpandLinkedCell implements ILinkedCell {
@@ -424,12 +424,14 @@ public class NeighborListGetter implements IShutdownable {
         /** 调整了遍历顺序让速度更快 */
         @Override public void forEachNeighbor(IXYZ aXYZ, IXYZIdxDo aXYZIdxDo) {
             for (int idx = 0; idx < mAtomNum; ++idx) {
-                final XYZ tXYZ = mAtomDataXYZ[idx];
+                double tX = mAtomDataXYZ.get(idx, 0);
+                double tY = mAtomDataXYZ.get(idx, 1);
+                double tZ = mAtomDataXYZ.get(idx, 2);
                 for (int i = -mMulX; i <= mMulX; ++i) for (int j = -mMulY; j <= mMulY; ++j) for (int k = -mMulZ; k <= mMulZ; ++k) {
                     aXYZIdxDo.run(
-                        i==0 ? tXYZ.mX : tXYZ.mX + mBox.mX*i,
-                        j==0 ? tXYZ.mY : tXYZ.mY + mBox.mY*j,
-                        k==0 ? tXYZ.mZ : tXYZ.mZ + mBox.mZ*k,
+                        i==0 ? tX : tX + mBox.mX*i,
+                        j==0 ? tY : tY + mBox.mY*j,
+                        k==0 ? tZ : tZ + mBox.mZ*k,
                         idx);
                 }
             }
@@ -439,38 +441,42 @@ public class NeighborListGetter implements IShutdownable {
             // 先统一处理一般情况
             final int tEnd = aHalf ? aIdx : mAtomNum;
             for (int idx = 0; idx < tEnd; ++idx) {
-                final XYZ tXYZ = mAtomDataXYZ[idx];
+                double tX = mAtomDataXYZ.get(idx, 0);
+                double tY = mAtomDataXYZ.get(idx, 1);
+                double tZ = mAtomDataXYZ.get(idx, 2);
                 for (int i = -mMulX; i <= mMulX; ++i) for (int j = -mMulY; j <= mMulY; ++j) for (int k = -mMulZ; k <= mMulZ; ++k) {
                     aXYZIdxDo.run(
-                        i==0 ? tXYZ.mX : tXYZ.mX + mBox.mX*i,
-                        j==0 ? tXYZ.mY : tXYZ.mY + mBox.mY*j,
-                        k==0 ? tXYZ.mZ : tXYZ.mZ + mBox.mZ*k,
+                        i==0 ? tX : tX + mBox.mX*i,
+                        j==0 ? tY : tY + mBox.mY*j,
+                        k==0 ? tZ : tZ + mBox.mZ*k,
                         idx);
                 }
             }
             if (aHalf) {
                 // 扩展情况的 Half 又有所不同，这里需要这样处理 idx 相同的情况
-                final XYZ cXYZ = mAtomDataXYZ[aIdx];
+                double tX = mAtomDataXYZ.get(aIdx, 0);
+                double tY = mAtomDataXYZ.get(aIdx, 1);
+                double tZ = mAtomDataXYZ.get(aIdx, 2);
                 // 通过这样的遍历方式排除掉对称的一半
                 for (int i = 1; i <= mMulX; ++i) for (int j = -mMulY; j <= mMulY; ++j) for (int k = -mMulZ; k <= mMulZ; ++k) {
                     aXYZIdxDo.run(
-                        i==0 ? cXYZ.mX : cXYZ.mX + mBox.mX*i,
-                        j==0 ? cXYZ.mY : cXYZ.mY + mBox.mY*j,
-                        k==0 ? cXYZ.mZ : cXYZ.mZ + mBox.mZ*k,
+                        i==0 ? tX : tX + mBox.mX*i,
+                        j==0 ? tY : tY + mBox.mY*j,
+                        k==0 ? tZ : tZ + mBox.mZ*k,
                         aIdx);
                 }
                 for (int j = 1; j <= mMulY; ++j) for (int k = -mMulZ; k <= mMulZ; ++k) {
                     aXYZIdxDo.run(
-                        cXYZ.mX,
-                        j==0 ? cXYZ.mY : cXYZ.mY + mBox.mY*j,
-                        k==0 ? cXYZ.mZ : cXYZ.mZ + mBox.mZ*k,
+                        tX,
+                        j==0 ? tY : tY + mBox.mY*j,
+                        k==0 ? tZ : tZ + mBox.mZ*k,
                         aIdx);
                 }
                 for (int k = 1; k <= mMulZ; ++k) {
                     aXYZIdxDo.run(
-                        cXYZ.mX,
-                        cXYZ.mY,
-                        k==0 ? cXYZ.mZ : cXYZ.mZ + mBox.mZ*k,
+                        tX,
+                        tY,
+                        k==0 ? tZ : tZ + mBox.mZ*k,
                         aIdx);
                 }
             }
@@ -482,11 +488,10 @@ public class NeighborListGetter implements IShutdownable {
             // 不是最优顺序，不过不重要
             for (int i = -mMulX; i <= mMulX; ++i) for (int j = -mMulY; j <= mMulY; ++j) for (int k = -mMulZ; k <= mMulZ; ++k) if (!(i==0 && j==0 && k==0)) {
                 for (int idx = 0; idx < mAtomNum; ++idx) {
-                    final XYZ tXYZ = mAtomDataXYZ[idx];
                     aXYZIdxDo.run(
-                        i==0 ? tXYZ.mX : tXYZ.mX + mBox.mX*i,
-                        j==0 ? tXYZ.mY : tXYZ.mY + mBox.mY*j,
-                        k==0 ? tXYZ.mZ : tXYZ.mZ + mBox.mZ*k,
+                        i==0 ? mAtomDataXYZ.get(idx, 0) : mAtomDataXYZ.get(idx, 0) + mBox.mX*i,
+                        j==0 ? mAtomDataXYZ.get(idx, 1) : mAtomDataXYZ.get(idx, 1) + mBox.mY*j,
+                        k==0 ? mAtomDataXYZ.get(idx, 2) : mAtomDataXYZ.get(idx, 2) + mBox.mZ*k,
                         idx);
                 }
             }
@@ -592,7 +597,7 @@ public class NeighborListGetter implements IShutdownable {
      void forEachNeighbor_(final int aIDX, final double aRMax, boolean aHalf, final boolean aMHT, final IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
-        final XYZ cXYZ = mAtomDataXYZ[aIDX];
+        final XYZ cXYZ = new XYZ(mAtomDataXYZ.row(aIDX));
         getProperLinkedCell(aRMax).forEachNeighbor(aIDX, aHalf, (x, y, z, idx) -> {
             // 内部会自动处理 idx 相同以及 half 的情况
             double tDis = aMHT ? cXYZ.distanceMHT(x, y, z) : cXYZ.distance(x, y, z);
@@ -696,7 +701,7 @@ public class NeighborListGetter implements IShutdownable {
         
         // 先遍历所有经历统计出最近的列表
         final NearestNeighborList rNN = new NearestNeighborList(aNnn);
-        final XYZ cXYZ = mAtomDataXYZ[aIDX];
+        final XYZ cXYZ = new XYZ(mAtomDataXYZ.row(aIDX));
         // 这里需要先强制关闭 half 来获取限制最近邻数目的列表
         getProperLinkedCell(aRMax).forEachNeighbor(aIDX, false, (x, y, z, idx) -> {
             // 内部会自动处理 idx 相同的情况

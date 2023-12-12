@@ -3,6 +3,7 @@ package jtool.parallel;
 import jtool.math.IDataShell;
 import jtool.math.matrix.ColumnMatrix;
 import jtool.math.matrix.IMatrix;
+import jtool.math.matrix.RowMatrix;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -29,9 +30,21 @@ public class MatrixCache {
         }
     }
     public static @NotNull IMatrix getZeros(int aRowNum, int aColNum) {
+        return getZerosCol(aRowNum, aColNum);
+    }
+    public static @NotNull IMatrix getZerosCol(int aRowNum, int aColNum) {
         return new ColumnMatrix(aRowNum, aColNum, DoubleArrayCache.getZeros(aRowNum*aColNum));
     }
+    public static @NotNull IMatrix getZerosRow(int aRowNum, int aColNum) {
+        return new RowMatrix(aRowNum, aColNum, DoubleArrayCache.getZeros(aRowNum*aColNum));
+    }
     public static @NotNull IMatrix getMat(int aRowNum, int aColNum) {
+        return getMatCol(aRowNum, aColNum);
+    }
+    public static @NotNull IMatrix getMatCol(int aRowNum, int aColNum) {
         return new ColumnMatrix(aRowNum, aColNum, DoubleArrayCache.getArray(aRowNum*aColNum));
+    }
+    public static @NotNull IMatrix getMatRow(int aRowNum, int aColNum) {
+        return new RowMatrix(aRowNum, aColNum, DoubleArrayCache.getArray(aRowNum*aColNum));
     }
 }
