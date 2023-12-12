@@ -68,6 +68,9 @@ public interface IFunc1Operation {
     /** 微分积分运算 */
     IFunc1 laplacian();
     
+    /** 积分运算 */
+    double integral();
+    
     /**
      * 卷积运算，通过输入的卷积核来对自身函数进行卷积运算，输出得到的结果
      * <p>

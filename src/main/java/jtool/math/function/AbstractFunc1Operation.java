@@ -2,11 +2,13 @@ package jtool.math.function;
 
 import jtool.code.functional.*;
 import jtool.math.vector.IVector;
+import org.jetbrains.annotations.ApiStatus;
 
 /**
  * 通用的的函数运算。
  * @author liqa
  */
+@ApiStatus.Experimental
 public abstract class AbstractFunc1Operation implements IFunc1Operation {
     /** 通用的一些运算 */
     @SuppressWarnings("Convert2MethodRef")
@@ -113,6 +115,19 @@ public abstract class AbstractFunc1Operation implements IFunc1Operation {
     
     /** 简单起见，对于一般非均匀的直接不支持此操作 */
     @Override public IFunc1 laplacian() {throw new UnsupportedOperationException("laplacian");}
+    
+    @Override public double integral() {
+        final IFunc1 tThis = thisFunc1_();
+        double pF = tThis.get_(0);
+        double tResult = 0.0;
+        int tNx = tThis.Nx();
+        for (int i = 1; i < tNx; ++i) {
+            double tF = tThis.get_(i);
+            tResult += tThis.dx(i-1)*(tF + pF)*0.5;
+            pF = tF;
+        }
+        return tResult;
+    }
     
     /** 对于卷积以 refConvolve 为主 */
     @Override public IFunc1 convolve(IFunc2Subs aConv) {

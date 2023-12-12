@@ -2,6 +2,7 @@ package atom
 
 import jtool.code.UT
 import jtool.lmp.Dump
+import jtool.math.function.Func1
 import jtool.math.vector.ILogicalVector
 import jtool.math.vector.IVector
 import jtool.math.vector.LogicalVector
@@ -223,7 +224,7 @@ class ClassifyCe {
         if (decider instanceof RandomForest) {
             def recall = zeros(21);
             def Ne = zeros(21);
-            def ratio = linspace(0.0, 1.0, 21);
+            def ratio = linspace(1.0, 0.0, 21);
             def pred = decider.predict(dataInput);
             for (j in 0..<21) {
                 if (ratio[j] == (double)0.0) {recall[j] = 1.0; Ne[j] = 1.0; continue;}
@@ -244,11 +245,12 @@ class ClassifyCe {
             }
             plot(Ne, recall, "ROC of $name").marker('o').lineType(line).color(color);
             plot([Ne[10]], [recall[10]], null).marker('x').lineType('none').color(color);
+            println("AUROC of $name: ${Func1.from(Ne, recall).opt().integral()}");
         } else
         if (decider instanceof IVector) {
             def recall = zeros(41);
             def Ne = zeros(41);
-            def ratio = linspace(0.0, 1.0, 41);
+            def ratio = linspace(1.0, 0.0, 41);
             for (j in 0..<41) {
                 if (ratio[j] == (double)0.0) {recall[j] = 1.0; Ne[j] = 1.0; continue;}
                 if (ratio[j] == (double)1.0) {recall[j] = 0.0; Ne[j] = 0.0; continue;}
@@ -268,6 +270,7 @@ class ClassifyCe {
                 Ne[j] = Nnp / (Nnn + Nnp);
             }
             plot(Ne, recall, "ROC of $name").marker('o').lineType(line).color(color);
+            println("AUROC of $name: ${Func1.from(Ne, recall).opt().integral()}");
         } else {
             int Npp = 0, Nnn = 0, Npn = 0, Nnp = 0;
             for (i in 0..<dataInput.size()) {
@@ -284,6 +287,7 @@ class ClassifyCe {
             def recall = Npp / (Npp + Npn);
             def Ne = Nnp / (Nnn + Nnp);
             plot([0, Ne, 1], [0, recall, 1], "ROC of $name").marker('o').lineType(line).color(color);
+            println("AUROC of $name: ${Ne*recall*0.5 + (1.0-Ne)*(1.0-recall)*0.5}");
         }
     }
 }

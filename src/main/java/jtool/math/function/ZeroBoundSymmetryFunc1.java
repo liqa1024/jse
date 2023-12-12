@@ -36,9 +36,12 @@ public final class ZeroBoundSymmetryFunc1 extends DoubleArrayFunc1 implements IZ
                 return rFunc1;
             }
             
+            /** 积分考虑对称性需要结果乘以 2 */
+            @Override public double integral() {return super.integral() * 2.0;}
+            
             /** 卷积考虑对称性需要结果乘以 2 */
             @Override public IFunc1Subs refConvolve(final IFunc2Subs aConv) {return k -> super.refConvolve(aConv).subs(k) * 2.0;}
-            @Override public IFunc1Subs refConvolveFull(final IFunc3Subs aConv)  {return k -> super.refConvolveFull(aConv).subs(k) * 2.0;}
+            @Override public IFunc1Subs refConvolveFull(final IFunc3Subs aConv) {return k -> super.refConvolveFull(aConv).subs(k) * 2.0;}
         };
     }
 }

@@ -5,11 +5,13 @@ import jtool.code.functional.*;
 import jtool.math.IDataShell;
 import jtool.math.MathEX;
 import jtool.math.operation.ARRAY;
+import org.jetbrains.annotations.ApiStatus;
 
 /**
  * 针对包含 double[] 的函数的运算，这里更进一步是针对 {@link DoubleArrayFunc1} 的运算。
  * @author liqa
  */
+@ApiStatus.Experimental
 public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
     /** 通用的一些运算 */
     @Override public IFunc1 plus(IFunc1 aRHS) {
@@ -439,6 +441,24 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
             
             rDest.set(i, (tFmm + tFpp - 2*tFunc1.get_(i)) / tDx2);
         }
+    }
+    
+    @Override public double integral() {
+        DoubleArrayFunc1 tThis = thisFunc1_();
+        double pF = tThis.get_(0);
+        double tDx2 = tThis.dx()/2.0;
+        double tResult = 0.0;
+        int tNx = tThis.Nx();
+        for (int i = 1; i < tNx; ++i) {
+            double tF = tThis.get_(i);
+            tResult += tDx2*(tF + pF);
+            pF = tF;
+        }
+        // 还需要增加 i == tNx 的一项，这样对于周期边界条件会全部都积分
+        double tF = tThis.getOutR_(tNx);
+        tResult += tDx2*(tF + pF);
+        
+        return tResult;
     }
     
     /** 对于卷积以 refConvolve 为主 */

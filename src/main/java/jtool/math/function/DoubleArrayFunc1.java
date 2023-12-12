@@ -7,6 +7,7 @@ import jtool.math.MathEX;
 import jtool.math.vector.RefVector;
 import jtool.math.vector.IVector;
 import jtool.math.vector.Vector;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 
@@ -16,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
  * <p> 并且都要求 x 是等间距排列的，主要是为了加速查找过程 </p>
  * <p> 如果完全抽象的实现会非常复杂（包括新的专门用于函数的迭代器，相关运算之类，复杂度会超过矩阵向量库），这里暂不打算实现（至少等矩阵向量库完全成熟稳定） </p>
  */
+@ApiStatus.Experimental
 public abstract class DoubleArrayFunc1 implements IEqualIntervalFunc1, IDataShell<double[]> {
     protected double[] mData;
     protected double mX0;

@@ -6,6 +6,7 @@ import jtool.math.vector.IVector;
 import jtool.math.vector.IVectorGetter;
 import jtool.math.vector.RefVector;
 import jtool.math.vector.Vector;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.Arrays;
 
@@ -14,6 +15,7 @@ import java.util.Arrays;
  * 简单起见这里只提供零边界的实现，size 为 mF.length
  * @author liqa
  */
+@ApiStatus.Experimental
 public final class UnequalIntervalFunc1 implements IZeroBoundFunc1 {
     /** 在这里提供一些常用的构造 */
     public static UnequalIntervalFunc1 zeros(int aNx, IVectorGetter aXGetter) {
