@@ -19,7 +19,7 @@ import jtool.math.function.IFunc1;
 import jtool.math.function.IFunc1Subs;
 import jtool.math.matrix.IMatrix;
 import jtool.math.matrix.Matrices;
-import jtool.math.random.LocalRandom;
+import jtool.parallel.LocalRandom;
 import jtool.math.table.ITable;
 import jtool.math.table.Tables;
 import jtool.math.vector.IVector;

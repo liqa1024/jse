@@ -14,7 +14,6 @@ java {
 repositories {
     mavenCentral()
     maven {url 'https://www.jitpack.io'}
-    maven {url 'https://invesdwin.de/repo/invesdwin-oss/'}
 }
 
 sourceSets {

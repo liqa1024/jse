@@ -1,7 +1,7 @@
 package rareevent
 
 import jtool.math.MathEX
-import jtool.math.random.LocalRandom
+import jtool.parallel.LocalRandom
 import jtoolex.rareevent.IParameterCalculator
 import jtoolex.rareevent.IPathGenerator
 import groovy.transform.CompileStatic

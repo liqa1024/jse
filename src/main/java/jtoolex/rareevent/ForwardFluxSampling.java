@@ -7,7 +7,7 @@ import jtool.code.CS;
 import jtool.code.UT;
 import jtool.code.collection.AbstractCollections;
 import jtool.math.MathEX;
-import jtool.math.random.LocalRandom;
+import jtool.parallel.LocalRandom;
 import jtool.math.vector.ILogicalVector;
 import jtool.math.vector.IVector;
 import jtool.math.vector.LogicalVector;

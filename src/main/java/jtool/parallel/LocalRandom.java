@@ -1,4 +1,4 @@
-package jtool.math.random;
+package jtool.parallel;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;

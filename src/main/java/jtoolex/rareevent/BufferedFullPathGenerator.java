@@ -1,7 +1,7 @@
 package jtoolex.rareevent;
 
 import jtool.atom.IAtomData;
-import jtool.math.random.LocalRandom;
+import jtool.parallel.LocalRandom;
 import jtool.parallel.AbstractHasAutoShutdown;
 import jtool.parallel.IAutoShutdown;
 import org.jetbrains.annotations.ApiStatus;

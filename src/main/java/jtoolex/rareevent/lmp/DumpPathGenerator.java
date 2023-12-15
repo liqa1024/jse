@@ -13,7 +13,7 @@ import jtool.lmp.LmpIn;
 import jtool.lmp.Lmpdat;
 import jtool.math.matrix.IMatrix;
 import jtool.math.matrix.Matrices;
-import jtool.math.random.LocalRandom;
+import jtool.parallel.LocalRandom;
 import jtool.math.vector.IVector;
 import jtool.math.vector.Vectors;
 import jtool.parallel.AbstractHasAutoShutdown;
