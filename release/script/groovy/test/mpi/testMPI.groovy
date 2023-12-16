@@ -11,12 +11,19 @@ import static jtool.code.UT.Math.*;
 MPI.init(args);
 
 int me = MPI.Comm.WORLD.rank();
-int size = MPI.Comm.WORLD.size();
-double r = rand();
+double[] r = [rand()];
 println("rand of <$me>: $r");
-double [] recv = new double[size];
-MPI.Comm.WORLD.allgather([r] as double[], 1, recv, 1);
-println("recv of <$me>: $recv");
+if (me == 0) {
+    double[] sum = new double[1];
+    double[] max = new double[1];
+    MPI.Comm.WORLD.reduce(r, sum, 1, MPI.Op.SUM, 0);
+    MPI.Comm.WORLD.reduce(r, max, 1, MPI.Op.MAX, 0);
+    println("sum of <$me>: $sum");
+    println("max of <$me>: $max");
+} else {
+    MPI.Comm.WORLD.reduce(r, null, 1, MPI.Op.SUM, 0);
+    MPI.Comm.WORLD.reduce(r, null, 1, MPI.Op.MAX, 0);
+}
 
 MPI.shutdown();
 
