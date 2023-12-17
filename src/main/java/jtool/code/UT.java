@@ -35,6 +35,7 @@ import jtool.plot.*;
 import jtool.vasp.IVaspCommonData;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarBuilder;
+import me.tongfei.progressbar.ProgressBarStyle;
 import net.jafama.FastMath;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -450,6 +451,7 @@ public class UT {
                 .setTaskName(aName).setInitialMax(aN)
 //                .setConsumer(new ConsoleProgressBarConsumer(System.out))
                 .setUpdateIntervalMillis((int)FILE_SYSTEM_SLEEP_TIME_2)
+                .setStyle(ProgressBarStyle.ASCII)
                 .build();
             Main.addGlobalAutoCloseable(sProgressBar);
         }
@@ -557,7 +559,7 @@ public class UT {
             tZ = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
             XYZ tBox = new XYZ(tX, tY, tZ);
             // 获取原子数据，这里只有 XYZ 数据
-            int tAtomNum = aBytes.length/(DOUBLE_LEN*3) - 2;
+            int tAtomNum = (aBytes.length - DOUBLE_LEN*3) / (DOUBLE_LEN*3);
             List<Atom> rAtoms = new ArrayList<>(tAtomNum);
             for (int tID = 1; tID <= tAtomNum; ++tID) {
                 tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
@@ -567,6 +569,51 @@ public class UT {
             }
             // 返回结果
             return new AtomData(rAtoms, tBox);
+        }
+        
+        /** {@link IAtomData} 的序列化和反序列化 */
+        public static byte[] atomDataXYZType2bytes(IAtomData aAtomData) {
+            byte[] rBytes = new byte[DOUBLE_LEN*3 + INT_LEN + (DOUBLE_LEN*3 + INT_LEN)*aAtomData.atomNum()];
+            int tIdx = 0;
+            // 模拟盒数据
+            IXYZ tBox = aAtomData.box();
+            double2bytes(tBox.x(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            double2bytes(tBox.y(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            double2bytes(tBox.z(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            // 原子种类数目信息
+            int2bytes(aAtomData.atomTypeNum(), rBytes, tIdx); tIdx+=INT_LEN;
+            // 原子数据
+            for (IAtom tAtom : aAtomData.asList()) {
+                double2bytes(tAtom.x(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+                double2bytes(tAtom.y(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+                double2bytes(tAtom.z(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+                int2bytes (tAtom.type(), rBytes, tIdx); tIdx+=INT_LEN;
+            }
+            return rBytes;
+        }
+        public static IAtomData bytes2atomDataXYZType(byte[] aBytes) {
+            double tX, tY, tZ;
+            int tType;
+            int tIdx = 0;
+            // 获取模拟盒数据
+            tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+            tY = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+            tZ = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+            XYZ tBox = new XYZ(tX, tY, tZ);
+            // 获取原子种类数目信息
+            int tAtomTypeNum = bytes2int(aBytes, tIdx); tIdx+=INT_LEN;
+            // 获取原子数据，这里只有 XYZ 数据
+            int tAtomNum = (aBytes.length - DOUBLE_LEN*3 - INT_LEN) / (DOUBLE_LEN*3 + INT_LEN);
+            List<Atom> rAtoms = new ArrayList<>(tAtomNum);
+            for (int tID = 1; tID <= tAtomNum; ++tID) {
+                tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+                tY = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+                tZ = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+                tType = bytes2int(aBytes, tIdx); tIdx+=INT_LEN;
+                rAtoms.add(new Atom(tX, tY, tZ, tID, tType));
+            }
+            // 返回结果
+            return new AtomData(rAtoms, tAtomTypeNum, tBox);
         }
     }
     
