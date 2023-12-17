@@ -34,9 +34,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static jtool.code.CS.*;
 import static jtool.code.CS.Exec.*;
-import static jtool.code.CS.IS_WINDOWS;
-import static jtool.code.CS.WORKING_DIR;
 import static org.codehaus.groovy.runtime.InvokerHelper.MAIN_METHOD_NAME;
 
 /**
@@ -216,7 +215,7 @@ public class SP {
         private final static String PYPKG_DIR = JAR_DIR+".pypkg/";
         private final static String PYLIB_DIR = JAR_DIR;
         private final static String JEPLIB_DIR = PYLIB_DIR+"jep/";
-        private final static String JEPLIB_PATH = JEPLIB_DIR + (IS_WINDOWS ? "jep.dll" : "jep.so");
+        private final static String JEPLIB_PATH = JEPLIB_DIR + (IS_WINDOWS ? "jep.dll" : (IS_MAC ? "jep.jnilib" : "jep.so"));
         
         /** 直接运行文本的脚本 */
         public synchronized static void runText(String aText) throws JepException {JEP_INTERP.exec(aText);}
@@ -373,7 +372,7 @@ public class SP {
                 System.out.println("JEP INIT INFO: jep source code downloading finished");
             }
             // 解压 jep 包到临时目录，如果已经存在则直接情况此目录
-            String tWorkingDir = WORKING_DIR.replaceAll("%n", "jep-src");
+            String tWorkingDir = WORKING_DIR.replaceAll("%n", "jepsrc");
             UT.IO.removeDir(tWorkingDir);
             UT.IO.zip2dir(tJepZipPath, tWorkingDir);
             // 安装 jep 包，这里直接通过 setup.py 来安装
@@ -402,7 +401,7 @@ public class SP {
             // 获取 lib 文件夹下的 lib 名称
             tList = UT.IO.list(tJepLibDir);
             String tJepLibPath = null;
-            for (String tName : tList) if (tName.contains("jep") && (tName.endsWith(".dll") || tName.endsWith(".so") || tName.endsWith(".jnilib"))) {
+            for (String tName : tList) if (tName.contains("jep") && (tName.endsWith(".dll") || tName.endsWith(".so") || tName.endsWith(".jnilib") || tName.endsWith(".dylib"))) {
                 tJepLibPath = tName;
             }
             if (tJepLibPath == null) throw new Exception("JEP BUILD ERROR: No Jep lib in "+tJepLibDir);

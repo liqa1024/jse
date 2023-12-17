@@ -51,6 +51,7 @@ public class CS {
     public final static String WORKING_DIR = ".temp/%n/";
     
     public final static boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("windows");
+    public final static boolean IS_MAC = System.getProperty("os.name").toLowerCase().contains("mac");
     public final static String NO_LOG_LINUX = "/dev/null";
     public final static String NO_LOG_WIN = "NUL";
     public final static String NO_LOG = IS_WINDOWS ? NO_LOG_WIN : NO_LOG_LINUX;

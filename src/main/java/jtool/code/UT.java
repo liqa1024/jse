@@ -1159,10 +1159,6 @@ public class UT {
          * get URL of the resource
          * @author liqa
          */
-        @SuppressWarnings("rawtypes")
-        public static URL getResource(Class aClass, String aPath) {
-            return aClass.getClassLoader().getResource("assets/" + aClass.getName().replaceAll("\\.", "/") + "/" + aPath);
-        }
         public static URL getResource(String aPath) {
             return IO.class.getClassLoader().getResource("assets/" + aPath);
         }

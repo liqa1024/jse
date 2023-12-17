@@ -3,8 +3,9 @@ package jtool.parallel;
 import jtool.code.UT;
 import org.jetbrains.annotations.ApiStatus;
 
+import static jtool.code.CS.*;
+import static jtool.code.CS.Exec.EXE;
 import static jtool.code.CS.Exec.JAR_DIR;
-import static jtool.code.CS.IS_WINDOWS;
 
 /**
  * 基于 jni 实现的 MPI wrapper, 介绍部分基于
@@ -49,9 +50,6 @@ import static jtool.code.CS.IS_WINDOWS;
 @ApiStatus.Experimental
 public class MPI {
     private MPI() {}
-    
-    private final static String MPILIB_DIR = JAR_DIR+"mpi/";
-    private final static String MPILIB_PATH = MPILIB_DIR + (IS_WINDOWS ? "mpi.dll" : "mpi.so");
     
     public enum Comm {
           NULL (Native.MPI_COMM_NULL )
@@ -429,11 +427,67 @@ public class MPI {
     public static class Native {
         private Native() {}
         
+        private final static String MPILIB_DIR = JAR_DIR+"mpi/";
+        private final static String MPILIB_PATH = MPILIB_DIR + (IS_WINDOWS ? "mpi.dll" : (IS_MAC ? "mpi.jnilib" : "mpi.so"));
+        private final static String[] MPISRC_NAME = {
+              "CMakeLists.txt"
+            , "jtool_parallel_MPI_Native.c"
+            , "jtool_parallel_MPI_Native.h"
+        };
+        
+        private static void initMPI_() throws Exception {
+            // 如果没有 cmake，在 windows 上，尝试直接用预编译的库
+            if (IS_WINDOWS) {
+                EXE.setNoSTDOutput().setNoERROutput();
+                boolean tNoCmake = EXE.system("cmake --version") != 0;
+                EXE.setNoSTDOutput(false).setNoERROutput(false);
+                if (tNoCmake) {
+                    System.err.println("MPI BUILD WARNING: no camke environment, using the pre-build libraries,");
+                    System.err.println("  which may have some problems.");
+                    UT.IO.copy(UT.IO.getResource("mpilib/mpi.dll"), MPILIB_PATH);
+                    return;
+                }
+            }
+            // 从内部资源解压到临时目录
+            String tWorkingDir = WORKING_DIR.replaceAll("%n", "mpisrc");
+            for (String tName : MPISRC_NAME) {
+                UT.IO.copy(UT.IO.getResource("mpisrc/"+tName), tWorkingDir+tName);
+            }
+            System.out.println("MPI INIT INFO: Installing mpi from source code...");
+            String tBuildDir = tWorkingDir+"build/";
+            UT.IO.makeDir(tBuildDir);
+            // 直接通过系统指令来编译 mpi 的库，关闭输出
+            EXE.setNoSTDOutput();
+            EXE.system(String.format("cd %s; cmake ..; cmake --build . --config Release", tBuildDir));
+            EXE.setNoSTDOutput(false);
+            // 获取 build 目录下的 lib 文件
+            String tLibDir = tBuildDir+"lib/";
+            if (!UT.IO.isDir(tLibDir)) throw new Exception("MPI BUILD ERROR: No mpi lib in "+tBuildDir);
+            String[] tList = UT.IO.list(tLibDir);
+            String tLibPath = null;
+            for (String tName : tList) if (tName.contains("mpi") && (tName.endsWith(".dll") || tName.endsWith(".so") || tName.endsWith(".jnilib") || tName.endsWith(".dylib"))) {
+                tLibPath = tName;
+            }
+            if (tLibPath == null) throw new Exception("MPI BUILD ERROR: No mpi lib in "+tLibDir);
+            tLibPath = tLibDir+tLibPath;
+            // 将 build 的输出拷贝到 lib 目录下
+            UT.IO.copy(tLibPath, MPILIB_PATH);
+            // 完事后移除临时解压得到的源码
+            UT.IO.removeDir(tWorkingDir);
+            System.out.println("MPI INIT INFO: mpi successfully installed.");
+        }
+        
         // 直接进行初始化，虽然原则上会在 MPI_Init() 之前获取，
         // 但是得到的是 final 值，可以避免意外的修改，并且简化代码；
         // 这对于一般的 MPI 实现应该都是没有问题的
         static {
-            // 检测 jni lib 以及编译相关操作
+            // 如果不存 jni lib 在则需要重新通过源码编译
+            if (!UT.IO.isFile(MPILIB_PATH)) {
+                System.out.println("MPI INIT INFO: mpi libraries not found. Reinstalling...");
+                try {initMPI_();}
+                catch (Exception e) {throw new RuntimeException(e);}
+            }
+            // 设置库路径
             System.load(UT.IO.toAbsolutePath(MPILIB_PATH));
             
             // 初始化 final 常量
