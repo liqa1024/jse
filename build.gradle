@@ -17,7 +17,15 @@ repositories {
 }
 
 sourceSets {
-    main {java {srcDirs = ['src/main/java']}; resources {srcDirs = ['src/main/resources']}}
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+        resources {
+            srcDirs = ['src/main/resources']
+            exclude('assets/mpisrc/.*/', 'assets/mpisrc/build/', 'assets/mpisrc/*build*/')
+        }
+    }
 }
 
 compileJava {
