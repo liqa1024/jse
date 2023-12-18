@@ -442,14 +442,14 @@ public class MPI {
                 if (tNoCmake) {
                     System.err.println("MPI BUILD WARNING: no camke environment, using the pre-build libraries,");
                     System.err.println("  which may have some problems.");
-                    UT.IO.copy(UT.IO.getResource("mpilib/mpi.dll"), MPILIB_PATH);
+                    UT.IO.copy(UT.IO.getResource("mpi/lib/mpi.dll"), MPILIB_PATH);
                     return;
                 }
             }
             // 从内部资源解压到临时目录
             String tWorkingDir = WORKING_DIR.replaceAll("%n", "mpisrc");
             for (String tName : MPISRC_NAME) {
-                UT.IO.copy(UT.IO.getResource("mpisrc/"+tName), tWorkingDir+tName);
+                UT.IO.copy(UT.IO.getResource("mpi/src/"+tName), tWorkingDir+tName);
             }
             System.out.println("MPI INIT INFO: Installing mpi from source code...");
             String tBuildDir = tWorkingDir+"build/";

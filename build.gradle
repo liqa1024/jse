@@ -23,7 +23,7 @@ sourceSets {
         }
         resources {
             srcDirs = ['src/main/resources']
-            exclude('assets/mpisrc/.*/', 'assets/mpisrc/build/', 'assets/mpisrc/*build*/')
+            exclude('assets/mpi/src/.*/', 'assets/mpi/src/build/', 'assets/mpi/src/*build*/')
         }
     }
 }
