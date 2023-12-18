@@ -1,7 +1,6 @@
 package jtool.parallel;
 
 import jtool.code.UT;
-import org.jetbrains.annotations.ApiStatus;
 
 import static jtool.code.CS.*;
 import static jtool.code.CS.Exec.EXE;
@@ -47,7 +46,6 @@ import static jtool.code.CS.Exec.JAR_DIR;
  * MPI: A Message-Passing Interface Standard Version 3.1 </a>
  * @author liqa
  */
-@ApiStatus.Experimental
 public class MPI {
     private MPI() {}
     
