@@ -369,9 +369,9 @@ public class SP {
             if (!UT.IO.isFile(tJepZipPath)) {
                 System.out.printf("JEP INIT INFO: No jep source code in %s, downloading...\n", PYPKG_DIR);
                 UT.IO.copy(new URL("https://github.com/ninia/jep/archive/v4.1.1.zip"), tJepZipPath);
-                System.out.println("JEP INIT INFO: jep source code downloading finished");
+                System.out.println("JEP INIT INFO: jep source code downloading finished.");
             }
-            // 解压 jep 包到临时目录，如果已经存在则直接情况此目录
+            // 解压 jep 包到临时目录，如果已经存在则直接清空此目录
             String tWorkingDir = WORKING_DIR.replaceAll("%n", "jepsrc");
             UT.IO.removeDir(tWorkingDir);
             UT.IO.zip2dir(tJepZipPath, tWorkingDir);

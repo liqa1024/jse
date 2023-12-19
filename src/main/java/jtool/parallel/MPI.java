@@ -456,37 +456,37 @@ public class MPI {
             for (String tName : MPISRC_NAME) {
                 UT.IO.copy(UT.IO.getResource("mpi/src/"+tName), tWorkingDir+tName);
             }
-            System.out.println("MPI INIT INFO: Installing mpi from source code...");
+            System.out.println("MPI INIT INFO: Building mpijni from source code...");
             String tBuildDir = tWorkingDir+"build/";
             UT.IO.makeDir(tBuildDir);
-            // 直接通过系统指令来编译 mpi 的库，关闭输出
+            // 直接通过系统指令来编译 mpijni 的库，关闭输出
             EXE.setNoSTDOutput();
             EXE.system(String.format("cd %s; cmake ..; cmake --build . --config Release", tBuildDir));
             EXE.setNoSTDOutput(false);
             // 获取 build 目录下的 lib 文件
             String tLibDir = tBuildDir+"lib/";
-            if (!UT.IO.isDir(tLibDir)) throw new Exception("MPI BUILD ERROR: Build Failed, No mpi lib in "+tBuildDir);
+            if (!UT.IO.isDir(tLibDir)) throw new Exception("MPI BUILD ERROR: Build Failed, No mpijni lib in "+tBuildDir);
             String[] tList = UT.IO.list(tLibDir);
             String tLibPath = null;
             for (String tName : tList) if (tName.contains("mpi") && (tName.endsWith(".dll") || tName.endsWith(".so") || tName.endsWith(".jnilib") || tName.endsWith(".dylib"))) {
                 tLibPath = tName;
             }
-            if (tLibPath == null) throw new Exception("MPI BUILD ERROR: Build Failed, No mpi lib in "+tLibDir);
+            if (tLibPath == null) throw new Exception("MPI BUILD ERROR: Build Failed, No mpijni lib in "+tLibDir);
             tLibPath = tLibDir+tLibPath;
             // 将 build 的输出拷贝到 lib 目录下
             UT.IO.copy(tLibPath, MPILIB_PATH);
             // 完事后移除临时解压得到的源码
             UT.IO.removeDir(tWorkingDir);
-            System.out.println("MPI INIT INFO: mpi successfully installed.");
+            System.out.println("MPI INIT INFO: mpijni successfully installed.");
         }
         
         // 直接进行初始化，虽然原则上会在 MPI_Init() 之前获取，
         // 但是得到的是 final 值，可以避免意外的修改，并且简化代码；
         // 这对于一般的 MPI 实现应该都是没有问题的
         static {
-            // 如果不存 jni lib 在则需要重新通过源码编译
+            // 如果不存在 jni lib 则需要重新通过源码编译
             if (!UT.IO.isFile(MPILIB_PATH)) {
-                System.out.println("MPI INIT INFO: mpi libraries not found. Reinstalling...");
+                System.out.println("MPI INIT INFO: mpijni libraries not found. Reinstalling...");
                 try {initMPI_();}
                 catch (Exception e) {throw new RuntimeException(e);}
             }
