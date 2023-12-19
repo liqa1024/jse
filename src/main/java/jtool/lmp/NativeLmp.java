@@ -1,6 +1,12 @@
 package jtool.lmp;
 
 import jtool.code.UT;
+import jtool.math.matrix.ColumnMatrix;
+import jtool.math.matrix.IMatrix;
+import jtool.math.matrix.RowMatrix;
+import jtool.math.vector.IVector;
+import jtool.math.vector.Vector;
+import jtool.parallel.DoubleArrayCache;
 import jtool.parallel.IAutoShutdown;
 import jtool.parallel.MPI;
 
@@ -208,7 +214,7 @@ public class NativeLmp implements IAutoShutdown {
         }
         if (!Conf.LMP_HOME.isEmpty() && !Conf.LMP_HOME.endsWith("/") && !Conf.LMP_HOME.endsWith("\\")) Conf.LMP_HOME += "/";
         // 如果不存在 jni lib 则需要重新通过源码编译
-        if (!UT.IO.isFile(LMPLIB_PATH) || !UT.IO.isFile(Conf.LMP_HOME+"lib/"+NATIVE_LMPLIB_NAME)) {
+        if (Conf.REBUILD || !UT.IO.isFile(LMPLIB_PATH) || !UT.IO.isFile(Conf.LMP_HOME+"lib/"+NATIVE_LMPLIB_NAME)) {
             System.out.println("NATIVE_LMP INIT INFO: lammps libraries not found. Reinstalling...");
             try {initLmp_();}
             catch (Exception e) {throw new RuntimeException(e);}
@@ -270,6 +276,164 @@ public class NativeLmp implements IAutoShutdown {
     }
     private native static int lammpsVersion_(long aLmpPtr);
     
+    /**
+     * Read LAMMPS commands from a file.
+     * <p>
+     * This is a wrapper around the {@code lammps_file()} function of the C-library interface.
+     * It will open the file with the name/path file and process the LAMMPS commands line by line
+     * until the end.
+     * The function will return when the end of the file is reached.
+     * @param aPath Name of the file/path with LAMMPS commands
+     */
+    public void file(String aPath) {
+        lammpsFile_(mLmpPtr, aPath);
+    }
+    private native static void lammpsFile_(long aLmpPtr, String aPath);
+    
+    /**
+     * Process a single LAMMPS input command from a string.
+     * <p>
+     * This is a wrapper around the {@code lammps_command()} function of the C-library interface.
+     * @param aCmd a single lammps command
+     */
+    public void command(String aCmd) {
+        lammpsCommand_(mLmpPtr, aCmd);
+    }
+    private native static void lammpsCommand_(long aLmpPtr, String aCmd);
+    
+    /**
+     * Process multiple LAMMPS input commands from a list of strings.
+     * <p>
+     * This is a wrapper around the {@code lammps_commands_list()} function of the C-library interface.
+     * @param aCmds a list of lammps commands
+     */
+    public void commands(String[] aCmds) {
+        lammpsCommandsList_(mLmpPtr, aCmds);
+    }
+    private native static void lammpsCommandsList_(long aLmpPtr, String[] aCmds);
+    
+    /**
+     * Process a block of LAMMPS input commands from a string.
+     * <p>
+     * This is a wrapper around the {@code lammps_commands_string()} function of the C-library interface.
+     * @param aMultiCmd text block of lammps commands
+     */
+    public void commands(String aMultiCmd) {
+        lammpsCommandsString_(mLmpPtr, aMultiCmd);
+    }
+    private native static void lammpsCommandsString_(long aLmpPtr, String aMultiCmd);
+    
+    /**
+     * Get the total number of atoms in the LAMMPS instance.
+     * <p>
+     * This is a wrapper around the {@code lammps_get_natoms()} function of the C-library interface.
+     * @return number of atoms
+     */
+    public int atomNum() {
+        return (int)lammpsGetNatoms_(mLmpPtr);
+    }
+    public int natoms() {return atomNum();}
+    private native static double lammpsGetNatoms_(long aLmpPtr);
+    
+    /**
+     * Get the total number of atoms types in the LAMMPS instance.
+     * @return number of atom types
+     */
+    public int atomTypeNum() {return settingOf("ntypes");}
+    public int ntype() {return atomTypeNum();}
+    
+    /**
+     * Extract simulation box parameters
+     * <p>
+     * This is a wrapper around the lammps_extract_box() function of the C-library interface.
+     * Unlike in the C function, the result is returned a {@link BoxPrism} object.
+     * @return a {@link BoxPrism} object.
+     */
+    public BoxPrism box() {
+        double[] rBox = DoubleArrayCache.getArray(15);
+        lammpsExtractBox_(mLmpPtr, rBox);
+        BoxPrism tOut = new BoxPrism(rBox[0], rBox[3], rBox[1], rBox[4], rBox[2], rBox[5], rBox[6], rBox[8], rBox[7]);
+        DoubleArrayCache.returnArray(rBox);
+        return tOut;
+    }
+    /**
+     * {@code [xlo, ylo, zlo, xhi, yhi, zhi, xy, yz, xz, px, py, pz, bx, by, bz]}
+     * <p>
+     * {@code [0  , 1  , 2  , 3  , 4  , 5  , 6 , 7 , 8 , 9 , 10, 11, 12, 13, 14]}
+     */
+    private native static void lammpsExtractBox_(long aLmpPtr, double[] rBox);
+    
+    /**
+     * Query LAMMPS about global settings that can be expressed as an integer.
+     * <p>
+     * This is a wrapper around the {@code lammps_extract_setting()} function of the C-library interface.
+     * <a href="https://docs.lammps.org/Library_properties.html#_CPPv422lammps_extract_settingPvPKc">
+     * Its documentation </a> includes a list of the supported keywords.
+     * @param aName name of the setting
+     * @return value of the setting
+     */
+    public int settingOf(String aName) {
+        return lammpsExtractSetting_(mLmpPtr, aName);
+    }
+    private native static int lammpsExtractSetting_(long aLmpPtr, String aName);
+    
+    /**
+     * Retrieve per-atom properties from LAMMPS
+     * <p>
+     * This is a wrapper around the {@code lammps_gather_concat()} function of the C-library interface.
+     * <a href="https://docs.lammps.org/Classes_atom.html#_CPPv4N9LAMMPS_NS4Atom7extractEPKc">
+     * Its documentation </a> includes a list of the supported keywords and their data types.
+     * This function will try to auto-detect the data type by asking the library.
+     * This function returns null if either the keyword is not recognized.
+     * @param aName name of the property
+     * @return requested data or null
+     * @see <a href="https://docs.lammps.org/Library_scatter.html#_CPPv420lammps_gather_concatPvPKciiPv">
+     * lammps_gather_concat() </a>
+     */
+    @SuppressWarnings("DuplicateBranchesInSwitch")
+    public IMatrix atomDataOf(String aName) {
+        switch(aName) {
+        case "mass":        {return atomDataOf(aName, true , 1);}
+        case "id":          {return atomDataOf(aName, false, 1);}
+        case "type":        {return atomDataOf(aName, false, 1);}
+        case "mask":        {return atomDataOf(aName, false, 1);}
+        case "image":       {return atomDataOf(aName, false, 1);}
+        case "x":           {return atomDataOf(aName, true , 3);}
+        case "v":           {return atomDataOf(aName, true , 3);}
+        case "f":           {return atomDataOf(aName, true , 3);}
+        case "molecule":    {return atomDataOf(aName, false, 1);}
+        case "q":           {return atomDataOf(aName, true , 1);}
+        case "mu":          {return atomDataOf(aName, true , 3);}
+        case "omega":       {return atomDataOf(aName, true , 3);}
+        case "angmom":      {return atomDataOf(aName, true , 3);}
+        case "torque":      {return atomDataOf(aName, true , 3);}
+        case "radius":      {return atomDataOf(aName, true , 1);}
+        case "rmass":       {return atomDataOf(aName, true , 1);}
+        case "ellipsoid":   {return atomDataOf(aName, false, 1);}
+        case "line":        {return atomDataOf(aName, false, 1);}
+        case "tri":         {return atomDataOf(aName, false, 1);}
+        case "body":        {return atomDataOf(aName, false, 1);}
+        case "quat":        {return atomDataOf(aName, true , 4);}
+        case "temperature": {return atomDataOf(aName, true , 1);}
+        case "heatflow":    {return atomDataOf(aName, true , 1);}
+        default: {
+            if (aName.startsWith("i_")) {
+                return atomDataOf(aName, false, 1);
+            } else
+            if (aName.startsWith("d_")) {
+                return atomDataOf(aName, true, 1);
+            } else {
+                throw new IllegalArgumentException("Unexpected name: "+aName+", use atomDataOf(aName, aIsDouble, aCount) to gather this atom data.");
+            }
+        }}
+    }
+    public IMatrix atomDataOf(String aName, boolean aIsDouble, int aCount) {
+        int tAtomNum = atomNum();
+        double[] rData = DoubleArrayCache.getArray(tAtomNum*aCount);
+        lammpsGatherConcat_(mLmpPtr, aName, aIsDouble, aCount, rData);
+        return aCount==1 ? new ColumnMatrix(tAtomNum, 1, rData) : new RowMatrix(tAtomNum, aCount, rData);
+    }
+    private native static void lammpsGatherConcat_(long aLmpPtr, String aName, boolean aIsDouble, int aCount, double[] rData);
     
     /**
      * Explicitly delete a LAMMPS instance through the C-library interface.

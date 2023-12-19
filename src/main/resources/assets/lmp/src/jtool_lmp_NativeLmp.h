@@ -33,6 +33,70 @@ JNIEXPORT jint JNICALL Java_jtool_lmp_NativeLmp_lammpsVersion_1
 
 /*
  * Class:     jtool_lmp_NativeLmp
+ * Method:    lammpsFile_
+ * Signature: (JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsFile_1
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     jtool_lmp_NativeLmp
+ * Method:    lammpsCommand_
+ * Signature: (JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsCommand_1
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     jtool_lmp_NativeLmp
+ * Method:    lammpsCommandsList_
+ * Signature: (J[Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsCommandsList_1
+  (JNIEnv *, jclass, jlong, jobjectArray);
+
+/*
+ * Class:     jtool_lmp_NativeLmp
+ * Method:    lammpsCommandsString_
+ * Signature: (JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsCommandsString_1
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     jtool_lmp_NativeLmp
+ * Method:    lammpsGetNatoms_
+ * Signature: (J)D
+ */
+JNIEXPORT jdouble JNICALL Java_jtool_lmp_NativeLmp_lammpsGetNatoms_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jtool_lmp_NativeLmp
+ * Method:    lammpsExtractBox_
+ * Signature: (J[D)V
+ */
+JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractBox_1
+  (JNIEnv *, jclass, jlong, jdoubleArray);
+
+/*
+ * Class:     jtool_lmp_NativeLmp
+ * Method:    lammpsExtractSetting_
+ * Signature: (JLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractSetting_1
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     jtool_lmp_NativeLmp
+ * Method:    lammpsGatherConcat_
+ * Signature: (JLjava/lang/String;ZI[D)V
+ */
+JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsGatherConcat_1
+  (JNIEnv *, jclass, jlong, jstring, jboolean, jint, jdoubleArray);
+
+/*
+ * Class:     jtool_lmp_NativeLmp
  * Method:    lammpsClose_
  * Signature: (J)V
  */

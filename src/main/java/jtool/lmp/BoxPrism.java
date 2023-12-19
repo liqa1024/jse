@@ -15,10 +15,15 @@ public class BoxPrism extends Box {
     public BoxPrism(BoxPrism aBoxPrism) {super(aBoxPrism); mXY = aBoxPrism.mXY; mXZ = aBoxPrism.mXZ; mYZ = aBoxPrism.mYZ;}
     
     /// 获取属性
-    public double xy() {return mXY;}
-    public double xz() {return mXZ;}
-    public double yz() {return mYZ;}
+    public final double xy() {return mXY;}
+    public final double xz() {return mXZ;}
+    public final double yz() {return mYZ;}
     
     @Override public BoxPrism copy() {return new BoxPrism(this);}
     @Override protected Type type() {return Type.PRISM;}
+    
+    @Override public String toString() {
+        return String.format("{boxlo: (%.4g, %.4g, %.4g), boxhi: (%.4g, %.4g, %.4g), xy: %.4g, xz: %.4g, yz: %.4g}",
+                             boxLo().x(), boxLo().y(), boxLo().z(), boxHi().x(), boxHi().y(), boxHi().z(), mXY, mXZ, mYZ);
+    }
 }
