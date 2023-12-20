@@ -106,18 +106,26 @@ JNIEXPORT jint JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractSetting_1
 /*
  * Class:     jtool_lmp_NativeLmp
  * Method:    lammpsGatherConcat_
- * Signature: (JLjava/lang/String;ZI[D)V
+ * Signature: (JLjava/lang/String;ZII[D)V
  */
 JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsGatherConcat_1
-  (JNIEnv *, jclass, jlong, jstring, jboolean, jint, jdoubleArray);
+  (JNIEnv *, jclass, jlong, jstring, jboolean, jint, jint, jdoubleArray);
+
+/*
+ * Class:     jtool_lmp_NativeLmp
+ * Method:    lammpsExtractAtom_
+ * Signature: (JLjava/lang/String;III[D)V
+ */
+JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractAtom_1
+  (JNIEnv *, jclass, jlong, jstring, jint, jint, jint, jdoubleArray);
 
 /*
  * Class:     jtool_lmp_NativeLmp
  * Method:    lammpsScatter_
- * Signature: (JLjava/lang/String;ZI[D)V
+ * Signature: (JLjava/lang/String;ZII[D)V
  */
 JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsScatter_1
-  (JNIEnv *, jclass, jlong, jstring, jboolean, jint, jdoubleArray);
+  (JNIEnv *, jclass, jlong, jstring, jboolean, jint, jint, jdoubleArray);
 
 /*
  * Class:     jtool_lmp_NativeLmp

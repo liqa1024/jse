@@ -16,7 +16,6 @@ import jtool.math.vector.IVector;
 import jtool.parallel.DoubleArrayCache;
 import jtool.parallel.IAutoShutdown;
 import jtool.parallel.MPI;
-import jtool.parallel.MatrixCache;
 import jtool.vasp.IVaspCommonData;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -462,47 +461,76 @@ public class NativeLmp implements IAutoShutdown {
     @SuppressWarnings("DuplicateBranchesInSwitch")
     public IMatrix atomDataOf(String aName) {
         switch(aName) {
-        case "mass":        {return atomDataOf(aName, true , 1);}
-        case "id":          {return atomDataOf(aName, false, 1);}
-        case "type":        {return atomDataOf(aName, false, 1);}
-        case "mask":        {return atomDataOf(aName, false, 1);}
-        case "image":       {return atomDataOf(aName, false, 1);}
-        case "x":           {return atomDataOf(aName, true , 3);}
-        case "v":           {return atomDataOf(aName, true , 3);}
-        case "f":           {return atomDataOf(aName, true , 3);}
-        case "molecule":    {return atomDataOf(aName, false, 1);}
-        case "q":           {return atomDataOf(aName, true , 1);}
-        case "mu":          {return atomDataOf(aName, true , 3);}
-        case "omega":       {return atomDataOf(aName, true , 3);}
-        case "angmom":      {return atomDataOf(aName, true , 3);}
-        case "torque":      {return atomDataOf(aName, true , 3);}
-        case "radius":      {return atomDataOf(aName, true , 1);}
-        case "rmass":       {return atomDataOf(aName, true , 1);}
-        case "ellipsoid":   {return atomDataOf(aName, false, 1);}
-        case "line":        {return atomDataOf(aName, false, 1);}
-        case "tri":         {return atomDataOf(aName, false, 1);}
-        case "body":        {return atomDataOf(aName, false, 1);}
-        case "quat":        {return atomDataOf(aName, true , 4);}
-        case "temperature": {return atomDataOf(aName, true , 1);}
-        case "heatflow":    {return atomDataOf(aName, true , 1);}
+        case "mass":        {return localAtomDataOf(aName, 1, atomTypeNum()+1, 1);}
+        case "id":          {return fullAtomDataOf(aName, false, atomNum(), 1);}
+        case "type":        {return fullAtomDataOf(aName, false, atomNum(), 1);}
+        case "mask":        {return fullAtomDataOf(aName, false, atomNum(), 1);}
+        case "image":       {return fullAtomDataOf(aName, false, atomNum(), 1);}
+        case "x":           {return fullAtomDataOf(aName, true , atomNum(), 3);}
+        case "v":           {return fullAtomDataOf(aName, true , atomNum(), 3);}
+        case "f":           {return fullAtomDataOf(aName, true , atomNum(), 3);}
+        case "molecule":    {return fullAtomDataOf(aName, false, atomNum(), 1);}
+        case "q":           {return fullAtomDataOf(aName, true , atomNum(), 1);}
+        case "mu":          {return fullAtomDataOf(aName, true , atomNum(), 3);}
+        case "omega":       {return fullAtomDataOf(aName, true , atomNum(), 3);}
+        case "angmom":      {return fullAtomDataOf(aName, true , atomNum(), 3);}
+        case "torque":      {return fullAtomDataOf(aName, true , atomNum(), 3);}
+        case "radius":      {return fullAtomDataOf(aName, true , atomNum(), 1);}
+        case "rmass":       {return fullAtomDataOf(aName, true , atomNum(), 1);}
+        case "ellipsoid":   {return fullAtomDataOf(aName, false, atomNum(), 1);}
+        case "line":        {return fullAtomDataOf(aName, false, atomNum(), 1);}
+        case "tri":         {return fullAtomDataOf(aName, false, atomNum(), 1);}
+        case "body":        {return fullAtomDataOf(aName, false, atomNum(), 1);}
+        case "quat":        {return fullAtomDataOf(aName, true , atomNum(), 4);}
+        case "temperature": {return fullAtomDataOf(aName, true , atomNum(), 1);}
+        case "heatflow":    {return fullAtomDataOf(aName, true , atomNum(), 1);}
         default: {
             if (aName.startsWith("i_")) {
-                return atomDataOf(aName, false, 1);
+                return fullAtomDataOf(aName, false, atomNum(), 1);
             } else
             if (aName.startsWith("d_")) {
-                return atomDataOf(aName, true , 1);
+                return fullAtomDataOf(aName, true , atomNum(), 1);
             } else {
-                throw new IllegalArgumentException("Unexpected name: "+aName+", use atomDataOf(aName, aIsDouble, aCount) to gather this atom data.");
+                throw new IllegalArgumentException("Unexpected name: "+aName+", use fullAtomDataOf(aName, aIsDouble, aRowNum, aColNum) to gather this atom data.");
             }
         }}
     }
-    public IMatrix atomDataOf(String aName, boolean aIsDouble, int aCount) {
-        int tAtomNum = atomNum();
-        double[] rData = DoubleArrayCache.getArray(tAtomNum*aCount);
-        lammpsGatherConcat_(mLmpPtr, aName, aIsDouble, aCount, rData);
-        return new RowMatrix(tAtomNum, aCount, rData);
+    
+    /**
+     * Gather the named per-atom, per-atom fix, per-atom compute,
+     * or fix property/atom-based entities from all processes, unordered.
+     * <p>
+     * This is a wrapper around the {@code lammps_extract_atom()} function of the C-library interface.
+     * @param aName name of the property
+     * @param aIsDouble false for int, true for double
+     * @param aColNum column number of Matrix of requested data
+     * @param aRowNum row number of Matrix of requested data
+     * @return Matrix of requested data
+     */
+    public IMatrix fullAtomDataOf(String aName, boolean aIsDouble, int aRowNum, int aColNum) {
+        double[] rData = DoubleArrayCache.getArray(aRowNum*aColNum);
+        lammpsGatherConcat_(mLmpPtr, aName, aIsDouble, aRowNum, aColNum, rData);
+        return new RowMatrix(aRowNum, aColNum, rData);
     }
-    private native static void lammpsGatherConcat_(long aLmpPtr, String aName, boolean aIsDouble, int aCount, double[] rData);
+    /**
+     * 获取此进程的原子数据而不进行收集操作，
+     * 似乎 mass 需要使用此方法才能合法获取；
+     * 这里支持 BigBig 包因此需要 int 类型的 aDataType
+     * <p>
+     * This is a wrapper around the {@code lammps_extract_atom()} function of the C-library interface.
+     * @param aName name of the property
+     * @param aDataType 0 for int, 1 for double, 2 for int64_t when LAMMPS_BIGBIG is defined, 3 for int64_t anyway
+     * @param aColNum column number of Matrix of requested data
+     * @param aRowNum row number of Matrix of requested data
+     * @return Matrix of requested data
+     */
+    public IMatrix localAtomDataOf(String aName, int aDataType, int aRowNum, int aColNum) {
+        double[] rData = DoubleArrayCache.getArray(aRowNum*aColNum);
+        lammpsExtractAtom_(mLmpPtr, aName, aDataType, aRowNum, aColNum, rData);
+        return new RowMatrix(aRowNum, aColNum, rData);
+    }
+    private native static void lammpsGatherConcat_(long aLmpPtr, String aName, boolean aIsDouble, int aAtomNum, int aCount, double[] rData);
+    private native static void lammpsExtractAtom_(long aLmpPtr, String aName, int aDataType, int aAtomNum, int aCount, double[] rData);
     
     /**
      * Scatter the named per-atom, per-atom fix, per-atom compute,
@@ -521,7 +549,6 @@ public class NativeLmp implements IAutoShutdown {
     @SuppressWarnings("DuplicateBranchesInSwitch")
     public void setAtomDataOf(String aName, IMatrix aData) {
         switch(aName) {
-        case "mass":        {setAtomDataOf(aName, aData, true ); return;}
         case "id":          {setAtomDataOf(aName, aData, false); return;}
         case "type":        {setAtomDataOf(aName, aData, false); return;}
         case "mask":        {setAtomDataOf(aName, aData, false); return;}
@@ -557,12 +584,12 @@ public class NativeLmp implements IAutoShutdown {
     }
     public void setAtomDataOf(String aName, IMatrix aData, boolean aIsDouble) {
         if ((aData instanceof RowMatrix) || ((aData instanceof ColumnMatrix) && aData.columnNumber()==1)) {
-            lammpsScatter_(mLmpPtr, aName, aIsDouble, aData.columnNumber(), ((DoubleArrayMatrix)aData).getData());
+            lammpsScatter_(mLmpPtr, aName, aIsDouble, aData.rowNumber(), aData.columnNumber(), ((DoubleArrayMatrix)aData).getData());
         } else {
-            lammpsScatter_(mLmpPtr, aName, aIsDouble, aData.columnNumber(), aData.asVecRow().data());
+            lammpsScatter_(mLmpPtr, aName, aIsDouble, aData.rowNumber(), aData.columnNumber(), aData.asVecRow().data());
         }
     }
-    private native static void lammpsScatter_(long aLmpPtr, String aName, boolean aIsDouble, int aCount, double[] aData);
+    private native static void lammpsScatter_(long aLmpPtr, String aName, boolean aIsDouble, int aAtomNum, int aCount, double[] aData);
     
     /**
      * 通过 {@link #atomDataOf} 直接构造一个 {@link Lmpdat}，
@@ -579,10 +606,10 @@ public class NativeLmp implements IAutoShutdown {
         @Nullable IMatrix tVelocities = aNoVelocities ? null : atomDataOf("v");
         IMatrix tMasses = atomDataOf("mass");
         int tAtomNum = tXYZ.rowNumber();
-        int tAtomTypeNum = atomTypeNum();
+        int tAtomTypeNum = tMasses.rowNumber()-1;
         // 设置 mass，按照 lammps 的设定只有这个范围内的才有意义（但是超出范围的依旧会进行访问，因此还是需要一个 atomNum 长的数组）
         IVector tMassesData = tMasses.asVecRow().slicer().get(AbstractCollections.range(1, tAtomTypeNum+1));
-        MatrixCache.returnMat(tMasses);
+        DoubleArrayCache.returnArray(((DoubleArrayMatrix)tMasses).getData());
         // 设置 atomData
         IMatrix tAtomData = RowMatrix.zeros(tAtomNum, STD_ATOM_DATA_KEYS.length);
         IDoubleIterator itID   = tID  .iteratorRow();

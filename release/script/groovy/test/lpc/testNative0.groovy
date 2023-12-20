@@ -33,6 +33,10 @@ try (def lammps = new NativeLmp()) {
     //    9.025   0.000   1.805
     //    7.220   1.805   1.805
     //    ...
+    println(lammps.atomDataOf('mass'));
+    // 2 x 1 Matrix:
+    //    0.000
+    //    63.55
     lammps.data().write('lmp/.temp/test2.lmpdat');
 }
 
