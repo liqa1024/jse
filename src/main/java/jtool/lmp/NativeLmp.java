@@ -1,8 +1,11 @@
 package jtool.lmp;
 
+import jtool.atom.IAtom;
+import jtool.atom.IXYZ;
 import jtool.code.UT;
 import jtool.code.collection.AbstractCollections;
 import jtool.code.iterator.IDoubleIterator;
+import jtool.math.matrix.DoubleArrayMatrix;
 import jtool.math.matrix.IMatrix;
 import jtool.math.matrix.RowMatrix;
 import jtool.math.vector.IVector;
@@ -11,6 +14,7 @@ import jtool.parallel.IAutoShutdown;
 import jtool.parallel.MPI;
 import jtool.parallel.MatrixCache;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.BufferedReader;
 import java.net.URL;
@@ -334,7 +338,7 @@ public class NativeLmp implements IAutoShutdown {
     public int atomNum() {
         return (int)lammpsGetNatoms_(mLmpPtr);
     }
-    public int natoms() {return atomNum();}
+    @VisibleForTesting public int natoms() {return atomNum();}
     private native static double lammpsGetNatoms_(long aLmpPtr);
     
     /**
@@ -342,7 +346,7 @@ public class NativeLmp implements IAutoShutdown {
      * @return number of atom types
      */
     public int atomTypeNum() {return settingOf("ntypes");}
-    public int ntype() {return atomTypeNum();}
+    @VisibleForTesting public int ntype() {return atomTypeNum();}
     
     /**
      * Extract simulation box parameters
@@ -364,6 +368,51 @@ public class NativeLmp implements IAutoShutdown {
      * {@code [0  , 1  , 2  , 3  , 4  , 5  , 6 , 7 , 8 , 9 , 10, 11, 12, 13, 14]}
      */
     private native static void lammpsExtractBox_(long aLmpPtr, double[] rBox);
+    
+    /**
+     * Reset simulation box parameters
+     * <p>
+     * This is a wrapper around the {@code lammps_reset_box()} function of the C-library interface,
+     * but in {@link BoxPrism} order.
+     */
+    public void resetBox(double aXlo, double aXhi, double aYlo, double aYhi, double aZlo, double aZhi, double aXY, double aXZ, double aYZ) {
+        lammpsResetBox_(mLmpPtr, aXlo, aYlo, aZlo, aXhi, aYhi, aZhi, aXY, aYZ, aXZ);
+    }
+    public void resetBox(double aXlo, double aXhi, double aYlo, double aYhi, double aZlo, double aZhi) {
+        resetBox(aXlo, aXhi, aYlo, aYhi, aZlo, aZhi, 0.0, 0.0, 0.0);
+    }
+    public void resetBox(double aXhi, double aYhi, double aZhi) {
+        resetBox(0.0, aXhi, 0.0, aYhi, 0.0, aZhi);
+    }
+    public void resetBox(BoxPrism aBoxPrism) {
+        resetBox(aBoxPrism.xlo(), aBoxPrism.xhi(), aBoxPrism.ylo(), aBoxPrism.yhi(), aBoxPrism.zlo(), aBoxPrism.zhi(), aBoxPrism.xy(), aBoxPrism.xz(), aBoxPrism.yz());
+    }
+    public void resetBox(Box aBox) {
+        if (aBox.type() == Box.Type.NORMAL) {
+            resetBox(aBox.xlo(), aBox.xhi(), aBox.ylo(), aBox.yhi(), aBox.zlo(), aBox.zhi());
+        } else {
+            resetBox((BoxPrism)aBox);
+        }
+    }
+    public void resetBox(IXYZ aBoxLo, IXYZ aBoxHi) {
+        resetBox(aBoxLo.x(), aBoxHi.x(), aBoxLo.y(), aBoxHi.y(), aBoxLo.z(), aBoxHi.z());
+    }
+    public void resetBox(IXYZ aBox) {
+        resetBox(aBox.x(), aBox.y(), aBox.z());
+    }
+    private native static void lammpsResetBox_(long aLmpPtr, double aXlo, double aYlo, double aZlo, double aXhi, double aYhi, double aZhi, double aXY, double aYZ, double aXZ);
+    
+    /**
+     * Get current value of a thermo keyword
+     * <p>
+     * This is a wrapper around the {@code lammps_get_thermo()} function of the C-library interface.
+     * @param aName name of thermo keyword
+     * @return value of thermo keyword
+     */
+    public double thermoOf(String aName) {
+        return lammpsGetThermo_(mLmpPtr, aName);
+    }
+    private native static double lammpsGetThermo_(long aLmpPtr, String aName);
     
     /**
      * Query LAMMPS about global settings that can be expressed as an integer.
@@ -388,7 +437,7 @@ public class NativeLmp implements IAutoShutdown {
      * This function will try to auto-detect the data type by asking the library.
      * This function returns null if either the keyword is not recognized.
      * @param aName name of the property
-     * @return requested data or null
+     * @return Matrix of requested data
      * @see <a href="https://docs.lammps.org/Library_scatter.html#_CPPv420lammps_gather_concatPvPKciiPv">
      * lammps_gather_concat() </a>
      */
@@ -469,15 +518,58 @@ public class NativeLmp implements IAutoShutdown {
             tRow.set(STD_Y_COL   , itXYZ .next());
             tRow.set(STD_Z_COL   , itXYZ .next());
         }
-        MatrixCache.returnMat(tID);
-        MatrixCache.returnMat(tType);
-        MatrixCache.returnMat(tXYZ);
+        DoubleArrayCache.returnArray(((DoubleArrayMatrix)tID  ).getData());
+        DoubleArrayCache.returnArray(((DoubleArrayMatrix)tType).getData());
+        DoubleArrayCache.returnArray(((DoubleArrayMatrix)tXYZ ).getData());
         // 构造 Lmpdat，其余数据由于可以直接存在 Lmpdat 中，因此不用归还
         return new Lmpdat(tAtomTypeNum, box(), tMassesData, tAtomData, tVelocities);
     }
     public Lmpdat lmpdat() {
         return lmpdat(false);
     }
+    @VisibleForTesting public Lmpdat data(boolean aNoVelocities) {return lmpdat(aNoVelocities);}
+    @VisibleForTesting public Lmpdat data() {return lmpdat();}
+    
+    /**
+     * Create N atoms from list of coordinates and properties
+     * <p>
+     * This function is a wrapper around the {@code lammps_create_atoms()} function of the C-library interface.
+     * @param aAtoms List of Atoms
+     * @param aShrinkExceed whether to expand shrink-wrap boundaries if atoms are outside the box (false in default)
+     * @return number of atoms created. 0 if insufficient or invalid data
+     */
+    public int creatAtoms(List<? extends IAtom> aAtoms, boolean aShrinkExceed) {
+        final boolean tHasVelocities = UT.Code.first(aAtoms).hasVelocities();
+        final int tAtomNum = aAtoms.size();
+        double[] rID = DoubleArrayCache.getArray(tAtomNum);
+        double[] rType = DoubleArrayCache.getArray(tAtomNum);
+        double[] rXYZ = DoubleArrayCache.getArray(tAtomNum*3);
+        double[] rVelocities = tHasVelocities ? DoubleArrayCache.getArray(tAtomNum*3) : null;
+        int i = 0, j1 = 0, j2 = 0;
+        for (IAtom tAtom : aAtoms) {
+            rID[i] = tAtom.id();
+            rType[i] = tAtom.type();
+            ++i;
+            rXYZ[j1] = tAtom.x(); ++j1;
+            rXYZ[j1] = tAtom.y(); ++j1;
+            rXYZ[j1] = tAtom.z(); ++j1;
+            if (tHasVelocities) {
+                rVelocities[j2] = tAtom.vx(); ++j2;
+                rVelocities[j2] = tAtom.vy(); ++j2;
+                rVelocities[j2] = tAtom.vz(); ++j2;
+            }
+        }
+        int tOut = lammpsCreateAtoms_(mLmpPtr, rID, rType, rXYZ, rVelocities, null, aShrinkExceed);
+        DoubleArrayCache.returnArray(rID);
+        DoubleArrayCache.returnArray(rType);
+        DoubleArrayCache.returnArray(rXYZ);
+        if (tHasVelocities) DoubleArrayCache.returnArray(rVelocities);
+        return tOut;
+    }
+    public int creatAtoms(List<? extends IAtom> aAtoms) {
+        return creatAtoms(aAtoms, false);
+    }
+    private native static int lammpsCreateAtoms_(long aLmpPtr, double[] aID, double[] aType, double[] aXYZ, double[] aVelocities, double[] aImage, boolean aShrinkExceed);
     
     /**
      * Explicitly delete a LAMMPS instance through the C-library interface.

@@ -81,6 +81,22 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractBox_1
 
 /*
  * Class:     jtool_lmp_NativeLmp
+ * Method:    lammpsResetBox_
+ * Signature: (JDDDDDDDDD)V
+ */
+JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsResetBox_1
+  (JNIEnv *, jclass, jlong, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble);
+
+/*
+ * Class:     jtool_lmp_NativeLmp
+ * Method:    lammpsGetThermo_
+ * Signature: (JLjava/lang/String;)D
+ */
+JNIEXPORT jdouble JNICALL Java_jtool_lmp_NativeLmp_lammpsGetThermo_1
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     jtool_lmp_NativeLmp
  * Method:    lammpsExtractSetting_
  * Signature: (JLjava/lang/String;)I
  */
@@ -94,6 +110,14 @@ JNIEXPORT jint JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractSetting_1
  */
 JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsGatherConcat_1
   (JNIEnv *, jclass, jlong, jstring, jboolean, jint, jdoubleArray);
+
+/*
+ * Class:     jtool_lmp_NativeLmp
+ * Method:    lammpsCreateAtoms_
+ * Signature: (J[D[D[D[D[DZ)I
+ */
+JNIEXPORT jint JNICALL Java_jtool_lmp_NativeLmp_lammpsCreateAtoms_1
+  (JNIEnv *, jclass, jlong, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jboolean);
 
 /*
  * Class:     jtool_lmp_NativeLmp

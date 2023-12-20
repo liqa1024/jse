@@ -41,6 +41,21 @@ void freeStrBuf(char **aStrBuf, int aLen) {
 }
 
 
+#define GEN_PARSE_ANY_TO_ANY(R, T, TF)                                              \
+R *parse##TF##2##R (JNIEnv *aEnv, j##T##Array aJArray) {                            \
+    if (aJArray==NULL) return NULL;                                                 \
+    jsize tLen = (*aEnv)->GetArrayLength(aEnv, aJArray);                            \
+    R *rOutBuf = (R *) malloc(tLen * sizeof(R));                                    \
+                                                                                    \
+    j##T *tBuf = (*aEnv)->Get##TF##ArrayElements(aEnv, aJArray, NULL);              \
+    for (jsize i = 0; i < tLen; ++i) rOutBuf[i] = (R)tBuf[i];                       \
+    (*aEnv)->Release##TF##ArrayElements(aEnv, aJArray, tBuf, JNI_ABORT);            \
+    return rOutBuf;                                                                 \
+}
+
+GEN_PARSE_ANY_TO_ANY(int, double, Double)
+
+
 JNIEXPORT jlong JNICALL Java_jtool_lmp_NativeLmp_lammpsOpen_1___3Ljava_lang_String_2JJ(JNIEnv *aEnv, jclass aClazz, jobjectArray aArgs, jlong aComm, jlong aPtr) {
     int tLen;
     char **sArgs = parseStrBuf(aEnv, aArgs, &tLen);
@@ -133,6 +148,17 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractBox_1(JNIEnv *aEnv,
     rBoxBuf[14] = rBoxflag[2];
     (*aEnv)->ReleaseDoubleArrayElements(aEnv, rBox, rBoxBuf, 0); // write mode
 }
+JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsResetBox_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jdouble aXlo, jdouble aYlo, jdouble aZlo, jdouble aXhi, jdouble aYhi, jdouble aZhi, jdouble aXY, jdouble aYZ, jdouble aXZ) {
+    double tBoxLo[] = {aXlo, aYlo, aZlo};
+    double tBoxHi[] = {aXhi, aYhi, aZhi};
+    lammps_reset_box((void *)aLmpPtr, tBoxLo, tBoxHi, aXY, aYZ, aXZ);
+}
+JNIEXPORT jdouble JNICALL Java_jtool_lmp_NativeLmp_lammpsGetThermo_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aName) {
+    char *tName = parseStr(aEnv, aName);
+    double tThermo = lammps_get_thermo((void *)aLmpPtr, tName);
+    free(tName);
+    return tThermo;
+}
 JNIEXPORT jint JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractSetting_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aName) {
     char *tName = parseStr(aEnv, aName);
     int tSetting = lammps_extract_setting((void *)aLmpPtr, tName);
@@ -153,6 +179,21 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsGatherConcat_1(JNIEnv *aEn
     }
     free(tName);
     (*aEnv)->ReleaseDoubleArrayElements(aEnv, rData, rDataBuf, 0); // write mode
+}
+JNIEXPORT jint JNICALL Java_jtool_lmp_NativeLmp_lammpsCreateAtoms_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jdoubleArray aID, jdoubleArray aType, jdoubleArray aXYZ, jdoubleArray aVelocities, jdoubleArray aImage, jboolean aShrinkExceed) {
+    jsize tN = (*aEnv)->GetArrayLength(aEnv, aID);
+    int *tID    = parseDouble2int(aEnv, aID   );
+    int *tType  = parseDouble2int(aEnv, aType );
+    int *tImage = parseDouble2int(aEnv, aImage);
+    jdouble *tXYZ        = aXYZ       ==NULL ? NULL : (*aEnv)->GetDoubleArrayElements(aEnv, aXYZ       , NULL);
+    jdouble *tVelocities = aVelocities==NULL ? NULL : (*aEnv)->GetDoubleArrayElements(aEnv, aVelocities, NULL);
+    int tOut = lammps_create_atoms((void *)aLmpPtr, tN, tID, tType, tXYZ, tVelocities, tImage, aShrinkExceed);
+    if (tID    != NULL) free(tID   );
+    if (tType  != NULL) free(tType );
+    if (tImage != NULL) free(tImage);
+    if (tXYZ        != NULL) (*aEnv)->ReleaseDoubleArrayElements(aEnv, aXYZ       , tXYZ       , JNI_ABORT); // read mode
+    if (tVelocities != NULL) (*aEnv)->ReleaseDoubleArrayElements(aEnv, aVelocities, tVelocities, JNI_ABORT); // read mode
+    return tOut;
 }
 
 JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsClose_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {

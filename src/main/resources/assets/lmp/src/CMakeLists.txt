@@ -35,7 +35,7 @@ endif ()
 # add mpi
 find_package(MPI)
 if (MPI_FOUND)
-    add_definitions(-DLAMMPS_LIB_MPI)
+#    add_definitions(-DLAMMPS_LIB_MPI)
     
     set(CMAKE_COMPILE_FLAGS ${CMAKE_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS})
     set(CMAKE_LINK_FLAGS ${CMAKE_LINK_FLAGS} ${MPI_LINK_FLAGS})

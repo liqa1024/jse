@@ -36,6 +36,7 @@ if (me == 0) {
 
 try (def lammps = new NativeLmp()) {
     lammps.file('lmp/.temp/in.melt');
+    lammps.lmpdat().write("lmp/.temp/data-laves1-out-$me");
 }
 // Total wall time: 0:04:11 (mpi np 1)
 // Total wall time: 0:01:10 (mpi np 4)
