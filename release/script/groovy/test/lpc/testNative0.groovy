@@ -33,5 +33,6 @@ try (def lammps = new NativeLmp()) {
     //    9.025   0.000   1.805
     //    7.220   1.805   1.805
     //    ...
+    lammps.lmpdat().write('lmp/.temp/test2.lmpdat');
 }
 

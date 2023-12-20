@@ -1,14 +1,16 @@
 package jtool.lmp;
 
 import jtool.code.UT;
-import jtool.math.matrix.ColumnMatrix;
+import jtool.code.collection.AbstractCollections;
+import jtool.code.iterator.IDoubleIterator;
 import jtool.math.matrix.IMatrix;
 import jtool.math.matrix.RowMatrix;
 import jtool.math.vector.IVector;
-import jtool.math.vector.Vector;
 import jtool.parallel.DoubleArrayCache;
 import jtool.parallel.IAutoShutdown;
 import jtool.parallel.MPI;
+import jtool.parallel.MatrixCache;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.net.URL;
@@ -17,9 +19,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static jtool.code.CS.*;
 import static jtool.code.CS.Exec.EXE;
 import static jtool.code.CS.Exec.JAR_DIR;
+import static jtool.code.CS.*;
 
 /**
  * 基于 jni 的调用本地原生 lammps 的类，
@@ -421,7 +423,7 @@ public class NativeLmp implements IAutoShutdown {
                 return atomDataOf(aName, false, 1);
             } else
             if (aName.startsWith("d_")) {
-                return atomDataOf(aName, true, 1);
+                return atomDataOf(aName, true , 1);
             } else {
                 throw new IllegalArgumentException("Unexpected name: "+aName+", use atomDataOf(aName, aIsDouble, aCount) to gather this atom data.");
             }
@@ -431,9 +433,51 @@ public class NativeLmp implements IAutoShutdown {
         int tAtomNum = atomNum();
         double[] rData = DoubleArrayCache.getArray(tAtomNum*aCount);
         lammpsGatherConcat_(mLmpPtr, aName, aIsDouble, aCount, rData);
-        return aCount==1 ? new ColumnMatrix(tAtomNum, 1, rData) : new RowMatrix(tAtomNum, aCount, rData);
+        return new RowMatrix(tAtomNum, aCount, rData);
     }
     private native static void lammpsGatherConcat_(long aLmpPtr, String aName, boolean aIsDouble, int aCount, double[] rData);
+    
+    
+    /**
+     * 通过 {@link #atomDataOf} 直接构造一个 {@link Lmpdat}，
+     * 可以避免走文件管理系统
+     * @param aNoVelocities 是否关闭速度信息，默认 false（包含速度信息）
+     * @return 一个类似于读取 lammps data 文件后得到的 {@link Lmpdat}
+     * @author liqa
+     */
+    public Lmpdat lmpdat(boolean aNoVelocities) {
+        // 获取数据
+        IMatrix tID = atomDataOf("id");
+        IMatrix tType = atomDataOf("type");
+        IMatrix tXYZ = atomDataOf("x");
+        @Nullable IMatrix tVelocities = aNoVelocities ? null : atomDataOf("v");
+        IMatrix tMasses = atomDataOf("mass");
+        int tAtomNum = tXYZ.rowNumber();
+        int tAtomTypeNum = atomTypeNum();
+        // 设置 mass，按照 lammps 的设定只有这个范围内的才有意义（但是超出范围的依旧会进行访问，因此还是需要一个 atomNum 长的数组）
+        IVector tMassesData = tMasses.asVecRow().slicer().get(AbstractCollections.range(1, tAtomTypeNum+1));
+        MatrixCache.returnMat(tMasses);
+        // 设置 atomData
+        IMatrix tAtomData = RowMatrix.zeros(tAtomNum, STD_ATOM_DATA_KEYS.length);
+        IDoubleIterator itID   = tID  .iteratorRow();
+        IDoubleIterator itType = tType.iteratorRow();
+        IDoubleIterator itXYZ  = tXYZ .iteratorRow();
+        for (IVector tRow : tAtomData.rows()) {
+            tRow.set(STD_ID_COL  , itID  .next());
+            tRow.set(STD_TYPE_COL, itType.next());
+            tRow.set(STD_X_COL   , itXYZ .next());
+            tRow.set(STD_Y_COL   , itXYZ .next());
+            tRow.set(STD_Z_COL   , itXYZ .next());
+        }
+        MatrixCache.returnMat(tID);
+        MatrixCache.returnMat(tType);
+        MatrixCache.returnMat(tXYZ);
+        // 构造 Lmpdat，其余数据由于可以直接存在 Lmpdat 中，因此不用归还
+        return new Lmpdat(tAtomTypeNum, box(), tMassesData, tAtomData, tVelocities);
+    }
+    public Lmpdat lmpdat() {
+        return lmpdat(false);
+    }
     
     /**
      * Explicitly delete a LAMMPS instance through the C-library interface.
