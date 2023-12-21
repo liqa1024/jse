@@ -365,16 +365,28 @@ public class NativeLmp implements IAutoShutdown {
     @VisibleForTesting public int ntype() {return atomTypeNum();}
     
     /**
+     * Get the local number of atoms in the LAMMPS instance.
+     * @return number of “owned” atoms of the current MPI rank.
+     */
+    public int localAtomNum() {return settingOf("nlocal");}
+    @VisibleForTesting public int nlocal() {return localAtomNum();}
+    
+    /**
      * Extract simulation box parameters
      * <p>
      * This is a wrapper around the lammps_extract_box() function of the C-library interface.
-     * Unlike in the C function, the result is returned a {@link BoxPrism} object.
-     * @return a {@link BoxPrism} object.
+     * Unlike in the C function, the result is returned a {@link Box} object.
+     * @return a {@link Box} object.
      */
-    public BoxPrism box() {
+    public Box box() {
         double[] rBox = DoubleArrayCache.getArray(15);
         lammpsExtractBox_(mLmpPtr, rBox);
-        BoxPrism tOut = new BoxPrism(rBox[0], rBox[3], rBox[1], rBox[4], rBox[2], rBox[5], rBox[6], rBox[8], rBox[7]);
+        Box tOut;
+        if (settingOf("triclinic")==1) {
+            tOut = new BoxPrism(rBox[0], rBox[3], rBox[1], rBox[4], rBox[2], rBox[5], rBox[6], rBox[8], rBox[7]);
+        } else {
+            tOut = new Box(rBox[0], rBox[3], rBox[1], rBox[4], rBox[2], rBox[5]);
+        }
         DoubleArrayCache.returnArray(rBox);
         return tOut;
     }
@@ -590,6 +602,13 @@ public class NativeLmp implements IAutoShutdown {
         }
     }
     private native static void lammpsScatter_(long aLmpPtr, String aName, boolean aIsDouble, int aAtomNum, int aCount, double[] aData);
+    
+    /** 提供 {@link Lmpdat} 格式的获取质量 */
+    public IVector masses() {
+        IVector tMasses = atomDataOf("mass").asVecRow();
+        return tMasses.refSlicer().get(AbstractCollections.range(1, tMasses.size()));
+    }
+    public double mass(int aType) {return atomDataOf("mass").get(aType, 1);}
     
     /**
      * 通过 {@link #atomDataOf} 直接构造一个 {@link Lmpdat}，
