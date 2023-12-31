@@ -25,10 +25,14 @@
 package jep.python;
 
 import java.lang.reflect.Proxy;
+import java.util.Map;
 
+import groovy.lang.GroovyObject;
+import groovy.lang.MetaClass;
 import jep.Jep;
 import jep.JepAccess;
 import jep.JepException;
+import org.codehaus.groovy.runtime.InvokerHelper;
 
 /**
  * A Java object that wraps a pointer to a Python object.
@@ -37,8 +41,36 @@ import jep.JepException;
  * where they were created. When an Interpreter instance is closed all PyObjects
  * from that instance will be invalid and can no longer be used.
  */
-public class PyObject extends JepAccess implements AutoCloseable {
-
+public class PyObject extends JepAccess implements AutoCloseable, GroovyObject {
+    
+    /** 通过直接修改 PyObject 来避免嵌套的情况不能包装，以及作为输入时需要解包装的情况 */
+    @SuppressWarnings("unchecked")
+    @Override public Object invokeMethod(String name, Object args) throws JepException {
+        Object[] aArgs = (Object[])args;
+        if (aArgs == null || aArgs.length == 0) return getAttr(name, PyCallable.class).call();
+        if (aArgs.length == 1 && (aArgs[0] instanceof Map)) return getAttr(name, PyCallable.class).call((Map<String, Object>)aArgs[0]);
+        if (aArgs.length > 1 && (aArgs[aArgs.length-1] instanceof Map)) {
+            Object[] tArgs = new Object[aArgs.length-1];
+            System.arraycopy(aArgs, 0, tArgs, 0, aArgs.length-1);
+            return getAttr(name, PyCallable.class).call(tArgs, (Map<String, Object>)aArgs[aArgs.length-1]);
+        }
+        return getAttr(name, PyCallable.class).call(aArgs);
+    }
+    @Override public Object getProperty(String propertyName) throws JepException {return getAttr(propertyName);}
+    @Override public void setProperty(String propertyName, Object newValue) throws JepException {setAttr(propertyName, newValue);}
+    
+    
+    private MetaClass mDelegate = InvokerHelper.getMetaClass(getClass());
+    @Override public MetaClass getMetaClass() {return mDelegate;}
+    @Override public void setMetaClass(MetaClass metaClass) {mDelegate = metaClass;}
+    
+    
+    /** python 重载运算符匹配 */
+    public Object getAt(int aIdx) {return getAttr("__getitem__", PyCallable.class).call(aIdx);}
+    public void putAt(int aIdx, Object aValue) {getAttr("__setitem__", PyCallable.class).call(aIdx, aValue);}
+    
+    
+    
     protected final PyPointer pointer;
 
     /**
