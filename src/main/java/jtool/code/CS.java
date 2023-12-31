@@ -31,6 +31,9 @@ import java.util.regex.Pattern;
  * <p> Class containing useful Constants </p>
  */
 public class CS {
+    /** version of jtool */
+    public final static String VERSION = "2.2.1";
+    
     /** a Random generator so I don't need to instantiate a new one all the time. */
     public final static Random RNGSUS = new Random(), RANDOM = RNGSUS;
     public final static int MAX_SEED = 2147483647;

@@ -1,6 +1,6 @@
 package jtool;
 
-
+import groovy.lang.GroovySystem;
 import jtool.code.SP;
 import jtool.code.UT;
 import org.jetbrains.annotations.Nullable;
@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import static jtool.code.CS.VERSION;
 
 /**
  * @author liqa
@@ -49,32 +51,42 @@ public class Main {
             }
             // 一般行为
             String tOption = tValue;
-            if (tOption.equals("-?") || tOption.equals("-help")) {printHelp(); return;}
-            if (aArgs.length < 2) {printHelp(); return;}
-            tValue = aArgs[1];
-            String[] tArgs = new String[aArgs.length-2];
-            if (tArgs.length > 0) System.arraycopy(aArgs, 2, tArgs, 0, tArgs.length);
             switch (tOption) {
-            case "-t": case "-text": {
-                SP.Groovy.runText(tValue, tArgs);
-                break;
+            case "-v": case "-version": {
+                System.out.println("jtool version: "+VERSION+String.format(" (groovy: %s, java: %s)", GroovySystem.getVersion(), System.getProperty("java.version")));
+                return;
             }
-            case "-f": case "-file": {
-                SP.Groovy.runScript(tValue, tArgs);
-                break;
-            }
-            case "-i": case "-invoke": {
-                int tLastDot = tValue.lastIndexOf(".");
-                if (tLastDot < 0) {
-                    System.err.println("ERROR: Invalid method name: " + tValue);
-                    return;
-                }
-                UT.Hack.getRunnableOfStaticMethod(tValue.substring(0, tLastDot), tValue.substring(tLastDot+1), (Object[])tArgs).run();
-                break;
+            case "-?": case "-help": {
+                printHelp();
+                return;
             }
             default: {
-                printHelp();
-                break;
+                if (aArgs.length < 2) {printHelp(); return;}
+                tValue = aArgs[1];
+                String[] tArgs = new String[aArgs.length-2];
+                if (tArgs.length > 0) System.arraycopy(aArgs, 2, tArgs, 0, tArgs.length);
+                switch (tOption) {
+                case "-t": case "-text": {
+                    SP.Groovy.runText(tValue, tArgs);
+                    return;
+                }
+                case "-f": case "-file": {
+                    SP.Groovy.runScript(tValue, tArgs);
+                    return;
+                }
+                case "-i": case "-invoke": {
+                    int tLastDot = tValue.lastIndexOf(".");
+                    if (tLastDot < 0) {
+                        System.err.println("ERROR: Invalid method name: " + tValue);
+                        return;
+                    }
+                    UT.Hack.getRunnableOfStaticMethod(tValue.substring(0, tLastDot), tValue.substring(tLastDot+1), (Object[])tArgs).run();
+                    return;
+                }
+                default: {
+                    printHelp();
+                    return;
+                }}
             }}
         } finally {
             closeAllAutoCloseable();
@@ -82,15 +94,16 @@ public class Main {
     }
     
     private static void printHelp() {
-        System.out.println("Usage:   jtool [-option] value [args...]");
-        System.out.println("Such as: jtool path/to/script.groovy [argsOfGroovyScript...]");
-        System.out.println("Or:      jtool -t \"println('hello world')\"");
+        System.out.println("Usage:    jtool [-option] value [args...]");
+        System.out.println("Such as:  jtool path/to/script.groovy [argsOfGroovyScript...]");
+        System.out.println("Or:       jtool -t \"println('hello world')\"");
         System.out.println();
         System.out.println("The options can be:");
-        System.out.println("    -t -text    Run the groovy text script");
-        System.out.println("    -f -file    Run the groovy file script (default behavior when left blank)");
-        System.out.println("    -i -invoke  Invoke the internal java static method directly");
-        System.out.println("    -? -help    Print help message");
+        System.out.println("    -t -text      Run the groovy text script");
+        System.out.println("    -f -file      Run the groovy file script (default behavior when left blank)");
+        System.out.println("    -i -invoke    Invoke the internal java static method directly");
+        System.out.println("    -v -version   Print version number");
+        System.out.println("    -? -help      Print help message");
         System.out.println();
         System.out.println("You can also using another scripting language such as MATLAB or Python with Py4J and import jtool-*.jar");
     }
