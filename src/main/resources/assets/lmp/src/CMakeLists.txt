@@ -24,13 +24,13 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
 endif ()
 
 # add jni
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    include_directories($ENV{JAVA_HOME}/include $ENV{JAVA_HOME}/include/linux)
-elseif (CMAKE_SYSTEM_NAME MATCHES "Windows")
-    include_directories($ENV{JAVA_HOME}/include $ENV{JAVA_HOME}/include/win32)
-elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    include_directories($ENV{JAVA_HOME}/include $ENV{JAVA_HOME}/include/darwin)
-endif ()
+find_package(JNI)
+if (JNI_FOUND)
+    include_directories(${JNI_INCLUDE_DIRS})
+    target_link_libraries(lmpjni ${JNI_LIBRARIES})
+else ()
+    message(FATAL_ERROR "No Java Environment Found")
+endif(JNI_FOUND)
 
 # add mpi
 find_package(MPI)

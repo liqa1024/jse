@@ -367,6 +367,11 @@ public class SP {
         
         /** 内部使用的安装 jep 的操作，和一般的库不同，jep 由于不能离线使用 pip 安装，这里直接使用源码编译 */
         private synchronized static void installJep_() throws Exception {
+            // 检测 cmake，这里要求一定要有 cmake 环境
+            EXE.setNoSTDOutput().setNoERROutput();
+            boolean tNoCmake = EXE.system("cmake --version") != 0;
+            EXE.setNoSTDOutput(false).setNoERROutput(false);
+            if (tNoCmake) throw new Exception("JEP BUILD ERROR: No camke environment.");
             String tWorkingDir = WORKING_DIR.replaceAll("%n", "jepsrc");
             // 首先获取源码路径，这里直接从 resource 里输出
             String tJepZipPath = tWorkingDir+"jep-"+JEP_VERSION+".zip";
@@ -375,23 +380,19 @@ public class SP {
             String tJepDir = tWorkingDir+"jep/";
             UT.IO.removeDir(tJepDir);
             UT.IO.zip2dir(tJepZipPath, tJepDir);
-            // 安装 jep 包，这里直接通过 setup.py 来安装
+            // 安装 jep 包，这里通过 cmake 来安装
             System.out.println("JEP INIT INFO: Installing jep from source code...");
-            // 直接通过系统指令来编译 Jep 的库，关闭输出
-            EXE.setNoSTDOutput().setNoERROutput();
-            EXE.system(String.format("cd %s; python setup.py build", tJepDir));
-            EXE.setNoSTDOutput(false).setNoERROutput(false);
-            // 获取 build 目录下的 lib 文件夹
             String tJepBuildDir = tJepDir+"build/";
-            String[] tList = UT.IO.list(tJepBuildDir);
-            String tJepLibDir = null;
-            for (String tName : tList) if (tName.contains("lib")) {
-                tJepLibDir = tName;
-            }
-            if (tJepLibDir == null) throw new Exception("JEP BUILD ERROR: No Jep lib in "+tJepBuildDir);
-            tJepLibDir = tJepBuildDir+tJepLibDir+"/jep/";
+            UT.IO.makeDir(tJepBuildDir);
+            // 直接通过系统指令来编译 Jep 的库，关闭输出
+            EXE.setNoSTDOutput();
+            EXE.system(String.format("cd %s; cmake ..; cmake --build . --config Release", tJepBuildDir));
+            EXE.setNoSTDOutput(false);
+            // 获取 build 目录下的 lib 文件夹
+            String tJepLibDir = tJepBuildDir+"lib/";
+            if (!UT.IO.isDir(tJepLibDir)) throw new Exception("JEP BUILD ERROR: No Jep lib in "+tJepBuildDir);
             // 获取 lib 文件夹下的 lib 名称
-            tList = UT.IO.list(tJepLibDir);
+            String[] tList = UT.IO.list(tJepLibDir);
             String tJepLibPath = null;
             for (String tName : tList) if (tName.contains("jep") && (tName.endsWith(".dll") || tName.endsWith(".so") || tName.endsWith(".jnilib") || tName.endsWith(".dylib"))) {
                 tJepLibPath = tName;
@@ -400,10 +401,11 @@ public class SP {
             tJepLibPath = tJepLibDir+tJepLibPath;
             // 将 build 的输出拷贝到 lib 目录下
             UT.IO.copy(tJepLibPath, JEPLIB_PATH);
-            // 顺便拷贝生成的 python 脚本
-            tList = UT.IO.list(tJepLibDir);
+            // 顺便拷贝 python 脚本
+            String tJepPyDir = tJepDir+"src/main/python/jep/";
+            tList = UT.IO.list(tJepPyDir);
             for (String tName : tList) if (tName.endsWith(".py")) {
-                UT.IO.copy(tJepLibDir+tName, JEPLIB_DIR+tName);
+                UT.IO.copy(tJepPyDir+tName, JEPLIB_DIR+tName);
             }
             // 完事后移除临时解压得到的源码
             UT.IO.removeDir(tWorkingDir);
