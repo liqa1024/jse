@@ -1,5 +1,6 @@
 package jtool.code;
 
+import jep.python.PyBuiltins;
 import jtool.Main;
 import jtool.atom.AbstractAtoms;
 import jtool.atom.Structures;
@@ -216,6 +217,8 @@ public class SP {
         private final static String PYLIB_DIR = JAR_DIR;
         private final static String JEPLIB_DIR = PYLIB_DIR+"jep/";
         private final static String JEPLIB_PATH = JEPLIB_DIR + (IS_WINDOWS ? "jep.dll" : (IS_MAC ? "jep.jnilib" : "jep.so"));
+        /** 包的版本 */
+        private final static String JEP_VERSION = "4.2.0", ASE_VERSION = "3.22.1";
         
         /** 直接运行文本的脚本 */
         public synchronized static void runText(String aText) throws JepException {JEP_INTERP.exec(aText);}
@@ -239,7 +242,7 @@ public class SP {
             }
             return ScriptObjectPython.of(JEP_INTERP.invoke(aMethodName, aArgs));
         }
-        public synchronized static void importModule(String aModuleName) throws JepException {JEP_INTERP.exec("import "+aModuleName);}
+        public synchronized static Object importModule(String aModuleName) throws JepException {return invoke("import_module", aModuleName);}
         /** 创建 Python 实例，这里可以直接将类名当作函数调用即可 */
         public synchronized static Object newInstance(String aClassName, Object... aArgs) throws JepException {return invoke(aClassName, aArgs);}
         /** 提供一个方便直接访问类型的接口，由于 jep 没有提供相关接口这里直接使用字符串的形式来实现 */
@@ -285,7 +288,10 @@ public class SP {
             initInterpreter_();
         }
         /** 初始化内部的 JEP_INTERP，主要用于减少重复代码 */
-        private synchronized static void initInterpreter_() {JEP_INTERP = new SharedInterpreter();}
+        private synchronized static void initInterpreter_() {
+            JEP_INTERP = new SharedInterpreter();
+            JEP_INTERP.exec("from importlib import import_module");
+        }
         /** 初始化 JEP 需要使用的外部库，需要平台至少拥有 python3 环境 */
         private synchronized static void initJepLib_() {
             // 如果不存在则需要重新通过源码编译
@@ -363,12 +369,12 @@ public class SP {
         
         /** 内部使用的安装 jep 的操作，和一般的库不同，jep 由于不能离线使用 pip 安装，这里直接使用源码编译 */
         private synchronized static void installJep_() throws Exception {
-            // 首先获取源码路径，这里直接检测是否有 jep-4.1.1.zip
-            String tJepZipPath = PYPKG_DIR+"jep-4.1.1.zip";
+            // 首先获取源码路径，这里直接检测是否有 jep-$JEP_VERSION.zip
+            String tJepZipPath = PYPKG_DIR+"jep-"+JEP_VERSION+".zip";
             // 如果没有 jep 包则直接下载，直接从 github 上下载保证结果稳定
             if (!UT.IO.isFile(tJepZipPath)) {
                 System.out.printf("JEP INIT INFO: No jep source code in %s, downloading...\n", PYPKG_DIR);
-                UT.IO.copy(new URL("https://github.com/ninia/jep/archive/v4.1.1.zip"), tJepZipPath);
+                UT.IO.copy(new URL("https://github.com/ninia/jep/archive/refs/tags/v"+JEP_VERSION+".zip"), tJepZipPath);
                 System.out.println("JEP INIT INFO: jep source code downloading finished.");
             }
             // 解压 jep 包到临时目录，如果已经存在则直接清空此目录
@@ -420,21 +426,21 @@ public class SP {
         
         /** 一些内置的 python 库安装，主要用于内部使用 */
         public synchronized static void installAse() throws IOException {
-            // 首先获取源码路径，这里直接检测是否是 ase-3.22.1 开头
+            // 首先获取源码路径，这里直接检测是否是 ase-$ASE_VERSION 开头
             String[] tList = UT.IO.list(PYPKG_DIR);
             boolean tHasAsePkg = false;
-            for (String tName : tList) if (tName.startsWith("ase-3.22.1")) {
+            for (String tName : tList) if (tName.startsWith("ase-"+ASE_VERSION)) {
                 tHasAsePkg = true; break;
             }
-            // 如果没有 ase 包则直接下载，指定版本 3.22.1 避免因为更新造成的问题
+            // 如果没有 ase 包则直接下载，指定版本 ASE_VERSION 避免因为更新造成的问题
             if (!tHasAsePkg) {
                 System.out.printf("ASE INIT INFO: No ase package in %s, downloading...\n", PYPKG_DIR);
-                downloadPackage("ase==3.22.1");
+                downloadPackage("ase=="+ASE_VERSION);
                 System.out.println("ASE INIT INFO: ase package downloading finished");
             }
             // 安装 ase 包
             System.out.println("ASE INIT INFO: Installing ase from package...");
-            installPackage("ase==3.22.1");
+            installPackage("ase=="+ASE_VERSION);
             System.out.println("ASE INIT INFO: ase Installing finished");
         }
     }

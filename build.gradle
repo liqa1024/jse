@@ -45,7 +45,7 @@ dependencies {
     implementation('org.apache.groovy:groovy-xml:4.0.16')           // groovy 的 xml
     implementation('org.apache.groovy:groovy-yaml:4.0.16')          // groovy 的 yaml，暂时没有用到，并且这个包有些复杂，所以不提供支持
     
-    implementation('black.ninia:jep:4.1.1')                         // 调用 python 代码支持，需要系统有需要的 python 环境，并且需要初始化，因此这里不作为主要代码的使用
+    implementation('black.ninia:jep:4.2.0')                         // 调用 python 代码支持，需要系统有需要的 python 环境，并且需要初始化，因此这里不作为主要代码的使用
 //  implementation('org.zeromq:jeromq:0.5.4')                       // 跨 JVM 并行库，可以支持超算上跨节点并行；虽然 java 标准库也有类似功能，但是这个更加易用；现在直接使用 mpi
     
 //  implementation('org.apache.commons:commons-rng-sampling:1.5')   // 只使用随机数生成器，还是太复杂了

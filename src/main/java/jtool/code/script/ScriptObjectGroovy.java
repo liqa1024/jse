@@ -20,5 +20,5 @@ public class ScriptObjectGroovy implements IScriptObject {
     @Override public void setMetaClass(MetaClass metaClass) {mObj.setMetaClass(metaClass);}
     
     /** 主要用来判断是否需要外包这一层 */
-    public static Object of(Object aObj) {return (aObj instanceof GroovyObject) ? (new ScriptObjectGroovy((GroovyObject)aObj)) : aObj;}
+    public static Object of(Object aObj) {return (!(aObj instanceof ScriptObjectGroovy) && (aObj instanceof GroovyObject)) ? (new ScriptObjectGroovy((GroovyObject)aObj)) : aObj;}
 }
