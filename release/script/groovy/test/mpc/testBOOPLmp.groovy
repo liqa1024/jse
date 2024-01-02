@@ -12,7 +12,7 @@ import jtool.system.WSL
 
 
 final def dataPath = 'lmp/data/data-crystal';
-final def dumpPath = 'lmp/.temp/out-cal'
+final def dumpPath = 'lmp/.temp/out-cal';
 
 // 读取需要计算的结构
 def mpc = Lmpdat.read(dataPath).getMPC(4);

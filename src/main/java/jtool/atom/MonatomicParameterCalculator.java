@@ -10,17 +10,11 @@ import jtool.math.function.Func1;
 import jtool.math.function.IFunc1;
 import jtool.math.function.IZeroBoundFunc1;
 import jtool.math.matrix.IMatrix;
-import jtool.math.vector.IComplexVector;
-import jtool.math.vector.ILogicalVector;
-import jtool.math.vector.IVector;
-import jtool.math.vector.Vectors;
+import jtool.math.vector.*;
 import jtool.parallel.*;
 import jtoolex.voronoi.VoronoiBuilder;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.RandomAccess;
+import java.util.*;
 
 import static jtool.atom.NeighborListGetter.DEFAULT_CELL_STEP;
 import static jtool.code.CS.PI;
@@ -520,6 +514,65 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public List<Integer> getNeighborList(IXYZ aXYZ              ) {return getNeighborList(aXYZ, mUnitLen*R_NEAREST_MUL);}
     
     
+    /** 用于分割模拟盒，判断给定 XYZ 或者 idx 处的原子是否在需要考虑的区域中 */
+    private class MPIRegion {
+        private final double mXLo, mXHi, mYLo, mYHi, mZLo, mZHi;
+        MPIRegion(MPI.Comm aComm) {
+            int tSizeRest = aComm.size();
+            // 使用这个方法来获取每个方向的分划数
+            Deque<Integer> rFactors = new ArrayDeque<>();
+            for (int tFactor = 2; tFactor <= tSizeRest; ++tFactor) {
+                while (tSizeRest % tFactor == 0) {
+                    rFactors.addFirst(tFactor); // 直接使用 addFirst 来实现逆序的作用
+                    tSizeRest /= tFactor;
+                }
+            }
+            int rSizeX = 1, rSizeY = 1, rSizeZ = 1;
+            for (int tFactor : rFactors) {
+                if (rSizeX <= rSizeY && rSizeX <= rSizeZ) {
+                    rSizeX *= tFactor;
+                } else
+                if (rSizeY <= rSizeX && rSizeY <= rSizeZ) {
+                    rSizeY *= tFactor;
+                } else {
+                    rSizeZ *= tFactor;
+                }
+            }
+            // 根据分划数获取对应的 mXLo, mXhi, mYLo, mYHi, mZLo, mZHi
+            int tRank = aComm.rank();
+            int tX = tRank/rSizeZ/rSizeY;
+            int tY = tRank/rSizeZ%rSizeY;
+            int tZ = tRank%rSizeZ;
+            XYZ subBox = mBox.div(rSizeX, rSizeY, rSizeZ);
+            mXLo = tX * subBox.mX; mXHi = mXLo + subBox.mX;
+            mYLo = tY * subBox.mY; mYHi = mYLo + subBox.mY;
+            mZLo = tZ * subBox.mZ; mZHi = mZLo + subBox.mZ;
+        }
+        @SuppressWarnings("RedundantIfStatement")
+        boolean inRegin(IXYZ aXYZ) {
+            double tX = aXYZ.x();
+            if (tX < mXLo || tX >= mXHi) return false;
+            double tY = aXYZ.y();
+            if (tY < mYLo || tY >= mYHi) return false;
+            double tZ = aXYZ.z();
+            if (tZ < mZLo || tZ >= mZHi) return false;
+            return true;
+        }
+        @SuppressWarnings("RedundantIfStatement")
+        boolean inRegin(int aIdx) {
+            double tX = mAtomDataXYZ.get(aIdx, 0);
+            if (tX < mXLo || tX >= mXHi) return false;
+            double tY = mAtomDataXYZ.get(aIdx, 1);
+            if (tY < mYLo || tY >= mYHi) return false;
+            double tZ = mAtomDataXYZ.get(aIdx, 2);
+            if (tZ < mZLo || tZ >= mZHi) return false;
+            return true;
+        }
+        boolean inRegin(double aX, double aY, double aZ) {
+            return (aX >= mXLo) && (aX < mXHi) && (aY >= mYLo) && (aY < mYHi) && (aZ >= mZLo) && (aZ < mZHi);
+        }
+    }
+    
     
     /**
      * 计算所有粒子的近邻球谐函数的平均，即 Qlm；
@@ -621,6 +674,95 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     }
     public List<IComplexVector> calYlmMean(int aL, double aRNearest) {return calYlmMean(aL, aRNearest, -1);}
     public List<IComplexVector> calYlmMean(int aL                  ) {return calYlmMean(aL, mUnitLen*R_NEAREST_MUL);}
+    
+    /** MPI 版本的计算 计算所有粒子的近邻球谐函数的平均，即 Qlm */
+    public List<IComplexVector> calYlmMean_MPI(boolean aNoReduce, MPI.Comm aComm, final int aL, double aRNearest, int aNnn) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
+        
+        // 构造用于输出的暂存数组，注意需要初始值为 0.0
+        final List<IComplexVector> Qlm = ComplexVectorCache.getZeros(aL+aL+1, mAtomNum);
+        // 统计近邻数用于求平均
+        final IVector tNN = VectorCache.getZeros(mAtomNum);
+        // 如果限制了 aNnn 需要关闭 half 遍历的优化
+        final boolean aHalf = aNnn<=0;
+        
+        // 获取 MPI 的考虑区域
+        final MPIRegion tCalRegion = new MPIRegion(aComm);
+        
+        // 遍历计算 Qlm，这里直接判断原子位置是否是需要计算的然后跳过
+        for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
+            // 一次计算一行
+            final IComplexVector Qlmi = Qlm.get(i);
+            final XYZ cXYZ = new XYZ(mAtomDataXYZ.row(i));
+            // 遍历近邻计算 Ylm
+            final int fI = i;
+            mNL.forEachNeighbor(fI, aRNearest, aNnn, aHalf, tCalRegion::inRegin, (x, y, z, idx, dis) -> {
+                // 计算角度
+                double dx = x - cXYZ.mX;
+                double dy = y - cXYZ.mY;
+                double dz = z - cXYZ.mZ;
+                double theta = Fast.acos(dz / dis);
+                double disXY = Fast.hypot(dx, dy);
+                double phi = (dy > 0) ? Fast.acos(dx / disXY) : (2.0*PI - Fast.acos(dx / disXY));
+                
+                // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
+                boolean tHalfStat = aHalf && tCalRegion.inRegin(idx);
+                IComplexVector Qlmj = null;
+                if (tHalfStat) {
+                    Qlmj = Qlm.get(idx);
+                }
+                // 计算 Y 并累加，考虑对称性只需要算 m=0~l 的部分
+                for (int tM = 0; tM <= aL; ++tM) {
+                    int tColP =  tM+aL;
+                    int tColN = -tM+aL;
+                    // 虽然存在更快速的版本，并且也存在瓶颈，但精度损失较大，这里不使用
+                    ComplexDouble tY = Func.sphericalHarmonics_(aL, tM, theta, phi);
+                    Qlmi.add_(tColP, tY);
+                    // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
+                    if (tHalfStat) {
+                        Qlmj.add_(tColP, tY);
+                    }
+                    // m < 0 的部分直接利用对称性求
+                    if (tM != 0) {
+                        tY.conj2this();
+                        if ((tM&1)==1) tY.negative2this();
+                        Qlmi.add_(tColN, tY);
+                        // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
+                        if (tHalfStat) {
+                            Qlmj.add_(tColN, tY);
+                        }
+                    }
+                }
+                
+                // 统计近邻数
+                tNN.increment_(fI);
+                // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
+                if (tHalfStat) {
+                    tNN.increment_(idx);
+                }
+            });
+        }
+        
+        // 根据近邻数平均得到 Qlm
+        for (int i = 0; i < mAtomNum; ++i) {
+            double subNN = tNN.get_(i);
+            if (subNN > 0.0) Qlm.get(i).div2this(subNN);
+        }
+        // 归还临时变量
+        VectorCache.returnVec(tNN);
+        
+        // 所有进程将统计到的 Qlm 求和，这里直接遍历 mAtomNum 实现
+        if (!aNoReduce) for (IComplexVector Qlmi : Qlm) {
+            double[][] tData = ((BiDoubleArrayVector)Qlmi).getData();
+            int tCount = ((BiDoubleArrayVector)Qlmi).dataSize();
+            aComm.allreduce(tData[0], tCount, MPI.Op.SUM);
+            aComm.allreduce(tData[1], tCount, MPI.Op.SUM);
+        }
+        
+        return Qlm;
+    }
+    public List<IComplexVector> calYlmMean_MPI(MPI.Comm aComm, int aL, double aRNearest, int aNnn) {return calYlmMean_MPI(false, aComm, aL, aRNearest, aNnn);}
     
     
     /**
@@ -729,6 +871,42 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     }
     public IVector calBOOP(int aL, double aRNearest) {return calBOOP(aL, aRNearest, -1);}
     public IVector calBOOP(int aL                  ) {return calBOOP(aL, mUnitLen*R_NEAREST_MUL);}
+    
+    /** MPI 版本的计算所有粒子的原始的 BOOP */
+    public IVector calBOOP_MPI(boolean aNoReduce, MPI.Comm aComm, int aL, double aRNearest, int aNnn) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
+        List<IComplexVector> Qlm = calYlmMean_MPI(true, aComm, aL, aRNearest, aNnn);
+        
+        // 获取 MPI 的考虑区域
+        MPIRegion tCalRegion = new MPIRegion(aComm);
+        
+        // 直接求和
+        IVector Ql = Vectors.zeros(mAtomNum);
+        for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
+            // 直接计算复向量的点乘
+            double tDot = Qlm.get(i).operation().dot();
+            // 使用这个公式设置 Ql
+            Ql.set_(i, Fast.sqrt(4.0*PI*tDot/(double)(aL+aL+1)));
+        }
+        
+        // 计算完成归还缓存数据
+        ComplexVectorCache.returnVec(Qlm);
+        
+        // 所有进程将统计到的 Ql 求和，这里直接遍历 mAtomNum 实现
+        if (!aNoReduce) {
+            aComm.allreduce(((DoubleArrayVector)Ql).getData(), ((DoubleArrayVector)Ql).dataSize(), MPI.Op.SUM);
+        }
+        
+        // 返回最终计算结果
+        return Ql;
+    }
+    public IVector calBOOP_MPI(MPI.Comm aComm, int aL, double aRNearest, int aNnn) {return calBOOP_MPI(false, aComm, aL, aRNearest, aNnn);}
+    public IVector calBOOP_MPI(MPI.Comm aComm, int aL, double aRNearest          ) {return calBOOP_MPI(aComm, aL, aRNearest, -1);}
+    public IVector calBOOP_MPI(MPI.Comm aComm, int aL                            ) {return calBOOP_MPI(aComm, aL, mUnitLen*R_NEAREST_MUL);}
+    public IVector calBOOP_MPI(                int aL, double aRNearest, int aNnn) {return calBOOP_MPI(MPI.Comm.WORLD, aL, aRNearest, aNnn);}
+    public IVector calBOOP_MPI(                int aL, double aRNearest          ) {return calBOOP_MPI(MPI.Comm.WORLD, aL, aRNearest);}
+    public IVector calBOOP_MPI(                int aL                            ) {return calBOOP_MPI(MPI.Comm.WORLD, aL);}
     
     
     /**

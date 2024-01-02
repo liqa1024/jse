@@ -35,7 +35,7 @@ import static jtool.code.CS.*;
  * @author liqa
  */
 @ApiStatus.Experimental
-public class NativePathGenerator {
+public class MPIFullPathGenerator {
     
     /** 用于 MPI 收发信息的 tags */
     private final static int LMPDAT_INFO = 100, DATA_STD = 101, DATA_VELOCITIES = 102;
@@ -91,7 +91,7 @@ public class NativePathGenerator {
      * @param aDumpStep 每隔多少模拟步输出一个 dump，默认为 10
      * @param aPathLength 一次创建的路径的长度，默认为 20
      */
-    public NativePathGenerator(MPI.Comm aWorldComm, int aWorldRoot, MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, Iterable<? extends IAtomData> aInitAtomDataList, IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, int aPathLength) {
+    public MPIFullPathGenerator(MPI.Comm aWorldComm, int aWorldRoot, MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, Iterable<? extends IAtomData> aInitAtomDataList, IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, int aPathLength) {
         // 基本参数存储
         mInitPoints = NewCollections.map(aInitAtomDataList, data -> Lmpdat.fromAtomData(data).setVelocities(null)); // 初始点也需要移除速度，保证会从不同路径开始
         mMesses = aMesses.copy();
