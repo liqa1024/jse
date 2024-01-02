@@ -961,7 +961,7 @@ public class MPI {
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-allreduce-function"> MPI_Allreduce function </a>
          */
         public static <T> void MPI_Allreduce(T aSendBuf, T rRecvBuf, int aCount, long aOp, long aComm) {
-            MPI_Allreduce0(aSendBuf==MPI_IN_PLACE, aSendBuf, rRecvBuf, aCount, datatypeOf_(aSendBuf), aOp, aComm);
+            MPI_Allreduce0(aSendBuf==MPI_IN_PLACE, aSendBuf, rRecvBuf, aCount, datatypeOf_(rRecvBuf), aOp, aComm);
         }
         private native static void MPI_Allreduce0(boolean aInPlace, Object aSendBuf, Object rRecvBuf, int aCount, long aDataType, long aOp, long aComm);
         
@@ -1098,7 +1098,7 @@ public class MPI {
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-reduce-function"> MPI_Reduce function </a>
          */
         public static <T> void MPI_Reduce(T aSendBuf, T rRecvBuf, int aCount, long aOp, int aRoot, long aComm) {
-            MPI_Reduce0(aSendBuf==MPI_IN_PLACE, aSendBuf, rRecvBuf, aCount, datatypeOf_(aSendBuf), aOp, aRoot, aComm);
+            MPI_Reduce0(aSendBuf==MPI_IN_PLACE, aSendBuf, rRecvBuf, aCount, datatypeOf_(rRecvBuf), aOp, aRoot, aComm);
         }
         private native static void MPI_Reduce0(boolean aInPlace, Object aSendBuf, Object rRecvBuf, int aCount, long aDataType, long aOp, int aRoot, long aComm);
         
