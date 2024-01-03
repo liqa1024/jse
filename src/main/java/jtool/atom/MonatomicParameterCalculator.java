@@ -903,6 +903,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         return qlm;
     }
+    public IComplexMatrix calQlmMean_MPI(MPI.Comm aComm, int aL, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ) {return calQlmMean_MPI(false, aComm, aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);}
+    
     
     /**
      * 计算所有粒子的原始的 BOOP（local Bond Orientational Order Parameters, Ql），
@@ -1248,6 +1250,69 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IVector calConnectCountBOOP(int aL, double aConnectThreshold, double aRNearest          ) {return calConnectCountBOOP(aL, aConnectThreshold, aRNearest, -1);}
     public IVector calConnectCountBOOP(int aL, double aConnectThreshold                            ) {return calConnectCountBOOP(aL, aConnectThreshold, mUnitLen*R_NEAREST_MUL);}
     
+    /** MPI 版本的 BOOP 连接数目 */
+    public IVector calConnectCountBOOP_MPI(boolean aNoReduce, MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestS, int aNnnS) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
+        final IComplexMatrix Qlm = calYlmMean_MPI(aComm, aL, aRNearestY, aNnnY);
+        
+        // 如果限制了 aNnn 需要关闭 half 遍历的优化
+        final boolean aHalf = aNnnS<=0;
+        // 统计连接数
+        final IVector tConnectCount = VectorCache.getZeros(mAtomNum);
+        
+        // 注意需要先对 Qlm 归一化
+        for (int i = 0; i < mAtomNum; ++i) {
+            IComplexVector Qlmi = Qlm.row(i);
+            Qlmi.div2this(Qlmi.operation().norm());
+        }
+        
+        // 获取 MPI 的考虑区域
+        MPIRegion tCalRegion = new MPIRegion(aComm);
+        
+        // 计算近邻上 Qlm 的标量积，根据标量积来统计连接数
+        for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
+            // 统一获取行向量
+            final IComplexVector Qlmi = Qlm.row(i);
+            // 遍历近邻计算连接数
+            final int fI = i;
+            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, tCalRegion::inRegin, (x, y, z, idx, dis) -> {
+                // 统一获取行向量
+                IComplexVector Qlmj = Qlm.row(idx);
+                // 计算复向量的点乘
+                ComplexDouble Sij = Qlmi.operation().dot(Qlmj);
+                // 取模量来判断是否连接
+                if (Sij.norm() > aConnectThreshold) {
+                    tConnectCount.increment_(fI);
+                    // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
+                    boolean tHalfStat = aHalf && tCalRegion.inRegin(idx);
+                    if (tHalfStat) {
+                        tConnectCount.increment_(idx);
+                    }
+                }
+            });
+        }
+        
+        // 计算完成归还缓存数据
+        ComplexMatrixCache.returnMat(Qlm);
+        
+        // 所有进程将统计到的连接数求和
+        if (!aNoReduce) {
+            aComm.allreduce(((DoubleArrayVector)tConnectCount).getData(), ((DoubleArrayVector)tConnectCount).dataSize(), MPI.Op.SUM);
+        }
+        
+        // 返回最终计算结果
+        return tConnectCount;
+    }
+    public IVector calConnectCountBOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestS, int aNnnS) {return calConnectCountBOOP_MPI(false, aComm, aL, aConnectThreshold, aRNearestY, aNnnY, aRNearestS, aNnnS);}
+    public IVector calConnectCountBOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearest, int aNnn) {return calConnectCountBOOP_MPI(aComm, aL, aConnectThreshold, aRNearest, aNnn, aRNearest, aNnn);}
+    public IVector calConnectCountBOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearest          ) {return calConnectCountBOOP_MPI(aComm, aL, aConnectThreshold, aRNearest, -1);}
+    public IVector calConnectCountBOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold                            ) {return calConnectCountBOOP_MPI(aComm, aL, aConnectThreshold, mUnitLen*R_NEAREST_MUL);}
+    public IVector calConnectCountBOOP_MPI(                int aL, double aConnectThreshold, double aRNearest, int aNnn) {return calConnectCountBOOP_MPI(MPI.Comm.WORLD, aL, aConnectThreshold, aRNearest, aNnn);}
+    public IVector calConnectCountBOOP_MPI(                int aL, double aConnectThreshold, double aRNearest          ) {return calConnectCountBOOP_MPI(MPI.Comm.WORLD, aL, aConnectThreshold, aRNearest);}
+    public IVector calConnectCountBOOP_MPI(                int aL, double aConnectThreshold                            ) {return calConnectCountBOOP_MPI(MPI.Comm.WORLD, aL, aConnectThreshold);}
+    
+    
     /**
      * 通过 Averaged bond order parameter（ql）来计算结构中每个原子的连接数目，
      * 输出结果为按照输入原子顺序排列的向量，数值为连接数目；
@@ -1318,6 +1383,68 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IVector calConnectCountABOOP(int aL, double aConnectThreshold, double aRNearest, int aNnn) {return calConnectCountABOOP(aL, aConnectThreshold, aRNearest, aNnn, aRNearest, aNnn, aRNearest, aNnn);}
     public IVector calConnectCountABOOP(int aL, double aConnectThreshold, double aRNearest          ) {return calConnectCountABOOP(aL, aConnectThreshold, aRNearest, -1);}
     public IVector calConnectCountABOOP(int aL, double aConnectThreshold                            ) {return calConnectCountABOOP(aL, aConnectThreshold, mUnitLen*R_NEAREST_MUL);}
+    
+    /** MPI 版本的 BOOP 连接数目 */
+    public IVector calConnectCountABOOP_MPI(boolean aNoReduce, MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ, double aRNearestS, int aNnnS) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
+        final IComplexMatrix qlm = calQlmMean_MPI(aComm, aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);
+        
+        // 如果限制了 aNnn 需要关闭 half 遍历的优化
+        final boolean aHalf = aNnnS<=0;
+        // 统计连接数，这里同样不去考虑减少重复代码
+        final IVector tConnectCount = VectorCache.getZeros(mAtomNum);
+        
+        // 注意需要先对 qlm 归一化
+        for (int i = 0; i < mAtomNum; ++i) {
+            IComplexVector qlmi = qlm.row(i);
+            qlmi.div2this(qlmi.operation().norm());
+        }
+        
+        // 获取 MPI 的考虑区域
+        MPIRegion tCalRegion = new MPIRegion(aComm);
+        
+        // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
+        for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
+            // 统一获取行向量
+            final IComplexVector qlmi = qlm.row(i);
+            // 遍历近邻计算连接数
+            final int fI = i;
+            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, tCalRegion::inRegin, (x, y, z, idx, dis) -> {
+                // 统一获取行向量
+                IComplexVector qlmj = qlm.row(idx);
+                // 计算复向量的点乘
+                ComplexDouble Sij = qlmi.operation().dot(qlmj);
+                // 取模量来判断是否连接
+                if (Sij.norm() > aConnectThreshold) {
+                    tConnectCount.increment_(fI);
+                    // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
+                    boolean tHalfStat = aHalf && tCalRegion.inRegin(idx);
+                    if (tHalfStat) {
+                        tConnectCount.increment_(idx);
+                    }
+                }
+            });
+        }
+        
+        // 计算完成归还缓存数据
+        ComplexMatrixCache.returnMat(qlm);
+        
+        // 所有进程将统计到的连接数求和
+        if (!aNoReduce) {
+            aComm.allreduce(((DoubleArrayVector)tConnectCount).getData(), ((DoubleArrayVector)tConnectCount).dataSize(), MPI.Op.SUM);
+        }
+        
+        // 返回最终计算结果
+        return tConnectCount;
+    }
+    public IVector calConnectCountABOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ, double aRNearestS, int aNnnS) {return calConnectCountABOOP_MPI(false, aComm, aL, aConnectThreshold, aRNearestY, aNnnY, aRNearestQ, aNnnQ, aRNearestS, aNnnS);}
+    public IVector calConnectCountABOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearest, int aNnn) {return calConnectCountABOOP_MPI(aComm, aL, aConnectThreshold, aRNearest, aNnn, aRNearest, aNnn, aRNearest, aNnn);}
+    public IVector calConnectCountABOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearest          ) {return calConnectCountABOOP_MPI(aComm, aL, aConnectThreshold, aRNearest, -1);}
+    public IVector calConnectCountABOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold                            ) {return calConnectCountABOOP_MPI(aComm, aL, aConnectThreshold, mUnitLen*R_NEAREST_MUL);}
+    public IVector calConnectCountABOOP_MPI(                int aL, double aConnectThreshold, double aRNearest, int aNnn) {return calConnectCountABOOP_MPI(MPI.Comm.WORLD, aL, aConnectThreshold, aRNearest, aNnn);}
+    public IVector calConnectCountABOOP_MPI(                int aL, double aConnectThreshold, double aRNearest          ) {return calConnectCountABOOP_MPI(MPI.Comm.WORLD, aL, aConnectThreshold, aRNearest);}
+    public IVector calConnectCountABOOP_MPI(                int aL, double aConnectThreshold                            ) {return calConnectCountABOOP_MPI(MPI.Comm.WORLD, aL, aConnectThreshold);}
     
     
     /**

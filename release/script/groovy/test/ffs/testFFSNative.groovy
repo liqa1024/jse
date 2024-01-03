@@ -9,6 +9,7 @@ import jtool.parallel.MPI
 import jtool.system.WSL
 import jtoolex.rareevent.BufferedFullPathGenerator
 import jtoolex.rareevent.atom.ABOOPSolidChecker
+import jtoolex.rareevent.atom.ABOOPSolidChecker_MPI
 import jtoolex.rareevent.atom.MultiTypeClusterSizeCalculator
 import jtoolex.rareevent.lmp.DumpPathGenerator
 import jtoolex.rareevent.lmp.NativeLmpFullPathGenerator
@@ -53,8 +54,8 @@ final int dumpStep          = 10; // 0.02 ps
 def initPoints = range(parallelNum).collect {Lmpdat.read("${SCOutDataPath}-${it}")};
 
 def dumpCal = new MultiTypeClusterSizeCalculator(
-    new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.89).setSolidThreshold(7),
-    [new ABOOPSolidChecker().setRNearestMul(1.8).setConnectThreshold(0.84).setSolidThreshold(13), new ABOOPSolidChecker().setRNearestMul(1.5).setConnectThreshold(0.84).setSolidThreshold(7)]
+    new ABOOPSolidChecker_MPI().setRNearestMul(1.5).setConnectThreshold(0.89).setSolidThreshold(7),
+    [new ABOOPSolidChecker_MPI().setRNearestMul(1.8).setConnectThreshold(0.84).setSolidThreshold(13), new ABOOPSolidChecker_MPI().setRNearestMul(1.5).setConnectThreshold(0.84).setSolidThreshold(7)]
 );
 
 MPI.init();
@@ -81,12 +82,12 @@ if (me == 0) dump.write(FFSDumpPath);
 // time: 1.94, lambda: 9.0
 // time: 1.96, lambda: 10.0
 // time: 1.98, lambda: 11.0
-// Total time: 00 hour 00 min 18.55 sec
+// Total time: 00 hour 00 min 19.89 sec
 // Native (mpi np 4):
 // time: 1.94, lambda: 9.0
 // time: 1.96, lambda: 10.0
 // time: 1.98, lambda: 11.0
-// Total time: 00 hour 00 min 11.98 sec
+// Total time: 00 hour 00 min 8.21 sec
 
 // WSL (mpi np 1):
 // time: 1.94, lambda: 17.0
