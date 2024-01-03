@@ -12,6 +12,13 @@ public abstract class BiDoubleArrayMatrix extends AbstractComplexMatrix implemen
     @Override public double[][] getData() {return mData;}
     @Override public int dataSize() {return columnNumber()*rowNumber();}
     
+    protected class BiDoubleArrayMatrixOperation_ extends BiDoubleArrayMatrixOperation {
+        @Override protected BiDoubleArrayMatrix thisMatrix_() {return BiDoubleArrayMatrix.this;}
+    }
+    
+    /** 矩阵运算实现 */
+    @Override public IComplexMatrixOperation operation() {return new BiDoubleArrayMatrixOperation_();}
+    
     
     /** stuff to override */
     public abstract BiDoubleArrayMatrix newShell();

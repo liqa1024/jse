@@ -1,14 +1,109 @@
 package jtool.math.matrix;
 
 import jtool.code.collection.AbstractRandomAccessList;
+import jtool.code.iterator.IComplexDoubleIterator;
+import jtool.code.iterator.IComplexDoubleSetIterator;
 import jtool.math.ComplexDouble;
 import jtool.math.IComplexDouble;
 import jtool.math.vector.IComplexVector;
+import jtool.math.vector.IVector;
 import jtool.math.vector.RefComplexVector;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public abstract class AbstractComplexMatrix implements IComplexMatrix {
+    /** print */
+    @Override public String toString() {
+        final StringBuilder rStr  = new StringBuilder();
+        rStr.append(String.format("%d x %d Complex Matrix:", rowNumber(), columnNumber()));
+        List<IComplexVector> tRows = rows();
+        for (IComplexVector tRow : tRows) {
+            rStr.append("\n");
+            tRow.forEach((real, imag) -> rStr.append(toString_(real, imag)));
+        }
+        return rStr.toString();
+    }
+    
+    /** Iterator stuffs */
+    @Override public IComplexDoubleIterator iteratorCol() {
+        return new IComplexDoubleIterator() {
+            private final int mColNum = columnNumber();
+            private final int mRowNum = rowNumber();
+            private int mCol = 0, oCol = -1;
+            private int mRow = 0, oRow = -1;
+            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public void nextOnly() {
+                if (hasNext()) {
+                    oCol = mCol; oRow = mRow;
+                    ++mRow;
+                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public double real() {
+                if (oRow < 0) throw new IllegalStateException();
+                return getReal_(oRow, oCol);
+            }
+            @Override public double imag() {
+                if (oRow < 0) throw new IllegalStateException();
+                return getImag_(oRow, oCol);
+            }
+            
+            /** 重写保证使用此类中的逻辑而不是 IComplexDoubleIterator，虽然是一致的 */
+            @Override public ComplexDouble next() {nextOnly(); return get_(oRow, oCol);}
+        };
+    }
+    @Override public IComplexDoubleSetIterator setIteratorCol() {
+        return new IComplexDoubleSetIterator() {
+            private final int mColNum = columnNumber();
+            private final int mRowNum = rowNumber();
+            private int mCol = 0, oCol = -1;
+            private int mRow = 0, oRow = -1;
+            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public void setReal(double aReal) {
+                if (oRow < 0) throw new IllegalStateException();
+                setReal_(oRow, oCol, aReal);
+            }
+            @Override public void setImag(double aImag) {
+                if (oRow < 0) throw new IllegalStateException();
+                setImag_(oRow, oCol, aImag);
+            }
+            @Override public void nextOnly() {
+                if (hasNext()) {
+                    oCol = mCol; oRow = mRow;
+                    ++mRow;
+                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public double real() {
+                if (oRow < 0) throw new IllegalStateException();
+                return getReal_(oRow, oCol);
+            }
+            @Override public double imag() {
+                if (oRow < 0) throw new IllegalStateException();
+                return getImag_(oRow, oCol);
+            }
+            
+            /** 重写保证使用此类中的逻辑而不是 IComplexDoubleSetIterator，虽然是一致的 */
+            @Override public ComplexDouble next() {nextOnly(); return get_(oRow, oCol);}
+            @Override public void set(IComplexDouble aValue) {
+                if (oRow < 0) throw new IllegalStateException();
+                set_(oRow, oCol, aValue);
+            }
+            @Override public void set(ComplexDouble aValue) {
+                if (oRow < 0) throw new IllegalStateException();
+                set_(oRow, oCol, aValue);
+            }
+            @Override public void set(double aValue) {
+                if (oRow < 0) throw new IllegalStateException();
+                set_(oRow, oCol, aValue);
+            }
+        };
+    }
     
     
     @Override public ComplexDouble get(int aRow, int aCol) {
@@ -115,6 +210,17 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     }
     
     
+    /** 矩阵的运算器 */
+    @Override public IComplexMatrixOperation operation() {
+        return new AbstractComplexMatrixOperation() {
+            @Override protected IComplexMatrix thisMatrix_() {return AbstractComplexMatrix.this;}
+        };
+    }
+    
+    @Override public final void plus2this       (IComplexMatrix aRHS) {operation().plus2this    (aRHS);}
+    
+    
+    
     /** stuff to override */
     public ComplexDouble get_(int aRow, int aCol) {return new ComplexDouble(getReal_(aRow, aCol), getImag_(aRow, aCol));}
     public abstract double getReal_(int aRow, int aCol);
@@ -131,4 +237,6 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     public abstract double getAndSetImag_(int aRow, int aCol, double aImag);
     public abstract int rowNumber();
     public abstract int columnNumber();
+    
+    protected String toString_(double aReal, double aImag) {return Double.compare(aImag, 0.0)>=0 ? String.format("   %.4g + %.4gi", aReal, aImag) : String.format("   %.4g - %.4gi", aReal, -aImag);}
 }

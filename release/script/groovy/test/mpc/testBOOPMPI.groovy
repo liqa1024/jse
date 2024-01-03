@@ -52,7 +52,7 @@ if (me == 0) println("Mean of q6 jtool (MPI): ${q6_MPI.mean()}");
 if (me == 0) UT.Timer.toc();
 // Mean of q6 jtool (MPI): 0.11684061284708915
 // Total time: 00 hour 00 min 1.17 sec (np = 1)
-// Total time: 00 hour 00 min 0.65 sec (np = 4)
+// Total time: 00 hour 00 min 0.42 sec (np = 4)
 
 
 mpc.shutdown();

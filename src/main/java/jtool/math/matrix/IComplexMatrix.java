@@ -1,5 +1,7 @@
 package jtool.math.matrix;
 
+import jtool.code.iterator.IComplexDoubleIterator;
+import jtool.code.iterator.IComplexDoubleSetIterator;
 import jtool.math.ComplexDouble;
 import jtool.math.IComplexDouble;
 import jtool.math.vector.IComplexVector;
@@ -14,6 +16,9 @@ import java.util.List;
  * <p> 当然为了后续完善的方便，结构依旧保持一致 </p>
  */
 public interface IComplexMatrix {
+    /** Iterable stuffs，现在指定具体行列会仅遍历此行或者列，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便使用 */
+    IComplexDoubleIterator iteratorCol();
+    IComplexDoubleSetIterator setIteratorCol();
     
     /** 访问和修改部分，自带的接口 */
     ComplexDouble get_(int aRow, int aCol);
@@ -54,4 +59,11 @@ public interface IComplexMatrix {
     IComplexVector row(int aRow);
     List<IComplexVector> cols();
     IComplexVector col(int aCol);
+    
+    
+    /** 矩阵的运算操作，默认返回新的矩阵 */
+    IComplexMatrixOperation operation();
+    @VisibleForTesting default IComplexMatrixOperation opt() {return operation();}
+    
+    void plus2this      (IComplexMatrix aRHS);
 }
