@@ -21,36 +21,33 @@ import static jtool.code.CS.NO_CACHE;
 public class VectorCache {
     private VectorCache() {}
     
-    private static final IObjectPool<List<IVector>> CACHE = ThreadLocalObjectCachePool.withInitial(ArrayList::new);
-    
     public static void returnVec(@NotNull IVector aVector) {
         if (NO_CACHE) return;
         DoubleArrayCache.returnArray(((DoubleArrayVector)aVector).getData());
     }
-    public static void returnVec(final @NotNull List<@NotNull IVector> aVectorList) {
+    public static void returnVec(final @NotNull List<? extends @NotNull IVector> aVectorList) {
         if (NO_CACHE) return;
-        // 这里不实际缓存 List<IVector>，而是直接统一归还内部值后缓存 clear 后的结构，这样实现会比较简单
+        if (aVectorList.isEmpty()) return;
+        // 这里不实际缓存 List<IVector>，而是直接统一归还内部值，这样实现会比较简单
         DoubleArrayCache.returnArrayFrom(aVectorList.size(), i -> ((DoubleArrayVector)aVectorList.get(i)).getData());
-        aVectorList.clear();
-        CACHE.returnObject(aVectorList);
     }
     
     
-    public static @NotNull IVector getZeros(int aSize) {
+    public static @NotNull Vector getZeros(int aSize) {
         return new Vector(aSize, DoubleArrayCache.getZeros(aSize));
     }
-    public static @NotNull List<IVector> getZeros(final int aSize, int aMultiple) {
+    public static @NotNull List<Vector> getZeros(final int aSize, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
-        final List<IVector> rOut = NO_CACHE ? new ArrayList<>(aMultiple) : CACHE.getObject();
+        final List<Vector> rOut = new ArrayList<>(aMultiple);
         DoubleArrayCache.getZerosTo(aSize, aMultiple, (i, arr) -> rOut.add(new Vector(aSize, arr)));
         return rOut;
     }
-    public static @NotNull IVector getVec(int aSize) {
+    public static @NotNull Vector getVec(int aSize) {
         return new Vector(aSize, DoubleArrayCache.getArray(aSize));
     }
-    public static @NotNull List<IVector> getVec(final int aSize, int aMultiple) {
+    public static @NotNull List<Vector> getVec(final int aSize, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
-        final List<IVector> rOut = NO_CACHE ? new ArrayList<>(aMultiple) : CACHE.getObject();
+        final List<Vector> rOut = new ArrayList<>(aMultiple);
         DoubleArrayCache.getArrayTo(aSize, aMultiple, (i, arr) -> rOut.add(new Vector(aSize, arr)));
         return rOut;
     }

@@ -37,7 +37,7 @@ import static jtool.code.UT.Code.newBox;
  */
 @ApiStatus.Experimental
 public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThreadPool> {
-    private List<IMatrix> mAllAtomDataXYZ; // 现在改为 Matrix 存储，每行为一个原子的 xyz 数据
+    private List<? extends IMatrix> mAllAtomDataXYZ; // 现在改为 Matrix 存储，每行为一个原子的 xyz 数据
     private final double mTimestep;
     private final List<IXYZ> mBoxList;
     
@@ -53,7 +53,7 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
         mDead = true; super.shutdown();
         // 此时 MFPC 关闭，归还 mAllAtomDataXYZ，这种写法保证永远能获取到 mAllAtomDataXYZ 时都是合法的
         if (mAllAtomDataXYZ != null) {
-            List<IMatrix> oAllAtomDataXYZ = mAllAtomDataXYZ;
+            List<? extends IMatrix> oAllAtomDataXYZ = mAllAtomDataXYZ;
             mAllAtomDataXYZ = null;
             MatrixCache.returnMat(oAllAtomDataXYZ);
         }
@@ -83,7 +83,7 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
         if (aAtomDataList.isEmpty()) throw new IllegalArgumentException("aAtomDataList MUST be Non-Empty");
         mFrameNum = aAtomDataList.size();
         
-        List<IMatrix> tXYZArray = null;
+        List<? extends IMatrix> tXYZArray = null;
         try {
             Iterator<? extends Collection<? extends IAtom>> it = aAtomDataList.iterator();
             Collection<? extends IAtom> tFirst = it.next();

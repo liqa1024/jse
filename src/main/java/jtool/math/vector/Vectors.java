@@ -18,86 +18,78 @@ import java.util.Collection;
 public class Vectors {
     private Vectors() {}
     
-    public static IVector ones(int aSize) {return Vector.ones(aSize);}
-    public static IVector zeros(int aSize) {return Vector.zeros(aSize);}
-    public static IVector NaN(int aSize) {
-        IVector rVector = zeros(aSize);
+    public static Vector ones(int aSize) {return Vector.ones(aSize);}
+    public static Vector zeros(int aSize) {return Vector.zeros(aSize);}
+    public static Vector NaN(int aSize) {
+        Vector rVector = zeros(aSize);
         rVector.fill(Double.NaN);
         return rVector;
     }
     
-    public static IVector from(int aSize, IVectorGetter aVectorGetter) {
-        IVector rVector = zeros(aSize);
+    public static Vector from(int aSize, IVectorGetter aVectorGetter) {
+        Vector rVector = zeros(aSize);
         rVector.fill(aVectorGetter);
         return rVector;
     }
-    public static IVector from(IVector aVector) {
-        if (aVector instanceof Vector) {
-            return aVector.copy();
-        } else {
-            IVector rVector = zeros(aVector.size());
-            rVector.fill(aVector);
-            return rVector;
-        }
+    public static Vector from(IVector aVector) {
+        Vector rVector = zeros(aVector.size());
+        rVector.fill(aVector);
+        return rVector;
     }
     /** Groovy stuff */
-    public static IVector from(int aSize, final Closure<? extends Number> aGroovyTask) {return from(aSize, i -> aGroovyTask.call(i).doubleValue());}
+    public static Vector from(int aSize, final Closure<? extends Number> aGroovyTask) {return from(aSize, i -> aGroovyTask.call(i).doubleValue());}
     
-    public static IVector from(Iterable<? extends Number> aIterable) {
+    public static Vector from(Iterable<? extends Number> aIterable) {
         final Vector.Builder rBuilder = Vector.builder();
         for (Number tValue : aIterable) rBuilder.add(tValue.doubleValue());
         rBuilder.trimToSize();
         return rBuilder.build();
     }
-    public static IVector from(Collection<? extends Number> aList) {
-        IVector rVector = zeros(aList.size());
+    public static Vector from(Collection<? extends Number> aList) {
+        Vector rVector = zeros(aList.size());
         rVector.fill(aList);
         return rVector;
     }
-    public static IVector from(double[] aData) {
-        IVector rVector = zeros(aData.length);
+    public static Vector from(double[] aData) {
+        Vector rVector = zeros(aData.length);
         rVector.fill(aData);
         return rVector;
     }
     
     
-    public static ILogicalVector fromBoolean(int aSize, ILogicalVectorGetter aVectorGetter) {
-        ILogicalVector rVector = LogicalVector.zeros(aSize);
+    public static LogicalVector fromBoolean(int aSize, ILogicalVectorGetter aVectorGetter) {
+        LogicalVector rVector = LogicalVector.zeros(aSize);
         rVector.fill(aVectorGetter);
         return rVector;
     }
-    public static ILogicalVector fromBoolean(ILogicalVector aVector) {
-        if (aVector instanceof LogicalVector) {
-            return aVector.copy();
-        } else {
-            ILogicalVector rVector = LogicalVector.zeros(aVector.size());
-            rVector.fill(aVector);
-            return rVector;
-        }
+    public static LogicalVector fromBoolean(ILogicalVector aVector) {
+        LogicalVector rVector = LogicalVector.zeros(aVector.size());
+        rVector.fill(aVector);
+        return rVector;
     }
     /** Groovy stuff */
-    public static ILogicalVector fromBoolean(int aSize, final Closure<Boolean> aGroovyTask) {return fromBoolean(aSize, aGroovyTask::call);}
+    public static LogicalVector fromBoolean(int aSize, final Closure<Boolean> aGroovyTask) {return fromBoolean(aSize, aGroovyTask::call);}
     
-    public static ILogicalVector fromBoolean(Iterable<Boolean> aIterable) {
+    public static LogicalVector fromBoolean(Iterable<Boolean> aIterable) {
         final LogicalVector.Builder rBuilder = LogicalVector.builder();
         for (Boolean tValue : aIterable) rBuilder.add(tValue);
         rBuilder.trimToSize();
         return rBuilder.build();
     }
-    public static ILogicalVector fromBoolean(Collection<Boolean> aList) {
-        ILogicalVector rVector = LogicalVector.zeros(aList.size());
+    public static LogicalVector fromBoolean(Collection<Boolean> aList) {
+        LogicalVector rVector = LogicalVector.zeros(aList.size());
         rVector.fill(aList);
         return rVector;
     }
-    public static ILogicalVector fromBoolean(boolean[] aData) {
-        ILogicalVector rVector = LogicalVector.zeros(aData.length);
+    public static LogicalVector fromBoolean(boolean[] aData) {
+        LogicalVector rVector = LogicalVector.zeros(aData.length);
         rVector.fill(aData);
         return rVector;
     }
     
     
-    public static IVector merge(IVector aBefore, IVector aAfter) {
-        IVector rVector = zeros(aBefore.size()+aAfter.size());
+    public static Vector merge(IVector aBefore, IVector aAfter) {
+        Vector rVector = zeros(aBefore.size()+aAfter.size());
         // 原则上使用优化后的 refSlicer 会更快，但是优化需要的代码量较大，这里直接使用迭代器遍历，一个适中的优化效果
         final IDoubleSetIterator si = rVector.setIterator();
         final IDoubleIterator itB = aBefore.iterator();
@@ -108,17 +100,17 @@ public class Vectors {
     }
     
     /** 也提供过滤的接口，但是这里使用 vector 的写法，不涉及 {@link IHasDoubleIterator} */
-    public static IVector filter(Iterable<? extends Number> aIterable, IDoubleFilter aFilter) {
+    public static Vector filter(Iterable<? extends Number> aIterable, IDoubleFilter aFilter) {
         return NewCollections.filterDouble(aIterable, aFilter);
     }
-    public static IVector filter(IVector aVector, IDoubleFilter aFilter) {
+    public static Vector filter(IVector aVector, IDoubleFilter aFilter) {
         return NewCollections.filterDouble(aVector, aFilter);
     }
     
     
     /** Vector 特有的构造 */
-    public static IVector linsequence(double aStart, double aStep, int aN) {
-        final IVector rVector = zeros(aN);
+    public static Vector linsequence(double aStart, double aStep, int aN) {
+        final Vector rVector = zeros(aN);
         final IDoubleSetIterator si = rVector.setIterator();
         double tValue = aStart;
         while (si.hasNext()) {
@@ -127,13 +119,13 @@ public class Vectors {
         }
         return rVector;
     }
-    public static IVector linspace(double aStart, double aEnd, int aN) {
+    public static Vector linspace(double aStart, double aEnd, int aN) {
         double tStep = (aEnd-aStart)/(double)(aN-1);
         return linsequence(aStart, tStep, aN);
     }
     
-    public static IVector logsequence(double aStart, double aStep, int aN) {
-        final IVector rVector = zeros(aN);
+    public static Vector logsequence(double aStart, double aStep, int aN) {
+        final Vector rVector = zeros(aN);
         final IDoubleSetIterator si = rVector.setIterator();
         double tValue = aStart;
         while (si.hasNext()) {
@@ -142,7 +134,7 @@ public class Vectors {
         }
         return rVector;
     }
-    public static IVector logspace(double aStart, double aEnd, int aN) {
+    public static Vector logspace(double aStart, double aEnd, int aN) {
         double tStep = MathEX.Fast.pow(aEnd/aStart, 1.0/(double)(aN-1));
         return logsequence(aStart, tStep, aN);
     }

@@ -9,9 +9,10 @@ import jtool.math.function.FixBoundFunc1;
 import jtool.math.function.Func1;
 import jtool.math.function.IFunc1;
 import jtool.math.function.IZeroBoundFunc1;
-import jtool.math.matrix.BiDoubleArrayMatrix;
 import jtool.math.matrix.IComplexMatrix;
 import jtool.math.matrix.IMatrix;
+import jtool.math.matrix.RowComplexMatrix;
+import jtool.math.vector.Vector;
 import jtool.math.vector.*;
 import jtool.parallel.*;
 import jtoolex.voronoi.VoronoiBuilder;
@@ -167,7 +168,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         final double dr = aRMax/aN;
         // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
-        final List<IVector> dn = VectorCache.getZeros(aN, nThreads());
+        final List<? extends IVector> dn = VectorCache.getZeros(aN, nThreads());
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(mAtomNum, (i, threadID) -> {
@@ -208,7 +209,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         final double dr = aRMax/aN;
         // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
-        final List<IVector> dn = VectorCache.getZeros(aN, nThreads());
+        final List<? extends IVector> dn = VectorCache.getZeros(aN, nThreads());
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(aAtomNum, (i, threadID) -> {
@@ -598,7 +599,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 构造用于并行的暂存数组，注意需要初始值为 0.0
         final List<IComplexMatrix> rDestPar = NewCollections.from(nThreads(), i -> ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1));
         // 统计近邻数用于求平均，同样也需要为并行使用数组
-        final List<IVector> tNNPar = VectorCache.getZeros(mAtomNum, nThreads());
+        final List<? extends IVector> tNNPar = VectorCache.getZeros(mAtomNum, nThreads());
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnn<=0;
         
@@ -684,7 +685,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
         
         // 构造用于输出的暂存数组，注意需要初始值为 0.0
-        final IComplexMatrix Qlm = ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1);
+        final RowComplexMatrix Qlm = ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1);
         // 统计近邻数用于求平均
         final IVector tNN = VectorCache.getZeros(mAtomNum);
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
@@ -756,8 +757,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 所有进程将统计到的 Qlm 求和，现在可以直接一起同步保证效率
         if (!aNoReduce) {
-            double[][] tData = ((BiDoubleArrayMatrix)Qlm).getData();
-            int tCount = ((BiDoubleArrayMatrix)Qlm).dataSize();
+            double[][] tData = Qlm.getData();
+            int tCount = Qlm.dataSize();
             aComm.allreduce(tData[0], tCount, MPI.Op.SUM);
             aComm.allreduce(tData[1], tCount, MPI.Op.SUM);
         }
@@ -846,7 +847,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
         
         final IComplexMatrix Qlm = calYlmMean_MPI(aComm, aL, aRNearestY, aNnnY);
-        final IComplexMatrix qlm = ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1);
+        final RowComplexMatrix qlm = ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1);
         
         // 统计近邻数用于求平均（增加一个自身）
         final IVector tNN = VectorCache.getVec(mAtomNum);
@@ -895,8 +896,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
 
         // 所有进程将统计到的 qlm 求和，现在可以直接一起同步保证效率
         if (!aNoReduce) {
-            double[][] tData = ((BiDoubleArrayMatrix)qlm).getData();
-            int tCount = ((BiDoubleArrayMatrix)qlm).dataSize();
+            double[][] tData = qlm.getData();
+            int tCount = qlm.dataSize();
             aComm.allreduce(tData[0], tCount, MPI.Op.SUM);
             aComm.allreduce(tData[1], tCount, MPI.Op.SUM);
         }
@@ -953,7 +954,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         MPIRegion tCalRegion = new MPIRegion(aComm);
         
         // 直接求和
-        IVector Ql = VectorCache.getZeros(mAtomNum);
+        Vector Ql = VectorCache.getZeros(mAtomNum);
         for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
             // 直接计算复向量的点乘
             double tDot = Qlm.row(i).operation().dot();
@@ -966,7 +967,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 所有进程将统计到的 Ql 求和
         if (!aNoReduce) {
-            aComm.allreduce(((DoubleArrayVector)Ql).getData(), ((DoubleArrayVector)Ql).dataSize(), MPI.Op.SUM);
+            aComm.allreduce(Ql.getData(), Ql.dataSize(), MPI.Op.SUM);
         }
         
         // 返回最终计算结果
@@ -1088,7 +1089,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         MPIRegion tCalRegion = new MPIRegion(aComm);
         
         // 直接求和
-        IVector ql = VectorCache.getZeros(mAtomNum);
+        Vector ql = VectorCache.getZeros(mAtomNum);
         for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
             // 直接计算复向量的点乘
             double tDot = qlm.row(i).operation().dot();
@@ -1101,7 +1102,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 所有进程将统计到的 ql 求和
         if (!aNoReduce) {
-            aComm.allreduce(((DoubleArrayVector)ql).getData(), ((DoubleArrayVector)ql).dataSize(), MPI.Op.SUM);
+            aComm.allreduce(ql.getData(), ql.dataSize(), MPI.Op.SUM);
         }
         
         // 返回最终计算结果
@@ -1259,7 +1260,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnS<=0;
         // 统计连接数
-        final IVector tConnectCount = VectorCache.getZeros(mAtomNum);
+        final Vector tConnectCount = VectorCache.getZeros(mAtomNum);
         
         // 注意需要先对 Qlm 归一化
         for (int i = 0; i < mAtomNum; ++i) {
@@ -1298,7 +1299,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 所有进程将统计到的连接数求和
         if (!aNoReduce) {
-            aComm.allreduce(((DoubleArrayVector)tConnectCount).getData(), ((DoubleArrayVector)tConnectCount).dataSize(), MPI.Op.SUM);
+            aComm.allreduce(tConnectCount.getData(), tConnectCount.dataSize(), MPI.Op.SUM);
         }
         
         // 返回最终计算结果
@@ -1393,7 +1394,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnS<=0;
         // 统计连接数，这里同样不去考虑减少重复代码
-        final IVector tConnectCount = VectorCache.getZeros(mAtomNum);
+        final Vector tConnectCount = VectorCache.getZeros(mAtomNum);
         
         // 注意需要先对 qlm 归一化
         for (int i = 0; i < mAtomNum; ++i) {
@@ -1432,7 +1433,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 所有进程将统计到的连接数求和
         if (!aNoReduce) {
-            aComm.allreduce(((DoubleArrayVector)tConnectCount).getData(), ((DoubleArrayVector)tConnectCount).dataSize(), MPI.Op.SUM);
+            aComm.allreduce(tConnectCount.getData(), tConnectCount.dataSize(), MPI.Op.SUM);
         }
         
         // 返回最终计算结果
@@ -1571,12 +1572,12 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * @return 原子指纹矩阵组成的数组，n 为行，l 为列，因此 asVecRow 即为原本定义的基
      */
     @ApiStatus.Experimental
-    public List<IMatrix> calFPSuRui(final int aNMax, final int aLMax, final double aRCutOff) {
+    public List<? extends IMatrix> calFPSuRui(final int aNMax, final int aLMax, final double aRCutOff) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         if (aNMax < 0) throw new IllegalArgumentException("Input n_max MUST be Non-Negative, input: "+aNMax);
         if (aLMax < 0) throw new IllegalArgumentException("Input l_max MUST be Non-Negative, input: "+aLMax);
         
-        final List<IMatrix> rFingerPrints = MatrixCache.getMatRow(aNMax+1, aLMax+1, mAtomNum);
+        final List<? extends IMatrix> rFingerPrints = MatrixCache.getMatRow(aNMax+1, aLMax+1, mAtomNum);
         
         // TODO: 理论上只需要遍历一半从而加速这个过程，但由于实现较麻烦且占用过多内存，这里暂不考虑
         pool().parfor(mAtomNum, (i, threadID) -> {

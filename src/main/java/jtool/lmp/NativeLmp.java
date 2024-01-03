@@ -15,6 +15,7 @@ import jtool.math.vector.IVector;
 import jtool.parallel.DoubleArrayCache;
 import jtool.parallel.IAutoShutdown;
 import jtool.parallel.MPI;
+import jtool.parallel.MatrixCache;
 import jtool.vasp.IVaspCommonData;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -519,9 +520,9 @@ public class NativeLmp implements IAutoShutdown {
      * @return Matrix of requested data
      */
     public IMatrix fullAtomDataOf(String aName, boolean aIsDouble, int aRowNum, int aColNum) {
-        double[] rData = DoubleArrayCache.getArray(aRowNum*aColNum);
-        lammpsGatherConcat_(mLmpPtr, aName, aIsDouble, aRowNum, aColNum, rData);
-        return new RowMatrix(aRowNum, aColNum, rData);
+        RowMatrix rData = MatrixCache.getMatRow(aRowNum, aColNum);
+        lammpsGatherConcat_(mLmpPtr, aName, aIsDouble, aRowNum, aColNum, rData.getData());
+        return rData;
     }
     /**
      * 获取此进程的原子数据而不进行收集操作，
@@ -536,9 +537,9 @@ public class NativeLmp implements IAutoShutdown {
      * @return Matrix of requested data
      */
     public IMatrix localAtomDataOf(String aName, int aDataType, int aRowNum, int aColNum) {
-        double[] rData = DoubleArrayCache.getArray(aRowNum*aColNum);
-        lammpsExtractAtom_(mLmpPtr, aName, aDataType, aRowNum, aColNum, rData);
-        return new RowMatrix(aRowNum, aColNum, rData);
+        RowMatrix rData = MatrixCache.getMatRow(aRowNum, aColNum);
+        lammpsExtractAtom_(mLmpPtr, aName, aDataType, aRowNum, aColNum, rData.getData());
+        return rData;
     }
     private native static void lammpsGatherConcat_(long aLmpPtr, String aName, boolean aIsDouble, int aAtomNum, int aCount, double[] rData);
     private native static void lammpsExtractAtom_(long aLmpPtr, String aName, int aDataType, int aAtomNum, int aCount, double[] rData);
@@ -639,9 +640,9 @@ public class NativeLmp implements IAutoShutdown {
             tRow.set(STD_Y_COL   , itXYZ .next());
             tRow.set(STD_Z_COL   , itXYZ .next());
         }
-        DoubleArrayCache.returnArray(((DoubleArrayMatrix)tID  ).getData());
-        DoubleArrayCache.returnArray(((DoubleArrayMatrix)tType).getData());
-        DoubleArrayCache.returnArray(((DoubleArrayMatrix)tXYZ ).getData());
+        MatrixCache.returnMat(tID  );
+        MatrixCache.returnMat(tType);
+        MatrixCache.returnMat(tXYZ );
         // 构造 Lmpdat，其余数据由于可以直接存在 Lmpdat 中，因此不用归还
         return new Lmpdat(tAtomTypeNum, box(), tMassesData, tAtomData, tVelocities);
     }

@@ -21,16 +21,15 @@ import static jtool.code.CS.NO_CACHE;
 public class ComplexMatrixCache {
     private ComplexMatrixCache() {}
     
-    private static final IObjectPool<List<IComplexMatrix>> CACHE = ThreadLocalObjectCachePool.withInitial(ArrayList::new);
-    
     public static void returnMat(@NotNull IComplexMatrix aComplexMatrix) {
         if (NO_CACHE) return;
         final double[][] tData = ((BiDoubleArrayMatrix)aComplexMatrix).getData();
         DoubleArrayCache.returnArrayFrom(2, i -> tData[1-i]);
     }
-    public static void returnMat(final @NotNull List<@NotNull IComplexMatrix> aComplexMatrixList) {
+    public static void returnMat(final @NotNull List<? extends @NotNull IComplexMatrix> aComplexMatrixList) {
         if (NO_CACHE) return;
-        // 这里不实际缓存 List<IComplexMatrix>，而是直接统一归还内部值后缓存 clear 后的结构，这样实现会比较简单
+        if (aComplexMatrixList.isEmpty()) return;
+        // 这里不实际缓存 List<IComplexMatrix>，而是直接统一归还内部值，这样实现会比较简单
         final double[][] tArrayBuffer = {null};
         DoubleArrayCache.returnArrayFrom(aComplexMatrixList.size()*2, i -> {
             double[] tArrayReal = tArrayBuffer[0];
@@ -43,19 +42,17 @@ public class ComplexMatrixCache {
                 return tArrayReal;
             }
         });
-        aComplexMatrixList.clear();
-        CACHE.returnObject(aComplexMatrixList);
     }
     
     
-    public static @NotNull IComplexMatrix getZerosRow(int aRowNum, int aColNum) {
+    public static @NotNull RowComplexMatrix getZerosRow(int aRowNum, int aColNum) {
         final double[][] rData = new double[2][];
         DoubleArrayCache.getZerosTo(aRowNum*aColNum, 2, (i, arr) -> rData[i] = arr);
         return new RowComplexMatrix(aRowNum, aColNum, rData);
     }
-    public static @NotNull List<IComplexMatrix> getZerosRow(final int aRowNum, final int aColNum, int aMultiple) {
+    public static @NotNull List<RowComplexMatrix> getZerosRow(final int aRowNum, final int aColNum, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
-        final List<IComplexMatrix> rOut = NO_CACHE ? new ArrayList<>(aMultiple) : CACHE.getObject();
+        final List<RowComplexMatrix> rOut = new ArrayList<>(aMultiple);
         final double[][] tArrayBuffer = {null};
         DoubleArrayCache.getZerosTo(aRowNum*aColNum, aMultiple*2, (i, arr) -> {
             double[] tArrayReal = tArrayBuffer[0];
@@ -68,14 +65,14 @@ public class ComplexMatrixCache {
         });
         return rOut;
     }
-    public static @NotNull IComplexMatrix getMatRow(int aRowNum, int aColNum) {
+    public static @NotNull RowComplexMatrix getMatRow(int aRowNum, int aColNum) {
         final double[][] rData = new double[2][];
         DoubleArrayCache.getArrayTo(aRowNum*aColNum, 2, (i, arr) -> rData[i] = arr);
         return new RowComplexMatrix(aRowNum, aColNum, rData);
     }
-    public static @NotNull List<IComplexMatrix> getMatRow(final int aRowNum, final int aColNum, int aMultiple) {
+    public static @NotNull List<RowComplexMatrix> getMatRow(final int aRowNum, final int aColNum, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
-        final List<IComplexMatrix> rOut = NO_CACHE ? new ArrayList<>(aMultiple) : CACHE.getObject();
+        final List<RowComplexMatrix> rOut = new ArrayList<>(aMultiple);
         final double[][] tArrayBuffer = {null};
         DoubleArrayCache.getArrayTo(aRowNum*aColNum, aMultiple*2, (i, arr) -> {
             double[] tArrayReal = tArrayBuffer[0];

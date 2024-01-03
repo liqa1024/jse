@@ -21,16 +21,15 @@ import static jtool.code.CS.NO_CACHE;
 public class ComplexVectorCache {
     private ComplexVectorCache() {}
     
-    private static final IObjectPool<List<IComplexVector>> CACHE = ThreadLocalObjectCachePool.withInitial(ArrayList::new);
-    
     public static void returnVec(@NotNull IComplexVector aComplexVector) {
         if (NO_CACHE) return;
         final double[][] tData = ((BiDoubleArrayVector)aComplexVector).getData();
         DoubleArrayCache.returnArrayFrom(2, i -> tData[1-i]);
     }
-    public static void returnVec(final @NotNull List<@NotNull IComplexVector> aComplexVectorList) {
+    public static void returnVec(final @NotNull List<? extends @NotNull IComplexVector> aComplexVectorList) {
         if (NO_CACHE) return;
-        // 这里不实际缓存 List<IComplexVector>，而是直接统一归还内部值后缓存 clear 后的结构，这样实现会比较简单
+        if (aComplexVectorList.isEmpty()) return;
+        // 这里不实际缓存 List<IComplexVector>，而是直接统一归还内部值，这样实现会比较简单
         final double[][] tArrayBuffer = {null};
         DoubleArrayCache.returnArrayFrom(aComplexVectorList.size()*2, i -> {
             double[] tArrayReal = tArrayBuffer[0];
@@ -43,19 +42,17 @@ public class ComplexVectorCache {
                 return tArrayReal;
             }
         });
-        aComplexVectorList.clear();
-        CACHE.returnObject(aComplexVectorList);
     }
     
     
-    public static @NotNull IComplexVector getZeros(int aSize) {
+    public static @NotNull ComplexVector getZeros(int aSize) {
         final double[][] rData = new double[2][];
         DoubleArrayCache.getZerosTo(aSize, 2, (i, arr) -> rData[i] = arr);
         return new ComplexVector(aSize, rData);
     }
-    public static @NotNull List<IComplexVector> getZeros(final int aSize, int aMultiple) {
+    public static @NotNull List<ComplexVector> getZeros(final int aSize, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
-        final List<IComplexVector> rOut = NO_CACHE ? new ArrayList<>(aMultiple) : CACHE.getObject();
+        final List<ComplexVector> rOut = new ArrayList<>(aMultiple);
         final double[][] tArrayBuffer = {null};
         DoubleArrayCache.getZerosTo(aSize, aMultiple*2, (i, arr) -> {
             double[] tArrayReal = tArrayBuffer[0];
@@ -68,14 +65,14 @@ public class ComplexVectorCache {
         });
         return rOut;
     }
-    public static @NotNull IComplexVector getVec(int aSize) {
+    public static @NotNull ComplexVector getVec(int aSize) {
         final double[][] rData = new double[2][];
         DoubleArrayCache.getArrayTo(aSize, 2, (i, arr) -> rData[i] = arr);
         return new ComplexVector(aSize, rData);
     }
-    public static @NotNull List<IComplexVector> getVec(final int aSize, int aMultiple) {
+    public static @NotNull List<ComplexVector> getVec(final int aSize, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
-        final List<IComplexVector> rOut = NO_CACHE ? new ArrayList<>(aMultiple) : CACHE.getObject();
+        final List<ComplexVector> rOut = new ArrayList<>(aMultiple);
         final double[][] tArrayBuffer = {null};
         DoubleArrayCache.getArrayTo(aSize, aMultiple*2, (i, arr) -> {
             double[] tArrayReal = tArrayBuffer[0];
