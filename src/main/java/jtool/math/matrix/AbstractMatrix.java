@@ -474,7 +474,7 @@ public abstract class AbstractMatrix implements IMatrix {
     
     
     
-    @Override public final IMatrix copy() {
+    @Override public IMatrix copy() {
         IMatrix rMatrix = newZeros_(rowNumber(), columnNumber());
         rMatrix.fill(this);
         return rMatrix;

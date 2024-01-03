@@ -3,7 +3,6 @@ package jtool.lmp;
 import jtool.atom.*;
 import jtool.code.UT;
 import jtool.math.MathEX;
-import jtool.math.matrix.IMatrix;
 import jtool.math.matrix.RowMatrix;
 import jtool.math.vector.IVector;
 import jtool.math.vector.Vectors;
@@ -22,6 +21,7 @@ import static jtool.code.CS.*;
  * <p> 包含读取写出的文本文件的格式 </p>
  * <p> 暂时不支持键和键角等信息 </p>
  * <p> 直接获取到的所有数据都是引用，因此外部可以直接进行修改 </p>
+ * <p> 修改了格式从而匹配 {@link NativeLmp} 的使用 </p>
  */
 public class Lmpdat extends AbstractSettableAtomData {
     public final static int LMPDAT_VELOCITY_LENGTH = 4;
@@ -30,8 +30,9 @@ public class Lmpdat extends AbstractSettableAtomData {
     private int mAtomTypeNum;
     private Box mBox;
     private @Nullable IVector mMasses;
-    private final IMatrix mAtomData;
-    private @Nullable IMatrix mVelocities;
+    /** 固定类型方便 MPI 传输 */
+    private final RowMatrix mAtomData;
+    private @Nullable RowMatrix mVelocities;
     
     /**
      * 直接根据数据创建 Lmpdat
@@ -41,7 +42,7 @@ public class Lmpdat extends AbstractSettableAtomData {
      * @param aAtomData 原子数据组成的矩阵（必须）
      * @param aVelocities 原子速度组成的矩阵
      */
-    public Lmpdat(int aAtomTypeNum, Box aBox, @Nullable IVector aMasses, IMatrix aAtomData, @Nullable IMatrix aVelocities) {
+    public Lmpdat(int aAtomTypeNum, Box aBox, @Nullable IVector aMasses, RowMatrix aAtomData, @Nullable RowMatrix aVelocities) {
         mBox = aBox;
         mMasses = aMasses;
         mAtomData = aAtomData;
@@ -60,7 +61,8 @@ public class Lmpdat extends AbstractSettableAtomData {
     public Lmpdat setMasses(Collection<? extends Number> aMasses) {return setMasses(Vectors.from(aMasses));}
     public Lmpdat setMasses(IVector aMasses) {mMasses = aMasses; return this;}
     @Override public Lmpdat setAtomTypeNum(int aAtomTypeNum) {mAtomTypeNum = aAtomTypeNum; return this;}
-    public Lmpdat setVelocities(IMatrix aVelocities) {mVelocities = aVelocities; return this;}
+    public Lmpdat setNoVelocities() {mVelocities = null; return this;}
+    public Lmpdat setHasVelocities() {if (mVelocities == null) {mVelocities = RowMatrix.zeros(atomNum(), ATOM_DATA_KEYS_VELOCITY.length);} return this;}
     
     /**
      * 修改模拟盒类型
@@ -122,8 +124,8 @@ public class Lmpdat extends AbstractSettableAtomData {
     
     /// 获取属性
     public Box lmpBox() {return mBox;}
-    public IMatrix atomData() {return mAtomData;}
-    public @Nullable IMatrix velocities() {return mVelocities;}
+    public RowMatrix atomData() {return mAtomData;}
+    public @Nullable RowMatrix velocities() {return mVelocities;}
     public @Nullable IVector masses() {return mMasses;}
     public double mass(int aType) {return mMasses!=null ? mMasses.get(aType-1) : Double.NaN;}
     public ISettableAtom pickAtomInternal(final int aIdx) {
@@ -256,8 +258,24 @@ public class Lmpdat extends AbstractSettableAtomData {
             Lmpdat tLmpdat = (Lmpdat)aAtomData;
             return new Lmpdat(tLmpdat.atomTypeNum(), tLmpdat.mBox.copy(), aMasses, tLmpdat.mAtomData.copy(), tLmpdat.mVelocities==null?null:tLmpdat.mVelocities.copy());
         } else {
-            // 一般的情况，通过 dataSTD 来创建，注意这里认为获取时已经经过了值拷贝，因此不再需要 copy
-            return new Lmpdat(aAtomData.atomTypeNum(), new Box(aAtomData.box()), aMasses, aAtomData.dataSTD().asMatrix(), aAtomData.hasVelocities()?aAtomData.dataVelocities().asMatrix():null);
+            // 一般的情况
+            RowMatrix rDataSTD = RowMatrix.zeros(aAtomData.atomNum(), STD_ATOM_DATA_KEYS.length);
+            @Nullable RowMatrix rVelocities = aAtomData.hasVelocities() ? RowMatrix.zeros(aAtomData.atomNum(), ATOM_DATA_KEYS_VELOCITY.length) : null;
+            int row = 0;
+            for (IAtom tAtom : aAtomData.asList()) {
+                rDataSTD.set_(row, STD_ID_COL, tAtom.id());
+                rDataSTD.set_(row, STD_TYPE_COL, tAtom.type());
+                rDataSTD.set_(row, STD_X_COL, tAtom.x());
+                rDataSTD.set_(row, STD_Y_COL, tAtom.y());
+                rDataSTD.set_(row, STD_Z_COL, tAtom.z());
+                if (rVelocities != null) {
+                    rVelocities.set_(row, STD_VX_COL, tAtom.vx());
+                    rVelocities.set_(row, STD_VY_COL, tAtom.vy());
+                    rVelocities.set_(row, STD_VZ_COL, tAtom.vz());
+                }
+                ++row;
+            }
+            return new Lmpdat(aAtomData.atomTypeNum(), new Box(aAtomData.box()), aMasses, rDataSTD, rVelocities);
         }
     }
     
@@ -276,8 +294,8 @@ public class Lmpdat extends AbstractSettableAtomData {
         int aAtomTypeNum;
         Box aBox;
         IVector aMasses;
-        IMatrix aAtomData;
-        IMatrix aVelocities;
+        RowMatrix aAtomData;
+        RowMatrix aVelocities;
         
         int idx = 0; int end;
         int tIdx; String[] tTokens;

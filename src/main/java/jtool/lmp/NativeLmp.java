@@ -466,12 +466,12 @@ public class NativeLmp implements IAutoShutdown {
      * This function will try to auto-detect the data type by asking the library.
      * This function returns null if either the keyword is not recognized.
      * @param aName name of the property
-     * @return Matrix of requested data
+     * @return RowMatrix of requested data
      * @see <a href="https://docs.lammps.org/Library_scatter.html#_CPPv420lammps_gather_concatPvPKciiPv">
      * lammps_gather_concat() </a>
      */
     @SuppressWarnings("DuplicateBranchesInSwitch")
-    public IMatrix atomDataOf(String aName) {
+    public RowMatrix atomDataOf(String aName) {
         switch(aName) {
         case "mass":        {return localAtomDataOf(aName, 1, atomTypeNum()+1, 1);}
         case "id":          {return fullAtomDataOf(aName, false, atomNum(), 1);}
@@ -517,9 +517,9 @@ public class NativeLmp implements IAutoShutdown {
      * @param aIsDouble false for int, true for double
      * @param aColNum column number of Matrix of requested data
      * @param aRowNum row number of Matrix of requested data
-     * @return Matrix of requested data
+     * @return RowMatrix of requested data
      */
-    public IMatrix fullAtomDataOf(String aName, boolean aIsDouble, int aRowNum, int aColNum) {
+    public RowMatrix fullAtomDataOf(String aName, boolean aIsDouble, int aRowNum, int aColNum) {
         RowMatrix rData = MatrixCache.getMatRow(aRowNum, aColNum);
         lammpsGatherConcat_(mLmpPtr, aName, aIsDouble, aRowNum, aColNum, rData.getData());
         return rData;
@@ -534,9 +534,9 @@ public class NativeLmp implements IAutoShutdown {
      * @param aDataType 0 for int, 1 for double, 2 for int64_t when LAMMPS_BIGBIG is defined, 3 for int64_t anyway
      * @param aColNum column number of Matrix of requested data
      * @param aRowNum row number of Matrix of requested data
-     * @return Matrix of requested data
+     * @return RowMatrix of requested data
      */
-    public IMatrix localAtomDataOf(String aName, int aDataType, int aRowNum, int aColNum) {
+    public RowMatrix localAtomDataOf(String aName, int aDataType, int aRowNum, int aColNum) {
         RowMatrix rData = MatrixCache.getMatRow(aRowNum, aColNum);
         lammpsExtractAtom_(mLmpPtr, aName, aDataType, aRowNum, aColNum, rData.getData());
         return rData;
@@ -622,14 +622,14 @@ public class NativeLmp implements IAutoShutdown {
         IMatrix tID = atomDataOf("id");
         IMatrix tType = atomDataOf("type");
         IMatrix tXYZ = atomDataOf("x");
-        @Nullable IMatrix tVelocities = aNoVelocities ? null : atomDataOf("v");
+        @Nullable RowMatrix tVelocities = aNoVelocities ? null : atomDataOf("v");
         IMatrix tMasses = atomDataOf("mass");
         int tAtomNum = tXYZ.rowNumber();
         int tAtomTypeNum = tMasses.rowNumber()-1;
         // 设置 mass，按照 lammps 的设定只有这个范围内的才有意义（但是超出范围的依旧会进行访问，因此还是需要一个 atomNum 长的数组）
         IVector tMassesData = tMasses.asVecRow().subVec(1, tAtomTypeNum+1);
         // 设置 atomData
-        IMatrix tAtomData = RowMatrix.zeros(tAtomNum, STD_ATOM_DATA_KEYS.length);
+        RowMatrix tAtomData = RowMatrix.zeros(tAtomNum, STD_ATOM_DATA_KEYS.length);
         IDoubleIterator itID   = tID  .iteratorRow();
         IDoubleIterator itType = tType.iteratorRow();
         IDoubleIterator itXYZ  = tXYZ .iteratorRow();

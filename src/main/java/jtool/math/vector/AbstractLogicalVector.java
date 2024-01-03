@@ -170,7 +170,7 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
     
     
     
-    @Override public final ILogicalVector copy() {
+    @Override public ILogicalVector copy() {
         ILogicalVector rVector = newZeros_(size());
         rVector.fill(this);
         return rVector;

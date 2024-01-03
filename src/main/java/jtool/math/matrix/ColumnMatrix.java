@@ -54,6 +54,11 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
     @Override public int columnNumber() {return mColNum;}
     
     @Override protected ColumnMatrix newZeros_(int aRowNum, int aColNum) {return ColumnMatrix.zeros(aRowNum, aColNum);}
+    @Override public ColumnMatrix copy() {
+        ColumnMatrix rMatrix = ColumnMatrix.zeros(mRowNum, mColNum);
+        rMatrix.fill(this);
+        return rMatrix;
+    }
     
     @Override public ColumnMatrix newShell() {return new ColumnMatrix(mRowNum, mColNum, null);}
     @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {

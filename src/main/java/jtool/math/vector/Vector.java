@@ -1,10 +1,10 @@
 package jtool.math.vector;
 
 import jtool.code.functional.IDoubleConsumer1;
+import jtool.code.functional.IDoubleOperator1;
 import jtool.code.functional.IDoubleSupplier;
 import jtool.code.iterator.IDoubleIterator;
 import jtool.code.iterator.IDoubleSetIterator;
-import jtool.code.functional.IDoubleOperator1;
 import jtool.math.MathEX;
 import org.jetbrains.annotations.Nullable;
 
@@ -95,6 +95,11 @@ public final class Vector extends DoubleArrayVector {
     @Override public int size() {return mSize;}
     
     @Override protected Vector newZeros_(int aSize) {return Vector.zeros(aSize);}
+    @Override public Vector copy() {
+        Vector rVector = Vector.zeros(mSize);
+        rVector.fill(this);
+        return rVector;
+    }
     
     @Override public Vector newShell() {return new Vector(mSize, null);}
     @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {

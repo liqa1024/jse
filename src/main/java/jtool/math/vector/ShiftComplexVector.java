@@ -45,6 +45,11 @@ public final class ShiftComplexVector extends BiDoubleArrayVector {
     @Override public int size() {return mSize;}
     
     @Override protected ComplexVector newZeros_(int aSize) {return ComplexVector.zeros(aSize);}
+    @Override public ComplexVector copy() {
+        ComplexVector rVector = ComplexVector.zeros(mSize);
+        rVector.fill(this);
+        return rVector;
+    }
     
     @Override public ShiftComplexVector newShell() {return new ShiftComplexVector(mSize, mShift, null);}
     @Override public double @Nullable[][] getIfHasSameOrderData(Object aObj) {

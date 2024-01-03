@@ -351,7 +351,7 @@ public abstract class AbstractComplexVector implements IComplexVector {
     }
     
     
-    @Override public final IComplexVector copy() {
+    @Override public IComplexVector copy() {
         IComplexVector rVector = newZeros_(size());
         rVector.fill(this);
         return rVector;

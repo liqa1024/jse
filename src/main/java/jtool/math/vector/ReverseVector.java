@@ -47,6 +47,11 @@ public final class ReverseVector extends DoubleArrayVector {
     @Override public int size() {return mSize;}
     
     @Override protected ReverseVector newZeros_(int aSize) {return ReverseVector.zeros(aSize);}
+    @Override public ReverseVector copy() {
+        ReverseVector rVector = ReverseVector.zeros(mSize);
+        rVector.fill(this);
+        return rVector;
+    }
     
     @Override public ReverseVector newShell() {return new ReverseVector(mSize, null);}
     @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {

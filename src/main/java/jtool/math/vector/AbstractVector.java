@@ -4,14 +4,13 @@ import jtool.code.CS.SliceType;
 import jtool.code.collection.AbstractRandomAccessList;
 import jtool.code.filter.IIndexFilter;
 import jtool.code.functional.IDoubleConsumer1;
+import jtool.code.functional.IDoubleOperator1;
 import jtool.code.functional.IDoubleSupplier;
 import jtool.code.iterator.IDoubleIterator;
 import jtool.code.iterator.IDoubleSetIterator;
-import jtool.code.functional.IDoubleOperator1;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -205,7 +204,7 @@ public abstract class AbstractVector implements IVector {
     
     
     
-    @Override public final IVector copy() {
+    @Override public IVector copy() {
         IVector rVector = newZeros_(size());
         rVector.fill(this);
         return rVector;

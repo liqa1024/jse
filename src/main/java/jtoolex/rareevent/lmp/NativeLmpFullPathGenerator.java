@@ -61,7 +61,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
      */
     public NativeLmpFullPathGenerator(MPI.Comm aLmpComm, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep) {
         // 基本参数存储
-        mInitPoints = NewCollections.map(aInitAtomDataList, data -> Lmpdat.fromAtomData(data).setVelocities(null)); // 初始点也需要移除速度，保证会从不同路径开始
+        mInitPoints = NewCollections.map(aInitAtomDataList, data -> Lmpdat.fromAtomData(data).setNoVelocities()); // 初始点也需要移除速度，保证会从不同路径开始
         mMesses = aMesses.copy();
         mTemperature = aTemperature;
         mPairStyle = aPairStyle; mPairCoeff = aPairCoeff;

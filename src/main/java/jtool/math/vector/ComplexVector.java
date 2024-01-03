@@ -110,6 +110,11 @@ public final class ComplexVector extends BiDoubleArrayVector {
     @Override public int size() {return mSize;}
     
     @Override protected ComplexVector newZeros_(int aSize) {return ComplexVector.zeros(aSize);}
+    @Override public ComplexVector copy() {
+        ComplexVector rVector = ComplexVector.zeros(mSize);
+        rVector.fill(this);
+        return rVector;
+    }
     
     @Override public ComplexVector newShell() {return new ComplexVector(mSize, null);}
     @Override public double @Nullable[][] getIfHasSameOrderData(Object aObj) {
