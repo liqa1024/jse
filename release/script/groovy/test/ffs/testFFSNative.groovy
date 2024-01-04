@@ -87,7 +87,7 @@ if (me == 0) dump.write(FFSDumpPath);
 // time: 1.94, lambda: 9.0
 // time: 1.96, lambda: 10.0
 // time: 1.98, lambda: 11.0
-// Total time: 00 hour 00 min 8.21 sec
+// Total time: 00 hour 00 min 8.05 sec
 
 // WSL (mpi np 1):
 // time: 1.94, lambda: 17.0

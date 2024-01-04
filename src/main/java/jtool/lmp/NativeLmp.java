@@ -4,8 +4,6 @@ import jtool.atom.IAtom;
 import jtool.atom.IAtomData;
 import jtool.atom.IXYZ;
 import jtool.code.UT;
-import jtool.code.collection.AbstractRandomAccessList;
-import jtool.code.iterator.IDoubleIterator;
 import jtool.iofile.IInFile;
 import jtool.math.matrix.ColumnMatrix;
 import jtool.math.matrix.DoubleArrayMatrix;
@@ -619,32 +617,16 @@ public class NativeLmp implements IAutoShutdown {
      */
     public Lmpdat lmpdat(boolean aNoVelocities) {
         // 获取数据
-        IMatrix tID = atomDataOf("id");
-        IMatrix tType = atomDataOf("type");
-        IMatrix tXYZ = atomDataOf("x");
+        RowMatrix tID = atomDataOf("id");
+        RowMatrix tType = atomDataOf("type");
+        RowMatrix tXYZ = atomDataOf("x");
         @Nullable RowMatrix tVelocities = aNoVelocities ? null : atomDataOf("v");
         IMatrix tMasses = atomDataOf("mass");
-        int tAtomNum = tXYZ.rowNumber();
         int tAtomTypeNum = tMasses.rowNumber()-1;
-        // 设置 mass，按照 lammps 的设定只有这个范围内的才有意义（但是超出范围的依旧会进行访问，因此还是需要一个 atomNum 长的数组）
+        // 设置 mass，按照 lammps 的设定只有这个范围内的才有意义
         IVector tMassesData = tMasses.asVecRow().subVec(1, tAtomTypeNum+1);
-        // 设置 atomData
-        RowMatrix tAtomData = RowMatrix.zeros(tAtomNum, STD_ATOM_DATA_KEYS.length);
-        IDoubleIterator itID   = tID  .iteratorRow();
-        IDoubleIterator itType = tType.iteratorRow();
-        IDoubleIterator itXYZ  = tXYZ .iteratorRow();
-        for (IVector tRow : tAtomData.rows()) {
-            tRow.set(STD_ID_COL  , itID  .next());
-            tRow.set(STD_TYPE_COL, itType.next());
-            tRow.set(STD_X_COL   , itXYZ .next());
-            tRow.set(STD_Y_COL   , itXYZ .next());
-            tRow.set(STD_Z_COL   , itXYZ .next());
-        }
-        MatrixCache.returnMat(tID  );
-        MatrixCache.returnMat(tType);
-        MatrixCache.returnMat(tXYZ );
         // 构造 Lmpdat，其余数据由于可以直接存在 Lmpdat 中，因此不用归还
-        return new Lmpdat(tAtomTypeNum, box(), tMassesData, tAtomData, tVelocities);
+        return new Lmpdat(tAtomTypeNum, box(), tMassesData, tID.asVecRow(), tType.asVecRow(), tXYZ, tVelocities);
     }
     public Lmpdat lmpdat() {
         return lmpdat(false);
@@ -672,10 +654,8 @@ public class NativeLmp implements IAutoShutdown {
         if (tMasses != null) for (int i = 0; i < tAtomTypeNum; ++i) {
         command(String.format("mass            %d %f", i+1, tMasses.get(i)));
         }
-        creatAtoms(new AbstractRandomAccessList<IAtom>() {
-            @Override public IAtom get(int index) {return aLmpdat.pickAtomInternal(index);}
-            @Override public int size() {return aLmpdat.atomNum();}
-        });
+        @Nullable RowMatrix tVelocities = aLmpdat.velocities();
+        lammpsCreateAtoms_(mLmpPtr, aLmpdat.ids().getData(), aLmpdat.types().getData(), aLmpdat.positions().getData(), tVelocities==null ? null : tVelocities.getData(), null, false);
     }
     public void loadData(IAtomData aAtomData) {
         if (aAtomData instanceof Lmpdat) {loadLmpdat((Lmpdat)aAtomData); return;}

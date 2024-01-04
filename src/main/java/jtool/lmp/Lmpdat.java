@@ -5,6 +5,7 @@ import jtool.code.UT;
 import jtool.math.MathEX;
 import jtool.math.matrix.RowMatrix;
 import jtool.math.vector.IVector;
+import jtool.math.vector.Vector;
 import jtool.math.vector.Vectors;
 import jtool.vasp.IVaspCommonData;
 import org.jetbrains.annotations.Nullable;
@@ -31,7 +32,9 @@ public class Lmpdat extends AbstractSettableAtomData {
     private Box mBox;
     private @Nullable IVector mMasses;
     /** 固定类型方便 MPI 传输 */
-    private final RowMatrix mAtomData;
+    private final Vector mAtomID;
+    private final Vector mAtomType;
+    private final RowMatrix mAtomXYZ;
     private @Nullable RowMatrix mVelocities;
     
     /**
@@ -39,13 +42,17 @@ public class Lmpdat extends AbstractSettableAtomData {
      * @param aAtomTypeNum 原子类型数目（必须）
      * @param aBox 模拟盒，可以接收 double[] 的模拟盒，则认为所有数据已经经过了 shift
      * @param aMasses 原子的质量
-     * @param aAtomData 原子数据组成的矩阵（必须）
+     * @param aAtomID 原子数据组成的矩阵（必须）
+     * @param aAtomType 原子数据组成的矩阵（必须）
+     * @param aAtomXYZ 原子数据组成的矩阵（必须）
      * @param aVelocities 原子速度组成的矩阵
      */
-    public Lmpdat(int aAtomTypeNum, Box aBox, @Nullable IVector aMasses, RowMatrix aAtomData, @Nullable RowMatrix aVelocities) {
+    public Lmpdat(int aAtomTypeNum, Box aBox, @Nullable IVector aMasses, Vector aAtomID, Vector aAtomType, RowMatrix aAtomXYZ, @Nullable RowMatrix aVelocities) {
         mBox = aBox;
         mMasses = aMasses;
-        mAtomData = aAtomData;
+        mAtomID = aAtomID;
+        mAtomType = aAtomType;
+        mAtomXYZ = aAtomXYZ;
         // 会根据 aMasses 的长度自适应调整原子种类数目
         mAtomTypeNum = aMasses==null ? aAtomTypeNum : Math.max(aAtomTypeNum, aMasses.size());
         mVelocities = aVelocities;
@@ -97,13 +104,13 @@ public class Lmpdat extends AbstractSettableAtomData {
         // 从逻辑上考虑，这里不对原本数据做值拷贝
         double tXlo = mBox.xlo(), tYlo = mBox.ylo(), tZlo = mBox.zlo();
         IVector
-        tCol = mAtomData.col(STD_X_COL);
+        tCol = mAtomXYZ.col(XYZ_X_COL);
         tCol.minus2this(tXlo);
         tCol.multiply2this(tScale);
-        tCol = mAtomData.col(STD_Y_COL);
+        tCol = mAtomXYZ.col(XYZ_Y_COL);
         tCol.minus2this(tYlo);
         tCol.multiply2this(tScale);
-        tCol = mAtomData.col(STD_Z_COL);
+        tCol = mAtomXYZ.col(XYZ_Z_COL);
         tCol.minus2this(tZlo);
         tCol.multiply2this(tScale);
         if (mVelocities != null) {
@@ -124,17 +131,19 @@ public class Lmpdat extends AbstractSettableAtomData {
     
     /// 获取属性
     public Box lmpBox() {return mBox;}
-    public RowMatrix atomData() {return mAtomData;}
+    public Vector ids() {return mAtomID;}
+    public Vector types() {return mAtomType;}
+    public RowMatrix positions() {return mAtomXYZ;}
     public @Nullable RowMatrix velocities() {return mVelocities;}
     public @Nullable IVector masses() {return mMasses;}
     public double mass(int aType) {return mMasses!=null ? mMasses.get(aType-1) : Double.NaN;}
     public ISettableAtom pickAtomInternal(final int aIdx) {
         return new AbstractSettableAtom() {
-            @Override public double x() {return mAtomData.get(aIdx, STD_X_COL);}
-            @Override public double y() {return mAtomData.get(aIdx, STD_Y_COL);}
-            @Override public double z() {return mAtomData.get(aIdx, STD_Z_COL);}
-            @Override public int id() {return (int)mAtomData.get(aIdx, STD_ID_COL);}
-            @Override public int type() {return (int)mAtomData.get(aIdx, STD_TYPE_COL);}
+            @Override public double x() {return mAtomXYZ.get(aIdx, XYZ_X_COL);}
+            @Override public double y() {return mAtomXYZ.get(aIdx, XYZ_Y_COL);}
+            @Override public double z() {return mAtomXYZ.get(aIdx, XYZ_Z_COL);}
+            @Override public int id() {return (int)mAtomID.get(aIdx);}
+            @Override public int type() {return (int)mAtomType.get(aIdx);}
             @Override public int index() {return aIdx;}
             
             @Override public double vx() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VX_COL);}
@@ -142,13 +151,13 @@ public class Lmpdat extends AbstractSettableAtomData {
             @Override public double vz() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VZ_COL);}
             @Override public boolean hasVelocities() {return mVelocities!=null;}
             
-            @Override public ISettableAtom setX(double aX) {mAtomData.set(aIdx, STD_X_COL, aX); return this;}
-            @Override public ISettableAtom setY(double aY) {mAtomData.set(aIdx, STD_Y_COL, aY); return this;}
-            @Override public ISettableAtom setZ(double aZ) {mAtomData.set(aIdx, STD_Z_COL, aZ); return this;}
-            @Override public ISettableAtom setID(int aID) {mAtomData.set(aIdx, STD_ID_COL, aID); return this;}
+            @Override public ISettableAtom setX(double aX) {mAtomXYZ.set(aIdx, XYZ_X_COL, aX); return this;}
+            @Override public ISettableAtom setY(double aY) {mAtomXYZ.set(aIdx, XYZ_Y_COL, aY); return this;}
+            @Override public ISettableAtom setZ(double aZ) {mAtomXYZ.set(aIdx, XYZ_Z_COL, aZ); return this;}
+            @Override public ISettableAtom setID(int aID) {mAtomID.set(aIdx, aID); return this;}
             @Override public ISettableAtom setType(int aType) {
                 // 对于设置种类需要特殊处理，设置种类同时需要更新内部的原子种类计数
-                mAtomData.set(aIdx, STD_TYPE_COL, aType);
+                mAtomType.set(aIdx, aType);
                 if (aType > atomTypeNum()) setAtomTypeNum(aType);
                 return this;
             }
@@ -174,11 +183,11 @@ public class Lmpdat extends AbstractSettableAtomData {
         // 注意如果是斜方的模拟盒则不能获取到正交的原子数据
         if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("atoms is temporarily support NORMAL Box only");
         return new AbstractSettableAtom() {
-            @Override public double x() {return mAtomData.get(aIdx, STD_X_COL)-mBox.xlo();}
-            @Override public double y() {return mAtomData.get(aIdx, STD_Y_COL)-mBox.ylo();}
-            @Override public double z() {return mAtomData.get(aIdx, STD_Z_COL)-mBox.zlo();}
-            @Override public int id() {return (int)mAtomData.get(aIdx, STD_ID_COL);}
-            @Override public int type() {return (int)mAtomData.get(aIdx, STD_TYPE_COL);}
+            @Override public double x() {return mAtomXYZ.get(aIdx, XYZ_X_COL)-mBox.xlo();}
+            @Override public double y() {return mAtomXYZ.get(aIdx, XYZ_Y_COL)-mBox.ylo();}
+            @Override public double z() {return mAtomXYZ.get(aIdx, XYZ_Z_COL)-mBox.zlo();}
+            @Override public int id() {return (int)mAtomID.get(aIdx);}
+            @Override public int type() {return (int)mAtomType.get(aIdx);}
             @Override public int index() {return aIdx;}
             
             @Override public double vx() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VX_COL);}
@@ -186,13 +195,13 @@ public class Lmpdat extends AbstractSettableAtomData {
             @Override public double vz() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VZ_COL);}
             @Override public boolean hasVelocities() {return mVelocities!=null;}
             
-            @Override public ISettableAtom setX(double aX) {mAtomData.set(aIdx, STD_X_COL, aX+mBox.xlo()); return this;}
-            @Override public ISettableAtom setY(double aY) {mAtomData.set(aIdx, STD_Y_COL, aY+mBox.ylo()); return this;}
-            @Override public ISettableAtom setZ(double aZ) {mAtomData.set(aIdx, STD_Z_COL, aZ+mBox.zlo()); return this;}
-            @Override public ISettableAtom setID(int aID) {mAtomData.set(aIdx, STD_ID_COL, aID); return this;}
+            @Override public ISettableAtom setX(double aX) {mAtomXYZ.set(aIdx, XYZ_X_COL, aX+mBox.xlo()); return this;}
+            @Override public ISettableAtom setY(double aY) {mAtomXYZ.set(aIdx, XYZ_Y_COL, aY+mBox.ylo()); return this;}
+            @Override public ISettableAtom setZ(double aZ) {mAtomXYZ.set(aIdx, XYZ_Z_COL, aZ+mBox.zlo()); return this;}
+            @Override public ISettableAtom setID(int aID) {mAtomID.set(aIdx, aID); return this;}
             @Override public ISettableAtom setType(int aType) {
                 // 对于设置种类需要特殊处理，设置种类同时需要更新内部的原子种类计数
-                mAtomData.set(aIdx, STD_TYPE_COL, aType);
+                mAtomType.set(aIdx, aType);
                 if (aType > atomTypeNum()) setAtomTypeNum(aType);
                 return this;
             }
@@ -215,7 +224,7 @@ public class Lmpdat extends AbstractSettableAtomData {
         if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("box is temporarily support NORMAL Box only");
         return mBox.shiftedBox();
     }
-    @Override public int atomNum() {return mAtomData.rowNumber();}
+    @Override public int atomNum() {return mAtomID.size();}
     @Override public int atomTypeNum() {return mAtomTypeNum;}
     @Override public double volume() {
         // 注意如果是斜方的模拟盒则不能获取到模拟盒体积
@@ -226,9 +235,9 @@ public class Lmpdat extends AbstractSettableAtomData {
     
     /// 创建 Lmpdat
     /** 拷贝一份 Lmpdat，为了简洁还是只保留 copy 一种方法 */
-    @Override public Lmpdat copy() {return new Lmpdat(mAtomTypeNum, mBox.copy(), mMasses==null?null:mMasses.copy(), mAtomData.copy(), mVelocities==null?null:mVelocities.copy());}
-    @Override protected Lmpdat newSame_() {return new Lmpdat(mAtomTypeNum, mBox.copy(), mMasses==null?null:mMasses.copy(), mAtomData.copy(), mVelocities==null?null:mVelocities.copy());}
-    @Override protected Lmpdat newZeros_(int aAtomNum) {return new Lmpdat(mAtomTypeNum, mBox.copy(), mMasses==null?null:mMasses.copy(), RowMatrix.zeros(aAtomNum, mAtomData.columnNumber()), mVelocities==null?null:RowMatrix.zeros(aAtomNum, mVelocities.columnNumber()));}
+    @Override public Lmpdat copy() {return new Lmpdat(mAtomTypeNum, mBox.copy(), mMasses==null?null:mMasses.copy(), mAtomID.copy(), mAtomType.copy(), mAtomXYZ.copy(), mVelocities==null?null:mVelocities.copy());}
+    @Override protected Lmpdat newSame_() {return new Lmpdat(mAtomTypeNum, mBox.copy(), mMasses==null?null:mMasses.copy(), mAtomID.copy(), mAtomType.copy(), mAtomXYZ.copy(), mVelocities==null?null:mVelocities.copy());}
+    @Override protected Lmpdat newZeros_(int aAtomNum) {return new Lmpdat(mAtomTypeNum, mBox.copy(), mMasses==null?null:mMasses.copy(), Vector.zeros(aAtomNum), Vector.zeros(aAtomNum), RowMatrix.zeros(aAtomNum, mAtomXYZ.columnNumber()), mVelocities==null?null:RowMatrix.zeros(aAtomNum, mVelocities.columnNumber()));}
     
     /** 从 IAtomData 来创建，一般来说 Lmpdat 需要一个额外的质量信息 */
     public static Lmpdat fromAtomData(IAtomData aAtomData) {
@@ -256,18 +265,21 @@ public class Lmpdat extends AbstractSettableAtomData {
         if (aAtomData instanceof Lmpdat) {
             // Lmpdat 则直接获取即可（专门优化，保留完整模拟盒信息）
             Lmpdat tLmpdat = (Lmpdat)aAtomData;
-            return new Lmpdat(tLmpdat.atomTypeNum(), tLmpdat.mBox.copy(), aMasses, tLmpdat.mAtomData.copy(), tLmpdat.mVelocities==null?null:tLmpdat.mVelocities.copy());
+            return new Lmpdat(tLmpdat.atomTypeNum(), tLmpdat.mBox.copy(), aMasses, tLmpdat.mAtomID.copy(), tLmpdat.mAtomType.copy(), tLmpdat.mAtomXYZ.copy(), tLmpdat.mVelocities==null?null:tLmpdat.mVelocities.copy());
         } else {
             // 一般的情况
-            RowMatrix rDataSTD = RowMatrix.zeros(aAtomData.atomNum(), STD_ATOM_DATA_KEYS.length);
-            @Nullable RowMatrix rVelocities = aAtomData.hasVelocities() ? RowMatrix.zeros(aAtomData.atomNum(), ATOM_DATA_KEYS_VELOCITY.length) : null;
+            int tAtomNum = aAtomData.atomNum();
+            Vector rAtomID = Vector.zeros(tAtomNum);
+            Vector rAtomType = Vector.zeros(tAtomNum);
+            RowMatrix rAtomXYZ = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
+            @Nullable RowMatrix rVelocities = aAtomData.hasVelocities() ? RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : null;
             int row = 0;
             for (IAtom tAtom : aAtomData.asList()) {
-                rDataSTD.set_(row, STD_ID_COL, tAtom.id());
-                rDataSTD.set_(row, STD_TYPE_COL, tAtom.type());
-                rDataSTD.set_(row, STD_X_COL, tAtom.x());
-                rDataSTD.set_(row, STD_Y_COL, tAtom.y());
-                rDataSTD.set_(row, STD_Z_COL, tAtom.z());
+                rAtomID.set_(row, tAtom.id());
+                rAtomType.set_(row, tAtom.type());
+                rAtomXYZ.set_(row, XYZ_X_COL, tAtom.x());
+                rAtomXYZ.set_(row, XYZ_Y_COL, tAtom.y());
+                rAtomXYZ.set_(row, XYZ_Z_COL, tAtom.z());
                 if (rVelocities != null) {
                     rVelocities.set_(row, STD_VX_COL, tAtom.vx());
                     rVelocities.set_(row, STD_VY_COL, tAtom.vy());
@@ -275,7 +287,7 @@ public class Lmpdat extends AbstractSettableAtomData {
                 }
                 ++row;
             }
-            return new Lmpdat(aAtomData.atomTypeNum(), new Box(aAtomData.box()), aMasses, rDataSTD, rVelocities);
+            return new Lmpdat(aAtomData.atomTypeNum(), new Box(aAtomData.box()), aMasses, rAtomID, rAtomType, rAtomXYZ, rVelocities);
         }
     }
     
@@ -294,7 +306,9 @@ public class Lmpdat extends AbstractSettableAtomData {
         int aAtomTypeNum;
         Box aBox;
         IVector aMasses;
-        RowMatrix aAtomData;
+        Vector aAtomID;
+        Vector aAtomType;
+        RowMatrix aAtomXYZ;
         RowMatrix aVelocities;
         
         int idx = 0; int end;
@@ -345,9 +359,17 @@ public class Lmpdat extends AbstractSettableAtomData {
         ++idx; // 中间有一个空行
         end = idx+tAtomNum;
         if (end > aLines.size()) return null;
-        aAtomData = RowMatrix.zeros(tAtomNum, STD_ATOM_DATA_KEYS.length);
-        for (IVector tRow : aAtomData.rows()) {
-            tRow.fill(UT.Texts.str2data(aLines.get(idx), STD_ATOM_DATA_KEYS.length));
+        aAtomID = Vector.zeros(tAtomNum);
+        aAtomType = Vector.zeros(tAtomNum);
+        aAtomXYZ = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
+        // 和坐标排序一致的顺序来存储
+        for (int row = 0; row < tAtomNum; ++row) {
+            IVector tIDTypeXYZ = UT.Texts.str2data(aLines.get(idx), STD_ATOM_DATA_KEYS.length);
+            aAtomID.set(row, tIDTypeXYZ.get(STD_ID_COL));
+            aAtomType.set(row, tIDTypeXYZ.get(STD_TYPE_COL));
+            aAtomXYZ.set(row, XYZ_X_COL, tIDTypeXYZ.get(STD_X_COL));
+            aAtomXYZ.set(row, XYZ_Y_COL, tIDTypeXYZ.get(STD_Y_COL));
+            aAtomXYZ.set(row, XYZ_Z_COL, tIDTypeXYZ.get(STD_Z_COL));
             ++idx;
         }
         
@@ -357,7 +379,7 @@ public class Lmpdat extends AbstractSettableAtomData {
             idx = tIdx;
             // 统计 id 和对应行的映射，用于保证速度顺序和坐标排序一致
             Map<Integer, Integer> tId2Row = new HashMap<>(tAtomNum);
-            for (int row = 0; row < tAtomNum; ++row) tId2Row.put((int)aAtomData.get(row, STD_ID_COL), row);
+            for (int row = 0; row < tAtomNum; ++row) tId2Row.put((int)aAtomID.get(row), row);
             // 读取速率
             ++idx; // 中间有一个空行
             end = idx+tAtomNum;
@@ -376,7 +398,7 @@ public class Lmpdat extends AbstractSettableAtomData {
         }
         
         // 返回 lmpdat
-        return new Lmpdat(aAtomTypeNum, aBox, aMasses, aAtomData, aVelocities);
+        return new Lmpdat(aAtomTypeNum, aBox, aMasses, aAtomID, aAtomType, aAtomXYZ, aVelocities);
     }
     
     /**
@@ -411,14 +433,14 @@ public class Lmpdat extends AbstractSettableAtomData {
         lines.add("");
         lines.add("Atoms");
         lines.add("");
-        for (IVector subAtomData : mAtomData.rows())
-        lines.add(String.format("%6d %6d %15.10g %15.10g %15.10g", (int)subAtomData.get(STD_ID_COL), (int)subAtomData.get(STD_TYPE_COL), subAtomData.get(STD_X_COL), subAtomData.get(STD_Y_COL), subAtomData.get(STD_Z_COL)));
+        for (int i = 0; i < atomNum(); ++i)
+        lines.add(String.format("%6d %6d %15.10g %15.10g %15.10g", (int)mAtomID.get(i), (int)mAtomType.get(i), mAtomXYZ.get(i,XYZ_X_COL), mAtomXYZ.get(i,XYZ_Y_COL), mAtomXYZ.get(i,XYZ_Z_COL)));
         if (mVelocities != null) {
         lines.add("");
         lines.add("Velocities");
         lines.add("");
         for (int i = 0; i < atomNum(); ++i)
-        lines.add(String.format("%6d %15.10g %15.10g %15.10g", (int)mAtomData.get(i,STD_ID_COL), mVelocities.get(i,STD_VX_COL), mVelocities.get(i,STD_VY_COL), mVelocities.get(i,STD_VZ_COL)));
+        lines.add(String.format("%6d %15.10g %15.10g %15.10g", (int)mAtomID.get(i), mVelocities.get(i,STD_VX_COL), mVelocities.get(i,STD_VY_COL), mVelocities.get(i,STD_VZ_COL)));
         }
         
         UT.IO.write(aFilePath, lines);
