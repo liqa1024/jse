@@ -22,11 +22,13 @@ import jtool.math.IComplexDouble;
 import jtool.math.MathEX;
 import jtool.math.function.IFunc1;
 import jtool.math.function.IFunc1Subs;
+import jtool.math.matrix.ColumnMatrix;
 import jtool.math.matrix.IMatrix;
 import jtool.math.matrix.Matrices;
 import jtool.math.table.ITable;
 import jtool.math.table.Tables;
 import jtool.math.vector.IVector;
+import jtool.math.vector.Vector;
 import jtool.math.vector.Vectors;
 import jtool.parallel.LocalRandom;
 import jtool.parallel.MergedFuture;
@@ -1594,16 +1596,16 @@ public class UT {
         public static double dot(IVector aLHS, IVector aRHS) {return aLHS.operation().dot(aRHS);}
         public static double norm(IVector aVec) {return aVec.operation().norm();}
         
-        public static IVector zeros(int aSize) {return Vectors.zeros(aSize);}
-        public static IVector ones(int aSize) {return Vectors.ones(aSize);}
-        public static IVector NaN(int aSize) {return Vectors.NaN(aSize);}
-        public static IVector nan(int aSize) {return NaN(aSize);}
-        public static IVector rand(int aSize) {IVector rVec = zeros(aSize); rVec.assign(Math::rand); return rVec;}
-        public static IVector randi(final int aBound, int aSize) {IVector rVec = zeros(aSize); rVec.assign(()->randi(aBound)); return rVec;}
-        public static IVector linsequence(double aStart, double aStep, int aN) {return Vectors.linsequence(aStart, aStep, aN);}
-        public static IVector linspace(double aStart, double aEnd, int aN) {return Vectors.linspace(aStart, aEnd, aN);}
-        public static IVector logsequence(double aStart, double aStep, int aN) {return Vectors.logsequence(aStart, aStep, aN);}
-        public static IVector logspace(double aStart, double aEnd, int aN) {return Vectors.logspace(aStart, aEnd, aN);}
+        public static Vector zeros(int aSize) {return Vectors.zeros(aSize);}
+        public static Vector ones(int aSize) {return Vectors.ones(aSize);}
+        public static Vector NaN(int aSize) {return Vectors.NaN(aSize);}
+        public static Vector nan(int aSize) {return NaN(aSize);}
+        public static Vector rand(int aSize) {Vector rVec = zeros(aSize); rVec.assign(Math::rand); return rVec;}
+        public static Vector randi(final int aBound, int aSize) {Vector rVec = zeros(aSize); rVec.assign(()->randi(aBound)); return rVec;}
+        public static Vector linsequence(double aStart, double aStep, int aN) {return Vectors.linsequence(aStart, aStep, aN);}
+        public static Vector linspace(double aStart, double aEnd, int aN) {return Vectors.linspace(aStart, aEnd, aN);}
+        public static Vector logsequence(double aStart, double aStep, int aN) {return Vectors.logsequence(aStart, aStep, aN);}
+        public static Vector logspace(double aStart, double aEnd, int aN) {return Vectors.logspace(aStart, aEnd, aN);}
         
         
         /// matrices
@@ -1665,13 +1667,13 @@ public class UT {
         public static IVector meanOfCols(IMatrix aMat) {return aMat.operation().meanOfCols();}
         public static IVector meanOfRows(IMatrix aMat) {return aMat.operation().meanOfRows();}
         
-        public static IMatrix zeros(int aRowNum, int ColNum) {return Matrices.zeros(aRowNum, ColNum);}
-        public static IMatrix ones(int aRowNum, int ColNum) {return Matrices.ones(aRowNum, ColNum);}
-        public static IMatrix NaN(int aRowNum, int ColNum) {return Matrices.NaN(aRowNum, ColNum);}
-        public static IMatrix nan(int aRowNum, int ColNum) {return NaN(aRowNum, ColNum);}
-        public static IMatrix rand(int aRowNum, int ColNum) {IMatrix rMat = zeros(aRowNum, ColNum); rMat.assignCol(Math::rand); return rMat;}
-        public static IMatrix randi(final int aBound, int aRowNum, int ColNum) {IMatrix rMat = zeros(aRowNum, ColNum); rMat.assignCol(()->randi(aBound)); return rMat;}
-        public static IMatrix diag(IVector aVec) {return Matrices.diag(aVec);}
+        public static ColumnMatrix zeros(int aRowNum, int ColNum) {return Matrices.zeros(aRowNum, ColNum);}
+        public static ColumnMatrix ones(int aRowNum, int ColNum) {return Matrices.ones(aRowNum, ColNum);}
+        public static ColumnMatrix NaN(int aRowNum, int ColNum) {return Matrices.NaN(aRowNum, ColNum);}
+        public static ColumnMatrix nan(int aRowNum, int ColNum) {return NaN(aRowNum, ColNum);}
+        public static ColumnMatrix rand(int aRowNum, int ColNum) {ColumnMatrix rMat = zeros(aRowNum, ColNum); rMat.assignCol(Math::rand); return rMat;}
+        public static ColumnMatrix randi(final int aBound, int aRowNum, int ColNum) {ColumnMatrix rMat = zeros(aRowNum, ColNum); rMat.assignCol(()->randi(aBound)); return rMat;}
+        public static ColumnMatrix diag(IVector aVec) {return Matrices.diag(aVec);}
         public static IVector diag(IMatrix aMat) {return aMat.slicer().diag();}
         public static IVector diag(IMatrix aMat, int aShift) {return aMat.slicer().diag(aShift);}
         

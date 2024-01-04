@@ -470,6 +470,28 @@ public class MPI {
         public <T> void recv(T rBuf, int aCount, int aSource) {
             Native.MPI_Recv(rBuf, aCount, aSource, Tag.ANY, mPtr);
         }
+        
+        /**
+         * Performs a synchronous mode send operation and returns when the send buffer can be safely reused.
+         *
+         * @param aBuf The data array to be sent
+         *
+         * @param aCount The number of elements in the buffer. If the data part of the message
+         *               is empty, set the count parameter to 0.
+         *
+         * @param aDest The rank of the destination process within the communicator that is
+         *              specified by the comm parameter.
+         *
+         * @param aTag The message tag that can be used to distinguish different types of messages.
+         *
+         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-ssend-function"> MPI_Ssend function </a>
+         */
+        public <T> void ssend(T aBuf, int aCount, int aDest, int aTag) {
+            Native.MPI_Ssend(aBuf, aCount, aDest, aTag, mPtr);
+        }
+        public <T> void ssend(T aBuf, int aCount, int aDest) {
+            Native.MPI_Ssend(aBuf, aCount, aDest, 0, mPtr);
+        }
     }
     
     public enum Op {
@@ -572,6 +594,7 @@ public class MPI {
      * @param aRequired The level of desired thread support. Multiple MPI processes
      *                  in the same job may use different values.
      * @return The level of provided thread support.
+     * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-init-thread-function"> MPI_Init_thread function </a>
      */
     public static int initThread(String[] aArgs, int aRequired) {return Native.MPI_Init_thread(aArgs, aRequired);}
     
@@ -1321,6 +1344,27 @@ public class MPI {
         }
         private native static void MPI_Recv0(Object rBuf, int aCount, long aDataType, int aSource, int aTag, long aComm);
         
+        /**
+         * Performs a synchronous mode send operation and returns when the send buffer can be safely reused.
+         *
+         * @param aBuf The data array to be sent
+         *
+         * @param aCount The number of elements in the buffer. If the data part of the message
+         *               is empty, set the count parameter to 0.
+         *
+         * @param aDest The rank of the destination process within the communicator that is
+         *              specified by the comm parameter.
+         *
+         * @param aTag The message tag that can be used to distinguish different types of messages.
+         *
+         * @param aComm The handle to the communicator.
+         *
+         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-ssend-function"> MPI_Ssend function </a>
+         */
+        public static <T> void MPI_Ssend(T aBuf, int aCount, int aDest, int aTag, long aComm) {
+            MPI_Ssend0(aBuf, aCount, datatypeOf_(aBuf), aDest, aTag, aComm);
+        }
+        private native static void MPI_Ssend0(Object aBuf, int aCount, long aDataType, int aDest, int aTag, long aComm);
         
         
         
@@ -1331,6 +1375,7 @@ public class MPI {
          * @param aRequired The level of desired thread support. Multiple MPI processes
          *                  in the same job may use different values.
          * @return The level of provided thread support.
+         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-init-thread-function"> MPI_Init_thread function </a>
          */
         public native static int MPI_Init_thread(String[] aArgs, int aRequired);
         
