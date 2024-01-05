@@ -73,10 +73,10 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
     }
     
     
-    @Override public ITimeAndParameterIterator<IAtomData> fullPathFrom(IAtomData aStart, long aSeed) {return new NativeLmpIterator(aStart, aSeed);}
-    @Override public ITimeAndParameterIterator<IAtomData> fullPathInit(long aSeed) {return new NativeLmpIterator(null, aSeed);}
+    @Override public ITimeAndParameterIterator<Lmpdat> fullPathFrom(IAtomData aStart, long aSeed) {return new NativeLmpIterator(aStart, aSeed);}
+    @Override public ITimeAndParameterIterator<Lmpdat> fullPathInit(long aSeed) {return new NativeLmpIterator(null, aSeed);}
     
-    private class NativeLmpIterator implements ITimeAndParameterIterator<IAtomData>, IAutoShutdown {
+    private class NativeLmpIterator implements ITimeAndParameterIterator<Lmpdat>, IAutoShutdown {
         /** 专门优化第一次调用，不去创建路径，因为可能直接满足条件 */
         private boolean mIsFirst = true;
         /** 路径部分 */
@@ -92,7 +92,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
         }
         
         /** 这里获取到的点需要是精简的 */
-        @Override public IAtomData next() {
+        @Override public Lmpdat next() {
             // 第一次调用特殊优化，直接返回
             if (mIsFirst) {
                 mIsFirst = false;

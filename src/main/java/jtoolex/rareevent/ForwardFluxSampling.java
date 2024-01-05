@@ -32,7 +32,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     private final static double DEFAULT_CUTOFF = 0.01;
     private final static int DEFAULT_MAX_STAT_TIMES = 10;
     
-    private final BufferedFullPathGenerator<T> mFullPathGenerator;
+    private final IFullPathGenerator<T> mFullPathGenerator;
     
     private final IVector mSurfaces;
     private final double mSurfaceA;
@@ -64,21 +64,20 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     /**
      * 创建一个通用的 FFS 运算器
      * @author liqa
-     * @param aPathGenerator 任意的路径生成器
-     * @param aParameterCalculator 对于路径上一个点的 λ 的计算器
+     * @param aFullPathGenerator 任意的路径生成器
      * @param aThreadNum FFS 的并行数，默认为 1，不开启并行
      * @param aSurfaceA 对于 A 有一个专门的分界面，因为需要频繁使用因此专门拿出来，要求 {@code A <= λ0}
      * @param aSurfaces 分割相空间的分界面，有 {@code λ0 < λ1 < λ2 < ... < λn == B}
      * @param aN0 每个界面的统计数目
      */
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, int aThreadNum, double aSurfaceA,                      IVector aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), aThreadNum, aSurfaceA, Vectors.from(aSurfaces), aN0);}
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, int aThreadNum, double aSurfaceA, Collection<? extends Number> aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), aThreadNum, aSurfaceA, Vectors.from(aSurfaces), aN0);}
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator, int aThreadNum, double aSurfaceA,                     double[] aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), aThreadNum, aSurfaceA, Vectors.from(aSurfaces), aN0);}
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator,                 double aSurfaceA,                      IVector aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), 1, aSurfaceA, Vectors.from(aSurfaces), aN0);}
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator,                 double aSurfaceA, Collection<? extends Number> aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), 1, aSurfaceA, Vectors.from(aSurfaces), aN0);}
-    public ForwardFluxSampling(IPathGenerator<T> aPathGenerator, IParameterCalculator<? super T> aParameterCalculator,                 double aSurfaceA,                     double[] aSurfaces, int aN0) {this(new BufferedFullPathGenerator<>(aPathGenerator, aParameterCalculator), 1, aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IFullPathGenerator<T> aFullPathGenerator, int aThreadNum, double aSurfaceA,                      IVector aSurfaces, int aN0) {this(true, aFullPathGenerator, aThreadNum, aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IFullPathGenerator<T> aFullPathGenerator, int aThreadNum, double aSurfaceA, Collection<? extends Number> aSurfaces, int aN0) {this(true, aFullPathGenerator, aThreadNum, aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IFullPathGenerator<T> aFullPathGenerator, int aThreadNum, double aSurfaceA,                     double[] aSurfaces, int aN0) {this(true, aFullPathGenerator, aThreadNum, aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IFullPathGenerator<T> aFullPathGenerator,                 double aSurfaceA,                      IVector aSurfaces, int aN0) {this(true, aFullPathGenerator, 1, aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IFullPathGenerator<T> aFullPathGenerator,                 double aSurfaceA, Collection<? extends Number> aSurfaces, int aN0) {this(true, aFullPathGenerator, 1, aSurfaceA, Vectors.from(aSurfaces), aN0);}
+    public ForwardFluxSampling(IFullPathGenerator<T> aFullPathGenerator,                 double aSurfaceA,                     double[] aSurfaces, int aN0) {this(true, aFullPathGenerator, 1, aSurfaceA, Vectors.from(aSurfaces), aN0);}
     
-    ForwardFluxSampling(BufferedFullPathGenerator<T> aFullPathGenerator, int aThreadNum, double aSurfaceA, IVector aSurfaces, int aN0) {
+    ForwardFluxSampling(boolean aFlag, IFullPathGenerator<T> aFullPathGenerator, int aThreadNum, double aSurfaceA, IVector aSurfaces, int aN0) {
         // FFS 这里固定采用非竞争的 ParforThreadPool，因为 parfor 都只有线程数的任务
         super(new ParforThreadPool(aThreadNum, true));
         
@@ -130,7 +129,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     public ForwardFluxSampling<T> setNoCompetitive(boolean aNoCompetitive) {mNoCompetitive = aNoCompetitive; return this;}
     public ForwardFluxSampling<T> setNoCompetitive() {return setNoCompetitive(true);}
     /** 是否在关闭此实例时顺便关闭输入的生成器和计算器 */
-    @Override public ForwardFluxSampling<T> setDoNotShutdown(boolean aDoNotShutdown) {mFullPathGenerator.setDoNotShutdown(aDoNotShutdown); return this;}
+    private boolean mDoNotShutdown = false;
+    @Override public ForwardFluxSampling<T> setDoNotShutdown(boolean aDoNotShutdown) {mDoNotShutdown = aDoNotShutdown; return this;}
     /** 可以从中间开始，此时则会直接跳过第一步（对于合法输入）*/
     public ForwardFluxSampling<T> setStep(int aStep, Iterable<? extends T> aPointsOnLambda, Map<?, ?> aRestData) {
         // 对于输入的合法性进行检测（界面需要兼容，这里只考虑现在省略了一些开头的界面以及完全不省略的情况）
@@ -247,7 +247,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     
     /** 期望向后运行直到 lambdaA 的路径，在向前运行时会进行剪枝，用于过程 1 使用 */
     private class BackwardPath implements IAutoShutdown {
-        private final ITimeAndParameterIterator<T> mPath;
+        private final ITimeAndParameterIterator<? extends T> mPath;
         private final LocalRandom mRNG_;
         private @Nullable Point mCurrentPoint = null;
         private double mTimeConsumed = 0.0;
@@ -432,7 +432,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     
     /** 期望向前运行直到下一个界面的路径，在向后运行时会进行剪枝，用于过程 2 使用 */
     private class ForwardPath implements IAutoShutdown {
-        private final ITimeAndParameterIterator<T> mPath;
+        private final ITimeAndParameterIterator<? extends T> mPath;
         private final LocalRandom mRNG_;
         private final Point mStart;
         private long mPointNum = 0;
@@ -789,8 +789,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             .build();
     }
     
-    /** 程序结束时会顺便关闭内部的 mFullPathGenerator，通过切换不同的 mFullPathGenerator 来调整实际输入的生成器是否会顺便关闭 */
-    @Override public void shutdown() {super.shutdown(); mFullPathGenerator.shutdown();}
+    /** 程序结束时会顺便关闭内部的 mFullPathGenerator */
+    @Override public void shutdown() {super.shutdown(); if (!mDoNotShutdown) mFullPathGenerator.shutdown();}
     /** 注意有些类（如线程池）的 close 逻辑不完全和 shutdown 相同，这里需要专门使用内部的 close */
-    @ApiStatus.Internal @Override public void close() {super.close(); mFullPathGenerator.close();}
+    @ApiStatus.Internal @Override public void close() {super.close(); if (!mDoNotShutdown) mFullPathGenerator.close();}
 }
