@@ -103,22 +103,27 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
             }
             // 一般操作直接合法化后 next
             if (mLmp==null) {
-                mLmp = new NativeLmp(LMP_ARGS, mLmpComm);
-                mLmp.command("units           metal");
-                mLmp.command("boundary        p p p");
-                mLmp.command("timestep        "+mTimestep);
-                mLmp.loadLmpdat(mNext.setMasses(mMesses)); // 在这里统一设置质量
-                mLmp.command("pair_style      "+mPairStyle);
-                mLmp.command("pair_coeff      "+mPairCoeff);
-                // 虽然理论上永远都是没有速度并且重新分配速度，这里还是和原本保持逻辑一致
-                if (!mNext.hasVelocities()) {
-                mLmp.command(String.format("velocity        all create %f %d dist gaussian mom yes rot yes", mTemperature, mRNG.nextInt(MAX_SEED)));
+                try {
+                    mLmp = new NativeLmp(LMP_ARGS, mLmpComm);
+                    mLmp.command("units           metal");
+                    mLmp.command("boundary        p p p");
+                    mLmp.command("timestep        "+mTimestep);
+                    mLmp.loadLmpdat(mNext.setMasses(mMesses)); // 在这里统一设置质量
+                    mLmp.command("pair_style      "+mPairStyle);
+                    mLmp.command("pair_coeff      "+mPairCoeff); // TODO: 好像卡在这里
+                    // 虽然理论上永远都是没有速度并且重新分配速度，这里还是和原本保持逻辑一致
+                    if (!mNext.hasVelocities()) {
+                        mLmp.command(String.format("velocity        all create %f %d dist gaussian mom yes rot yes", mTemperature, mRNG.nextInt(MAX_SEED)));
+                    }
+                    mLmp.command(String.format("fix             1 all npt temp %f %f 0.2 iso 0.0 0.0 2", mTemperature, mTemperature));
+                } catch (NativeLmp.Error e) {
+                    throw new RuntimeException(e);
                 }
-                mLmp.command(String.format("fix             1 all npt temp %f %f 0.2 iso 0.0 0.0 2", mTemperature, mTemperature));
             }
             // 加入对 mLmpComm 的同步，避免相同的 mLmpComm 对应的 NativeLmp 实例同时运行
             synchronized (mLmpComm) {
-                mLmp.command("run       "+mDumpStep);
+                try {mLmp.command("run "+mDumpStep);}
+                catch (NativeLmp.Error e) {throw new RuntimeException(e);}
             }
             // 由于这里底层的 NativeLmp 获取的 Lmpdat 也是使用了缓存，因此对于上一步的 mNext 可以归还；
             // 当然一般情况下获取的 next 会在外部保存，不能归还，因此默认关闭
@@ -132,7 +137,8 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
                 VectorCache.returnVec(mNext.types());
                 VectorCache.returnVec(mNext.ids());
             }
-            mNext = mLmp.lmpdat(true);
+            try {mNext = mLmp.lmpdat(true);}
+            catch (NativeLmp.Error e) {throw new RuntimeException(e);}
             return mNext;
         }
         
@@ -140,7 +146,8 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
         @Override public double timeConsumed() {
             if (mIsFirst) throw new IllegalStateException();
             if (mLmp == null) return 0.0;
-            return mLmp.thermoOf("step") * mTimestep;
+            try {return mLmp.thermoOf("step") * mTimestep;}
+            catch (NativeLmp.Error e) {throw new RuntimeException(e);}
         }
         
         /** 获取当前位置点的参数 λ */
