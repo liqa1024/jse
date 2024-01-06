@@ -451,7 +451,7 @@ public class UT {
             }
             sProgressBar = new ProgressBarBuilder()
                 .setTaskName(aName).setInitialMax(aN)
-                .setConsumer(new ConsoleProgressBarConsumer(System.err, 80)) // 一般来说 pbar 都是 err 流，这里需要重写一下避免乱码问题
+                .setConsumer(new ConsoleProgressBarConsumer(System.out, 80)) // 一般来说 pbar 都是 err 流，这里需要重写一下避免乱码问题，并改用 out 从而可以有意避开扰乱
                 .setUpdateIntervalMillis((int)FILE_SYSTEM_SLEEP_TIME_2)
                 .build();
             Main.addGlobalAutoCloseable(sProgressBar);

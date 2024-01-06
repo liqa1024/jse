@@ -46,6 +46,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     private Random mRNG = RANDOM;
     /** 此 FFS 是否是竞争性的，默认开启，当自定义了种子后会自动关闭保证结果一致 */
     private boolean mNoCompetitive = false;
+    /** 是否在运行时显示进度条 */
+    private boolean mProgressBar = false;
     
     /** 用来限制统计时间，（第二个过程）每步统计的最大路径数目，默认为 100 * N0 */
     private long mMaxPathNum;
@@ -128,6 +130,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     public ForwardFluxSampling<T> disableStep1Pruning() {return setStep1Pruning(false);}
     public ForwardFluxSampling<T> setNoCompetitive(boolean aNoCompetitive) {mNoCompetitive = aNoCompetitive; return this;}
     public ForwardFluxSampling<T> setNoCompetitive() {return setNoCompetitive(true);}
+    public ForwardFluxSampling<T> setProgressBar(boolean aProgressBar) {mProgressBar = aProgressBar; return this;}
+    public ForwardFluxSampling<T> setProgressBar() {return setProgressBar(true);}
     /** 是否在关闭此实例时顺便关闭输入的生成器和计算器 */
     private boolean mDoNotShutdown = false;
     @Override public ForwardFluxSampling<T> setDoNotShutdown(boolean aDoNotShutdown) {mDoNotShutdown = aDoNotShutdown; return this;}
@@ -384,6 +388,16 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                     rPointsOnLambda.add(tPoint);
                 }
                 rN0Eff += tPoint.multiple;
+                if (mProgressBar) UT.Timer.progressBar();
+                // 每记录一个点查看总数是否达标
+                if (!mNoCompetitive) {
+                    // 如果是竞争的需要进行同步
+                    synchronized (this) {
+                        if (rPointsOnLambda.size() >= aN0) break;
+                    }
+                } else {
+                    if (rPointsOnLambda.size() >= aN0) break;
+                }
                 // 如果此时恰好到达 B 则重新回到 A（对于只有一个界面的情况）
                 if (tPoint.lambda >= mSurfaces.last()) {
                     // 重设路径之前记得先保存旧的时间
@@ -395,17 +409,9 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                         tPath = new BackwardPath(tRNG.nextLong()); ++rPathNum;
                         tRoot = tPath.nextUntilReachLambdaAOrLambdaB(false); // 此过程不会记录耗时
                     } while (tRoot == null);
+                    // 直接重新找下一个 λ0
+                    continue;
                 }
-                // 每记录一个点查看总数是否达标
-                if (!mNoCompetitive) {
-                    // 如果是竞争的需要进行同步
-                    synchronized (this) {
-                        if (rPointsOnLambda.size() >= aN0) break;
-                    }
-                } else {
-                    if (rPointsOnLambda.size() >= aN0) break;
-                }
-                
                 // 再一直查找下次重新到达 A
                 tRoot = tPath.nextUntilReachLambdaAOrLambdaB();
                 // 如果没有回到 A 则需要重设路径
@@ -543,6 +549,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                         rPointsOnLambda.add(tStart);
                         oPointsOnLambda.set(tIndex, tStart);
                         mMovedPoints.set(tIndex, true);
+                        if (mProgressBar) UT.Timer.progressBar();
                     }
                     // 此路径结束，增加统计结果，将 tStart 设为 null 标记需要重新选取
                     rMi += tStart.parent.multiple;
@@ -570,6 +577,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                         rPointsOnLambda.add(tNext);
                     }
                     rNippEff += tNext.multiple;
+                    if (mProgressBar) UT.Timer.progressBar();
                 }
             }
             // 这里统一检测点的总数是否达标，以及中断条件
@@ -612,6 +620,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             if (!mNoCompetitive) {
                 // 竞争的写法，每个线程共用 mPointsOnLambda 并同步检测容量是否达标
                 // 在竞争的情况下不需要统一生成种子
+                if (mProgressBar) UT.Timer.progressBar("step1", (long)mN0*mStep1Mul);
                 pool().parfor(tThreadNum, i -> {
                     tStep1ReturnBuffer[i] = doStep1(mN0*mStep1Mul, mPointsOnLambda, mRNG.nextLong());
                 });
@@ -624,6 +633,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 for (int i = 1; i < tThreadNum; ++i) tPointsOnLambdaBuffer[i] = new ArrayList<>(subN0);
                 // 为了保证结果可重复，这里统一为每个线程生成一个种子，用于内部创建 LocalRandom
                 final long[] tSeeds = genSeeds_(tThreadNum);
+                if (mProgressBar) UT.Timer.progressBar("step1", (long)subN0*tThreadNum);
                 pool().parfor(tThreadNum, i -> {
                     tStep1ReturnBuffer[i] = doStep1(subN0, tPointsOnLambdaBuffer[i], tSeeds[i]);
                 });
@@ -686,6 +696,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 // 竞争的写法，每个线程共用 mPointsOnLambda 并同步检测容量是否达标
                 final long subMaxPathNum = MathEX.Code.divup(mMaxPathNum, tThreadNum);
                 // 在竞争的情况下不需要统一生成种子
+                if (mProgressBar) UT.Timer.progressBar("step2, i="+mStep, mN0);
                 pool().parfor(tThreadNum, i -> {
                     tStep2ReturnBuffer[i] = doStep2(mN0, mPointsOnLambda, subMaxPathNum, mRNG.nextLong());
                 });
@@ -699,6 +710,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 for (int i = 1; i < tThreadNum; ++i) tPointsOnLambdaBuffer[i] = new ArrayList<>(subNipp);
                 // 为了保证结果可重复，这里统一为每个线程生成一个种子，用于内部创建 LocalRandom
                 final long[] tSeeds = genSeeds_(tThreadNum);
+                if (mProgressBar) UT.Timer.progressBar("step2, i="+mStep, (long)subNipp*tThreadNum);
                 pool().parfor(tThreadNum, i -> {
                     tStep2ReturnBuffer[i] = doStep2(subNipp, tPointsOnLambdaBuffer[i], subMaxPathNum, tSeeds[i]);
                 });

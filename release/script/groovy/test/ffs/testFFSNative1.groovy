@@ -99,7 +99,7 @@ println("SURFACES: ${surfaces}");
 println("PRUNING_PROB: ${pruningProb}");
 println("PRUNING_THRESHOLD: ${pruningThreshold}");
 
-try (def FFS = new ForwardFluxSampling<>(fullPathGen, parallelNum, surfaceA, surfaces, N0).setRNG(123456789).setStep1Mul(step1Mul).setPruningProb(pruningProb).setPruningThreshold(pruningThreshold)) {
+try (def FFS = new ForwardFluxSampling<>(fullPathGen, parallelNum, surfaceA, surfaces, N0).setProgressBar().setRNG(123456789).setStep1Mul(step1Mul).setPruningProb(pruningProb).setPruningThreshold(pruningThreshold)) {
     // 第一步，每步都会输出结构
     UT.Timer.tic();
     FFS.run();
@@ -129,6 +129,10 @@ try (def FFS = new ForwardFluxSampling<>(fullPathGen, parallelNum, surfaceA, sur
     println("k = ${FFS.getK()}, totalPointNum = ${FFS.totalPointNum()}");
 }}}
 // i = -1, k0 = 0.897492300923889, step1PointNum = 11429, step1PathNum = 6, time: 00 hour 05 min 28.89 sec
+// i = 0, prob = 0.13007159904534607, step2PointNum = 9516, step2PathNum = 838, time: 00 hour 03 min 59.42 sec
+// i = 1, prob = 0.13552188552188585, step2PointNum = 20869, step2PathNum = 1009, time: 00 hour 09 min 47.59 sec
+// i = 2, prob = 0.20618919751727793, step2PointNum = 23835, step2PathNum = 688, time: 00 hour 10 min 21.89 sec
+// i = 3, prob = 0.247749468787495, step2PointNum = 28745, step2PathNum = 578, time: 00 hour 12 min 36.06 sec
 
 
 MPI.shutdown();

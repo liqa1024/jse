@@ -3,6 +3,7 @@ package test.ffs
 import jtool.code.UT
 import jtool.math.vector.Vectors
 import jtool.plot.Plotters
+import jtoolex.rareevent.BufferedFullPathGenerator
 import jtoolex.rareevent.ForwardFluxSampling
 import rareevent.RandomWalk
 
@@ -16,12 +17,13 @@ int N0 = 10000;
 
 def biPathGen = new RandomWalk.PathGenerator(10);
 def biCal = new RandomWalk.ParameterCalculator();
+def fullPath = new BufferedFullPathGenerator(biPathGen, biCal);
 
 def lambda = 1..40;
 def k1 = Vectors.zeros(lambda.size());
 def k2 = Vectors.zeros(lambda.size());
 
-def FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, lambda, N0).setPruningProb(0.5).setPruningThreshold(3).disableStep1Pruning();
+def FFS = new ForwardFluxSampling<>(fullPath, 0, lambda, N0).setPruningProb(0.5).setPruningThreshold(3).disableStep1Pruning();
 UT.Timer.tic();
 FFS.run();
 k1[0] = FFS.getK0();
@@ -37,7 +39,7 @@ UT.Timer.toc("1, k = ${FFS.getK()}, step1PointNum = ${FFS.step1PointNum()}, step
 FFS.shutdown();
 
 
-FFS = new ForwardFluxSampling<>(biPathGen, biCal, 0, lambda, N0);
+FFS = new ForwardFluxSampling<>(fullPath, 0, lambda, N0);
 UT.Timer.tic();
 FFS.run();
 k2[0] = FFS.getK0();
