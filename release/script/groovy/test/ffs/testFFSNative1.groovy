@@ -52,7 +52,7 @@ final int dumpStep          = 5; // 0.01 ps
 final int N0                = 100;
 final int step1Mul          = 1;
 final double surfaceA       = 30;
-final def surfaces          = (50..500).step(20);
+final def surfaces          = (50..200).step(20);
 
 final double pruningProb    = 0.5;
 final int pruningThreshold  = 5;
@@ -81,54 +81,54 @@ def dumpCal = new MultiTypeClusterSizeCalculator(
     [new ABOOPSolidChecker_MPI().setComm(subComm).setRNearestMul(1.8).setConnectThreshold(0.84).setSolidThreshold(13), new ABOOPSolidChecker_MPI().setComm(subComm).setRNearestMul(1.5).setConnectThreshold(0.84).setSolidThreshold(7)]
 );
 
-def fullPathGen = new MultipleNativeLmpFullPathGenerator(MPI.Comm.WORLD, 0, subComm, subRoots, dumpCal, initPoints, Vectors.from([MASS.Cu, MASS.Zr]), SCTemp, pairStyle, pairCoeff, timestep, dumpStep);
-
-/** 开始 FFS */
-if (me == 0) {
-println("=====BEGIN ${UNIQUE_NAME} OF Cu${Cu}Zr${Zr}=====");
-println("TIMESTEP: ${timestep} ps");
-println("PAIR_STYLE: ${pairStyle}");
-println("PAIR_COEFF: ${pairCoeff}");
-println("PARALLEL_NUM: ${parallelNum}");
-println("LMP_CORE_NUM: ${lmpCores}");
-println("TEMPERATURE: ${SCTemp}K");
-println("N0: ${N0}");
-println("DUMP_STEP: ${dumpStep}");
-println("SURFACE_A: ${surfaceA}");
-println("SURFACES: ${surfaces}");
-println("PRUNING_PROB: ${pruningProb}");
-println("PRUNING_THRESHOLD: ${pruningThreshold}");
-
-// MARK: seed = 123456789, np = 12, windows 下会卡死
-try (def FFS = new ForwardFluxSampling<>(fullPathGen, parallelNum, surfaceA, surfaces, N0).setProgressBar().setRNG(123456789).setStep1Mul(step1Mul).setPruningProb(pruningProb).setPruningThreshold(pruningThreshold)) {
-    // 第一步，每步都会输出结构
-    UT.Timer.tic();
-    FFS.run();
-    UT.Timer.toc("i = -1, k0 = ${FFS.getK0()}, step1PointNum = ${FFS.step1PointNum()}, step1PathNum = ${FFS.step1PathNum()},");
-    // 然后直接随便选一个输出路径到 dump 并保存 restart
-    Dump.fromAtomDataList(FFS.pickPath()).write(FFSDumpPath);
-    if (FFS.stepFinished()) {
-        Dump.fromAtomDataList(FFS.pointsOnLambda()).write(FFSRestartPathDu);
-        UT.IO.map2json(FFS.restData(), FFSRestartPathRe);
-    }
+MultipleNativeLmpFullPathGenerator.ofWith(MPI.Comm.WORLD, 0, subComm, subRoots, dumpCal, initPoints, Vectors.from([MASS.Cu, MASS.Zr]), SCTemp, pairStyle, pairCoeff, timestep, dumpStep) {fullPathGen ->
     
-    // 后面的步骤，每步都会输出结构并保存 restart
-    def i = 0;
-    while (!FFS.finished()) {
+    /** 开始 FFS */
+    println("=====BEGIN ${UNIQUE_NAME} OF Cu${Cu}Zr${Zr}=====");
+    println("TIMESTEP: ${timestep} ps");
+    println("PAIR_STYLE: ${pairStyle}");
+    println("PAIR_COEFF: ${pairCoeff}");
+    println("PARALLEL_NUM: ${parallelNum}");
+    println("LMP_CORE_NUM: ${lmpCores}");
+    println("TEMPERATURE: ${SCTemp}K");
+    println("N0: ${N0}");
+    println("DUMP_STEP: ${dumpStep}");
+    println("SURFACE_A: ${surfaceA}");
+    println("SURFACES: ${surfaces}");
+    println("PRUNING_PROB: ${pruningProb}");
+    println("PRUNING_THRESHOLD: ${pruningThreshold}");
+    
+    // MARK: seed = 123456789, np = 12, windows 下会卡死
+    try (def FFS = new ForwardFluxSampling<>(fullPathGen, parallelNum, surfaceA, surfaces, N0).setProgressBar().setRNG(123456789).setStep1Mul(step1Mul).setPruningProb(pruningProb).setPruningThreshold(pruningThreshold)) {
+        // 第一步，每步都会输出结构
         UT.Timer.tic();
         FFS.run();
-        UT.Timer.toc("i = ${i}, prob = ${FFS.getProb(i)}, step2PointNum = ${FFS.step2PointNum(i)}, step2PathNum = ${FFS.step2PathNum(i)},");
+        UT.Timer.toc("i = -1, k0 = ${FFS.getK0()}, step1PointNum = ${FFS.step1PointNum()}, step1PathNum = ${FFS.step1PathNum()},");
         // 然后直接随便选一个输出路径到 dump 并保存 restart
         Dump.fromAtomDataList(FFS.pickPath()).write(FFSDumpPath);
         if (FFS.stepFinished()) {
             Dump.fromAtomDataList(FFS.pointsOnLambda()).write(FFSRestartPathDu);
             UT.IO.map2json(FFS.restData(), FFSRestartPathRe);
         }
-        ++i;
-    }
-    println("=====${UNIQUE_NAME} FINISHED=====");
-    println("k = ${FFS.getK()}, totalPointNum = ${FFS.totalPointNum()}");
-}}}
+        
+        // 后面的步骤，每步都会输出结构并保存 restart
+        def i = 0;
+        while (!FFS.finished()) {
+            UT.Timer.tic();
+            FFS.run();
+            UT.Timer.toc("i = ${i}, prob = ${FFS.getProb(i)}, step2PointNum = ${FFS.step2PointNum(i)}, step2PathNum = ${FFS.step2PathNum(i)},");
+            // 然后直接随便选一个输出路径到 dump 并保存 restart
+            Dump.fromAtomDataList(FFS.pickPath()).write(FFSDumpPath);
+            if (FFS.stepFinished()) {
+                Dump.fromAtomDataList(FFS.pointsOnLambda()).write(FFSRestartPathDu);
+                UT.IO.map2json(FFS.restData(), FFSRestartPathRe);
+            }
+            ++i;
+        }
+        println("=====${UNIQUE_NAME} FINISHED=====");
+        println("k = ${FFS.getK()}, totalPointNum = ${FFS.totalPointNum()}");
+    }}
+}
 // i = -1, k0 = 0.897492300923889, step1PointNum = 11429, step1PathNum = 6, time: 00 hour 05 min 28.89 sec
 // i = 0, prob = 0.13007159904534607, step2PointNum = 9516, step2PathNum = 838, time: 00 hour 03 min 59.42 sec
 // i = 1, prob = 0.13552188552188585, step2PointNum = 20869, step2PathNum = 1009, time: 00 hour 09 min 47.59 sec

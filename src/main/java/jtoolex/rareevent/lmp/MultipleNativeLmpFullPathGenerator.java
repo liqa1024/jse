@@ -19,6 +19,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 import static jtool.code.CS.*;
 
@@ -40,7 +41,6 @@ import static jtool.code.CS.*;
  */
 @ApiStatus.Experimental
 public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData> {
-    public static boolean RETURN_LMPDAT = true;
     
     private final IVector mMesses; // 主要用于收发数据时创建 Lmpdat 使用
     
@@ -51,8 +51,9 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
     private final Deque<Integer> mLmpRoots;
     private final int mLmpMe;
     
+    private final NativeLmpFullPathGenerator mPathGen;
+    
     private volatile boolean mDead = false;
-    private final Future<Void> mServerTaskRoot;
     
     /**
      * 创建一个生成器；
@@ -71,7 +72,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
      * @param aTimestep 每步的实际时间步长，影响输入文件和统计使用的时间，默认为 0.002 (ps)
      * @param aDumpStep 每隔多少模拟步输出一个 dump，默认为 10
      */
-    public MultipleNativeLmpFullPathGenerator(MPI.Comm aWorldComm, int aWorldRoot, MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep) throws MPI.Error {
+    private MultipleNativeLmpFullPathGenerator(MPI.Comm aWorldComm, int aWorldRoot, MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep) throws MPI.Error, NativeLmp.Error {
         // 基本参数存储
         mMesses = aMesses.copy();
         // MPI 相关参数
@@ -88,17 +89,26 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
             mLmpRoots = new ConcurrentLinkedDeque<>(aLmpRoots);
         }
         
-        try (PathGenServer tServer = new PathGenServer(new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep).setReturnLast())) {
-            // 主线程挂后台，其余的直接运行阻塞后续操作
-            if (mWorldMe == mWorldRoot) {
-                mServerTaskRoot = UT.Par.runAsync(tServer);
-            } else {
-                mServerTaskRoot = null;
+        mPathGen = new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep).setReturnLast();
+    }
+    
+    /** 这里改为 static 方法来构造，从而避免一些问题，顺便实现自动资源释放 */
+    public static void ofWith(MPI.Comm aWorldComm, int aWorldRoot, MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, Consumer<MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {
+        try (MultipleNativeLmpFullPathGenerator tPathGen = new MultipleNativeLmpFullPathGenerator(aWorldComm, aWorldRoot, aLmpComm, aLmpRoots,  aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep)) {
+            // 在另一个线程执行后续操作
+            Future<Void> tLaterTask = null;
+            if (tPathGen.mWorldMe == aWorldRoot) tLaterTask = UT.Par.runAsync(() -> aDoLater.accept(tPathGen));
+            // 主线程开启服务器，现在所有进程都会阻塞，保证线程为主线程可以避免一些问题
+            try (PathGenServer tServer = tPathGen.new PathGenServer()) {
                 tServer.run();
+            }
+            // 最后需要等待一下 tLaterTask 完成
+            if (tPathGen.mWorldMe == aWorldRoot) {
+                assert tLaterTask != null;
+                tLaterTask.get();
             }
         }
     }
-    
     
     
     @Override public ITimeAndParameterIterator<Lmpdat> fullPathFrom(IAtomData aStart, long aSeed) {
@@ -264,11 +274,6 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
     
     private class PathGenServer implements IAutoShutdown, Runnable {
         private ITimeAndParameterIterator<Lmpdat> mIt = null;
-        
-        private final NativeLmpFullPathGenerator mPathGen;
-        PathGenServer(NativeLmpFullPathGenerator aPathGen) {
-            mPathGen = aPathGen;
-        }
         
         @Override public void run() {
             try {while (true) {
@@ -462,18 +467,14 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
     
     
     @Override public void shutdown() {
-        if (!mDead && mWorldMe==mWorldRoot) {
+        if (mDead) return;
+        mDead = true;
+        mPathGen.shutdown(); // 这样会存在重复关闭的问题，不过不重要就是
+        if (mWorldMe==mWorldRoot) {
             for (int tLmpRoot : mLmpRoots) {
                 try {mWorldComm.send(SHUTDOWN_BUF, 1, tLmpRoot, JOB_TYPE);} catch (MPI.Error ignored) {}
             }
             mLmpRoots.clear();
         }
-        mDead = true;
-    }
-    /** 注意 try-with-resources 自动关闭还需要等待内部的携程完全关闭（注意需要忽略 InterruptedException 让后续可能的资源正常释放） */
-    @ApiStatus.Internal @Override public void close() {
-        shutdown();
-        try {mServerTaskRoot.get();}
-        catch (Exception e) {mServerTaskRoot.cancel(true);}
     }
 }
