@@ -21,7 +21,7 @@ import static jtool.code.UT.Code.range
  */
 
 // CuZr 需要开启 MANYBODY 包
-NativeLmp.Conf.CMAKE_SETTING.PKG_MANYBODY = 'yes';
+NativeLmp.Conf.CMAKE_SETTING.PKG_MANYBODY = 'ON';
 NativeLmp.Conf.REBUILD = false; // 如果没有这个包需要开启此选项重新构建
 
 /** 体系参数 */
@@ -99,6 +99,7 @@ println("SURFACES: ${surfaces}");
 println("PRUNING_PROB: ${pruningProb}");
 println("PRUNING_THRESHOLD: ${pruningThreshold}");
 
+// MARK: seed = 123456789, np = 12, windows 下会卡死
 try (def FFS = new ForwardFluxSampling<>(fullPathGen, parallelNum, surfaceA, surfaces, N0).setProgressBar().setRNG(123456789).setStep1Mul(step1Mul).setPruningProb(pruningProb).setPruningThreshold(pruningThreshold)) {
     // 第一步，每步都会输出结构
     UT.Timer.tic();

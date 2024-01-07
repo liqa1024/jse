@@ -14,7 +14,7 @@ import static jtool.code.CS.MASS
  */
 
 // CuZr 需要开启 MANYBODY 包
-NativeLmp.Conf.CMAKE_SETTING.PKG_MANYBODY = 'yes';
+NativeLmp.Conf.CMAKE_SETTING.PKG_MANYBODY = 'ON';
 NativeLmp.Conf.REBUILD = false; // 如果没有这个包需要开启此选项重新构建
 
 MPI.init();

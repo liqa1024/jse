@@ -356,6 +356,6 @@ JNIEXPORT jint JNICALL Java_jtool_lmp_NativeLmp_lammpsCreateAtoms_1(JNIEnv *aEnv
 
 JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsClose_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
     lammps_close((void *)aLmpPtr);
-    exceptionCheck(aEnv, (void *)aLmpPtr);
+    exceptionCheck(aEnv, NULL);
 }
 
