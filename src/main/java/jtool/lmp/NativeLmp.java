@@ -109,8 +109,10 @@ public class NativeLmp implements IAutoShutdown {
         // 设置输出动态链接库
         rCommand.add("-D"); rCommand.add("BUILD_SHARED_LIBS=ON");
         // 设置抛出错误
-        rCommand.add("-D"); rCommand.add("LAMMPS_EXCEPTIONS=ON");
-        // 设置构建输出目录为 lib（TODO: linux 下无效，暂没有好的解决方法）
+        rCommand.add("-D"); rCommand.add("LAMMPS_EXCEPTIONS:BOOL=ON");
+        // 设置编译模式 Release
+        rCommand.add("-D"); rCommand.add("CMAKE_BUILD_TYPE=Release");
+        // 设置构建输出目录为 lib
         rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=\""+aNativeLmpBuildDir+"lib\"");
         rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=\""+aNativeLmpBuildDir+"lib\"");
         rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=\""+aNativeLmpBuildDir+"lib\"");
