@@ -63,7 +63,7 @@ public class DefaultProgressBarRenderer implements ProgressBarRenderer {
             return Util.formatDuration(eta.get());
         }
         else {
-            return "?";
+            return "?:??:??";
         }
     }
 
@@ -156,10 +156,10 @@ public class DefaultProgressBarRenderer implements ProgressBarRenderer {
                 if (fraction != 0) {
                     sb.append(style.fractionSymbols.charAt(fraction));
                     sb.append(style.delimitingSequence);
-                }
-                else {
+                } else {
                     sb.append(style.delimitingSequence);
-                    sb.append(style.rightSideFractionSymbol);
+                    // fraction 为零并且 progress 值不为零时，使用 rightSideFractionSymbol 重写 fractionSymbols
+                    sb.append(progress.current!=0 ? style.rightSideFractionSymbol : style.fractionSymbols.charAt(fraction));
                 }
                 sb.append(Util.repeat(style.space, length - progressIntegralPart(progress, length) - 1));
             }

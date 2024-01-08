@@ -38,6 +38,7 @@ import jtool.vasp.IVaspCommonData;
 import me.tongfei.progressbar.ConsoleProgressBarConsumer;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarBuilder;
+import me.tongfei.progressbar.ProgressBarStyle;
 import net.jafama.FastMath;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -443,6 +444,7 @@ public class UT {
             return (System.currentTimeMillis() - sTime) / 1000.0;
         }
         
+        public static boolean USE_ASCII = false;
         private static @Nullable ProgressBar sProgressBar = null;
         public static synchronized void progressBar(String aName, long aN) {
             if (sProgressBar != null) {
@@ -453,6 +455,7 @@ public class UT {
                 .setTaskName(aName).setInitialMax(aN)
                 .setConsumer(new ConsoleProgressBarConsumer(System.out, 80)) // 一般来说 pbar 都是 err 流，这里需要重写一下避免乱码问题，并改用 out 从而可以有意避开扰乱
                 .setUpdateIntervalMillis((int)FILE_SYSTEM_SLEEP_TIME_2)
+                .setStyle(USE_ASCII ? ProgressBarStyle.ASCII : ProgressBarStyle.COLORFUL_UNICODE_BLOCK)
                 .build();
             Main.addGlobalAutoCloseable(sProgressBar);
         }

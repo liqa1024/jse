@@ -31,7 +31,7 @@ public class ProgressBarStyle {
             new ProgressBarStyle("\r", "\u001b[33m│", "", "│\u001b[0m", '█', ' ', " ▏▎▍▌▋▊▉", ' ');
 
     public static ProgressBarStyle COLORFUL_UNICODE_BAR =
-            new ProgressBarStyle("\r", "\u001b[33m", "\u001b[90m", "\u001b[0m", '━', '━', " ╸", '╺');
+            new ProgressBarStyle("\r", "\u001b[33m", "\u001b[90m", "\u001b[0m", '━', '━', "━╸", '╺');
 
     /** Use Unicode block characters to draw the progress bar. */
     public static ProgressBarStyle UNICODE_BLOCK =
@@ -39,7 +39,7 @@ public class ProgressBarStyle {
 
     /** Use only ASCII characters to draw the progress bar. */
     public static ProgressBarStyle ASCII =
-            new ProgressBarStyle("\r", "[", "", "]", '=', ' ', ">", ' ');
+            new ProgressBarStyle("\r", "[", "", "]", '=', ' ', " >", '>');
 
     /** Creates a builder to build a custom progress bar style. */
     public static ProgressBarStyleBuilder builder() {

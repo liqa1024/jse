@@ -100,7 +100,8 @@ MultipleNativeLmpFullPathGenerator.withOf(MPI.Comm.WORLD, 0, subComm, subRoots, 
     println("PRUNING_THRESHOLD: ${pruningThreshold}");
     
     // MARK: seed = 123456789, np = 12, windows 下会卡死
-    try (def FFS = new ForwardFluxSampling<>(fullPathGen, parallelNum, surfaceA, surfaces, N0).setProgressBar().setRNG(123456789).setStep1Mul(step1Mul).setPruningProb(pruningProb).setPruningThreshold(pruningThreshold)) {
+    UT.Timer.USE_ASCII = true; // 避免乱码，并且现在修复了 ASCII 的显示问题
+    try (def FFS = new ForwardFluxSampling<>(fullPathGen, parallelNum, surfaceA, surfaces, N0).setProgressBar().setStep1Mul(step1Mul).setPruningProb(pruningProb).setPruningThreshold(pruningThreshold)) {
         // 第一步，每步都会输出结构
         UT.Timer.tic();
         FFS.run();
