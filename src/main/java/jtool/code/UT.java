@@ -1206,7 +1206,13 @@ public class UT {
          * @return the Right absolute path
          */
         public static String toAbsolutePath(String aPath) {return toAbsolutePath_(aPath).toString();}
-        public static Path toAbsolutePath_(String aPath) {return WORKING_PATH.resolve(aPath);}
+        public static Path toAbsolutePath_(String aPath) {
+            if (aPath.startsWith("~")) {
+                // 默认不支持 ~
+                aPath = System.getProperty("user.home") + aPath.substring(1);
+            }
+            return WORKING_PATH.resolve(aPath);
+        }
         
         // reset the working dir to correct value
         private static Path WORKING_PATH = null;

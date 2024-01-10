@@ -67,7 +67,10 @@ GEN_PARSE_JANY_TO_ANY(intbig, double, Double)
 
 void exceptionCheck(JNIEnv *aEnv, void *aLmpPtr) {
 #ifdef LAMMPS_EXCEPTIONS
-    if (!lammps_has_error(aLmpPtr)) return;
+#ifndef LAMMPS_EXCEPTIONS_NULL_SUPPORT
+    if (aLmpPtr == NULL) return;
+#endif
+    if (lammps_has_error(aLmpPtr) == 0) return;
     
     // find class runtime due to asm
     jclass tLmpErrorClazz = (*aEnv)->FindClass(aEnv, "jtool/lmp/NativeLmp$Error");
@@ -180,7 +183,11 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsCommand_1(JNIEnv *aEnv, jc
 JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsCommandsList_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jobjectArray aCmds) {
     int tLen;
     char **tCmds = parseStrBuf(aEnv, aCmds, &tLen);
+#ifdef LAMMPS_OLD
     lammps_commands_list((void *)aLmpPtr, tLen, tCmds);
+#else
+    lammps_commands_list((void *)aLmpPtr, tLen, (const char **)tCmds);
+#endif
     exceptionCheck(aEnv, (void *)aLmpPtr);
     freeStrBuf(tCmds, tLen);
 }

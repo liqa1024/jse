@@ -50,6 +50,7 @@ endif(MPI_C_FOUND)
 # add lammps
 option(LAMMPS_IS_OLD "Build based on old version lammps (like version below 18Sep2020)" OFF)
 option(LAMMPS_HAS_EXCEPTIONS "Build based on lammps which has error handling" ON)
+option(LAMMPS_EXCEPTIONS_NULL_SUPPORT "NULL support for lammps_has_error" ON)
 
 if (LAMMPS_IS_OLD)
     add_definitions(-DLAMMPS_OLD)
@@ -58,6 +59,10 @@ endif(LAMMPS_IS_OLD)
 if (LAMMPS_HAS_EXCEPTIONS)
     add_definitions(-DLAMMPS_EXCEPTIONS)
 endif(LAMMPS_HAS_EXCEPTIONS)
+
+if (LAMMPS_EXCEPTIONS_NULL_SUPPORT)
+    add_definitions(-DLAMMPS_EXCEPTIONS_NULL_SUPPORT)
+endif(LAMMPS_EXCEPTIONS_NULL_SUPPORT)
 
 include_directories($ENV{LAMMPS_HOME}includes)
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")

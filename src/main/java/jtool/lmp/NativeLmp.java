@@ -103,6 +103,12 @@ public class NativeLmp implements IAutoShutdown {
          * 关闭后可以保证编译通过
          */
         public static boolean HAS_EXCEPTIONS = true;
+        
+        /**
+         * lammps 的 lammps_has_error 接口是否有 NULL 支持，
+         * 对于较旧的版本并不支持这个
+         */
+        public static boolean EXCEPTIONS_NULL_SUPPORT = true;
     }
     
     private final static String LMPLIB_DIR = JAR_DIR+"lmp/";
@@ -144,8 +150,9 @@ public class NativeLmp implements IAutoShutdown {
         List<String> rCommand = new ArrayList<>();
         rCommand.add("cd"); rCommand.add("\""+aLmpJniBuildDir+"\""); rCommand.add(";");
         rCommand.add("cmake");
-        rCommand.add("-D"); rCommand.add("LAMMPS_IS_OLD="        +(Conf.IS_OLD        ?"ON":"OFF"));
-        rCommand.add("-D"); rCommand.add("LAMMPS_HAS_EXCEPTIONS="+(Conf.HAS_EXCEPTIONS?"ON":"OFF"));
+        rCommand.add("-D"); rCommand.add("LAMMPS_IS_OLD="                 +(Conf.IS_OLD                 ?"ON":"OFF"));
+        rCommand.add("-D"); rCommand.add("LAMMPS_HAS_EXCEPTIONS="         +(Conf.HAS_EXCEPTIONS         ?"ON":"OFF"));
+        rCommand.add("-D"); rCommand.add("LAMMPS_EXCEPTIONS_NULL_SUPPORT="+(Conf.EXCEPTIONS_NULL_SUPPORT?"ON":"OFF"));
         rCommand.add(".");
         return String.join(" ", rCommand);
     }
