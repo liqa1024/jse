@@ -804,7 +804,7 @@ public class MPI {
         
         private static long datatypeOf_(Object aBuf) {
             if (aBuf == null) {
-                return MPI_DATATYPE_NULL;
+                return MPI_BYTE; // 返回 MPI_BYTE 而不是 MPI_DATATYPE_NULL 来保证 null 传空数据的支持
             } else
             if (aBuf instanceof byte[]) {
                 return MPI_SIGNED_CHAR;
