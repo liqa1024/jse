@@ -59,7 +59,7 @@ JAVA_OPTS="$JAVA_OPTS -Djava.util.prefs.syncInterval=1000000"
 
 # SLURM_PROCID 环境变量存在且不为 0 时限制内存大小
 if [ -n "$SLURM_PROCID" ] && [ "$SLURM_PROCID" -ne 0 ]; then
-JAVA_OPTS="$JAVA_OPTS -Xmx1g"
+JAVA_OPTS="$JAVA_OPTS -Xmx600m"
 fi
 
 # 执行 jtool.jar

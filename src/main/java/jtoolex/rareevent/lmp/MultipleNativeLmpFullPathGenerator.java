@@ -315,7 +315,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                 case SHUTDOWN: {
                     shutdown();
                     if (mLmpMe == 0) {
-                        mWorldComm.send(null, 0, mWorldRoot, SHUTDOWN_FINISHED);
+                        mWorldComm.send(mWorldRoot, SHUTDOWN_FINISHED);
                     }
                     mLmpComm.barrier();
                     return;
@@ -331,7 +331,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                     if (mIt != null) mIt.shutdown();
                     mIt = mPathGen.fullPathInit(tSeed);
                     if (mLmpMe == 0) {
-                        mWorldComm.send(null, 0, mWorldRoot, PATH_INIT_FINISHED);
+                        mWorldComm.send(mWorldRoot, PATH_INIT_FINISHED);
                     }
                     mLmpComm.barrier();
                     break;
@@ -352,7 +352,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                     if (mIt != null) mIt.shutdown();
                     mIt = mPathGen.fullPathFrom(tStart, tSeed);
                     if (mLmpMe == 0) {
-                        mWorldComm.send(null, 0, mWorldRoot, PATH_FROM_FINISHED);
+                        mWorldComm.send(mWorldRoot, PATH_FROM_FINISHED);
                     }
                     mLmpComm.barrier();
                     break;
@@ -367,7 +367,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                     // 并且下一步的 lammps 运行也需要这个 Lmpdat 作为输入，
                     // 直接闪退并且不报任何错误应该也是 lammps 运行的原因
                     if (mLmpMe == 0) {
-                        mWorldComm.send(null, 0, mWorldRoot, PATH_NEXT_FINISHED);
+                        mWorldComm.send(mWorldRoot, PATH_NEXT_FINISHED);
                     }
                     mLmpComm.barrier();
                     break;
@@ -381,7 +381,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                         DOUBLE1_CACHE.returnObject(tTimeConsumedBuf);
                     }
                     if (mLmpMe == 0) {
-                        mWorldComm.send(null, 0, mWorldRoot, PATH_TIME_FINISHED);
+                        mWorldComm.send(mWorldRoot, PATH_TIME_FINISHED);
                     }
                     mLmpComm.barrier();
                     break;
@@ -395,7 +395,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                         DOUBLE1_CACHE.returnObject(tLambdaBuf);
                     }
                     if (mLmpMe == 0) {
-                        mWorldComm.send(null, 0, mWorldRoot, PATH_LAMBDA_FINISHED);
+                        mWorldComm.send(mWorldRoot, PATH_LAMBDA_FINISHED);
                     }
                     mLmpComm.barrier();
                     break;
@@ -406,7 +406,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                         mIt = null;
                     }
                     if (mLmpMe == 0) {
-                        mWorldComm.send(null, 0, mWorldRoot, PATH_SHUTDOWN_FINISHED);
+                        mWorldComm.send(mWorldRoot, PATH_SHUTDOWN_FINISHED);
                     }
                     mLmpComm.barrier();
                     break;
@@ -461,7 +461,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                     sendLmpdat_(tStart, mLmpRoot, mWorldComm);
                 }
                 // 接收任务完成信息
-                mWorldComm.recv(null, 0, mLmpRoot, aStart==null ? PATH_INIT_FINISHED : PATH_FROM_FINISHED);
+                mWorldComm.recv(mLmpRoot, aStart==null ? PATH_INIT_FINISHED : PATH_FROM_FINISHED);
             } catch (Throwable t) {
                 this.shutdown();
                 throw new RuntimeException(t);
@@ -476,7 +476,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                 // 之后获取 Lmpdat 即可
                 Lmpdat tNext = recvLmpdat_(mLmpRoot, mWorldComm);
                 // 接收任务完成信息
-                mWorldComm.recv(null, 0, mLmpRoot, PATH_NEXT_FINISHED);
+                mWorldComm.recv(mLmpRoot, PATH_NEXT_FINISHED);
                 return tNext;
             } catch (MPI.Error e) {
                 throw new RuntimeException(e);
@@ -493,7 +493,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                 double tTimeConsumed = rTimeConsumedBuf[0];
                 DOUBLE1_CACHE.returnObject(rTimeConsumedBuf);
                 // 接收任务完成信息
-                mWorldComm.recv(null, 0, mLmpRoot, PATH_TIME_FINISHED);
+                mWorldComm.recv(mLmpRoot, PATH_TIME_FINISHED);
                 return tTimeConsumed;
             } catch (MPI.Error e) {
                 throw new RuntimeException(e);
@@ -510,7 +510,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                 double tLambda = rLambdaBuf[0];
                 DOUBLE1_CACHE.returnObject(rLambdaBuf);
                 // 接收任务完成信息
-                mWorldComm.recv(null, 0, mLmpRoot, PATH_LAMBDA_FINISHED);
+                mWorldComm.recv(mLmpRoot, PATH_LAMBDA_FINISHED);
                 return tLambda;
             } catch (MPI.Error e) {
                 throw new RuntimeException(e);
@@ -524,7 +524,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
             if (mLmpRoot >= 0) {
                 try {
                     mWorldComm.send(PATH_SHUTDOWN_BUF, 1, mLmpRoot, JOB_TYPE);
-                    mWorldComm.recv(null, 0, mLmpRoot, PATH_SHUTDOWN_FINISHED);
+                    mWorldComm.recv(mLmpRoot, PATH_SHUTDOWN_FINISHED);
                 } catch (MPI.Error e) {
                     e.printStackTrace(System.err);
                 }
@@ -545,7 +545,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
             for (int tLmpRoot : mLmpRoots) {
                 try {
                     mWorldComm.send(SHUTDOWN_BUF, 1, tLmpRoot, JOB_TYPE);
-                    mWorldComm.recv(null, 0, tLmpRoot, SHUTDOWN_FINISHED);
+                    mWorldComm.recv(tLmpRoot, SHUTDOWN_FINISHED);
                 } catch (MPI.Error e) {
                     e.printStackTrace(System.err);
                 }

@@ -4,7 +4,7 @@ import jtool.atom.Structures
 import jtool.atom.XYZ
 import jtool.code.SP
 import jtool.code.UT
-import jtool.iofile.InFiles
+import jtool.io.InFiles
 import jtool.lmp.Dump
 import jtool.lmp.LmpIn
 import jtool.lmp.Lmpdat

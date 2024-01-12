@@ -205,15 +205,30 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-allgather-function"> MPI_Allgather function </a>
          */
-        public <S, R> void allgather(S aSendBuf, int aSendCount, R rRecvBuf, int aRecvCount) throws Error {
-            Native.MPI_Allgather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, mPtr);
-        }
-        public <S, R> void allgather(S aSendBuf, R rRecvBuf, int aCount) throws Error {
-            Native.MPI_Allgather(aSendBuf, aCount, rRecvBuf, aCount, mPtr);
-        }
-        public <R> void allgather(R rBuf, int aCount) throws Error {
-            Native.MPI_Allgather(rBuf, aCount, mPtr);
-        }
+        public void allgather(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int aRecvCount) throws Error {Native.MPI_Allgather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, mPtr);}
+        public void allgather(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int aRecvCount) throws Error {Native.MPI_Allgather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, mPtr);}
+        public void allgather(boolean[] aSendBuf, int aSendCount, boolean[] rRecvBuf, int aRecvCount) throws Error {Native.MPI_Allgather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, mPtr);}
+        public void allgather(char[]    aSendBuf, int aSendCount, char[]    rRecvBuf, int aRecvCount) throws Error {Native.MPI_Allgather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, mPtr);}
+        public void allgather(short[]   aSendBuf, int aSendCount, short[]   rRecvBuf, int aRecvCount) throws Error {Native.MPI_Allgather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, mPtr);}
+        public void allgather(int[]     aSendBuf, int aSendCount, int[]     rRecvBuf, int aRecvCount) throws Error {Native.MPI_Allgather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, mPtr);}
+        public void allgather(long[]    aSendBuf, int aSendCount, long[]    rRecvBuf, int aRecvCount) throws Error {Native.MPI_Allgather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, mPtr);}
+        public void allgather(float[]   aSendBuf, int aSendCount, float[]   rRecvBuf, int aRecvCount) throws Error {Native.MPI_Allgather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, mPtr);}
+        public void allgather(byte[]    aSendBuf, byte[]    rRecvBuf, int aCount) throws Error {Native.MPI_Allgather(aSendBuf, aCount, rRecvBuf, aCount, mPtr);}
+        public void allgather(double[]  aSendBuf, double[]  rRecvBuf, int aCount) throws Error {Native.MPI_Allgather(aSendBuf, aCount, rRecvBuf, aCount, mPtr);}
+        public void allgather(boolean[] aSendBuf, boolean[] rRecvBuf, int aCount) throws Error {Native.MPI_Allgather(aSendBuf, aCount, rRecvBuf, aCount, mPtr);}
+        public void allgather(char[]    aSendBuf, char[]    rRecvBuf, int aCount) throws Error {Native.MPI_Allgather(aSendBuf, aCount, rRecvBuf, aCount, mPtr);}
+        public void allgather(short[]   aSendBuf, short[]   rRecvBuf, int aCount) throws Error {Native.MPI_Allgather(aSendBuf, aCount, rRecvBuf, aCount, mPtr);}
+        public void allgather(int[]     aSendBuf, int[]     rRecvBuf, int aCount) throws Error {Native.MPI_Allgather(aSendBuf, aCount, rRecvBuf, aCount, mPtr);}
+        public void allgather(long[]    aSendBuf, long[]    rRecvBuf, int aCount) throws Error {Native.MPI_Allgather(aSendBuf, aCount, rRecvBuf, aCount, mPtr);}
+        public void allgather(float[]   aSendBuf, float[]   rRecvBuf, int aCount) throws Error {Native.MPI_Allgather(aSendBuf, aCount, rRecvBuf, aCount, mPtr);}
+        public void allgather(byte[]    rBuf, int aCount) throws Error {Native.MPI_Allgather(rBuf, aCount, mPtr);}
+        public void allgather(double[]  rBuf, int aCount) throws Error {Native.MPI_Allgather(rBuf, aCount, mPtr);}
+        public void allgather(boolean[] rBuf, int aCount) throws Error {Native.MPI_Allgather(rBuf, aCount, mPtr);}
+        public void allgather(char[]    rBuf, int aCount) throws Error {Native.MPI_Allgather(rBuf, aCount, mPtr);}
+        public void allgather(short[]   rBuf, int aCount) throws Error {Native.MPI_Allgather(rBuf, aCount, mPtr);}
+        public void allgather(int[]     rBuf, int aCount) throws Error {Native.MPI_Allgather(rBuf, aCount, mPtr);}
+        public void allgather(long[]    rBuf, int aCount) throws Error {Native.MPI_Allgather(rBuf, aCount, mPtr);}
+        public void allgather(float[]   rBuf, int aCount) throws Error {Native.MPI_Allgather(rBuf, aCount, mPtr);}
         
         /**
          * Gathers a variable amount of data from each member of a group and sends the data to all members of the group.
@@ -242,12 +257,22 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-allgatherv-function"> MPI_Allgatherv function </a>
          */
-        public <S, R> void allgatherv(S aSendBuf, int aSendCount, R rRecvBuf, int[] aRecvCounts, int[] aDispls) throws Error {
-            Native.MPI_Allgatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, mPtr);
-        }
-        public <R> void allgatherv(R rBuf, int[] aCounts, int[] aDispls) throws Error {
-            Native.MPI_Allgatherv(rBuf, aCounts, aDispls, mPtr);
-        }
+        public void allgatherv(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int[] aRecvCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, mPtr);}
+        public void allgatherv(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int[] aRecvCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, mPtr);}
+        public void allgatherv(boolean[] aSendBuf, int aSendCount, boolean[] rRecvBuf, int[] aRecvCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, mPtr);}
+        public void allgatherv(char[]    aSendBuf, int aSendCount, char[]    rRecvBuf, int[] aRecvCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, mPtr);}
+        public void allgatherv(short[]   aSendBuf, int aSendCount, short[]   rRecvBuf, int[] aRecvCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, mPtr);}
+        public void allgatherv(int[]     aSendBuf, int aSendCount, int[]     rRecvBuf, int[] aRecvCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, mPtr);}
+        public void allgatherv(long[]    aSendBuf, int aSendCount, long[]    rRecvBuf, int[] aRecvCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, mPtr);}
+        public void allgatherv(float[]   aSendBuf, int aSendCount, float[]   rRecvBuf, int[] aRecvCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, mPtr);}
+        public void allgatherv(byte[]    rBuf, int[] aCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(rBuf, aCounts, aDispls, mPtr);}
+        public void allgatherv(double[]  rBuf, int[] aCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(rBuf, aCounts, aDispls, mPtr);}
+        public void allgatherv(boolean[] rBuf, int[] aCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(rBuf, aCounts, aDispls, mPtr);}
+        public void allgatherv(char[]    rBuf, int[] aCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(rBuf, aCounts, aDispls, mPtr);}
+        public void allgatherv(short[]   rBuf, int[] aCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(rBuf, aCounts, aDispls, mPtr);}
+        public void allgatherv(int[]     rBuf, int[] aCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(rBuf, aCounts, aDispls, mPtr);}
+        public void allgatherv(long[]    rBuf, int[] aCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(rBuf, aCounts, aDispls, mPtr);}
+        public void allgatherv(float[]   rBuf, int[] aCounts, int[] aDispls) throws Error {Native.MPI_Allgatherv(rBuf, aCounts, aDispls, mPtr);}
         
         /**
          * Combines values from all processes and distributes the result back to all processes.
@@ -268,12 +293,22 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-allreduce-function"> MPI_Allreduce function </a>
          */
-        public <T> void allreduce(T aSendBuf, T rRecvBuf, int aCount, Op aOp) throws Error {
-            Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);
-        }
-        public <T> void allreduce(T rBuf, int aCount, Op aOp) throws Error {
-            Native.MPI_Allreduce(rBuf, aCount, aOp.mPtr, mPtr);
-        }
+        public void allreduce(byte[]    aSendBuf, byte[]    rRecvBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(double[]  aSendBuf, double[]  rRecvBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(boolean[] aSendBuf, boolean[] rRecvBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(char[]    aSendBuf, char[]    rRecvBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(short[]   aSendBuf, short[]   rRecvBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(int[]     aSendBuf, int[]     rRecvBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(long[]    aSendBuf, long[]    rRecvBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(float[]   aSendBuf, float[]   rRecvBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(byte[]    rBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(rBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(double[]  rBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(rBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(boolean[] rBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(rBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(char[]    rBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(rBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(short[]   rBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(rBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(int[]     rBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(rBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(long[]    rBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(rBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(float[]   rBuf, int aCount, Op aOp) throws Error {Native.MPI_Allreduce(rBuf, aCount, aOp.mPtr, mPtr);}
         
         /**
          * Initiates barrier synchronization across all members of a group.
@@ -298,9 +333,14 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-bcast-function"> MPI_Bcast function </a>
          */
-        public <T> void bcast(T rBuf, int aCount, int aRoot) throws Error {
-            Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);
-        }
+        public void bcast(byte[]    rBuf, int aCount, int aRoot) throws Error {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
+        public void bcast(double[]  rBuf, int aCount, int aRoot) throws Error {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
+        public void bcast(boolean[] rBuf, int aCount, int aRoot) throws Error {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
+        public void bcast(char[]    rBuf, int aCount, int aRoot) throws Error {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
+        public void bcast(short[]   rBuf, int aCount, int aRoot) throws Error {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
+        public void bcast(int[]     rBuf, int aCount, int aRoot) throws Error {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
+        public void bcast(long[]    rBuf, int aCount, int aRoot) throws Error {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
+        public void bcast(float[]   rBuf, int aCount, int aRoot) throws Error {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
         
         /**
          * Gathers data from all members of a group to one member.
@@ -321,15 +361,30 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-gather-function"> MPI_Gather function </a>
          */
-        public <S, R> void gather(S aSendBuf, int aSendCount, R rRecvBuf, int aRecvCount, int aRoot) throws Error {
-            Native.MPI_Gather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);
-        }
-        public <S, R> void gather(S aSendBuf, R rRecvBuf, int aCount, int aRoot) throws Error {
-            Native.MPI_Gather(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);
-        }
-        public <R> void gather(R rBuf, int aCount, int aRoot) throws Error {
-            Native.MPI_Gather(rBuf, aCount, aRoot, mPtr);
-        }
+        public void gather(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void gather(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void gather(boolean[] aSendBuf, int aSendCount, boolean[] rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void gather(char[]    aSendBuf, int aSendCount, char[]    rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void gather(short[]   aSendBuf, int aSendCount, short[]   rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void gather(int[]     aSendBuf, int aSendCount, int[]     rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void gather(long[]    aSendBuf, int aSendCount, long[]    rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void gather(float[]   aSendBuf, int aSendCount, float[]   rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void gather(byte[]    aSendBuf, byte[]    rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void gather(double[]  aSendBuf, double[]  rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void gather(boolean[] aSendBuf, boolean[] rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void gather(char[]    aSendBuf, char[]    rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void gather(short[]   aSendBuf, short[]   rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void gather(int[]     aSendBuf, int[]     rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void gather(long[]    aSendBuf, long[]    rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void gather(float[]   aSendBuf, float[]   rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void gather(byte[]    rBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(rBuf, aCount, aRoot, mPtr);}
+        public void gather(double[]  rBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(rBuf, aCount, aRoot, mPtr);}
+        public void gather(boolean[] rBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(rBuf, aCount, aRoot, mPtr);}
+        public void gather(char[]    rBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(rBuf, aCount, aRoot, mPtr);}
+        public void gather(short[]   rBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(rBuf, aCount, aRoot, mPtr);}
+        public void gather(int[]     rBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(rBuf, aCount, aRoot, mPtr);}
+        public void gather(long[]    rBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(rBuf, aCount, aRoot, mPtr);}
+        public void gather(float[]   rBuf, int aCount, int aRoot) throws Error {Native.MPI_Gather(rBuf, aCount, aRoot, mPtr);}
         
         /**
          * Gathers variable data from all members of a group to one member.
@@ -362,12 +417,22 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-gatherv-function"> MPI_Gatherv function </a>
          */
-        public <S, R> void gatherv(S aSendBuf, int aSendCount, R rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot) throws Error {
-            Native.MPI_Gatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, aRoot, mPtr);
-        }
-        public <R> void gatherv(R rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {
-            Native.MPI_Gatherv(rBuf, aCounts, aDispls, aRoot, mPtr);
-        }
+        public void gatherv(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(boolean[] aSendBuf, int aSendCount, boolean[] rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(char[]    aSendBuf, int aSendCount, char[]    rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(short[]   aSendBuf, int aSendCount, short[]   rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(int[]     aSendBuf, int aSendCount, int[]     rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(long[]    aSendBuf, int aSendCount, long[]    rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(float[]   aSendBuf, int aSendCount, float[]   rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(byte[]    rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(double[]  rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(boolean[] rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(char[]    rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(short[]   rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(int[]     rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(long[]    rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void gatherv(float[]   rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Gatherv(rBuf, aCounts, aDispls, aRoot, mPtr);}
         
         /**
          * Performs a global reduce operation across all members of a group. You can specify
@@ -387,12 +452,22 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-reduce-function"> MPI_Reduce function </a>
          */
-        public <T> void reduce(T aSendBuf, T rRecvBuf, int aCount, Op aOp, int aRoot) throws Error {
-            Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);
-        }
-        public <T> void reduce(T rBuf, int aCount, Op aOp, int aRoot) throws Error {
-            Native.MPI_Reduce(rBuf, aCount, aOp.mPtr, aRoot, mPtr);
-        }
+        public void reduce(byte[]    aSendBuf, byte[]    rRecvBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(double[]  aSendBuf, double[]  rRecvBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(boolean[] aSendBuf, boolean[] rRecvBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(char[]    aSendBuf, char[]    rRecvBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(short[]   aSendBuf, short[]   rRecvBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(int[]     aSendBuf, int[]     rRecvBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(long[]    aSendBuf, long[]    rRecvBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(float[]   aSendBuf, float[]   rRecvBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(byte[]    rBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(rBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(double[]  rBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(rBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(boolean[] rBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(rBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(char[]    rBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(rBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(short[]   rBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(rBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(int[]     rBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(rBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(long[]    rBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(rBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(float[]   rBuf, int aCount, Op aOp, int aRoot) throws Error {Native.MPI_Reduce(rBuf, aCount, aOp.mPtr, aRoot, mPtr);}
         
         /**
          * Scatters data from one member across all members of a group.
@@ -418,15 +493,30 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-scatter-function"> MPI_Scatter function </a>
          */
-        public <S, R> void scatter(S aSendBuf, int aSendCount, R rRecvBuf, int aRecvCount, int aRoot) throws Error {
-            Native.MPI_Scatter(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);
-        }
-        public <S, R> void scatter(S aSendBuf, R rRecvBuf, int aCount, int aRoot) throws Error {
-            Native.MPI_Scatter(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);
-        }
-        public <S> void scatter(S rBuf, int aCount, int aRoot) throws Error {
-            Native.MPI_Scatter(rBuf, aCount, aRoot, mPtr);
-        }
+        public void scatter(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatter(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatter(boolean[] aSendBuf, int aSendCount, boolean[] rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatter(char[]    aSendBuf, int aSendCount, char[]    rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatter(short[]   aSendBuf, int aSendCount, short[]   rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatter(int[]     aSendBuf, int aSendCount, int[]     rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatter(long[]    aSendBuf, int aSendCount, long[]    rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatter(float[]   aSendBuf, int aSendCount, float[]   rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatter(byte[]    aSendBuf, byte[]    rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void scatter(double[]  aSendBuf, double[]  rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void scatter(boolean[] aSendBuf, boolean[] rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void scatter(char[]    aSendBuf, char[]    rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void scatter(short[]   aSendBuf, short[]   rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void scatter(int[]     aSendBuf, int[]     rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void scatter(long[]    aSendBuf, long[]    rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void scatter(float[]   aSendBuf, float[]   rRecvBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(aSendBuf, aCount, rRecvBuf, aCount, aRoot, mPtr);}
+        public void scatter(byte[]    rBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(rBuf, aCount, aRoot, mPtr);}
+        public void scatter(double[]  rBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(rBuf, aCount, aRoot, mPtr);}
+        public void scatter(boolean[] rBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(rBuf, aCount, aRoot, mPtr);}
+        public void scatter(char[]    rBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(rBuf, aCount, aRoot, mPtr);}
+        public void scatter(short[]   rBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(rBuf, aCount, aRoot, mPtr);}
+        public void scatter(int[]     rBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(rBuf, aCount, aRoot, mPtr);}
+        public void scatter(long[]    rBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(rBuf, aCount, aRoot, mPtr);}
+        public void scatter(float[]   rBuf, int aCount, int aRoot) throws Error {Native.MPI_Scatter(rBuf, aCount, aRoot, mPtr);}
         
         /**
          * Scatters data from one member across all members of a group.
@@ -460,12 +550,22 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-scatterv-function"> MPI_Scatterv function </a>
          */
-        public <S, R> void scatterv(S aSendBuf, int[] aSendCounts, int[] aDispls, R rRecvBuf, int aRecvCount, int aRoot) throws Error {
-            Native.MPI_Scatterv(aSendBuf, aSendCounts, aDispls, rRecvBuf, aRecvCount, aRoot, mPtr);
-        }
-        public <R> void scatterv(R rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {
-            Native.MPI_Scatterv(rBuf, aCounts, aDispls, aRoot, mPtr);
-        }
+        public void scatterv(byte[]    aSendBuf, int[] aSendCounts, int[] aDispls, byte[]    rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatterv(aSendBuf, aSendCounts, aDispls, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatterv(double[]  aSendBuf, int[] aSendCounts, int[] aDispls, double[]  rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatterv(aSendBuf, aSendCounts, aDispls, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatterv(boolean[] aSendBuf, int[] aSendCounts, int[] aDispls, boolean[] rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatterv(aSendBuf, aSendCounts, aDispls, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatterv(char[]    aSendBuf, int[] aSendCounts, int[] aDispls, char[]    rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatterv(aSendBuf, aSendCounts, aDispls, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatterv(short[]   aSendBuf, int[] aSendCounts, int[] aDispls, short[]   rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatterv(aSendBuf, aSendCounts, aDispls, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatterv(int[]     aSendBuf, int[] aSendCounts, int[] aDispls, int[]     rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatterv(aSendBuf, aSendCounts, aDispls, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatterv(long[]    aSendBuf, int[] aSendCounts, int[] aDispls, long[]    rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatterv(aSendBuf, aSendCounts, aDispls, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatterv(float[]   aSendBuf, int[] aSendCounts, int[] aDispls, float[]   rRecvBuf, int aRecvCount, int aRoot) throws Error {Native.MPI_Scatterv(aSendBuf, aSendCounts, aDispls, rRecvBuf, aRecvCount, aRoot, mPtr);}
+        public void scatterv(byte[]    rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Scatterv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void scatterv(double[]  rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Scatterv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void scatterv(boolean[] rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Scatterv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void scatterv(char[]    rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Scatterv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void scatterv(short[]   rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Scatterv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void scatterv(int[]     rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Scatterv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void scatterv(long[]    rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Scatterv(rBuf, aCounts, aDispls, aRoot, mPtr);}
+        public void scatterv(float[]   rBuf, int[] aCounts, int[] aDispls, int aRoot) throws Error {Native.MPI_Scatterv(rBuf, aCounts, aDispls, aRoot, mPtr);}
         
         
         /// MPI Communicator Functions
@@ -527,12 +627,24 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-send-function"> MPI_Send function </a>
          */
-        public <T> void send(T aBuf, int aCount, int aDest, int aTag) throws Error {
-            Native.MPI_Send(aBuf, aCount, aDest, aTag, mPtr);
-        }
-        public <T> void send(T aBuf, int aCount, int aDest) throws Error {
-            Native.MPI_Send(aBuf, aCount, aDest, 0, mPtr);
-        }
+        public void send(byte[]    aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Send(aBuf, aCount, aDest, aTag, mPtr);}
+        public void send(double[]  aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Send(aBuf, aCount, aDest, aTag, mPtr);}
+        public void send(boolean[] aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Send(aBuf, aCount, aDest, aTag, mPtr);}
+        public void send(char[]    aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Send(aBuf, aCount, aDest, aTag, mPtr);}
+        public void send(short[]   aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Send(aBuf, aCount, aDest, aTag, mPtr);}
+        public void send(int[]     aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Send(aBuf, aCount, aDest, aTag, mPtr);}
+        public void send(long[]    aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Send(aBuf, aCount, aDest, aTag, mPtr);}
+        public void send(float[]   aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Send(aBuf, aCount, aDest, aTag, mPtr);}
+        public void send(byte[]    aBuf, int aCount, int aDest) throws Error {Native.MPI_Send(aBuf, aCount, aDest, 0, mPtr);}
+        public void send(double[]  aBuf, int aCount, int aDest) throws Error {Native.MPI_Send(aBuf, aCount, aDest, 0, mPtr);}
+        public void send(boolean[] aBuf, int aCount, int aDest) throws Error {Native.MPI_Send(aBuf, aCount, aDest, 0, mPtr);}
+        public void send(char[]    aBuf, int aCount, int aDest) throws Error {Native.MPI_Send(aBuf, aCount, aDest, 0, mPtr);}
+        public void send(short[]   aBuf, int aCount, int aDest) throws Error {Native.MPI_Send(aBuf, aCount, aDest, 0, mPtr);}
+        public void send(int[]     aBuf, int aCount, int aDest) throws Error {Native.MPI_Send(aBuf, aCount, aDest, 0, mPtr);}
+        public void send(long[]    aBuf, int aCount, int aDest) throws Error {Native.MPI_Send(aBuf, aCount, aDest, 0, mPtr);}
+        public void send(float[]   aBuf, int aCount, int aDest) throws Error {Native.MPI_Send(aBuf, aCount, aDest, 0, mPtr);}
+        public void send(int aDest, int aTag) throws Error {Native.MPI_Send(aDest, aTag, mPtr);}
+        public void send(int aDest) throws Error {Native.MPI_Send(aDest, 0, mPtr);}
         
         /**
          * Performs a receive operation and does not return until a matching message is received.
@@ -552,12 +664,24 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-recv-function"> MPI_Recv function </a>
          */
-        public <T> void recv(T rBuf, int aCount, int aSource, int aTag) throws Error {
-            Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);
-        }
-        public <T> void recv(T rBuf, int aCount, int aSource) throws Error {
-            Native.MPI_Recv(rBuf, aCount, aSource, Tag.ANY, mPtr);
-        }
+        public void recv(byte[]    rBuf, int aCount, int aSource, int aTag) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);}
+        public void recv(double[]  rBuf, int aCount, int aSource, int aTag) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);}
+        public void recv(boolean[] rBuf, int aCount, int aSource, int aTag) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);}
+        public void recv(char[]    rBuf, int aCount, int aSource, int aTag) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);}
+        public void recv(short[]   rBuf, int aCount, int aSource, int aTag) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);}
+        public void recv(int[]     rBuf, int aCount, int aSource, int aTag) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);}
+        public void recv(long[]    rBuf, int aCount, int aSource, int aTag) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);}
+        public void recv(float[]   rBuf, int aCount, int aSource, int aTag) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);}
+        public void recv(byte[]    rBuf, int aCount, int aSource) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, Tag.ANY, mPtr);}
+        public void recv(double[]  rBuf, int aCount, int aSource) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, Tag.ANY, mPtr);}
+        public void recv(boolean[] rBuf, int aCount, int aSource) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, Tag.ANY, mPtr);}
+        public void recv(char[]    rBuf, int aCount, int aSource) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, Tag.ANY, mPtr);}
+        public void recv(short[]   rBuf, int aCount, int aSource) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, Tag.ANY, mPtr);}
+        public void recv(int[]     rBuf, int aCount, int aSource) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, Tag.ANY, mPtr);}
+        public void recv(long[]    rBuf, int aCount, int aSource) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, Tag.ANY, mPtr);}
+        public void recv(float[]   rBuf, int aCount, int aSource) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, Tag.ANY, mPtr);}
+        public void recv(int aSource, int aTag) throws Error {Native.MPI_Recv(aSource, aTag, mPtr);}
+        public void recv(int aSource) throws Error {Native.MPI_Recv(aSource, Tag.ANY, mPtr);}
         
         /**
          * Performs a synchronous mode send operation and returns when the send buffer can be safely reused.
@@ -574,12 +698,24 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-ssend-function"> MPI_Ssend function </a>
          */
-        public <T> void ssend(T aBuf, int aCount, int aDest, int aTag) throws Error {
-            Native.MPI_Ssend(aBuf, aCount, aDest, aTag, mPtr);
-        }
-        public <T> void ssend(T aBuf, int aCount, int aDest) throws Error {
-            Native.MPI_Ssend(aBuf, aCount, aDest, 0, mPtr);
-        }
+        public void ssend(byte[]    aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, aTag, mPtr);}
+        public void ssend(double[]  aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, aTag, mPtr);}
+        public void ssend(boolean[] aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, aTag, mPtr);}
+        public void ssend(char[]    aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, aTag, mPtr);}
+        public void ssend(short[]   aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, aTag, mPtr);}
+        public void ssend(int[]     aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, aTag, mPtr);}
+        public void ssend(long[]    aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, aTag, mPtr);}
+        public void ssend(float[]   aBuf, int aCount, int aDest, int aTag) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, aTag, mPtr);}
+        public void ssend(byte[]    aBuf, int aCount, int aDest) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, 0, mPtr);}
+        public void ssend(double[]  aBuf, int aCount, int aDest) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, 0, mPtr);}
+        public void ssend(boolean[] aBuf, int aCount, int aDest) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, 0, mPtr);}
+        public void ssend(char[]    aBuf, int aCount, int aDest) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, 0, mPtr);}
+        public void ssend(short[]   aBuf, int aCount, int aDest) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, 0, mPtr);}
+        public void ssend(int[]     aBuf, int aCount, int aDest) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, 0, mPtr);}
+        public void ssend(long[]    aBuf, int aCount, int aDest) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, 0, mPtr);}
+        public void ssend(float[]   aBuf, int aCount, int aDest) throws Error {Native.MPI_Ssend(aBuf, aCount, aDest, 0, mPtr);}
+        public void ssend(int aDest, int aTag) throws Error {Native.MPI_Ssend(aDest, aTag, mPtr);}
+        public void ssend(int aDest) throws Error {Native.MPI_Ssend(aDest, 0, mPtr);}
     }
     
     public enum Op {
@@ -881,38 +1017,6 @@ public class MPI {
         private native static long getMpiUint32T_();
         private native static long getMpiUint64T_();
         
-        private static long datatypeOf_(Object aBuf) {
-            if (aBuf == null) {
-                return MPI_BYTE; // 返回 MPI_BYTE 而不是 MPI_DATATYPE_NULL 来保证 null 传空数据的支持
-            } else
-            if (aBuf instanceof byte[]) {
-                return MPI_SIGNED_CHAR;
-            } else
-            if (aBuf instanceof double[]) {
-                return MPI_DOUBLE;
-            } else
-            if (aBuf instanceof boolean[]) {
-                return MPI_UNSIGNED_CHAR;
-            } else
-            if (aBuf instanceof char[]) {
-                return MPI_UNSIGNED_SHORT;
-            } else
-            if (aBuf instanceof short[]) {
-                return MPI_SHORT;
-            } else
-            if (aBuf instanceof int[]) {
-                return MPI_INT32_T;
-            } else
-            if (aBuf instanceof long[]) {
-                return MPI_INT64_T;
-            } else
-            if (aBuf instanceof float[]) {
-                return MPI_FLOAT;
-            } else {
-                throw new RuntimeException("Unexpected datatype: "+aBuf.getClass().getName());
-            }
-        }
-        
         public final static int MPI_THREAD_SINGLE, MPI_THREAD_FUNNELED, MPI_THREAD_SERIALIZED, MPI_THREAD_MULTIPLE;
         private native static int getMpiThreadSingle_();
         private native static int getMpiThreadFunneled_();
@@ -1004,12 +1108,22 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-allgather-function"> MPI_Allgather function </a>
          */
-        public static <S, R> void MPI_Allgather(S aSendBuf, int aSendCount, R rRecvBuf, int aRecvCount, long aComm) throws Error {
-            MPI_Allgather0(false, aSendBuf, aSendCount, datatypeOf_(aSendBuf), rRecvBuf, aRecvCount, datatypeOf_(rRecvBuf), aComm);
-        }
-        public static <T> void MPI_Allgather(T rBuf, int aCount, long aComm) throws Error {
-            MPI_Allgather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, datatypeOf_(rBuf), aComm);
-        }
+        public static void MPI_Allgather(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int aRecvCount, long aComm) throws Error {MPI_Allgather0(false, aSendBuf, aSendCount, MPI_SIGNED_CHAR   , rRecvBuf, aRecvCount, MPI_SIGNED_CHAR   , aComm);}
+        public static void MPI_Allgather(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int aRecvCount, long aComm) throws Error {MPI_Allgather0(false, aSendBuf, aSendCount, MPI_DOUBLE        , rRecvBuf, aRecvCount, MPI_DOUBLE        , aComm);}
+        public static void MPI_Allgather(boolean[] aSendBuf, int aSendCount, boolean[] rRecvBuf, int aRecvCount, long aComm) throws Error {MPI_Allgather0(false, aSendBuf, aSendCount, MPI_UNSIGNED_CHAR , rRecvBuf, aRecvCount, MPI_UNSIGNED_CHAR , aComm);}
+        public static void MPI_Allgather(char[]    aSendBuf, int aSendCount, char[]    rRecvBuf, int aRecvCount, long aComm) throws Error {MPI_Allgather0(false, aSendBuf, aSendCount, MPI_UNSIGNED_SHORT, rRecvBuf, aRecvCount, MPI_UNSIGNED_SHORT, aComm);}
+        public static void MPI_Allgather(short[]   aSendBuf, int aSendCount, short[]   rRecvBuf, int aRecvCount, long aComm) throws Error {MPI_Allgather0(false, aSendBuf, aSendCount, MPI_SHORT         , rRecvBuf, aRecvCount, MPI_SHORT         , aComm);}
+        public static void MPI_Allgather(int[]     aSendBuf, int aSendCount, int[]     rRecvBuf, int aRecvCount, long aComm) throws Error {MPI_Allgather0(false, aSendBuf, aSendCount, MPI_INT32_T       , rRecvBuf, aRecvCount, MPI_INT32_T       , aComm);}
+        public static void MPI_Allgather(long[]    aSendBuf, int aSendCount, long[]    rRecvBuf, int aRecvCount, long aComm) throws Error {MPI_Allgather0(false, aSendBuf, aSendCount, MPI_INT64_T       , rRecvBuf, aRecvCount, MPI_INT64_T       , aComm);}
+        public static void MPI_Allgather(float[]   aSendBuf, int aSendCount, float[]   rRecvBuf, int aRecvCount, long aComm) throws Error {MPI_Allgather0(false, aSendBuf, aSendCount, MPI_FLOAT         , rRecvBuf, aRecvCount, MPI_FLOAT         , aComm);}
+        public static void MPI_Allgather(byte[]    rBuf, int aCount, long aComm) throws Error {MPI_Allgather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_SIGNED_CHAR   , aComm);}
+        public static void MPI_Allgather(double[]  rBuf, int aCount, long aComm) throws Error {MPI_Allgather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_DOUBLE        , aComm);}
+        public static void MPI_Allgather(boolean[] rBuf, int aCount, long aComm) throws Error {MPI_Allgather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_UNSIGNED_CHAR , aComm);}
+        public static void MPI_Allgather(char[]    rBuf, int aCount, long aComm) throws Error {MPI_Allgather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_UNSIGNED_SHORT, aComm);}
+        public static void MPI_Allgather(short[]   rBuf, int aCount, long aComm) throws Error {MPI_Allgather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_SHORT         , aComm);}
+        public static void MPI_Allgather(int[]     rBuf, int aCount, long aComm) throws Error {MPI_Allgather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_INT32_T       , aComm);}
+        public static void MPI_Allgather(long[]    rBuf, int aCount, long aComm) throws Error {MPI_Allgather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_INT64_T       , aComm);}
+        public static void MPI_Allgather(float[]   rBuf, int aCount, long aComm) throws Error {MPI_Allgather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_FLOAT         , aComm);}
         private native static void MPI_Allgather0(boolean aInPlace, Object aSendBuf, int aSendCount, long aSendType, Object rRecvBuf, int aRecvCount, long aRecvType, long aComm) throws Error;
         
         /**
@@ -1041,12 +1155,22 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-allgatherv-function"> MPI_Allgatherv function </a>
          */
-        public static <S, R> void MPI_Allgatherv(S aSendBuf, int aSendCount, R rRecvBuf, int[] aRecvCounts, int[] aDispls, long aComm) throws Error {
-            MPI_Allgatherv0(false, aSendBuf, aSendCount, datatypeOf_(aSendBuf), rRecvBuf, aRecvCounts, aDispls, datatypeOf_(rRecvBuf), aComm);
-        }
-        public static <T> void MPI_Allgatherv(T rBuf, int[] aCounts, int[] aDispls, long aComm) throws Error {
-            MPI_Allgatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, datatypeOf_(rBuf), aComm);
-        }
+        public static void MPI_Allgatherv(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int[] aRecvCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(false, aSendBuf, aSendCount, MPI_SIGNED_CHAR   , rRecvBuf, aRecvCounts, aDispls, MPI_SIGNED_CHAR   , aComm);}
+        public static void MPI_Allgatherv(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int[] aRecvCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(false, aSendBuf, aSendCount, MPI_DOUBLE        , rRecvBuf, aRecvCounts, aDispls, MPI_DOUBLE        , aComm);}
+        public static void MPI_Allgatherv(boolean[] aSendBuf, int aSendCount, boolean[] rRecvBuf, int[] aRecvCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(false, aSendBuf, aSendCount, MPI_UNSIGNED_CHAR , rRecvBuf, aRecvCounts, aDispls, MPI_UNSIGNED_CHAR , aComm);}
+        public static void MPI_Allgatherv(char[]    aSendBuf, int aSendCount, char[]    rRecvBuf, int[] aRecvCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(false, aSendBuf, aSendCount, MPI_UNSIGNED_SHORT, rRecvBuf, aRecvCounts, aDispls, MPI_UNSIGNED_SHORT, aComm);}
+        public static void MPI_Allgatherv(short[]   aSendBuf, int aSendCount, short[]   rRecvBuf, int[] aRecvCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(false, aSendBuf, aSendCount, MPI_SHORT         , rRecvBuf, aRecvCounts, aDispls, MPI_SHORT         , aComm);}
+        public static void MPI_Allgatherv(int[]     aSendBuf, int aSendCount, int[]     rRecvBuf, int[] aRecvCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(false, aSendBuf, aSendCount, MPI_INT32_T       , rRecvBuf, aRecvCounts, aDispls, MPI_INT32_T       , aComm);}
+        public static void MPI_Allgatherv(long[]    aSendBuf, int aSendCount, long[]    rRecvBuf, int[] aRecvCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(false, aSendBuf, aSendCount, MPI_INT64_T       , rRecvBuf, aRecvCounts, aDispls, MPI_INT64_T       , aComm);}
+        public static void MPI_Allgatherv(float[]   aSendBuf, int aSendCount, float[]   rRecvBuf, int[] aRecvCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(false, aSendBuf, aSendCount, MPI_FLOAT         , rRecvBuf, aRecvCounts, aDispls, MPI_FLOAT         , aComm);}
+        public static void MPI_Allgatherv(byte[]    rBuf, int[] aCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_SIGNED_CHAR   , aComm);}
+        public static void MPI_Allgatherv(double[]  rBuf, int[] aCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_DOUBLE        , aComm);}
+        public static void MPI_Allgatherv(boolean[] rBuf, int[] aCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_UNSIGNED_CHAR , aComm);}
+        public static void MPI_Allgatherv(char[]    rBuf, int[] aCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_UNSIGNED_SHORT, aComm);}
+        public static void MPI_Allgatherv(short[]   rBuf, int[] aCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_SHORT         , aComm);}
+        public static void MPI_Allgatherv(int[]     rBuf, int[] aCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_INT32_T       , aComm);}
+        public static void MPI_Allgatherv(long[]    rBuf, int[] aCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_INT64_T       , aComm);}
+        public static void MPI_Allgatherv(float[]   rBuf, int[] aCounts, int[] aDispls, long aComm) throws Error {MPI_Allgatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_FLOAT         , aComm);}
         private native static void MPI_Allgatherv0(boolean aInPlace, Object aSendBuf, int aSendCount, long aSendType, Object rRecvBuf, int[] aRecvCounts, int[] aDispls, long aRecvType, long aComm) throws Error;
         
         /**
@@ -1070,12 +1194,22 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-allreduce-function"> MPI_Allreduce function </a>
          */
-        public static <T> void MPI_Allreduce(T aSendBuf, T rRecvBuf, int aCount, long aOp, long aComm) throws Error {
-            MPI_Allreduce0(false, aSendBuf, rRecvBuf, aCount, datatypeOf_(rRecvBuf), aOp, aComm);
-        }
-        public static <T> void MPI_Allreduce(T rBuf, int aCount, long aOp, long aComm) throws Error {
-            MPI_Allreduce0(true, null, rBuf, aCount, datatypeOf_(rBuf), aOp, aComm);
-        }
+        public static void MPI_Allreduce(byte[]    aSendBuf, byte[]    rRecvBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(false, aSendBuf, rRecvBuf, aCount, MPI_SIGNED_CHAR   , aOp, aComm);}
+        public static void MPI_Allreduce(double[]  aSendBuf, double[]  rRecvBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(false, aSendBuf, rRecvBuf, aCount, MPI_DOUBLE        , aOp, aComm);}
+        public static void MPI_Allreduce(boolean[] aSendBuf, boolean[] rRecvBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(false, aSendBuf, rRecvBuf, aCount, MPI_UNSIGNED_CHAR , aOp, aComm);}
+        public static void MPI_Allreduce(char[]    aSendBuf, char[]    rRecvBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(false, aSendBuf, rRecvBuf, aCount, MPI_UNSIGNED_SHORT, aOp, aComm);}
+        public static void MPI_Allreduce(short[]   aSendBuf, short[]   rRecvBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(false, aSendBuf, rRecvBuf, aCount, MPI_SHORT         , aOp, aComm);}
+        public static void MPI_Allreduce(int[]     aSendBuf, int[]     rRecvBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(false, aSendBuf, rRecvBuf, aCount, MPI_INT32_T       , aOp, aComm);}
+        public static void MPI_Allreduce(long[]    aSendBuf, long[]    rRecvBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(false, aSendBuf, rRecvBuf, aCount, MPI_INT64_T       , aOp, aComm);}
+        public static void MPI_Allreduce(float[]   aSendBuf, float[]   rRecvBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(false, aSendBuf, rRecvBuf, aCount, MPI_FLOAT         , aOp, aComm);}
+        public static void MPI_Allreduce(byte[]    rBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(true, null, rBuf, aCount, MPI_SIGNED_CHAR   , aOp, aComm);}
+        public static void MPI_Allreduce(double[]  rBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(true, null, rBuf, aCount, MPI_DOUBLE        , aOp, aComm);}
+        public static void MPI_Allreduce(boolean[] rBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(true, null, rBuf, aCount, MPI_UNSIGNED_CHAR , aOp, aComm);}
+        public static void MPI_Allreduce(char[]    rBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(true, null, rBuf, aCount, MPI_UNSIGNED_SHORT, aOp, aComm);}
+        public static void MPI_Allreduce(short[]   rBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(true, null, rBuf, aCount, MPI_SHORT         , aOp, aComm);}
+        public static void MPI_Allreduce(int[]     rBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(true, null, rBuf, aCount, MPI_INT32_T       , aOp, aComm);}
+        public static void MPI_Allreduce(long[]    rBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(true, null, rBuf, aCount, MPI_INT64_T       , aOp, aComm);}
+        public static void MPI_Allreduce(float[]   rBuf, int aCount, long aOp, long aComm) throws Error {MPI_Allreduce0(true, null, rBuf, aCount, MPI_FLOAT         , aOp, aComm);}
         private native static void MPI_Allreduce0(boolean aInPlace, Object aSendBuf, Object rRecvBuf, int aCount, long aDataType, long aOp, long aComm) throws Error;
         
         /**
@@ -1115,11 +1249,15 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-bcast-function"> MPI_Bcast function </a>
          */
-        public static <T> void MPI_Bcast(T rBuf, int aCount, int aRoot, long aComm) throws Error {
-            MPI_Bcast0(rBuf, aCount, datatypeOf_(rBuf), aRoot, aComm);
-        }
+        public static void MPI_Bcast(byte[]    rBuf, int aCount, int aRoot, long aComm) throws Error {MPI_Bcast0(rBuf, aCount, MPI_SIGNED_CHAR   , aRoot, aComm);}
+        public static void MPI_Bcast(double[]  rBuf, int aCount, int aRoot, long aComm) throws Error {MPI_Bcast0(rBuf, aCount, MPI_DOUBLE        , aRoot, aComm);}
+        public static void MPI_Bcast(boolean[] rBuf, int aCount, int aRoot, long aComm) throws Error {MPI_Bcast0(rBuf, aCount, MPI_UNSIGNED_CHAR , aRoot, aComm);}
+        public static void MPI_Bcast(char[]    rBuf, int aCount, int aRoot, long aComm) throws Error {MPI_Bcast0(rBuf, aCount, MPI_UNSIGNED_SHORT, aRoot, aComm);}
+        public static void MPI_Bcast(short[]   rBuf, int aCount, int aRoot, long aComm) throws Error {MPI_Bcast0(rBuf, aCount, MPI_SHORT         , aRoot, aComm);}
+        public static void MPI_Bcast(int[]     rBuf, int aCount, int aRoot, long aComm) throws Error {MPI_Bcast0(rBuf, aCount, MPI_INT32_T       , aRoot, aComm);}
+        public static void MPI_Bcast(long[]    rBuf, int aCount, int aRoot, long aComm) throws Error {MPI_Bcast0(rBuf, aCount, MPI_INT64_T       , aRoot, aComm);}
+        public static void MPI_Bcast(float[]   rBuf, int aCount, int aRoot, long aComm) throws Error {MPI_Bcast0(rBuf, aCount, MPI_FLOAT         , aRoot, aComm);}
         private native static void MPI_Bcast0(Object rBuf, int aCount, long aDataType, int aRoot, long aComm) throws Error;
-        
         
         /**
          * Gathers data from all members of a group to one member.
@@ -1142,13 +1280,22 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-gather-function"> MPI_Gather function </a>
          */
-        public static <S, R> void MPI_Gather(S aSendBuf, int aSendCount, R rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {
-            MPI_Gather0(false, aSendBuf, aSendCount, datatypeOf_(aSendBuf), rRecvBuf, aRecvCount, datatypeOf_(rRecvBuf), aRoot, aComm);
-        }
-        public static <T> void MPI_Gather(T rBuf, int aCount, int aRoot, long aComm) throws Error {
-            if (MPI_Comm_rank(aComm) == aRoot) MPI_Gather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, datatypeOf_(rBuf), aRoot, aComm);
-            else MPI_Gather0(false, rBuf, aCount, datatypeOf_(rBuf), null, 0, MPI_DATATYPE_NULL, aRoot, aComm);
-        }
+        public static void MPI_Gather(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Gather0(false, aSendBuf, aSendCount, MPI_SIGNED_CHAR   , rRecvBuf, aRecvCount, MPI_SIGNED_CHAR   , aRoot, aComm);}
+        public static void MPI_Gather(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Gather0(false, aSendBuf, aSendCount, MPI_DOUBLE        , rRecvBuf, aRecvCount, MPI_DOUBLE        , aRoot, aComm);}
+        public static void MPI_Gather(boolean[] aSendBuf, int aSendCount, boolean[] rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Gather0(false, aSendBuf, aSendCount, MPI_UNSIGNED_CHAR , rRecvBuf, aRecvCount, MPI_UNSIGNED_CHAR , aRoot, aComm);}
+        public static void MPI_Gather(char[]    aSendBuf, int aSendCount, char[]    rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Gather0(false, aSendBuf, aSendCount, MPI_UNSIGNED_SHORT, rRecvBuf, aRecvCount, MPI_UNSIGNED_SHORT, aRoot, aComm);}
+        public static void MPI_Gather(short[]   aSendBuf, int aSendCount, short[]   rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Gather0(false, aSendBuf, aSendCount, MPI_SHORT         , rRecvBuf, aRecvCount, MPI_SHORT         , aRoot, aComm);}
+        public static void MPI_Gather(int[]     aSendBuf, int aSendCount, int[]     rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Gather0(false, aSendBuf, aSendCount, MPI_INT32_T       , rRecvBuf, aRecvCount, MPI_INT32_T       , aRoot, aComm);}
+        public static void MPI_Gather(long[]    aSendBuf, int aSendCount, long[]    rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Gather0(false, aSendBuf, aSendCount, MPI_INT64_T       , rRecvBuf, aRecvCount, MPI_INT64_T       , aRoot, aComm);}
+        public static void MPI_Gather(float[]   aSendBuf, int aSendCount, float[]   rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Gather0(false, aSendBuf, aSendCount, MPI_FLOAT         , rRecvBuf, aRecvCount, MPI_FLOAT         , aRoot, aComm);}
+        public static void MPI_Gather(byte[]    rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Gather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_SIGNED_CHAR   , aRoot, aComm);} else {MPI_Gather0(false, rBuf, aCount, MPI_SIGNED_CHAR   , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gather(double[]  rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Gather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_DOUBLE        , aRoot, aComm);} else {MPI_Gather0(false, rBuf, aCount, MPI_DOUBLE        , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gather(boolean[] rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Gather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_UNSIGNED_CHAR , aRoot, aComm);} else {MPI_Gather0(false, rBuf, aCount, MPI_UNSIGNED_CHAR , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gather(char[]    rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Gather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_UNSIGNED_SHORT, aRoot, aComm);} else {MPI_Gather0(false, rBuf, aCount, MPI_UNSIGNED_SHORT, null, 0, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gather(short[]   rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Gather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_SHORT         , aRoot, aComm);} else {MPI_Gather0(false, rBuf, aCount, MPI_SHORT         , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gather(int[]     rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Gather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_INT32_T       , aRoot, aComm);} else {MPI_Gather0(false, rBuf, aCount, MPI_INT32_T       , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gather(long[]    rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Gather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_INT64_T       , aRoot, aComm);} else {MPI_Gather0(false, rBuf, aCount, MPI_INT64_T       , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gather(float[]   rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Gather0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_FLOAT         , aRoot, aComm);} else {MPI_Gather0(false, rBuf, aCount, MPI_FLOAT         , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);}}
         private native static void MPI_Gather0(boolean aInPlace, Object aSendBuf, int aSendCount, long aSendType, Object rRecvBuf, int aRecvCount, long aRecvType, int aRoot, long aComm) throws Error;
         
         /**
@@ -1184,14 +1331,22 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-gatherv-function"> MPI_Gatherv function </a>
          */
-        public static <S, R> void MPI_Gatherv(S aSendBuf, int aSendCount, R rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot, long aComm) throws Error {
-            MPI_Gatherv0(false, aSendBuf, aSendCount, datatypeOf_(aSendBuf), rRecvBuf, aRecvCounts, aDispls, datatypeOf_(rRecvBuf), aRoot, aComm);
-        }
-        public static <T> void MPI_Gatherv(T rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {
-            int tRank = MPI_Comm_rank(aComm);
-            if (tRank == aRoot) MPI_Gatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, datatypeOf_(rBuf), aRoot, aComm);
-            else MPI_Gatherv0(false, rBuf, aCounts[tRank], datatypeOf_(rBuf), null, null, null, MPI_DATATYPE_NULL, aRoot, aComm);
-        }
+        public static void MPI_Gatherv(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot, long aComm) throws Error {MPI_Gatherv0(false, aSendBuf, aSendCount, MPI_SIGNED_CHAR   , rRecvBuf, aRecvCounts, aDispls, MPI_SIGNED_CHAR   , aRoot, aComm);}
+        public static void MPI_Gatherv(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot, long aComm) throws Error {MPI_Gatherv0(false, aSendBuf, aSendCount, MPI_DOUBLE        , rRecvBuf, aRecvCounts, aDispls, MPI_DOUBLE        , aRoot, aComm);}
+        public static void MPI_Gatherv(boolean[] aSendBuf, int aSendCount, boolean[] rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot, long aComm) throws Error {MPI_Gatherv0(false, aSendBuf, aSendCount, MPI_UNSIGNED_CHAR , rRecvBuf, aRecvCounts, aDispls, MPI_UNSIGNED_CHAR , aRoot, aComm);}
+        public static void MPI_Gatherv(char[]    aSendBuf, int aSendCount, char[]    rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot, long aComm) throws Error {MPI_Gatherv0(false, aSendBuf, aSendCount, MPI_UNSIGNED_SHORT, rRecvBuf, aRecvCounts, aDispls, MPI_UNSIGNED_SHORT, aRoot, aComm);}
+        public static void MPI_Gatherv(short[]   aSendBuf, int aSendCount, short[]   rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot, long aComm) throws Error {MPI_Gatherv0(false, aSendBuf, aSendCount, MPI_SHORT         , rRecvBuf, aRecvCounts, aDispls, MPI_SHORT         , aRoot, aComm);}
+        public static void MPI_Gatherv(int[]     aSendBuf, int aSendCount, int[]     rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot, long aComm) throws Error {MPI_Gatherv0(false, aSendBuf, aSendCount, MPI_INT32_T       , rRecvBuf, aRecvCounts, aDispls, MPI_INT32_T       , aRoot, aComm);}
+        public static void MPI_Gatherv(long[]    aSendBuf, int aSendCount, long[]    rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot, long aComm) throws Error {MPI_Gatherv0(false, aSendBuf, aSendCount, MPI_INT64_T       , rRecvBuf, aRecvCounts, aDispls, MPI_INT64_T       , aRoot, aComm);}
+        public static void MPI_Gatherv(float[]   aSendBuf, int aSendCount, float[]   rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot, long aComm) throws Error {MPI_Gatherv0(false, aSendBuf, aSendCount, MPI_FLOAT         , rRecvBuf, aRecvCounts, aDispls, MPI_FLOAT         , aRoot, aComm);}
+        public static void MPI_Gatherv(byte[]    rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Gatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_SIGNED_CHAR   , aRoot, aComm);} else {MPI_Gatherv0(false, rBuf, aCounts[tRank], MPI_SIGNED_CHAR   , null, null, null, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gatherv(double[]  rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Gatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_DOUBLE        , aRoot, aComm);} else {MPI_Gatherv0(false, rBuf, aCounts[tRank], MPI_DOUBLE        , null, null, null, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gatherv(boolean[] rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Gatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_UNSIGNED_CHAR , aRoot, aComm);} else {MPI_Gatherv0(false, rBuf, aCounts[tRank], MPI_UNSIGNED_CHAR , null, null, null, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gatherv(char[]    rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Gatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_UNSIGNED_SHORT, aRoot, aComm);} else {MPI_Gatherv0(false, rBuf, aCounts[tRank], MPI_UNSIGNED_SHORT, null, null, null, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gatherv(short[]   rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Gatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_SHORT         , aRoot, aComm);} else {MPI_Gatherv0(false, rBuf, aCounts[tRank], MPI_SHORT         , null, null, null, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gatherv(int[]     rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Gatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_INT32_T       , aRoot, aComm);} else {MPI_Gatherv0(false, rBuf, aCounts[tRank], MPI_INT32_T       , null, null, null, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gatherv(long[]    rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Gatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_INT64_T       , aRoot, aComm);} else {MPI_Gatherv0(false, rBuf, aCounts[tRank], MPI_INT64_T       , null, null, null, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gatherv(float[]   rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Gatherv0(true, null, 0, MPI_DATATYPE_NULL, rBuf, aCounts, aDispls, MPI_FLOAT         , aRoot, aComm);} else {MPI_Gatherv0(false, rBuf, aCounts[tRank], MPI_FLOAT         , null, null, null, MPI_DATATYPE_NULL, aRoot, aComm);}}
         private native static void MPI_Gatherv0(boolean aInPlace, Object aSendBuf, int aSendCount, long aSendType, Object rRecvBuf, int[] aRecvCounts, int[] aDispls, long aRecvType, int aRoot, long aComm) throws Error;
         
         /**
@@ -1214,12 +1369,22 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-reduce-function"> MPI_Reduce function </a>
          */
-        public static <T> void MPI_Reduce(T aSendBuf, T rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {
-            MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, datatypeOf_(rRecvBuf), aOp, aRoot, aComm);
-        }
-        public static <T> void MPI_Reduce(T rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {
-            MPI_Reduce0(true, null, rBuf, aCount, datatypeOf_(rBuf), aOp, aRoot, aComm);
-        }
+        public static void MPI_Reduce(byte[]    aSendBuf, byte[]    rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, MPI_SIGNED_CHAR   , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(double[]  aSendBuf, double[]  rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, MPI_DOUBLE        , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(boolean[] aSendBuf, boolean[] rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, MPI_UNSIGNED_CHAR , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(char[]    aSendBuf, char[]    rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, MPI_UNSIGNED_SHORT, aOp, aRoot, aComm);}
+        public static void MPI_Reduce(short[]   aSendBuf, short[]   rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, MPI_SHORT         , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(int[]     aSendBuf, int[]     rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, MPI_INT32_T       , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(long[]    aSendBuf, long[]    rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, MPI_INT64_T       , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(float[]   aSendBuf, float[]   rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, MPI_FLOAT         , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(byte[]    rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_SIGNED_CHAR   , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(double[]  rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_DOUBLE        , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(boolean[] rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_UNSIGNED_CHAR , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(char[]    rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_UNSIGNED_SHORT, aOp, aRoot, aComm);}
+        public static void MPI_Reduce(short[]   rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_SHORT         , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(int[]     rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_INT32_T       , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(long[]    rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_INT64_T       , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(float[]   rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_FLOAT         , aOp, aRoot, aComm);}
         private native static void MPI_Reduce0(boolean aInPlace, Object aSendBuf, Object rRecvBuf, int aCount, long aDataType, long aOp, int aRoot, long aComm) throws Error;
         
         /**
@@ -1248,13 +1413,22 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-scatter-function"> MPI_Scatter function </a>
          */
-        public static <S, R> void MPI_Scatter(S aSendBuf, int aSendCount, R rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {
-            MPI_Scatter0(false, aSendBuf, aSendCount, datatypeOf_(aSendBuf), rRecvBuf, aRecvCount, datatypeOf_(rRecvBuf), aRoot, aComm);
-        }
-        public static <T> void MPI_Scatter(T rBuf, int aCount, int aRoot, long aComm) throws Error {
-            if (MPI_Comm_rank(aComm) == aRoot) MPI_Scatter0(true, rBuf, aCount, datatypeOf_(rBuf), null, 0, MPI_DATATYPE_NULL, aRoot, aComm);
-            else MPI_Scatter0(false, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, datatypeOf_(rBuf), aRoot, aComm);
-        }
+        public static void MPI_Scatter(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatter0(false, aSendBuf, aSendCount, MPI_SIGNED_CHAR   , rRecvBuf, aRecvCount, MPI_SIGNED_CHAR   , aRoot, aComm);}
+        public static void MPI_Scatter(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatter0(false, aSendBuf, aSendCount, MPI_DOUBLE        , rRecvBuf, aRecvCount, MPI_DOUBLE        , aRoot, aComm);}
+        public static void MPI_Scatter(boolean[] aSendBuf, int aSendCount, boolean[] rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatter0(false, aSendBuf, aSendCount, MPI_UNSIGNED_CHAR , rRecvBuf, aRecvCount, MPI_UNSIGNED_CHAR , aRoot, aComm);}
+        public static void MPI_Scatter(char[]    aSendBuf, int aSendCount, char[]    rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatter0(false, aSendBuf, aSendCount, MPI_UNSIGNED_SHORT, rRecvBuf, aRecvCount, MPI_UNSIGNED_SHORT, aRoot, aComm);}
+        public static void MPI_Scatter(short[]   aSendBuf, int aSendCount, short[]   rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatter0(false, aSendBuf, aSendCount, MPI_SHORT         , rRecvBuf, aRecvCount, MPI_SHORT         , aRoot, aComm);}
+        public static void MPI_Scatter(int[]     aSendBuf, int aSendCount, int[]     rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatter0(false, aSendBuf, aSendCount, MPI_INT32_T       , rRecvBuf, aRecvCount, MPI_INT32_T       , aRoot, aComm);}
+        public static void MPI_Scatter(long[]    aSendBuf, int aSendCount, long[]    rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatter0(false, aSendBuf, aSendCount, MPI_INT64_T       , rRecvBuf, aRecvCount, MPI_INT64_T       , aRoot, aComm);}
+        public static void MPI_Scatter(float[]   aSendBuf, int aSendCount, float[]   rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatter0(false, aSendBuf, aSendCount, MPI_FLOAT         , rRecvBuf, aRecvCount, MPI_FLOAT         , aRoot, aComm);}
+        public static void MPI_Scatter(byte[]    rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Scatter0(true, rBuf, aCount, MPI_SIGNED_CHAR   , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatter0(false, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_SIGNED_CHAR   , aRoot, aComm);}}
+        public static void MPI_Scatter(double[]  rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Scatter0(true, rBuf, aCount, MPI_DOUBLE        , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatter0(false, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_DOUBLE        , aRoot, aComm);}}
+        public static void MPI_Scatter(boolean[] rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Scatter0(true, rBuf, aCount, MPI_UNSIGNED_CHAR , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatter0(false, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_UNSIGNED_CHAR , aRoot, aComm);}}
+        public static void MPI_Scatter(char[]    rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Scatter0(true, rBuf, aCount, MPI_UNSIGNED_SHORT, null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatter0(false, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_UNSIGNED_SHORT, aRoot, aComm);}}
+        public static void MPI_Scatter(short[]   rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Scatter0(true, rBuf, aCount, MPI_SHORT         , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatter0(false, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_SHORT         , aRoot, aComm);}}
+        public static void MPI_Scatter(int[]     rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Scatter0(true, rBuf, aCount, MPI_INT32_T       , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatter0(false, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_INT32_T       , aRoot, aComm);}}
+        public static void MPI_Scatter(long[]    rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Scatter0(true, rBuf, aCount, MPI_INT64_T       , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatter0(false, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_INT64_T       , aRoot, aComm);}}
+        public static void MPI_Scatter(float[]   rBuf, int aCount, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Scatter0(true, rBuf, aCount, MPI_FLOAT         , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatter0(false, null, 0, MPI_DATATYPE_NULL, rBuf, aCount, MPI_FLOAT         , aRoot, aComm);}}
         private native static void MPI_Scatter0(boolean aInPlace, Object aSendBuf, int aSendCount, long aSendType, Object rRecvBuf, int aRecvCount, long aRecvType, int aRoot, long aComm) throws Error;
         
         /**
@@ -1291,14 +1465,22 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-scatterv-function"> MPI_Scatterv function </a>
          */
-        public static <S, R> void MPI_Scatterv(S aSendBuf, int[] aSendCounts, int[] aDispls, R rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {
-            MPI_Scatterv0(false, aSendBuf, aSendCounts, aDispls, datatypeOf_(aSendBuf), rRecvBuf, aRecvCount, datatypeOf_(rRecvBuf), aRoot, aComm);
-        }
-        public static <T> void MPI_Scatterv(T rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {
-            int tRank = MPI_Comm_rank(aComm);
-            if (tRank == aRoot) MPI_Scatterv0(true, rBuf, aCounts, aDispls, datatypeOf_(rBuf), null, 0, MPI_DATATYPE_NULL, aRoot, aComm);
-            else MPI_Scatterv0(false, null, null, null, MPI_DATATYPE_NULL, rBuf, aCounts[tRank], datatypeOf_(rBuf), aRoot, aComm);
-        }
+        public static void MPI_Scatterv(byte[]    aSendBuf, int[] aSendCounts, int[] aDispls, byte[]    rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatterv0(false, aSendBuf, aSendCounts, aDispls, MPI_SIGNED_CHAR   , rRecvBuf, aRecvCount, MPI_SIGNED_CHAR   , aRoot, aComm);}
+        public static void MPI_Scatterv(double[]  aSendBuf, int[] aSendCounts, int[] aDispls, double[]  rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatterv0(false, aSendBuf, aSendCounts, aDispls, MPI_DOUBLE        , rRecvBuf, aRecvCount, MPI_DOUBLE        , aRoot, aComm);}
+        public static void MPI_Scatterv(boolean[] aSendBuf, int[] aSendCounts, int[] aDispls, boolean[] rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatterv0(false, aSendBuf, aSendCounts, aDispls, MPI_UNSIGNED_CHAR , rRecvBuf, aRecvCount, MPI_UNSIGNED_CHAR , aRoot, aComm);}
+        public static void MPI_Scatterv(char[]    aSendBuf, int[] aSendCounts, int[] aDispls, char[]    rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatterv0(false, aSendBuf, aSendCounts, aDispls, MPI_UNSIGNED_SHORT, rRecvBuf, aRecvCount, MPI_UNSIGNED_SHORT, aRoot, aComm);}
+        public static void MPI_Scatterv(short[]   aSendBuf, int[] aSendCounts, int[] aDispls, short[]   rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatterv0(false, aSendBuf, aSendCounts, aDispls, MPI_SHORT         , rRecvBuf, aRecvCount, MPI_SHORT         , aRoot, aComm);}
+        public static void MPI_Scatterv(int[]     aSendBuf, int[] aSendCounts, int[] aDispls, int[]     rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatterv0(false, aSendBuf, aSendCounts, aDispls, MPI_INT32_T       , rRecvBuf, aRecvCount, MPI_INT32_T       , aRoot, aComm);}
+        public static void MPI_Scatterv(long[]    aSendBuf, int[] aSendCounts, int[] aDispls, long[]    rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatterv0(false, aSendBuf, aSendCounts, aDispls, MPI_INT64_T       , rRecvBuf, aRecvCount, MPI_INT64_T       , aRoot, aComm);}
+        public static void MPI_Scatterv(float[]   aSendBuf, int[] aSendCounts, int[] aDispls, float[]   rRecvBuf, int aRecvCount, int aRoot, long aComm) throws Error {MPI_Scatterv0(false, aSendBuf, aSendCounts, aDispls, MPI_FLOAT         , rRecvBuf, aRecvCount, MPI_FLOAT         , aRoot, aComm);}
+        public static void MPI_Scatterv(byte[]    rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Scatterv0(true, rBuf, aCounts, aDispls, MPI_SIGNED_CHAR   , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatterv0(false, null, null, null, MPI_DATATYPE_NULL, rBuf, aCounts[tRank], MPI_SIGNED_CHAR   , aRoot, aComm);}}
+        public static void MPI_Scatterv(double[]  rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Scatterv0(true, rBuf, aCounts, aDispls, MPI_DOUBLE        , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatterv0(false, null, null, null, MPI_DATATYPE_NULL, rBuf, aCounts[tRank], MPI_DOUBLE        , aRoot, aComm);}}
+        public static void MPI_Scatterv(boolean[] rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Scatterv0(true, rBuf, aCounts, aDispls, MPI_UNSIGNED_CHAR , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatterv0(false, null, null, null, MPI_DATATYPE_NULL, rBuf, aCounts[tRank], MPI_UNSIGNED_CHAR , aRoot, aComm);}}
+        public static void MPI_Scatterv(char[]    rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Scatterv0(true, rBuf, aCounts, aDispls, MPI_UNSIGNED_SHORT, null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatterv0(false, null, null, null, MPI_DATATYPE_NULL, rBuf, aCounts[tRank], MPI_UNSIGNED_SHORT, aRoot, aComm);}}
+        public static void MPI_Scatterv(short[]   rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Scatterv0(true, rBuf, aCounts, aDispls, MPI_SHORT         , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatterv0(false, null, null, null, MPI_DATATYPE_NULL, rBuf, aCounts[tRank], MPI_SHORT         , aRoot, aComm);}}
+        public static void MPI_Scatterv(int[]     rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Scatterv0(true, rBuf, aCounts, aDispls, MPI_INT32_T       , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatterv0(false, null, null, null, MPI_DATATYPE_NULL, rBuf, aCounts[tRank], MPI_INT32_T       , aRoot, aComm);}}
+        public static void MPI_Scatterv(long[]    rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Scatterv0(true, rBuf, aCounts, aDispls, MPI_INT64_T       , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatterv0(false, null, null, null, MPI_DATATYPE_NULL, rBuf, aCounts[tRank], MPI_INT64_T       , aRoot, aComm);}}
+        public static void MPI_Scatterv(float[]   rBuf, int[] aCounts, int[] aDispls, int aRoot, long aComm) throws Error {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Scatterv0(true, rBuf, aCounts, aDispls, MPI_FLOAT         , null, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatterv0(false, null, null, null, MPI_DATATYPE_NULL, rBuf, aCounts[tRank], MPI_FLOAT         , aRoot, aComm);}}
         private native static void MPI_Scatterv0(boolean aInPlace, Object aSendBuf, int[] aSendCounts, int[] aDispls, long aSendType, Object rRecvBuf, int aRecvCount, long aRecvType, int aRoot, long aComm) throws Error;
         
         
@@ -1490,9 +1672,15 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-send-function"> MPI_Send function </a>
          */
-        public static <T> void MPI_Send(T aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {
-            MPI_Send0(aBuf, aCount, datatypeOf_(aBuf), aDest, aTag, aComm);
-        }
+        public static void MPI_Send(byte[]    aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Send0(aBuf, aCount, MPI_SIGNED_CHAR   , aDest, aTag, aComm);}
+        public static void MPI_Send(double[]  aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Send0(aBuf, aCount, MPI_DOUBLE        , aDest, aTag, aComm);}
+        public static void MPI_Send(boolean[] aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Send0(aBuf, aCount, MPI_UNSIGNED_CHAR , aDest, aTag, aComm);}
+        public static void MPI_Send(char[]    aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Send0(aBuf, aCount, MPI_UNSIGNED_SHORT, aDest, aTag, aComm);}
+        public static void MPI_Send(short[]   aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Send0(aBuf, aCount, MPI_SHORT         , aDest, aTag, aComm);}
+        public static void MPI_Send(int[]     aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Send0(aBuf, aCount, MPI_INT32_T       , aDest, aTag, aComm);}
+        public static void MPI_Send(long[]    aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Send0(aBuf, aCount, MPI_INT64_T       , aDest, aTag, aComm);}
+        public static void MPI_Send(float[]   aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Send0(aBuf, aCount, MPI_FLOAT         , aDest, aTag, aComm);}
+        public static void MPI_Send(int aDest, int aTag, long aComm) throws Error {MPI_Send0(null, 0, MPI_BYTE, aDest, aTag, aComm);}
         private native static void MPI_Send0(Object aBuf, int aCount, long aDataType, int aDest, int aTag, long aComm) throws Error;
         
         /**
@@ -1515,9 +1703,15 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-recv-function"> MPI_Recv function </a>
          */
-        public static <T> void MPI_Recv(T rBuf, int aCount, int aSource, int aTag, long aComm) throws Error {
-            MPI_Recv0(rBuf, aCount, datatypeOf_(rBuf), aSource, aTag, aComm);
-        }
+        public static void MPI_Recv(byte[]    rBuf, int aCount, int aSource, int aTag, long aComm) throws Error {MPI_Recv0(rBuf, aCount, MPI_SIGNED_CHAR   , aSource, aTag, aComm);}
+        public static void MPI_Recv(double[]  rBuf, int aCount, int aSource, int aTag, long aComm) throws Error {MPI_Recv0(rBuf, aCount, MPI_DOUBLE        , aSource, aTag, aComm);}
+        public static void MPI_Recv(boolean[] rBuf, int aCount, int aSource, int aTag, long aComm) throws Error {MPI_Recv0(rBuf, aCount, MPI_UNSIGNED_CHAR , aSource, aTag, aComm);}
+        public static void MPI_Recv(char[]    rBuf, int aCount, int aSource, int aTag, long aComm) throws Error {MPI_Recv0(rBuf, aCount, MPI_UNSIGNED_SHORT, aSource, aTag, aComm);}
+        public static void MPI_Recv(short[]   rBuf, int aCount, int aSource, int aTag, long aComm) throws Error {MPI_Recv0(rBuf, aCount, MPI_SHORT         , aSource, aTag, aComm);}
+        public static void MPI_Recv(int[]     rBuf, int aCount, int aSource, int aTag, long aComm) throws Error {MPI_Recv0(rBuf, aCount, MPI_INT32_T       , aSource, aTag, aComm);}
+        public static void MPI_Recv(long[]    rBuf, int aCount, int aSource, int aTag, long aComm) throws Error {MPI_Recv0(rBuf, aCount, MPI_INT64_T       , aSource, aTag, aComm);}
+        public static void MPI_Recv(float[]   rBuf, int aCount, int aSource, int aTag, long aComm) throws Error {MPI_Recv0(rBuf, aCount, MPI_FLOAT         , aSource, aTag, aComm);}
+        public static void MPI_Recv(int aSource, int aTag, long aComm) throws Error {MPI_Recv0(null, 0, MPI_BYTE, aSource, aTag, aComm);}
         private native static void MPI_Recv0(Object rBuf, int aCount, long aDataType, int aSource, int aTag, long aComm) throws Error;
         
         /**
@@ -1537,9 +1731,15 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-ssend-function"> MPI_Ssend function </a>
          */
-        public static <T> void MPI_Ssend(T aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {
-            MPI_Ssend0(aBuf, aCount, datatypeOf_(aBuf), aDest, aTag, aComm);
-        }
+        public static void MPI_Ssend(byte[]    aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Ssend0(aBuf, aCount, MPI_SIGNED_CHAR   , aDest, aTag, aComm);}
+        public static void MPI_Ssend(double[]  aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Ssend0(aBuf, aCount, MPI_DOUBLE        , aDest, aTag, aComm);}
+        public static void MPI_Ssend(boolean[] aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Ssend0(aBuf, aCount, MPI_UNSIGNED_CHAR , aDest, aTag, aComm);}
+        public static void MPI_Ssend(char[]    aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Ssend0(aBuf, aCount, MPI_UNSIGNED_SHORT, aDest, aTag, aComm);}
+        public static void MPI_Ssend(short[]   aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Ssend0(aBuf, aCount, MPI_SHORT         , aDest, aTag, aComm);}
+        public static void MPI_Ssend(int[]     aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Ssend0(aBuf, aCount, MPI_INT32_T       , aDest, aTag, aComm);}
+        public static void MPI_Ssend(long[]    aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Ssend0(aBuf, aCount, MPI_INT64_T       , aDest, aTag, aComm);}
+        public static void MPI_Ssend(float[]   aBuf, int aCount, int aDest, int aTag, long aComm) throws Error {MPI_Ssend0(aBuf, aCount, MPI_FLOAT         , aDest, aTag, aComm);}
+        public static void MPI_Ssend(int aDest, int aTag, long aComm) throws Error {MPI_Ssend0(null, 0, MPI_BYTE, aDest, aTag, aComm);}
         private native static void MPI_Ssend0(Object aBuf, int aCount, long aDataType, int aDest, int aTag, long aComm) throws Error;
         
         
