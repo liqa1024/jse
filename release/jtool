@@ -57,5 +57,10 @@ JAVA_OPTS="$JAVA_OPTS -Dfile.encoding=UTF-8"
 # 消除每 30s 一次的 prefs 的警告
 JAVA_OPTS="$JAVA_OPTS -Djava.util.prefs.syncInterval=1000000"
 
+# SLURM_PROCID 环境变量存在且不为 0 时限制内存大小
+if [ -n "$SLURM_PROCID" ] && [ "$SLURM_PROCID" -ne 0 ]; then
+JAVA_OPTS="$JAVA_OPTS -Xmx1g"
+fi
+
 # 执行 jtool.jar
 java $JAVA_OPTS -jar "$JAR_LOCATION" "$@"

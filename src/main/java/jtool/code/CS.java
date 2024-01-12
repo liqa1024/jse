@@ -6,8 +6,8 @@ import jtool.Main;
 import jtool.atom.AbstractXYZ;
 import jtool.atom.IXYZ;
 import jtool.code.collection.AbstractCollections;
-import jtool.iofile.IIOFiles;
-import jtool.iofile.IOFiles;
+import jtool.io.IIOFiles;
+import jtool.io.IOFiles;
 import jtool.math.AbstractComplexDouble;
 import jtool.math.IComplexDouble;
 import jtool.math.MathEX;
@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  */
 public class CS {
     /** version of jtool */
-    public final static String VERSION = "2.3.7d";
+    public final static String VERSION = "2.3.8";
     
     /** a Random generator so I don't need to instantiate a new one all the time. */
     public final static Random RNGSUS = new Random(), RANDOM = RNGSUS;

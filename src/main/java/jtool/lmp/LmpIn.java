@@ -1,6 +1,6 @@
 package jtool.lmp;
 
-import jtool.iofile.AbstractInFileLines;
+import jtool.io.AbstractInFileLines;
 import jtool.code.UT;
 import org.jetbrains.annotations.VisibleForTesting;
 

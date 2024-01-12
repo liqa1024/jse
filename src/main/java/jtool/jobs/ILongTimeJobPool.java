@@ -1,7 +1,7 @@
 package jtool.jobs;
 
 
-import jtool.iofile.ISavable;
+import jtool.io.ISavable;
 
 /**
  * @author liqa

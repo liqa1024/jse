@@ -1,4 +1,4 @@
-package jtool.iofile;
+package jtool.io;
 
 import jtool.code.UT;
 import groovy.json.JsonBuilder;
@@ -6,9 +6,6 @@ import groovy.json.JsonSlurper;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import static jtool.code.CS.KEEP;

@@ -4,7 +4,7 @@ import jtool.atom.IAtom;
 import jtool.atom.IAtomData;
 import jtool.atom.IXYZ;
 import jtool.code.UT;
-import jtool.iofile.IInFile;
+import jtool.io.IInFile;
 import jtool.math.matrix.ColumnMatrix;
 import jtool.math.matrix.DoubleArrayMatrix;
 import jtool.math.matrix.IMatrix;

@@ -1,7 +1,7 @@
 package jtool.jobs;
 
 import jtool.code.UT;
-import jtool.iofile.ILoader;
+import jtool.io.ILoader;
 import jtool.parallel.IShutdownable;
 
 import java.util.*;

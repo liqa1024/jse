@@ -69,12 +69,12 @@ public final class ServerSSH implements IAutoShutdown {
     public void save(String aFilePath, String aKey) throws Exception {
         Map rJson = new LinkedHashMap();
         save(rJson);
-        jtool.iofile.Encryptor tEncryptor = new jtool.iofile.Encryptor(aKey);
+        jtool.io.Encryptor tEncryptor = new jtool.io.Encryptor(aKey);
         UT.IO.write(aFilePath, tEncryptor.getData((new JsonBuilder(rJson)).toString()));
     }
     @SuppressWarnings("rawtypes")
     public static ServerSSH load(String aFilePath, String aKey) throws Exception {
-        jtool.iofile.Decryptor tDecryptor = new jtool.iofile.Decryptor(aKey);
+        jtool.io.Decryptor tDecryptor = new jtool.io.Decryptor(aKey);
         Map tJson = (Map) (new JsonSlurper()).parseText(tDecryptor.get(UT.IO.readAllBytes(aFilePath)));
         return load(tJson);
     }

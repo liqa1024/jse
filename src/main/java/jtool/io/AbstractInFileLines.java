@@ -1,4 +1,4 @@
-package jtool.iofile;
+package jtool.io;
 
 import jtool.code.UT;
 

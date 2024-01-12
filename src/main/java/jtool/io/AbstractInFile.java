@@ -1,4 +1,4 @@
-package jtool.iofile;
+package jtool.io;
 
 
 import com.google.common.collect.BiMap;

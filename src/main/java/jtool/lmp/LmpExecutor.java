@@ -1,8 +1,8 @@
 package jtool.lmp;
 
 import jtool.code.UT;
-import jtool.iofile.IIOFiles;
-import jtool.iofile.IInFile;
+import jtool.io.IIOFiles;
+import jtool.io.IInFile;
 import jtool.parallel.AbstractHasAutoShutdown;
 import jtool.system.ISystemExecutor;
 import org.jetbrains.annotations.Nullable;

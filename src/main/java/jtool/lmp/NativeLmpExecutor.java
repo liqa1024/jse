@@ -1,7 +1,7 @@
 package jtool.lmp;
 
-import jtool.iofile.IIOFiles;
-import jtool.iofile.IInFile;
+import jtool.io.IIOFiles;
+import jtool.io.IInFile;
 import jtool.parallel.AbstractHasAutoShutdown;
 import jtool.parallel.MPI;
 import jtool.system.ISystemExecutor;

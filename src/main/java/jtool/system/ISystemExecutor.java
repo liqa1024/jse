@@ -1,7 +1,7 @@
 package jtool.system;
 
 
-import jtool.iofile.IIOFiles;
+import jtool.io.IIOFiles;
 import jtool.parallel.IThreadPool;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;

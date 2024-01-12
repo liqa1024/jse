@@ -1,4 +1,4 @@
-package jtool.iofile;
+package jtool.io;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
