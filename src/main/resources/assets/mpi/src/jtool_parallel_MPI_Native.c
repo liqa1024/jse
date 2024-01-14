@@ -107,6 +107,7 @@ void exceptionCheck(JNIEnv *aEnv, int aExitCode) {
     (*aEnv)->Throw(aEnv, tMPIError);
     (*aEnv)->DeleteLocalRef(aEnv, tMPIError);
     (*aEnv)->DeleteLocalRef(aEnv, tJErrStr);
+    (*aEnv)->DeleteLocalRef(aEnv, tMPIErrorClazz);
 }
 
 

@@ -92,6 +92,7 @@ void exceptionCheck(JNIEnv *aEnv, void *aLmpPtr) {
     (*aEnv)->Throw(aEnv, tLmpError);
     (*aEnv)->DeleteLocalRef(aEnv, tLmpError);
     (*aEnv)->DeleteLocalRef(aEnv, tJErrStr);
+    (*aEnv)->DeleteLocalRef(aEnv, tLmpErrorClazz);
 #endif
 }
 
