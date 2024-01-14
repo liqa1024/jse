@@ -163,13 +163,13 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
         // 发送后归还临时数据
         LMP_INFO_CACHE.returnObject(rLmpdatInfo);
         // 必要信息发送完成后分别发送 atomData 和 velocities
-        aComm.send(tAtomID  .getData(), tAtomID  .dataSize(), aDest, DATA_ID  );
-        aComm.send(tAtomType.getData(), tAtomType.dataSize(), aDest, DATA_Type);
-        aComm.send(tAtomXYZ .getData(), tAtomXYZ .dataSize(), aDest, DATA_XYZ );
+        aComm.send(tAtomID  .internalData(), tAtomID  .internalDataSize(), aDest, DATA_ID);
+        aComm.send(tAtomType.internalData(), tAtomType.internalDataSize(), aDest, DATA_Type);
+        aComm.send(tAtomXYZ .internalData(), tAtomXYZ .internalDataSize(), aDest, DATA_XYZ);
         // 如果有速度信息则需要再发送一次速度信息
         if (tHasVelocities) {
             assert tVelocities != null;
-            aComm.send(tVelocities.getData(), tVelocities.dataSize(), aDest, DATA_VELOCITIES);
+            aComm.send(tVelocities.internalData(), tVelocities.internalDataSize(), aDest, DATA_VELOCITIES);
         }
     }
     private Lmpdat recvLmpdat_(int aSource, MPI.Comm aComm) throws MPI.Error {
@@ -182,12 +182,12 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
         RowMatrix tAtomXYZ = MatrixCache.getMatRow((int)tLmpdatInfo[0], ATOM_DATA_KEYS_XYZ.length);
         @Nullable RowMatrix tVelocities = null;
         // 先是基本信息，后是速度信息
-        aComm.recv(tAtomID  .getData(), tAtomID  .dataSize(), aSource, DATA_ID  );
-        aComm.recv(tAtomType.getData(), tAtomType.dataSize(), aSource, DATA_Type);
-        aComm.recv(tAtomXYZ .getData(), tAtomXYZ .dataSize(), aSource, DATA_XYZ );
+        aComm.recv(tAtomID  .internalData(), tAtomID  .internalDataSize(), aSource, DATA_ID);
+        aComm.recv(tAtomType.internalData(), tAtomType.internalDataSize(), aSource, DATA_Type);
+        aComm.recv(tAtomXYZ .internalData(), tAtomXYZ .internalDataSize(), aSource, DATA_XYZ);
         if (tLmpdatInfo[7] == 1) {
             tVelocities = MatrixCache.getMatRow((int)tLmpdatInfo[0], ATOM_DATA_KEYS_VELOCITY.length);
-            aComm.recv(tVelocities.getData(), tVelocities.dataSize(), aSource, DATA_VELOCITIES);
+            aComm.recv(tVelocities.internalData(), tVelocities.internalDataSize(), aSource, DATA_VELOCITIES);
         }
         // 创建 Lmpdat
         Lmpdat tOut = new Lmpdat(mMesses.size(), new Box(
@@ -224,13 +224,13 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
             // 发送后归还临时数据
             LMP_INFO_CACHE.returnObject(rLmpdatInfo);
             // 必要信息发送完成后分别发送 atomData 和 velocities
-            aComm.bcast(tAtomID  .getData(), tAtomID  .dataSize(), aRoot);
-            aComm.bcast(tAtomType.getData(), tAtomType.dataSize(), aRoot);
-            aComm.bcast(tAtomXYZ .getData(), tAtomXYZ .dataSize(), aRoot);
+            aComm.bcast(tAtomID  .internalData(), tAtomID  .internalDataSize(), aRoot);
+            aComm.bcast(tAtomType.internalData(), tAtomType.internalDataSize(), aRoot);
+            aComm.bcast(tAtomXYZ .internalData(), tAtomXYZ .internalDataSize(), aRoot);
             // 如果有速度信息则需要再发送一次速度信息
             if (tHasVelocities) {
                 assert tVelocities != null;
-                aComm.bcast(tVelocities.getData(), tVelocities.dataSize(), aRoot);
+                aComm.bcast(tVelocities.internalData(), tVelocities.internalDataSize(), aRoot);
             }
             return aLmpdat;
         } else {
@@ -243,12 +243,12 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
             RowMatrix tAtomXYZ = MatrixCache.getMatRow((int)tLmpdatInfo[0], ATOM_DATA_KEYS_XYZ.length);
             @Nullable RowMatrix tVelocities = null;
             // 先是基本信息，后是速度信息
-            aComm.bcast(tAtomID  .getData(), tAtomID  .dataSize(), aRoot);
-            aComm.bcast(tAtomType.getData(), tAtomType.dataSize(), aRoot);
-            aComm.bcast(tAtomXYZ .getData(), tAtomXYZ .dataSize(), aRoot);
+            aComm.bcast(tAtomID  .internalData(), tAtomID  .internalDataSize(), aRoot);
+            aComm.bcast(tAtomType.internalData(), tAtomType.internalDataSize(), aRoot);
+            aComm.bcast(tAtomXYZ .internalData(), tAtomXYZ .internalDataSize(), aRoot);
             if (tLmpdatInfo[7] == 1) {
                 tVelocities = MatrixCache.getMatRow((int)tLmpdatInfo[0], ATOM_DATA_KEYS_VELOCITY.length);
-                aComm.bcast(tVelocities.getData(), tVelocities.dataSize(), aRoot);
+                aComm.bcast(tVelocities.internalData(), tVelocities.internalDataSize(), aRoot);
             }
             // 创建 Lmpdat
             Lmpdat tOut = new Lmpdat(mMesses.size(), new Box(

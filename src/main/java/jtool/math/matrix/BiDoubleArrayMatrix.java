@@ -8,9 +8,9 @@ public abstract class BiDoubleArrayMatrix extends AbstractComplexMatrix implemen
     protected BiDoubleArrayMatrix(double[][] aData) {mData = aData;}
     
     /** DataShell stuffs */
-    @Override public void setData2this(double[][] aData) {mData = aData;}
-    @Override public double[][] getData() {return mData;}
-    @Override public int dataSize() {return columnNumber()*rowNumber();}
+    @Override public void setInternalData(double[][] aData) {mData = aData;}
+    @Override public double[][] internalData() {return mData;}
+    @Override public int internalDataSize() {return columnNumber()*rowNumber();}
     
     protected class BiDoubleArrayMatrixOperation_ extends BiDoubleArrayMatrixOperation {
         @Override protected BiDoubleArrayMatrix thisMatrix_() {return BiDoubleArrayMatrix.this;}

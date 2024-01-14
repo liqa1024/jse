@@ -23,13 +23,13 @@ public class VectorCache {
     
     public static void returnVec(@NotNull IVector aVector) {
         if (NO_CACHE) return;
-        DoubleArrayCache.returnArray(((DoubleArrayVector)aVector).getData());
+        DoubleArrayCache.returnArray(((DoubleArrayVector)aVector).internalData());
     }
     public static void returnVec(final @NotNull List<? extends @NotNull IVector> aVectorList) {
         if (NO_CACHE) return;
         if (aVectorList.isEmpty()) return;
         // 这里不实际缓存 List<IVector>，而是直接统一归还内部值，这样实现会比较简单
-        DoubleArrayCache.returnArrayFrom(aVectorList.size(), i -> ((DoubleArrayVector)aVectorList.get(i)).getData());
+        DoubleArrayCache.returnArrayFrom(aVectorList.size(), i -> ((DoubleArrayVector)aVectorList.get(i)).internalData());
     }
     
     

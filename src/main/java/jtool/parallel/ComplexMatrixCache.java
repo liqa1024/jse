@@ -23,7 +23,7 @@ public class ComplexMatrixCache {
     
     public static void returnMat(@NotNull IComplexMatrix aComplexMatrix) {
         if (NO_CACHE) return;
-        final double[][] tData = ((BiDoubleArrayMatrix)aComplexMatrix).getData();
+        final double[][] tData = ((BiDoubleArrayMatrix)aComplexMatrix).internalData();
         DoubleArrayCache.returnArrayFrom(2, i -> tData[1-i]);
     }
     public static void returnMat(final @NotNull List<? extends @NotNull IComplexMatrix> aComplexMatrixList) {
@@ -34,7 +34,7 @@ public class ComplexMatrixCache {
         DoubleArrayCache.returnArrayFrom(aComplexMatrixList.size()*2, i -> {
             double[] tArrayReal = tArrayBuffer[0];
             if (tArrayReal == null) {
-                double[][] tData = ((BiDoubleArrayMatrix)aComplexMatrixList.get(i/2)).getData();
+                double[][] tData = ((BiDoubleArrayMatrix)aComplexMatrixList.get(i/2)).internalData();
                 tArrayBuffer[0] = tData[0];
                 return tData[1];
             } else {

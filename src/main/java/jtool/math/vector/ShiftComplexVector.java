@@ -24,6 +24,7 @@ public final class ShiftComplexVector extends BiDoubleArrayVector {
     public ShiftComplexVector(int aShift, double[][] aData) {this(aData.length-aShift, aShift, aData);}
     
     /** 提供额外的接口来直接设置底层参数 */
+    public int shift() {return mShift;}
     public ShiftComplexVector setSize(int aSize) {mSize = MathEX.Code.toRange(0, dataLength()-mShift, aSize); return this;}
     public ShiftComplexVector setShift(int aShift) {mShift = MathEX.Code.toRange(0, dataLength()-mSize, aShift); return this;}
     public int dataLength() {return Math.min(mData[0].length, mData[1].length);}
@@ -62,7 +63,7 @@ public final class ShiftComplexVector extends BiDoubleArrayVector {
         return null;
     }
     /** 需要指定平移的距离保证优化运算的正确性 */
-    @Override public int shiftSize() {return mShift;}
+    @Override public int internalDataShift() {return shift();}
     
     
     /** Optimize stuffs，real()，imag() 直接返回 {@link ShiftVector} */

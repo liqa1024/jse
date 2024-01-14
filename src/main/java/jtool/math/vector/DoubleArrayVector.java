@@ -12,9 +12,9 @@ public abstract class DoubleArrayVector extends AbstractVector implements IDataS
     protected DoubleArrayVector(double[] aData) {mData = aData;}
     
     /** DataShell stuffs */
-    @Override public void setData2this(double[] aData) {mData = aData;}
-    @Override public double[] getData() {return mData;}
-    @Override public int dataSize() {return size();}
+    @Override public void setInternalData(double[] aData) {mData = aData;}
+    @Override public double[] internalData() {return mData;}
+    @Override public int internalDataSize() {return size();}
     
     
     protected class DoubleArrayVectorOperation_ extends DoubleArrayVectorOperation {
@@ -26,13 +26,13 @@ public abstract class DoubleArrayVector extends AbstractVector implements IDataS
     @Override public IVectorOperation operation() {return new DoubleArrayVectorOperation_();}
     
     /** Optimize stuffs，重写这些接口来加速批量填充过程 */
-    @Override public void fill(double[] aData) {System.arraycopy(aData, 0, getData(), shiftSize(), dataSize());}
+    @Override public void fill(double[] aData) {System.arraycopy(aData, 0, internalData(), internalDataShift(), internalDataSize());}
     
     /** Optimize stuffs，重写这些接口来加速获取 data 的过程 */
     @Override public double[] data() {
-        final int tSize = dataSize();
+        final int tSize = internalDataSize();
         double[] rData = new double[tSize];
-        System.arraycopy(getData(), shiftSize(), rData, 0, tSize);
+        System.arraycopy(internalData(), internalDataShift(), rData, 0, tSize);
         return rData;
     }
     

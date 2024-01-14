@@ -12,9 +12,9 @@ public abstract class BooleanArrayVector extends AbstractLogicalVector implement
     protected BooleanArrayVector(boolean[] aData) {mData = aData;}
     
     /** DataShell stuffs */
-    @Override public void setData2this(boolean[] aData) {mData = aData;}
-    @Override public boolean[] getData() {return mData;}
-    @Override public int dataSize() {return size();}
+    @Override public void setInternalData(boolean[] aData) {mData = aData;}
+    @Override public boolean[] internalData() {return mData;}
+    @Override public int internalDataSize() {return size();}
     
     
     protected class BooleanArrayVectorOperation_ extends BooleanArrayVectorOperation {
@@ -26,13 +26,13 @@ public abstract class BooleanArrayVector extends AbstractLogicalVector implement
     @Override public ILogicalVectorOperation operation() {return new BooleanArrayVectorOperation_();}
     
     /** Optimize stuffs，重写这些接口来加速批量填充过程 */
-    @Override public void fill(boolean[] aData) {System.arraycopy(aData, 0, getData(), shiftSize(), dataSize());}
+    @Override public void fill(boolean[] aData) {System.arraycopy(aData, 0, internalData(), internalDataShift(), internalDataSize());}
     
     /** Optimize stuffs，重写这些接口来加速获取 data 的过程 */
     @Override public boolean[] data() {
-        final int tSize = dataSize();
+        final int tSize = internalDataSize();
         boolean[] rData = new boolean[tSize];
-        System.arraycopy(getData(), shiftSize(), rData, 0, tSize);
+        System.arraycopy(internalData(), internalDataShift(), rData, 0, tSize);
         return rData;
     }
     

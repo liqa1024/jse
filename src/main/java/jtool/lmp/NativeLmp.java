@@ -596,7 +596,7 @@ public class NativeLmp implements IAutoShutdown {
     public RowMatrix fullAtomDataOf(String aName, boolean aIsDouble, int aRowNum, int aColNum) throws Error {
         checkThread();
         RowMatrix rData = MatrixCache.getMatRow(aRowNum, aColNum);
-        lammpsGatherConcat_(mLmpPtr, aName, aIsDouble, aRowNum, aColNum, rData.getData());
+        lammpsGatherConcat_(mLmpPtr, aName, aIsDouble, aRowNum, aColNum, rData.internalData());
         return rData;
     }
     /**
@@ -614,7 +614,7 @@ public class NativeLmp implements IAutoShutdown {
     public RowMatrix localAtomDataOf(String aName, int aDataType, int aRowNum, int aColNum) throws Error {
         checkThread();
         RowMatrix rData = MatrixCache.getMatRow(aRowNum, aColNum);
-        lammpsExtractAtom_(mLmpPtr, aName, aDataType, aRowNum, aColNum, rData.getData());
+        lammpsExtractAtom_(mLmpPtr, aName, aDataType, aRowNum, aColNum, rData.internalData());
         return rData;
     }
     private native static void lammpsGatherConcat_(long aLmpPtr, String aName, boolean aIsDouble, int aAtomNum, int aCount, double[] rData) throws Error;
@@ -673,7 +673,7 @@ public class NativeLmp implements IAutoShutdown {
     public void setAtomDataOf(String aName, IMatrix aData, boolean aIsDouble) throws Error {
         checkThread();
         if ((aData instanceof RowMatrix) || ((aData instanceof ColumnMatrix) && aData.columnNumber()==1)) {
-            lammpsScatter_(mLmpPtr, aName, aIsDouble, aData.rowNumber(), aData.columnNumber(), ((DoubleArrayMatrix)aData).getData());
+            lammpsScatter_(mLmpPtr, aName, aIsDouble, aData.rowNumber(), aData.columnNumber(), ((DoubleArrayMatrix)aData).internalData());
         } else {
             lammpsScatter_(mLmpPtr, aName, aIsDouble, aData.rowNumber(), aData.columnNumber(), aData.asVecRow().data());
         }
@@ -735,7 +735,7 @@ public class NativeLmp implements IAutoShutdown {
         command(String.format("mass            %d %f", i+1, tMasses.get(i)));
         }
         @Nullable RowMatrix tVelocities = aLmpdat.velocities();
-        lammpsCreateAtoms_(mLmpPtr, aLmpdat.ids().getData(), aLmpdat.types().getData(), aLmpdat.positions().getData(), tVelocities==null ? null : tVelocities.getData(), null, false);
+        lammpsCreateAtoms_(mLmpPtr, aLmpdat.ids().internalData(), aLmpdat.types().internalData(), aLmpdat.positions().internalData(), tVelocities==null ? null : tVelocities.internalData(), null, false);
     }
     public void loadData(IAtomData aAtomData) throws Error {
         checkThread();

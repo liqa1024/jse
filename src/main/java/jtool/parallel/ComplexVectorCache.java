@@ -23,7 +23,7 @@ public class ComplexVectorCache {
     
     public static void returnVec(@NotNull IComplexVector aComplexVector) {
         if (NO_CACHE) return;
-        final double[][] tData = ((BiDoubleArrayVector)aComplexVector).getData();
+        final double[][] tData = ((BiDoubleArrayVector)aComplexVector).internalData();
         DoubleArrayCache.returnArrayFrom(2, i -> tData[1-i]);
     }
     public static void returnVec(final @NotNull List<? extends @NotNull IComplexVector> aComplexVectorList) {
@@ -34,7 +34,7 @@ public class ComplexVectorCache {
         DoubleArrayCache.returnArrayFrom(aComplexVectorList.size()*2, i -> {
             double[] tArrayReal = tArrayBuffer[0];
             if (tArrayReal == null) {
-                double[][] tData = ((BiDoubleArrayVector)aComplexVectorList.get(i/2)).getData();
+                double[][] tData = ((BiDoubleArrayVector)aComplexVectorList.get(i/2)).internalData();
                 tArrayBuffer[0] = tData[0];
                 return tData[1];
             } else {

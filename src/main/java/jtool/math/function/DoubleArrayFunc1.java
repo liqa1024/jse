@@ -40,10 +40,10 @@ public abstract class DoubleArrayFunc1 implements IEqualIntervalFunc1, IDataShel
     
     
     /** DataShell stuffs */
-    @Override public final void setData2this(double[] aData) {mData = aData;}
-    @Override public final double[] getData() {return mData;}
-    @Override public final int dataSize() {return Nx();}
-    @Override public final int shiftSize() {return 0;}
+    @Override public final void setInternalData(double[] aData) {mData = aData;}
+    @Override public final double[] internalData() {return mData;}
+    @Override public final int internalDataSize() {return Nx();}
+    @Override public final int internalDataShift() {return 0;}
     @Override public final double @Nullable[] getIfHasSameOrderData(Object aObj) {
         // 必须要求同样是 DoubleArrayFunc1 并且开始位置，间距以及长度都相同，也就是只考虑完全一致的情况（因为 Func 在区域外依旧可以取值）
         if (aObj instanceof DoubleArrayFunc1) {

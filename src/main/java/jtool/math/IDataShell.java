@@ -1,6 +1,7 @@
 package jtool.math;
 
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
@@ -11,22 +12,28 @@ import java.lang.reflect.Array;
  * @author liqa
  */
 public interface IDataShell<D> {
-    void setData2this(D aData);
+    void setInternalData(D aData);
     IDataShell<D> newShell();
-    D getData();
-    @Nullable D getIfHasSameOrderData(Object aObj);
+    D internalData();
+    @ApiStatus.Internal @Nullable D getIfHasSameOrderData(Object aObj);
     /** 返回需要使用的 data 长度，因为可能会通过 setData 导致 data 过长 */
-    int dataSize();
+    int internalDataSize();
     /** 返回 data 开头需要平移的长度，部分结构支持传入任意数组然后从中间开始访问 */
-    default int shiftSize() {return 0;}
+    default int internalDataShift() {return 0;}
     
-    static int shiftSize(Object aObj) {
-        if (aObj instanceof IDataShell) return ((IDataShell<?>)aObj).shiftSize();
+    static int internalDataShift(Object aObj) {
+        if (aObj instanceof IDataShell) return ((IDataShell<?>)aObj).internalDataShift();
         return 0;
     }
-    static int dataSize(Object aObj) {
-        if (aObj instanceof IDataShell) return ((IDataShell<?>)aObj).dataSize();
+    static int internalDataSize(Object aObj) {
+        if (aObj instanceof IDataShell) return ((IDataShell<?>)aObj).internalDataSize();
         else if (aObj.getClass().isArray()) return Array.getLength(aObj);
         return 0;
     }
+    
+    /** 旧名称保留兼容 */
+    @Deprecated default void setData2this(D aData) {setInternalData(aData);}
+    @Deprecated default D getData() {return internalData();}
+    @Deprecated default int dataSize() {return internalDataSize();}
+    @Deprecated default int shiftSize() {return internalDataShift();}
 }

@@ -21,7 +21,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebePlus2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.ebePlus2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -36,7 +36,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMinus2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.ebeMinus2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -51,7 +51,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMinus2Dest(tDataR, IDataShell.shiftSize(aRHS), tDataL, tThis.shiftSize(), rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.ebeMinus2Dest(tDataR, IDataShell.internalDataShift(aRHS), tDataL, tThis.internalDataShift(), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -66,7 +66,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMultiply2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.ebeMultiply2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -81,7 +81,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeDiv2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.ebeDiv2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -96,7 +96,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeDiv2Dest(tDataR, IDataShell.shiftSize(aRHS), tDataL, tThis.shiftSize(), rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.ebeDiv2Dest(tDataR, IDataShell.internalDataShift(aRHS), tDataL, tThis.internalDataShift(), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -111,7 +111,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMod2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.ebeMod2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -126,7 +126,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMod2Dest(tDataR, IDataShell.shiftSize(aRHS), tDataL, tThis.shiftSize(), rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.ebeMod2Dest(tDataR, IDataShell.internalDataShift(aRHS), tDataL, tThis.internalDataShift(), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -141,7 +141,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeDo2Dest(tDataL, tThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize(), aOpt);
+            ARRAY.ebeDo2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize(), aOpt);
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -156,7 +156,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapPlus2Dest(tDataL, tThis.shiftSize(), aRHS, rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.mapPlus2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -170,7 +170,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapMinus2Dest(tDataL, tThis.shiftSize(), aRHS, rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.mapMinus2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -184,7 +184,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapLMinus2Dest(tDataL, tThis.shiftSize(), aRHS, rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.mapLMinus2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -198,7 +198,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapMultiply2Dest(tDataL, tThis.shiftSize(), aRHS, rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.mapMultiply2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -212,7 +212,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapDiv2Dest(tDataL, tThis.shiftSize(), aRHS, rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.mapDiv2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -226,7 +226,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapLDiv2Dest(tDataL, tThis.shiftSize(), aRHS, rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.mapLDiv2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -240,7 +240,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapMod2Dest(tDataL, tThis.shiftSize(), aRHS, rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.mapMod2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -254,7 +254,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapLMod2Dest(tDataL, tThis.shiftSize(), aRHS, rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize());
+            ARRAY.mapLMod2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -268,7 +268,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapDo2Dest(tDataL, tThis.shiftSize(), rFunc1.getData(), rFunc1.shiftSize(), rFunc1.dataSize(), aOpt);
+            ARRAY.mapDo2Dest(tDataL, tThis.internalDataShift(), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize(), aOpt);
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
@@ -282,7 +282,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebePlus2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
+            ARRAY.ebePlus2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构
             final int tNx = rThis.Nx();
@@ -303,7 +303,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMinus2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
+            ARRAY.ebeMinus2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构
             final int tNx = rThis.Nx();
@@ -324,7 +324,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeLMinus2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
+            ARRAY.ebeLMinus2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
@@ -336,7 +336,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMultiply2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
+            ARRAY.ebeMultiply2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
@@ -348,7 +348,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeDiv2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
+            ARRAY.ebeDiv2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
@@ -360,7 +360,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeLDiv2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
+            ARRAY.ebeLDiv2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
@@ -372,7 +372,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMod2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
+            ARRAY.ebeMod2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
@@ -384,7 +384,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeLMod2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
+            ARRAY.ebeLMod2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
@@ -396,7 +396,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeDo2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize(), aOpt);
+            ARRAY.ebeDo2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize(), aOpt);
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
@@ -409,11 +409,11 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         final double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeFill2This(rThis.getData(), rThis.shiftSize(), tDataR, IDataShell.shiftSize(aRHS), rThis.dataSize());
+            ARRAY.ebeFill2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         } else {
-            final double[] rData = rThis.getData();
-            final int rShift = rThis.shiftSize();
-            final int rSize = rThis.dataSize();
+            final double[] rData = rThis.internalData();
+            final int rShift = rThis.internalDataShift();
+            final int rSize = rThis.internalDataSize();
             if (rShift == 0) for (int i = 0; i < rSize; ++i) rData[i] += aRHS.subs(rThis.getX(i));
             else for (int i = 0, j = rShift; i < rSize; ++i, ++j) rData[j] += aRHS.subs(rThis.getX(i));
         }

@@ -24,6 +24,7 @@ public final class ShiftReverseVector extends DoubleArrayVector {
     public ShiftReverseVector(int aShift, double[] aData) {this(aData.length-aShift, aShift, aData);}
     
     /** 提供额外的接口来直接设置底层参数 */
+    public int shift() {return mShift;}
     public ShiftReverseVector setSize(int aSize) {mSize = MathEX.Code.toRange(0, mData.length-mShift, aSize); totShift = mSize-1+mShift; return this;}
     public ShiftReverseVector setShift(int aShift) {mShift = MathEX.Code.toRange(0, mData.length-mSize, aShift); totShift = mSize-1+mShift; return this;}
     public int dataLength() {return mData.length;}
@@ -53,7 +54,7 @@ public final class ShiftReverseVector extends DoubleArrayVector {
         return null;
     }
     /** 需要指定平移的距离保证优化运算的正确性 */
-    @Override public int shiftSize() {return mShift;}
+    @Override public int internalDataShift() {return shift();}
     
     
     /** Optimize stuffs，subVec 切片直接返回  {@link ShiftReverseVector} */

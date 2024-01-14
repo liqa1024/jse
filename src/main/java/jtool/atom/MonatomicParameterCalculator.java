@@ -757,8 +757,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 所有进程将统计到的 Qlm 求和，现在可以直接一起同步保证效率
         if (!aNoReduce) {
-            double[][] tData = Qlm.getData();
-            int tCount = Qlm.dataSize();
+            double[][] tData = Qlm.internalData();
+            int tCount = Qlm.internalDataSize();
             aComm.allreduce(tData[0], tCount, MPI.Op.SUM);
             aComm.allreduce(tData[1], tCount, MPI.Op.SUM);
         }
@@ -896,8 +896,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
 
         // 所有进程将统计到的 qlm 求和，现在可以直接一起同步保证效率
         if (!aNoReduce) {
-            double[][] tData = qlm.getData();
-            int tCount = qlm.dataSize();
+            double[][] tData = qlm.internalData();
+            int tCount = qlm.internalDataSize();
             aComm.allreduce(tData[0], tCount, MPI.Op.SUM);
             aComm.allreduce(tData[1], tCount, MPI.Op.SUM);
         }
@@ -967,7 +967,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 所有进程将统计到的 Ql 求和
         if (!aNoReduce) {
-            aComm.allreduce(Ql.getData(), Ql.dataSize(), MPI.Op.SUM);
+            aComm.allreduce(Ql.internalData(), Ql.internalDataSize(), MPI.Op.SUM);
         }
         
         // 返回最终计算结果
@@ -1102,7 +1102,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 所有进程将统计到的 ql 求和
         if (!aNoReduce) {
-            aComm.allreduce(ql.getData(), ql.dataSize(), MPI.Op.SUM);
+            aComm.allreduce(ql.internalData(), ql.internalDataSize(), MPI.Op.SUM);
         }
         
         // 返回最终计算结果
@@ -1299,7 +1299,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 所有进程将统计到的连接数求和
         if (!aNoReduce) {
-            aComm.allreduce(tConnectCount.getData(), tConnectCount.dataSize(), MPI.Op.SUM);
+            aComm.allreduce(tConnectCount.internalData(), tConnectCount.internalDataSize(), MPI.Op.SUM);
         }
         
         // 返回最终计算结果
@@ -1433,7 +1433,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 所有进程将统计到的连接数求和
         if (!aNoReduce) {
-            aComm.allreduce(tConnectCount.getData(), tConnectCount.dataSize(), MPI.Op.SUM);
+            aComm.allreduce(tConnectCount.internalData(), tConnectCount.internalDataSize(), MPI.Op.SUM);
         }
         
         // 返回最终计算结果
