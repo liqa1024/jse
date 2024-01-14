@@ -106,10 +106,10 @@ JNIEXPORT jint JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractSetting_1
 /*
  * Class:     jtool_lmp_NativeLmp
  * Method:    lammpsGatherConcat_
- * Signature: (JLjava/lang/String;ZII[D)V
+ * Signature: (JLjava/lang/String;ZI[D)V
  */
 JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsGatherConcat_1
-  (JNIEnv *, jclass, jlong, jstring, jboolean, jint, jint, jdoubleArray);
+  (JNIEnv *, jclass, jlong, jstring, jboolean, jint, jdoubleArray);
 
 /*
  * Class:     jtool_lmp_NativeLmp

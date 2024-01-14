@@ -65,13 +65,7 @@ GEN_PARSE_JANY_TO_ANY(intbig, double, Double)
 
 #define LMP_MAX_ERROR_STRING 512
 
-void exceptionCheck(JNIEnv *aEnv, void *aLmpPtr) {
-#ifdef LAMMPS_EXCEPTIONS
-#ifndef LAMMPS_EXCEPTIONS_NULL_SUPPORT
-    if (aLmpPtr == NULL) return;
-#endif
-    if (lammps_has_error(aLmpPtr) == 0) return;
-    
+void throwException(JNIEnv *aEnv, const char *aErrStr) {
     // find class runtime due to asm
     jclass tLmpErrorClazz = (*aEnv)->FindClass(aEnv, "jtool/lmp/NativeLmp$Error");
     if (tLmpErrorClazz == NULL) {
@@ -84,17 +78,58 @@ void exceptionCheck(JNIEnv *aEnv, void *aLmpPtr) {
         return;
     }
     
-    char rErrStr[LMP_MAX_ERROR_STRING];
-    lammps_get_last_error_message(aLmpPtr, rErrStr, LMP_MAX_ERROR_STRING);
-    
-    jstring tJErrStr = (*aEnv)->NewStringUTF(aEnv, (const char*)rErrStr);
+    jstring tJErrStr = (*aEnv)->NewStringUTF(aEnv, aErrStr);
     jobject tLmpError = (*aEnv)->NewObject(aEnv, tLmpErrorClazz, tLmpErrorInit, tJErrStr);
     (*aEnv)->Throw(aEnv, tLmpError);
     (*aEnv)->DeleteLocalRef(aEnv, tLmpError);
     (*aEnv)->DeleteLocalRef(aEnv, tJErrStr);
     (*aEnv)->DeleteLocalRef(aEnv, tLmpErrorClazz);
+}
+jboolean exceptionCheck(JNIEnv *aEnv, void *aLmpPtr) {
+#ifdef LAMMPS_EXCEPTIONS
+#ifndef LAMMPS_EXCEPTIONS_NULL_SUPPORT
+    if (aLmpPtr == NULL) return JNI_FALSE;
+#endif
+    if (lammps_has_error(aLmpPtr) == 0) return JNI_FALSE;
+    
+    char rErrStr[LMP_MAX_ERROR_STRING];
+    lammps_get_last_error_message(aLmpPtr, rErrStr, LMP_MAX_ERROR_STRING);
+    
+    throwException(aEnv, rErrStr);
+    return JNI_TRUE;
+#else
+    return JNI_FALSE;
 #endif
 }
+#ifdef LAMMPS_LIB_MPI
+jboolean exceptionCheckMPI(JNIEnv *aEnv, int aExitCode) {
+    if (aExitCode == MPI_SUCCESS) return JNI_FALSE;
+    
+    // find class runtime due to asm
+    jclass tMPIErrorClazz = (*aEnv)->FindClass(aEnv, "jtool/parallel/MPI$Error");
+    if (tMPIErrorClazz == NULL) {
+        fprintf(stderr, "Couldn't find jtool/parallel/MPI$Error\n");
+        return JNI_TRUE;
+    }
+    jmethodID tMPIErrorInit = (*aEnv)->GetMethodID(aEnv, tMPIErrorClazz, "<init>", "(ILjava/lang/String;)V");
+    if (tMPIErrorInit == NULL) {
+        fprintf(stderr, "Couldn't find jtool/parallel/MPI$Error.<init>(ILjava/lang/String;)V\n");
+        return JNI_TRUE;
+    }
+    
+    char rErrStr[MPI_MAX_ERROR_STRING];
+    int rLen;
+    MPI_Error_string(aExitCode, rErrStr, &rLen);
+    
+    jstring tJErrStr = (*aEnv)->NewStringUTF(aEnv, (const char*)rErrStr);
+    jobject tMPIError = (*aEnv)->NewObject(aEnv, tMPIErrorClazz, tMPIErrorInit, aExitCode, tJErrStr);
+    (*aEnv)->Throw(aEnv, tMPIError);
+    (*aEnv)->DeleteLocalRef(aEnv, tMPIError);
+    (*aEnv)->DeleteLocalRef(aEnv, tJErrStr);
+    (*aEnv)->DeleteLocalRef(aEnv, tMPIErrorClazz);
+    return JNI_TRUE;
+}
+#endif
 
 
 
@@ -249,40 +284,140 @@ JNIEXPORT jint JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractSetting_1(JNIEnv *a
     free(tName);
     return tSetting;
 }
-JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsGatherConcat_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aName, jboolean aIsDouble, jint aAtomNum, jint aCount, jdoubleArray rData) {
-    jdouble *rDataBuf = (*aEnv)->GetDoubleArrayElements(aEnv, rData, NULL);
+JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsGatherConcat_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aName, jboolean aIsDouble, jint aCount, jdoubleArray rData) {
+    // The implementation of `lammps_gather_concat` is just a piece of shit which actually causes memory leakage,
+    // so I can only implement it myself, while also providing support for non MPI.
+#ifdef LAMMPS_BIGBIG
+    throwException(aEnv, "Library function lammps_gather_concat() is not compatible with -DLAMMPS_BIGBIG");
+#endif
+    void *tLmpPtr = (void *)aLmpPtr;
     char *tName = parseStr(aEnv, aName);
-    if (aIsDouble) {
-#ifdef LAMMPS_OLD
-        lammps_gather_atoms_concat((void *)aLmpPtr, tName, 1, aCount, rDataBuf);
-#else
-        lammps_gather_concat((void *)aLmpPtr, tName, 1, aCount, rDataBuf);
-#endif
-        exceptionCheck(aEnv, (void *)aLmpPtr);
-    } else {
-        jint tLen = aCount * aAtomNum;
-        int *rIntBuf = malloc(tLen*sizeof(int));
-#ifdef LAMMPS_OLD
-        lammps_gather_atoms_concat((void *)aLmpPtr, tName, 0, aCount, rIntBuf);
-#else
-        lammps_gather_concat((void *)aLmpPtr, tName, 0, aCount, rIntBuf);
-#endif
-        exceptionCheck(aEnv, (void *)aLmpPtr);
-        for (int i = 0; i < tLen; ++i) rDataBuf[i] = rIntBuf[i];
-        free(rIntBuf);
-    }
+    void *tRef = lammps_extract_atom(tLmpPtr, tName);
+    jboolean tHasException = exceptionCheck(aEnv, tLmpPtr);
     free(tName);
+    if (tHasException || tRef==NULL) return;
+    int tLocalAtomNum = lammps_extract_setting(tLmpPtr, "nlocal"); if (exceptionCheck(aEnv, tLmpPtr)) return;
+#ifdef LAMMPS_LIB_MPI
+    // init MPI_Comm stuffs
+    MPI_Comm tLmpComm = (MPI_Comm)lammps_get_mpi_comm(tLmpPtr);
+    int tLmpMe, tLmpNP;
+    int tExitCodeMPI;
+    tExitCodeMPI = MPI_Comm_rank(tLmpComm, &tLmpMe); if (exceptionCheckMPI(aEnv, tExitCodeMPI)) return;
+    tExitCodeMPI = MPI_Comm_size(tLmpComm, &tLmpNP); if (exceptionCheckMPI(aEnv, tExitCodeMPI)) return;
+    // allgather counts (tLocalAtomNum * aCount)
+    int *tCounts = malloc(tLmpNP * sizeof(int));
+    tCounts[tLmpMe] = tLocalAtomNum * aCount;
+    tExitCodeMPI = MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, tCounts, 1, MPI_INT, tLmpComm);
+    if (exceptionCheckMPI(aEnv, tExitCodeMPI)) {free(tCounts); return;}
+    // cal displs
+    int *tDispls = malloc(tLmpNP * sizeof(int));
+    tDispls[0] = 0;
+    for (int i = 1; i < tLmpNP; ++i) {
+        tDispls[i] = tDispls[i-1] + tCounts[i-1];
+    }
+    // gather atom data by allgatherv
+    jdouble *rDataBuf = (*aEnv)->GetDoubleArrayElements(aEnv, rData, NULL);
+    if (aIsDouble) {
+        if (aCount > 1) {
+            double **tDoubleRef = (double **)tRef;
+            int idx = tDispls[tLmpMe];
+            for (int i = 0; i < tLocalAtomNum; ++i) {
+                double *subDoubleRef = tDoubleRef[i];
+                if (subDoubleRef == NULL) break;
+                for (int j = 0; j < aCount; ++j) {
+                    rDataBuf[idx] = (jdouble)subDoubleRef[j];
+                    ++idx;
+                }
+            }
+        } else {
+            double *tDoubleRef = (double *)tRef;
+            int idx = tDispls[tLmpMe];
+            for (int i = 0; i < tLocalAtomNum; ++i) {
+                rDataBuf[idx] = (jdouble)tDoubleRef[i];
+                ++idx;
+            }
+        }
+        // NO need to free due to it is lammps internal data
+        tExitCodeMPI = MPI_Allgatherv(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, rDataBuf, tCounts, tDispls, MPI_DOUBLE, tLmpComm);
+        exceptionCheckMPI(aEnv, tExitCodeMPI);
+    } else {
+        int tDataSize = tDispls[tLmpNP-1] + tCounts[tLmpNP-1];
+        int *rIntDataBuf = malloc(tDataSize * sizeof(int));
+        if (aCount > 1) {
+            int **tIntRef = (int **)tRef;
+            int idx = tDispls[tLmpMe];
+            for (int i = 0; i < tLocalAtomNum; ++i) {
+                int *subIntRef = tIntRef[i];
+                if (subIntRef == NULL) break;
+                for (int j = 0; j < aCount; ++j) {
+                    rIntDataBuf[idx] = subIntRef[j];
+                    ++idx;
+                }
+            }
+        } else {
+            int *tIntRef = (int *)tRef;
+            int idx = tDispls[tLmpMe];
+            for (int i = 0; i < tLocalAtomNum; ++i) {
+                rIntDataBuf[idx] = tIntRef[i];
+                ++idx;
+            }
+        }
+        // NO need to free due to it is lammps internal data
+        tExitCodeMPI = MPI_Allgatherv(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, rIntDataBuf, tCounts, tDispls, MPI_INT, tLmpComm);
+        exceptionCheckMPI(aEnv, tExitCodeMPI);
+        for (int i = 0; i < tDataSize; ++i) rDataBuf[i] = rIntDataBuf[i];
+        free(rIntDataBuf);
+    }
+    free(tCounts);
+    free(tDispls);
     (*aEnv)->ReleaseDoubleArrayElements(aEnv, rData, rDataBuf, 0); // write mode
+#else
+    jdouble *rDataBuf = (*aEnv)->GetDoubleArrayElements(aEnv, rData, NULL);
+    if (aIsDouble) {
+        if (aCount > 1) {
+            double **tDoubleRef = (double **)tRef;
+            int idx = 0;
+            for (int i = 0; i < tLocalAtomNum; ++i) {
+                double *subDoubleRef = tDoubleRef[i];
+                if (subDoubleRef == NULL) break;
+                for (int j = 0; j < aCount; ++j) {
+                    rDataBuf[idx] = (jdouble)subDoubleRef[j];
+                    ++idx;
+                }
+            }
+        } else {
+            double *tDoubleRef = (double *)tRef;
+            for (int i = 0; i < tLocalAtomNum; ++i) rDataBuf[i] = (jdouble)tDoubleRef[i];
+        }
+        // NO need to free due to it is lammps internal data
+    } else {
+        if (aCount > 1) {
+            int **tIntRef = (int **)tRef;
+            int idx = 0;
+            for (int i = 0; i < tLocalAtomNum; ++i) {
+                int *subIntRef = tIntRef[i];
+                if (subIntRef == NULL) break;
+                for (int j = 0; j < aCount; ++j) {
+                    rDataBuf[idx] = (jdouble)subIntRef[j];
+                    ++idx;
+                }
+            }
+        } else {
+            int *tIntRef = (int *)tRef;
+            for (int i = 0; i < tLocalAtomNum; ++i) rDataBuf[i] = (jdouble)tIntRef[i];
+        }
+        // NO need to free due to it is lammps internal data
+    }
+    (*aEnv)->ReleaseDoubleArrayElements(aEnv, rData, rDataBuf, 0); // write mode
+#endif
 }
 JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractAtom_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aName, jint aDataType, jint aAtomNum, jint aCount, jdoubleArray rData) {
-    jdouble *rDataBuf = (*aEnv)->GetDoubleArrayElements(aEnv, rData, NULL);
     char *tName = parseStr(aEnv, aName);
     void *tRef = lammps_extract_atom((void *)aLmpPtr, tName);
-    exceptionCheck(aEnv, (void *)aLmpPtr);
+    jboolean tHasException = exceptionCheck(aEnv, (void *)aLmpPtr);
     free(tName);
-    if (tRef == NULL) {
-        (*aEnv)->ReleaseDoubleArrayElements(aEnv, rData, rDataBuf, JNI_ABORT); return;
-    }
+    if (tHasException || tRef==NULL) return;
+    jdouble *rDataBuf = (*aEnv)->GetDoubleArrayElements(aEnv, rData, NULL);
     switch (aDataType) {
     case 0: {
         if (aCount > 1) {
@@ -292,13 +427,13 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractAtom_1(JNIEnv *aEnv
                 int *subIntRef = tIntRef[i];
                 if (subIntRef == NULL) break;
                 for (int j = 0; j < aCount; ++j) {
-                    rDataBuf[idx] = (double)subIntRef[j];
+                    rDataBuf[idx] = (jdouble)subIntRef[j];
                     ++idx;
                 }
             }
         } else {
             int *tIntRef = (int *)tRef;
-            for (int i = 0; i < aAtomNum; ++i) rDataBuf[i] = (double)tIntRef[i];
+            for (int i = 0; i < aAtomNum; ++i) rDataBuf[i] = (jdouble)tIntRef[i];
         }
         // NO need to free due to it is lammps internal data
         break;
@@ -311,13 +446,13 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractAtom_1(JNIEnv *aEnv
                 double *subDoubleRef = tDoubleRef[i];
                 if (subDoubleRef == NULL) break;
                 for (int j = 0; j < aCount; ++j) {
-                    rDataBuf[idx] = (double)subDoubleRef[j];
+                    rDataBuf[idx] = (jdouble)subDoubleRef[j];
                     ++idx;
                 }
             }
         } else {
             double *tDoubleRef = (double *)tRef;
-            for (int i = 0; i < aAtomNum; ++i) rDataBuf[i] = (double)tDoubleRef[i];
+            for (int i = 0; i < aAtomNum; ++i) rDataBuf[i] = (jdouble)tDoubleRef[i];
         }
         // NO need to free due to it is lammps internal data
         break;
@@ -330,13 +465,13 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractAtom_1(JNIEnv *aEnv
                 intbig *subIntbigRef = tIntbigRef[i];
                 if (subIntbigRef == NULL) break;
                 for (int j = 0; j < aCount; ++j) {
-                    rDataBuf[idx] = (double)subIntbigRef[j];
+                    rDataBuf[idx] = (jdouble)subIntbigRef[j];
                     ++idx;
                 }
             }
         } else {
             intbig *tIntbigRef = (intbig *)tRef;
-            for (int i = 0; i < aAtomNum; ++i) rDataBuf[i] = (double)tIntbigRef[i];
+            for (int i = 0; i < aAtomNum; ++i) rDataBuf[i] = (jdouble)tIntbigRef[i];
         }
         // NO need to free due to it is lammps internal data
         break;
@@ -349,12 +484,12 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractAtom_1(JNIEnv *aEnv
                 int64_t *subInt64Ref = tInt64Ref[i];
                 if (subInt64Ref == NULL) break;
                 for (int j = 0; j < aCount; ++j) {
-                    rDataBuf[idx] = (double)subInt64Ref[j]; ++idx;
+                    rDataBuf[idx] = (jdouble)subInt64Ref[j]; ++idx;
                 }
             }
         } else {
             int64_t *tInt64Ref = (int64_t *)tRef;
-            for (int i = 0; i < aAtomNum; ++i) rDataBuf[i] = (double)tInt64Ref[i];
+            for (int i = 0; i < aAtomNum; ++i) rDataBuf[i] = (jdouble)tInt64Ref[i];
         }
         // NO need to free due to it is lammps internal data
         break;

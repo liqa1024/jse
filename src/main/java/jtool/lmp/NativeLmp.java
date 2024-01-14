@@ -548,34 +548,34 @@ public class NativeLmp implements IAutoShutdown {
     public RowMatrix atomDataOf(String aName) throws Error {
         switch(aName) {
         case "mass":        {return localAtomDataOf(aName, 1, atomTypeNum()+1, 1);}
-        case "id":          {return fullAtomDataOf(aName, false, atomNum(), 1);}
-        case "type":        {return fullAtomDataOf(aName, false, atomNum(), 1);}
-        case "mask":        {return fullAtomDataOf(aName, false, atomNum(), 1);}
-        case "image":       {return fullAtomDataOf(aName, false, atomNum(), 1);}
-        case "x":           {return fullAtomDataOf(aName, true , atomNum(), 3);}
-        case "v":           {return fullAtomDataOf(aName, true , atomNum(), 3);}
-        case "f":           {return fullAtomDataOf(aName, true , atomNum(), 3);}
-        case "molecule":    {return fullAtomDataOf(aName, false, atomNum(), 1);}
-        case "q":           {return fullAtomDataOf(aName, true , atomNum(), 1);}
-        case "mu":          {return fullAtomDataOf(aName, true , atomNum(), 3);}
-        case "omega":       {return fullAtomDataOf(aName, true , atomNum(), 3);}
-        case "angmom":      {return fullAtomDataOf(aName, true , atomNum(), 3);}
-        case "torque":      {return fullAtomDataOf(aName, true , atomNum(), 3);}
-        case "radius":      {return fullAtomDataOf(aName, true , atomNum(), 1);}
-        case "rmass":       {return fullAtomDataOf(aName, true , atomNum(), 1);}
-        case "ellipsoid":   {return fullAtomDataOf(aName, false, atomNum(), 1);}
-        case "line":        {return fullAtomDataOf(aName, false, atomNum(), 1);}
-        case "tri":         {return fullAtomDataOf(aName, false, atomNum(), 1);}
-        case "body":        {return fullAtomDataOf(aName, false, atomNum(), 1);}
-        case "quat":        {return fullAtomDataOf(aName, true , atomNum(), 4);}
-        case "temperature": {return fullAtomDataOf(aName, true , atomNum(), 1);}
-        case "heatflow":    {return fullAtomDataOf(aName, true , atomNum(), 1);}
+        case "id":          {return fullAtomDataOf(aName, false, 1);}
+        case "type":        {return fullAtomDataOf(aName, false, 1);}
+        case "mask":        {return fullAtomDataOf(aName, false, 1);}
+        case "image":       {return fullAtomDataOf(aName, false, 1);}
+        case "x":           {return fullAtomDataOf(aName, true , 3);}
+        case "v":           {return fullAtomDataOf(aName, true , 3);}
+        case "f":           {return fullAtomDataOf(aName, true , 3);}
+        case "molecule":    {return fullAtomDataOf(aName, false, 1);}
+        case "q":           {return fullAtomDataOf(aName, true , 1);}
+        case "mu":          {return fullAtomDataOf(aName, true , 3);}
+        case "omega":       {return fullAtomDataOf(aName, true , 3);}
+        case "angmom":      {return fullAtomDataOf(aName, true , 3);}
+        case "torque":      {return fullAtomDataOf(aName, true , 3);}
+        case "radius":      {return fullAtomDataOf(aName, true , 1);}
+        case "rmass":       {return fullAtomDataOf(aName, true , 1);}
+        case "ellipsoid":   {return fullAtomDataOf(aName, false, 1);}
+        case "line":        {return fullAtomDataOf(aName, false, 1);}
+        case "tri":         {return fullAtomDataOf(aName, false, 1);}
+        case "body":        {return fullAtomDataOf(aName, false, 1);}
+        case "quat":        {return fullAtomDataOf(aName, true , 4);}
+        case "temperature": {return fullAtomDataOf(aName, true , 1);}
+        case "heatflow":    {return fullAtomDataOf(aName, true , 1);}
         default: {
             if (aName.startsWith("i_")) {
-                return fullAtomDataOf(aName, false, atomNum(), 1);
+                return fullAtomDataOf(aName, false, 1);
             } else
             if (aName.startsWith("d_")) {
-                return fullAtomDataOf(aName, true , atomNum(), 1);
+                return fullAtomDataOf(aName, true , 1);
             } else {
                 throw new IllegalArgumentException("Unexpected name: "+aName+", use fullAtomDataOf(aName, aIsDouble, aRowNum, aColNum) to gather this atom data.");
             }
@@ -590,13 +590,12 @@ public class NativeLmp implements IAutoShutdown {
      * @param aName name of the property
      * @param aIsDouble false for int, true for double
      * @param aColNum column number of Matrix of requested data
-     * @param aRowNum row number of Matrix of requested data
-     * @return RowMatrix of requested data
+     * @return RowMatrix of requested data, row number is always atomNum.
      */
-    public RowMatrix fullAtomDataOf(String aName, boolean aIsDouble, int aRowNum, int aColNum) throws Error {
+    public RowMatrix fullAtomDataOf(String aName, boolean aIsDouble, int aColNum) throws Error {
         checkThread();
-        RowMatrix rData = MatrixCache.getMatRow(aRowNum, aColNum);
-        lammpsGatherConcat_(mLmpPtr, aName, aIsDouble, aRowNum, aColNum, rData.internalData());
+        RowMatrix rData = MatrixCache.getMatRow(atomNum(), aColNum);
+        lammpsGatherConcat_(mLmpPtr, aName, aIsDouble, aColNum, rData.internalData());
         return rData;
     }
     /**
@@ -617,7 +616,7 @@ public class NativeLmp implements IAutoShutdown {
         lammpsExtractAtom_(mLmpPtr, aName, aDataType, aRowNum, aColNum, rData.internalData());
         return rData;
     }
-    private native static void lammpsGatherConcat_(long aLmpPtr, String aName, boolean aIsDouble, int aAtomNum, int aCount, double[] rData) throws Error;
+    private native static void lammpsGatherConcat_(long aLmpPtr, String aName, boolean aIsDouble, int aCount, double[] rData) throws Error;
     private native static void lammpsExtractAtom_(long aLmpPtr, String aName, int aDataType, int aAtomNum, int aCount, double[] rData) throws Error;
     
     /**
