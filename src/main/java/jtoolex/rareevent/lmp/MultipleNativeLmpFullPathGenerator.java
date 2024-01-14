@@ -317,7 +317,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                     if (mLmpMe == 0) {
                         mWorldComm.send(mWorldRoot, SHUTDOWN_FINISHED);
                     }
-                    mLmpComm.barrier();
+                    mWorldComm.barrier(); // 注意这个 shutdown 是全局操作，并且此时 mLmpComm 已经失效
                     return;
                 }
                 case PATH_INIT: {

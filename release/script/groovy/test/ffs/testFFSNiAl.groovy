@@ -61,6 +61,7 @@ rng(rng().nextLong());
 /** NativeLmp 参数 */
 NativeLmp.Conf.CMAKE_SETTING.PKG_MANYBODY = 'ON';
 NativeLmp.Conf.REBUILD = false; // 如果没有这个包需要开启此选项重新构建
+//NativeLmp.Conf.LMP_HOME = 'lib/lmp/native/build-debug/'; // 用于 debug
 if (me == 0) println("LMP_HOME: ${NativeLmp.Conf.LMP_HOME}");
 
 
