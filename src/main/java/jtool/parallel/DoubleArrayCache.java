@@ -1,13 +1,17 @@
 package jtool.parallel;
 
-import jtool.code.functional.IConsumer2;
-import jtool.code.functional.IOperator1;
+import jtool.code.collection.IListGetter;
+import jtool.code.collection.IListSetter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
-import static jtool.code.CS.*;
+import static jtool.code.CS.NO_CACHE;
+import static jtool.code.CS.ZL_VEC;
 
 /**
  * 专门针对 {@code double[]} 的全局线程独立缓存，
@@ -71,31 +75,31 @@ public class DoubleArrayCache {
     
     
     
-    /** 内部使用的批量操作的接口，约定所有数组都等长 */
-    static void returnArrayFrom(double aMultiple, IOperator1<double @NotNull[], Integer> aArrayGetter) {
+    /** 批量操作的接口，约定所有数组都等长 */
+    public static void returnArrayFrom(int aMultiple, IListGetter<double @NotNull[]> aArrayGetter) {
         if (NO_CACHE) return;
         if (aMultiple <= 0) return;
-        double[] tFirst = aArrayGetter.cal(0);
+        double[] tFirst = aArrayGetter.get(0);
         final int tSizeKey = tFirst.length;
         if (tSizeKey == 0) return;
         IObjectPool<double[]> tPool = CACHE.get().computeIfAbsent(tSizeKey, key -> new ObjectCachePool<>());
         tPool.returnObject(tFirst);
-        for (int i = 1; i < aMultiple; ++i) tPool.returnObject(aArrayGetter.cal(i));
+        for (int i = 1; i < aMultiple; ++i) tPool.returnObject(aArrayGetter.get(i));
     }
     
-    static void getZerosTo(int aMinSize, int aMultiple, IConsumer2<Integer, double @NotNull[]> aZerosConsumer) {
+    public static void getZerosTo(int aMinSize, int aMultiple, IListSetter<double @NotNull[]> aZerosConsumer) {
         if (aMultiple <= 0) return;
         if (aMinSize <= 0) {
-            for (int i = 0; i < aMultiple; ++i) aZerosConsumer.run(i, ZL_VEC);
+            for (int i = 0; i < aMultiple; ++i) aZerosConsumer.set(i, ZL_VEC);
             return;
         }
         if (NO_CACHE) {
-            for (int i = 0; i < aMultiple; ++i) aZerosConsumer.run(i, new double[aMinSize]);
+            for (int i = 0; i < aMultiple; ++i) aZerosConsumer.set(i, new double[aMinSize]);
             return;
         }
         Map.Entry<Integer, IObjectPool<double[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
         if (tEntry == null || tEntry.getKey()>=aMinSize*2) {
-            for (int i = 0; i < aMultiple; ++i) aZerosConsumer.run(i, new double[aMinSize]);
+            for (int i = 0; i < aMultiple; ++i) aZerosConsumer.set(i, new double[aMinSize]);
             return;
         }
         IObjectPool<double[]> tPool = tEntry.getValue();
@@ -103,7 +107,7 @@ public class DoubleArrayCache {
         boolean tNoCache = false;
         for (int i = 0; i < aMultiple; ++i) {
             if (tNoCache) {
-                aZerosConsumer.run(i, new double[aMinSize]);
+                aZerosConsumer.set(i, new double[aMinSize]);
                 continue;
             }
             double @Nullable[] subOut = tPool.getObject();
@@ -113,30 +117,30 @@ public class DoubleArrayCache {
             } else {
                 Arrays.fill(subOut, 0.0);
             }
-            aZerosConsumer.run(i, subOut);
+            aZerosConsumer.set(i, subOut);
         }
     }
     
-    static void getArrayTo(int aMinSize, int aMultiple, IConsumer2<Integer, double @NotNull[]> aArrayConsumer) {
+    public static void getArrayTo(int aMinSize, int aMultiple, IListSetter<double @NotNull[]> aArrayConsumer) {
         if (aMultiple <= 0) return;
         if (aMinSize <= 0) {
-            for (int i = 0; i < aMultiple; ++i) aArrayConsumer.run(i, ZL_VEC);
+            for (int i = 0; i < aMultiple; ++i) aArrayConsumer.set(i, ZL_VEC);
             return;
         }
         if (NO_CACHE) {
-            for (int i = 0; i < aMultiple; ++i) aArrayConsumer.run(i, new double[aMinSize]);
+            for (int i = 0; i < aMultiple; ++i) aArrayConsumer.set(i, new double[aMinSize]);
             return;
         }
         Map.Entry<Integer, IObjectPool<double[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
         if (tEntry == null || tEntry.getKey()>=aMinSize*2) {
-            for (int i = 0; i < aMultiple; ++i) aArrayConsumer.run(i, new double[aMinSize]);
+            for (int i = 0; i < aMultiple; ++i) aArrayConsumer.set(i, new double[aMinSize]);
             return;
         }
         IObjectPool<double[]> tPool = tEntry.getValue();
         boolean tNoCache = false;
         for (int i = 0; i < aMultiple; ++i) {
             if (tNoCache) {
-                aArrayConsumer.run(i, new double[aMinSize]);
+                aArrayConsumer.set(i, new double[aMinSize]);
                 continue;
             }
             double @Nullable[] subOut = tPool.getObject();
@@ -144,7 +148,7 @@ public class DoubleArrayCache {
                 tNoCache = true;
                 subOut = new double[aMinSize];
             }
-            aArrayConsumer.run(i, subOut);
+            aArrayConsumer.set(i, subOut);
         }
     }
 }

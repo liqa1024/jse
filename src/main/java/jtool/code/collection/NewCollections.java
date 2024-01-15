@@ -40,9 +40,9 @@ public class NewCollections {
         for (int i = 0; i < aSize; ++i) rOut.add(null);
         return rOut;
     }
-    public static <T> ArrayList<T> from(int aSize, IOperator1<? extends T, Integer> aListGetter) {
+    public static <T> ArrayList<T> from(int aSize, IListGetter<? extends T> aListGetter) {
         ArrayList<T> rOut = new ArrayList<>(aSize);
-        for (int i = 0; i < aSize; ++i) rOut.add(aListGetter.cal(i));
+        for (int i = 0; i < aSize; ++i) rOut.add(aListGetter.get(i));
         return rOut;
     }
     public static <T> ArrayList<T> from(Iterable<? extends T> aIterable) {

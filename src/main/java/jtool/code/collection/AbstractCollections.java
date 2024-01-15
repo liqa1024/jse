@@ -25,9 +25,9 @@ public class AbstractCollections {
     public static <T> @Unmodifiable List<T> zl() {return ImmutableList.of();}
     
     /** 通用的转换方法 */
-    public static <T> @Unmodifiable List<T> from(final int aSize, final IOperator1<? extends T, Integer> aListGetter) {
+    public static <T> @Unmodifiable List<T> from(final int aSize, final IListGetter<? extends T> aListGetter) {
         return new AbstractRandomAccessList<T>() {
-            @Override public T get(int index) {return aListGetter.cal(index);}
+            @Override public T get(int index) {return aListGetter.get(index);}
             @Override public int size() {return aSize;}
         };
     }

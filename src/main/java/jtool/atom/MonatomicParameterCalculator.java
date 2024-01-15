@@ -3,6 +3,7 @@ package jtool.atom;
 import jtool.code.collection.AbstractRandomAccessList;
 import jtool.code.collection.NewCollections;
 import jtool.code.functional.IOperator1;
+import jtool.code.iterator.IDoubleIterator;
 import jtool.code.iterator.IDoubleSetIterator;
 import jtool.math.ComplexDouble;
 import jtool.math.function.FixBoundFunc1;
@@ -519,10 +520,16 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     
     
     /** 用于分割模拟盒，判断给定 XYZ 或者 idx 处的原子是否在需要考虑的区域中 */
-    private class MPIRegion {
+    private class MPIInfo implements IAutoShutdown {
         private final double mXLo, mXHi, mYLo, mYHi, mZLo, mZHi;
-        MPIRegion(MPI.Comm aComm) throws MPI.Error {
-            int tSizeRest = aComm.size();
+        final MPI.Comm mComm;
+        final int mRank, mSize;
+        final int mSizeX, mSizeY, mSizeZ;
+        MPIInfo(MPI.Comm aComm) throws MPI.Error {
+            mComm = aComm;
+            mRank = mComm.rank();
+            mSize = mComm.size();
+            int tSizeRest = mSize;
             // 使用这个方法来获取每个方向的分划数
             Deque<Integer> rFactors = new ArrayDeque<>();
             for (int tFactor = 2; tFactor <= tSizeRest; ++tFactor) {
@@ -542,16 +549,18 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                     rSizeZ *= tFactor;
                 }
             }
+            mSizeX = rSizeX; mSizeY = rSizeY; mSizeZ = rSizeZ;
             // 根据分划数获取对应的 mXLo, mXhi, mYLo, mYHi, mZLo, mZHi
-            int tRank = aComm.rank();
-            int tI = tRank/rSizeZ/rSizeY;
-            int tJ = tRank/rSizeZ%rSizeY;
-            int tK = tRank%rSizeZ;
-            XYZ tCellSize = mBox.div(rSizeX, rSizeY, rSizeZ);
+            int tI = mRank/mSizeZ/mSizeY;
+            int tJ = mRank/mSizeZ%mSizeY;
+            int tK = mRank%mSizeZ;
+            XYZ tCellSize = mBox.div(mSizeX, mSizeY, mSizeZ);
             mXLo = tI * tCellSize.mX; mXHi = mXLo + tCellSize.mX;
             mYLo = tJ * tCellSize.mY; mYHi = mYLo + tCellSize.mY;
             mZLo = tK * tCellSize.mZ; mZHi = mZLo + tCellSize.mZ;
         }
+        
+        /** Regin stuffs */
         @SuppressWarnings("RedundantIfStatement")
         boolean inRegin(IXYZ aXYZ) {
             double tX = aXYZ.x();
@@ -574,6 +583,68 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         }
         boolean inRegin(double aX, double aY, double aZ) {
             return (aX >= mXLo) && (aX < mXHi) && (aY >= mYLo) && (aY < mYHi) && (aZ >= mZLo) && (aZ < mZHi);
+        }
+        
+        /** Gather stuffs */
+        private boolean mInitialized = false;
+        private int[] mCounts;
+        private int[] mDispls;
+        private int[] mBuf2Idx;
+        private void init_() {
+            if (mDead) throw new RuntimeException("This MPIInfo is dead");
+            if (mInitialized) return;
+            mInitialized = true;
+            mCounts = IntegerArrayCache.getZeros(mSize);
+            final int[][] rBuf2Idx = new int[mSize][];
+            IntegerArrayCache.getArrayTo(mAtomNum, mSize, (i, array) -> rBuf2Idx[i] = array);
+            // 遍历所有的原子统计位置
+            XYZ tCellSize = mBox.div(mSizeX, mSizeY, mSizeZ);
+            IDoubleIterator it = mAtomDataXYZ.iteratorRow();
+            for (int i = 0; i < mAtomNum; ++i) {
+                double tX = it.next();
+                double tY = it.next();
+                double tZ = it.next();
+                int tI = (int) Math.floor(tX / tCellSize.mX);
+                int tJ = (int) Math.floor(tY / tCellSize.mY);
+                int tK = (int) Math.floor(tZ / tCellSize.mZ);
+                int tRank = (tI*mSizeY*mSizeZ + tJ*mSizeZ + tK); // 这里的排序和 LinkedCell 不同，但是和新的 AbstractAtoms 的一直，为了避免问题这里暂时不去改 LinkedCell 的排序
+                int tCount = mCounts[tRank];
+                rBuf2Idx[tRank][tCount] = i;
+                ++mCounts[tRank];
+            }
+            mBuf2Idx = IntegerArrayCache.getArray(mAtomNum);
+            mDispls = IntegerArrayCache.getArray(mSize);
+            mDispls[0] = 0;
+            for (int i = 0; i < mSize; ++i) {
+                int tStart = mDispls[i];
+                int tCount = mCounts[i];
+                System.arraycopy(rBuf2Idx[i], 0, mBuf2Idx, tStart, tCount);
+                if (i != mSize-1) mDispls[i+1] = tStart + tCount;
+            }
+            IntegerArrayCache.returnArrayFrom(mSize, i -> rBuf2Idx[i]);
+        }
+        int[] counts() {
+            if (!mInitialized) init_();
+            return mCounts;
+        }
+        int[] displs() {
+            if (!mInitialized) init_();
+            return mDispls;
+        }
+        int[] buf2idx() {
+            if (!mInitialized) init_();
+            return mBuf2Idx;
+        }
+        
+        private boolean mDead = false;
+        @Override public void shutdown() {
+            if (mDead) return;
+            mDead = true;
+            if (mInitialized) {
+                IntegerArrayCache.returnArray(mCounts);
+                IntegerArrayCache.returnArray(mDispls);
+                IntegerArrayCache.returnArray(mBuf2Idx);
+            }
         }
     }
     
@@ -680,7 +751,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IComplexMatrix calYlmMean(int aL                  ) {return calYlmMean(aL, mUnitLen*R_NEAREST_MUL);}
     
     /** MPI 版本的计算 计算所有粒子的近邻球谐函数的平均，即 Qlm */
-    public IComplexMatrix calYlmMean_MPI(boolean aNoReduce, MPI.Comm aComm, final int aL, double aRNearest, int aNnn) throws MPI.Error {
+    private IComplexMatrix calYlmMean_MPI(boolean aNoGather, MPIInfo aMPIInfo, final int aL, double aRNearest, int aNnn) throws MPI.Error {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
         
@@ -691,17 +762,14 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnn<=0;
         
-        // 获取 MPI 的考虑区域
-        final MPIRegion tCalRegion = new MPIRegion(aComm);
-        
         // 遍历计算 Qlm，这里直接判断原子位置是否是需要计算的然后跳过
-        for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
+        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             // 一次计算一行
             final IComplexVector Qlmi = Qlm.row(i);
             final XYZ cXYZ = new XYZ(mAtomDataXYZ.row(i));
             // 遍历近邻计算 Ylm
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearest, aNnn, aHalf, tCalRegion::inRegin, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(fI, aRNearest, aNnn, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis) -> {
                 // 计算角度
                 double dx = x - cXYZ.mX;
                 double dy = y - cXYZ.mY;
@@ -711,7 +779,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 double phi = (dy > 0) ? Fast.acos(dx / disXY) : (2.0*PI - Fast.acos(dx / disXY));
                 
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
-                boolean tHalfStat = aHalf && tCalRegion.inRegin(idx);
+                boolean tHalfStat = aHalf && aMPIInfo.inRegin(idx);
                 IComplexVector Qlmj = null;
                 if (tHalfStat) {
                     Qlmj = Qlm.row(idx);
@@ -749,22 +817,47 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         }
         
         // 根据近邻数平均得到 Qlm
-        for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
+        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             Qlm.row(i).div2this(tNN.get_(i));
         }
         // 归还临时变量
         VectorCache.returnVec(tNN);
         
-        // 所有进程将统计到的 Qlm 求和，现在可以直接一起同步保证效率
-        if (!aNoReduce) {
-            double[][] tData = Qlm.internalData();
-            int tCount = Qlm.internalDataSize();
-            aComm.allreduce(tData[0], tCount, MPI.Op.SUM);
-            aComm.allreduce(tData[1], tCount, MPI.Op.SUM);
+        // 收集所有进程将统计到的 Qlm，现在可以直接一起同步保证效率
+        if (!aNoGather) {
+            int tMul = aL+aL+1;
+            // 先创建临时的同步数组
+            RowComplexMatrix rBuf = ComplexMatrixCache.getMatRow(mAtomNum, tMul);
+            // 获取 buf2idx, counts 和 displs 来将需要的数据放入 rBuf 指定位置
+            int[] tBuf2Idx = aMPIInfo.buf2idx();
+            int[] tCounts = aMPIInfo.counts();
+            int[] tDispls = aMPIInfo.displs();
+            final int tStart = tDispls[aMPIInfo.mRank];
+            final int tEnd = tStart + tCounts[aMPIInfo.mRank];
+            for (int i = tStart; i < tEnd; ++i) {
+                rBuf.row(i).fill(Qlm.row(tBuf2Idx[i]));
+            }
+            // 使用 allgatherv 收集所有 buf，注意实际 tCounts 和 tDispls 需要增倍
+            int[] tCountsMul = IntegerArrayCache.getArray(aMPIInfo.mSize);
+            int[] tDisplsMul = IntegerArrayCache.getArray(aMPIInfo.mSize);
+            for (int i = 0; i < aMPIInfo.mSize; ++i) tCountsMul[i] = tCounts[i] * tMul;
+            for (int i = 0; i < aMPIInfo.mSize; ++i) tDisplsMul[i] = tDispls[i] * tMul;
+            double[][] tData = rBuf.internalData();
+            aMPIInfo.mComm.allgatherv(tData[0], tCountsMul, tDisplsMul);
+            aMPIInfo.mComm.allgatherv(tData[1], tCountsMul, tDisplsMul);
+            IntegerArrayCache.returnArray(tCountsMul);
+            IntegerArrayCache.returnArray(tDisplsMul);
+            // 将在 buf 中的数据重新设回 Qlm
+            for (int i = 0; i < mAtomNum; ++i) {
+                Qlm.row(tBuf2Idx[i]).fill(rBuf.row(i));
+            }
+            // 归还临时数组
+            ComplexMatrixCache.returnMat(rBuf);
         }
         
         return Qlm;
     }
+    public IComplexMatrix calYlmMean_MPI(boolean aNoGather, MPI.Comm aComm, int aL, double aRNearest, int aNnn) throws MPI.Error {try (MPIInfo tMPIInfo = new MPIInfo(aComm)) {return calYlmMean_MPI(aNoGather, tMPIInfo, aL, aRNearest, aNnn);}}
     public IComplexMatrix calYlmMean_MPI(MPI.Comm aComm, int aL, double aRNearest, int aNnn) throws MPI.Error {return calYlmMean_MPI(false, aComm, aL, aRNearest, aNnn);}
     
     
@@ -841,12 +934,12 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IComplexMatrix calQlmMean(int aL                            ) {return calQlmMean(aL, mUnitLen*R_NEAREST_MUL);}
     
     /** MPI 版本的在 Qlm 基础上再次对所有近邻做一次平均，即 qlm */
-    public IComplexMatrix calQlmMean_MPI(boolean aNoReduce, final MPI.Comm aComm, int aL, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ) throws MPI.Error {
+    private IComplexMatrix calQlmMean_MPI(boolean aNoGather, final MPIInfo aMPIInfo, int aL, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ) throws MPI.Error {
         // 直接全部平均一遍分两步算
         if (mDead) throw new RuntimeException("This Calculator is dead");
         if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
         
-        final IComplexMatrix Qlm = calYlmMean_MPI(aComm, aL, aRNearestY, aNnnY);
+        final IComplexMatrix Qlm = calYlmMean_MPI(false, aMPIInfo, aL, aRNearestY, aNnnY);
         final RowComplexMatrix qlm = ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1);
         
         // 统计近邻数用于求平均（增加一个自身）
@@ -855,11 +948,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnQ<=0;
         
-        // 获取 MPI 的考虑区域
-        final MPIRegion tCalRegion = new MPIRegion(aComm);
-        
         // 遍历计算 Qlm，这里直接判断原子位置是否是需要计算的然后跳过
-        for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
+        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             // 一次计算一行
             final IComplexVector qlmi = qlm.row(i);
             final IComplexVector Qlmi = Qlm.row(i);
@@ -868,11 +958,11 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             qlmi.fill(Qlmi);
             // 再累加近邻
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearestQ, aNnnQ, aHalf, tCalRegion::inRegin, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(fI, aRNearestQ, aNnnQ, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis) -> {
                 // 直接按行累加即可
                 qlmi.plus2this(Qlm.row(idx));
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
-                boolean tHalfStat = aHalf && tCalRegion.inRegin(idx);
+                boolean tHalfStat = aHalf && aMPIInfo.inRegin(idx);
                 if (tHalfStat) {
                     qlm.row(idx).plus2this(Qlmi);
                 }
@@ -886,7 +976,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             });
         }
         // 根据近邻数平均得到 qlm
-        for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
+        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             qlm.row(i).div2this(tNN.get_(i));
         }
         
@@ -894,16 +984,41 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         VectorCache.returnVec(tNN);
         ComplexMatrixCache.returnMat(Qlm);
 
-        // 所有进程将统计到的 qlm 求和，现在可以直接一起同步保证效率
-        if (!aNoReduce) {
-            double[][] tData = qlm.internalData();
-            int tCount = qlm.internalDataSize();
-            aComm.allreduce(tData[0], tCount, MPI.Op.SUM);
-            aComm.allreduce(tData[1], tCount, MPI.Op.SUM);
+        // 收集所有进程将统计到的 qlm，现在可以直接一起同步保证效率
+        if (!aNoGather) {
+            int tMul = aL+aL+1;
+            // 先创建临时的同步数组
+            RowComplexMatrix rBuf = ComplexMatrixCache.getMatRow(mAtomNum, tMul);
+            // 获取 buf2idx, counts 和 displs 来将需要的数据放入 rBuf 指定位置
+            int[] tBuf2Idx = aMPIInfo.buf2idx();
+            int[] tCounts = aMPIInfo.counts();
+            int[] tDispls = aMPIInfo.displs();
+            final int tStart = tDispls[aMPIInfo.mRank];
+            final int tEnd = tStart + tCounts[aMPIInfo.mRank];
+            for (int i = tStart; i < tEnd; ++i) {
+                rBuf.row(i).fill(qlm.row(tBuf2Idx[i]));
+            }
+            // 使用 allgatherv 收集所有 buf，注意实际 tCounts 和 tDispls 需要增倍
+            int[] tCountsMul = IntegerArrayCache.getArray(aMPIInfo.mSize);
+            int[] tDisplsMul = IntegerArrayCache.getArray(aMPIInfo.mSize);
+            for (int i = 0; i < aMPIInfo.mSize; ++i) tCountsMul[i] = tCounts[i] * tMul;
+            for (int i = 0; i < aMPIInfo.mSize; ++i) tDisplsMul[i] = tDispls[i] * tMul;
+            double[][] tData = rBuf.internalData();
+            aMPIInfo.mComm.allgatherv(tData[0], tCountsMul, tDisplsMul);
+            aMPIInfo.mComm.allgatherv(tData[1], tCountsMul, tDisplsMul);
+            IntegerArrayCache.returnArray(tCountsMul);
+            IntegerArrayCache.returnArray(tDisplsMul);
+            // 将在 buf 中的数据重新设回 qlm
+            for (int i = 0; i < mAtomNum; ++i) {
+                qlm.row(tBuf2Idx[i]).fill(rBuf.row(i));
+            }
+            // 归还临时数组
+            ComplexMatrixCache.returnMat(rBuf);
         }
         
         return qlm;
     }
+    public IComplexMatrix calQlmMean_MPI(boolean aNoGather, final MPI.Comm aComm, int aL, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ) throws MPI.Error {try (MPIInfo tMPIInfo = new MPIInfo(aComm)) {return calQlmMean_MPI(aNoGather, tMPIInfo, aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);}}
     public IComplexMatrix calQlmMean_MPI(MPI.Comm aComm, int aL, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ) throws MPI.Error {return calQlmMean_MPI(false, aComm, aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);}
     
     
@@ -945,17 +1060,14 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IVector calBOOP(int aL                  ) {return calBOOP(aL, mUnitLen*R_NEAREST_MUL);}
     
     /** MPI 版本的计算所有粒子的原始的 BOOP */
-    public IVector calBOOP_MPI(boolean aNoReduce, MPI.Comm aComm, int aL, double aRNearest, int aNnn) throws MPI.Error {
+    private IVector calBOOP_MPI(boolean aNoGather, MPIInfo aMPIInfo, int aL, double aRNearest, int aNnn) throws MPI.Error {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
-        IComplexMatrix Qlm = calYlmMean_MPI(true, aComm, aL, aRNearest, aNnn);
-        
-        // 获取 MPI 的考虑区域
-        MPIRegion tCalRegion = new MPIRegion(aComm);
+        IComplexMatrix Qlm = calYlmMean_MPI(true, aMPIInfo, aL, aRNearest, aNnn);
         
         // 直接求和
-        Vector Ql = VectorCache.getZeros(mAtomNum);
-        for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
+        Vector Ql = VectorCache.getVec(mAtomNum);
+        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             // 直接计算复向量的点乘
             double tDot = Qlm.row(i).operation().dot();
             // 使用这个公式设置 Ql
@@ -965,14 +1077,34 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 计算完成归还缓存数据
         ComplexMatrixCache.returnMat(Qlm);
         
-        // 所有进程将统计到的 Ql 求和
-        if (!aNoReduce) {
-            aComm.allreduce(Ql.internalData(), Ql.internalDataSize(), MPI.Op.SUM);
+        // 收集所有进程将统计到的 Ql
+        if (!aNoGather) {
+            // 先创建临时的同步数组
+            Vector rBuf = VectorCache.getVec(mAtomNum);
+            // 获取 buf2idx, counts 和 displs 来将需要的数据放入 rBuf 指定位置
+            int[] tBuf2Idx = aMPIInfo.buf2idx();
+            int[] tCounts = aMPIInfo.counts();
+            int[] tDispls = aMPIInfo.displs();
+            final int tStart = tDispls[aMPIInfo.mRank];
+            final int tEnd = tStart + tCounts[aMPIInfo.mRank];
+            for (int i = tStart; i < tEnd; ++i) {
+                rBuf.set(i, Ql.get(tBuf2Idx[i]));
+            }
+            // 使用 allgatherv 收集所有 buf
+            double[] tData = rBuf.internalData();
+            aMPIInfo.mComm.allgatherv(tData, tCounts, tDispls);
+            // 将在 buf 中的数据重新设回 qlm
+            for (int i = 0; i < mAtomNum; ++i) {
+                Ql.set(tBuf2Idx[i], rBuf.get(i));
+            }
+            // 归还临时数组
+            VectorCache.returnVec(rBuf);
         }
         
         // 返回最终计算结果
         return Ql;
     }
+    public IVector calBOOP_MPI(boolean aNoGather, MPI.Comm aComm, int aL, double aRNearest, int aNnn) throws MPI.Error {try (MPIInfo tMPIInfo = new MPIInfo(aComm)) {return calBOOP_MPI(aNoGather, tMPIInfo, aL, aRNearest, aNnn);}}
     public IVector calBOOP_MPI(MPI.Comm aComm, int aL, double aRNearest, int aNnn) throws MPI.Error {return calBOOP_MPI(false, aComm, aL, aRNearest, aNnn);}
     public IVector calBOOP_MPI(MPI.Comm aComm, int aL, double aRNearest          ) throws MPI.Error {return calBOOP_MPI(aComm, aL, aRNearest, -1);}
     public IVector calBOOP_MPI(MPI.Comm aComm, int aL                            ) throws MPI.Error {return calBOOP_MPI(aComm, aL, mUnitLen*R_NEAREST_MUL);}
@@ -1080,17 +1212,14 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IVector calABOOP(int aL                            ) {return calABOOP(aL, mUnitLen*R_NEAREST_MUL);}
     
     /** MPI 版本的计算所有粒子的 ABOOP */
-    public IVector calABOOP_MPI(boolean aNoReduce, MPI.Comm aComm, int aL, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ) throws MPI.Error {
+    private IVector calABOOP_MPI(boolean aNoGather, MPIInfo aMPIInfo, int aL, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ) throws MPI.Error {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
-        IComplexMatrix qlm = calQlmMean_MPI(true, aComm, aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);
-        
-        // 获取 MPI 的考虑区域
-        MPIRegion tCalRegion = new MPIRegion(aComm);
+        IComplexMatrix qlm = calQlmMean_MPI(true, aMPIInfo, aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);
         
         // 直接求和
-        Vector ql = VectorCache.getZeros(mAtomNum);
-        for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
+        Vector ql = VectorCache.getVec(mAtomNum);
+        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             // 直接计算复向量的点乘
             double tDot = qlm.row(i).operation().dot();
             // 使用这个公式设置 ql
@@ -1100,14 +1229,34 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 计算完成归还缓存数据
         ComplexMatrixCache.returnMat(qlm);
         
-        // 所有进程将统计到的 ql 求和
-        if (!aNoReduce) {
-            aComm.allreduce(ql.internalData(), ql.internalDataSize(), MPI.Op.SUM);
+        // 收集所有进程将统计到的 ql
+        if (!aNoGather) {
+            // 先创建临时的同步数组
+            Vector rBuf = VectorCache.getVec(mAtomNum);
+            // 获取 buf2idx, counts 和 displs 来将需要的数据放入 rBuf 指定位置
+            int[] tBuf2Idx = aMPIInfo.buf2idx();
+            int[] tCounts = aMPIInfo.counts();
+            int[] tDispls = aMPIInfo.displs();
+            final int tStart = tDispls[aMPIInfo.mRank];
+            final int tEnd = tStart + tCounts[aMPIInfo.mRank];
+            for (int i = tStart; i < tEnd; ++i) {
+                rBuf.set(i, ql.get(tBuf2Idx[i]));
+            }
+            // 使用 allgatherv 收集所有 buf
+            double[] tData = rBuf.internalData();
+            aMPIInfo.mComm.allgatherv(tData, tCounts, tDispls);
+            // 将在 buf 中的数据重新设回 qlm
+            for (int i = 0; i < mAtomNum; ++i) {
+                ql.set(tBuf2Idx[i], rBuf.get(i));
+            }
+            // 归还临时数组
+            VectorCache.returnVec(rBuf);
         }
         
         // 返回最终计算结果
         return ql;
     }
+    public IVector calABOOP_MPI(boolean aNoGather, MPI.Comm aComm, int aL, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ) throws MPI.Error {try (MPIInfo tMPIInfo = new MPIInfo(aComm)) {return calABOOP_MPI(aNoGather, tMPIInfo, aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);}}
     public IVector calABOOP_MPI(MPI.Comm aComm, int aL, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ) throws MPI.Error {return calABOOP_MPI(false, aComm, aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);}
     public IVector calABOOP_MPI(MPI.Comm aComm, int aL, double aRNearest, int aNnn) throws MPI.Error {return calABOOP_MPI(aComm, aL, aRNearest, aNnn, aRNearest, aNnn);}
     public IVector calABOOP_MPI(MPI.Comm aComm, int aL, double aRNearest          ) throws MPI.Error {return calABOOP_MPI(aComm, aL, aRNearest, -1);}
@@ -1252,10 +1401,10 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IVector calConnectCountBOOP(int aL, double aConnectThreshold                            ) {return calConnectCountBOOP(aL, aConnectThreshold, mUnitLen*R_NEAREST_MUL);}
     
     /** MPI 版本的 BOOP 连接数目 */
-    public IVector calConnectCountBOOP_MPI(boolean aNoReduce, MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestS, int aNnnS) throws MPI.Error {
+    private IVector calConnectCountBOOP_MPI(boolean aNoGather, MPIInfo aMPIInfo, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestS, int aNnnS) throws MPI.Error {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
-        final IComplexMatrix Qlm = calYlmMean_MPI(aComm, aL, aRNearestY, aNnnY);
+        final IComplexMatrix Qlm = calYlmMean_MPI(false, aMPIInfo, aL, aRNearestY, aNnnY);
         
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnS<=0;
@@ -1268,16 +1417,13 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             Qlmi.div2this(Qlmi.operation().norm());
         }
         
-        // 获取 MPI 的考虑区域
-        MPIRegion tCalRegion = new MPIRegion(aComm);
-        
         // 计算近邻上 Qlm 的标量积，根据标量积来统计连接数
-        for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
+        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             // 统一获取行向量
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, tCalRegion::inRegin, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis) -> {
                 // 统一获取行向量
                 IComplexVector Qlmj = Qlm.row(idx);
                 // 计算复向量的点乘
@@ -1286,7 +1432,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 if (Sij.norm() > aConnectThreshold) {
                     tConnectCount.increment_(fI);
                     // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
-                    boolean tHalfStat = aHalf && tCalRegion.inRegin(idx);
+                    boolean tHalfStat = aHalf && aMPIInfo.inRegin(idx);
                     if (tHalfStat) {
                         tConnectCount.increment_(idx);
                     }
@@ -1297,14 +1443,34 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 计算完成归还缓存数据
         ComplexMatrixCache.returnMat(Qlm);
         
-        // 所有进程将统计到的连接数求和
-        if (!aNoReduce) {
-            aComm.allreduce(tConnectCount.internalData(), tConnectCount.internalDataSize(), MPI.Op.SUM);
+        // 收集所有进程将统计到的连接数
+        if (!aNoGather) {
+            // 先创建临时的同步数组
+            Vector rBuf = VectorCache.getVec(mAtomNum);
+            // 获取 buf2idx, counts 和 displs 来将需要的数据放入 rBuf 指定位置
+            int[] tBuf2Idx = aMPIInfo.buf2idx();
+            int[] tCounts = aMPIInfo.counts();
+            int[] tDispls = aMPIInfo.displs();
+            final int tStart = tDispls[aMPIInfo.mRank];
+            final int tEnd = tStart + tCounts[aMPIInfo.mRank];
+            for (int i = tStart; i < tEnd; ++i) {
+                rBuf.set(i, tConnectCount.get(tBuf2Idx[i]));
+            }
+            // 使用 allgatherv 收集所有 buf
+            double[] tData = rBuf.internalData();
+            aMPIInfo.mComm.allgatherv(tData, tCounts, tDispls);
+            // 将在 buf 中的数据重新设回 qlm
+            for (int i = 0; i < mAtomNum; ++i) {
+                tConnectCount.set(tBuf2Idx[i], rBuf.get(i));
+            }
+            // 归还临时数组
+            VectorCache.returnVec(rBuf);
         }
         
         // 返回最终计算结果
         return tConnectCount;
     }
+    public IVector calConnectCountBOOP_MPI(boolean aNoGather, MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestS, int aNnnS) throws MPI.Error {try (MPIInfo tMPIInfo = new MPIInfo(aComm)) {return calConnectCountBOOP_MPI(aNoGather, tMPIInfo, aL, aConnectThreshold, aRNearestY, aNnnY, aRNearestS, aNnnS);}}
     public IVector calConnectCountBOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestS, int aNnnS) throws MPI.Error {return calConnectCountBOOP_MPI(false, aComm, aL, aConnectThreshold, aRNearestY, aNnnY, aRNearestS, aNnnS);}
     public IVector calConnectCountBOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearest, int aNnn) throws MPI.Error {return calConnectCountBOOP_MPI(aComm, aL, aConnectThreshold, aRNearest, aNnn, aRNearest, aNnn);}
     public IVector calConnectCountBOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearest          ) throws MPI.Error {return calConnectCountBOOP_MPI(aComm, aL, aConnectThreshold, aRNearest, -1);}
@@ -1386,10 +1552,10 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IVector calConnectCountABOOP(int aL, double aConnectThreshold                            ) {return calConnectCountABOOP(aL, aConnectThreshold, mUnitLen*R_NEAREST_MUL);}
     
     /** MPI 版本的 BOOP 连接数目 */
-    public IVector calConnectCountABOOP_MPI(boolean aNoReduce, MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ, double aRNearestS, int aNnnS) throws MPI.Error {
+    private IVector calConnectCountABOOP_MPI(boolean aNoGather, MPIInfo aMPIInfo, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ, double aRNearestS, int aNnnS) throws MPI.Error {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
-        final IComplexMatrix qlm = calQlmMean_MPI(aComm, aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);
+        final IComplexMatrix qlm = calQlmMean_MPI(false, aMPIInfo, aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);
         
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnS<=0;
@@ -1402,16 +1568,13 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             qlmi.div2this(qlmi.operation().norm());
         }
         
-        // 获取 MPI 的考虑区域
-        MPIRegion tCalRegion = new MPIRegion(aComm);
-        
         // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
-        for (int i = 0; i < mAtomNum; ++i) if (tCalRegion.inRegin(i)) {
+        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             // 统一获取行向量
             final IComplexVector qlmi = qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, tCalRegion::inRegin, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis) -> {
                 // 统一获取行向量
                 IComplexVector qlmj = qlm.row(idx);
                 // 计算复向量的点乘
@@ -1420,7 +1583,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 if (Sij.norm() > aConnectThreshold) {
                     tConnectCount.increment_(fI);
                     // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
-                    boolean tHalfStat = aHalf && tCalRegion.inRegin(idx);
+                    boolean tHalfStat = aHalf && aMPIInfo.inRegin(idx);
                     if (tHalfStat) {
                         tConnectCount.increment_(idx);
                     }
@@ -1431,14 +1594,34 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 计算完成归还缓存数据
         ComplexMatrixCache.returnMat(qlm);
         
-        // 所有进程将统计到的连接数求和
-        if (!aNoReduce) {
-            aComm.allreduce(tConnectCount.internalData(), tConnectCount.internalDataSize(), MPI.Op.SUM);
+        // 收集所有进程将统计到的连接数
+        if (!aNoGather) {
+            // 先创建临时的同步数组
+            Vector rBuf = VectorCache.getVec(mAtomNum);
+            // 获取 buf2idx, counts 和 displs 来将需要的数据放入 rBuf 指定位置
+            int[] tBuf2Idx = aMPIInfo.buf2idx();
+            int[] tCounts = aMPIInfo.counts();
+            int[] tDispls = aMPIInfo.displs();
+            final int tStart = tDispls[aMPIInfo.mRank];
+            final int tEnd = tStart + tCounts[aMPIInfo.mRank];
+            for (int i = tStart; i < tEnd; ++i) {
+                rBuf.set(i, tConnectCount.get(tBuf2Idx[i]));
+            }
+            // 使用 allgatherv 收集所有 buf
+            double[] tData = rBuf.internalData();
+            aMPIInfo.mComm.allgatherv(tData, tCounts, tDispls);
+            // 将在 buf 中的数据重新设回 qlm
+            for (int i = 0; i < mAtomNum; ++i) {
+                tConnectCount.set(tBuf2Idx[i], rBuf.get(i));
+            }
+            // 归还临时数组
+            VectorCache.returnVec(rBuf);
         }
         
         // 返回最终计算结果
         return tConnectCount;
     }
+    public IVector calConnectCountABOOP_MPI(boolean aNoGather, MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ, double aRNearestS, int aNnnS) throws MPI.Error {try (MPIInfo tMPIInfo = new MPIInfo(aComm)) {return calConnectCountABOOP_MPI(aNoGather, tMPIInfo, aL, aConnectThreshold, aRNearestY, aNnnY, aRNearestQ, aNnnQ, aRNearestS, aNnnS);}}
     public IVector calConnectCountABOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ, double aRNearestS, int aNnnS) throws MPI.Error {return calConnectCountABOOP_MPI(false, aComm, aL, aConnectThreshold, aRNearestY, aNnnY, aRNearestQ, aNnnQ, aRNearestS, aNnnS);}
     public IVector calConnectCountABOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearest, int aNnn) throws MPI.Error {return calConnectCountABOOP_MPI(aComm, aL, aConnectThreshold, aRNearest, aNnn, aRNearest, aNnn, aRNearest, aNnn);}
     public IVector calConnectCountABOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearest          ) throws MPI.Error {return calConnectCountABOOP_MPI(aComm, aL, aConnectThreshold, aRNearest, -1);}
