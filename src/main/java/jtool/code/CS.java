@@ -8,8 +8,6 @@ import jtool.atom.IXYZ;
 import jtool.code.collection.AbstractCollections;
 import jtool.io.IIOFiles;
 import jtool.io.IOFiles;
-import jtool.math.AbstractComplexDouble;
-import jtool.math.IComplexDouble;
 import jtool.math.MathEX;
 import jtool.parallel.CompletedFuture;
 import jtool.system.*;
@@ -20,8 +18,8 @@ import java.awt.*;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,7 +30,7 @@ import java.util.regex.Pattern;
  */
 public class CS {
     /** version of jtool */
-    public final static String VERSION = "2.4.1";
+    public final static String VERSION = "2.4.1b";
     
     /** a Random generator so I don't need to instantiate a new one all the time. */
     public final static Random RNGSUS = new Random(), RANDOM = RNGSUS;
@@ -487,12 +485,6 @@ public class CS {
         .put("Og", 2.00)
         .build();
     
-    public final static double PI = Math.PI;
-    public final static double E = Math.E;
-    public final static IComplexDouble i1 = new AbstractComplexDouble() {
-        @Override public double real() {return 0.0;}
-        @Override public double imag() {return 1.0;}
-    };
     /** Boltzmann constant */
     public final static double K_B = 0.0000861733262; // eV / K
     

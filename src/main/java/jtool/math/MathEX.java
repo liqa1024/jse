@@ -9,16 +9,18 @@ import jtool.code.collection.Pair;
 import jtool.code.functional.*;
 import jtool.math.function.Func2;
 import jtool.math.function.Func3;
-import jtool.math.vector.IVector;
+import jtool.math.vector.*;
+import jtool.math.vector.Vector;
+import jtool.parallel.ComplexVectorCache;
 import jtool.parallel.ParforThreadPool;
 import jtool.parallel.VectorCache;
 import jtoolex.voronoi.Geometry;
+import net.jafama.DoubleWrapper;
 import net.jafama.FastMath;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.*;
 
-import static jtool.code.CS.PI;
 import static jtool.code.CS.ZL_MAT;
 
 
@@ -29,6 +31,38 @@ import static jtool.code.CS.ZL_MAT;
  */
 @SuppressWarnings("DuplicatedCode")
 public class MathEX {
+    /** 数学常量以及用于运算的常量，现在都放在这里而不是 CS */
+    public final static double PI = Math.PI;
+    public final static double E = Math.E;
+    public final static IComplexDouble i1 = new AbstractComplexDouble() {
+        @Override public double real() {return 0.0;}
+        @Override public double imag() {return 1.0;}
+    };
+    public final static double SQRT2 = Math.sqrt(2.0);
+    public final static double SQRT2_INV = 1.0/SQRT2;
+    public final static double SQRT3 = Math.sqrt(3.0);
+    public final static double SQRT3_INV = 1.0/SQRT3;
+    public final static double SQRT3DIV2 = Math.sqrt(3.0/2.0);
+    
+    private final static IVector SH_A, SH_B;
+    private final static int SH_LARGEST_L = 1000;
+    
+    static {
+        final int tSize = (SH_LARGEST_L+2)*(SH_LARGEST_L+1)/2;
+        SH_A = Vectors.NaN(tSize);
+        SH_B = Vectors.NaN(tSize);
+        int tStart = 3;
+        for (int tL = 2; tL <= SH_LARGEST_L; ++tL) {
+            double tLL = tL*tL, tLmmLmm = (tL-1)*(tL-1);
+            for (int tM = 0; tM < tL-1; ++tM) {
+                double tMM = tM * tM;
+                SH_A.set(tStart+tM,  Fast.sqrt((4.0*tLL - 1.0) / (tLL - tMM)));
+                SH_B.set(tStart+tM, -Fast.sqrt((tLmmLmm - tMM) / (4.0*tLmmLmm - 1.0)));
+            }
+            tStart += tL + 1;
+        }
+    }
+    
     
     @ApiStatus.Obsolete
     @SuppressWarnings("UnusedReturnValue")
@@ -778,9 +812,138 @@ public class MathEX {
         }
         
         /**
+         * 使用 <a href="https://arxiv.org/abs/1410.1748">
+         * Taweetham Limpanuparb, Josh Milthorpe. 2014 </a>
+         * 介绍的方法计算球谐函数，应该会快非常多
+         * <p>
+         * 注意原文存在许多错误在这里已经修复，并且修改了返回形式依旧为复数，可以方便使用
+         * <p>
+         * 一次直接计算给定 l 下的所有 m 的值
+         * @author liqa
+         * @param aCalAllL 是否顺便计算所有的 l，一般来说不会增加太多计算量，但是索引起来会比较麻烦（按照 l 从小到大排列，先遍历 m 后遍历 l），默认关闭
+         * @param aL 球谐函数参数 l，非负整数
+         * @param aTheta 球坐标下径向方向与 z 轴的角度
+         * @param aPhi 球坐标下径向方向在 xy 平面投影下和 x 轴的角度
+         * @return m = -l ~ l 下所有球谐函数值组成的复向量
+         */
+        public static ComplexVector sphericalHarmonicsTL(boolean aCalAllL, int aL, double aTheta, double aPhi) {
+            // 判断输入是否合法
+            if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
+            if (aL > SH_LARGEST_L) throw new IllegalArgumentException("Input l MUST be Less than SH_LARGEST_L("+SH_LARGEST_L+") for Taweetham Limpanuparb sphericalHarmonics, input: "+aL);
+            return sphericalHarmonicsTL_(aCalAllL, aL, aTheta, aPhi);
+        }
+        public static ComplexVector sphericalHarmonicsTL(int aL, double aTheta, double aPhi) {
+            // 判断输入是否合法
+            if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
+            if (aL > SH_LARGEST_L) throw new IllegalArgumentException("Input l MUST be Less than SH_LARGEST_L("+SH_LARGEST_L+") for Taweetham Limpanuparb sphericalHarmonics, input: "+aL);
+            return sphericalHarmonicsTL_(aL, aTheta, aPhi);
+        }
+        public static ComplexVector sphericalHarmonicsTL_(boolean aCalAllL, int aL, double aTheta, double aPhi) {
+            DoubleWrapper tJafamaDoubleWrapper = new DoubleWrapper(); // new 的损耗应该可以忽略掉
+            double tSinTheta = FastMath.sinAndCos(aTheta, tJafamaDoubleWrapper);
+            IVector tP = normalizedLegendre_(aCalAllL, aL, tJafamaDoubleWrapper.value, tSinTheta);
+            ComplexVector tY = ComplexVectorCache.getVec(aCalAllL ? (aL+1)*(aL+1) : (aL+aL+1));
+            if (aCalAllL) {
+                int tStartY = 0, tStartP = 0;
+                for (int tL = 0; tL <= aL; ++tL) {
+                    tY.set(tStartY+tL, tP.get(tStartP));
+                    tStartY += tL+tL+1;
+                    tStartP += tL+1;
+                }
+            } else {
+                tY.set(aL, tP.get(0));
+            }
+            double tSinMmmPhi = 0.0;
+            double tCosMmmPhi = 1.0;
+            double tSinMPhi = FastMath.sinAndCos(aPhi, tJafamaDoubleWrapper);
+            double tCosMPhi = tJafamaDoubleWrapper.value;
+            final double tCosPhi2 = tCosMPhi+tCosMPhi;
+            for (int tM = 1; tM <= aL; ++tM) {
+                if (aCalAllL) {
+                    int tStartY = tM*tM, tStartP = (tM+1)*tM/2;
+                    for (int tL = tM; tL <= aL; ++tL) {
+                        int tIdxPos = tStartY+tL+tM;
+                        int tIdxNeg = tStartY+tL-tM;
+                        double tPlm = tP.get(tStartP+tM);
+                        double tReal = tPlm * tCosMPhi;
+                        double tImag = tPlm * tSinMPhi;
+                        tY.setReal(tIdxPos, tReal);
+                        tY.setImag(tIdxPos, tImag);
+                        // 利用对称性设置另一半
+                        if ((tM&1)==1) {
+                            tY.setReal(tIdxNeg, -tReal);
+                            tY.setImag(tIdxNeg,  tImag);
+                        } else {
+                            tY.setReal(tIdxNeg,  tReal);
+                            tY.setImag(tIdxNeg, -tImag);
+                        }
+                        tStartY += tL+tL+1;
+                        tStartP += tL+1;
+                    }
+                } else {
+                    int tIdxPos =  tM+aL;
+                    int tIdxNeg = -tM+aL;
+                    double tPlm = tP.get(tM);
+                    double tReal = tPlm * tCosMPhi;
+                    double tImag = tPlm * tSinMPhi;
+                    tY.setReal(tIdxPos, tReal);
+                    tY.setImag(tIdxPos, tImag);
+                    // 利用对称性设置另一半
+                    if ((tM&1)==1) {
+                        tY.setReal(tIdxNeg, -tReal);
+                        tY.setImag(tIdxNeg,  tImag);
+                    } else {
+                        tY.setReal(tIdxNeg,  tReal);
+                        tY.setImag(tIdxNeg, -tImag);
+                    }
+                }
+                // 利用和差化积的递推公式来更新 tSinMPhi tCosMPhi
+                double tSinMppPhi = tCosPhi2 * tSinMPhi - tSinMmmPhi;
+                double tCosMppPhi = tCosPhi2 * tCosMPhi - tCosMmmPhi;
+                tSinMmmPhi = tSinMPhi; tCosMmmPhi = tCosMPhi;
+                tSinMPhi = tSinMppPhi; tCosMPhi = tCosMppPhi;
+            }
+            // 归还临时变量
+            VectorCache.returnVec(tP);
+            // 输出
+            return tY;
+        }
+        public static ComplexVector sphericalHarmonicsTL_(int aL, double aTheta, double aPhi) {
+            return sphericalHarmonicsTL_(false, aL, aTheta, aPhi);
+        }
+        private static DoubleArrayVector normalizedLegendre_(boolean aCalAllL, int aL, double aX, double aY) {
+            double tPll = 0.28209479177387814347403972578039; // = sqrt(1/(4*PI))
+            final int tSize = (aL+2)*(aL+1)/2;
+            Vector tP = VectorCache.getVec(tSize);
+            tP.set(0, tPll);
+            if (aL > 0) {
+                tP.set(1, SQRT3 * aX * tPll);
+                tPll *= (-SQRT3DIV2 * aY);
+                tP.set(2, tPll);
+                int tStartL = 3, tStartLmm = 1, tStartLm2 = 0;
+                for (int tL = 2; tL <= aL; ++tL) {
+                    for (int tM = 0; tM < tL-1; ++tM) {
+                        int tIdx = tStartL+tM;
+                        tP.set(tIdx, SH_A.get(tIdx) * (aX*tP.get(tStartLmm+tM) + SH_B.get(tIdx)*tP.get(tStartLm2+tM)));
+                    }
+                    tP.set(tStartL+tL-1, aX * Fast.sqrt(2.0*(tL-1) + 3.0) * tPll);
+                    tPll *= (-Fast.sqrt(1.0 + 0.5/(double)tL) * aY);
+                    tP.set(tStartL+tL, tPll);
+                    tStartLm2 = tStartLmm;
+                    tStartLmm = tStartL;
+                    tStartL += tL+1;
+                }
+            }
+            return aCalAllL ? tP : tP.subVec((aL+1)*aL/2, tSize);
+        }
+        
+        
+        /**
          * 输出球谐（Spherical Harmonics）函数，定义同北大数理方法教材，可参考：
          * <a href="https://en.wikipedia.org/wiki/Spherical_harmonics">
          * Spherical harmonics </a> 中声学的定义
+         * <p>
+         * 标准的直接使用递推公式来计算的方式
          * @author liqa
          * @param aL 球谐函数参数 l，非负整数
          * @param aM 球谐函数参数 m，整数，-l ~ l
@@ -813,33 +976,6 @@ public class MathEX {
             rFront *= legendre_(aL, aM, Fast.cos(aTheta));
             // 返回结果，实部虚部分开计算
             return new ComplexDouble(rFront*Fast.cos(aM*aPhi), rFront*Fast.sin(aM*aPhi));
-        }
-        /** Quick version of sphericalHarmonics */
-        public static ComplexDouble sphericalHarmonicsQuick(int aL, int aM, double aTheta, double aPhi) {
-            // 判断输入是否合法
-            if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
-            if (Math.abs(aM) > aL) throw new IllegalArgumentException("Input m MUST be in range -l ~ l, input: "+aM);
-            
-            return sphericalHarmonicsQuick_(aL, aM, aTheta, aPhi);
-        }
-        public static ComplexDouble sphericalHarmonicsQuick_(int aL, int aM, double aTheta, double aPhi) {
-            if (aM < 0) {
-                ComplexDouble tY = sphericalHarmonicsQuick_(aL, -aM, aTheta, aPhi);
-                tY.conj2this();
-                if ((aM&1)==1) tY.negative2this();
-                return tY;
-            }
-            // 计算前系数（实数部分）
-            double rFront = 1.0;
-            for (int i = aL-aM+1, tEnd = aL+aM; i <= tEnd; ++i) rFront *= i;
-            rFront = 1.0 / rFront;
-            rFront *= aL+aL+1;
-            rFront /= 4*PI;
-            rFront = Fast.sqrtQuick(rFront);
-            // 计算连带 Legendre 多项式部分
-            rFront *= legendreQuick_(aL, aM, Fast.cosQuick(aTheta));
-            // 返回结果，实部虚部分开计算
-            return new ComplexDouble(rFront*Fast.cosQuick(aM*aPhi), rFront*Fast.sinQuick(aM*aPhi));
         }
         
         /**
@@ -876,15 +1012,44 @@ public class MathEX {
                 return ((aL+aL-1)*aX*legendre_(aL-1, aM, aX) - (aL+aM-1)*legendre_(aL-2, aM, aX)) / (double)tGreater;
             }}
         }
+        
+        
+        /** Quick version of sphericalHarmonics */
+        @Deprecated public static ComplexDouble sphericalHarmonicsQuick(int aL, int aM, double aTheta, double aPhi) {
+            // 判断输入是否合法
+            if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
+            if (Math.abs(aM) > aL) throw new IllegalArgumentException("Input m MUST be in range -l ~ l, input: "+aM);
+            
+            return sphericalHarmonicsQuick_(aL, aM, aTheta, aPhi);
+        }
+        @Deprecated public static ComplexDouble sphericalHarmonicsQuick_(int aL, int aM, double aTheta, double aPhi) {
+            if (aM < 0) {
+                ComplexDouble tY = sphericalHarmonicsQuick_(aL, -aM, aTheta, aPhi);
+                tY.conj2this();
+                if ((aM&1)==1) tY.negative2this();
+                return tY;
+            }
+            // 计算前系数（实数部分）
+            double rFront = 1.0;
+            for (int i = aL-aM+1, tEnd = aL+aM; i <= tEnd; ++i) rFront *= i;
+            rFront = 1.0 / rFront;
+            rFront *= aL+aL+1;
+            rFront /= 4*PI;
+            rFront = Fast.sqrtQuick(rFront);
+            // 计算连带 Legendre 多项式部分
+            rFront *= legendreQuick_(aL, aM, Fast.cosQuick(aTheta));
+            // 返回结果，实部虚部分开计算
+            return new ComplexDouble(rFront*Fast.cosQuick(aM*aPhi), rFront*Fast.sinQuick(aM*aPhi));
+        }
         /** Quick version of legendre */
-        public static double legendreQuick(int aL, int aM, double aX) {
+        @Deprecated public static double legendreQuick(int aL, int aM, double aX) {
             // 判断输入是否合法
             if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
             if (aM < 0 || aM > aL) throw new IllegalArgumentException("Input m MUST be in range 0 ~ l, input: "+aM);
             
             return legendreQuick_(aL, aM, aX);
         }
-        public static double legendreQuick_(int aL, int aM, double aX) {
+        @Deprecated public static double legendreQuick_(int aL, int aM, double aX) {
             // 直接采用递推关系递归计算
             int tGreater = aL - aM;
             switch(tGreater) {

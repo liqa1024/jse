@@ -1505,7 +1505,7 @@ public class UT {
     @VisibleForTesting public static class Math {
         public final static double PI = FastMath.PI, pi = PI;
         public final static double E = FastMath.E, e = E;
-        public final static IComplexDouble i1 = CS.i1, j1 = i1, i = i1, j = j1;
+        public final static IComplexDouble i1 = MathEX.i1, j1 = i1, i = i1, j = j1;
         public final static double NaN = Double.NaN, nan = NaN;
         public final static double Inf = Double.POSITIVE_INFINITY, inf = Inf;
         

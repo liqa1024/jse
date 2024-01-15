@@ -1,10 +1,14 @@
 package jtool.plot;
 
-import jtool.math.MathEX;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
-import java.awt.geom.*;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.GeneralPath;
+import java.awt.geom.Line2D;
+import java.awt.geom.Rectangle2D;
+
+import static jtool.math.MathEX.*;
 
 
 /**
@@ -56,8 +60,6 @@ public class Shapes {
             return tPlus;
         }
     }
-    private final static double SQRT2 = MathEX.Fast.sqrt(2.0);
-    private final static double SQRT2_INV = 1.0/SQRT2;
     private final static double ASTERISK_MUL = 1.30;
     public static class Asterisk extends AbstractResizableShape {
         public Asterisk(double aSize) {super(aSize);}
@@ -105,7 +107,7 @@ public class Shapes {
         }
     }
     private final static double TRIANGLE_MUL_X = 0.63;
-    private final static double TRIANGLE_MUL_Y = TRIANGLE_MUL_X/MathEX.Fast.sqrt(3.0);
+    private final static double TRIANGLE_MUL_Y = TRIANGLE_MUL_X/SQRT3;
     public static class Triangle extends AbstractResizableShape {
         public Triangle(double aSize) {super(aSize);}
         @Override protected @NotNull Shape getShape(double aSize) {

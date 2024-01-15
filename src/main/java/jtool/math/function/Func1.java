@@ -6,7 +6,7 @@ import jtool.math.vector.IVectorGetter;
 
 import java.util.Collection;
 
-import static jtool.code.CS.PI;
+import static jtool.math.MathEX.PI;
 
 /**
  * @author liqa
