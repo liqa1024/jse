@@ -673,11 +673,11 @@ JNIEXPORT void JNICALL Java_jtool_parallel_MPI_00024Native_MPI_1Recv0
 
 /*
  * Class:     jtool_parallel_MPI_Native
- * Method:    MPI_Ssend0
- * Signature: (Ljava/lang/Object;IJIIJ)V
+ * Method:    MPI_Sendrecv0
+ * Signature: (Ljava/lang/Object;IJIILjava/lang/Object;IJIIJ)V
  */
-JNIEXPORT void JNICALL Java_jtool_parallel_MPI_00024Native_MPI_1Ssend0
-  (JNIEnv *, jclass, jobject, jint, jlong, jint, jint, jlong);
+JNIEXPORT void JNICALL Java_jtool_parallel_MPI_00024Native_MPI_1Sendrecv0
+  (JNIEnv *, jclass, jobject, jint, jlong, jint, jint, jobject, jint, jlong, jint, jint, jlong);
 
 /*
  * Class:     jtool_parallel_MPI_Native

@@ -457,13 +457,16 @@ JNIEXPORT void JNICALL Java_jtool_parallel_MPI_00024Native_MPI_1Recv0(JNIEnv *aE
     exceptionCheck(aEnv, tExitCode);
     releaseJArray(aEnv, rArray, tDataType, rBuf, 0); // write mode, Update the data on the Java heap. Free the space used by the copy.
 }
-JNIEXPORT void JNICALL Java_jtool_parallel_MPI_00024Native_MPI_1Ssend0(JNIEnv *aEnv, jclass aClazz, jobject aArray, jint aCount, jlong aDataType, jint aDest, jint aTag, jlong aComm) {
-    MPI_Datatype tDataType = (MPI_Datatype) (intptr_t) aDataType;
+JNIEXPORT void JNICALL Java_jtool_parallel_MPI_00024Native_MPI_1Sendrecv0(JNIEnv *aEnv, jclass aClazz, jobject aSendArray, jint aSendCount, jlong aSendType, jint aDest, jint aSendTag, jobject rRecvArray, jint aRecvCount, jlong aRecvType, jint aSource, jint aRecvTag, jlong aComm) {
+    MPI_Datatype tSendType = (MPI_Datatype) (intptr_t) aSendType;
+    MPI_Datatype tRecvType = (MPI_Datatype) (intptr_t) aRecvType;
     MPI_Comm tComm = (MPI_Comm) (intptr_t) aComm;
-    void *tBuf = getJArray(aEnv, aArray, tDataType);
-    int tExitCode = MPI_Ssend(tBuf, aCount, tDataType, aDest, aTag, tComm);
+    void *tSendBuf = getJArray(aEnv, aSendArray, tSendType);
+    void *rRecvBuf = getJArray(aEnv, rRecvArray, tRecvType);
+    int tExitCode = MPI_Sendrecv(tSendBuf, aSendCount, tSendType, aDest, aSendTag, rRecvBuf, aRecvCount, tRecvType, aSource, aRecvTag, tComm, MPI_STATUS_IGNORE); // no return Status, because its field name is unstable
     exceptionCheck(aEnv, tExitCode);
-    releaseJArray(aEnv, aArray, tDataType, tBuf, JNI_ABORT); // read mode, Do not update the data on the Java heap. Free the space used by the copy.
+    releaseJArray(aEnv, aSendArray, tSendType, tSendBuf, JNI_ABORT); // read mode, Do not update the data on the Java heap. Free the space used by the copy.
+    releaseJArray(aEnv, rRecvArray, tRecvType, rRecvBuf, 0);         // write mode, Update the data on the Java heap. Free the space used by the copy.
 }
 
 
