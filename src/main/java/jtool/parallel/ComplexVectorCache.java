@@ -16,6 +16,8 @@ import static jtool.code.CS.NO_CACHE;
  * 基于 {@link DoubleArrayCache} 实现
  * <p>
  * 会在内存不足时自动回收缓存
+ * <p>
+ * 注意归还线程和借用线程一致
  * @author liqa
  */
 public class ComplexVectorCache {

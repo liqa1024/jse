@@ -17,6 +17,8 @@ import static jtool.code.CS.NO_CACHE;
  * 注意为了实现简洁和性能，此类对于 return 相同对象不进行检测
  * <p>
  * 现在统一不设置缓存数目上限
+ * <p>
+ * 注意归还线程和借用线程一致
  * @author liqa
  */
 public class ThreadLocalObjectCachePool<T> implements IObjectPool<T> {

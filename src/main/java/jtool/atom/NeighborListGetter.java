@@ -36,6 +36,7 @@ public class NeighborListGetter implements IShutdownable {
     private final double mCellStep;
     
     private final TreeMap<Integer, ILinkedCell> mLinkedCells = new TreeMap<>(); // 记录对应有效近邻半径的 LinkedCell，使用 Integer 只存储倍率（负值表示除法），避免 double 作为 key 的问题
+    private final long mInitThreadID;
     
     /** NL 只支持已经经过平移的数据，目前暂不支持外部创建 */
     NeighborListGetter(IMatrix aAtomDataXYZ, int aAtomNum, IXYZ aBox, double aCellStep) {
@@ -45,6 +46,7 @@ public class NeighborListGetter implements IShutdownable {
         mMinBox = mBox.min();
         mCellStep = Math.max(aCellStep, 1.1);
         mAllCellsAlloc = sAllCellsAllocCache.getObject();
+        mInitThreadID = Thread.currentThread().getId();
     }
     
     /** 直接使用 ObjectCachePool 避免重复创建临时变量 */
@@ -547,9 +549,14 @@ public class NeighborListGetter implements IShutdownable {
     @Override public void shutdown() {
         mDead = true; mLinkedCells.clear(); mAtomDataXYZ = null;
         // 归还 Cells 的内存到缓存，这种写法保证永远能获取到 mAllCellsAlloc 时都是合法的
-        Map<Integer, List<Cell>> oAllCellsAlloc = mAllCellsAlloc;
-        mAllCellsAlloc = null;
-        sAllCellsAllocCache.returnObject(oAllCellsAlloc);
+        // 只有相同线程关闭才会归还
+        if (Thread.currentThread().getId() == mInitThreadID) {
+            Map<Integer, List<Cell>> oAllCellsAlloc = mAllCellsAlloc;
+            mAllCellsAlloc = null;
+            sAllCellsAllocCache.returnObject(oAllCellsAlloc);
+        } else {
+            System.err.println("WARNING: ThreadID of shutdown() and init should be SAME in NeighborListGetter");
+        }
     }
     
     public double getCellStep() {return mCellStep;}
