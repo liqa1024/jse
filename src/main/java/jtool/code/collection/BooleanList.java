@@ -2,11 +2,10 @@ package jtool.code.collection;
 
 import jtool.code.functional.IBooleanConsumer1;
 import jtool.math.IDataShell;
-import jtool.math.vector.ILogicalVector;
-import jtool.math.vector.LogicalVector;
-import jtool.math.vector.RefLogicalVector;
+import jtool.math.vector.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -78,12 +77,32 @@ public class BooleanList implements IDataShell<boolean[]> {
             @Override public boolean add(Boolean element) {BooleanList.this.add(element); return true;}
         };
     }
+    @ApiStatus.Experimental
+    public @Unmodifiable List<Boolean> asConstList() {
+        return new AbstractRandomAccessList<Boolean>() {
+            @Override public Boolean get(int index) {return BooleanList.this.get(index);}
+            @Override public int size() {return BooleanList.this.size();}
+        };
+    }
     public ILogicalVector asVec() {
         return new RefLogicalVector() {
             @Override public boolean get_(int aIdx) {return mData[aIdx];}
             @Override public void set_(int aIdx, boolean aValue) {mData[aIdx] = aValue;}
             @Override public int size() {return mSize;}
         };
+    }
+    @ApiStatus.Experimental
+    public ILogicalVector asConstVec() {
+        return new RefLogicalVector() {
+            @Override public boolean get_(int aIdx) {return mData[aIdx];}
+            @Override public int size() {return mSize;}
+        };
+    }
+    @ApiStatus.Experimental
+    public LogicalVector copy2vec() {
+        LogicalVector rVector = LogicalVector.zeros(mSize);
+        System.arraycopy(mData, 0, rVector.internalData(), rVector.internalDataShift(), mSize);
+        return rVector;
     }
     
     

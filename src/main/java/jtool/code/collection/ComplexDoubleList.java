@@ -5,12 +5,10 @@ import jtool.code.functional.IDoubleConsumer2;
 import jtool.math.ComplexDouble;
 import jtool.math.IComplexDouble;
 import jtool.math.IDataShell;
-import jtool.math.vector.ComplexVector;
-import jtool.math.vector.IComplexVector;
-import jtool.math.vector.RefComplexVector;
-import jtool.math.vector.ShiftComplexVector;
+import jtool.math.vector.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -102,6 +100,14 @@ public class ComplexDoubleList implements IDataShell<double[][]> {
             @Override public boolean add(ComplexDouble element) {ComplexDoubleList.this.add(element); return true;}
         };
     }
+    @ApiStatus.Experimental
+    public @Unmodifiable List<ComplexDouble> asConstList() {
+        return new AbstractRandomAccessList<ComplexDouble>() {
+            @Override public ComplexDouble get(int index) {return ComplexDoubleList.this.get(index);}
+            @Override public int size() {return ComplexDoubleList.this.size();}
+            @Override public boolean add(ComplexDouble element) {ComplexDoubleList.this.add(element); return true;}
+        };
+    }
     public IComplexVector asVec() {
         return new RefComplexVector() {
             @Override public double getReal_(int aIdx) {return mData[0][aIdx];}
@@ -110,6 +116,23 @@ public class ComplexDoubleList implements IDataShell<double[][]> {
             @Override public void setImag_(int aIdx, double aImag) {mData[1][aIdx] = aImag;}
             @Override public int size() {return mSize;}
         };
+    }
+    @ApiStatus.Experimental
+    public IComplexVector asConstVec() {
+        return new RefComplexVector() {
+            @Override public double getReal_(int aIdx) {return mData[0][aIdx];}
+            @Override public double getImag_(int aIdx) {return mData[1][aIdx];}
+            @Override public int size() {return mSize;}
+        };
+    }
+    @ApiStatus.Experimental
+    public ComplexVector copy2vec() {
+        ComplexVector rVector = ComplexVector.zeros(mSize);
+        double[][] rData = rVector.internalData();
+        int tShift = rVector.internalDataShift();
+        System.arraycopy(mData[0], 0, rData[0], tShift, mSize);
+        System.arraycopy(mData[1], 0, rData[1], tShift, mSize);
+        return rVector;
     }
     
     

@@ -4,6 +4,7 @@ import jtool.code.functional.IIntegerConsumer1;
 import jtool.math.IDataShell;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -73,6 +74,13 @@ public class IntegerList implements IDataShell<int[]> {
             @Override public Integer set(int index, Integer element) {int oValue = IntegerList.this.get(index); IntegerList.this.set(index, element); return oValue;}
             @Override public int size() {return IntegerList.this.size();}
             @Override public boolean add(Integer element) {IntegerList.this.add(element); return true;}
+        };
+    }
+    @ApiStatus.Experimental
+    public @Unmodifiable List<Integer> asConstList() {
+        return new AbstractRandomAccessList<Integer>() {
+            @Override public Integer get(int index) {return IntegerList.this.get(index);}
+            @Override public int size() {return IntegerList.this.size();}
         };
     }
     

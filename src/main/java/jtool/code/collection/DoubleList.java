@@ -2,12 +2,10 @@ package jtool.code.collection;
 
 import jtool.code.functional.IDoubleConsumer1;
 import jtool.math.IDataShell;
-import jtool.math.vector.IVector;
-import jtool.math.vector.RefVector;
-import jtool.math.vector.ShiftVector;
-import jtool.math.vector.Vector;
+import jtool.math.vector.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -79,12 +77,32 @@ public class DoubleList implements IDataShell<double[]> {
             @Override public boolean add(Double element) {DoubleList.this.add(element); return true;}
         };
     }
+    @ApiStatus.Experimental
+    public @Unmodifiable List<Double> asConstList() {
+        return new AbstractRandomAccessList<Double>() {
+            @Override public Double get(int index) {return DoubleList.this.get(index);}
+            @Override public int size() {return DoubleList.this.size();}
+        };
+    }
     public IVector asVec() {
         return new RefVector() {
             @Override public double get_(int aIdx) {return mData[aIdx];}
             @Override public void set_(int aIdx, double aValue) {mData[aIdx] = aValue;}
             @Override public int size() {return mSize;}
         };
+    }
+    @ApiStatus.Experimental
+    public IVector asConstVec() {
+        return new RefVector() {
+            @Override public double get_(int aIdx) {return mData[aIdx];}
+            @Override public int size() {return mSize;}
+        };
+    }
+    @ApiStatus.Experimental
+    public Vector copy2vec() {
+        Vector rVector = Vectors.zeros(mSize);
+        System.arraycopy(mData, 0, rVector.internalData(), rVector.internalDataShift(), mSize);
+        return rVector;
     }
     
     

@@ -45,7 +45,7 @@ final def SCDir             = workingDir+'supercooling/';
 final def SCOutDataPath     = SCDir+'data-out';
 
 /** FFS 参数 */
-final int lmpCores          = 4;
+final int lmpCores          = 2;
 
 final int dumpStep          = 5; // 0.01 ps
 
@@ -101,7 +101,7 @@ MultipleNativeLmpFullPathGenerator.withOf(subComm, subRoots, dumpCal, initPoints
     
     // MARK: seed = 123456789, np = 12, windows 下会卡死
     UT.Timer.USE_ASCII = true; // 避免乱码，并且现在修复了 ASCII 的显示问题
-    try (def FFS = new ForwardFluxSampling<>(fullPathGen, parallelNum, surfaceA, surfaces, N0).setProgressBar().setStep1Mul(step1Mul).setPruningProb(pruningProb).setPruningThreshold(pruningThreshold)) {
+    try (def FFS = new ForwardFluxSampling<>(fullPathGen, parallelNum, surfaceA, surfaces, N0).setRNG(123456789).setProgressBar().setStep1Mul(step1Mul).setPruningProb(pruningProb).setPruningThreshold(pruningThreshold)) {
         // 增加对 fullPathGen 的单元耗时统计
         fullPathGen.initTimer();
         // 第一步，每步都会输出结构

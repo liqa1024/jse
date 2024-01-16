@@ -2,16 +2,11 @@ package test.ffs
 
 import jtool.code.UT
 import jtool.lmp.Dump
-import jtool.lmp.LmpExecutor
 import jtool.lmp.Lmpdat
 import jtool.math.vector.Vectors
 import jtool.parallel.MPI
-import jtool.system.WSL
-import jtoolex.rareevent.BufferedFullPathGenerator
-import jtoolex.rareevent.atom.ABOOPSolidChecker
 import jtoolex.rareevent.atom.ABOOPSolidChecker_MPI
 import jtoolex.rareevent.atom.MultiTypeClusterSizeCalculator
-import jtoolex.rareevent.lmp.DumpPathGenerator
 import jtoolex.rareevent.lmp.NativeLmpFullPathGenerator
 
 import static jtool.code.CS.MASS
@@ -82,12 +77,12 @@ if (me == 0) dump.write(FFSDumpPath);
 // time: 1.94, lambda: 9.0
 // time: 1.96, lambda: 10.0
 // time: 1.98, lambda: 11.0
-// Total time: 00 hour 00 min 19.89 sec
+// Total time: 00 hour 00 min 19.89 sec / 14.55 sec
 // Native (mpi np 4):
 // time: 1.94, lambda: 9.0
 // time: 1.96, lambda: 10.0
 // time: 1.98, lambda: 11.0
-// Total time: 00 hour 00 min 8.05 sec
+// Total time: 00 hour 00 min 8.05 sec / 6.35 sec
 
 // WSL (mpi np 1):
 // time: 1.94, lambda: 17.0
