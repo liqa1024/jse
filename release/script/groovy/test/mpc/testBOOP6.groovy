@@ -13,6 +13,7 @@ import jtool.vasp.POSCAR
 
 /** 测试计算 BOOP，测试团簇计算器的效果 */
 
+UT.Math.rng(123456789);
 
 // 首先导入 Lmpdat
 def dataG = Lmpdat.read('lmp/data/data-glass');
@@ -36,6 +37,15 @@ println("default Zr7Cu10: ${cal.lambdaOf(dataZr7Cu10)}, total: ${dataZr7Cu10.ato
 println("default ZrCu2: ${cal.lambdaOf(dataZrCu2)}, total: ${dataZrCu2.atomNum()}");
 println("default Zr14Cu51: ${cal.lambdaOf(dataZr14Cu51)}, total: ${dataZr14Cu51.atomNum()}");
 UT.Timer.toc();
+// default glass: 4.0, total: 4000
+// default crystal: 3780.0, total: 4000
+// default ffs: 6.0, total: 13500
+// default MgCu2: 0.0, total: 3000
+// default Zr3Cu8: 0.0, total: 1188
+// default Zr7Cu10: 19.0, total: 1836
+// default ZrCu2: 1447.0, total: 1500
+// default Zr14Cu51: 42.0, total: 4160
+// Total time: 00 hour 00 min 0.46 sec
 
 // 用于计算合金的团簇计算器
 UT.Timer.tic();
@@ -52,7 +62,20 @@ println("multi Zr7Cu10: ${calMulti.lambdaOf(dataZr7Cu10)}, total: ${dataZr7Cu10.
 println("multi ZrCu2: ${calMulti.lambdaOf(dataZrCu2)}, total: ${dataZrCu2.atomNum()}");
 println("multi Zr14Cu51: ${calMulti.lambdaOf(dataZr14Cu51)}, total: ${dataZr14Cu51.atomNum()}");
 UT.Timer.toc();
+// multi glass: 1.0, total: 4000
+// multi crystal: 4000.0, total: 4000
+// multi ffs: 65.0, total: 13500
+// multi MgCu2: 3000.0, total: 3000
+// multi Zr3Cu8: 1188.0, total: 1188
+// multi Zr7Cu10: 1830.0, total: 1836
+// multi ZrCu2: 1500.0, total: 1500
+// multi Zr14Cu51: 4160.0, total: 4160
+// Total time: 00 hour 00 min 0.43 sec
 
+UT.Timer.tic();
+for (_ in 0..<100) calMulti.lambdaOf(dataFFS);
+UT.Timer.toc();
+// Total time: 00 hour 00 min 10.96 sec
 
 
 //def isSolid = calMulti.getIsSolid_(dataFFS.last().getMPC(), dataFFS.last());

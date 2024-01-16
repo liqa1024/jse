@@ -516,16 +516,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 获取缓存近邻列表，这里只需要进行遍历 idx
         IntegerList @Nullable[] tNL = getValidBufferedNL_(aRMax, aNnn, false);
         if (tNL != null) return tNL[aIdx].asConstList();
-        // 如果为 null 则尝试全部遍历一次缓存所有近邻列表
-        final IntegerList @Nullable[] tNLToBuffer = getNLWhichNeedBuffer_(aRMax, aNnn, false);
-        if (tNLToBuffer != null) {
-            for (int i = 0; i < mAtomNum; ++i) {
-                final IntegerList subNL = tNLToBuffer[i];
-                mNL.forEachNeighbor(i, aRMax, aNnn, (x, y, z, idx, dis2) -> subNL.add(idx));
-            }
-            return tNLToBuffer[aIdx].asConstList();
-        }
-        // 否则直接遍历指定 idx 即可
+        
+        // 如果为 null 则直接遍历指定 idx，如果需要重复使用则直接在外部缓存即可
         final List<Integer> rNeighborList = new ArrayList<>();
         mNL.forEachNeighbor(aIdx, aRMax, aNnn, (x, y, z, idx, dis2) -> rNeighborList.add(idx));
         return rNeighborList;
