@@ -1,5 +1,6 @@
 package jtool.math.vector;
 
+import jtool.code.collection.BooleanList;
 import jtool.code.functional.*;
 import jtool.code.iterator.IBooleanIterator;
 import jtool.code.iterator.IBooleanSetIterator;
@@ -25,51 +26,13 @@ public final class LogicalVector extends BooleanArrayVector {
     /** 提供 builder 方式的构建 */
     public static Builder builder() {return new Builder();}
     public static Builder builder(int aInitSize) {return new Builder(aInitSize);}
-    public static class Builder {
+    public final static class Builder extends BooleanList {
         private final static int DEFAULT_INIT_SIZE = 8;
-        private boolean[] mData;
-        private int mSize = 0;
-        private Builder() {this(DEFAULT_INIT_SIZE);}
-        private Builder(int aInitSize) {mData = new boolean[aInitSize];}
+        private Builder() {super(DEFAULT_INIT_SIZE);}
+        private Builder(int aInitSize) {super(aInitSize);}
         
-        public boolean get(int aIdx) {
-            if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-            return mData[aIdx];
-        }
-        public void set(int aIdx, boolean aValue) {
-            if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-            mData[aIdx] = aValue;
-        }
-        public int size() {return mSize;}
-        /** 用于方便访问 */
-        public boolean isEmpty() {return mSize==0;}
-        public boolean last() {
-            if (isEmpty()) throw new NoSuchElementException("Cannot access last() element from an empty LogicalVector.Builder");
-            return mData[mSize-1];
-        }
-        public boolean first() {
-            if (isEmpty()) throw new NoSuchElementException("Cannot access first() element from an empty LogicalVector.Builder");
-            return mData[0];
-        }
-        
-        public void add(boolean aValue) {
-            if (mData.length <= mSize) {
-                boolean[] oData = mData;
-                mData = new boolean[oData.length * 2];
-                System.arraycopy(oData, 0, mData, 0, oData.length);
-            }
-            mData[mSize] = aValue;
-            ++mSize;
-        }
         public LogicalVector build() {
             return new LogicalVector(mSize, mData);
-        }
-        public void trimToSize() {
-            if (mData.length != mSize) {
-                boolean[] oData = mData;
-                mData = new boolean[mSize];
-                System.arraycopy(oData, 0, mData, 0, mSize);
-            }
         }
     }
     
@@ -101,6 +64,7 @@ public final class LogicalVector extends BooleanArrayVector {
     @Override public LogicalVector newShell() {return new LogicalVector(mSize, null);}
     @Override public boolean @Nullable[] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof LogicalVector) return ((LogicalVector)aObj).mData;
+        if (aObj instanceof BooleanList) return ((BooleanList)aObj).internalData();
         if (aObj instanceof boolean[]) return (boolean[])aObj;
         return null;
     }

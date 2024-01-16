@@ -1,5 +1,6 @@
 package jtool.math.vector;
 
+import jtool.code.collection.ComplexDoubleList;
 import jtool.code.functional.*;
 import jtool.code.iterator.*;
 import jtool.math.ComplexDouble;
@@ -28,60 +29,13 @@ public final class ComplexVector extends BiDoubleArrayVector {
     /** 提供 builder 方式的构建 */
     public static Builder builder() {return new Builder();}
     public static Builder builder(int aInitSize) {return new Builder(aInitSize);}
-    public static class Builder {
+    public final static class Builder extends ComplexDoubleList {
         private final static int DEFAULT_INIT_SIZE = 8;
-        private double[][] mData;
-        private int mSize = 0;
         private Builder() {this(DEFAULT_INIT_SIZE);}
-        private Builder(int aInitSize) {mData = new double[2][aInitSize];}
+        private Builder(int aInitSize) {super(aInitSize);}
         
-        public ComplexDouble get(int aIdx) {
-            if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-            return new ComplexDouble(mData[0][aIdx], mData[1][aIdx]);
-        }
-        public void set(int aIdx, IComplexDouble aValue) {
-            if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-            mData[0][aIdx] = aValue.real();
-            mData[1][aIdx] = aValue.imag();
-        }
-        public int size() {return mSize;}
-        /** 用于方便访问 */
-        public boolean isEmpty() {return mSize==0;}
-        public ComplexDouble last() {
-            if (isEmpty()) throw new NoSuchElementException("Cannot access last() element from an empty ComplexVector.Builder");
-            int tSizeMM = mSize-1;
-            return new ComplexDouble(mData[0][tSizeMM], mData[1][tSizeMM]);
-        }
-        public ComplexDouble first() {
-            if (isEmpty()) throw new NoSuchElementException("Cannot access first() element from an empty ComplexVector.Builder");
-            return new ComplexDouble(mData[0][0], mData[1][0]);
-        }
-        
-        /** 在这里这个方法是必要的，虽然目前的约定下不会出现 {@code double aReal, double aImag} 两个参数的方法 */
-        public void add(double aReal, double aImag) {
-            int tLen = mData[0].length;
-            if (tLen <= mSize) {
-                double[][] oData = mData;
-                mData = new double[2][tLen * 2];
-                System.arraycopy(oData[0], 0, mData[0], 0, tLen);
-                System.arraycopy(oData[1], 0, mData[1], 0, tLen);
-            }
-            mData[0][mSize] = aReal;
-            mData[1][mSize] = aImag;
-            ++mSize;
-        }
-        public void add(IComplexDouble aValue) {add(aValue.real(), aValue.imag());}
-        public void add(double aValue) {add(aValue, 0.0);}
         public ComplexVector build() {
             return new ComplexVector(mSize, mData);
-        }
-        public void trimToSize() {
-            if (mData[0].length != mSize) {
-                double[][] oData = mData;
-                mData = new double[2][mSize];
-                System.arraycopy(oData[0], 0, mData[0], 0, mSize);
-                System.arraycopy(oData[1], 0, mData[1], 0, mSize);
-            }
         }
     }
     
@@ -121,6 +75,7 @@ public final class ComplexVector extends BiDoubleArrayVector {
     @Override public double @Nullable[][] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof ComplexVector) return ((ComplexVector)aObj).mData;
         if (aObj instanceof ShiftComplexVector) return ((ShiftComplexVector)aObj).mData;
+        if (aObj instanceof ComplexDoubleList) return ((ComplexDoubleList)aObj).internalData();
         if (aObj instanceof double[][]) {
             double[][] tData = (double[][])aObj;
             if (tData.length==2 && tData[0]!=null && tData[1]!=null) return tData;

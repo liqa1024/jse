@@ -103,6 +103,7 @@ public class CS {
     public final static double[]   ZL_VEC = new double[0];
     public final static int[]      ZL_INT = new int[0];
     public final static byte[]    ZL_BYTE = new byte[0];
+    public final static boolean[] ZL_BOOL = new boolean[0];
     
     /** IOFiles Keys */
     public final static String

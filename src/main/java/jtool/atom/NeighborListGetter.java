@@ -1,5 +1,6 @@
 package jtool.atom;
 
+import jtool.code.collection.IntegerList;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.IIntegerConsumer1;
 import jtool.math.MathEX;
@@ -13,8 +14,6 @@ import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static jtool.code.CS.ZL_INT;
 
 
 /**
@@ -68,15 +67,10 @@ public class NeighborListGetter implements IShutdownable {
         void forEach(int aIdx, boolean aHalf, @Nullable IIndexFilter aRegion, IMatrix aAtomDataXYZ, IXYZIdxDo aXYZIdxDo);
     }
     
-    private final static class Cell implements ICell {
-        private int[] mData;
-        private int mSize;
-        private Cell(int aInitDataLength) {mData = new int[aInitDataLength]; mSize = 0;}
-        private Cell() {mData = ZL_INT; mSize = 0;}
-        public void forEach(IIntegerConsumer1 aIdxDo) {
-            final int tSize = mSize;
-            for (int i = 0; i < tSize; ++i) aIdxDo.run(mData[i]);
-        }
+    private final static class Cell extends IntegerList implements ICell {
+        private Cell(int aInitDataLength) {super(aInitDataLength);}
+        private Cell() {super();}
+        
         @Override public void forEach(IMatrix aAtomDataXYZ, IXYZIdxDo aXYZIdxDo) {
             final int tSize = mSize;
             for (int i = 0; i < tSize; ++i) {
@@ -100,19 +94,6 @@ public class NeighborListGetter implements IShutdownable {
                 }
             }
         }
-        private void add(int aValue) {
-            if (mData.length == 0) {
-                mData = new int[1];
-            } else
-            if (mData.length <= mSize) {
-                int[] oData = mData;
-                mData = new int[oData.length * 2];
-                System.arraycopy(oData, 0, mData, 0, oData.length);
-            }
-            mData[mSize] = aValue;
-            ++mSize;
-        }
-        private void clear() {mSize = 0;}
     }
     
     private final static class MirrorCell implements ICell {
@@ -123,17 +104,19 @@ public class NeighborListGetter implements IShutdownable {
             mDirX = aDirX; mDirY = aDirY; mDirZ = aDirZ;
         }
         @Override public void forEach(IMatrix aAtomDataXYZ, IXYZIdxDo aXYZIdxDo) {
-            final int tSize = mCell.mSize;
+            final int tSize = mCell.size();
+            final int[] tData = mCell.internalData();
             for (int i = 0; i < tSize; ++i) {
-                int tIdx = mCell.mData[i];
+                int tIdx = tData[i];
                 aXYZIdxDo.run(aAtomDataXYZ.get(tIdx, 0) + mDirX, aAtomDataXYZ.get(tIdx, 1) + mDirY, aAtomDataXYZ.get(tIdx, 2) + mDirZ, tIdx);
             }
         }
         /** 对于镜像的不能排除 idx 相同的，而对于 Half 的情况要仔细分析 */
         @Override public void forEach(int aIdx, boolean aHalf, @Nullable IIndexFilter aRegion, IMatrix aAtomDataXYZ, IXYZIdxDo aXYZIdxDo) {
-            final int tSize = mCell.mSize;
+            final int tSize = mCell.size();
+            final int[] tData = mCell.internalData();
             for (int i = 0; i < tSize; ++i) {
-                int tIdx = mCell.mData[i];
+                int tIdx = tData[i];
                 if (aHalf) {
                     // 由于有区域限制，因此一半优化时不在区域内的也需要进行统计
                     if (tIdx < aIdx || (aRegion!=null && !aRegion.accept(tIdx))) {

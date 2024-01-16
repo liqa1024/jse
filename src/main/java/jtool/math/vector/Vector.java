@@ -1,5 +1,6 @@
 package jtool.math.vector;
 
+import jtool.code.collection.DoubleList;
 import jtool.code.functional.IDoubleConsumer1;
 import jtool.code.functional.IDoubleOperator1;
 import jtool.code.functional.IDoubleSupplier;
@@ -27,51 +28,13 @@ public final class Vector extends DoubleArrayVector {
     /** 提供 builder 方式的构建 */
     public static Builder builder() {return new Builder();}
     public static Builder builder(int aInitSize) {return new Builder(aInitSize);}
-    public static class Builder {
+    public final static class Builder extends DoubleList {
         private final static int DEFAULT_INIT_SIZE = 8;
-        private double[] mData;
-        private int mSize = 0;
-        private Builder() {this(DEFAULT_INIT_SIZE);}
-        private Builder(int aInitSize) {mData = new double[aInitSize];}
+        private Builder() {super(DEFAULT_INIT_SIZE);}
+        private Builder(int aInitSize) {super(aInitSize);}
         
-        public double get(int aIdx) {
-            if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-            return mData[aIdx];
-        }
-        public void set(int aIdx, double aValue) {
-            if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-            mData[aIdx] = aValue;
-        }
-        public int size() {return mSize;}
-        /** 用于方便访问 */
-        public boolean isEmpty() {return mSize==0;}
-        public double last() {
-            if (isEmpty()) throw new NoSuchElementException("Cannot access last() element from an empty Vector.Builder");
-            return mData[mSize-1];
-        }
-        public double first() {
-            if (isEmpty()) throw new NoSuchElementException("Cannot access first() element from an empty Vector.Builder");
-            return mData[0];
-        }
-        
-        public void add(double aValue) {
-            if (mData.length <= mSize) {
-                double[] oData = mData;
-                mData = new double[oData.length * 2];
-                System.arraycopy(oData, 0, mData, 0, oData.length);
-            }
-            mData[mSize] = aValue;
-            ++mSize;
-        }
         public Vector build() {
             return new Vector(mSize, mData);
-        }
-        public void trimToSize() {
-            if (mData.length != mSize) {
-                double[] oData = mData;
-                mData = new double[mSize];
-                System.arraycopy(oData, 0, mData, 0, mSize);
-            }
         }
     }
     
@@ -105,6 +68,7 @@ public final class Vector extends DoubleArrayVector {
     @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof Vector) return ((Vector)aObj).mData;
         if (aObj instanceof ShiftVector) return ((ShiftVector)aObj).mData;
+        if (aObj instanceof DoubleList) return ((DoubleList)aObj).internalData();
         if (aObj instanceof double[]) return (double[])aObj;
         return null;
     }
