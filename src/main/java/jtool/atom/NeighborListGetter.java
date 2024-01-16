@@ -634,17 +634,27 @@ public class NeighborListGetter implements IShutdownable {
      * @param aIDX 中心粒子的 index
      * @param aRMax 最大的近邻半径
      * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子
-     * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据
+     * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据；
+     *             开启后会直接输出 MHT 距离，默认则会输出几何距离的平方
      */
-     void forEachNeighbor_(final int aIDX, final double aRMax, boolean aHalf, final boolean aMHT, @Nullable IIndexFilter aRegion, final IXYZIdxDisDo aXYZIdxDisDo) {
+     void forEachNeighbor_(final int aIDX, final double aRMax, boolean aHalf, boolean aMHT, @Nullable IIndexFilter aRegion, final IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
         final XYZ cXYZ = new XYZ(mAtomDataXYZ.row(aIDX));
-        getProperLinkedCell(aRMax).forEachNeighbor(aIDX, aHalf, aRegion, (x, y, z, idx) -> {
-            // 内部会自动处理 idx 相同以及 half 的情况
-            double tDis = aMHT ? cXYZ.distanceMHT(x, y, z) : cXYZ.distance(x, y, z);
-            if (tDis < aRMax) aXYZIdxDisDo.run(x, y, z, idx, tDis);
-        });
+        if (aMHT) {
+            getProperLinkedCell(aRMax).forEachNeighbor(aIDX, aHalf, aRegion, (x, y, z, idx) -> {
+                // 内部会自动处理 idx 相同以及 half 的情况
+                double tDisMHT = cXYZ.distanceMHT(x, y, z);
+                if (tDisMHT < aRMax) aXYZIdxDisDo.run(x, y, z, idx, tDisMHT);
+            });
+        } else {
+            final double tRMax2 = aRMax*aRMax;
+            getProperLinkedCell(aRMax).forEachNeighbor(aIDX, aHalf, aRegion, (x, y, z, idx) -> {
+                // 内部会自动处理 idx 相同以及 half 的情况
+                double tDis2 = cXYZ.distance2(x, y, z);
+                if (tDis2 < tRMax2) aXYZIdxDisDo.run(x, y, z, idx, tDis2);
+            });
+        }
     }
     void forEachNeighbor_(int aIDX, double aRMax, boolean aHalf, boolean aMHT, IXYZIdxDisDo aXYZIdxDisDo) {
         forEachNeighbor_(aIDX, aRMax, aHalf, aMHT, null, aXYZIdxDisDo);
@@ -656,16 +666,25 @@ public class NeighborListGetter implements IShutdownable {
      * @author liqa
      * @param aXYZ 中心粒子的位置
      * @param aRMax 最大的近邻半径
-     * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据
+     * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据；
+     *             开启后会直接输出 MHT 距离，默认则会输出几何距离的平方
      */
-    void forEachNeighbor_(IXYZ aXYZ, final double aRMax, final boolean aMHT, final IXYZIdxDisDo aXYZIdxDisDo) {
+    void forEachNeighbor_(IXYZ aXYZ, final double aRMax, boolean aMHT, final IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
         final XYZ cXYZ = XYZ.toXYZ(aXYZ);
-        getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (x, y, z, idx) -> {
-            double tDis = aMHT ? cXYZ.distanceMHT(x, y, z) : cXYZ.distance(x, y, z);
-            if (tDis < aRMax) aXYZIdxDisDo.run(x, y, z, idx, tDis);
-        });
+        if (aMHT) {
+            getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (x, y, z, idx) -> {
+                double tDisMHT = cXYZ.distanceMHT(x, y, z);
+                if (tDisMHT < aRMax) aXYZIdxDisDo.run(x, y, z, idx, tDisMHT);
+            });
+        } else {
+            final double tRMax2 = aRMax*aRMax;
+            getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (x, y, z, idx) -> {
+                double tDis2 = cXYZ.distance2(x, y, z);
+                if (tDis2 < tRMax2) aXYZIdxDisDo.run(x, y, z, idx, tDis2);
+            });
+        }
     }
     
     /** 使用这个统一的类来管理，可以限制最大元素数目，并专门处理距离完全相同的情况不会抹去 */
@@ -732,9 +751,10 @@ public class NeighborListGetter implements IShutdownable {
      * @param aRMax 最大的近邻半径
      * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）
      * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子（当设置了最大近邻后建议关闭，否则会爆出警告）
-     * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据
+     * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据；
+     *             开启后会直接输出 MHT 距离，默认则会输出几何距离的平方
      */
-    void forEachNeighbor_(final int aIDX, final double aRMax, int aNnn, boolean aHalf, final boolean aMHT, @Nullable IIndexFilter aRegion, IXYZIdxDisDo aXYZIdxDisDo) {
+    void forEachNeighbor_(final int aIDX, final double aRMax, int aNnn, boolean aHalf, boolean aMHT, @Nullable IIndexFilter aRegion, IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
         // 特殊输入处理，直接回到没有限制的情况
@@ -749,11 +769,20 @@ public class NeighborListGetter implements IShutdownable {
         final NearestNeighborList rNN = new NearestNeighborList(aNnn);
         final XYZ cXYZ = new XYZ(mAtomDataXYZ.row(aIDX));
         // 这里需要先强制关闭 half 来获取限制最近邻数目的列表
-        getProperLinkedCell(aRMax).forEachNeighbor(aIDX, false, aRegion, (x, y, z, idx) -> {
-            // 内部会自动处理 idx 相同的情况
-            double tDis = aMHT ? cXYZ.distanceMHT(x, y, z) : cXYZ.distance(x, y, z);
-            if (tDis < aRMax) rNN.put(tDis, x, y, z, idx);
-        });
+        if (aMHT) {
+            getProperLinkedCell(aRMax).forEachNeighbor(aIDX, false, aRegion, (x, y, z, idx) -> {
+                // 内部会自动处理 idx 相同的情况
+                double tDisMHT = cXYZ.distanceMHT(x, y, z);
+                if (tDisMHT < aRMax) rNN.put(tDisMHT, x, y, z, idx);
+            });
+        } else {
+            final double tRMax2 = aRMax*aRMax;
+            getProperLinkedCell(aRMax).forEachNeighbor(aIDX, false, aRegion, (x, y, z, idx) -> {
+                // 内部会自动处理 idx 相同的情况
+                double tDis2 = cXYZ.distance2(x, y, z);
+                if (tDis2 < tRMax2) rNN.put(tDis2, x, y, z, idx);
+            });
+        }
         // 然后直接遍历得到的近邻列表，这里再手动处理 half 的情况
         rNN.forEachNeighbor(aIDX, aHalf, aRegion, aXYZIdxDisDo);
     }
@@ -771,9 +800,10 @@ public class NeighborListGetter implements IShutdownable {
      * @param aXYZ 中心粒子的位置
      * @param aRMax 最大的近邻半径
      * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）
-     * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据
+     * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据；
+     *             开启后会直接输出 MHT 距离，默认则会输出几何距离的平方
      */
-    void forEachNeighbor_(IXYZ aXYZ, final double aRMax, int aNnn, final boolean aMHT, IXYZIdxDisDo aXYZIdxDisDo) {
+    void forEachNeighbor_(IXYZ aXYZ, final double aRMax, int aNnn, boolean aMHT, IXYZIdxDisDo aXYZIdxDisDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
         // 特殊输入处理，直接回到没有限制的情况
@@ -785,10 +815,18 @@ public class NeighborListGetter implements IShutdownable {
         // 先遍历所有经历统计出最近的列表
         final NearestNeighborList rNN = new NearestNeighborList(aNnn);
         final XYZ cXYZ = XYZ.toXYZ(aXYZ);
-        getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (x, y, z, idx) -> {
-            double tDis = aMHT ? cXYZ.distanceMHT(x, y, z) : cXYZ.distance(x, y, z);
-            if (tDis < aRMax) rNN.put(tDis, x, y, z, idx);
-        });
+        if (aMHT) {
+            getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (x, y, z, idx) -> {
+                double tDisMHT = cXYZ.distanceMHT(x, y, z);
+                if (tDisMHT < aRMax) rNN.put(tDisMHT, x, y, z, idx);
+            });
+        } else {
+            final double tRMax2 = aRMax*aRMax;
+            getProperLinkedCell(aRMax).forEachNeighbor(cXYZ, (x, y, z, idx) -> {
+                double tDis2 = cXYZ.distance2(x, y, z);
+                if (tDis2 < tRMax2) rNN.put(tDis2, x, y, z, idx);
+            });
+        }
         // 然后直接遍历得到的近邻列表
         rNN.forEachNeighbor(aXYZIdxDisDo);
     }

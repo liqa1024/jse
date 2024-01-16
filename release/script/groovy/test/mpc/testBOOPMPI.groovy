@@ -24,7 +24,7 @@ for (_ in 0..<100) mpc.calBOOP(6, mpc.unitLen()*1.5);
 if (me == 0) println("Mean of Q6 jtool: ${Q6.mean()}");
 if (me == 0) UT.Timer.toc();
 // Mean of Q6 jtool: 0.37245757782954264
-// Total time: 00 hour 00 min 5.87 sec / 5.28 sec
+// Total time: 00 hour 00 min 5.87 sec / 5.28 sec / 3.86 sec
 
 if (me == 0) UT.Timer.tic();
 def q6 = mpc.calABOOP(6, mpc.unitLen()*1.5);
@@ -32,7 +32,7 @@ for (_ in 0..<100) mpc.calABOOP(6, mpc.unitLen()*1.5);
 if (me == 0) println("Mean of q6 jtool: ${q6.mean()}");
 if (me == 0) UT.Timer.toc();
 // Mean of q6 jtool: 0.11684061284708915
-// Total time: 00 hour 00 min 7.92 sec / 5.48 sec
+// Total time: 00 hour 00 min 7.92 sec / 5.48 sec / 3.94 sec
 
 
 //// 使用 MPI 方式计算

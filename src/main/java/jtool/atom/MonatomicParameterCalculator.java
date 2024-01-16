@@ -181,8 +181,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(mAtomNum, (i, threadID) -> {
-            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dis) -> {
-                int tIdx = (int) Math.ceil((dis - dr*0.5) / dr);
+            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dis2) -> {
+                int tIdx = (int) Math.ceil((Fast.sqrt(dis2) - dr*0.5) / dr);
                 if (tIdx > 0 && tIdx < aN) dn.get(threadID).increment_(tIdx);
             });
         });
@@ -222,8 +222,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(aAtomNum, (i, threadID) -> {
-            mNL.forEachNeighbor(new XYZ(aAtomDataXYZ.row(i)), aRMax - dr*0.5, (x, y, z, idx, dis) -> {
-                int tIdx = (int) Math.ceil((dis - dr*0.5) / dr);
+            mNL.forEachNeighbor(new XYZ(aAtomDataXYZ.row(i)), aRMax - dr*0.5, (x, y, z, idx, dis2) -> {
+                int tIdx = (int) Math.ceil((Fast.sqrt(dis2) - dr*0.5) / dr);
                 if (tIdx > 0 && tIdx < aN) dn.get(threadID).increment_(tIdx);
             });
         });
@@ -276,8 +276,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(mAtomNum, (i, threadID) -> {
-            mNL.forEachNeighbor(i, aRMax+tRShift, true, (x, y, z, idx, dis) -> {
-                tDeltaG[threadID].setX0(dis);
+            mNL.forEachNeighbor(i, aRMax+tRShift, true, (x, y, z, idx, dis2) -> {
+                tDeltaG[threadID].setX0(Fast.sqrt(dis2));
                 dn[threadID].plus2this(tDeltaG[threadID]);
             });
         });
@@ -314,8 +314,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(aAtomNum, (i, threadID) -> {
-            mNL.forEachNeighbor(new XYZ(aAtomDataXYZ.row(i)), aRMax+tRShift, (x, y, z, idx, dis) -> {
-                tDeltaG[threadID].setX0(dis);
+            mNL.forEachNeighbor(new XYZ(aAtomDataXYZ.row(i)), aRMax+tRShift, (x, y, z, idx, dis2) -> {
+                tDeltaG[threadID].setX0(Fast.sqrt(dis2));
                 dn[threadID].plus2this(tDeltaG[threadID]);
             });
         });
@@ -499,7 +499,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
         final List<Integer> rNeighborList = new ArrayList<>();
-        mNL.forEachNeighbor(aIdx, aRMax, aNnn, (x, y, z, idx, dis) -> rNeighborList.add(idx));
+        mNL.forEachNeighbor(aIdx, aRMax, aNnn, (x, y, z, idx, dis2) -> rNeighborList.add(idx));
         return rNeighborList;
     }
     public List<Integer> getNeighborList(int aIdx, double aRMax) {return getNeighborList(aIdx, aRMax, -1);}
@@ -520,7 +520,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         else if (tXYZ.mZ >= tBox.mZ) tXYZ.mZ -= tBox.mZ;
         
         final List<Integer> rNeighborList = new ArrayList<>();
-        mNL.forEachNeighbor(tXYZ, aRMax, aNnn, (x, y, z, idx, dis) -> rNeighborList.add(idx));
+        mNL.forEachNeighbor(tXYZ, aRMax, aNnn, (x, y, z, idx, dis2) -> rNeighborList.add(idx));
         return rNeighborList;
     }
     public List<Integer> getNeighborList(IXYZ aXYZ, double aRMax) {return getNeighborList(aXYZ, aRMax, -1);}
@@ -723,12 +723,12 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             final IComplexVector Qlmi = Qlm.row(i);
             final XYZ cXYZ = new XYZ(mAtomDataXYZ.row(i));
             // 遍历近邻计算 Ylm
-            mNL.forEachNeighbor(i, aRNearest, aNnn, aHalf, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(i, aRNearest, aNnn, aHalf, (x, y, z, idx, dis2) -> {
                 // 计算角度
                 double dx = x - cXYZ.mX;
                 double dy = y - cXYZ.mY;
                 double dz = z - cXYZ.mZ;
-                double theta = Fast.acos(dz / dis);
+                double theta = Fast.acos(dz / Fast.sqrt(dis2));
                 double disXY = Fast.hypot(dx, dy);
                 double phi = (dy > 0) ? Fast.acos(dx / disXY) : (2.0*PI - Fast.acos(dx / disXY));
                 
@@ -814,12 +814,12 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             final XYZ cXYZ = new XYZ(mAtomDataXYZ.row(i));
             // 遍历近邻计算 Ylm
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearest, aNnn, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(fI, aRNearest, aNnn, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis2) -> {
                 // 计算角度
                 double dx = x - cXYZ.mX;
                 double dy = y - cXYZ.mY;
                 double dz = z - cXYZ.mZ;
-                double theta = Fast.acos(dz / dis);
+                double theta = Fast.acos(dz / Fast.sqrt(dis2));
                 double disXY = Fast.hypot(dx, dy);
                 double phi = (dy > 0) ? Fast.acos(dx / disXY) : (2.0*PI - Fast.acos(dx / disXY));
                 
@@ -954,7 +954,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 }
             } else {
                 final int fI = i;
-                mNL.forEachNeighbor(fI, aRNearestQ, aNnnQ, aHalf, (x, y, z, idx, dis) -> {
+                mNL.forEachNeighbor(fI, aRNearestQ, aNnnQ, aHalf, (x, y, z, idx, dis2) -> {
                     // 直接按行累加即可
                     qlmi.plus2this(Qlm.row(idx));
                     // 如果开启 half 遍历的优化，对称的对面的粒子也要进行累加
@@ -1009,7 +1009,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             qlmi.fill(Qlmi);
             // 再累加近邻
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearestQ, aNnnQ, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(fI, aRNearestQ, aNnnQ, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis2) -> {
                 // 直接按行累加即可
                 qlmi.plus2this(Qlm.row(idx));
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
@@ -1425,7 +1425,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, (x, y, z, idx, dis2) -> {
                 // 统一获取行向量
                 IComplexVector Qlmj = Qlm.row(idx);
                 // 计算复向量的点乘
@@ -1474,7 +1474,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis2) -> {
                 // 统一获取行向量
                 IComplexVector Qlmj = Qlm.row(idx);
                 // 计算复向量的点乘
@@ -1576,7 +1576,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             final IComplexVector qlmi = qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, (x, y, z, idx, dis2) -> {
                 // 统一获取行向量
                 IComplexVector qlmj = qlm.row(idx);
                 // 计算复向量的点乘
@@ -1625,7 +1625,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             final IComplexVector qlmi = qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis2) -> {
                 // 统一获取行向量
                 IComplexVector qlmj = qlm.row(idx);
                 // 计算复向量的点乘
@@ -1822,7 +1822,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             }
             final XYZ cXYZ = new XYZ(mAtomDataXYZ.row(i));
             // 遍历近邻计算 Ylm, Rn, fc
-            mNL.forEachNeighbor(i, aRCutOff, false, (x, y, z, idx, dis) -> {
+            mNL.forEachNeighbor(i, aRCutOff, false, (x, y, z, idx, dis2) -> {
+                double dis = Fast.sqrt(dis2);
                 // 计算角度
                 double dx = x - cXYZ.mX;
                 double dy = y - cXYZ.mY;
