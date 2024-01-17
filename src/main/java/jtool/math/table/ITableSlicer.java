@@ -1,6 +1,7 @@
 package jtool.math.table;
 
 import jtool.code.CS.SliceType;
+import jtool.code.collection.ISlice;
 import jtool.code.functional.IFilter;
 import jtool.code.functional.IIndexFilter;
 
@@ -17,18 +18,23 @@ public interface ITableSlicer {
      * 实际切片过程会将 Boolean 和 String 转成 Integer。
      * 还是使用多种输入排列组合方式来重载，可能会让实现比较复杂，但是是值得的
      */
+    ITable get(ISlice        aSelectedRows, String[]  aSelectedCols);
     ITable get(int[]         aSelectedRows, String[]  aSelectedCols);
     ITable get(List<Integer> aSelectedRows, String[]  aSelectedCols);
     ITable get(SliceType     aSelectedRows, String[]  aSelectedCols);
     ITable get(int           aSelectedRow , String[]  aSelectedCols);
+    ITable get(ISlice        aSelectedRows, String    aSelectedCol );
     ITable get(int[]         aSelectedRows, String    aSelectedCol );
     ITable get(List<Integer> aSelectedRows, String    aSelectedCol );
     ITable get(SliceType     aSelectedRows, String    aSelectedCol );
     ITable get(int           aSelectedRow , String    aSelectedCol );
+    ITable get(ISlice        aSelectedRows, SliceType aSelectedCols);
     ITable get(int[]         aSelectedRows, SliceType aSelectedCols);
     ITable get(List<Integer> aSelectedRows, SliceType aSelectedCols);
     ITable get(SliceType     aSelectedRows, SliceType aSelectedCols);
+    ITable get(int           aSelectedRow , SliceType aSelectedCols);
     /** Groovy stuff */
+    ITable get(ISlice        aSelectedRows, Iterable<? extends CharSequence> aSelectedCols);
     ITable get(int[]         aSelectedRows, Iterable<? extends CharSequence> aSelectedCols);
     ITable get(List<Integer> aSelectedRows, Iterable<? extends CharSequence> aSelectedCols);
     ITable get(SliceType     aSelectedRows, Iterable<? extends CharSequence> aSelectedCols);
@@ -39,6 +45,7 @@ public interface ITableSlicer {
     ITable get(IIndexFilter  aSelectedRows, String[]        aSelectedCols);
     ITable get(IIndexFilter  aSelectedRows, String          aSelectedCol );
     ITable get(IIndexFilter  aSelectedRows, SliceType       aSelectedCols);
+    ITable get(ISlice        aSelectedRows, IFilter<String> aSelectedCols);
     ITable get(int[]         aSelectedRows, IFilter<String> aSelectedCols);
     ITable get(List<Integer> aSelectedRows, IFilter<String> aSelectedCols);
     ITable get(SliceType     aSelectedRows, IFilter<String> aSelectedCols);

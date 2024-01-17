@@ -126,6 +126,12 @@ public class NewCollections {
      * 提供通用切片接口
      * @author liqa
      */
+    public static <T> ArrayList<T> slice(List<? extends T> aList, ISlice aIndices) {
+        final int tSize = aIndices.size();
+        ArrayList<T> rList = new ArrayList<>(tSize);
+        for (int i = 0; i < tSize; ++i) rList.add(aList.get(aIndices.get(i)));
+        return rList;
+    }
     public static <T> ArrayList<T> slice(List<? extends T> aList, Iterable<Integer> aIndices) {
         ArrayList<T> rList = new ArrayList<>();
         for (int tIdx : aIndices) rList.add(aList.get(tIdx));
@@ -140,6 +146,16 @@ public class NewCollections {
     public static <T> ArrayList<T> slice(List<? extends T> aList, int[] aIndices) {
         ArrayList<T> rList = new ArrayList<>(aIndices.length);
         for (int tIdx : aIndices) rList.add(aList.get(tIdx));
+        return rList;
+    }
+    public static <T> ArrayList<T> slice(Collection<? extends T> aIterable, IIndexFilter aIndices) {
+        ArrayList<T> rList = new ArrayList<>(aIterable.size());
+        int tIdx = 0;
+        for (T tValue : aIterable) {
+            if (aIndices.accept(tIdx)) rList.add(tValue);
+            ++tIdx;
+        }
+        rList.trimToSize();
         return rList;
     }
     public static <T> ArrayList<T> slice(Iterable<? extends T> aIterable, IIndexFilter aIndices) {

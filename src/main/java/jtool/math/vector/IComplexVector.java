@@ -3,6 +3,7 @@ package jtool.math.vector;
 import jtool.atom.IAtom;
 import jtool.atom.IXYZ;
 import jtool.code.CS.SliceType;
+import jtool.code.collection.ISlice;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.*;
 import jtool.code.iterator.*;
@@ -197,12 +198,21 @@ public interface IComplexVector extends IHasComplexDoubleIterator, IHasComplexDo
     @VisibleForTesting void putAt(int aIdx, ComplexDouble aValue);
     @VisibleForTesting void putAt(int aIdx, double aValue);
     
+    @VisibleForTesting IComplexVector call(ISlice        aIndices);
     @VisibleForTesting IComplexVector call(List<Integer> aIndices);
     @VisibleForTesting IComplexVector call(SliceType     aIndices);
+    @VisibleForTesting IComplexVector call(IIndexFilter  aIndices);
     
+    @VisibleForTesting IComplexVector getAt(ISlice        aIndices);
     @VisibleForTesting IComplexVector getAt(List<Integer> aIndices);
     @VisibleForTesting IComplexVector getAt(SliceType     aIndices);
     @VisibleForTesting IComplexVector getAt(IIndexFilter  aIndices);
+    @VisibleForTesting void putAt(ISlice        aIndices, IComplexDouble aValue);
+    @VisibleForTesting void putAt(ISlice        aIndices, ComplexDouble aValue);
+    @VisibleForTesting void putAt(ISlice        aIndices, double aValue);
+    @VisibleForTesting void putAt(ISlice        aIndices, Iterable<? extends Number> aList);
+    @VisibleForTesting void putAt(ISlice        aIndices, IVector aVector);
+    @VisibleForTesting void putAt(ISlice        aIndices, IComplexVector aVector);
     @VisibleForTesting void putAt(List<Integer> aIndices, IComplexDouble aValue);
     @VisibleForTesting void putAt(List<Integer> aIndices, ComplexDouble aValue);
     @VisibleForTesting void putAt(List<Integer> aIndices, double aValue);

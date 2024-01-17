@@ -206,7 +206,7 @@ public class AbstractCollections {
         return new AbstractRandomAccessList<R>() {
             @Override public R get(int index) {return aOpt.cal(aList.get(index));}
             @Override public int size() {return aList.size();}
-            @Override public @NotNull Iterator<R> iterator() {return map(aList.iterator(), aOpt);}
+            @Override public @NotNull @Unmodifiable Iterator<R> iterator() {return map(aList.iterator(), aOpt);}
         };
     }
     public static <R, T> @Unmodifiable List<R> map(final T[] aArray, final IOperator1<? extends R, ? super T> aOpt) {
@@ -221,25 +221,34 @@ public class AbstractCollections {
      * 提供通用切片接口
      * @author liqa
      */
-    public static <T> @Unmodifiable List<T> slice(final List<? extends T> aList, final List<Integer> aIndices) {
+    public static <T> List<T> slice(final List<T> aList, final ISlice aIndices) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {return aList.get(aIndices.get(index));}
+            @Override public T set(int index, T element) {return aList.set(aIndices.get(index), element);}
             @Override public int size() {return aIndices.size();}
         };
     }
-    public static <T> @Unmodifiable List<T> slice(List<? extends T> aList, Iterable<Integer> aIndices) {
+    public static <T> List<T> slice(final List<T> aList, final List<Integer> aIndices) {
+        return new AbstractRandomAccessList<T>() {
+            @Override public T get(int index) {return aList.get(aIndices.get(index));}
+            @Override public T set(int index, T element) {return aList.set(aIndices.get(index), element);}
+            @Override public int size() {return aIndices.size();}
+        };
+    }
+    public static <T> List<T> slice(List<T> aList, Iterable<Integer> aIndices) {
         return slice(aList, NewCollections.from(aIndices));
     }
-    public static <T> @Unmodifiable List<T> slice(List<? extends T> aList, Collection<Integer> aIndices) {
+    public static <T> List<T> slice(List<T> aList, Collection<Integer> aIndices) {
         return slice(aList, NewCollections.from(aIndices));
     }
-    public static <T> @Unmodifiable List<T> slice(final List<? extends T> aList, final int[] aIndices) {
+    public static <T> List<T> slice(final List<T> aList, final int[] aIndices) {
         return new AbstractRandomAccessList<T>() {
             @Override public T get(int index) {return aList.get(aIndices[index]);}
+            @Override public T set(int index, T element) {return aList.set(aIndices[index], element);}
             @Override public int size() {return aIndices.length;}
         };
     }
-    public static <T> @Unmodifiable List<T> slice(final List<? extends T> aList, IIndexFilter aIndices) {
+    public static <T> List<T> slice(final List<T> aList, IIndexFilter aIndices) {
         return slice(aList, NewCollections.filterInteger(aList.size(), aIndices));
     }
     

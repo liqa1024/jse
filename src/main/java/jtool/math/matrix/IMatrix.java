@@ -1,6 +1,7 @@
 package jtool.math.matrix;
 
 import jtool.code.CS.SliceType;
+import jtool.code.collection.ISlice;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.IDoubleConsumer1;
 import jtool.code.functional.IDoubleSupplier;
@@ -132,17 +133,34 @@ public interface IMatrix extends IMatrixGetter {
     
     /** Groovy 的部分，重载一些运算符方便操作 */
     @VisibleForTesting double call(int aRow, int aCol);
+    @VisibleForTesting IMatrix call(ISlice        aSelectedRows, ISlice        aSelectedCols);
+    @VisibleForTesting IMatrix call(List<Integer> aSelectedRows, ISlice        aSelectedCols);
+    @VisibleForTesting IMatrix call(SliceType     aSelectedRows, ISlice        aSelectedCols);
+    @VisibleForTesting IMatrix call(IIndexFilter  aSelectedRows, ISlice        aSelectedCols);
+    @VisibleForTesting IMatrix call(ISlice        aSelectedRows, List<Integer> aSelectedCols);
     @VisibleForTesting IMatrix call(List<Integer> aSelectedRows, List<Integer> aSelectedCols);
     @VisibleForTesting IMatrix call(SliceType     aSelectedRows, List<Integer> aSelectedCols);
+    @VisibleForTesting IMatrix call(IIndexFilter  aSelectedRows, List<Integer> aSelectedCols);
+    @VisibleForTesting IMatrix call(ISlice        aSelectedRows, SliceType     aSelectedCols);
     @VisibleForTesting IMatrix call(List<Integer> aSelectedRows, SliceType     aSelectedCols);
     @VisibleForTesting IMatrix call(SliceType     aSelectedRows, SliceType     aSelectedCols);
+    @VisibleForTesting IMatrix call(IIndexFilter  aSelectedRows, SliceType     aSelectedCols);
+    @VisibleForTesting IMatrix call(ISlice        aSelectedRows, IIndexFilter  aSelectedCols);
+    @VisibleForTesting IMatrix call(List<Integer> aSelectedRows, IIndexFilter  aSelectedCols);
+    @VisibleForTesting IMatrix call(SliceType     aSelectedRows, IIndexFilter  aSelectedCols);
+    @VisibleForTesting IMatrix call(IIndexFilter  aSelectedRows, IIndexFilter  aSelectedCols);
+    @VisibleForTesting IVector call(int           aSelectedRow , ISlice        aSelectedCols);
     @VisibleForTesting IVector call(int           aSelectedRow , List<Integer> aSelectedCols);
     @VisibleForTesting IVector call(int           aSelectedRow , SliceType     aSelectedCols);
+    @VisibleForTesting IVector call(int           aSelectedRow , IIndexFilter  aSelectedCols);
+    @VisibleForTesting IVector call(ISlice        aSelectedRows, int           aSelectedCol );
     @VisibleForTesting IVector call(List<Integer> aSelectedRows, int           aSelectedCol );
     @VisibleForTesting IVector call(SliceType     aSelectedRows, int           aSelectedCol );
+    @VisibleForTesting IVector call(IIndexFilter  aSelectedRows, int           aSelectedCol );
     
     @VisibleForTesting IMatrixRow_ getAt(int aRow);
     @VisibleForTesting IMatrixRows_ getAt(SliceType aSelectedRows);
+    @VisibleForTesting IMatrixRows_ getAt(ISlice aSelectedRows);
     @VisibleForTesting IMatrixRows_ getAt(List<Integer> aSelectedRows);
     @VisibleForTesting IMatrixRows_ getAt(IIndexFilter aSelectedRows);
     
@@ -152,11 +170,15 @@ public interface IMatrix extends IMatrixGetter {
         @VisibleForTesting void putAt(int aCol, double aValue);
         
         @VisibleForTesting IVector getAt(SliceType aSelectedCols);
+        @VisibleForTesting IVector getAt(ISlice aSelectedCols);
         @VisibleForTesting IVector getAt(List<Integer> aSelectedCols);
         @VisibleForTesting IVector getAt(IIndexFilter  aSelectedCols);
         @VisibleForTesting void putAt(SliceType aSelectedCols, double aValue);
         @VisibleForTesting void putAt(SliceType aSelectedCols, Iterable<? extends Number> aList);
         @VisibleForTesting void putAt(SliceType aSelectedCols, IVector aVector);
+        @VisibleForTesting void putAt(ISlice aSelectedCols, double aValue);
+        @VisibleForTesting void putAt(ISlice aSelectedCols, Iterable<? extends Number> aList);
+        @VisibleForTesting void putAt(ISlice aSelectedCols, IVector aVector);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, double aValue);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, Iterable<? extends Number> aList);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, IVector aVector);
@@ -167,6 +189,7 @@ public interface IMatrix extends IMatrixGetter {
     @ApiStatus.Internal interface IMatrixRows_ {
         @VisibleForTesting IVector getAt(int aCol);
         @VisibleForTesting IMatrix getAt(SliceType aSelectedCols);
+        @VisibleForTesting IMatrix getAt(ISlice aSelectedCols);
         @VisibleForTesting IMatrix getAt(List<Integer> aSelectedCols);
         @VisibleForTesting IMatrix getAt(IIndexFilter  aSelectedCols);
         @VisibleForTesting void putAt(int aCol, double aValue);
@@ -175,6 +198,9 @@ public interface IMatrix extends IMatrixGetter {
         @VisibleForTesting void putAt(SliceType aSelectedCols, double aValue);
         @VisibleForTesting void putAt(SliceType aSelectedCols, Iterable<?> aRows);
         @VisibleForTesting void putAt(SliceType aSelectedCols, IMatrix aMatrix);
+        @VisibleForTesting void putAt(ISlice aSelectedCols, double aValue);
+        @VisibleForTesting void putAt(ISlice aSelectedCols, Iterable<?> aRows);
+        @VisibleForTesting void putAt(ISlice aSelectedCols, IMatrix aMatrix);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, double aValue);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, Iterable<?> aRows);
         @VisibleForTesting void putAt(List<Integer> aSelectedCols, IMatrix aMatrix);

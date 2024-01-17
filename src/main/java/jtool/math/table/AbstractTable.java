@@ -1,6 +1,7 @@
 package jtool.math.table;
 
 
+import jtool.code.collection.ISlice;
 import jtool.code.collection.NewCollections;
 import jtool.math.matrix.IMatrix;
 import jtool.math.vector.IVector;
@@ -34,7 +35,7 @@ public abstract class AbstractTable implements ITable {
     }
     
     private String[] copyHeads_() {return mHeads.toArray(ZL_STR);}
-    private String[] copyHeads_(List<Integer> aIndices) {
+    private String[] copyHeads_(ISlice aIndices) {
         String[] tOut = new String[aIndices.size()];
         for (int i = 0; i < tOut.length; ++i) tOut[i] = mHeads.get(aIndices.get(i));
         return tOut;
@@ -93,9 +94,9 @@ public abstract class AbstractTable implements ITable {
     
     @Override public final ITableSlicer slicer() {
         return new AbstractTableSlicer() {
-            @Override protected ITable getLL(final List<Integer> aSelectedRows, final List<Integer> aSelectedCols) {return Tables.from(asMatrix().refSlicer().get(aSelectedRows, aSelectedCols), copyHeads_(aSelectedCols));}
-            @Override protected ITable getLA(final List<Integer> aSelectedRows) {return Tables.from(asMatrix().refSlicer().get(aSelectedRows, ALL), copyHeads_());}
-            @Override protected ITable getAL(final List<Integer> aSelectedCols) {return Tables.from(asMatrix().refSlicer().get(ALL, aSelectedCols), copyHeads_(aSelectedCols));}
+            @Override protected ITable getLL(final ISlice aSelectedRows, final ISlice aSelectedCols) {return Tables.from(asMatrix().refSlicer().get(aSelectedRows, aSelectedCols), copyHeads_(aSelectedCols));}
+            @Override protected ITable getLA(final ISlice aSelectedRows) {return Tables.from(asMatrix().refSlicer().get(aSelectedRows, ALL), copyHeads_());}
+            @Override protected ITable getAL(final ISlice aSelectedCols) {return Tables.from(asMatrix().refSlicer().get(ALL, aSelectedCols), copyHeads_(aSelectedCols));}
             @Override protected ITable getAA() {return Tables.from(asMatrix(), copyHeads_());}
             
             @Override protected int thisRowNum_() {return rowNumber();}
@@ -105,15 +106,15 @@ public abstract class AbstractTable implements ITable {
     }
     @Override public final ITableSlicer refSlicer() {
         return new AbstractTableSlicer() {
-            @Override protected ITable getLL(final List<Integer> aSelectedRows, final List<Integer> aSelectedCols) {
+            @Override protected ITable getLL(final ISlice aSelectedRows, final ISlice aSelectedCols) {
                 final IMatrix tMatrix = asMatrix().refSlicer().get(aSelectedRows, aSelectedCols);
                 return new AbstractTable(NewCollections.slice(mHeads, aSelectedCols)) {@Override public IMatrix asMatrix() {return tMatrix;}};
             }
-            @Override protected ITable getLA(List<Integer> aSelectedRows) {
+            @Override protected ITable getLA(ISlice aSelectedRows) {
                 final IMatrix tMatrix = asMatrix().refSlicer().get(aSelectedRows, ALL);
                 return new AbstractTable(NewCollections.from(mHeads)) {@Override public IMatrix asMatrix() {return tMatrix;}};
             }
-            @Override protected ITable getAL(List<Integer> aSelectedCols) {
+            @Override protected ITable getAL(ISlice aSelectedCols) {
                 final IMatrix tMatrix = asMatrix().refSlicer().get(ALL, aSelectedCols);
                 return new AbstractTable(NewCollections.slice(mHeads, aSelectedCols)) {@Override public IMatrix asMatrix() {return tMatrix;}};
             }

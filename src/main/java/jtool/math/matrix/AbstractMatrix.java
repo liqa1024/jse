@@ -3,6 +3,7 @@ package jtool.math.matrix;
 import jtool.code.CS.SliceType;
 import jtool.code.collection.AbstractCollections;
 import jtool.code.collection.AbstractRandomAccessList;
+import jtool.code.collection.ISlice;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.IDoubleConsumer1;
 import jtool.code.functional.IDoubleSupplier;
@@ -484,14 +485,14 @@ public abstract class AbstractMatrix implements IMatrix {
     /** 切片操作，默认返回新的矩阵，refSlicer 则会返回引用的切片结果 */
     @Override public IMatrixSlicer slicer() {
         return new AbstractMatrixSlicer() {
-            @Override protected IVector getIL(final int aSelectedRow, final List<Integer> aSelectedCols) {IVector rVector = newZerosVec_(aSelectedCols.size()); rVector.fill(refSlicer().get(aSelectedRow, aSelectedCols)); return rVector;}
-            @Override protected IVector getLI(final List<Integer> aSelectedRows, final int aSelectedCol) {IVector rVector = newZerosVec_(aSelectedRows.size()); rVector.fill(refSlicer().get(aSelectedRows, aSelectedCol)); return rVector;}
+            @Override protected IVector getIL(final int aSelectedRow, final ISlice aSelectedCols) {IVector rVector = newZerosVec_(aSelectedCols.size()); rVector.fill(refSlicer().get(aSelectedRow, aSelectedCols)); return rVector;}
+            @Override protected IVector getLI(final ISlice aSelectedRows, final int aSelectedCol) {IVector rVector = newZerosVec_(aSelectedRows.size()); rVector.fill(refSlicer().get(aSelectedRows, aSelectedCol)); return rVector;}
             @Override protected IVector getIA(final int aSelectedRow) {IVector rVector = newZerosVec_(columnNumber()); rVector.fill(refSlicer().get(aSelectedRow, ALL)); return rVector;}
             @Override protected IVector getAI(final int aSelectedCol) {IVector rVector = newZerosVec_(rowNumber()); rVector.fill(refSlicer().get(ALL, aSelectedCol)); return rVector;}
             
-            @Override protected IMatrix getLL(final List<Integer> aSelectedRows, final List<Integer> aSelectedCols) {IMatrix rMatrix = newZeros_(aSelectedRows.size(), aSelectedCols.size()); rMatrix.fill(refSlicer().get(aSelectedRows, aSelectedCols)); return rMatrix;}
-            @Override protected IMatrix getLA(final List<Integer> aSelectedRows) {IMatrix rMatrix = newZeros_(aSelectedRows.size(), columnNumber()); rMatrix.fill(refSlicer().get(aSelectedRows, ALL)); return rMatrix;}
-            @Override protected IMatrix getAL(final List<Integer> aSelectedCols) {IMatrix rMatrix = newZeros_(rowNumber()         , aSelectedCols.size()); rMatrix.fill(refSlicer().get(ALL, aSelectedCols)); return rMatrix;}
+            @Override protected IMatrix getLL(final ISlice aSelectedRows, final ISlice aSelectedCols) {IMatrix rMatrix = newZeros_(aSelectedRows.size(), aSelectedCols.size()); rMatrix.fill(refSlicer().get(aSelectedRows, aSelectedCols)); return rMatrix;}
+            @Override protected IMatrix getLA(final ISlice aSelectedRows) {IMatrix rMatrix = newZeros_(aSelectedRows.size(), columnNumber()); rMatrix.fill(refSlicer().get(aSelectedRows, ALL)); return rMatrix;}
+            @Override protected IMatrix getAL(final ISlice aSelectedCols) {IMatrix rMatrix = newZeros_(rowNumber()         , aSelectedCols.size()); rMatrix.fill(refSlicer().get(ALL, aSelectedCols)); return rMatrix;}
             @Override protected IMatrix getAA() {return copy();}
             
             @Override public IVector diag(final int aShift) {
@@ -516,7 +517,7 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     @Override public IMatrixSlicer refSlicer() {
         return new AbstractMatrixSlicer() {
-            @Override protected IVector getIL(final int aSelectedRow, final List<Integer> aSelectedCols) {
+            @Override protected IVector getIL(final int aSelectedRow, final ISlice aSelectedCols) {
                 if (aSelectedRow<0 || aSelectedRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aSelectedRow);
                 return new RefVector() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
@@ -526,7 +527,7 @@ public abstract class AbstractMatrix implements IMatrix {
                     @Override public int size() {return aSelectedCols.size();}
                 };
             }
-            @Override protected IVector getLI(final List<Integer> aSelectedRows, final int aSelectedCol) {
+            @Override protected IVector getLI(final ISlice aSelectedRows, final int aSelectedCol) {
                 if (aSelectedCol<0 || aSelectedCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aSelectedCol);
                 return new RefVector() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
@@ -539,7 +540,7 @@ public abstract class AbstractMatrix implements IMatrix {
             @Override protected IVector getIA(int aSelectedRow) {return row(aSelectedRow);}
             @Override protected IVector getAI(int aSelectedCol) {return col(aSelectedCol);}
             
-            @Override protected IMatrix getLL(final List<Integer> aSelectedRows, final List<Integer> aSelectedCols) {
+            @Override protected IMatrix getLL(final ISlice aSelectedRows, final ISlice aSelectedCols) {
                 return new RefMatrix() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public double get_(int aRow, int aCol) {return AbstractMatrix.this.get(aSelectedRows.get(aRow), aSelectedCols.get(aCol));}
@@ -549,7 +550,7 @@ public abstract class AbstractMatrix implements IMatrix {
                     @Override public int columnNumber() {return aSelectedCols.size();}
                 };
             }
-            @Override protected IMatrix getLA(final List<Integer> aSelectedRows) {
+            @Override protected IMatrix getLA(final ISlice aSelectedRows) {
                 return new RefMatrix() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public double get_(int aRow, int aCol) {return AbstractMatrix.this.get(aSelectedRows.get(aRow), aCol);}
@@ -559,7 +560,7 @@ public abstract class AbstractMatrix implements IMatrix {
                     @Override public int columnNumber() {return AbstractMatrix.this.columnNumber();}
                 };
             }
-            @Override protected IMatrix getAL(final List<Integer> aSelectedCols) {
+            @Override protected IMatrix getAL(final ISlice aSelectedCols) {
                 return new RefMatrix() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public double get_(int aRow, int aCol) {return AbstractMatrix.this.get(aRow, aSelectedCols.get(aCol));}
@@ -651,16 +652,33 @@ public abstract class AbstractMatrix implements IMatrix {
     
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public final double call(int aRow, int aCol) {return get(aRow, aCol);}
+    @VisibleForTesting @Override public final IMatrix call(ISlice        aSelectedRows, ISlice        aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(List<Integer> aSelectedRows, ISlice        aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(SliceType     aSelectedRows, ISlice        aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(IIndexFilter  aSelectedRows, ISlice        aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(ISlice        aSelectedRows, List<Integer> aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
     @VisibleForTesting @Override public final IMatrix call(List<Integer> aSelectedRows, List<Integer> aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
     @VisibleForTesting @Override public final IMatrix call(SliceType     aSelectedRows, List<Integer> aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(IIndexFilter  aSelectedRows, List<Integer> aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(ISlice        aSelectedRows, SliceType     aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
     @VisibleForTesting @Override public final IMatrix call(List<Integer> aSelectedRows, SliceType     aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
     @VisibleForTesting @Override public final IMatrix call(SliceType     aSelectedRows, SliceType     aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(IIndexFilter  aSelectedRows, SliceType     aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(ISlice        aSelectedRows, IIndexFilter  aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(List<Integer> aSelectedRows, IIndexFilter  aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(SliceType     aSelectedRows, IIndexFilter  aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IMatrix call(IIndexFilter  aSelectedRows, IIndexFilter  aSelectedCols) {return slicer().get(aSelectedRows, aSelectedCols);}
+    @VisibleForTesting @Override public final IVector call(int           aSelectedRow , ISlice        aSelectedCols) {return slicer().get(aSelectedRow , aSelectedCols);}
     @VisibleForTesting @Override public final IVector call(int           aSelectedRow , List<Integer> aSelectedCols) {return slicer().get(aSelectedRow , aSelectedCols);}
     @VisibleForTesting @Override public final IVector call(int           aSelectedRow , SliceType     aSelectedCols) {return slicer().get(aSelectedRow , aSelectedCols);}
+    @VisibleForTesting @Override public final IVector call(int           aSelectedRow , IIndexFilter  aSelectedCols) {return slicer().get(aSelectedRow , aSelectedCols);}
+    @VisibleForTesting @Override public final IVector call(ISlice        aSelectedRows, int           aSelectedCol ) {return slicer().get(aSelectedRows, aSelectedCol );}
     @VisibleForTesting @Override public final IVector call(List<Integer> aSelectedRows, int           aSelectedCol ) {return slicer().get(aSelectedRows, aSelectedCol );}
     @VisibleForTesting @Override public final IVector call(SliceType     aSelectedRows, int           aSelectedCol ) {return slicer().get(aSelectedRows, aSelectedCol );}
+    @VisibleForTesting @Override public final IVector call(IIndexFilter  aSelectedRows, int           aSelectedCol ) {return slicer().get(aSelectedRows, aSelectedCol );}
     
     @VisibleForTesting @Override public final IMatrixRows_ getAt(SliceType aSelectedRows) {return new MatrixRowsA_(aSelectedRows);}
+    @VisibleForTesting @Override public final IMatrixRows_ getAt(ISlice aSelectedRows) {return new MatrixRowsS_(aSelectedRows);}
     @VisibleForTesting @Override public final IMatrixRows_ getAt(List<Integer> aSelectedRows) {return new MatrixRowsL_(aSelectedRows);}
     @VisibleForTesting @Override public final IMatrixRows_ getAt(IIndexFilter aSelectedRows) {return new MatrixRowsF_(aSelectedRows);}
     
@@ -672,12 +690,16 @@ public abstract class AbstractMatrix implements IMatrix {
         private MatrixRow_(int aRow) {mRow = aRow;}
         
         @Override public IVector getAt(SliceType aSelectedCols) {return slicer().get(mRow, aSelectedCols);}
+        @Override public IVector getAt(ISlice aSelectedCols) {return slicer().get(mRow, aSelectedCols);}
         @Override public IVector getAt(List<Integer> aSelectedCols) {return slicer().get(mRow, aSelectedCols);}
         @Override public IVector getAt(IIndexFilter aSelectedCols) {return slicer().get(mRow, aSelectedCols);}
         
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mRow, aSelectedCols).fill(aValue);}
         @Override public void putAt(SliceType aSelectedCols, Iterable<? extends Number> aList) {refSlicer().get(mRow, aSelectedCols).fill(aList);}
         @Override public void putAt(SliceType aSelectedCols, IVector aVector) {refSlicer().get(mRow, aSelectedCols).fill(aVector);}
+        @Override public void putAt(ISlice aSelectedCols, double aValue) {refSlicer().get(mRow, aSelectedCols).fill(aValue);}
+        @Override public void putAt(ISlice aSelectedCols, Iterable<? extends Number> aList) {refSlicer().get(mRow, aSelectedCols).fill(aList);}
+        @Override public void putAt(ISlice aSelectedCols, IVector aVector) {refSlicer().get(mRow, aSelectedCols).fill(aVector);}
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mRow, aSelectedCols).fill(aValue);}
         @Override public void putAt(List<Integer> aSelectedCols, Iterable<? extends Number> aList) {refSlicer().get(mRow, aSelectedCols).fill(aList);}
         @Override public void putAt(List<Integer> aSelectedCols, IVector aVector) {refSlicer().get(mRow, aSelectedCols).fill(aVector);}
@@ -694,6 +716,7 @@ public abstract class AbstractMatrix implements IMatrix {
         private MatrixRowsA_(SliceType aSelectedRows) {mSelectedRows = aSelectedRows;}
         
         @Override public IMatrix getAt(SliceType aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
+        @Override public IMatrix getAt(ISlice aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         @Override public IMatrix getAt(List<Integer> aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         @Override public IMatrix getAt(IIndexFilter aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         
@@ -702,6 +725,9 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(SliceType aSelectedCols, Iterable<?> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(SliceType aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(ISlice aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
+        @Override public void putAt(ISlice aSelectedCols, Iterable<?> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
+        @Override public void putAt(ISlice aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(List<Integer> aSelectedCols, Iterable<?> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(List<Integer> aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
@@ -718,6 +744,7 @@ public abstract class AbstractMatrix implements IMatrix {
         private MatrixRowsL_(List<Integer> aSelectedRows) {mSelectedRows = aSelectedRows;}
         
         @Override public IMatrix getAt(SliceType aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
+        @Override public IMatrix getAt(ISlice aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         @Override public IMatrix getAt(List<Integer> aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         @Override public IMatrix getAt(IIndexFilter aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         
@@ -726,6 +753,37 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(SliceType aSelectedCols, Iterable<?> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(SliceType aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(ISlice aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
+        @Override public void putAt(ISlice aSelectedCols, Iterable<?> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
+        @Override public void putAt(ISlice aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
+        @Override public void putAt(List<Integer> aSelectedCols, Iterable<?> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
+        @Override public void putAt(List<Integer> aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(IIndexFilter aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
+        @Override public void putAt(IIndexFilter aSelectedCols, Iterable<?> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
+        @Override public void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        
+        /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
+        @Override public IVector getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
+        @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol).fill(aValue);}
+    }
+    private class MatrixRowsS_ implements IMatrixRows_ {
+        private final ISlice mSelectedRows;
+        private MatrixRowsS_(ISlice aSelectedRows) {mSelectedRows = aSelectedRows;}
+        
+        @Override public IMatrix getAt(SliceType aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
+        @Override public IMatrix getAt(ISlice aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
+        @Override public IMatrix getAt(List<Integer> aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
+        @Override public IMatrix getAt(IIndexFilter aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
+        
+        @Override public void putAt(int aCol, Iterable<? extends Number> aList) {refSlicer().get(mSelectedRows, aCol).fill(aList);}
+        @Override public void putAt(int aCol, IVector aVector) {refSlicer().get(mSelectedRows, aCol).fill(aVector);}
+        @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
+        @Override public void putAt(SliceType aSelectedCols, Iterable<?> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
+        @Override public void putAt(SliceType aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(ISlice aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
+        @Override public void putAt(ISlice aSelectedCols, Iterable<?> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
+        @Override public void putAt(ISlice aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(List<Integer> aSelectedCols, Iterable<?> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(List<Integer> aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
@@ -742,6 +800,7 @@ public abstract class AbstractMatrix implements IMatrix {
         private MatrixRowsF_(IIndexFilter aSelectedRows) {mSelectedRows = aSelectedRows;}
         
         @Override public IMatrix getAt(SliceType aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
+        @Override public IMatrix getAt(ISlice aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         @Override public IMatrix getAt(List<Integer> aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         @Override public IMatrix getAt(IIndexFilter aSelectedCols) {return slicer().get(mSelectedRows, aSelectedCols);}
         
@@ -750,6 +809,9 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public void putAt(SliceType aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(SliceType aSelectedCols, Iterable<?> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(SliceType aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
+        @Override public void putAt(ISlice aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
+        @Override public void putAt(ISlice aSelectedCols, Iterable<?> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
+        @Override public void putAt(ISlice aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         @Override public void putAt(List<Integer> aSelectedCols, double aValue) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aValue);}
         @Override public void putAt(List<Integer> aSelectedCols, Iterable<?> aRows) {refSlicer().get(mSelectedRows, aSelectedCols).fillWithRows(aRows);}
         @Override public void putAt(List<Integer> aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}

@@ -2,6 +2,7 @@ package jtool.math.vector;
 
 import jtool.code.CS.SliceType;
 import jtool.code.collection.AbstractRandomAccessList;
+import jtool.code.collection.ISlice;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.*;
 import jtool.code.iterator.*;
@@ -361,7 +362,7 @@ public abstract class AbstractComplexVector implements IComplexVector {
     /** 切片操作，默认返回新的向量，refSlicer 则会返回引用的切片结果 */
     @Override public IComplexVectorSlicer slicer() {
         return new AbstractComplexVectorSlicer() {
-            @Override protected IComplexVector getL(final List<Integer> aIndices) {IComplexVector rVector = newZeros_(aIndices.size()); rVector.fill(refSlicer().get(aIndices)); return rVector;}
+            @Override protected IComplexVector getL(final ISlice aIndices) {IComplexVector rVector = newZeros_(aIndices.size()); rVector.fill(refSlicer().get(aIndices)); return rVector;}
             @Override protected IComplexVector getA() {return copy();}
             
             @Override protected int thisSize_() {return size();}
@@ -369,7 +370,7 @@ public abstract class AbstractComplexVector implements IComplexVector {
     }
     @Override public IComplexVectorSlicer refSlicer() {
         return new AbstractComplexVectorSlicer() {
-            @Override protected IComplexVector getL(final List<Integer> aIndices) {
+            @Override protected IComplexVector getL(final ISlice aIndices) {
                 return new RefComplexVector() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public double getReal_(int aIdx) {return AbstractComplexVector.this.getReal(aIndices.get(aIdx));}
@@ -450,13 +451,22 @@ public abstract class AbstractComplexVector implements IComplexVector {
     
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public ComplexDouble call(int aIdx) {return get(aIdx);}
+    @VisibleForTesting @Override public IComplexVector call(ISlice        aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public IComplexVector call(List<Integer> aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public IComplexVector call(SliceType     aIndices) {return slicer().get(aIndices);}
+    @VisibleForTesting @Override public IComplexVector call(IIndexFilter  aIndices) {return slicer().get(aIndices);}
     
+    @VisibleForTesting @Override public IComplexVector getAt(ISlice        aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public IComplexVector getAt(List<Integer> aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public IComplexVector getAt(SliceType     aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public IComplexVector getAt(IIndexFilter  aIndices) {return slicer().get(aIndices);}
     
+    @VisibleForTesting @Override public void putAt(ISlice        aIndices, IComplexDouble aValue) {refSlicer().get(aIndices).fill(aValue);}
+    @VisibleForTesting @Override public void putAt(ISlice        aIndices, ComplexDouble aValue) {refSlicer().get(aIndices).fill(aValue);}
+    @VisibleForTesting @Override public void putAt(ISlice        aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
+    @VisibleForTesting @Override public void putAt(ISlice        aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
+    @VisibleForTesting @Override public void putAt(ISlice        aIndices, IComplexVector aVector) {refSlicer().get(aIndices).fill(aVector);}
+    @VisibleForTesting @Override public void putAt(ISlice        aIndices, IVector aVector) {refSlicer().get(aIndices).fill(aVector);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, IComplexDouble aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, ComplexDouble aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}

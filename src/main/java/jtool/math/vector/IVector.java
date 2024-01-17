@@ -1,6 +1,7 @@
 package jtool.math.vector;
 
 import jtool.code.CS.SliceType;
+import jtool.code.collection.ISlice;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.IDoubleConsumer1;
 import jtool.code.functional.IDoubleSupplier;
@@ -146,12 +147,18 @@ public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVec
     @VisibleForTesting double getAt(int aIdx);
     @VisibleForTesting void putAt(int aIdx, double aValue);
     
+    @VisibleForTesting IVector call(ISlice        aIndices);
     @VisibleForTesting IVector call(List<Integer> aIndices);
     @VisibleForTesting IVector call(SliceType     aIndices);
+    @VisibleForTesting IVector call(IIndexFilter  aIndices);
     
+    @VisibleForTesting IVector getAt(ISlice        aIndices);
     @VisibleForTesting IVector getAt(List<Integer> aIndices);
     @VisibleForTesting IVector getAt(SliceType     aIndices);
     @VisibleForTesting IVector getAt(IIndexFilter  aIndices);
+    @VisibleForTesting void putAt(ISlice        aIndices, double aValue);
+    @VisibleForTesting void putAt(ISlice        aIndices, Iterable<? extends Number> aList);
+    @VisibleForTesting void putAt(ISlice        aIndices, IVector aVector);
     @VisibleForTesting void putAt(List<Integer> aIndices, double aValue);
     @VisibleForTesting void putAt(List<Integer> aIndices, Iterable<? extends Number> aList);
     @VisibleForTesting void putAt(List<Integer> aIndices, IVector aVector);

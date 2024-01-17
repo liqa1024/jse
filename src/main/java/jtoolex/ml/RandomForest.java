@@ -160,7 +160,7 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
             List<Integer> tRandIndex = NewCollections.from(tSampleNum, j->j);
             LocalRandom.shuffle(tRandIndex, tRNG);
             tRandIndex = tRandIndex.subList(0, tTrainSampleNum);
-            List<IVector> subTrainDataInput = AbstractCollections.slice(aTrainDataInput, tRandIndex);
+            List<? extends IVector> subTrainDataInput = AbstractCollections.slice(aTrainDataInput, tRandIndex);
             ILogicalVector subTrainDataOutput = aTrainDataOutput.refSlicer().get(tRandIndex);
             // 随机森林使用略微修改的决策树来增加随机性
             mTrees.set(i, treeBuilder(subTrainDataInput, subTrainDataOutput).setRNG(tRNG.nextLong()).build());

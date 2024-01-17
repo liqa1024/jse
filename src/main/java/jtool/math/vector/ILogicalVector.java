@@ -1,6 +1,7 @@
 package jtool.math.vector;
 
 import jtool.code.CS.SliceType;
+import jtool.code.collection.ISlice;
 import jtool.code.collection.NewCollections;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.*;
@@ -112,12 +113,18 @@ public interface ILogicalVector extends IHasBooleanIterator, IHasBooleanSetItera
     @VisibleForTesting boolean getAt(int aIdx);
     @VisibleForTesting void putAt(int aIdx, boolean aValue);
     
+    @VisibleForTesting ILogicalVector call(ISlice        aIndices);
     @VisibleForTesting ILogicalVector call(List<Integer> aIndices);
     @VisibleForTesting ILogicalVector call(SliceType     aIndices);
+    @VisibleForTesting ILogicalVector call(IIndexFilter  aIndices);
     
+    @VisibleForTesting ILogicalVector getAt(ISlice        aIndices);
     @VisibleForTesting ILogicalVector getAt(List<Integer> aIndices);
     @VisibleForTesting ILogicalVector getAt(SliceType     aIndices);
     @VisibleForTesting ILogicalVector getAt(IIndexFilter  aIndices);
+    @VisibleForTesting void putAt(ISlice        aIndices, boolean aValue);
+    @VisibleForTesting void putAt(ISlice        aIndices, Iterable<Boolean> aList);
+    @VisibleForTesting void putAt(ISlice        aIndices, ILogicalVector aVector);
     @VisibleForTesting void putAt(List<Integer> aIndices, boolean aValue);
     @VisibleForTesting void putAt(List<Integer> aIndices, Iterable<Boolean> aList);
     @VisibleForTesting void putAt(List<Integer> aIndices, ILogicalVector aVector);

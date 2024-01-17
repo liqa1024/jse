@@ -2,6 +2,7 @@ package jtool.math.vector;
 
 import jtool.code.CS.SliceType;
 import jtool.code.collection.AbstractRandomAccessList;
+import jtool.code.collection.ISlice;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.IDoubleConsumer1;
 import jtool.code.functional.IDoubleOperator1;
@@ -214,7 +215,7 @@ public abstract class AbstractVector implements IVector {
     /** 切片操作，默认返回新的向量，refSlicer 则会返回引用的切片结果 */
     @Override public IVectorSlicer slicer() {
         return new AbstractVectorSlicer() {
-            @Override protected IVector getL(final List<Integer> aIndices) {IVector rVector = newZeros_(aIndices.size()); rVector.fill(refSlicer().get(aIndices)); return rVector;}
+            @Override protected IVector getL(final ISlice aIndices) {IVector rVector = newZeros_(aIndices.size()); rVector.fill(refSlicer().get(aIndices)); return rVector;}
             @Override protected IVector getA() {return copy();}
             
             @Override protected int thisSize_() {return size();}
@@ -222,7 +223,7 @@ public abstract class AbstractVector implements IVector {
     }
     @Override public IVectorSlicer refSlicer() {
         return new AbstractVectorSlicer() {
-            @Override protected IVector getL(final List<Integer> aIndices) {
+            @Override protected IVector getL(final ISlice aIndices) {
                 return new RefVector() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public double get_(int aIdx) {return AbstractVector.this.get(aIndices.get(aIdx));}
@@ -319,13 +320,19 @@ public abstract class AbstractVector implements IVector {
     
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public double call(int aIdx) {return get(aIdx);}
+    @VisibleForTesting @Override public IVector call(ISlice        aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public IVector call(List<Integer> aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public IVector call(SliceType     aIndices) {return slicer().get(aIndices);}
+    @VisibleForTesting @Override public IVector call(IIndexFilter  aIndices) {return slicer().get(aIndices);}
     
+    @VisibleForTesting @Override public IVector getAt(ISlice        aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public IVector getAt(List<Integer> aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public IVector getAt(SliceType     aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public IVector getAt(IIndexFilter  aIndices) {return slicer().get(aIndices);}
     
+    @VisibleForTesting @Override public void putAt(ISlice        aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
+    @VisibleForTesting @Override public void putAt(ISlice        aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
+    @VisibleForTesting @Override public void putAt(ISlice        aIndices, IVector aVector) {refSlicer().get(aIndices).fill(aVector);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, double aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, Iterable<? extends Number> aList) {refSlicer().get(aIndices).fill(aList);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, IVector aVector) {refSlicer().get(aIndices).fill(aVector);}

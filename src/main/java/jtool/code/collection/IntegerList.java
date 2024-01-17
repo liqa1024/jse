@@ -16,7 +16,7 @@ import static jtool.code.CS.ZL_INT;
  * 通用的使用 {@code int[]} 存储内部元素的 list，
  * 并且支持增长和随机访问
  */
-public class IntegerList implements IDataShell<int[]> {
+public class IntegerList implements ISlice, IDataShell<int[]> {
     protected int[] mData;
     protected int mSize = 0;
     private IntegerList(int aSize, int[] aData) {mSize = aSize; mData = aData;}

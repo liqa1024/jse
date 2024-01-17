@@ -1,6 +1,7 @@
 package jtool.math.vector;
 
 import jtool.code.CS.SliceType;
+import jtool.code.collection.ISlice;
 import jtool.code.functional.IIndexFilter;
 
 import java.util.List;
@@ -15,6 +16,7 @@ public interface IComplexVectorSlicer {
      * 并且实际切片过程也会将 Boolean 转成 Integer。
      * 还是使用多种输入排列组合方式来重载，可能会让实现比较复杂，但是是值得的
      */
+    IComplexVector get(ISlice        aIndices);
     IComplexVector get(int[]         aIndices);
     IComplexVector get(List<Integer> aIndices);
     IComplexVector get(SliceType     aIndices);

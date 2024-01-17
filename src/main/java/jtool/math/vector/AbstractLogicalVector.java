@@ -2,6 +2,7 @@ package jtool.math.vector;
 
 import jtool.code.CS.SliceType;
 import jtool.code.collection.AbstractRandomAccessList;
+import jtool.code.collection.ISlice;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.*;
 import jtool.code.iterator.*;
@@ -180,7 +181,7 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
     /** 切片操作，默认返回新的向量，refSlicer 则会返回引用的切片结果 */
     @Override public ILogicalVectorSlicer slicer() {
         return new AbstractLogicalVectorSlicer() {
-            @Override protected ILogicalVector getL(final List<Integer> aIndices) {ILogicalVector rVector = newZeros_(aIndices.size()); rVector.fill(i -> AbstractLogicalVector.this.get(aIndices.get(i))); return rVector;}
+            @Override protected ILogicalVector getL(final ISlice aIndices) {ILogicalVector rVector = newZeros_(aIndices.size()); rVector.fill(i -> AbstractLogicalVector.this.get(aIndices.get(i))); return rVector;}
             @Override protected ILogicalVector getA() {return copy();}
             
             @Override protected int thisSize_() {return size();}
@@ -188,7 +189,7 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
     }
     @Override public ILogicalVectorSlicer refSlicer() {
         return new AbstractLogicalVectorSlicer() {
-            @Override protected ILogicalVector getL(final List<Integer> aIndices) {
+            @Override protected ILogicalVector getL(final ISlice aIndices) {
                 return new RefLogicalVector() {
                     /** 方便起见，依旧使用带有边界检查的方法，保证一般方法的边界检测永远生效 */
                     @Override public boolean get_(int aIdx) {return AbstractLogicalVector.this.get(aIndices.get(aIdx));}
@@ -246,13 +247,19 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
     
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public boolean call(int aIdx) {return get(aIdx);}
+    @VisibleForTesting @Override public ILogicalVector call(ISlice        aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public ILogicalVector call(List<Integer> aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public ILogicalVector call(SliceType     aIndices) {return slicer().get(aIndices);}
+    @VisibleForTesting @Override public ILogicalVector call(IIndexFilter  aIndices) {return slicer().get(aIndices);}
     
+    @VisibleForTesting @Override public ILogicalVector getAt(ISlice        aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public ILogicalVector getAt(List<Integer> aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public ILogicalVector getAt(SliceType     aIndices) {return slicer().get(aIndices);}
     @VisibleForTesting @Override public ILogicalVector getAt(IIndexFilter  aIndices) {return slicer().get(aIndices);}
     
+    @VisibleForTesting @Override public void putAt(ISlice        aIndices, boolean aValue) {refSlicer().get(aIndices).fill(aValue);}
+    @VisibleForTesting @Override public void putAt(ISlice        aIndices, Iterable<Boolean> aList) {refSlicer().get(aIndices).fill(aList);}
+    @VisibleForTesting @Override public void putAt(ISlice        aIndices, ILogicalVector aVector) {refSlicer().get(aIndices).fill(aVector);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, boolean aValue) {refSlicer().get(aIndices).fill(aValue);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, Iterable<Boolean> aList) {refSlicer().get(aIndices).fill(aList);}
     @VisibleForTesting @Override public void putAt(List<Integer> aIndices, ILogicalVector aVector) {refSlicer().get(aIndices).fill(aVector);}
