@@ -1,13 +1,13 @@
 package test.ml
 
 import jtool.code.UT
-import jtool.code.collection.ArrayLists
 import jtool.math.table.Tables
+import jtool.math.vector.Vectors
 import jtoolex.ml.RandomForest
 
+import static jtool.code.CS.ALL
 import static jtool.code.UT.Math.*
 import static jtool.code.UT.Plot.*
-import static jtool.code.CS.*
 
 /**
  * 测试课程中给出的例子
@@ -84,11 +84,11 @@ def tableTrain = table.refSlicer().get(5000..<table.rowNumber(), ALL);
 // 调整正负样本比例一致
 def isHeartDisease = tableTrain['HeartDisease'].equal(1.0);
 def positiveIndex = isHeartDisease.where();
-positiveIndex *= 2; // 正样本也扩容一倍
+positiveIndex = Vectors.merge(positiveIndex, positiveIndex); // 正样本也扩容一倍
 def negativeIndex = (~isHeartDisease).where();
 negativeIndex.shuffle();
-negativeIndex = negativeIndex[0..<positiveIndex.size()];
-def totalIndex = ArrayLists.merge(positiveIndex, negativeIndex);
+negativeIndex = negativeIndex.subVec(0, positiveIndex.size());
+def totalIndex = Vectors.merge(positiveIndex, negativeIndex);
 totalIndex.shuffle();
 tableTrain = tableTrain.slicer().get(totalIndex, ALL);
 

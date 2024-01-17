@@ -56,6 +56,37 @@ public class Vectors {
         return rVector;
     }
     
+    /** Vector 特有的构造 */
+    public static Vector linsequence(double aStart, double aStep, int aN) {
+        final Vector rVector = zeros(aN);
+        final IDoubleSetIterator si = rVector.setIterator();
+        double tValue = aStart;
+        while (si.hasNext()) {
+            si.nextAndSet(tValue);
+            tValue += aStep;
+        }
+        return rVector;
+    }
+    public static Vector linspace(double aStart, double aEnd, int aN) {
+        double tStep = (aEnd-aStart)/(double)(aN-1);
+        return linsequence(aStart, tStep, aN);
+    }
+    
+    public static Vector logsequence(double aStart, double aStep, int aN) {
+        final Vector rVector = zeros(aN);
+        final IDoubleSetIterator si = rVector.setIterator();
+        double tValue = aStart;
+        while (si.hasNext()) {
+            si.nextAndSet(tValue);
+            tValue *= aStep;
+        }
+        return rVector;
+    }
+    public static Vector logspace(double aStart, double aEnd, int aN) {
+        double tStep = MathEX.Fast.pow(aEnd/aStart, 1.0/(double)(aN-1));
+        return logsequence(aStart, tStep, aN);
+    }
+    
     
     public static LogicalVector fromBoolean(int aSize, ILogicalVectorGetter aVectorGetter) {
         LogicalVector rVector = LogicalVector.zeros(aSize);
@@ -118,15 +149,58 @@ public class Vectors {
         return rVector;
     }
     
+    /** IntegerVector 特有的构造 */
+    public static IntegerVector range(int aSize) {
+        IntegerVector rVector = IntegerVector.zeros(aSize);
+        rVector.fill(i->i);
+        return rVector;
+    }
+    public static IntegerVector range(final int aStart, int aStop) {
+        IntegerVector rVector = IntegerVector.zeros(aStop-aStart);
+        rVector.fill(i->i+aStart);
+        return rVector;
+    }
+    public static IntegerVector range(final int aStart, int aStop, int aStep) {
+        IntegerVector rVector = IntegerVector.zeros(MathEX.Code.divup(aStop-aStart, aStep));
+        rVector.fill(i -> (i*aStep + aStart));
+        return rVector;
+    }
+    
     
     public static Vector merge(IVector aBefore, IVector aAfter) {
-        Vector rVector = zeros(aBefore.size()+aAfter.size());
-        // 原则上使用优化后的 refSlicer 会更快，但是优化需要的代码量较大，这里直接使用迭代器遍历，一个适中的优化效果
-        final IDoubleSetIterator si = rVector.setIterator();
-        final IDoubleIterator itB = aBefore.iterator();
-        final IDoubleIterator itA = aAfter.iterator();
-        while (itB.hasNext()) si.nextAndSet(itB.next());
-        while (itA.hasNext()) si.nextAndSet(itA.next());
+        final int tBSize = aBefore.size();
+        final int tASize = aAfter.size();
+        final int tTotSize = tBSize+tASize;
+        Vector rVector = Vector.zeros(tTotSize);
+        rVector.subVec(0, tBSize).fill(aBefore);
+        rVector.subVec(tBSize, tTotSize).fill(aAfter);
+        return rVector;
+    }
+    public static LogicalVector merge(ILogicalVector aBefore, ILogicalVector aAfter) {
+        final int tBSize = aBefore.size();
+        final int tASize = aAfter.size();
+        final int tTotSize = tBSize+tASize;
+        LogicalVector rVector = LogicalVector.zeros(aBefore.size()+aAfter.size());
+        rVector.subVec(0, tBSize).fill(aBefore);
+        rVector.subVec(tBSize, tTotSize).fill(aAfter);
+        return rVector;
+    }
+    public static IntegerVector merge(IIntegerVector aBefore, IIntegerVector aAfter) {
+        final int tBSize = aBefore.size();
+        final int tASize = aAfter.size();
+        final int tTotSize = tBSize+tASize;
+        IntegerVector rVector = IntegerVector.zeros(aBefore.size()+aAfter.size());
+        rVector.subVec(0, tBSize).fill(aBefore);
+        rVector.subVec(tBSize, tTotSize).fill(aAfter);
+        return rVector;
+    }
+    public static ComplexVector merge(IComplexVector aBefore, IComplexVector aAfter) {
+        final int tBSize = aBefore.size();
+        final int tASize = aAfter.size();
+        final int tTotSize = tBSize+tASize;
+        ComplexVector rVector = ComplexVector.zeros(aBefore.size()+aAfter.size());
+        rVector.subVec(0, tBSize).fill(aBefore);
+        rVector.subVec(tBSize, tTotSize).fill(aAfter);
         return rVector;
     }
     
@@ -136,37 +210,5 @@ public class Vectors {
     }
     public static Vector filter(IVector aVector, IDoubleFilter aFilter) {
         return NewCollections.filterDouble(aVector, aFilter);
-    }
-    
-    
-    /** Vector 特有的构造 */
-    public static Vector linsequence(double aStart, double aStep, int aN) {
-        final Vector rVector = zeros(aN);
-        final IDoubleSetIterator si = rVector.setIterator();
-        double tValue = aStart;
-        while (si.hasNext()) {
-            si.nextAndSet(tValue);
-            tValue += aStep;
-        }
-        return rVector;
-    }
-    public static Vector linspace(double aStart, double aEnd, int aN) {
-        double tStep = (aEnd-aStart)/(double)(aN-1);
-        return linsequence(aStart, tStep, aN);
-    }
-    
-    public static Vector logsequence(double aStart, double aStep, int aN) {
-        final Vector rVector = zeros(aN);
-        final IDoubleSetIterator si = rVector.setIterator();
-        double tValue = aStart;
-        while (si.hasNext()) {
-            si.nextAndSet(tValue);
-            tValue *= aStep;
-        }
-        return rVector;
-    }
-    public static Vector logspace(double aStart, double aEnd, int aN) {
-        double tStep = MathEX.Fast.pow(aEnd/aStart, 1.0/(double)(aN-1));
-        return logsequence(aStart, tStep, aN);
     }
 }
