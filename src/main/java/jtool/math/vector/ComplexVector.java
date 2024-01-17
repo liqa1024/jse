@@ -13,6 +13,8 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
+import static jtool.math.vector.AbstractVector.subVecRangeCheck;
+
 /**
  * @author liqa
  * <p> 复向量的一般实现 </p>

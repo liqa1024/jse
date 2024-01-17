@@ -1,7 +1,9 @@
 package jtool.math.vector;
 
 import jtool.code.collection.ISlice;
+import jtool.code.functional.IIntegerConsumer1;
 import jtool.code.functional.IIntegerOperator1;
+import jtool.code.functional.IIntegerSupplier;
 import jtool.code.iterator.IHasIntegerIterator;
 import jtool.code.iterator.IHasIntegerSetIterator;
 import jtool.code.iterator.IIntegerIterator;
@@ -24,6 +26,15 @@ public interface IIntegerVector extends ISlice, IHasIntegerIterator, IHasInteger
     default Iterable<Integer> iterable() {return () -> iterator().toIterator();}
     List<Integer> asList();
     IVector asVec();
+    
+    /** 批量修改的接口 */
+    void fill(int aValue);
+    void fill(IIntegerVector aVector);
+    void fill(IIntegerVectorGetter aVectorGetter);
+    void fill(int[] aData);
+    void fill(Iterable<Integer> aList);
+    void assign(IIntegerSupplier aSup);
+    void forEach(IIntegerConsumer1 aCon);
     
     /** 访问和修改部分，自带的接口 */
     int get_(int aIdx);
@@ -54,6 +65,7 @@ public interface IIntegerVector extends ISlice, IHasIntegerIterator, IHasInteger
     void update(int aIdx, IIntegerOperator1 aOpt);
     int getAndUpdate(int aIdx, IIntegerOperator1 aOpt);
     
+    IIntegerVector subVec(int aFromIdx, int aToIdx);
     
     /** 向量的运算操作，默认返回新的向量 */
     IIntegerVectorOperation operation();

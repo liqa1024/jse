@@ -114,6 +114,7 @@ public class IntegerList implements ISlice, IDataShell<int[]> {
     @ApiStatus.Internal @Override public int @Nullable[] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof IntegerList) return ((IntegerList)aObj).mData;
         if (aObj instanceof IntegerVector) return ((IntegerVector)aObj).internalData();
+        if (aObj instanceof ShiftIntegerVector) return ((ShiftIntegerVector)aObj).internalData();
         if (aObj instanceof int[]) return (int[])aObj;
         return null;
     }

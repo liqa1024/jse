@@ -781,6 +781,14 @@ public class ARRAY {
         System.arraycopy(aDataR, aShiftR, rThis, rShift, aLength);
     }
     
+    public static void mapFill2This(int[] rThis, int rShift, int aRHS, int aLength) {
+        final int rEnd = aLength + rShift;
+        for (int i = rShift; i < rEnd; ++i) rThis[i] = aRHS; // 注意在指定区域外不能填充，因此不能使用 Arrays.fill
+    }
+    public static void ebeFill2This(int[] rThis, int rShift, int[] aDataR, int aShiftR, int aLength) {
+        System.arraycopy(aDataR, aShiftR, rThis, rShift, aLength);
+    }
+    
     
     /** stat stuff */
     public static double sumOfThis(double[] aThis, int aShift, int aLength) {

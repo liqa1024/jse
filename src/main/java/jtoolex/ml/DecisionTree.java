@@ -11,10 +11,7 @@ import jtool.code.functional.IIndexFilter;
 import jtool.io.ISavable;
 import jtool.math.MathEX;
 import jtool.math.matrix.IMatrix;
-import jtool.math.vector.ILogicalVector;
-import jtool.math.vector.IVector;
-import jtool.math.vector.LogicalVector;
-import jtool.math.vector.Vectors;
+import jtool.math.vector.*;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
@@ -274,10 +271,10 @@ public class DecisionTree implements ISavable {
             int tConsiderNum = getConsiderCharaNumber(tValidCharaNum);
             IIndexFilter tConsiderID;
             if (tConsiderNum < tValidCharaNum) {
-                List<Integer> rRandIndex = tValidChara.where();
-                Collections.shuffle(rRandIndex, mRNG);
+                IIntegerVector rRandIndex = tValidChara.where();
+                Collections.shuffle(rRandIndex.asList(), mRNG);
                 ILogicalVector rConsiderID = LogicalVector.zeros(mInputDim);
-                rConsiderID.refSlicer().get(rRandIndex.subList(0, tConsiderNum)).fill(true);
+                rConsiderID.refSlicer().get(rRandIndex.subVec(0, tConsiderNum)).fill(true);
                 tConsiderID = rConsiderID;
             } else {
                 tConsiderID = tValidChara;

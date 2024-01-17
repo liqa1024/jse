@@ -74,13 +74,14 @@ public interface ILogicalVector extends IHasBooleanIterator, IHasBooleanSetItera
     /** 切片操作，默认返回新的向量，refSlicer 则会返回引用的切片结果 */
     ILogicalVectorSlicer slicer();
     ILogicalVectorSlicer refSlicer();
-
+    ILogicalVector subVec(int aFromIdx, int aToIdx);
+    
     /** 向量的运算操作，默认返回新的向量 */
     ILogicalVectorOperation operation();
     @VisibleForTesting default ILogicalVectorOperation opt() {return operation();}
     
     /** 提供一个调用过滤的方法简化使用 */
-    default List<Integer> where() {return NewCollections.filterInteger(size(), this);}
+    default IIntegerVector where() {return NewCollections.filterInteger(size(), this);}
     
     /** Groovy 的部分，增加向量基本的运算操作，现在也归入内部使用 */
     ILogicalVector and  (boolean aRHS);

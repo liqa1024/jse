@@ -1,5 +1,6 @@
 package jtool.math.vector;
 
+import jtool.code.collection.DoubleList;
 import jtool.code.functional.IDoubleConsumer1;
 import jtool.code.functional.IDoubleSupplier;
 import jtool.code.iterator.IDoubleIterator;
@@ -49,6 +50,7 @@ public final class ShiftVector extends DoubleArrayVector {
     @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof Vector) return ((Vector)aObj).mData;
         if (aObj instanceof ShiftVector) return ((ShiftVector)aObj).mData;
+        if (aObj instanceof DoubleList) return ((DoubleList)aObj).internalData();
         if (aObj instanceof double[]) return (double[])aObj;
         return null;
     }

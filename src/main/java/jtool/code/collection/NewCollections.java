@@ -5,8 +5,11 @@ import jtool.code.functional.IFilter;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.IOperator1;
 import jtool.code.iterator.IHasDoubleIterator;
+import jtool.code.iterator.IHasIntegerIterator;
 import jtool.math.MathEX;
+import jtool.math.vector.IIntegerVector;
 import jtool.math.vector.IVector;
+import jtool.math.vector.IntegerVector;
 import jtool.math.vector.Vector;
 
 import java.lang.reflect.Array;
@@ -186,17 +189,39 @@ public class NewCollections {
         rList.trimToSize();
         return rList;
     }
-    public static ArrayList<Integer> filterInteger(Iterable<Integer> aIndices, final IIndexFilter aFilter) {
-        return filter(aIndices, aFilter::accept);
+    public static IntegerVector filterInteger(Iterable<Integer> aIndices, final IIndexFilter aFilter) {
+        IntegerVector.Builder rBuilder = IntegerVector.builder();
+        for (int tValue : aIndices) if (aFilter.accept(tValue)) rBuilder.add(tValue);
+        rBuilder.trimToSize();
+        return rBuilder.build();
     }
-    public static ArrayList<Integer> filterInteger(Collection<Integer> aIndices, final IIndexFilter aFilter) {
-        return filter(aIndices, aFilter::accept);
+    public static IntegerVector filterInteger(Collection<Integer> aIndices, final IIndexFilter aFilter) {
+        IntegerVector.Builder rBuilder = IntegerVector.builder(aIndices.size());
+        for (int tValue : aIndices) if (aFilter.accept(tValue)) rBuilder.add(tValue);
+        rBuilder.trimToSize();
+        return rBuilder.build();
     }
-    public static ArrayList<Integer> filterInteger(int aSize, IIndexFilter aFilter) {
-        ArrayList<Integer> rIndices = new ArrayList<>(aSize);
-        for (int i = 0; i < aSize; ++i) if (aFilter.accept(i)) rIndices.add(i);
-        rIndices.trimToSize();
-        return rIndices;
+    public static IntegerVector filterInteger(int aSize, IIndexFilter aFilter) {
+        IntegerVector.Builder rBuilder = IntegerVector.builder(aSize);
+        for (int i = 0; i < aSize; ++i) if (aFilter.accept(i)) rBuilder.add(i);
+        rBuilder.trimToSize();
+        return rBuilder.build();
+    }
+    public static IntegerVector filterInteger(IHasIntegerIterator aIterable, IIndexFilter aFilter) {
+        IntegerVector.Builder rBuilder = IntegerVector.builder();
+        aIterable.forEach(i -> {
+            if (aFilter.accept(i)) rBuilder.add(i);
+        });
+        rBuilder.trimToSize();
+        return rBuilder.build();
+    }
+    public static IntegerVector filterInteger(IIntegerVector aVector, IIndexFilter aFilter) {
+        IntegerVector.Builder rBuilder = IntegerVector.builder(aVector.size());
+        aVector.forEach(i -> {
+            if (aFilter.accept(i)) rBuilder.add(i);
+        });
+        rBuilder.trimToSize();
+        return rBuilder.build();
     }
     public static Vector filterDouble(Iterable<? extends Number> aIterable, IDoubleFilter aFilter) {
         Vector.Builder rBuilder = Vector.builder();

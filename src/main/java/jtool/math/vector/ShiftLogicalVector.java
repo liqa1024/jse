@@ -1,55 +1,40 @@
 package jtool.math.vector;
 
 import jtool.code.collection.BooleanList;
-import jtool.code.functional.*;
+import jtool.code.functional.IBooleanConsumer1;
+import jtool.code.functional.IBooleanOperator1;
+import jtool.code.functional.IBooleanSupplier;
 import jtool.code.iterator.IBooleanIterator;
 import jtool.code.iterator.IBooleanSetIterator;
 import jtool.math.MathEX;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 import static jtool.math.vector.AbstractVector.subVecRangeCheck;
 
 /**
  * @author liqa
- * <p> 逻辑向量的一般实现 </p>
+ * <p> 支持将内部的 boolean[] 进行平移访问的 LogicalVector，理论拥有和 {@link LogicalVector} 几乎一样的性能 </p>
+ * <p> 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link LogicalVector} </p>
  */
-public final class LogicalVector extends BooleanArrayVector {
-    /** 提供默认的创建 */
-    public static LogicalVector ones(int aSize) {
-        boolean[] tData = new boolean[aSize];
-        Arrays.fill(tData, true);
-        return new LogicalVector(tData);
-    }
-    public static LogicalVector zeros(int aSize) {return new LogicalVector(new boolean[aSize]);}
-    
-    /** 提供 builder 方式的构建 */
-    public static Builder builder() {return new Builder();}
-    public static Builder builder(int aInitSize) {return new Builder(aInitSize);}
-    public final static class Builder extends BooleanList {
-        private final static int DEFAULT_INIT_SIZE = 8;
-        private Builder() {super(DEFAULT_INIT_SIZE);}
-        private Builder(int aInitSize) {super(aInitSize);}
-        
-        public LogicalVector build() {
-            return new LogicalVector(mSize, mData);
-        }
-    }
-    
+public final class ShiftLogicalVector extends BooleanArrayVector {
     private int mSize;
-    public LogicalVector(int aSize, boolean[] aData) {super(aData); mSize = aSize;}
-    public LogicalVector(boolean[] aData) {this(aData.length, aData);}
+    private int mShift;
+    public ShiftLogicalVector(int aSize, int aShift, boolean[] aData) {super(aData); mSize = aSize; mShift = aShift;}
+    public ShiftLogicalVector(int aShift, boolean[] aData) {this(aData.length-aShift, aShift, aData);}
     
     /** 提供额外的接口来直接设置底层参数 */
-    public LogicalVector setSize(int aSize) {mSize = MathEX.Code.toRange(0, mData.length, aSize); return this;}
+    public int shift() {return mShift;}
+    public ShiftLogicalVector setSize(int aSize) {mSize = MathEX.Code.toRange(0, mData.length-mShift, aSize); return this;}
+    public ShiftLogicalVector setShift(int aShift) {mShift = MathEX.Code.toRange(0, mData.length-mSize, aShift); return this;}
     public int dataLength() {return mData.length;}
     
     /** ILogicalVector stuffs */
-    @Override public boolean get_(int aIdx) {return mData[aIdx];}
-    @Override public void set_(int aIdx, boolean aValue) {mData[aIdx] = aValue;}
+    @Override public boolean get_(int aIdx) {return mData[aIdx + mShift];}
+    @Override public void set_(int aIdx, boolean aValue) {mData[aIdx + mShift] = aValue;}
     @Override public boolean getAndSet_(int aIdx, boolean aValue) {
+        aIdx += mShift;
         boolean oValue = mData[aIdx];
         mData[aIdx] = aValue;
         return oValue;
@@ -63,7 +48,7 @@ public final class LogicalVector extends BooleanArrayVector {
         return rVector;
     }
     
-    @Override public LogicalVector newShell() {return new LogicalVector(mSize, null);}
+    @Override public ShiftLogicalVector newShell() {return new ShiftLogicalVector(mSize, mShift, null);}
     @Override public boolean @Nullable[] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof LogicalVector) return ((LogicalVector)aObj).mData;
         if (aObj instanceof ShiftLogicalVector) return ((ShiftLogicalVector)aObj).mData;
@@ -71,60 +56,71 @@ public final class LogicalVector extends BooleanArrayVector {
         if (aObj instanceof boolean[]) return (boolean[])aObj;
         return null;
     }
+    /** 需要指定平移的距离保证优化运算的正确性 */
+    @Override public int internalDataShift() {return shift();}
+    
     
     /** Optimize stuffs，subVec 切片直接返回  {@link ShiftLogicalVector} */
-    @Override public BooleanArrayVector subVec(final int aFromIdx, final int aToIdx) {
+    @Override public ShiftLogicalVector subVec(final int aFromIdx, final int aToIdx) {
         subVecRangeCheck(aFromIdx, aToIdx, mSize);
-        return aFromIdx==0 ? new LogicalVector(aToIdx, mData) : new ShiftLogicalVector(aToIdx-aFromIdx, aFromIdx, mData);
+        return new ShiftLogicalVector(aToIdx-aFromIdx, aFromIdx+mShift, mData);
     }
     
     /** Optimize stuffs，重写加速遍历 */
     @Override public ILogicalVectorOperation operation() {
         return new BooleanArrayVectorOperation_() {
             @Override public void fill(ILogicalVectorGetter aRHS) {
-                for (int i = 0; i < mSize; ++i) mData[i] = aRHS.get(i);
+                final int tEnd = mSize + mShift;
+                for (int i = mShift, j = 0; i < tEnd; ++i, ++j) mData[i] = aRHS.get(j);
             }
             @Override public void assign(IBooleanSupplier aSup) {
-                for (int i = 0; i < mSize; ++i) mData[i] = aSup.get();
+                final int tEnd = mSize + mShift;
+                for (int i = mShift; i < tEnd; ++i) mData[i] = aSup.get();
             }
             @Override public void forEach(IBooleanConsumer1 aCon) {
-                for (int i = 0; i < mSize; ++i) aCon.run(mData[i]);
+                final int tEnd = mSize + mShift;
+                for (int i = mShift; i < tEnd; ++i) aCon.run(mData[i]);
             }
         };
     }
     
     /** Optimize stuffs，重写加速这些操作 */
     @Override public void flip_(int aIdx) {
+        aIdx += mShift;
         mData[aIdx] = !mData[aIdx];
     }
     @Override public boolean getAndFlip_(int aIdx) {
+        aIdx += mShift;
         boolean tValue = mData[aIdx];
         mData[aIdx] = !tValue;
         return tValue;
     }
     @Override public void update_(int aIdx, IBooleanOperator1 aOpt) {
+        aIdx += mShift;
         mData[aIdx] = aOpt.cal(mData[aIdx]);
     }
     @Override public boolean getAndUpdate_(int aIdx, IBooleanOperator1 aOpt) {
+        aIdx += mShift;
         boolean tValue = mData[aIdx];
         mData[aIdx] = aOpt.cal(tValue);
         return tValue;
     }
     @Override public boolean isEmpty() {return mSize==0;}
     @Override public boolean last() {
-        if (isEmpty()) throw new NoSuchElementException("Cannot access last() element from an empty LogicalVector");
-        return mData[mSize-1];
+        if (isEmpty()) throw new NoSuchElementException("Cannot access last() element from an empty Vector");
+        return mData[mSize-1+mShift];
     }
     @Override public boolean first() {
-        if (isEmpty()) throw new NoSuchElementException("Cannot access first() element from an empty LogicalVector");
-        return mData[0];
+        if (isEmpty()) throw new NoSuchElementException("Cannot access first() element from an empty Vector");
+        return mData[mShift];
     }
     
     /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式） */
     @Override public IBooleanIterator iterator() {
         return new IBooleanIterator() {
-            private int mIdx = 0;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mSize + mShift;
+            private int mIdx = mShift;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public boolean next() {
                 if (hasNext()) {
                     boolean tNext = mData[mIdx];
@@ -138,8 +134,9 @@ public final class LogicalVector extends BooleanArrayVector {
     }
     @Override public IBooleanSetIterator setIterator() {
         return new IBooleanSetIterator() {
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mSize + mShift;
+            private int mIdx = mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(boolean aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;

@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
+import static jtool.math.vector.AbstractVector.subVecRangeCheck;
+
 /**
  * @author liqa
  * <p> 通用的向量类，由于默认实现比较复杂，并且涉及到重写 Object 的成员，因此部分方法放入抽象类中 </p>
@@ -148,11 +150,6 @@ public abstract class AbstractComplexVector implements IComplexVector {
             @Override public double getAndSetImag_(int aIdx, double aImag) {return AbstractComplexVector.this.getAndSetImag_(aIdx+aFromIdx, aImag);}
             @Override public int size() {return aToIdx-aFromIdx;}
         };
-    }
-    static void subVecRangeCheck(int aFromIdx, int aToIdx, int aSize) {
-        if (aFromIdx < 0) throw new IndexOutOfBoundsException("fromIndex = " + aFromIdx);
-        if (aToIdx > aSize) throw new IndexOutOfBoundsException("toIndex = " + aToIdx);
-        if (aFromIdx > aToIdx) throw new IllegalArgumentException("fromIndex(" + aFromIdx + ") > toIndex(" + aToIdx + ")");
     }
     
     /** 转为兼容性更好的 double[][] */

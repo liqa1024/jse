@@ -114,6 +114,7 @@ public class BooleanList implements IDataShell<boolean[]> {
     @ApiStatus.Internal @Override public boolean @Nullable [] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof BooleanList) return ((BooleanList)aObj).mData;
         if (aObj instanceof LogicalVector) return ((LogicalVector)aObj).internalData();
+        if (aObj instanceof ShiftLogicalVector) return ((ShiftLogicalVector)aObj).internalData();
         if (aObj instanceof boolean[]) return (boolean[])aObj;
         return null;
     }

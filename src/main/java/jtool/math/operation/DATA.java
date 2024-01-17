@@ -874,6 +874,23 @@ public class DATA {
         while (it.hasNext()) aCon.run(it.next());
     }
     
+    public static void mapFill2This(IHasIntegerSetOnlyIterator rThis, final int aRHS) {
+        rThis.assign(() -> aRHS);
+    }
+    public static void ebeFill2This(IHasIntegerSetOnlyIterator rThis, IHasIntegerIterator aRHS) {
+        final IIntegerIterator it = aRHS.iterator();
+        rThis.assign(it::next);
+    }
+    /** 注意这几个方法不能替换成通用遍历方法，会造成无限递归 */
+    public static void assign2This(IHasIntegerSetOnlyIterator rThis, IIntegerSupplier aSup) {
+        final IIntegerSetOnlyIterator si = rThis.setIterator();
+        while (si.hasNext()) si.nextAndSet(aSup.get());
+    }
+    public static void forEachOfThis(IHasIntegerIterator aThis, IIntegerConsumer1 aCon) {
+        final IIntegerIterator it = aThis.iterator();
+        while (it.hasNext()) aCon.run(it.next());
+    }
+    
     
     /** stat stuff */
     public static double sumOfThis(IHasDoubleIterator aThis) {

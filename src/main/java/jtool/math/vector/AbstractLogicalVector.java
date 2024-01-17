@@ -13,6 +13,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import static jtool.math.vector.AbstractVector.subVecRangeCheck;
+
 /**
  * @author liqa
  * <p> 通用的逻辑向量类，由于默认实现比较复杂，并且涉及到重写 Object 的成员，因此部分方法放入抽象类中 </p>
@@ -209,6 +211,16 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
             }
             
             @Override protected int thisSize_() {return size();}
+        };
+    }
+    @Override public ILogicalVector subVec(final int aFromIdx, final int aToIdx) {
+        subVecRangeCheck(aFromIdx, aToIdx, size());
+        return new RefLogicalVector() {
+            /** 由于一开始有边界检查，所以这里不再需要边检检查 */
+            @Override public boolean get_(int aIdx) {return AbstractLogicalVector.this.get_(aIdx+aFromIdx);}
+            @Override public void set_(int aIdx, boolean aValue) {AbstractLogicalVector.this.set_(aIdx+aFromIdx, aValue);}
+            @Override public boolean getAndSet_(int aIdx, boolean aValue) {return AbstractLogicalVector.this.getAndSet_(aIdx+aFromIdx, aValue);}
+            @Override public int size() {return aToIdx-aFromIdx;}
         };
     }
     

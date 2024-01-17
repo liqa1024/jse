@@ -9,57 +9,40 @@ import jtool.code.iterator.IIntegerSetIterator;
 import jtool.math.MathEX;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 import static jtool.math.vector.AbstractVector.subVecRangeCheck;
 
-
 /**
  * @author liqa
- * <p> 整数向量的一般实现 </p>
+ * <p> 支持将内部的 int[] 进行平移访问的 IntegerVector，理论拥有和 {@link IntegerVector} 几乎一样的性能 </p>
+ * <p> 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link IntegerVector} </p>
  */
-public final class IntegerVector extends IntegerArrayVector {
-    /** 提供默认的创建 */
-    public static IntegerVector ones(int aSize) {
-        int[] tData = new int[aSize];
-        Arrays.fill(tData, 1);
-        return new IntegerVector(tData);
-    }
-    public static IntegerVector zeros(int aSize) {return new IntegerVector(new int[aSize]);}
-    
-    /** 提供 builder 方式的构建 */
-    public static Builder builder() {return new Builder();}
-    public static Builder builder(int aInitSize) {return new Builder(aInitSize);}
-    public final static class Builder extends IntegerList {
-        private final static int DEFAULT_INIT_SIZE = 8;
-        private Builder() {super(DEFAULT_INIT_SIZE);}
-        private Builder(int aInitSize) {super(aInitSize);}
-        
-        public IntegerVector build() {
-            return new IntegerVector(mSize, mData);
-        }
-    }
-    
+public final class ShiftIntegerVector extends IntegerArrayVector {
     private int mSize;
-    public IntegerVector(int aSize, int[] aData) {super(aData); mSize = aSize;}
-    public IntegerVector(int[] aData) {this(aData.length, aData);}
+    private int mShift;
+    public ShiftIntegerVector(int aSize, int aShift, int[] aData) {super(aData); mSize = aSize; mShift = aShift;}
+    public ShiftIntegerVector(int aShift, int[] aData) {this(aData.length-aShift, aShift, aData);}
     
     /** 提供额外的接口来直接设置底层参数 */
-    public IntegerVector setSize(int aSize) {mSize = MathEX.Code.toRange(0, mData.length, aSize); return this;}
+    public int shift() {return mShift;}
+    public ShiftIntegerVector setSize(int aSize) {mSize = MathEX.Code.toRange(0, mData.length-mShift, aSize); return this;}
+    public ShiftIntegerVector setShift(int aShift) {mShift = MathEX.Code.toRange(0, mData.length-mSize, aShift); return this;}
     public int dataLength() {return mData.length;}
     
-    /** IIntegerVector stuffs */
-    @Override public int get_(int aIdx) {return mData[aIdx];}
-    @Override public void set_(int aIdx, int aValue) {mData[aIdx] = aValue;}
+    /** ILogicalVector stuffs */
+    @Override public int get_(int aIdx) {return mData[aIdx + mShift];}
+    @Override public void set_(int aIdx, int aValue) {mData[aIdx + mShift] = aValue;}
     @Override public int getAndSet_(int aIdx, int aValue) {
+        aIdx += mShift;
         int oValue = mData[aIdx];
         mData[aIdx] = aValue;
         return oValue;
     }
     @Override public int size() {return mSize;}
     
-    @Override public IntegerVector newShell() {return new IntegerVector(mSize, null);}
+    
+    @Override public ShiftIntegerVector newShell() {return new ShiftIntegerVector(mSize, mShift, null);}
     @Override public int @Nullable[] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof IntegerVector) return ((IntegerVector)aObj).mData;
         if (aObj instanceof ShiftIntegerVector) return ((ShiftIntegerVector)aObj).mData;
@@ -67,54 +50,64 @@ public final class IntegerVector extends IntegerArrayVector {
         if (aObj instanceof int[]) return (int[])aObj;
         return null;
     }
+    /** 需要指定平移的距离保证优化运算的正确性 */
+    @Override public int internalDataShift() {return shift();}
+    
     
     /** Optimize stuffs，subVec 切片直接返回  {@link ShiftIntegerVector} */
-    @Override public IntegerArrayVector subVec(final int aFromIdx, final int aToIdx) {
+    @Override public ShiftIntegerVector subVec(final int aFromIdx, final int aToIdx) {
         subVecRangeCheck(aFromIdx, aToIdx, mSize);
-        return aFromIdx==0 ? new IntegerVector(aToIdx, mData) : new ShiftIntegerVector(aToIdx-aFromIdx, aFromIdx, mData);
+        return new ShiftIntegerVector(aToIdx-aFromIdx, aFromIdx+mShift, mData);
     }
     
     /** Optimize stuffs，重写加速遍历 */
     @Override public IIntegerVectorOperation operation() {
         return new IntegerArrayVectorOperation_() {
             @Override public void fill(IIntegerVectorGetter aRHS) {
-                for (int i = 0; i < mSize; ++i) mData[i] = aRHS.get(i);
+                final int tEnd = mSize + mShift;
+                for (int i = mShift, j = 0; i < tEnd; ++i, ++j) mData[i] = aRHS.get(j);
             }
             @Override public void assign(IIntegerSupplier aSup) {
-                for (int i = 0; i < mSize; ++i) mData[i] = aSup.get();
+                final int tEnd = mSize + mShift;
+                for (int i = mShift; i < tEnd; ++i) mData[i] = aSup.get();
             }
             @Override public void forEach(IIntegerConsumer1 aCon) {
-                for (int i = 0; i < mSize; ++i) aCon.run(mData[i]);
+                final int tEnd = mSize + mShift;
+                for (int i = mShift; i < tEnd; ++i) aCon.run(mData[i]);
             }
         };
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override public void increment_(int aIdx) {++mData[aIdx];}
-    @Override public int getAndIncrement_(int aIdx) {return mData[aIdx]++;}
-    @Override public void decrement_(int aIdx) {--mData[aIdx];}
-    @Override public int getAndDecrement_(int aIdx) {return mData[aIdx]--;}
+    @Override public void increment_(int aIdx) {++mData[aIdx + mShift];}
+    @Override public int getAndIncrement_(int aIdx) {return mData[aIdx + mShift]++;}
+    @Override public void decrement_(int aIdx) {--mData[aIdx + mShift];}
+    @Override public int getAndDecrement_(int aIdx) {return mData[aIdx + mShift]--;}
     
-    @Override public void add_(int aIdx, int aDelta) {mData[aIdx] += aDelta;}
+    @Override public void add_(int aIdx, int aDelta) {mData[aIdx + mShift] += aDelta;}
     @Override public int getAndAdd_(int aIdx, int aDelta) {
+        aIdx += mShift;
         int tValue = mData[aIdx];
         mData[aIdx] += aDelta;
         return tValue;
     }
     @Override public void update_(int aIdx, IIntegerOperator1 aOpt) {
+        aIdx += mShift;
         mData[aIdx] = aOpt.cal(mData[aIdx]);
     }
     @Override public int getAndUpdate_(int aIdx, IIntegerOperator1 aOpt) {
+        aIdx += mShift;
         int tValue = mData[aIdx];
         mData[aIdx] = aOpt.cal(tValue);
         return tValue;
     }
     
-    /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式）*/
+    /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式） */
     @Override public IIntegerIterator iterator() {
         return new IIntegerIterator() {
-            private int mIdx = 0;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mSize + mShift;
+            private int mIdx = mShift;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public int next() {
                 if (hasNext()) {
                     int tNext = mData[mIdx];
@@ -128,8 +121,9 @@ public final class IntegerVector extends IntegerArrayVector {
     }
     @Override public IIntegerSetIterator setIterator() {
         return new IIntegerSetIterator() {
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mSize + mShift;
+            private int mIdx = mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(int aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;

@@ -1,7 +1,9 @@
 package jtool.math.vector;
 
 import jtool.code.collection.AbstractRandomAccessList;
+import jtool.code.functional.IIntegerConsumer1;
 import jtool.code.functional.IIntegerOperator1;
+import jtool.code.functional.IIntegerSupplier;
 import jtool.code.iterator.IIntegerIterator;
 import jtool.code.iterator.IIntegerSetIterator;
 import org.jetbrains.annotations.NotNull;
@@ -9,6 +11,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+
+import static jtool.math.vector.AbstractVector.subVecRangeCheck;
 
 public abstract class AbstractIntegerVector implements IIntegerVector {
     /** print */
@@ -84,6 +88,24 @@ public abstract class AbstractIntegerVector implements IIntegerVector {
         };
     }
     
+    /** 批量修改的接口 */
+    @Override public final void fill(int aValue) {operation().fill(aValue);}
+    @Override public final void fill(IIntegerVector aVector) {operation().fill(aVector);}
+    @Override public final void fill(IIntegerVectorGetter aVectorGetter) {operation().fill(aVectorGetter);}
+    @Override public final void fill(Iterable<Integer> aList) {
+        final Iterator<Integer> it = aList.iterator();
+        assign(it::next);
+    }
+    @Override public void fill(int[] aData) {
+        final IIntegerSetIterator si = setIterator();
+        int idx = 0;
+        while (si.hasNext()) {
+            si.nextAndSet(aData[idx]);
+            ++idx;
+        }
+    }
+    @Override public final void assign(IIntegerSupplier aSup) {operation().assign(aSup);}
+    @Override public final void forEach(IIntegerConsumer1 aCon) {operation().forEach(aCon);}
     
     @Override public int get(int aIdx) {
         if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
@@ -172,6 +194,16 @@ public abstract class AbstractIntegerVector implements IIntegerVector {
         return getAndUpdate_(aIdx, aOpt);
     }
     
+    @Override public IIntegerVector subVec(final int aFromIdx, final int aToIdx) {
+        subVecRangeCheck(aFromIdx, aToIdx, size());
+        return new RefIntegerVector() {
+            /** 由于一开始有边界检查，所以这里不再需要边检检查 */
+            @Override public int get_(int aIdx) {return AbstractIntegerVector.this.get_(aIdx+aFromIdx);}
+            @Override public void set_(int aIdx, int aValue) {AbstractIntegerVector.this.set_(aIdx+aFromIdx, aValue);}
+            @Override public int getAndSet_(int aIdx, int aValue) {return AbstractIntegerVector.this.getAndSet_(aIdx+aFromIdx, aValue);}
+            @Override public int size() {return aToIdx-aFromIdx;}
+        };
+    }
     
     /** 向量的运算器 */
     @Override public IIntegerVectorOperation operation() {
