@@ -6,7 +6,6 @@ import jtool.code.CS;
 import jtool.code.UT;
 import jtool.code.collection.AbstractCollections;
 import jtool.code.collection.DoublePair;
-import jtool.code.collection.NewCollections;
 import jtool.code.functional.IIndexFilter;
 import jtool.io.ISavable;
 import jtool.math.MathEX;
@@ -185,10 +184,10 @@ public class DecisionTree implements ISavable {
                 return rSplit;
             }
             case RANDOM: {
-                List<Integer> tRandIdx = NewCollections.from(tSizeMM, i->i);
-                Collections.shuffle(tRandIdx, mRNG);
-                tRandIdx = tRandIdx.subList(0, mMaxSplit);
-                tRandIdx.sort(Integer::compareTo);
+                IIntegerVector tRandIdx = Vectors.fromInteger(tSizeMM, i->i);
+                tRandIdx.shuffle(mRNG);
+                tRandIdx = tRandIdx.subVec(0, mMaxSplit);
+                tRandIdx.sort();
                 IVector rSplit = Vectors.zeros(mMaxSplit);
                 for (int i = 0; i < mMaxSplit; ++i) {
                     int j = tRandIdx.get(i);
@@ -238,9 +237,9 @@ public class DecisionTree implements ISavable {
                 // 权重取绝对值
                 tWeight.operation().map2this(Math::abs);
                 // 排序选取权重最高的 aMaxSplit 个分点
-                List<Integer> rSortedIndex = NewCollections.from(tWeight.size(), i->i);
+                IIntegerVector rSortedIndex = Vectors.fromInteger(tWeight.size(), i->i);
                 rSortedIndex.sort(Comparator.comparingDouble(tWeight::get).reversed());
-                return rSplit.refSlicer().get(tSplitIndex).slicer().get(rSortedIndex.subList(0, mMaxSplit));
+                return rSplit.refSlicer().get(tSplitIndex).slicer().get(rSortedIndex.subVec(0, mMaxSplit));
             }
             default: throw new RuntimeException();
             }
@@ -272,7 +271,7 @@ public class DecisionTree implements ISavable {
             IIndexFilter tConsiderID;
             if (tConsiderNum < tValidCharaNum) {
                 IIntegerVector rRandIndex = tValidChara.where();
-                Collections.shuffle(rRandIndex.asList(), mRNG);
+                rRandIndex.shuffle(mRNG);
                 ILogicalVector rConsiderID = LogicalVector.zeros(mInputDim);
                 rConsiderID.refSlicer().get(rRandIndex.subVec(0, tConsiderNum)).fill(true);
                 tConsiderID = rConsiderID;

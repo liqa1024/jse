@@ -8,9 +8,7 @@ import jtool.code.iterator.IIntegerIterator;
 import jtool.code.iterator.IIntegerSetIterator;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import static jtool.math.vector.AbstractVector.subVecRangeCheck;
 
@@ -212,6 +210,12 @@ public abstract class AbstractIntegerVector implements IIntegerVector {
         };
     }
     
+    /** 向量基本的运算操作 */
+    @Override public final void sort() {operation().sort();}
+    @Override public final void sort(Comparator<? super Integer> aComp) {operation().sort(aComp);}
+    @Override public final void shuffle() {operation().shuffle();}
+    @Override public final void shuffle(Random aRng) {operation().shuffle(aRng::nextInt);}
+    @Override public final void shuffle(IIntegerOperator1 aRng) {operation().shuffle(aRng);}
     
     
     /** stuff to override */

@@ -8,9 +8,12 @@ import jtool.code.iterator.IHasIntegerIterator;
 import jtool.code.iterator.IHasIntegerSetIterator;
 import jtool.code.iterator.IIntegerIterator;
 import jtool.code.iterator.IIntegerSetIterator;
+import jtool.parallel.LocalRandom;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 
 /**
  * @author liqa
@@ -70,4 +73,11 @@ public interface IIntegerVector extends ISlice, IHasIntegerIterator, IHasInteger
     /** 向量的运算操作，默认返回新的向量 */
     IIntegerVectorOperation operation();
     @VisibleForTesting default IIntegerVectorOperation opt() {return operation();}
+    
+    /** 增加向量基本的运算操作以及 IntegerVector 特有的操作，现在也归入内部使用 */
+    void sort();
+    void sort(Comparator<? super Integer> aComp);
+    void shuffle();
+    void shuffle(Random aRng);
+    void shuffle(IIntegerOperator1 aRng);
 }

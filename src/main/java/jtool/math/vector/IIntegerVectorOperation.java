@@ -1,7 +1,10 @@
 package jtool.math.vector;
 
 import jtool.code.functional.IIntegerConsumer1;
+import jtool.code.functional.IIntegerOperator1;
 import jtool.code.functional.IIntegerSupplier;
+
+import java.util.Comparator;
 
 /**
  * 任意的整数向量的运算
@@ -15,4 +18,10 @@ public interface IIntegerVectorOperation {
     void assign             (IIntegerSupplier aSup);
     /** 统一提供一个 for-each 运算来减少优化需要的重复代码 */
     void forEach            (IIntegerConsumer1 aCon);
+    
+    /** IntegerVector 特有的操作 */
+    void sort();
+    void sort(Comparator<? super Integer> aComp);
+    void shuffle();
+    void shuffle(IIntegerOperator1 aRng);
 }

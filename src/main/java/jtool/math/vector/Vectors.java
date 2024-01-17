@@ -88,6 +88,37 @@ public class Vectors {
     }
     
     
+    public static IntegerVector fromInteger(int aSize, IIntegerVectorGetter aVectorGetter) {
+        IntegerVector rVector = IntegerVector.zeros(aSize);
+        rVector.fill(aVectorGetter);
+        return rVector;
+    }
+    public static IntegerVector fromInteger(IIntegerVector aVector) {
+        IntegerVector rVector = IntegerVector.zeros(aVector.size());
+        rVector.fill(aVector);
+        return rVector;
+    }
+    /** Groovy stuff */
+    public static IntegerVector fromInteger(int aSize, final Closure<Integer> aGroovyTask) {return fromInteger(aSize, aGroovyTask::call);}
+    
+    public static IntegerVector fromInteger(Iterable<Integer> aIterable) {
+        final IntegerVector.Builder rBuilder = IntegerVector.builder();
+        for (Integer tValue : aIterable) rBuilder.add(tValue);
+        rBuilder.trimToSize();
+        return rBuilder.build();
+    }
+    public static IntegerVector fromInteger(Collection<Integer> aList) {
+        IntegerVector rVector = IntegerVector.zeros(aList.size());
+        rVector.fill(aList);
+        return rVector;
+    }
+    public static IntegerVector fromInteger(int[] aData) {
+        IntegerVector rVector = IntegerVector.zeros(aData.length);
+        rVector.fill(aData);
+        return rVector;
+    }
+    
+    
     public static Vector merge(IVector aBefore, IVector aAfter) {
         Vector rVector = zeros(aBefore.size()+aAfter.size());
         // 原则上使用优化后的 refSlicer 会更快，但是优化需要的代码量较大，这里直接使用迭代器遍历，一个适中的优化效果

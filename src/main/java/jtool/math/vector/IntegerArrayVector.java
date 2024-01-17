@@ -19,6 +19,8 @@ public abstract class IntegerArrayVector extends AbstractIntegerVector implement
     /** 向量运算实现 */
     @Override public IIntegerVectorOperation operation() {return new IntegerArrayVectorOperation_();}
     
+    /** Optimize stuffs，重写这些接口来加速批量填充过程 */
+    @Override public void fill(int[] aData) {System.arraycopy(aData, 0, internalData(), internalDataShift(), internalDataSize());}
     
     /** stuff to override */
     public abstract IntegerArrayVector newShell();
