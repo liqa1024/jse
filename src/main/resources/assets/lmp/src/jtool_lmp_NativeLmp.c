@@ -320,21 +320,21 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsGatherConcat_1(JNIEnv *aEn
     if (aIsDouble) {
         if (aCount > 1) {
             double **tDoubleRef = (double **)tRef;
-            int idx = tDispls[tLmpMe];
+            jdouble *it = rDataBuf + tDispls[tLmpMe];
             for (int i = 0; i < tLocalAtomNum; ++i) {
                 double *subDoubleRef = tDoubleRef[i];
                 if (subDoubleRef == NULL) break;
                 for (int j = 0; j < aCount; ++j) {
-                    rDataBuf[idx] = (jdouble)subDoubleRef[j];
-                    ++idx;
+                    *it = (jdouble)subDoubleRef[j];
+                    ++it;
                 }
             }
         } else {
             double *tDoubleRef = (double *)tRef;
-            int idx = tDispls[tLmpMe];
+            jdouble *it = rDataBuf + tDispls[tLmpMe];
             for (int i = 0; i < tLocalAtomNum; ++i) {
-                rDataBuf[idx] = (jdouble)tDoubleRef[i];
-                ++idx;
+                *it = (jdouble)tDoubleRef[i];
+                ++it;
             }
         }
         // NO need to free due to it is lammps internal data
@@ -345,21 +345,21 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsGatherConcat_1(JNIEnv *aEn
         int *rIntDataBuf = malloc(tDataSize * sizeof(int));
         if (aCount > 1) {
             int **tIntRef = (int **)tRef;
-            int idx = tDispls[tLmpMe];
+            int *it = rIntDataBuf + tDispls[tLmpMe];
             for (int i = 0; i < tLocalAtomNum; ++i) {
                 int *subIntRef = tIntRef[i];
                 if (subIntRef == NULL) break;
                 for (int j = 0; j < aCount; ++j) {
-                    rIntDataBuf[idx] = subIntRef[j];
-                    ++idx;
+                    *it = subIntRef[j];
+                    ++it;
                 }
             }
         } else {
             int *tIntRef = (int *)tRef;
-            int idx = tDispls[tLmpMe];
+            int *it = rIntDataBuf + tDispls[tLmpMe];
             for (int i = 0; i < tLocalAtomNum; ++i) {
-                rIntDataBuf[idx] = tIntRef[i];
-                ++idx;
+                *it = tIntRef[i];
+                ++it;
             }
         }
         // NO need to free due to it is lammps internal data
@@ -376,13 +376,13 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsGatherConcat_1(JNIEnv *aEn
     if (aIsDouble) {
         if (aCount > 1) {
             double **tDoubleRef = (double **)tRef;
-            int idx = 0;
+            jdouble *it = rDataBuf;
             for (int i = 0; i < tLocalAtomNum; ++i) {
                 double *subDoubleRef = tDoubleRef[i];
                 if (subDoubleRef == NULL) break;
                 for (int j = 0; j < aCount; ++j) {
-                    rDataBuf[idx] = (jdouble)subDoubleRef[j];
-                    ++idx;
+                    *it = (jdouble)subDoubleRef[j];
+                    ++it;
                 }
             }
         } else {
@@ -393,13 +393,13 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsGatherConcat_1(JNIEnv *aEn
     } else {
         if (aCount > 1) {
             int **tIntRef = (int **)tRef;
-            int idx = 0;
+            jdouble *it = rDataBuf;
             for (int i = 0; i < tLocalAtomNum; ++i) {
                 int *subIntRef = tIntRef[i];
                 if (subIntRef == NULL) break;
                 for (int j = 0; j < aCount; ++j) {
-                    rDataBuf[idx] = (jdouble)subIntRef[j];
-                    ++idx;
+                    *it = (jdouble)subIntRef[j];
+                    ++it;
                 }
             }
         } else {
@@ -422,13 +422,13 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractAtom_1(JNIEnv *aEnv
     case 0: {
         if (aCount > 1) {
             int **tIntRef = (int **)tRef;
-            int idx = 0;
+            jdouble *it = rDataBuf;
             for (int i = 0; i < aAtomNum; ++i) {
                 int *subIntRef = tIntRef[i];
                 if (subIntRef == NULL) break;
                 for (int j = 0; j < aCount; ++j) {
-                    rDataBuf[idx] = (jdouble)subIntRef[j];
-                    ++idx;
+                    *it = (jdouble)subIntRef[j];
+                    ++it;
                 }
             }
         } else {
@@ -441,13 +441,13 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractAtom_1(JNIEnv *aEnv
     case 1: {
         if (aCount > 1) {
             double **tDoubleRef = (double **)tRef;
-            int idx = 0;
+            jdouble *it = rDataBuf;
             for (int i = 0; i < aAtomNum; ++i) {
                 double *subDoubleRef = tDoubleRef[i];
                 if (subDoubleRef == NULL) break;
                 for (int j = 0; j < aCount; ++j) {
-                    rDataBuf[idx] = (jdouble)subDoubleRef[j];
-                    ++idx;
+                    *it = (jdouble)subDoubleRef[j];
+                    ++it;
                 }
             }
         } else {
@@ -460,13 +460,13 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractAtom_1(JNIEnv *aEnv
     case 2: {
         if (aCount > 1) {
             intbig **tIntbigRef = (intbig **)tRef;
-            int idx = 0;
+            jdouble *it = rDataBuf;
             for (int i = 0; i < aAtomNum; ++i) {
                 intbig *subIntbigRef = tIntbigRef[i];
                 if (subIntbigRef == NULL) break;
                 for (int j = 0; j < aCount; ++j) {
-                    rDataBuf[idx] = (jdouble)subIntbigRef[j];
-                    ++idx;
+                    *it = (jdouble)subIntbigRef[j];
+                    ++it;
                 }
             }
         } else {
@@ -479,12 +479,13 @@ JNIEXPORT void JNICALL Java_jtool_lmp_NativeLmp_lammpsExtractAtom_1(JNIEnv *aEnv
     case 3: {
         if (aCount > 1) {
             int64_t **tInt64Ref = (int64_t **)tRef;
-            int idx = 0;
+            jdouble *it = rDataBuf;
             for (int i = 0; i < aAtomNum; ++i) {
                 int64_t *subInt64Ref = tInt64Ref[i];
                 if (subInt64Ref == NULL) break;
                 for (int j = 0; j < aCount; ++j) {
-                    rDataBuf[idx] = (jdouble)subInt64Ref[j]; ++idx;
+                    *it = (jdouble)subInt64Ref[j];
+                    ++it;
                 }
             }
         } else {
