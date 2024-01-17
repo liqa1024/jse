@@ -110,7 +110,7 @@ MultipleNativeLmpFullPathGenerator.withOf(subComm, subRoots, dumpCal, initPoints
         UT.Timer.toc("i = -1, k0 = ${FFS.getK0()}, step1PointNum = ${FFS.step1PointNum()}, step1PathNum = ${FFS.step1PathNum()},");
         // 输出 fullPathGen 的耗时
         def info = fullPathGen.getTimerInfo();
-        println("FullPathGenTime: lmp = ${percent(info.lmp/info.total)}, lambda = ${percent(info.lambda/info.total)}, wait = ${percent(info.wait/info.total)}, else = ${percent((info.total-info.lmp-info.lambda-info.wait)/info.total)}");
+        println("FullPathGenTime: lmp = ${percent(info.lmp/info.total)}, lambda = ${percent(info.lambda/info.total)}, wait = ${percent(info.wait/info.total)}, else = ${percent((info.other)/info.total)}");
         // 然后直接随便选一个输出路径到 dump 并保存 restart
         Dump.fromAtomDataList(FFS.pickPath()).write(FFSDumpPath);
         if (FFS.stepFinished()) {
