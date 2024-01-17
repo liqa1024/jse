@@ -1066,4 +1066,27 @@ public class DATA {
             si.setImag(rStat.mImag);
         }
     }
+    
+    
+    /** 较为复杂的运算，只有遇到时专门增加，主要避免 IOperator2 使用需要新建 ComplexDouble */
+    public static void mapMultiplyThenEbePlus2This(IHasComplexDoubleSetIterator rThis, IHasComplexDoubleIterator aRHS, double aMul) {
+        final IComplexDoubleSetIterator si = rThis.setIterator();
+        final IComplexDoubleIterator ri = aRHS.iterator();
+        while (si.hasNext()) {
+            ri.nextOnly();
+            si.nextOnly();
+            si.setComplexDouble(si.real() + aMul*ri.real(), si.imag() + aMul*ri.imag());
+        }
+    }
+    public static void mapMultiplyThenEbePlus2This(IHasComplexDoubleSetIterator rThis, IHasComplexDoubleIterator aRHS, IComplexDouble aMul) {
+        final IComplexDoubleSetIterator si = rThis.setIterator();
+        final IComplexDoubleIterator ri = aRHS.iterator();
+        final double lReal = aMul.real(), lImag = aMul.imag();
+        while (si.hasNext()) {
+            ri.nextOnly();
+            si.nextOnly();
+            final double rReal = ri.real(),   rImag = ri.imag();
+            si.setComplexDouble(si.real() + (lReal*rReal - lImag*rImag), si.imag() + (lImag*rReal + lReal*rImag));
+        }
+    }
 }

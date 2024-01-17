@@ -112,4 +112,8 @@ public interface IComplexVectorOperation {
     
     IComplexVector reverse     ();
     IComplexVector refReverse  ();
+    
+    /** 较为复杂的运算，只有遇到时专门增加，主要避免 IOperator2 使用需要新建 ComplexDouble */
+    void mplus2this      (IComplexVector aRHS, double aMul);
+    void mplus2this      (IComplexVector aRHS, IComplexDouble aMul);
 }

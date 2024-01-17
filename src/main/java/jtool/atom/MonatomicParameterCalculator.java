@@ -2014,16 +2014,13 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 
                 // 遍历求 n，l 的情况
                 Func.sphericalHarmonicsFull2Dest(aLMax, theta, phi, tY);
-                IVector tYReal = tY.real();
-                IVector tYImag = tY.imag();
                 for (int tN = 0; tN <= aNMax; ++tN) {
                     // 得到 cnlm 向量
                     IComplexVector cijm = cnlm[tN];
-                    // 得到 fc*Ri
-                    final double tMul = fc * Rn.get(tN);
-                    // 这里分别使用 real 和 imag 部分来运算来避免缓存数组以及自定义复数运算频繁创建 ComplexDouble 的问题
-                    cijm.real().operation().operate2this(tYReal, (lhs, rhs) -> (lhs + tMul*rhs));
-                    cijm.imag().operation().operate2this(tYImag, (lhs, rhs) -> (lhs + tMul*rhs));
+                    // 现在提供了 mplus2this 支持将数乘到 tY 中后再加到 cijm，可以不用中间变量；
+                    // 虽然看起来和使用 operate2this 效率基本一致，即使后者理论上应该还会创建一些 DoubleComplex；
+                    // 总之至少没有反向优化，并且这样包装后更加不吃编译器的优化，也不存在一大坨 lambda 表达式，以及传入的 DoubleComplex 一定不是引用等这种约定
+                    cijm.operation().mplus2this(tY, fc * Rn.get(tN));
                 }
                 // 统计近邻
                 if (tNLToBuffer != null) {tNLToBuffer[i].add(idx);}

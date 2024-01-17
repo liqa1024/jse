@@ -210,6 +210,10 @@ public abstract class AbstractComplexVectorOperation implements IComplexVectorOp
     }
     
     
+    @Override public void mplus2this(IComplexVector aRHS, double aMul) {DATA.mapMultiplyThenEbePlus2This(thisVector_(), aRHS, aMul);}
+    @Override public void mplus2this(IComplexVector aRHS, IComplexDouble aMul) {DATA.mapMultiplyThenEbePlus2This(thisVector_(), aRHS, aMul);}
+    
+    
     /** 方便内部使用，减少一些重复代码 */
     private IComplexVector newVector_() {return newVector_(thisVector_().size());}
     private IVector newRealVector_() {return newRealVector_(thisVector_().size());}

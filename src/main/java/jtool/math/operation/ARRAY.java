@@ -875,4 +875,43 @@ public class ARRAY {
         for (int i = aShift; i < tEnd; ++i) rStat = toComplexDouble(aOpt.cal(rStat, new ComplexDouble(tRealThis[i], tImagThis[i])));
         return rStat;
     }
+    
+    
+    
+    /** 较为复杂的运算，只有遇到时专门增加，主要避免 IOperator2 使用需要新建 ComplexDouble */
+    public static void mapMultiplyThenEbePlus2This(double[][] rThis, int rShift, double[][] aDataR, int aShiftR, double aMul, int aLength) {
+        final double[] rRealThis  = rThis [0], rImagThis  = rThis [1];
+        final double[] tRealDataR = aDataR[0], tImagDataR = aDataR[1];
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) {
+            for (int i = rShift; i < rEnd; ++i) {
+                rRealThis[i] += aMul*tRealDataR[i];
+                rImagThis[i] += aMul*tImagDataR[i];
+            }
+        } else {
+            for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) {
+                rRealThis[i] += aMul*tRealDataR[j];
+                rImagThis[i] += aMul*tImagDataR[j];
+            }
+        }
+    }
+    public static void mapMultiplyThenEbePlus2This(double[][] rThis, int rShift, double[][] aDataR, int aShiftR, IComplexDouble aMul, int aLength) {
+        final double[] rRealThis  = rThis [0], rImagThis  = rThis [1];
+        final double[] tRealDataR = aDataR[0], tImagDataR = aDataR[1];
+        final double lReal = aMul.real(), lImag = aMul.imag();
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) {
+            for (int i = rShift; i < rEnd; ++i) {
+                final double rReal = tRealDataR[i], rImag = tImagDataR[i];
+                rRealThis[i] += lReal*rReal - lImag*rImag;
+                rImagThis[i] += lImag*rReal + lReal*rImag;
+            }
+        } else {
+            for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) {
+                final double rReal = tRealDataR[j], rImag = tImagDataR[j];
+                rRealThis[i] += lReal*rReal - lImag*rImag;
+                rImagThis[i] += lImag*rReal + lReal*rImag;
+            }
+        }
+    }
 }

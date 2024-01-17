@@ -16,6 +16,6 @@ println("AtomNum: ${data.atomNum()}");
 UT.Timer.tic();
 data.getMPC(nThreads).withCloseable {it.calFPSuRui(5, 6, 6.5)}
 UT.Timer.toc("${nThreads} threads");
-// 1 threads time: 00 hour 00 min 1.35 sec
+// 1 threads time: 00 hour 00 min 1.21 sec
 // 4 threads time: 00 hour 00 min 0.75 sec
 

@@ -318,6 +318,20 @@ public abstract class BiDoubleArrayVectorOperation extends AbstractComplexVector
     }
     
     
+    @Override public void mplus2this(IComplexVector aRHS, double aMul) {
+        BiDoubleArrayVector rThis = thisVector_();
+        double[][] tDataR = rThis.getIfHasSameOrderData(aRHS);
+        if (tDataR != null) ARRAY.mapMultiplyThenEbePlus2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), aMul, rThis.internalDataSize());
+        else DATA.mapMultiplyThenEbePlus2This(rThis, aRHS, aMul);
+    }
+    @Override public void mplus2this(IComplexVector aRHS, IComplexDouble aMul) {
+        BiDoubleArrayVector rThis = thisVector_();
+        double[][] tDataR = rThis.getIfHasSameOrderData(aRHS);
+        if (tDataR != null) ARRAY.mapMultiplyThenEbePlus2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), aMul, rThis.internalDataSize());
+        else DATA.mapMultiplyThenEbePlus2This(rThis, aRHS, aMul);
+    }
+    
+    
     /** 方便内部使用，减少一些重复代码 */
     private BiDoubleArrayVector newVector_() {return newVector_(thisVector_().size());}
     
