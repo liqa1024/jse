@@ -81,6 +81,14 @@ public final class ShiftReverseVector extends DoubleArrayVector {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
+    @Override void swap_(int aIdx1, int aIdx2) {
+        aIdx1 = totShift-aIdx1;
+        aIdx2 = totShift-aIdx2;
+        double tValue = mData[aIdx2];
+        mData[aIdx2] = mData[aIdx1];
+        mData[aIdx1] = tValue;
+    }
+    
     @Override public void increment_(int aIdx) {++mData[totShift-aIdx];}
     @Override public double getAndIncrement_(int aIdx) {return mData[totShift-aIdx]++;}
     @Override public void decrement_(int aIdx) {--mData[totShift-aIdx];}

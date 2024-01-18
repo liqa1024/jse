@@ -1,6 +1,8 @@
 package jtool.math.vector;
 
-import java.util.Comparator;
+import jtool.code.functional.ISwapper;
+
+import java.util.function.IntBinaryOperator;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 import java.util.function.IntUnaryOperator;
@@ -18,9 +20,19 @@ public interface IIntegerVectorOperation {
     /** 统一提供一个 for-each 运算来减少优化需要的重复代码 */
     void forEach            (IntConsumer aCon);
     
-    /** IntegerVector 特有的操作 */
+    
+    /** 向量的一些额外的运算 */
+    void reverse2this();
+    
+    /** 各种排序操作 */
     void sort();
-    void sort(Comparator<? super Integer> aComp);
+    /** 注意 aComp 传入的为 index 而不是值 */
+    void sort(IntBinaryOperator aComp);
+    /** 使用自身作为 key 来进行排序，会顺便将自身也排序 */
+    void bisort(ISwapper aSwapper);
+    void bisort(ISwapper aSwapper, IntBinaryOperator aComp);
+    
+    /** IntegerVector 特有的操作 */
     void shuffle();
     void shuffle(IntUnaryOperator aRng);
 }

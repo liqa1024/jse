@@ -93,6 +93,17 @@ public abstract class AbstractVector implements IVector {
         return rData;
     }
     
+    /** ISwapper stuffs */
+    @Override public void swap(int aIdx1, int aIdx2) {
+        final int tSize = size();
+        if (aIdx1<0 || aIdx1>=tSize) throw new IndexOutOfBoundsException(String.format("Index 1: %d", aIdx1));
+        if (aIdx2<0 || aIdx2>=tSize) throw new IndexOutOfBoundsException(String.format("Index 2: %d", aIdx1));
+        swap_(aIdx1, aIdx2);
+    }
+    void swap_(int aIdx1, int aIdx2) {
+        set_(aIdx1, getAndSet_(aIdx2, get_(aIdx1)));
+    }
+    
     
     /** 批量修改的接口 */
     @Override public final void fill(double aValue) {operation().fill(aValue);}
@@ -303,6 +314,7 @@ public abstract class AbstractVector implements IVector {
     @Override public final double prod  () {return operation().prod ();}
     @Override public final double max   () {return operation().max  ();}
     @Override public final double min   () {return operation().min  ();}
+    @Override public final void sort() {operation().sort();}
     
     @Override public final ILogicalVector equal         (IVector aRHS) {return operation().equal         (aRHS);}
     @Override public final ILogicalVector greater       (IVector aRHS) {return operation().greater       (aRHS);}

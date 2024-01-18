@@ -1,13 +1,13 @@
 package jtool.math.vector;
 
 import jtool.code.collection.ISlice;
+import jtool.code.functional.ISwapper;
 import jtool.code.iterator.IHasIntIterator;
 import jtool.code.iterator.IHasIntSetIterator;
 import jtool.code.iterator.IIntIterator;
 import jtool.code.iterator.IIntSetIterator;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.function.IntConsumer;
@@ -20,7 +20,7 @@ import java.util.function.IntUnaryOperator;
  * <p> 由于完全实现工作量较大，这里暂只实现用到的接口 </p>
  * <p> 当然为了后续完善的方便，结构依旧保持一致 </p>
  */
-public interface IIntVector extends ISlice, IHasIntIterator, IHasIntSetIterator, IIntegerVectorGetter {
+public interface IIntVector extends ISwapper, ISlice, IHasIntIterator, IHasIntSetIterator, IIntegerVectorGetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
     IIntIterator iterator();
     IIntSetIterator setIterator();
@@ -28,6 +28,9 @@ public interface IIntVector extends ISlice, IHasIntIterator, IHasIntSetIterator,
     default Iterable<Integer> iterable() {return () -> iterator().toIterator();}
     List<Integer> asList();
     IVector asVec();
+    
+    /** ISwapper stuffs */
+    void swap(int aIdx1, int aIdx2);
     
     /** 批量修改的接口 */
     void fill(int aValue);
@@ -75,7 +78,6 @@ public interface IIntVector extends ISlice, IHasIntIterator, IHasIntSetIterator,
     
     /** 增加向量基本的运算操作以及 IntegerVector 特有的操作，现在也归入内部使用 */
     void sort();
-    void sort(Comparator<? super Integer> aComp);
     void shuffle();
     void shuffle(Random aRng);
     void shuffle(IntUnaryOperator aRng);

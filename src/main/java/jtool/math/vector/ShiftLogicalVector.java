@@ -85,6 +85,14 @@ public final class ShiftLogicalVector extends BooleanArrayVector {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
+    @Override void swap_(int aIdx1, int aIdx2) {
+        aIdx1 += mShift;
+        aIdx2 += mShift;
+        boolean tValue = mData[aIdx2];
+        mData[aIdx2] = mData[aIdx1];
+        mData[aIdx1] = tValue;
+    }
+    
     @Override public void flip_(int aIdx) {
         aIdx += mShift;
         mData[aIdx] = !mData[aIdx];

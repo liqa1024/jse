@@ -86,6 +86,17 @@ public abstract class AbstractIntVector implements IIntVector {
         };
     }
     
+    /** ISwapper stuffs */
+    @Override public void swap(int aIdx1, int aIdx2) {
+        final int tSize = size();
+        if (aIdx1<0 || aIdx1>=tSize) throw new IndexOutOfBoundsException(String.format("Index 1: %d", aIdx1));
+        if (aIdx2<0 || aIdx2>=tSize) throw new IndexOutOfBoundsException(String.format("Index 2: %d", aIdx1));
+        swap_(aIdx1, aIdx2);
+    }
+    void swap_(int aIdx1, int aIdx2) {
+        set_(aIdx1, getAndSet_(aIdx2, get_(aIdx1)));
+    }
+    
     /** 批量修改的接口 */
     @Override public final void fill(int aValue) {operation().fill(aValue);}
     @Override public final void fill(IIntVector aVector) {operation().fill(aVector);}
@@ -212,7 +223,6 @@ public abstract class AbstractIntVector implements IIntVector {
     
     /** 向量基本的运算操作 */
     @Override public final void sort() {operation().sort();}
-    @Override public final void sort(Comparator<? super Integer> aComp) {operation().sort(aComp);}
     @Override public final void shuffle() {operation().shuffle();}
     @Override public final void shuffle(Random aRng) {operation().shuffle(aRng::nextInt);}
     @Override public final void shuffle(IntUnaryOperator aRng) {operation().shuffle(aRng);}

@@ -187,6 +187,17 @@ public final class ComplexVector extends BiDoubleArrayVector {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
+    @Override void swap_(int aIdx1, int aIdx2) {
+        final double[] tRealData = mData[0];
+        final double[] tImagData = mData[1];
+        double tReal = tRealData[aIdx2];
+        tRealData[aIdx2] = tRealData[aIdx1];
+        tRealData[aIdx1] = tReal;
+        double tImag = tImagData[aIdx2];
+        tImagData[aIdx2] = tImagData[aIdx1];
+        tImagData[aIdx1] = tImag;
+    }
+    
     @Override public void add_(int aIdx, IComplexDouble aDelta) {
         mData[0][aIdx] += aDelta.real();
         mData[1][aIdx] += aDelta.imag();

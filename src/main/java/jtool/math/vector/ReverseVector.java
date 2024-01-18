@@ -85,6 +85,14 @@ public final class ReverseVector extends DoubleArrayVector {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
+    @Override void swap_(int aIdx1, int aIdx2) {
+        aIdx1 = mSizeMM-aIdx1;
+        aIdx2 = mSizeMM-aIdx2;
+        double tValue = mData[aIdx2];
+        mData[aIdx2] = mData[aIdx1];
+        mData[aIdx1] = tValue;
+    }
+    
     @Override public void increment_(int aIdx) {++mData[mSizeMM-aIdx];}
     @Override public double getAndIncrement_(int aIdx) {return mData[mSizeMM-aIdx]++;}
     @Override public void decrement_(int aIdx) {--mData[mSizeMM-aIdx];}

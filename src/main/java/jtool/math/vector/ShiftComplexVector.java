@@ -179,6 +179,19 @@ public final class ShiftComplexVector extends BiDoubleArrayVector {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
+    @Override void swap_(int aIdx1, int aIdx2) {
+        aIdx1 += mShift;
+        aIdx2 += mShift;
+        final double[] tRealData = mData[0];
+        final double[] tImagData = mData[1];
+        double tReal = tRealData[aIdx2];
+        tRealData[aIdx2] = tRealData[aIdx1];
+        tRealData[aIdx1] = tReal;
+        double tImag = tImagData[aIdx2];
+        tImagData[aIdx2] = tImagData[aIdx1];
+        tImagData[aIdx1] = tImag;
+    }
+    
     @Override public void add_(int aIdx, IComplexDouble aDelta) {
         aIdx += mShift;
         mData[0][aIdx] += aDelta.real();

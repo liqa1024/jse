@@ -1,10 +1,13 @@
 package jtool.math.operation;
 
+import com.mastfrog.util.sort.Sort;
 import jtool.code.functional.*;
 import jtool.math.ComplexDouble;
 import jtool.math.IComplexDouble;
 
-import java.util.function.*;
+import java.util.Arrays;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleUnaryOperator;
 
 import static jtool.code.UT.Code.toComplexDouble;
 
@@ -886,6 +889,20 @@ public class ARRAY {
         return rStat;
     }
     
+    
+    /** 排序会用到的算法，这里不自己实现 */
+    public static void sort(double[] rData, int rShift, int aLength) {
+        Arrays.sort(rData, rShift, aLength+rShift);
+    }
+    public static void sort(int[] rData, int rShift, int aLength) {
+        Arrays.sort(rData, rShift, aLength+rShift);
+    }
+    public static void biSort(double[] rData, int rShift, int aLength, ISwapper aSwapper) {
+        Sort.multiSort(rData, rShift, aLength+rShift, aSwapper);
+    }
+    public static void biSort(int[] rData, int rShift, int aLength, ISwapper aSwapper) {
+        Sort.multiSort(rData, rShift, aLength+rShift, aSwapper);
+    }
     
     
     /** 较为复杂的运算，只有遇到时专门增加，主要避免 IOperator2 使用需要新建 ComplexDouble */

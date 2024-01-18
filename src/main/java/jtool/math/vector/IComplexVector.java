@@ -7,6 +7,7 @@ import jtool.code.CS.SliceType;
 import jtool.code.collection.ISlice;
 import jtool.code.functional.IDoubleBinaryConsumer;
 import jtool.code.functional.IIndexFilter;
+import jtool.code.functional.ISwapper;
 import jtool.code.functional.IUnaryFullOperator;
 import jtool.code.iterator.IComplexDoubleIterator;
 import jtool.code.iterator.IComplexDoubleSetIterator;
@@ -28,7 +29,7 @@ import java.util.function.*;
  * <p> 和 {@link IXYZ} 或者 {@link IAtom} 部分的用法思路不同，
  * 这里直接返回 {@link ComplexDouble} 让其和基本类型一样的使用，不会有引用的属性在里面 </p>
  */
-public interface IComplexVector extends IHasComplexDoubleIterator, IHasComplexDoubleSetIterator, IComplexVectorGetter {
+public interface IComplexVector extends ISwapper, IHasComplexDoubleIterator, IHasComplexDoubleSetIterator, IComplexVectorGetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
     IComplexDoubleIterator iterator();
     IComplexDoubleSetIterator setIterator();
@@ -42,6 +43,9 @@ public interface IComplexVector extends IHasComplexDoubleIterator, IHasComplexDo
     
     /** 转为兼容性更好的 double[][] */
     double[][] data();
+    
+    /** ISwapper stuffs */
+    void swap(int aIdx1, int aIdx2);
     
     /** 批量修改的接口 */
     void fill(IComplexDouble aValue);

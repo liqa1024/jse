@@ -1,10 +1,10 @@
 package jtool.math.vector;
 
+import jtool.code.functional.ISwapper;
 import jtool.code.iterator.IIntSetOnlyIterator;
 import jtool.math.operation.DATA;
 
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.function.IntBinaryOperator;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 import java.util.function.IntUnaryOperator;
@@ -23,26 +23,21 @@ public abstract class AbstractIntegerVectorOperation implements IIntegerVectorOp
         for (int i = 0; i < tSize; ++i) si.nextAndSet(aRHS.get(i));
     }
     
+    @Override public void reverse2this() {DATA.reverse2This(thisVector_());}
     
     /** 排序不自己实现 */
-    @Override public void sort() {
-        Collections.sort(thisVector_().asList());
-    }
-    @Override public void sort(Comparator<? super Integer> aComp) {
-        thisVector_().asList().sort(aComp);
-    }
+    @Override public void sort() {DATA.sort(thisVector_());}
+    @Override public void sort(IntBinaryOperator aComp) {DATA.sort(thisVector_(), aComp);}
+    @Override public void bisort(ISwapper aSwapper) {DATA.biSort(thisVector_(), aSwapper);}
+    @Override public void bisort(ISwapper aSwapper, IntBinaryOperator aComp) {DATA.biSort(thisVector_(), aSwapper, aComp);}
     
     @Override public final void shuffle() {shuffle(RANDOM::nextInt);}
     @Override public void shuffle(IntUnaryOperator aRng) {
         final IIntVector tThis = thisVector_();
         final int tSize = tThis.size();
         for (int i = tSize; i > 1; --i) {
-            swap(tThis, i-1, aRng.applyAsInt(i));
+            tThis.swap(i-1, aRng.applyAsInt(i));
         }
-    }
-    
-    static void swap(IIntVector rVector, int i, int j) {
-        rVector.set(i, rVector.getAndSet(j, rVector.get(i)));
     }
     
     /** stuff to override */

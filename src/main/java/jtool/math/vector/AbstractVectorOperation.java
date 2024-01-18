@@ -1,7 +1,9 @@
 package jtool.math.vector;
 
+import com.mastfrog.util.sort.Sort;
 import jtool.code.functional.IChecker;
 import jtool.code.functional.IComparator;
+import jtool.code.functional.ISwapper;
 import jtool.code.iterator.IDoubleIterator;
 import jtool.code.iterator.IDoubleSetOnlyIterator;
 import jtool.math.MathEX;
@@ -133,6 +135,13 @@ public abstract class AbstractVectorOperation implements IVectorOperation {
             @Override public int size() {return mThis.size();}
         };
     }
+    @Override public void reverse2this() {DATA.reverse2This(thisVector_());}
+    
+    /** 排序不自己实现 */
+    @Override public void sort() {DATA.sort(thisVector_());}
+    @Override public void sort(IntBinaryOperator aComp) {DATA.sort(thisVector_(), aComp);}
+    @Override public void bisort(ISwapper aSwapper) {DATA.biSort(thisVector_(), aSwapper);}
+    @Override public void bisort(ISwapper aSwapper, IntBinaryOperator aComp) {DATA.biSort(thisVector_(), aSwapper, aComp);}
     
     
     /** 方便内部使用，减少一些重复代码 */

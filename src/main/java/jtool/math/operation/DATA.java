@@ -1,9 +1,12 @@
 package jtool.math.operation;
 
+import com.mastfrog.util.sort.Sort;
 import jtool.code.iterator.*;
 import jtool.code.functional.*;
 import jtool.math.ComplexDouble;
 import jtool.math.IComplexDouble;
+import jtool.math.vector.IIntVector;
+import jtool.math.vector.IVector;
 
 import java.util.function.*;
 
@@ -1082,6 +1085,44 @@ public class DATA {
             si.setReal(rStat.mReal);
             si.setImag(rStat.mImag);
         }
+    }
+    
+    
+    /** 排序会用到的算法，这里不自己实现 */
+    public static void reverse2This(IVector rThis) {
+        reverse2This(rThis, rThis.size());
+    }
+    public static void reverse2This(IIntVector rThis) {
+        reverse2This(rThis, rThis.size());
+    }
+    public static void reverse2This(ISwapper rThis, int aSize) {
+        for (int i = 0, j = aSize-1; i < j; ++i, --j) {
+            rThis.swap(i, j);
+        }
+    }
+    public static void sort(final IVector rVec) {
+        Sort.sortAdhoc(rVec, rVec.size(), (i, j) -> Double.compare(rVec.get(i), rVec.get(j)));
+    }
+    public static void sort(final IIntVector rVec) {
+        Sort.sortAdhoc(rVec, rVec.size(), (i, j) -> Integer.compare(rVec.get(i), rVec.get(j)));
+    }
+    public static void sort(IVector rVec, IntBinaryOperator aComp) {
+        Sort.sortAdhoc(rVec, rVec.size(), aComp);
+    }
+    public static void sort(IIntVector rVec, IntBinaryOperator aComp) {
+        Sort.sortAdhoc(rVec, rVec.size(), aComp);
+    }
+    public static void biSort(final IVector rVec, ISwapper aSwapper) {
+        Sort.sortAdhoc((i, j) -> {rVec.swap(i, j); aSwapper.swap(i, j);}, rVec.size(), (i, j) -> Double.compare(rVec.get(i), rVec.get(j)));
+    }
+    public static void biSort(final IIntVector rVec, ISwapper aSwapper) {
+        Sort.sortAdhoc((i, j) -> {rVec.swap(i, j); aSwapper.swap(i, j);}, rVec.size(), (i, j) -> Integer.compare(rVec.get(i), rVec.get(j)));
+    }
+    public static void biSort(final IVector rVec, ISwapper aSwapper, IntBinaryOperator aComp) {
+        Sort.sortAdhoc((i, j) -> {rVec.swap(i, j); aSwapper.swap(i, j);}, rVec.size(), aComp);
+    }
+    public static void biSort(final IIntVector rVec, ISwapper aSwapper, IntBinaryOperator aComp) {
+        Sort.sortAdhoc((i, j) -> {rVec.swap(i, j); aSwapper.swap(i, j);}, rVec.size(), aComp);
     }
     
     

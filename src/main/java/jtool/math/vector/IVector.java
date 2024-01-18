@@ -1,21 +1,27 @@
 package jtool.math.vector;
 
+import groovy.lang.Closure;
 import jtool.code.CS.SliceType;
 import jtool.code.collection.ISlice;
 import jtool.code.functional.IIndexFilter;
-import jtool.code.iterator.*;
-import groovy.lang.Closure;
+import jtool.code.functional.ISwapper;
+import jtool.code.iterator.IDoubleIterator;
+import jtool.code.iterator.IDoubleSetIterator;
+import jtool.code.iterator.IHasDoubleIterator;
+import jtool.code.iterator.IHasDoubleSetIterator;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.function.*;
+import java.util.function.DoubleConsumer;
+import java.util.function.DoubleSupplier;
+import java.util.function.DoubleUnaryOperator;
 
 /**
  * @author liqa
  * <p> 简单起见默认都是实向量，返回类型 double </p>
  */
-public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVectorGetter {
+public interface IVector extends ISwapper, IHasDoubleIterator, IHasDoubleSetIterator, IVectorGetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
     IDoubleIterator iterator();
     IDoubleSetIterator setIterator();
@@ -25,6 +31,9 @@ public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVec
     
     /** 转为兼容性更好的 double[] */
     double[] data();
+    
+    /** ISwapper stuffs */
+    void swap(int aIdx1, int aIdx2);
     
     /** 批量修改的接口 */
     void fill(double aValue);
@@ -126,6 +135,7 @@ public interface IVector extends IHasDoubleIterator, IHasDoubleSetIterator, IVec
     double prod ();
     double max  ();
     double min  ();
+    void sort();
     
     /** 比较运算，注意特地避开 equals */
     ILogicalVector equal            (IVector aRHS);

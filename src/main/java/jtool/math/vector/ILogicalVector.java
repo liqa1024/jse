@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
  * @author liqa
  * <p> 专用的逻辑值向量 </p>
  */
-public interface ILogicalVector extends IHasBooleanIterator, IHasBooleanSetIterator, ILogicalVectorGetter {
+public interface ILogicalVector extends ISwapper, IHasBooleanIterator, IHasBooleanSetIterator, ILogicalVectorGetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
     IBooleanIterator iterator();
     IBooleanSetIterator setIterator();
@@ -26,6 +26,9 @@ public interface ILogicalVector extends IHasBooleanIterator, IHasBooleanSetItera
     
     /** 转为兼容性更好的 boolean[] */
     boolean[] data();
+    
+    /** ISwapper stuffs */
+    void swap(int aIdx1, int aIdx2);
     
     /** 批量修改的接口 */
     void fill(boolean aValue);

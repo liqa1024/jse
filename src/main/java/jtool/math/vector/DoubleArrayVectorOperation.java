@@ -1,10 +1,12 @@
 package jtool.math.vector;
 
+import jtool.code.functional.ISwapper;
 import jtool.math.IDataShell;
 import jtool.math.operation.ARRAY;
 import jtool.math.operation.DATA;
 
-import java.util.function.*;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleUnaryOperator;
 
 /**
  * 对于内部含有 double[] 的向量的运算使用专门优化后的函数
@@ -290,6 +292,22 @@ public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation
             rDot += tValue*tValue;
         }
         return rDot;
+    }
+    
+    /** 排序不自己实现 */
+    @Override public void sort() {
+        final DoubleArrayVector rThis = thisVector_();
+        ARRAY.sort(rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize());
+        if (rThis.isReverse()) reverse2this();
+    }
+    @Override public void bisort(ISwapper aSwapper) {
+        final DoubleArrayVector rThis = thisVector_();
+        final int tSize = rThis.internalDataSize();
+        ARRAY.biSort(rThis.internalData(), rThis.internalDataShift(), tSize, aSwapper.undata(rThis));
+        if (rThis.isReverse()) {
+            reverse2this();
+            DATA.reverse2This(aSwapper, tSize);
+        }
     }
     
     

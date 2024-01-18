@@ -79,6 +79,14 @@ public final class ShiftIntVector extends IntArrayVector {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
+    @Override void swap_(int aIdx1, int aIdx2) {
+        aIdx1 += mShift;
+        aIdx2 += mShift;
+        int tValue = mData[aIdx2];
+        mData[aIdx2] = mData[aIdx1];
+        mData[aIdx1] = tValue;
+    }
+    
     @Override public void increment_(int aIdx) {++mData[aIdx + mShift];}
     @Override public int getAndIncrement_(int aIdx) {return mData[aIdx + mShift]++;}
     @Override public void decrement_(int aIdx) {--mData[aIdx + mShift];}

@@ -94,6 +94,12 @@ public final class LogicalVector extends BooleanArrayVector {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
+    @Override void swap_(int aIdx1, int aIdx2) {
+        boolean tValue = mData[aIdx2];
+        mData[aIdx2] = mData[aIdx1];
+        mData[aIdx1] = tValue;
+    }
+    
     @Override public void flip_(int aIdx) {
         mData[aIdx] = !mData[aIdx];
     }

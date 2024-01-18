@@ -234,12 +234,12 @@ public class DecisionTree implements ISavable {
                     }
                 }
                 final IVector tWeight = rWeight.slicer().get(tSplitIndex);
+                final IVector tSplit  = rSplit .slicer().get(tSplitIndex);
                 // 权重取绝对值
                 tWeight.operation().map2this(Math::abs);
                 // 排序选取权重最高的 aMaxSplit 个分点
-                IIntVector rSortedIndex = Vectors.range(tWeight.size());
-                rSortedIndex.sort(Comparator.comparingDouble(tWeight::get).reversed());
-                return rSplit.refSlicer().get(tSplitIndex).slicer().get(rSortedIndex.subVec(0, mMaxSplit));
+                tWeight.operation().bisort(tSplit);
+                return tSplit.operation().refReverse().subVec(0, mMaxSplit);
             }
             default: throw new RuntimeException();
             }
