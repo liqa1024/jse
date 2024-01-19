@@ -1,6 +1,7 @@
 package jtool.atom;
 
 
+import jtool.code.collection.ISlice;
 import jtool.code.functional.IFilter;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.IUnaryFullOperator;
@@ -43,6 +44,7 @@ public interface IAtomDataOperation {
      * @param aIndices 选择保留的原子的下标组成的数组
      * @return 新创建的切片后的 AtomData
      */
+    IAtomData refSlice(ISlice aIndices);
     IAtomData refSlice(List<Integer> aIndices);
     IAtomData refSlice(int[] aIndices);
     IAtomData refSlice(IIndexFilter aIndices);

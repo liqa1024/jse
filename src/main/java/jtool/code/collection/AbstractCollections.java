@@ -7,6 +7,8 @@ import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.IUnaryFullOperator;
 import jtool.code.iterator.IDoubleIterator;
 import jtool.code.iterator.IHasDoubleIterator;
+import jtool.code.iterator.IHasIntIterator;
+import jtool.code.iterator.IIntIterator;
 import jtool.math.MathEX;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -293,8 +295,39 @@ public class AbstractCollections {
     public static @Unmodifiable Iterable<Integer> filterInteger(Iterable<Integer> aIndices, IIndexFilter aFilter) {
         return filter(aIndices, aFilter::accept);
     }
-    public static @Unmodifiable Iterable<Integer> filterInteger(final int aSize, final IIndexFilter aFilter) {
-        return () -> new Iterator<Integer>() {
+    public static @Unmodifiable IHasIntIterator filterInteger(final IHasIntIterator aIndices, final IIndexFilter aFilter) {
+        return () -> new IIntIterator() {
+            private final IIntIterator mIt = aIndices.iterator();
+            private boolean mNextValid = false;
+            private int mNext = -1;
+            
+            @Override public boolean hasNext() {
+                while (true) {
+                    if (mNextValid) return true;
+                    if (mIt.hasNext()) {
+                        mNext = mIt.next();
+                        // 过滤器通过则设为合法跳过
+                        if (aFilter.accept(mNext)) {
+                            mNextValid = true;
+                            return true;
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+            }
+            @Override public int next() {
+                if (hasNext()) {
+                    mNextValid = false; // 设置非法表示此时不再有 Next
+                    return mNext;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+    public static @Unmodifiable IHasIntIterator filterInteger(final int aSize, final IIndexFilter aFilter) {
+        return () -> new IIntIterator() {
             private int mIdx = 0, mNext = -1;
             
             @Override public boolean hasNext() {
@@ -309,7 +342,7 @@ public class AbstractCollections {
                     }
                 }
             }
-            @Override public Integer next() {
+            @Override public int next() {
                 if (hasNext()) {
                     int tNext = mNext;
                     mNext = -1; // 设置 mNext 非法表示此时不再有 Next

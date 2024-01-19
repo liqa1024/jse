@@ -22,8 +22,8 @@ import static jtool.code.CS.ZL_INT;
  * 注意归还线程和借用线程一致
  * @author liqa
  */
-public class IntegerArrayCache {
-    private IntegerArrayCache() {}
+public class IntArrayCache {
+    private IntArrayCache() {}
     
     private static final ThreadLocal<NavigableMap<Integer, IObjectPool<int[]>>> CACHE = ThreadLocal.withInitial(TreeMap::new);
     

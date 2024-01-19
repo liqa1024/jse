@@ -1,15 +1,21 @@
 package jtool.atom;
 
 import jtool.code.collection.AbstractCollections;
+import jtool.code.collection.ISlice;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.IUnaryFullOperator;
+import jtool.code.iterator.IIntIterator;
+import jtool.math.vector.IIntVector;
 import jtool.math.vector.IVector;
+import jtool.math.vector.IntVector;
 
-import java.util.*;
+import java.util.List;
+import java.util.Random;
 
 
 public abstract class AbstractSettableAtomDataOperation extends AbstractAtomDataOperation implements ISettableAtomDataOperation {
     
+    @Override public ISettableAtomData refSlice(ISlice aIndices) {return refAtomData_(AbstractCollections.slice(thisAtomData_().asList(), aIndices));}
     @Override public ISettableAtomData refSlice(List<Integer> aIndices) {return refAtomData_(AbstractCollections.slice(thisAtomData_().asList(), aIndices));}
     @Override public ISettableAtomData refSlice(int[] aIndices) {return refAtomData_(AbstractCollections.slice(thisAtomData_().asList(), aIndices));}
     @Override public ISettableAtomData refSlice(IIndexFilter aIndices) {return refAtomData_(AbstractCollections.slice(thisAtomData_().asList(), aIndices));}
@@ -44,17 +50,18 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
         int tAtomNum = thisAtomData_().atomNum();
         int tMaxType = aTypeWeights.size();
         // 获得对应原子种类的 List
-        final List<Integer> tTypeList = new ArrayList<>(tAtomNum+tMaxType);
+        final IntVector.Builder tBuilder = IntVector.builder(tAtomNum+tMaxType);
         for (int tType = 1; tType <= tMaxType; ++tType) {
             // 计算这种种类的粒子数目
             long tSteps = Math.round((aTypeWeights.get_(tType-1) / tTotWeight) * tAtomNum);
-            for (int i = 0; i < tSteps; ++i) tTypeList.add(tType);
+            for (int i = 0; i < tSteps; ++i) tBuilder.add(tType);
         }
         // 简单处理，如果数量不够则添加最后一种种类
-        while (tTypeList.size() < tAtomNum) tTypeList.add(tMaxType);
+        while (tBuilder.size() < tAtomNum) tBuilder.add(tMaxType);
+        IIntVector tTypeList = tBuilder.build();
         // 随机打乱这些种类标记
-        Collections.shuffle(tTypeList, aRandom);
-        final Iterator<Integer> it = tTypeList.iterator();
+        tTypeList.shuffle(aRandom);
+        final IIntIterator it = tTypeList.iterator();
         // 使用 mapType2this 直接设置
         mapType2this(tMaxType, atom -> it.next());
     }

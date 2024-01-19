@@ -510,22 +510,22 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * 直接获取近邻列表的 api，不包括自身
      * @author liqa
      */
-    public List<Integer> getNeighborList(int aIdx, double aRMax, int aNnn) {
+    public IIntVector getNeighborList(int aIdx, double aRMax, int aNnn) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
         // 获取缓存近邻列表，这里只需要进行遍历 idx
         IntList @Nullable[] tNL = getValidBufferedNL_(aRMax, aNnn, false);
-        if (tNL != null) return tNL[aIdx].asConstList();
+        if (tNL != null) return tNL[aIdx].copy2vec();
         
         // 如果为 null 则直接遍历指定 idx，如果需要重复使用则直接在外部缓存即可
-        final List<Integer> rNeighborList = new ArrayList<>();
-        mNL.forEachNeighbor(aIdx, aRMax, aNnn, (x, y, z, idx, dis2) -> rNeighborList.add(idx));
-        return rNeighborList;
+        final IntVector.Builder rNL = IntVector.builder();
+        mNL.forEachNeighbor(aIdx, aRMax, aNnn, (x, y, z, idx, dis2) -> rNL.add(idx));
+        return rNL.build();
     }
-    public List<Integer> getNeighborList(int aIdx, double aRMax) {return getNeighborList(aIdx, aRMax, -1);}
-    public List<Integer> getNeighborList(int aIdx              ) {return getNeighborList(aIdx, mUnitLen*R_NEAREST_MUL);}
+    public IIntVector getNeighborList(int aIdx, double aRMax) {return getNeighborList(aIdx, aRMax, -1);}
+    public IIntVector getNeighborList(int aIdx              ) {return getNeighborList(aIdx, mUnitLen*R_NEAREST_MUL);}
     
-    public List<Integer> getNeighborList(IXYZ aXYZ, double aRMax, int aNnn) {
+    public IIntVector getNeighborList(IXYZ aXYZ, double aRMax, int aNnn) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
         // 为了方便统一拷贝一次输入 XYZ
@@ -539,12 +539,12 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         if      (tXYZ.mZ <  0.0    ) tXYZ.mZ += tBox.mZ;
         else if (tXYZ.mZ >= tBox.mZ) tXYZ.mZ -= tBox.mZ;
         
-        final List<Integer> rNeighborList = new ArrayList<>();
-        mNL.forEachNeighbor(tXYZ, aRMax, aNnn, (x, y, z, idx, dis2) -> rNeighborList.add(idx));
-        return rNeighborList;
+        final IntVector.Builder rNL = IntVector.builder();
+        mNL.forEachNeighbor(tXYZ, aRMax, aNnn, (x, y, z, idx, dis2) -> rNL.add(idx));
+        return rNL.build();
     }
-    public List<Integer> getNeighborList(IXYZ aXYZ, double aRMax) {return getNeighborList(aXYZ, aRMax, -1);}
-    public List<Integer> getNeighborList(IXYZ aXYZ              ) {return getNeighborList(aXYZ, mUnitLen*R_NEAREST_MUL);}
+    public IIntVector getNeighborList(IXYZ aXYZ, double aRMax) {return getNeighborList(aXYZ, aRMax, -1);}
+    public IIntVector getNeighborList(IXYZ aXYZ              ) {return getNeighborList(aXYZ, mUnitLen*R_NEAREST_MUL);}
     
     
     /** 用于分割模拟盒，判断给定 XYZ 或者 idx 处的原子是否在需要考虑的区域中 */
@@ -622,9 +622,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             if (mDead) throw new RuntimeException("This MPIInfo is dead");
             if (mInitialized) return;
             mInitialized = true;
-            mCounts = IntegerArrayCache.getZeros(mSize);
+            mCounts = IntArrayCache.getZeros(mSize);
             final int[][] rBuf2Idx = new int[mSize][];
-            IntegerArrayCache.getArrayTo(mAtomNum, mSize, (i, array) -> rBuf2Idx[i] = array);
+            IntArrayCache.getArrayTo(mAtomNum, mSize, (i, array) -> rBuf2Idx[i] = array);
             // 遍历所有的原子统计位置
             XYZ tCellSize = mBox.div(mSizeX, mSizeY, mSizeZ);
             IDoubleIterator it = mAtomDataXYZ.iteratorRow();
@@ -640,8 +640,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 rBuf2Idx[tRank][tCount] = i;
                 ++mCounts[tRank];
             }
-            mBuf2Idx = IntegerArrayCache.getArray(mAtomNum);
-            mDispls = IntegerArrayCache.getArray(mSize);
+            mBuf2Idx = IntArrayCache.getArray(mAtomNum);
+            mDispls = IntArrayCache.getArray(mSize);
             mDispls[0] = 0;
             for (int i = 0; i < mSize; ++i) {
                 int tStart = mDispls[i];
@@ -649,7 +649,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 System.arraycopy(rBuf2Idx[i], 0, mBuf2Idx, tStart, tCount);
                 if (i != mSize-1) mDispls[i+1] = tStart + tCount;
             }
-            IntegerArrayCache.returnArrayFrom(mSize, i -> rBuf2Idx[i]);
+            IntArrayCache.returnArrayFrom(mSize, i -> rBuf2Idx[i]);
         }
         int[] counts() {
             if (!mInitialized) init_();
@@ -669,9 +669,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             if (mDead) return;
             mDead = true;
             if (mInitialized) {
-                IntegerArrayCache.returnArray(mCounts);
-                IntegerArrayCache.returnArray(mDispls);
-                IntegerArrayCache.returnArray(mBuf2Idx);
+                IntArrayCache.returnArray(mCounts);
+                IntArrayCache.returnArray(mDispls);
+                IntArrayCache.returnArray(mBuf2Idx);
             }
         }
     }
@@ -1000,15 +1000,15 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 rBuf.row(i).fill(Qlm.row(tBuf2Idx[i]));
             }
             // 使用 allgatherv 收集所有 buf，注意实际 tCounts 和 tDispls 需要增倍
-            int[] tCountsMul = IntegerArrayCache.getArray(aMPIInfo.mSize);
-            int[] tDisplsMul = IntegerArrayCache.getArray(aMPIInfo.mSize);
+            int[] tCountsMul = IntArrayCache.getArray(aMPIInfo.mSize);
+            int[] tDisplsMul = IntArrayCache.getArray(aMPIInfo.mSize);
             for (int i = 0; i < aMPIInfo.mSize; ++i) tCountsMul[i] = tCounts[i] * tMul;
             for (int i = 0; i < aMPIInfo.mSize; ++i) tDisplsMul[i] = tDispls[i] * tMul;
             double[][] tData = rBuf.internalData();
             aMPIInfo.mComm.allgatherv(tData[0], tCountsMul, tDisplsMul);
             aMPIInfo.mComm.allgatherv(tData[1], tCountsMul, tDisplsMul);
-            IntegerArrayCache.returnArray(tCountsMul);
-            IntegerArrayCache.returnArray(tDisplsMul);
+            IntArrayCache.returnArray(tCountsMul);
+            IntArrayCache.returnArray(tDisplsMul);
             // 将在 buf 中的数据重新设回 Qlm
             for (int i = 0; i < mAtomNum; ++i) {
                 Qlm.row(tBuf2Idx[i]).fill(rBuf.row(i));
@@ -1178,15 +1178,15 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 rBuf.row(i).fill(qlm.row(tBuf2Idx[i]));
             }
             // 使用 allgatherv 收集所有 buf，注意实际 tCounts 和 tDispls 需要增倍
-            int[] tCountsMul = IntegerArrayCache.getArray(aMPIInfo.mSize);
-            int[] tDisplsMul = IntegerArrayCache.getArray(aMPIInfo.mSize);
+            int[] tCountsMul = IntArrayCache.getArray(aMPIInfo.mSize);
+            int[] tDisplsMul = IntArrayCache.getArray(aMPIInfo.mSize);
             for (int i = 0; i < aMPIInfo.mSize; ++i) tCountsMul[i] = tCounts[i] * tMul;
             for (int i = 0; i < aMPIInfo.mSize; ++i) tDisplsMul[i] = tDispls[i] * tMul;
             double[][] tData = rBuf.internalData();
             aMPIInfo.mComm.allgatherv(tData[0], tCountsMul, tDisplsMul);
             aMPIInfo.mComm.allgatherv(tData[1], tCountsMul, tDisplsMul);
-            IntegerArrayCache.returnArray(tCountsMul);
-            IntegerArrayCache.returnArray(tDisplsMul);
+            IntArrayCache.returnArray(tCountsMul);
+            IntArrayCache.returnArray(tDisplsMul);
             // 将在 buf 中的数据重新设回 qlm
             for (int i = 0; i < mAtomNum; ++i) {
                 qlm.row(tBuf2Idx[i]).fill(rBuf.row(i));

@@ -2,12 +2,14 @@ package jtoolex.rareevent.atom;
 
 import jtool.atom.IAtomData;
 import jtool.atom.MonatomicParameterCalculator;
+import jtool.code.collection.ISlice;
 import jtool.code.collection.NewCollections;
 import jtool.math.MathEX;
+import jtool.math.vector.IIntVector;
 import jtool.math.vector.ILogicalVector;
+import jtool.math.vector.IntVector;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -50,10 +52,11 @@ public class MultiTypeClusterSizeCalculator extends AbstractClusterSizeCalculato
         // 先判断所有的
         ILogicalVector rIsSolid = mAllSolidChecker.checkSolid(aMPC);
         // 手动遍历过滤
-        List<List<Integer>> tTypeIndices = NewCollections.from(tTypeNum, i -> new ArrayList<>());
+        List<IntVector.Builder> tBuilder = NewCollections.from(tTypeNum, i -> IntVector.builder());
         for (int idx = 0; idx < tAtomNum; ++idx) {
-            tTypeIndices.get(aPoint.pickAtom(idx).type()-1).add(idx);
+            tBuilder.get(aPoint.pickAtom(idx).type()-1).add(idx);
         }
+        List<ISlice> tTypeIndices = NewCollections.map(tBuilder, IntVector.Builder::build);
         // 再判断某个种类的
         int tMinCalNum = (int)Math.ceil(tAtomNum * mTypeCalThreshold);
         for (int tTypeMM = 0; tTypeMM < tTypeNum; ++tTypeMM) {
@@ -65,9 +68,8 @@ public class MultiTypeClusterSizeCalculator extends AbstractClusterSizeCalculato
                     rIsSolid.refSlicer().get(tTypeIndices.get(tTypeMM)).or2this(tTypeIsSolid);
                     // 周围中有一半的为 solid 则也要设为 solid
                     for (int idx = 0; idx < tAtomNum; ++idx) if (!rIsSolid.get(idx) && aPoint.pickAtom(idx).type()!=tTypeMM+1) {
-                        List<Integer> tNL = tMPC.getNeighborList(aPoint.pickAtom(idx));
-                        int rTypeSolidNum = 0;
-                        for (int i : tNL) if (tTypeIsSolid.get(i)) ++rTypeSolidNum;
+                        IIntVector tNL = tMPC.getNeighborList(aPoint.pickAtom(idx));
+                        int rTypeSolidNum = tTypeIsSolid.refSlicer().get(tNL).count();
                         if (rTypeSolidNum!=0 && rTypeSolidNum+rTypeSolidNum>=tNL.size()) rIsSolid.set(idx, true);
                     }
                 }

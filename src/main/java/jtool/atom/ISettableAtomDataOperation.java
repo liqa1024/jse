@@ -1,5 +1,6 @@
 package jtool.atom;
 
+import jtool.code.collection.ISlice;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.IUnaryFullOperator;
 import jtool.math.vector.IVector;
@@ -17,6 +18,7 @@ import static jtool.code.CS.RANDOM;
  * @author liqa
  */
 public interface ISettableAtomDataOperation extends IAtomDataOperation {
+    ISettableAtomData refSlice(ISlice aIndices);
     ISettableAtomData refSlice(List<Integer> aIndices);
     ISettableAtomData refSlice(int[] aIndices);
     ISettableAtomData refSlice(IIndexFilter aIndices);

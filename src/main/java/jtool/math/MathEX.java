@@ -3,16 +3,13 @@ package jtool.math;
 import jtool.Main;
 import jtool.atom.IXYZ;
 import jtool.atom.XYZ;
-import jtool.code.collection.DoublePair;
-import jtool.code.collection.DoubleTriplet;
-import jtool.code.collection.Pair;
+import jtool.code.collection.*;
 import jtool.code.functional.*;
+import jtool.code.iterator.IHasIntIterator;
 import jtool.math.function.Func2;
 import jtool.math.function.Func3;
-import jtool.math.vector.ComplexVector;
-import jtool.math.vector.IComplexVector;
-import jtool.math.vector.IVector;
-import jtool.math.vector.Vectors;
+import jtool.math.vector.*;
+import jtool.parallel.LogicalVectorCache;
 import jtool.parallel.ParforThreadPool;
 import jtool.parallel.VectorCache;
 import jtoolex.voronoi.Geometry;
@@ -1458,72 +1455,80 @@ public class MathEX {
         /**
          * General method to get clusters by using Breadth-First Search
          * @author liqa
+         * @param aSize number of the total points, aSize == max(points) + 1
          * @param aPoints all points should be considered
          * @param aNeighborListGetter get the neighbor list of the giving point
          * @return list of cluster
-         * @param <T> type of the point
          */
-        public static <T> List<List<T>> getClustersBFS(Iterable<? extends T> aPoints, IUnaryFullOperator<? extends Iterable<? extends T>, ? super T> aNeighborListGetter) {
-            List<List<T>> rClusters = new ArrayList<>();
-            Set<T> tVisited = new HashSet<>();
+        public static List<IntVector> getClustersBFS(int aSize, IHasIntIterator aPoints, final IListGetter<? extends IHasIntIterator> aNeighborListGetter) {
+            final List<IntVector> rClusters = new ArrayList<>();
+            final ILogicalVector tVisited = LogicalVectorCache.getZeros(aSize);
             
-            Queue<T> tQueue = new ArrayDeque<>();
-            for (T tPoint : aPoints) if (!tVisited.contains(tPoint)) {
-                List<T> subCluster = new ArrayList<>();
-//              tQueue.clear(); // 由于后面会遍历移除，因此此时 tQueue 永远为空
-                
-                tQueue.offer(tPoint);
-                tVisited.add(tPoint);
-                
-                while (!tQueue.isEmpty()) {
-                    T currentPoint = tQueue.poll();
-                    subCluster.add(currentPoint);
+            final Queue<Integer> tQueue = new ArrayDeque<>();
+            aPoints.forEach(point -> {
+                if (!tVisited.get(point)) {
+                    IntVector.Builder subCluster = IntVector.builder();
+//                  tQueue.clear(); // 由于后面会遍历移除，因此此时 tQueue 永远为空
                     
-                    for (T tNeighbor : aNeighborListGetter.apply(currentPoint)) if (!tVisited.contains(tNeighbor)) {
-                        tQueue.offer(tNeighbor);
-                        tVisited.add(tNeighbor);
+                    tQueue.offer(point);
+                    tVisited.set(point, true);
+                    
+                    while (!tQueue.isEmpty()) {
+                        int currentPoint = tQueue.poll();
+                        subCluster.add(currentPoint);
+                        
+                        aNeighborListGetter.get(currentPoint).forEach(neighbor -> {
+                            if (!tVisited.get(neighbor)) {
+                                tQueue.offer(neighbor);
+                                tVisited.set(neighbor, true);
+                            }
+                        });
                     }
+                    rClusters.add(subCluster.build());
                 }
-                rClusters.add(subCluster);
-            }
+            });
+            
+            LogicalVectorCache.returnVec(tVisited);
             return rClusters;
         }
         
         /**
          * General method to get clusters by using Depth-First Search
          * @author liqa
+         * @param aSize number of the total points, aSize == max(points) + 1
          * @param aPoints all points should be considered
          * @param aNeighborListGetter get the neighbor list of the giving point
          * @return list of cluster
-         * @param <T> type of the point
          */
-        public static <T> List<List<T>> getClustersDFS(Iterable<? extends T> aPoints, IUnaryFullOperator<? extends Iterable<? extends T>, ? super T> aNeighborListGetter) {
-            List<List<T>> rClusters = new ArrayList<>();
-            Set<T> tVisited = new HashSet<>();
+        public static List<IntVector> getClustersDFS(int aSize, IHasIntIterator aPoints, final IListGetter<? extends IHasIntIterator> aNeighborListGetter) {
+            final List<IntVector> rClusters = new ArrayList<>();
+            final ILogicalVector tVisited = LogicalVectorCache.getZeros(aSize);
             
-            Deque<T> tStack = new ArrayDeque<>();
-            for (T tPoint : aPoints) {
-                if (!tVisited.contains(tPoint)) {
-                    List<T> subCluster = new ArrayList<>();
+            final Deque<Integer> tStack = new ArrayDeque<>();
+            aPoints.forEach(point -> {
+                if (!tVisited.get(point)) {
+                    IntVector.Builder subCluster = IntVector.builder();
 //                  tStack.clear(); // 由于后面会遍历移除，因此此时 tStack 永远为空
                     
-                    tStack.push(tPoint);
-                    tVisited.add(tPoint);
+                    tStack.push(point);
+                    tVisited.set(point, true);
                     
                     while (!tStack.isEmpty()) {
-                        T currentPoint = tStack.pop();
+                        int currentPoint = tStack.pop();
                         subCluster.add(currentPoint);
                         
-                        for (T tNeighbor : aNeighborListGetter.apply(currentPoint)) {
-                            if (!tVisited.contains(tNeighbor)) {
-                                tStack.push(tNeighbor);
-                                tVisited.add(tNeighbor);
+                        aNeighborListGetter.get(currentPoint).forEach(neighbor -> {
+                            if (!tVisited.get(neighbor)) {
+                                tStack.push(neighbor);
+                                tVisited.set(neighbor, true);
                             }
-                        }
+                        });
                     }
-                    rClusters.add(subCluster);
+                    rClusters.add(subCluster.build());
                 }
-            }
+            });
+            
+            LogicalVectorCache.returnVec(tVisited);
             return rClusters;
         }
     }
