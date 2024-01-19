@@ -66,12 +66,12 @@ MPI.initThread(args, MPI.Thread.MULTIPLE); // 需要指定 MPI.Thread.MULTIPLE �
 int me = MPI.Comm.WORLD.rank();
 int np = MPI.Comm.WORLD.size();
 
-final int parallelNum       = MathEX.Code.divup(np, lmpCores);
+final int parallelNumInit       = MathEX.Code.divup(np, lmpCores);
 final def subRoots = range(0, np, lmpCores);
 
 
 // 读取结构
-def initPoints = range(parallelNum).collect {Lmpdat.read("${SCOutDataPath}-${it}")};
+def initPoints = range(parallelNumInit).collect {Lmpdat.read("${SCOutDataPath}-${it}")};
 
 int color = me.intdiv(lmpCores);
 try (def subComm = MPI.Comm.WORLD.split(color)) {
@@ -83,7 +83,7 @@ def dumpCal = new MultiTypeClusterSizeCalculator(
 );
 
 MultipleNativeLmpFullPathGenerator.withOf(subComm, subRoots, dumpCal, initPoints, [MASS.Cu, MASS.Zr], SCTemp, pairStyle, pairCoeff, timestep, dumpStep) {fullPathGen ->
-    
+    int parallelNum = fullPathGen.parallelNum();
     /** 开始 FFS */
     println("=====BEGIN ${UNIQUE_NAME} OF Cu${Cu}Zr${Zr}=====");
     println("TIMESTEP: ${timestep} ps");

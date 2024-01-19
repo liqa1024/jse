@@ -45,6 +45,8 @@ import static jtool.code.CS.*;
  */
 @ApiStatus.Experimental
 public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData> {
+    /** 控制是否在包含 mWorldRoot 的 mLmpComm 上运行 lammps，对于资源受限的超算系统可能有用 */
+    public static boolean NO_LMP_IN_WORLD_ROOT = false;
     
     private final IVector mMesses; // 主要用于收发数据时创建 Lmpdat 使用
     
@@ -492,6 +494,17 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
         }
     }
     
+    /** 实用接口，获取可用的并行数，目前在设置 NO_LMP_IN_WORLD_ROOT 后不一定为输入的并行数 */
+    public int parallelNum() {
+        if (mWorldMe != mWorldRoot) throw new RuntimeException("parallelNum can ONLY be called from WorldRoot ("+mWorldRoot+")");
+        if (!NO_LMP_IN_WORLD_ROOT) return mLmpRoots.size();
+        int rParallelNum = 0;
+        for (int tLmpRoot : mLmpRoots) {
+            if (tLmpRoot != mWorldMe) ++rParallelNum;
+        }
+        return rParallelNum;
+    }
+    
     /** 获取统计时间的接口 */
     public void initTimer() throws MPI.Error {
         if (mWorldMe != mWorldRoot) throw new RuntimeException("initTimer can ONLY be called from WorldRoot ("+mWorldRoot+")");
@@ -517,7 +530,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
             this.other = this.total - this.lmp - this.lambda - this.wait;
         }
     }
-    public TimerInfo getTimerInfo() throws MPI.Error {return getTimerInfo(false);}
+    public TimerInfo getTimerInfo() throws MPI.Error {return getTimerInfo(NO_LMP_IN_WORLD_ROOT);} // 如果关闭了 worldRoot 的 lammps 运行，则当然默认关闭其效率统计
     public TimerInfo getTimerInfo(boolean aExcludeWorldRoot) throws MPI.Error {
         if (mWorldMe != mWorldRoot) throw new RuntimeException("getTimerInfo can ONLY be called from WorldRoot ("+mWorldRoot+")");
         if (mDead) throw new RuntimeException("This MultipleNativeLmpFullPathGenerator is dead");
@@ -550,6 +563,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
         RemotePathIterator(@Nullable IAtomData aStart, long aSeed) {
             // 尝试获取对应 lmp 根节点发送数据
             @Nullable Integer tLmpRoot = mLmpRoots.pollLast();
+            if (NO_LMP_IN_WORLD_ROOT && tLmpRoot!=null && tLmpRoot==mWorldRoot) {mLmpRoots.addLast(tLmpRoot); tLmpRoot = null;}
             if (tLmpRoot == null) {
                 System.err.println("WARNING: Can NOT to get LmpRoot for this path gen temporarily, this path gen blocks until there are any free LmpRoot.");
                 System.err.println("It may be caused by too large number of parallels.");
@@ -558,6 +572,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                 try {Thread.sleep(FILE_SYSTEM_SLEEP_TIME);}
                 catch (InterruptedException e) {throw new RuntimeException(e);}
                 tLmpRoot = mLmpRoots.pollLast();
+                if (NO_LMP_IN_WORLD_ROOT && tLmpRoot!=null && tLmpRoot==mWorldRoot) {mLmpRoots.addLast(tLmpRoot); tLmpRoot = null;}
             }
             mLmpRoot = tLmpRoot;
             try {
