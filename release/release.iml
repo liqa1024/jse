@@ -5,6 +5,13 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/script/groovy" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vscode" />
+      <excludeFolder url="file://$MODULE_DIR$/lib/.pypkg" />
+      <excludeFolder url="file://$MODULE_DIR$/lib/ase" />
+      <excludeFolder url="file://$MODULE_DIR$/lib/ase-3.22.1.dist-info" />
+      <excludeFolder url="file://$MODULE_DIR$/lib/bin" />
+      <excludeFolder url="file://$MODULE_DIR$/lib/jep" />
+      <excludeFolder url="file://$MODULE_DIR$/lib/lmp" />
+      <excludeFolder url="file://$MODULE_DIR$/lib/mpi" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

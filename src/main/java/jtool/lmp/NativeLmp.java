@@ -16,10 +16,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static jtool.code.CS.Exec.EXE;
 import static jtool.code.CS.Exec.JAR_DIR;
@@ -54,6 +51,8 @@ public class NativeLmp implements IAutoShutdown {
      */
     public static class Conf {
         private Conf() {}
+        private final static String DEFAULT_LMP_TAG = "stable_2Aug2023_update2";
+        
         /**
          * 设置 lammps 的 build 目录，
          * 应该包含一个 includes 目录其中有所有的头文件，
@@ -66,7 +65,7 @@ public class NativeLmp implements IAutoShutdown {
          * 只在下载时有用；
          * 这里简单实现，不使用 git 来自动识别最新稳定版本
          */
-        public static String LMP_TAG = "stable_2Aug2023_update2";
+        public static String LMP_TAG = null;
         
         /**
          * 包含所有的 cmake 参数设置，
@@ -107,11 +106,13 @@ public class NativeLmp implements IAutoShutdown {
     }
     
     private final static String LMPLIB_DIR = JAR_DIR+"lmp/";
-    private final static String LMPLIB_PATH = LMPLIB_DIR + "lmpjni@"+UT.Code.uniqueID(VERSION, Conf.LMP_HOME, Conf.HAS_EXCEPTIONS, Conf.EXCEPTIONS_NULL_SUPPORT) + JNILIB_EXTENSION;
+    private final static String LMPLIB_PATH;
     private final static String[] LMPSRC_NAME = {
           "jtool_lmp_NativeLmp.c"
         , "jtool_lmp_NativeLmp.h"
     };
+    private final static @Nullable String NATIVE_LMP_DIR;
+    private final static String NATIVE_LMPLIB_PATH;
     private final static String NATIVE_DIR_NAME = "native", BUILD_DIR_NAME = IS_WINDOWS ? "build-win" : (IS_MAC ? "build-mac" : "build");
     private final static String NATIVE_LMPLIB_NAME = IS_WINDOWS ? "liblammps.dll" : (IS_MAC ? "liblammps.dylib" : "liblammps.so");
     
@@ -161,44 +162,37 @@ public class NativeLmp implements IAutoShutdown {
         String tWorkingDir = WORKING_DIR.replaceAll("%n", "nativelmp");
         // 如果已经存在则先删除
         UT.IO.removeDir(tWorkingDir);
-        // LMP_HOME 不合法，需要重新指定
-        if (!UT.IO.isDir(Conf.LMP_HOME)) {
-            String tNativeLmpDir = LMPLIB_DIR+NATIVE_DIR_NAME+"/";
-            // 如果 lammps 源码文件夹不存在则需要重新从 github 上下载
-            if (!UT.IO.isDir(tNativeLmpDir)) {
-                String tNativeLmpZipPath = tWorkingDir+"lammps-"+Conf.LMP_TAG+".zip";
-                System.out.printf("NATIVE_LMP INIT INFO: No native lammps build dir in %s, downloading the source code...\n", Conf.LMP_HOME);
-                UT.IO.copy(new URL(String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.zip", Conf.LMP_TAG)), tNativeLmpZipPath);
-                System.out.println("NATIVE_LMP INIT INFO: Lammps source code downloading finished.");
-                // 解压 lammps 到临时目录，如果已经存在则直接清空此目录
-                String tNativeLmpTempDir = tWorkingDir+"temp/";
-                UT.IO.removeDir(tNativeLmpTempDir);
-                UT.IO.zip2dir(tNativeLmpZipPath, tNativeLmpTempDir);
-                String tNativeLmpTempDir2 = null;
-                for (String tName : UT.IO.list(tNativeLmpTempDir)) {
-                    if (tName!=null && !tName.isEmpty() && !tName.equals(".") && !tName.equals("..")) {
-                        String tNativeLmpTempDir1 = tNativeLmpTempDir + tName + "/";
-                        if (UT.IO.isDir(tNativeLmpTempDir1)) {
-                            tNativeLmpTempDir2 = tNativeLmpTempDir1;
-                            break;
-                        }
+        // 如果有 NATIVE_LMP_DIR 但是不合法，则需要下载 lammps
+        if (NATIVE_LMP_DIR !=null && !UT.IO.isDir(NATIVE_LMP_DIR)) {
+            String tNativeLmpZipPath = tWorkingDir+"lammps-"+Conf.LMP_TAG+".zip";
+            System.out.printf("NATIVE_LMP INIT INFO: No native lammps dir in %s, downloading the source code...\n", NATIVE_LMP_DIR);
+            UT.IO.copy(new URL(String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.zip", Conf.LMP_TAG)), tNativeLmpZipPath);
+            System.out.println("NATIVE_LMP INIT INFO: Lammps source code downloading finished.");
+            // 解压 lammps 到临时目录，如果已经存在则直接清空此目录
+            String tNativeLmpTempDir = tWorkingDir+"temp/";
+            UT.IO.removeDir(tNativeLmpTempDir);
+            UT.IO.zip2dir(tNativeLmpZipPath, tNativeLmpTempDir);
+            String tNativeLmpTempDir2 = null;
+            for (String tName : UT.IO.list(tNativeLmpTempDir)) {
+                if (tName!=null && !tName.isEmpty() && !tName.equals(".") && !tName.equals("..")) {
+                    String tNativeLmpTempDir1 = tNativeLmpTempDir + tName + "/";
+                    if (UT.IO.isDir(tNativeLmpTempDir1)) {
+                        tNativeLmpTempDir2 = tNativeLmpTempDir1;
+                        break;
                     }
                 }
-                if (tNativeLmpTempDir2 == null) throw new Exception("NATIVE_LMP INIT ERROR: No lammps dir in "+tNativeLmpTempDir);
-                // 移动到需要的目录
-                UT.IO.move(tNativeLmpTempDir2, tNativeLmpDir);
             }
-            // 这里创建 build 目录即可
-            String tNativeLmpBuildDir = tNativeLmpDir+BUILD_DIR_NAME+"/";
-            UT.IO.makeDir(tNativeLmpBuildDir);
-            // 设置新的 LMP_HOME
-            Conf.LMP_HOME = UT.IO.toAbsolutePath(tNativeLmpBuildDir);
-            if (!Conf.LMP_HOME.isEmpty() && !Conf.LMP_HOME.endsWith("/") && !Conf.LMP_HOME.endsWith("\\")) Conf.LMP_HOME += "/";
+            if (tNativeLmpTempDir2 == null) throw new Exception("NATIVE_LMP INIT ERROR: No lammps dir in "+tNativeLmpTempDir);
+            // 移动到需要的目录
+            UT.IO.move(tNativeLmpTempDir2, NATIVE_LMP_DIR);
         }
         // 检测是否有需要的 lib，如果没有（或者强制要求重新编译），则需要进行编译
-        String tNativeLmpLib = Conf.LMP_HOME+"lib/"+NATIVE_LMPLIB_NAME;
-        if (Conf.REBUILD || !UT.IO.isFile(tNativeLmpLib)) {
+        boolean tNeedBuildNativeLmp = (Conf.REBUILD || !UT.IO.isFile(NATIVE_LMPLIB_PATH));
+        // 执行 lammps 构建
+        if (tNeedBuildNativeLmp) {
             System.out.println("NATIVE_LMP INIT INFO: Building lammps from source code...");
+            // 创建一下 LMP_HOME 文件夹（构建目录）
+            UT.IO.makeDir(Conf.LMP_HOME);
             // 编译 lammps，直接通过系统指令来编译，关闭输出
             EXE.setNoSTDOutput();
             // 初始化 cmake
@@ -212,7 +206,7 @@ public class NativeLmp implements IAutoShutdown {
             EXE.setNoSTDOutput(false);
         }
         // 如果依旧没有 tNativeLmpLib 则构建失败
-        if (!UT.IO.isFile(tNativeLmpLib)) throw new Exception("NATIVE_LMP BUILD ERROR: Lammps build Failed, No liblammps in "+Conf.LMP_HOME+"lib/");
+        if (!UT.IO.isFile(NATIVE_LMPLIB_PATH)) throw new Exception("NATIVE_LMP BUILD ERROR: Lammps build Failed, No liblammps in "+Conf.LMP_HOME+"lib/");
         // 注意只有 jni 的 lib 没有检测到才编译 jni 的部分
         if (!UT.IO.isFile(LMPLIB_PATH)) {
             // 从内部资源解压到临时目录
@@ -261,19 +255,42 @@ public class NativeLmp implements IAutoShutdown {
     static {
         // 先规范化 LMP_HOME 的格式
         if (Conf.LMP_HOME == null) {
-            Conf.LMP_HOME = UT.IO.toAbsolutePath(LMPLIB_DIR+NATIVE_DIR_NAME+"/"+BUILD_DIR_NAME+"/");
+            String tNativeDir;
+            if (Conf.LMP_TAG != null) {
+                // 如果有手动设定 LMP_TAG 则永远使用带有 tag 的
+                tNativeDir = UT.IO.toAbsolutePath(LMPLIB_DIR+NATIVE_DIR_NAME+"-"+Conf.LMP_TAG+"/");
+            } else {
+                // 否则需要设置 DEFAULT_LMP_TAG 并尝试不带 tag 的
+                Conf.LMP_TAG = Conf.DEFAULT_LMP_TAG;
+                tNativeDir = UT.IO.toAbsolutePath(LMPLIB_DIR+NATIVE_DIR_NAME+"-"+Conf.LMP_TAG+"/");
+                // 如果不存在并且 tag 没变则会尝试检测不带 tag 保持兼容
+                if (!UT.IO.isDir(tNativeDir)) {
+                    String tShortLmpDir = UT.IO.toAbsolutePath(LMPLIB_DIR+NATIVE_DIR_NAME+"/");
+                    if (UT.IO.isDir(tShortLmpDir)) {
+                        tNativeDir = tShortLmpDir;
+                    }
+                }
+            }
+            if (!tNativeDir.isEmpty() && !tNativeDir.endsWith("/") && !tNativeDir.endsWith("\\")) tNativeDir += "/";
+            NATIVE_LMP_DIR = tNativeDir;
+            Conf.LMP_HOME = NATIVE_LMP_DIR+BUILD_DIR_NAME+"/";
         } else {
+            NATIVE_LMP_DIR = null;
             Conf.LMP_HOME = UT.IO.toAbsolutePath(Conf.LMP_HOME);
+            if (!Conf.LMP_HOME.isEmpty() && !Conf.LMP_HOME.endsWith("/") && !Conf.LMP_HOME.endsWith("\\")) Conf.LMP_HOME += "/";
         }
-        if (!Conf.LMP_HOME.isEmpty() && !Conf.LMP_HOME.endsWith("/") && !Conf.LMP_HOME.endsWith("\\")) Conf.LMP_HOME += "/";
+        NATIVE_LMPLIB_PATH = Conf.LMP_HOME+"lib/"+NATIVE_LMPLIB_NAME;
+        // 现在 uniqueID 不再包含这个 tag（确实当时也想到了），因为已经包含到了 LMP_HOME 中
+        // 在这里初始化保证顺序合理
+        LMPLIB_PATH = LMPLIB_DIR + "lmpjni@"+UT.Code.uniqueID(VERSION, Conf.LMP_HOME, Conf.HAS_EXCEPTIONS, Conf.EXCEPTIONS_NULL_SUPPORT) + JNILIB_EXTENSION;
         // 如果不存在 jni lib 则需要重新通过源码编译
-        if (Conf.REBUILD || !UT.IO.isFile(LMPLIB_PATH) || !UT.IO.isFile(Conf.LMP_HOME+"lib/"+NATIVE_LMPLIB_NAME)) {
+        if (Conf.REBUILD || !UT.IO.isFile(LMPLIB_PATH) || !UT.IO.isFile(NATIVE_LMPLIB_PATH)) {
             System.out.println("NATIVE_LMP INIT INFO: lammps libraries not found. Reinstalling...");
             try {initLmp_();}
             catch (Exception e) {throw new RuntimeException(e);}
         }
         // 设置库路径（注意 LMP_HOME 在这期间会改变，因此需要重新获取）
-        System.load(UT.IO.toAbsolutePath(Conf.LMP_HOME+"lib/"+NATIVE_LMPLIB_NAME));
+        System.load(UT.IO.toAbsolutePath(NATIVE_LMPLIB_PATH));
         System.load(UT.IO.toAbsolutePath(LMPLIB_PATH));
     }
     
