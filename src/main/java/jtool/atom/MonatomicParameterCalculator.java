@@ -1,7 +1,6 @@
 package jtool.atom;
 
 import jtool.code.collection.AbstractRandomAccessList;
-import jtool.code.collection.IntDeque;
 import jtool.code.collection.IntList;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.IUnaryFullOperator;
@@ -16,7 +15,6 @@ import jtool.math.function.IZeroBoundFunc1;
 import jtool.math.matrix.IComplexMatrix;
 import jtool.math.matrix.IMatrix;
 import jtool.math.matrix.RowComplexMatrix;
-import jtool.math.vector.Vector;
 import jtool.math.vector.*;
 import jtool.parallel.*;
 import jtoolex.voronoi.VoronoiBuilder;
@@ -24,7 +22,9 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.RandomAccess;
 import java.util.function.IntConsumer;
 
 import static jtool.atom.NeighborListGetter.DEFAULT_CELL_STEP;
@@ -560,25 +560,27 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             mSize = mComm.size();
             int tSizeRest = mSize;
             // 使用这个方法来获取每个方向的分划数
-            IntDeque rFactors = new IntDeque();
+            IntList rFactors = new IntList();
             for (int tFactor = 2; tFactor <= tSizeRest; ++tFactor) {
                 while (tSizeRest % tFactor == 0) {
-                    rFactors.addFirst(tFactor); // 直接使用 addFirst 来实现逆序的作用
+                    rFactors.add(tFactor);
                     tSizeRest /= tFactor;
                 }
             }
-            final int[] rSizeX = {1}, rSizeY = {1}, rSizeZ = {1};
-            rFactors.forEach(factor -> {
-                if (rSizeX[0] <= rSizeY[0] && rSizeX[0] <= rSizeZ[0]) {
-                    rSizeX[0] *= factor;
+            int rSizeX = 1, rSizeY = 1, rSizeZ = 1;
+            // 直接这样逆序遍历，应该没有效率损失
+            for (int i = rFactors.size()-1; i >= 0; --i) {
+                int tFactor = rFactors.get(i);
+                if (rSizeX <= rSizeY && rSizeX <= rSizeZ) {
+                    rSizeX *= tFactor;
                 } else
-                if (rSizeY[0] <= rSizeX[0] && rSizeY[0] <= rSizeZ[0]) {
-                    rSizeY[0] *= factor;
+                if (rSizeY <= rSizeX && rSizeY <= rSizeZ) {
+                    rSizeY *= tFactor;
                 } else {
-                    rSizeZ[0] *= factor;
+                    rSizeZ *= tFactor;
                 }
-            });
-            mSizeX = rSizeX[0]; mSizeY = rSizeY[0]; mSizeZ = rSizeZ[0];
+            }
+            mSizeX = rSizeX; mSizeY = rSizeY; mSizeZ = rSizeZ;
             // 根据分划数获取对应的 mXLo, mXhi, mYLo, mYHi, mZLo, mZHi
             int tI = mRank/mSizeZ/mSizeY;
             int tJ = mRank/mSizeZ%mSizeY;
