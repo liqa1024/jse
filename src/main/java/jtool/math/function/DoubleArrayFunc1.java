@@ -58,7 +58,7 @@ public abstract class DoubleArrayFunc1 extends AbstractFunc1 implements IEqualIn
     /** IFunc1 stuffs */
     @Override public final IVector x() {
         return new RefVector() {
-            @Override protected double get_(int aIdx) {return getX(aIdx);}
+            @Override public double get(int aIdx) {return getX(aIdx);}
             @Override public int size() {return Nx();}
         };
     }
@@ -84,8 +84,8 @@ public abstract class DoubleArrayFunc1 extends AbstractFunc1 implements IEqualIn
     }
     
     /** 不进行边界检测的版本，带入 x 的情况永远不会超过边界（周期边界或者固定值），因此只提供索引的情况 */
-    @Override protected final double get_(int aI) {return mData[aI];}
-    @Override protected final void set_(int aI, double aV) {mData[aI] = aV;}
+    @Override public final double get(int aI) {rangeCheck(aI, Nx()); return mData[aI];}
+    @Override public final void set(int aI, double aV) {rangeCheck(aI, Nx()); mData[aI] = aV;}
     
     /** 索引和 x 相互转换的接口 */
     @Override public final int Nx() {return mData.length;}
@@ -95,10 +95,12 @@ public abstract class DoubleArrayFunc1 extends AbstractFunc1 implements IEqualIn
     @Override public final void setX0(double aNewX0) {mX0 = aNewX0;}
     
     /** 附加一些额外的单元素操作，对于一般的只提供一个 update 的接口 */
-    @Override protected final void update_(int aI, DoubleUnaryOperator aOpt) {
+    @Override public final void update(int aI, DoubleUnaryOperator aOpt) {
+        rangeCheck(aI, Nx());
         mData[aI] = aOpt.applyAsDouble(mData[aI]);
     }
-    @Override protected final double getAndUpdate_(int aI, DoubleUnaryOperator aOpt) {
+    @Override public final double getAndUpdate(int aI, DoubleUnaryOperator aOpt) {
+        rangeCheck(aI, Nx());
         double tV = mData[aI];
         mData[aI] = aOpt.applyAsDouble(tV);
         return tV;

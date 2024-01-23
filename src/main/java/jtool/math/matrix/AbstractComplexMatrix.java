@@ -11,6 +11,9 @@ import jtool.math.vector.RefComplexVector;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import static jtool.math.matrix.AbstractMatrix.rangeCheckCol;
+import static jtool.math.matrix.AbstractMatrix.rangeCheckRow;
+
 public abstract class AbstractComplexMatrix implements IComplexMatrix {
     /** print */
     @Override public String toString() {
@@ -43,15 +46,15 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
             }
             @Override public double real() {
                 if (oRow < 0) throw new IllegalStateException();
-                return getReal_(oRow, oCol);
+                return getReal(oRow, oCol);
             }
             @Override public double imag() {
                 if (oRow < 0) throw new IllegalStateException();
-                return getImag_(oRow, oCol);
+                return getImag(oRow, oCol);
             }
             
             /** 重写保证使用此类中的逻辑而不是 IComplexDoubleIterator，虽然是一致的 */
-            @Override public ComplexDouble next() {nextOnly(); return get_(oRow, oCol);}
+            @Override public ComplexDouble next() {nextOnly(); return get(oRow, oCol);}
         };
     }
     @Override public IComplexDoubleSetIterator setIteratorCol() {
@@ -63,11 +66,11 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
             @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public void setReal(double aReal) {
                 if (oRow < 0) throw new IllegalStateException();
-                setReal_(oRow, oCol, aReal);
+                AbstractComplexMatrix.this.setReal(oRow, oCol, aReal);
             }
             @Override public void setImag(double aImag) {
                 if (oRow < 0) throw new IllegalStateException();
-                setImag_(oRow, oCol, aImag);
+                AbstractComplexMatrix.this.setImag(oRow, oCol, aImag);
             }
             @Override public void nextOnly() {
                 if (hasNext()) {
@@ -80,83 +83,31 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
             }
             @Override public double real() {
                 if (oRow < 0) throw new IllegalStateException();
-                return getReal_(oRow, oCol);
+                return getReal(oRow, oCol);
             }
             @Override public double imag() {
                 if (oRow < 0) throw new IllegalStateException();
-                return getImag_(oRow, oCol);
+                return getImag(oRow, oCol);
             }
             
             /** 重写保证使用此类中的逻辑而不是 IComplexDoubleSetIterator，虽然是一致的 */
-            @Override public ComplexDouble next() {nextOnly(); return get_(oRow, oCol);}
+            @Override public ComplexDouble next() {nextOnly(); return get(oRow, oCol);}
             @Override public void set(IComplexDouble aValue) {
                 if (oRow < 0) throw new IllegalStateException();
-                set_(oRow, oCol, aValue);
+                AbstractComplexMatrix.this.set(oRow, oCol, aValue);
             }
             @Override public void set(ComplexDouble aValue) {
                 if (oRow < 0) throw new IllegalStateException();
-                set_(oRow, oCol, aValue);
+                AbstractComplexMatrix.this.set(oRow, oCol, aValue);
             }
             @Override public void set(double aValue) {
                 if (oRow < 0) throw new IllegalStateException();
-                set_(oRow, oCol, aValue);
+                AbstractComplexMatrix.this.set(oRow, oCol, aValue);
             }
         };
     }
     
     
-    @Override public ComplexDouble get(int aRow, int aCol) {
-        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
-        return get_(aRow, aCol);
-    }
-    @Override public double getReal(int aRow, int aCol) {
-        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
-        return getReal_(aRow, aCol);
-    }
-    @Override public double getImag(int aRow, int aCol) {
-        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
-        return getImag_(aRow, aCol);
-    }
-    @Override public void set(int aRow, int aCol, IComplexDouble aValue) {
-        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
-        set_(aRow, aCol, aValue);
-    }
-    @Override public void set(int aRow, int aCol, ComplexDouble aValue) {
-        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
-        set_(aRow, aCol, aValue);
-    }
-    @Override public void set(int aRow, int aCol, double aValue) {
-        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
-        set_(aRow, aCol, aValue);
-    }
-    @Override public void setReal(int aRow, int aCol, double aReal) {
-        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
-        setReal_(aRow, aCol, aReal);
-    }
-    @Override public void setImag(int aRow, int aCol, double aImag) {
-        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
-        setImag_(aRow, aCol, aImag);
-    }
-    @Override public ComplexDouble getAndSet(int aRow, int aCol, IComplexDouble aValue) {
-        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
-        return getAndSet_(aRow, aCol, aValue);
-    }
-    @Override public ComplexDouble getAndSet(int aRow, int aCol, ComplexDouble aValue) {
-        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
-        return getAndSet_(aRow, aCol, aValue);
-    }
-    @Override public ComplexDouble getAndSet(int aRow, int aCol, double aValue) {
-        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
-        return getAndSet_(aRow, aCol, aValue);
-    }
-    @Override public double getAndSetReal(int aRow, int aCol, double aReal) {
-        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
-        return getAndSetReal_(aRow, aCol, aReal);
-    }
-    @Override public double getAndSetImag(int aRow, int aCol, double aImag) {
-        if (aRow<0 || aRow>=rowNumber() || aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException(String.format("Row: %d, Col: %d", aRow, aCol));
-        return getAndSetImag_(aRow, aCol, aImag);
-    }
     @Override public IMatrix.ISize size() {
         return new IMatrix.ISize() {
             @Override public int row() {return rowNumber();}
@@ -172,15 +123,15 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
         };
     }
     @Override public IComplexVector row(final int aRow) {
-        if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
+        rangeCheckRow(aRow, rowNumber());
         return new RefComplexVector() {
             /** 对于全部切片，则不再需要二次边界检查 */
-            @Override protected double getReal_(int aIdx) {return AbstractComplexMatrix.this.getReal_(aRow, aIdx);}
-            @Override protected double getImag_(int aIdx) {return AbstractComplexMatrix.this.getImag_(aRow, aIdx);}
-            @Override protected void setReal_(int aIdx, double aReal) {AbstractComplexMatrix.this.setReal_(aRow, aIdx, aReal);}
-            @Override protected void setImag_(int aIdx, double aImag) {AbstractComplexMatrix.this.setImag_(aRow, aIdx, aImag);}
-            @Override protected double getAndSetReal_(int aIdx, double aReal) {return AbstractComplexMatrix.this.getAndSetReal_(aRow, aIdx, aReal);}
-            @Override protected double getAndSetImag_(int aIdx, double aImag) {return AbstractComplexMatrix.this.getAndSetImag_(aRow, aIdx, aImag);}
+            @Override public double getReal(int aIdx) {return AbstractComplexMatrix.this.getReal(aRow, aIdx);}
+            @Override public double getImag(int aIdx) {return AbstractComplexMatrix.this.getImag(aRow, aIdx);}
+            @Override public void setReal(int aIdx, double aReal) {AbstractComplexMatrix.this.setReal(aRow, aIdx, aReal);}
+            @Override public void setImag(int aIdx, double aImag) {AbstractComplexMatrix.this.setImag(aRow, aIdx, aImag);}
+            @Override public double getAndSetReal(int aIdx, double aReal) {return AbstractComplexMatrix.this.getAndSetReal(aRow, aIdx, aReal);}
+            @Override public double getAndSetImag(int aIdx, double aImag) {return AbstractComplexMatrix.this.getAndSetImag(aRow, aIdx, aImag);}
             @Override public int size() {return columnNumber();}
 //            @Override public IDoubleIterator iterator() {return iteratorRowAt(aRow);}
 //            @Override public IDoubleSetIterator setIterator() {return setIteratorRowAt(aRow);}
@@ -193,15 +144,15 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
         };
     }
     @Override public IComplexVector col(final int aCol) {
-        if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
+        rangeCheckCol(aCol, columnNumber());
         return new RefComplexVector() {
             /** 对于全部切片，则不再需要二次边界检查 */
-            @Override protected double getReal_(int aIdx) {return AbstractComplexMatrix.this.getReal_(aIdx, aCol);}
-            @Override protected double getImag_(int aIdx) {return AbstractComplexMatrix.this.getImag_(aIdx, aCol);}
-            @Override protected void setReal_(int aIdx, double aReal) {AbstractComplexMatrix.this.setReal_(aIdx, aCol, aReal);}
-            @Override protected void setImag_(int aIdx, double aImag) {AbstractComplexMatrix.this.setImag_(aIdx, aCol, aImag);}
-            @Override protected double getAndSetReal_(int aIdx, double aReal) {return AbstractComplexMatrix.this.getAndSetReal_(aIdx, aCol, aReal);}
-            @Override protected double getAndSetImag_(int aIdx, double aImag) {return AbstractComplexMatrix.this.getAndSetImag_(aIdx, aCol, aImag);}
+            @Override public double getReal(int aIdx) {return AbstractComplexMatrix.this.getReal(aIdx, aCol);}
+            @Override public double getImag(int aIdx) {return AbstractComplexMatrix.this.getImag(aIdx, aCol);}
+            @Override public void setReal(int aIdx, double aReal) {AbstractComplexMatrix.this.setReal(aIdx, aCol, aReal);}
+            @Override public void setImag(int aIdx, double aImag) {AbstractComplexMatrix.this.setImag(aIdx, aCol, aImag);}
+            @Override public double getAndSetReal(int aIdx, double aReal) {return AbstractComplexMatrix.this.getAndSetReal(aIdx, aCol, aReal);}
+            @Override public double getAndSetImag(int aIdx, double aImag) {return AbstractComplexMatrix.this.getAndSetImag(aIdx, aCol, aImag);}
             @Override public int size() {return columnNumber();}
 //            @Override public IDoubleIterator iterator() {return iteratorColAt(aCol);}
 //            @Override public IDoubleSetIterator setIterator() {return setIteratorColAt(aCol);}
@@ -221,19 +172,19 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     
     
     /** stuff to override */
-    protected ComplexDouble get_(int aRow, int aCol) {return new ComplexDouble(getReal_(aRow, aCol), getImag_(aRow, aCol));}
-    protected abstract double getReal_(int aRow, int aCol);
-    protected abstract double getImag_(int aRow, int aCol);
-    protected void set_(int aRow, int aCol, IComplexDouble aValue) {setReal_(aRow, aCol, aValue.real()); setImag_(aRow, aCol, aValue.imag());}
-    protected void set_(int aRow, int aCol, ComplexDouble aValue) {setReal_(aRow, aCol, aValue.mReal); setImag_(aRow, aCol, aValue.mImag);}
-    protected void set_(int aRow, int aCol, double aValue) {setReal_(aRow, aCol, aValue); setImag_(aRow, aCol, 0.0);}
-    protected abstract void setReal_(int aRow, int aCol, double aReal);
-    protected abstract void setImag_(int aRow, int aCol, double aImag);
-    protected ComplexDouble getAndSet_(int aRow, int aCol, IComplexDouble aValue) {return new ComplexDouble(getAndSetReal_(aRow, aCol, aValue.real()), getAndSetImag_(aRow, aCol, aValue.imag()));}
-    protected ComplexDouble getAndSet_(int aRow, int aCol, ComplexDouble aValue) {return new ComplexDouble(getAndSetReal_(aRow, aCol, aValue.mReal), getAndSetImag_(aRow, aCol, aValue.mImag));}
-    protected ComplexDouble getAndSet_(int aRow, int aCol, double aValue) {return new ComplexDouble(getAndSetReal_(aRow, aCol, aValue), getAndSetImag_(aRow, aCol, 0.0));}
-    protected abstract double getAndSetReal_(int aRow, int aCol, double aReal);
-    protected abstract double getAndSetImag_(int aRow, int aCol, double aImag);
+    public ComplexDouble get(int aRow, int aCol) {return new ComplexDouble(getReal(aRow, aCol), getImag(aRow, aCol));}
+    public abstract double getReal(int aRow, int aCol);
+    public abstract double getImag(int aRow, int aCol);
+    public void set(int aRow, int aCol, IComplexDouble aValue) {setReal(aRow, aCol, aValue.real()); setImag(aRow, aCol, aValue.imag());}
+    public void set(int aRow, int aCol, ComplexDouble aValue) {setReal(aRow, aCol, aValue.mReal); setImag(aRow, aCol, aValue.mImag);}
+    public void set(int aRow, int aCol, double aValue) {setReal(aRow, aCol, aValue); setImag(aRow, aCol, 0.0);}
+    public abstract void setReal(int aRow, int aCol, double aReal);
+    public abstract void setImag(int aRow, int aCol, double aImag);
+    public ComplexDouble getAndSet(int aRow, int aCol, IComplexDouble aValue) {return new ComplexDouble(getAndSetReal(aRow, aCol, aValue.real()), getAndSetImag(aRow, aCol, aValue.imag()));}
+    public ComplexDouble getAndSet(int aRow, int aCol, ComplexDouble aValue) {return new ComplexDouble(getAndSetReal(aRow, aCol, aValue.mReal), getAndSetImag(aRow, aCol, aValue.mImag));}
+    public ComplexDouble getAndSet(int aRow, int aCol, double aValue) {return new ComplexDouble(getAndSetReal(aRow, aCol, aValue), getAndSetImag(aRow, aCol, 0.0));}
+    public abstract double getAndSetReal(int aRow, int aCol, double aReal);
+    public abstract double getAndSetImag(int aRow, int aCol, double aImag);
     public abstract int rowNumber();
     public abstract int columnNumber();
     

@@ -62,17 +62,14 @@ public final class Table extends AbstractTable {
     /** AbstractTable stuffs */
     @Override public IMatrix asMatrix() {
         return new RefMatrix() {
-            @Override protected double get_(int aRow, int aCol) {return mData.get(aCol).get(aRow);}
-            @Override protected void set_(int aRow, int aCol, double aValue) {mData.get(aCol).set(aRow, aValue);}
-            @Override protected double getAndSet_(int aRow, int aCol, double aValue) {return mData.get(aCol).getAndSet(aRow, aValue);}
+            @Override public double get(int aRow, int aCol) {return mData.get(aCol).get(aRow);}
+            @Override public void set(int aRow, int aCol, double aValue) {mData.get(aCol).set(aRow, aValue);}
+            @Override public double getAndSet(int aRow, int aCol, double aValue) {return mData.get(aCol).getAndSet(aRow, aValue);}
             @Override public int rowNumber() {return mRowNum;}
             @Override public int columnNumber() {return mData.size();}
             
             /** 重写这些接口来加速部分操作，为了避免意料外的问题这里不重写所有可以加速的操作 */
-            @Override public IVector col(int aCol) {
-                if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
-                return mData.get(aCol);
-            }
+            @Override public IVector col(int aCol) {return mData.get(aCol);}
         };
     }
     @Override protected IVector newColumn_(String aHead) {

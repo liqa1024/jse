@@ -26,7 +26,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, tThis.get_(i) + aRHS.subs(rFunc1.getX(i)));
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) + aRHS.subs(rFunc1.getX(i)));
         }
         return rFunc1;
     }
@@ -41,7 +41,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, tThis.get_(i) - aRHS.subs(rFunc1.getX(i)));
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) - aRHS.subs(rFunc1.getX(i)));
         }
         return rFunc1;
     }
@@ -56,7 +56,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, aRHS.subs(rFunc1.getX(i)) - tThis.get_(i));
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, aRHS.subs(rFunc1.getX(i)) - tThis.get(i));
         }
         return rFunc1;
     }
@@ -71,7 +71,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, tThis.get_(i) * aRHS.subs(rFunc1.getX(i)));
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) * aRHS.subs(rFunc1.getX(i)));
         }
         return rFunc1;
     }
@@ -86,7 +86,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, tThis.get_(i) / aRHS.subs(rFunc1.getX(i)));
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) / aRHS.subs(rFunc1.getX(i)));
         }
         return rFunc1;
     }
@@ -101,7 +101,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, aRHS.subs(rFunc1.getX(i)) / tThis.get_(i));
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, aRHS.subs(rFunc1.getX(i)) / tThis.get(i));
         }
         return rFunc1;
     }
@@ -116,7 +116,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, tThis.get_(i) % aRHS.subs(rFunc1.getX(i)));
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) % aRHS.subs(rFunc1.getX(i)));
         }
         return rFunc1;
     }
@@ -131,7 +131,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, aRHS.subs(rFunc1.getX(i)) % tThis.get_(i));
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, aRHS.subs(rFunc1.getX(i)) % tThis.get(i));
         }
         return rFunc1;
     }
@@ -146,7 +146,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, aOpt.applyAsDouble(tThis.get_(i), aRHS.subs(rFunc1.getX(i))));
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, aOpt.applyAsDouble(tThis.get(i), aRHS.subs(rFunc1.getX(i))));
         }
         return rFunc1;
     }
@@ -161,7 +161,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, tThis.get_(i) + aRHS);
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) + aRHS);
         }
         return rFunc1;
     }
@@ -175,7 +175,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, tThis.get_(i) - aRHS);
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) - aRHS);
         }
         return rFunc1;
     }
@@ -189,7 +189,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, aRHS - tThis.get_(i));
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, aRHS - tThis.get(i));
         }
         return rFunc1;
     }
@@ -203,7 +203,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, tThis.get_(i) * aRHS);
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) * aRHS);
         }
         return rFunc1;
     }
@@ -217,7 +217,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, tThis.get_(i) / aRHS);
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) / aRHS);
         }
         return rFunc1;
     }
@@ -231,7 +231,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, aRHS / tThis.get_(i));
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, aRHS / tThis.get(i));
         }
         return rFunc1;
     }
@@ -245,7 +245,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, tThis.get_(i) % aRHS);
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) % aRHS);
         }
         return rFunc1;
     }
@@ -259,7 +259,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, aRHS % tThis.get_(i));
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, aRHS % tThis.get(i));
         }
         return rFunc1;
     }
@@ -273,7 +273,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
-            for (int i = 0; i < tNx; ++i) rFunc1.set_(i, aOpt.applyAsDouble(tThis.get_(i)));
+            for (int i = 0; i < tNx; ++i) rFunc1.set(i, aOpt.applyAsDouble(tThis.get(i)));
         }
         return rFunc1;
     }
@@ -296,7 +296,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
             } else {
                 tStart = 0; tEnd = tNx;
             }
-            for (int i = tStart; i < tEnd; ++i) rThis.set_(i, rThis.get_(i) + aRHS.subs(rThis.getX(i)));
+            for (int i = tStart; i < tEnd; ++i) rThis.set(i, rThis.get(i) + aRHS.subs(rThis.getX(i)));
         }
     }
     @Override public void minus2this(IFunc1 aRHS) {
@@ -317,7 +317,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
             } else {
                 tStart = 0; tEnd = tNx;
             }
-            for (int i = tStart; i < tEnd; ++i) rThis.set_(i, rThis.get_(i) - aRHS.subs(rThis.getX(i)));
+            for (int i = tStart; i < tEnd; ++i) rThis.set(i, rThis.get(i) - aRHS.subs(rThis.getX(i)));
         }
     }
     @Override public void lminus2this(IFunc1 aRHS) {
@@ -329,7 +329,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
-            for (int i = 0; i < tNx; ++i) rThis.set_(i, aRHS.subs(rThis.getX(i)) - rThis.get_(i));
+            for (int i = 0; i < tNx; ++i) rThis.set(i, aRHS.subs(rThis.getX(i)) - rThis.get(i));
         }
     }
     @Override public void multiply2this(IFunc1 aRHS) {
@@ -341,7 +341,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
-            for (int i = 0; i < tNx; ++i) rThis.set_(i, rThis.get_(i) * aRHS.subs(rThis.getX(i)));
+            for (int i = 0; i < tNx; ++i) rThis.set(i, rThis.get(i) * aRHS.subs(rThis.getX(i)));
         }
     }
     @Override public void div2this(IFunc1 aRHS) {
@@ -353,7 +353,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
-            for (int i = 0; i < tNx; ++i) rThis.set_(i, rThis.get_(i) / aRHS.subs(rThis.getX(i)));
+            for (int i = 0; i < tNx; ++i) rThis.set(i, rThis.get(i) / aRHS.subs(rThis.getX(i)));
         }
     }
     @Override public void ldiv2this(IFunc1 aRHS) {
@@ -365,7 +365,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
-            for (int i = 0; i < tNx; ++i) rThis.set_(i, aRHS.subs(rThis.getX(i)) / rThis.get_(i));
+            for (int i = 0; i < tNx; ++i) rThis.set(i, aRHS.subs(rThis.getX(i)) / rThis.get(i));
         }
     }
     @Override public void mod2this(IFunc1 aRHS) {
@@ -377,7 +377,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
-            for (int i = 0; i < tNx; ++i) rThis.set_(i, rThis.get_(i) % aRHS.subs(rThis.getX(i)));
+            for (int i = 0; i < tNx; ++i) rThis.set(i, rThis.get(i) % aRHS.subs(rThis.getX(i)));
         }
     }
     @Override public void lmod2this(IFunc1 aRHS) {
@@ -389,7 +389,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
-            for (int i = 0; i < tNx; ++i) rThis.set_(i, aRHS.subs(rThis.getX(i)) % rThis.get_(i));
+            for (int i = 0; i < tNx; ++i) rThis.set(i, aRHS.subs(rThis.getX(i)) % rThis.get(i));
         }
     }
     @Override public void operate2this(IFunc1 aRHS, DoubleBinaryOperator aOpt) {
@@ -401,7 +401,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         } else {
             // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
-            for (int i = 0; i < tNx; ++i) rThis.set_(i, aOpt.applyAsDouble(rThis.get_(i), aRHS.subs(rThis.getX(i))));
+            for (int i = 0; i < tNx; ++i) rThis.set(i, aOpt.applyAsDouble(rThis.get(i), aRHS.subs(rThis.getX(i))));
         }
     }
     
@@ -436,22 +436,22 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         double tDx2 = tFunc1.dx() * tFunc1.dx();
         for (int i = 0; i < tNx; ++i) {
             int imm = i-1;
-            double tFmm = (imm < 0) ? tFunc1.getOutL_(imm) : tFunc1.get_(imm);
+            double tFmm = (imm < 0) ? tFunc1.getOutL_(imm) : tFunc1.get(imm);
             int ipp = i+1;
-            double tFpp = (ipp >= tNx) ? tFunc1.getOutR_(ipp) : tFunc1.get_(ipp);
+            double tFpp = (ipp >= tNx) ? tFunc1.getOutR_(ipp) : tFunc1.get(ipp);
             
-            rDest.set(i, (tFmm + tFpp - 2*tFunc1.get_(i)) / tDx2);
+            rDest.set(i, (tFmm + tFpp - 2*tFunc1.get(i)) / tDx2);
         }
     }
     
     @Override public double integral() {
         DoubleArrayFunc1 tThis = thisFunc1_();
-        double pF = tThis.get_(0);
+        double pF = tThis.get(0);
         double tDx2 = tThis.dx()/2.0;
         double tResult = 0.0;
         int tNx = tThis.Nx();
         for (int i = 1; i < tNx; ++i) {
-            double tF = tThis.get_(i);
+            double tF = tThis.get(i);
             tResult += tDx2*(tF + pF);
             pF = tF;
         }
@@ -472,12 +472,12 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
     @Override public IFunc1Subs refConvolve(IFunc2Subs aConv) {
         final DoubleArrayFunc1 tThis = thisFunc1_();
         return k -> {
-            double pC = aConv.subs(tThis.x0(), k) * tThis.get_(0);
+            double pC = aConv.subs(tThis.x0(), k) * tThis.get(0);
             double tResult = 0.0;
             double tDx2 = tThis.dx()/2.0;
             int tNx = tThis.Nx();
             for (int i = 1; i < tNx; ++i) {
-                double tC = aConv.subs(tThis.getX(i), k) * tThis.get_(i);
+                double tC = aConv.subs(tThis.getX(i), k) * tThis.get(i);
                 tResult += tDx2*(tC + pC);
                 pC = tC;
             }
@@ -497,12 +497,12 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
     @Override public IFunc1Subs refConvolveFull(IFunc3Subs aConv) {
         final DoubleArrayFunc1 tThis = thisFunc1_();
         return k -> {
-            double pC = aConv.subs(tThis.get_(0), tThis.x0(), k);
+            double pC = aConv.subs(tThis.get(0), tThis.x0(), k);
             double tResult = 0.0;
             double tDx2 = tThis.dx()/2.0;
             int tNx = tThis.Nx();
             for (int i = 1; i < tNx; ++i) {
-                double tC = aConv.subs(tThis.get_(i), tThis.getX(i), k);
+                double tC = aConv.subs(tThis.get(i), tThis.getX(i), k);
                 tResult += tDx2*(tC + pC);
                 pC = tC;
             }

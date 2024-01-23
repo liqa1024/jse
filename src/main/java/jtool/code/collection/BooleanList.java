@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import static jtool.code.CS.ZL_BOOL;
+import static jtool.code.collection.DoubleList.rangeCheck;
 
 /**
  * 通用的使用 {@code boolean[]} 存储内部元素的 list，
@@ -24,11 +25,11 @@ public class BooleanList implements IDataShell<boolean[]> {
     public BooleanList(int aInitSize) {mData = new boolean[aInitSize];}
     
     public boolean get(int aIdx) {
-        if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        rangeCheck(aIdx, mSize);
         return mData[aIdx];
     }
     public void set(int aIdx, boolean aValue) {
-        if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        rangeCheck(aIdx, mSize);
         mData[aIdx] = aValue;
     }
     public int size() {return mSize;}
@@ -73,7 +74,7 @@ public class BooleanList implements IDataShell<boolean[]> {
         return new AbstractRandomAccessList<Boolean>() {
             @Override public Boolean get(int index) {return BooleanList.this.get(index);}
             @Override public Boolean set(int index, Boolean element) {boolean oValue = BooleanList.this.get(index); BooleanList.this.set(index, element); return oValue;}
-            @Override public int size() {return BooleanList.this.size();}
+            @Override public int size() {return mSize;}
             @Override public boolean add(Boolean element) {BooleanList.this.add(element); return true;}
         };
     }
@@ -81,20 +82,20 @@ public class BooleanList implements IDataShell<boolean[]> {
     public @Unmodifiable List<Boolean> asConstList() {
         return new AbstractRandomAccessList<Boolean>() {
             @Override public Boolean get(int index) {return BooleanList.this.get(index);}
-            @Override public int size() {return BooleanList.this.size();}
+            @Override public int size() {return mSize;}
         };
     }
     public ILogicalVector asVec() {
         return new RefLogicalVector() {
-            @Override protected boolean get_(int aIdx) {return mData[aIdx];}
-            @Override protected void set_(int aIdx, boolean aValue) {mData[aIdx] = aValue;}
+            @Override public boolean get(int aIdx) {return BooleanList.this.get(aIdx);}
+            @Override public void set(int aIdx, boolean aValue) {BooleanList.this.set(aIdx, aValue);}
             @Override public int size() {return mSize;}
         };
     }
     @ApiStatus.Experimental
     public ILogicalVector asConstVec() {
         return new RefLogicalVector() {
-            @Override protected boolean get_(int aIdx) {return mData[aIdx];}
+            @Override public boolean get(int aIdx) {return BooleanList.this.get(aIdx);}
             @Override public int size() {return mSize;}
         };
     }

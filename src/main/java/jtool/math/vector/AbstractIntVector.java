@@ -10,7 +10,7 @@ import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 import java.util.function.IntUnaryOperator;
 
-import static jtool.math.vector.AbstractVector.subVecRangeCheck;
+import static jtool.math.vector.AbstractVector.*;
 
 public abstract class AbstractIntVector implements IIntVector {
     /** print */
@@ -30,7 +30,7 @@ public abstract class AbstractIntVector implements IIntVector {
             @Override public boolean hasNext() {return mIdx < mSize;}
             @Override public int next() {
                 if (hasNext()) {
-                    int tNext = get_(mIdx);
+                    int tNext = get(mIdx);
                     ++mIdx;
                     return tNext;
                 } else {
@@ -46,13 +46,13 @@ public abstract class AbstractIntVector implements IIntVector {
             @Override public boolean hasNext() {return mIdx < mSize;}
             @Override public void set(int aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
-                set_(oIdx, aValue);
+                AbstractIntVector.this.set(oIdx, aValue);
             }
             @Override public int next() {
                 if (hasNext()) {
                     oIdx = mIdx;
                     ++mIdx;
-                    return get_(oIdx);
+                    return get(oIdx);
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -79,22 +79,17 @@ public abstract class AbstractIntVector implements IIntVector {
     }
     @Override public IVector asVec() {
         return new RefVector() {
-            @Override protected double get_(int aIdx) {return AbstractIntVector.this.get_(aIdx);}
-            @Override protected void set_(int aIdx, double aValue) {AbstractIntVector.this.set_(aIdx, (int)aValue);}
-            @Override protected double getAndSet_(int aIdx, double aValue) {return AbstractIntVector.this.getAndSet_(aIdx, (int)aValue);}
+            @Override public double get(int aIdx) {return AbstractIntVector.this.get(aIdx);}
+            @Override public void set(int aIdx, double aValue) {AbstractIntVector.this.set(aIdx, (int)aValue);}
+            @Override public double getAndSet(int aIdx, double aValue) {return AbstractIntVector.this.getAndSet(aIdx, (int)aValue);}
             @Override public int size() {return AbstractIntVector.this.size();}
         };
     }
     
     /** ISwapper stuffs */
     @Override public void swap(int aIdx1, int aIdx2) {
-        final int tSize = size();
-        if (aIdx1<0 || aIdx1>=tSize) throw new IndexOutOfBoundsException(String.format("Index 1: %d", aIdx1));
-        if (aIdx2<0 || aIdx2>=tSize) throw new IndexOutOfBoundsException(String.format("Index 2: %d", aIdx1));
-        swap_(aIdx1, aIdx2);
-    }
-    protected void swap_(int aIdx1, int aIdx2) {
-        set_(aIdx1, getAndSet_(aIdx2, get_(aIdx1)));
+        biRangeCheck(aIdx1, aIdx2, size());
+        set(aIdx1, getAndSet(aIdx2, get(aIdx1)));
     }
     
     /** 批量修改的接口 */
@@ -116,92 +111,56 @@ public abstract class AbstractIntVector implements IIntVector {
     @Override public final void assign(IntSupplier aSup) {operation().assign(aSup);}
     @Override public final void forEach(IntConsumer aCon) {operation().forEach(aCon);}
     
-    @Override public int get(int aIdx) {
-        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-        return get_(aIdx);
-    }
-    @Override public int getAndSet(int aIdx, int aValue) {
-        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-        return getAndSet_(aIdx, aValue);
-    }
-    @Override public void set(int aIdx, int aValue) {
-        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-        set_(aIdx, aValue);
-    }
-    
-    protected void increment_(int aIdx) {
-        int tValue = get_(aIdx);
-        ++tValue;
-        set_(aIdx, tValue);
-    }
-    protected int getAndIncrement_(int aIdx) {
-        int tValue = get_(aIdx);
-        set_(aIdx, tValue+1);
-        return tValue;
-    }
-    protected void decrement_(int aIdx) {
-        int tValue = get_(aIdx);
-        --tValue;
-        set_(aIdx, tValue);
-    }
-    protected int getAndDecrement_(int aIdx) {
-        int tValue = get_(aIdx);
-        set_(aIdx, tValue-1);
-        return tValue;
-    }
-    protected void add_(int aIdx, int aDelta) {
-        int tValue = get_(aIdx);
-        tValue += aDelta;
-        set_(aIdx, tValue);
-    }
-    protected int getAndAdd_(int aIdx, int aDelta) {
-        int tValue = get_(aIdx);
-        set_(aIdx, tValue+aDelta);
-        return tValue;
-    }
-    protected void update_(int aIdx, IntUnaryOperator aOpt) {
-        int tValue = get_(aIdx);
-        tValue = aOpt.applyAsInt(tValue);
-        set_(aIdx, tValue);
-    }
-    protected int getAndUpdate_(int aIdx, IntUnaryOperator aOpt) {
-        int tValue = get_(aIdx);
-        set_(aIdx, aOpt.applyAsInt(tValue));
-        return tValue;
-    }
     
     @Override public void increment(int aIdx) {
-        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-        increment_(aIdx);
+        rangeCheck(aIdx, size());
+        int tValue = get(aIdx);
+        ++tValue;
+        set(aIdx, tValue);
     }
     @Override public int getAndIncrement(int aIdx) {
-        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-        return getAndIncrement_(aIdx);
+        rangeCheck(aIdx, size());
+        int tValue = get(aIdx);
+        set(aIdx, tValue+1);
+        return tValue;
     }
     @Override public void decrement(int aIdx) {
-        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-        decrement_(aIdx);
+        rangeCheck(aIdx, size());
+        int tValue = get(aIdx);
+        --tValue;
+        set(aIdx, tValue);
     }
     @Override public int getAndDecrement(int aIdx) {
-        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-        return getAndDecrement_(aIdx);
+        rangeCheck(aIdx, size());
+        int tValue = get(aIdx);
+        set(aIdx, tValue-1);
+        return tValue;
     }
     @Override public void add(int aIdx, int aDelta) {
-        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-        add_(aIdx, aDelta);
+        rangeCheck(aIdx, size());
+        int tValue = get(aIdx);
+        tValue += aDelta;
+        set(aIdx, tValue);
     }
     @Override public int getAndAdd(int aIdx, int aDelta) {
-        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-        return getAndAdd_(aIdx, aDelta);
+        rangeCheck(aIdx, size());
+        int tValue = get(aIdx);
+        set(aIdx, tValue+aDelta);
+        return tValue;
     }
     @Override public void update(int aIdx, IntUnaryOperator aOpt) {
-        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-        update_(aIdx, aOpt);
+        rangeCheck(aIdx, size());
+        int tValue = get(aIdx);
+        tValue = aOpt.applyAsInt(tValue);
+        set(aIdx, tValue);
     }
     @Override public int getAndUpdate(int aIdx, IntUnaryOperator aOpt) {
-        if (aIdx<0 || aIdx>=size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-        return getAndUpdate_(aIdx, aOpt);
+        rangeCheck(aIdx, size());
+        int tValue = get(aIdx);
+        set(aIdx, aOpt.applyAsInt(tValue));
+        return tValue;
     }
+    
     
     @Override public IIntVector copy() {
         IIntVector rVector = newZeros_(size());
@@ -213,9 +172,9 @@ public abstract class AbstractIntVector implements IIntVector {
         subVecRangeCheck(aFromIdx, aToIdx, size());
         return new RefIntVector() {
             /** 由于一开始有边界检查，所以这里不再需要边检检查 */
-            @Override protected int get_(int aIdx) {return AbstractIntVector.this.get_(aIdx+aFromIdx);}
-            @Override protected void set_(int aIdx, int aValue) {AbstractIntVector.this.set_(aIdx+aFromIdx, aValue);}
-            @Override protected int getAndSet_(int aIdx, int aValue) {return AbstractIntVector.this.getAndSet_(aIdx+aFromIdx, aValue);}
+            @Override public int get(int aIdx) {rangeCheck(aIdx, size()); return AbstractIntVector.this.get(aIdx+aFromIdx);}
+            @Override public void set(int aIdx, int aValue) {rangeCheck(aIdx, size()); AbstractIntVector.this.set(aIdx+aFromIdx, aValue);}
+            @Override public int getAndSet(int aIdx, int aValue) {rangeCheck(aIdx, size()); return AbstractIntVector.this.getAndSet(aIdx+aFromIdx, aValue);}
             @Override public int size() {return aToIdx-aFromIdx;}
         };
     }
@@ -237,9 +196,9 @@ public abstract class AbstractIntVector implements IIntVector {
     
     
     /** stuff to override */
-    protected abstract int get_(int aIdx);
-    protected abstract void set_(int aIdx, int aValue);
-    protected abstract int getAndSet_(int aIdx, int aValue);
+    public abstract int get(int aIdx);
+    public abstract void set(int aIdx, int aValue);
+    public abstract int getAndSet(int aIdx, int aValue);
     public abstract int size();
     protected abstract IIntVector newZeros_(int aSize);
     

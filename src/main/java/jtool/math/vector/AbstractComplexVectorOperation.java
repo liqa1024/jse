@@ -15,6 +15,8 @@ import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
+import static jtool.math.vector.AbstractVector.rangeCheck;
+
 /**
  * 一般的实向量运算的实现，默认没有做任何优化
  * @author liqa
@@ -167,12 +169,12 @@ public abstract class AbstractComplexVectorOperation implements IComplexVectorOp
     @Override public IComplexVector refReverse() {
         return new RefComplexVector() {
             private final IComplexVector mThis = thisVector_();
-            @Override protected double getReal_(int aIdx) {return mThis.getReal(mThis.size()-1-aIdx);}
-            @Override protected double getImag_(int aIdx) {return mThis.getImag(mThis.size()-1-aIdx);}
-            @Override protected void setReal_(int aIdx, double aReal) {mThis.setReal(mThis.size()-1-aIdx, aReal);}
-            @Override protected void setImag_(int aIdx, double aImag) {mThis.setImag(mThis.size()-1-aIdx, aImag);}
-            @Override protected double getAndSetReal_(int aIdx, double aReal) {return mThis.getAndSetReal(mThis.size()-1-aIdx, aReal);}
-            @Override protected double getAndSetImag_(int aIdx, double aImag) {return mThis.getAndSetImag(mThis.size()-1-aIdx, aImag);}
+            @Override public double getReal(int aIdx) {rangeCheck(aIdx, size()); return mThis.getReal(mThis.size()-1-aIdx);}
+            @Override public double getImag(int aIdx) {rangeCheck(aIdx, size()); return mThis.getImag(mThis.size()-1-aIdx);}
+            @Override public void setReal(int aIdx, double aReal) {rangeCheck(aIdx, size()); mThis.setReal(mThis.size()-1-aIdx, aReal);}
+            @Override public void setImag(int aIdx, double aImag) {rangeCheck(aIdx, size()); mThis.setImag(mThis.size()-1-aIdx, aImag);}
+            @Override public double getAndSetReal(int aIdx, double aReal) {rangeCheck(aIdx, size()); return mThis.getAndSetReal(mThis.size()-1-aIdx, aReal);}
+            @Override public double getAndSetImag(int aIdx, double aImag) {rangeCheck(aIdx, size()); return mThis.getAndSetImag(mThis.size()-1-aIdx, aImag);}
             @Override public int size() {return mThis.size();}
         };
     }

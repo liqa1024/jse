@@ -38,9 +38,19 @@ public final class RowMatrix extends DoubleArrayMatrix {
     
     
     /** IMatrix stuffs */
-    @Override protected double get_(int aRow, int aCol) {return mData[aCol + aRow*mColNum];}
-    @Override protected void set_(int aRow, int aCol, double aValue) {mData[aCol + aRow*mColNum] = aValue;}
-    @Override protected double getAndSet_(int aRow, int aCol, double aValue) {
+    @Override public double get(int aRow, int aCol) {
+        rangeCheckRow(aRow, mRowNum);
+        rangeCheckCol(aCol, mColNum);
+        return mData[aCol + aRow*mColNum];
+    }
+    @Override public void set(int aRow, int aCol, double aValue) {
+        rangeCheckRow(aRow, mRowNum);
+        rangeCheckCol(aCol, mColNum);
+        mData[aCol + aRow*mColNum] = aValue;
+    }
+    @Override public double getAndSet(int aRow, int aCol, double aValue) {
+        rangeCheckRow(aRow, mRowNum);
+        rangeCheckCol(aCol, mColNum);
         int tIdx = aCol + aRow*mColNum;
         double oValue = mData[tIdx];
         mData[tIdx] = aValue;
@@ -66,7 +76,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
     
     /** Optimize stuffs，重写这个提高行向的索引速度 */
     @Override public ShiftVector row(final int aRow) {
-        if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
+        rangeCheckRow(aRow, mRowNum);
         return new ShiftVector(mColNum, aRow*mColNum, mData);
     }
     
@@ -98,11 +108,15 @@ public final class RowMatrix extends DoubleArrayMatrix {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override protected void update_(int aRow, int aCol, DoubleUnaryOperator aOpt) {
+    @Override public void update(int aRow, int aCol, DoubleUnaryOperator aOpt) {
+        rangeCheckRow(aRow, mRowNum);
+        rangeCheckCol(aCol, mColNum);
         int tIdx = aCol + aRow*mColNum;
         mData[tIdx] = aOpt.applyAsDouble(mData[tIdx]);
     }
-    @Override protected double getAndUpdate_(int aRow, int aCol, DoubleUnaryOperator aOpt) {
+    @Override public double getAndUpdate(int aRow, int aCol, DoubleUnaryOperator aOpt) {
+        rangeCheckRow(aRow, mRowNum);
+        rangeCheckCol(aCol, mColNum);
         int tIdx = aCol + aRow*mColNum;
         double tValue = mData[tIdx];
         mData[tIdx] = aOpt.applyAsDouble(tValue);
@@ -146,7 +160,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public IDoubleIterator iteratorColAt(final int aCol) {
-        if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
+        rangeCheckCol(aCol, mColNum);
         return new IDoubleIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = aCol;
@@ -163,7 +177,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public IDoubleIterator iteratorRowAt(final int aRow) {
-        if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
+        rangeCheckRow(aRow, mRowNum);
         return new IDoubleIterator() {
             private final int mEnd = (aRow+1)*mColNum;
             private int mIdx = aRow*mColNum;
@@ -254,7 +268,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public IDoubleSetIterator setIteratorColAt(final int aCol) {
-        if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
+        rangeCheckCol(aCol, mColNum);
         return new IDoubleSetIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = aCol, oIdx = -1;
@@ -290,7 +304,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public IDoubleSetIterator setIteratorRowAt(final int aRow) {
-        if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
+        rangeCheckRow(aRow, mRowNum);
         return new IDoubleSetIterator() {
             private final int mEnd = (aRow+1)*mColNum;
             private int mIdx = aRow*mColNum, oIdx = -1;

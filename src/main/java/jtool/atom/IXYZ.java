@@ -1,7 +1,6 @@
 package jtool.atom;
 
 import jtool.code.collection.AbstractRandomAccessList;
-import jtool.math.ComplexDouble;
 import jtool.math.MathEX;
 import jtool.math.vector.IVector;
 import jtool.math.vector.RefVector;
@@ -23,7 +22,7 @@ public interface IXYZ {
     default double[] data() {return new double[] {x(), y(), z()};}
     default IVector asVec() {
         return new RefVector() {
-            @Override protected double get_(int aIdx) {
+            @Override public double get(int aIdx) {
                 switch(aIdx) {
                 case 0: return x();
                 case 1: return y();

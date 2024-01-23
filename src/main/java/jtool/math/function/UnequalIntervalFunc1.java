@@ -46,7 +46,7 @@ public final class UnequalIntervalFunc1 extends AbstractFunc1 implements IZeroBo
     @Override public IVector x() {
         // 这样防止外部修改
         return new RefVector() {
-            @Override protected double get_(int aIdx) {return mX[aIdx];}
+            @Override public double get(int aIdx) {return mX[aIdx];}
             @Override public int size() {return Nx();}
         };
     }
@@ -75,8 +75,8 @@ public final class UnequalIntervalFunc1 extends AbstractFunc1 implements IZeroBo
     }
     
     /** 不进行边界检测的版本，带入 x 的情况永远不会超过边界（周期边界或者固定值），因此只提供索引的情况 */
-    @Override protected double get_(int aI) {return mF[aI];}
-    @Override protected void set_(int aI, double aV) {mF[aI] = aV;}
+    @Override public double get(int aI) {rangeCheck(aI, Nx()); return mF[aI];}
+    @Override public void set(int aI, double aV) {rangeCheck(aI, Nx()); mF[aI] = aV;}
     
     /** 索引和 x 相互转换的接口 */
     @Override public int Nx() {return mF.length;}
@@ -96,10 +96,12 @@ public final class UnequalIntervalFunc1 extends AbstractFunc1 implements IZeroBo
     }
     
     /** 附加一些额外的单元素操作，对于一般的只提供一个 update 的接口 */
-    @Override protected void update_(int aI, DoubleUnaryOperator aOpt) {
+    @Override public void update(int aI, DoubleUnaryOperator aOpt) {
+        rangeCheck(aI, Nx());
         mF[aI] = aOpt.applyAsDouble(mF[aI]);
     }
-    @Override protected double getAndUpdate_(int aI, DoubleUnaryOperator aOpt) {
+    @Override public double getAndUpdate(int aI, DoubleUnaryOperator aOpt) {
+        rangeCheck(aI, Nx());
         double tV = mF[aI];
         mF[aI] = aOpt.applyAsDouble(tV);
         return tV;

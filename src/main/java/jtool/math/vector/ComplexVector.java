@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.function.DoubleUnaryOperator;
 
-import static jtool.math.vector.AbstractVector.subVecRangeCheck;
+import static jtool.math.vector.AbstractVector.*;
 
 /**
  * @author liqa
@@ -51,19 +51,19 @@ public final class ComplexVector extends BiDoubleArrayVector {
     public int dataLength() {return Math.min(mData[0].length, mData[1].length);}
     
     /** IComplexVector stuffs */
-    @Override protected ComplexDouble get_(int aIdx) {return new ComplexDouble(mData[0][aIdx], mData[1][aIdx]);}
-    @Override protected double getReal_(int aIdx) {return mData[0][aIdx];}
-    @Override protected double getImag_(int aIdx) {return mData[1][aIdx];}
-    @Override protected void set_(int aIdx, IComplexDouble aValue) {mData[0][aIdx] = aValue.real(); mData[1][aIdx] = aValue.imag();}
-    @Override protected void set_(int aIdx, ComplexDouble aValue) {mData[0][aIdx] = aValue.mReal; mData[1][aIdx] = aValue.mImag;}
-    @Override protected void set_(int aIdx, double aValue) {mData[0][aIdx] = aValue; mData[1][aIdx] = 0.0;}
-    @Override protected void setReal_(int aIdx, double aReal) {mData[0][aIdx] = aReal;}
-    @Override protected void setImag_(int aIdx, double aImag) {mData[1][aIdx] = aImag;}
-    @Override protected ComplexDouble getAndSet_(int aIdx, IComplexDouble aValue) {ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aValue.real(); mData[1][aIdx] = aValue.imag(); return oValue;}
-    @Override protected ComplexDouble getAndSet_(int aIdx, ComplexDouble aValue) {ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aValue.mReal; mData[1][aIdx] = aValue.mImag; return oValue;}
-    @Override protected ComplexDouble getAndSet_(int aIdx, double aValue) {ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aValue; mData[1][aIdx] = 0.0; return oValue;}
-    @Override protected double getAndSetReal_(int aIdx, double aReal) {double oReal = mData[0][aIdx]; mData[0][aIdx] = aReal; return oReal;}
-    @Override protected double getAndSetImag_(int aIdx, double aImag) {double oImag = mData[1][aIdx]; mData[1][aIdx] = aImag; return oImag;}
+    @Override public ComplexDouble get(int aIdx) {rangeCheck(aIdx, mSize); return new ComplexDouble(mData[0][aIdx], mData[1][aIdx]);}
+    @Override public double getReal(int aIdx) {rangeCheck(aIdx, mSize); return mData[0][aIdx];}
+    @Override public double getImag(int aIdx) {rangeCheck(aIdx, mSize); return mData[1][aIdx];}
+    @Override public void set(int aIdx, IComplexDouble aValue) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aValue.real(); mData[1][aIdx] = aValue.imag();}
+    @Override public void set(int aIdx, ComplexDouble aValue) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aValue.mReal; mData[1][aIdx] = aValue.mImag;}
+    @Override public void set(int aIdx, double aValue) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aValue; mData[1][aIdx] = 0.0;}
+    @Override public void setReal(int aIdx, double aReal) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aReal;}
+    @Override public void setImag(int aIdx, double aImag) {rangeCheck(aIdx, mSize); mData[1][aIdx] = aImag;}
+    @Override public ComplexDouble getAndSet(int aIdx, IComplexDouble aValue) {rangeCheck(aIdx, mSize); ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aValue.real(); mData[1][aIdx] = aValue.imag(); return oValue;}
+    @Override public ComplexDouble getAndSet(int aIdx, ComplexDouble aValue) {rangeCheck(aIdx, mSize); ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aValue.mReal; mData[1][aIdx] = aValue.mImag; return oValue;}
+    @Override public ComplexDouble getAndSet(int aIdx, double aValue) {rangeCheck(aIdx, mSize); ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aValue; mData[1][aIdx] = 0.0; return oValue;}
+    @Override public double getAndSetReal(int aIdx, double aReal) {rangeCheck(aIdx, mSize); double oReal = mData[0][aIdx]; mData[0][aIdx] = aReal; return oReal;}
+    @Override public double getAndSetImag(int aIdx, double aImag) {rangeCheck(aIdx, mSize); double oImag = mData[1][aIdx]; mData[1][aIdx] = aImag; return oImag;}
     @Override public int size() {return mSize;}
     
     @Override protected ComplexVector newZeros_(int aSize) {return ComplexVector.zeros(aSize);}
@@ -97,7 +97,8 @@ public final class ComplexVector extends BiDoubleArrayVector {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override protected void swap_(int aIdx1, int aIdx2) {
+    @Override public void swap(int aIdx1, int aIdx2) {
+        biRangeCheck(aIdx1, aIdx2, mSize);
         final double[] tRealData = mData[0];
         final double[] tImagData = mData[1];
         double tReal = tRealData[aIdx2];
@@ -108,32 +109,38 @@ public final class ComplexVector extends BiDoubleArrayVector {
         tImagData[aIdx1] = tImag;
     }
     
-    @Override protected void add_(int aIdx, IComplexDouble aDelta) {
+    @Override public void add(int aIdx, IComplexDouble aDelta) {
+        rangeCheck(aIdx, mSize);
         mData[0][aIdx] += aDelta.real();
         mData[1][aIdx] += aDelta.imag();
     }
-    @Override protected void add_(int aIdx, ComplexDouble aDelta) {
+    @Override public void add(int aIdx, ComplexDouble aDelta) {
+        rangeCheck(aIdx, mSize);
         mData[0][aIdx] += aDelta.mReal;
         mData[1][aIdx] += aDelta.mImag;
     }
-    @Override protected void add_(int aIdx, double aDelta) {mData[0][aIdx] += aDelta;}
-    @Override protected void addImag_(int aIdx, double aImag) {mData[1][aIdx] += aImag;}
-    @Override protected void update_(int aIdx, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {
+    @Override public void add(int aIdx, double aDelta) {rangeCheck(aIdx, mSize); mData[0][aIdx] += aDelta;}
+    @Override public void addImag(int aIdx, double aImag) {rangeCheck(aIdx, mSize); mData[1][aIdx] += aImag;}
+    @Override public void update(int aIdx, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {
+        rangeCheck(aIdx, mSize);
         final double[] tRealData = mData[0];
         final double[] tImagData = mData[1];
         IComplexDouble tValue = aOpt.apply(new ComplexDouble(tRealData[aIdx], tImagData[aIdx]));
         tRealData[aIdx] = tValue.real();
         tImagData[aIdx] = tValue.imag();
     }
-    @Override protected void updateReal_(int aIdx, DoubleUnaryOperator aRealOpt) {
+    @Override public void updateReal(int aIdx, DoubleUnaryOperator aRealOpt) {
+        rangeCheck(aIdx, mSize);
         final double[] tRealData = mData[0];
         tRealData[aIdx] = aRealOpt.applyAsDouble(tRealData[aIdx]);
     }
-    @Override protected void updateImag_(int aIdx, DoubleUnaryOperator aImagOpt) {
+    @Override public void updateImag(int aIdx, DoubleUnaryOperator aImagOpt) {
+        rangeCheck(aIdx, mSize);
         final double[] tImagData = mData[1];
         tImagData[aIdx] = aImagOpt.applyAsDouble(tImagData[aIdx]);
     }
-    @Override protected ComplexDouble getAndUpdate_(int aIdx, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {
+    @Override public ComplexDouble getAndUpdate(int aIdx, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {
+        rangeCheck(aIdx, mSize);
         final double[] tRealData = mData[0];
         final double[] tImagData = mData[1];
         ComplexDouble oValue = new ComplexDouble(tRealData[aIdx], tImagData[aIdx]);
@@ -142,13 +149,15 @@ public final class ComplexVector extends BiDoubleArrayVector {
         tImagData[aIdx] = tValue.imag();
         return oValue;
     }
-    @Override protected double getAndUpdateReal_(int aIdx, DoubleUnaryOperator aRealOpt) {
+    @Override public double getAndUpdateReal(int aIdx, DoubleUnaryOperator aRealOpt) {
+        rangeCheck(aIdx, mSize);
         final double[] tRealData = mData[0];
         double oReal = tRealData[aIdx];
         tRealData[aIdx] = aRealOpt.applyAsDouble(oReal);
         return oReal;
     }
-    @Override protected double getAndUpdateImag_(int aIdx, DoubleUnaryOperator aImagOpt) {
+    @Override public double getAndUpdateImag(int aIdx, DoubleUnaryOperator aImagOpt) {
+        rangeCheck(aIdx, mSize);
         final double[] tImagData = mData[1];
         double oImag = tImagData[aIdx];
         tImagData[aIdx] = aImagOpt.applyAsDouble(oImag);

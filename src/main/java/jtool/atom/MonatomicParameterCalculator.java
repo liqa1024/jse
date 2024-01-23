@@ -1333,7 +1333,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                     ComplexDouble subMul = Qlmi.get(tM1+aL);
                     subMul.multiply2this(Qlmi.get(tM2+aL));
                     subMul.multiply2this(Qlmi.get(tM3+aL));
-                    subMul.multiply2this(Func.wigner3j_(aL, aL, aL, tM1, tM2, tM3));
+                    subMul.multiply2this(Func.wigner3j(aL, aL, aL, tM1, tM2, tM3));
                     // 累加到分子，这里只统计实数部分（虚数部分为 0）
                     rMul += subMul.mReal;
                 }
@@ -1492,7 +1492,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                     ComplexDouble subMul = qlmi.get(tM1+aL);
                     subMul.multiply2this(qlmi.get(tM2+aL));
                     subMul.multiply2this(qlmi.get(tM3+aL));
-                    subMul.multiply2this(Func.wigner3j_(aL, aL, aL, tM1, tM2, tM3));
+                    subMul.multiply2this(Func.wigner3j(aL, aL, aL, tM1, tM2, tM3));
                     // 累加到分子，这里只统计实数部分（虚数部分为 0）
                     rMul += subMul.mReal;
                 }

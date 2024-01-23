@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.NoSuchElementException;
 
-import static jtool.math.vector.AbstractVector.subVecRangeCheck;
+import static jtool.math.vector.AbstractVector.*;
 
 /**
  * @author liqa
@@ -29,9 +29,10 @@ public final class ShiftLogicalVector extends BooleanArrayVector {
     public int dataLength() {return mData.length;}
     
     /** ILogicalVector stuffs */
-    @Override protected boolean get_(int aIdx) {return mData[aIdx + mShift];}
-    @Override protected void set_(int aIdx, boolean aValue) {mData[aIdx + mShift] = aValue;}
-    @Override protected boolean getAndSet_(int aIdx, boolean aValue) {
+    @Override public boolean get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx + mShift];}
+    @Override public void set(int aIdx, boolean aValue) {rangeCheck(aIdx, mSize); mData[aIdx + mShift] = aValue;}
+    @Override public boolean getAndSet(int aIdx, boolean aValue) {
+        rangeCheck(aIdx, mSize);
         aIdx += mShift;
         boolean oValue = mData[aIdx];
         mData[aIdx] = aValue;
@@ -65,7 +66,8 @@ public final class ShiftLogicalVector extends BooleanArrayVector {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override protected void swap_(int aIdx1, int aIdx2) {
+    @Override public void swap(int aIdx1, int aIdx2) {
+        biRangeCheck(aIdx1, aIdx2, mSize);
         aIdx1 += mShift;
         aIdx2 += mShift;
         boolean tValue = mData[aIdx2];
@@ -73,21 +75,25 @@ public final class ShiftLogicalVector extends BooleanArrayVector {
         mData[aIdx1] = tValue;
     }
     
-    @Override protected void flip_(int aIdx) {
+    @Override public void flip(int aIdx) {
+        rangeCheck(aIdx, mSize);
         aIdx += mShift;
         mData[aIdx] = !mData[aIdx];
     }
-    @Override protected boolean getAndFlip_(int aIdx) {
+    @Override public boolean getAndFlip(int aIdx) {
+        rangeCheck(aIdx, mSize);
         aIdx += mShift;
         boolean tValue = mData[aIdx];
         mData[aIdx] = !tValue;
         return tValue;
     }
-    @Override protected void update_(int aIdx, IBooleanUnaryOperator aOpt) {
+    @Override public void update(int aIdx, IBooleanUnaryOperator aOpt) {
+        rangeCheck(aIdx, mSize);
         aIdx += mShift;
         mData[aIdx] = aOpt.applyAsBoolean(mData[aIdx]);
     }
-    @Override protected boolean getAndUpdate_(int aIdx, IBooleanUnaryOperator aOpt) {
+    @Override public boolean getAndUpdate(int aIdx, IBooleanUnaryOperator aOpt) {
+        rangeCheck(aIdx, mSize);
         aIdx += mShift;
         boolean tValue = mData[aIdx];
         mData[aIdx] = aOpt.applyAsBoolean(tValue);

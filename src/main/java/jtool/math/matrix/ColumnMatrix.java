@@ -39,9 +39,19 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
     
     
     /** IMatrix stuffs */
-    @Override protected double get_(int aRow, int aCol) {return mData[aRow + aCol*mRowNum];}
-    @Override protected void set_(int aRow, int aCol, double aValue) {mData[aRow + aCol*mRowNum] = aValue;}
-    @Override protected double getAndSet_(int aRow, int aCol, double aValue) {
+    @Override public double get(int aRow, int aCol) {
+        rangeCheckRow(aRow, mRowNum);
+        rangeCheckCol(aCol, mColNum);
+        return mData[aRow + aCol*mRowNum];
+    }
+    @Override public void set(int aRow, int aCol, double aValue) {
+        rangeCheckRow(aRow, mRowNum);
+        rangeCheckCol(aCol, mColNum);
+        mData[aRow + aCol*mRowNum] = aValue;
+    }
+    @Override public double getAndSet(int aRow, int aCol, double aValue) {
+        rangeCheckRow(aRow, mRowNum);
+        rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
         double oValue = mData[tIdx];
         mData[tIdx] = aValue;
@@ -67,7 +77,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
     
     /** Optimize stuffs，重写这个提高列向的索引速度 */
     @Override public ShiftVector col(final int aCol) {
-        if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
+        rangeCheckCol(aCol, mColNum);
         return new ShiftVector(mRowNum, aCol*mRowNum, mData);
     }
     
@@ -99,11 +109,15 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override protected void update_(int aRow, int aCol, DoubleUnaryOperator aOpt) {
+    @Override public void update(int aRow, int aCol, DoubleUnaryOperator aOpt) {
+        rangeCheckRow(aRow, mRowNum);
+        rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
         mData[tIdx] = aOpt.applyAsDouble(mData[tIdx]);
     }
-    @Override protected double getAndUpdate_(int aRow, int aCol, DoubleUnaryOperator aOpt) {
+    @Override public double getAndUpdate(int aRow, int aCol, DoubleUnaryOperator aOpt) {
+        rangeCheckRow(aRow, mRowNum);
+        rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
         double tValue = mData[tIdx];
         mData[tIdx] = aOpt.applyAsDouble(tValue);
@@ -147,7 +161,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public IDoubleIterator iteratorColAt(final int aCol) {
-        if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
+        rangeCheckCol(aCol, mColNum);
         return new IDoubleIterator() {
             private final int mEnd = (aCol+1)*mRowNum;
             private int mIdx = aCol*mRowNum;
@@ -164,7 +178,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public IDoubleIterator iteratorRowAt(final int aRow) {
-        if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
+        rangeCheckRow(aRow, mRowNum);
         return new IDoubleIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = aRow;
@@ -255,7 +269,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public IDoubleSetIterator setIteratorColAt(final int aCol) {
-        if (aCol<0 || aCol>=columnNumber()) throw new IndexOutOfBoundsException("Col: "+aCol);
+        rangeCheckCol(aCol, mColNum);
         return new IDoubleSetIterator() {
             private final int mEnd = (aCol+1)*mRowNum;
             private int mIdx = aCol*mRowNum, oIdx = -1;
@@ -291,7 +305,7 @@ public final class ColumnMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public IDoubleSetIterator setIteratorRowAt(final int aRow) {
-        if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
+        rangeCheckRow(aRow, mRowNum);
         return new IDoubleSetIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = aRow, oIdx = -1;

@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.function.IntUnaryOperator;
 
-import static jtool.math.vector.AbstractVector.subVecRangeCheck;
+import static jtool.math.vector.AbstractVector.*;
 
 
 /**
@@ -48,9 +48,10 @@ public final class IntVector extends IntArrayVector {
     public int dataLength() {return mData.length;}
     
     /** IIntegerVector stuffs */
-    @Override protected int get_(int aIdx) {return mData[aIdx];}
-    @Override protected void set_(int aIdx, int aValue) {mData[aIdx] = aValue;}
-    @Override protected int getAndSet_(int aIdx, int aValue) {
+    @Override public int get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx];}
+    @Override public void set(int aIdx, int aValue) {rangeCheck(aIdx, mSize); mData[aIdx] = aValue;}
+    @Override public int getAndSet(int aIdx, int aValue) {
+        rangeCheck(aIdx, mSize);
         int oValue = mData[aIdx];
         mData[aIdx] = aValue;
         return oValue;
@@ -76,27 +77,31 @@ public final class IntVector extends IntArrayVector {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override protected void swap_(int aIdx1, int aIdx2) {
+    @Override public void swap(int aIdx1, int aIdx2) {
+        biRangeCheck(aIdx1, aIdx2, mSize);
         int tValue = mData[aIdx2];
         mData[aIdx2] = mData[aIdx1];
         mData[aIdx1] = tValue;
     }
     
-    @Override protected void increment_(int aIdx) {++mData[aIdx];}
-    @Override protected int getAndIncrement_(int aIdx) {return mData[aIdx]++;}
-    @Override protected void decrement_(int aIdx) {--mData[aIdx];}
-    @Override protected int getAndDecrement_(int aIdx) {return mData[aIdx]--;}
+    @Override public void increment(int aIdx) {rangeCheck(aIdx, mSize); ++mData[aIdx];}
+    @Override public int getAndIncrement(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx]++;}
+    @Override public void decrement(int aIdx) {rangeCheck(aIdx, mSize); --mData[aIdx];}
+    @Override public int getAndDecrement(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx]--;}
     
-    @Override protected void add_(int aIdx, int aDelta) {mData[aIdx] += aDelta;}
-    @Override protected int getAndAdd_(int aIdx, int aDelta) {
+    @Override public void add(int aIdx, int aDelta) {rangeCheck(aIdx, mSize); mData[aIdx] += aDelta;}
+    @Override public int getAndAdd(int aIdx, int aDelta) {
+        rangeCheck(aIdx, mSize);
         int tValue = mData[aIdx];
         mData[aIdx] += aDelta;
         return tValue;
     }
-    @Override protected void update_(int aIdx, IntUnaryOperator aOpt) {
+    @Override public void update(int aIdx, IntUnaryOperator aOpt) {
+        rangeCheck(aIdx, mSize);
         mData[aIdx] = aOpt.applyAsInt(mData[aIdx]);
     }
-    @Override protected int getAndUpdate_(int aIdx, IntUnaryOperator aOpt) {
+    @Override public int getAndUpdate(int aIdx, IntUnaryOperator aOpt) {
+        rangeCheck(aIdx, mSize);
         int tValue = mData[aIdx];
         mData[aIdx] = aOpt.applyAsInt(tValue);
         return tValue;

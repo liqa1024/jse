@@ -40,9 +40,9 @@ public abstract class AbstractLongVector implements ILongVector {
     }
     @Override public IVector asVec() {
         return new RefVector() {
-            @Override protected double get_(int aIdx) {return AbstractLongVector.this.get_(aIdx);}
-            @Override protected void set_(int aIdx, double aValue) {AbstractLongVector.this.set_(aIdx, (long)aValue);}
-            @Override protected double getAndSet_(int aIdx, double aValue) {return AbstractLongVector.this.getAndSet_(aIdx, (long)aValue);}
+            @Override public double get(int aIdx) {return AbstractLongVector.this.get_(aIdx);}
+            @Override public void set(int aIdx, double aValue) {AbstractLongVector.this.set_(aIdx, (long)aValue);}
+            @Override public double getAndSet(int aIdx, double aValue) {return AbstractLongVector.this.getAndSet_(aIdx, (long)aValue);}
             @Override public int size() {return AbstractLongVector.this.size();}
         };
     }

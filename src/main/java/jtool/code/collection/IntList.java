@@ -14,6 +14,7 @@ import java.util.NoSuchElementException;
 import java.util.function.IntConsumer;
 
 import static jtool.code.CS.ZL_INT;
+import static jtool.code.collection.DoubleList.rangeCheck;
 
 /**
  * 通用的使用 {@code int[]} 存储内部元素的 list，
@@ -27,11 +28,11 @@ public class IntList implements ISlice, IDataShell<int[]> {
     public IntList(int aInitSize) {mData = new int[aInitSize];}
     
     public int get(int aIdx) {
-        if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        rangeCheck(aIdx, mSize);
         return mData[aIdx];
     }
     public void set(int aIdx, int aValue) {
-        if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        rangeCheck(aIdx, mSize);
         mData[aIdx] = aValue;
     }
     public int size() {return mSize;}
@@ -76,7 +77,7 @@ public class IntList implements ISlice, IDataShell<int[]> {
         return new AbstractRandomAccessList<Integer>() {
             @Override public Integer get(int index) {return IntList.this.get(index);}
             @Override public Integer set(int index, Integer element) {int oValue = IntList.this.get(index); IntList.this.set(index, element); return oValue;}
-            @Override public int size() {return IntList.this.size();}
+            @Override public int size() {return mSize;}
             @Override public boolean add(Integer element) {IntList.this.add(element); return true;}
         };
     }
@@ -84,20 +85,20 @@ public class IntList implements ISlice, IDataShell<int[]> {
     public @Unmodifiable List<Integer> asConstList() {
         return new AbstractRandomAccessList<Integer>() {
             @Override public Integer get(int index) {return IntList.this.get(index);}
-            @Override public int size() {return IntList.this.size();}
+            @Override public int size() {return mSize;}
         };
     }
     public IIntVector asVec() {
         return new RefIntVector() {
-            @Override protected int get_(int aIdx) {return mData[aIdx];}
-            @Override protected void set_(int aIdx, int aValue) {mData[aIdx] = aValue;}
+            @Override public int get(int aIdx) {return IntList.this.get(aIdx);}
+            @Override public void set(int aIdx, int aValue) {IntList.this.set(aIdx, aValue);}
             @Override public int size() {return mSize;}
         };
     }
     @ApiStatus.Experimental
     public IIntVector asConstVec() {
         return new RefIntVector() {
-            @Override protected int get_(int aIdx) {return mData[aIdx];}
+            @Override public int get(int aIdx) {return IntList.this.get(aIdx);}
             @Override public int size() {return mSize;}
         };
     }

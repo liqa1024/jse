@@ -130,9 +130,9 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     @Override public IMatrix refTranspose() {
         return new RefMatrix() {
             private final IMatrix mThis = thisMatrix_();
-            @Override protected double get_(int aRow, int aCol) {return mThis.get(aCol, aRow);}
-            @Override protected void set_(int aRow, int aCol, double aValue)  {mThis.set(aCol, aRow, aValue);}
-            @Override protected double getAndSet_(int aRow, int aCol, double aValue) {return mThis.getAndSet(aCol, aRow, aValue);}
+            @Override public double get(int aRow, int aCol) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); return mThis.get(aCol, aRow);}
+            @Override public void set(int aRow, int aCol, double aValue)  {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); mThis.set(aCol, aRow, aValue);}
+            @Override public double getAndSet(int aRow, int aCol, double aValue) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); return mThis.getAndSet(aCol, aRow, aValue);}
             @Override public int rowNumber() {return mThis.columnNumber();}
             @Override public int columnNumber() {return mThis.rowNumber();}
         };

@@ -17,6 +17,10 @@ import static jtool.code.CS.ZL_VEC;
  * 并且支持增长和随机访问
  */
 public class DoubleList implements IDataShell<double[]> {
+    static void rangeCheck(int aIdx, int aSize) {
+        if (aIdx<0 || aIdx>=aSize) throw new IndexOutOfBoundsException("Index = " + aIdx + ", Size = " + aSize);
+    }
+    
     protected double[] mData;
     protected int mSize = 0;
     private DoubleList(int aSize, double[] aData) {mSize = aSize; mData = aData;}
@@ -24,11 +28,11 @@ public class DoubleList implements IDataShell<double[]> {
     public DoubleList(int aInitSize) {mData = new double[aInitSize];}
     
     public double get(int aIdx) {
-        if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        rangeCheck(aIdx, mSize);
         return mData[aIdx];
     }
     public void set(int aIdx, double aValue) {
-        if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        rangeCheck(aIdx, mSize);
         mData[aIdx] = aValue;
     }
     public int size() {return mSize;}
@@ -73,7 +77,7 @@ public class DoubleList implements IDataShell<double[]> {
         return new AbstractRandomAccessList<Double>() {
             @Override public Double get(int index) {return DoubleList.this.get(index);}
             @Override public Double set(int index, Double element) {double oValue = DoubleList.this.get(index); DoubleList.this.set(index, element); return oValue;}
-            @Override public int size() {return DoubleList.this.size();}
+            @Override public int size() {return mSize;}
             @Override public boolean add(Double element) {DoubleList.this.add(element); return true;}
         };
     }
@@ -86,15 +90,15 @@ public class DoubleList implements IDataShell<double[]> {
     }
     public IVector asVec() {
         return new RefVector() {
-            @Override protected double get_(int aIdx) {return mData[aIdx];}
-            @Override protected void set_(int aIdx, double aValue) {mData[aIdx] = aValue;}
+            @Override public double get(int aIdx) {return DoubleList.this.get(aIdx);}
+            @Override public void set(int aIdx, double aValue) {DoubleList.this.set(aIdx, aValue);}
             @Override public int size() {return mSize;}
         };
     }
     @ApiStatus.Experimental
     public IVector asConstVec() {
         return new RefVector() {
-            @Override protected double get_(int aIdx) {return mData[aIdx];}
+            @Override public double get(int aIdx) {return DoubleList.this.get(aIdx);}
             @Override public int size() {return mSize;}
         };
     }

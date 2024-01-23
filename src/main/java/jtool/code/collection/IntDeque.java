@@ -10,6 +10,7 @@ import java.util.NoSuchElementException;
 import java.util.function.IntConsumer;
 
 import static jtool.code.CS.ZL_INT;
+import static jtool.code.collection.DoubleList.rangeCheck;
 
 /**
  * 通用的使用 {@code int[]} 存储内部元素的 deque，
@@ -25,17 +26,17 @@ public class IntDeque {
     public IntDeque(int aInitSize) {mData = new int[aInitSize];}
     
     public int get(int aIdx) {
-        if (mEnd == mStart) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        rangeCheck(aIdx, size());
         aIdx += mStart;
         if (mEnd<mStart && aIdx>=mData.length) aIdx -= mData.length;
-        if (aIdx >= mEnd) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        assert aIdx < mEnd;
         return mData[aIdx];
     }
     public void set(int aIdx, int aValue) {
-        if (mEnd == mStart) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        rangeCheck(aIdx, size());
         aIdx += mStart;
         if (mEnd<mStart && aIdx>=mData.length) aIdx -= mData.length;
-        if (aIdx >= mEnd) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        assert aIdx < mEnd;
         mData[aIdx] = aValue;
     }
     public int size() {
@@ -168,16 +169,8 @@ public class IntDeque {
     }
     public IIntVector asVec() {
         return new RefIntVector() {
-            @Override protected int get_(int aIdx) {
-                aIdx += mStart;
-                if (mEnd<mStart && aIdx>=mData.length) aIdx -= mData.length;
-                return mData[aIdx];
-            }
-            @Override protected void set_(int aIdx, int aValue) {
-                aIdx += mStart;
-                if (mEnd<mStart && aIdx>=mData.length) aIdx -= mData.length;
-                mData[aIdx] = aValue;
-            }
+            @Override public int get(int aIdx) {return IntDeque.this.get(aIdx);}
+            @Override public void set(int aIdx, int aValue) {IntDeque.this.set(aIdx, aValue);}
             @Override public int size() {return IntDeque.this.size();}
         };
     }

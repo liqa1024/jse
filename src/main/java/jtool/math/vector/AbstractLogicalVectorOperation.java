@@ -7,6 +7,8 @@ import jtool.math.operation.DATA;
 
 import java.util.function.BooleanSupplier;
 
+import static jtool.math.vector.AbstractVector.rangeCheck;
+
 /**
  * 一般的实向量运算的实现，默认没有做任何优化
  * @author liqa
@@ -59,9 +61,9 @@ public abstract class AbstractLogicalVectorOperation implements ILogicalVectorOp
     @Override public ILogicalVector refReverse() {
         return new RefLogicalVector() {
             private final ILogicalVector mThis = thisVector_();
-            @Override protected boolean get_(int aIdx) {return mThis.get(mThis.size()-1-aIdx);}
-            @Override protected void set_(int aIdx, boolean aValue) {mThis.set(mThis.size()-1-aIdx, aValue);}
-            @Override protected boolean getAndSet_(int aIdx, boolean aValue) {return mThis.getAndSet(mThis.size()-1-aIdx, aValue);}
+            @Override public boolean get(int aIdx) {rangeCheck(aIdx, size()); return mThis.get(mThis.size()-1-aIdx);}
+            @Override public void set(int aIdx, boolean aValue) {rangeCheck(aIdx, size()); mThis.set(mThis.size()-1-aIdx, aValue);}
+            @Override public boolean getAndSet(int aIdx, boolean aValue) {rangeCheck(aIdx, size()); return mThis.getAndSet(mThis.size()-1-aIdx, aValue);}
             @Override public int size() {return mThis.size();}
         };
     }

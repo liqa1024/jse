@@ -122,9 +122,9 @@ public abstract class AbstractVectorOperation implements IVectorOperation {
     @Override public IVector refReverse() {
         return new RefVector() {
             private final IVector mThis = thisVector_();
-            @Override protected double get_(int aIdx) {return mThis.get(mThis.size()-1-aIdx);}
-            @Override protected void set_(int aIdx, double aValue) {mThis.set(mThis.size()-1-aIdx, aValue);}
-            @Override protected double getAndSet_(int aIdx, double aValue) {return mThis.getAndSet(mThis.size()-1-aIdx, aValue);}
+            @Override public double get(int aIdx) {rangeCheck(aIdx, size()); return mThis.get(mThis.size()-1-aIdx);}
+            @Override public void set(int aIdx, double aValue) {rangeCheck(aIdx, size()); mThis.set(mThis.size()-1-aIdx, aValue);}
+            @Override public double getAndSet(int aIdx, double aValue) {rangeCheck(aIdx, size()); return mThis.getAndSet(mThis.size()-1-aIdx, aValue);}
             @Override public int size() {return mThis.size();}
         };
     }

@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
+import static jtool.code.collection.DoubleList.rangeCheck;
+
 /**
  * 通用的使用 {@code double[][]} 存储内部元素的 list，
  * 并且支持增长和随机访问
@@ -26,12 +28,16 @@ public class ComplexDoubleList implements IDataShell<double[][]> {
     public ComplexDoubleList() {mData = ZL_BIDOU; mSize = 0;}
     public ComplexDoubleList(int aInitSize) {mData = new double[2][aInitSize];}
     
+    public double getReal(int aIdx) {rangeCheck(aIdx, mSize); return mData[0][aIdx];}
+    public double getImag(int aIdx) {rangeCheck(aIdx, mSize); return mData[1][aIdx];}
     public ComplexDouble get(int aIdx) {
-        if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        rangeCheck(aIdx, mSize);
         return new ComplexDouble(mData[0][aIdx], mData[1][aIdx]);
     }
+    public void setReal(int aIdx, double aReal) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aReal;}
+    public void setImag(int aIdx, double aImag) {rangeCheck(aIdx, mSize); mData[1][aIdx] = aImag;}
     public void set(int aIdx, IComplexDouble aValue) {
-        if (aIdx >= mSize) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
+        rangeCheck(aIdx, mSize);
         mData[0][aIdx] = aValue.real();
         mData[1][aIdx] = aValue.imag();
     }
@@ -96,7 +102,7 @@ public class ComplexDoubleList implements IDataShell<double[][]> {
         return new AbstractRandomAccessList<ComplexDouble>() {
             @Override public ComplexDouble get(int index) {return ComplexDoubleList.this.get(index);}
             @Override public ComplexDouble set(int index, ComplexDouble element) {ComplexDouble oValue = ComplexDoubleList.this.get(index); ComplexDoubleList.this.set(index, element); return oValue;}
-            @Override public int size() {return ComplexDoubleList.this.size();}
+            @Override public int size() {return mSize;}
             @Override public boolean add(ComplexDouble element) {ComplexDoubleList.this.add(element); return true;}
         };
     }
@@ -104,24 +110,24 @@ public class ComplexDoubleList implements IDataShell<double[][]> {
     public @Unmodifiable List<ComplexDouble> asConstList() {
         return new AbstractRandomAccessList<ComplexDouble>() {
             @Override public ComplexDouble get(int index) {return ComplexDoubleList.this.get(index);}
-            @Override public int size() {return ComplexDoubleList.this.size();}
+            @Override public int size() {return mSize;}
             @Override public boolean add(ComplexDouble element) {ComplexDoubleList.this.add(element); return true;}
         };
     }
     public IComplexVector asVec() {
         return new RefComplexVector() {
-            @Override protected double getReal_(int aIdx) {return mData[0][aIdx];}
-            @Override protected double getImag_(int aIdx) {return mData[1][aIdx];}
-            @Override protected void setReal_(int aIdx, double aReal) {mData[0][aIdx] = aReal;}
-            @Override protected void setImag_(int aIdx, double aImag) {mData[1][aIdx] = aImag;}
+            @Override public double getReal(int aIdx) {return ComplexDoubleList.this.getReal(aIdx);}
+            @Override public double getImag(int aIdx) {return ComplexDoubleList.this.getImag(aIdx);}
+            @Override public void setReal(int aIdx, double aReal) {ComplexDoubleList.this.setReal(aIdx, aReal);}
+            @Override public void setImag(int aIdx, double aImag) {ComplexDoubleList.this.setImag(aIdx, aImag);}
             @Override public int size() {return mSize;}
         };
     }
     @ApiStatus.Experimental
     public IComplexVector asConstVec() {
         return new RefComplexVector() {
-            @Override protected double getReal_(int aIdx) {return mData[0][aIdx];}
-            @Override protected double getImag_(int aIdx) {return mData[1][aIdx];}
+            @Override public double getReal(int aIdx) {return ComplexDoubleList.this.getReal(aIdx);}
+            @Override public double getImag(int aIdx) {return ComplexDoubleList.this.getImag(aIdx);}
             @Override public int size() {return mSize;}
         };
     }

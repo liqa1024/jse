@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.NoSuchElementException;
 import java.util.function.IntUnaryOperator;
 
-import static jtool.math.vector.AbstractVector.subVecRangeCheck;
+import static jtool.math.vector.AbstractVector.*;
 
 /**
  * @author liqa
@@ -29,9 +29,10 @@ public final class ShiftIntVector extends IntArrayVector {
     public int dataLength() {return mData.length;}
     
     /** ILogicalVector stuffs */
-    @Override protected int get_(int aIdx) {return mData[aIdx + mShift];}
-    @Override protected void set_(int aIdx, int aValue) {mData[aIdx + mShift] = aValue;}
-    @Override protected int getAndSet_(int aIdx, int aValue) {
+    @Override public int get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx + mShift];}
+    @Override public void set(int aIdx, int aValue) {rangeCheck(aIdx, mSize); mData[aIdx + mShift] = aValue;}
+    @Override public int getAndSet(int aIdx, int aValue) {
+        rangeCheck(aIdx, mSize);
         aIdx += mShift;
         int oValue = mData[aIdx];
         mData[aIdx] = aValue;
@@ -61,7 +62,8 @@ public final class ShiftIntVector extends IntArrayVector {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override protected void swap_(int aIdx1, int aIdx2) {
+    @Override public void swap(int aIdx1, int aIdx2) {
+        biRangeCheck(aIdx1, aIdx2, mSize);
         aIdx1 += mShift;
         aIdx2 += mShift;
         int tValue = mData[aIdx2];
@@ -69,23 +71,26 @@ public final class ShiftIntVector extends IntArrayVector {
         mData[aIdx1] = tValue;
     }
     
-    @Override protected void increment_(int aIdx) {++mData[aIdx + mShift];}
-    @Override protected int getAndIncrement_(int aIdx) {return mData[aIdx + mShift]++;}
-    @Override protected void decrement_(int aIdx) {--mData[aIdx + mShift];}
-    @Override protected int getAndDecrement_(int aIdx) {return mData[aIdx + mShift]--;}
+    @Override public void increment(int aIdx) {rangeCheck(aIdx, mSize); ++mData[aIdx + mShift];}
+    @Override public int getAndIncrement(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx + mShift]++;}
+    @Override public void decrement(int aIdx) {rangeCheck(aIdx, mSize); --mData[aIdx + mShift];}
+    @Override public int getAndDecrement(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx + mShift]--;}
     
-    @Override protected void add_(int aIdx, int aDelta) {mData[aIdx + mShift] += aDelta;}
-    @Override protected int getAndAdd_(int aIdx, int aDelta) {
+    @Override public void add(int aIdx, int aDelta) {rangeCheck(aIdx, mSize); mData[aIdx + mShift] += aDelta;}
+    @Override public int getAndAdd(int aIdx, int aDelta) {
+        rangeCheck(aIdx, mSize);
         aIdx += mShift;
         int tValue = mData[aIdx];
         mData[aIdx] += aDelta;
         return tValue;
     }
-    @Override protected void update_(int aIdx, IntUnaryOperator aOpt) {
+    @Override public void update(int aIdx, IntUnaryOperator aOpt) {
+        rangeCheck(aIdx, mSize);
         aIdx += mShift;
         mData[aIdx] = aOpt.applyAsInt(mData[aIdx]);
     }
-    @Override protected int getAndUpdate_(int aIdx, IntUnaryOperator aOpt) {
+    @Override public int getAndUpdate(int aIdx, IntUnaryOperator aOpt) {
+        rangeCheck(aIdx, mSize);
         aIdx += mShift;
         int tValue = mData[aIdx];
         mData[aIdx] = aOpt.applyAsInt(tValue);

@@ -24,8 +24,6 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.*;
 
-import static jtool.code.CS.ZL_STR;
-
 
 /**
  * @author liqa
@@ -295,14 +293,14 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         
         final double tScale = aSrcBoxScale / aToBoxScale;
         if (aToCartesian) return new RefMatrix() {
-            @Override protected double get_(int aRow, int aCol) {return aDirect.get(aRow, aCol) * aBox.get(aCol, aCol) * tScale;}
-            @Override protected void set_(int aRow, int aCol, double aValue) {aDirect.set(aRow, aCol, aValue / aBox.get(aCol, aCol) / tScale);}
+            @Override public double get(int aRow, int aCol) {return aDirect.get(aRow, aCol) * aBox.get(aCol, aCol) * tScale;}
+            @Override public void set(int aRow, int aCol, double aValue) {aDirect.set(aRow, aCol, aValue / aBox.get(aCol, aCol) / tScale);}
             @Override public int rowNumber() {return aDirect.rowNumber();}
             @Override public int columnNumber() {return aDirect.columnNumber();}
         };
         else return new RefMatrix() {
-            @Override protected double get_(int aRow, int aCol) {return aDirect.get(aRow, aCol) / aBox.get(aCol, aCol) * tScale;}
-            @Override protected void set_(int aRow, int aCol, double aValue) {aDirect.set(aRow, aCol, aValue * aBox.get(aCol, aCol) / tScale);}
+            @Override public double get(int aRow, int aCol) {return aDirect.get(aRow, aCol) / aBox.get(aCol, aCol) * tScale;}
+            @Override public void set(int aRow, int aCol, double aValue) {aDirect.set(aRow, aCol, aValue * aBox.get(aCol, aCol) / tScale);}
             @Override public int rowNumber() {return aDirect.rowNumber();}
             @Override public int columnNumber() {return aDirect.columnNumber();}
         };

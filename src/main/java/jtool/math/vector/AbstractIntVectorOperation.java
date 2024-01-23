@@ -1,7 +1,6 @@
 package jtool.math.vector;
 
 import jtool.code.functional.ISwapper;
-import jtool.code.iterator.IIntSetOnlyIterator;
 import jtool.math.operation.DATA;
 
 import java.util.function.IntBinaryOperator;

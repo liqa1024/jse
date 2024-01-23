@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 
-import static jtool.math.vector.AbstractVector.subVecRangeCheck;
+import static jtool.math.vector.AbstractVector.*;
 
 /**
  * @author liqa
@@ -47,9 +47,10 @@ public final class LogicalVector extends BooleanArrayVector {
     public int dataLength() {return mData.length;}
     
     /** ILogicalVector stuffs */
-    @Override protected boolean get_(int aIdx) {return mData[aIdx];}
-    @Override protected void set_(int aIdx, boolean aValue) {mData[aIdx] = aValue;}
-    @Override protected boolean getAndSet_(int aIdx, boolean aValue) {
+    @Override public boolean get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx];}
+    @Override public void set(int aIdx, boolean aValue) {rangeCheck(aIdx, mSize); mData[aIdx] = aValue;}
+    @Override public boolean getAndSet(int aIdx, boolean aValue) {
+        rangeCheck(aIdx, mSize);
         boolean oValue = mData[aIdx];
         mData[aIdx] = aValue;
         return oValue;
@@ -79,24 +80,29 @@ public final class LogicalVector extends BooleanArrayVector {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override protected void swap_(int aIdx1, int aIdx2) {
+    @Override public void swap(int aIdx1, int aIdx2) {
+        biRangeCheck(aIdx1, aIdx2, mSize);
         boolean tValue = mData[aIdx2];
         mData[aIdx2] = mData[aIdx1];
         mData[aIdx1] = tValue;
     }
     
-    @Override protected void flip_(int aIdx) {
+    @Override public void flip(int aIdx) {
+        rangeCheck(aIdx, mSize);
         mData[aIdx] = !mData[aIdx];
     }
-    @Override protected boolean getAndFlip_(int aIdx) {
+    @Override public boolean getAndFlip(int aIdx) {
+        rangeCheck(aIdx, mSize);
         boolean tValue = mData[aIdx];
         mData[aIdx] = !tValue;
         return tValue;
     }
-    @Override protected void update_(int aIdx, IBooleanUnaryOperator aOpt) {
+    @Override public void update(int aIdx, IBooleanUnaryOperator aOpt) {
+        rangeCheck(aIdx, mSize);
         mData[aIdx] = aOpt.applyAsBoolean(mData[aIdx]);
     }
-    @Override protected boolean getAndUpdate_(int aIdx, IBooleanUnaryOperator aOpt) {
+    @Override public boolean getAndUpdate(int aIdx, IBooleanUnaryOperator aOpt) {
+        rangeCheck(aIdx, mSize);
         boolean tValue = mData[aIdx];
         mData[aIdx] = aOpt.applyAsBoolean(tValue);
         return tValue;

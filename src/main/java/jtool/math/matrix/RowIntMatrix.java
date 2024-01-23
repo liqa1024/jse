@@ -6,6 +6,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
+import static jtool.math.matrix.AbstractMatrix.rangeCheckCol;
+import static jtool.math.matrix.AbstractMatrix.rangeCheckRow;
+
 
 /**
  * @author liqa
@@ -35,9 +38,19 @@ public final class RowIntMatrix extends IntArrayMatrix {
     
     
     /** IComplexMatrix stuffs */
-    @Override protected int get_(int aRow, int aCol) {return mData[aCol + aRow*mColNum];}
-    @Override protected void set_(int aRow, int aCol, int aValue) {mData[aCol + aRow*mColNum] = aValue;}
-    @Override protected int getAndSet_(int aRow, int aCol, int aValue) {
+    @Override public int get(int aRow, int aCol) {
+        rangeCheckRow(aRow, mRowNum);
+        rangeCheckCol(aCol, mColNum);
+        return mData[aCol + aRow*mColNum];
+    }
+    @Override public void set(int aRow, int aCol, int aValue) {
+        rangeCheckRow(aRow, mRowNum);
+        rangeCheckCol(aCol, mColNum);
+        mData[aCol + aRow*mColNum] = aValue;
+    }
+    @Override public int getAndSet(int aRow, int aCol, int aValue) {
+        rangeCheckRow(aRow, mRowNum);
+        rangeCheckCol(aCol, mColNum);
         int tIdx = aCol + aRow*mColNum;
         int oValue = mData[tIdx];
         mData[tIdx] = aValue;
@@ -58,7 +71,7 @@ public final class RowIntMatrix extends IntArrayMatrix {
     
     /** Optimize stuffs，重写这个提高行向的索引速度 */
     @Override public ShiftIntVector row(final int aRow) {
-        if (aRow<0 || aRow>=rowNumber()) throw new IndexOutOfBoundsException("Row: "+aRow);
+        rangeCheckRow(aRow, mRowNum);
         return new ShiftIntVector(mColNum, aRow*mColNum, mData);
     }
 }
