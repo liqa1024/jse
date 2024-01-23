@@ -228,6 +228,8 @@ public abstract class AbstractIntVector implements IIntVector {
     }
     
     /** 向量基本的运算操作 */
+    @Override public final double sum() {return operation().sum();}
+    
     @Override public final void sort() {operation().sort();}
     @Override public final void shuffle() {operation().shuffle();}
     @Override public final void shuffle(Random aRng) {operation().shuffle(aRng::nextInt);}

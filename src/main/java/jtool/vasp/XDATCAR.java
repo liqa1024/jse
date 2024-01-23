@@ -5,14 +5,14 @@ import com.google.common.collect.Multimap;
 import jtool.atom.*;
 import jtool.code.UT;
 import jtool.code.collection.AbstractCollections;
-import jtool.code.iterator.IDoubleIterator;
-import jtool.code.iterator.IDoubleSetIterator;
 import jtool.math.MathEX;
 import jtool.math.matrix.IMatrix;
 import jtool.math.matrix.Matrices;
 import jtool.math.matrix.RefMatrix;
 import jtool.math.matrix.RowMatrix;
+import jtool.math.vector.IIntVector;
 import jtool.math.vector.IVector;
+import jtool.math.vector.IntVector;
 import jtool.math.vector.Vectors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,12 +39,12 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     /** 这里统一存放通用数据保证所有帧这些一定是相同的 */
     private final String mDataName;
     private String @Nullable[] mAtomTypes;
-    private IVector mAtomNumbers;
+    private IIntVector mAtomNumbers;
     private final IMatrix mBox;
     private final double mBoxScale;
     private final boolean mIsDiagBox;
     /** 保存一份 id 列表，这样在 lmpdat 转为 poscar 时会继续保留 id 信息，XDATCAR 认为不能进行修改 */
-    private final @Nullable IVector mIDs;
+    private final @Nullable IIntVector mIDs;
     private final @Nullable @Unmodifiable Map<Integer, Integer> mId2Index; // 原子的 id 转为存储在 AtomDataXYZ 的指标 index
     
     private List<IMatrix> mDirects;
@@ -53,7 +53,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     /** 用于通过字符获取每个种类的粒子数，考虑了可能有相同 key 的情况 */
     private final @NotNull Multimap<String, Integer> mKey2Type;
     
-    XDATCAR(String aDataName, IMatrix aBox, double aBoxScale, String @Nullable[] aAtomTypes, IVector aAtomNumbers, List<IMatrix> aDirects, boolean aIsCartesian, @Nullable IVector aIDs) {
+    XDATCAR(String aDataName, IMatrix aBox, double aBoxScale, String @Nullable[] aAtomTypes, IIntVector aAtomNumbers, List<IMatrix> aDirects, boolean aIsCartesian, @Nullable IIntVector aIDs) {
         mDataName = aDataName;
         mAtomTypes = aAtomTypes;
         mAtomNumbers = aAtomNumbers;
@@ -68,7 +68,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         } else {
             int tSize = mIDs.size();
             mId2Index = new HashMap<>(tSize);
-            for (int idx = 0; idx < tSize; ++idx) mId2Index.put((int)mIDs.get(idx), idx);
+            for (int idx = 0; idx < tSize; ++idx) mId2Index.put(mIDs.get(idx), idx);
         }
         
         mKey2Type = ArrayListMultimap.create();
@@ -82,7 +82,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         
         mIsDiagBox = mBox.operation().isDiag();
     }
-    XDATCAR(String aDataName, IMatrix aBox, double aBoxScale, String @Nullable[] aAtomTypes, IVector aAtomNumbers, IMatrix aFirstDirect, int aInitSize, boolean aIsCartesian, @Nullable IVector aIDs) {
+    XDATCAR(String aDataName, IMatrix aBox, double aBoxScale, String @Nullable[] aAtomTypes, IIntVector aAtomNumbers, IMatrix aFirstDirect, int aInitSize, boolean aIsCartesian, @Nullable IIntVector aIDs) {
         this(aDataName, aBox, aBoxScale, aAtomTypes, aAtomNumbers, new ArrayList<>(aInitSize), aIsCartesian, aIDs);
         mDirects.add(aFirstDirect);
     }
@@ -139,16 +139,16 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         for (int tType : mKey2Type.get(aKey)) rAtomNum += atomNum(tType);
         return rAtomNum;
     }
-    public int atomNum(int aType) {return (int)mAtomNumbers.get(aType-1);}
+    public int atomNum(int aType) {return mAtomNumbers.get(aType-1);}
     public @Override String dataName() {return mDataName;}
     public @Override String @Nullable[] atomTypes() {return mAtomTypes;}
-    public @Override IVector atomNumbers() {return mAtomNumbers;}
+    public @Override IIntVector atomNumbers() {return mAtomNumbers;}
     public @Override IMatrix vaspBox() {return mBox;}
     public @Override double vaspBoxScale() {return mBoxScale;}
     public List<IMatrix> directs() {return mDirects;}
     public @Override boolean isCartesian() {return mIsCartesian;}
     public @Override boolean isDiagBox() {return mIsDiagBox;}
-    public @Override @Nullable IVector ids() {return mIDs;}
+    public @Override @Nullable IIntVector ids() {return mIDs;}
     
     
     /** 支持直接修改 AtomTypes，只会增大种类数，不会减少 */
@@ -161,11 +161,9 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         if (mAtomTypes==null || aAtomTypes.length>mAtomTypes.length) mAtomTypes = Arrays.copyOf(aAtomTypes, aAtomTypes.length);
         else System.arraycopy(aAtomTypes, 0, mAtomTypes, 0, aAtomTypes.length);
         if (aAtomTypes.length > mAtomNumbers.size()) {
-            IVector oAtomNumbers = mAtomNumbers;
-            mAtomNumbers = Vectors.zeros(aAtomTypes.length);
-            IDoubleIterator it = oAtomNumbers.iterator();
-            IDoubleSetIterator si = mAtomNumbers.setIterator();
-            while (it.hasNext()) si.nextAndSet(it.next());
+            IIntVector oAtomNumbers = mAtomNumbers;
+            mAtomNumbers = IntVector.zeros(aAtomTypes.length);
+            mAtomNumbers.subVec(0, oAtomNumbers.size()).fill(oAtomNumbers);
         }
         mKey2Type.clear();
         int rType = 0;
@@ -246,9 +244,9 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
             return fromAtomData_(((XDATCAR)aAtomData).defaultFrame(), aInitSize, aAtomTypes);
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
-            IVector rIDs = Vectors.zeros(aAtomData.atomNum());
+            IIntVector rIDs = IntVector.zeros(aAtomData.atomNum());
             int tAtomTypeNum = aAtomData.atomTypeNum();
-            IVector rAtomNumbers = Vectors.zeros(tAtomTypeNum);
+            IIntVector rAtomNumbers = IntVector.zeros(tAtomTypeNum);
             IMatrix rDirect = Matrices.zeros(aAtomData.atomNum(), 3);
             int tIdx = 0;
             for (int tTypeMM = 0; tTypeMM < tAtomTypeNum; ++tTypeMM) {
@@ -312,7 +310,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     
     /** 对于 matlab 调用的兼容 */
     public static XDATCAR fromAtomData_compat(Object[] aAtomDataArray) {
-        return fromAtomData_compat(aAtomDataArray, ZL_STR);
+        return fromAtomData_compat(aAtomDataArray, (String[])null);
     }
     public static XDATCAR fromAtomData_compat(Object[] aAtomDataArray, String... aAtomTypes) {
         return fromAtomDataList(AbstractCollections.map(AbstractCollections.filter(AbstractCollections.from(aAtomDataArray), atomData -> (atomData instanceof IAtomData)), obj -> (IAtomData)obj), aAtomTypes);
@@ -335,7 +333,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         IMatrix aBox;
         double aBoxScale;
         String[] aAtomTypes;
-        IVector aAtomNumbers;
+        IIntVector aAtomNumbers;
         boolean aIsCartesian;
         
         String tLine;
@@ -359,11 +357,13 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         aAtomTypes = tTokens;
         tLine = aReader.readLine(); if (tLine == null) return null; tTokens = UT.Texts.splitBlank(tLine);
         try {
-        aAtomNumbers = Vectors.from(AbstractCollections.map(tTokens, Integer::parseInt));
+        final String[] fTokens = tTokens;
+        aAtomNumbers = Vectors.fromInteger(fTokens.length, i -> Integer.parseInt(fTokens[i]));
         } catch (Exception e) {
         tNoAtomType = true;
-        aAtomNumbers = Vectors.from(AbstractCollections.map(aAtomTypes, Integer::parseInt));
-        aAtomTypes = ZL_STR;
+        final String[] fTokens = aAtomTypes;
+        aAtomNumbers = Vectors.fromInteger(fTokens.length, i -> Integer.parseInt(fTokens[i]));
+        aAtomTypes = null;
         }
         if (!tNoAtomType) {
         tLine = aReader.readLine(); if (tLine == null) return null;
@@ -414,7 +414,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
             if (mAtomTypes!=null && mAtomTypes.length!=0) {
             tWriteln.writeln(String.join(" ", AbstractCollections.map(mAtomTypes, type -> String.format("%6s", type))));
             }
-            tWriteln.writeln(String.join(" ", AbstractCollections.map(mAtomNumbers.iterable(), number -> String.format("%6d", number.intValue()))));
+            tWriteln.writeln(String.join(" ", AbstractCollections.map(mAtomNumbers.iterable(), number -> String.format("%6d", number))));
             // 再输出原子数据
             for (int i = 0; i < mDirects.size(); ++i) {
             tWriteln.writeln((mIsCartesian ? "Cartesian" : "Direct") + " configuration= " + (i+1));

@@ -9,6 +9,7 @@ import jtool.code.iterator.IIntSetIterator;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
@@ -47,6 +48,17 @@ public interface IIntVector extends ISwapper, ISlice, IHasIntIterator, IHasIntSe
     int getAndSet(int aIdx, int aValue); // 返回修改前的值
     void set(int aIdx, int aValue);
     
+    /** 用于方便访问 */
+    default boolean isEmpty() {return size()==0;}
+    default double last() {
+        if (isEmpty()) throw new NoSuchElementException("Cannot access last() element from an empty IntVector");
+        return get(size()-1);
+    }
+    default double first() {
+        if (isEmpty()) throw new NoSuchElementException("Cannot access first() element from an empty IntVector");
+        return get(0);
+    }
+    
     /** 附加一些额外的单元素操作，对于 IntegerVector 由于适用范围更广，提供更多的接口 */
     void increment(int aIdx);
     int getAndIncrement(int aIdx);
@@ -66,6 +78,8 @@ public interface IIntVector extends ISwapper, ISlice, IHasIntIterator, IHasIntSe
     @VisibleForTesting default IIntVectorOperation opt() {return operation();}
     
     /** 增加向量基本的运算操作以及 IntegerVector 特有的操作，现在也归入内部使用 */
+    double sum();
+    
     void sort();
     void shuffle();
     void shuffle(Random aRng);

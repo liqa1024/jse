@@ -20,6 +20,8 @@ public interface IIntVectorOperation {
     /** 统一提供一个 for-each 运算来减少优化需要的重复代码 */
     void forEach            (IntConsumer aCon);
     
+    double sum          ();
+    
     
     /** 向量的一些额外的运算 */
     void reverse2this();

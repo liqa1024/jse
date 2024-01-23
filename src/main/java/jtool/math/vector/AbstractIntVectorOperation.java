@@ -19,6 +19,8 @@ public abstract class AbstractIntVectorOperation implements IIntVectorOperation 
     @Override public void fill          (IIntVectorGetter   aRHS) {DATA.vecFill2This (thisVector_(), aRHS);}
     @Override public void reverse2this() {DATA.reverse2This(thisVector_());}
     
+    @Override public double sum ()                      {return DATA.sumOfThis(thisVector_().asDouble());}
+    
     /** 排序不自己实现 */
     @Override public void sort() {DATA.sort(thisVector_());}
     @Override public void sort(IntBinaryOperator aComp) {DATA.sort(thisVector_(), aComp);}

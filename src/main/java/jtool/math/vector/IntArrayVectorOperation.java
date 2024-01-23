@@ -20,6 +20,8 @@ public abstract class IntArrayVectorOperation extends AbstractIntVectorOperation
     @Override public void assign        (IntSupplier      aSup) {IntArrayVector rThis = thisVector_(); ARRAY.assign2This  (rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize(), rThis.isReverse(), aSup);}
     @Override public void forEach       (IntConsumer      aCon) {IntArrayVector rThis = thisVector_(); ARRAY.forEachOfThis(rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize(), rThis.isReverse(), aCon);}
     
+    @Override public double sum ()                      {IntArrayVector tThis = thisVector_(); return ARRAY.sumOfThis (tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
+    
     
     /** 排序不自己实现 */
     @Override public void sort() {
