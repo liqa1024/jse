@@ -201,8 +201,8 @@ public class SP {
         }
         
         static {
-            // 手动加载 UT，会自动重新设置工作目录，会在调用静态函数 get 或者 load 时自动加载保证路径的正确性
-            UT.IO.init();
+            // 手动加载 UT，会自动重新设置工作目录，保证 Groovy 读取到的工作目录是正确的
+            UT.IO.InitHelper.init();
             // 在程序结束时关闭 CLASS_LOADER，最先添加来避免一些问题
             Main.addGlobalAutoCloseable(Groovy::close);
             // 初始化 CLASS_LOADER
@@ -221,6 +221,19 @@ public class SP {
     
     /** Python 脚本运行支持，完全基于 jep */
     public static class Python {
+        
+        /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
+        public final static class InitHelper {
+            private static volatile boolean INITIALIZED = false;
+            
+            public static boolean initialized() {return INITIALIZED;}
+            @SuppressWarnings("ResultOfMethodCallIgnored")
+            public static void init() {
+                // 手动调用此值来强制初始化
+                if (!INITIALIZED) String.valueOf(JEP_INTERP);
+            }
+        }
+        
         /** 包的版本 */
         private final static String JEP_VERSION = "4.2.0", ASE_VERSION = "3.22.1";
         /** python 离线包的路径以及 python 库的路径，这里采用 jar 包所在的绝对路径 */
@@ -282,8 +295,10 @@ public class SP {
         
         
         static {
-            // 手动加载 UT，会自动重新设置工作目录，会在调用静态函数 get 或者 load 时自动加载保证路径的正确性
-            UT.IO.init();
+            InitHelper.INITIALIZED = true;
+            
+            // 手动加载 UT，会自动重新设置工作目录，保证 jep 读取到的工作目录是正确的
+            UT.IO.InitHelper.init();
             // 在 JVM 关闭时关闭 JEP_INTERP，最先添加来避免一些问题
             Main.addGlobalAutoCloseable(Python::close);
             // 设置 Jep 非 java 库的路径，考虑到 WSL，windows 和 linux 使用不同的名称

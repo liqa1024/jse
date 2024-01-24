@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  */
 public class CS {
     /** version of jtool */
-    public final static String VERSION = "2.4.6";
+    public final static String VERSION = "2.4.6b";
     
     /** a Random generator so I don't need to instantiate a new one all the time. */
     public final static Random RNGSUS = new Random(), RANDOM = RNGSUS;
@@ -505,7 +505,7 @@ public class CS {
         public final static String JAR_DIR;
         static {
             // 先手动加载 UT，会自动重新设置工作目录，保证路径的正确性
-            UT.IO.init();
+            UT.IO.InitHelper.init();
             // 获取此 jar 的路径
             JAR_PATH = System.getProperty("java.class.path");
             Path tPath = UT.IO.toAbsolutePath_(JAR_PATH).getParent();

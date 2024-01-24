@@ -33,6 +33,7 @@ import jtool.math.vector.IVector;
 import jtool.math.vector.Vector;
 import jtool.math.vector.Vectors;
 import jtool.parallel.LocalRandom;
+import jtool.parallel.MPI;
 import jtool.parallel.MergedFuture;
 import jtool.parallel.ParforThreadPool;
 import jtool.plot.*;
@@ -1234,18 +1235,27 @@ public class UT {
             return WORKING_PATH.resolve(aPath);
         }
         
+        /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
+        public final static class InitHelper {
+            private static volatile boolean INITIALIZED = false;
+            
+            public static boolean initialized() {return INITIALIZED;}
+            @SuppressWarnings("ResultOfMethodCallIgnored")
+            public static void init() {
+                // 手动调用此值来强制初始化
+                if (!INITIALIZED) String.valueOf(WORKING_PATH);
+            }
+        }
+        
         // reset the working dir to correct value
-        private static Path WORKING_PATH = null;
-        private static volatile boolean INITIALIZED = false;
-        public static void init() {
-            if (INITIALIZED) return;
-            INITIALIZED = true;
+        private final static Path WORKING_PATH;
+        static {
+            InitHelper.INITIALIZED = true;
             // 全局修改工作目录为正确的目录
             String wd = pwd();
             System.setProperty("user.dir", wd);
             WORKING_PATH = Paths.get(wd);
         }
-        static {init();}
     }
     
     

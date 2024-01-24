@@ -49,6 +49,19 @@ import static jtool.code.CS.Exec.JAR_DIR;
  */
 public class MPI {
     private MPI() {}
+    
+    /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
+    public final static class InitHelper {
+        private static volatile boolean INITIALIZED = false;
+        
+        public static boolean initialized() {return INITIALIZED;}
+        @SuppressWarnings("ResultOfMethodCallIgnored")
+        public static void init() {
+            // 此常量由于需要在 initThread 中使用，一定会在 MPI.init 之前就需要初始化，因此手动调用一定可以实现初始化
+            if (!INITIALIZED) String.valueOf(Native.MPI_THREAD_SINGLE);
+        }
+    }
+    
     public static String libraryVersion() throws Error {return MPI.Native.MPI_Get_library_version();}
     
     public static final int UNDEFINED = Native.MPI_UNDEFINED;
@@ -996,6 +1009,8 @@ public class MPI {
         // 但是得到的是 final 值，可以避免意外的修改，并且简化代码；
         // 这对于一般的 MPI 实现应该都是没有问题的
         static {
+            InitHelper.INITIALIZED = true;
+            
             // 如果不存在 jni lib 则需要重新通过源码编译
             if (!UT.IO.isFile(MPILIB_PATH)) {
                 System.out.println("MPI INIT INFO: mpijni libraries not found. Reinstalling...");

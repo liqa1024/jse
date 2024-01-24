@@ -38,6 +38,18 @@ import static jtool.code.CS.*;
  */
 public class NativeLmp implements IAutoShutdown {
     
+    /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
+    public final static class InitHelper {
+        private static volatile boolean INITIALIZED = false;
+        
+        public static boolean initialized() {return INITIALIZED;}
+        @SuppressWarnings("ResultOfMethodCallIgnored")
+        public static void init() {
+            // 手动调用此值来强制初始化
+            if (!INITIALIZED) String.valueOf(LMPLIB_PATH);
+        }
+    }
+    
     public final static class Error extends Exception {
         public Error(String aMessage) {
             super(aMessage);
@@ -253,6 +265,8 @@ public class NativeLmp implements IAutoShutdown {
     }
     
     static {
+        InitHelper.INITIALIZED = true;
+        
         // 先规范化 LMP_HOME 的格式
         if (Conf.LMP_HOME == null) {
             String tNativeDir;
