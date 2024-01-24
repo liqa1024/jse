@@ -1191,16 +1191,16 @@ public class DATA {
         Sort.sortAdhoc(rVec, rVec.size(), aComp);
     }
     public static void biSort(final IVector rVec, ISwapper aSwapper) {
-        Sort.sortAdhoc((i, j) -> {rVec.swap(i, j); aSwapper.swap(i, j);}, rVec.size(), (i, j) -> Double.compare(rVec.get(i), rVec.get(j)));
+        Sort.sortAdhoc(rVec.merge(aSwapper), rVec.size(), (i, j) -> Double.compare(rVec.get(i), rVec.get(j)));
     }
     public static void biSort(final IIntVector rVec, ISwapper aSwapper) {
-        Sort.sortAdhoc((i, j) -> {rVec.swap(i, j); aSwapper.swap(i, j);}, rVec.size(), (i, j) -> Integer.compare(rVec.get(i), rVec.get(j)));
+        Sort.sortAdhoc(rVec.merge(aSwapper), rVec.size(), (i, j) -> Integer.compare(rVec.get(i), rVec.get(j)));
     }
     public static void biSort(final IVector rVec, ISwapper aSwapper, IntBinaryOperator aComp) {
-        Sort.sortAdhoc((i, j) -> {rVec.swap(i, j); aSwapper.swap(i, j);}, rVec.size(), aComp);
+        Sort.sortAdhoc(rVec.merge(aSwapper), rVec.size(), aComp);
     }
     public static void biSort(final IIntVector rVec, ISwapper aSwapper, IntBinaryOperator aComp) {
-        Sort.sortAdhoc((i, j) -> {rVec.swap(i, j); aSwapper.swap(i, j);}, rVec.size(), aComp);
+        Sort.sortAdhoc(rVec.merge(aSwapper), rVec.size(), aComp);
     }
     
     

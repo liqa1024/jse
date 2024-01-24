@@ -12,6 +12,20 @@ import jtool.math.IDataShell;
 public interface ISwapper extends Swapper {
     void swap(int aIdx1, int aIdx2);
     
+    default ISwapper merge(final ISwapper aAfter) {
+        return (i, j) -> {
+            this.swap(i, j);
+            aAfter.swap(i, j);
+        };
+    }
+    default ISwapper merge(final ISwapper aFirst, final ISwapper... aElse) {
+        return (i, j) -> {
+            this.swap(i, j);
+            aFirst.swap(i, j);
+            for (ISwapper tElse : aElse) tElse.swap(i, j);
+        };
+    }
+    
     default ISwapper unshift(final int aShift) {
         return aShift==0 ? this : (i, j) -> swap(i-aShift, j-aShift);
     }

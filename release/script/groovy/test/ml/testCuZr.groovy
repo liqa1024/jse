@@ -91,7 +91,7 @@ static List<IMatrix> getBasisMean(List<IMatrix> basis, def mpc, double cutoff) {
     for (int i : 0..<basis.size()) {
         basisMean[i].fill(basis[i]);
         def nl = mpc.getNeighborList(i, mpc.unitLen()*cutoff);
-        for (int j : nl) basisMean[i].plus2this(basis[j]);
+        nl.forEach {int j -> basisMean[i].plus2this(basis[j]);}
         basisMean[i].div2this(nl.size()+1);
     }
     MatrixCache.returnMat(basis);
