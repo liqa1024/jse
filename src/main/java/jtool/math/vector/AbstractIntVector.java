@@ -91,7 +91,7 @@ public abstract class AbstractIntVector implements IIntVector {
             @Override public void set(int aIdx, double aValue) {AbstractIntVector.this.set(aIdx, (int)aValue);}
             @Override public double getAndSet(int aIdx, double aValue) {return AbstractIntVector.this.getAndSet(aIdx, (int)aValue);}
             @Override public int size() {return AbstractIntVector.this.size();}
-            @Override public @NotNull IDoubleIterator iterator() {return AbstractIntVector.this.iterator().asDouble();}
+            @Override public IDoubleIterator iterator() {return AbstractIntVector.this.iterator().asDouble();}
         };
     }
     

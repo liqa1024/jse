@@ -50,34 +50,19 @@ public interface IComplexVector extends ISwapper, IHasComplexDoubleIterator, IHa
     /** 批量修改的接口 */
     void fill(IComplexDouble aValue);
     void fill(double aValue);
-    void fillReal(double aReal);
-    void fillImag(double aImag);
     void fill(IComplexVector aVector);
     void fill(IVector aVector);
-    void fillReal(IVector aRealVector);
-    void fillImag(IVector aImagVector);
     void fill(IComplexVectorGetter aVectorGetter);
     void fill(IVectorGetter aVectorGetter);
-    void fillReal(IVectorGetter aRealGetter);
-    void fillImag(IVectorGetter aImagGetter);
+    void fill(double[][] aData);
     void fill(double[] aData);
-    void fillReal(double[] aRealData);
-    void fillImag(double[] aImagData);
-    void fill(Iterable<? extends Number> aList);
-    void fillReal(Iterable<? extends Number> aRealList);
-    void fillImag(Iterable<? extends Number> aImagList);
+    void fill(Iterable<?> aList);
     void assign(Supplier<? extends IComplexDouble> aSup);
     void assign(DoubleSupplier aSup);
-    void assignReal(DoubleSupplier aRealSup);
-    void assignImag(DoubleSupplier aImagSup);
     void forEach(Consumer<? super ComplexDouble> aCon);
     void forEach(IDoubleBinaryConsumer aCon);
-    void forEachReal(DoubleConsumer aCon);
-    void forEachImag(DoubleConsumer aCon);
     /** Groovy stuff */
     void fill(Closure<?> aGroovyTask);
-    void fillReal(Closure<? extends Number> aGroovyTask);
-    void fillImag(Closure<? extends Number> aGroovyTask);
     void assign(Closure<?> aGroovyTask);
     void forEach(Closure<?> aGroovyTask);
     

@@ -9,6 +9,7 @@ import jtool.code.functional.IIndexFilter;
 import jtool.code.functional.IUnaryFullOperator;
 import jtool.code.iterator.IComplexDoubleIterator;
 import jtool.code.iterator.IComplexDoubleSetIterator;
+import jtool.code.iterator.IComplexDoubleSetOnlyIterator;
 import jtool.math.ComplexDouble;
 import jtool.math.IComplexDouble;
 import org.jetbrains.annotations.NotNull;
@@ -179,27 +180,36 @@ public abstract class AbstractComplexVector implements IComplexVector {
     /** 批量修改的接口 */
     @Override public final void fill(IComplexDouble aValue) {operation().fill(aValue);}
     @Override public final void fill(double aValue) {operation().fill(aValue);}
-    @Override public final void fillReal(double aReal) {real().fill(aReal);}
-    @Override public final void fillImag(double aImag) {imag().fill(aImag);}
     @Override public final void fill(IComplexVector aVector) {operation().fill(aVector);}
     @Override public final void fill(IVector aVector) {operation().fill(aVector);}
-    @Override public final void fillReal(IVector aRealVector) {real().fill(aRealVector);}
-    @Override public final void fillImag(IVector aImagVector) {imag().fill(aImagVector);}
     @Override public final void fill(IComplexVectorGetter aVectorGetter) {operation().fill(aVectorGetter);}
     @Override public final void fill(IVectorGetter aVectorGetter) {operation().fill(aVectorGetter);}
-    @Override public final void fillReal(IVectorGetter aRealGetter) {real().fill(aRealGetter);}
-    @Override public final void fillImag(IVectorGetter aImagGetter) {imag().fill(aImagGetter);}
-    @Override public final void fillReal(double[] aRealData) {real().fill(aRealData);}
-    @Override public final void fillImag(double[] aImagData) {imag().fill(aImagData);}
-    @Override public final void fillReal(Iterable<? extends Number> aRealList) {real().fill(aRealList);}
-    @Override public final void fillImag(Iterable<? extends Number> aImagList) {imag().fill(aImagList);}
     
-    @Override public final void fill(Iterable<? extends Number> aList) {
-        final Iterator<? extends Number> it = aList.iterator();
-        assign(() -> it.next().doubleValue());
+    @Override public final void fill(Iterable<?> aList) {
+        final Iterator<?> it = aList.iterator();
+        final IComplexDoubleSetOnlyIterator si = setIterator();
+        while (si.hasNext()) {
+            // 直接先执行然后检测类型决定如何设置
+            Object tObj = it.next();
+            if (tObj instanceof IComplexDouble) si.nextAndSet((IComplexDouble)tObj);
+            else if (tObj instanceof Number) si.nextAndSet(((Number)tObj).doubleValue());
+            else si.nextAndSet(Double.NaN);
+        }
+    }
+    @Override public void fill(double[][] aData) {
+        final double[] tRealData = aData[0];
+        final double[] tImagData = aData[1];
+        final IComplexDoubleSetOnlyIterator si = setIterator();
+        int idx = 0;
+        while (si.hasNext()) {
+            si.nextOnly();
+            si.setReal(tRealData[idx]);
+            si.setImag(tImagData[idx]);
+            ++idx;
+        }
     }
     @Override public void fill(double[] aData) {
-        final IComplexDoubleSetIterator si = setIterator();
+        final IComplexDoubleSetOnlyIterator si = setIterator();
         int idx = 0;
         while (si.hasNext()) {
             si.nextAndSet(aData[idx]);
@@ -209,16 +219,10 @@ public abstract class AbstractComplexVector implements IComplexVector {
     
     @Override public final void assign(Supplier<? extends IComplexDouble> aSup) {operation().assign(aSup);}
     @Override public final void assign(DoubleSupplier aSup) {operation().assign(aSup);}
-    @Override public final void assignReal(DoubleSupplier aRealSup) {real().assign(aRealSup);}
-    @Override public final void assignImag(DoubleSupplier aImagSup) {imag().assign(aImagSup);}
     @Override public final void forEach(Consumer<? super ComplexDouble> aCon) {operation().forEach(aCon);}
     @Override public final void forEach(IDoubleBinaryConsumer aCon) {operation().forEach(aCon);}
-    @Override public final void forEachReal(DoubleConsumer aCon) {real().forEach(aCon);}
-    @Override public final void forEachImag(DoubleConsumer aCon) {imag().forEach(aCon);}
     /** Groovy stuff */
     @Override public void fill(Closure<?> aGroovyTask) {operation().fill(aGroovyTask);}
-    @Override public void fillReal(Closure<? extends Number> aGroovyTask) {real().fill(aGroovyTask);}
-    @Override public void fillImag(Closure<? extends Number> aGroovyTask) {imag().fill(aGroovyTask);}
     @Override public final void assign(Closure<?> aGroovyTask) {operation().assign(aGroovyTask);}
     @Override public final void forEach(Closure<?> aGroovyTask) {operation().forEach(aGroovyTask);}
     

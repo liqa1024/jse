@@ -26,6 +26,13 @@ public abstract class BiDoubleArrayVector extends AbstractComplexVector implemen
     @Override public IComplexVectorOperation operation() {return new BiDoubleArrayVectorOperation_();}
     
     /** Optimize stuffs，重写这些接口来加速批量填充过程 */
+    @Override public void fill(double[][] aData) {
+        double[][] tData = internalData();
+        final int tShift = internalDataShift();
+        final int tSize = internalDataSize();
+        System.arraycopy(aData[0], 0, tData[0], tShift, tSize);
+        System.arraycopy(aData[1], 0, tData[1], tShift, tSize);
+    }
     @Override public void fill(double[] aData) {
         double[][] tData = internalData();
         final int tShift = internalDataShift();

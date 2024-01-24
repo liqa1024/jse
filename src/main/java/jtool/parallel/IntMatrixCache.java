@@ -1,7 +1,10 @@
 package jtool.parallel;
 
 import jtool.code.collection.AbstractCollections;
-import jtool.math.matrix.*;
+import jtool.math.matrix.ColumnIntMatrix;
+import jtool.math.matrix.IIntMatrix;
+import jtool.math.matrix.IntArrayMatrix;
+import jtool.math.matrix.RowIntMatrix;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -33,6 +36,21 @@ public class IntMatrixCache {
     }
     
     
+    public static @NotNull ColumnIntMatrix getZeros(int aRowNum, int aColNum) {
+        return getZerosCol(aRowNum, aColNum);
+    }
+    public static @NotNull List<ColumnIntMatrix> getZeros(int aRowNum, int aColNum, int aMultiple) {
+        return getZerosCol(aRowNum, aColNum, aMultiple);
+    }
+    public static @NotNull ColumnIntMatrix getZerosCol(int aRowNum, int aColNum) {
+        return new ColumnIntMatrix(aRowNum, aColNum, IntArrayCache.getZeros(aRowNum*aColNum));
+    }
+    public static @NotNull List<ColumnIntMatrix> getZerosCol(final int aRowNum, final int aColNum, int aMultiple) {
+        if (aMultiple <= 0) return AbstractCollections.zl();
+        final List<ColumnIntMatrix> rOut = new ArrayList<>(aMultiple);
+        IntArrayCache.getZerosTo(aRowNum*aColNum, aMultiple, (i, arr) -> rOut.add(new ColumnIntMatrix(aRowNum, aColNum, arr)));
+        return rOut;
+    }
     public static @NotNull RowIntMatrix getZerosRow(int aRowNum, int aColNum) {
         return new RowIntMatrix(aRowNum, aColNum, IntArrayCache.getZeros(aRowNum*aColNum));
     }
@@ -40,6 +58,21 @@ public class IntMatrixCache {
         if (aMultiple <= 0) return AbstractCollections.zl();
         final List<RowIntMatrix> rOut = new ArrayList<>(aMultiple);
         IntArrayCache.getZerosTo(aRowNum*aColNum, aMultiple, (i, arr) -> rOut.add(new RowIntMatrix(aRowNum, aColNum, arr)));
+        return rOut;
+    }
+    public static @NotNull ColumnIntMatrix getMat(int aRowNum, int aColNum) {
+        return getMatCol(aRowNum, aColNum);
+    }
+    public static @NotNull List<ColumnIntMatrix> getMat(int aRowNum, int aColNum, int aMultiple) {
+        return getMatCol(aRowNum, aColNum, aMultiple);
+    }
+    public static @NotNull ColumnIntMatrix getMatCol(int aRowNum, int aColNum) {
+        return new ColumnIntMatrix(aRowNum, aColNum, IntArrayCache.getArray(aRowNum*aColNum));
+    }
+    public static @NotNull List<ColumnIntMatrix> getMatCol(final int aRowNum, final int aColNum, int aMultiple) {
+        if (aMultiple <= 0) return AbstractCollections.zl();
+        final List<ColumnIntMatrix> rOut = new ArrayList<>(aMultiple);
+        IntArrayCache.getArrayTo(aRowNum*aColNum, aMultiple, (i, arr) -> rOut.add(new ColumnIntMatrix(aRowNum, aColNum, arr)));
         return rOut;
     }
     public static @NotNull RowIntMatrix getMatRow(int aRowNum, int aColNum) {

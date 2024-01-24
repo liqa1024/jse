@@ -29,28 +29,28 @@ public abstract class AbstractComplexVectorOperation implements IComplexVectorOp
     @Override public IComplexVector multiply    (IComplexVector aRHS) {IComplexVector rVector = newVector_(); DATA.ebeMultiply2Dest(thisVector_(), aRHS, rVector); return rVector;}
     @Override public IComplexVector div         (IComplexVector aRHS) {IComplexVector rVector = newVector_(); DATA.ebeDiv2Dest     (thisVector_(), aRHS, rVector); return rVector;}
     @Override public IComplexVector ldiv        (IComplexVector aRHS) {IComplexVector rVector = newVector_(); DATA.ebeDiv2Dest     (aRHS, thisVector_(), rVector); return rVector;}
-    @Override public IComplexVector operate(IComplexVector aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt) {IComplexVector rVector = newVector_(); DATA.ebeDo2Dest(thisVector_(), aRHS, rVector, aOpt); return rVector;}
+    @Override public IComplexVector operate     (IComplexVector aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt) {IComplexVector rVector = newVector_(); DATA.ebeDo2Dest(thisVector_(), aRHS, rVector, aOpt); return rVector;}
     @Override public IComplexVector plus        (IVector        aRHS) {IComplexVector rVector = newVector_(); DATA.ebePlus2Dest    (thisVector_(), aRHS, rVector); return rVector;}
     @Override public IComplexVector minus       (IVector        aRHS) {IComplexVector rVector = newVector_(); DATA.ebeMinus2Dest   (thisVector_(), aRHS, rVector); return rVector;}
     @Override public IComplexVector lminus      (IVector        aRHS) {IComplexVector rVector = newVector_(); DATA.ebeMinus2Dest   (aRHS, thisVector_(), rVector); return rVector;}
     @Override public IComplexVector multiply    (IVector        aRHS) {IComplexVector rVector = newVector_(); DATA.ebeMultiply2Dest(thisVector_(), aRHS, rVector); return rVector;}
     @Override public IComplexVector div         (IVector        aRHS) {IComplexVector rVector = newVector_(); DATA.ebeDiv2Dest     (thisVector_(), aRHS, rVector); return rVector;}
     @Override public IComplexVector ldiv        (IVector        aRHS) {IComplexVector rVector = newVector_(); DATA.ebeDiv2Dest     (aRHS, thisVector_(), rVector); return rVector;}
-    @Override public IComplexVector operate(IVector        aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt) {IComplexVector rVector = newVector_(); DATA.ebeDo2Dest(thisVector_(), aRHS, rVector, aOpt); return rVector;}
+    @Override public IComplexVector operate     (IVector        aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt) {IComplexVector rVector = newVector_(); DATA.ebeDo2Dest(thisVector_(), aRHS, rVector, aOpt); return rVector;}
     
-    @Override public IComplexVector plus       (IComplexDouble aRHS) {IComplexVector rVector = newVector_(); DATA.mapPlus2Dest    (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IComplexVector minus      (IComplexDouble aRHS) {IComplexVector rVector = newVector_(); DATA.mapMinus2Dest   (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IComplexVector lminus     (IComplexDouble aRHS) {IComplexVector rVector = newVector_(); DATA.mapLMinus2Dest  (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IComplexVector multiply   (IComplexDouble aRHS) {IComplexVector rVector = newVector_(); DATA.mapMultiply2Dest(thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IComplexVector div        (IComplexDouble aRHS) {IComplexVector rVector = newVector_(); DATA.mapDiv2Dest     (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IComplexVector ldiv       (IComplexDouble aRHS) {IComplexVector rVector = newVector_(); DATA.mapLDiv2Dest    (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IComplexVector plus       (double         aRHS) {IComplexVector rVector = newVector_(); DATA.mapPlus2Dest    (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IComplexVector minus      (double         aRHS) {IComplexVector rVector = newVector_(); DATA.mapMinus2Dest   (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IComplexVector lminus     (double         aRHS) {IComplexVector rVector = newVector_(); DATA.mapLMinus2Dest  (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IComplexVector multiply   (double         aRHS) {IComplexVector rVector = newVector_(); DATA.mapMultiply2Dest(thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IComplexVector div        (double         aRHS) {IComplexVector rVector = newVector_(); DATA.mapDiv2Dest     (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IComplexVector ldiv       (double         aRHS) {IComplexVector rVector = newVector_(); DATA.mapLDiv2Dest    (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IComplexVector map(IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {IComplexVector rVector = newVector_(); DATA.mapDo2Dest(thisVector_(), rVector, aOpt); return rVector;}
+    @Override public IComplexVector plus        (IComplexDouble aRHS) {IComplexVector rVector = newVector_(); DATA.mapPlus2Dest    (thisVector_(), aRHS, rVector); return rVector;}
+    @Override public IComplexVector minus       (IComplexDouble aRHS) {IComplexVector rVector = newVector_(); DATA.mapMinus2Dest   (thisVector_(), aRHS, rVector); return rVector;}
+    @Override public IComplexVector lminus      (IComplexDouble aRHS) {IComplexVector rVector = newVector_(); DATA.mapLMinus2Dest  (thisVector_(), aRHS, rVector); return rVector;}
+    @Override public IComplexVector multiply    (IComplexDouble aRHS) {IComplexVector rVector = newVector_(); DATA.mapMultiply2Dest(thisVector_(), aRHS, rVector); return rVector;}
+    @Override public IComplexVector div         (IComplexDouble aRHS) {IComplexVector rVector = newVector_(); DATA.mapDiv2Dest     (thisVector_(), aRHS, rVector); return rVector;}
+    @Override public IComplexVector ldiv        (IComplexDouble aRHS) {IComplexVector rVector = newVector_(); DATA.mapLDiv2Dest    (thisVector_(), aRHS, rVector); return rVector;}
+    @Override public IComplexVector plus        (double         aRHS) {IComplexVector rVector = newVector_(); DATA.mapPlus2Dest    (thisVector_(), aRHS, rVector); return rVector;}
+    @Override public IComplexVector minus       (double         aRHS) {IComplexVector rVector = newVector_(); DATA.mapMinus2Dest   (thisVector_(), aRHS, rVector); return rVector;}
+    @Override public IComplexVector lminus      (double         aRHS) {IComplexVector rVector = newVector_(); DATA.mapLMinus2Dest  (thisVector_(), aRHS, rVector); return rVector;}
+    @Override public IComplexVector multiply    (double         aRHS) {IComplexVector rVector = newVector_(); DATA.mapMultiply2Dest(thisVector_(), aRHS, rVector); return rVector;}
+    @Override public IComplexVector div         (double         aRHS) {IComplexVector rVector = newVector_(); DATA.mapDiv2Dest     (thisVector_(), aRHS, rVector); return rVector;}
+    @Override public IComplexVector ldiv        (double         aRHS) {IComplexVector rVector = newVector_(); DATA.mapLDiv2Dest    (thisVector_(), aRHS, rVector); return rVector;}
+    @Override public IComplexVector map         (IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {IComplexVector rVector = newVector_(); DATA.mapDo2Dest(thisVector_(), rVector, aOpt); return rVector;}
     
     @Override public void plus2this     (IComplexVector aRHS) {DATA.ebePlus2This    (thisVector_(), aRHS);}
     @Override public void minus2this    (IComplexVector aRHS) {DATA.ebeMinus2This   (thisVector_(), aRHS);}
@@ -58,14 +58,14 @@ public abstract class AbstractComplexVectorOperation implements IComplexVectorOp
     @Override public void multiply2this (IComplexVector aRHS) {DATA.ebeMultiply2This(thisVector_(), aRHS);}
     @Override public void div2this      (IComplexVector aRHS) {DATA.ebeDiv2This     (thisVector_(), aRHS);}
     @Override public void ldiv2this     (IComplexVector aRHS) {DATA.ebeLDiv2This    (thisVector_(), aRHS);}
-    @Override public void operate2this(IComplexVector aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt) {DATA.ebeDo2This(thisVector_(), aRHS, aOpt);}
+    @Override public void operate2this  (IComplexVector aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt) {DATA.ebeDo2This(thisVector_(), aRHS, aOpt);}
     @Override public void plus2this     (IVector        aRHS) {DATA.ebePlus2This    (thisVector_(), aRHS);}
     @Override public void minus2this    (IVector        aRHS) {DATA.ebeMinus2This   (thisVector_(), aRHS);}
     @Override public void lminus2this   (IVector        aRHS) {DATA.ebeLMinus2This  (thisVector_(), aRHS);}
     @Override public void multiply2this (IVector        aRHS) {DATA.ebeMultiply2This(thisVector_(), aRHS);}
     @Override public void div2this      (IVector        aRHS) {DATA.ebeDiv2This     (thisVector_(), aRHS);}
     @Override public void ldiv2this     (IVector        aRHS) {DATA.ebeLDiv2This    (thisVector_(), aRHS);}
-    @Override public void operate2this(IVector        aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt) {DATA.ebeDo2This(thisVector_(), aRHS, aOpt);}
+    @Override public void operate2this  (IVector        aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt) {DATA.ebeDo2This(thisVector_(), aRHS, aOpt);}
     
     @Override public void plus2this     (IComplexDouble aRHS) {DATA.mapPlus2This    (thisVector_(), aRHS);}
     @Override public void minus2this    (IComplexDouble aRHS) {DATA.mapMinus2This   (thisVector_(), aRHS);}
@@ -79,7 +79,7 @@ public abstract class AbstractComplexVectorOperation implements IComplexVectorOp
     @Override public void multiply2this (double         aRHS) {DATA.mapMultiply2This(thisVector_(), aRHS);}
     @Override public void div2this      (double         aRHS) {DATA.mapDiv2This     (thisVector_(), aRHS);}
     @Override public void ldiv2this     (double         aRHS) {DATA.mapLDiv2This    (thisVector_(), aRHS);}
-    @Override public void map2this(IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {DATA.mapDo2This(thisVector_(), aOpt);}
+    @Override public void map2this      (IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {DATA.mapDo2This(thisVector_(), aOpt);}
     
     @Override public IComplexVector negative() {IComplexVector rVector = newVector_(); DATA.mapNegative2Dest(thisVector_(), rVector); return rVector;}
     @Override public void negative2this() {DATA.mapNegative2This(thisVector_());}

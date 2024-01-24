@@ -23,14 +23,14 @@ public interface IComplexVectorOperation {
     IComplexVector multiply (IComplexVector aRHS);
     IComplexVector div      (IComplexVector aRHS);
     IComplexVector ldiv     (IComplexVector aRHS);
-    IComplexVector operate(IComplexVector aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt);
+    IComplexVector operate  (IComplexVector aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt);
     IComplexVector plus     (IVector aRHS);
     IComplexVector minus    (IVector aRHS);
     IComplexVector lminus   (IVector aRHS);
     IComplexVector multiply (IVector aRHS);
     IComplexVector div      (IVector aRHS);
     IComplexVector ldiv     (IVector aRHS);
-    IComplexVector operate(IVector aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt);
+    IComplexVector operate  (IVector aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt);
     
     IComplexVector plus     (IComplexDouble aRHS);
     IComplexVector minus    (IComplexDouble aRHS);
@@ -44,7 +44,7 @@ public interface IComplexVectorOperation {
     IComplexVector multiply (double aRHS);
     IComplexVector div      (double aRHS);
     IComplexVector ldiv     (double aRHS);
-    IComplexVector map(IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt);
+    IComplexVector map      (IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt);
     
     void plus2this          (IComplexVector aRHS);
     void minus2this         (IComplexVector aRHS);
@@ -52,14 +52,14 @@ public interface IComplexVectorOperation {
     void multiply2this      (IComplexVector aRHS);
     void div2this           (IComplexVector aRHS);
     void ldiv2this          (IComplexVector aRHS);
-    void operate2this(IComplexVector aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt);
+    void operate2this       (IComplexVector aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt);
     void plus2this          (IVector aRHS);
     void minus2this         (IVector aRHS);
     void lminus2this        (IVector aRHS);
     void multiply2this      (IVector aRHS);
     void div2this           (IVector aRHS);
     void ldiv2this          (IVector aRHS);
-    void operate2this(IVector aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt);
+    void operate2this       (IVector aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt);
     
     void plus2this          (IComplexDouble aRHS);
     void minus2this         (IComplexDouble aRHS);
@@ -73,7 +73,7 @@ public interface IComplexVectorOperation {
     void multiply2this      (double aRHS);
     void div2this           (double aRHS);
     void ldiv2this          (double aRHS);
-    void map2this(IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt);
+    void map2this           (IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt);
     
     IComplexVector negative();
     void negative2this();
@@ -89,7 +89,7 @@ public interface IComplexVectorOperation {
     void assign             (DoubleSupplier aSup);
     /** 统一提供一个 for-each 运算来减少优化需要的重复代码 */
     void forEach            (Consumer<? super ComplexDouble> aCon);
-    void forEach(IDoubleBinaryConsumer aCon);
+    void forEach            (IDoubleBinaryConsumer aCon);
     /** Groovy stuffs */
     void fill               (Closure<?> aGroovyTask);
     void assign             (Closure<?> aGroovyTask);
@@ -98,12 +98,12 @@ public interface IComplexVectorOperation {
     ComplexDouble sum       ();
     ComplexDouble mean      ();
     ComplexDouble prod      ();
-    ComplexDouble stat(IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt);
+    ComplexDouble stat      (IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt);
     
     IComplexVector cumsum   ();
     IComplexVector cummean  ();
     IComplexVector cumprod  ();
-    IComplexVector cumstat(IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt);
+    IComplexVector cumstat  (IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt);
     
     /** 这里定义 a.dot(b) = a * b' */
     ComplexDouble dot   (IComplexVector aRHS);

@@ -75,7 +75,7 @@ public interface IComplexDoubleIterator extends IComplexDouble {
             @Override public ComplexDouble next() {return IComplexDoubleIterator.this.next();}
             
             @Override public void remove() {IComplexDoubleIterator.this.remove();}
-            @Override public void forEachRemaining(Consumer<? super ComplexDouble> action) {IComplexDoubleIterator.this.forEachRemaining(action::accept);}
+            @Override public void forEachRemaining(Consumer<? super ComplexDouble> action) {IComplexDoubleIterator.this.forEachRemaining(action);}
         };
     }
 }

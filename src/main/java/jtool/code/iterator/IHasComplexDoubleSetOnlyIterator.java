@@ -22,16 +22,6 @@ public interface IHasComplexDoubleSetOnlyIterator {
         final IComplexDoubleSetOnlyIterator si = setIterator();
         while (si.hasNext()) si.nextAndSet(aSup.getAsDouble());
     }
-    default void assignReal(DoubleSupplier aRealSup) {
-        Objects.requireNonNull(aRealSup);
-        final IComplexDoubleSetOnlyIterator si = setIterator();
-        while (si.hasNext()) si.nextAndSetReal(aRealSup.getAsDouble());
-    }
-    default void assignImag(DoubleSupplier aImagSup) {
-        Objects.requireNonNull(aImagSup);
-        final IComplexDoubleSetOnlyIterator si = setIterator();
-        while (si.hasNext()) si.nextAndSetImag(aImagSup.getAsDouble());
-    }
     /** Groovy stuffs */
     default void assign(Closure<?> aGroovyTask) {
         final IComplexDoubleSetOnlyIterator si = setIterator();

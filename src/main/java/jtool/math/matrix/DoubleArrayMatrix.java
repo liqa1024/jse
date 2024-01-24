@@ -31,6 +31,8 @@ public abstract class DoubleArrayMatrix extends AbstractMatrix implements IDataS
     @Override protected final IVector newZerosVec_(int aSize) {return Vector.zeros(aSize);}
     
     
+    @Override public DoubleArrayMatrix copy() {return (DoubleArrayMatrix)super.copy();}
+    
     /** stuff to override */
     protected abstract DoubleArrayMatrix newZeros_(int aRowNum, int aColNum);
     public abstract DoubleArrayMatrix newShell();

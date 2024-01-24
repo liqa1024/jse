@@ -7,14 +7,18 @@ import jtool.code.collection.ISlice;
 import jtool.code.functional.IIndexFilter;
 import jtool.code.iterator.IDoubleIterator;
 import jtool.code.iterator.IDoubleSetIterator;
-import jtool.code.iterator.IHasDoubleIterator;
-import jtool.math.vector.*;
+import jtool.code.iterator.IDoubleSetOnlyIterator;
+import jtool.math.vector.IVector;
+import jtool.math.vector.RefVector;
+import jtool.math.vector.Vector;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.function.*;
+import java.util.function.DoubleConsumer;
+import java.util.function.DoubleSupplier;
+import java.util.function.DoubleUnaryOperator;
 
 import static jtool.code.CS.ALL;
 
@@ -303,7 +307,7 @@ public abstract class AbstractMatrix implements IMatrix {
         double[][] rMat = new double[tRowNum][tColNum];
         final IDoubleIterator it = iteratorRow();
         for (int row = 0; row < tRowNum; ++row) {
-            final double[] tRow = rMat[row];
+            double[] tRow = rMat[row];
             for (int col = 0; col < tColNum; ++col) tRow[col] = it.next();
         }
         return rMat;
@@ -316,7 +320,7 @@ public abstract class AbstractMatrix implements IMatrix {
     
     /** 同样这里改为直接用迭代器遍历实现而不去调用对应向量的运算，中等的优化程度 */
     @Override public void fill(final double[][] aData) {
-        final IDoubleSetIterator si = setIteratorRow();
+        final IDoubleSetOnlyIterator si = setIteratorRow();
         final int tRowNum = rowNumber();
         final int tColNum = columnNumber();
         for (int row = 0; row < tRowNum; ++row) {
@@ -324,69 +328,41 @@ public abstract class AbstractMatrix implements IMatrix {
             for (int col = 0; col < tColNum; ++col) si.nextAndSet(tRow[col]);
         }
     }
+    @SuppressWarnings("unchecked")
     @Override public void fillWithRows(Iterable<?> aRows) {
+        // 为了避免重复代码，这里直接使用 rows 来填充，毕竟这里速度也不关键
         final Iterator<?> tRowsIt = aRows.iterator();
-        final IDoubleSetIterator si = setIteratorRow();
-        final int tRowNum = rowNumber();
-        final int tColNum = columnNumber();
-        for (int row = 0; row < tRowNum; ++row) {
+        for (IVector row : rows()) {
             Object tRow = tRowsIt.next();
             if (tRow instanceof Iterable) {
-                final Iterator<?> tRowIt = ((Iterable<?>)tRow).iterator();
-                for (int col = 0; col < tColNum; ++col) si.nextAndSet(((Number)tRowIt.next()).doubleValue());
+                row.fill((Iterable<? extends Number>)tRow);
             } else
-            if (tRow instanceof IHasDoubleIterator) {
-                final IDoubleIterator tRowIt = ((IHasDoubleIterator)tRow).iterator();
-                for (int col = 0; col < tColNum; ++col) si.nextAndSet(tRowIt.next());
+            if (tRow instanceof IVector) {
+                row.fill((IVector)tRow);
             } else
             if (tRow instanceof double[]) {
-                final double[] fRow = (double[])tRow;
-                for (int col = 0; col < tColNum; ++col) si.nextAndSet(fRow[col]);
-            } else
-            if (tRow instanceof float[]) {
-                final float[] fRow = (float[])tRow;
-                for (int col = 0; col < tColNum; ++col) si.nextAndSet(fRow[col]);
-            } else
-            if (tRow instanceof long[]) {
-                final long[] fRow = (long[])tRow;
-                for (int col = 0; col < tColNum; ++col) si.nextAndSet(fRow[col]);
-            } else
-            if (tRow instanceof int[]) {
-                final int[] fRow = (int[])tRow;
-                for (int col = 0; col < tColNum; ++col) si.nextAndSet(fRow[col]);
+                row.fill((double[])tRow);
+            } else {
+                row.fill(Double.NaN);
             }
         }
     }
+    @SuppressWarnings("unchecked")
     @Override public void fillWithCols(Iterable<?> aCols) {
+        // 为了避免重复代码，这里直接使用 cols 来填充，毕竟这里速度也不关键
         final Iterator<?> tColsIt = aCols.iterator();
-        final IDoubleSetIterator si = setIteratorCol();
-        final int tRowNum = rowNumber();
-        final int tColNum = columnNumber();
-        for (int col = 0; col < tColNum; ++col) {
+        for (IVector col : cols()) {
             Object tCol = tColsIt.next();
             if (tCol instanceof Iterable) {
-                final Iterator<?> tColIt = ((Iterable<?>)tCol).iterator();
-                for (int row = 0; row < tRowNum; ++row) si.nextAndSet(((Number)tColIt.next()).doubleValue());
+                col.fill((Iterable<? extends Number>)tCol);
             } else
-            if (tCol instanceof IHasDoubleIterator) {
-                final IDoubleIterator tColIt = ((IHasDoubleIterator)tCol).iterator();
-                for (int row = 0; row < tRowNum; ++row) si.nextAndSet(tColIt.next());
+            if (tCol instanceof IVector) {
+                col.fill((IVector)tCol);
             } else
             if (tCol instanceof double[]) {
-                final double[] fCol = (double[])tCol;
-                for (int row = 0; row < tRowNum; ++row) si.nextAndSet(fCol[row]);
-            } else
-            if (tCol instanceof float[]) {
-                final float[] fCol = (float[])tCol;
-                for (int row = 0; row < tRowNum; ++row) si.nextAndSet(fCol[row]);
-            } else
-            if (tCol instanceof long[]) {
-                final long[] fCol = (long[])tCol;
-                for (int row = 0; row < tRowNum; ++row) si.nextAndSet(fCol[row]);
-            } else
-            if (tCol instanceof int[]) {
-                final int[] fCol = (int[])tCol;
-                for (int row = 0; row < tRowNum; ++row) si.nextAndSet(fCol[row]);
+                col.fill((double[])tCol);
+            } else {
+                col.fill(Double.NaN);
             }
         }
     }

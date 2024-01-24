@@ -13,6 +13,8 @@ public abstract class RefMatrix extends AbstractMatrix {
     public abstract double get(int aRow, int aCol);
     public void set(int aRow, int aCol, double aValue) {throw new UnsupportedOperationException("set");}
     public double getAndSet(int aRow, int aCol, double aValue) {
+        rangeCheckRow(aRow, rowNumber());
+        rangeCheckCol(aCol, columnNumber());
         double oValue = get(aRow, aCol);
         set(aRow, aCol, aValue);
         return oValue;

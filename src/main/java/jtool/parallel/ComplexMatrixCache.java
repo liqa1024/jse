@@ -2,6 +2,7 @@ package jtool.parallel;
 
 import jtool.code.collection.AbstractCollections;
 import jtool.math.matrix.BiDoubleArrayMatrix;
+import jtool.math.matrix.ColumnComplexMatrix;
 import jtool.math.matrix.IComplexMatrix;
 import jtool.math.matrix.RowComplexMatrix;
 import org.jetbrains.annotations.NotNull;
@@ -47,6 +48,32 @@ public class ComplexMatrixCache {
     }
     
     
+    public static @NotNull ColumnComplexMatrix getZeros(int aRowNum, int aColNum) {
+        return getZerosCol(aRowNum, aColNum);
+    }
+    public static @NotNull List<ColumnComplexMatrix> getZeros(int aRowNum, int aColNum, int aMultiple) {
+        return getZerosCol(aRowNum, aColNum, aMultiple);
+    }
+    public static @NotNull ColumnComplexMatrix getZerosCol(int aRowNum, int aColNum) {
+        final double[][] rData = new double[2][];
+        DoubleArrayCache.getZerosTo(aRowNum*aColNum, 2, (i, arr) -> rData[i] = arr);
+        return new ColumnComplexMatrix(aRowNum, aColNum, rData);
+    }
+    public static @NotNull List<ColumnComplexMatrix> getZerosCol(final int aRowNum, final int aColNum, int aMultiple) {
+        if (aMultiple <= 0) return AbstractCollections.zl();
+        final List<ColumnComplexMatrix> rOut = new ArrayList<>(aMultiple);
+        final double[][] tArrayBuffer = {null};
+        DoubleArrayCache.getZerosTo(aRowNum*aColNum, aMultiple*2, (i, arr) -> {
+            double[] tArrayReal = tArrayBuffer[0];
+            if (tArrayReal == null) {
+                tArrayBuffer[0] = arr;
+            } else {
+                rOut.add(new ColumnComplexMatrix(aRowNum, aColNum, new double[][]{tArrayReal, arr}));
+                tArrayBuffer[0] = null;
+            }
+        });
+        return rOut;
+    }
     public static @NotNull RowComplexMatrix getZerosRow(int aRowNum, int aColNum) {
         final double[][] rData = new double[2][];
         DoubleArrayCache.getZerosTo(aRowNum*aColNum, 2, (i, arr) -> rData[i] = arr);
@@ -62,6 +89,32 @@ public class ComplexMatrixCache {
                 tArrayBuffer[0] = arr;
             } else {
                 rOut.add(new RowComplexMatrix(aRowNum, aColNum, new double[][]{tArrayReal, arr}));
+                tArrayBuffer[0] = null;
+            }
+        });
+        return rOut;
+    }
+    public static @NotNull ColumnComplexMatrix getMat(int aRowNum, int aColNum) {
+        return getMatCol(aRowNum, aColNum);
+    }
+    public static @NotNull List<ColumnComplexMatrix> getMat(int aRowNum, int aColNum, int aMultiple) {
+        return getMatCol(aRowNum, aColNum, aMultiple);
+    }
+    public static @NotNull ColumnComplexMatrix getMatCol(int aRowNum, int aColNum) {
+        final double[][] rData = new double[2][];
+        DoubleArrayCache.getArrayTo(aRowNum*aColNum, 2, (i, arr) -> rData[i] = arr);
+        return new ColumnComplexMatrix(aRowNum, aColNum, rData);
+    }
+    public static @NotNull List<ColumnComplexMatrix> getMatCol(final int aRowNum, final int aColNum, int aMultiple) {
+        if (aMultiple <= 0) return AbstractCollections.zl();
+        final List<ColumnComplexMatrix> rOut = new ArrayList<>(aMultiple);
+        final double[][] tArrayBuffer = {null};
+        DoubleArrayCache.getArrayTo(aRowNum*aColNum, aMultiple*2, (i, arr) -> {
+            double[] tArrayReal = tArrayBuffer[0];
+            if (tArrayReal == null) {
+                tArrayBuffer[0] = arr;
+            } else {
+                rOut.add(new ColumnComplexMatrix(aRowNum, aColNum, new double[][]{tArrayReal, arr}));
                 tArrayBuffer[0] = null;
             }
         });

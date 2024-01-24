@@ -1,14 +1,13 @@
 package jtool.code.iterator;
 
+import groovy.lang.Closure;
 import jtool.atom.IAtom;
 import jtool.atom.IXYZ;
 import jtool.code.functional.IDoubleBinaryConsumer;
 import jtool.math.ComplexDouble;
-import groovy.lang.Closure;
 
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.DoubleConsumer;
 
 /**
  * 和 {@link IXYZ} 或者 {@link IAtom} 部分的用法思路不同，
@@ -35,22 +34,6 @@ public interface IHasComplexDoubleIterator {
         Objects.requireNonNull(aCon);
         final IComplexDoubleIterator it = iterator();
         while (it.hasNext()) aCon.accept(it.next());
-    }
-    default void forEachReal(DoubleConsumer aRealCon) {
-        Objects.requireNonNull(aRealCon);
-        final IComplexDoubleIterator it = iterator();
-        while (it.hasNext()) {
-            it.nextOnly();
-            aRealCon.accept(it.real());
-        }
-    }
-    default void forEachImag(DoubleConsumer aImagCon) {
-        Objects.requireNonNull(aImagCon);
-        final IComplexDoubleIterator it = iterator();
-        while (it.hasNext()) {
-            it.nextOnly();
-            aImagCon.accept(it.imag());
-        }
     }
     /** Groovy stuffs */
     default void forEach(Closure<?> aGroovyTask) {

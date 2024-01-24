@@ -3,7 +3,6 @@ package jtool.code.iterator;
 import jtool.atom.IAtom;
 import jtool.atom.IXYZ;
 import jtool.math.ComplexDouble;
-import jtool.math.IComplexDouble;
 import jtool.math.ISettableComplexDouble;
 
 import java.util.function.Consumer;
@@ -28,7 +27,7 @@ public interface IComplexDoubleSetIterator extends IComplexDoubleIterator, IComp
             @Override public ComplexDouble next() {return IComplexDoubleSetIterator.this.next();}
             
             @Override public void remove() {IComplexDoubleSetIterator.this.remove();}
-            @Override public void forEachRemaining(Consumer<? super ComplexDouble> action) {IComplexDoubleSetIterator.this.forEachRemaining(action::accept);}
+            @Override public void forEachRemaining(Consumer<? super ComplexDouble> action) {IComplexDoubleSetIterator.this.forEachRemaining(action);}
             
             @Override public void nextOnly() {IComplexDoubleSetIterator.this.nextOnly();}
             @Override public void set(ComplexDouble aValue) {IComplexDoubleSetIterator.this.set(aValue);}
