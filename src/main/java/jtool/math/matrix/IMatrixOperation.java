@@ -75,10 +75,7 @@ public interface IMatrixOperation {
     IVector meanOfRows  ();
     
     IMatrix transpose();
-    @VisibleForTesting default IMatrix T() {return transpose();}
-    
     IMatrix refTranspose();
-    @VisibleForTesting default IMatrix refT() {return refTranspose();}
     
     boolean isDiag();
 }
