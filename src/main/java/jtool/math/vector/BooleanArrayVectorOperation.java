@@ -140,6 +140,14 @@ public abstract class BooleanArrayVectorOperation extends AbstractLogicalVectorO
     @Override public boolean        any     () {BooleanArrayVector tThis = thisVector_(); return ARRAY.anyOfThis  (tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
     @Override public int            count   () {BooleanArrayVector tThis = thisVector_(); return ARRAY.countOfThis(tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
     
+    @Override public ILogicalVector reverse() {
+        BooleanArrayVector tThis = thisVector_();
+        BooleanArrayVector rVector = newVector_();
+        boolean[] tDataL = rVector.getIfHasSameOrderData(tThis);
+        if (tDataL != null) ARRAY.reverse2Dest(tDataL, tThis.internalDataShift(), rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
+        else DATA.reverse2Dest(tThis, rVector);
+        return rVector;
+    }
     
     /** 方便内部使用，减少一些重复代码 */
     private BooleanArrayVector newVector_() {return newVector_(thisVector_().size());}

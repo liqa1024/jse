@@ -1,6 +1,7 @@
 package jtool.math.vector;
 
 import jtool.code.functional.ISwapper;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntConsumer;
@@ -31,8 +32,10 @@ public interface IIntVectorOperation {
     /** 注意 aComp 传入的为 index 而不是值 */
     void sort(IntBinaryOperator aComp);
     /** 使用自身作为 key 来进行排序，会顺便将自身也排序 */
-    void bisort(ISwapper aSwapper);
-    void bisort(ISwapper aSwapper, IntBinaryOperator aComp);
+    void biSort(ISwapper aSwapper);
+    void biSort(ISwapper aSwapper, IntBinaryOperator aComp);
+    @VisibleForTesting default void bisort(ISwapper aSwapper) {biSort(aSwapper);}
+    @VisibleForTesting default void bisort(ISwapper aSwapper, IntBinaryOperator aComp) {biSort(aSwapper, aComp);}
     
     /** IntegerVector 特有的操作 */
     void shuffle();

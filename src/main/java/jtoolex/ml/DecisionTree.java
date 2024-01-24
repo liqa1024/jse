@@ -238,7 +238,7 @@ public class DecisionTree implements ISavable {
                 // 权重取绝对值
                 tWeight.operation().map2this(Math::abs);
                 // 排序选取权重最高的 aMaxSplit 个分点
-                tWeight.operation().bisort(tSplit);
+                tWeight.operation().biSort(tSplit);
                 return tSplit.operation().refReverse().subVec(0, mMaxSplit);
             }
             default: throw new RuntimeException();

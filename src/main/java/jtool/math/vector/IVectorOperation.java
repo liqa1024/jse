@@ -3,6 +3,7 @@ package jtool.math.vector;
 import jtool.code.functional.IChecker;
 import jtool.code.functional.IComparator;
 import jtool.code.functional.ISwapper;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.function.*;
 
@@ -101,12 +102,15 @@ public interface IVectorOperation {
     IVector reverse     ();
     IVector refReverse  ();
     void reverse2this();
+    @VisibleForTesting default IVector refreverse() {return refReverse();}
     
     /** 各种排序操作 */
     void sort();
     /** 注意 aComp 传入的为 index */
     void sort(IntBinaryOperator aComp);
     /** 使用自身作为 key 来进行排序，会顺便将自身也排序 */
-    void bisort(ISwapper aSwapper);
-    void bisort(ISwapper aSwapper, IntBinaryOperator aComp);
+    void biSort(ISwapper aSwapper);
+    void biSort(ISwapper aSwapper, IntBinaryOperator aComp);
+    @VisibleForTesting default void bisort(ISwapper aSwapper) {biSort(aSwapper);}
+    @VisibleForTesting default void bisort(ISwapper aSwapper, IntBinaryOperator aComp) {biSort(aSwapper, aComp);}
 }

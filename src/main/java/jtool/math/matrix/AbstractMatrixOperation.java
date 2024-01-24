@@ -124,7 +124,9 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     @Override public IMatrix transpose() {
         final IMatrix tThis = thisMatrix_();
         IMatrix rMatrix = newMatrix_(tThis.columnNumber(), tThis.rowNumber());
-        rMatrix.fill(refTranspose());
+        final IDoubleIterator it = tThis.iteratorCol();
+        final IDoubleSetOnlyIterator si = rMatrix.setIteratorRow();
+        while (it.hasNext()) si.nextAndSet(it.next());
         return rMatrix;
     }
     @Override public IMatrix refTranspose() {

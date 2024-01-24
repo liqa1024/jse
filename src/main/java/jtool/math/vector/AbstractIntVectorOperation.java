@@ -23,8 +23,8 @@ public abstract class AbstractIntVectorOperation implements IIntVectorOperation 
     /** 排序不自己实现 */
     @Override public void sort() {DATA.sort(thisVector_());}
     @Override public void sort(IntBinaryOperator aComp) {DATA.sort(thisVector_(), aComp);}
-    @Override public void bisort(ISwapper aSwapper) {DATA.biSort(thisVector_(), aSwapper);}
-    @Override public void bisort(ISwapper aSwapper, IntBinaryOperator aComp) {DATA.biSort(thisVector_(), aSwapper, aComp);}
+    @Override public void biSort(ISwapper aSwapper) {DATA.biSort(thisVector_(), aSwapper);}
+    @Override public void biSort(ISwapper aSwapper, IntBinaryOperator aComp) {DATA.biSort(thisVector_(), aSwapper, aComp);}
     
     @Override public final void shuffle() {shuffle(RANDOM::nextInt);}
     @Override public void shuffle(IntUnaryOperator aRng) {

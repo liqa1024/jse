@@ -333,6 +333,15 @@ public abstract class BiDoubleArrayVectorOperation extends AbstractComplexVector
         return rDot;
     }
     
+    @Override public IComplexVector reverse() {
+        BiDoubleArrayVector tThis = thisVector_();
+        BiDoubleArrayVector rVector = newVector_();
+        double[][] tDataL = rVector.getIfHasSameOrderData(tThis);
+        if (tDataL != null) ARRAY.reverse2Dest(tDataL, tThis.internalDataShift(), rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
+        else DATA.reverse2Dest(tThis, rVector);
+        return rVector;
+    }
+    
     
     @Override public void mplus2this(IComplexVector aRHS, double aMul) {
         BiDoubleArrayVector rThis = thisVector_();

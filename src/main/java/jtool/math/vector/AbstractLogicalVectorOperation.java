@@ -3,6 +3,7 @@ package jtool.math.vector;
 import jtool.code.functional.IBooleanBinaryOperator;
 import jtool.code.functional.IBooleanConsumer;
 import jtool.code.functional.IBooleanUnaryOperator;
+import jtool.code.iterator.IBooleanIterator;
 import jtool.math.operation.DATA;
 
 import java.util.function.BooleanSupplier;
@@ -53,11 +54,7 @@ public abstract class AbstractLogicalVectorOperation implements ILogicalVectorOp
     @Override public IVector        cumcount() {IVector    rVector = newRealVector_(); DATA.cumcount2Dest(thisVector_(), rVector); return rVector;}
     
     
-    @Override public ILogicalVector reverse() {
-        ILogicalVector rVector = newVector_();
-        rVector.fill(refReverse());
-        return rVector;
-    }
+    @Override public ILogicalVector reverse() {ILogicalVector rVector = newVector_(); DATA.reverse2Dest(thisVector_(), rVector); return rVector;}
     @Override public ILogicalVector refReverse() {
         return new RefLogicalVector() {
             private final ILogicalVector mThis = thisVector_();

@@ -823,15 +823,13 @@ public class DATA {
         rThis.assign(it::next);
     }
     /** 注意这几个方法不能替换成通用遍历方法，会造成无限递归 */
-    public static void vecFill2This(IComplexVector rThis, IComplexVectorGetter aVec) {
+    public static void vecFill2This(IHasComplexDoubleSetOnlyIterator rThis, IComplexVectorGetter aVec) {
         final IComplexDoubleSetOnlyIterator si = rThis.setIterator();
-        final int tSize = rThis.size();
-        for (int i = 0; i < tSize; ++i) si.nextAndSet(aVec.get(i));
+        for (int i = 0; si.hasNext(); ++i) si.nextAndSet(aVec.get(i));
     }
-    public static void vecFill2This(IComplexVector rThis, IVectorGetter aVec) {
+    public static void vecFill2This(IHasComplexDoubleSetOnlyIterator rThis, IVectorGetter aVec) {
         final IComplexDoubleSetOnlyIterator si = rThis.setIterator();
-        final int tSize = rThis.size();
-        for (int i = 0; i < tSize; ++i) si.nextAndSet(aVec.get(i));
+        for (int i = 0; si.hasNext(); ++i) si.nextAndSet(aVec.get(i));
     }
     public static void assign2This(IHasComplexDoubleSetOnlyIterator rThis, Supplier<? extends IComplexDouble> aSup) {
         final IComplexDoubleSetOnlyIterator si = rThis.setIterator();
@@ -853,14 +851,14 @@ public class DATA {
         }
     }
     /** Groovy stuffs */
-    public static void vecFill2This(IComplexVector rThis, Closure<?> aGroovyTask) {
+    public static void vecFill2This(IHasComplexDoubleSetOnlyIterator rThis, Closure<?> aGroovyTask) {
         final IComplexDoubleSetOnlyIterator si = rThis.setIterator();
-        final int tSize = rThis.size();
-        for (int i = 0; i < tSize; ++i) {
+        for (int i = 0; si.hasNext(); ++i) {
             // 直接先执行然后检测类型决定如何设置
             Object tObj = aGroovyTask.call(i);
             if (tObj instanceof IComplexDouble) si.nextAndSet((IComplexDouble)tObj);
             else if (tObj instanceof Number) si.nextAndSet(((Number)tObj).doubleValue());
+            else si.nextAndSet(Double.NaN);
         }
     }
     public static void assign2This(IHasComplexDoubleSetOnlyIterator rThis, Closure<?> aGroovyTask) {
@@ -870,6 +868,7 @@ public class DATA {
             Object tObj = aGroovyTask.call();
             if (tObj instanceof IComplexDouble) si.nextAndSet((IComplexDouble)tObj);
             else if (tObj instanceof Number) si.nextAndSet(((Number)tObj).doubleValue());
+            else si.nextAndSet(Double.NaN);
         }
     }
     public static void forEachOfThis(IHasComplexDoubleIterator aThis, Closure<?> aGroovyTask) {
@@ -889,10 +888,9 @@ public class DATA {
         rThis.assign(it::next);
     }
     /** 注意这几个方法不能替换成通用遍历方法，会造成无限递归 */
-    public static void vecFill2This(IVector rThis, IVectorGetter aVec) {
+    public static void vecFill2This(IHasDoubleSetOnlyIterator rThis, IVectorGetter aVec) {
         final IDoubleSetOnlyIterator si = rThis.setIterator();
-        final int tSize = rThis.size();
-        for (int i = 0; i < tSize; ++i) si.nextAndSet(aVec.get(i));
+        for (int i = 0; si.hasNext(); ++i) si.nextAndSet(aVec.get(i));
     }
     public static void assign2This(IHasDoubleSetOnlyIterator rThis, DoubleSupplier aSup) {
         final IDoubleSetOnlyIterator si = rThis.setIterator();
@@ -911,10 +909,9 @@ public class DATA {
         rThis.assign(it::next);
     }
     /** 注意这几个方法不能替换成通用遍历方法，会造成无限递归 */
-    public static void vecFill2This(ILogicalVector rThis, ILogicalVectorGetter aVec) {
+    public static void vecFill2This(IHasBooleanSetOnlyIterator rThis, ILogicalVectorGetter aVec) {
         final IBooleanSetOnlyIterator si = rThis.setIterator();
-        final int tSize = rThis.size();
-        for (int i = 0; i < tSize; ++i) si.nextAndSet(aVec.get(i));
+        for (int i = 0; si.hasNext(); ++i) si.nextAndSet(aVec.get(i));
     }
     public static void assign2This(IHasBooleanSetOnlyIterator rThis, BooleanSupplier aSup) {
         final IBooleanSetOnlyIterator si = rThis.setIterator();
@@ -933,10 +930,9 @@ public class DATA {
         rThis.assign(it::next);
     }
     /** 注意这几个方法不能替换成通用遍历方法，会造成无限递归 */
-    public static void vecFill2This(IIntVector rThis, IIntVectorGetter aVec) {
+    public static void vecFill2This(IHasIntSetOnlyIterator rThis, IIntVectorGetter aVec) {
         final IIntSetOnlyIterator si = rThis.setIterator();
-        final int tSize = rThis.size();
-        for (int i = 0; i < tSize; ++i) si.nextAndSet(aVec.get(i));
+        for (int i = 0; si.hasNext(); ++i) si.nextAndSet(aVec.get(i));
     }
     public static void assign2This(IHasIntSetOnlyIterator rThis, IntSupplier aSup) {
         final IIntSetOnlyIterator si = rThis.setIterator();
@@ -1142,6 +1138,35 @@ public class DATA {
     
     
     /** 排序会用到的算法，这里不自己实现 */
+    public static void reverse2Dest(IHasDoubleIterator aThis, IVector rDest) {
+        final int tSize = rDest.size();
+        final IDoubleIterator it = aThis.iterator();
+        for (int i = tSize-1; i >= 0; --i) {
+            rDest.set(i, it.next());
+        }
+    }
+    public static void reverse2Dest(IHasComplexDoubleIterator aThis, IComplexVector rDest) {
+        final int tSize = rDest.size();
+        final IComplexDoubleIterator it = aThis.iterator();
+        for (int i = tSize-1; i >= 0; --i) {
+            it.nextOnly();
+            rDest.set(i, it);
+        }
+    }
+    public static void reverse2Dest(IHasBooleanIterator aThis, ILogicalVector rDest) {
+        final int tSize = rDest.size();
+        final IBooleanIterator it = aThis.iterator();
+        for (int i = tSize-1; i >= 0; --i) {
+            rDest.set(i, it.next());
+        }
+    }
+    public static void reverse2Dest(IHasIntIterator aThis, IIntVector rDest) {
+        final int tSize = rDest.size();
+        final IIntIterator it = aThis.iterator();
+        for (int i = tSize-1; i >= 0; --i) {
+            rDest.set(i, it.next());
+        }
+    }
     public static void reverse2This(IVector rThis) {
         reverse2This(rThis, rThis.size());
     }

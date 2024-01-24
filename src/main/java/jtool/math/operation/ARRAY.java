@@ -907,6 +907,9 @@ public class ARRAY {
                 if (tObj instanceof Number) {
                     tRealData[i] = ((Number)tObj).doubleValue();
                     tImagData[i] = 0.0;
+                } else {
+                    tRealData[i] = Double.NaN;
+                    tImagData[i] = 0.0;
                 }
             }
         } else {
@@ -922,6 +925,9 @@ public class ARRAY {
                     if (tObj instanceof Number) {
                         tRealData[i] = ((Number)tObj).doubleValue();
                         tImagData[i] = 0.0;
+                    } else {
+                        tRealData[i] = Double.NaN;
+                        tImagData[i] = 0.0;
                     }
                 }
             } else {
@@ -936,6 +942,9 @@ public class ARRAY {
                     } else
                     if (tObj instanceof Number) {
                         tRealData[i] = ((Number)tObj).doubleValue();
+                        tImagData[i] = 0.0;
+                    } else {
+                        tRealData[i] = Double.NaN;
                         tImagData[i] = 0.0;
                     }
                 }
@@ -958,6 +967,9 @@ public class ARRAY {
                 if (tObj instanceof Number) {
                     tRealData[i] = ((Number)tObj).doubleValue();
                     tImagData[i] = 0.0;
+                } else {
+                    tRealData[i] = Double.NaN;
+                    tImagData[i] = 0.0;
                 }
             }
         } else {
@@ -972,6 +984,9 @@ public class ARRAY {
                 } else
                 if (tObj instanceof Number) {
                     tRealData[i] = ((Number)tObj).doubleValue();
+                    tImagData[i] = 0.0;
+                } else {
+                    tRealData[i] = Double.NaN;
                     tImagData[i] = 0.0;
                 }
             }
@@ -1197,6 +1212,29 @@ public class ARRAY {
     
     
     /** 排序会用到的算法，这里不自己实现 */
+    public static void reverse2Dest(double[][] aData, int aShift, double[][] rDest, int rShift, int aLength) {
+        reverse2Dest(aData[0], aShift, rDest[0], rShift, aLength);
+        reverse2Dest(aData[1], aShift, rDest[1], rShift, aLength);
+    }
+    public static void reverse2Dest(double[] aData, int aShift, double[] rDest, int rShift, int aLength) {
+        final int tEnd = aShift + aLength;
+        for (int i = aShift, j = rShift+aLength-1; i < tEnd; ++i, --j) {
+            rDest[j] = aData[i];
+        }
+    }
+    public static void reverse2Dest(boolean[] aData, int aShift, boolean[] rDest, int rShift, int aLength) {
+        final int tEnd = aShift + aLength;
+        for (int i = aShift, j = rShift+aLength-1; i < tEnd; ++i, --j) {
+            rDest[j] = aData[i];
+        }
+    }
+    public static void reverse2Dest(int[] aData, int aShift, int[] rDest, int rShift, int aLength) {
+        final int tEnd = aShift + aLength;
+        for (int i = aShift, j = rShift+aLength-1; i < tEnd; ++i, --j) {
+            rDest[j] = aData[i];
+        }
+    }
+    
     public static void sort(double[] rData, int rShift, int aLength) {
         Arrays.sort(rData, rShift, aLength+rShift);
     }

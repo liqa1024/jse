@@ -29,7 +29,7 @@ public abstract class IntArrayVectorOperation extends AbstractIntVectorOperation
         ARRAY.sort(rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize());
         if (rThis.isReverse()) reverse2this();
     }
-    @Override public void bisort(ISwapper aSwapper) {
+    @Override public void biSort(ISwapper aSwapper) {
         final IntArrayVector rThis = thisVector_();
         final int tSize = rThis.internalDataSize();
         ARRAY.biSort(rThis.internalData(), rThis.internalDataShift(), tSize, aSwapper.undata(rThis));

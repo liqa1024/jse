@@ -4,6 +4,7 @@ package jtool.math.vector;
 import jtool.code.functional.IBooleanBinaryOperator;
 import jtool.code.functional.IBooleanConsumer;
 import jtool.code.functional.IBooleanUnaryOperator;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.function.BooleanSupplier;
 
@@ -53,4 +54,5 @@ public interface ILogicalVectorOperation {
     
     ILogicalVector reverse      ();
     ILogicalVector refReverse   ();
+    @VisibleForTesting default ILogicalVector refreverse() {return refReverse();}
 }

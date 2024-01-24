@@ -299,13 +299,22 @@ public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation
         return rDot;
     }
     
+    @Override public IVector reverse() {
+        DoubleArrayVector tThis = thisVector_();
+        DoubleArrayVector rVector = newVector_();
+        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
+        if (tDataL != null) ARRAY.reverse2Dest(tDataL, tThis.internalDataShift(), rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
+        else DATA.reverse2Dest(tThis, rVector);
+        return rVector;
+    }
+    
     /** 排序不自己实现 */
     @Override public void sort() {
         final DoubleArrayVector rThis = thisVector_();
         ARRAY.sort(rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize());
         if (rThis.isReverse()) reverse2this();
     }
-    @Override public void bisort(ISwapper aSwapper) {
+    @Override public void biSort(ISwapper aSwapper) {
         final DoubleArrayVector rThis = thisVector_();
         final int tSize = rThis.internalDataSize();
         ARRAY.biSort(rThis.internalData(), rThis.internalDataShift(), tSize, aSwapper.undata(rThis));

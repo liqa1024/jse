@@ -6,6 +6,7 @@ import jtool.code.functional.IUnaryFullOperator;
 import jtool.math.ComplexDouble;
 import jtool.math.IComplexDouble;
 import groovy.lang.Closure;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.function.*;
 
@@ -113,6 +114,7 @@ public interface IComplexVectorOperation {
     
     IComplexVector reverse     ();
     IComplexVector refReverse  ();
+    @VisibleForTesting default IComplexVector refreverse() {return refReverse();}
     
     /** 较为复杂的运算，只有遇到时专门增加，主要避免 IOperator2 使用需要新建 ComplexDouble */
     void mplus2this      (IComplexVector aRHS, double aMul);

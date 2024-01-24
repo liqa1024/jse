@@ -114,11 +114,7 @@ public abstract class AbstractVectorOperation implements IVectorOperation {
     }
     @Override public double norm() {return MathEX.Fast.sqrt(dot());}
     
-    @Override public IVector reverse() {
-        IVector rVector = newVector_();
-        rVector.fill(refReverse());
-        return rVector;
-    }
+    @Override public IVector reverse() {IVector rVector = newVector_(); DATA.reverse2Dest(thisVector_(), rVector); return rVector;}
     @Override public IVector refReverse() {
         return new RefVector() {
             private final IVector mThis = thisVector_();
@@ -133,8 +129,8 @@ public abstract class AbstractVectorOperation implements IVectorOperation {
     /** 排序不自己实现 */
     @Override public void sort() {DATA.sort(thisVector_());}
     @Override public void sort(IntBinaryOperator aComp) {DATA.sort(thisVector_(), aComp);}
-    @Override public void bisort(ISwapper aSwapper) {DATA.biSort(thisVector_(), aSwapper);}
-    @Override public void bisort(ISwapper aSwapper, IntBinaryOperator aComp) {DATA.biSort(thisVector_(), aSwapper, aComp);}
+    @Override public void biSort(ISwapper aSwapper) {DATA.biSort(thisVector_(), aSwapper);}
+    @Override public void biSort(ISwapper aSwapper, IntBinaryOperator aComp) {DATA.biSort(thisVector_(), aSwapper, aComp);}
     
     
     /** 方便内部使用，减少一些重复代码 */

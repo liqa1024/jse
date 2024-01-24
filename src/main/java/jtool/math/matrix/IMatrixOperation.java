@@ -76,6 +76,8 @@ public interface IMatrixOperation {
     
     IMatrix transpose();
     IMatrix refTranspose();
+    @VisibleForTesting default IMatrix reftranspose() {return refTranspose();}
     
     boolean isDiag();
+    @VisibleForTesting default boolean isdiag() {return isDiag();}
 }

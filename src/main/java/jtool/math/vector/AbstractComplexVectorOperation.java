@@ -161,11 +161,7 @@ public abstract class AbstractComplexVectorOperation implements IComplexVectorOp
     }
     
     
-    @Override public IComplexVector reverse() {
-        IComplexVector rVector = newVector_();
-        rVector.fill(refReverse());
-        return rVector;
-    }
+    @Override public IComplexVector reverse() {IComplexVector rVector = newVector_(); DATA.reverse2Dest(thisVector_(), rVector); return rVector;}
     @Override public IComplexVector refReverse() {
         return new RefComplexVector() {
             private final IComplexVector mThis = thisVector_();
