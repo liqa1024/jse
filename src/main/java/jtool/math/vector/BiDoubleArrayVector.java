@@ -27,19 +27,37 @@ public abstract class BiDoubleArrayVector extends AbstractComplexVector implemen
     
     /** Optimize stuffs，重写这些接口来加速批量填充过程 */
     @Override public void fill(double[][] aData) {
-        double[][] tData = internalData();
+        double[][] rData = internalData();
         final int tShift = internalDataShift();
         final int tSize = internalDataSize();
-        System.arraycopy(aData[0], 0, tData[0], tShift, tSize);
-        System.arraycopy(aData[1], 0, tData[1], tShift, tSize);
+        if (isReverse()) {
+            double[] rRealData = rData[0];
+            double[] rImagData = rData[1];
+            double[] aRealData = aData[0];
+            double[] aImagData = aData[1];
+            for (int i = 0, j = tShift+tSize-1; i < tSize; ++i, --j) {
+                rRealData[j] = aRealData[i];
+                rImagData[j] = aImagData[i];
+            }
+        } else {
+            System.arraycopy(aData[0], 0, rData[0], tShift, tSize);
+            System.arraycopy(aData[1], 0, rData[1], tShift, tSize);
+        }
     }
     @Override public void fill(double[] aData) {
-        double[][] tData = internalData();
+        double[][] rData = internalData();
         final int tShift = internalDataShift();
         final int tSize = internalDataSize();
-        System.arraycopy(aData, 0, tData[0], tShift, tSize);
+        if (isReverse()) {
+            double[] rRealData = rData[0];
+            for (int i = 0, j = tShift+tSize-1; i < tSize; ++i, --j) {
+                rRealData[j] = aData[i];
+            }
+        } else {
+            System.arraycopy(aData, 0, rData[0], tShift, tSize);
+        }
         final int tEnd = tShift + tSize;
-        final double[] tImagData = tData[1];
+        final double[] tImagData = rData[1];
         for (int i = tShift; i < tEnd; ++i) tImagData[i] = 0.0;
     }
     
@@ -49,8 +67,19 @@ public abstract class BiDoubleArrayVector extends AbstractComplexVector implemen
         final int tSize = internalDataSize();
         double[][] rData = new double[2][tSize];
         double[][] tData = internalData();
-        System.arraycopy(tData[0], tShift, rData[0], 0, tSize);
-        System.arraycopy(tData[1], tShift, rData[1], 0, tSize);
+        if (isReverse()) {
+            double[] rRealData = rData[0];
+            double[] rImagData = rData[1];
+            double[] tRealData = tData[0];
+            double[] tImagData = tData[1];
+            for (int i = 0, j = tShift+tSize-1; i < tSize; ++i, --j) {
+                rRealData[i] = tRealData[j];
+                rImagData[i] = tImagData[j];
+            }
+        } else {
+            System.arraycopy(tData[0], tShift, rData[0], 0, tSize);
+            System.arraycopy(tData[1], tShift, rData[1], 0, tSize);
+        }
         return rData;
     }
     

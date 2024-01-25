@@ -26,13 +26,32 @@ public abstract class DoubleArrayVector extends AbstractVector implements IDataS
     @Override public IVectorOperation operation() {return new DoubleArrayVectorOperation_();}
     
     /** Optimize stuffs，重写这些接口来加速批量填充过程 */
-    @Override public void fill(double[] aData) {System.arraycopy(aData, 0, internalData(), internalDataShift(), internalDataSize());}
+    @Override public void fill(double[] aData) {
+        if (isReverse()) {
+            double[] rData = internalData();
+            final int tShift = internalDataShift();
+            final int tSize = internalDataSize();
+            for (int i = 0, j = tShift+tSize-1; i < tSize; ++i, --j) {
+                rData[j] = aData[i];
+            }
+        } else {
+            System.arraycopy(aData, 0, internalData(), internalDataShift(), internalDataSize());
+        }
+    }
     
     /** Optimize stuffs，重写这些接口来加速获取 data 的过程 */
     @Override public double[] data() {
         final int tSize = internalDataSize();
         double[] rData = new double[tSize];
-        System.arraycopy(internalData(), internalDataShift(), rData, 0, tSize);
+        if (isReverse()) {
+            double[] tData = internalData();
+            final int tShift = internalDataShift();
+            for (int i = 0, j = tShift+tSize-1; i < tSize; ++i, --j) {
+                rData[i] = tData[j];
+            }
+        } else {
+            System.arraycopy(internalData(), internalDataShift(), rData, 0, tSize);
+        }
         return rData;
     }
     
