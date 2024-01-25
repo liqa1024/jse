@@ -74,11 +74,13 @@ public interface IComplexVector extends ISwapper, IHasComplexDoubleIterator, IHa
     void set(int aIdx, IComplexDouble aValue);
     void set(int aIdx, ComplexDouble aValue);
     void set(int aIdx, double aValue);
+    void set(int aIdx, double aReal, double aImag);
     void setReal(int aIdx, double aReal);
     void setImag(int aIdx, double aImag);
     ComplexDouble getAndSet(int aIdx, IComplexDouble aValue); // 返回修改前的值
     ComplexDouble getAndSet(int aIdx, ComplexDouble aValue);
     ComplexDouble getAndSet(int aIdx, double aValue);
+    ComplexDouble getAndSet(int aIdx, double aReal, double aImag);
     double getAndSetReal(int aIdx, double aReal);
     double getAndSetImag(int aIdx, double aImag);
     

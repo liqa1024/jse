@@ -1,6 +1,7 @@
 package jtool.math.matrix;
 
 
+import jtool.math.ComplexDouble;
 import jtool.math.vector.ComplexVector;
 
 import static jtool.math.matrix.AbstractMatrix.rangeCheckCol;
@@ -16,8 +17,12 @@ public abstract class RefComplexMatrix extends AbstractComplexMatrix {
     /** stuff to override */
     public abstract double getReal(int aRow, int aCol);
     public abstract double getImag(int aRow, int aCol);
+    public void set(int aRow, int aCol, double aReal, double aImag) {setReal(aRow, aCol, aReal); setImag(aRow, aCol, aImag);}
     public void setReal(int aRow, int aCol, double aReal) {throw new UnsupportedOperationException("set");}
     public void setImag(int aRow, int aCol, double aImag) {throw new UnsupportedOperationException("set");}
+    public ComplexDouble getAndSet(int aRow, int aCol, double aReal, double aImag) {
+        return new ComplexDouble(getAndSetReal(aRow, aCol, aReal), getAndSetImag(aRow, aCol, aImag));
+    }
     public double getAndSetReal(int aRow, int aCol, double aReal) {
         rangeCheckRow(aRow, rowNumber());
         rangeCheckCol(aCol, columnNumber());

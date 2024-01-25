@@ -167,8 +167,10 @@ public abstract class AbstractComplexVectorOperation implements IComplexVectorOp
             private final IComplexVector mThis = thisVector_();
             @Override public double getReal(int aIdx) {rangeCheck(aIdx, size()); return mThis.getReal(mThis.size()-1-aIdx);}
             @Override public double getImag(int aIdx) {rangeCheck(aIdx, size()); return mThis.getImag(mThis.size()-1-aIdx);}
+            @Override public void set(int aIdx, double aReal, double aImag) {rangeCheck(aIdx, size()); mThis.set(mThis.size()-1-aIdx, aReal, aImag);}
             @Override public void setReal(int aIdx, double aReal) {rangeCheck(aIdx, size()); mThis.setReal(mThis.size()-1-aIdx, aReal);}
             @Override public void setImag(int aIdx, double aImag) {rangeCheck(aIdx, size()); mThis.setImag(mThis.size()-1-aIdx, aImag);}
+            @Override public ComplexDouble getAndSet(int aIdx, double aReal, double aImag) {rangeCheck(aIdx, size()); return mThis.getAndSet(mThis.size()-1-aIdx, aReal, aImag);}
             @Override public double getAndSetReal(int aIdx, double aReal) {rangeCheck(aIdx, size()); return mThis.getAndSetReal(mThis.size()-1-aIdx, aReal);}
             @Override public double getAndSetImag(int aIdx, double aImag) {rangeCheck(aIdx, size()); return mThis.getAndSetImag(mThis.size()-1-aIdx, aImag);}
             @Override public int size() {return mThis.size();}

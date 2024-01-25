@@ -29,33 +29,34 @@ public interface IComplexDoubleSetOnlyIterator {
     /** ISetOnlyIterator stuffs */
     boolean hasNext();
     void nextOnly();
+    default void set(double aReal, double aImag) {
+        setReal(aReal);
+        setImag(aImag);
+    }
     default void set(IComplexDouble aValue) {
-        setReal(aValue.real());
-        setImag(aValue.imag());
+        set(aValue.real(), aValue.imag());
     }
     default void set(ComplexDouble aValue) {
-        setReal(aValue.mReal);
-        setImag(aValue.mImag);
+        set(aValue.mReal, aValue.mImag);
+    }
+    default void nextAndSet(double aReal, double aImag) {
+        nextOnly();
+        set(aReal, aImag);
     }
     default void nextAndSet(IComplexDouble aValue) {
         nextOnly();
-        setReal(aValue.real());
-        setImag(aValue.imag());
+        set(aValue.real(), aValue.imag());
     }
     default void nextAndSet(ComplexDouble aValue) {
         nextOnly();
-        setReal(aValue.mReal);
-        setImag(aValue.mImag);
+        set(aValue.mReal, aValue.mImag);
     }
     /** IDoubleSetOnlyIterator like stuffs */
     default void set(double aValue) {
-        setReal(aValue);
-        setImag(0.0);
+        set(aValue, 0.0);
     }
     default void nextAndSet(double aValue) {
-        nextOnly();
-        setReal(aValue);
-        setImag(0.0);
+        nextAndSet(aValue, 0.0);
     }
     
     /** 同样采用 toSetOnlyIterator() 的方法转为 {@link ISetOnlyIterator} 而不是继承 */

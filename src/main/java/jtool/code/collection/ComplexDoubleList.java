@@ -34,6 +34,7 @@ public class ComplexDoubleList implements IDataShell<double[][]> {
         rangeCheck(aIdx, mSize);
         return new ComplexDouble(mData[0][aIdx], mData[1][aIdx]);
     }
+    public void set(int aIdx, double aReal, double aImag) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aReal; mData[1][aIdx] = aImag;}
     public void setReal(int aIdx, double aReal) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aReal;}
     public void setImag(int aIdx, double aImag) {rangeCheck(aIdx, mSize); mData[1][aIdx] = aImag;}
     public void set(int aIdx, IComplexDouble aValue) {
@@ -118,6 +119,7 @@ public class ComplexDoubleList implements IDataShell<double[][]> {
         return new RefComplexVector() {
             @Override public double getReal(int aIdx) {return ComplexDoubleList.this.getReal(aIdx);}
             @Override public double getImag(int aIdx) {return ComplexDoubleList.this.getImag(aIdx);}
+            @Override public void set(int aIdx, double aReal, double aImag) {ComplexDoubleList.this.set(aIdx, aReal, aImag);}
             @Override public void setReal(int aIdx, double aReal) {ComplexDoubleList.this.setReal(aIdx, aReal);}
             @Override public void setImag(int aIdx, double aImag) {ComplexDoubleList.this.setImag(aIdx, aImag);}
             @Override public int size() {return mSize;}

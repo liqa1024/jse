@@ -931,14 +931,11 @@ public class MathEX {
         private static void setY_(IComplexVector rY, int aIdxL0, int aM, double aValue) {
             int tIdxPos = aIdxL0+aM;
             int tIdxNeg = aIdxL0-aM;
-            rY.setReal(tIdxPos, aValue);
-            rY.setImag(tIdxPos, aValue);
+            rY.set(tIdxPos, aValue, aValue);
             if ((aM&1)==1) {
-                rY.setReal(tIdxNeg, -aValue);
-                rY.setImag(tIdxNeg,  aValue);
+                rY.set(tIdxNeg, -aValue, aValue);
             } else {
-                rY.setReal(tIdxNeg,  aValue);
-                rY.setImag(tIdxNeg, -aValue);
+                rY.set(tIdxNeg, aValue, -aValue);
             }
         }
         

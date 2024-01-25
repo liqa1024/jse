@@ -57,11 +57,13 @@ public final class RowComplexMatrix extends BiDoubleArrayMatrix {
     @Override public void set(int aRow, int aCol, IComplexDouble aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aCol + aRow*mColNum; mData[0][tIdx] = aValue.real(); mData[1][tIdx] = aValue.imag();}
     @Override public void set(int aRow, int aCol, ComplexDouble aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aCol + aRow*mColNum; mData[0][tIdx] = aValue.mReal; mData[1][tIdx] = aValue.mImag;}
     @Override public void set(int aRow, int aCol, double aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aCol + aRow*mColNum; mData[0][tIdx] = aValue; mData[1][tIdx] = 0.0;}
+    @Override public void set(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aCol + aRow*mColNum; mData[0][tIdx] = aReal; mData[1][tIdx] = aImag;}
     @Override public void setReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); mData[0][aCol + aRow*mColNum] = aReal;}
     @Override public void setImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); mData[1][aCol + aRow*mColNum] = aImag;}
     @Override public ComplexDouble getAndSet(int aRow, int aCol, IComplexDouble aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aCol + aRow*mColNum; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aValue.real(); mData[1][tIdx] = aValue.imag(); return oValue;}
     @Override public ComplexDouble getAndSet(int aRow, int aCol, ComplexDouble aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aCol + aRow*mColNum; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aValue.mReal; mData[1][tIdx] = aValue.mImag; return oValue;}
     @Override public ComplexDouble getAndSet(int aRow, int aCol, double aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aCol + aRow*mColNum; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aValue; mData[1][tIdx] = 0.0; return oValue;}
+    @Override public ComplexDouble getAndSet(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aCol + aRow*mColNum; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aReal; mData[1][tIdx] = aImag; return oValue;}
     @Override public double getAndSetReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aCol + aRow*mColNum; double oReal = mData[0][tIdx]; mData[0][tIdx] = aReal; return oReal;}
     @Override public double getAndSetImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aCol + aRow*mColNum; double oImag = mData[1][tIdx]; mData[1][tIdx] = aImag; return oImag;}
     @Override public int rowNumber() {return mRowNum;}
@@ -347,6 +349,11 @@ public final class RowComplexMatrix extends BiDoubleArrayMatrix {
             private int mCol = 0;
             private int mIdx = mCol, oIdx = -1;
             @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public void set(double aReal, double aImag) {
+                if (oIdx < 0) throw new IllegalStateException();
+                mData[0][oIdx] = aReal;
+                mData[1][oIdx] = aImag;
+            }
             @Override public void setReal(double aReal) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[0][oIdx] = aReal;
@@ -422,6 +429,15 @@ public final class RowComplexMatrix extends BiDoubleArrayMatrix {
                     if (mIdx >= mSize) {++mCol; mIdx = mCol;}
                     mData[0][oIdx] = aValue;
                     mData[1][oIdx] = 0.0;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public void nextAndSet(double aReal, double aImag) {
+                if (hasNext()) {
+                    oIdx = mIdx; mIdx += mColNum;
+                    mData[0][oIdx] = aReal;
+                    mData[1][oIdx] = aImag;
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -451,6 +467,11 @@ public final class RowComplexMatrix extends BiDoubleArrayMatrix {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = 0, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mSize;}
+            @Override public void set(double aReal, double aImag) {
+                if (oIdx < 0) throw new IllegalStateException();
+                mData[0][oIdx] = aReal;
+                mData[1][oIdx] = aImag;
+            }
             @Override public void setReal(double aReal) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[0][oIdx] = aReal;
@@ -522,6 +543,15 @@ public final class RowComplexMatrix extends BiDoubleArrayMatrix {
                     oIdx = mIdx; ++mIdx;
                     mData[0][oIdx] = aValue;
                     mData[1][oIdx] = 0.0;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public void nextAndSet(double aReal, double aImag) {
+                if (hasNext()) {
+                    oIdx = mIdx; ++mIdx;
+                    mData[0][oIdx] = aReal;
+                    mData[1][oIdx] = aImag;
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -550,6 +580,11 @@ public final class RowComplexMatrix extends BiDoubleArrayMatrix {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = aCol, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mSize;}
+            @Override public void set(double aReal, double aImag) {
+                if (oIdx < 0) throw new IllegalStateException();
+                mData[0][oIdx] = aReal;
+                mData[1][oIdx] = aImag;
+            }
             @Override public void setReal(double aReal) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[0][oIdx] = aReal;
@@ -621,6 +656,15 @@ public final class RowComplexMatrix extends BiDoubleArrayMatrix {
                     oIdx = mIdx; mIdx += mColNum;
                     mData[0][oIdx] = aValue;
                     mData[1][oIdx] = 0.0;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public void nextAndSet(double aReal, double aImag) {
+                if (hasNext()) {
+                    oIdx = mIdx; mIdx += mColNum;
+                    mData[0][oIdx] = aReal;
+                    mData[1][oIdx] = aImag;
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -649,6 +693,11 @@ public final class RowComplexMatrix extends BiDoubleArrayMatrix {
             private final int mEnd = (aRow+1)*mColNum;
             private int mIdx = aRow*mColNum, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mEnd;}
+            @Override public void set(double aReal, double aImag) {
+                if (oIdx < 0) throw new IllegalStateException();
+                mData[0][oIdx] = aReal;
+                mData[1][oIdx] = aImag;
+            }
             @Override public void setReal(double aReal) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[0][oIdx] = aReal;
@@ -720,6 +769,15 @@ public final class RowComplexMatrix extends BiDoubleArrayMatrix {
                     oIdx = mIdx; ++mIdx;
                     mData[0][oIdx] = aValue;
                     mData[1][oIdx] = 0.0;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public void nextAndSet(double aReal, double aImag) {
+                if (hasNext()) {
+                    oIdx = mIdx; ++mIdx;
+                    mData[0][oIdx] = aReal;
+                    mData[1][oIdx] = aImag;
                 } else {
                     throw new NoSuchElementException();
                 }

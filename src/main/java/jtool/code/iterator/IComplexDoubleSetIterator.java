@@ -19,6 +19,7 @@ import java.util.function.Consumer;
  */
 public interface IComplexDoubleSetIterator extends IComplexDoubleIterator, IComplexDoubleSetOnlyIterator, ISettableComplexDouble {
     void nextOnly();
+    @Override default void setComplexDouble(double aReal, double aImag) {set(aReal, aImag);}
     
     /** 同样采用 toSetIterator() 的方法转为 {@link ISetIterator} 而不是继承 */
     default ISetIterator<ComplexDouble> toSetIterator() {

@@ -82,11 +82,13 @@ public interface IComplexMatrix extends IComplexMatrixGetter {
     void set(int aRow, int aCol, IComplexDouble aValue);
     void set(int aRow, int aCol, ComplexDouble aValue);
     void set(int aRow, int aCol, double aValue);
+    void set(int aRow, int aCol, double aReal, double aImag);
     void setReal(int aRow, int aCol, double aReal);
     void setImag(int aRow, int aCol, double aImag);
     ComplexDouble getAndSet(int aRow, int aCol, IComplexDouble aValue); // 返回修改前的值
     ComplexDouble getAndSet(int aRow, int aCol, ComplexDouble aValue);
     ComplexDouble getAndSet(int aRow, int aCol, double aValue);
+    ComplexDouble getAndSet(int aRow, int aCol, double aReal, double aImag);
     double getAndSetReal(int aRow, int aCol, double aReal);
     double getAndSetImag(int aRow, int aCol, double aImag);
     IMatrix.ISize size();

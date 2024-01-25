@@ -57,11 +57,13 @@ public final class ComplexVector extends BiDoubleArrayVector {
     @Override public void set(int aIdx, IComplexDouble aValue) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aValue.real(); mData[1][aIdx] = aValue.imag();}
     @Override public void set(int aIdx, ComplexDouble aValue) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aValue.mReal; mData[1][aIdx] = aValue.mImag;}
     @Override public void set(int aIdx, double aValue) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aValue; mData[1][aIdx] = 0.0;}
+    @Override public void set(int aIdx, double aReal, double aImag) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aReal; mData[1][aIdx] = aImag;}
     @Override public void setReal(int aIdx, double aReal) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aReal;}
     @Override public void setImag(int aIdx, double aImag) {rangeCheck(aIdx, mSize); mData[1][aIdx] = aImag;}
     @Override public ComplexDouble getAndSet(int aIdx, IComplexDouble aValue) {rangeCheck(aIdx, mSize); ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aValue.real(); mData[1][aIdx] = aValue.imag(); return oValue;}
     @Override public ComplexDouble getAndSet(int aIdx, ComplexDouble aValue) {rangeCheck(aIdx, mSize); ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aValue.mReal; mData[1][aIdx] = aValue.mImag; return oValue;}
     @Override public ComplexDouble getAndSet(int aIdx, double aValue) {rangeCheck(aIdx, mSize); ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aValue; mData[1][aIdx] = 0.0; return oValue;}
+    @Override public ComplexDouble getAndSet(int aIdx, double aReal, double aImag) {rangeCheck(aIdx, mSize); ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aReal; mData[1][aIdx] = aImag; return oValue;}
     @Override public double getAndSetReal(int aIdx, double aReal) {rangeCheck(aIdx, mSize); double oReal = mData[0][aIdx]; mData[0][aIdx] = aReal; return oReal;}
     @Override public double getAndSetImag(int aIdx, double aImag) {rangeCheck(aIdx, mSize); double oImag = mData[1][aIdx]; mData[1][aIdx] = aImag; return oImag;}
     @Override public int size() {return mSize;}
@@ -204,6 +206,11 @@ public final class ComplexVector extends BiDoubleArrayVector {
         return new IComplexDoubleSetIterator() {
             private int mIdx = 0, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mSize;}
+            @Override public void set(double aReal, double aImag) {
+                if (oIdx < 0) throw new IllegalStateException();
+                mData[0][oIdx] = aReal;
+                mData[1][oIdx] = aImag;
+            }
             @Override public void setReal(double aReal) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[0][oIdx] = aReal;
@@ -279,6 +286,16 @@ public final class ComplexVector extends BiDoubleArrayVector {
                     ++mIdx;
                     mData[0][oIdx] = aValue;
                     mData[1][oIdx] = 0.0;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public void nextAndSet(double aReal, double aImag) {
+                if (hasNext()) {
+                    oIdx = mIdx;
+                    ++mIdx;
+                    mData[0][oIdx] = aReal;
+                    mData[1][oIdx] = aImag;
                 } else {
                     throw new NoSuchElementException();
                 }

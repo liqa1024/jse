@@ -1,6 +1,8 @@
 package jtool.math.vector;
 
 
+import jtool.math.ComplexDouble;
+
 import static jtool.math.vector.AbstractVector.rangeCheck;
 
 /**
@@ -13,8 +15,12 @@ public abstract class RefComplexVector extends AbstractComplexVector {
     /** stuff to override */
     public abstract double getReal(int aIdx);
     public abstract double getImag(int aIdx);
+    public void set(int aIdx, double aReal, double aImag) {setReal(aIdx, aReal); setImag(aIdx, aImag);}
     public void setReal(int aIdx, double aReal) {throw new UnsupportedOperationException("set");}
     public void setImag(int aIdx, double aImag) {throw new UnsupportedOperationException("set");}
+    public ComplexDouble getAndSet(int aIdx, double aReal, double aImag) {
+        return new ComplexDouble(getAndSetReal(aIdx, aReal), getAndSetImag(aIdx, aImag));
+    }
     public double getAndSetReal(int aIdx, double aReal) {
         rangeCheck(aIdx, size());
         double oReal = getReal(aIdx);

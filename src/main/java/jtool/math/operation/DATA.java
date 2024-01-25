@@ -169,17 +169,14 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             it.nextOnly();
-            si.nextOnly();
-            si.setReal(-it.real());
-            si.setImag(-it.imag());
+            si.nextAndSet(-it.real(), -it.imag());
         }
     }
     public static void mapNegative2This(IHasComplexDoubleSetIterator rThis) {
         final IComplexDoubleSetIterator si = rThis.setIterator();
         while (si.hasNext()) {
             si.nextOnly();
-            si.setReal(-si.real());
-            si.setImag(-si.imag());
+            si.set(-si.real(), -si.imag());
         }
     }
     
@@ -191,9 +188,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
-            si.setReal(li.real() + ri.next());
-            si.setImag(li.imag());
+            si.nextAndSet(li.real() + ri.next(), li.imag());
         }
     }
     public static void ebeMinus2Dest(IHasComplexDoubleIterator aLHS, IHasDoubleIterator aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -202,9 +197,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
-            si.setReal(li.real() + ri.next());
-            si.setImag(li.imag());
+            si.nextAndSet(li.real() - ri.next(), li.imag());
         }
     }
     public static void ebeMultiply2Dest(IHasComplexDoubleIterator aLHS, IHasDoubleIterator aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -213,10 +206,8 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
             double tRHS = ri.next();
-            si.setReal(li.real() * tRHS);
-            si.setImag(li.imag() * tRHS);
+            si.nextAndSet(li.real() * tRHS, li.imag() * tRHS);
         }
     }
     public static void ebeDiv2Dest(IHasComplexDoubleIterator aLHS, IHasDoubleIterator aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -225,10 +216,8 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
             double tRHS = ri.next();
-            si.setReal(li.real() / tRHS);
-            si.setImag(li.imag() / tRHS);
+            si.nextAndSet(li.real() / tRHS, li.imag() / tRHS);
         }
     }
     public static void ebePlus2Dest(IHasDoubleIterator aLHS, IHasComplexDoubleIterator aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -237,9 +226,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             ri.nextOnly();
-            si.nextOnly();
-            si.setReal(li.next() + ri.real());
-            si.setImag(ri.imag());
+            si.nextAndSet(li.next() + ri.real(), ri.imag());
         }
     }
     public static void ebeMinus2Dest(IHasDoubleIterator aLHS, IHasComplexDoubleIterator aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -248,9 +235,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             ri.nextOnly();
-            si.nextOnly();
-            si.setReal(li.next() - ri.real());
-            si.setImag(-ri.imag());
+            si.nextAndSet(li.next() - ri.real(), -ri.imag());
         }
     }
     public static void ebeMultiply2Dest(IHasDoubleIterator aLHS, IHasComplexDoubleIterator aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -259,10 +244,8 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             ri.nextOnly();
-            si.nextOnly();
             double tLHS = li.next();
-            si.setReal(tLHS * ri.real());
-            si.setImag(tLHS * ri.imag());
+            si.nextAndSet(tLHS * ri.real(), tLHS * ri.imag());
         }
     }
     public static void ebeDiv2Dest(IHasDoubleIterator aLHS, IHasComplexDoubleIterator aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -271,10 +254,10 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             ri.nextOnly();
-            si.nextOnly();
             double tLHS = li.next();
-            si.setReal(tLHS / ri.real());
-            si.setImag(tLHS / ri.imag());
+            double rReal = ri.real(), rImag = ri.imag();
+            double div = rReal*rReal + rImag*rImag;
+            si.nextAndSet((tLHS*rReal)/div, (-tLHS*rImag)/div);
         }
     }
     public static void ebePlus2Dest(IHasComplexDoubleIterator aLHS, IHasComplexDoubleIterator aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -284,9 +267,7 @@ public class DATA {
         while (si.hasNext()) {
             li.nextOnly();
             ri.nextOnly();
-            si.nextOnly();
-            si.setReal(li.real() + ri.real());
-            si.setImag(li.imag() + ri.imag());
+            si.nextAndSet(li.real() + ri.real(), li.imag() + ri.imag());
         }
     }
     public static void ebeMinus2Dest(IHasComplexDoubleIterator aLHS, IHasComplexDoubleIterator aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -296,9 +277,7 @@ public class DATA {
         while (si.hasNext()) {
             li.nextOnly();
             ri.nextOnly();
-            si.nextOnly();
-            si.setReal(li.real() - ri.real());
-            si.setImag(li.imag() - ri.imag());
+            si.nextAndSet(li.real() - ri.real(), li.imag() - ri.imag());
         }
     }
     public static void ebeMultiply2Dest(IHasComplexDoubleIterator aLHS, IHasComplexDoubleIterator aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -308,11 +287,9 @@ public class DATA {
         while (si.hasNext()) {
             li.nextOnly();
             ri.nextOnly();
-            si.nextOnly();
             double lReal = li.real(), lImag = li.imag();
             double rReal = ri.real(), rImag = ri.imag();
-            si.setReal(lReal*rReal - lImag*rImag);
-            si.setImag(lImag*rReal + lReal*rImag);
+            si.nextAndSet(lReal*rReal - lImag*rImag, lImag*rReal + lReal*rImag);
         }
     }
     public static void ebeDiv2Dest(IHasComplexDoubleIterator aLHS, IHasComplexDoubleIterator aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -322,12 +299,10 @@ public class DATA {
         while (si.hasNext()) {
             li.nextOnly();
             ri.nextOnly();
-            si.nextOnly();
             double lReal = li.real(), lImag = li.imag();
             double rReal = ri.real(), rImag = ri.imag();
             double div = rReal*rReal + rImag*rImag;
-            si.setReal((lReal*rReal + lImag*rImag)/div);
-            si.setImag((lImag*rReal - lReal*rImag)/div);
+            si.nextAndSet((lReal*rReal + lImag*rImag)/div, (lImag*rReal - lReal*rImag)/div);
         }
     }
     
@@ -336,9 +311,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
-            si.setReal(li.real() + aRHS);
-            si.setImag(li.imag());
+            si.nextAndSet(li.real() + aRHS, li.imag());
         }
     }
     public static void mapMinus2Dest(IHasComplexDoubleIterator aLHS, double aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -346,9 +319,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
-            si.setReal(li.real() - aRHS);
-            si.setImag(li.imag());
+            si.nextAndSet(li.real() - aRHS, li.imag());
         }
     }
     public static void mapLMinus2Dest(IHasComplexDoubleIterator aLHS, double aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -356,9 +327,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
-            si.setReal(aRHS - li.real());
-            si.setImag(-li.imag());
+            si.nextAndSet(aRHS - li.real(), -li.imag());
         }
     }
     public static void mapMultiply2Dest(IHasComplexDoubleIterator aLHS, double aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -366,9 +335,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
-            si.setReal(li.real() * aRHS);
-            si.setImag(li.imag() * aRHS);
+            si.nextAndSet(li.real() * aRHS, li.imag() * aRHS);
         }
     }
     public static void mapDiv2Dest(IHasComplexDoubleIterator aLHS, double aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -376,9 +343,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
-            si.setReal(li.real() / aRHS);
-            si.setImag(li.imag() / aRHS);
+            si.nextAndSet(li.real() / aRHS, li.imag() / aRHS);
         }
     }
     public static void mapLDiv2Dest(IHasComplexDoubleIterator aLHS, double aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -386,11 +351,9 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
             double lReal = li.real(), lImag = li.imag();
             double div = lReal*lReal + lImag*lImag;
-            si.setReal((aRHS*lReal)/div);
-            si.setImag((-aRHS*lImag)/div);
+            si.nextAndSet((aRHS*lReal)/div, (-aRHS*lImag)/div);
         }
     }
     public static void mapPlus2Dest(IHasDoubleIterator aLHS, IComplexDouble aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -398,9 +361,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         final double rReal = aRHS.real(), rImag = aRHS.imag();
         while (si.hasNext()) {
-            si.nextOnly();
-            si.setReal(li.next() + rReal);
-            si.setImag(rImag);
+            si.nextAndSet(li.next() + rReal, rImag);
         }
     }
     public static void mapMinus2Dest(IHasDoubleIterator aLHS, IComplexDouble aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -408,9 +369,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         final double rReal = aRHS.real(), rImag = aRHS.imag();
         while (si.hasNext()) {
-            si.nextOnly();
-            si.setReal(li.next() - rReal);
-            si.setImag(-rImag);
+            si.nextAndSet(li.next() - rReal, -rImag);
         }
     }
     public static void mapLMinus2Dest(IHasDoubleIterator aLHS, IComplexDouble aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -418,9 +377,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         final double rReal = aRHS.real(), rImag = aRHS.imag();
         while (si.hasNext()) {
-            si.nextOnly();
-            si.setReal(rReal - li.next());
-            si.setImag(rImag);
+            si.nextAndSet(rReal - li.next(), rImag);
         }
     }
     public static void mapMultiply2Dest(IHasDoubleIterator aLHS, IComplexDouble aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -428,10 +385,8 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         final double rReal = aRHS.real(), rImag = aRHS.imag();
         while (si.hasNext()) {
-            si.nextOnly();
             double tLHS = li.next();
-            si.setReal(tLHS * rReal);
-            si.setImag(tLHS * rImag);
+            si.nextAndSet(tLHS * rReal, tLHS * rImag);
         }
     }
     public static void mapDiv2Dest(IHasDoubleIterator aLHS, IComplexDouble aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -440,10 +395,8 @@ public class DATA {
         final double rReal = aRHS.real(), rImag = aRHS.imag();
         final double div = rReal*rReal + rImag*rImag;
         while (si.hasNext()) {
-            si.nextOnly();
             double tLHS = li.next();
-            si.setReal((tLHS*rReal)/div);
-            si.setImag((-tLHS*rImag)/div);
+            si.nextAndSet((tLHS*rReal)/div, (-tLHS*rImag)/div);
         }
     }
     public static void mapLDiv2Dest(IHasDoubleIterator aLHS, IComplexDouble aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -451,10 +404,8 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rDest.setIterator();
         final double rReal = aRHS.real(), rImag = aRHS.imag();
         while (si.hasNext()) {
-            si.nextOnly();
             double tLHS = li.next();
-            si.setReal(rReal / tLHS);
-            si.setImag(rImag / tLHS);
+            si.nextAndSet(rReal / tLHS, rImag / tLHS);
         }
     }
     public static void mapPlus2Dest(IHasComplexDoubleIterator aLHS, IComplexDouble aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -463,9 +414,7 @@ public class DATA {
         final double rReal = aRHS.real(), rImag = aRHS.imag();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
-            si.setReal(li.real() + rReal);
-            si.setImag(li.imag() + rImag);
+            si.nextAndSet(li.real() + rReal, li.imag() + rImag);
         }
     }
     public static void mapMinus2Dest(IHasComplexDoubleIterator aLHS, IComplexDouble aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -474,9 +423,7 @@ public class DATA {
         final double rReal = aRHS.real(), rImag = aRHS.imag();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
-            si.setReal(li.real() - rReal);
-            si.setImag(li.imag() - rImag);
+            si.nextAndSet(li.real() - rReal, li.imag() - rImag);
         }
     }
     public static void mapLMinus2Dest(IHasComplexDoubleIterator aLHS, IComplexDouble aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -485,9 +432,7 @@ public class DATA {
         final double rReal = aRHS.real(), rImag = aRHS.imag();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
-            si.setReal(rReal - li.real());
-            si.setImag(rImag - li.imag());
+            si.nextAndSet(rReal - li.real(), rImag - li.imag());
         }
     }
     public static void mapMultiply2Dest(IHasComplexDoubleIterator aLHS, IComplexDouble aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -496,10 +441,8 @@ public class DATA {
         final double rReal = aRHS.real(), rImag = aRHS.imag();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
             double lReal = li.real(), lImag = li.imag();
-            si.setReal(lReal*rReal - lImag*rImag);
-            si.setImag(lImag*rReal + lReal*rImag);
+            si.nextAndSet(lReal*rReal - lImag*rImag, lImag*rReal + lReal*rImag);
         }
     }
     public static void mapDiv2Dest(IHasComplexDoubleIterator aLHS, IComplexDouble aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -509,10 +452,8 @@ public class DATA {
         final double div = rReal*rReal + rImag*rImag;
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
             double lReal = li.real(), lImag = li.imag();
-            si.setReal((lReal*rReal + lImag*rImag)/div);
-            si.setImag((lImag*rReal - lReal*rImag)/div);
+            si.nextAndSet((lReal*rReal + lImag*rImag)/div, (lImag*rReal - lReal*rImag)/div);
         }
     }
     public static void mapLDiv2Dest(IHasComplexDoubleIterator aLHS, IComplexDouble aRHS, IHasComplexDoubleSetOnlyIterator rDest) {
@@ -521,11 +462,9 @@ public class DATA {
         final double rReal = aRHS.real(), rImag = aRHS.imag();
         while (si.hasNext()) {
             li.nextOnly();
-            si.nextOnly();
             double lReal = li.real(), lImag = li.imag();
             double div = lReal*lReal + lImag*lImag;
-            si.setReal((rReal*lReal + rImag*lImag)/div);
-            si.setImag((rImag*lReal - rReal*lImag)/div);
+            si.nextAndSet((rReal*lReal + rImag*lImag)/div, (rImag*lReal - rReal*lImag)/div);
         }
     }
     
@@ -800,9 +739,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rThis.setIterator();
         final double rReal = aRHS.real(), rImag = aRHS.imag();
         while (si.hasNext()) {
-            si.nextOnly();
-            si.setReal(rReal);
-            si.setImag(rImag);
+            si.nextAndSet(rReal, rImag);
         }
     }
     public static void mapFill2This(IHasComplexDoubleSetOnlyIterator rThis, final double aRHS) {
@@ -813,9 +750,7 @@ public class DATA {
         final IComplexDoubleSetOnlyIterator si = rThis.setIterator();
         while (si.hasNext()) {
             it.nextOnly();
-            si.nextOnly();
-            si.setReal(it.real());
-            si.setImag(it.imag());
+            si.nextAndSet(it.real(), it.imag());
         }
     }
     public static void ebeFill2This(IHasComplexDoubleSetOnlyIterator rThis, IHasDoubleIterator aRHS) {
@@ -1100,10 +1035,8 @@ public class DATA {
         ComplexDouble rSum = new ComplexDouble();
         while (it.hasNext()) {
             it.nextOnly();
-            si.nextOnly();
             rSum.plus2this(it);
-            si.setReal(rSum.mReal);
-            si.setImag(rSum.mImag);
+            si.nextAndSet(rSum);
         }
     }
     public static void cummean2Dest(IHasDoubleIterator aThis, IHasDoubleSetOnlyIterator rDest) {
@@ -1124,11 +1057,9 @@ public class DATA {
         double tNum = 0.0;
         while (it.hasNext()) {
             it.nextOnly();
-            si.nextOnly();
             rSum.plus2this(it);
             ++tNum;
-            si.setReal(rSum.mReal / tNum);
-            si.setImag(rSum.mImag / tNum);
+            si.nextAndSet(rSum.mReal / tNum, rSum.mImag / tNum);
         }
     }
     public static void cumprod2Dest(IHasDoubleIterator aThis, IHasDoubleSetOnlyIterator rDest) {
@@ -1146,10 +1077,8 @@ public class DATA {
         ComplexDouble rProd = new ComplexDouble(1.0);
         while (it.hasNext()) {
             it.nextOnly();
-            si.nextOnly();
             rProd.multiply2this(it);
-            si.setReal(rProd.mReal);
-            si.setImag(rProd.mImag);
+            si.nextAndSet(rProd);
         }
     }
     public static void cummax2Dest(IHasDoubleIterator aThis, IHasDoubleSetOnlyIterator rDest) {
@@ -1187,9 +1116,7 @@ public class DATA {
         ComplexDouble rStat = null;
         while (it.hasNext()) {
             rStat = toComplexDouble(aOpt.apply(rStat, it.next()));
-            si.nextOnly();
-            si.setReal(rStat.mReal);
-            si.setImag(rStat.mImag);
+            si.nextAndSet(rStat);
         }
     }
     

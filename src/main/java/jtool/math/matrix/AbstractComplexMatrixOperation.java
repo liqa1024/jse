@@ -147,8 +147,10 @@ public abstract class AbstractComplexMatrixOperation implements IComplexMatrixOp
             private final IComplexMatrix mThis = thisMatrix_();
             @Override public double getReal(int aRow, int aCol) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); return mThis.getReal(aCol, aRow);}
             @Override public double getImag(int aRow, int aCol) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); return mThis.getImag(aCol, aRow);}
+            @Override public void set(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); mThis.set(aCol, aRow, aReal, aImag);}
             @Override public void setReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); mThis.setReal(aCol, aRow, aReal);}
             @Override public void setImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); mThis.setImag(aCol, aRow, aImag);}
+            @Override public ComplexDouble getAndSet(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); return mThis.getAndSet(aCol, aRow, aReal, aImag);}
             @Override public double getAndSetReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); return mThis.getAndSetReal(aCol, aRow, aReal);}
             @Override public double getAndSetImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); return mThis.getAndSetImag(aCol, aRow, aImag);}
             @Override public int rowNumber() {return mThis.columnNumber();}
