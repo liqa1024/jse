@@ -115,6 +115,8 @@ public class MPI {
         /**
          * A group constructor that is used to define a new group by deleting ranks from an existing group.
          *
+         * @param aN The number of elements in the ranks parameter.
+         *
          * @param aRanks The arrays of processes in group that are not to appear in newgroup.
          *               The specified ranks must be valid in the existing group.
          *               Each element in the array must be distinct.
@@ -125,10 +127,13 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-excl-function"> MPI_Group_excl function </a>
          */
-        public Group excl(int[] aRanks) throws Error {return of(Native.MPI_Group_excl(mPtr, aRanks));}
+        public Group excl(int aN, int[] aRanks) throws Error {return of(Native.MPI_Group_excl(mPtr, aN, aRanks));}
+        public Group excl(int[] aRanks) throws Error {return excl(aRanks.length, aRanks);}
         
         /**
          * Creates a new group that contains a subset of the processes in an existing group.
+         *
+         * @param aN The number of elements in the ranks parameter and the size of the new group.
          *
          * @param aRanks The processes to be included in the new group.
          *
@@ -137,7 +142,8 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-incl-function"> MPI_Group_incl function </a>
          */
-        public Group incl(int[] aRanks) throws Error {return of(Native.MPI_Group_incl(mPtr, aRanks));}
+        public Group incl(int aN, int[] aRanks) throws Error {return of(Native.MPI_Group_incl(mPtr, aN, aRanks));}
+        public Group incl(int[] aRanks) throws Error {return incl(aRanks.length, aRanks);}
         
         /**
          * Creates a new group from the intersection of two existing groups.
@@ -1492,14 +1498,14 @@ public class MPI {
         public static void MPI_Reduce(int[]     aSendBuf, int[]     rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, MPI_INT32_T       , aOp, aRoot, aComm);}
         public static void MPI_Reduce(long[]    aSendBuf, long[]    rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, MPI_INT64_T       , aOp, aRoot, aComm);}
         public static void MPI_Reduce(float[]   aSendBuf, float[]   rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, MPI_FLOAT         , aOp, aRoot, aComm);}
-        public static void MPI_Reduce(byte[]    rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_SIGNED_CHAR   , aOp, aRoot, aComm);}
-        public static void MPI_Reduce(double[]  rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_DOUBLE        , aOp, aRoot, aComm);}
-        public static void MPI_Reduce(boolean[] rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_UNSIGNED_CHAR , aOp, aRoot, aComm);}
-        public static void MPI_Reduce(char[]    rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_UNSIGNED_SHORT, aOp, aRoot, aComm);}
-        public static void MPI_Reduce(short[]   rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_SHORT         , aOp, aRoot, aComm);}
-        public static void MPI_Reduce(int[]     rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_INT32_T       , aOp, aRoot, aComm);}
-        public static void MPI_Reduce(long[]    rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_INT64_T       , aOp, aRoot, aComm);}
-        public static void MPI_Reduce(float[]   rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {MPI_Reduce0(true, null, rBuf, aCount, MPI_FLOAT         , aOp, aRoot, aComm);}
+        public static void MPI_Reduce(byte[]    rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Reduce0(true, null, rBuf, aCount, MPI_SIGNED_CHAR   , aOp, aRoot, aComm);} else {MPI_Reduce0(false, rBuf, null, aCount, MPI_SIGNED_CHAR   , aOp, aRoot, aComm);}}
+        public static void MPI_Reduce(double[]  rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Reduce0(true, null, rBuf, aCount, MPI_DOUBLE        , aOp, aRoot, aComm);} else {MPI_Reduce0(false, rBuf, null, aCount, MPI_DOUBLE        , aOp, aRoot, aComm);}}
+        public static void MPI_Reduce(boolean[] rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Reduce0(true, null, rBuf, aCount, MPI_UNSIGNED_CHAR , aOp, aRoot, aComm);} else {MPI_Reduce0(false, rBuf, null, aCount, MPI_UNSIGNED_CHAR , aOp, aRoot, aComm);}}
+        public static void MPI_Reduce(char[]    rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Reduce0(true, null, rBuf, aCount, MPI_UNSIGNED_SHORT, aOp, aRoot, aComm);} else {MPI_Reduce0(false, rBuf, null, aCount, MPI_UNSIGNED_SHORT, aOp, aRoot, aComm);}}
+        public static void MPI_Reduce(short[]   rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Reduce0(true, null, rBuf, aCount, MPI_SHORT         , aOp, aRoot, aComm);} else {MPI_Reduce0(false, rBuf, null, aCount, MPI_SHORT         , aOp, aRoot, aComm);}}
+        public static void MPI_Reduce(int[]     rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Reduce0(true, null, rBuf, aCount, MPI_INT32_T       , aOp, aRoot, aComm);} else {MPI_Reduce0(false, rBuf, null, aCount, MPI_INT32_T       , aOp, aRoot, aComm);}}
+        public static void MPI_Reduce(long[]    rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Reduce0(true, null, rBuf, aCount, MPI_INT64_T       , aOp, aRoot, aComm);} else {MPI_Reduce0(false, rBuf, null, aCount, MPI_INT64_T       , aOp, aRoot, aComm);}}
+        public static void MPI_Reduce(float[]   rBuf, int aCount, long aOp, int aRoot, long aComm) throws Error {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Reduce0(true, null, rBuf, aCount, MPI_FLOAT         , aOp, aRoot, aComm);} else {MPI_Reduce0(false, rBuf, null, aCount, MPI_FLOAT         , aOp, aRoot, aComm);}}
         private native static void MPI_Reduce0(boolean aInPlace, Object aSendBuf, Object rRecvBuf, int aCount, long aDataType, long aOp, int aRoot, long aComm) throws Error;
         
         /**
@@ -1690,6 +1696,8 @@ public class MPI {
          *
          * @param aGroup The existing group.
          *
+         * @param aN The number of elements in the ranks parameter.
+         *
          * @param aRanks The arrays of processes in group that are not to appear in newgroup.
          *               The specified ranks must be valid in the existing group.
          *               Each element in the array must be distinct.
@@ -1700,7 +1708,7 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-excl-function"> MPI_Group_excl function </a>
          */
-        public native static long MPI_Group_excl(long aGroup, int[] aRanks) throws Error;
+        public native static long MPI_Group_excl(long aGroup, int aN, int[] aRanks) throws Error;
         
         /**
          * Frees a group.
@@ -1714,6 +1722,8 @@ public class MPI {
          *
          * @param aGroup The existing group.
          *
+         * @param aN The number of elements in the ranks parameter and the size of the new group.
+         *
          * @param aRanks The processes to be included in the new group.
          *
          * @return A pointer to a handle that represents the new group, which contains the included
@@ -1721,7 +1731,7 @@ public class MPI {
          *
          * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-incl-function"> MPI_Group_incl function </a>
          */
-        public native static long MPI_Group_incl(long aGroup, int[] aRanks) throws Error;
+        public native static long MPI_Group_incl(long aGroup, int aN, int[] aRanks) throws Error;
         
         /**
          * Creates a new group from the intersection of two existing groups.

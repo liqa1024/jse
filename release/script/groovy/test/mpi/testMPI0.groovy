@@ -15,6 +15,14 @@ println(MPI.libraryVersion());
 final int me = MPI.Comm.WORLD.rank();
 final int np = MPI.Comm.WORLD.size();
 
+double[] r1 = [rand()];
+// 测试 reduce IN_PLACE
+println("rand of <$me>: $r1");
+MPI.Comm.WORLD.barrier();
+MPI.Comm.WORLD.reduce(r1, 1, MPI.Op.MAX, 0);
+println("reduced of <$me>: $r1");
+MPI.Comm.WORLD.barrier();
+
 double[] r;
 if (me == 0) {
     r = new double[np];

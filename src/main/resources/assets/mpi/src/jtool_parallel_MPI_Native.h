@@ -602,10 +602,10 @@ JNIEXPORT jlong JNICALL Java_jtool_parallel_MPI_00024Native_MPI_1Group_1differen
 /*
  * Class:     jtool_parallel_MPI_Native
  * Method:    MPI_Group_excl
- * Signature: (J[I)J
+ * Signature: (JI[I)J
  */
 JNIEXPORT jlong JNICALL Java_jtool_parallel_MPI_00024Native_MPI_1Group_1excl
-  (JNIEnv *, jclass, jlong, jintArray);
+  (JNIEnv *, jclass, jlong, jint, jintArray);
 
 /*
  * Class:     jtool_parallel_MPI_Native
@@ -618,10 +618,10 @@ JNIEXPORT void JNICALL Java_jtool_parallel_MPI_00024Native_MPI_1Group_1free
 /*
  * Class:     jtool_parallel_MPI_Native
  * Method:    MPI_Group_incl
- * Signature: (J[I)J
+ * Signature: (JI[I)J
  */
 JNIEXPORT jlong JNICALL Java_jtool_parallel_MPI_00024Native_MPI_1Group_1incl
-  (JNIEnv *, jclass, jlong, jintArray);
+  (JNIEnv *, jclass, jlong, jint, jintArray);
 
 /*
  * Class:     jtool_parallel_MPI_Native
