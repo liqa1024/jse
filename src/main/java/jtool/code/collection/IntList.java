@@ -1,6 +1,7 @@
 package jtool.code.collection;
 
 import jtool.math.IDataShell;
+import jtool.math.MathEX;
 import jtool.math.vector.IIntVector;
 import jtool.math.vector.IntVector;
 import jtool.math.vector.RefIntVector;
@@ -48,13 +49,14 @@ public class IntList implements ISlice, IDataShell<int[]> {
     }
     
     public void add(int aValue) {
-        if (mData.length == 0) {
+        final int tLen = mData.length;
+        if (tLen == 0) {
             mData = new int[1];
         } else
-        if (mData.length <= mSize) {
+        if (tLen <= mSize) {
             int[] oData = mData;
-            mData = new int[oData.length * 2];
-            System.arraycopy(oData, 0, mData, 0, oData.length);
+            mData = new int[tLen + Math.max(1, tLen>>1)];
+            System.arraycopy(oData, 0, mData, 0, tLen);
         }
         mData[mSize] = aValue;
         ++mSize;

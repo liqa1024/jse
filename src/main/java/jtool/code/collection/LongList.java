@@ -53,7 +53,7 @@ public class LongList implements IDataShell<long[]> {
         } else
         if (mData.length <= mSize) {
             long[] oData = mData;
-            mData = new long[oData.length * 2];
+            mData = new long[oData.length + Math.max(1, oData.length>>1)];
             System.arraycopy(oData, 0, mData, 0, oData.length);
         }
         mData[mSize] = aValue;

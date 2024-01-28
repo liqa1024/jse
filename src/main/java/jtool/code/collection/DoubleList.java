@@ -48,13 +48,14 @@ public class DoubleList implements IDataShell<double[]> {
     }
     
     public void add(double aValue) {
-        if (mData.length == 0) {
+        final int tLen = mData.length;
+        if (tLen == 0) {
             mData = new double[1];
         } else
-        if (mData.length <= mSize) {
+        if (tLen <= mSize) {
             double[] oData = mData;
-            mData = new double[oData.length * 2];
-            System.arraycopy(oData, 0, mData, 0, oData.length);
+            mData = new double[tLen + Math.max(1, tLen>>1)];
+            System.arraycopy(oData, 0, mData, 0, tLen);
         }
         mData[mSize] = aValue;
         ++mSize;

@@ -2,6 +2,7 @@ package jtool.code.collection;
 
 import jtool.code.functional.IBooleanConsumer;
 import jtool.math.IDataShell;
+import jtool.math.MathEX;
 import jtool.math.vector.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -45,13 +46,14 @@ public class BooleanList implements IDataShell<boolean[]> {
     }
     
     public void add(boolean aValue) {
-        if (mData.length == 0) {
+        final int tLen = mData.length;
+        if (tLen == 0) {
             mData = new boolean[1];
         } else
-        if (mData.length <= mSize) {
+        if (tLen <= mSize) {
             boolean[] oData = mData;
-            mData = new boolean[oData.length * 2];
-            System.arraycopy(oData, 0, mData, 0, oData.length);
+            mData = new boolean[tLen + Math.max(1, tLen>>1)];
+            System.arraycopy(oData, 0, mData, 0, tLen);
         }
         mData[mSize] = aValue;
         ++mSize;

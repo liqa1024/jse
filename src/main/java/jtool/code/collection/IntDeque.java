@@ -56,23 +56,26 @@ public class IntDeque {
     }
     
     private void growthIfNeed_() {
-        if (mData.length == 0) {
+        final int tLen = mData.length;
+        if (tLen == 0) {
             mData = new int[16+1];
         } else {
             boolean tCross;
             int tSize = mEnd-mStart;
             if (tSize < 0) {
-                tSize += mData.length;
+                tSize += tLen;
                 tCross = true;
             } else {
                 tCross = false;
             }
-            if (mData.length == tSize+1) {
+            if (tLen == tSize+1) {
                 int[] oData = mData;
-                mData = new int[mData.length + tSize];
+                // Double capacity if small; else grow by 50%
+                int tJump = (tLen < 64) ? (tLen + 2) : (tLen >> 1);
+                mData = new int[tLen + tJump];
                 if (tCross) {
                     int oStart = mStart;
-                    mStart += tSize;
+                    mStart += tJump;
                     System.arraycopy(oData, 0, mData, 0, mEnd);
                     System.arraycopy(oData, oStart, mData, mStart, tSize-mEnd);
                 } else {

@@ -57,13 +57,13 @@ public class ComplexDoubleList implements IDataShell<double[][]> {
     
     /** 在这里这个方法是必要的，虽然目前的约定下不会出现 {@code double aReal, double aImag} 两个参数的方法 */
     public void add(double aReal, double aImag) {
-        int tLen = mData[0].length;
+        final int tLen = mData[0].length;
         if (tLen == 0) {
             mData = new double[2][1];
         } else
         if (tLen <= mSize) {
             double[][] oData = mData;
-            mData = new double[2][tLen * 2];
+            mData = new double[2][tLen + Math.max(1, tLen>>1)];
             System.arraycopy(oData[0], 0, mData[0], 0, tLen);
             System.arraycopy(oData[1], 0, mData[1], 0, tLen);
         }
