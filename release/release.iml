@@ -12,6 +12,7 @@
       <excludeFolder url="file://$MODULE_DIR$/lib/jep" />
       <excludeFolder url="file://$MODULE_DIR$/lib/lmp" />
       <excludeFolder url="file://$MODULE_DIR$/lib/mpi" />
+      <excludeFolder url="file://$MODULE_DIR$/lib/mimalloc" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

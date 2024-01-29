@@ -3,6 +3,7 @@ package jtool.lmp;
 import jtool.atom.IAtom;
 import jtool.atom.IAtomData;
 import jtool.atom.IXYZ;
+import jtool.clib.MiMalloc;
 import jtool.code.UT;
 import jtool.io.IInFile;
 import jtool.math.matrix.*;
@@ -43,7 +44,7 @@ public class NativeLmp implements IAutoShutdown {
         private static volatile boolean INITIALIZED = false;
         
         public static boolean initialized() {return INITIALIZED;}
-        @SuppressWarnings("ResultOfMethodCallIgnored")
+        @SuppressWarnings({"ResultOfMethodCallIgnored", "UnnecessaryCallToStringValueOf"})
         public static void init() {
             // 手动调用此值来强制初始化
             if (!INITIALIZED) String.valueOf(LMPLIB_PATH);
@@ -231,6 +232,7 @@ public class NativeLmp implements IAutoShutdown {
                 String tLine;
                 while ((tLine = tReader.readLine()) != null) {
                     tLine = tLine.replace("$ENV{LAMMPS_HOME}", Conf.LMP_HOME.replace("\\", "\\\\")); // 注意反斜杠的转义问题
+                    tLine = tLine.replace("$ENV{MIMALLOC_HOME}", MiMalloc.MIMALLOC_DIR.replace("\\", "\\\\")); // 注意反斜杠的转义问题
                     tWriter.writeln(tLine);
                 }
             }
@@ -266,6 +268,8 @@ public class NativeLmp implements IAutoShutdown {
     
     static {
         InitHelper.INITIALIZED = true;
+        // 不管怎样都会依赖 MiMalloc
+        MiMalloc.InitHelper.init();
         
         // 先规范化 LMP_HOME 的格式
         if (Conf.LMP_HOME == null) {
@@ -303,7 +307,7 @@ public class NativeLmp implements IAutoShutdown {
             try {initLmp_();}
             catch (Exception e) {throw new RuntimeException(e);}
         }
-        // 设置库路径（注意 LMP_HOME 在这期间会改变，因此需要重新获取）
+        // 设置库路径
         System.load(UT.IO.toAbsolutePath(NATIVE_LMPLIB_PATH));
         System.load(UT.IO.toAbsolutePath(LMPLIB_PATH));
     }

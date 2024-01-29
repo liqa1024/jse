@@ -46,3 +46,14 @@ else ()
     message(FATAL_ERROR "No MPI C Environment Found")
 endif(MPI_C_FOUND)
 
+
+# add mimalloc
+include_directories($ENV{MIMALLOC_HOME}include)
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    target_link_libraries(mpijni $ENV{MIMALLOC_HOME}lib/libmimalloc.so)
+elseif (CMAKE_SYSTEM_NAME MATCHES "Windows")
+    target_link_libraries(mpijni $ENV{MIMALLOC_HOME}lib/mimalloc.lib)
+elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    target_link_libraries(mpijni $ENV{MIMALLOC_HOME}lib/libmimalloc.dylib)
+endif ()
+

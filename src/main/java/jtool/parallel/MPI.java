@@ -1,11 +1,14 @@
 package jtool.parallel;
 
+import jtool.clib.MiMalloc;
 import jtool.code.UT;
 import org.jetbrains.annotations.ApiStatus;
 
-import static jtool.code.CS.*;
+import java.io.BufferedReader;
+
 import static jtool.code.CS.Exec.EXE;
 import static jtool.code.CS.Exec.JAR_DIR;
+import static jtool.code.CS.*;
 
 /**
  * 基于 jni 实现的 MPI wrapper, 介绍部分基于
@@ -969,8 +972,7 @@ public class MPI {
         private final static String MPILIB_DIR = JAR_DIR+"mpi/";
         private final static String MPILIB_PATH = MPILIB_DIR + "mpijni@"+UT.Code.uniqueID(VERSION) + JNILIB_EXTENSION;
         private final static String[] MPISRC_NAME = {
-              "CMakeLists.txt"
-            , "jtool_parallel_MPI_Native.c"
+              "jtool_parallel_MPI_Native.c"
             , "jtool_parallel_MPI_Native.h"
         };
         
@@ -986,6 +988,14 @@ public class MPI {
             UT.IO.removeDir(tWorkingDir);
             for (String tName : MPISRC_NAME) {
                 UT.IO.copy(UT.IO.getResource("mpi/src/"+tName), tWorkingDir+tName);
+            }
+            // 这里对 CMakeLists.txt 特殊处理，替换其中的 mimalloc 库路径为设置好的路径
+            try (BufferedReader tReader = UT.IO.toReader(UT.IO.getResource("mpi/src/CMakeLists.txt")); UT.IO.IWriteln tWriter = UT.IO.toWriteln(tWorkingDir+"CMakeLists.txt")) {
+                String tLine;
+                while ((tLine = tReader.readLine()) != null) {
+                    tLine = tLine.replace("$ENV{MIMALLOC_HOME}", MiMalloc.MIMALLOC_DIR.replace("\\", "\\\\")); // 注意反斜杠的转义问题
+                    tWriter.writeln(tLine);
+                }
             }
             System.out.println("MPI INIT INFO: Building mpijni from source code...");
             String tBuildDir = tWorkingDir+"build/";
@@ -1016,6 +1026,8 @@ public class MPI {
         // 这对于一般的 MPI 实现应该都是没有问题的
         static {
             InitHelper.INITIALIZED = true;
+            // 不管怎样都会依赖 MiMalloc
+            MiMalloc.InitHelper.init();
             
             // 如果不存在 jni lib 则需要重新通过源码编译
             if (!UT.IO.isFile(MPILIB_PATH)) {

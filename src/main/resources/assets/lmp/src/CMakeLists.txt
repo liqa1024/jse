@@ -47,6 +47,17 @@ if (MPI_C_FOUND)
 endif(MPI_C_FOUND)
 
 
+# add mimalloc
+include_directories($ENV{MIMALLOC_HOME}include)
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    target_link_libraries(lmpjni $ENV{MIMALLOC_HOME}lib/libmimalloc.so)
+elseif (CMAKE_SYSTEM_NAME MATCHES "Windows")
+    target_link_libraries(lmpjni $ENV{MIMALLOC_HOME}lib/mimalloc.lib)
+elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    target_link_libraries(lmpjni $ENV{MIMALLOC_HOME}lib/libmimalloc.dylib)
+endif ()
+
+
 # add lammps
 option(LAMMPS_IS_OLD "Build based on old version lammps (like version below 18Sep2020)" OFF)
 option(LAMMPS_HAS_EXCEPTIONS "Build based on lammps which has error handling" ON)
