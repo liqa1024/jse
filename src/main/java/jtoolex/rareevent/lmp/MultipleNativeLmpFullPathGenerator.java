@@ -107,7 +107,12 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
         try (MultipleNativeLmpFullPathGenerator tPathGen = new MultipleNativeLmpFullPathGenerator(aWorldComm, aWorldRoot, aLmpComm, aLmpRoots,  aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep)) {
             // 在另一个线程执行后续操作
             Future<Void> tLaterTask = null;
-            if (tPathGen.mWorldMe == aWorldRoot) tLaterTask = UT.Par.runAsync(() -> aDoLater.accept(tPathGen));
+            if (tPathGen.mWorldMe == aWorldRoot) {
+                tLaterTask = UT.Par.runAsync(() -> {
+                    try {aDoLater.accept(tPathGen);}
+                    finally {tPathGen.shutdown();} // 需要在结束时手动关闭 tPathGen 让主线程 tServer 自动退出
+                });
+            }
             // 主线程开启服务器，现在所有进程都会阻塞，保证线程为主线程可以避免一些问题
             try (PathGenServer tServer = tPathGen.new PathGenServer()) {
                 tServer.run();

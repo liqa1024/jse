@@ -82,6 +82,7 @@ def dumpCal = new MultiTypeClusterSizeCalculator(
     [new ABOOPSolidChecker_MPI().setComm(calComm).setRNearestMul(1.8).setConnectThreshold(0.84).setSolidThreshold(13), new ABOOPSolidChecker_MPI().setComm(calComm).setRNearestMul(1.5).setConnectThreshold(0.84).setSolidThreshold(7)]
 );
 
+MultipleNativeLmpFullPathGenerator.NO_LMP_IN_WORLD_ROOT = true;
 MultipleNativeLmpFullPathGenerator.withOf(subComm, subRoots, dumpCal, initPoints, [MASS.Cu, MASS.Zr], SCTemp, pairStyle, pairCoeff, timestep, dumpStep) {fullPathGen ->
     int parallelNum = fullPathGen.parallelNum();
     /** 开始 FFS */
