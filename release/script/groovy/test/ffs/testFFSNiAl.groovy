@@ -2,8 +2,8 @@ package test.ffs
 
 import groovy.transform.Field
 import jtool.atom.Structures
-import jtool.code.UT
 import jtool.code.CS.Slurm
+import jtool.code.UT
 import jtool.io.RefreshableFilePrintStream
 import jtool.lmp.Dump
 import jtool.lmp.Lmpdat
@@ -17,8 +17,7 @@ import jtoolex.rareevent.lmp.MultipleNativeLmpFullPathGenerator
 
 import static jtool.code.CS.MASS
 import static jtool.code.CS.VERSION
-import static jtool.code.UT.Code.randSeed
-import static jtool.code.UT.Code.range
+import static jtool.code.UT.Code.*
 import static jtool.code.UT.Math.rng
 
 /**
@@ -61,7 +60,6 @@ rng(rng().nextLong());
 /** NativeLmp 参数 */
 NativeLmp.Conf.CMAKE_SETTING.PKG_MANYBODY = 'ON';
 NativeLmp.Conf.REBUILD = false; // 如果没有这个包需要开启此选项重新构建
-//NativeLmp.Conf.LMP_HOME = 'lib/lmp/native/build-debug/'; // 用于 debug
 if (me == 0) println("LMP_HOME: ${NativeLmp.Conf.LMP_HOME}");
 
 
@@ -102,11 +100,12 @@ final def FFSOutDataPath    = FFSDir+'data-out';
 
 /** FFS 参数 */
 final boolean dumpAllPath   = false;
+final boolean printPathEff  = true;
 
 final double timestep       = 0.001; // ps
 
-final int lmpCores          = 8;
-final int parallelNum       = MathEX.Code.divup(np, lmpCores);
+final int lmpCores          = 2; // lammps 核越少效率越高，并且 MPI 参数计算器效率也会更高
+final int initParallelNum   = MathEX.Code.divup(np, lmpCores);
 
 final int color             = me.intdiv(lmpCores);
 final def subComm           = MPI.Comm.WORLD.split(color)
@@ -122,11 +121,12 @@ final double surfaceA       = 5;
 final def surfaces = [
     10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80, 90, 100,
     110, 120, 130, 140, 150, 160, 180, 200, 220, 240, 260, 280, 300,
-    320, 340, 360, 380, 400
+    320, 340, 360, 380, 400, 420, 440, 460, 480, 500, 520, 540, 560,
+    580, 600, 620, 640, 660, 680, 700, 720, 740, 760, 780, 800
 ];
 
 final double pruningProb    = 0.5;
-final int pruningThreshold  = 3;
+final int pruningThreshold  = 6;
 
 final def FFSDumpPath       = workingDir+'dump-0';
 final def FFSRestartPathDu  = workingDir+'restart-dump';
@@ -195,14 +195,14 @@ if (genInitPoints) try (def lmp = new NativeLmp('-log', 'none', '-screen', 'none
 if (genPostInitPoints) try (def lmp = new NativeLmp(['-log', 'none', '-screen', 'none'] as String[], subComm)) {
     // 然后批量继续过冷的体系，得到不相关的多个初始结构
     if (me == 0) {
-    println("=====CONTINUE FFS DATA AND GET ${parallelNum} FFS DATA=====");
+    println("=====CONTINUE FFS DATA AND GET ${initParallelNum} FFS DATA=====");
     println("PAIR_STYLE: ${pairStyle}");
     println("PAIR_COEFF: ${pairCoeff}");
     println("ATOM_NUM: ${atomNum}");
     println("TEMPERATURE: ${FFSTemp}K");
     println("TIMESTEP: ${initTimestep} ps");
     println("STEP_NUM: ${FFSContinueStep}");
-    println("PARALLEL_NUM: ${parallelNum}");
+    println("PARALLEL_NUM: ${initParallelNum}");
     println("LMP_CORE_NUM: ${lmpCores}");
     }
     if (me == 0) UT.Timer.tic();
@@ -215,7 +215,7 @@ if (genPostInitPoints) try (def lmp = new NativeLmp(['-log', 'none', '-screen', 
 
 
 // 读取结构
-def initPoints = range(parallelNum).collect {Lmpdat.read("${FFSOutDataPath}-${it}")};
+def initPoints = range(initParallelNum).collect {Lmpdat.read("${FFSOutDataPath}-${it}")};
 
 def calComm = subComm.copy(); // 参数计算的也需要拷贝一次，避免相互干扰
 def dumpCal = new MultiTypeClusterSizeCalculator(
@@ -224,7 +224,10 @@ def dumpCal = new MultiTypeClusterSizeCalculator(
 );
 
 MPI.Comm.WORLD.barrier();
+MultipleNativeLmpFullPathGenerator.NO_LMP_IN_WORLD_ROOT = true; // slurm 上还是不需要主进程运行 lammps
 MultipleNativeLmpFullPathGenerator.withOf(subComm, subRoots, dumpCal, initPoints, [MASS.Ni, MASS.Al], FFSTemp, pairStyle, pairCoeff, timestep, dumpStep) {fullPathGen ->
+    int parallelNum = fullPathGen.parallelNum();
+    
     /** 开始 FFS */
     println("=====BEGIN ${UNIQUE_NAME} OF Ni${Ni}Al${Al}=====");
     println("TIMESTEP: ${timestep} ps");
@@ -243,10 +246,17 @@ MultipleNativeLmpFullPathGenerator.withOf(subComm, subRoots, dumpCal, initPoints
     // 我也不知道为啥 i = 0 就会达到路径总数阈值，可能第一步有很多大飞跃？总之先设高
     try (def FFS = new ForwardFluxSampling<>(fullPathGen, parallelNum, surfaceA, surfaces, N0).setStep1Mul(step1Mul).setPruningProb(pruningProb).setPruningThreshold(pruningThreshold).setMaxPathNum(N0 * 10000)) {
         if (pbar) FFS.setProgressBar();
+        // 增加对 fullPathGen 的单元耗时统计
+        if (printPathEff) fullPathGen.initTimer();
         // 第一步，每步都会输出结构
         UT.Timer.tic();
         FFS.run();
         UT.Timer.toc("i = -1, k0 = ${FFS.getK0()}, step1PointNum = ${FFS.step1PointNum()}, step1PathNum = ${FFS.step1PathNum()},");
+        // 输出 fullPathGen 的耗时
+        if (printPathEff) {
+            def info = fullPathGen.getTimerInfo();
+            println("PathGenEff: lmp = ${percent(info.lmp/info.total)}, lambda = ${percent(info.lambda/info.total)}, wait = ${percent(info.wait/info.total)}, else = ${percent((info.other)/info.total)}");
+        }
         // 然后直接随便选一个输出路径到 dump 并保存 restart
         Dump.fromAtomDataList(FFS.pickPath()).write(FFSDumpPath);
         if (dumpAllPath) {
@@ -264,9 +274,16 @@ MultipleNativeLmpFullPathGenerator.withOf(subComm, subRoots, dumpCal, initPoints
         // 后面的步骤，每步都会输出结构并保存 restart
         def i = 0;
         while (!FFS.finished()) {
+            // 增加对 fullPathGen 的单元耗时统计
+            if (printPathEff) fullPathGen.resetTimer();
             UT.Timer.tic();
             FFS.run();
             UT.Timer.toc("i = ${i}, prob = ${FFS.getProb(i)}, step2PointNum = ${FFS.step2PointNum(i)}, step2PathNum = ${FFS.step2PathNum(i)},");
+            // 输出 fullPathGen 的耗时
+            if (printPathEff) {
+                def info = fullPathGen.getTimerInfo();
+                println("PathGenEff: lmp = ${percent(info.lmp/info.total)}, lambda = ${percent(info.lambda/info.total)}, wait = ${percent(info.wait/info.total)}, else = ${percent(info.other/info.total)}");
+            }
             // 然后直接随便选一个输出路径到 dump 并保存 restart
             Dump.fromAtomDataList(FFS.pickPath()).write(FFSDumpPath);
             if (dumpAllPath) {

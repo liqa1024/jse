@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  */
 public class CS {
     /** version of jtool */
-    public final static String VERSION = "2.5.2b";
+    public final static String VERSION = "2.5.2c";
     
     /** a Random generator so I don't need to instantiate a new one all the time. */
     public final static Random RNGSUS = new Random(), RANDOM = RNGSUS;
@@ -529,6 +529,8 @@ public class CS {
         public final static int CORES_PER_TASK;
         public final static int MAX_STEP_COUNT;
         public final static int JOB_ID;
+        public final static int NODEID;
+        public final static String NODENAME;
         public final static List<String> NODE_LIST;
         public final static ResourcesManager RESOURCES_MANAGER;
         
@@ -675,6 +677,9 @@ public class CS {
                 JOB_ID = Integer.parseInt(System.getenv("SLURM_JOB_ID"));
                 // 获取任务总数
                 NTASKS = Integer.parseInt(System.getenv("SLURM_NTASKS"));
+                // 获取对应的 node id 和节点名
+                NODEID = Integer.parseInt(System.getenv("SLURM_NODEID"));
+                NODENAME = System.getenv("SLURMD_NODENAME");
                 
                 // 获取每节点的核心数
                 String tRawCoresPerNode = System.getenv("SLURM_JOB_CPUS_PER_NODE");
@@ -702,6 +707,8 @@ public class CS {
             } else {
                 JOB_ID = -1;
                 NTASKS = -1;
+                NODEID = -1;
+                NODENAME = null;
                 CORES_PER_NODE = -1;
                 CORES_PER_TASK = -1;
                 MAX_STEP_COUNT = -1;
