@@ -87,7 +87,7 @@ public interface ILongVector extends ISwapper, IHasLongIterator, IHasLongSetIter
     @VisibleForTesting default ILongVectorOperation opt() {return operation();}
     
     /** 增加向量基本的运算操作，现在也归入内部使用 */
-    double sum  ();
+    long   sum  ();
     double mean ();
     double prod ();
     long   max  ();

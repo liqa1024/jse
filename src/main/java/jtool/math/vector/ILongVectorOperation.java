@@ -21,7 +21,7 @@ public interface ILongVectorOperation {
     /** 统一提供一个 for-each 运算来减少优化需要的重复代码 */
     void forEach            (LongConsumer aCon);
     
-    double sum          ();
+    long   sum          ();
     double mean         ();
     double prod         ();
     long   max          ();

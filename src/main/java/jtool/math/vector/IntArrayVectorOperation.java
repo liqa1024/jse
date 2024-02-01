@@ -21,12 +21,13 @@ public abstract class IntArrayVectorOperation extends AbstractIntVectorOperation
     @Override public void assign        (IntSupplier      aSup) {IntArrayVector rThis = thisVector_(); ARRAY.assign2This  (rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize(), rThis.isReverse(), aSup);}
     @Override public void forEach       (IntConsumer      aCon) {IntArrayVector rThis = thisVector_(); ARRAY.forEachOfThis(rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize(), rThis.isReverse(), aCon);}
     
-    @Override public double sum ()                      {IntArrayVector tThis = thisVector_(); return ARRAY.sumOfThis (tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
-    @Override public double mean()                      {IntArrayVector tThis = thisVector_(); return ARRAY.meanOfThis(tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
-    @Override public double prod()                      {IntArrayVector tThis = thisVector_(); return ARRAY.prodOfThis(tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
-    @Override public int    max ()                      {IntArrayVector tThis = thisVector_(); return ARRAY.maxOfThis (tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
-    @Override public int    min ()                      {IntArrayVector tThis = thisVector_(); return ARRAY.minOfThis (tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
-    @Override public double stat(DoubleBinaryOperator aOpt) {IntArrayVector tThis = thisVector_(); return ARRAY.statOfThis(tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize(), aOpt);}
+    @Override public int    sum  ()                         {IntArrayVector tThis = thisVector_(); return ARRAY.sumOfThis  (tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
+    @Override public long   exsum()                         {IntArrayVector tThis = thisVector_(); return ARRAY.exsumOfThis(tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
+    @Override public double mean ()                         {IntArrayVector tThis = thisVector_(); return ARRAY.meanOfThis (tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
+    @Override public double prod ()                         {IntArrayVector tThis = thisVector_(); return ARRAY.prodOfThis (tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
+    @Override public int    max  ()                         {IntArrayVector tThis = thisVector_(); return ARRAY.maxOfThis  (tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
+    @Override public int    min  ()                         {IntArrayVector tThis = thisVector_(); return ARRAY.minOfThis  (tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}
+    @Override public double stat(DoubleBinaryOperator aOpt) {IntArrayVector tThis = thisVector_(); return ARRAY.statOfThis (tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize(), aOpt);}
     
     
     @Override public IIntVector reverse() {

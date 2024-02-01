@@ -90,7 +90,7 @@ public interface IIntVector extends ISwapper, ISlice, IHasIntIterator, IHasIntSe
     @VisibleForTesting default IIntVectorOperation opt() {return operation();}
     
     /** 增加向量基本的运算操作以及 IntegerVector 特有的操作，现在也归入内部使用 */
-    double sum  ();
+    int    sum  ();
     double mean ();
     double prod ();
     int    max  ();

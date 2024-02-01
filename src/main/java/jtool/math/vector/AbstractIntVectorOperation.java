@@ -15,11 +15,12 @@ public abstract class AbstractIntVectorOperation implements IIntVectorOperation 
     @Override public void forEach       (IntConsumer        aCon) {DATA.forEachOfThis(thisVector_(), aCon);}
     @Override public void fill          (IIntVectorGetter   aRHS) {DATA.vecFill2This (thisVector_(), aRHS);}
     
-    @Override public double sum ()                      {return DATA.sumOfThis  (thisVector_().asDouble());}
-    @Override public double mean()                      {return DATA.meanOfThis (thisVector_().asDouble());}
-    @Override public double prod()                      {return DATA.prodOfThis (thisVector_().asDouble());}
-    @Override public int    max ()                      {return DATA.maxOfThis  (thisVector_()           );}
-    @Override public int    min ()                      {return DATA.minOfThis  (thisVector_()           );}
+    @Override public int    sum  ()                         {return DATA.sumOfThis  (thisVector_()           );}
+    @Override public long   exsum()                         {return DATA.exsumOfThis(thisVector_()           );}
+    @Override public double mean ()                         {return DATA.meanOfThis (thisVector_().asDouble());}
+    @Override public double prod ()                         {return DATA.prodOfThis (thisVector_().asDouble());}
+    @Override public int    max  ()                         {return DATA.maxOfThis  (thisVector_()           );}
+    @Override public int    min  ()                         {return DATA.minOfThis  (thisVector_()           );}
     @Override public double stat(DoubleBinaryOperator aOpt) {return DATA.statOfThis(thisVector_().asDouble(), aOpt);}
     
     

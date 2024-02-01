@@ -237,7 +237,7 @@ public abstract class AbstractIntVector implements IIntVector {
     }
     
     /** 向量基本的运算操作 */
-    @Override public final double sum   () {return operation().sum  ();}
+    @Override public final int    sum   () {return operation().sum  ();}
     @Override public final double mean  () {return operation().mean ();}
     @Override public final double prod  () {return operation().prod ();}
     @Override public final int    max   () {return operation().max  ();}

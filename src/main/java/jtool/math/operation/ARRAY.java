@@ -1153,17 +1153,24 @@ public class ARRAY {
         }
         return rSum;
     }
-    public static double sumOfThis(int[] aThis, int aShift, int aLength) {
+    public static int sumOfThis(int[] aThis, int aShift, int aLength) {
         final int tEnd = aLength + aShift;
         
-        double rSum = 0.0;
+        int rSum = 0;
         for (int i = aShift; i < tEnd; ++i) rSum += aThis[i];
         return rSum;
     }
-    public static double sumOfThis(long[] aThis, int aShift, int aLength) {
+    public static long exsumOfThis(int[] aThis, int aShift, int aLength) {
         final int tEnd = aLength + aShift;
         
-        double rSum = 0.0;
+        long rSum = 0;
+        for (int i = aShift; i < tEnd; ++i) rSum += aThis[i];
+        return rSum;
+    }
+    public static long sumOfThis(long[] aThis, int aShift, int aLength) {
+        final int tEnd = aLength + aShift;
+        
+        long rSum = 0;
         for (int i = aShift; i < tEnd; ++i) rSum += aThis[i];
         return rSum;
     }

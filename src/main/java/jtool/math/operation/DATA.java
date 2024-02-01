@@ -8,6 +8,7 @@ import jtool.math.ComplexDouble;
 import jtool.math.IComplexDouble;
 import jtool.math.vector.*;
 
+import java.math.BigInteger;
 import java.util.function.*;
 
 import static jtool.code.UT.Code.toComplexDouble;
@@ -914,6 +915,24 @@ public class DATA {
             it.nextOnly();
             rSum.plus2this(it);
         }
+        return rSum;
+    }
+    public static int sumOfThis(IHasIntIterator aThis) {
+        final IIntIterator it = aThis.iterator();
+        int rSum = 0;
+        while (it.hasNext()) rSum += it.next();
+        return rSum;
+    }
+    public static long exsumOfThis(IHasIntIterator aThis) {
+        final IIntIterator it = aThis.iterator();
+        long rSum = 0;
+        while (it.hasNext()) rSum += it.next();
+        return rSum;
+    }
+    public static long sumOfThis(IHasLongIterator aThis) {
+        final ILongIterator it = aThis.iterator();
+        long rSum = 0;
+        while (it.hasNext()) rSum += it.next();
         return rSum;
     }
     public static double meanOfThis(IHasDoubleIterator aThis) {

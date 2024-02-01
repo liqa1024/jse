@@ -232,7 +232,7 @@ public abstract class AbstractLongVector implements ILongVector {
     }
     
     /** 向量基本的运算操作 */
-    @Override public final double sum   () {return operation().sum  ();}
+    @Override public final long   sum   () {return operation().sum  ();}
     @Override public final double mean  () {return operation().mean ();}
     @Override public final double prod  () {return operation().prod ();}
     @Override public final long   max   () {return operation().max  ();}

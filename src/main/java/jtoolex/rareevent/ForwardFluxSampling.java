@@ -754,8 +754,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     public long step1PathNum() {return mStep1PathNum;}
     public long step2PointNum(int aIdx) {return mStep2PointNum.get(aIdx);}
     public long step2PathNum(int aIdx) {return mStep2PathNum.get(aIdx);}
-    public long totalPointNum() {return mStep1PointNum + (long)mStep2PointNum.sum();}
-    public long totalPathNum() {return mStep1PathNum + (long)mStep2PathNum.sum();}
+    public long totalPointNum() {return mStep1PointNum + mStep2PointNum.sum();}
+    public long totalPathNum() {return mStep1PathNum + mStep2PathNum.sum();}
     
     /** 利用保存的 parent 获取演化路径 */
     public Deque<T> pickPath() {

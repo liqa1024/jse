@@ -14,7 +14,7 @@ public abstract class AbstractLongVectorOperation implements ILongVectorOperatio
     @Override public void forEach       (LongConsumer       aCon) {DATA.forEachOfThis(thisVector_(), aCon);}
     @Override public void fill          (ILongVectorGetter  aRHS) {DATA.vecFill2This (thisVector_(), aRHS);}
     
-    @Override public double sum ()                      {return DATA.sumOfThis  (thisVector_().asDouble());}
+    @Override public long   sum ()                      {return DATA.sumOfThis  (thisVector_()           );}
     @Override public double mean()                      {return DATA.meanOfThis (thisVector_().asDouble());}
     @Override public double prod()                      {return DATA.prodOfThis (thisVector_().asDouble());}
     @Override public long   max ()                      {return DATA.maxOfThis  (thisVector_()           );}

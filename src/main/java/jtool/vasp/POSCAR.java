@@ -405,7 +405,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         }
         // 读取原子数据
         ++idx; if (idx >= aLines.size()) return null;
-        int tAtomNum = (int)aAtomNumbers.sum();
+        int tAtomNum = aAtomNumbers.sum();
         if (idx+tAtomNum > aLines.size()) return null;
         aDirect = RowMatrix.zeros(tAtomNum, 3);
         for (IVector tRow : aDirect.rows()) {

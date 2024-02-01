@@ -374,7 +374,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         
         // 再读取原子数据
         List<IMatrix> rDirects = new ArrayList<>();
-        int tAtomNum = (int)aAtomNumbers.sum();
+        int tAtomNum = aAtomNumbers.sum();
         while (true) {
             IMatrix subDirect = RowMatrix.zeros(tAtomNum, 3);
             
