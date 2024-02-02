@@ -34,43 +34,43 @@
 void parseBuf2JArray(JNIEnv *aEnv, jobject rJArray, jsize aStart, jsize aLen, MPI_Datatype aDataType, const void *aBuf) {
     if (rJArray==NULL || aBuf==NULL) return;
     switch (aDataType) {
-        case MPI_SIGNED_CHAR:    {(*aEnv)->SetByteArrayRegion   (aEnv, rJArray, aStart, aLen, ((const jbyte    *)aBuf)+aStart); return;}
-        case MPI_DOUBLE:         {(*aEnv)->SetDoubleArrayRegion (aEnv, rJArray, aStart, aLen, ((const jdouble  *)aBuf)+aStart); return;}
-        case MPI_UNSIGNED_CHAR:  {(*aEnv)->SetBooleanArrayRegion(aEnv, rJArray, aStart, aLen, ((const jboolean *)aBuf)+aStart); return;}
-        case MPI_UNSIGNED_SHORT: {(*aEnv)->SetCharArrayRegion   (aEnv, rJArray, aStart, aLen, ((const jchar    *)aBuf)+aStart); return;}
-        case MPI_SHORT:          {(*aEnv)->SetShortArrayRegion  (aEnv, rJArray, aStart, aLen, ((const jshort   *)aBuf)+aStart); return;}
-        case MPI_INT32_T:        {(*aEnv)->SetIntArrayRegion    (aEnv, rJArray, aStart, aLen, ((const jint     *)aBuf)+aStart); return;}
-        case MPI_INT64_T:        {(*aEnv)->SetLongArrayRegion   (aEnv, rJArray, aStart, aLen, ((const jlong    *)aBuf)+aStart); return;}
-        case MPI_FLOAT:          {(*aEnv)->SetFloatArrayRegion  (aEnv, rJArray, aStart, aLen, ((const jfloat   *)aBuf)+aStart); return;}
-        default:                 {return;}
+        case MPI_INT8_T: case MPI_SIGNED_CHAR:      {(*aEnv)->SetByteArrayRegion   (aEnv, rJArray, aStart, aLen, ((const jbyte    *)aBuf)+aStart); return;}
+        case MPI_DOUBLE:                            {(*aEnv)->SetDoubleArrayRegion (aEnv, rJArray, aStart, aLen, ((const jdouble  *)aBuf)+aStart); return;}
+        case MPI_UINT8_T: case MPI_UNSIGNED_CHAR:   {(*aEnv)->SetBooleanArrayRegion(aEnv, rJArray, aStart, aLen, ((const jboolean *)aBuf)+aStart); return;}
+        case MPI_UINT16_T: case MPI_UNSIGNED_SHORT: {(*aEnv)->SetCharArrayRegion   (aEnv, rJArray, aStart, aLen, ((const jchar    *)aBuf)+aStart); return;}
+        case MPI_INT16_T: case MPI_SHORT:           {(*aEnv)->SetShortArrayRegion  (aEnv, rJArray, aStart, aLen, ((const jshort   *)aBuf)+aStart); return;}
+        case MPI_INT32_T:                           {(*aEnv)->SetIntArrayRegion    (aEnv, rJArray, aStart, aLen, ((const jint     *)aBuf)+aStart); return;}
+        case MPI_INT64_T:                           {(*aEnv)->SetLongArrayRegion   (aEnv, rJArray, aStart, aLen, ((const jlong    *)aBuf)+aStart); return;}
+        case MPI_FLOAT:                             {(*aEnv)->SetFloatArrayRegion  (aEnv, rJArray, aStart, aLen, ((const jfloat   *)aBuf)+aStart); return;}
+        default:                                    {return;}
     }
 }
 void parseJArray2Buf(JNIEnv *aEnv, jobject aJArray, jsize aStart, jsize aLen, MPI_Datatype aDataType, void *rBuf) {
     if (aJArray==NULL || rBuf==NULL) return;
     switch (aDataType) {
-        case MPI_SIGNED_CHAR:    {(*aEnv)->GetByteArrayRegion   (aEnv, aJArray, aStart, aLen, ((jbyte    *)rBuf)+aStart); return;}
-        case MPI_DOUBLE:         {(*aEnv)->GetDoubleArrayRegion (aEnv, aJArray, aStart, aLen, ((jdouble  *)rBuf)+aStart); return;}
-        case MPI_UNSIGNED_CHAR:  {(*aEnv)->GetBooleanArrayRegion(aEnv, aJArray, aStart, aLen, ((jboolean *)rBuf)+aStart); return;}
-        case MPI_UNSIGNED_SHORT: {(*aEnv)->GetCharArrayRegion   (aEnv, aJArray, aStart, aLen, ((jchar    *)rBuf)+aStart); return;}
-        case MPI_SHORT:          {(*aEnv)->GetShortArrayRegion  (aEnv, aJArray, aStart, aLen, ((jshort   *)rBuf)+aStart); return;}
-        case MPI_INT32_T:        {(*aEnv)->GetIntArrayRegion    (aEnv, aJArray, aStart, aLen, ((jint     *)rBuf)+aStart); return;}
-        case MPI_INT64_T:        {(*aEnv)->GetLongArrayRegion   (aEnv, aJArray, aStart, aLen, ((jlong    *)rBuf)+aStart); return;}
-        case MPI_FLOAT:          {(*aEnv)->GetFloatArrayRegion  (aEnv, aJArray, aStart, aLen, ((jfloat   *)rBuf)+aStart); return;}
-        default:                 {return;}
+        case MPI_INT8_T: case MPI_SIGNED_CHAR:      {(*aEnv)->GetByteArrayRegion   (aEnv, aJArray, aStart, aLen, ((jbyte    *)rBuf)+aStart); return;}
+        case MPI_DOUBLE:                            {(*aEnv)->GetDoubleArrayRegion (aEnv, aJArray, aStart, aLen, ((jdouble  *)rBuf)+aStart); return;}
+        case MPI_UINT8_T: case MPI_UNSIGNED_CHAR:   {(*aEnv)->GetBooleanArrayRegion(aEnv, aJArray, aStart, aLen, ((jboolean *)rBuf)+aStart); return;}
+        case MPI_UINT16_T: case MPI_UNSIGNED_SHORT: {(*aEnv)->GetCharArrayRegion   (aEnv, aJArray, aStart, aLen, ((jchar    *)rBuf)+aStart); return;}
+        case MPI_INT16_T: case MPI_SHORT:           {(*aEnv)->GetShortArrayRegion  (aEnv, aJArray, aStart, aLen, ((jshort   *)rBuf)+aStart); return;}
+        case MPI_INT32_T:                           {(*aEnv)->GetIntArrayRegion    (aEnv, aJArray, aStart, aLen, ((jint     *)rBuf)+aStart); return;}
+        case MPI_INT64_T:                           {(*aEnv)->GetLongArrayRegion   (aEnv, aJArray, aStart, aLen, ((jlong    *)rBuf)+aStart); return;}
+        case MPI_FLOAT:                             {(*aEnv)->GetFloatArrayRegion  (aEnv, aJArray, aStart, aLen, ((jfloat   *)rBuf)+aStart); return;}
+        default:                                    {return;}
     }
 }
 void *allocBuf(jsize aSize, MPI_Datatype aDataType) {
     if (aSize <= 0) return NULL;
     switch (aDataType) {
-        case MPI_SIGNED_CHAR:    {return MALLOCN(jbyte   , aSize);}
-        case MPI_DOUBLE:         {return MALLOCN(jdouble , aSize);}
-        case MPI_UNSIGNED_CHAR:  {return MALLOCN(jboolean, aSize);}
-        case MPI_UNSIGNED_SHORT: {return MALLOCN(jchar   , aSize);}
-        case MPI_SHORT:          {return MALLOCN(jshort  , aSize);}
-        case MPI_INT32_T:        {return MALLOCN(jint    , aSize);}
-        case MPI_INT64_T:        {return MALLOCN(jlong   , aSize);}
-        case MPI_FLOAT:          {return MALLOCN(jfloat  , aSize);}
-        default:                 {return NULL;}
+        case MPI_INT8_T: case MPI_SIGNED_CHAR:      {return MALLOCN(jbyte   , aSize);}
+        case MPI_DOUBLE:                            {return MALLOCN(jdouble , aSize);}
+        case MPI_UINT8_T: case MPI_UNSIGNED_CHAR:   {return MALLOCN(jboolean, aSize);}
+        case MPI_UINT16_T: case MPI_UNSIGNED_SHORT: {return MALLOCN(jchar   , aSize);}
+        case MPI_INT16_T: case MPI_SHORT:           {return MALLOCN(jshort  , aSize);}
+        case MPI_INT32_T:                           {return MALLOCN(jint    , aSize);}
+        case MPI_INT64_T:                           {return MALLOCN(jlong   , aSize);}
+        case MPI_FLOAT:                             {return MALLOCN(jfloat  , aSize);}
+        default:                                    {return NULL;}
     }
 }
 void freeBuf(void *aBuf) {
