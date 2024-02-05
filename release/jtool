@@ -21,12 +21,14 @@ for i in "$SCRIPT_DIR"/jtool-*.jar; do
     break
     fi
 done
+if [ -z "$JAR_LOCATION" ]; then
 for i in "$SCRIPT_DIR"/jTool-*.jar; do
     if [ -e "$i" ]; then
     JAR_LOCATION="$i"
     break
     fi
 done
+fi
 if [ -z "$JAR_LOCATION" ]; then
 for i in "$SCRIPT_DIR"/lib/jtool-*.jar; do
     if [ -e "$i" ]; then
