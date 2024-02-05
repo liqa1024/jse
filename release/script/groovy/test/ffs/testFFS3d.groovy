@@ -1,12 +1,12 @@
 package test.ffs
 
-import jtool.code.UT
-import jtool.jobs.StepJobManager
-import jtool.math.table.Tables
-import jtool.math.vector.Vectors
-import jtool.plot.Plotters
-import jtoolex.rareevent.BufferedFullPathGenerator
-import jtoolex.rareevent.ForwardFluxSampling
+import jse.code.UT
+import jse.jobs.StepJobManager
+import jse.math.table.Tables
+import jse.math.vector.Vectors
+import jse.plot.Plotters
+import jsex.rareevent.BufferedFullPathGenerator
+import jsex.rareevent.ForwardFluxSampling
 import rareevent.NoiseClusterGrowth
 
 

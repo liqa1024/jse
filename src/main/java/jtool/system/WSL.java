@@ -1,8 +1,0 @@
-package jtool.system;
-
-import org.jetbrains.annotations.VisibleForTesting;
-
-@VisibleForTesting
-public final class WSL extends WSLSystemExecutor {
-    public WSL() {super();}
-}

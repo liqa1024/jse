@@ -1,8 +1,8 @@
 package test.mpi
 
-import jtool.parallel.MPI
+import jse.parallel.MPI
 
-import static jtool.code.UT.Math.*;
+import static jse.code.UT.Math.*;
 
 /**
  * 测试 MPI

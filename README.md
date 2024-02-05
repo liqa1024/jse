@@ -1,6 +1,7 @@
 # 简介
+jse (Java Simulation Environment) 是
 使用 [java](https://en.wikipedia.org/wiki/Java_(programming_language))
-编写的项目管理工具，目前提供了：
+编写的模拟环境，目前提供了：
 - 通用的任务提交接口（bash，powershell，wsl，ssh，...）
 - 针对 lammps 输出文件的读写（data，dump，log）以及输入文件支持
 - 通用的 lammps 运行器以及原生调用 lammps（不经过 python）

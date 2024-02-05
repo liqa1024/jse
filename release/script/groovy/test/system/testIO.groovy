@@ -1,7 +1,7 @@
 package test.system
 
-import jtool.code.UT
-import jtool.lmp.Dump
+import jse.code.UT
+import jse.lmp.Dump
 
 // 读取测试数据，1000 帧的 dump
 UT.Timer.tic();

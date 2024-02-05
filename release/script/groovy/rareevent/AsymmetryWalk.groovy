@@ -1,8 +1,8 @@
 package rareevent
 
-import jtool.parallel.LocalRandom
-import jtoolex.rareevent.IParameterCalculator
-import jtoolex.rareevent.IPathGenerator
+import jse.parallel.LocalRandom
+import jsex.rareevent.IParameterCalculator
+import jsex.rareevent.IPathGenerator
 
 
 /**

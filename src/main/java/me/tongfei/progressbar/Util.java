@@ -8,7 +8,7 @@ import java.util.Spliterator;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
-import static jtool.code.CS.IS_WINDOWS;
+import static jse.code.CS.IS_WINDOWS;
 
 
 class Util {

@@ -1,7 +1,7 @@
 package test.mpi
 
-import jtool.parallel.MPI
-import static jtool.code.UT.Math.*;
+import jse.parallel.MPI
+import static jse.code.UT.Math.*;
 
 MPI.init();
 int me = MPI.Comm.WORLD.rank();

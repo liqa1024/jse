@@ -1,6 +1,6 @@
 package test.code
 
-import jtool.clib.MiMalloc
+import jse.clib.MiMalloc
 
 println(MiMalloc.InitHelper.initialized());
 MiMalloc.InitHelper.init();

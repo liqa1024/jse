@@ -1903,8 +1903,8 @@ javax/swing/text/JTextComponent
 javax/swing/JTextField
 javax/swing/JTextPane
 javax/swing/JToggleButton
-javax/swing/JToolBar
-javax/swing/JToolTip
+javax/swing/jseBar
+javax/swing/jseTip
 javax/swing/JTree
 java/time/temporal/JulianFields
 javax/swing/JViewport

@@ -1,8 +1,8 @@
 package test.system
 
-import jtool.code.UT
-import jtool.lmp.LmpIn
-import jtool.system.SLURM
+import jse.code.UT
+import jse.lmp.LmpIn
+import jse.system.SLURM
 
 
 /** 测试使用 SLURM 运行 lammps，以后会有 LmpRunner 直接执行 */

@@ -1,7 +1,7 @@
 package test.code
 
-import static jtool.code.UT.Math.*
-import static jtool.code.UT.Plot.*
+import static jse.code.UT.Math.*
+import static jse.code.UT.Plot.*
 
 
 /** 测试直接在 java 上绘图 */

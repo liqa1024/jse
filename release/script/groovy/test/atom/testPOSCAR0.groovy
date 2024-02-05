@@ -1,7 +1,7 @@
 package test.atom
 
-import jtool.lmp.Lmpdat
-import jtool.vasp.POSCAR
+import jse.lmp.Lmpdat
+import jse.vasp.POSCAR
 
 
 data = Lmpdat.read('lmp/data/data-glass');

@@ -1,11 +1,11 @@
 package atom
 
-import jtool.code.UT
-import jtool.lmp.Dump
-import jtoolex.rareevent.atom.ABOOPSolidChecker
-import jtoolex.rareevent.atom.MultiTypeClusterSizeCalculator
+import jse.code.UT
+import jse.lmp.Dump
+import jsex.rareevent.atom.ABOOPSolidChecker
+import jsex.rareevent.atom.MultiTypeClusterSizeCalculator
 
-import static jtool.code.UT.Par.parfor
+import static jse.code.UT.Par.parfor
 
 
 final def dump = Dump.read('lmp/.stableglass-in/dump-fs2');

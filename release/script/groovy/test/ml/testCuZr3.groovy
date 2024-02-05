@@ -1,16 +1,16 @@
 package test.ml
 
-import jtool.code.UT
-import jtool.lmp.Dump
-import jtool.math.vector.Vectors
-import jtool.parallel.MatrixCache
-import jtool.plot.Plotters
-import jtoolex.ml.RandomForest
-import jtoolex.rareevent.atom.ABOOPSolidChecker
-import jtoolex.rareevent.atom.CustomClusterSizeCalculator
-import jtoolex.rareevent.atom.MultiTypeClusterSizeCalculator
+import jse.code.UT
+import jse.lmp.Dump
+import jse.math.vector.Vectors
+import jse.parallel.MatrixCache
+import jse.plot.Plotters
+import jsex.ml.RandomForest
+import jsex.rareevent.atom.ABOOPSolidChecker
+import jsex.rareevent.atom.CustomClusterSizeCalculator
+import jsex.rareevent.atom.MultiTypeClusterSizeCalculator
 
-import static jtool.code.UT.Par.parfor
+import static jse.code.UT.Par.parfor
 import static test.ml.testCuZr.getBasisMean
 
 /**

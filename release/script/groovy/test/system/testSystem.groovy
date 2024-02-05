@@ -1,8 +1,8 @@
 package test.system
 
 import obj.Terminal
-import jtool.code.UT
-import jtool.system.WSL
+import jse.code.UT
+import jse.system.WSL
 
 
 /** 测试系统指令执行的接口 */

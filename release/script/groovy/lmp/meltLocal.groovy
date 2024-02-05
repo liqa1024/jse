@@ -1,12 +1,12 @@
 package lmp
 
-import jtool.atom.Structures
-import jtool.lmp.LPC
-import jtool.lmp.Lmpdat
-import jtool.system.WSL
-import jtool.vasp.POSCAR
+import jse.atom.Structures
+import jse.lmp.LPC
+import jse.lmp.Lmpdat
+import jse.system.WSL
+import jse.vasp.POSCAR
 
-import static jtool.code.CS.MASS
+import static jse.code.CS.MASS
 
 
 /**

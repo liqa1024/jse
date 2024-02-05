@@ -10,24 +10,24 @@
 
 # API 文档
 
-目前通用的任务提交器（[ISystemExecutor](../src/main/java/com/jtool/system/ISystemExecutor.java)）提供了这些接口：
+目前通用的任务提交器（[ISystemExecutor](../src/main/java/com/jse/system/ISystemExecutor.java)）提供了这些接口：
 
 | 方法 | 输入 | 输出 | 说明 |
 | ---- | ---- | ---- | ---- |
-| `system(command, [outFilePath], [IOFiles])` | `command`: String，系统指令<br>`outFilePath`: String，可选，输出到文件的路径<br>`IOFiles`: [IIOFiles](../src/main/java/com/jtool/iofile/IIOFiles.java)，可选，指令附带的输入输出文件 | 退出值 `exitValue`，int | 使用此任务提交器运行一个系统指令，<br>系统指令不保证和直接在控制台中执行效果一致，<br>一般不指定输出文件则会将输出输出到控制台，<br>关于附加输入输出文件参考 [SSH 任务提交器](systemSSH.md) 中的说明。 |
+| `system(command, [outFilePath], [IOFiles])` | `command`: String，系统指令<br>`outFilePath`: String，可选，输出到文件的路径<br>`IOFiles`: [IIOFiles](../src/main/java/com/jse/iofile/IIOFiles.java)，可选，指令附带的输入输出文件 | 退出值 `exitValue`，int | 使用此任务提交器运行一个系统指令，<br>系统指令不保证和直接在控制台中执行效果一致，<br>一般不指定输出文件则会将输出输出到控制台，<br>关于附加输入输出文件参考 [SSH 任务提交器](systemSSH.md) 中的说明。 |
 | `submitSystem(command, [outFilePath], [IOFiles])` | 同 `system` | 异步计算结果 `Future<Integer>` | 使用此任务提交器提交一个后台运行的系统指令，<br>详见 [后台任务提交](system.md#后台任务提交)。 |
-| `system_str(command, [IOFiles])` | `command`: String，系统指令<br>`IOFiles`: [IIOFiles](../src/main/java/com/jtool/iofile/IIOFiles.java)，可选，指令附带的输入输出文件 | 指令输出 `List<String>`，<br>按照行来分隔 | 使用此任务提交器运行一个系统指令，<br>并将输出放入`List<String>`。<br>此语句执行完成时此指令一定已经运行结束。 |
+| `system_str(command, [IOFiles])` | `command`: String，系统指令<br>`IOFiles`: [IIOFiles](../src/main/java/com/jse/iofile/IIOFiles.java)，可选，指令附带的输入输出文件 | 指令输出 `List<String>`，<br>按照行来分隔 | 使用此任务提交器运行一个系统指令，<br>并将输出放入`List<String>`。<br>此语句执行完成时此指令一定已经运行结束。 |
 | `submitSystem_str(command, [IOFiles])` | 同 `system_str` | 异步计算结果 `Future<List<String>>` | 使用此任务提交器提交一个后台运行的系统指令，<br>并将输出放入`List<String>`。<br>使用 `get()` 获取到 `Future<List<String>>` 结果时此指令一定已经运行结束。 |
-| `setNoSTDOutput([noSTDOutput=true])` | `noSTDOutput`: boolean，是否关闭标准输出 | 任务提交器本身 [ISystemExecutor](../src/main/java/com/jtool/system/ISystemExecutor.java)，<br>用于链式调用 | 设置此任务提交器是否会输出标准输出，<br>详见 [指令输出控制](system.md#指令输出控制)。 |
-| `setNoERROutput([noERROutput=true])` | `noERROutput`: boolean，是否关闭错误输出 | 任务提交器本身 [ISystemExecutor](../src/main/java/com/jtool/system/ISystemExecutor.java)，<br>用于链式调用 | 设置此任务提交器是否会输出错误输出，<br>详见 [指令输出控制](system.md#指令输出控制)。 |
+| `setNoSTDOutput([noSTDOutput=true])` | `noSTDOutput`: boolean，是否关闭标准输出 | 任务提交器本身 [ISystemExecutor](../src/main/java/com/jse/system/ISystemExecutor.java)，<br>用于链式调用 | 设置此任务提交器是否会输出标准输出，<br>详见 [指令输出控制](system.md#指令输出控制)。 |
+| `setNoERROutput([noERROutput=true])` | `noERROutput`: boolean，是否关闭错误输出 | 任务提交器本身 [ISystemExecutor](../src/main/java/com/jse/system/ISystemExecutor.java)，<br>用于链式调用 | 设置此任务提交器是否会输出错误输出，<br>详见 [指令输出控制](system.md#指令输出控制)。 |
 
 
 --------------------------------
 
 <br>
 
-而 [ISystemExecutor](../src/main/java/com/jtool/system/ISystemExecutor.java)
-又继承了 [IThreadPool](../src/main/java/com/jtool/parallel/IThreadPool.java)，
+而 [ISystemExecutor](../src/main/java/com/jse/system/ISystemExecutor.java)
+又继承了 [IThreadPool](../src/main/java/com/jse/parallel/IThreadPool.java)，
 对应接口在这里的含义为：
 
 | 方法                  | 说明 |
@@ -46,7 +46,7 @@
 
 <br>
 
-所有的任务提交器位于 [jtool.system](../src/main/java/com/jtool/system)，
+所有的任务提交器位于 [jse.system](../src/main/java/com/jse/system)，
 目前的各种任务提交器和说明如下：
 
 | 名称                       | 简写      | 参数 | 说明 |

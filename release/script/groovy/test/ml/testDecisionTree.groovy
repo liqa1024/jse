@@ -1,13 +1,13 @@
 package test.ml
 
-import jtool.math.vector.LogicalVector
-import jtool.math.vector.Vectors
-import jtoolex.ml.DecisionTree
+import jse.math.vector.LogicalVector
+import jse.math.vector.Vectors
+import jsex.ml.DecisionTree
 
-import static jtool.code.UT.Math.*
-import static jtool.code.UT.Plot.*
-import static jtool.code.UT.Code.*
-import static jtool.code.CS.*
+import static jse.code.UT.Math.*
+import static jse.code.UT.Plot.*
+import static jse.code.UT.Code.*
+import static jse.code.CS.*
 
 /**
  * 测试简单的异或数据集

@@ -1,2 +1,2 @@
-jtool      eol=lf
-jtool.bat  eol=crlf
+jse      eol=lf
+jse.bat  eol=crlf

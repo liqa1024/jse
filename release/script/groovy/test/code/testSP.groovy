@@ -1,8 +1,8 @@
 package test.code
 
-import jtool.code.SP
-import jtool.math.MathEX
-import jtool.math.vector.Vectors
+import jse.code.SP
+import jse.math.MathEX
+import jse.math.vector.Vectors
 
 
 /** 自定义 python 类的使用 */

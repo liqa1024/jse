@@ -1,9 +1,9 @@
 package test.code
 
-import jtool.code.UT
-import jtool.parallel.ParforThreadPool
+import jse.code.UT
+import jse.parallel.ParforThreadPool
 
-import static jtool.code.UT.Par.*
+import static jse.code.UT.Par.*
 
 
 /** 测试并行 for 循环 */

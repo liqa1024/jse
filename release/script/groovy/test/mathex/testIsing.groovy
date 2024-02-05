@@ -1,12 +1,12 @@
 package test.mathex
 
-import jtool.code.collection.ArrayLists
-import jtool.math.vector.IVector
-import jtool.plot.Plotters
-import jtoolex.mcmc.Ising2D
+import jse.code.collection.ArrayLists
+import jse.math.vector.IVector
+import jse.plot.Plotters
+import jsex.mcmc.Ising2D
 
-import static jtool.code.UT.Math.*
-import static jtool.code.UT.Timer.*
+import static jse.code.UT.Math.*
+import static jse.code.UT.Timer.*
 
 
 /** 测试蒙特卡洛处理 Ising 模型，应该会比 python 实现快得多 */

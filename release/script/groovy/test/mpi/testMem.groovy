@@ -1,9 +1,9 @@
 package test.mpi
 
-import jtool.code.CS
-import jtool.parallel.MPI
+import jse.code.CS
+import jse.parallel.MPI
 
-import static jtool.code.UT.Math.*;
+import static jse.code.UT.Math.*;
 
 /**
  * 暴力测试 MPI 是否存在内存泄漏

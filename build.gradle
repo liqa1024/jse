@@ -3,7 +3,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
-group = 'com.jtool'
+group = 'com.jse'
 
 java {
     // 依旧保持 java8 保证对 matlab 等应用的兼容性
@@ -46,6 +46,7 @@ dependencies {
     implementation('org.apache.groovy:groovy-json:4.0.16')          // 直接使用 groovy 的 json 包来支持 json，可以让 groovy 脚本使用原生的 json 功能
     implementation('org.apache.groovy:groovy-xml:4.0.16')           // groovy 的 xml
     implementation('org.apache.groovy:groovy-yaml:4.0.16')          // groovy 的 yaml，暂时没有用到，并且这个包有些复杂，所以不提供支持
+    implementation('jline:jline:2.14.6')                            // groovysh 前置，用来重写 sh 相关方法
     
 //  implementation('black.ninia:jep:4.2.0')                         // 调用 python 代码支持，需要系统有需要的 python 环境，并且需要初始化，因此这里不作为主要代码的使用；由于 PyObject 不能 groovy 原生调用，现在包含到项目中
 //  implementation('org.zeromq:jeromq:0.5.4')                       // 跨 JVM 并行库，可以支持超算上跨节点并行；虽然 java 标准库也有类似功能，但是这个更加易用；现在直接使用 mpi
@@ -53,7 +54,6 @@ dependencies {
     implementation('com.mastfrog:sort:2.9.7')                       // 实用的多排序功能，因此现在不再支持支持性不好的 Compare 排序
 //  implementation('org.apache.commons:commons-rng-sampling:1.5')   // 只使用随机数生成器，还是太复杂了
 //  implementation('me.tongfei:progressbar:0.9.5')                  // 简单的进度条实现（最新版需要 jdk9）；由于字符问题这里直接把源码包含到项目中
-//  implementation('jline:jline:2.14.6')                            // 这样的话就需要包含一下 jline 这个前置，这里用 groovy 同款来减少包的大小；现在不需要了
     implementation('org.jfree:jfreechart:1.5.4')                    // 简单的绘图支持
 //  implementation('org.apache.commons:commons-pool2:2.11.1')       // 对象池, bad ideal，即使需要也应该自己实现一个简单的实例
     implementation('com.google.collections:google-collections:1.0') // 实现更加简单的容器初始化
@@ -67,11 +67,11 @@ dependencies {
 
 shadowJar {
     // 指定输出的 jar 文件名，默认输出所有的工具包
-    archiveBaseName = 'jtool'
+    archiveBaseName = 'jse'
     archiveClassifier = 'all'
     
     // 指定主要运行类
-    manifest {attributes 'Main-Class': 'jtool.Main'}
+    manifest {attributes 'Main-Class': 'jse.Main'}
     
     // 现在只重命名实际遇到冲突的第三方库，避免意外的问题（主要是 matlab 自带的 jsch）
     relocate('com.jcraft.jsch', 'shade.com.jcraft.jsch')
@@ -82,7 +82,7 @@ shadowJar {
 }
 
 tasks.register('sourceJar', Jar) {
-    archiveBaseName = 'jtool'
+    archiveBaseName = 'jse'
     archiveClassifier = 'src'
     from(sourceSets.main.allSource)
     exclude('assets/**')

@@ -1,8 +1,8 @@
 package test.mpc
 
-import jtool.code.UT
-import jtool.math.vector.IVector
-import jtool.vasp.XDATCAR
+import jse.code.UT
+import jse.math.vector.IVector
+import jse.vasp.XDATCAR
 
 /**
  * 测试基组正确性

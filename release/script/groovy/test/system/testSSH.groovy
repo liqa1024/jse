@@ -1,7 +1,7 @@
 package test.system
 
-import jtool.code.UT;
-import jtool.system.SSH;
+import jse.code.UT;
+import jse.system.SSH;
 
 
 /** 创建 ssh */

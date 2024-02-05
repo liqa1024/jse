@@ -1,6 +1,6 @@
 package test.mathex
 
-import static jtool.code.UT.Math.*
+import static jse.code.UT.Math.*
 
 /**
  * 测试整数数组的排序和打乱功能

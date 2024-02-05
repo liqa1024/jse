@@ -1,10 +1,10 @@
 package test.mpc
 
-import jtool.lmp.Dump
-import jtool.lmp.LmpExecutor
-import jtool.lmp.LmpIn
-import jtool.lmp.Lmpdat
-import jtool.system.WSL
+import jse.lmp.Dump
+import jse.lmp.LmpExecutor
+import jse.lmp.LmpIn
+import jse.lmp.Lmpdat
+import jse.system.WSL
 
 /**
  * 测试 BOOP 结果是否和 lammps 的一致
@@ -39,13 +39,13 @@ println("Mean of Q6 lmp: ${dump.first().asTable()['c_Ql[1]'].mean()}");
 
 
 // 直接计算结果
-println("Mean of Q6 jtool: ${mpc.calBOOP(6, mpc.unitLen()*1.5).mean()}");
-// Mean of Q6 jtool: 0.4266242779918842
+println("Mean of Q6 jse: ${mpc.calBOOP(6, mpc.unitLen()*1.5).mean()}");
+// Mean of Q6 jse: 0.4266242779918842
 
 // 重复计算检测缓存的正确性
-println("Mean of Q6 jtool: ${mpc.calBOOP(6, mpc.unitLen()*1.5).mean()}");
-// Mean of Q6 jtool: 0.4266242779918842
-println("Mean of Q4 jtool: ${mpc.calBOOP(4, mpc.unitLen()*1.5).mean()}");
-// Mean of Q4 jtool: 0.07240307373895653
+println("Mean of Q6 jse: ${mpc.calBOOP(6, mpc.unitLen()*1.5).mean()}");
+// Mean of Q6 jse: 0.4266242779918842
+println("Mean of Q4 jse: ${mpc.calBOOP(4, mpc.unitLen()*1.5).mean()}");
+// Mean of Q4 jse: 0.07240307373895653
 
 mpc.shutdown();

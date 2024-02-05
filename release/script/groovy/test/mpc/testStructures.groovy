@@ -1,9 +1,9 @@
 package test.mpc
 
-import jtool.atom.Structures
-import jtool.lmp.Dump
-import jtool.lmp.Lmpdat
-import jtool.vasp.POSCAR
+import jse.atom.Structures
+import jse.lmp.Dump
+import jse.lmp.Lmpdat
+import jse.vasp.POSCAR
 
 
 /** 测试创建的结构是否正确 */

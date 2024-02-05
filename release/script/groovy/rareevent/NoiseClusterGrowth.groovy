@@ -1,9 +1,9 @@
 package rareevent
 
-import jtool.math.MathEX
-import jtool.parallel.LocalRandom
-import jtoolex.rareevent.IParameterCalculator
-import jtoolex.rareevent.IPathGenerator
+import jse.math.MathEX
+import jse.parallel.LocalRandom
+import jsex.rareevent.IParameterCalculator
+import jsex.rareevent.IPathGenerator
 import groovy.transform.CompileStatic
 
 

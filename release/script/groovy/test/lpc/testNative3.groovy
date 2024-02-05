@@ -1,13 +1,13 @@
 package test.lpc
 
-import jtool.atom.Structures
-import jtool.code.UT
-import jtool.lmp.Lmpdat
-import jtool.lmp.NativeLmp
-import jtool.parallel.MPI
-import jtool.vasp.POSCAR
+import jse.atom.Structures
+import jse.code.UT
+import jse.lmp.Lmpdat
+import jse.lmp.NativeLmp
+import jse.parallel.MPI
+import jse.vasp.POSCAR
 
-import static jtool.code.CS.MASS
+import static jse.code.CS.MASS
 
 /**
  * 测试本地原生的 lammps 在拆分的 Comm 下运行

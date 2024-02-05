@@ -1,10 +1,10 @@
 package test.mpc
 
-import jtool.code.UT
-import jtool.lmp.Lmpdat
-import jtool.math.table.Tables
+import jse.code.UT
+import jse.lmp.Lmpdat
+import jse.math.table.Tables
 
-import static jtool.code.CS.*
+import static jse.code.CS.*
 
 data = Lmpdat.read('lmp/data/data-glass');
 

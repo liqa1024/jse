@@ -1,8 +1,8 @@
 package test.mpc
 
-import jtool.atom.Structures
-import jtool.code.UT
-import jtool.plot.Plotters
+import jse.atom.Structures
+import jse.code.UT
+import jse.plot.Plotters
 
 
 /** 测试计算 RDF */

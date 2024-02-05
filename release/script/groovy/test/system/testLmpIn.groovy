@@ -1,7 +1,7 @@
 package test.system
 
-import jtool.code.UT
-import jtool.lmp.LmpIn
+import jse.code.UT
+import jse.lmp.LmpIn
 
 
 /** 测试 lammps 输入文件相关 */

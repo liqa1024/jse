@@ -1,12 +1,12 @@
 package test.mpc
 
-import jtool.atom.Structures
-import jtool.code.UT
-import jtool.lmp.Lmpdat
-import jtool.math.table.Tables
-import jtool.math.vector.Vectors
-import jtool.plot.Plotters
-import jtool.vasp.POSCAR
+import jse.atom.Structures
+import jse.code.UT
+import jse.lmp.Lmpdat
+import jse.math.table.Tables
+import jse.math.vector.Vectors
+import jse.plot.Plotters
+import jse.vasp.POSCAR
 
 
 /** 测试计算 BOOP，测试固液判断的阈值选择 */

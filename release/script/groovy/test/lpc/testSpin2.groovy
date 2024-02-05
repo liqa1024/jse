@@ -1,11 +1,11 @@
 package test.lpc
 
-import jtool.atom.Atom
-import jtool.atom.AtomData
-import jtool.atom.IAtom
-import jtool.lmp.Dump
+import jse.atom.Atom
+import jse.atom.AtomData
+import jse.atom.IAtom
+import jse.lmp.Dump
 
-import static jtool.code.CS.*
+import static jse.code.CS.*
 
 /**
  * 测试 lammps 的 spin 包；

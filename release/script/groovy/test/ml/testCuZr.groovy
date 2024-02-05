@@ -1,17 +1,17 @@
 package test.ml
 
-import jtool.code.UT
-import jtool.code.collection.ArrayLists
-import jtool.lmp.Lmpdat
-import jtool.math.matrix.IMatrix
-import jtool.math.vector.IVector
-import jtool.math.vector.LogicalVector
-import jtool.parallel.MatrixCache
-import jtoolex.ml.RandomForest
+import jse.code.UT
+import jse.code.collection.ArrayLists
+import jse.lmp.Lmpdat
+import jse.math.matrix.IMatrix
+import jse.math.vector.IVector
+import jse.math.vector.LogicalVector
+import jse.parallel.MatrixCache
+import jsex.ml.RandomForest
 import atom.ClassifyCe;
 
-import static jtool.code.UT.Plot.axis
-import static jtool.code.UT.Plot.plot
+import static jse.code.UT.Plot.axis
+import static jse.code.UT.Plot.plot
 
 /**
  * 测试使用基组 + 随机森林来区分 CuZr 中的晶相，

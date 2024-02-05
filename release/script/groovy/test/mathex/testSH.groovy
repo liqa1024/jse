@@ -1,9 +1,9 @@
 package test.mathex
 
-import jtool.math.MathEX
-import jtool.math.vector.ComplexVector
+import jse.math.MathEX
+import jse.math.vector.ComplexVector
 
-import static jtool.code.UT.Math.*
+import static jse.code.UT.Math.*
 
 /**
  * 测试球谐函数计算结果

@@ -1,6 +1,6 @@
 package test.system
 
-import jtool.code.UT
+import jse.code.UT
 
 UT.Timer.pbar(50);
 for (i in 0..<50) {

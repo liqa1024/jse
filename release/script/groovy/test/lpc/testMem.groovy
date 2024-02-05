@@ -1,12 +1,12 @@
 package test.lpc
 
-import jtool.atom.Structures
-import jtool.code.CS
-import jtool.lmp.Lmpdat
-import jtool.lmp.NativeLmp
-import jtool.parallel.MPI
+import jse.atom.Structures
+import jse.code.CS
+import jse.lmp.Lmpdat
+import jse.lmp.NativeLmp
+import jse.parallel.MPI
 
-import static jtool.code.CS.MASS
+import static jse.code.CS.MASS
 
 /**
  * 暴力测试 NativeLmp 是否存在内存泄漏

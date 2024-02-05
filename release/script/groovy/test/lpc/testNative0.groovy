@@ -1,6 +1,6 @@
 package test.lpc
 
-import jtool.lmp.NativeLmp
+import jse.lmp.NativeLmp
 
 /**
  * 测试本地原生的 lammps 运行，

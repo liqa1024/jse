@@ -1,24 +1,24 @@
 package test.ffs
 
 import groovy.transform.Field
-import jtool.atom.Structures
-import jtool.code.CS.Slurm
-import jtool.code.UT
-import jtool.io.RefreshableFilePrintStream
-import jtool.lmp.Dump
-import jtool.lmp.Lmpdat
-import jtool.lmp.NativeLmp
-import jtool.math.MathEX
-import jtool.parallel.MPI
-import jtoolex.rareevent.ForwardFluxSampling
-import jtoolex.rareevent.atom.ABOOPSolidChecker_MPI
-import jtoolex.rareevent.atom.MultiTypeClusterSizeCalculator
-import jtoolex.rareevent.lmp.MultipleNativeLmpFullPathGenerator
+import jse.atom.Structures
+import jse.code.CS.Slurm
+import jse.code.UT
+import jse.io.RefreshableFilePrintStream
+import jse.lmp.Dump
+import jse.lmp.Lmpdat
+import jse.lmp.NativeLmp
+import jse.math.MathEX
+import jse.parallel.MPI
+import jsex.rareevent.ForwardFluxSampling
+import jsex.rareevent.atom.ABOOPSolidChecker_MPI
+import jsex.rareevent.atom.MultiTypeClusterSizeCalculator
+import jsex.rareevent.lmp.MultipleNativeLmpFullPathGenerator
 
-import static jtool.code.CS.MASS
-import static jtool.code.CS.VERSION
-import static jtool.code.UT.Code.*
-import static jtool.code.UT.Math.rng
+import static jse.code.CS.MASS
+import static jse.code.CS.VERSION
+import static jse.code.UT.Code.*
+import static jse.code.UT.Math.rng
 
 /**
  * lammps 跑 FFS 的实例；
@@ -48,7 +48,7 @@ np = MPI.Comm.WORLD.size();
 if (me == 0 && Slurm.IS_SLURM) {
     System.setOut(new RefreshableFilePrintStream("slurm-${Slurm.JOB_ID}.jout"));
 }
-if (me == 0) println("JTOOL_VERSION: ${VERSION}");
+if (me == 0) println("jse_VERSION: ${VERSION}");
 if (me == 0) println("MPI_VERSION: ${MPI.libraryVersion()}");
 
 

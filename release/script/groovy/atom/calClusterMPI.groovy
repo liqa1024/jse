@@ -1,14 +1,14 @@
 package atom
 
-import jtool.atom.IAtomData
-import jtool.code.UT
-import jtool.lmp.Dump
-import jtool.math.vector.LogicalVector
-import jtool.parallel.MPI
-import jtoolex.rareevent.atom.ABOOPSolidChecker
-import jtoolex.rareevent.atom.MultiTypeClusterSizeCalculator
+import jse.atom.IAtomData
+import jse.code.UT
+import jse.lmp.Dump
+import jse.math.vector.LogicalVector
+import jse.parallel.MPI
+import jsex.rareevent.atom.ABOOPSolidChecker
+import jsex.rareevent.atom.MultiTypeClusterSizeCalculator
 
-import static jtool.code.UT.Code.range
+import static jse.code.UT.Code.range
 
 /**
  * 使用 MPI 并行计算

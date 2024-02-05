@@ -1,7 +1,7 @@
 package test.mpi
 
-import jtool.code.UT
-import jtool.parallel.MPI
+import jse.code.UT
+import jse.parallel.MPI
 
 
 /**

@@ -1,7 +1,7 @@
 package test.mathex
 
 
-import jtool.math.vector.Vectors
+import jse.math.vector.Vectors
 
 def vec = Vectors.linspace(0, 1, 10).opt().refreverse();
 

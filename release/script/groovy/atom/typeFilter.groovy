@@ -1,10 +1,10 @@
 package atom
 
-import jtool.atom.Generator
-import jtool.code.UT
-import jtool.vasp.POSCAR
+import jse.atom.Generator
+import jse.code.UT
+import jse.vasp.POSCAR
 
-import static jtool.code.UT.Code.*
+import static jse.code.UT.Code.*
 
 /** 全局参数 */
 // 每层 z 的判据

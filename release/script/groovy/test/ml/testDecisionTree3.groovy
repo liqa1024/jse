@@ -1,14 +1,14 @@
 package test.ml
 
-import jtool.code.UT
-import jtool.code.collection.ArrayLists
-import jtool.math.vector.IVector
-import jtool.math.vector.LogicalVector
-import jtoolex.ml.DecisionTree
-import jtoolex.ml.RandomForest
+import jse.code.UT
+import jse.code.collection.ArrayLists
+import jse.math.vector.IVector
+import jse.math.vector.LogicalVector
+import jsex.ml.DecisionTree
+import jsex.ml.RandomForest
 
-import static jtool.code.UT.Plot.axis
-import static jtool.code.UT.Plot.plot
+import static jse.code.UT.Plot.axis
+import static jse.code.UT.Plot.plot
 
 /**
  * 测试区分基组

@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="jtool-RunShell" type="JarApplication">
-    <option name="JAR_PATH" value="$PROJECT_DIR$/lib/jtool-all.jar" />
+  <configuration default="false" name="jse-RunShell" type="JarApplication">
+    <option name="JAR_PATH" value="$PROJECT_DIR$/lib/jse-all.jar" />
     <option name="VM_PARAMETERS" value="-Dfile.encoding=UTF-8" />
     <option name="WORKING_DIRECTORY" value="$ProjectFileDir$" />
     <option name="ALTERNATIVE_JRE_PATH" />

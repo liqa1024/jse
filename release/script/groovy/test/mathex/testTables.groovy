@@ -1,9 +1,9 @@
 package test.mathex
 
-import jtool.lmp.Thermo
-import jtool.math.table.Tables
+import jse.lmp.Thermo
+import jse.math.table.Tables
 
-import static jtool.code.CS.*
+import static jse.code.CS.*
 
 
 /** 测试表格的创建读写合并 */

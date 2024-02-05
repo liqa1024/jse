@@ -1,8 +1,8 @@
 package test.atom
 
-import jtool.atom.Structures
-import jtool.lmp.Lmpdat
-import jtool.vasp.POSCAR
+import jse.atom.Structures
+import jse.lmp.Lmpdat
+import jse.vasp.POSCAR
 
 
 data = Structures.FCC(4.0, 8, 2, 1).opt().mapType {(it.index().intdiv(8)+1)};

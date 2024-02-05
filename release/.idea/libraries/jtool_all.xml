@@ -1,11 +1,11 @@
 <component name="libraryTable">
-  <library name="jtool-all">
+  <library name="jse-all">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/lib/jtool-all.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jse-all.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
-      <root url="jar://$PROJECT_DIR$/src/jtool-src.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/jse-src.jar!/" />
       <root url="jar://$PROJECT_DIR$/src/groovy-4.0.16-sources.jar!/" />
     </SOURCES>
   </library>

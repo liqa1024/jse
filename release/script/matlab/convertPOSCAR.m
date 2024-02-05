@@ -1,11 +1,11 @@
 %% load lmp script and set global variable
-addjpath('lib/jtool-all.jar');
+addjpath('lib/jse-all.jar');
 
 %% 定义需要处理的 POSCAR 路径
 path = 'lmp/data/re_ZrCu-MoB-like.poscar';
 
 %% 读取 POSCAR
-import jtool.vasp.*
+import jse.vasp.*
 
 data = POSCAR.read(path);
 
@@ -36,4 +36,4 @@ data.write(path);
 
 %% unload lmp script and clear global variable
 clear;
-rmjpath('lib/jtool-all.jar');
+rmjpath('lib/jse-all.jar');

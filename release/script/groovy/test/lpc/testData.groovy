@@ -1,13 +1,13 @@
 package test.lpc
 
-import jtool.atom.Structures
-import jtool.code.CS
-import jtool.code.UT
-import jtool.lmp.Lmpdat
-import jtool.lmp.NativeLmp
-import jtool.parallel.MPI
+import jse.atom.Structures
+import jse.code.CS
+import jse.code.UT
+import jse.lmp.Lmpdat
+import jse.lmp.NativeLmp
+import jse.parallel.MPI
 
-import static jtool.code.CS.MASS
+import static jse.code.CS.MASS
 
 /**
  * 测试传输 lammps 的 data 的效率

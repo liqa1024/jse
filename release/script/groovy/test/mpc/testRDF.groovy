@@ -1,8 +1,8 @@
 package test.mpc
 
-import jtool.code.UT
-import jtool.lmp.Lmpdat
-import jtool.plot.Plotters
+import jse.code.UT
+import jse.lmp.Lmpdat
+import jse.plot.Plotters
 
 /** 测试计算 RDF */
 

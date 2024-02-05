@@ -1,10 +1,10 @@
 package test.mpc
 
-import jtool.atom.XYZ
-import jtoolex.voronoi.VoronoiBuilder
+import jse.atom.XYZ
+import jsex.voronoi.VoronoiBuilder
 
-import static jtool.code.UT.Math.*
-import static jtool.code.UT.Plot.*
+import static jse.code.UT.Math.*
+import static jse.code.UT.Plot.*
 
 
 vbuild = new VoronoiBuilder().setNoWarning();

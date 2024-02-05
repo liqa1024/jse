@@ -1,14 +1,14 @@
 package test.lpc
 
-import jtool.atom.Structures
-import jtool.code.UT
-import jtool.lmp.LPC
-import jtool.math.MathEX
-import jtool.math.table.Tables
-import jtool.plot.Plotters
-import jtool.system.WSL
+import jse.atom.Structures
+import jse.code.UT
+import jse.lmp.LPC
+import jse.math.MathEX
+import jse.math.table.Tables
+import jse.plot.Plotters
+import jse.system.WSL
 
-import static jtool.code.CS.*
+import static jse.code.CS.*
 
 /** 测试计算 MSD */
 

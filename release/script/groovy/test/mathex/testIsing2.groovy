@@ -1,7 +1,7 @@
 package test.mathex
 
-import jtool.code.collection.ArrayLists
-import jtoolex.mcmc.Ising2D
+import jse.code.collection.ArrayLists
+import jsex.mcmc.Ising2D
 
 
 /** 测试蒙特卡洛处理 Ising 模型固定种子的结果 */

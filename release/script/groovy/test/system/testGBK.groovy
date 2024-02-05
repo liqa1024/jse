@@ -1,9 +1,9 @@
 package test.system
 
-import jtool.code.UT
-import jtool.system.CMD
+import jse.code.UT
+import jse.system.CMD
 
-import static jtool.code.UT.Exec.*
+import static jse.code.UT.Exec.*
 
 
 

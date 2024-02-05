@@ -1,6 +1,6 @@
 package test.mathex
 
-import jtool.math.ComplexDouble
+import jse.math.ComplexDouble
 
 /** 测试复数 */
 

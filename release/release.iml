@@ -14,7 +14,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="jtool-all" level="project" />
-    <orderEntry type="library" name="jtool-src" level="project" />
+    <orderEntry type="library" name="jse-all" level="project" />
+    <orderEntry type="library" name="jse-src" level="project" />
   </component>
 </module>

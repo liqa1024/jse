@@ -1,8 +1,8 @@
 package test.lpc
 
-import jtool.lmp.LmpExecutor
-import jtool.lmp.LmpIn
-import jtool.system.WSL
+import jse.lmp.LmpExecutor
+import jse.lmp.LmpIn
+import jse.system.WSL
 
 /**
  * 直接本地跑熔融，快速得到此温度下的结构

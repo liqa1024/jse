@@ -1,7 +1,7 @@
 package test.mpc
 
-import jtool.code.UT
-import jtool.lmp.Lmpdat
+import jse.code.UT
+import jse.lmp.Lmpdat
 
 
 /** 测试计算 BOOP */

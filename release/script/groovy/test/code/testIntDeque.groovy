@@ -1,6 +1,6 @@
 package test.code
 
-import jtool.code.collection.IntDeque
+import jse.code.collection.IntDeque
 
 
 def deque = new IntDeque();

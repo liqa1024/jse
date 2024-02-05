@@ -1,9 +1,9 @@
 %% load lmp script and set global variable
-addjpath('lib/jtool-all.jar');
+addjpath('lib/jse-all.jar');
 
 %% 获取 ssh 并执行指令
-import jtool.system.*
-import jtool.compat.*
+import jse.system.*
+import jse.compat.*
 
 ssh = SSH(UT.IO.json2map('.SECRET/SSH_INFO.json'));
 
@@ -14,4 +14,4 @@ ssh.shutdown();
 
 %% unload lmp script and clear global variable
 clear;
-rmjpath('lib/jtool-all.jar');
+rmjpath('lib/jse-all.jar');

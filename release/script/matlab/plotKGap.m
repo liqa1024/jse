@@ -1,8 +1,8 @@
 %% load lmp script and set global variable
-addjpath('lib/jtool-all.jar');
+addjpath('lib/jse-all.jar');
 
 %% load data
-import jtool.compat.*
+import jse.compat.*
 table = UT.IO.csv2table('.temp/FFS3c-gap.csv');
 
 %%
@@ -36,4 +36,4 @@ grid on;
 
 %% unload lmp script and clear global variable
 clear;
-rmjpath('lib/jtool-all.jar');
+rmjpath('lib/jse-all.jar');

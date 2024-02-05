@@ -1,23 +1,23 @@
 package test.code
 
-import jtool.atom.Structures
-import jtool.atom.XYZ
-import jtool.code.SP
-import jtool.code.UT
-import jtool.io.InFiles
-import jtool.lmp.Dump
-import jtool.lmp.LmpIn
-import jtool.lmp.Lmpdat
-import jtool.math.MathEX
-import jtool.parallel.LocalRandom
-import jtool.plot.Plotters
-import jtool.system.SSH
-import jtool.system.WSL
-import jtool.vasp.POSCAR
-import jtool.vasp.XDATCAR
+import jse.atom.Structures
+import jse.atom.XYZ
+import jse.code.SP
+import jse.code.UT
+import jse.io.InFiles
+import jse.lmp.Dump
+import jse.lmp.LmpIn
+import jse.lmp.Lmpdat
+import jse.math.MathEX
+import jse.parallel.LocalRandom
+import jse.plot.Plotters
+import jse.system.SSH
+import jse.system.WSL
+import jse.vasp.POSCAR
+import jse.vasp.XDATCAR
 
-import static jtool.code.UT.Math.*
-import static jtool.code.UT.Plot.*
+import static jse.code.UT.Math.*
+import static jse.code.UT.Plot.*
 
 try (def wsl = new WSL()) {
     wsl.system('ls');

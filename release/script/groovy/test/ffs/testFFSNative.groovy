@@ -1,17 +1,17 @@
 package test.ffs
 
-import jtool.code.UT
-import jtool.lmp.Dump
-import jtool.lmp.Lmpdat
-import jtool.math.vector.Vectors
-import jtool.parallel.MPI
-import jtoolex.rareevent.atom.ABOOPSolidChecker_MPI
-import jtoolex.rareevent.atom.MultiTypeClusterSizeCalculator
-import jtoolex.rareevent.lmp.MultipleNativeLmpFullPathGenerator
+import jse.code.UT
+import jse.lmp.Dump
+import jse.lmp.Lmpdat
+import jse.math.vector.Vectors
+import jse.parallel.MPI
+import jsex.rareevent.atom.ABOOPSolidChecker_MPI
+import jsex.rareevent.atom.MultiTypeClusterSizeCalculator
+import jsex.rareevent.lmp.MultipleNativeLmpFullPathGenerator
 
-import static jtool.code.CS.MASS
-import static jtool.code.UT.Code.percent
-import static jtool.code.UT.Code.range
+import static jse.code.CS.MASS
+import static jse.code.UT.Code.percent
+import static jse.code.UT.Code.range
 
 /**
  * lammps 跑 FFS 的实例；

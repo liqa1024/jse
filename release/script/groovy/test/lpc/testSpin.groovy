@@ -1,12 +1,12 @@
 package test.lpc
 
-import jtool.atom.Structures
-import jtool.lmp.LmpExecutor
-import jtool.lmp.LmpIn
-import jtool.lmp.Lmpdat
-import jtool.system.WSL
+import jse.atom.Structures
+import jse.lmp.LmpExecutor
+import jse.lmp.LmpIn
+import jse.lmp.Lmpdat
+import jse.system.WSL
 
-import static jtool.code.CS.*
+import static jse.code.CS.*
 
 /**
  * 测试 lammps 的 spin 包

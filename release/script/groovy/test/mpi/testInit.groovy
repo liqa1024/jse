@@ -1,6 +1,6 @@
 package test.mpi
 
-import jtool.parallel.MPI
+import jse.parallel.MPI
 
 /**
  * 测试静态初始化

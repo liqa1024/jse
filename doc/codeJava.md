@@ -3,11 +3,11 @@
 
 实际使用了更加成熟的 [Gradle](https://gradle.org/) 来管理项目，
 可以方便的控制程序构建的细节，添加第三方依赖，并将第三方依赖一并打包到 
-`jtool-all.jar` 文件中。
+`jse-all.jar` 文件中。
 
 实际构建时**不需要手动安装 Gradle**，直接在根目录运行 `./gradlew build` 即可进行编译，
-默认会将编译得到的 `jtool-all.jar` 文件输出到 `release/lib` 文件夹，
-并将用于开发的源码文件 `jtool-src.jar` 输出到 `release/src` 文件夹。
+默认会将编译得到的 `jse-all.jar` 文件输出到 `release/lib` 文件夹，
+并将用于开发的源码文件 `jse-src.jar` 输出到 `release/src` 文件夹。
 
 > 第一次运行构建会自动下载 Gradle 以及依赖的第三方库，因此构建时间会比较长。
 

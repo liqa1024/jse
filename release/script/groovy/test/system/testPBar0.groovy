@@ -1,7 +1,7 @@
 package test.system
 
-import jtool.code.UT
-import jtool.io.RefreshableFilePrintStream
+import jse.code.UT
+import jse.io.RefreshableFilePrintStream
 
 println('987卷4\r序3456789\n7894561列\r\n789456\r987\n1');
 

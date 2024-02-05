@@ -1,7 +1,7 @@
 package atom
 
-import jtool.lmp.Dump
-import jtool.vasp.XDATCAR
+import jse.lmp.Dump
+import jse.vasp.XDATCAR
 
 
 def data = XDATCAR.read('lmp/.lll-in/XDATCAR');

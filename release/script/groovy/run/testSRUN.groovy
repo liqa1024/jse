@@ -1,6 +1,6 @@
 package run
 
-import jtool.system.SRUN
+import jse.system.SRUN
 
 
 // 测试 srun 不能及时释放资源的问题

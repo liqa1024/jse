@@ -1,7 +1,7 @@
 package test.mpc
 
-import jtool.lmp.Lmpdat
-import jtool.plot.Plotters
+import jse.lmp.Lmpdat
+import jse.plot.Plotters
 
 
 /** 测试计算不同近邻半径选择下的 BOOP 区别 */

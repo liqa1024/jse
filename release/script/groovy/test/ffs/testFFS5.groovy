@@ -1,8 +1,8 @@
 package test.ffs
 
-import jtool.code.UT
-import jtoolex.rareevent.BufferedFullPathGenerator
-import jtoolex.rareevent.ForwardFluxSampling
+import jse.code.UT
+import jsex.rareevent.BufferedFullPathGenerator
+import jsex.rareevent.ForwardFluxSampling
 import rareevent.NoiseClusterGrowth
 /**
  * 用来测试 FFS 并行下的可重复性

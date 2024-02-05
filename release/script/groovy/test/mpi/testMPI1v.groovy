@@ -1,13 +1,13 @@
 package test.mpi
 
-import jtool.math.vector.Vector
-import jtool.parallel.MPI
+import jse.math.vector.Vector
+import jse.parallel.MPI
 
-import static jtool.code.UT.Code.range
-import static jtool.code.UT.Code.range
-import static jtool.code.UT.Code.range
-import static jtool.code.UT.Code.range
-import static jtool.code.UT.Math.*;
+import static jse.code.UT.Code.range
+import static jse.code.UT.Code.range
+import static jse.code.UT.Code.range
+import static jse.code.UT.Code.range
+import static jse.code.UT.Math.*;
 
 /**
  * 测试 MPI

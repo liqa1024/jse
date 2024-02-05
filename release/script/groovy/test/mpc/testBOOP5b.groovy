@@ -1,9 +1,9 @@
 package test.mpc
 
-import jtool.lmp.Dump
-import jtool.lmp.Lmpdat
-import jtool.math.vector.Vectors
-import jtool.plot.Plotters
+import jse.lmp.Dump
+import jse.lmp.Lmpdat
+import jse.math.vector.Vectors
+import jse.plot.Plotters
 
 
 /** 测试计算 BOOP，测试固液判断的阈值选择 */

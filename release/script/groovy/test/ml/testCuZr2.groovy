@@ -1,12 +1,12 @@
 package test.ml
 
-import jtool.atom.Structures
-import jtool.code.UT
-import jtool.lmp.Lmpdat
-import jtool.math.function.Func1
-import jtool.plot.Plotters
-import jtool.vasp.POSCAR
-import jtoolex.ml.RandomForest
+import jse.atom.Structures
+import jse.code.UT
+import jse.lmp.Lmpdat
+import jse.math.function.Func1
+import jse.plot.Plotters
+import jse.vasp.POSCAR
+import jsex.ml.RandomForest
 
 import static test.ml.testCuZr.getBasisMean
 

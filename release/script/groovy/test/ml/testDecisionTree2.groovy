@@ -1,13 +1,13 @@
 package test.ml
 
-import jtool.code.UT
-import jtool.math.table.Tables
-import jtool.math.vector.Vectors
-import jtoolex.ml.RandomForest
+import jse.code.UT
+import jse.math.table.Tables
+import jse.math.vector.Vectors
+import jsex.ml.RandomForest
 
-import static jtool.code.CS.ALL
-import static jtool.code.UT.Math.*
-import static jtool.code.UT.Plot.*
+import static jse.code.CS.ALL
+import static jse.code.UT.Math.*
+import static jse.code.UT.Plot.*
 
 /**
  * 测试课程中给出的例子
