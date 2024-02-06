@@ -1,4 +1,4 @@
-- [任务提交接口](system.md)
+- [任务提交](system.md)
     - [快速开始](system.md#快速开始)
     - [指令输出控制](system.md#指令输出控制)
     - [后台任务提交](system.md#后台任务提交)

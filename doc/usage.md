@@ -98,7 +98,7 @@ import jse.lmp.Dump
 > 
 > 具体项目文件的结构以及解释参看 [项目文件结构](filestructure.md)。
 >
-> 对于独立项目，也可以直接使用 `jse path/to/script` 来运行脚本。
+> 对于独立项目，也可以直接使用 `./jse path/to/script` 来运行脚本。
 > 
 
 

@@ -1,10 +1,8 @@
 1. [基本使用方式](usage.md)
-    1. [搭建 java 环境](usage.md#搭建-java-环境)
-    2. [通过 groovy 使用](usage.md#通过-groovy-使用)
-    3. [通过 python 使用](usage.md#通过-python-使用)
-    4. [通过 matlab 使用](usage.md#通过-matlab-使用)
-2. [命令行参数]()
-3. [任务提交接口](system.md)
+   
+2. [命令行参数](commandline.md)
+   
+3. [任务提交](system.md)
     1. [快速开始](system.md#快速开始)
     2. [指令输出控制](system.md#指令输出控制)
     3. [后台任务提交](system.md#后台任务提交)
@@ -57,7 +55,7 @@
         3. [运行 MPI 程序]()
         4. [运行原生 lammps]()
         5. [API 文档]()
-9. [实用方法]()
+9.  [实用方法]()
     1. [快速开始]()
     2. [常用方法]()
     3. [系统指令方法]()
