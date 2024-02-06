@@ -99,8 +99,8 @@ public class UT {
          * Get the random seed for lammps usage
          * @author liqa
          */
-        public static int randSeed() {return RANDOM.nextInt(MAX_SEED);}
-        public static int randSeed(long aSeed) {return new LocalRandom(aSeed).nextInt(MAX_SEED);}
+        public static int randSeed() {return RANDOM.nextInt(MAX_SEED) + 1;}
+        public static int randSeed(long aSeed) {return new LocalRandom(aSeed).nextInt(MAX_SEED) + 1;}
         
         /**
          * MPI version of {@link #randSeed},
