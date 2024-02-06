@@ -3,13 +3,7 @@
 2. [命令行参数](commandline.md)
    
 3. [任务提交](system.md)
-    1. [快速开始](system.md#快速开始)
-    2. [指令输出控制](system.md#指令输出控制)
-    3. [后台任务提交](system.md#后台任务提交)
-    4. [其他种类的任务提交器](system.md#其他种类的任务提交器)
-    5. [关闭任务提交器](system.md#关闭任务提交器)
-    6. [SSH 任务提交器](systemSSH.md)
-    7. [API 文档](systemAPI.md)
+   
 4. [Lammps 相关]()
     1. [data 文件读写]()
     2. [dump 文件读写]()

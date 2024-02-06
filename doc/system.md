@@ -1,318 +1,307 @@
 - [任务提交](system.md)
-    - [快速开始](#快速开始)
-    - [指令输出控制](#指令输出控制)
+    - [基本功能](#基本功能)
+    - [输出控制](#输出控制)
     - [后台任务提交](#后台任务提交)
-    - [其他种类的任务提交器](#其他种类的任务提交器)
-    - [关闭任务提交器](#关闭任务提交器)
-- [SSH 任务提交器](systemSSH.md)
-- [API 文档](systemAPI.md)
+    - [自定义任务提交器种类](#自定义任务提交器种类)
+    - [SSH 任务提交](#ssh-任务提交)
 - [**⟶ 目录**](contents.md)
 
 # 任务提交
 
-## 快速开始
+jse 通过提交系统指令的方式来提交任务，类似
+[matlab 的 system 方法](https://ww2.mathworks.cn/help/matlab/ref/system.html)。
+例如对于提交 lammps 任务，则通过类似方法
+`system('lmp_mpi -in path/to/in/file')` 即可执行系统指令来运行 lammps。
 
-一般情况可以直接使用程序内部预置的任务提交器，在 Groovy 脚本中，可以使用类似语句：
+
+## 基本功能
+
+一般使用需要导入 [`jse.code.UT.Exec`](../src/main/java/jse/code/UT.java)
+中的静态方法，然后通过 `system()` 方法来执行系统指令。
+
+在 linux 系统下会将指令解释为 [bash 指令](https://wiki.archlinux.org/title/Bash)，
+在 windows 下则会解释为 [powershell 指令](https://learn.microsoft.com/en-us/powershell/scripting/overview?view=powershell-7.4)。
+一般来说两者可以使用相同的指令。
+
+- 输入脚本（`jse example/system/basic`
+  [⤤](../release/script/groovy/example/system/basic.groovy)）：
+  
+  ```groovy
+  import static jse.code.UT.Exec.*
+  
+  def exitCode = system('echo 123456')
+  println("exitCode: $exitCode")
+  ```
+  
+- 输出：
+  
+  ```
+  123456
+  exitCode: 0
+  ```
+
+> `jse.code.UT.Exec` 中的静态方法在 shell 模式下是默认导入的，
+> 因此在 shell 模式下可以直接执行 `system()` 方法而不需要导入。
+> 
+
+
+## 输出控制
+
+默认情况下，一般的任务提交器会将指令的输出直接输出到控制台，
+这里支持将其输出到指定文件（不通过系统的重定向功能），
+或者作为程序中的字符串使用，以及关闭输出流。
+
+### 输出到文本
+
+如果希望指令输出到指定路径的文本中，则需要在输入参数中指定输出路径：
 
 ```groovy
-import static jse.code.CS.Exec.EXE;
+system('echo 123456', 'path/to/output/file')
 ```
 
-会导入存储在 [jse.code.CS.Exec](../src/main/java/com/jse/code/CS.java)
-中的全局任务提交器。
+此时则会将指令的输出写入路径 `path/to/output/file`。
 
-> 在 matlab 脚本中，则为：
-> 
-> ```matlab
-> import jse.code.CS.Exec.*
-> ```
-> 
-> 在 python 脚本中，则需要使用类似这种方式：
-> 
-> ```python
-> from py4j.java_gateway import JavaGateway
-> GATEWAY = JavaGateway.launch_gateway(classpath='lib/jse-all.jar')
-> EXE = GATEWAY.jvm.jse.code.CS.Exec.EXE
-> ```
-> 
-> 使用全局任务提交器的好处是不需要手动使用 `shutdown()` 来关闭，程序内部会在结束后自动关闭。
+> 会自动创建文件夹使得路径合法，如果文件不存在则会创建文件，
+> 如果已经存在相同的文件则会清空原本内容。
 > 
 
---------------------------------
-
-语法上和 matlab 类似，使用 `system()` 方法来执行系统指令从而提交任务，基本流程为（下只提供 Groovy 代码）：
-
-```groovy
-// 全局任务提交器
-import static jse.code.CS.Exec.EXE;
-
-// 使用 system() 指令来执行系统指令，返回指令的退出值
-def exitValue = EXE.system('echo 123456');
-
-// 程序正常退出会返回 0
-println("exitValue: $exitValue");
-```
-
-
-## 指令输出控制
-
-默认情况下，一般的任务提交器会将指令的输出直接输出到控制台（`java.lang.System.out`）。
-
-> 如上述代码则会在控制台中输出：
-> 
-> ```
-> 123456
-> exitValue: 0
-> ```
-> 
-
---------------------------------
-
-如果希望指令输出到指定路径的文本中，则需要在输入参数中增加一项路径：
-
-```groovy
-import static jse.code.CS.Exec.EXE;
-
-EXE.system('echo 123456', 'path/to/output/file');
-```
-
-此时则会将指令的输出写入路径 `path/to/output/file`。注意会自动创建文件夹使得路径合法，并且如果已经存在相同的文件则会直接覆盖。
-
---------------------------------
+### 输出为字符串
 
 如果希望将指令的输出作为脚本中的一个变量，则可以使用 `system_str()` 指令：
 
 ```groovy
-import static jse.code.CS.Exec.EXE;
-
-out = EXE.system_str('echo 123456');
-// 返回值类型为 List<String>，按照输出的行来分隔
-println(out.getClass());
-// 大小为输出的行数
-println(out.size());
-// 直接打印整个 List
-println(out);
-// 可以通过 get() 方法来获取具体某一行的信息
-println(out.get(0));
+lines = system_str('echo 123456')
 ```
 
-> 输出为：
-> 
-> ```
-> class java.util.ArrayList
-> 1
-> [123456]
-> 123456
-> ```
-> 
+会将指令的输出作为方法的输出进行返回，具体为按行分隔的字符串列表 `List<String>`。
+
+### 关闭输出
+
+有时不希望保留指令的输出，首先需要通过 `exec()` 
+获取到内部的指令执行器，然后调用 `setNoSTDOutput()` 和
+`setNoERROutput()` 来分别关闭标准输出和错误输出：
+
+```groovy
+exec().setNoSTDOutput() // 关闭标准输出
+exec().setNoERROutput() // 关闭错误输出
+exec().setNoSTDOutput(false).setNoERROutput(false) // 重新打开标准输出和错误输出
+```
 
 --------------------------------
 
-有时不希望保留指令的输出，则可以通过 `setNoSTDOutput()` 和 `setNoERROutput()` 来分别关闭标准输出和错误输出：
+关于输出控制的实例，可以参看脚本 `example/system/output`
+[⤤](../release/script/groovy/example/system/output.groovy)。
 
-```groovy
-import static jse.code.CS.Exec.EXE;
 
-// 一般情况
-EXE.system('echo 111111');
-
-// 关闭标准输出
-EXE.setNoSTDOutput();
-EXE.system('echo 222222');
-EXE.system('echoecho 333333'); // 不存在的指令报错，错误输出依旧保留
-
-// 开启标准输出，关闭错误输出；支持链式调用在一行中设置
-EXE.setNoSTDOutput(false).setNoERROutput();
-EXE.system('echo 444444');
-EXE.system('echoecho 555555');
-
-// 由于这个任务提交器是全局的，记得设置回原本的值
-EXE.setNoSTDOutput(false).setNoERROutput(false);
-```
-
-> 输出为（注意 Windows 下报错结果会有所不同）：
-> 
-> ```
-> 111111
-> /bin/bash: echoecho: command not found
-> 444444
-> ```
-> 
 
 ## 后台任务提交
 
-有时可能需要提交一个长期运行的任务并挂到后台（异步执行），然后继续进行其他运算。
-这里提供了 `submitSystem()` 方法：
+jse 支持将任务提交到后台运行，而后继续进行后续运算（异步执行），
+这里提供 `submitSystem()` 方法来实现这个功能：
+
+- 输入脚本（`jse example/system/submit1`
+  [⤤](../release/script/groovy/example/system/submit1.groovy)）：
+  
+  ```groovy
+  import static jse.code.UT.Exec.*
+  
+  submitSystem('echo 111111') // 异步执行，会在 222222 后输出
+  println('222222')
+  system('echo 333333')
+  println('444444')
+  ```
+  
+- 输出：
+  
+  ```
+  222222
+  111111
+  333333
+  444444
+  ```
+
+> `submitSystem()` 会返回 java 的 
+> [`Future<Integer>`](https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/Future.html) 
+> 用于管理这个异步任务，可以等待执行完成，取消任务等，
+> 具体可参看脚本 `example/system/submit2`
+> [⤤](../release/script/groovy/example/system/submit2.groovy)。
+> 
+
+
+## 自定义任务提交器种类
+
+所有的任务提交器都位于包 `jse.system`，可以根据需要创建一个自定义的任务提交器，
+而不是 jse 内部使用的全局任务提交器。
+
+例如在 windows 下，如果不希望使用默认情况下的 powershell 来执行指令，
+可以创建一个更加经典的 cmd 类型的任务提交器：
+
+- 输入脚本（`jse example/system/custom`
+  [⤤](../release/script/groovy/example/system/custom.groovy)）：
+  
+  ```groovy
+  import jse.system.CMD
+  
+  try (def exec = new CMD()) {
+      // 在 cmd 中需要使用 `cd` 来获取当前目录而不是 `pwd`
+      exec.system('pwd')
+      exec.system('cd')
+  }
+  ```
+  
+- 输出：
+  
+  ```
+  'pwd' 不是内部或外部命令，也不是可运行的程序
+  或批处理文件。
+  ${你的当前目录}
+  ```
+
+> 手动创建新的任务提交器需要注意在使用完成后调用 `shutdown()` 方法关闭，
+> 也可以像上述例子一样使用 
+> [try-with-resources](https://zhuanlan.zhihu.com/p/343069478)
+> 写法来实现自动关闭。
+> 
+
+
+## SSH 任务提交
+
+jse 支持使用 ssh 向远程服务器来提交任务，这里基于
+[jsch](http://www.jcraft.com/jsch/) 来实现这个功能。
+
+
+这里需要通过 [`jse.system.SSH`](../src/main/java/jse/system/SSH.java)
+来创建一个 ssh 任务提交器。
+由于可选的输入参数较多，这里使用一个 `Map` 作为输入参数，
+因此一般需要先将连接 ssh 所需的参数（ip地址，用户名等）构造为一个 `Map`：
 
 ```groovy
-import static jse.code.CS.Exec.EXE;
-
-EXE.submitSystem('echo 111111'); // 异步执行，会在 222222 后输出
-println('222222');
-EXE.system('echo 333333');
-println('444444');
+// 替换成所需连接的远程服务器的 ip，用户名，以及密码
+def sshInfo = [
+    hostname: '127.0.0.1',
+    username: 'admin',
+    password: '123456'
+]
 ```
 
-> 输出为：
-> 
-> ```
-> 222222
-> 111111
-> 333333
-> 444444
-> ```
-> 
-
---------------------------------
-
-这里使用 java 的 [Future](https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/Future.html) 接口来管理这种异步任务：
+然后使用类似 [自定义任务提交器种类](#自定义任务提交器种类)
+的方式创建一个 ssh 任务提交器，并执行任务即可：
 
 ```groovy
-import static jse.code.CS.Exec.EXE;
+import jse.system.SSH
 
-// 接收到一个 Future<Integer> 异步任务
-def task = EXE.submitSystem('echo 111111');
-
-// 此时这个异步任务依旧在运行，因此这个结果先输出
-println("isDone: ${task.isDone()}");
-println('222222');
-println("isDone: ${task.isDone()}");
-
-// 等待完成并获取结果
-println("exitValue: ${task.get()}");
-
-// 此时任务已经运行完成，因此这个结果后输出
-println("isDone: ${task.isDone()}");
-println('333333');
-```
-
-> 输出为：
-> 
-> ```
-> isDone: false
-> 222222
-> isDone: false
-> 111111
-> exitValue: 0
-> isDone: true
-> 333333
-> ```
-> 
-
---------------------------------
-
-支持通过 `Future` 的 `cancel()` 方法来取消任务：
-
-```groovy
-import static jse.code.CS.Exec.EXE;
-
-// 接收到一个 Future<Integer> 异步任务
-def task = EXE.submitSystem('echo 111111');
-
-// 此时这个异步任务依旧在运行，因此这个结果先输出
-println("isDone: ${task.isDone()}");
-println('222222');
-println("isDone: ${task.isDone()}");
-
-// 直接取消这个任务，传入 true 表明即使已经在运行了也会尝试中断
-task.cancel(true);
-println("isCancelled: ${task.isCancelled()}");
-
-// 此时任务已经被取消，因此不会有输出
-println("isDone: ${task.isDone()}");
-println('333333');
-```
-
-> 输出为：
-> 
-> ```
-> isDone: false
-> 222222
-> isDone: false
-> isCancelled: true
-> isDone: true
-> 333333
-> ```
-> 
-
-
-## 其他种类的任务提交器
-
-所有的任务提交器位于 [jse.system](../src/main/java/com/jse/system)，详细说明可以查看 [API 文档](systemAPI.md)：
-
-> 上述默认的全局任务提交器 `jse.code.CS.Exec.EXE` 在 windows 下为
-> `jse.system.PowerShellSystemExecutor`，其余情况为 `jse.system.LocalSystemExecutor`。
-
-要使用这些任务提交器，只需要直接创建对应的实例即可，例如：
-
-```groovy
-import jse.system.PWSH;
-
-// 创建一个 PowerShell 提交器实例
-def exe = new PWSH();
-
-// 使用 system() 指令来执行系统指令，返回指令的退出值
-def exitValue = exe.system('echo 123456');
-
-// 程序正常退出会返回 0
-println("exitValue: $exitValue");
-
-// 对于自己创建新实例，需要在使用完成后手动关闭
-exe.shutdown();
-```
-
-
-## 关闭任务提交器
-
-由于任务提交器内部都存在线程池来管理后台任务，因此在使用结束后需要调用 `shutdown()` 来手动关闭这个任务提交器，例如：
-
-```groovy
-import jse.system.PWSH;
-
-def exe = new PWSH();
-exe.system('echo 123456');
-
-exe.shutdown();
-```
-
-但是如果在 `exe.shutdown();` 语句到达之前，程序抛出了一些错误中断了，此时任务提交器不会正常关闭，在一些时候程序会卡死。在 groovy 脚本中，支持 java 原生的 [try-with-resources](https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html) 语法来自动关闭这个实例：
-
-```groovy
-import jse.system.PWSH;
-
-try (def exe = new PWSH()) {
-    exe.system('echo 123456');
+try (def ssh = new SSH(sshInfo)) {
+    ssh.system('echo 123456');
+    ssh.system('hostname');
 }
 ```
 
-此时即使 `try` 语句中抛出了错误，也会正常关闭这个任务提交器。
+完整实例可参看脚本 `example/system/ssh1`
+[⤤](../release/script/groovy/example/system/ssh1.groovy)。
 
-在 groovy 中，还可以使用这种更加紧凑的写法：
+--------------------------------
 
-```groovy
-import jse.system.PWSH;
+具体参数和解释如下：
 
-def exitValue = new PWSH().withCloseable {def exe -> exe.system('echo 123456')}
-println("exitValue: $exitValue");
-```
+- **`Username`/`username`/`user`/`u`**：
+  
+  类型：`String`
+  
+  描述：设置 ssh 连接使用的用户名。
+  
+  例子：`'admin'`
+  
+  默认行为：不得为空
+  
+- **`Hostname`/`hostname`/`host`/`h`**：
+  
+  类型：`String`
+  
+  描述：设置 ssh 连接主机的 ip。
+  
+  例子：`'127.0.0.1'`
+  
+  默认行为：不得为空
+  
+- **`Port`/`port`/`p`**：
+  
+  类型：`Integer`
+  
+  描述：设置 ssh 连接主机的端口。
+  
+  例子：`22`
+  
+  默认行为：22
+  
+- **`Password`/`password`/`pw`**：
+  
+  类型：`String`
+  
+  描述：设置 ssh 连接使用的密码。
+  
+  例子：`'123456abcdef'`
+  
+  默认行为：改为使用密钥验证
 
-甚至可以省略掉变量 `exe` 的创建：
+- **`KeyPath`/`keypath`/`key`/`k`**：
+  
+  类型：`String`
+  
+  描述：设置 ssh 连接使用的密钥的路径。
+  
+  例子：`'~/.ssh/id_rsa'`
+  
+  默认行为：使用默认密钥会保存的位置，如 `'~/.ssh/id_rsa'`
+  
+- **`CompressLevel`/`compresslevel`/`cl`**：
+  
+  类型：`Integer`
+  
+  描述：设置 ssh 传输的压缩等级，0~9。
+  
+  例子：`6`
+  
+  默认行为：不开启压缩传输（`0`）
 
-```groovy
-import jse.system.PWSH;
+- **`LocalWorkingDir`/`localworkingdir`/`lwd`**：
+  
+  类型：`String`
+  
+  描述：设置本地的工作目录，所有输入输出文件会以此作为根目录。
+  
+  例子：`'./ssh'`
+  
+  默认行为：程序运行时使用的目录（`'.'`）
 
-def exitValue = new PWSH().withCloseable {it.system('echo 123456')}
-println("exitValue: $exitValue");
-```
+- **`RemoteWorkingDir`/`remoteworkingdir`/`rwd`/`wd`**：
+  
+  类型：`String`
+  
+  描述：设置远程的工作目录，所有输入输出文件会以此作为根目录。
+  
+  例子：`'~/path/to/project'`
+  
+  默认行为：ssh 连接后的目录，一般为用户目录（`'~'`）
 
-> 输出为：
-> 
-> ```
-> 123456
-> exitValue: 0
-> ```
-> 
-> **注意**：由于全局的任务提交器 `jse.code.CS.Exec.EXE` 在程序中其他地方也有使用，
-> 因此**不能**手动关闭。
-> 
+- **`BeforeCommand`/`beforecommand`/`bcommand`/`bc`**：
+  
+  类型：`String`
+  
+  描述：所有 ssh 指令前添加的指令，一般是环境初始化。
+  
+  例子：`'source ../env.sh'`
+  
+  默认行为：不添加此指令
 
+--------------------------------
+
+对于存在输入输出文件的 ssh 任务，一般希望在任务开始之前先上传输入文件到远程服务器，
+然后在任务完成后自动从远程服务器下载输出文件。
+
+因此 jse 提供了 [`jse.io.IOFiles`](../src/main/java/jse/io/IOFiles.java)
+类专门存储一个任务的输入输出文件（的路径），在执行系统指令时传入
+`IOFiles` 即可将任务和这些输入输出文件进行绑定，
+进而实现自动上传和下载文件。
+
+具体实例可参看脚本 `example/system/ssh2`
+[⤤](../release/script/groovy/example/system/ssh2.groovy)。

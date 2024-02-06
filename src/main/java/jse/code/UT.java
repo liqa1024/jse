@@ -34,6 +34,7 @@ import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 import jse.parallel.*;
 import jse.plot.*;
+import jse.system.ISystemExecutor;
 import jse.vasp.IVaspCommonData;
 import me.tongfei.progressbar.ConsoleProgressBarConsumer;
 import me.tongfei.progressbar.ProgressBar;
@@ -77,7 +78,6 @@ import java.util.zip.ZipOutputStream;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static jse.code.CS.*;
-import static jse.code.CS.Exec.EXE;
 
 /**
  * @author liqa
@@ -287,14 +287,6 @@ public class UT {
         public static ComplexDouble toComplexDouble(IComplexDouble aComplexDouble) {
             return (aComplexDouble instanceof ComplexDouble) ? (ComplexDouble)aComplexDouble : new ComplexDouble(aComplexDouble);
         }
-    }
-    
-    public static class Exec {
-        /** 提供这些接口方便外部调用使用 */
-        @VisibleForTesting public static int system(String aCommand) {return EXE.system(aCommand);}
-        @VisibleForTesting public static Future<Integer> submitSystem(String aCommand) {return EXE.submitSystem(aCommand);}
-        @VisibleForTesting public static List<String> system_str(String aCommand) {return EXE.system_str(aCommand);}
-        @VisibleForTesting public static Future<List<String>> submitSystem_str(String aCommand) {return EXE.submitSystem_str(aCommand);}
     }
     
     public static class Par {
@@ -1339,6 +1331,18 @@ public class UT {
             System.setProperty("user.dir", wd);
             WORKING_PATH = Paths.get(wd);
         }
+    }
+    
+    
+    @VisibleForTesting public static class Exec {
+        /** 提供这些接口方便外部调用使用 */
+        public static ISystemExecutor exec() {return CS.Exec.EXE;}
+        public static int system(String aCommand) {return exec().system(aCommand);}
+        public static int system(String aCommand, String aOutFilePath) {return exec().system(aCommand, aOutFilePath);}
+        public static Future<Integer> submitSystem(String aCommand) {return exec().submitSystem(aCommand);}
+        public static Future<Integer> submitSystem(String aCommand, String aOutFilePath) {return exec().submitSystem(aCommand, aOutFilePath);}
+        public static List<String> system_str(String aCommand) {return exec().system_str(aCommand);}
+        public static Future<List<String>> submitSystem_str(String aCommand) {return exec().submitSystem_str(aCommand);}
     }
     
     
