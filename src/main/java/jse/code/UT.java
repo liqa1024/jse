@@ -432,9 +432,8 @@ public class UT {
             return new TaskCall<>(() -> m.invoke(aInstance, fArgs));
         }
         public static TaskCall<Object> getCallableOfStaticMethod(String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException, ClassNotFoundException {
-            Class<?> tClass;
-            tClass = Class.forName(aClassName);
-            return getCallableOfMethod_(tClass, null, aMethodName, aArgs);
+            Class<?> aClazz = Class.forName(aClassName);
+            return getCallableOfMethod_(aClazz, null, aMethodName, aArgs);
         }
         public static TaskRun          getRunnableOfStaticMethod(              String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException, ClassNotFoundException {return getCallableOfStaticMethod(aClassName, aMethodName, aArgs).toRunnable();}
         public static TaskCall<Object> getCallableOfMethod      (final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {return getCallableOfMethod_(aInstance.getClass(), aInstance, aMethodName, aArgs);}

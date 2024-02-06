@@ -80,7 +80,28 @@ public class Main {
                         System.err.println("ERROR: Invalid method name: " + tValue);
                         return;
                     }
-                    UT.Hack.getRunnableOfStaticMethod(tValue.substring(0, tLastDot), tValue.substring(tLastDot+1), (Object[])tArgs).run();
+                    String tPackageName = tValue.substring(0, tLastDot);
+                    String tMethodName = tValue.substring(tLastDot+1);
+                    try {
+                        UT.Hack.getRunnableOfStaticMethod(tPackageName, tMethodName, (Object[])tArgs).run();
+                    } catch (ClassNotFoundException e) {
+                        tLastDot = tPackageName.lastIndexOf(".");
+                        String tClassName = tPackageName.substring(0, tLastDot);
+                        String tFieldName = tPackageName.substring(tLastDot+1);
+                        Class<?> aClazz;
+                        try {
+                            aClazz = Class.forName(tClassName);
+                        } catch (ClassNotFoundException ex) {
+                            throw new ClassNotFoundException(tPackageName+" nor "+tClassName);
+                        }
+                        Object tInstance;
+                        try {
+                            tInstance = aClazz.getField(tFieldName).get(null);
+                        } catch (NoSuchFieldException | NullPointerException ex) {
+                            throw e;
+                        }
+                        UT.Hack.getRunnableOfMethod(tInstance, tMethodName, (Object[])tArgs).run();
+                    }
                     return;
                 }
                 default: {
