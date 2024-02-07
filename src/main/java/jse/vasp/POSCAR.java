@@ -371,19 +371,19 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         // 第一行为 DataName
         aDataName = aLines.get(idx);
         // 读取模拟盒信息
-        ++idx; if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
+        ++idx; if (idx >= aLines.size()) return null; tTokens = UT.Text.splitBlank(aLines.get(idx));
         aBoxScale = Double.parseDouble(tTokens[0]);
         aBox = Matrices.zeros(3);
         ++idx; if (idx >= aLines.size()) return null;
-        aBox.row(0).fill(UT.Texts.str2data(aLines.get(idx), 3));
+        aBox.row(0).fill(UT.Text.str2data(aLines.get(idx), 3));
         ++idx; if (idx >= aLines.size()) return null;
-        aBox.row(1).fill(UT.Texts.str2data(aLines.get(idx), 3));
+        aBox.row(1).fill(UT.Text.str2data(aLines.get(idx), 3));
         ++idx; if (idx >= aLines.size()) return null;
-        aBox.row(2).fill(UT.Texts.str2data(aLines.get(idx), 3));
+        aBox.row(2).fill(UT.Text.str2data(aLines.get(idx), 3));
         // 读取原子种类（可选）和对应数目的信息
-        ++idx; if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
+        ++idx; if (idx >= aLines.size()) return null; tTokens = UT.Text.splitBlank(aLines.get(idx));
         aAtomTypes = tTokens;
-        ++idx; if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
+        ++idx; if (idx >= aLines.size()) return null; tTokens = UT.Text.splitBlank(aLines.get(idx));
         try {
         final String[] fTokens = tTokens;
         aAtomNumbers = Vectors.fromInteger(fTokens.length, i -> Integer.parseInt(fTokens[i]));
@@ -409,7 +409,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         if (idx+tAtomNum > aLines.size()) return null;
         aDirect = RowMatrix.zeros(tAtomNum, 3);
         for (IVector tRow : aDirect.rows()) {
-            tRow.fill(UT.Texts.str2data(aLines.get(idx), 3));
+            tRow.fill(UT.Text.str2data(aLines.get(idx), 3));
             ++idx;
         }
         

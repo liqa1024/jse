@@ -316,30 +316,30 @@ public class Lmpdat extends AbstractSettableAtomData {
         // 跳过第一行
         ++idx;
         // 读取原子数目
-        idx = UT.Texts.findLineContaining(aLines, idx, "atoms", true); if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
+        idx = UT.Text.findLineContaining(aLines, idx, "atoms", true); if (idx >= aLines.size()) return null; tTokens = UT.Text.splitBlank(aLines.get(idx));
         tAtomNum = Integer.parseInt(tTokens[0]);
         // 读取原子种类数目
-        idx = UT.Texts.findLineContaining(aLines, idx, "atom types", true); if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
+        idx = UT.Text.findLineContaining(aLines, idx, "atom types", true); if (idx >= aLines.size()) return null; tTokens = UT.Text.splitBlank(aLines.get(idx));
         aAtomTypeNum = Integer.parseInt(tTokens[0]);
         // 读取模拟盒信息
-        idx = UT.Texts.findLineContaining(aLines, idx, "xlo xhi", true); if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
+        idx = UT.Text.findLineContaining(aLines, idx, "xlo xhi", true); if (idx >= aLines.size()) return null; tTokens = UT.Text.splitBlank(aLines.get(idx));
         double aXlo = Double.parseDouble(tTokens[0]); double aXhi = Double.parseDouble(tTokens[1]);
-        idx = UT.Texts.findLineContaining(aLines, idx, "ylo yhi", true); if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
+        idx = UT.Text.findLineContaining(aLines, idx, "ylo yhi", true); if (idx >= aLines.size()) return null; tTokens = UT.Text.splitBlank(aLines.get(idx));
         double aYlo = Double.parseDouble(tTokens[0]); double aYhi = Double.parseDouble(tTokens[1]);
-        idx = UT.Texts.findLineContaining(aLines, idx, "zlo zhi", true); if (idx >= aLines.size()) return null; tTokens = UT.Texts.splitBlank(aLines.get(idx));
+        idx = UT.Text.findLineContaining(aLines, idx, "zlo zhi", true); if (idx >= aLines.size()) return null; tTokens = UT.Text.splitBlank(aLines.get(idx));
         double aZlo = Double.parseDouble(tTokens[0]); double aZhi = Double.parseDouble(tTokens[1]);
         // 兼容可能的斜方模拟盒
-        tIdx = UT.Texts.findLineContaining(aLines, idx, "xy xz yz", true);
+        tIdx = UT.Text.findLineContaining(aLines, idx, "xy xz yz", true);
         if (tIdx < aLines.size()) {
             idx = tIdx;
-            tTokens = UT.Texts.splitBlank(aLines.get(idx));
+            tTokens = UT.Text.splitBlank(aLines.get(idx));
             aBox = new BoxPrism(aXlo, aXhi, aYlo, aYhi, aZlo, aZhi, Double.parseDouble(tTokens[0]), Double.parseDouble(tTokens[1]), Double.parseDouble(tTokens[2]));
         } else {
             aBox = new Box(aXlo, aXhi, aYlo, aYhi, aZlo, aZhi);
         }
         
         // 读取可能的质量信息
-        tIdx = UT.Texts.findLineContaining(aLines, idx, "Masses", true); ++tIdx;
+        tIdx = UT.Text.findLineContaining(aLines, idx, "Masses", true); ++tIdx;
         if (tIdx < aLines.size()) {
             idx = tIdx;
             ++idx; // 中间有一个空行
@@ -347,7 +347,7 @@ public class Lmpdat extends AbstractSettableAtomData {
             if (end > aLines.size()) return null;
             aMasses = Vectors.zeros(aAtomTypeNum);
             for (; idx < end; ++idx) {
-                tTokens = UT.Texts.splitBlank(aLines.get(idx));
+                tTokens = UT.Text.splitBlank(aLines.get(idx));
                 aMasses.set(Integer.parseInt(tTokens[0])-1, Double.parseDouble(tTokens[1]));
             }
         } else {
@@ -355,7 +355,7 @@ public class Lmpdat extends AbstractSettableAtomData {
         }
         
         // 获取原子坐标信息
-        idx = UT.Texts.findLineContaining(aLines, idx, "Atoms", true); ++idx;
+        idx = UT.Text.findLineContaining(aLines, idx, "Atoms", true); ++idx;
         ++idx; // 中间有一个空行
         end = idx+tAtomNum;
         if (end > aLines.size()) return null;
@@ -364,7 +364,7 @@ public class Lmpdat extends AbstractSettableAtomData {
         aAtomXYZ = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
         // 和坐标排序一致的顺序来存储
         for (int row = 0; row < tAtomNum; ++row) {
-            IVector tIDTypeXYZ = UT.Texts.str2data(aLines.get(idx), STD_ATOM_DATA_KEYS.length);
+            IVector tIDTypeXYZ = UT.Text.str2data(aLines.get(idx), STD_ATOM_DATA_KEYS.length);
             aAtomID.set(row, (int)tIDTypeXYZ.get(STD_ID_COL));
             aAtomType.set(row, (int)tIDTypeXYZ.get(STD_TYPE_COL));
             aAtomXYZ.set(row, XYZ_X_COL, tIDTypeXYZ.get(STD_X_COL));
@@ -374,7 +374,7 @@ public class Lmpdat extends AbstractSettableAtomData {
         }
         
         // 读取可能的速度信息
-        tIdx = UT.Texts.findLineContaining(aLines, idx, "Velocities", true); ++tIdx;
+        tIdx = UT.Text.findLineContaining(aLines, idx, "Velocities", true); ++tIdx;
         if (tIdx < aLines.size()) {
             idx = tIdx;
             // 统计 id 和对应行的映射，用于保证速度顺序和坐标排序一致
@@ -387,7 +387,7 @@ public class Lmpdat extends AbstractSettableAtomData {
             aVelocities = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length);
             // 和坐标排序一致的顺序来存储
             for (; idx < end; ++idx) {
-                IVector tVelocity = UT.Texts.str2data(aLines.get(idx), LMPDAT_VELOCITY_LENGTH);
+                IVector tVelocity = UT.Text.str2data(aLines.get(idx), LMPDAT_VELOCITY_LENGTH);
                 int tRow = tId2Row.get((int)tVelocity.get(LMPDAT_ID_COL));
                 aVelocities.set(tRow, STD_VX_COL, tVelocity.get(LMPDAT_VX_COL));
                 aVelocities.set(tRow, STD_VY_COL, tVelocity.get(LMPDAT_VY_COL));

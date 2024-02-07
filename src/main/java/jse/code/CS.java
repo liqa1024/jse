@@ -701,7 +701,7 @@ public class CS {
                 MAX_STEP_COUNT = 40000;
                 
                 // 获取节点列表
-                NODE_LIST = ImmutableList.copyOf(UT.Texts.splitNodeList(System.getenv("SLURM_NODELIST")));
+                NODE_LIST = ImmutableList.copyOf(UT.Text.splitNodeList(System.getenv("SLURM_NODELIST")));
                 
                 RESOURCES_MANAGER = new ResourcesManager();
             } else {

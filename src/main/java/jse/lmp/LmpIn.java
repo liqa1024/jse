@@ -26,7 +26,7 @@ public class LmpIn extends AbstractInFileLines {
     @Override protected BufferedReader getInFileReader() throws IOException {return mInternal ? UT.IO.toReader(UT.IO.getResource("lmp/in/" + mInFilePath)) : UT.IO.toReader(mInFilePath);}
     @Override protected String getKeyOfLine(String aLine) {
         // 对于 lammps 的输入文件，这里的 key 检测 variable 定义的变量名或者每行的第一个值（如果是 variable 则会变成 variable 定义的变量名）
-        String[] tTokens = UT.Texts.splitBlank(aLine);
+        String[] tTokens = UT.Text.splitBlank(aLine);
         if (tTokens.length == 0) return null;
         if (tTokens[0].equals("variable") && tTokens.length>1) return tTokens[1];
         return tTokens[0];
@@ -34,7 +34,7 @@ public class LmpIn extends AbstractInFileLines {
     @Override protected String setValueOfLine(String aLine, Object aValue) {
         // 同样，对于 lammps 的输入文件，检测第一个为 variable 时则修改后续定义的变量值，否则修改后续所有
         if (aValue == null) return aLine;
-        String[] tTokens = UT.Texts.splitBlank(aLine);
+        String[] tTokens = UT.Text.splitBlank(aLine);
         if (tTokens.length == 0) return aLine;
         if (tTokens[0].equals("variable") && tTokens.length>1) {
             tTokens[3] = aValue.toString();

@@ -133,7 +133,7 @@ public class SP {
                         
                         io.out.println(MessageFormat.format("@|green JSE Shell|@ ({0}, Groovy: {1}, JVM: {2})", VERSION, GroovySystem.getVersion(), System.getProperty("java.version")));
                         io.out.println("Type '@|bold :help|@' or '@|bold :h|@' for help.");
-                        io.out.println(UT.Texts.repeat('-', width-1));
+                        io.out.println(UT.Text.repeat('-', width-1));
                     }
                 }
             };

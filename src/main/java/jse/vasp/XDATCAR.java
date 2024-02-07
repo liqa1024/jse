@@ -340,20 +340,20 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         tLine = aReader.readLine();
         aDataName = tLine;
         // 读取模拟盒信息
-        tLine = aReader.readLine(); if (tLine == null) return null; tTokens = UT.Texts.splitBlank(tLine);
+        tLine = aReader.readLine(); if (tLine == null) return null; tTokens = UT.Text.splitBlank(tLine);
         aBoxScale = Double.parseDouble(tTokens[0]);
         aBox = Matrices.zeros(3);
         tLine = aReader.readLine(); if (tLine == null) return null;
-        aBox.row(0).fill(UT.Texts.str2data(tLine, 3));
+        aBox.row(0).fill(UT.Text.str2data(tLine, 3));
         tLine = aReader.readLine(); if (tLine == null) return null;
-        aBox.row(1).fill(UT.Texts.str2data(tLine, 3));
+        aBox.row(1).fill(UT.Text.str2data(tLine, 3));
         tLine = aReader.readLine(); if (tLine == null) return null;
-        aBox.row(2).fill(UT.Texts.str2data(tLine, 3));
+        aBox.row(2).fill(UT.Text.str2data(tLine, 3));
         // 读取原子种类（可选）和对应数目的信息
         boolean tNoAtomType = false;
-        tLine = aReader.readLine(); if (tLine == null) return null; tTokens = UT.Texts.splitBlank(tLine);
+        tLine = aReader.readLine(); if (tLine == null) return null; tTokens = UT.Text.splitBlank(tLine);
         aAtomTypes = tTokens;
-        tLine = aReader.readLine(); if (tLine == null) return null; tTokens = UT.Texts.splitBlank(tLine);
+        tLine = aReader.readLine(); if (tLine == null) return null; tTokens = UT.Text.splitBlank(tLine);
         try {
         final String[] fTokens = tTokens;
         aAtomNumbers = Vectors.fromInteger(fTokens.length, i -> Integer.parseInt(fTokens[i]));
@@ -367,8 +367,8 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         tLine = aReader.readLine(); if (tLine == null) return null;
         }
         // 只支持 Direct 和 Cartesian
-        aIsCartesian = UT.Texts.containsIgnoreCase(tLine, "Cartesian");
-        if (!aIsCartesian && !UT.Texts.containsIgnoreCase(tLine, "Direct")) {
+        aIsCartesian = UT.Text.containsIgnoreCase(tLine, "Cartesian");
+        if (!aIsCartesian && !UT.Text.containsIgnoreCase(tLine, "Direct")) {
         throw new RuntimeException("Can ONLY read Direct or Cartesian XDATCAR");
         }
         
@@ -382,7 +382,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
             for (IVector tRow : subDirect.rows()) {
                 tLine = aReader.readLine();
                 if (tLine == null) {tIsAtomDataReadFull = false; break;}
-                tRow.fill(UT.Texts.str2data(tLine, 3));
+                tRow.fill(UT.Text.str2data(tLine, 3));
             }
             if (!tIsAtomDataReadFull) break;
             

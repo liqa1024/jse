@@ -689,7 +689,7 @@ public class UT {
         }
     }
     
-    public static class Texts {
+    public static class Text {
         
         /**
          * Convert a prob value to percent String
@@ -1174,7 +1174,7 @@ public class UT {
             Iterator<IVector> itRow;
             String[] tTokens;
             // 读取第一行检测是否有头，直接看能否成功粘贴
-            tTokens = Texts.splitComma(tLines.get(0));
+            tTokens = Text.splitComma(tLines.get(0));
             IVector tFirstData = null;
             try {tFirstData = Vectors.from(AbstractCollections.map(tTokens, Double::parseDouble));} catch (Exception ignored) {} // 直接看能否成功粘贴
             if (tFirstData != null) {
@@ -1187,7 +1187,7 @@ public class UT {
             }
             // 遍历读取后续数据
             for (int i = 1; i < tLineNum; ++i) {
-                tTokens = Texts.splitComma(tLines.get(i));
+                tTokens = Text.splitComma(tLines.get(i));
                 itRow.next().fill(AbstractCollections.map(tTokens, Double::parseDouble));
             }
             // 返回结果
@@ -1226,7 +1226,7 @@ public class UT {
             Iterator<IVector> itRow;
             String[] tTokens;
             // 读取第一行检测是否有头，直接看能否成功粘贴
-            tTokens = Texts.splitComma(tLines.get(0));
+            tTokens = Text.splitComma(tLines.get(0));
             IVector tFirstData = null;
             try {tFirstData = Vectors.from(AbstractCollections.map(tTokens, Double::parseDouble));} catch (Exception ignored) {} // 直接看能否成功粘贴
             if (tFirstData != null) {
@@ -1239,7 +1239,7 @@ public class UT {
             }
             // 遍历读取后续数据
             for (int i = 1; i < tLineNum; ++i) {
-                tTokens = Texts.splitComma(tLines.get(i));
+                tTokens = Text.splitComma(tLines.get(i));
                 itRow.next().fill(AbstractCollections.map(tTokens, Double::parseDouble));
             }
             // 返回结果

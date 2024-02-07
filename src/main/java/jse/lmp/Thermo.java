@@ -163,20 +163,20 @@ public class Thermo extends AbstractMultiFrameTable<ITable> {
         String[] tTokens;
         while (idx < aLines.size()) {
             // 跳转到 "Per MPI rank memory allocation" 后面的 "Step" 行，也就是需要 thermo 中包含 step 项
-            idx = UT.Texts.findLineContaining(aLines, idx, "Per MPI rank memory allocation");
-            idx = UT.Texts.findLineContaining(aLines, idx, "Step", true);
+            idx = UT.Text.findLineContaining(aLines, idx, "Per MPI rank memory allocation");
+            idx = UT.Text.findLineContaining(aLines, idx, "Step", true);
             if (idx >= aLines.size()) break;
             // 获取种类的 key
-            tTokens = UT.Texts.splitBlank(aLines.get(idx));
+            tTokens = UT.Text.splitBlank(aLines.get(idx));
             String[] tHands = tTokens;
             ++idx;
             // 获取结束的位置
-            endIdx = UT.Texts.findLineContaining(aLines, idx, "Loop time of");
+            endIdx = UT.Text.findLineContaining(aLines, idx, "Loop time of");
             if (endIdx >= aLines.size()) break;
             ITable rTable = Tables.zeros(endIdx-idx, tHands);
             // 读取数据
             for (IVector tRow : rTable.rows()) {
-                tRow.fill(UT.Texts.str2data(aLines.get(idx), tHands.length));
+                tRow.fill(UT.Text.str2data(aLines.get(idx), tHands.length));
                 ++idx;
             }
             // 创建 Table 并附加到 rThermo 中

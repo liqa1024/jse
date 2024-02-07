@@ -51,7 +51,7 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
             try {
                 // 这里对于一般情况改为更加稳定的 processBuilder
                 String[] tProgramAndArgs = programAndArgs_();
-                String[] tCommands = tProgramAndArgs.length==0 ? UT.Texts.splitBlank(aCommand) : NewCollections.merge(tProgramAndArgs, aCommand);
+                String[] tCommands = tProgramAndArgs.length==0 ? UT.Text.splitBlank(aCommand) : NewCollections.merge(tProgramAndArgs, aCommand);
                 tProcess = new ProcessBuilder(tCommands).start();
             } catch (Exception e) {
                 printStackTrace(e); tProcess = null;
