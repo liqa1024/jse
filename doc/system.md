@@ -4,6 +4,9 @@
     - [后台任务提交](#后台任务提交)
     - [自定义任务提交器种类](#自定义任务提交器种类)
     - [SSH 任务提交](#ssh-任务提交)
+        - [免密连接](#免密连接)
+        - [带有输入输出文件](#带有输入输出文件)
+        - [SSH 参数 API](#ssh-参数-api)
 - [**⟶ 目录**](contents.md)
 
 # 任务提交
@@ -172,33 +175,106 @@ jse 支持使用 ssh 向远程服务器来提交任务，这里基于
 这里需要通过 [`jse.system.SSH`](../src/main/java/jse/system/SSH.java)
 来创建一个 ssh 任务提交器。
 由于可选的输入参数较多，这里使用一个 `Map` 作为输入参数，
-因此一般需要先将连接 ssh 所需的参数（ip地址，用户名等）构造为一个 `Map`：
-
-```groovy
-// 替换成所需连接的远程服务器的 ip，用户名，以及密码
-def sshInfo = [
-    hostname: '127.0.0.1',
-    username: 'admin',
-    password: '123456'
-]
-```
-
+将 ip 地址，用户名等参数构造成 `Map` 后传入 ssh；
 然后使用类似 [自定义任务提交器种类](#自定义任务提交器种类)
 的方式创建一个 ssh 任务提交器，并执行任务即可：
 
-```groovy
-import jse.system.SSH
 
-try (def ssh = new SSH(sshInfo)) {
-    ssh.system('echo 123456');
-    ssh.system('hostname');
-}
+- 输入脚本（`jse example/system/ssh1`
+  [⤤](../release/script/groovy/example/system/ssh1.groovy)）：
+  
+  ```groovy
+  import jse.system.SSH
+  
+  // 替换成所需连接的远程服务器的 ip，用户名，以及密码
+  try (def ssh = new SSH(
+      hostname: '127.0.0.1',
+      username: 'admin',
+      password: '123456'
+  )) {
+      ssh.system('echo 123456');
+      ssh.system('hostname');
+  }
+  ```
+  
+- 输出：
+  
+  ```
+  123456
+  lon12
+  ```
+
+> 一般不希望在代码中出现明文的密码，为了避免这个问题可以将这些参数存储在
+> json 文件中（如 `.SECRET/SSH_INFO.json`），然后使用读取 json
+> 的方法来得到参数：
+>
+> ```groovy
+> try (def ssh = new SSH(UT.IO.json2map('.SECRET/SSH_INFO.json'))) {
+>     /***/
+> }
+> ```
+> 
+> 具体实例以及 json 文件的写法可参看脚本 `example/system/ssh3`
+> [⤤](../release/script/groovy/example/system/ssh3.groovy)。
+> 
+
+### 免密连接
+
+这里同样支持免密连接 ssh，但是 jsch 只支持经典格式的 openSSH 密钥，
+因此在生成密钥时需要加上 `-m pem` 参数，具体操作如下：
+
+- **windows:**
+  
+  在 powershell 中输入：
+  
+  ```powershell
+  ssh-keygen -m pem -t rsa -b 4096
+  cat ~/.ssh/id_rsa.pub | ssh username@hostname "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+  ```
+  
+- **liunx:**
+  
+  直接在终端输入：
+  
+  ```shell
+  ssh-keygen -m pem -t rsa -b 4096
+  ssh-copy-id username@hostname
+  ```
+  
+> **注意**: 需要将 `username` 和 `hostname` 分别替换成用户名以及服务器地址。
+> 
+
+如果已经有了密钥并且实现了免密连接，但是 jsch 不支持现在的密钥格式，
+则可通过这个指令来修改密钥格式：
+
+```shell
+ssh-keygen -p -f .ssh/id_rsa -m pem
 ```
 
-完整实例可参看脚本 `example/system/ssh1`
-[⤤](../release/script/groovy/example/system/ssh1.groovy)。
+> 创建 ssh 任务提交器时不提供密码则会自动使用位于
+> `~/.ssh/id_rsa` 的密钥进行验证。
+> 
 
---------------------------------
+### 带有输入输出文件
+
+对于存在输入输出文件的 ssh 任务，一般希望在任务开始之前先上传输入文件到远程服务器，
+然后在任务完成后自动从远程服务器下载输出文件。
+
+因此 jse 提供了 [`jse.io.IOFiles`](../src/main/java/jse/io/IOFiles.java)
+类专门存储一个任务的输入输出文件（的路径），在执行系统指令时传入
+`IOFiles` 即可将任务和这些输入输出文件进行绑定，
+进而实现自动上传和下载文件。
+
+具体实例可参看脚本 `example/system/ssh2`
+[⤤](../release/script/groovy/example/system/ssh2.groovy)。
+
+> 这里的输入输出文件**只支持相对路径**，而绝对路径通过上述
+> `LocalWorkingDir` 和 `RemoteWorkingDir` 来调整，
+> 这样可以减少代码中重复的绝对路径部分，增加可移植性；
+> 而为了简化 ssh 任务提交器的实现，这里暂时**没有提供**对于绝对路径输入的提供支持。
+> 
+
+### SSH 参数 API
 
 具体参数和解释如下：
 
@@ -304,21 +380,3 @@ try (def ssh = new SSH(sshInfo)) {
   
   默认行为：不开启并行传输
 
---------------------------------
-
-对于存在输入输出文件的 ssh 任务，一般希望在任务开始之前先上传输入文件到远程服务器，
-然后在任务完成后自动从远程服务器下载输出文件。
-
-因此 jse 提供了 [`jse.io.IOFiles`](../src/main/java/jse/io/IOFiles.java)
-类专门存储一个任务的输入输出文件（的路径），在执行系统指令时传入
-`IOFiles` 即可将任务和这些输入输出文件进行绑定，
-进而实现自动上传和下载文件。
-
-具体实例可参看脚本 `example/system/ssh2`
-[⤤](../release/script/groovy/example/system/ssh2.groovy)。
-
-> 这里的输入输出文件**只支持相对路径**，而绝对路径通过上述
-> `LocalWorkingDir` 和 `RemoteWorkingDir` 来调整，
-> 这样可以减少代码中重复的绝对路径部分，增加可移植性；
-> 而为了简化 ssh 任务提交器的实现，这里暂时**没有提供**对于绝对路径输入的提供支持。
-> 
