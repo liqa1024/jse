@@ -48,8 +48,8 @@ endif(MPI_C_FOUND)
 
 
 # add mimalloc
-option(USE_MIMALLOC "Use mimalloc to accelerate `malloc` operation" ON)
-if (USE_MIMALLOC)
+option(JSE_USE_MIMALLOC "Use mimalloc to accelerate `malloc` operation" ON)
+if (JSE_USE_MIMALLOC)
     add_definitions(-DUSE_MIMALLOC)
     
     include_directories($ENV{MIMALLOC_HOME}include)
@@ -60,5 +60,5 @@ if (USE_MIMALLOC)
     elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         target_link_libraries(mpijni $ENV{MIMALLOC_HOME}lib/libmimalloc.dylib)
     endif ()
-endif(USE_MIMALLOC)
+endif(JSE_USE_MIMALLOC)
 

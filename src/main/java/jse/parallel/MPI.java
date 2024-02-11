@@ -1015,7 +1015,7 @@ public class MPI {
             List<String> rCommand = new ArrayList<>();
             rCommand.add("cd"); rCommand.add("\""+aBuildDir+"\""); rCommand.add(";");
             rCommand.add("cmake");
-            rCommand.add("-D"); rCommand.add("USE_MIMALLOC="+(Conf.USE_MIMALLOC?"ON":"OFF"));
+            rCommand.add("-D"); rCommand.add("JSE_USE_MIMALLOC="+(Conf.USE_MIMALLOC?"ON":"OFF"));
             rCommand.add(".");
             return String.join(" ", rCommand);
         }

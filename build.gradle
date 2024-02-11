@@ -24,6 +24,7 @@ sourceSets {
         resources {
             srcDirs = ['src/main/resources']
             exclude(
+                'assets/jniutil/src/.*/', 'assets/jniutil/src/build/', 'assets/jniutil/src/*build*/',
                 'assets/mpi/src/.*/', 'assets/mpi/src/build/', 'assets/mpi/src/*build*/',
                 'assets/lmp/src/.*/', 'assets/lmp/src/build/', 'assets/lmp/src/*build*/',
                 'assets/jep/jep*-test/'

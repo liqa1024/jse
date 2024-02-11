@@ -48,8 +48,8 @@ endif(MPI_C_FOUND)
 
 
 # add mimalloc
-option(USE_MIMALLOC "Use mimalloc to accelerate `malloc` operation" ON)
-if (USE_MIMALLOC)
+option(JSE_USE_MIMALLOC "Use mimalloc to accelerate `malloc` operation" ON)
+if (JSE_USE_MIMALLOC)
     add_definitions(-DUSE_MIMALLOC)
     
     include_directories($ENV{MIMALLOC_HOME}include)
@@ -60,25 +60,25 @@ if (USE_MIMALLOC)
     elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         target_link_libraries(lmpjni $ENV{MIMALLOC_HOME}lib/libmimalloc.dylib)
     endif ()
-endif (USE_MIMALLOC)
+endif (JSE_USE_MIMALLOC)
 
 
 # add lammps
-option(LAMMPS_IS_OLD "Build based on old version lammps (like version below 18Sep2020)" OFF)
-option(LAMMPS_HAS_EXCEPTIONS "Build based on lammps which has error handling" ON)
-option(LAMMPS_EXCEPTIONS_NULL_SUPPORT "NULL support for lammps_has_error" ON)
+option(JSE_LAMMPS_IS_OLD "Build based on old version lammps (like version below 18Sep2020)" OFF)
+option(JSE_LAMMPS_HAS_EXCEPTIONS "Build based on lammps which has error handling" ON)
+option(JSE_LAMMPS_EXCEPTIONS_NULL_SUPPORT "NULL support for lammps_has_error" ON)
 
-if (LAMMPS_IS_OLD)
+if (JSE_LAMMPS_IS_OLD)
     add_definitions(-DLAMMPS_OLD)
-endif(LAMMPS_IS_OLD)
+endif(JSE_LAMMPS_IS_OLD)
 
-if (LAMMPS_HAS_EXCEPTIONS)
+if (JSE_LAMMPS_HAS_EXCEPTIONS)
     add_definitions(-DLAMMPS_EXCEPTIONS)
-endif(LAMMPS_HAS_EXCEPTIONS)
+endif(JSE_LAMMPS_HAS_EXCEPTIONS)
 
-if (LAMMPS_EXCEPTIONS_NULL_SUPPORT)
+if (JSE_LAMMPS_EXCEPTIONS_NULL_SUPPORT)
     add_definitions(-DLAMMPS_EXCEPTIONS_NULL_SUPPORT)
-endif(LAMMPS_EXCEPTIONS_NULL_SUPPORT)
+endif(JSE_LAMMPS_EXCEPTIONS_NULL_SUPPORT)
 
 include_directories($ENV{LAMMPS_HOME}includes)
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
