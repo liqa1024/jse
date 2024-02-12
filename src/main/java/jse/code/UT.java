@@ -134,18 +134,20 @@ public class UT {
         
         
         /**
-         * Get the random id in URL and Filename safe Base64, 8 length
+         * 现在改为（小于等于） 8 长度的 Base16 的字符串，
+         * 这样和 uniqueID 同步并且可以避免 windows 下不区分大小写的问题
+         * <p>
+         * 虽然现在长度更低了导致哈希碰撞概率较高，但是实际应该影响不大，
+         * 并且也没有高效的方法实现返回 long 的 hashCode
+         * <p>
+         * 这个修改会修改随机流，导致部分结果会和和旧版本不同
          * @author liqa
          */
         public static String randID() {
-            byte[] rBytes = new byte[6];
-            RANDOM.nextBytes(rBytes);
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(rBytes);
+            return Integer.toHexString(RANDOM.nextInt());
         }
         public static String randID(long aSeed) {
-            byte[] rBytes = new byte[6];
-            new LocalRandom(aSeed).nextBytes(rBytes);
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(rBytes);
+            return Integer.toHexString(new LocalRandom(aSeed).nextInt());
         }
         
         /**
@@ -154,26 +156,25 @@ public class UT {
          * @author liqa
          */
         public static String randID(MPI.Comm aComm, int aRoot) throws MPI.Error {
-            byte[] tBuf = BYTE6_CACHE.getObject();
+            int[] tBuf = INT1_CACHE.getObject();
             try {
-                if (aComm.rank() == aRoot) RANDOM.nextBytes(tBuf);
-                aComm.bcast(tBuf, 6, aRoot);
-                return Base64.getUrlEncoder().withoutPadding().encodeToString(tBuf);
+                if (aComm.rank() == aRoot) tBuf[0] = RANDOM.nextInt();
+                aComm.bcast(tBuf, 1, aRoot);
+                return Integer.toHexString(tBuf[0]);
             } finally {
-                BYTE6_CACHE.returnObject(tBuf);
+                INT1_CACHE.returnObject(tBuf);
             }
         }
         public static String randID(MPI.Comm aComm, int aRoot, long aSeed) throws MPI.Error {
-            byte[] tBuf = BYTE6_CACHE.getObject();
+            int[] tBuf = INT1_CACHE.getObject();
             try {
-                if (aComm.rank() == aRoot) new LocalRandom(aSeed).nextBytes(tBuf);
-                aComm.bcast(tBuf, 6, aRoot);
-                return Base64.getUrlEncoder().withoutPadding().encodeToString(tBuf);
+                if (aComm.rank() == aRoot) tBuf[0] = new LocalRandom(aSeed).nextInt();
+                aComm.bcast(tBuf, 1, aRoot);
+                return Integer.toHexString(tBuf[0]);
             } finally {
-                BYTE6_CACHE.returnObject(tBuf);
+                INT1_CACHE.returnObject(tBuf);
             }
         }
-        private final static ThreadLocalObjectCachePool<byte[]> BYTE6_CACHE = ThreadLocalObjectCachePool.withInitial(() -> new byte[6]);
         
         /**
          * Get the unique id in Base16, 8 length
