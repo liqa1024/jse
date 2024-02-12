@@ -31,9 +31,9 @@ public abstract class AbstractMultiFrameTable<T extends ITable> extends Abstract
     @Override public final void put(String aHead, double[] aData) {defaultFrame().put(aHead, aData);}
     @Override public final void put(String aHead, Iterable<? extends Number> aList) {defaultFrame().put(aHead, aList);}
     @Override public final IMatrix asMatrix() {return defaultFrame().asMatrix();}
-    @Override public final List<IVector> rows() {return defaultFrame().rows();}
+    @Override public final List<? extends IVector> rows() {return defaultFrame().rows();}
     @Override public final IVector row(int aRow) {return defaultFrame().row(aRow);}
-    @Override public final List<IVector> cols() {return defaultFrame().cols();}
+    @Override public final List<? extends IVector> cols() {return defaultFrame().cols();}
     @Override public final IVector col(String aHead) {return defaultFrame().col(aHead);}
     @Override public final int rowNumber() {return defaultFrame().rowNumber();}
     @Override public final int columnNumber() {return defaultFrame().columnNumber();}

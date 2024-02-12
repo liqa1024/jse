@@ -24,8 +24,7 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     @Override public String toString() {
         final StringBuilder rStr  = new StringBuilder();
         rStr.append(String.format("%d x %d Integer Matrix:", rowNumber(), columnNumber()));
-        List<IIntVector> tRows = rows();
-        for (IIntVector tRow : tRows) {
+        for (IIntVector tRow : rows()) {
             rStr.append("\n");
             tRow.forEach(v -> rStr.append(toString_(v)));
         }

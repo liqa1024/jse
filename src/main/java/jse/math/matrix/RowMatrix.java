@@ -1,5 +1,6 @@
 package jse.math.matrix;
 
+import jse.code.collection.AbstractRandomAccessList;
 import jse.code.iterator.IDoubleIterator;
 import jse.code.iterator.IDoubleSetIterator;
 import jse.math.vector.ShiftVector;
@@ -7,8 +8,11 @@ import jse.math.vector.Vector;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.function.*;
+import java.util.function.DoubleConsumer;
+import java.util.function.DoubleSupplier;
+import java.util.function.DoubleUnaryOperator;
 
 /**
  * @author liqa
@@ -71,6 +75,12 @@ public final class RowMatrix extends DoubleArrayMatrix {
     
     
     /** Optimize stuffs，重写这个提高行向的索引速度 */
+    @Override public List<ShiftVector> rows() {
+        return new AbstractRandomAccessList<ShiftVector>() {
+            @Override public int size() {return mRowNum;}
+            @Override public ShiftVector get(int aRow) {return row(aRow);}
+        };
+    }
     @Override public ShiftVector row(final int aRow) {
         rangeCheckRow(aRow, mRowNum);
         return new ShiftVector(mColNum, aRow*mColNum, mData);

@@ -14,27 +14,27 @@ import java.util.Collection;
 public class Tables {
     private Tables() {}
     
-    public static ITable zeros(int aRowNum, String... aHeads) {return Table.zeros(aRowNum, aHeads);}
-    public static ITable zeros(int aRowNum, int aColNum) {return Table.zeros(aRowNum, aColNum);}
+    public static Table zeros(int aRowNum, String... aHeads) {return Table.zeros(aRowNum, aHeads);}
+    public static Table zeros(int aRowNum, int aColNum) {return Table.zeros(aRowNum, aColNum);}
     
-    public static ITable from(int aRowNum, IMatrixGetter aDataGetter, String... aHeads) {
-        ITable rTable = zeros(aRowNum, aHeads);
+    public static Table from(int aRowNum, IMatrixGetter aDataGetter, String... aHeads) {
+        Table rTable = zeros(aRowNum, aHeads);
         rTable.asMatrix().fill(aDataGetter);
         return rTable;
     }
-    public static ITable from(IMatrix aData, String... aHeads) {
-        ITable rTable = zeros(aData.rowNumber(), aHeads);
+    public static Table from(IMatrix aData, String... aHeads) {
+        Table rTable = zeros(aData.rowNumber(), aHeads);
         rTable.asMatrix().fill(aData);
         return rTable;
     }
     
-    public static ITable from(Collection<?> aRows, String... aHeads) {return fromRows(aRows, aHeads);}
-    public static ITable fromRows(Collection<?> aRows, String... aHeads) {
-        ITable rTable = zeros(aRows.size(), aHeads);
+    public static Table from(Collection<?> aRows, String... aHeads) {return fromRows(aRows, aHeads);}
+    public static Table fromRows(Collection<?> aRows, String... aHeads) {
+        Table rTable = zeros(aRows.size(), aHeads);
         rTable.asMatrix().fillWithRows(aRows);
         return rTable;
     }
-    public static ITable fromCols(Collection<?> aCols, String... aHeads) {
+    public static Table fromCols(Collection<?> aCols, String... aHeads) {
         int tRowNum;
         Object tFirst = UT.Code.first(aCols);
         if (tFirst instanceof Collection) {
@@ -44,7 +44,7 @@ public class Tables {
         } else {
             throw new IllegalArgumentException("Type of Column Must be Collection<? extends Number> or IVector");
         }
-        ITable rTable = zeros(tRowNum, aHeads);
+        Table rTable = zeros(tRowNum, aHeads);
         rTable.asMatrix().fillWithCols(aCols);
         return rTable;
     }

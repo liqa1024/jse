@@ -1,6 +1,6 @@
 package jse.atom;
 
-import jse.math.table.ITable;
+import jse.math.table.Table;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
@@ -11,13 +11,13 @@ import java.util.List;
  * <p> 移除过多的无用的接口，只保留实际使用会用到的部分 </p>
  */
 public interface IAtomData {
-    /** 获取所有的数据组成的 {@link ITable}，约定数据按行排列，每行一个原子，会在通用抽象类中自动生成不需要子类手动实现 */
-    ITable dataXYZ();
-    ITable dataXYZID();
-    ITable dataSTD();
-    ITable dataAll();
+    /** 获取所有的数据组成的 {@link Table}，约定数据按行排列，每行一个原子，会在通用抽象类中自动生成不需要子类手动实现 */
+    Table dataXYZ();
+    Table dataXYZID();
+    Table dataSTD();
+    Table dataAll();
     /** 获取速度数据, vx, vy, vz */
-    ITable dataVelocities();
+    Table dataVelocities();
     boolean hasVelocities();
     
     /** 现在改为 asList，让其 set 接口更加合理 */

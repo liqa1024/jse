@@ -32,8 +32,7 @@ public abstract class AbstractMatrix implements IMatrix {
     @Override public String toString() {
         StringBuilder rStr  = new StringBuilder();
         rStr.append(String.format("%d x %d Matrix:", rowNumber(), columnNumber()));
-        List<IVector> tRows = rows();
-        for (IVector tRow : tRows) {
+        for (IVector tRow : rows()) {
             rStr.append("\n");
             for (double tValue : tRow.iterable()) rStr.append(toString_(tValue));
         }
@@ -388,7 +387,7 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     
     
-    @Override public List<IVector> rows() {
+    @Override public List<? extends IVector> rows() {
         return new AbstractRandomAccessList<IVector>() {
             @Override public int size() {return rowNumber();}
             @Override public IVector get(int aRow) {return row(aRow);}
@@ -405,7 +404,7 @@ public abstract class AbstractMatrix implements IMatrix {
             @Override public IDoubleSetIterator setIterator() {return setIteratorRowAt(aRow);}
         };
     }
-    @Override public List<IVector> cols() {
+    @Override public List<? extends IVector> cols() {
         return new AbstractRandomAccessList<IVector>() {
             @Override public int size() {return columnNumber();}
             @Override public IVector get(int aCol) {return col(aCol);}

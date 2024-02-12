@@ -31,8 +31,7 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     @Override public String toString() {
         final StringBuilder rStr  = new StringBuilder();
         rStr.append(String.format("%d x %d Complex Matrix:", rowNumber(), columnNumber()));
-        List<IComplexVector> tRows = rows();
-        for (IComplexVector tRow : tRows) {
+        for (IComplexVector tRow : rows()) {
             rStr.append("\n");
             tRow.forEach((real, imag) -> rStr.append(toString_(real, imag)));
         }

@@ -1202,7 +1202,7 @@ public class UT {
             }
             // 需要的参数
             IMatrix rMatrix;
-            Iterator<IVector> itRow;
+            Iterator<? extends IVector> itRow;
             String[] tTokens;
             // 读取第一行检测是否有头，直接看能否成功粘贴
             tTokens = Text.splitComma(tLines.get(0));
@@ -1254,7 +1254,7 @@ public class UT {
             }
             // 需要的参数
             ITable rTable;
-            Iterator<IVector> itRow;
+            Iterator<? extends IVector> itRow;
             String[] tTokens;
             // 读取第一行检测是否有头，直接看能否成功粘贴
             tTokens = Text.splitComma(tLines.get(0));

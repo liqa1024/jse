@@ -78,9 +78,9 @@ public interface IMatrix extends IMatrixGetter {
     double getAndUpdate(int aRow, int aCol, DoubleUnaryOperator aOpt);
     
     
-    List<IVector> rows();
+    List<? extends IVector> rows();
     IVector row(int aRow);
-    List<IVector> cols();
+    List<? extends IVector> cols();
     IVector col(int aCol);
     
     

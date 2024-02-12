@@ -54,9 +54,7 @@ public class NewCollections {
         return rOut;
     }
     public static <T> ArrayList<T> from(Collection<? extends T> aList) {
-        ArrayList<T> rOut = new ArrayList<>(aList.size());
-        for (T tValue : aList) rOut.add(tValue);
-        return rOut;
+        return new ArrayList<>(aList);
     }
     public static <T> ArrayList<T> from(T[] aData) {
         ArrayList<T> rOut = new ArrayList<>(aData.length);

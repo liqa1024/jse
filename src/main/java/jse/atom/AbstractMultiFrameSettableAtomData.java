@@ -1,7 +1,7 @@
 package jse.atom;
 
 import jse.code.collection.AbstractRandomAccessList;
-import jse.math.table.ITable;
+import jse.math.table.Table;
 
 import java.util.List;
 
@@ -17,11 +17,11 @@ public abstract class AbstractMultiFrameSettableAtomData<T extends ISettableAtom
     
     /** IHasAtomData 的接口，将本身作为 atomData 时则会返回第一帧的结果 */
     public T defaultFrame() {return get(0);}
-    @Override public final ITable dataXYZ() {return defaultFrame().dataXYZ();}
-    @Override public final ITable dataXYZID() {return defaultFrame().dataXYZID();}
-    @Override public final ITable dataSTD() {return defaultFrame().dataSTD();}
-    @Override public final ITable dataAll() {return defaultFrame().dataAll();}
-    @Override public final ITable dataVelocities() {return defaultFrame().dataVelocities();}
+    @Override public final Table dataXYZ() {return defaultFrame().dataXYZ();}
+    @Override public final Table dataXYZID() {return defaultFrame().dataXYZID();}
+    @Override public final Table dataSTD() {return defaultFrame().dataSTD();}
+    @Override public final Table dataAll() {return defaultFrame().dataAll();}
+    @Override public final Table dataVelocities() {return defaultFrame().dataVelocities();}
     
     @Override public final boolean hasVelocities() {return defaultFrame().hasVelocities();}
     

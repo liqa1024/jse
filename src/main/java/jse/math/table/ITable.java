@@ -41,9 +41,9 @@ public interface ITable {
     IMatrix asMatrix();
     double get(int aRow, String aHead);
     void set(int aRow, String aHead, double aValue);
-    List<IVector> rows();
+    List<? extends IVector> rows();
     IVector row(int aRow);
-    List<IVector> cols();
+    List<? extends IVector> cols();
     IVector col(String aHead);
     int rowNumber();
     int columnNumber();

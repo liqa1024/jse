@@ -6,8 +6,7 @@ import jse.code.collection.AbstractCollections;
 import jse.code.collection.NewCollections;
 import jse.math.MathEX;
 import jse.math.table.AbstractMultiFrameTable;
-import jse.math.table.ITable;
-import jse.math.table.Tables;
+import jse.math.table.Table;
 import jse.math.vector.IVector;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -66,12 +65,12 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
     public Box lmpBox() {return defaultFrame().lmpBox();}
     
     /** 提供直接转为表格的接口 */
-    public AbstractMultiFrameTable<ITable> asTable() {
-        return new AbstractMultiFrameTable<ITable>() {
-            @Override public AbstractMultiFrameTable<ITable> copy() {return Lammpstrj.this.copy().asTable();}
-            @Override public ITable get(int index) {return Lammpstrj.this.get(index).asTable();}
+    public AbstractMultiFrameTable<Table> asTable() {
+        return new AbstractMultiFrameTable<Table>() {
+            @Override public AbstractMultiFrameTable<Table> copy() {return Lammpstrj.this.copy().asTable();}
+            @Override public Table get(int index) {return Lammpstrj.this.get(index).asTable();}
             @Override public int size() {return Lammpstrj.this.size();}
-            @Override public ITable defaultFrame() {return Lammpstrj.this.defaultFrame().asTable();}
+            @Override public Table defaultFrame() {return Lammpstrj.this.defaultFrame().asTable();}
         };
     }
     
@@ -103,7 +102,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
     public static class SubLammpstrj extends AbstractSettableAtomData {
         private final long mTimeStep;
         private final String[] mBoxBounds;
-        private final ITable mAtomData;
+        private final Table mAtomData;
         private int mAtomTypeNum;
         private Box mBox;
         
@@ -111,9 +110,9 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
         private final boolean mHasVelocities;
         
         /** 提供直接转为表格的接口 */
-        public ITable asTable() {return mAtomData;}
+        public Table asTable() {return mAtomData;}
         
-        public SubLammpstrj(long aTimeStep, String[] aBoxBounds, Box aBox, ITable aAtomData) {
+        public SubLammpstrj(long aTimeStep, String[] aBoxBounds, Box aBox, Table aAtomData) {
             mTimeStep = aTimeStep;
             mBoxBounds = aBoxBounds;
             mBox = aBox;
@@ -455,7 +454,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
             int tAtomNum;
             String[] aBoxBounds;
             Box aBox;
-            final ITable aAtomData;
+            final Table aAtomData;
             
             // 读取时间步数
             UT.Text.findLineContaining(aReader, "ITEM: TIMESTEP", true); tLine=aReader.readLine();
@@ -488,7 +487,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
             String[] tAtomDataKeys = new String[tTokens.length-2];
             System.arraycopy(tTokens, 2, tAtomDataKeys, 0, tAtomDataKeys.length);
             boolean tIsAtomDataReadFull = true;
-            aAtomData = Tables.zeros(tAtomNum, tAtomDataKeys);
+            aAtomData = Table.zeros(tAtomNum, tAtomDataKeys);
             for (IVector tRow : aAtomData.rows()) {
                 tLine = aReader.readLine();
                 if (tLine == null) {tIsAtomDataReadFull = false; break;}
