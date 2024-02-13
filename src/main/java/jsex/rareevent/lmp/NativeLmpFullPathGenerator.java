@@ -119,7 +119,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
                     mLmp.command("pair_coeff      "+mPairCoeff); // MARK: 好像卡在这里，但是不一定
                     // 虽然理论上永远都是没有速度并且重新分配速度，这里还是和原本保持逻辑一致
                     if (!mNext.hasVelocities()) {
-                        mLmp.command(String.format("velocity        all create %f %d dist gaussian mom yes rot yes", mTemperature, mRNG.nextInt(MAX_SEED)));
+                        mLmp.command(String.format("velocity        all create %f %d dist gaussian mom yes rot yes", mTemperature, mRNG.nextInt(MAX_SEED)+1));
                     }
                     mLmp.command(String.format("fix             1 all npt temp %f %f 0.2 iso 0.0 0.0 2", mTemperature, mTemperature));
                 } catch (NativeLmp.Error e) {
