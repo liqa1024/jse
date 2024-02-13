@@ -334,20 +334,19 @@ public class NativeLmp implements IAutoShutdown {
             String tNativeDir;
             if (Conf.LMP_TAG != null) {
                 // 如果有手动设定 LMP_TAG 则永远使用带有 tag 的
-                tNativeDir = UT.IO.toAbsolutePath(LMPLIB_ROOT+NATIVE_DIR_NAME+"-"+Conf.LMP_TAG+"/");
+                tNativeDir = LMPLIB_ROOT+NATIVE_DIR_NAME+"-"+Conf.LMP_TAG+"/";
             } else {
                 // 否则需要设置 DEFAULT_LMP_TAG 并尝试不带 tag 的
                 Conf.LMP_TAG = Conf.DEFAULT_LMP_TAG;
-                tNativeDir = UT.IO.toAbsolutePath(LMPLIB_ROOT+NATIVE_DIR_NAME+"-"+Conf.LMP_TAG+"/");
+                tNativeDir = LMPLIB_ROOT+NATIVE_DIR_NAME+"-"+Conf.LMP_TAG+"/";
                 // 如果不存在并且 tag 没变则会尝试检测不带 tag 保持兼容
                 if (!UT.IO.isDir(tNativeDir)) {
-                    String tShortLmpDir = UT.IO.toAbsolutePath(LMPLIB_ROOT+NATIVE_DIR_NAME+"/");
+                    String tShortLmpDir = LMPLIB_ROOT+NATIVE_DIR_NAME+"/";
                     if (UT.IO.isDir(tShortLmpDir)) {
                         tNativeDir = tShortLmpDir;
                     }
                 }
             }
-            tNativeDir = UT.IO.toInternalValidDir(tNativeDir);
             NATIVE_LMP_DIR = tNativeDir;
             Conf.LMP_HOME = NATIVE_LMP_DIR+BUILD_DIR_NAME+"/";
         } else {
