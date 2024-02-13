@@ -8,7 +8,10 @@ import jse.clib.MiMalloc;
 import jse.code.UT;
 import jse.io.IInFile;
 import jse.math.matrix.*;
+import jse.math.vector.IIntVector;
 import jse.math.vector.IVector;
+import jse.math.vector.IntVector;
+import jse.math.vector.Vector;
 import jse.parallel.*;
 import jse.vasp.IVaspCommonData;
 import org.jetbrains.annotations.NotNull;
@@ -869,8 +872,17 @@ public class NativeLmp implements IAutoShutdown {
         if (tMasses != null) for (int i = 0; i < tAtomTypeNum; ++i) {
         command(String.format("mass            %d %f", i+1, tMasses.get(i)));
         }
-        @Nullable RowMatrix tVelocities = aLmpdat.velocities();
-        lammpsCreateAtoms_(mLmpPtr, aLmpdat.atomNum(), aLmpdat.ids().internalData(), aLmpdat.types().internalData(), aLmpdat.positions().internalData(), tVelocities==null ? null : tVelocities.internalData(), null, false);
+        IIntVector tIDs = aLmpdat.ids(); IntVector tBufIDs = tIDs.toBuf();
+        IIntVector tTypes = aLmpdat.types(); IntVector tBufTypes = tTypes.toBuf();
+        IVector tPositionsVec = aLmpdat.positions().asVecRow(); Vector tBufPositionsVec = tPositionsVec.toBuf();
+        @Nullable IMatrix tVelocities = aLmpdat.velocities();
+        @Nullable IVector tVelocitiesVec = tVelocities==null ? null : tVelocities.asVecRow();
+        @Nullable Vector tBufVelocitiesVec = tVelocitiesVec==null ? null : tVelocitiesVec.toBuf();
+        lammpsCreateAtoms_(mLmpPtr, aLmpdat.atomNum(), tBufIDs.internalData(), tBufTypes.internalData(), tBufPositionsVec.internalData(), tBufVelocitiesVec==null ? null : tBufVelocitiesVec.internalData(), null, false);
+        tIDs.releaseBuf(tBufIDs);
+        tTypes.releaseBuf(tBufTypes);
+        tPositionsVec.releaseBuf(tBufPositionsVec);
+        if (tVelocitiesVec!=null && tBufVelocitiesVec!=null) tVelocitiesVec.releaseBuf(tBufVelocitiesVec);
     }
     public void loadData(IAtomData aAtomData) throws Error {
         checkThread();

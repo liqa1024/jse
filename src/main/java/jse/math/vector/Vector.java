@@ -4,6 +4,7 @@ import jse.code.collection.DoubleList;
 import jse.code.iterator.IDoubleIterator;
 import jse.code.iterator.IDoubleSetIterator;
 import jse.math.MathEX;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -67,6 +68,9 @@ public final class Vector extends DoubleArrayVector {
         if (aObj instanceof double[]) return (double[])aObj;
         return null;
     }
+    
+    @Override public Vector toBuf(boolean aAbort) {return this;}
+    @Override public void releaseBuf(@NotNull Vector aBuf, boolean aAbort) {/**/}
     
     
     /** Optimize stuffs，subVec 切片直接返回  {@link ShiftVector} */

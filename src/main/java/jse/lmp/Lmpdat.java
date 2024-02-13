@@ -3,21 +3,19 @@ package jse.lmp;
 import jse.atom.*;
 import jse.code.UT;
 import jse.math.MathEX;
+import jse.math.matrix.ColumnMatrix;
+import jse.math.matrix.IMatrix;
 import jse.math.matrix.RowMatrix;
+import jse.math.vector.IIntVector;
 import jse.math.vector.IVector;
 import jse.math.vector.IntVector;
-import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 import jse.parallel.*;
 import jse.vasp.IVaspCommonData;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static jse.code.CS.*;
 
@@ -38,11 +36,10 @@ public class Lmpdat extends AbstractSettableAtomData {
     private int mAtomTypeNum;
     private Box mBox;
     private @Nullable IVector mMasses;
-    /** 固定类型方便 MPI 传输 */
-    private final IntVector mAtomID;
-    private final IntVector mAtomType;
-    private final RowMatrix mAtomXYZ;
-    private @Nullable RowMatrix mVelocities;
+    private final IIntVector mAtomID;
+    private final IIntVector mAtomType;
+    private final IMatrix mAtomXYZ;
+    private @Nullable IMatrix mVelocities;
     
     /**
      * 直接根据数据创建 Lmpdat
@@ -54,7 +51,7 @@ public class Lmpdat extends AbstractSettableAtomData {
      * @param aAtomXYZ 原子数据组成的矩阵（必须）
      * @param aVelocities 原子速度组成的矩阵
      */
-    public Lmpdat(int aAtomTypeNum, Box aBox, @Nullable IVector aMasses, IntVector aAtomID, IntVector aAtomType, RowMatrix aAtomXYZ, @Nullable RowMatrix aVelocities) {
+    public Lmpdat(int aAtomTypeNum, Box aBox, @Nullable IVector aMasses, IIntVector aAtomID, IIntVector aAtomType, IMatrix aAtomXYZ, @Nullable IMatrix aVelocities) {
         mBox = aBox;
         mMasses = aMasses;
         mAtomID = aAtomID;
@@ -140,10 +137,11 @@ public class Lmpdat extends AbstractSettableAtomData {
     
     /// 获取属性
     public Box lmpBox() {return mBox;}
-    public IntVector ids() {return mAtomID;}
-    public IntVector types() {return mAtomType;}
-    public RowMatrix positions() {return mAtomXYZ;}
-    public @Nullable RowMatrix velocities() {return mVelocities;}
+    public IIntVector ids() {return mAtomID;}
+    public IIntVector types() {return mAtomType;}
+    public IMatrix positions() {return mAtomXYZ;}
+    public @Nullable IMatrix velocities() {return mVelocities;}
+    public boolean hasMasses() {return mMasses!=null;}
     public @Nullable IVector masses() {return mMasses;}
     public double mass(int aType) {return mMasses!=null ? mMasses.get(aType-1) : Double.NaN;}
     public ISettableAtom pickAtomInternal(final int aIdx) {
@@ -315,10 +313,10 @@ public class Lmpdat extends AbstractSettableAtomData {
         int aAtomTypeNum;
         Box aBox;
         IVector aMasses;
-        IntVector aAtomID;
-        IntVector aAtomType;
-        RowMatrix aAtomXYZ;
-        RowMatrix aVelocities;
+        IIntVector aAtomID;
+        IIntVector aAtomType;
+        IMatrix aAtomXYZ;
+        IMatrix aVelocities;
         
         int idx = 0; int end;
         int tIdx; String[] tTokens;
@@ -467,16 +465,18 @@ public class Lmpdat extends AbstractSettableAtomData {
         , DATA_TYPE = 204
         , DATA_VELOCITIES = 202
         ;
-    /** [AtomNum | AtomTypeNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, HasVelocities | HasMass] */
+    /** [AtomNum | AtomTypeNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, HasVelocities | HasMass | PositionsIsCol | VelocitiesIsCol] */
     private final static int LMP_INFO_LEN = 8;
     /** 为了使用简单并且避免 double 转 long 造成的信息损耗，这里统一用 long[] 来传输信息 */
     private final static ThreadLocalObjectCachePool<long[]> LMP_INFO_CACHE = ThreadLocalObjectCachePool.withInitial(() -> new long[LMP_INFO_LEN]);
     /** 专门的方法用来收发 Lmpdat */
     public static void send(Lmpdat aLmpdat, int aDest, MPI.Comm aComm) throws MPI.Error {
         // 获取必要信息
-        final boolean tHasVelocities = aLmpdat.mVelocities != null;
-        final boolean tHasMass = aLmpdat.mMasses != null;
-        // 先发送 Lmpdat 的必要信息，[AtomNum | AtomTypeNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, HasVelocities | HasMass]
+        final boolean tHasVelocities = (aLmpdat.mVelocities != null);
+        final boolean tHasMass = (aLmpdat.mMasses != null);
+        final boolean tPositionsIsCol = (aLmpdat.mAtomXYZ instanceof ColumnMatrix);
+        final boolean tVelocitiesIsCol = (aLmpdat.mVelocities instanceof ColumnMatrix);
+        // 先发送 Lmpdat 的必要信息，[AtomNum | AtomTypeNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, HasVelocities | HasMass | PositionsIsCol | VelocitiesIsCol]
         long[] rLmpdatInfo = LMP_INFO_CACHE.getObject();
         try {
             rLmpdatInfo[0] = UT.Serial.combineI(aLmpdat.mAtomNum, aLmpdat.mAtomTypeNum);
@@ -486,7 +486,7 @@ public class Lmpdat extends AbstractSettableAtomData {
             rLmpdatInfo[4] = Double.doubleToLongBits(aLmpdat.lmpBox().yhi());
             rLmpdatInfo[5] = Double.doubleToLongBits(aLmpdat.lmpBox().zlo());
             rLmpdatInfo[6] = Double.doubleToLongBits(aLmpdat.lmpBox().zhi());
-            rLmpdatInfo[7] = UT.Serial.combineZ(tHasVelocities, tHasMass);
+            rLmpdatInfo[7] = UT.Serial.combineZ(tHasVelocities, tHasMass, tPositionsIsCol, tVelocitiesIsCol);
             aComm.send(rLmpdatInfo, LMP_INFO_LEN, aDest, LMPDAT_INFO);
         } finally {
             // 发送后归还临时数据
@@ -494,20 +494,14 @@ public class Lmpdat extends AbstractSettableAtomData {
         }
         // 必要信息发送完成后分别发送 masses, atomData 和 velocities
         if (tHasMass) {
-            Vector tBuf = VectorCache.getVec(aLmpdat.mAtomTypeNum);
-            try {
-                tBuf.fill(aLmpdat.mMasses);
-                aComm.send(tBuf.internalData(), aLmpdat.mAtomTypeNum, aDest, DATA_MASSES);
-            } finally {
-                VectorCache.returnVec(tBuf);
-            }
+            aComm.send(aLmpdat.mMasses, aDest, DATA_MASSES);
         }
-        aComm.send(aLmpdat.mAtomID  .internalData(), aLmpdat.mAtomID  .internalDataSize(), aDest, DATA_ID  );
-        aComm.send(aLmpdat.mAtomType.internalData(), aLmpdat.mAtomType.internalDataSize(), aDest, DATA_TYPE);
-        aComm.send(aLmpdat.mAtomXYZ .internalData(), aLmpdat.mAtomXYZ .internalDataSize(), aDest, DATA_XYZ );
+        aComm.send(aLmpdat.mAtomID  , aDest, DATA_ID  );
+        aComm.send(aLmpdat.mAtomType, aDest, DATA_TYPE);
+        aComm.send(tPositionsIsCol ? aLmpdat.mAtomXYZ.asVecCol() : aLmpdat.mAtomXYZ.asVecRow(), aDest, DATA_XYZ);
         // 如果有速度信息则需要再发送一次速度信息
         if (tHasVelocities) {
-            aComm.send(aLmpdat.mVelocities.internalData(), aLmpdat.mVelocities.internalDataSize(), aDest, DATA_VELOCITIES);
+            aComm.send(tVelocitiesIsCol ? aLmpdat.mVelocities.asVecCol() : aLmpdat.mVelocities.asVecRow(), aDest, DATA_VELOCITIES);
         }
     }
     public static Lmpdat recv(int aSource, MPI.Comm aComm) throws MPI.Error {
@@ -521,23 +515,25 @@ public class Lmpdat extends AbstractSettableAtomData {
             tData = tLmpdatInfo[7];
             final boolean tHasVelocities = UT.Serial.toBooleanB((byte)tData, 0);
             final boolean tHasMasses = UT.Serial.toBooleanB((byte)tData, 1);
+            final boolean tPositionsIsCol = UT.Serial.toBooleanB((byte)tData, 2);
+            final boolean tVelocitiesIsCol = UT.Serial.toBooleanB((byte)tData, 3);
             // 还是使用缓存的数据
-            final IntVector tAtomID = IntVectorCache.getVec(tAtomNum);
-            final IntVector tAtomType = IntVectorCache.getVec(tAtomNum);
-            final RowMatrix tAtomXYZ = MatrixCache.getMatRow(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
-            @Nullable RowMatrix tVelocities = null;
-            @Nullable Vector tMasses = null;
+            final IIntVector tAtomID = IntVectorCache.getVec(tAtomNum);
+            final IIntVector tAtomType = IntVectorCache.getVec(tAtomNum);
+            final IMatrix tAtomXYZ = tPositionsIsCol ? MatrixCache.getMatCol(tAtomNum, ATOM_DATA_KEYS_XYZ.length) : MatrixCache.getMatRow(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
+            @Nullable IMatrix tVelocities = null;
+            @Nullable IVector tMasses = null;
             // 先是质量信息，基本信息，后是速度信息
             if (tHasMasses) {
                 tMasses = VectorCache.getVec(tAtomTypeNum);
-                aComm.recv(tMasses.internalData(), tAtomTypeNum, aSource, DATA_MASSES);
+                aComm.recv(tMasses, aSource, DATA_MASSES);
             }
-            aComm.recv(tAtomID  .internalData(), tAtomID  .internalDataSize(), aSource, DATA_ID  );
-            aComm.recv(tAtomType.internalData(), tAtomType.internalDataSize(), aSource, DATA_TYPE);
-            aComm.recv(tAtomXYZ .internalData(), tAtomXYZ .internalDataSize(), aSource, DATA_XYZ );
+            aComm.recv(tAtomID  , aSource, DATA_ID  );
+            aComm.recv(tAtomType, aSource, DATA_TYPE);
+            aComm.recv(tPositionsIsCol ? tAtomXYZ.asVecCol() : tAtomXYZ.asVecRow(), aSource, DATA_XYZ);
             if (tHasVelocities) {
-                tVelocities = MatrixCache.getMatRow(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length);
-                aComm.recv(tVelocities.internalData(), tVelocities.internalDataSize(), aSource, DATA_VELOCITIES);
+                tVelocities = tVelocitiesIsCol ? MatrixCache.getMatCol(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : MatrixCache.getMatRow(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length);
+                aComm.recv(tVelocitiesIsCol ? tVelocities.asVecCol() : tVelocities.asVecRow(), aSource, DATA_VELOCITIES);
             }
             // 创建 Lmpdat
             return new Lmpdat(tAtomTypeNum, new Box(
@@ -557,6 +553,8 @@ public class Lmpdat extends AbstractSettableAtomData {
             // 获取必要信息
             final boolean tHasVelocities = aLmpdat.mVelocities != null;
             final boolean tHasMass = aLmpdat.mMasses != null;
+            final boolean tPositionsIsCol = (aLmpdat.mAtomXYZ instanceof ColumnMatrix);
+            final boolean tVelocitiesIsCol = (aLmpdat.mVelocities instanceof ColumnMatrix);
             // 先发送 Lmpdat 的必要信息，[AtomNum | AtomTypeNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, HasVelocities | HasMass]
             long[] rLmpdatInfo = LMP_INFO_CACHE.getObject();
             try {
@@ -567,7 +565,7 @@ public class Lmpdat extends AbstractSettableAtomData {
                 rLmpdatInfo[4] = Double.doubleToLongBits(aLmpdat.lmpBox().yhi());
                 rLmpdatInfo[5] = Double.doubleToLongBits(aLmpdat.lmpBox().zlo());
                 rLmpdatInfo[6] = Double.doubleToLongBits(aLmpdat.lmpBox().zhi());
-                rLmpdatInfo[7] = UT.Serial.combineZ(tHasVelocities, tHasMass);
+                rLmpdatInfo[7] = UT.Serial.combineZ(tHasVelocities, tHasMass, tPositionsIsCol, tVelocitiesIsCol);
                 aComm.bcast(rLmpdatInfo, LMP_INFO_LEN, aRoot);
             } finally {
                 // 发送后归还临时数据
@@ -575,20 +573,14 @@ public class Lmpdat extends AbstractSettableAtomData {
             }
             // 必要信息发送完成后分别发送 masses, atomData 和 velocities
             if (tHasMass) {
-                Vector tBuf = VectorCache.getVec(aLmpdat.mAtomTypeNum);
-                try {
-                    tBuf.fill(aLmpdat.mMasses);
-                    aComm.bcast(tBuf.internalData(), aLmpdat.mAtomTypeNum, aRoot);
-                } finally {
-                    VectorCache.returnVec(tBuf);
-                }
+                aComm.bcast(aLmpdat.mMasses, aRoot);
             }
-            aComm.bcast(aLmpdat.mAtomID  .internalData(), aLmpdat.mAtomID  .internalDataSize(), aRoot);
-            aComm.bcast(aLmpdat.mAtomType.internalData(), aLmpdat.mAtomType.internalDataSize(), aRoot);
-            aComm.bcast(aLmpdat.mAtomXYZ .internalData(), aLmpdat.mAtomXYZ .internalDataSize(), aRoot);
+            aComm.bcast(aLmpdat.mAtomID  , aRoot);
+            aComm.bcast(aLmpdat.mAtomType, aRoot);
+            aComm.bcast(tPositionsIsCol ? aLmpdat.mAtomXYZ.asVecCol() : aLmpdat.mAtomXYZ.asVecRow(), aRoot);
             // 如果有速度信息则需要再发送一次速度信息
             if (tHasVelocities) {
-                aComm.bcast(aLmpdat.mVelocities.internalData(), aLmpdat.mVelocities.internalDataSize(), aRoot);
+                aComm.bcast(tVelocitiesIsCol ? aLmpdat.mVelocities.asVecCol() : aLmpdat.mVelocities.asVecRow(), aRoot);
             }
             return aLmpdat;
         } else {
@@ -602,23 +594,25 @@ public class Lmpdat extends AbstractSettableAtomData {
                 tData = tLmpdatInfo[7];
                 final boolean tHasVelocities = UT.Serial.toBooleanB((byte)tData, 0);
                 final boolean tHasMasses = UT.Serial.toBooleanB((byte)tData, 1);
+                final boolean tPositionsIsCol = UT.Serial.toBooleanB((byte)tData, 2);
+                final boolean tVelocitiesIsCol = UT.Serial.toBooleanB((byte)tData, 3);
                 // 还是使用缓存的数据
-                final IntVector tAtomID = IntVectorCache.getVec(tAtomNum);
-                final IntVector tAtomType = IntVectorCache.getVec(tAtomNum);
-                final RowMatrix tAtomXYZ = MatrixCache.getMatRow(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
-                @Nullable RowMatrix tVelocities = null;
-                @Nullable Vector tMasses = null;
+                final IIntVector tAtomID = IntVectorCache.getVec(tAtomNum);
+                final IIntVector tAtomType = IntVectorCache.getVec(tAtomNum);
+                final IMatrix tAtomXYZ = tPositionsIsCol ? MatrixCache.getMatCol(tAtomNum, ATOM_DATA_KEYS_XYZ.length) : MatrixCache.getMatRow(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
+                @Nullable IMatrix tVelocities = null;
+                @Nullable IVector tMasses = null;
                 // 先是质量信息，基本信息，后是速度信息
                 if (tHasMasses) {
                     tMasses = VectorCache.getVec(tAtomTypeNum);
-                    aComm.bcast(tMasses.internalData(), tAtomTypeNum, aRoot);
+                    aComm.bcast(tMasses, aRoot);
                 }
-                aComm.bcast(tAtomID  .internalData(), tAtomID  .internalDataSize(), aRoot);
-                aComm.bcast(tAtomType.internalData(), tAtomType.internalDataSize(), aRoot);
-                aComm.bcast(tAtomXYZ .internalData(), tAtomXYZ .internalDataSize(), aRoot);
+                aComm.bcast(tAtomID  , aRoot);
+                aComm.bcast(tAtomType, aRoot);
+                aComm.bcast(tPositionsIsCol ? tAtomXYZ.asVecCol() : tAtomXYZ.asVecRow(), aRoot);
                 if (tHasVelocities) {
-                    tVelocities = MatrixCache.getMatRow(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length);
-                    aComm.bcast(tVelocities.internalData(), tVelocities.internalDataSize(), aRoot);
+                    tVelocities = tVelocitiesIsCol ? MatrixCache.getMatCol(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : MatrixCache.getMatRow(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length);
+                    aComm.bcast(tVelocitiesIsCol ? tVelocities.asVecCol() : tVelocities.asVecRow(), aRoot);
                 }
                 // 创建 Lmpdat
                 return new Lmpdat(tAtomTypeNum, new Box(

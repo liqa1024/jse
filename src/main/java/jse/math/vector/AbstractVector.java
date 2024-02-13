@@ -1,18 +1,21 @@
 package jse.math.vector;
 
-import jse.math.SliceType;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.code.collection.ISlice;
 import jse.code.functional.IIndexFilter;
 import jse.code.iterator.IDoubleIterator;
 import jse.code.iterator.IDoubleSetIterator;
+import jse.math.SliceType;
+import jse.parallel.VectorCache;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.function.*;
+import java.util.function.DoubleConsumer;
+import java.util.function.DoubleSupplier;
+import java.util.function.DoubleUnaryOperator;
 
 /**
  * @author liqa
@@ -91,6 +94,16 @@ public abstract class AbstractVector implements IVector {
         final IDoubleIterator it = iterator();
         for (int i = 0; i < tSize; ++i) rData[i] = it.next();
         return rData;
+    }
+    @Override public Vector toBuf(boolean aAbort) {
+        Vector rBuf = VectorCache.getVec(size());
+        if (aAbort) return rBuf;
+        rBuf.fill(this);
+        return rBuf;
+    }
+    @Override public void releaseBuf(@NotNull Vector aBuf, boolean aAbort) {
+        if (!aAbort) fill(aBuf);
+        VectorCache.returnVec(aBuf);
     }
     
     /** ISwapper stuffs */

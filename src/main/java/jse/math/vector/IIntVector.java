@@ -1,7 +1,6 @@
 package jse.math.vector;
 
 import groovy.lang.Closure;
-import jse.math.SliceType;
 import jse.code.collection.ISlice;
 import jse.code.functional.IIndexFilter;
 import jse.code.functional.ISwapper;
@@ -9,6 +8,9 @@ import jse.code.iterator.IHasIntIterator;
 import jse.code.iterator.IHasIntSetIterator;
 import jse.code.iterator.IIntIterator;
 import jse.code.iterator.IIntSetIterator;
+import jse.math.SliceType;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
@@ -35,6 +37,25 @@ public interface IIntVector extends ISwapper, ISlice, IHasIntIterator, IHasIntSe
     
     /** 转为兼容性更好的 int[] */
     int[] data();
+    
+    /**
+     * 通用的转换成 {@link IntVector} 的方法，借鉴了 jni 中相关函数的实现思路，
+     * 对于 {@link IntVector} 会直接转换，而其他类型会使用缓存；
+     * <p>
+     * 使用完成后调用 {@link #releaseBuf} 来释放数据，此时会将更改应用到数据中，
+     * 而对于使用缓存的类型会归还缓存；
+     * <p>
+     * aAbort 参数用于指定是否抛弃数据，对于 {@link #toBuf} 则不需要获取到原始数据（仅写入并且会全部写入），
+     * 对于 {@link #releaseBuf} 则会忽略掉 aBuf 的修改（仅读取）；
+     * <p>
+     * 显而易见，对于 {@link IntVector}，aAbort 参数不会有任何影响，
+     * 而对于其他类型，aAbort 参数可以对复杂工况做优化。
+     * @author liqa
+     */
+    @ApiStatus.Experimental IntVector toBuf(boolean aAbort);
+    @ApiStatus.Experimental void releaseBuf(@NotNull IntVector aBuf, boolean aAbort);
+    @ApiStatus.Experimental default IntVector toBuf() {return toBuf(false);}
+    @ApiStatus.Experimental default void releaseBuf(@NotNull IntVector aBuf) {releaseBuf(aBuf, false);}
     
     /** ISwapper stuffs */
     void swap(int aIdx1, int aIdx2);

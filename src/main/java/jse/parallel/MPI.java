@@ -3,6 +3,7 @@ package jse.parallel;
 import jse.clib.JNIUtil;
 import jse.clib.MiMalloc;
 import jse.code.UT;
+import jse.math.vector.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -384,6 +385,21 @@ public class MPI {
         public void bcast(int[]     rBuf, int aCount, int aRoot) throws Error {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
         public void bcast(long[]    rBuf, int aCount, int aRoot) throws Error {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
         public void bcast(float[]   rBuf, int aCount, int aRoot) throws Error {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
+        /** 提供内部类型的支持，统一进行类型优化（例如后续对 shift 的支持）*/
+        public void bcast(Vector rBuf, int aRoot) throws Error {bcast(rBuf.internalData(), rBuf.internalDataSize(), aRoot);}
+        public void bcast(IVector rVector, int aRoot) throws Error {
+            final boolean tIsRoot = (rank() == aRoot);
+            Vector rBuf = rVector.toBuf(!tIsRoot); // 不是 root 则只需要写入，原本数据不用读取
+            bcast(rBuf, aRoot);
+            rVector.releaseBuf(rBuf, tIsRoot); // 是 root 则只需要读取，不用写入到原本数据
+        }
+        public void bcast(IntVector rBuf, int aRoot) throws Error {bcast(rBuf.internalData(), rBuf.internalDataSize(), aRoot);}
+        public void bcast(IIntVector rVector, int aRoot) throws Error {
+            final boolean tIsRoot = (rank() == aRoot);
+            IntVector rBuf = rVector.toBuf(!tIsRoot); // 不是 root 则只需要写入，原本数据不用读取
+            bcast(rBuf, aRoot);
+            rVector.releaseBuf(rBuf, tIsRoot); // 是 root 则只需要读取，不用写入到原本数据
+        }
         
         /**
          * Gathers data from all members of a group to one member.
@@ -688,6 +704,23 @@ public class MPI {
         public void send(float[]   aBuf, int aCount, int aDest) throws Error {Native.MPI_Send(aBuf, aCount, aDest, 0, mPtr);}
         public void send(int aDest, int aTag) throws Error {Native.MPI_Send(aDest, aTag, mPtr);}
         public void send(int aDest) throws Error {Native.MPI_Send(aDest, 0, mPtr);}
+        /** 提供内部类型的支持，统一进行类型优化（例如后续对 shift 的支持）*/
+        public void send(Vector aBuf, int aDest, int aTag) throws Error {send(aBuf.internalData(), aBuf.internalDataSize(), aDest, aTag);}
+        public void send(IVector aVector, int aDest, int aTag) throws Error {
+            Vector tBuf = aVector.toBuf();
+            send(tBuf, aDest, aTag);
+            aVector.releaseBuf(tBuf, true); // send 只需要读取数据
+        }
+        public void send(IntVector aBuf, int aDest, int aTag) throws Error {send(aBuf.internalData(), aBuf.internalDataSize(), aDest, aTag);}
+        public void send(IIntVector aVector, int aDest, int aTag) throws Error {
+            IntVector tBuf = aVector.toBuf();
+            send(tBuf, aDest, aTag);
+            aVector.releaseBuf(tBuf, true); // send 只需要读取数据
+        }
+        public void send(Vector aBuf, int aDest) throws Error {send(aBuf, aDest, 0);}
+        public void send(IVector aVector, int aDest) throws Error {send(aVector, aDest, 0);}
+        public void send(IntVector aBuf, int aDest) throws Error {send(aBuf, aDest, 0);}
+        public void send(IIntVector aVector, int aDest) throws Error {send(aVector, aDest, 0);}
         
         /**
          * Performs a receive operation and does not return until a matching message is received.
@@ -725,6 +758,23 @@ public class MPI {
         public void recv(float[]   rBuf, int aCount, int aSource) throws Error {Native.MPI_Recv(rBuf, aCount, aSource, Tag.ANY, mPtr);}
         public void recv(int aSource, int aTag) throws Error {Native.MPI_Recv(aSource, aTag, mPtr);}
         public void recv(int aSource) throws Error {Native.MPI_Recv(aSource, Tag.ANY, mPtr);}
+        /** 提供内部类型的支持，统一进行类型优化（例如后续对 shift 的支持）*/
+        public void recv(Vector rBuf, int aSource, int aTag) throws Error {recv(rBuf.internalData(), rBuf.internalDataSize(), aSource, aTag);}
+        public void recv(IVector rVector, int aSource, int aTag) throws Error {
+            Vector rBuf = rVector.toBuf(true); // recv 只需要写入
+            recv(rBuf, aSource, aTag);
+            rVector.releaseBuf(rBuf);
+        }
+        public void recv(IntVector rBuf, int aSource, int aTag) throws Error {recv(rBuf.internalData(), rBuf.internalDataSize(), aSource, aTag);}
+        public void recv(IIntVector rVector, int aSource, int aTag) throws Error {
+            IntVector rBuf = rVector.toBuf(true); // recv 只需要写入
+            recv(rBuf, aSource, aTag);
+            rVector.releaseBuf(rBuf);
+        }
+        public void recv(Vector rBuf, int aSource) throws Error {recv(rBuf, aSource, Tag.ANY);}
+        public void recv(IVector rVector, int aSource) throws Error {recv(rVector, aSource, Tag.ANY);}
+        public void recv(IntVector rBuf, int aSource) throws Error {recv(rBuf, aSource, Tag.ANY);}
+        public void recv(IIntVector rVector, int aSource) throws Error {recv(rVector, aSource, Tag.ANY);}
         
         /**
          * Sends and receives a message.

@@ -40,4 +40,7 @@ public interface IDataShell<D> {
     @Deprecated default D getData() {return internalData();}
     @Deprecated default int dataSize() {return internalDataSize();}
     @Deprecated default int shiftSize() {return internalDataShift();}
+    
+    /** 快速构造 */
+    static <D> IDataShell<D> of(int aSize, D aData) {return new SimpleDataShell<>(aSize, aData);}
 }

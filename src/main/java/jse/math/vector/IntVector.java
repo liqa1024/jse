@@ -4,6 +4,7 @@ import jse.code.collection.IntList;
 import jse.code.iterator.IIntIterator;
 import jse.code.iterator.IIntSetIterator;
 import jse.math.MathEX;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -69,6 +70,10 @@ public final class IntVector extends IntArrayVector {
         if (aObj instanceof int[]) return (int[])aObj;
         return null;
     }
+    
+    @Override public IntVector toBuf(boolean aAbort) {return this;}
+    @Override public void releaseBuf(@NotNull IntVector aBuf, boolean aAbort) {/**/}
+    
     
     /** Optimize stuffs，subVec 切片直接返回  {@link ShiftIntVector} */
     @Override public IntArrayVector subVec(final int aFromIdx, final int aToIdx) {

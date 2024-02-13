@@ -4,7 +4,7 @@ import jse.atom.IAtomData;
 import jse.code.collection.NewCollections;
 import jse.lmp.Lmpdat;
 import jse.lmp.NativeLmp;
-import jse.math.matrix.RowMatrix;
+import jse.math.matrix.IMatrix;
 import jse.math.vector.IVector;
 import jse.parallel.*;
 import jsex.rareevent.IFullPathGenerator;
@@ -132,13 +132,20 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
             // 当然一般情况下获取的 next 会在外部保存，不能归还，因此默认关闭
             if (mReturnLast) {
                 if (mNext.hasVelocities()) {
-                    RowMatrix tVelocities = mNext.velocities();
+                    IMatrix tVelocities = mNext.velocities();
                     assert tVelocities != null;
                     MatrixCache.returnMat(tVelocities);
                 }
                 MatrixCache.returnMat(mNext.positions());
                 IntVectorCache.returnVec(mNext.types());
                 IntVectorCache.returnVec(mNext.ids());
+                // 现在也可以返回 masses 了，首先 NativeLmp 获取的 Lmpdat 肯定是可以返回 masses 的；
+                // 然后是 init 初始化得到的点，现在通过 MPI recv 得到的 masses 也是缓存区的了
+                if (mNext.hasMasses()) {
+                    IVector tMasses = mNext.masses();
+                    assert tMasses != null;
+                    VectorCache.returnVec(tMasses);
+                }
             }
             try {mNext = mLmp.lmpdat(true);}
             catch (NativeLmp.Error e) {throw new RuntimeException(e);}
