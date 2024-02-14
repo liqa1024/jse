@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
-project(mpijni C)
+project(mpijni C CXX)
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 11)
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -17,6 +18,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/lib)
 set(SOURCE_FILES
         jse_parallel_MPI_Native.c)
 add_library(mpijni SHARED ${SOURCE_FILES})
+
+if(CMAKE_C_COMPILER_ID MATCHES "MSVC|Intel")
+    set_source_files_properties(${SOURCE_FILES} PROPERTIES LANGUAGE CXX)
+endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)

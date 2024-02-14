@@ -1,9 +1,14 @@
+#ifdef __cplusplus
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "modernize-use-auto"
+#pragma ide diagnostic ignored "modernize-use-nullptr"
+#endif
+
 #include "mpi.h"
 #include "jniutil.h"
 #include "jse_parallel_MPI_Native.h"
 
 
-/** utils for mpi */
 #define MPI_JNULL    MPI_DATATYPE_NULL
 #define MPI_JBYTE    MPI_INT8_T
 #define MPI_JDOUBLE  MPI_DOUBLE
@@ -14,10 +19,21 @@
 #define MPI_JLONG    MPI_INT64_T
 #define MPI_JFLOAT   MPI_FLOAT
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** utils for mpi */
 inline void throwExceptionMPI(JNIEnv *aEnv, const char *aErrStr, int aExitCode) {
+#ifdef __cplusplus
+    jstring tJErrStr = aEnv->NewStringUTF(aErrStr);
+    throwException(aEnv, "jse/parallel/MPI$Error", "(ILjava/lang/String;)V", aExitCode, tJErrStr);
+    aEnv->DeleteLocalRef(tJErrStr);
+#else
     jstring tJErrStr = (*aEnv)->NewStringUTF(aEnv, aErrStr);
     throwException(aEnv, "jse/parallel/MPI$Error", "(ILjava/lang/String;)V", aExitCode, tJErrStr);
     (*aEnv)->DeleteLocalRef(aEnv, tJErrStr);
+#endif
 }
 inline jboolean exceptionCheckMPI(JNIEnv *aEnv, int aExitCode) {
     if (aExitCode == MPI_SUCCESS) return JNI_FALSE;
@@ -105,7 +121,11 @@ JNIEXPORT jstring JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Get_1library_1v
     int rLen;
     int tExitCode = MPI_Get_library_version(rVersionStr, &rLen);
     exceptionCheckMPI(aEnv, tExitCode);
+#ifdef __cplusplus
+    return aEnv->NewStringUTF((const char*)rVersionStr);
+#else
     return (*aEnv)->NewStringUTF(aEnv, (const char*)rVersionStr);
+#endif
 }
 
 
@@ -628,3 +648,10 @@ JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Init_1thread(JNIEn
     return tProvided;
 }
 
+#ifdef __cplusplus
+}
+#endif
+
+#ifdef __cplusplus
+#pragma clang diagnostic pop
+#endif

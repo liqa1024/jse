@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  */
 public class CS {
     /** version of jse */
-    public final static String VERSION = "2.6.1";
+    public final static String VERSION = "2.6.1b";
     
     /** a Random generator so I don't need to instantiate a new one all the time. */
     public final static Random RNGSUS = new Random(), RANDOM = RNGSUS;
@@ -716,15 +716,19 @@ public class CS {
                 
                 // 获取每节点的核心数
                 String tRawCoresPerNode = UT.Exec.env("SLURM_JOB_CPUS_PER_NODE");
-                // 目前仅支持单一的 CoresPerNode，对于有多个的情况会选取最小值
-                Pattern tPattern = Pattern.compile("(\\d+)(\\([^)]+\\))?"); // 匹配整数部分和可选的括号部分
-                Matcher tMatcher = tPattern.matcher(tRawCoresPerNode);
-                int tCoresPerNode = -1;
-                while (tMatcher.find()) {
-                    int tResult = Integer.parseInt(tMatcher.group(1));
-                    tCoresPerNode = (tCoresPerNode < 0) ? tResult : Math.min(tCoresPerNode, tResult);
+                if (tRawCoresPerNode == null) {
+                    CORES_PER_NODE = -1;
+                } else {
+                    // 目前仅支持单一的 CoresPerNode，对于有多个的情况会选取最小值
+                    Pattern tPattern = Pattern.compile("(\\d+)(\\([^)]+\\))?"); // 匹配整数部分和可选的括号部分
+                    Matcher tMatcher = tPattern.matcher(tRawCoresPerNode);
+                    int tCoresPerNode = -1;
+                    while (tMatcher.find()) {
+                        int tResult = Integer.parseInt(tMatcher.group(1));
+                        tCoresPerNode = (tCoresPerNode < 0) ? tResult : Math.min(tCoresPerNode, tResult);
+                    }
+                    CORES_PER_NODE = tCoresPerNode;
                 }
-                CORES_PER_NODE = tCoresPerNode;
                 
                 // 获取每任务的核心数，可能为 null
                 String tRawCoresPerTask = UT.Exec.env("SLURM_CPUS_PER_TASK");
@@ -734,8 +738,8 @@ public class CS {
                 MAX_STEP_COUNT = 40000;
                 
                 // 获取节点列表
-                String tRowNodeList = UT.Exec.env("SLURM_NODELIST");
-                NODE_LIST = tRowNodeList==null ? null : ImmutableList.copyOf(UT.Text.splitNodeList(tRowNodeList));
+                String tRawNodeList = UT.Exec.env("SLURM_NODELIST");
+                NODE_LIST = tRawNodeList==null ? null : ImmutableList.copyOf(UT.Text.splitNodeList(tRawNodeList));
                 
                 RESOURCES_MANAGER = new ResourcesManager();
             } else {

@@ -17,6 +17,11 @@ if (JSE_USE_CXX)
     set_source_files_properties(${SOURCE_FILES} PROPERTIES LANGUAGE CXX)
 endif(JSE_USE_CXX)
 
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set(BUILD_SHARED_LIBS ON)
+endif ()
+
 
 # add jni
 find_package(JNI)

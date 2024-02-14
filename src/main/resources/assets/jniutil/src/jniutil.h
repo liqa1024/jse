@@ -1,6 +1,7 @@
 #ifdef __cplusplus
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "modernize-deprecated-headers"
+#pragma ide diagnostic ignored "modernize-use-auto"
 #pragma ide diagnostic ignored "modernize-use-nullptr"
 #endif
 
@@ -133,7 +134,7 @@ inline void freeBuf(void *aBuf) {
 #define GEN_PARSE_ANY_TO_JANY(CTYPE, JTYPE)                                                                                                 \
 inline void parse##CTYPE##2##JTYPE##V(JNIEnv *aEnv, JTYPE##Array rJArray, jsize aJStart, const CTYPE *aBuf, jsize aBStart, jsize aLen) {    \
     if (rJArray==NULL || aBuf==NULL) return;                                                                                                \
-    auto *rBuf = (JTYPE *)aEnv->GetPrimitiveArrayCritical(rJArray, NULL);                                                                   \
+    JTYPE *rBuf = (JTYPE *)aEnv->GetPrimitiveArrayCritical(rJArray, NULL);                                                                  \
     JTYPE *ji = rBuf + aJStart; const CTYPE *bi = aBuf + aBStart;                                                                           \
     for (jsize i = 0; i < aLen; ++i) {                                                                                                      \
         *ji = (JTYPE)(*bi);                                                                                                                 \
@@ -187,7 +188,7 @@ inline void parsedouble2jdouble(JNIEnv *aEnv, jdoubleArray rJArray, const double
 #define GEN_PARSE_JANY_TO_ANY(JTYPE, CTYPE)                                                                                                 \
 inline void parse##JTYPE##2##CTYPE##V(JNIEnv *aEnv, JTYPE##Array aJArray, jsize aJStart, CTYPE *rBuf, jsize aBStart, jsize aLen) {          \
     if (aJArray==NULL || rBuf==NULL) return;                                                                                                \
-    auto *tBuf = (JTYPE *)aEnv->GetPrimitiveArrayCritical(aJArray, NULL);                                                                   \
+    JTYPE *tBuf = (JTYPE *)aEnv->GetPrimitiveArrayCritical(aJArray, NULL);                                                                  \
     JTYPE *ji = tBuf + aJStart; CTYPE *bi = rBuf + aBStart;                                                                                 \
     for (jsize i = 0; i < aLen; ++i) {                                                                                                      \
         *bi = (CTYPE)(*ji);                                                                                                                 \
@@ -241,7 +242,7 @@ inline void parsejdouble2double(JNIEnv *aEnv, jdoubleArray aJArray, double *rBuf
 #define GEN_PARSE_ANY_TO_JANY_WITH_COUNT(CTYPE, JTYPE)                                                                                                          \
 inline void parse##CTYPE##2##JTYPE##WithCountV(JNIEnv *aEnv, JTYPE##Array rJArray, jsize aJStart, const void *aBuf, jsize aBStart, jsize aSize, jsize aCount) { \
     if (rJArray==NULL || aBuf==NULL) return;                                                                                                                    \
-    auto *rBuf = (JTYPE *)aEnv->GetPrimitiveArrayCritical(rJArray, NULL);                                                                                      \
+    JTYPE *rBuf = (JTYPE *)aEnv->GetPrimitiveArrayCritical(rJArray, NULL);                                                                                      \
     JTYPE *ji = rBuf + aJStart;                                                                                                                                 \
     if (aCount > 1) {                                                                                                                                           \
         CTYPE **bbi = ((CTYPE **)aBuf) + aBStart;                                                                                                               \
@@ -310,7 +311,7 @@ inline void parsedouble2jdoubleWithCountV(JNIEnv *aEnv, jdoubleArray rJArray, js
     if (rJArray==NULL || aBuf==NULL) return;
 #ifdef __cplusplus
     if (aCount > 1) {
-        auto *rBuf = (jdouble *)aEnv->GetPrimitiveArrayCritical(rJArray, NULL);
+        jdouble *rBuf = (jdouble *)aEnv->GetPrimitiveArrayCritical(rJArray, NULL);
         jdouble *ji = rBuf + aJStart;
         // now aBuf is double **
         double **bbi = ((double **)aBuf) + aBStart;
@@ -374,7 +375,7 @@ inline char **parseStrBuf(JNIEnv *aEnv, jobjectArray aStrBuf, int *rLen) {
     char **rStrBuf = CALLOC(char*, tLen+1);
     
     for (jsize i = 0; i < tLen; ++i) {
-        auto jc = (jstring)aEnv->GetObjectArrayElement(aStrBuf, i);
+        jstring jc = (jstring)aEnv->GetObjectArrayElement(aStrBuf, i);
         rStrBuf[i] = parseStr(aEnv, jc);
         aEnv->DeleteLocalRef(jc);
     }
@@ -413,7 +414,7 @@ inline void throwException(JNIEnv *aEnv, const char *aClazzName, const char *aIn
     }
     va_list aArgs;
     va_start(aArgs, aInitSig);
-    auto tException = (jthrowable)aEnv->NewObjectV(tClazz, tInit, aArgs);
+    jthrowable tException = (jthrowable)aEnv->NewObjectV(tClazz, tInit, aArgs);
     va_end(aArgs);
     aEnv->Throw(tException);
     aEnv->DeleteLocalRef(tException);

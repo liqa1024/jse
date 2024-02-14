@@ -1,10 +1,20 @@
+#ifdef __cplusplus
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "modernize-use-auto"
+#pragma ide diagnostic ignored "modernize-use-nullptr"
+#endif
+
 #include "lammps/library.h"
 #include "jniutil.h"
 #include "jse_lmp_NativeLmp.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** utils for lmp */
-#if defined(LAMMPS_BIGBIG)
+#ifdef LAMMPS_BIGBIG
 typedef int64_t intbig;
 #else
 typedef int intbig;
@@ -20,9 +30,15 @@ GEN_PARSE_ANY_TO_JANY_WITH_COUNT(intbig, jdouble)
 #define LMP_MAX_ERROR_STRING 512
 
 inline void throwExceptionLMP(JNIEnv *aEnv, const char *aErrStr) {
+#ifdef __cplusplus
+    jstring tJErrStr = aEnv->NewStringUTF(aErrStr);
+    throwException(aEnv, "jse/lmp/NativeLmp$Error", "(Ljava/lang/String;)V", tJErrStr);
+    aEnv->DeleteLocalRef(tJErrStr);
+#else
     jstring tJErrStr = (*aEnv)->NewStringUTF(aEnv, aErrStr);
     throwException(aEnv, "jse/lmp/NativeLmp$Error", "(Ljava/lang/String;)V", tJErrStr);
     (*aEnv)->DeleteLocalRef(aEnv, tJErrStr);
+#endif
 }
 inline jboolean exceptionCheckLMP(JNIEnv *aEnv, void *aLmpPtr) {
 #ifdef LAMMPS_EXCEPTIONS
@@ -42,9 +58,15 @@ inline jboolean exceptionCheckLMP(JNIEnv *aEnv, void *aLmpPtr) {
 }
 #ifdef LAMMPS_LIB_MPI
 inline void throwExceptionMPI(JNIEnv *aEnv, const char *aErrStr, int aExitCode) {
+#ifdef __cplusplus
+    jstring tJErrStr = aEnv->NewStringUTF(aErrStr);
+    throwException(aEnv, "jse/parallel/MPI$Error", "(ILjava/lang/String;)V", aExitCode, tJErrStr);
+    aEnv->DeleteLocalRef(tJErrStr);
+#else
     jstring tJErrStr = (*aEnv)->NewStringUTF(aEnv, aErrStr);
     throwException(aEnv, "jse/parallel/MPI$Error", "(ILjava/lang/String;)V", aExitCode, tJErrStr);
     (*aEnv)->DeleteLocalRef(aEnv, tJErrStr);
+#endif
 }
 inline jboolean exceptionCheckMPI(JNIEnv *aEnv, int aExitCode) {
     if (aExitCode == MPI_SUCCESS) return JNI_FALSE;
@@ -173,7 +195,11 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractBox_1(JNIEnv *aEnv, j
     int rBoxflag[3];
     lammps_extract_box((void *)aLmpPtr, rBoxlo, rBoxhi, &rXY, &rYZ, &rXZ, rPflags, rBoxflag);
     exceptionCheckLMP(aEnv, (void *)aLmpPtr);
+#ifdef __cplusplus
+    jdouble *rBoxBuf = (jdouble *)aEnv->GetPrimitiveArrayCritical(rBox, NULL);
+#else
     jdouble *rBoxBuf = (jdouble *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rBox, NULL);
+#endif
     rBoxBuf[0 ] = rBoxlo[0];
     rBoxBuf[1 ] = rBoxlo[1];
     rBoxBuf[2 ] = rBoxlo[2];
@@ -189,7 +215,11 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractBox_1(JNIEnv *aEnv, j
     rBoxBuf[12] = rBoxflag[0];
     rBoxBuf[13] = rBoxflag[1];
     rBoxBuf[14] = rBoxflag[2];
+#ifdef __cplusplus
+    aEnv->ReleasePrimitiveArrayCritical(rBox, rBoxBuf, 0); // write mode
+#else
     (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rBox, rBoxBuf, 0); // write mode
+#endif
 }
 JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsResetBox_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jdouble aXlo, jdouble aYlo, jdouble aZlo, jdouble aXhi, jdouble aYhi, jdouble aZhi, jdouble aXY, jdouble aYZ, jdouble aXZ) {
     double tBoxLo[] = {aXlo, aYlo, aZlo};
@@ -475,7 +505,11 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsScatter_1(JNIEnv *aEnv, jcla
     if (tDataBuf != NULL) FREE(tDataBuf);
 }
 JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCreateAtoms_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jint aAtomNum, jintArray aID, jintArray aType, jdoubleArray aXYZ, jdoubleArray aVel, jintArray aImage, jboolean aShrinkExceed) {
+#ifdef __cplusplus
+    jsize tN = aEnv->GetArrayLength(aID);
+#else
     jsize tN = (*aEnv)->GetArrayLength(aEnv, aID);
+#endif
     jint tAtomNum3 = aAtomNum * 3;
     intbig  *tID    = aID   ==NULL ? NULL : MALLOCN(intbig , aAtomNum ); parsejint2intbig   (aEnv, aID   , tID   , aAtomNum );
     int     *tType  = aType ==NULL ? NULL : MALLOCN(int    , aAtomNum ); parsejint2int      (aEnv, aType , tType , aAtomNum );
@@ -496,3 +530,10 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsClose_1(JNIEnv *aEnv, jclass
     exceptionCheckLMP(aEnv, NULL);
 }
 
+#ifdef __cplusplus
+}
+#endif
+
+#ifdef __cplusplus
+#pragma clang diagnostic pop
+#endif
