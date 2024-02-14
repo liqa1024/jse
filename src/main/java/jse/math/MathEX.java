@@ -16,6 +16,7 @@ import jsex.voronoi.Geometry;
 import net.jafama.DoubleWrapper;
 import net.jafama.FastMath;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Range;
 
 import java.util.*;
 import java.util.function.*;
@@ -826,18 +827,12 @@ public class MathEX {
          * @param aN Chebyshev 多项式阶数，有 {@code n >= 0}
          * @return 计算结果，实数
          */
-        public static double chebyshev(int aN, double aX) {
-            // 判断输入是否合法
-            if (aN < 0) throw new IllegalArgumentException("Input n MUST be Non-Negative, input: "+aN);
-            return chebyshev_(aN, aX);
-        }
-        
-        public static double chebyshev_(int aN, double aX) {
+        public static double chebyshev(@Range(from = 0, to = Integer.MAX_VALUE) int aN, double aX) {
             // 直接采用递推关系递归计算
             switch(aN) {
             case 0: {return 1.0;}
             case 1: {return aX;}
-            default: {return 2.0 * aX * chebyshev_(aN - 1, aX) - chebyshev_(aN - 2, aX);}
+            default: {return 2.0 * aX * chebyshev(aN - 1, aX) - chebyshev(aN - 2, aX);}
             }
         }
         
@@ -855,25 +850,17 @@ public class MathEX {
          * @param aPhi 球坐标下径向方向在 xy 平面投影下和 x 轴的角度
          * @return l = 0 ~ aLMax, m = -l ~ l 下所有球谐函数值组成的复向量，按照 l 从小到大排列，先遍历 m 后遍历 l
          */
-        public static ComplexVector sphericalHarmonicsFull(int aLMax, double aTheta, double aPhi) {
-            // 判断输入是否合法
-            if (aLMax < 0) throw new IllegalArgumentException("Input L MUST be Non-Negative, input: "+aLMax);
-            if (aLMax > SH_LARGEST_L) throw new IllegalArgumentException("Input L MUST be Less than SH_LARGEST_L ("+SH_LARGEST_L+") for sphericalHarmonics, input: "+aLMax);
-            return sphericalHarmonicsFull_(aLMax, aTheta, aPhi);
-        }
-        public static void sphericalHarmonicsFull2Dest(int aLMax, double aTheta, double aPhi, IComplexVector rDest) {
-            // 判断输入是否合法
-            if (aLMax < 0) throw new IllegalArgumentException("Input L MUST be Non-Negative, input: "+aLMax);
-            if (aLMax > SH_LARGEST_L) throw new IllegalArgumentException("Input L MUST be Less than SH_LARGEST_L ("+SH_LARGEST_L+") for sphericalHarmonics, input: "+aLMax);
-            if (rDest.size() < (aLMax+1)*(aLMax+1)) throw new IllegalArgumentException("Size of rDest MUST be GreaterOrEqual to (L+1)^2 ("+((aLMax+1)*(aLMax+1))+"), input: "+rDest.size());
-            sphericalHarmonicsFull2Dest_(aLMax, aTheta, aPhi, rDest);
-        }
-        private static ComplexVector sphericalHarmonicsFull_(int aLMax, double aTheta, double aPhi) {
+        public static ComplexVector sphericalHarmonicsFull(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aTheta, double aPhi) {
             ComplexVector rY = ComplexVector.zeros((aLMax+1)*(aLMax+1));
             sphericalHarmonicsFull2Dest_(aLMax, aTheta, aPhi, rY);
             return rY;
         }
-        private static void sphericalHarmonicsFull2Dest_(int aLMax, double aTheta, double aPhi, IComplexVector rDest) {
+        public static void sphericalHarmonicsFull2Dest(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aTheta, double aPhi, IComplexVector rDest) {
+            // 判断输入是否合法
+            if (rDest.size() < (aLMax+1)*(aLMax+1)) throw new IllegalArgumentException("Size of rDest MUST be GreaterOrEqual to (L+1)^2 ("+((aLMax+1)*(aLMax+1))+"), input: "+rDest.size());
+            sphericalHarmonicsFull2Dest_(aLMax, aTheta, aPhi, rDest);
+        }
+        private static void sphericalHarmonicsFull2Dest_(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aTheta, double aPhi, IComplexVector rDest) {
             DoubleWrapper tJafamaDoubleWrapper = new DoubleWrapper(); // new 的损耗应该可以忽略掉
             double tSinTheta = FastMath.sinAndCos(aTheta, tJafamaDoubleWrapper);
             normalizedLegendreFull2Dest_(aLMax, tJafamaDoubleWrapper.value, tSinTheta, rDest);
@@ -901,7 +888,7 @@ public class MathEX {
                 tSinMPhi = tSinMppPhi; tCosMPhi = tCosMppPhi;
             }
         }
-        private static void normalizedLegendreFull2Dest_(int aLMax, double aX, double aY, IComplexVector rDest) {
+        private static void normalizedLegendreFull2Dest_(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aX, double aY, IComplexVector rDest) {
             // 直接设置到 rY 上，可以减少缓存的使用，并且可以简化实现
             double tPll = 0.28209479177387814347403972578039; // = sqrt(1/(4*PI))
             rDest.set(0, tPll);
@@ -954,25 +941,17 @@ public class MathEX {
          * @param aPhi 球坐标下径向方向在 xy 平面投影下和 x 轴的角度
          * @return m = -l ~ l 下所有球谐函数值组成的复向量
          */
-        public static ComplexVector sphericalHarmonics(int aL, double aTheta, double aPhi) {
-            // 判断输入是否合法
-            if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
-            if (aL > SH_LARGEST_L) throw new IllegalArgumentException("Input l MUST be Less than SH_LARGEST_L ("+SH_LARGEST_L+") for sphericalHarmonics, input: "+aL);
-            return sphericalHarmonics_(aL, aTheta, aPhi);
-        }
-        public static void sphericalHarmonics2Dest(int aL, double aTheta, double aPhi, IComplexVector rDest) {
-            // 判断输入是否合法
-            if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
-            if (aL > SH_LARGEST_L) throw new IllegalArgumentException("Input l MUST be Less than SH_LARGEST_L ("+SH_LARGEST_L+") for sphericalHarmonics, input: "+aL);
-            if (rDest.size() < aL+aL+1) throw new IllegalArgumentException("Size of rY MUST be GreaterOrEqual to 2l+1 ("+(aL+aL+1)+"), input: "+rDest.size());
-            sphericalHarmonics2Dest_(aL, aTheta, aPhi, rDest);
-        }
-        public static ComplexVector sphericalHarmonics_(int aL, double aTheta, double aPhi) {
+        public static ComplexVector sphericalHarmonics(@Range(from = 0, to = SH_LARGEST_L) int aL, double aTheta, double aPhi) {
             ComplexVector rY = ComplexVector.zeros(aL+aL+1);
             sphericalHarmonics2Dest_(aL, aTheta, aPhi, rY);
             return rY;
         }
-        private static void sphericalHarmonics2Dest_(int aL, double aTheta, double aPhi, IComplexVector rDest) {
+        public static void sphericalHarmonics2Dest(@Range(from = 0, to = SH_LARGEST_L) int aL, double aTheta, double aPhi, IComplexVector rDest) {
+            // 判断输入是否合法
+            if (rDest.size() < aL+aL+1) throw new IllegalArgumentException("Size of rY MUST be GreaterOrEqual to 2l+1 ("+(aL+aL+1)+"), input: "+rDest.size());
+            sphericalHarmonics2Dest_(aL, aTheta, aPhi, rDest);
+        }
+        private static void sphericalHarmonics2Dest_(@Range(from = 0, to = SH_LARGEST_L) int aL, double aTheta, double aPhi, IComplexVector rDest) {
             DoubleWrapper tJafamaDoubleWrapper = new DoubleWrapper(); // new 的损耗应该可以忽略掉
             double tSinTheta = FastMath.sinAndCos(aTheta, tJafamaDoubleWrapper);
             normalizedLegendre2Dest_(aL, tJafamaDoubleWrapper.value, tSinTheta, rDest);
@@ -996,7 +975,7 @@ public class MathEX {
                 tSinMPhi = tSinMppPhi; tCosMPhi = tCosMppPhi;
             }
         }
-        private static void normalizedLegendre2Dest_(int aL, double aX, double aY, IComplexVector rDest) {
+        private static void normalizedLegendre2Dest_(@Range(from = 0, to = SH_LARGEST_L) int aL, double aX, double aY, IComplexVector rDest) {
             // 直接设置到 rY 上，可以减少缓存的使用，并且可以简化实现
             // 对于固定 l 的，改为这种迭代顺序
             switch (aL) {
@@ -1045,28 +1024,22 @@ public class MathEX {
          * @param aPhi 球坐标下径向方向在 xy 平面投影下和 x 轴的角度
          * @return 球谐函数值，复数
          */
-        public static ComplexDouble sphericalHarmonics(int aL, int aM, double aTheta, double aPhi) {
+        public static ComplexDouble sphericalHarmonics(@Range(from = 0, to = SH_LARGEST_L) int aL, int aM, double aTheta, double aPhi) {
             // 判断输入是否合法
-            if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
-            if (aL > SH_LARGEST_L) throw new IllegalArgumentException("Input l MUST be Less than SH_LARGEST_L ("+SH_LARGEST_L+") for sphericalHarmonics, input: "+aL);
             if (Math.abs(aM) > aL) throw new IllegalArgumentException("Input m MUST be in range -l ~ l, input: "+aM);
-            
             return sphericalHarmonics_(aL, aM, aTheta, aPhi);
         }
-        public static void sphericalHarmonics2Dest(int aL, int aM, double aTheta, double aPhi, ISettableComplexDouble rDest) {
+        public static void sphericalHarmonics2Dest(@Range(from = 0, to = SH_LARGEST_L) int aL, int aM, double aTheta, double aPhi, ISettableComplexDouble rDest) {
             // 判断输入是否合法
-            if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
-            if (aL > SH_LARGEST_L) throw new IllegalArgumentException("Input l MUST be Less than SH_LARGEST_L ("+SH_LARGEST_L+") for sphericalHarmonics, input: "+aL);
             if (Math.abs(aM) > aL) throw new IllegalArgumentException("Input m MUST be in range -l ~ l, input: "+aM);
-            
             sphericalHarmonics2Dest_(aL, aM, aTheta, aPhi, rDest);
         }
-        private static ComplexDouble sphericalHarmonics_(int aL, int aM, double aTheta, double aPhi) {
+        private static ComplexDouble sphericalHarmonics_(@Range(from = 0, to = SH_LARGEST_L) int aL, int aM, double aTheta, double aPhi) {
             ComplexDouble rY = new ComplexDouble();
             sphericalHarmonics2Dest_(aL, aM, aTheta, aPhi, rY);
             return rY;
         }
-        private static void sphericalHarmonics2Dest_(int aL, int aM, double aTheta, double aPhi, ISettableComplexDouble rDest) {
+        private static void sphericalHarmonics2Dest_(@Range(from = 0, to = SH_LARGEST_L) int aL, int aM, double aTheta, double aPhi, ISettableComplexDouble rDest) {
             if (aM < 0) {
                 sphericalHarmonics2Dest_(aL, -aM, aTheta, aPhi, rDest);
                 rDest.conj2this();
@@ -1090,15 +1063,12 @@ public class MathEX {
          * @param aM 连带 Legendre 多项式参数 m，非负整数，{@code m <= l}
          * @return 计算结果，实数
          */
-        public static double legendre(int aL, int aM, double aX) {
+        public static double legendre(@Range(from = 0, to = SH_LARGEST_L) int aL, int aM, double aX) {
             // 判断输入是否合法
-            if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
-            if (aL > SH_LARGEST_L) throw new IllegalArgumentException("Input l MUST be Less than SH_LARGEST_L ("+SH_LARGEST_L+") for legendre, input: "+aL);
             if (aM < 0 || aM > aL) throw new IllegalArgumentException("Input m MUST be in range 0 ~ l, input: "+aM);
-            
             return legendre_(aL, aM, aX);
         }
-        private static double legendre_(int aL, int aM, double aX) {
+        private static double legendre_(@Range(from = 0, to = SH_LARGEST_L) int aL, int aM, double aX) {
             // 直接采用递推关系递归计算
             int tGreater = aL - aM;
             switch(tGreater) {
@@ -1126,15 +1096,11 @@ public class MathEX {
          * @author liqa
          * @return 计算结果，实数
          */
-        public static double wigner3j(int aJ1, int aJ2, int aJ3, int aM1, int aM2, int aM3) {
+        public static double wigner3j(@Range(from = 0, to = SH_LARGEST_L) int aJ1, @Range(from = 0, to = SH_LARGEST_L) int aJ2, @Range(from = 0, to = SH_LARGEST_L) int aJ3, int aM1, int aM2, int aM3) {
             // 判断输入是否合法
-            if (aJ1 < 0) throw new IllegalArgumentException("Input j1 MUST be Non-Negative, input: "+aJ1);
-            if (aJ2 < 0) throw new IllegalArgumentException("Input j2 MUST be Non-Negative, input: "+aJ2);
-            if (aJ3 < 0) throw new IllegalArgumentException("Input j3 MUST be Non-Negative, input: "+aJ3);
             if (aM1 < 0 || aM1 > aJ1) throw new IllegalArgumentException("Input m1 MUST be in range 0 ~ j1, input: "+aM1);
             if (aM2 < 0 || aM2 > aJ2) throw new IllegalArgumentException("Input m2 MUST be in range 0 ~ j2, input: "+aM2);
             if (aM3 < 0 || aM3 > aJ3) throw new IllegalArgumentException("Input m3 MUST be in range 0 ~ j3, input: "+aM3);
-            
             return wigner3j_(aJ1, aJ2, aJ3, aM1, aM2, aM3);
         }
         private static double wigner3j_(int aJ1, int aJ2, int aJ3, int aM1, int aM2, int aM3) {
