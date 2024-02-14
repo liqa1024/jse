@@ -22,18 +22,18 @@ public class ExecutorsEX {
         @Override public boolean isTerminated() {return mPool.isTerminated();}
         @SuppressWarnings("ResultOfMethodCallIgnored") @Override public void awaitTermination() throws InterruptedException {mPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);}
         @SuppressWarnings("BusyWait") @Override public void waitUntilDone() throws InterruptedException {while (mPool.getActiveCount() > 0 || !mPool.getQueue().isEmpty()) Thread.sleep(SYNC_SLEEP_TIME);}
-        @Override public int nJobs() {return mPool.getActiveCount() + mPool.getQueue().size();}
+        @Override public int jobNumber() {return mPool.getActiveCount() + mPool.getQueue().size();}
     }
     
     
     public static IExecutorEX newFixedThreadPool(final int nThreads) {
         return new AbstractExecutorEX(new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>())) {
-            @Override public int nThreads() {return nThreads;}
+            @Override public int threadNumber() {return nThreads;}
         };
     }
     public static IExecutorEX newSingleThreadExecutor() {
         return new AbstractExecutorEX(new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>())) {
-            @Override public int nThreads() {return 1;}
+            @Override public int threadNumber() {return 1;}
         };
     }
 }

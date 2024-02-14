@@ -43,7 +43,7 @@ public class Generator extends AbstractThreadPool<ParforThreadPool> {
     Generator(ParforThreadPool aPool, Random aRNG) {super(aPool); mRNG = aRNG;}
     
     /** 参数设置 */
-    public Generator setThreadNum(int aThreadNum)  {if (aThreadNum!=nThreads()) setPool(new ParforThreadPool(aThreadNum)); return this;}
+    public Generator setThreadNumber(int aThreadNum)  {if (aThreadNum != threadNumber()) setPool(new ParforThreadPool(aThreadNum)); return this;}
     
     
     

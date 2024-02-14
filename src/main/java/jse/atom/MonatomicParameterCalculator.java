@@ -165,7 +165,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * @param aThreadNum 线程数目
      * @return 返回自身用于链式调用
      */
-    public MonatomicParameterCalculator setThreadNum(int aThreadNum)  {if (aThreadNum!=nThreads()) setPool(new ParforThreadPool(aThreadNum)); return this;}
+    public MonatomicParameterCalculator setThreadNumber(int aThreadNum)  {if (aThreadNum != threadNumber()) setPool(new ParforThreadPool(aThreadNum)); return this;}
     /**
      * 修改 LinkedCell 的步长，如果相同则不会进行任何操作
      * @param sCellStep 步长，默认为 2.0，需要大于 1.1，理论上越小速度会越快，同时会消耗更多的内存
@@ -194,7 +194,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         final double dr = aRMax/aN;
         // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
-        final List<? extends IVector> dn = VectorCache.getZeros(aN, nThreads());
+        final List<? extends IVector> dn = VectorCache.getZeros(aN, threadNumber());
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(mAtomNum, (i, threadID) -> {
@@ -235,7 +235,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         final double dr = aRMax/aN;
         // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
-        final List<? extends IVector> dn = VectorCache.getZeros(aN, nThreads());
+        final List<? extends IVector> dn = VectorCache.getZeros(aN, threadNumber());
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(aAtomNum, (i, threadID) -> {
@@ -282,11 +282,11 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         final double dr = aRMax/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
-        final IFunc1[] dn = new IFunc1[nThreads()];
+        final IFunc1[] dn = new IFunc1[threadNumber()];
         for (int i = 0; i < dn.length; ++i) dn[i] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
         
         // 并行需要线程数个独立的 DeltaG
-        final IZeroBoundFunc1[] tDeltaG = new IZeroBoundFunc1[nThreads()];
+        final IZeroBoundFunc1[] tDeltaG = new IZeroBoundFunc1[threadNumber()];
         for (int i = 0; i < tDeltaG.length; ++i) tDeltaG[i] = Func1.deltaG(dr*aSigmaMul, 0.0, aSigmaMul);
         // 需要增加一个额外的偏移保证外部边界的统计正确性
         final double tRShift = tDeltaG[0].zeroBoundR();
@@ -320,11 +320,11 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         final double dr = aRMax/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
-        final IFunc1[] dn = new IFunc1[nThreads()];
+        final IFunc1[] dn = new IFunc1[threadNumber()];
         for (int i = 0; i < dn.length; ++i) dn[i] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
         
         // 并行需要线程数个独立的 DeltaG
-        final IZeroBoundFunc1[] tDeltaG = new IZeroBoundFunc1[nThreads()];
+        final IZeroBoundFunc1[] tDeltaG = new IZeroBoundFunc1[threadNumber()];
         for (int i = 0; i < tDeltaG.length; ++i) tDeltaG[i] = Func1.deltaG(dr*aSigmaMul, 0.0, aSigmaMul);
         // 需要增加一个额外的偏移保证外部边界的统计正确性
         final double tRShift = tDeltaG[0].zeroBoundR();
@@ -373,7 +373,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         final double dq = (aQMax-aQMin)/aN;
         // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
-        final IFunc1[] Hq = new IFunc1[nThreads()];
+        final IFunc1[] Hq = new IFunc1[threadNumber()];
         for (int i = 0; i < Hq.length; ++i) Hq[i] = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
         
         // 使用 mNL 的通用获取近邻的方法，因为 SF 需要使用方形半径内的所有距离（曼哈顿距离）
@@ -416,7 +416,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         final double dq = (aQMax-aQMin)/aN;
         // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
-        final IFunc1[] Hq = new IFunc1[nThreads()];
+        final IFunc1[] Hq = new IFunc1[threadNumber()];
         for (int i = 0; i < Hq.length; ++i) Hq[i] = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
         
         // 使用 mNL 的通用获取近邻的方法，因为 SF 需要使用方形半径内的所有距离（曼哈顿距离）
@@ -940,14 +940,14 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
         
         // 构造用于并行的暂存数组，注意需要初始值为 0.0
-        final List<? extends IComplexMatrix> rDestPar = ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1, nThreads());
+        final List<? extends IComplexMatrix> rDestPar = ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1, threadNumber());
         // 统计近邻数用于求平均，同样也需要为并行使用数组
-        final List<? extends IVector> tNNPar = VectorCache.getZeros(mAtomNum, nThreads());
+        final List<? extends IVector> tNNPar = VectorCache.getZeros(mAtomNum, threadNumber());
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnn<=0;
         
         // 全局暂存 Y 的数组，这样可以用来防止重复获取来提高效率
-        final List<? extends IComplexVector> tYPar = ComplexVectorCache.getVec(aL+aL+1, nThreads());
+        final List<? extends IComplexVector> tYPar = ComplexVectorCache.getVec(aL+aL+1, threadNumber());
         
         // 获取需要缓存的近邻列表
         final IntList @Nullable[] tNLToBuffer = getNLWhichNeedBuffer_(aRNearest, aNnn, aHalf);
@@ -1932,12 +1932,12 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         final List<? extends IMatrix> rFingerPrints = MatrixCache.getMatRow(aNMax+1, aLMax+1, mAtomNum);
         
         // 需要存储所有的 l，n，m 的值来统一进行近邻求和
-        final IComplexVector[][] cnlmPar = new IComplexVector[nThreads()][aNMax+1];
+        final IComplexVector[][] cnlmPar = new IComplexVector[threadNumber()][aNMax+1];
         for (IComplexVector[] cnlm : cnlmPar) for (int tN = 0; tN <= aNMax; ++tN) {
             cnlm[tN] = ComplexVectorCache.getVec((aLMax+1)*(aLMax+1));
         }
         // 全局暂存 Y 的数组，这样可以用来防止重复获取来提高效率
-        final List<? extends IComplexVector> tYPar = ComplexVectorCache.getVec((aLMax+1)*(aLMax+1), nThreads());
+        final List<? extends IComplexVector> tYPar = ComplexVectorCache.getVec((aLMax+1)*(aLMax+1), threadNumber());
         
         // 获取需要缓存的近邻列表
         final IntList @Nullable[] tNLToBuffer = getNLWhichNeedBuffer_(aRCutOff, -1, false);

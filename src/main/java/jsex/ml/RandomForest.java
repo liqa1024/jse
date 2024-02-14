@@ -54,12 +54,12 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
     
     
     /** 现在支持设置线程数 */
-    public RandomForest setThreadNumber(int aThreadNum)  {if (aThreadNum!=nThreads()) setPool(new ParforThreadPool(aThreadNum, true)); return this;}
+    public RandomForest setThreadNumber(int aThreadNum)  {if (aThreadNum!= threadNumber()) setPool(new ParforThreadPool(aThreadNum, true)); return this;}
     
     /** 输入 x 进行进行决策判断 */
     public double predict(final IVector aInput) {
         int tTreeNum = mTrees.size();
-        int[] rPredTrueNumPar = new int[nThreads()];
+        int[] rPredTrueNumPar = new int[threadNumber()];
         pool().parfor(tTreeNum, (i, threadID) -> {
             if (mTrees.get(i).makeDecision(aInput)) ++rPredTrueNumPar[threadID];
         });
@@ -148,7 +148,7 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
         final int tTrainSampleNum = Math.max(1, (int)Math.round(tSampleNum * aTrainRatio));
         
         // 为了保证结果可重复，这里统一为每个线程生成一个种子，用于创建 LocalRandom
-        final long[] tSeeds = genSeeds_(nThreads(), aRNG);
+        final long[] tSeeds = genSeeds_(threadNumber(), aRNG);
         // 统一创建好 mTrees 避免并行写入的问题
         mTrees = NewCollections.nulls(aTreeNum);
         

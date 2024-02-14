@@ -13,6 +13,7 @@ import jse.parallel.IExecutorEX;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
 import java.util.*;
@@ -55,10 +56,10 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
     @Override public final void shutdownNow() {cancelThis(); if (!isShutdown()) shutdown_();}
     @Override public boolean isShutdown() {return mDead;}
     
-    @Override public final synchronized int nJobs() {return mQueuedJobList.size() + mJobList.size();}
-    @Override public final int nThreads() {return mParallelNum;}
+    @Override public final synchronized int jobNumber() {return mQueuedJobList.size() + mJobList.size();}
+    @Override public final int threadNumber() {return mParallelNum;}
     @SuppressWarnings("BusyWait")
-    @Override public void waitUntilDone() throws InterruptedException {while (nJobs() > 0) Thread.sleep(SYNC_SLEEP_TIME_2);}
+    @Override public void waitUntilDone() throws InterruptedException {while (this.jobNumber() > 0) Thread.sleep(SYNC_SLEEP_TIME_2);}
     
     protected void shutdown_() {
         mDead = true;
@@ -84,7 +85,7 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
         // 先保存子类
         save_(rSaveTo);
         // 保存自身数据
-        rSaveTo.put("JobNumber", jobNumber());
+        rSaveTo.put("TotalJobNumber", totalJobNumber());
         // 保存 mQueuedJobList 和 mJobList
         saveQueuedJobList(rSaveTo);
         saveJobList(rSaveTo);
@@ -97,8 +98,8 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
         // 加载这些属性
         loadQueuedJobList(aLoadFrom);
         loadJobList(aLoadFrom);
-        // 需要最后重新设置 jobNumber，因为创建任务列表时会顺便修改内部的 jobNumber
-        setJobNumber(((Number)aLoadFrom.get("JobNumber")).intValue());
+        // 需要最后重新设置 jobNumber，因为创建任务列表时会顺便修改内部的 totalJobNumber
+        setJobNumber(((Number)UT.Code.get(aLoadFrom, "TotalJobNumber", "JobNumber")).intValue()); // 保留 "JobNumber" 来保证兼容性
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -148,7 +149,7 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
         if (tList != null) for (Object tObj : tList) aOFiles.add(UT.Code.toString(tObj));
         return new FutureJob(aSubmitCommand, aOFiles);
     }
-    private synchronized void setJobNumber(int aJobNumber) {mJobNumber = aJobNumber;}
+    private synchronized void setJobNumber(int aJobNumber) {mTotalJobNumber = aJobNumber;}
     @ApiStatus.Internal
     @SuppressWarnings("RedundantIfStatement")
     @Override public synchronized boolean killRecommended() {
@@ -240,9 +241,9 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
     
     
     
-    private int mJobNumber = 0;
-    protected synchronized int jobNumber() {return mJobNumber;}
-    private synchronized void increaseJobNumber() {++mJobNumber;}
+    private int mTotalJobNumber = 0;
+    protected synchronized int totalJobNumber() {return mTotalJobNumber;}
+    private synchronized void increaseTotalJobNumber() {++mTotalJobNumber;}
     /** 需要专门自定义实现一个 Future，返回的是这个指令最终的退出代码，注意保持只有一个锁来防止死锁 */
     protected class FutureJob implements IFutureJob, ISavable {
         private String mSubmitCommand;
@@ -250,7 +251,7 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
         protected FutureJob(String aSubmitCommand, Iterable<String> aOFiles) {
             mSubmitCommand = aSubmitCommand;
             mOFiles = aOFiles;
-            increaseJobNumber();
+            increaseTotalJobNumber();
         }
         
         @Override
@@ -541,4 +542,9 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
     protected synchronized void cancelThis_() {
         for (int tJobID : mJobList.values()) cancelJobFromSystem(tJobID);
     }
+    
+    
+    /** IJobPool stuffs */
+    @VisibleForTesting @Override public int njobs() {return jobNumber();}
+    @SuppressWarnings("deprecation") @Deprecated @Override public int nJobs() {return jobNumber();}
 }

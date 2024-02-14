@@ -22,6 +22,6 @@ public interface IExecutorEX extends IThreadPool {
     
     /** Extended stuffs */
     void waitUntilDone() throws InterruptedException;
-    int nJobs();
-    int nThreads();
+    int jobNumber();
+    int threadNumber();
 }

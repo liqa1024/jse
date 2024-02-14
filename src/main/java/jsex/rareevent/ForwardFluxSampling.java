@@ -609,7 +609,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         if (mStep < 0) {
             mStepFinished = false;
             
-            int tThreadNum = pool().nThreads();
+            int tThreadNum = pool().threadNumber();
             // 每个线程独立的返回值
             final Step1Return[] tStep1ReturnBuffer = new Step1Return[tThreadNum];
             // 统计从 A 到达 λ0，运行直到采集到的点数目超过 mN0*mStep1Mul
@@ -680,11 +680,11 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             mPointsOnLambda.clear();
             // 这里保证 mMovedPoints 长度永远合法
             if (oPointsOnLambda.size() > mMovedPoints.size()) {
-                mMovedPoints = LogicalVector.zeros(oPointsOnLambda.size()+nThreads());
+                mMovedPoints = LogicalVector.zeros(oPointsOnLambda.size()+ threadNumber());
             }
             mMovedPoints.fill(false);
             
-            int tThreadNum = pool().nThreads();
+            int tThreadNum = pool().threadNumber();
             // 每个线程独立的返回值
             final Step2Return[] tStep2ReturnBuffer = new Step2Return[tThreadNum];
             // 统计从 λi 第一次到达 λi+1 的点

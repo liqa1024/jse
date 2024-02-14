@@ -231,7 +231,7 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
     @Override protected @NotNull String defaultOutFilePath() {return DEFAULT_OUTFILE_PATH;}
     @Override protected @NotNull String toRealOutFilePath(String aOutFilePath) {
         // 对输出文件路径提供一个简单的解码，这里只支持自定义的一些写法而不是 slurm 中的写法（无法简单获取到 slurm 的其他信息）
-        return aOutFilePath.replaceAll("%n", mUniqueJobName).replaceAll("%i", String.valueOf(jobNumber()));
+        return aOutFilePath.replaceAll("%n", mUniqueJobName).replaceAll("%i", String.valueOf(totalJobNumber()));
     }
     /** run 使用 srun 指令，submit 使用 sbatch 指令，内部提交一个运行 srun 的脚本 */
     @Override protected @Nullable String getRunCommand(String aCommand, @NotNull String aOutFilePath) {

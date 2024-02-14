@@ -155,7 +155,7 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
      * @param aThreadNum 线程数目
      * @return 返回自身用于链式调用
      */
-    public MultiFrameParameterCalculator setThreadNum(int aThreadNum) {if (aThreadNum!=nThreads()) setPool(new ParforThreadPool(aThreadNum)); return this;}
+    public MultiFrameParameterCalculator setThreadNumber(int aThreadNum) {if (aThreadNum != threadNumber()) setPool(new ParforThreadPool(aThreadNum)); return this;}
     
     
     /// 获取信息
@@ -271,7 +271,7 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
         if (aFrame < 0 || aFrame>=mFrameNum) throw new IllegalArgumentException("Input aFrame MUST be in range [0, "+mFrameNum+"), input: "+aFrame);
         
         // 使用这种方式创建 MPC
-        return new MonatomicParameterCalculator(mAtomNum, mBoxList.get(aFrame), nThreads(), xyzMat -> {
+        return new MonatomicParameterCalculator(mAtomNum, mBoxList.get(aFrame), threadNumber(), xyzMat -> {
             xyzMat.fill(mAllAtomDataXYZ.get(aFrame));
             return xyzMat;
         });
@@ -303,7 +303,7 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
         if (aFrameNum<=0 || aFrameNum>(mFrameNum-aStart)) throw new IllegalArgumentException("Input aFrameNum MUST be in range (0, "+(mFrameNum-aStart)+"], input: "+aFrameNum);
         
         // 使用这种方式创建 MPC
-        return new MonatomicParameterCalculator(mAtomNum, mBoxList.get(aStart), nThreads(), xyzMat -> {
+        return new MonatomicParameterCalculator(mAtomNum, mBoxList.get(aStart), threadNumber(), xyzMat -> {
             xyzMat.fill(0.0);
             final int tEnd = aStart + aFrameNum;
             for (int frame = aStart; frame < tEnd; ++frame) {

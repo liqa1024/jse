@@ -2,6 +2,7 @@ package jse.jobs;
 
 
 import jse.parallel.IAutoShutdown;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * @author liqa
@@ -15,7 +16,10 @@ import jse.parallel.IAutoShutdown;
 public interface IJobPool extends IAutoShutdown {
     /** 这些现在也是 IHasJobPool 的东西 */
     void waitUntilDone() throws InterruptedException;
-    int nJobs();
+    int jobNumber();
     /** 正常关闭的接口 */
     void shutdown();
+    
+    @VisibleForTesting default int njobs() {return jobNumber();}
+    @Deprecated default int nJobs() {return jobNumber();}
 }

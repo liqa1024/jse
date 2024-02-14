@@ -54,19 +54,19 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> implements IShutdown
     private final InitJobPool  INIT_JOB_POOL  = new InitJobPool();
     private final WhenJobsDone WHEN_JOBS_DONE = new WhenJobsDone();
     private final Connector    CONNECTOR      = new Connector();
-    protected class InitJobPool {
+    public class InitJobPool {
         public WhenJobsDone initJobPool(Supplier<T> aJobPool) {
             mJobPoolList.add(aJobPool);
             return WHEN_JOBS_DONE;
         }
     }
-    protected class WhenJobsDone {
+    public class WhenJobsDone {
         public Connector whenJobsDone(IInputTask<T> aJobDone) {
             mJobsDoneList.add(aJobDone);
             return CONNECTOR;
         }
     }
-    protected class Connector {
+    public class Connector {
         public InitJobPool then(Runnable aThenDo) {
             mConnectorList.add(aThenDo);
             return INIT_JOB_POOL;
@@ -104,7 +104,7 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> implements IShutdown
             int idx = 0;
             while (true) {
                 // 任务完成则可以删除旧的 json 文件，并且执行后续操作
-                if (tJobPool.nJobs() == 0) {
+                if (tJobPool.jobNumber() == 0) {
                     // 为了避免一些问题，这里需要先删除旧的 json 文件
                     UT.IO.delete(mJobPoolFile);
                     // 执行后续操作

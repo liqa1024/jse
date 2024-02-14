@@ -182,7 +182,7 @@ public class MathEX {
          */
         public static boolean[] parmapDo(final int aBlockSize, final boolean[] aData, final IBooleanUnaryOperator aOpt) {return parmapDo(Par.POOL, aBlockSize, aData, aOpt);}
         public static boolean[] parmapDo(ParforThreadPool aPool, final int aBlockSize, final boolean[] aData, final IBooleanUnaryOperator aOpt) {
-            if (aPool.nThreads()==1) return mapDo(aData, aOpt);
+            if (aPool.threadNumber()==1) return mapDo(aData, aOpt);
             
             int tN = aData.length/aBlockSize;
             boolean[] tOut = new boolean[aData.length];
@@ -196,7 +196,7 @@ public class MathEX {
         }
         public static boolean[] parmapDo2Dest(final int aBlockSize, final boolean[] rDest, final IBooleanUnaryOperator aOpt) {return parmapDo2Dest(Par.POOL, aBlockSize, rDest, aOpt);}
         public static boolean[] parmapDo2Dest(ParforThreadPool aPool, final int aBlockSize, final boolean[] rDest, final IBooleanUnaryOperator aOpt) {
-            if (aPool.nThreads()==1) return mapDo2Dest(rDest, aOpt);
+            if (aPool.threadNumber()==1) return mapDo2Dest(rDest, aOpt);
             
             int tN = rDest.length/aBlockSize;
             aPool.parfor(tN, i -> {
@@ -209,7 +209,7 @@ public class MathEX {
         }
         public static double[] parebeDo(final int aBlockSize, final double[] aData1, final double[] aData2, DoubleBinaryOperator aOpt) {return parebeDo(Par.POOL, aBlockSize, aData1, aData2, aOpt);}
         public static double[] parebeDo(ParforThreadPool aPool, final int aBlockSize, final double[] aData1, final double[] aData2, DoubleBinaryOperator aOpt) {
-            if (aPool.nThreads()==1) return ebeDo(aData1, aData2, aOpt);
+            if (aPool.threadNumber()==1) return ebeDo(aData1, aData2, aOpt);
             assert aData1.length == aData2.length;
             
             int tN = aData1.length/aBlockSize;
@@ -224,7 +224,7 @@ public class MathEX {
         }
         public static double[] parebeDo2Dest(final int aBlockSize, final double[] rDest, final double[] aData, final DoubleBinaryOperator aOpt) {return parebeDo2Dest(Par.POOL, aBlockSize, rDest, aData, aOpt);}
         public static double[] parebeDo2Dest(ParforThreadPool aPool, final int aBlockSize, final double[] rDest, final double[] aData, final DoubleBinaryOperator aOpt) {
-            if (aPool.nThreads()==1) return ebeDo2Dest(rDest, aData, aOpt);
+            if (aPool.threadNumber()==1) return ebeDo2Dest(rDest, aData, aOpt);
             assert rDest.length == aData.length;
             
             int tN = aData.length/aBlockSize;
@@ -585,7 +585,7 @@ public class MathEX {
     public static class Par {
         private static ParforThreadPool POOL = new ParforThreadPool(1);
         public static void setThreadNum(int aThreadNum) {POOL.shutdown(); POOL = new ParforThreadPool(aThreadNum);}
-        public static void closeThreadPool() {if (POOL.nThreads() > 1) setThreadNum(1);}
+        public static void closeThreadPool() {if (POOL.threadNumber() > 1) setThreadNum(1);}
         // 在程序结束时关闭 POOL
         static {Main.addGlobalAutoCloseable(Par::closeThreadPool);}
     }

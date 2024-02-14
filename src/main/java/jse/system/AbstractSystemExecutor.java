@@ -243,10 +243,10 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
         shutdown();
     }
     @Override public final boolean isShutdown() {return mDead;}
-    @Override public final synchronized int nJobs() {return mRunningSystem.size();}
-    @Override public final int nThreads() {return 1;}
+    @Override public final synchronized int jobNumber() {return mRunningSystem.size();}
+    @Override public final int threadNumber() {return 1;}
     @SuppressWarnings("BusyWait")
-    @Override public void waitUntilDone() throws InterruptedException {while (nJobs() > 0) Thread.sleep(SYNC_SLEEP_TIME_2);}
+    @Override public void waitUntilDone() throws InterruptedException {while (this.jobNumber() > 0) Thread.sleep(SYNC_SLEEP_TIME_2);}
     
     
     /** 保证提交的指令都在内部有记录 */

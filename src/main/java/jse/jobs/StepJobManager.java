@@ -34,13 +34,13 @@ public class StepJobManager {
     /** 使用这个结构让使用更加规范 */
     private final StepJob STEP_JOB = new StepJob();
     private final Connector CONNECTOR = new Connector();
-    protected class StepJob {
+    public class StepJob {
         public Connector doJob(Runnable aJobDo) {
             mJobList.add(aJobDo);
             return CONNECTOR;
         }
     }
-    protected class Connector {
+    public class Connector {
         public StepJob then(Runnable aThenDo) {
             mConnectorList.add(aThenDo);
             return STEP_JOB;
