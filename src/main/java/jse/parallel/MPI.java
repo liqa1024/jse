@@ -81,14 +81,14 @@ public class MPI {
          * 自定义构建 mpijni 时使用的编译器，
          * cmake 有时不能自动检测到希望使用的编译器
          */
-        public static @Nullable String CMAKE_C_COMPILER   = null;
-        public static @Nullable String CMAKE_CXX_COMPILER = null;
+        public static @Nullable String CMAKE_C_COMPILER   = UT.Exec.env("JSE_CMAKE_C_COMPILER");
+        public static @Nullable String CMAKE_CXX_COMPILER = UT.Exec.env("JSE_CMAKE_CXX_COMPILER");
         
         /**
          * 对于 mpijni，是否使用 {@link MiMalloc} 来加速 c 的内存分配，
          * 这对于 java 数组和 c 数组的转换很有效
          */
-        public static boolean USE_MIMALLOC = true;
+        public static boolean USE_MIMALLOC = UT.Exec.envZ("JSE_USE_MIMALLOC", true);
     }
     
     public static String libraryVersion() throws Error {return MPI.Native.MPI_Get_library_version();}

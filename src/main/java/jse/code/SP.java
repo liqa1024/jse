@@ -307,8 +307,8 @@ public class SP {
              * 自定义构建 jep 时使用的编译器，
              * cmake 有时不能自动检测到希望使用的编译器
              */
-            public static @Nullable String CMAKE_C_COMPILER   = null;
-            public static @Nullable String CMAKE_CXX_COMPILER = null;
+            public static @Nullable String CMAKE_C_COMPILER   = UT.Exec.env("JSE_CMAKE_C_COMPILER");
+            public static @Nullable String CMAKE_CXX_COMPILER = UT.Exec.env("JSE_CMAKE_CXX_COMPILER");
         }
         
         
