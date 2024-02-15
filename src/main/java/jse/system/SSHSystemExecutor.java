@@ -230,11 +230,11 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
     }
     
     
-    @Override public final void putFiles(Iterable<String> aFiles) throws Exception {
-        if (mIOThreadNum>0) mSSH.putFiles(aFiles, mIOThreadNum); else mSSH.putFiles(aFiles);
+    @Override protected final void putFiles_(Iterable<String> aFiles) throws Exception {
+        if (mIOThreadNum>0) {mSSH.putFiles(aFiles, mIOThreadNum);} else {mSSH.putFiles(aFiles);}
     }
-    @Override public final void getFiles(Iterable<String> aFiles) throws Exception {
-        if (mIOThreadNum>0) mSSH.getFiles(aFiles, mIOThreadNum); else mSSH.getFiles(aFiles);
+    @Override protected final void getFiles_(Iterable<String> aFiles) throws Exception {
+        if (mIOThreadNum>0) {mSSH.getFiles(aFiles, mIOThreadNum);} else {mSSH.getFiles(aFiles);}
     }
     /** 需要重写 shutdownFinal 方法将内部 ssh 的关闭包含进去 */
     @Override protected void shutdownFinal() {mSSH.shutdown();}

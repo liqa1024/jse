@@ -1,6 +1,5 @@
 package jse.system;
 
-
 import jse.io.IIOFiles;
 import jse.parallel.IThreadPool;
 import org.jetbrains.annotations.ApiStatus;
@@ -28,8 +27,10 @@ public interface ISystemExecutor extends IThreadPool {
     boolean isFile(String aFilePath) throws Exception;
     boolean isDir(String aDir) throws Exception;
     /** 单独的上传和下载的操作，用于方便使用 */
-    void putFiles(Iterable<String> aFiles) throws Exception;
-    void getFiles(Iterable<String> aFiles) throws Exception;
+    void putFiles(Iterable<? extends CharSequence> aFiles) throws Exception;
+    void getFiles(Iterable<? extends CharSequence> aFiles) throws Exception;
+    void putFiles(String... aFiles) throws Exception;
+    void getFiles(String... aFiles) throws Exception;
     boolean needSyncIOFiles();
     
     

@@ -521,8 +521,10 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
     /** 用来控制检测频率，ms */
     protected long sleepTime() {return SSH_SLEEP_TIME;}
     
-    @Override public final void putFiles(Iterable<String> aFiles) throws Exception {mEXE.putFiles(aFiles);}
-    @Override public final void getFiles(Iterable<String> aFiles) throws Exception {mEXE.getFiles(aFiles);}
+    @Override public final void putFiles(Iterable<? extends CharSequence> aFiles) throws Exception {mEXE.putFiles(aFiles);}
+    @Override public final void getFiles(Iterable<? extends CharSequence> aFiles) throws Exception {mEXE.getFiles(aFiles);}
+    @Override public final void putFiles(String... aFiles) throws Exception {mEXE.putFiles(aFiles);}
+    @Override public final void getFiles(String... aFiles) throws Exception {mEXE.getFiles(aFiles);}
     @Override public final boolean needSyncIOFiles() {return mEXE.needSyncIOFiles();}
     
     /** 提供向系统提交任务所需要的指令，为了简化代码不支持不进行输出的情况，除了默认的输出路径，还是使用 str 直接获取输出时使用的临时文件路径 */

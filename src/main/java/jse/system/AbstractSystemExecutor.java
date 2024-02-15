@@ -322,11 +322,15 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
         return tSystem;
     }
     
+    @Override public final void putFiles(Iterable<? extends CharSequence> aFiles) throws Exception {putFiles_(AbstractCollections.map(aFiles, UT.Code::toString));}
+    @Override public final void getFiles(Iterable<? extends CharSequence> aFiles) throws Exception {getFiles_(AbstractCollections.map(aFiles, UT.Code::toString));}
+    @Override public final void putFiles(String... aFiles) throws Exception {putFiles_(AbstractCollections.from(aFiles));}
+    @Override public final void getFiles(String... aFiles) throws Exception {getFiles_(AbstractCollections.from(aFiles));}
     
     /** stuff to override */
     protected void shutdownFinal() {/**/}
     protected abstract Future<Integer> submitSystem__(String aCommand, @NotNull AbstractSystemExecutor.IWritelnSupplier aWriteln);
-    public abstract void putFiles(Iterable<String> aFiles) throws Exception;
-    public abstract void getFiles(Iterable<String> aFiles) throws Exception;
+    protected abstract void putFiles_(Iterable<String> aFiles) throws Exception;
+    protected abstract void getFiles_(Iterable<String> aFiles) throws Exception;
     public abstract boolean needSyncIOFiles();
 }

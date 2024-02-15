@@ -14,6 +14,6 @@ public abstract class RemoteSystemExecutor extends AbstractSystemExecutor {
     public final boolean needSyncIOFiles() {return true;}
     /** stuff to override */
     protected abstract Future<Integer> submitSystem__(String aCommand, @NotNull AbstractSystemExecutor.IWritelnSupplier aWriteln);
-    public abstract void putFiles(Iterable<String> aFiles) throws Exception;
-    public abstract void getFiles(Iterable<String> aFiles) throws Exception;
+    protected abstract void putFiles_(Iterable<String> aFiles) throws Exception;
+    protected abstract void getFiles_(Iterable<String> aFiles) throws Exception;
 }
