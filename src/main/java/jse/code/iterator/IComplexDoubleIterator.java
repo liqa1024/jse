@@ -1,5 +1,7 @@
 package jse.code.iterator;
 
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
 import jse.atom.IAtom;
 import jse.atom.IXYZ;
 import jse.code.functional.IDoubleBinaryConsumer;
@@ -59,13 +61,12 @@ public interface IComplexDoubleIterator extends IComplexDouble {
         }
     }
     /** Groovy stuffs */
-    default void forEachRemaining(Closure<?> aGroovyTask) {
-        int tN = aGroovyTask.getMaximumNumberOfParameters();
-        switch (tN) {
-        case 1: forEachRemaining(value -> aGroovyTask.call(value));
-        case 2: forEachRemaining((real, imag) -> aGroovyTask.call(real, imag));
-        default: throw new IllegalArgumentException("Parameters Number of forEachRemaining in IComplexDoubleIterator Must be 1 or 2");
+    default void forEachRemaining(@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask) {
+        if (aGroovyTask.getMaximumNumberOfParameters() == 2) {
+            forEachRemaining((real, imag) -> aGroovyTask.call(real, imag));
+            return;
         }
+        forEachRemaining(value -> aGroovyTask.call(value));
     }
     
     /** 同样采用 toIterator() 的方法转为 {@link Iterator} 而不是继承 */

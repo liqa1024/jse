@@ -1,6 +1,9 @@
 package jse.math.matrix;
 
 import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
+import groovy.transform.stc.SimpleType;
 import jse.code.functional.IBinaryFullOperator;
 import jse.code.functional.IDoubleBinaryConsumer;
 import jse.code.functional.IUnaryFullOperator;
@@ -113,7 +116,7 @@ public abstract class AbstractComplexMatrixOperation implements IComplexMatrixOp
         }
     }
     /** Groovy stuffs */
-    @Override public void fill          (Closure<?> aGroovyTask) {
+    @Override public void fill          (@ClosureParams(value=FromString.class, options={"int,int"}) Closure<?> aGroovyTask) {
         final IComplexMatrix tThis = thisMatrix_();
         final IComplexDoubleSetOnlyIterator si = tThis.setIteratorCol();
         final int tColNum = tThis.columnNumber();
@@ -128,8 +131,8 @@ public abstract class AbstractComplexMatrixOperation implements IComplexMatrixOp
     }
     @Override public void assignCol     (Closure<?> aGroovyTask) {DATA.assign2This  (thisMatrix_()::setIteratorCol, aGroovyTask);}
     @Override public void assignRow     (Closure<?> aGroovyTask) {DATA.assign2This  (thisMatrix_()::setIteratorRow, aGroovyTask);}
-    @Override public void forEachCol    (Closure<?> aGroovyTask) {DATA.forEachOfThis(thisMatrix_()::iteratorCol, aGroovyTask);}
-    @Override public void forEachRow    (Closure<?> aGroovyTask) {DATA.forEachOfThis(thisMatrix_()::iteratorRow, aGroovyTask);}
+    @Override public void forEachCol    (@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask) {DATA.forEachOfThis(thisMatrix_()::iteratorCol, aGroovyTask);}
+    @Override public void forEachRow    (@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask) {DATA.forEachOfThis(thisMatrix_()::iteratorRow, aGroovyTask);}
     
     @Override public IComplexMatrix transpose() {
         final IComplexMatrix tThis = thisMatrix_();

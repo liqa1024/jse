@@ -1,5 +1,7 @@
 package jse.math.matrix;
 
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
 import jse.math.SliceType;
 import jse.code.collection.ISlice;
 import jse.code.functional.IIndexFilter;
@@ -59,7 +61,7 @@ public interface IMatrix extends IMatrixGetter {
     void forEachCol(DoubleConsumer aCon);
     void forEachRow(DoubleConsumer aCon);
     /** Groovy stuff */
-    default void fill(final Closure<? extends Number> aGroovyTask) {fill((i, j) -> aGroovyTask.call(i, j).doubleValue());}
+    default void fill(@ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {fill((i, j) -> aGroovyTask.call(i, j).doubleValue());}
     default void assignCol(final Closure<? extends Number> aGroovyTask) {assignCol(() -> aGroovyTask.call().doubleValue());}
     default void assignRow(final Closure<? extends Number> aGroovyTask) {assignRow(() -> aGroovyTask.call().doubleValue());}
     

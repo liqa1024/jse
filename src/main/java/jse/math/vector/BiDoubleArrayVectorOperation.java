@@ -1,6 +1,8 @@
 package jse.math.vector;
 
 import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.SimpleType;
 import jse.code.functional.IDoubleBinaryConsumer;
 import jse.code.functional.IUnaryFullOperator;
 import jse.code.functional.IBinaryFullOperator;
@@ -274,7 +276,7 @@ public abstract class BiDoubleArrayVectorOperation extends AbstractComplexVector
     @Override public void forEach       (Consumer<? super ComplexDouble>    aCon) {BiDoubleArrayVector rThis = thisVector_(); ARRAY.forEachOfThis(rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize(), rThis.isReverse(), aCon);}
     @Override public void forEach       (IDoubleBinaryConsumer              aCon) {BiDoubleArrayVector rThis = thisVector_(); ARRAY.forEachOfThis(rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize(), rThis.isReverse(), aCon);}
     /** Groovy stuffs */
-    @Override public void fill          (Closure<?>                         aRHS) {BiDoubleArrayVector rThis = thisVector_(); ARRAY.vecFill2This (rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize(), rThis.isReverse(), aRHS);}
+    @Override public void fill          (@ClosureParams(value=SimpleType.class, options="int") Closure<?> aRHS) {BiDoubleArrayVector rThis = thisVector_(); ARRAY.vecFill2This(rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize(), rThis.isReverse(), aRHS);}
     @Override public void assign        (Closure<?>                         aSup) {BiDoubleArrayVector rThis = thisVector_(); ARRAY.assign2This  (rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize(), rThis.isReverse(), aSup);}
     
     @Override public ComplexDouble sum () {BiDoubleArrayVector tThis = thisVector_(); return ARRAY.sumOfThis (tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());}

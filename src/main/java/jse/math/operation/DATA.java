@@ -2,6 +2,9 @@ package jse.math.operation;
 
 import com.mastfrog.util.sort.Sort;
 import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
+import groovy.transform.stc.SimpleType;
 import jse.code.functional.*;
 import jse.code.iterator.*;
 import jse.math.ComplexDouble;
@@ -850,7 +853,7 @@ public class DATA {
         }
     }
     /** Groovy stuffs */
-    public static void vecFill2This(IHasComplexDoubleSetOnlyIterator rThis, Closure<?> aGroovyTask) {
+    public static void vecFill2This(IHasComplexDoubleSetOnlyIterator rThis, @ClosureParams(value=SimpleType.class, options="int") Closure<?> aGroovyTask) {
         final IComplexDoubleSetOnlyIterator si = rThis.setIterator();
         for (int i = 0; si.hasNext(); ++i) {
             // 直接先执行然后检测类型决定如何设置
@@ -870,13 +873,12 @@ public class DATA {
             else si.nextAndSet(Double.NaN);
         }
     }
-    public static void forEachOfThis(IHasComplexDoubleIterator aThis, Closure<?> aGroovyTask) {
-        int tN = aGroovyTask.getMaximumNumberOfParameters();
-        switch (tN) {
-        case 1: {forEachOfThis(aThis, value -> aGroovyTask.call(value)); return;}
-        case 2: {forEachOfThis(aThis, (real, imag) -> aGroovyTask.call(real, imag)); return;}
-        default: throw new IllegalArgumentException("Parameters Number of forEach in ComplexVector Must be 1 or 2");
+    public static void forEachOfThis(IHasComplexDoubleIterator aThis, @ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask) {
+        if (aGroovyTask.getMaximumNumberOfParameters() == 2) {
+            forEachOfThis(aThis, (real, imag) -> aGroovyTask.call(real, imag));
+            return;
         }
+        forEachOfThis(aThis, value -> aGroovyTask.call(value));
     }
     
     public static void mapFill2This(IHasDoubleSetOnlyIterator rThis, final double aRHS) {

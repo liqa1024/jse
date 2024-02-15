@@ -1,6 +1,9 @@
 package jse.math.vector;
 
 import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
+import groovy.transform.stc.SimpleType;
 import jse.math.SliceType;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.code.collection.ISlice;
@@ -229,9 +232,9 @@ public abstract class AbstractComplexVector implements IComplexVector {
     @Override public final void forEach(Consumer<? super ComplexDouble> aCon) {operation().forEach(aCon);}
     @Override public final void forEach(IDoubleBinaryConsumer aCon) {operation().forEach(aCon);}
     /** Groovy stuff */
-    @Override public void fill(Closure<?> aGroovyTask) {operation().fill(aGroovyTask);}
+    @Override public void fill(@ClosureParams(value=SimpleType.class, options="int") Closure<?> aGroovyTask) {operation().fill(aGroovyTask);}
     @Override public final void assign(Closure<?> aGroovyTask) {operation().assign(aGroovyTask);}
-    @Override public final void forEach(Closure<?> aGroovyTask) {operation().forEach(aGroovyTask);}
+    @Override public final void forEach(@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask) {operation().forEach(aGroovyTask);}
     
     
     @Override public void add(int aIdx, IComplexDouble aDelta) {

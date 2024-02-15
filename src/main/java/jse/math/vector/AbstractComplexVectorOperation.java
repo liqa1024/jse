@@ -1,6 +1,9 @@
 package jse.math.vector;
 
 import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
+import groovy.transform.stc.SimpleType;
 import jse.code.functional.IBinaryFullOperator;
 import jse.code.functional.IDoubleBinaryConsumer;
 import jse.code.functional.IUnaryFullOperator;
@@ -95,9 +98,9 @@ public abstract class AbstractComplexVectorOperation implements IComplexVectorOp
     @Override public void fill          (IComplexVectorGetter               aRHS) {DATA.vecFill2This (thisVector_(), aRHS);}
     @Override public void fill          (IVectorGetter                      aRHS) {DATA.vecFill2This (thisVector_(), aRHS);}
     /** Groovy stuffs */
-    @Override public void fill          (Closure<?> aGroovyTask) {DATA.vecFill2This (thisVector_(), aGroovyTask);}
+    @Override public void fill          (@ClosureParams(value=SimpleType.class, options="int") Closure<?> aGroovyTask) {DATA.vecFill2This(thisVector_(), aGroovyTask);}
     @Override public void assign        (Closure<?> aGroovyTask) {DATA.assign2This  (thisVector_(), aGroovyTask);}
-    @Override public void forEach       (Closure<?> aGroovyTask) {DATA.forEachOfThis(thisVector_(), aGroovyTask);}
+    @Override public void forEach       (@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask) {DATA.forEachOfThis(thisVector_(), aGroovyTask);}
     
     @Override public ComplexDouble sum () {return DATA.sumOfThis (thisVector_());}
     @Override public ComplexDouble mean() {return DATA.meanOfThis(thisVector_());}

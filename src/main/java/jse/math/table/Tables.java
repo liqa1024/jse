@@ -1,6 +1,10 @@
 package jse.math.table;
 
+import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
 import jse.code.UT;
+import jse.math.matrix.ColumnMatrix;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.IMatrixGetter;
 import jse.math.vector.IVector;
@@ -28,6 +32,8 @@ public class Tables {
         rTable.asMatrix().fill(aData);
         return rTable;
     }
+    /** Groovy stuff */
+    public static Table from(int aRowNum, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask, String... aHeads) {return from(aRowNum, (i, j) -> aGroovyTask.call(i, j).doubleValue(), aHeads);}
     
     public static Table from(Collection<?> aRows, String... aHeads) {return fromRows(aRows, aHeads);}
     public static Table fromRows(Collection<?> aRows, String... aHeads) {

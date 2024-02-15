@@ -1,6 +1,8 @@
 package jse.code.iterator;
 
 import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
 import jse.atom.IAtom;
 import jse.atom.IXYZ;
 import jse.code.functional.IDoubleBinaryConsumer;
@@ -36,12 +38,11 @@ public interface IHasComplexDoubleIterator {
         while (it.hasNext()) aCon.accept(it.next());
     }
     /** Groovy stuffs */
-    default void forEach(Closure<?> aGroovyTask) {
-        int tN = aGroovyTask.getMaximumNumberOfParameters();
-        switch (tN) {
-        case 1: {forEach(value -> aGroovyTask.call(value)); return;}
-        case 2: {forEach((real, imag) -> aGroovyTask.call(real, imag)); return;}
-        default: throw new IllegalArgumentException("Parameters Number of forEach in IHasComplexDoubleIterator Must be 1 or 2");
+    default void forEach(@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask) {
+        if (aGroovyTask.getMaximumNumberOfParameters() == 2) {
+            forEach((real, imag) -> aGroovyTask.call(real, imag));
+            return;
         }
+        forEach(value -> aGroovyTask.call(value));
     }
 }

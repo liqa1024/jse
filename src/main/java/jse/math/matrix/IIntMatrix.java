@@ -1,6 +1,8 @@
 package jse.math.matrix;
 
 import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
 import jse.code.iterator.IIntIterator;
 import jse.code.iterator.IIntSetIterator;
 import jse.math.vector.IIntVector;
@@ -54,7 +56,7 @@ public interface IIntMatrix extends IIntMatrixGetter {
     void forEachCol(IntConsumer aCon);
     void forEachRow(IntConsumer aCon);
     /** Groovy stuff */
-    default void fill(final Closure<? extends Number> aGroovyTask) {fill((i, j) -> aGroovyTask.call(i, j).intValue());}
+    default void fill(@ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {fill((i, j) -> aGroovyTask.call(i, j).intValue());}
     default void assignCol(final Closure<? extends Number> aGroovyTask) {assignCol(() -> aGroovyTask.call().intValue());}
     default void assignRow(final Closure<? extends Number> aGroovyTask) {assignRow(() -> aGroovyTask.call().intValue());}
     

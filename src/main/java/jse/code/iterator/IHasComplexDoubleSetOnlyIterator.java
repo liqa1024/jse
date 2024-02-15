@@ -1,7 +1,7 @@
 package jse.code.iterator;
 
-import jse.math.IComplexDouble;
 import groovy.lang.Closure;
+import jse.math.IComplexDouble;
 
 import java.util.Objects;
 import java.util.function.DoubleSupplier;

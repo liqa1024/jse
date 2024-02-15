@@ -1,6 +1,8 @@
 package jse.math.matrix;
 
 import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
 import jse.code.functional.IDoubleBinaryConsumer;
 import jse.code.functional.IUnaryFullOperator;
 import jse.code.iterator.IComplexDoubleIterator;
@@ -67,11 +69,11 @@ public interface IComplexMatrix extends IComplexMatrixGetter {
     void forEachRow(Consumer<? super ComplexDouble> aCon);
     void forEachRow(IDoubleBinaryConsumer aCon);
     /** Groovy stuff */
-    void fill(Closure<?> aGroovyTask);
+    void fill(@ClosureParams(value=FromString.class, options={"int,int"}) Closure<?> aGroovyTask);
     void assignCol(Closure<?> aGroovyTask);
     void assignRow(Closure<?> aGroovyTask);
-    void forEachCol(Closure<?> aGroovyTask);
-    void forEachRow(Closure<?> aGroovyTask);
+    void forEachCol(@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask);
+    void forEachRow(@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask);
     
     /** 访问和修改部分，自带的接口 */
     int rowNumber();

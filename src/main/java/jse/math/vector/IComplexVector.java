@@ -1,6 +1,9 @@
 package jse.math.vector;
 
 import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
+import groovy.transform.stc.SimpleType;
 import jse.atom.IAtom;
 import jse.atom.IXYZ;
 import jse.math.SliceType;
@@ -62,9 +65,9 @@ public interface IComplexVector extends ISwapper, IHasComplexDoubleIterator, IHa
     void forEach(Consumer<? super ComplexDouble> aCon);
     void forEach(IDoubleBinaryConsumer aCon);
     /** Groovy stuff */
-    void fill(Closure<?> aGroovyTask);
+    void fill(@ClosureParams(value=SimpleType.class, options="int") Closure<?> aGroovyTask);
     void assign(Closure<?> aGroovyTask);
-    void forEach(Closure<?> aGroovyTask);
+    void forEach(@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask);
     
     /** 访问和修改部分，自带的接口 */
     int size();

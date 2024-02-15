@@ -1,6 +1,8 @@
 package jse.math.matrix;
 
 import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
 import jse.code.collection.AbstractCollections;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.code.functional.IDoubleBinaryConsumer;
@@ -545,11 +547,11 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     @Override public final void forEachRow(IDoubleBinaryConsumer aCon) {operation().forEachRow(aCon);}
     
     /** Groovy stuff */
-    @Override public final void fill(Closure<?> aGroovyTask) {operation().fill(aGroovyTask);}
+    @Override public final void fill(@ClosureParams(value=FromString.class, options={"int,int"}) Closure<?> aGroovyTask) {operation().fill(aGroovyTask);}
     @Override public final void assignCol(Closure<?> aGroovyTask) {operation().assignCol(aGroovyTask);}
     @Override public final void assignRow(Closure<?> aGroovyTask) {operation().assignRow(aGroovyTask);}
-    @Override public final void forEachCol(Closure<?> aGroovyTask) {operation().forEachCol(aGroovyTask);}
-    @Override public final void forEachRow(Closure<?> aGroovyTask) {operation().forEachRow(aGroovyTask);}
+    @Override public final void forEachCol(@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask) {operation().forEachCol(aGroovyTask);}
+    @Override public final void forEachRow(@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask) {operation().forEachRow(aGroovyTask);}
     
     
     @Override public IMatrix.ISize size() {

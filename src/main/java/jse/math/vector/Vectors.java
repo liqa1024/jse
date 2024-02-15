@@ -1,6 +1,8 @@
 package jse.math.vector;
 
 
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.SimpleType;
 import jse.code.collection.NewCollections;
 import jse.code.functional.IDoubleFilter;
 import jse.code.iterator.IDoubleSetIterator;
@@ -36,7 +38,7 @@ public class Vectors {
         return rVector;
     }
     /** Groovy stuff */
-    public static Vector from(int aSize, final Closure<? extends Number> aGroovyTask) {return from(aSize, i -> aGroovyTask.call(i).doubleValue());}
+    public static Vector from(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {return from(aSize, i -> aGroovyTask.call(i).doubleValue());}
     
     public static Vector from(Iterable<? extends Number> aIterable) {
         final Vector.Builder rBuilder = Vector.builder();
@@ -98,7 +100,7 @@ public class Vectors {
         return rVector;
     }
     /** Groovy stuff */
-    public static LogicalVector fromBoolean(int aSize, final Closure<Boolean> aGroovyTask) {return fromBoolean(aSize, aGroovyTask::call);}
+    public static LogicalVector fromBoolean(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<Boolean> aGroovyTask) {return fromBoolean(aSize, aGroovyTask::call);}
     
     public static LogicalVector fromBoolean(Iterable<Boolean> aIterable) {
         final LogicalVector.Builder rBuilder = LogicalVector.builder();
@@ -129,7 +131,7 @@ public class Vectors {
         return rVector;
     }
     /** Groovy stuff */
-    public static IntVector fromInteger(int aSize, final Closure<Integer> aGroovyTask) {return fromInteger(aSize, aGroovyTask::call);}
+    public static IntVector fromInteger(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<Integer> aGroovyTask) {return fromInteger(aSize, aGroovyTask::call);}
     
     public static IntVector fromInteger(Iterable<Integer> aIterable) {
         final IntVector.Builder rBuilder = IntVector.builder();

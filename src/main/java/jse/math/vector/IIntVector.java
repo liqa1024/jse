@@ -1,6 +1,8 @@
 package jse.math.vector;
 
 import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.SimpleType;
 import jse.code.collection.ISlice;
 import jse.code.functional.IIndexFilter;
 import jse.code.functional.ISwapper;
@@ -69,7 +71,7 @@ public interface IIntVector extends ISwapper, ISlice, IHasIntIterator, IHasIntSe
     void assign(IntSupplier aSup);
     void forEach(IntConsumer aCon);
     /** Groovy stuff */
-    default void fill(final Closure<? extends Number> aGroovyTask) {fill(i -> aGroovyTask.call(i).intValue());}
+    default void fill(@ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {fill(i -> aGroovyTask.call(i).intValue());}
     default void assign(final Closure<? extends Number> aGroovyTask) {assign(() -> aGroovyTask.call().intValue());}
     
     /** 访问和修改部分，自带的接口 */

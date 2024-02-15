@@ -2,6 +2,8 @@ package jse.math.operation;
 
 import com.mastfrog.util.sort.Sort;
 import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.SimpleType;
 import jse.code.functional.*;
 import jse.math.ComplexDouble;
 import jse.math.IComplexDouble;
@@ -1071,7 +1073,7 @@ public class ARRAY {
         }
     }
     /** Groovy stuffs */
-    public static void vecFill2This(double[][] rThis, int rShift, int aLength, boolean aReverse, Closure<?> aGroovyTask) {
+    public static void vecFill2This(double[][] rThis, int rShift, int aLength, boolean aReverse, @ClosureParams(value=SimpleType.class, options="int") Closure<?> aGroovyTask) {
         final double[] tRealData = rThis[0];
         final double[] tImagData = rThis[1];
         if (aReverse) {

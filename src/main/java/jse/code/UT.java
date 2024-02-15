@@ -5,6 +5,9 @@ import com.google.common.collect.ImmutableBiMap;
 import groovy.json.JsonBuilder;
 import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
+import groovy.transform.stc.SimpleType;
 import groovy.yaml.YamlBuilder;
 import groovy.yaml.YamlSlurper;
 import jse.Main;
@@ -272,31 +275,24 @@ public class UT {
          * parfor for groovy usage
          * @author liqa
          */
-        @VisibleForTesting public static void parfor(int aSize, Closure<?> aGroovyTask) {parfor(aSize, PARFOR_THREAD_NUMBER, aGroovyTask);}
-        @VisibleForTesting public static void parfor(int aSize, int aThreadNum, final Closure<?> aGroovyTask) {
+        @VisibleForTesting public static void parfor(int aSize, @ClosureParams(value=FromString.class, options={"int", "int,int"}) Closure<?> aGroovyTask) {parfor(aSize, PARFOR_THREAD_NUMBER, aGroovyTask);}
+        @VisibleForTesting public static void parfor(int aSize, int aThreadNum, @ClosureParams(value=FromString.class, options={"int", "int,int"}) final Closure<?> aGroovyTask) {
             try (ParforThreadPool tPool = new ParforThreadPool(aThreadNum)) {
-                int tN = aGroovyTask.getMaximumNumberOfParameters();
-                switch (tN) {
-                case 0: {tPool.parfor(aSize, (i, threadID) -> aGroovyTask.call()); return;}
-                case 1: {tPool.parfor(aSize, (i, threadID) -> aGroovyTask.call(i)); return;}
-                case 2: {tPool.parfor(aSize, (i, threadID) -> aGroovyTask.call(i, threadID)); return;}
-                default: throw new IllegalArgumentException("Parameters Number of parfor Task Must be 0, 1 or 2");
+                if (aGroovyTask.getMaximumNumberOfParameters() == 2) {
+                    tPool.parfor(aSize, (i, threadID) -> aGroovyTask.call(i, threadID));
+                    return;
                 }
+                tPool.parfor(aSize, (i, threadID) -> aGroovyTask.call(i));
             }
         }
         /**
          * parwhile for groovy usage
          * @author liqa
          */
-        @VisibleForTesting public static void parwhile(ParforThreadPool.IParwhileChecker aChecker, Closure<?> aGroovyTask) {parwhile(aChecker, PARFOR_THREAD_NUMBER, aGroovyTask);}
-        @VisibleForTesting public static void parwhile(ParforThreadPool.IParwhileChecker aChecker, int aThreadNum, final Closure<?> aGroovyTask) {
+        @VisibleForTesting public static void parwhile(ParforThreadPool.IParwhileChecker aChecker, @ClosureParams(value=SimpleType.class, options="int") Closure<?> aGroovyTask) {parwhile(aChecker, PARFOR_THREAD_NUMBER, aGroovyTask);}
+        @VisibleForTesting public static void parwhile(ParforThreadPool.IParwhileChecker aChecker, int aThreadNum, @ClosureParams(value=SimpleType.class, options="int") final Closure<?> aGroovyTask) {
             try (ParforThreadPool tPool = new ParforThreadPool(aThreadNum)) {
-                int tN = aGroovyTask.getMaximumNumberOfParameters();
-                switch (tN) {
-                case 0: {tPool.parwhile(aChecker, (threadID) -> aGroovyTask.call()); return;}
-                case 1: {tPool.parwhile(aChecker, (threadID) -> aGroovyTask.call(threadID)); return;}
-                default: throw new IllegalArgumentException("Parameters Number of parwhile Task Must be 0 or 1");
-                }
+                tPool.parwhile(aChecker, (threadID) -> aGroovyTask.call(threadID));
             }
         }
         
