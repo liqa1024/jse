@@ -22,8 +22,6 @@ if not defined JAR_LOCATION (
   exit /b 1
 )
 
-@REM Set UTF-8
-set JAVA_OPTS=%JAVA_OPTS% -Dfile.encoding=UTF-8
 
 @REM Eliminate the every 30s prefs warning
 set JAVA_OPTS=%JAVA_OPTS% -Djava.util.prefs.syncInterval=1000000

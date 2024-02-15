@@ -37,8 +37,6 @@ echo "Error: jse-*.jar not found"
 exit 1
 fi
 
-# Set UTF-8
-JAVA_OPTS="$JAVA_OPTS -Dfile.encoding=UTF-8"
 
 # Eliminate the every 30s prefs warning
 JAVA_OPTS="$JAVA_OPTS -Djava.util.prefs.syncInterval=1000000"
