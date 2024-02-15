@@ -31,9 +31,26 @@ sourceSets {
             )
         }
     }
+    jep {
+        java {
+            srcDirs = ['src/jep/java']
+        }
+        resources {
+            srcDirs = ['src/jep/resources']
+        }
+    }
+    progressbar {
+        java {
+            srcDirs = ['src/progressbar/java']
+        }
+    }
 }
 
+compileJepJava {options.encoding = 'UTF-8'}
+compileProgressbarJava {options.encoding = 'UTF-8'}
 compileJava {
+    dependsOn(compileJepJava, compileProgressbarJava)
+    
     options.fork = true
     options.forkOptions.jvmArgs << '-Duser.language=en' // 直接设置 java 编译器为英文即可避免乱码问题，这应该是最好的方法
     options.encoding = 'UTF-8'
@@ -42,8 +59,13 @@ compileJava {
 }
 
 dependencies {
-    implementation('org.jetbrains:annotations:24.1.0')              // debug
+    implementation('org.jetbrains:annotations:24.1.0')              // idea 调试支持
     
+    // 源码依赖
+    implementation(sourceSets.jep.output)
+    implementation(sourceSets.progressbar.output)
+    
+    // groovy
     implementation('org.apache.groovy:groovy:4.0.18')               // 用于直接执行 groovy 脚本而不需要安装 groovy
     implementation('org.apache.groovy:groovy-groovysh:4.0.18')      // 用于直接通过命令行交互试的操作
     implementation('org.apache.groovy:groovy-json:4.0.18')          // 直接使用 groovy 的 json 包来支持 json，可以让 groovy 脚本使用原生的 json 功能
@@ -51,9 +73,11 @@ dependencies {
     implementation('org.apache.groovy:groovy-yaml:4.0.18')          // groovy 的 yaml，暂时没有用到，并且这个包有些复杂，所以不提供支持
     implementation('jline:jline:2.14.6')                            // groovysh 前置，用来重写 sh 相关方法
     
+    // 跨语言编程
 //  implementation('black.ninia:jep:4.2.0')                         // 调用 python 代码支持，需要系统有需要的 python 环境，并且需要初始化，因此这里不作为主要代码的使用；由于 PyObject 不能 groovy 原生调用，现在包含到项目中
 //  implementation('org.zeromq:jeromq:0.5.4')                       // 跨 JVM 并行库，可以支持超算上跨节点并行；虽然 java 标准库也有类似功能，但是这个更加易用；现在直接使用 mpi
     
+    // 实用工具
     implementation('com.mastfrog:sort:2.9.7')                       // 实用的多排序功能，因此现在不再支持支持性不好的 Compare 排序
 //  implementation('org.apache.commons:commons-rng-sampling:1.5')   // 只使用随机数生成器，还是太复杂了
 //  implementation('me.tongfei:progressbar:0.9.5')                  // 简单的进度条实现（最新版需要 jdk9）；由于字符问题这里直接把源码包含到项目中
@@ -66,6 +90,14 @@ dependencies {
     implementation('com.jcraft:jsch:0.1.55')                        // 用于支持 ssh 连接
     implementation('com.jcraft:jzlib:1.1.3')                        // ssh 压缩传输，并且提供压缩指令支持
 //  implementation('com.googlecode.json-simple:json-simple:1.1')    // 小的 json 读写支持，现在直接使用 groovy-json
+    
+    
+    // jep 依赖
+    jepImplementation('org.jetbrains:annotations:24.1.0')           // idea 调试支持
+    jepImplementation('org.apache.groovy:groovy:4.0.18')            // jep 增加 groovy 支持
+    
+    // progressbar 依赖
+    progressbarImplementation('org.jetbrains:annotations:24.1.0')   // idea 调试支持
 }
 
 shadowJar {
@@ -87,7 +119,7 @@ shadowJar {
 tasks.register('sourceJar', Jar) {
     archiveBaseName = 'jse'
     archiveClassifier = 'src'
-    from(sourceSets.main.allSource)
+    from(sourceSets.main.allSource, sourceSets.jep.allSource, sourceSets.progressbar.allSource)
     exclude('assets/**')
     // 添加过滤器来修复 relocate 的问题
     filteringCharset = 'UTF-8'
@@ -109,7 +141,7 @@ tasks.register('downloadSource') {
 
 
 build {
-    dependsOn shadowJar, sourceJar, downloadSource
+    dependsOn(shadowJar, sourceJar, downloadSource)
     jar.enabled = false
 }
 
