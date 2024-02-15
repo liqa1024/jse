@@ -104,8 +104,8 @@ final class SSHCore implements IAutoShutdown {
             }
             rServerSSH.mSession.connect();
             
-            if (aCompressLevel >= 0) rServerSSH.setCompressionLevel(aCompressLevel);
-            if (aBeforeCommand != null) rServerSSH.setBeforeSystem(aBeforeCommand);
+            if (aCompressLevel >= 0) rServerSSH.setCompressLevel(aCompressLevel);
+            if (aBeforeCommand != null) rServerSSH.setBeforeCommand(aBeforeCommand);
         } catch (Exception e) {
             // 获取失败会自动关闭
             if (rServerSSH != null) rServerSSH.shutdown();
@@ -140,15 +140,15 @@ final class SSHCore implements IAutoShutdown {
         return this;
     }
     // 设置数据传输的压缩等级
-    public SSHCore setCompressionLevel(int aCompressionLevel) throws Exception {
+    public SSHCore setCompressLevel(int aCompressLevel) throws Exception {
         if (mDead) throw new RuntimeException("Can NOT setCompressionLevel from a Dead SSH.");
         // 会尝试一次重新连接
         if (!isConnecting()) connect();
         // 根据输入设置压缩等级
-        if (aCompressionLevel > 0) {
+        if (aCompressLevel > 0) {
             session().setConfig("compression.s2c", "zlib@openssh.com,zlib,none");
             session().setConfig("compression.c2s", "zlib@openssh.com,zlib,none");
-            session().setConfig("compression_level", String.valueOf(aCompressionLevel));
+            session().setConfig("compression_level", String.valueOf(aCompressLevel));
         } else {
             session().setConfig("compression.s2c", "none");
             session().setConfig("compression.c2s", "none");
@@ -157,7 +157,7 @@ final class SSHCore implements IAutoShutdown {
         return this;
     }
     // 设置执行 system 之前的附加指令
-    public SSHCore setBeforeSystem(String aCommand) {
+    public SSHCore setBeforeCommand(String aCommand) {
         if (mDead) throw new RuntimeException("Can NOT setBeforeSystem from a Dead SSH.");
         mBeforeCommand = aCommand;
         return this;

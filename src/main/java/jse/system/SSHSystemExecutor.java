@@ -34,6 +34,12 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
         }
     }
     
+    /** 这些属性支持创建后修改来方便使用 */
+    public SSHSystemExecutor setLocalWorkingDir(String aLocalWorkingDir) {mSSH.setLocalWorkingDir(aLocalWorkingDir); return this;}
+    public SSHSystemExecutor setRemoteWorkingDir(String aRemoteWorkingDir) {mSSH.setRemoteWorkingDir(aRemoteWorkingDir); return this;}
+    public SSHSystemExecutor setCompressLevel(int aCompressLevel) throws Exception {mSSH.setCompressLevel(aCompressLevel); return this;}
+    public SSHSystemExecutor setBeforeCommand(String aBeforeCommand) {mSSH.setBeforeCommand(aBeforeCommand); return this;}
+    
     /** 现在也支持使用 builder 来构造 */
     public static Builder builder() {return new Builder();}
     public final static class Builder {

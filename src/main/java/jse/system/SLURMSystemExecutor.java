@@ -74,6 +74,11 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
         } catch (Exception ignored) {}
     }
     
+    /** 这些属性支持创建后修改来方便使用 */
+    public SLURMSystemExecutor setLocalWorkingDir(String aLocalWorkingDir) {mEXE.setLocalWorkingDir(aLocalWorkingDir); return this;}
+    public SLURMSystemExecutor setRemoteWorkingDir(String aRemoteWorkingDir) {mEXE.setRemoteWorkingDir(aRemoteWorkingDir); return this;}
+    public SLURMSystemExecutor setCompressLevel(int aCompressLevel) throws Exception {mEXE.setCompressLevel(aCompressLevel); return this;}
+    public SLURMSystemExecutor setBeforeCommand(String aBeforeCommand) {mEXE.setBeforeCommand(aBeforeCommand); return this;}
     
     /** 现在也支持使用 builder 来构造 */
     public static Builder builder() {return new Builder();}
