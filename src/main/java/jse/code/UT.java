@@ -931,7 +931,7 @@ public class UT {
          * @return lines of String
          * @throws IOException when fail
          */
-        public static List<String> readAllLines(String aFilePath) throws IOException {return Files.readAllLines(toAbsolutePath_(aFilePath));}
+        public static List<String> readAllLines(String aFilePath) throws IOException {return Files.readAllLines(toAbsolutePath_(aFilePath), StandardCharsets.UTF_8);}
         /**
          * read all lines from the BufferedReader
          * @author liqa
@@ -968,12 +968,12 @@ public class UT {
             removeDir_(aDir);
         }
         private static void removeDir_(String aDir) throws IOException {
-            String[] tFiles = UT.IO.list(aDir);
+            String[] tFiles = list(aDir);
             for (String tName : tFiles) {
                 if (tName==null || tName.isEmpty() || tName.equals(".") || tName.equals("..")) continue;
                 String tFileOrDir = aDir+tName;
-                if (UT.IO.isDir(tFileOrDir)) {removeDir_(tFileOrDir+"/");}
-                else if (UT.IO.isFile(tFileOrDir)) {delete(tFileOrDir);}
+                if (isDir(tFileOrDir)) {removeDir_(tFileOrDir+"/");}
+                else if (isFile(tFileOrDir)) {delete(tFileOrDir);}
             }
             delete(aDir);
         }
@@ -1006,9 +1006,9 @@ public class UT {
         @FunctionalInterface public interface IWriteln extends AutoCloseable {void writeln(CharSequence aLine) throws IOException; default void close() throws IOException {/**/}}
         
         /** output stuffs */
-        public static OutputStream   toOutputStream(String aFilePath, OpenOption... aOptions)   throws IOException  {return toOutputStream(UT.IO.toAbsolutePath_(aFilePath), aOptions);}
+        public static OutputStream   toOutputStream(String aFilePath, OpenOption... aOptions)   throws IOException  {return toOutputStream(toAbsolutePath_(aFilePath), aOptions);}
         public static OutputStream   toOutputStream(Path aPath, OpenOption... aOptions)         throws IOException  {validPath(aPath); return Files.newOutputStream(aPath, aOptions);}
-        public static BufferedWriter toWriter      (String aFilePath, OpenOption... aOptions)   throws IOException  {return toWriter(UT.IO.toAbsolutePath_(aFilePath), aOptions);}
+        public static BufferedWriter toWriter      (String aFilePath, OpenOption... aOptions)   throws IOException  {return toWriter(toAbsolutePath_(aFilePath), aOptions);}
         public static BufferedWriter toWriter      (Path aPath, OpenOption... aOptions)         throws IOException  {validPath(aPath); return new BufferedWriter(new OutputStreamWriter(toOutputStream(aPath, aOptions), StandardCharsets.UTF_8)) {@Override public void newLine() throws IOException {write("\n");}};}
         public static BufferedWriter toWriter      (OutputStream aOutputStream)                                     {return toWriter(aOutputStream, StandardCharsets.UTF_8);}
         public static BufferedWriter toWriter      (OutputStream aOutputStream, Charset aCS)                        {return new BufferedWriter(new OutputStreamWriter(aOutputStream, aCS)) {@Override public void newLine() throws IOException {write("\n");}};}
@@ -1024,18 +1024,18 @@ public class UT {
         }
         
         /** input stuffs */
-        public static InputStream    toInputStream(String aFilePath)        throws IOException  {return toInputStream(UT.IO.toAbsolutePath_(aFilePath));}
+        public static InputStream    toInputStream(String aFilePath)        throws IOException  {return toInputStream(toAbsolutePath_(aFilePath));}
         public static InputStream    toInputStream(Path aPath)              throws IOException  {return Files.newInputStream(aPath);}
-        public static BufferedReader toReader     (String aFilePath)        throws IOException  {return toReader(UT.IO.toAbsolutePath_(aFilePath));}
-        public static BufferedReader toReader     (Path aPath)              throws IOException  {return Files.newBufferedReader(aPath);}
+        public static BufferedReader toReader     (String aFilePath)        throws IOException  {return toReader(toAbsolutePath_(aFilePath));}
+        public static BufferedReader toReader     (Path aPath)              throws IOException  {return Files.newBufferedReader(aPath, StandardCharsets.UTF_8);}
         public static BufferedReader toReader     (URL aFileURL)            throws IOException  {return toReader(aFileURL.openStream());}
         public static BufferedReader toReader     (InputStream aInputStream)                    {return toReader(aInputStream, StandardCharsets.UTF_8);}
         public static BufferedReader toReader     (InputStream aInputStream, Charset aCS)       {return new BufferedReader(new InputStreamReader(aInputStream, aCS));}
         
         /** misc stuffs */
         public static File toFile(String aFilePath)                     {return toAbsolutePath_(aFilePath).toFile();}
-        public static void validPath(String aPath)  throws IOException  {if (aPath.endsWith("/") || aPath.endsWith("\\")) UT.IO.makeDir(aPath); else validPath(toAbsolutePath_(aPath));}
-        public static void validPath(Path aPath)    throws IOException  {Path tParent = aPath.getParent(); if (tParent != null) UT.IO.makeDir(tParent);}
+        public static void validPath(String aPath)  throws IOException  {if (aPath.endsWith("/") || aPath.endsWith("\\")) makeDir(aPath); else validPath(toAbsolutePath_(aPath));}
+        public static void validPath(Path aPath)    throws IOException  {Path tParent = aPath.getParent(); if (tParent != null) makeDir(tParent);}
         
         /**
          * extract zip file to directory
@@ -1044,7 +1044,7 @@ public class UT {
         public static void zip2dir(String aZipFilePath, String aDir) throws IOException {
             aDir = toInternalValidDir(aDir);
             makeDir(aDir);
-            byte[] tBuffer = new byte[1024];
+            byte[] tBuffer = new byte[8192];
             try (ZipInputStream tZipInputStream = new ZipInputStream(toInputStream(aZipFilePath))) {
                 ZipEntry tZipEntry = tZipInputStream.getNextEntry();
                 while (tZipEntry != null) {
@@ -1071,7 +1071,7 @@ public class UT {
         public static void dir2zip(String aDir, String aZipFilePath, int aCompressLevel) throws IOException {
             aDir = toInternalValidDir(aDir);
             try (ZipOutputStream tZipOutputStream = new ZipOutputStream(toOutputStream(aZipFilePath))) {
-                byte[] tBuffer = new byte[1024];
+                byte[] tBuffer = new byte[8192];
                 tZipOutputStream.setLevel(aCompressLevel);
                 for (String tName : list(aDir)) {
                     if (tName==null || tName.isEmpty() || tName.equals(".") || tName.equals("..")) continue;
@@ -1091,7 +1091,7 @@ public class UT {
         /** Groovy stuff */
         public static void files2zip(Iterable<? extends CharSequence> aPaths, String aZipFilePath, int aCompressLevel) throws IOException {
             try (ZipOutputStream tZipOutputStream = new ZipOutputStream(toOutputStream(aZipFilePath))) {
-                byte[] tBuffer = new byte[1024];
+                byte[] tBuffer = new byte[8192];
                 tZipOutputStream.setLevel(aCompressLevel);
                 for (CharSequence tCS : aPaths) {
                     String tPath = tCS.toString();
@@ -1111,7 +1111,7 @@ public class UT {
             try (InputStream tInputStream = toInputStream(aFilePath)) {
                 aZipOutputStream.putNextEntry(new ZipEntry(aZipDir+aFileName));
                 int length;
-                while ((length = tInputStream.read(rBuffer)) > 0) {
+                while ((length = tInputStream.read(rBuffer, 0, 8192)) > 0) {
                     aZipOutputStream.write(rBuffer, 0, length);
                 }
                 aZipOutputStream.closeEntry();
@@ -1133,12 +1133,12 @@ public class UT {
          * @author liqa
          */
         public static Map<?, ?> json2map(String aFilePath) throws IOException {
-            try (Reader tReader = IO.toReader(aFilePath)) {
+            try (Reader tReader = toReader(aFilePath)) {
                 return (Map<?, ?>) (new JsonSlurper()).parse(tReader);
             }
         }
         public static void map2json(Map<?, ?> aMap, String aFilePath) throws IOException {
-            try (Writer tWriter = IO.toWriter(aFilePath)) {
+            try (Writer tWriter = toWriter(aFilePath)) {
                 (new JsonBuilder(aMap)).writeTo(tWriter);
             }
         }
@@ -1147,12 +1147,12 @@ public class UT {
          * @author liqa
          */
         public static Map<?, ?> yaml2map(String aFilePath) throws Exception {
-            try (Reader tReader = IO.toReader(aFilePath)) {
+            try (Reader tReader = toReader(aFilePath)) {
                 return (Map<?, ?>) (new YamlSlurper()).parse(tReader);
             }
         }
         public static void map2yaml(Map<?, ?> aMap, String aFilePath) throws IOException {
-            try (Writer tWriter = IO.toWriter(aFilePath)) {
+            try (Writer tWriter = toWriter(aFilePath)) {
                 YamlBuilder tBuilder = new YamlBuilder();
                 tBuilder.call(aMap);
                 tBuilder.writeTo(tWriter);

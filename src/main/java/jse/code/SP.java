@@ -70,25 +70,25 @@ public class SP {
         }
         
         private final static String GROOVY_SP_DIR = "script/groovy/";
-        /** 将 aScriptPath 转换成 File，现在可以省略掉 script/groovy/ 以及后缀 */
-        private static File toScriptFile(String aScriptPath) throws IOException {
+        /** 将 aScriptPath 转换成 GroovyCodeSource，现在可以省略掉 script/groovy/ 以及后缀 */
+        private static GroovyCodeSource toSourceFile(String aScriptPath) throws IOException {
             // 如果不是 .groovy 后缀则有限检测带有后缀的，和 .bat 脚本类似的逻辑，可以保证同名脚本共存
             if (!aScriptPath.endsWith(".groovy")) {
-                @Nullable File tFile = toScriptFile_(aScriptPath+".groovy");
+                @Nullable GroovyCodeSource tFile = toScriptFile_(aScriptPath+".groovy");
                 if (tFile != null) return tFile;
             }
-            @Nullable File tFile = toScriptFile_(aScriptPath);
+            @Nullable GroovyCodeSource tFile = toScriptFile_(aScriptPath);
             if (tFile == null) throw new FileNotFoundException(aScriptPath + " (" + UT.IO.toAbsolutePath(aScriptPath) + ")");
             return tFile;
         }
         /** 返回 null 表示没有找到文件 */
-        private static @Nullable File toScriptFile_(String aScriptPath) {
+        private static @Nullable GroovyCodeSource toScriptFile_(String aScriptPath) throws IOException {
             // 首先如果此文件存在则直接返回
             File tFile = UT.IO.toFile(aScriptPath);
-            if (tFile.isFile()) return tFile;
+            if (tFile.isFile()) return new GroovyCodeSource(tFile, "UTF-8"); // 文件统一使用 utf-8 编码
             // 否则增加 script/groovy/ 后再次检测
             tFile = UT.IO.toFile(GROOVY_SP_DIR+aScriptPath);
-            if (tFile.isFile()) return tFile;
+            if (tFile.isFile()) return new GroovyCodeSource(tFile, "UTF-8"); // 文件统一使用 utf-8 编码
             // 否则返回 null
             return null;
         }
@@ -175,7 +175,7 @@ public class SP {
         /** 创建脚本类的实例 */
         public synchronized static Object newInstance(String aScriptPath, Object... aArgs) throws Exception {
             // 获取脚本的类，底层自动进行了缓存，并且在文件修改时会自动更新
-            Class<?> tScriptClass = CLASS_LOADER.parseClass(toScriptFile(aScriptPath));
+            Class<?> tScriptClass = CLASS_LOADER.parseClass(toSourceFile(aScriptPath));
             // 获取 ScriptClass 的实例
             return newInstance_(tScriptClass, aArgs);
         }
@@ -196,14 +196,14 @@ public class SP {
         }
         public synchronized static TaskCall<?> getCallableOfScript(String aScriptPath, String... aArgs) throws IOException {
             // 获取脚本的类，底层自动进行了缓存
-            Class<?> tScriptClass = CLASS_LOADER.parseClass(toScriptFile(aScriptPath));
+            Class<?> tScriptClass = CLASS_LOADER.parseClass(toSourceFile(aScriptPath));
             // 获取 ScriptClass 的执行 Task
             return getCallableOfScript_(tScriptClass, aArgs);
         }
         /** 注意是脚本中的方法或者是类中静态方法，成员方法可以获取对象后直接用 {@link UT.Hack}.getTaskOfMethod */
         public synchronized static TaskCall<?> getCallableOfScriptMethod(String aScriptPath, final String aMethodName, Object... aArgs) throws IOException {
             // 获取脚本的类，底层自动进行了缓存
-            Class<?> tScriptClass = CLASS_LOADER.parseClass(toScriptFile(aScriptPath));
+            Class<?> tScriptClass = CLASS_LOADER.parseClass(toSourceFile(aScriptPath));
             // 获取 ScriptClass 中具体方法的 Task
             return getCallableOfScriptMethod_(tScriptClass, aMethodName, aArgs);
         }

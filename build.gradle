@@ -34,9 +34,11 @@ sourceSets {
 }
 
 compileJava {
-    options.encoding = "UTF-8"
-//  options.compilerArgs << "-Xlint:deprecation"
-//  options.compilerArgs << "-Xlint:unchecked"
+    options.fork = true
+    options.forkOptions.jvmArgs << '-Duser.language=en' // 直接设置 java 编译器为英文即可避免乱码问题，这应该是最好的方法
+    options.encoding = 'UTF-8'
+    
+    options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked'
 }
 
 dependencies {

@@ -8,8 +8,6 @@ import java.util.Spliterator;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
-import static jse.code.CS.Exec.IS_WINDOWS;
-
 
 class Util {
 
@@ -21,10 +19,7 @@ class Util {
     });
 
     static ConsoleProgressBarConsumer createConsoleConsumer(int predefinedWidth) {
-        PrintStream real;
-        // 这种写法可以在原本逻辑上保证最大的兼容性，虽然在此项目中现在用不到了
-        try {real = new PrintStream(new FileOutputStream(FileDescriptor.err), false, IS_WINDOWS ? "GBK" : "UTF-8");}
-        catch (UnsupportedEncodingException e) {throw new RuntimeException(e);}
+        PrintStream real = new PrintStream(new FileOutputStream(FileDescriptor.err)); // 不再手动指定 charset
         return createConsoleConsumer(real, predefinedWidth);  // System.err might be overridden by System.setErr
     }
 

@@ -33,9 +33,9 @@ public class RefreshableFilePrintStream extends PrintStream {
      * @since  2.3.8
      */
     public RefreshableFilePrintStream(@NotNull String aFilePath) throws IOException {
-        super(new RefreshableFileOutputStream(aFilePath));
+        this(aFilePath, "UTF-8"); // 文件操作统一使用 utf-8
     }
-    public RefreshableFilePrintStream(@NotNull String aFilePath, String aEncoding) throws IOException {
+    public RefreshableFilePrintStream(@NotNull String aFilePath, @NotNull String aEncoding) throws IOException {
         super(new RefreshableFileOutputStream(aFilePath), false, aEncoding);
     }
     
