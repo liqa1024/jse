@@ -12,6 +12,7 @@ import groovy.yaml.YamlBuilder;
 import groovy.yaml.YamlSlurper;
 import jse.Main;
 import jse.atom.*;
+import jse.cache.ByteArrayCache;
 import jse.code.collection.AbstractCollections;
 import jse.code.functional.IDoubleFilter;
 import jse.code.functional.IFilter;
@@ -890,6 +891,7 @@ public class UT {
     }
     
     public static class IO {
+        private final static int BUFFER_SIZE = 8192;
         
         /**
          * 内部使用，判断一个文件夹路径 aDir 是否符合内部使用的格式，
@@ -910,7 +912,7 @@ public class UT {
         
         
         /**
-         * Wrapper of {@link Files}.write
+         * Wrapper of {@link Files#write}
          * @author liqa
          * @param aFilePath File to write
          * @param aLines Iterable String or String[]
@@ -929,7 +931,7 @@ public class UT {
             }
         }
         /**
-         * Wrapper of {@link Files}.readAllBytes
+         * Wrapper of {@link Files#readAllBytes}
          * @author liqa
          * @param aFilePath File to read
          * @return array of byte
@@ -1062,7 +1064,7 @@ public class UT {
         public static void zip2dir(String aZipFilePath, String aDir) throws IOException {
             aDir = toInternalValidDir(aDir);
             makeDir(aDir);
-            byte[] tBuffer = new byte[8192];
+            byte[] tBuffer = ByteArrayCache.getArray(BUFFER_SIZE);
             try (ZipInputStream tZipInputStream = new ZipInputStream(toInputStream(aZipFilePath))) {
                 ZipEntry tZipEntry = tZipInputStream.getNextEntry();
                 while (tZipEntry != null) {
@@ -1072,13 +1074,15 @@ public class UT {
                     } else {
                         try (OutputStream tOutputStream = toOutputStream(tEntryPath)) {
                             int length;
-                            while ((length = tZipInputStream.read(tBuffer)) > 0) {
+                            while ((length = tZipInputStream.read(tBuffer, 0, BUFFER_SIZE)) > 0) {
                                 tOutputStream.write(tBuffer, 0, length);
                             }
                         }
                     }
                     tZipEntry = tZipInputStream.getNextEntry();
                 }
+            } finally {
+                ByteArrayCache.returnArray(tBuffer);
             }
         }
         
@@ -1088,8 +1092,8 @@ public class UT {
          */
         public static void dir2zip(String aDir, String aZipFilePath, int aCompressLevel) throws IOException {
             aDir = toInternalValidDir(aDir);
+            byte[] tBuffer =  ByteArrayCache.getArray(BUFFER_SIZE);
             try (ZipOutputStream tZipOutputStream = new ZipOutputStream(toOutputStream(aZipFilePath))) {
-                byte[] tBuffer = new byte[8192];
                 tZipOutputStream.setLevel(aCompressLevel);
                 for (String tName : list(aDir)) {
                     if (tName==null || tName.isEmpty() || tName.equals(".") || tName.equals("..")) continue;
@@ -1097,6 +1101,8 @@ public class UT {
                     if (isDir(tPath)) addDirToZip_("", tPath+"/", tName, tZipOutputStream, tBuffer);
                     else addFileToZip_("", tPath, tName, tZipOutputStream, tBuffer);
                 }
+            } finally {
+                ByteArrayCache.returnArray(tBuffer);
             }
         }
         public static void dir2zip(String aDir, String aZipFilePath) throws IOException {dir2zip(aDir, aZipFilePath, Deflater.DEFAULT_COMPRESSION);}
@@ -1108,8 +1114,8 @@ public class UT {
         public static void files2zip(String[] aPaths, String aZipFilePath) throws IOException {files2zip(AbstractCollections.from(aPaths), aZipFilePath);}
         /** Groovy stuff */
         public static void files2zip(Iterable<? extends CharSequence> aPaths, String aZipFilePath, int aCompressLevel) throws IOException {
+            byte[] tBuffer = ByteArrayCache.getArray(BUFFER_SIZE);
             try (ZipOutputStream tZipOutputStream = new ZipOutputStream(toOutputStream(aZipFilePath))) {
-                byte[] tBuffer = new byte[8192];
                 tZipOutputStream.setLevel(aCompressLevel);
                 for (CharSequence tCS : aPaths) {
                     String tPath = tCS.toString();
@@ -1121,6 +1127,8 @@ public class UT {
                         addFileToZip_("", tPath, tFile.getName(), tZipOutputStream, tBuffer);
                     }
                 }
+            } finally {
+                ByteArrayCache.returnArray(tBuffer);
             }
         }
         public static void files2zip(Iterable<? extends CharSequence> aPaths, String aZipFilePath) throws IOException {files2zip(aPaths, aZipFilePath, Deflater.DEFAULT_COMPRESSION);}
@@ -1129,7 +1137,7 @@ public class UT {
             try (InputStream tInputStream = toInputStream(aFilePath)) {
                 aZipOutputStream.putNextEntry(new ZipEntry(aZipDir+aFileName));
                 int length;
-                while ((length = tInputStream.read(rBuffer, 0, 8192)) > 0) {
+                while ((length = tInputStream.read(rBuffer, 0, BUFFER_SIZE)) > 0) {
                     aZipOutputStream.write(rBuffer, 0, length);
                 }
                 aZipOutputStream.closeEntry();
