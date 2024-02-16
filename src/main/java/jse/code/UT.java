@@ -578,9 +578,6 @@ public class UT {
         
         
         
-        private final static int LONG_LEN = 8, DOUBLE_LEN = LONG_LEN;
-        private final static int INT_LEN = 4;
-        
         
         public static void int2bytes(int aI, byte[] rBytes, final int aPos) {
             for (int i = aPos; i < aPos+4; ++i) {
@@ -621,7 +618,7 @@ public class UT {
         
         
         public static byte[] int2bytes(int aI) {
-            byte[] rBytes = new byte[INT_LEN];
+            byte[] rBytes = new byte[Integer.BYTES];
             int2bytes(aI, rBytes, 0);
             return rBytes;
         }
@@ -630,7 +627,7 @@ public class UT {
         }
         
         public static byte[] long2bytes(long aL) {
-            byte[] rBytes = new byte[LONG_LEN];
+            byte[] rBytes = new byte[Long.BYTES];
             long2bytes(aL, rBytes, 0);
             return rBytes;
         }
@@ -642,18 +639,18 @@ public class UT {
         
         /** {@link IAtomData} 的序列化和反序列化 */
         public static byte[] atomDataXYZ2bytes(IAtomData aAtomData) {
-            byte[] rBytes = new byte[DOUBLE_LEN*3 + DOUBLE_LEN*3*aAtomData.atomNum()];
+            byte[] rBytes = new byte[Double.BYTES*3 + Double.BYTES*3*aAtomData.atomNum()];
             int tIdx = 0;
             // 模拟盒数据
             IXYZ tBox = aAtomData.box();
-            double2bytes(tBox.x(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-            double2bytes(tBox.y(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-            double2bytes(tBox.z(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            double2bytes(tBox.x(), rBytes, tIdx); tIdx+=Double.BYTES;
+            double2bytes(tBox.y(), rBytes, tIdx); tIdx+=Double.BYTES;
+            double2bytes(tBox.z(), rBytes, tIdx); tIdx+=Double.BYTES;
             // 原子数据
             for (IAtom tAtom : aAtomData.asList()) {
-                double2bytes(tAtom.x(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-                double2bytes(tAtom.y(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-                double2bytes(tAtom.z(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+                double2bytes(tAtom.x(), rBytes, tIdx); tIdx+=Double.BYTES;
+                double2bytes(tAtom.y(), rBytes, tIdx); tIdx+=Double.BYTES;
+                double2bytes(tAtom.z(), rBytes, tIdx); tIdx+=Double.BYTES;
             }
             return rBytes;
         }
@@ -661,17 +658,17 @@ public class UT {
             double tX, tY, tZ;
             int tIdx = 0;
             // 获取模拟盒数据
-            tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-            tY = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-            tZ = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+            tX = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
+            tY = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
+            tZ = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
             XYZ tBox = new XYZ(tX, tY, tZ);
             // 获取原子数据，这里只有 XYZ 数据
-            int tAtomNum = (aBytes.length - DOUBLE_LEN*3) / (DOUBLE_LEN*3);
+            int tAtomNum = (aBytes.length - Double.BYTES*3) / (Double.BYTES*3);
             List<Atom> rAtoms = new ArrayList<>(tAtomNum);
             for (int tID = 1; tID <= tAtomNum; ++tID) {
-                tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-                tY = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-                tZ = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+                tX = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
+                tY = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
+                tZ = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
                 rAtoms.add(new Atom(tX, tY, tZ, tID, 1));
             }
             // 返回结果
@@ -680,21 +677,21 @@ public class UT {
         
         /** {@link IAtomData} 的序列化和反序列化 */
         public static byte[] atomDataXYZType2bytes(IAtomData aAtomData) {
-            byte[] rBytes = new byte[DOUBLE_LEN*3 + INT_LEN + (DOUBLE_LEN*3 + INT_LEN)*aAtomData.atomNum()];
+            byte[] rBytes = new byte[Double.BYTES*3 + Integer.BYTES + (Double.BYTES*3 + Integer.BYTES)*aAtomData.atomNum()];
             int tIdx = 0;
             // 模拟盒数据
             IXYZ tBox = aAtomData.box();
-            double2bytes(tBox.x(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-            double2bytes(tBox.y(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-            double2bytes(tBox.z(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
+            double2bytes(tBox.x(), rBytes, tIdx); tIdx+=Double.BYTES;
+            double2bytes(tBox.y(), rBytes, tIdx); tIdx+=Double.BYTES;
+            double2bytes(tBox.z(), rBytes, tIdx); tIdx+=Double.BYTES;
             // 原子种类数目信息
-            int2bytes(aAtomData.atomTypeNum(), rBytes, tIdx); tIdx+=INT_LEN;
+            int2bytes(aAtomData.atomTypeNum(), rBytes, tIdx); tIdx+=Integer.BYTES;
             // 原子数据
             for (IAtom tAtom : aAtomData.asList()) {
-                double2bytes(tAtom.x(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-                double2bytes(tAtom.y(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-                double2bytes(tAtom.z(), rBytes, tIdx); tIdx+=DOUBLE_LEN;
-                int2bytes (tAtom.type(), rBytes, tIdx); tIdx+=INT_LEN;
+                double2bytes(tAtom.x(), rBytes, tIdx); tIdx+=Double.BYTES;
+                double2bytes(tAtom.y(), rBytes, tIdx); tIdx+=Double.BYTES;
+                double2bytes(tAtom.z(), rBytes, tIdx); tIdx+=Double.BYTES;
+                int2bytes (tAtom.type(), rBytes, tIdx); tIdx+=Integer.BYTES;
             }
             return rBytes;
         }
@@ -703,20 +700,20 @@ public class UT {
             int tType;
             int tIdx = 0;
             // 获取模拟盒数据
-            tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-            tY = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-            tZ = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
+            tX = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
+            tY = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
+            tZ = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
             XYZ tBox = new XYZ(tX, tY, tZ);
             // 获取原子种类数目信息
-            int tAtomTypeNum = bytes2int(aBytes, tIdx); tIdx+=INT_LEN;
+            int tAtomTypeNum = bytes2int(aBytes, tIdx); tIdx+=Integer.BYTES;
             // 获取原子数据，这里只有 XYZ 数据
-            int tAtomNum = (aBytes.length - DOUBLE_LEN*3 - INT_LEN) / (DOUBLE_LEN*3 + INT_LEN);
+            int tAtomNum = (aBytes.length - Double.BYTES*3 - Integer.BYTES) / (Double.BYTES*3 + Integer.BYTES);
             List<Atom> rAtoms = new ArrayList<>(tAtomNum);
             for (int tID = 1; tID <= tAtomNum; ++tID) {
-                tX = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-                tY = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-                tZ = bytes2double(aBytes, tIdx); tIdx+=DOUBLE_LEN;
-                tType = bytes2int(aBytes, tIdx); tIdx+=INT_LEN;
+                tX = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
+                tY = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
+                tZ = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
+                tType = bytes2int(aBytes, tIdx); tIdx+=Integer.BYTES;
                 rAtoms.add(new Atom(tX, tY, tZ, tID, tType));
             }
             // 返回结果
@@ -996,8 +993,13 @@ public class UT {
         @VisibleForTesting
         public static void      mkdir   (String aDir)                                   throws IOException  {makeDir(aDir);} // can mkdir nested
         public static void      makeDir (String aDir)                                   throws IOException  {makeDir(toAbsolutePath_(aDir));} // can mkdir nested
+        @VisibleForTesting
+        public static boolean   isdir   (String aDir)                                                       {return isDir(aDir);}
         public static boolean   isDir   (String aDir)                                                       {return Files.isDirectory(toAbsolutePath_(aDir));}
+        @VisibleForTesting
+        public static boolean   isfile  (String aFilePath)                                                  {return isFile(aFilePath);}
         public static boolean   isFile  (String aFilePath)                                                  {return Files.isRegularFile(toAbsolutePath_(aFilePath));}
+        
         public static boolean   exists  (String aPath)                                                      {return Files.exists(toAbsolutePath_(aPath));}
         public static void      delete  (String aPath)                                  throws IOException  {Files.deleteIfExists(toAbsolutePath_(aPath));} // can delete not exist path
         public static void      copy    (String aSourcePath, String aTargetPath)        throws IOException  {copy(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath));}
