@@ -50,6 +50,7 @@ import me.tongfei.progressbar.ProgressBarStyle;
 import net.jafama.FastMath;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.groovy.json.internal.CharScanner;
 import org.apache.groovy.util.Maps;
@@ -1317,13 +1318,30 @@ public class UT {
          * @param aFilePath csv file path to read
          * @return split 后的行组成的 List
          */
-        public static List<String[]> csv2str(String aFilePath) throws IOException {
+        public static List<String[]> csv2str(String aFilePath, CSVFormat aFormat) throws IOException {
             List<String[]> rLines = new ArrayList<>();
-            try (CSVParser tParser = new CSVParser(toReader(aFilePath), CSVFormat.DEFAULT)) {
+            try (CSVParser tParser = new CSVParser(toReader(aFilePath), aFormat)) {
                 for (CSVRecord tRecord : tParser) rLines.add(tRecord.values());
             }
             return rLines;
         }
+        public static void str2csv(Iterable<?> aLines, String aFilePath, CSVFormat aFormat) throws IOException {
+            try (CSVPrinter tPrinter = new CSVPrinter(toWriter(aFilePath), aFormat)) {
+                for (Object tLine : aLines) {
+                    if (tLine instanceof Iterable) {
+                        tPrinter.printRecord((Iterable<?>)tLine);
+                    } else
+                    if (tLine instanceof Object[]) {
+                        tPrinter.printRecord((Object[])tLine);
+                    } else {
+                        tPrinter.printRecord(tLine);
+                    }
+                }
+            }
+        }
+        private final static CSVFormat DEFAULT_CSV_FORMAT = CSVFormat.DEFAULT.builder().setRecordSeparator('\n').build();
+        public static List<String[]> csv2str(String aFilePath) throws IOException {return csv2str(aFilePath, DEFAULT_CSV_FORMAT);}
+        public static void str2csv(Iterable<?> aLines, String aFilePath) throws IOException {str2csv(aLines, aFilePath, DEFAULT_CSV_FORMAT);}
         
         /**
          * get URL of the resource
