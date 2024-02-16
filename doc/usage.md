@@ -34,6 +34,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 来原生调用 java 程序中的功能（而不是常见的 gui 形式）。
 
 > 关于 groovy 脚本的语法可以参考 [这篇文章](https://zhuanlan.zhihu.com/p/257969931)，
+> 以及 [使用风格](https://www.groovy-lang.org/style-guide.html)，
 > 它在兼容 java 语法的同时，提供了一种更加简洁的语法。
 > 
 

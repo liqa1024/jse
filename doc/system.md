@@ -288,6 +288,8 @@ ssh-keygen -p -f .ssh/id_rsa -m pem
   
   默认行为：不得为空
   
+  -----------------------------
+  
 - **`Hostname`/`hostname`/`host`/`h`**：
   
   类型：`String`
@@ -297,6 +299,8 @@ ssh-keygen -p -f .ssh/id_rsa -m pem
   例子：`'127.0.0.1'`
   
   默认行为：不得为空
+  
+  -----------------------------
   
 - **`Port`/`port`/`p`**：
   
@@ -308,6 +312,8 @@ ssh-keygen -p -f .ssh/id_rsa -m pem
   
   默认行为：22
   
+  -----------------------------
+  
 - **`Password`/`password`/`pw`**：
   
   类型：`String`
@@ -317,7 +323,8 @@ ssh-keygen -p -f .ssh/id_rsa -m pem
   例子：`'123456abcdef'`
   
   默认行为：改为使用密钥验证
-
+  
+  -----------------------------
 - **`KeyPath`/`keypath`/`key`/`k`**：
   
   类型：`String`
@@ -327,6 +334,8 @@ ssh-keygen -p -f .ssh/id_rsa -m pem
   例子：`'~/.ssh/id_rsa'`
   
   默认行为：使用默认密钥会保存的位置，如 `'~/.ssh/id_rsa'`
+  
+  -----------------------------
   
 - **`CompressLevel`/`compresslevel`/`cl`**：
   
@@ -338,7 +347,9 @@ ssh-keygen -p -f .ssh/id_rsa -m pem
   例子：`6`
   
   默认行为：不开启压缩传输（`0`）
-
+  
+  -----------------------------
+  
 - **`LocalWorkingDir`/`localworkingdir`/`lwd`**：
   
   类型：`String`
@@ -348,7 +359,9 @@ ssh-keygen -p -f .ssh/id_rsa -m pem
   例子：`'./ssh'`
   
   默认行为：程序运行时使用的目录（`'.'`）
-
+  
+  -----------------------------
+  
 - **`RemoteWorkingDir`/`remoteworkingdir`/`rwd`/`wd`**：
   
   类型：`String`
@@ -358,7 +371,9 @@ ssh-keygen -p -f .ssh/id_rsa -m pem
   例子：`'~/path/to/project'`
   
   默认行为：ssh 连接后的目录，一般为用户目录（`'~'`）
-
+  
+  -----------------------------
+  
 - **`BeforeCommand`/`beforecommand`/`bcommand`/`bc`**：
   
   类型：`String`
@@ -369,14 +384,18 @@ ssh-keygen -p -f .ssh/id_rsa -m pem
   
   默认行为：不添加此指令
   
+  -----------------------------
+  
 - **`IOThreadNumber`/`iothreadnumber`/`IOThreadNum`/`iothreadnum`/`ion`**：
   
   类型：`Integer`
   
-  描述：设置和 ssh 服务器传输文件时的并行线程数
-  （注意有些服务器禁止过高的并行数）。
+  描述：设置和 ssh 服务器传输文件时的并行线程数。
   
   例子：`4`
   
   默认行为：不开启并行传输
+  
+  > 注意：有些服务器禁止过高的并行数
+  > 
 
