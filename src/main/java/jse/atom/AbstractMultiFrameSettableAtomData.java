@@ -28,9 +28,9 @@ public abstract class AbstractMultiFrameSettableAtomData<T extends ISettableAtom
     @Override public final ISettableAtom pickAtom(int aIdx) {return defaultFrame().pickAtom(aIdx);}
     @Override public final void setAtom(int aIdx, IAtom aAtom) {defaultFrame().setAtom(aIdx, aAtom);}
     @Override public final List<? extends ISettableAtom> asList() {return defaultFrame().asList();}
-    @Override public final int atomNum() {return defaultFrame().atomNum();}
-    @Override public final int atomTypeNum() {return defaultFrame().atomTypeNum();}
-    @Override public final ISettableAtomData setAtomTypeNum(int aAtomTypeNum) {return defaultFrame().setAtomTypeNum(aAtomTypeNum);}
+    @Override public final int atomNumber() {return defaultFrame().atomNumber();}
+    @Override public final int atomTypeNumber() {return defaultFrame().atomTypeNumber();}
+    @Override public final ISettableAtomData setAtomTypeNumber(int aAtomTypeNum) {return defaultFrame().setAtomTypeNumber(aAtomTypeNum);}
     
     @Override public final IXYZ box() {return defaultFrame().box();}
     @Override public final double volume() {return defaultFrame().volume();}

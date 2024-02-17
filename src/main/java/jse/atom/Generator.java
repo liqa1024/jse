@@ -64,7 +64,7 @@ public class Generator extends AbstractThreadPool<ParforThreadPool> {
             rAtoms.add(tAtom);
         }
         
-        return new AtomData(rAtoms, aAtomData.atomTypeNum(), newBox(aAtomData.box()), aAtomData.hasVelocities());
+        return new AtomData(rAtoms, aAtomData.atomTypeNumber(), newBox(aAtomData.box()), aAtomData.hasVelocities());
     }
     
     /**

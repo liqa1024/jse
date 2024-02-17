@@ -159,7 +159,7 @@ public class AbstractAtoms {
     public static IAtomData from(final IAtomData aLattice, final int aReplicateX, final int aReplicateY, final int aReplicateZ) {
         return new AtomData(new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(final int index) {
-                final int tLatticeNum = aLattice.atomNum();
+                final int tLatticeNum = aLattice.atomNumber();
                 final IAtom tAtom = aLattice.pickAtom(index%tLatticeNum);
                 final int tRepTotal = index/tLatticeNum;
                 return new AbstractAtom() {
@@ -172,9 +172,9 @@ public class AbstractAtoms {
                 };
             }
             @Override public int size() {
-                return aLattice.atomNum()*aReplicateX*aReplicateY*aReplicateZ;
+                return aLattice.atomNumber()*aReplicateX*aReplicateY*aReplicateZ;
             }
-        }, aLattice.atomTypeNum(), new AbstractXYZ() {
+        }, aLattice.atomTypeNumber(), new AbstractXYZ() {
             @Override public double x() {return aLattice.box().x() * aReplicateX;}
             @Override public double y() {return aLattice.box().y() * aReplicateY;}
             @Override public double z() {return aLattice.box().z() * aReplicateZ;}

@@ -77,7 +77,7 @@ public class Lmpdat extends AbstractSettableAtomData {
     public Lmpdat setMasses(double[] aMasses) {return setMasses(Vectors.from(aMasses));}
     public Lmpdat setMasses(Collection<? extends Number> aMasses) {return setMasses(Vectors.from(aMasses));}
     public Lmpdat setMasses(IVector aMasses) {mMasses = aMasses; return this;}
-    @Override public Lmpdat setAtomTypeNum(int aAtomTypeNum) {mAtomTypeNum = aAtomTypeNum; return this;}
+    @Override public Lmpdat setAtomTypeNumber(int aAtomTypeNum) {mAtomTypeNum = aAtomTypeNum; return this;}
     public Lmpdat setNoVelocities() {mVelocities = null; return this;}
     public Lmpdat setHasVelocities() {if (mVelocities == null) {mVelocities = RowMatrix.zeros(mAtomNum, ATOM_DATA_KEYS_VELOCITY.length);} return this;}
     
@@ -169,7 +169,7 @@ public class Lmpdat extends AbstractSettableAtomData {
             @Override public ISettableAtom setType(int aType) {
                 // 对于设置种类需要特殊处理，设置种类同时需要更新内部的原子种类计数
                 mAtomType.set(aIdx, aType);
-                if (aType > atomTypeNum()) setAtomTypeNum(aType);
+                if (aType > atomTypeNumber()) setAtomTypeNumber(aType);
                 return this;
             }
             @Override public ISettableAtom setVx(double aVx) {
@@ -213,7 +213,7 @@ public class Lmpdat extends AbstractSettableAtomData {
             @Override public ISettableAtom setType(int aType) {
                 // 对于设置种类需要特殊处理，设置种类同时需要更新内部的原子种类计数
                 mAtomType.set(aIdx, aType);
-                if (aType > atomTypeNum()) setAtomTypeNum(aType);
+                if (aType > atomTypeNumber()) setAtomTypeNumber(aType);
                 return this;
             }
             @Override public ISettableAtom setVx(double aVx) {
@@ -235,8 +235,8 @@ public class Lmpdat extends AbstractSettableAtomData {
         if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("box is temporarily support NORMAL Box only");
         return mBox.shiftedBox();
     }
-    @Override public int atomNum() {return mAtomNum;}
-    @Override public int atomTypeNum() {return mAtomTypeNum;}
+    @Override public int atomNumber() {return mAtomNum;}
+    @Override public int atomTypeNumber() {return mAtomTypeNum;}
     @Override public double volume() {
         // 注意如果是斜方的模拟盒则不能获取到模拟盒体积
         if (mBox.type() != Box.Type.NORMAL) throw new RuntimeException("volume is temporarily support NORMAL Box only");
@@ -259,7 +259,7 @@ public class Lmpdat extends AbstractSettableAtomData {
         } else
         if (aAtomData instanceof IVaspCommonData) {
             String[] tAtomTypes = ((IVaspCommonData)aAtomData).atomTypes();
-            int tAtomTypeNum = aAtomData.atomTypeNum();
+            int tAtomTypeNum = aAtomData.atomTypeNumber();
             if (tAtomTypes!=null && tAtomTypes.length>=tAtomTypeNum) {
                 aMasses = Vectors.zeros(tAtomTypeNum);
                 for (int i = 0; i < tAtomTypeNum; ++i) aMasses.set(i, MASS.getOrDefault(tAtomTypes[i], -1.0));
@@ -276,10 +276,10 @@ public class Lmpdat extends AbstractSettableAtomData {
         if (aAtomData instanceof Lmpdat) {
             // Lmpdat 则直接获取即可（专门优化，保留完整模拟盒信息）
             Lmpdat tLmpdat = (Lmpdat)aAtomData;
-            return new Lmpdat(tLmpdat.atomTypeNum(), tLmpdat.mBox.copy(), aMasses, tLmpdat.mAtomID.copy(), tLmpdat.mAtomType.copy(), tLmpdat.mAtomXYZ.copy(), tLmpdat.mVelocities==null?null:tLmpdat.mVelocities.copy());
+            return new Lmpdat(tLmpdat.atomTypeNumber(), tLmpdat.mBox.copy(), aMasses, tLmpdat.mAtomID.copy(), tLmpdat.mAtomType.copy(), tLmpdat.mAtomXYZ.copy(), tLmpdat.mVelocities==null?null:tLmpdat.mVelocities.copy());
         } else {
             // 一般的情况
-            int tAtomNum = aAtomData.atomNum();
+            int tAtomNum = aAtomData.atomNumber();
             IntVector rAtomID = IntVector.zeros(tAtomNum);
             IntVector rAtomType = IntVector.zeros(tAtomNum);
             RowMatrix rAtomXYZ = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
@@ -298,7 +298,7 @@ public class Lmpdat extends AbstractSettableAtomData {
                 }
                 ++row;
             }
-            return new Lmpdat(aAtomData.atomTypeNum(), new Box(aAtomData.box()), aMasses, rAtomID, rAtomType, rAtomXYZ, rVelocities);
+            return new Lmpdat(aAtomData.atomTypeNumber(), new Box(aAtomData.box()), aMasses, rAtomID, rAtomType, rAtomXYZ, rVelocities);
         }
     }
     /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
@@ -450,13 +450,13 @@ public class Lmpdat extends AbstractSettableAtomData {
         lines.add("");
         lines.add("Atoms");
         lines.add("");
-        for (int i = 0; i < atomNum(); ++i)
+        for (int i = 0; i < atomNumber(); ++i)
         lines.add(String.format("%6d %6d %15.10g %15.10g %15.10g", mAtomID.get(i), mAtomType.get(i), mAtomXYZ.get(i, XYZ_X_COL), mAtomXYZ.get(i, XYZ_Y_COL), mAtomXYZ.get(i, XYZ_Z_COL)));
         if (mVelocities != null) {
         lines.add("");
         lines.add("Velocities");
         lines.add("");
-        for (int i = 0; i < atomNum(); ++i)
+        for (int i = 0; i < atomNumber(); ++i)
         lines.add(String.format("%6d %15.10g %15.10g %15.10g", mAtomID.get(i), mVelocities.get(i, STD_VX_COL), mVelocities.get(i, STD_VY_COL), mVelocities.get(i, STD_VZ_COL)));
         }
         

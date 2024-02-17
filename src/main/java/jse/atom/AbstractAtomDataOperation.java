@@ -37,28 +37,28 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     
     @Override public ISettableAtomData map(int aMinTypeNum, IUnaryFullOperator<? extends IAtom, ? super IAtom> aOperator) {
         final IAtomData tThis = thisAtomData_();
-        final int tAtomNum = tThis.atomNum();
+        final int tAtomNum = tThis.atomNumber();
         ISettableAtomData rAtomData = newSettableAtomData_(tAtomNum);
         for (int i = 0; i < tAtomNum; ++i) {
             // 保存修改后的原子，现在内部会自动更新种类计数
             rAtomData.setAtom(i, aOperator.apply(tThis.pickAtom(i)));
         }
         // 这里不进行 try 包含，因为目前这里的实例都是支持的，并且手动指定了 aMinTypeNum 后才会调用，此时设置失败会希望抛出错误
-        if (rAtomData.atomTypeNum() < aMinTypeNum) rAtomData.setAtomTypeNum(aMinTypeNum);
+        if (rAtomData.atomTypeNumber() < aMinTypeNum) rAtomData.setAtomTypeNumber(aMinTypeNum);
         return rAtomData;
     }
     
     
     @Override public ISettableAtomData mapType(int aMinTypeNum, IUnaryFullOperator<Integer, ? super IAtom> aOperator) {
         final IAtomData tThis = thisAtomData_();
-        final int tAtomNum = tThis.atomNum();
+        final int tAtomNum = tThis.atomNumber();
         ISettableAtomData rAtomData = newSameSettableAtomData_();
         for (int i = 0; i < tAtomNum; ++i) {
             // 保存修改后的原子，现在内部会自动更新种类计数
             rAtomData.pickAtom(i).setType(aOperator.apply(tThis.pickAtom(i)));
         }
         // 这里不进行 try 包含，因为目前这里的实例都是支持的，并且手动指定了 aMinTypeNum 后才会调用，此时设置失败会希望抛出错误
-        if (rAtomData.atomTypeNum() < aMinTypeNum) rAtomData.setAtomTypeNum(aMinTypeNum);
+        if (rAtomData.atomTypeNumber() < aMinTypeNum) rAtomData.setAtomTypeNumber(aMinTypeNum);
         return rAtomData;
     }
     
@@ -66,7 +66,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
         double tTotWeight = aTypeWeights.sum();
         if (tTotWeight <= 0.0) throw new RuntimeException("TypeWeights Must be Positive");
         
-        int tAtomNum = thisAtomData_().atomNum();
+        int tAtomNum = thisAtomData_().atomNumber();
         int tMaxType = aTypeWeights.size();
         // 获得对应原子种类的 List
         final IntVector.Builder tBuilder = IntVector.builder(tAtomNum+tMaxType);
@@ -87,7 +87,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     
     @Override public ISettableAtomData perturbXYZGaussian(Random aRandom, double aSigma) {
         final IAtomData tThis = thisAtomData_();
-        final int tAtomNum = tThis.atomNum();
+        final int tAtomNum = tThis.atomNumber();
         ISettableAtomData rAtomData = newSameSettableAtomData_();
         for (int i = 0; i < tAtomNum; ++i) {
             IAtom oAtom = tThis.pickAtom(i);
@@ -104,7 +104,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     @Override public ISettableAtomData wrapPBC() {
         final IAtomData tThis = thisAtomData_();
         final XYZ tBox = XYZ.toXYZ(tThis.box());
-        final int tAtomNum = tThis.atomNum();
+        final int tAtomNum = tThis.atomNumber();
         ISettableAtomData rAtomData = newSameSettableAtomData_();
         for (int i = 0; i < tAtomNum; ++i) {
             IAtom oAtom = tThis.pickAtom(i);
@@ -126,7 +126,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     /** 用于方便内部使用 */
     private IAtomData refAtomData_(List<? extends IAtom> aAtoms) {
         IAtomData tThis = thisAtomData_();
-        return new AtomData(aAtoms, tThis.atomTypeNum(), tThis.box(), tThis.hasVelocities());
+        return new AtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasVelocities());
     }
     
     /** stuff to override */

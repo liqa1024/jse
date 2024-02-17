@@ -27,9 +27,14 @@ public interface IAtomData {
     IAtom pickAtom(int aIdx);
     
     /** 保留获取原子总数的接口，但是特定种类的原子数目现在不能直接获取 */
-    int atomNum();
-    int atomTypeNum();
-    
+    int atomNumber();
+    int atomTypeNumber();
+    /** 保留旧名称兼容，当时起名太随意了，居然这么久都没发现 */
+    @Deprecated default int atomNum() {return atomNumber();}
+    @Deprecated default int atomTypeNum() {return atomTypeNumber();}
+    /** 提供简写版本 */
+    @VisibleForTesting default int natoms() {return atomNumber();}
+    @VisibleForTesting default int ntypes() {return atomTypeNumber();}
     
     /** 获取模拟盒信息的接口，现在为了使用方便，移除了 boxLo 的设定 */
     IXYZ box();

@@ -509,26 +509,29 @@ public class NativeLmp implements IAutoShutdown {
      * This is a wrapper around the {@code lammps_get_natoms()} function of the C-library interface.
      * @return number of atoms
      */
-    public int atomNum() throws Error {
+    public int atomNumber() throws Error {
         checkThread();
         return (int)lammpsGetNatoms_(mLmpPtr);
     }
-    @VisibleForTesting public int natoms() throws Error {return atomNum();}
+    @Deprecated public final int atomNum() throws Error {return atomNumber();}
+    @VisibleForTesting public int natoms() throws Error {return atomNumber();}
     private native static double lammpsGetNatoms_(long aLmpPtr) throws Error;
     
     /**
      * Get the total number of atoms types in the LAMMPS instance.
      * @return number of atom types
      */
-    public int atomTypeNum() throws Error {return settingOf("ntypes");}
-    @VisibleForTesting public int ntype() throws Error {return atomTypeNum();}
+    public int atomTypeNumber() throws Error {return settingOf("ntypes");}
+    @Deprecated public final int atomTypeNum() throws Error {return atomTypeNumber();}
+    @VisibleForTesting public int ntypes() throws Error {return atomTypeNumber();}
     
     /**
      * Get the local number of atoms in the LAMMPS instance.
      * @return number of “owned” atoms of the current MPI rank.
      */
-    public int localAtomNum() throws Error {return settingOf("nlocal");}
-    @VisibleForTesting public int nlocal() throws Error {return localAtomNum();}
+    public int localAtomNumber() throws Error {return settingOf("nlocal");}
+    @Deprecated public final int localAtomNum() throws Error {return localAtomNumber();}
+    @VisibleForTesting public int nlocal() throws Error {return localAtomNumber();}
     
     /**
      * Extract simulation box parameters
@@ -636,7 +639,7 @@ public class NativeLmp implements IAutoShutdown {
     @SuppressWarnings("DuplicateBranchesInSwitch")
     public RowMatrix atomDataOf(String aName) throws Error {
         switch(aName) {
-        case "mass":        {return localAtomDataOf(aName, 1, atomTypeNum()+1, 1);}
+        case "mass":        {return localAtomDataOf(aName, 1, atomTypeNumber()+1, 1);}
         case "id":          {return fullAtomDataOf(aName, false, 1);}
         case "type":        {return fullAtomDataOf(aName, false, 1);}
         case "mask":        {return fullAtomDataOf(aName, false, 1);}
@@ -719,13 +722,13 @@ public class NativeLmp implements IAutoShutdown {
      */
     public RowMatrix fullAtomDataOf(String aName, boolean aIsDouble, int aColNum) throws Error {
         checkThread();
-        RowMatrix rData = MatrixCache.getMatRow(atomNum(), aColNum);
+        RowMatrix rData = MatrixCache.getMatRow(atomNumber(), aColNum);
         lammpsGatherConcat_(mLmpPtr, aName, aIsDouble, aColNum, rData.internalData());
         return rData;
     }
     public RowIntMatrix fullAtomIntDataOf(String aName, int aColNum) throws Error {
         checkThread();
-        RowIntMatrix rData = IntMatrixCache.getMatRow(atomNum(), aColNum);
+        RowIntMatrix rData = IntMatrixCache.getMatRow(atomNumber(), aColNum);
         lammpsGatherConcatInt_(mLmpPtr, aName, aColNum, rData.internalData());
         return rData;
     }
@@ -867,7 +870,7 @@ public class NativeLmp implements IAutoShutdown {
         BoxPrism pBox = (BoxPrism)tBox;
         command(String.format("region          box prism %f %f %f %f %f %f %f %f %f", pBox.xlo(), pBox.xhi(), pBox.ylo(), pBox.yhi(), pBox.zlo(), pBox.zhi(), pBox.xy(), pBox.xz(), pBox.yz()));
         }
-        int tAtomTypeNum = aLmpdat.atomTypeNum();
+        int tAtomTypeNum = aLmpdat.atomTypeNumber();
         command(String.format("create_box      %d box", tAtomTypeNum));
         IVector tMasses = aLmpdat.masses();
         if (tMasses != null) for (int i = 0; i < tAtomTypeNum; ++i) {
@@ -879,7 +882,7 @@ public class NativeLmp implements IAutoShutdown {
         @Nullable IMatrix tVelocities = aLmpdat.velocities();
         @Nullable IVector tVelocitiesVec = tVelocities==null ? null : tVelocities.asVecRow();
         @Nullable Vector tBufVelocitiesVec = tVelocitiesVec==null ? null : tVelocitiesVec.toBuf();
-        lammpsCreateAtoms_(mLmpPtr, aLmpdat.atomNum(), tBufIDs.internalData(), tBufTypes.internalData(), tBufPositionsVec.internalData(), tBufVelocitiesVec==null ? null : tBufVelocitiesVec.internalData(), null, false);
+        lammpsCreateAtoms_(mLmpPtr, aLmpdat.atomNumber(), tBufIDs.internalData(), tBufTypes.internalData(), tBufPositionsVec.internalData(), tBufVelocitiesVec==null ? null : tBufVelocitiesVec.internalData(), null, false);
         tIDs.releaseBuf(tBufIDs);
         tTypes.releaseBuf(tBufTypes);
         tPositionsVec.releaseBuf(tBufPositionsVec);
@@ -890,7 +893,7 @@ public class NativeLmp implements IAutoShutdown {
         if (aAtomData instanceof Lmpdat) {loadLmpdat((Lmpdat)aAtomData); return;}
         IXYZ tBox = aAtomData.box();
         command(String.format("region          box block 0 %f 0 %f 0 %f", tBox.x(), tBox.y(), tBox.z()));
-        int tAtomTypeNum = aAtomData.atomTypeNum();
+        int tAtomTypeNum = aAtomData.atomTypeNumber();
         command(String.format("create_box      %d box", tAtomTypeNum));
         // IVaspCommonData 包含原子种类字符，可以自动获取到质量
         if (aAtomData instanceof IVaspCommonData) {

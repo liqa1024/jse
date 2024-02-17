@@ -150,7 +150,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
             if (mKeyZ==null) throw new RuntimeException("No Z data in this Lammpstrj");
             
             XYZ oShiftedBox = XYZ.toXYZ(mBox.shiftedBox());
-            double tScale = MathEX.Fast.cbrt(oShiftedBox.prod() / atomNum());
+            double tScale = MathEX.Fast.cbrt(oShiftedBox.prod() / this.atomNumber());
             tScale = 1.0 / tScale;
             
             // 从逻辑上考虑，这里不对原本数据做值拷贝
@@ -338,7 +338,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
                     if (!mAtomData.containsHead("type")) throw new UnsupportedOperationException("setType");
                     // 对于设置种类需要特殊处理，设置种类同时需要更新内部的原子种类计数
                     mAtomData.set(aIdx, "type", aType);
-                    if (aType > atomTypeNum()) setAtomTypeNum(aType);
+                    if (aType > atomTypeNumber()) setAtomTypeNumber(aType);
                     return this;
                 }
                 
@@ -357,9 +357,9 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
             };
         }
         @Override public IXYZ box() {return mBox.shiftedBox();}
-        @Override public int atomNum() {return mAtomData.rowNumber();}
-        @Override public int atomTypeNum() {return mAtomTypeNum;}
-        @Override public SubLammpstrj setAtomTypeNum(int aAtomTypeNum) {mAtomTypeNum = aAtomTypeNum; return this;}
+        @Override public int atomNumber() {return mAtomData.rowNumber();}
+        @Override public int atomTypeNumber() {return mAtomTypeNum;}
+        @Override public SubLammpstrj setAtomTypeNumber(int aAtomTypeNum) {mAtomTypeNum = aAtomTypeNum; return this;}
         
         @Override public double volume() {return mBox.shiftedBox().prod();}
         
@@ -381,7 +381,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
             // 先发送 SubLammpstrj 的必要信息，[AtomNum | AtomDataKeyNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, TimeStep]
             long[] tLammpstrjInfo = LAMMPSTRJ_INFO_CACHE.getObject();
             try {
-                tLammpstrjInfo[0] = UT.Serial.combineI(aSubLammpstrj.atomNum(), aSubLammpstrj.mAtomData.columnNumber());
+                tLammpstrjInfo[0] = UT.Serial.combineI(aSubLammpstrj.atomNumber(), aSubLammpstrj.mAtomData.columnNumber());
                 tLammpstrjInfo[1] = Double.doubleToLongBits(aSubLammpstrj.mBox.xlo());
                 tLammpstrjInfo[2] = Double.doubleToLongBits(aSubLammpstrj.mBox.xhi());
                 tLammpstrjInfo[3] = Double.doubleToLongBits(aSubLammpstrj.mBox.ylo());
@@ -432,7 +432,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
                 // 先发送 SubLammpstrj 的必要信息，[AtomNum | AtomDataKeyNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, TimeStep]
                 long[] tLammpstrjInfo = LAMMPSTRJ_INFO_CACHE.getObject();
                 try {
-                    tLammpstrjInfo[0] = UT.Serial.combineI(aSubLammpstrj.atomNum(), aSubLammpstrj.mAtomData.columnNumber());
+                    tLammpstrjInfo[0] = UT.Serial.combineI(aSubLammpstrj.atomNumber(), aSubLammpstrj.mAtomData.columnNumber());
                     tLammpstrjInfo[1] = Double.doubleToLongBits(aSubLammpstrj.mBox.xlo());
                     tLammpstrjInfo[2] = Double.doubleToLongBits(aSubLammpstrj.mBox.xhi());
                     tLammpstrjInfo[3] = Double.doubleToLongBits(aSubLammpstrj.mBox.ylo());
@@ -636,7 +636,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
                 tWriteln.writeln("ITEM: TIMESTEP");
                 tWriteln.writeln(String.format("%d", tSubLammpstrj.timeStep()));
                 tWriteln.writeln("ITEM: NUMBER OF ATOMS");
-                tWriteln.writeln(String.format("%d", tSubLammpstrj.atomNum()));
+                tWriteln.writeln(String.format("%d", tSubLammpstrj.atomNumber()));
                 tWriteln.writeln(String.format("ITEM: BOX BOUNDS %s", String.join(" ", tSubLammpstrj.boxBounds())));
                 tWriteln.writeln(String.format("%f %f", tSubLammpstrj.mBox.xlo(), tSubLammpstrj.mBox.xhi()));
                 tWriteln.writeln(String.format("%f %f", tSubLammpstrj.mBox.ylo(), tSubLammpstrj.mBox.yhi()));

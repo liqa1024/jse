@@ -118,7 +118,7 @@ public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathG
             String tLmpDataPath = tLmpDir+"data";
             String tLmpDumpPath = tLmpDir+"dump";
             // 先根据输入创建 Lmpdat 并写入，注意需要再设置一下种类数，因为 dump 不会保留种类数，对于恰好缺少种类的情况会出错
-            Lmpdat.fromAtomData(aStart, mMesses).setAtomTypeNum(mMesses.size()).write(tLmpDataPath);
+            Lmpdat.fromAtomData(aStart, mMesses).setAtomTypeNumber(mMesses.size()).write(tLmpDataPath);
             // 设置输入 data 路径和输出 dump 路径，考虑要线程安全这里要串行设置并且设置完成后拷贝结果
             IIOFiles tIOFiles;
             synchronized (this) {
@@ -165,7 +165,7 @@ public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathG
         // 如果本来就没有速率则不需要执行此操作
         if (!aPoint.hasVelocities()) return aPoint;
         // 遍历拷贝数据，只需要坐标和种类数据
-        final int tAtomNum = aPoint.atomNum();
+        final int tAtomNum = aPoint.atomNumber();
         final IMatrix rData = Matrices.zeros(tAtomNum, ATOM_DATA_KEYS_TYPE_XYZ.length);
         int row = 0;
         for (IAtom tAtom : aPoint.asList()) {
@@ -187,7 +187,7 @@ public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathG
                 };
             }
             @Override public int size() {return tAtomNum;}
-        }, aPoint.atomTypeNum(), newBox(aPoint.box()));
+        }, aPoint.atomTypeNumber(), newBox(aPoint.box()));
     }
     
     

@@ -53,7 +53,7 @@ public final class AtomData extends AbstractAtomData {
         };
     }
     @Override public IXYZ box() {return mBox;}
-    @Override public int atomNum() {return mAtoms.size();}
-    @Override public int atomTypeNum() {return mAtomTypeNum;}
+    @Override public int atomNumber() {return mAtoms.size();}
+    @Override public int atomTypeNumber() {return mAtomTypeNum;}
     @Override public boolean hasVelocities() {return mHasVelocities;}
 }

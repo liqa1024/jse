@@ -59,7 +59,7 @@ public final class SettableAtomData extends AbstractSettableAtomData {
             @Override public ISettableAtom setType(int aType) {
                 // 对于设置种类需要特殊处理，设置种类同时需要更新内部的原子种类计数
                 tAtom.setType(aType);
-                if (aType > atomTypeNum()) setAtomTypeNum(aType);
+                if (aType > atomTypeNumber()) setAtomTypeNumber(aType);
                 return this;
             }
             
@@ -70,8 +70,8 @@ public final class SettableAtomData extends AbstractSettableAtomData {
         };
     }
     @Override public IXYZ box() {return mBox;}
-    @Override public int atomNum() {return mAtoms.size();}
-    @Override public int atomTypeNum() {return mAtomTypeNum;}
-    @Override public SettableAtomData setAtomTypeNum(int aAtomTypeNum) {mAtomTypeNum = aAtomTypeNum; return this;}
+    @Override public int atomNumber() {return mAtoms.size();}
+    @Override public int atomTypeNumber() {return mAtomTypeNum;}
+    @Override public SettableAtomData setAtomTypeNumber(int aAtomTypeNum) {mAtomTypeNum = aAtomTypeNum; return this;}
     @Override public boolean hasVelocities() {return mHasVelocities;}
 }

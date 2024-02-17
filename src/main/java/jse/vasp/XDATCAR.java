@@ -242,10 +242,10 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
             return fromAtomData_(((XDATCAR)aAtomData).defaultFrame(), aInitSize, aAtomTypes);
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
-            IIntVector rIDs = IntVector.zeros(aAtomData.atomNum());
-            int tAtomTypeNum = aAtomData.atomTypeNum();
+            IIntVector rIDs = IntVector.zeros(aAtomData.atomNumber());
+            int tAtomTypeNum = aAtomData.atomTypeNumber();
             IIntVector rAtomNumbers = IntVector.zeros(tAtomTypeNum);
-            IMatrix rDirect = Matrices.zeros(aAtomData.atomNum(), 3);
+            IMatrix rDirect = Matrices.zeros(aAtomData.atomNumber(), 3);
             int tIdx = 0;
             for (int tTypeMM = 0; tTypeMM < tAtomTypeNum; ++tTypeMM) {
                 for (IAtom tAtom : aAtomData.asList()) if (tAtom.type() == tTypeMM+1) {
@@ -275,7 +275,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         // 这里只考虑一般的情况，这里直接遍历 atoms 来创建，
         // 这里直接按照 mIDs 的顺序进行排序，不考虑 type 发生改变的情况
         XYZ tBox = XYZ.toXYZ(aAtomData.box());
-        int tAtomNum = aAtomData.atomNum();
+        int tAtomNum = aAtomData.atomNumber();
         IMatrix rDirect = Matrices.zeros(tAtomNum, 3);
         for (IAtom tAtom : aAtomData.asList()) {
             int tIdx = mId2Index==null ? tAtom.id()-1 : mId2Index.get(tAtom.id());

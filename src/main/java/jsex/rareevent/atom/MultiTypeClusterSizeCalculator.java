@@ -47,8 +47,8 @@ public class MultiTypeClusterSizeCalculator extends AbstractClusterSizeCalculato
     
     @Override protected ILogicalVector getIsSolid_(MonatomicParameterCalculator aMPC, IAtomData aPoint) {
         // 常量暂存
-        final int tTypeNum = aPoint.atomTypeNum();
-        final int tAtomNum = aPoint.atomNum();
+        final int tTypeNum = aPoint.atomTypeNumber();
+        final int tAtomNum = aPoint.atomNumber();
         // 先判断所有的
         ILogicalVector rIsSolid = mAllSolidChecker.checkSolid(aMPC);
         // 手动遍历过滤

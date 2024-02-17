@@ -641,7 +641,7 @@ public class UT {
         
         /** {@link IAtomData} 的序列化和反序列化 */
         public static byte[] atomDataXYZ2bytes(IAtomData aAtomData) {
-            byte[] rBytes = new byte[Double.BYTES*3 + Double.BYTES*3*aAtomData.atomNum()];
+            byte[] rBytes = new byte[Double.BYTES*3 + Double.BYTES*3*aAtomData.atomNumber()];
             int tIdx = 0;
             // 模拟盒数据
             IXYZ tBox = aAtomData.box();
@@ -679,7 +679,7 @@ public class UT {
         
         /** {@link IAtomData} 的序列化和反序列化 */
         public static byte[] atomDataXYZType2bytes(IAtomData aAtomData) {
-            byte[] rBytes = new byte[Double.BYTES*3 + Integer.BYTES + (Double.BYTES*3 + Integer.BYTES)*aAtomData.atomNum()];
+            byte[] rBytes = new byte[Double.BYTES*3 + Integer.BYTES + (Double.BYTES*3 + Integer.BYTES)*aAtomData.atomNumber()];
             int tIdx = 0;
             // 模拟盒数据
             IXYZ tBox = aAtomData.box();
@@ -687,7 +687,7 @@ public class UT {
             double2bytes(tBox.y(), rBytes, tIdx); tIdx+=Double.BYTES;
             double2bytes(tBox.z(), rBytes, tIdx); tIdx+=Double.BYTES;
             // 原子种类数目信息
-            int2bytes(aAtomData.atomTypeNum(), rBytes, tIdx); tIdx+=Integer.BYTES;
+            int2bytes(aAtomData.atomTypeNumber(), rBytes, tIdx); tIdx+=Integer.BYTES;
             // 原子数据
             for (IAtom tAtom : aAtomData.asList()) {
                 double2bytes(tAtom.x(), rBytes, tIdx); tIdx+=Double.BYTES;
@@ -1626,7 +1626,7 @@ public class UT {
             case "z": {tScale = 200.0/Math.max(aAtomData.box().x(), aAtomData.box().y()); break;}
             default: throw new RuntimeException();
             }
-            ILine[] rLines = new ILine[aAtomData.atomTypeNum()];
+            ILine[] rLines = new ILine[aAtomData.atomTypeNumber()];
             for (int i = 0; i < rLines.length; ++i) {
                 final int tType = i + 1;
                 Iterable<IAtom> tAtoms = AbstractCollections.filter(aAtomData.asList(), atom->atom.type()==tType);

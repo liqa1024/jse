@@ -12,7 +12,7 @@ import java.util.List;
 public abstract class AbstractSettableAtomData extends AbstractAtomData implements ISettableAtomData {
     /** stuff to override */
     public abstract ISettableAtom pickAtom(int aIdx);
-    public abstract AbstractSettableAtomData setAtomTypeNum(int aAtomTypeNum);
+    public abstract AbstractSettableAtomData setAtomTypeNumber(int aAtomTypeNum);
     
     @Override public void setAtom(int aIdx, IAtom aAtom) {
         ISettableAtom tAtom = pickAtom(aIdx);
@@ -39,7 +39,7 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
                 setAtom(index, element);
                 return oAtom;
             }
-            @Override public int size() {return atomNum();}
+            @Override public int size() {return atomNumber();}
         };
     }
     

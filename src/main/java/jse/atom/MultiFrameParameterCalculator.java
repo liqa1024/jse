@@ -128,7 +128,7 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
     public MultiFrameParameterCalculator(Collection<? extends Collection<? extends IAtom>> aAtomDataList, Collection<? extends IXYZ> aBoxList, double aTimestep, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(aAtomDataList, aBoxList, aTimestep, aThreadNum, 1);}
     
     public MultiFrameParameterCalculator(Collection<? extends IAtomData> aAtomDataList, double aTimestep) {this(aAtomDataList, aTimestep, 1);}
-    public MultiFrameParameterCalculator(Collection<? extends IAtomData> aAtomDataList, double aTimestep, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(AbstractCollections.map(aAtomDataList, IAtomData::asList), AbstractCollections.map(aAtomDataList, IAtomData::box), aTimestep, aThreadNum, UT.Code.first(aAtomDataList).atomTypeNum());}
+    public MultiFrameParameterCalculator(Collection<? extends IAtomData> aAtomDataList, double aTimestep, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(AbstractCollections.map(aAtomDataList, IAtomData::asList), AbstractCollections.map(aAtomDataList, IAtomData::box), aTimestep, aThreadNum, UT.Code.first(aAtomDataList).atomTypeNumber());}
     
     
     /** 内部使用方法，处理精度问题造成的超出边界问题 */

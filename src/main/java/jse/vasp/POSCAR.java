@@ -167,7 +167,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         // 注意如果是斜方的模拟盒则不能进行转换
         if (!mIsDiagBox) throw new RuntimeException("setDenseNormalized is temporarily support Diagonal Box only");
         
-        double tScale = MathEX.Fast.cbrt(volume() / atomNum());
+        double tScale = MathEX.Fast.cbrt(volume() / atomNumber());
         // 直接通过调整 boxScale 来实现
         mBoxScale /= tScale;
         
@@ -208,7 +208,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
             @Override public ISettableAtom setID(int aID) {
                 if (id() == aID) return this;
                 if (mIsRef) throw new RuntimeException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
-                if (mIDs==null) mIDs = Vectors.range(1, atomNum()+1);
+                if (mIDs==null) mIDs = Vectors.range(1, atomNumber()+1);
                 mIDs.set(mIdx, aID);
                 return this;
             }
@@ -264,7 +264,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
                     double tX = mDirect.get(mIdx, 0);
                     double tY = mDirect.get(mIdx, 1);
                     double tZ = mDirect.get(mIdx, 2);
-                    int from = atomNum();
+                    int from = atomNumber();
                     for (int typeMM = mAtomNumbers.size()-1; typeMM >= oType; --typeMM) {
                         from -= mAtomNumbers.get(typeMM);
                     }
@@ -297,9 +297,9 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         tBox.multiply2this(mBoxScale);
         return tBox;
     }
-    @Override public int atomNum() {return mDirect.rowNumber();}
-    @Override public int atomTypeNum() {return mAtomNumbers.size();}
-    @Override public POSCAR setAtomTypeNum(int aAtomTypeNum) {throw new UnsupportedOperationException("setAtomTypeNum");}
+    @Override public int atomNumber() {return mDirect.rowNumber();}
+    @Override public int atomTypeNumber() {return mAtomNumbers.size();}
+    @Override public POSCAR setAtomTypeNumber(int aAtomTypeNum) {throw new UnsupportedOperationException("setAtomTypeNum");}
     @Override public double volume() {
         // 注意如果是斜方的模拟盒则不能获取到模拟盒体积
         if (!mIsDiagBox) throw new RuntimeException("volume is temporarily support Diagonal Box only");
@@ -325,10 +325,10 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
             return fromAtomData(((XDATCAR)aAtomData).defaultFrame(), aSelectiveDynamics, aAtomTypes);
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
-            IIntVector rIDs = IntVector.zeros(aAtomData.atomNum());
-            int tAtomTypeNum = aAtomData.atomTypeNum();
+            IIntVector rIDs = IntVector.zeros(aAtomData.atomNumber());
+            int tAtomTypeNum = aAtomData.atomTypeNumber();
             IIntVector rAtomNumbers = IntVector.zeros(tAtomTypeNum);
-            IMatrix rDirect = Matrices.zeros(aAtomData.atomNum(), 3);
+            IMatrix rDirect = Matrices.zeros(aAtomData.atomNumber(), 3);
             int tIdx = 0;
             for (int tTypeMM = 0; tTypeMM < tAtomTypeNum; ++tTypeMM) {
                 for (IAtom tAtom : aAtomData.asList()) if (tAtom.type() == tTypeMM+1) {
