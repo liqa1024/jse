@@ -301,6 +301,12 @@ public class Lmpdat extends AbstractSettableAtomData {
             return new Lmpdat(aAtomData.atomTypeNum(), new Box(aAtomData.box()), aMasses, rAtomID, rAtomType, rAtomXYZ, rVelocities);
         }
     }
+    /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
+    public static Lmpdat of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
+    public static Lmpdat of(IAtomData aAtomData, IVector aMasses) {return fromAtomData(aAtomData, aMasses);}
+    public static Lmpdat of(IAtomData aAtomData, Collection<? extends Number> aMasses) {return fromAtomData(aAtomData, aMasses);}
+    public static Lmpdat of(IAtomData aAtomData, double[] aMasses) {return fromAtomData(aAtomData, aMasses);}
+    
     
     /// 文件读写
     /**

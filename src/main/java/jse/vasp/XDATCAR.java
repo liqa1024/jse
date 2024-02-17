@@ -305,7 +305,6 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
             @Override public int columnNumber() {return aDirect.columnNumber();}
         };
     }
-    
     /** 对于 matlab 调用的兼容 */
     public static XDATCAR fromAtomData_compat(Object[] aAtomDataArray) {
         return fromAtomData_compat(aAtomDataArray, (String[])null);
@@ -313,6 +312,15 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     public static XDATCAR fromAtomData_compat(Object[] aAtomDataArray, String... aAtomTypes) {
         return fromAtomDataList(AbstractCollections.map(AbstractCollections.filter(AbstractCollections.from(aAtomDataArray), atomData -> (atomData instanceof IAtomData)), obj -> (IAtomData)obj), aAtomTypes);
     }
+    /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
+    public static XDATCAR of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
+    public static XDATCAR of(IAtomData aAtomData, String... aAtomTypes) {return fromAtomData(aAtomData, aAtomTypes);}
+    public static XDATCAR ofList(Iterable<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
+    public static XDATCAR ofList(Iterable<? extends IAtomData> aAtomDataList, String... aAtomTypes) {return fromAtomDataList(aAtomDataList, aAtomTypes);}
+    public static XDATCAR ofList(Collection<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
+    public static XDATCAR ofList(Collection<? extends IAtomData> aAtomDataList, String... aAtomTypes) {return fromAtomDataList(aAtomDataList, aAtomTypes);}
+    public static XDATCAR of_compat(Object[] aAtomDataArray) {return fromAtomData_compat(aAtomDataArray);}
+    public static XDATCAR of_compat(Object[] aAtomDataArray, String... aAtomTypes) {return fromAtomData_compat(aAtomDataArray, aAtomTypes);}
     
     
     /// 文件读写

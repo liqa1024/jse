@@ -546,6 +546,13 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
         }
         return new Lammpstrj(rLammpstrj);
     }
+    /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
+    public static Lammpstrj zl() {return new Lammpstrj();}
+    public static Lammpstrj of(IAtomData aAtomData, long aTimeStep) {return fromAtomData(aAtomData, aTimeStep);}
+    public static Lammpstrj of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
+    public static Lammpstrj ofList(Iterable<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
+    public static Lammpstrj ofList(Collection<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
+    public static Lammpstrj of_compat(Object[] aAtomDataArray) {return fromAtomData_compat(aAtomDataArray);}
     
     
     /// 文件读写

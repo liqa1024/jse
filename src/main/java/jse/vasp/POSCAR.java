@@ -344,6 +344,10 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
             return new POSCAR(DEFAULT_DATA_NAME, Matrices.diag(aAtomData.box().data()), 1.0, copyTypes(aAtomTypes), rAtomNumbers, aSelectiveDynamics, rDirect, true, rIDs);
         }
     }
+    /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
+    public static POSCAR of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
+    public static POSCAR of(IAtomData aAtomData, String... aAtomTypes) {return fromAtomData(aAtomData, aAtomTypes);}
+    public static POSCAR of(IAtomData aAtomData, boolean aSelectiveDynamics, String... aAtomTypes) {return fromAtomData(aAtomData, aSelectiveDynamics, aAtomTypes);}
     
     
     /// 文件读写
