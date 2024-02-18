@@ -6,7 +6,7 @@
    
 4. [通用文件操作](io.md)
    
-5. [Lammps 相关]()
+5. [Lammps 相关](lammps.md)
    
 6. [VASP 相关]()
     1. [POSCAR 文件读写]()

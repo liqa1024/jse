@@ -3,10 +3,11 @@
     - [dump 文件读写](#dump-文件读写)
     - [原子数据类型转换](#原子数据类型转换)
     - [原子数据修改](#原子数据修改)
-    - [log 文件读写]()
-    - [输入文件管理]()
-    - [通用 lammps 运行器]()
-    - [原生运行 lammps]()
+    - [log 文件读取](#log-文件读取)
+    - [原生运行 lammps](#原生运行-lammps)
+        - [环境要求](#环境要求)
+        - [使用方法](#使用方法)
+        - [可选配置](#可选配置)
 - [**⟶ 目录**](contents.md)
 
 # Lammps 相关
@@ -90,7 +91,7 @@ jse 中使用 [`jse.lmp.Lammpstrj`](../src/main/java/jse/lmp/Lammpstrj.java) /
     
     dump.write('.temp/example/lmp/dumpFCC')
     ```
-  
+    
 - 输出：
     
     ```
@@ -127,6 +128,48 @@ jse 支持直接使用 `dump` 来获取数据（`Dump` 本身也继承了 `IAtom
     println('time step: ' + dump.timeStep())
     println('atom at 10: ' + dump.pickAtom(10))
     ```
+
+-----------------------------
+
+一般来说 lammps 的 dump 应该是一个表格数据而不一定包含原子数据，
+这里可以通过 `dump.asTables()`/`dump[i].asTable()` 方法来将其转换成
+jse 表格 `ITable`，从而使用表格的操作方式来处理 dump 数据：
+
+- 输入脚本（`jse example/lmp/dumptable`
+  [⤤](../release/script/groovy/example/lmp/dumptable.groovy)）：
+    
+    ```groovy
+    import jse.lmp.Dump
+    import static jse.code.UT.Math.*
+    
+    def dump = Dump.read('lmp/dump/CuFCC108.lammpstrj')
+    def table = dump[4].asTable();
+    
+    println('origin x: ' + table['x'])
+    table['x'].plus2this(10)
+    println('new x: ' + table['x'])
+    
+    println('origin heads: ' + table.heads())
+    table['rand'] = rand(table.nrows())
+    println('new heads: ' + table.heads())
+    
+    dump.write('.temp/example/lmp/dumpSet')
+    ```
+    
+- 输出：
+    
+    ```
+    origin x: 108-length Vector:
+       4.930   10.31   2.890   3.056   4.018   4.987   9.465 ...
+    new x: 108-length Vector:
+       14.93   20.31   12.89   13.06   14.02   14.99   19.46 ...
+    origin heads: [id, type, x, y, z, vx, vy, vz]
+    new heads: [id, type, x, y, z, vx, vy, vz, rand]
+    ```
+
+> 其中 `asTable()`/`asTables()` 会获取到表格数据的引用，
+> 因此对获取到的表格进行修改会同时反应到 `dump` 中。
+> 
 
 
 ## 原子数据类型转换
@@ -195,12 +238,14 @@ jse 中通用的可修改的原子数据接口
     
     def data = Data.read('lmp/data/CuFCC108.lmpdat')
     
+    // 使用 `pickAtom` 获取一个原子
     def atom10 = data.pickAtom(10)
     println('origin atom10: ' + atom10)
     atom10.type = 2
     atom10.x = 3.14
     println('new atom at 10: ' + data.pickAtom(10))
     
+    // 使用 `asList` 转为 List 后遍历所有原子
     for (atom in data.asList()) atom.y += 10
     println('new atom10: ' + atom10)
     
@@ -240,5 +285,508 @@ jse 中通用的可修改的原子数据接口
 >   一般来说，对于简单的属性，jse 中也会提供一套 getter/setter
 >   来方便 groovy 中的使用。
 > 
+
+
+## log 文件读取
+
+jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
+[`jse.lmp.Log`](../src/main/java/jse/lmp/Log.java)
+来实现 lammps 的 log 文件读取：
+
+- 输入脚本（`jse example/lmp/log`
+  [⤤](../release/script/groovy/example/lmp/log.groovy)）：
+    
+    ```groovy
+    import jse.lmp.Log
+    
+    def log = Log.read('lmp/log/CuFCC108.thermo')
+    
+    println('heads: ' + log.heads())
+    println('volume: ' + log['Volume'])
+    
+    // 会保存成 csv 文件
+    log.write('.temp/example/lmp/logFCC.csv')
+    ```
+    
+- 输出：
+    
+    ```
+    heads: [Step, Temp, Press, Volume, PotEng, KinEng, TotEng]
+    volume: 21-length Vector:
+       1270   1503   1473   1481   1515   1468   1452   1499 ...
+    ```
+
+> 可以使用 `jse.lmp.Thermo` 替换 `jse.lmp.Log`，
+> 两者使用方法完全相同；使用 `Thermo` 可以指定为 lammps 的数据，
+> 用于区分其他的 `Log` 类。
+> 
+
+
+## 原生运行 lammps
+
+在 jse 中，除了通过 [任务提交](system.md) 的方式来运行 lammps，
+还支持直接原生运行 lammps。
+具体为通过 [jni](https://www.baeldung.com/jni) 
+来调用 lammps 的动态库（如 `liblammps.so`），
+然后通过类似 python 中的 lammps 包的方式来直接原生调用 lammps。
+
+> **注意**：这里直接基于 jni 来调用 lammps
+> 的动态库，而没有经过 python，因此效率和兼容性都会更高。
+> 
+
+### 环境要求
+
+- [**CMake**](https://cmake.org/) (`>= 3.14`)
+    
+    为了实现跨平台，jse 将调用动态库需要的 jni 源码直接包装到
+    `jse-all.jar` 中，并在调用到原生方法时进行编译。
+    为了保证不同平台下编译流程一致，并且能使用
+    [CLion](https://www.jetbrains.com/clion/) 进行调试，
+    这里使用 cmake 来管理这部分项目。
+    
+    这里借助了 cmake 的 `find_package` 方法来自动找到 jni 和 mpi 依赖，
+    此功能至少需要 cmake 版本为 `3.14`。
+    
+- **MPI**（可选）
+    
+    一般来说，为了实现高性能的 lammps 计算，都会使用 mpi 版本的 lammps，
+    这里和 lammps 一样提供串行版本的支持。
+    
+    jse 会通过 cmake 的 `find_package(MPI)` 来自动检测是否存在 MPI 环境，
+    并在成功检测到 MPI 时自动开启 MPI。
+    
+- **网络环境或编译好的 lammps 动态库**
+    
+    jse 会自动检测 `lib/lmp/native/build` 目录是否存在 lammps 动态库环境，
+    并在检测失败后自动从网络下载 
+    [`stable_2Aug2023_update2` 版本的 lammps](https://github.com/lammps/lammps/releases/tag/stable_2Aug2023_update2)
+    并使用 cmake 编译（这当然会花费很多时间）。
+    
+    对于没有网络的环境，可以手动编译出 lammps 动态库，并将动态库放在
+    `lib/lmp/native/build/lib`，头文件放在 `lib/lmp/native/build/includes`，
+    具体为：
+    
+    ```
+    build
+        ├─lib
+        │   └─liblammps.so
+        └─includes
+            └─lammps
+                └─library.h
+    ```
+    
+    > 可以参考 [lammps 官方文档](https://docs.lammps.org/Build_basics.html#build-the-lammps-executable-and-library) 
+    > 来实现 lammps 动态库的编译
+    > 
+
+
+### 使用方法
+
+原生 lammps 类位于 [`jse.lmp.NativeLmp`](../src/main/java/jse/lmp/NativeLmp.java)，
+其接口基本和 [python 的 lammps 包](https://docs.lammps.org/Python_module.html) 一致。
+在上述环境配置完成后，第一次调用 `NativeLmp` 相关方法时会自动编译需要的 jni 库。
+
+- **`<init>`**
+    
+    描述：`jse.lmp.NativeLmp` 的构造函数。
+    
+    输入1（可选）：`String[]`，传入 lammps 的参数，默认为
+    `['-log', 'none']`
+    
+    输入2（可选）：`MPI.Comm`，lammps 使用的 MPI 通讯器，
+    默认为 `MPI.Comm.WORLD`（当存在 MPI 环境时）
+    
+    输出：`NativeLmp`，创建的 lammps 对象
+    
+    例子：`example/lmp/native`
+    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    
+    > 注意：创建后记得在使用完成后显示调用 `shutdown()` 关闭 lammps 回收资源，
+    > 或者使用 [*try-with-resources*](https://www.baeldung.com/java-try-with-resources)
+    > 实现自动回收。
+    > 
+    > 由于 lammps 的特性，`NativeLmp` 线程不安全，并且要求所有方法都由相同的线程调用。
+    >
+    > jse 不会去尝试解析这个输入参数，因此如果手动设置了 log 的路径，
+    > 可能需要手动调用 `UT.IO.validPath` 来将此路径合法化
+    >（创建需要的文件夹）。
+    > 
+    
+    -----------------------------
+    
+- **`version`**
+    
+    输出：`int`，使用的 lammps 的版本组成的整数
+    
+    例子：`example/lmp/native`
+    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    
+    -----------------------------
+    
+- **`comm`**
+    
+    输出：`MPI.Comm`，此实例使用的 MPI 通讯器
+    
+    > 注意：对于没有 MPI 环境时会返回 `null`
+    > 
+    
+    -----------------------------
+    
+- **`file`**
+    
+    描述：读取输入文件。
+    
+    输入：`String`，字符串表示的输入文件路径
+    
+    例子：`example/lmp/native`
+    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    
+    -----------------------------
+    
+- **`command`**
+    
+    描述：执行单个 lammps 指令。
+    
+    输入：`String`，字符串表示的 lammps 指令
+    
+    例子：`example/lmp/native`
+    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    
+    -----------------------------
+    
+- **`commands`**
+    
+    描述：执行多个 lammps 指令。
+    
+    输入：根据输入类型重载，具体为：
+    
+    - `String[]`，多个指令组成的数组
+    - `String`，由换行符（`\n`）分隔的多个指令组成的单个字符串
+    
+    -----------------------------
+    
+- **`atomNumber`/`natoms`**
+    
+    输出：`int`，此时的原子总数目
+    
+    例子：`example/lmp/native`
+    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    
+    -----------------------------
+    
+- **`atomTypeNumber`/`ntypes`**
+    
+    输出：`int`，此时的原子种类数目
+    
+    例子：`example/lmp/native`
+    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    
+    -----------------------------
+    
+- **`localAtomNumber`/`nlocal`**
+    
+    输出：`int`，此进程的原子数目
+    
+    例子：`example/lmp/native`
+    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    
+    -----------------------------
+    
+- **`box`**
+    
+    输出：`jse.lmp.Box`，此时的模拟盒数据（带有下边界 `xlo`, `ylo`, `zlo`）
+    
+    例子：`example/lmp/native`
+    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    
+    -----------------------------
+    
+- **`resetBox`**
+    
+    描述：重设模拟盒信息
+    
+    输入：各种设置模拟盒边界的参数（可以设置下边界 `xlo`, `ylo`, `zlo`）
+    
+    -----------------------------
+    
+- **`thermoOf`**
+    
+    描述：获取指定名称的热力学信息
+    
+    输入：`String`，字符串表示的热力学信息名称
+    
+    输出：`double`，此热力学信息的值
+    
+    -----------------------------
+    
+- **`settingOf`**
+    
+    描述：获取指定名称的 lammps 设置
+    
+    输入：`String`，字符串表示的设置名称，具体可以参考
+    [lammps 官方文档](https://docs.lammps.org/Library_properties.html#_CPPv422lammps_extract_settingPvPKc)
+    
+    输出：`int`，此设置名称对应的值
+    
+    -----------------------------
+    
+- **`atomDataOf`**
+    
+    描述：获取指定名称的原子数据
+    
+    输入：`String`，字符串表示的原子数据类型，具体可以参考
+    [lammps 官方文档](https://docs.lammps.org/Classes_atom.html#_CPPv4N9LAMMPS_NS4Atom7extractEPKc)
+    
+    输出：`RowMatrix`，此类型原子数据组成的行矩阵
+    
+    -----------------------------
+
+- **`setAtomDataOf`**
+    
+    描述：设置获取指定名称的原子数据
+    
+    输入1：`String`，字符串表示的原子数据类型，具体可以参考
+    [lammps 官方文档](https://docs.lammps.org/Classes_atom.html#_CPPv4N9LAMMPS_NS4Atom7extractEPKc)
+    
+    输入2：`RowMatrix`，此类型原子数据组成的行矩阵
+    
+    -----------------------------
+    
+- **`masses`**
+    
+    输出：`IVector`，每个种类原子质量组成的向量
+    
+    例子：`example/lmp/native`
+    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    
+    -----------------------------
+    
+- **`masse`**
+    
+    获取指定种类的原子的质量
+    
+    输入：`int`，原子种类（从 1 开始）
+    
+    输出：`double`，此种类对应的质量
+    
+    -----------------------------
+    
+- **`lmpdat`/`data`**
+    
+    描述：获取此时的完成原子数据
+    
+    输入（可选）：`boolean`，是否关闭速度信息的输出，`true` 表示不输出速度，
+    默认为 `false`（输出速度）
+    
+    输出：`Lmpdat`，此时的完整原子数据
+    
+    例子：`example/lmp/native`
+    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    
+    -----------------------------
+    
+- **`loadLmpdat`/`loadData`**
+    
+    描述：加载输入的原子数据到 lammps 中
+    
+    输入：`Lmpdat`，需要加载的原子数据；
+    对于 `loadData` 还支持 `IAtomData` 输入
+    
+    例子：`example/lmp/native`
+    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    
+    -----------------------------
+    
+- **`shutdown`**
+    
+    描述：关闭此 lammps 实例
+
+
+### 可选配置
+
+对于自定义 lammps 动态库的情况下，不同版本的 lammps 其接口的使用和支持程度也会有所区别，
+jse 在 [`jse.lmp.NativeLmp.Conf`](../src/main/java/jse/lmp/NativeLmp.java)
+中提供了一些可选的配置来适应这些情况。
+
+可以在脚本中手动设置这些配置从而实现不同脚本使用不同的配置，
+也可以通过环境变量的方式进行设置，从而实现全局的默认配置。
+
+- **`LMP_HOME`**
+    
+    描述：检测 lammps 动态库的目录。
+    
+    类型：`String`
+    
+    默认值：`'lib/lmp/native/build'`
+    
+    环境变量名称：`JSE_NATIVE_LMP_HOME`
+    
+    -----------------------------
+    
+- **`LMP_TAG`**
+    
+    描述：自动下载的 lammps 的版本。
+    
+    类型：`String`
+    
+    默认值：`'stable_2Aug2023_update2'`
+    
+    环境变量名称：`JSE_NATIVE_LMP_TAG`
+    
+    -----------------------------
+    
+- **`CMAKE_SETTING`**
+    
+    描述：自定义构建 lammps 的 cmake 参数设置，
+    会在构建时使用 `-D ${key}=${value}` 传入。
+    
+    类型：`Map<String, String>`
+    
+    默认值：`{}`
+    
+    环境变量名称：无
+    
+    -----------------------------
+    
+- **`CMAKE_C_COMPILER`**
+    
+    描述：自定义使用 cmake 构建 lammps 以及 jni 部分使用的 C 编译器。
+    
+    类型：`String`
+    
+    默认值：`null`（cmake 自动检测）
+    
+    环境变量名称：`JSE_CMAKE_C_COMPILER`
+    
+    -----------------------------
+    
+- **`CMAKE_CXX_COMPILER`**
+    
+    描述：自定义使用 cmake 构建 lammps 以及 jni 部分使用的 C++ 编译器。
+    
+    类型：`String`
+    
+    默认值：`null`（cmake 自动检测）
+    
+    环境变量名称：`JSE_CMAKE_CXX_COMPILER`
+    
+    -----------------------------
+    
+- **`CMAKE_C_COMPILER_LMPJNI`**
+    
+    描述：自定义使用 cmake 构建 jni 部分使用的 C 编译器，
+    会覆盖 `CMAKE_C_COMPILER`。
+    
+    类型：`String`
+    
+    默认值：`null`（cmake 自动检测）
+    
+    环境变量名称：`JSE_CMAKE_C_COMPILER`
+    
+    -----------------------------
+    
+- **`CMAKE_CXX_COMPILER_LMPJNI`**
+    
+    描述：自定义使用 cmake 构建 jni 部分使用的 C++ 编译器，
+    会覆盖 `CMAKE_CXX_COMPILER`。
+    
+    类型：`String`
+    
+    默认值：`null`（cmake 自动检测）
+    
+    环境变量名称：`JSE_CMAKE_CXX_COMPILER`
+    
+    -----------------------------
+    
+- **`USE_MIMALLOC`**
+    
+    描述：对于 jni 部分，是否使用 [mimalloc](https://github.com/microsoft/mimalloc)
+    来加速 C 的内存分配，这对于 java 数组和 C 数组的转换很有效。
+    
+    类型：`boolean`
+    
+    默认值：`true`
+    
+    环境变量名称：`JSE_USE_MIMALLOC`
+    
+    > **注意**：mimalloc 的编译需要较高版本的编译器，在一些旧平台上可能会编译失败
+    > 
+    
+    -----------------------------
+    
+- **`REBUILD`**
+    
+    描述：是否在检测到库文件时依旧重新编译 lammps，在需要修改 lammps 包时很有用。
+    
+    类型：`boolean`
+    
+    默认值：`false`
+    
+    环境变量名称：无
+    
+    -----------------------------
+    
+- **`CLEAN`**
+    
+    描述：在编译 lammps 之前是否进行 clean 操作。
+    
+    类型：`boolean`
+    
+    默认值：`false`
+    
+    环境变量名称：无
+    
+    -----------------------------
+    
+- **`IS_OLD`**
+    
+    描述：是否是旧版本的 lammps，具体来说大致为 18Sep2020 之前版本的 lammps，
+    开启后会使用更老的 api。
+    
+    类型：`boolean`
+    
+    默认值：`false`
+    
+    环境变量名称：`JSE_NATIVE_LMP_IS_OLD`
+    
+    -----------------------------
+    
+- **`HAS_EXCEPTIONS`**
+    
+    描述：lammps 是否有 exception 相关接口，对于新版的 lammps 总是存在，
+    但对于旧版可能不会存在，关闭后可以保证编译通过。
+    
+    类型：`boolean`
+    
+    默认值：`true`
+    
+    环境变量名称：`JSE_NATIVE_LMP_HAS_EXCEPTIONS`
+    
+    > **注意**：关闭后如果出现 lammps 的错误则不会重定向为 java 的错误，
+    > 从而不会有 java 的栈信息，使得调试更加困难。
+    > 
+    > 即使在较新的 lammps 版本中，存在 exception 相关接口，
+    > 因此可以顺利通过编译，但是实际出现错误进行调用时依旧会发生崩溃，
+    > 导致无法得到正确的报错信息，此时依旧建议将此选项关闭。
+    > 
+    > 当然由于 lammps 部分依旧是 C/C++ 的程序，实际大部分错误并不会抛出，
+    > 而是直接导致程序崩溃，因此这个选项的实际意义并不算大。
+    > 
+    
+    -----------------------------
+    
+- **`EXCEPTIONS_NULL_SUPPORT`**
+    
+    描述：lammps 的 lammps_has_error 接口是否有 NULL 支持，
+    对于较旧的版本并不支持。
+    
+    类型：`boolean`
+    
+    默认值：`true`
+    
+    环境变量名称：`JSE_NATIVE_LMP_EXCEPTIONS_NULL_SUPPORT`
+    
+    -----------------------------
+
 
 

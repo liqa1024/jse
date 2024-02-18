@@ -280,6 +280,21 @@
     
     例子：`example/io/fileopt`
     [⤤](../release/script/groovy/example/io/fileopt.groovy)
+    
+    -----------------------------
+    
+- **`UT.IO.validPath`**
+    
+    描述：合法化输入的路径（创建需要的文件夹）。
+    
+    输入：`String`，字符串表示的路径
+    
+    例子：`UT.IO.validPath('path/to/output/file')`
+    
+    > 注意：一般用于在调用第三方工具时，对方输出文件在目录不存在时会报错时使用，
+    > jse 内部的文件操作由于会自动创建文件夹，因此不需要手动调用；
+    > 触发权限不够时会抛出异常
+    >
 
 
 ## 数据结构文本文件读写

@@ -451,7 +451,7 @@ public class NativeLmp implements IAutoShutdown {
      */
     public void file(String aPath) throws Error {
         checkThread();
-        lammpsFile_(mLmpPtr, aPath);
+        lammpsFile_(mLmpPtr, UT.IO.toAbsolutePath(aPath));
     }
     private native static void lammpsFile_(long aLmpPtr, String aPath) throws Error;
     
