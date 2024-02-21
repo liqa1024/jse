@@ -4,7 +4,6 @@ import jse.atom.*;
 import jse.cache.IntVectorCache;
 import jse.cache.MatrixCache;
 import jse.cache.ThreadLocalObjectCachePool;
-import jse.cache.VectorCache;
 import jse.code.UT;
 import jse.math.MathEX;
 import jse.math.matrix.ColumnMatrix;
@@ -66,6 +65,23 @@ public class Lmpdat extends AbstractSettableAtomData {
         // 会根据 aMasses 的长度自适应调整原子种类数目
         mAtomTypeNum = aMasses==null ? aAtomTypeNum : Math.max(aAtomTypeNum, aMasses.size());
         mVelocities = aVelocities;
+    }
+    
+    
+    /// 缓存部分
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    public boolean isFromCache() {
+        return IntVectorCache.isFromCache(mAtomID) && IntVectorCache.isFromCache(mAtomType)
+            && MatrixCache.isFromCache(mAtomXYZ) && (mVelocities==null || MatrixCache.isFromCache(mVelocities));
+    }
+    public void returnToCache() {
+        if (!isFromCache()) throw new IllegalArgumentException("Return Lmpdat MUST be from cache");
+        IntVectorCache.returnVec(mAtomID);
+        IntVectorCache.returnVec(mAtomType);
+        MatrixCache.returnMat(mAtomXYZ);
+        if (mVelocities != null) MatrixCache.returnMat(mVelocities);
+        // 现在不再归还 masses，虽然 NativeLmp 获取的 Lmpdat 的 masses
+        // 是来自 cache 的，但是由于经过了一个 subVec 因此不能直接归还
     }
     
     
@@ -529,22 +545,22 @@ public class Lmpdat extends AbstractSettableAtomData {
             final boolean tHasMasses = UT.Serial.toBooleanB((byte)tData, 1);
             final boolean tPositionsIsCol = UT.Serial.toBooleanB((byte)tData, 2);
             final boolean tVelocitiesIsCol = UT.Serial.toBooleanB((byte)tData, 3);
-            // 还是使用缓存的数据
-            final IIntVector tAtomID = IntVectorCache.getVec(tAtomNum);
-            final IIntVector tAtomType = IntVectorCache.getVec(tAtomNum);
-            final IMatrix tAtomXYZ = tPositionsIsCol ? MatrixCache.getMatCol(tAtomNum, ATOM_DATA_KEYS_XYZ.length) : MatrixCache.getMatRow(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
+            // 现在和 read 保持一致不再使用缓存的数据
+            final IIntVector tAtomID = IntVector.zeros(tAtomNum);
+            final IIntVector tAtomType = IntVector.zeros(tAtomNum);
+            final IMatrix tAtomXYZ = tPositionsIsCol ? ColumnMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length) : RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
             @Nullable IMatrix tVelocities = null;
             @Nullable IVector tMasses = null;
             // 先是质量信息，基本信息，后是速度信息
             if (tHasMasses) {
-                tMasses = VectorCache.getVec(tAtomTypeNum);
+                tMasses = Vectors.zeros(tAtomTypeNum);
                 aComm.recv(tMasses, aSource, DATA_MASSES);
             }
             aComm.recv(tAtomID  , aSource, DATA_ID  );
             aComm.recv(tAtomType, aSource, DATA_TYPE);
             aComm.recv(tPositionsIsCol ? tAtomXYZ.asVecCol() : tAtomXYZ.asVecRow(), aSource, DATA_XYZ);
             if (tHasVelocities) {
-                tVelocities = tVelocitiesIsCol ? MatrixCache.getMatCol(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : MatrixCache.getMatRow(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length);
+                tVelocities = tVelocitiesIsCol ? ColumnMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length);
                 aComm.recv(tVelocitiesIsCol ? tVelocities.asVecCol() : tVelocities.asVecRow(), aSource, DATA_VELOCITIES);
             }
             // 创建 Lmpdat
@@ -608,22 +624,22 @@ public class Lmpdat extends AbstractSettableAtomData {
                 final boolean tHasMasses = UT.Serial.toBooleanB((byte)tData, 1);
                 final boolean tPositionsIsCol = UT.Serial.toBooleanB((byte)tData, 2);
                 final boolean tVelocitiesIsCol = UT.Serial.toBooleanB((byte)tData, 3);
-                // 还是使用缓存的数据
-                final IIntVector tAtomID = IntVectorCache.getVec(tAtomNum);
-                final IIntVector tAtomType = IntVectorCache.getVec(tAtomNum);
-                final IMatrix tAtomXYZ = tPositionsIsCol ? MatrixCache.getMatCol(tAtomNum, ATOM_DATA_KEYS_XYZ.length) : MatrixCache.getMatRow(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
+                // 现在和 read 保持一致不再使用缓存的数据
+                final IIntVector tAtomID = IntVector.zeros(tAtomNum);
+                final IIntVector tAtomType = IntVector.zeros(tAtomNum);
+                final IMatrix tAtomXYZ = tPositionsIsCol ? ColumnMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length) : RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
                 @Nullable IMatrix tVelocities = null;
                 @Nullable IVector tMasses = null;
                 // 先是质量信息，基本信息，后是速度信息
                 if (tHasMasses) {
-                    tMasses = VectorCache.getVec(tAtomTypeNum);
+                    tMasses = Vectors.zeros(tAtomTypeNum);
                     aComm.bcast(tMasses, aRoot);
                 }
                 aComm.bcast(tAtomID  , aRoot);
                 aComm.bcast(tAtomType, aRoot);
                 aComm.bcast(tPositionsIsCol ? tAtomXYZ.asVecCol() : tAtomXYZ.asVecRow(), aRoot);
                 if (tHasVelocities) {
-                    tVelocities = tVelocitiesIsCol ? MatrixCache.getMatCol(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : MatrixCache.getMatRow(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length);
+                    tVelocities = tVelocitiesIsCol ? ColumnMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length);
                     aComm.bcast(tVelocitiesIsCol ? tVelocities.asVecCol() : tVelocities.asVecRow(), aRoot);
                 }
                 // 创建 Lmpdat

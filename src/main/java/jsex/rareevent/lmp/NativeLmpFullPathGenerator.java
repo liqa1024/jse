@@ -136,16 +136,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
             // 由于这里底层的 NativeLmp 获取的 Lmpdat 也是使用了缓存，因此对于上一步的 mNext 可以归还；
             // 当然一般情况下获取的 next 会在外部保存，不能归还，因此默认关闭
             if (mReturnLast && mNextIsFromNativeLmp) {
-                if (mNext.hasVelocities()) {
-                    IMatrix tVelocities = mNext.velocities();
-                    assert tVelocities != null;
-                    MatrixCache.returnMat(tVelocities);
-                }
-                MatrixCache.returnMat(mNext.positions());
-                IntVectorCache.returnVec(mNext.types());
-                IntVectorCache.returnVec(mNext.ids());
-                // 现在不再归还 masses，虽然 NativeLmp 获取的 Lmpdat 的 masses
-                // 是来自 cache 的，但是由于经过了一个 subVec 因此不能直接归还
+                mNext.returnToCache();
             }
             try {mNext = mLmp.lmpdat(true); mNextIsFromNativeLmp = true;}
             catch (NativeLmp.Error e) {throw new RuntimeException(e);}

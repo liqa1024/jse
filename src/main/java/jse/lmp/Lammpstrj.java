@@ -407,7 +407,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
                 final int tAtomNum = UT.Serial.toIntL(tData, 0);
                 final int tAtomDataKeyNum = UT.Serial.toIntL(tData, 1);
                 final long tTimeStep = tLammpstrjInfo[7];
-                // 由于 Table 可以扩容，因此这里不使用缓存数据
+                // 由于 Table 可以扩容，并且要和和 read 保持一致，不使用缓存的数据
                 String[] tAtomDataKeys = new String[tAtomDataKeyNum];
                 for (int i = 0; i < tAtomDataKeyNum; ++i) tAtomDataKeys[i] = aComm.recvStr(aSource, DATA_KEY);
                 ITable rAtomData = Tables.zeros(tAtomNum, tAtomDataKeys);
@@ -458,7 +458,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
                     final int tAtomNum = UT.Serial.toIntL(tData, 0);
                     final int tAtomDataKeyNum = UT.Serial.toIntL(tData, 1);
                     final long tTimeStep = tLammpstrjInfo[7];
-                    // 由于 Table 可以扩容，因此这里不使用缓存数据
+                    // 由于 Table 可以扩容，并且要和和 read 保持一致，不使用缓存的数据
                     String[] tAtomDataKeys = new String[tAtomDataKeyNum];
                     for (int i = 0; i < tAtomDataKeyNum; ++i) tAtomDataKeys[i] = aComm.bcastStr(null, aRoot);
                     ITable rAtomData = Tables.zeros(tAtomNum, tAtomDataKeys);
