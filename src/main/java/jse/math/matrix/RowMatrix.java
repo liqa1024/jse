@@ -18,7 +18,7 @@ import java.util.function.DoubleUnaryOperator;
  * @author liqa
  * <p> 按照行排序的矩阵，{@link ColumnMatrix} 的对称实现 </p>
  */
-public final class RowMatrix extends DoubleArrayMatrix {
+public class RowMatrix extends DoubleArrayMatrix {
     /** 提供默认的创建 */
     public static RowMatrix ones(int aSize) {return ones(aSize, aSize);}
     public static RowMatrix ones(int aRowNum, int aColNum) {
@@ -42,17 +42,17 @@ public final class RowMatrix extends DoubleArrayMatrix {
     
     
     /** IMatrix stuffs */
-    @Override public double get(int aRow, int aCol) {
+    @Override public final double get(int aRow, int aCol) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         return mData[aCol + aRow*mColNum];
     }
-    @Override public void set(int aRow, int aCol, double aValue) {
+    @Override public final void set(int aRow, int aCol, double aValue) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         mData[aCol + aRow*mColNum] = aValue;
     }
-    @Override public double getAndSet(int aRow, int aCol, double aValue) {
+    @Override public final double getAndSet(int aRow, int aCol, double aValue) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aCol + aRow*mColNum;
@@ -60,12 +60,13 @@ public final class RowMatrix extends DoubleArrayMatrix {
         mData[tIdx] = aValue;
         return oValue;
     }
-    @Override public int rowNumber() {return mRowNum;}
-    @Override public int columnNumber() {return mColNum;}
+    @Override public final int rowNumber() {return mRowNum;}
+    @Override public final int columnNumber() {return mColNum;}
     
     @Override protected RowMatrix newZeros_(int aRowNum, int aColNum) {return RowMatrix.zeros(aRowNum, aColNum);}
     @Override public RowMatrix copy() {return (RowMatrix)super.copy();}
     
+    @Override public int internalDataSize() {return mRowNum*mColNum;}
     @Override public RowMatrix newShell() {return new RowMatrix(mRowNum, mColNum, null);}
     @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {
         // 只有同样是 RowMatrix 并且列数相同才会返回 mData
@@ -75,7 +76,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
     
     
     /** Optimize stuffs，重写这个提高行向的索引速度 */
-    @Override public List<ShiftVector> rows() {
+    @Override public List<? extends ShiftVector> rows() {
         return new AbstractRandomAccessList<ShiftVector>() {
             @Override public int size() {return mRowNum;}
             @Override public ShiftVector get(int aRow) {return row(aRow);}
@@ -90,7 +91,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
     @Override public Vector asVecRow() {return new Vector(mRowNum*mColNum, mData);}
     
     /** Optimize stuffs，引用转置直接返回 {@link ColumnMatrix} */
-    @Override public IMatrixOperation operation() {
+    @Override public final IMatrixOperation operation() {
         return new DoubleArrayMatrixOperation_() {
             @Override public void fill(IMatrixGetter aRHS) {
                 int idx = 0;
@@ -114,13 +115,13 @@ public final class RowMatrix extends DoubleArrayMatrix {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override public void update(int aRow, int aCol, DoubleUnaryOperator aOpt) {
+    @Override public final void update(int aRow, int aCol, DoubleUnaryOperator aOpt) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aCol + aRow*mColNum;
         mData[tIdx] = aOpt.applyAsDouble(mData[tIdx]);
     }
-    @Override public double getAndUpdate(int aRow, int aCol, DoubleUnaryOperator aOpt) {
+    @Override public final double getAndUpdate(int aRow, int aCol, DoubleUnaryOperator aOpt) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aCol + aRow*mColNum;
@@ -131,7 +132,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
     
     
     /** Optimize stuffs，重写迭代器来提高遍历速度 */
-    @Override public IDoubleIterator iteratorCol() {
+    @Override public final IDoubleIterator iteratorCol() {
         return new IDoubleIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mCol = 0;
@@ -149,7 +150,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleIterator iteratorRow() {
+    @Override public final IDoubleIterator iteratorRow() {
         return new IDoubleIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = 0;
@@ -165,7 +166,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleIterator iteratorColAt(final int aCol) {
+    @Override public final IDoubleIterator iteratorColAt(final int aCol) {
         rangeCheckCol(aCol, mColNum);
         return new IDoubleIterator() {
             private final int mSize = mRowNum * mColNum;
@@ -182,7 +183,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleIterator iteratorRowAt(final int aRow) {
+    @Override public final IDoubleIterator iteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mRowNum);
         return new IDoubleIterator() {
             private final int mEnd = (aRow+1)*mColNum;
@@ -199,7 +200,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator setIteratorCol() {
+    @Override public final IDoubleSetIterator setIteratorCol() {
         return new IDoubleSetIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mCol = 0;
@@ -238,7 +239,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator setIteratorRow() {
+    @Override public final IDoubleSetIterator setIteratorRow() {
         return new IDoubleSetIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = 0, oIdx = -1;
@@ -273,7 +274,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator setIteratorColAt(final int aCol) {
+    @Override public final IDoubleSetIterator setIteratorColAt(final int aCol) {
         rangeCheckCol(aCol, mColNum);
         return new IDoubleSetIterator() {
             private final int mSize = mRowNum * mColNum;
@@ -309,7 +310,7 @@ public final class RowMatrix extends DoubleArrayMatrix {
             }
         };
     }
-    @Override public IDoubleSetIterator setIteratorRowAt(final int aRow) {
+    @Override public final IDoubleSetIterator setIteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mRowNum);
         return new IDoubleSetIterator() {
             private final int mEnd = (aRow+1)*mColNum;

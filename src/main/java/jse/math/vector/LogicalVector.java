@@ -16,7 +16,7 @@ import static jse.math.vector.AbstractVector.*;
  * @author liqa
  * <p> 逻辑向量的一般实现 </p>
  */
-public final class LogicalVector extends BooleanArrayVector {
+public class LogicalVector extends BooleanArrayVector {
     /** 提供默认的创建 */
     public static LogicalVector ones(int aSize) {
         boolean[] tData = new boolean[aSize];
@@ -43,29 +43,29 @@ public final class LogicalVector extends BooleanArrayVector {
     public LogicalVector(boolean[] aData) {this(aData.length, aData);}
     
     /** 提供额外的接口来直接设置底层参数 */
-    public LogicalVector setSize(int aSize) {mSize = MathEX.Code.toRange(0, mData.length, aSize); return this;}
-    public int dataLength() {return mData.length;}
+    public final LogicalVector setSize(int aSize) {mSize = MathEX.Code.toRange(0, mData.length, aSize); return this;}
+    public final int dataLength() {return mData.length;}
     
     /** ILogicalVector stuffs */
-    @Override public boolean get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx];}
-    @Override public void set(int aIdx, boolean aValue) {rangeCheck(aIdx, mSize); mData[aIdx] = aValue;}
-    @Override public boolean getAndSet(int aIdx, boolean aValue) {
+    @Override public final boolean get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx];}
+    @Override public final void set(int aIdx, boolean aValue) {rangeCheck(aIdx, mSize); mData[aIdx] = aValue;}
+    @Override public final boolean getAndSet(int aIdx, boolean aValue) {
         rangeCheck(aIdx, mSize);
         boolean oValue = mData[aIdx];
         mData[aIdx] = aValue;
         return oValue;
     }
-    @Override public int size() {return mSize;}
+    @Override public final int size() {return mSize;}
     
-    @Override protected LogicalVector newZeros_(int aSize) {return LogicalVector.zeros(aSize);}
-    @Override public LogicalVector copy() {
+    @Override protected final LogicalVector newZeros_(int aSize) {return LogicalVector.zeros(aSize);}
+    @Override public final LogicalVector copy() {
         LogicalVector rVector = LogicalVector.zeros(mSize);
         rVector.fill(this);
         return rVector;
     }
     
-    @Override public LogicalVector newShell() {return new LogicalVector(mSize, null);}
-    @Override public boolean @Nullable[] getIfHasSameOrderData(Object aObj) {
+    @Override public final LogicalVector newShell() {return new LogicalVector(mSize, null);}
+    @Override public final boolean @Nullable[] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof LogicalVector) return ((LogicalVector)aObj).mData;
         if (aObj instanceof ShiftLogicalVector) return ((ShiftLogicalVector)aObj).mData;
         if (aObj instanceof BooleanList) return ((BooleanList)aObj).internalData();
@@ -74,51 +74,51 @@ public final class LogicalVector extends BooleanArrayVector {
     }
     
     /** Optimize stuffs，subVec 切片直接返回  {@link ShiftLogicalVector} */
-    @Override public BooleanArrayVector subVec(final int aFromIdx, final int aToIdx) {
+    @Override public final BooleanArrayVector subVec(final int aFromIdx, final int aToIdx) {
         subVecRangeCheck(aFromIdx, aToIdx, mSize);
         return aFromIdx==0 ? new LogicalVector(aToIdx, mData) : new ShiftLogicalVector(aToIdx-aFromIdx, aFromIdx, mData);
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override public void swap(int aIdx1, int aIdx2) {
+    @Override public final void swap(int aIdx1, int aIdx2) {
         biRangeCheck(aIdx1, aIdx2, mSize);
         boolean tValue = mData[aIdx2];
         mData[aIdx2] = mData[aIdx1];
         mData[aIdx1] = tValue;
     }
     
-    @Override public void flip(int aIdx) {
+    @Override public final void flip(int aIdx) {
         rangeCheck(aIdx, mSize);
         mData[aIdx] = !mData[aIdx];
     }
-    @Override public boolean getAndFlip(int aIdx) {
+    @Override public final boolean getAndFlip(int aIdx) {
         rangeCheck(aIdx, mSize);
         boolean tValue = mData[aIdx];
         mData[aIdx] = !tValue;
         return tValue;
     }
-    @Override public void update(int aIdx, IBooleanUnaryOperator aOpt) {
+    @Override public final void update(int aIdx, IBooleanUnaryOperator aOpt) {
         rangeCheck(aIdx, mSize);
         mData[aIdx] = aOpt.applyAsBoolean(mData[aIdx]);
     }
-    @Override public boolean getAndUpdate(int aIdx, IBooleanUnaryOperator aOpt) {
+    @Override public final boolean getAndUpdate(int aIdx, IBooleanUnaryOperator aOpt) {
         rangeCheck(aIdx, mSize);
         boolean tValue = mData[aIdx];
         mData[aIdx] = aOpt.applyAsBoolean(tValue);
         return tValue;
     }
-    @Override public boolean isEmpty() {return mSize==0;}
-    @Override public boolean last() {
+    @Override public final boolean isEmpty() {return mSize==0;}
+    @Override public final boolean last() {
         if (isEmpty()) throw new NoSuchElementException("Cannot access last() element from an empty LogicalVector");
         return mData[mSize-1];
     }
-    @Override public boolean first() {
+    @Override public final boolean first() {
         if (isEmpty()) throw new NoSuchElementException("Cannot access first() element from an empty LogicalVector");
         return mData[0];
     }
     
     /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式） */
-    @Override public IBooleanIterator iterator() {
+    @Override public final IBooleanIterator iterator() {
         return new IBooleanIterator() {
             private int mIdx = 0;
             @Override public boolean hasNext() {return mIdx < mSize;}
@@ -133,7 +133,7 @@ public final class LogicalVector extends BooleanArrayVector {
             }
         };
     }
-    @Override public IBooleanSetIterator setIterator() {
+    @Override public final IBooleanSetIterator setIterator() {
         return new IBooleanSetIterator() {
             private int mIdx = 0, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mSize;}

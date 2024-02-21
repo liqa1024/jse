@@ -15,7 +15,7 @@ import java.util.function.*;
  * @author liqa
  * <p> 向量的一般实现 </p>
  */
-public final class Vector extends DoubleArrayVector {
+public class Vector extends DoubleArrayVector {
     /** 提供默认的创建 */
     public static Vector ones(int aSize) {
         double[] tData = new double[aSize];
@@ -47,21 +47,21 @@ public final class Vector extends DoubleArrayVector {
     public int dataLength() {return mData.length;}
     
     /** IVector stuffs */
-    @Override public double get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx];}
-    @Override public void set(int aIdx, double aValue) {rangeCheck(aIdx, mSize); mData[aIdx] = aValue;}
-    @Override public double getAndSet(int aIdx, double aValue) {
+    @Override public final double get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx];}
+    @Override public final void set(int aIdx, double aValue) {rangeCheck(aIdx, mSize); mData[aIdx] = aValue;}
+    @Override public final double getAndSet(int aIdx, double aValue) {
         rangeCheck(aIdx, mSize);
         double oValue = mData[aIdx];
         mData[aIdx] = aValue;
         return oValue;
     }
-    @Override public int size() {return mSize;}
+    @Override public final int size() {return mSize;}
     
-    @Override protected Vector newZeros_(int aSize) {return Vector.zeros(aSize);}
-    @Override public Vector copy() {return (Vector)super.copy();}
+    @Override protected final Vector newZeros_(int aSize) {return Vector.zeros(aSize);}
+    @Override public final Vector copy() {return (Vector)super.copy();}
     
-    @Override public Vector newShell() {return new Vector(mSize, null);}
-    @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {
+    @Override public final Vector newShell() {return new Vector(mSize, null);}
+    @Override public final double @Nullable[] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof Vector) return ((Vector)aObj).mData;
         if (aObj instanceof ShiftVector) return ((ShiftVector)aObj).mData;
         if (aObj instanceof DoubleList) return ((DoubleList)aObj).internalData();
@@ -69,18 +69,18 @@ public final class Vector extends DoubleArrayVector {
         return null;
     }
     
-    @Override public Vector toBuf(boolean aAbort) {return this;}
-    @Override public void releaseBuf(@NotNull Vector aBuf, boolean aAbort) {/**/}
+    @Override public final Vector toBuf(boolean aAbort) {return this;}
+    @Override public final void releaseBuf(@NotNull Vector aBuf, boolean aAbort) {/**/}
     
     
     /** Optimize stuffs，subVec 切片直接返回  {@link ShiftVector} */
-    @Override public DoubleArrayVector subVec(final int aFromIdx, final int aToIdx) {
+    @Override public final DoubleArrayVector subVec(final int aFromIdx, final int aToIdx) {
         subVecRangeCheck(aFromIdx, aToIdx, mSize);
         return aFromIdx==0 ? new Vector(aToIdx, mData) : new ShiftVector(aToIdx-aFromIdx, aFromIdx, mData);
     }
     
     /** Optimize stuffs，引用反转直接返回 {@link ReverseVector} */
-    @Override public IVectorOperation operation() {
+    @Override public final IVectorOperation operation() {
         return new DoubleArrayVectorOperation_() {
             @Override public ReverseVector refReverse() {
                 return new ReverseVector(mSize, mData);
@@ -89,47 +89,47 @@ public final class Vector extends DoubleArrayVector {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override public void swap(int aIdx1, int aIdx2) {
+    @Override public final void swap(int aIdx1, int aIdx2) {
         biRangeCheck(aIdx1, aIdx2, mSize);
         double tValue = mData[aIdx2];
         mData[aIdx2] = mData[aIdx1];
         mData[aIdx1] = tValue;
     }
     
-    @Override public void increment(int aIdx) {rangeCheck(aIdx, mSize); ++mData[aIdx];}
-    @Override public double getAndIncrement(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx]++;}
-    @Override public void decrement(int aIdx) {rangeCheck(aIdx, mSize); --mData[aIdx];}
-    @Override public double getAndDecrement(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx]--;}
+    @Override public final void increment(int aIdx) {rangeCheck(aIdx, mSize); ++mData[aIdx];}
+    @Override public final double getAndIncrement(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx]++;}
+    @Override public final void decrement(int aIdx) {rangeCheck(aIdx, mSize); --mData[aIdx];}
+    @Override public final double getAndDecrement(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx]--;}
     
-    @Override public void add(int aIdx, double aDelta) {rangeCheck(aIdx, mSize); mData[aIdx] += aDelta;}
-    @Override public double getAndAdd(int aIdx, double aDelta) {
+    @Override public final void add(int aIdx, double aDelta) {rangeCheck(aIdx, mSize); mData[aIdx] += aDelta;}
+    @Override public final double getAndAdd(int aIdx, double aDelta) {
         rangeCheck(aIdx, mSize);
         double tValue = mData[aIdx];
         mData[aIdx] += aDelta;
         return tValue;
     }
-    @Override public void update(int aIdx, DoubleUnaryOperator aOpt) {
+    @Override public final void update(int aIdx, DoubleUnaryOperator aOpt) {
         rangeCheck(aIdx, mSize);
         mData[aIdx] = aOpt.applyAsDouble(mData[aIdx]);
     }
-    @Override public double getAndUpdate(int aIdx, DoubleUnaryOperator aOpt) {
+    @Override public final double getAndUpdate(int aIdx, DoubleUnaryOperator aOpt) {
         rangeCheck(aIdx, mSize);
         double tValue = mData[aIdx];
         mData[aIdx] = aOpt.applyAsDouble(tValue);
         return tValue;
     }
-    @Override public boolean isEmpty() {return mSize==0;}
-    @Override public double last() {
+    @Override public final boolean isEmpty() {return mSize==0;}
+    @Override public final double last() {
         if (isEmpty()) throw new NoSuchElementException("Cannot access last() element from an empty Vector");
         return mData[mSize-1];
     }
-    @Override public double first() {
+    @Override public final double first() {
         if (isEmpty()) throw new NoSuchElementException("Cannot access first() element from an empty Vector");
         return mData[0];
     }
     
     /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式） */
-    @Override public IDoubleIterator iterator() {
+    @Override public final IDoubleIterator iterator() {
         return new IDoubleIterator() {
             private int mIdx = 0;
             @Override public boolean hasNext() {return mIdx < mSize;}
@@ -144,7 +144,7 @@ public final class Vector extends DoubleArrayVector {
             }
         };
     }
-    @Override public IDoubleSetIterator setIterator() {
+    @Override public final IDoubleSetIterator setIterator() {
         return new IDoubleSetIterator() {
             private int mIdx = 0, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mSize;}

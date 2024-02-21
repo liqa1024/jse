@@ -91,6 +91,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
         private boolean mIsFirst = true;
         private boolean mLmpNeedInit = true;
         private boolean mDead = false;
+        private boolean mNextIsFromNativeLmp = false;
         /** 路径部分 */
         private @NotNull Lmpdat mNext;
         /** 此路径的局部随机数生成器，由于约定了相同实例线程不安全，并且考虑到可能存在的高并发需求，因此直接使用 {@link LocalRandom} */
@@ -101,7 +102,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
             if (mUsing) throw new RuntimeException("NativeLmpFullPathGenerator can ONLY have ONE active path.");
             mUsing = true;
             mRNG = new LocalRandom(aSeed);
-            mNext = aStart==null ? mInitPoints.get(mRNG.nextInt(mInitPoints.size())) : (aStart instanceof Lmpdat) ? (Lmpdat)aStart : Lmpdat.fromAtomData(aStart);
+            mNext = aStart==null ? mInitPoints.get(mRNG.nextInt(mInitPoints.size())) : ((aStart instanceof Lmpdat) ? (Lmpdat)aStart : Lmpdat.fromAtomData(aStart));
         }
         
         /** 这里获取到的点需要是精简的 */
@@ -135,7 +136,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
             catch (NativeLmp.Error e) {throw new RuntimeException(e);}
             // 由于这里底层的 NativeLmp 获取的 Lmpdat 也是使用了缓存，因此对于上一步的 mNext 可以归还；
             // 当然一般情况下获取的 next 会在外部保存，不能归还，因此默认关闭
-            if (mReturnLast) {
+            if (mReturnLast && mNextIsFromNativeLmp) {
                 if (mNext.hasVelocities()) {
                     IMatrix tVelocities = mNext.velocities();
                     assert tVelocities != null;
@@ -144,15 +145,10 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
                 MatrixCache.returnMat(mNext.positions());
                 IntVectorCache.returnVec(mNext.types());
                 IntVectorCache.returnVec(mNext.ids());
-                // 现在也可以返回 masses 了，首先 NativeLmp 获取的 Lmpdat 肯定是可以返回 masses 的；
-                // 然后是 init 初始化得到的点，现在通过 MPI recv 得到的 masses 也是缓存区的了
-                if (mNext.hasMasses()) {
-                    IVector tMasses = mNext.masses();
-                    assert tMasses != null;
-                    VectorCache.returnVec(tMasses);
-                }
+                // 现在不再归还 masses，虽然 NativeLmp 获取的 Lmpdat 的 masses
+                // 是来自 cache 的，但是由于经过了一个 subVec 因此不能直接归还
             }
-            try {mNext = mLmp.lmpdat(true);}
+            try {mNext = mLmp.lmpdat(true); mNextIsFromNativeLmp = true;}
             catch (NativeLmp.Error e) {throw new RuntimeException(e);}
             return mNext;
         }

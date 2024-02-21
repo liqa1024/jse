@@ -5,11 +5,10 @@ import jse.math.vector.BiDoubleArrayVector;
 import jse.math.vector.ComplexVector;
 import jse.math.vector.IComplexVector;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static jse.code.Conf.NO_CACHE;
 
 /**
  * 专门针对 {@link IComplexVector} 和 {@code List<IComplexVector>} 的全局线程独立缓存，
@@ -23,20 +22,36 @@ import static jse.code.Conf.NO_CACHE;
 public class ComplexVectorCache {
     private ComplexVectorCache() {}
     
+    interface ICacheableComplexVector {}
+    final static class CacheableComplexVector extends ComplexVector implements ICacheableComplexVector {
+        public CacheableComplexVector(int aSize, double[][] aData) {super(aSize, aData);}
+    }
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    public static boolean isFromCache(IComplexVector aVector) {
+        return (aVector instanceof ICacheableComplexVector);
+    }
+    
     public static void returnVec(@NotNull IComplexVector aComplexVector) {
-        if (NO_CACHE) return;
-        final double[][] tData = ((BiDoubleArrayVector)aComplexVector).internalData();
+        if (!isFromCache(aComplexVector)) throw new IllegalArgumentException("Return ComplexVector MUST be from cache");
+        BiDoubleArrayVector tBiDoubleArrayVector = (BiDoubleArrayVector)aComplexVector;
+        double @Nullable[][] tData = tBiDoubleArrayVector.internalData();
+        if (tData == null) throw new IllegalStateException("Redundant return ComplexVector");
+        tBiDoubleArrayVector.setInternalData(null);
         DoubleArrayCache.returnArrayFrom(2, i -> tData[1-i]);
     }
     public static void returnVec(final @NotNull List<? extends @NotNull IComplexVector> aComplexVectorList) {
-        if (NO_CACHE) return;
         if (aComplexVectorList.isEmpty()) return;
         // 这里不实际缓存 List<IComplexVector>，而是直接统一归还内部值，这样实现会比较简单
         final double[][] tArrayBuffer = {null};
         DoubleArrayCache.returnArrayFrom(aComplexVectorList.size()*2, i -> {
             double[] tArrayReal = tArrayBuffer[0];
             if (tArrayReal == null) {
-                double[][] tData = ((BiDoubleArrayVector)aComplexVectorList.get(i/2)).internalData();
+                IComplexVector tComplexVector = aComplexVectorList.get(i/2);
+                if (!isFromCache(tComplexVector)) throw new IllegalArgumentException("Return ComplexVector MUST be from cache");
+                BiDoubleArrayVector tBiDoubleArrayVector = (BiDoubleArrayVector)tComplexVector;
+                double @Nullable[][] tData = tBiDoubleArrayVector.internalData();
+                if (tData == null) throw new IllegalStateException("Redundant return ComplexVector");
+                tBiDoubleArrayVector.setInternalData(null);
                 tArrayBuffer[0] = tData[0];
                 return tData[1];
             } else {
@@ -50,7 +65,7 @@ public class ComplexVectorCache {
     public static @NotNull ComplexVector getZeros(int aSize) {
         final double[][] rData = new double[2][];
         DoubleArrayCache.getZerosTo(aSize, 2, (i, arr) -> rData[i] = arr);
-        return new ComplexVector(aSize, rData);
+        return new CacheableComplexVector(aSize, rData);
     }
     public static @NotNull List<ComplexVector> getZeros(final int aSize, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
@@ -61,7 +76,7 @@ public class ComplexVectorCache {
             if (tArrayReal == null) {
                 tArrayBuffer[0] = arr;
             } else {
-                rOut.add(new ComplexVector(aSize, new double[][]{tArrayReal, arr}));
+                rOut.add(new CacheableComplexVector(aSize, new double[][]{tArrayReal, arr}));
                 tArrayBuffer[0] = null;
             }
         });
@@ -70,7 +85,7 @@ public class ComplexVectorCache {
     public static @NotNull ComplexVector getVec(int aSize) {
         final double[][] rData = new double[2][];
         DoubleArrayCache.getArrayTo(aSize, 2, (i, arr) -> rData[i] = arr);
-        return new ComplexVector(aSize, rData);
+        return new CacheableComplexVector(aSize, rData);
     }
     public static @NotNull List<ComplexVector> getVec(final int aSize, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
@@ -81,7 +96,7 @@ public class ComplexVectorCache {
             if (tArrayReal == null) {
                 tArrayBuffer[0] = arr;
             } else {
-                rOut.add(new ComplexVector(aSize, new double[][]{tArrayReal, arr}));
+                rOut.add(new CacheableComplexVector(aSize, new double[][]{tArrayReal, arr}));
                 tArrayBuffer[0] = null;
             }
         });

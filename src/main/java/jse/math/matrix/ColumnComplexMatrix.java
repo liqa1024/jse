@@ -28,7 +28,7 @@ import static jse.math.matrix.AbstractMatrix.rangeCheckRow;
  * @author liqa
  * <p> 矩阵一般实现，按照列排序 </p>
  */
-public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
+public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     /** 提供默认的创建 */
     public static ColumnComplexMatrix ones(int aSize) {return ones(aSize, aSize);}
     public static ColumnComplexMatrix ones(int aRowNum, int aColNum) {
@@ -52,27 +52,28 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     
     
     /** IComplexMatrix stuffs */
-    @Override public ComplexDouble get(int aRow, int aCol) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; return new ComplexDouble(mData[0][tIdx], mData[1][tIdx]);}
-    @Override public double getReal(int aRow, int aCol) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); return mData[0][aRow + aCol*mRowNum];}
-    @Override public double getImag(int aRow, int aCol) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); return mData[1][aRow + aCol*mRowNum];}
-    @Override public void set(int aRow, int aCol, IComplexDouble aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; mData[0][tIdx] = aValue.real(); mData[1][tIdx] = aValue.imag();}
-    @Override public void set(int aRow, int aCol, ComplexDouble aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; mData[0][tIdx] = aValue.mReal; mData[1][tIdx] = aValue.mImag;}
-    @Override public void set(int aRow, int aCol, double aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; mData[0][tIdx] = aValue; mData[1][tIdx] = 0.0;}
-    @Override public void set(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; mData[0][tIdx] = aReal; mData[1][tIdx] = aImag;}
-    @Override public void setReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); mData[0][aRow + aCol*mRowNum] = aReal;}
-    @Override public void setImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); mData[1][aRow + aCol*mRowNum] = aImag;}
-    @Override public ComplexDouble getAndSet(int aRow, int aCol, IComplexDouble aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aValue.real(); mData[1][tIdx] = aValue.imag(); return oValue;}
-    @Override public ComplexDouble getAndSet(int aRow, int aCol, ComplexDouble aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aValue.mReal; mData[1][tIdx] = aValue.mImag; return oValue;}
-    @Override public ComplexDouble getAndSet(int aRow, int aCol, double aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aValue; mData[1][tIdx] = 0.0; return oValue;}
-    @Override public ComplexDouble getAndSet(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aReal; mData[1][tIdx] = aImag; return oValue;}
-    @Override public double getAndSetReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; double oReal = mData[0][tIdx]; mData[0][tIdx] = aReal; return oReal;}
-    @Override public double getAndSetImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; double oImag = mData[1][tIdx]; mData[1][tIdx] = aImag; return oImag;}
-    @Override public int rowNumber() {return mRowNum;}
-    @Override public int columnNumber() {return mColNum;}
+    @Override public final ComplexDouble get(int aRow, int aCol) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; return new ComplexDouble(mData[0][tIdx], mData[1][tIdx]);}
+    @Override public final double getReal(int aRow, int aCol) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); return mData[0][aRow + aCol*mRowNum];}
+    @Override public final double getImag(int aRow, int aCol) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); return mData[1][aRow + aCol*mRowNum];}
+    @Override public final void set(int aRow, int aCol, IComplexDouble aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; mData[0][tIdx] = aValue.real(); mData[1][tIdx] = aValue.imag();}
+    @Override public final void set(int aRow, int aCol, ComplexDouble aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; mData[0][tIdx] = aValue.mReal; mData[1][tIdx] = aValue.mImag;}
+    @Override public final void set(int aRow, int aCol, double aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; mData[0][tIdx] = aValue; mData[1][tIdx] = 0.0;}
+    @Override public final void set(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; mData[0][tIdx] = aReal; mData[1][tIdx] = aImag;}
+    @Override public final void setReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); mData[0][aRow + aCol*mRowNum] = aReal;}
+    @Override public final void setImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); mData[1][aRow + aCol*mRowNum] = aImag;}
+    @Override public final ComplexDouble getAndSet(int aRow, int aCol, IComplexDouble aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aValue.real(); mData[1][tIdx] = aValue.imag(); return oValue;}
+    @Override public final ComplexDouble getAndSet(int aRow, int aCol, ComplexDouble aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aValue.mReal; mData[1][tIdx] = aValue.mImag; return oValue;}
+    @Override public final ComplexDouble getAndSet(int aRow, int aCol, double aValue) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aValue; mData[1][tIdx] = 0.0; return oValue;}
+    @Override public final ComplexDouble getAndSet(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aReal; mData[1][tIdx] = aImag; return oValue;}
+    @Override public final double getAndSetReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; double oReal = mData[0][tIdx]; mData[0][tIdx] = aReal; return oReal;}
+    @Override public final double getAndSetImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; double oImag = mData[1][tIdx]; mData[1][tIdx] = aImag; return oImag;}
+    @Override public final int rowNumber() {return mRowNum;}
+    @Override public final int columnNumber() {return mColNum;}
     
     @Override protected ColumnComplexMatrix newZeros_(int aRowNum, int aColNum) {return ColumnComplexMatrix.zeros(aRowNum, aColNum);}
     @Override public ColumnComplexMatrix copy() {return (ColumnComplexMatrix)super.copy();}
     
+    @Override public int internalDataSize() {return mRowNum*mColNum;}
     @Override public ColumnComplexMatrix newShell() {return new ColumnComplexMatrix(mRowNum, mColNum, null);}
     @Override public double @Nullable[][] getIfHasSameOrderData(Object aObj) {
         // 只有同样是 ColumnMatrix 并且行数相同才会返回 mData
@@ -91,11 +92,11 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     @Override public ComplexVector asVecCol() {return new ComplexVector(mRowNum*mColNum, mData);}
     
     /** Optimize stuffs，real()，imag() 直接返回 {@link ColumnMatrix} */
-    @Override public ColumnMatrix real() {return new ColumnMatrix(mRowNum, mColNum, mData[0]);}
-    @Override public ColumnMatrix imag() {return new ColumnMatrix(mRowNum, mColNum, mData[1]);}
+    @Override public final ColumnMatrix real() {return new ColumnMatrix(mRowNum, mColNum, mData[0]);}
+    @Override public final ColumnMatrix imag() {return new ColumnMatrix(mRowNum, mColNum, mData[1]);}
     
     /** Optimize stuffs，引用转置直接返回 {@link RowComplexMatrix} */
-    @Override public IComplexMatrixOperation operation() {
+    @Override public final IComplexMatrixOperation operation() {
         return new BiDoubleArrayMatrixOperation_() {
             @Override public void fill(IComplexMatrixGetter aRHS) {
                 final double[] tRealData = mData[0];
@@ -183,7 +184,7 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override public void update(int aRow, int aCol, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {
+    @Override public final void update(int aRow, int aCol, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
@@ -193,21 +194,21 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
         tRealData[tIdx] = tValue.real();
         tImagData[tIdx] = tValue.imag();
     }
-    @Override public void updateReal(int aRow, int aCol,  DoubleUnaryOperator aRealOpt) {
+    @Override public final void updateReal(int aRow, int aCol,  DoubleUnaryOperator aRealOpt) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
         final double[] tRealData = mData[0];
         tRealData[tIdx] = aRealOpt.applyAsDouble(tRealData[tIdx]);
     }
-    @Override public void updateImag(int aRow, int aCol, DoubleUnaryOperator aImagOpt) {
+    @Override public final void updateImag(int aRow, int aCol, DoubleUnaryOperator aImagOpt) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
         final double[] tImagData = mData[1];
         tImagData[tIdx] = aImagOpt.applyAsDouble(tImagData[tIdx]);
     }
-    @Override public ComplexDouble getAndUpdate(int aRow, int aCol, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {
+    @Override public final ComplexDouble getAndUpdate(int aRow, int aCol, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
@@ -219,7 +220,7 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
         tImagData[tIdx] = tValue.imag();
         return oValue;
     }
-    @Override public double getAndUpdateReal(int aRow, int aCol,DoubleUnaryOperator aRealOpt) {
+    @Override public final double getAndUpdateReal(int aRow, int aCol,DoubleUnaryOperator aRealOpt) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
@@ -228,7 +229,7 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
         tRealData[tIdx] = aRealOpt.applyAsDouble(oReal);
         return oReal;
     }
-    @Override public double getAndUpdateImag(int aRow, int aCol,DoubleUnaryOperator aImagOpt) {
+    @Override public final double getAndUpdateImag(int aRow, int aCol,DoubleUnaryOperator aImagOpt) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
@@ -239,7 +240,7 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     }
     
     /** Optimize stuffs，重写迭代器来提高遍历速度 */
-    @Override public IComplexDoubleIterator iteratorCol() {
+    @Override public final IComplexDoubleIterator iteratorCol() {
         return new IComplexDoubleIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = 0, oIdx = -1;
@@ -264,7 +265,7 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}
         };
     }
-    @Override public IComplexDoubleIterator iteratorRow() {
+    @Override public final IComplexDoubleIterator iteratorRow() {
         return new IComplexDoubleIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mRow = 0;
@@ -291,7 +292,7 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}
         };
     }
-    @Override public IComplexDoubleIterator iteratorColAt(final int aCol) {
+    @Override public final IComplexDoubleIterator iteratorColAt(final int aCol) {
         rangeCheckCol(aCol, mColNum);
         return new IComplexDoubleIterator() {
             private final int mEnd = (aCol+1)*mRowNum;
@@ -317,7 +318,7 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}
         };
     }
-    @Override public IComplexDoubleIterator iteratorRowAt(final int aRow) {
+    @Override public final IComplexDoubleIterator iteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mRowNum);
         return new IComplexDoubleIterator() {
             private final int mSize = mRowNum * mColNum;
@@ -343,7 +344,7 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}
         };
     }
-    @Override public IComplexDoubleSetIterator setIteratorCol() {
+    @Override public final IComplexDoubleSetIterator setIteratorCol() {
         return new IComplexDoubleSetIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = 0, oIdx = -1;
@@ -455,7 +456,7 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             }
         };
     }
-    @Override public IComplexDoubleSetIterator setIteratorRow() {
+    @Override public final IComplexDoubleSetIterator setIteratorRow() {
         return new IComplexDoubleSetIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mRow = 0;
@@ -574,7 +575,7 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             }
         };
     }
-    @Override public IComplexDoubleSetIterator setIteratorColAt(final int aCol) {
+    @Override public final IComplexDoubleSetIterator setIteratorColAt(final int aCol) {
         rangeCheckCol(aCol, mColNum);
         return new IComplexDoubleSetIterator() {
             private final int mEnd = (aCol+1)*mRowNum;
@@ -687,7 +688,7 @@ public final class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             }
         };
     }
-    @Override public IComplexDoubleSetIterator setIteratorRowAt(final int aRow) {
+    @Override public final IComplexDoubleSetIterator setIteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mRowNum);
         return new IComplexDoubleSetIterator() {
             private final int mSize = mRowNum * mColNum;

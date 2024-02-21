@@ -6,11 +6,10 @@ import jse.math.matrix.ColumnComplexMatrix;
 import jse.math.matrix.IComplexMatrix;
 import jse.math.matrix.RowComplexMatrix;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static jse.code.Conf.NO_CACHE;
 
 /**
  * 专门针对 {@link IComplexMatrix} 和 {@code List<IComplexMatrix>} 的全局线程独立缓存，
@@ -24,20 +23,43 @@ import static jse.code.Conf.NO_CACHE;
 public class ComplexMatrixCache {
     private ComplexMatrixCache() {}
     
+    interface ICacheableComplexMatrix {}
+    final static class CacheableColumnComplexMatrix extends ColumnComplexMatrix implements ICacheableComplexMatrix {
+        public CacheableColumnComplexMatrix(int aRowNum, int aColNum, double[][] aData) {super(aRowNum, aColNum, aData);}
+        /** 重写这些方法来让这个 cache 可以顺利相互转换 */
+        @Override public ComplexVectorCache.CacheableComplexVector asVecCol() {return new ComplexVectorCache.CacheableComplexVector(internalDataSize(), internalData());}
+    }
+    final static class CacheableRowComplexMatrix extends RowComplexMatrix implements ICacheableComplexMatrix {
+        public CacheableRowComplexMatrix(int aRowNum, int aColNum, double[][] aData) {super(aRowNum, aColNum, aData);}
+        /** 重写这些方法来让这个 cache 可以顺利相互转换 */
+        @Override public ComplexVectorCache.CacheableComplexVector asVecRow() {return new ComplexVectorCache.CacheableComplexVector(internalDataSize(), internalData());}
+    }
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    public static boolean isFromCache(IComplexMatrix aComplexMatrix) {
+        return (aComplexMatrix instanceof ICacheableComplexMatrix);
+    }
+    
     public static void returnMat(@NotNull IComplexMatrix aComplexMatrix) {
-        if (NO_CACHE) return;
-        final double[][] tData = ((BiDoubleArrayMatrix)aComplexMatrix).internalData();
+        if (!isFromCache(aComplexMatrix)) throw new IllegalArgumentException("Return ComplexMatrix MUST be from cache");
+        BiDoubleArrayMatrix tBiDoubleArrayMatrix = (BiDoubleArrayMatrix)aComplexMatrix;
+        double @Nullable[][] tData = tBiDoubleArrayMatrix.internalData();
+        if (tData == null) throw new IllegalStateException("Redundant return ComplexMatrix");
+        tBiDoubleArrayMatrix.setInternalData(null);
         DoubleArrayCache.returnArrayFrom(2, i -> tData[1-i]);
     }
     public static void returnMat(final @NotNull List<? extends @NotNull IComplexMatrix> aComplexMatrixList) {
-        if (NO_CACHE) return;
         if (aComplexMatrixList.isEmpty()) return;
         // 这里不实际缓存 List<IComplexMatrix>，而是直接统一归还内部值，这样实现会比较简单
         final double[][] tArrayBuffer = {null};
         DoubleArrayCache.returnArrayFrom(aComplexMatrixList.size()*2, i -> {
             double[] tArrayReal = tArrayBuffer[0];
             if (tArrayReal == null) {
-                double[][] tData = ((BiDoubleArrayMatrix)aComplexMatrixList.get(i/2)).internalData();
+                IComplexMatrix tComplexMatrix = aComplexMatrixList.get(i/2);
+                if (!isFromCache(tComplexMatrix)) throw new IllegalArgumentException("Return ComplexMatrix MUST be from cache");
+                BiDoubleArrayMatrix tBiDoubleArrayMatrix = (BiDoubleArrayMatrix)tComplexMatrix;
+                double @Nullable[][] tData = tBiDoubleArrayMatrix.internalData();
+                if (tData == null) throw new IllegalStateException("Redundant return ComplexMatrix");
+                tBiDoubleArrayMatrix.setInternalData(null);
                 tArrayBuffer[0] = tData[0];
                 return tData[1];
             } else {
@@ -57,7 +79,7 @@ public class ComplexMatrixCache {
     public static @NotNull ColumnComplexMatrix getZerosCol(int aRowNum, int aColNum) {
         final double[][] rData = new double[2][];
         DoubleArrayCache.getZerosTo(aRowNum*aColNum, 2, (i, arr) -> rData[i] = arr);
-        return new ColumnComplexMatrix(aRowNum, aColNum, rData);
+        return new CacheableColumnComplexMatrix(aRowNum, aColNum, rData);
     }
     public static @NotNull List<ColumnComplexMatrix> getZerosCol(final int aRowNum, final int aColNum, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
@@ -68,7 +90,7 @@ public class ComplexMatrixCache {
             if (tArrayReal == null) {
                 tArrayBuffer[0] = arr;
             } else {
-                rOut.add(new ColumnComplexMatrix(aRowNum, aColNum, new double[][]{tArrayReal, arr}));
+                rOut.add(new CacheableColumnComplexMatrix(aRowNum, aColNum, new double[][]{tArrayReal, arr}));
                 tArrayBuffer[0] = null;
             }
         });
@@ -77,7 +99,7 @@ public class ComplexMatrixCache {
     public static @NotNull RowComplexMatrix getZerosRow(int aRowNum, int aColNum) {
         final double[][] rData = new double[2][];
         DoubleArrayCache.getZerosTo(aRowNum*aColNum, 2, (i, arr) -> rData[i] = arr);
-        return new RowComplexMatrix(aRowNum, aColNum, rData);
+        return new CacheableRowComplexMatrix(aRowNum, aColNum, rData);
     }
     public static @NotNull List<RowComplexMatrix> getZerosRow(final int aRowNum, final int aColNum, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
@@ -88,7 +110,7 @@ public class ComplexMatrixCache {
             if (tArrayReal == null) {
                 tArrayBuffer[0] = arr;
             } else {
-                rOut.add(new RowComplexMatrix(aRowNum, aColNum, new double[][]{tArrayReal, arr}));
+                rOut.add(new CacheableRowComplexMatrix(aRowNum, aColNum, new double[][]{tArrayReal, arr}));
                 tArrayBuffer[0] = null;
             }
         });
@@ -103,7 +125,7 @@ public class ComplexMatrixCache {
     public static @NotNull ColumnComplexMatrix getMatCol(int aRowNum, int aColNum) {
         final double[][] rData = new double[2][];
         DoubleArrayCache.getArrayTo(aRowNum*aColNum, 2, (i, arr) -> rData[i] = arr);
-        return new ColumnComplexMatrix(aRowNum, aColNum, rData);
+        return new CacheableColumnComplexMatrix(aRowNum, aColNum, rData);
     }
     public static @NotNull List<ColumnComplexMatrix> getMatCol(final int aRowNum, final int aColNum, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
@@ -114,7 +136,7 @@ public class ComplexMatrixCache {
             if (tArrayReal == null) {
                 tArrayBuffer[0] = arr;
             } else {
-                rOut.add(new ColumnComplexMatrix(aRowNum, aColNum, new double[][]{tArrayReal, arr}));
+                rOut.add(new CacheableColumnComplexMatrix(aRowNum, aColNum, new double[][]{tArrayReal, arr}));
                 tArrayBuffer[0] = null;
             }
         });
@@ -123,7 +145,7 @@ public class ComplexMatrixCache {
     public static @NotNull RowComplexMatrix getMatRow(int aRowNum, int aColNum) {
         final double[][] rData = new double[2][];
         DoubleArrayCache.getArrayTo(aRowNum*aColNum, 2, (i, arr) -> rData[i] = arr);
-        return new RowComplexMatrix(aRowNum, aColNum, rData);
+        return new CacheableRowComplexMatrix(aRowNum, aColNum, rData);
     }
     public static @NotNull List<RowComplexMatrix> getMatRow(final int aRowNum, final int aColNum, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
@@ -134,7 +156,7 @@ public class ComplexMatrixCache {
             if (tArrayReal == null) {
                 tArrayBuffer[0] = arr;
             } else {
-                rOut.add(new RowComplexMatrix(aRowNum, aColNum, new double[][]{tArrayReal, arr}));
+                rOut.add(new CacheableRowComplexMatrix(aRowNum, aColNum, new double[][]{tArrayReal, arr}));
                 tArrayBuffer[0] = null;
             }
         });

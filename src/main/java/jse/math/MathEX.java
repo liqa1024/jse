@@ -210,7 +210,6 @@ public class MathEX {
         public static double[] parebeDo(final int aBlockSize, final double[] aData1, final double[] aData2, DoubleBinaryOperator aOpt) {return parebeDo(Par.POOL, aBlockSize, aData1, aData2, aOpt);}
         public static double[] parebeDo(ParforThreadPool aPool, final int aBlockSize, final double[] aData1, final double[] aData2, DoubleBinaryOperator aOpt) {
             if (aPool.threadNumber()==1) return ebeDo(aData1, aData2, aOpt);
-            assert aData1.length == aData2.length;
             
             int tN = aData1.length/aBlockSize;
             final double[] tOut = new double[aData1.length];
@@ -225,7 +224,6 @@ public class MathEX {
         public static double[] parebeDo2Dest(final int aBlockSize, final double[] rDest, final double[] aData, final DoubleBinaryOperator aOpt) {return parebeDo2Dest(Par.POOL, aBlockSize, rDest, aData, aOpt);}
         public static double[] parebeDo2Dest(ParforThreadPool aPool, final int aBlockSize, final double[] rDest, final double[] aData, final DoubleBinaryOperator aOpt) {
             if (aPool.threadNumber()==1) return ebeDo2Dest(rDest, aData, aOpt);
-            assert rDest.length == aData.length;
             
             int tN = aData.length/aBlockSize;
             aPool.parfor(tN, i -> {

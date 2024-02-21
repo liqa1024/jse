@@ -20,7 +20,7 @@ import static jse.math.matrix.AbstractMatrix.rangeCheckRow;
  * @author liqa
  * <p> 矩阵一般实现，按照列排序 </p>
  */
-public final class ColumnIntMatrix extends IntArrayMatrix {
+public class ColumnIntMatrix extends IntArrayMatrix {
     /** 提供默认的创建 */
     public static ColumnIntMatrix ones(int aSize) {return ones(aSize, aSize);}
     public static ColumnIntMatrix ones(int aRowNum, int aColNum) {
@@ -44,17 +44,17 @@ public final class ColumnIntMatrix extends IntArrayMatrix {
     
     
     /** IMatrix stuffs */
-    @Override public int get(int aRow, int aCol) {
+    @Override public final int get(int aRow, int aCol) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         return mData[aRow + aCol*mRowNum];
     }
-    @Override public void set(int aRow, int aCol, int aValue) {
+    @Override public final void set(int aRow, int aCol, int aValue) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         mData[aRow + aCol*mRowNum] = aValue;
     }
-    @Override public int getAndSet(int aRow, int aCol, int aValue) {
+    @Override public final int getAndSet(int aRow, int aCol, int aValue) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
@@ -62,12 +62,13 @@ public final class ColumnIntMatrix extends IntArrayMatrix {
         mData[tIdx] = aValue;
         return oValue;
     }
-    @Override public int rowNumber() {return mRowNum;}
-    @Override public int columnNumber() {return mColNum;}
+    @Override public final int rowNumber() {return mRowNum;}
+    @Override public final int columnNumber() {return mColNum;}
     
     @Override protected ColumnIntMatrix newZeros_(int aRowNum, int aColNum) {return ColumnIntMatrix.zeros(aRowNum, aColNum);}
     @Override public ColumnIntMatrix copy() {return (ColumnIntMatrix)super.copy();}
     
+    @Override public int internalDataSize() {return mRowNum*mColNum;}
     @Override public ColumnIntMatrix newShell() {return new ColumnIntMatrix(mRowNum, mColNum, null);}
     @Override public int @Nullable[] getIfHasSameOrderData(Object aObj) {
         // 只有同样是 ColumnMatrix 并且行数相同才会返回 mData
@@ -86,7 +87,7 @@ public final class ColumnIntMatrix extends IntArrayMatrix {
     @Override public IntVector asVecCol() {return new IntVector(mRowNum*mColNum, mData);}
     
     /** Optimize stuffs，引用转置直接返回 {@link RowIntMatrix} */
-    @Override public IIntMatrixOperation operation() {
+    @Override public final IIntMatrixOperation operation() {
         return new IntArrayMatrixOperation_() {
             @Override public void fill(IIntMatrixGetter aRHS) {
                 int idx = 0;
@@ -110,13 +111,13 @@ public final class ColumnIntMatrix extends IntArrayMatrix {
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override public void update(int aRow, int aCol, IntUnaryOperator aOpt) {
+    @Override public final void update(int aRow, int aCol, IntUnaryOperator aOpt) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
         mData[tIdx] = aOpt.applyAsInt(mData[tIdx]);
     }
-    @Override public int getAndUpdate(int aRow, int aCol, IntUnaryOperator aOpt) {
+    @Override public final int getAndUpdate(int aRow, int aCol, IntUnaryOperator aOpt) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
@@ -127,7 +128,7 @@ public final class ColumnIntMatrix extends IntArrayMatrix {
     
     
     /** Optimize stuffs，重写迭代器来提高遍历速度 */
-    @Override public IIntIterator iteratorCol() {
+    @Override public final IIntIterator iteratorCol() {
         return new IIntIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = 0;
@@ -143,7 +144,7 @@ public final class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public IIntIterator iteratorRow() {
+    @Override public final IIntIterator iteratorRow() {
         return new IIntIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mRow = 0;
@@ -161,7 +162,7 @@ public final class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public IIntIterator iteratorColAt(final int aCol) {
+    @Override public final IIntIterator iteratorColAt(final int aCol) {
         rangeCheckCol(aCol, mColNum);
         return new IIntIterator() {
             private final int mEnd = (aCol+1)*mRowNum;
@@ -178,7 +179,7 @@ public final class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public IIntIterator iteratorRowAt(final int aRow) {
+    @Override public final IIntIterator iteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mRowNum);
         return new IIntIterator() {
             private final int mSize = mRowNum * mColNum;
@@ -195,7 +196,7 @@ public final class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public IIntSetIterator setIteratorCol() {
+    @Override public final IIntSetIterator setIteratorCol() {
         return new IIntSetIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = 0, oIdx = -1;
@@ -230,7 +231,7 @@ public final class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public IIntSetIterator setIteratorRow() {
+    @Override public final IIntSetIterator setIteratorRow() {
         return new IIntSetIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mRow = 0;
@@ -269,7 +270,7 @@ public final class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public IIntSetIterator setIteratorColAt(final int aCol) {
+    @Override public final IIntSetIterator setIteratorColAt(final int aCol) {
         rangeCheckCol(aCol, mColNum);
         return new IIntSetIterator() {
             private final int mEnd = (aCol+1)*mRowNum;
@@ -305,7 +306,7 @@ public final class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public IIntSetIterator setIteratorRowAt(final int aRow) {
+    @Override public final IIntSetIterator setIteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mRowNum);
         return new IIntSetIterator() {
             private final int mSize = mRowNum * mColNum;
