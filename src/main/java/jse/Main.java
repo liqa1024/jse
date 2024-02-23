@@ -17,6 +17,10 @@ import static jse.code.CS.VERSION;
  * <p> 直接运行 jse 时的主要类，根据输入参数来决定具体操作 </p>
  */
 public class Main {
+    /** 记录 jse 是通过何种方式运行的，null 表示通过将 jar 添加到 class-path 运行 */
+    private static @Nullable String RUN_FROM = null;
+    public static @Nullable String RUN_FROM() {return RUN_FROM;}
+    
     /** 使用这个替代原本的 addShutdownHook 的使用，注意要求线程安全以及避免死锁 */
     private final static Set<AutoCloseable> GLOBAL_AUTO_CLOSEABLE = new HashSet<>();
     public static void addGlobalAutoCloseable(@Nullable AutoCloseable aAutoCloseable) {
@@ -38,14 +42,18 @@ public class Main {
     
     public static void main(String[] aArgs) throws Exception {
         try {
-            // 没有输入时启动 groovysh
-            if (aArgs.length == 0) {SP.Groovy.runShell(); return;}
+            // 完全没有输入时（双击运行）直接结束
+            if (aArgs==null || aArgs.length==0) return;
+            // 第 0 参数记录从何处运行的 jse
+            RUN_FROM = aArgs[0];
+            // 没有后续输入时启动 groovysh
+            if (aArgs.length == 1) {SP.Groovy.runShell(); return;}
             // 获取第一个值
-            String tValue = aArgs[0];
+            String tValue = aArgs[1];
             if (!tValue.startsWith("-")) {
                 // 默认执行脚本文件
-                String[] tArgs = new String[aArgs.length-1];
-                if (tArgs.length > 0) System.arraycopy(aArgs, 1, tArgs, 0, tArgs.length);
+                String[] tArgs = new String[aArgs.length-2];
+                if (tArgs.length > 0) System.arraycopy(aArgs, 2, tArgs, 0, tArgs.length);
                 SP.Groovy.run(tValue, tArgs);
                 return;
             }
@@ -61,10 +69,10 @@ public class Main {
                 return;
             }
             default: {
-                if (aArgs.length < 2) {printHelp(); return;}
-                tValue = aArgs[1];
-                String[] tArgs = new String[aArgs.length-2];
-                if (tArgs.length > 0) System.arraycopy(aArgs, 2, tArgs, 0, tArgs.length);
+                if (aArgs.length < 3) {printHelp(); return;}
+                tValue = aArgs[2];
+                String[] tArgs = new String[aArgs.length-3];
+                if (tArgs.length > 0) System.arraycopy(aArgs, 3, tArgs, 0, tArgs.length);
                 switch (tOption) {
                 case "-t": case "-text": {
                     SP.Groovy.runText(tValue, tArgs);

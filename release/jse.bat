@@ -30,4 +30,4 @@ set JAVA_OPTS=%JAVA_OPTS% -Djava.util.prefs.syncInterval=1000000
 set JAVA_OPTS=%JAVA_OPTS% -Djline.terminal=none
 
 @REM Execute jse.jar
-java %JAVA_OPTS% -jar "%JAR_LOCATION%" %*
+java %JAVA_OPTS% -jar "%JAR_LOCATION%" CMD %*

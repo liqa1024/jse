@@ -47,4 +47,4 @@ JAVA_OPTS="$JAVA_OPTS -Xmx1g"
 fi
 
 # Execute jse.jar
-java $JAVA_OPTS -jar "$JAR_LOCATION" "$@"
+java $JAVA_OPTS -jar "$JAR_LOCATION" BASH "$@"
