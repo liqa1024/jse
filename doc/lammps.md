@@ -629,7 +629,7 @@ jse 在 [`jse.lmp.NativeLmp.Conf`](../src/main/java/jse/lmp/NativeLmp.java)
     
     默认值：`'lib/lmp/native/build'`
     
-    环境变量名称：`JSE_NATIVE_LMP_HOME`
+    环境变量名称：`JSE_LMP_HOME`
     
     -----------------------------
     
@@ -641,7 +641,7 @@ jse 在 [`jse.lmp.NativeLmp.Conf`](../src/main/java/jse/lmp/NativeLmp.java)
     
     默认值：`'stable_2Aug2023_update2'`
     
-    环境变量名称：`JSE_NATIVE_LMP_TAG`
+    环境变量名称：`JSE_LMP_TAG`
     
     -----------------------------
     
@@ -757,7 +757,7 @@ jse 在 [`jse.lmp.NativeLmp.Conf`](../src/main/java/jse/lmp/NativeLmp.java)
     
     默认值：`false`
     
-    环境变量名称：`JSE_NATIVE_LMP_IS_OLD`
+    环境变量名称：`JSE_LMP_IS_OLD`
     
     -----------------------------
     
@@ -770,7 +770,7 @@ jse 在 [`jse.lmp.NativeLmp.Conf`](../src/main/java/jse/lmp/NativeLmp.java)
     
     默认值：`true`
     
-    环境变量名称：`JSE_NATIVE_LMP_HAS_EXCEPTIONS`
+    环境变量名称：`JSE_LMP_HAS_EXCEPTIONS`
     
     > **注意**：关闭后如果出现 lammps 的错误则不会重定向为 java 的错误，
     > 从而不会有 java 的栈信息，使得调试更加困难。
@@ -790,7 +790,7 @@ jse 在 [`jse.lmp.NativeLmp.Conf`](../src/main/java/jse/lmp/NativeLmp.java)
     
     默认值：`true`
     
-    环境变量名称：`JSE_NATIVE_LMP_EXCEPTIONS_NULL_SUPPORT`
+    环境变量名称：`JSE_LMP_EXCEPTIONS_NULL_SUPPORT`
     
     > **注意**：即使在较新的 lammps 版本中，存在 exception 相关接口，
     > 但是不支持 `null` 输入（即使这在最近 lammps 官方文档中已经明确支持，
