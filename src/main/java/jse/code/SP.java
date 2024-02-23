@@ -43,7 +43,7 @@ import java.util.Map;
 
 import static jse.code.CS.Exec.*;
 import static jse.code.CS.VERSION;
-import static jse.code.Conf.DYLIB_NAME_IN;
+import static jse.code.Conf.LIB_NAME_IN;
 import static jse.code.Conf.WORKING_DIR_OF;
 import static org.codehaus.groovy.runtime.InvokerHelper.MAIN_METHOD_NAME;
 
@@ -413,7 +413,7 @@ public class SP {
             Main.addGlobalAutoCloseable(Python::close);
             
             // 设置 Jep 非 java 库的路径，考虑到 WSL，windows 和 linux 使用不同的名称
-            @Nullable String tLibName = DYLIB_NAME_IN(JEP_LIB_DIR, "jep");
+            @Nullable String tLibName = LIB_NAME_IN(JEP_LIB_DIR, "jep");
             // 如果不存在则需要重新通过源码编译
             if (tLibName == null) {
                 System.out.println("JEP INIT INFO: jep libraries not found. Reinstalling...");
@@ -562,7 +562,7 @@ public class SP {
             EXE.system(String.format("cd \"%s\"; cmake --build . --config Release", tJepBuildDir));
             EXE.setNoSTDOutput(false);
             // 简单检测一下是否编译成功
-            @Nullable String tJepLibName = DYLIB_NAME_IN(JEP_LIB_DIR, "jep");
+            @Nullable String tJepLibName = LIB_NAME_IN(JEP_LIB_DIR, "jep");
             if (tJepLibName == null) throw new Exception("JEP BUILD ERROR: No jep lib in "+JEP_LIB_DIR);
             // 拷贝 python 脚本
             String tJepPyDir = tJepDir+"src/main/python/jep/";

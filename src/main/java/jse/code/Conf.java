@@ -38,13 +38,27 @@ public class Conf {
     public static @Nullable String CMAKE_C_COMPILER   = UT.Exec.env("JSE_CMAKE_C_COMPILER"  );
     public static @Nullable String CMAKE_CXX_COMPILER = UT.Exec.env("JSE_CMAKE_CXX_COMPILER");
     /** 设置编译得到的 C/C++ 动态库的后缀，不同平台格式不同 */
-    public static String DYLIB_EXTENSION = IS_WINDOWS ? ".dll" : (IS_MAC ? ".dylib" : ".so");
-    /** 根据后缀在和项目名称，在指定文件夹中找到合适的动态库名称，这种写法考虑到了 可选的 `lib` 开头 */
-    public static @Nullable String DYLIB_NAME_IN(String aLibDir, String aProjectName) {
+    public static String LIB_EXTENSION = IS_WINDOWS ? ".dll" : (IS_MAC ? ".dylib" : ".so");
+    /** 设置用于编译 C/C++ 时链接的库的后缀，不同平台格式不同（L: Link） */
+    public static String LLIB_EXTENSION = IS_WINDOWS ? ".lib" : (IS_MAC ? ".dylib" : ".so");
+    /** 根据后缀在和项目名称，在指定文件夹中找到合适的库名称，这种写法考虑到了 可选的 `lib` 开头 */
+    public static @Nullable String LIB_NAME_IN(String aLibDir, String aProjectName) {
         try {
             for (String tName : UT.IO.list(aLibDir)) {
                 // 固定后缀保证不会加载到其他平台的动态库
-                if (tName.endsWith(DYLIB_EXTENSION) && tName.contains(aProjectName)) return tName;
+                if (tName.endsWith(LIB_EXTENSION) && tName.contains(aProjectName)) return tName;
+            }
+        } catch (IOException e) {
+            // 失败时返回 null 而不抛出错误
+            return null;
+        }
+        return null;
+    }
+    public static @Nullable String LLIB_NAME_IN(String aLibDir, String aProjectName) {
+        try {
+            for (String tName : UT.IO.list(aLibDir)) {
+                // 固定后缀保证不会加载到其他平台的动态库
+                if (tName.endsWith(LLIB_EXTENSION) && tName.contains(aProjectName)) return tName;
             }
         } catch (IOException e) {
             // 失败时返回 null 而不抛出错误

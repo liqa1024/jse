@@ -1,5 +1,6 @@
 package jse.clib;
 
+import jse.code.CS;
 import jse.code.UT;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -8,8 +9,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static jse.code.CS.Exec.*;
-import static jse.code.CS.VERSION;
+import static jse.code.CS.Exec.EXE;
+import static jse.code.CS.Exec.JAR_DIR;
 import static jse.code.Conf.*;
 
 /**
@@ -29,7 +30,7 @@ public class MiMalloc {
         @SuppressWarnings({"ResultOfMethodCallIgnored", "UnnecessaryCallToStringValueOf"})
         public static void init() {
             // 手动调用此值来强制初始化
-            if (!INITIALIZED) String.valueOf(MIMALLOC_DIR);
+            if (!INITIALIZED) String.valueOf(HOME);
         }
     }
     
@@ -43,12 +44,13 @@ public class MiMalloc {
     }
     
     
-    public final static String MIMALLOC_VERSION = "2.1.2";
+    public final static String VERSION = "2.1.2";
     
-    public final static String MIMALLOC_DIR = JAR_DIR+"mimalloc/" + UT.Code.uniqueID(VERSION, MIMALLOC_VERSION) + "/";
-    public final static String MIMALLOC_LIB_DIR = MIMALLOC_DIR+"lib/";
-    public final static String MIMALLOC_INCLUDE_DIR = MIMALLOC_DIR+"include/";
-    public final static String MIMALLOC_LIB_PATH;
+    public final static String HOME = JAR_DIR+"mimalloc/" + UT.Code.uniqueID(CS.VERSION, MiMalloc.VERSION) + "/";
+    public final static String LIB_DIR = HOME+"lib/";
+    public final static String INCLUDE_DIR = HOME+"include/";
+    public final static String LIB_PATH;
+    public final static String LLIB_PATH;
     
     
     private static String cmakeInitCmd_(String aMiBuildDir) {
@@ -83,13 +85,13 @@ public class MiMalloc {
         // 设置编译模式 Release
         rCommand.add("-D"); rCommand.add("CMAKE_BUILD_TYPE=Release");
         // 设置构建输出目录为 lib
-        UT.IO.makeDir(MIMALLOC_LIB_DIR); // 初始化一下这个目录避免意料外的问题
-        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=\""+MIMALLOC_LIB_DIR+"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=\""+MIMALLOC_LIB_DIR+"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=\""+MIMALLOC_LIB_DIR+"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=\""+MIMALLOC_LIB_DIR+"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=\""+MIMALLOC_LIB_DIR+"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH=\""+MIMALLOC_LIB_DIR+"\"");
+        UT.IO.makeDir(LIB_DIR); // 初始化一下这个目录避免意料外的问题
+        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=\""+ LIB_DIR +"\"");
+        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=\""+ LIB_DIR +"\"");
+        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=\""+ LIB_DIR +"\"");
+        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ LIB_DIR +"\"");
+        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ LIB_DIR +"\"");
+        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ LIB_DIR +"\"");
         rCommand.add(".");
         return String.join(" ", rCommand);
     }
@@ -103,8 +105,8 @@ public class MiMalloc {
         // 如果已经存在则先删除
         UT.IO.removeDir(tWorkingDir);
         // 首先获取源码路径，这里直接从 resource 里输出
-        String tMiZipPath = tWorkingDir+"mimalloc-"+MIMALLOC_VERSION+".zip";
-        UT.IO.copy(UT.IO.getResource("mimalloc/mimalloc-"+MIMALLOC_VERSION+".zip"), tMiZipPath);
+        String tMiZipPath = tWorkingDir+"mimalloc-"+VERSION+".zip";
+        UT.IO.copy(UT.IO.getResource("mimalloc/mimalloc-"+VERSION+".zip"), tMiZipPath);
         // 解压 mimalloc 包到临时目录，如果已经存在则直接清空此目录
         String tMiDir = tWorkingDir+"mimalloc/";
         UT.IO.removeDir(tMiDir);
@@ -123,10 +125,10 @@ public class MiMalloc {
         EXE.system(String.format("cd \"%s\"; cmake --build . --config Release", tMiBuildDir));
         EXE.setNoSTDOutput(false);
         // 简单检测一下是否编译成功
-        @Nullable String tLibName = DYLIB_NAME_IN(MIMALLOC_LIB_DIR, "mimalloc");
-        if (tLibName == null) throw new Exception("MIMALLOC BUILD ERROR: No mimalloc lib in "+MIMALLOC_LIB_DIR);
+        @Nullable String tLibName = LIB_NAME_IN(LIB_DIR, "mimalloc");
+        if (tLibName == null) throw new Exception("MIMALLOC BUILD ERROR: No mimalloc lib in "+LIB_DIR);
         // 手动拷贝头文件到指定目录
-        UT.IO.copy(tMiDir+"include/mimalloc.h", MIMALLOC_INCLUDE_DIR+"mimalloc.h");
+        UT.IO.copy(tMiDir+"include/mimalloc.h", INCLUDE_DIR+"mimalloc.h");
         // 完事后移除临时解压得到的源码
         UT.IO.removeDir(tWorkingDir);
         System.out.println("MIMALLOC INIT INFO: mimalloc successfully installed.");
@@ -137,14 +139,16 @@ public class MiMalloc {
     static {
         InitHelper.INITIALIZED = true;
         
-        @Nullable String tLibName = DYLIB_NAME_IN(MIMALLOC_LIB_DIR, "mimalloc");
+        @Nullable String tLibName = LIB_NAME_IN(LIB_DIR, "mimalloc");
         // 如果不存在 mimalloc lib 则需要重新通过源码编译
         if (tLibName == null) {
             System.out.println("MIMALLOC INIT INFO: mimalloc libraries not found. Reinstalling...");
             try {tLibName = initMiMalloc_();} catch (Exception e) {throw new RuntimeException(e);}
         }
-        MIMALLOC_LIB_PATH = MIMALLOC_LIB_DIR+tLibName;
+        LIB_PATH = LIB_DIR+tLibName;
+        @Nullable String tLLibName = LLIB_NAME_IN(LIB_DIR, "mimalloc");
+        LLIB_PATH = tLLibName==null ? LIB_PATH : (LIB_DIR+tLLibName);
         // 设置库路径
-        System.load(UT.IO.toAbsolutePath(MIMALLOC_LIB_PATH));
+        System.load(UT.IO.toAbsolutePath(LIB_PATH));
     }
 }

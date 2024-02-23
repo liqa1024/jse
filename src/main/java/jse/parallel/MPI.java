@@ -20,7 +20,7 @@ import static jse.clib.JNIUtil.*;
 import static jse.code.CS.Exec.*;
 import static jse.code.CS.VERSION;
 import static jse.code.CS.ZL_STR;
-import static jse.code.Conf.DYLIB_NAME_IN;
+import static jse.code.Conf.LIB_NAME_IN;
 import static jse.code.Conf.WORKING_DIR_OF;
 
 /**
@@ -1189,10 +1189,11 @@ public class MPI {
             // 这里对 CMakeLists.txt 特殊处理
             UT.IO.map(UT.IO.getResource("mpi/src/CMakeLists.txt"), tWorkingDir+"CMakeLists.txt", line -> {
                 // 替换其中的 jniutil 库路径为设置好的路径
-                line = line.replace("$ENV{JNIUTIL_HOME}", JNIUtil.JNIUTIL_DIR.replace("\\", "\\\\")); // 注意反斜杠的转义问题
+                line = line.replace("$ENV{JSE_JNIUTIL_INCLUDE_DIR}", JNIUtil.INCLUDE_DIR.replace("\\", "\\\\")); // 注意反斜杠的转义问题
                 // 替换其中的 mimalloc 库路径为设置好的路径
                 if (Conf.USE_MIMALLOC) {
-                line = line.replace("$ENV{MIMALLOC_HOME}", MiMalloc.MIMALLOC_DIR.replace("\\", "\\\\")); // 注意反斜杠的转义问题
+                line = line.replace("$ENV{JSE_MIMALLOC_INCLUDE_DIR}", MiMalloc.INCLUDE_DIR.replace("\\", "\\\\"))  // 注意反斜杠的转义问题
+                           .replace("$ENV{JSE_MIMALLOC_LIB_PATH}"   , MiMalloc.LLIB_PATH  .replace("\\", "\\\\")); // 注意反斜杠的转义问题
                 }
                 return line;
             });
@@ -1209,7 +1210,7 @@ public class MPI {
             EXE.system(String.format("cd \"%s\"; cmake --build . --config Release", tBuildDir));
             EXE.setNoSTDOutput(false);
             // 简单检测一下是否编译成功
-            @Nullable String tLibName = DYLIB_NAME_IN(MPIJNI_LIB_DIR, "mpijni");
+            @Nullable String tLibName = LIB_NAME_IN(MPIJNI_LIB_DIR, "mpijni");
             if (tLibName == null) throw new Exception("MPI BUILD ERROR: Build Failed, No mpijni lib in "+MPIJNI_LIB_DIR);
             // 完事后移除临时解压得到的源码
             UT.IO.removeDir(tWorkingDir);
@@ -1228,7 +1229,7 @@ public class MPI {
             // 如果开启了 USE_MIMALLOC 则增加 MiMalloc 依赖
             if (Conf.USE_MIMALLOC) MiMalloc.InitHelper.init();
             
-            @Nullable String tLibName = DYLIB_NAME_IN(MPIJNI_LIB_DIR, "mpijni");
+            @Nullable String tLibName = LIB_NAME_IN(MPIJNI_LIB_DIR, "mpijni");
             // 如果不存在 jni lib 则需要重新通过源码编译
             if (tLibName == null) {
                 System.out.println("MPI INIT INFO: mpijni libraries not found. Reinstalling...");

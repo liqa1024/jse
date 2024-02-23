@@ -40,7 +40,7 @@ endif()
 
 
 # add jniutil
-include_directories($ENV{JNIUTIL_HOME}include)
+include_directories($ENV{JSE_JNIUTIL_INCLUDE_DIR})
 
 
 # add mpi
@@ -73,14 +73,8 @@ option(JSE_USE_MIMALLOC "Use mimalloc to accelerate `malloc` operation" ON)
 if(JSE_USE_MIMALLOC)
     add_definitions(-DUSE_MIMALLOC)
     
-    include_directories($ENV{MIMALLOC_HOME}include)
-    if(CMAKE_SYSTEM_NAME MATCHES "Linux")
-        target_link_libraries(lmpjni $ENV{MIMALLOC_HOME}lib/libmimalloc.so)
-    elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
-        target_link_libraries(lmpjni $ENV{MIMALLOC_HOME}lib/mimalloc.lib)
-    elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-        target_link_libraries(lmpjni $ENV{MIMALLOC_HOME}lib/libmimalloc.dylib)
-    endif()
+    include_directories($ENV{JSE_MIMALLOC_INCLUDE_DIR})
+    target_link_libraries(lmpjni $ENV{JSE_MIMALLOC_LIB_PATH})
 endif()
 
 
@@ -101,12 +95,6 @@ if(JSE_LAMMPS_EXCEPTIONS_NULL_SUPPORT)
     add_definitions(-DLAMMPS_EXCEPTIONS_NULL_SUPPORT)
 endif()
 
-include_directories($ENV{LAMMPS_HOME}includes)
-if(CMAKE_SYSTEM_NAME MATCHES "Linux")
-    target_link_libraries(lmpjni $ENV{LAMMPS_HOME}lib/liblammps.so)
-elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    target_link_libraries(lmpjni $ENV{LAMMPS_HOME}lib/lammps.lib)
-elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(lmpjni $ENV{LAMMPS_HOME}lib/liblammps.dylib)
-endif()
+include_directories($ENV{JSE_LMP_INCLUDE_DIR})
+target_link_libraries(lmpjni $ENV{JSE_LMP_LIB_PATH})
 
