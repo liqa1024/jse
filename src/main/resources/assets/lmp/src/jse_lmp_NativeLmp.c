@@ -1,4 +1,4 @@
-#ifdef __cplusplus
+#if defined(__cplusplus) && defined(__CLION_IDE__)
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "modernize-use-auto"
 #pragma ide diagnostic ignored "modernize-use-nullptr"
@@ -512,6 +512,6 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsClose_1(JNIEnv *aEnv, jclass
 }
 #endif
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && defined(__CLION_IDE__)
 #pragma clang diagnostic pop
 #endif

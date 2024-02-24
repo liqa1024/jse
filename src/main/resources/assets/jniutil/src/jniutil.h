@@ -1,4 +1,4 @@
-#ifdef __cplusplus
+#if defined(__cplusplus) && defined(__CLION_IDE__)
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "modernize-deprecated-headers"
 #pragma ide diagnostic ignored "modernize-use-auto"
@@ -488,6 +488,6 @@ inline void throwExceptionLMP(JNIEnv *aEnv, const char *aErrStr) {
 #endif
 #endif
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && defined(__CLION_IDE__)
 #pragma clang diagnostic pop
 #endif

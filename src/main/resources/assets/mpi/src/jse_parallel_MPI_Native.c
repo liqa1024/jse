@@ -1,4 +1,4 @@
-#ifdef __cplusplus
+#if defined(__cplusplus) && defined(__CLION_IDE__)
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "modernize-use-auto"
 #pragma ide diagnostic ignored "modernize-use-nullptr"
@@ -641,6 +641,6 @@ JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Init_1thread(JNIEn
 }
 #endif
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && defined(__CLION_IDE__)
 #pragma clang diagnostic pop
 #endif
