@@ -85,6 +85,8 @@ public class MPI {
          */
         public static @Nullable String CMAKE_C_COMPILER   = UT.Exec.env("JSE_CMAKE_C_COMPILER_MPI"  , jse.code.Conf.CMAKE_C_COMPILER  );
         public static @Nullable String CMAKE_CXX_COMPILER = UT.Exec.env("JSE_CMAKE_CXX_COMPILER_MPI", jse.code.Conf.CMAKE_CXX_COMPILER);
+        public static @Nullable String CMAKE_C_FLAGS      = UT.Exec.env("JSE_CMAKE_C_FLAGS_MPI"     , jse.code.Conf.CMAKE_C_FLAGS     );
+        public static @Nullable String CMAKE_CXX_FLAGS    = UT.Exec.env("JSE_CMAKE_CXX_FLAGS_MPI"   , jse.code.Conf.CMAKE_CXX_FLAGS   );
         
         /**
          * 对于 mpijni，是否使用 {@link MiMalloc} 来加速 c 的内存分配，
@@ -1149,8 +1151,10 @@ public class MPI {
             rCommand.add("cd"); rCommand.add("\""+aBuildDir+"\""); rCommand.add(";");
             rCommand.add("cmake");
             // 这里设置 C/C++ 编译器（如果有）
-            if (Conf.CMAKE_C_COMPILER   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + Conf.CMAKE_C_COMPILER  );}
-            if (Conf.CMAKE_CXX_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ Conf.CMAKE_CXX_COMPILER);}
+            if (Conf.CMAKE_C_COMPILER   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + Conf.CMAKE_C_COMPILER    );}
+            if (Conf.CMAKE_CXX_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ Conf.CMAKE_CXX_COMPILER  );}
+            if (Conf.CMAKE_C_FLAGS      != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS=\""   + Conf.CMAKE_C_FLAGS  +"\"");}
+            if (Conf.CMAKE_CXX_FLAGS    != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS=\"" + Conf.CMAKE_CXX_FLAGS+"\"");}
             // 初始化使用上一个目录的 CMakeList.txt
             rCommand.add("..");
             return String.join(" ", rCommand);

@@ -41,7 +41,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static jse.code.CS.Exec.*;
+import static jse.code.CS.Exec.EXE;
+import static jse.code.CS.Exec.JAR_DIR;
 import static jse.code.CS.VERSION;
 import static jse.code.Conf.LIB_NAME_IN;
 import static jse.code.Conf.WORKING_DIR_OF;
@@ -316,6 +317,7 @@ public class SP {
              * 目前 jep 只支持 C 编译器
              */
             public static @Nullable String CMAKE_C_COMPILER = UT.Exec.env("JSE_CMAKE_C_COMPILER_JEP", jse.code.Conf.CMAKE_C_COMPILER);
+            public static @Nullable String CMAKE_C_FLAGS    = UT.Exec.env("JSE_CMAKE_C_FLAGS_JEP"   , jse.code.Conf.CMAKE_C_FLAGS   );
         }
         
         
@@ -509,7 +511,8 @@ public class SP {
             rCommand.add("cd"); rCommand.add("\""+aJepBuildDir+"\""); rCommand.add(";");
             rCommand.add("cmake");
             // 这里设置 C 编译器（如果有）
-            if (Conf.CMAKE_C_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="+Conf.CMAKE_C_COMPILER);}
+            if (Conf.CMAKE_C_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="+Conf.CMAKE_C_COMPILER  );}
+            if (Conf.CMAKE_C_FLAGS    != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS=\"" +Conf.CMAKE_C_FLAGS+"\"");}
             // 初始化使用上一个目录的 CMakeList.txt
             rCommand.add("..");
             return String.join(" ", rCommand);

@@ -103,6 +103,8 @@ public class NativeLmp implements IAutoShutdown {
          */
         public static @Nullable String CMAKE_C_COMPILER   = UT.Exec.env("JSE_CMAKE_C_COMPILER_LMP"  , jse.code.Conf.CMAKE_C_COMPILER  );
         public static @Nullable String CMAKE_CXX_COMPILER = UT.Exec.env("JSE_CMAKE_CXX_COMPILER_LMP", jse.code.Conf.CMAKE_CXX_COMPILER);
+        public static @Nullable String CMAKE_C_FLAGS      = UT.Exec.env("JSE_CMAKE_C_FLAGS_LMP"     , jse.code.Conf.CMAKE_C_FLAGS     );
+        public static @Nullable String CMAKE_CXX_FLAGS    = UT.Exec.env("JSE_CMAKE_CXX_FLAGS_LMP"   , jse.code.Conf.CMAKE_CXX_FLAGS   );
         
         /**
          * 自定义构建 lmpjni 时使用的编译器，会覆盖上面的设置，
@@ -110,6 +112,8 @@ public class NativeLmp implements IAutoShutdown {
          */
         public static @Nullable String CMAKE_C_COMPILER_LMPJNI   = UT.Exec.env("JSE_CMAKE_C_COMPILER_LMPJNI"  );
         public static @Nullable String CMAKE_CXX_COMPILER_LMPJNI = UT.Exec.env("JSE_CMAKE_CXX_COMPILER_LMPJNI");
+        public static @Nullable String CMAKE_C_FLAGS_LMPJNI      = UT.Exec.env("JSE_CMAKE_C_FLAGS_LMPJNI"     );
+        public static @Nullable String CMAKE_CXX_FLAGS_LMPJNI    = UT.Exec.env("JSE_CMAKE_CXX_FLAGS_LMPJNI"   );
         
         /**
          * 对于 lmpjni，是否使用 {@link MiMalloc} 来加速 c 的内存分配，
@@ -169,8 +173,10 @@ public class NativeLmp implements IAutoShutdown {
         rCommand.add("cd"); rCommand.add("\""+Conf.LMP_HOME+"\""); rCommand.add(";");
         rCommand.add("cmake");
         // 这里设置 C/C++ 编译器（如果有）
-        if (Conf.CMAKE_C_COMPILER   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + Conf.CMAKE_C_COMPILER);}
-        if (Conf.CMAKE_CXX_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ Conf.CMAKE_CXX_COMPILER);}
+        if (Conf.CMAKE_C_COMPILER   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + Conf.CMAKE_C_COMPILER    );}
+        if (Conf.CMAKE_CXX_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ Conf.CMAKE_CXX_COMPILER  );}
+        if (Conf.CMAKE_C_FLAGS      != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS=\""   + Conf.CMAKE_C_FLAGS  +"\"");}
+        if (Conf.CMAKE_CXX_FLAGS    != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS=\"" + Conf.CMAKE_CXX_FLAGS+"\"");}
         // 初始化使用上一个目录的 CMakeList.txt
         rCommand.add("../cmake");
         return String.join(" ", rCommand);
@@ -181,8 +187,10 @@ public class NativeLmp implements IAutoShutdown {
         rCommand.add("cd"); rCommand.add("\""+aLmpJniBuildDir+"\""); rCommand.add(";");
         rCommand.add("cmake");
         // 这里设置 C/C++ 编译器（如果有）
-        if (Conf.CMAKE_C_COMPILER_LMPJNI  !=null || Conf.CMAKE_C_COMPILER  !=null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + (Conf.CMAKE_C_COMPILER_LMPJNI  ==null ? Conf.CMAKE_C_COMPILER   : Conf.CMAKE_C_COMPILER_LMPJNI  ));}
-        if (Conf.CMAKE_CXX_COMPILER_LMPJNI!=null || Conf.CMAKE_CXX_COMPILER!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ (Conf.CMAKE_CXX_COMPILER_LMPJNI==null ? Conf.CMAKE_CXX_COMPILER : Conf.CMAKE_CXX_COMPILER_LMPJNI));}
+        if (Conf.CMAKE_C_COMPILER_LMPJNI  !=null || Conf.CMAKE_C_COMPILER  !=null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + (Conf.CMAKE_C_COMPILER_LMPJNI  ==null ? Conf.CMAKE_C_COMPILER   : Conf.CMAKE_C_COMPILER_LMPJNI  )     );}
+        if (Conf.CMAKE_CXX_COMPILER_LMPJNI!=null || Conf.CMAKE_CXX_COMPILER!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ (Conf.CMAKE_CXX_COMPILER_LMPJNI==null ? Conf.CMAKE_CXX_COMPILER : Conf.CMAKE_CXX_COMPILER_LMPJNI)     );}
+        if (Conf.CMAKE_C_FLAGS_LMPJNI     !=null || Conf.CMAKE_C_FLAGS     !=null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS=\""   + (Conf.CMAKE_C_FLAGS_LMPJNI     ==null ? Conf.CMAKE_C_FLAGS      : Conf.CMAKE_C_FLAGS_LMPJNI     )+"\"");}
+        if (Conf.CMAKE_CXX_FLAGS_LMPJNI   !=null || Conf.CMAKE_CXX_FLAGS   !=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS=\"" + (Conf.CMAKE_CXX_FLAGS_LMPJNI   ==null ? Conf.CMAKE_CXX_FLAGS    : Conf.CMAKE_CXX_FLAGS_LMPJNI   )+"\"");}
         // 初始化使用上一个目录的 CMakeList.txt
         rCommand.add("..");
         return String.join(" ", rCommand);

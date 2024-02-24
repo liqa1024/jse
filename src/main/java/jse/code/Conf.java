@@ -34,9 +34,11 @@ public class Conf {
     
     /** 是否使用 {@link MiMalloc} 来加速 c 的内存分配，这对于 java 数组和 c 数组的转换很有效 */
     public static boolean USE_MIMALLOC = UT.Exec.envZ("JSE_USE_MIMALLOC", true);
-    /** 设置 cmake 使用的 C/C++ 编译器 */
+    /** 设置 cmake 使用的 C/C++ 编译器以及 flag */
     public static @Nullable String CMAKE_C_COMPILER   = UT.Exec.env("JSE_CMAKE_C_COMPILER"  );
     public static @Nullable String CMAKE_CXX_COMPILER = UT.Exec.env("JSE_CMAKE_CXX_COMPILER");
+    public static @Nullable String CMAKE_C_FLAGS      = UT.Exec.env("JSE_CMAKE_C_FLAGS"     );
+    public static @Nullable String CMAKE_CXX_FLAGS    = UT.Exec.env("JSE_CMAKE_CXX_FLAGS"   );
     /** 设置编译得到的 C/C++ 动态库的后缀，不同平台格式不同 */
     public static String LIB_EXTENSION = IS_WINDOWS ? ".dll" : (IS_MAC ? ".dylib" : ".so");
     /** 设置用于编译 C/C++ 时链接的库的后缀，不同平台格式不同（L: Link） */
