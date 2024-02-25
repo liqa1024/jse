@@ -931,7 +931,7 @@ public class NativeLmp implements IAutoShutdown {
         command(String.format("create_box      %d box", tAtomTypeNum));
         // IVaspCommonData 包含原子种类字符，可以自动获取到质量
         if (aAtomData instanceof IVaspCommonData) {
-        String[] tAtomTypes = ((IVaspCommonData)aAtomData).atomTypes();
+        String[] tAtomTypes = ((IVaspCommonData)aAtomData).typeNames();
         if (tAtomTypes!=null && tAtomTypes.length>=tAtomTypeNum) for (int i = 0; i < tAtomTypeNum; ++i) {
         command(String.format("mass            %d %f", i+1, MASS.getOrDefault(tAtomTypes[i], -1.0)));
         }}

@@ -29,7 +29,7 @@
 jse 中约定，对于获取属性的方法，直接省略开头的 `get` 而是直接使用属性名称定义函数；
 对于设置属性的方法，保留开头的 `set`，并可以返回自身从而支持链式调用。
 
-- 使用：
+- **使用：**
     ```java
     public class Person {
         private String mName;
@@ -44,7 +44,7 @@ jse 中约定，对于获取属性的方法，直接省略开头的 `get` 而是
     }
     ```
   
-- 不要使用：
+- **不要使用：**
     ```java
     public class Person {
         private String name;

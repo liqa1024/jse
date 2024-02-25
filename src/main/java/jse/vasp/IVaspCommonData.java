@@ -5,8 +5,8 @@ import jse.math.vector.IIntVector;
 import org.jetbrains.annotations.Nullable;
 
 public interface IVaspCommonData {
-    @Nullable String dataName();
-    String @Nullable[] atomTypes();
+    @Nullable String comment();
+    String @Nullable[] typeNames();
     IIntVector atomNumbers();
     IMatrix vaspBox();
     double vaspBoxScale();

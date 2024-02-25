@@ -15,7 +15,7 @@
 几乎所有 lammps 相关的功能都位于 `jse.lmp` 包中，
 涉及读写 lammps 输出的 data 和 dump 文件，
 读取 lammps 输出的 log 文件，
-以及管理 lammps 的输入文件并以此来运行 lammps。
+以及原生运行 lammps 的接口。
 
 
 ## data 文件读写
@@ -51,6 +51,16 @@ jse 中使用 [`jse.lmp.Lmpdat`](../src/main/java/jse/lmp/Lmpdat.java) /
 > 可以使用 `jse.lmp.Lmpdat` 替换 `jse.lmp.Data`，
 > 两者使用方法完全相同；使用 `Lmpdat` 可以指定为 lammps 的数据，
 > 用于区分其他的 `Data` 类。
+>
+> 可以通过 `mass(type)` 来获取指定 `type` 的质量，
+> 如果没有设置质量则会得到 `Double.NaN`；
+> 注意这里的 `type` 值和 lammps 保持一致统一从 **1** 
+> 开始索引，而 `masses()` 获取的数组依旧是从 **0** 开始索引，
+> 因此有：
+>
+> ```groovy
+> assert data.mass(1) == data.masses()[0]
+> ```
 > 
 
 -----------------------------
@@ -108,31 +118,8 @@ jse 中使用 [`jse.lmp.Lammpstrj`](../src/main/java/jse/lmp/Lammpstrj.java) /
 
 -----------------------------
 
-有时会使用只有一帧原子数据的 dump 文件，此时使用
-`dump[0]` 或者 `dump.first()` 来专门获取第一帧数据会有些繁琐，
-jse 支持直接使用 `dump` 来获取数据（`Dump` 本身也继承了 `IAtomData`），
-此时获取的数据默认就是第一帧的原子数据：
-
-- 原始：
-    ```groovy
-    def first = dump[0]
-    println('atom number: ' + first.natoms())
-    println('time step: ' + first.timeStep())
-    println('atom at 10: ' + first.pickAtom(10))
-    ```
-    
-- 简化：
-    
-    ```groovy
-    println('atom number: ' + dump.natoms())
-    println('time step: ' + dump.timeStep())
-    println('atom at 10: ' + dump.pickAtom(10))
-    ```
-
------------------------------
-
 一般来说 lammps 的 dump 应该是一个表格数据而不一定包含原子数据，
-这里可以通过 `dump.asTables()`/`dump[i].asTable()` 方法来将其转换成
+这里可以通过 `dump[i].asTable()` 方法来将其转换成
 jse 表格 `ITable`，从而使用表格的操作方式来处理 dump 数据：
 
 - 输入脚本（`jse example/lmp/dumptable`
@@ -167,7 +154,7 @@ jse 表格 `ITable`，从而使用表格的操作方式来处理 dump 数据：
     new heads: [id, type, x, y, z, vx, vy, vz, rand]
     ```
 
-> 其中 `asTable()`/`asTables()` 会获取到表格数据的引用，
+> 其中 `dump[i].asTable()` 会获取到表格数据的引用，
 > 因此对获取到的表格进行修改会同时反应到 `dump` 中。
 > 
 

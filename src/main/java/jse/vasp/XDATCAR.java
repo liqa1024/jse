@@ -24,6 +24,8 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.*;
 
+import static jse.code.CS.MASS;
+
 
 /**
  * @author liqa
@@ -34,11 +36,11 @@ import java.util.*;
  * <p> 返回的 {@link POSCAR} 共享原子位置但是不共享 mBoxScale 以及 mSelectiveDynamics（除了原子位置其余是否共享属于未定义）</p>
  */
 public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implements IVaspCommonData {
-    public final static String DEFAULT_DATA_NAME = "VASP_XDATCAR_FROM_JSE";
+    public final static String DEFAULT_COMMENT = "VASP_XDATCAR_FROM_JSE";
     
     /** 这里统一存放通用数据保证所有帧这些一定是相同的 */
-    private @Nullable String mDataName;
-    private String @Nullable[] mAtomTypes;
+    private @Nullable String mComment;
+    private String @Nullable[] mTypeNames;
     private IIntVector mAtomNumbers;
     private final IMatrix mBox;
     private double mBoxScale;
@@ -53,9 +55,9 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     /** 用于通过字符获取每个种类的粒子数，考虑了可能有相同 key 的情况 */
     private final @NotNull Multimap<String, Integer> mKey2Type;
     
-    XDATCAR(@Nullable String aDataName, IMatrix aBox, double aBoxScale, String @Nullable[] aAtomTypes, IIntVector aAtomNumbers, List<IMatrix> aDirects, boolean aIsCartesian, @Nullable IIntVector aIDs) {
-        mDataName = aDataName;
-        mAtomTypes = aAtomTypes;
+    XDATCAR(@Nullable String aComment, IMatrix aBox, double aBoxScale, String @Nullable[] aTypeNames, IIntVector aAtomNumbers, List<IMatrix> aDirects, boolean aIsCartesian, @Nullable IIntVector aIDs) {
+        mComment = aComment;
+        mTypeNames = aTypeNames;
         mAtomNumbers = aAtomNumbers;
         mBox = aBox;
         mBoxScale = aBoxScale;
@@ -72,9 +74,9 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         }
         
         mKey2Type = ArrayListMultimap.create();
-        if (mAtomTypes != null) {
+        if (mTypeNames != null) {
             int rType = 0;
-            for (String tKey : mAtomTypes) {
+            for (String tKey : mTypeNames) {
                 ++rType;
                 mKey2Type.put(tKey, rType);
             }
@@ -82,8 +84,8 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         
         mIsDiagBox = mBox.operation().isDiag();
     }
-    XDATCAR(@Nullable String aDataName, IMatrix aBox, double aBoxScale, String @Nullable[] aAtomTypes, IIntVector aAtomNumbers, IMatrix aFirstDirect, int aInitSize, boolean aIsCartesian, @Nullable IIntVector aIDs) {
-        this(aDataName, aBox, aBoxScale, aAtomTypes, aAtomNumbers, new ArrayList<>(aInitSize), aIsCartesian, aIDs);
+    XDATCAR(@Nullable String aComment, IMatrix aBox, double aBoxScale, String @Nullable[] aTypeNames, IIntVector aAtomNumbers, IMatrix aFirstDirect, int aInitSize, boolean aIsCartesian, @Nullable IIntVector aIDs) {
+        this(aComment, aBox, aBoxScale, aTypeNames, aAtomNumbers, new ArrayList<>(aInitSize), aIsCartesian, aIDs);
         mDirects.add(aFirstDirect);
     }
     
@@ -135,14 +137,26 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     
     
     /** 对于 XDATCAR 提供额外的实用接口 */
-    public int atomNum(String aKey) {
+    public @Nullable String typeName(int aType) {return mTypeNames==null ? null : mTypeNames[aType-1];}
+    public double mass(int aType) {
+        @Nullable String tTypeName = typeName(aType);
+        return tTypeName==null ? Double.NaN : MASS.getOrDefault(tTypeName, Double.NaN);
+    }
+    public int atomNumber(String aKey) {
         int rAtomNum = 0;
-        for (int tType : mKey2Type.get(aKey)) rAtomNum += atomNum(tType);
+        for (int tType : mKey2Type.get(aKey)) rAtomNum += atomNumber(tType);
         return rAtomNum;
     }
-    public int atomNum(int aType) {return mAtomNumbers.get(aType-1);}
-    public @Override @Nullable String dataName() {return mDataName;}
-    public @Override String @Nullable[] atomTypes() {return mAtomTypes;}
+    public int atomNumber(int aType) {return mAtomNumbers.get(aType-1);}
+    /** 保留旧名称兼容，当时起名太随意了，居然这么久都没发现 */
+    @Deprecated public final int atomNum(String aType) {return atomNumber(aType);}
+    @Deprecated public final int atomNum(int aType) {return atomNumber(aType);}
+    /** 提供简写版本 */
+    @VisibleForTesting public final int natoms(String aType) {return atomNumber(aType);}
+    @VisibleForTesting public final int natoms(int aType) {return atomNumber(aType);}
+    
+    public @Override @Nullable String comment() {return mComment;}
+    public @Override String @Nullable[] typeNames() {return mTypeNames;}
     public @Override IIntVector atomNumbers() {return mAtomNumbers;}
     public @Override IMatrix vaspBox() {return mBox;}
     public @Override double vaspBoxScale() {return mBoxScale;}
@@ -152,34 +166,35 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     public @Override @Nullable IIntVector ids() {return mIDs;}
     
     /** Groovy stuffs */
-    @VisibleForTesting public String getDataName() {return mDataName;}
+    @VisibleForTesting public String @Nullable[] getTypeNames() {return mTypeNames;}
+    @VisibleForTesting public String getComment() {return mComment;}
     @VisibleForTesting public double getBoxScale() {return mBoxScale;}
     
     
-    /** 支持直接修改 AtomTypes，只会增大种类数，不会减少 */
-    public XDATCAR setAtomTypes(String... aAtomTypes) {
-        if (aAtomTypes==null || aAtomTypes.length==0) {
-            mAtomTypes = null;
+    /** 支持直接修改 TypeNames，只会增大种类数，不会减少 */
+    public XDATCAR setTypeNames(String... aTypeNames) {
+        if (aTypeNames==null || aTypeNames.length==0) {
+            mTypeNames = null;
             mKey2Type.clear();
             return this;
         }
-        if (mAtomTypes==null || aAtomTypes.length>mAtomTypes.length) mAtomTypes = Arrays.copyOf(aAtomTypes, aAtomTypes.length);
-        else System.arraycopy(aAtomTypes, 0, mAtomTypes, 0, aAtomTypes.length);
-        if (aAtomTypes.length > mAtomNumbers.size()) {
+        if (mTypeNames==null || aTypeNames.length>mTypeNames.length) mTypeNames = Arrays.copyOf(aTypeNames, aTypeNames.length);
+        else System.arraycopy(aTypeNames, 0, mTypeNames, 0, aTypeNames.length);
+        if (aTypeNames.length > mAtomNumbers.size()) {
             IIntVector oAtomNumbers = mAtomNumbers;
-            mAtomNumbers = IntVector.zeros(aAtomTypes.length);
+            mAtomNumbers = IntVector.zeros(aTypeNames.length);
             mAtomNumbers.subVec(0, oAtomNumbers.size()).fill(oAtomNumbers);
         }
         mKey2Type.clear();
         int rType = 0;
-        for (String tKey : mAtomTypes) {
+        for (String tKey : mTypeNames) {
             ++rType;
             mKey2Type.put(tKey, rType);
         }
         return this;
     }
     
-    public XDATCAR setDataName(@Nullable String aDataName) {mDataName = aDataName; return this;}
+    public XDATCAR setComment(@Nullable String aComment) {mComment = aComment; return this;}
     public XDATCAR setBoxScale(double aBoxScale) {mBoxScale = aBoxScale; return this;}
     
     /** Cartesian 和 Direct 来回转换 */
@@ -230,31 +245,34 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     @Override public XDATCAR copy() {
         List<IMatrix> rDirects = new ArrayList<>(mDirects.size());
         for (IMatrix subDirect : mDirects) rDirects.add(subDirect.copy());
-        return new XDATCAR(mDataName, mBox.copy(), mBoxScale, POSCAR.copyTypes(mAtomTypes), mAtomNumbers.copy(), rDirects, mIsCartesian, POSCAR.copyIDs(mIDs));
+        return new XDATCAR(mComment, mBox.copy(), mBoxScale, POSCAR.copyTypeNames(mTypeNames), mAtomNumbers.copy(), rDirects, mIsCartesian, POSCAR.copyIDs(mIDs));
     }
     
     /// 创建 XDATCAR
     /** 从 IAtomData 来创建，对于 XDATCAR 可以支持容器的 aAtomData */
-    public static XDATCAR fromAtomData(IAtomData aAtomData) {return fromAtomData(aAtomData, (aAtomData instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomData).atomTypes() : null);}
-    public static XDATCAR fromAtomData(IAtomData aAtomData, String... aAtomTypes) {return fromAtomData_(aAtomData, 1, aAtomTypes);}
-    public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList, (aAtomDataList instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomDataList).atomTypes() : null);}
-    public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, String... aAtomTypes) {return fromAtomDataList_(aAtomDataList, 1, aAtomTypes);}
-    public static XDATCAR fromAtomDataList(Collection<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList, (aAtomDataList instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomDataList).atomTypes() : null);}
-    public static XDATCAR fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, String... aAtomTypes) {return fromAtomDataList_(aAtomDataList, aAtomDataList.size(), aAtomTypes);}
-    static XDATCAR fromAtomData_(IAtomData aAtomData, int aInitSize, String[] aAtomTypes) {
+    public static XDATCAR fromAtomData(IAtomData aAtomData) {return fromAtomData(aAtomData, (aAtomData instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomData).typeNames() : null);}
+    public static XDATCAR fromAtomData(IAtomData aAtomData, String... aTypeNames) {return fromAtomData_(aAtomData, 1, aTypeNames);}
+    public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList, (aAtomDataList instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomDataList).typeNames() : null);}
+    public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, String... aTypeNames) {return fromAtomDataList_(aAtomDataList, 1, aTypeNames);}
+    public static XDATCAR fromAtomDataList(Collection<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList, (aAtomDataList instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomDataList).typeNames() : null);}
+    public static XDATCAR fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, String... aTypeNames) {return fromAtomDataList_(aAtomDataList, aAtomDataList.size(), aTypeNames);}
+    static XDATCAR fromAtomData_(IAtomData aAtomData, int aInitSize, String[] aTypeNames) {
         // 根据输入的 aAtomData 类型来具体判断需要如何获取 Direct
         if (aAtomData instanceof POSCAR) {
             // POSCAR 则直接获取即可（专门优化，保留完整模拟盒信息等）
             POSCAR tPOSCAR = (POSCAR)aAtomData;
-            return new XDATCAR(tPOSCAR.dataName(), tPOSCAR.vaspBox().copy(), tPOSCAR.vaspBoxScale(), POSCAR.copyTypes(aAtomTypes), tPOSCAR.atomNumbers().copy(), tPOSCAR.direct().copy(), aInitSize, tPOSCAR.isCartesian(), POSCAR.copyIDs(tPOSCAR.ids()));
+            int tAtomTypeNum = Math.max(tPOSCAR.atomNumbers().size(), aTypeNames.length);
+            IIntVector tAtomNumbers = IntVector.zeros(tAtomTypeNum);
+            tAtomNumbers.subVec(0, tPOSCAR.atomNumbers().size()).fill(tPOSCAR.atomNumbers());
+            return new XDATCAR(tPOSCAR.comment(), tPOSCAR.vaspBox().copy(), tPOSCAR.vaspBoxScale(), POSCAR.copyTypeNames(aTypeNames), tAtomNumbers, tPOSCAR.direct().copy(), aInitSize, tPOSCAR.isCartesian(), POSCAR.copyIDs(tPOSCAR.ids()));
         } else
         if (aAtomData instanceof XDATCAR) {
             // XDATCAR 则直接获取即可（专门优化，保留完整模拟盒信息等）
-            return fromAtomData_(((XDATCAR)aAtomData).defaultFrame(), aInitSize, aAtomTypes);
+            return fromAtomData_(((XDATCAR)aAtomData).defaultFrame(), aInitSize, aTypeNames);
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
             IIntVector rIDs = IntVector.zeros(aAtomData.atomNumber());
-            int tAtomTypeNum = aAtomData.atomTypeNumber();
+            int tAtomTypeNum = Math.max(aAtomData.atomTypeNumber(), aTypeNames.length);
             IIntVector rAtomNumbers = IntVector.zeros(tAtomTypeNum);
             IMatrix rDirect = Matrices.zeros(aAtomData.atomNumber(), 3);
             int tIdx = 0;
@@ -268,16 +286,16 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
                     ++tIdx;
                 }
             }
-            return new XDATCAR(null, Matrices.diag(aAtomData.box().data()), 1.0, POSCAR.copyTypes(aAtomTypes), rAtomNumbers, rDirect, aInitSize, true, rIDs);
+            return new XDATCAR(null, Matrices.diag(aAtomData.box().data()), 1.0, POSCAR.copyTypeNames(aTypeNames), rAtomNumbers, rDirect, aInitSize, true, rIDs);
         }
     }
-    static XDATCAR fromAtomDataList_(Iterable<? extends IAtomData> aAtomDataList, int aInitSize, String[] aAtomTypes) {
+    static XDATCAR fromAtomDataList_(Iterable<? extends IAtomData> aAtomDataList, int aInitSize, String[] aTypeNames) {
         // 直接不支持空的创建来简化实现的代码
         if (aAtomDataList == null) throw new IllegalArgumentException("XDATCAR do NOT support empty AtomDataList");
         Iterator<? extends IAtomData> it = aAtomDataList.iterator();
         if (!it.hasNext()) throw new IllegalArgumentException("XDATCAR do NOT support empty AtomDataList");
         IAtomData first = it.next();
-        final XDATCAR rXDATCAR = fromAtomData_(first, aInitSize, ((aAtomTypes==null || aAtomTypes.length==0) && (first instanceof IVaspCommonData)) ? ((IVaspCommonData)first).atomTypes() : aAtomTypes);
+        final XDATCAR rXDATCAR = fromAtomData_(first, aInitSize, ((aTypeNames==null || aTypeNames.length==0) && (first instanceof IVaspCommonData)) ? ((IVaspCommonData)first).typeNames() : aTypeNames);
         it.forEachRemaining(rXDATCAR::append);
         return rXDATCAR;
     }
@@ -320,22 +338,22 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     public static XDATCAR fromAtomData_compat(Object[] aAtomDataArray) {
         return fromAtomData_compat(aAtomDataArray, (String[])null);
     }
-    public static XDATCAR fromAtomData_compat(Object[] aAtomDataArray, String... aAtomTypes) {
-        return fromAtomDataList(AbstractCollections.map(AbstractCollections.filter(AbstractCollections.from(aAtomDataArray), atomData -> (atomData instanceof IAtomData)), obj -> (IAtomData)obj), aAtomTypes);
+    public static XDATCAR fromAtomData_compat(Object[] aAtomDataArray, String... aTypeNames) {
+        return fromAtomDataList(AbstractCollections.map(AbstractCollections.filter(AbstractCollections.from(aAtomDataArray), atomData -> (atomData instanceof IAtomData)), obj -> (IAtomData)obj), aTypeNames);
     }
     /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
-    public static XDATCAR of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
-    public static XDATCAR of(IAtomData aAtomData, String... aAtomTypes) {return fromAtomData(aAtomData, aAtomTypes);}
+    public static XDATCAR of(IAtomData aAtomData) {return (aAtomData instanceof AbstractMultiFrameSettableAtomData) ? fromAtomDataList((AbstractMultiFrameSettableAtomData<?>)aAtomData) : fromAtomData(aAtomData);}
+    public static XDATCAR of(IAtomData aAtomData, String... aTypeNames) {return (aAtomData instanceof AbstractMultiFrameSettableAtomData) ? fromAtomDataList((AbstractMultiFrameSettableAtomData<?>)aAtomData, aTypeNames) : fromAtomData(aAtomData, aTypeNames);}
     public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
-    public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList, String... aAtomTypes) {return fromAtomDataList(aAtomDataList, aAtomTypes);}
+    public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList, String... aTypeNames) {return fromAtomDataList(aAtomDataList, aTypeNames);}
     public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
-    public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList, String... aAtomTypes) {return fromAtomDataList(aAtomDataList, aAtomTypes);}
+    public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList, String... aTypeNames) {return fromAtomDataList(aAtomDataList, aTypeNames);}
     /** 直接提供一个 AbstractMultiFrameSettableAtomData 的接口就不用担心冲突问题了 */
-    public static XDATCAR of(AbstractMultiFrameSettableAtomData<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
-    public static XDATCAR of(AbstractMultiFrameSettableAtomData<? extends IAtomData> aAtomDataList, String... aAtomTypes) {return fromAtomDataList(aAtomDataList, aAtomTypes);}
+    public static XDATCAR of(AbstractMultiFrameSettableAtomData<?> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
+    public static XDATCAR of(AbstractMultiFrameSettableAtomData<?> aAtomDataList, String... aTypeNames) {return fromAtomDataList(aAtomDataList, aTypeNames);}
     /** matlab stuffs */
     public static XDATCAR of_compat(Object[] aAtomDataArray) {return fromAtomData_compat(aAtomDataArray);}
-    public static XDATCAR of_compat(Object[] aAtomDataArray, String... aAtomTypes) {return fromAtomData_compat(aAtomDataArray, aAtomTypes);}
+    public static XDATCAR of_compat(Object[] aAtomDataArray, String... aTypeNames) {return fromAtomData_compat(aAtomDataArray, aTypeNames);}
     /** 这些接口用来覆盖同名的 jdk9 中同名的 {@link List#of} 方法 */
     @VisibleForTesting @Deprecated public static XDATCAR of() {throw new IllegalArgumentException("XDATCAR must be initialized through at least ONE AtomData");}
     @VisibleForTesting public static XDATCAR of(IAtomData... aAtomDataArray) {return of(AbstractCollections.from(aAtomDataArray));}
@@ -362,18 +380,18 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     /** 改为 {@link BufferedReader} 而不是 {@code List<String>} 来避免过多内存占用 */
     public static XDATCAR read_(BufferedReader aReader) throws IOException {
         // 先读通用信息
-        String aDataName;
+        String aComment;
         IMatrix aBox;
         double aBoxScale;
-        String[] aAtomTypes;
+        String[] aTypeNames;
         IIntVector aAtomNumbers;
         boolean aIsCartesian;
         
         String tLine;
         String[] tTokens;
-        // 第一行为 DataName
+        // 第一行为 Comment
         tLine = aReader.readLine();
-        aDataName = tLine;
+        aComment = tLine;
         // 读取模拟盒信息
         tLine = aReader.readLine(); if (tLine == null) return null; tTokens = UT.Text.splitBlank(tLine);
         aBoxScale = Double.parseDouble(tTokens[0]);
@@ -387,16 +405,16 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         // 读取原子种类（可选）和对应数目的信息
         boolean tNoAtomType = false;
         tLine = aReader.readLine(); if (tLine == null) return null; tTokens = UT.Text.splitBlank(tLine);
-        aAtomTypes = tTokens;
+        aTypeNames = tTokens;
         tLine = aReader.readLine(); if (tLine == null) return null; tTokens = UT.Text.splitBlank(tLine);
         try {
         final String[] fTokens = tTokens;
         aAtomNumbers = Vectors.fromInteger(fTokens.length, i -> Integer.parseInt(fTokens[i]));
         } catch (Exception e) {
         tNoAtomType = true;
-        final String[] fTokens = aAtomTypes;
+        final String[] fTokens = aTypeNames;
         aAtomNumbers = Vectors.fromInteger(fTokens.length, i -> Integer.parseInt(fTokens[i]));
-        aAtomTypes = null;
+        aTypeNames = null;
         }
         if (!tNoAtomType) {
         tLine = aReader.readLine(); if (tLine == null) return null;
@@ -425,7 +443,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
             // 跳过下一个的 Direct configuration，如果没有则终止循环
             tLine = aReader.readLine(); if (tLine == null) break;
         }
-        return new XDATCAR(aDataName, aBox, aBoxScale, aAtomTypes, aAtomNumbers, rDirects, aIsCartesian, null);
+        return new XDATCAR(aComment, aBox, aBoxScale, aTypeNames, aAtomNumbers, rDirects, aIsCartesian, null);
     }
     
     /**
@@ -439,13 +457,13 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     public void write(String aFilePath) throws IOException {
         try (UT.IO.IWriteln tWriteln = UT.IO.toWriteln(aFilePath)) {
             // 先输出通用信息
-            tWriteln.writeln(mDataName==null ? DEFAULT_DATA_NAME : mDataName);
+            tWriteln.writeln(mComment==null ? DEFAULT_COMMENT : mComment);
             tWriteln.writeln(String.valueOf(mBoxScale));
             tWriteln.writeln(String.format("    %16.10g    %16.10g    %16.10g", mBox.get(0, 0), mBox.get(0, 1), mBox.get(0, 2)));
             tWriteln.writeln(String.format("    %16.10g    %16.10g    %16.10g", mBox.get(1, 0), mBox.get(1, 1), mBox.get(1, 2)));
             tWriteln.writeln(String.format("    %16.10g    %16.10g    %16.10g", mBox.get(2, 0), mBox.get(2, 1), mBox.get(2, 2)));
-            if (mAtomTypes!=null && mAtomTypes.length!=0) {
-            tWriteln.writeln(String.join(" ", AbstractCollections.map(mAtomTypes, type -> String.format("%6s", type))));
+            if (mTypeNames!=null && mTypeNames.length!=0) {
+            tWriteln.writeln(String.join(" ", AbstractCollections.map(mTypeNames, type -> String.format("%6s", type))));
             }
             tWriteln.writeln(String.join(" ", AbstractCollections.map(mAtomNumbers.iterable(), number -> String.format("%6d", number))));
             // 再输出原子数据

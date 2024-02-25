@@ -16,6 +16,7 @@ import jse.math.vector.Vectors;
 import jse.parallel.MPI;
 import jse.vasp.IVaspCommonData;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
 import java.util.*;
@@ -97,6 +98,9 @@ public class Lmpdat extends AbstractSettableAtomData {
     public Lmpdat setNoVelocities() {mVelocities = null; return this;}
     public Lmpdat setHasVelocities() {if (mVelocities == null) {mVelocities = RowMatrix.zeros(mAtomNum, ATOM_DATA_KEYS_VELOCITY.length);} return this;}
     
+    /** Groovy stuffs */
+    @VisibleForTesting public @Nullable IVector getMasses() {return mMasses;}
+    
     /**
      * 修改模拟盒类型
      * @return 返回自身来支持链式调用
@@ -157,7 +161,7 @@ public class Lmpdat extends AbstractSettableAtomData {
     public @Nullable IMatrix velocities() {return mVelocities;}
     public boolean hasMasses() {return mMasses!=null;}
     public @Nullable IVector masses() {return mMasses;}
-    public double mass(int aType) {return mMasses!=null ? mMasses.get(aType-1) : Double.NaN;}
+    public double mass(int aType) {return mMasses==null ? Double.NaN : mMasses.get(aType-1);}
     public ISettableAtom pickAtomInternal(final int aIdx) {
         return new AbstractSettableAtom() {
             @Override public double x() {return mAtomXYZ.get(aIdx, XYZ_X_COL);}
@@ -268,7 +272,7 @@ public class Lmpdat extends AbstractSettableAtomData {
             if (aMasses != null) aMasses = aMasses.copy();
         } else
         if (aAtomData instanceof IVaspCommonData) {
-            String[] tAtomTypes = ((IVaspCommonData)aAtomData).atomTypes();
+            String[] tAtomTypes = ((IVaspCommonData)aAtomData).typeNames();
             int tAtomTypeNum = aAtomData.atomTypeNumber();
             if (tAtomTypes!=null && tAtomTypes.length>=tAtomTypeNum) {
                 aMasses = Vectors.zeros(tAtomTypeNum);

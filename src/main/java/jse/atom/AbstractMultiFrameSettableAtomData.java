@@ -2,6 +2,7 @@ package jse.atom;
 
 import jse.code.collection.AbstractRandomAccessList;
 import jse.math.table.Table;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
 
@@ -16,6 +17,8 @@ public abstract class AbstractMultiFrameSettableAtomData<T extends ISettableAtom
     @Override public abstract T get(int index);
     
     /** IHasAtomData 的接口，将本身作为 atomData 时则会返回第一帧的结果 */
+    public final int frameNumber() {return size();}
+    @VisibleForTesting final int nframes() {return size();}
     public T defaultFrame() {return get(0);}
     @Override public final Table dataXYZ() {return defaultFrame().dataXYZ();}
     @Override public final Table dataXYZID() {return defaultFrame().dataXYZID();}

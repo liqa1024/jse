@@ -68,6 +68,9 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
     public long timeStep() {return defaultFrame().timeStep();}
     public String[] boxBounds() {return defaultFrame().boxBounds();}
     public Box lmpBox() {return defaultFrame().lmpBox();}
+    public Lammpstrj setTimeStep(long aTimeStep) {defaultFrame().setTimeStep(aTimeStep); return this;}
+    /** Groovy stuffs */
+    @VisibleForTesting public long getTimeStep() {return defaultFrame().timeStep();}
     
     /** 提供直接转为表格的接口 */
     public AbstractMultiFrameTable<ITable> asTable() {
@@ -105,7 +108,7 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
     
     /** 每个帧的子 Lammpstrj */
     public static class SubLammpstrj extends AbstractSettableAtomData {
-        private final long mTimeStep;
+        private long mTimeStep;
         private final String[] mBoxBounds;
         private final ITable mAtomData;
         private int mAtomTypeNum;
@@ -143,6 +146,10 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
         public long timeStep() {return mTimeStep;}
         public String[] boxBounds() {return mBoxBounds;}
         public Box lmpBox() {return mBox;}
+        
+        public SubLammpstrj setTimeStep(long aTimeStep) {mTimeStep = aTimeStep; return this;}
+        /** Groovy stuffs */
+        @VisibleForTesting public long getTimeStep() {return mTimeStep;}
         
         /** 密度归一化, 返回自身来支持链式调用 */
         public SubLammpstrj setDenseNormalized() {
@@ -488,9 +495,6 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
     
     /// 创建 Lammpstrj
     /** 从 IAtomData 来创建，对于 Lammpstrj 可以支持容器的 aAtomData */
-    public static Lammpstrj fromAtomData(IAtomData aAtomData, long aTimeStep) {
-        return new Lammpstrj(fromAtomData_(aAtomData, aTimeStep));
-    }
     public static Lammpstrj fromAtomData(IAtomData aAtomData) {
         return new Lammpstrj(fromAtomData_(aAtomData, getTimeStep(aAtomData, 0)));
     }
@@ -549,12 +553,11 @@ public class Lammpstrj extends AbstractMultiFrameSettableAtomData<Lammpstrj.SubL
     }
     /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
     public static Lammpstrj zl() {return new Lammpstrj();}
-    public static Lammpstrj of(IAtomData aAtomData, long aTimeStep) {return fromAtomData(aAtomData, aTimeStep);}
-    public static Lammpstrj of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
+    public static Lammpstrj of(IAtomData aAtomData) {return (aAtomData instanceof AbstractMultiFrameSettableAtomData) ? fromAtomDataList((AbstractMultiFrameSettableAtomData<?>)aAtomData) : fromAtomData(aAtomData);}
     public static Lammpstrj of(Iterable<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
     public static Lammpstrj of(Collection<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
     /** 直接提供一个 AbstractMultiFrameSettableAtomData 的接口就不用担心冲突问题了 */
-    public static Lammpstrj of(AbstractMultiFrameSettableAtomData<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
+    public static Lammpstrj of(AbstractMultiFrameSettableAtomData<?> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
     /** matlab stuffs */
     public static Lammpstrj of_compat(Object[] aAtomDataArray) {return fromAtomData_compat(aAtomDataArray);}
     /** 这些接口用来覆盖同名的 jdk9 中同名的 {@link List#of} 方法 */
