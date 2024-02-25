@@ -4,7 +4,6 @@ import jse.code.collection.AbstractRandomAccessList;
 import jse.code.collection.NewCollections;
 import jse.math.matrix.IMatrix;
 import jse.math.table.Table;
-import jse.math.table.Tables;
 
 import java.util.List;
 
@@ -41,7 +40,7 @@ public abstract class AbstractAtomData implements IAtomData {
     
     /** 会利用 atomNum() 来得到初始的容量 */
     @Override public Table dataXYZ() {
-        Table rData = Tables.zeros(atomNumber(), ATOM_DATA_KEYS_XYZ);
+        Table rData = Table.zeros(atomNumber(), ATOM_DATA_KEYS_XYZ);
         IMatrix rMat = rData.asMatrix();
         int row = 0;
         for (IAtom tAtom : asList()) {
@@ -53,7 +52,7 @@ public abstract class AbstractAtomData implements IAtomData {
         return rData;
     }
     @Override public Table dataXYZID() {
-        Table rData = Tables.zeros(atomNumber(), ATOM_DATA_KEYS_XYZID);
+        Table rData = Table.zeros(atomNumber(), ATOM_DATA_KEYS_XYZID);
         IMatrix rMat = rData.asMatrix();
         int row = 0;
         for (IAtom tAtom : asList()) {
@@ -66,7 +65,7 @@ public abstract class AbstractAtomData implements IAtomData {
         return rData;
     }
     @Override public Table dataSTD() {
-        Table rData = Tables.zeros(atomNumber(), STD_ATOM_DATA_KEYS);
+        Table rData = Table.zeros(atomNumber(), STD_ATOM_DATA_KEYS);
         IMatrix rMat = rData.asMatrix();
         int row = 0;
         for (IAtom tAtom : asList()) {
@@ -80,7 +79,7 @@ public abstract class AbstractAtomData implements IAtomData {
         return rData;
     }
     @Override public Table dataAll() {
-        Table rData = Tables.zeros(atomNumber(), ALL_ATOM_DATA_KEYS);
+        Table rData = Table.zeros(atomNumber(), ALL_ATOM_DATA_KEYS);
         IMatrix rMat = rData.asMatrix();
         int row = 0;
         for (IAtom tAtom : asList()) {
@@ -97,7 +96,7 @@ public abstract class AbstractAtomData implements IAtomData {
         return rData;
     }
     @Override public Table dataVelocities() {
-        Table rData = Tables.zeros(atomNumber(), ATOM_DATA_KEYS_VELOCITY);
+        Table rData = Table.zeros(atomNumber(), ATOM_DATA_KEYS_VELOCITY);
         IMatrix rMat = rData.asMatrix();
         int row = 0;
         for (IAtom tAtom : asList()) {

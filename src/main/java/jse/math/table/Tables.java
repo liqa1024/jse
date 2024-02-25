@@ -4,12 +4,13 @@ import groovy.lang.Closure;
 import groovy.transform.stc.ClosureParams;
 import groovy.transform.stc.FromString;
 import jse.code.UT;
-import jse.math.matrix.ColumnMatrix;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.IMatrixGetter;
 import jse.math.vector.IVector;
 
 import java.util.Collection;
+
+import static jse.code.CS.ZL_STR;
 
 /**
  * @author liqa
@@ -30,6 +31,12 @@ public class Tables {
     public static Table from(IMatrix aData, String... aHeads) {
         Table rTable = zeros(aData.rowNumber(), aHeads);
         rTable.asMatrix().fill(aData);
+        return rTable;
+    }
+    public static Table from(ITable aTable) {
+        if (aTable instanceof Table) return ((Table)aTable).copy();
+        Table rTable = zeros(aTable.rowNumber(), aTable.heads().toArray(ZL_STR));
+        rTable.asMatrix().fill(aTable.asMatrix());
         return rTable;
     }
     /** Groovy stuff */

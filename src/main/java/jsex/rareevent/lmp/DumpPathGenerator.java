@@ -11,7 +11,7 @@ import jse.io.IIOFiles;
 import jse.io.IInFile;
 import jse.lmp.ILmpExecutor;
 import jse.lmp.Lammpstrj;
-import jse.lmp.Lammpstrj.SubLammpstrj;
+import jse.lmp.SubLammpstrj;
 import jse.lmp.LmpIn;
 import jse.lmp.Lmpdat;
 import jse.math.matrix.IMatrix;
@@ -142,7 +142,7 @@ public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathG
             Lammpstrj tLammpstrj = Lammpstrj.read(tLmpDumpPath);
             // 获取成功，重置容忍
             synchronized (this) {mTolerant = TOLERANT;}
-            return tLammpstrj;
+            return tLammpstrj.asList();
         } catch (Exception e) {
             // 出错了则减去容忍，重复失败才真正抛出错误
             synchronized (this) {

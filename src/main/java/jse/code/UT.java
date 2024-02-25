@@ -32,7 +32,7 @@ import jse.math.matrix.ColumnMatrix;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.Matrices;
 import jse.math.table.ITable;
-import jse.math.table.Tables;
+import jse.math.table.Table;
 import jse.math.vector.IVector;
 import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
@@ -975,7 +975,11 @@ public class UT {
          * @return lines of String
          * @throws IOException when fail
          */
-        public static String readAllText(String aFilePath) throws IOException {return IOGroovyMethods.getText(toReader(aFilePath));}
+        public static String readAllText(String aFilePath) throws IOException {
+            try (Reader tReader = toReader(aFilePath)) {
+                return IOGroovyMethods.getText(tReader);
+            }
+        }
         
         
         /**
@@ -1306,7 +1310,7 @@ public class UT {
          * @param aFilePath csv file path to read
          * @return table with head
          */
-        public static ITable csv2table(String aFilePath) throws IOException {
+        public static Table csv2table(String aFilePath) throws IOException {
             // 现在直接全部读取
             List<String> tLines = readAllLines(aFilePath);
             // 获取行数，末尾空行忽略
@@ -1316,7 +1320,7 @@ public class UT {
                 else break;
             }
             // 需要的参数
-            ITable rTable; int row = 0;
+            Table rTable; int row = 0;
             String[] tTokens;
             // 读取第一行检测是否有头，直接看能否成功粘贴
             tTokens = Text.splitComma(tLines.get(0));
@@ -1324,10 +1328,10 @@ public class UT {
             try {tFirstData = Vectors.from(AbstractCollections.map(tTokens, Double::parseDouble));}
             catch (Exception ignored) {} // 直接看能否成功粘贴
             if (tFirstData != null) {
-                rTable = Tables.zeros(tLineNum, tFirstData.size());
+                rTable = Table.zeros(tLineNum, tFirstData.size());
                 rTable.row(row).fill(tFirstData); ++row;
             } else {
-                rTable = Tables.zeros(tLineNum-1, tTokens);
+                rTable = Table.zeros(tLineNum-1, tTokens);
             }
             // 遍历读取后续数据
             for (int i = 1; i < tLineNum; ++i, ++row) {

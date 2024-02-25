@@ -21,8 +21,9 @@ import static jse.code.CS.ZL_STR;
 public abstract class AbstractTable implements ITable {
     protected final List<String> mHeads;
     protected final Map<String, Integer> mHead2Idx;
+    public final List<String> internalHeads() {return mHeads;}
     
-    AbstractTable(List<String> aHeads) {
+    protected AbstractTable(List<String> aHeads) {
         mHeads = aHeads;
         int tSize = aHeads.size();
         mHead2Idx = new HashMap<>(tSize);

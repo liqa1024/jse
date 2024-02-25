@@ -55,7 +55,7 @@ public class Lmpdat extends AbstractSettableAtomData {
      * @param aAtomXYZ 原子数据组成的矩阵（必须）
      * @param aVelocities 原子速度组成的矩阵
      */
-    public Lmpdat(int aAtomTypeNum, Box aBox, @Nullable IVector aMasses, IIntVector aAtomID, IIntVector aAtomType, IMatrix aAtomXYZ, @Nullable IMatrix aVelocities) {
+    Lmpdat(int aAtomTypeNum, Box aBox, @Nullable IVector aMasses, IIntVector aAtomID, IIntVector aAtomType, IMatrix aAtomXYZ, @Nullable IMatrix aVelocities) {
         mBox = aBox;
         mMasses = aMasses;
         mAtomID = aAtomID;
@@ -330,7 +330,7 @@ public class Lmpdat extends AbstractSettableAtomData {
      * @throws IOException 如果读取失败
      */
     public static Lmpdat read(String aFilePath) throws IOException {return read_(UT.IO.readAllLines(aFilePath));}
-    public static Lmpdat read_(List<String> aLines) {
+    static Lmpdat read_(List<String> aLines) {
         if (aLines.isEmpty()) return null;
         
         int tAtomNum;

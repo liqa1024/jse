@@ -17,7 +17,7 @@ import java.util.*;
  * 方便直接使用 csv 读取结果的数据格式
  * @author liqa
  */
-public final class Table extends AbstractTable implements IDataShell<List<Vector>> {
+public class Table extends AbstractTable implements IDataShell<List<Vector>> {
     /** 提供默认的创建 */
     public static Table zeros(int aRowNum) {
         return new Table(aRowNum);
@@ -34,7 +34,7 @@ public final class Table extends AbstractTable implements IDataShell<List<Vector
     private final int mRowNum;
     private List<Vector> mData;
     /** 这些构造函数主要用于避免重复值拷贝数据 */
-    Table(int aRowNum, List<String> aHeads, List<Vector> aData) {
+    protected Table(int aRowNum, List<String> aHeads, List<Vector> aData) {
         super(aHeads);
         mRowNum = aRowNum;
         mData = aData;
@@ -56,9 +56,9 @@ public final class Table extends AbstractTable implements IDataShell<List<Vector
     
     
     /** 重写这些接口避免过多的嵌套 */
-    @Override public double get(int aRow, String aHead) {return mData.get(mHead2Idx.get(aHead)).get(aRow);}
-    @Override public void set(int aRow, String aHead, double aValue) {mData.get(mHead2Idx.get(aHead)).set(aRow, aValue);}
-    @Override public Map<String, Vector> cols() {
+    @Override public final double get(int aRow, String aHead) {return mData.get(mHead2Idx.get(aHead)).get(aRow);}
+    @Override public final void set(int aRow, String aHead, double aValue) {mData.get(mHead2Idx.get(aHead)).set(aRow, aValue);}
+    @Override public final Map<String, Vector> cols() {
         return new AbstractMap<String, Vector>() {
             @NotNull @Override public Set<Entry<String, Vector>> entrySet() {
                 return new AbstractSet<Entry<String, Vector>>() {
@@ -80,18 +80,16 @@ public final class Table extends AbstractTable implements IDataShell<List<Vector
             @Override public Vector put(String key, Vector value) {throw new UnsupportedOperationException("put");}
         };
     }
-    @Override public Vector col(String aHead) {return mData.get(mHead2Idx.get(aHead));}
-    @Override public int rowNumber() {return mRowNum;}
-    @Override public int columnNumber() {return mData.size();}
+    @Override public final Vector col(String aHead) {return mData.get(mHead2Idx.get(aHead));}
+    @Override public final int rowNumber() {return mRowNum;}
+    @Override public final int columnNumber() {return mData.size();}
     
     @Override public Table copy() {
-        Table rTable = new Table(mRowNum, NewCollections.from(mHeads), NewCollections.from(columnNumber(), col -> Vector.zeros(mRowNum)));
-        rTable.asMatrix().fill(asMatrix());
-        return rTable;
+        return new Table(mRowNum, NewCollections.from(mHeads), NewCollections.from(columnNumber(), col -> mData.get(col).copy()));
     }
     
     /** AbstractTable stuffs */
-    @Override public IMatrix asMatrix() {
+    @Override public final IMatrix asMatrix() {
         return new RefMatrix() {
             @Override public double get(int aRow, int aCol) {return mData.get(aCol).get(aRow);}
             @Override public void set(int aRow, int aCol, double aValue) {mData.get(aCol).set(aRow, aValue);}
@@ -110,7 +108,7 @@ public final class Table extends AbstractTable implements IDataShell<List<Vector
             @Override public Vector col(int aCol) {return mData.get(aCol);}
         };
     }
-    @Override protected Vector newColumn_(String aHead) {
+    @Override protected final Vector newColumn_(String aHead) {
         // 先扩展 map
         mHead2Idx.put(aHead, mHeads.size());
         mHeads.add(aHead);
@@ -120,9 +118,9 @@ public final class Table extends AbstractTable implements IDataShell<List<Vector
     }
     
     /** DataShell stuffs */
-    @Override public void setInternalData(List<Vector> aData) {mData = aData;}
-    @Override public List<Vector> internalData() {return mData;}
-    @Override public int internalDataSize() {return mRowNum;}
+    @Override public final void setInternalData(List<Vector> aData) {mData = aData;}
+    @Override public final List<Vector> internalData() {return mData;}
+    @Override public final int internalDataSize() {return mRowNum;}
     @Override public Table newShell() {return new Table(mRowNum, NewCollections.from(mHeads), null);}
     @Override public @Nullable List<Vector> getIfHasSameOrderData(Object aObj) {
         // 简单处理，这里认为所有 Table 内部数据都不是相同 order 的

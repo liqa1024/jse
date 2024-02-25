@@ -2,9 +2,13 @@ package jse.vasp;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-import jse.atom.*;
+import jse.atom.IAtom;
+import jse.atom.IAtomData;
+import jse.atom.MultiFrameParameterCalculator;
+import jse.atom.XYZ;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
+import jse.code.collection.AbstractListWrapper;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.Matrices;
@@ -34,8 +38,10 @@ import static jse.code.CS.MASS;
  * <p> 暂时不支持边界条件设置 </p>
  * <p> 暂时不考虑 Direct configuration 间距不为 1 的情况，因此 MFPC 不会统计两帧之间跳过的部分 </p>
  * <p> 返回的 {@link POSCAR} 共享原子位置但是不共享 mBoxScale 以及 mSelectiveDynamics（除了原子位置其余是否共享属于未定义）</p>
+ * <p> 现在不再继承 {@link List}，因为 List 的接口太脏了 </p>
+ * <p> 并且现在不再继承 {@link IAtomData}，如果需要使用单个 XDATCAR 直接使用 {@link POSCAR} </p>
  */
-public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implements IVaspCommonData {
+public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> implements IVaspCommonData {
     public final static String DEFAULT_COMMENT = "VASP_XDATCAR_FROM_JSE";
     
     /** 这里统一存放通用数据保证所有帧这些一定是相同的 */
@@ -49,19 +55,18 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     private final @Nullable IIntVector mIDs;
     private final @Nullable @Unmodifiable Map<Integer, Integer> mId2Index; // 原子的 id 转为存储在 AtomDataXYZ 的指标 index
     
-    private List<IMatrix> mDirects;
     private boolean mIsCartesian; // 如果是 Cartesian 则是没有进行缩放的
     
     /** 用于通过字符获取每个种类的粒子数，考虑了可能有相同 key 的情况 */
     private final @NotNull Multimap<String, Integer> mKey2Type;
     
     XDATCAR(@Nullable String aComment, IMatrix aBox, double aBoxScale, String @Nullable[] aTypeNames, IIntVector aAtomNumbers, List<IMatrix> aDirects, boolean aIsCartesian, @Nullable IIntVector aIDs) {
+        super(aDirects);
         mComment = aComment;
         mTypeNames = aTypeNames;
         mAtomNumbers = aAtomNumbers;
         mBox = aBox;
         mBoxScale = aBoxScale;
-        mDirects = aDirects;
         mIsCartesian = aIsCartesian;
         mIDs = aIDs;
         
@@ -86,54 +91,33 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     }
     XDATCAR(@Nullable String aComment, IMatrix aBox, double aBoxScale, String @Nullable[] aTypeNames, IIntVector aAtomNumbers, IMatrix aFirstDirect, int aInitSize, boolean aIsCartesian, @Nullable IIntVector aIDs) {
         this(aComment, aBox, aBoxScale, aTypeNames, aAtomNumbers, new ArrayList<>(aInitSize), aIsCartesian, aIDs);
-        mDirects.add(aFirstDirect);
+        mList.add(aFirstDirect);
     }
     
-    /** AbstractList stuffs */
-    @Override public int size() {return mDirects.size();}
-    @Override public POSCAR get(int index) {
-        return new POSCAR(this, false, mDirects.get(index));
-    }
-    @Override public POSCAR set(int index, POSCAR aPOSCAR) {
-        // 只有正交的 XDATCAR 才能设置内部元素
-        if (!mIsDiagBox) throw new RuntimeException("set is support Diagonal Box only");
-        return new POSCAR(this, false, mDirects.set(index, getDirect_(aPOSCAR)));
-    }
-    @Override public boolean add(POSCAR aPOSCAR) {
-        // 只有正交的 XDATCAR 才能设置内部元素
-        if (!mIsDiagBox) throw new RuntimeException("add is support Diagonal Box only");
-        return mDirects.add(getDirect_(aPOSCAR));
-    }
-    @Override public POSCAR remove(int aIndex) {
-        return new POSCAR(this, false, mDirects.remove(aIndex));
-    }
+    /** AbstractListWrapper stuffs */
+    @Override protected final IMatrix toInternal_(IAtomData aAtomData) {return getDirect_(aAtomData);}
+    @Override protected final POSCAR toOutput_(IMatrix aDirect) {return new POSCAR(this, false, aDirect);}
+    
+    
     /** 提供更加易用的添加方法，返回自身支持链式调用 */
     public XDATCAR append(IAtomData aAtomData) {
         // 只有正交的 XDATCAR 才能通过 AtomData 设置内部元素
         if (!mIsDiagBox) throw new RuntimeException("append is support Diagonal Box only");
-        mDirects.add(getDirect_(aAtomData));
+        mList.add(getDirect_(aAtomData));
         return this;
     }
     public XDATCAR appendList(Iterable<? extends IAtomData> aAtomDataList) {
         // 只有正交的 XDATCAR 才能通过 AtomData 设置内部元素
         if (!mIsDiagBox) throw new RuntimeException("appendList is support Diagonal Box only");
-        for (IAtomData tAtomData : aAtomDataList) mDirects.add(getDirect_(tAtomData));
+        for (IAtomData tAtomData : aAtomDataList) mList.add(getDirect_(tAtomData));
         return this;
     }
     public XDATCAR appendFile(String aFilePath) throws IOException {
         // 原则上只有正交的或者 box 完全相同才可以添加，这里直接通过 refDirect_ 的内部进行判断，即使 box 不相同也会可以添加
         final XDATCAR tXDATCAR = read(aFilePath);
-        mDirects.addAll(AbstractCollections.map(tXDATCAR.mDirects, direct -> refDirect_(tXDATCAR.mBox, tXDATCAR.mBoxScale, mBoxScale, direct, tXDATCAR.mIsCartesian, mIsCartesian)));
+        mList.addAll(AbstractCollections.map(tXDATCAR.mList, direct -> refDirect_(tXDATCAR.mBox, tXDATCAR.mBoxScale, mBoxScale, direct, tXDATCAR.mIsCartesian, mIsCartesian)));
         return this;
     }
-    /** Groovy stuffs，用于支持传入 IAtomData 来设置 */
-    void set(int aIdx, IAtomData aAtomData) {
-        // 只有正交的 XDATCAR 才能通过 AtomData 设置内部元素
-        if (!mIsDiagBox) throw new RuntimeException("set is support Diagonal Box only");
-        mDirects.set(aIdx, getDirect_(aAtomData));
-    }
-    @VisibleForTesting void putAt(int aIdx, IAtomData aAtomData) {set(aIdx, aAtomData);}
-    @VisibleForTesting XDATCAR leftShift(IAtomData aAtomData) {return append(aAtomData);}
     
     
     /** 对于 XDATCAR 提供额外的实用接口 */
@@ -160,7 +144,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     public @Override IIntVector atomNumbers() {return mAtomNumbers;}
     public @Override IMatrix vaspBox() {return mBox;}
     public @Override double vaspBoxScale() {return mBoxScale;}
-    public List<IMatrix> directs() {return mDirects;}
+    public List<IMatrix> directs() {return mList;}
     public @Override boolean isCartesian() {return mIsCartesian;}
     public @Override boolean isDiagBox() {return mIsDiagBox;}
     public @Override @Nullable IIntVector ids() {return mIDs;}
@@ -202,7 +186,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         if (mIsCartesian) return this;
         // 注意如果是斜方的模拟盒则不能进行转换
         if (!mIsDiagBox) throw new RuntimeException("converting between Cartesian and Direct is temporarily support Diagonal Box only");
-        for (IMatrix tDirect : mDirects) {
+        for (IMatrix tDirect : mList) {
             tDirect.col(0).multiply2this(mBox.get(0, 0));
             tDirect.col(1).multiply2this(mBox.get(1, 1));
             tDirect.col(2).multiply2this(mBox.get(2, 2));
@@ -214,7 +198,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         if (!mIsCartesian) return this;
         // 注意如果是斜方的模拟盒则不能进行转换
         if (!mIsDiagBox) throw new RuntimeException("converting between Cartesian and Direct is temporarily support Diagonal Box only");
-        for (IMatrix tDirect : mDirects) {
+        for (IMatrix tDirect : mList) {
             tDirect.col(0).div2this(mBox.get(0, 0));
             tDirect.col(1).div2this(mBox.get(1, 1));
             tDirect.col(2).div2this(mBox.get(2, 2));
@@ -226,25 +210,25 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
     /** 截断开头一部分, 返回自身来支持链式调用 */
     public XDATCAR cutFront(int aLength) {
         if (aLength <= 0) return this;
-        if (aLength > mDirects.size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aLength));
-        List<IMatrix> oData = mDirects;
-        mDirects = new ArrayList<>(oData.size() - aLength);
-        Iterator<IMatrix> it = oData.listIterator(aLength);
-        while (it.hasNext()) mDirects.add(it.next());
+        if (aLength > mList.size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aLength));
+        List<IMatrix> oList = mList;
+        mList = new ArrayList<>(oList.size() - aLength);
+        Iterator<IMatrix> it = oList.listIterator(aLength);
+        while (it.hasNext()) mList.add(it.next());
         return this;
     }
     /** 截断结尾一部分, 返回自身来支持链式调用 */
     public XDATCAR cutBack(int aLength) {
         if (aLength <= 0) return this;
-        if (aLength > mDirects.size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aLength));
-        for (int i = 0; i < aLength; ++i) UT.Code.removeLast(mDirects);
+        if (aLength > mList.size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aLength));
+        for (int i = 0; i < aLength; ++i) UT.Code.removeLast(mList);
         return this;
     }
     
     /** 拷贝一份 XDATCAR */
-    @Override public XDATCAR copy() {
-        List<IMatrix> rDirects = new ArrayList<>(mDirects.size());
-        for (IMatrix subDirect : mDirects) rDirects.add(subDirect.copy());
+    public XDATCAR copy() {
+        List<IMatrix> rDirects = new ArrayList<>(mList.size());
+        for (IMatrix tDirect : mList) rDirects.add(tDirect.copy());
         return new XDATCAR(mComment, mBox.copy(), mBoxScale, POSCAR.copyTypeNames(mTypeNames), mAtomNumbers.copy(), rDirects, mIsCartesian, POSCAR.copyIDs(mIDs));
     }
     
@@ -265,10 +249,6 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
             IIntVector tAtomNumbers = IntVector.zeros(tAtomTypeNum);
             tAtomNumbers.subVec(0, tPOSCAR.atomNumbers().size()).fill(tPOSCAR.atomNumbers());
             return new XDATCAR(tPOSCAR.comment(), tPOSCAR.vaspBox().copy(), tPOSCAR.vaspBoxScale(), POSCAR.copyTypeNames(aTypeNames), tAtomNumbers, tPOSCAR.direct().copy(), aInitSize, tPOSCAR.isCartesian(), POSCAR.copyIDs(tPOSCAR.ids()));
-        } else
-        if (aAtomData instanceof XDATCAR) {
-            // XDATCAR 则直接获取即可（专门优化，保留完整模拟盒信息等）
-            return fromAtomData_(((XDATCAR)aAtomData).defaultFrame(), aInitSize, aTypeNames);
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
             IIntVector rIDs = IntVector.zeros(aAtomData.atomNumber());
@@ -321,18 +301,29 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         if (!aBox.operation().isDiag()) throw new RuntimeException("refDirect is temporarily support Diagonal Box only");
         
         final double tScale = aSrcBoxScale / aToBoxScale;
-        if (aToCartesian) return new RefMatrix() {
-            @Override public double get(int aRow, int aCol) {return aDirect.get(aRow, aCol) * aBox.get(aCol, aCol) * tScale;}
-            @Override public void set(int aRow, int aCol, double aValue) {aDirect.set(aRow, aCol, aValue / aBox.get(aCol, aCol) / tScale);}
-            @Override public int rowNumber() {return aDirect.rowNumber();}
-            @Override public int columnNumber() {return aDirect.columnNumber();}
-        };
-        else return new RefMatrix() {
-            @Override public double get(int aRow, int aCol) {return aDirect.get(aRow, aCol) / aBox.get(aCol, aCol) * tScale;}
-            @Override public void set(int aRow, int aCol, double aValue) {aDirect.set(aRow, aCol, aValue * aBox.get(aCol, aCol) / tScale);}
-            @Override public int rowNumber() {return aDirect.rowNumber();}
-            @Override public int columnNumber() {return aDirect.columnNumber();}
-        };
+        if (aSrcCartesian == aToCartesian) {
+            return new RefMatrix() {
+                @Override public double get(int aRow, int aCol) {return aDirect.get(aRow, aCol) * tScale;}
+                @Override public void set(int aRow, int aCol, double aValue) {aDirect.set(aRow, aCol, aValue / tScale);}
+                @Override public int rowNumber() {return aDirect.rowNumber();}
+                @Override public int columnNumber() {return aDirect.columnNumber();}
+            };
+        } else
+        if (aToCartesian) {
+            return new RefMatrix() {
+                @Override public double get(int aRow, int aCol) {return aDirect.get(aRow, aCol) * aBox.get(aCol, aCol) * tScale;}
+                @Override public void set(int aRow, int aCol, double aValue) {aDirect.set(aRow, aCol, aValue / aBox.get(aCol, aCol) / tScale);}
+                @Override public int rowNumber() {return aDirect.rowNumber();}
+                @Override public int columnNumber() {return aDirect.columnNumber();}
+            };
+        } else {
+            return new RefMatrix() {
+                @Override public double get(int aRow, int aCol) {return aDirect.get(aRow, aCol) / aBox.get(aCol, aCol) * tScale;}
+                @Override public void set(int aRow, int aCol, double aValue) {aDirect.set(aRow, aCol, aValue * aBox.get(aCol, aCol) / tScale);}
+                @Override public int rowNumber() {return aDirect.rowNumber();}
+                @Override public int columnNumber() {return aDirect.columnNumber();}
+            };
+        }
     }
     /** 对于 matlab 调用的兼容 */
     public static XDATCAR fromAtomData_compat(Object[] aAtomDataArray) {
@@ -342,30 +333,18 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
         return fromAtomDataList(AbstractCollections.map(AbstractCollections.filter(AbstractCollections.from(aAtomDataArray), atomData -> (atomData instanceof IAtomData)), obj -> (IAtomData)obj), aTypeNames);
     }
     /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
-    public static XDATCAR of(IAtomData aAtomData) {return (aAtomData instanceof AbstractMultiFrameSettableAtomData) ? fromAtomDataList((AbstractMultiFrameSettableAtomData<?>)aAtomData) : fromAtomData(aAtomData);}
-    public static XDATCAR of(IAtomData aAtomData, String... aTypeNames) {return (aAtomData instanceof AbstractMultiFrameSettableAtomData) ? fromAtomDataList((AbstractMultiFrameSettableAtomData<?>)aAtomData, aTypeNames) : fromAtomData(aAtomData, aTypeNames);}
+    public static XDATCAR of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
+    public static XDATCAR of(IAtomData aAtomData, String... aTypeNames) {return fromAtomData(aAtomData, aTypeNames);}
     public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
     public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList, String... aTypeNames) {return fromAtomDataList(aAtomDataList, aTypeNames);}
     public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
     public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList, String... aTypeNames) {return fromAtomDataList(aAtomDataList, aTypeNames);}
-    /** 直接提供一个 AbstractMultiFrameSettableAtomData 的接口就不用担心冲突问题了 */
-    public static XDATCAR of(AbstractMultiFrameSettableAtomData<?> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
-    public static XDATCAR of(AbstractMultiFrameSettableAtomData<?> aAtomDataList, String... aTypeNames) {return fromAtomDataList(aAtomDataList, aTypeNames);}
+    /** 再提供一个 IListWrapper 的接口保证 XDATCAR 也能输入 */
+    public static XDATCAR of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList) {return fromAtomDataList(aAtomDataList.asList());}
+    public static XDATCAR of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, String... aTypeNames) {return fromAtomDataList(aAtomDataList.asList(), aTypeNames);}
     /** matlab stuffs */
     public static XDATCAR of_compat(Object[] aAtomDataArray) {return fromAtomData_compat(aAtomDataArray);}
     public static XDATCAR of_compat(Object[] aAtomDataArray, String... aTypeNames) {return fromAtomData_compat(aAtomDataArray, aTypeNames);}
-    /** 这些接口用来覆盖同名的 jdk9 中同名的 {@link List#of} 方法 */
-    @VisibleForTesting @Deprecated public static XDATCAR of() {throw new IllegalArgumentException("XDATCAR must be initialized through at least ONE AtomData");}
-    @VisibleForTesting public static XDATCAR of(IAtomData... aAtomDataArray) {return of(AbstractCollections.from(aAtomDataArray));}
-    @VisibleForTesting public static XDATCAR of(IAtomData aD1, IAtomData aD2                                                                                                                         ) {return of(new IAtomData[]{aD1, aD2});}
-    @VisibleForTesting public static XDATCAR of(IAtomData aD1, IAtomData aD2, IAtomData aD3                                                                                                          ) {return of(new IAtomData[]{aD1, aD2, aD3});}
-    @VisibleForTesting public static XDATCAR of(IAtomData aD1, IAtomData aD2, IAtomData aD3, IAtomData aD4                                                                                           ) {return of(new IAtomData[]{aD1, aD2, aD3, aD4});}
-    @VisibleForTesting public static XDATCAR of(IAtomData aD1, IAtomData aD2, IAtomData aD3, IAtomData aD4, IAtomData aD5                                                                            ) {return of(new IAtomData[]{aD1, aD2, aD3, aD4, aD5});}
-    @VisibleForTesting public static XDATCAR of(IAtomData aD1, IAtomData aD2, IAtomData aD3, IAtomData aD4, IAtomData aD5, IAtomData aD6                                                             ) {return of(new IAtomData[]{aD1, aD2, aD3, aD4, aD5, aD6});}
-    @VisibleForTesting public static XDATCAR of(IAtomData aD1, IAtomData aD2, IAtomData aD3, IAtomData aD4, IAtomData aD5, IAtomData aD6, IAtomData aD7                                              ) {return of(new IAtomData[]{aD1, aD2, aD3, aD4, aD5, aD6, aD7});}
-    @VisibleForTesting public static XDATCAR of(IAtomData aD1, IAtomData aD2, IAtomData aD3, IAtomData aD4, IAtomData aD5, IAtomData aD6, IAtomData aD7, IAtomData aD8                               ) {return of(new IAtomData[]{aD1, aD2, aD3, aD4, aD5, aD6, aD7, aD8});}
-    @VisibleForTesting public static XDATCAR of(IAtomData aD1, IAtomData aD2, IAtomData aD3, IAtomData aD4, IAtomData aD5, IAtomData aD6, IAtomData aD7, IAtomData aD8, IAtomData aD9                ) {return of(new IAtomData[]{aD1, aD2, aD3, aD4, aD5, aD6, aD7, aD8, aD9});}
-    @VisibleForTesting public static XDATCAR of(IAtomData aD1, IAtomData aD2, IAtomData aD3, IAtomData aD4, IAtomData aD5, IAtomData aD6, IAtomData aD7, IAtomData aD8, IAtomData aD9, IAtomData aD10) {return of(new IAtomData[]{aD1, aD2, aD3, aD4, aD5, aD6, aD7, aD8, aD9, aD10});}
     
     
     /// 文件读写
@@ -378,7 +357,7 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
      */
     public static XDATCAR read(String aFilePath) throws IOException {try (BufferedReader tReader = UT.IO.toReader(aFilePath)) {return read_(tReader);}}
     /** 改为 {@link BufferedReader} 而不是 {@code List<String>} 来避免过多内存占用 */
-    public static XDATCAR read_(BufferedReader aReader) throws IOException {
+    static XDATCAR read_(BufferedReader aReader) throws IOException {
         // 先读通用信息
         String aComment;
         IMatrix aBox;
@@ -467,9 +446,9 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
             }
             tWriteln.writeln(String.join(" ", AbstractCollections.map(mAtomNumbers.iterable(), number -> String.format("%6d", number))));
             // 再输出原子数据
-            for (int i = 0; i < mDirects.size(); ++i) {
+            for (int i = 0; i < mList.size(); ++i) {
             tWriteln.writeln((mIsCartesian ? "Cartesian" : "Direct") + " configuration= " + (i+1));
-            for (IVector subDirect : mDirects.get(i).rows()) {
+            for (IVector subDirect : mList.get(i).rows()) {
             tWriteln.writeln(String.format("%16.10g    %16.10g    %16.10g", subDirect.get(0), subDirect.get(1), subDirect.get(2)));
             }}
         }
@@ -485,12 +464,12 @@ public class XDATCAR extends AbstractMultiFrameSettableAtomData<POSCAR> implemen
      * @param aThreadNum 执行 MFPC 的线程数目
      * @return 获取到的 MFPC
      */
-    public MultiFrameParameterCalculator getTypeMultiFrameParameterCalculator(double aTimestep, int aType, int aThreadNum) {return new MultiFrameParameterCalculator(AbstractCollections.map(this, atomData -> atomData.operation().filterType(aType)), aTimestep, aThreadNum);}
-    public MultiFrameParameterCalculator getMultiFrameParameterCalculator    (double aTimestep                           ) {return new MultiFrameParameterCalculator(this                                                                             , aTimestep            );}
-    public MultiFrameParameterCalculator getMultiFrameParameterCalculator    (double aTimestep,            int aThreadNum) {return new MultiFrameParameterCalculator(this                                                                             , aTimestep, aThreadNum);}
-    public MultiFrameParameterCalculator getTypeMultiFrameParameterCalculator(double aTimestep, int aType                ) {return new MultiFrameParameterCalculator(AbstractCollections.map(this, atomData -> atomData.operation().filterType(aType)), aTimestep            );}
-    @VisibleForTesting public MultiFrameParameterCalculator getMFPC          (double aTimestep                           ) {return new MultiFrameParameterCalculator(this                                                                             , aTimestep            );}
-    @VisibleForTesting public MultiFrameParameterCalculator getMFPC          (double aTimestep,            int aThreadNum) {return new MultiFrameParameterCalculator(this                                                                             , aTimestep, aThreadNum);}
-    @VisibleForTesting public MultiFrameParameterCalculator getTypeMFPC      (double aTimestep, int aType                ) {return new MultiFrameParameterCalculator(AbstractCollections.map(this, atomData -> atomData.operation().filterType(aType)), aTimestep            );}
-    @VisibleForTesting public MultiFrameParameterCalculator getTypeMFPC      (double aTimestep, int aType, int aThreadNum) {return new MultiFrameParameterCalculator(AbstractCollections.map(this, atomData -> atomData.operation().filterType(aType)), aTimestep, aThreadNum);}
+    public MultiFrameParameterCalculator getTypeMultiFrameParameterCalculator(double aTimestep, int aType, int aThreadNum) {return new MultiFrameParameterCalculator(AbstractCollections.map(asList(), atomData -> atomData.operation().filterType(aType)), aTimestep, aThreadNum);}
+    public MultiFrameParameterCalculator getMultiFrameParameterCalculator    (double aTimestep                           ) {return new MultiFrameParameterCalculator(asList()                                                                             , aTimestep            );}
+    public MultiFrameParameterCalculator getMultiFrameParameterCalculator    (double aTimestep,            int aThreadNum) {return new MultiFrameParameterCalculator(asList()                                                                             , aTimestep, aThreadNum);}
+    public MultiFrameParameterCalculator getTypeMultiFrameParameterCalculator(double aTimestep, int aType                ) {return new MultiFrameParameterCalculator(AbstractCollections.map(asList(), atomData -> atomData.operation().filterType(aType)), aTimestep            );}
+    @VisibleForTesting public MultiFrameParameterCalculator getMFPC          (double aTimestep                           ) {return new MultiFrameParameterCalculator(asList()                                                                             , aTimestep            );}
+    @VisibleForTesting public MultiFrameParameterCalculator getMFPC          (double aTimestep,            int aThreadNum) {return new MultiFrameParameterCalculator(asList()                                                                             , aTimestep, aThreadNum);}
+    @VisibleForTesting public MultiFrameParameterCalculator getTypeMFPC      (double aTimestep, int aType                ) {return new MultiFrameParameterCalculator(AbstractCollections.map(asList(), atomData -> atomData.operation().filterType(aType)), aTimestep            );}
+    @VisibleForTesting public MultiFrameParameterCalculator getTypeMFPC      (double aTimestep, int aType, int aThreadNum) {return new MultiFrameParameterCalculator(AbstractCollections.map(asList(), atomData -> atomData.operation().filterType(aType)), aTimestep, aThreadNum);}
 }

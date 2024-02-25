@@ -344,9 +344,6 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
             IIntVector tAtomNumbers = IntVector.zeros(tAtomTypeNum);
             tAtomNumbers.subVec(0, tPOSCAR.mAtomNumbers.size()).fill(tPOSCAR.mAtomNumbers);
             return new POSCAR(tPOSCAR.mComment, tPOSCAR.mBox.copy(), tPOSCAR.mBoxScale, copyTypeNames(aTypeNames), tAtomNumbers, aSelectiveDynamics, tPOSCAR.mDirect.copy(), tPOSCAR.mIsCartesian, copyIDs(tPOSCAR.mIDs));
-        } if (aAtomData instanceof XDATCAR) {
-            // XDATCAR 则直接获取即可（专门优化，保留完整模拟盒信息等）
-            return fromAtomData(((XDATCAR)aAtomData).defaultFrame(), aSelectiveDynamics, aTypeNames);
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
             IIntVector rIDs = IntVector.zeros(aAtomData.atomNumber());
@@ -382,7 +379,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
      * @throws IOException 如果读取失败
      */
     public static POSCAR read(String aFilePath) throws IOException {return read_(UT.IO.readAllLines(aFilePath));}
-    public static POSCAR read_(List<String> aLines) {
+    static POSCAR read_(List<String> aLines) {
         if (aLines.isEmpty()) return null;
         
         String aComment;
