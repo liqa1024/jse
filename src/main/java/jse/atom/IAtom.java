@@ -2,6 +2,14 @@ package jse.atom;
 
 /** 现在认为原子无论怎样都会拥有这些属性 */
 public interface IAtom extends IXYZ {
+    /** 转为兼容性更高的 double[] */
+    @Override default double[] data() {return dataSTD();}
+    default double[] dataXYZ() {return new double[] {x(), y(), z()};}
+    default double[] dataXYZID() {return new double[] {x(), y(), z(), id()};}
+    default double[] dataSTD() {return new double[] {id(), type(), x(), y(), z()};}
+    default double[] dataAll() {return new double[] {id(), type(), x(), y(), z(), vx(), vy(), vz()};}
+    default double[] dataVelocities() {return new double[] {vx(), vy(), vz()};}
+    
     double x();
     double y();
     double z();

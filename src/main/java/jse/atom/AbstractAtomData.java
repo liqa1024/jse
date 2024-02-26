@@ -2,12 +2,9 @@ package jse.atom;
 
 import jse.code.collection.AbstractRandomAccessList;
 import jse.code.collection.NewCollections;
-import jse.math.matrix.IMatrix;
-import jse.math.table.Table;
 
 import java.util.List;
 
-import static jse.code.CS.*;
 import static jse.code.UT.Code.newBox;
 
 /**
@@ -39,72 +36,44 @@ public abstract class AbstractAtomData implements IAtomData {
     };}
     
     
-    /** 会利用 atomNum() 来得到初始的容量 */
-    @Override public Table dataXYZ() {
-        Table rData = Table.zeros(atomNumber(), ATOM_DATA_KEYS_XYZ);
-        IMatrix rMat = rData.asMatrix();
-        int row = 0;
-        for (IAtom tAtom : atoms()) {
-            rMat.set(row, XYZ_X_COL, tAtom.x());
-            rMat.set(row, XYZ_Y_COL, tAtom.y());
-            rMat.set(row, XYZ_Z_COL, tAtom.z());
-            ++row;
+    /** 会利用 atomNumber() 来得到初始的容量 */
+    @Override public double[][] dataXYZ() {
+        final int tAtomNum = atomNumber();
+        double[][] rData = new double[tAtomNum][];
+        for (int i = 0; i < tAtomNum; ++i) {
+            rData[i] = atom(i).dataXYZ();
         }
         return rData;
     }
-    @Override public Table dataXYZID() {
-        Table rData = Table.zeros(atomNumber(), ATOM_DATA_KEYS_XYZID);
-        IMatrix rMat = rData.asMatrix();
-        int row = 0;
-        for (IAtom tAtom : atoms()) {
-            rMat.set(row, XYZID_X_COL, tAtom.x());
-            rMat.set(row, XYZID_Y_COL, tAtom.y());
-            rMat.set(row, XYZID_Z_COL, tAtom.z());
-            rMat.set(row, XYZID_ID_COL, tAtom.id());
-            ++row;
+    @Override public double[][] dataXYZID() {
+        final int tAtomNum = atomNumber();
+        double[][] rData = new double[tAtomNum][];
+        for (int i = 0; i < tAtomNum; ++i) {
+            rData[i] = atom(i).dataXYZID();
         }
         return rData;
     }
-    @Override public Table dataSTD() {
-        Table rData = Table.zeros(atomNumber(), STD_ATOM_DATA_KEYS);
-        IMatrix rMat = rData.asMatrix();
-        int row = 0;
-        for (IAtom tAtom : atoms()) {
-            rMat.set(row, STD_ID_COL, tAtom.id());
-            rMat.set(row, STD_TYPE_COL, tAtom.type());
-            rMat.set(row, STD_X_COL, tAtom.x());
-            rMat.set(row, STD_Y_COL, tAtom.y());
-            rMat.set(row, STD_Z_COL, tAtom.z());
-            ++row;
+    @Override public double[][] dataSTD() {
+        final int tAtomNum = atomNumber();
+        double[][] rData = new double[tAtomNum][];
+        for (int i = 0; i < tAtomNum; ++i) {
+            rData[i] = atom(i).dataSTD();
         }
         return rData;
     }
-    @Override public Table dataAll() {
-        Table rData = Table.zeros(atomNumber(), ALL_ATOM_DATA_KEYS);
-        IMatrix rMat = rData.asMatrix();
-        int row = 0;
-        for (IAtom tAtom : atoms()) {
-            rMat.set(row, ALL_ID_COL, tAtom.id());
-            rMat.set(row, ALL_TYPE_COL, tAtom.type());
-            rMat.set(row, ALL_X_COL, tAtom.x());
-            rMat.set(row, ALL_Y_COL, tAtom.y());
-            rMat.set(row, ALL_Z_COL, tAtom.z());
-            rMat.set(row, ALL_VX_COL, tAtom.vx());
-            rMat.set(row, ALL_VY_COL, tAtom.vy());
-            rMat.set(row, ALL_VZ_COL, tAtom.vz());
-            ++row;
+    @Override public double[][] dataAll() {
+        final int tAtomNum = atomNumber();
+        double[][] rData = new double[tAtomNum][];
+        for (int i = 0; i < tAtomNum; ++i) {
+            rData[i] = atom(i).dataAll();
         }
         return rData;
     }
-    @Override public Table dataVelocities() {
-        Table rData = Table.zeros(atomNumber(), ATOM_DATA_KEYS_VELOCITY);
-        IMatrix rMat = rData.asMatrix();
-        int row = 0;
-        for (IAtom tAtom : atoms()) {
-            rMat.set(row, STD_VX_COL, tAtom.vx());
-            rMat.set(row, STD_VY_COL, tAtom.vy());
-            rMat.set(row, STD_VZ_COL, tAtom.vz());
-            ++row;
+    @Override public double[][] dataVelocities() {
+        final int tAtomNum = atomNumber();
+        double[][] rData = new double[tAtomNum][];
+        for (int i = 0; i < tAtomNum; ++i) {
+            rData[i] = atom(i).dataVelocities();
         }
         return rData;
     }

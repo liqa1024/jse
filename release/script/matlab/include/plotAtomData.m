@@ -4,7 +4,7 @@ function fig = plotAtomData(jAtomData, colors, sizes, extend)
 
 fig = figure;
 
-dataSTD = jAtomData.dataSTD.data;
+dataSTD = jAtomData.dataSTD;
 scatter3(dataSTD(:, 3), dataSTD(:, 4), dataSTD(:, 5), sizes(dataSTD(:, 2)), colors(dataSTD(:, 2), :), "filled");
 
 hold on

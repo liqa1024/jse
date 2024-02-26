@@ -5,6 +5,7 @@ import jse.cache.ThreadLocalObjectCachePool;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 import jse.math.MathEX;
+import jse.math.matrix.IMatrix;
 import jse.math.table.ITable;
 import jse.math.table.Tables;
 import jse.math.vector.IVector;
@@ -15,6 +16,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static jse.code.CS.*;
 import static jse.lmp.Lammpstrj.*;
 
 /** 每个帧的子 Lammpstrj */
@@ -297,8 +299,36 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             SubLammpstrj tSubLammpstrj = (SubLammpstrj)aAtomData;
             return new SubLammpstrj(aTimeStep, Arrays.copyOf(tSubLammpstrj.mBoxBounds, tSubLammpstrj.mBoxBounds.length), tSubLammpstrj.mBox.copy(), tSubLammpstrj.mAtomData.copy());
         } else {
-            // 一般的情况，通过 dataXXX 来创建，注意这里认为获取时已经经过了值拷贝，因此不再需要 copy
-            return new SubLammpstrj(aTimeStep, BOX_BOUND, new Box(aAtomData.box()), aAtomData.hasVelocities()?aAtomData.dataAll():aAtomData.dataSTD());
+            // 一般的情况，现在需要手动拷贝一下
+            final int tAtomNum = aAtomData.atomNumber();
+            ITable rAtomData;
+            if (aAtomData.hasVelocities()) {
+                rAtomData = Tables.zeros(tAtomNum, ALL_ATOM_DATA_KEYS);
+                IMatrix rMat = rAtomData.asMatrix();
+                for (int i = 0; i < tAtomNum; ++i) {
+                    IAtom tAtom = aAtomData.atom(i);
+                    rMat.set(i, ALL_ID_COL, tAtom.id());
+                    rMat.set(i, ALL_TYPE_COL, tAtom.type());
+                    rMat.set(i, ALL_X_COL, tAtom.x());
+                    rMat.set(i, ALL_Y_COL, tAtom.y());
+                    rMat.set(i, ALL_Z_COL, tAtom.z());
+                    rMat.set(i, ALL_VX_COL, tAtom.vx());
+                    rMat.set(i, ALL_VY_COL, tAtom.vy());
+                    rMat.set(i, ALL_VZ_COL, tAtom.vz());
+                }
+            } else {
+                rAtomData = Tables.zeros(tAtomNum, STD_ATOM_DATA_KEYS);
+                IMatrix rMat = rAtomData.asMatrix();
+                for (int i = 0; i < tAtomNum; ++i) {
+                    IAtom tAtom = aAtomData.atom(i);
+                    rMat.set(i, STD_ID_COL, tAtom.id());
+                    rMat.set(i, STD_TYPE_COL, tAtom.type());
+                    rMat.set(i, STD_X_COL, tAtom.x());
+                    rMat.set(i, STD_Y_COL, tAtom.y());
+                    rMat.set(i, STD_Z_COL, tAtom.z());
+                }
+            }
+            return new SubLammpstrj(aTimeStep, BOX_BOUND, new Box(aAtomData.box()), rAtomData);
         }
     }
     static long getTimeStep(IAtomData aAtomData, long aDefault) {
