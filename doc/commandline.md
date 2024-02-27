@@ -4,7 +4,9 @@
     - [-f/-file](#f-file)
     - [-i/-invoke](#i-invoke)
     - [-v/-version](#v-version)
-    - [-?/-help]()
+    - [-?/-help](#help)
+    - [-groovy](#groovy)
+    - [-python](#python)
 - [**⟶ 目录**](contents.md)
 
 # 命令行参数
@@ -83,8 +85,8 @@ jse -t "println('hello world')"
 
 ## -f/-file
 
-增加 `-f` 或 `-file` 后，jse 会将输入的参数作为 groovy 脚本文件的路径，
-会尝试找到此脚本文件并执行。
+增加 `-f` 或 `-file` 后，jse 会将输入的参数作为 groovy 或 python 脚本文件的路径，
+会根据后缀自动检测脚本类型并并执行。
 
 此参数可以省略。
 
@@ -112,12 +114,20 @@ jse -t "println('hello world')"
 > ```shell
 > jse example/helloWorld
 > ```
+> 
+> 可以通过内部的 [jep](https://github.com/ninia/jep)
+> 来执行 python 脚本，例如：
 >
+> ```shell
+> jse script/python/helloWorld.py
+> ```
+>
+
 
 
 ## -i/-invoke
 
-增加 `-f` 或 `-file` 后，jse 会将输入的参数作为一个 java 的静态函数
+增加 `-i` 或 `-invoke` 后，jse 会将输入的参数作为一个 java 的静态函数
 （或者静态成员的函数）直接调用，而后续参数则作为函数的参数传入。
 
 此行为不通过 groovy 而是直接使用 java 的反射机制来实现，
@@ -179,4 +189,22 @@ groovy 版本以及 java 版本并退出。
     
     You can also using another scripting language such as MATLAB or Python with Py4J and import jse-*.jar
     ```
+
+
+## -groovy
+
+增加 `-groovy` 后，jse 会将输入的参数作为 groovy 脚本文件的路径，
+会尝试找到此脚本文件并执行。
+
+和 `-f`/`-file`，不同，此时不会自动判断脚本类型，
+永远将输入的文件当作 groovy 脚本执行。
+
+
+## -python
+
+增加 `-python` 后，jse 会将输入的参数作为 python 脚本文件的路径，
+会尝试找到此脚本文件并执行。
+
+和 `-f`/`-file`，不同，此时不会自动判断脚本类型，
+永远将输入的文件当作 python 脚本执行。
 

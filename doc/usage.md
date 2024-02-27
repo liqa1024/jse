@@ -106,9 +106,15 @@ import jse.lmp.Dump
 ## 通过 python 使用
 
 在 python 中，可以使用第三方库来使用调用 java 代码
-（例如 [py4j](https://www.py4j.org/) ）。
-目前 jse 可以通过在 python 中使用 py4j 之类的库直接导入
-`jse-all.jar` 文件的方式来使用。
+（例如 [py4j](https://www.py4j.org/) ）；
+在 jse 中也可以通过内部的 [jep](https://github.com/ninia/jep)
+库来运行 python 脚本。
+
+
+### a. 通过 py4j 使用 jse：
+
+通过在 python 中使用 py4j 库直接导入 `jse-all.jar`
+文件的方式来使用 jse 提供的方法。
 
 - 确保已经安装了 [py4j](https://www.py4j.org/)
 
@@ -159,6 +165,35 @@ import jse.lmp.Dump
 > GATEWAY = JavaGateway.launch_gateway(classpath='lib/jse-all.jar', redirect_stdout=sys.stdout)
 > ```
 > 
+
+
+### b. 通过 jep 使用 jse：
+
+也可以通过 jse 内部的 jep 库来运行 python 脚本，
+其中 jep 提供了 python 中调用 java 类的支持。
+
+这种方法不再需要依赖第三方库，并且由于 jse 已经包含了 jep，
+因此也**不需要手动安装 jep**。
+
+- 参考 [通过 groovy 使用](#通过-groovy-使用) 中的任意做法，
+  只是将其中需要运行的 groovy 脚本改为 python 脚本；
+  并将脚本置于 `script/python` 目录下（非必须）。
+  
+- 对于需要使用 jse 的 python 脚本（例如 `script/python/main.py`），
+  可以直接通过 `import` 的方式导入 java 以及 jse 中的类：
+    
+    ```python
+    from jse.lmp import Data, Dump
+    ```
+    
+- 通过 `jse`/`./jse` 来运行此脚本而不是 `python`，从而让导入有效：
+    
+    ```shell
+    jse script/python/main.py
+    ```
+    
+    当然也可以通过 vscode 或者 idea 中已经配置好的
+    `jse-RunCurrentScript` 来运行。
 
 
 ## 通过 matlab 使用

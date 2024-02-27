@@ -388,7 +388,7 @@ public class SP {
         /** 运行脚本文件 */
         public synchronized static void run(String aScriptPath, String... aArgs) throws JepException, IOException {runScript(aScriptPath, aArgs);}
         public synchronized static void runScript(String aScriptPath, String... aArgs) throws JepException, IOException {
-            if (aArgs==null || aArgs.length==0) setValue("sys.argv", Collections.singleton(aScriptPath));
+            if (aArgs==null || aArgs.length==0) setValue("sys.argv", Collections.singletonList(aScriptPath));
             else setValue("sys.argv", AbstractCollections.merge(aScriptPath, aArgs));
             JEP_INTERP.runScript(validScriptPath(aScriptPath));
         }
@@ -405,6 +405,7 @@ public class SP {
             return JEP_INTERP.invoke(aMethodName, aArgs);
         }
         public synchronized static void importAny(String aName) throws JepException {runText("import " + aName);}
+        public synchronized static void importFrom(String aPackage, String aName) throws JepException {runText("from " + aPackage + " import " + aName);}
         public synchronized static Object importModule(String aModuleName) throws JepException {return invoke("import_module", aModuleName);}
         /** 创建 Python 实例，这里可以直接将类名当作函数调用即可 */
         public synchronized static Object newInstance(String aClassName, Object... aArgs) throws JepException {return invoke(aClassName, aArgs);}
