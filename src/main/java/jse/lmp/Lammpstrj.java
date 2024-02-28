@@ -1,6 +1,7 @@
 package jse.lmp;
 
 import jse.atom.IAtomData;
+import jse.atom.MFPC;
 import jse.atom.MultiFrameParameterCalculator;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
@@ -12,6 +13,7 @@ import jse.math.vector.ILongVectorGetter;
 import jse.math.vector.RefLongVector;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Range;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -329,12 +331,12 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
      * @param aThreadNum 执行 MFPC 的线程数目
      * @return 获取到的 MFPC
      */
-    public MultiFrameParameterCalculator getTypeMultiFrameParameterCalculator(double aTimestep, int aType, int aThreadNum) {return new MultiFrameParameterCalculator(AbstractCollections.map(mList, atomData -> atomData.operation().filterType(aType)), size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep, aThreadNum);}
-    public MultiFrameParameterCalculator getMultiFrameParameterCalculator    (double aTimestep                           ) {return new MultiFrameParameterCalculator(mList                                                                             , size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep            );}
-    public MultiFrameParameterCalculator getMultiFrameParameterCalculator    (double aTimestep,            int aThreadNum) {return new MultiFrameParameterCalculator(mList                                                                             , size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep, aThreadNum);}
-    public MultiFrameParameterCalculator getTypeMultiFrameParameterCalculator(double aTimestep, int aType                ) {return new MultiFrameParameterCalculator(AbstractCollections.map(mList, atomData -> atomData.operation().filterType(aType)), size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep            );}
-    @VisibleForTesting public MultiFrameParameterCalculator getMFPC          (double aTimestep                           ) {return new MultiFrameParameterCalculator(mList                                                                             , size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep            );}
-    @VisibleForTesting public MultiFrameParameterCalculator getMFPC          (double aTimestep,            int aThreadNum) {return new MultiFrameParameterCalculator(mList                                                                             , size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep, aThreadNum);}
-    @VisibleForTesting public MultiFrameParameterCalculator getTypeMFPC      (double aTimestep, int aType                ) {return new MultiFrameParameterCalculator(AbstractCollections.map(mList, atomData -> atomData.operation().filterType(aType)), size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep            );}
-    @VisibleForTesting public MultiFrameParameterCalculator getTypeMFPC      (double aTimestep, int aType, int aThreadNum) {return new MultiFrameParameterCalculator(AbstractCollections.map(mList, atomData -> atomData.operation().filterType(aType)), size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep, aThreadNum);}
+    @ApiStatus.Experimental public MultiFrameParameterCalculator getTypeMultiFrameParameterCalculator(double aTimestep, int aType, int aThreadNum) {return new MultiFrameParameterCalculator(AbstractCollections.map(mList, atomData -> atomData.operation().filterType(aType)), size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep, aThreadNum);}
+    @ApiStatus.Experimental public MultiFrameParameterCalculator getMultiFrameParameterCalculator    (double aTimestep                           ) {return new MultiFrameParameterCalculator(mList                                                                             , size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep            );}
+    @ApiStatus.Experimental public MultiFrameParameterCalculator getMultiFrameParameterCalculator    (double aTimestep,            int aThreadNum) {return new MultiFrameParameterCalculator(mList                                                                             , size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep, aThreadNum);}
+    @ApiStatus.Experimental public MultiFrameParameterCalculator getTypeMultiFrameParameterCalculator(double aTimestep, int aType                ) {return new MultiFrameParameterCalculator(AbstractCollections.map(mList, atomData -> atomData.operation().filterType(aType)), size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep            );}
+    @ApiStatus.Experimental @VisibleForTesting public MFPC getMFPC    (double aTimestep                           ) {return new MFPC(mList                                                                             , size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep            );}
+    @ApiStatus.Experimental @VisibleForTesting public MFPC getMFPC    (double aTimestep,            int aThreadNum) {return new MFPC(mList                                                                             , size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep, aThreadNum);}
+    @ApiStatus.Experimental @VisibleForTesting public MFPC getTypeMFPC(double aTimestep, int aType                ) {return new MFPC(AbstractCollections.map(mList, atomData -> atomData.operation().filterType(aType)), size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep            );}
+    @ApiStatus.Experimental @VisibleForTesting public MFPC getTypeMFPC(double aTimestep, int aType, int aThreadNum) {return new MFPC(AbstractCollections.map(mList, atomData -> atomData.operation().filterType(aType)), size()>1 ? aTimestep*(get(1).timeStep()-get(0).timeStep()) : aTimestep, aThreadNum);}
 }

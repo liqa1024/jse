@@ -1,5 +1,6 @@
 package jse.atom;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Range;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -50,6 +51,7 @@ public interface IAtomData {
     IAtomDataOperation operation();
     @VisibleForTesting default IAtomDataOperation opt() {return operation();}
     
+    
     /// 实用功能，这里依旧保留这种写法
     /**
      * 获取单原子参数的计算器，支持使用 MPC 的简写来调用
@@ -57,12 +59,12 @@ public interface IAtomData {
      * @param aThreadNum 执行 MPC 的线程数目
      * @return 获取到的 MPC
      */
-    default MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return new MonatomicParameterCalculator(operation().filterType(aType), aThreadNum);}
-    default MonatomicParameterCalculator getMonatomicParameterCalculator    (                                                              ) {return new MonatomicParameterCalculator(this                                     );}
-    default MonatomicParameterCalculator getMonatomicParameterCalculator    (           @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return new MonatomicParameterCalculator(this                         , aThreadNum);}
-    default MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType                                                     ) {return new MonatomicParameterCalculator(operation().filterType(aType)            );}
-    @VisibleForTesting default MonatomicParameterCalculator getMPC          (                                                              ) {return new MonatomicParameterCalculator(this                                     );}
-    @VisibleForTesting default MonatomicParameterCalculator getMPC          (           @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return new MonatomicParameterCalculator(this                         , aThreadNum);}
-    @VisibleForTesting default MonatomicParameterCalculator getTypeMPC      (int aType                                                     ) {return new MonatomicParameterCalculator(operation().filterType(aType)            );}
-    @VisibleForTesting default MonatomicParameterCalculator getTypeMPC      (int aType, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return new MonatomicParameterCalculator(operation().filterType(aType), aThreadNum);}
+    @ApiStatus.Obsolete default MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return new MonatomicParameterCalculator(operation().filterType(aType), aThreadNum);}
+    @ApiStatus.Obsolete default MonatomicParameterCalculator getMonatomicParameterCalculator    (                                                              ) {return new MonatomicParameterCalculator(this                                     );}
+    @ApiStatus.Obsolete default MonatomicParameterCalculator getMonatomicParameterCalculator    (           @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return new MonatomicParameterCalculator(this                         , aThreadNum);}
+    @ApiStatus.Obsolete default MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType                                                     ) {return new MonatomicParameterCalculator(operation().filterType(aType)            );}
+    @ApiStatus.Obsolete @VisibleForTesting default MPC getMPC    (                                                              ) {return new MPC(this                                     );}
+    @ApiStatus.Obsolete @VisibleForTesting default MPC getMPC    (           @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return new MPC(this                         , aThreadNum);}
+    @ApiStatus.Obsolete @VisibleForTesting default MPC getTypeMPC(int aType                                                     ) {return new MPC(operation().filterType(aType)            );}
+    @ApiStatus.Obsolete @VisibleForTesting default MPC getTypeMPC(int aType, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return new MPC(operation().filterType(aType), aThreadNum);}
 }

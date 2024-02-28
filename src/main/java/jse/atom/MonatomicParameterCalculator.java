@@ -1,5 +1,8 @@
 package jse.atom;
 
+import groovy.lang.Closure;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.SimpleType;
 import jse.cache.*;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.code.collection.IntList;
@@ -128,6 +131,14 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox, DEFAULT_CELL_STEP);
         mInitThreadID = Thread.currentThread().getId();
     }
+    
+    /** 自动关闭，主要用于 groovy 中使用 */
+    public static <T> T withOf(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, @ClosureParams(value=SimpleType.class, options="jse.atom.MPC") Closure<T> aDoLater) {try (MonatomicParameterCalculator tMPC = new MonatomicParameterCalculator(aAtomDataXYZ, aBox)) {return aDoLater.call(tMPC);}}
+    public static <T> T withOf(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value=SimpleType.class, options="jse.atom.MPC") Closure<T> aDoLater) {try (MonatomicParameterCalculator tMPC = new MonatomicParameterCalculator(aAtomDataXYZ, aBox, aThreadNum)) {return aDoLater.call(tMPC);}}
+    public static <T> T withOf(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, double aCellStep, @ClosureParams(value=SimpleType.class, options="jse.atom.MPC") Closure<T> aDoLater) {try (MonatomicParameterCalculator tMPC = new MonatomicParameterCalculator(aAtomDataXYZ, aBox, aThreadNum, aCellStep)) {return aDoLater.call(tMPC);}}
+    public static <T> T withOf(IAtomData aAtomData, @ClosureParams(value=SimpleType.class, options="jse.atom.MPC") Closure<T> aDoLater) {try (MonatomicParameterCalculator tMPC = new MonatomicParameterCalculator(aAtomData)) {return aDoLater.call(tMPC);}}
+    public static <T> T withOf(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value=SimpleType.class, options="jse.atom.MPC") Closure<T> aDoLater) {try (MonatomicParameterCalculator tMPC = new MonatomicParameterCalculator(aAtomData, aThreadNum)) {return aDoLater.call(tMPC);}}
+    public static <T> T withOf(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, double aCellStep, @ClosureParams(value=SimpleType.class, options="jse.atom.MPC") Closure<T> aDoLater) {try (MonatomicParameterCalculator tMPC = new MonatomicParameterCalculator(aAtomData, aThreadNum, aCellStep)) {return aDoLater.call(tMPC);}}
     
     
     /** 内部使用方法，用来将 aAtomDataXYZ 转换成内部存储的格式，并且处理精度问题造成的超出边界问题 */
