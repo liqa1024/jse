@@ -80,7 +80,7 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> implements IShutdown
                 tStep = mForceStep;
             } else
             if (UT.IO.isFile(mStepFile)) {
-                tStep = Integer.parseInt(UT.IO.readAllLines(mStepFile).get(0));
+                tStep = Integer.parseInt(UT.IO.readAllText(mStepFile).trim());
             } else {
                 tStep = 0;
             }
@@ -111,7 +111,7 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> implements IShutdown
                     mJobsDoneList.get(tStep).run(tJobPool);
                     // 增加步骤，更新步骤文件
                     ++tStep;
-                    UT.IO.write(mStepFile, String.valueOf(tStep));
+                    UT.IO.writeText(mStepFile, String.valueOf(tStep));
                     // 正常退出则会执行 shutdown
                     tJobPool.shutdown();
                     // 直接退出
@@ -130,9 +130,9 @@ public class LongTimeJobManager<T extends ILongTimeJobPool> implements IShutdown
                 // 每秒检测一次 shutdown 文件看是否手动关闭
                 if (idx % 10 == 9) {
                     if (!UT.IO.isFile(mShutdownFile)) {
-                        UT.IO.write(mShutdownFile, "0");
+                        UT.IO.writeText(mShutdownFile, "0");
                     } else {
-                        int tValue = Integer.parseInt(UT.IO.readAllLines(mShutdownFile).get(0));
+                        int tValue = Integer.parseInt(UT.IO.readAllText(mShutdownFile).trim());
                         if (tValue != 0) {
                             UT.IO.delete(mShutdownFile); // 关闭前记得先删掉这个文件
                             shutdown();

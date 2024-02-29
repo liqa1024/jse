@@ -917,14 +917,15 @@ public class UT {
          * Wrapper of {@link Files#write}
          * @author liqa
          * @param aFilePath File to write
-         * @param aLines Iterable String or String[]
+         * @param aLines Iterable String or String[] to be written
          * @throws IOException when fail
          */
         public static void write(String aFilePath, String[] aLines, OpenOption... aOptions)                         throws IOException  {write(aFilePath, AbstractCollections.from(aLines), aOptions);}
-        public static void write(String aFilePath, String aText, OpenOption... aOptions)                            throws IOException  {write(aFilePath, Collections.singletonList(aText), aOptions);}
-        public static void write(String aFilePath, byte[] aData, OpenOption... aOptions)                            throws IOException  {write(toAbsolutePath_(aFilePath), aData, aOptions);}
         public static void write(String aFilePath, Iterable<? extends CharSequence> aLines, OpenOption... aOptions) throws IOException  {write(toAbsolutePath_(aFilePath), aLines, aOptions);}
+        public static void write(String aFilePath, String aLine, OpenOption... aOptions)                            throws IOException  {write(aFilePath, Collections.singletonList(aLine), aOptions);}
+        public static void write(String aFilePath, byte[] aData, OpenOption... aOptions)                            throws IOException  {write(toAbsolutePath_(aFilePath), aData, aOptions);}
         public static void write(Path aPath, byte[] aData, OpenOption... aOptions)                                  throws IOException  {validPath(aPath); Files.write(aPath, aData, aOptions);}
+        public static void write(Path aPath, String aLine, OpenOption... aOptions)                                  throws IOException  {write(aPath, Collections.singletonList(aLine), aOptions);}
         public static void write(Path aPath, Iterable<? extends CharSequence> aLines, OpenOption... aOptions)       throws IOException  {
             validPath(aPath);
             // 使用 UT.IO 中的 stream 统一使用 LF 换行符
@@ -932,6 +933,22 @@ public class UT {
                 for (CharSequence tLine: aLines) {tWriteln.writeln(tLine);}
             }
         }
+        /**
+         * Wrapper of {@link Files#writeString}
+         * @author liqa
+         * @param aFilePath File to write
+         * @param aText String to be written
+         * @throws IOException when fail
+         */
+        public static void writeText(String aFilePath, String aText, OpenOption... aOptions) throws IOException {writeText(toAbsolutePath_(aFilePath), aText, aOptions);}
+        public static void writeText(Path aPath, String aText, OpenOption... aOptions) throws IOException {
+            validPath(aPath);
+            // 现在改为直接使用 BufferedWriter 写入整个 String，保证编码格式为 UTF-8，并且内部也会自动分 buffer 处理字符串
+            try (BufferedWriter tWriter = toWriter(aPath, aOptions)) {
+                tWriter.write(aText);
+            }
+        }
+        
         /**
          * Wrapper of {@link Files#readAllBytes}
          * @author liqa

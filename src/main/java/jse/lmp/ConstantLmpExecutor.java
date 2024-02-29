@@ -238,8 +238,8 @@ public final class ConstantLmpExecutor extends AbstractHasAutoShutdown implement
         for (Pair<String, Future<Integer>> tLMP : mConstantLmpProcess.keySet()) {
             String tShutdownPath = tLMP.mFirst+"shutdown";
             try {
-                UT.IO.write(tShutdownPath, "");
-                if (mEXE.needSyncIOFiles()) mEXE.putFiles(Collections.singleton(tShutdownPath));
+                UT.IO.writeText(tShutdownPath, "");
+                if (mEXE.needSyncIOFiles()) mEXE.putFiles(Collections.singletonList(tShutdownPath));
             } catch (Exception ignored) {}
         }
         // 注意需要等待程序结束后再删除文件夹，如果没有结束则手动强制结束

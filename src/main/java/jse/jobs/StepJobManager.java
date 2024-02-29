@@ -53,7 +53,7 @@ public class StepJobManager {
                 tStep = mForceStep;
             } else
             if (UT.IO.isFile(mStepFile)) {
-                tStep = Integer.parseInt(UT.IO.readAllLines(mStepFile).get(0));
+                tStep = Integer.parseInt(UT.IO.readAllText(mStepFile).trim());
             } else {
                 tStep = 0;
             }
@@ -67,7 +67,7 @@ public class StepJobManager {
                 mJobList.get(tStep).run();
                 // 增加步骤，存储到文件
                 ++tStep;
-                UT.IO.write(mStepFile, String.valueOf(tStep));
+                UT.IO.writeText(mStepFile, String.valueOf(tStep));
             }
         }
     }
