@@ -13,8 +13,8 @@ FILE IN `.SECRET/SSH_INFO.json` WILL LIKE:
 */
 
 try (def ssh = new SSH(UT.IO.json2map('.SECRET/SSH_INFO.json'))) {
-    ssh.system('echo 123456');
-    ssh.system('hostname');
+    ssh.system('echo 123456')
+    ssh.system('hostname')
 }
 
 //OUTPUT:

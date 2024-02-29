@@ -19,11 +19,11 @@ try (def ssh = new SSH(
     password: '123456'
 )) {
     // 提交任务，将输入文件移动到输出文件，并追加一行 222222
-    ssh.system("mv ${iofiles.i('in')} ${iofiles.o('out')}; echo '222222' >> ${iofiles.o('out')}", iofiles);
+    ssh.system("mv ${iofiles.i('in')} ${iofiles.o('out')}; echo '222222' >> ${iofiles.o('out')}", iofiles)
 }
 
 // 读取输出文件，此时已经从 ssh 下载完毕
-println(UT.IO.readAllLines(iofiles.o('out')));
+println(UT.IO.readAllLines(iofiles.o('out')))
 
 
 //OUTPUT:

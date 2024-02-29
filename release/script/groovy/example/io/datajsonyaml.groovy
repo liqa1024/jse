@@ -3,17 +3,17 @@ package example.io
 import static jse.code.UT.IO.*
 
 def data0 = [
-    "pi": 3.141,
-    "happy": true,
-    "name": "Niels",
-    "nothing": null,
-    "answer": [
-        "everything": 42
+    'pi': 3.141,
+    'happy': true,
+    'name': 'Niels',
+    'nothing': null,
+    'answer': [
+        'everything': 42
     ],
-    "list": [1, 0, 2],
-    "object": [
-        "currency": "USD",
-        "value": 42.99
+    'list': [1, 0, 2],
+    'object': [
+        'currency': 'USD',
+        'value': 42.99
     ]
 ]
 println('origin data:')

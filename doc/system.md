@@ -192,8 +192,8 @@ jse 支持使用 ssh 向远程服务器来提交任务，这里基于
         username: 'admin',
         password: '123456'
     )) {
-        ssh.system('echo 123456');
-        ssh.system('hostname');
+        ssh.system('echo 123456')
+        ssh.system('hostname')
     }
     ```
     

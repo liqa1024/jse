@@ -8,8 +8,8 @@ try (def ssh = new SSH(
     username: 'admin',
     password: '123456'
 )) {
-    ssh.system('echo 123456');
-    ssh.system('hostname');
+    ssh.system('echo 123456')
+    ssh.system('hostname')
 }
 
 //OUTPUT:
