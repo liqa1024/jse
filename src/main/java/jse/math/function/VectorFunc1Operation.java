@@ -1,150 +1,150 @@
 package jse.math.function;
 
 
-import jse.math.IDataShell;
 import jse.math.MathEX;
-import jse.math.operation.ARRAY;
+import jse.math.vector.Vector;
 import org.jetbrains.annotations.ApiStatus;
 
-import java.util.function.*;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleUnaryOperator;
 
 /**
- * 针对包含 double[] 的函数的运算，这里更进一步是针对 {@link DoubleArrayFunc1} 的运算。
+ * 针对包含 {@link Vector} 的函数的运算。
  * @author liqa
  */
 @ApiStatus.Experimental
-public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
+public abstract class VectorFunc1Operation extends AbstractFunc1Operation {
     /** 通用的一些运算 */
     @Override public IFunc1 plus(IFunc1 aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
-        double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        Vector tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebePlus2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().plus2dest(tDataR, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) + aRHS.subs(rFunc1.getX(i)));
         }
         return rFunc1;
     }
     @Override public IFunc1 minus(IFunc1 aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
-        double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        Vector tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMinus2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().minus2dest(tDataR, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) - aRHS.subs(rFunc1.getX(i)));
         }
         return rFunc1;
     }
     @Override public IFunc1 lminus(IFunc1 aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
-        double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        Vector tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMinus2Dest(tDataR, IDataShell.internalDataShift(aRHS), tDataL, tThis.internalDataShift(), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().lminus2dest(tDataR, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, aRHS.subs(rFunc1.getX(i)) - tThis.get(i));
         }
         return rFunc1;
     }
     @Override public IFunc1 multiply(IFunc1 aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
-        double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        Vector tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMultiply2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().multiply2dest(tDataR, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) * aRHS.subs(rFunc1.getX(i)));
         }
         return rFunc1;
     }
     @Override public IFunc1 div(IFunc1 aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
-        double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        Vector tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeDiv2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().div2dest(tDataR, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) / aRHS.subs(rFunc1.getX(i)));
         }
         return rFunc1;
     }
     @Override public IFunc1 ldiv(IFunc1 aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
-        double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        Vector tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeDiv2Dest(tDataR, IDataShell.internalDataShift(aRHS), tDataL, tThis.internalDataShift(), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().ldiv2dest(tDataR, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, aRHS.subs(rFunc1.getX(i)) / tThis.get(i));
         }
         return rFunc1;
     }
     @Override public IFunc1 mod(IFunc1 aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
-        double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        Vector tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMod2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().mod2dest(tDataR, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) % aRHS.subs(rFunc1.getX(i)));
         }
         return rFunc1;
     }
     @Override public IFunc1 lmod(IFunc1 aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
-        double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        Vector tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMod2Dest(tDataR, IDataShell.internalDataShift(aRHS), tDataL, tThis.internalDataShift(), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().lmod2dest(tDataR, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, aRHS.subs(rFunc1.getX(i)) % tThis.get(i));
         }
         return rFunc1;
     }
     @Override public IFunc1 operate(IFunc1 aRHS, DoubleBinaryOperator aOpt) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
-        double[] tDataR = rFunc1.getIfHasSameOrderData(aRHS);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        Vector tDataR = rFunc1.getIfHasSameOrderData(aRHS);
         if (tDataL != null && tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeDo2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize(), aOpt);
+            tDataL.operation().operate2dest(tDataR, rFunc1.internalData(), aOpt);
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, aOpt.applyAsDouble(tThis.get(i), aRHS.subs(rFunc1.getX(i))));
         }
@@ -152,126 +152,126 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
     }
     
     @Override public IFunc1 plus(double aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapPlus2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().plus2dest(aRHS, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) + aRHS);
         }
         return rFunc1;
     }
     @Override public IFunc1 minus(double aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapMinus2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().minus2dest(aRHS, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，并且考虑到代码量这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，并且考虑到代码量这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) - aRHS);
         }
         return rFunc1;
     }
     @Override public IFunc1 lminus(double aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapLMinus2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().lminus2dest(aRHS, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, aRHS - tThis.get(i));
         }
         return rFunc1;
     }
     @Override public IFunc1 multiply(double aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapMultiply2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().multiply2dest(aRHS, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) * aRHS);
         }
         return rFunc1;
     }
     @Override public IFunc1 div(double aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapDiv2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().div2dest(aRHS, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) / aRHS);
         }
         return rFunc1;
     }
     @Override public IFunc1 ldiv(double aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapLDiv2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().ldiv2dest(aRHS, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, aRHS / tThis.get(i));
         }
         return rFunc1;
     }
     @Override public IFunc1 mod(double aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapMod2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().mod2dest(aRHS, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, tThis.get(i) % aRHS);
         }
         return rFunc1;
     }
     @Override public IFunc1 lmod(double aRHS) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapLMod2Dest(tDataL, tThis.internalDataShift(), aRHS, rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize());
+            tDataL.operation().lmod2dest(aRHS, rFunc1.internalData());
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, aRHS % tThis.get(i));
         }
         return rFunc1;
     }
     @Override public IFunc1 map(DoubleUnaryOperator aOpt) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
-        DoubleArrayFunc1 rFunc1 = newFunc1_();
-        double[] tDataL = rFunc1.getIfHasSameOrderData(tThis);
+        VectorFunc1 tThis = thisFunc1_();
+        VectorFunc1 rFunc1 = newFunc1_();
+        Vector tDataL = rFunc1.getIfHasSameOrderData(tThis);
         if (tDataL != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.mapDo2Dest(tDataL, tThis.internalDataShift(), rFunc1.internalData(), rFunc1.internalDataShift(), rFunc1.internalDataSize(), aOpt);
+            tDataL.operation().map2dest(rFunc1.internalData(), aOpt);
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rFunc1.Nx();
             for (int i = 0; i < tNx; ++i) rFunc1.set(i, aOpt.applyAsDouble(tThis.get(i)));
         }
@@ -279,13 +279,13 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
     }
     
     @Override public void plus2this(IFunc1 aRHS) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
+        VectorFunc1 rThis = thisFunc1_();
+        Vector tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebePlus2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
+            rThis.internalData().operation().plus2this(tDataR);
         } else {
-            // 其余情况不考虑 double[] 的结构
+            // 其余情况不考虑 Vector 的结构
             final int tNx = rThis.Nx();
             final int tStart, tEnd;
             if (aRHS instanceof IZeroBoundFunc1) {
@@ -300,13 +300,13 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         }
     }
     @Override public void minus2this(IFunc1 aRHS) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
+        VectorFunc1 rThis = thisFunc1_();
+        Vector tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMinus2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
+            rThis.internalData().operation().minus2this(tDataR);
         } else {
-            // 其余情况不考虑 double[] 的结构
+            // 其余情况不考虑 Vector 的结构
             final int tNx = rThis.Nx();
             final int tStart, tEnd;
             if (aRHS instanceof IZeroBoundFunc1) {
@@ -321,102 +321,98 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         }
     }
     @Override public void lminus2this(IFunc1 aRHS) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
+        VectorFunc1 rThis = thisFunc1_();
+        Vector tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeLMinus2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
+            rThis.internalData().operation().lminus2this(tDataR);
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
             for (int i = 0; i < tNx; ++i) rThis.set(i, aRHS.subs(rThis.getX(i)) - rThis.get(i));
         }
     }
     @Override public void multiply2this(IFunc1 aRHS) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
+        VectorFunc1 rThis = thisFunc1_();
+        Vector tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMultiply2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
+            rThis.internalData().operation().multiply2this(tDataR);
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
             for (int i = 0; i < tNx; ++i) rThis.set(i, rThis.get(i) * aRHS.subs(rThis.getX(i)));
         }
     }
     @Override public void div2this(IFunc1 aRHS) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
+        VectorFunc1 rThis = thisFunc1_();
+        Vector tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeDiv2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
+            rThis.internalData().operation().div2this(tDataR);
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
             for (int i = 0; i < tNx; ++i) rThis.set(i, rThis.get(i) / aRHS.subs(rThis.getX(i)));
         }
     }
     @Override public void ldiv2this(IFunc1 aRHS) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
+        VectorFunc1 rThis = thisFunc1_();
+        Vector tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeLDiv2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
+            rThis.internalData().operation().ldiv2this(tDataR);
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
             for (int i = 0; i < tNx; ++i) rThis.set(i, aRHS.subs(rThis.getX(i)) / rThis.get(i));
         }
     }
     @Override public void mod2this(IFunc1 aRHS) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
+        VectorFunc1 rThis = thisFunc1_();
+        Vector tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeMod2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
+            rThis.internalData().operation().mod2this(tDataR);
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
             for (int i = 0; i < tNx; ++i) rThis.set(i, rThis.get(i) % aRHS.subs(rThis.getX(i)));
         }
     }
     @Override public void lmod2this(IFunc1 aRHS) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
+        VectorFunc1 rThis = thisFunc1_();
+        Vector tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeLMod2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
+            rThis.internalData().operation().lmod2this(tDataR);
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
             for (int i = 0; i < tNx; ++i) rThis.set(i, aRHS.subs(rThis.getX(i)) % rThis.get(i));
         }
     }
     @Override public void operate2this(IFunc1 aRHS, DoubleBinaryOperator aOpt) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
+        VectorFunc1 rThis = thisFunc1_();
+        Vector tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeDo2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize(), aOpt);
+            rThis.internalData().operation().operate2this(tDataR, aOpt);
         } else {
-            // 其余情况不考虑 double[] 的结构，这里不对零边界的情况做优化
+            // 其余情况不考虑 Vector 的结构，这里不对零边界的情况做优化
             final int tNx = rThis.Nx();
             for (int i = 0; i < tNx; ++i) rThis.set(i, aOpt.applyAsDouble(rThis.get(i), aRHS.subs(rThis.getX(i))));
         }
     }
     
     @Override public void fill(IFunc1 aRHS) {
-        DoubleArrayFunc1 rThis = thisFunc1_();
-        final double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
+        VectorFunc1 rThis = thisFunc1_();
+        final Vector tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) {
             // 对于完全相同排列的特殊优化，简单起见这里不考虑零边界的情况，只考虑完全一致的情况
-            ARRAY.ebeFill2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
+            rThis.internalData().operation().fill(tDataR);
         } else {
-            final double[] rData = rThis.internalData();
-            final int rShift = rThis.internalDataShift();
-            final int rSize = rThis.internalDataSize();
-            if (rShift == 0) for (int i = 0; i < rSize; ++i) rData[i] += aRHS.subs(rThis.getX(i));
-            else for (int i = 0, j = rShift; i < rSize; ++i, ++j) rData[j] += aRHS.subs(rThis.getX(i));
+            rThis.internalData().fill(i -> aRHS.subs(rThis.getX(i)));
         }
     }
     
@@ -431,7 +427,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
     }
     /** 严格来说获取到的 data 顺序没有相关性，因此不能根据这个来做 laplacian */
     protected void laplacian2Dest_(IFunc1 rDest) {
-        DoubleArrayFunc1 tFunc1 = thisFunc1_();
+        VectorFunc1 tFunc1 = thisFunc1_();
         int tNx = tFunc1.Nx();
         double tDx2 = tFunc1.dx() * tFunc1.dx();
         for (int i = 0; i < tNx; ++i) {
@@ -445,7 +441,7 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
     }
     
     @Override public double integral() {
-        DoubleArrayFunc1 tThis = thisFunc1_();
+        VectorFunc1 tThis = thisFunc1_();
         double pF = tThis.get(0);
         double tDx2 = tThis.dx()/2.0;
         double tResult = 0.0;
@@ -464,13 +460,13 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
     
     /** 对于卷积以 refConvolve 为主 */
     @Override public IFunc1 convolve(IFunc2Subs aConv) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
+        VectorFunc1 tThis = thisFunc1_();
         IFunc1 rFunc1 = ZeroBoundFunc1.zeros(tThis.x0(), tThis.dx(), tThis.Nx());
         rFunc1.fill(refConvolve(aConv));
         return rFunc1;
     }
     @Override public IFunc1Subs refConvolve(IFunc2Subs aConv) {
-        final DoubleArrayFunc1 tThis = thisFunc1_();
+        final VectorFunc1 tThis = thisFunc1_();
         return k -> {
             double pC = aConv.subs(tThis.x0(), k) * tThis.get(0);
             double tResult = 0.0;
@@ -489,13 +485,13 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
         };
     }
     @Override public IFunc1 convolveFull(IFunc3Subs aConv) {
-        DoubleArrayFunc1 tThis = thisFunc1_();
+        VectorFunc1 tThis = thisFunc1_();
         IFunc1 rFunc1 = ZeroBoundFunc1.zeros(tThis.x0(), tThis.dx(), tThis.Nx());
         rFunc1.fill(refConvolveFull(aConv));
         return rFunc1;
     }
     @Override public IFunc1Subs refConvolveFull(IFunc3Subs aConv) {
-        final DoubleArrayFunc1 tThis = thisFunc1_();
+        final VectorFunc1 tThis = thisFunc1_();
         return k -> {
             double pC = aConv.subs(tThis.get(0), tThis.x0(), k);
             double tResult = 0.0;
@@ -515,6 +511,6 @@ public abstract class DoubleArrayFunc1Operation extends AbstractFunc1Operation {
     }
     
     /** stuff to override */
-    protected abstract DoubleArrayFunc1 thisFunc1_();
-    protected abstract DoubleArrayFunc1 newFunc1_();
+    protected abstract VectorFunc1 thisFunc1_();
+    protected abstract VectorFunc1 newFunc1_();
 }

@@ -56,6 +56,28 @@ public interface IVectorOperation {
     IVector negative();
     void negative2this();
     
+    /** 补充的一些运算 */
+    void plus2dest      (IVector aRHS, IVector rDest);
+    void minus2dest     (IVector aRHS, IVector rDest);
+    void lminus2dest    (IVector aRHS, IVector rDest);
+    void multiply2dest  (IVector aRHS, IVector rDest);
+    void div2dest       (IVector aRHS, IVector rDest);
+    void ldiv2dest      (IVector aRHS, IVector rDest);
+    void mod2dest       (IVector aRHS, IVector rDest);
+    void lmod2dest      (IVector aRHS, IVector rDest);
+    void operate2dest   (IVector aRHS, IVector rDest, DoubleBinaryOperator aOpt);
+    
+    void plus2dest      (double aRHS, IVector rDest);
+    void minus2dest     (double aRHS, IVector rDest);
+    void lminus2dest    (double aRHS, IVector rDest);
+    void multiply2dest  (double aRHS, IVector rDest);
+    void div2dest       (double aRHS, IVector rDest);
+    void ldiv2dest      (double aRHS, IVector rDest);
+    void mod2dest       (double aRHS, IVector rDest);
+    void lmod2dest      (double aRHS, IVector rDest);
+    void map2dest       (IVector rDest, DoubleUnaryOperator aOpt);
+    
+    
     /** 这两个方法名默认是作用到自身的，这里为了保持 operation 的使用简洁不在函数名上特殊说明 */
     void fill           (double aRHS);
     void fill           (IVector aRHS);

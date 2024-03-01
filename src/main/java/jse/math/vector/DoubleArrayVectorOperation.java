@@ -4,6 +4,7 @@ import jse.code.functional.ISwapper;
 import jse.math.IDataShell;
 import jse.math.operation.ARRAY;
 import jse.math.operation.DATA;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleConsumer;
@@ -18,161 +19,6 @@ import java.util.function.DoubleUnaryOperator;
  */
 public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation {
     /** 通用的一些运算 */
-    @Override public IVector plus(IVector aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
-        if (tDataL != null && tDataR != null) ARRAY.ebePlus2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.ebePlus2Dest(tThis, aRHS, rVector);
-        return rVector;
-    }
-    @Override public IVector minus(IVector aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
-        if (tDataL != null && tDataR != null) ARRAY.ebeMinus2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.ebeMinus2Dest(tThis, aRHS, rVector);
-        return rVector;
-    }
-    @Override public IVector lminus(IVector aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
-        if (tDataL != null && tDataR != null) ARRAY.ebeMinus2Dest(tDataR, IDataShell.internalDataShift(aRHS), tDataL, tThis.internalDataShift(), rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.ebeMinus2Dest(aRHS, tThis, rVector);
-        return rVector;
-    }
-    @Override public IVector multiply(IVector aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
-        if (tDataL != null && tDataR != null) ARRAY.ebeMultiply2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.ebeMultiply2Dest(tThis, aRHS, rVector);
-        return rVector;
-    }
-    @Override public IVector div(IVector aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
-        if (tDataL != null && tDataR != null) ARRAY.ebeDiv2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.ebeDiv2Dest(tThis, aRHS, rVector);
-        return rVector;
-    }
-    @Override public IVector ldiv(IVector aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
-        if (tDataL != null && tDataR != null) ARRAY.ebeDiv2Dest(tDataR, IDataShell.internalDataShift(aRHS), tDataL, tThis.internalDataShift(), rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.ebeDiv2Dest(aRHS, tThis, rVector);
-        return rVector;
-    }
-    @Override public IVector mod(IVector aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
-        if (tDataL != null && tDataR != null) ARRAY.ebeMod2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.ebeMod2Dest(tThis, aRHS, rVector);
-        return rVector;
-    }
-    @Override public IVector lmod(IVector aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
-        if (tDataL != null && tDataR != null) ARRAY.ebeMod2Dest(tDataR, IDataShell.internalDataShift(aRHS), tDataL, tThis.internalDataShift(), rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.ebeMod2Dest(aRHS, tThis, rVector);
-        return rVector;
-    }
-    @Override public IVector operate(IVector aRHS, DoubleBinaryOperator aOpt) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        double[] tDataR = rVector.getIfHasSameOrderData(aRHS);
-        if (tDataL != null && tDataR != null) ARRAY.ebeDo2Dest(tDataL, tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize(), aOpt);
-        else DATA.ebeDo2Dest(tThis, aRHS, rVector, aOpt);
-        return rVector;
-    }
-    
-    @Override public IVector plus(double aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        if (tDataL != null) ARRAY.mapPlus2Dest(tDataL, tThis.internalDataShift(), aRHS, rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.mapPlus2Dest(tThis, aRHS, rVector);
-        return rVector;
-    }
-    @Override public IVector minus(double aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        if (tDataL != null) ARRAY.mapMinus2Dest(tDataL, tThis.internalDataShift(), aRHS, rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.mapMinus2Dest(tThis, aRHS, rVector);
-        return rVector;
-    }
-    @Override public IVector lminus(double aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        if (tDataL != null) ARRAY.mapLMinus2Dest(tDataL, tThis.internalDataShift(), aRHS, rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.mapLMinus2Dest(tThis, aRHS, rVector);
-        return rVector;
-    }
-    @Override public IVector multiply(double aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        if (tDataL != null) ARRAY.mapMultiply2Dest(tDataL, tThis.internalDataShift(), aRHS, rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.mapMultiply2Dest(tThis, aRHS, rVector);
-        return rVector;
-    }
-    @Override public IVector div(double aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        if (tDataL != null) ARRAY.mapDiv2Dest(tDataL, tThis.internalDataShift(), aRHS, rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.mapDiv2Dest(tThis, aRHS, rVector);
-        return rVector;
-    }
-    @Override public IVector ldiv(double aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        if (tDataL != null) ARRAY.mapLDiv2Dest(tDataL, tThis.internalDataShift(), aRHS, rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.mapLDiv2Dest(tThis, aRHS, rVector);
-        return rVector;
-    }
-    @Override public IVector mod(double aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        if (tDataL != null) ARRAY.mapMod2Dest(tDataL, tThis.internalDataShift(), aRHS, rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.mapMod2Dest(tThis, aRHS, rVector);
-        return rVector;
-    }
-    @Override public IVector lmod(double aRHS) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        if (tDataL != null) ARRAY.mapLMod2Dest(tDataL, tThis.internalDataShift(), aRHS, rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize());
-        else DATA.mapLMod2Dest(tThis, aRHS, rVector);
-        return rVector;
-    }
-    @Override public IVector map(DoubleUnaryOperator aOpt) {
-        DoubleArrayVector tThis = thisVector_();
-        DoubleArrayVector rVector = newVector_();
-        double[] tDataL = rVector.getIfHasSameOrderData(tThis);
-        if (tDataL != null) ARRAY.mapDo2Dest(tDataL, tThis.internalDataShift(), rVector.internalData(), rVector.internalDataShift(), rVector.internalDataSize(), aOpt);
-        else DATA.mapDo2Dest(tThis, rVector, aOpt);
-        return rVector;
-    }
-    
     @Override public void plus2this(IVector aRHS) {
         DoubleArrayVector rThis = thisVector_();
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
@@ -247,6 +93,127 @@ public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation
         return rVector;
     }
     @Override public void negative2this() {DoubleArrayVector rThis = thisVector_(); ARRAY.mapNegative2This(rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize());}
+    
+    /** 补充的一些运算 */
+    @Override public void plus2dest(IVector aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
+        if (rData != null && tDataR != null) ARRAY.ebePlus2Dest(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.ebePlus2Dest(tThis, aRHS, rDest);
+    }
+    @Override public void minus2dest(IVector aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
+        if (rData != null && tDataR != null) ARRAY.ebeMinus2Dest(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.ebeMinus2Dest(tThis, aRHS, rDest);
+    }
+    @Override public void lminus2dest(IVector aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
+        if (rData != null && tDataR != null) ARRAY.ebeMinus2Dest(tDataR, IDataShell.internalDataShift(aRHS), tThis.internalData(), tThis.internalDataShift(), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.ebeMinus2Dest(aRHS, tThis, rDest);
+    }
+    @Override public void multiply2dest(IVector aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
+        if (rData != null && tDataR != null) ARRAY.ebeMultiply2Dest(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.ebeMultiply2Dest(tThis, aRHS, rDest);
+    }
+    @Override public void div2dest(IVector aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
+        if (rData != null && tDataR != null) ARRAY.ebeDiv2Dest(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.ebeDiv2Dest(tThis, aRHS, rDest);
+    }
+    @Override public void ldiv2dest(IVector aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
+        if (rData != null && tDataR != null) ARRAY.ebeDiv2Dest(tDataR, IDataShell.internalDataShift(aRHS), tThis.internalData(), tThis.internalDataShift(), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.ebeDiv2Dest(aRHS, tThis, rDest);
+    }
+    @Override public void mod2dest(IVector aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
+        if (rData != null && tDataR != null) ARRAY.ebeMod2Dest(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.ebeMod2Dest(tThis, aRHS, rDest);
+    }
+    @Override public void lmod2dest(IVector aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
+        if (rData != null && tDataR != null) ARRAY.ebeMod2Dest(tDataR, IDataShell.internalDataShift(aRHS), tThis.internalData(), tThis.internalDataShift(), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.ebeMod2Dest(aRHS, tThis, rDest);
+    }
+    @Override public void operate2dest(IVector aRHS, IVector rDest, DoubleBinaryOperator aOpt) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
+        if (rData != null && tDataR != null) ARRAY.ebeDo2Dest(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize(), aOpt);
+        else DATA.ebeDo2Dest(tThis, aRHS, rDest, aOpt);
+    }
+    
+    @Override public void plus2dest(double aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        if (rData != null) ARRAY.mapPlus2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.mapPlus2Dest(tThis, aRHS, rDest);
+    }
+    @Override public void minus2dest(double aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        if (rData != null) ARRAY.mapMinus2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.mapMinus2Dest(tThis, aRHS, rDest);
+    }
+    @Override public void lminus2dest(double aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        if (rData != null) ARRAY.mapLMinus2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.mapLMinus2Dest(tThis, aRHS, rDest);
+    }
+    @Override public void multiply2dest(double aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        if (rData != null) ARRAY.mapMultiply2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.mapMultiply2Dest(tThis, aRHS, rDest);
+    }
+    @Override public void div2dest(double aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        if (rData != null) ARRAY.mapDiv2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.mapDiv2Dest(tThis, aRHS, rDest);
+    }
+    @Override public void ldiv2dest(double aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        if (rData != null) ARRAY.mapLDiv2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.mapLDiv2Dest(tThis, aRHS, rDest);
+    }
+    @Override public void mod2dest(double aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        if (rData != null) ARRAY.mapMod2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.mapMod2Dest(tThis, aRHS, rDest);
+    }
+    @Override public void lmod2dest(double aRHS, IVector rDest) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        if (rData != null) ARRAY.mapLMod2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
+        else DATA.mapLMod2Dest(tThis, aRHS, rDest);
+    }
+    @Override public void map2dest(IVector rDest, DoubleUnaryOperator aOpt) {
+        DoubleArrayVector tThis = thisVector_();
+        double[] rData = tThis.getIfHasSameOrderData(rDest);
+        if (rData != null) ARRAY.mapDo2Dest(tThis.internalData(), tThis.internalDataShift(), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize(), aOpt);
+        else DATA.mapDo2Dest(tThis, rDest, aOpt);
+    }
+    
     
     @Override public void fill          (double aRHS) {DoubleArrayVector rThis = thisVector_(); ARRAY.mapFill2This(rThis.internalData(), rThis.internalDataShift(), aRHS, rThis.internalDataSize());}
     @Override public void fill          (IVector aRHS) {
@@ -327,6 +294,14 @@ public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation
     
     /** 方便内部使用，减少一些重复代码 */
     private DoubleArrayVector newVector_() {return newVector_(thisVector_().size());}
+    private static double @Nullable[] getIfHasSameOrderData_(IVector aThis, IVector aData) {
+        if (aThis instanceof IDataShell) {
+            Object tData = ((IDataShell<?>) aThis).getIfHasSameOrderData(aData);
+            return (tData instanceof double[]) ? (double[])tData : null;
+        } else {
+            return null;
+        }
+    }
     
     /** stuff to override */
     @Override protected abstract DoubleArrayVector thisVector_();

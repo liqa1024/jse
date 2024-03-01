@@ -15,25 +15,25 @@ import java.util.function.*;
  */
 public abstract class AbstractVectorOperation implements IVectorOperation {
     /** 通用的一些运算 */
-    @Override public IVector plus       (IVector aRHS) {IVector rVector = newVector_(); DATA.ebePlus2Dest    (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IVector minus      (IVector aRHS) {IVector rVector = newVector_(); DATA.ebeMinus2Dest   (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IVector lminus     (IVector aRHS) {IVector rVector = newVector_(); DATA.ebeMinus2Dest   (aRHS, thisVector_(), rVector); return rVector;}
-    @Override public IVector multiply   (IVector aRHS) {IVector rVector = newVector_(); DATA.ebeMultiply2Dest(thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IVector div        (IVector aRHS) {IVector rVector = newVector_(); DATA.ebeDiv2Dest     (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IVector ldiv       (IVector aRHS) {IVector rVector = newVector_(); DATA.ebeDiv2Dest     (aRHS, thisVector_(), rVector); return rVector;}
-    @Override public IVector mod        (IVector aRHS) {IVector rVector = newVector_(); DATA.ebeMod2Dest     (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IVector lmod       (IVector aRHS) {IVector rVector = newVector_(); DATA.ebeMod2Dest     (aRHS, thisVector_(), rVector); return rVector;}
-    @Override public IVector operate    (IVector aRHS, DoubleBinaryOperator aOpt) {IVector rVector = newVector_(); DATA.ebeDo2Dest(thisVector_(), aRHS, rVector, aOpt); return rVector;}
+    @Override public final IVector plus       (IVector aRHS) {IVector rVector = newVector_(); plus2dest    (aRHS, rVector); return rVector;}
+    @Override public final IVector minus      (IVector aRHS) {IVector rVector = newVector_(); minus2dest   (aRHS, rVector); return rVector;}
+    @Override public final IVector lminus     (IVector aRHS) {IVector rVector = newVector_(); lminus2dest  (aRHS, rVector); return rVector;}
+    @Override public final IVector multiply   (IVector aRHS) {IVector rVector = newVector_(); multiply2dest(aRHS, rVector); return rVector;}
+    @Override public final IVector div        (IVector aRHS) {IVector rVector = newVector_(); div2dest     (aRHS, rVector); return rVector;}
+    @Override public final IVector ldiv       (IVector aRHS) {IVector rVector = newVector_(); ldiv2dest    (aRHS, rVector); return rVector;}
+    @Override public final IVector mod        (IVector aRHS) {IVector rVector = newVector_(); mod2dest     (aRHS, rVector); return rVector;}
+    @Override public final IVector lmod       (IVector aRHS) {IVector rVector = newVector_(); lmod2dest    (aRHS, rVector); return rVector;}
+    @Override public final IVector operate    (IVector aRHS, DoubleBinaryOperator aOpt) {IVector rVector = newVector_(); operate2dest(aRHS, rVector, aOpt); return rVector;}
     
-    @Override public IVector plus       (double aRHS) {IVector rVector = newVector_(); DATA.mapPlus2Dest    (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IVector minus      (double aRHS) {IVector rVector = newVector_(); DATA.mapMinus2Dest   (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IVector lminus     (double aRHS) {IVector rVector = newVector_(); DATA.mapLMinus2Dest  (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IVector multiply   (double aRHS) {IVector rVector = newVector_(); DATA.mapMultiply2Dest(thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IVector div        (double aRHS) {IVector rVector = newVector_(); DATA.mapDiv2Dest     (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IVector ldiv       (double aRHS) {IVector rVector = newVector_(); DATA.mapLDiv2Dest    (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IVector mod        (double aRHS) {IVector rVector = newVector_(); DATA.mapMod2Dest     (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IVector lmod       (double aRHS) {IVector rVector = newVector_(); DATA.mapLMod2Dest    (thisVector_(), aRHS, rVector); return rVector;}
-    @Override public IVector map        (DoubleUnaryOperator aOpt) {IVector rVector = newVector_(); DATA.mapDo2Dest(thisVector_(), rVector, aOpt); return rVector;}
+    @Override public final IVector plus       (double aRHS) {IVector rVector = newVector_(); plus2dest    (aRHS, rVector); return rVector;}
+    @Override public final IVector minus      (double aRHS) {IVector rVector = newVector_(); minus2dest   (aRHS, rVector); return rVector;}
+    @Override public final IVector lminus     (double aRHS) {IVector rVector = newVector_(); lminus2dest  (aRHS, rVector); return rVector;}
+    @Override public final IVector multiply   (double aRHS) {IVector rVector = newVector_(); multiply2dest(aRHS, rVector); return rVector;}
+    @Override public final IVector div        (double aRHS) {IVector rVector = newVector_(); div2dest     (aRHS, rVector); return rVector;}
+    @Override public final IVector ldiv       (double aRHS) {IVector rVector = newVector_(); ldiv2dest    (aRHS, rVector); return rVector;}
+    @Override public final IVector mod        (double aRHS) {IVector rVector = newVector_(); mod2dest     (aRHS, rVector); return rVector;}
+    @Override public final IVector lmod       (double aRHS) {IVector rVector = newVector_(); lmod2dest    (aRHS, rVector); return rVector;}
+    @Override public final IVector map        (DoubleUnaryOperator aOpt) {IVector rVector = newVector_(); map2dest(rVector, aOpt); return rVector;}
     
     @Override public void plus2this     (IVector aRHS) {DATA.ebePlus2This    (thisVector_(), aRHS);}
     @Override public void minus2this    (IVector aRHS) {DATA.ebeMinus2This   (thisVector_(), aRHS);}
@@ -57,6 +57,27 @@ public abstract class AbstractVectorOperation implements IVectorOperation {
     
     @Override public IVector negative() {IVector rVector = newVector_(); DATA.mapNegative2Dest(thisVector_(), rVector); return rVector;}
     @Override public void negative2this() {DATA.mapNegative2This(thisVector_());}
+    
+    /** 补充的一些运算 */
+    @Override public void plus2dest      (IVector aRHS, IVector rDest) {DATA.ebePlus2Dest    (thisVector_(), aRHS, rDest);}
+    @Override public void minus2dest     (IVector aRHS, IVector rDest) {DATA.ebeMinus2Dest   (thisVector_(), aRHS, rDest);}
+    @Override public void lminus2dest    (IVector aRHS, IVector rDest) {DATA.ebeMinus2Dest   (aRHS, thisVector_(), rDest);}
+    @Override public void multiply2dest  (IVector aRHS, IVector rDest) {DATA.ebeMultiply2Dest(thisVector_(), aRHS, rDest);}
+    @Override public void div2dest       (IVector aRHS, IVector rDest) {DATA.ebeDiv2Dest     (thisVector_(), aRHS, rDest);}
+    @Override public void ldiv2dest      (IVector aRHS, IVector rDest) {DATA.ebeDiv2Dest     (aRHS, thisVector_(), rDest);}
+    @Override public void mod2dest       (IVector aRHS, IVector rDest) {DATA.ebeMod2Dest     (thisVector_(), aRHS, rDest);}
+    @Override public void lmod2dest      (IVector aRHS, IVector rDest) {DATA.ebeMod2Dest     (aRHS, thisVector_(), rDest);}
+    @Override public void operate2dest   (IVector aRHS, IVector rDest, DoubleBinaryOperator aOpt) {DATA.ebeDo2Dest(thisVector_(), aRHS, rDest, aOpt);}
+    
+    @Override public void plus2dest      (double aRHS, IVector rDest) {DATA.mapPlus2Dest    (thisVector_(), aRHS, rDest);}
+    @Override public void minus2dest     (double aRHS, IVector rDest) {DATA.mapMinus2Dest   (thisVector_(), aRHS, rDest);}
+    @Override public void lminus2dest    (double aRHS, IVector rDest) {DATA.mapLMinus2Dest  (thisVector_(), aRHS, rDest);}
+    @Override public void multiply2dest  (double aRHS, IVector rDest) {DATA.mapMultiply2Dest(thisVector_(), aRHS, rDest);}
+    @Override public void div2dest       (double aRHS, IVector rDest) {DATA.mapDiv2Dest     (thisVector_(), aRHS, rDest);}
+    @Override public void ldiv2dest      (double aRHS, IVector rDest) {DATA.mapLDiv2Dest    (thisVector_(), aRHS, rDest);}
+    @Override public void mod2dest       (double aRHS, IVector rDest) {DATA.mapMod2Dest     (thisVector_(), aRHS, rDest);}
+    @Override public void lmod2dest      (double aRHS, IVector rDest) {DATA.mapLMod2Dest    (thisVector_(), aRHS, rDest);}
+    @Override public void map2dest       (IVector rDest, DoubleUnaryOperator aOpt) {DATA.mapDo2Dest(thisVector_(), rDest, aOpt);}
     
     @Override public void fill          (double         aRHS) {DATA.mapFill2This (thisVector_(), aRHS);}
     @Override public void fill          (IVector        aRHS) {DATA.ebeFill2This (thisVector_(), aRHS);}
