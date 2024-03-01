@@ -8,10 +8,7 @@ import jse.code.collection.NewCollections;
 import jse.io.ISavable;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
-import jse.math.vector.ILogicalVector;
-import jse.math.vector.IVector;
-import jse.math.vector.LogicalVector;
-import jse.math.vector.Vectors;
+import jse.math.vector.*;
 import jse.parallel.AbstractThreadPool;
 import jse.parallel.LocalRandom;
 import jse.parallel.ParforThreadPool;
@@ -158,9 +155,9 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
         pool().parfor(aTreeNum, (i, threadID) -> {
             LocalRandom tRNG = new LocalRandom(tSeeds[threadID]);
             // 随机选取部分样本集
-            List<Integer> tRandIndex = NewCollections.from(tSampleNum, j->j);
-            LocalRandom.shuffle(tRandIndex, tRNG);
-            tRandIndex = tRandIndex.subList(0, tTrainSampleNum);
+            IIntVector tRandIndex = Vectors.range(tSampleNum);
+            tRandIndex.shuffle(tRNG::nextInt);
+            tRandIndex = tRandIndex.subVec(0, tTrainSampleNum);
             List<? extends IVector> subTrainDataInput = AbstractCollections.slice(aTrainDataInput, tRandIndex);
             ILogicalVector subTrainDataOutput = aTrainDataOutput.refSlicer().get(tRandIndex);
             // 随机森林使用略微修改的决策树来增加随机性

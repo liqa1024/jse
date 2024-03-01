@@ -205,25 +205,22 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
         final double dr = aRMax/aN;
-        // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
-        final List<? extends IVector> dn = VectorCache.getZeros(aN, threadNumber());
+        // 这里需要使用 IFunc 来进行函数的相关运算操作
+        final IFunc1[] dn = new IFunc1[threadNumber()];
+        for (int i = 0; i < dn.length; ++i) dn[i] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(mAtomNum, (i, threadID) -> {
             mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dis2) -> {
-                int tIdx = (int) Math.ceil((Fast.sqrt(dis2) - dr*0.5) / dr);
-                if (tIdx > 0 && tIdx < aN) dn.get(threadID).increment(tIdx);
+                dn[threadID].updateNear(Fast.sqrt(dis2), g->g+1);
             });
         });
         
         // 获取结果
-        IFunc1 gr = FixBoundFunc1.zeros(0, dr, aN).setBound(0.0, 1.0);
-        for (IVector subDn : dn) gr.f().plus2this(subDn);
+        IFunc1 gr = dn[0];
+        for (int i = 1; i < dn.length; ++i) gr.plus2this(dn[i]);
         final double rou = dr * mAtomNum*0.5 * mRou; // mAtomNum*0.5 为对所有原子求和需要进行的平均
         gr.operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*rou)));
-        
-        // 归还临时变量
-        VectorCache.returnVec(dn);
         
         // 修复截断数据
         gr.set(0, 0.0);
@@ -238,26 +235,22 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
         final double dr = aRMax/aN;
-        // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
-        final List<? extends IVector> dn = VectorCache.getZeros(aN, threadNumber());
+        // 这里需要使用 IFunc 来进行函数的相关运算操作
+        final IFunc1[] dn = new IFunc1[threadNumber()];
+        for (int i = 0; i < dn.length; ++i) dn[i] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
         
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(aAtomNum, (i, threadID) -> {
             mNL.forEachNeighbor(new XYZ(aAtomDataXYZ.row(i)), aRMax - dr*0.5, (x, y, z, idx, dis2) -> {
-                int tIdx = (int) Math.ceil((Fast.sqrt(dis2) - dr*0.5) / dr);
-                if (tIdx > 0 && tIdx < aN) dn.get(threadID).increment(tIdx);
+                dn[threadID].updateNear(Fast.sqrt(dis2), g->g+1);
             });
         });
         
-        
         // 获取结果
-        IFunc1 gr = FixBoundFunc1.zeros(0, dr, aN).setBound(0.0, 1.0);
-        for (IVector subDn : dn) gr.f().plus2this(subDn);
+        IFunc1 gr = dn[0];
+        for (int i = 1; i < dn.length; ++i) gr.plus2this(dn[i]);
         final double rou = dr * aAtomNum * mRou; // aAtomDataXYZ.size() 为对所有原子求和需要进行的平均
         gr.operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*rou)));
-        
-        // 归还临时变量
-        VectorCache.returnVec(dn);
         
         // 修复截断数据
         gr.set(0, 0.0);
