@@ -1,5 +1,7 @@
 package jse.code.iterator;
 
+import jse.code.collection.AbstractCollections;
+
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -16,9 +18,9 @@ public interface IDoubleIterator {
     
     /** Iterator default stuffs */
     default void remove() {throw new UnsupportedOperationException("remove");}
-    default void forEachRemaining(DoubleConsumer action) {
-        Objects.requireNonNull(action);
-        while (hasNext()) action.accept(next());
+    default void forEachRemaining(DoubleConsumer aCon) {
+        Objects.requireNonNull(aCon);
+        while (hasNext()) aCon.accept(next());
     }
     
     /** convert to Double */
@@ -29,6 +31,17 @@ public interface IDoubleIterator {
             
             @Override public void remove() {IDoubleIterator.this.remove();}
             @Override public void forEachRemaining(Consumer<? super Double> action) {IDoubleIterator.this.forEachRemaining(action::accept);}
+        };
+    }
+    
+    /** 通过 {@code Iterator<? extends Number>} 得到 */
+    static IDoubleIterator of(final Iterator<? extends Number> aIterator) {
+        return new IDoubleIterator() {
+            @Override public boolean hasNext() {return aIterator.hasNext();}
+            @Override public double next() {return aIterator.next().doubleValue();}
+            @Override public void remove() {aIterator.remove();}
+            @Override public void forEachRemaining(DoubleConsumer aCon) {aIterator.forEachRemaining(v->aCon.accept(v.doubleValue()));}
+            @Override public Iterator<Double> toIterator() {return AbstractCollections.map(aIterator, Number::doubleValue);}
         };
     }
 }

@@ -2,8 +2,7 @@
     - [参量计算器初始化](#参量计算器初始化)
     - [RDF 和 SF 的计算](#rdf-和-sf-的计算)
     - [键角序参量的计算](#键角序参量的计算)
-    - [Voronoi 分析]()
-    - [近邻列表获取]()
+    - [Voronoi 分析](#voronoi-分析)
 - [**⟶ 目录**](contents.md)
 
 # 原子结构参量计算
@@ -460,5 +459,121 @@ ABOOP（Averaged local Bond Orientational Order Parameters），
     例子：`example/mpc/connectcount`
     [⤤](../release/script/groovy/example/mpc/connectcount.groovy)
 
+
+## Voronoi 分析
+
+MPC 可以简单的计算出原子坐标的 voronoi 多面体并进行分析，
+从而给出每个原子的 voronoi 多面体的体积，面数，指数等，
+具体定义和应用可以
+[参考 ovito 的文档](https://docs.ovito.org/reference/pipelines/modifiers/voronoi_analysis.html)。
+
+这里采用 [这个文章的方法](https://ieeexplore.ieee.org/document/4276112)
+来实现简单的 3D voronoi 多面体的计算，并基于
+[Hellblazer/Voronoi-3D](https://github.com/Hellblazer/Voronoi-3D)
+的代码提供纯 java 的实现，从而可以在*任何地方*快速得到结果。
+
+这里通过直接在最外围增加一层镜像原子的方法，实现周期边界条件下的 voronoi
+多面体计算。
+
+- **`calVoronoi`**
+    
+    描述：计算 voronoi 多面体并获取各种参数，
+    由于内部实现是串行的，因此此方法不受线程数影响。
+    
+    输入1（可选）：`double`，外围周期边界增加的镜像粒子的半径（默认为 3 倍*单位长度*）
+    
+    输入2（可选）：`boolean`，是否关闭错误警告（默认为 `false`）
+    
+    输入3（可选）：`int`，voronoi indices 的存储长度（默认为 9）
+    
+    输入4（可选）：`double`，过小面积的阈值（相对值，默认为 0.0，不处理）
+    
+    输入4（可选）：`double`，过小长度的阈值（相对值，默认为 0.0，不处理）
+    
+    输出：`IVoronoiCalculator`，voronoi 多面体参数的计算器
+    
+    例子：`example/mpc/voronoi`
+    [⤤](../release/script/groovy/example/mpc/voronoi.groovy)
+    
+    > 注意：`IVoronoiCalculator` 也提供了一系列的 set 方法来设置这些参数，
+    > 因此更推荐直接使用 `calVoronoi()` 获取到 `IVoronoiCalculator`
+    > 后，通过此对象来进行需要的设置，相比通过传参设置更加灵活。
+    >
+
+
+
+其中获取得到的 `IVoronoiCalculator` 继承了
+`List<VoronoiBuilder.IVertex>`，而
+[`VoronoiBuilder.IVertex`](../src/main/java/jsex/voronoi/VoronoiBuilder.java)
+提供了系列接口来获取到各种常用的 voronoi 多面体参数：
+
+- **`IVertex.coordination`**
+    
+    输出：`int`，此节点对应 voronoi 多面体的面的数目（配位数）
+    
+    例子：`example/mpc/voronoi`
+    [⤤](../release/script/groovy/example/mpc/voronoi.groovy)
+    
+    -----------------------------
+    
+- **`IVertex.atomicVolume`**
+    
+    输出：`double`，此节点对应 voronoi 多面体的体积（原子体积）
+    
+    例子：`example/mpc/voronoi`
+    [⤤](../release/script/groovy/example/mpc/voronoi.groovy)
+    
+    -----------------------------
+    
+- **`IVertex.cavityRadius`**
+    
+    输出：`double`，此节点距 voronoi 多面体顶点的最大距离（空腔距离）
+    
+    例子：`example/mpc/voronoi`
+    [⤤](../release/script/groovy/example/mpc/voronoi.groovy)
+    
+    -----------------------------
+    
+- **`IVertex.index`**
+    
+    输出：`int[]`，记录此节点的 voronoi 多面体每个面的多边形边数统计（voronoi indices），
+    `IVertex.index()[4] == 12` 代表拥有 `12` 个 `4+1` 边形
+    
+    例子：`example/mpc/voronoi`
+    [⤤](../release/script/groovy/example/mpc/voronoi.groovy)
+    
+    > 注意：这里为了保证直接输出的 `IVertex.index()` 和 ovito 的结果一致，
+    > 同样保持从 0 开始计数，因此如果希望获得 5 边形的数目应该使用
+    > `IVertex.index()[4]`
+    >
+    
+    -----------------------------
+    
+- **`IVertex.x`, `IVertex.y`, `IVertex.z`**
+    
+    输出：`double`，此节点的 x, y, z 坐标（即为原子坐标）
+    
+    > 这些方法主要用于计算上面没有给出的 voronoi 参数
+    >
+    
+    -----------------------------
+    
+- **`IVertex.neighborVertex`**
+    
+    输出：`Collection<IVertex>`，此节点的 voronoi 近邻节点列表，
+    voronoi 多面体的每个面对应一个中心节点和近邻节点的垂直平分面
+    
+    > 这些方法主要用于计算上面没有给出的 voronoi 参数
+    >
+    
+    -----------------------------
+    
+- **`IVertex.neighborTetrahedron`**
+    
+    输出：`Collection<ITetrahedron>`，此节点的和近邻节点组成的四面体列表（Delaunay 四面体），
+    voronoi 多面体的每个顶点对应一个近邻四面体的外接球球心
+    
+    > 这些方法主要用于计算上面没有给出的 voronoi 参数
+    >
 
 

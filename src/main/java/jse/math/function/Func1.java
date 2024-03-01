@@ -1,5 +1,6 @@
 package jse.math.function;
 
+import jse.code.iterator.IHasDoubleIterator;
 import jse.math.MathEX;
 import jse.math.vector.IVector;
 import jse.math.vector.IVectorGetter;
@@ -100,19 +101,22 @@ public class Func1 {
      * @param aN 分划的份数
      * @return 得到的分布函数
      */
-    public static IZeroBoundFunc1 distFrom(IVector aData, double aStart, double aEnd, int aN) {
+    public static IZeroBoundFunc1 distFrom(IHasDoubleIterator aData, double aStart, double aEnd, int aN) {
         final double tStep = (aEnd-aStart)/(double)(aN-1);
         final IZeroBoundFunc1 rFunc1 = ZeroBoundFunc1.zeros(aStart, tStep, aN);
         
         final double tLBound = aStart - tStep*0.5;
         final double tUBound = aEnd + tStep*0.5;
+        final int[] rSize = {0};
         aData.forEach(v -> {
+            ++rSize[0]; // 虽然说大部分输入数据都不用进行这个计数，不过保证简洁还是都做一下
             if (v>=tLBound && v<tUBound) rFunc1.updateNear(v, f->f+1);
         });
         
-        rFunc1.div2this(aData.size() * tStep);
+        rFunc1.div2this(rSize[0] * tStep);
         return rFunc1;
     }
+    public static IZeroBoundFunc1 distFrom(Iterable<? extends Number> aDataList, double aStart, double aEnd, int aN) {return distFrom(IHasDoubleIterator.of(aDataList), aStart, aEnd, aN);}
     
     /**
      * 使用带有一定展宽的高斯分布代替直接计数来统计分布，超出范围的值会忽略
@@ -124,7 +128,7 @@ public class Func1 {
      * @param aSigmaMul 高斯分布的一个标准差宽度对应的分划份数，默认为 4
      * @return 得到的分布函数
      */
-    public static IZeroBoundFunc1 distFrom_G(IVector aData, double aStart, double aEnd, int aN, int aSigmaMul) {
+    public static IZeroBoundFunc1 distFrom_G(IHasDoubleIterator aData, double aStart, double aEnd, int aN, int aSigmaMul) {
         final double tStep = (aEnd-aStart)/(double)(aN-1);
         final IZeroBoundFunc1 rFunc1 = ZeroBoundFunc1.zeros(aStart, tStep, aN);
         // 用于累加的 DeltaG
@@ -132,15 +136,19 @@ public class Func1 {
         
         final double tLBound = aStart - tDeltaG.zeroBoundR();
         final double tUBound = aEnd - tDeltaG.zeroBoundL();
+        final int[] rSize = {0};
         aData.forEach(v -> {
+            ++rSize[0]; // 虽然说大部分输入数据都不用进行这个计数，不过保证简洁还是都做一下
             if (v>=tLBound && v<tUBound) {
                 tDeltaG.setX0(v);
                 rFunc1.plus2this(tDeltaG);
             }
         });
         
-        rFunc1.div2this(aData.size());
+        rFunc1.div2this(rSize[0]);
         return rFunc1;
     }
-    public static IZeroBoundFunc1 distFrom_G(IVector aData, double aStart, double aEnd, int aN) {return distFrom_G(aData, aStart, aEnd, aN, 4);}
+    public static IZeroBoundFunc1 distFrom_G(IHasDoubleIterator aData, double aStart, double aEnd, int aN) {return distFrom_G(aData, aStart, aEnd, aN, 4);}
+    public static IZeroBoundFunc1 distFrom_G(Iterable<? extends Number> aDataList, double aStart, double aEnd, int aN, int aSigmaMul) {return distFrom_G(IHasDoubleIterator.of(aDataList), aStart, aEnd, aN, aSigmaMul);}
+    public static IZeroBoundFunc1 distFrom_G(Iterable<? extends Number> aDataList, double aStart, double aEnd, int aN) {return distFrom_G(IHasDoubleIterator.of(aDataList), aStart, aEnd, aN);}
 }

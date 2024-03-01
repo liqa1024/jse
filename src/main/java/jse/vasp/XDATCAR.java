@@ -143,11 +143,32 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     public @Override boolean isDiagBox() {return mIsDiagBox;}
     public @Override @Nullable IIntVector ids() {return mIDs;}
     
+    /** 对于 XDATCAR 这些接口也同样可以获取到 */
+    public IXYZ box() {
+        if (!mIsDiagBox) throw new RuntimeException("box is temporarily support Diagonal Box only");
+        XYZ tBox = new XYZ(mBox.refSlicer().diag());
+        tBox.multiply2this(mBoxScale);
+        return tBox;
+    }
+    public int atomNumber() {return mAtomNumbers.sum();}
+    public int atomTypeNumber() {return mAtomNumbers.size();}
+    public double volume() {
+        // 注意如果是斜方的模拟盒则不能获取到模拟盒体积
+        if (!mIsDiagBox) throw new RuntimeException("volume is temporarily support Diagonal Box only");
+        return mBox.refSlicer().diag().prod() * MathEX.Fast.pow3(mBoxScale);
+    }
+    /** 保留旧名称兼容，当时起名太随意了，居然这么久都没发现 */
+    @Deprecated public final int atomNum() {return atomNumber();}
+    @Deprecated public final int atomTypeNum() {return atomTypeNumber();}
+    /** 提供简写版本 */
+    @VisibleForTesting public final int natoms() {return atomNumber();}
+    @VisibleForTesting public final int ntypes() {return atomTypeNumber();}
+    
+    
     /** Groovy stuffs */
     @VisibleForTesting public String @Nullable[] getTypeNames() {return mTypeNames;}
     @VisibleForTesting public String getComment() {return mComment;}
     @VisibleForTesting public double getBoxScale() {return mBoxScale;}
-    
     
     /** 支持直接修改 TypeNames，只会增大种类数，不会减少 */
     public XDATCAR setTypeNames(String... aTypeNames) {
