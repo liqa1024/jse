@@ -1,7 +1,8 @@
 package jse.code;
 
 import groovy.lang.*;
-import jep.*;
+import jep.JepConfig;
+import jep.JepException;
 import jline.Terminal;
 import jline.WindowsTerminal;
 import jse.Main;
@@ -11,7 +12,6 @@ import jse.code.collection.AbstractCollections;
 import jse.code.collection.ArrayLists;
 import jse.code.collection.Iterables;
 import jse.code.collection.NewCollections;
-import jse.code.task.TaskCall;
 import jse.io.IOFiles;
 import jse.io.InFiles;
 import jse.math.ComplexDouble;
@@ -23,6 +23,7 @@ import jse.math.vector.Vectors;
 import jse.plot.Plotters;
 import org.apache.groovy.groovysh.Groovysh;
 import org.apache.groovy.groovysh.InteractiveShellRunner;
+import org.apache.groovy.groovysh.Interpreter;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import org.codehaus.groovy.tools.shell.IO;
@@ -41,18 +42,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static jse.code.CS.Exec.EXE;
 import static jse.code.CS.Exec.JAR_DIR;
 import static jse.code.CS.VERSION;
 import static jse.code.Conf.LIB_NAME_IN;
 import static jse.code.Conf.WORKING_DIR_OF;
-import static org.codehaus.groovy.runtime.InvokerHelper.MAIN_METHOD_NAME;
 
 /**
  * @author liqa
  * <p> 运行脚本（script）的通用类，目前支持运行 Groovy 脚本和 Python 脚本 </p>
- * <p> 为了方便调用这里使用纯静态的类来实现，为了线程安全所有方法都加上锁 </p>
+ * <p> 为了方便调用这里使用纯静态的类来实现 </p>
+ * <p> 根据底层实现，所有方法都是线程不安全的，这里加上 synchronized 表明这点 </p>
+ * <p> 看起来似乎当底层中开启新线程来执行脚本时，再次调用会发生死锁，但是经过测试发现并不会这样 </p>
  */
 @SuppressWarnings("UnusedReturnValue")
 public class SP {
@@ -116,6 +119,7 @@ public class SP {
     
     
     /** Groovy 脚本运行支持 */
+    @SuppressWarnings("RedundantThrows")
     public static class Groovy {
         /** Wrapper of {@link GroovyObject} for matlab usage */
         public final static class GroovyObjectWrapper implements GroovyObject {
@@ -138,14 +142,17 @@ public class SP {
             if (tPath == null) throw new FileNotFoundException(aScriptPath + " (" + UT.IO.toAbsolutePath(aScriptPath) + ")");
             return UT.IO.toFile(tPath);
         }
-        private static GroovyClassLoader CLASS_LOADER = null;
+        /** 现在 groovy 也一样统一使用全局的一个解释器 */
+        private static Interpreter GROOVY_INTERP = null;
+        private final static CompilerConfiguration GROOVY_CONF;
+        private final static AtomicInteger COUNTER = new AtomicInteger(0);
         
         /** 获取 shell 的交互式运行 */
         public synchronized static void runShell() throws Exception {
             // 使用这个方法来自动设置种类
             org.apache.groovy.groovysh.Main.setTerminalType("auto", false);
             // 这样手动指定 CLASS_LOADER
-            Groovysh tGroovysh = new Groovysh(CLASS_LOADER, new Binding(), new IO()) {
+            Groovysh tGroovysh = new Groovysh(GROOVY_INTERP.getClassLoader(), GROOVY_INTERP.getContext(), new IO(), null, GROOVY_CONF, GROOVY_INTERP) {
                 /** 直接重写 displayWelcomeBanner 来将 jse 的版本添加进去 */
                 @Override public void displayWelcomeBanner(InteractiveShellRunner runner) {
                     IO io = getIo();
@@ -211,125 +218,84 @@ public class SP {
             tGroovysh.run(null);
         }
         
-        /** 直接运行文本的脚本，底层不会进行缓存 */
-        public synchronized static Object runText(String aText, String... aArgs) throws Exception {return getCallableOfText(aText, aArgs).call();}
-        /** 运行脚本文件，底层会自动进行缓存 */
+        /** python like stuffs，exec 不会获取返回值，eval 获取返回值 */
+        public synchronized static void exec(String aText) throws Exception {GROOVY_INTERP.getShell().evaluate(aText);}
+        public synchronized static void execFile(String aFilePath) throws Exception {GROOVY_INTERP.getShell().evaluate(toSourceFile(aFilePath));}
+        public synchronized static Object eval(String aText) throws Exception {return GroovyObjectWrapper.of(GROOVY_INTERP.getShell().evaluate(aText));}
+        public synchronized static Object evalFile(String aFilePath) throws Exception {return GroovyObjectWrapper.of(GROOVY_INTERP.getShell().evaluate(toSourceFile(aFilePath)));}
+        
+        /** 直接运行文本的脚本 */
+        public synchronized static Object runText(String aText, String... aArgs) throws Exception {return GroovyObjectWrapper.of(GROOVY_INTERP.getShell().run(aText, "TextScriptFromJSE"+COUNTER.incrementAndGet()+".groovy", aArgs));}
+        /** Groovy 现在也可以使用 getValue 来获取变量以及 setValue 设置变量（仅限于 Context 变量，这样可以保证效率） */
+        public synchronized static Object get(String aValueName) throws Exception {return getValue(aValueName);}
+        public synchronized static void set(String aValueName, Object aValue) throws Exception {setValue(aValueName, aValue);}
+        public synchronized static void remove(String aValueName) throws Exception {removeValue(aValueName);}
+        public synchronized static Object getValue(String aValueName) throws Exception {return GroovyObjectWrapper.of(GROOVY_INTERP.getContext().getVariable(aValueName));}
+        public synchronized static void setValue(String aValueName, Object aValue) throws Exception {GROOVY_INTERP.getContext().setVariable(aValueName, aValue);}
+        public synchronized static void removeValue(String aValueName) throws Exception {GROOVY_INTERP.getContext().removeVariable(aValueName);}
+        /** 运行脚本文件 */
         public synchronized static Object run(String aScriptPath, String... aArgs) throws Exception {return runScript(aScriptPath, aArgs);}
-        public synchronized static Object runScript(String aScriptPath, String... aArgs) throws Exception {return getCallableOfScript(aScriptPath, aArgs).call();}
-        /** 调用指定脚本中的方法，会进行缓存 */
-        public synchronized static Object invoke(String aScriptPath, String aMethodName, Object... aArgs) throws Exception {return getCallableOfScriptMethod(aScriptPath, aMethodName, aArgs).call();}
-        /** 创建脚本类的实例 */
-        public synchronized static Object newInstance(String aScriptPath, Object... aArgs) throws Exception {
-            // 获取脚本的类，底层自动进行了缓存，并且在文件修改时会自动更新
-            Class<?> tScriptClass = CLASS_LOADER.parseClass(toSourceFile(aScriptPath));
-            // 获取 ScriptClass 的实例
-            return newInstance_(tScriptClass, aArgs);
-        }
-        
-        /** 提供一个手动关闭 CLASS_LOADER 的接口 */
-        public synchronized static void close() throws IOException {if (CLASS_LOADER != null) {CLASS_LOADER.close(); CLASS_LOADER = null;}}
-        public synchronized static boolean isClosed() {return CLASS_LOADER == null;}
-        /** 提供一个手动刷新 CLASS_LOADER 的接口，可以将关闭的重新打开，清除缓存和文件的依赖 */
-        public synchronized static void refresh() throws IOException {close(); initClassLoader_();}
-        
-        
-        /** 获取脚本相关的 task，对于脚本的内容请使用这里的接口而不是 {@link UT.Hack}.getTaskOfStaticMethod */
-        public synchronized static TaskCall<?> getCallableOfText(String aText, String... aArgs) {
-            // 获取文本脚本的类，由于是文本底层自动不进行缓存
-            Class<?> tScriptClass = CLASS_LOADER.parseClass(aText);
-            // 获取 ScriptClass 的执行 Task
-            return getCallableOfScript_(tScriptClass, aArgs);
-        }
-        public synchronized static TaskCall<?> getCallableOfScript(String aScriptPath, String... aArgs) throws IOException {
-            // 获取脚本的类，底层自动进行了缓存
-            Class<?> tScriptClass = CLASS_LOADER.parseClass(toSourceFile(aScriptPath));
-            // 获取 ScriptClass 的执行 Task
-            return getCallableOfScript_(tScriptClass, aArgs);
-        }
-        /** 注意是脚本中的方法或者是类中静态方法，成员方法可以获取对象后直接用 {@link UT.Hack}.getTaskOfMethod */
-        public synchronized static TaskCall<?> getCallableOfScriptMethod(String aScriptPath, final String aMethodName, Object... aArgs) throws IOException {
-            // 获取脚本的类，底层自动进行了缓存
-            Class<?> tScriptClass = CLASS_LOADER.parseClass(toSourceFile(aScriptPath));
-            // 获取 ScriptClass 中具体方法的 Task
-            return getCallableOfScriptMethod_(tScriptClass, aMethodName, aArgs);
-        }
-        
-        
-        /** 内部使用的方法，用于减少重复代码 */
-        public synchronized static Object newInstance_(Class<?> aScriptClass, Object... aArgs) throws InvocationTargetException, InstantiationException, IllegalAccessException {
-            final Object[] fArgs = (aArgs == null) ? new Object[0] : aArgs;
-            // 获取兼容输入参数的构造函数来创建实例
-            Constructor<?> tConstructor = UT.Hack.findConstructor_(aScriptClass, fArgs);
-            if (tConstructor == null) throw new GroovyRuntimeException("Cannot find constructor with compatible args: " + aScriptClass.getName());
-            return GroovyObjectWrapper.of(tConstructor.newInstance(aArgs));
-        }
-        public synchronized static TaskCall<?> getCallableOfScript_(final Class<?> aScriptClass, String... aArgs) {
-            final String[] fArgs = (aArgs == null) ? new String[0] : aArgs;
-            // 和 runScriptOrMainOrTestOrRunnable 保持一样的逻辑，不过现在是线程安全的了，不考虑 Test 和 Runnable 的情况
-            if (Script.class.isAssignableFrom(aScriptClass)) {
-                // 这样保证 tContext 是干净的
-                Binding tContext = new Binding();
-                tContext.setProperty("args", fArgs);
-                // treat it just like a script if it is one
-                try {
-                    @SuppressWarnings("unchecked")
-                    final Script tScript = InvokerHelper.newScript((Class<? extends Script>) aScriptClass, tContext);
-                    return new TaskCall<>(() -> GroovyObjectWrapper.of(tScript.run()));
-                } catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-                    // ignore instantiation errors, try to do main
-                }
-            }
-            // let's find a main method
-            try {
-                aScriptClass.getMethod(MAIN_METHOD_NAME, String[].class);
-            } catch (NoSuchMethodException e) {
-                String tMsg = "This script or class could not be run.\n" +
-                    "It should either:\n" +
-                    "- be a script format\n" +
-                    "- have a main method\n";
-                throw new GroovyRuntimeException(tMsg);
-            }
-            // if that main method exist, invoke it
-            return new TaskCall<>(() -> GroovyObjectWrapper.of(InvokerHelper.invokeMethod(aScriptClass, MAIN_METHOD_NAME, new Object[]{fArgs})));
-        }
-        public synchronized static TaskCall<?> getCallableOfScriptMethod_(final Class<?> aScriptClass, final String aMethodName, Object... aArgs) {
+        public synchronized static Object runScript(String aScriptPath, String... aArgs) throws Exception {return GroovyObjectWrapper.of(GROOVY_INTERP.getShell().run(toSourceFile(aScriptPath), aArgs));}
+        /** 调用指定脚本中的方法 */
+        public synchronized static Object invoke(String aScriptPath, String aMethodName, Object... aArgs) throws Exception {
+            // 获取脚本的类
+            Class<?> tScriptClass = GROOVY_INTERP.getClassLoader().parseClass(toSourceFile(aScriptPath));
             final Object[] fArgs = (aArgs == null) ? new Object[0] : aArgs;
             // 如果是脚本则使用脚本的调用方法的方式
-            if (Script.class.isAssignableFrom(aScriptClass)) {
+            if (Script.class.isAssignableFrom(tScriptClass)) {
                 // treat it just like a script if it is one
                 try {
-                    @SuppressWarnings("unchecked")
-                    final Script tScript = InvokerHelper.newScript((Class<? extends Script>) aScriptClass, new Binding()); // 这样保证 tContext 是干净的
-                    return new TaskCall<>(() -> GroovyObjectWrapper.of(tScript.invokeMethod(aMethodName, fArgs))); // 脚本的方法原则上不需要考虑类型兼容的问题
+                    @SuppressWarnings({"unchecked", "CastCanBeRemovedNarrowingVariableType"})
+                    final Script tScript = InvokerHelper.newScript((Class<? extends Script>) tScriptClass, new Binding()); // 这样保证 tContext 是干净的
+                    return GroovyObjectWrapper.of(tScript.invokeMethod(aMethodName, fArgs)); // 脚本的方法原则上不需要考虑类型兼容的问题
                 } catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
                     // ignore instantiation errors, try to run the static method in class
                 }
             }
             // 获取兼容输入的类
-            Method m = UT.Hack.findMethod_(aScriptClass, aMethodName, fArgs);
+            Method m = UT.Hack.findMethod_(tScriptClass, aMethodName, fArgs);
             // 如果有找到则需要转换参数到兼容的方法的参数类型上，避免无法转换的错误
             if (m == null) throw new GroovyRuntimeException("Cannot find method with compatible args: " + aMethodName);
             UT.Hack.convertArgs_(fArgs, m.getParameterTypes());
             // 注意使用 Groovy 的 InvokerHelper 来调用，避免意外的问题
-            return new TaskCall<>(() -> GroovyObjectWrapper.of(InvokerHelper.invokeMethod(aScriptClass, aMethodName, fArgs)));
+            return GroovyObjectWrapper.of(InvokerHelper.invokeMethod(tScriptClass, aMethodName, fArgs));
         }
+        /** 创建脚本类的实例 */
+        public synchronized static Object newInstance(String aScriptPath, Object... aArgs) throws Exception {
+            // 获取脚本的类
+            Class<?> tScriptClass = GROOVY_INTERP.getClassLoader().parseClass(toSourceFile(aScriptPath));
+            // 获取 ScriptClass 的实例
+            final Object[] fArgs = (aArgs == null) ? new Object[0] : aArgs;
+            // 获取兼容输入参数的构造函数来创建实例
+            Constructor<?> tConstructor = UT.Hack.findConstructor_(tScriptClass, fArgs);
+            if (tConstructor == null) throw new GroovyRuntimeException("Cannot find constructor with compatible args: " + tScriptClass.getName());
+            return GroovyObjectWrapper.of(tConstructor.newInstance(aArgs));
+        }
+        
+        /** 提供一个手动关闭 GROOVY_INTERP 的接口，似乎不需要手动关闭 Interpreter，但是这里还是关闭一下内部的 ClassLoader */
+        public synchronized static void close() throws IOException {if (GROOVY_INTERP != null) {GROOVY_INTERP.getClassLoader().close(); GROOVY_INTERP = null;}}
+        public synchronized static boolean isClosed() {return GROOVY_INTERP == null;}
+        /** 提供一个手动刷新 GROOVY_INTERP 的接口，可以将关闭的重新打开，清除缓存和文件的依赖 */
+        public synchronized static void refresh() throws IOException {close(); initInterpreter_();}
+        
         
         static {
             // 手动加载 CS.Exec，会自动重新设置工作目录，保证 Groovy 读取到的工作目录是正确的
             CS.Exec.InitHelper.init();
             // 在程序结束时关闭 CLASS_LOADER，最先添加来避免一些问题
             Main.addGlobalAutoCloseable(Groovy::close);
+            // 先初始化配置
+            GROOVY_CONF = new CompilerConfiguration();
+            GROOVY_CONF.setSourceEncoding(StandardCharsets.UTF_8.name()); // 文件统一使用 utf-8 编码
             // 初始化 CLASS_LOADER
-            initClassLoader_();
+            initInterpreter_();
         }
         /** 初始化内部的 CLASS_LOADER，主要用于减少重复代码 */
-        private synchronized static void initClassLoader_() {
+        private static void initInterpreter_() {
             // 重新指定 ClassLoader 为这个类的实际加载器
-            CompilerConfiguration rConfig = new CompilerConfiguration();
-            rConfig.setSourceEncoding(StandardCharsets.UTF_8.name()); // 文件统一使用 utf-8 编码
-            CLASS_LOADER = new GroovyClassLoader(SP.class.getClassLoader(), rConfig);
+            GROOVY_INTERP = new Interpreter(SP.class.getClassLoader(), new Binding(), GROOVY_CONF);
             // 指定默认的 Groovy 脚本的类路径
-            CLASS_LOADER.addClasspath(UT.IO.toAbsolutePath(GROOVY_SP_DIR));
+            GROOVY_INTERP.getClassLoader().addClasspath(UT.IO.toAbsolutePath(GROOVY_SP_DIR));
         }
     }
     
@@ -376,26 +342,31 @@ public class SP {
             return tPath;
         }
         /** 一样这里统一使用全局的一个解释器 */
-        private static Interpreter JEP_INTERP = null;
+        private static jep.Interpreter JEP_INTERP = null;
+        
+        
+        /** python like stuffs，exec 不会获取返回值，eval 获取返回值 */
+        public synchronized static void exec(String aText) throws JepException {JEP_INTERP.exec(aText);}
+        public synchronized static void execFile(String aFilePath) throws JepException, IOException {JEP_INTERP.runScript(validScriptPath(aFilePath));}
+        /** 由于 jep 的特性，这里可以直接使用 getValue 指定 eval */
+        public synchronized static Object eval(String aText) throws JepException {return JEP_INTERP.getValue(aText);}
+        // python 脚本文件不会有返回值
         
         /** 直接运行文本的脚本 */
-        public synchronized static void runText(String aText) throws JepException {JEP_INTERP.exec(aText);}
-        /** Python 还可以使用 getValue 来获取变量以及 setValue 设置变量 */
-        public synchronized static Object getValue(String aValueName) throws JepException {return JEP_INTERP.getValue(aValueName);}
-        public synchronized static void setValue(String aValueName, Object aValue) throws JepException {JEP_INTERP.set("_", aValue); JEP_INTERP.exec(aValueName + " = _");}
+        public synchronized static void runText(String aText, String... aArgs) throws JepException {setArgs_("", aArgs); JEP_INTERP.exec(aText);}
+        /** Python 还可以使用 getValue 来获取变量以及 setValue 设置变量（原则上同样仅限于 Context 变量，允许可以超出 Context 但是不保证支持） */
         public synchronized static Object get(String aValueName) throws JepException {return getValue(aValueName);}
         public synchronized static void set(String aValueName, Object aValue) throws JepException {setValue(aValueName, aValue);}
+        public synchronized static void remove(String aValueName) throws JepException {removeValue(aValueName);}
+        public synchronized static Object getValue(String aValueName) throws JepException {return JEP_INTERP.getValue(aValueName);}
+        public synchronized static void setValue(String aValueName, Object aValue) throws JepException {JEP_INTERP.set(aValueName, aValue);}
+        public synchronized static void removeValue(String aValueName) throws JepException {JEP_INTERP.exec("del "+aValueName);}
         /** 运行脚本文件 */
         public synchronized static void run(String aScriptPath, String... aArgs) throws JepException, IOException {runScript(aScriptPath, aArgs);}
         public synchronized static void runScript(String aScriptPath, String... aArgs) throws JepException, IOException {
-            // 需要保存旧的 sys.argv 并在运行完成后设置回来，这样保证不会改变环境
-            Object oArgs = getValue("sys.argv");
-            try {
-                setValue("sys.argv", (aArgs==null || aArgs.length==0) ? Collections.singletonList(aScriptPath) : AbstractCollections.merge(aScriptPath, aArgs));
-                JEP_INTERP.runScript(validScriptPath(aScriptPath));
-            } finally {
-                setValue("sys.argv", oArgs); // 当然这样的话，对于在脚本中修改的结果也同样会被抹掉，不过这不重要就是
-            }
+            // 现在不再保存旧的 sys.argv，如果需要可以在外部代码自行保存
+            setArgs_(aScriptPath, aArgs);
+            JEP_INTERP.runScript(validScriptPath(aScriptPath));
         }
         /** 调用方法，python 中需要结合 import 使用 */
         @SuppressWarnings("unchecked")
@@ -409,17 +380,22 @@ public class SP {
             }
             return JEP_INTERP.invoke(aMethodName, aArgs);
         }
-        public synchronized static void importAny(String aName) throws JepException {runText("import " + aName);}
-        public synchronized static void importFrom(String aPackage, String aName) throws JepException {runText("from " + aPackage + " import " + aName);}
-        public synchronized static Object importModule(String aModuleName) throws JepException {return invoke("import_module", aModuleName);}
         /** 创建 Python 实例，这里可以直接将类名当作函数调用即可 */
         public synchronized static Object newInstance(String aClassName, Object... aArgs) throws JepException {return invoke(aClassName, aArgs);}
-        /** 提供一个方便直接访问类型的接口，由于 jep 没有提供相关接口这里直接使用字符串的形式来实现 */
-        public synchronized static Object getClass(final String aClassName) throws JepException {
+        
+        /** 提供一个手动关闭 JEP_INTERP 的接口 */
+        public synchronized static void close() throws JepException {if (JEP_INTERP != null) {JEP_INTERP.close(); JEP_INTERP = null;}}
+        public synchronized static boolean isClosed() {return JEP_INTERP == null;}
+        /** 提供一个手动刷新 JEP_INTERP 的接口，可以将关闭的重新打开，会清空所有创建的 python 变量 */
+        public synchronized static void refresh() throws JepException {close(); initInterpreter_();}
+        
+        
+        /** 提供一个方便 Groovy 中使用的直接访问类型的接口 */
+        public static Object getClass(final String aClassName) throws JepException {
             return new GroovyObject() {
                 @Override public Object invokeMethod(String name, Object args) throws JepException {return invoke(aClassName+"."+name, (Object[])args);}
-                @Override public Object getProperty(String propertyName) throws JepException {return getValue(aClassName+"."+propertyName);}
-                @Override public void setProperty(String propertyName, Object newValue) throws JepException {setValue(aClassName+"."+propertyName, newValue);}
+                @Override public Object getProperty(String propertyName) throws JepException {return eval(aClassName+"."+propertyName);}
+                @Override public void setProperty(String propertyName, Object newValue) throws JepException {setValue("_", newValue); exec(aClassName+"."+propertyName+" = _");}
                 
                 private MetaClass mDelegate = InvokerHelper.getMetaClass(getClass());
                 @Override public MetaClass getMetaClass() {return mDelegate;}
@@ -429,14 +405,13 @@ public class SP {
                 public Object call(Object... aArgs) throws JepException {return newInstance(aClassName, aArgs);}
             };
         }
-        
-        /** 提供一个手动关闭 JEP_INTERP 的接口 */
-        public synchronized static void close() throws JepException {if (JEP_INTERP != null) {JEP_INTERP.close(); JEP_INTERP = null;}}
-        public synchronized static boolean isClosed() {return JEP_INTERP == null;}
-        /** 提供一个手动刷新 JEP_INTERP 的接口，可以将关闭的重新打开，会清空所有创建的 python 变量 */
-        public synchronized static void refresh() throws JepException {close(); initInterpreter_();}
-        
-        // 由于 Python 语言特性，不能并行执行 python 函数，因此这里不提供获取相关 task 的接口
+        /** 现在和 Groovy 逻辑保持一致，调用任何 run 都会全局重置 args 值 */
+        private static void setArgs_(String aFirst, String[] aArgs) {
+            List<String> tArgs = (aArgs==null || aArgs.length==0) ? Collections.singletonList(aFirst) : AbstractCollections.merge(aFirst, aArgs);
+            // 使用这种方法保证设置成功
+            setValue("_", tArgs);
+            exec("sys.argv = _");
+        }
         
         
         static {
@@ -456,10 +431,10 @@ public class SP {
             }
             JEP_LIB_PATH = JEP_LIB_DIR+tLibName;
             // 设置库路径
-            MainInterpreter.setJepLibraryPath(UT.IO.toAbsolutePath(JEP_LIB_PATH));
+            jep.MainInterpreter.setJepLibraryPath(UT.IO.toAbsolutePath(JEP_LIB_PATH));
             
             // 配置 Jep，这里只能配置一次
-            SharedInterpreter.setConfig(new JepConfig()
+            jep.SharedInterpreter.setConfig(new JepConfig()
                 .addIncludePaths(UT.IO.toAbsolutePath(PYTHON_SP_DIR))
                 .addIncludePaths(UT.IO.toAbsolutePath(PYLIB_DIR))
                 .addIncludePaths(UT.IO.toAbsolutePath(JEP_LIB_DIR))
@@ -470,15 +445,14 @@ public class SP {
             initInterpreter_();
         }
         /** 初始化内部的 JEP_INTERP，主要用于减少重复代码 */
-        private synchronized static void initInterpreter_() {
-            JEP_INTERP = new SharedInterpreter();
-            JEP_INTERP.exec("from importlib import import_module");
+        private static void initInterpreter_() {
+            JEP_INTERP = new jep.SharedInterpreter();
             JEP_INTERP.exec("import sys");
         }
         
         
         /** 基于 pip 的 python 包管理，下载指定包到 .pypkg */
-        public synchronized static void downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform, String aPythonVersion) {
+        public static void downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform, String aPythonVersion) {
             // 组装指令
             List<String> rCommand = new ArrayList<>();
             rCommand.add("pip"); rCommand.add("download");
@@ -515,7 +489,7 @@ public class SP {
         public static void downloadPackage(String aRequirement) {downloadPackage(aRequirement, false);}
         
         /** 基于 pip 的 python 包管理，直接安装指定包到 lib */
-        public synchronized static void installPackage(String aRequirement, boolean aIncludeDep, boolean aIncludeIndex) {
+        public static void installPackage(String aRequirement, boolean aIncludeDep, boolean aIncludeIndex) {
             // 组装指令
             List<String> rCommand = new ArrayList<>();
             rCommand.add("pip"); rCommand.add("install");
@@ -569,7 +543,7 @@ public class SP {
         }
         
         /** 内部使用的安装 jep 的操作，和一般的库不同，jep 由于不能离线使用 pip 安装，这里直接使用源码编译 */
-        private synchronized static @NotNull String installJep_() throws Exception {
+        private static @NotNull String installJep_() throws Exception {
             // 检测 cmake，这里要求一定要有 cmake 环境
             EXE.setNoSTDOutput().setNoERROutput();
             boolean tNoCmake = EXE.system("cmake --version") != 0;
@@ -614,7 +588,7 @@ public class SP {
         }
         
         /** 一些内置的 python 库安装，主要用于内部使用 */
-        public synchronized static void installAse() throws IOException {
+        public static void installAse() throws IOException {
             // 首先获取源码路径，这里直接检测是否是 ase-$ASE_VERSION 开头
             String[] tList = UT.IO.list(PYPKG_DIR);
             boolean tHasAsePkg = false;
