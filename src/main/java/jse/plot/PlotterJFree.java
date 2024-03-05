@@ -22,7 +22,6 @@ import org.jfree.data.general.DatasetUtils;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.graphics2d.svg.SVGGraphics2D;
 
 import javax.swing.*;
 import java.awt.*;
@@ -449,7 +448,7 @@ public final class PlotterJFree implements IPlotter {
     
     /** 直接保存结果 */
     @Override public void save(@Nullable String aFilePath, int aWidth, int aHeight) throws IOException {
-        // 有限走 mCurrentFigure 的 save，避免锁出现问题
+        // 优先走 mCurrentFigure 的 save，避免锁出现问题
         if (mCurrentFigure!=null) {mCurrentFigure.save(aFilePath, aWidth, aHeight); return;}
         // 如果没有 show，则直接保存
         if (aFilePath==null || aFilePath.isEmpty()) aFilePath = IPlotter.DEFAULT_FIGURE_NAME;
@@ -458,17 +457,23 @@ public final class PlotterJFree implements IPlotter {
         ChartUtils.saveChartAsPNG(UT.IO.toFile(aFilePath), mChart, aWidth, aHeight);
     }
     @Override public void save(@Nullable String aFilePath) throws IOException {
-        // 有限走 mCurrentFigure 的 save，避免锁出现问题
+        // 优先走 mCurrentFigure 的 save，避免锁出现问题
         if (mCurrentFigure!=null) {mCurrentFigure.save(aFilePath); return;}
         // 默认保存的大小
         save(aFilePath, mWidth, mHeight);
     }
-    @Override public String toSVG(int aWidth, int aHeight) {
-        final SVGGraphics2D tSVG = new SVGGraphics2D(aWidth, aHeight);
-        mChart.draw(tSVG, new Rectangle(0, 0, aWidth, aHeight));
-        return tSVG.getSVGElement();
+    @Override public byte[] encode(int aWidth, int aHeight) throws IOException {
+        // 优先走 mCurrentFigure 的 encode，避免锁出现问题
+        if (mCurrentFigure!=null) return mCurrentFigure.encode(aWidth, aHeight);
+        // 如果没有 show，则直接输出
+        return ChartUtils.encodeAsPNG(mChart.createBufferedImage(aWidth, aHeight, null));
     }
-    @Override public String toSVG() {return toSVG(mWidth, mHeight);}
+    @Override public byte[] encode() throws IOException {
+        // 优先走 mCurrentFigure 的 encode，避免锁出现问题
+        if (mCurrentFigure!=null) return mCurrentFigure.encode();
+        // 默认保存的大小
+        return encode(mWidth, mHeight);
+    }
     
     
     /** 添加绘制数据 */
@@ -572,6 +577,8 @@ public final class PlotterJFree implements IPlotter {
     /** 设置绘制的大小（和 {@link IFigure#size} 一致） */
     @Override public IPlotter size(int aWidth, int aHeight) {
         mWidth = aWidth; mHeight = aHeight;
+        // 同样也会执行 mCurrentFigure 的 size
+        if (mCurrentFigure!=null) mCurrentFigure.size(aWidth, aHeight);
         return this;
     }
     
@@ -632,6 +639,12 @@ public final class PlotterJFree implements IPlotter {
             }
             @Override public void save(@Nullable String aFilePath) throws IOException {
                 save(aFilePath, tPanel.getWidth(), tPanel.getHeight());
+            }
+            @Override public byte[] encode(int aWidth, int aHeight) throws IOException {
+                return ChartUtils.encodeAsPNG(mChart.createBufferedImage(aWidth, aHeight, null));
+            }
+            @Override public byte[] encode() throws IOException {
+                return encode(mWidth, mHeight);
             }
         };
         

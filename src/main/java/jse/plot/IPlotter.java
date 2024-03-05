@@ -10,7 +10,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.awt.*;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -157,7 +157,7 @@ public interface IPlotter {
     default ILine semilogy(Iterable<? extends Number> aX, Iterable  <? extends Number> aY, @Nullable String aName) {return yScaleLog().plot(aX, aY, aName);}
     
     String DEFAULT_FIGURE_NAME = "figure";
-    Set<IPlotter> SHOWED_PLOTTERS = new HashSet<>();
+    Set<IPlotter> SHOWED_PLOTTERS = new LinkedHashSet<>();
     /** 显示结果 */
     default IFigure show() {return show(DEFAULT_FIGURE_NAME);}
     default IFigure show(String aName) {SHOWED_PLOTTERS.add(this); return null;}
@@ -210,8 +210,8 @@ public interface IPlotter {
     void save(@Nullable String aFilePath, int aWidth, int aHeight) throws IOException;
     void save(@Nullable String aFilePath) throws IOException;
     default void save() throws IOException {save(null);}
-    String toSVG(int aWidth, int aHeight);
-    String toSVG();
+    byte[] encode(int aWidth, int aHeight) throws IOException;
+    byte[] encode() throws IOException;
     
     /** 清空数据 */
     IPlotter clear();

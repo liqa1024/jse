@@ -7,6 +7,7 @@ import io.github.spencerpark.jupyter.kernel.BaseKernel;
 import io.github.spencerpark.jupyter.kernel.LanguageInfo;
 import io.github.spencerpark.jupyter.kernel.ReplacementOptions;
 import io.github.spencerpark.jupyter.kernel.display.DisplayData;
+import io.github.spencerpark.jupyter.kernel.display.mime.MIMEType;
 import io.github.spencerpark.jupyter.kernel.util.CharPredicate;
 import io.github.spencerpark.jupyter.kernel.util.SimpleAutoCompleter;
 import io.github.spencerpark.jupyter.kernel.util.StringSearch;
@@ -50,10 +51,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -180,6 +178,7 @@ public class SP {
             private final String mBanner;
             private final List<LanguageInfo.Help> mHelpLinks;
             public JupyterKernel() {
+                super(StandardCharsets.UTF_8);
                 mLanguageInfo = new LanguageInfo.Builder("groovy")
                     .version(GroovySystem.getVersion())
                     .fileExtension(".groovy")
@@ -204,10 +203,10 @@ public class SP {
                     mEvalTask = null;
                     DisplayData tDisplayData = tOut==null ? null : (tOut instanceof DisplayData) ? (DisplayData)tOut : getRenderer().render(tOut);
                     // 附加输出图像
-                    if (!KERNEL_SHOW_FIGURE) {
+                    if (!KERNEL_SHOW_FIGURE && !IPlotter.SHOWED_PLOTTERS.isEmpty()) {
+                        if (tDisplayData == null) tDisplayData = new DisplayData();
                         for (IPlotter tPlt : IPlotter.SHOWED_PLOTTERS) {
-                            if (tDisplayData == null) tDisplayData = new DisplayData();
-                            tDisplayData.putSVG(tPlt.toSVG());
+                            tDisplayData.putData(MIMEType.IMAGE_PNG, Base64.getMimeEncoder().encodeToString(tPlt.encode()));
                         }
                         // 绘制完成清空存储
                         IPlotter.SHOWED_PLOTTERS.clear();

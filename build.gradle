@@ -84,7 +84,7 @@ dependencies {
 //  implementation('org.apache.commons:commons-rng-sampling:1.5')   // 只使用随机数生成器，还是太复杂了
 //  implementation('me.tongfei:progressbar:0.9.5')                  // 简单的进度条实现（最新版需要 jdk9）；由于字符问题这里直接把源码包含到项目中
     implementation('org.jfree:jfreechart:1.5.4')                    // 简单的绘图支持
-    implementation('org.jfree:jfreesvg:3.4.3')                      // 保存为 SVG 支持
+//  implementation('org.jfree:jfreesvg:3.4.3')                      // 保存为 SVG 支持，目前没有需求，为了接口一致性这里关掉
 //  implementation('org.apache.commons:commons-pool2:2.11.1')       // 对象池, bad ideal，即使需要也应该自己实现一个简单的实例
     implementation('com.google.collections:google-collections:1.0') // 实现更加简单的容器初始化
 //  implementation('org.apache.commons:commons-math3:3.6.1')        // 矩阵计算库，不好用

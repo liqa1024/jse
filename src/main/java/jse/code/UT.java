@@ -1755,8 +1755,8 @@ public class UT {
         public static void save(@Nullable String aFilePath, int aWidth, int aHeight) throws IOException {PLT.save(aFilePath, aWidth, aHeight);}
         public static void save(@Nullable String aFilePath) throws IOException {PLT.save(aFilePath);}
         public static void save() throws IOException {PLT.save();}
-        public static String toSVG(int aWidth, int aHeight) {return PLT.toSVG(aWidth, aHeight);}
-        public static String toSVG() {return PLT.toSVG();}
+        public static byte[] encode(int aWidth, int aHeight) throws IOException {return PLT.encode(aWidth, aHeight);}
+        public static byte[] encode() throws IOException {return PLT.encode();}
         
         public static void cla() {PLT.clear();}
         public static void clf() {PLT.dispose(); PLT = Plotters.get();}

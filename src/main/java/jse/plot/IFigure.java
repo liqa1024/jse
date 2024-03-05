@@ -26,4 +26,6 @@ public interface IFigure {
     void save(@Nullable String aFilePath, int aWidth, int aHeight) throws IOException;
     void save(@Nullable String aFilePath) throws IOException;
     default void save() throws IOException {save(null);}
+    byte[] encode(int aWidth, int aHeight) throws IOException;
+    byte[] encode() throws IOException;
 }
