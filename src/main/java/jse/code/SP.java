@@ -678,7 +678,7 @@ public class SP {
             EXE.setNoSTDOutput().setNoERROutput();
             boolean tNoCmake = EXE.system("cmake --version") != 0;
             EXE.setNoSTDOutput(false).setNoERROutput(false);
-            if (tNoCmake) throw new Exception("JEP BUILD ERROR: No camke environment.");
+            if (tNoCmake) throw new Exception("JEP BUILD ERROR: No cmake environment.");
             String tWorkingDir = WORKING_DIR_OF("jep");
             // 如果已经存在则先删除
             UT.IO.removeDir(tWorkingDir);

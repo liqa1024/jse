@@ -1174,7 +1174,7 @@ public class MPI {
             EXE.setNoSTDOutput().setNoERROutput();
             boolean tNoCmake = EXE.system("cmake --version") != 0;
             EXE.setNoSTDOutput(false).setNoERROutput(false);
-            if (tNoCmake) throw new Exception("MPI BUILD ERROR: No camke environment.");
+            if (tNoCmake) throw new Exception("MPI BUILD ERROR: No cmake environment.");
             // 从内部资源解压到临时目录
             String tWorkingDir = WORKING_DIR_OF("mpijni");
             // 如果已经存在则先删除

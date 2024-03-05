@@ -238,7 +238,7 @@ public class NativeLmp implements IAutoShutdown {
         EXE.setNoSTDOutput().setNoERROutput();
         boolean tNoCmake = EXE.system("cmake --version") != 0;
         EXE.setNoSTDOutput(false).setNoERROutput(false);
-        if (tNoCmake) throw new Exception("NATIVE_LMP BUILD ERROR: No camke environment.");
+        if (tNoCmake) throw new Exception("NATIVE_LMP BUILD ERROR: No cmake environment.");
         String tWorkingDir = WORKING_DIR_OF("nativelmp");
         // 如果已经存在则先删除
         UT.IO.removeDir(tWorkingDir);
@@ -295,7 +295,7 @@ public class NativeLmp implements IAutoShutdown {
         EXE.setNoSTDOutput().setNoERROutput();
         boolean tNoCmake = EXE.system("cmake --version") != 0;
         EXE.setNoSTDOutput(false).setNoERROutput(false);
-        if (tNoCmake) throw new Exception("NATIVE_LMP BUILD ERROR: No camke environment.");
+        if (tNoCmake) throw new Exception("NATIVE_LMP BUILD ERROR: No cmake environment.");
         String tWorkingDir = WORKING_DIR_OF("lmpjni");
         // 如果已经存在则先删除
         UT.IO.removeDir(tWorkingDir);
