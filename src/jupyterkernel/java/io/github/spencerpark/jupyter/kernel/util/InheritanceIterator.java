@@ -22,6 +22,7 @@ import java.util.*;
  * Iterating over {@code new InheritanceIterator(F.class)} will yield:
  * {@code F.class, J.class, K.class, I.class, E.class, L.class, D.class, Object.class}
  */
+@SuppressWarnings("rawtypes")
 public class InheritanceIterator implements Iterator<Class> {
     private final Set<Class> observedInterfaces;
 

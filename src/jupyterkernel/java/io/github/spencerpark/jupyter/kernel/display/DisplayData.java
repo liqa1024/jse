@@ -6,7 +6,6 @@ import io.github.spencerpark.jupyter.kernel.display.mime.MIMEType;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class DisplayData {
     public static final String DISPLAY_ID_KEY = "display_id";
@@ -116,6 +115,7 @@ public class DisplayData {
         this.putTransientData(DISPLAY_ID_KEY, id);
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean hasDisplayId() {
         return this.transientData != null
                 && this.transientData.containsKey(DISPLAY_ID_KEY);

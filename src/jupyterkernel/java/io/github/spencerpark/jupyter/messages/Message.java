@@ -3,22 +3,22 @@ package io.github.spencerpark.jupyter.messages;
 import java.util.*;
 
 public class Message<T> implements MessageContext {
-    private List<byte[]> identities;
+    private final List<byte[]> identities;
 
-    private Header<T> header;
+    private final Header<T> header;
 
     /**
      * Optional, in a chain of messages this is copied from
      * the parent so the client can better track where the messages
      * come from.
      */
-    private Header<?> parentHeader;
+    private final Header<?> parentHeader;
 
     private Map<String, Object> metadata;
 
-    private T content;
+    private final T content;
 
-    private List<byte[]> blobs;
+    private final List<byte[]> blobs;
 
     public Message(MessageContext ctx, MessageType<T> type, T content) {
         this(ctx, type, content, null, null);

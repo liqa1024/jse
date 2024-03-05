@@ -2,6 +2,7 @@ package io.github.spencerpark.jupyter.kernel.display;
 
 import io.github.spencerpark.jupyter.kernel.display.mime.MIMEType;
 
+@SuppressWarnings("UnnecessaryModifier")
 @FunctionalInterface
 public interface MIMESuffixAssociation {
     static final MIMESuffixAssociation NONE = s -> null;

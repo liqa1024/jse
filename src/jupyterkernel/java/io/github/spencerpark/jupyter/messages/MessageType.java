@@ -116,6 +116,7 @@ public class MessageType<T> {
         return id;
     }
 
+    @SuppressWarnings("RedundantMethodOverride")
     @Override
     public boolean equals(Object obj) {
         return this == obj;

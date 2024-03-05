@@ -8,6 +8,7 @@ import java.util.*;
  * A smarter set of {@link MIMEType}s.
  */
 public class RenderRequestTypes {
+    @SuppressWarnings("UnusedReturnValue")
     public static class Builder {
         private final MIMESuffixAssociation suffixAssociation;
 

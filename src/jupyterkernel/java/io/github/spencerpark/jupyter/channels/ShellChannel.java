@@ -36,7 +36,7 @@ public class ShellChannel extends JupyterSocket {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void bind(KernelConnectionProperties connProps) {
         if (this.isBound())
             throw new IllegalStateException("Shell channel already bound");

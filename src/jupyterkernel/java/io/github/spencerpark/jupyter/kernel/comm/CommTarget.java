@@ -3,13 +3,14 @@ package io.github.spencerpark.jupyter.kernel.comm;
 import io.github.spencerpark.jupyter.messages.Message;
 import io.github.spencerpark.jupyter.messages.comm.CommOpenCommand;
 
+@SuppressWarnings("UnnecessaryModifier")
 @FunctionalInterface
 public interface CommTarget {
     /**
      * Create a new comm as a result of the frontend making a {@code comm_open} request. This
      * is designed to be a constructor reference to a class that extends {@link Comm} overriding
      * the {@link Comm#onMessage(Message)}.
-     *
+     * <p>
      * For example a plain no-op handler may be {@code CommTarget noop = Comm::new;}. Which would create
      * comms that do nothing when the receive a message.
      *

@@ -1,5 +1,7 @@
 package io.github.spencerpark.jupyter.channels;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Objects;
@@ -80,11 +82,11 @@ public class JupyterInputStream extends InputStream {
             }
         }
 
-        return this.data[this.bufferPos++];
+        return this.data[this.bufferPos++] & 0xFF;
     }
 
     @Override
-    public int read(byte[] into, int intoOffset, int len) {
+    public int read(byte @NotNull[] into, int intoOffset, int len) {
         Objects.requireNonNull(into, "Target buffer cannot be null");
 
         if (intoOffset < 0)

@@ -29,11 +29,11 @@ public class ExecuteRequest implements ContentType<ExecuteRequest>, RequestType<
 
     /**
      *  silent -&gt; !store_history
-     *
+     * <p>
      *  if silent:
      *      - no broadcast on IOPUB channel
      *      - no execute_result reply
-     *
+     * <p>
      *  Default: {@code false}
      */
     protected final boolean silent;
@@ -47,7 +47,7 @@ public class ExecuteRequest implements ContentType<ExecuteRequest>, RequestType<
 
     /**
      * A bank of {@code name -> code} that need to be evaluated.
-     *
+     * <p>
      * The idea behind it is that a front end may always want {@code path -> `pwd`}
      * so that they can display where the kernel is.
      */

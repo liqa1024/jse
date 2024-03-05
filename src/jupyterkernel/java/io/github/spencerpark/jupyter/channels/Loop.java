@@ -68,6 +68,7 @@ public class Loop extends Thread {
         this.runNextQueue.offer(next);
     }
 
+    @SuppressWarnings("BusyWait")
     @Override
     public void run() {
         Runnable next;

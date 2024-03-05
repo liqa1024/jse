@@ -3,6 +3,7 @@ package io.github.spencerpark.jupyter.kernel.comm;
 import io.github.spencerpark.jupyter.messages.Message;
 import io.github.spencerpark.jupyter.messages.comm.CommOpenCommand;
 
+@SuppressWarnings("UnnecessaryModifier")
 @FunctionalInterface
 public interface CommFactory<T extends Comm> {
 

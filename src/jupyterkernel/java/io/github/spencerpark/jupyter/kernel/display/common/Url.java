@@ -32,7 +32,7 @@ public class Url {
                 DisplayData rendered = context.getRenderer().render(content, context.getParams());
                 context.getOutputContainer().assign(rendered);
             } catch (IOException e) {
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
         } else {
             context.renderIfRequested(MIMEType.TEXT_HTML, () -> {

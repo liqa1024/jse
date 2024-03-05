@@ -5,6 +5,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+@SuppressWarnings("UnnecessaryModifier")
 public interface HistoryManager {
     public enum ResultFlag {
         /**

@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+@SuppressWarnings("UnnecessaryModifier")
 @FunctionalInterface
 public interface DisplayDataRenderable {
     static Set<MIMEType> ANY = Collections.singleton(MIMEType.ANY);

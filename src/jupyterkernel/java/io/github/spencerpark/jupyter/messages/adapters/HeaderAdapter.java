@@ -7,6 +7,7 @@ import io.github.spencerpark.jupyter.messages.MessageType;
 
 import java.lang.reflect.Type;
 
+@SuppressWarnings("rawtypes")
 public class HeaderAdapter implements JsonSerializer<Header>, JsonDeserializer<Header> {
     public static final HeaderAdapter INSTANCE = new HeaderAdapter();
 

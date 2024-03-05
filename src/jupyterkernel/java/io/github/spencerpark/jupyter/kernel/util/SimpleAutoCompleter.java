@@ -14,7 +14,7 @@ public class SimpleAutoCompleter {
     }
 
     public static class Builder {
-        private Collection<String> keywords;
+        private final Collection<String> keywords;
         private boolean caseSensitive = true;
         private Comparator<String> resultsSorter = null;
 

@@ -5,10 +5,11 @@ import java.util.Map;
 
 /**
  * A utility class for inline map construction for use in the context of rendering.
- *
+ * <p>
  * See: {@link Renderer#render(Object, Map)} and {@link Renderer#renderAs(Object, Map, String...)}
  * which take a parameter map.
  */
+@SuppressWarnings("rawtypes")
 public class RenderParams extends LinkedHashMap<String, Object> {
     //TODO use the path map from MellowD to support a getAll query or one with wildcard patterns
     public static class Param<T> {

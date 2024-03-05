@@ -26,6 +26,7 @@ public class JupyterConnection {
     protected final StdinChannel stdin;
     protected final IOPubChannel iopub;
 
+    @SuppressWarnings("rawtypes")
     private final Map<MessageType, ShellHandler> handlers;
 
     public JupyterConnection(KernelConnectionProperties connProps) throws NoSuchAlgorithmException, InvalidKeyException {
@@ -62,7 +63,7 @@ public class JupyterConnection {
 
     @SuppressWarnings("unchecked")
     public <T> ShellHandler<T> getHandler(MessageType<T> type) {
-        return this.handlers.get(type);
+        return (ShellHandler<T>)this.handlers.get(type);
     }
 
     public ShellReplyEnvironment prepareReplyEnv(ShellChannel shell, MessageContext context) {

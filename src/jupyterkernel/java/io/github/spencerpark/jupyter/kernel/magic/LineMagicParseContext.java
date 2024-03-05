@@ -1,5 +1,6 @@
 package io.github.spencerpark.jupyter.kernel.magic;
 
+@SuppressWarnings("UnnecessaryModifier")
 public interface LineMagicParseContext {
     public static LineMagicParseContext of(LineMagicArgs args, String raw, String rawCell, String rawContextPrefix) {
         return new LineMagicParseContext() {

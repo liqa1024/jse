@@ -19,6 +19,7 @@ import java.util.*;
  * but in the event that renderAs (or displayAs) is invoked the specified types
  * override the defaults.
  */
+@SuppressWarnings("rawtypes")
 public class Renderer {
     private static class RenderFunctionProps {
         private final RenderFunction function;
@@ -93,6 +94,7 @@ public class Renderer {
     }
 
     private final Map<Class, List<RenderFunctionProps>> renderFunctions;
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     private final Map<String, MIMEType> suffixMappings;
 
     public Renderer() {

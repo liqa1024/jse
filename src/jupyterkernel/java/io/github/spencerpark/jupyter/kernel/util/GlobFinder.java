@@ -72,6 +72,7 @@ public class GlobFinder {
                     return false;
 
                 String name = pathName.toString();
+                //noinspection DataFlowIssue
                 return this.literal != null
                         ? this.literal.equals(name)
                         : this.regex.matcher(name).matches();
@@ -80,10 +81,12 @@ public class GlobFinder {
 
         @Override
         public String toString() {
+            //noinspection DataFlowIssue
             return this.isLiteral() ? this.literal : this.regex.pattern();
         }
     }
 
+    @SuppressWarnings({"ConcatenationWithEmptyString", "RegExpUnnecessaryNonCapturingGroup"})
     private static final Pattern GLOB_SEGMENT_COMPONENT = Pattern.compile(
             "" +
                     "(?<literal>[^*?]+)" +
@@ -145,6 +148,7 @@ public class GlobFinder {
                 matchers.add(new GlobSegment(lit.toString()));
                 if (lastBaseSegmentIdx == i) lastBaseSegmentIdx++;
             } else {
+                //noinspection UnnecessaryToStringCall
                 matchers.add(new GlobSegment(Pattern.compile("^" + pattern.toString() + "$")));
             }
         }

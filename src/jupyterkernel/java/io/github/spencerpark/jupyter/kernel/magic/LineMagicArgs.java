@@ -2,6 +2,7 @@ package io.github.spencerpark.jupyter.kernel.magic;
 
 import java.util.List;
 
+@SuppressWarnings("UnnecessaryModifier")
 public interface LineMagicArgs {
     public static LineMagicArgs of(String name, List<String> args) {
         return new LineMagicArgs() {

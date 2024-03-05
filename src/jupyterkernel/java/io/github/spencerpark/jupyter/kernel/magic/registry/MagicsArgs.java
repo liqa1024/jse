@@ -176,8 +176,9 @@ public class MagicsArgs {
         }
     }
 
+    @SuppressWarnings("UnnecessaryModifier")
     @FunctionalInterface
-    private static interface KeywordAggregator {
+    public static interface KeywordAggregator {
         /**
          * Consume the argument.
          *
@@ -308,7 +309,7 @@ public class MagicsArgs {
             s.add("-*");
 
         this.keywords.keySet().stream()
-                .filter(a -> !this.keywordFromFlag.values().contains(a))
+                .filter(a -> !this.keywordFromFlag.containsValue(a))
                 .forEach(a -> s.add("--" + a));
         if (this.defaultKeywordAggregator != null)
             s.add("--**");

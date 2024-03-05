@@ -2,6 +2,7 @@ package io.github.spencerpark.jupyter.kernel.util;
 
 import java.util.*;
 
+@SuppressWarnings("UnnecessaryModifier")
 @FunctionalInterface
 public interface CharPredicate {
 
@@ -142,7 +143,8 @@ public interface CharPredicate {
                 }
                 ranges.add(prev);
             }
-
+            
+            //noinspection ToArrayCallWithZeroLengthArrayArgument
             CharRange[] test = ranges.toArray(new CharRange[ranges.size()]);
 
             return c -> {

@@ -16,7 +16,7 @@ public class DefaultReplyEnvironment implements ReplyEnvironment {
 
     private final MessageContext context;
 
-    private Deque<Runnable> deferred = new LinkedList<>();
+    private final Deque<Runnable> deferred = new LinkedList<>();
     private boolean defer = false;
 
     public DefaultReplyEnvironment(JupyterSocket shell, JupyterSocket iopub, MessageContext context) {
@@ -88,7 +88,7 @@ public class DefaultReplyEnvironment implements ReplyEnvironment {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void replyError(MessageType<?> type, ErrorReply error) {
         reply(new Message(context, type, error));
     }

@@ -2,6 +2,7 @@ package io.github.spencerpark.jupyter.kernel.magic;
 
 import java.util.List;
 
+@SuppressWarnings("UnnecessaryModifier")
 public interface CellMagicArgs extends LineMagicArgs {
     public static CellMagicArgs of(String name, List<String> args, String body) {
         return new CellMagicArgs() {

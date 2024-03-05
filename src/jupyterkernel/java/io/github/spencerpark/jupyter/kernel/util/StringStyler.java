@@ -72,10 +72,10 @@ public class StringStyler {
         }
     }
 
-    private String primaryStyle;
-    private String secondaryStyle;
-    private String hlStyle;
-    private Function<Integer, String> linePrefix;
+    private final String primaryStyle;
+    private final String secondaryStyle;
+    private final String hlStyle;
+    private final Function<Integer, String> linePrefix;
 
     public StringStyler(String primaryStyle, String secondaryStyle, String hlStyle, Function<Integer, String> linePrefix) {
         this.primaryStyle = primaryStyle;
@@ -176,10 +176,12 @@ public class StringStyler {
                     hlLine.append(this.primary(src.substring(end, srcLineBreak.start())));
 
                 fmt.add(hlLine.toString());
-            } else if (foundStart && srcLineBreak.start() <= end) {
+            } else
+            if (foundStart && srcLineBreak.start() <= end) {
                 // This entire line should be highlighted
                 fmt.add(this.highlightLine(line, src.substring(lastLinePos, srcLineBreak.start())));
-            } else if (foundStart && end <= srcLineBreak.start()) {
+            } else //noinspection ConstantValue
+            if (foundStart && end <= srcLineBreak.start()) {
                 // This is the last line containing the highlighted region
                 fmt.add(this.highlightLine(line, src.substring(lastLinePos, end))
                         + this.primary(src.substring(end, srcLineBreak.start())));

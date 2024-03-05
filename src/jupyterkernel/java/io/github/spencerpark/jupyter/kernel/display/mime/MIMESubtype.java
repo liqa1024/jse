@@ -7,6 +7,7 @@ public class MIMESubtype {
         public static final Tree UNREGISTERED = new Tree("x");
 
         public static Tree of(String name) {
+            //noinspection SwitchStatementWithTooFewBranches
             switch (name.toLowerCase()) {
                 case "vnd": return VENDOR;
                 default:

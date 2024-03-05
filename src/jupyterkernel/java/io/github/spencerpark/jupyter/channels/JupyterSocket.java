@@ -18,16 +18,17 @@ import org.zeromq.ZMQ;
 
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Logger;
 
 public abstract class JupyterSocket extends ZMQ.Socket {
     protected static String formatAddress(String transport, String ip, int port) {
-        return transport + "://" + ip + ":" + Integer.toString(port);
+        return transport + "://" + ip + ":" + port;
     }
 
-    public static final Charset ASCII = Charset.forName("ascii");
-    public static final Charset UTF_8 = Charset.forName("utf8");
+    public static final Charset ASCII = StandardCharsets.US_ASCII;
+    public static final Charset UTF_8 = StandardCharsets.UTF_8;
 
     private static final byte[] IDENTITY_BLOB_DELIMITER = "<IDS|MSG>".getBytes(ASCII); // Comes from a python bytestring
     private static final Gson replyGson = new GsonBuilder()
@@ -97,7 +98,7 @@ public abstract class JupyterSocket extends ZMQ.Socket {
 
         Header<?> parentHeader = null;
         JsonElement parentHeaderJson = json.parse(new String(parentHeaderRaw, UTF_8));
-        if (parentHeaderJson.isJsonObject() && parentHeaderJson.getAsJsonObject().size() > 0)
+        if (parentHeaderJson.isJsonObject() && !parentHeaderJson.getAsJsonObject().isEmpty())
             parentHeader = gson.fromJson(parentHeaderJson, Header.class);
 
         Map<String, Object> metadata = gson.fromJson(new String(metadataRaw, UTF_8), JSON_OBJ_AS_MAP);
@@ -105,7 +106,7 @@ public abstract class JupyterSocket extends ZMQ.Socket {
         if (content instanceof ErrorReply)
             header = new Header<>(header.getId(), header.getUsername(), header.getSessionId(), header.getTimestamp(), header.getType().error(), header.getVersion());
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "rawtypes"})
         Message<?> message = new Message(identities, header, parentHeader, metadata, content, blobs);
 
         logger.finer(() -> "Received from " + super.base().getSocketOptx(zmq.ZMQ.ZMQ_LAST_ENDPOINT) + ":\n" + gson.toJson(message));

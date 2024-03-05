@@ -24,7 +24,7 @@ public class HistoryRequestAdapter implements JsonDeserializer<HistoryRequest> {
             case SEARCH:
                 return ctx.deserialize(element, HistoryRequest.Search.class);
             default:
-                throw new IllegalArgumentException("Unknown hist_access_type " + String.valueOf(accessTypeRaw));
+                throw new IllegalArgumentException("Unknown hist_access_type " + accessTypeRaw);
         }
     }
 }

@@ -6,7 +6,7 @@ import io.github.spencerpark.jupyter.kernel.magic.registry.MagicsArgs;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +30,7 @@ public class WriteFile {
         if (file.isDirectory())
             throw new FileAlreadyExistsException("Cannot write to file " + fileName + ". It is a directory.");
 
-        try (OutputStreamWriter fileOut = new OutputStreamWriter(new FileOutputStream(file, append), Charset.forName("utf8"))) {
+        try (OutputStreamWriter fileOut = new OutputStreamWriter(new FileOutputStream(file, append), StandardCharsets.UTF_8)) {
             fileOut.write(body);
         }
 

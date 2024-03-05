@@ -10,6 +10,7 @@ import io.github.spencerpark.jupyter.messages.comm.CommMsgCommand;
 import io.github.spencerpark.jupyter.messages.comm.CommOpenCommand;
 import io.github.spencerpark.jupyter.messages.reply.CommInfoReply;
 import io.github.spencerpark.jupyter.messages.request.CommInfoRequest;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -38,7 +39,7 @@ public class CommManager implements Iterable<Comm> {
     }
 
     @Override
-    public Iterator<Comm> iterator() {
+    public @NotNull Iterator<Comm> iterator() {
         return this.comms.values().iterator();
     }
 
