@@ -44,6 +44,14 @@ sourceSets {
             srcDirs = ['src/progressbar/java']
         }
     }
+    jupyterkernel {
+        java {
+            srcDirs = ['src/jupyterkernel/java']
+        }
+        resources {
+            srcDirs = ['src/jupyterkernel/resources']
+        }
+    }
 }
 
 compileJepJava {options.encoding = 'UTF-8'}
@@ -64,6 +72,7 @@ dependencies {
     // 源码依赖
     implementation(sourceSets.jep.output)
     implementation(sourceSets.progressbar.output)
+    implementation(sourceSets.jupyterkernel.output)
     
     // groovy
     implementation('org.apache.groovy:groovy:4.0.18')               // 用于直接执行 groovy 脚本而不需要安装 groovy
@@ -75,9 +84,9 @@ dependencies {
     
     // 跨语言编程
 //  implementation('black.ninia:jep:4.2.0')                         // 调用 python 代码支持，需要系统有需要的 python 环境，并且需要初始化，因此这里不作为主要代码的使用；由于 PyObject 不能 groovy 原生调用，现在包含到项目中
-    implementation('com.google.code.gson:gson:2.10.1')              // 使用新版的 gson，避免漏洞警告
-    implementation('org.zeromq:jeromq:0.5.4')                       // 跨 JVM 并行库，可以支持超算上跨节点并行；虽然 java 标准库也有类似功能，但是这个更加易用；现在直接使用 mpi
-    implementation('io.github.spencerpark:jupyter-jvm-basekernel:2.3.0') {transitive = false} // jupyter 的通用 kernel，关闭传递手动使用新版本的 ZeroMQ 和 Gson
+//  implementation('com.google.code.gson:gson:2.10.1')              // 使用新版的 gson，避免漏洞警告
+//  implementation('org.zeromq:jeromq:0.5.4')                       // 跨 JVM 并行库，可以支持超算上跨节点并行；虽然 java 标准库也有类似功能，但是这个更加易用；现在直接使用 mpi
+//  implementation('io.github.spencerpark:jupyter-jvm-basekernel:2.3.0') {transitive = false} // jupyter 的通用 kernel，关闭传递手动使用新版本的 ZeroMQ 和 Gson；现在改为直接包含源码，实现额外的功能
     
     // 实用工具
     implementation('com.mastfrog:sort:2.9.7')                       // 实用的多排序功能，因此现在不再支持支持性不好的 Compare 排序
@@ -101,6 +110,10 @@ dependencies {
     
     // progressbar 依赖
     progressbarImplementation('org.jetbrains:annotations:24.1.0')   // idea 调试支持
+    
+    // jupyterkernel 依赖
+    jupyterkernelImplementation('com.google.code.gson:gson:2.10.1') // gson
+    jupyterkernelImplementation('org.zeromq:jeromq:0.5.4')          // zeroMQ
 }
 
 shadowJar {
@@ -122,7 +135,7 @@ shadowJar {
 tasks.register('sourceJar', Jar) {
     archiveBaseName = 'jse'
     archiveClassifier = 'src'
-    from(sourceSets.main.allSource, sourceSets.jep.allSource, sourceSets.progressbar.allSource)
+    from(sourceSets.main.allSource)
     exclude('assets/**')
     // 添加过滤器来修复 relocate 的问题
     filteringCharset = 'UTF-8'
