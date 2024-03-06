@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import static jse.cache.ByteArrayCache.entryInvalid;
 import static jse.code.CS.ZL_BOOL;
 import static jse.code.Conf.NO_CACHE;
 
@@ -49,7 +50,7 @@ public class BooleanArrayCache {
         if (aMinSize <= 0) return ZL_BOOL;
         if (NO_CACHE) return new boolean[aMinSize];
         Map.Entry<Integer, IObjectPool<boolean[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) return new boolean[aMinSize];
+        if (entryInvalid(tEntry, aMinSize)) return new boolean[aMinSize];
         IObjectPool<boolean[]> tPool = tEntry.getValue();
         // 如果是缓存值需要手动设置为 0
         boolean @Nullable[] tOut = tPool.getObject();
@@ -67,7 +68,7 @@ public class BooleanArrayCache {
         if (aMinSize <= 0) return ZL_BOOL;
         if (NO_CACHE) return new boolean[aMinSize];
         Map.Entry<Integer, IObjectPool<boolean[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) return new boolean[aMinSize];
+        if (entryInvalid(tEntry, aMinSize)) return new boolean[aMinSize];
         IObjectPool<boolean[]> tPool = tEntry.getValue();
         if (tPool == null) return new boolean[aMinSize];
         boolean @Nullable[] tOut = tPool.getObject();
@@ -100,7 +101,7 @@ public class BooleanArrayCache {
             return;
         }
         Map.Entry<Integer, IObjectPool<boolean[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) {
+        if (entryInvalid(tEntry, aMinSize)) {
             for (int i = 0; i < aMultiple; ++i) aZerosConsumer.set(i, new boolean[aMinSize]);
             return;
         }
@@ -134,7 +135,7 @@ public class BooleanArrayCache {
             return;
         }
         Map.Entry<Integer, IObjectPool<boolean[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) {
+        if (entryInvalid(tEntry, aMinSize)) {
             for (int i = 0; i < aMultiple; ++i) aArrayConsumer.set(i, new boolean[aMinSize]);
             return;
         }

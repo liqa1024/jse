@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import static jse.cache.ByteArrayCache.entryInvalid;
 import static jse.code.CS.ZL_INT;
 import static jse.code.Conf.NO_CACHE;
 
@@ -49,7 +50,7 @@ public class IntArrayCache {
         if (aMinSize <= 0) return ZL_INT;
         if (NO_CACHE) return new int[aMinSize];
         Map.Entry<Integer, IObjectPool<int[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) return new int[aMinSize];
+        if (entryInvalid(tEntry, aMinSize)) return new int[aMinSize];
         IObjectPool<int[]> tPool = tEntry.getValue();
         // 如果是缓存值需要手动设置为 0
         int @Nullable[] tOut = tPool.getObject();
@@ -67,7 +68,7 @@ public class IntArrayCache {
         if (aMinSize <= 0) return ZL_INT;
         if (NO_CACHE) return new int[aMinSize];
         Map.Entry<Integer, IObjectPool<int[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) return new int[aMinSize];
+        if (entryInvalid(tEntry, aMinSize)) return new int[aMinSize];
         IObjectPool<int[]> tPool = tEntry.getValue();
         if (tPool == null) return new int[aMinSize];
         int @Nullable[] tOut = tPool.getObject();
@@ -100,7 +101,7 @@ public class IntArrayCache {
             return;
         }
         Map.Entry<Integer, IObjectPool<int[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) {
+        if (entryInvalid(tEntry, aMinSize)) {
             for (int i = 0; i < aMultiple; ++i) aZerosConsumer.set(i, new int[aMinSize]);
             return;
         }
@@ -134,7 +135,7 @@ public class IntArrayCache {
             return;
         }
         Map.Entry<Integer, IObjectPool<int[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) {
+        if (entryInvalid(tEntry, aMinSize)) {
             for (int i = 0; i < aMultiple; ++i) aArrayConsumer.set(i, new int[aMinSize]);
             return;
         }

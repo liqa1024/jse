@@ -39,6 +39,12 @@ public class ByteArrayCache {
         CACHE.get().computeIfAbsent(tSizeKey, key -> new ObjectCachePool<>()).returnObject(aArray);
     }
     
+    static boolean entryInvalid(@Nullable Map.Entry<Integer, ?> aEntry, int aSize) {
+        if (aEntry == null) return true;
+        int tSize = aEntry.getKey();
+        return (tSize > 16) && (tSize+tSize > aSize+aSize+aSize);
+    }
+    
     
     /**
      * @param aMinSize 要求的最小长度
@@ -49,7 +55,7 @@ public class ByteArrayCache {
         if (aMinSize <= 0) return ZL_BYTE;
         if (NO_CACHE) return new byte[aMinSize];
         Map.Entry<Integer, IObjectPool<byte[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) return new byte[aMinSize];
+        if (entryInvalid(tEntry, aMinSize)) return new byte[aMinSize];
         IObjectPool<byte[]> tPool = tEntry.getValue();
         // 如果是缓存值需要手动设置为 0.0
         byte @Nullable[] tOut = tPool.getObject();
@@ -67,7 +73,7 @@ public class ByteArrayCache {
         if (aMinSize <= 0) return ZL_BYTE;
         if (NO_CACHE) return new byte[aMinSize];
         Map.Entry<Integer, IObjectPool<byte[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) return new byte[aMinSize];
+        if (entryInvalid(tEntry, aMinSize)) return new byte[aMinSize];
         IObjectPool<byte[]> tPool = tEntry.getValue();
         if (tPool == null) return new byte[aMinSize];
         byte @Nullable[] tOut = tPool.getObject();
@@ -100,7 +106,7 @@ public class ByteArrayCache {
             return;
         }
         Map.Entry<Integer, IObjectPool<byte[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) {
+        if (entryInvalid(tEntry, aMinSize)) {
             for (int i = 0; i < aMultiple; ++i) aZerosConsumer.set(i, new byte[aMinSize]);
             return;
         }
@@ -134,7 +140,7 @@ public class ByteArrayCache {
             return;
         }
         Map.Entry<Integer, IObjectPool<byte[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) {
+        if (entryInvalid(tEntry, aMinSize)) {
             for (int i = 0; i < aMultiple; ++i) aArrayConsumer.set(i, new byte[aMinSize]);
             return;
         }

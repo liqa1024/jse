@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import static jse.cache.ByteArrayCache.entryInvalid;
 import static jse.code.CS.ZL_VEC;
 import static jse.code.Conf.NO_CACHE;
 
@@ -49,7 +50,7 @@ public class DoubleArrayCache {
         if (aMinSize <= 0) return ZL_VEC;
         if (NO_CACHE) return new double[aMinSize];
         Map.Entry<Integer, IObjectPool<double[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) return new double[aMinSize];
+        if (entryInvalid(tEntry, aMinSize)) return new double[aMinSize];
         IObjectPool<double[]> tPool = tEntry.getValue();
         // 如果是缓存值需要手动设置为 0.0
         double @Nullable[] tOut = tPool.getObject();
@@ -67,7 +68,7 @@ public class DoubleArrayCache {
         if (aMinSize <= 0) return ZL_VEC;
         if (NO_CACHE) return new double[aMinSize];
         Map.Entry<Integer, IObjectPool<double[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) return new double[aMinSize];
+        if (entryInvalid(tEntry, aMinSize)) return new double[aMinSize];
         IObjectPool<double[]> tPool = tEntry.getValue();
         if (tPool == null) return new double[aMinSize];
         double @Nullable[] tOut = tPool.getObject();
@@ -100,7 +101,7 @@ public class DoubleArrayCache {
             return;
         }
         Map.Entry<Integer, IObjectPool<double[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) {
+        if (entryInvalid(tEntry, aMinSize)) {
             for (int i = 0; i < aMultiple; ++i) aZerosConsumer.set(i, new double[aMinSize]);
             return;
         }
@@ -134,7 +135,7 @@ public class DoubleArrayCache {
             return;
         }
         Map.Entry<Integer, IObjectPool<double[]>> tEntry = CACHE.get().ceilingEntry(aMinSize);
-        if (tEntry == null || tEntry.getKey()>=aMinSize*2) {
+        if (entryInvalid(tEntry, aMinSize)) {
             for (int i = 0; i < aMultiple; ++i) aArrayConsumer.set(i, new double[aMinSize]);
             return;
         }
