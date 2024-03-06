@@ -4,7 +4,7 @@
 #pragma ide diagnostic ignored "modernize-use-nullptr"
 #endif
 
-#include "mpi.h"
+#include <mpi.h>
 #include "jniutil.h"
 #include "jse_parallel_MPI_Native.h"
 

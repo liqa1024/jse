@@ -49,21 +49,15 @@ if(JSE_USE_CXX)
     if(MPI_CXX_FOUND)
         add_definitions(-DLAMMPS_LIB_MPI)
         
-        set(CMAKE_COMPILE_FLAGS ${CMAKE_COMPILE_FLAGS} ${MPI_CXX_COMPILE_FLAGS})
-        set(CMAKE_LINK_FLAGS ${CMAKE_LINK_FLAGS} ${MPI_CXX_LINK_FLAGS})
+        set(MPI_CXX_SKIP_MPICXX TRUE)
         
-        include_directories(${MPI_CXX_INCLUDE_DIRS})
-        target_link_libraries(lmpjni ${MPI_CXX_LIBRARIES})
+        target_link_libraries(lmpjni MPI::MPI_CXX)
     endif()
 else()
     if(MPI_C_FOUND)
         add_definitions(-DLAMMPS_LIB_MPI)
         
-        set(CMAKE_COMPILE_FLAGS ${CMAKE_COMPILE_FLAGS} ${MPI_C_COMPILE_FLAGS})
-        set(CMAKE_LINK_FLAGS ${CMAKE_LINK_FLAGS} ${MPI_C_LINK_FLAGS})
-        
-        include_directories(${MPI_C_INCLUDE_DIRS})
-        target_link_libraries(lmpjni ${MPI_C_LIBRARIES})
+        target_link_libraries(lmpjni MPI::MPI_C)
     endif()
 endif()
 
