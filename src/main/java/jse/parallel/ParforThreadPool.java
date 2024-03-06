@@ -1,5 +1,6 @@
 package jse.parallel;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
@@ -21,7 +22,7 @@ import static jse.code.Conf.PARFOR_NO_COMPETITIVE;
  * 当线程数大于 1 时同一个实例的操作加锁保证线程安全；
  * 当线程数为 1 时同一个实例的操作不会加锁 </p>
  */
-public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
+public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
     private final Lock @Nullable[] mLocks; // 用来在并行时给每个线程独立加锁，保证每个线程独立写入的操作的可见性
     private final boolean mNoCompetitive;
     
@@ -31,6 +32,8 @@ public class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
     @Override public void shutdownNow() {shutdown();}
     @Override public boolean isShutdown() {return mDead;}
     @Override public boolean isTerminated() {return mDead;}
+    /** ParforThreadPool close 时不需要 awaitTermination */
+    @ApiStatus.Internal @Override public void close() {shutdown();}
     
     public ParforThreadPool(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, boolean aNoCompetitive) {
         super(aThreadNum==1 ? SERIAL_EXECUTOR : newPool(aThreadNum));

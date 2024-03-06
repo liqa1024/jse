@@ -7,6 +7,7 @@ import jse.math.MathEX;
 import jse.math.function.Func3;
 import jse.parallel.AbstractThreadPool;
 import jse.parallel.ParforThreadPool;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,8 @@ public class Generator extends AbstractThreadPool<ParforThreadPool> {
     @Override public void shutdownNow() {shutdown();}
     @Override public boolean isShutdown() {return mDead;}
     @Override public boolean isTerminated() {return mDead;}
+    /** ParforThreadPool close 时不需要 awaitTermination */
+    @ApiStatus.Internal @Override public void close() {shutdown();}
     /** 可定义的随机数生成器，默认为 {@link CS#RANDOM} */
     private final Random mRNG;
     

@@ -12,7 +12,7 @@ import java.util.concurrent.Future;
  * <p> 与一般的 java 线程池不同，为了方便外部调用，
  * 这里直接接受 String 的方法名称，使用反射来调用这个方法 </p>
  */
-public class MethodThreadPool extends AbstractThreadPool<IExecutorEX> {
+public final class MethodThreadPool extends AbstractThreadPool<IExecutorEX> {
     public MethodThreadPool(int aThreadNum) {super(newPool(aThreadNum));}
     
     // 提交任务

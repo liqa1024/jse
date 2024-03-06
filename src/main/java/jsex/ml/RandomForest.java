@@ -12,6 +12,7 @@ import jse.math.vector.*;
 import jse.parallel.AbstractThreadPool;
 import jse.parallel.LocalRandom;
 import jse.parallel.ParforThreadPool;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Range;
 import org.jetbrains.annotations.Unmodifiable;
 
@@ -26,6 +27,8 @@ import static jse.code.Conf.PARFOR_THREAD_NUMBER;
  * @author liqa
  */
 public class RandomForest extends AbstractThreadPool<ParforThreadPool> implements ISavable {
+    /** ParforThreadPool close 时不需要 awaitTermination */
+    @ApiStatus.Internal @Override public void close() {shutdown();}
     
     private final List<DecisionTree> mTrees;
     /** 构造一个空的随机森林，用于使用 put 手动构造 */

@@ -84,6 +84,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     @Override public void shutdownNow() {shutdown();}
     @Override public boolean isShutdown() {return mDead;}
     @Override public boolean isTerminated() {return mDead;}
+    /** ParforThreadPool close 时不需要 awaitTermination */
+    @ApiStatus.Internal @Override public void close() {shutdown();}
     
     
     /**

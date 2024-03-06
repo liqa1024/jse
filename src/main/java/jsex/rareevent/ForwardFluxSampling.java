@@ -800,6 +800,6 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     
     /** 程序结束时会顺便关闭内部的 mFullPathGenerator */
     @Override public void shutdown() {super.shutdown(); if (!mDoNotShutdown) mFullPathGenerator.shutdown();}
-    /** 注意有些类（如线程池）的 close 逻辑不完全和 shutdown 相同，这里需要专门使用内部的 close */
-    @ApiStatus.Internal @Override public void close() {super.close(); if (!mDoNotShutdown) mFullPathGenerator.close();}
+    /** ParforThreadPool close 时不需要 awaitTermination */
+    @ApiStatus.Internal @Override public void close() {super.shutdown(); if (!mDoNotShutdown) mFullPathGenerator.close();}
 }

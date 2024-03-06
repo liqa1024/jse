@@ -9,6 +9,7 @@ import jse.math.vector.IVector;
 import jse.math.vector.Vectors;
 import jse.parallel.AbstractThreadPool;
 import jse.parallel.ParforThreadPool;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Range;
 
 import java.util.Collections;
@@ -24,6 +25,9 @@ import static jse.code.CS.RANDOM;
  * @author liqa
  */
 public class Ising2D extends AbstractThreadPool<ParforThreadPool> {
+    /** ParforThreadPool close 时不需要 awaitTermination */
+    @ApiStatus.Internal @Override public void close() {shutdown();}
+    
     private final double mJ, mH;
     /** 可定义的主随机数生成器，默认为 {@link CS#RANDOM} */
     private final Random mRNG;
