@@ -1,12 +1,12 @@
 package jse.atom;
 
+import jse.cache.IObjectPool;
+import jse.cache.ThreadLocalObjectCachePool;
 import jse.code.collection.IntList;
 import jse.code.functional.IIndexFilter;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
-import jse.cache.IObjectPool;
 import jse.parallel.IShutdownable;
-import jse.cache.ThreadLocalObjectCachePool;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -26,24 +26,20 @@ import java.util.function.IntConsumer;
  * <p> 此类线程安全，包括多个线程同时访问同一个实例 </p>
  */
 public class NeighborListGetter implements IShutdownable {
-    final static double DEFAULT_CELL_STEP = 1.26; // 1.26*1.26*1.26 = 2.00
-    
     private IMatrix mAtomDataXYZ;  // 现在改为 Matrix 存储，每行为一个原子的 xyz 数据
     private final XYZ mBox;
     private final int mAtomNum;
     private final double mMinBox;
-    private final double mCellStep;
     
     private final TreeMap<Integer, ILinkedCell> mLinkedCells = new TreeMap<>(); // 记录对应有效近邻半径的 LinkedCell，使用 Integer 只存储倍率（负值表示除法），避免 double 作为 key 的问题
     private final long mInitThreadID;
     
     /** NL 只支持已经经过平移的数据，目前暂不支持外部创建 */
-    NeighborListGetter(IMatrix aAtomDataXYZ, int aAtomNum, IXYZ aBox, double aCellStep) {
+    NeighborListGetter(IMatrix aAtomDataXYZ, int aAtomNum, IXYZ aBox) {
         mAtomDataXYZ = aAtomDataXYZ;
         mAtomNum = aAtomNum;
         mBox = XYZ.toXYZ(aBox); // 仅用于计算，直接转为 XYZ 即可
         mMinBox = mBox.min();
-        mCellStep = Math.max(aCellStep, 1.1);
         mAllCellsAlloc = sAllCellsAllocCache.getObject();
         mInitThreadID = Thread.currentThread().getId();
     }
@@ -157,9 +153,9 @@ public class NeighborListGetter implements IShutdownable {
             for (Cell tCell : mCells) tCell.clear(); // 直接清空旧数据即可
             // 遍历添加 XYZ
             for (int idx = 0; idx < mAtomNum; ++idx) {
-                int i = (int) Math.floor(mAtomDataXYZ.get(idx, 0) / mCellBox.mX); if (i >= mSizeX) continue;
-                int j = (int) Math.floor(mAtomDataXYZ.get(idx, 1) / mCellBox.mY); if (j >= mSizeY) continue;
-                int k = (int) Math.floor(mAtomDataXYZ.get(idx, 2) / mCellBox.mZ); if (k >= mSizeZ) continue;
+                int i = (int) MathEX.Code.floor(mAtomDataXYZ.get(idx, 0) / mCellBox.mX); if (i >= mSizeX) continue;
+                int j = (int) MathEX.Code.floor(mAtomDataXYZ.get(idx, 1) / mCellBox.mY); if (j >= mSizeY) continue;
+                int k = (int) MathEX.Code.floor(mAtomDataXYZ.get(idx, 2) / mCellBox.mZ); if (k >= mSizeZ) continue;
                 mCells.get(idx(i, j, k)).add(idx);
             }
         }
@@ -181,9 +177,9 @@ public class NeighborListGetter implements IShutdownable {
         }
         /** 现在改为 for-each 的形式来避免单一返回值的问题 */
         @Override public void forEachNeighbor(IXYZ aXYZ, IXYZIdxDo aXYZIdxDo) {
-            final int i = (int) Math.floor(aXYZ.x() / mCellBox.mX);
-            final int j = (int) Math.floor(aXYZ.y() / mCellBox.mY);
-            final int k = (int) Math.floor(aXYZ.z() / mCellBox.mZ);
+            final int i = (int) MathEX.Code.floor(aXYZ.x() / mCellBox.mX);
+            final int j = (int) MathEX.Code.floor(aXYZ.y() / mCellBox.mY);
+            final int k = (int) MathEX.Code.floor(aXYZ.z() / mCellBox.mZ);
             cell(i  , j  , k  ).forEach(mAtomDataXYZ, aXYZIdxDo);
             cell(i+1, j  , k  ).forEach(mAtomDataXYZ, aXYZIdxDo);
             cell(i-1, j  , k  ).forEach(mAtomDataXYZ, aXYZIdxDo);
@@ -214,9 +210,9 @@ public class NeighborListGetter implements IShutdownable {
         }
         @Override public void forEachNeighbor(int aIdx, boolean aHalf, @Nullable IIndexFilter aRegion, IXYZIdxDo aXYZIdxDo) {
             if (aIdx >= mAtomNum) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
-            final int i = (int) Math.floor(mAtomDataXYZ.get(aIdx, 0) / mCellBox.mX);
-            final int j = (int) Math.floor(mAtomDataXYZ.get(aIdx, 1) / mCellBox.mY);
-            final int k = (int) Math.floor(mAtomDataXYZ.get(aIdx, 2) / mCellBox.mZ);
+            final int i = (int) MathEX.Code.floor(mAtomDataXYZ.get(aIdx, 0) / mCellBox.mX);
+            final int j = (int) MathEX.Code.floor(mAtomDataXYZ.get(aIdx, 1) / mCellBox.mY);
+            final int k = (int) MathEX.Code.floor(mAtomDataXYZ.get(aIdx, 2) / mCellBox.mZ);
             cell(i  , j  , k  ).forEach(aIdx, aHalf, aRegion, mAtomDataXYZ, aXYZIdxDo);
             cell(i+1, j  , k  ).forEach(aIdx, aHalf, aRegion, mAtomDataXYZ, aXYZIdxDo);
             cell(i-1, j  , k  ).forEach(aIdx, aHalf, aRegion, mAtomDataXYZ, aXYZIdxDo);
@@ -542,8 +538,6 @@ public class NeighborListGetter implements IShutdownable {
         }
     }
     
-    public double getCellStep() {return mCellStep;}
-    
     // 使用读写锁来实现线程安全
     private final ReadWriteLock mRWL = new ReentrantReadWriteLock();
     private final Lock mRL = mRWL.readLock();
@@ -552,7 +546,8 @@ public class NeighborListGetter implements IShutdownable {
     
     boolean isCeilEntryValid(@Nullable Map.Entry<Integer, ILinkedCell> aCeilEntry, int aMinMulti) {
         if (aCeilEntry == null) return false;
-        return (aMinMulti > 0 && aCeilEntry.getKey() < Math.ceil(aMinMulti*mCellStep)) || (aMinMulti < 0 && Math.floor(aCeilEntry.getKey()*mCellStep) < aMinMulti);
+        int tMinMulti = aCeilEntry.getKey();
+        return (aMinMulti > 0 && tMinMulti+tMinMulti <= aMinMulti+aMinMulti+aMinMulti) || (aMinMulti < 0 && tMinMulti+tMinMulti+tMinMulti <= aMinMulti+aMinMulti);
     }
     /**
      * 获取覆盖 aRMax 的 LinkedCell，会自动选择和创建合适的 LinkedCell
@@ -563,7 +558,7 @@ public class NeighborListGetter implements IShutdownable {
      */
     ILinkedCell getProperLinkedCell(double aRMax) {
         // 获取需要的最小的 cell 长度倍率
-        int tMinMulti = aRMax>mMinBox ? (int)Math.ceil(aRMax/mMinBox) : -(int)Math.floor(mMinBox/aRMax);
+        int tMinMulti = aRMax>mMinBox ? (int)MathEX.Code.ceil(aRMax/mMinBox) : -(int)MathEX.Code.floor(mMinBox/aRMax);
         // 尝试获取 LinkedCell
         mRL.lock();
         Map.Entry<Integer, ILinkedCell>
@@ -582,30 +577,29 @@ public class NeighborListGetter implements IShutdownable {
         // 计算对应 LinkedCell 的参数
         if (tMinMulti < 0) {
             // 先处理不需要扩展的情况
-            int tDiv = MathEX.Code.floorPower(-tMinMulti, mCellStep);
+            int tDiv = -tMinMulti;
             double tCellLength = mMinBox / (double)tDiv;
-            int aSizeX = Math.max((int)Math.floor(mBox.mX / tCellLength), tDiv); // 可以避免舍入误差的问题
-            int aSizeY = Math.max((int)Math.floor(mBox.mY / tCellLength), tDiv);
-            int aSizeZ = Math.max((int)Math.floor(mBox.mZ / tCellLength), tDiv);
+            int aSizeX = Math.max((int)MathEX.Code.floor(mBox.mX / tCellLength), tDiv); // 可以避免舍入误差的问题
+            int aSizeY = Math.max((int)MathEX.Code.floor(mBox.mY / tCellLength), tDiv);
+            int aSizeZ = Math.max((int)MathEX.Code.floor(mBox.mZ / tCellLength), tDiv);
             // 对于所有方向都不需要分割的情况特殊考虑，使用专门的 linkedCell 避免缓存的使用
             if (aSizeX==1 && aSizeY==1 && aSizeZ==1) {
                 tLinkedCell = new SingleLinkedCell();
-                mLinkedCells.put(-tDiv, tLinkedCell);
+                mLinkedCells.put(tMinMulti, tLinkedCell);
             } else {
-                tLinkedCell = new LinkedCell(-tDiv, aSizeX, aSizeY, aSizeZ);
-                mLinkedCells.put(-tDiv, tLinkedCell);
+                tLinkedCell = new LinkedCell(tMinMulti, aSizeX, aSizeY, aSizeZ);
+                mLinkedCells.put(tMinMulti, tLinkedCell);
             }
         } else {
             // 再处理需要扩展的情况
-            int tMul = MathEX.Code.ceilPower(tMinMulti, mCellStep);
-            double tCellLength = mMinBox * tMul;
+            double tCellLength = mMinBox * tMinMulti;
             // 统计扩展数目
-            int aMulX = (int)Math.ceil(tCellLength / mBox.mX);
-            int aMulY = (int)Math.ceil(tCellLength / mBox.mY);
-            int aMulZ = (int)Math.ceil(tCellLength / mBox.mZ);
+            int aMulX = (int)MathEX.Code.ceil(tCellLength / mBox.mX);
+            int aMulY = (int)MathEX.Code.ceil(tCellLength / mBox.mY);
+            int aMulZ = (int)MathEX.Code.ceil(tCellLength / mBox.mZ);
             // 这里简单起见，统一采用 ExpandLinkedCell 来管理，即使有非常长的边可以进一步分划
             tLinkedCell = new ExpandLinkedCell(aMulX, aMulY, aMulZ);
-            mLinkedCells.put(tMul, tLinkedCell);
+            mLinkedCells.put(tMinMulti, tLinkedCell);
         }
         mWL.unlock();
         

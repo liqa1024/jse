@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.RandomAccess;
 import java.util.function.IntConsumer;
 
-import static jse.atom.NeighborListGetter.DEFAULT_CELL_STEP;
 import static jse.code.CS.R_NEAREST_MUL;
 import static jse.code.UT.Code.newBox;
 import static jse.math.MathEX.*;
@@ -55,7 +54,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     private final double mRou; // 粒子数密度
     private final double mUnitLen; // 平均单个原子的距离
     
-    private NeighborListGetter mNL;
+    private final NeighborListGetter mNL;
     private final long mInitThreadID;
     
     /** IThreadPoolContainer stuffs */
@@ -93,9 +92,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * @param aAtomDataXYZ 粒子数据，这里只需要知道 xyz 坐标即可
      * @param aBox 模拟盒大小；现在也统一认为所有输入的原子坐标都经过了 shift
      * @param aThreadNum MPC 进行计算会使用的线程数
-     * @param aCellStep 内部用于加速近邻搜索的 LinkedCell 不同 Cell 大小的步长
      */
-    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, double aCellStep) {
+    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
         super(new ParforThreadPool(aThreadNum));
         
         // 获取模拟盒数据
@@ -109,15 +107,13 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         mRou = mAtomNum / mBox.prod();
         mUnitLen = Fast.cbrt(1.0/mRou);
         
-        mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox, aCellStep);
+        mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox);
         mInitThreadID = Thread.currentThread().getId();
     }
     public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox) {this(aAtomDataXYZ, aBox, 1);}
-    public MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(aAtomDataXYZ, aBox, aThreadNum, DEFAULT_CELL_STEP);}
     
     public MonatomicParameterCalculator(IAtomData aAtomData) {this(aAtomData, 1);}
-    public MonatomicParameterCalculator(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(aAtomData, aThreadNum, DEFAULT_CELL_STEP);}
-    public MonatomicParameterCalculator(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, double aCellStep) {this(aAtomData.atoms(), aAtomData.box(), aThreadNum, aCellStep);}
+    public MonatomicParameterCalculator(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(aAtomData.atoms(), aAtomData.box(), aThreadNum);}
     
     /** 主要用于内部使用 */
     MonatomicParameterCalculator(int aAtomNum, IXYZ aBox, int aThreadNum, IUnaryFullOperator<IMatrix, IMatrix> aXYZValidOpt) {
@@ -128,17 +124,15 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 计算单位长度供内部使用
         mRou = mAtomNum / mBox.prod();
         mUnitLen = Fast.cbrt(1.0/mRou);
-        mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox, DEFAULT_CELL_STEP);
+        mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox);
         mInitThreadID = Thread.currentThread().getId();
     }
     
     /** 自动关闭，主要用于 groovy 中使用 */
     public static <T> T withOf(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, IUnaryFullOperator<T, MPC> aDoLater) {try (MPC tMPC = new MPC(aAtomDataXYZ, aBox)) {return aDoLater.apply(tMPC);}}
     public static <T> T withOf(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, IUnaryFullOperator<T, MPC> aDoLater) {try (MPC tMPC = new MPC(aAtomDataXYZ, aBox, aThreadNum)) {return aDoLater.apply(tMPC);}}
-    public static <T> T withOf(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, double aCellStep, IUnaryFullOperator<T, MPC> aDoLater) {try (MPC tMPC = new MPC(aAtomDataXYZ, aBox, aThreadNum, aCellStep)) {return aDoLater.apply(tMPC);}}
     public static <T> T withOf(IAtomData aAtomData, IUnaryFullOperator<T, MPC> aDoLater) {try (MPC tMPC = new MPC(aAtomData)) {return aDoLater.apply(tMPC);}}
     public static <T> T withOf(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, IUnaryFullOperator<T, MPC> aDoLater) {try (MPC tMPC = new MPC(aAtomData, aThreadNum)) {return aDoLater.apply(tMPC);}}
-    public static <T> T withOf(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, double aCellStep, IUnaryFullOperator<T, MPC> aDoLater) {try (MPC tMPC = new MPC(aAtomData, aThreadNum, aCellStep)) {return aDoLater.apply(tMPC);}}
     
     
     /** 内部使用方法，用来将 aAtomDataXYZ 转换成内部存储的格式，并且处理精度问题造成的超出边界问题 */
@@ -178,12 +172,6 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * @return 返回自身用于链式调用
      */
     public MonatomicParameterCalculator setThreadNumber(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum)  {if (aThreadNum != threadNumber()) setPool(new ParforThreadPool(aThreadNum)); return this;}
-    /**
-     * 修改 LinkedCell 的步长，如果相同则不会进行任何操作
-     * @param sCellStep 步长，默认为 2.0，需要大于 1.1，理论上越小速度会越快，同时会消耗更多的内存
-     * @return 返回自身用于链式调用
-     */
-    public MonatomicParameterCalculator setCellStep(double sCellStep) {if (sCellStep != mNL.getCellStep()) {mNL.shutdown(); mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox, sCellStep);} return this;}
     
     
     /// 获取信息
@@ -692,9 +680,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 double tZ = it.next();
                 // 如果设置了 aRMax 则跳过在中间的原子即可
                 if (!tInitAll && !inEdge_(tX, tY, tZ, aRMax)) continue;
-                int tI = (int) Math.floor(tX / mCellSize.mX);
-                int tJ = (int) Math.floor(tY / mCellSize.mY);
-                int tK = (int) Math.floor(tZ / mCellSize.mZ);
+                int tI = (int) MathEX.Code.floor(tX / mCellSize.mX);
+                int tJ = (int) MathEX.Code.floor(tY / mCellSize.mY);
+                int tK = (int) MathEX.Code.floor(tZ / mCellSize.mZ);
                 // 这里的排序和 LinkedCell 不同，但是和新的 AbstractAtoms 的一直，为了避免问题这里暂时不去改 LinkedCell 的排序
                 int tRank = (tI*mSizeY*mSizeZ + tJ*mSizeZ + tK);
                 int tCount = mCounts.get(tRank);
