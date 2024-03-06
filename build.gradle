@@ -115,7 +115,7 @@ dependencies {
     // jupyterkernel 依赖
     jupyterkernelImplementation('org.jetbrains:annotations:24.1.0') // idea 调试支持
     jupyterkernelImplementation('org.apache.groovy:groovy:4.0.18')  // 会使用一些 groovy 的方法
-    jupyterkernelImplementation('com.google.code.gson:gson:2.10.1') // gson
+    jupyterkernelImplementation('com.google.code.gson:gson:2.10.1') // gson，依旧使用 gson 而不是 groovy-json，因为 jupyterkernel 使用了 gson 中的高级功能，完全修改相当于直接重构
     jupyterkernelImplementation('org.zeromq:jeromq:0.5.4')          // zeroMQ
 }
 
