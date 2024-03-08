@@ -16,49 +16,49 @@ import static jse.math.MathEX.PI;
 public class Func1 {
     private Func1() {}
     
-    public static IFunc1 ones(double aX0, double aDx, int aNx) {IFunc1 rFunc = zeros(aX0, aDx, aNx); rFunc.fill(1.0); return rFunc;}
-    public static IFunc1 zeros(double aX0, double aDx, int aNx) {return PBCFunc1.zeros(aX0, aDx, aNx);}
-    public static IFunc1 zeros(int aNx, IVectorGetter aXGetter) {return UnequalIntervalFunc1.zeros(aNx, aXGetter);}
-    public static IFunc1 zeros(IVector aX) {return zeros(aX.size(), aX);}
+    public static PBCFunc1 ones(double aX0, double aDx, int aNx) {PBCFunc1 rFunc = zeros(aX0, aDx, aNx); rFunc.fill(1.0); return rFunc;}
+    public static PBCFunc1 zeros(double aX0, double aDx, int aNx) {return PBCFunc1.zeros(aX0, aDx, aNx);}
+    public static UnequalIntervalFunc1 zeros(int aNx, IVectorGetter aXGetter) {return UnequalIntervalFunc1.zeros(aNx, aXGetter);}
+    public static UnequalIntervalFunc1 zeros(IVector aX) {return zeros(aX.size(), aX);}
     
-    public static IFunc1 from(double aX0, double aDx, int aNx, IFunc1Subs aFunc1Subs) {
-        IFunc1 rFunc = zeros(aX0, aDx, aNx);
+    public static PBCFunc1 from(double aX0, double aDx, int aNx, IFunc1Subs aFunc1Subs) {
+        PBCFunc1 rFunc = zeros(aX0, aDx, aNx);
         rFunc.fill(aFunc1Subs);
         return rFunc;
     }
-    public static IFunc1 from(double aX0, double aDx, int aNx, Iterable<? extends Number> aList) {
-        IFunc1 rFunc = zeros(aX0, aDx, aNx);
+    public static PBCFunc1 from(double aX0, double aDx, int aNx, Iterable<? extends Number> aList) {
+        PBCFunc1 rFunc = zeros(aX0, aDx, aNx);
         rFunc.fill(aList);
         return rFunc;
     }
-    public static IFunc1 from(double aX0, double aDx, Collection<? extends Number> aList) {
-        IFunc1 rFunc = zeros(aX0, aDx, aList.size());
+    public static PBCFunc1 from(double aX0, double aDx, Collection<? extends Number> aList) {
+        PBCFunc1 rFunc = zeros(aX0, aDx, aList.size());
         rFunc.fill(aList);
         return rFunc;
     }
-    public static IFunc1 from(double aX0, double aDx, double[] aData) {
-        IFunc1 rFunc = zeros(aX0, aDx, aData.length);
+    public static PBCFunc1 from(double aX0, double aDx, double[] aData) {
+        PBCFunc1 rFunc = zeros(aX0, aDx, aData.length);
         rFunc.fill(aData);
         return rFunc;
     }
-    public static IFunc1 from(double aX0, double aDx, IVector aVector) {
-        IFunc1 rFunc = zeros(aX0, aDx, aVector.size());
+    public static PBCFunc1 from(double aX0, double aDx, IVector aVector) {
+        PBCFunc1 rFunc = zeros(aX0, aDx, aVector.size());
         rFunc.fill(aVector);
         return rFunc;
     }
     /** 提供非均匀间距的构造 */
-    public static IFunc1 from(int aNx, IVectorGetter aXGetter, IFunc1Subs aFunc1Subs) {
-        IFunc1 rFunc = zeros(aNx, aXGetter);
+    public static UnequalIntervalFunc1 from(int aNx, IVectorGetter aXGetter, IFunc1Subs aFunc1Subs) {
+        UnequalIntervalFunc1 rFunc = zeros(aNx, aXGetter);
         rFunc.fill(aFunc1Subs);
         return rFunc;
     }
-    public static IFunc1 from(IVector aX, IFunc1Subs aFunc1Subs) {
-        IFunc1 rFunc = zeros(aX);
+    public static UnequalIntervalFunc1 from(IVector aX, IFunc1Subs aFunc1Subs) {
+        UnequalIntervalFunc1 rFunc = zeros(aX);
         rFunc.fill(aFunc1Subs);
         return rFunc;
     }
-    public static IFunc1 from(IVector aX, IVector aF) {
-        IFunc1 rFunc = zeros(aX);
+    public static UnequalIntervalFunc1 from(IVector aX, IVector aF) {
+        UnequalIntervalFunc1 rFunc = zeros(aX);
         rFunc.fill(aF);
         return rFunc;
     }
@@ -78,11 +78,11 @@ public class Func1 {
      * @param aResolution the Resolution of the Function1, dx == aSigma/aResolution
      * @return the Dirac Delta function δ(x-mu) in the Gaussian form
      */
-    public static IZeroBoundFunc1 deltaG(double aSigma, final double aMu, double aResolution) {
+    public static ZeroBoundSymmetryFunc1 deltaG(double aSigma, final double aMu, double aResolution) {
         final double tXMul = -1.0 / (2.0*aSigma*aSigma);
         final double tYMul =  1.0 / (MathEX.Fast.sqrt(2.0*PI) * aSigma);
         
-        IZeroBoundFunc1 rFunc1 = ZeroBoundSymmetryFunc1.zeros(aMu, aSigma/aResolution, (int)Math.round(aResolution*G_RANG));
+        ZeroBoundSymmetryFunc1 rFunc1 = ZeroBoundSymmetryFunc1.zeros(aMu, aSigma/aResolution, (int)Math.round(aResolution*G_RANG));
         rFunc1.fill(x -> {
             x -= aMu;
             return MathEX.Fast.exp(x * x * tXMul) * tYMul;
@@ -101,9 +101,9 @@ public class Func1 {
      * @param aN 分划的份数
      * @return 得到的分布函数
      */
-    public static IZeroBoundFunc1 distFrom(IHasDoubleIterator aData, double aStart, double aEnd, int aN) {
+    public static ZeroBoundFunc1 distFrom(IHasDoubleIterator aData, double aStart, double aEnd, int aN) {
         final double tStep = (aEnd-aStart)/(double)(aN-1);
-        final IZeroBoundFunc1 rFunc1 = ZeroBoundFunc1.zeros(aStart, tStep, aN);
+        final ZeroBoundFunc1 rFunc1 = ZeroBoundFunc1.zeros(aStart, tStep, aN);
         
         final double tLBound = aStart - tStep*0.5;
         final double tUBound = aEnd + tStep*0.5;
@@ -116,7 +116,7 @@ public class Func1 {
         rFunc1.div2this(rSize[0] * tStep);
         return rFunc1;
     }
-    public static IZeroBoundFunc1 distFrom(Iterable<? extends Number> aDataList, double aStart, double aEnd, int aN) {return distFrom(IHasDoubleIterator.of(aDataList), aStart, aEnd, aN);}
+    public static ZeroBoundFunc1 distFrom(Iterable<? extends Number> aDataList, double aStart, double aEnd, int aN) {return distFrom(IHasDoubleIterator.of(aDataList), aStart, aEnd, aN);}
     
     /**
      * 使用带有一定展宽的高斯分布代替直接计数来统计分布，超出范围的值会忽略
@@ -128,9 +128,9 @@ public class Func1 {
      * @param aSigmaMul 高斯分布的一个标准差宽度对应的分划份数，默认为 4
      * @return 得到的分布函数
      */
-    public static IZeroBoundFunc1 distFrom_G(IHasDoubleIterator aData, double aStart, double aEnd, int aN, int aSigmaMul) {
+    public static ZeroBoundFunc1 distFrom_G(IHasDoubleIterator aData, double aStart, double aEnd, int aN, int aSigmaMul) {
         final double tStep = (aEnd-aStart)/(double)(aN-1);
-        final IZeroBoundFunc1 rFunc1 = ZeroBoundFunc1.zeros(aStart, tStep, aN);
+        final ZeroBoundFunc1 rFunc1 = ZeroBoundFunc1.zeros(aStart, tStep, aN);
         // 用于累加的 DeltaG
         final IZeroBoundFunc1 tDeltaG = deltaG(tStep*aSigmaMul, 0.0, aSigmaMul);
         
@@ -148,7 +148,7 @@ public class Func1 {
         rFunc1.div2this(rSize[0]);
         return rFunc1;
     }
-    public static IZeroBoundFunc1 distFrom_G(IHasDoubleIterator aData, double aStart, double aEnd, int aN) {return distFrom_G(aData, aStart, aEnd, aN, 4);}
-    public static IZeroBoundFunc1 distFrom_G(Iterable<? extends Number> aDataList, double aStart, double aEnd, int aN, int aSigmaMul) {return distFrom_G(IHasDoubleIterator.of(aDataList), aStart, aEnd, aN, aSigmaMul);}
-    public static IZeroBoundFunc1 distFrom_G(Iterable<? extends Number> aDataList, double aStart, double aEnd, int aN) {return distFrom_G(IHasDoubleIterator.of(aDataList), aStart, aEnd, aN);}
+    public static ZeroBoundFunc1 distFrom_G(IHasDoubleIterator aData, double aStart, double aEnd, int aN) {return distFrom_G(aData, aStart, aEnd, aN, 4);}
+    public static ZeroBoundFunc1 distFrom_G(Iterable<? extends Number> aDataList, double aStart, double aEnd, int aN, int aSigmaMul) {return distFrom_G(IHasDoubleIterator.of(aDataList), aStart, aEnd, aN, aSigmaMul);}
+    public static ZeroBoundFunc1 distFrom_G(Iterable<? extends Number> aDataList, double aStart, double aEnd, int aN) {return distFrom_G(IHasDoubleIterator.of(aDataList), aStart, aEnd, aN);}
 }
