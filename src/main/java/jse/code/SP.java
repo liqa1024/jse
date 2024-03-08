@@ -455,6 +455,9 @@ public class SP {
              */
             public static @Nullable String CMAKE_C_COMPILER = UT.Exec.env("JSE_CMAKE_C_COMPILER_JEP", jse.code.Conf.CMAKE_C_COMPILER);
             public static @Nullable String CMAKE_C_FLAGS    = UT.Exec.env("JSE_CMAKE_C_FLAGS_JEP"   , jse.code.Conf.CMAKE_C_FLAGS   );
+            
+            /** 重定向 jep 动态库的路径 */
+            public static @Nullable String REDIRECT_JEP_LIB = UT.Exec.env("JSE_REDIRECT_JEP_LIB");
         }
         
         
@@ -552,14 +555,19 @@ public class SP {
             // 在 JVM 关闭时关闭 JEP_INTERP，最先添加来避免一些问题
             Main.addGlobalAutoCloseable(Python::close);
             
-            // 设置 Jep 非 java 库的路径，考虑到 WSL，windows 和 linux 使用不同的名称
-            @Nullable String tLibName = LIB_NAME_IN(JEP_LIB_DIR, "jep");
-            // 如果不存在则需要重新通过源码编译
-            if (tLibName == null) {
-                System.out.println("JEP INIT INFO: jep libraries not found. Reinstalling...");
-                try {tLibName = installJep_();} catch (Exception e) {throw new RuntimeException(e);}
+            if (Conf.REDIRECT_JEP_LIB == null) {
+                // 设置 Jep 非 java 库的路径，考虑到 WSL，windows 和 linux 使用不同的名称
+                @Nullable String tLibName = LIB_NAME_IN(JEP_LIB_DIR, "jep");
+                // 如果不存在则需要重新通过源码编译
+                if (tLibName == null) {
+                    System.out.println("JEP INIT INFO: jep libraries not found. Reinstalling...");
+                    try {tLibName = installJep_();} catch (Exception e) {throw new RuntimeException(e);}
+                }
+                JEP_LIB_PATH = JEP_LIB_DIR+tLibName;
+            } else {
+                if (DEBUG) System.out.println("JEP INIT INFO: jep libraries are redirected to '"+Conf.REDIRECT_JEP_LIB+"'");
+                JEP_LIB_PATH = Conf.REDIRECT_JEP_LIB;
             }
-            JEP_LIB_PATH = JEP_LIB_DIR+tLibName;
             // 设置库路径
             jep.MainInterpreter.setJepLibraryPath(UT.IO.toAbsolutePath(JEP_LIB_PATH));
             

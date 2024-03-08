@@ -20,8 +20,7 @@ import static jse.clib.JNIUtil.*;
 import static jse.code.CS.Exec.*;
 import static jse.code.CS.VERSION;
 import static jse.code.CS.ZL_STR;
-import static jse.code.Conf.LIB_NAME_IN;
-import static jse.code.Conf.WORKING_DIR_OF;
+import static jse.code.Conf.*;
 
 /**
  * 基于 jni 实现的 MPI wrapper, 介绍部分基于
@@ -93,6 +92,9 @@ public class MPI {
          * 这对于 java 数组和 c 数组的转换很有效
          */
         public static boolean USE_MIMALLOC = UT.Exec.envZ("JSE_USE_MIMALLOC_MPI", jse.code.Conf.USE_MIMALLOC);
+        
+        /** 重定向 mpijni 动态库的路径，用于自定义编译这个库的过程，或者重新实现 mpijni 的接口 */
+        public static @Nullable String REDIRECT_MPIJNI_LIB = UT.Exec.env("JSE_REDIRECT_MPIJNI_LIB");
     }
     
     public static String libraryVersion() throws MPIException {return MPI.Native.MPI_Get_library_version();}
@@ -1225,13 +1227,18 @@ public class MPI {
             // 如果开启了 USE_MIMALLOC 则增加 MiMalloc 依赖
             if (Conf.USE_MIMALLOC) MiMalloc.InitHelper.init();
             
-            @Nullable String tLibName = LIB_NAME_IN(MPIJNI_LIB_DIR, "mpijni");
-            // 如果不存在 jni lib 则需要重新通过源码编译
-            if (tLibName == null) {
-                System.out.println("MPI INIT INFO: mpijni libraries not found. Reinstalling...");
-                try {tLibName = initMPI_();} catch (Exception e) {throw new RuntimeException(e);}
+            if (Conf.REDIRECT_MPIJNI_LIB == null) {
+                @Nullable String tLibName = LIB_NAME_IN(MPIJNI_LIB_DIR, "mpijni");
+                // 如果不存在 jni lib 则需要重新通过源码编译
+                if (tLibName == null) {
+                    System.out.println("MPI INIT INFO: mpijni libraries not found. Reinstalling...");
+                    try {tLibName = initMPI_();} catch (Exception e) {throw new RuntimeException(e);}
+                }
+                MPIJNI_LIB_PATH = MPIJNI_LIB_DIR+tLibName;
+            } else {
+                if (DEBUG) System.out.println("MPI INIT INFO: mpijni libraries are redirected to '"+Conf.REDIRECT_MPIJNI_LIB+"'");
+                MPIJNI_LIB_PATH = Conf.REDIRECT_MPIJNI_LIB;
             }
-            MPIJNI_LIB_PATH = MPIJNI_LIB_DIR+tLibName;
             // 设置库路径
             System.load(UT.IO.toAbsolutePath(MPIJNI_LIB_PATH));
             

@@ -112,6 +112,12 @@ public class NativeLmp implements IAutoShutdown {
          */
         public static boolean USE_MIMALLOC = UT.Exec.envZ("JSE_USE_MIMALLOC_LMP", jse.code.Conf.USE_MIMALLOC);
         
+        /** 重定向 lammps 动态库的路径，主要用于作为重定向的 lmpjni 库的依赖导入 */
+        public static @Nullable String REDIRECT_LMP_LIB = UT.Exec.env("JSE_REDIRECT_LMP_LIB");
+        public static @Nullable String REDIRECT_LMP_LLIB = UT.Exec.env("JSE_REDIRECT_LMP_LLIB");
+        /** 重定向 lmpjni 动态库的路径，用于自定义编译这个库的过程，或者重新实现 lmpjni 的接口 */
+        public static @Nullable String REDIRECT_LMPJNI_LIB = UT.Exec.env("JSE_REDIRECT_LMPJNI_LIB");
+        
         /**
          * 是否在检测到库文件时依旧重新编译 lammps，
          * 在需要修改 lammps 包时很有用
@@ -374,25 +380,38 @@ public class NativeLmp implements IAutoShutdown {
         }
         NATIVELMP_INCLUDE_DIR = Conf.LMP_HOME+"includes/";
         NATIVELMP_LIB_DIR = Conf.LMP_HOME+"lib/";
-        @Nullable String tNativeLmpLibName = LIB_NAME_IN(NATIVELMP_LIB_DIR, "lammps");
-        // 如果不存在 native lib 则需要重新通过源码编译；这里分别初始化，而不是像原本一样两者混在一起
-        if (Conf.REBUILD || tNativeLmpLibName==null) {
-            System.out.println("NATIVE_LMP INIT INFO: Lammps libraries not found. Reinstalling (it will take a lot of time)...");
-            try {tNativeLmpLibName = initNativeLmp_();} catch (Exception e) {throw new RuntimeException(e);}
+        if (Conf.REDIRECT_LMP_LIB == null) {
+            @Nullable String tNativeLmpLibName = LIB_NAME_IN(NATIVELMP_LIB_DIR, "lammps");
+            // 如果不存在 native lib 则需要重新通过源码编译；这里分别初始化，而不是像原本一样两者混在一起
+            if (Conf.REBUILD || tNativeLmpLibName==null) {
+                System.out.println("NATIVE_LMP INIT INFO: Lammps libraries not found. Reinstalling (it will take a lot of time)...");
+                try {tNativeLmpLibName = initNativeLmp_();} catch (Exception e) {throw new RuntimeException(e);}
+            }
+            NATIVELMP_LIB_PATH = NATIVELMP_LIB_DIR+tNativeLmpLibName;
+            @Nullable String tNativeLmpLLibName = LLIB_NAME_IN(NATIVELMP_LIB_DIR, "lammps");
+            NATIVELMP_LLIB_PATH = tNativeLmpLLibName==null ? NATIVELMP_LIB_PATH : (NATIVELMP_LIB_DIR+tNativeLmpLLibName);
+        } else {
+            if (DEBUG) System.out.println("NATIVE_LMP INIT INFO: Lammps libraries are redirected to '"+Conf.REDIRECT_LMP_LIB+"'");
+            NATIVELMP_LIB_PATH = Conf.REDIRECT_LMP_LIB;
+            NATIVELMP_LLIB_PATH = Conf.REDIRECT_LMP_LLIB==null ? Conf.REDIRECT_LMP_LIB : Conf.REDIRECT_LMP_LLIB;
         }
-        NATIVELMP_LIB_PATH = NATIVELMP_LIB_DIR+tNativeLmpLibName;
-        @Nullable String tNativeLmpLLibName = LLIB_NAME_IN(NATIVELMP_LIB_DIR, "lammps");
-        NATIVELMP_LLIB_PATH = tNativeLmpLLibName==null ? NATIVELMP_LIB_PATH : (NATIVELMP_LIB_DIR+tNativeLmpLLibName);
+        
         // 现在 uniqueID 不再包含这个 tag（确实当时也想到了），因为已经包含到了 LMP_HOME 中
         // 在这里初始化保证顺序合理
         LMPJNI_LIB_DIR = LMP_ROOT + UT.Code.uniqueID(VERSION, Conf.LMP_HOME, Conf.USE_MIMALLOC, Conf.HAS_EXCEPTIONS, Conf.EXCEPTIONS_NULL_SUPPORT) + "/";
-        @Nullable String tLmpJniLibName = LIB_NAME_IN(LMPJNI_LIB_DIR, "lmpjni");
-        // 如果不存在 jni lib 则需要重新通过源码编译
-        if (tLmpJniLibName == null) {
-            System.out.println("NATIVE_LMP INIT INFO: lmpjni libraries not found. Reinstalling...");
-            try {tLmpJniLibName = initLmpJni_();} catch (Exception e) {throw new RuntimeException(e);}
+        if (Conf.REDIRECT_LMPJNI_LIB == null) {
+            @Nullable String tLmpJniLibName = LIB_NAME_IN(LMPJNI_LIB_DIR, "lmpjni");
+            // 如果不存在 jni lib 则需要重新通过源码编译
+            if (tLmpJniLibName == null) {
+                System.out.println("NATIVE_LMP INIT INFO: lmpjni libraries not found. Reinstalling...");
+                try {tLmpJniLibName = initLmpJni_();} catch (Exception e) {throw new RuntimeException(e);}
+            }
+            LMPJNI_LIB_PATH = LMPJNI_LIB_DIR+tLmpJniLibName;
+        } else {
+            if (DEBUG) System.out.println("NATIVE_LMP INIT INFO: lmpjni libraries are redirected to '"+Conf.REDIRECT_LMPJNI_LIB+"'");
+            LMPJNI_LIB_PATH = Conf.REDIRECT_LMPJNI_LIB;
         }
-        LMPJNI_LIB_PATH = LMPJNI_LIB_DIR+tLmpJniLibName;
+        
         // 设置库路径
         System.load(UT.IO.toAbsolutePath(NATIVELMP_LIB_PATH));
         System.load(UT.IO.toAbsolutePath(LMPJNI_LIB_PATH));

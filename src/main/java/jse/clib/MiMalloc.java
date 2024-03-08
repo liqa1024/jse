@@ -43,6 +43,10 @@ public class MiMalloc {
         public static @Nullable String CMAKE_CXX_COMPILER = UT.Exec.env("JSE_CMAKE_CXX_COMPILER_MIMALLOC", jse.code.Conf.CMAKE_CXX_COMPILER);
         public static @Nullable String CMAKE_C_FLAGS      = UT.Exec.env("JSE_CMAKE_C_FLAGS_MIMALLOC"     , jse.code.Conf.CMAKE_C_FLAGS     );
         public static @Nullable String CMAKE_CXX_FLAGS    = UT.Exec.env("JSE_CMAKE_CXX_FLAGS_MIMALLOC"   , jse.code.Conf.CMAKE_CXX_FLAGS   );
+        
+        /** 重定向 mimalloc 动态库的路径，主要用于作为重定向的 mpijni, lmpjni 等库的依赖导入 */
+        public static @Nullable String REDIRECT_MIMALLOC_LIB = UT.Exec.env("JSE_REDIRECT_MIMALLOC_LIB");
+        public static @Nullable String REDIRECT_MIMALLOC_LLIB = UT.Exec.env("JSE_REDIRECT_MIMALLOC_LLIB", REDIRECT_MIMALLOC_LIB);
     }
     
     
@@ -143,15 +147,21 @@ public class MiMalloc {
     static {
         InitHelper.INITIALIZED = true;
         
-        @Nullable String tLibName = LIB_NAME_IN(LIB_DIR, "mimalloc");
-        // 如果不存在 mimalloc lib 则需要重新通过源码编译
-        if (tLibName == null) {
-            System.out.println("MIMALLOC INIT INFO: mimalloc libraries not found. Reinstalling...");
-            try {tLibName = initMiMalloc_();} catch (Exception e) {throw new RuntimeException(e);}
+        if (Conf.REDIRECT_MIMALLOC_LIB == null) {
+            @Nullable String tLibName = LIB_NAME_IN(LIB_DIR, "mimalloc");
+            // 如果不存在 mimalloc lib 则需要重新通过源码编译
+            if (tLibName == null) {
+                System.out.println("MIMALLOC INIT INFO: mimalloc libraries not found. Reinstalling...");
+                try {tLibName = initMiMalloc_();} catch (Exception e) {throw new RuntimeException(e);}
+            }
+            LIB_PATH = LIB_DIR+tLibName;
+            @Nullable String tLLibName = LLIB_NAME_IN(LIB_DIR, "mimalloc");
+            LLIB_PATH = tLLibName==null ? LIB_PATH : (LIB_DIR+tLLibName);
+        } else {
+            if (DEBUG) System.out.println("MIMALLOC INIT INFO: mimalloc libraries are redirected to '"+Conf.REDIRECT_MIMALLOC_LIB+"'");
+            LIB_PATH = Conf.REDIRECT_MIMALLOC_LIB;
+            LLIB_PATH = Conf.REDIRECT_MIMALLOC_LLIB==null ? Conf.REDIRECT_MIMALLOC_LIB : Conf.REDIRECT_MIMALLOC_LLIB;
         }
-        LIB_PATH = LIB_DIR+tLibName;
-        @Nullable String tLLibName = LLIB_NAME_IN(LIB_DIR, "mimalloc");
-        LLIB_PATH = tLLibName==null ? LIB_PATH : (LIB_DIR+tLLibName);
         // 设置库路径
         System.load(UT.IO.toAbsolutePath(LIB_PATH));
     }
