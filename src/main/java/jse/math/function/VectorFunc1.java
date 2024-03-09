@@ -44,7 +44,6 @@ public abstract class VectorFunc1 extends AbstractFunc1 implements IEqualInterva
     @Override public final void setInternalData(Vector aData) {mData = aData;}
     @Override public final Vector internalData() {return mData;}
     @Override public final int internalDataSize() {return mData.size();}
-    @Override public final int internalDataShift() {return 0;}
     @Override public final @Nullable Vector getIfHasSameOrderData(Object aObj) {
         // 必须要求同样是 DoubleArrayFunc1 并且开始位置，间距以及长度都相同，也就是只考虑完全一致的情况（因为 Func 在区域外依旧可以取值）
         if (aObj instanceof VectorFunc1) {

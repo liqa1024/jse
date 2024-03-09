@@ -1,10 +1,14 @@
 package jse.code.collection;
 
 import jse.code.functional.IDoubleBinaryConsumer;
+import jse.code.iterator.IComplexDoubleIterator;
 import jse.math.ComplexDouble;
 import jse.math.IComplexDouble;
 import jse.math.IDataShell;
-import jse.math.vector.*;
+import jse.math.vector.ComplexVector;
+import jse.math.vector.IComplexVector;
+import jse.math.vector.RefComplexVector;
+import jse.math.vector.ShiftComplexVector;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -55,18 +59,47 @@ public class ComplexDoubleList implements IDataShell<double[][]> {
         return new ComplexDouble(mData[0][0], mData[1][0]);
     }
     
+    private void grow_(int aMinCapacity) {
+        final int tLen = mData[0].length;
+        double[][] oData = mData;
+        int tCapacity = Math.max(aMinCapacity, tLen + (tLen>>1));
+        mData = new double[2][tCapacity];
+        System.arraycopy(oData[0], 0, mData[0], 0, tLen);
+        System.arraycopy(oData[1], 0, mData[1], 0, tLen);
+    }
+    
+    /** 高性能接口，在末尾直接增加 aLen 个零，这将只进行扩容操作而不会赋值 */
+    public void addZeros(int aLen) {
+        int tSize = mSize+aLen;
+        if (tSize > mData[0].length) grow_(tSize);
+        mSize = tSize;
+    }
+    
+    public void addAll(IComplexVector aVector) {
+        final int aSize = aVector.size();
+        final int tSize = mSize+aSize;
+        if (tSize > mData[0].length) grow_(tSize);
+        double @Nullable[][] aData = getIfHasSameOrderData(aVector);
+        if (aData != null) {
+            final int tShift = IDataShell.internalDataShift(aVector);
+            System.arraycopy(aData[0], tShift, mData[0], mSize, aSize);
+            System.arraycopy(aData[1], tShift, mData[1], mSize, aSize);
+        } else {
+            final double[] tReal = mData[0];
+            final double[] tImag = mData[1];
+            IComplexDoubleIterator it = aVector.iterator();
+            for (int i = mSize; i < tSize; ++i) {
+                it.nextOnly();
+                tReal[i] = it.real();
+                tImag[i] = it.imag();
+            }
+        }
+        mSize = tSize;
+    }
+    
     /** 在这里这个方法是必要的，虽然目前的约定下不会出现 {@code double aReal, double aImag} 两个参数的方法 */
     public void add(double aReal, double aImag) {
-        final int tLen = mData[0].length;
-        if (tLen == 0) {
-            mData = new double[2][1];
-        } else
-        if (tLen <= mSize) {
-            double[][] oData = mData;
-            mData = new double[2][tLen + Math.max(1, tLen>>1)];
-            System.arraycopy(oData[0], 0, mData[0], 0, tLen);
-            System.arraycopy(oData[1], 0, mData[1], 0, tLen);
-        }
+        if (mData[0].length <= mSize) grow_(mSize+1);
         mData[0][mSize] = aReal;
         mData[1][mSize] = aImag;
         ++mSize;

@@ -14,6 +14,7 @@ import jse.Main;
 import jse.atom.*;
 import jse.cache.ByteArrayCache;
 import jse.code.collection.AbstractCollections;
+import jse.code.collection.DoubleList;
 import jse.code.collection.NewCollections;
 import jse.code.functional.IDoubleFilter;
 import jse.code.functional.IFilter;
@@ -32,8 +33,10 @@ import jse.math.function.IFunc1Subs;
 import jse.math.matrix.ColumnMatrix;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.Matrices;
+import jse.math.matrix.RowMatrix;
 import jse.math.table.ITable;
 import jse.math.table.Table;
+import jse.math.table.Tables;
 import jse.math.vector.IVector;
 import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
@@ -787,25 +790,44 @@ public class UT {
         
         /**
          * 针对 lammps 等软件输出文件中存在的使用空格分割的数据专门优化的读取操作，
-         * 使用 groovy-json 中现成的 parseDouble 等方法，总体比直接 split 并用 java 的 parseDouble 快一倍以上
+         * 使用 groovy-json 中现成的 parseDouble 等方法，总体比直接 split 并用 java 的 parseDouble 快一倍以上；
+         * <p>
+         * 现在兼容考虑逗号分割的情况，并同时运用在 csv 的读取上
+         * <p>
+         * 现在读取失败会存为 {@link Double#NaN} 而不是抛出错误
          * @author liqa
          */
-        public static IVector str2data(String aStr, int aLength) {
+        public static Vector str2data(String aStr, int aLength) {
+            Vector rData = Vectors.zeros(aLength);
             // 先直接转 char[]，适配 groovy-json 的 CharScanner
             char[] tChar = aStr.toCharArray();
-            // 直接遍历忽略空格（不可识别的也会跳过），获取开始和末尾，然后 parseDouble
-            IVector rData = Vectors.NaN(aLength); // 不足的数据现在默认为 NaN
+            // 直接遍历忽略空格，获取开始和末尾，然后 parseDouble
             int tFrom = CharScanner.skipWhiteSpace(tChar, 0, tChar.length);
             int tIdx = 0;
+            boolean tHasComma = false;
             for (int i = tFrom; i < tChar.length; ++i) {
                 int tCharCode = tChar[i];
                 if (tFrom < 0) {
                     if (tCharCode > 32) {
-                        tFrom = i;
+                        if (tCharCode == 44) {
+                            if (tHasComma) {
+                                rData.set(tIdx, Double.NaN);
+                                ++tIdx;
+                                if (tIdx == aLength) return rData;
+                            } else {
+                                tHasComma = true;
+                            }
+                        } else {
+                            tHasComma = false;
+                            tFrom = i;
+                        }
                     }
                 } else {
-                    if (tCharCode <= 32) {
-                        rData.set(tIdx, CharScanner.parseDouble(tChar, tFrom, i));
+                    if (tCharCode<=32 || tCharCode==44) {
+                        if (tCharCode == 44) tHasComma = true;
+                        double tValue = Double.NaN;
+                        try {tValue = CharScanner.parseDouble(tChar, tFrom, i);} catch (Exception ignored) {}
+                        rData.set(tIdx, tValue);
                         tFrom = -1;
                         ++tIdx;
                         if (tIdx == aLength) return rData;
@@ -813,7 +835,14 @@ public class UT {
                 }
             }
             // 最后一个数据
-            if (tFrom >= 0 && tFrom < tChar.length) rData.set(tIdx, CharScanner.parseDouble(tChar, tFrom, tChar.length));
+            if (tFrom >= 0 && tFrom < tChar.length) {
+                double tValue = Double.NaN;
+                try {tValue = CharScanner.parseDouble(tChar, tFrom, tChar.length);} catch (Exception ignored) {}
+                rData.set(tIdx, tValue);
+                ++tIdx;
+            }
+            // 不足的数据现在默认为 NaN
+            for (; tIdx < aLength; ++tIdx) rData.set(tIdx, Double.NaN);
             return rData;
         }
         
@@ -870,7 +899,7 @@ public class UT {
          * @return the split sting in array
          */
         public static String[] splitBlank(String aStr) {
-            return BLANKS.split(aStr.trim());
+            return BLANKS.split(aStr.trim(), -1);
         }
         
         
@@ -882,9 +911,19 @@ public class UT {
          * @return the split sting in array
          */
         public static String[] splitComma(String aStr) {
-            return COMMA.split(BLANKS.matcher(aStr).replaceAll(""));
+            return COMMA.split(aStr.trim(), -1);
         }
         
+        /**
+         * 匹配使用空格分割或者逗号（{@code ,}）分割的字符串，可以出现混合
+         * <p> 会自动忽略多余的空格 </p>
+         * @author liqa
+         * @param aStr input string
+         * @return the split sting in array
+         */
+        public static String[] splitStr(String aStr) {
+            return COMMA_OR_BLANKS.split(aStr.trim(), -1);
+        }
         
         /**
          * Java version of splitNodeList
@@ -1344,44 +1383,45 @@ public class UT {
         
         /**
          * read matrix data from csv file
+         * <p>
+         * 现在也可以直接读取泛滥的空格分割的数据
          * @author liqa
          * @param aFilePath csv file path to read
          * @return a matrix
          */
-        public static IMatrix csv2data(String aFilePath) throws IOException {
-            // 现在直接全部读取
-            List<String> tLines = readAllLines(aFilePath);
-            // 获取行数，末尾空行忽略
-            int tLineNum = tLines.size();
-            for (int i = tLines.size()-1; i >= 0; --i) {
-                if (tLines.get(i).trim().isEmpty()) --tLineNum;
-                else break;
+        public static RowMatrix csv2data(String aFilePath) throws IOException {
+            try (BufferedReader tReader = toReader(aFilePath)) {
+                // 需要的参数
+                DoubleList rData = new DoubleList();
+                String tLine;
+                int tColNum;
+                int rRowNum = 0;
+                // 读取第一行来判断列数
+                tLine = tReader.readLine();
+                String[] tTokens = Text.splitStr(tLine);
+                tColNum = tTokens.length;
+                // 读取第一行检测是否有头，直接看能否成功粘贴
+                IVector tRow = null;
+                try {tRow = Vectors.from(AbstractCollections.map(tTokens, Double::parseDouble));} catch (Exception ignored) {} // 直接看能否成功粘贴
+                if (tRow != null) {
+                    rData.addAll(tRow);
+                    ++rRowNum;
+                }
+                // 遍历读取后续数据
+                while ((tLine = tReader.readLine()) != null) {
+                    rData.addAll(Text.str2data(tLine, tColNum));
+                    ++rRowNum;
+                }
+                // 返回结果
+                return new RowMatrix(rRowNum, tColNum, rData.internalData());
             }
-            // 需要的参数
-            IMatrix rMatrix; int row = 0;
-            String[] tTokens;
-            // 读取第一行检测是否有头，直接看能否成功粘贴
-            tTokens = Text.splitComma(tLines.get(0));
-            IVector tFirstData = null;
-            try {tFirstData = Vectors.from(AbstractCollections.map(tTokens, Double::parseDouble));} catch (Exception ignored) {} // 直接看能否成功粘贴
-            if (tFirstData != null) {
-                rMatrix = Matrices.zeros(tLineNum, tFirstData.size());
-                rMatrix.row(row).fill(tFirstData); ++row;
-            } else {
-                rMatrix = Matrices.zeros(tLineNum-1, tTokens.length);
-            }
-            // 遍历读取后续数据
-            for (int i = 1; i < tLineNum; ++i, ++row) {
-                tTokens = Text.splitComma(tLines.get(i));
-                rMatrix.row(row).fill(AbstractCollections.map(tTokens, Double::parseDouble));
-            }
-            // 返回结果
-            return rMatrix;
         }
         
         
         /**
          * save table to csv file
+         * <p>
+         * 现在也可以直接读取泛滥的空格分割的数据
          * @author liqa
          * @param aTable the Table to be saved
          * @param aFilePath csv file path to save
@@ -1398,35 +1438,31 @@ public class UT {
          * @return table with head
          */
         public static Table csv2table(String aFilePath) throws IOException {
-            // 现在直接全部读取
-            List<String> tLines = readAllLines(aFilePath);
-            // 获取行数，末尾空行忽略
-            int tLineNum = tLines.size();
-            for (int i = tLines.size()-1; i >= 0; --i) {
-                if (tLines.get(i).trim().isEmpty()) --tLineNum;
-                else break;
+            try (BufferedReader tReader = toReader(aFilePath)) {
+                // 需要的参数
+                List<IVector> rRows = new ArrayList<>();
+                String tLine;
+                int tColNum;
+                String[] tHeads = null;
+                // 读取第一行来判断列数
+                tLine = tReader.readLine();
+                String[] tTokens = Text.splitStr(tLine);
+                tColNum = tTokens.length;
+                // 读取第一行检测是否有头，直接看能否成功粘贴
+                IVector tRow = null;
+                try {tRow = Vectors.from(AbstractCollections.map(tTokens, Double::parseDouble));} catch (Exception ignored) {} // 直接看能否成功粘贴
+                if (tRow != null) {
+                    rRows.add(tRow);
+                } else {
+                    tHeads = tTokens;
+                }
+                // 遍历读取后续数据
+                while ((tLine = tReader.readLine()) != null) {
+                    rRows.add(Text.str2data(tLine, tColNum));
+                }
+                // 返回结果
+                return Tables.fromRows(rRows, tHeads);
             }
-            // 需要的参数
-            Table rTable; int row = 0;
-            String[] tTokens;
-            // 读取第一行检测是否有头，直接看能否成功粘贴
-            tTokens = Text.splitComma(tLines.get(0));
-            IVector tFirstData = null;
-            try {tFirstData = Vectors.from(AbstractCollections.map(tTokens, Double::parseDouble));}
-            catch (Exception ignored) {} // 直接看能否成功粘贴
-            if (tFirstData != null) {
-                rTable = Table.zeros(tLineNum, tFirstData.size());
-                rTable.row(row).fill(tFirstData); ++row;
-            } else {
-                rTable = Table.zeros(tLineNum-1, tTokens);
-            }
-            // 遍历读取后续数据
-            for (int i = 1; i < tLineNum; ++i, ++row) {
-                tTokens = Text.splitComma(tLines.get(i));
-                rTable.row(row).fill(AbstractCollections.map(tTokens, Double::parseDouble));
-            }
-            // 返回结果
-            return rTable;
         }
         
         /**

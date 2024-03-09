@@ -27,7 +27,7 @@ public class Table extends AbstractTable implements IDataShell<List<Vector>> {
         else return new Table(aRowNum, NewCollections.from(aHeads.length, col -> Vector.zeros(aRowNum)), aHeads);
     }
     public static Table zeros(final int aRowNum, int aColNum) {
-        return new Table(aRowNum, NewCollections.from(aColNum, col -> Vector.zeros(aRowNum)), aColNum);
+        return new Table(aRowNum, aColNum, NewCollections.from(aColNum, col -> Vector.zeros(aRowNum)));
     }
     
     /** 内部数据为按列排序的 Vector，可以轻松实现扩展列 */
@@ -44,15 +44,15 @@ public class Table extends AbstractTable implements IDataShell<List<Vector>> {
         mRowNum = aRowNum;
         mData = aData;
     }
-    public Table(int aRowNum, List<Vector> aData, int aColNum) {
+    public Table(int aRowNum, int aColNum, List<Vector> aData) {
         super(aColNum);
         mRowNum = aRowNum;
         mData = aData;
     }
     public Table(List<Vector> aData, String... aHeads) {this(UT.Code.first(aData).size(), aData, aHeads);}
-    public Table(int aRowNum, List<Vector> aData) {this(aRowNum, aData, aData.size());}
-    public Table(List<Vector> aData) {this(UT.Code.first(aData).size(), aData, aData.size());}
-    public Table(int aRowNum) {this(aRowNum, new ArrayList<>(), 0);}
+    public Table(int aRowNum, List<Vector> aData) {this(aRowNum, aData.size(), aData);}
+    public Table(List<Vector> aData) {this(UT.Code.first(aData).size(), aData.size(), aData);}
+    public Table(int aRowNum) {this(aRowNum, 0, new ArrayList<>());}
     
     
     /** 重写这些接口避免过多的嵌套 */

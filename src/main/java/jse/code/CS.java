@@ -109,7 +109,8 @@ public class CS {
     /** Patterns */
     public final static Pattern BLANKS_OR_EMPTY = Pattern.compile("\\s*");
     public final static Pattern BLANKS = Pattern.compile("\\s+");
-    public final static Pattern COMMA = Pattern.compile(",");
+    public final static Pattern COMMA = Pattern.compile("\\s*,\\s*");
+    public final static Pattern COMMA_OR_BLANKS = Pattern.compile("\\s*[,\\s]\\s*");
     
     /** All atomic mass */
     public final static Map<String, Double> MASS = (new ImmutableMap.Builder<String, Double>())

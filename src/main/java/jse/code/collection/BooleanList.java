@@ -1,9 +1,12 @@
 package jse.code.collection;
 
 import jse.code.functional.IBooleanConsumer;
+import jse.code.iterator.IBooleanIterator;
 import jse.math.IDataShell;
-import jse.math.MathEX;
-import jse.math.vector.*;
+import jse.math.vector.ILogicalVector;
+import jse.math.vector.LogicalVector;
+import jse.math.vector.RefLogicalVector;
+import jse.math.vector.ShiftLogicalVector;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -45,16 +48,37 @@ public class BooleanList implements IDataShell<boolean[]> {
         return mData[0];
     }
     
-    public void add(boolean aValue) {
+    private void grow_(int aMinCapacity) {
         final int tLen = mData.length;
-        if (tLen == 0) {
-            mData = new boolean[1];
-        } else
-        if (tLen <= mSize) {
-            boolean[] oData = mData;
-            mData = new boolean[tLen + Math.max(1, tLen>>1)];
-            System.arraycopy(oData, 0, mData, 0, tLen);
+        boolean[] oData = mData;
+        int tCapacity = Math.max(aMinCapacity, tLen + (tLen>>1));
+        mData = new boolean[tCapacity];
+        System.arraycopy(oData, 0, mData, 0, tLen);
+    }
+    
+    /** 高性能接口，在末尾直接增加 aLen 个零，这将只进行扩容操作而不会赋值 */
+    public void addZeros(int aLen) {
+        int tSize = mSize+aLen;
+        if (tSize > mData.length) grow_(tSize);
+        mSize = tSize;
+    }
+    
+    public void addAll(ILogicalVector aVector) {
+        final int aSize = aVector.size();
+        final int tSize = mSize+aSize;
+        if (tSize > mData.length) grow_(tSize);
+        boolean @Nullable[] aData = getIfHasSameOrderData(aVector);
+        if (aData != null) {
+            System.arraycopy(aData, IDataShell.internalDataShift(aVector), mData, mSize, aSize);
+        } else {
+            IBooleanIterator it = aVector.iterator();
+            for (int i = mSize; i < tSize; ++i) mData[i] = it.next();
         }
+        mSize = tSize;
+    }
+    
+    public void add(boolean aValue) {
+        if (mData.length <= mSize) grow_(mSize+1);
         mData[mSize] = aValue;
         ++mSize;
     }
