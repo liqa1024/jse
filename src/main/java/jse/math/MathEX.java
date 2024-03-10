@@ -3,23 +3,26 @@ package jse.math;
 import jse.Main;
 import jse.atom.IXYZ;
 import jse.atom.XYZ;
+import jse.cache.LogicalVectorCache;
+import jse.cache.VectorCache;
 import jse.code.collection.*;
-import jse.code.functional.*;
+import jse.code.functional.IBinaryFullOperator;
+import jse.code.functional.IBooleanBinaryOperator;
+import jse.code.functional.IBooleanUnaryOperator;
 import jse.code.iterator.IHasIntIterator;
 import jse.math.function.Func2;
 import jse.math.function.Func3;
 import jse.math.vector.*;
-import jse.cache.LogicalVectorCache;
 import jse.parallel.ParforThreadPool;
-import jse.cache.VectorCache;
-import jsex.voronoi.Geometry;
 import net.jafama.DoubleWrapper;
 import net.jafama.FastMath;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Range;
 
-import java.util.*;
-import java.util.function.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleUnaryOperator;
 
 import static jse.code.CS.ZL_MAT;
 
@@ -603,43 +606,6 @@ public class MathEX {
             XYZ tAC = aC.minus(tA);
             tAB.cross2this(tAC);
             return 0.5 * tAB.norm();
-        }
-        /**
-         * 确定点 D 是否位于由点 A、B 和 C 定义的平面的左侧。假定从平面的右侧看，ABC 满足逆时针的顺序。
-         * @return 如果在左边则为正，右边则为负，刚好在平面上则为 0
-         */
-        public static double leftOfPlane(IXYZ aA, IXYZ aB, IXYZ aC, IXYZ aD) {
-            return Geometry.leftOfPlane(
-                  aA.x(), aA.y(), aA.z()
-                , aB.x(), aB.y(), aB.z()
-                , aC.x(), aC.y(), aC.z()
-                , aD.x(), aD.y(), aD.z());
-        }
-        /**
-         * 确定点 E 是否位于由点 A、B、C 和 D 定义的球体的内部。假定 {@code leftOfPlane(A, B, C, D) > 0}。
-         * @return 如果在内部则为正，外部则为负，刚好在球面上则为 0
-         */
-        public static double inSphere(IXYZ aA, IXYZ aB, IXYZ aC, IXYZ aD, IXYZ aE) {
-            return Geometry.inSphere(
-                  aA.x(), aA.y(), aA.z()
-                , aB.x(), aB.y(), aB.z()
-                , aC.x(), aC.y(), aC.z()
-                , aD.x(), aD.y(), aD.z()
-                , aE.x(), aE.y(), aE.z());
-        }
-        /**
-         * 计算由点 A，B，C 和 D 定义的球的中心。假定 {@code leftOfPlane(A, B, C, D) > 0}。
-         * @return 球心 XYZ 坐标
-         */
-        public static XYZ centerSphere(IXYZ aA, IXYZ aB, IXYZ aC, IXYZ aD) {
-            XYZ rCenter = new XYZ(0.0, 0.0, 0.0);
-            Geometry.centerSphere(
-                  aA.x(), aA.y(), aA.z()
-                , aB.x(), aB.y(), aB.z()
-                , aC.x(), aC.y(), aC.z()
-                , aD.x(), aD.y(), aD.z()
-                , rCenter);
-            return rCenter;
         }
         
         /**

@@ -511,6 +511,7 @@ public final class VoronoiBuilder {
         }
         void patch(Vertex aOld, Tetrahedron aNewTet, byte aNew) {patch(ordinalOf(aOld), aNewTet, aNew);}
         
+        @SuppressWarnings("UnnecessaryReturnStatement")
         void removeAnyDegenerateTetrahedronPair() {
             if (mTetA != null) {
                 if (mTetA == mTetB) {removeDegenerateTetrahedronPair_(PosTet.A, PosTet.B, PosTet.C, PosTet.D); return;}
@@ -570,7 +571,7 @@ public final class VoronoiBuilder {
      * Computing the 3D Voronoi Diagram Robustly: An Easy Explanation </a>
      */
     static int orient(IXYZ aXYZ, IXYZ aA, IXYZ aB, IXYZ aC) {
-        double result = MathEX.Graph.leftOfPlane(aA, aB, aC, aXYZ);
+        double result = VoronoiStaticExtensions.leftOfPlane(null, aA, aB, aC, aXYZ);
         if (result > 0.0) return 1;
         else if (result < 0.0) return -1;
         return 0;
@@ -582,7 +583,7 @@ public final class VoronoiBuilder {
      * Computing the 3D Voronoi Diagram Robustly: An Easy Explanation </a>
      */
     static int inSphere(IXYZ aXYZ, IXYZ aA, IXYZ aB, IXYZ aC, IXYZ aD) {
-        double result = MathEX.Graph.inSphere(aA, aB, aC, aD, aXYZ);
+        double result = VoronoiStaticExtensions.inSphere(null, aA, aB, aC, aD, aXYZ);
         if (result > 0.0) return 1;
         else if (result < 0.0) return -1;
         return 0;
@@ -834,7 +835,7 @@ public final class VoronoiBuilder {
         XYZ centerSphere_() {
             if (mCenterSphere == null) {
                 if (!mNoWarning && isUniverse(this)) System.err.println("WARNING: This Tetrahedron is Universe, centerSphere may be wrong.");
-                mCenterSphere = MathEX.Graph.centerSphere(mA.mXYZ, mB.mXYZ, mC.mXYZ, mD.mXYZ);
+                mCenterSphere = VoronoiStaticExtensions.centerSphere(null, mA.mXYZ, mB.mXYZ, mC.mXYZ, mD.mXYZ);
             }
             return mCenterSphere;
         }

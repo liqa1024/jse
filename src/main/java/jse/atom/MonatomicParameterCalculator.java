@@ -2,7 +2,6 @@ package jse.atom;
 
 import jse.cache.*;
 import jse.code.CS;
-import jse.code.collection.AbstractRandomAccessList;
 import jse.code.collection.IntList;
 import jse.code.functional.IIndexFilter;
 import jse.code.functional.IUnaryFullOperator;
@@ -19,7 +18,6 @@ import jse.math.matrix.IMatrix;
 import jse.math.matrix.RowComplexMatrix;
 import jse.math.vector.*;
 import jse.parallel.*;
-import jsex.voronoi.VoronoiBuilder;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +25,6 @@ import org.jetbrains.annotations.Range;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.RandomAccess;
 import java.util.function.IntConsumer;
 
 import static jse.code.CS.R_NEAREST_MUL;
@@ -47,14 +44,14 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public static int BUFFER_NL_NUM = 8; // 缓存近邻列表从而避免重复计算距离，这里设置缓存的大小，设置为 0 关闭缓存；即使现在优化了近邻列表获取，缓存依旧能大幅加速近邻遍历
     public static double BUFFER_NL_RMAX = 4.0; // 最大的缓存近邻截断半径关于单位距离的倍率，过高的值的近邻列表缓存对内存是个灾难
     
-    private IMatrix mAtomDataXYZ; // 现在改为 Matrix 存储，每行为一个原子的 xyz 数据
-    private final IXYZ mBox;
+    IMatrix mAtomDataXYZ; // 现在改为 Matrix 存储，每行为一个原子的 xyz 数据
+    final IXYZ mBox;
     
     private final int mAtomNum;
     private final double mRou; // 粒子数密度
     private final double mUnitLen; // 平均单个原子的距离
     
-    private final NeighborListGetter mNL;
+    final NeighborListGetter mNL;
     private final long mInitThreadID;
     
     /** IThreadPoolContainer stuffs */
@@ -1858,73 +1855,6 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public ILogicalVector checkSolidQ4(double aConnectThreshold, int aSolidThreshold, double aRNearest          ) {return checkSolidQ4(aConnectThreshold, aSolidThreshold, aRNearest, -1);}
     public ILogicalVector checkSolidQ4(double aConnectThreshold, int aSolidThreshold                            ) {return checkSolidQ4(aConnectThreshold, aSolidThreshold, mUnitLen*R_NEAREST_MUL);}
     public ILogicalVector checkSolidQ4(                                                                         ) {return checkSolidQ4(0.35, 6);}
-    
-    
-    public interface IVoronoiCalculator extends List<VoronoiBuilder.IVertex>, RandomAccess {
-        IVoronoiCalculator setNoWarning(boolean aNoWarning);
-        IVoronoiCalculator setNoWarning();
-        IVoronoiCalculator setAreaThreshold(double aAreaThreshold);
-        IVoronoiCalculator setLengthThreshold(double aLengthThreshold);
-        IVoronoiCalculator setAreaThresholdAbs(double aAreaThresholdAbs);
-        IVoronoiCalculator setLengthThresholdAbs(double aLengthThresholdAbs);
-        IVoronoiCalculator setIndexLength(int aIndexLength);
-    }
-    private static abstract class AbstractVoronoiCalculator extends AbstractRandomAccessList<VoronoiBuilder.IVertex> implements IVoronoiCalculator {
-        final VoronoiBuilder mBuilder;
-        AbstractVoronoiCalculator(VoronoiBuilder aBuilder) {mBuilder = aBuilder;}
-        @Override public final AbstractVoronoiCalculator setNoWarning(boolean aNoWarning) {mBuilder.setNoWarning(aNoWarning); return this;}
-        @Override public final AbstractVoronoiCalculator setNoWarning() {mBuilder.setNoWarning(); return this;}
-        @Override public final AbstractVoronoiCalculator setAreaThreshold(double aAreaThreshold) {mBuilder.setAreaThreshold(aAreaThreshold); return this;}
-        @Override public final AbstractVoronoiCalculator setLengthThreshold(double aLengthThreshold) {mBuilder.setLengthThreshold(aLengthThreshold); return this;}
-        @Override public final AbstractVoronoiCalculator setAreaThresholdAbs(double aAreaThresholdAbs) {mBuilder.setAreaThresholdAbs(aAreaThresholdAbs); return this;}
-        @Override public final AbstractVoronoiCalculator setLengthThresholdAbs(double aLengthThresholdAbs) {mBuilder.setLengthThresholdAbs(aLengthThresholdAbs); return this;}
-        @Override public final AbstractVoronoiCalculator setIndexLength(int aIndexLength) {mBuilder.setIndexLength(aIndexLength); return this;}
-    }
-    
-    
-    /**
-     * 计算 Voronoi 图并获取各种参数，
-     * 由于内部实现是串行的，因此此方法不受线程数影响
-     * <p>
-     * 简单使用额外的镜像原子的方式处理周期边界条件，
-     * 因此可能会出现不准确的情况，此时需要增加 aRCutOff
-     * <p>
-     * References:
-     * <a href="https://ieeexplore.ieee.org/document/4276112">
-     * Computing the 3D Voronoi Diagram Robustly: An Easy Explanation </a>
-     * and
-     * <a href="https://github.com/Hellblazer/Voronoi-3D">
-     * Hellblazer/Voronoi-3D </a>
-     * @author liqa
-     * @param aRCutOff 外围周期边界增加的镜像粒子的半径，默认为 3 倍单位长度
-     * @param aNoWarning 是否关闭错误警告，默认为 false
-     * @param aIndexLength voronoi 参数的存储长度，默认为 9
-     * @param aAreaThreshold 过小面积的阈值（相对值），默认为 0.0（不处理）
-     * @param aLengthThreshold 过小长度的阈值（相对值），默认为 0.0（不处理）
-     * @return Voronoi 分析的参数
-     */
-    public IVoronoiCalculator calVoronoi(double aRCutOff, boolean aNoWarning, int aIndexLength, double aAreaThreshold, double aLengthThreshold) {
-        final VoronoiBuilder rBuilder = new VoronoiBuilder().setNoWarning(aNoWarning).setIndexLength(aIndexLength).setAreaThreshold(aAreaThreshold).setLengthThreshold(aLengthThreshold);
-        // 先增加内部原本的粒子，根据 cell 的顺序添加可以加速 voronoi 的构造
-        final int[] idx2voronoi = new int[mAtomNum];
-        mNL.forEachCell(aRCutOff, idx -> {
-            idx2voronoi[idx] = rBuilder.sizeVertex();
-            // 原则上 VoronoiBuilder.insert 内部也会进行一次拷贝避免坐标被意外修改，但是旧版本没有，这样写可以兼顾效率和旧版兼容
-            rBuilder.insert(mAtomDataXYZ.get(idx, 0), mAtomDataXYZ.get(idx, 1), mAtomDataXYZ.get(idx, 2));
-        });
-        // 然后增加一些镜像粒子保证 PBC 下的准确性
-        mNL.forEachMirrorCell(aRCutOff, (x, y, z, idx) -> rBuilder.insert(x, y, z));
-        // 注意需要进行一次重新排序保证顺序和原子的顺序相同
-        return new AbstractVoronoiCalculator(rBuilder) {
-            @Override public int size() {return mAtomNum;}
-            @Override public VoronoiBuilder.IVertex get(int aIdx) {return mBuilder.getVertex(idx2voronoi[aIdx]);}
-        };
-    }
-    public IVoronoiCalculator calVoronoi(double aRCutOff, boolean aNoWarning, int aIndexLength, double aAreaThreshold) {return calVoronoi(aRCutOff, aNoWarning, aIndexLength, aAreaThreshold, 0.0);}
-    public IVoronoiCalculator calVoronoi(double aRCutOff, boolean aNoWarning, int aIndexLength) {return calVoronoi(aRCutOff, aNoWarning, aIndexLength, 0.0);}
-    public IVoronoiCalculator calVoronoi(double aRCutOff, boolean aNoWarning) {return calVoronoi(aRCutOff, aNoWarning, 9);}
-    public IVoronoiCalculator calVoronoi(double aRCutOff) {return calVoronoi(aRCutOff, false);}
-    public IVoronoiCalculator calVoronoi() {return calVoronoi(mUnitLen*3.0);}
     
     
     /**
