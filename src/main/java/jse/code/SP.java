@@ -70,6 +70,138 @@ public class SP {
     private final static String GROOVY_SP_DIR = "script/groovy/";
     private final static String PYTHON_SP_DIR = "script/python/";
     
+    /** Jupyter Kernel for Groovy */
+    public static class JupyterKernel extends BaseKernel {
+        private static final SimpleAutoCompleter AUTO_COMPLETER = SimpleAutoCompleter.builder()
+            .preferLong()
+            //Keywords from https://groovy-lang.org/syntax.html
+            .withKeywords("abstract", "assert", "break", "case")
+            .withKeywords("catch", "class", "continue")
+            .withKeywords("def", "default", "do", "else")
+            .withKeywords("enum", "extends", "final", "finally")
+            .withKeywords("for", "if", "implements")
+            .withKeywords("import", "instanceof", "interface", "native")
+            .withKeywords("new", "null", "non-sealed", "package")
+            .withKeywords("public", "protected", "private", "return")
+            .withKeywords("static", "super", "switch")
+            .withKeywords("synchronized", "this", "throw")
+            .withKeywords("throws", "transient", "try", "while")
+            .withKeywords("as", "in", "permits", "record")
+            .withKeywords("sealed", "trait", "var", "yields")
+            .withKeywords("true", "false", "boolean")
+            .withKeywords("char", "byte", "short", "int")
+            .withKeywords("long", "float", "double")
+            .build();
+        private static final CharPredicate ID_CHAR = CharPredicate.builder()
+            .inRange('a', 'z')
+            .inRange('A', 'Z')
+            .inRange('0', '9')
+            .match('_')
+            .build();
+        private static String toDisplayString(@Nullable Object aObj) {
+            if (aObj instanceof String) {
+                return "'"+aObj+"'";
+            } else
+            if (aObj instanceof GString) {
+                return "\""+aObj+"\"";
+            } else
+            if (aObj instanceof Iterable) {
+                StringBuilder rBuilder = new StringBuilder();
+                rBuilder.append("[");
+                Iterator<?> it = ((Iterable<?>)aObj).iterator();
+                if (it.hasNext()) rBuilder.append(toDisplayString(it.next()));
+                while (it.hasNext()) {
+                    rBuilder.append(", ");
+                    rBuilder.append(toDisplayString(it.next()));
+                }
+                rBuilder.append("]");
+                return rBuilder.toString();
+            } else
+            if (aObj instanceof Map) {
+                return toDisplayString(((Map<?, ?>)aObj).entrySet());
+            } else
+            if (aObj instanceof Map.Entry) {
+                Map.Entry<?, ?> tEntry = (Map.Entry<?, ?>)aObj;
+                // 使用可以直接粘贴到 groovy 的格式
+                return toDisplayString(tEntry.getKey())+":"+toDisplayString(tEntry.getValue());
+            } else
+            if (aObj instanceof Object[]) {
+                return toDisplayString(AbstractCollections.from((Object[])aObj));
+            } else {
+                return String.valueOf(aObj);
+            }
+        }
+        
+        private final LanguageInfo mLanguageInfo;
+        private final String mBanner;
+        private final List<LanguageInfo.Help> mHelpLinks;
+        public JupyterKernel() {
+            super(StandardCharsets.UTF_8);
+            mLanguageInfo = new LanguageInfo.Builder("groovy")
+                .version(GroovySystem.getVersion())
+                .fileExtension(".groovy")
+                .pygments("groovy")
+                .codemirror("groovy")
+                .build();
+            mBanner = "jse "+VERSION+String.format(" (groovy: %s, java: %s)", GroovySystem.getVersion(), System.getProperty("java.version"))+"\n"
+                +"Protocol v"+Header.PROTOCOL_VERISON+" implementation by "+KERNEL_META.getOrDefault("project", "UNKNOWN")+" "+KERNEL_META.getOrDefault("version", "UNKNOWN");
+            mHelpLinks = ImmutableList.of(
+                new LanguageInfo.Help("Groovy tutorial", "https://groovy-lang.org/learn.html"),
+                new LanguageInfo.Help("JSE homepage", "https://github.com/CHanzyLazer/jse"));
+        }
+        @Override public LanguageInfo getLanguageInfo() {return mLanguageInfo;}
+        @Override public String getBanner() {return mBanner;}
+        @Override public List<LanguageInfo.Help> getHelpLinks() {return mHelpLinks;}
+        
+        private volatile Future<?> mEvalTask = null;
+        @Override public DisplayData eval(String expr) throws Exception {
+            mEvalTask = UT.Par.callAsync(() -> Groovy.eval(expr));
+            try {
+                Object tOut = mEvalTask.get();
+                mEvalTask = null;
+                // 附加输出图像
+                if (!KERNEL_SHOW_FIGURE && !IPlotter.SHOWED_PLOTTERS.isEmpty()) {
+                    for (IPlotter tPlt : IPlotter.SHOWED_PLOTTERS) {
+                        DisplayData tDisplayData = new DisplayData();
+                        tDisplayData.putData(MIMEType.IMAGE_PNG, Base64.getMimeEncoder().encodeToString(tPlt.encode()));
+                        display(tDisplayData);
+                    }
+                    // 绘制完成清空存储
+                    IPlotter.SHOWED_PLOTTERS.clear();
+                }
+                return tOut==null ? null : new DisplayData(toDisplayString(tOut));
+            } catch (ExecutionException e) {
+                Throwable t = e.getCause();
+                if (t instanceof Exception) throw (Exception)t;
+                else throw e;
+            }
+        }
+        @Override public List<String> formatError(Exception e) {
+            return super.formatError(Main.deepSanitize(e));
+        }
+        @Override public void interrupt() {
+            if (mEvalTask != null) {
+                mEvalTask.cancel(true);
+                mEvalTask = null;
+            }
+        }
+        
+        @Override public DisplayData inspect(String code, int at, boolean extraDetail) throws Exception {
+            StringSearch.Range tMatch = StringSearch.findLongestMatchingAt(code, at, ID_CHAR);
+            if (tMatch == null) return null;
+            String tID = tMatch.extractSubString(code);
+            if (!Groovy.hasValue(tID)) return new DisplayData("No memory value for '"+tID+"'");
+            Object tVal = Groovy.getValue(tID);
+            return new DisplayData(toDisplayString(tVal));
+        }
+        @Override public ReplacementOptions complete(String code, int at) throws Exception {
+            StringSearch.Range tMatch = StringSearch.findLongestMatchingAt(code, at, ID_CHAR);
+            if (tMatch == null) return null;
+            String tPrefix = tMatch.extractSubString(code);
+            return new ReplacementOptions(AUTO_COMPLETER.autocomplete(tPrefix), tMatch.getLow(), tMatch.getHigh());
+        }
+    }
+    
     /** 一般的 aScriptPath 合法化，返回 null 表示没有找到文件 */
     static @Nullable String findValidScriptPath(String aScriptPath, String aExtension, String aScriptDir) {
         aScriptDir = UT.IO.toInternalValidDir(aScriptDir);
@@ -127,119 +259,6 @@ public class SP {
     /** Groovy 脚本运行支持 */
     @SuppressWarnings("RedundantThrows")
     public static class Groovy {
-        /** Jupyter Kernel for Groovy */
-        public static class JupyterKernel extends BaseKernel {
-            private static final SimpleAutoCompleter AUTO_COMPLETER = SimpleAutoCompleter.builder()
-                .preferLong()
-                //Keywords from https://groovy-lang.org/syntax.html
-                .withKeywords("abstract", "assert", "break", "case")
-                .withKeywords("catch", "class", "continue")
-                .withKeywords("def", "default", "do", "else")
-                .withKeywords("enum", "extends", "final", "finally")
-                .withKeywords("for", "if", "implements")
-                .withKeywords("import", "instanceof", "interface", "native")
-                .withKeywords("new", "null", "non-sealed", "package")
-                .withKeywords("public", "protected", "private", "return")
-                .withKeywords("static", "super", "switch")
-                .withKeywords("synchronized", "this", "throw")
-                .withKeywords("throws", "transient", "try", "while")
-                .withKeywords("as", "in", "permits", "record")
-                .withKeywords("sealed", "trait", "var", "yields")
-                .withKeywords("true", "false", "boolean")
-                .withKeywords("char", "byte", "short", "int")
-                .withKeywords("long", "float", "double")
-                .build();
-            private static final CharPredicate ID_CHAR = CharPredicate.builder()
-                .inRange('a', 'z')
-                .inRange('A', 'Z')
-                .inRange('0', '9')
-                .match('_')
-                .build();
-            private static String toDisplayString(Object aObj) {
-                if (aObj instanceof String) {
-                    return "'"+aObj+"'";
-                } else
-                if (aObj instanceof GString) {
-                    return "\""+aObj+"\"";
-                } else
-                if (aObj instanceof CharSequence) {
-                    return "'"+aObj+"'";
-                } else {
-                    return aObj.toString();
-                }
-            }
-            
-            private final LanguageInfo mLanguageInfo;
-            private final String mBanner;
-            private final List<LanguageInfo.Help> mHelpLinks;
-            public JupyterKernel() {
-                super(StandardCharsets.UTF_8);
-                mLanguageInfo = new LanguageInfo.Builder("groovy")
-                    .version(GroovySystem.getVersion())
-                    .fileExtension(".groovy")
-                    .pygments("groovy")
-                    .codemirror("groovy")
-                    .build();
-                mBanner = "jse "+VERSION+String.format(" (groovy: %s, java: %s)", GroovySystem.getVersion(), System.getProperty("java.version"))+"\n"
-                         +"Protocol v"+Header.PROTOCOL_VERISON+" implementation by "+KERNEL_META.getOrDefault("project", "UNKNOWN")+" "+KERNEL_META.getOrDefault("version", "UNKNOWN");
-                mHelpLinks = ImmutableList.of(
-                    new LanguageInfo.Help("Groovy tutorial", "https://groovy-lang.org/learn.html"),
-                    new LanguageInfo.Help("JSE homepage", "https://github.com/CHanzyLazer/jse"));
-            }
-            @Override public LanguageInfo getLanguageInfo() {return mLanguageInfo;}
-            @Override public String getBanner() {return mBanner;}
-            @Override public List<LanguageInfo.Help> getHelpLinks() {return mHelpLinks;}
-            
-            private volatile Future<?> mEvalTask = null;
-            @Override public DisplayData eval(String expr) throws Exception {
-                mEvalTask = UT.Par.callAsync(() -> Groovy.eval(expr));
-                try {
-                    Object tOut = mEvalTask.get();
-                    mEvalTask = null;
-                    // 附加输出图像
-                    if (!KERNEL_SHOW_FIGURE && !IPlotter.SHOWED_PLOTTERS.isEmpty()) {
-                        for (IPlotter tPlt : IPlotter.SHOWED_PLOTTERS) {
-                            DisplayData tDisplayData = new DisplayData();
-                            tDisplayData.putData(MIMEType.IMAGE_PNG, Base64.getMimeEncoder().encodeToString(tPlt.encode()));
-                            display(tDisplayData);
-                        }
-                        // 绘制完成清空存储
-                        IPlotter.SHOWED_PLOTTERS.clear();
-                    }
-                    return tOut==null ? null : (tOut instanceof DisplayData) ? (DisplayData)tOut : getRenderer().render(tOut);
-                } catch (ExecutionException e) {
-                    Throwable t = e.getCause();
-                    if (t instanceof Exception) throw (Exception)t;
-                    else throw e;
-                }
-            }
-            @Override public List<String> formatError(Exception e) {
-                return super.formatError(Main.deepSanitize(e));
-            }
-            @Override public void interrupt() {
-                if (mEvalTask != null) {
-                    mEvalTask.cancel(true);
-                    mEvalTask = null;
-                }
-            }
-            
-            @Override public DisplayData inspect(String code, int at, boolean extraDetail) throws Exception {
-                StringSearch.Range tMatch = StringSearch.findLongestMatchingAt(code, at, ID_CHAR);
-                if (tMatch == null) return null;
-                String tID = tMatch.extractSubString(code);
-                if (!GROOVY_SHELL.getContext().hasVariable(tID)) return new DisplayData("No memory value for '"+tID+"'");
-                Object tVal = GROOVY_SHELL.getContext().getVariable(tID);
-                return new DisplayData(toDisplayString(tVal));
-            }
-            @Override public ReplacementOptions complete(String code, int at) throws Exception {
-                StringSearch.Range tMatch = StringSearch.findLongestMatchingAt(code, at, ID_CHAR);
-                if (tMatch == null) return null;
-                String tPrefix = tMatch.extractSubString(code);
-                return new ReplacementOptions(AUTO_COMPLETER.autocomplete(tPrefix), tMatch.getLow(), tMatch.getHigh());
-            }
-        }
-        
-        
         /** Wrapper of {@link GroovyObject} for matlab usage */
         public final static class GroovyObjectWrapper implements GroovyObject {
             private final GroovyObject mObj;
@@ -315,6 +334,7 @@ public class SP {
         public static Object get(String aValueName) throws Exception {return getValue(aValueName);}
         public static void set(String aValueName, Object aValue) throws Exception {setValue(aValueName, aValue);}
         public static void remove(String aValueName) throws Exception {removeValue(aValueName);}
+        public static boolean hasValue(String aValueName) throws Exception {return GROOVY_SHELL.getContext().hasVariable(aValueName);}
         public static Object getValue(String aValueName) throws Exception {return GroovyObjectWrapper.of(GROOVY_SHELL.getContext().getVariable(aValueName));}
         public static void setValue(String aValueName, Object aValue) throws Exception {GROOVY_SHELL.getContext().setVariable(aValueName, aValue);}
         public static void removeValue(String aValueName) throws Exception {GROOVY_SHELL.getContext().removeVariable(aValueName);}
@@ -449,6 +469,7 @@ public class SP {
         public static Object get(String aValueName) throws JepException {return getValue(aValueName);}
         public static void set(String aValueName, Object aValue) throws JepException {setValue(aValueName, aValue);}
         public static void remove(String aValueName) throws JepException {removeValue(aValueName);}
+        public static boolean hasValue(String aValueName) throws JepException {return (Boolean)JEP_INTERP.getValue("('"+aValueName+"' in globals()) or ('"+aValueName+"' in locals())");}
         public static Object getValue(String aValueName) throws JepException {return JEP_INTERP.getValue(aValueName);}
         public static void setValue(String aValueName, Object aValue) throws JepException {JEP_INTERP.set(aValueName, aValue);}
         public static void removeValue(String aValueName) throws JepException {JEP_INTERP.exec("del "+aValueName);}

@@ -169,7 +169,7 @@ public class Main {
                     KernelConnectionProperties tConnProps = KernelConnectionProperties.parse(tContents);
                     JupyterConnection tConnection = new JupyterConnection(tConnProps);
                     
-                    SP.Groovy.JupyterKernel tKernel = new SP.Groovy.JupyterKernel();
+                    SP.JupyterKernel tKernel = new SP.JupyterKernel();
                     tKernel.becomeHandlerForConnection(tConnection);
                     tConnection.connect();
                     tConnection.waitUntilClose();
