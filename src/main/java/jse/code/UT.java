@@ -14,7 +14,6 @@ import jse.Main;
 import jse.atom.*;
 import jse.cache.ByteArrayCache;
 import jse.code.collection.AbstractCollections;
-import jse.code.collection.DoubleList;
 import jse.code.collection.NewCollections;
 import jse.code.functional.IDoubleFilter;
 import jse.code.functional.IFilter;
@@ -1838,12 +1837,18 @@ public class UT {
         public static void tick(double aTick) {PLT.tick(aTick);}
         public static void tick(double aXTick, double aYTick) {PLT.tick(aXTick, aYTick);}
         
-        public static void size(int aWidth, int aHeight) {PLT.size(aWidth, aHeight);}
-        public static void save(@Nullable String aFilePath, int aWidth, int aHeight) throws IOException {PLT.save(aFilePath, aWidth, aHeight);}
-        public static void save(@Nullable String aFilePath) throws IOException {PLT.save(aFilePath);}
-        public static void save() throws IOException {PLT.save();}
-        public static byte[] encode(int aWidth, int aHeight) throws IOException {return PLT.encode(aWidth, aHeight);}
-        public static byte[] encode() throws IOException {return PLT.encode();}
+        public static void figureSize(int aWidth, int aHeight) {PLT.size(aWidth, aHeight);}
+        public static void saveFigure(@Nullable String aFilePath, int aWidth, int aHeight) throws IOException {PLT.save(aFilePath, aWidth, aHeight);}
+        public static void saveFigure(@Nullable String aFilePath) throws IOException {PLT.save(aFilePath);}
+        public static void saveFigure() throws IOException {PLT.save();}
+        public static byte[] encodeFigure(int aWidth, int aHeight) throws IOException {return PLT.encode(aWidth, aHeight);}
+        public static byte[] encodeFigure() throws IOException {return PLT.encode();}
+        public static void figsize(int aWidth, int aHeight) {figureSize(aWidth, aHeight);}
+        public static void savefig(@Nullable String aFilePath, int aWidth, int aHeight) throws IOException {saveFigure(aFilePath, aWidth, aHeight);}
+        public static void savefig(@Nullable String aFilePath) throws IOException {saveFigure(aFilePath);}
+        public static void savefig() throws IOException {saveFigure();}
+        public static byte[] encodefig(int aWidth, int aHeight) throws IOException {return encodeFigure(aWidth, aHeight);}
+        public static byte[] encodefig() throws IOException {return encodeFigure();}
         
         public static void cla() {PLT.clear();}
         public static void clf() {PLT.dispose(); PLT = Plotters.get();}

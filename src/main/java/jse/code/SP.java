@@ -8,6 +8,8 @@ import io.github.spencerpark.jupyter.kernel.LanguageInfo;
 import io.github.spencerpark.jupyter.kernel.ReplacementOptions;
 import io.github.spencerpark.jupyter.kernel.display.DisplayData;
 import io.github.spencerpark.jupyter.kernel.display.mime.MIMEType;
+import io.github.spencerpark.jupyter.kernel.magic.CellMagicParseContext;
+import io.github.spencerpark.jupyter.kernel.magic.MagicParser;
 import io.github.spencerpark.jupyter.kernel.util.CharPredicate;
 import io.github.spencerpark.jupyter.kernel.util.SimpleAutoCompleter;
 import io.github.spencerpark.jupyter.kernel.util.StringSearch;
@@ -70,9 +72,14 @@ public class SP {
     private final static String GROOVY_SP_DIR = "script/groovy/";
     private final static String PYTHON_SP_DIR = "script/python/";
     
-    /** Jupyter Kernel for Groovy */
+    /**
+     * Jupyter Kernel for JSE，
+     * 基于 <a href="https://github.com/SpencerPark/jupyter-jvm-basekernel">
+     * SpencerPark / jupyter-jvm-basekernel </a> 实现
+     * @author liqa
+     */
     public static class JupyterKernel extends BaseKernel {
-        private static final SimpleAutoCompleter AUTO_COMPLETER = SimpleAutoCompleter.builder()
+        private static final SimpleAutoCompleter GROOVY_AUTO_COMPLETER = SimpleAutoCompleter.builder()
             .preferLong()
             //Keywords from https://groovy-lang.org/syntax.html
             .withKeywords("abstract", "assert", "break", "case")
@@ -91,6 +98,16 @@ public class SP {
             .withKeywords("true", "false", "boolean")
             .withKeywords("char", "byte", "short", "int")
             .withKeywords("long", "float", "double")
+            .build();
+        private static final SimpleAutoCompleter PYTHON_AUTO_COMPLETER = SimpleAutoCompleter.builder()
+            .preferLong()
+            //Keywords from `keyword.kwlist`
+            .withKeywords("and", "as", "assert", "break", "class", "continue")
+            .withKeywords("def", "del", "elif", "else", "except", "finally")
+            .withKeywords("for", "from", "False", "global", "if", "import")
+            .withKeywords("in", "is", "lambda", "nonlocal", "not", "None")
+            .withKeywords("or", "pass", "raise", "return", "try", "True")
+            .withKeywords("while", "with", "yield")
             .build();
         private static final CharPredicate ID_CHAR = CharPredicate.builder()
             .inRange('a', 'z')
@@ -135,6 +152,7 @@ public class SP {
         private final LanguageInfo mLanguageInfo;
         private final String mBanner;
         private final List<LanguageInfo.Help> mHelpLinks;
+        private final MagicParser mMagicParser;
         public JupyterKernel() {
             super(StandardCharsets.UTF_8);
             mLanguageInfo = new LanguageInfo.Builder("groovy")
@@ -148,14 +166,81 @@ public class SP {
             mHelpLinks = ImmutableList.of(
                 new LanguageInfo.Help("Groovy tutorial", "https://groovy-lang.org/learn.html"),
                 new LanguageInfo.Help("JSE homepage", "https://github.com/CHanzyLazer/jse"));
+            mMagicParser = new MagicParser();
         }
         @Override public LanguageInfo getLanguageInfo() {return mLanguageInfo;}
         @Override public String getBanner() {return mBanner;}
         @Override public List<LanguageInfo.Help> getHelpLinks() {return mHelpLinks;}
         
+        private final static String MAGIC_INFO =
+            "Available line magics:\n" +
+            "%lsmagic\n" +
+            "\n" +
+            "Available cell magics:\n" +
+            "%%python  %%groovy  %%writefile";
+        
         private volatile Future<?> mEvalTask = null;
         @Override public DisplayData eval(String expr) throws Exception {
-            mEvalTask = UT.Par.callAsync(() -> Groovy.eval(expr));
+            // 先处理 cell magics
+            @Nullable CellMagicParseContext tCellCTX = mMagicParser.parseCellMagic(expr);
+            boolean tIsPython = false;
+            if (tCellCTX != null) {
+                String tCellName = tCellCTX.getMagicCall().getName();
+                switch(tCellName) {
+                case "python": {tIsPython = true; break;}
+                case "groovy": {break;}
+                case "writefile": {
+                    List<String> tArgs = tCellCTX.getMagicCall().getArgs();
+                    if (tArgs.isEmpty()) throw new IllegalArgumentException("Magic `%%writefile` Must have at least one argument.");
+                    String tPath = tArgs.get(0);
+                    UT.IO.write(tPath, tCellCTX.getMagicCall().getBody());
+                    return new DisplayData("Cell body has been written to '"+tPath+"' ("+UT.IO.toAbsolutePath(tPath)+")");
+                }
+                default: {
+                    throw new IllegalArgumentException("Invalid cell magic: "+tCellName+"\n\n"+MAGIC_INFO);
+                }}
+                expr = tCellCTX.getMagicCall().getBody();
+            }
+            // 再处理 line magics
+            expr = mMagicParser.transformLineMagics(expr, ctx -> {
+                String tLineName = ctx.getMagicCall().getName();
+                if (tLineName.equals("lsmagic")) {
+                    display(new DisplayData(MAGIC_INFO));
+                } else {
+                    throw new IllegalArgumentException("Invalid line magic: "+tLineName+"\n\n"+MAGIC_INFO);
+                }
+                return ""; // just replace to empty string
+            });
+            if (expr.isEmpty()) return null;
+            // 根据 tIsPython 决定运行器
+            if (tIsPython) {
+                // python 下保持线程一致（当然也意味着不能中断）
+                Python.exec(expr);
+                // 简单的 matplotlab 支持
+                if (!KERNEL_SHOW_FIGURE) {
+                    //noinspection ConcatenationWithEmptyString
+                    Python.exec(""+
+                    "__jse_images__ = []\n" +
+                    "if __JSE_HAS_MATPLOTLIB__:\n" +
+                    "    for __jse_fig_num__ in __JSE_PYPLOT__.get_fignums():\n" +
+                    "        __JSE_PYPLOT__.figure(__jse_fig_num__)\n" +
+                    "        __jse_buffer__ = io.BytesIO()\n" +
+                    "        __JSE_PYPLOT__.savefig(__jse_buffer__, format='png')\n" +
+                    "        __jse_buffer__.seek(0)\n" +
+                    "        __jse_images__.append(base64.b64encode(__jse_buffer__.read()).decode('utf-8'))\n" +
+                    "    __JSE_PYPLOT__.close('all')"
+                    );
+                    for (Object tImage : Python.getValue("__jse_images__", List.class)) {
+                        DisplayData tDisplayData = new DisplayData();
+                        tDisplayData.putData(MIMEType.IMAGE_PNG, tImage.toString());
+                        display(tDisplayData);
+                    }
+                    Python.exec("__jse_images__.clear()");
+                }
+                return null; // jep 限制目前没有方法获得最后的输出
+            }
+            final String fExpr = expr;
+            mEvalTask = UT.Par.callAsync(() -> Groovy.eval(fExpr));
             try {
                 Object tOut = mEvalTask.get();
                 mEvalTask = null;
@@ -189,17 +274,21 @@ public class SP {
         @Override public DisplayData inspect(String code, int at, boolean extraDetail) throws Exception {
             StringSearch.Range tMatch = StringSearch.findLongestMatchingAt(code, at, ID_CHAR);
             if (tMatch == null) return null;
+            @Nullable CellMagicParseContext tCellCTX = mMagicParser.parseCellMagic(code);
+            boolean tIsPython = tCellCTX!=null && tCellCTX.getMagicCall().getName().equals("python");
             String tID = tMatch.extractSubString(code);
-            if (!Groovy.hasValue(tID)) return new DisplayData("No memory value for '"+tID+"'");
-            Object tVal = Groovy.getValue(tID);
+            if (!(tIsPython ? Python.hasValue(tID) : Groovy.hasValue(tID))) return new DisplayData("No memory value for '"+tID+"'");
+            Object tVal = tIsPython ? Python.getValue(tID) : Groovy.getValue(tID);
             return new DisplayData(toDisplayString(tVal));
         }
         @SuppressWarnings("RedundantThrows")
         @Override public ReplacementOptions complete(String code, int at) throws Exception {
             StringSearch.Range tMatch = StringSearch.findLongestMatchingAt(code, at, ID_CHAR);
             if (tMatch == null) return null;
+            @Nullable CellMagicParseContext tCellCTX = mMagicParser.parseCellMagic(code);
+            boolean tIsPython = tCellCTX!=null && tCellCTX.getMagicCall().getName().equals("python");
             String tPrefix = tMatch.extractSubString(code);
-            return new ReplacementOptions(AUTO_COMPLETER.autocomplete(tPrefix), tMatch.getLow(), tMatch.getHigh());
+            return new ReplacementOptions((tIsPython ? PYTHON_AUTO_COMPLETER : GROOVY_AUTO_COMPLETER).autocomplete(tPrefix), tMatch.getLow(), tMatch.getHigh());
         }
     }
     
@@ -472,6 +561,7 @@ public class SP {
         public static void remove(String aValueName) throws JepException {removeValue(aValueName);}
         public static boolean hasValue(String aValueName) throws JepException {return (Boolean)JEP_INTERP.getValue("('"+aValueName+"' in globals()) or ('"+aValueName+"' in locals())");}
         public static Object getValue(String aValueName) throws JepException {return JEP_INTERP.getValue(aValueName);}
+        public static <T> T getValue(String aValueName, Class<T> aClazz) throws JepException {return JEP_INTERP.getValue(aValueName, aClazz);}
         public static void setValue(String aValueName, Object aValue) throws JepException {JEP_INTERP.set(aValueName, aValue);}
         public static void removeValue(String aValueName) throws JepException {JEP_INTERP.exec("del "+aValueName);}
         /** 运行脚本文件 */
@@ -566,6 +656,22 @@ public class SP {
         private static void initInterpreter_() {
             JEP_INTERP = new jep.SharedInterpreter();
             JEP_INTERP.exec("import sys");
+            // 简单的 matplotlab 支持
+            if (!KERNEL_SHOW_FIGURE && Main.IS_KERNEL()) {
+                //noinspection ConcatenationWithEmptyString
+                JEP_INTERP.exec(""+
+                "try:\n" +
+                "    import matplotlib\n" +
+                "    import matplotlib.pyplot as __JSE_PYPLOT__\n" +
+                "    import io\n" +
+                "    import base64\n" +
+                "    __JSE_HAS_MATPLOTLIB__ = True\n" +
+                "except ImportError:\n" +
+                "    __JSE_HAS_MATPLOTLIB__ = False\n" +
+                "if __JSE_HAS_MATPLOTLIB__:\n" +
+                "    matplotlib.use('Agg')"
+                );
+            }
         }
         
         
