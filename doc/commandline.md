@@ -7,6 +7,7 @@
     - [-?/-help](#help)
     - [-groovy](#groovy)
     - [-python](#python)
+    - [-jupyter](#jupyter)
 - [**⟶ 目录**](contents.md)
 
 # 命令行参数
@@ -40,7 +41,7 @@ jse -t "println('hello world')"
     
 - **输出**
     ```
-    JSE Shell (2.6.4, Groovy: 4.0.18, JVM: 17.0.8)
+    JSE Shell (Groovy: 4.0.19, JVM: 17.0.8)
     Type ':help' or ':h' for help.
     --------------------------------------------------
     groovy:000>
@@ -160,7 +161,7 @@ groovy 版本以及 java 版本并退出。
     
 - **输出**
     ```
-    jse version: 2.6.4 (java: 17.0.8)
+    jse version: 2.7.4 (java: 17.0.8)
     ```
 
 
@@ -188,6 +189,7 @@ groovy 版本以及 java 版本并退出。
         -? -help      Print help message
         -groovy       Run the groovy file script
         -python       Run the python file script
+        -jupyter      Install current jse to the jupyter kernel
     
     You can also using another scripting language such as MATLAB or Python with Py4J and import jse-*.jar
     ```
@@ -209,4 +211,22 @@ groovy 版本以及 java 版本并退出。
 
 和 `-f`/`-file`，不同，此时不会自动判断脚本类型，
 永远将输入的文件当作 python 脚本执行。
+
+
+## -jupyter
+
+将当前的 jse 安装到 jupyter 内核中，从而可以在 jupyter notebook
+中使用 jse 来解析 groovy 或者 python 代码块。
+
+- **执行**
+    
+    ```shell
+    jse -jupyter
+    ```
+    
+- **输出**
+    ```
+    The jupyter kernel for JSE has been initialized,
+    now you can open the jupyter notebook through `jupyter notebook`
+    ```
 
