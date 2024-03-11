@@ -699,9 +699,9 @@ public class SP {
             }
             // 不提供强制仅下载源码的选项，因为很多下载的源码都不能编译成功
             // 设置目标路径
-            rCommand.add("--dest"); rCommand.add(String.format("\"%s\"", PYPKG_DIR));
+            rCommand.add("--dest"); rCommand.add(String.format("'%s'", PYPKG_DIR));
             // 设置需要的包名
-            rCommand.add(String.format("\"%s\"", aRequirement));
+            rCommand.add(String.format("'%s'", aRequirement));
             
             // 直接通过系统指令执行 pip 来下载
             EXE.system(String.join(" ", rCommand));
@@ -722,13 +722,13 @@ public class SP {
             // 是否开启联网，这里默认不开启联网，因为标准下会使用 downloadPackage 来下载包
             if (!aIncludeIndex) rCommand.add("--no-index");
             // 添加 .pypkg 到搜索路径
-            rCommand.add("--find-links"); rCommand.add(String.format("\"file:%s\"", PYPKG_DIR));
+            rCommand.add("--find-links"); rCommand.add(String.format("'file:%s'", PYPKG_DIR));
             // 设置目标路径
-            rCommand.add("--target"); rCommand.add(String.format("\"%s\"", PYLIB_DIR));
+            rCommand.add("--target"); rCommand.add(String.format("'%s'", PYLIB_DIR));
             // 强制开启更新，替换已有的包
             rCommand.add("--upgrade");
             // 设置需要的包名
-            rCommand.add(String.format("\"%s\"", aRequirement));
+            rCommand.add(String.format("'%s'", aRequirement));
             
             // 直接通过系统指令执行 pip 来下载
             EXE.system(String.join(" ", rCommand));
@@ -740,11 +740,11 @@ public class SP {
         private static String cmakeInitCmdJep_(String aJepBuildDir) {
             // 设置参数，这里使用 List 来构造这个长指令
             List<String> rCommand = new ArrayList<>();
-            rCommand.add("cd"); rCommand.add("\""+aJepBuildDir+"\""); rCommand.add(";");
+            rCommand.add("cd"); rCommand.add("'"+aJepBuildDir+"'"); rCommand.add(";");
             rCommand.add("cmake");
             // 这里设置 C 编译器（如果有）
             if (Conf.CMAKE_C_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="+Conf.CMAKE_C_COMPILER  );}
-            if (Conf.CMAKE_C_FLAGS    != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS=\"" +Conf.CMAKE_C_FLAGS+"\"");}
+            if (Conf.CMAKE_C_FLAGS    != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS='" +Conf.CMAKE_C_FLAGS+"'");}
             // 初始化使用上一个目录的 CMakeList.txt
             rCommand.add("..");
             return String.join(" ", rCommand);
@@ -752,16 +752,16 @@ public class SP {
         private static String cmakeSettingCmdJep_(String aJepBuildDir) throws IOException {
             // 设置参数，这里使用 List 来构造这个长指令
             List<String> rCommand = new ArrayList<>();
-            rCommand.add("cd"); rCommand.add("\""+aJepBuildDir+"\""); rCommand.add(";");
+            rCommand.add("cd"); rCommand.add("'"+aJepBuildDir+"'"); rCommand.add(";");
             rCommand.add("cmake");
             // 设置构建输出目录为 lib
             UT.IO.makeDir(JEP_LIB_DIR); // 初始化一下这个目录避免意料外的问题
-            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=\""+ JEP_LIB_DIR +"\"");
-            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=\""+ JEP_LIB_DIR +"\"");
-            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=\""+ JEP_LIB_DIR +"\"");
-            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ JEP_LIB_DIR +"\"");
-            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ JEP_LIB_DIR +"\"");
-            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ JEP_LIB_DIR +"\"");
+            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH='"+ JEP_LIB_DIR +"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH='"+ JEP_LIB_DIR +"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH='"+ JEP_LIB_DIR +"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH='"+ JEP_LIB_DIR +"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH='"+ JEP_LIB_DIR +"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH='"+ JEP_LIB_DIR +"'");
             rCommand.add(".");
             return String.join(" ", rCommand);
         }
@@ -794,7 +794,7 @@ public class SP {
             // 设置参数
             EXE.system(cmakeSettingCmdJep_(tJepBuildDir));
             // 最后进行构造操作
-            EXE.system(String.format("cd \"%s\"; cmake --build . --config Release", tJepBuildDir));
+            EXE.system(String.format("cd '%s'; cmake --build . --config Release", tJepBuildDir));
             EXE.setNoSTDOutput(false);
             // 简单检测一下是否编译成功
             @Nullable String tJepLibName = LIB_NAME_IN(JEP_LIB_DIR, "jep");

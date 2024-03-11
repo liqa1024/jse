@@ -224,7 +224,7 @@ final class SSHCore implements IAutoShutdown {
         tChannelExec.setInputStream(null);
         if (!aNoERROutput) tChannelExec.setErrStream(System.err, true); // 注意一定要设置不要关闭，啊，意外关闭其实是不好检测的啊
         if (mBeforeCommand != null && !mBeforeCommand.isEmpty()) aCommand = String.format("%s;%s", mBeforeCommand, aCommand);
-        aCommand = String.format("cd \"%s\";%s", mRemoteWorkingDir, aCommand); // 所有指令都会先 cd 到 mRemoteWorkingDir 再执行
+        aCommand = String.format("cd '%s';%s", mRemoteWorkingDir, aCommand); // 所有指令都会先 cd 到 mRemoteWorkingDir 再执行
         tChannelExec.setCommand(aCommand);
         return tChannelExec;
         // 不需要考虑失败时关闭连接的情况，因为还没有建立连接

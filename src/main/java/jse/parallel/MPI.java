@@ -1142,13 +1142,13 @@ public class MPI {
         private static String cmakeInitCmd_(String aBuildDir) {
             // 设置参数，这里使用 List 来构造这个长指令
             List<String> rCommand = new ArrayList<>();
-            rCommand.add("cd"); rCommand.add("\""+aBuildDir+"\""); rCommand.add(";");
+            rCommand.add("cd"); rCommand.add("'"+aBuildDir+"'"); rCommand.add(";");
             rCommand.add("cmake");
             // 这里设置 C/C++ 编译器（如果有）
-            if (Conf.CMAKE_C_COMPILER   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + Conf.CMAKE_C_COMPILER    );}
-            if (Conf.CMAKE_CXX_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ Conf.CMAKE_CXX_COMPILER  );}
-            if (Conf.CMAKE_C_FLAGS      != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS=\""   + Conf.CMAKE_C_FLAGS  +"\"");}
-            if (Conf.CMAKE_CXX_FLAGS    != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS=\"" + Conf.CMAKE_CXX_FLAGS+"\"");}
+            if (Conf.CMAKE_C_COMPILER   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + Conf.CMAKE_C_COMPILER   );}
+            if (Conf.CMAKE_CXX_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ Conf.CMAKE_CXX_COMPILER );}
+            if (Conf.CMAKE_C_FLAGS      != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS='"    + Conf.CMAKE_C_FLAGS  +"'");}
+            if (Conf.CMAKE_CXX_FLAGS    != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS='"  + Conf.CMAKE_CXX_FLAGS+"'");}
             // 初始化使用上一个目录的 CMakeList.txt
             rCommand.add("..");
             return String.join(" ", rCommand);
@@ -1156,17 +1156,17 @@ public class MPI {
         private static String cmakeSettingCmd_(String aBuildDir) throws IOException {
             // 设置参数，这里使用 List 来构造这个长指令
             List<String> rCommand = new ArrayList<>();
-            rCommand.add("cd"); rCommand.add("\""+aBuildDir+"\""); rCommand.add(";");
+            rCommand.add("cd"); rCommand.add("'"+aBuildDir+"'"); rCommand.add(";");
             rCommand.add("cmake");
             rCommand.add("-D"); rCommand.add("JSE_USE_MIMALLOC="+(Conf.USE_MIMALLOC?"ON":"OFF"));
             // 设置构建输出目录为 lib
             UT.IO.makeDir(MPIJNI_LIB_DIR); // 初始化一下这个目录避免意料外的问题
-            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=\""+ MPIJNI_LIB_DIR +"\"");
-            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=\""+ MPIJNI_LIB_DIR +"\"");
-            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=\""+ MPIJNI_LIB_DIR +"\"");
-            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ MPIJNI_LIB_DIR +"\"");
-            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ MPIJNI_LIB_DIR +"\"");
-            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ MPIJNI_LIB_DIR +"\"");
+            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH='"+ MPIJNI_LIB_DIR +"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH='"+ MPIJNI_LIB_DIR +"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH='"+ MPIJNI_LIB_DIR +"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH='"+ MPIJNI_LIB_DIR +"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH='"+ MPIJNI_LIB_DIR +"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH='"+ MPIJNI_LIB_DIR +"'");
             rCommand.add(".");
             return String.join(" ", rCommand);
         }
@@ -1205,7 +1205,7 @@ public class MPI {
             // 设置参数
             EXE.system(cmakeSettingCmd_(tBuildDir));
             // 最后进行构造操作
-            EXE.system(String.format("cd \"%s\"; cmake --build . --config Release", tBuildDir));
+            EXE.system(String.format("cd '%s'; cmake --build . --config Release", tBuildDir));
             EXE.setNoSTDOutput(false);
             // 简单检测一下是否编译成功
             @Nullable String tLibName = LIB_NAME_IN(MPIJNI_LIB_DIR, "mpijni");

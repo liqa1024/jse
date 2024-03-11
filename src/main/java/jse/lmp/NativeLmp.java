@@ -167,13 +167,13 @@ public class NativeLmp implements IAutoShutdown {
     private static String cmakeInitCmdNativeLmp_() {
         // 设置参数，这里使用 List 来构造这个长指令
         List<String> rCommand = new ArrayList<>();
-        rCommand.add("cd"); rCommand.add("\""+Conf.LMP_HOME+"\""); rCommand.add(";");
+        rCommand.add("cd"); rCommand.add("'"+Conf.LMP_HOME+"'"); rCommand.add(";");
         rCommand.add("cmake");
         // 这里设置 C/C++ 编译器（如果有）
-        if (Conf.CMAKE_C_COMPILER   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + Conf.CMAKE_C_COMPILER    );}
-        if (Conf.CMAKE_CXX_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ Conf.CMAKE_CXX_COMPILER  );}
-        if (Conf.CMAKE_C_FLAGS      != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS=\""   + Conf.CMAKE_C_FLAGS  +"\"");}
-        if (Conf.CMAKE_CXX_FLAGS    != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS=\"" + Conf.CMAKE_CXX_FLAGS+"\"");}
+        if (Conf.CMAKE_C_COMPILER   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + Conf.CMAKE_C_COMPILER   );}
+        if (Conf.CMAKE_CXX_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ Conf.CMAKE_CXX_COMPILER );}
+        if (Conf.CMAKE_C_FLAGS      != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS='"    + Conf.CMAKE_C_FLAGS  +"'");}
+        if (Conf.CMAKE_CXX_FLAGS    != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS='"  + Conf.CMAKE_CXX_FLAGS+"'");}
         // 初始化使用上一个目录的 CMakeList.txt
         rCommand.add("../cmake");
         return String.join(" ", rCommand);
@@ -181,13 +181,13 @@ public class NativeLmp implements IAutoShutdown {
     private static String cmakeInitCmdLmpJni_(String aLmpJniBuildDir) {
         // 设置参数，这里使用 List 来构造这个长指令
         List<String> rCommand = new ArrayList<>();
-        rCommand.add("cd"); rCommand.add("\""+aLmpJniBuildDir+"\""); rCommand.add(";");
+        rCommand.add("cd"); rCommand.add("'"+aLmpJniBuildDir+"'"); rCommand.add(";");
         rCommand.add("cmake");
         // 这里设置 C/C++ 编译器（如果有）
-        if (Conf.CMAKE_C_COMPILER_LMPJNI  !=null || Conf.CMAKE_C_COMPILER  !=null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + (Conf.CMAKE_C_COMPILER_LMPJNI  ==null ? Conf.CMAKE_C_COMPILER   : Conf.CMAKE_C_COMPILER_LMPJNI  )     );}
-        if (Conf.CMAKE_CXX_COMPILER_LMPJNI!=null || Conf.CMAKE_CXX_COMPILER!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ (Conf.CMAKE_CXX_COMPILER_LMPJNI==null ? Conf.CMAKE_CXX_COMPILER : Conf.CMAKE_CXX_COMPILER_LMPJNI)     );}
-        if (Conf.CMAKE_C_FLAGS_LMPJNI     !=null || Conf.CMAKE_C_FLAGS     !=null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS=\""   + (Conf.CMAKE_C_FLAGS_LMPJNI     ==null ? Conf.CMAKE_C_FLAGS      : Conf.CMAKE_C_FLAGS_LMPJNI     )+"\"");}
-        if (Conf.CMAKE_CXX_FLAGS_LMPJNI   !=null || Conf.CMAKE_CXX_FLAGS   !=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS=\"" + (Conf.CMAKE_CXX_FLAGS_LMPJNI   ==null ? Conf.CMAKE_CXX_FLAGS    : Conf.CMAKE_CXX_FLAGS_LMPJNI   )+"\"");}
+        if (Conf.CMAKE_C_COMPILER_LMPJNI  !=null || Conf.CMAKE_C_COMPILER  !=null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + (Conf.CMAKE_C_COMPILER_LMPJNI  ==null ? Conf.CMAKE_C_COMPILER   : Conf.CMAKE_C_COMPILER_LMPJNI  )    );}
+        if (Conf.CMAKE_CXX_COMPILER_LMPJNI!=null || Conf.CMAKE_CXX_COMPILER!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ (Conf.CMAKE_CXX_COMPILER_LMPJNI==null ? Conf.CMAKE_CXX_COMPILER : Conf.CMAKE_CXX_COMPILER_LMPJNI)    );}
+        if (Conf.CMAKE_C_FLAGS_LMPJNI     !=null || Conf.CMAKE_C_FLAGS     !=null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS='"    + (Conf.CMAKE_C_FLAGS_LMPJNI     ==null ? Conf.CMAKE_C_FLAGS      : Conf.CMAKE_C_FLAGS_LMPJNI     )+"'");}
+        if (Conf.CMAKE_CXX_FLAGS_LMPJNI   !=null || Conf.CMAKE_CXX_FLAGS   !=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS='"  + (Conf.CMAKE_CXX_FLAGS_LMPJNI   ==null ? Conf.CMAKE_CXX_FLAGS    : Conf.CMAKE_CXX_FLAGS_LMPJNI   )+"'");}
         // 初始化使用上一个目录的 CMakeList.txt
         rCommand.add("..");
         return String.join(" ", rCommand);
@@ -195,7 +195,7 @@ public class NativeLmp implements IAutoShutdown {
     private static String cmakeSettingCmdNativeLmp_() throws IOException {
         // 设置参数，这里使用 List 来构造这个长指令
         List<String> rCommand = new ArrayList<>();
-        rCommand.add("cd"); rCommand.add("\""+Conf.LMP_HOME+"\""); rCommand.add(";");
+        rCommand.add("cd"); rCommand.add("'"+Conf.LMP_HOME+"'"); rCommand.add(";");
         rCommand.add("cmake");
         // 设置输出动态链接库
         rCommand.add("-D"); rCommand.add("BUILD_SHARED_LIBS=ON");
@@ -205,12 +205,12 @@ public class NativeLmp implements IAutoShutdown {
         rCommand.add("-D"); rCommand.add("CMAKE_BUILD_TYPE=Release");
         // 设置构建输出目录为 lib
         UT.IO.makeDir(NATIVELMP_LIB_DIR); // 初始化一下这个目录避免意料外的问题
-        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=\""+ NATIVELMP_LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=\""+ NATIVELMP_LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=\""+ NATIVELMP_LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ NATIVELMP_LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ NATIVELMP_LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ NATIVELMP_LIB_DIR +"\"");
+        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH='"+ NATIVELMP_LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH='"+ NATIVELMP_LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH='"+ NATIVELMP_LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH='"+ NATIVELMP_LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH='"+ NATIVELMP_LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH='"+ NATIVELMP_LIB_DIR +"'");
         // 添加额外的设置参数
         for (Map.Entry<String, String> tEntry : Conf.CMAKE_SETTING.entrySet()) {
             rCommand.add("-D"); rCommand.add(String.format("%s=%s", tEntry.getKey(), tEntry.getValue()));
@@ -221,7 +221,7 @@ public class NativeLmp implements IAutoShutdown {
     private static String cmakeSettingCmdLmpJni_(String aLmpJniBuildDir) throws IOException {
         // 设置参数，这里使用 List 来构造这个长指令
         List<String> rCommand = new ArrayList<>();
-        rCommand.add("cd"); rCommand.add("\""+aLmpJniBuildDir+"\""); rCommand.add(";");
+        rCommand.add("cd"); rCommand.add("'"+aLmpJniBuildDir+"'"); rCommand.add(";");
         rCommand.add("cmake");
         rCommand.add("-D"); rCommand.add("JSE_USE_MIMALLOC="                  +(Conf.USE_MIMALLOC           ?"ON":"OFF"));
         rCommand.add("-D"); rCommand.add("JSE_LAMMPS_IS_OLD="                 +(Conf.IS_OLD                 ?"ON":"OFF"));
@@ -229,12 +229,12 @@ public class NativeLmp implements IAutoShutdown {
         rCommand.add("-D"); rCommand.add("JSE_LAMMPS_EXCEPTIONS_NULL_SUPPORT="+(Conf.EXCEPTIONS_NULL_SUPPORT?"ON":"OFF"));
         // 设置构建输出目录为 lib
         UT.IO.makeDir(LMPJNI_LIB_DIR); // 初始化一下这个目录避免意料外的问题
-        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=\""+ LMPJNI_LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=\""+ LMPJNI_LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=\""+ LMPJNI_LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ LMPJNI_LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ LMPJNI_LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ LMPJNI_LIB_DIR +"\"");
+        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH='"+ LMPJNI_LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH='"+ LMPJNI_LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH='"+ LMPJNI_LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH='"+ LMPJNI_LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH='"+ LMPJNI_LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH='"+ LMPJNI_LIB_DIR +"'");
         rCommand.add(".");
         return String.join(" ", rCommand);
     }
@@ -283,9 +283,9 @@ public class NativeLmp implements IAutoShutdown {
         // 设置参数
         EXE.system(cmakeSettingCmdNativeLmp_());
         // 如果设置 CLEAN 则进行 clean 操作
-        if (Conf.CLEAN) EXE.system(String.format("cd \"%s\"; cmake --build . --target clean", Conf.LMP_HOME));
+        if (Conf.CLEAN) EXE.system(String.format("cd '%s'; cmake --build . --target clean", Conf.LMP_HOME));
         // 最后进行构造操作
-        EXE.system(String.format("cd \"%s\"; cmake --build . --config Release", Conf.LMP_HOME));
+        EXE.system(String.format("cd '%s'; cmake --build . --config Release", Conf.LMP_HOME));
         EXE.setNoSTDOutput(false);
         // 简单检测一下是否编译成功
         @Nullable String tLibName = LIB_NAME_IN(NATIVELMP_LIB_DIR, "lammps");
@@ -335,7 +335,7 @@ public class NativeLmp implements IAutoShutdown {
         // 设置参数
         EXE.system(cmakeSettingCmdLmpJni_(tBuildDir));
         // 最后进行构造操作
-        EXE.system(String.format("cd \"%s\"; cmake --build . --config Release", tBuildDir));
+        EXE.system(String.format("cd '%s'; cmake --build . --config Release", tBuildDir));
         EXE.setNoSTDOutput(false);
         // 简单检测一下是否编译成功
         @Nullable String tLibName = LIB_NAME_IN(LMPJNI_LIB_DIR, "lmpjni");

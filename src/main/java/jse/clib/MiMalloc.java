@@ -62,13 +62,13 @@ public class MiMalloc {
     private static String cmakeInitCmd_(String aMiBuildDir) {
         // 设置参数，这里使用 List 来构造这个长指令
         List<String> rCommand = new ArrayList<>();
-        rCommand.add("cd"); rCommand.add("\""+aMiBuildDir+"\""); rCommand.add(";");
+        rCommand.add("cd"); rCommand.add("'"+aMiBuildDir+"'"); rCommand.add(";");
         rCommand.add("cmake");
         // 这里设置 C/C++ 编译器（如果有）
-        if (Conf.CMAKE_C_COMPILER   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  +Conf.CMAKE_C_COMPILER    );}
-        if (Conf.CMAKE_CXX_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+Conf.CMAKE_CXX_COMPILER  );}
-        if (Conf.CMAKE_C_FLAGS      != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS=\""   +Conf.CMAKE_C_FLAGS  +"\"");}
-        if (Conf.CMAKE_CXX_FLAGS    != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS=\"" +Conf.CMAKE_CXX_FLAGS+"\"");}
+        if (Conf.CMAKE_C_COMPILER   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  +Conf.CMAKE_C_COMPILER   );}
+        if (Conf.CMAKE_CXX_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+Conf.CMAKE_CXX_COMPILER );}
+        if (Conf.CMAKE_C_FLAGS      != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS='"    +Conf.CMAKE_C_FLAGS  +"'");}
+        if (Conf.CMAKE_CXX_FLAGS    != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS='"  +Conf.CMAKE_CXX_FLAGS+"'");}
         // 初始化使用上一个目录的 CMakeList.txt
         rCommand.add("..");
         return String.join(" ", rCommand);
@@ -76,7 +76,7 @@ public class MiMalloc {
     private static String cmakeSettingCmd_(String aMiBuildDir) throws IOException {
         // 设置参数，这里使用 List 来构造这个长指令
         List<String> rCommand = new ArrayList<>();
-        rCommand.add("cd"); rCommand.add("\""+aMiBuildDir+"\""); rCommand.add(";");
+        rCommand.add("cd"); rCommand.add("'"+aMiBuildDir+"'"); rCommand.add(";");
         rCommand.add("cmake");
         // 设置只输出动态链接库
         rCommand.add("-D"); rCommand.add("MI_BUILD_SHARED=ON");
@@ -94,12 +94,12 @@ public class MiMalloc {
         rCommand.add("-D"); rCommand.add("CMAKE_BUILD_TYPE=Release");
         // 设置构建输出目录为 lib
         UT.IO.makeDir(LIB_DIR); // 初始化一下这个目录避免意料外的问题
-        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=\""+ LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=\""+ LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=\""+ LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ LIB_DIR +"\"");
-        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH=\""+ LIB_DIR +"\"");
+        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH='"+ LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH='"+ LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH='"+ LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH='"+ LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH='"+ LIB_DIR +"'");
+        rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH='"+ LIB_DIR +"'");
         rCommand.add(".");
         return String.join(" ", rCommand);
     }
@@ -130,7 +130,7 @@ public class MiMalloc {
         // 设置参数
         EXE.system(cmakeSettingCmd_(tMiBuildDir));
         // 最后进行构造操作
-        EXE.system(String.format("cd \"%s\"; cmake --build . --config Release", tMiBuildDir));
+        EXE.system(String.format("cd '%s'; cmake --build . --config Release", tMiBuildDir));
         EXE.setNoSTDOutput(false);
         // 简单检测一下是否编译成功
         @Nullable String tLibName = LIB_NAME_IN(LIB_DIR, "mimalloc");
