@@ -217,8 +217,10 @@ Available cell magics:
                 // 根据 tIsPython 决定运行器
                 if (tIsPython) {
                     Python.exec(expr)
+                    //noinspection GroovyUnusedAssignment
                     tOut = null // jep 限制目前没有方法获得最后的输出
                 } else {
+                    //noinspection GroovyUnusedAssignment
                     tOut = Groovy.eval(expr)
                 }
             } finally {
@@ -549,6 +551,7 @@ if __JSE_HAS_MATPLOTLIB__:
         private final static String PYPKG_DIR = JAR_DIR+'.pypkg/'
         private final static String PYLIB_DIR = JAR_DIR+'python/'
         private final static String JEP_LIB_DIR = JAR_DIR+'jep/' + UT.Code.uniqueID(VERSION, JEP_VERSION) + '/'
+        @SuppressWarnings('GrFinalVariableAccess')
         private final static String JEP_LIB_PATH
         /** 将 aScriptPath 合法化，现在可以省略掉 script/python/ 以及后缀 */
         private static String validScriptPath(String aScriptPath) throws IOException {

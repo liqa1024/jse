@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  */
 public class CS {
     /** version of jse */
-    public final static String VERSION = "2.7.4d";
+    public final static String VERSION = "2.7.4e";
     
     /** a Random generator so I don't need to instantiate a new one all the time. */
     public final static Random RNGSUS = new Random(), RANDOM = RNGSUS;
@@ -542,7 +542,7 @@ public class CS {
             // 获取此 jar 的路径
             // 注意此属性在 linux 上有时不是绝对路径，这可能会造成一些问题；
             // 现在应该可以随意使用 UT.IO 而不会循环初始化
-            Path tJarPath = UT.IO.toAbsolutePath_(System.getProperty("java.class.path"));
+            Path tJarPath = UT.IO.toAbsolutePath_(new File(CS.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getPath());
             JAR_PATH = tJarPath.toString();
             Path tJarDirPath = tJarPath.getParent();
             String tJarDir = tJarDirPath==null ? "" : tJarDirPath.toString();
