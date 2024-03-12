@@ -19,10 +19,12 @@ repositories {
 
 sourceSets {
     main {
-        java {srcDirs = []}
+        java {
+            srcDirs = ['src/main/java']
+        }
         groovy {
             //noinspection GroovyAssignabilityCheck
-            srcDirs = ['src/main/java']
+            srcDirs = ['src/voronoi/java']
         }
         resources {
             srcDirs = ['src/main/resources']
@@ -64,7 +66,6 @@ compileJava {
     applyCommonCompileOptions(options)
 }
 compileGroovy {
-    dependsOn(compileJepJava, compileProgressbarJava)
     applyCommonCompileOptions(options)
 }
 
