@@ -325,7 +325,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
 
 - **C & C++ 编译器**
     
-    当然需要系统拥有 C/C++ 编译器，这里需要两者都有。
+    需要系统拥有 C/C++ 编译器，这里需要两者都有。
     
     例如对于 windows 需要
     [MSVC](https://visualstudio.microsoft.com/zh-hans/vs/features/cplusplus/)
@@ -335,9 +335,9 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     
 - [**CMake**](https://cmake.org/) (`>= 3.14`)
     
-    为了实现跨平台，jse 将调用动态库需要的 jni 源码直接包装到
-    `jse-all.jar` 中，并在调用到原生方法时进行编译。
-    为了保证不同平台下编译流程一致，并且能使用
+    为了实现跨平台，jse 将调用 lammps 库需要的 jni 源码直接封装到
+    `jse-all.jar` 中，并在调用到原生方法时自动编译。
+    为了保证不同平台下编译流程一致，以及能使用
     [CLion](https://www.jetbrains.com/clion/) 进行调试，
     这里使用 cmake 来管理这部分项目。
     
@@ -381,7 +381,20 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
 
 原生 lammps 类位于 [`jse.lmp.NativeLmp`](../src/main/java/jse/lmp/NativeLmp.java)，
 其接口基本和 [python 的 lammps 包](https://docs.lammps.org/Python_module.html) 一致。
+
 在上述环境配置完成后，第一次调用 `NativeLmp` 相关方法时会自动编译需要的 jni 库。
+而后可以使用类似 `mpiexec -np 4 jse path/to/script`
+的方法来通过 MPI 运行脚本中的 lammps。
+
+> **注意**：在 MPI 环境下编译 jni 库会导致多个进程同时访问相同目录，
+> 最终导致编译失败（并且这是不可能从程序中预先知道的，因为这时还没有 MPI 环境！），
+> 因此第一次运行 MPI 代码时需要在“串行”环境下运行，保证相关
+> jni 库正常编译。
+>
+> 在 windows 下，可能需要手动指定指定的脚本才能正常使用 mpiexec 运行，例如
+> `mpiexec -np 4 jse.bat path/to/script`
+> 
+> 
 
 - **`<init>`**
     
@@ -656,7 +669,7 @@ jse 在 [`jse.lmp.NativeLmp.Conf`](../src/main/java/jse/lmp/NativeLmp.java)
     
     默认值：`null`（cmake 自动检测）
     
-    环境变量名称：`JSE_CMAKE_C_COMPILER`
+    环境变量名称：`JSE_CMAKE_C_COMPILER_LMP` / `JSE_CMAKE_C_COMPILER`
     
     -----------------------------
     
@@ -668,7 +681,31 @@ jse 在 [`jse.lmp.NativeLmp.Conf`](../src/main/java/jse/lmp/NativeLmp.java)
     
     默认值：`null`（cmake 自动检测）
     
-    环境变量名称：`JSE_CMAKE_CXX_COMPILER`
+    环境变量名称：`JSE_CMAKE_CXX_COMPILER_LMP` / `JSE_CMAKE_CXX_COMPILER`
+    
+    -----------------------------
+    
+- **`CMAKE_C_FLAGS`**
+    
+    描述：自定义使用 cmake 构建 lammps 以及 jni 部分使用的 C 的 flags。
+    
+    类型：`String`
+    
+    默认值：`null`（不添加 flags）
+    
+    环境变量名称：`JSE_CMAKE_C_FLAGS_LMP` / `JSE_CMAKE_C_FLAGS`
+    
+    -----------------------------
+    
+- **`CMAKE_CXX_FLAGS`**
+    
+    描述：自定义使用 cmake 构建 lammps 以及 jni 部分使用的 C++ 的 flags。
+    
+    类型：`String`
+    
+    默认值：`null`（不添加 flags）
+    
+    环境变量名称：`JSE_CMAKE_CXX_FLAGS_LMP` / `JSE_CMAKE_CXX_FLAGS`
     
     -----------------------------
     
@@ -681,7 +718,7 @@ jse 在 [`jse.lmp.NativeLmp.Conf`](../src/main/java/jse/lmp/NativeLmp.java)
     
     默认值：`null`（cmake 自动检测）
     
-    环境变量名称：`JSE_CMAKE_C_COMPILER`
+    环境变量名称：`JSE_CMAKE_C_COMPILER_LMPJNI`
     
     -----------------------------
     
@@ -694,7 +731,33 @@ jse 在 [`jse.lmp.NativeLmp.Conf`](../src/main/java/jse/lmp/NativeLmp.java)
     
     默认值：`null`（cmake 自动检测）
     
-    环境变量名称：`JSE_CMAKE_CXX_COMPILER`
+    环境变量名称：`JSE_CMAKE_CXX_COMPILER_LMPJNI`
+    
+    -----------------------------
+    
+- **`CMAKE_C_FLAGS_LMPJNI`**
+    
+    描述：自定义使用 cmake 构建 jni 部分使用的 C 的 flags。
+    会覆盖 `CMAKE_C_FLAGS`。
+    
+    类型：`String`
+    
+    默认值：`null`（不添加 flags）
+    
+    环境变量名称：`JSE_CMAKE_C_FLAGS_LMPJNI`
+    
+    -----------------------------
+    
+- **`CMAKE_CXX_FLAGS_LMPJNI`**
+    
+    描述：自定义使用 cmake 构建 jni 部分使用的 C++ 的 flags。
+    会覆盖 `CMAKE_CXX_FLAGS`。
+    
+    类型：`String`
+    
+    默认值：`null`（不添加 flags）
+    
+    环境变量名称：`JSE_CMAKE_CXX_FLAGS_LMPJNI`
     
     -----------------------------
     
@@ -707,10 +770,49 @@ jse 在 [`jse.lmp.NativeLmp.Conf`](../src/main/java/jse/lmp/NativeLmp.java)
     
     默认值：`true`
     
-    环境变量名称：`JSE_USE_MIMALLOC`
+    环境变量名称：`JSE_USE_MIMALLOC_LMP` / `JSE_USE_MIMALLOC`
     
     > **注意**：mimalloc 的编译需要较高版本的编译器，在一些旧平台上可能会编译失败
     > 
+    
+    -----------------------------
+    
+- **`REDIRECT_LMP_LIB`**
+    
+    描述：重定向 lammps 动态库的路径，
+    设置后会完全关闭 jse 关于 lammps 动态库的查找和构建并直接使用此动态库。
+    
+    类型：`String`
+    
+    默认值：`null`
+    
+    环境变量名称：`JSE_REDIRECT_LMP_LIB`
+    
+    -----------------------------
+    
+- **`REDIRECT_LMP_LLIB`**
+    
+    描述：重定向编译 lammps jni 部分用来连接 lammps 库的路径，
+    默认为 `REDIRECT_LMP_LIB`。
+    
+    类型：`String`
+    
+    默认值：`null`
+    
+    环境变量名称：`JSE_REDIRECT_LMP_LLIB`
+    
+    -----------------------------
+    
+- **`REDIRECT_LMPJNI_LIB`**
+    
+    描述：重定向 lammps jni 动态库的路径，
+    设置后会完全关闭 jse 关于 lammps jni 动态库的查找和构建并直接使用此动态库。
+    
+    类型：`String`
+    
+    默认值：`null`
+    
+    环境变量名称：`JSE_REDIRECT_LMPJNI_LIB`
     
     -----------------------------
     

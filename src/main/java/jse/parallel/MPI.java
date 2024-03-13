@@ -24,7 +24,7 @@ import static jse.code.Conf.*;
 
 /**
  * 基于 jni 实现的 MPI wrapper, 介绍部分基于
- * <a href="https://learn.microsoft.com/en-us/message-passing-interface/microsoft-mpi">
+ * <a href="https://learn.microsoft.com/message-passing-interface/microsoft-mpi">
  * Microsoft MPI </a> 的标准；
  * 所有函数名称按照原始的 MPI 标准而不是流行的 java binding 中使用的标准，
  * 从而保证对 c 风格的 MPI 有更好的一致性；
@@ -35,22 +35,22 @@ import static jse.code.Conf.*;
  * <p>
  * 使用方法：
  * <pre> {@code
- * import static jse.parallel.MPI.Native.*;
+ * import static jse.parallel.MPI.Native.*
  *
- * MPI_Init(args);
- * int me = MPI_Comm_rank(MPI_COMM_WORLD);
- * System.out.println("Hi from <"+me+">");
- * MPI_Finalize();
+ * MPI_Init(args)
+ * int me = MPI_Comm_rank(MPI_COMM_WORLD)
+ * println('Hi from <'+me+'>')
+ * MPI_Finalize()
  * } </pre>
  * <p>
  * 或者更加 java 风格的使用：
  * <pre> {@code
- * import jse.parallel.MPI;
+ * import jse.parallel.MPI
  *
- * MPI.init(args);
- * int me = MPI.Comm.WORLD.rank();
- * System.out.println("Hi from <"+me+">");
- * MPI.shutdown(); // "finalize()" has been used in java
+ * MPI.init(args)
+ * int me = MPI.Comm.WORLD.rank()
+ * println('Hi from <'+me+'>')
+ * MPI.shutdown() // `finalize()` has been used in java
  * } </pre>
  * <p>
  * References:
@@ -143,7 +143,7 @@ public class MPI {
          * @return A new {@link MPI.Group} that contains all elements in the first group that
          * are not present in the second group.
          * The function returns {@link MPI.Group#EMPTY} if the new group is empty.
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-difference-function"> MPI_Group_difference function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-group-difference-function"> MPI_Group_difference function </a>
          */
         public Group difference(Group aRHS) throws MPIException {return of(Native.MPI_Group_difference(mPtr, aRHS.mPtr));}
         
@@ -160,7 +160,7 @@ public class MPI {
          * @return A new {@link MPI.Group} that is derived from the existing group.
          * The order of the existing group is preserved in the new group.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-excl-function"> MPI_Group_excl function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-group-excl-function"> MPI_Group_excl function </a>
          */
         public Group excl(int aN, int[] aRanks) throws MPIException {return of(Native.MPI_Group_excl(mPtr, aN, aRanks));}
         public Group excl(int[] aRanks) throws MPIException {return excl(aRanks.length, aRanks);}
@@ -175,7 +175,7 @@ public class MPI {
          * @return A new {@link MPI.Group}, which contains the included
          * processes in the order that they are specified in the ranks parameter.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-incl-function"> MPI_Group_incl function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-group-incl-function"> MPI_Group_incl function </a>
          */
         public Group incl(int aN, int[] aRanks) throws MPIException {return of(Native.MPI_Group_incl(mPtr, aN, aRanks));}
         public Group incl(int[] aRanks) throws MPIException {return incl(aRanks.length, aRanks);}
@@ -185,7 +185,7 @@ public class MPI {
          * @param aRHS The second group.
          * @return A new {@link MPI.Group} with those elements that are present in both groups.
          * The function returns {@link MPI.Group#EMPTY} if the new group is empty.
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-intersection-function"> MPI_Group_intersection function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-group-intersection-function"> MPI_Group_intersection function </a>
          */
         public Group intersection(Group aRHS) throws MPIException {return of(Native.MPI_Group_intersection(mPtr, aRHS.mPtr));}
         
@@ -193,7 +193,7 @@ public class MPI {
          * Creates a new group from the union of two existing groups.
          * @param aRHS The second group.
          * @return A new {@link MPI.Group} that represents all elements in either group.
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-union-function"> MPI_Group_union function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-group-union-function"> MPI_Group_union function </a>
          */
         public Group union(Group aRHS) throws MPIException {return of(Native.MPI_Group_union(mPtr, aRHS.mPtr));}
     }
@@ -257,7 +257,7 @@ public class MPI {
          * @param aRecvCount The number of elements in the receive buffer. If the count is zero,
          *                   the data part of the message is empty.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-allgather-function"> MPI_Allgather function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-allgather-function"> MPI_Allgather function </a>
          */
         public void allgather(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int aRecvCount) throws MPIException {Native.MPI_Allgather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, mPtr);}
         public void allgather(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int aRecvCount) throws MPIException {Native.MPI_Allgather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, mPtr);}
@@ -309,7 +309,7 @@ public class MPI {
          *                In the rRecvBuf, aRecvCounts, and aDispls parameter arrays, the nth element of each
          *                array refers to the data that is received from the nth communicator process.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-allgatherv-function"> MPI_Allgatherv function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-allgatherv-function"> MPI_Allgatherv function </a>
          */
         public void allgatherv(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int[] aRecvCounts, int[] aDispls) throws MPIException {Native.MPI_Allgatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, mPtr);}
         public void allgatherv(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int[] aRecvCounts, int[] aDispls) throws MPIException {Native.MPI_Allgatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, mPtr);}
@@ -345,7 +345,7 @@ public class MPI {
          * @param aOp The MPI_Op handle indicating the global reduction operation to perform.
          *            The handle can indicate a built-in or application-defined operation.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-allreduce-function"> MPI_Allreduce function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-allreduce-function"> MPI_Allreduce function </a>
          */
         public void allreduce(byte[]    aSendBuf, byte[]    rRecvBuf, int aCount, Op aOp) throws MPIException {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);}
         public void allreduce(double[]  aSendBuf, double[]  rRecvBuf, int aCount, Op aOp) throws MPIException {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);}
@@ -375,7 +375,7 @@ public class MPI {
         
         /**
          * Initiates barrier synchronization across all members of a group.
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-barrier-function"> MPI_Barrier function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-barrier-function"> MPI_Barrier function </a>
          */
         public void barrier() throws MPIException {
             Native.MPI_Barrier(mPtr);
@@ -394,7 +394,7 @@ public class MPI {
          *
          * @param aRoot The rank of the receiving process within the specified communicator.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-bcast-function"> MPI_Bcast function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-bcast-function"> MPI_Bcast function </a>
          */
         public void bcast(byte[]    rBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
         public void bcast(double[]  rBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
@@ -463,7 +463,7 @@ public class MPI {
          *
          * @param aRoot The rank of the receiving process within the specified communicator.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-gather-function"> MPI_Gather function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-gather-function"> MPI_Gather function </a>
          */
         public void gather(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int aRecvCount, int aRoot) throws MPIException {Native.MPI_Gather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
         public void gather(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int aRecvCount, int aRoot) throws MPIException {Native.MPI_Gather(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
@@ -519,7 +519,7 @@ public class MPI {
          *
          * @param aRoot The rank of the receiving process within the specified communicator.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-gatherv-function"> MPI_Gatherv function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-gatherv-function"> MPI_Gatherv function </a>
          */
         public void gatherv(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot) throws MPIException {Native.MPI_Gatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, aRoot, mPtr);}
         public void gatherv(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot) throws MPIException {Native.MPI_Gatherv(aSendBuf, aSendCount, rRecvBuf, aRecvCounts, aDispls, aRoot, mPtr);}
@@ -554,7 +554,7 @@ public class MPI {
          *
          * @param aRoot The rank of the receiving process within the specified communicator.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-reduce-function"> MPI_Reduce function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-reduce-function"> MPI_Reduce function </a>
          */
         public void reduce(byte[]    aSendBuf, byte[]    rRecvBuf, int aCount, Op aOp, int aRoot) throws MPIException {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);}
         public void reduce(double[]  aSendBuf, double[]  rRecvBuf, int aCount, Op aOp, int aRoot) throws MPIException {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);}
@@ -604,7 +604,7 @@ public class MPI {
          *
          * @param aRoot The rank of the sending process within the specified communicator.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-scatter-function"> MPI_Scatter function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-scatter-function"> MPI_Scatter function </a>
          */
         public void scatter(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int aRecvCount, int aRoot) throws MPIException {Native.MPI_Scatter(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
         public void scatter(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int aRecvCount, int aRoot) throws MPIException {Native.MPI_Scatter(aSendBuf, aSendCount, rRecvBuf, aRecvCount, aRoot, mPtr);}
@@ -661,7 +661,7 @@ public class MPI {
          *
          * @param aRoot The rank of the receiving process within the specified communicator.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-scatterv-function"> MPI_Scatterv function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-scatterv-function"> MPI_Scatterv function </a>
          */
         public void scatterv(byte[]    aSendBuf, int[] aSendCounts, int[] aDispls, byte[]    rRecvBuf, int aRecvCount, int aRoot) throws MPIException {Native.MPI_Scatterv(aSendBuf, aSendCounts, aDispls, rRecvBuf, aRecvCount, aRoot, mPtr);}
         public void scatterv(double[]  aSendBuf, int[] aSendCounts, int[] aDispls, double[]  rRecvBuf, int aRecvCount, int aRoot) throws MPIException {Native.MPI_Scatterv(aSendBuf, aSendCounts, aDispls, rRecvBuf, aRecvCount, aRoot, mPtr);}
@@ -690,7 +690,7 @@ public class MPI {
          *               source communicator.
          * @return A new {@link MPI.Comm}.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-comm-create-function"> MPI_Comm_create function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-comm-create-function"> MPI_Comm_create function </a>
          */
         public Comm create(Group aGroup) throws MPIException {return of(Native.MPI_Comm_create(mPtr, aGroup.mPtr));}
         
@@ -709,7 +709,7 @@ public class MPI {
          *
          * @return A new {@link MPI.Comm}.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-comm-split-function"> MPI_Comm_split function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-comm-split-function"> MPI_Comm_split function </a>
          */
         public Comm split(int aColor, int aKey) throws MPIException {return of(Native.MPI_Comm_split(mPtr, aColor, aKey));}
         public Comm split(int aColor) throws MPIException {return split(aColor, rank());}
@@ -719,7 +719,7 @@ public class MPI {
         /**
          * Retrieves the group that is associated with a communicator.
          * @return The new {@link MPI.Group} that is associated with the specified communicator.
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-comm-group-function"> MPI_Comm_group function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-comm-group-function"> MPI_Comm_group function </a>
          */
         public Group group() throws MPIException {return Group.of(Native.MPI_Comm_group(mPtr));}
         
@@ -738,7 +738,7 @@ public class MPI {
          *
          * @param aTag The message tag that can be used to distinguish different types of messages.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-send-function"> MPI_Send function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-send-function"> MPI_Send function </a>
          */
         public void send(byte[]    aBuf, int aCount, int aDest, int aTag) throws MPIException {Native.MPI_Send(aBuf, aCount, aDest, aTag, mPtr);}
         public void send(double[]  aBuf, int aCount, int aDest, int aTag) throws MPIException {Native.MPI_Send(aBuf, aCount, aDest, aTag, mPtr);}
@@ -813,7 +813,7 @@ public class MPI {
          *             Specify the {@link MPI.Tag#ANY} constant to indicate that any tag is
          *             acceptable.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-recv-function"> MPI_Recv function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-recv-function"> MPI_Recv function </a>
          */
         public void recv(byte[]    rBuf, int aCount, int aSource, int aTag) throws MPIException {Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);}
         public void recv(double[]  rBuf, int aCount, int aSource, int aTag) throws MPIException {Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);}
@@ -887,7 +887,7 @@ public class MPI {
          * @param aSource Rank of source.
          * @param aRecvTag Receive tag.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-sendrecv-function"> MPI_Sendrecv function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-sendrecv-function"> MPI_Sendrecv function </a>
          */
         public void sendrecv(byte[]    aSendBuf, int aSendCount, int aDest, int aSendTag, byte[]    rRecvBuf, int aRecvCount, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendCount, aDest, aSendTag, rRecvBuf, aRecvCount, aSource, aRecvTag, mPtr);}
         public void sendrecv(byte[]    aSendBuf, int aSendCount, int aDest, int aSendTag, double[]  rRecvBuf, int aRecvCount, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendCount, aDest, aSendTag, rRecvBuf, aRecvCount, aSource, aRecvTag, mPtr);}
@@ -1118,7 +1118,7 @@ public class MPI {
      * @param aRequired The level of desired thread support. Multiple MPI processes
      *                  in the same job may use different values.
      * @return The level of provided thread support.
-     * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-init-thread-function"> MPI_Init_thread function </a>
+     * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-init-thread-function"> MPI_Init_thread function </a>
      */
     public static int initThread(String[] aArgs, int aRequired) throws MPIException {return Native.MPI_Init_thread(aArgs, aRequired);}
     public static int initThread(int aRequired) throws MPIException {return Native.MPI_Init_thread(ZL_STR, aRequired);}
@@ -1455,7 +1455,7 @@ public class MPI {
          *
          * @param aComm The MPI_Comm communicator handle.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-allgather-function"> MPI_Allgather function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-allgather-function"> MPI_Allgather function </a>
          */
         public static void MPI_Allgather(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int aRecvCount, long aComm) throws MPIException {MPI_Allgather0(false, aSendBuf, aSendCount, MPI_JBYTE   , JTYPE_BYTE   , rRecvBuf, aRecvCount, MPI_JBYTE   , JTYPE_BYTE   , aComm);}
         public static void MPI_Allgather(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int aRecvCount, long aComm) throws MPIException {MPI_Allgather0(false, aSendBuf, aSendCount, MPI_JDOUBLE , JTYPE_DOUBLE , rRecvBuf, aRecvCount, MPI_JDOUBLE , JTYPE_DOUBLE , aComm);}
@@ -1502,7 +1502,7 @@ public class MPI {
          *
          * @param aComm The MPI_Comm communicator handle.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-allgatherv-function"> MPI_Allgatherv function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-allgatherv-function"> MPI_Allgatherv function </a>
          */
         public static void MPI_Allgatherv(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int[] aRecvCounts, int[] aDispls, long aComm) throws MPIException {MPI_Allgatherv0(false, aSendBuf, aSendCount, MPI_JBYTE   , JTYPE_BYTE   , rRecvBuf, aRecvCounts, aDispls, MPI_JBYTE   , JTYPE_BYTE   , aComm);}
         public static void MPI_Allgatherv(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int[] aRecvCounts, int[] aDispls, long aComm) throws MPIException {MPI_Allgatherv0(false, aSendBuf, aSendCount, MPI_JDOUBLE , JTYPE_DOUBLE , rRecvBuf, aRecvCounts, aDispls, MPI_JDOUBLE , JTYPE_DOUBLE , aComm);}
@@ -1541,7 +1541,7 @@ public class MPI {
          *
          * @param aComm The MPI_Comm communicator handle.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-allreduce-function"> MPI_Allreduce function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-allreduce-function"> MPI_Allreduce function </a>
          */
         public static void MPI_Allreduce(byte[]    aSendBuf, byte[]    rRecvBuf, int aCount, long aOp, long aComm) throws MPIException {MPI_Allreduce0(false, aSendBuf, rRecvBuf, aCount, MPI_JBYTE   , JTYPE_BYTE   , aOp, aComm);}
         public static void MPI_Allreduce(double[]  aSendBuf, double[]  rRecvBuf, int aCount, long aOp, long aComm) throws MPIException {MPI_Allreduce0(false, aSendBuf, rRecvBuf, aCount, MPI_JDOUBLE , JTYPE_DOUBLE , aOp, aComm);}
@@ -1586,7 +1586,7 @@ public class MPI {
          *              The function can return for a process before all processes in its own group
          *              have called the function.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-barrier-function"> MPI_Barrier function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-barrier-function"> MPI_Barrier function </a>
          */
         public native static void MPI_Barrier(long aComm) throws MPIException;
         
@@ -1605,7 +1605,7 @@ public class MPI {
          *
          * @param aComm The MPI_Comm communicator handle.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-bcast-function"> MPI_Bcast function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-bcast-function"> MPI_Bcast function </a>
          */
         public static void MPI_Bcast(byte[]    rBuf, int aCount, int aRoot, long aComm) throws MPIException {MPI_Bcast0(rBuf, aCount, MPI_JBYTE   , JTYPE_BYTE   , aRoot, aComm);}
         public static void MPI_Bcast(double[]  rBuf, int aCount, int aRoot, long aComm) throws MPIException {MPI_Bcast0(rBuf, aCount, MPI_JDOUBLE , JTYPE_DOUBLE , aRoot, aComm);}
@@ -1645,7 +1645,7 @@ public class MPI {
          *
          * @param aComm The MPI_Comm communicator handle.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-gather-function"> MPI_Gather function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-gather-function"> MPI_Gather function </a>
          */
         public static void MPI_Gather(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int aRecvCount, int aRoot, long aComm) throws MPIException {MPI_Gather0(false, aSendBuf, aSendCount, MPI_JBYTE   , JTYPE_BYTE   , rRecvBuf, aRecvCount, MPI_JBYTE   , JTYPE_BYTE   , aRoot, aComm);}
         public static void MPI_Gather(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int aRecvCount, int aRoot, long aComm) throws MPIException {MPI_Gather0(false, aSendBuf, aSendCount, MPI_JDOUBLE , JTYPE_DOUBLE , rRecvBuf, aRecvCount, MPI_JDOUBLE , JTYPE_DOUBLE , aRoot, aComm);}
@@ -1696,7 +1696,7 @@ public class MPI {
          *
          * @param aComm The MPI_Comm communicator handle.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-gatherv-function"> MPI_Gatherv function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-gatherv-function"> MPI_Gatherv function </a>
          */
         public static void MPI_Gatherv(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot, long aComm) throws MPIException {MPI_Gatherv0(false, aSendBuf, aSendCount, MPI_JBYTE   , JTYPE_BYTE   , rRecvBuf, aRecvCounts, aDispls, MPI_JBYTE   , JTYPE_BYTE   , aRoot, aComm);}
         public static void MPI_Gatherv(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int[] aRecvCounts, int[] aDispls, int aRoot, long aComm) throws MPIException {MPI_Gatherv0(false, aSendBuf, aSendCount, MPI_JDOUBLE , JTYPE_DOUBLE , rRecvBuf, aRecvCounts, aDispls, MPI_JDOUBLE , JTYPE_DOUBLE , aRoot, aComm);}
@@ -1734,7 +1734,7 @@ public class MPI {
          *
          * @param aComm The MPI_Comm communicator handle.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-reduce-function"> MPI_Reduce function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-reduce-function"> MPI_Reduce function </a>
          */
         public static void MPI_Reduce(byte[]    aSendBuf, byte[]    rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws MPIException {MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, MPI_JBYTE   , JTYPE_BYTE   , aOp, aRoot, aComm);}
         public static void MPI_Reduce(double[]  aSendBuf, double[]  rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws MPIException {MPI_Reduce0(false, aSendBuf, rRecvBuf, aCount, MPI_JDOUBLE , JTYPE_DOUBLE , aOp, aRoot, aComm);}
@@ -1787,7 +1787,7 @@ public class MPI {
          *
          * @param aComm The MPI_Comm communicator handle.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-scatter-function"> MPI_Scatter function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-scatter-function"> MPI_Scatter function </a>
          */
         public static void MPI_Scatter(byte[]    aSendBuf, int aSendCount, byte[]    rRecvBuf, int aRecvCount, int aRoot, long aComm) throws MPIException {MPI_Scatter0(false, aSendBuf, aSendCount, MPI_JBYTE   , JTYPE_BYTE   , rRecvBuf, aRecvCount, MPI_JBYTE   , JTYPE_BYTE   , aRoot, aComm);}
         public static void MPI_Scatter(double[]  aSendBuf, int aSendCount, double[]  rRecvBuf, int aRecvCount, int aRoot, long aComm) throws MPIException {MPI_Scatter0(false, aSendBuf, aSendCount, MPI_JDOUBLE , JTYPE_DOUBLE , rRecvBuf, aRecvCount, MPI_JDOUBLE , JTYPE_DOUBLE , aRoot, aComm);}
@@ -1839,7 +1839,7 @@ public class MPI {
          *
          * @param aComm The MPI_Comm communicator handle.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-scatterv-function"> MPI_Scatterv function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-scatterv-function"> MPI_Scatterv function </a>
          */
         public static void MPI_Scatterv(byte[]    aSendBuf, int[] aSendCounts, int[] aDispls, byte[]    rRecvBuf, int aRecvCount, int aRoot, long aComm) throws MPIException {MPI_Scatterv0(false, aSendBuf, aSendCounts, aDispls, MPI_JBYTE   , JTYPE_BYTE   , rRecvBuf, aRecvCount, MPI_JBYTE   , JTYPE_BYTE   , aRoot, aComm);}
         public static void MPI_Scatterv(double[]  aSendBuf, int[] aSendCounts, int[] aDispls, double[]  rRecvBuf, int aRecvCount, int aRoot, long aComm) throws MPIException {MPI_Scatterv0(false, aSendBuf, aSendCounts, aDispls, MPI_JDOUBLE , JTYPE_DOUBLE , rRecvBuf, aRecvCount, MPI_JDOUBLE , JTYPE_DOUBLE , aRoot, aComm);}
@@ -1871,7 +1871,7 @@ public class MPI {
          *               source communicator.
          * @return An MPI_Comm handle to a new communicator.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-comm-create-function"> MPI_Comm_create function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-comm-create-function"> MPI_Comm_create function </a>
          */
         public native static long MPI_Comm_create(long aComm, long aGroup) throws MPIException;
         
@@ -1886,7 +1886,7 @@ public class MPI {
          * group or groups and any copied cached information from the source, but it contains
          * new context information.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-comm-dup-function"> MPI_Comm_dup function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-comm-dup-function"> MPI_Comm_dup function </a>
          */
         public native static long MPI_Comm_dup(long aComm) throws MPIException;
         
@@ -1896,7 +1896,7 @@ public class MPI {
          *
          * @param aComm The communicator handle to free.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-comm-free-function"> MPI_Comm_free function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-comm-free-function"> MPI_Comm_free function </a>
          */
         public native static void MPI_Comm_free(long aComm) throws MPIException;
         
@@ -1917,7 +1917,7 @@ public class MPI {
          *
          * @return An MPI_Comm handle to a new communicator.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-comm-split-function"> MPI_Comm_split function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-comm-split-function"> MPI_Comm_split function </a>
          */
         public native static long MPI_Comm_split(long aComm, int aColor, int aKey) throws MPIException;
         
@@ -1930,7 +1930,7 @@ public class MPI {
          * @param aComm The communicator on which to base the group.
          * @return The MPI_Group handle to the group that is associated with the specified communicator.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-comm-group-function"> MPI_Comm_group function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-comm-group-function"> MPI_Comm_group function </a>
          */
         public native static long MPI_Comm_group(long aComm) throws MPIException;
         
@@ -1942,7 +1942,7 @@ public class MPI {
          * @return A pointer to a handle that represents a new group that contains all elements in the first group that
          * are not present in the second group. The function returns {@link #MPI_GROUP_EMPTY} if the new group is empty.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-difference-function"> MPI_Group_difference function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-group-difference-function"> MPI_Group_difference function </a>
          */
         public native static long MPI_Group_difference(long aGroup1, long aGroup2) throws MPIException;
         
@@ -1961,14 +1961,14 @@ public class MPI {
          * @return A pointer to a handle that represents the new group that is derived from the existing group.
          * The order of the existing group is preserved in the new group.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-excl-function"> MPI_Group_excl function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-group-excl-function"> MPI_Group_excl function </a>
          */
         public native static long MPI_Group_excl(long aGroup, int aN, int[] aRanks) throws MPIException;
         
         /**
          * Frees a group.
          * @param aGroup Group to free.
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-free-function"> MPI_Group_free function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-group-free-function"> MPI_Group_free function </a>
          */
         public native static void MPI_Group_free(long aGroup) throws MPIException;
         
@@ -1984,7 +1984,7 @@ public class MPI {
          * @return A pointer to a handle that represents the new group, which contains the included
          * processes in the order that they are specified in the ranks parameter.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-incl-function"> MPI_Group_incl function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-group-incl-function"> MPI_Group_incl function </a>
          */
         public native static long MPI_Group_incl(long aGroup, int aN, int[] aRanks) throws MPIException;
         
@@ -1996,7 +1996,7 @@ public class MPI {
          * @return A pointer to a handle that represents a new group with those elements that are present in both groups.
          * The function returns {@link #MPI_GROUP_EMPTY} if the new group is empty.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-intersection-function"> MPI_Group_intersection function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-group-intersection-function"> MPI_Group_intersection function </a>
          */
         public native static long MPI_Group_intersection(long aGroup1, long aGroup2) throws MPIException;
         
@@ -2007,7 +2007,7 @@ public class MPI {
          * @return An integer contains the rank of the calling process in the specified group.
          * A value of {@link #MPI_UNDEFINED} that the calling process is not a member of the specified group.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-rank-function"> MPI_Group_rank function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-group-rank-function"> MPI_Group_rank function </a>
          */
         public native static int MPI_Group_rank(long aGroup) throws MPIException;
         
@@ -2017,7 +2017,7 @@ public class MPI {
          * @param aGroup The group to evaluate.
          * @return The size of the specified group.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-size-function"> MPI_Group_size function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-group-size-function"> MPI_Group_size function </a>
          */
         public native static int MPI_Group_size(long aGroup) throws MPIException;
         
@@ -2028,7 +2028,7 @@ public class MPI {
          * @param aGroup2 The second group.
          * @return A pointer to a handle that represents a new group that represents all elements in either group.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-group-union-function"> MPI_Group_union function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-group-union-function"> MPI_Group_union function </a>
          */
         public native static long MPI_Group_union(long aGroup1, long aGroup2) throws MPIException;
         
@@ -2050,7 +2050,7 @@ public class MPI {
          *
          * @param aComm The handle to the communicator.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-send-function"> MPI_Send function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-send-function"> MPI_Send function </a>
          */
         public static void MPI_Send(byte[]    aBuf, int aCount, int aDest, int aTag, long aComm) throws MPIException {MPI_Send0(aBuf, aCount, MPI_JBYTE   , JTYPE_BYTE   , aDest, aTag, aComm);}
         public static void MPI_Send(double[]  aBuf, int aCount, int aDest, int aTag, long aComm) throws MPIException {MPI_Send0(aBuf, aCount, MPI_JDOUBLE , JTYPE_DOUBLE , aDest, aTag, aComm);}
@@ -2090,7 +2090,7 @@ public class MPI {
          *
          * @param aComm The handle to the communicator.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-recv-function"> MPI_Recv function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-recv-function"> MPI_Recv function </a>
          */
         public static void MPI_Recv(byte[]    rBuf, int aCount, int aSource, int aTag, long aComm) throws MPIException {MPI_Recv0(rBuf, aCount, MPI_JBYTE   , JTYPE_BYTE   , aSource, aTag, aComm);}
         public static void MPI_Recv(double[]  rBuf, int aCount, int aSource, int aTag, long aComm) throws MPIException {MPI_Recv0(rBuf, aCount, MPI_JDOUBLE , JTYPE_DOUBLE , aSource, aTag, aComm);}
@@ -2125,7 +2125,7 @@ public class MPI {
          * @param aRecvTag Receive tag.
          * @param aComm Communicator.
          *
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-sendrecv-function"> MPI_Sendrecv function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-sendrecv-function"> MPI_Sendrecv function </a>
          */
         public static void MPI_Sendrecv(byte[]    aSendBuf, int aSendCount, int aDest, int aSendTag, byte[]    rRecvBuf, int aRecvCount, int aSource, int aRecvTag, long aComm) throws MPIException {MPI_Sendrecv0(aSendBuf, aSendCount, MPI_JBYTE   , JTYPE_BYTE   , aDest, aSendTag, rRecvBuf, aRecvCount, MPI_JBYTE   , JTYPE_BYTE   , aSource, aRecvTag, aComm);}
         public static void MPI_Sendrecv(byte[]    aSendBuf, int aSendCount, int aDest, int aSendTag, double[]  rRecvBuf, int aRecvCount, int aSource, int aRecvTag, long aComm) throws MPIException {MPI_Sendrecv0(aSendBuf, aSendCount, MPI_JBYTE   , JTYPE_BYTE   , aDest, aSendTag, rRecvBuf, aRecvCount, MPI_JDOUBLE , JTYPE_DOUBLE , aSource, aRecvTag, aComm);}
@@ -2202,7 +2202,7 @@ public class MPI {
          * @param aRequired The level of desired thread support. Multiple MPI processes
          *                  in the same job may use different values.
          * @return The level of provided thread support.
-         * @see <a href="https://learn.microsoft.com/en-us/message-passing-interface/mpi-init-thread-function"> MPI_Init_thread function </a>
+         * @see <a href="https://learn.microsoft.com/message-passing-interface/mpi-init-thread-function"> MPI_Init_thread function </a>
          */
         public native static int MPI_Init_thread(String[] aArgs, int aRequired) throws MPIException;
         
