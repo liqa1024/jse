@@ -33,7 +33,7 @@ jse 中可以通过构造函数 `<init>` 直接创建一个参数计算器，
     `example/mpc/boop`
     [⤤](../release/script/groovy/example/mpc/boop.groovy)
     
-    > 注意：创建后记得在使用完成后显式调用 `shutdown()` 关闭 MPC 回收资源，
+    > 注意：创建后记得在使用完成后手动调用 `shutdown()` 关闭 MPC 回收资源，
     > 或者使用 [*try-with-resources*](https://www.baeldung.com/java-try-with-resources)
     > 实现自动回收。
     > 

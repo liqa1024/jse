@@ -398,7 +398,10 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     例子：`example/lmp/native`
     [⤤](../release/script/groovy/example/lmp/native.groovy)
     
-    > 注意：创建后记得在使用完成后显式调用 `shutdown()` 关闭 lammps 回收资源，
+    > 注意：*输入1* 和 *输入2* 的顺序可以调换，当 `String[]`
+    > 作为最末尾的参数时可以使用可变参数 `String...`。
+    >
+    > 创建后记得在使用完成后手动调用 `shutdown()` 关闭 lammps 回收资源，
     > 或者使用 [*try-with-resources*](https://www.baeldung.com/java-try-with-resources)
     > 实现自动回收。
     > 
@@ -457,7 +460,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     
     输入：根据输入类型重载，具体为：
     
-    - `String[]`，多个指令组成的数组
+    - `String...`，使用可变参数参数输入的多个指令
     - `String`，由换行符（`\n`）分隔的多个指令组成的单个字符串
     
     -----------------------------
