@@ -3,6 +3,7 @@
     - [通过 groovy 使用](#通过-groovy-使用)
     - [通过 python 使用](#通过-python-使用)
     - [通过 matlab 使用](#通过-matlab-使用)
+    - [通过 jupyter 使用](#通过-jupyter-使用)
 - [**⟶ 目录**](contents.md)
 
 # 基本使用方式
@@ -179,18 +180,18 @@ import jse.lmp.Dump
 这种方法不再需要依赖第三方库，并且由于 jse 已经包含了 jep，
 因此也**不需要手动安装 jep**。
 
-- 参考 [通过 groovy 使用](#通过-groovy-使用) 中的任意做法，
-  只是将其中需要运行的 groovy 脚本改为 python 脚本；
-  并将脚本置于 `script/python` 目录下（非必须）。
+-   参考 [通过 groovy 使用](#通过-groovy-使用) 中的任意做法，
+    只是将其中需要运行的 groovy 脚本改为 python 脚本；
+    并将脚本置于 `script/python` 目录下（非必须）。
   
-- 对于需要使用 jse 的 python 脚本（例如 `script/python/main.py`），
-  可以直接通过 `import` 的方式导入 java 以及 jse 中的类：
+-   对于需要使用 jse 的 python 脚本（例如 `script/python/main.py`），
+    可以直接通过 `import` 的方式导入 java 以及 jse 中的类：
     
     ```python
     from jse.lmp import Data, Dump
     ```
     
-- 通过 `jse`/`./jse` 来运行此脚本而不是 `python`，从而让导入有效：
+-   通过 `jse` / `./jse` 来运行此脚本而不是 `python`，从而让导入有效：
     
     ```shell
     jse script/python/main.py
@@ -255,4 +256,35 @@ matlab 原生支持调用 java 程序，因此可以比较简单的使用 jse。
 > 
 > 两个函数都位于目录 `script/matlab/include`
 > 
+
+
+## 通过 jupyter 使用
+
+jse 从 `2.7.0` 开始支持在 jupyter 中直接使用（不需要通过 py4j）。
+
+-   参考 [通过 groovy 使用](#通过-groovy-使用) 中的任意做法安装 jse。
+    
+-   通过 `jse` / `./jse` 来执行命令安装当前 jse 到 jupyter 内核中：
+    
+    ```shell
+    jse -jupyter
+    ```
+    
+    输出
+    
+    ```
+    The jupyter kernel for JSE has been initialized,
+    now you can open the jupyter notebook through `jupyter notebook`
+    ```
+    
+    表示安装成功，如果遇到权限问题，可以尝试 *管理员权限运行*，或者通过：
+    
+    ```shell
+    jse -jupyter user=True
+    ```
+    
+    来仅为当前用户安装。
+
+-   通过 `jupyter notebook` 或者 `jupyter lab` 运行 jupyter，
+    这时应该能够看到名为 `jse` 的内核。
 

@@ -230,3 +230,22 @@ groovy 版本以及 java 版本并退出。
     now you can open the jupyter notebook through `jupyter notebook`
     ```
 
+此指令使用 jpyter 提供的 `KernelSpecManager.install_kernel_spec`
+函数来安装 jupyter 内核，此函数还存在两个可调参数 `user`
+以及 `prefix`，这里可以直接通过在命令行后面添加来进行设置，
+例如：
+
+```shell
+jse -jupyter user=Ture
+```
+
+表示为当前用户安装；
+
+```shell
+jse -jupyter prefix=sys.prefix
+```
+
+表示设置 `prefix` 为 `sys.prefix`，详细可参考
+[jupyter 官方文档](https://jupyter-client.readthedocs.io/en/latest/api/jupyter_client.html#jupyter_client.kernelspec.KernelSpecManager.install_kernel_spec)
+。
+

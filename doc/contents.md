@@ -3,6 +3,7 @@
     2. [通过 groovy 使用](usage.md#通过-groovy-使用)
     3. [通过 python 使用](usage.md#通过-python-使用)
     4. [通过 matlab 使用](usage.md#通过-matlab-使用)
+    5. [通过 jupyter 使用](usage.md#通过-jupyter-使用)
     
 2. [命令行参数](commandline.md)
     1. [*None*](commandline.md#none)
