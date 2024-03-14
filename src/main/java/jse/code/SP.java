@@ -155,15 +155,16 @@ public class SP {
             super(StandardCharsets.UTF_8);
             mLanguageInfo = new LanguageInfo.Builder("groovy")
                 .version(GroovySystem.getVersion())
+//                .mimetype("text/x-groovy")
                 .fileExtension(".groovy")
                 .pygments("groovy")
                 .codemirror("groovy")
                 .build();
-            mBanner = "jse "+VERSION+String.format(" (groovy: %s, java: %s)", GroovySystem.getVersion(), System.getProperty("java.version"))+"\n"
+            mBanner = "jse "+VERSION+String.format(" (java: %s, groovy: %s, jep: %s)", System.getProperty("java.version"), GroovySystem.getVersion(), Python.JEP_VERSION)+"\n"
                 +"Protocol v"+Header.PROTOCOL_VERISON+" implementation by "+KERNEL_META.getOrDefault("project", "UNKNOWN")+" "+KERNEL_META.getOrDefault("version", "UNKNOWN");
             mHelpLinks = ImmutableList.of(
-                new LanguageInfo.Help("Groovy tutorial", "https://groovy-lang.org/learn.html"),
-                new LanguageInfo.Help("JSE homepage", "https://github.com/CHanzyLazer/jse"));
+                new LanguageInfo.Help("JSE homepage", "https://github.com/CHanzyLazer/jse"),
+                new LanguageInfo.Help("Groovy tutorial", "https://groovy-lang.org/learn.html"));
             mMagicParser = new MagicParser();
         }
         @Override public LanguageInfo getLanguageInfo() {return mLanguageInfo;}
