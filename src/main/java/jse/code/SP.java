@@ -621,6 +621,8 @@ public class SP {
         }
         /** 调用方法，python 中需要结合 import 使用 */
         public static Object invoke(String aMethodName)                  throws JepException {return invoke(aMethodName, ZL_OBJ);}
+        public static Object invoke(String aMethodName, Map<String, Object> aKWArgs) throws JepException {return JEP_INTERP.invoke(aMethodName, aKWArgs);}
+        public static Object invoke(String aMethodName, Object[] aArgs, Map<String, Object> aKWArgs) throws JepException {return JEP_INTERP.invoke(aMethodName, aArgs, aKWArgs);}
         @SuppressWarnings("unchecked")
         public static Object invoke(String aMethodName, Object... aArgs) throws JepException {
             if (aArgs == null || aArgs.length == 0) return JEP_INTERP.invoke(aMethodName);
@@ -634,6 +636,8 @@ public class SP {
         }
         /** 创建 Python 实例，这里可以直接将类名当作函数调用即可 */
         public static Object newInstance(String aClassName)                  throws JepException {return newInstance(aClassName, ZL_OBJ);}
+        public static Object newInstance(String aClassName, Map<String, Object> aKWArgs) throws JepException {return invoke(aClassName, aKWArgs);}
+        public static Object newInstance(String aClassName, Object[] aArgs, Map<String, Object> aKWArgs) throws JepException {return invoke(aClassName, aArgs, aKWArgs);}
         public static Object newInstance(String aClassName, Object... aArgs) throws JepException {return invoke(aClassName, aArgs);}
         
         /** 提供一个手动关闭 JEP_INTERP 的接口 */
