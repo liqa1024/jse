@@ -51,16 +51,26 @@
     1. [环境要求](mpi.md#环境要求)
     2. [使用方法](mpi.md#使用方法)
     3. [可选配置](mpi.md#可选配置)
-    
-9.  [简单绘图]()
+
+9.  [简单的数学库]()
     - TODO
     
-10. [其他实用方法和技巧]()
+10. [简单的绘图]()
     - TODO
     
-11. [交叉编程]()
+11. [其他实用方法和技巧]()
+    - TODO
+
+12. [jupyter 支持](jupyter.ipynb)
+    1. [分段执行和上下文](jupyter.ipynb#分段执行和上下文)
+    2. [查看变量值](jupyter.ipynb#查看变量值)
+    3. [绘图支持](jupyter.ipynb#绘图支持)
+    4. [magic 支持](jupyter.ipynb#magic-支持)
+    5. [python 交叉编程支持](jupyter.ipynb#python-交叉编程支持)
+    
+13. [交叉编程]()
     - TODO
     
-12. [代码部分]()
+14. [代码部分]()
     - TODO
 
