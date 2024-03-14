@@ -57,6 +57,7 @@ public class Table extends AbstractTable implements IDataShell<DoubleList> {
         mRowNum = aRowNum;
         mData = aData;
     }
+    public Table(int aRowNum, DoubleList aData) {this(aRowNum, 0, aData);}
     public Table(int aRowNum) {this(aRowNum, 0, new DoubleList());}
     
     

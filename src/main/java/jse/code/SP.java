@@ -51,9 +51,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static jse.code.CS.*;
 import static jse.code.CS.Exec.EXE;
 import static jse.code.CS.Exec.JAR_DIR;
-import static jse.code.CS.VERSION;
 import static jse.code.Conf.*;
 
 /**
@@ -324,7 +324,9 @@ public class SP {
     
     
     /** 运行任意的脚本，自动检测脚本类型（根据后缀） */
+    public static void run(String aScriptPath)                  throws Exception {run(aScriptPath, ZL_STR);}
     public static void run(String aScriptPath, String... aArgs) throws Exception {runScript(aScriptPath, aArgs);}
+    public static void runScript(String aScriptPath)                  throws Exception {runScript(aScriptPath, ZL_STR);}
     public static void runScript(String aScriptPath, String... aArgs) throws Exception {
         // 有后缀的情况，直接执行
         if (aScriptPath.endsWith(".groovy")) {
@@ -424,6 +426,7 @@ public class SP {
         public static Object evalFile(String aFilePath) throws Exception {return GroovyObjectWrapper.of(GROOVY_SHELL.evaluate(toSourceFile(aFilePath)));}
         
         /** 直接运行文本的脚本 */
+        public static Object runText(String aText)                  throws Exception {return runText(aText, ZL_STR);}
         public static Object runText(String aText, String... aArgs) throws Exception {return GroovyObjectWrapper.of(GROOVY_SHELL.run(aText, "ScriptJSE"+COUNTER.incrementAndGet()+".groovy", aArgs));}
         /** Groovy 现在也可以使用 getValue 来获取变量以及 setValue 设置变量（仅限于 Context 变量，这样可以保证效率） */
         public static Object get(String aValueName) throws Exception {return getValue(aValueName);}
@@ -434,9 +437,12 @@ public class SP {
         public static void setValue(String aValueName, Object aValue) throws Exception {GROOVY_SHELL.getContext().setVariable(aValueName, aValue);}
         public static void removeValue(String aValueName) throws Exception {GROOVY_SHELL.getContext().removeVariable(aValueName);}
         /** 运行脚本文件 */
+        public static Object run(String aScriptPath)                  throws Exception {return run(aScriptPath, ZL_STR);}
         public static Object run(String aScriptPath, String... aArgs) throws Exception {return runScript(aScriptPath, aArgs);}
+        public static Object runScript(String aScriptPath)                  throws Exception {return runScript(aScriptPath, ZL_STR);}
         public static Object runScript(String aScriptPath, String... aArgs) throws Exception {return GroovyObjectWrapper.of(GROOVY_SHELL.run(toSourceFile(aScriptPath), aArgs));}
         /** 调用指定脚本中的方法 */
+        public static Object invoke(String aScriptPath, String aMethodName)                  throws Exception {return invoke(aScriptPath, aMethodName, ZL_OBJ);}
         public static Object invoke(String aScriptPath, String aMethodName, Object... aArgs) throws Exception {
             // 获取脚本的类
             Class<?> tScriptClass = GROOVY_SHELL.getClassLoader().parseClass(toSourceFile(aScriptPath));
@@ -455,6 +461,7 @@ public class SP {
             return GroovyObjectWrapper.of(InvokerHelper.invokeMethod(tScriptClass, aMethodName, aArgs));
         }
         /** 创建脚本类的实例 */
+        public static Object newInstance(String aScriptPath)                  throws Exception {return newInstance(aScriptPath, ZL_OBJ);}
         @SuppressWarnings("unchecked")
         public static Object newInstance(String aScriptPath, Object... aArgs) throws Exception {
             // 获取脚本的类
@@ -591,6 +598,7 @@ public class SP {
         // python 脚本文件不会有返回值
         
         /** 直接运行文本的脚本 */
+        public static void runText(String aText)                  throws JepException {runText(aText, ZL_STR);}
         public static void runText(String aText, String... aArgs) throws JepException {setArgs_("", aArgs); JEP_INTERP.exec(aText);}
         /** Python 还可以使用 getValue 来获取变量以及 setValue 设置变量（原则上同样仅限于 Context 变量，允许可以超出 Context 但是不保证支持） */
         public static Object get(String aValueName) throws JepException {return getValue(aValueName);}
@@ -602,13 +610,16 @@ public class SP {
         public static void setValue(String aValueName, Object aValue) throws JepException {JEP_INTERP.set(aValueName, aValue);}
         public static void removeValue(String aValueName) throws JepException {JEP_INTERP.exec("del "+aValueName);}
         /** 运行脚本文件 */
+        public static void run(String aScriptPath)                  throws JepException, IOException {run(aScriptPath, ZL_STR);}
         public static void run(String aScriptPath, String... aArgs) throws JepException, IOException {runScript(aScriptPath, aArgs);}
+        public static void runScript(String aScriptPath)                  throws JepException, IOException {runScript(aScriptPath, ZL_STR);}
         public static void runScript(String aScriptPath, String... aArgs) throws JepException, IOException {
             // 现在不再保存旧的 sys.argv，如果需要可以在外部代码自行保存
             setArgs_(aScriptPath, aArgs);
             JEP_INTERP.runScript(validScriptPath(aScriptPath));
         }
         /** 调用方法，python 中需要结合 import 使用 */
+        public static Object invoke(String aMethodName)                  throws JepException {return invoke(aMethodName, ZL_OBJ);}
         @SuppressWarnings("unchecked")
         public static Object invoke(String aMethodName, Object... aArgs) throws JepException {
             if (aArgs == null || aArgs.length == 0) return JEP_INTERP.invoke(aMethodName);
@@ -621,6 +632,7 @@ public class SP {
             return JEP_INTERP.invoke(aMethodName, aArgs);
         }
         /** 创建 Python 实例，这里可以直接将类名当作函数调用即可 */
+        public static Object newInstance(String aClassName)                  throws JepException {return newInstance(aClassName, ZL_OBJ);}
         public static Object newInstance(String aClassName, Object... aArgs) throws JepException {return invoke(aClassName, aArgs);}
         
         /** 提供一个手动关闭 JEP_INTERP 的接口 */
@@ -644,7 +656,9 @@ public class SP {
             @Override public void setMetaClass(MetaClass metaClass) {mDelegate = metaClass;}
             
             /** 现在同时支持规范中的 of 构造以及类似 python 的 call 构造 */
+            public Object of()                throws JepException {return of(ZL_OBJ);}
             public Object of(Object... aArgs) throws JepException {return newInstance(mClassName, aArgs);}
+            public Object call()                throws JepException {return call(ZL_OBJ);}
             public Object call(Object... aArgs) throws JepException {return newInstance(mClassName, aArgs);}
         }
         public static PyClass getClass(String aClassName) throws JepException {return new PyClass(aClassName);}

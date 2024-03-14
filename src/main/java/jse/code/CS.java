@@ -19,6 +19,7 @@ import org.jetbrains.annotations.Unmodifiable;
 import java.awt.*;
 import java.io.*;
 import java.net.URI;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -86,6 +87,7 @@ public class CS {
     public final static double R_NEAREST_MUL = 1.5;
     
     /** const arrays */
+    public final static OpenOption[] ZL_OO = new OpenOption[0];
     public final static String[] ZL_STR = new String[0];
     public final static Object[] ZL_OBJ = new Object[0];
     public final static double[][] ZL_MAT = new double[0][];

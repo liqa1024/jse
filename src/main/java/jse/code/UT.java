@@ -1013,13 +1013,17 @@ public class UT {
          * @param aLines Iterable String or String[] to be written
          * @throws IOException when fail
          */
-        public static void write(String aFilePath, String[] aLines, OpenOption... aOptions)                         throws IOException  {write(aFilePath, AbstractCollections.from(aLines), aOptions);}
-        public static void write(String aFilePath, Iterable<? extends CharSequence> aLines, OpenOption... aOptions) throws IOException  {write(toAbsolutePath_(aFilePath), aLines, aOptions);}
-        public static void write(String aFilePath, String aLine, OpenOption... aOptions)                            throws IOException  {write(aFilePath, Collections.singletonList(aLine), aOptions);}
-        public static void write(String aFilePath, byte[] aData, OpenOption... aOptions)                            throws IOException  {write(toAbsolutePath_(aFilePath), aData, aOptions);}
-        public static void write(Path aPath, byte[] aData, OpenOption... aOptions)                                  throws IOException  {validPath(aPath); Files.write(aPath, aData, aOptions);}
-        public static void write(Path aPath, String aLine, OpenOption... aOptions)                                  throws IOException  {write(aPath, Collections.singletonList(aLine), aOptions);}
-        public static void write(Path aPath, Iterable<? extends CharSequence> aLines, OpenOption... aOptions)       throws IOException  {
+        public static void write(String aFilePath, String[]                         aLines)                         throws IOException {write(aFilePath, aLines, ZL_OO);}
+        public static void write(String aFilePath, Iterable<? extends CharSequence> aLines)                         throws IOException {write(aFilePath, aLines, ZL_OO);}
+        public static void write(String aFilePath, String                            aLine)                         throws IOException {write(aFilePath, aLine, ZL_OO);}
+        public static void write(String aFilePath, byte[]                            aData)                         throws IOException {write(aFilePath, aData, ZL_OO);}
+        public static void write(String aFilePath, String[]                         aLines, OpenOption... aOptions) throws IOException {write(aFilePath, AbstractCollections.from(aLines), aOptions);}
+        public static void write(String aFilePath, Iterable<? extends CharSequence> aLines, OpenOption... aOptions) throws IOException {write(toAbsolutePath_(aFilePath), aLines, aOptions);}
+        public static void write(String aFilePath, String                            aLine, OpenOption... aOptions) throws IOException {write(aFilePath, Collections.singletonList(aLine), aOptions);}
+        public static void write(String aFilePath, byte[]                            aData, OpenOption... aOptions) throws IOException {write(toAbsolutePath_(aFilePath), aData, aOptions);}
+        public static void write(Path       aPath, byte[]                            aData, OpenOption... aOptions) throws IOException {validPath(aPath); Files.write(aPath, aData, aOptions);}
+        public static void write(Path       aPath, String                            aLine, OpenOption... aOptions) throws IOException {write(aPath, Collections.singletonList(aLine), aOptions);}
+        public static void write(Path       aPath, Iterable<? extends CharSequence> aLines, OpenOption... aOptions) throws IOException {
             validPath(aPath);
             // 使用 UT.IO 中的 stream 统一使用 LF 换行符
             try (IWriteln tWriteln = toWriteln(aPath, aOptions)) {
@@ -1033,6 +1037,7 @@ public class UT {
          * @param aText String to be written
          * @throws IOException when fail
          */
+        public static void writeText(String aFilePath, String aText) throws IOException {writeText(aFilePath, aText, ZL_OO);}
         public static void writeText(String aFilePath, String aText, OpenOption... aOptions) throws IOException {writeText(toAbsolutePath_(aFilePath), aText, aOptions);}
         public static void writeText(Path aPath, String aText, OpenOption... aOptions) throws IOException {
             validPath(aPath);
@@ -1156,12 +1161,15 @@ public class UT {
         @FunctionalInterface public interface IWriteln extends AutoCloseable {void writeln(CharSequence aLine) throws IOException; default void close() throws IOException {/**/}}
         
         /** output stuffs */
+        public static OutputStream   toOutputStream(String aFilePath)                           throws IOException  {return toOutputStream(aFilePath, ZL_OO);}
         public static OutputStream   toOutputStream(String aFilePath, OpenOption... aOptions)   throws IOException  {return toOutputStream(toAbsolutePath_(aFilePath), aOptions);}
         public static OutputStream   toOutputStream(Path aPath, OpenOption... aOptions)         throws IOException  {validPath(aPath); return Files.newOutputStream(aPath, aOptions);}
+        public static BufferedWriter toWriter      (String aFilePath)                           throws IOException  {return toWriter(aFilePath, ZL_OO);}
         public static BufferedWriter toWriter      (String aFilePath, OpenOption... aOptions)   throws IOException  {return toWriter(toAbsolutePath_(aFilePath), aOptions);}
         public static BufferedWriter toWriter      (Path aPath, OpenOption... aOptions)         throws IOException  {validPath(aPath); return new BufferedWriter(new OutputStreamWriter(toOutputStream(aPath, aOptions), StandardCharsets.UTF_8)) {@Override public void newLine() throws IOException {write("\n");}};}
         public static BufferedWriter toWriter      (OutputStream aOutputStream)                                     {return toWriter(aOutputStream, StandardCharsets.UTF_8);}
         public static BufferedWriter toWriter      (OutputStream aOutputStream, Charset aCS)                        {return new BufferedWriter(new OutputStreamWriter(aOutputStream, aCS)) {@Override public void newLine() throws IOException {write("\n");}};}
+        public static IWriteln       toWriteln     (String aFilePath)                           throws IOException  {return toWriteln(aFilePath, ZL_OO);}
         public static IWriteln       toWriteln     (String aFilePath, OpenOption... aOptions)   throws IOException  {return toWriteln(toWriter(aFilePath, aOptions));}
         public static IWriteln       toWriteln     (Path aPath, OpenOption... aOptions)         throws IOException  {return toWriteln(toWriter(aPath, aOptions));}
         public static IWriteln       toWriteln     (OutputStream aOutputStream)                                     {return toWriteln(toWriter(aOutputStream));}
@@ -1321,14 +1329,16 @@ public class UT {
          * @author liqa
          * @param aData the matrix form data to save
          * @param aFilePath csv file path to save
-         * @param aHeads optional heads for the title
          */
+        public static void data2csv(double[][] aData, String aFilePath)                   throws IOException {data2csv(aData, aFilePath, ZL_STR);}
         public static void data2csv(double[][] aData, String aFilePath, String... aHeads) throws IOException {rows2csv(aData, aFilePath, aHeads);}
+        public static void rows2csv(double[][] aData, String aFilePath)                   throws IOException {rows2csv(aData, aFilePath, ZL_STR);}
         public static void rows2csv(double[][] aRows, String aFilePath, String... aHeads) throws IOException {
             List<String> rLines = AbstractCollections.map(AbstractCollections.from(aRows), row -> String.join(",", AbstractCollections.map(row, Object::toString)));
             if (aHeads!=null && aHeads.length>0) rLines = AbstractCollections.merge(String.join(",", aHeads), rLines);
             write(aFilePath, rLines);
         }
+        public static void cols2csv(double[][] aData, String aFilePath)                   throws IOException {cols2csv(aData, aFilePath, ZL_STR);}
         public static void cols2csv(double[][] aCols, String aFilePath, String... aHeads) throws IOException {
             List<String> rLines = AbstractCollections.from(aCols[0].length, i ->  String.join(",", AbstractCollections.from(aCols.length, j -> String.valueOf(aCols[j][i]))));
             if (aHeads!=null && aHeads.length>0) rLines = AbstractCollections.merge(String.join(",", aHeads), rLines);
@@ -1340,7 +1350,9 @@ public class UT {
         public static void data2csv(double[] aData, String aFilePath, String aHead) throws IOException {
             write(aFilePath, AbstractCollections.merge(aHead, AbstractCollections.map(aData, Object::toString)));
         }
+        public static void data2csv(Iterable<?> aData, String aFilePath)                   throws IOException {data2csv(aData, aFilePath, ZL_STR);}
         public static void data2csv(Iterable<?> aData, String aFilePath, String... aHeads) throws IOException {rows2csv(aData, aFilePath, aHeads);}
+        public static void rows2csv(Iterable<?> aData, String aFilePath)                   throws IOException {rows2csv(aData, aFilePath, ZL_STR);}
         public static void rows2csv(Iterable<?> aRows, String aFilePath, String... aHeads) throws IOException {
             Iterable<String> rLines = AbstractCollections.map(aRows, row -> {
                 if (row instanceof IVector) {
@@ -1358,6 +1370,7 @@ public class UT {
             if (aHeads!=null && aHeads.length>0) rLines = AbstractCollections.merge(String.join(",", aHeads), rLines);
             write(aFilePath, rLines);
         }
+        public static void cols2csv(Iterable<?> aData, String aFilePath)                   throws IOException {cols2csv(aData, aFilePath, ZL_STR);}
         public static void cols2csv(Iterable<?> aCols, String aFilePath, String... aHeads) throws IOException {
             List<Iterator<String>> its = NewCollections.map(aCols, col -> {
                 if (col instanceof IVector) {
@@ -1388,6 +1401,7 @@ public class UT {
                 }
             }
         }
+        public static void data2csv(IMatrix aData, String aFilePath)                   throws IOException {data2csv(aData, aFilePath, ZL_STR);}
         public static void data2csv(IMatrix aData, String aFilePath, String... aHeads) throws IOException {
             List<String> rLines = AbstractCollections.map(aData.rows(), subData -> String.join(",", AbstractCollections.map(subData, Object::toString)));
             if (aHeads!=null && aHeads.length>0) rLines = AbstractCollections.merge(String.join(",", aHeads), rLines);
@@ -1399,6 +1413,7 @@ public class UT {
         public static void data2csv(IVector aData, String aFilePath, String aHead) throws IOException {
             write(aFilePath, AbstractCollections.merge(aHead, AbstractCollections.map(aData, Object::toString)));
         }
+        public static void data2csv(IFunc1 aFunc, String aFilePath)                   throws IOException {data2csv(aFunc, aFilePath, ZL_STR);}
         public static void data2csv(IFunc1 aFunc, String aFilePath, String... aHeads) throws IOException {
             List<String> rLines = AbstractCollections.map(AbstractCollections.range(aFunc.Nx()), i -> aFunc.get(i)+","+aFunc.getX(i));
             rLines = AbstractCollections.merge((aHeads!=null && aHeads.length>0) ? String.join(",", aHeads) : "f,x", rLines);
@@ -1466,7 +1481,7 @@ public class UT {
                 List<IVector> rRows = new ArrayList<>();
                 String tLine;
                 int tColNum;
-                String[] tHeads = null;
+                String[] tHeads = ZL_STR;
                 // 读取第一行来判断列数
                 tLine = tReader.readLine();
                 String[] tTokens = Text.splitStr(tLine);
