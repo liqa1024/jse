@@ -16,6 +16,7 @@ import io.github.spencerpark.jupyter.kernel.util.StringSearch;
 import io.github.spencerpark.jupyter.messages.Header;
 import jep.JepConfig;
 import jep.JepException;
+import jep.python.PyCallable;
 import jep.python.PyObject;
 import jse.Main;
 import jse.atom.AbstractAtoms;
@@ -363,7 +364,9 @@ public class SP {
             public Object __call__(Object... args) {return mOpt.apply(args);}
         }
         public Object __getattribute__(final String attrName) {
-            if (!Python.InitHelper.initialized()) return getProperty(attrName);
+            if (!Python.InitHelper.initialized()) {
+                return getProperty(attrName);
+            }
             switch(attrName) {
             case "_to_python": {throw EXCEPTION;} // 需要考虑 _to_python，在初始化时的特殊处理（具体为何并不清楚）
             case "unwrap": {return funcUnwrap;} // wrapper 带有的特有的函数
@@ -371,7 +374,6 @@ public class SP {
                 // 这时 Wrapper 还有个用途，可以通过内部的 mObj 来检测通用的属性并直接获取
                 @Nullable Object tAttr = Python.GET_ATTRIBUTE_SAFE.apply(mObj, attrName);
                 if (tAttr != null) {
-                    System.out.println("DEBUG: "+tAttr.getClass().getName());
                     return of(tAttr);
                 }
                 try {
@@ -383,11 +385,30 @@ public class SP {
         }
         public void __setattr__(String attrName, Object newAttr) {mObj.setProperty(attrName, newAttr);}
         
-        /** python 运算符重载 */
+        /** python 运算符重载，借助 python 的 __getattribute__ 接口并通过 PyCallable 来调用，让自动类型转换重新生效 */
         public Object __call__()               {return __call__(ZL_OBJ);}
-        public Object __call__(Object... args) {return of(mObj.invokeMethod("call", args));}
-        public Object __getitem__(int aIdx) {return of(mObj.invokeMethod("getAt", aIdx));}
-        public void __setitem__(int aIdx, Object aValue) {mObj.invokeMethod("putAt", new Object[]{aIdx, aValue});}
+        public Object __call__(Object... args) {
+            if (Python.InitHelper.initialized()) {
+                @Nullable Object tAttr = Python.GET_ATTRIBUTE_SAFE.apply(mObj, "call");
+                if (tAttr instanceof PyCallable) {
+                    return ((PyCallable)tAttr).call(args);
+                }
+            }
+            return of(mObj.invokeMethod("call", args));
+        }
+        public Object __getitem__(int aIdx) {
+            return of(mObj.invokeMethod("getAt", aIdx));
+        }
+        public void __setitem__(int aIdx, Object aValue) {
+            if (Python.InitHelper.initialized()) {
+                @Nullable Object tAttr = Python.GET_ATTRIBUTE_SAFE.apply(mObj, "putAt");
+                if (tAttr instanceof PyCallable) {
+                    ((PyCallable)tAttr).call(aIdx, aValue);
+                    return;
+                }
+            }
+            mObj.invokeMethod("putAt", new Object[]{aIdx, aValue});
+        }
     }
     
     
