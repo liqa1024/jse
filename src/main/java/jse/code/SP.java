@@ -16,7 +16,6 @@ import io.github.spencerpark.jupyter.kernel.util.StringSearch;
 import io.github.spencerpark.jupyter.messages.Header;
 import jep.JepConfig;
 import jep.JepException;
-import jep.python.PyCallable;
 import jep.python.PyObject;
 import jse.Main;
 import jse.atom.AbstractAtoms;
@@ -28,7 +27,7 @@ import jse.code.collection.ArrayLists;
 import jse.code.collection.Iterables;
 import jse.code.collection.NewCollections;
 import jse.code.functional.IBinaryFullOperator;
-import jse.code.functional.IUnaryFullOperator;
+import jse.code.functional.ITernaryConsumer;
 import jse.io.IOFiles;
 import jse.io.InFiles;
 import jse.math.ComplexDouble;
@@ -358,58 +357,30 @@ public class SP {
         
         /** jep support */
         private final Object funcUnwrap = new Object() {public GroovyObject __call__() {return unwrap();}};
-        private final static class PyCallable_ {
-            private final IUnaryFullOperator<Object, Object[]> mOpt;
-            PyCallable_(IUnaryFullOperator<Object, Object[]> aOpt) {mOpt = aOpt;}
-            public Object __call__()               {return __call__(ZL_OBJ);}
-            public Object __call__(Object... args) {return mOpt.apply(args);}
-        }
         public Object __getattribute__(final String attrName) {
             if (!Python.InitHelper.initialized()) {
                 return getProperty(attrName);
             }
-            switch(attrName) {
-            case "_to_python": {throw EXCEPTION;} // 需要考虑 _to_python，在初始化时的特殊处理（具体为何并不清楚）
-            case "unwrap": {return funcUnwrap;} // wrapper 带有的特有的函数
-            default: {
-                // 这时 Wrapper 还有个用途，可以通过内部的 mObj 来检测通用的属性并直接获取
-                @Nullable Object tAttr = Python.GET_ATTRIBUTE_SAFE.apply(mObj, attrName);
-                if (tAttr != null) {
-                    return of(tAttr);
-                }
-                try {
-                    return of(mObj.getProperty(attrName));
-                } catch (Exception e) {
-                    return new PyCallable_(args -> of(mObj.invokeMethod(attrName, args)));
-                }
-            }}
+            // wrapper 带有的特有的函数
+            if (attrName.equals("unwrap")) {
+                return funcUnwrap;
+            }
+            // 直接回滚使用 mObj 的 __getattribute__，从而保证一致
+            return Python.GET_ATTRIBUTE.apply(mObj, attrName);
         }
-        public void __setattr__(String attrName, Object newAttr) {mObj.setProperty(attrName, newAttr);}
+        public void __setattr__(String attrName, Object newAttr) {
+            if (!Python.InitHelper.initialized()) {
+                setProperty(attrName, newAttr);
+                return;
+            }
+            // 直接回滚使用 mObj 的 __setattr__，从而保证一致
+            Python.SET_ATTRIBUTE.accept(mObj, attrName, newAttr);
+        }
         
-        /** python 运算符重载，借助 python 的 __getattribute__ 接口并通过 PyCallable 来调用，让自动类型转换重新生效 */
-        public Object __call__()               {return __call__(ZL_OBJ);}
-        public Object __call__(Object... args) {
-            if (Python.InitHelper.initialized()) {
-                @Nullable Object tAttr = Python.GET_ATTRIBUTE_SAFE.apply(mObj, "call");
-                if (tAttr instanceof PyCallable) {
-                    return ((PyCallable)tAttr).call(args);
-                }
-            }
-            return of(mObj.invokeMethod("call", args));
-        }
-        public Object __getitem__(int aIdx) {
-            return of(mObj.invokeMethod("getAt", aIdx));
-        }
-        public void __setitem__(int aIdx, Object aValue) {
-            if (Python.InitHelper.initialized()) {
-                @Nullable Object tAttr = Python.GET_ATTRIBUTE_SAFE.apply(mObj, "putAt");
-                if (tAttr instanceof PyCallable) {
-                    ((PyCallable)tAttr).call(aIdx, aValue);
-                    return;
-                }
-            }
-            mObj.invokeMethod("putAt", new Object[]{aIdx, aValue});
-        }
+        // 现在不再进行运算符重载之类的操作，因为 python 中更可能会使用 unwrap
+        // 的对象，为了和 unwrap 的使用保持一致这里不再提供重载；
+        // 注意到 python 中的类在 groovy 中会重载运算，而反之不会，这是因为 groovy
+        // 的结果更加应该看成是 java 的类，而不是独立的脚本
     }
     
     
@@ -634,7 +605,8 @@ public class SP {
         /** 一样这里统一使用全局的一个解释器 */
         private static jep.Interpreter JEP_INTERP = null;
         /** 用于内部使用的 python 函数 */
-        private static IBinaryFullOperator<@Nullable Object, Object, String> GET_ATTRIBUTE_SAFE = null;
+        private static IBinaryFullOperator<Object, Object, String> GET_ATTRIBUTE = null;
+        private static ITernaryConsumer<Object, String, Object> SET_ATTRIBUTE = null;
         
         
         /** python like stuffs，exec 不会获取返回值，eval 获取返回值 */
@@ -687,7 +659,7 @@ public class SP {
         public static Object newInstance(String aClassName, Object... aArgs) throws JepException {return invoke(aClassName, aArgs);}
         
         /** 提供一个手动关闭 JEP_INTERP 的接口 */
-        public static void close() throws JepException {if (JEP_INTERP != null) {JEP_INTERP.close(); JEP_INTERP = null; GET_ATTRIBUTE_SAFE = null;}}
+        public static void close() throws JepException {if (JEP_INTERP != null) {JEP_INTERP.close(); JEP_INTERP = null; GET_ATTRIBUTE = null; SET_ATTRIBUTE = null;}}
         public static boolean isClosed() {return JEP_INTERP == null;}
         /** 提供一个手动刷新 JEP_INTERP 的接口，可以将关闭的重新打开，会清空所有创建的 python 变量 */
         public static void refresh() throws JepException {close(); initInterpreter_();}
@@ -749,15 +721,10 @@ public class SP {
             JEP_INTERP = new jep.SharedInterpreter();
             JEP_INTERP.exec("import sys");
             // python 函数获取
-            //noinspection ConcatenationWithEmptyString
-            JEP_INTERP.exec("" +
-            "def __JSE_GET_ATTRIBUTE_SAFE__(obj, name):\n" +
-            "    try:\n" +
-            "        return obj.__getattribute__(name)\n" +
-            "    except AttributeError:\n" +
-            "        return None"
-            );
-            GET_ATTRIBUTE_SAFE = (IBinaryFullOperator<@Nullable Object, Object, String>)JEP_INTERP.getValue("__JSE_GET_ATTRIBUTE_SAFE__", IBinaryFullOperator.class);
+            JEP_INTERP.exec("def __JSE_GET_ATTRIBUTE__(obj, name):\n    return obj.__getattribute__(name)");
+            JEP_INTERP.exec("def __JSE_SET_ATTRIBUTE__(obj, name, value):\n    return obj.__setattr__(name, value)");
+            GET_ATTRIBUTE = (IBinaryFullOperator<Object, Object, String>)JEP_INTERP.getValue("__JSE_GET_ATTRIBUTE__", IBinaryFullOperator.class);
+            SET_ATTRIBUTE = (ITernaryConsumer<Object, String, Object>)JEP_INTERP.getValue("__JSE_SET_ATTRIBUTE__", ITernaryConsumer.class);
             // 简单的 matplotlab 支持
             if (!KERNEL_SHOW_FIGURE && Main.IS_KERNEL()) {
                 //noinspection ConcatenationWithEmptyString
