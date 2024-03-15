@@ -16,7 +16,6 @@ import io.github.spencerpark.jupyter.kernel.util.StringSearch;
 import io.github.spencerpark.jupyter.messages.Header;
 import jep.JepConfig;
 import jep.JepException;
-import jep.python.PyCallable;
 import jep.python.PyObject;
 import jse.Main;
 import jse.atom.AbstractAtoms;
@@ -50,7 +49,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -493,43 +491,25 @@ public class SP {
         public static Object run(String aScriptPath, String... aArgs) throws Exception {return runScript(aScriptPath, aArgs);}
         public static Object runScript(String aScriptPath)                  throws Exception {return runScript(aScriptPath, ZL_STR);}
         public static Object runScript(String aScriptPath, String... aArgs) throws Exception {return GroovyObjectWrapper.of(GROOVY_SHELL.run(toSourceFile(aScriptPath), aArgs));}
-        /** 调用指定脚本中的方法 */
-        public static Object invoke(String aScriptPath, String aMethodName)                  throws Exception {return invoke(aScriptPath, aMethodName, ZL_OBJ);}
-        public static Object invoke(String aScriptPath, String aMethodName, Object... aArgs) throws Exception {
-            // 获取脚本的类
-            Class<?> tScriptClass = GROOVY_SHELL.getClassLoader().parseClass(toSourceFile(aScriptPath));
-            // 如果是脚本则使用脚本的调用方法的方式，调用方法的参数是方法输入，因此不能设置脚本的输入参数
-            if (Script.class.isAssignableFrom(tScriptClass)) {
-                // treat it just like a script if it is one
-                try {
-                    @SuppressWarnings({"unchecked", "CastCanBeRemovedNarrowingVariableType"})
-                    final Script tScript = InvokerHelper.newScript((Class<? extends Script>)tScriptClass, GROOVY_SHELL.getContext()); // 统一上下文
-                    return GroovyObjectWrapper.of(tScript.invokeMethod(aMethodName, aArgs)); // 脚本的方法原则上不需要考虑类型兼容的问题
-                } catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-                    // ignore instantiation errors, try to run the static method in class
-                }
+        /** 调用指定脚本中的方法，现在统一使用包名的做法 */
+        public static Object invoke(String aMethodName)                  throws Exception {return invoke(aMethodName, ZL_OBJ);}
+        public static Object invoke(String aMethodName, Object... aArgs) throws Exception {
+            Object tObj;
+            // 获取开口类名（如果存在的话）
+            int tLastDot = aMethodName.lastIndexOf(".");
+            if (tLastDot < 0) {
+                tObj = null;
+            } else {
+                tObj = GROOVY_SHELL.evaluate(aMethodName.substring(0, tLastDot));
+                aMethodName = aMethodName.substring(tLastDot+1);
             }
             // 现在统一使用使用 Groovy 的 InvokerHelper 来调用，更加通用，如果需要类型转换可以借助 setValue 走 groovy 的接口
-            return GroovyObjectWrapper.of(InvokerHelper.invokeMethod(tScriptClass, aMethodName, aArgs));
+            return GroovyObjectWrapper.of(InvokerHelper.invokeMethod(tObj, aMethodName, aArgs));
         }
         /** 创建脚本类的实例 */
-        public static Object newInstance(String aScriptPath)                  throws Exception {return newInstance(aScriptPath, ZL_OBJ);}
-        @SuppressWarnings("unchecked")
-        public static Object newInstance(String aScriptPath, Object... aArgs) throws Exception {
-            // 获取脚本的类
-            Class<?> tScriptClass = GROOVY_SHELL.getClassLoader().parseClass(toSourceFile(aScriptPath));
-            // 如果是脚本则使用脚本的调用方法的方式，这里和 invoke 统一不去设置上下文中的 args，因为认为输入参数一定是构造函数的输入，因此不能设置脚本的输入参数
-            if (Script.class.isAssignableFrom(tScriptClass)) {
-                // treat it just like a script if it is one
-                try {
-                    //noinspection CastCanBeRemovedNarrowingVariableType
-                    return InvokerHelper.newScript((Class<? extends Script>)tScriptClass, GROOVY_SHELL.getContext()); // 统一上下文
-                } catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-                    // ignore instantiation errors, try to run the static method in class
-                }
-            }
-            // 现在统一使用使用 Groovy 的 InvokerHelper 来调用，更加通用
-            return GroovyObjectWrapper.of(InvokerHelper.invokeConstructorOf(tScriptClass, aArgs));
+        public static Object newInstance(String aClassName)                  throws Exception {return newInstance(aClassName, ZL_OBJ);}
+        public static Object newInstance(String aClassName, Object... aArgs) throws Exception {
+            return GroovyObjectWrapper.of(InvokerHelper.invokeConstructorOf(getClass(aClassName), aArgs));
         }
         
         /** 提供一个手动关闭 GROOVY_INTERP 的接口，似乎不需要手动关闭 Interpreter，但是这里还是关闭一下内部的 ClassLoader */
@@ -539,7 +519,10 @@ public class SP {
         public static void refresh() throws IOException {close(); initInterpreter_();}
         
         /** 现在这里也不进行包装，如果需要更加通用的调用可以借助 {@link InvokerHelper} */
-        public static Class<?> getClass(String aScriptPath) throws IOException {
+        public static Class<?> getClass(String aClassName) throws Exception {
+            return GROOVY_SHELL.getClassLoader().loadClass(aClassName);
+        }
+        public static Class<?> parseClass(String aScriptPath) throws IOException {
             return GROOVY_SHELL.getClassLoader().parseClass(toSourceFile(aScriptPath));
         }
         
