@@ -74,6 +74,7 @@ public class SP {
     private final static String PYTHON_SP_DIR = "script/python/";
     /** groovy 库的路径，这里采用 jar 包所在的绝对路径 */
     private final static String GROOVY_LIB_DIR = JAR_DIR+"groovy/";
+    private final static String JAR_LIB_DIR = JAR_DIR+"jar/";
     /** python 离线包的路径以及 python 库的路径，这里采用 jar 包所在的绝对路径 */
     private final static String PYTHON_PKG_DIR = JAR_DIR+".pypkg/";
     private final static String PYTHON_LIB_DIR = JAR_DIR+"python/";
@@ -570,6 +571,14 @@ public class SP {
             GROOVY_SHELL.getClassLoader().addClasspath(UT.IO.toAbsolutePath(GROOVY_SP_DIR));
             // 增加一个 Groovy 的库的路径
             GROOVY_SHELL.getClassLoader().addClasspath(UT.IO.toAbsolutePath(GROOVY_LIB_DIR));
+            // 增加 jar 文件夹下的所有 jar 文件到类路径中
+            try {
+                for (String tName : UT.IO.list(JAR_LIB_DIR)) if (tName.endsWith(".jar")) {
+                    GROOVY_SHELL.getClassLoader().addClasspath(UT.IO.toAbsolutePath(JAR_LIB_DIR+tName));
+                }
+            } catch (IOException e) {
+                e.printStackTrace(System.err);
+            }
         }
     }
     
