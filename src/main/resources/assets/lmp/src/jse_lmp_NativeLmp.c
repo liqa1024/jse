@@ -101,6 +101,15 @@ JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsVersion_1(JNIEnv *aEnv, jcla
     return lammps_version((void *)(intptr_t)aLmpPtr);
 }
 
+JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsComm_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
+#ifdef LAMMPS_OLD
+    throwExceptionLMP(aEnv, "Function `lammpsComm` is INVALID when LAMMPS_IS_OLD");
+    return 0;
+#else
+    return (jlong)lammps_get_mpi_comm((void *)(intptr_t)aLmpPtr);
+#endif
+}
+
 JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsFile_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aPath) {
     char *tPath = parseStr(aEnv, aPath);
     lammps_file((void *)(intptr_t)aLmpPtr, tPath);

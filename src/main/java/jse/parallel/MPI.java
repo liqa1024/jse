@@ -205,6 +205,7 @@ public class MPI {
         , SELF  = new Comm(Native.MPI_COMM_SELF )
         ;
         @ApiStatus.Internal public static Comm of(long aPtr) {
+            if (aPtr==0 || aPtr==-1) return null;
             if (aPtr == Native.MPI_COMM_NULL ) return NULL ;
             if (aPtr == Native.MPI_COMM_WORLD) return WORLD;
             if (aPtr == Native.MPI_COMM_SELF ) return SELF ;
