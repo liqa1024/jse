@@ -488,10 +488,22 @@ public class NativeLmp implements IAutoShutdown {
     private native static int lammpsVersion_(long aLmpPtr) throws LmpException;
     
     /**
+     * Get the MPI communicator in use by the current LAMMPS instance
+     * <p>
+     * This is a wrapper around the {@code lammps_file()} function of the C-library interface.
+     * It will return {@code null} if the LAMMPS library was compiled without MPI support.
      * @return the {@link MPI.Comm} of this NativeLmp
      */
     public MPI.Comm comm() throws LmpException {return MPI.Comm.of(lammpsComm_(mLmpPtr));}
     private native static long lammpsComm_(long aLmpPtr) throws LmpException;
+    
+    /**
+     * Shut down the MPI communication like {@link MPI#shutdown}
+     * <p>
+     * This is a wrapper around the {@code lammps_mpi_finalize()} function of the C-library interface.
+     */
+    public static void shutdownMPI() throws LmpException {lammpsMpiFinalize_();}
+    private native static void lammpsMpiFinalize_() throws LmpException;
     
     /**
      * Read LAMMPS commands from a file.

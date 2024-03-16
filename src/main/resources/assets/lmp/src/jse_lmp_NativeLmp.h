@@ -41,6 +41,14 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsComm_1
 
 /*
  * Class:     jse_lmp_NativeLmp
+ * Method:    lammpsMpiFinalize_
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsMpiFinalize_1
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     jse_lmp_NativeLmp
  * Method:    lammpsFile_
  * Signature: (JLjava/lang/String;)V
  */

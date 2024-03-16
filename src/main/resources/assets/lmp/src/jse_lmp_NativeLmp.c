@@ -110,6 +110,14 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsComm_1(JNIEnv *aEnv, jclass
 #endif
 }
 
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsMpiFinalize_1(JNIEnv *aEnv, jclass aClazz) {
+#ifdef LAMMPS_OLD
+    throwExceptionLMP(aEnv, "Function `lammpsMpiFinalize` is INVALID when LAMMPS_IS_OLD");
+#else
+    lammps_mpi_finalize();
+#endif
+}
+
 JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsFile_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aPath) {
     char *tPath = parseStr(aEnv, aPath);
     lammps_file((void *)(intptr_t)aLmpPtr, tPath);
