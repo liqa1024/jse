@@ -9,6 +9,7 @@ import jse.math.vector.IVector;
 import jse.parallel.IAutoShutdown;
 import jse.parallel.LocalRandom;
 import jse.parallel.MPI;
+import jse.parallel.MPIException;
 import jsex.rareevent.IFullPathGenerator;
 import jsex.rareevent.IParameterCalculator;
 import jsex.rareevent.ITimeAndParameterIterator;
@@ -137,7 +138,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
                 mNext.returnToCache();
             }
             try {mNext = mLmp.lmpdat(true); mNextIsFromNativeLmp = true;}
-            catch (LmpException e) {throw new RuntimeException(e);}
+            catch (LmpException | MPIException e) {throw new RuntimeException(e);}
             return mNext;
         }
         

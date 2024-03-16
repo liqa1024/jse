@@ -18,6 +18,7 @@ import jse.math.vector.IntVector;
 import jse.math.vector.Vector;
 import jse.parallel.IAutoShutdown;
 import jse.parallel.MPI;
+import jse.parallel.MPIException;
 import jse.vasp.IVaspCommonData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -684,7 +685,7 @@ public class NativeLmp implements IAutoShutdown {
      * lammps_gather_concat() </a>
      */
     @SuppressWarnings("DuplicateBranchesInSwitch")
-    public RowMatrix atomDataOf(String aName) throws LmpException {
+    public RowMatrix atomDataOf(String aName) throws LmpException, MPIException {
         switch(aName) {
         case "mass":        {return localAtomDataOf(aName, 1, atomTypeNumber()+1, 1);}
         case "id":          {return fullAtomDataOf(aName, false, 1);}
@@ -721,7 +722,7 @@ public class NativeLmp implements IAutoShutdown {
         }}
     }
     @SuppressWarnings("DuplicateBranchesInSwitch")
-    public RowIntMatrix atomIntDataOf(String aName) throws LmpException {
+    public RowIntMatrix atomIntDataOf(String aName) throws LmpException, MPIException {
         switch(aName) {
         case "id":          {return fullAtomIntDataOf(aName, 1);}
         case "type":        {return fullAtomIntDataOf(aName, 1);}
@@ -767,13 +768,13 @@ public class NativeLmp implements IAutoShutdown {
      * @param aColNum column number of Matrix of requested data
      * @return RowMatrix of requested data, row number is always atomNum.
      */
-    public RowMatrix fullAtomDataOf(String aName, boolean aIsDouble, int aColNum) throws LmpException {
+    public RowMatrix fullAtomDataOf(String aName, boolean aIsDouble, int aColNum) throws LmpException, MPIException {
         checkThread();
         RowMatrix rData = MatrixCache.getMatRow(atomNumber(), aColNum);
         lammpsGatherConcat_(mLmpPtr, aName, aIsDouble, aColNum, rData.internalData());
         return rData;
     }
-    public RowIntMatrix fullAtomIntDataOf(String aName, int aColNum) throws LmpException {
+    public RowIntMatrix fullAtomIntDataOf(String aName, int aColNum) throws LmpException, MPIException {
         checkThread();
         RowIntMatrix rData = IntMatrixCache.getMatRow(atomNumber(), aColNum);
         lammpsGatherConcatInt_(mLmpPtr, aName, aColNum, rData.internalData());
@@ -803,8 +804,8 @@ public class NativeLmp implements IAutoShutdown {
         lammpsExtractAtomInt_(mLmpPtr, aName, aDataType, aRowNum, aColNum, rData.internalData());
         return rData;
     }
-    private native static void lammpsGatherConcat_(long aLmpPtr, String aName, boolean aIsDouble, int aCount, double[] rData) throws LmpException;
-    private native static void lammpsGatherConcatInt_(long aLmpPtr, String aName, int aCount, int[] rData) throws LmpException;
+    private native static void lammpsGatherConcat_(long aLmpPtr, String aName, boolean aIsDouble, int aCount, double[] rData) throws LmpException, MPIException;
+    private native static void lammpsGatherConcatInt_(long aLmpPtr, String aName, int aCount, int[] rData) throws LmpException, MPIException;
     private native static void lammpsExtractAtom_(long aLmpPtr, String aName, int aDataType, int aAtomNum, int aCount, double[] rData) throws LmpException;
     private native static void lammpsExtractAtomInt_(long aLmpPtr, String aName, int aDataType, int aAtomNum, int aCount, int[] rData) throws LmpException;
     private native static void lammpsExtractAtomLong_(long aLmpPtr, String aName, int aDataType, int aAtomNum, int aCount, long[] rData) throws LmpException;
@@ -871,10 +872,10 @@ public class NativeLmp implements IAutoShutdown {
     
     /** 提供 {@link Lmpdat} 格式的获取质量 */
     public IVector masses() throws LmpException {
-        IVector tMasses = atomDataOf("mass").asVecRow();
+        IVector tMasses = localAtomDataOf("mass", 1, atomTypeNumber()+1, 1).asVecRow();
         return tMasses.subVec(1, tMasses.size());
     }
-    public double mass(int aType) throws LmpException {return atomDataOf("mass").get(aType, 1);}
+    public double mass(int aType) throws LmpException {return localAtomDataOf("mass", 1, atomTypeNumber()+1, 1).get(aType, 1);}
     
     /**
      * 通过 {@link #atomDataOf} 直接构造一个 {@link Lmpdat}，
@@ -883,24 +884,21 @@ public class NativeLmp implements IAutoShutdown {
      * @return 一个类似于读取 lammps data 文件后得到的 {@link Lmpdat}
      * @author liqa
      */
-    public Lmpdat lmpdat(boolean aNoVelocities) throws LmpException {
+    public Lmpdat lmpdat(boolean aNoVelocities) throws LmpException, MPIException {
         // 获取数据
         RowIntMatrix tID = atomIntDataOf("id");
         RowIntMatrix tType = atomIntDataOf("type");
         RowMatrix tXYZ = atomDataOf("x");
         @Nullable RowMatrix tVelocities = aNoVelocities ? null : atomDataOf("v");
-        IMatrix tMasses = atomDataOf("mass");
-        int tAtomTypeNum = tMasses.rowNumber()-1;
-        // 设置 mass，按照 lammps 的设定只有这个范围内的才有意义
-        IVector tMassesData = tMasses.asVecRow().subVec(1, tAtomTypeNum+1);
+        IVector tMasses = masses();
         // 构造 Lmpdat，其余数据由于可以直接存在 Lmpdat 中，因此不用归还
-        return new Lmpdat(tAtomTypeNum, box(), tMassesData, tID.asVecRow(), tType.asVecRow(), tXYZ, tVelocities);
+        return new Lmpdat(tMasses.size(), box(), tMasses, tID.asVecRow(), tType.asVecRow(), tXYZ, tVelocities);
     }
-    public Lmpdat lmpdat() throws LmpException {
+    public Lmpdat lmpdat() throws LmpException, MPIException {
         return lmpdat(false);
     }
-    @VisibleForTesting public Lmpdat data(boolean aNoVelocities) throws LmpException {return lmpdat(aNoVelocities);}
-    @VisibleForTesting public Lmpdat data() throws LmpException {return lmpdat();}
+    @VisibleForTesting public Lmpdat data(boolean aNoVelocities) throws LmpException, MPIException {return lmpdat(aNoVelocities);}
+    @VisibleForTesting public Lmpdat data() throws LmpException, MPIException {return lmpdat();}
     
     /**
      * 更加易用的方法，类似于 lammps 的 {@code read_data} 命令，但是不需要走文件管理器；
