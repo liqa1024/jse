@@ -1303,8 +1303,17 @@ public class UT {
             }
         }
         public static void map2json(Map<?, ?> aMap, String aFilePath) throws IOException {
+            map2json(aMap, aFilePath, false);
+        }
+        public static void map2json(Map<?, ?> aMap, String aFilePath, boolean aPretty) throws IOException {
             try (Writer tWriter = toWriter(aFilePath)) {
-                (new JsonBuilder(aMap)).writeTo(tWriter);
+                JsonBuilder tBuilder = new JsonBuilder();
+                tBuilder.call(aMap);
+                if (aPretty) {
+                    tWriter.append(tBuilder.toPrettyString());
+                } else {
+                    tBuilder.writeTo(tWriter);
+                }
             }
         }
         /**

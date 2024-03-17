@@ -369,6 +369,9 @@ jse 直接基于 [`groovy-json`](https://www.groovy-lang.org/processing-json.htm
     
     输入2：`String`，字符串表示的输出 json 文件的路径
     
+    输入3（可选）：`boolean`，是否 pretty 输出并且格式化 json，
+    让输出的文本更加可读（默认为 `false`）
+    
     例子：`example/io/datajsonyaml`
     [⤤](../release/script/groovy/example/io/datajsonyaml.groovy)
     
