@@ -1577,14 +1577,14 @@ public class UT {
         public static Path toFileName_(String aPath) {return Paths.get(aPath).getFileName();}
         
         /**
-         * 将输入路径转为相对路径，顺便会将 {@link File#separator}
+         * 将输入路径转为相对路径，顺便会将 {@code `\`}
          * 转换为 {@code `/`}，保证可以用于 ssh 的文件路径；
          * 此项目依旧认为所有路径风格符都为 {@code `/`} 并要求至少兼容此种路径分隔符
          * @author liqa
          * @param aPath 字符串路径
          * @return 合理的相对路径
          */
-        public static String toRelativePath(String aPath) {return toRelativePath_(aPath).toString().replace(File.separator, "/");}
+        public static String toRelativePath(String aPath) {return toRelativePath_(aPath).toString().replace("\\", "/");}
         public static Path toRelativePath_(String aPath) {return WORKING_DIR_PATH.relativize(Paths.get(aPath));}
         
         /**
