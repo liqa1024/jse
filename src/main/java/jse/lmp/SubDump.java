@@ -7,5 +7,5 @@ import java.util.List;
 
 @VisibleForTesting
 public final class SubDump extends SubLammpstrj {
-    SubDump(long aTimeStep, String[] aBoxBounds, Box aBox, ITable aAtomData) {super(aTimeStep, aBoxBounds, aBox, aAtomData);}
+    private SubDump(long aTimeStep, String[] aBoxBounds, Box aBox, ITable aAtomData) {super(aTimeStep, aBoxBounds, aBox, aAtomData);}
 }

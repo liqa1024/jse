@@ -5,5 +5,5 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 @VisibleForTesting
 public final class Log extends Thermo {
-    Log(Table aTable) {super(aTable);}
+    private Log(Table aTable) {super(aTable);}
 }

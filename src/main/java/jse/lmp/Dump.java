@@ -6,7 +6,7 @@ import java.util.List;
 
 @VisibleForTesting
 public final class Dump extends Lammpstrj {
-    Dump() {super();}
-    Dump(SubLammpstrj... aData) {super(aData);}
-    Dump(List<SubLammpstrj> aData) {super(aData);}
+    private Dump() {super();}
+    private Dump(SubLammpstrj... aData) {super(aData);}
+    private Dump(List<SubLammpstrj> aData) {super(aData);}
 }

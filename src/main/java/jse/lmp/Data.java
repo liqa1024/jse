@@ -8,5 +8,5 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 @VisibleForTesting
 public final class Data extends Lmpdat {
-    Data(int aAtomTypeNum, Box aBox, @Nullable IVector aMasses, IntVector aAtomID, IntVector aAtomType, RowMatrix aAtomXYZ, @Nullable RowMatrix aVelocities) {super(aAtomTypeNum, aBox, aMasses, aAtomID, aAtomType, aAtomXYZ, aVelocities);}
+    private Data(int aAtomTypeNum, Box aBox, @Nullable IVector aMasses, IntVector aAtomID, IntVector aAtomType, RowMatrix aAtomXYZ, @Nullable RowMatrix aVelocities) {super(aAtomTypeNum, aBox, aMasses, aAtomID, aAtomType, aAtomXYZ, aVelocities);}
 }
