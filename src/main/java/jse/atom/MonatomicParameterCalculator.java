@@ -183,7 +183,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     /** 保留旧名称兼容，当时起名太随意了，居然这么久都没发现 */
     @Deprecated public final int atomNum() {return atomNumber();}
     /** 补充运算时使用 */
-    @ApiStatus.Internal public NeighborListGetter NL_() {return mNL;}
+    @ApiStatus.Internal public NeighborListGetter nl_() {return mNL;}
     @ApiStatus.Internal public IMatrix atomDataXYZ_() {return mAtomDataXYZ;}
     
     
