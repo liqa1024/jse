@@ -123,7 +123,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             }
             try {
                 for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=tMidNum) for (int col = 0, rs = 0; col < tColNum; ++col, rs+=tMidNum) {
-                    final double tDot = ARRAY.dotN(tLHS.internalData(), ls, tRHS.internalData(), rs, tMidNum);
+                    final double tDot = ARRAY.dot(tLHS.internalData(), ls, tRHS.internalData(), rs, tMidNum);
                     rDest.update(row, col, v -> v+tDot);
                 }
             } finally {
@@ -171,23 +171,23 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     private static void addBlockMatmul2Dest_(int aBlockSizeMid, double[] aLHS, int aBlockSizeRow, double[] aRHS, int aBlockSizeCol, IMatrix rDest, int aRowStart, int aColStart) {
         if (aBlockSizeMid == BLOCK_SIZE) {
             for (int row = 0, ls = 0; row < aBlockSizeRow; ++row, ls+=BLOCK_SIZE) for (int col = 0, rs = 0; col < aBlockSizeCol; ++col, rs+=BLOCK_SIZE) {
+                double rSum0 = 0.0;
                 double rSum1 = 0.0;
                 double rSum2 = 0.0;
                 double rSum3 = 0.0;
-                double rSum4 = 0.0;
                 // 定长循环更快，因此这里手动实现一下这个点乘
                 for (int i = 0; i < BLOCK_SIZE; i+=4) {
-                    rSum1 += aLHS[ls+i  ]*aRHS[rs+i  ];
-                    rSum2 += aLHS[ls+i+1]*aRHS[rs+i+1];
-                    rSum3 += aLHS[ls+i+2]*aRHS[rs+i+2];
-                    rSum4 += aLHS[ls+i+3]*aRHS[rs+i+3];
+                    rSum0 += aLHS[ls+i  ]*aRHS[rs+i  ];
+                    rSum1 += aLHS[ls+i+1]*aRHS[rs+i+1];
+                    rSum2 += aLHS[ls+i+2]*aRHS[rs+i+2];
+                    rSum3 += aLHS[ls+i+3]*aRHS[rs+i+3];
                 }
-                final double fSum = rSum1+rSum2+rSum3+rSum4;
+                final double fSum = rSum0+rSum1+rSum2+rSum3;
                 rDest.update(aRowStart+row, aColStart+col, v -> v+fSum);
             }
         } else {
             for (int row = 0, ls = 0; row < aBlockSizeRow; ++row, ls+=BLOCK_SIZE) for (int col = 0, rs = 0; col < aBlockSizeCol; ++col, rs+=BLOCK_SIZE) {
-                final double tDot = ARRAY.dotN(aLHS, ls, aRHS, rs, aBlockSizeMid);
+                final double tDot = ARRAY.dot(aLHS, ls, aRHS, rs, aBlockSizeMid);
                 rDest.update(aRowStart+row, aColStart+col, v -> v+tDot);
             }
         }

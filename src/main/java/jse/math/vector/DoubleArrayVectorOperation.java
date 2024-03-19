@@ -264,24 +264,15 @@ public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation
     
     /** 向量的一些额外的运算 */
     @Override public double dot(IVector aRHS) {
-        final DoubleArrayVector tThis = thisVector_();
+        DoubleArrayVector tThis = thisVector_();
         ebeCheck(tThis.size(), aRHS.size());
-        final double[] tDataR = tThis.getIfHasSameOrderData(aRHS);
+        double[] tDataR = tThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) return ARRAY.dot(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), tThis.internalDataSize());
         else return super.dot(aRHS);
     }
     @Override public double dot() {
-        final DoubleArrayVector tThis = thisVector_();
-        final double[] tData = tThis.internalData();
-        final int tShift = tThis.internalDataShift();
-        final int tEnd = tThis.internalDataSize() + tShift;
-        
-        double rDot = 0.0;
-        for (int i = tShift; i < tEnd; ++i) {
-            double tValue = tData[i];
-            rDot += tValue*tValue;
-        }
-        return rDot;
+        DoubleArrayVector tThis = thisVector_();
+        return ARRAY.dotOfThis(tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());
     }
     
     @Override public IVector reverse() {
@@ -295,13 +286,13 @@ public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation
     
     /** 排序不自己实现 */
     @Override public void sort() {
-        final DoubleArrayVector rThis = thisVector_();
+        DoubleArrayVector rThis = thisVector_();
         ARRAY.sort(rThis.internalData(), rThis.internalDataShift(), rThis.internalDataSize());
         if (rThis.isReverse()) reverse2this();
     }
     @Override public void biSort(ISwapper aSwapper) {
-        final DoubleArrayVector rThis = thisVector_();
-        final int tSize = rThis.internalDataSize();
+        DoubleArrayVector rThis = thisVector_();
+        int tSize = rThis.internalDataSize();
         ARRAY.biSort(rThis.internalData(), rThis.internalDataShift(), tSize, aSwapper.undata(rThis));
         if (rThis.isReverse()) {
             reverse2this();
