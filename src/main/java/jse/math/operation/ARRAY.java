@@ -1327,6 +1327,10 @@ public class ARRAY {
         case 2:  {return sum2OfThis(aThis, aShift);}
         case 3:  {return sum3OfThis(aThis, aShift);}
         case 4:  {return sum4OfThis(aThis, aShift);}
+        case 5:  {return sum5OfThis(aThis, aShift);}
+        case 6:  {return sum6OfThis(aThis, aShift);}
+        case 7:  {return sum7OfThis(aThis, aShift);}
+        case 8:  {return sum8OfThis(aThis, aShift);}
         default: {return sumNOfThis(aThis, aShift, aLength);}
         }
     }
@@ -1342,47 +1346,69 @@ public class ARRAY {
     public static double sum4OfThis(double[] aThis, int aShift) {
         return aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3];
     }
+    public static double sum5OfThis(double[] aThis, int aShift) {
+        return aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3] + aThis[aShift+4];
+    }
+    public static double sum6OfThis(double[] aThis, int aShift) {
+        return aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3] + aThis[aShift+4] + aThis[aShift+5];
+    }
+    public static double sum7OfThis(double[] aThis, int aShift) {
+        return aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3] + aThis[aShift+4] + aThis[aShift+5] + aThis[aShift+6];
+    }
+    public static double sum8OfThis(double[] aThis, int aShift) {
+        return aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3] + aThis[aShift+4] + aThis[aShift+5] + aThis[aShift+6] + aThis[aShift+7];
+    }
     public static double sumNOfThis(double[] aThis, int aShift, int aLength) {
         // 对于求和类型运算，JIT 不会自动做 SIMD 优化，因此这里需要手动做
-        // 目前只对 double 的做专门优化（写一堆 rest 处理很麻烦）
-        final int tRest = aLength % 4;
-        double rSum0 = 0.0;
-        double rSum1 = 0.0;
-        double rSum2 = 0.0;
-        double rSum3 = 0.0;
+        final int tRest = aLength % 8;
+        double rSum = 0.0;
         // 先做 rest 的计算
         switch(tRest) {
         case 0: {
             break;
         }
         case 1: {
-            rSum0 += aThis[aShift];
+            rSum += aThis[aShift];
             ++aShift;
             break;
         }
         case 2: {
-            rSum0 += aThis[aShift  ];
-            rSum1 += aThis[aShift+1];
+            rSum += (aThis[aShift] + aThis[aShift+1]);
             aShift+=2;
             break;
         }
         case 3: {
-            rSum0 += aThis[aShift  ];
-            rSum1 += aThis[aShift+1];
-            rSum2 += aThis[aShift+2];
+            rSum += (aThis[aShift] + aThis[aShift+1] + aThis[aShift+2]);
             aShift+=3;
+            break;
+        }
+        case 4: {
+            rSum += (aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3]);
+            aShift+=4;
+            break;
+        }
+        case 5: {
+            rSum += (aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3] + aThis[aShift+4]);
+            aShift+=5;
+            break;
+        }
+        case 6: {
+            rSum += (aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3] + aThis[aShift+4] + aThis[aShift+5]);
+            aShift+=6;
+            break;
+        }
+        case 7: {
+            rSum += (aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3] + aThis[aShift+4] + aThis[aShift+5] + aThis[aShift+6]);
+            aShift+=7;
             break;
         }}
         aLength -= tRest;
         // 再做 simd 的计算
         final int tEnd = aLength + aShift;
-        for (int i = aShift; i < tEnd; i+=4) {
-            rSum0 += aThis[i  ];
-            rSum1 += aThis[i+1];
-            rSum2 += aThis[i+2];
-            rSum3 += aThis[i+3];
+        for (int i = aShift; i < tEnd; i+=8) {
+            rSum += (aThis[i] + aThis[i+1] + aThis[i+2] + aThis[i+3] + aThis[i+4] + aThis[i+5] + aThis[i+6] + aThis[i+7]);
         }
-        return rSum0+rSum1+rSum2+rSum3;
+        return rSum;
     }
     
     public static ComplexDouble sumOfThis(double[][] aThis, int aShift, int aLength) {
@@ -1448,6 +1474,10 @@ public class ARRAY {
         case 2:  {return prod2OfThis(aThis, aShift);}
         case 3:  {return prod3OfThis(aThis, aShift);}
         case 4:  {return prod4OfThis(aThis, aShift);}
+        case 5:  {return prod5OfThis(aThis, aShift);}
+        case 6:  {return prod6OfThis(aThis, aShift);}
+        case 7:  {return prod7OfThis(aThis, aShift);}
+        case 8:  {return prod8OfThis(aThis, aShift);}
         default: {return prodNOfThis(aThis, aShift, aLength);}
         }
     }
@@ -1463,47 +1493,69 @@ public class ARRAY {
     public static double prod4OfThis(double[] aThis, int aShift) {
         return aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3];
     }
+    public static double prod5OfThis(double[] aThis, int aShift) {
+        return aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3] * aThis[aShift+4];
+    }
+    public static double prod6OfThis(double[] aThis, int aShift) {
+        return aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3] * aThis[aShift+4] * aThis[aShift+5];
+    }
+    public static double prod7OfThis(double[] aThis, int aShift) {
+        return aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3] * aThis[aShift+4] * aThis[aShift+5] * aThis[aShift+6];
+    }
+    public static double prod8OfThis(double[] aThis, int aShift) {
+        return aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3] * aThis[aShift+4] * aThis[aShift+5] * aThis[aShift+6] * aThis[aShift+7];
+    }
     public static double prodNOfThis(double[] aThis, int aShift, int aLength) {
         // 对于求和类型运算，JIT 不会自动做 SIMD 优化，因此这里需要手动做
-        // 目前只对 double 的做专门优化（写一堆 rest 处理很麻烦）
-        final int tRest = aLength % 4;
-        double rProd0 = 1.0;
-        double rProd1 = 1.0;
-        double rProd2 = 1.0;
-        double rProd3 = 1.0;
+        final int tRest = aLength % 8;
+        double rProd = 1.0;
         // 先做 rest 的计算
         switch(tRest) {
         case 0: {
             break;
         }
         case 1: {
-            rProd0 *= aThis[aShift];
+            rProd *= aThis[aShift];
             ++aShift;
             break;
         }
         case 2: {
-            rProd0 *= aThis[aShift  ];
-            rProd1 *= aThis[aShift+1];
+            rProd *= (aThis[aShift] * aThis[aShift+1]);
             aShift+=2;
             break;
         }
         case 3: {
-            rProd0 *= aThis[aShift  ];
-            rProd1 *= aThis[aShift+1];
-            rProd2 *= aThis[aShift+2];
+            rProd *= (aThis[aShift] * aThis[aShift+1] * aThis[aShift+2]);
             aShift+=3;
+            break;
+        }
+        case 4: {
+            rProd *= (aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3]);
+            aShift+=4;
+            break;
+        }
+        case 5: {
+            rProd *= (aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3] * aThis[aShift+4]);
+            aShift+=5;
+            break;
+        }
+        case 6: {
+            rProd *= (aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3] * aThis[aShift+4] * aThis[aShift+5]);
+            aShift+=6;
+            break;
+        }
+        case 7: {
+            rProd *= (aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3] * aThis[aShift+4] * aThis[aShift+5] * aThis[aShift+6]);
+            aShift+=7;
             break;
         }}
         aLength -= tRest;
         // 再做 simd 的计算
         final int tEnd = aLength + aShift;
-        for (int i = aShift; i < tEnd; i+=4) {
-            rProd0 *= aThis[i  ];
-            rProd1 *= aThis[i+1];
-            rProd2 *= aThis[i+2];
-            rProd3 *= aThis[i+3];
+        for (int i = aShift; i < tEnd; i+=8) {
+            rProd *= (aThis[i] * aThis[i+1] * aThis[i+2] * aThis[i+3] * aThis[i+4] * aThis[i+5] * aThis[i+6] * aThis[i+7]);
         }
-        return rProd0*rProd1*rProd2*rProd3;
+        return rProd;
     }
     
     public static ComplexDouble prodOfThis(double[][] aThis, int aShift, int aLength) {
@@ -1683,6 +1735,10 @@ public class ARRAY {
         case 2:  {return dot2(aDataL, aShiftL, aDataR, aShiftR);}
         case 3:  {return dot3(aDataL, aShiftL, aDataR, aShiftR);}
         case 4:  {return dot4(aDataL, aShiftL, aDataR, aShiftR);}
+        case 5:  {return dot5(aDataL, aShiftL, aDataR, aShiftR);}
+        case 6:  {return dot6(aDataL, aShiftL, aDataR, aShiftR);}
+        case 7:  {return dot7(aDataL, aShiftL, aDataR, aShiftR);}
+        case 8:  {return dot8(aDataL, aShiftL, aDataR, aShiftR);}
         default: {return dotN(aDataL, aShiftL, aDataR, aShiftR, aLength);}
         }
     }
@@ -1707,58 +1763,163 @@ public class ARRAY {
              + aDataL[aShiftL+3]*aDataR[aShiftR+3]
              ;
     }
+    public static double dot5(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR) {
+        return aDataL[aShiftL  ]*aDataR[aShiftR  ]
+             + aDataL[aShiftL+1]*aDataR[aShiftR+1]
+             + aDataL[aShiftL+2]*aDataR[aShiftR+2]
+             + aDataL[aShiftL+3]*aDataR[aShiftR+3]
+             + aDataL[aShiftL+4]*aDataR[aShiftR+4]
+             ;
+    }
+    public static double dot6(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR) {
+        return aDataL[aShiftL  ]*aDataR[aShiftR  ]
+             + aDataL[aShiftL+1]*aDataR[aShiftR+1]
+             + aDataL[aShiftL+2]*aDataR[aShiftR+2]
+             + aDataL[aShiftL+3]*aDataR[aShiftR+3]
+             + aDataL[aShiftL+4]*aDataR[aShiftR+4]
+             + aDataL[aShiftL+5]*aDataR[aShiftR+5]
+             ;
+    }
+    public static double dot7(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR) {
+        return aDataL[aShiftL  ]*aDataR[aShiftR  ]
+             + aDataL[aShiftL+1]*aDataR[aShiftR+1]
+             + aDataL[aShiftL+2]*aDataR[aShiftR+2]
+             + aDataL[aShiftL+3]*aDataR[aShiftR+3]
+             + aDataL[aShiftL+4]*aDataR[aShiftR+4]
+             + aDataL[aShiftL+5]*aDataR[aShiftR+5]
+             + aDataL[aShiftL+6]*aDataR[aShiftR+6]
+             ;
+    }
+    public static double dot8(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR) {
+        return aDataL[aShiftL  ]*aDataR[aShiftR  ]
+             + aDataL[aShiftL+1]*aDataR[aShiftR+1]
+             + aDataL[aShiftL+2]*aDataR[aShiftR+2]
+             + aDataL[aShiftL+3]*aDataR[aShiftR+3]
+             + aDataL[aShiftL+4]*aDataR[aShiftR+4]
+             + aDataL[aShiftL+5]*aDataR[aShiftR+5]
+             + aDataL[aShiftL+6]*aDataR[aShiftR+6]
+             + aDataL[aShiftL+7]*aDataR[aShiftR+7]
+             ;
+    }
     public static double dotN(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, int aLength) {
         // 对于求和类型运算，JIT 不会自动做 SIMD 优化，因此这里需要手动做
-        double rDot0 = 0.0;
-        double rDot1 = 0.0;
-        double rDot2 = 0.0;
-        double rDot3 = 0.0;
+        double rDot = 0.0;
         // 先做 rest 的计算
-        final int tRest = aLength % 4;
+        final int tRest = aLength % 8;
         switch(tRest) {
         case 0: {
             break;
         }
         case 1: {
-            rDot0 += aDataL[aShiftL]*aDataR[aShiftR];
+            rDot += aDataL[aShiftL]*aDataR[aShiftR];
             ++aShiftL; ++aShiftR;
             break;
         }
         case 2: {
-            rDot0 += aDataL[aShiftL  ]*aDataR[aShiftR  ];
-            rDot1 += aDataL[aShiftL+1]*aDataR[aShiftR+1];
+            rDot += (
+                  aDataL[aShiftL  ]*aDataR[aShiftR  ]
+                + aDataL[aShiftL+1]*aDataR[aShiftR+1]
+            );
             aShiftL+=2; aShiftR+=2;
             break;
         }
         case 3: {
-            rDot0 += aDataL[aShiftL  ]*aDataR[aShiftR  ];
-            rDot1 += aDataL[aShiftL+1]*aDataR[aShiftR+1];
-            rDot2 += aDataL[aShiftL+2]*aDataR[aShiftR+2];
+            rDot += (
+                  aDataL[aShiftL  ]*aDataR[aShiftR  ]
+                + aDataL[aShiftL+1]*aDataR[aShiftR+1]
+                + aDataL[aShiftL+2]*aDataR[aShiftR+2]
+            );
             aShiftL+=3; aShiftR+=3;
+            break;
+        }
+        case 4: {
+            rDot += (
+                  aDataL[aShiftL  ]*aDataR[aShiftR  ]
+                + aDataL[aShiftL+1]*aDataR[aShiftR+1]
+                + aDataL[aShiftL+2]*aDataR[aShiftR+2]
+                + aDataL[aShiftL+3]*aDataR[aShiftR+3]
+            );
+            aShiftL+=4; aShiftR+=4;
+            break;
+        }
+        case 5: {
+            rDot += (
+                  aDataL[aShiftL  ]*aDataR[aShiftR  ]
+                + aDataL[aShiftL+1]*aDataR[aShiftR+1]
+                + aDataL[aShiftL+2]*aDataR[aShiftR+2]
+                + aDataL[aShiftL+3]*aDataR[aShiftR+3]
+                + aDataL[aShiftL+4]*aDataR[aShiftR+4]
+            );
+            aShiftL+=5; aShiftR+=5;
+            break;
+        }
+        case 6: {
+            rDot += (
+                  aDataL[aShiftL  ]*aDataR[aShiftR  ]
+                + aDataL[aShiftL+1]*aDataR[aShiftR+1]
+                + aDataL[aShiftL+2]*aDataR[aShiftR+2]
+                + aDataL[aShiftL+3]*aDataR[aShiftR+3]
+                + aDataL[aShiftL+4]*aDataR[aShiftR+4]
+                + aDataL[aShiftL+5]*aDataR[aShiftR+5]
+            );
+            aShiftL+=6; aShiftR+=6;
+            break;
+        }
+        case 7: {
+            rDot += (
+                  aDataL[aShiftL  ]*aDataR[aShiftR  ]
+                + aDataL[aShiftL+1]*aDataR[aShiftR+1]
+                + aDataL[aShiftL+2]*aDataR[aShiftR+2]
+                + aDataL[aShiftL+3]*aDataR[aShiftR+3]
+                + aDataL[aShiftL+4]*aDataR[aShiftR+4]
+                + aDataL[aShiftL+5]*aDataR[aShiftR+5]
+                + aDataL[aShiftL+6]*aDataR[aShiftR+6]
+            );
+            aShiftL+=7; aShiftR+=7;
             break;
         }}
         aLength -= tRest;
         // 再做 simd 的计算
         final int tEndL = aShiftL + aLength;
         if (aShiftL == aShiftR) {
-            for (int i = aShiftL; i < tEndL; i+=4) {
-                rDot0 += aDataL[i  ]*aDataR[i  ];
-                rDot1 += aDataL[i+1]*aDataR[i+1];
-                rDot2 += aDataL[i+2]*aDataR[i+2];
-                rDot3 += aDataL[i+3]*aDataR[i+3];
+            for (int i = aShiftL; i < tEndL; i+=8) {
+                // 这样分两批计算更快，可以在支持 avx512 的机器上再测试
+                rDot += (
+                      aDataL[i  ]*aDataR[i  ]
+                    + aDataL[i+1]*aDataR[i+1]
+                    + aDataL[i+2]*aDataR[i+2]
+                    + aDataL[i+3]*aDataR[i+3]
+                );
+                // 不使用两个 dot 尽量保证逻辑一致性
+                rDot += (
+                      aDataL[i+4]*aDataR[i+4]
+                    + aDataL[i+5]*aDataR[i+5]
+                    + aDataL[i+6]*aDataR[i+6]
+                    + aDataL[i+7]*aDataR[i+7]
+                );
             }
         } else {
-            for (int i = aShiftL, j = aShiftR; i < tEndL; i+=4, j+=4) {
-                rDot0 += aDataL[i  ]*aDataR[j  ];
-                rDot1 += aDataL[i+1]*aDataR[j+1];
-                rDot2 += aDataL[i+2]*aDataR[j+2];
-                rDot3 += aDataL[i+3]*aDataR[j+3];
+            for (int i = aShiftL, j = aShiftR; i < tEndL; i+=8, j+=8) {
+                // 这样分两批计算更快，可以在支持 avx512 的机器上再测试
+                rDot += (
+                      aDataL[i  ]*aDataR[j  ]
+                    + aDataL[i+1]*aDataR[j+1]
+                    + aDataL[i+2]*aDataR[j+2]
+                    + aDataL[i+3]*aDataR[j+3]
+                );
+                // 不使用两个 dot 尽量保证逻辑一致性
+                rDot += (
+                      aDataL[i+4]*aDataR[j+4]
+                    + aDataL[i+5]*aDataR[j+5]
+                    + aDataL[i+6]*aDataR[j+6]
+                    + aDataL[i+7]*aDataR[j+7]
+                );
             }
         }
-        return rDot0+rDot1+rDot2+rDot3;
+        return rDot;
     }
     
-    /** 由于 JIT 的神奇实时优化逻辑，导致此方法反而比上面的更慢，这里不去研究了 */
+    /** 现在这个方法更快了 */
     public static double dotOfThis(double[] aThis, int aShift, int aLength) {
         switch(aLength) {
         case 0:  {return 0.0;}
@@ -1766,6 +1927,10 @@ public class ARRAY {
         case 2:  {return dot2OfThis(aThis, aShift);}
         case 3:  {return dot3OfThis(aThis, aShift);}
         case 4:  {return dot4OfThis(aThis, aShift);}
+        case 5:  {return dot5OfThis(aThis, aShift);}
+        case 6:  {return dot6OfThis(aThis, aShift);}
+        case 7:  {return dot7OfThis(aThis, aShift);}
+        case 8:  {return dot8OfThis(aThis, aShift);}
         default: {return dotNOfThis(aThis, aShift, aLength);}
         }
     }
@@ -1776,70 +1941,148 @@ public class ARRAY {
     public static double dot2OfThis(double[] aThis, int aShift) {
         double tData0 = aThis[aShift  ];
         double tData1 = aThis[aShift+1];
-        return tData0*tData0
-             + tData1*tData1
-             ;
+        return tData0*tData0 + tData1*tData1;
     }
     public static double dot3OfThis(double[] aThis, int aShift) {
         double tData0 = aThis[aShift  ];
         double tData1 = aThis[aShift+1];
         double tData2 = aThis[aShift+2];
-        return tData0*tData0
-             + tData1*tData1
-             + tData2*tData2
-             ;
+        return tData0*tData0 + tData1*tData1 + tData2*tData2;
     }
     public static double dot4OfThis(double[] aThis, int aShift) {
         double tData0 = aThis[aShift  ];
         double tData1 = aThis[aShift+1];
         double tData2 = aThis[aShift+2];
         double tData3 = aThis[aShift+3];
-        return tData0*tData0
-             + tData1*tData1
-             + tData2*tData2
-             + tData3*tData3
-             ;
+        return tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3;
+    }
+    public static double dot5OfThis(double[] aThis, int aShift) {
+        double tData0 = aThis[aShift  ];
+        double tData1 = aThis[aShift+1];
+        double tData2 = aThis[aShift+2];
+        double tData3 = aThis[aShift+3];
+        double tData4 = aThis[aShift+4];
+        return tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3 + tData4*tData4;
+    }
+    public static double dot6OfThis(double[] aThis, int aShift) {
+        double tData0 = aThis[aShift  ];
+        double tData1 = aThis[aShift+1];
+        double tData2 = aThis[aShift+2];
+        double tData3 = aThis[aShift+3];
+        double tData4 = aThis[aShift+4];
+        double tData5 = aThis[aShift+5];
+        return tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3 + tData4*tData4 + tData5*tData5;
+    }
+    public static double dot7OfThis(double[] aThis, int aShift) {
+        double tData0 = aThis[aShift  ];
+        double tData1 = aThis[aShift+1];
+        double tData2 = aThis[aShift+2];
+        double tData3 = aThis[aShift+3];
+        double tData4 = aThis[aShift+4];
+        double tData5 = aThis[aShift+5];
+        double tData6 = aThis[aShift+6];
+        return tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3 + tData4*tData4 + tData5*tData5 + tData6*tData6;
+    }
+    public static double dot8OfThis(double[] aThis, int aShift) {
+        double tData0 = aThis[aShift  ];
+        double tData1 = aThis[aShift+1];
+        double tData2 = aThis[aShift+2];
+        double tData3 = aThis[aShift+3];
+        double tData4 = aThis[aShift+4];
+        double tData5 = aThis[aShift+5];
+        double tData6 = aThis[aShift+6];
+        double tData7 = aThis[aShift+7];
+        return tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3 + tData4*tData4 + tData5*tData5 + tData6*tData6 + tData7*tData7;
     }
     public static double dotNOfThis(double[] aThis, int aShift, int aLength) {
         // 对于求和类型运算，JIT 不会自动做 SIMD 优化，因此这里需要手动做
-        final int tRest = aLength % 4;
-        double rDot0 = 0.0;
-        double rDot1 = 0.0;
-        double rDot2 = 0.0;
-        double rDot3 = 0.0;
+        final int tRest = aLength % 8;
+        double rDot = 0.0;
         // 先做 rest 的计算
         switch(tRest) {
         case 0: {
             break;
         }
         case 1: {
-            double tData = aThis[aShift]; rDot0 += tData*tData;
+            double tData = aThis[aShift];
+            rDot += tData*tData;
             ++aShift;
             break;
         }
         case 2: {
-            double tData0 = aThis[aShift  ]; rDot0 += tData0*tData0;
-            double tData1 = aThis[aShift+1]; rDot1 += tData1*tData1;
+            double tData0 = aThis[aShift  ];
+            double tData1 = aThis[aShift+1];
+            rDot += (tData0*tData0 + tData1*tData1);
             aShift+=2;
             break;
         }
         case 3: {
-            double tData0 = aThis[aShift  ]; rDot0 += tData0*tData0;
-            double tData1 = aThis[aShift+1]; rDot1 += tData1*tData1;
-            double tData2 = aThis[aShift+2]; rDot2 += tData2*tData2;
+            double tData0 = aThis[aShift  ];
+            double tData1 = aThis[aShift+1];
+            double tData2 = aThis[aShift+2];
+            rDot += (tData0*tData0 + tData1*tData1 + tData2*tData2);
             aShift+=3;
+            break;
+        }
+        case 4: {
+            double tData0 = aThis[aShift  ];
+            double tData1 = aThis[aShift+1];
+            double tData2 = aThis[aShift+2];
+            double tData3 = aThis[aShift+3];
+            rDot += (tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3);
+            aShift+=4;
+            break;
+        }
+        case 5: {
+            double tData0 = aThis[aShift  ];
+            double tData1 = aThis[aShift+1];
+            double tData2 = aThis[aShift+2];
+            double tData3 = aThis[aShift+3];
+            double tData4 = aThis[aShift+4];
+            rDot += (tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3 + tData4*tData4);
+            aShift+=5;
+            break;
+        }
+        case 6: {
+            double tData0 = aThis[aShift  ];
+            double tData1 = aThis[aShift+1];
+            double tData2 = aThis[aShift+2];
+            double tData3 = aThis[aShift+3];
+            double tData4 = aThis[aShift+4];
+            double tData5 = aThis[aShift+5];
+            rDot += (tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3 + tData4*tData4 + tData5*tData5);
+            aShift+=6;
+            break;
+        }
+        case 7: {
+            double tData0 = aThis[aShift  ];
+            double tData1 = aThis[aShift+1];
+            double tData2 = aThis[aShift+2];
+            double tData3 = aThis[aShift+3];
+            double tData4 = aThis[aShift+4];
+            double tData5 = aThis[aShift+5];
+            double tData6 = aThis[aShift+6];
+            rDot += (tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3 + tData4*tData4 + tData5*tData5 + tData6*tData6);
+            aShift+=7;
             break;
         }}
         aLength -= tRest;
         // 再做 simd 的计算
         final int tEndL = aShift + aLength;
-        for (int i = aShift; i < tEndL; i+=4) {
-            double tData0 = aThis[i  ]; rDot0 += tData0*tData0;
-            double tData1 = aThis[i+1]; rDot1 += tData1*tData1;
-            double tData2 = aThis[i+2]; rDot2 += tData2*tData2;
-            double tData3 = aThis[i+3]; rDot3 += tData3*tData3;
+        for (int i = aShift; i < tEndL; i+=8) {
+            double tData0 = aThis[i  ];
+            double tData1 = aThis[i+1];
+            double tData2 = aThis[i+2];
+            double tData3 = aThis[i+3];
+            double tData4 = aThis[i+4];
+            double tData5 = aThis[i+5];
+            double tData6 = aThis[i+6];
+            double tData7 = aThis[i+7];
+            // 这样分两批计算更快，可以在支持 avx512 的机器上再测试
+            rDot += (tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3);
+            rDot += (tData4*tData4 + tData5*tData5 + tData6*tData6 + tData7*tData7);
         }
-        return rDot0+rDot1+rDot2+rDot3;
+        return rDot;
     }
     
     

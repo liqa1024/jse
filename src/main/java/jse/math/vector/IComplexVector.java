@@ -164,6 +164,11 @@ public interface IComplexVector extends ISwapper, IHasComplexDoubleIterator, IHa
     IComplexVector negative();
     void negative2this();
     
+    /** 对于 ComplexVector，现在也将这些统计接口也直接放在这里方便使用 */
+    ComplexDouble sum  ();
+    ComplexDouble mean ();
+    ComplexDouble prod ();
+    
     /** Groovy 的部分，增加向量切片操作 */
     @VisibleForTesting ComplexDouble call(int aIdx);
     @VisibleForTesting ComplexDouble getAt(int aIdx);

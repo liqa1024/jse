@@ -19,7 +19,7 @@ public class Conf {
     public static boolean DEBUG = UT.Exec.envZ("JSE_DEBUG", false);
     /** 运算是否开启边界检测，在 {@code jse 2.7.7} 以及更早的版本下不会直接检测 */
     public static boolean OPERATION_CHECK = UT.Exec.envZ("JSE_OPERATION_CHECK", true);
-    /** 是否使用分块矩阵来计算矩阵乘法，这对于较大的长宽接近的矩阵效果较好，并且内存更加友好*/
+    /** 是否使用分块矩阵来计算矩阵乘法，这对于较大的长宽接近的矩阵效果较好，并且内存更加友好；注意调整此值会导致矩阵乘法结果出现偏差 */
     public static boolean MATMUL_BLOCK = UT.Exec.envZ("JSE_MATMUL_BLOCK", true);
     
     /** 是否在 kernel 模式下开启 ThreadInterrupt，会在所有循环检测是否中断从而让中断总是有效，当然会影响性能 */

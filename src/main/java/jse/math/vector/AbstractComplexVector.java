@@ -392,6 +392,10 @@ public abstract class AbstractComplexVector implements IComplexVector {
     @Override public final IComplexVector negative() {return operation().negative();}
     @Override public final void negative2this() {operation().negative2this();}
     
+    @Override public final ComplexDouble sum () {return operation().sum ();}
+    @Override public final ComplexDouble mean() {return operation().mean();}
+    @Override public final ComplexDouble prod() {return operation().prod();}
+    
     /** Groovy 的部分，增加矩阵切片操作 */
     @VisibleForTesting @Override public ComplexDouble call(int aIdx) {return get(aIdx);}
     @VisibleForTesting @Override public IComplexVector call(ISlice        aIndices) {return slicer().get(aIndices);}

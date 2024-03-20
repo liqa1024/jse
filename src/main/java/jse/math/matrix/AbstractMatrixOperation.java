@@ -159,18 +159,25 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     private static void addBlockMatmul2Dest_(int aBlockSizeMid, double[] aLHS, int aBlockSizeRow, double[] aRHS, int aBlockSizeCol, IMatrix rDest, int aRowStart, int aColStart) {
         if (aBlockSizeMid == BLOCK_SIZE) {
             for (int row = 0, ls = 0; row < aBlockSizeRow; ++row, ls+=BLOCK_SIZE) for (int col = 0, rs = 0; col < aBlockSizeCol; ++col, rs+=BLOCK_SIZE) {
-                double rSum0 = 0.0;
-                double rSum1 = 0.0;
-                double rSum2 = 0.0;
-                double rSum3 = 0.0;
+                double rSum = 0.0;
                 // 定长循环更快，因此这里手动实现一下这个点乘
-                for (int i = 0; i < BLOCK_SIZE; i+=4) {
-                    rSum0 += aLHS[ls+i  ]*aRHS[rs+i  ];
-                    rSum1 += aLHS[ls+i+1]*aRHS[rs+i+1];
-                    rSum2 += aLHS[ls+i+2]*aRHS[rs+i+2];
-                    rSum3 += aLHS[ls+i+3]*aRHS[rs+i+3];
+                for (int i = 0; i < BLOCK_SIZE; i+=8) {
+                    // 这样分两批计算更快，可以在支持 avx512 的机器上再测试
+                    rSum += (
+                          aLHS[ls+i  ]*aRHS[rs+i  ]
+                        + aLHS[ls+i+1]*aRHS[rs+i+1]
+                        + aLHS[ls+i+2]*aRHS[rs+i+2]
+                        + aLHS[ls+i+3]*aRHS[rs+i+3]
+                    );
+                    // 不使用两个 sum 尽量保证逻辑一致性
+                    rSum += (
+                          aLHS[ls+i+4]*aRHS[rs+i+4]
+                        + aLHS[ls+i+5]*aRHS[rs+i+5]
+                        + aLHS[ls+i+6]*aRHS[rs+i+6]
+                        + aLHS[ls+i+7]*aRHS[rs+i+7]
+                    );
                 }
-                final double fSum = rSum0+rSum1+rSum2+rSum3;
+                final double fSum = rSum;
                 rDest.update(aRowStart+row, aColStart+col, v -> v+fSum);
             }
         } else {
