@@ -8,6 +8,7 @@ import jse.math.vector.IVector;
 import jse.math.vector.IVectorGetter;
 import jse.math.vector.ShiftVector;
 import jse.math.vector.Vector;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -96,6 +97,9 @@ public class RowMatrix extends DoubleArrayMatrix {
         if (aObj instanceof RowMatrix && ((RowMatrix)aObj).mColNum == mColNum) return ((RowMatrix)aObj).mData;
         return null;
     }
+    
+    @Override public final RowMatrix toBufRow(boolean aAbort) {return this;}
+    @Override public final void releaseBuf(@NotNull IMatrix aBuf, boolean aAbort) {if (aBuf != this) super.releaseBuf(aBuf, aAbort);}
     
     
     /** Optimize stuffs，重写这个提高行向的索引速度 */

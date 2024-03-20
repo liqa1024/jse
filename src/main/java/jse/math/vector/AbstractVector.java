@@ -101,7 +101,7 @@ public abstract class AbstractVector implements IVector {
         rBuf.fill(this);
         return rBuf;
     }
-    @Override public void releaseBuf(@NotNull Vector aBuf, boolean aAbort) {
+    @Override public void releaseBuf(@NotNull IVector aBuf, boolean aAbort) {
         if (!aAbort) fill(aBuf);
         VectorCache.returnVec(aBuf);
     }

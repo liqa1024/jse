@@ -74,7 +74,7 @@ public class IntVector extends IntArrayVector {
     }
     
     @Override public final IntVector toBuf(boolean aAbort) {return this;}
-    @Override public final void releaseBuf(@NotNull IntVector aBuf, boolean aAbort) {/**/}
+    @Override public final void releaseBuf(@NotNull IIntVector aBuf, boolean aAbort) {if (aBuf != this) super.releaseBuf(aBuf, aAbort);}
     
     
     /** Optimize stuffs，subVec 切片直接返回  {@link ShiftIntVector} */

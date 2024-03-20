@@ -55,9 +55,9 @@ public interface IIntVector extends ISwapper, ISlice, IHasIntIterator, IHasIntSe
      * @author liqa
      */
     @ApiStatus.Experimental IntVector toBuf(boolean aAbort);
-    @ApiStatus.Experimental void releaseBuf(@NotNull IntVector aBuf, boolean aAbort);
+    @ApiStatus.Experimental void releaseBuf(@NotNull IIntVector aBuf, boolean aAbort);
     @ApiStatus.Experimental default IntVector toBuf() {return toBuf(false);}
-    @ApiStatus.Experimental default void releaseBuf(@NotNull IntVector aBuf) {releaseBuf(aBuf, false);}
+    @ApiStatus.Experimental default void releaseBuf(@NotNull IIntVector aBuf) {releaseBuf(aBuf, false);}
     
     /** ISwapper stuffs */
     void swap(int aIdx1, int aIdx2);

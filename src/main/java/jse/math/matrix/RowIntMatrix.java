@@ -8,6 +8,7 @@ import jse.math.vector.IIntVector;
 import jse.math.vector.IIntVectorGetter;
 import jse.math.vector.IntVector;
 import jse.math.vector.ShiftIntVector;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -100,6 +101,10 @@ public class RowIntMatrix extends IntArrayMatrix {
         if (aObj instanceof RowIntMatrix && ((RowIntMatrix)aObj).mColNum == mColNum) return ((RowIntMatrix)aObj).mData;
         return null;
     }
+    
+    @Override public final RowIntMatrix toBufRow(boolean aAbort) {return this;}
+    @Override public final void releaseBuf(@NotNull IIntMatrix aBuf, boolean aAbort) {if (aBuf != this) super.releaseBuf(aBuf, aAbort);}
+    
     
     /** Optimize stuffs，行向展开的向量直接返回 */
     @Override public IntVector asVecRow() {return new IntVector(mRowNum*mColNum, mData);}

@@ -110,7 +110,7 @@ public abstract class AbstractIntVector implements IIntVector {
         rBuf.fill(this);
         return rBuf;
     }
-    @Override public void releaseBuf(@NotNull IntVector aBuf, boolean aAbort) {
+    @Override public void releaseBuf(@NotNull IIntVector aBuf, boolean aAbort) {
         if (!aAbort) fill(aBuf);
         IntVectorCache.returnVec(aBuf);
     }

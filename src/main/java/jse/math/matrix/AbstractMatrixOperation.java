@@ -107,28 +107,16 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         // 不用分块的情况
         if (!MATMUL_BLOCK || tRowNum<BLOCK_SIZE_MIN || tColNum<BLOCK_SIZE_MIN || tMidNum<BLOCK_SIZE_MIN || (tRowNum<BLOCK_SIZE+BLOCK_SIZE && tColNum<BLOCK_SIZE+BLOCK_SIZE && tMidNum<BLOCK_SIZE+BLOCK_SIZE)) {
             // 还是会先转为行列的形式，这样永远都最快
-            RowMatrix tLHS;
-            if (aLHS instanceof RowMatrix) {
-                tLHS = (RowMatrix)aLHS;
-            } else {
-                tLHS = MatrixCache.getMatRow(tRowNum, tMidNum);
-                tLHS.fill(aLHS);
-            }
-            ColumnMatrix tRHS;
-            if (aRHS instanceof ColumnMatrix) {
-                tRHS = (ColumnMatrix)aRHS;
-            } else {
-                tRHS = MatrixCache.getMatCol(tMidNum, tColNum);
-                tRHS.fill(aRHS);
-            }
+            RowMatrix    tLHS = aLHS.toBufRow();
+            ColumnMatrix tRHS = aRHS.toBufCol();
             try {
                 for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=tMidNum) for (int col = 0, rs = 0; col < tColNum; ++col, rs+=tMidNum) {
                     final double tDot = ARRAY.dot(tLHS.internalData(), ls, tRHS.internalData(), rs, tMidNum);
                     rDest.update(row, col, v -> v+tDot);
                 }
             } finally {
-                if (!(aLHS instanceof RowMatrix   )) MatrixCache.returnMat(tLHS);
-                if (!(aRHS instanceof ColumnMatrix)) MatrixCache.returnMat(tRHS);
+                aLHS.releaseBuf(tLHS, true);
+                aRHS.releaseBuf(tRHS, true);
             }
             return;
         }

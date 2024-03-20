@@ -1,5 +1,7 @@
 package jse.math.matrix;
 
+import jse.cache.MatrixCache;
+import jse.cache.VectorCache;
 import jse.math.SliceType;
 import jse.code.collection.AbstractCollections;
 import jse.code.collection.AbstractRandomAccessList;
@@ -11,6 +13,7 @@ import jse.code.iterator.IDoubleSetOnlyIterator;
 import jse.math.vector.IVector;
 import jse.math.vector.RefVector;
 import jse.math.vector.Vector;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Iterator;
@@ -310,6 +313,22 @@ public abstract class AbstractMatrix implements IMatrix {
             for (int col = 0; col < tColNum; ++col) tRow[col] = it.next();
         }
         return rMat;
+    }
+    @Override public ColumnMatrix toBufCol(boolean aAbort) {
+        ColumnMatrix rBuf = MatrixCache.getMatCol(rowNumber(), columnNumber());
+        if (aAbort) return rBuf;
+        rBuf.fill(this);
+        return rBuf;
+    }
+    @Override public RowMatrix toBufRow(boolean aAbort) {
+        RowMatrix rBuf = MatrixCache.getMatRow(rowNumber(), columnNumber());
+        if (aAbort) return rBuf;
+        rBuf.fill(this);
+        return rBuf;
+    }
+    @Override public void releaseBuf(@NotNull IMatrix aBuf, boolean aAbort) {
+        if (!aAbort) fill(aBuf);
+        MatrixCache.returnMat(aBuf);
     }
     
     /** 批量修改的接口，现在统一使用迭代器来填充 */

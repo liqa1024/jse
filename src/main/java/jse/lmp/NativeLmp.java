@@ -944,11 +944,14 @@ public class NativeLmp implements IAutoShutdown {
         @Nullable IMatrix tVelocities = aLmpdat.velocities();
         @Nullable IVector tVelocitiesVec = tVelocities==null ? null : tVelocities.asVecRow();
         @Nullable Vector tBufVelocitiesVec = tVelocitiesVec==null ? null : tVelocitiesVec.toBuf();
-        lammpsCreateAtoms_(mLmpPtr, aLmpdat.atomNumber(), tBufIDs.internalData(), tBufTypes.internalData(), tBufPositionsVec.internalData(), tBufVelocitiesVec==null ? null : tBufVelocitiesVec.internalData(), null, false);
-        tIDs.releaseBuf(tBufIDs);
-        tTypes.releaseBuf(tBufTypes);
-        tPositionsVec.releaseBuf(tBufPositionsVec);
-        if (tVelocitiesVec!=null && tBufVelocitiesVec!=null) tVelocitiesVec.releaseBuf(tBufVelocitiesVec);
+        try {
+            lammpsCreateAtoms_(mLmpPtr, aLmpdat.atomNumber(), tBufIDs.internalData(), tBufTypes.internalData(), tBufPositionsVec.internalData(), tBufVelocitiesVec==null ? null : tBufVelocitiesVec.internalData(), null, false);
+        } finally {
+            tIDs.releaseBuf(tBufIDs, true);
+            tTypes.releaseBuf(tBufTypes, true);
+            tPositionsVec.releaseBuf(tBufPositionsVec, true);
+            if (tVelocitiesVec!=null && tBufVelocitiesVec!=null) tVelocitiesVec.releaseBuf(tBufVelocitiesVec, true);
+        }
     }
     public void loadData(IAtomData aAtomData) throws LmpException {
         checkThread();

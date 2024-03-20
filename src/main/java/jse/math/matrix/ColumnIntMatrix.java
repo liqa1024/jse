@@ -8,6 +8,7 @@ import jse.math.vector.IIntVector;
 import jse.math.vector.IIntVectorGetter;
 import jse.math.vector.IntVector;
 import jse.math.vector.ShiftIntVector;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -100,6 +101,9 @@ public class ColumnIntMatrix extends IntArrayMatrix {
         if (aObj instanceof ColumnIntMatrix && ((ColumnIntMatrix)aObj).mRowNum == mRowNum) return ((ColumnIntMatrix)aObj).mData;
         return null;
     }
+    
+    @Override public final ColumnIntMatrix toBufCol(boolean aAbort) {return this;}
+    @Override public final void releaseBuf(@NotNull IIntMatrix aBuf, boolean aAbort) {if (aBuf != this) super.releaseBuf(aBuf, aAbort);}
     
     
     /** Optimize stuffs，重写这个提高列向的索引速度 */

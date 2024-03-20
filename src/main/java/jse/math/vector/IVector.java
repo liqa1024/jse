@@ -46,14 +46,14 @@ public interface IVector extends ISwapper, IHasDoubleIterator, IHasDoubleSetIter
      * aAbort 参数用于指定是否抛弃数据，对于 {@link #toBuf} 则不需要获取到原始数据（仅写入并且会全部写入），
      * 对于 {@link #releaseBuf} 则会忽略掉 aBuf 的修改（仅读取）；
      * <p>
-     * 显而易见，对于 {@link IntVector}，aAbort 参数不会有任何影响，
+     * 显而易见，对于 {@link Vector}，aAbort 参数不会有任何影响，
      * 而对于其他类型，aAbort 参数可以对复杂工况做优化。
      * @author liqa
      */
     @ApiStatus.Experimental Vector toBuf(boolean aAbort);
-    @ApiStatus.Experimental void releaseBuf(@NotNull Vector aBuf, boolean aAbort);
+    @ApiStatus.Experimental void releaseBuf(@NotNull IVector aBuf, boolean aAbort);
     @ApiStatus.Experimental default Vector toBuf() {return toBuf(false);}
-    @ApiStatus.Experimental default void releaseBuf(@NotNull Vector aBuf) {releaseBuf(aBuf, false);}
+    @ApiStatus.Experimental default void releaseBuf(@NotNull IVector aBuf) {releaseBuf(aBuf, false);}
     
     /** ISwapper stuffs */
     void swap(int aIdx1, int aIdx2);
