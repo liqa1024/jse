@@ -1,11 +1,13 @@
 package jse.math.matrix;
 
 import jse.cache.MatrixCache;
+import jse.cache.VectorCache;
 import jse.code.iterator.IDoubleIterator;
 import jse.code.iterator.IDoubleSetOnlyIterator;
 import jse.math.operation.ARRAY;
 import jse.math.operation.DATA;
 import jse.math.vector.IVector;
+import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 import jse.parallel.ParforThreadPool;
 
@@ -121,17 +123,44 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         int tColNum = aRHS.columnNumber();
         int tMidNum = aLHS.columnNumber();
         // 现在对于串行的版本默认都不进行分块，更加简洁且很多情况下都更快
-        // 还是会先转为行列的形式，这样永远都最快
-        RowMatrix    tLHS = aLHS.toBufRow();
-        ColumnMatrix tRHS = aRHS.toBufCol();
-        try {
-            for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=tMidNum) for (int col = 0, rs = 0; col < tColNum; ++col, rs+=tMidNum) {
-                final double tDot = ARRAY.dot(tLHS.internalData(), ls, tRHS.internalData(), rs, tMidNum);
-                rDest.update(row, col, v -> v+tDot);
+        // 判断行列顺序优先，这个问题没有那么简单
+        // 一般情况下，行和列更短的一方对应矩阵更小，应该优先全部遍历（内存友好）
+        boolean tRowFirst = tColNum > tRowNum;
+        // 但是在中间很短的情况下，应该翻转这个操作，从而利用上 SIMD 加速
+        if (tMidNum <= 4) tRowFirst = !tRowFirst;
+        // 根据上述判断决定遍历顺序
+        if (tRowFirst) {
+            // 先遍历行，因此左边需要是行矩阵
+            RowMatrix tLHS = aLHS.toBufRow();
+            Vector tCol = VectorCache.getVec(tMidNum);
+            try {
+                for (int col = 0; col < tColNum; ++col) {
+                    tCol.fill(aRHS.col(col));
+                    for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=tMidNum) {
+                        final double tDot = ARRAY.dot(tLHS.internalData(), ls, tCol.internalData(), 0, tMidNum);
+                        rDest.update(row, col, v -> v+tDot);
+                    }
+                }
+            } finally {
+                VectorCache.returnVec(tCol);
+                aLHS.releaseBuf(tLHS, true);
             }
-        } finally {
-            aLHS.releaseBuf(tLHS, true);
-            aRHS.releaseBuf(tRHS, true);
+        } else {
+            // 先遍历列，因此右边需要是列矩阵
+            ColumnMatrix tRHS = aRHS.toBufCol();
+            Vector tRow = VectorCache.getVec(tMidNum);
+            try {
+                for (int row = 0; row < tRowNum; ++row) {
+                    tRow.fill(aLHS.row(row));
+                    for (int col = 0, rs = 0; col < tColNum; ++col, rs+=tMidNum) {
+                        final double tDot = ARRAY.dot(tRow.internalData(), 0, tRHS.internalData(), rs, tMidNum);
+                        rDest.update(row, col, v -> v+tDot);
+                    }
+                }
+            } finally {
+                VectorCache.returnVec(tRow);
+                aRHS.releaseBuf(tRHS, true);
+            }
         }
     }
     private static void addMatmul2Dest_par_(IMatrix aLHS, IMatrix aRHS, IMatrix rDest, ParforThreadPool aPool) {
