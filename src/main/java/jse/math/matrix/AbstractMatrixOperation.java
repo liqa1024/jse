@@ -92,6 +92,8 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     
     @Override public IMatrix  matmul(IMatrix aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.rowNumber(), aRHS.columnNumber()); addMatmul2Dest_(tThis, aRHS, rMatrix); return rMatrix;}
     @Override public IMatrix lmatmul(IMatrix aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(aRHS.rowNumber(), tThis.columnNumber()); addMatmul2Dest_(aRHS, tThis, rMatrix); return rMatrix;}
+    @Override public void  matmul2this(IMatrix aRHS) {matmul2This_(thisMatrix_(), aRHS);}
+//    @Override public void lmatmul2this(IMatrix aRHS) {lmatmul2This_(thisMatrix_(), aRHS);}
     @Override public void  matmul2dest(IMatrix aRHS, IMatrix rDest) {rDest.fill(0.0); addMatmul2Dest_(thisMatrix_(), aRHS, rDest);}
     @Override public void lmatmul2dest(IMatrix aRHS, IMatrix rDest) {rDest.fill(0.0); addMatmul2Dest_(aRHS, thisMatrix_(), rDest);}
     
@@ -115,6 +117,149 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
      * 现在对于串行版本不进行分块，因为大部分情况效率更低；
      * 不使用复杂度更低的神奇算法，因为实现麻烦且会降低精度
      */
+    private static void matmul2This_(IMatrix rThis, IMatrix aRHS) {
+        // 由于逻辑存在些许不同，这里简单起见重新实现，不去考虑重复代码的问题
+        // 先判断大小是否合适
+        matmulCheck(rThis.rowNumber(), rThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rThis.rowNumber(), rThis.columnNumber());
+        // 获取必要数据（mid == col）
+        final int tRowNum = rThis.rowNumber();
+        final int tColNum = rThis.columnNumber();
+        // 特殊情况，这里是不去处理
+        if (tColNum == 0) return;
+        // 这里简单处理，强制列优先遍历，让逻辑一致
+        ColumnMatrix tRHS = aRHS.toBufCol();
+        double[] rData = tRHS.internalData();
+        try {
+            // 注意 mid == col，可以直接展开
+            switch(tColNum) {
+            case 1: {
+                rThis.multiply2this(rData[0]);
+                break;
+            }
+            case 2: {
+                for (int row = 0; row < tRowNum; ++row) {
+                    double tRow0 = rThis.get(row, 0);
+                    double tRow1 = rThis.get(row, 1);
+                    rThis.set(row, 0, tRow0*rData[0] + tRow1*rData[1]);
+                    rThis.set(row, 1, tRow0*rData[2] + tRow1*rData[3]);
+                }
+                break;
+            }
+            case 3: {
+                for (int row = 0; row < tRowNum; ++row) {
+                    double tRow0 = rThis.get(row, 0);
+                    double tRow1 = rThis.get(row, 1);
+                    double tRow2 = rThis.get(row, 2);
+                    rThis.set(row, 0, tRow0*rData[0] + tRow1*rData[1] + tRow2*rData[2]);
+                    rThis.set(row, 1, tRow0*rData[3] + tRow1*rData[4] + tRow2*rData[5]);
+                    rThis.set(row, 2, tRow0*rData[6] + tRow1*rData[7] + tRow2*rData[8]);
+                }
+                break;
+            }
+            case 4: {
+                for (int row = 0; row < tRowNum; ++row) {
+                    double tRow0 = rThis.get(row, 0);
+                    double tRow1 = rThis.get(row, 1);
+                    double tRow2 = rThis.get(row, 2);
+                    double tRow3 = rThis.get(row, 3);
+                    rThis.set(row, 0, tRow0*rData[ 0] + tRow1*rData[ 1] + tRow2*rData[ 2] + tRow3*rData[ 3]);
+                    rThis.set(row, 1, tRow0*rData[ 4] + tRow1*rData[ 5] + tRow2*rData[ 6] + tRow3*rData[ 7]);
+                    rThis.set(row, 2, tRow0*rData[ 8] + tRow1*rData[ 9] + tRow2*rData[10] + tRow3*rData[11]);
+                    rThis.set(row, 3, tRow0*rData[12] + tRow1*rData[13] + tRow2*rData[14] + tRow3*rData[16]);
+                }
+                break;
+            }
+            case 5: {
+                for (int row = 0; row < tRowNum; ++row) {
+                    double tRow0 = rThis.get(row, 0);
+                    double tRow1 = rThis.get(row, 1);
+                    double tRow2 = rThis.get(row, 2);
+                    double tRow3 = rThis.get(row, 3);
+                    double tRow4 = rThis.get(row, 4);
+                    rThis.set(row, 0, tRow0*rData[ 0] + tRow1*rData[ 1] + tRow2*rData[ 2] + tRow3*rData[ 3] + tRow4*rData[ 4]);
+                    rThis.set(row, 1, tRow0*rData[ 5] + tRow1*rData[ 6] + tRow2*rData[ 7] + tRow3*rData[ 8] + tRow4*rData[ 9]);
+                    rThis.set(row, 2, tRow0*rData[10] + tRow1*rData[11] + tRow2*rData[12] + tRow3*rData[13] + tRow4*rData[14]);
+                    rThis.set(row, 3, tRow0*rData[15] + tRow1*rData[16] + tRow2*rData[17] + tRow3*rData[18] + tRow4*rData[19]);
+                    rThis.set(row, 4, tRow0*rData[20] + tRow1*rData[21] + tRow2*rData[22] + tRow3*rData[23] + tRow4*rData[24]);
+                }
+                break;
+            }
+            case 6: {
+                for (int row = 0; row < tRowNum; ++row) {
+                    double tRow0 = rThis.get(row, 0);
+                    double tRow1 = rThis.get(row, 1);
+                    double tRow2 = rThis.get(row, 2);
+                    double tRow3 = rThis.get(row, 3);
+                    double tRow4 = rThis.get(row, 4);
+                    double tRow5 = rThis.get(row, 5);
+                    rThis.set(row, 0, tRow0*rData[ 0] + tRow1*rData[ 1] + tRow2*rData[ 2] + tRow3*rData[ 3] + tRow4*rData[ 4] + tRow5*rData[ 5]);
+                    rThis.set(row, 1, tRow0*rData[ 6] + tRow1*rData[ 7] + tRow2*rData[ 8] + tRow3*rData[ 9] + tRow4*rData[10] + tRow5*rData[11]);
+                    rThis.set(row, 2, tRow0*rData[12] + tRow1*rData[13] + tRow2*rData[14] + tRow3*rData[15] + tRow4*rData[16] + tRow5*rData[17]);
+                    rThis.set(row, 3, tRow0*rData[18] + tRow1*rData[19] + tRow2*rData[20] + tRow3*rData[21] + tRow4*rData[22] + tRow5*rData[23]);
+                    rThis.set(row, 4, tRow0*rData[24] + tRow1*rData[25] + tRow2*rData[26] + tRow3*rData[27] + tRow4*rData[28] + tRow5*rData[29]);
+                    rThis.set(row, 5, tRow0*rData[30] + tRow1*rData[31] + tRow2*rData[32] + tRow3*rData[33] + tRow4*rData[34] + tRow5*rData[35]);
+                }
+                break;
+            }
+            case 7: {
+                for (int row = 0; row < tRowNum; ++row) {
+                    double tRow0 = rThis.get(row, 0);
+                    double tRow1 = rThis.get(row, 1);
+                    double tRow2 = rThis.get(row, 2);
+                    double tRow3 = rThis.get(row, 3);
+                    double tRow4 = rThis.get(row, 4);
+                    double tRow5 = rThis.get(row, 5);
+                    double tRow6 = rThis.get(row, 6);
+                    rThis.set(row, 0, tRow0*rData[ 0] + tRow1*rData[ 1] + tRow2*rData[ 2] + tRow3*rData[ 3] + tRow4*rData[ 4] + tRow5*rData[ 5] + tRow6*rData[ 6]);
+                    rThis.set(row, 1, tRow0*rData[ 7] + tRow1*rData[ 8] + tRow2*rData[ 9] + tRow3*rData[10] + tRow4*rData[11] + tRow5*rData[12] + tRow6*rData[13]);
+                    rThis.set(row, 2, tRow0*rData[14] + tRow1*rData[15] + tRow2*rData[16] + tRow3*rData[17] + tRow4*rData[18] + tRow5*rData[19] + tRow6*rData[20]);
+                    rThis.set(row, 3, tRow0*rData[21] + tRow1*rData[22] + tRow2*rData[23] + tRow3*rData[24] + tRow4*rData[25] + tRow5*rData[26] + tRow6*rData[27]);
+                    rThis.set(row, 4, tRow0*rData[28] + tRow1*rData[29] + tRow2*rData[30] + tRow3*rData[31] + tRow4*rData[32] + tRow5*rData[33] + tRow6*rData[34]);
+                    rThis.set(row, 5, tRow0*rData[35] + tRow1*rData[36] + tRow2*rData[37] + tRow3*rData[38] + tRow4*rData[39] + tRow5*rData[40] + tRow6*rData[41]);
+                    rThis.set(row, 6, tRow0*rData[42] + tRow1*rData[43] + tRow2*rData[44] + tRow3*rData[45] + tRow4*rData[46] + tRow5*rData[47] + tRow6*rData[48]);
+                }
+                break;
+            }
+            case 8: {
+                for (int row = 0; row < tRowNum; ++row) {
+                    double tRow0 = rThis.get(row, 0);
+                    double tRow1 = rThis.get(row, 1);
+                    double tRow2 = rThis.get(row, 2);
+                    double tRow3 = rThis.get(row, 3);
+                    double tRow4 = rThis.get(row, 4);
+                    double tRow5 = rThis.get(row, 5);
+                    double tRow6 = rThis.get(row, 6);
+                    double tRow7 = rThis.get(row, 7);
+                    rThis.set(row, 0, tRow0*rData[ 0] + tRow1*rData[ 1] + tRow2*rData[ 2] + tRow3*rData[ 3] + tRow4*rData[ 4] + tRow5*rData[ 5] + tRow6*rData[ 6] + tRow7*rData[ 7]);
+                    rThis.set(row, 1, tRow0*rData[ 8] + tRow1*rData[ 9] + tRow2*rData[10] + tRow3*rData[11] + tRow4*rData[12] + tRow5*rData[13] + tRow6*rData[14] + tRow7*rData[15]);
+                    rThis.set(row, 2, tRow0*rData[16] + tRow1*rData[17] + tRow2*rData[18] + tRow3*rData[19] + tRow4*rData[20] + tRow5*rData[21] + tRow6*rData[22] + tRow7*rData[23]);
+                    rThis.set(row, 3, tRow0*rData[24] + tRow1*rData[25] + tRow2*rData[26] + tRow3*rData[27] + tRow4*rData[28] + tRow5*rData[29] + tRow6*rData[30] + tRow7*rData[31]);
+                    rThis.set(row, 4, tRow0*rData[32] + tRow1*rData[33] + tRow2*rData[34] + tRow3*rData[35] + tRow4*rData[36] + tRow5*rData[37] + tRow6*rData[38] + tRow7*rData[39]);
+                    rThis.set(row, 5, tRow0*rData[40] + tRow1*rData[41] + tRow2*rData[42] + tRow3*rData[43] + tRow4*rData[44] + tRow5*rData[45] + tRow6*rData[46] + tRow7*rData[47]);
+                    rThis.set(row, 6, tRow0*rData[48] + tRow1*rData[49] + tRow2*rData[50] + tRow3*rData[51] + tRow4*rData[52] + tRow5*rData[53] + tRow6*rData[54] + tRow7*rData[55]);
+                    rThis.set(row, 7, tRow0*rData[56] + tRow1*rData[57] + tRow2*rData[58] + tRow3*rData[59] + tRow4*rData[60] + tRow5*rData[61] + tRow6*rData[62] + tRow7*rData[63]);
+                }
+                break;
+            }
+            default: {
+                Vector tRow = VectorCache.getVec(tColNum);
+                double[] rowData = tRow.internalData();
+                try {
+                    for (int row = 0; row < tRowNum; ++row) {
+                        tRow.fill(rThis.row(row));
+                        for (int col = 0, rs = 0; col < tColNum; ++col, rs+=tColNum) {
+                            rThis.set(row, col, ARRAY.dot(rowData, 0, rData, rs, tColNum));
+                        }
+                    }
+                } finally {
+                    VectorCache.returnVec(tRow);
+                }
+                break;
+            }}
+        } finally {
+            aRHS.releaseBuf(tRHS, true);
+        }
+    }
     private static void addMatmul2Dest_(IMatrix aLHS, IMatrix aRHS, IMatrix rDest) {
         // 先判断大小是否合适
         matmulCheck(aLHS.rowNumber(), aLHS.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
@@ -571,6 +716,13 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         if (!OPERATION_CHECK) return;
         if (lRowNum!=rRowNum || lColNum!=rColNum) throw new IllegalArgumentException(
             "The dimensions of two matrices are not match: ("+lRowNum+" x "+lColNum+") vs ("+rRowNum+" x "+rColNum+")"
+        );
+    }
+    static void matmulCheck(int lRowNum, int lColNum, int rRowNum, int rColNum) {
+        if (!OPERATION_CHECK) return;
+        if (lColNum != rRowNum) throw new IllegalArgumentException(
+            "The dimension used for matrix multiplication is incorrect: ("+lRowNum+" x "+lColNum+") vs ("+rRowNum+" x "+rColNum+").\n" +
+            "Please ensure that the ncols in the first matrix ("+lColNum+") matches the nrows in the second matrix ("+rRowNum+")"
         );
     }
     static void matmulCheck(int lRowNum, int lColNum, int rRowNum, int rColNum, int dRowNum, int dColNum) {

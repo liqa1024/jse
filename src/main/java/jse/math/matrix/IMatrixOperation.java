@@ -73,7 +73,8 @@ public interface IMatrixOperation {
     /** 矩阵的一些额外的运算 */
     IMatrix  matmul(IMatrix aRHS);
     IMatrix lmatmul(IMatrix aRHS);
-    // 矩阵乘法暂不提供 2this 的接口
+    void  matmul2this(IMatrix aRHS);
+//    void lmatmul2this(IMatrix aRHS);
     void  matmul2dest(IMatrix aRHS, IMatrix rDest);
     void lmatmul2dest(IMatrix aRHS, IMatrix rDest);
     // 并行的接口
@@ -83,7 +84,7 @@ public interface IMatrixOperation {
     @ApiStatus.Experimental IMatrix lmatmul_par(IMatrix aRHS, int aTreadNum);
     @ApiStatus.Experimental IMatrix  matmul_par(IMatrix aRHS, ParforThreadPool aPool);
     @ApiStatus.Experimental IMatrix lmatmul_par(IMatrix aRHS, ParforThreadPool aPool);
-    // 矩阵乘法暂不提供 2this 的接口
+    // 并行矩阵乘法不提供 2this 的接口
     @ApiStatus.Experimental void  matmul2dest_par(IMatrix aRHS, IMatrix rDest);
     @ApiStatus.Experimental void lmatmul2dest_par(IMatrix aRHS, IMatrix rDest);
     @ApiStatus.Experimental void  matmul2dest_par(IMatrix aRHS, IMatrix rDest, int aTreadNum);
