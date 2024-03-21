@@ -1412,15 +1412,8 @@ public class ARRAY {
     }
     
     public static ComplexDouble sumOfThis(double[][] aThis, int aShift, int aLength) {
-        final double[] tRealThis = aThis[0], tImagThis = aThis[1];
-        final int tEnd = aLength + aShift;
-        
-        ComplexDouble rSum = new ComplexDouble();
-        for (int i = aShift; i < tEnd; ++i) {
-            rSum.mReal += tRealThis[i];
-            rSum.mImag += tImagThis[i];
-        }
-        return rSum;
+        // 这样可以简化重复代码，并且保证部分情况下和实数的 sum 结果一致
+        return new ComplexDouble(sumOfThis(aThis[0], aShift, aLength), sumOfThis(aThis[1], aShift, aLength));
     }
     public static int sumOfThis(int[] aThis, int aShift, int aLength) {
         final int tEnd = aLength + aShift;
@@ -1562,6 +1555,7 @@ public class ARRAY {
         final double[] tRealThis = aThis[0], tImagThis = aThis[1];
         final int tEnd = aLength + aShift;
         
+        // 由于复数 prod 迭代的性质，没有简单的方法做 SIMD 优化，这里暂时不做
         ComplexDouble rProd = new ComplexDouble(1.0);
         for (int i = aShift; i < tEnd; ++i) {
             final double lReal = rProd.mReal,  lImag = rProd.mImag;
@@ -2083,6 +2077,34 @@ public class ARRAY {
             rDot += (tData4*tData4 + tData5*tData5 + tData6*tData6 + tData7*tData7);
         }
         return rDot;
+    }
+    
+    public static ComplexDouble dot(double[][] aDataL, int aShiftL, double[][] aDataR, int aShiftR, int aLength) {
+        final double[] tRealDataL = aDataL[0], tImagDataL = aDataL[1];
+        final double[] tRealDataR = aDataR[0], tImagDataR = aDataR[1];
+        final int tEndL = aLength + aShiftL;
+        
+        ComplexDouble rDot = new ComplexDouble();
+        if (aShiftL == aShiftR) {
+            for (int i = aShiftL; i < tEndL; ++i) {
+                double lReal0 = tRealDataL[i], lImag0 = tImagDataL[i];
+                double rReal0 = tRealDataR[i], rImag0 = tImagDataR[i];
+                rDot.mReal += (lReal0*rReal0 + lImag0*rImag0);
+                rDot.mImag += (lImag0*rReal0 - lReal0*rImag0);
+            }
+        } else {
+            for (int i = aShiftL, j = aShiftR; i < tEndL; ++i, ++j) {
+                double lReal = tRealDataL[i], lImag = tImagDataL[i];
+                double rReal = tRealDataR[j], rImag = tImagDataR[j];
+                rDot.mReal += (lReal*rReal + lImag*rImag);
+                rDot.mImag += (lImag*rReal - lReal*rImag);
+            }
+        }
+        return rDot;
+    }
+    public static double dotOfThis(double[][] aThis, int aShift, int aLength) {
+        // 这样可以简化重复代码，并且保证部分情况下和实数的 dot 结果一致
+        return dotOfThis(aThis[0], aShift, aLength) + dotOfThis(aThis[1], aShift, aLength);
     }
     
     

@@ -303,53 +303,15 @@ public abstract class BiDoubleArrayVectorOperation extends AbstractComplexVector
     
     /** 向量的一些额外的运算 */
     @Override public ComplexDouble dot(IComplexVector aRHS) {
-        final BiDoubleArrayVector tThis = thisVector_();
+        BiDoubleArrayVector tThis = thisVector_();
         ebeCheck(tThis.size(), aRHS.size());
-        final double[][] tDataR = tThis.getIfHasSameOrderData(aRHS);
-        if (tDataR != null) {
-            final double[][] tDataL = tThis.internalData();
-            final int tShiftL = tThis.internalDataShift();
-            final int tEndL = tThis.internalDataSize() + tShiftL;
-            final int tShiftR = IDataShell.internalDataShift(aRHS);
-            
-            final double[] tRealDataL = tDataL[0], tImagDataL = tDataL[1];
-            final double[] tRealDataR = tDataR[0], tImagDataR = tDataR[1];
-            
-            ComplexDouble rDot = new ComplexDouble();
-            if (tShiftL == tShiftR) {
-                for (int i = tShiftL; i < tEndL; ++i) {
-                    double lReal = tRealDataL[i], lImag = tImagDataL[i];
-                    double rReal = tRealDataR[i], rImag = tImagDataR[i];
-                    rDot.mReal += (lReal*rReal + lImag*rImag);
-                    rDot.mImag += (lImag*rReal - lReal*rImag);
-                }
-            } else {
-                for (int i = tShiftL, j = tShiftR; i < tEndL; ++i, ++j) {
-                    double lReal = tRealDataL[i], lImag = tImagDataL[i];
-                    double rReal = tRealDataR[j], rImag = tImagDataR[j];
-                    rDot.mReal += (lReal*rReal + lImag*rImag);
-                    rDot.mImag += (lImag*rReal - lReal*rImag);
-                }
-            }
-            return rDot;
-        } else {
-            return super.dot(aRHS);
-        }
+        double[][] tDataR = tThis.getIfHasSameOrderData(aRHS);
+        if (tDataR != null) return ARRAY.dot(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), tThis.internalDataSize());
+        else return super.dot(aRHS);
     }
     @Override public double dot() {
-        final BiDoubleArrayVector tThis = thisVector_();
-        final double[][] tData = tThis.internalData();
-        final int tShift = tThis.internalDataShift();
-        final int tEnd = tThis.internalDataSize() + tShift;
-        
-        final double[] tRealData = tData[0], tImagData = tData[1];
-        
-        double rDot = 0.0;
-        for (int i = tShift; i < tEnd; ++i) {
-            double tReal = tRealData[i], tImag = tImagData[i];
-            rDot += (tReal*tReal + tImag*tImag);
-        }
-        return rDot;
+        BiDoubleArrayVector tThis = thisVector_();
+        return ARRAY.dotOfThis(tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());
     }
     
     @Override public IComplexVector reverse() {
