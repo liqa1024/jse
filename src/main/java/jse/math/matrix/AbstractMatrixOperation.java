@@ -90,12 +90,12 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     @Override public double min () {return DATA.minOfThis (thisMatrix_()::iteratorCol);}
     
     
-    @Override public IMatrix  matmul(IMatrix aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.rowNumber(), aRHS.columnNumber()); addMatmul2Dest_(tThis, aRHS, rMatrix); return rMatrix;}
-    @Override public IMatrix lmatmul(IMatrix aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(aRHS.rowNumber(), tThis.columnNumber()); addMatmul2Dest_(aRHS, tThis, rMatrix); return rMatrix;}
+    @Override public IMatrix  matmul(IMatrix aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.rowNumber(), aRHS.columnNumber()); matmul2Dest_(tThis, aRHS, rMatrix); return rMatrix;}
+    @Override public IMatrix lmatmul(IMatrix aRHS) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(aRHS.rowNumber(), tThis.columnNumber()); matmul2Dest_(aRHS, tThis, rMatrix); return rMatrix;}
     @Override public void  matmul2this(IMatrix aRHS) {matmul2This_(thisMatrix_(), aRHS);}
 //    @Override public void lmatmul2this(IMatrix aRHS) {lmatmul2This_(thisMatrix_(), aRHS);}
-    @Override public void  matmul2dest(IMatrix aRHS, IMatrix rDest) {rDest.fill(0.0); addMatmul2Dest_(thisMatrix_(), aRHS, rDest);}
-    @Override public void lmatmul2dest(IMatrix aRHS, IMatrix rDest) {rDest.fill(0.0); addMatmul2Dest_(aRHS, thisMatrix_(), rDest);}
+    @Override public void  matmul2dest(IMatrix aRHS, IMatrix rDest) {matmul2Dest_(thisMatrix_(), aRHS, rDest);}
+    @Override public void lmatmul2dest(IMatrix aRHS, IMatrix rDest) {matmul2Dest_(aRHS, thisMatrix_(), rDest);}
     
     @Override public IMatrix  matmul_par(IMatrix aRHS) {return  matmul_par(aRHS, PARFOR_THREAD_NUMBER);}
     @Override public IMatrix lmatmul_par(IMatrix aRHS) {return lmatmul_par(aRHS, PARFOR_THREAD_NUMBER);}
@@ -105,10 +105,10 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     @Override public void lmatmul2dest_par(IMatrix aRHS, IMatrix rDest) {lmatmul2dest_par(aRHS, rDest, PARFOR_THREAD_NUMBER);}
     @Override public void  matmul2dest_par(IMatrix aRHS, IMatrix rDest, int aTreadNum) {try (ParforThreadPool tPool = new ParforThreadPool(aTreadNum)) { matmul2dest_par(aRHS, rDest, tPool);}}
     @Override public void lmatmul2dest_par(IMatrix aRHS, IMatrix rDest, int aTreadNum) {try (ParforThreadPool tPool = new ParforThreadPool(aTreadNum)) {lmatmul2dest_par(aRHS, rDest, tPool);}}
-    @Override public IMatrix  matmul_par(IMatrix aRHS, ParforThreadPool aPool) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.rowNumber(), aRHS.columnNumber()); addMatmul2Dest_par_(tThis, aRHS, rMatrix, aPool); return rMatrix;}
-    @Override public IMatrix lmatmul_par(IMatrix aRHS, ParforThreadPool aPool) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(aRHS.rowNumber(), tThis.columnNumber()); addMatmul2Dest_par_(aRHS, tThis, rMatrix, aPool); return rMatrix;}
-    @Override public void  matmul2dest_par(IMatrix aRHS, IMatrix rDest, ParforThreadPool aPool) {rDest.fill(0.0); addMatmul2Dest_par_(thisMatrix_(), aRHS, rDest, aPool);}
-    @Override public void lmatmul2dest_par(IMatrix aRHS, IMatrix rDest, ParforThreadPool aPool) {rDest.fill(0.0); addMatmul2Dest_par_(aRHS, thisMatrix_(), rDest, aPool);}
+    @Override public IMatrix  matmul_par(IMatrix aRHS, ParforThreadPool aPool) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(tThis.rowNumber(), aRHS.columnNumber()); matmul2Dest_par_(newMatrixIsZeros(), tThis, aRHS, rMatrix, aPool); return rMatrix;}
+    @Override public IMatrix lmatmul_par(IMatrix aRHS, ParforThreadPool aPool) {IMatrix tThis = thisMatrix_(); IMatrix rMatrix = newMatrix_(aRHS.rowNumber(), tThis.columnNumber()); matmul2Dest_par_(newMatrixIsZeros(), aRHS, tThis, rMatrix, aPool); return rMatrix;}
+    @Override public void  matmul2dest_par(IMatrix aRHS, IMatrix rDest, ParforThreadPool aPool) {matmul2Dest_par_(thisMatrix_(), aRHS, rDest, aPool);}
+    @Override public void lmatmul2dest_par(IMatrix aRHS, IMatrix rDest, ParforThreadPool aPool) {matmul2Dest_par_(aRHS, thisMatrix_(), rDest, aPool);}
     
     
     private final static int BLOCK_SIZE = 128; // 现在是并行分块的大小，大一些可以排除并行的损耗
@@ -260,14 +260,14 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             aRHS.releaseBuf(tRHS, true);
         }
     }
-    private static void addMatmul2Dest_(IMatrix aLHS, IMatrix aRHS, IMatrix rDest) {
+    private static void matmul2Dest_(IMatrix aLHS, IMatrix aRHS, IMatrix rDest) {
         // 先判断大小是否合适
         matmulCheck(aLHS.rowNumber(), aLHS.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
         // 获取必要数据
         final int tRowNum = aLHS.rowNumber();
         final int tColNum = aRHS.columnNumber();
         final int tMidNum = aLHS.columnNumber();
-        // 特殊情况，这里是不去处理
+        // 特殊情况处理
         if (tMidNum == 0) return;
         // 现在对于串行的版本默认都不进行分块，更加简洁且很多情况下都更快
         // 判断行列顺序优先，这个问题没有那么简单
@@ -286,8 +286,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                     for (int col = 0; col < tColNum; ++col) {
                         double tCol0 = aRHS.get(0, col);
                         for (int row = 0; row < tRowNum; ++row) {
-                            final double tDot = lData[row]*tCol0;
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, lData[row]*tCol0);
                         }
                     }
                     break;
@@ -297,8 +296,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tCol0 = aRHS.get(0, col);
                         double tCol1 = aRHS.get(1, col);
                         for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=2) {
-                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1;
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1);
                         }
                     }
                     break;
@@ -309,8 +307,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tCol1 = aRHS.get(1, col);
                         double tCol2 = aRHS.get(2, col);
                         for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=3) {
-                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2;
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2);
                         }
                     }
                     break;
@@ -322,8 +319,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tCol2 = aRHS.get(2, col);
                         double tCol3 = aRHS.get(3, col);
                         for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=4) {
-                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3;
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3);
                         }
                     }
                     break;
@@ -336,8 +332,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tCol3 = aRHS.get(3, col);
                         double tCol4 = aRHS.get(4, col);
                         for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=5) {
-                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4;
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4);
                         }
                     }
                     break;
@@ -351,8 +346,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tCol4 = aRHS.get(4, col);
                         double tCol5 = aRHS.get(5, col);
                         for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=6) {
-                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4 + lData[ls+5]*tCol5;
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4 + lData[ls+5]*tCol5);
                         }
                     }
                     break;
@@ -367,8 +361,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tCol5 = aRHS.get(5, col);
                         double tCol6 = aRHS.get(6, col);
                         for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=7) {
-                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4 + lData[ls+5]*tCol5 + lData[ls+6]*tCol6;
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4 + lData[ls+5]*tCol5 + lData[ls+6]*tCol6);
                         }
                     }
                     break;
@@ -384,8 +377,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tCol6 = aRHS.get(6, col);
                         double tCol7 = aRHS.get(7, col);
                         for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=8) {
-                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4 + lData[ls+5]*tCol5 + lData[ls+6]*tCol6 + lData[ls+7]*tCol7;
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4 + lData[ls+5]*tCol5 + lData[ls+6]*tCol6 + lData[ls+7]*tCol7);
                         }
                     }
                     break;
@@ -397,8 +389,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         for (int col = 0; col < tColNum; ++col) {
                             tCol.fill(aRHS.col(col));
                             for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=tMidNum) {
-                                final double tDot = ARRAY.dot(lData, ls, colData, 0, tMidNum);
-                                rDest.update(row, col, v -> v+tDot);
+                                rDest.set(row, col, ARRAY.dot(lData, ls, colData, 0, tMidNum));
                             }
                         }
                     } finally {
@@ -419,8 +410,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                     for (int row = 0; row < tRowNum; ++row) {
                         double tRow0 = aLHS.get(row, 0);
                         for (int col = 0; col < tColNum; ++col) {
-                            final double tDot = tRow0*rData[col];
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, tRow0*rData[col]);
                         }
                     }
                     break;
@@ -430,8 +420,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tRow0 = aLHS.get(row, 0);
                         double tRow1 = aLHS.get(row, 1);
                         for (int col = 0, rs = 0; col < tColNum; ++col, rs+=2) {
-                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1];
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1]);
                         }
                     }
                     break;
@@ -442,8 +431,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tRow1 = aLHS.get(row, 1);
                         double tRow2 = aLHS.get(row, 2);
                         for (int col = 0, rs = 0; col < tColNum; ++col, rs+=3) {
-                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2];
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2]);
                         }
                     }
                     break;
@@ -455,8 +443,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tRow2 = aLHS.get(row, 2);
                         double tRow3 = aLHS.get(row, 3);
                         for (int col = 0, rs = 0; col < tColNum; ++col, rs+=4) {
-                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3];
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3]);
                         }
                     }
                     break;
@@ -469,8 +456,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tRow3 = aLHS.get(row, 3);
                         double tRow4 = aLHS.get(row, 4);
                         for (int col = 0, rs = 0; col < tColNum; ++col, rs+=5) {
-                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4];
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4]);
                         }
                     }
                     break;
@@ -484,8 +470,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tRow4 = aLHS.get(row, 4);
                         double tRow5 = aLHS.get(row, 5);
                         for (int col = 0, rs = 0; col < tColNum; ++col, rs+=6) {
-                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4] + tRow5*rData[rs+5];
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4] + tRow5*rData[rs+5]);
                         }
                     }
                     break;
@@ -500,8 +485,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tRow5 = aLHS.get(row, 5);
                         double tRow6 = aLHS.get(row, 6);
                         for (int col = 0, rs = 0; col < tColNum; ++col, rs+=7) {
-                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4] + tRow5*rData[rs+5] + tRow6*rData[rs+6];
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4] + tRow5*rData[rs+5] + tRow6*rData[rs+6]);
                         }
                     }
                     break;
@@ -517,8 +501,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         double tRow6 = aLHS.get(row, 6);
                         double tRow7 = aLHS.get(row, 7);
                         for (int col = 0, rs = 0; col < tColNum; ++col, rs+=8) {
-                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4] + tRow5*rData[rs+5] + tRow6*rData[rs+6] + tRow7*rData[rs+7];
-                            rDest.update(row, col, v -> v+tDot);
+                            rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4] + tRow5*rData[rs+5] + tRow6*rData[rs+6] + tRow7*rData[rs+7]);
                         }
                     }
                     break;
@@ -530,8 +513,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                         for (int row = 0; row < tRowNum; ++row) {
                             tRow.fill(aLHS.row(row));
                             for (int col = 0, rs = 0; col < tColNum; ++col, rs+=tMidNum) {
-                                final double tDot = ARRAY.dot(rowData, 0, rData, rs, tMidNum);
-                                rDest.update(row, col, v -> v+tDot);
+                                rDest.set(row, col, ARRAY.dot(rowData, 0, rData, rs, tMidNum));
                             }
                         }
                     } finally {
@@ -544,7 +526,8 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             }
         }
     }
-    private static void addMatmul2Dest_par_(IMatrix aLHS, IMatrix aRHS, IMatrix rDest, ParforThreadPool aPool) {
+    private static void matmul2Dest_par_(IMatrix aLHS, IMatrix aRHS, IMatrix rDest, ParforThreadPool aPool) {matmul2Dest_par_(false, aLHS, aRHS, rDest, aPool);}
+    private static void matmul2Dest_par_(boolean aDestIsZeros, IMatrix aLHS, IMatrix aRHS, IMatrix rDest, ParforThreadPool aPool) {
         // 先判断大小是否合适
         matmulCheck(aLHS.rowNumber(), aLHS.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
         // 获取必要数据
@@ -553,9 +536,11 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         int tMidNum = aLHS.columnNumber();
         // 过小情况不进行并行
         if (tRowNum<BLOCK_SIZE+BLOCK_SIZE && tColNum<BLOCK_SIZE+BLOCK_SIZE && tMidNum<BLOCK_SIZE+BLOCK_SIZE) {
-            addMatmul2Dest_(aLHS, aRHS, rDest);
+            matmul2Dest_(aLHS, aRHS, rDest);
             return;
         }
+        // 如果 Dest 不为零则需要手动设为 0
+        if (!aDestIsZeros) rDest.fill(0.0);
         // 获取分块数目和剩余数目（需要考虑非整除的情况）
         final int blockRowNum = tRowNum / BLOCK_SIZE;
         final int blockColNum = tColNum / BLOCK_SIZE;
@@ -740,4 +725,5 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     protected abstract IMatrix thisMatrix_();
     protected abstract IMatrix newMatrix_(int aRowNum, int aColNum);
     protected IVector newVector_(int aSize) {return Vectors.zeros(aSize);}
+    protected boolean newMatrixIsZeros() {return true;}
 }
