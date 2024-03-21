@@ -119,46 +119,282 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         // 先判断大小是否合适
         matmulCheck(aLHS.rowNumber(), aLHS.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
         // 获取必要数据
-        int tRowNum = aLHS.rowNumber();
-        int tColNum = aRHS.columnNumber();
-        int tMidNum = aLHS.columnNumber();
+        final int tRowNum = aLHS.rowNumber();
+        final int tColNum = aRHS.columnNumber();
+        final int tMidNum = aLHS.columnNumber();
+        // 特殊情况，这里是不去处理
+        if (tMidNum == 0) return;
         // 现在对于串行的版本默认都不进行分块，更加简洁且很多情况下都更快
         // 判断行列顺序优先，这个问题没有那么简单
         // 一般情况下，行和列更短的一方对应矩阵更小，应该优先全部遍历（内存友好）
         boolean tRowFirst = tColNum > tRowNum;
-        // 但是在中间很短的情况下，应该翻转这个操作，从而利用上 SIMD 加速
+        // 但是在中间很短的情况下，应该翻转这个操作，从而更好利用上 SIMD 加速
         if (tMidNum <= 4) tRowFirst = !tRowFirst;
         // 根据上述判断决定遍历顺序
         if (tRowFirst) {
             // 先遍历行，因此左边需要是行矩阵
             RowMatrix tLHS = aLHS.toBufRow();
-            Vector tCol = VectorCache.getVec(tMidNum);
+            double[] lData = tLHS.internalData();
             try {
-                for (int col = 0; col < tColNum; ++col) {
-                    tCol.fill(aRHS.col(col));
-                    for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=tMidNum) {
-                        final double tDot = ARRAY.dot(tLHS.internalData(), ls, tCol.internalData(), 0, tMidNum);
-                        rDest.update(row, col, v -> v+tDot);
+                switch(tMidNum) {
+                case 1: {
+                    for (int col = 0; col < tColNum; ++col) {
+                        double tCol0 = aRHS.get(0, col);
+                        for (int row = 0; row < tRowNum; ++row) {
+                            final double tDot = lData[row]*tCol0;
+                            rDest.update(row, col, v -> v+tDot);
+                        }
                     }
+                    break;
                 }
+                case 2: {
+                    for (int col = 0; col < tColNum; ++col) {
+                        double tCol0 = aRHS.get(0, col);
+                        double tCol1 = aRHS.get(1, col);
+                        for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=2) {
+                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1;
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                case 3: {
+                    for (int col = 0; col < tColNum; ++col) {
+                        double tCol0 = aRHS.get(0, col);
+                        double tCol1 = aRHS.get(1, col);
+                        double tCol2 = aRHS.get(2, col);
+                        for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=3) {
+                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2;
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                case 4: {
+                    for (int col = 0; col < tColNum; ++col) {
+                        double tCol0 = aRHS.get(0, col);
+                        double tCol1 = aRHS.get(1, col);
+                        double tCol2 = aRHS.get(2, col);
+                        double tCol3 = aRHS.get(3, col);
+                        for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=4) {
+                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3;
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                case 5: {
+                    for (int col = 0; col < tColNum; ++col) {
+                        double tCol0 = aRHS.get(0, col);
+                        double tCol1 = aRHS.get(1, col);
+                        double tCol2 = aRHS.get(2, col);
+                        double tCol3 = aRHS.get(3, col);
+                        double tCol4 = aRHS.get(4, col);
+                        for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=5) {
+                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4;
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                case 6: {
+                    for (int col = 0; col < tColNum; ++col) {
+                        double tCol0 = aRHS.get(0, col);
+                        double tCol1 = aRHS.get(1, col);
+                        double tCol2 = aRHS.get(2, col);
+                        double tCol3 = aRHS.get(3, col);
+                        double tCol4 = aRHS.get(4, col);
+                        double tCol5 = aRHS.get(5, col);
+                        for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=6) {
+                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4 + lData[ls+5]*tCol5;
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                case 7: {
+                    for (int col = 0; col < tColNum; ++col) {
+                        double tCol0 = aRHS.get(0, col);
+                        double tCol1 = aRHS.get(1, col);
+                        double tCol2 = aRHS.get(2, col);
+                        double tCol3 = aRHS.get(3, col);
+                        double tCol4 = aRHS.get(4, col);
+                        double tCol5 = aRHS.get(5, col);
+                        double tCol6 = aRHS.get(6, col);
+                        for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=7) {
+                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4 + lData[ls+5]*tCol5 + lData[ls+6]*tCol6;
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                case 8: {
+                    for (int col = 0; col < tColNum; ++col) {
+                        double tCol0 = aRHS.get(0, col);
+                        double tCol1 = aRHS.get(1, col);
+                        double tCol2 = aRHS.get(2, col);
+                        double tCol3 = aRHS.get(3, col);
+                        double tCol4 = aRHS.get(4, col);
+                        double tCol5 = aRHS.get(5, col);
+                        double tCol6 = aRHS.get(6, col);
+                        double tCol7 = aRHS.get(7, col);
+                        for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=8) {
+                            final double tDot = lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4 + lData[ls+5]*tCol5 + lData[ls+6]*tCol6 + lData[ls+7]*tCol7;
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                default: {
+                    Vector tCol = VectorCache.getVec(tMidNum);
+                    double[] colData = tCol.internalData();
+                    try {
+                        for (int col = 0; col < tColNum; ++col) {
+                            tCol.fill(aRHS.col(col));
+                            for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=tMidNum) {
+                                final double tDot = ARRAY.dot(lData, ls, colData, 0, tMidNum);
+                                rDest.update(row, col, v -> v+tDot);
+                            }
+                        }
+                    } finally {
+                        VectorCache.returnVec(tCol);
+                    }
+                    break;
+                }}
             } finally {
-                VectorCache.returnVec(tCol);
                 aLHS.releaseBuf(tLHS, true);
             }
         } else {
             // 先遍历列，因此右边需要是列矩阵
             ColumnMatrix tRHS = aRHS.toBufCol();
-            Vector tRow = VectorCache.getVec(tMidNum);
+            double[] rData = tRHS.internalData();
             try {
-                for (int row = 0; row < tRowNum; ++row) {
-                    tRow.fill(aLHS.row(row));
-                    for (int col = 0, rs = 0; col < tColNum; ++col, rs+=tMidNum) {
-                        final double tDot = ARRAY.dot(tRow.internalData(), 0, tRHS.internalData(), rs, tMidNum);
-                        rDest.update(row, col, v -> v+tDot);
+                switch(tMidNum) {
+                case 1: {
+                    for (int row = 0; row < tRowNum; ++row) {
+                        double tRow0 = aLHS.get(row, 0);
+                        for (int col = 0; col < tColNum; ++col) {
+                            final double tDot = tRow0*rData[col];
+                            rDest.update(row, col, v -> v+tDot);
+                        }
                     }
+                    break;
                 }
+                case 2: {
+                    for (int row = 0; row < tRowNum; ++row) {
+                        double tRow0 = aLHS.get(row, 0);
+                        double tRow1 = aLHS.get(row, 1);
+                        for (int col = 0, rs = 0; col < tColNum; ++col, rs+=2) {
+                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1];
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                case 3: {
+                    for (int row = 0; row < tRowNum; ++row) {
+                        double tRow0 = aLHS.get(row, 0);
+                        double tRow1 = aLHS.get(row, 1);
+                        double tRow2 = aLHS.get(row, 2);
+                        for (int col = 0, rs = 0; col < tColNum; ++col, rs+=3) {
+                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2];
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                case 4: {
+                    for (int row = 0; row < tRowNum; ++row) {
+                        double tRow0 = aLHS.get(row, 0);
+                        double tRow1 = aLHS.get(row, 1);
+                        double tRow2 = aLHS.get(row, 2);
+                        double tRow3 = aLHS.get(row, 3);
+                        for (int col = 0, rs = 0; col < tColNum; ++col, rs+=4) {
+                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3];
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                case 5: {
+                    for (int row = 0; row < tRowNum; ++row) {
+                        double tRow0 = aLHS.get(row, 0);
+                        double tRow1 = aLHS.get(row, 1);
+                        double tRow2 = aLHS.get(row, 2);
+                        double tRow3 = aLHS.get(row, 3);
+                        double tRow4 = aLHS.get(row, 4);
+                        for (int col = 0, rs = 0; col < tColNum; ++col, rs+=5) {
+                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4];
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                case 6: {
+                    for (int row = 0; row < tRowNum; ++row) {
+                        double tRow0 = aLHS.get(row, 0);
+                        double tRow1 = aLHS.get(row, 1);
+                        double tRow2 = aLHS.get(row, 2);
+                        double tRow3 = aLHS.get(row, 3);
+                        double tRow4 = aLHS.get(row, 4);
+                        double tRow5 = aLHS.get(row, 5);
+                        for (int col = 0, rs = 0; col < tColNum; ++col, rs+=6) {
+                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4] + tRow5*rData[rs+5];
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                case 7: {
+                    for (int row = 0; row < tRowNum; ++row) {
+                        double tRow0 = aLHS.get(row, 0);
+                        double tRow1 = aLHS.get(row, 1);
+                        double tRow2 = aLHS.get(row, 2);
+                        double tRow3 = aLHS.get(row, 3);
+                        double tRow4 = aLHS.get(row, 4);
+                        double tRow5 = aLHS.get(row, 5);
+                        double tRow6 = aLHS.get(row, 6);
+                        for (int col = 0, rs = 0; col < tColNum; ++col, rs+=7) {
+                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4] + tRow5*rData[rs+5] + tRow6*rData[rs+6];
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                case 8: {
+                    for (int row = 0; row < tRowNum; ++row) {
+                        double tRow0 = aLHS.get(row, 0);
+                        double tRow1 = aLHS.get(row, 1);
+                        double tRow2 = aLHS.get(row, 2);
+                        double tRow3 = aLHS.get(row, 3);
+                        double tRow4 = aLHS.get(row, 4);
+                        double tRow5 = aLHS.get(row, 5);
+                        double tRow6 = aLHS.get(row, 6);
+                        double tRow7 = aLHS.get(row, 7);
+                        for (int col = 0, rs = 0; col < tColNum; ++col, rs+=8) {
+                            final double tDot = tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4] + tRow5*rData[rs+5] + tRow6*rData[rs+6] + tRow7*rData[rs+7];
+                            rDest.update(row, col, v -> v+tDot);
+                        }
+                    }
+                    break;
+                }
+                default: {
+                    Vector tRow = VectorCache.getVec(tMidNum);
+                    double[] rowData = tRow.internalData();
+                    try {
+                        for (int row = 0; row < tRowNum; ++row) {
+                            tRow.fill(aLHS.row(row));
+                            for (int col = 0, rs = 0; col < tColNum; ++col, rs+=tMidNum) {
+                                final double tDot = ARRAY.dot(rowData, 0, rData, rs, tMidNum);
+                                rDest.update(row, col, v -> v+tDot);
+                            }
+                        }
+                    } finally {
+                        VectorCache.returnVec(tRow);
+                    }
+                    break;
+                }}
             } finally {
-                VectorCache.returnVec(tRow);
                 aRHS.releaseBuf(tRHS, true);
             }
         }
