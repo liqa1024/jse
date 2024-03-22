@@ -83,7 +83,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     /** ParforThreadPool close 时不需要 awaitTermination */
     @ApiStatus.Internal @Override public void close() {shutdown();}
     
-    /** 保留兼容 */
+    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed")
     MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
         super(new ParforThreadPool(aThreadNum));
         
@@ -101,8 +101,11 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox);
         mInitThreadID = Thread.currentThread().getId();
     }
+    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed")
     MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox) {this(aAtomDataXYZ, aBox, 1);}
+    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed")
     MonatomicParameterCalculator(IAtomData aAtomData) {this(aAtomData, 1);}
+    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed")
     MonatomicParameterCalculator(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(aAtomData.atoms(), aAtomData.box(), aThreadNum);}
     /** 主要用于内部使用 */
     @ApiStatus.Internal MonatomicParameterCalculator(int aAtomNum, IXYZ aBox, int aThreadNum, IUnaryFullOperator<IMatrix, IMatrix> aXYZValidOpt) {

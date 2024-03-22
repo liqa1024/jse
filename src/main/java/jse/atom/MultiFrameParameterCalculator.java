@@ -66,7 +66,7 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
     @ApiStatus.Internal @Override public void close() {shutdown();}
     
     
-    /** 保留兼容 */
+    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed")
     MultiFrameParameterCalculator(Collection<? extends Collection<? extends IAtom>> aAtomDataList, Collection<? extends IXYZ> aBoxList, double aTimestep, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, int aMinAtomTypeNum) {
         super(new ParforThreadPool(aThreadNum));
         
@@ -119,9 +119,13 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
         }
         mAllAtomDataXYZ = tXYZArray;
     }
+    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed")
     MultiFrameParameterCalculator(Collection<? extends Collection<? extends IAtom>> aAtomDataList, Collection<? extends IXYZ> aBoxList, double aTimestep) {this(aAtomDataList, aBoxList, aTimestep, 1);}
+    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed")
     MultiFrameParameterCalculator(Collection<? extends Collection<? extends IAtom>> aAtomDataList, Collection<? extends IXYZ> aBoxList, double aTimestep, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(aAtomDataList, aBoxList, aTimestep, aThreadNum, 1);}
+    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed")
     MultiFrameParameterCalculator(Collection<? extends IAtomData> aAtomDataList, double aTimestep) {this(aAtomDataList, aTimestep, 1);}
+    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed")
     MultiFrameParameterCalculator(Collection<? extends IAtomData> aAtomDataList, double aTimestep, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(AbstractCollections.map(aAtomDataList, IAtomData::atoms), AbstractCollections.map(aAtomDataList, IAtomData::box), aTimestep, aThreadNum, UT.Code.first(aAtomDataList).atomTypeNumber());}
     
     /**
