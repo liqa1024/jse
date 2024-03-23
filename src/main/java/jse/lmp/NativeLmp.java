@@ -578,7 +578,7 @@ public class NativeLmp implements IAutoShutdown {
         checkThread();
         return (int)lammpsGetNatoms_(mLmpPtr);
     }
-    @Deprecated public final int atomNum() throws LmpException {return atomNumber();}
+    /** @deprecated use {@link #atomNumber} or {@link #natoms} */ @Deprecated public final int atomNum() throws LmpException {return atomNumber();}
     @VisibleForTesting public int natoms() throws LmpException {return atomNumber();}
     private native static double lammpsGetNatoms_(long aLmpPtr) throws LmpException;
     
@@ -587,7 +587,7 @@ public class NativeLmp implements IAutoShutdown {
      * @return number of atom types
      */
     public int atomTypeNumber() throws LmpException {return settingOf("ntypes");}
-    @Deprecated public final int atomTypeNum() throws LmpException {return atomTypeNumber();}
+    /** @deprecated use {@link #atomTypeNumber} or {@link #ntypes} */ @Deprecated public final int atomTypeNum() throws LmpException {return atomTypeNumber();}
     @VisibleForTesting public int ntypes() throws LmpException {return atomTypeNumber();}
     
     /**
@@ -595,7 +595,7 @@ public class NativeLmp implements IAutoShutdown {
      * @return number of “owned” atoms of the current MPI rank.
      */
     public int localAtomNumber() throws LmpException {return settingOf("nlocal");}
-    @Deprecated public final int localAtomNum() throws LmpException {return localAtomNumber();}
+    /** @deprecated use {@link #localAtomNumber} or {@link #nlocal} */ @Deprecated public final int localAtomNum() throws LmpException {return localAtomNumber();}
     @VisibleForTesting public int nlocal() throws LmpException {return localAtomNumber();}
     
     /**

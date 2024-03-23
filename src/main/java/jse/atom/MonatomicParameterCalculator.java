@@ -83,7 +83,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     /** ParforThreadPool close 时不需要 awaitTermination */
     @ApiStatus.Internal @Override public void close() {shutdown();}
     
-    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed")
+    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed") @Deprecated
     MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
         super(new ParforThreadPool(aThreadNum));
         
@@ -101,11 +101,11 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox);
         mInitThreadID = Thread.currentThread().getId();
     }
-    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed")
+    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed") @Deprecated
     MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IXYZ aBox) {this(aAtomDataXYZ, aBox, 1);}
-    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed")
+    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed") @Deprecated
     MonatomicParameterCalculator(IAtomData aAtomData) {this(aAtomData, 1);}
-    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed")
+    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed") @Deprecated
     MonatomicParameterCalculator(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(aAtomData.atoms(), aAtomData.box(), aThreadNum);}
     /** 主要用于内部使用 */
     @ApiStatus.Internal MonatomicParameterCalculator(int aAtomNum, IXYZ aBox, int aThreadNum, IUnaryFullOperator<IMatrix, IMatrix> aXYZValidOpt) {
@@ -183,7 +183,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public double unitLen() {return mUnitLen;}
     public double rou() {return mRou;}
     public double rou(MonatomicParameterCalculator aMPC) {return Fast.sqrt(mRou*aMPC.mRou);}
-    /** 保留旧名称兼容，当时起名太随意了，居然这么久都没发现 */
+    /** @deprecated use {@link #atomNumber} */
     @Deprecated public final int atomNum() {return atomNumber();}
     /** 补充运算时使用 */
     @ApiStatus.Internal public NeighborListGetter nl_() {return mNL;}

@@ -25,7 +25,7 @@ public interface IThreadPool extends IAutoShutdown {
     @ApiStatus.Internal @Override default void close() {shutdown(); try {awaitTermination();} catch (InterruptedException ignored) {}}
     
     
-    @Deprecated default int nJobs() {return jobNumber();}
-    @Deprecated default int nThreads() {return threadNumber();}
-    @Deprecated default int getTaskNumber() {return jobNumber();}
+    /** @deprecated use {@link #jobNumber} or {@link #njobs} */       @Deprecated default int nJobs() {return jobNumber();}
+    /** @deprecated use {@link #threadNumber} or {@link #nthreads} */ @Deprecated default int nThreads() {return threadNumber();}
+    /** @deprecated use {@link #jobNumber} or {@link #njobs} */       @Deprecated default int getTaskNumber() {return jobNumber();}
 }

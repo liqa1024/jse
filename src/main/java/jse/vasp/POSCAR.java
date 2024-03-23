@@ -104,9 +104,8 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         return rAtomNum;
     }
     public int atomNumber(int aType) {return mAtomNumbers.get(aType-1);}
-    /** 保留旧名称兼容，当时起名太随意了，居然这么久都没发现 */
-    @Deprecated public final int atomNum(String aType) {return atomNumber(aType);}
-    @Deprecated public final int atomNum(int aType) {return atomNumber(aType);}
+    /** @deprecated use {@link #atomNumber} or {@link #natoms} */ @Deprecated public final int atomNum(String aType) {return atomNumber(aType);}
+    /** @deprecated use {@link #atomNumber} or {@link #natoms} */ @Deprecated public final int atomNum(int aType) {return atomNumber(aType);}
     /** 提供简写版本 */
     @VisibleForTesting public final int natoms(String aType) {return atomNumber(aType);}
     @VisibleForTesting public final int natoms(int aType) {return atomNumber(aType);}

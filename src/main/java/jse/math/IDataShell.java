@@ -35,11 +35,11 @@ public interface IDataShell<D> {
         return 0;
     }
     
-    /** 旧名称保留兼容 */
-    @Deprecated default void setData2this(D aData) {setInternalData(aData);}
-    @Deprecated default D getData() {return internalData();}
-    @Deprecated default int dataSize() {return internalDataSize();}
-    @Deprecated default int shiftSize() {return internalDataShift();}
+    
+    /** @deprecated use {@link #setInternalData} */   @Deprecated default void setData2this(D aData) {setInternalData(aData);}
+    /** @deprecated use {@link #internalData} */      @Deprecated default D getData() {return internalData();}
+    /** @deprecated use {@link #internalDataSize} */  @Deprecated default int dataSize() {return internalDataSize();}
+    /** @deprecated use {@link #internalDataShift} */ @Deprecated default int shiftSize() {return internalDataShift();}
     
     /** 快速构造 */
     static <D> IDataShell<D> of(int aSize, D aData) {return new SimpleDataShell<>(aSize, aData);}

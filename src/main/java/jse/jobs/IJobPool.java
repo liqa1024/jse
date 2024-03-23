@@ -21,5 +21,5 @@ public interface IJobPool extends IAutoShutdown {
     void shutdown();
     
     @VisibleForTesting default int njobs() {return jobNumber();}
-    @Deprecated default int nJobs() {return jobNumber();}
+    /** @deprecated use {@link #jobNumber} or {@link #njobs} */ @Deprecated default int nJobs() {return jobNumber();}
 }

@@ -27,15 +27,14 @@ public interface IAtomData {
     /** 现在统一提供随机访问获取一个原子的接口；改为 atom 保证逻辑一致，旧名称由于外部使用较少不再保留 */
     IAtom atom(int aIdx);
 
-    /** asList 接口保留兼容 */
+    /** @deprecated use {@link #atoms} */
     @Deprecated default List<? extends IAtom> asList() {return atoms();}
     
     /** 保留获取原子总数的接口，但是特定种类的原子数目现在不能直接获取 */
     int atomNumber();
     int atomTypeNumber();
-    /** 保留旧名称兼容，当时起名太随意了，居然这么久都没发现 */
-    @Deprecated default int atomNum() {return atomNumber();}
-    @Deprecated default int atomTypeNum() {return atomTypeNumber();}
+    /** @deprecated use {@link #atomNumber} or {@link #natoms} */     @Deprecated default int atomNum() {return atomNumber();}
+    /** @deprecated use {@link #atomTypeNumber} or {@link #ntypes} */ @Deprecated default int atomTypeNum() {return atomTypeNumber();}
     /** 提供简写版本 */
     @VisibleForTesting default int natoms() {return atomNumber();}
     @VisibleForTesting default int ntypes() {return atomTypeNumber();}

@@ -175,7 +175,7 @@ public class MultiFrameParameterCalculator extends AbstractThreadPool<ParforThre
     public int atomNumber() {return mAtomNum;}
     public int frameNumber() {return mFrameNum;}
     public double timestep() {return mTimestep;}
-    /** 保留旧名称兼容，当时起名太随意了，居然这么久都没发现 */
+    /** @deprecated use {@link #atomNumber} */
     @Deprecated public final int atomNum() {return atomNumber();}
     
     

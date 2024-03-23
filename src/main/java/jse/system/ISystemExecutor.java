@@ -59,9 +59,9 @@ public interface ISystemExecutor extends IThreadPool {
     void putBatchSystem(String aCommand);
     void putBatchSystem(String aCommand, IIOFiles aIOFiles);
     
-    @Deprecated default Future<List<Integer>> getSubmit() {return submitBatchSystem();}
-    @Deprecated default void putSubmit(String aCommand) {putBatchSystem(aCommand);}
-    @Deprecated default void putSubmit(String aCommand, IIOFiles aIOFiles) {putBatchSystem(aCommand, aIOFiles);}
+    /** @deprecated use {@link #submitBatchSystem} */ @Deprecated default Future<List<Integer>> getSubmit() {return submitBatchSystem();}
+    /** @deprecated use {@link #putBatchSystem} */    @Deprecated default void putSubmit(String aCommand) {putBatchSystem(aCommand);}
+    /** @deprecated use {@link #putBatchSystem} */    @Deprecated default void putSubmit(String aCommand, IIOFiles aIOFiles) {putBatchSystem(aCommand, aIOFiles);}
     
     
     /** 获取字符串输出而不是退出代码 */

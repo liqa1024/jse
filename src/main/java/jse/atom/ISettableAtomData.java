@@ -12,7 +12,7 @@ import java.util.List;
 public interface ISettableAtomData extends IAtomData {
     void setAtom(int aIdx, IAtom aAtom);
     ISettableAtomData setAtomTypeNumber(int aAtomTypeNum);
-    @Deprecated default ISettableAtomData setAtomTypeNum(int aAtomTypeNum) {return setAtomTypeNumber(aAtomTypeNum);}
+    /** @deprecated use {@link #setAtomTypeNumber} */ @Deprecated default ISettableAtomData setAtomTypeNum(int aAtomTypeNum) {return setAtomTypeNumber(aAtomTypeNum);}
     
     /** IAtomData stuffs*/
     List<? extends ISettableAtom> atoms();
