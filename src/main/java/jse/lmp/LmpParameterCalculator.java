@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import static jse.code.CS.Exec.EXE;
+import static jse.code.OS.EXE;
 import static jse.code.Conf.WORKING_DIR_OF;
 
 /**

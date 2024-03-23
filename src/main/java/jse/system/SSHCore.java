@@ -1,7 +1,7 @@
 package jse.system;
 
 import com.jcraft.jsch.*;
-import jse.code.CS;
+import jse.code.OS;
 import jse.code.UT;
 import jse.parallel.ExecutorsEX;
 import jse.parallel.IAutoShutdown;
@@ -13,7 +13,7 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.Vector;
 
-import static jse.code.CS.Exec.USER_HOME_DIR;
+import static jse.code.OS.USER_HOME_DIR;
 import static jse.code.CS.FILE_SYSTEM_SLEEP_TIME;
 
 
@@ -581,5 +581,5 @@ final class SSHCore implements IAutoShutdown {
     }
     
     // 手动加载 CS.Exec，会自动重新设置工作目录，会在调用静态函数 get 或者 load 时自动加载保证路径的正确性
-    static {CS.Exec.InitHelper.init();}
+    static {OS.InitHelper.init();}
 }

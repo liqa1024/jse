@@ -9,6 +9,7 @@ import jse.cache.IntMatrixCache;
 import jse.cache.MatrixCache;
 import jse.clib.JNIUtil;
 import jse.clib.MiMalloc;
+import jse.code.OS;
 import jse.code.UT;
 import jse.io.IInFile;
 import jse.math.matrix.*;
@@ -28,7 +29,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
-import static jse.code.CS.Exec.*;
+import static jse.code.OS.*;
 import static jse.code.CS.*;
 import static jse.code.Conf.*;
 
@@ -74,14 +75,14 @@ public class NativeLmp implements IAutoShutdown {
          * 应该包含一个 includes 目录其中有所有的头文件，
          * 然后包含一个 lib 目录，其中有所有的二进制库文件
          */
-        public static String LMP_HOME = UT.Exec.env("JSE_LMP_HOME");
+        public static String LMP_HOME = OS.env("JSE_LMP_HOME");
         
         /**
          * 指定需要下载的 lammps 的 tag，
          * 只在下载时有用；
          * 这里简单实现，不使用 git 来自动识别最新稳定版本
          */
-        public static String LMP_TAG = UT.Exec.env("JSE_LMP_TAG");
+        public static String LMP_TAG = OS.env("JSE_LMP_TAG");
         
         /**
          * 自定义构建 lammps 的 cmake 参数设置，
@@ -93,31 +94,31 @@ public class NativeLmp implements IAutoShutdown {
          * 自定义构建 lammps 以及 lmpjni 时使用的编译器，
          * cmake 有时不能自动检测到希望使用的编译器
          */
-        public static @Nullable String CMAKE_C_COMPILER   = UT.Exec.env("JSE_CMAKE_C_COMPILER_LMP"  , jse.code.Conf.CMAKE_C_COMPILER  );
-        public static @Nullable String CMAKE_CXX_COMPILER = UT.Exec.env("JSE_CMAKE_CXX_COMPILER_LMP", jse.code.Conf.CMAKE_CXX_COMPILER);
-        public static @Nullable String CMAKE_C_FLAGS      = UT.Exec.env("JSE_CMAKE_C_FLAGS_LMP"     , jse.code.Conf.CMAKE_C_FLAGS     );
-        public static @Nullable String CMAKE_CXX_FLAGS    = UT.Exec.env("JSE_CMAKE_CXX_FLAGS_LMP"   , jse.code.Conf.CMAKE_CXX_FLAGS   );
+        public static @Nullable String CMAKE_C_COMPILER   = OS.env("JSE_CMAKE_C_COMPILER_LMP"  , jse.code.Conf.CMAKE_C_COMPILER);
+        public static @Nullable String CMAKE_CXX_COMPILER = OS.env("JSE_CMAKE_CXX_COMPILER_LMP", jse.code.Conf.CMAKE_CXX_COMPILER);
+        public static @Nullable String CMAKE_C_FLAGS      = OS.env("JSE_CMAKE_C_FLAGS_LMP"     , jse.code.Conf.CMAKE_C_FLAGS);
+        public static @Nullable String CMAKE_CXX_FLAGS    = OS.env("JSE_CMAKE_CXX_FLAGS_LMP"   , jse.code.Conf.CMAKE_CXX_FLAGS);
         
         /**
          * 自定义构建 lmpjni 时使用的编译器，会覆盖上面的设置，
          * cmake 有时不能自动检测到希望使用的编译器
          */
-        public static @Nullable String CMAKE_C_COMPILER_LMPJNI   = UT.Exec.env("JSE_CMAKE_C_COMPILER_LMPJNI"  );
-        public static @Nullable String CMAKE_CXX_COMPILER_LMPJNI = UT.Exec.env("JSE_CMAKE_CXX_COMPILER_LMPJNI");
-        public static @Nullable String CMAKE_C_FLAGS_LMPJNI      = UT.Exec.env("JSE_CMAKE_C_FLAGS_LMPJNI"     );
-        public static @Nullable String CMAKE_CXX_FLAGS_LMPJNI    = UT.Exec.env("JSE_CMAKE_CXX_FLAGS_LMPJNI"   );
+        public static @Nullable String CMAKE_C_COMPILER_LMPJNI   = OS.env("JSE_CMAKE_C_COMPILER_LMPJNI");
+        public static @Nullable String CMAKE_CXX_COMPILER_LMPJNI = OS.env("JSE_CMAKE_CXX_COMPILER_LMPJNI");
+        public static @Nullable String CMAKE_C_FLAGS_LMPJNI      = OS.env("JSE_CMAKE_C_FLAGS_LMPJNI");
+        public static @Nullable String CMAKE_CXX_FLAGS_LMPJNI    = OS.env("JSE_CMAKE_CXX_FLAGS_LMPJNI");
         
         /**
          * 对于 lmpjni，是否使用 {@link MiMalloc} 来加速 c 的内存分配，
          * 这对于 java 数组和 c 数组的转换很有效
          */
-        public static boolean USE_MIMALLOC = UT.Exec.envZ("JSE_USE_MIMALLOC_LMP", jse.code.Conf.USE_MIMALLOC);
+        public static boolean USE_MIMALLOC = OS.envZ("JSE_USE_MIMALLOC_LMP", jse.code.Conf.USE_MIMALLOC);
         
         /** 重定向 lammps 动态库的路径，主要用于作为重定向的 lmpjni 库的依赖导入 */
-        public static @Nullable String REDIRECT_LMP_LIB = UT.Exec.env("JSE_REDIRECT_LMP_LIB");
-        public static @Nullable String REDIRECT_LMP_LLIB = UT.Exec.env("JSE_REDIRECT_LMP_LLIB");
+        public static @Nullable String REDIRECT_LMP_LIB = OS.env("JSE_REDIRECT_LMP_LIB");
+        public static @Nullable String REDIRECT_LMP_LLIB = OS.env("JSE_REDIRECT_LMP_LLIB");
         /** 重定向 lmpjni 动态库的路径，用于自定义编译这个库的过程，或者重新实现 lmpjni 的接口 */
-        public static @Nullable String REDIRECT_LMPJNI_LIB = UT.Exec.env("JSE_REDIRECT_LMPJNI_LIB");
+        public static @Nullable String REDIRECT_LMPJNI_LIB = OS.env("JSE_REDIRECT_LMPJNI_LIB");
         
         /**
          * 是否在检测到库文件时依旧重新编译 lammps，
@@ -135,20 +136,20 @@ public class NativeLmp implements IAutoShutdown {
          * 是否是旧版本的 lammps，具体来说大致为 18Sep2020 之前版本的 lammps，
          * 开启后会使用更老的 api，兼容性会更高
          */
-        public static boolean IS_OLD = UT.Exec.envZ("JSE_LMP_IS_OLD", false);
+        public static boolean IS_OLD = OS.envZ("JSE_LMP_IS_OLD", false);
         
         /**
          * lammps 是否有 exception 相关接口，
          * 对于新版的 lammps 总是存在，但对于旧版可能不会存在，
          * 关闭后可以保证编译通过
          */
-        public static boolean HAS_EXCEPTIONS = UT.Exec.envZ("JSE_LMP_HAS_EXCEPTIONS", true);
+        public static boolean HAS_EXCEPTIONS = OS.envZ("JSE_LMP_HAS_EXCEPTIONS", true);
         
         /**
          * lammps 的 lammps_has_error 接口是否有 NULL 支持，
          * 对于较旧的版本并不支持这个
          */
-        public static boolean EXCEPTIONS_NULL_SUPPORT = UT.Exec.envZ("JSE_LMP_EXCEPTIONS_NULL_SUPPORT", true);
+        public static boolean EXCEPTIONS_NULL_SUPPORT = OS.envZ("JSE_LMP_EXCEPTIONS_NULL_SUPPORT", true);
     }
     
     private final static String LMP_ROOT = JAR_DIR+"lmp/";

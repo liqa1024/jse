@@ -42,7 +42,6 @@ import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 import jse.parallel.*;
 import jse.plot.*;
-import jse.system.ISystemExecutor;
 import jse.vasp.IVaspCommonData;
 import me.tongfei.progressbar.ConsoleProgressBarConsumer;
 import me.tongfei.progressbar.ProgressBar;
@@ -86,9 +85,9 @@ import java.util.zip.ZipOutputStream;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static jse.code.CS.*;
-import static jse.code.CS.Exec.USER_HOME;
-import static jse.code.CS.Exec.WORKING_DIR_PATH;
 import static jse.code.Conf.*;
+import static jse.code.OS.USER_HOME;
+import static jse.code.OS.WORKING_DIR_PATH;
 
 /**
  * @author liqa
@@ -1620,52 +1619,11 @@ public class UT {
         public static boolean isAbsolutePath(String aPath) {return isAbsolutePath(Paths.get(aPath));}
         public static boolean isAbsolutePath(Path aPath) {return aPath.isAbsolute();}
         
-        static {CS.Exec.InitHelper.init();}
+        static {jse.code.OS.InitHelper.init();}
     }
     
-    
-    public static class Exec {
-        /** 更加易用的获取环境变量的接口 */
-        public static @Nullable String env(String aName) {
-            try {return System.getenv(aName);}
-            catch (Throwable ignored) {} // 获取失败不抛出错误，在 jse 中获取环境变量都是非必要的
-            return null;
-        }
-        @Contract("_, !null -> !null")
-        public static String env(String aName, String aDefault) {
-            String tEnv = env(aName);
-            return tEnv==null ? aDefault : tEnv;
-        }
-        public static int envI(String aName, int aDefault) throws NumberFormatException {
-            String tEnv = env(aName);
-            return tEnv==null ? aDefault : Integer.parseInt(tEnv);
-        }
-        public static double envD(String aName, double aDefault) throws NumberFormatException {
-            String tEnv = env(aName);
-            return tEnv==null ? aDefault : Double.parseDouble(tEnv);
-        }
-        public static boolean envZ(String aName, boolean aDefault) throws NumberFormatException {
-            String tEnv = env(aName);
-            if (tEnv == null) return aDefault;
-            tEnv = tEnv.toLowerCase();
-            switch(tEnv) {
-            case "true" : case "t": case "on" : case "yes": case "1": {return true ;}
-            case "false": case "f": case "off": case "no" : case "0": {return false;}
-            default: {throw new NumberFormatException("For input string: \""+tEnv+"\"");}
-            }
-        }
-        
-        /** 提供这些接口方便外部调用使用 */
-        @VisibleForTesting public static ISystemExecutor exec() {return CS.Exec.EXE;}
-        @VisibleForTesting public static int system(String aCommand) {return exec().system(aCommand);}
-        @VisibleForTesting public static int system(String aCommand, String aOutFilePath) {return exec().system(aCommand, aOutFilePath);}
-        @VisibleForTesting public static Future<Integer> submitSystem(String aCommand) {return exec().submitSystem(aCommand);}
-        @VisibleForTesting public static Future<Integer> submitSystem(String aCommand, String aOutFilePath) {return exec().submitSystem(aCommand, aOutFilePath);}
-        @VisibleForTesting public static List<String> system_str(String aCommand) {return exec().system_str(aCommand);}
-        @VisibleForTesting public static Future<List<String>> submitSystem_str(String aCommand) {return exec().submitSystem_str(aCommand);}
-        static {CS.Exec.InitHelper.init();}
-    }
-    
+    /** @deprecated use {@link OS} */
+    @Deprecated public final static class Exec extends OS {}
     
     /**
      * 实现类似 matlab 中可以直接使用 plot 函数进行绘图

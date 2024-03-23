@@ -1,6 +1,7 @@
 package jse.clib;
 
 import jse.code.CS;
+import jse.code.OS;
 import jse.code.UT;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -9,8 +10,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static jse.code.CS.Exec.EXE;
-import static jse.code.CS.Exec.JAR_DIR;
+import static jse.code.OS.EXE;
+import static jse.code.OS.JAR_DIR;
 import static jse.code.Conf.*;
 
 /**
@@ -39,14 +40,14 @@ public class MiMalloc {
          * 自定义构建 mimalloc 时使用的编译器，
          * cmake 有时不能自动检测到希望使用的编译器
          */
-        public static @Nullable String CMAKE_C_COMPILER   = UT.Exec.env("JSE_CMAKE_C_COMPILER_MIMALLOC"  , jse.code.Conf.CMAKE_C_COMPILER  );
-        public static @Nullable String CMAKE_CXX_COMPILER = UT.Exec.env("JSE_CMAKE_CXX_COMPILER_MIMALLOC", jse.code.Conf.CMAKE_CXX_COMPILER);
-        public static @Nullable String CMAKE_C_FLAGS      = UT.Exec.env("JSE_CMAKE_C_FLAGS_MIMALLOC"     , jse.code.Conf.CMAKE_C_FLAGS     );
-        public static @Nullable String CMAKE_CXX_FLAGS    = UT.Exec.env("JSE_CMAKE_CXX_FLAGS_MIMALLOC"   , jse.code.Conf.CMAKE_CXX_FLAGS   );
+        public static @Nullable String CMAKE_C_COMPILER   = OS.env("JSE_CMAKE_C_COMPILER_MIMALLOC"  , jse.code.Conf.CMAKE_C_COMPILER);
+        public static @Nullable String CMAKE_CXX_COMPILER = OS.env("JSE_CMAKE_CXX_COMPILER_MIMALLOC", jse.code.Conf.CMAKE_CXX_COMPILER);
+        public static @Nullable String CMAKE_C_FLAGS      = OS.env("JSE_CMAKE_C_FLAGS_MIMALLOC"     , jse.code.Conf.CMAKE_C_FLAGS);
+        public static @Nullable String CMAKE_CXX_FLAGS    = OS.env("JSE_CMAKE_CXX_FLAGS_MIMALLOC"   , jse.code.Conf.CMAKE_CXX_FLAGS);
         
         /** 重定向 mimalloc 动态库的路径，主要用于作为重定向的 mpijni, lmpjni 等库的依赖导入 */
-        public static @Nullable String REDIRECT_MIMALLOC_LIB = UT.Exec.env("JSE_REDIRECT_MIMALLOC_LIB");
-        public static @Nullable String REDIRECT_MIMALLOC_LLIB = UT.Exec.env("JSE_REDIRECT_MIMALLOC_LLIB", REDIRECT_MIMALLOC_LIB);
+        public static @Nullable String REDIRECT_MIMALLOC_LIB = OS.env("JSE_REDIRECT_MIMALLOC_LIB");
+        public static @Nullable String REDIRECT_MIMALLOC_LLIB = OS.env("JSE_REDIRECT_MIMALLOC_LLIB", REDIRECT_MIMALLOC_LIB);
     }
     
     

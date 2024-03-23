@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 
-import static jse.code.CS.Exec.JAR_PATH;
+import static jse.code.OS.JAR_PATH;
 import static jse.code.CS.VERSION;
 import static jse.code.Conf.DEBUG;
 import static jse.code.Conf.WORKING_DIR_OF;

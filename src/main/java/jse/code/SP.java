@@ -53,8 +53,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static jse.code.CS.Exec.EXE;
-import static jse.code.CS.Exec.JAR_DIR;
+import static jse.code.OS.EXE;
+import static jse.code.OS.JAR_DIR;
 import static jse.code.CS.*;
 import static jse.code.Conf.*;
 
@@ -469,13 +469,12 @@ public class SP {
             tGroovysh.getImports().add(Plotters.class.getName());
             tGroovysh.getImports().add("static "+UT.Timer.class.getName()+".*");
             tGroovysh.getImports().add("static "+UT.Par.class.getName()+".*");
-            tGroovysh.getImports().add("static "+UT.Exec.class.getName()+".*");
             tGroovysh.getImports().add("static "+UT.IO.class.getName()+".*");
             tGroovysh.getImports().add("static "+UT.Math.class.getName()+".*");
             tGroovysh.getImports().add("static "+UT.Plot.class.getName()+".*");
             tGroovysh.getImports().add("static "+UT.Code.class.getName()+".*");
             tGroovysh.getImports().add("static "+CS.class.getName()+".*");
-            tGroovysh.getImports().add("static "+CS.Exec.class.getName()+".*");
+            tGroovysh.getImports().add("static "+OS.class.getName()+".*");
             tGroovysh.run(null);
         }
         
@@ -534,7 +533,7 @@ public class SP {
         
         static {
             // 手动加载 CS.Exec，会自动重新设置工作目录，保证 Groovy 读取到的工作目录是正确的
-            CS.Exec.InitHelper.init();
+            OS.InitHelper.init();
             // 先初始化配置
             GROOVY_CONF = new CompilerConfiguration();
             GROOVY_CONF.setSourceEncoding(StandardCharsets.UTF_8.name()); // 文件统一使用 utf-8 编码
@@ -577,17 +576,17 @@ public class SP {
              * <p>
              * 目前 jep 只支持 C 编译器
              */
-            public static @Nullable String CMAKE_C_COMPILER = UT.Exec.env("JSE_CMAKE_C_COMPILER_JEP", jse.code.Conf.CMAKE_C_COMPILER);
-            public static @Nullable String CMAKE_C_FLAGS    = UT.Exec.env("JSE_CMAKE_C_FLAGS_JEP"   , jse.code.Conf.CMAKE_C_FLAGS   );
+            public static @Nullable String CMAKE_C_COMPILER = OS.env("JSE_CMAKE_C_COMPILER_JEP", jse.code.Conf.CMAKE_C_COMPILER);
+            public static @Nullable String CMAKE_C_FLAGS    = OS.env("JSE_CMAKE_C_FLAGS_JEP"   , jse.code.Conf.CMAKE_C_FLAGS);
             
             /**
              * 对于 jep，是否使用 {@link MiMalloc} 来加速 c 的内存分配，
              * 这对于 java 数组和 c 数组的转换很有效
              */
-            public static boolean USE_MIMALLOC = UT.Exec.envZ("JSE_USE_MIMALLOC_JEP", jse.code.Conf.USE_MIMALLOC);
+            public static boolean USE_MIMALLOC = OS.envZ("JSE_USE_MIMALLOC_JEP", jse.code.Conf.USE_MIMALLOC);
             
             /** 重定向 jep 动态库的路径 */
-            public static @Nullable String REDIRECT_JEP_LIB = UT.Exec.env("JSE_REDIRECT_JEP_LIB");
+            public static @Nullable String REDIRECT_JEP_LIB = OS.env("JSE_REDIRECT_JEP_LIB");
         }
         
         
@@ -679,7 +678,7 @@ public class SP {
         static {
             InitHelper.INITIALIZED = true;
             // 手动加载 CS.Exec，会自动重新设置工作目录，保证 jep 读取到的工作目录是正确的
-            CS.Exec.InitHelper.init();
+            OS.InitHelper.init();
             // 在 JVM 关闭时关闭 JEP_INTERP，最先添加来避免一些问题
             Main.addGlobalAutoCloseable(Python::close);
             

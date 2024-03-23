@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
-import static jse.code.CS.Exec.EXE;
+import static jse.code.OS.EXE;
 
 /**
  * 基于 {@link NativeLmp} 的 lammps 运行器实现

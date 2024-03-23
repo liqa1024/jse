@@ -1,7 +1,8 @@
 package jse.compat.UT;
 
-import jse.code.UT;
+import jse.code.OS;
 import org.jetbrains.annotations.VisibleForTesting;
 
-@VisibleForTesting
-public final class Exec extends UT.Exec {}
+/** @deprecated use {@link OS} */
+@VisibleForTesting @Deprecated
+public final class Exec extends OS {}

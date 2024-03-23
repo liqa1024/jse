@@ -2,7 +2,7 @@ package jse.clib;
 
 import jse.code.UT;
 
-import static jse.code.CS.Exec.JAR_DIR;
+import static jse.code.OS.JAR_DIR;
 import static jse.code.CS.VERSION;
 
 /**

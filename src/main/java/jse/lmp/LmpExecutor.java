@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 
-import static jse.code.CS.Exec.EXE;
+import static jse.code.OS.EXE;
 import static jse.code.Conf.WORKING_DIR_OF;
 
 /**

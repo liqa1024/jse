@@ -2,7 +2,6 @@ package jse.code;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import jse.Main;
 import jse.atom.AbstractXYZ;
 import jse.atom.IXYZ;
 import jse.code.collection.AbstractCollections;
@@ -19,10 +18,7 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.awt.*;
 import java.io.*;
-import java.net.URI;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.Future;
@@ -494,82 +490,21 @@ public class CS {
     public final static Future<List<String>> EPT_STR_FUTURE = new CompletedFuture<>(AbstractCollections.zl());
     public final static PrintStream NUL_PRINT_STREAM = new PrintStream(new OutputStream() {public void write(int b) {/**/}});
     
-    /** 内部运行相关，使用子类分割避免冗余初始化 */
-    public static class Exec {
-        /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
-        public final static class InitHelper {
-            private static volatile boolean INITIALIZED = false;
-            
-            public static boolean initialized() {return INITIALIZED;}
-            @SuppressWarnings("ResultOfMethodCallIgnored")
-            public static void init() {
-                // 手动调用此值来强制初始化
-                if (!INITIALIZED) String.valueOf(WORKING_DIR);
-            }
-        }
+    
+    /** @deprecated use {@link OS} */
+    @Deprecated public final static class Exec extends OS {
+        public final static boolean IS_WINDOWS = OS.IS_WINDOWS;
+        public final static boolean IS_MAC = OS.IS_MAC;
+        public final static String NO_LOG_LINUX = OS.NO_LOG_LINUX;
+        public final static String NO_LOG_WIN = OS.NO_LOG_WIN;
+        public final static String NO_LOG = OS.NO_LOG;
         
-        public final static boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("windows");
-        public final static boolean IS_MAC = System.getProperty("os.name").toLowerCase().contains("mac");
-        public final static String NO_LOG_LINUX = "/dev/null";
-        public final static String NO_LOG_WIN = "NUL";
-        public final static String NO_LOG = IS_WINDOWS ? NO_LOG_WIN : NO_LOG_LINUX;
-        
-        public final static ISystemExecutor EXE;
-        public final static String JAR_PATH;
-        public final static String JAR_DIR;
-        public final static String USER_HOME;
-        public final static String USER_HOME_DIR;
-        public final static String WORKING_DIR;
-        final static Path WORKING_DIR_PATH;
-        
-        static {
-            InitHelper.INITIALIZED = true;
-            // 先获取 user.home
-            USER_HOME = System.getProperty("user.home"); // user.home 这里统一认为 user.home 就是绝对路径
-            USER_HOME_DIR = UT.IO.toInternalValidDir(USER_HOME);
-            // 然后通过执行指令来初始化 WORKING_DIR；
-            // 这种写法可以保证有最大的兼容性，即使后续 EXE 可能非法（不是所有平台都有 bash）
-            String wd = USER_HOME;
-            Process tProcess = null;
-            try {tProcess = Runtime.getRuntime().exec(IS_WINDOWS ? "cmd /c cd" : "pwd");}
-            catch (IOException ignored) {}
-            if (tProcess != null) {
-                try (BufferedReader tReader = new BufferedReader(new InputStreamReader(tProcess.getInputStream()))) {
-                    tProcess.waitFor();
-                    wd = tReader.readLine().trim();
-                } catch (Exception ignored) {
-                } finally {
-                    tProcess.destroy();
-                }
-            }
-            // 全局修改工作目录为正确的目录
-            System.setProperty("user.dir", wd);
-            // jse 内部使用的 dir 需要末尾增加 `/`
-            WORKING_DIR = UT.IO.toInternalValidDir(wd);
-            WORKING_DIR_PATH = Paths.get(WORKING_DIR);
-            
-            // 获取此 jar 的路径
-            // 默认这样获取而不是通过 System.getProperty("java.class.path")，为了避免此属性有多个 jar
-            Path tJarPath;
-            try {
-                URI tJarURI = CS.class.getProtectionDomain().getCodeSource().getLocation().toURI();
-                tJarPath = WORKING_DIR_PATH.resolve(Paths.get(tJarURI));
-            } catch (Exception e) {
-                // 在 linux 中这个路径可能是相对路径，为了避免库安装错误这里统一获取一下绝对路径
-                // 现在应该可以随意使用 UT.IO 而不会循环初始化
-                tJarPath = UT.IO.toAbsolutePath_(System.getProperty("java.class.path"));
-            }
-            JAR_PATH = tJarPath.toString();
-            Path tJarDirPath = tJarPath.getParent();
-            String tJarDir = tJarDirPath==null ? "" : tJarDirPath.toString();
-            tJarDir = UT.IO.toInternalValidDir(tJarDir);
-            JAR_DIR = tJarDir;
-            // 创建默认 EXE，无内部线程池，windows 下使用 powershell 而 linux 下使用 bash 统一指令；
-            // 这种选择可以保证指令使用统一，即使这些终端不一定所有平台都有
-            EXE = IS_WINDOWS ? new PowerShellSystemExecutor() : new BashSystemExecutor();
-            // 在程序结束时关闭 EXE
-            Main.addGlobalAutoCloseable(EXE);
-        }
+        public final static ISystemExecutor EXE = OS.EXE;
+        public final static String JAR_PATH = OS.JAR_PATH;
+        public final static String JAR_DIR = OS.JAR_DIR;
+        public final static String USER_HOME = OS.USER_HOME;
+        public final static String USER_HOME_DIR = OS.USER_HOME_DIR;
+        public final static String WORKING_DIR = OS.WORKING_DIR;
     }
     
     /** SLURM 相关，使用子类分割避免冗余初始化 */
@@ -719,20 +654,20 @@ public class CS {
         
         static {
             // 获取 ID，如果失败则不是 slurm
-            PROCID = UT.Exec.envI("SLURM_PROCID", -1);
+            PROCID = OS.envI("SLURM_PROCID", -1);
             IS_SLURM = PROCID >= 0;
             // 是 slurm 则从环境变量中读取后续参数，否则使用默认非法值
             if (IS_SLURM) {
                 // 获取作业 id
-                JOB_ID = UT.Exec.envI("SLURM_JOB_ID", -1);
+                JOB_ID = OS.envI("SLURM_JOB_ID", -1);
                 // 获取任务总数
-                NTASKS = UT.Exec.envI("SLURM_NTASKS", -1);
+                NTASKS = OS.envI("SLURM_NTASKS", -1);
                 // 获取对应的 node id 和节点名
-                NODEID = UT.Exec.envI("SLURM_NODEID", -1);
-                NODENAME = UT.Exec.env("SLURMD_NODENAME");
+                NODEID = OS.envI("SLURM_NODEID", -1);
+                NODENAME = OS.env("SLURMD_NODENAME");
                 
                 // 获取每节点的核心数
-                String tRawCoresPerNode = UT.Exec.env("SLURM_JOB_CPUS_PER_NODE");
+                String tRawCoresPerNode = OS.env("SLURM_JOB_CPUS_PER_NODE");
                 if (tRawCoresPerNode == null) {
                     CORES_PER_NODE = -1;
                 } else {
@@ -748,14 +683,14 @@ public class CS {
                 }
                 
                 // 获取每任务的核心数，可能为 null
-                String tRawCoresPerTask = UT.Exec.env("SLURM_CPUS_PER_TASK");
+                String tRawCoresPerTask = OS.env("SLURM_CPUS_PER_TASK");
                 CORES_PER_TASK = tRawCoresPerTask==null ? 1 : Integer.parseInt(tRawCoresPerTask);
                 
                 // 单个任务的作业步限制，不能获取，默认为此值
                 MAX_STEP_COUNT = 40000;
                 
                 // 获取节点列表
-                String tRawNodeList = UT.Exec.env("SLURM_NODELIST");
+                String tRawNodeList = OS.env("SLURM_NODELIST");
                 NODE_LIST = tRawNodeList==null ? null : ImmutableList.copyOf(UT.Text.splitNodeList(tRawNodeList));
                 
                 RESOURCES_MANAGER = new ResourcesManager();

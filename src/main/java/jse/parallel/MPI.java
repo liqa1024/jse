@@ -3,6 +3,7 @@ package jse.parallel;
 import jse.cache.ByteArrayCache;
 import jse.clib.JNIUtil;
 import jse.clib.MiMalloc;
+import jse.code.OS;
 import jse.code.UT;
 import jse.math.vector.IIntVector;
 import jse.math.vector.IVector;
@@ -17,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static jse.clib.JNIUtil.*;
-import static jse.code.CS.Exec.*;
+import static jse.code.OS.*;
 import static jse.code.CS.VERSION;
 import static jse.code.CS.ZL_STR;
 import static jse.code.Conf.*;
@@ -82,19 +83,19 @@ public class MPI {
          * 自定义构建 mpijni 时使用的编译器，
          * cmake 有时不能自动检测到希望使用的编译器
          */
-        public static @Nullable String CMAKE_C_COMPILER   = UT.Exec.env("JSE_CMAKE_C_COMPILER_MPI"  , jse.code.Conf.CMAKE_C_COMPILER  );
-        public static @Nullable String CMAKE_CXX_COMPILER = UT.Exec.env("JSE_CMAKE_CXX_COMPILER_MPI", jse.code.Conf.CMAKE_CXX_COMPILER);
-        public static @Nullable String CMAKE_C_FLAGS      = UT.Exec.env("JSE_CMAKE_C_FLAGS_MPI"     , jse.code.Conf.CMAKE_C_FLAGS     );
-        public static @Nullable String CMAKE_CXX_FLAGS    = UT.Exec.env("JSE_CMAKE_CXX_FLAGS_MPI"   , jse.code.Conf.CMAKE_CXX_FLAGS   );
+        public static @Nullable String CMAKE_C_COMPILER   = OS.env("JSE_CMAKE_C_COMPILER_MPI"  , jse.code.Conf.CMAKE_C_COMPILER);
+        public static @Nullable String CMAKE_CXX_COMPILER = OS.env("JSE_CMAKE_CXX_COMPILER_MPI", jse.code.Conf.CMAKE_CXX_COMPILER);
+        public static @Nullable String CMAKE_C_FLAGS      = OS.env("JSE_CMAKE_C_FLAGS_MPI"     , jse.code.Conf.CMAKE_C_FLAGS);
+        public static @Nullable String CMAKE_CXX_FLAGS    = OS.env("JSE_CMAKE_CXX_FLAGS_MPI"   , jse.code.Conf.CMAKE_CXX_FLAGS);
         
         /**
          * 对于 mpijni，是否使用 {@link MiMalloc} 来加速 c 的内存分配，
          * 这对于 java 数组和 c 数组的转换很有效
          */
-        public static boolean USE_MIMALLOC = UT.Exec.envZ("JSE_USE_MIMALLOC_MPI", jse.code.Conf.USE_MIMALLOC);
+        public static boolean USE_MIMALLOC = OS.envZ("JSE_USE_MIMALLOC_MPI", jse.code.Conf.USE_MIMALLOC);
         
         /** 重定向 mpijni 动态库的路径，用于自定义编译这个库的过程，或者重新实现 mpijni 的接口 */
-        public static @Nullable String REDIRECT_MPIJNI_LIB = UT.Exec.env("JSE_REDIRECT_MPIJNI_LIB");
+        public static @Nullable String REDIRECT_MPIJNI_LIB = OS.env("JSE_REDIRECT_MPIJNI_LIB");
     }
     
     public static String libraryVersion() throws MPIException {return MPI.Native.MPI_Get_library_version();}

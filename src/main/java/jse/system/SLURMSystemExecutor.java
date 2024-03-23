@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Range;
 
 import java.util.*;
 
-import static jse.code.CS.Exec.NO_LOG_LINUX;
+import static jse.code.OS.NO_LOG_LINUX;
 import static jse.code.CS.*;
 import static jse.code.Conf.WORKING_DIR_OF;
 
