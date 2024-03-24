@@ -159,10 +159,10 @@ public class AbstractAtoms {
     public static IAtomData from(final IAtomData aLattice, final int aReplicateX, final int aReplicateY, final int aReplicateZ) {
         final IBox aBox = aLattice.box();
         final IBox tBox = aLattice.isPrism() ? new BoxPrism(
-            aBox.a().multiply(aReplicateX),
-            aBox.b().multiply(aReplicateY),
-            aBox.c().multiply(aReplicateZ)
-        ) : new Box(aBox.multiply(aReplicateX, aReplicateY, aReplicateZ));
+            aBox.ax()*aReplicateX, aBox.ay()*aReplicateX, aBox.az()*aReplicateX,
+            aBox.bx()*aReplicateY, aBox.by()*aReplicateY, aBox.bz()*aReplicateY,
+            aBox.cx()*aReplicateZ, aBox.cy()*aReplicateZ, aBox.cz()*aReplicateZ
+            ) : new Box(aBox.x()*aReplicateX, aBox.y()*aReplicateY, aBox.z()*aReplicateZ);
         final int tLatticeNum = aLattice.atomNumber();
         return new AtomData(new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(final int index) {
@@ -174,10 +174,11 @@ public class AbstractAtoms {
                 int k = tRepTotal%aReplicateZ            ;
                 final XYZ tSXYZ;
                 if (aBox.isPrism()) {
-                    tSXYZ = new XYZ(0.0, 0.0, 0.0);
-                    tSXYZ.mplus2this(aBox.a(), i);
-                    tSXYZ.mplus2this(aBox.b(), j);
-                    tSXYZ.mplus2this(aBox.c(), k);
+                    tSXYZ = new XYZ(
+                        aBox.ax()*i + aBox.bx()*j + aBox.cx()*k,
+                        aBox.ay()*i + aBox.by()*j + aBox.cy()*k,
+                        aBox.az()*i + aBox.bz()*j + aBox.cz()*k
+                    );
                 } else {
                     tSXYZ = aBox.multiply(i, j, k);
                 }

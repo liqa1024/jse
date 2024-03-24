@@ -58,7 +58,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
     // dump 额外的属性
     public long timeStep() {return mTimeStep;}
     public String[] boxBounds() {return mBoxBounds;}
-    public LmpBox lmpBox() {return mBox;}
+    /** @deprecated use {@link #box} */ @Deprecated public LmpBox lmpBox() {return box();}
     
     public SubLammpstrj setTimeStep(long aTimeStep) {mTimeStep = aTimeStep; return this;}
     /** Groovy stuffs */
@@ -70,8 +70,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         if (mKeyY==null) throw new RuntimeException("No Y data in this Lammpstrj");
         if (mKeyZ==null) throw new RuntimeException("No Z data in this Lammpstrj");
         
-        XYZ oShiftedBox = XYZ.toXYZ(mBox.shiftedBox());
-        double tScale = MathEX.Fast.cbrt(oShiftedBox.prod() / this.atomNumber());
+        double tScale = MathEX.Fast.cbrt(volume() / atomNumber());
         tScale = 1.0 / tScale;
         
         // 从逻辑上考虑，这里不对原本数据做值拷贝
@@ -111,7 +110,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         if (mAtomData.containsHead("vz")) mAtomData.col("vz").multiply2this(tScale);
         
         // box 还是会重新创建，因为 box 的值这里约定是严格的常量，可以避免一些问题
-        mBox = new LmpBox(oShiftedBox.multiply(tScale));
+        mBox = new LmpBox(mBox.multiply(tScale));
         
         return this;
     }
@@ -277,7 +276,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             }
         };
     }
-    @Override public IXYZ box() {return mBox.shiftedBox();}
+    @Override public LmpBox box() {return mBox;}
     @Override public int atomNumber() {return mAtomData.rowNumber();}
     @Override public int atomTypeNumber() {return mAtomTypeNum;}
     @Override public SubLammpstrj setAtomTypeNumber(int aAtomTypeNum) {mAtomTypeNum = aAtomTypeNum; return this;}

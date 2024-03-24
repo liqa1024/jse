@@ -12,21 +12,31 @@ public interface IBox extends IXYZ {
     default boolean isLmpStyle() {return true;}
     
     /** 一般的接口，获取三个基，要求这三个基满足右手系，也就是 {@code (a x b) · c > 0} */
-    default IXYZ a() {return new XYZ( x(),  0.0, 0.0);}
-    default IXYZ b() {return new XYZ(xy(),  y(), 0.0);}
-    default IXYZ c() {return new XYZ(xz(), yz(), z());}
+    default IXYZ a() {return new XYZ(ax(), ay(), az());}
+    default IXYZ b() {return new XYZ(bx(), by(), bz());}
+    default IXYZ c() {return new XYZ(cx(), cy(), cz());}
     /** 还需要提供一个复制的方法方便拷贝 */
     IBox copy();
+    /** 提供直接获取基的某个元素的方法，现在这个为所有方法基础 */
+    double ax();
+    default double ay() {return 0.0;}
+    default double az() {return 0.0;}
+    default double bx() {return 0.0;}
+    double by();
+    default double bz() {return 0.0;}
+    default double cx() {return 0.0;}
+    default double cy() {return 0.0;}
+    double cz();
     
     /** IXYZ stuffs */
-    double x();
-    double y();
-    double z();
+    default double x() {return ax();}
+    default double y() {return by();}
+    default double z() {return cz();}
     
     /** lammps prism box stuffs */
-    default double xy() {return 0.0;}
-    default double xz() {return 0.0;}
-    default double yz() {return 0.0;}
+    default double xy() {return bx();}
+    default double xz() {return cx();}
+    default double yz() {return cy();}
     
     default double volume() {
         if (isLmpStyle()) return prod();
@@ -45,13 +55,10 @@ public interface IBox extends IXYZ {
                 z()*rDirect.mZ
             );
         } else {
-            IXYZ tA = a();
-            IXYZ tB = b();
-            IXYZ tC = c();
             rDirect.setXYZ(
-                tA.x()*rDirect.mX + tB.x()*rDirect.mY + tC.x()*rDirect.mZ,
-                tA.y()*rDirect.mX + tB.y()*rDirect.mY + tC.y()*rDirect.mZ,
-                tA.z()*rDirect.mX + tB.z()*rDirect.mY + tC.z()*rDirect.mZ
+                ax()*rDirect.mX + bx()*rDirect.mY + cx()*rDirect.mZ,
+                ay()*rDirect.mX + by()*rDirect.mY + cy()*rDirect.mZ,
+                az()*rDirect.mX + bz()*rDirect.mY + cz()*rDirect.mZ
             );
         }
     }
@@ -68,7 +75,7 @@ public interface IBox extends IXYZ {
                 rCartesian.mZ/tZ
             );
         } else {
-            // 默认实现不缓存中间结果
+            // 默认实现简单处理，不缓存中间结果
             XYZ tA = XYZ.toXYZ(a());
             XYZ tB = XYZ.toXYZ(b());
             XYZ tC = XYZ.toXYZ(c());

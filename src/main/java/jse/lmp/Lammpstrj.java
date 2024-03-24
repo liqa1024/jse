@@ -69,7 +69,8 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
         };
     }
     public List<String[]> allBoxBounds() {return AbstractCollections.map(mList, SubLammpstrj::boxBounds);}
-    public List<LmpBox> allLmpBox() {return AbstractCollections.map(mList, SubLammpstrj::lmpBox);}
+    public List<LmpBox> allBox() {return AbstractCollections.map(mList, SubLammpstrj::box);}
+    /** @deprecated use {@link #allBox} */ @Deprecated public List<LmpBox> allLmpBox() {return allBox();}
     public Lammpstrj setAllTimeStep(ILongVectorGetter aTimeStepGetter) {
         int i = 0;
         for (SubLammpstrj tSubLammpstrj : mList) {

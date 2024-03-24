@@ -3,7 +3,7 @@ package jse.lmp;
 import jse.atom.IXYZ;
 import org.jetbrains.annotations.NotNull;
 
-public class LmpBoxPrism extends LmpBox {
+public final class LmpBoxPrism extends LmpBox {
     private final double mXY, mXZ, mYZ;
     
     public LmpBoxPrism(double aSize, double aXY, double aXZ, double aYZ) {super(aSize); mXY = aXY; mXZ = aXZ; mYZ = aYZ;}
@@ -18,10 +18,9 @@ public class LmpBoxPrism extends LmpBox {
     @Override public boolean isPrism() {return true;}
     @SuppressWarnings("RedundantMethodOverride")
     @Override public boolean isLmpStyle() {return true;}
-    @Override public final double xy() {return mXY;}
-    @Override public final double xz() {return mXZ;}
-    @Override public final double yz() {return mYZ;}
-    @Override public double volume() {return super.volume();}
+    @Override public double bx() {return mXY;}
+    @Override public double cx() {return mXZ;}
+    @Override public double cy() {return mYZ;}
     
     @Override public LmpBoxPrism copy() {return new LmpBoxPrism(this);}
     

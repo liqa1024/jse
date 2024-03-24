@@ -5,17 +5,24 @@ import org.jetbrains.annotations.NotNull;
 public final class BoxPrism implements IBox {
     private final @NotNull XYZ mA, mB, mC;
     public BoxPrism(@NotNull IXYZ aA, @NotNull IXYZ aB, @NotNull IXYZ aC) {mA = new XYZ(aA); mB = new XYZ(aB); mC = new XYZ(aC);}
+    public BoxPrism(double aAx, double aAy, double aAz, double aBx, double aBy, double aBz, double aCx, double aCy, double aCz) {
+        mA = new XYZ(aAx, aAy, aAz);
+        mB = new XYZ(aBx, aBy, aBz);
+        mC = new XYZ(aCx, aCy, aCz);
+    }
     
     @Override public boolean isLmpStyle() {return false;}
     @Override public boolean isPrism() {return true;}
     
-    @Override public double x() {return mA.mX;}
-    @Override public double y() {return mB.mY;}
-    @Override public double z() {return mC.mZ;}
-    
-    @Override public IXYZ a() {return mA;}
-    @Override public IXYZ b() {return mB;}
-    @Override public IXYZ c() {return mC;}
+    @Override public double ax() {return mA.mX;}
+    @Override public double ay() {return mA.mY;}
+    @Override public double az() {return mA.mZ;}
+    @Override public double bx() {return mB.mX;}
+    @Override public double by() {return mB.mY;}
+    @Override public double bz() {return mB.mZ;}
+    @Override public double cx() {return mC.mX;}
+    @Override public double cy() {return mC.mY;}
+    @Override public double cz() {return mC.mZ;}
     
     @Override public BoxPrism copy() {return new BoxPrism(mA, mB, mC);}
     
@@ -28,7 +35,7 @@ public final class BoxPrism implements IBox {
     /** optimize stuffs */
     @Override public double volume() {return mA.mixed(mB, mC);}
     
-    /** 为了加速运算，内部会缓存中间变量，因此原则上 mA，mB，mC 都是不能修改的，虽然为了性能这里没有那么严格 */
+    /** 为了加速运算，内部会缓存中间变量，因此这个实现的 mA，mB，mC 都是不能修改的 */
     @Override public void toCartesian(XYZ rDirect) {
         rDirect.setXYZ(
             mA.mX*rDirect.mX + mB.mX*rDirect.mY + mC.mX*rDirect.mZ,

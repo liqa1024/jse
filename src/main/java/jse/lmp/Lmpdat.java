@@ -201,7 +201,7 @@ public class Lmpdat extends AbstractSettableAtomData {
     
     
     /// 获取属性
-    /** @deprecated use {@link #box} */ @Deprecated public LmpBox lmpBox() {return mBox;}
+    /** @deprecated use {@link #box} */ @Deprecated public LmpBox lmpBox() {return box();}
     public IIntVector ids() {return mAtomID;}
     public IIntVector types() {return mAtomType;}
     public IMatrix positions() {return mAtomXYZ;}

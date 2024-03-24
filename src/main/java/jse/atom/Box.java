@@ -9,9 +9,9 @@ public final class Box implements IBox {
     
     @Override public Box copy() {return new Box(mBox);}
     
-    @Override public double x() {return mBox.mX;}
-    @Override public double y() {return mBox.mY;}
-    @Override public double z() {return mBox.mZ;}
+    @Override public double ax() {return mBox.mX;}
+    @Override public double by() {return mBox.mY;}
+    @Override public double cz() {return mBox.mZ;}
     
     @Override public String toString() {
         return String.format("(%.4g, %.4g, %.4g)", mBox.mX, mBox.mY, mBox.mZ);

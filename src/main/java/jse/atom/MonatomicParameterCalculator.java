@@ -611,7 +611,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         final int mSizeX, mSizeY, mSizeZ;
         private final double mXLo, mXHi, mYLo, mYHi, mZLo, mZHi;
         MPIInfo(MPI.Comm aComm) throws MPIException {
-            // TODO: 这里简单处理，MPI 只支持非斜方的模拟盒
+            // 这里简单处理，MPI 只支持非斜方的模拟盒
             if (mBox.isPrism()) throw new IllegalArgumentException("MonatomicParameterCalculator only provides MPI support for orthogonal box");
             mComm = aComm;
             mRank = mComm.rank();

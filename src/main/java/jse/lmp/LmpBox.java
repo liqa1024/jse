@@ -26,9 +26,9 @@ public class LmpBox implements IBox {
     /** IBox stuffs */
     @Override public LmpBox copy() {return new LmpBox(this);}
     
-    @Override public double x() {return mBoxLo==null ? mBoxHi.mX : (mBoxHi.mX-mBoxLo.mX);}
-    @Override public double y() {return mBoxLo==null ? mBoxHi.mY : (mBoxHi.mY-mBoxLo.mY);}
-    @Override public double z() {return mBoxLo==null ? mBoxHi.mZ : (mBoxHi.mZ-mBoxLo.mZ);}
+    @Override public final double ax() {return mBoxLo==null ? mBoxHi.mX : (mBoxHi.mX-mBoxLo.mX);}
+    @Override public final double by() {return mBoxLo==null ? mBoxHi.mY : (mBoxHi.mY-mBoxLo.mY);}
+    @Override public final double cz() {return mBoxLo==null ? mBoxHi.mZ : (mBoxHi.mZ-mBoxLo.mZ);}
     
     @Override public String toString() {
         return String.format("{boxlo: (%.4g, %.4g, %.4g), boxhi: (%.4g, %.4g, %.4g)}", xlo(), ylo(), zlo(), xhi(), yhi(), zhi());
