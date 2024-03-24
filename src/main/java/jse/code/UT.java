@@ -702,7 +702,6 @@ public class UT {
             tX = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
             tY = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
             tZ = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
-            XYZ tBox = new XYZ(tX, tY, tZ);
             // 获取原子数据，这里只有 XYZ 数据
             int tAtomNum = (aBytes.length - Double.BYTES*3) / (Double.BYTES*3);
             List<Atom> rAtoms = new ArrayList<>(tAtomNum);
@@ -713,7 +712,7 @@ public class UT {
                 rAtoms.add(new Atom(tX, tY, tZ, tID, 1));
             }
             // 返回结果
-            return new AtomData(rAtoms, new NormalBox(tBox));
+            return new AtomData(rAtoms, new Box(tX, tY, tZ));
         }
         
         /** {@link IAtomData} 的序列化和反序列化 */
@@ -744,7 +743,6 @@ public class UT {
             tX = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
             tY = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
             tZ = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
-            XYZ tBox = new XYZ(tX, tY, tZ);
             // 获取原子种类数目信息
             int tAtomTypeNum = bytes2int(aBytes, tIdx); tIdx+=Integer.BYTES;
             // 获取原子数据，这里只有 XYZ 数据
@@ -758,7 +756,7 @@ public class UT {
                 rAtoms.add(new Atom(tX, tY, tZ, tID, tType));
             }
             // 返回结果
-            return new AtomData(rAtoms, tAtomTypeNum, new NormalBox(tBox));
+            return new AtomData(rAtoms, tAtomTypeNum, new Box(tX, tY, tZ));
         }
     }
     

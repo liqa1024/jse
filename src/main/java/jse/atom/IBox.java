@@ -32,26 +32,35 @@ public interface IBox extends IXYZ {
     /** 是否是 lammps 的风格，也就是 {@code ay = az = bz = 0}，当然很多时候这只是一个标记 */
     default boolean isLmpStyle() {return true;}
     
-    /** 提供一个通用的坐标相互转换接口 */
-    default XYZ toCartesian(IXYZ aDirect) {
-        if (!isPrism()) return aDirect.multiply(this);
-        XYZ rCartesian = new XYZ(0.0, 0.0, 0.0);
-        rCartesian.mplus2this(a(), aDirect.x());
-        rCartesian.mplus2this(b(), aDirect.y());
-        rCartesian.mplus2this(c(), aDirect.z());
-        return rCartesian;
+    /** 提供一个简单通用的坐标相互转换接口，这里不直接创建新的 XYZ 而是修改输入的 XYZ，可以保证性能，减少重复代码 */
+    default void toCartesian(XYZ rDirect) {
+        if (isPrism()) {
+            IXYZ tA = a();
+            IXYZ tB = b();
+            IXYZ tC = c();
+            rDirect.setXYZ(
+                tA.x()*rDirect.mX + tB.x()*rDirect.mY + tC.x()*rDirect.mZ,
+                tA.y()*rDirect.mX + tB.y()*rDirect.mY + tC.y()*rDirect.mZ,
+                tA.z()*rDirect.mX + tB.z()*rDirect.mY + tC.z()*rDirect.mZ
+            );
+        } else {
+            rDirect.multiply2this(this);
+        }
     }
-    default XYZ toDirect(IXYZ aCartesian) {
-        if (!isPrism()) return aCartesian.div(this);
-        XYZ tCartesian = XYZ.toXYZ(aCartesian);
-        XYZ tA = XYZ.toXYZ(a());
-        XYZ tB = XYZ.toXYZ(b());
-        XYZ tC = XYZ.toXYZ(c());
-        double tV = tA.mixed(tB, tC);
-        return new XYZ(
-            tB.mixed(tC, tCartesian) / tV,
-            tC.mixed(tA, tCartesian) / tV,
-            tA.mixed(tB, tCartesian) / tV
-        );
+    default void toDirect(XYZ rCartesian) {
+        if (isPrism()) {
+            // 默认实现不缓存中间结果
+            XYZ tA = XYZ.toXYZ(a());
+            XYZ tB = XYZ.toXYZ(b());
+            XYZ tC = XYZ.toXYZ(c());
+            double tV = tA.mixed(tB, tC);
+            rCartesian.setXYZ(
+                tB.mixed(tC, rCartesian) / tV,
+                tC.mixed(tA, rCartesian) / tV,
+                tA.mixed(tB, rCartesian) / tV
+            );
+        } else {
+            rCartesian.div2this(this);
+        }
     }
 }

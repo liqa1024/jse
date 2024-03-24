@@ -87,7 +87,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         super(new ParforThreadPool(aThreadNum));
         
         // 获取模拟盒数据
-        mBox = aBox.copy();
+        mBox = aBox.copy(); // 最大限度防止外部修改
         
         // 获取合适的 XYZ 数据
         mAtomDataXYZ = getValidAtomDataXYZ_(aAtomDataXYZ);
@@ -145,23 +145,40 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         IMatrix tXYZMat = MatrixCache.getMatRow(tSize, 3);
         
         // 遍历设置，顺便由于 lammps 精度的问题，需要将超出边界的进行平移
-        XYZ tBox = XYZ.toXYZ(mBox);
-        IDoubleSetIterator si = tXYZMat.setIteratorRow();
-        for (IXYZ tXYZ : aAtomDataXYZ) {
-            double tX = tXYZ.x();
-            if      (tX <  0.0    ) tX += tBox.mX;
-            else if (tX >= tBox.mX) tX -= tBox.mX;
-            si.nextAndSet(tX);
-            
-            double tY = tXYZ.y();
-            if      (tY <  0.0    ) tY += tBox.mY;
-            else if (tY >= tBox.mY) tY -= tBox.mY;
-            si.nextAndSet(tY);
-            
-            double tZ = tXYZ.z();
-            if      (tZ <  0.0    ) tZ += tBox.mZ;
-            else if (tZ >= tBox.mZ) tZ -= tBox.mZ;
-            si.nextAndSet(tZ);
+        if (mBox.isPrism()) {
+            // 斜方情况需要转为 Direct 再 wrap，
+            // 完事后再转回 Cartesian
+            XYZ tBuf = new XYZ(0.0, 0.0, 0.0);
+            IDoubleSetIterator si = tXYZMat.setIteratorRow();
+            for (IXYZ tXYZ : aAtomDataXYZ) {
+                tBuf.setXYZ(tXYZ);
+                mBox.toDirect(tBuf);
+                if      (tBuf.mX <  0.0) {++tBuf.mX; while (tBuf.mX <  0.0) ++tBuf.mX;}
+                else if (tBuf.mX >= 1.0) {--tBuf.mX; while (tBuf.mX >= 1.0) --tBuf.mX;}
+                if      (tBuf.mY <  0.0) {++tBuf.mY; while (tBuf.mY <  0.0) ++tBuf.mY;}
+                else if (tBuf.mY >= 1.0) {--tBuf.mY; while (tBuf.mY >= 1.0) --tBuf.mY;}
+                if      (tBuf.mZ <  0.0) {++tBuf.mZ; while (tBuf.mZ <  0.0) ++tBuf.mZ;}
+                else if (tBuf.mZ >= 1.0) {--tBuf.mZ; while (tBuf.mZ >= 1.0) --tBuf.mZ;}
+                mBox.toCartesian(tBuf);
+                si.nextAndSet(tBuf.mX);
+                si.nextAndSet(tBuf.mY);
+                si.nextAndSet(tBuf.mZ);
+            }
+        } else {
+            XYZ tBox = XYZ.toXYZ(mBox);
+            IDoubleSetIterator si = tXYZMat.setIteratorRow();
+            for (IXYZ tXYZ : aAtomDataXYZ) {
+                double tX = tXYZ.x(), tY = tXYZ.y(), tZ = tXYZ.z();
+                if      (tX <  0.0    ) {tX += tBox.mX; while (tX <  0.0    ) tX += tBox.mX;}
+                else if (tX >= tBox.mX) {tX -= tBox.mX; while (tX >= tBox.mX) tX -= tBox.mX;}
+                if      (tY <  0.0    ) {tY += tBox.mY; while (tY <  0.0    ) tY += tBox.mY;}
+                else if (tY >= tBox.mY) {tY -= tBox.mY; while (tY >= tBox.mY) tY -= tBox.mY;}
+                if      (tZ <  0.0    ) {tZ += tBox.mZ; while (tZ <  0.0    ) tZ += tBox.mZ;}
+                else if (tZ >= tBox.mZ) {tZ -= tBox.mZ; while (tZ >= tBox.mZ) tZ -= tBox.mZ;}
+                si.nextAndSet(tX);
+                si.nextAndSet(tY);
+                si.nextAndSet(tZ);
+            }
         }
         
         return tXYZMat;
@@ -553,19 +570,33 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IIntVector getNeighborList(IXYZ aXYZ, double aRMax, int aNnn) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
-        // 为了方便统一拷贝一次输入 XYZ
-        XYZ tXYZ = new XYZ(aXYZ);
         // 由于 lammps 精度的问题，需要将超出边界的进行平移
-        XYZ tBox = XYZ.toXYZ(mBox);
-        if      (tXYZ.mX <  0.0    ) tXYZ.mX += tBox.mX;
-        else if (tXYZ.mX >= tBox.mX) tXYZ.mX -= tBox.mX;
-        if      (tXYZ.mY <  0.0    ) tXYZ.mY += tBox.mY;
-        else if (tXYZ.mY >= tBox.mY) tXYZ.mY -= tBox.mY;
-        if      (tXYZ.mZ <  0.0    ) tXYZ.mZ += tBox.mZ;
-        else if (tXYZ.mZ >= tBox.mZ) tXYZ.mZ -= tBox.mZ;
+        if (mBox.isPrism()) {
+            // 斜方情况需要转为 Direct 再 wrap，
+            // 完事后再转回 Cartesian
+            XYZ tBuf = new XYZ(aXYZ);
+            mBox.toDirect(tBuf);
+            if      (tBuf.mX <  0.0) {++tBuf.mX; while (tBuf.mX <  0.0) ++tBuf.mX;}
+            else if (tBuf.mX >= 1.0) {--tBuf.mX; while (tBuf.mX >= 1.0) --tBuf.mX;}
+            if      (tBuf.mY <  0.0) {++tBuf.mY; while (tBuf.mY <  0.0) ++tBuf.mY;}
+            else if (tBuf.mY >= 1.0) {--tBuf.mY; while (tBuf.mY >= 1.0) --tBuf.mY;}
+            if      (tBuf.mZ <  0.0) {++tBuf.mZ; while (tBuf.mZ <  0.0) ++tBuf.mZ;}
+            else if (tBuf.mZ >= 1.0) {--tBuf.mZ; while (tBuf.mZ >= 1.0) --tBuf.mZ;}
+            mBox.toCartesian(tBuf);
+            aXYZ = tBuf;
+        } else {
+            XYZ tBox = XYZ.toXYZ(mBox);
+            double tX = aXYZ.x(), tY = aXYZ.y(), tZ = aXYZ.z();
+            if      (tX <  0.0    ) {tX += tBox.mX; while (tX <  0.0    ) tX += tBox.mX;}
+            else if (tX >= tBox.mX) {tX -= tBox.mX; while (tX >= tBox.mX) tX -= tBox.mX;}
+            if      (tY <  0.0    ) {tY += tBox.mY; while (tY <  0.0    ) tY += tBox.mY;}
+            else if (tY >= tBox.mY) {tY -= tBox.mY; while (tY >= tBox.mY) tY -= tBox.mY;}
+            if      (tZ <  0.0    ) {tZ += tBox.mZ; while (tZ <  0.0    ) tZ += tBox.mZ;}
+            else if (tZ >= tBox.mZ) {tZ -= tBox.mZ; while (tZ >= tBox.mZ) tZ -= tBox.mZ;}
+        }
         
         final IntVector.Builder rNL = IntVector.builder();
-        mNL.forEachNeighbor(tXYZ, aRMax, aNnn, (x, y, z, idx, dis2) -> rNL.add(idx));
+        mNL.forEachNeighbor(aXYZ, aRMax, aNnn, (x, y, z, idx, dis2) -> rNL.add(idx));
         return rNL.build();
     }
     public IIntVector getNeighborList(IXYZ aXYZ, double aRMax) {return getNeighborList(aXYZ, aRMax, -1);}
@@ -580,6 +611,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         final int mSizeX, mSizeY, mSizeZ;
         private final double mXLo, mXHi, mYLo, mYHi, mZLo, mZHi;
         MPIInfo(MPI.Comm aComm) throws MPIException {
+            // TODO: 这里简单处理，MPI 只支持非斜方的模拟盒
+            if (mBox.isPrism()) throw new IllegalArgumentException("MonatomicParameterCalculator only provides MPI support for orthogonal box");
             mComm = aComm;
             mRank = mComm.rank();
             mSize = mComm.size();

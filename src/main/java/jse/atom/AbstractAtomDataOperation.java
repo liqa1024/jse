@@ -109,25 +109,25 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
         if (tThis.isPrism()) {
             // 斜方情况需要转为 Direct 再 wrap，
             // 完事后再转回 Cartesian
-            final IBox tBox = tThis.box();
+            IBox tBox = tThis.box();
+            XYZ tBuf = new XYZ(0.0, 0.0, 0.0);
             for (int i = 0; i < tAtomNum; ++i) {
-                XYZ tDirect = tBox.toDirect(tThis.atom(i));
-                if      (tDirect.mX <  0.0) {++tDirect.mX; while (tDirect.mX <  0.0) ++tDirect.mX;}
-                else if (tDirect.mX >= 1.0) {--tDirect.mX; while (tDirect.mX >= 1.0) --tDirect.mX;}
-                if      (tDirect.mY <  0.0) {++tDirect.mY; while (tDirect.mY <  0.0) ++tDirect.mY;}
-                else if (tDirect.mY >= 1.0) {--tDirect.mY; while (tDirect.mY >= 1.0) --tDirect.mY;}
-                if      (tDirect.mZ <  0.0) {++tDirect.mZ; while (tDirect.mZ <  0.0) ++tDirect.mZ;}
-                else if (tDirect.mZ >= 1.0) {--tDirect.mZ; while (tDirect.mZ >= 1.0) --tDirect.mZ;}
-                XYZ tCartesian = tBox.toCartesian(tDirect);
-                rAtomData.atom(i).setXYZ(tCartesian);
+                tBuf.setXYZ(tThis.atom(i));
+                tBox.toDirect(tBuf);
+                if      (tBuf.mX <  0.0) {++tBuf.mX; while (tBuf.mX <  0.0) ++tBuf.mX;}
+                else if (tBuf.mX >= 1.0) {--tBuf.mX; while (tBuf.mX >= 1.0) --tBuf.mX;}
+                if      (tBuf.mY <  0.0) {++tBuf.mY; while (tBuf.mY <  0.0) ++tBuf.mY;}
+                else if (tBuf.mY >= 1.0) {--tBuf.mY; while (tBuf.mY >= 1.0) --tBuf.mY;}
+                if      (tBuf.mZ <  0.0) {++tBuf.mZ; while (tBuf.mZ <  0.0) ++tBuf.mZ;}
+                else if (tBuf.mZ >= 1.0) {--tBuf.mZ; while (tBuf.mZ >= 1.0) --tBuf.mZ;}
+                tBox.toCartesian(tBuf);
+                rAtomData.atom(i).setXYZ(tBuf);
             }
         } else {
             final XYZ tBox = XYZ.toXYZ(tThis.box());
             for (int i = 0; i < tAtomNum; ++i) {
                 IAtom oAtom = tThis.atom(i);
-                double tX = oAtom.x();
-                double tY = oAtom.y();
-                double tZ = oAtom.z();
+                double tX = oAtom.x(), tY = oAtom.y(), tZ = oAtom.z();
                 if      (tX <  0.0    ) {tX += tBox.mX; while (tX <  0.0    ) tX += tBox.mX;}
                 else if (tX >= tBox.mX) {tX -= tBox.mX; while (tX >= tBox.mX) tX -= tBox.mX;}
                 if      (tY <  0.0    ) {tY += tBox.mY; while (tY <  0.0    ) tY += tBox.mY;}

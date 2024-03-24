@@ -88,17 +88,19 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
             // 斜方情况需要转为 Direct 再 wrap，
             // 完事后再转回 Cartesian
             final IBox tBox = tThis.box();
+            XYZ tBuf = new XYZ(0.0, 0.0, 0.0);
             for (int i = 0; i < tAtomNum; ++i) {
                 ISettableAtom tAtom = tThis.atom(i);
-                XYZ tDirect = tBox.toDirect(tAtom);
-                if      (tDirect.mX <  0.0) {++tDirect.mX; while (tDirect.mX <  0.0) ++tDirect.mX;}
-                else if (tDirect.mX >= 1.0) {--tDirect.mX; while (tDirect.mX >= 1.0) --tDirect.mX;}
-                if      (tDirect.mY <  0.0) {++tDirect.mY; while (tDirect.mY <  0.0) ++tDirect.mY;}
-                else if (tDirect.mY >= 1.0) {--tDirect.mY; while (tDirect.mY >= 1.0) --tDirect.mY;}
-                if      (tDirect.mZ <  0.0) {++tDirect.mZ; while (tDirect.mZ <  0.0) ++tDirect.mZ;}
-                else if (tDirect.mZ >= 1.0) {--tDirect.mZ; while (tDirect.mZ >= 1.0) --tDirect.mZ;}
-                XYZ tCartesian = tBox.toCartesian(tDirect);
-                tAtom.setXYZ(tCartesian);
+                tBuf.setXYZ(tAtom);
+                tBox.toDirect(tBuf);
+                if      (tBuf.mX <  0.0) {++tBuf.mX; while (tBuf.mX <  0.0) ++tBuf.mX;}
+                else if (tBuf.mX >= 1.0) {--tBuf.mX; while (tBuf.mX >= 1.0) --tBuf.mX;}
+                if      (tBuf.mY <  0.0) {++tBuf.mY; while (tBuf.mY <  0.0) ++tBuf.mY;}
+                else if (tBuf.mY >= 1.0) {--tBuf.mY; while (tBuf.mY >= 1.0) --tBuf.mY;}
+                if      (tBuf.mZ <  0.0) {++tBuf.mZ; while (tBuf.mZ <  0.0) ++tBuf.mZ;}
+                else if (tBuf.mZ >= 1.0) {--tBuf.mZ; while (tBuf.mZ >= 1.0) --tBuf.mZ;}
+                tBox.toCartesian(tBuf);
+                tAtom.setXYZ(tBuf);
             }
         } else {
             final XYZ tBox = XYZ.toXYZ(tThis.box());

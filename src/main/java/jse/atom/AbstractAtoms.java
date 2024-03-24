@@ -58,7 +58,7 @@ public class AbstractAtoms {
             @Override public int size() {
                 return 4*aReplicateX*aReplicateY*aReplicateZ;
             }
-        }, new NormalBox(aCellSize*aReplicateX, aCellSize*aReplicateY, aCellSize*aReplicateZ));
+        }, new Box(aCellSize*aReplicateX, aCellSize*aReplicateY, aCellSize*aReplicateZ));
     }
     public static IAtomData FCC(double aCellSize, int aReplicate) {return FCC(aCellSize, aReplicate, aReplicate, aReplicate);}
     
@@ -86,7 +86,7 @@ public class AbstractAtoms {
             @Override public int size() {
                 return 2*aReplicateX*aReplicateY*aReplicateZ;
             }
-        }, new NormalBox(aCellSize*aReplicateX, aCellSize*aReplicateY, aCellSize*aReplicateZ));
+        }, new Box(aCellSize*aReplicateX, aCellSize*aReplicateY, aCellSize*aReplicateZ));
     }
     public static IAtomData BCC(double aCellSize, int aReplicate) {return BCC(aCellSize, aReplicate, aReplicate, aReplicate);}
     
@@ -139,7 +139,7 @@ public class AbstractAtoms {
             @Override public int size() {
                 return 4*aReplicateX*aReplicateY*aReplicateZ;
             }
-        }, new NormalBox(aCellSize*aReplicateX, tCellSizeY*aReplicateY, aCellHeight*aReplicateZ));
+        }, new Box(aCellSize*aReplicateX, tCellSizeY*aReplicateY, aCellHeight*aReplicateZ));
     }
     public static IAtomData HCP(double aCellSize,                     int aReplicateX, int aReplicateY, int aReplicateZ) {return HCP(aCellSize, aCellSize*SQRT83, aReplicateX, aReplicateY, aReplicateZ);}
     public static IAtomData HCP(double aCellSize, double aCellHeight, int aReplicate                                   ) {return HCP(aCellSize, aCellHeight, aReplicate, aReplicate, aReplicate);}
@@ -158,11 +158,11 @@ public class AbstractAtoms {
      */
     public static IAtomData from(final IAtomData aLattice, final int aReplicateX, final int aReplicateY, final int aReplicateZ) {
         final IBox aBox = aLattice.box();
-        final IBox tBox = aLattice.isPrism() ? new PrismBox(
+        final IBox tBox = aLattice.isPrism() ? new BoxPrism(
             aBox.a().multiply(aReplicateX),
             aBox.b().multiply(aReplicateY),
             aBox.c().multiply(aReplicateZ)
-        ) : new NormalBox(aBox.multiply(aReplicateX, aReplicateY, aReplicateZ));
+        ) : new Box(aBox.multiply(aReplicateX, aReplicateY, aReplicateZ));
         final int tLatticeNum = aLattice.atomNumber();
         return new AtomData(new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(final int index) {
