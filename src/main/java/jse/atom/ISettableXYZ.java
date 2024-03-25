@@ -14,4 +14,52 @@ public interface ISettableXYZ extends IXYZ {
     @VisibleForTesting default double getX() {return x();}
     @VisibleForTesting default double getY() {return y();}
     @VisibleForTesting default double getZ() {return z();}
+    
+    default void cross2this(IXYZ aRHS) {cross2this(aRHS.x(), aRHS.y(), aRHS.z());}
+    default void cross2this(XYZ aRHS) {cross2this(aRHS.mX, aRHS.mY, aRHS.mZ);}
+    default void cross2this(double aX, double aY, double aZ) {
+        double tX = x();
+        double tY = y();
+        double tZ = z();
+        setXYZ(
+            tY*aZ - aY*tZ,
+            tZ*aX - aZ*tX,
+            tX*aY - aX*tY
+        );
+    }
+    
+    default void negative2this() {setXYZ(-x(), -y(), -z());}
+    
+    default void plus2this(IXYZ aRHS) {setXYZ(x()+aRHS.x(), y()+aRHS.y(), z()+aRHS.z());}
+    default void plus2this(XYZ aRHS) {setXYZ(x()+aRHS.mX, y()+aRHS.mY, z()+aRHS.mZ);}
+    default void plus2this(double aX, double aY, double aZ) {setXYZ(x()+aX, y()+aY, z()+aZ);}
+    default void plus2this(double aRHS) {setXYZ(x()+aRHS, y()+aRHS, z()+aRHS);}
+    /** 也增加这个运算方便使用 */
+    default void mplus2this(IXYZ aRHS, double aMul) {setXYZ(x() + aMul*aRHS.x(), y() + aMul*aRHS.y(), z() + aMul*aRHS.z());}
+    default void mplus2this(XYZ aRHS, double aMul) {setXYZ(x() + aMul*aRHS.mX, y() + aMul*aRHS.mY, z() + aMul*aRHS.mZ);}
+    
+    default void minus2this(IXYZ aRHS) {setXYZ(x()-aRHS.x(), y()-aRHS.y(), z()-aRHS.z());}
+    default void minus2this(XYZ aRHS) {setXYZ(x()-aRHS.mX, y()-aRHS.mY, z()-aRHS.mZ);}
+    default void minus2this(double aX, double aY, double aZ) {setXYZ(x()-aX, y()-aY, z()-aZ);}
+    default void minus2this(double aRHS) {setXYZ(x()-aRHS, y()-aRHS, z()-aRHS);}
+    
+    default void lminus2this(IXYZ aRHS) {setXYZ(aRHS.x()-x(), aRHS.y()-y(), aRHS.z()-z());}
+    default void lminus2this(XYZ aRHS) {setXYZ(aRHS.mX-x(), aRHS.mY-y(), aRHS.mZ-z());}
+    default void lminus2this(double aX, double aY, double aZ) {setXYZ(aX-x(), aY-y(), aZ-z());}
+    default void lminus2this(double aRHS) {setXYZ(aRHS-x(), aRHS-y(), aRHS-z());}
+    
+    default void multiply2this(IXYZ aRHS) {setXYZ(x()*aRHS.x(), y()*aRHS.y(), z()*aRHS.z());}
+    default void multiply2this(XYZ aRHS) {setXYZ(x()*aRHS.mX, y()*aRHS.mY, z()*aRHS.mZ);}
+    default void multiply2this(double aX, double aY, double aZ) {setXYZ(x()*aX, y()*aY, z()*aZ);}
+    default void multiply2this(double aRHS) {setXYZ(x()*aRHS, y()*aRHS, z()*aRHS);}
+    
+    default void div2this(IXYZ aRHS) {setXYZ(x()/aRHS.x(), y()/aRHS.y(), z()/aRHS.z());}
+    default void div2this(XYZ aRHS) {setXYZ(x()/aRHS.mX, y()/aRHS.mY, z()/aRHS.mZ);}
+    default void div2this(double aX, double aY, double aZ) {setXYZ(x()/aX, y()/aY, z()/aZ);}
+    default void div2this(double aRHS) {setXYZ(x()/aRHS, y()/aRHS, z()/aRHS);}
+    
+    default void ldiv2this(IXYZ aRHS) {setXYZ(aRHS.x()/x(), aRHS.y()/y(), aRHS.z()/z());}
+    default void ldiv2this(XYZ aRHS) {setXYZ(aRHS.mX/x(), aRHS.mY/y(), aRHS.mZ/z());}
+    default void ldiv2this(double aX, double aY, double aZ) {setXYZ(aX/x(), aY/y(), aZ/z());}
+    default void ldiv2this(double aRHS) {setXYZ(aRHS/x(), aRHS/y(), aRHS/z());}
 }

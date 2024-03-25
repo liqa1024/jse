@@ -16,8 +16,7 @@ public interface IXYZ {
     double x();
     double y();
     double z();
-    /** 由于继承 IXYZ 的对象很多，不能保证所有的 copy 都是希望的结果，因此默认直接抛出错误，避免此接口滥用 */
-    default IXYZ copy() {throw new UnsupportedOperationException("copy");}
+    default IXYZ copy() {return new XYZ(this);}
     
     /** 转为兼容性更高的 double[] */
     default double[] data() {return new double[] {x(), y(), z()};}
@@ -37,9 +36,11 @@ public interface IXYZ {
         return tX*tX + tY*tY + tZ*tZ;
     }
     default double dot(IXYZ aRHS) {return dot(aRHS.x(), aRHS.y(), aRHS.z());}
+    default double dot(XYZ aRHS) {return dot(aRHS.mX, aRHS.mY, aRHS.mZ);}
     default double dot(double aX, double aY, double aZ) {return x()*aX + y()*aY + z()*aZ;}
     
     default XYZ cross(IXYZ aRHS) {return cross(aRHS.x(), aRHS.y(), aRHS.z());}
+    default XYZ cross(XYZ aRHS) {return cross(aRHS.mX, aRHS.mY, aRHS.mZ);}
     default XYZ cross(double aX, double aY, double aZ) {
         double tX = x();
         double tY = y();
@@ -48,6 +49,7 @@ public interface IXYZ {
     }
     
     default double mixed(IXYZ aCross, IXYZ aDot) {return mixed(aCross.x(), aCross.y(), aCross.z(), aDot.x(), aDot.y(), aDot.z());}
+    default double mixed(XYZ aCross, XYZ aDot) {return mixed(aCross.mX, aCross.mY, aCross.mZ, aDot.mX, aDot.mY, aDot.mZ);}
     default double mixed(double aCX, double aCY, double aCZ, double aDX, double aDY, double aDZ) {
         double tX = x();
         double tY = y();
@@ -60,20 +62,40 @@ public interface IXYZ {
     
     /** 使用和 Groovy 重载运算符相同的名称，可以顺便实现重载运算符操作 */
     default XYZ plus(IXYZ aRHS) {return new XYZ(x()+aRHS.x(), y()+aRHS.y(), z()+aRHS.z());}
+    /** 使用重载而不是 instanceof，即只优化可以在编译期间判断的情况 */
+    default XYZ plus(XYZ aRHS) {return new XYZ(x()+aRHS.mX, y()+aRHS.mY, z()+aRHS.mZ);}
     default XYZ plus(double aX, double aY, double aZ) {return new XYZ(x()+aX, y()+aY, z()+aZ);}
     default XYZ plus(double aRHS) {return new XYZ(x()+aRHS, y()+aRHS, z()+aRHS);}
     
     default XYZ minus(IXYZ aRHS) {return new XYZ(x()-aRHS.x(), y()-aRHS.y(), z()-aRHS.z());}
+    /** 使用重载而不是 instanceof，即只优化可以在编译期间判断的情况 */
+    default XYZ minus(XYZ aRHS) {return new XYZ(x()-aRHS.mX, y()-aRHS.mY, z()-aRHS.mZ);}
     default XYZ minus(double aX, double aY, double aZ) {return new XYZ(x()-aX, y()-aY, z()-aZ);}
     default XYZ minus(double aRHS) {return new XYZ(x()-aRHS, y()-aRHS, z()-aRHS);}
     
+    default XYZ lminus(IXYZ aRHS) {return new XYZ(aRHS.x()-x(), aRHS.y()-y(), aRHS.z()-z());}
+    /** 使用重载而不是 instanceof，即只优化可以在编译期间判断的情况 */
+    default XYZ lminus(XYZ aRHS) {return new XYZ(aRHS.mX-x(), aRHS.mY-y(), aRHS.mZ-z());}
+    default XYZ lminus(double aX, double aY, double aZ) {return new XYZ(aX-x(), aY-y(), aZ-z());}
+    default XYZ lminus(double aRHS) {return new XYZ(aRHS-x(), aRHS-y(), aRHS-z());}
+    
     default XYZ multiply(IXYZ aRHS) {return new XYZ(x()*aRHS.x(), y()*aRHS.y(), z()*aRHS.z());}
+    /** 使用重载而不是 instanceof，即只优化可以在编译期间判断的情况 */
+    default XYZ multiply(XYZ aRHS) {return new XYZ(x()*aRHS.mX, y()*aRHS.mY, z()*aRHS.mZ);}
     default XYZ multiply(double aX, double aY, double aZ) {return new XYZ(x()*aX, y()*aY, z()*aZ);}
     default XYZ multiply(double aRHS) {return new XYZ(x()*aRHS, y()*aRHS, z()*aRHS);}
     
     default XYZ div(IXYZ aRHS) {return new XYZ(x()/aRHS.x(), y()/aRHS.y(), z()/aRHS.z());}
+    /** 使用重载而不是 instanceof，即只优化可以在编译期间判断的情况 */
+    default XYZ div(XYZ aRHS) {return new XYZ(x()/aRHS.mX, y()/aRHS.mY, z()/aRHS.mZ);}
     default XYZ div(double aX, double aY, double aZ) {return new XYZ(x()/aX, y()/aY, z()/aZ);}
     default XYZ div(double aRHS) {return new XYZ(x()/aRHS, y()/aRHS, z()/aRHS);}
+    
+    default XYZ ldiv(IXYZ aRHS) {return new XYZ(aRHS.x()/x(), aRHS.y()/y(), aRHS.z()/z());}
+    /** 使用重载而不是 instanceof，即只优化可以在编译期间判断的情况 */
+    default XYZ ldiv(XYZ aRHS) {return new XYZ(aRHS.mX/x(), aRHS.mY/y(), aRHS.mZ/z());}
+    default XYZ ldiv(double aX, double aY, double aZ) {return new XYZ(aX/x(), aY/y(), aZ/z());}
+    default XYZ ldiv(double aRHS) {return new XYZ(aRHS/x(), aRHS/y(), aRHS/z());}
     
     
     
@@ -81,6 +103,12 @@ public interface IXYZ {
         double tX = x() - aRHS.x();
         double tY = y() - aRHS.y();
         double tZ = z() - aRHS.z();
+        return tX*tX + tY*tY + tZ*tZ;
+    }
+    default double distance2(XYZ aRHS) {
+        double tX = x() - aRHS.mX;
+        double tY = y() - aRHS.mY;
+        double tZ = z() - aRHS.mZ;
         return tX*tX + tY*tY + tZ*tZ;
     }
     default double distance2(double aX, double aY, double aZ) {
@@ -91,8 +119,10 @@ public interface IXYZ {
     }
     
     default double distance(IXYZ aRHS) {return MathEX.Fast.hypot(x()-aRHS.x(), y()-aRHS.y(), z()-aRHS.z());}
+    default double distance(XYZ aRHS) {return MathEX.Fast.hypot(x()-aRHS.mX, y()-aRHS.mY, z()-aRHS.mZ);}
     default double distance(double aX, double aY, double aZ) {return MathEX.Fast.hypot(x()-aX, y()-aY, z()-aZ);}
     default double distanceQuick(IXYZ aRHS) {return MathEX.Fast.sqrtQuick(distance2(aRHS));}
+    default double distanceQuick(XYZ aRHS) {return MathEX.Fast.sqrtQuick(distance2(aRHS));}
     default double distanceQuick(double aX, double aY, double aZ) {return MathEX.Fast.sqrtQuick(distance2(aX, aY, aZ));}
     
     /**
@@ -101,6 +131,9 @@ public interface IXYZ {
      */
     default double distanceMHT(IXYZ aRHS) {
         return Math.abs(x() - aRHS.x()) + Math.abs(y() - aRHS.y()) + Math.abs(z() - aRHS.z());
+    }
+    default double distanceMHT(XYZ aRHS) {
+        return Math.abs(x() - aRHS.mX) + Math.abs(y() - aRHS.mY) + Math.abs(z() - aRHS.mZ);
     }
     default double distanceMHT(double aX, double aY, double aZ) {
         aX -= x();
