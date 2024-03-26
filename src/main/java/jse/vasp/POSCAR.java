@@ -128,7 +128,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     
     /** 支持直接修改 TypeNames，只会增大种类数，不会减少 */
     public POSCAR setTypeNames(String... aTypeNames) {
-        if (mIsRef) throw new RuntimeException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+        if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
         if (aTypeNames==null || aTypeNames.length==0) {
             mTypeNames = null;
             mKey2Type.clear();
@@ -138,7 +138,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         return this;
     }
     void setTypeNames_(String @NotNull[] aTypeNames, boolean aCopy) {
-        if (mIsRef) throw new RuntimeException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+        if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
         if (mTypeNames ==null || aTypeNames.length> mTypeNames.length) mTypeNames = aCopy ? Arrays.copyOf(aTypeNames, aTypeNames.length) : aTypeNames;
         else System.arraycopy(aTypeNames, 0, mTypeNames, 0, aTypeNames.length);
         if (aTypeNames.length > mAtomNumbers.size()) {
@@ -163,7 +163,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     
     /** Cartesian 和 Direct 来回转换 */
     public POSCAR setCartesian() {
-        if (mIsRef) throw new RuntimeException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+        if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
         if (mIsCartesian) return this;
         // 这里绕过 scale 直接处理
         if (isPrism()) {
@@ -177,7 +177,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         return this;
     }
     public POSCAR setDirect() {
-        if (mIsRef) throw new RuntimeException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+        if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
         if (!mIsCartesian) return this;
         // 这里绕过 scale 直接处理
         if (isPrism()) {
@@ -195,7 +195,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     
     /** 修改模拟盒类型 */
     public POSCAR setBoxNormal() {
-        if (mIsRef) throw new RuntimeException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+        if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
         if (!isPrism()) return this;
         VaspBox oBox = mBox;
         mBox = new VaspBox(mBox);
@@ -218,7 +218,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     public POSCAR setBoxPrism() {return setBoxPrism(0.0, 0.0, 0.0);}
     public POSCAR setBoxPrism(double aIXY, double aIXZ, double aIYZ) {return setBoxPrism(0.0, 0.0, aIXY, 0.0, aIXZ, aIYZ);}
     public POSCAR setBoxPrism(double aIAy, double aIAz, double aIBx, double aIBz, double aICx, double aICy) {
-        if (mIsRef) throw new RuntimeException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+        if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
         VaspBox oBox = mBox;
         mBox = new VaspBoxPrism(mBox, aIAy, aIAz, aIBx, aIBz, aICx, aICy);
         // 如果是 direct 则不用转换数据
@@ -244,7 +244,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     
     /** 密度归一化 */
     public POSCAR setDenseNormalized() {
-        if (mIsRef) throw new RuntimeException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+        if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
         double tScale = MathEX.Fast.cbrt(volume() / atomNumber());
         // 直接通过调整 boxScale 来实现
         mBox.setScale(mBox.scale() / tScale);
@@ -373,7 +373,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
                 return this;
             }
             @Override public ISettableAtom setID(int aID) {
-                if (mIsRef) throw new RuntimeException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+                if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
                 if (id() == aID) return this;
                 if (mIDs==null) mIDs = Vectors.range(1, atomNumber()+1);
                 mIDs.set(mIdx, aID);
@@ -381,7 +381,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
             }
             /** poscar 的 atom 在 setType 后会改变位置，并且也会影响其他原子的位置，这里只同步当前原子的位置 */
             @Override public ISettableAtom setType(int aType) {
-                if (mIsRef) throw new RuntimeException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+                if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
                 int oType = type();
                 if (oType == aType) return this;
                 // 超过原子种类数目则需要重新设置

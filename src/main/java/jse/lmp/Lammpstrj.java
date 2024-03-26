@@ -35,8 +35,6 @@ import java.util.List;
  * <p> 并且现在不再继承 {@link IAtomData}，如果需要使用单个 dump 直接使用 {@link SubLammpstrj} </p>
  */
 public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubLammpstrj> {
-    final static String[] BOX_BOUND = {"pp", "pp", "pp"};
-    
     Lammpstrj() {super(NewCollections.zl());}
     Lammpstrj(SubLammpstrj... aData) {super(NewCollections.from(aData));}
     Lammpstrj(List<SubLammpstrj> aData) {super(aData);}
@@ -87,11 +85,23 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
         return AbstractCollections.map(mList, SubLammpstrj::asTable);
     }
     
+    /** 修改模拟盒类型 */
+    public Lammpstrj setBoxNormal() {
+        for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setBoxNormal();
+        return this;
+    }
+    public Lammpstrj setBoxPrism() {return setBoxPrism(0.0, 0.0, 0.0);}
+    public Lammpstrj setBoxPrism(double aXY, double aXZ, double aYZ) {
+        for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setBoxPrism(aXY, aXZ, aYZ);
+        return this;
+    }
+    
     /** 密度归一化, 返回自身来支持链式调用 */
     public Lammpstrj setDenseNormalized() {
         for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setDenseNormalized();
         return this;
     }
+    
     /** 截断开头一部分, 返回自身来支持链式调用 */
     public Lammpstrj cutFront(@Range(from=0, to=Integer.MAX_VALUE) int aLength) {
         if (aLength == 0) return this;

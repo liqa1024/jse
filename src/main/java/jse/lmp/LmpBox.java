@@ -16,7 +16,6 @@ public class LmpBox implements IBox {
     private final @Nullable XYZ mBoxLo;
     private final @NotNull XYZ mBoxHi;
     
-    public LmpBox(double aSize) {this(aSize, aSize, aSize);}
     public LmpBox(double aX, double aY, double aZ) {mBoxLo = null; mBoxHi = new XYZ(aX, aY, aZ);}
     public LmpBox(double aXlo, double aXhi, double aYlo, double aYhi, double aZlo, double aZhi) {mBoxLo = new XYZ(aXlo, aYlo, aZlo); mBoxHi = new XYZ(aXhi, aYhi, aZhi);}
     public LmpBox(@NotNull IXYZ aBox) {mBoxLo = null; mBoxHi = new XYZ(aBox);}

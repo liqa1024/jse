@@ -192,8 +192,8 @@ public class Lmpdat extends AbstractSettableAtomData {
         
         // box 还是会重新创建，因为 box 的值这里约定是严格的常量，可以避免一些问题
         mBox = isPrism() ?
-            new LmpBoxPrism(mBox.multiply(tScale), mBox.xy()*tScale, mBox.xz()*tScale, mBox.yz()*tScale) :
-            new LmpBox(mBox.multiply(tScale));
+            new LmpBoxPrism(mBox.x()*tScale, mBox.y()*tScale, mBox.z()*tScale, mBox.xy()*tScale, mBox.xz()*tScale, mBox.yz()*tScale) :
+            new LmpBox(mBox.x()*tScale, mBox.y()*tScale, mBox.z()*tScale);
         
         return this;
     }
@@ -545,7 +545,7 @@ public class Lmpdat extends AbstractSettableAtomData {
     /** 专门的方法用来收发 Lmpdat */
     public static void send(Lmpdat aLmpdat, int aDest, MPI.Comm aComm) throws MPIException {
         // 暂不支持正交盒以外的类型的发送
-        if (aLmpdat.isPrism()) throw new RuntimeException("send is temporarily NOT support Prism Lmpdat");
+        if (aLmpdat.isPrism()) throw new UnsupportedOperationException("send is temporarily NOT support Prism Lmpdat");
         // 获取必要信息
         final boolean tHasVelocities = (aLmpdat.mVelocities != null);
         final boolean tHasMass = (aLmpdat.mMasses != null);
@@ -615,7 +615,7 @@ public class Lmpdat extends AbstractSettableAtomData {
     public static Lmpdat bcast(Lmpdat aLmpdat, int aRoot, MPI.Comm aComm) throws MPIException {
         if (aComm.rank() == aRoot) {
             // 暂不支持正交盒以外的类型的发送
-            if (aLmpdat.isPrism()) throw new RuntimeException("bcast is temporarily NOT support Prism Lmpdat");
+            if (aLmpdat.isPrism()) throw new UnsupportedOperationException("bcast is temporarily NOT support Prism Lmpdat");
             // 获取必要信息
             final boolean tHasVelocities = aLmpdat.mVelocities != null;
             final boolean tHasMass = aLmpdat.mMasses != null;
