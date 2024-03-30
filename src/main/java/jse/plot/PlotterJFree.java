@@ -656,6 +656,8 @@ public class PlotterJFree implements IPlotter {
             mInset = new Insets(20, 20, 20, 20);
             mPanel = new ChartPanel(mChart, mWidth, mHeight, ChartPanel.DEFAULT_MINIMUM_DRAW_WIDTH, ChartPanel.DEFAULT_MINIMUM_DRAW_HEIGHT, ChartPanel.DEFAULT_MAXIMUM_DRAW_WIDTH, ChartPanel.DEFAULT_MAXIMUM_DRAW_HEIGHT, ChartPanel.DEFAULT_BUFFER_USED, true, true, true, true, true) {
                 @Override public Insets getInsets() {return mInset;}
+                /** 重写这些方法来增加上锁，保证不会出现并行修改错误 */
+                @Override public void paintComponent(Graphics g) {syncRun(() -> super.paintComponent(g));}
             };
             mPanel.setBackground(WHITE);
             mFrame.setContentPane(mPanel);
