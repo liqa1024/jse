@@ -89,7 +89,7 @@ public class Strokes {
         case "none": case "null": case "NULL":
             return LineType.NULL;
         default:
-            return DEFAULT_LINE_TYPE;
+            throw new IllegalArgumentException(aLineType);
         }
     }
     public static IResizableStroke toStroke(LineType aLineType, double aLineWidth) {
@@ -101,7 +101,7 @@ public class Strokes {
         case DASH_DOTTED:       return new DashDotted(aLineWidth);
         case DASH_DOT_DOTTED:   return new DashDotDotted(aLineWidth);
         case DASH_DASH_DOTTED:  return new DashDashDotted(aLineWidth);
-        default:                return toStroke(DEFAULT_LINE_TYPE, aLineWidth);
+        default: throw new RuntimeException();
         }
     }
     

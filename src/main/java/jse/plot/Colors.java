@@ -62,7 +62,7 @@ public class Colors {
         case "none": case "null": case "NULL":
             return COLOR_NULL;
         default:
-            return DEFAULT_COLOR;
+            throw new IllegalArgumentException(aColor);
         }
     }
     

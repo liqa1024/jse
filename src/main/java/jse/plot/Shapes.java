@@ -153,7 +153,7 @@ public class Shapes {
         case "none": case "null": case "NULL":
             return MarkerType.NULL;
         default:
-            return DEFAULT_MARKER_TYPE;
+            throw new IllegalArgumentException(aMarkerType);
         }
     }
     
@@ -167,7 +167,7 @@ public class Shapes {
         case SQUARE:            return new Square(aMarkerSize);
         case DIAMOND:           return new Diamond(aMarkerSize);
         case TRIANGLE:          return new Triangle(aMarkerSize);
-        default:                return toShape(DEFAULT_MARKER_TYPE, aMarkerSize);
+        default: throw new RuntimeException();
         }
     }
     

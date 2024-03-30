@@ -37,7 +37,7 @@ public class Anchors {
         case "none": case "null": case "NULL":
             return AnchorType.NULL;
         default:
-            return DEFAULT_ANCHOR_TYPE;
+            throw new IllegalArgumentException(aAnchorType);
         }
     }
     
