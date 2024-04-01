@@ -564,17 +564,12 @@ public class PlotterJFree implements IPlotter {
     
     /** 获取已经绘制的线条 */
     @Override public ILine line(String aName) {return syncSup(() -> mLines.get(mName2ID.get(aName)));}
-    @Override public ILine line(int aIdx) {return syncSup(() -> mLines.get((aIdx < 0) ? (mLines.size()+aIdx) : aIdx));}
+    @Override public ILine line(int aIdx) {return syncSup(() -> mLines.get(aIdx));}
     @Override public int lineNumber() {return syncSup(mLines::size);}
     @Override public List<? extends ILine> lines() {
         return new AbstractRandomAccessList<ILine>() {
             @Override public int size() {return lineNumber();}
-            @Override public ILine get(int index) {return syncSup(() -> mLines.get(index));}
-            @Override public void clear() {
-                mLinesData.removeAllSeries();
-                mName2ID.clear();
-                mLines.clear();
-            }
+            @Override public ILine get(int index) {return line(index);}
         };
     }
     

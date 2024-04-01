@@ -54,13 +54,13 @@ public abstract class AbstractListWrapper<R, T, E> {
     public AbstractListWrapper<R, T, E> appendAll(Collection<? extends T> aList) {addAll(aList); return this;}
     
     /** groovy stuffs */
-    @VisibleForTesting public final R getAt(int aIdx) {return get(aIdx);}
-    @VisibleForTesting public final void putAt(int aIdx, T aValue) {set(aIdx, aValue);}
+    @VisibleForTesting public final R getAt(int aIdx) {return toOutput_(DefaultGroovyMethods.getAt(mList, aIdx));}
+    @VisibleForTesting public final void putAt(int aIdx, T aValue) {DefaultGroovyMethods.putAt(mList, aIdx, toInternal_(aValue));}
     @VisibleForTesting @SuppressWarnings("rawtypes") public final List<R> getAt(Range aRange) {return DefaultGroovyMethods.getAt(asList(), aRange);}
     @VisibleForTesting @SuppressWarnings("rawtypes") public final List<R> getAt(EmptyRange aRange) {return DefaultGroovyMethods.getAt(asList(), aRange);}
     @VisibleForTesting @SuppressWarnings("rawtypes") public final List<R> getAt(Collection aIndices) {return DefaultGroovyMethods.getAt(asList(), aIndices);}
-    @VisibleForTesting public final List<R> collect() {return DefaultGroovyMethods.collect(asList());}
-    @VisibleForTesting public final <RR> List<RR> collect(@ClosureParams(FirstParam.FirstGenericType.class) Closure<RR> aTransform) {return DefaultGroovyMethods.collect(asList(), aTransform);}
+    @VisibleForTesting public final List<R> collect() {return NewCollections.map(mList, this::toOutput_);}
+    @VisibleForTesting public final <RR> List<RR> collect(final @ClosureParams(FirstParam.FirstGenericType.class) Closure<RR> aTransform) {return NewCollections.map(mList, v -> aTransform.call(toOutput_(v)));}
     @VisibleForTesting public AbstractListWrapper<R, T, E> leftShift(T aValue) {return append(aValue);}
     @VisibleForTesting public AbstractListWrapper<R, T, E> leftShift(Collection<? extends T> aList) {return appendAll(aList);}
 }

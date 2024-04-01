@@ -1626,31 +1626,23 @@ public class UT {
         
         /** 增加多图片支持 */
         public static IPlotter plotter() {PLT = Plotters.get(); PLTS.add(PLT); return PLT;}
-        public static IPlotter plotter(int aIdx) {return PLTS.get((aIdx < 0) ? (PLTS.size()+aIdx) : aIdx);}
+        public static IPlotter plotter(int aIdx) {return PLTS.get(aIdx);}
         public static int plotterNumber() {return PLTS.size();}
         public static int nplotters() {return plotterNumber();}
         public static List<? extends IPlotter> plotters() {
             return new AbstractRandomAccessList<IPlotter>() {
                 @Override public int size() {return plotterNumber();}
-                @Override public IPlotter get(int index) {return PLTS.get(index);}
-                @Override public void clear() {
-                    PLTS.forEach(IPlotter::dispose);
-                    PLTS.clear(); PLT = null;
-                }
+                @Override public IPlotter get(int index) {return plotter(index);}
             };
         }
         public static IFigure figure() {PLT = Plotters.get(); PLTS.add(PLT); return PLT.show();}
-        public static IFigure figure(int aIdx) {return PLTS.get((aIdx < 0) ? (PLTS.size()+aIdx) : aIdx).show();}
+        public static IFigure figure(int aIdx) {return PLTS.get(aIdx).show();}
         public static int figureNumber() {return PLTS.size();}
         public static int nfigures() {return figureNumber();}
         public static List<? extends IFigure> figures() {
             return new AbstractRandomAccessList<IFigure>() {
                 @Override public int size() {return figureNumber();}
-                @Override public IFigure get(int index) {return PLTS.get(index).show();}
-                @Override public void clear() {
-                    PLTS.forEach(IPlotter::dispose);
-                    PLTS.clear(); PLT = null;
-                }
+                @Override public IFigure get(int index) {return figure(index);}
             };
         }
         public static void cla() {if (PLT != null) {PLT.clear();}}
