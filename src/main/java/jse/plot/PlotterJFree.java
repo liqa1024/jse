@@ -524,13 +524,12 @@ public class PlotterJFree implements IPlotter {
             // 先检测是否有相同名称的，如果有则进行更新数据
             if (mName2ID.containsKey(tName)) {
                 int tID = mName2ID.get(tName);
-                // 更新数据
-                mLinesData.removeSeries(tID);
-                mLinesData.addSeries(getValidXYSeries_(aX, aY, tName));
                 // 更新曲线
                 tLine = mLines.get(tID);
                 tLine.mX = aX;
                 tLine.mY = aY;
+                // 更新数据
+                updateSeries_();
             } else {
                 int tID = mLines.size();
                 // 添加数据

@@ -724,6 +724,19 @@ public class MathEX {
             return new DoublePair(tA, tB);
         }
         /**
+         * 线性拟合得到 y = bx
+         * @author liqa
+         * @param aX x 数据组成的向量
+         * @param aY y 数据组成的向量
+         * @return 斜率 b
+         */
+        public static double lineFit0(IVector aX, IVector aY) {
+            int tNx = aX.size();
+            int tNy = aY.size();
+            if (tNx != tNy) throw new IllegalArgumentException("Input x, y MUST have same size, input: ("+tNx+", "+tNy+")");
+            return aX.operation().dot(aY) / aX.operation().dot();
+        }
+        /**
          * 带有误差考虑的线性拟合得到 y = a + bx + e
          * @author liqa
          * @param aX x 数据组成的向量
