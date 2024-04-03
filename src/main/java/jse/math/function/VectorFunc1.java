@@ -72,7 +72,7 @@ public abstract class VectorFunc1 extends AbstractFunc1 implements IEqualInterva
     
     /** 获取结果，支持按照索引查找和按照 x 的值来查找 */
     @Override public final double subs(double aX) {
-        int tI = (int)MathEX.Code.ceil((aX-mX0)/mDx);
+        int tI = MathEX.Code.ceil2int((aX-mX0)/mDx);
         int tImm = tI-1;
         
         double tX1 = getX(tImm);
@@ -87,7 +87,7 @@ public abstract class VectorFunc1 extends AbstractFunc1 implements IEqualInterva
     /** 不进行边界检测的版本，带入 x 的情况永远不会超过边界（周期边界或者固定值），因此只提供索引的情况 */
     @Override public final double get(int aI) {return mData.get(aI);}
     @Override public final void set(int aI, double aV) {mData.set(aI, aV);}
-    @Override public int getINear(double aX) {return (int)MathEX.Code.round((aX-mX0)/mDx);}
+    @Override public int getINear(double aX) {return MathEX.Code.round2int((aX-mX0)/mDx);}
     
     /** 索引和 x 相互转换的接口 */
     @Override public final int Nx() {return mData.size();}

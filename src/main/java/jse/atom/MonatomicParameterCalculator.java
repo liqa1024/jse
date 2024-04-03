@@ -721,9 +721,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 double tZ = mAtomDataXYZ.get(i, 2);
                 // 如果设置了 aRMax 则跳过在中间的原子即可
                 if (!tInitAll && !inEdge_(tX, tY, tZ, aRMax)) continue;
-                int tI = (int) MathEX.Code.floor(tX / mCellSize.mX);
-                int tJ = (int) MathEX.Code.floor(tY / mCellSize.mY);
-                int tK = (int) MathEX.Code.floor(tZ / mCellSize.mZ);
+                int tI = MathEX.Code.floor2int(tX / mCellSize.mX);
+                int tJ = MathEX.Code.floor2int(tY / mCellSize.mY);
+                int tK = MathEX.Code.floor2int(tZ / mCellSize.mZ);
                 // 现在排序和 LinkedCell 保持相同了
                 int tRank = (tI + tJ*mSizeX + tK*mSizeX*mSizeY);
                 int tCount = mCounts.get(tRank);

@@ -531,8 +531,8 @@ public class UT {
             double elapsedTime = TIMER.get();
             TIMER.reset();
             
-            int hours = (int) MathEX.Code.floor(elapsedTime / 3600.0);
-            int minutes = (int) MathEX.Code.floor(elapsedTime % 3600.0) / 60;
+            int hours = MathEX.Code.floor2int(elapsedTime / 3600.0);
+            int minutes = MathEX.Code.floor2int(elapsedTime % 3600.0) / 60;
             double seconds = elapsedTime % 60.0;
             System.out.printf("%s time: %02d hour %02d min %02.2f sec\n", aMsg, hours, minutes, seconds);
         }

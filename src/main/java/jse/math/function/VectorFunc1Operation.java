@@ -291,8 +291,8 @@ public abstract class VectorFunc1Operation extends AbstractFunc1Operation {
             if (aRHS instanceof IZeroBoundFunc1) {
                 // 对于零边界的特殊优化，只需要运算一部分
                 IZeroBoundFunc1 tRHS = (IZeroBoundFunc1)aRHS;
-                tStart = Math.max((int)MathEX.Code.floor((tRHS.zeroBoundL() - rThis.x0())/rThis.dx()), 0);
-                tEnd = Math.min((int)MathEX.Code.ceil((tRHS.zeroBoundR() - rThis.x0())/rThis.dx()) + 1, tNx);
+                tStart = Math.max(MathEX.Code.floor2int((tRHS.zeroBoundL() - rThis.x0())/rThis.dx()), 0);
+                tEnd = Math.min(MathEX.Code.ceil2int((tRHS.zeroBoundR() - rThis.x0())/rThis.dx()) + 1, tNx);
             } else {
                 tStart = 0; tEnd = tNx;
             }
@@ -312,8 +312,8 @@ public abstract class VectorFunc1Operation extends AbstractFunc1Operation {
             if (aRHS instanceof IZeroBoundFunc1) {
                 // 对于零边界的特殊优化，只需要运算一部分
                 IZeroBoundFunc1 tRHS = (IZeroBoundFunc1)aRHS;
-                tStart = Math.max((int)MathEX.Code.floor((tRHS.zeroBoundL() - rThis.x0())/rThis.dx()), 0);
-                tEnd = Math.min((int)MathEX.Code.ceil((tRHS.zeroBoundR() - rThis.x0())/rThis.dx()) + 1, tNx);
+                tStart = Math.max(MathEX.Code.floor2int((tRHS.zeroBoundL() - rThis.x0())/rThis.dx()), 0);
+                tEnd = Math.min(MathEX.Code.ceil2int((tRHS.zeroBoundR() - rThis.x0())/rThis.dx()) + 1, tNx);
             } else {
                 tStart = 0; tEnd = tNx;
             }

@@ -176,17 +176,17 @@ public class NeighborListGetter implements IShutdownable {
                 for (int idx = 0; idx < mAtomNum; ++idx) {
                     tBuf.setXYZ(mAtomDataXYZ.get(idx, 0), mAtomDataXYZ.get(idx, 1), mAtomDataXYZ.get(idx, 2));
                     mBox.toDirect(tBuf);
-                    int i = (int) MathEX.Code.floor(tBuf.mX * mSizeX);
-                    int j = (int) MathEX.Code.floor(tBuf.mY * mSizeY);
-                    int k = (int) MathEX.Code.floor(tBuf.mZ * mSizeZ);
+                    int i = MathEX.Code.floor2int(tBuf.mX * mSizeX);
+                    int j = MathEX.Code.floor2int(tBuf.mY * mSizeY);
+                    int k = MathEX.Code.floor2int(tBuf.mZ * mSizeZ);
                     mCells.get(idx(i, j, k)).add(idx);
                 }
             } else {
                 mCellBoxXYZ = mBoxXYZ.div(mSizeX, mSizeY, mSizeZ);
                 for (int idx = 0; idx < mAtomNum; ++idx) {
-                    int i = (int) MathEX.Code.floor(mAtomDataXYZ.get(idx, 0) / mCellBoxXYZ.mX);
-                    int j = (int) MathEX.Code.floor(mAtomDataXYZ.get(idx, 1) / mCellBoxXYZ.mY);
-                    int k = (int) MathEX.Code.floor(mAtomDataXYZ.get(idx, 2) / mCellBoxXYZ.mZ);
+                    int i = MathEX.Code.floor2int(mAtomDataXYZ.get(idx, 0) / mCellBoxXYZ.mX);
+                    int j = MathEX.Code.floor2int(mAtomDataXYZ.get(idx, 1) / mCellBoxXYZ.mY);
+                    int k = MathEX.Code.floor2int(mAtomDataXYZ.get(idx, 2) / mCellBoxXYZ.mZ);
                     mCells.get(idx(i, j, k)).add(idx);
                 }
             }
@@ -223,14 +223,14 @@ public class NeighborListGetter implements IShutdownable {
             if (mBox.isPrism()) {
                 XYZ tBuf = new XYZ(aXYZ);
                 mBox.toDirect(tBuf);
-                i = (int) MathEX.Code.floor(tBuf.mX * mSizeX);
-                j = (int) MathEX.Code.floor(tBuf.mY * mSizeY);
-                k = (int) MathEX.Code.floor(tBuf.mZ * mSizeZ);
+                i = MathEX.Code.floor2int(tBuf.mX * mSizeX);
+                j = MathEX.Code.floor2int(tBuf.mY * mSizeY);
+                k = MathEX.Code.floor2int(tBuf.mZ * mSizeZ);
             } else {
                 assert mCellBoxXYZ != null;
-                i = (int) MathEX.Code.floor(aXYZ.x() / mCellBoxXYZ.mX);
-                j = (int) MathEX.Code.floor(aXYZ.y() / mCellBoxXYZ.mY);
-                k = (int) MathEX.Code.floor(aXYZ.z() / mCellBoxXYZ.mZ);
+                i = MathEX.Code.floor2int(aXYZ.x() / mCellBoxXYZ.mX);
+                j = MathEX.Code.floor2int(aXYZ.y() / mCellBoxXYZ.mY);
+                k = MathEX.Code.floor2int(aXYZ.z() / mCellBoxXYZ.mZ);
             }
             cell(i  , j  , k  ).forEach(mAtomDataXYZ, aXYZIdxDo);
             cell(i+1, j  , k  ).forEach(mAtomDataXYZ, aXYZIdxDo);
@@ -266,14 +266,14 @@ public class NeighborListGetter implements IShutdownable {
             if (mBox.isPrism()) {
                 XYZ tBuf = new XYZ(mAtomDataXYZ.get(aIdx, 0), mAtomDataXYZ.get(aIdx, 1), mAtomDataXYZ.get(aIdx, 2));
                 mBox.toDirect(tBuf);
-                i = (int) MathEX.Code.floor(tBuf.mX * mSizeX);
-                j = (int) MathEX.Code.floor(tBuf.mY * mSizeY);
-                k = (int) MathEX.Code.floor(tBuf.mZ * mSizeZ);
+                i = MathEX.Code.floor2int(tBuf.mX * mSizeX);
+                j = MathEX.Code.floor2int(tBuf.mY * mSizeY);
+                k = MathEX.Code.floor2int(tBuf.mZ * mSizeZ);
             } else {
                 assert mCellBoxXYZ != null;
-                i = (int) MathEX.Code.floor(mAtomDataXYZ.get(aIdx, 0) / mCellBoxXYZ.mX);
-                j = (int) MathEX.Code.floor(mAtomDataXYZ.get(aIdx, 1) / mCellBoxXYZ.mY);
-                k = (int) MathEX.Code.floor(mAtomDataXYZ.get(aIdx, 2) / mCellBoxXYZ.mZ);
+                i = MathEX.Code.floor2int(mAtomDataXYZ.get(aIdx, 0) / mCellBoxXYZ.mX);
+                j = MathEX.Code.floor2int(mAtomDataXYZ.get(aIdx, 1) / mCellBoxXYZ.mY);
+                k = MathEX.Code.floor2int(mAtomDataXYZ.get(aIdx, 2) / mCellBoxXYZ.mZ);
             }
             cell(i  , j  , k  ).forEach(aIdx, aHalf, aRegion, mAtomDataXYZ, aXYZIdxDo);
             cell(i+1, j  , k  ).forEach(aIdx, aHalf, aRegion, mAtomDataXYZ, aXYZIdxDo);
@@ -878,7 +878,7 @@ public class NeighborListGetter implements IShutdownable {
      */
     ILinkedCell getProperLinkedCell(double aRMax) {
         // 获取需要的最小的 cell 长度倍率
-        int tMinMulti = aRMax>mMinBox ? (int)MathEX.Code.ceil(aRMax/mMinBox) : -(int)MathEX.Code.floor(mMinBox/aRMax);
+        int tMinMulti = aRMax>mMinBox ? MathEX.Code.ceil2int(aRMax/mMinBox) : -MathEX.Code.floor2int(mMinBox/aRMax);
         // 尝试获取 LinkedCell
         mRL.lock();
         Map.Entry<Integer, ILinkedCell>
@@ -899,9 +899,9 @@ public class NeighborListGetter implements IShutdownable {
             // 先处理不需要扩展的情况
             int tDiv = -tMinMulti;
             double tCellLength = mMinBox / (double)tDiv;
-            int aSizeX = Math.max((int)MathEX.Code.floor(mBoxXYZ.mX / tCellLength), tDiv); // 可以避免舍入误差的问题
-            int aSizeY = Math.max((int)MathEX.Code.floor(mBoxXYZ.mY / tCellLength), tDiv);
-            int aSizeZ = Math.max((int)MathEX.Code.floor(mBoxXYZ.mZ / tCellLength), tDiv);
+            int aSizeX = Math.max(MathEX.Code.floor2int(mBoxXYZ.mX / tCellLength), tDiv); // 可以避免舍入误差的问题
+            int aSizeY = Math.max(MathEX.Code.floor2int(mBoxXYZ.mY / tCellLength), tDiv);
+            int aSizeZ = Math.max(MathEX.Code.floor2int(mBoxXYZ.mZ / tCellLength), tDiv);
             // 对于所有方向都不需要分割的情况特殊考虑，使用专门的 linkedCell 避免缓存的使用
             if (aSizeX==1 && aSizeY==1 && aSizeZ==1) {
                 tLinkedCell = new SingleLinkedCell();
@@ -914,9 +914,9 @@ public class NeighborListGetter implements IShutdownable {
             // 再处理需要扩展的情况
             double tCellLength = mMinBox * tMinMulti;
             // 统计扩展数目
-            int aMulX = (int)MathEX.Code.ceil(tCellLength / mBoxXYZ.mX);
-            int aMulY = (int)MathEX.Code.ceil(tCellLength / mBoxXYZ.mY);
-            int aMulZ = (int)MathEX.Code.ceil(tCellLength / mBoxXYZ.mZ);
+            int aMulX = MathEX.Code.ceil2int(tCellLength / mBoxXYZ.mX);
+            int aMulY = MathEX.Code.ceil2int(tCellLength / mBoxXYZ.mY);
+            int aMulZ = MathEX.Code.ceil2int(tCellLength / mBoxXYZ.mZ);
             // 这里简单起见，统一采用 ExpandLinkedCell 来管理，即使有非常长的边可以进一步分划
             tLinkedCell = new ExpandLinkedCell(aMulX, aMulY, aMulZ);
             mLinkedCells.put(tMinMulti, tLinkedCell);

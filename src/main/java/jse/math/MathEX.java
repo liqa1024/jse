@@ -947,7 +947,7 @@ public class MathEX {
             int out = 1;
             while (out < aNum) {
                 tValue *= aRoot;
-                out = (int) Code.ceil(tValue);
+                out = Code.ceil2int(tValue);
             }
             return out;
         }
@@ -962,7 +962,7 @@ public class MathEX {
             int out = 1;
             while (true) {
                 tValue *= aRoot;
-                int tOut = (int) Code.ceil(tValue);
+                int tOut = Code.ceil2int(tValue);
                 if (tOut > aNum) return out;
                 out = tOut;
             }

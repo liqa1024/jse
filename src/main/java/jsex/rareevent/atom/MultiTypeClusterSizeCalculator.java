@@ -58,7 +58,7 @@ public class MultiTypeClusterSizeCalculator extends AbstractClusterSizeCalculato
         }
         List<ISlice> tTypeIndices = NewCollections.map(tBuilder, IntVector.Builder::build);
         // 再判断某个种类的
-        int tMinCalNum = (int)MathEX.Code.ceil(tAtomNum * mTypeCalThreshold);
+        int tMinCalNum = MathEX.Code.ceil2int(tAtomNum * mTypeCalThreshold);
         for (int tTypeMM = 0; tTypeMM < tTypeNum; ++tTypeMM) {
             ISolidChecker subTypeSolidChecker = mTypeSolidCheckers==null ? mAllSolidChecker : mTypeSolidCheckers[tTypeMM];
             if (subTypeSolidChecker!=null && tTypeIndices.get(tTypeMM).size()>=tMinCalNum) {

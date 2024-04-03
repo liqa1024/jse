@@ -213,9 +213,9 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
         for (int idx = 0; idx < tAtomNum; ++idx) {
             tBuf.setXYZ(tThis.atom(idx));
             rBox.toDirect(tBuf);
-            int i = (int) MathEX.Code.floor(tBuf.mX); if (i<0 || i>=aNx) continue;
-            int j = (int) MathEX.Code.floor(tBuf.mY); if (j<0 || j>=aNy) continue;
-            int k = (int) MathEX.Code.floor(tBuf.mZ); if (k<0 || k>=aNz) continue;
+            int i = MathEX.Code.floor2int(tBuf.mX); if (i<0 || i>=aNx) continue;
+            int j = MathEX.Code.floor2int(tBuf.mY); if (j<0 || j>=aNy) continue;
+            int k = MathEX.Code.floor2int(tBuf.mZ); if (k<0 || k>=aNz) continue;
             rIndices.get(i + j*aNx + k*aNx*aNy).add(idx);
         }
         List<ISettableAtomData> rSlice = new ArrayList<>(tSliceNum);

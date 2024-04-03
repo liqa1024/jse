@@ -670,7 +670,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             for (Point tPoint : mPointsOnLambda) {
                 if (tPoint.lambda<tLambdaNext && tPoint.multiple>2.0) {
                     // 减少倍率并增加拷贝样本
-                    int tStatTimes = (int)Math.min(MathEX.Code.floor(tPoint.multiple), mMaxStatTimes);
+                    int tStatTimes = Math.min(MathEX.Code.floor2int(tPoint.multiple), mMaxStatTimes);
                     if (tStatTimes > 1) {
                         //noinspection RedundantCast
                         tPoint.multiple /= (double)tStatTimes;
