@@ -385,22 +385,24 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
 
 ### 使用方法
 
-原生 lammps 类位于 [`jse.lmp.NativeLmp`](../src/main/java/jse/lmp/NativeLmp.java)，
-其接口基本和 [python 的 lammps 包](https://docs.lammps.org/Python_module.html) 一致。
-
-在上述环境配置完成后，第一次调用 `NativeLmp` 相关方法时会自动编译需要的 jni 库。
+在上述环境配置完成后，第一次调用 `jse.lmp.NativeLmp`
+相关方法时会自动编译需要的 jni 库。
 而后可以使用类似 `mpiexec -np 4 jse path/to/script`
 的方法来通过 MPI 运行脚本中的 lammps。
 
-> **注意**：在 MPI 环境下编译 jni 库会导致多个进程同时访问相同目录，
+> **注意**：
+> 
+> 1. 在 MPI 环境下编译 jni 库会导致多个进程同时访问相同目录，
 > 最终导致编译失败（并且这是不可能从程序中预先知道的，因为这时还没有 MPI 环境！），
 > 因此第一次运行 MPI 代码时需要在“串行”环境下运行，保证相关
 > jni 库正常编译。
 >
-> 在 windows 下，可能需要手动指定指定的脚本才能正常使用 mpiexec 运行，例如
+> 2. 在 windows 下，可能需要手动指定指定的脚本才能正常使用 mpiexec 运行，例如
 > `mpiexec -np 4 jse.bat path/to/script`
 > 
-> 
+
+原生 lammps 类位于 [`jse.lmp.NativeLmp`](../src/main/java/jse/lmp/NativeLmp.java)，
+其接口基本和 [python 的 lammps 包](https://docs.lammps.org/Python_module.html) 一致：
 
 - **`<init>`**
     

@@ -69,8 +69,11 @@
     5. [python 交叉编程支持](jupyter.ipynb#python-交叉编程支持)
     6. [可选配置](jupyter.ipynb#可选配置)
     
-13. [交叉编程]()
-    - TODO
+13. 交叉编程
+    1. [groovy 中调用 python](pythoningroovy.md)
+    2. [python 中调用 jse（jep）]()
+    3. [python 中调用 jse（py4j）]()
+    4. [matlab 中调用 jse]()
     
 14. [代码部分]()
     - TODO
