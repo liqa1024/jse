@@ -2,6 +2,7 @@
     - [基本使用方法](#基本使用方法)
     - [进阶运算](#进阶运算)
     - [其他功能](#其他功能)
+    - [性能](#性能)
 - [**⟶ 目录**](contents.md)
 
 # 简单的数学库
@@ -251,6 +252,147 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
     > 脚本位置：`jse example/math/optcom`
     > [⤤](../release/script/groovy/example/math/optcom.groovy)
     > 
-    
-    
 
+
+## 其他功能
+
+- **转换为其他类型**
+    
+    通过 `data()` 方法可以将 `IVector` 转为 `double[]`，
+    此方法统一会创建一个新的 `size()` 长度的 `double[]`
+    并将数据拷贝进去。
+    `double[]` 类型对于跨语言编程会有更好的兼容性，
+    例如在 matlab 中则会自动转换成 matlab 的向量数据，
+    而在 jep 中可以作为 `jep.NDArray` 的内部数据输入（详见
+    [NDArray 创建和使用](pythoningroovy.md#ndarray-创建和使用)）
+    
+    通过 `asList()` 方法可以将 `IVector` 转为 `List<Double>`，
+    此方法统一**不会进行值拷贝**，因此得到的 `List<Double>`
+    为关于此 `IVector` 的引用，两者的修改都会直接同步。
+    `List<Double>` 类型可以使用 groovy 提供的关于
+    `List` 的方法（当然依旧不能添加和删除元素）。
+    
+    通过 `asMatCol()` 和 `asMatRow()` 方法可以将 `IVector`
+    分别转为单列矩阵或者单行矩阵 `IMatrix`，
+    此方法统一**不会进行值拷贝**，因此得到的 `IMatrix`
+    为关于此 `IVector` 的引用，两者的修改都会直接同步。
+    
+- **通过 `List` 直接创建**
+    
+    `jse.code.UT.Math` 中并没有提供通过 `List`
+    来创建 `IVector` 的方法（类型 numpy 的 `array`），
+    主要因为不能在编译器确定输出类型是 `IVector` 还是 `IMatrix`。
+    
+    因此需要先通过 `zeros` 来创建一个 `IVector`，
+    然后再调用 `IVector` 的 `fill` 方法来将输入的 `List`
+    填充进去：
+    
+    ```groovy
+    import static jse.code.UT.Math.*
+    
+    def a = zeros(5)
+    a.fill([1, 2, 3, 4, 5])
+    ```
+    
+    不过 jse 在 `jse.math.vector.Vectors` 以及
+    `jse.math.matrix.Matrices` 中提供了 `from`
+    方法来直接通过输入的 `List` 分别创建 `IVector`
+    和 `IMatrix`：
+    
+    ```groovy
+    import jse.math.matrix.Matrices
+    import jse.math.vector.Vectors
+
+    def vec = Vectors.from([1, 2, 3, 4, 5])
+    
+    def mat = Matrices.from([
+        [11, 12, 13, 14, 15],
+        [21, 22, 23, 24, 25],
+        [31, 32, 33, 34, 35],
+        [41, 42, 43, 44, 45]
+    ])
+    ```
+    
+- **指定创建类型**
+    
+    jse 中，对于浮点数矩阵 `IMatrix`，
+    存在两种实现，按列排列的矩阵 `ColumnMatrix` 和
+    按行排列的矩阵 `RowMatrix`，
+    在一般情况下两者使用起来不会有任何区别。
+    
+    在默认情况下，直接通过 `jse.code.UT.Math.zeros`
+    之类的方法创建的矩阵实际都是 `ColumnMatrix`，如果希望创建一个
+    `RowMatrix`，可以直接通过 `RowMatrix` 类中的 `zeros`
+    方法来创建：
+    
+    ```groovy
+    import jse.math.matrix.RowMatrix
+    
+    def mat = RowMatrix.zeros(4, 5)
+    ```
+    
+    其余类型也是相同的逻辑，例如直接创建一个整数向量 `IntVector`：
+    
+    ```groovy
+    import jse.math.vector.IntVector
+    
+    def vec = IntVector.zeros(10)
+    ```
+    
+- **不定长度向量创建**
+    
+    直接创建的 `IVector` 不能修改长度，因此创建时需要提前知道长度，
+    这并不总是可行。
+    jse 提供了 `Vector.builder()` 方法来获取一个关于 `Vector`
+    的构造器，并可以像 `List` 一样不断添加元素，而在构造完成后可通过
+    `build()` 方法完成向量的创建：
+    
+    ```groovy
+    import jse.math.vector.Vector
+    
+    def build = Vector.builder()
+    for (i in 0..<10) {
+        build.add(i)
+    }
+    def vec = build.build()
+    // vec.size() == 10
+    ```
+    
+- **直接获取内部数据**
+    
+    向量类 `IVector` 的一般实现 `Vector`
+    内部使用 `double[]` 来存储数据，
+    对此可能希望直接获取内部的 `double[]` 数据，
+    从而可以避免使用 `data()` 方法时的一次值拷贝。
+    这里可以通过 `internalData()` 方法直接获取到内部的
+    `double[]` 数据：
+    
+    ```groovy
+    import jse.math.vector.Vector
+    
+    def vec = Vector.zeros(10)
+    def data = vec.internalData()
+    ```
+    
+    > **注意**：
+    >
+    > 1. 一般情况下，有 `data.size() >= vec.size()`。
+    >
+    > 2. `ColumnMatrix` 和 `RowMatrix` 内部数据也是 `double[]`，
+    > 其中 `ColumnMatrix` 会按照列来排列数据，而 `RowMatrix`
+    > 会按照行来排列数据。
+    > 因此在和 `jep.NDArray` 相互转换时 `RowMatrix` 会比较常用。
+    >
+    
+    同理也可以直接通过 `double[]` 来创建 `Vector`：
+    
+    ```groovy
+    import jse.math.vector.Vector
+    
+    double[] data = [1, 2, 3, 4, 5]
+    def vec = new Vector(data)
+    ```
+    
+    这样会直接将输入的 `data` 作为内部使用的数据，而不会做任何值拷贝。
+    
+    
