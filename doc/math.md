@@ -394,5 +394,26 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
     ```
     
     这样会直接将输入的 `data` 作为内部使用的数据，而不会做任何值拷贝。
-    
-    
+
+
+## 性能
+
+java 会在运行时自动进行 SIMD 优化，
+因此一般的标量运算性能和 numpy 之类的库基本一致，
+而矩阵乘法之类的运算会慢 2~10 倍。
+
+这里展示简单的测试结果，注意这里手动关闭了
+numpy 使用的线性代数库的并行保证测试公平
+（开启并行后 `dot` 速度会异常的慢，而 `matmul`
+速度可以达到 `80 GFlops`）。
+
+![fig](figure/math.png)
+
+> - 测试平台：Windows 10
+> - CPU：AMD Ryzen 9 5900X
+> - python: 3.10.11
+> - numpy: 1.26.0
+> - 额外环境变量: OPENBLAS_NUM_THREADS=1
+> - jse: 2.8.0
+> - java: 17.0.8, Oracle
+
