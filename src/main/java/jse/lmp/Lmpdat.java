@@ -281,7 +281,7 @@ public class Lmpdat extends AbstractSettableAtomData {
     }
     public static Lmpdat fromAtomData(IAtomData aAtomData, IVector aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
     public static Lmpdat fromAtomData(IAtomData aAtomData, Collection<? extends Number> aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
-    public static Lmpdat fromAtomData(IAtomData aAtomData, double[] aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
+    public static Lmpdat fromAtomData(IAtomData aAtomData, double... aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
     
     static Lmpdat fromAtomData_(IAtomData aAtomData, @Nullable IVector aMasses) {
         // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
@@ -344,7 +344,7 @@ public class Lmpdat extends AbstractSettableAtomData {
     public static Lmpdat of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
     public static Lmpdat of(IAtomData aAtomData, IVector aMasses) {return fromAtomData(aAtomData, aMasses);}
     public static Lmpdat of(IAtomData aAtomData, Collection<? extends Number> aMasses) {return fromAtomData(aAtomData, aMasses);}
-    public static Lmpdat of(IAtomData aAtomData, double[] aMasses) {return fromAtomData(aAtomData, aMasses);}
+    public static Lmpdat of(IAtomData aAtomData, double... aMasses) {return fromAtomData(aAtomData, aMasses);}
     
     
     /// 文件读写

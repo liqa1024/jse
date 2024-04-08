@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * 支持使用 \r 来 refresh 的 {@link PrintStream}，
  * 主要用于进度条使用；
- * 由于主要用于重写 out 流，因此这里不进行 buffer
+ * 这里简单处理不进行 buffer，因此也不存在 flush 的问题
  * @author liqa
  */
 public class RefreshableFilePrintStream extends PrintStream {

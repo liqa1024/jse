@@ -1,5 +1,6 @@
 - [通用原子结构操作](atomdata.md)
     - [结构创建](#结构创建)
+    - [类型转换](#类型转换)
 - [**⟶ 目录**](contents.md)
 
 # 通用原子结构操作
@@ -122,4 +123,64 @@ def data2 = cell.opt().repeat(3, 4, 5) // #1. #2.
 > 从而返回可以直接修改的原子数据 `ISettableAtomData`，
 > 当然也会占用更多内存，可以根据需要选择使用。
 > 
+
+
+## 类型转换
+
+直接通过 `AbstractAtoms` / `Structures`
+创建的原子数据实际是通用的 `IAtomData`，
+并不属于任何现有的原子数据结构（如 `Lmpdat`，`Lammpstrj`，`POSCAR`），
+如果希望转为这些结构并保存，或者进行相关运算，
+则可以使用相应类中的 `of` 方法：
+
+```groovy
+import jse.atom.Structures
+import jse.lmp.Data
+import jse.lmp.Dump
+import jse.vasp.POSCAR
+
+// #1.
+def data = Structures.FCC(4.0, 5)
+
+// #2.
+def lmpdat = Data.of(data)
+lmpdat.write('.temp/example/atoms/lmpdat')
+
+// #3.
+def dump = Dump.of(data)
+dump.write('.temp/example/atoms/dump')
+
+// #4.
+def poscar = POSCAR.of(data)
+poscar.write('.temp/example/atoms/poscar')
+```
+
+> 脚本位置：`jse example/atoms/transform`
+> [⤤](../release/script/groovy/example/atoms/transform.groovy)
+> 
+> 1. 创建一个 FCC 原子结构。
+> 
+> 2. 通过 `Data.of` 转为 lammps 的 data 类型，
+> 然后可以使用其中的 `write` 方法写入到文件。
+>
+> 3. 通过 `Dump.of` 转为 lammps 的 dump 类型，
+> 然后可以使用其中的 `write` 方法写入到文件。
+>
+> 4. 通过 `POSCAR.of` 转为 vasp 的 POSCAR 类型，
+> 然后可以使用其中的 `write` 方法写入到文件。
+> 
+
+> **注意**：
+> 这些原子数据结构一般都存在额外的可选数据，
+> 例如 lammps data 可以包含原子的质量，而
+> POSCAR 可以包含原子种类的具体名称，
+> 这些一般可以通过 `of` 后增加参数来实现：
+>
+> ```groovy
+> def lmpdat = Data.of(data, 63.546)
+> def poscar = POSCAR.of(data, 'Cu')
+> ```
+>
+
+
 
