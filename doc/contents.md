@@ -43,7 +43,9 @@
     
 7. [通用原子结构操作](atomdata.md)
     1. [结构创建](atomdata.md#结构创建)
-
+    2. [类型转换](atomdata.md#类型转换)
+    3. [通用运算](atomdata.md#通用运算)
+    
 8. [原子结构参量计算](mpc.md)
     1. [参量计算器初始化](mpc.md#参量计算器初始化)
     2. [RDF 和 SF 的计算](mpc.md#rdf-和-sf-的计算)
