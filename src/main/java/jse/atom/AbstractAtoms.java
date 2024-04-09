@@ -3,6 +3,7 @@ package jse.atom;
 
 import jse.code.collection.AbstractRandomAccessList;
 import jse.math.MathEX;
+import org.jetbrains.annotations.VisibleForTesting;
 
 
 /**
@@ -61,6 +62,8 @@ public class AbstractAtoms {
         }, new Box(aCellSize*aRepeatX, aCellSize*aRepeatY, aCellSize*aRepeatZ));
     }
     public static IAtomData FCC(double aCellSize, int aRepeat) {return FCC(aCellSize, aRepeat, aRepeat, aRepeat);}
+    @VisibleForTesting public static IAtomData fcc(double aCellSize, int aRepeatX, int aRepeatY, int aRepeatZ) {return FCC(aCellSize, aRepeatX, aRepeatY, aRepeatZ);}
+    @VisibleForTesting public static IAtomData fcc(double aCellSize, int aRepeat) {return FCC(aCellSize, aRepeat);}
     
     /**
      * 根据给定数据创建 BCC (Body Center Cubic) 的 atomData
@@ -89,6 +92,8 @@ public class AbstractAtoms {
         }, new Box(aCellSize*aRepeatX, aCellSize*aRepeatY, aCellSize*aRepeatZ));
     }
     public static IAtomData BCC(double aCellSize, int aRepeat) {return BCC(aCellSize, aRepeat, aRepeat, aRepeat);}
+    @VisibleForTesting public static IAtomData bcc(double aCellSize, int aRepeatX, int aRepeatY, int aRepeatZ) {return BCC(aCellSize, aRepeatX, aRepeatY, aRepeatZ);}
+    @VisibleForTesting public static IAtomData bcc(double aCellSize, int aRepeat) {return BCC(aCellSize, aRepeat);}
     
     /**
      * 根据给定数据创建 SC (Simple Cubic) 的 atomData
@@ -117,6 +122,8 @@ public class AbstractAtoms {
         }, new Box(aCellSize*aRepeatX, aCellSize*aRepeatY, aCellSize*aRepeatZ));
     }
     public static IAtomData SC(double aCellSize, int aRepeat) {return SC(aCellSize, aRepeat, aRepeat, aRepeat);}
+    @VisibleForTesting public static IAtomData sc(double aCellSize, int aRepeatX, int aRepeatY, int aRepeatZ) {return SC(aCellSize, aRepeatX, aRepeatY, aRepeatZ);}
+    @VisibleForTesting public static IAtomData sc(double aCellSize, int aRepeat) {return SC(aCellSize, aRepeat);}
     
     /**
      * 根据给定数据创建 HCP (Hexagonal Close Packed) 的 atomData，
@@ -174,7 +181,10 @@ public class AbstractAtoms {
     public static IAtomData HCP(double aCellSize, double aCellHeight, int aRepeat                             ) {return HCP(aCellSize, aCellHeight, aRepeat, aRepeat, aRepeat);}
     public static IAtomData HCP(double aCellSize,                     int aRepeat                             ) {return HCP(aCellSize, aRepeat, aRepeat, aRepeat);}
     private final static double SQRT3 = MathEX.Fast.sqrt(3.0), SQRT83 = MathEX.Fast.sqrt(8.0/3.0);
-    
+    @VisibleForTesting public static IAtomData hcp(double aCellSize, double aCellHeight, int aRepeatX, int aRepeatY, int aRepeatZ) {return HCP(aCellSize, aCellHeight, aRepeatX, aRepeatY, aRepeatZ);}
+    @VisibleForTesting public static IAtomData hcp(double aCellSize,                     int aRepeatX, int aRepeatY, int aRepeatZ) {return HCP(aCellSize, aRepeatX, aRepeatY, aRepeatZ);}
+    @VisibleForTesting public static IAtomData hcp(double aCellSize, double aCellHeight, int aRepeat                             ) {return HCP(aCellSize, aCellHeight, aRepeat);}
+    @VisibleForTesting public static IAtomData hcp(double aCellSize,                     int aRepeat                             ) {return HCP(aCellSize, aRepeat);}
     
     /**
      * 根据给定数据创建输入晶胞的 atomData
