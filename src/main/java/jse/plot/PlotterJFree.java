@@ -455,8 +455,8 @@ public class PlotterJFree implements IPlotter {
         Iterator<? extends Number> ity = aY.iterator();
         boolean tNeedInterPoint = false;
         while (itx.hasNext() && ity.hasNext()) {
-            double tX = itx.next().doubleValue();
-            double tY = ity.next().doubleValue();
+            double tX = UT.Code.doubleValue(itx.next());
+            double tY = UT.Code.doubleValue(ity.next());
             // 检测位置是否合法，合法则直接添加
             if (tX>tBoxXMin && tX<tBoxXMax && tY>tBoxYMin && tY<tBoxYMax) {
                 if (tNeedInterPoint) {

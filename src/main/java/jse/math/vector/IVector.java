@@ -3,6 +3,7 @@ package jse.math.vector;
 import groovy.lang.Closure;
 import groovy.transform.stc.ClosureParams;
 import groovy.transform.stc.SimpleType;
+import jse.code.UT;
 import jse.math.SliceType;
 import jse.code.collection.ISlice;
 import jse.code.functional.IIndexFilter;
@@ -71,8 +72,8 @@ public interface IVector extends ISwapper, IHasDoubleIterator, IHasDoubleSetIter
     void assign(DoubleSupplier aSup);
     void forEach(DoubleConsumer aCon);
     /** Groovy stuff */
-    default void fill(@ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {fill(i -> aGroovyTask.call(i).doubleValue());}
-    default void assign(final Closure<? extends Number> aGroovyTask) {assign(() -> aGroovyTask.call().doubleValue());}
+    default void fill(@ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {fill(i -> UT.Code.doubleValue(aGroovyTask.call(i)));}
+    default void assign(final Closure<? extends Number> aGroovyTask) {assign(() -> UT.Code.doubleValue(aGroovyTask.call()));}
     
     /** 访问和修改部分，自带的接口 */
     int size();

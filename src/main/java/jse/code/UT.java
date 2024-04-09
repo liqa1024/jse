@@ -107,6 +107,14 @@ public class UT {
         }
         
         /**
+         * 考虑 null 的转为 double
+         * @author liqa
+         */
+        public static double doubleValue(@Nullable Number aNumber) {
+            return aNumber==null ? Double.NaN : aNumber.doubleValue();
+        }
+        
+        /**
          * Get the random seed for lammps usage
          * @author liqa
          */

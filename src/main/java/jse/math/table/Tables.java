@@ -54,9 +54,9 @@ public class Tables {
         return rTable;
     }
     /** Groovy stuff */
-    public static Table from(int aRowNum, String[] aHeads, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return from(aRowNum, aHeads, (i, j) -> aGroovyTask.call(i, j).doubleValue());}
-    public static Table from(int aRowNum, Collection<? extends CharSequence> aHeads, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return from(aRowNum, aHeads, (i, j) -> aGroovyTask.call(i, j).doubleValue());}
-    public static Table from(int aRowNum, int aColNum, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return from(aRowNum, aColNum, (i, j) -> aGroovyTask.call(i, j).doubleValue());}
+    public static Table from(int aRowNum, String[] aHeads, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return from(aRowNum, aHeads, (i, j) -> UT.Code.doubleValue(aGroovyTask.call(i, j)));}
+    public static Table from(int aRowNum, Collection<? extends CharSequence> aHeads, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return from(aRowNum, aHeads, (i, j) -> UT.Code.doubleValue(aGroovyTask.call(i, j)));}
+    public static Table from(int aRowNum, int aColNum, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return from(aRowNum, aColNum, (i, j) -> UT.Code.doubleValue(aGroovyTask.call(i, j)));}
     
     public static Table from(Collection<?> aRows, String... aHeads) {return fromRows(aRows, aHeads);}
     public static Table from(Collection<?> aRows) {return fromRows(aRows);}

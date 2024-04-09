@@ -3,6 +3,7 @@ package jse.math.vector;
 
 import groovy.transform.stc.ClosureParams;
 import groovy.transform.stc.SimpleType;
+import jse.code.UT;
 import jse.code.collection.NewCollections;
 import jse.code.functional.IDoubleFilter;
 import jse.code.iterator.IDoubleSetIterator;
@@ -38,11 +39,11 @@ public class Vectors {
         return rVector;
     }
     /** Groovy stuff */
-    public static Vector from(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {return from(aSize, i -> aGroovyTask.call(i).doubleValue());}
+    public static Vector from(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {return from(aSize, i -> UT.Code.doubleValue(aGroovyTask.call(i)));}
     
     public static Vector from(Iterable<? extends Number> aIterable) {
         final Vector.Builder rBuilder = Vector.builder();
-        for (Number tValue : aIterable) rBuilder.add(tValue.doubleValue());
+        for (Number tValue : aIterable) rBuilder.add(UT.Code.doubleValue(tValue));
         rBuilder.trimToSize();
         return rBuilder.build();
     }

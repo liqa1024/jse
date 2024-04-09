@@ -1,6 +1,7 @@
 package jse.code.collection;
 
 import com.google.common.collect.ImmutableList;
+import jse.code.UT;
 import jse.code.functional.IDoubleFilter;
 import jse.code.functional.IFilter;
 import jse.code.functional.IIndexFilter;
@@ -416,7 +417,7 @@ public class AbstractCollections {
         };
     }
     public static @Unmodifiable Iterable<? extends Number> filterDouble(Iterable<? extends Number> aIterable, final IDoubleFilter aFilter) {
-        return filter(aIterable, v -> aFilter.accept(v.doubleValue()));
+        return filter(aIterable, v -> aFilter.accept(UT.Code.doubleValue(v)));
     }
     public static @Unmodifiable IHasDoubleIterator filterDouble(final IHasDoubleIterator aIterable, final IDoubleFilter aFilter) {
         return () -> new IDoubleIterator() {

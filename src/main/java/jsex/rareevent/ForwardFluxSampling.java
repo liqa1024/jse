@@ -163,8 +163,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 } else {
                     // 此界面被省略，累计概率到 k0
                     if (MathEX.Code.numericLess(tSurface, tLambda0) && pi.hasNext()) {
-                        Number tProb = (Number)pi.next();
-                        tP0 *= (tProb==null ? Double.NaN : tProb.doubleValue());
+                        tP0 *= UT.Code.doubleValue((Number)pi.next());
                     } else {
                         System.err.println("WARNING: surfaces from restData is NOT compatible with the surfaces from this instance!!!");
                         tSurfaceCompat = false;
@@ -174,14 +173,13 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             }
             // 设置 k0
             if (tSurfaceCompat && aRestData.containsKey("k0")) {
-                Number tK0 = (Number)aRestData.get("k0");
-                mK0 = (tK0==null ? Double.NaN : tK0.doubleValue()) * tP0;
+                mK0 = UT.Code.doubleValue((Number)aRestData.get("k0")) * tP0;
             }
             // 设置概率
             if (tSurfaceCompat) {
                 for (int i = 0; i < mN && pi.hasNext() && si.hasNext(); ++i) {
                     if (MathEX.Code.numericEqual(((Number)si.next()).doubleValue(), mSurfaces.get(i+1))) {
-                        mPi.set(i, ((Number)pi.next()).doubleValue());
+                        mPi.set(i, UT.Code.doubleValue((Number)pi.next()));
                     } else {
                         System.err.println("WARNING: surfaces from restData is NOT compatible with the surfaces from this instance!!!");
                         //noinspection UnusedAssignment

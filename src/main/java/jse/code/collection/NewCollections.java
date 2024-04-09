@@ -1,5 +1,6 @@
 package jse.code.collection;
 
+import jse.code.UT;
 import jse.code.functional.IDoubleFilter;
 import jse.code.functional.IFilter;
 import jse.code.functional.IIndexFilter;
@@ -27,6 +28,7 @@ import java.util.List;
  * 注意一般的创建实例的工具类不会有 New 开头
  * @author liqa
  */
+
 @SuppressWarnings({"UseBulkOperation", "ManualArrayToCollectionCopy"})
 public class NewCollections {
     protected NewCollections() {}
@@ -257,7 +259,7 @@ public class NewCollections {
     public static Vector filterDouble(Iterable<? extends Number> aIterable, IDoubleFilter aFilter) {
         Vector.Builder rBuilder = Vector.builder();
         for (Number tNumber : aIterable) {
-            double tValue = tNumber.doubleValue();
+            double tValue = UT.Code.doubleValue(tNumber);
             if (aFilter.accept(tValue)) rBuilder.add(tValue);
         }
         rBuilder.trimToSize();
@@ -266,7 +268,7 @@ public class NewCollections {
     public static Vector filterDouble(Collection<? extends Number> aCollection, IDoubleFilter aFilter) {
         Vector.Builder rBuilder = Vector.builder(aCollection.size());
         for (Number tNumber : aCollection) {
-            double tValue = tNumber.doubleValue();
+            double tValue = UT.Code.doubleValue(tNumber);
             if (aFilter.accept(tValue)) rBuilder.add(tValue);
         }
         rBuilder.trimToSize();

@@ -3,6 +3,7 @@ package jse.math.matrix;
 import groovy.lang.Closure;
 import groovy.transform.stc.ClosureParams;
 import groovy.transform.stc.FromString;
+import jse.code.UT;
 import jse.code.collection.ISlice;
 import jse.code.functional.IIndexFilter;
 import jse.code.iterator.IDoubleIterator;
@@ -85,9 +86,9 @@ public interface IMatrix extends IMatrixGetter {
     void forEachCol(DoubleConsumer aCon);
     void forEachRow(DoubleConsumer aCon);
     /** Groovy stuff */
-    default void fill(@ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {fill((i, j) -> aGroovyTask.call(i, j).doubleValue());}
-    default void assignCol(final Closure<? extends Number> aGroovyTask) {assignCol(() -> aGroovyTask.call().doubleValue());}
-    default void assignRow(final Closure<? extends Number> aGroovyTask) {assignRow(() -> aGroovyTask.call().doubleValue());}
+    default void fill(@ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {fill((i, j) -> UT.Code.doubleValue(aGroovyTask.call(i, j)));}
+    default void assignCol(final Closure<? extends Number> aGroovyTask) {assignCol(() -> UT.Code.doubleValue(aGroovyTask.call()));}
+    default void assignRow(final Closure<? extends Number> aGroovyTask) {assignRow(() -> UT.Code.doubleValue(aGroovyTask.call()));}
     
     /** 访问和修改部分，自带的接口 */
     int rowNumber();

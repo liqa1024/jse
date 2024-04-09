@@ -1,5 +1,6 @@
 package jse.code.iterator;
 
+import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 
 import java.util.Objects;
@@ -22,8 +23,8 @@ public interface IHasDoubleIterator {
     static IHasDoubleIterator of(final Iterable<? extends Number> aIterable) {
         return new IHasDoubleIterator() {
             @Override public IDoubleIterator iterator() {return IDoubleIterator.of(aIterable.iterator());}
-            @Override public Iterable<Double> iterable() {return AbstractCollections.map(aIterable, Number::doubleValue);}
-            @Override public void forEach(final DoubleConsumer aCon) {aIterable.forEach(v->aCon.accept(v.doubleValue()));}
+            @Override public Iterable<Double> iterable() {return AbstractCollections.map(aIterable, UT.Code::doubleValue);}
+            @Override public void forEach(final DoubleConsumer aCon) {aIterable.forEach(v->aCon.accept(UT.Code.doubleValue(v)));}
         };
     }
 }

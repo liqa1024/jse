@@ -1,5 +1,6 @@
 package jse.math.function;
 
+import jse.code.UT;
 import jse.math.vector.IVector;
 
 import java.util.Iterator;
@@ -15,7 +16,7 @@ public abstract class AbstractFunc1 implements IFunc1 {
     @Override public final void fill(IFunc1Subs aFunc1Subs) {operation().fill(aFunc1Subs);}
     @Override public final void fill(Iterable<? extends Number> aList) {
         final Iterator<? extends Number> it = aList.iterator();
-        assign(() -> it.next().doubleValue());
+        assign(() -> UT.Code.doubleValue(it.next()));
     }
     @Override public final void assign(DoubleSupplier aSup) {operation().assign(aSup);}
     @Override public final void forEach(DoubleConsumer aCon) {operation().forEach(aCon);}

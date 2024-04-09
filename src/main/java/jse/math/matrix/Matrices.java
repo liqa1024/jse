@@ -40,8 +40,8 @@ public class Matrices {
         return rMatrix;
     }
     /** Groovy stuff */
-    public static ColumnMatrix from(int aSize, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return from(aSize, (i, j) -> aGroovyTask.call(i, j).doubleValue());}
-    public static ColumnMatrix from(int aRowNum, int aColNum, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return from(aRowNum, aColNum, (i, j) -> aGroovyTask.call(i, j).doubleValue());}
+    public static ColumnMatrix from(int aSize, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return from(aSize, (i, j) -> UT.Code.doubleValue(aGroovyTask.call(i, j)));}
+    public static ColumnMatrix from(int aRowNum, int aColNum, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return from(aRowNum, aColNum, (i, j) ->UT.Code.doubleValue( aGroovyTask.call(i, j)));}
     
     /** Matrix 暂时没有相关 Builder，因此不支持 Iterable 构造 */
     public static ColumnMatrix from(Collection<?> aRows) {return fromRows(aRows);}
@@ -93,5 +93,5 @@ public class Matrices {
         return rMatrix;
     }
     /** Groovy stuff */
-    public static ColumnMatrix diag(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {return diag(aSize, i -> aGroovyTask.call(i).doubleValue());}
+    public static ColumnMatrix diag(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {return diag(aSize, i -> UT.Code.doubleValue(aGroovyTask.call(i)));}
 }

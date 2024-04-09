@@ -30,6 +30,7 @@ public interface IHasComplexDoubleSetOnlyIterator {
             Object tObj = aGroovyTask.call();
             if (tObj instanceof IComplexDouble) si.nextAndSet((IComplexDouble)tObj);
             else if (tObj instanceof Number) si.nextAndSet(((Number)tObj).doubleValue());
+            else si.nextAndSet(Double.NaN);
         }
     }
 }

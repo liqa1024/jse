@@ -1,5 +1,6 @@
 package jse.plot;
 
+import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 import jse.math.function.IFunc1;
 import jse.math.function.IFunc1Subs;
@@ -52,7 +53,7 @@ public interface IPlotter {
     default ILine plot(                                                     IFunc1 aY, @Nullable String aName) {return plot(aY.x(), aY.f(), aName);}
     default ILine plot(                  double[] aX,                   IFunc1Subs aY, @Nullable String aName) {return plot(AbstractCollections.from(aX), aY, aName);}
     default ILine plot(                   IVector aX,                   IFunc1Subs aY, @Nullable String aName) {return plot(aX.iterable(), aY, aName);}
-    default ILine plot(Iterable<? extends Number> aX,                   IFunc1Subs aY, @Nullable String aName) {return plot(aX, AbstractCollections.map(aX, x -> aY.subs(x.doubleValue())), aName);}
+    default ILine plot(Iterable<? extends Number> aX,                   IFunc1Subs aY, @Nullable String aName) {return plot(aX, AbstractCollections.map(aX, x -> aY.subs(UT.Code.doubleValue(x))), aName);}
     default ILine plot(                               Collection<? extends Number> aY, @Nullable String aName) {return plot(AbstractCollections.range_(aY.size()), aY, aName);}
     default ILine plot(                  double[] aX, Iterable  <? extends Number> aY, @Nullable String aName) {return plot(AbstractCollections.from(aX), aY, aName);}
     default ILine plot(                   IVector aX, Iterable  <? extends Number> aY, @Nullable String aName) {return plot(aX.iterable(), aY, aName);}

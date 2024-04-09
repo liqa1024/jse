@@ -1,6 +1,7 @@
 package jse.math.vector;
 
 import jse.cache.VectorCache;
+import jse.code.UT;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.code.collection.ISlice;
 import jse.code.functional.IIndexFilter;
@@ -153,7 +154,7 @@ public abstract class AbstractVector implements IVector {
     @Override public final void fill(IVectorGetter aVectorGetter) {operation().fill(aVectorGetter);}
     @Override public final void fill(Iterable<? extends Number> aList) {
         final Iterator<? extends Number> it = aList.iterator();
-        assign(() -> it.next().doubleValue());
+        assign(() -> UT.Code.doubleValue(it.next()));
     }
     @Override public void fill(double[] aData) {
         final IDoubleSetIterator si = setIterator();
