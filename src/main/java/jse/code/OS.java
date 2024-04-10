@@ -147,12 +147,14 @@ public class OS {
     /** SLURM 相关，使用子类分割避免冗余初始化 */
     public static class Slurm {
         public final static boolean IS_SLURM;
+        public final static boolean IS_SRUN;
         public final static int PROCID;
         public final static int NTASKS;
         public final static int CORES_PER_NODE;
         public final static int CORES_PER_TASK;
         public final static int MAX_STEP_COUNT;
         public final static int JOB_ID;
+        public final static int STEP_ID;
         public final static int NODEID;
         public final static String NODENAME;
         public final static List<String> NODE_LIST;
@@ -163,16 +165,30 @@ public class OS {
         public final static class ResourcesManager {
             private final Map<String, Integer> mAllResources;
             private int mRestStepCount;
+            private boolean mWarning = false;
             private ResourcesManager() {
                 mAllResources = new HashMap<>();
                 for (String tNode : NODE_LIST) mAllResources.put(tNode, CORES_PER_NODE);
-                // 如果使用常规的 sbatch 提交 groovy 脚本则不需要为此脚本专门分配资源，
-                // 因此这里不去预留任何资源，当然对于嵌套使用的情况下则不能从 jse 内部保证资源分配合适。
+                // 如果是 srun 环境下则需要给自身预留资源，如果是没有设置 CORES_PER_TASK 的一般情况则输出警告，
+                // 因为一般情况下可以直接使用 sbatch 提交运行 groovy 脚本（不会被杀掉）
+                if (IS_SRUN) {
+                    if (CORES_PER_TASK <= 0) {
+                        mWarning = true;
+                        mAllResources.computeIfPresent(NODE_LIST.get(0), (node, cores) -> cores-1);
+                    } else {
+                        mAllResources.computeIfPresent(NODE_LIST.get(0), (node, cores) -> cores-CORES_PER_TASK);
+                    }
+                }
                 // 移除自身消耗的作业步，预留 100 步给外部使用
                 mRestStepCount = MAX_STEP_COUNT - 100;
             }
             /** 根据需要的核心数来分配资源，返回节点和对应的可用核心数 */
             public synchronized @Nullable Resource assignResource(final int aTaskNum) {
+                if (mWarning) {
+                    mWarning = false; // 只警告一次
+                    System.err.println("WARNING: It is not necessary to run jse using `srun` and then assignResource. You can run jse directly in the `sbatch` script.");
+                    System.err.println("If this jse needs special resources, please specified core number required by `-c`.");
+                }
                 // 计算至少需要的节点数目
                 int tMinNodes = MathEX.Code.divup(aTaskNum, CORES_PER_NODE);
                 // 超过节点数则直接分配失败，返回 null
@@ -290,11 +306,14 @@ public class OS {
         
         
         static {
-            // 获取 ID，如果失败则不是 slurm
-            PROCID = OS.envI("SLURM_PROCID", -1);
-            IS_SLURM = PROCID >= 0;
+            // 获取节点列表，如果失败则不是 slurm
+            String tRawNodeList = OS.env("SLURM_NODELIST");
+            NODE_LIST = tRawNodeList==null ? null : ImmutableList.copyOf(UT.Text.splitNodeList(tRawNodeList));
+            IS_SLURM = NODE_LIST != null;
             // 是 slurm 则从环境变量中读取后续参数，否则使用默认非法值
             if (IS_SLURM) {
+                // 获取 ID
+                PROCID = OS.envI("SLURM_PROCID", -1);
                 // 获取作业 id
                 JOB_ID = OS.envI("SLURM_JOB_ID", -1);
                 // 获取任务总数
@@ -304,6 +323,9 @@ public class OS {
                 NODENAME = OS.env("SLURMD_NODENAME");
                 // 获取每任务的核心数，可能为 null；现在统一在没有时为 -1，这里已经用不到这个参数了
                 CORES_PER_TASK = OS.envI("SLURM_CPUS_PER_TASK", -1);
+                // 获取 srun step 的 id，只有开启 srun 后才有值
+                STEP_ID = OS.envI("SLURM_STEP_ID", -1);
+                IS_SRUN = STEP_ID >= 0;
                 
                 // 获取每节点的核心数
                 String tRawCoresPerNode = OS.env("SLURM_JOB_CPUS_PER_NODE");
@@ -324,20 +346,18 @@ public class OS {
                 // 单个任务的作业步限制，不能获取，默认为此值
                 MAX_STEP_COUNT = 40000;
                 
-                // 获取节点列表
-                String tRawNodeList = OS.env("SLURM_NODELIST");
-                NODE_LIST = tRawNodeList==null ? null : ImmutableList.copyOf(UT.Text.splitNodeList(tRawNodeList));
-                
                 RESOURCES_MANAGER = new ResourcesManager();
             } else {
+                IS_SRUN = false;
+                PROCID = -1;
                 JOB_ID = -1;
                 NTASKS = -1;
                 NODEID = -1;
+                STEP_ID = -1;
                 NODENAME = null;
                 CORES_PER_NODE = -1;
                 CORES_PER_TASK = -1;
                 MAX_STEP_COUNT = -1;
-                NODE_LIST = null;
                 RESOURCES_MANAGER = null;
             }
         }
