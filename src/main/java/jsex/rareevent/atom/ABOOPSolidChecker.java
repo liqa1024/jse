@@ -19,6 +19,7 @@ public class ABOOPSolidChecker implements ISolidChecker {
     private int mLInBOOP = 6; // 计算 BOOP 所用的 l，默认为 6
     private double mConnectThreshold =  0.83; // 用来判断两个原子是否是相连接的阈值，默认为 0.83
     private int mSolidThreshold = 7; // 用来根据最近邻原子中，连接数大于或等于此值则认为是固体的阈值，默认为 7
+    private boolean mUseRatio = false; // 是否使用比例版本，此时 mSolidThreshold 会失效，默认关闭保持兼容
     
     /** 将一些设置参数放在这里避免过于复杂的构造函数 */
     public ABOOPSolidChecker setRNearestMul(double aRNearestMul) {mRNearestMul = Math.max(0.1, aRNearestMul); return this;}
@@ -26,11 +27,20 @@ public class ABOOPSolidChecker implements ISolidChecker {
     public ABOOPSolidChecker setLInBOOP(int aLInBOOP) {mLInBOOP = Math.max(1, aLInBOOP); return this;}
     public ABOOPSolidChecker setConnectThreshold(double aConnectThreshold) {mConnectThreshold = MathEX.Code.toRange(0.0, 1.0, aConnectThreshold); return this;}
     public ABOOPSolidChecker setSolidThreshold(int aSolidThreshold) {mSolidThreshold = Math.max(0, aSolidThreshold); return this;}
+    public ABOOPSolidChecker setUseRatio(boolean aUseRatio) {mUseRatio = aUseRatio; return this;}
+    public ABOOPSolidChecker setUseRatio() {return setUseRatio(true);}
     
     @Override public ILogicalVector checkSolid(MonatomicParameterCalculator aMPC) {
-        IVector tConnectCount = aMPC.calConnectCountABOOP(mLInBOOP, mConnectThreshold, aMPC.unitLen()*mRNearestMul, mNnn);
-        ILogicalVector tIsSolid = tConnectCount.greaterOrEqual(mSolidThreshold);
-        VectorCache.returnVec(tConnectCount);
+        ILogicalVector tIsSolid;
+        if (mUseRatio) {
+            IVector tConnectRatio = aMPC.calConnectRatioABOOP(mLInBOOP, mConnectThreshold, aMPC.unitLen()*mRNearestMul, mNnn);
+            tIsSolid = tConnectRatio.greaterOrEqual(0.5);
+            VectorCache.returnVec(tConnectRatio);
+        } else {
+            IVector tConnectCount = aMPC.calConnectCountABOOP(mLInBOOP, mConnectThreshold, aMPC.unitLen()*mRNearestMul, mNnn);
+            tIsSolid = tConnectCount.greaterOrEqual(mSolidThreshold);
+            VectorCache.returnVec(tConnectCount);
+        }
         return tIsSolid;
     }
 }
