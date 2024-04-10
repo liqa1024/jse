@@ -16,10 +16,7 @@ import jse.math.matrix.IMatrix;
 import jse.math.matrix.RowComplexMatrix;
 import jse.math.vector.*;
 import jse.parallel.*;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Range;
+import org.jetbrains.annotations.*;
 
 import java.util.Collection;
 import java.util.List;
@@ -1865,7 +1862,353 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     
     
     /**
-     * 具体通过 Q6 来检测结构中类似固体的部分，
+     * 通过 bond orientational order parameter（Ql）来计算结构中每个原子的连接数占所有近邻数的比例值，
+     * 输出结果为按照输入原子顺序排列的向量，数值为 0~1 的比例值；
+     * <p>
+     * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
+     * <p>
+     * 为了统一接口这里同样返回 cache 的值，
+     * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
+     * <p>
+     * Reference:
+     * <a href="https://doi.org/10.1039/FD9960400093">
+     * Simulation of homogeneous crystal nucleation close to coexistence</a>,
+     * <a href="https://doi.org/10.1063/1.2977970">
+     * Accurate determination of crystal structures based on averaged local bond order parameters</a>,
+     * <a href="https://doi.org/10.1063/1.1896348">
+     * Rate of homogeneous crystal nucleation in molten NaCl</a>
+     * @author liqa
+     * @param aL 计算具体 Q 值的下标，即 Q4: l = 4, Q6: l = 6
+     * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
+     * @param aRNearestY 用来计算 YlmMean 的搜索的最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
+     * @param aNnnY 用来计算 YlmMean 的最大最近邻数目（Number of Nearest Neighbor list）。默认不做限制
+     * @param aRNearestS 用来计算 Sij 的搜索的最近邻半径，会使用此值对应的近邻总数作为分母。默认为 aRNearestY
+     * @param aNnnS 用来计算 Sij 最大的最近邻数目（Number of Nearest Neighbor list）。默认为 aNnnY
+     * @return 最后得到的连接数占所有近邻数的比例值组成的向量
+     */
+    public IVector calConnectRatioBOOP(int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestS, int aNnnS) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
+        final IComplexMatrix Qlm = calYlmMean(aL, aRNearestY, aNnnY);
+        
+        // 如果限制了 aNnn 需要关闭 half 遍历的优化
+        final boolean aHalf = aNnnS<=0;
+        // 统计连接数
+        final IVector tConnectRatio = VectorCache.getZeros(mAtomNum);
+        // 统计近邻数用于求平均
+        final IVector tNN = VectorCache.getZeros(mAtomNum);
+        
+        // 注意需要先对 Qlm 归一化
+        for (int i = 0; i < mAtomNum; ++i) {
+            IComplexVector Qlmi = Qlm.row(i);
+            Qlmi.div2this(Qlmi.operation().norm());
+        }
+        
+        // 获取缓存近邻列表，这里只需要进行遍历 idx
+        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestS, aNnnS, aHalf);
+        // 如果为 null 还需要获取需要缓存的近邻列表
+        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestS, aNnnS, aHalf) : null;
+        
+        // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
+        for (int i = 0; i < mAtomNum; ++i) {
+            // 统一获取行向量
+            final IComplexVector Qlmi = Qlm.row(i);
+            // 遍历近邻计算连接数
+            final int fI = i;
+            forEachNeighbor_(tNL, fI, aRNearestS, aNnnS, aHalf, idx -> {
+                // 统一获取行向量
+                IComplexVector Qlmj = Qlm.row(idx);
+                // 计算复向量的点乘
+                ComplexDouble Sij = Qlmi.operation().dot(Qlmj);
+                // 取模量来判断是否连接
+                if (Sij.norm() > aConnectThreshold) {
+                    tConnectRatio.increment(fI);
+                    // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
+                    if (aHalf) {
+                        tConnectRatio.increment(idx);
+                    }
+                }
+                
+                // 统计近邻
+                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
+                
+                // 统计近邻数
+                tNN.increment(fI);
+                // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
+                if (aHalf) {
+                    tNN.increment(idx);
+                }
+            });
+        }
+        // 除以近邻数得到比例
+        tConnectRatio.div2this(tNN);
+        
+        // 计算完成归还缓存数据
+        VectorCache.returnVec(tNN);
+        ComplexMatrixCache.returnMat(Qlm);
+        
+        // 返回最终计算结果
+        return tConnectRatio;
+    }
+    public IVector calConnectRatioBOOP(int aL, double aConnectThreshold, double aRNearest, int aNnn) {return calConnectRatioBOOP(aL, aConnectThreshold, aRNearest, aNnn, aRNearest, aNnn);}
+    public IVector calConnectRatioBOOP(int aL, double aConnectThreshold, double aRNearest          ) {return calConnectRatioBOOP(aL, aConnectThreshold, aRNearest, -1);}
+    public IVector calConnectRatioBOOP(int aL, double aConnectThreshold                            ) {return calConnectRatioBOOP(aL, aConnectThreshold, mUnitLen*R_NEAREST_MUL);}
+    
+    /** MPI 版本的 BOOP 连接数目 */
+    private IVector calConnectRatioBOOP_MPI_(boolean aNoGather, MPIInfo aMPIInfo, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestS, int aNnnS) throws MPIException {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
+        final IComplexMatrix Qlm = calYlmMean_MPI_(true, aMPIInfo, aL, aRNearestY, aNnnY);
+        aMPIInfo.allgather(Qlm, aRNearestS); // 手动同步边界的数据用于计算 Sij
+        
+        // 如果限制了 aNnn 需要关闭 half 遍历的优化
+        final boolean aHalf = aNnnS<=0;
+        // 统计连接数
+        final Vector tConnectRatio = VectorCache.getZeros(mAtomNum);
+        // 统计近邻数用于求平均
+        final IVector tNN = VectorCache.getZeros(mAtomNum);
+        
+        // 注意需要先对 Qlm 归一化
+        for (int i = 0; i < mAtomNum; ++i) {
+            IComplexVector Qlmi = Qlm.row(i);
+            Qlmi.div2this(Qlmi.operation().norm());
+        }
+        
+        // 获取缓存近邻列表，这里只需要进行遍历 idx
+        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestS, aNnnS, aHalf, aMPIInfo.mSize);
+        // 如果为 null 还需要获取需要缓存的近邻列表
+        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestS, aNnnS, aHalf, aMPIInfo.mSize) : null;
+        
+        // 计算近邻上 Qlm 的标量积，根据标量积来统计连接数
+        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
+            // 统一获取行向量
+            final IComplexVector Qlmi = Qlm.row(i);
+            // 遍历近邻计算连接数
+            final int fI = i;
+            forEachNeighbor_(tNL, fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, idx -> {
+                // 统一获取行向量
+                IComplexVector Qlmj = Qlm.row(idx);
+                // 计算复向量的点乘
+                ComplexDouble Sij = Qlmi.operation().dot(Qlmj);
+                // 取模量来判断是否连接
+                if (Sij.norm() > aConnectThreshold) {
+                    tConnectRatio.increment(fI);
+                    // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
+                    boolean tHalfStat = aHalf && aMPIInfo.inRegin(idx);
+                    if (tHalfStat) {
+                        tConnectRatio.increment(idx);
+                    }
+                }
+                
+                // 统计近邻
+                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
+                
+                // 统计近邻数
+                tNN.increment(fI);
+                // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
+                if (aHalf) {
+                    tNN.increment(idx);
+                }
+            });
+        }
+        // 除以近邻数得到比例
+        tConnectRatio.div2this(tNN);
+        
+        // 计算完成归还缓存数据
+        VectorCache.returnVec(tNN);
+        ComplexMatrixCache.returnMat(Qlm);
+        
+        // 收集所有进程将统计到的连接数
+        if (!aNoGather) aMPIInfo.allgather(tConnectRatio);
+        
+        // 返回最终计算结果
+        return tConnectRatio;
+    }
+    private IVector calConnectRatioBOOP_MPI_(MPIInfo aMPIInfo, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestS, int aNnnS) throws MPIException {return calConnectRatioBOOP_MPI_(aMPIInfo.mSize==1, aMPIInfo, aL, aConnectThreshold, aRNearestY, aNnnY, aRNearestS, aNnnS);}
+    public IVector calConnectRatioBOOP_MPI(boolean aNoGather, MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestS, int aNnnS) throws MPIException {try (MPIInfo tMPIInfo = new MPIInfo(aComm)) {return calConnectRatioBOOP_MPI_(aNoGather, tMPIInfo, aL, aConnectThreshold, aRNearestY, aNnnY, aRNearestS, aNnnS);}}
+    public IVector calConnectRatioBOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestS, int aNnnS) throws MPIException {try (MPIInfo tMPIInfo = new MPIInfo(aComm)) {return calConnectRatioBOOP_MPI_(tMPIInfo, aL, aConnectThreshold, aRNearestY, aNnnY, aRNearestS, aNnnS);}}
+    public IVector calConnectRatioBOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearest, int aNnn) throws MPIException {return calConnectRatioBOOP_MPI(aComm, aL, aConnectThreshold, aRNearest, aNnn, aRNearest, aNnn);}
+    public IVector calConnectRatioBOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearest          ) throws MPIException {return calConnectRatioBOOP_MPI(aComm, aL, aConnectThreshold, aRNearest, -1);}
+    public IVector calConnectRatioBOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold                            ) throws MPIException {return calConnectRatioBOOP_MPI(aComm, aL, aConnectThreshold, mUnitLen*R_NEAREST_MUL);}
+    public IVector calConnectRatioBOOP_MPI(                int aL, double aConnectThreshold, double aRNearest, int aNnn) throws MPIException {return calConnectRatioBOOP_MPI(MPI.Comm.WORLD, aL, aConnectThreshold, aRNearest, aNnn);}
+    public IVector calConnectRatioBOOP_MPI(                int aL, double aConnectThreshold, double aRNearest          ) throws MPIException {return calConnectRatioBOOP_MPI(MPI.Comm.WORLD, aL, aConnectThreshold, aRNearest);}
+    public IVector calConnectRatioBOOP_MPI(                int aL, double aConnectThreshold                            ) throws MPIException {return calConnectRatioBOOP_MPI(MPI.Comm.WORLD, aL, aConnectThreshold);}
+    
+    
+    /**
+     * 通过 Averaged bond orientational order parameter（ql）来计算结构中每个原子的连接数占所有近邻数的比例值，
+     * 输出结果为按照输入原子顺序排列的向量，数值为 0~1 的比例值；
+     * <p>
+     * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
+     * <p>
+     * 为了统一接口这里同样返回 cache 的值，
+     * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
+     * <p>
+     * Reference:
+     * <a href="https://doi.org/10.1063/1.2977970">
+     * Accurate determination of crystal structures based on averaged local bond order parameters</a>,
+     * @author liqa
+     * @param aL 计算具体 q 值的下标，即 q4: l = 4, q6: l = 6
+     * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
+     * @param aRNearestY 用来计算 YlmMean 的搜索的最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
+     * @param aNnnY 用来计算 YlmMean 的最大最近邻数目（Number of Nearest Neighbor list）。默认不做限制
+     * @param aRNearestQ 用来计算 QlmMean 的搜索的最近邻半径。默认为 aRNearestY
+     * @param aNnnQ 用来计算 QlmMean 最大的最近邻数目（Number of Nearest Neighbor list）。默认为 aNnnY
+     * @param aRNearestS 用来计算 sij 的搜索的最近邻半径，会使用此值对应的近邻总数作为分母。默认为 aRNearestY
+     * @param aNnnS 用来计算 sij 最大的最近邻数目（Number of Nearest Neighbor list）。默认为 aNnnY
+     * @return 最后得到的连接数占所有近邻数的比例值组成的向量
+     */
+    public IVector calConnectRatioABOOP(int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ, double aRNearestS, int aNnnS) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
+        final IComplexMatrix qlm = calQlmMean(aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);
+        
+        // 如果限制了 aNnn 需要关闭 half 遍历的优化
+        final boolean aHalf = aNnnS<=0;
+        // 统计连接数，这里同样不去考虑减少重复代码
+        final IVector tConnectRatio = VectorCache.getZeros(mAtomNum);
+        // 统计近邻数用于求平均
+        final IVector tNN = VectorCache.getZeros(mAtomNum);
+        
+        // 注意需要先对 qlm 归一化
+        for (int i = 0; i < mAtomNum; ++i) {
+            IComplexVector qlmi = qlm.row(i);
+            qlmi.div2this(qlmi.operation().norm());
+        }
+        
+        // 获取缓存近邻列表，这里只需要进行遍历 idx
+        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestS, aNnnS, aHalf);
+        // 如果为 null 还需要获取需要缓存的近邻列表
+        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestS, aNnnS, aHalf) : null;
+        
+        // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
+        for (int i = 0; i < mAtomNum; ++i) {
+            // 统一获取行向量
+            final IComplexVector qlmi = qlm.row(i);
+            // 遍历近邻计算连接数
+            final int fI = i;
+            forEachNeighbor_(tNL, fI, aRNearestS, aNnnS, aHalf, idx -> {
+                // 统一获取行向量
+                IComplexVector qlmj = qlm.row(idx);
+                // 计算复向量的点乘
+                ComplexDouble Sij = qlmi.operation().dot(qlmj);
+                // 取模量来判断是否连接
+                if (Sij.norm() > aConnectThreshold) {
+                    tConnectRatio.increment(fI);
+                    // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
+                    if (aHalf) {
+                        tConnectRatio.increment(idx);
+                    }
+                }
+                
+                // 统计近邻
+                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
+                
+                // 统计近邻数
+                tNN.increment(fI);
+                // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
+                if (aHalf) {
+                    tNN.increment(idx);
+                }
+            });
+        }
+        // 除以近邻数得到比例
+        tConnectRatio.div2this(tNN);
+        
+        // 计算完成归还缓存数据
+        VectorCache.returnVec(tNN);
+        ComplexMatrixCache.returnMat(qlm);
+        
+        // 返回最终计算结果
+        return tConnectRatio;
+    }
+    public IVector calConnectRatioABOOP(int aL, double aConnectThreshold, double aRNearest, int aNnn) {return calConnectRatioABOOP(aL, aConnectThreshold, aRNearest, aNnn, aRNearest, aNnn, aRNearest, aNnn);}
+    public IVector calConnectRatioABOOP(int aL, double aConnectThreshold, double aRNearest          ) {return calConnectRatioABOOP(aL, aConnectThreshold, aRNearest, -1);}
+    public IVector calConnectRatioABOOP(int aL, double aConnectThreshold                            ) {return calConnectRatioABOOP(aL, aConnectThreshold, mUnitLen*R_NEAREST_MUL);}
+    
+    /** MPI 版本的 BOOP 连接数目 */
+    private IVector calConnectRatioABOOP_MPI_(boolean aNoGather, MPIInfo aMPIInfo, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ, double aRNearestS, int aNnnS) throws MPIException {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
+        final IComplexMatrix qlm = calQlmMean_MPI_(true, aMPIInfo, aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);
+        aMPIInfo.allgather(qlm, aRNearestS); // 手动同步边界的数据用于计算 sij
+        
+        // 如果限制了 aNnn 需要关闭 half 遍历的优化
+        final boolean aHalf = aNnnS<=0;
+        // 统计连接数，这里同样不去考虑减少重复代码
+        final Vector tConnectRatio = VectorCache.getZeros(mAtomNum);
+        // 统计近邻数用于求平均
+        final IVector tNN = VectorCache.getZeros(mAtomNum);
+        
+        // 注意需要先对 qlm 归一化
+        for (int i = 0; i < mAtomNum; ++i) {
+            IComplexVector qlmi = qlm.row(i);
+            qlmi.div2this(qlmi.operation().norm());
+        }
+        
+        // 获取缓存近邻列表，这里只需要进行遍历 idx
+        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestS, aNnnS, aHalf, aMPIInfo.mSize);
+        // 如果为 null 还需要获取需要缓存的近邻列表
+        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestS, aNnnS, aHalf, aMPIInfo.mSize) : null;
+        
+        // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
+        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
+            // 统一获取行向量
+            final IComplexVector qlmi = qlm.row(i);
+            // 遍历近邻计算连接数
+            final int fI = i;
+            forEachNeighbor_(tNL, fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, idx -> {
+                // 统一获取行向量
+                IComplexVector qlmj = qlm.row(idx);
+                // 计算复向量的点乘
+                ComplexDouble Sij = qlmi.operation().dot(qlmj);
+                // 取模量来判断是否连接
+                if (Sij.norm() > aConnectThreshold) {
+                    tConnectRatio.increment(fI);
+                    // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
+                    boolean tHalfStat = aHalf && aMPIInfo.inRegin(idx);
+                    if (tHalfStat) {
+                        tConnectRatio.increment(idx);
+                    }
+                }
+                
+                // 统计近邻
+                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
+                
+                // 统计近邻数
+                tNN.increment(fI);
+                // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
+                if (aHalf) {
+                    tNN.increment(idx);
+                }
+            });
+        }
+        // 除以近邻数得到比例
+        tConnectRatio.div2this(tNN);
+        
+        // 计算完成归还缓存数据
+        VectorCache.returnVec(tNN);
+        ComplexMatrixCache.returnMat(qlm);
+        
+        // 收集所有进程将统计到的连接数
+        if (!aNoGather) aMPIInfo.allgather(tConnectRatio);
+        
+        // 返回最终计算结果
+        return tConnectRatio;
+    }
+    private IVector calConnectRatioABOOP_MPI_(MPIInfo aMPIInfo, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ, double aRNearestS, int aNnnS) throws MPIException {return calConnectRatioABOOP_MPI_(aMPIInfo.mSize==1, aMPIInfo, aL, aConnectThreshold, aRNearestY, aNnnY, aRNearestQ, aNnnQ, aRNearestS, aNnnS);}
+    public IVector calConnectRatioABOOP_MPI(boolean aNoGather, MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ, double aRNearestS, int aNnnS) throws MPIException {try (MPIInfo tMPIInfo = new MPIInfo(aComm)) {return calConnectRatioABOOP_MPI_(aNoGather, tMPIInfo, aL, aConnectThreshold, aRNearestY, aNnnY, aRNearestQ, aNnnQ, aRNearestS, aNnnS);}}
+    public IVector calConnectRatioABOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearestY, int aNnnY, double aRNearestQ, int aNnnQ, double aRNearestS, int aNnnS) throws MPIException {try (MPIInfo tMPIInfo = new MPIInfo(aComm)) {return calConnectRatioABOOP_MPI_(tMPIInfo, aL, aConnectThreshold, aRNearestY, aNnnY, aRNearestQ, aNnnQ, aRNearestS, aNnnS);}}
+    public IVector calConnectRatioABOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearest, int aNnn) throws MPIException {return calConnectRatioABOOP_MPI(aComm, aL, aConnectThreshold, aRNearest, aNnn, aRNearest, aNnn, aRNearest, aNnn);}
+    public IVector calConnectRatioABOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold, double aRNearest          ) throws MPIException {return calConnectRatioABOOP_MPI(aComm, aL, aConnectThreshold, aRNearest, -1);}
+    public IVector calConnectRatioABOOP_MPI(MPI.Comm aComm, int aL, double aConnectThreshold                            ) throws MPIException {return calConnectRatioABOOP_MPI(aComm, aL, aConnectThreshold, mUnitLen*R_NEAREST_MUL);}
+    public IVector calConnectRatioABOOP_MPI(                int aL, double aConnectThreshold, double aRNearest, int aNnn) throws MPIException {return calConnectRatioABOOP_MPI(MPI.Comm.WORLD, aL, aConnectThreshold, aRNearest, aNnn);}
+    public IVector calConnectRatioABOOP_MPI(                int aL, double aConnectThreshold, double aRNearest          ) throws MPIException {return calConnectRatioABOOP_MPI(MPI.Comm.WORLD, aL, aConnectThreshold, aRNearest);}
+    public IVector calConnectRatioABOOP_MPI(                int aL, double aConnectThreshold                            ) throws MPIException {return calConnectRatioABOOP_MPI(MPI.Comm.WORLD, aL, aConnectThreshold);}
+    
+    
+    /**
+     * 具体通过 {@link #calConnectCountBOOP} 且 {@code l = 6} 来检测结构中类似固体的部分，
      * 输出结果为按照输入原子顺序排列的布尔向量，true 表示判断为类似固体；
      * <p>
      * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
@@ -1880,13 +2223,40 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）。默认不做限制
      * @return 最后判断得到是否是固体组成的逻辑向量
      */
-    public ILogicalVector checkSolidQ6(double aConnectThreshold, int aSolidThreshold, double aRNearest, int aNnn) {IVector tConnectCount = calConnectCountBOOP(6, aConnectThreshold, aRNearest, aNnn); ILogicalVector tIsSolid = tConnectCount.greaterOrEqual(aSolidThreshold); VectorCache.returnVec(tConnectCount); return tIsSolid;}
-    public ILogicalVector checkSolidQ6(double aConnectThreshold, int aSolidThreshold, double aRNearest          ) {return checkSolidQ6(aConnectThreshold, aSolidThreshold, aRNearest, -1);}
-    public ILogicalVector checkSolidQ6(double aConnectThreshold, int aSolidThreshold                            ) {return checkSolidQ6(aConnectThreshold, aSolidThreshold, mUnitLen*R_NEAREST_MUL);}
-    public ILogicalVector checkSolidQ6(                                                                         ) {return checkSolidQ6(0.5, 7);}
+    public ILogicalVector checkSolidConnectCount6(double aConnectThreshold, int aSolidThreshold, double aRNearest, int aNnn) {IVector tConnectCount = calConnectCountBOOP(6, aConnectThreshold, aRNearest, aNnn); ILogicalVector tIsSolid = tConnectCount.greaterOrEqual(aSolidThreshold); VectorCache.returnVec(tConnectCount); return tIsSolid;}
+    public ILogicalVector checkSolidConnectCount6(double aConnectThreshold, int aSolidThreshold, double aRNearest          ) {return checkSolidConnectCount6(aConnectThreshold, aSolidThreshold, aRNearest, -1);}
+    public ILogicalVector checkSolidConnectCount6(double aConnectThreshold, int aSolidThreshold                            ) {return checkSolidConnectCount6(aConnectThreshold, aSolidThreshold, mUnitLen*R_NEAREST_MUL);}
+    public ILogicalVector checkSolidConnectCount6(                                                                         ) {return checkSolidConnectCount6(0.5, 7);}
+    
+    /**@deprecated use {@link #checkSolidConnectCount6} */ @Deprecated public ILogicalVector checkSolidQ6(double aConnectThreshold, int aSolidThreshold, double aRNearest, int aNnn) {return checkSolidConnectCount6(aConnectThreshold, aSolidThreshold, aRNearest, aNnn);}
+    /**@deprecated use {@link #checkSolidConnectCount6} */ @Deprecated public ILogicalVector checkSolidQ6(double aConnectThreshold, int aSolidThreshold, double aRNearest          ) {return checkSolidConnectCount6(aConnectThreshold, aSolidThreshold, aRNearest);}
+    /**@deprecated use {@link #checkSolidConnectCount6} */ @Deprecated public ILogicalVector checkSolidQ6(double aConnectThreshold, int aSolidThreshold                            ) {return checkSolidConnectCount6(aConnectThreshold, aSolidThreshold);}
+    /**@deprecated use {@link #checkSolidConnectCount6} */ @Deprecated public ILogicalVector checkSolidQ6(                                                                         ) {return checkSolidConnectCount6();}
     
     /**
-     * 具体通过 Q4 来检测结构中类似固体的部分，
+     * 具体通过 {@link #calConnectRatioBOOP} 且 {@code l = 6} 来检测结构中类似固体的部分，
+     * 输出结果为按照输入原子顺序排列的布尔向量，true 表示判断为类似固体；
+     * <p>
+     * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
+     * @author liqa
+     * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值，默认为 0.58
+     * @param aRNearest 用来搜索的最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
+     * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）。默认不做限制
+     * @return 最后判断得到是否是固体组成的逻辑向量
+     */
+    public ILogicalVector checkSolidConnectRatio6(double aConnectThreshold, double aRNearest, int aNnn) {IVector tConnectRatio = calConnectRatioBOOP(6, aConnectThreshold, aRNearest, aNnn); ILogicalVector tIsSolid = tConnectRatio.greaterOrEqual(0.5); VectorCache.returnVec(tConnectRatio); return tIsSolid;}
+    public ILogicalVector checkSolidConnectRatio6(double aConnectThreshold, double aRNearest          ) {return checkSolidConnectRatio6(aConnectThreshold, aRNearest, -1);}
+    public ILogicalVector checkSolidConnectRatio6(double aConnectThreshold                            ) {return checkSolidConnectRatio6(aConnectThreshold, mUnitLen*R_NEAREST_MUL);}
+    public ILogicalVector checkSolidConnectRatio6(                                                    ) {return checkSolidConnectRatio6(0.58);}
+    
+    @VisibleForTesting public ILogicalVector checkSolidS6(double aConnectThreshold, double aRNearest, int aNnn) {return checkSolidConnectRatio6(aConnectThreshold, aRNearest, aNnn);}
+    @VisibleForTesting public ILogicalVector checkSolidS6(double aConnectThreshold, double aRNearest          ) {return checkSolidConnectRatio6(aConnectThreshold, aRNearest);}
+    @VisibleForTesting public ILogicalVector checkSolidS6(double aConnectThreshold                            ) {return checkSolidConnectRatio6(aConnectThreshold);}
+    @VisibleForTesting public ILogicalVector checkSolidS6(                                                    ) {return checkSolidConnectRatio6();}
+    
+    
+    /**
+     * 具体通过 {@link #calConnectCountBOOP} 且 {@code l = 4} 来检测结构中类似固体的部分，
      * 输出结果为按照输入原子顺序排列的布尔向量，true 表示判断为类似固体；
      * <p>
      * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
@@ -1901,10 +2271,36 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）。默认不做限制
      * @return 最后判断得到是否是固体组成的逻辑向量
      */
-    public ILogicalVector checkSolidQ4(double aConnectThreshold, int aSolidThreshold, double aRNearest, int aNnn) {IVector tConnectCount = calConnectCountBOOP(4, aConnectThreshold, aRNearest, aNnn); ILogicalVector tIsSolid = tConnectCount.greaterOrEqual(aSolidThreshold); VectorCache.returnVec(tConnectCount); return tIsSolid;}
-    public ILogicalVector checkSolidQ4(double aConnectThreshold, int aSolidThreshold, double aRNearest          ) {return checkSolidQ4(aConnectThreshold, aSolidThreshold, aRNearest, -1);}
-    public ILogicalVector checkSolidQ4(double aConnectThreshold, int aSolidThreshold                            ) {return checkSolidQ4(aConnectThreshold, aSolidThreshold, mUnitLen*R_NEAREST_MUL);}
-    public ILogicalVector checkSolidQ4(                                                                         ) {return checkSolidQ4(0.35, 6);}
+    public ILogicalVector checkSolidConnectCount4(double aConnectThreshold, int aSolidThreshold, double aRNearest, int aNnn) {IVector tConnectCount = calConnectCountBOOP(4, aConnectThreshold, aRNearest, aNnn); ILogicalVector tIsSolid = tConnectCount.greaterOrEqual(aSolidThreshold); VectorCache.returnVec(tConnectCount); return tIsSolid;}
+    public ILogicalVector checkSolidConnectCount4(double aConnectThreshold, int aSolidThreshold, double aRNearest          ) {return checkSolidConnectCount4(aConnectThreshold, aSolidThreshold, aRNearest, -1);}
+    public ILogicalVector checkSolidConnectCount4(double aConnectThreshold, int aSolidThreshold                            ) {return checkSolidConnectCount4(aConnectThreshold, aSolidThreshold, mUnitLen*R_NEAREST_MUL);}
+    public ILogicalVector checkSolidConnectCount4(                                                                         ) {return checkSolidConnectCount4(0.35, 6);}
+    
+    /**@deprecated use {@link #checkSolidConnectCount4} */ @Deprecated public ILogicalVector checkSolidQ4(double aConnectThreshold, int aSolidThreshold, double aRNearest, int aNnn) {return checkSolidConnectCount4(aConnectThreshold, aSolidThreshold, aRNearest, aNnn);}
+    /**@deprecated use {@link #checkSolidConnectCount4} */ @Deprecated public ILogicalVector checkSolidQ4(double aConnectThreshold, int aSolidThreshold, double aRNearest          ) {return checkSolidConnectCount4(aConnectThreshold, aSolidThreshold, aRNearest);}
+    /**@deprecated use {@link #checkSolidConnectCount4} */ @Deprecated public ILogicalVector checkSolidQ4(double aConnectThreshold, int aSolidThreshold                            ) {return checkSolidConnectCount4(aConnectThreshold, aSolidThreshold);}
+    /**@deprecated use {@link #checkSolidConnectCount4} */ @Deprecated public ILogicalVector checkSolidQ4(                                                                         ) {return checkSolidConnectCount4();}
+    
+    /**
+     * 具体通过 {@link #calConnectRatioBOOP} 且 {@code l = 4} 来检测结构中类似固体的部分，
+     * 输出结果为按照输入原子顺序排列的布尔向量，true 表示判断为类似固体；
+     * <p>
+     * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
+     * @author liqa
+     * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值，默认为 0.50
+     * @param aRNearest 用来搜索的最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
+     * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）。默认不做限制
+     * @return 最后判断得到是否是固体组成的逻辑向量
+     */
+    public ILogicalVector checkSolidConnectRatio4(double aConnectThreshold, double aRNearest, int aNnn) {IVector tConnectRatio = calConnectRatioBOOP(4, aConnectThreshold, aRNearest, aNnn); ILogicalVector tIsSolid = tConnectRatio.greaterOrEqual(0.5); VectorCache.returnVec(tConnectRatio); return tIsSolid;}
+    public ILogicalVector checkSolidConnectRatio4(double aConnectThreshold, double aRNearest          ) {return checkSolidConnectRatio4(aConnectThreshold, aRNearest, -1);}
+    public ILogicalVector checkSolidConnectRatio4(double aConnectThreshold                            ) {return checkSolidConnectRatio4(aConnectThreshold, mUnitLen*R_NEAREST_MUL);}
+    public ILogicalVector checkSolidConnectRatio4(                                                    ) {return checkSolidConnectRatio4(0.50);}
+    
+    @VisibleForTesting public ILogicalVector checkSolidS4(double aConnectThreshold, double aRNearest, int aNnn) {return checkSolidConnectRatio4(aConnectThreshold, aRNearest, aNnn);}
+    @VisibleForTesting public ILogicalVector checkSolidS4(double aConnectThreshold, double aRNearest          ) {return checkSolidConnectRatio4(aConnectThreshold, aRNearest);}
+    @VisibleForTesting public ILogicalVector checkSolidS4(double aConnectThreshold                            ) {return checkSolidConnectRatio4(aConnectThreshold);}
+    @VisibleForTesting public ILogicalVector checkSolidS4(                                                    ) {return checkSolidConnectRatio4();}
     
     
     /**

@@ -10,5 +10,5 @@ import jse.math.vector.ILogicalVector;
  * @author liqa
  */
 public class ClusterSizeCalculator extends AbstractClusterSizeCalculator {
-    @Override protected ILogicalVector getIsSolid_(MonatomicParameterCalculator aMPC, IAtomData aPoint) {return aMPC.checkSolidQ6();}
+    @Override protected ILogicalVector getIsSolid_(MonatomicParameterCalculator aMPC, IAtomData aPoint) {return aMPC.checkSolidConnectRatio6();}
 }

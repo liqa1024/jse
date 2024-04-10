@@ -18,47 +18,28 @@ def dataC = Data.read('lmp/data/data-crystal')
 def dataB = Structures.BCC(2.0, 10).opt().perturbXYZ(0.1)
 def dataF = Structures.FCC(3.0,  8).opt().perturbXYZ(0.1)
 
-// 计算 ConnectCount, isSolidQ6, isSolidQ4
-def countQ6G, countq6G, isSolidQ6G, isSolidQ4G
+// 计算 ConnectCount
+def countQ6G, countq6G
 try (def mpcG = MPC.of(dataG)) {
     countQ6G = mpcG.calConnectCountBOOP(6, 0.5)
     countq6G = mpcG.calConnectCountABOOP(6, 0.9)
-    isSolidQ6G = mpcG.checkSolidQ6()
-    isSolidQ4G = mpcG.checkSolidQ4()
 }
-def countQ6C, countq6C, isSolidQ6C, isSolidQ4C
+def countQ6C, countq6C
 try (def mpcC = MPC.of(dataC)) {
     countQ6C = mpcC.calConnectCountBOOP(6, 0.5)
     countq6C = mpcC.calConnectCountABOOP(6, 0.9)
-    isSolidQ6C = mpcC.checkSolidQ6()
-    isSolidQ4C = mpcC.checkSolidQ4()
 }
-def countQ6B, countq6B, isSolidQ6B, isSolidQ4B
+def countQ6B, countq6B
 try (def mpcB = MPC.of(dataB)) {
     countQ6B = mpcB.calConnectCountBOOP(6, 0.5)
     countq6B = mpcB.calConnectCountABOOP(6, 0.9)
-    isSolidQ6B = mpcB.checkSolidQ6()
-    isSolidQ4B = mpcB.checkSolidQ4()
 }
-def countQ6F, countq6F, isSolidQ6F, isSolidQ4F
+def countQ6F, countq6F
 try (def mpcF = MPC.of(dataF)) {
     countQ6F = mpcF.calConnectCountBOOP(6, 0.5)
     countq6F = mpcF.calConnectCountABOOP(6, 0.9)
-    isSolidQ6F = mpcF.checkSolidQ6()
-    isSolidQ4F = mpcF.checkSolidQ4()
 }
 
-// 输出判断的固体的数目
-println("Solid Q6 of glass:   ${isSolidQ6G.count()} / ${isSolidQ6G.size()}")
-println("Solid Q6 of crystal: ${isSolidQ6C.count()} / ${isSolidQ6C.size()}")
-println("Solid Q6 of BCC:     ${isSolidQ6B.count()} / ${isSolidQ6B.size()}")
-println("Solid Q6 of FCC:     ${isSolidQ6F.count()} / ${isSolidQ6F.size()}")
-println()
-println("Solid Q4 of glass:   ${isSolidQ4G.count()} / ${isSolidQ4G.size()}")
-println("Solid Q4 of crystal: ${isSolidQ4C.count()} / ${isSolidQ4C.size()}")
-println("Solid Q4 of BCC:     ${isSolidQ4B.count()} / ${isSolidQ4B.size()}")
-println("Solid Q4 of FCC:     ${isSolidQ4F.count()} / ${isSolidQ4F.size()}")
-println()
 // 输出平均值
 println("Mean of connect count Q6 of glass:   ${countQ6G.mean()}")
 println("Mean of connect count Q6 of crystal: ${countQ6C.mean()}")
@@ -102,16 +83,6 @@ xrange(distCountq6G.x().first(), distCountq6G.x().last())
 
 
 //OUTPUT:
-// Solid Q6 of glass:   29 / 4000
-// Solid Q6 of crystal: 3780 / 4000
-// Solid Q6 of BCC:     2000 / 2000
-// Solid Q6 of FCC:     2048 / 2048
-//
-// Solid Q4 of glass:   1118 / 4000
-// Solid Q4 of crystal: 2875 / 4000
-// Solid Q4 of BCC:     1005 / 2000
-// Solid Q4 of FCC:     2013 / 2048
-//
 // Mean of connect count Q6 of glass:   1.617
 // Mean of connect count Q6 of crystal: 12.438
 // Mean of connect count Q6 of BCC:     13.98
