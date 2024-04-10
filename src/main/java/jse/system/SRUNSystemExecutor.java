@@ -1,8 +1,7 @@
 package jse.system;
 
-import jse.code.CS.Slurm.Resource;
+import jse.code.OS.Slurm;
 import jse.code.UT;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -11,8 +10,8 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 import static jse.code.CS.*;
-import static jse.code.CS.Slurm.IS_SLURM;
-import static jse.code.CS.Slurm.RESOURCES_MANAGER;
+import static jse.code.OS.Slurm.IS_SLURM;
+import static jse.code.OS.Slurm.RESOURCES_MANAGER;
 import static jse.code.Conf.WORKING_DIR_OF;
 
 /**
@@ -21,10 +20,9 @@ import static jse.code.Conf.WORKING_DIR_OF;
  * 在提交的 jse 任务中提交子任务；因此认为此时已经有了 SLURM 的任务环境 </p>
  * <p> 由于是提交子任务的形式，这里依旧使用 java 线程池来提交后台任务 </p>
  */
-@ApiStatus.Obsolete
 public class SRUNSystemExecutor extends LocalSystemExecutor {
     private final String mWorkingDir;
-    private final Map<Resource, Boolean> mAssignedResources;
+    private final Map<Slurm.Resource, Boolean> mAssignedResources;
     
     /** 线程数现在由每个任务的并行数，申请到的节点数，以及每节点的核心数来确定 */
     public SRUNSystemExecutor(int aTaskNum, int aMaxParallelNum) throws Exception {
@@ -40,7 +38,7 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
             throw new Exception("SRUN can Only be used in SLURM");
         }
         for (int i = 0; i < aMaxParallelNum; ++i) {
-            Resource tResource = aTaskNum>0 ? RESOURCES_MANAGER.assignResource(aTaskNum) : RESOURCES_MANAGER.assignResource();
+            Slurm.Resource tResource = aTaskNum>0 ? RESOURCES_MANAGER.assignResource(aTaskNum) : RESOURCES_MANAGER.assignResource();
             // 分配失败直接抛出错误
             if (tResource == null) {
                 this.shutdown();
@@ -53,8 +51,8 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
     public SRUNSystemExecutor() throws Exception {this(-1, 1);}
     
     /** 内部使用的向任务分配节点的方法 */
-    private synchronized @Nullable Resource assignResource() {
-        for (Map.Entry<Resource, Boolean> tEntry : mAssignedResources.entrySet()) {
+    private synchronized @Nullable Slurm.Resource assignResource() {
+        for (Map.Entry<Slurm.Resource, Boolean> tEntry : mAssignedResources.entrySet()) {
             if (!tEntry.getValue()) {
                 tEntry.setValue(true);
                 return tEntry.getKey();
@@ -64,15 +62,15 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
         return null;
     }
     /** 内部使用的任务完成归还节点的方法 */
-    private synchronized void returnResource(Resource aResource) {
+    private synchronized void returnResource(Slurm.Resource aResource) {
         mAssignedResources.put(aResource, false);
     }
     
-    @Override protected Future<Integer> submitSystem__(String aCommand, @NotNull UT.IO.IWriteln  aWriteln) {
+    @Override protected Future<Integer> submitSystem__(String aCommand, @NotNull UT.IO.IWriteln aWriteln) {
         // 对于空指令专门优化，不执行操作
         if (aCommand == null || aCommand.isEmpty()) return SUC_FUTURE;
         // 先尝试获取节点
-        Resource tResource = assignResource();
+        Slurm.Resource tResource = assignResource();
         if (tResource == null && !noERROutput()) {
             System.err.println("WARNING: Can NOT to assign resource for this job temporarily, this job blocks until there are any free resource.");
             System.err.println("It may be caused by too large number of parallels.");
@@ -82,7 +80,7 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
             catch (InterruptedException e) {printStackTrace(e); return ERR_FUTURE;}
             tResource = assignResource();
         }
-        // 为了兼容性，需要将实际需要执行的脚本写入 bash 后再执行（现在可能不会有问题了，不过为了避免出现意料外的情况还是不改了）
+        // 为了兼容性，需要将实际需要执行的脚本写入 bash 后再执行，从而可以支持复杂的逻辑输入（包含 cd 等操作或者多行命令）
         String tTempScriptPath = mWorkingDir+UT.Code.randID()+".sh";
         try {UT.IO.write(tTempScriptPath, "#!/bin/bash\n"+aCommand);}
         catch (Exception e) {printStackTrace(e); returnResource(tResource); return ERR_FUTURE;}
@@ -91,7 +89,7 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
         // 获取指令失败直接输出错误
         if (tCommand == null) {System.err.println("ERROR: Create SLURM job step Failed"); returnResource(tResource); return ERR_FUTURE;}
         // 任务完成后需要归还任务
-        final Resource fResource = tResource;
+        final Slurm.Resource fResource = tResource;
         return toSystemFuture(super.submitSystem__(tCommand, aWriteln), () -> returnResource(fResource));
     }
     
@@ -101,6 +99,6 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
             UT.IO.removeDir(mWorkingDir);
             if (needSyncIOFiles()) removeDir(mWorkingDir);
         } catch (Exception ignored) {}
-        for (Resource tResource : mAssignedResources.keySet()) RESOURCES_MANAGER.returnResource(tResource);
+        for (Slurm.Resource tResource : mAssignedResources.keySet()) RESOURCES_MANAGER.returnResource(tResource);
     }
 }

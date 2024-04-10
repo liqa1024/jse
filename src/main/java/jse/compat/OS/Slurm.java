@@ -1,12 +1,11 @@
-package jse.compat.CS;
+package jse.compat.OS;
 
 import jse.code.OS;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
 
-/** @deprecated use {@link OS.Slurm} */
-@VisibleForTesting @Deprecated
+@VisibleForTesting
 public final class Slurm extends OS.Slurm {
     public final static boolean IS_SLURM = OS.Slurm.IS_SLURM;
     public final static int PROCID = OS.Slurm.PROCID;

@@ -1,11 +1,14 @@
 package jse.code;
 
+import com.google.common.collect.ImmutableList;
 import jse.Main;
+import jse.math.MathEX;
 import jse.system.BashSystemExecutor;
 import jse.system.ISystemExecutor;
 import jse.system.PowerShellSystemExecutor;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.BufferedReader;
@@ -14,8 +17,10 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Future;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 系统相关操作，包括 jar 包的位置，执行系统指令，判断系统类型，获取工作目录等；
@@ -137,4 +142,204 @@ public class OS {
     @VisibleForTesting public static List<String> system_str(String aCommand) {return EXEC.system_str(aCommand);}
     @VisibleForTesting public static Future<List<String>> submitSystem_str(String aCommand) {return EXEC.submitSystem_str(aCommand);}
     /** @deprecated use {@link #EXEC} */  @VisibleForTesting @Deprecated public static ISystemExecutor exec() {return EXEC;}
+    
+    
+    /** SLURM 相关，使用子类分割避免冗余初始化 */
+    public static class Slurm {
+        public final static boolean IS_SLURM;
+        public final static int PROCID;
+        public final static int NTASKS;
+        public final static int CORES_PER_NODE;
+        public final static int CORES_PER_TASK;
+        public final static int MAX_STEP_COUNT;
+        public final static int JOB_ID;
+        public final static int NODEID;
+        public final static String NODENAME;
+        public final static List<String> NODE_LIST;
+        public final static ResourcesManager RESOURCES_MANAGER;
+        
+        
+        /** slurm 的资源分配器，所有 slurm 资源申请统一先走这层防止资源分配失败 */
+        public final static class ResourcesManager {
+            private final Map<String, Integer> mAllResources;
+            private int mRestStepCount;
+            private ResourcesManager() {
+                mAllResources = new HashMap<>();
+                for (String tNode : NODE_LIST) mAllResources.put(tNode, CORES_PER_NODE);
+                // 如果使用常规的 sbatch 提交 groovy 脚本则不需要为此脚本专门分配资源，
+                // 因此这里不去预留任何资源，当然对于嵌套使用的情况下则不能从 jse 内部保证资源分配合适。
+                // 移除自身消耗的作业步，预留 100 步给外部使用
+                mRestStepCount = MAX_STEP_COUNT - 100;
+            }
+            /** 根据需要的核心数来分配资源，返回节点和对应的可用核心数 */
+            public synchronized @Nullable Resource assignResource(final int aTaskNum) {
+                // 计算至少需要的节点数目
+                int tMinNodes = MathEX.Code.divup(aTaskNum, CORES_PER_NODE);
+                // 超过节点数则直接分配失败，返回 null
+                if (tMinNodes > NODE_LIST.size()) return null;
+                // 一直增加节点数直到分配成功，slurm 不能过于灵活的分配，对于给定节点数分配情况是“唯一”的
+                int tNodes = tMinNodes;
+                while (tNodes <= NODE_LIST.size()) {
+                    // 获取 slurm 下的分配结果
+                    int tRestTasks = aTaskNum;
+                    int tNTasksPerNode = aTaskNum / tNodes;
+                    int[] tNTasksPerNodeList = new int[tNodes];
+                    for (int i = 0; i < tNodes; ++i) {
+                        tNTasksPerNodeList[i] = tNTasksPerNode;
+                        tRestTasks -= tNTasksPerNode;
+                    }
+                    if (tRestTasks > 0) {
+                        ++tNTasksPerNode;
+                        int tIdx = 0;
+                        while (tRestTasks > 0) {
+                            ++tNTasksPerNodeList[tIdx]; --tRestTasks;
+                            ++tIdx;
+                        }
+                    }
+                    // 从所有资源中分配，获取节点列表
+                    List<String> rNodeList = new ArrayList<>();
+                    int tIdx = 0;
+                    for (Map.Entry<String, Integer> tEntry : mAllResources.entrySet()) {
+                        if (tEntry.getValue() >= tNTasksPerNodeList[tIdx]) {
+                            rNodeList.add(tEntry.getKey());
+                            ++tIdx;
+                            if (tIdx == tNodes) break;
+                        }
+                    }
+                    // 成功分配则减去资源，输出结果
+                    if (rNodeList.size() == tNodes) {
+                        tIdx = 0;
+                        for (String tNode : rNodeList) {
+                            final int tThisNodeNTasks = tNTasksPerNodeList[tIdx];
+                            mAllResources.computeIfPresent(tNode, (node, cores) -> cores-tThisNodeNTasks);
+                            ++tIdx;
+                        }
+                        return new Resource(rNodeList, tNodes, aTaskNum, tNTasksPerNode, tNTasksPerNodeList);
+                    }
+                    // 否则增加需要的节点数，重新分配
+                    ++tNodes;
+                }
+                // 分配失败，返回 null
+                return null;
+            }
+            
+            /** 不指定时会分配目前最大核数的节点，保持不跨节点 */
+            public synchronized @Nullable Resource assignResource() {
+                int tNTasks = 0;
+                String tNode = null;
+                for (Map.Entry<String, Integer> tEntry : mAllResources.entrySet()) {
+                    int tRestCores = tEntry.getValue();
+                    if (tRestCores > tNTasks) {
+                        tNTasks = tRestCores;
+                        tNode = tEntry.getKey();
+                        if (tNTasks == CORES_PER_NODE) break;
+                    }
+                }
+                // 成功分配则减去资源，输出结果
+                if (tNTasks > 0) {
+                    mAllResources.put(tNode, 0);
+                    return new Resource(Collections.singletonList(tNode), 1, tNTasks, tNTasks, new int[] {tNTasks});
+                }
+                // 分配失败，返回 null
+                return null;
+            }
+            
+            /** 返回分配的资源 */
+            public synchronized void returnResource(Resource aResource) {
+                int tIdx = 0;
+                for (String tNode : aResource.nodelist) {
+                    final int tThisNodeNTasks = aResource.ntasksPerNodeList[tIdx];
+                    mAllResources.computeIfPresent(tNode, (node, cores) -> cores+tThisNodeNTasks);
+                    ++tIdx;
+                }
+            }
+            
+            /** 获取提交作业步的指令 */
+            public synchronized @Nullable String creatJobStep(Resource aResource, String aCommand) {
+                // 超过作业步限制直接禁止分配
+                --mRestStepCount;
+                if (mRestStepCount < 0) {mRestStepCount = 0; return null;}
+                
+                List<String> rCommand = new ArrayList<>();
+                rCommand.add("srun");
+                rCommand.add("--nodelist");         rCommand.add(String.join(",", aResource.nodelist));
+                rCommand.add("--nodes");            rCommand.add(String.valueOf(aResource.nodes));
+                rCommand.add("--ntasks");           rCommand.add(String.valueOf(aResource.ntasks));
+                rCommand.add("--ntasks-per-node");  rCommand.add(String.valueOf(aResource.ntasksPerNode));
+                rCommand.add("--cpus-per-task");    rCommand.add(String.valueOf(1));
+                rCommand.add(aCommand);
+                return String.join(" ", rCommand);
+            }
+        }
+        /** slurm 的资源结构，限制很多已经尽力 */
+        public final static class Resource {
+            private final @Unmodifiable List<String> nodelist;
+            private final int nodes;
+            private final int ntasks;
+            private final int ntasksPerNode;
+            private final int[] ntasksPerNodeList; // internal usage
+            
+            private Resource(@Unmodifiable List<String> nodelist, int nodes, int ntasks, int ntasksPerNode, int[] ntasksPerNodeList) {
+                this.nodelist = nodelist;
+                this.nodes = nodes;
+                this.ntasks = ntasks;
+                this.ntasksPerNode = ntasksPerNode;
+                this.ntasksPerNodeList = ntasksPerNodeList;
+            }
+        }
+        
+        
+        static {
+            // 获取 ID，如果失败则不是 slurm
+            PROCID = OS.envI("SLURM_PROCID", -1);
+            IS_SLURM = PROCID >= 0;
+            // 是 slurm 则从环境变量中读取后续参数，否则使用默认非法值
+            if (IS_SLURM) {
+                // 获取作业 id
+                JOB_ID = OS.envI("SLURM_JOB_ID", -1);
+                // 获取任务总数
+                NTASKS = OS.envI("SLURM_NTASKS", -1);
+                // 获取对应的 node id 和节点名
+                NODEID = OS.envI("SLURM_NODEID", -1);
+                NODENAME = OS.env("SLURMD_NODENAME");
+                // 获取每任务的核心数，可能为 null；现在统一在没有时为 -1，这里已经用不到这个参数了
+                CORES_PER_TASK = OS.envI("SLURM_CPUS_PER_TASK", -1);
+                
+                // 获取每节点的核心数
+                String tRawCoresPerNode = OS.env("SLURM_JOB_CPUS_PER_NODE");
+                if (tRawCoresPerNode == null) {
+                    CORES_PER_NODE = -1;
+                } else {
+                    // 目前仅支持单一的 CoresPerNode，对于有多个的情况会选取最小值
+                    Pattern tPattern = Pattern.compile("(\\d+)(\\([^)]+\\))?"); // 匹配整数部分和可选的括号部分
+                    Matcher tMatcher = tPattern.matcher(tRawCoresPerNode);
+                    int tCoresPerNode = -1;
+                    while (tMatcher.find()) {
+                        int tResult = Integer.parseInt(tMatcher.group(1));
+                        tCoresPerNode = (tCoresPerNode < 0) ? tResult : Math.min(tCoresPerNode, tResult);
+                    }
+                    CORES_PER_NODE = tCoresPerNode;
+                }
+                
+                // 单个任务的作业步限制，不能获取，默认为此值
+                MAX_STEP_COUNT = 40000;
+                
+                // 获取节点列表
+                String tRawNodeList = OS.env("SLURM_NODELIST");
+                NODE_LIST = tRawNodeList==null ? null : ImmutableList.copyOf(UT.Text.splitNodeList(tRawNodeList));
+                
+                RESOURCES_MANAGER = new ResourcesManager();
+            } else {
+                JOB_ID = -1;
+                NTASKS = -1;
+                NODEID = -1;
+                NODENAME = null;
+                CORES_PER_NODE = -1;
+                CORES_PER_TASK = -1;
+                MAX_STEP_COUNT = -1;
+                NODE_LIST = null;
+                RESOURCES_MANAGER = null;
+            }
+        }
+    }
 }
