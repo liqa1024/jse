@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 通用的列表类，不提供 get(int...) 以及 size() 之类的接口方便 {@link WrapperedTable} 的使用，
+ * 通用的列表类，目前依旧不提供 get(int...) 以及 size()，
  * 不去涉及复杂的返回类型的情况，因此不使用泛型
  * @author liqa
  */
