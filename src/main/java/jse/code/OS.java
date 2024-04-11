@@ -153,8 +153,9 @@ public class OS {
         public final static int CORES_PER_NODE;
         public final static int CORES_PER_TASK;
         public final static int MAX_STEP_COUNT;
-        public final static int JOB_ID;
         public final static int STEP_ID;
+        public final static int JOB_ID;
+        public final static String JOB_NAME;
         public final static int NODEID;
         public final static String NODENAME;
         public final static List<String> NODE_LIST;
@@ -186,7 +187,7 @@ public class OS {
             public synchronized @Nullable Resource assignResource(final int aTaskNum) {
                 if (mWarning) {
                     mWarning = false; // 只警告一次
-                    System.err.println("WARNING: It is not necessary to run jse using `srun` and then assignResource. You can run jse directly in the `sbatch` script.");
+                    System.err.println("WARNING: It is UNSAFE to run jse using `srun` and then assignResource. You should run jse directly in the `sbatch` script.");
                     System.err.println("If this jse needs special resources, please specified core number required by `-c`.");
                 }
                 // 计算至少需要的节点数目
@@ -241,6 +242,11 @@ public class OS {
             
             /** 不指定时会分配目前最大核数的节点，保持不跨节点 */
             public synchronized @Nullable Resource assignResource() {
+                if (mWarning) {
+                    mWarning = false; // 只警告一次
+                    System.err.println("WARNING: It is UNSAFE to run jse using `srun` and then assignResource. You should run jse directly in the `sbatch` script.");
+                    System.err.println("If this jse needs special resources, please specified core number required by `-c`.");
+                }
                 int tNTasks = 0;
                 String tNode = null;
                 for (Map.Entry<String, Integer> tEntry : mAllResources.entrySet()) {
@@ -282,7 +288,9 @@ public class OS {
                 rCommand.add("--nodes");            rCommand.add(String.valueOf(aResource.nodes));
                 rCommand.add("--ntasks");           rCommand.add(String.valueOf(aResource.ntasks));
                 rCommand.add("--ntasks-per-node");  rCommand.add(String.valueOf(aResource.ntasksPerNode));
+                if (CORES_PER_TASK > 0) {
                 rCommand.add("--cpus-per-task");    rCommand.add(String.valueOf(1));
+                }
                 rCommand.add(aCommand);
                 return String.join(" ", rCommand);
             }
@@ -314,8 +322,9 @@ public class OS {
             if (IS_SLURM) {
                 // 获取 ID
                 PROCID = OS.envI("SLURM_PROCID", -1);
-                // 获取作业 id
+                // 获取作业 id 和作业名
                 JOB_ID = OS.envI("SLURM_JOB_ID", -1);
+                JOB_NAME = OS.env("SLURM_JOB_NAME");
                 // 获取任务总数
                 NTASKS = OS.envI("SLURM_NTASKS", -1);
                 // 获取对应的 node id 和节点名
@@ -350,10 +359,11 @@ public class OS {
             } else {
                 IS_SRUN = false;
                 PROCID = -1;
+                STEP_ID = -1;
                 JOB_ID = -1;
+                JOB_NAME = null;
                 NTASKS = -1;
                 NODEID = -1;
-                STEP_ID = -1;
                 NODENAME = null;
                 CORES_PER_NODE = -1;
                 CORES_PER_TASK = -1;
