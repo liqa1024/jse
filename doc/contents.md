@@ -20,6 +20,7 @@
     3. [后台任务提交](system.md#后台任务提交)
     4. [自定义任务提交器种类](system.md#自定义任务提交器种类)
     5. [SSH 任务提交](system.md#ssh-任务提交)
+    6. [srun/yhrun 任务提交](system.md#srun-任务提交)
     
 4. [通用文件操作](io.md)
     1. [文件读写](io.md#文件读写)
