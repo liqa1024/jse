@@ -1,6 +1,8 @@
 package jse.code;
 
 import jse.clib.MiMalloc;
+import jse.code.collection.NewCollections;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -25,8 +27,8 @@ public class Conf {
     /** 是否在 kernel 模式下显示 figure 窗口，关闭后则会在 jupyter notebook 上渲染 */
     public static boolean KERNEL_SHOW_FIGURE = OS.envZ("JSE_KERNEL_SHOW_FIGURE", false);
     
-    /** 设置 jse 许多类工作的临时目录，一般来说使用 .jse/ 目录应该会更加合适，这里为了兼容并减少目录数还是默认保持使用 .temp */
-    public static String TEMP_WORKING_DIR = OS.env("JSE_TEMP_WORKING_DIR", ".temp/%n/");
+    /** 设置 jse 许多类工作的临时目录，一般来说使用 .jse/ 目录应该会更加合适，这里为了兼容并减少目录数还是默认保持使用 .temp；现在为了保证不带 / 也能使用，统一增加一个 toInternalValidDir */
+    public static String TEMP_WORKING_DIR = UT.IO.toInternalValidDir(OS.env("JSE_TEMP_WORKING_DIR", ".temp/%n/"));
     public static String WORKING_DIR_OF(String aUniqueName) {return WORKING_DIR_OF(aUniqueName, false);}
     public static String WORKING_DIR_OF(String aUniqueName, boolean aRelative) {
         String tRelativeWD = TEMP_WORKING_DIR.replaceAll("%n", aUniqueName);
@@ -43,6 +45,13 @@ public class Conf {
     public static boolean PARFOR_NO_COMPETITIVE = OS.envZ("JSE_PARFOR_NO_COMPETITIVE", false);
     /** 设置 parfor 默认的线程数 */
     public static int PARFOR_THREAD_NUMBER = OS.envI("JSE_PARFOR_THREAD_NUMBER", Runtime.getRuntime().availableProcessors());
+    
+    /** 设置外置的 Groovy 库的路径，这里保留原始输入不进行预处理 */
+    public static String @NotNull[] GROOVY_EXLIB_DIRS = OS.envPath("JSE_GROOVY_EXLIB_DIRS");
+    /** 设置外置的 jar 库的路径，这里保留原始输入不进行预处理 */
+    public static String @NotNull[] JAR_EXLIB_DIRS = OS.envPath("JSE_JAR_EXLIB_DIRS");
+    /** 设置外置的 Python 库的路径，这里保留原始输入不进行预处理 */
+    public static String @NotNull[] PYTHON_EXLIB_DIRS = OS.envPath("JSE_PYTHON_EXLIB_DIRS");
     
     /** 设置是否开启缓存，关闭后可以让内存管理全权交给 jvm，目前 jse 的内存效率和 jvm 基本类似 */
     public static boolean NO_CACHE = OS.envZ("JSE_NO_CACHE", false);

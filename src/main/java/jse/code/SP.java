@@ -81,14 +81,21 @@ public class SP {
     
     static {
         JAR_LIB_PATHS = new ArrayList<>();
-        if (UT.IO.isDir(JAR_LIB_DIR)) {
-            try {
+        try {
+            if (UT.IO.isDir(JAR_LIB_DIR)) {
                 for (String tName : UT.IO.list(JAR_LIB_DIR)) if (tName.endsWith(".jar")) {
                     JAR_LIB_PATHS.add(UT.IO.toAbsolutePath(JAR_LIB_DIR+tName));
                 }
-            } catch (IOException e) {
-                e.printStackTrace(System.err);
             }
+            // 增加外置 jar 的库的路径
+            for (String tJarExlibDir : JAR_EXLIB_DIRS) if (UT.IO.isDir(tJarExlibDir)) {
+                tJarExlibDir = UT.IO.toInternalValidDir(tJarExlibDir);
+                for (String tName : UT.IO.list(tJarExlibDir)) if (tName.endsWith(".jar")) {
+                    JAR_LIB_PATHS.add(UT.IO.toAbsolutePath(tJarExlibDir+tName));
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace(System.err);
         }
     }
     
@@ -547,6 +554,10 @@ public class SP {
             GROOVY_SHELL.getClassLoader().addClasspath(UT.IO.toAbsolutePath(GROOVY_SP_DIR));
             // 增加一个 Groovy 的库的路径
             GROOVY_SHELL.getClassLoader().addClasspath(UT.IO.toAbsolutePath(GROOVY_LIB_DIR));
+            // 增加外置 Groovy 的库的路径
+            for (String tGroovyExlibDir : GROOVY_EXLIB_DIRS) {
+            GROOVY_SHELL.getClassLoader().addClasspath(UT.IO.toAbsolutePath(tGroovyExlibDir));
+            }
             // 增加 jar 文件夹下的所有 jar 文件到类路径中
             JAR_LIB_PATHS.forEach(path -> GROOVY_SHELL.getClassLoader().addClasspath(path));
         }
@@ -705,15 +716,19 @@ public class SP {
             
             // 配置 Jep，这里只能配置一次
             jep.SharedInterpreter.setConfig(new JepConfig()
-                .addIncludePaths(UT.IO.toAbsolutePath(PYTHON_SP_DIR))
-                .addIncludePaths(UT.IO.toAbsolutePath(PYTHON_LIB_DIR))
-                .addIncludePaths(UT.IO.toAbsolutePath(JEP_LIB_DIR))
+                .addIncludePaths(UT.IO.toAbsolutePath(PYTHON_SP_DIR),
+                                 UT.IO.toAbsolutePath(PYTHON_LIB_DIR),
+                                 UT.IO.toAbsolutePath(JEP_LIB_DIR))
+                .addIncludePaths(NewCollections.mapArray(PYTHON_EXLIB_DIRS, UT.IO::toAbsolutePath))
                 .setClassLoader(Groovy.classLoader()) // 指定 Groovy 的 ClassLoader 从而可以直接导入 groovy 的类
                 .redirectStdout(System.out)
                 .redirectStdErr(System.err));
             // 把 groovy 的类路径也加进去
             jep.ClassList.ADDITIONAL_CLASS_PATHS.add(UT.IO.toAbsolutePath(GROOVY_SP_DIR));
             jep.ClassList.ADDITIONAL_CLASS_PATHS.add(UT.IO.toAbsolutePath(GROOVY_LIB_DIR));
+            for (String tGroovyExlibDir : GROOVY_EXLIB_DIRS) {
+            jep.ClassList.ADDITIONAL_CLASS_PATHS.add(UT.IO.toAbsolutePath(tGroovyExlibDir));
+            }
             jep.ClassList.ADDITIONAL_CLASS_PATHS.addAll(JAR_LIB_PATHS);
             jep.ClassList.ADDITIONAL_CLASS_FILE_EXTENSION.add(".groovy");
             // 初始化 JEP_INTERP

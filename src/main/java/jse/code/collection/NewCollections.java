@@ -156,6 +156,12 @@ public class NewCollections {
         aIterable.forEach(v -> rOut.add(aOpt.apply(v)));
         return rOut;
     }
+    @SuppressWarnings("unchecked")
+    public static <T> T[] mapArray(final T[] aArray, final IUnaryFullOperator<? extends T, ? super T> aOpt) {
+        T[] rOut = (T[]) Array.newInstance(aArray.getClass().getComponentType(), aArray.length);
+        for (int i = 0; i < aArray.length; ++i) rOut[i] = aOpt.apply(aArray[i]);
+        return rOut;
+    }
     
     
     /**

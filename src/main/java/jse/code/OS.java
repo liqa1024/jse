@@ -6,12 +6,10 @@ import jse.math.MathEX;
 import jse.system.BashSystemExecutor;
 import jse.system.ISystemExecutor;
 import jse.system.PowerShellSystemExecutor;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
-import org.jetbrains.annotations.VisibleForTesting;
+import org.jetbrains.annotations.*;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -21,6 +19,8 @@ import java.util.*;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static jse.code.CS.ZL_STR;
 
 /**
  * 系统相关操作，包括 jar 包的位置，执行系统指令，判断系统类型，获取工作目录等；
@@ -114,6 +114,14 @@ public class OS {
     public static String env(String aName, String aDefault) {
         String tEnv = env(aName);
         return tEnv==null ? aDefault : tEnv;
+    }
+    public static String @NotNull[] envPath(String aName) {
+        return envPath(aName, ZL_STR);
+    }
+    @Contract("_, !null -> !null")
+    public static String[] envPath(String aName, String[] aDefault) {
+        String tEnv = env(aName);
+        return tEnv==null ? aDefault : tEnv.trim().split(File.pathSeparator);
     }
     public static int envI(String aName, int aDefault) throws NumberFormatException {
         String tEnv = env(aName);
