@@ -483,9 +483,6 @@ ABOOP（Averaged local Bond Orientational Order Parameters），
     
     输出：`IVector`，计算得到的每个原子的连接数占所有近邻数的比例值，按照原子顺序排列
     
-    例子：`example/mpc/connectcount`
-    [⤤](../release/script/groovy/example/mpc/connectcount.groovy)
-    
     -----------------------------
     
 - **`calConnectRatioABOOP`**
@@ -502,9 +499,6 @@ ABOOP（Averaged local Bond Orientational Order Parameters），
     输入4（可选）：`int`，限制最大的最近邻数目（默认不做限制）
     
     输出：`IVector`，计算得到的每个原子的连接数占所有近邻数的比例值，按照原子顺序排列
-    
-    例子：`example/mpc/connectcount`
-    [⤤](../release/script/groovy/example/mpc/connectcount.groovy)
 
 
 ## Voronoi 分析
