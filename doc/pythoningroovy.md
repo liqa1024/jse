@@ -256,3 +256,30 @@ ${JSE_HOME}
 `${JSE_HOME}/lib/.pypkg`，而 `installPackage`
 会在此目录查找符合要求的跑进行安装。
 
+有时直接在 jse 目录下添加文件是不太现实的，
+从 `2.8.2` 版本后支持通过环境变量 `JSE_PYTHON_EXLIB_DIRS`
+来增加自定义路径的 python 库。
+例如设置这样设置环境变量：
+
+```shell
+export JSE_PYTHON_EXLIB_DIRS=/software/pypkg
+```
+
+将需要安装的 python 库置于上述目录即可，例如对于上述 ase 库：
+
+```
+software
+    └─pypkg
+        ├─ase
+        └─bin
+```
+
+`JSE_PYTHON_EXLIB_DIRS` 也支持设置多个路径，和 `PATH`
+类似，在 linux 下使用 `:` 分隔，在 windows 下使用 `;`
+分隔：
+
+```shell
+export JSE_PYTHON_EXLIB_DIRS=\
+/software/pypkg1:/software/pypkg2:$JSE_PYTHON_EXLIB_DIRS
+```
+
