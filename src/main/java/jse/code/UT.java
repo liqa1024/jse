@@ -980,6 +980,35 @@ public class UT {
             
             return rOutput;
         }
+        
+        
+        /**
+         * convert between json and map
+         * @author liqa
+         */
+        public static Map<?, ?> json2map(String aText) {
+            return (Map<?, ?>) (new JsonSlurper()).parseText(aText);
+        }
+        public static String map2json(Map<?, ?> aMap) {
+            return map2json(aMap, false);
+        }
+        public static String map2json(Map<?, ?> aMap, boolean aPretty) {
+            JsonBuilder tBuilder = new JsonBuilder();
+            tBuilder.call(aMap);
+            return aPretty ? tBuilder.toPrettyString() : tBuilder.toString();
+        }
+        /**
+         * convert between yaml and map
+         * @author liqa
+         */
+        public static Map<?, ?> yaml2map(String aText) {
+            return (Map<?, ?>) (new YamlSlurper()).parseText(aText);
+        }
+        public static String map2yaml(Map<?, ?> aMap) {
+            YamlBuilder tBuilder = new YamlBuilder();
+            tBuilder.call(aMap);
+            return tBuilder.toString();
+        }
     }
     
     public static class IO {
@@ -1155,7 +1184,10 @@ public class UT {
         
         
         /** only support writeln */
-        @FunctionalInterface public interface IWriteln extends AutoCloseable {void writeln(CharSequence aLine) throws IOException; default void close() throws IOException {/**/}}
+        @FunctionalInterface public interface IWriteln extends AutoCloseable {
+            void writeln(CharSequence aLine) throws IOException;
+            default void close() throws IOException {/**/}
+        }
         
         /** output stuffs */
         public static OutputStream   toOutputStream(String aFilePath)                           throws IOException  {return toOutputStream(aFilePath, ZL_OO);}
@@ -1294,9 +1326,10 @@ public class UT {
          * @author liqa
          */
         public static Map<?, ?> json2map(String aFilePath) throws IOException {
-            try (Reader tReader = toReader(aFilePath)) {
-                return (Map<?, ?>) (new JsonSlurper()).parse(tReader);
-            }
+            try (Reader tReader = toReader(aFilePath)) {return json2map(tReader);}
+        }
+        public static Map<?, ?> json2map(Reader aReader) {
+            return (Map<?, ?>) (new JsonSlurper()).parse(aReader);
         }
         public static void map2json(Map<?, ?> aMap, String aFilePath) throws IOException {
             map2json(aMap, aFilePath, false);
@@ -1316,10 +1349,11 @@ public class UT {
          * convert between yaml and map
          * @author liqa
          */
-        public static Map<?, ?> yaml2map(String aFilePath) throws Exception {
-            try (Reader tReader = toReader(aFilePath)) {
-                return (Map<?, ?>) (new YamlSlurper()).parse(tReader);
-            }
+        public static Map<?, ?> yaml2map(String aFilePath) throws IOException {
+            try (Reader tReader = toReader(aFilePath)) {return yaml2map(tReader);}
+        }
+        public static Map<?, ?> yaml2map(Reader aReader) {
+            return (Map<?, ?>) (new YamlSlurper()).parse(aReader);
         }
         public static void map2yaml(Map<?, ?> aMap, String aFilePath) throws IOException {
             try (Writer tWriter = toWriter(aFilePath)) {
