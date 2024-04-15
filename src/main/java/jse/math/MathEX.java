@@ -307,11 +307,22 @@ public class MathEX {
          * 注意原文存在许多错误在这里已经修复，并且修改了返回形式依旧为复数，可以方便使用
          * <p>
          * 一次直接计算小于等于 aLMax 的 l 以及对应的所有 m 的 Ylm 值
+         * <p>
+         * 所有的球谐函数值 Ylm 排列成一个复向量，
+         * 先遍历 m 后遍历 l，由于有
+         * {@code m = -l ~ l}，也就是说，如果需要访问给定 {@code (l, m)}
+         * 的 Ylm，需要使用：
+         * <pre> {@code
+         * def YlmFull = MathEx.Func.sphericalHarmonicsFull(...)
+         * int idx = l*(l+1) + m
+         * def Ylm = YlmFull[idx]
+         * } </pre>
+         * 来获取。
          * @author liqa
          * @param aLMax 球谐函数参数 l，非负整数
          * @param aTheta 球坐标下径向方向与 z 轴的角度
          * @param aPhi 球坐标下径向方向在 xy 平面投影下和 x 轴的角度
-         * @return l = 0 ~ aLMax, m = -l ~ l 下所有球谐函数值组成的复向量，按照 l 从小到大排列，先遍历 m 后遍历 l
+         * @return {@code l = 0 ~ aLMax}, {@code m = -l ~ l} 下所有球谐函数值组成的复向量，按照 l 从小到大排列，先遍历 m 后遍历 l
          */
         public static ComplexVector sphericalHarmonicsFull(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aTheta, double aPhi) {
             ComplexVector rY = ComplexVector.zeros((aLMax+1)*(aLMax+1));
@@ -402,7 +413,7 @@ public class MathEX {
          * @param aL 球谐函数参数 l，非负整数
          * @param aTheta 球坐标下径向方向与 z 轴的角度
          * @param aPhi 球坐标下径向方向在 xy 平面投影下和 x 轴的角度
-         * @return m = -l ~ l 下所有球谐函数值组成的复向量
+         * @return {@code m = -l ~ l} 下所有球谐函数值组成的复向量
          */
         public static ComplexVector sphericalHarmonics(@Range(from = 0, to = SH_LARGEST_L) int aL, double aTheta, double aPhi) {
             ComplexVector rY = ComplexVector.zeros(aL+aL+1);
@@ -648,7 +659,7 @@ public class MathEX {
         /**
          * 计算阶乘，返回浮点数避免整型溢出
          * @author liqa
-         * @return 1 * 2 * 3 * ... * (aN-1) * aN
+         * @return {@code 1 * 2 * 3 * ... * (aN-1) * aN}
          */
         public static double factorial(int aN) {
             if (aN < 0) return 0.0;

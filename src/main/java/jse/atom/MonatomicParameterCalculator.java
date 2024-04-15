@@ -3,6 +3,7 @@ package jse.atom;
 import jse.cache.*;
 import jse.code.CS;
 import jse.code.collection.IntList;
+import jse.code.collection.NewCollections;
 import jse.code.functional.IIndexFilter;
 import jse.code.functional.IUnaryFullOperator;
 import jse.math.ComplexDouble;
@@ -19,6 +20,7 @@ import jse.parallel.*;
 import org.jetbrains.annotations.*;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.IntConsumer;
 
@@ -288,6 +290,100 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IFunc1 calRDF_AB(MonatomicParameterCalculator aMPC, int aN, final double aRMax) {return calRDF_AB_(aMPC.mAtomDataXYZ, aMPC.mAtomNum, aN, aRMax);} // aMPC 的 mAtomDataXYZ 都已经经过平移并且合理化
     public IFunc1 calRDF_AB(MonatomicParameterCalculator aMPC, int aN                    ) {return calRDF_AB(aMPC, aN, mUnitLen*6);}
     public IFunc1 calRDF_AB(MonatomicParameterCalculator aMPC                            ) {return calRDF_AB(aMPC, 160);}
+    
+    
+    private List<? extends IFunc1> calAllRDF_(final IIntVector aTypeVec, IIntVector aAtomNumType, int aN, final double aRMax) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
+        final int tTypeNum = aAtomNumType.size();
+        final double dr = aRMax/aN;
+        // 这里需要使用 IFunc 来进行函数的相关运算操作
+        final List<List<IFunc1>> dnAllPar = NewCollections.from(threadNumber(), i ->
+            NewCollections.from((tTypeNum*(tTypeNum+1))/2 + 1, j ->
+                FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0)
+            )
+        );
+        // 使用 mNL 的专门获取近邻距离的方法
+        pool().parfor(mAtomNum, (i, threadID) -> {
+            final int tTypeA = aTypeVec.get(i);
+            final List<IFunc1> dnAll = dnAllPar.get(threadID);
+            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dis2) -> {
+                double dis = Fast.sqrt(dis2);
+                dnAll.get(0).updateNear(dis, g->g+1);
+                int tTypeB = aTypeVec.get(idx);
+                dnAll.get((tTypeA*(tTypeA-1))/2 + tTypeB).updateNear(dis, g->g+1);
+            });
+        });
+        
+        // 获取结果
+        Iterator<List<IFunc1>> it = dnAllPar.iterator();
+        List<IFunc1> grAll = it.next();
+        final int tSize = grAll.size();
+        it.forEachRemaining(dnAll -> {
+            for (int i = 0; i < tSize; ++i) grAll.get(i).plus2this(dnAll.get(i));
+        });
+        double rou = dr * mAtomNum*0.5 * mRou; // mAtomNum*0.5 为对所有原子求和需要进行的平均
+        final double fRou = rou;
+        grAll.get(0).operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRou)));
+        int idx = 1;
+        for (int typeAmm = 0; typeAmm < tTypeNum; ++typeAmm) for (int typeBmm = 0; typeBmm <= typeAmm; ++typeBmm) {
+            rou = dr * aAtomNumType.get(typeAmm) * aAtomNumType.get(typeBmm) * mRou / (double)mAtomNum;
+            if (typeAmm == typeBmm) rou *= 0.5;
+            final double fRouAB = rou;
+            grAll.get(idx).operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRouAB)));
+            ++idx;
+        }
+        
+        // 修复截断数据
+        grAll.forEach(gr -> gr.set(0, 0.0));
+        // 输出
+        return grAll;
+    }
+    /**
+     * 计算所有种类之间的 RDF (radial distribution function，即 g(r))，
+     * 只计算一个固定结构的值，因此不包含温度信息。
+     * <p>
+     * 所有的 {@code g_AB(r)} 直接排列成一个列表，
+     * 先遍历 {@code typeB} 后遍历 {@code typeA}，且保持
+     * {@code typeB <= typeA}，也就是说，如果需要访问给定 {@code (typeA, typeB)}
+     * 的 {@code g_AB(r)}，需要使用：
+     * <pre> {@code
+     * def grAll = mpc.calAllRDF(...)
+     * int idx = (typeA*(typeA-1)).intdiv(2) + typeB
+     * def grAB = grAll[idx]
+     * } </pre>
+     * 来获取（注意到 {@code idx == 0} 对应所有种类都考虑的
+     * g(r)，并且这里认为所有的种类都是从 1 开始的）。
+     * <p>
+     * 当只有一个种类时不进行单独种类的计算，即此时返回的向量长度一定为 1
+     * @author liqa
+     * @param aTypeVec 原子种类组成的向量
+     * @param aN 指定分划的份数（默认为 160）
+     * @param aRMax 指定计算的最大半径（默认为 6 倍单位长度）
+     * @return 所有 gr 函数组成的列表
+     */
+    public List<? extends IFunc1> calAllRDF(IIntVectorGetter aTypeVec, int aN, double aRMax) {
+        // 遍历统计种类数目
+        IIntVector rTypeVec = IntVector.zeros(mAtomNum);
+        int rTypeNum = 1;
+        for (int i = 0; i < mAtomNum; ++i) {
+            int tType = aTypeVec.get(i);
+            rTypeVec.set(i, tType);
+            if (tType > rTypeNum) rTypeNum = tType;
+        }
+        // 当只有一个种类时不进行单独种类的计算
+        if (rTypeNum == 1) {
+            return NewCollections.from(1, i -> calRDF(aN, aRMax));
+        }
+        final IIntVector rAtomNumType = IntVector.zeros(rTypeNum);
+        rTypeVec.forEach(type -> rAtomNumType.increment(type-1));
+        return calAllRDF_(rTypeVec, rAtomNumType, aN, aRMax);
+    }
+    public List<? extends IFunc1> calAllRDF(IIntVectorGetter aTypeVec, int aN            ) {return calAllRDF(aTypeVec, aN, mUnitLen*6);}
+    public List<? extends IFunc1> calAllRDF(IIntVectorGetter aTypeVec                    ) {return calAllRDF(aTypeVec, 160);}
+    public List<? extends IFunc1> calAllRDF(List<Integer> aTypeList, int aN, double aRMax) {return calAllRDF(aTypeList::get, aN, aRMax);}
+    public List<? extends IFunc1> calAllRDF(List<Integer> aTypeList, int aN              ) {return calAllRDF(aTypeList::get, aN);}
+    public List<? extends IFunc1> calAllRDF(List<Integer> aTypeList                      ) {return calAllRDF(aTypeList::get);}
     
     
     /**
