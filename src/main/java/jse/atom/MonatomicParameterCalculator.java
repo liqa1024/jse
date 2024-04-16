@@ -2728,11 +2728,13 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     
     /**
      * 一种基于 Chebyshev 多项式和球谐函数将原子局域环境展开成一个基组的方法，
-     * 或称为此原子的指纹（FingerPrints）， 主要用于作为机器学习的输入向量
+     * 或称为此原子的指纹（FingerPrints），主要用于作为机器学习的输入向量
      * <p>
      * References:
      * <a href="https://arxiv.org/abs/2211.03350v3">
      * Computing the 3D Voronoi Diagram Robustly: An Easy Explanation </a>
+     * <p>
+     * TODO: 现在应该可以把原子种类项也加进来
      * @author Su Rui, liqa
      * @param aNMax Chebyshev 多项式选取的最大阶数
      * @param aLMax 球谐函数中 l 选取的最大阶数
