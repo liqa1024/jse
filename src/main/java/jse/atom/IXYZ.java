@@ -129,16 +129,13 @@ public interface IXYZ {
      * MHT: ManHaTtan distance
      * 曼哈顿距离
      */
-    default double distanceMHT(IXYZ aRHS) {
-        return Math.abs(x() - aRHS.x()) + Math.abs(y() - aRHS.y()) + Math.abs(z() - aRHS.z());
-    }
-    default double distanceMHT(XYZ aRHS) {
-        return Math.abs(x() - aRHS.mX) + Math.abs(y() - aRHS.mY) + Math.abs(z() - aRHS.mZ);
-    }
-    default double distanceMHT(double aX, double aY, double aZ) {
-        aX -= x();
-        aY -= y();
-        aZ -= z();
-        return Math.abs(aX) + Math.abs(aY) + Math.abs(aZ);
+    default double distanceMHT(IXYZ aRHS) {return Math.abs(x()-aRHS.x()) + Math.abs(y()-aRHS.y()) + Math.abs(z()-aRHS.z());}
+    default double distanceMHT(XYZ aRHS) {return Math.abs(x()-aRHS.mX) + Math.abs(y()-aRHS.mY) + Math.abs(z()-aRHS.mZ);}
+    default double distanceMHT(double aX, double aY, double aZ) {return Math.abs(x()-aX) + Math.abs(y()-aY) + Math.abs(z()-aZ);}
+    
+    default boolean numericEqual(IXYZ aRHS) {return numericEqual(aRHS.x(), aRHS.y(), aRHS.z());}
+    default boolean numericEqual(XYZ aRHS) {return numericEqual(aRHS.mX, aRHS.mY, aRHS.mZ);}
+    default boolean numericEqual(double aX, double aY, double aZ) {
+        return MathEX.Code.numericEqual(x(), aX) && MathEX.Code.numericEqual(y(), aY) && MathEX.Code.numericEqual(z(), aZ);
     }
 }

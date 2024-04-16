@@ -155,10 +155,9 @@ public final class XYZ extends AbstractSettableXYZ {
     
     @Override public double distanceMHT(IXYZ aRHS) {return Math.abs(mX-aRHS.x()) + Math.abs(mY-aRHS.y()) + Math.abs(mZ-aRHS.z());}
     @Override public double distanceMHT(XYZ aRHS) {return Math.abs(mX-aRHS.mX) + Math.abs(mY-aRHS.mY) + Math.abs(mZ-aRHS.mZ);}
-    @Override public double distanceMHT(double aX, double aY, double aZ) {
-        aX -= mX;
-        aY -= mY;
-        aZ -= mZ;
-        return Math.abs(aX) + Math.abs(aY) + Math.abs(aZ);
+    @Override public double distanceMHT(double aX, double aY, double aZ)  {return Math.abs(mX-aX) + Math.abs(mY-aY) + Math.abs(mZ-aZ);}
+    
+    @Override public boolean numericEqual(double aX, double aY, double aZ) {
+        return MathEX.Code.numericEqual(mX, aX) && MathEX.Code.numericEqual(mY, aY) && MathEX.Code.numericEqual(mZ, aZ);
     }
 }

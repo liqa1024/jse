@@ -257,8 +257,12 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(aAtomNum, (i, threadID) -> {
             final IFunc1 dn = dnPar[threadID];
-            mNL.forEachNeighbor(new XYZ(aAtomDataXYZ.row(i)), aRMax - dr*0.5, (x, y, z, idx, dis2) -> {
-                dn.updateNear(Fast.sqrt(dis2), g->g+1);
+            final XYZ cXYZ = new XYZ(aAtomDataXYZ.row(i));
+            mNL.forEachNeighbor(cXYZ, aRMax - dr*0.5, (x, y, z, idx, dis2) -> {
+                // 当类型相同时可能存在相同原子
+                if (!cXYZ.numericEqual(x, y, z)) {
+                    dn.updateNear(Fast.sqrt(dis2), g->g+1);
+                }
             });
         });
         
@@ -331,6 +335,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             }
             return dnAll;
         });
+        
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(mAtomNum, (i, threadID) -> {
             final int tTypeA = mTypeVec.get(i);
@@ -436,9 +441,13 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         pool().parfor(aAtomNum, (i, threadID) -> {
             final IFunc1 dn = dnPar[threadID];
             final IZeroBoundFunc1 tDeltaG = tDeltaGPar[threadID];
-            mNL.forEachNeighbor(new XYZ(aAtomDataXYZ.row(i)), aRMax+tRShift, (x, y, z, idx, dis2) -> {
-                tDeltaG.setX0(Fast.sqrt(dis2));
-                dn.plus2this(tDeltaG);
+            final XYZ cXYZ = new XYZ(aAtomDataXYZ.row(i));
+            mNL.forEachNeighbor(cXYZ, aRMax+tRShift, (x, y, z, idx, dis2) -> {
+                // 当类型相同时可能存在相同原子
+                if (!cXYZ.numericEqual(x, y, z)) {
+                    tDeltaG.setX0(Fast.sqrt(dis2));
+                    dn.plus2this(tDeltaG);
+                }
             });
         });
         
@@ -459,6 +468,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * @param aAtomDataXYZ 另一个元素的 xyz 坐标组成的列表，或者输入 aMPC 即计算两个 MPC 之间的 RDF
      * @param aN 指定分划的份数（默认为 160）
      * @param aRMax 指定计算的最大半径（默认为 6 倍单位长度）
+     * @param aSigmaMul 高斯分布的一个标准差宽度对应的分划份数，默认为 4
      * @return gr 函数
      */
     public IFunc1 calRDF_AB_G(Collection<? extends IXYZ>  aAtomDataXYZ, int aN, final double aRMax, int aSigmaMul) {
@@ -474,6 +484,92 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IFunc1 calRDF_AB_G(MonatomicParameterCalculator aMPC, int aN, final double aRMax               ) {return calRDF_AB_G(aMPC, aN, aRMax, 4);}
     public IFunc1 calRDF_AB_G(MonatomicParameterCalculator aMPC, int aN                                   ) {return calRDF_AB_G(aMPC, aN, mUnitLen*6);}
     public IFunc1 calRDF_AB_G(MonatomicParameterCalculator aMPC                                           ) {return calRDF_AB_G(aMPC, 1000);}
+    
+    
+    /**
+     * 使用带有一定展宽的高斯分布代替直接计数来计算所有种类之间的 RDF，
+     * 只计算一个固定结构的值，因此不包含温度信息。
+     * <p>
+     * 所有的 {@code g_AB(r)} 直接排列成一个列表，
+     * 先遍历 {@code typeB} 后遍历 {@code typeA}，且保持
+     * {@code typeB <= typeA}，也就是说，如果需要访问给定 {@code (typeA, typeB)}
+     * 的 {@code g_AB(r)}，需要使用：
+     * <pre> {@code
+     * def grAll = mpc.calAllRDF_G(...)
+     * int idx = (typeA*(typeA-1)).intdiv(2) + typeB
+     * def grAB = grAll[idx]
+     * } </pre>
+     * 来获取（注意到 {@code idx == 0} 对应所有种类都考虑的
+     * g(r)，并且这里认为所有的种类都是从 1 开始的）。
+     * <p>
+     * 当只有一个种类时不进行单独种类的计算，即此时返回的向量长度一定为 1
+     * @author liqa
+     * @param aN 指定分划的份数（默认为 160）
+     * @param aRMax 指定计算的最大半径（默认为 6 倍单位长度）
+     * @param aSigmaMul 高斯分布的一个标准差宽度对应的分划份数，默认为 4
+     * @return 所有 gr 函数组成的列表
+     */
+    public List<? extends IFunc1> calAllRDF_G(int aN, final double aRMax, int aSigmaMul) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
+        // 当只有一个种类时不进行单独种类的计算
+        if (mAtomTypeNum == 1) return Collections.singletonList(calRDF_G(aN, aRMax, aSigmaMul));
+        
+        final double dr = aRMax/aN;
+        // 这里需要使用 IFunc 来进行函数的相关运算操作
+        final List<IFunc1[]> dnAllPar = NewCollections.from(threadNumber(), i -> {
+            IFunc1[] dnAll = new IFunc1[(mAtomTypeNum*(mAtomTypeNum+1))/2 + 1];
+            for (int j = 0; j < dnAll.length; ++j) {
+                dnAll[j] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
+            }
+            return dnAll;
+        });
+        
+        // 并行需要线程数个独立的 DeltaG
+        final IZeroBoundFunc1[] tDeltaGPar = new IZeroBoundFunc1[threadNumber()];
+        for (int i = 0; i < tDeltaGPar.length; ++i) tDeltaGPar[i] = Func1.deltaG(dr*aSigmaMul, 0.0, aSigmaMul);
+        // 需要增加一个额外的偏移保证外部边界的统计正确性
+        final double tRShift = -tDeltaGPar[0].zeroBoundL();
+        
+        // 使用 mNL 的专门获取近邻距离的方法
+        pool().parfor(mAtomNum, (i, threadID) -> {
+            final int tTypeA = mTypeVec.get(i);
+            final IFunc1[] dnAll = dnAllPar.get(threadID);
+            final IZeroBoundFunc1 tDeltaG = tDeltaGPar[threadID];
+            mNL.forEachNeighbor(i, aRMax+tRShift, true, (x, y, z, idx, dis2) -> {
+                tDeltaG.setX0(Fast.sqrt(dis2));
+                dnAll[0].plus2this(tDeltaG);
+                int tTypeB = mTypeVec.get(idx);
+                dnAll[(tTypeA*(tTypeA-1))/2 + tTypeB].plus2this(tDeltaG);
+            });
+        });
+        
+        // 获取结果
+        Iterator<IFunc1[]> it = dnAllPar.iterator();
+        IFunc1[] grAll = it.next();
+        it.forEachRemaining(dnAll -> {
+            for (int i = 0; i < grAll.length; ++i) grAll[i].plus2this(dnAll[i]);
+        });
+        double rou = mAtomNum*0.5 * mRou; // mAtomNum*0.5 为对所有原子求和需要进行的平均
+        final double fRou = rou;
+        grAll[0].operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRou)));
+        int idx = 1;
+        for (int typeAmm = 0; typeAmm < mAtomTypeNum; ++typeAmm) for (int typeBmm = 0; typeBmm <= typeAmm; ++typeBmm) {
+            rou = mAtomNumType.get(typeAmm) * mAtomNumType.get(typeBmm) / mVolume;
+            if (typeAmm == typeBmm) rou *= 0.5;
+            final double fRouAB = rou;
+            grAll[idx].operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRouAB)));
+            ++idx;
+        }
+        
+        // 修复截断数据
+        for (IFunc1 gr : grAll) gr.set(0, 0.0);
+        // 输出
+        return AbstractCollections.from(grAll);
+    }
+    public List<? extends IFunc1> calAllRDF_G(int aN, double aRMax) {return calAllRDF_G(aN, aRMax, 4);}
+    public List<? extends IFunc1> calAllRDF_G(int aN              ) {return calAllRDF_G(aN, mUnitLen*6);}
+    public List<? extends IFunc1> calAllRDF_G(                    ) {return calAllRDF_G(160);}
     
     
     
@@ -532,8 +628,14 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             XYZ cXYZ = new XYZ(aAtomDataXYZ.row(i));
             IFunc1 Hq = HqPar[threadID];
             for (int j = 0; j < mAtomNum; ++j) {
-                final double dis = cXYZ.distance(mAtomDataXYZ.get(j, 0), mAtomDataXYZ.get(j, 1), mAtomDataXYZ.get(j, 2));
-                Hq.operation().mapFull2this((H, q) -> (H + Fast.sin(q*dis)/(q*dis)));
+                double tX = mAtomDataXYZ.get(j, 0);
+                double tY = mAtomDataXYZ.get(j, 1);
+                double tZ = mAtomDataXYZ.get(j, 2);
+                // 当类型相同时可能存在相同原子
+                if (!cXYZ.numericEqual(tX, tY, tZ)) {
+                    final double dis = cXYZ.distance(tX, tY, tZ);
+                    Hq.operation().mapFull2this((H, q) -> (H + Fast.sin(q*dis)/(q*dis)));
+                }
             }
         });
         
