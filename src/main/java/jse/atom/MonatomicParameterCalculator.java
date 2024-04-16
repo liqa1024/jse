@@ -49,6 +49,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     private IIntVector mAtomNumType; // 统计某个种类的原子数目
     private IIntVector mTypeVec; // 统计所有的原子种类
     private final int mAtomTypeNum; // 统计所有的原子种类数目
+    private final double mVolume; // 模拟盒体积
     private final double mRou; // 粒子数密度
     private final double mUnitLen; // 平均单个原子的距离
     
@@ -113,7 +114,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         }
         
         // 计算单位长度供内部使用
-        mRou = mAtomNum / mBox.volume();
+        mVolume = mBox.volume();
+        mRou = mAtomNum / mVolume;
         mUnitLen = Fast.cbrt(1.0/mRou);
         
         mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox);
@@ -195,6 +197,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     /// 获取信息
     public int atomNumber() {return mAtomNum;}
     public double unitLen() {return mUnitLen;}
+    public double volume() {return mVolume;}
     public double rou() {return mRou;}
     public double rou(MonatomicParameterCalculator aMPC) {return Fast.sqrt(mRou*aMPC.mRou);}
     /** @deprecated use {@link #atomNumber} */
@@ -351,7 +354,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         grAll[0].operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRou)));
         int idx = 1;
         for (int typeAmm = 0; typeAmm < mAtomTypeNum; ++typeAmm) for (int typeBmm = 0; typeBmm <= typeAmm; ++typeBmm) {
-            rou = dr * mAtomNumType.get(typeAmm) * mAtomNumType.get(typeBmm) * mRou / (double)mAtomNum;
+            rou = dr * mAtomNumType.get(typeAmm) * mAtomNumType.get(typeBmm) / mVolume;
             if (typeAmm == typeBmm) rou *= 0.5;
             final double fRouAB = rou;
             grAll[idx].operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRouAB)));
