@@ -2,6 +2,7 @@ package jse.atom;
 
 import jse.cache.*;
 import jse.code.CS;
+import jse.code.collection.AbstractCollections;
 import jse.code.collection.IntList;
 import jse.code.collection.NewCollections;
 import jse.code.functional.IIndexFilter;
@@ -320,46 +321,47 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         final double dr = aRMax/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
-        final List<List<IFunc1>> dnAllPar = NewCollections.from(threadNumber(), i ->
-            NewCollections.from((mAtomTypeNum*(mAtomTypeNum+1))/2 + 1, j ->
-                FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0)
-            )
-        );
+        final List<IFunc1[]> dnAllPar = NewCollections.from(threadNumber(), i -> {
+            IFunc1[] dnAll = new IFunc1[(mAtomTypeNum*(mAtomTypeNum+1))/2 + 1];
+            for (int j = 0; j < dnAll.length; ++j) {
+                dnAll[j] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
+            }
+            return dnAll;
+        });
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(mAtomNum, (i, threadID) -> {
             final int tTypeA = mTypeVec.get(i);
-            final List<IFunc1> dnAll = dnAllPar.get(threadID);
+            final IFunc1[] dnAll = dnAllPar.get(threadID);
             mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dis2) -> {
                 double dis = Fast.sqrt(dis2);
-                dnAll.get(0).updateNear(dis, g->g+1);
+                dnAll[0].updateNear(dis, g->g+1);
                 int tTypeB = mTypeVec.get(idx);
-                dnAll.get((tTypeA*(tTypeA-1))/2 + tTypeB).updateNear(dis, g->g+1);
+                dnAll[(tTypeA*(tTypeA-1))/2 + tTypeB].updateNear(dis, g->g+1);
             });
         });
         
         // 获取结果
-        Iterator<List<IFunc1>> it = dnAllPar.iterator();
-        List<IFunc1> grAll = it.next();
-        final int tSize = grAll.size();
+        Iterator<IFunc1[]> it = dnAllPar.iterator();
+        IFunc1[] grAll = it.next();
         it.forEachRemaining(dnAll -> {
-            for (int i = 0; i < tSize; ++i) grAll.get(i).plus2this(dnAll.get(i));
+            for (int i = 0; i < grAll.length; ++i) grAll[i].plus2this(dnAll[i]);
         });
         double rou = dr * mAtomNum*0.5 * mRou; // mAtomNum*0.5 为对所有原子求和需要进行的平均
         final double fRou = rou;
-        grAll.get(0).operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRou)));
+        grAll[0].operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRou)));
         int idx = 1;
         for (int typeAmm = 0; typeAmm < mAtomTypeNum; ++typeAmm) for (int typeBmm = 0; typeBmm <= typeAmm; ++typeBmm) {
             rou = dr * mAtomNumType.get(typeAmm) * mAtomNumType.get(typeBmm) * mRou / (double)mAtomNum;
             if (typeAmm == typeBmm) rou *= 0.5;
             final double fRouAB = rou;
-            grAll.get(idx).operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRouAB)));
+            grAll[idx].operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRouAB)));
             ++idx;
         }
         
         // 修复截断数据
-        grAll.forEach(gr -> gr.set(0, 0.0));
+        for (IFunc1 gr : grAll) gr.set(0, 0.0);
         // 输出
-        return grAll;
+        return AbstractCollections.from(grAll);
     }
     public List<? extends IFunc1> calAllRDF(int aN) {return calAllRDF(aN, mUnitLen*6);}
     public List<? extends IFunc1> calAllRDF(      ) {return calAllRDF(160);}

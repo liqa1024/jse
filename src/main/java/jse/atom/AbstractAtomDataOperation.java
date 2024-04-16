@@ -218,7 +218,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
             int k = MathEX.Code.floor2int(tBuf.mZ); if (k<0 || k>=aNz) continue;
             rIndices.get(i + j*aNx + k*aNx*aNy).add(idx);
         }
-        List<ISettableAtomData> rSlice = new ArrayList<>(tSliceNum);
+        ISettableAtomData[] rSlice = new ISettableAtomData[tSliceNum];
         for (int i = 0; i < tSliceNum; ++i) {
             IntList subIndices = rIndices.get(i);
             ISettableAtomData subAtomData = newSettableAtomData_(rIndices.get(i).size(), rBox.copy());
@@ -243,9 +243,9 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
                 }
                 if (tAtom.hasVelocities()) subAtom.setVxyz(tAtom.vx(), tAtom.vy(), tAtom.vz());
             }
-            rSlice.add(subAtomData);
+            rSlice[i] = subAtomData;
         }
-        return rSlice;
+        return NewCollections.from(rSlice);
     }
     
     
