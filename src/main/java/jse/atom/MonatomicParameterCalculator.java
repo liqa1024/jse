@@ -20,6 +20,7 @@ import jse.parallel.*;
 import org.jetbrains.annotations.*;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.IntConsumer;
@@ -44,6 +45,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     private final IBox mBox;
     
     private final int mAtomNum;
+    private IIntVector mAtomNumType; // 统计某个种类的原子数目
+    private IIntVector mTypeVec; // 统计所有的原子种类
+    private final int mAtomTypeNum; // 统计所有的原子种类数目
     private final double mRou; // 粒子数密度
     private final double mUnitLen; // 平均单个原子的距离
     
@@ -54,14 +58,20 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     private volatile boolean mDead = false;
     @Override public void shutdown() {
         mDead = true; super.shutdown();
-        mNL.shutdown(); // 内部保证执行后内部的 mAtomDataXYZ 以及置为 null
+        mNL.shutdown(); // 内部保证执行后内部的 mAtomDataXYZ 已经置为 null
         // 此时 MPC 关闭，归还 mAtomDataXYZ，这种写法保证永远能获取到 mAtomDataXYZ 时都是合法的
         // 只有相同线程关闭才会归还
         long tThreadID = Thread.currentThread().getId();
         if (tThreadID == mInitThreadID) {
             IMatrix oAtomDataXYZ = mAtomDataXYZ;
+            IIntVector oAtomNumType = mAtomNumType;
+            IIntVector oTypeVec = mTypeVec;
             mAtomDataXYZ = null;
+            mAtomNumType = null;
+            mTypeVec = null;
             MatrixCache.returnMat(oAtomDataXYZ);
+            IntVectorCache.returnVec(oAtomNumType);
+            IntVectorCache.returnVec(oTypeVec);
         } else {
             System.err.println("WARNING: ThreadID of shutdown() and init should be SAME in MonatomicParameterCalculator");
         }
@@ -80,15 +90,26 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     @ApiStatus.Internal @Override public void close() {shutdown();}
     
     /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed") @Deprecated
-    MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IBox aBox, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
+    MonatomicParameterCalculator(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
         super(new ParforThreadPool(aThreadNum));
         
         // 获取模拟盒数据
-        mBox = aBox.copy(); // 最大限度防止外部修改
+        mBox = aAtomData.box().copy(); // 最大限度防止外部修改
         
-        // 获取合适的 XYZ 数据
-        mAtomDataXYZ = getValidAtomDataXYZ_(aAtomDataXYZ);
-        mAtomNum = aAtomDataXYZ.size();
+        // 获取合适的 XYZ 数据和原子种类信息
+        mAtomNum = aAtomData.atomNumber();
+        mAtomTypeNum = aAtomData.atomTypeNumber();
+        mAtomDataXYZ = MatrixCache.getMatRow(mAtomNum, 3);
+        mTypeVec = IntVectorCache.getVec(mAtomNum);
+        mAtomNumType = IntVectorCache.getZeros(mAtomTypeNum);
+        XYZ tBuf = new XYZ();
+        for (int i = 0; i < mAtomNum; ++i) {
+            IAtom tAtom = aAtomData.atom(i);
+            setValidXYZ_(mAtomDataXYZ, tAtom, i, tBuf);
+            int tType = tAtom.type();
+            mTypeVec.set(i, tType);
+            mAtomNumType.increment(tType-1);
+        }
         
         // 计算单位长度供内部使用
         mRou = mAtomNum / mBox.volume();
@@ -97,90 +118,67 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox);
         mInitThreadID = Thread.currentThread().getId();
     }
-    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed") @Deprecated
-    MonatomicParameterCalculator(Collection<? extends IXYZ> aAtomDataXYZ, IBox aBox) {this(aAtomDataXYZ, aBox, 1);}
     /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed") @Deprecated
     MonatomicParameterCalculator(IAtomData aAtomData) {this(aAtomData, 1);}
-    /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed") @Deprecated
-    MonatomicParameterCalculator(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(aAtomData.atoms(), aAtomData.box(), aThreadNum);}
-    /** 主要用于内部使用 */
-    @ApiStatus.Internal MonatomicParameterCalculator(int aAtomNum, IBox aBox, int aThreadNum, IUnaryFullOperator<IMatrix, IMatrix> aXYZValidOpt) {
-        super(new ParforThreadPool(aThreadNum));
-        mAtomNum = aAtomNum;
-        mBox = aBox;
-        mAtomDataXYZ = aXYZValidOpt.apply(MatrixCache.getMatRow(aAtomNum, 3));
-        // 计算单位长度供内部使用
-        mRou = mAtomNum / mBox.volume();
-        mUnitLen = Fast.cbrt(1.0/mRou);
-        mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox);
-        mInitThreadID = Thread.currentThread().getId();
-    }
     
     
     /**
      * 根据输入数据直接创建 MPC
-     * @param aAtomDataXYZ 粒子数据，这里只需要知道 xyz 坐标即可
-     * @param aBox 模拟盒大小；现在也统一认为所有输入的原子坐标都经过了 shift
+     * @param aAtomData 原子数据
      * @param aThreadNum MPC 进行计算会使用的线程数
      */
-    public static MonatomicParameterCalculator of(Collection<? extends IXYZ> aAtomDataXYZ, IBox aBox, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return new MonatomicParameterCalculator(aAtomDataXYZ, aBox, aThreadNum);}
-    public static MonatomicParameterCalculator of(Collection<? extends IXYZ> aAtomDataXYZ, IBox aBox) {return new MonatomicParameterCalculator(aAtomDataXYZ, aBox);}
     public static MonatomicParameterCalculator of(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return new MonatomicParameterCalculator(aAtomData, aThreadNum);}
     public static MonatomicParameterCalculator of(IAtomData aAtomData) {return new MonatomicParameterCalculator(aAtomData);}
     
     /** 自动关闭接口 */
-    public static <T> T withOf(Collection<? extends IXYZ> aAtomDataXYZ, IBox aBox, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, IUnaryFullOperator<? extends T, ? super MonatomicParameterCalculator> aDoLater) {try (MonatomicParameterCalculator tMPC = new MonatomicParameterCalculator(aAtomDataXYZ, aBox, aThreadNum)) {return aDoLater.apply(tMPC);}}
-    public static <T> T withOf(Collection<? extends IXYZ> aAtomDataXYZ, IBox aBox, IUnaryFullOperator<? extends T, ? super MonatomicParameterCalculator> aDoLater) {try (MonatomicParameterCalculator tMPC = new MonatomicParameterCalculator(aAtomDataXYZ, aBox)) {return aDoLater.apply(tMPC);}}
     public static <T> T withOf(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, IUnaryFullOperator<? extends T, ? super MonatomicParameterCalculator> aDoLater) {try (MonatomicParameterCalculator tMPC = new MonatomicParameterCalculator(aAtomData, aThreadNum)) {return aDoLater.apply(tMPC);}}
     public static <T> T withOf(IAtomData aAtomData, IUnaryFullOperator<? extends T, ? super MonatomicParameterCalculator> aDoLater) {try (MonatomicParameterCalculator tMPC = new MonatomicParameterCalculator(aAtomData)) {return aDoLater.apply(tMPC);}}
     
     
     /** 内部使用方法，用来将 aAtomDataXYZ 转换成内部存储的格式，并且处理精度问题造成的超出边界问题 */
+    @ApiStatus.Internal static void setValidXYZ_(IBox aBox, IMatrix rXYZMat, IXYZ aXYZ, int aRow, XYZ rBuf) {
+        if (aBox.isPrism()) {
+            // 斜方情况需要转为 Direct 再 wrap，
+            // 完事后再转回 Cartesian
+            rBuf.setXYZ(aXYZ);
+            aBox.toDirect(rBuf);
+            if      (rBuf.mX <  0.0) {do {++rBuf.mX;} while (rBuf.mX <  0.0);}
+            else if (rBuf.mX >= 1.0) {do {--rBuf.mX;} while (rBuf.mX >= 1.0);}
+            if      (rBuf.mY <  0.0) {do {++rBuf.mY;} while (rBuf.mY <  0.0);}
+            else if (rBuf.mY >= 1.0) {do {--rBuf.mY;} while (rBuf.mY >= 1.0);}
+            if      (rBuf.mZ <  0.0) {do {++rBuf.mZ;} while (rBuf.mZ <  0.0);}
+            else if (rBuf.mZ >= 1.0) {do {--rBuf.mZ;} while (rBuf.mZ >= 1.0);}
+            aBox.toCartesian(rBuf);
+            rXYZMat.set(aRow, 0, rBuf.mX);
+            rXYZMat.set(aRow, 1, rBuf.mY);
+            rXYZMat.set(aRow, 2, rBuf.mZ);
+        } else {
+            double tX = aXYZ.x(), tY = aXYZ.y(), tZ = aXYZ.z();
+            if      (tX <  0.0     ) {do {tX += aBox.x();} while (tX <  0.0     );}
+            else if (tX >= aBox.x()) {do {tX -= aBox.x();} while (tX >= aBox.x());}
+            if      (tY <  0.0     ) {do {tY += aBox.y();} while (tY <  0.0     );}
+            else if (tY >= aBox.y()) {do {tY -= aBox.y();} while (tY >= aBox.y());}
+            if      (tZ <  0.0     ) {do {tZ += aBox.z();} while (tZ <  0.0     );}
+            else if (tZ >= aBox.z()) {do {tZ -= aBox.z();} while (tZ >= aBox.z());}
+            rXYZMat.set(aRow, 0, tX);
+            rXYZMat.set(aRow, 1, tY);
+            rXYZMat.set(aRow, 2, tZ);
+        }
+    }
+    private void setValidXYZ_(IMatrix rXYZMat, IXYZ aXYZ, int aRow, XYZ rBuf) {
+        setValidXYZ_(mBox, rXYZMat, aXYZ, aRow, rBuf);
+    }
     private IMatrix getValidAtomDataXYZ_(Collection<? extends IXYZ> aAtomDataXYZ) {
         int tSize = aAtomDataXYZ.size();
         // 尝试先获取缓存的临时变量
-        IMatrix tXYZMat = MatrixCache.getMatRow(tSize, 3);
-        
-        // 遍历设置，顺便由于 lammps 精度的问题，需要将超出边界的进行平移
-        if (mBox.isPrism()) {
-            // 斜方情况需要转为 Direct 再 wrap，
-            // 完事后再转回 Cartesian
-            XYZ tBuf = new XYZ();
-            int row = 0;
-            for (IXYZ tXYZ : aAtomDataXYZ) {
-                tBuf.setXYZ(tXYZ);
-                mBox.toDirect(tBuf);
-                if      (tBuf.mX <  0.0) {do {++tBuf.mX;} while (tBuf.mX <  0.0);}
-                else if (tBuf.mX >= 1.0) {do {--tBuf.mX;} while (tBuf.mX >= 1.0);}
-                if      (tBuf.mY <  0.0) {do {++tBuf.mY;} while (tBuf.mY <  0.0);}
-                else if (tBuf.mY >= 1.0) {do {--tBuf.mY;} while (tBuf.mY >= 1.0);}
-                if      (tBuf.mZ <  0.0) {do {++tBuf.mZ;} while (tBuf.mZ <  0.0);}
-                else if (tBuf.mZ >= 1.0) {do {--tBuf.mZ;} while (tBuf.mZ >= 1.0);}
-                mBox.toCartesian(tBuf);
-                tXYZMat.set(row, 0, tBuf.mX);
-                tXYZMat.set(row, 1, tBuf.mY);
-                tXYZMat.set(row, 2, tBuf.mZ);
-                ++row;
-            }
-        } else {
-            XYZ tBox = XYZ.toXYZ(mBox);
-            int row = 0;
-            for (IXYZ tXYZ : aAtomDataXYZ) {
-                double tX = tXYZ.x(), tY = tXYZ.y(), tZ = tXYZ.z();
-                if      (tX <  0.0    ) {do {tX += tBox.mX;} while (tX <  0.0    );}
-                else if (tX >= tBox.mX) {do {tX -= tBox.mX;} while (tX >= tBox.mX);}
-                if      (tY <  0.0    ) {do {tY += tBox.mY;} while (tY <  0.0    );}
-                else if (tY >= tBox.mY) {do {tY -= tBox.mY;} while (tY >= tBox.mY);}
-                if      (tZ <  0.0    ) {do {tZ += tBox.mZ;} while (tZ <  0.0    );}
-                else if (tZ >= tBox.mZ) {do {tZ -= tBox.mZ;} while (tZ >= tBox.mZ);}
-                tXYZMat.set(row, 0, tX);
-                tXYZMat.set(row, 1, tY);
-                tXYZMat.set(row, 2, tZ);
-                ++row;
-            }
+        IMatrix rXYZMat = MatrixCache.getMatRow(tSize, 3);
+        XYZ tBuf = new XYZ();
+        int row = 0;
+        for (IXYZ tXYZ : aAtomDataXYZ) {
+            setValidXYZ_(rXYZMat, tXYZ, row, tBuf);
+            ++row;
         }
-        
-        return tXYZMat;
+        return rXYZMat;
     }
     
     
@@ -274,7 +272,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     /**
      * 计算自身与输入的 aAtomDataXYZ 之间的 RDF，只计算一个固定结构的值，因此不包含温度信息
      * @author liqa
-     * @param aAtomDataXYZ 另一个元素的 xyz 坐标组成的列表，或者输入 aMPC 即计算两个 MPC 之间的 RDF，如果初始化使用的 Box 则认为 aAtomDataXYZ 未经过平移，否则认为 aAtomDataXYZ 已经经过了平移。对于 MPC 没有这个问题
+     * @param aAtomDataXYZ 另一个元素的 xyz 坐标组成的列表，或者输入 aMPC 即计算两个 MPC 之间的 RDF
      * @param aN 指定分划的份数（默认为 160）
      * @param aRMax 指定计算的最大半径（默认为 6 倍单位长度）
      * @return gr 函数
@@ -292,53 +290,6 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IFunc1 calRDF_AB(MonatomicParameterCalculator aMPC                            ) {return calRDF_AB(aMPC, 160);}
     
     
-    private List<? extends IFunc1> calAllRDF_(final IIntVector aTypeVec, IIntVector aAtomNumType, int aN, final double aRMax) {
-        if (mDead) throw new RuntimeException("This Calculator is dead");
-        
-        final int tTypeNum = aAtomNumType.size();
-        final double dr = aRMax/aN;
-        // 这里需要使用 IFunc 来进行函数的相关运算操作
-        final List<List<IFunc1>> dnAllPar = NewCollections.from(threadNumber(), i ->
-            NewCollections.from((tTypeNum*(tTypeNum+1))/2 + 1, j ->
-                FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0)
-            )
-        );
-        // 使用 mNL 的专门获取近邻距离的方法
-        pool().parfor(mAtomNum, (i, threadID) -> {
-            final int tTypeA = aTypeVec.get(i);
-            final List<IFunc1> dnAll = dnAllPar.get(threadID);
-            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dis2) -> {
-                double dis = Fast.sqrt(dis2);
-                dnAll.get(0).updateNear(dis, g->g+1);
-                int tTypeB = aTypeVec.get(idx);
-                dnAll.get((tTypeA*(tTypeA-1))/2 + tTypeB).updateNear(dis, g->g+1);
-            });
-        });
-        
-        // 获取结果
-        Iterator<List<IFunc1>> it = dnAllPar.iterator();
-        List<IFunc1> grAll = it.next();
-        final int tSize = grAll.size();
-        it.forEachRemaining(dnAll -> {
-            for (int i = 0; i < tSize; ++i) grAll.get(i).plus2this(dnAll.get(i));
-        });
-        double rou = dr * mAtomNum*0.5 * mRou; // mAtomNum*0.5 为对所有原子求和需要进行的平均
-        final double fRou = rou;
-        grAll.get(0).operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRou)));
-        int idx = 1;
-        for (int typeAmm = 0; typeAmm < tTypeNum; ++typeAmm) for (int typeBmm = 0; typeBmm <= typeAmm; ++typeBmm) {
-            rou = dr * aAtomNumType.get(typeAmm) * aAtomNumType.get(typeBmm) * mRou / (double)mAtomNum;
-            if (typeAmm == typeBmm) rou *= 0.5;
-            final double fRouAB = rou;
-            grAll.get(idx).operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRouAB)));
-            ++idx;
-        }
-        
-        // 修复截断数据
-        grAll.forEach(gr -> gr.set(0, 0.0));
-        // 输出
-        return grAll;
-    }
     /**
      * 计算所有种类之间的 RDF (radial distribution function，即 g(r))，
      * 只计算一个固定结构的值，因此不包含温度信息。
@@ -357,33 +308,61 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * <p>
      * 当只有一个种类时不进行单独种类的计算，即此时返回的向量长度一定为 1
      * @author liqa
-     * @param aTypeVec 原子种类组成的向量
      * @param aN 指定分划的份数（默认为 160）
      * @param aRMax 指定计算的最大半径（默认为 6 倍单位长度）
      * @return 所有 gr 函数组成的列表
      */
-    public List<? extends IFunc1> calAllRDF(IIntVectorGetter aTypeVec, int aN, double aRMax) {
-        // 遍历统计种类数目
-        IIntVector rTypeVec = IntVector.zeros(mAtomNum);
-        int rTypeNum = 1;
-        for (int i = 0; i < mAtomNum; ++i) {
-            int tType = aTypeVec.get(i);
-            rTypeVec.set(i, tType);
-            if (tType > rTypeNum) rTypeNum = tType;
-        }
+    public List<? extends IFunc1> calAllRDF(int aN, final double aRMax) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
         // 当只有一个种类时不进行单独种类的计算
-        if (rTypeNum == 1) {
-            return NewCollections.from(1, i -> calRDF(aN, aRMax));
+        if (mAtomTypeNum == 1) return Collections.singletonList(calRDF(aN, aRMax));
+        
+        final double dr = aRMax/aN;
+        // 这里需要使用 IFunc 来进行函数的相关运算操作
+        final List<List<IFunc1>> dnAllPar = NewCollections.from(threadNumber(), i ->
+            NewCollections.from((mAtomTypeNum*(mAtomTypeNum+1))/2 + 1, j ->
+                FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0)
+            )
+        );
+        // 使用 mNL 的专门获取近邻距离的方法
+        pool().parfor(mAtomNum, (i, threadID) -> {
+            final int tTypeA = mTypeVec.get(i);
+            final List<IFunc1> dnAll = dnAllPar.get(threadID);
+            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dis2) -> {
+                double dis = Fast.sqrt(dis2);
+                dnAll.get(0).updateNear(dis, g->g+1);
+                int tTypeB = mTypeVec.get(idx);
+                dnAll.get((tTypeA*(tTypeA-1))/2 + tTypeB).updateNear(dis, g->g+1);
+            });
+        });
+        
+        // 获取结果
+        Iterator<List<IFunc1>> it = dnAllPar.iterator();
+        List<IFunc1> grAll = it.next();
+        final int tSize = grAll.size();
+        it.forEachRemaining(dnAll -> {
+            for (int i = 0; i < tSize; ++i) grAll.get(i).plus2this(dnAll.get(i));
+        });
+        double rou = dr * mAtomNum*0.5 * mRou; // mAtomNum*0.5 为对所有原子求和需要进行的平均
+        final double fRou = rou;
+        grAll.get(0).operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRou)));
+        int idx = 1;
+        for (int typeAmm = 0; typeAmm < mAtomTypeNum; ++typeAmm) for (int typeBmm = 0; typeBmm <= typeAmm; ++typeBmm) {
+            rou = dr * mAtomNumType.get(typeAmm) * mAtomNumType.get(typeBmm) * mRou / (double)mAtomNum;
+            if (typeAmm == typeBmm) rou *= 0.5;
+            final double fRouAB = rou;
+            grAll.get(idx).operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRouAB)));
+            ++idx;
         }
-        final IIntVector rAtomNumType = IntVector.zeros(rTypeNum);
-        rTypeVec.forEach(type -> rAtomNumType.increment(type-1));
-        return calAllRDF_(rTypeVec, rAtomNumType, aN, aRMax);
+        
+        // 修复截断数据
+        grAll.forEach(gr -> gr.set(0, 0.0));
+        // 输出
+        return grAll;
     }
-    public List<? extends IFunc1> calAllRDF(IIntVectorGetter aTypeVec, int aN            ) {return calAllRDF(aTypeVec, aN, mUnitLen*6);}
-    public List<? extends IFunc1> calAllRDF(IIntVectorGetter aTypeVec                    ) {return calAllRDF(aTypeVec, 160);}
-    public List<? extends IFunc1> calAllRDF(List<Integer> aTypeList, int aN, double aRMax) {return calAllRDF(aTypeList::get, aN, aRMax);}
-    public List<? extends IFunc1> calAllRDF(List<Integer> aTypeList, int aN              ) {return calAllRDF(aTypeList::get, aN);}
-    public List<? extends IFunc1> calAllRDF(List<Integer> aTypeList                      ) {return calAllRDF(aTypeList::get);}
+    public List<? extends IFunc1> calAllRDF(int aN) {return calAllRDF(aN, mUnitLen*6);}
+    public List<? extends IFunc1> calAllRDF(      ) {return calAllRDF(160);}
     
     
     /**
@@ -472,7 +451,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     /**
      * 使用带有一定展宽的高斯分布代替直接计数来计算自身与输入的 aAtomDataXYZ 之间的 RDF
      * @author liqa
-     * @param aAtomDataXYZ 另一个元素的 xyz 坐标组成的列表，或者输入 aMPC 即计算两个 MPC 之间的 RDF，如果初始化使用的 Box 则认为 aAtomDataXYZ 未经过平移，否则认为 aAtomDataXYZ 已经经过了平移。对于 MPC 没有这个问题
+     * @param aAtomDataXYZ 另一个元素的 xyz 坐标组成的列表，或者输入 aMPC 即计算两个 MPC 之间的 RDF
      * @param aN 指定分划的份数（默认为 160）
      * @param aRMax 指定计算的最大半径（默认为 6 倍单位长度）
      * @return gr 函数

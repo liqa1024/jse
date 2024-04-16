@@ -6,8 +6,6 @@ import java.util.Collection;
 
 @VisibleForTesting
 public final class MFPC extends MultiFrameParameterCalculator {
-    /** @deprecated use {@link #of} */ private MFPC(Collection<? extends Collection<? extends IAtom>> aAtomDataList, Collection<? extends IBox> aBoxList, double aTimestep, int aThreadNum) {super(aAtomDataList, aBoxList, aTimestep, aThreadNum);}
-    /** @deprecated use {@link #of} */ private MFPC(Collection<? extends Collection<? extends IAtom>> aAtomDataList, Collection<? extends IBox> aBoxList, double aTimestep) {super(aAtomDataList, aBoxList, aTimestep);}
     /** @deprecated use {@link #of} */ private MFPC(Collection<? extends IAtomData> aAtomDataList, double aTimestep) {super(aAtomDataList, aTimestep);}
     /** @deprecated use {@link #of} */ private MFPC(Collection<? extends IAtomData> aAtomDataList, double aTimestep, int aThreadNum) {super(aAtomDataList, aTimestep, aThreadNum);}
 }
