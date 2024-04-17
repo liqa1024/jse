@@ -83,7 +83,15 @@ public class PyCallable extends PyObject {
      * @throws JepException
      *             if an error occurs
      */
+    @SuppressWarnings("unchecked")
     public Object call(Object... args) throws JepException {
+        if (args == null || args.length == 0) return callAs(Object.class, args);
+        if (args.length == 1 && (args[0] instanceof Map)) return callAs(Object.class, (Map<String, Object>)args[0]);
+        if (args.length > 1 && (args[args.length-1] instanceof Map)) {
+            Object[] tArgs = new Object[args.length-1];
+            System.arraycopy(args, 0, tArgs, 0, args.length-1);
+            return callAs(Object.class, tArgs, (Map<String, Object>)args[args.length-1]);
+        }
         return callAs(Object.class, args);
     }
 
