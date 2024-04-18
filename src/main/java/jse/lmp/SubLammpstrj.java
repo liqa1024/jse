@@ -266,15 +266,11 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         }
         return this;
     }
-    
-    /** 密度归一化, 返回自身来支持链式调用 */
-    public SubLammpstrj setDenseNormalized() {
-        if (mKeyX == null) throw new UnsupportedOperationException("`setDenseNormalized` for Lammpstrj without x data");
-        if (mKeyY == null) throw new UnsupportedOperationException("`setDenseNormalized` for Lammpstrj without y data");
-        if (mKeyZ == null) throw new UnsupportedOperationException("`setDenseNormalized` for Lammpstrj without z data");
-        
-        double tScale = MathEX.Fast.cbrt(volume() / atomNumber());
-        tScale = 1.0 / tScale;
+    /** 设置缩放 */
+    public SubLammpstrj setBoxScale(double aScale) {
+        if (mKeyX == null) throw new UnsupportedOperationException("`setBoxScale` for Lammpstrj without x data");
+        if (mKeyY == null) throw new UnsupportedOperationException("`setBoxScale` for Lammpstrj without y data");
+        if (mKeyZ == null) throw new UnsupportedOperationException("`setBoxScale` for Lammpstrj without z data");
         
         // 从逻辑上考虑，这里不对原本数据做值拷贝，
         // 即使是斜方的也可以直接像这样进行缩放，
@@ -283,7 +279,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         case NORMAL: case UNWRAPPED: {
             IVector tCol = mAtomData.col(mKeyX);
             tCol.minus2this(mBox.xlo());
-            tCol.multiply2this(tScale);
+            tCol.multiply2this(aScale);
             break;
         }
         case SCALED: case SCALED_UNWRAPPED: {break;}
@@ -293,7 +289,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         case NORMAL: case UNWRAPPED: {
             IVector tCol = mAtomData.col(mKeyY);
             tCol.minus2this(mBox.ylo());
-            tCol.multiply2this(tScale);
+            tCol.multiply2this(aScale);
             break;
         }
         case SCALED: case SCALED_UNWRAPPED: {break;}
@@ -303,23 +299,35 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         case NORMAL: case UNWRAPPED: {
             IVector tCol = mAtomData.col(mKeyZ);
             tCol.minus2this(mBox.zlo());
-            tCol.multiply2this(tScale);
+            tCol.multiply2this(aScale);
             break;
         }
         case SCALED: case SCALED_UNWRAPPED: {break;}
         default: throw new RuntimeException();
         }
         
-        if (mKeyVx != null) mAtomData.col(mKeyVx).multiply2this(tScale);
-        if (mKeyVy != null) mAtomData.col(mKeyVy).multiply2this(tScale);
-        if (mKeyVz != null) mAtomData.col(mKeyVz).multiply2this(tScale);
+        if (mKeyVx != null) mAtomData.col(mKeyVx).multiply2this(aScale);
+        if (mKeyVy != null) mAtomData.col(mKeyVy).multiply2this(aScale);
+        if (mKeyVz != null) mAtomData.col(mKeyVz).multiply2this(aScale);
         
         // box 还是会重新创建，因为 box 的值这里约定是严格的常量，可以避免一些问题
         mBox = isPrism() ?
-            new LmpBoxPrism(mBox.x()*tScale, mBox.y()*tScale, mBox.z()*tScale, mBox.xy()*tScale, mBox.xz()*tScale, mBox.yz()*tScale) :
-            new LmpBox(mBox.x()*tScale, mBox.y()*tScale, mBox.z()*tScale);
+            new LmpBoxPrism(mBox.x()*aScale, mBox.y()*aScale, mBox.z()*aScale, mBox.xy()*aScale, mBox.xz()*aScale, mBox.yz()*aScale) :
+            new LmpBox(mBox.x()*aScale, mBox.y()*aScale, mBox.z()*aScale);
         
         return this;
+    }
+    
+    /** 密度归一化, 返回自身来支持链式调用 */
+    @SuppressWarnings("UnusedReturnValue")
+    public SubLammpstrj setDenseNormalized() {
+        if (mKeyX == null) throw new UnsupportedOperationException("`setDenseNormalized` for Lammpstrj without x data");
+        if (mKeyY == null) throw new UnsupportedOperationException("`setDenseNormalized` for Lammpstrj without y data");
+        if (mKeyZ == null) throw new UnsupportedOperationException("`setDenseNormalized` for Lammpstrj without z data");
+        
+        double tScale = MathEX.Fast.cbrt(volume() / atomNumber());
+        tScale = 1.0 / tScale;
+        return setBoxScale(tScale);
     }
     
     

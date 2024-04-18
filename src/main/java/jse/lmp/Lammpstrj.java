@@ -100,7 +100,11 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
         for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setBoxXYZ(aX, aY, aZ);
         return this;
     }
-    
+    /** 设置缩放 */
+    public Lammpstrj setBoxScale(double aScale) {
+        for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setBoxScale(aScale);
+        return this;
+    }
     /** 密度归一化, 返回自身来支持链式调用 */
     public Lammpstrj setDenseNormalized() {
         for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setDenseNormalized();

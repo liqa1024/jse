@@ -15,6 +15,7 @@ import jse.math.vector.Vectors;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import jse.vasp.IVaspCommonData;
+import jse.vasp.POSCAR;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -201,6 +202,37 @@ public class Lmpdat extends AbstractSettableAtomData {
         }
         return this;
     }
+    /** 设置缩放 */
+    public Lmpdat setBoxScale(double aScale) {
+        // 从逻辑上考虑，这里不对原本数据做值拷贝，
+        // 即使是斜方的也可以直接像这样进行缩放，
+        // 这里顺便也会移除掉 boxlo 的数据，因此不使用 atom 修改
+        IVector
+        tCol = mAtomXYZ.col(XYZ_X_COL);
+        tCol.minus2this(mBox.xlo());
+        tCol.multiply2this(aScale);
+        tCol = mAtomXYZ.col(XYZ_Y_COL);
+        tCol.minus2this(mBox.ylo());
+        tCol.multiply2this(aScale);
+        tCol = mAtomXYZ.col(XYZ_Z_COL);
+        tCol.minus2this(mBox.zlo());
+        tCol.multiply2this(aScale);
+        if (mVelocities != null) {
+        tCol = mVelocities.col(STD_VX_COL);
+        tCol.multiply2this(aScale);
+        tCol = mVelocities.col(STD_VY_COL);
+        tCol.multiply2this(aScale);
+        tCol = mVelocities.col(STD_VZ_COL);
+        tCol.multiply2this(aScale);
+        }
+        
+        // box 还是会重新创建，因为 box 的值这里约定是严格的常量，可以避免一些问题
+        mBox = isPrism() ?
+            new LmpBoxPrism(mBox.x()*aScale, mBox.y()*aScale, mBox.z()*aScale, mBox.xy()*aScale, mBox.xz()*aScale, mBox.yz()*aScale) :
+            new LmpBox(mBox.x()*aScale, mBox.y()*aScale, mBox.z()*aScale);
+        
+        return this;
+    }
     
     /**
      * 密度归一化
@@ -209,35 +241,7 @@ public class Lmpdat extends AbstractSettableAtomData {
     public Lmpdat setDenseNormalized() {
         double tScale = MathEX.Fast.cbrt(volume() / mAtomNum);
         tScale = 1.0 / tScale;
-        
-        // 从逻辑上考虑，这里不对原本数据做值拷贝，
-        // 即使是斜方的也可以直接像这样进行缩放，
-        // 这里顺便也会移除掉 boxlo 的数据，因此不使用 atom 修改
-        IVector
-        tCol = mAtomXYZ.col(XYZ_X_COL);
-        tCol.minus2this(mBox.xlo());
-        tCol.multiply2this(tScale);
-        tCol = mAtomXYZ.col(XYZ_Y_COL);
-        tCol.minus2this(mBox.ylo());
-        tCol.multiply2this(tScale);
-        tCol = mAtomXYZ.col(XYZ_Z_COL);
-        tCol.minus2this(mBox.zlo());
-        tCol.multiply2this(tScale);
-        if (mVelocities != null) {
-        tCol = mVelocities.col(STD_VX_COL);
-        tCol.multiply2this(tScale);
-        tCol = mVelocities.col(STD_VY_COL);
-        tCol.multiply2this(tScale);
-        tCol = mVelocities.col(STD_VZ_COL);
-        tCol.multiply2this(tScale);
-        }
-        
-        // box 还是会重新创建，因为 box 的值这里约定是严格的常量，可以避免一些问题
-        mBox = isPrism() ?
-            new LmpBoxPrism(mBox.x()*tScale, mBox.y()*tScale, mBox.z()*tScale, mBox.xy()*tScale, mBox.xz()*tScale, mBox.yz()*tScale) :
-            new LmpBox(mBox.x()*tScale, mBox.y()*tScale, mBox.z()*tScale);
-        
-        return this;
+        return setBoxScale(tScale);
     }
     
     
