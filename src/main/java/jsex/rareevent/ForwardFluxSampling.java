@@ -657,7 +657,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             // 截断过小的值，这里简单起见直接将其按照 multiple 降序排序然后进行截断
             mPointsOnLambda.sort(Comparator.comparingDouble((Point p) -> p.multiple).reversed());
             double rCutoffValue = 0.0;
-            while (mPointsOnLambda.size()*2 > mN0) {
+            while (mPointsOnLambda.size()*3 > mN0*2) {
                 rCutoffValue += UT.Code.last(mPointsOnLambda).multiple;
                 if (rCutoffValue > mCutoff*mN0) break;
                 UT.Code.removeLast(mPointsOnLambda);
