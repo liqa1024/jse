@@ -1,6 +1,8 @@
 package jse.io;
 
 import jse.code.UT;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 
@@ -41,6 +43,6 @@ public abstract class AbstractInFileLines extends AbstractInFile {
     
     /** stuff to override，提供一个获取 inFile 的 Reader 以及应用这些自定义设置的方法 */
     protected abstract IReadLine getInFileReader() throws IOException;
-    protected abstract String getKeyOfLine(String aLine); // 注意返回 null 表示获取 key 失败，不进行 value 设置
-    protected abstract String setValueOfLine(String aLine, Object aValue);
+    protected abstract @Nullable String getKeyOfLine(String aLine); // 注意返回 null 表示获取 key 失败，不进行 value 设置
+    protected abstract @NotNull String setValueOfLine(String aLine, @Nullable Object aValue);
 }

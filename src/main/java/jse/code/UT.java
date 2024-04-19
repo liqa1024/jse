@@ -813,6 +813,31 @@ public class UT {
         }
         
         
+        public static boolean firstCharIsDigitDecimal(int aChar) {
+            switch(aChar) {
+            case '-': case '+': case '.': {
+                return true;
+            }
+            default: {
+                return CharScanner.isDigit(aChar);
+            }}
+        }
+        /**
+         * 将单个字符串转为 Number 值，如果转换失败则返回 {@code null}
+         * @author liqa
+         */
+        public static @Nullable Number str2number(String aStr) {
+            // 先直接转 char[]，适配 groovy-json 的 CharScanner
+            char[] tChar = aStr.toCharArray();
+            // 先判断开头，这样可以避免抛出错误带来的性能损失
+            if (!firstCharIsDigitDecimal(tChar[0])) return null;
+            // 但一般还是使用 try，这样避免意外的情况
+            try {return CharScanner.parseJsonNumber(tChar);}
+            catch (Exception ignored) {}
+            return null;
+        }
+        
+        
         /**
          * 针对 lammps 等软件输出文件中存在的使用空格分割的数据专门优化的读取操作，
          * 使用 groovy-json 中现成的 parseDouble 等方法，总体比直接 split 并用 java 的 parseDouble 快一倍以上；

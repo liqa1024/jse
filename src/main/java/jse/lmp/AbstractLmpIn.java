@@ -2,6 +2,8 @@ package jse.lmp;
 
 import jse.code.UT;
 import jse.io.AbstractInFileLines;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -14,19 +16,18 @@ import java.util.List;
  * <p> 抽象的 lammps 输入文件 </p>
  */
 public abstract class AbstractLmpIn extends AbstractInFileLines {
-    
     /** stuff to override */
     @Override protected abstract IReadLine getInFileReader() throws IOException;
     
     /** AbstractInFile stuffs，实现 lammps 的输入文件格式的设置参数 */
-    @Override protected String getKeyOfLine(String aLine) {
+    @Override protected @Nullable String getKeyOfLine(String aLine) {
         // 对于 lammps 的输入文件，这里的 key 检测 variable 定义的变量名或者每行的第一个值（如果是 variable 则会变成 variable 定义的变量名）
         String[] tTokens = UT.Text.splitBlank(aLine);
         if (tTokens.length == 0) return null;
         if (tTokens[0].equals("variable") && tTokens.length>1) return tTokens[1];
         return tTokens[0];
     }
-    @Override protected String setValueOfLine(String aLine, Object aValue) {
+    @Override protected @NotNull String setValueOfLine(String aLine, @Nullable Object aValue) {
         // 同样，对于 lammps 的输入文件，检测第一个为 variable 时则修改后续定义的变量值，否则修改后续所有
         if (aValue == null) return aLine;
         String[] tTokens = UT.Text.splitBlank(aLine);

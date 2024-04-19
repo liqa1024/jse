@@ -37,7 +37,7 @@ public class LmpIn extends AbstractLmpIn {
         return new AbstractLmpIn() {
             @Override protected IReadLine getInFileReader() {
                 Iterator<String> it = IOGroovyMethods.iterator(new CharSequenceReader(aText));
-                return it::next;
+                return () -> it.hasNext() ? it.next() : null;
             }
         };
     }
