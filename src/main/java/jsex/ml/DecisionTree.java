@@ -36,17 +36,17 @@ public class DecisionTree implements ISavable {
     }
     /** 叶节点 */
     static final class NodeLeaf implements INode {
-        private final boolean mResult;
-        public NodeLeaf(boolean aResult) {mResult = aResult;}
+        final boolean mResult;
+        NodeLeaf(boolean aResult) {mResult = aResult;}
         @Override public INode nextNode(IVector aInput) {throw new UnsupportedOperationException("nextNode");}
         @Override public boolean isLeaf() {return true;}
         @Override public boolean result() {return mResult;}
     }
     /** 二叉树的节点 */
     static abstract class NodeBinary implements INode {
-        protected final INode mLeft, mRight;
-        protected final int mIndex;
-        public NodeBinary(INode aLeft, INode aRight, int aIndex) {
+        final INode mLeft, mRight;
+        final int mIndex;
+        NodeBinary(INode aLeft, INode aRight, int aIndex) {
             mLeft = aLeft; mRight = aRight;
             mIndex = aIndex; // 需要记录分类输入对应的 index，即输入变量的种类
         }
@@ -55,8 +55,8 @@ public class DecisionTree implements ISavable {
     }
     /** 连续情况节点，需要记录此节点考虑的分划点 */
     static final class NodeContinue extends NodeBinary {
-        private final double mSplit;
-        public NodeContinue(INode aLeft, INode aRight, int aIndex, double aSplit) {
+        final double mSplit;
+        NodeContinue(INode aLeft, INode aRight, int aIndex, double aSplit) {
             super(aLeft, aRight, aIndex);
             mSplit = aSplit;
         }
