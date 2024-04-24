@@ -904,7 +904,12 @@ public class SP {
             String tJepPyDir = tJepDir+"src/main/python/jep/";
             String tJepLibPyDir = JEP_LIB_DIR+"jep/";
             UT.IO.removeDir(tJepLibPyDir); // 如果存在删除一下保证移动成功
-            UT.IO.move(tJepPyDir, tJepLibPyDir);
+            try {
+                UT.IO.move(tJepPyDir, tJepLibPyDir);
+            } catch (Exception e) {
+                // 移动失败则尝试直接拷贝整个目录
+                UT.IO.copyDir(tJepPyDir, tJepLibPyDir);
+            }
             // 完事后移除临时解压得到的源码
             UT.IO.removeDir(tWorkingDir);
             System.out.println("JEP INIT INFO: jep successfully installed.");

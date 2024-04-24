@@ -271,7 +271,12 @@ public class NativeLmp implements IAutoShutdown {
             }
             if (tNativeLmpTempSrcDir2 == null) throw new Exception("NATIVE_LMP INIT ERROR: No lammps in "+tNativeLmpTempSrcDir);
             // 移动到需要的目录
-            UT.IO.move(tNativeLmpTempSrcDir2, NATIVELMP_SRC_DIR);
+            try {
+                UT.IO.move(tNativeLmpTempSrcDir2, NATIVELMP_SRC_DIR);
+            } catch (Exception e) {
+                // 移动失败则尝试直接拷贝整个目录
+                UT.IO.copyDir(tNativeLmpTempSrcDir2, NATIVELMP_SRC_DIR);
+            }
         }
         // 执行 lammps 构建
         System.out.println("NATIVE_LMP INIT INFO: Building lammps from source code...");

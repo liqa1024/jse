@@ -66,10 +66,7 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.*;
@@ -1172,6 +1169,32 @@ public class UT {
             }
             delete(aDir);
         }
+        
+        /**
+         * 递归的复制一个目录，这里使用字符串拼接的方法实现，而不是
+         * {@link Files#walkFileTree}
+         * @author liqa
+         */
+        @VisibleForTesting public static void cpdir(String aSourceDir, String aTargetDir) throws IOException {copyDir(aSourceDir, aTargetDir);}
+        public static void copyDir(String aSourceDir, String aTargetDir) throws IOException {
+            aSourceDir = toInternalValidDir(aSourceDir);
+            aTargetDir = toInternalValidDir(aTargetDir);
+            if (!exists(aSourceDir)) throw new NoSuchFileException(toAbsolutePath(aSourceDir));
+            if (!isDir(aSourceDir)) throw new NotDirectoryException(toAbsolutePath(aSourceDir));
+            copyDir_(aSourceDir, aTargetDir);
+        }
+        private static void copyDir_(String aSourceDir, String aTargetDir) throws IOException {
+            makeDir(aTargetDir);
+            String[] tFiles = list(aSourceDir);
+            for (String tName : tFiles) {
+                if (tName==null || tName.isEmpty() || tName.equals(".") || tName.equals("..")) continue;
+                String tSourceFileOrDir = aSourceDir+tName;
+                String tTargetFileOrDir = aTargetDir+tName;
+                if (isDir(tSourceFileOrDir)) {copyDir_(tSourceFileOrDir+"/", tTargetFileOrDir+"/");}
+                else if (isFile(tSourceFileOrDir)) {copy(tSourceFileOrDir, tTargetFileOrDir);}
+            }
+        }
+        
         
         /** useful methods, wrapper of {@link Files} stuffs */
         @VisibleForTesting
