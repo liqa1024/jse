@@ -52,6 +52,17 @@ jse 通过提交系统指令的方式来提交任务，类似
 > 因此在 shell 模式下可以直接执行 `system()` 方法而不需要导入。
 > 
 
+### 修改工作目录
+
+默认情况下，任务提交器的工作目录和 jse 的工作目录一致，
+如果希望修改工作目录，可以通过 `EXEC.setWorkingDir()`
+来修改工作目录：
+
+```groovy
+EXEC.setWorkingDir('lmp') // 修改工作目录到 lmp 文件夹
+EXEC.setWorkingDir(null) // 清空工作目录修改，现在工作目录和 jse 的工作目录一致
+```
+
 
 ## 输出控制
 
@@ -85,14 +96,13 @@ lines = system_str('echo 123456')
 
 ### 关闭输出
 
-有时不希望保留指令的输出，首先需要通过 `EXEC` 
-获取到内部的指令执行器，然后调用 `setNoSTDOutput()` 和
-`setNoERROutput()` 来分别关闭标准输出和错误输出：
+有时不希望保留指令的输出，可以通过 `EXEC.setNoSTDOutput()` 和
+`EXEC.setNoERROutput()` 来分别关闭标准输出和错误输出：
 
 ```groovy
 EXEC.setNoSTDOutput() // 关闭标准输出
 EXEC.setNoERROutput() // 关闭错误输出
-EXEC.setNoSTDOutput(false).setNoERROutput(false) // 重新打开标准输出和错误输出
+EXEC.setNoSTDOutput(false).setNoERROutput(false) // 重新打开标准输出和错误输出，支持链式调用
 ```
 
 --------------------------------

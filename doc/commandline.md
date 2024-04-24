@@ -7,6 +7,8 @@
     - [-?/-help](#help)
     - [-groovy](#groovy)
     - [-python](#python)
+    - [-groovytext](#groovytext)
+    - [-pythontext](#pythontext)
     - [-jupyter](#jupyter)
 - [**⟶ 目录**](contents.md)
 
@@ -60,7 +62,7 @@ jse -t 'println(/hello world/)'
 ## -t/-text
 
 增加 `-t` 或 `-text` 后，jse 会将后续输入的字符串当作 groovy 指令执行。
-注意这里一般需要将整个指令使用双引号 `"` 包围，
+注意这里一般需要将整个指令使用单引号 `'` 包围，
 保证整个指令被当作一个字符串传入。
 
 - **执行**
@@ -197,7 +199,7 @@ groovy 版本以及 java 版本并退出。
     
 - **输出**
     ```
-    jse version: 2.8.0 (java: 17.0.8)
+    jse version: 2.8.3 (java: 17.0.8)
     ```
 
 
@@ -216,7 +218,7 @@ groovy 版本以及 java 版本并退出。
     Usage:    jse [-option] value [args...]
     Such as:  jse path/to/script.groovy [args...]
     Or:       jse -t 'println(/hello world/)'
-    
+
     The options can be:
         -t -text      Run the groovy text script
         -f -file      Run the groovy/python file script (default behavior when left blank)
@@ -225,8 +227,10 @@ groovy 版本以及 java 版本并退出。
         -? -help      Print help message
         -groovy       Run the groovy file script
         -python       Run the python file script
+        -groovytext   Run the groovy text script
+        -pythontext   Run the python text script
         -jupyter      Install current jse to the jupyter kernel
-    
+
     You can also using another scripting language such as MATLAB or Python with Py4J and import jse-*.jar
     ```
 
@@ -247,6 +251,25 @@ groovy 版本以及 java 版本并退出。
 
 和 `-f`/`-file`，不同，此时不会自动判断脚本类型，
 永远将输入的文件当作 python 脚本执行。
+
+
+## -groovytext
+
+增加 `-groovytext` 后，jse 会将后续输入的字符串当作 groovy 指令执行。
+
+和 `-t`/`-text` 行为完全一致。
+
+
+## -pythontext
+
+增加 `-pythontext` 后，jse 会将后续输入的字符串当作 python 指令执行。
+
+和 `-t`/`-text` 不同，此时会认为输入的指令为 python
+指令并通过 jep 来运行。
+
+> 由于 groovy 指令会先进行编译，因此一般来说 python
+> 指令启动更快，而 groovy 指令对于长时的任务会更快
+> 
 
 
 ## -jupyter
