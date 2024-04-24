@@ -827,10 +827,9 @@ public class SP {
         public static void installPackage(String aRequirement) {installPackage(aRequirement, false);}
         
         
-        private static String cmakeInitCmdJep_(String aJepBuildDir) {
+        private static String cmakeInitCmdJep_() {
             // 设置参数，这里使用 List 来构造这个长指令
             List<String> rCommand = new ArrayList<>();
-            rCommand.add("cd"); rCommand.add("'"+aJepBuildDir+"'"); rCommand.add(";");
             rCommand.add("cmake");
             // 这里设置 C 编译器（如果有）
             if (Conf.CMAKE_C_COMPILER != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="+Conf.CMAKE_C_COMPILER  );}
@@ -839,10 +838,9 @@ public class SP {
             rCommand.add("..");
             return String.join(" ", rCommand);
         }
-        private static String cmakeSettingCmdJep_(String aJepBuildDir) throws IOException {
+        private static String cmakeSettingCmdJep_() throws IOException {
             // 设置参数，这里使用 List 来构造这个长指令
             List<String> rCommand = new ArrayList<>();
-            rCommand.add("cd"); rCommand.add("'"+aJepBuildDir+"'"); rCommand.add(";");
             rCommand.add("cmake");
             // 设置构建输出目录为 lib
             UT.IO.makeDir(JEP_LIB_DIR); // 初始化一下这个目录避免意料外的问题
@@ -891,14 +889,14 @@ public class SP {
             String tJepBuildDir = tJepDir+"build/";
             UT.IO.makeDir(tJepBuildDir);
             // 直接通过系统指令来编译 Jep 的库，关闭输出
-            EXEC.setNoSTDOutput();
+            EXEC.setNoSTDOutput().setWorkingDir(tJepBuildDir);
             // 初始化 cmake
-            EXEC.system(cmakeInitCmdJep_(tJepBuildDir));
+            EXEC.system(cmakeInitCmdJep_());
             // 设置参数
-            EXEC.system(cmakeSettingCmdJep_(tJepBuildDir));
+            EXEC.system(cmakeSettingCmdJep_());
             // 最后进行构造操作
-            EXEC.system(String.format("cd '%s'; cmake --build . --config Release", tJepBuildDir));
-            EXEC.setNoSTDOutput(false);
+            EXEC.system("cmake --build . --config Release");
+            EXEC.setNoSTDOutput(false).setWorkingDir(null);
             // 简单检测一下是否编译成功
             @Nullable String tJepLibName = LIB_NAME_IN(JEP_LIB_DIR, "jep");
             if (tJepLibName == null) throw new Exception("JEP BUILD ERROR: No jep lib in "+JEP_LIB_DIR);

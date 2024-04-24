@@ -60,10 +60,9 @@ public class MiMalloc {
     public final static String LLIB_PATH;
     
     
-    private static String cmakeInitCmd_(String aMiBuildDir) {
+    private static String cmakeInitCmd_() {
         // 设置参数，这里使用 List 来构造这个长指令
         List<String> rCommand = new ArrayList<>();
-        rCommand.add("cd"); rCommand.add("'"+aMiBuildDir+"'"); rCommand.add(";");
         rCommand.add("cmake");
         // 这里设置 C/C++ 编译器（如果有）
         if (Conf.CMAKE_C_COMPILER   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  +Conf.CMAKE_C_COMPILER   );}
@@ -74,10 +73,9 @@ public class MiMalloc {
         rCommand.add("..");
         return String.join(" ", rCommand);
     }
-    private static String cmakeSettingCmd_(String aMiBuildDir) throws IOException {
+    private static String cmakeSettingCmd_() throws IOException {
         // 设置参数，这里使用 List 来构造这个长指令
         List<String> rCommand = new ArrayList<>();
-        rCommand.add("cd"); rCommand.add("'"+aMiBuildDir+"'"); rCommand.add(";");
         rCommand.add("cmake");
         // 设置只输出动态链接库
         rCommand.add("-D"); rCommand.add("MI_BUILD_SHARED=ON");
@@ -125,14 +123,14 @@ public class MiMalloc {
         String tMiBuildDir = tMiDir+"build/";
         UT.IO.makeDir(tMiBuildDir);
         // 直接通过系统指令来编译 mimalloc 的库，关闭输出
-        EXEC.setNoSTDOutput();
+        EXEC.setNoSTDOutput().setWorkingDir(tMiBuildDir);
         // 初始化 cmake
-        EXEC.system(cmakeInitCmd_(tMiBuildDir));
+        EXEC.system(cmakeInitCmd_());
         // 设置参数
-        EXEC.system(cmakeSettingCmd_(tMiBuildDir));
+        EXEC.system(cmakeSettingCmd_());
         // 最后进行构造操作
-        EXEC.system(String.format("cd '%s'; cmake --build . --config Release", tMiBuildDir));
-        EXEC.setNoSTDOutput(false);
+        EXEC.system("cmake --build . --config Release");
+        EXEC.setNoSTDOutput(false).setWorkingDir(null);
         // 简单检测一下是否编译成功
         @Nullable String tLibName = LIB_NAME_IN(LIB_DIR, "mimalloc");
         if (tLibName == null) throw new Exception("MIMALLOC BUILD ERROR: No mimalloc lib in '"+LIB_DIR+"'");

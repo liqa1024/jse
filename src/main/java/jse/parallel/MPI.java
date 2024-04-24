@@ -1141,10 +1141,9 @@ public class MPI {
             , "jse_parallel_MPI_Native.h"
         };
         
-        private static String cmakeInitCmd_(String aBuildDir) {
+        private static String cmakeInitCmd_() {
             // 设置参数，这里使用 List 来构造这个长指令
             List<String> rCommand = new ArrayList<>();
-            rCommand.add("cd"); rCommand.add("'"+aBuildDir+"'"); rCommand.add(";");
             rCommand.add("cmake");
             // 这里设置 C/C++ 编译器（如果有）
             if (Conf.CMAKE_C_COMPILER   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + Conf.CMAKE_C_COMPILER   );}
@@ -1155,10 +1154,9 @@ public class MPI {
             rCommand.add("..");
             return String.join(" ", rCommand);
         }
-        private static String cmakeSettingCmd_(String aBuildDir) throws IOException {
+        private static String cmakeSettingCmd_() throws IOException {
             // 设置参数，这里使用 List 来构造这个长指令
             List<String> rCommand = new ArrayList<>();
-            rCommand.add("cd"); rCommand.add("'"+aBuildDir+"'"); rCommand.add(";");
             rCommand.add("cmake");
             rCommand.add("-D"); rCommand.add("JSE_USE_MIMALLOC="+(Conf.USE_MIMALLOC?"ON":"OFF"));
             // 设置构建输出目录为 lib
@@ -1201,14 +1199,14 @@ public class MPI {
             String tBuildDir = tWorkingDir+"build/";
             UT.IO.makeDir(tBuildDir);
             // 直接通过系统指令来编译 mpijni 的库，关闭输出
-            EXEC.setNoSTDOutput();
+            EXEC.setNoSTDOutput().setWorkingDir(tBuildDir);
             // 初始化 cmake
-            EXEC.system(cmakeInitCmd_(tBuildDir));
+            EXEC.system(cmakeInitCmd_());
             // 设置参数
-            EXEC.system(cmakeSettingCmd_(tBuildDir));
+            EXEC.system(cmakeSettingCmd_());
             // 最后进行构造操作
-            EXEC.system(String.format("cd '%s'; cmake --build . --config Release", tBuildDir));
-            EXEC.setNoSTDOutput(false);
+            EXEC.system("cmake --build . --config Release");
+            EXEC.setNoSTDOutput(false).setWorkingDir(null);
             // 简单检测一下是否编译成功
             @Nullable String tLibName = LIB_NAME_IN(MPIJNI_LIB_DIR, "mpijni");
             if (tLibName == null) throw new Exception("MPI BUILD ERROR: Build Failed, No mpijni lib in '"+MPIJNI_LIB_DIR+"'");
