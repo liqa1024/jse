@@ -3,6 +3,7 @@ package jse.system;
 import jse.io.IIOFiles;
 import jse.parallel.IThreadPool;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
@@ -33,6 +34,9 @@ public interface ISystemExecutor extends IThreadPool {
     void getFiles(String... aFiles) throws Exception;
     boolean needSyncIOFiles();
     
+    
+    /** 现在支持设置工作目录 */
+    ISystemExecutor setWorkingDir(@Nullable String aWorkingDir);
     
     /** 砍掉原本的 _NO 接口，改为直接设置是否输出到控制台 */
     default ISystemExecutor setNoSTDOutput() {return setNoSTDOutput(true);}

@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.concurrent.*;
@@ -22,6 +23,9 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
     /** stuff to override */
     protected String @NotNull[] programAndArgs_() {return ZL_STR;}
     protected Charset charset_() {return Charset.defaultCharset();}
+    
+    private @Nullable File mWorkingDir = null;
+    @Override public final LocalSystemExecutor setWorkingDir(@Nullable String aWorkingDir) {mWorkingDir = aWorkingDir==null ? null : UT.IO.toFile(aWorkingDir); return this;}
     
     /** 本地则在本地创建目录即可 */
     @Override public final void validPath(String aPath) throws IOException {UT.IO.validPath(aPath);}
@@ -51,7 +55,7 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
                 // 这里对于一般情况改为更加稳定的 processBuilder
                 String[] tProgramAndArgs = programAndArgs_();
                 String[] tCommands = tProgramAndArgs.length==0 ? UT.Text.splitBlank(aCommand) : NewCollections.merge(tProgramAndArgs, aCommand);
-                tProcess = new ProcessBuilder(tCommands).start();
+                tProcess = new ProcessBuilder(tCommands).directory(mWorkingDir).start();
             } catch (Exception e) {
                 printStackTrace(e); tProcess = null;
             }

@@ -359,6 +359,7 @@ public abstract class AbstractLongTimeSystemExecutor<T extends ISystemExecutor> 
     
     
     /** ISystemExecutor stuffs */
+    @Override public final ISystemExecutor setWorkingDir(@Nullable String aWorkingDir) {mEXE.setWorkingDir(aWorkingDir); return this;}
     @Override public final ISystemExecutor setNoSTDOutput(boolean aNoSTDOutput) {mEXE.setNoSTDOutput(aNoSTDOutput); return this;}
     @Override public final boolean noSTDOutput() {return mEXE.noSTDOutput();}
     @Override public final ISystemExecutor setNoERROutput(boolean aNoERROutput) {mEXE.setNoERROutput(aNoERROutput); return this;}

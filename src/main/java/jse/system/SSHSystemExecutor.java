@@ -34,6 +34,7 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
         }
     }
     
+    @Override public final SSHSystemExecutor setWorkingDir(@Nullable String aWorkingDir) {mSSH.setRemoteWorkingDir(aWorkingDir); return this;}
     /** 这些属性支持创建后修改来方便使用 */
     public SSHSystemExecutor setLocalWorkingDir(String aLocalWorkingDir) {mSSH.setLocalWorkingDir(aLocalWorkingDir); return this;}
     public SSHSystemExecutor setRemoteWorkingDir(String aRemoteWorkingDir) {mSSH.setRemoteWorkingDir(aRemoteWorkingDir); return this;}
