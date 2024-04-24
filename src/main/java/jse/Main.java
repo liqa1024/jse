@@ -5,6 +5,7 @@ import io.github.spencerpark.jupyter.channels.JupyterSocket;
 import io.github.spencerpark.jupyter.kernel.KernelConnectionProperties;
 import jse.code.SP;
 import jse.code.UT;
+import jse.system.PythonSystemExecutor;
 import org.apache.groovy.util.Maps;
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.codehaus.groovy.runtime.InvokerInvocationException;
@@ -17,7 +18,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Future;
 import java.util.logging.Level;
 
 import static jse.code.OS.JAR_PATH;
@@ -100,15 +100,16 @@ public class Main {
                 // 写入 logo
                 UT.IO.copy(UT.IO.getResource("jupyter/logo-32x32.png"), tWorkingDir+"logo-32x32.png");
                 UT.IO.copy(UT.IO.getResource("jupyter/logo-64x64.png"), tWorkingDir+"logo-64x64.png");
-                // 使用这种方法来安装，不走 jep 来避免安装失败的问题
-                // 这里改用 ProcessBuilder 直接调用 python 而不是 CS.Exec.EXE 来通过 shell 调用，因为 powershell 有双引号的问题
-                Process tProcess = new ProcessBuilder("python", "-c", "import sys;from jupyter_client.kernelspec import KernelSpecManager;KernelSpecManager().install_kernel_spec('"+tWorkingDir.replace("\\", "\\\\")+"', 'jse'"+rArgs+")").start();
-                // 只读取错误输出
-                Future<Void> tErrTask = UT.Par.redirectStream(tProcess.getErrorStream(), true, System.err);
-                int tExitValue;
-                try {tErrTask.get(); tExitValue = tProcess.waitFor();}
-                catch (Exception e) {tProcess.destroy(); throw e;}
-                if (tExitValue != 0) {System.exit(tExitValue); return;}
+                // 使用这种方法来安装，不走 jep 来避免安装失败的问题；
+                // 现在支持直接使用 PythonExec 来执行
+                try (PythonSystemExecutor tPython = new PythonSystemExecutor()) {
+                    int tExitValue = tPython.system(
+                        "import sys\n" +
+                            "from jupyter_client.kernelspec import KernelSpecManager\n" +
+                            "KernelSpecManager().install_kernel_spec('"+tWorkingDir.replace("\\", "\\\\")+"', 'jse'"+rArgs+")"
+                    );
+                    if (tExitValue != 0) {System.exit(tExitValue); return;}
+                }
                 UT.IO.removeDir(tWorkingDir);
                 // 由于 java 中不能正常关闭 jupyter，因此不在这里运行 jupyter
                 System.out.println("The jupyter kernel for JSE has been initialized,");
@@ -121,8 +122,12 @@ public class Main {
                 String[] tArgs = new String[aArgs.length-3];
                 if (tArgs.length > 0) System.arraycopy(aArgs, 3, tArgs, 0, tArgs.length);
                 switch (tOption) {
-                case "-t": case "-text": {
+                case "-t": case "-text": case "-groovytext": {
                     SP.Groovy.runText(tValue, tArgs);
+                    return;
+                }
+                case "-pythontext": {
+                    SP.Python.runText(tValue, tArgs);
                     return;
                 }
                 case "-f": case "-file": {
@@ -275,6 +280,8 @@ public class Main {
         aPrinter.println("    -? -help      Print help message");
         aPrinter.println("    -groovy       Run the groovy file script");
         aPrinter.println("    -python       Run the python file script");
+        aPrinter.println("    -groovytext   Run the groovy text script");
+        aPrinter.println("    -pythontext   Run the python text script");
         aPrinter.println("    -jupyter      Install current jse to the jupyter kernel");
         aPrinter.println();
         aPrinter.println("You can also using another scripting language such as MATLAB or Python with Py4J and import jse-*.jar");
