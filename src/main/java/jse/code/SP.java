@@ -686,8 +686,8 @@ public class SP {
         }
         /** Python 提供额外的接口 */
         public static <T> T getAs(Class<T> aExpectedType, String aValueName) throws JepException {return JEP_INTERP.getValue(aValueName, aExpectedType);}
-        /** 返回一个新的 jep 的 Interpreter，主要用于并行运行 python 使用 */
-        public static jep.Interpreter newInterpreter() throws JepException {return new jep.SharedInterpreter();}
+        // 并行使用 Python 请手动使用 new jep.SharedInterpreter()，并且需要实现在主线程上初始化 SP.Python 从而保证 jse 的 python 环境成功初始化；
+        // 因为直接在多线程环境下使用会在主线程之外初始化全局的 JEP_INTERP，从而导致同一个线程多次初始化的问题
         
         static {
             InitHelper.INITIALIZED = true;
