@@ -565,17 +565,16 @@ public class UT {
             Main.addGlobalAutoCloseable(sProgressBar);
         }
         public static synchronized void progressBar(Map<?, ?> aArgs) {
-            progressBar_(UT.Code.toString(UT.Code.getWithDefault(aArgs, "", "TaskName", "taskname", "Name", "name")),
-                         ((Number)UT.Code.get(aArgs, "InitialMax", "initialmax", "Max", "max", "N", "n")).longValue(),
-                         (ProgressBarStyle)UT.Code.getWithDefault(aArgs, UNICODE_SUPPORT ? ProgressBarStyle.COLORFUL_UNICODE_BLOCK : ProgressBarStyle.ASCII, "Style", "style", "s"),
-                         (PrintStream)UT.Code.getWithDefault(aArgs, PBAR_ERR_STREAM ? System.err : System.out, "Consumer", "consumer", "c"),
-                         ((Number)UT.Code.getWithDefault(aArgs, (int)FILE_SYSTEM_SLEEP_TIME_2, "UpdateIntervalMillis", "updateintervalmills", "Update", "update")).intValue(),
-                         UT.Code.toString(UT.Code.getWithDefault(aArgs, "", "UnitName", "unitname", "uname")),
-                         ((Number)UT.Code.getWithDefault(aArgs, 1, "UnitSize", "unitsize", "usize")).longValue(),
-                         ((Number)UT.Code.getWithDefault(aArgs, -1, "MaxRenderedLength", "maxrenderlength", "Length", "length", "l")).intValue(),
-                         (Boolean)UT.Code.getWithDefault(aArgs, false, "ShowSpeed", "showspeed", "Speed", "speed"),
-                         (ChronoUnit)UT.Code.getWithDefault(aArgs, ChronoUnit.SECONDS, "SpeedUnit", "speedunit")
-                        );
+            progressBar_(Code.toString(Code.getWithDefault(aArgs, "", "TaskName", "taskname", "Name", "name")),
+                         ((Number)Code.get(aArgs, "InitialMax", "initialmax", "Max", "max", "N", "n")).longValue(),
+                         (ProgressBarStyle)Code.getWithDefault(aArgs, UNICODE_SUPPORT ? ProgressBarStyle.COLORFUL_UNICODE_BLOCK : ProgressBarStyle.ASCII, "Style", "style", "s"),
+                         (PrintStream)Code.getWithDefault(aArgs, PBAR_ERR_STREAM ? System.err : System.out, "Consumer", "consumer", "c"),
+                         ((Number)Code.getWithDefault(aArgs, (int)FILE_SYSTEM_SLEEP_TIME_2, "UpdateIntervalMillis", "updateintervalmills", "Update", "update")).intValue(),
+                         Code.toString(Code.getWithDefault(aArgs, "", "UnitName", "unitname", "uname")),
+                         ((Number)Code.getWithDefault(aArgs, 1, "UnitSize", "unitsize", "usize")).longValue(),
+                         ((Number)Code.getWithDefault(aArgs, -1, "MaxRenderedLength", "maxrenderlength", "Length", "length", "l")).intValue(),
+                         (Boolean)Code.getWithDefault(aArgs, false, "ShowSpeed", "showspeed", "Speed", "speed"),
+                         (ChronoUnit)Code.getWithDefault(aArgs, ChronoUnit.SECONDS, "SpeedUnit", "speedunit"));
         }
         public static synchronized void progressBar(String aName, long aN) {
             progressBar_(aName, aN,
@@ -585,11 +584,12 @@ public class UT {
                          "", 1,
                          -1,
                          false, ChronoUnit.SECONDS
-                        );
+            );
         }
         public static synchronized void progressBar(long aN) {progressBar("", aN);}
-        public static synchronized void progressBar() {
+        public static synchronized void progressBar(@Nullable String aExtraMsg) {
             if (sProgressBar == null) return;
+            if (aExtraMsg != null) sProgressBar.setExtraMessage(aExtraMsg);
             sProgressBar.step();
             if (sProgressBar.getCurrent() >= sProgressBar.getMax()) {
                 sProgressBar.close();
@@ -597,9 +597,11 @@ public class UT {
                 sProgressBar = null;
             }
         }
+        public static synchronized void progressBar() {progressBar((String)null);}
         @VisibleForTesting public static void pbar(Map<?, ?> aArgs) {progressBar(aArgs);}
         @VisibleForTesting public static void pbar(String aName, long aN) {progressBar(aName, aN);}
         @VisibleForTesting public static void pbar(long aN) {progressBar(aN);}
+        @VisibleForTesting public static void pbar(@Nullable String aExtraMsg) {progressBar(aExtraMsg);}
         @VisibleForTesting public static void pbar() {progressBar();}
     }
     

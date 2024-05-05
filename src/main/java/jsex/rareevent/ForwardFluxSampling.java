@@ -616,6 +616,12 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         return rSeeds;
     }
     
+    private static String double2str_(double aValue) {
+        int tIntValue = (int)aValue;
+        if (tIntValue == aValue) return String.valueOf(tIntValue);
+        return String.format("%.4g", aValue);
+    }
+    
     /** 一个简单的实现 */
     private int mStep = -1; // 记录运行的步骤，i
     private boolean mFinished = false;
@@ -634,7 +640,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             if (!mNoCompetitive) {
                 // 竞争的写法，每个线程共用 mPointsOnLambda 并同步检测容量是否达标
                 // 在竞争的情况下不需要统一生成种子
-                if (mProgressBar) UT.Timer.progressBar("step1", (long)mN0*mStep1Mul);
+                if (mProgressBar) UT.Timer.progressBar(double2str_(mSurfaceA)+" -> "+double2str_(mSurfaces.first()), (long)mN0*mStep1Mul);
                 pool().parfor(tThreadNum, i -> {
                     tStep1ReturnBuffer[i] = doStep1(mN0*mStep1Mul, mPointsOnLambda, mRNG.nextLong());
                 });
@@ -647,7 +653,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 for (int i = 1; i < tThreadNum; ++i) tPointsOnLambdaBuffer[i] = new ArrayList<>(subN0);
                 // 为了保证结果可重复，这里统一为每个线程生成一个种子，用于内部创建 LocalRandom
                 final long[] tSeeds = genSeeds_(tThreadNum);
-                if (mProgressBar) UT.Timer.progressBar("step1", (long)subN0*tThreadNum);
+                if (mProgressBar) UT.Timer.progressBar(double2str_(mSurfaceA)+" -> "+double2str_(mSurfaces.first()), (long)subN0*tThreadNum);
                 pool().parfor(tThreadNum, i -> {
                     tStep1ReturnBuffer[i] = doStep1(subN0, tPointsOnLambdaBuffer[i], tSeeds[i]);
                 });
@@ -717,7 +723,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 // 竞争的写法，每个线程共用 mPointsOnLambda 并同步检测容量是否达标
                 final long subMaxPathNum = MathEX.Code.divup(mMaxPathNum, tThreadNum);
                 // 在竞争的情况下不需要统一生成种子
-                if (mProgressBar) UT.Timer.progressBar("step2, i="+mStep, tNipp);
+                if (mProgressBar) UT.Timer.progressBar(double2str_(mSurfaces.get(mStep))+" -> "+double2str_(tLambdaNext), tNipp);
                 pool().parfor(tThreadNum, i -> {
                     tStep2ReturnBuffer[i] = doStep2(tNipp, mPointsOnLambda, subMaxPathNum, mRNG.nextLong());
                 });
@@ -731,7 +737,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 for (int i = 1; i < tThreadNum; ++i) tPointsOnLambdaBuffer[i] = new ArrayList<>(subNipp);
                 // 为了保证结果可重复，这里统一为每个线程生成一个种子，用于内部创建 LocalRandom
                 final long[] tSeeds = genSeeds_(tThreadNum);
-                if (mProgressBar) UT.Timer.progressBar("step2, i="+mStep, (long)subNipp*tThreadNum);
+                if (mProgressBar) UT.Timer.progressBar(double2str_(mSurfaces.get(mStep))+" -> "+double2str_(tLambdaNext), (long)subNipp*tThreadNum);
                 pool().parfor(tThreadNum, i -> {
                     tStep2ReturnBuffer[i] = doStep2(subNipp, tPointsOnLambdaBuffer[i], subMaxPathNum, tSeeds[i]);
                 });
