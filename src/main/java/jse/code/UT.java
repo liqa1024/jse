@@ -25,6 +25,7 @@ import jse.code.iterator.IHasIntIterator;
 import jse.code.task.TaskCall;
 import jse.code.task.TaskRun;
 import jse.code.timer.FixedTimer;
+import jse.io.UnicodeReader;
 import jse.math.ComplexDouble;
 import jse.math.IComplexDouble;
 import jse.math.MathEX;
@@ -1106,13 +1107,26 @@ public class UT {
          */
         public static byte[] readAllBytes(String aFilePath) throws IOException {return Files.readAllBytes(toAbsolutePath_(aFilePath));}
         /**
-         * Wrapper of {@link Files#readAllLines}
+         * read all lines from the File
          * @author liqa
          * @param aFilePath File to read
          * @return lines of String
          * @throws IOException when fail
          */
-        public static List<String> readAllLines(String aFilePath) throws IOException {return Files.readAllLines(toAbsolutePath_(aFilePath), StandardCharsets.UTF_8);}
+        public static List<String> readAllLines(String aFilePath) throws IOException {
+            try (BufferedReader tReader = toReader(aFilePath)) {
+                return readAllLines(tReader);
+            }
+        }
+        /**
+         * read the specified number of lines from the File
+         * @author liqa
+         */
+        public static List<String> readLines(String aFilePath, int aNumber) throws IOException {
+            try (BufferedReader tReader = toReader(aFilePath)) {
+                return readLines(tReader, aNumber);
+            }
+        }
         /**
          * read all lines from the BufferedReader
          * @author liqa
@@ -1144,7 +1158,7 @@ public class UT {
          * @throws IOException when fail
          */
         public static String readAllText(String aFilePath) throws IOException {
-            try (Reader tReader = toReader(aFilePath)) {
+            try (BufferedReader tReader = toReader(aFilePath)) {
                 return IOGroovyMethods.getText(tReader);
             }
         }
@@ -1198,26 +1212,26 @@ public class UT {
         
         /** useful methods, wrapper of {@link Files} stuffs */
         @VisibleForTesting
-        public static void      mkdir   (String aDir)                                   throws IOException  {makeDir(aDir);} // can mkdir nested
-        public static void      makeDir (String aDir)                                   throws IOException  {makeDir(toAbsolutePath_(aDir));} // can mkdir nested
+        public static void      mkdir   (String aDir)                                   throws IOException {makeDir(aDir);} // can mkdir nested
+        public static void      makeDir (String aDir)                                   throws IOException {makeDir(toAbsolutePath_(aDir));} // can mkdir nested
         @VisibleForTesting
-        public static boolean   isdir   (String aDir)                                                       {return isDir(aDir);}
-        public static boolean   isDir   (String aDir)                                                       {return Files.isDirectory(toAbsolutePath_(aDir));}
+        public static boolean   isdir   (String aDir)                                                      {return isDir(aDir);}
+        public static boolean   isDir   (String aDir)                                                      {return Files.isDirectory(toAbsolutePath_(aDir));}
         @VisibleForTesting
-        public static boolean   isfile  (String aFilePath)                                                  {return isFile(aFilePath);}
-        public static boolean   isFile  (String aFilePath)                                                  {return Files.isRegularFile(toAbsolutePath_(aFilePath));}
+        public static boolean   isfile  (String aFilePath)                                                 {return isFile(aFilePath);}
+        public static boolean   isFile  (String aFilePath)                                                 {return Files.isRegularFile(toAbsolutePath_(aFilePath));}
         
-        public static boolean   exists  (String aPath)                                                      {return Files.exists(toAbsolutePath_(aPath));}
-        public static void      delete  (String aPath)                                  throws IOException  {Files.deleteIfExists(toAbsolutePath_(aPath));} // can delete not exist path
-        public static void      copy    (String aSourcePath, String aTargetPath)        throws IOException  {copy(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath));}
-        public static void      copy    (InputStream aSourceStream, String aTargetPath) throws IOException  {copy(aSourceStream, toAbsolutePath_(aTargetPath));}
-        public static void      copy    (URL aSourceURL, String aTargetPath)            throws IOException  {copy(aSourceURL, toAbsolutePath_(aTargetPath));}
-        public static void      move    (String aSourcePath, String aTargetPath)        throws IOException  {move(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath));}
-        public static void      makeDir (Path aDir)                                     throws IOException  {Files.createDirectories(aDir);} // can mkdir nested
-        public static void      copy    (Path aSourcePath, Path aTargetPath)            throws IOException  {validPath(aTargetPath); Files.copy(aSourcePath, aTargetPath, REPLACE_EXISTING);}
-        public static void      copy    (InputStream aSourceStream, Path aTargetPath)   throws IOException  {validPath(aTargetPath); Files.copy(aSourceStream, aTargetPath, REPLACE_EXISTING);}
-        public static void      copy    (URL aSourceURL, Path aTargetPath)              throws IOException  {try (InputStream tURLStream = aSourceURL.openStream()) {copy(tURLStream, aTargetPath);}}
-        public static void      move    (Path aSourcePath, Path aTargetPath)            throws IOException  {validPath(aTargetPath); Files.move(aSourcePath, aTargetPath, REPLACE_EXISTING);}
+        public static boolean   exists  (String aPath)                                                     {return Files.exists(toAbsolutePath_(aPath));}
+        public static void      delete  (String aPath)                                  throws IOException {Files.deleteIfExists(toAbsolutePath_(aPath));} // can delete not exist path
+        public static void      copy    (String aSourcePath, String aTargetPath)        throws IOException {copy(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath));}
+        public static void      copy    (InputStream aSourceStream, String aTargetPath) throws IOException {copy(aSourceStream, toAbsolutePath_(aTargetPath));}
+        public static void      copy    (URL aSourceURL, String aTargetPath)            throws IOException {copy(aSourceURL, toAbsolutePath_(aTargetPath));}
+        public static void      move    (String aSourcePath, String aTargetPath)        throws IOException {move(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath));}
+        public static void      makeDir (Path aDir)                                     throws IOException {Files.createDirectories(aDir);} // can mkdir nested
+        public static void      copy    (Path aSourcePath, Path aTargetPath)            throws IOException {validPath(aTargetPath); Files.copy(aSourcePath, aTargetPath, REPLACE_EXISTING);}
+        public static void      copy    (InputStream aSourceStream, Path aTargetPath)   throws IOException {validPath(aTargetPath); Files.copy(aSourceStream, aTargetPath, REPLACE_EXISTING);}
+        public static void      copy    (URL aSourceURL, Path aTargetPath)              throws IOException {try (InputStream tURLStream = aSourceURL.openStream()) {copy(tURLStream, aTargetPath);}}
+        public static void      move    (Path aSourcePath, Path aTargetPath)            throws IOException {validPath(aTargetPath); Files.move(aSourcePath, aTargetPath, REPLACE_EXISTING);}
         /** use the {@link File#list} not {@link Files#list} to get the simple result */
         public static String @NotNull[] list(String aDir) throws IOException {
             String[] tList = toFile(aDir).list();
@@ -1238,20 +1252,20 @@ public class UT {
         }
         
         /** output stuffs */
-        public static OutputStream   toOutputStream(String aFilePath)                           throws IOException  {return toOutputStream(aFilePath, ZL_OO);}
-        public static OutputStream   toOutputStream(String aFilePath, OpenOption... aOptions)   throws IOException  {return toOutputStream(toAbsolutePath_(aFilePath), aOptions);}
-        public static OutputStream   toOutputStream(Path aPath, OpenOption... aOptions)         throws IOException  {validPath(aPath); return Files.newOutputStream(aPath, aOptions);}
-        public static BufferedWriter toWriter      (String aFilePath)                           throws IOException  {return toWriter(aFilePath, ZL_OO);}
-        public static BufferedWriter toWriter      (String aFilePath, OpenOption... aOptions)   throws IOException  {return toWriter(toAbsolutePath_(aFilePath), aOptions);}
-        public static BufferedWriter toWriter      (Path aPath, OpenOption... aOptions)         throws IOException  {validPath(aPath); return new BufferedWriter(new OutputStreamWriter(toOutputStream(aPath, aOptions), StandardCharsets.UTF_8)) {@Override public void newLine() throws IOException {write("\n");}};}
-        public static BufferedWriter toWriter      (OutputStream aOutputStream)                                     {return toWriter(aOutputStream, StandardCharsets.UTF_8);}
-        public static BufferedWriter toWriter      (OutputStream aOutputStream, Charset aCS)                        {return new BufferedWriter(new OutputStreamWriter(aOutputStream, aCS)) {@Override public void newLine() throws IOException {write("\n");}};}
-        public static IWriteln       toWriteln     (String aFilePath)                           throws IOException  {return toWriteln(aFilePath, ZL_OO);}
-        public static IWriteln       toWriteln     (String aFilePath, OpenOption... aOptions)   throws IOException  {return toWriteln(toWriter(aFilePath, aOptions));}
-        public static IWriteln       toWriteln     (Path aPath, OpenOption... aOptions)         throws IOException  {return toWriteln(toWriter(aPath, aOptions));}
-        public static IWriteln       toWriteln     (OutputStream aOutputStream)                                     {return toWriteln(toWriter(aOutputStream));}
-        public static IWriteln       toWriteln     (OutputStream aOutputStream, Charset aCS)                        {return toWriteln(toWriter(aOutputStream, aCS));}
-        public static IWriteln       toWriteln     (BufferedWriter aWriter)                                         {
+        public static OutputStream   toOutputStream(String aFilePath)                           throws IOException {return toOutputStream(aFilePath, ZL_OO);}
+        public static OutputStream   toOutputStream(String aFilePath, OpenOption... aOptions)   throws IOException {return toOutputStream(toAbsolutePath_(aFilePath), aOptions);}
+        public static OutputStream   toOutputStream(Path aPath, OpenOption... aOptions)         throws IOException {validPath(aPath); return Files.newOutputStream(aPath, aOptions);}
+        public static BufferedWriter toWriter      (String aFilePath)                           throws IOException {return toWriter(aFilePath, ZL_OO);}
+        public static BufferedWriter toWriter      (String aFilePath, OpenOption... aOptions)   throws IOException {return toWriter(toAbsolutePath_(aFilePath), aOptions);}
+        public static BufferedWriter toWriter      (Path aPath, OpenOption... aOptions)         throws IOException {validPath(aPath); return new BufferedWriter(new OutputStreamWriter(toOutputStream(aPath, aOptions), StandardCharsets.UTF_8)) {@Override public void newLine() throws IOException {write("\n");}};}
+        public static BufferedWriter toWriter      (OutputStream aOutputStream)                                    {return toWriter(aOutputStream, StandardCharsets.UTF_8);}
+        public static BufferedWriter toWriter      (OutputStream aOutputStream, Charset aCS)                       {return new BufferedWriter(new OutputStreamWriter(aOutputStream, aCS)) {@Override public void newLine() throws IOException {write("\n");}};}
+        public static IWriteln       toWriteln     (String aFilePath)                           throws IOException {return toWriteln(aFilePath, ZL_OO);}
+        public static IWriteln       toWriteln     (String aFilePath, OpenOption... aOptions)   throws IOException {return toWriteln(toWriter(aFilePath, aOptions));}
+        public static IWriteln       toWriteln     (Path aPath, OpenOption... aOptions)         throws IOException {return toWriteln(toWriter(aPath, aOptions));}
+        public static IWriteln       toWriteln     (OutputStream aOutputStream)                                    {return toWriteln(toWriter(aOutputStream));}
+        public static IWriteln       toWriteln     (OutputStream aOutputStream, Charset aCS)                       {return toWriteln(toWriter(aOutputStream, aCS));}
+        public static IWriteln       toWriteln     (BufferedWriter aWriter)                                        {
             return new IWriteln() {
                 @Override public void writeln(CharSequence aLine) throws IOException {aWriter.append(aLine); aWriter.newLine();}
                 @Override public void close() throws IOException {aWriter.close();}
@@ -1259,18 +1273,21 @@ public class UT {
         }
         
         /** input stuffs */
-        public static InputStream    toInputStream(String aFilePath)        throws IOException  {return toInputStream(toAbsolutePath_(aFilePath));}
-        public static InputStream    toInputStream(Path aPath)              throws IOException  {return Files.newInputStream(aPath);}
-        public static BufferedReader toReader     (String aFilePath)        throws IOException  {return toReader(toAbsolutePath_(aFilePath));}
-        public static BufferedReader toReader     (Path aPath)              throws IOException  {return Files.newBufferedReader(aPath, StandardCharsets.UTF_8);}
-        public static BufferedReader toReader     (URL aFileURL)            throws IOException  {return toReader(aFileURL.openStream());}
-        public static BufferedReader toReader     (InputStream aInputStream)                    {return toReader(aInputStream, StandardCharsets.UTF_8);}
-        public static BufferedReader toReader     (InputStream aInputStream, Charset aCS)       {return new BufferedReader(new InputStreamReader(aInputStream, aCS));}
+        public static InputStream    toInputStream(String aFilePath)         throws IOException {return toInputStream(toAbsolutePath_(aFilePath));}
+        public static InputStream    toInputStream(Path aPath)               throws IOException {return Files.newInputStream(aPath);}
+        public static BufferedReader toReader     (String aFilePath)         throws IOException {return toReader(toAbsolutePath_(aFilePath));}
+        public static BufferedReader toReader     (Path aPath)               throws IOException {return toReader(toInputStream(aPath));}
+        public static BufferedReader toReader     (URL aFileURL)             throws IOException {return toReader(aFileURL.openStream());}
+        public static BufferedReader toReader     (InputStream aInputStream) throws IOException {return toReader(aInputStream, StandardCharsets.UTF_8);}
+        public static BufferedReader toReader     (InputStream aInputStream, Charset aCS) throws IOException {
+            // 现在改为 UnicodeReader 实现，可以自动检测 UTF 的 BOM
+            return new BufferedReader(new UnicodeReader(aInputStream, aCS.name()));
+        }
         
         /** misc stuffs */
-        public static File toFile(String aFilePath)                     {return toAbsolutePath_(aFilePath).toFile();}
-        public static void validPath(String aPath)  throws IOException  {if (aPath.endsWith("/") || aPath.endsWith("\\")) makeDir(aPath); else validPath(toAbsolutePath_(aPath));}
-        public static void validPath(Path aPath)    throws IOException  {Path tParent = aPath.getParent(); if (tParent != null) makeDir(tParent);}
+        public static File toFile(String aFilePath)                    {return toAbsolutePath_(aFilePath).toFile();}
+        public static void validPath(String aPath)  throws IOException {if (aPath.endsWith("/") || aPath.endsWith("\\")) makeDir(aPath); else validPath(toAbsolutePath_(aPath));}
+        public static void validPath(Path aPath)    throws IOException {Path tParent = aPath.getParent(); if (tParent != null) makeDir(tParent);}
         
         /**
          * extract zip file to directory
