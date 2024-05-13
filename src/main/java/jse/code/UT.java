@@ -48,6 +48,7 @@ import me.tongfei.progressbar.ConsoleProgressBarConsumer;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarBuilder;
 import me.tongfei.progressbar.ProgressBarStyle;
+import me.tongfei.progressbar.wrapped.ProgressBarWrappedIterable;
 import net.jafama.FastMath;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -575,7 +576,8 @@ public class UT {
                          ((Number)Code.getWithDefault(aArgs, 1, "UnitSize", "unitsize", "usize")).longValue(),
                          ((Number)Code.getWithDefault(aArgs, -1, "MaxRenderedLength", "maxrenderlength", "Length", "length", "l")).intValue(),
                          (Boolean)Code.getWithDefault(aArgs, false, "ShowSpeed", "showspeed", "Speed", "speed"),
-                         (ChronoUnit)Code.getWithDefault(aArgs, ChronoUnit.SECONDS, "SpeedUnit", "speedunit"));
+                         (ChronoUnit)Code.getWithDefault(aArgs, ChronoUnit.SECONDS, "SpeedUnit", "speedunit")
+            );
         }
         public static synchronized void progressBar(String aName, long aN) {
             progressBar_(aName, aN,
@@ -604,6 +606,46 @@ public class UT {
         @VisibleForTesting public static void pbar(long aN) {progressBar(aN);}
         @VisibleForTesting public static void pbar(@Nullable String aExtraMsg) {progressBar(aExtraMsg);}
         @VisibleForTesting public static void pbar() {progressBar();}
+        
+        
+        private static <T> Iterable<T> progressBarWrapper_(String aName, Iterable<T> aUnderlying, ProgressBarStyle aStyle, PrintStream aConsumer, int aUpdateIntervalMillis, String aUnitName, long aUnitSize, int aMaxRenderedLength, boolean aShowSpeed, ChronoUnit aSpeedUnit) {
+            ProgressBarBuilder rBuilder = new ProgressBarBuilder()
+                .setTaskName(aName)
+                .setConsumer(new ConsoleProgressBarConsumer(aConsumer, aMaxRenderedLength)) // 这里总是需要重写一下避免乱码问题
+                .setUpdateIntervalMillis(aUpdateIntervalMillis)
+                .setStyle(aStyle)
+                .setUnit(aUnitName, aUnitSize)
+                .setMaxRenderedLength(aMaxRenderedLength);
+            if (aShowSpeed) rBuilder.showSpeed().setSpeedUnit(aSpeedUnit);
+            return new ProgressBarWrappedIterable<>(aUnderlying, rBuilder);
+        }
+        public static Iterable<?> progressBarWrapper(Map<?, ?> aArgs) {
+            return progressBarWrapper_(Code.toString(Code.getWithDefault(aArgs, "", "TaskName", "taskname", "Name", "name")),
+                                       (Iterable<?>)Code.get(aArgs, "Underlying", "underlying", "u"),
+                                       (ProgressBarStyle)Code.getWithDefault(aArgs, UNICODE_SUPPORT ? ProgressBarStyle.COLORFUL_UNICODE_BLOCK : ProgressBarStyle.ASCII, "Style", "style", "s"),
+                                       (PrintStream)Code.getWithDefault(aArgs, PBAR_ERR_STREAM ? System.err : System.out, "Consumer", "consumer", "c"),
+                                       ((Number)Code.getWithDefault(aArgs, (int)FILE_SYSTEM_SLEEP_TIME_2, "UpdateIntervalMillis", "updateintervalmills", "Update", "update")).intValue(),
+                                       Code.toString(Code.getWithDefault(aArgs, "", "UnitName", "unitname", "uname")),
+                                       ((Number)Code.getWithDefault(aArgs, 1, "UnitSize", "unitsize", "usize")).longValue(),
+                                       ((Number)Code.getWithDefault(aArgs, -1, "MaxRenderedLength", "maxrenderlength", "Length", "length", "l")).intValue(),
+                                       (Boolean)Code.getWithDefault(aArgs, false, "ShowSpeed", "showspeed", "Speed", "speed"),
+                                       (ChronoUnit)Code.getWithDefault(aArgs, ChronoUnit.SECONDS, "SpeedUnit", "speedunit")
+            );
+        }
+        public static <T> Iterable<T> progressBarWrapper(String aName, Iterable<T> aUnderlying) {
+            return progressBarWrapper_(aName, aUnderlying,
+                                       UNICODE_SUPPORT ? ProgressBarStyle.COLORFUL_UNICODE_BLOCK : ProgressBarStyle.ASCII,
+                                       PBAR_ERR_STREAM ? System.err : System.out, // 现在统一默认使用 err 流
+                                       (int)FILE_SYSTEM_SLEEP_TIME_2,
+                                       "", 1,
+                                       -1,
+                                       false, ChronoUnit.SECONDS
+            );
+        }
+        public static <T> Iterable<T> progressBarWrapper(Iterable<T> aUnderlying) {return progressBarWrapper("", aUnderlying);}
+        @VisibleForTesting public static Iterable<?> pbarw(Map<?, ?> aArgs) {return progressBarWrapper(aArgs);}
+        @VisibleForTesting public static <T> Iterable<T> pbarw(String aName, Iterable<T> aUnderlying) {return progressBarWrapper(aName, aUnderlying);}
+        @VisibleForTesting public static <T> Iterable<T> pbarw(Iterable<T> aUnderlying) {return progressBarWrapper(aUnderlying);}
     }
     
     /** 序列化和反序列化的一些方法 */
