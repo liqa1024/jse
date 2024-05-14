@@ -3,6 +3,9 @@ package jse.code;
 import com.google.common.collect.ImmutableList;
 import groovy.lang.*;
 import groovy.transform.ThreadInterrupt;
+import groovy.transform.stc.ClosureParams;
+import groovy.transform.stc.FromString;
+import groovy.transform.stc.SimpleType;
 import io.github.spencerpark.jupyter.kernel.BaseKernel;
 import io.github.spencerpark.jupyter.kernel.LanguageInfo;
 import io.github.spencerpark.jupyter.kernel.ReplacementOptions;
@@ -36,6 +39,7 @@ import jse.math.function.Func1;
 import jse.math.matrix.Matrices;
 import jse.math.table.Tables;
 import jse.math.vector.Vectors;
+import jse.parallel.ParforThreadPool;
 import jse.plot.IPlotter;
 import jse.plot.Plotters;
 import org.apache.groovy.groovysh.Groovysh;
@@ -45,12 +49,14 @@ import org.codehaus.groovy.runtime.InvokerHelper;
 import org.codehaus.groovy.tools.shell.IO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Range;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static jse.code.OS.EXEC;
@@ -685,10 +691,70 @@ public class SP {
             setValue("_", tArgs);
             exec("sys.argv = _");
         }
-        /** Python 提供额外的接口 */
+        
+        /** Python 提供额外的接口，获取同时做类型检查并转换 */
         public static <T> T getAs(Class<T> aExpectedType, String aValueName) throws JepException {return JEP_INTERP.getValue(aValueName, aExpectedType);}
-        // 并行使用 Python 请手动使用 new jep.SharedInterpreter()，并且需要实现在主线程上初始化 SP.Python 从而保证 jse 的 python 环境成功初始化；
-        // 因为直接在多线程环境下使用会在主线程之外初始化全局的 JEP_INTERP，从而导致同一个线程多次初始化的问题
+        
+        /** Python 提供额外的接口，提供专门的 parfor 带有线程独立的 Interpreter，这种写法可以保证 jse 的 python 环境一定成功初始化 */
+        public static void parforWithInterpreter(int aSize, @ClosureParams(value= FromString.class, options={"jep.Interpreter", "jep.Interpreter,int", "jep.Interpreter,int,int"}) final Closure<?> aGroovyTask) {parforWithInterpreter(aSize, PARFOR_THREAD_NUMBER, aGroovyTask);}
+        @SuppressWarnings({"resource", "UnnecessaryReturnStatement"})
+        public static void parforWithInterpreter(int aSize, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value= FromString.class, options={"jep.Interpreter", "jep.Interpreter,int", "jep.Interpreter,int,int"}) final Closure<?> aGroovyTask) {
+            // 这里约定了线程数为 1 时一定是主线程串行执行，并且其余情况下一定会创建新线程运行，主线程只进行等待
+            if (aThreadNum == 1) {
+                switch(aGroovyTask.getMaximumNumberOfParameters()) {
+                case 3:  {UT.Par.pool(aThreadNum).parfor(aSize, (i, threadID) -> aGroovyTask.call(JEP_INTERP, i, threadID)); return;}
+                case 2:  {UT.Par.pool(aThreadNum).parfor(aSize, (i, threadID) -> aGroovyTask.call(JEP_INTERP, i)); return;}
+                default: {UT.Par.pool(aThreadNum).parfor(aSize, (i, threadID) -> aGroovyTask.call(JEP_INTERP)); return;}
+                }
+            }
+            final jep.Interpreter[] tInterpreters = new jep.Interpreter[aThreadNum];
+            ParforThreadPool.ITaskWithID tInitDo = threadID -> tInterpreters[threadID] = new jep.SharedInterpreter();
+            ParforThreadPool.ITaskWithID tFinalDo = threadID -> tInterpreters[threadID].close();
+            switch(aGroovyTask.getMaximumNumberOfParameters()) {
+            case 3:  {UT.Par.pool(aThreadNum).parfor(aSize, tInitDo, tFinalDo, (i, threadID) -> aGroovyTask.call(tInterpreters[threadID], i, threadID)); return;}
+            case 2:  {UT.Par.pool(aThreadNum).parfor(aSize, tInitDo, tFinalDo, (i, threadID) -> aGroovyTask.call(tInterpreters[threadID], i)); return;}
+            default: {UT.Par.pool(aThreadNum).parfor(aSize, tInitDo, tFinalDo, (i, threadID) -> aGroovyTask.call(tInterpreters[threadID])); return;}
+            }
+        }
+        public static void parwhileWithInterpreter(ParforThreadPool.IParwhileChecker aChecker, @ClosureParams(value= FromString.class, options={"jep.Interpreter", "jep.Interpreter,int"}) final Closure<?> aGroovyTask) {parwhileWithInterpreter(aChecker, PARFOR_THREAD_NUMBER, aGroovyTask);}
+        @SuppressWarnings({"resource", "UnnecessaryReturnStatement"})
+        public static void parwhileWithInterpreter(ParforThreadPool.IParwhileChecker aChecker, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value= FromString.class, options={"jep.Interpreter", "jep.Interpreter,int"}) final Closure<?> aGroovyTask) {
+            // 这里约定了线程数为 1 时一定是主线程串行执行，并且其余情况下一定会创建新线程运行，主线程只进行等待
+            if (aThreadNum == 1) {
+                if (aGroovyTask.getMaximumNumberOfParameters() == 2) {
+                    UT.Par.pool(aThreadNum).parwhile(aChecker, threadID -> aGroovyTask.call(JEP_INTERP, threadID));
+                    return;
+                }
+                UT.Par.pool(aThreadNum).parwhile(aChecker, threadID -> aGroovyTask.call(JEP_INTERP));
+                return;
+            }
+            final jep.Interpreter[] tInterpreters = new jep.Interpreter[aThreadNum];
+            ParforThreadPool.ITaskWithID tInitDo = threadID -> tInterpreters[threadID] = new jep.SharedInterpreter();
+            ParforThreadPool.ITaskWithID tFinalDo = threadID -> tInterpreters[threadID].close();
+            if (aGroovyTask.getMaximumNumberOfParameters() == 2) {
+                UT.Par.pool(aThreadNum).parwhile(aChecker, tInitDo, tFinalDo, threadID -> aGroovyTask.call(tInterpreters[threadID], threadID));
+                return;
+            }
+            UT.Par.pool(aThreadNum).parwhile(aChecker, tInitDo, tFinalDo, threadID -> aGroovyTask.call(tInterpreters[threadID]));
+            return;
+        }
+        
+        public static <U> Future<U> callAsyncWithInterpreter(@ClosureParams(value=SimpleType.class, options="jep.Interpreter") final Closure<U> aGroovyTask) {
+            return UT.Par.callAsync(() -> {
+                try (jep.Interpreter interp = new jep.SharedInterpreter()) {return aGroovyTask.call(interp);}
+            });
+        }
+        public static <U> Future<U> supplyAsyncWithInterpreter(@ClosureParams(value=SimpleType.class, options="jep.Interpreter") final Closure<U> aGroovyTask) {
+            return UT.Par.supplyAsync(() -> {
+                try (jep.Interpreter interp = new jep.SharedInterpreter()) {return aGroovyTask.call(interp);}
+            });
+        }
+        public static Future<Void> runAsyncWithInterpreter(@ClosureParams(value=SimpleType.class, options="jep.Interpreter") final Closure<?> aGroovyTask) {
+            return UT.Par.runAsync(() -> {
+                try (jep.Interpreter interp = new jep.SharedInterpreter()) {aGroovyTask.call(interp);}
+            });
+        }
+        
         
         static {
             InitHelper.INITIALIZED = true;

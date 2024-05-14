@@ -273,7 +273,7 @@ public class UT {
     public static class Par {
         /** 改为全局的 pool 缓存来避免总是创建 */
         private static @Nullable ParforThreadPool POOL = null;
-        private static @NotNull ParforThreadPool pool_(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
+        public static @NotNull ParforThreadPool pool(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
             if (POOL==null || POOL.threadNumber()!=aThreadNum) {
                 if (POOL != null) POOL.shutdown();
                 POOL = new ParforThreadPool(aThreadNum);
@@ -292,21 +292,21 @@ public class UT {
          * parfor for groovy usage
          * @author liqa
          */
-        @VisibleForTesting public synchronized static void parfor(int aSize, @ClosureParams(value=FromString.class, options={"int", "int,int"}) Closure<?> aGroovyTask) {parfor(aSize, PARFOR_THREAD_NUMBER, aGroovyTask);}
-        @VisibleForTesting public synchronized static void parfor(int aSize, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value=FromString.class, options={"int", "int,int"}) final Closure<?> aGroovyTask) {
+        @VisibleForTesting public static void parfor(int aSize, @ClosureParams(value=FromString.class, options={"int", "int,int"}) Closure<?> aGroovyTask) {parfor(aSize, PARFOR_THREAD_NUMBER, aGroovyTask);}
+        @VisibleForTesting public static void parfor(int aSize, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value=FromString.class, options={"int", "int,int"}) final Closure<?> aGroovyTask) {
             if (aGroovyTask.getMaximumNumberOfParameters() == 2) {
-                pool_(aThreadNum).parfor(aSize, (i, threadID) -> aGroovyTask.call(i, threadID));
+                pool(aThreadNum).parfor(aSize, (i, threadID) -> aGroovyTask.call(i, threadID));
                 return;
             }
-            pool_(aThreadNum).parfor(aSize, (i, threadID) -> aGroovyTask.call(i));
+            pool(aThreadNum).parfor(aSize, (i, threadID) -> aGroovyTask.call(i));
         }
         /**
          * parwhile for groovy usage
          * @author liqa
          */
-        @VisibleForTesting public synchronized static void parwhile(ParforThreadPool.IParwhileChecker aChecker, @ClosureParams(value=SimpleType.class, options="int") Closure<?> aGroovyTask) {parwhile(aChecker, PARFOR_THREAD_NUMBER, aGroovyTask);}
-        @VisibleForTesting public synchronized static void parwhile(ParforThreadPool.IParwhileChecker aChecker, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value=SimpleType.class, options="int") final Closure<?> aGroovyTask) {
-            pool_(aThreadNum).parwhile(aChecker, (threadID) -> aGroovyTask.call(threadID));
+        @VisibleForTesting public static void parwhile(ParforThreadPool.IParwhileChecker aChecker, @ClosureParams(value=SimpleType.class, options="int") Closure<?> aGroovyTask) {parwhile(aChecker, PARFOR_THREAD_NUMBER, aGroovyTask);}
+        @VisibleForTesting public static void parwhile(ParforThreadPool.IParwhileChecker aChecker, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value=SimpleType.class, options="int") final Closure<?> aGroovyTask) {
+            pool(aThreadNum).parwhile(aChecker, (threadID) -> aGroovyTask.call(threadID));
         }
         
         /**
