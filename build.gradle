@@ -27,7 +27,7 @@ sourceSets {
                 'assets/jniutil/src/.*/', 'assets/jniutil/src/build/', 'assets/jniutil/src/*build*/',
                 'assets/mpi/src/.*/', 'assets/mpi/src/build/', 'assets/mpi/src/*build*/',
                 'assets/lmp/src/.*/', 'assets/lmp/src/build/', 'assets/lmp/src/*build*/',
-                'assets/jep/jep*-test/'
+                'assets/jep/jep*-src/'
             )
         }
     }
@@ -44,6 +44,19 @@ sourceSets {
             srcDirs = ['src/progressbar/java']
         }
     }
+}
+
+tasks.register('zipJep', Zip) {
+    def dir = 'src/main/resources/assets/jep/'
+    def name = file(dir).list().find {it.contains('jep')}
+    from(dir + name) {
+        exclude('.*', 'build', '*build*')
+    }
+    archiveFileName = name.replace('-src', '.zip')
+    destinationDirectory = file(dir)
+}
+processResources {
+    dependsOn(zipJep)
 }
 
 
@@ -80,7 +93,7 @@ dependencies {
 //  implementation('black.ninia:jep:4.2.0')                         // 调用 python 代码支持，需要系统有需要的 python 环境，并且需要初始化，因此这里不作为主要代码的使用；由于 PyObject 不能 groovy 原生调用，现在包含到项目中
     implementation('com.google.code.gson:gson:2.10.1')              // 使用新版的 gson，避免漏洞警告
     implementation('org.zeromq:jeromq:0.5.4')                       // 跨 JVM 并行库，可以支持超算上跨节点并行；虽然 java 标准库也有类似功能，但是这个更加易用；现在直接使用 mpi
-    implementation('io.github.spencerpark:jupyter-jvm-basekernel:2.3.0') {transitive = false} // jupyter 的通用 kernel，关闭传递手动使用新版本的 ZeroMQ 和 Gson；现在改为直接包含源码，实现额外的功能
+    implementation('io.github.spencerpark:jupyter-jvm-basekernel:2.3.0') {transitive = false} // jupyter 的通用 kernel，关闭传递手动使用新版本的 ZeroMQ 和 Gson
     
     // 实用工具
     implementation('com.mastfrog:sort:2.9.7')                       // 实用的多排序功能，因此现在不再支持支持性不好的 Compare 排序
