@@ -593,7 +593,7 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
             && MathEX.Code.numericEqual(aBoxC.get(0), 0.0) && MathEX.Code.numericEqual(aBoxC.get(1), 0.0)
             ;
         aBox = tNotPrism ?
-            new VaspBox(aBoxA.get(0), aBoxB.get(1), aBoxC.get(2)) :
+            new VaspBox(aBoxA.get(0), aBoxB.get(1), aBoxC.get(2), aBoxScale) :
             new VaspBoxPrism(
                 aBoxA.get(0), aBoxA.get(1), aBoxA.get(2),
                 aBoxB.get(0), aBoxB.get(1), aBoxB.get(2),

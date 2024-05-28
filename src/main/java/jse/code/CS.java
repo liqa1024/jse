@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
  */
 public class CS {
     /** version of jse */
-    public final static String VERSION = "2.8.5";
+    public final static String VERSION = "2.8.5b";
     
     /** a Random generator so I don't need to instantiate a new one all the time. */
     public final static Random RANDOM = new Random();
