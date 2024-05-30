@@ -121,7 +121,11 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     
     /** boxScale stuffs */
     public double boxScale() {return mBox.scale();}
-    public POSCAR setBoxScale(double aBoxScale) {mBox.setScale(aBoxScale); return this;}
+    public POSCAR setBoxScale(double aBoxScale) {
+        if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+        mBox.setScale(aBoxScale);
+        return this;
+    }
     /** Groovy stuffs */
     @VisibleForTesting public double getBoxScale() {return mBox.getScale();}
     
@@ -181,7 +185,11 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         }
     }
     
-    public POSCAR setComment(@Nullable String aComment) {mComment = aComment; return this;}
+    public POSCAR setComment(@Nullable String aComment) {
+        if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+        mComment = aComment;
+        return this;
+    }
     
     /** Groovy stuffs */
     @VisibleForTesting public String @Nullable[] getTypeNames() {return mTypeNames;}
