@@ -611,7 +611,7 @@ public class SP {
         /** 包的版本 */
         private final static String JEP_VERSION = "4.2.0", ASE_VERSION = "3.22.1";
         /** jep 二进制库路径 */
-        private final static String JEP_LIB_DIR = JAR_DIR+"jep/" + UT.Code.uniqueID(VERSION, JEP_VERSION) + "/";
+        private final static String JEP_LIB_DIR = JAR_DIR+"jep/" + UT.Code.uniqueID(VERSION, JEP_VERSION, Conf.USE_MIMALLOC) + "/";
         private final static String JEP_LIB_PATH;
         /** 将 aScriptPath 合法化，现在可以省略掉 script/python/ 以及后缀 */
         private static String validScriptPath(String aScriptPath) throws IOException {
@@ -910,6 +910,7 @@ public class SP {
             // 设置参数，这里使用 List 来构造这个长指令
             List<String> rCommand = new ArrayList<>();
             rCommand.add("cmake");
+            rCommand.add("-D"); rCommand.add("JSE_USE_MIMALLOC="+(Conf.USE_MIMALLOC?"ON":"OFF"));
             // 设置构建输出目录为 lib
             UT.IO.makeDir(JEP_LIB_DIR); // 初始化一下这个目录避免意料外的问题
             rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH='"+ JEP_LIB_DIR +"'");
