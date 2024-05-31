@@ -38,7 +38,7 @@ public interface ISystemExecutor extends IThreadPool {
     
     
     /** 现在支持设置工作目录 */
-    ISystemExecutor setWorkingDir(@Nullable String aWorkingDir);
+    ISystemExecutor setWorkingDir(@Nullable String aWorkingDir) throws Exception;
     
     /** 砍掉原本的 _NO 接口，改为直接设置是否输出到控制台 */
     default ISystemExecutor setNoSTDOutput() {return setNoSTDOutput(true);}

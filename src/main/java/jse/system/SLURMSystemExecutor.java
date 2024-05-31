@@ -77,7 +77,7 @@ public class SLURMSystemExecutor extends AbstractLongTimeSystemExecutor<SSHSyste
     
     /** 这些属性支持创建后修改来方便使用 */
     public SLURMSystemExecutor setLocalWorkingDir(String aLocalWorkingDir) {mEXE.setLocalWorkingDir(aLocalWorkingDir); return this;}
-    public SLURMSystemExecutor setRemoteWorkingDir(String aRemoteWorkingDir) {mEXE.setRemoteWorkingDir(aRemoteWorkingDir); return this;}
+    public SLURMSystemExecutor setRemoteWorkingDir(String aRemoteWorkingDir) throws Exception {mEXE.setRemoteWorkingDir(aRemoteWorkingDir); return this;}
     public SLURMSystemExecutor setCompressLevel(int aCompressLevel) throws Exception {mEXE.setCompressLevel(aCompressLevel); return this;}
     public SLURMSystemExecutor setBeforeCommand(String aBeforeCommand) {mEXE.setBeforeCommand(aBeforeCommand); return this;}
     
