@@ -28,7 +28,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     private final static long DEFAULT_MAX_PATH_MUL = 100;
     private final static double DEFAULT_CUTOFF = 0.01;
     private final static int DEFAULT_MAX_STAT_TIMES = 10;
-    private final static long DEFAULT_TIME_DEPENDENCE_PRUNING_THRESHOLD = 1000;
+    private final static long DEFAULT_PRUNING_STEP = 1000;
     
     private final IFullPathGenerator<T> mFullPathGenerator;
     
@@ -58,14 +58,16 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     private boolean mJumpy = false;
     
     public static final byte FIXED = 0, SIMPLE_GUESS = 1, CONSERVATIVE_GUESS = 2, TIME_DEPENDENCE = -1;
-    /** 路径演化到上一界面后进行裁剪的概率，默认为 0.0（关闭），用于优化从中间界面回到 A 的长期路径 */
-    private double mPruningProb;
-    /** 开始进行裁剪的阈值，对于经典的情况为界面的阈值（默认为 1），对于时间依赖的为路径的步骤阈值（默认为 1000 步）*/
-    private long mPruningThreshold;
-    /** 是否开启第一个过程的剪枝，对于某些特殊情况第一过程剪枝会导致统计出现系统偏差，默认开启 */
-    private boolean mStep1Pruning;
     /** 控制剪枝概率策略，默认采用较为先进的 TIME_DEPENDENCE */
     private byte mPruningPolicy;
+    /** 进行裁剪的概率，默认为 0.0（关闭），用于优化从中间界面回到 A 的长期路径 */
+    private double mPruningProb;
+    /** 是否开启第一个过程的剪枝，对于某些特殊情况第一过程剪枝会导致统计出现系统偏差，默认开启 */
+    private boolean mStep1Pruning;
+    /** 经典的情况下开始进行裁剪的阈值，默认为 1 */
+    private int mPruningThreshold;
+    /** 时间依赖情况下进行裁剪的步数，每经过指定步数就会尝试一次裁剪，默认为 1000 */
+    private long mPruningStep;
     
     /**
      * 创建一个通用的 FFS 运算器
@@ -107,7 +109,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         mCutoff = DEFAULT_CUTOFF;
         mMaxStatTimes = DEFAULT_MAX_STAT_TIMES;
         mPruningProb = 0.0;
-        mPruningThreshold = -1;
+        mPruningThreshold = 1;
+        mPruningStep = DEFAULT_PRUNING_STEP;
         mPruningPolicy = TIME_DEPENDENCE;
         mStep1Pruning = true;
         
@@ -130,7 +133,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     public ForwardFluxSampling<T> setCutoff(double aCutoff) {mCutoff = MathEX.Code.toRange(0.0, 0.5, aCutoff); return this;}
     public ForwardFluxSampling<T> setMaxStatTimes(int aMaxStatTimes) {mMaxStatTimes = Math.max(1, aMaxStatTimes); return this;}
     public ForwardFluxSampling<T> setPruningProb(double aPruningProb) {mPruningProb = MathEX.Code.toRange(0.0, 1.0, aPruningProb); return this;}
-    public ForwardFluxSampling<T> setPruningThreshold(long aPruningThreshold) {mPruningThreshold = aPruningThreshold; return this;}
+    public ForwardFluxSampling<T> setPruningThreshold(int aPruningThreshold) {mPruningThreshold = Math.max(1, aPruningThreshold); return this;}
+    public ForwardFluxSampling<T> setPruningStep(long aPruningStep) {mPruningStep = Math.max(1, aPruningStep); return this;}
     public ForwardFluxSampling<T> setStep1Pruning(boolean aStep1Pruning) {mStep1Pruning = aStep1Pruning; return this;}
     public ForwardFluxSampling<T> disableStep1Pruning() {return setStep1Pruning(false);}
     public ForwardFluxSampling<T> setPruningPolicy(byte aPruningPolicy) {mPruningPolicy = aPruningPolicy; return this;}
@@ -263,7 +267,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         private double mTimeConsumed = 0.0;
         private long mPointNum = 0;
         /** pruning stuffs */
-        private int mPruningIndex = mPruningPolicy==TIME_DEPENDENCE ? 0 : (mPruningThreshold<=0 ? 1 : (int)mPruningThreshold);
+        private int mPruningIndex = mPruningPolicy==TIME_DEPENDENCE ? 0 : mPruningThreshold;
         private double mPruningMul = 1.0;
         
         private boolean mDead = false;
@@ -329,8 +333,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                     boolean tPruning;
                     if (mPruningPolicy == TIME_DEPENDENCE) {
                         // 时间依赖的 pruning
-                        long tPruningThreshold = mPruningThreshold<=0 ? DEFAULT_TIME_DEPENDENCE_PRUNING_THRESHOLD : mPruningThreshold;
-                        tPruning = tPruningThreshold*(long)mPruningIndex < mPointNum;
+                        tPruning = mPruningStep*(long)mPruningIndex < mPointNum;
                     } else {
                         // 经典 pruning
                         tPruning = mPruningIndex < mSurfaces.size() && tLambda >= mSurfaces.get(mPruningIndex);
@@ -460,7 +463,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         private final Point mStart;
         private long mPointNum = 0;
         /** pruning stuffs */
-        private int mPruningIndex = mPruningPolicy==TIME_DEPENDENCE ? 0 : (mPruningThreshold<=0 ? (mStep-1) : (mStep-(int)mPruningThreshold));
+        private int mPruningIndex = mPruningPolicy==TIME_DEPENDENCE ? 0 : (mStep-mPruningThreshold);
         private double mPruningMul = 1.0;
         
         private boolean mDead = false;
@@ -504,8 +507,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                     boolean tPruning;
                     if (mPruningPolicy == TIME_DEPENDENCE) {
                         // 时间依赖的 pruning
-                        long tPruningThreshold = mPruningThreshold<=0 ? DEFAULT_TIME_DEPENDENCE_PRUNING_THRESHOLD : mPruningThreshold;
-                        tPruning = tPruningThreshold*(long)(-mPruningIndex) < mPointNum;
+                        tPruning = mPruningStep*(long)(-mPruningIndex) < mPointNum;
                     } else {
                         // 经典 pruning
                         tPruning = mPruningIndex >= 0 && tLambda <= mSurfaces.get(mPruningIndex);
