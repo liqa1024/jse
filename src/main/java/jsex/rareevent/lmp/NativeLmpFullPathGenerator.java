@@ -13,6 +13,7 @@ import jse.parallel.MPIException;
 import jsex.rareevent.IFullPathGenerator;
 import jsex.rareevent.IParameterCalculator;
 import jsex.rareevent.ITimeAndParameterIterator;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,8 +35,11 @@ import static jse.code.CS.MAX_SEED;
  * 这样可以简单处理很多情况
  * @author liqa
  */
+@ApiStatus.Experimental
 public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData> {
     private final static String[] LMP_ARGS = {"-log", "none", "-screen", "none"};
+    /** 热浴的策略，默认为 NOSE_HOOVER */
+    public final static byte NOSE_HOOVER = 0, LANGEVIN = 1;
     
     private final List<Lmpdat> mInitPoints;
     private final IVector mMesses;
@@ -43,6 +47,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
     private final String mPairStyle, mPairCoeff;
     private final double mTimestep;
     private final int mDumpStep;
+    private final byte mThermostat;
     
     /** 现在固定只有一个 lammps 实例 */
     private final NativeLmp mLmp;
@@ -64,8 +69,9 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
      * @param aPairCoeff lammps 输入文件使用的势场参数
      * @param aTimestep 每步的实际时间步长，影响输入文件和统计使用的时间，默认为 0.002 (ps)
      * @param aDumpStep 每隔多少模拟步输出一个 dump，默认为 10
+     * @param aThermostat 选择的热浴，默认为 {@link #NOSE_HOOVER}
      */
-    public NativeLmpFullPathGenerator(MPI.Comm aLmpComm, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep) throws LmpException {
+    public NativeLmpFullPathGenerator(MPI.Comm aLmpComm, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, byte aThermostat) throws LmpException {
         // 基本参数存储
         mInitPoints = NewCollections.map(aInitAtomDataList, data -> Lmpdat.fromAtomData(data).setNoVelocities()); // 初始点也需要移除速度，保证会从不同路径开始
         mMesses = aMesses.copy();
@@ -73,6 +79,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
         mPairStyle = aPairStyle; mPairCoeff = aPairCoeff;
         mTimestep = aTimestep;
         mDumpStep = aDumpStep;
+        mThermostat = aThermostat;
         // Lmp 相关参数
         mLmp = new NativeLmp(LMP_ARGS, aLmpComm);
         mParameterCalculator = aParameterCalculator;
@@ -103,6 +110,31 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
             mNext = aStart==null ? mInitPoints.get(mRNG.nextInt(mInitPoints.size())) : ((aStart instanceof Lmpdat) ? (Lmpdat)aStart : Lmpdat.fromAtomData(aStart));
         }
         
+        /** 用于方便子类重写从而实现自定义的策略 */
+        protected void initLmp_() throws LmpException {
+            mLmp.command("units           metal");
+            mLmp.command("boundary        p p p");
+            mLmp.command("timestep        "+mTimestep);
+            mLmp.loadLmpdat(mNext.setMasses(mMesses)); // 在这里统一设置质量
+            mLmp.command("pair_style      "+mPairStyle);
+            mLmp.command("pair_coeff      "+mPairCoeff); // MARK: 好像卡在这里，但是不一定
+            // 逻辑上只要没有速度还是需要重新分配速度
+            if (!mNext.hasVelocities()) {
+                mLmp.command(String.format("velocity        all create %f %d dist gaussian mom yes rot yes", mTemperature, mRNG.nextInt(MAX_SEED)+1));
+            }
+            switch(mThermostat) {
+            case LANGEVIN: {
+                mLmp.command("fix             1 all nve");
+                mLmp.command(String.format("fix             2 all langevin %f %f %f %d", mTemperature, mTemperature, mTimestep*100.0*1000.0, mRNG.nextInt(MAX_SEED)+1));
+                mLmp.command(String.format("fix             3 all press/berendsen iso 0.0 0.0 %f", mTimestep*1000.0*1000.0));
+                break;
+            }
+            case NOSE_HOOVER: default: {
+                mLmp.command(String.format("fix             1 all npt temp %f %f %f iso 0.0 0.0 %f", mTemperature, mTemperature, mTimestep*100.0, mTimestep*1000.0));
+                break;
+            }}
+        }
+        
         /** 这里获取到的点需要是精简的 */
         @Override public Lmpdat next() {
             if (mDead) throw new RuntimeException("This NativeLmpIterator is dead");
@@ -115,17 +147,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
             if (mLmpNeedInit) {
                 mLmpNeedInit = false;
                 try {
-                    mLmp.command("units           metal");
-                    mLmp.command("boundary        p p p");
-                    mLmp.command("timestep        "+mTimestep);
-                    mLmp.loadLmpdat(mNext.setMasses(mMesses)); // 在这里统一设置质量
-                    mLmp.command("pair_style      "+mPairStyle);
-                    mLmp.command("pair_coeff      "+mPairCoeff); // MARK: 好像卡在这里，但是不一定
-                    // 虽然理论上永远都是没有速度并且重新分配速度，这里还是和原本保持逻辑一致
-                    if (!mNext.hasVelocities()) {
-                        mLmp.command(String.format("velocity        all create %f %d dist gaussian mom yes rot yes", mTemperature, mRNG.nextInt(MAX_SEED)+1));
-                    }
-                    mLmp.command(String.format("fix             1 all npt temp %f %f 0.2 iso 0.0 0.0 2", mTemperature, mTemperature));
+                    initLmp_();
                 } catch (LmpException e) {
                     throw new RuntimeException(e);
                 }
@@ -137,7 +159,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
             if (mReturnLast && mNextIsFromNativeLmp) {
                 mNext.returnToCache();
             }
-            try {mNext = mLmp.lmpdat(true); mNextIsFromNativeLmp = true;}
+            try {mNext = mLmp.lmpdat(mThermostat!=LANGEVIN); mNextIsFromNativeLmp = true;}
             catch (LmpException | MPIException e) {throw new RuntimeException(e);}
             return mNext;
         }
