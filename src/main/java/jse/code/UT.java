@@ -229,9 +229,9 @@ public class UT {
         
         /** 保留这些接口方便外部调用使用 */
         @VisibleForTesting public static <T> Iterable<T> filter(Iterable<? extends T> aIterable, IFilter<? super T> aFilter) {return AbstractCollections.filter(aIterable, aFilter);}
-        @VisibleForTesting public static Iterable<Integer> filterInteger(Iterable<Integer> aIndices, IIndexFilter aFilter) {return AbstractCollections.filterInt(aIndices, aFilter);}
-        @VisibleForTesting public static IHasIntIterator filterInteger(IHasIntIterator aIndices, IIndexFilter aFilter) {return AbstractCollections.filterInt(aIndices, aFilter);}
-        @VisibleForTesting public static IHasIntIterator filterInteger(int aSize, IIndexFilter aFilter) {return AbstractCollections.filterInt(aSize, aFilter);}
+        @VisibleForTesting public static Iterable<Integer> filterInt(Iterable<Integer> aIndices, IIndexFilter aFilter) {return AbstractCollections.filterInt(aIndices, aFilter);}
+        @VisibleForTesting public static IHasIntIterator filterInt(IHasIntIterator aIndices, IIndexFilter aFilter) {return AbstractCollections.filterInt(aIndices, aFilter);}
+        @VisibleForTesting public static IHasIntIterator filterInt(int aSize, IIndexFilter aFilter) {return AbstractCollections.filterInt(aSize, aFilter);}
         @VisibleForTesting public static Iterable<? extends Number> filterDouble(Iterable<? extends Number> aIterable, final IDoubleFilter aFilter) {return AbstractCollections.filterDouble(aIterable, aFilter);}
         @VisibleForTesting public static IHasDoubleIterator filterDouble(IHasDoubleIterator aIterable, final IDoubleFilter aFilter) {return AbstractCollections.filterDouble(aIterable, aFilter);}
         

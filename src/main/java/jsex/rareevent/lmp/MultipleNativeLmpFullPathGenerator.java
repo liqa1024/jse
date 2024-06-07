@@ -8,7 +8,6 @@ import jse.lmp.LmpException;
 import jse.lmp.Lmpdat;
 import jse.lmp.NativeLmp;
 import jse.math.vector.IVector;
-import jse.math.vector.Vectors;
 import jse.parallel.IAutoShutdown;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
@@ -26,7 +25,6 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import static jse.code.CS.FILE_SYSTEM_SLEEP_TIME;
-import static jsex.rareevent.lmp.NativeLmpFullPathGenerator.NOSE_HOOVER;
 
 /**
  * 一种路径生成器，通过原生运行 {@link NativeLmp} 来直接生成完整的路径，
@@ -60,25 +58,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
     
     private volatile boolean mDead = false;
     
-    /**
-     * 创建一个生成器；
-     * 每个进程都需要调用来进行创建，除了特殊说明，输入参数都需要一致
-     * @author liqa
-     * @param aWorldComm 此进程用于和主进程通讯的 {@link MPI.Comm}，默认为 {@link MPI.Comm#WORLD}
-     * @param aWorldRoot 主进程编号，默认为 0
-     * @param aLmpComm 此进程需要运行 {@link NativeLmp} 的 {@link MPI.Comm}，不同分组（color）的进程可以不同
-     * @param aLmpRoots aLmpComm 对应的主进程 0 在 aWorldComm 中的编号列表，一般为 n * aLmpComm.size()，可以只有主进程 aWorldRoot 传入
-     * @param aParameterCalculator 计算对应 Lmpdat 参数的计算器，建议使用 MPI 版本的计算器，并使用和 aLmpComm 相同的 {@link MPI.Comm}
-     * @param aInitAtomDataList  用于初始的原子数据
-     * @param aMesses 每个种类的原子对应的摩尔质量，且长度指定原子种类数目
-     * @param aTemperature 创建路径的温度
-     * @param aPairStyle lammps 输入文件使用的势场类型
-     * @param aPairCoeff lammps 输入文件使用的势场参数
-     * @param aTimestep 每步的实际时间步长，影响输入文件和统计使用的时间，默认为 0.002 (ps)
-     * @param aDumpStep 每隔多少模拟步输出一个 dump，默认为 10
-     * @param aThermostat 选择的热浴，默认为 {@link NativeLmpFullPathGenerator#NOSE_HOOVER}
-     */
-    private MultipleNativeLmpFullPathGenerator(MPI.Comm aWorldComm, int aWorldRoot, MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, byte aThermostat) throws MPIException, LmpException {
+    private MultipleNativeLmpFullPathGenerator(MPI.Comm aWorldComm, int aWorldRoot, MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, NativeLmpFullPathGenerator aPathGen) throws MPIException {
         // MPI 相关参数
         mWorldComm = aWorldComm;
         mWorldRoot = aWorldRoot;
@@ -93,16 +73,16 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                 // 直接使用 ConcurrentLinkedDeque 来简单处理并行访问的情况
                 mLmpRoots = new ConcurrentLinkedDeque<>(aLmpRoots);
             }
-            mPathGen = new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, aThermostat).setReturnLast();
-        } catch (MPIException | LmpException e) {
+            mPathGen = aPathGen.setReturnLast();
+        } catch (Exception e) {
             mLmpComm.shutdown();
             throw e;
         }
     }
     
     /** 这里改为 static 方法来构造，从而避免一些问题，顺便实现自动资源释放 */
-    private static void withOf_(MPI.Comm aWorldComm, int aWorldRoot, MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, byte aThermostat, Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {
-        try (MultipleNativeLmpFullPathGenerator tPathGen = new MultipleNativeLmpFullPathGenerator(aWorldComm, aWorldRoot, aLmpComm, aLmpRoots,  aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, aThermostat)) {
+    private static void withOf_(MPI.Comm aWorldComm, int aWorldRoot, MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, NativeLmpFullPathGenerator aPathGen, Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {
+        try (MultipleNativeLmpFullPathGenerator tPathGen = new MultipleNativeLmpFullPathGenerator(aWorldComm, aWorldRoot, aLmpComm, aLmpRoots, aPathGen)) {
             // 在另一个线程执行后续操作
             Future<Void> tLaterTask = null;
             if (tPathGen.mWorldMe == aWorldRoot) {
@@ -122,21 +102,39 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
             }
         }
     }
+    /**
+     * 创建一个生成器；
+     * 每个进程都需要调用来进行创建，除了特殊说明，输入参数都需要一致
+     * @author liqa
+     * @param aWorldComm 此进程用于和主进程通讯的 {@link MPI.Comm}，默认为 {@link MPI.Comm#WORLD}
+     * @param aWorldRoot 主进程编号，默认为 0
+     * @param aLmpComm 此进程需要运行 {@link NativeLmp} 的 {@link MPI.Comm}，不同分组（color）的进程可以不同
+     * @param aLmpRoots aLmpComm 对应的主进程 0 在 aWorldComm 中的编号列表，一般为 n * aLmpComm.size()，可以只有主进程 aWorldRoot 传入
+     * @param aParameterCalculator 计算对应 Lmpdat 参数的计算器，建议使用 MPI 版本的计算器，并使用和 aLmpComm 相同的 {@link MPI.Comm}
+     * @param aInitAtomDataList  用于初始的原子数据
+     * @param aMesses 每个种类的原子对应的摩尔质量，且长度指定原子种类数目
+     * @param aTemperature 创建路径的温度
+     * @param aPairStyle lammps 输入文件使用的势场类型
+     * @param aPairCoeff lammps 输入文件使用的势场参数
+     * @param aTimestep 每步的实际时间步长，影响输入文件和统计使用的时间，默认为 0.002 (ps)
+     * @param aDumpStep 每隔多少模拟步输出一个 dump，默认为 10
+     * @param aThermostat 选择的热浴，默认为 {@link NativeLmpFullPathGenerator#NOSE_HOOVER}
+     */
     public static void withOf(MPI.Comm aWorldComm, int aWorldRoot, MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, byte aThermostat, Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {
-        withOf_(aWorldComm, aWorldRoot, aLmpComm, aLmpRoots, aParameterCalculator, aInitAtomDataList, Vectors.from(aMesses), aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, aThermostat, aDoLater);
+        withOf_(aWorldComm, aWorldRoot, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, aThermostat), aDoLater);
     }
-    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                      IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, byte aThermostat, Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, aParameterCalculator, aInitAtomDataList, Vectors.from(aMesses), aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, aThermostat, aDoLater);}
-    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                      IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep,                   Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf(aLmpComm, aLmpRoots, aParameterCalculator, aInitAtomDataList, Vectors.from(aMesses), aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, NOSE_HOOVER, aDoLater);}
-    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                      IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep,                                  Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf(aLmpComm, aLmpRoots, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, 10, aDoLater);}
-    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                      IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff,                                                    Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf(aLmpComm, aLmpRoots, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, 0.002, aDoLater);}
-    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, Collection<? extends Number> aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, byte aThermostat, Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, aParameterCalculator, aInitAtomDataList, Vectors.from(aMesses), aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, aThermostat, aDoLater);}
-    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, Collection<? extends Number> aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep,                   Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf(aLmpComm, aLmpRoots, aParameterCalculator, aInitAtomDataList, Vectors.from(aMesses), aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, NOSE_HOOVER, aDoLater);}
-    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, Collection<? extends Number> aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep,                                  Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf(aLmpComm, aLmpRoots, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, 10, aDoLater);}
-    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, Collection<? extends Number> aMesses, double aTemperature, String aPairStyle, String aPairCoeff,                                                    Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf(aLmpComm, aLmpRoots, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, 0.002, aDoLater);}
-    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                     double[] aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, byte aThermostat, Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, aParameterCalculator, aInitAtomDataList, Vectors.from(aMesses), aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, aThermostat, aDoLater);}
-    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                     double[] aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep,                   Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf(aLmpComm, aLmpRoots, aParameterCalculator, aInitAtomDataList, Vectors.from(aMesses), aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, NOSE_HOOVER, aDoLater);}
-    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                     double[] aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep,                                  Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf(aLmpComm, aLmpRoots, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, 10, aDoLater);}
-    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                     double[] aMesses, double aTemperature, String aPairStyle, String aPairCoeff,                                                    Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf(aLmpComm, aLmpRoots, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, 0.002, aDoLater);}
+    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                      IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, byte aThermostat, Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, aThermostat), aDoLater);}
+    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                      IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep,                   Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep), aDoLater);}
+    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                      IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep,                                  Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep), aDoLater);}
+    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                      IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff,                                                    Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff), aDoLater);}
+    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, Collection<? extends Number> aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, byte aThermostat, Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, aThermostat), aDoLater);}
+    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, Collection<? extends Number> aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep,                   Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep), aDoLater);}
+    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, Collection<? extends Number> aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep,                                  Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep), aDoLater);}
+    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, Collection<? extends Number> aMesses, double aTemperature, String aPairStyle, String aPairCoeff,                                                    Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff), aDoLater);}
+    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                     double[] aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, byte aThermostat, Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep, aThermostat), aDoLater);}
+    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                     double[] aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep,                   Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep, aDumpStep), aDoLater);}
+    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                     double[] aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep,                                  Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff, aTimestep), aDoLater);}
+    public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                     double[] aMesses, double aTemperature, String aPairStyle, String aPairCoeff,                                                    Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff), aDoLater);}
     
     
     @Override public ITimeAndParameterIterator<Lmpdat> fullPathFrom(IAtomData aStart, long aSeed) {
