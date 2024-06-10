@@ -49,8 +49,8 @@ public class LmpBox implements IBox {
     @Deprecated public final @NotNull IXYZ shiftedBox() {return new XYZ(this);}
     
     
-    /** 目前主要用于内部使用 */
-    static LmpBox of(IBox aBox) {
+    /** 现在开放外部使用 */
+    public static LmpBox of(IBox aBox) {
         if (aBox.isLmpStyle()) {
             return aBox.isPrism() ? new LmpBoxPrism(aBox, aBox.xy(), aBox.xz(), aBox.yz()) : new LmpBox(aBox);
         } else {
@@ -65,6 +65,10 @@ public class LmpBox implements IBox {
             double tXZ = tC.dot(tA) / tX;
             double tYZ = (tB.dot(tC) - tXY*tXZ) / tY;
             double tZ = MathEX.Fast.sqrt(tC.dot() - tXZ*tXZ - tYZ*tYZ);
+            // 这里同样考虑由于计算误差导致的数值非正交问题
+            if (Math.abs(tXY) < MathEX.Code.DBL_EPSILON) tXY = 0.0;
+            if (Math.abs(tXZ) < MathEX.Code.DBL_EPSILON) tXZ = 0.0;
+            if (Math.abs(tYZ) < MathEX.Code.DBL_EPSILON) tYZ = 0.0;
             return new LmpBoxPrism(tX, tY, tZ, tXY, tXZ, tYZ);
         }
     }
