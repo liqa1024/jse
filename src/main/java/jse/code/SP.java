@@ -834,7 +834,7 @@ public class SP {
         
         
         /** 基于 pip 的 python 包管理，下载指定包到 .pypkg */
-        public static void downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform, String aPythonVersion) {
+        public static void downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform, String aPythonVersion) throws IOException {
             // 组装指令
             List<String> rCommand = new ArrayList<>();
             rCommand.add("pip"); rCommand.add("download");
@@ -857,6 +857,7 @@ public class SP {
             }
             // 不提供强制仅下载源码的选项，因为很多下载的源码都不能编译成功
             // 设置目标路径
+            UT.IO.makeDir(PYTHON_PKG_DIR);
             rCommand.add("--dest"); rCommand.add("'"+PYTHON_PKG_DIR+"'");
             // 设置需要的包名
             rCommand.add("'"+aRequirement+"'");
@@ -864,14 +865,14 @@ public class SP {
             // 直接通过系统指令执行 pip 来下载
             EXEC.system(String.join(" ", rCommand));
         }
-        public static void downloadPackage(String aRequirement, String aPlatform, String aPythonVersion) {downloadPackage(aRequirement, false, aPlatform, aPythonVersion);}
-        public static void downloadPackage(String aRequirement, String aPlatform) {downloadPackage(aRequirement, aPlatform, null);}
-        public static void downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform) {downloadPackage(aRequirement, aIncludeDep, aPlatform, null);}
-        public static void downloadPackage(String aRequirement, boolean aIncludeDep) {downloadPackage(aRequirement, aIncludeDep, null);}
-        public static void downloadPackage(String aRequirement) {downloadPackage(aRequirement, false);}
+        public static void downloadPackage(String aRequirement, String aPlatform, String aPythonVersion) throws IOException {downloadPackage(aRequirement, false, aPlatform, aPythonVersion);}
+        public static void downloadPackage(String aRequirement, String aPlatform) throws IOException {downloadPackage(aRequirement, aPlatform, null);}
+        public static void downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform) throws IOException {downloadPackage(aRequirement, aIncludeDep, aPlatform, null);}
+        public static void downloadPackage(String aRequirement, boolean aIncludeDep) throws IOException {downloadPackage(aRequirement, aIncludeDep, null);}
+        public static void downloadPackage(String aRequirement) throws IOException {downloadPackage(aRequirement, false);}
         
         /** 基于 pip 的 python 包管理，直接安装指定包到 lib */
-        public static void installPackage(String aRequirement, boolean aIncludeDep, boolean aIncludeIndex) {
+        public static void installPackage(String aRequirement, boolean aIncludeDep, boolean aIncludeIndex) throws IOException {
             // 组装指令
             List<String> rCommand = new ArrayList<>();
             rCommand.add("pip"); rCommand.add("install");
@@ -880,8 +881,10 @@ public class SP {
             // 是否开启联网，这里默认不开启联网，因为标准下会使用 downloadPackage 来下载包
             if (!aIncludeIndex) rCommand.add("--no-index");
             // 添加 .pypkg 到搜索路径
+            UT.IO.makeDir(PYTHON_PKG_DIR);
             rCommand.add("--find-links"); rCommand.add("'file:"+PYTHON_PKG_DIR+"'");
             // 设置目标路径
+            UT.IO.makeDir(PYTHON_LIB_DIR);
             rCommand.add("--target"); rCommand.add("'"+PYTHON_LIB_DIR+"'");
             // 强制开启更新，替换已有的包
             rCommand.add("--upgrade");
@@ -891,8 +894,8 @@ public class SP {
             // 直接通过系统指令执行 pip 来下载
             EXEC.system(String.join(" ", rCommand));
         }
-        public static void installPackage(String aRequirement, boolean aIncludeDep) {installPackage(aRequirement, aIncludeDep, false);}
-        public static void installPackage(String aRequirement) {installPackage(aRequirement, false);}
+        public static void installPackage(String aRequirement, boolean aIncludeDep) throws IOException {installPackage(aRequirement, aIncludeDep, false);}
+        public static void installPackage(String aRequirement) throws IOException {installPackage(aRequirement, false);}
         
         
         private static String cmakeInitCmdJep_() {
@@ -989,6 +992,7 @@ public class SP {
         /** 一些内置的 python 库安装，主要用于内部使用 */
         public static void installAse() throws IOException {
             // 首先获取源码路径，这里直接检测是否是 ase-$ASE_VERSION 开头
+            UT.IO.makeDir(PYTHON_PKG_DIR);
             String[] tList = UT.IO.list(PYTHON_PKG_DIR);
             boolean tHasAsePkg = false;
             for (String tName : tList) if (tName.startsWith("ase-"+ASE_VERSION)) {
