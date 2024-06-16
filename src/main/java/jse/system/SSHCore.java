@@ -511,7 +511,7 @@ final class SSHCore implements IAutoShutdown {
         try {tAttrs = aChannelSftp.stat(aPath);} catch (SftpException ignored) {}
         return tAttrs!=null && !tAttrs.isDir();
     }
-    /** 判断是否是文件 */
+    /** 删除一个路径，如果文件不存在不会执行任何操作 */
     private static void delete_(ChannelSftp aChannelSftp, String aPath) throws Exception {
         SftpATTRS tAttrs = null;
         try {tAttrs = aChannelSftp.stat(aPath);} catch (SftpException ignored) {}

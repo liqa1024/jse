@@ -609,7 +609,7 @@ public class SP {
         
         
         /** 包的版本 */
-        private final static String JEP_VERSION = "4.2.0", ASE_VERSION = "3.22.1";
+        private final static String JEP_VERSION = "4.2.0", ASE_VERSION = "3.23.0";
         /** jep 二进制库路径 */
         private final static String JEP_LIB_DIR = JAR_DIR+"jep/" + UT.Code.uniqueID(VERSION, JEP_VERSION, Conf.USE_MIMALLOC) + "/";
         private final static String JEP_LIB_PATH;
