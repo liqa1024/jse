@@ -3,6 +3,7 @@ package jse.parallel;
 import java.util.concurrent.*;
 
 import static jse.code.CS.SYNC_SLEEP_TIME;
+import static jse.code.CS.SYNC_TIMEOUT;
 
 /**
  * @author liqa
@@ -27,12 +28,16 @@ public class ExecutorsEX {
     
     
     public static IExecutorEX newFixedThreadPool(final int nThreads) {
-        return new AbstractExecutorEX(new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>())) {
+        ThreadPoolExecutor tPool = new ThreadPoolExecutor(nThreads, nThreads, SYNC_TIMEOUT, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+        tPool.allowCoreThreadTimeOut(true);
+        return new AbstractExecutorEX(tPool) {
             @Override public int threadNumber() {return nThreads;}
         };
     }
     public static IExecutorEX newSingleThreadExecutor() {
-        return new AbstractExecutorEX(new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>())) {
+        ThreadPoolExecutor tPool = new ThreadPoolExecutor(1, 1, SYNC_TIMEOUT, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+        tPool.allowCoreThreadTimeOut(true);
+        return new AbstractExecutorEX(tPool) {
             @Override public int threadNumber() {return 1;}
         };
     }

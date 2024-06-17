@@ -52,6 +52,7 @@ public class CS {
         , FILE_SYSTEM_SLEEP_TIME_2 = 200
         , SSH_SLEEP_TIME = 500
         , SSH_SLEEP_TIME_2 = 1000
+        , SYNC_TIMEOUT = 500
         , FILE_SYSTEM_TIMEOUT = 10000
         ;
     
