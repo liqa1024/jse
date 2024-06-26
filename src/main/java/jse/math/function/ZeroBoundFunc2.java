@@ -41,7 +41,7 @@ public final class ZeroBoundFunc2 extends ColumnMatrixFunc2 implements IZeroBoun
     }
     
     @Override public int getINear(double aX) {return MathEX.Code.toRange(0, Nx()-1, super.getINear(aX));}
-    @Override public int getJNear(double aY) {return MathEX.Code.toRange(0, Nx()-1, super.getJNear(aY));}
+    @Override public int getJNear(double aY) {return MathEX.Code.toRange(0, Ny()-1, super.getJNear(aY));}
     
     /** 提供额外的接口用于检测两端 */
     @Override public double zeroBoundNegX() {return mX0 - mDx;}

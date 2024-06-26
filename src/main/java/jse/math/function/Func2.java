@@ -30,11 +30,11 @@ public class Func2 {
      * @param aResolution the Resolution of the Function1, dx == aSigma/aResolution
      * @return the Dirac Delta function δ(x-mu) in the Gaussian form
      */
-    public static IZeroBoundFunc2 deltaG(double aSigma, final double aMu, double aResolution) {
+    public static ZeroBoundSymmetryFunc2 deltaG(double aSigma, final double aMu, double aResolution) {
         final double tMul = -1.0 / (2.0*aSigma*aSigma);
         final double tFMul =  1.0 / (MathEX.Fast.sqrt(2.0*PI) * aSigma * aSigma);
         
-        IZeroBoundFunc2 rFunc1 = ZeroBoundFunc2.zeros(aMu, aSigma/aResolution, (int)Math.round(aResolution*G_RANG));
+        ZeroBoundSymmetryFunc2 rFunc1 = ZeroBoundSymmetryFunc2.zeros(aMu, aSigma/aResolution, MathEX.Code.round2int(aResolution*G_RANG));
         rFunc1.fill((x, y) -> {
             x -= aMu;
             y -= aMu;
@@ -58,10 +58,10 @@ public class Func2 {
      * @param aNy 分划的 y 份数
      * @return 得到的二维分布函数
      */
-    public static IZeroBoundFunc2 distFrom(IHasDoubleIterator aDataX, IHasDoubleIterator aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy) {
+    public static ZeroBoundFunc2 distFrom(IHasDoubleIterator aDataX, IHasDoubleIterator aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy) {
         double tStepX = (aEndX-aStartX)/(double)(aNx-1);
         double tStepY = (aEndY-aStartY)/(double)(aNy-1);
-        IZeroBoundFunc2 rFunc2 = ZeroBoundFunc2.zeros(aStartX, aStartY, tStepX, tStepY, aNx, aNy);
+        ZeroBoundFunc2 rFunc2 = ZeroBoundFunc2.zeros(aStartX, aStartY, tStepX, tStepY, aNx, aNy);
         
         double tLBoundX = aStartX - tStepX*0.5;
         double tLBoundY = aStartY - tStepY*0.5;
@@ -81,12 +81,68 @@ public class Func2 {
         rFunc2.div2this(rSize * tStepX * tStepY);
         return rFunc2;
     }
-    public static IZeroBoundFunc2 distFrom(IHasDoubleIterator aDataX, Iterable<? extends Number> aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy) {return distFrom(aDataX, IHasDoubleIterator.of(aDataY), aStartX, aStartY, aEndX, aEndY, aNx, aNy);}
-    public static IZeroBoundFunc2 distFrom(Iterable<? extends Number> aDataX, IHasDoubleIterator aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy) {return distFrom(IHasDoubleIterator.of(aDataX), aDataY, aStartX, aStartY, aEndX, aEndY, aNx, aNy);}
-    public static IZeroBoundFunc2 distFrom(Iterable<? extends Number> aDataX, Iterable<? extends Number> aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy) {return distFrom(IHasDoubleIterator.of(aDataX), IHasDoubleIterator.of(aDataY), aStartX, aStartY, aEndX, aEndY, aNx, aNy);}
+    public static ZeroBoundFunc2 distFrom(IHasDoubleIterator aDataX, Iterable<? extends Number> aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy) {return distFrom(aDataX, IHasDoubleIterator.of(aDataY), aStartX, aStartY, aEndX, aEndY, aNx, aNy);}
+    public static ZeroBoundFunc2 distFrom(Iterable<? extends Number> aDataX, IHasDoubleIterator aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy) {return distFrom(IHasDoubleIterator.of(aDataX), aDataY, aStartX, aStartY, aEndX, aEndY, aNx, aNy);}
+    public static ZeroBoundFunc2 distFrom(Iterable<? extends Number> aDataX, Iterable<? extends Number> aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy) {return distFrom(IHasDoubleIterator.of(aDataX), IHasDoubleIterator.of(aDataY), aStartX, aStartY, aEndX, aEndY, aNx, aNy);}
     
-    public static IZeroBoundFunc2 distFrom(IHasDoubleIterator aDataX, IHasDoubleIterator aDataY, double aStart, double aEnd, int aN) {return distFrom(aDataX, aDataY, aStart, aStart, aEnd, aEnd, aN, aN);}
-    public static IZeroBoundFunc2 distFrom(IHasDoubleIterator aDataX, Iterable<? extends Number> aDataY, double aStart, double aEnd, int aN) {return distFrom(aDataX, aDataY, aStart, aStart, aEnd, aEnd, aN, aN);}
-    public static IZeroBoundFunc2 distFrom(Iterable<? extends Number> aDataX, IHasDoubleIterator aDataY, double aStart, double aEnd, int aN) {return distFrom(aDataX, aDataY, aStart, aStart, aEnd, aEnd, aN, aN);}
-    public static IZeroBoundFunc2 distFrom(Iterable<? extends Number> aDataX, Iterable<? extends Number> aDataY, double aStart, double aEnd, int aN) {return distFrom(aDataX, aDataY, aStart, aStart, aEnd, aEnd, aN, aN);}
+    public static ZeroBoundFunc2 distFrom(IHasDoubleIterator aDataX, IHasDoubleIterator aDataY, double aStart, double aEnd, int aN) {return distFrom(aDataX, aDataY, aStart, aStart, aEnd, aEnd, aN, aN);}
+    public static ZeroBoundFunc2 distFrom(IHasDoubleIterator aDataX, Iterable<? extends Number> aDataY, double aStart, double aEnd, int aN) {return distFrom(aDataX, aDataY, aStart, aStart, aEnd, aEnd, aN, aN);}
+    public static ZeroBoundFunc2 distFrom(Iterable<? extends Number> aDataX, IHasDoubleIterator aDataY, double aStart, double aEnd, int aN) {return distFrom(aDataX, aDataY, aStart, aStart, aEnd, aEnd, aN, aN);}
+    public static ZeroBoundFunc2 distFrom(Iterable<? extends Number> aDataX, Iterable<? extends Number> aDataY, double aStart, double aEnd, int aN) {return distFrom(aDataX, aDataY, aStart, aStart, aEnd, aEnd, aN, aN);}
+    
+    
+    /**
+     * 使用带有一定展宽的高斯分布代替直接计数来统计分布，超出范围的值会忽略
+     * @author liqa
+     * @param aDataX 需要统计分布的 x 数据
+     * @param aDataY 需要统计分布的 y 数据
+     * @param aStartX 分布的 x 下界
+     * @param aStartY 分布的 y 下界
+     * @param aEndX 分布的 x 上界
+     * @param aEndY 分布的 y 上界
+     * @param aNx 分划的 x 份数
+     * @param aNy 分划的 y 份数
+     * @param aSigmaMul 高斯分布的一个标准差宽度对应的分划份数，默认为 4
+     * @return 得到的分布函数
+     */
+    public static ZeroBoundFunc2 distFrom_G(IHasDoubleIterator aDataX, IHasDoubleIterator aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy, int aSigmaMul) {
+        double tStepX = (aEndX-aStartX)/(double)(aNx-1);
+        double tStepY = (aEndY-aStartY)/(double)(aNy-1);
+        ZeroBoundFunc2 rFunc2 = ZeroBoundFunc2.zeros(aStartX, aStartY, tStepX, tStepY, aNx, aNy);
+        // 用于累加的 DeltaG
+        final IZeroBoundFunc2 tDeltaG = deltaG(MathEX.Fast.sqrt(tStepX*tStepY)*aSigmaMul, 0.0, aSigmaMul);
+        
+        final double tLBoundX = aStartX - tDeltaG.zeroBoundNegX();
+        final double tLBoundY = aStartY - tDeltaG.zeroBoundNegY();
+        final double tUBoundX = aEndX - tDeltaG.zeroBoundPosX();
+        final double tUBoundY = aEndY - tDeltaG.zeroBoundPosY();
+        int rSize = 0;
+        
+        IDoubleIterator itX = aDataX.iterator(), itY = aDataY.iterator();
+        while (itX.hasNext() && itY.hasNext()) {
+            double tX = itX.next(), tY = itY.next();
+            ++rSize; // 虽然说大部分输入数据都不用进行这个计数，不过保证简洁还是都做一下
+            if (tX>=tLBoundX && tY>=tLBoundY
+             && tX< tUBoundX && tY< tUBoundY) {
+                tDeltaG.setX0(tX);
+                tDeltaG.setY0(tY);
+                rFunc2.plus2this(tDeltaG);
+            }
+        }
+        rFunc2.div2this(rSize);
+        return rFunc2;
+    }
+    public static ZeroBoundFunc2 distFrom_G(IHasDoubleIterator aDataX, Iterable<? extends Number> aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy, int aSigmaMul) {return distFrom_G(aDataX, IHasDoubleIterator.of(aDataY), aStartX, aStartY, aEndX, aEndY, aNx, aNy, aSigmaMul);}
+    public static ZeroBoundFunc2 distFrom_G(Iterable<? extends Number> aDataX, IHasDoubleIterator aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy, int aSigmaMul) {return distFrom_G(IHasDoubleIterator.of(aDataX), aDataY, aStartX, aStartY, aEndX, aEndY, aNx, aNy, aSigmaMul);}
+    public static ZeroBoundFunc2 distFrom_G(Iterable<? extends Number> aDataX, Iterable<? extends Number> aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy, int aSigmaMul) {return distFrom_G(IHasDoubleIterator.of(aDataX), IHasDoubleIterator.of(aDataY), aStartX, aStartY, aEndX, aEndY, aNx, aNy, aSigmaMul);}
+    
+    public static ZeroBoundFunc2 distFrom_G(IHasDoubleIterator aDataX, IHasDoubleIterator aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy) {return distFrom_G(aDataX, aDataY, aStartX, aStartY, aEndX, aEndY, aNx, aNy, 4);}
+    public static ZeroBoundFunc2 distFrom_G(IHasDoubleIterator aDataX, Iterable<? extends Number> aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy) {return distFrom_G(aDataX, aDataY, aStartX, aStartY, aEndX, aEndY, aNx, aNy, 4);}
+    public static ZeroBoundFunc2 distFrom_G(Iterable<? extends Number> aDataX, IHasDoubleIterator aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy) {return distFrom_G(aDataX, aDataY, aStartX, aStartY, aEndX, aEndY, aNx, aNy, 4);}
+    public static ZeroBoundFunc2 distFrom_G(Iterable<? extends Number> aDataX, Iterable<? extends Number> aDataY, double aStartX, double aStartY, double aEndX, double aEndY, int aNx, int aNy) {return distFrom_G(aDataX, aDataY, aStartX, aStartY, aEndX, aEndY, aNx, aNy, 4);}
+    
+    public static ZeroBoundFunc2 distFrom_G(IHasDoubleIterator aDataX, IHasDoubleIterator aDataY, double aStart, double aEnd, int aN) {return distFrom_G(aDataX, aDataY, aStart, aStart, aEnd, aEnd, aN, aN);}
+    public static ZeroBoundFunc2 distFrom_G(IHasDoubleIterator aDataX, Iterable<? extends Number> aDataY, double aStart, double aEnd, int aN) {return distFrom_G(aDataX, aDataY, aStart, aStart, aEnd, aEnd, aN, aN);}
+    public static ZeroBoundFunc2 distFrom_G(Iterable<? extends Number> aDataX, IHasDoubleIterator aDataY, double aStart, double aEnd, int aN) {return distFrom_G(aDataX, aDataY, aStart, aStart, aEnd, aEnd, aN, aN);}
+    public static ZeroBoundFunc2 distFrom_G(Iterable<? extends Number> aDataX, Iterable<? extends Number> aDataY, double aStart, double aEnd, int aN) {return distFrom_G(aDataX, aDataY, aStart, aStart, aEnd, aEnd, aN, aN);}
 }
