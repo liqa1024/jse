@@ -9,6 +9,7 @@ import org.jetbrains.annotations.VisibleForTesting;
  * @author liqa
  * <p> 通用的数值函数接口，三维输入（f(x,y,z)）</p>
  */
+@ApiStatus.Experimental
 public interface IFunc3 extends IFunc3Subs {
     /** 获取所有数据方便外部使用或者进行运算 */
     IVector x();

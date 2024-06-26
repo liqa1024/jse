@@ -1,5 +1,6 @@
 package jse.math.function;
 
+import jse.math.matrix.IMatrix;
 import jse.math.vector.IVector;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -12,7 +13,7 @@ public interface IFunc2 extends IFunc2Subs {
     /** 获取所有数据方便外部使用或者进行运算 */
     IVector x();
     IVector y();
-    IVector f();
+    IMatrix f();
     
     /** 拷贝的接口 */
     IFunc2 copy();
