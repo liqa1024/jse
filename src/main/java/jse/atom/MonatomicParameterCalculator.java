@@ -16,6 +16,7 @@ import jse.math.function.IZeroBoundFunc1;
 import jse.math.matrix.IComplexMatrix;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.RowComplexMatrix;
+import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import jse.parallel.*;
 import org.jetbrains.annotations.*;
@@ -2737,30 +2738,29 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     
     /**
      * 一种基于 Chebyshev 多项式和球谐函数将原子局域环境展开成一个基组的方法，
-     * 或称为此原子的指纹（FingerPrints），主要用于作为机器学习的输入向量
+     * 主要用于作为机器学习的输入向量；这是 NNAP 中默认使用的原子基组。
      * <p>
      * References:
      * <a href="https://arxiv.org/abs/2211.03350v3">
      * Computing the 3D Voronoi Diagram Robustly: An Easy Explanation </a>
      * <p>
-     * TODO: 现在应该可以把原子种类项也加进来
      * @author Su Rui, liqa
      * @param aNMax Chebyshev 多项式选取的最大阶数
      * @param aLMax 球谐函数中 l 选取的最大阶数
      * @param aRCutOff 截断半径
-     * @return 原子指纹矩阵组成的数组，n 为行，l 为列，因此 asVecRow 即为原本定义的基
+     * @return 原子指纹矩阵组成的数组，n 为行，l 为列，因此 asVecRow 即为原本定义的基；如果存在超过一个种类则输出行数翻倍
      */
-    @ApiStatus.Experimental
-    public List<? extends IMatrix> calFPSuRui(final int aNMax, final int aLMax, final double aRCutOff) {
+    public List<RowMatrix> calBasisNNAP(final int aNMax, final int aLMax, final double aRCutOff) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         if (aNMax < 0) throw new IllegalArgumentException("Input n_max MUST be Non-Negative, input: "+aNMax);
         if (aLMax < 0) throw new IllegalArgumentException("Input l_max MUST be Non-Negative, input: "+aLMax);
         
-        final List<? extends IMatrix> rFingerPrints = MatrixCache.getMatRow(aNMax+1, aLMax+1, mAtomNum);
+        final int tSizeN = mAtomTypeNum>1 ? aNMax+aNMax+2 : aNMax+1;
+        final List<RowMatrix> rFingerPrints = MatrixCache.getMatRow(tSizeN, aLMax+1, mAtomNum);
         
         // 需要存储所有的 l，n，m 的值来统一进行近邻求和
-        final IComplexVector[][] cnlmPar = new IComplexVector[threadNumber()][aNMax+1];
-        for (IComplexVector[] cnlm : cnlmPar) for (int tN = 0; tN <= aNMax; ++tN) {
+        final IComplexVector[][] cnlmPar = new IComplexVector[threadNumber()][tSizeN];
+        for (IComplexVector[] cnlm : cnlmPar) for (int tN = 0; tN < tSizeN; ++tN) {
             cnlm[tN] = ComplexVectorCache.getVec((aLMax+1)*(aLMax+1));
         }
         // 全局暂存 Y 的数组，这样可以用来防止重复获取来提高效率
@@ -2773,7 +2773,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         pool().parfor(mAtomNum, (i, threadID) -> {
             // 获取线程独立的变量
             final IComplexVector[] cnlm = cnlmPar[threadID];
-            for (int tN = 0; tN <= aNMax; ++tN) {
+            for (int tN = 0; tN < tSizeN; ++tN) {
                 cnlm[tN].fill(0.0); // 需要手动置为 0，后面直接对近邻进行累加
             }
             final IComplexVector tY = tYPar.get(threadID);
@@ -2793,6 +2793,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 cosPhi = Code.toRange(-1.0, 1.0, cosPhi);
                 double phi = (dy > 0) ? Fast.acos(cosPhi) : (2.0*PI - Fast.acos(cosPhi));
                 
+                // 计算种类的权重
+                int type = mTypeVec.get(idx);
+                double wt = ((type&1)==1) ? type : -type;
                 // 计算截断函数 fc
                 double fc = dis>=aRCutOff ? 0.0 : Fast.powFast(1.0 - Fast.pow2(dis/aRCutOff), 4);
                 // 统一遍历一次计算 Rn
@@ -2802,19 +2805,19 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 // 遍历求 n，l 的情况
                 Func.sphericalHarmonicsFull2Dest(aLMax, theta, phi, tY);
                 for (int tN = 0; tN <= aNMax; ++tN) {
-                    // 得到 cnlm 向量
-                    IComplexVector cijm = cnlm[tN];
                     // 现在提供了 mplus2this 支持将数乘到 tY 中后再加到 cijm，可以不用中间变量；
                     // 虽然看起来和使用 operate2this 效率基本一致，即使后者理论上应该还会创建一些 DoubleComplex；
                     // 总之至少没有反向优化，并且这样包装后更加不吃编译器的优化，也不存在一大坨 lambda 表达式，以及传入的 DoubleComplex 一定不是引用等这种约定
-                    cijm.operation().mplus2this(tY, fc * Rn.get(tN));
+                    double tMul = fc * Rn.get(tN);
+                    cnlm[tN].operation().mplus2this(tY, tMul);
+                    if (mAtomTypeNum > 1) cnlm[tN+aNMax+1].operation().mplus2this(tY, wt*tMul);
                 }
                 // 统计近邻
                 if (tNLToBuffer != null) {tNLToBuffer[i].add(idx);}
             });
             // 做标量积消去 m 项，得到此原子的 FP
             IMatrix tFP = rFingerPrints.get(i);
-            for (int tN = 0; tN <= aNMax; ++tN) for (int tL = 0; tL <= aLMax; ++tL) {
+            for (int tN = 0; tN < tSizeN; ++tN) for (int tL = 0; tL <= aLMax; ++tL) {
                 // 根据 sphericalHarmonicsFull2Dest 的约定这里需要这样索引
                 int tStart = tL*tL;
                 int tLen = tL+tL+1;
