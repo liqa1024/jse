@@ -722,8 +722,6 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         Sq.div2this(mAtomNum*0.5);
         Sq.plus2this(1.0);
         
-        // 修复截断数据
-        Sq.set(0, 0.0);
         // 输出
         return Sq;
     }
@@ -762,8 +760,6 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         Sq.div2this(Fast.sqrt(mAtomNum*aAtomNum));
         Sq.plus2this(1.0);
         
-        // 修复截断数据
-        Sq.set(0, 0.0);
         // 输出
         return Sq;
     }
@@ -829,8 +825,6 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         Sq.div2this(tDiv);
         Sq.plus2this(1.0);
         
-        // 修复截断数据
-        Sq.set(0, 0.0);
         // 输出
         return Sq;
     }
@@ -914,8 +908,6 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 归还临时变量
         VectorCache.returnVec(tDeltaPar);
         
-        // 修复截断数据
-        for (IFunc1 Sq : SqAll) Sq.set(0, 0.0);
         // 输出
         return AbstractCollections.from(SqAll);
     }
@@ -944,7 +936,6 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         Sq.multiply2this(4.0*PI*aRho);
         Sq.plus2this(1.0);
         
-        Sq.set(0, 0.0);
         return Sq;
     }
     public static IFunc1 RDF2SF(IFunc1 aGr, double aRho, int aN, double aQMax) {return RDF2SF(aGr, aRho, aN, aQMax, 2.0*PI/aGr.operation().maxX() * 0.5);}
@@ -971,7 +962,6 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         gr.multiply2this(1.0/(2.0*PI*PI*aRho));
         gr.plus2this(1.0);
         
-        gr.set(0, 0.0);
         return gr;
     }
     public static IFunc1 SF2RDF(IFunc1 aSq, double aRho, int aN, double aRMax) {return SF2RDF(aSq, aRho, aN, aRMax, 2.0*PI/aSq.operation().maxX() * 0.5);}
