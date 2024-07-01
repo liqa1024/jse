@@ -115,6 +115,24 @@ public abstract class AbstractFunc1Operation implements IFunc1Operation {
     }
     
     
+    @Override public IFunc1 gradient() {
+        IFunc1 rFunc1 = newFunc1_();
+        gradient2Dest_(rFunc1);
+        return rFunc1;
+    }
+    protected void gradient2Dest_(IFunc1 rDest) {
+        IFunc1 tFunc1 = thisFunc1_();
+        int tNx = tFunc1.Nx();
+        for (int i = 0; i < tNx; ++i) {
+            double tF = tFunc1.get(i);
+            int imm = i - 1;
+            double gFl = (imm < 0) ? Double.NaN : (tF - tFunc1.get(imm)) / tFunc1.dx(imm);
+            int ipp = i + 1;
+            double gFr = (ipp >= tNx) ? Double.NaN : (tFunc1.get(ipp) - tF) / tFunc1.dx(i);
+            rDest.set(i, Double.isNaN(gFl) ? (Double.isNaN(gFr) ? 0.0 : gFr) : (Double.isNaN(gFr) ? gFl : 0.5*(gFl+gFr)));
+        }
+    }
+    
     /** 简单起见，对于一般非均匀的直接不支持此操作 */
     @Override public IFunc1 laplacian() {throw new UnsupportedOperationException("laplacian");}
     

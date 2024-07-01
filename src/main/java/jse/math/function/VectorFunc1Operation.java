@@ -418,6 +418,19 @@ public abstract class VectorFunc1Operation extends AbstractFunc1Operation {
     
     
     
+    @Override protected void gradient2Dest_(IFunc1 rDest) {
+        VectorFunc1 tFunc1 = thisFunc1_();
+        int tNx = tFunc1.Nx();
+        double tDx = tFunc1.dx();
+        for (int i = 0; i < tNx; ++i) {
+            double tF = tFunc1.get(i);
+            int imm = i - 1;
+            double tFmm = (imm < 0) ? tFunc1.getOutL_(imm) : tFunc1.get(imm);
+            int ipp = i + 1;
+            double tFpp = (ipp >= tNx) ? tFunc1.getOutR_(ipp) : tFunc1.get(ipp);
+            rDest.set(i, 0.5*((tF-tFmm) + (tFpp-tF))/tDx);
+        }
+    }
     
     /** 边界外的结果不保证正确性 */
     @Override public IFunc1 laplacian() {
@@ -431,9 +444,9 @@ public abstract class VectorFunc1Operation extends AbstractFunc1Operation {
         int tNx = tFunc1.Nx();
         double tDx2 = tFunc1.dx() * tFunc1.dx();
         for (int i = 0; i < tNx; ++i) {
-            int imm = i-1;
+            int imm = i - 1;
             double tFmm = (imm < 0) ? tFunc1.getOutL_(imm) : tFunc1.get(imm);
-            int ipp = i+1;
+            int ipp = i + 1;
             double tFpp = (ipp >= tNx) ? tFunc1.getOutR_(ipp) : tFunc1.get(ipp);
             
             rDest.set(i, (tFmm + tFpp - 2*tFunc1.get(i)) / tDx2);

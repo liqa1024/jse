@@ -67,6 +67,7 @@ public interface IFunc1Operation {
     void mapFull2this       (DoubleBinaryOperator aOpt);
     
     /** 微分积分运算 */
+    IFunc1 gradient();
     IFunc1 laplacian();
     
     /** 积分运算 */
