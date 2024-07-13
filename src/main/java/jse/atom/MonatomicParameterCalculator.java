@@ -1441,13 +1441,24 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             final XYZ cXYZ = new XYZ(mAtomDataXYZ.row(i));
             // 遍历近邻计算 Ylm
             mNL.forEachNeighbor(i, aRNearest, aNnn, aHalf, (x, y, z, idx, dis2) -> {
+                double dis = Fast.sqrt(dis2);
                 // 计算角度
                 double dx = x - cXYZ.mX;
                 double dy = y - cXYZ.mY;
                 double dz = z - cXYZ.mZ;
-                double theta = Fast.acos(dz / Fast.sqrt(dis2));
-                // 使用 atan2 避免 NaN 以及由于精度越界的情况
-                double phi = Fast.atan2(dy, dx);
+                double xy = Fast.hypot(dx, dy);
+                double cosTheta = dz / dis;
+                double sinTheta = xy / dis;
+                double cosPhi;
+                double sinPhi;
+                // 注意避免 NaN 的情况
+                if (Code.numericEqual(xy, 0.0)) {
+                    cosPhi = 1.0;
+                    sinPhi = 0.0;
+                } else {
+                    cosPhi = dx / xy;
+                    sinPhi = dy / xy;
+                }
                 
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
                 IComplexVector Qlmj = null;
@@ -1455,7 +1466,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                     Qlmj = Qlm.row(idx);
                 }
                 // 计算 Y 并累加，考虑对称性只需要算 m=0~l 的部分
-                Func.sphericalHarmonics2Dest(aL, theta, phi, tY);
+                Func.sphericalHarmonics2Dest4(aL, cosTheta, sinTheta, cosPhi, sinPhi, tY);
                 Qlmi.plus2this(tY);
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
                 if (aHalf) Qlmj.plus2this(tY);
@@ -1519,13 +1530,24 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             // 遍历近邻计算 Ylm
             final int fI = i;
             mNL.forEachNeighbor(fI, aRNearest, aNnn, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis2) -> {
+                double dis = Fast.sqrt(dis2);
                 // 计算角度
                 double dx = x - cXYZ.mX;
                 double dy = y - cXYZ.mY;
                 double dz = z - cXYZ.mZ;
-                double theta = Fast.acos(dz / Fast.sqrt(dis2));
-                // 使用 atan2 避免 NaN 以及由于精度越界的情况
-                double phi = Fast.atan2(dy, dx);
+                double xy = Fast.hypot(dx, dy);
+                double cosTheta = dz / dis;
+                double sinTheta = xy / dis;
+                double cosPhi;
+                double sinPhi;
+                // 注意避免 NaN 的情况
+                if (Code.numericEqual(xy, 0.0)) {
+                    cosPhi = 1.0;
+                    sinPhi = 0.0;
+                } else {
+                    cosPhi = dx / xy;
+                    sinPhi = dy / xy;
+                }
                 
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
                 boolean tHalfStat = aHalf && aMPIInfo.inRegin(idx);
@@ -1534,7 +1556,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                     Qlmj = Qlm.row(idx);
                 }
                 // 计算 Y 并累加，考虑对称性只需要算 m=0~l 的部分
-                Func.sphericalHarmonics2Dest(aL, theta, phi, tY);
+                Func.sphericalHarmonics2Dest4(aL, cosTheta, sinTheta, cosPhi, sinPhi, tY);
                 Qlmi.plus2this(tY);
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
                 if (tHalfStat) Qlmj.plus2this(tY);
@@ -2770,9 +2792,19 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 double dx = x - cXYZ.mX;
                 double dy = y - cXYZ.mY;
                 double dz = z - cXYZ.mZ;
-                double theta = Fast.acos(dz / dis);
-                // 使用 atan2 避免 NaN 以及由于精度越界的情况
-                double phi = Fast.atan2(dy, dx);
+                double xy = Fast.hypot(dx, dy);
+                double cosTheta = dz / dis;
+                double sinTheta = xy / dis;
+                double cosPhi;
+                double sinPhi;
+                // 注意避免 NaN 的情况
+                if (Code.numericEqual(xy, 0.0)) {
+                    cosPhi = 1.0;
+                    sinPhi = 0.0;
+                } else {
+                    cosPhi = dx / xy;
+                    sinPhi = dy / xy;
+                }
                 
                 // 计算种类的权重
                 int type = mTypeVec.get(idx);
@@ -2784,7 +2816,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 IVector Rn = Vectors.from(aNMax+1, n -> Func.chebyshev(n, tX));
                 
                 // 遍历求 n，l 的情况
-                Func.sphericalHarmonicsFull2Dest(aLMax, theta, phi, tY);
+                Func.sphericalHarmonicsFull2Dest4(aLMax, cosTheta, sinTheta, cosPhi, sinPhi, tY);
                 for (int tN = 0; tN <= aNMax; ++tN) {
                     // 现在提供了 mplus2this 支持将数乘到 tY 中后再加到 cijm，可以不用中间变量；
                     // 虽然看起来和使用 operate2this 效率基本一致，即使后者理论上应该还会创建一些 DoubleComplex；
