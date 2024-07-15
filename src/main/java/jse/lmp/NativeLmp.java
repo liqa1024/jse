@@ -963,7 +963,7 @@ public class NativeLmp implements IAutoShutdown {
         if (aAtomData instanceof IVaspCommonData) {
         String[] tAtomTypes = ((IVaspCommonData)aAtomData).typeNames();
         if (tAtomTypes!=null && tAtomTypes.length>=tAtomTypeNum) for (int i = 0; i < tAtomTypeNum; ++i) {
-        command(String.format("mass            %d %f", i+1, MASS.getOrDefault(tAtomTypes[i], -1.0)));
+        command(String.format("mass            %d %f", i+1, MASS.getOrDefault(tAtomTypes[i], Double.NaN)));
         }}
         creatAtoms(aAtomData.atoms());
     }

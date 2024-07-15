@@ -349,7 +349,7 @@ public class Lmpdat extends AbstractSettableAtomData {
             String[] tAtomTypes = ((IVaspCommonData)aAtomData).typeNames();
             if (tAtomTypes!=null && tAtomTypes.length>=tTypeNum) {
                 aMasses = Vectors.zeros(tTypeNum);
-                for (int i = 0; i < tTypeNum; ++i) aMasses.set(i, MASS.getOrDefault(tAtomTypes[i], -1.0));
+                for (int i = 0; i < tTypeNum; ++i) aMasses.set(i, MASS.getOrDefault(tAtomTypes[i], Double.NaN));
             }
         }
         return fromAtomData_(aAtomData, aMasses);
