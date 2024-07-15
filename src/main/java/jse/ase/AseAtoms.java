@@ -1,16 +1,15 @@
 package jse.ase;
 
+import jep.NDArray;
 import jep.python.PyCallable;
 import jep.python.PyObject;
 import jse.atom.*;
 import jse.code.SP;
 import jse.code.UT;
+import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.RowMatrix;
-import jse.math.vector.IIntVector;
-import jse.math.vector.IVector;
-import jse.math.vector.IntVector;
-import jse.math.vector.Vectors;
+import jse.math.vector.*;
 import jse.vasp.IVaspCommonData;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.NotNull;
@@ -40,8 +39,6 @@ public class AseAtoms extends AbstractSettableAtomData {
     private final IIntVector mAtomicNumbers;
     private final IMatrix mPositions;
     private @Nullable IMatrix mMomenta = null;
-    private @Nullable IVector mMagmoms = null;
-    private @Nullable IVector mCharges = null;
     /** 用于通过原子序数获取每个种类的粒子数 */
     private final @NotNull Map<Integer, Integer> mAtomicNumber2Type;
     private final @NotNull IIntVector mType2AtomicNumber; // 第 0 个直接制空
@@ -78,8 +75,6 @@ public class AseAtoms extends AbstractSettableAtomData {
     public IIntVector atomicNumbers() {return mAtomicNumbers;}
     public IMatrix positions() {return mPositions;}
     public @Nullable IMatrix momenta() {return mMomenta;}
-    public @Nullable IVector magmoms() {return mMagmoms;}
-    public @Nullable IVector charges() {return mCharges;}
     
     /** AbstractAtomData stuffs */
     @Override public boolean hasVelocities() {return mMomenta != null;}
@@ -130,15 +125,14 @@ public class AseAtoms extends AbstractSettableAtomData {
     public PyObject toPyObject() {return toPyObject(SP.Python.interpreter());}
     public PyObject toPyObject(@NotNull jep.Interpreter aInterpreter) {
         aInterpreter.exec("from ase import Atoms");
-        PyCallable tPyAtoms = aInterpreter.getValue("Atoms", PyCallable.class);
-        return tPyAtoms.callAs(PyObject.class, Maps.of(
-            "cell"     , new double[][] {{mBox.ax(), mBox.ay(), mBox.az()}, {mBox.bx(), mBox.by(), mBox.bz()}, {mBox.cx(), mBox.cy(), mBox.cz()}},
-            "numbers"  , mAtomicNumbers.asList(),
-            "positions", mPositions.asListRows(),
-            "momenta"  , mMomenta==null ? null : mMomenta.asListRows(),
-            "magmoms"  , mMagmoms==null ? null : mMagmoms.asList(),
-            "charges"  , mCharges==null ? null : mCharges.asList()
-        ));
+        try (PyCallable tPyAtoms = aInterpreter.getValue("Atoms", PyCallable.class)) {
+            return tPyAtoms.callAs(PyObject.class, Maps.of(
+                "cell"     , new double[][] {{mBox.ax(), mBox.ay(), mBox.az()}, {mBox.bx(), mBox.by(), mBox.bz()}, {mBox.cx(), mBox.cy(), mBox.cz()}},
+                "numbers"  , mAtomicNumbers.asList(),
+                "positions", mPositions.asListRows(),
+                "momenta"  , mMomenta==null ? null : mMomenta.asListRows()
+            ));
+        }
     }
     
     /** 拷贝一份 AseAtoms */
@@ -146,8 +140,38 @@ public class AseAtoms extends AbstractSettableAtomData {
     private AseAtoms copy_(@Nullable Map<Integer, Integer> aAtomicNumber2Type) {
         AseAtoms rAseAtoms = new AseAtoms(mBox.copy(), mAtomicNumbers.copy(), mPositions.copy(), aAtomicNumber2Type==null ? mAtomicNumber2Type : aAtomicNumber2Type);
         if (mMomenta != null) rAseAtoms.mMomenta = mMomenta.copy();
-        if (mMagmoms != null) rAseAtoms.mMagmoms = mMagmoms.copy();
-        if (mCharges != null) rAseAtoms.mCharges = mCharges.copy();
+        return rAseAtoms;
+    }
+    
+    /** 从 PyObject 来创建 */
+    public static AseAtoms fromPyObject(PyObject aPyAtoms) {
+        NDArray<?> tPyCellArray;
+        try (PyObject tPyCell = aPyAtoms.getAttr("cell", PyObject.class)) {
+            tPyCellArray = tPyCell.getAttr("array", NDArray.class);
+        }
+        NDArray<?> tPyNumbers = aPyAtoms.getAttr("numbers", NDArray.class);
+        NDArray<?> tPyPositions = aPyAtoms.getAttr("positions", NDArray.class);
+        @Nullable NDArray<?> tPyMomenta = null;
+        try (PyCallable tHas = aPyAtoms.getAttr("has", PyCallable.class)) {
+            if (tHas.callAs(Boolean.class, "momenta")) try (PyCallable tGetMomenta = aPyAtoms.getAttr("get_momenta", PyCallable.class)) {
+                tPyMomenta = tGetMomenta.callAs(NDArray.class);
+            }
+        }
+        RowMatrix tCellMat = new RowMatrix(tPyCellArray.getDimensions()[0], tPyCellArray.getDimensions()[1], (double[])tPyCellArray.getData());
+        boolean tNotPrism =
+               MathEX.Code.numericEqual(tCellMat.get(0, 1), 0.0) && MathEX.Code.numericEqual(tCellMat.get(0, 2), 0.0)
+            && MathEX.Code.numericEqual(tCellMat.get(1, 0), 0.0) && MathEX.Code.numericEqual(tCellMat.get(1, 2), 0.0)
+            && MathEX.Code.numericEqual(tCellMat.get(2, 0), 0.0) && MathEX.Code.numericEqual(tCellMat.get(2, 1), 0.0)
+            ;
+        IBox rBox = tNotPrism ?
+            new Box(tCellMat.get(0, 0), tCellMat.get(1, 1), tCellMat.get(2, 2)) :
+            new BoxPrism(
+                tCellMat.get(0, 0), tCellMat.get(0, 1), tCellMat.get(0, 2),
+                tCellMat.get(1, 0), tCellMat.get(1, 1), tCellMat.get(1, 2),
+                tCellMat.get(2, 0), tCellMat.get(2, 1), tCellMat.get(2, 2)
+            );
+        AseAtoms rAseAtoms = new AseAtoms(rBox, new IntVector(tPyNumbers.getDimensions()[0], (int[])tPyNumbers.getData()), new RowMatrix(tPyPositions.getDimensions()[0], tPyPositions.getDimensions()[1], (double[])tPyPositions.getData()));
+        if (tPyMomenta != null) rAseAtoms.mMomenta = new RowMatrix(tPyMomenta.getDimensions()[0], tPyMomenta.getDimensions()[1], (double[])tPyMomenta.getData());
         return rAseAtoms;
     }
     
@@ -158,7 +182,8 @@ public class AseAtoms extends AbstractSettableAtomData {
         if (aTypeNames!=null && aTypeNames.length>0) {
             rAtomicNumber2Type = new HashMap<>();
             for (int i = 0; i < aTypeNames.length; ++i) {
-                rAtomicNumber2Type.put(SYMBOL_TO_ATOMIC_NUMBER.get(aTypeNames[i]), i+1);
+                @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(aTypeNames[i]);
+                if (tAtomicNumber != null) rAtomicNumber2Type.put(tAtomicNumber, i+1);
             }
         }
         // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
@@ -207,4 +232,5 @@ public class AseAtoms extends AbstractSettableAtomData {
     /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
     public static AseAtoms of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
     public static AseAtoms of(IAtomData aAtomData, String... aTypeNames) {return fromAtomData(aAtomData, aTypeNames);}
+    public static AseAtoms of(PyObject aPyAtoms) {return fromPyObject(aPyAtoms);}
 }
