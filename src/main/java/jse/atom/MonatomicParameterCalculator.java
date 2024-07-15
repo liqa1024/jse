@@ -237,8 +237,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(mAtomNum, (i, threadID) -> {
             final IFunc1 dn = dnPar[threadID];
-            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dis2) -> {
-                dn.updateNear(Fast.sqrt(dis2), g->g+1);
+            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dx, dy, dz) -> {
+                dn.updateNear(Fast.hypot(dx, dy, dz), g->g+1);
             });
         });
         
@@ -269,10 +269,10 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         pool().parfor(aAtomNum, (i, threadID) -> {
             final IFunc1 dn = dnPar[threadID];
             final XYZ cXYZ = new XYZ(aAtomDataXYZ.row(i));
-            mNL.forEachNeighbor(cXYZ, aRMax - dr*0.5, (x, y, z, idx, dis2) -> {
+            mNL.forEachNeighbor(cXYZ, aRMax - dr*0.5, (x, y, z, idx, dx, dy, dz) -> {
                 // 当类型相同时可能存在相同原子
                 if (!cXYZ.numericEqual(x, y, z)) {
-                    dn.updateNear(Fast.sqrt(dis2), g->g+1);
+                    dn.updateNear(Fast.hypot(dx, dy, dz), g->g+1);
                 }
             });
         });
@@ -332,9 +332,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             if (tTypeI==aTypeA || tTypeI==aTypeB) {
                 final int tTypeJ = tTypeI==aTypeA ? aTypeB : aTypeA;
                 final IFunc1 dn = dnPar[threadID];
-                mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dis2) -> {
+                mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dx, dy, dz) -> {
                     if (mTypeVec.get(idx) == tTypeJ) {
-                        dn.updateNear(Fast.sqrt(dis2), g->g+1);
+                        dn.updateNear(Fast.hypot(dx, dy, dz), g->g+1);
                     }
                 });
             }
@@ -399,8 +399,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         pool().parfor(mAtomNum, (i, threadID) -> {
             final int tTypeA = mTypeVec.get(i);
             final IFunc1[] dnAll = dnAllPar.get(threadID);
-            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dis2) -> {
-                double dis = Fast.sqrt(dis2);
+            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dx, dy, dz) -> {
+                double dis = Fast.hypot(dx, dy, dz);
                 dnAll[0].updateNear(dis, g->g+1);
                 int tTypeB = mTypeVec.get(idx);
                 dnAll[(tTypeA*(tTypeA-1))/2 + tTypeB].updateNear(dis, g->g+1);
@@ -460,8 +460,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         pool().parfor(mAtomNum, (i, threadID) -> {
             final IFunc1 dn = dnPar[threadID];
             final IZeroBoundFunc1 tDeltaG = tDeltaGPar[threadID];
-            mNL.forEachNeighbor(i, aRMax+tRShift, true, (x, y, z, idx, dis2) -> {
-                tDeltaG.setX0(Fast.sqrt(dis2));
+            mNL.forEachNeighbor(i, aRMax+tRShift, true, (x, y, z, idx, dx, dy, dz) -> {
+                tDeltaG.setX0(Fast.hypot(dx, dy, dz));
                 dn.plus2this(tDeltaG);
             });
         });
@@ -501,10 +501,10 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             final IFunc1 dn = dnPar[threadID];
             final IZeroBoundFunc1 tDeltaG = tDeltaGPar[threadID];
             final XYZ cXYZ = new XYZ(aAtomDataXYZ.row(i));
-            mNL.forEachNeighbor(cXYZ, aRMax+tRShift, (x, y, z, idx, dis2) -> {
+            mNL.forEachNeighbor(cXYZ, aRMax+tRShift, (x, y, z, idx, dx, dy, dz) -> {
                 // 当类型相同时可能存在相同原子
                 if (!cXYZ.numericEqual(x, y, z)) {
-                    tDeltaG.setX0(Fast.sqrt(dis2));
+                    tDeltaG.setX0(Fast.hypot(dx, dy, dz));
                     dn.plus2this(tDeltaG);
                 }
             });
@@ -576,9 +576,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 final int tTypeJ = tTypeI==aTypeA ? aTypeB : aTypeA;
                 final IFunc1 dn = dnPar[threadID];
                 final IZeroBoundFunc1 tDeltaG = tDeltaGPar[threadID];
-                mNL.forEachNeighbor(i, aRMax+tRShift, true, (x, y, z, idx, dis2) -> {
+                mNL.forEachNeighbor(i, aRMax+tRShift, true, (x, y, z, idx, dx, dy, dz) -> {
                     if (mTypeVec.get(idx) == tTypeJ) {
-                        tDeltaG.setX0(Fast.sqrt(dis2));
+                        tDeltaG.setX0(Fast.hypot(dx, dy, dz));
                         dn.plus2this(tDeltaG);
                     }
                 });
@@ -653,8 +653,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             final int tTypeA = mTypeVec.get(i);
             final IFunc1[] dnAll = dnAllPar.get(threadID);
             final IZeroBoundFunc1 tDeltaG = tDeltaGPar[threadID];
-            mNL.forEachNeighbor(i, aRMax+tRShift, true, (x, y, z, idx, dis2) -> {
-                tDeltaG.setX0(Fast.sqrt(dis2));
+            mNL.forEachNeighbor(i, aRMax+tRShift, true, (x, y, z, idx, dx, dy, dz) -> {
+                tDeltaG.setX0(Fast.hypot(dx, dy, dz));
                 dnAll[0].plus2this(tDeltaG);
                 int tTypeB = mTypeVec.get(idx);
                 dnAll[(tTypeA*(tTypeA-1))/2 + tTypeB].plus2this(tDeltaG);
@@ -984,7 +984,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         
         // 如果为 null 则直接遍历指定 idx，如果需要重复使用则直接在外部缓存即可
         final IntVector.Builder rNL = IntVector.builder();
-        mNL.forEachNeighbor(aIdx, aRMax, aNnn, (x, y, z, idx, dis2) -> rNL.add(idx));
+        mNL.forEachNeighbor(aIdx, aRMax, aNnn, (x, y, z, idx, dx, dy, dz) -> rNL.add(idx));
         return rNL.build();
     }
     public IIntVector getNeighborList(int aIdx, double aRMax) {return getNeighborList(aIdx, aRMax, -1);}
@@ -1019,7 +1019,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         }
         
         final IntVector.Builder rNL = IntVector.builder();
-        mNL.forEachNeighbor(aXYZ, aRMax, aNnn, (x, y, z, idx, dis2) -> rNL.add(idx));
+        mNL.forEachNeighbor(aXYZ, aRMax, aNnn, (x, y, z, idx, dx, dy, dz) -> rNL.add(idx));
         return rNL.build();
     }
     public IIntVector getNeighborList(IXYZ aXYZ, double aRMax) {return getNeighborList(aXYZ, aRMax, -1);}
@@ -1385,7 +1385,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             aNL[aIdx].forEach(aIdxDo);
         } else {
             // aNL 为 null，则使用 mNL 完整遍历
-            mNL.forEachNeighbor(aIdx, aRMax, aNnn, aHalf, (x, y, z, idx, dis2) -> aIdxDo.accept(idx));
+            mNL.forEachNeighbor(aIdx, aRMax, aNnn, aHalf, (x, y, z, idx, dx, dy, dz) -> aIdxDo.accept(idx));
         }
     }
     @ApiStatus.Internal public void forEachNeighbor_(IntList @Nullable[] aNL, int aIdx, double aRMax, int aNnn, boolean aHalf, IIndexFilter aRegion, IntConsumer aIdxDo) {
@@ -1394,7 +1394,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             aNL[aIdx].forEach(aIdxDo);
         } else {
             // aNL 为 null，则使用 mNL 完整遍历
-            mNL.forEachNeighbor(aIdx, aRMax, aNnn, aHalf, aRegion, (x, y, z, idx, dis2) -> aIdxDo.accept(idx));
+            mNL.forEachNeighbor(aIdx, aRMax, aNnn, aHalf, aRegion, (x, y, z, idx, dx, dy, dz) -> aIdxDo.accept(idx));
         }
     }
     
@@ -1438,13 +1438,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             final IComplexVector tY = tYPar.get(threadID);
             // 一次计算一行
             final IComplexVector Qlmi = Qlm.row(i);
-            final XYZ cXYZ = new XYZ(mAtomDataXYZ.row(i));
             // 遍历近邻计算 Ylm
-            mNL.forEachNeighbor(i, aRNearest, aNnn, aHalf, (x, y, z, idx, dis2) -> {
-                double dx = x - cXYZ.mX;
-                double dy = y - cXYZ.mY;
-                double dz = z - cXYZ.mZ;
-                
+            mNL.forEachNeighbor(i, aRNearest, aNnn, aHalf, (x, y, z, idx, dx, dy, dz) -> {
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
                 IComplexVector Qlmj = null;
                 if (aHalf) {
@@ -1511,14 +1506,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             // 一次计算一行
             final IComplexVector Qlmi = Qlm.row(i);
-            final XYZ cXYZ = new XYZ(mAtomDataXYZ.row(i));
             // 遍历近邻计算 Ylm
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearest, aNnn, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dis2) -> {
-                double dx = x - cXYZ.mX;
-                double dy = y - cXYZ.mY;
-                double dz = z - cXYZ.mZ;
-                
+            mNL.forEachNeighbor(fI, aRNearest, aNnn, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dx, dy, dz) -> {
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
                 boolean tHalfStat = aHalf && aMPIInfo.inRegin(idx);
                 IComplexVector Qlmj = null;
@@ -2754,13 +2744,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             }
             final IComplexVector tY = tYPar.get(threadID);
             
-            final XYZ cXYZ = new XYZ(mAtomDataXYZ.row(i));
             // 遍历近邻计算 Ylm, Rn, fc
-            mNL.forEachNeighbor(i, aRCutOff, false, (x, y, z, idx, dis2) -> {
-                double dis = Fast.sqrt(dis2);
-                double dx = x - cXYZ.mX;
-                double dy = y - cXYZ.mY;
-                double dz = z - cXYZ.mZ;
+            mNL.forEachNeighbor(i, aRCutOff, false, (x, y, z, idx, dx, dy, dz) -> {
+                double dis = Fast.hypot(dx, dy, dz);
                 
                 // 计算种类的权重
                 int type = mTypeVec.get(idx);

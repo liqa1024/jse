@@ -113,7 +113,7 @@ public final class XYZ extends AbstractSettableXYZ {
         return aX*aX + aY*aY + aZ*aZ;
     }
     @Override public double distance(double aX, double aY, double aZ) {return MathEX.Fast.hypot(mX-aX, mY-aY, mZ-aZ);}
-    @Override public double distanceMHT(double aX, double aY, double aZ)  {return Math.abs(mX-aX) + Math.abs(mY-aY) + Math.abs(mZ-aZ);}
+    @Override public double distanceMHT(double aX, double aY, double aZ) {return Math.abs(mX-aX) + Math.abs(mY-aY) + Math.abs(mZ-aZ);}
     
     @Override public boolean numericEqual(double aX, double aY, double aZ) {
         return MathEX.Code.numericEqual(mX, aX) && MathEX.Code.numericEqual(mY, aY) && MathEX.Code.numericEqual(mZ, aZ);
