@@ -7,10 +7,10 @@ package jse.atom;
 public abstract class AbstractAtom implements IAtom {
     /** print */
     @Override public String toString() {
-        return hasVelocities() ?
+        return hasVelocity() ?
             String.format("{id: %d, type: %d, xyz: (%.4g, %.4g, %.4g), vxvyvz: (%.4g, %.4g, %.4g)}", id(), type(), x(), y(), z(), vx(), vy(), vz()) :
             String.format("{id: %d, type: %d, xyz: (%.4g, %.4g, %.4g)}", id(), type(), x(), y(), z())
             ;
     }
-    public Atom copy() {return hasVelocities() ? new AtomFull(this) : new Atom(this);}
+    public Atom copy() {return hasVelocity() ? new AtomFull(this) : new Atom(this);}
 }

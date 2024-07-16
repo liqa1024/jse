@@ -20,6 +20,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import static jse.code.CS.MASS;
 import static jse.code.CS.ZL_STR;
@@ -88,12 +89,16 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         return (aIDs==null || aIDs.isEmpty()) ? null : aIDs.copy();
     }
     
-    /** 对于 POSCAR 提供额外的实用接口 */
-    public @Nullable String typeName(int aType) {return mTypeNames==null ? null : mTypeNames[aType-1];}
-    public double mass(int aType) {
-        @Nullable String tTypeName = typeName(aType);
-        return tTypeName==null ? Double.NaN : MASS.getOrDefault(tTypeName, Double.NaN);
+    /// 获取属性
+    @Override public boolean hasSymbol() {return mTypeNames!=null;}
+    @Override public @Nullable String symbol(int aType) {return mTypeNames==null ? null : mTypeNames[aType-1];}
+    @Override public boolean hasMasse() {return hasSymbol();}
+    @Override public double mass(int aType) {
+        @Nullable String tSymbol = symbol(aType);
+        return tSymbol==null ? Double.NaN : MASS.getOrDefault(tSymbol, Double.NaN);
     }
+    /** @deprecated use {@link #symbol} */
+    @Deprecated public @Nullable String typeName(int aType) {return symbol(aType);}
     public int atomNumber(String aType) {
         int rAtomNum = 0;
         for (int tType : mKey2Type.get(aType)) rAtomNum += atomNumber(tType);
@@ -131,7 +136,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     
     
     /** 支持直接修改 TypeNames，只会增大种类数，不会减少 */
-    public POSCAR setTypeNames(String... aTypeNames) {
+    @Override public POSCAR setSymbols(String... aTypeNames) {
         if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
         if (aTypeNames==null || aTypeNames.length==0) {
             mTypeNames = null;
@@ -148,7 +153,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         validKey2Type_();
         return this;
     }
-    public POSCAR setNoTypeName() {return setTypeNames(ZL_STR);}
+    @Override public POSCAR setNoSymbol() {return setSymbols(ZL_STR);}
     /** 设置原子种类数目 */
     @Override public POSCAR setAtomTypeNumber(int aAtomTypeNum) {
         if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
@@ -184,6 +189,8 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
             }
         }
     }
+    /** @deprecated use {@link #setSymbols} */ @Deprecated public POSCAR setTypeNames(String... aSymbols) {return setSymbols(aSymbols);}
+    /** @deprecated use {@link #setNoSymbol} */ @Deprecated public POSCAR setNoTypeName() {return setNoSymbol();}
     
     public POSCAR setComment(@Nullable String aComment) {
         if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
@@ -331,7 +338,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     
     /** AbstractAtomData stuffs */
     @Override public ISettableAtom atom(final int aIdx) {
-        return new AbstractSettableAtom() {
+        return new AbstractSettableAtom_() {
             private int mIdx = aIdx;
             @Override public double x() {
                 if (mIsCartesian) {
@@ -541,14 +548,17 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     // 由于 POSCAR 不是全都可以修改，因此不重写另外两个
     
     /** 从 IAtomData 来创建，POSCAR 需要额外的原子种类字符串以及额外的是否开启 SelectiveDynamics */
-    public static POSCAR fromAtomData(IAtomData aAtomData) {return fromAtomData(aAtomData, (aAtomData instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomData).typeNames() : ZL_STR);}
+    public static POSCAR fromAtomData(IAtomData aAtomData) {
+        @Nullable List<@Nullable String> tSymbols = aAtomData.symbols();
+        return fromAtomData(aAtomData, tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
+    }
     public static POSCAR fromAtomData(IAtomData aAtomData, String... aTypeNames) {return fromAtomData(aAtomData, (aAtomData instanceof POSCAR) && ((POSCAR)aAtomData).mSelectiveDynamics, aTypeNames);}
     public static POSCAR fromAtomData(IAtomData aAtomData, boolean aSelectiveDynamics, String... aTypeNames) {
         if (aTypeNames == null) aTypeNames = ZL_STR;
         // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
         if (aAtomData instanceof POSCAR) {
             // POSCAR 则直接获取即可（专门优化，保留完整模拟盒信息等）
-            return ((POSCAR)aAtomData).copy().setSelectiveDynamics(aSelectiveDynamics).setTypeNames(aTypeNames);
+            return ((POSCAR)aAtomData).copy().setSelectiveDynamics(aSelectiveDynamics).setSymbols(aTypeNames);
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
             IIntVector rIDs = IntVector.zeros(aAtomData.atomNumber());

@@ -124,7 +124,7 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
     /** 用于方便内部使用 */
     private ISettableAtomData refAtomData_(List<? extends ISettableAtom> aAtoms) {
         ISettableAtomData tThis = thisAtomData_();
-        return new SettableAtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasVelocities());
+        return new SettableAtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasVelocity());
     }
     
     /** stuff to override */

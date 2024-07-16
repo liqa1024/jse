@@ -110,7 +110,7 @@ public class CS {
     public final static double K_B = 0.0000861733262; // eV / K
     
     /** All atom name, start from 0 */
-    public final static String[] ATOM_TYPE_NAMES = {
+    public final static String[] SYMBOLS = {
         "H" , "He",
         "Li", "Be", "B" , "C" , "N" , "O" , "F" , "Ne",
         "Na", "Mg", "Al", "Si", "P" , "S" , "Cl", "Ar",
@@ -121,9 +121,10 @@ public class CS {
         "Fr", "Ra", "Ac", "Th", "Pa", "U" , "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf",
         "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og"
     };
+    public final static @Deprecated String[] ATOM_TYPE_NAMES = SYMBOLS;
     public final static List<String> ATOMIC_NUMBER_TO_SYMBOL = new AbstractRandomAccessList<String>() {
-        @Override public String get(int index) {return ATOM_TYPE_NAMES[index-1];}
-        @Override public int size() {return ATOM_TYPE_NAMES.length+1;}
+        @Override public String get(int index) {return SYMBOLS[index-1];}
+        @Override public int size() {return SYMBOLS.length+1;}
     };
     public final static Map<String, Integer> SYMBOL_TO_ATOMIC_NUMBER = (new ImmutableMap.Builder<String, Integer>())
         .put("H" , 1)

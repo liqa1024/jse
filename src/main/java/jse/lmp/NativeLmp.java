@@ -20,7 +20,6 @@ import jse.math.vector.Vector;
 import jse.parallel.IAutoShutdown;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
-import jse.vasp.IVaspCommonData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -959,11 +958,10 @@ public class NativeLmp implements IAutoShutdown {
         command(String.format("region          box block 0 %f 0 %f 0 %f", tBox.x(), tBox.y(), tBox.z()));
         int tAtomTypeNum = aAtomData.atomTypeNumber();
         command(String.format("create_box      %d box", tAtomTypeNum));
-        // IVaspCommonData 包含原子种类字符，可以自动获取到质量
-        if (aAtomData instanceof IVaspCommonData) {
-        String[] tAtomTypes = ((IVaspCommonData)aAtomData).typeNames();
-        if (tAtomTypes!=null && tAtomTypes.length>=tAtomTypeNum) for (int i = 0; i < tAtomTypeNum; ++i) {
-        command(String.format("mass            %d %f", i+1, MASS.getOrDefault(tAtomTypes[i], Double.NaN)));
+        if (aAtomData.hasMasse()) for (int tType = 1; tType <= tAtomTypeNum; ++tType) {
+        double tMass = aAtomData.mass(tType);
+        if (!Double.isNaN(tMass)) {
+        command(String.format("mass            %d %f", tType, tMass));
         }}
         creatAtoms(aAtomData.atoms());
     }
@@ -978,7 +976,7 @@ public class NativeLmp implements IAutoShutdown {
      */
     public void creatAtoms(List<? extends IAtom> aAtoms, boolean aShrinkExceed) throws LmpException {
         checkThread();
-        final boolean tHasVelocities = UT.Code.first(aAtoms).hasVelocities();
+        final boolean tHasVelocities = UT.Code.first(aAtoms).hasVelocity();
         final int tAtomNum = aAtoms.size();
         int[] rID = IntArrayCache.getArray(tAtomNum);
         int[] rType = IntArrayCache.getArray(tAtomNum);

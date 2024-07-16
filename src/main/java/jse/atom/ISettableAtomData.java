@@ -1,8 +1,10 @@
 package jse.atom;
 
 
+import jse.math.vector.IVector;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -13,6 +15,10 @@ public interface ISettableAtomData extends IAtomData {
     void setAtom(int aIdx, IAtom aAtom);
     ISettableAtomData setAtomTypeNumber(int aAtomTypeNum);
     /** @deprecated use {@link #setAtomTypeNumber} */ @Deprecated default ISettableAtomData setAtomTypeNum(int aAtomTypeNum) {return setAtomTypeNumber(aAtomTypeNum);}
+    ISettableAtomData setSymbols(String... aSymbols);
+    ISettableAtomData setMasses(double... aMasses);
+    ISettableAtomData setMasses(Collection<? extends Number> aMasses);
+    ISettableAtomData setMasses(IVector aMasses);
     
     /** IAtomData stuffs*/
     List<? extends ISettableAtom> atoms();

@@ -10,13 +10,13 @@ import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
-import jse.vasp.IVaspCommonData;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static jse.code.CS.*;
@@ -78,9 +78,14 @@ public class AseAtoms extends AbstractSettableAtomData {
     public IIntVector atomicNumbers() {return mAtomicNumbers;}
     public IMatrix positions() {return mPositions;}
     public @Nullable IMatrix momenta() {return mMomenta;}
+    @Override public boolean hasVelocity() {return mMomenta != null;}
+    @Override public boolean hasSymbol() {return true;}
+    @Override public @Nullable String symbol(int aType) {return ATOMIC_NUMBER_TO_SYMBOL.get(mType2AtomicNumber.get(aType));}
+    @Override public boolean hasMasse() {return true;}
+    @Override public double mass(int aType) {return MASS.get(symbol(aType));}
     
     /** 支持直接修改 symbols，只会增大种类数，不会减少 */
-    public AseAtoms setSymbols(String... aSymbols) {
+    @Override public AseAtoms setSymbols(String... aSymbols) {
         if (aSymbols==null || aSymbols.length==0) {
             mAtomicNumbers.opt().map2this(mAtomicNumber2Type::get);
             mType2AtomicNumber.fill(i -> i);
@@ -125,11 +130,12 @@ public class AseAtoms extends AbstractSettableAtomData {
             mAtomicNumber2Type.put(mType2AtomicNumber.get(tType), tType);
         }
     }
+    @Override public AseAtoms setNoVelocity() {mMomenta = null; return this;}
+    @Override public AseAtoms setHasVelocity() {if (mMomenta == null) {mMomenta = RowMatrix.zeros(atomNumber(), ATOM_DATA_KEYS_VELOCITY.length);} return this;}
     
     /** AbstractAtomData stuffs */
-    @Override public boolean hasVelocities() {return mMomenta != null;}
     @Override public ISettableAtom atom(int aIdx) {
-        return new AbstractSettableAtom() {
+        return new AbstractSettableAtom_() {
             @Override public double x() {return mPositions.get(aIdx, XYZ_X_COL);}
             @Override public double y() {return mPositions.get(aIdx, XYZ_Y_COL);}
             @Override public double z() {return mPositions.get(aIdx, XYZ_Z_COL);}
@@ -140,7 +146,6 @@ public class AseAtoms extends AbstractSettableAtomData {
             @Override public double vx() {return mMomenta==null?0.0:(mMomenta.get(aIdx, STD_VX_COL)/MASS.get(ATOMIC_NUMBER_TO_SYMBOL.get(mAtomicNumbers.get(aIdx))));}
             @Override public double vy() {return mMomenta==null?0.0:(mMomenta.get(aIdx, STD_VY_COL)/MASS.get(ATOMIC_NUMBER_TO_SYMBOL.get(mAtomicNumbers.get(aIdx))));}
             @Override public double vz() {return mMomenta==null?0.0:(mMomenta.get(aIdx, STD_VZ_COL)/MASS.get(ATOMIC_NUMBER_TO_SYMBOL.get(mAtomicNumbers.get(aIdx))));}
-            @Override public boolean hasVelocities() {return mMomenta != null;}
             
             @Override public ISettableAtom setX(double aX) {mPositions.set(aIdx, XYZ_X_COL, aX); return this;}
             @Override public ISettableAtom setY(double aY) {mPositions.set(aIdx, XYZ_Y_COL, aY); return this;}
@@ -225,17 +230,8 @@ public class AseAtoms extends AbstractSettableAtomData {
     
     /** 从 IAtomData 来创建，一般来说 AseAtoms 需要一个额外的 aTypeNames 信息 */
     public static AseAtoms fromAtomData(IAtomData aAtomData) {
-        String[] aSymbols = ZL_STR;
-        if (aAtomData instanceof AseAtoms) {
-            aSymbols = new String[aAtomData.atomTypeNumber()];
-            for (int tType = 1; tType <= aSymbols.length; ++tType) {
-                aSymbols[tType-1] = ATOMIC_NUMBER_TO_SYMBOL.get(((AseAtoms)aAtomData).mType2AtomicNumber.get(tType));
-            }
-        } else
-        if (aAtomData instanceof IVaspCommonData) {
-            aSymbols = ((IVaspCommonData)aAtomData).typeNames();
-        }
-        return fromAtomData(aAtomData, aSymbols);
+        @Nullable List<@Nullable String> tSymbols = aAtomData.symbols();
+        return fromAtomData(aAtomData, tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
     public static AseAtoms fromAtomData(IAtomData aAtomData, String... aSymbols) {
         if (aSymbols == null) aSymbols = ZL_STR;
@@ -244,7 +240,7 @@ public class AseAtoms extends AbstractSettableAtomData {
             // AseAtoms 则直接获取即可（专门优化，保留完整模拟盒信息）
             return ((AseAtoms)aAtomData).copy().setSymbols(aSymbols);
         } else {
-            IIntVector rType2AtomicNumber = Vectors.range(Math.max(aSymbols.length, aAtomData.atomTypeNumber()));
+            IIntVector rType2AtomicNumber = Vectors.range(Math.max(aSymbols.length, aAtomData.atomTypeNumber())+1);
             for (int tType = 1; tType <= aSymbols.length; ++tType) {
                 @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(aSymbols[tType-1]);
                 if (tAtomicNumber != null) rType2AtomicNumber.set(tType, tAtomicNumber);
@@ -253,7 +249,7 @@ public class AseAtoms extends AbstractSettableAtomData {
             int tAtomNum = aAtomData.atomNumber();
             IntVector rAtomicNumbers = IntVector.zeros(tAtomNum);
             RowMatrix rPositions = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
-            @Nullable RowMatrix rMomenta = aAtomData.hasVelocities() ? RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : null;
+            @Nullable RowMatrix rMomenta = aAtomData.hasVelocity() ? RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : null;
             for (int i = 0; i < tAtomNum; ++i) {
                 IAtom tAtom = aAtomData.atom(i);
                 rAtomicNumbers.set(i, rType2AtomicNumber.get(tAtom.type()));

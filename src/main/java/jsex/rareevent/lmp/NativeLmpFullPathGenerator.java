@@ -75,7 +75,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
      */
     public NativeLmpFullPathGenerator(MPI.Comm aLmpComm, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, IVector aMesses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, byte aThermostat) throws LmpException {
         // 基本参数存储
-        mInitPoints = NewCollections.map(aInitAtomDataList, data -> Lmpdat.fromAtomData(data).setNoVelocities()); // 初始点也需要移除速度，保证会从不同路径开始
+        mInitPoints = NewCollections.map(aInitAtomDataList, data -> Lmpdat.fromAtomData(data).setNoVelocity()); // 初始点也需要移除速度，保证会从不同路径开始
         mMesses = aMesses.copy();
         mTemperature = aTemperature;
         mPairStyle = aPairStyle; mPairCoeff = aPairCoeff;
@@ -132,7 +132,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
             mLmp.command("pair_style      "+mPairStyle);
             mLmp.command("pair_coeff      "+mPairCoeff); // MARK: 好像卡在这里，但是不一定
             // 逻辑上只要没有速度还是需要重新分配速度
-            if (!mNext.hasVelocities()) {
+            if (!mNext.hasVelocity()) {
                 mLmp.command(String.format("velocity        all create %f %d dist gaussian mom yes rot yes", mTemperature, mRNG.nextInt(MAX_SEED)+1));
             }
             switch(mThermostat) {

@@ -1,5 +1,7 @@
 package jse.atom;
 
+import jse.math.vector.IVector;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -19,7 +21,9 @@ public interface IAtomData {
     double[][] dataAll();
     /** 获取速度数据, vx, vy, vz */
     double[][] dataVelocities();
-    boolean hasVelocities();
+    boolean hasVelocity();
+    /** @deprecated use {@link #hasVelocity} */
+    @Deprecated default boolean hasVelocities() {return hasVelocity();}
     
     /** 现在改为 atoms 保证一致性 */
     List<? extends IAtom> atoms();
@@ -43,6 +47,14 @@ public interface IAtomData {
     default double volume() {return box().volume();}
     default boolean isPrism() {return box().isPrism();}
     default boolean isLmpStyle() {return box().isLmpStyle();}
+    
+    /** 现在都能获取到元素信息和质量，不存在的会返回 null */
+    boolean hasSymbol();
+    @Nullable List<@Nullable String> symbols();
+    @Nullable String symbol(int aType);
+    boolean hasMasse();
+    @Nullable IVector masses();
+    double mass(int aType);
     
     /** 统一提供拷贝接口 */
     ISettableAtomData copy();

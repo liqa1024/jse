@@ -30,7 +30,7 @@ public final class SettableAtomData extends AbstractSettableAtomData {
     @Override public ISettableAtom atom(int aIdx) {
         // 需要包装一层，用于在更新种类时自动更新整体的种类计数
         final ISettableAtom tAtom = mAtoms.get(aIdx);
-        return new AbstractSettableAtom() {
+        return new AbstractSettableAtom_() {
             @Override public double x() {return tAtom.x();}
             @Override public double y() {return tAtom.y();}
             @Override public double z() {return tAtom.z();}
@@ -43,7 +43,6 @@ public final class SettableAtomData extends AbstractSettableAtomData {
             @Override public double vx() {return mHasVelocities ? tAtom.vx() : 0.0;}
             @Override public double vy() {return mHasVelocities ? tAtom.vy() : 0.0;}
             @Override public double vz() {return mHasVelocities ? tAtom.vz() : 0.0;}
-            @Override public boolean hasVelocities() {return mHasVelocities;}
             
             /** 注意 return this 和 return tAtom 的区别 */
             @Override public ISettableAtom setX(double aX) {tAtom.setX(aX); return this;}
@@ -79,5 +78,5 @@ public final class SettableAtomData extends AbstractSettableAtomData {
         }
         return this;
     }
-    @Override public boolean hasVelocities() {return mHasVelocities;}
+    @Override public boolean hasVelocity() {return mHasVelocities;}
 }

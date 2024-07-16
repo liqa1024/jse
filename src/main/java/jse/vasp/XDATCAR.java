@@ -6,6 +6,7 @@ import jse.atom.*;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 import jse.code.collection.AbstractListWrapper;
+import jse.code.collection.AbstractRandomAccessList;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.Matrices;
@@ -128,12 +129,23 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     @Override public XDATCAR leftShift(Collection<? extends IAtomData> aAtomDataList) {return (XDATCAR)super.leftShift(aAtomDataList);}
     
     
-    /** 对于 XDATCAR 提供额外的实用接口 */
-    public @Nullable String typeName(int aType) {return mTypeNames==null ? null : mTypeNames[aType-1];}
-    public double mass(int aType) {
-        @Nullable String tTypeName = typeName(aType);
-        return tTypeName==null ? Double.NaN : MASS.getOrDefault(tTypeName, Double.NaN);
+    /// 获取属性
+    public boolean hasSymbol() {return mTypeNames!=null;}
+    public @Nullable String symbol(int aType) {return mTypeNames==null ? null : mTypeNames[aType-1];}
+    public @Nullable List<@Nullable String> symbols() {
+        if (!hasSymbol()) return null;
+        return new AbstractRandomAccessList<@Nullable String>() {
+            @Override public @Nullable String get(int index) {return symbol(index+1);}
+            @Override public int size() {return atomTypeNumber();}
+        };
     }
+    public boolean hasMasse() {return hasSymbol();}
+    public double mass(int aType) {
+        @Nullable String tSymbol = symbol(aType);
+        return tSymbol==null ? Double.NaN : MASS.getOrDefault(tSymbol, Double.NaN);
+    }
+    /** @deprecated use {@link #symbol} */
+    @Deprecated public @Nullable String typeName(int aType) {return symbol(aType);}
     public int atomNumber(String aKey) {
         int rAtomNum = 0;
         for (int tType : mKey2Type.get(aKey)) rAtomNum += atomNumber(tType);
@@ -178,7 +190,7 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     
     
     /** 支持直接修改 TypeNames，只会增大种类数，不会减少 */
-    public XDATCAR setTypeNames(String... aTypeNames) {
+    public XDATCAR setSymbols(String... aTypeNames) {
         if (aTypeNames==null || aTypeNames.length==0) {
             mTypeNames = null;
             validKey2Type_();
@@ -194,7 +206,7 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
         validKey2Type_();
         return this;
     }
-    public XDATCAR setNoTypeName() {return setTypeNames(ZL_STR);}
+    public XDATCAR setNoSymbol() {return setSymbols(ZL_STR);}
     /** 设置原子种类数目 */
     public XDATCAR setAtomTypeNumber(int aAtomTypeNum) {
         int oTypeNum = mAtomNumbers.size();
@@ -229,12 +241,15 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
             }
         }
     }
+    /** @deprecated use {@link #setSymbols} */ @Deprecated public XDATCAR setTypeNames(String... aSymbols) {return setSymbols(aSymbols);}
+    /** @deprecated use {@link #setNoSymbol} */ @Deprecated public XDATCAR setNoTypeName() {return setNoSymbol();}
     
     public XDATCAR setComment(@Nullable String aComment) {mComment = aComment; return this;}
     
     /** Groovy stuffs */
     @VisibleForTesting public String @Nullable[] getTypeNames() {return mTypeNames;}
-    @VisibleForTesting public String getComment() {return mComment;}
+    @VisibleForTesting public @Nullable String getComment() {return mComment;}
+    @VisibleForTesting public @Nullable List<@Nullable String> getSymbols() {return symbols();}
     
     /** Cartesian 和 Direct 来回转换 */
     public XDATCAR setCartesian() {
@@ -405,7 +420,10 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     
     /// 创建 XDATCAR
     /** 从 IAtomData 来创建，对于 XDATCAR 可以支持容器的 aAtomData */
-    public static XDATCAR fromAtomData(IAtomData aAtomData) {return fromAtomData(aAtomData, (aAtomData instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomData).typeNames() : ZL_STR);}
+    public static XDATCAR fromAtomData(IAtomData aAtomData) {
+        @Nullable List<@Nullable String> tSymbols = aAtomData.symbols();
+        return fromAtomData(aAtomData, tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
+    }
     public static XDATCAR fromAtomData(IAtomData aAtomData, String... aTypeNames) {return fromAtomData_(aAtomData, 1, aTypeNames);}
     public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList, (aAtomDataList instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomDataList).typeNames() : ZL_STR);}
     public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, String... aTypeNames) {return fromAtomDataList_(aAtomDataList, 1, aTypeNames);}
@@ -417,7 +435,7 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
         if (aAtomData instanceof POSCAR) {
             // POSCAR 则直接获取即可（专门优化，保留完整模拟盒信息等）
             POSCAR tPOSCAR = (POSCAR)aAtomData;
-            return new XDATCAR(tPOSCAR.comment(), tPOSCAR.box().copy(), POSCAR.copyTypeNames(tPOSCAR.typeNames()), tPOSCAR.atomNumbers().copy(), tPOSCAR.direct().copy(), aInitSize, tPOSCAR.isCartesian(), POSCAR.copyIDs(tPOSCAR.ids())).setTypeNames(aTypeNames);
+            return new XDATCAR(tPOSCAR.comment(), tPOSCAR.box().copy(), POSCAR.copyTypeNames(tPOSCAR.typeNames()), tPOSCAR.atomNumbers().copy(), tPOSCAR.direct().copy(), aInitSize, tPOSCAR.isCartesian(), POSCAR.copyIDs(tPOSCAR.ids())).setSymbols(aTypeNames);
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
             IIntVector rIDs = IntVector.zeros(aAtomData.atomNumber());
@@ -455,7 +473,8 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
         Iterator<? extends IAtomData> it = aAtomDataList.iterator();
         if (!it.hasNext()) throw new IllegalArgumentException("XDATCAR do NOT support empty AtomDataList");
         IAtomData first = it.next();
-        final XDATCAR rXDATCAR = fromAtomData_(first, aInitSize, ((aTypeNames==null || aTypeNames==ZL_STR) && (first instanceof IVaspCommonData)) ? ((IVaspCommonData)first).typeNames() : aTypeNames);
+        @Nullable List<@Nullable String> tSymbols = first.symbols();
+        final XDATCAR rXDATCAR = fromAtomData_(first, aInitSize, ((aTypeNames==null || aTypeNames==ZL_STR) && tSymbols!=null) ? tSymbols.toArray(ZL_STR) : aTypeNames);
         it.forEachRemaining(rXDATCAR::append);
         return rXDATCAR;
     }

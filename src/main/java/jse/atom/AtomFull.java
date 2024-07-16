@@ -20,7 +20,7 @@ public class AtomFull extends Atom {
     @Override public double vx() {return mVx;}
     @Override public double vy() {return mVy;}
     @Override public double vz() {return mVz;}
-    @Override public boolean hasVelocities() {return true;}
+    @Override public boolean hasVelocity() {return true;}
     
     @Override public AtomFull setVx(double aVx) {mVx = aVx; return this;}
     @Override public AtomFull setVy(double aVy) {mVy = aVy; return this;}

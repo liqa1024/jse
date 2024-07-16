@@ -175,7 +175,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
                         tY + tDirAY + tDirBY + tCy*k,
                         tZ + tDirAZ + tDirBZ + tCz*k
                     ).setID(tShift + tID).setType(tType);
-                    if (tAtom.hasVelocities()) rAtom.setVxyz(tVx, tVy, tVz);
+                    if (tAtom.hasVelocity()) rAtom.setVxyz(tVx, tVy, tVz);
                 }}}
             } else {
                 for (int i = 0; i < aNx; ++i) {
@@ -190,7 +190,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
                         tY + tDirY,
                         tZ + tCz*k
                     ).setID(tShift + tID).setType(tType);
-                    if (tAtom.hasVelocities()) rAtom.setVxyz(tVx, tVy, tVz);
+                    if (tAtom.hasVelocity()) rAtom.setVxyz(tVx, tVy, tVz);
                 }}}
             }
         }
@@ -241,7 +241,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
                         tAtom.z() % rBox.z()
                     ).setID(tAtom.id()).setType(tAtom.type());
                 }
-                if (tAtom.hasVelocities()) subAtom.setVxyz(tAtom.vx(), tAtom.vy(), tAtom.vz());
+                if (tAtom.hasVelocity()) subAtom.setVxyz(tAtom.vx(), tAtom.vy(), tAtom.vz());
             }
             rSlice[i] = subAtomData;
         }
@@ -252,7 +252,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     /** 用于方便内部使用 */
     private IAtomData refAtomData_(List<? extends IAtom> aAtoms) {
         IAtomData tThis = thisAtomData_();
-        return new AtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasVelocities());
+        return new AtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasVelocity());
     }
     
     /** stuff to override */

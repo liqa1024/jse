@@ -14,7 +14,6 @@ import jse.math.vector.IntVector;
 import jse.math.vector.Vectors;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
-import jse.vasp.IVaspCommonData;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -94,10 +93,10 @@ public class Lmpdat extends AbstractSettableAtomData {
      * 修改一些属性来方便调整最终输出的 data 文件
      * @return 返回自身来支持链式调用
      */
-    public Lmpdat setMasses(double... aMasses) {return setMasses_(Vectors.from(aMasses), false);}
-    public Lmpdat setMasses(Collection<? extends Number> aMasses) {return setMasses_(Vectors.from(aMasses), false);}
-    public Lmpdat setMasses(@Nullable IVector aMasses) {return setMasses_(aMasses, true);}
-    public Lmpdat setNoMass() {return setMasses((IVector)null);}
+    @Override public Lmpdat setMasses(double... aMasses) {return setMasses_(Vectors.from(aMasses), false);}
+    @Override public Lmpdat setMasses(Collection<? extends Number> aMasses) {return setMasses_(Vectors.from(aMasses), false);}
+    @Override public Lmpdat setMasses(@Nullable IVector aMasses) {return setMasses_(aMasses, true);}
+    @Override public Lmpdat setNoMass() {return setMasses((IVector)null);}
     Lmpdat setMasses_(@Nullable IVector aMasses, boolean aCopy) {
         if (aMasses==null || aMasses.isEmpty()) {
             mMasses = null; return this;
@@ -125,8 +124,15 @@ public class Lmpdat extends AbstractSettableAtomData {
         }
         return this;
     }
-    public Lmpdat setNoVelocities() {mVelocities = null; return this;}
-    public Lmpdat setHasVelocities() {if (mVelocities == null) {mVelocities = RowMatrix.zeros(mAtomNum, ATOM_DATA_KEYS_VELOCITY.length);} return this;}
+    @Override public Lmpdat setNoVelocity() {mVelocities = null; return this;}
+    @Override public Lmpdat setHasVelocity() {if (mVelocities == null) {mVelocities = RowMatrix.zeros(mAtomNum, ATOM_DATA_KEYS_VELOCITY.length);} return this;}
+    @Override public Lmpdat setSymbols(String... aSymbols) {
+        IVector rMasses = Vectors.NaN(aSymbols.length);
+        for (int i = 0; i < aSymbols.length; ++i) {
+            rMasses.set(i, MASS.getOrDefault(aSymbols[i], mass(i+1)));
+        }
+        return setMasses_(rMasses, false);
+    }
     
     /** Groovy stuffs */
     @VisibleForTesting public @Nullable IVector getMasses() {return mMasses;}
@@ -277,15 +283,23 @@ public class Lmpdat extends AbstractSettableAtomData {
     public IIntVector types() {return mAtomType;}
     public IMatrix positions() {return mAtomXYZ;}
     public @Nullable IMatrix velocities() {return mVelocities;}
-    public boolean hasMasses() {return mMasses!=null;}
-    public @Nullable IVector masses() {return mMasses;}
-    public double mass(int aType) {return mMasses==null ? Double.NaN : mMasses.get(aType-1);}
-    
+    @Override public boolean hasVelocity() {return mVelocities != null;}
+    @Override public boolean hasMasse() {return mMasses!=null;}
+    @Override public double mass(int aType) {return mMasses==null ? Double.NaN : mMasses.get(aType-1);}
+    @Override public boolean hasSymbol() {return hasMasse();}
+    @Override public @Nullable String symbol(int aType) {
+        // 直接通过质量来猜测元素种类，直接遍历，误差在 0.1 内即可
+        double tMass = mass(aType);
+        if (Double.isNaN(tMass)) return null;
+        for (Map.Entry<String, Double> tEntry : MASS.entrySet()) {
+            if (Math.abs(tMass - tEntry.getValue()) < 0.1) return tEntry.getKey();
+        }
+        return null;
+    }
     
     /** AbstractAtomData stuffs */
-    @Override public boolean hasVelocities() {return mVelocities != null;}
     @Override public ISettableAtom atom(final int aIdx) {
-        return new AbstractSettableAtom() {
+        return new AbstractSettableAtom_() {
             @Override public double x() {return mAtomXYZ.get(aIdx, XYZ_X_COL)-mBox.xlo();}
             @Override public double y() {return mAtomXYZ.get(aIdx, XYZ_Y_COL)-mBox.ylo();}
             @Override public double z() {return mAtomXYZ.get(aIdx, XYZ_Z_COL)-mBox.zlo();}
@@ -296,7 +310,6 @@ public class Lmpdat extends AbstractSettableAtomData {
             @Override public double vx() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VX_COL);}
             @Override public double vy() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VY_COL);}
             @Override public double vz() {return mVelocities==null?0.0:mVelocities.get(aIdx, STD_VZ_COL);}
-            @Override public boolean hasVelocities() {return mVelocities != null;}
             
             @Override public ISettableAtom setX(double aX) {mAtomXYZ.set(aIdx, XYZ_X_COL, aX+mBox.xlo()); return this;}
             @Override public ISettableAtom setY(double aY) {mAtomXYZ.set(aIdx, XYZ_Y_COL, aY+mBox.ylo()); return this;}
@@ -335,25 +348,7 @@ public class Lmpdat extends AbstractSettableAtomData {
     @Override protected Lmpdat newZeros_(int aAtomNum, IBox aBox) {return new Lmpdat(mAtomTypeNum, LmpBox.of(aBox), mMasses==null?null:mMasses.copy(), IntVector.zeros(aAtomNum), IntVector.zeros(aAtomNum), RowMatrix.zeros(aAtomNum, mAtomXYZ.columnNumber()), mVelocities==null?null:RowMatrix.zeros(aAtomNum, mVelocities.columnNumber()));}
     
     /** 从 IAtomData 来创建，一般来说 Lmpdat 需要一个额外的质量信息 */
-    public static Lmpdat fromAtomData(IAtomData aAtomData) {
-        @Nullable IVector aMasses = null;
-        int tTypeNum = aAtomData.atomTypeNumber();
-        if (aAtomData instanceof Lmpdat) {
-            aMasses = ((Lmpdat)aAtomData).mMasses;
-            if (aMasses != null) {
-                if (aMasses.size() > tTypeNum) aMasses = aMasses.subVec(0, tTypeNum);
-                aMasses = aMasses.copy();
-            }
-        } else
-        if (aAtomData instanceof IVaspCommonData) {
-            String[] tAtomTypes = ((IVaspCommonData)aAtomData).typeNames();
-            if (tAtomTypes!=null && tAtomTypes.length>=tTypeNum) {
-                aMasses = Vectors.zeros(tTypeNum);
-                for (int i = 0; i < tTypeNum; ++i) aMasses.set(i, MASS.getOrDefault(tAtomTypes[i], Double.NaN));
-            }
-        }
-        return fromAtomData_(aAtomData, aMasses);
-    }
+    public static Lmpdat fromAtomData(IAtomData aAtomData) {return fromAtomData_(aAtomData, aAtomData.masses());}
     public static Lmpdat fromAtomData(IAtomData aAtomData, IVector aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
     public static Lmpdat fromAtomData(IAtomData aAtomData, Collection<? extends Number> aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
     public static Lmpdat fromAtomData(IAtomData aAtomData, double... aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
@@ -368,7 +363,7 @@ public class Lmpdat extends AbstractSettableAtomData {
             IntVector rAtomID = IntVector.zeros(tAtomNum);
             IntVector rAtomType = IntVector.zeros(tAtomNum);
             RowMatrix rAtomXYZ = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
-            @Nullable RowMatrix rVelocities = aAtomData.hasVelocities() ? RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : null;
+            @Nullable RowMatrix rVelocities = aAtomData.hasVelocity() ? RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : null;
             // 一般的情况，需要考虑斜方的模拟盒的情况
             IBox tBox = aAtomData.box();
             LmpBox rBox = LmpBox.of(tBox);

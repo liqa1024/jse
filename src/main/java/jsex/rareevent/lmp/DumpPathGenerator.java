@@ -122,7 +122,7 @@ public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathG
             IIOFiles tIOFiles;
             synchronized (this) {
                 // 如果此点不带有速度则需要有不同的随机初始速度，否则不需要分配速度
-                if (aStart.hasVelocities()) {
+                if (aStart.hasVelocity()) {
                     mGenDumpIn.put("velocity", REMOVE);
                 } else {
                     mGenDumpIn.put("velocity", KEEP);
@@ -162,7 +162,7 @@ public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathG
     
     @Override public IAtomData reducedPoint(IAtomData aPoint) {
         // 如果本来就没有速率则不需要执行此操作
-        if (!aPoint.hasVelocities()) return aPoint;
+        if (!aPoint.hasVelocity()) return aPoint;
         // 遍历拷贝数据，只需要坐标和种类数据
         final int tAtomNum = aPoint.atomNumber();
         final IMatrix rData = Matrices.zeros(tAtomNum, ATOM_DATA_KEYS_TYPE_XYZ.length);

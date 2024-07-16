@@ -1,8 +1,11 @@
 package jse.atom;
 
 import jse.code.collection.AbstractRandomAccessList;
+import jse.math.vector.IVector;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -12,14 +15,39 @@ import java.util.List;
 public abstract class AbstractSettableAtomData extends AbstractAtomData implements ISettableAtomData {
     /** stuff to override */
     public abstract ISettableAtom atom(int aIdx);
-    public abstract AbstractSettableAtomData setAtomTypeNumber(int aAtomTypeNum);
+    public AbstractSettableAtomData setAtomTypeNumber(int aAtomTypeNum) {throw new UnsupportedOperationException("setAtomTypeNumber");}
+    public AbstractSettableAtomData setNoVelocity() {throw new UnsupportedOperationException("setNoVelocity");}
+    public AbstractSettableAtomData setHasVelocity() {throw new UnsupportedOperationException("setHasVelocity");}
+    public AbstractSettableAtomData setSymbols(String... aSymbols) {throw new UnsupportedOperationException("setSymbols");}
+    public AbstractSettableAtomData setNoSymbol() {throw new UnsupportedOperationException("setNoSymbol");}
+    public AbstractSettableAtomData setMasses(double... aMasses) {throw new UnsupportedOperationException("setMasses");}
+    public AbstractSettableAtomData setMasses(Collection<? extends Number> aMasses) {throw new UnsupportedOperationException("setMasses");}
+    public AbstractSettableAtomData setMasses(IVector aMasses) {throw new UnsupportedOperationException("setMasses");}
+    public AbstractSettableAtomData setNoMass() {throw new UnsupportedOperationException("setNoMass");}
+    /** @deprecated use {@link #setNoVelocity} */
+    @Deprecated public AbstractSettableAtomData setNoVelocities() {return setNoVelocity();}
+    /** @deprecated use {@link #setHasVelocity} */
+    @Deprecated public AbstractSettableAtomData setHasVelocities() {return setHasVelocity();}
+    
+    /** Groovy stuffs */
+    @VisibleForTesting public @Nullable List<@Nullable String> getSymbols() {return symbols();}
+    @VisibleForTesting public @Nullable IVector getMasses() {return masses();}
+    
+    /** 提供一个一般的原子实现，帮助实现重复的部分 */
+    protected abstract class AbstractSettableAtom_ extends AbstractSettableAtom {
+        @Override public boolean hasVelocity() {return AbstractSettableAtomData.this.hasVelocity();}
+        @Override public @Nullable String symbol() {return AbstractSettableAtomData.this.symbol(type());}
+        @Override public boolean hasSymbol() {return AbstractSettableAtomData.this.hasSymbol();}
+        @Override public double mass() {return AbstractSettableAtomData.this.mass(type());}
+        @Override public boolean hasMass() {return AbstractSettableAtomData.this.hasMasse();}
+    }
     
     
     @Override @Deprecated @SuppressWarnings("deprecation") public List<? extends ISettableAtom> asList() {return atoms();}
     @Override public void setAtom(int aIdx, IAtom aAtom) {
         ISettableAtom tAtom = this.atom(aIdx);
         tAtom.setXYZ(aAtom).setID(aAtom.id()).setType(aAtom.type());
-        if (aAtom.hasVelocities()) tAtom.setVxyz(aAtom.vx(), aAtom.vy(), aAtom.vz());
+        if (aAtom.hasVelocity()) tAtom.setVxyz(aAtom.vx(), aAtom.vy(), aAtom.vz());
     }
     
     @Override public List<? extends ISettableAtom> atoms() {

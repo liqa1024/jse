@@ -332,9 +332,9 @@ public class SubLammpstrj extends AbstractSettableAtomData {
     
     
     /** AbstractAtomData stuffs */
-    @Override public boolean hasVelocities() {return mHasVelocities;}
+    @Override public boolean hasVelocity() {return mHasVelocities;}
     @Override public ISettableAtom atom(final int aIdx) {
-        return new AbstractSettableAtom() {
+        return new AbstractSettableAtom_() {
             @Override public double x() {
                 if (mKeyX == null) throw new UnsupportedOperationException("`x` for Lammpstrj without x data");
                 double tX = mAtomData.get(aIdx, mKeyX);
@@ -446,7 +446,6 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             @Override public double vx() {return mKeyVx==null ? 0.0 : mAtomData.get(aIdx, mKeyVx);}
             @Override public double vy() {return mKeyVy==null ? 0.0 : mAtomData.get(aIdx, mKeyVy);}
             @Override public double vz() {return mKeyVz==null ? 0.0 : mAtomData.get(aIdx, mKeyVz);}
-            @Override public boolean hasVelocities() {return mHasVelocities;}
             
             private final XYZ mBuf = new XYZ();
             @Override public ISettableAtom setX(double aX) {
@@ -615,7 +614,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             LmpBox rBox = LmpBox.of(tBox);
             if (tBox.isLmpStyle()) {
                 // 模拟盒满足 lammps 种类下可以直接拷贝过来
-                if (aAtomData.hasVelocities()) {
+                if (aAtomData.hasVelocity()) {
                     rAtomData = Tables.zeros(tAtomNum, ALL_ATOM_DATA_KEYS);
                     IMatrix rMat = rAtomData.asMatrix();
                     for (int i = 0; i < tAtomNum; ++i) {
@@ -644,7 +643,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             } else {
                 // 否则需要转换成 lammps 的种类
                 XYZ tBuf = new XYZ();
-                if (aAtomData.hasVelocities()) {
+                if (aAtomData.hasVelocity()) {
                     rAtomData = Tables.zeros(tAtomNum, ALL_ATOM_DATA_KEYS);
                     IMatrix rMat = rAtomData.asMatrix();
                     for (int i = 0; i < tAtomNum; ++i) {

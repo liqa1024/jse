@@ -43,7 +43,6 @@ import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 import jse.parallel.*;
 import jse.plot.*;
-import jse.vasp.IVaspCommonData;
 import me.tongfei.progressbar.ConsoleProgressBarConsumer;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarBuilder;
@@ -1997,7 +1996,7 @@ public class UT {
         @SuppressWarnings("unchecked")
         public static ILine[] plot(IAtomData aAtomData, Map<?, ?> aArgs) {
             validPlotter_();
-            List<?> aTypes = (List<?>)Code.getWithDefault(aArgs, AbstractCollections.from((aAtomData instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomData).typeNames() : ZL_STR), "Types", "types", "t");
+            List<?> aTypes = (List<?>)Code.getWithDefault(aArgs, aAtomData.hasSymbol() ? AbstractCollections.from(aAtomData.atomTypeNumber(), i -> aAtomData.symbol(i+1)==null ? ("type "+(i+1)) : aAtomData.symbol(i+1)) : AbstractCollections.zl(), "Types", "types", "t");
             List<?> aColors = (List<?>)Code.getWithDefault(aArgs, AbstractCollections.from(aTypes.size(), i -> COLOR.getOrDefault(Code.toString(aTypes.get(i)), Colors.COLOR(i+1))), "Colors", "colors", "c");
             List<?> aSizes = (List<?>)Code.getWithDefault(aArgs, AbstractCollections.map(aTypes, type -> SIZE.getOrDefault(Code.toString(type), 1.0)), "Sizes", "sizes", "s");
             String aAxis = Code.toString(Code.getWithDefault(aArgs, "z", "Axis", "axis", "a"));
@@ -2050,7 +2049,12 @@ public class UT {
             return rLines;
         }
         public static ILine[] plot(IAtomData aAtomData, final String... aAtomTypes) {return plot(aAtomData, Maps.of("Types" , AbstractCollections.from(aAtomTypes)));}
-        public static ILine[] plot(IAtomData aAtomData) {return plot(aAtomData, (aAtomData instanceof IVaspCommonData) ? ((IVaspCommonData)aAtomData).typeNames() : ZL_STR);}
+        public static ILine[] plot(IAtomData aAtomData) {
+            @Nullable List<@Nullable String> tSymbols = aAtomData.symbols();
+            String[] rAtomTypes = tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR);
+            for (int tType = 1; tType <= rAtomTypes.length; ++tType) if (rAtomTypes[tType]==null) rAtomTypes[tType] = "type "+tType;
+            return plot(aAtomData, rAtomTypes);
+        }
         
         
         public static void xScaleLog() {validPlotter_(); PLT.xScaleLog();}
