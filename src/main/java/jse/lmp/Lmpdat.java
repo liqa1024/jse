@@ -166,7 +166,10 @@ public class Lmpdat extends AbstractSettableAtomData {
         }
         return this;
     }
-    public Lmpdat setBoxPrism() {return setBoxPrism(0.0, 0.0, 0.0);}
+    public Lmpdat setBoxPrism() {
+        if (isPrism()) return this;
+        return setBoxPrism(0.0, 0.0, 0.0);
+    }
     public Lmpdat setBoxPrism(double aXY, double aXZ, double aYZ) {
         LmpBox oBox = mBox;
         mBox = new LmpBoxPrism(mBox, aXY, aXZ, aYZ);

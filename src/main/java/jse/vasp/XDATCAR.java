@@ -315,7 +315,10 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
         }
         return this;
     }
-    public XDATCAR setBoxPrism() {return setBoxPrism(0.0, 0.0, 0.0);}
+    public XDATCAR setBoxPrism() {
+        if (isPrism()) return this;
+        return setBoxPrism(0.0, 0.0, 0.0);
+    }
     public XDATCAR setBoxPrism(double aIXY, double aIXZ, double aIYZ) {return setBoxPrism(0.0, 0.0, aIXY, 0.0, aIXZ, aIYZ);}
     public XDATCAR setBoxPrism(double aIAy, double aIAz, double aIBx, double aIBz, double aICx, double aICy) {
         VaspBox oBox = mBox;

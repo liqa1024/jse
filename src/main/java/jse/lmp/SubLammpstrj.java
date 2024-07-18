@@ -162,7 +162,11 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         }
         return this;
     }
-    public SubLammpstrj setBoxPrism() {return setBoxPrism(0.0, 0.0, 0.0);}
+    @SuppressWarnings("UnusedReturnValue")
+    public SubLammpstrj setBoxPrism() {
+        if (isPrism()) return this;
+        return setBoxPrism(0.0, 0.0, 0.0);
+    }
     public SubLammpstrj setBoxPrism(double aXY, double aXZ, double aYZ) {
         if (mKeyX == null) throw new UnsupportedOperationException("`setDenseNormalized` for Lammpstrj without x data");
         if (mKeyY == null) throw new UnsupportedOperationException("`setDenseNormalized` for Lammpstrj without y data");

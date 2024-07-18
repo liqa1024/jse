@@ -263,7 +263,10 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         mDirect.col(2).multiply2this(mBox.icz());
         return this;
     }
-    public POSCAR setBoxPrism() {return setBoxPrism(0.0, 0.0, 0.0);}
+    public POSCAR setBoxPrism() {
+        if (isPrism()) return this;
+        return setBoxPrism(0.0, 0.0, 0.0);
+    }
     public POSCAR setBoxPrism(double aIXY, double aIXZ, double aIYZ) {return setBoxPrism(0.0, 0.0, aIXY, 0.0, aIXZ, aIYZ);}
     public POSCAR setBoxPrism(double aIAy, double aIAz, double aIBx, double aIBz, double aICx, double aICy) {
         if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");

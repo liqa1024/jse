@@ -90,7 +90,10 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
         for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setBoxNormal();
         return this;
     }
-    public Lammpstrj setBoxPrism() {return setBoxPrism(0.0, 0.0, 0.0);}
+    public Lammpstrj setBoxPrism() {
+        for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setBoxPrism();
+        return this;
+    }
     public Lammpstrj setBoxPrism(double aXY, double aXZ, double aYZ) {
         for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setBoxPrism(aXY, aXZ, aYZ);
         return this;
