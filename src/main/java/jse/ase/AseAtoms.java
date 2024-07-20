@@ -54,7 +54,7 @@ public class AseAtoms extends AbstractSettableAtomData {
                 mAtomicNumber2Type.put(atomicNumber, tType);
             }
         });
-        mType2AtomicNumber = Vectors.range(mAtomicNumber2Type.size()+1);
+        mType2AtomicNumber = IntVector.zeros(mAtomicNumber2Type.size()+1);
         for (Map.Entry<Integer, Integer> tEntry : mAtomicNumber2Type.entrySet()) {
             mType2AtomicNumber.set(tEntry.getValue(), tEntry.getKey());
         }
@@ -84,16 +84,45 @@ public class AseAtoms extends AbstractSettableAtomData {
     @Override public boolean hasMasse() {return true;}
     @Override public double mass(int aType) {return MASS.get(symbol(aType));}
     
-    /** 支持直接修改 symbols，只会增大种类数，不会减少 */
-    @Override public AseAtoms setSymbols(String... aSymbols) {
-        if (aSymbols==null || aSymbols.length==0) {
-            mAtomicNumbers.opt().map2this(mAtomicNumber2Type::get);
-            mType2AtomicNumber.fill(i -> i);
-            validAtomicNumber2Type_();
-            return this;
+    /** 支持调整种类的顺序，这对于 ase atoms 比较重要 */
+    public AseAtoms setSymbolOrder(String... aSymbolOrder) {
+        if (aSymbolOrder == null) aSymbolOrder = ZL_STR;
+        if (aSymbolOrder.length > atomTypeNumber()) {
+            IIntVector oType2AtomicNumber = mType2AtomicNumber;
+            mType2AtomicNumber = Vectors.range(aSymbolOrder.length+1);
+            mType2AtomicNumber.subVec(0, oType2AtomicNumber.size()).fill(oType2AtomicNumber);
         }
-        if (aSymbols.length > atomTypeNumber()) mType2AtomicNumber = IntVector.zeros(aSymbols.length+1);
-        mType2AtomicNumber.fill(i -> i);
+        for (int tType = 1; tType <= aSymbolOrder.length; ++tType) {
+            @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(aSymbolOrder[tType-1]);
+            if (tAtomicNumber != null) mType2AtomicNumber.set(tType, tAtomicNumber);
+        }
+        // 先更新 mAtomicNumber2Type
+        validAtomicNumber2Type_();
+        // 遍历一次 mAtomicNumbers 确保 mType2AtomicNumber 全部覆盖
+        mAtomicNumbers.forEach(atomicNumber -> {
+            if (!mAtomicNumber2Type.containsKey(atomicNumber)) {
+                int tType = mAtomicNumber2Type.size() + 1;
+                mAtomicNumber2Type.put(atomicNumber, tType);
+            }
+        });
+        // 如果有缺失需要补充
+        if (mAtomicNumbers.size() > atomTypeNumber()) {
+            mType2AtomicNumber = IntVector.zeros(mAtomicNumber2Type.size()+1);
+            for (Map.Entry<Integer, Integer> tEntry : mAtomicNumber2Type.entrySet()) {
+                mType2AtomicNumber.set(tEntry.getValue(), tEntry.getKey());
+            }
+        }
+        return this;
+    }
+    
+    /** 支持直接修改 symbols，只会增大种类数，不会减少；少于种类数时会保留旧值 */
+    @Override public AseAtoms setSymbols(String... aSymbols) {
+        if (aSymbols == null) aSymbols = ZL_STR;
+        if (aSymbols.length > atomTypeNumber()) {
+            IIntVector oType2AtomicNumber = mType2AtomicNumber;
+            mType2AtomicNumber = Vectors.range(aSymbols.length+1);
+            mType2AtomicNumber.subVec(0, oType2AtomicNumber.size()).fill(oType2AtomicNumber);
+        }
         for (int tType = 1; tType <= aSymbols.length; ++tType) {
             @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(aSymbols[tType-1]);
             if (tAtomicNumber != null) mType2AtomicNumber.set(tType, tAtomicNumber);
