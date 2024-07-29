@@ -1045,11 +1045,17 @@ public class UT {
         public static List<String> splitNodeList(String aRawNodeList) {
             List<String> rOutput = new ArrayList<>();
             
-            // Remove the "cn", "[" and "]" characters
-            String tTrimmedStr = aRawNodeList.replace("cn", "").replace("[", "").replace("]", "");
+            // check for "[", "]"
+            int tListStart = aRawNodeList.indexOf("[");
+            if (tListStart < 0) {
+                rOutput.add(aRawNodeList);
+                return rOutput;
+            }
+            String tHeadStr = aRawNodeList.substring(0, tListStart);
+            String tListStr = aRawNodeList.substring(tListStart+1, aRawNodeList.length()-1);
             
             // Split the string by comma
-            String[] tArray = tTrimmedStr.split(",");
+            String[] tArray = tListStr.split(",");
             
             // Range of numbers
             Pattern tPattern = Pattern.compile("([0-9]+)-([0-9]+)");
@@ -1059,12 +1065,12 @@ public class UT {
                 if (tMatcher.find()) {
                     int tStart = Integer.parseInt(tMatcher.group(1));
                     int tEnd = Integer.parseInt(tMatcher.group(2));
-                    for (int i = tStart; i <= tEnd; i++) {
-                        rOutput.add("cn" + i);
+                    for (int i = tStart; i <= tEnd; ++i) {
+                        rOutput.add(tHeadStr + i);
                     }
                 } else {
                     // Single number
-                    rOutput.add("cn" + tRange);
+                    rOutput.add(tHeadStr + tRange);
                 }
             }
             
