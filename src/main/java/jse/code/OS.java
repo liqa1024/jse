@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -66,7 +67,8 @@ public class OS {
         try {tProcess = Runtime.getRuntime().exec(IS_WINDOWS ? "cmd /c cd" : "pwd");}
         catch (IOException ignored) {}
         if (tProcess != null) {
-            try (BufferedReader tReader = new BufferedReader(new InputStreamReader(tProcess.getInputStream()))) {
+            // 注意自 jdk18 起，默认 charset 统一成了 UTF-8，因此对于 cmd 需要手动指定为 GBK
+            try (BufferedReader tReader = new BufferedReader(new InputStreamReader(tProcess.getInputStream(), IS_WINDOWS ? "GBK" : Charset.defaultCharset().name()))) {
                 tProcess.waitFor();
                 wd = tReader.readLine().trim();
             } catch (Exception ignored) {
