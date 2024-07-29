@@ -1045,14 +1045,36 @@ public class UT {
         public static List<String> splitNodeList(String aRawNodeList) {
             List<String> rOutput = new ArrayList<>();
             
-            // check for "[", "]"
-            int tListStart = aRawNodeList.indexOf("[");
-            if (tListStart < 0) {
-                rOutput.add(aRawNodeList);
-                return rOutput;
+            int tLen = aRawNodeList.length();
+            boolean tInBlock = false;
+            int tStart = 0;
+            for (int i = 0; i < tLen; ++i) {
+                if (tInBlock) {
+                    if (aRawNodeList.charAt(i) == ']') tInBlock = false;
+                    continue;
+                }
+                if (aRawNodeList.charAt(i) == '[') {
+                    tInBlock = true;
+                    continue;
+                }
+                if (aRawNodeList.charAt(i) == ',') {
+                    splitNodeList_(aRawNodeList.substring(tStart, i), rOutput);
+                    tStart = i+1;
+                }
             }
-            String tHeadStr = aRawNodeList.substring(0, tListStart);
-            String tListStr = aRawNodeList.substring(tListStart+1, aRawNodeList.length()-1);
+            splitNodeList_(aRawNodeList.substring(tStart, tLen), rOutput);
+            
+            return rOutput;
+        }
+        private static void splitNodeList_(String aSubRawNodeList, List<String> rNodeList) {
+            // check for "[", "]"
+            int tListStart = aSubRawNodeList.indexOf("[");
+            if (tListStart < 0) {
+                rNodeList.add(aSubRawNodeList);
+                return;
+            }
+            String tHeadStr = aSubRawNodeList.substring(0, tListStart);
+            String tListStr = aSubRawNodeList.substring(tListStart+1, aSubRawNodeList.length()-1);
             
             // Split the string by comma
             String[] tArray = tListStr.split(",");
@@ -1063,18 +1085,18 @@ public class UT {
             for (String tRange : tArray) {
                 Matcher tMatcher = tPattern.matcher(tRange);
                 if (tMatcher.find()) {
-                    int tStart = Integer.parseInt(tMatcher.group(1));
+                    String tStartStr = tMatcher.group(1);
+                    int tMinLen = tStartStr.length();
+                    int tStart = Integer.parseInt(tStartStr);
                     int tEnd = Integer.parseInt(tMatcher.group(2));
                     for (int i = tStart; i <= tEnd; ++i) {
-                        rOutput.add(tHeadStr + i);
+                        rNodeList.add(String.format("%s%0"+tMinLen+"d", tHeadStr, i));
                     }
                 } else {
                     // Single number
-                    rOutput.add(tHeadStr + tRange);
+                    rNodeList.add(tHeadStr + tRange);
                 }
             }
-            
-            return rOutput;
         }
         
         
