@@ -56,7 +56,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     private final double mUnitLen; // 平均单个原子的距离
     
     private final NeighborListGetter mNL;
-    private final long mInitThreadID;
+    private final Thread mInitThread;
     
     /** IThreadPoolContainer stuffs */
     private volatile boolean mDead = false;
@@ -65,8 +65,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         mNL.shutdown(); // 内部保证执行后内部的 mAtomDataXYZ 已经置为 null
         // 此时 MPC 关闭，归还 mAtomDataXYZ，这种写法保证永远能获取到 mAtomDataXYZ 时都是合法的
         // 只有相同线程关闭才会归还
-        long tThreadID = Thread.currentThread().getId();
-        if (tThreadID == mInitThreadID) {
+        Thread tThread = Thread.currentThread();
+        if (tThread == mInitThread) {
             IMatrix oAtomDataXYZ = mAtomDataXYZ;
             IIntVector oAtomNumType = mAtomNumType;
             IIntVector oTypeVec = mTypeVec;
@@ -77,9 +77,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             IntVectorCache.returnVec(oAtomNumType);
             IntVectorCache.returnVec(oTypeVec);
         } else {
-            UT.Code.warning("ThreadID of shutdown() and init should be SAME in MonatomicParameterCalculator");
+            UT.Code.warning("Thread of shutdown() and init should be SAME in MonatomicParameterCalculator");
         }
-        if (tThreadID == mInitBufferNLThreadID) {
+        if (tThread == mInitBufferNLThread) {
             if (mBufferedNL != null) {
                 BufferedNL oBufferedNL = mBufferedNL;
                 mBufferedNL = null;
@@ -121,7 +121,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         mUnitLen = Fast.cbrt(1.0/ mRho);
         
         mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox);
-        mInitThreadID = Thread.currentThread().getId();
+        mInitThread = Thread.currentThread();
     }
     /** @deprecated use {@link #of} */ @SuppressWarnings("DeprecatedIsStillUsed") @Deprecated
     MonatomicParameterCalculator(IAtomData aAtomData) {this(aAtomData, 1);}
@@ -1334,7 +1334,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     
     // 简单处理这里直接缓存整个对象，而内部不再缓存
     private @Nullable BufferedNL mBufferedNL = null;
-    private long mInitBufferNLThreadID = -1;
+    private @Nullable Thread mInitBufferNLThread = null;
     private final static IObjectPool<BufferedNL> sBufferedNLCache = new ThreadLocalObjectCachePool<>();
     
     private void initBufferNL_() {
@@ -1348,8 +1348,8 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             mBufferedNL.setAtomNum(mAtomNum);
             mBufferedNL.reset();
         }
-        mInitBufferNLThreadID = Thread.currentThread().getId();
-        if (mInitBufferNLThreadID != mInitThreadID) UT.Code.warning("ThreadID of initBufferNL() and init should be SAME in MonatomicParameterCalculator");
+        mInitBufferNLThread = Thread.currentThread();
+        if (mInitBufferNLThread != mInitThread) UT.Code.warning("Thread of initBufferNL() and init should be SAME in MonatomicParameterCalculator");
     }
     
     /**

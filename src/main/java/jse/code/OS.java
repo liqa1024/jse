@@ -64,7 +64,7 @@ public class OS {
         // 这种写法可以保证有最大的兼容性，即使后续 EXE 可能非法（不是所有平台都有 bash）
         String wd = USER_HOME;
         Process tProcess = null;
-        try {tProcess = Runtime.getRuntime().exec(IS_WINDOWS ? "cmd /c cd" : "pwd");}
+        try {tProcess = new ProcessBuilder(IS_WINDOWS ? new String[]{"cmd", "/c", "cd"} : new String[]{"pwd"}).start();}
         catch (IOException ignored) {}
         if (tProcess != null) {
             // 注意自 jdk18 起，默认 charset 统一成了 UTF-8，因此对于 cmd 需要手动指定为 GBK

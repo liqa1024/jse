@@ -13,6 +13,9 @@
       <excludeFolder url="file://$MODULE_DIR$/lib/mimalloc" />
       <excludeFolder url="file://$MODULE_DIR$/lib/python" />
       <excludeFolder url="file://$MODULE_DIR$/lib/jniutil" />
+      <excludeFolder url="file://$MODULE_DIR$/.temp" />
+      <excludeFolder url="file://$MODULE_DIR$/lmp" />
+      <excludeFolder url="file://$MODULE_DIR$/vasp" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.util.*;
 
 import static jse.code.OS.*;
@@ -252,7 +252,7 @@ public class NativeLmp implements IAutoShutdown {
         if (NATIVELMP_SRC_DIR!=null && !UT.IO.isDir(NATIVELMP_SRC_DIR)) {
             String tNativeLmpZipPath = tWorkingDir+"lammps-"+Conf.LMP_TAG+".zip";
             System.out.printf("NATIVE_LMP INIT INFO: No lammps in %s, downloading the source code...\n", NATIVELMP_SRC_DIR);
-            UT.IO.copy(new URL(String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.zip", Conf.LMP_TAG)), tNativeLmpZipPath);
+            UT.IO.copy(URI.create(String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.zip", Conf.LMP_TAG)).toURL(), tNativeLmpZipPath);
             System.out.println("NATIVE_LMP INIT INFO: Lammps source code downloading finished.");
             // 解压 lammps 到临时目录，如果已经存在则直接清空此目录
             String tNativeLmpTempSrcDir = tWorkingDir+"temp/";
@@ -428,7 +428,7 @@ public class NativeLmp implements IAutoShutdown {
     
     
     private final long mLmpPtr;
-    private final long mInitTheadID; // lammps 需要保证初始化时的线程和调用时的是相同的
+    private final Thread mInitThead; // lammps 需要保证初始化时的线程和调用时的是相同的
     private boolean mDead = false;
     /**
      * Create an instance of the LAMMPS Java class.
@@ -456,7 +456,7 @@ public class NativeLmp implements IAutoShutdown {
         if (aArgs != null) System.arraycopy(aArgs, 0, tArgs, 1, aArgs.length);
         mLmpPtr = aComm==null ? lammpsOpen_(tArgs) : lammpsOpen_(tArgs, aComm.ptr_());
         if (mLmpPtr==0 || mLmpPtr==-1) throw new LmpException("Failed to init a NativeLmp: "+mLmpPtr);
-        mInitTheadID = Thread.currentThread().getId();
+        mInitThead = Thread.currentThread();
     }
     public NativeLmp(Collection<? extends CharSequence> aArgs, @Nullable MPI.Comm aComm) throws LmpException {this(UT.Text.toArray(aArgs), aComm);}
     public NativeLmp(String... aArgs) throws LmpException {this(aArgs, null);}
@@ -467,11 +467,11 @@ public class NativeLmp implements IAutoShutdown {
     private native static long lammpsOpen_(String[] aArgs) throws LmpException;
     
     public boolean threadValid() {
-        return Thread.currentThread().getId() == mInitTheadID;
+        return Thread.currentThread() == mInitThead;
     }
     public void checkThread() throws LmpException {
-        long tCurrentThreadID = Thread.currentThread().getId();
-        if (tCurrentThreadID != mInitTheadID) throw new LmpException("Thread of NativeLmp MUST be SAME: "+tCurrentThreadID+" vs "+mInitTheadID);
+        Thread tCurrentThread = Thread.currentThread();
+        if (tCurrentThread != mInitThead) throw new LmpException("Thread of NativeLmp MUST be SAME: "+tCurrentThread+" vs "+mInitThead);
     }
     
     /**
