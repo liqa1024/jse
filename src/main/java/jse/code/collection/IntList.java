@@ -122,6 +122,11 @@ public class IntList implements ISlice, IDataShell<int[]> {
         System.arraycopy(mData, 0, tData, 0, mSize);
         return new IntList(mSize, tData);
     }
+    @ApiStatus.Experimental
+    public void removeLast() {
+        if (isEmpty()) throw new NoSuchElementException("Cannot removeLast() from an empty IntList");
+        --mSize;
+    }
     
     
     /** IDataShell stuffs */

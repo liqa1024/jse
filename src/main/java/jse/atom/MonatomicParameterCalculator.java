@@ -141,11 +141,12 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     
     
     /** 内部使用方法，用来将 aAtomDataXYZ 转换成内部存储的格式，并且处理精度问题造成的超出边界问题 */
-    @ApiStatus.Internal static void setValidXYZ_(IBox aBox, IMatrix rXYZMat, IXYZ aXYZ, int aRow, XYZ rBuf) {
+    private static void setValidXYZ_(IBox aBox, IMatrix rXYZMat, double aX, double aY, double aZ, int aRow, @Nullable XYZ rBuf) {
         if (aBox.isPrism()) {
             // 斜方情况需要转为 Direct 再 wrap，
             // 完事后再转回 Cartesian
-            rBuf.setXYZ(aXYZ);
+            assert rBuf != null;
+            rBuf.setXYZ(aX, aY, aZ);
             aBox.toDirect(rBuf);
             if      (rBuf.mX <  0.0) {do {++rBuf.mX;} while (rBuf.mX <  0.0);}
             else if (rBuf.mX >= 1.0) {do {--rBuf.mX;} while (rBuf.mX >= 1.0);}
@@ -158,20 +159,19 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
             rXYZMat.set(aRow, 1, rBuf.mY);
             rXYZMat.set(aRow, 2, rBuf.mZ);
         } else {
-            double tX = aXYZ.x(), tY = aXYZ.y(), tZ = aXYZ.z();
-            if      (tX <  0.0     ) {do {tX += aBox.x();} while (tX <  0.0     );}
-            else if (tX >= aBox.x()) {do {tX -= aBox.x();} while (tX >= aBox.x());}
-            if      (tY <  0.0     ) {do {tY += aBox.y();} while (tY <  0.0     );}
-            else if (tY >= aBox.y()) {do {tY -= aBox.y();} while (tY >= aBox.y());}
-            if      (tZ <  0.0     ) {do {tZ += aBox.z();} while (tZ <  0.0     );}
-            else if (tZ >= aBox.z()) {do {tZ -= aBox.z();} while (tZ >= aBox.z());}
-            rXYZMat.set(aRow, 0, tX);
-            rXYZMat.set(aRow, 1, tY);
-            rXYZMat.set(aRow, 2, tZ);
+            if      (aX <  0.0     ) {do {aX += aBox.x();} while (aX <  0.0     );}
+            else if (aX >= aBox.x()) {do {aX -= aBox.x();} while (aX >= aBox.x());}
+            if      (aY <  0.0     ) {do {aY += aBox.y();} while (aY <  0.0     );}
+            else if (aY >= aBox.y()) {do {aY -= aBox.y();} while (aY >= aBox.y());}
+            if      (aZ <  0.0     ) {do {aZ += aBox.z();} while (aZ <  0.0     );}
+            else if (aZ >= aBox.z()) {do {aZ -= aBox.z();} while (aZ >= aBox.z());}
+            rXYZMat.set(aRow, 0, aX);
+            rXYZMat.set(aRow, 1, aY);
+            rXYZMat.set(aRow, 2, aZ);
         }
     }
-    private void setValidXYZ_(IMatrix rXYZMat, IXYZ aXYZ, int aRow, XYZ rBuf) {
-        setValidXYZ_(mBox, rXYZMat, aXYZ, aRow, rBuf);
+    private void setValidXYZ_(IMatrix rXYZMat, IXYZ aXYZ, int aRow, @Nullable XYZ rBuf) {
+        setValidXYZ_(mBox, rXYZMat, aXYZ.x(), aXYZ.y(), aXYZ.z(), aRow, rBuf);
     }
     private IMatrix getValidAtomDataXYZ_(Collection<? extends IXYZ> aAtomDataXYZ) {
         int tSize = aAtomDataXYZ.size();
@@ -214,9 +214,31 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public final double birou(int aTypeA, int aTypeB) {return birho(aTypeA, aTypeB);}
     /** @deprecated use {@link #birho} */
     public final double birou(MonatomicParameterCalculator aMPC) {return birho(aMPC);}
+    /** 现在支持合法修改 MPC 中的原子位置和种类 */
+    public MonatomicParameterCalculator setAtomXYZ(int aIdx, IXYZ aXYZ) {return setAtomXYZ(aIdx, aXYZ.x(), aXYZ.y(), aXYZ.z());}
+    public MonatomicParameterCalculator setAtomXYZ(int aIdx, double aX, double aY, double aZ) {
+        double oX = mAtomDataXYZ.get(aIdx, 0);
+        double oY = mAtomDataXYZ.get(aIdx, 1);
+        double oZ = mAtomDataXYZ.get(aIdx, 2);
+        @Nullable XYZ tBuf = mBox.isPrism() ? new XYZ() : null;
+        setValidXYZ_(mBox, mAtomDataXYZ, aX, aY, aZ, aIdx, tBuf);
+        mNL.updateAtomXYZ_(aIdx, oX, oY, oZ, tBuf);
+        // 这里简单处理，直接清空缓存列表
+        if (mBufferedNL != null) mBufferedNL.reset();
+        return this;
+    }
+    public MonatomicParameterCalculator setAtomType(int aIdx, int aType) {
+        // 简单更新
+        if (aType > mAtomTypeNum) throw new IllegalArgumentException("input type ("+aType+") Must <= ntypes ("+mAtomTypeNum+")");
+        mAtomNumType.decrement(mTypeVec.get(aIdx)-1);
+        mTypeVec.set(aIdx, aType);
+        mAtomNumType.increment(aType-1);
+        return this;
+    }
     /** 补充运算时使用 */
     @ApiStatus.Internal public NeighborListGetter nl_() {return mNL;}
     @ApiStatus.Internal public IMatrix atomDataXYZ_() {return mAtomDataXYZ;}
+    @ApiStatus.Internal public IIntVector atomType_() {return mTypeVec;}
     
     
     /// 计算方法

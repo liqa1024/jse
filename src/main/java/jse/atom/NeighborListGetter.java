@@ -8,6 +8,7 @@ import jse.code.functional.IIndexFilter;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.parallel.IShutdownable;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -62,6 +63,12 @@ public class NeighborListGetter implements IShutdownable {
         mMinBox = mBoxXYZ.min();
         mAllCellsAlloc = sAllCellsAllocCache.getObject();
         mInitThread = Thread.currentThread();
+    }
+    
+    @ApiStatus.Internal void updateAtomXYZ_(int aIdx, double oX, double oY, double oZ, @Nullable XYZ rBuf) {
+        for (ILinkedCell tLinkedCell : mLinkedCells.values()) {
+            tLinkedCell.updateAtomXYZ_(aIdx, oX, oY, oZ, rBuf);
+        }
     }
     
     /** 直接使用 ObjectCachePool 避免重复创建临时变量 */
@@ -158,6 +165,7 @@ public class NeighborListGetter implements IShutdownable {
         void forEachNeighbor(int aIdx, boolean aHalf, @Nullable IIndexFilter aRegion, IXYZIdxDo aXYZIdxDo);
         void forEachCell(IntConsumer aIdxDo);
         void forEachMirrorCell(IXYZIdxDo aXYZIdxDo);
+        @ApiStatus.Internal default void updateAtomXYZ_(int aIdx, double oX, double oY, double oZ, @Nullable XYZ rBuf) {/**/}
     }
     
     /** 一般的 LinkedCell 实现 */
@@ -192,6 +200,48 @@ public class NeighborListGetter implements IShutdownable {
                 }
             }
         }
+        
+        @ApiStatus.Internal @Override public void updateAtomXYZ_(int aIdx, double oX, double oY, double oZ, @Nullable XYZ rBuf) {
+            double tX = mAtomDataXYZ.get(aIdx, 0);
+            double tY = mAtomDataXYZ.get(aIdx, 1);
+            double tZ = mAtomDataXYZ.get(aIdx, 2);
+            int oI, oJ, oK;
+            int tI, tJ, tK;
+            if (mBox.isPrism()) {
+                assert rBuf != null;
+                rBuf.setXYZ(oX, oY, oY);
+                mBox.toDirect(rBuf);
+                oI = MathEX.Code.floor2int(rBuf.mX * mSizeX);
+                oJ = MathEX.Code.floor2int(rBuf.mY * mSizeY);
+                oK = MathEX.Code.floor2int(rBuf.mZ * mSizeZ);
+                rBuf.setXYZ(tX, tY, tZ);
+                mBox.toDirect(rBuf);
+                tI = MathEX.Code.floor2int(rBuf.mX * mSizeX);
+                tJ = MathEX.Code.floor2int(rBuf.mY * mSizeY);
+                tK = MathEX.Code.floor2int(rBuf.mZ * mSizeZ);
+            } else {
+                assert mCellBoxXYZ != null;
+                oI = MathEX.Code.floor2int(oX / mCellBoxXYZ.mX);
+                oJ = MathEX.Code.floor2int(oY / mCellBoxXYZ.mY);
+                oK = MathEX.Code.floor2int(oZ / mCellBoxXYZ.mZ);
+                tI = MathEX.Code.floor2int(tX / mCellBoxXYZ.mX);
+                tJ = MathEX.Code.floor2int(tY / mCellBoxXYZ.mY);
+                tK = MathEX.Code.floor2int(tZ / mCellBoxXYZ.mZ);
+            }
+            if (oI==tI && oJ==tJ && oK==tK) return;
+            // 从 oCell 中移除，并添加到 tCell 中
+            Cell oCell = mCells.get(idx(oI, oJ, oK));
+            int i = 0;
+            final int oSize = oCell.size();
+            for (; i < oSize; ++i) {
+                if (oCell.get(i) == aIdx) break;
+            }
+            // 采用和最后一个交换的方法来移除
+            oCell.set(i, oCell.last());
+            oCell.removeLast();
+            mCells.get(idx(tI, tJ, tK)).add(aIdx);
+        }
+        
         private int idx(int i, int j, int k) {
             if (i<0 || i>=mSizeX || j<0 || j>=mSizeY || k<0 || k>=mSizeZ) throw new IndexOutOfBoundsException(String.format("Index: (%d, %d, %d)", i, j, k));
             return (i + mSizeX*j + mSizeX*mSizeY*k);
