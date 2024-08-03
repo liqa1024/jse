@@ -958,7 +958,7 @@ public class NativeLmp implements IAutoShutdown {
         command(String.format("region          box block 0 %f 0 %f 0 %f", tBox.x(), tBox.y(), tBox.z()));
         int tAtomTypeNum = aAtomData.atomTypeNumber();
         command(String.format("create_box      %d box", tAtomTypeNum));
-        if (aAtomData.hasMasse()) for (int tType = 1; tType <= tAtomTypeNum; ++tType) {
+        if (aAtomData.hasMass()) for (int tType = 1; tType <= tAtomTypeNum; ++tType) {
         double tMass = aAtomData.mass(tType);
         if (!Double.isNaN(tMass)) {
         command(String.format("mass            %d %f", tType, tMass));

@@ -8,6 +8,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
+import static jse.code.CS.ZL_STR;
+
 
 /**
  * @author liqa
@@ -23,7 +25,7 @@ public abstract class AbstractAtomData implements IAtomData {
     @Override public boolean hasVelocity() {return false;}
     @Override public boolean hasSymbol() {return false;}
     @Override public @Nullable String symbol(int aType) {return null;}
-    @Override public boolean hasMasse() {return false;}
+    @Override public boolean hasMass() {return false;}
     @Override public double mass(int aType) {return Double.NaN;}
     
     @Override public @Nullable List<@Nullable String> symbols() {
@@ -34,7 +36,7 @@ public abstract class AbstractAtomData implements IAtomData {
         };
     }
     @Override public @Nullable IVector masses() {
-        if (!hasMasse()) return null;
+        if (!hasMass()) return null;
         return new RefVector() {
             @Override public double get(int aIdx) {return mass(aIdx+1);}
             @Override public int size() {return atomTypeNumber();}
@@ -47,7 +49,7 @@ public abstract class AbstractAtomData implements IAtomData {
         @Override public @Nullable String symbol() {return AbstractAtomData.this.symbol(type());}
         @Override public boolean hasSymbol() {return AbstractAtomData.this.hasSymbol();}
         @Override public double mass() {return AbstractAtomData.this.mass(type());}
-        @Override public boolean hasMass() {return AbstractAtomData.this.hasMasse();}
+        @Override public boolean hasMass() {return AbstractAtomData.this.hasMass();}
     }
     
     
@@ -121,25 +123,31 @@ public abstract class AbstractAtomData implements IAtomData {
     /**  默认拷贝会直接使用 {@code List<IAtom>} 来存储，尽管这会占据更多的内存并且会抹除速度信息 */
     @Override public ISettableAtomData copy() {
         final boolean tHasVelocities = hasVelocity();
+        @Nullable List<@Nullable String> tSymbols = symbols();
         return new SettableAtomData(
             NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (Atom::new)),
-            atomTypeNumber(), box().copy(), tHasVelocities
+            atomTypeNumber(), box().copy(), tHasVelocities,
+            tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR)
         );
     }
     /** 这两个方法返回结果要保证一定可以进行修改 */
     protected ISettableAtomData newSame_() {
         final boolean tHasVelocities = hasVelocity();
+        @Nullable List<@Nullable String> tSymbols = symbols();
         return new SettableAtomData(
             NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (Atom::new)),
-            atomTypeNumber(), box().copy(), tHasVelocities
+            atomTypeNumber(), box().copy(), tHasVelocities,
+            tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR)
         );
     }
     protected ISettableAtomData newZeros_(int aAtomNum) {return newZeros_(aAtomNum, box().copy());}
     protected ISettableAtomData newZeros_(int aAtomNum, IBox aBox) {
         final boolean tHasVelocities = hasVelocity();
+        @Nullable List<@Nullable String> tSymbols = symbols();
         return new SettableAtomData(
             NewCollections.from(aAtomNum, tHasVelocities ? (i -> new AtomFull()) : (i -> new Atom())),
-            atomTypeNumber(), aBox, tHasVelocities
+            atomTypeNumber(), aBox, tHasVelocities,
+            tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR)
         );
     }
 }

@@ -1,6 +1,7 @@
 package jse.atom;
 
 import jse.cache.LogicalVectorCache;
+import jse.code.CS;
 import jse.code.collection.*;
 import jse.code.functional.IFilter;
 import jse.code.functional.IIndexFilter;
@@ -9,8 +10,11 @@ import jse.math.MathEX;
 import jse.math.vector.ILogicalVector;
 import jse.math.vector.IVector;
 import jse.math.vector.IntVector;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+
+import static jse.code.CS.ZL_STR;
 
 
 /**
@@ -232,7 +236,8 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     /** 用于方便内部使用 */
     private IAtomData refAtomData_(List<? extends IAtom> aAtoms) {
         IAtomData tThis = thisAtomData_();
-        return new AtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasVelocity());
+        @Nullable List<@Nullable String> tSymbols = tThis.symbols();
+        return new AtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
     
     /** stuff to override */

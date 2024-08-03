@@ -8,9 +8,12 @@ import jse.code.iterator.IIntIterator;
 import jse.math.vector.IIntVector;
 import jse.math.vector.IVector;
 import jse.math.vector.IntVector;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Random;
+
+import static jse.code.CS.ZL_STR;
 
 
 public abstract class AbstractSettableAtomDataOperation extends AbstractAtomDataOperation implements ISettableAtomDataOperation {
@@ -131,7 +134,8 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
     /** 用于方便内部使用 */
     private ISettableAtomData refAtomData_(List<? extends ISettableAtom> aAtoms) {
         ISettableAtomData tThis = thisAtomData_();
-        return new SettableAtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasVelocity());
+        @Nullable List<@Nullable String> tSymbols = tThis.symbols();
+        return new SettableAtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
     
     /** stuff to override */

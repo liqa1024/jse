@@ -52,7 +52,7 @@ public interface IAtomData {
     boolean hasSymbol();
     @Nullable List<@Nullable String> symbols();
     @Nullable String symbol(int aType);
-    boolean hasMasse();
+    boolean hasMass();
     @Nullable IVector masses();
     double mass(int aType);
     

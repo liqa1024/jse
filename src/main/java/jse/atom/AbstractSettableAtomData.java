@@ -39,7 +39,7 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
         @Override public @Nullable String symbol() {return AbstractSettableAtomData.this.symbol(type());}
         @Override public boolean hasSymbol() {return AbstractSettableAtomData.this.hasSymbol();}
         @Override public double mass() {return AbstractSettableAtomData.this.mass(type());}
-        @Override public boolean hasMass() {return AbstractSettableAtomData.this.hasMasse();}
+        @Override public boolean hasMass() {return AbstractSettableAtomData.this.hasMass();}
     }
     
     

@@ -3,7 +3,12 @@ package jse.atom;
 
 import jse.code.collection.AbstractRandomAccessList;
 import jse.math.MathEX;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+
+import java.util.List;
+
+import static jse.code.CS.ZL_STR;
 
 
 /**
@@ -203,6 +208,7 @@ public class AbstractAtoms {
             aBox.cx()*aRepeatZ, aBox.cy()*aRepeatZ, aBox.cz()*aRepeatZ
             ) : new Box(aBox.x()*aRepeatX, aBox.y()*aRepeatY, aBox.z()*aRepeatZ);
         final int tLatticeNum = aLattice.atomNumber();
+        @Nullable List<@Nullable String> tSymbols = aLattice.symbols();
         return new AtomData(new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(final int index) {
                 final IAtom tAtom = aLattice.atom(index%tLatticeNum);
@@ -233,7 +239,7 @@ public class AbstractAtoms {
             @Override public int size() {
                 return tLatticeNum*aRepeatX*aRepeatY*aRepeatZ;
             }
-        }, aLattice.atomTypeNumber(), tBox);
+        }, aLattice.atomTypeNumber(), tBox, aLattice.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
     public static IAtomData from(IAtomData aLattice, int aRepeat) {return from(aLattice, aRepeat, aRepeat, aRepeat);}
 }

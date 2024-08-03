@@ -84,7 +84,7 @@ public class AseAtoms extends AbstractSettableAtomData {
     @Override public boolean hasVelocity() {return mMomenta != null;}
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return ATOMIC_NUMBER_TO_SYMBOL.get(mType2AtomicNumber.get(aType));}
-    @Override public boolean hasMasse() {return true;}
+    @Override public boolean hasMass() {return true;}
     @Override public double mass(int aType) {return MASS.get(symbol(aType));}
     
     /** 支持调整种类的顺序，这对于 ase atoms 比较重要 */

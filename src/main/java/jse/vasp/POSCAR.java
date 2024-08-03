@@ -92,7 +92,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     /// 获取属性
     @Override public boolean hasSymbol() {return mTypeNames!=null;}
     @Override public @Nullable String symbol(int aType) {return mTypeNames==null ? null : mTypeNames[aType-1];}
-    @Override public boolean hasMasse() {return hasSymbol();}
+    @Override public boolean hasMass() {return hasSymbol();}
     @Override public double mass(int aType) {
         @Nullable String tSymbol = symbol(aType);
         return tSymbol==null ? Double.NaN : MASS.getOrDefault(tSymbol, Double.NaN);

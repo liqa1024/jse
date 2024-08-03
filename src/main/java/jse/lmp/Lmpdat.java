@@ -287,9 +287,9 @@ public class Lmpdat extends AbstractSettableAtomData {
     public IMatrix positions() {return mAtomXYZ;}
     public @Nullable IMatrix velocities() {return mVelocities;}
     @Override public boolean hasVelocity() {return mVelocities != null;}
-    @Override public boolean hasMasse() {return mMasses!=null;}
+    @Override public boolean hasMass() {return mMasses!=null;}
     @Override public double mass(int aType) {return mMasses==null ? Double.NaN : mMasses.get(aType-1);}
-    @Override public boolean hasSymbol() {return hasMasse();}
+    @Override public boolean hasSymbol() {return this.hasMass();}
     @Override public @Nullable String symbol(int aType) {
         // 直接通过质量来猜测元素种类，直接遍历，误差在 0.1 内即可
         double tMass = mass(aType);
