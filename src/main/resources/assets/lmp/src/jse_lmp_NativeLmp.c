@@ -450,6 +450,14 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractAtomLong_1(JNIEnv *aE
             return;
         }}
 }
+JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsExtractAtomCPointer_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aName) {
+    char *tName = parseStr(aEnv, aName);
+    void *tRef = lammps_extract_atom((void *)(intptr_t)aLmpPtr, tName); // NO need to free due to it is lammps internal data
+    jboolean tHasException = exceptionCheckLMP(aEnv, (void *)(intptr_t)aLmpPtr);
+    FREE(tName);
+    if (tHasException) return 0;
+    return (jlong)(intptr_t)tRef;
+}
 JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsScatter_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aName, jboolean aIsDouble, jint aAtomNum, jint aCount, jdoubleArray aData) {
     void *tDataBuf;
     if (aIsDouble) {

@@ -1,11 +1,13 @@
 package jse.clib;
 
+import org.jetbrains.annotations.ApiStatus;
+
 /**
  * 当作 C 中的 {@code void **} 处理的指针，
  * 用于处理一般的 C 数组
  */
 public class NestedCPointer extends CPointer {
-    protected NestedCPointer(long aPtr) {super(aPtr);}
+    @ApiStatus.Internal public NestedCPointer(long aPtr) {super(aPtr);}
     
     public static NestedCPointer malloc(int aCount) {
         return new NestedCPointer(malloc_(aCount * typeSize()));

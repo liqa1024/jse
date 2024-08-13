@@ -161,6 +161,14 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractAtomLong_1
 
 /*
  * Class:     jse_lmp_NativeLmp
+ * Method:    lammpsExtractAtomCPointer_
+ * Signature: (JLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsExtractAtomCPointer_1
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     jse_lmp_NativeLmp
  * Method:    lammpsScatter_
  * Signature: (JLjava/lang/String;ZII[D)V
  */

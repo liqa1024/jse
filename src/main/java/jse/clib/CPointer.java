@@ -166,7 +166,7 @@ public class CPointer {
     
     
     protected long mPtr;
-    protected CPointer(long aPtr) {mPtr = aPtr;}
+    @ApiStatus.Internal public CPointer(long aPtr) {mPtr = aPtr;}
     @ApiStatus.Internal public final long ptr_() {return mPtr;}
     
     public static CPointer malloc(int aCount) {

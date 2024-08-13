@@ -7,6 +7,7 @@ import jse.cache.DoubleArrayCache;
 import jse.cache.IntArrayCache;
 import jse.cache.IntMatrixCache;
 import jse.cache.MatrixCache;
+import jse.clib.CPointer;
 import jse.clib.JNIUtil;
 import jse.clib.MiMalloc;
 import jse.code.OS;
@@ -820,11 +821,22 @@ public class NativeLmp implements IAutoShutdown {
         lammpsExtractAtomInt_(mLmpPtr, aName, aDataType, aRowNum, aColNum, rData.internalData());
         return rData;
     }
+    
+    /**
+     * 直接获取原子数据的 C 指针，用于只获取部分数据而不是整体，
+     * 可以避免整体值拷贝带来的损耗。
+     * @param aName name of the property
+     * @return {@link CPointer} of lammps internal atom data
+     */
+    public CPointer localAtomCPointerDataOf(String aName) throws LmpException {
+        return new CPointer(lammpsExtractAtomCPointer_(mLmpPtr, aName));
+    }
     private native static void lammpsGatherConcat_(long aLmpPtr, String aName, boolean aIsDouble, int aCount, double[] rData) throws LmpException, MPIException;
     private native static void lammpsGatherConcatInt_(long aLmpPtr, String aName, int aCount, int[] rData) throws LmpException, MPIException;
     private native static void lammpsExtractAtom_(long aLmpPtr, String aName, int aDataType, int aAtomNum, int aCount, double[] rData) throws LmpException;
     private native static void lammpsExtractAtomInt_(long aLmpPtr, String aName, int aDataType, int aAtomNum, int aCount, int[] rData) throws LmpException;
     private native static void lammpsExtractAtomLong_(long aLmpPtr, String aName, int aDataType, int aAtomNum, int aCount, long[] rData) throws LmpException;
+    private native static long lammpsExtractAtomCPointer_(long aLmpPtr, String aName) throws LmpException;
     
     /**
      * Scatter the named per-atom, per-atom fix, per-atom compute,

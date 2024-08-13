@@ -1,12 +1,14 @@
 package jse.clib;
 
+import org.jetbrains.annotations.ApiStatus;
+
 /**
  * 当作 C 中的 {@code double *} 处理的指针，
  * 虽然一般来说 C 中的 {@code double} 和 java 的 {@code jdouble}
  * 等价，但这里为了不失一般性两者都提供一套支持。
  */
 public class DoubleCPointer extends CPointer {
-    protected DoubleCPointer(long aPtr) {super(aPtr);}
+    @ApiStatus.Internal public DoubleCPointer(long aPtr) {super(aPtr);}
     
     public static DoubleCPointer malloc(int aCount) {
         return new DoubleCPointer(malloc_(aCount * typeSize()));
