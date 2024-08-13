@@ -19,6 +19,7 @@ public class DoubleCPointer extends CPointer {
     public native static int typeSize();
     
     public void parse2dest(double[] rDest, int aStart, int aCount) {
+        if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart+aCount);
         parse2dest_(mPtr, rDest, aStart, aCount);
     }
@@ -27,32 +28,62 @@ public class DoubleCPointer extends CPointer {
     private native static void parse2dest_(long aPtr, double[] rDest, int aStart, int aCount);
     
     
-    public double get() {return get_(mPtr);}
+    public double get() {
+        if (isNull()) throw new NullPointerException();
+        return get_(mPtr);
+    }
     private native static double get_(long aPtr);
     
-    public double getAt(int aIdx) {return getAt_(mPtr, aIdx);}
+    public double getAt(int aIdx) {
+        if (isNull()) throw new NullPointerException();
+        return getAt_(mPtr, aIdx);
+    }
     private native static double getAt_(long aPtr, int aIdx);
     
-    public void set(double aValue) {set_(mPtr, aValue);}
+    public void set(double aValue) {
+        if (isNull()) throw new NullPointerException();
+        set_(mPtr, aValue);
+    }
     private native static void set_(long aPtr, double aValue);
     
-    public void putAt(int aIdx, double aValue) {putAt_(mPtr, aIdx, aValue);}
+    public void putAt(int aIdx, double aValue) {
+        if (isNull()) throw new NullPointerException();
+        putAt_(mPtr, aIdx, aValue);
+    }
     private native static void putAt_(long aPtr, int aIdx, double aValue);
     
     
-    public void next() {mPtr = next_(mPtr);}
+    public void next() {
+        if (isNull()) throw new NullPointerException();
+        mPtr = next_(mPtr);
+    }
     private native static long next_(long aPtr);
     
-    public void rightShift(int aCount) {mPtr = rightShift_(mPtr, aCount);}
+    public void rightShift(int aCount) {
+        if (isNull()) throw new NullPointerException();
+        mPtr = rightShift_(mPtr, aCount);
+    }
     private native static long rightShift_(long aPtr, int aCount);
-    public DoubleCPointer plus(int aCount) {return new DoubleCPointer(rightShift_(mPtr, aCount));}
+    public DoubleCPointer plus(int aCount) {
+        if (isNull()) throw new NullPointerException();
+        return new DoubleCPointer(rightShift_(mPtr, aCount));
+    }
     
-    public void previous() {mPtr = previous_(mPtr);}
+    public void previous() {
+        if (isNull()) throw new NullPointerException();
+        mPtr = previous_(mPtr);
+    }
     private native static long previous_(long aPtr);
     
-    public void leftShift(int aCount) {mPtr = leftShift_(mPtr, aCount);}
+    public void leftShift(int aCount) {
+        if (isNull()) throw new NullPointerException();
+        mPtr = leftShift_(mPtr, aCount);
+    }
     private native static long leftShift_(long aPtr, int aCount);
-    public DoubleCPointer minus(int aCount) {return new DoubleCPointer(leftShift_(mPtr, aCount));}
+    public DoubleCPointer minus(int aCount) {
+        if (isNull()) throw new NullPointerException();
+        return new DoubleCPointer(leftShift_(mPtr, aCount));
+    }
     
     @Override public DoubleCPointer copy() {
         return new DoubleCPointer(mPtr);

@@ -169,6 +169,8 @@ public class CPointer {
     @ApiStatus.Internal public CPointer(long aPtr) {mPtr = aPtr;}
     @ApiStatus.Internal public final long ptr_() {return mPtr;}
     
+    public boolean isNull() {return mPtr==0 || mPtr==-1;}
+    
     public static CPointer malloc(int aCount) {
         return new CPointer(malloc_(aCount));
     }
@@ -180,7 +182,7 @@ public class CPointer {
     protected native static long calloc_(int aCount);
     
     public void free() {
-        if (mPtr==0 || mPtr==-1) throw new IllegalStateException("Cannot free a NULL pointer");
+        if (isNull()) throw new IllegalStateException("Cannot free a NULL pointer");
         free_(mPtr);
         mPtr = 0;
     }
