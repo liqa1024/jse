@@ -1784,8 +1784,11 @@ public class UT {
          * @param aPath 字符串路径
          * @return 给定路径的父路径
          */
-        public static String toParentPath(String aPath) {return Objects.requireNonNull(toParentPath_(aPath)).toString();}
-        public static Path toParentPath_(String aPath) {return Paths.get(aPath).getParent();}
+        public static @Nullable String toParentPath(String aPath) {
+            Path tPath = toParentPath_(aPath);
+            return tPath==null ? null : tPath.toString();
+        }
+        public static @Nullable Path toParentPath_(String aPath) {return Paths.get(aPath).getParent();}
         
         /**
          * @author liqa
