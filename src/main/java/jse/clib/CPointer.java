@@ -205,6 +205,16 @@ public class CPointer {
     public CPointer copy() {
         return new CPointer(mPtr);
     }
+    @Override public final boolean equals(Object aRHS) {
+        if (this == aRHS) return true;
+        if (!(aRHS instanceof CPointer)) return false;
+        
+        CPointer tCPointer = (CPointer)aRHS;
+        return mPtr == tCPointer.mPtr;
+    }
+    @Override public final int hashCode() {
+        return Long.hashCode(mPtr);
+    }
     
     public DoubleCPointer asDoubleCPointer() {return new DoubleCPointer(mPtr);}
     public NestedCPointer asNestedCPointer() {return new NestedCPointer(mPtr);}
