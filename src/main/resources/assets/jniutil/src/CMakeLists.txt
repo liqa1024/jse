@@ -14,6 +14,10 @@ set(SOURCE_FILES
 add_library(jniutil SHARED ${SOURCE_FILES})
 
 option(JSE_USE_CXX "Use CXX compiler" OFF)
+if(CMAKE_C_COMPILER_ID MATCHES "MSVC")
+    set(JSE_USE_CXX ON)
+endif()
+
 if(JSE_USE_CXX)
     set_source_files_properties(${SOURCE_FILES} PROPERTIES LANGUAGE CXX)
 endif()

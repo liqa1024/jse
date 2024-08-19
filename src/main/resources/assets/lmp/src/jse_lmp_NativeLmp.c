@@ -29,7 +29,7 @@ GEN_PARSE_ANY_TO_JANY_WITH_COUNT(intbig, jdouble)
 
 #define LMP_MAX_ERROR_STRING (512)
 
-inline jboolean exceptionCheckLMP(JNIEnv *aEnv, void *aLmpPtr) {
+static inline jboolean exceptionCheckLMP(JNIEnv *aEnv, void *aLmpPtr) {
 #ifdef LAMMPS_EXCEPTIONS
 #ifndef LAMMPS_EXCEPTIONS_NULL_SUPPORT
     if (aLmpPtr == NULL) return JNI_FALSE;
@@ -46,7 +46,7 @@ inline jboolean exceptionCheckLMP(JNIEnv *aEnv, void *aLmpPtr) {
 #endif
 }
 #ifdef LAMMPS_LIB_MPI
-inline jboolean exceptionCheckMPI(JNIEnv *aEnv, int aExitCode) {
+static inline jboolean exceptionCheckMPI(JNIEnv *aEnv, int aExitCode) {
     if (aExitCode == MPI_SUCCESS) return JNI_FALSE;
     
     char rErrStr[MPI_MAX_ERROR_STRING];

@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 /** utils for mpi */
-inline jboolean exceptionCheckMPI(JNIEnv *aEnv, int aExitCode) {
+static inline jboolean exceptionCheckMPI(JNIEnv *aEnv, int aExitCode) {
     if (aExitCode == MPI_SUCCESS) return JNI_FALSE;
     
     char rErrStr[MPI_MAX_ERROR_STRING];
@@ -35,9 +35,8 @@ inline jboolean exceptionCheckMPI(JNIEnv *aEnv, int aExitCode) {
     return JNI_TRUE;
 }
 
-inline int getSizeAndRank(MPI_Comm aComm, int* rSize, int* rRank) {
-    int tExitCode;
-    tExitCode = MPI_Comm_size(aComm, rSize);
+static inline int getSizeAndRank(MPI_Comm aComm, int* rSize, int* rRank) {
+    int tExitCode = MPI_Comm_size(aComm, rSize);
     if (tExitCode != MPI_SUCCESS) return tExitCode;
     tExitCode = MPI_Comm_rank(aComm, rRank);
     return tExitCode;
