@@ -123,6 +123,30 @@ public class LongList implements IDataShell<long[]> {
         return new LongList(mSize, tData);
     }
     
+    @Override public final boolean equals(Object aRHS) {
+        if (this == aRHS) return true;
+        if (!(aRHS instanceof LongList)) return false;
+        
+        LongList tList = (LongList)aRHS;
+        final int tSize = mSize;
+        if (tSize != tList.mSize) return false;
+        final long[] lData = mData;
+        final long[] rData = tList.mData;
+        for (int i = 0; i < tSize; ++i) {
+            if (lData[i] != rData[i]) return false;
+        }
+        return true;
+    }
+    @Override public final int hashCode() {
+        final int tSize = mSize;
+        final long[] tData = mData;
+        int rHashCode = 1;
+        for (int i = 0; i < tSize; ++i) {
+            rHashCode = 31*rHashCode + Long.hashCode(tData[i]);
+        }
+        return rHashCode;
+    }
+    
     
     /** IDataShell stuffs */
     @Override public int internalDataSize() {return size();}

@@ -10,6 +10,9 @@ public interface IComplexDouble {
     double real();
     double imag();
     
+    boolean equals(Object other);
+    int hashCode();
+    
     /** 提供一些常见的复数运算；使用重载而不是 instanceof，即只优化可以在编译期间判断的情况 */
     default ComplexDouble plus(IComplexDouble aComplex) {return plus(aComplex.real(), aComplex.imag());}
     default ComplexDouble plus(ComplexDouble aComplex) {return plus(aComplex.mReal, aComplex.mImag);}

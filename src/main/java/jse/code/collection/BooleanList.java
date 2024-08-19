@@ -123,6 +123,29 @@ public class BooleanList implements IDataShell<boolean[]> {
         return new BooleanList(mSize, tData);
     }
     
+    @Override public final boolean equals(Object aRHS) {
+        if (this == aRHS) return true;
+        if (!(aRHS instanceof BooleanList)) return false;
+        
+        BooleanList tList = (BooleanList)aRHS;
+        final int tSize = mSize;
+        if (tSize != tList.mSize) return false;
+        final boolean[] lData = mData;
+        final boolean[] rData = tList.mData;
+        for (int i = 0; i < tSize; ++i) {
+            if (lData[i] != rData[i]) return false;
+        }
+        return true;
+    }
+    @Override public final int hashCode() {
+        final int tSize = mSize;
+        final boolean[] tData = mData;
+        int rHashCode = 1;
+        for (int i = 0; i < tSize; ++i) {
+            rHashCode = 31*rHashCode + Boolean.hashCode(tData[i]);
+        }
+        return rHashCode;
+    }
     
     /** IDataShell stuffs */
     @Override public int internalDataSize() {return size();}

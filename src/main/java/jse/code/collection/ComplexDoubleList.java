@@ -194,6 +194,30 @@ public class ComplexDoubleList implements IDataShell<double[][]> {
         return new ComplexDoubleList(mSize, tData);
     }
     
+    @Override public final boolean equals(Object aRHS) {
+        if (this == aRHS) return true;
+        if (!(aRHS instanceof ComplexDoubleList)) return false;
+        
+        ComplexDoubleList tList = (ComplexDoubleList)aRHS;
+        final int tSize = mSize;
+        if (tSize != tList.mSize) return false;
+        final double[] lDataReal = mData[0], lDataImag = mData[1];
+        final double[] rDataReal = tList.mData[0], rDataImag = tList.mData[1];
+        for (int i = 0; i < tSize; ++i) {
+            if (Double.compare(lDataReal[i], rDataReal[i])!=0 || Double.compare(lDataImag[i], rDataImag[i])!=0) return false;
+        }
+        return true;
+    }
+    @Override public final int hashCode() {
+        final int tSize = mSize;
+        final double[] lDataReal = mData[0], lDataImag = mData[1];
+        int rHashCode = 1;
+        for (int i = 0; i < tSize; ++i) {
+            rHashCode = 31*rHashCode + ComplexDouble.hashCode(lDataReal[i], lDataImag[i]);
+        }
+        return rHashCode;
+    }
+    
     
     /** IDataShell stuffs */
     @Override public int internalDataSize() {return size();}

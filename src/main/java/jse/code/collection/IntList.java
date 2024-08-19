@@ -128,6 +128,30 @@ public class IntList implements ISlice, IDataShell<int[]> {
         --mSize;
     }
     
+    @Override public final boolean equals(Object aRHS) {
+        if (this == aRHS) return true;
+        if (!(aRHS instanceof IntList)) return false;
+        
+        IntList tList = (IntList)aRHS;
+        final int tSize = mSize;
+        if (tSize != tList.mSize) return false;
+        final int[] lData = mData;
+        final int[] rData = tList.mData;
+        for (int i = 0; i < tSize; ++i) {
+            if (lData[i] != rData[i]) return false;
+        }
+        return true;
+    }
+    @Override public final int hashCode() {
+        final int tSize = mSize;
+        final int[] tData = mData;
+        int rHashCode = 1;
+        for (int i = 0; i < tSize; ++i) {
+            rHashCode = 31*rHashCode + Integer.hashCode(tData[i]);
+        }
+        return rHashCode;
+    }
+    
     
     /** IDataShell stuffs */
     @Override public int internalDataSize() {return size();}

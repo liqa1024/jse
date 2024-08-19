@@ -3,12 +3,12 @@ package jse.code.collection;
 import jse.code.iterator.IDoubleIterator;
 import jse.math.IDataShell;
 import jse.math.vector.*;
+import jse.math.vector.Vector;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.function.DoubleConsumer;
 
 import static jse.code.CS.ZL_VEC;
@@ -126,6 +126,29 @@ public class DoubleList implements IDataShell<double[]> {
         return new DoubleList(mSize, tData);
     }
     
+    @Override public final boolean equals(Object aRHS) {
+        if (this == aRHS) return true;
+        if (!(aRHS instanceof DoubleList)) return false;
+        
+        DoubleList tList = (DoubleList)aRHS;
+        final int tSize = mSize;
+        if (tSize != tList.mSize) return false;
+        final double[] lData = mData;
+        final double[] rData = tList.mData;
+        for (int i = 0; i < tSize; ++i) {
+            if (Double.compare(lData[i], rData[i]) != 0) return false;
+        }
+        return true;
+    }
+    @Override public final int hashCode() {
+        final int tSize = mSize;
+        final double[] tData = mData;
+        int rHashCode = 1;
+        for (int i = 0; i < tSize; ++i) {
+            rHashCode = 31*rHashCode + Double.hashCode(tData[i]);
+        }
+        return rHashCode;
+    }
     
     /** IDataShell stuffs */
     @Override public int internalDataSize() {return size();}
