@@ -59,7 +59,7 @@ public class MiMalloc {
     }
     
     
-    public final static String VERSION = "2.1.2";
+    public final static String VERSION = "2.1.7";
     
     public final static String HOME = JAR_DIR+"mimalloc/" + UT.Code.uniqueID(CS.VERSION, MiMalloc.VERSION, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
     public final static String LIB_DIR = HOME+"lib/";
