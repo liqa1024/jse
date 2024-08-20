@@ -15,7 +15,6 @@ import jse.math.vector.Vectors;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -46,6 +45,8 @@ public class Lmpdat extends AbstractSettableAtomData {
     private final IIntVector mAtomType;
     private final IMatrix mAtomXYZ;
     private @Nullable IMatrix mVelocities;
+    /** 缓存的 symbols，主要用来加速获取到 symbol 值 */
+    private String @Nullable[] mSymbols;
     
     /**
      * 直接根据数据创建 Lmpdat
@@ -68,6 +69,8 @@ public class Lmpdat extends AbstractSettableAtomData {
         // 会根据 aMasses 的长度自适应调整原子种类数目
         mAtomTypeNum = aMasses==null ? aAtomTypeNum : Math.max(aAtomTypeNum, aMasses.size());
         mVelocities = aVelocities;
+        // 初始化 mSymbols
+        validSymbols_();
     }
     
     
@@ -104,6 +107,7 @@ public class Lmpdat extends AbstractSettableAtomData {
         if (mMasses==null || aMasses.size()>mMasses.size()) mMasses = aCopy ? aMasses.copy() : aMasses;
         else mMasses.subVec(0, aMasses.size()).fill(aMasses);
         mAtomTypeNum = Math.max(mAtomTypeNum, aMasses.size());
+        validSymbols_();
         return this;
     }
     /** 设置原子种类数目 */
@@ -116,12 +120,7 @@ public class Lmpdat extends AbstractSettableAtomData {
             mAtomType.opt().map2this(v -> Math.min(v, aAtomTypeNum));
             return this;
         }
-        // 还需要更新 Masses 长度
-        if (mMasses!=null && mMasses.size()<aAtomTypeNum) {
-            IVector rMasses = Vectors.NaN(aAtomTypeNum);
-            rMasses.subVec(0, mMasses.size()).fill(mMasses);
-            mMasses = rMasses;
-        }
+        // 现在理论上不需要更新 Masses 长度
         return this;
     }
     @Override public Lmpdat setNoVelocity() {mVelocities = null; return this;}
@@ -133,9 +132,27 @@ public class Lmpdat extends AbstractSettableAtomData {
         }
         return setMasses_(rMasses, false);
     }
-    
-    /** Groovy stuffs */
-    @VisibleForTesting public @Nullable IVector getMasses() {return mMasses;}
+    void validSymbols_() {
+        if (mMasses == null) {
+            mSymbols = null;
+            return;
+        }
+        if (mSymbols==null || mSymbols.length<mMasses.size()) {
+            mSymbols = new String[mMasses.size()];
+        }
+        for (int tType = 1; tType <= mAtomTypeNum; ++tType) {
+            mSymbols[tType-1] = symbol_(tType);
+        }
+    }
+    @Nullable String symbol_(int aType) {
+        // 直接通过质量来猜测元素种类，直接遍历，误差在 0.1 内即可
+        double tMass = mass(aType);
+        if (Double.isNaN(tMass)) return null;
+        for (Map.Entry<String, Double> tEntry : MASS.entrySet()) {
+            if (Math.abs(tMass - tEntry.getValue()) < 0.1) return tEntry.getKey();
+        }
+        return null;
+    }
     
     /**
      * 修改模拟盒类型
@@ -288,17 +305,9 @@ public class Lmpdat extends AbstractSettableAtomData {
     public @Nullable IMatrix velocities() {return mVelocities;}
     @Override public boolean hasVelocity() {return mVelocities != null;}
     @Override public boolean hasMass() {return mMasses!=null;}
-    @Override public double mass(int aType) {return mMasses==null ? Double.NaN : mMasses.get(aType-1);}
+    @Override public double mass(int aType) {return (mMasses==null || aType>mMasses.size()) ? Double.NaN : mMasses.get(aType-1);}
     @Override public boolean hasSymbol() {return this.hasMass();}
-    @Override public @Nullable String symbol(int aType) {
-        // 直接通过质量来猜测元素种类，直接遍历，误差在 0.1 内即可
-        double tMass = mass(aType);
-        if (Double.isNaN(tMass)) return null;
-        for (Map.Entry<String, Double> tEntry : MASS.entrySet()) {
-            if (Math.abs(tMass - tEntry.getValue()) < 0.1) return tEntry.getKey();
-        }
-        return null;
-    }
+    @Override public @Nullable String symbol(int aType) {return (mSymbols==null || aType>mSymbols.length) ? null : mSymbols[aType-1];}
     
     /** AbstractAtomData stuffs */
     @Override public ISettableAtom atom(final int aIdx) {
@@ -582,8 +591,8 @@ public class Lmpdat extends AbstractSettableAtomData {
         aWriteln.writeln("");
         aWriteln.writeln("Masses");
         aWriteln.writeln("");
-        for (int i = 0; i < mAtomTypeNum; ++i) {
-        aWriteln.writeln(String.format("%6d  %24.18g", i+1, mMasses.get(i)));
+        for (int type = 1; type <= mAtomTypeNum; ++type) {
+        aWriteln.writeln(String.format("%6d  %24.18g", type, mass(type)));
         }}
         aWriteln.writeln("");
         aWriteln.writeln("Atoms # atomic");
