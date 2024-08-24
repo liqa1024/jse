@@ -17,6 +17,14 @@ JNIEXPORT jint JNICALL Java_jse_clib_DoubleCPointer_typeSize
 
 /*
  * Class:     jse_clib_DoubleCPointer
+ * Method:    fill_
+ * Signature: (J[DII)V
+ */
+JNIEXPORT void JNICALL Java_jse_clib_DoubleCPointer_fill_1
+  (JNIEnv *, jclass, jlong, jdoubleArray, jint, jint);
+
+/*
+ * Class:     jse_clib_DoubleCPointer
  * Method:    parse2dest_
  * Signature: (J[DII)V
  */

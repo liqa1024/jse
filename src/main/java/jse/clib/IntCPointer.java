@@ -24,6 +24,15 @@ public class IntCPointer extends CPointer {
     }
     public native static int typeSize();
     
+    public void fill(int[] aData, int aStart, int aCount) {
+        if (isNull()) throw new NullPointerException();
+        rangeCheck(aData.length, aStart+aCount);
+        fill_(mPtr, aData, aStart, aCount);
+    }
+    public void fill(int[] aData, int aCount) {fill(aData, 0, aCount);}
+    public void fill(int[] aData) {fill(aData, 0, aData.length);}
+    private native static void fill_(long rPtr, int[] aData, int aStart, int aCount);
+    
     public void parse2dest(int[] rDest, int aStart, int aCount) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart+aCount);

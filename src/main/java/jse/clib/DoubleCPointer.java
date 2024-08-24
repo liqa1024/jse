@@ -25,6 +25,15 @@ public class DoubleCPointer extends CPointer {
     }
     public native static int typeSize();
     
+    public void fill(double[] aData, int aStart, int aCount) {
+        if (isNull()) throw new NullPointerException();
+        rangeCheck(aData.length, aStart+aCount);
+        fill_(mPtr, aData, aStart, aCount);
+    }
+    public void fill(double[] aData, int aCount) {fill(aData, 0, aCount);}
+    public void fill(double[] aData) {fill(aData, 0, aData.length);}
+    private native static void fill_(long rPtr, double[] aData, int aStart, int aCount);
+    
     public void parse2dest(double[] rDest, int aStart, int aCount) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart+aCount);
