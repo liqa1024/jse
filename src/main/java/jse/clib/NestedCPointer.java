@@ -26,11 +26,35 @@ public class NestedCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         return new CPointer(get_(mPtr));
     }
+    public DoubleCPointer getAsDoubleCPointer() {
+        if (isNull()) throw new NullPointerException();
+        return new DoubleCPointer(get_(mPtr));
+    }
+    public IntCPointer getAsIntCPointer() {
+        if (isNull()) throw new NullPointerException();
+        return new IntCPointer(get_(mPtr));
+    }
+    public NestedCPointer getAsNestedCPointer() {
+        if (isNull()) throw new NullPointerException();
+        return new NestedCPointer(get_(mPtr));
+    }
     private native static long get_(long aPtr);
     
     public CPointer getAt(int aIdx) {
         if (isNull()) throw new NullPointerException();
         return new CPointer(getAt_(mPtr, aIdx));
+    }
+    public DoubleCPointer getAsDoubleCPointerAt(int aIdx) {
+        if (isNull()) throw new NullPointerException();
+        return new DoubleCPointer(getAt_(mPtr, aIdx));
+    }
+    public IntCPointer getAsIntCPointerAt(int aIdx) {
+        if (isNull()) throw new NullPointerException();
+        return new IntCPointer(getAt_(mPtr, aIdx));
+    }
+    public NestedCPointer getAsNestedCPointerAt(int aIdx) {
+        if (isNull()) throw new NullPointerException();
+        return new NestedCPointer(getAt_(mPtr, aIdx));
     }
     private native static long getAt_(long aPtr, int aIdx);
     
