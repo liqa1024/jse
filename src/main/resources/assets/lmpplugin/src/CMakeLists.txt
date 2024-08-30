@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
-project(lmpplugin C CXX)
+project(lmpplugin CXX)
 
-set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 11)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -36,20 +35,12 @@ include_directories($ENV{JSE_JNIUTIL_INCLUDE_DIR})
 
 # add mpi
 find_package(MPI)
-if(JSE_USE_CXX)
-    if(MPI_CXX_FOUND)
-        add_definitions(-DLAMMPS_LIB_MPI)
-        
-        set(MPI_CXX_SKIP_MPICXX TRUE)
-        
-        target_link_libraries(lmpplugin MPI::MPI_CXX)
-    endif()
-else()
-    if(MPI_C_FOUND)
-        add_definitions(-DLAMMPS_LIB_MPI)
-        
-        target_link_libraries(lmpplugin MPI::MPI_C)
-    endif()
+if(MPI_CXX_FOUND)
+    add_definitions(-DLAMMPS_LIB_MPI)
+    
+    set(MPI_CXX_SKIP_MPICXX TRUE)
+    
+    target_link_libraries(lmpplugin MPI::MPI_CXX)
 endif()
 
 

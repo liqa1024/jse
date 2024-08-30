@@ -110,9 +110,9 @@ JNIEXPORT jstring JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Get_1library_1v
     int tExitCode = MPI_Get_library_version(rVersionStr, &rLen);
     exceptionCheckMPI(aEnv, tExitCode);
 #ifdef __cplusplus
-    return aEnv->NewStringUTF((const char*)rVersionStr);
+    return aEnv->NewStringUTF(rVersionStr);
 #else
-    return (*aEnv)->NewStringUTF(aEnv, (const char*)rVersionStr);
+    return (*aEnv)->NewStringUTF(aEnv, rVersionStr);
 #endif
 }
 
@@ -186,6 +186,20 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allgather0(JNIEnv 
     parseBuf2JArray(aEnv, rRecvArray, aRecvJType, rRecvBuf, tTotSize);
     freeBuf(rRecvBuf);
 }
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allgather1(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jlong aSendPtr, jint aSendCount, jlong aSendType, jlong rRecvPtr, jint aRecvCount, jlong aRecvType, jlong aComm) {
+    MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
+    MPI_Datatype tRecvType = (MPI_Datatype)(intptr_t)aRecvType;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+    void *rRecvBuf = (void *)(intptr_t)rRecvPtr;
+    if (aInPlace) {
+        int tExitCode = MPI_Allgather(MPI_IN_PLACE, 0, tSendType, rRecvBuf, aRecvCount, tRecvType, tComm);
+        exceptionCheckMPI(aEnv, tExitCode);
+    } else {
+        void *tSendBuf = (void *)(intptr_t)aSendPtr;
+        int tExitCode = MPI_Allgather(tSendBuf, aSendCount, tSendType, rRecvBuf, aRecvCount, tRecvType, tComm);
+        exceptionCheckMPI(aEnv, tExitCode);
+    }
+}
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allgatherv0(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jobject aSendArray, jint aSendCount, jlong aSendType, jint aSendJType, jobject rRecvArray, jintArray aRecvCounts, jintArray aDispls, jlong aRecvType, jint aRecvJType, jlong aComm) {
     MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
     MPI_Datatype tRecvType = (MPI_Datatype)(intptr_t)aRecvType;
@@ -215,6 +229,22 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allgatherv0(JNIEnv
     FREE(tRecvCounts);
     FREE(tDispls    );
 }
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allgatherv1(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jlong aSendPtr, jint aSendCount, jlong aSendType, jlong rRecvPtr, jlong aRecvCounts, jlong aDispls, jlong aRecvType, jlong aComm) {
+    MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
+    MPI_Datatype tRecvType = (MPI_Datatype)(intptr_t)aRecvType;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+    int *tRecvCounts = (int *)(intptr_t)aRecvCounts;
+    int *tDispls = (int *)(intptr_t)aDispls;
+    void *rRecvBuf = (void *)(intptr_t)rRecvPtr;
+    if (aInPlace) {
+        int tExitCode = MPI_Allgatherv(MPI_IN_PLACE, 0, tSendType, rRecvBuf, tRecvCounts, tDispls, tRecvType, tComm);
+        exceptionCheckMPI(aEnv, tExitCode);
+    } else {
+        void *tSendBuf = (void *)(intptr_t)aSendPtr;
+        int tExitCode = MPI_Allgatherv(tSendBuf, aSendCount, tSendType, rRecvBuf, tRecvCounts, tDispls, tRecvType, tComm);
+        exceptionCheckMPI(aEnv, tExitCode);
+    }
+}
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allreduce0(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jobject aSendArray, jobject rRecvArray, jint aCount, jlong aDataType, jint aJDataType, jlong aOp, jlong aComm) {
     MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
     MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
@@ -234,14 +264,28 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allreduce0(JNIEnv 
     parseBuf2JArray(aEnv, rRecvArray, aJDataType, rRecvBuf, aCount);
     freeBuf(rRecvBuf);
 }
-JNIEXPORT jbyte    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceB(JNIEnv *aEnv, jclass aClazz, jbyte    aB, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aB, 1, MPI_JBYTE   , (MPI_Op)aOp, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aB;}
-JNIEXPORT jdouble  JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceD(JNIEnv *aEnv, jclass aClazz, jdouble  aD, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aD, 1, MPI_JDOUBLE , (MPI_Op)aOp, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aD;}
-JNIEXPORT jboolean JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceZ(JNIEnv *aEnv, jclass aClazz, jboolean aZ, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aZ, 1, MPI_JBOOLEAN, (MPI_Op)aOp, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aZ;}
-JNIEXPORT jchar    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceC(JNIEnv *aEnv, jclass aClazz, jchar    aC, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aC, 1, MPI_JCHAR   , (MPI_Op)aOp, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aC;}
-JNIEXPORT jshort   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceS(JNIEnv *aEnv, jclass aClazz, jshort   aS, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aS, 1, MPI_JSHORT  , (MPI_Op)aOp, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aS;}
-JNIEXPORT jint     JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceI(JNIEnv *aEnv, jclass aClazz, jint     aI, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aI, 1, MPI_JINT    , (MPI_Op)aOp, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aI;}
-JNIEXPORT jlong    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceL(JNIEnv *aEnv, jclass aClazz, jlong    aL, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aL, 1, MPI_JLONG   , (MPI_Op)aOp, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aL;}
-JNIEXPORT jfloat   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceF(JNIEnv *aEnv, jclass aClazz, jfloat   aF, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aF, 1, MPI_JFLOAT  , (MPI_Op)aOp, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aF;}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allreduce1(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jlong aSendPtr, jlong rRecvPtr, jint aCount, jlong aDataType, jlong aOp, jlong aComm) {
+    MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+    MPI_Op tOp = (MPI_Op)(intptr_t)aOp;
+    void *rRecvBuf = (void *)(intptr_t)rRecvPtr;
+    if (aInPlace) {
+        int tExitCode = MPI_Allreduce(MPI_IN_PLACE, rRecvBuf, aCount, tDataType, tOp, tComm);
+        exceptionCheckMPI(aEnv, tExitCode);
+    } else {
+        void *tSendBuf = (void *)(intptr_t)aSendPtr;
+        int tExitCode = MPI_Allreduce(tSendBuf, rRecvBuf, aCount, tDataType, tOp, tComm);
+        exceptionCheckMPI(aEnv, tExitCode);
+    }
+}
+JNIEXPORT jbyte    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceB(JNIEnv *aEnv, jclass aClazz, jbyte    aB, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aB, 1, MPI_JBYTE   , (MPI_Op)(intptr_t)aOp, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aB;}
+JNIEXPORT jdouble  JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceD(JNIEnv *aEnv, jclass aClazz, jdouble  aD, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aD, 1, MPI_JDOUBLE , (MPI_Op)(intptr_t)aOp, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aD;}
+JNIEXPORT jboolean JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceZ(JNIEnv *aEnv, jclass aClazz, jboolean aZ, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aZ, 1, MPI_JBOOLEAN, (MPI_Op)(intptr_t)aOp, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aZ;}
+JNIEXPORT jchar    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceC(JNIEnv *aEnv, jclass aClazz, jchar    aC, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aC, 1, MPI_JCHAR   , (MPI_Op)(intptr_t)aOp, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aC;}
+JNIEXPORT jshort   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceS(JNIEnv *aEnv, jclass aClazz, jshort   aS, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aS, 1, MPI_JSHORT  , (MPI_Op)(intptr_t)aOp, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aS;}
+JNIEXPORT jint     JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceI(JNIEnv *aEnv, jclass aClazz, jint     aI, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aI, 1, MPI_JINT    , (MPI_Op)(intptr_t)aOp, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aI;}
+JNIEXPORT jlong    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceL(JNIEnv *aEnv, jclass aClazz, jlong    aL, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aL, 1, MPI_JLONG   , (MPI_Op)(intptr_t)aOp, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aL;}
+JNIEXPORT jfloat   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1AllreduceF(JNIEnv *aEnv, jclass aClazz, jfloat   aF, jlong aOp, jlong aComm) {int tExitCode = MPI_Allreduce(MPI_IN_PLACE, &aF, 1, MPI_JFLOAT  , (MPI_Op)(intptr_t)aOp, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aF;}
 
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Barrier(JNIEnv *aEnv, jclass aClazz, jlong aComm) {
     MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
@@ -266,14 +310,21 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Bcast0(JNIEnv *aEn
     }
     freeBuf(rBuf);
 }
-JNIEXPORT jbyte    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastB(JNIEnv *aEnv, jclass aClazz, jbyte    aB, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aB, 1, MPI_JBYTE   , aRoot, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aB;}
-JNIEXPORT jdouble  JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastD(JNIEnv *aEnv, jclass aClazz, jdouble  aD, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aD, 1, MPI_JDOUBLE , aRoot, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aD;}
-JNIEXPORT jboolean JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastZ(JNIEnv *aEnv, jclass aClazz, jboolean aZ, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aZ, 1, MPI_JBOOLEAN, aRoot, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aZ;}
-JNIEXPORT jchar    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastC(JNIEnv *aEnv, jclass aClazz, jchar    aC, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aC, 1, MPI_JCHAR   , aRoot, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aC;}
-JNIEXPORT jshort   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastS(JNIEnv *aEnv, jclass aClazz, jshort   aS, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aS, 1, MPI_JSHORT  , aRoot, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aS;}
-JNIEXPORT jint     JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastI(JNIEnv *aEnv, jclass aClazz, jint     aI, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aI, 1, MPI_JINT    , aRoot, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aI;}
-JNIEXPORT jlong    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastL(JNIEnv *aEnv, jclass aClazz, jlong    aL, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aL, 1, MPI_JLONG   , aRoot, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aL;}
-JNIEXPORT jfloat   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastF(JNIEnv *aEnv, jclass aClazz, jfloat   aF, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aF, 1, MPI_JFLOAT  , aRoot, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode); return aF;}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Bcast1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jint aCount, jlong aDataType, jint aRoot, jlong aComm) {
+    MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+    void *rBuf = (void *)(intptr_t)rPtr;
+    int tExitCode = MPI_Bcast(rBuf, aCount, tDataType, aRoot, tComm);
+    exceptionCheckMPI(aEnv, tExitCode);
+}
+JNIEXPORT jbyte    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastB(JNIEnv *aEnv, jclass aClazz, jbyte    aB, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aB, 1, MPI_JBYTE   , aRoot, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aB;}
+JNIEXPORT jdouble  JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastD(JNIEnv *aEnv, jclass aClazz, jdouble  aD, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aD, 1, MPI_JDOUBLE , aRoot, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aD;}
+JNIEXPORT jboolean JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastZ(JNIEnv *aEnv, jclass aClazz, jboolean aZ, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aZ, 1, MPI_JBOOLEAN, aRoot, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aZ;}
+JNIEXPORT jchar    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastC(JNIEnv *aEnv, jclass aClazz, jchar    aC, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aC, 1, MPI_JCHAR   , aRoot, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aC;}
+JNIEXPORT jshort   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastS(JNIEnv *aEnv, jclass aClazz, jshort   aS, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aS, 1, MPI_JSHORT  , aRoot, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aS;}
+JNIEXPORT jint     JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastI(JNIEnv *aEnv, jclass aClazz, jint     aI, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aI, 1, MPI_JINT    , aRoot, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aI;}
+JNIEXPORT jlong    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastL(JNIEnv *aEnv, jclass aClazz, jlong    aL, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aL, 1, MPI_JLONG   , aRoot, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aL;}
+JNIEXPORT jfloat   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1BcastF(JNIEnv *aEnv, jclass aClazz, jfloat   aF, jint aRoot, jlong aComm) {int tExitCode = MPI_Bcast(&aF, 1, MPI_JFLOAT  , aRoot, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode); return aF;}
 
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Gather0(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jobject aSendArray, jint aSendCount, jlong aSendType, jint aSendJType, jobject rRecvArray, jint aRecvCount, jlong aRecvType, jint aRecvJType, jint aRoot, jlong aComm) {
     MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
@@ -309,6 +360,34 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Gather0(JNIEnv *aE
             tExitCode = MPI_Gather(tSendBuf, aSendCount, tSendType, NULL, 0, tRecvType, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
             freeBuf(tSendBuf);
+        }
+    }
+}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Gather1(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jlong aSendPtr, jint aSendCount, jlong aSendType, jlong rRecvPtr, jint aRecvCount, jlong aRecvType, jint aRoot, jlong aComm) {
+    MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
+    MPI_Datatype tRecvType = (MPI_Datatype)(intptr_t)aRecvType;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+    int tRank;
+    int tExitCode = MPI_Comm_rank(tComm, &tRank);
+    if (exceptionCheckMPI(aEnv, tExitCode)) return;
+    if (tRank == aRoot) {
+        void *rRecvBuf = (void *)(intptr_t)rRecvPtr;
+        if (aInPlace) {
+            tExitCode = MPI_Gather(MPI_IN_PLACE, 0, tSendType, rRecvBuf, aRecvCount, tRecvType, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
+        } else {
+            void *tSendBuf = (void *)(intptr_t)aSendPtr;
+            tExitCode = MPI_Gather(tSendBuf, aSendCount, tSendType, rRecvBuf, aRecvCount, tRecvType, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
+        }
+    } else {
+        if (aInPlace) {
+            throwExceptionMPI(aEnv, "MPI_IN_PLACE can ONLY be set in Root for MPI_Gather", -1);
+            return;
+        } else {
+            void *tSendBuf = (void *)(intptr_t)aSendPtr;
+            tExitCode = MPI_Gather(tSendBuf, aSendCount, tSendType, NULL, 0, tRecvType, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
         }
     }
 }
@@ -354,6 +433,36 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Gatherv0(JNIEnv *a
         }
     }
 }
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Gatherv1(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jlong aSendPtr, jint aSendCount, jlong aSendType, jlong rRecvPtr, jlong aRecvCounts, jlong aDispls, jlong aRecvType, jint aRoot, jlong aComm) {
+    MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
+    MPI_Datatype tRecvType = (MPI_Datatype)(intptr_t)aRecvType;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+    int tRank;
+    int tExitCode = MPI_Comm_rank(tComm, &tRank);
+    if (exceptionCheckMPI(aEnv, tExitCode)) return;
+    if (tRank == aRoot) {
+        int *tRecvCounts = (int *)(intptr_t)aRecvCounts;
+        int *tDispls = (int *)(intptr_t)aDispls;
+        void *rRecvBuf = (void *)(intptr_t)rRecvPtr;
+        if (aInPlace) {
+            tExitCode = MPI_Gatherv(MPI_IN_PLACE, 0, tSendType, rRecvBuf, tRecvCounts, tDispls, tRecvType, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
+        } else {
+            void *tSendBuf = (void *)(intptr_t)aSendPtr;
+            tExitCode = MPI_Gatherv(tSendBuf, aSendCount, tSendType, rRecvBuf, tRecvCounts, tDispls, tRecvType, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
+        }
+    } else {
+        if (aInPlace) {
+            throwExceptionMPI(aEnv, "MPI_IN_PLACE can ONLY be set in Root for MPI_Gatherv", -1);
+            return;
+        } else {
+            void *tSendBuf = (void *)(intptr_t)aSendPtr;
+            tExitCode = MPI_Gatherv(tSendBuf, aSendCount, tSendType, NULL, NULL, NULL, tRecvType, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
+        }
+    }
+}
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Reduce0(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jobject aSendArray, jobject rRecvArray, jint aCount, jlong aDataType, jint aJDataType, jlong aOp, jint aRoot, jlong aComm) {
     MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
     MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
@@ -389,14 +498,42 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Reduce0(JNIEnv *aE
         }
     }
 }
-JNIEXPORT jbyte    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceB(JNIEnv *aEnv, jclass aClazz, jbyte    aB, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)aComm; MPI_Op tOp = (MPI_Op)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aB;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aB, 1, MPI_JBYTE   , tOp, aRoot, tComm);} else {MPI_Reduce(&aB, NULL, 1, MPI_JBYTE   , tOp, aRoot, tComm);} return aB;}
-JNIEXPORT jdouble  JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceD(JNIEnv *aEnv, jclass aClazz, jdouble  aD, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)aComm; MPI_Op tOp = (MPI_Op)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aD;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aD, 1, MPI_JDOUBLE , tOp, aRoot, tComm);} else {MPI_Reduce(&aD, NULL, 1, MPI_JDOUBLE , tOp, aRoot, tComm);} return aD;}
-JNIEXPORT jboolean JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceZ(JNIEnv *aEnv, jclass aClazz, jboolean aZ, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)aComm; MPI_Op tOp = (MPI_Op)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aZ;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aZ, 1, MPI_JBOOLEAN, tOp, aRoot, tComm);} else {MPI_Reduce(&aZ, NULL, 1, MPI_JBOOLEAN, tOp, aRoot, tComm);} return aZ;}
-JNIEXPORT jchar    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceC(JNIEnv *aEnv, jclass aClazz, jchar    aC, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)aComm; MPI_Op tOp = (MPI_Op)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aC;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aC, 1, MPI_JCHAR   , tOp, aRoot, tComm);} else {MPI_Reduce(&aC, NULL, 1, MPI_JCHAR   , tOp, aRoot, tComm);} return aC;}
-JNIEXPORT jshort   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceS(JNIEnv *aEnv, jclass aClazz, jshort   aS, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)aComm; MPI_Op tOp = (MPI_Op)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aS;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aS, 1, MPI_JSHORT  , tOp, aRoot, tComm);} else {MPI_Reduce(&aS, NULL, 1, MPI_JSHORT  , tOp, aRoot, tComm);} return aS;}
-JNIEXPORT jint     JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceI(JNIEnv *aEnv, jclass aClazz, jint     aI, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)aComm; MPI_Op tOp = (MPI_Op)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aI;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aI, 1, MPI_JINT    , tOp, aRoot, tComm);} else {MPI_Reduce(&aI, NULL, 1, MPI_JINT    , tOp, aRoot, tComm);} return aI;}
-JNIEXPORT jlong    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceL(JNIEnv *aEnv, jclass aClazz, jlong    aL, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)aComm; MPI_Op tOp = (MPI_Op)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aL;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aL, 1, MPI_JLONG   , tOp, aRoot, tComm);} else {MPI_Reduce(&aL, NULL, 1, MPI_JLONG   , tOp, aRoot, tComm);} return aL;}
-JNIEXPORT jfloat   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceF(JNIEnv *aEnv, jclass aClazz, jfloat   aF, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)aComm; MPI_Op tOp = (MPI_Op)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aF;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aF, 1, MPI_JFLOAT  , tOp, aRoot, tComm);} else {MPI_Reduce(&aF, NULL, 1, MPI_JFLOAT  , tOp, aRoot, tComm);} return aF;}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Reduce1(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jlong aSendPtr, jlong rRecvPtr, jint aCount, jlong aDataType, jlong aOp, jint aRoot, jlong aComm) {
+    MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+    MPI_Op tOp = (MPI_Op)(intptr_t)aOp;
+    int tRank;
+    int tExitCode = MPI_Comm_rank(tComm, &tRank);
+    if (exceptionCheckMPI(aEnv, tExitCode)) return;
+    if (tRank == aRoot) {
+        void *rRecvBuf = (void *)(intptr_t)rRecvPtr;
+        if (aInPlace) {
+            tExitCode = MPI_Reduce(MPI_IN_PLACE, rRecvBuf, aCount, tDataType, tOp, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
+        } else {
+            void *tSendBuf = (void *)(intptr_t)aSendPtr;
+            tExitCode = MPI_Reduce(tSendBuf, rRecvBuf, aCount, tDataType, tOp, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
+        }
+    } else {
+        if (aInPlace) {
+            throwExceptionMPI(aEnv, "MPI_IN_PLACE can ONLY be set in Root for MPI_Reduce", -1);
+            return;
+        } else {
+            void *tSendBuf = (void *)(intptr_t)aSendPtr;
+            tExitCode = MPI_Reduce(tSendBuf, NULL, aCount, tDataType, tOp, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
+        }
+    }
+}
+JNIEXPORT jbyte    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceB(JNIEnv *aEnv, jclass aClazz, jbyte    aB, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm; MPI_Op tOp = (MPI_Op)(intptr_t)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aB;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aB, 1, MPI_JBYTE   , tOp, aRoot, tComm);} else {MPI_Reduce(&aB, NULL, 1, MPI_JBYTE   , tOp, aRoot, tComm);} return aB;}
+JNIEXPORT jdouble  JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceD(JNIEnv *aEnv, jclass aClazz, jdouble  aD, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm; MPI_Op tOp = (MPI_Op)(intptr_t)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aD;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aD, 1, MPI_JDOUBLE , tOp, aRoot, tComm);} else {MPI_Reduce(&aD, NULL, 1, MPI_JDOUBLE , tOp, aRoot, tComm);} return aD;}
+JNIEXPORT jboolean JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceZ(JNIEnv *aEnv, jclass aClazz, jboolean aZ, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm; MPI_Op tOp = (MPI_Op)(intptr_t)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aZ;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aZ, 1, MPI_JBOOLEAN, tOp, aRoot, tComm);} else {MPI_Reduce(&aZ, NULL, 1, MPI_JBOOLEAN, tOp, aRoot, tComm);} return aZ;}
+JNIEXPORT jchar    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceC(JNIEnv *aEnv, jclass aClazz, jchar    aC, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm; MPI_Op tOp = (MPI_Op)(intptr_t)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aC;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aC, 1, MPI_JCHAR   , tOp, aRoot, tComm);} else {MPI_Reduce(&aC, NULL, 1, MPI_JCHAR   , tOp, aRoot, tComm);} return aC;}
+JNIEXPORT jshort   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceS(JNIEnv *aEnv, jclass aClazz, jshort   aS, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm; MPI_Op tOp = (MPI_Op)(intptr_t)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aS;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aS, 1, MPI_JSHORT  , tOp, aRoot, tComm);} else {MPI_Reduce(&aS, NULL, 1, MPI_JSHORT  , tOp, aRoot, tComm);} return aS;}
+JNIEXPORT jint     JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceI(JNIEnv *aEnv, jclass aClazz, jint     aI, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm; MPI_Op tOp = (MPI_Op)(intptr_t)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aI;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aI, 1, MPI_JINT    , tOp, aRoot, tComm);} else {MPI_Reduce(&aI, NULL, 1, MPI_JINT    , tOp, aRoot, tComm);} return aI;}
+JNIEXPORT jlong    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceL(JNIEnv *aEnv, jclass aClazz, jlong    aL, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm; MPI_Op tOp = (MPI_Op)(intptr_t)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aL;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aL, 1, MPI_JLONG   , tOp, aRoot, tComm);} else {MPI_Reduce(&aL, NULL, 1, MPI_JLONG   , tOp, aRoot, tComm);} return aL;}
+JNIEXPORT jfloat   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1ReduceF(JNIEnv *aEnv, jclass aClazz, jfloat   aF, jlong aOp, jint aRoot, jlong aComm) {MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm; MPI_Op tOp = (MPI_Op)(intptr_t)aOp; int tRank; int tExitCode = MPI_Comm_rank(tComm, &tRank); if (exceptionCheckMPI(aEnv, tExitCode)) {return aF;} if (tRank == aRoot) {MPI_Reduce(MPI_IN_PLACE, &aF, 1, MPI_JFLOAT  , tOp, aRoot, tComm);} else {MPI_Reduce(&aF, NULL, 1, MPI_JFLOAT  , tOp, aRoot, tComm);} return aF;}
 
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Scatter0(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jobject aSendArray, jint aSendCount, jlong aSendType, jint aSendJType, jobject rRecvArray, jint aRecvCount, jlong aRecvType, jint aRecvJType, jint aRoot, jlong aComm) {
     MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
@@ -430,6 +567,34 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Scatter0(JNIEnv *a
             exceptionCheckMPI(aEnv, tExitCode);
             parseBuf2JArray(aEnv, rRecvArray, aRecvJType, rRecvBuf, aRecvCount);
             freeBuf(rRecvBuf);
+        }
+    }
+}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Scatter1(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jlong aSendPtr, jint aSendCount, jlong aSendType, jlong rRecvPtr, jint aRecvCount, jlong aRecvType, jint aRoot, jlong aComm) {
+    MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
+    MPI_Datatype tRecvType = (MPI_Datatype)(intptr_t)aRecvType;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+    int tRank;
+    int tExitCode = MPI_Comm_rank(tComm, &tRank);
+    if (exceptionCheckMPI(aEnv, tExitCode)) return;
+    if (tRank == aRoot) {
+        void *tSendBuf = (void *)(intptr_t)aSendPtr;
+        if (aInPlace) {
+            tExitCode = MPI_Scatter(tSendBuf, aSendCount, tSendType, MPI_IN_PLACE, 0, tRecvType, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
+        } else {
+            void *rRecvBuf = (void *)(intptr_t)rRecvPtr;
+            tExitCode = MPI_Scatter(tSendBuf, aSendCount, tSendType, rRecvBuf, aRecvCount, tRecvType, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
+        }
+    } else {
+        if (aInPlace) {
+            throwExceptionMPI(aEnv, "MPI_IN_PLACE can ONLY be set in Root for MPI_Scatter", -1);
+            return;
+        } else {
+            void *rRecvBuf = (void *)(intptr_t)rRecvPtr;
+            tExitCode = MPI_Scatter(NULL, 0, tSendType, rRecvBuf, aRecvCount, tRecvType, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
         }
     }
 }
@@ -470,6 +635,36 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Scatterv0(JNIEnv *
             exceptionCheckMPI(aEnv, tExitCode);
             parseBuf2JArray(aEnv, rRecvArray, aRecvJType, rRecvBuf, aRecvCount);
             freeBuf(rRecvBuf);
+        }
+    }
+}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Scatterv1(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jlong aSendPtr, jlong aSendCounts, jlong aDispls, jlong aSendType, jlong rRecvPtr, jint aRecvCount, jlong aRecvType, jint aRoot, jlong aComm) {
+    MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
+    MPI_Datatype tRecvType = (MPI_Datatype)(intptr_t)aRecvType;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+    int tRank;
+    int tExitCode = MPI_Comm_rank(tComm, &tRank);
+    if (exceptionCheckMPI(aEnv, tExitCode)) return;
+    if (tRank == aRoot) {
+        int *tSendCounts = (int *)(intptr_t)aSendCounts;
+        int *tDispls     = (int *)(intptr_t)aDispls;
+        void *tSendBuf = (void *)(intptr_t)aSendPtr;
+        if (aInPlace) {
+            tExitCode = MPI_Scatterv(tSendBuf, tSendCounts, tDispls, tSendType, MPI_IN_PLACE, 0, tRecvType, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
+        } else {
+            void *rRecvBuf = (void *)(intptr_t)rRecvPtr;
+            tExitCode = MPI_Scatterv(tSendBuf, tSendCounts, tDispls, tSendType, rRecvBuf, aRecvCount, tRecvType, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
+        }
+    } else {
+        if (aInPlace) {
+            throwExceptionMPI(aEnv, "MPI_IN_PLACE can ONLY be set in Root for MPI_Scatterv", -1);
+            return;
+        } else {
+            void *rRecvBuf = (void *)(intptr_t)rRecvPtr;
+            tExitCode = MPI_Scatterv(NULL, NULL, NULL, tSendType, rRecvBuf, aRecvCount, tRecvType, aRoot, tComm);
+            exceptionCheckMPI(aEnv, tExitCode);
         }
     }
 }
@@ -581,14 +776,21 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Send0(JNIEnv *aEnv
     exceptionCheckMPI(aEnv, tExitCode);
     freeBuf(tBuf);
 }
-JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendB(JNIEnv *aEnv, jclass aClazz, jbyte    aB, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aB, 1, MPI_JBYTE   , aDest, aTag, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode);}
-JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendD(JNIEnv *aEnv, jclass aClazz, jdouble  aD, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aD, 1, MPI_JDOUBLE , aDest, aTag, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode);}
-JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendZ(JNIEnv *aEnv, jclass aClazz, jboolean aZ, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aZ, 1, MPI_JBOOLEAN, aDest, aTag, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode);}
-JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendC(JNIEnv *aEnv, jclass aClazz, jchar    aC, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aC, 1, MPI_JCHAR   , aDest, aTag, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode);}
-JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendS(JNIEnv *aEnv, jclass aClazz, jshort   aS, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aS, 1, MPI_JSHORT  , aDest, aTag, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode);}
-JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendI(JNIEnv *aEnv, jclass aClazz, jint     aI, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aI, 1, MPI_JINT    , aDest, aTag, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode);}
-JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendL(JNIEnv *aEnv, jclass aClazz, jlong    aL, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aL, 1, MPI_JLONG   , aDest, aTag, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode);}
-JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendF(JNIEnv *aEnv, jclass aClazz, jfloat   aF, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aF, 1, MPI_JFLOAT  , aDest, aTag, (MPI_Comm)aComm); exceptionCheckMPI(aEnv, tExitCode);}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Send1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jint aCount, jlong aDataType, jint aDest, jint aTag, jlong aComm) {
+    MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+    void *tBuf = (void *)(intptr_t)aPtr;
+    int tExitCode = MPI_Send(tBuf, aCount, tDataType, aDest, aTag, tComm);
+    exceptionCheckMPI(aEnv, tExitCode);
+}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendB(JNIEnv *aEnv, jclass aClazz, jbyte    aB, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aB, 1, MPI_JBYTE   , aDest, aTag, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode);}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendD(JNIEnv *aEnv, jclass aClazz, jdouble  aD, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aD, 1, MPI_JDOUBLE , aDest, aTag, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode);}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendZ(JNIEnv *aEnv, jclass aClazz, jboolean aZ, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aZ, 1, MPI_JBOOLEAN, aDest, aTag, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode);}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendC(JNIEnv *aEnv, jclass aClazz, jchar    aC, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aC, 1, MPI_JCHAR   , aDest, aTag, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode);}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendS(JNIEnv *aEnv, jclass aClazz, jshort   aS, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aS, 1, MPI_JSHORT  , aDest, aTag, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode);}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendI(JNIEnv *aEnv, jclass aClazz, jint     aI, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aI, 1, MPI_JINT    , aDest, aTag, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode);}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendL(JNIEnv *aEnv, jclass aClazz, jlong    aL, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aL, 1, MPI_JLONG   , aDest, aTag, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode);}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendF(JNIEnv *aEnv, jclass aClazz, jfloat   aF, jint aDest, jint aTag, jlong aComm) {int tExitCode = MPI_Send(&aF, 1, MPI_JFLOAT  , aDest, aTag, (MPI_Comm)(intptr_t)aComm); exceptionCheckMPI(aEnv, tExitCode);}
 
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Recv0(JNIEnv *aEnv, jclass aClazz, jobject rArray, jint aCount, jlong aDataType, jint aJDataType, jint aSource, jint aTag, jlong aComm) {
     MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
@@ -599,14 +801,21 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Recv0(JNIEnv *aEnv
     parseBuf2JArray(aEnv, rArray, aJDataType, rBuf, aCount);
     freeBuf(rBuf);
 }
-JNIEXPORT jbyte    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvB(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jbyte    tB; int tExitCode = MPI_Recv(&tB, 1, MPI_JBYTE   , aSource, aTag, (MPI_Comm)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tB;}
-JNIEXPORT jdouble  JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvD(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jdouble  tD; int tExitCode = MPI_Recv(&tD, 1, MPI_JDOUBLE , aSource, aTag, (MPI_Comm)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tD;}
-JNIEXPORT jboolean JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvZ(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jboolean tZ; int tExitCode = MPI_Recv(&tZ, 1, MPI_JBOOLEAN, aSource, aTag, (MPI_Comm)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tZ;}
-JNIEXPORT jchar    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvC(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jchar    tC; int tExitCode = MPI_Recv(&tC, 1, MPI_JCHAR   , aSource, aTag, (MPI_Comm)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tC;}
-JNIEXPORT jshort   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvS(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jshort   tS; int tExitCode = MPI_Recv(&tS, 1, MPI_JSHORT  , aSource, aTag, (MPI_Comm)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tS;}
-JNIEXPORT jint     JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvI(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jint     tI; int tExitCode = MPI_Recv(&tI, 1, MPI_JINT    , aSource, aTag, (MPI_Comm)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tI;}
-JNIEXPORT jlong    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvL(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jlong    tL; int tExitCode = MPI_Recv(&tL, 1, MPI_JLONG   , aSource, aTag, (MPI_Comm)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tL;}
-JNIEXPORT jfloat   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvF(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jfloat   tF; int tExitCode = MPI_Recv(&tF, 1, MPI_JFLOAT  , aSource, aTag, (MPI_Comm)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tF;}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Recv1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jint aCount, jlong aDataType, jint aSource, jint aTag, jlong aComm) {
+    MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+    void *rBuf = (void *)(intptr_t)rPtr;
+    int tExitCode = MPI_Recv(rBuf, aCount, tDataType, aSource, aTag, tComm, MPI_STATUS_IGNORE); // no return Status, because its field name is unstable
+    exceptionCheckMPI(aEnv, tExitCode);
+}
+JNIEXPORT jbyte    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvB(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jbyte    tB; int tExitCode = MPI_Recv(&tB, 1, MPI_JBYTE   , aSource, aTag, (MPI_Comm)(intptr_t)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tB;}
+JNIEXPORT jdouble  JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvD(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jdouble  tD; int tExitCode = MPI_Recv(&tD, 1, MPI_JDOUBLE , aSource, aTag, (MPI_Comm)(intptr_t)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tD;}
+JNIEXPORT jboolean JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvZ(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jboolean tZ; int tExitCode = MPI_Recv(&tZ, 1, MPI_JBOOLEAN, aSource, aTag, (MPI_Comm)(intptr_t)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tZ;}
+JNIEXPORT jchar    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvC(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jchar    tC; int tExitCode = MPI_Recv(&tC, 1, MPI_JCHAR   , aSource, aTag, (MPI_Comm)(intptr_t)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tC;}
+JNIEXPORT jshort   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvS(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jshort   tS; int tExitCode = MPI_Recv(&tS, 1, MPI_JSHORT  , aSource, aTag, (MPI_Comm)(intptr_t)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tS;}
+JNIEXPORT jint     JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvI(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jint     tI; int tExitCode = MPI_Recv(&tI, 1, MPI_JINT    , aSource, aTag, (MPI_Comm)(intptr_t)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tI;}
+JNIEXPORT jlong    JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvL(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jlong    tL; int tExitCode = MPI_Recv(&tL, 1, MPI_JLONG   , aSource, aTag, (MPI_Comm)(intptr_t)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tL;}
+JNIEXPORT jfloat   JNICALL Java_jse_parallel_MPI_00024Native_MPI_1RecvF(JNIEnv *aEnv, jclass aClazz, jint aSource, jint aTag, jlong aComm) {jfloat   tF; int tExitCode = MPI_Recv(&tF, 1, MPI_JFLOAT  , aSource, aTag, (MPI_Comm)(intptr_t)aComm, MPI_STATUS_IGNORE); exceptionCheckMPI(aEnv, tExitCode); return tF;}
 
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Sendrecv0(JNIEnv *aEnv, jclass aClazz, jobject aSendArray, jint aSendCount, jlong aSendType, jint aSendJType, jint aDest, jint aSendTag, jobject rRecvArray, jint aRecvCount, jlong aRecvType, jint aRecvJType, jint aSource, jint aRecvTag, jlong aComm) {
     MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
@@ -620,6 +829,15 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Sendrecv0(JNIEnv *
     parseBuf2JArray(aEnv, rRecvArray, aRecvJType, rRecvBuf, aRecvCount);
     freeBuf(tSendBuf);
     freeBuf(rRecvBuf);
+}
+JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Sendrecv1(JNIEnv *aEnv, jclass aClazz, jlong aSendPtr, jint aSendCount, jlong aSendType, jint aDest, jint aSendTag, jlong rRecvPtr, jint aRecvCount, jlong aRecvType, jint aSource, jint aRecvTag, jlong aComm) {
+    MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
+    MPI_Datatype tRecvType = (MPI_Datatype)(intptr_t)aRecvType;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+    void *tSendBuf = (void *)(intptr_t)aSendPtr;
+    void *rRecvBuf = (void *)(intptr_t)rRecvPtr;
+    int tExitCode = MPI_Sendrecv(tSendBuf, aSendCount, tSendType, aDest, aSendTag, rRecvBuf, aRecvCount, tRecvType, aSource, aRecvTag, tComm, MPI_STATUS_IGNORE); // no return Status, because its field name is unstable
+    exceptionCheckMPI(aEnv, tExitCode);
 }
 
 
