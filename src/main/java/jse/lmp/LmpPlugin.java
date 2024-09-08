@@ -1,10 +1,12 @@
 package jse.lmp;
 
+import jse.cache.MatrixCache;
 import jse.clib.*;
 import jse.code.OS;
 import jse.code.SP;
 import jse.code.UT;
 import jse.math.MathEX;
+import jse.math.matrix.RowMatrix;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -238,8 +240,9 @@ public class LmpPlugin {
             double evdwl = 0.0;
             evInit(aEFlag, aVFlag);
             
-            NestedCPointer x = atomX();
-            NestedCPointer f = atomF();
+            NestedDoubleCPointer x = atomX();
+            NestedDoubleCPointer f = atomF();
+            
             IntCPointer type = atomType();
             int nlocal = atomNlocal(); // 用于判断是否是 ghost 原子
             DoubleCPointer special_lj = forceSpecialLj();
@@ -253,10 +256,9 @@ public class LmpPlugin {
             // loop over neighbors of atoms
             for (int ii = 0; ii < inum; ++ii) {
                 int i = ilist.getAt(ii);
-                DoubleCPointer xi = x.getAsDoubleCPointerAt(i);
-                double xtmp = xi.getAt(0);
-                double ytmp = xi.getAt(1);
-                double ztmp = xi.getAt(2);
+                double xtmp = x.getAt(i, 0);
+                double ytmp = x.getAt(i, 1);
+                double ztmp = x.getAt(i, 2);
                 int itype = type.getAt(i);
                 IntCPointer jlist = firstneigh.getAsIntCPointerAt(i);
                 int jnum = numneigh.getAt(i);
@@ -266,10 +268,9 @@ public class LmpPlugin {
                     double factor_lj = special_lj.getAt(sbmask(j));
                     j &= NEIGHMASK;
                     
-                    DoubleCPointer xj = x.getAsDoubleCPointerAt(j);
-                    double delx = xtmp - xj.getAt(0);
-                    double dely = ytmp - xj.getAt(1);
-                    double delz = ztmp - xj.getAt(2);
+                    double delx = xtmp - x.getAt(j, 0);
+                    double dely = ytmp - x.getAt(j, 1);
+                    double delz = ztmp - x.getAt(j, 2);
                     double rsq = delx * delx + dely * dely + delz * delz;
                     int jtype = type.getAt(j);
                     
@@ -279,15 +280,13 @@ public class LmpPlugin {
                         double forcelj = r6inv * (lj1 * r6inv - lj2);
                         double fpair = factor_lj * forcelj * r2inv;
                         
-                        DoubleCPointer fi = f.getAsDoubleCPointerAt(i);
-                        fi.putAt(0, fi.getAt(0) + delx*fpair);
-                        fi.putAt(1, fi.getAt(1) + dely*fpair);
-                        fi.putAt(2, fi.getAt(2) + delz*fpair);
+                        f.putAt(i, 0, f.getAt(i, 0) + delx*fpair);
+                        f.putAt(i, 1, f.getAt(i, 1) + dely*fpair);
+                        f.putAt(i, 2, f.getAt(i, 2) + delz*fpair);
                         if (newton_pair || j < nlocal) {
-                            DoubleCPointer fj = f.getAsDoubleCPointerAt(j);
-                            fj.putAt(0, fj.getAt(0) - delx*fpair);
-                            fj.putAt(1, fj.getAt(1) - dely*fpair);
-                            fj.putAt(2, fj.getAt(2) - delz*fpair);
+                            f.putAt(j, 0, f.getAt(j, 0) - delx*fpair);
+                            f.putAt(j, 1, f.getAt(j, 1) - dely*fpair);
+                            f.putAt(j, 2, f.getAt(j, 2) - delz*fpair);
                         }
                         
                         // ev stuffs
@@ -352,10 +351,10 @@ public class LmpPlugin {
         protected final void evInit(boolean eflag, boolean vflag) {evInit_(mPairPtr, eflag, vflag);}
         private native static void evInit_(long aPairPtr, boolean eflag, boolean vflag);
         
-        protected final NestedCPointer atomX() {return new NestedCPointer(atomX_(mPairPtr));}
+        protected final NestedDoubleCPointer atomX() {return new NestedDoubleCPointer(atomX_(mPairPtr));}
         private native static long atomX_(long aPairPtr);
         
-        protected final NestedCPointer atomF() {return new NestedCPointer(atomF_(mPairPtr));}
+        protected final NestedDoubleCPointer atomF() {return new NestedDoubleCPointer(atomF_(mPairPtr));}
         private native static long atomF_(long aPairPtr);
         
         protected final IntCPointer atomType() {return new IntCPointer(atomType_(mPairPtr));}

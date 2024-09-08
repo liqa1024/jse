@@ -106,8 +106,8 @@ public class IntCPointer extends CPointer {
     
     public IIntVector asVec(final int aSize) {
         return new RefIntVector() {
-            @Override public int get(int aIdx) {AbstractVector.rangeCheck(aIdx, aSize); return getAt(aIdx);}
-            @Override public void set(int aIdx, int aValue) {AbstractVector.rangeCheck(aIdx, aSize); putAt(aIdx, aValue);}
+            @Override public int get(int aIdx) {AbstractVector.rangeCheck(aIdx, aSize); return IntCPointer.this.getAt(aIdx);}
+            @Override public void set(int aIdx, int aValue) {AbstractVector.rangeCheck(aIdx, aSize); IntCPointer.this.putAt(aIdx, aValue);}
             @Override public int size() {return aSize;}
         };
     }

@@ -38,7 +38,7 @@ public class NestedCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         return new NestedCPointer(get_(mPtr));
     }
-    private native static long get_(long aPtr);
+    native static long get_(long aPtr);
     
     public CPointer getAt(int aIdx) {
         if (isNull()) throw new NullPointerException();
@@ -56,32 +56,32 @@ public class NestedCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         return new NestedCPointer(getAt_(mPtr, aIdx));
     }
-    private native static long getAt_(long aPtr, int aIdx);
+    native static long getAt_(long aPtr, int aIdx);
     
     public void set(@NotNull CPointer aValue) {
         if (isNull()) throw new NullPointerException();
         set_(mPtr, aValue.mPtr);
     }
-    private native static void set_(long aPtr, long aValue);
+    native static void set_(long aPtr, long aValue);
     
     public void putAt(int aIdx, @NotNull CPointer aValue) {
         if (isNull()) throw new NullPointerException();
         putAt_(mPtr, aIdx, aValue.mPtr);
     }
-    private native static void putAt_(long aPtr, int aIdx, long aValue);
+    native static void putAt_(long aPtr, int aIdx, long aValue);
     
     
     public void next() {
         if (isNull()) throw new NullPointerException();
         mPtr = next_(mPtr);
     }
-    private native static long next_(long aPtr);
+    native static long next_(long aPtr);
     
     public void rightShift(int aCount) {
         if (isNull()) throw new NullPointerException();
         mPtr = rightShift_(mPtr, aCount);
     }
-    private native static long rightShift_(long aPtr, int aCount);
+    native static long rightShift_(long aPtr, int aCount);
     public NestedCPointer plus(int aCount) {
         if (isNull()) throw new NullPointerException();
         return new NestedCPointer(rightShift_(mPtr, aCount));
@@ -91,13 +91,13 @@ public class NestedCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         mPtr = previous_(mPtr);
     }
-    private native static long previous_(long aPtr);
+    native static long previous_(long aPtr);
     
     public void leftShift(int aCount) {
         if (isNull()) throw new NullPointerException();
         mPtr = leftShift_(mPtr, aCount);
     }
-    private native static long leftShift_(long aPtr, int aCount);
+    native static long leftShift_(long aPtr, int aCount);
     public NestedCPointer minus(int aCount) {
         if (isNull()) throw new NullPointerException();
         return new NestedCPointer(leftShift_(mPtr, aCount));
@@ -107,7 +107,7 @@ public class NestedCPointer extends CPointer {
         return new NestedCPointer(mPtr);
     }
     
-    public List<CPointer> asList(final int aSize) {
+    public List<? extends CPointer> asList(final int aSize) {
         return new AbstractRandomAccessList<CPointer>() {
             @Override public CPointer get(int index) {
                 if (index >= aSize) throw new IndexOutOfBoundsException("Index: "+index+", Size: "+aSize);

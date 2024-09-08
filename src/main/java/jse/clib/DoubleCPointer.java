@@ -107,8 +107,8 @@ public class DoubleCPointer extends CPointer {
     
     public IVector asVec(final int aSize) {
         return new RefVector() {
-            @Override public double get(int aIdx) {AbstractVector.rangeCheck(aIdx, aSize); return getAt(aIdx);}
-            @Override public void set(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, aSize); putAt(aIdx, aValue);}
+            @Override public double get(int aIdx) {AbstractVector.rangeCheck(aIdx, aSize); return DoubleCPointer.this.getAt(aIdx);}
+            @Override public void set(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, aSize); DoubleCPointer.this.putAt(aIdx, aValue);}
             @Override public int size() {return aSize;}
         };
     }

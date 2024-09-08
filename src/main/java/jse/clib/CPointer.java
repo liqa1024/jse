@@ -73,6 +73,8 @@ public class CPointer {
         , "jse_clib_DoubleCPointer.h"
         , "jse_clib_NestedCPointer.c"
         , "jse_clib_NestedCPointer.h"
+        , "jse_clib_NestedDoubleCPointer.c"
+        , "jse_clib_NestedDoubleCPointer.h"
     };
     
     private static String cmakeInitCmd_() {
@@ -217,7 +219,9 @@ public class CPointer {
     }
     
     public DoubleCPointer asDoubleCPointer() {return new DoubleCPointer(mPtr);}
+    public IntCPointer asIntCPointer() {return new IntCPointer(mPtr);}
     public NestedCPointer asNestedCPointer() {return new NestedCPointer(mPtr);}
+    public NestedDoubleCPointer asNestedDoubleCPointer() {return new NestedDoubleCPointer(mPtr);}
     
     static void rangeCheck(int jArraySize, int aCount) {
         if (!OPERATION_CHECK) return;

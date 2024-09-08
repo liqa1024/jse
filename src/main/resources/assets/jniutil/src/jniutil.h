@@ -129,7 +129,7 @@ static inline void freeBuf(void *aBuf) {
 
 #ifdef __cplusplus
 #define GEN_PARSE_ANY_TO_JANY(CTYPE, JTYPE)                                                                                                 \
-static inline void parse##CTYPE##2##JTYPE##V(JNIEnv *aEnv, JTYPE##Array rJArray, jsize aJStart, const CTYPE *aBuf, jsize aBStart, jsize aLen) {    \
+static inline void parse##CTYPE##2##JTYPE##V(JNIEnv *aEnv, JTYPE##Array rJArray, jsize aJStart, const CTYPE *aBuf, jsize aBStart, jsize aLen) {\
     if (rJArray==NULL || aBuf==NULL) return;                                                                                                \
     JTYPE *rBuf = (JTYPE *)aEnv->GetPrimitiveArrayCritical(rJArray, NULL);                                                                  \
     JTYPE *ji = rBuf + aJStart; const CTYPE *bi = aBuf + aBStart;                                                                           \
@@ -139,12 +139,12 @@ static inline void parse##CTYPE##2##JTYPE##V(JNIEnv *aEnv, JTYPE##Array rJArray,
     }                                                                                                                                       \
     aEnv->ReleasePrimitiveArrayCritical(rJArray, rBuf, 0);                                                                                  \
 }                                                                                                                                           \
-static inline void parse##CTYPE##2##JTYPE(JNIEnv *aEnv, JTYPE##Array rJArray, const CTYPE *aBuf, jsize aLen) {                                     \
+static inline void parse##CTYPE##2##JTYPE(JNIEnv *aEnv, JTYPE##Array rJArray, const CTYPE *aBuf, jsize aLen) {                              \
     parse##CTYPE##2##JTYPE##V(aEnv, rJArray, 0, aBuf, 0, aLen);                                                                             \
 }
 #else
 #define GEN_PARSE_ANY_TO_JANY(CTYPE, JTYPE)                                                                                                 \
-static inline void parse##CTYPE##2##JTYPE##V(JNIEnv *aEnv, JTYPE##Array rJArray, jsize aJStart, const CTYPE *aBuf, jsize aBStart, jsize aLen) {    \
+static inline void parse##CTYPE##2##JTYPE##V(JNIEnv *aEnv, JTYPE##Array rJArray, jsize aJStart, const CTYPE *aBuf, jsize aBStart, jsize aLen) {\
     if (rJArray==NULL || aBuf==NULL) return;                                                                                                \
     JTYPE *rBuf = (JTYPE *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rJArray, NULL);                                                         \
     JTYPE *ji = rBuf + aJStart; const CTYPE *bi = aBuf + aBStart;                                                                           \
@@ -154,7 +154,7 @@ static inline void parse##CTYPE##2##JTYPE##V(JNIEnv *aEnv, JTYPE##Array rJArray,
     }                                                                                                                                       \
     (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rJArray, rBuf, 0);                                                                         \
 }                                                                                                                                           \
-static inline void parse##CTYPE##2##JTYPE(JNIEnv *aEnv, JTYPE##Array rJArray, const CTYPE *aBuf, jsize aLen) {                                     \
+static inline void parse##CTYPE##2##JTYPE(JNIEnv *aEnv, JTYPE##Array rJArray, const CTYPE *aBuf, jsize aLen) {                              \
     parse##CTYPE##2##JTYPE##V(aEnv, rJArray, 0, aBuf, 0, aLen);                                                                             \
 }
 #endif
@@ -183,7 +183,7 @@ static inline void parsedouble2jdouble(JNIEnv *aEnv, jdoubleArray rJArray, const
 
 #ifdef __cplusplus
 #define GEN_PARSE_JANY_TO_ANY(JTYPE, CTYPE)                                                                                                 \
-static inline void parse##JTYPE##2##CTYPE##V(JNIEnv *aEnv, JTYPE##Array aJArray, jsize aJStart, CTYPE *rBuf, jsize aBStart, jsize aLen) {          \
+static inline void parse##JTYPE##2##CTYPE##V(JNIEnv *aEnv, JTYPE##Array aJArray, jsize aJStart, CTYPE *rBuf, jsize aBStart, jsize aLen) {   \
     if (aJArray==NULL || rBuf==NULL) return;                                                                                                \
     JTYPE *tBuf = (JTYPE *)aEnv->GetPrimitiveArrayCritical(aJArray, NULL);                                                                  \
     JTYPE *ji = tBuf + aJStart; CTYPE *bi = rBuf + aBStart;                                                                                 \
@@ -193,12 +193,12 @@ static inline void parse##JTYPE##2##CTYPE##V(JNIEnv *aEnv, JTYPE##Array aJArray,
     }                                                                                                                                       \
     aEnv->ReleasePrimitiveArrayCritical(aJArray, tBuf, JNI_ABORT);                                                                          \
 }                                                                                                                                           \
-static inline void parse##JTYPE##2##CTYPE(JNIEnv *aEnv, JTYPE##Array aJArray, CTYPE *rBuf, jsize aLen) {                                           \
+static inline void parse##JTYPE##2##CTYPE(JNIEnv *aEnv, JTYPE##Array aJArray, CTYPE *rBuf, jsize aLen) {                                    \
     parse##JTYPE##2##CTYPE##V(aEnv, aJArray, 0, rBuf, 0, aLen);                                                                             \
 }
 #else
 #define GEN_PARSE_JANY_TO_ANY(JTYPE, CTYPE)                                                                                                 \
-static inline void parse##JTYPE##2##CTYPE##V(JNIEnv *aEnv, JTYPE##Array aJArray, jsize aJStart, CTYPE *rBuf, jsize aBStart, jsize aLen) {          \
+static inline void parse##JTYPE##2##CTYPE##V(JNIEnv *aEnv, JTYPE##Array aJArray, jsize aJStart, CTYPE *rBuf, jsize aBStart, jsize aLen) {   \
     if (aJArray==NULL || rBuf==NULL) return;                                                                                                \
     JTYPE *tBuf = (JTYPE *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aJArray, NULL);                                                         \
     JTYPE *ji = tBuf + aJStart; CTYPE *bi = rBuf + aBStart;                                                                                 \
@@ -208,7 +208,7 @@ static inline void parse##JTYPE##2##CTYPE##V(JNIEnv *aEnv, JTYPE##Array aJArray,
     }                                                                                                                                       \
     (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aJArray, tBuf, JNI_ABORT);                                                                 \
 }                                                                                                                                           \
-static inline void parse##JTYPE##2##CTYPE(JNIEnv *aEnv, JTYPE##Array aJArray, CTYPE *rBuf, jsize aLen) {                                           \
+static inline void parse##JTYPE##2##CTYPE(JNIEnv *aEnv, JTYPE##Array aJArray, CTYPE *rBuf, jsize aLen) {                                    \
     parse##JTYPE##2##CTYPE##V(aEnv, aJArray, 0, rBuf, 0, aLen);                                                                             \
 }
 #endif
@@ -237,7 +237,7 @@ static inline void parsejdouble2double(JNIEnv *aEnv, jdoubleArray aJArray, doubl
 
 #ifdef __cplusplus
 #define GEN_PARSE_ANY_TO_JANY_WITH_COUNT(CTYPE, JTYPE)                                                                                                          \
-static inline void parse##CTYPE##2##JTYPE##WithCountV(JNIEnv *aEnv, JTYPE##Array rJArray, jsize aJStart, const void *aBuf, jsize aBStart, jsize aSize, jsize aCount) { \
+static inline void parse##CTYPE##2##JTYPE##WithCountV(JNIEnv *aEnv, JTYPE##Array rJArray, jsize aJStart, const void *aBuf, jsize aBStart, jsize aSize, jsize aCount) {\
     if (rJArray==NULL || aBuf==NULL) return;                                                                                                                    \
     JTYPE *rBuf = (JTYPE *)aEnv->GetPrimitiveArrayCritical(rJArray, NULL);                                                                                      \
     JTYPE *ji = rBuf + aJStart;                                                                                                                                 \
@@ -261,12 +261,12 @@ static inline void parse##CTYPE##2##JTYPE##WithCountV(JNIEnv *aEnv, JTYPE##Array
     }                                                                                                                                                           \
     aEnv->ReleasePrimitiveArrayCritical(rJArray, rBuf, 0);                                                                                                      \
 }                                                                                                                                                               \
-static inline void parse##CTYPE##2##JTYPE##WithCount(JNIEnv *aEnv, JTYPE##Array rJArray, const void *aBuf, jsize aSize, jsize aCount) {                                \
+static inline void parse##CTYPE##2##JTYPE##WithCount(JNIEnv *aEnv, JTYPE##Array rJArray, const void *aBuf, jsize aSize, jsize aCount) {                         \
     parse##CTYPE##2##JTYPE##WithCountV(aEnv, rJArray, 0, aBuf, 0, aSize, aCount);                                                                               \
 }
 #else
 #define GEN_PARSE_ANY_TO_JANY_WITH_COUNT(CTYPE, JTYPE)                                                                                                          \
-static inline void parse##CTYPE##2##JTYPE##WithCountV(JNIEnv *aEnv, JTYPE##Array rJArray, jsize aJStart, const void *aBuf, jsize aBStart, jsize aSize, jsize aCount) { \
+static inline void parse##CTYPE##2##JTYPE##WithCountV(JNIEnv *aEnv, JTYPE##Array rJArray, jsize aJStart, const void *aBuf, jsize aBStart, jsize aSize, jsize aCount) {\
     if (rJArray==NULL || aBuf==NULL) return;                                                                                                                    \
     JTYPE *rBuf = (JTYPE *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rJArray, NULL);                                                                             \
     JTYPE *ji = rBuf + aJStart;                                                                                                                                 \
@@ -290,7 +290,7 @@ static inline void parse##CTYPE##2##JTYPE##WithCountV(JNIEnv *aEnv, JTYPE##Array
     }                                                                                                                                                           \
     (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rJArray, rBuf, 0);                                                                                             \
 }                                                                                                                                                               \
-static inline void parse##CTYPE##2##JTYPE##WithCount(JNIEnv *aEnv, JTYPE##Array rJArray, const void *aBuf, jsize aSize, jsize aCount) {                                \
+static inline void parse##CTYPE##2##JTYPE##WithCount(JNIEnv *aEnv, JTYPE##Array rJArray, const void *aBuf, jsize aSize, jsize aCount) {                         \
     parse##CTYPE##2##JTYPE##WithCountV(aEnv, rJArray, 0, aBuf, 0, aSize, aCount);                                                                               \
 }
 #endif
@@ -351,6 +351,108 @@ static inline void parsedouble2jdoubleWithCountV(JNIEnv *aEnv, jdoubleArray rJAr
 static inline void parsedouble2jdoubleWithCount(JNIEnv *aEnv, jdoubleArray rJArray, const void *aBuf, jsize aSize, jsize aCount) {
     parsedouble2jdoubleWithCountV(aEnv, rJArray, 0, aBuf, 0, aSize, aCount);
 }
+
+
+#ifdef __cplusplus
+#define GEN_PARSE_NESTED_ANY_TO_JANY(CTYPE, JTYPE)                                                                                          \
+static inline void parsenested##CTYPE##2##JTYPE##V(JNIEnv *aEnv, JTYPE##Array rJArray, jsize aJStart, const CTYPE **aBuf, jsize aBStart, jsize aRowNum, jsize aColNum) {\
+    if (rJArray==NULL || aBuf==NULL) return;                                                                                                \
+    JTYPE *rBuf = (JTYPE *)aEnv->GetPrimitiveArrayCritical(rJArray, NULL);                                                                  \
+    JTYPE *ji = rBuf + aJStart; const CTYPE **bbi = aBuf + aBStart;                                                                         \
+    for (jsize i = 0; i < aRowNum; ++i) {                                                                                                   \
+        const CTYPE *bi = *bbi;                                                                                                             \
+        if (bi == NULL) break;                                                                                                              \
+        for (jsize j = 0; j < aColNum; ++j) {                                                                                               \
+            *ji = (JTYPE)(*bi);                                                                                                             \
+            ++ji; ++bi;                                                                                                                     \
+        }                                                                                                                                   \
+    }                                                                                                                                       \
+    aEnv->ReleasePrimitiveArrayCritical(rJArray, rBuf, 0);                                                                                  \
+}                                                                                                                                           \
+static inline void parsenested##CTYPE##2##JTYPE(JNIEnv *aEnv, JTYPE##Array rJArray, const CTYPE **aBuf, jsize aRowNum, jsize aColNum) {     \
+    parsenested##CTYPE##2##JTYPE##V(aEnv, rJArray, 0, aBuf, 0, aRowNum, aColNum);                                                           \
+}
+#else
+#define GEN_PARSE_NESTED_ANY_TO_JANY(CTYPE, JTYPE)                                                                                          \
+static inline void parsenested##CTYPE##2##JTYPE##V(JNIEnv *aEnv, JTYPE##Array rJArray, jsize aJStart, const CTYPE **aBuf, jsize aBStart, jsize aRowNum, jsize aColNum) {\
+    if (rJArray==NULL || aBuf==NULL) return;                                                                                                \
+    JTYPE *rBuf = (JTYPE *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rJArray, NULL);                                                         \
+    JTYPE *ji = rBuf + aJStart; const CTYPE **bbi = aBuf + aBStart;                                                                         \
+    for (jsize i = 0; i < aRowNum; ++i) {                                                                                                   \
+        const CTYPE *bi = *bbi;                                                                                                             \
+        if (bi == NULL) break;                                                                                                              \
+        for (jsize j = 0; j < aColNum; ++j) {                                                                                               \
+            *ji = (JTYPE)(*bi);                                                                                                             \
+            ++ji; ++bi;                                                                                                                     \
+        }                                                                                                                                   \
+    }                                                                                                                                       \
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rJArray, rBuf, 0);                                                                         \
+}                                                                                                                                           \
+static inline void parsenested##CTYPE##2##JTYPE(JNIEnv *aEnv, JTYPE##Array rJArray, const CTYPE **aBuf, jsize aRowNum, jsize aColNum) {     \
+    parsenested##CTYPE##2##JTYPE##V(aEnv, rJArray, 0, aBuf, 0, aRowNum, aColNum);                                                           \
+}
+#endif
+
+GEN_PARSE_NESTED_ANY_TO_JANY(int, jint)
+GEN_PARSE_NESTED_ANY_TO_JANY(int64_t, jint)
+GEN_PARSE_NESTED_ANY_TO_JANY(double, jint)
+GEN_PARSE_NESTED_ANY_TO_JANY(int, jlong)
+GEN_PARSE_NESTED_ANY_TO_JANY(int64_t, jlong)
+GEN_PARSE_NESTED_ANY_TO_JANY(double, jlong)
+GEN_PARSE_NESTED_ANY_TO_JANY(int, jdouble)
+GEN_PARSE_NESTED_ANY_TO_JANY(int64_t, jdouble)
+GEN_PARSE_NESTED_ANY_TO_JANY(double, jdouble)
+
+
+#ifdef __cplusplus
+#define GEN_PARSE_JANY_TO_NESTED_ANY(JTYPE, CTYPE)                                                                                          \
+static inline void parse##JTYPE##2nested##CTYPE##V(JNIEnv *aEnv, JTYPE##Array aJArray, jsize aJStart, CTYPE **rBuf, jsize aBStart, jsize aRowNum, jsize aColNum) {\
+    if (aJArray==NULL || rBuf==NULL) return;                                                                                                \
+    JTYPE *aBuf = (JTYPE *)aEnv->GetPrimitiveArrayCritical(aJArray, NULL);                                                                  \
+    JTYPE *ji = aBuf + aJStart; CTYPE **bbi = rBuf + aBStart;                                                                               \
+    for (jsize i = 0; i < aRowNum; ++i) {                                                                                                   \
+        CTYPE *bi = *bbi;                                                                                                                   \
+        if (bi == NULL) break;                                                                                                              \
+        for (jsize j = 0; j < aColNum; ++j) {                                                                                               \
+            *bi = (CTYPE)(*ji);                                                                                                             \
+            ++ji; ++bi;                                                                                                                     \
+        }                                                                                                                                   \
+    }                                                                                                                                       \
+    aEnv->ReleasePrimitiveArrayCritical(aJArray, aBuf, JNI_ABORT);                                                                          \
+}                                                                                                                                           \
+static inline void parse##JTYPE##2nested##CTYPE(JNIEnv *aEnv, JTYPE##Array aJArray, CTYPE **rBuf, jsize aRowNum, jsize aColNum) {           \
+    parse##JTYPE##2nested##CTYPE##V(aEnv, aJArray, 0, rBuf, 0, aRowNum, aColNum);                                                           \
+}
+#else
+#define GEN_PARSE_JANY_TO_NESTED_ANY(JTYPE, CTYPE)                                                                                          \
+static inline void parse##JTYPE##2nested##CTYPE##V(JNIEnv *aEnv, JTYPE##Array aJArray, jsize aJStart, CTYPE **rBuf, jsize aBStart, jsize aRowNum, jsize aColNum) {\
+    if (aJArray==NULL || rBuf==NULL) return;                                                                                                \
+    JTYPE *aBuf = (JTYPE *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aJArray, NULL);                                                         \
+    JTYPE *ji = aBuf + aJStart; CTYPE **bbi = rBuf + aBStart;                                                                               \
+    for (jsize i = 0; i < aRowNum; ++i) {                                                                                                   \
+        CTYPE *bi = *bbi;                                                                                                                   \
+        if (bi == NULL) break;                                                                                                              \
+        for (jsize j = 0; j < aColNum; ++j) {                                                                                               \
+            *bi = (CTYPE)(*ji);                                                                                                             \
+            ++ji; ++bi;                                                                                                                     \
+        }                                                                                                                                   \
+    }                                                                                                                                       \
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aJArray, aBuf, JNI_ABORT);                                                                 \
+}                                                                                                                                           \
+static inline void parse##JTYPE##2nested##CTYPE(JNIEnv *aEnv, JTYPE##Array aJArray, CTYPE **rBuf, jsize aRowNum, jsize aColNum) {           \
+    parse##JTYPE##2nested##CTYPE##V(aEnv, aJArray, 0, rBuf, 0, aRowNum, aColNum);                                                           \
+}
+#endif
+
+GEN_PARSE_JANY_TO_NESTED_ANY(jint, int)
+GEN_PARSE_JANY_TO_NESTED_ANY(jint, int64_t)
+GEN_PARSE_JANY_TO_NESTED_ANY(jint, double)
+GEN_PARSE_JANY_TO_NESTED_ANY(jlong, int)
+GEN_PARSE_JANY_TO_NESTED_ANY(jlong, int64_t)
+GEN_PARSE_JANY_TO_NESTED_ANY(jlong, double)
+GEN_PARSE_JANY_TO_NESTED_ANY(jdouble, int)
+GEN_PARSE_JANY_TO_NESTED_ANY(jdouble, int64_t)
+GEN_PARSE_JANY_TO_NESTED_ANY(jdouble, double)
 
 
 /** string stuffs */

@@ -17,7 +17,7 @@ JNIEXPORT void JNICALL Java_jse_clib_IntCPointer_fill_1(JNIEnv *aEnv, jclass aCl
     parsejint2intV(aEnv, aJArray, aStart, (int *)(intptr_t)rPtr, 0, aCount);
 }
 JNIEXPORT void JNICALL Java_jse_clib_IntCPointer_parse2dest_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jintArray rJArray, jint aStart, jint aCount) {
-    parseint2jintV(aEnv, rJArray, aStart, (int *)(intptr_t)aPtr, 0, aCount);
+    parseint2jintV(aEnv, rJArray, aStart, (const int *)(intptr_t)aPtr, 0, aCount);
 }
 JNIEXPORT jint JNICALL Java_jse_clib_IntCPointer_get_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr) {
     return (jint) *(int *)(intptr_t)aPtr;
