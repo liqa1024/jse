@@ -14,6 +14,7 @@ set(SOURCE_FILES
     jse_clib_IntCPointer.c
     jse_clib_DoubleCPointer.c
     jse_clib_NestedCPointer.c
+    jse_clib_NestedIntCPointer.c
     jse_clib_NestedDoubleCPointer.c)
 add_library(cpointer SHARED ${SOURCE_FILES})
 

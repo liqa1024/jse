@@ -22,7 +22,6 @@ public class NestedDoubleCPointer extends NestedCPointer {
     public static NestedDoubleCPointer calloc(int aCount) {
         return new NestedDoubleCPointer(calloc_(aCount * typeSize()));
     }
-    public static int typeSize() {return NestedCPointer.typeSize();}
     
     public void fill(double[] aData, int aStart, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
@@ -45,11 +44,11 @@ public class NestedDoubleCPointer extends NestedCPointer {
     
     @Override public DoubleCPointer get() {
         if (isNull()) throw new NullPointerException();
-        return new DoubleCPointer(NestedCPointer.get_(mPtr));
+        return new DoubleCPointer(get_(mPtr));
     }
     @Override public DoubleCPointer getAt(int aIdx) {
         if (isNull()) throw new NullPointerException();
-        return new DoubleCPointer(NestedCPointer.getAt_(mPtr, aIdx));
+        return new DoubleCPointer(getAt_(mPtr, aIdx));
     }
     public double getAt(int aRow, int aCol) {
         if (isNull()) throw new NullPointerException();
@@ -65,11 +64,11 @@ public class NestedDoubleCPointer extends NestedCPointer {
     
     @Override public NestedDoubleCPointer plus(int aCount) {
         if (isNull()) throw new NullPointerException();
-        return new NestedDoubleCPointer(NestedCPointer.rightShift_(mPtr, aCount));
+        return new NestedDoubleCPointer(rightShift_(mPtr, aCount));
     }
     @Override public NestedDoubleCPointer minus(int aCount) {
         if (isNull()) throw new NullPointerException();
-        return new NestedDoubleCPointer(NestedCPointer.leftShift_(mPtr, aCount));
+        return new NestedDoubleCPointer(leftShift_(mPtr, aCount));
     }
     
     @Override public NestedDoubleCPointer copy() {

@@ -400,10 +400,10 @@ public abstract class AbstractMatrix implements IMatrix {
         };
     }
     
-    protected static void rangeCheckRow(int aRow, int aRowNum) {
+    public static void rangeCheckRow(int aRow, int aRowNum) {
         if (aRow<0 || aRow>=aRowNum) throw new IndexOutOfBoundsException("Row = " + aRow + ", RowNumber = " + aRowNum);
     }
-    protected static void rangeCheckCol(int aCol, int aColNum) {
+    public static void rangeCheckCol(int aCol, int aColNum) {
         if (aCol<0 || aCol>=aColNum) throw new IndexOutOfBoundsException("Col = " + aCol + ", ColumnNumber = " + aColNum);
     }
     

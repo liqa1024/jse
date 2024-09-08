@@ -249,7 +249,7 @@ public class LmpPlugin {
             int inum = listInum();
             IntCPointer ilist = listIlist();
             IntCPointer numneigh = listNumneigh();
-            NestedCPointer firstneigh = listFirstneigh();
+            NestedIntCPointer firstneigh = listFirstneigh();
             
             // loop over neighbors of atoms
             for (int ii = 0; ii < inum; ++ii) {
@@ -258,7 +258,7 @@ public class LmpPlugin {
                 double ytmp = x.getAt(i, 1);
                 double ztmp = x.getAt(i, 2);
                 int itype = type.getAt(i);
-                IntCPointer jlist = firstneigh.getAsIntCPointerAt(i);
+                IntCPointer jlist = firstneigh.getAt(i);
                 int jnum = numneigh.getAt(i);
                 
                 for (int jj = 0; jj < jnum; ++jj) {
@@ -382,7 +382,7 @@ public class LmpPlugin {
         protected final IntCPointer listNumneigh() {return new IntCPointer(listNumneigh_(mPairPtr));}
         private native static long listNumneigh_(long aPairPtr);
         
-        protected final NestedCPointer listFirstneigh() {return new NestedCPointer(listFirstneigh_(mPairPtr));}
+        protected final NestedIntCPointer listFirstneigh() {return new NestedIntCPointer(listFirstneigh_(mPairPtr));}
         private native static long listFirstneigh_(long aPairPtr);
         
         protected static int sbmask(int j) {return (j >> SBBITS) & 3;}
