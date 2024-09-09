@@ -46,8 +46,11 @@ public:
     jlong listFirstneigh();
     jdouble cutsq_(jint, jint);
     void evTally(jint, jint, jint, jboolean, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble);
+    jboolean evflag_();
     jboolean vflagFdotr();
     void virialFdotrCompute();
+    jint commMe();
+    jint commNprocs();
 };
 
 }    // namespace LAMMPS_NS

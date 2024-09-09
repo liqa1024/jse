@@ -50,17 +50,23 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_listNumneigh_1(JNIEnv *
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_listFirstneigh_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     return ((PairJSE *)(intptr_t)aPairPtr)->listFirstneigh();
 }
-JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Pair_cutsq_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jint i, jint j) {
-    return ((PairJSE *)(intptr_t)aPairPtr)->cutsq_(i, j);
-}
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evTally_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jint i, jint j, jint nlocal, jboolean newtonPair, jdouble evdwl, jdouble ecoul, jdouble fpair, jdouble delx, jdouble dely, jdouble delz) {
     ((PairJSE *)(intptr_t)aPairPtr)->evTally(i, j, nlocal, newtonPair, evdwl, ecoul, fpair, delx, dely, delz);
+}
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evflag_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
+    return ((PairJSE *)(intptr_t)aPairPtr)->evflag_();
 }
 JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagFdotr_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     return ((PairJSE *)(intptr_t)aPairPtr)->vflagFdotr();
 }
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_virialFdotrCompute_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     ((PairJSE *)(intptr_t)aPairPtr)->virialFdotrCompute();
+}
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commMe_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
+    return ((PairJSE *)(intptr_t)aPairPtr)->commMe();
+}
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commNprocs_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
+    return ((PairJSE *)(intptr_t)aPairPtr)->commNprocs();
 }
 
 }

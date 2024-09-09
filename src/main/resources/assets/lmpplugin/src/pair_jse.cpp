@@ -3,6 +3,7 @@
 
 #include "LmpPair.h"
 #include "lammps/atom.h"
+#include "lammps/comm.h"
 #include "lammps/error.h"
 #include "lammps/force.h"
 #include "lammps/memory.h"
@@ -168,9 +169,18 @@ jdouble PairJSE::cutsq_(jint i, jint j) {
 void PairJSE::evTally(jint i, jint j, jint nlocal, jboolean newtonPair, jdouble evdwl, jdouble ecoul, jdouble fpair, jdouble delx, jdouble dely, jdouble delz) {
     ev_tally((int)i, (int)j, (int)nlocal, (int)newtonPair, (double)evdwl, (double)ecoul, (double)fpair, (double)delx, (double)dely, (double)delz);
 }
+jboolean PairJSE::evflag_() {
+    return evflag ? JNI_TRUE : JNI_FALSE;
+}
 jboolean PairJSE::vflagFdotr() {
     return vflag_fdotr ? JNI_TRUE : JNI_FALSE;
 }
 void PairJSE::virialFdotrCompute() {
     virial_fdotr_compute();
+}
+jint PairJSE::commMe() {
+    return (jint) comm->me;
+}
+jint PairJSE::commNprocs() {
+    return (jint) comm->nprocs;
 }

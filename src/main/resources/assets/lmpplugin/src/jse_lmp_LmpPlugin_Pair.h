@@ -129,19 +129,19 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_listFirstneigh_1
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    cutsq_
- * Signature: (JII)D
- */
-JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Pair_cutsq_1
-  (JNIEnv *, jclass, jlong, jint, jint);
-
-/*
- * Class:     jse_lmp_LmpPlugin_Pair
  * Method:    evTally_
  * Signature: (JIIIZDDDDDD)V
  */
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evTally_1
   (JNIEnv *, jclass, jlong, jint, jint, jint, jboolean, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    evflag_
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evflag_1
+  (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
@@ -157,6 +157,22 @@ JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagFdotr_1
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_virialFdotrCompute_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    commMe_
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commMe_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    commNprocs_
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commNprocs_1
   (JNIEnv *, jclass, jlong);
 
 #ifdef __cplusplus

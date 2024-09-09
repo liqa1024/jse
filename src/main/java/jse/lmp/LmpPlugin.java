@@ -1,10 +1,13 @@
 package jse.lmp;
 
+import jse.cache.IntVectorCache;
+import jse.cache.MatrixCache;
 import jse.clib.*;
 import jse.code.OS;
 import jse.code.SP;
 import jse.code.UT;
-import jse.math.MathEX;
+import jse.math.matrix.RowMatrix;
+import jse.math.vector.IntVector;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -237,6 +240,7 @@ public class LmpPlugin {
         public void compute(boolean eflag, boolean vflag) {
             double evdwl = 0.0;
             evInit(eflag, vflag);
+            boolean evflag = evflag();
             
             NestedDoubleCPointer x = atomX();
             NestedDoubleCPointer f = atomF();
@@ -251,40 +255,50 @@ public class LmpPlugin {
             IntCPointer numneigh = listNumneigh();
             NestedIntCPointer firstneigh = listFirstneigh();
             
+            // 优化部分，将这些经常访问的数据全部缓存来加速遍历
+            int nghost = atomNghost();
+            RowMatrix xMat = MatrixCache.getMatRow(nlocal+nghost, 3);
+            RowMatrix fMat = MatrixCache.getMatRow(nlocal+nghost, 3);
+            IntVector typeVec = IntVectorCache.getVec(nlocal+nghost);
+            x.parse2dest(xMat.internalData(), xMat.nrows(), xMat.ncols());
+            f.parse2dest(fMat.internalData(), fMat.nrows(), fMat.ncols());
+            type.parse2dest(typeVec.internalData(), typeVec.size());
+            double[] special_lj_arr = {special_lj.getAt(0), special_lj.getAt(1), special_lj.getAt(2), special_lj.getAt(3)};
+            
             // loop over neighbors of atoms
             for (int ii = 0; ii < inum; ++ii) {
                 int i = ilist.getAt(ii);
-                double xtmp = x.getAt(i, 0);
-                double ytmp = x.getAt(i, 1);
-                double ztmp = x.getAt(i, 2);
-                int itype = type.getAt(i);
+                double xtmp = xMat.get(i, 0);
+                double ytmp = xMat.get(i, 1);
+                double ztmp = xMat.get(i, 2);
+                int itype = typeVec.get(i);
                 IntCPointer jlist = firstneigh.getAt(i);
                 int jnum = numneigh.getAt(i);
                 
                 for (int jj = 0; jj < jnum; ++jj) {
                     int j = jlist.getAt(jj);
-                    double factor_lj = special_lj.getAt(sbmask(j));
+                    double factor_lj = special_lj_arr[sbmask(j)];
                     j &= NEIGHMASK;
                     
-                    double delx = xtmp - x.getAt(j, 0);
-                    double dely = ytmp - x.getAt(j, 1);
-                    double delz = ztmp - x.getAt(j, 2);
+                    double delx = xtmp - xMat.get(j, 0);
+                    double dely = ytmp - xMat.get(j, 1);
+                    double delz = ztmp - xMat.get(j, 2);
                     double rsq = delx * delx + dely * dely + delz * delz;
-                    int jtype = type.getAt(j);
+                    int jtype = typeVec.get(j);
                     
-                    if (rsq < cutsq(itype, jtype)) {
+                    if (rsq < cutsq[itype][jtype]) {
                         double r2inv = 1.0 / rsq;
                         double r6inv = r2inv * r2inv * r2inv;
                         double forcelj = r6inv * (lj1 * r6inv - lj2);
                         double fpair = factor_lj * forcelj * r2inv;
                         
-                        f.putAt(i, 0, f.getAt(i, 0) + delx*fpair);
-                        f.putAt(i, 1, f.getAt(i, 1) + dely*fpair);
-                        f.putAt(i, 2, f.getAt(i, 2) + delz*fpair);
+                        fMat.update(i, 0, v -> v + delx*fpair);
+                        fMat.update(i, 1, v -> v + dely*fpair);
+                        fMat.update(i, 2, v -> v + delz*fpair);
                         if (newton_pair || j < nlocal) {
-                            f.putAt(j, 0, f.getAt(j, 0) - delx*fpair);
-                            f.putAt(j, 1, f.getAt(j, 1) - dely*fpair);
-                            f.putAt(j, 2, f.getAt(j, 2) - delz*fpair);
+                            fMat.update(j, 0, v -> v - delx*fpair);
+                            fMat.update(j, 1, v -> v - dely*fpair);
+                            fMat.update(j, 2, v -> v - delz*fpair);
                         }
                         
                         // ev stuffs
@@ -292,10 +306,15 @@ public class LmpPlugin {
                             evdwl = r6inv * (lj3 * r6inv - lj4);
                             evdwl *= factor_lj;
                         }
-                        if (vflag) evTally(i, j, nlocal, newton_pair, evdwl, 0.0, fpair, delx, dely, delz);
+                        if (evflag) evTally(i, j, nlocal, newton_pair, evdwl, 0.0, fpair, delx, dely, delz);
                     }
                 }
             }
+            
+            f.fill(fMat.internalData(), fMat.nrows(), fMat.ncols());
+            IntVectorCache.returnVec(typeVec);
+            MatrixCache.returnMat(fMat);
+            MatrixCache.returnMat(xMat);
             
             // ev stuffs
             if (vflagFdotr()) virialFdotrCompute();
@@ -311,12 +330,13 @@ public class LmpPlugin {
             double epsilon = Double.parseDouble(aArgs[0]);
             double sigma = Double.parseDouble(aArgs[1]);
             cutoff = Double.parseDouble(aArgs[2]);
-            lj1 = 48.0 * epsilon * MathEX.Fast.powFast(sigma, 12);
-            lj2 = 24.0 * epsilon * MathEX.Fast.powFast(sigma,  6);
-            lj3 =  4.0 * epsilon * MathEX.Fast.powFast(sigma, 12);
-            lj4 =  4.0 * epsilon * MathEX.Fast.powFast(sigma,  6);
+            lj1 = 48.0 * epsilon * Math.pow(sigma, 12);
+            lj2 = 24.0 * epsilon * Math.pow(sigma,  6);
+            lj3 =  4.0 * epsilon * Math.pow(sigma, 12);
+            lj4 =  4.0 * epsilon * Math.pow(sigma,  6);
         }
         private double cutoff = 0.0;
+        private double[][] cutsq = new double[2][2];
         private double lj1 = Double.NaN, lj2 = Double.NaN, lj3 = Double.NaN, lj4 = Double.NaN;
         
         /**
@@ -325,6 +345,7 @@ public class LmpPlugin {
          */
         public void initStyle() {
             neighborRequestDefault();
+            cutsq[1][1] = cutoff*cutoff;
         }
         
         /**
@@ -387,17 +408,23 @@ public class LmpPlugin {
         
         protected static int sbmask(int j) {return (j >> SBBITS) & 3;}
         
-        protected final double cutsq(int i, int j) {return cutsq_(mPairPtr, i, j);}
-        private native static double cutsq_(long aPairPtr, int i, int j);
-        
         @SuppressWarnings("SameParameterValue")
         protected final void evTally(int i, int j, int nlocal, boolean newtonPair, double evdwl, double ecoul, double fpair, double delx, double dely, double delz) {evTally_(mPairPtr, i, j, nlocal, newtonPair, evdwl, ecoul, fpair, delx, dely, delz);}
         private native static void evTally_(long aPairPtr, int i, int j, int nlocal, boolean newtonPair, double evdwl, double ecoul, double fpair, double delx, double dely, double delz);
+        
+        protected final boolean evflag() {return evflag_(mPairPtr);}
+        private native static boolean evflag_(long aPairPtr);
         
         protected final boolean vflagFdotr() {return vflagFdotr_(mPairPtr);}
         private native static boolean vflagFdotr_(long aPairPtr);
         
         protected final void virialFdotrCompute() {virialFdotrCompute_(mPairPtr);}
         private native static void virialFdotrCompute_(long aPairPtr);
+        
+        protected final int commMe() {return commMe_(mPairPtr);}
+        private native static int commMe_(long aPairPtr);
+        
+        protected final int commNprocs() {return commNprocs_(mPairPtr);}
+        private native static int commNprocs_(long aPairPtr);
     }
 }
