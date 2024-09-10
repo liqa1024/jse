@@ -18,7 +18,7 @@ JNIEXPORT void JNICALL lammpsplugin_init(void *lmp, void *handle, void *regfunc)
     plugin.version = LAMMPS_VERSION;
     plugin.style = "pair";
     plugin.name = "jse";
-    plugin.info = "pair to invoke jse v0.1";
+    plugin.info = "jse pair v0.1";
     plugin.author = "liqa, CHanzyLazer";
     plugin.creator.v1 = (lammpsplugin_factory1 *) &jsecreator;
     plugin.handle = handle;

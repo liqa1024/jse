@@ -47,6 +47,9 @@ public class OS {
     public final static String NO_LOG_WIN = "NUL";
     public final static String NO_LOG = IS_WINDOWS ? NO_LOG_WIN : NO_LOG_LINUX;
     
+    public final static String JAVA_HOME;
+    public final static String JAVA_HOME_DIR;
+    
     public final static ISystemExecutor EXEC;
     public final static String JAR_PATH;
     public final static String JAR_DIR;
@@ -57,8 +60,11 @@ public class OS {
     
     static {
         InitHelper.INITIALIZED = true;
+        // 获取 java.home
+        JAVA_HOME = System.getProperty("java.home"); // 这里统一认为 java.home 就是绝对路径
+        JAVA_HOME_DIR = UT.IO.toInternalValidDir(JAVA_HOME);
         // 先获取 user.home
-        USER_HOME = System.getProperty("user.home"); // user.home 这里统一认为 user.home 就是绝对路径
+        USER_HOME = System.getProperty("user.home"); // 这里统一认为 user.home 就是绝对路径
         USER_HOME_DIR = UT.IO.toInternalValidDir(USER_HOME);
         // 然后通过执行指令来初始化 WORKING_DIR；
         // 这种写法可以保证有最大的兼容性，即使后续 EXE 可能非法（不是所有平台都有 bash）

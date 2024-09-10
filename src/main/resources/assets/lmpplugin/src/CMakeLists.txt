@@ -28,14 +28,20 @@ endif()
 set(SOURCE_FILES
     jseplugin.cpp
     pair_jse.cpp
+    jse_lmp_LmpPlugin_Pair.cpp
     LmpPair.cpp
-    jse_lmp_LmpPlugin_Pair.cpp)
+    LmpPlugin.cpp)
 add_library(lmpplugin SHARED ${SOURCE_FILES})
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
     set(BUILD_SHARED_LIBS ON)
 endif()
+
+
+# ad jse jar path
+add_definitions(-DJVM_CLASS_PATH="-Djava.class.path=$ENV{JSE_JAR_PATH_DEF}")
+add_definitions(-DJVM_XMX="-Xmx$ENV{JSE_JVM_XMX}")
 
 
 # add jni
@@ -46,7 +52,7 @@ if(JNI_FOUND)
     # delay load jvm.dll on windows
     if((CMAKE_SYSTEM_NAME MATCHES "Windows") AND (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"))
         target_link_options(lmpplugin PRIVATE "/DELAYLOAD:jvm.dll")
-        add_definitions(-DJVM_DLL_PATH="$ENV{JSE_JVM_DLL_PATH_DEF}")
+        add_definitions(-DJVM_LIB_PATH="$ENV{JSE_JVM_LIB_PATH_DEF}")
     endif()
 else()
     message(FATAL_ERROR "No Java Environment Found")

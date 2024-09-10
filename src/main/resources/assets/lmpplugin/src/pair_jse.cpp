@@ -1,7 +1,9 @@
 #include "jniutil.h"
 #include "pair_jse.h"
 
+#include "LmpPlugin.h"
 #include "LmpPair.h"
+
 #include "lammps/atom.h"
 #include "lammps/comm.h"
 #include "lammps/error.h"
@@ -27,6 +29,7 @@ PairJSE::~PairJSE() {
     }
     if (mCore != NULL && mEnv != NULL) {
         mEnv->DeleteGlobalRef(mCore);
+        mCore = NULL;
         JSE_LMPPAIR::uncacheJClass(mEnv);
     }
 }
@@ -35,11 +38,7 @@ PairJSE::~PairJSE() {
 
 void PairJSE::compute(int eflag, int vflag) {
     JSE_LMPPAIR::compute(mEnv, mCore, eflag, vflag);
-    if (mEnv->ExceptionCheck()) {
-        mEnv->ExceptionDescribe();
-        mEnv->ExceptionClear();
-        error->all(FLERR, "Fail to compute");
-    }
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to compute");
 }
 
 void PairJSE::allocate() {
@@ -52,36 +51,21 @@ void PairJSE::allocate() {
     memory->create(cutsq, n, n, "pair:cutsq");
 }
 
-
 /** global settings, init LmpPair here */
 void PairJSE::settings(int aArgc, char **aArgv) {
     if (aArgc != 1) error->all(FLERR, "Illegal pair_style command");
     
     // init jni env
     if (mEnv == NULL) {
-#ifdef JVM_DLL_PATH
-        platform::dlopen(JVM_DLL_PATH);
-#endif
-        JavaVM *tJVM;
-        jsize tNVMs;
-        JNI_GetCreatedJavaVMs(&tJVM, 1, &tNVMs);
-        if (tJVM == NULL) error->all(FLERR, "pair_style jse can not run without jse yet");
-        tJVM->AttachCurrentThreadAsDaemon((void**)&mEnv, NULL);
+        jboolean tSuc = JSE_LMPPLUGIN::initJVM(&mEnv);
+        if (!tSuc) error->all(FLERR, "Fail to init jvm");
         if (mEnv == NULL) error->all(FLERR, "Fail to get jni env");
     }
     // init java LmpPair object
-    if (!JSE_LMPPAIR::cacheJClass(mEnv)) {
-        mEnv->ExceptionDescribe();
-        mEnv->ExceptionClear();
-        error->all(FLERR, "Fail to cache class of java LmpPair");
-    }
+    jboolean tSuc = JSE_LMPPAIR::cacheJClass(mEnv);
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv) || !tSuc) error->all(FLERR, "Fail to cache class of java LmpPair");
     jobject tObj = JSE_LMPPAIR::newJObject(mEnv, aArgv[0], this);
-    if (mEnv->ExceptionCheck()) {
-        mEnv->ExceptionDescribe();
-        mEnv->ExceptionClear();
-        error->all(FLERR, "Fail to create java LmpPair object");
-    }
-    if (tObj == NULL) error->all(FLERR, "Fail to create java LmpPair object");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv) || tObj==NULL) error->all(FLERR, "Fail to create java LmpPair object");
     if (mCore != NULL) mEnv->DeleteGlobalRef(mCore);
     mCore = mEnv->NewGlobalRef(tObj);
     mEnv->DeleteLocalRef(tObj);
@@ -92,30 +76,17 @@ void PairJSE::settings(int aArgc, char **aArgv) {
 void PairJSE::coeff(int aArgc, char **aArgv) {
     if (!allocated) allocate();
     JSE_LMPPAIR::coeff(mEnv, mCore, aArgc, aArgv);
-    if (mEnv->ExceptionCheck()) {
-        mEnv->ExceptionDescribe();
-        mEnv->ExceptionClear();
-        error->all(FLERR, "Fail to set coeff");
-    }
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to set coeff");
 }
 
 void PairJSE::init_style() {
     JSE_LMPPAIR::initStyle(mEnv, mCore);
-    if (mEnv->ExceptionCheck()) {
-        mEnv->ExceptionDescribe();
-        mEnv->ExceptionClear();
-        error->all(FLERR, "Fail to init_style");
-    }
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to init_style");
 }
 
 double PairJSE::init_one(int i, int j) {
     double cutij = JSE_LMPPAIR::initOne(mEnv, mCore, i, j);
-    if (mEnv->ExceptionCheck()) {
-        mEnv->ExceptionDescribe();
-        mEnv->ExceptionClear();
-        error->all(FLERR, "Fail to init_one");
-    }
-    if (cutij <= 0.0) error->all(FLERR, "Fail to init_one");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv) || cutij<=0.0) error->all(FLERR, "Fail to init_one");
     return cutij;
 }
 

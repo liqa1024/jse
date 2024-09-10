@@ -17,8 +17,7 @@ import java.util.Map;
 
 import static jse.code.CS.VERSION;
 import static jse.code.Conf.*;
-import static jse.code.OS.EXEC;
-import static jse.code.OS.JAR_DIR;
+import static jse.code.OS.*;
 
 /**
  * 原生的 lammps jse 插件，提供 {@code LmpPair} 和
@@ -60,6 +59,9 @@ public class LmpPlugin {
          */
         public static boolean USE_MIMALLOC = OS.envZ("JSE_USE_MIMALLOC_LMPPLUGIN", jse.code.Conf.USE_MIMALLOC);
         
+        /** 启动的 jvm 的最大内存，默认为 1g 用来防止 mpi 运行 java 导致内存溢出 */
+        public static String JVM_XMX = "1g";
+        
         /** 重定向 lmpplugin 动态库的路径，用于自定义编译这个库的过程，或者重新实现 lmpplugin 的接口 */
         public static @Nullable String REDIRECT_LMPPLUGIN_LIB = OS.env("JSE_REDIRECT_LMPPLUGIN_LIB");
     }
@@ -72,6 +74,8 @@ public class LmpPlugin {
         , "jseplugin.cpp"
         , "LmpPair.cpp"
         , "LmpPair.h"
+        , "LmpPlugin.cpp"
+        , "LmpPlugin.h"
         , "pair_jse.cpp"
         , "pair_jse.h"
         , "lammpsplugin.h"
@@ -134,6 +138,11 @@ public class LmpPlugin {
             line = line.replace("$ENV{JSE_MIMALLOC_INCLUDE_DIR}", MiMalloc.INCLUDE_DIR.replace("\\", "\\\\"))  // 注意反斜杠的转义问题
                        .replace("$ENV{JSE_MIMALLOC_LIB_PATH}"   , MiMalloc.LLIB_PATH  .replace("\\", "\\\\")); // 注意反斜杠的转义问题
             }
+            // 替换其中的 jvm 库路径为自动检测到的路径
+            line = line.replace("$ENV{JSE_JVM_LIB_PATH_DEF}", JVM.LIB_PATH.replace("\\", "\\\\\\\\")); // 注意反斜杠的转义问题
+            // 替换 jvm 启动设置
+            line = line.replace("$ENV{JSE_JAR_PATH_DEF}",  JAR_PATH.replace("\\", "\\\\\\\\"))
+                       .replace("$ENV{JSE_JVM_XMX}", Conf.JVM_XMX);
             return line;
         });
         System.out.println("LMPPLUGIN INIT INFO: Building lmpplugin from source code...");

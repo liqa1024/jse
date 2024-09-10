@@ -14,7 +14,7 @@ void initStyle(JNIEnv *, jobject);
 double initOne(JNIEnv *, jobject, int, int);
 
 /** cache jclass */
-int cacheJClass(JNIEnv *);
+jboolean cacheJClass(JNIEnv *);
 void uncacheJClass(JNIEnv *);
 
 }

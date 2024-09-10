@@ -5,20 +5,20 @@
 jclass JSE_LMPPAIR::LMPPAIR_CLAZZ = NULL;
 jclass JSE_LMPPAIR::STRING_CLAZZ = NULL;
 
-int JSE_LMPPAIR::cacheJClass(JNIEnv *aEnv) {
+jboolean JSE_LMPPAIR::cacheJClass(JNIEnv *aEnv) {
     if (LMPPAIR_CLAZZ == NULL) {
         jclass clazz = aEnv->FindClass("jse/lmp/LmpPlugin$Pair");
-        if(aEnv->ExceptionCheck()) return 0;
+        if (aEnv->ExceptionCheck()) return JNI_FALSE;
         LMPPAIR_CLAZZ = (jclass)aEnv->NewGlobalRef(clazz);
         aEnv->DeleteLocalRef(clazz);
     }
     if (STRING_CLAZZ == NULL) {
         jclass clazz = aEnv->FindClass("java/lang/String");
-        if(aEnv->ExceptionCheck()) return 0;
+        if (aEnv->ExceptionCheck()) return JNI_FALSE;
         STRING_CLAZZ = (jclass)aEnv->NewGlobalRef(clazz);
         aEnv->DeleteLocalRef(clazz);
     }
-    return 1;
+    return JNI_TRUE;
 }
 void JSE_LMPPAIR::uncacheJClass(JNIEnv *aEnv) {
     if (LMPPAIR_CLAZZ != NULL) {
