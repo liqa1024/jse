@@ -16,9 +16,4 @@ public final class Box implements IBox {
     @Override public String toString() {
         return String.format("(%.4g, %.4g, %.4g)", mBox.mX, mBox.mY, mBox.mZ);
     }
-    
-    /** optimize stuffs */
-    @Override public double volume() {return mBox.prod();}
-    @Override public void toCartesian(XYZ rDirect) {rDirect.multiply2this(mBox);}
-    @Override public void toDirect(XYZ rCartesian) {rCartesian.div2this(mBox);}
 }

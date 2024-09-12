@@ -228,18 +228,18 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         // 这里绕过 scale 直接处理
         if (isPrism()) {
             mDirect.operation().matmul2this(mBox.inviabc());
-            // direct 需要考虑计算误差带来的出边界的问题，现在支持自动靠近所有整数值
-            mDirect.operation().map2this(v -> {
-                if (Math.abs(v) < MathEX.Code.DBL_EPSILON) return 0.0;
-                int tIntV = MathEX.Code.round2int(v);
-                if (MathEX.Code.numericEqual(v, tIntV)) return tIntV;
-                return v;
-            });
         } else {
             mDirect.col(0).div2this(mBox.iax());
             mDirect.col(1).div2this(mBox.iby());
             mDirect.col(2).div2this(mBox.icz());
         }
+        // direct 现在无论任何情况都会自动靠近所有接近的整数值
+        mDirect.operation().map2this(v -> {
+            if (Math.abs(v) < MathEX.Code.DBL_EPSILON) return 0.0;
+            int tIntV = MathEX.Code.round2int(v);
+            if (MathEX.Code.numericEqual(v, tIntV)) return tIntV;
+            return v;
+        });
         mIsCartesian = false;
         return this;
     }
@@ -258,8 +258,13 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
          && MathEX.Code.numericEqual(oBox.icx(), 0.0) && MathEX.Code.numericEqual(oBox.icy(), 0.0)) return this;
         // 否则将原子进行线性变换，这里绕过 scale 直接处理
         mDirect.operation().matmul2this(oBox.inviabc());
-        // 考虑计算误差带来的出边界的问题
-        mDirect.operation().map2this(v -> Math.abs(v)<MathEX.Code.DBL_EPSILON ? 0.0 : v);
+        // 考虑计算误差带来的出边界的问题，现在会自动靠近所有接近的整数值
+        mDirect.operation().map2this(v -> {
+            if (Math.abs(v) < MathEX.Code.DBL_EPSILON) return 0.0;
+            int tIntV = MathEX.Code.round2int(v);
+            if (MathEX.Code.numericEqual(v, tIntV)) return tIntV;
+            return v;
+        });
         // 手动转换回到 cartesian
         mDirect.col(0).multiply2this(mBox.iax());
         mDirect.col(1).multiply2this(mBox.iby());
@@ -284,8 +289,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         // 否则将原子进行线性变换，这里绕过 scale 直接处理
         if (oBox.isPrism()) {
             mDirect.operation().matmul2this(oBox.inviabc());
-            // 考虑计算误差带来的出边界的问题
-            mDirect.operation().map2this(v -> Math.abs(v)<MathEX.Code.DBL_EPSILON ? 0.0 : v);
+            // 由于后续存在处理，这里不处理计算误差带来的出边界的问题
         } else {
             mDirect.col(0).div2this(oBox.iax());
             mDirect.col(1).div2this(oBox.iby());
@@ -313,8 +317,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         // 否则将原子进行线性变换，这里绕过 scale 直接处理
         if (oBox.isPrism()) {
             mDirect.operation().matmul2this(oBox.inviabc());
-            // 考虑计算误差带来的出边界的问题
-            mDirect.operation().map2this(v -> Math.abs(v)<MathEX.Code.DBL_EPSILON ? 0.0 : v);
+            // 由于后续存在处理，这里不处理计算误差带来的出边界的问题
             // 手动转换回到 cartesian
             IMatrix tIABC = mBox.iabc();
             mDirect.operation().matmul2this(tIABC);

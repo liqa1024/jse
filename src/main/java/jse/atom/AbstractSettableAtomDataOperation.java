@@ -94,39 +94,13 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
     @Override public void wrapPBC2this() {
         final ISettableAtomData tThis = thisAtomData_();
         final int tAtomNum = tThis.atomNumber();
-        if (tThis.isPrism()) {
-            // 斜方情况需要转为 Direct 再 wrap，
-            // 完事后再转回 Cartesian
-            final IBox tBox = tThis.box();
-            XYZ tBuf = new XYZ();
-            for (int i = 0; i < tAtomNum; ++i) {
-                ISettableAtom tAtom = tThis.atom(i);
-                tBuf.setXYZ(tAtom);
-                tBox.toDirect(tBuf);
-                if      (tBuf.mX <  0.0) {do {++tBuf.mX;} while (tBuf.mX <  0.0);}
-                else if (tBuf.mX >= 1.0) {do {--tBuf.mX;} while (tBuf.mX >= 1.0);}
-                if      (tBuf.mY <  0.0) {do {++tBuf.mY;} while (tBuf.mY <  0.0);}
-                else if (tBuf.mY >= 1.0) {do {--tBuf.mY;} while (tBuf.mY >= 1.0);}
-                if      (tBuf.mZ <  0.0) {do {++tBuf.mZ;} while (tBuf.mZ <  0.0);}
-                else if (tBuf.mZ >= 1.0) {do {--tBuf.mZ;} while (tBuf.mZ >= 1.0);}
-                tBox.toCartesian(tBuf);
-                tAtom.setXYZ(tBuf);
-            }
-        } else {
-            final XYZ tBox = XYZ.toXYZ(tThis.box());
-            for (int i = 0; i < tAtomNum; ++i) {
-                ISettableAtom tAtom = tThis.atom(i);
-                double tX = tAtom.x();
-                double tY = tAtom.y();
-                double tZ = tAtom.z();
-                if      (tX <  0.0    ) {do {tX += tBox.mX;} while (tX <  0.0    );}
-                else if (tX >= tBox.mX) {do {tX -= tBox.mX;} while (tX >= tBox.mX);}
-                if      (tY <  0.0    ) {do {tY += tBox.mY;} while (tY <  0.0    );}
-                else if (tY >= tBox.mY) {do {tY -= tBox.mY;} while (tY >= tBox.mY);}
-                if      (tZ <  0.0    ) {do {tZ += tBox.mZ;} while (tZ <  0.0    );}
-                else if (tZ >= tBox.mZ) {do {tZ -= tBox.mZ;} while (tZ >= tBox.mZ);}
-                tAtom.setXYZ(tX, tY, tZ);
-            }
+        final IBox tBox = tThis.box();
+        XYZ tBuf = new XYZ();
+        for (int i = 0; i < tAtomNum; ++i) {
+            ISettableAtom tAtom = tThis.atom(i);
+            tBuf.setXYZ(tAtom);
+            tBox.wrapPBC(tBuf);
+            tAtom.setXYZ(tBuf);
         }
     }
     

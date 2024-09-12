@@ -45,12 +45,25 @@ public interface IBox extends IXYZ {
         return a().mixed(b(), c());
     }
     
+    
+    default void wrapPBC(XYZ rXYZ) {
+        toDirect(rXYZ);
+        if (rXYZ.mX<0.0 || rXYZ.mX>=1.0) {rXYZ.mX -= MathEX.Code.floor(rXYZ.mX);}
+        if (rXYZ.mY<0.0 || rXYZ.mY>=1.0) {rXYZ.mY -= MathEX.Code.floor(rXYZ.mY);}
+        if (rXYZ.mZ<0.0 || rXYZ.mZ>=1.0) {rXYZ.mZ -= MathEX.Code.floor(rXYZ.mZ);}
+        toCartesian(rXYZ);
+    }
     /** 提供一个简单通用的坐标相互转换接口，这里不直接创建新的 XYZ 而是修改输入的 XYZ，可以保证性能，减少重复代码 */
     default void toCartesian(XYZ rDirect) {
         if (!isPrism()) {
-            rDirect.multiply2this(this);
-            return;
-        }
+            double tX = x(), tY = y(), tZ = z();
+            rDirect.multiply2this(tX, tY, tZ);
+            // cartesian 其实也需要考虑计算误差带来的出边界的问题（当然此时在另一端的就不好修复了）
+            double tNorm = Math.abs(tX) + Math.abs(tY) + Math.abs(tZ);
+            if (Math.abs(rDirect.mX) < MathEX.Code.DBL_EPSILON*tNorm) rDirect.mX = 0.0;
+            if (Math.abs(rDirect.mY) < MathEX.Code.DBL_EPSILON*tNorm) rDirect.mY = 0.0;
+            if (Math.abs(rDirect.mZ) < MathEX.Code.DBL_EPSILON*tNorm) rDirect.mZ = 0.0;
+        } else
         if (isLmpStyle()) {
             double tX  =  x(), tY  =  y(), tZ  =  z();
             double tXY = xy(), tXZ = xz(), tYZ = yz();
@@ -86,8 +99,7 @@ public interface IBox extends IXYZ {
     default void toDirect(XYZ rCartesian) {
         if (!isPrism()) {
             rCartesian.div2this(this);
-            return;
-        }
+        } else
         if (isLmpStyle()) {
             double tX  =  x(), tY  =  y(), tZ  =  z();
             double tXY = xy(), tXZ = xz(), tYZ = yz();

@@ -141,36 +141,14 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     
     
     /** 内部使用方法，用来将 aAtomDataXYZ 转换成内部存储的格式，并且处理精度问题造成的超出边界问题 */
-    private static void setValidXYZ_(IBox aBox, IMatrix rXYZMat, double aX, double aY, double aZ, int aRow, @Nullable XYZ rBuf) {
-        if (aBox.isPrism()) {
-            // 斜方情况需要转为 Direct 再 wrap，
-            // 完事后再转回 Cartesian
-            assert rBuf != null;
-            rBuf.setXYZ(aX, aY, aZ);
-            aBox.toDirect(rBuf);
-            if      (rBuf.mX <  0.0) {do {++rBuf.mX;} while (rBuf.mX <  0.0);}
-            else if (rBuf.mX >= 1.0) {do {--rBuf.mX;} while (rBuf.mX >= 1.0);}
-            if      (rBuf.mY <  0.0) {do {++rBuf.mY;} while (rBuf.mY <  0.0);}
-            else if (rBuf.mY >= 1.0) {do {--rBuf.mY;} while (rBuf.mY >= 1.0);}
-            if      (rBuf.mZ <  0.0) {do {++rBuf.mZ;} while (rBuf.mZ <  0.0);}
-            else if (rBuf.mZ >= 1.0) {do {--rBuf.mZ;} while (rBuf.mZ >= 1.0);}
-            aBox.toCartesian(rBuf);
-            rXYZMat.set(aRow, 0, rBuf.mX);
-            rXYZMat.set(aRow, 1, rBuf.mY);
-            rXYZMat.set(aRow, 2, rBuf.mZ);
-        } else {
-            if      (aX <  0.0     ) {do {aX += aBox.x();} while (aX <  0.0     );}
-            else if (aX >= aBox.x()) {do {aX -= aBox.x();} while (aX >= aBox.x());}
-            if      (aY <  0.0     ) {do {aY += aBox.y();} while (aY <  0.0     );}
-            else if (aY >= aBox.y()) {do {aY -= aBox.y();} while (aY >= aBox.y());}
-            if      (aZ <  0.0     ) {do {aZ += aBox.z();} while (aZ <  0.0     );}
-            else if (aZ >= aBox.z()) {do {aZ -= aBox.z();} while (aZ >= aBox.z());}
-            rXYZMat.set(aRow, 0, aX);
-            rXYZMat.set(aRow, 1, aY);
-            rXYZMat.set(aRow, 2, aZ);
-        }
+    private static void setValidXYZ_(IBox aBox, IMatrix rXYZMat, double aX, double aY, double aZ, int aRow, @NotNull XYZ rBuf) {
+        rBuf.setXYZ(aX, aY, aZ);
+        aBox.wrapPBC(rBuf);
+        rXYZMat.set(aRow, 0, rBuf.mX);
+        rXYZMat.set(aRow, 1, rBuf.mY);
+        rXYZMat.set(aRow, 2, rBuf.mZ);
     }
-    private void setValidXYZ_(IMatrix rXYZMat, IXYZ aXYZ, int aRow, @Nullable XYZ rBuf) {
+    private void setValidXYZ_(IMatrix rXYZMat, IXYZ aXYZ, int aRow, @NotNull XYZ rBuf) {
         setValidXYZ_(mBox, rXYZMat, aXYZ.x(), aXYZ.y(), aXYZ.z(), aRow, rBuf);
     }
     private IMatrix getValidAtomDataXYZ_(Collection<? extends IXYZ> aAtomDataXYZ) {
@@ -220,7 +198,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         double oX = mAtomDataXYZ.get(aIdx, 0);
         double oY = mAtomDataXYZ.get(aIdx, 1);
         double oZ = mAtomDataXYZ.get(aIdx, 2);
-        @Nullable XYZ tBuf = mBox.isPrism() ? new XYZ() : null;
+        XYZ tBuf = new XYZ();
         setValidXYZ_(mBox, mAtomDataXYZ, aX, aY, aZ, aIdx, tBuf);
         mNL.updateAtomXYZ_(aIdx, oX, oY, oZ, tBuf);
         // 这里简单处理，直接清空缓存列表
