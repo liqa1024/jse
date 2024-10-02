@@ -28,11 +28,16 @@ public class DoubleCPointer extends CPointer {
     public void fill(double[] aData, int aStart, int aCount) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(aData.length, aStart+aCount);
-        fill_(mPtr, aData, aStart, aCount);
+        fill0(mPtr, aData, aStart, aCount);
     }
     public void fill(double[] aData, int aCount) {fill(aData, 0, aCount);}
     public void fill(double[] aData) {fill(aData, 0, aData.length);}
-    private native static void fill_(long rPtr, double[] aData, int aStart, int aCount);
+    private native static void fill0(long rPtr, double[] aData, int aStart, int aCount);
+    public void fill(double aValue, int aCount) {
+        if (isNull()) throw new NullPointerException();
+        fill1(mPtr, aValue, aCount);
+    }
+    private native static void fill1(long rPtr, double aValue, int aCount);
     
     public void parse2dest(double[] rDest, int aStart, int aCount) {
         if (isNull()) throw new NullPointerException();

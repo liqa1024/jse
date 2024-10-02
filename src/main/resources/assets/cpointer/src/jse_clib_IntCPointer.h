@@ -17,11 +17,19 @@ JNIEXPORT jint JNICALL Java_jse_clib_IntCPointer_typeSize
 
 /*
  * Class:     jse_clib_IntCPointer
- * Method:    fill_
+ * Method:    fill0
  * Signature: (J[III)V
  */
-JNIEXPORT void JNICALL Java_jse_clib_IntCPointer_fill_1
+JNIEXPORT void JNICALL Java_jse_clib_IntCPointer_fill0
   (JNIEnv *, jclass, jlong, jintArray, jint, jint);
+
+/*
+ * Class:     jse_clib_IntCPointer
+ * Method:    fill1
+ * Signature: (JII)V
+ */
+JNIEXPORT void JNICALL Java_jse_clib_IntCPointer_fill1
+  (JNIEnv *, jclass, jlong, jint, jint);
 
 /*
  * Class:     jse_clib_IntCPointer

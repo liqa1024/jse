@@ -10,8 +10,18 @@
 extern "C" {
 #endif
 
-JNIEXPORT void JNICALL Java_jse_clib_NestedIntCPointer_fill_1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jintArray aJArray, jint aStart, jint aRowNum, jint aColNum) {
+JNIEXPORT void JNICALL Java_jse_clib_NestedIntCPointer_fill0(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jintArray aJArray, jint aStart, jint aRowNum, jint aColNum) {
     parsejint2nestedintV(aEnv, aJArray, aStart, (int **)(intptr_t)rPtr, 0, aRowNum, aColNum);
+}
+JNIEXPORT void JNICALL Java_jse_clib_NestedIntCPointer_fill1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jint aValue, jint aRowNum, jint aColNum) {
+    int **tPtr = (int **)(intptr_t)rPtr;
+    for (jsize i = 0; i < aRowNum; ++i) {
+        int *tBuf = tPtr[i];
+        if (tBuf == NULL) break;
+        for (jsize j = 0; j < aColNum; ++j) {
+            tBuf[j] = (int)aValue;
+        }
+    }
 }
 JNIEXPORT void JNICALL Java_jse_clib_NestedIntCPointer_parse2dest_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jintArray rJArray, jint aStart, jint aRowNum, jint aColNum) {
     parsenestedint2jintV(aEnv, rJArray, aStart, (const int **)(intptr_t)aPtr, 0, aRowNum, aColNum);

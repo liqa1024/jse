@@ -24,11 +24,16 @@ public class NestedIntCPointer extends NestedCPointer {
     public void fill(int[] aData, int aStart, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(aData.length, aStart + aRowNum*aColNum);
-        fill_(mPtr, aData, aStart, aRowNum, aColNum);
+        fill0(mPtr, aData, aStart, aRowNum, aColNum);
     }
     public void fill(int[] aData, int aRowNum, int aColNum) {fill(aData, 0, aRowNum, aColNum);}
     public void fill(int[] aData, int aColNum) {fill(aData, 0, aData.length/aColNum, aColNum);}
-    private native static void fill_(long rPtr, int[] aData, int aStart, int aRowNum, int aColNum);
+    private native static void fill0(long rPtr, int[] aData, int aStart, int aRowNum, int aColNum);
+    public void fill(int aValue, int aRowNum, int aColNum) {
+        if (isNull()) throw new NullPointerException();
+        fill1(mPtr, aValue, aRowNum, aColNum);
+    }
+    private native static void fill1(long rPtr, int aValue, int aRowNum, int aColNum);
     
     public void parse2dest(int[] rDest, int aStart, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();

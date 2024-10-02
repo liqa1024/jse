@@ -9,11 +9,19 @@ extern "C" {
 #endif
 /*
  * Class:     jse_clib_NestedDoubleCPointer
- * Method:    fill_
+ * Method:    fill0
  * Signature: (J[DIII)V
  */
-JNIEXPORT void JNICALL Java_jse_clib_NestedDoubleCPointer_fill_1
+JNIEXPORT void JNICALL Java_jse_clib_NestedDoubleCPointer_fill0
   (JNIEnv *, jclass, jlong, jdoubleArray, jint, jint, jint);
+
+/*
+ * Class:     jse_clib_NestedDoubleCPointer
+ * Method:    fill1
+ * Signature: (JDII)V
+ */
+JNIEXPORT void JNICALL Java_jse_clib_NestedDoubleCPointer_fill1
+  (JNIEnv *, jclass, jlong, jdouble, jint, jint);
 
 /*
  * Class:     jse_clib_NestedDoubleCPointer

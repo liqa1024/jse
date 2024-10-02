@@ -10,8 +10,18 @@
 extern "C" {
 #endif
 
-JNIEXPORT void JNICALL Java_jse_clib_NestedDoubleCPointer_fill_1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jdoubleArray aJArray, jint aStart, jint aRowNum, jint aColNum) {
+JNIEXPORT void JNICALL Java_jse_clib_NestedDoubleCPointer_fill0(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jdoubleArray aJArray, jint aStart, jint aRowNum, jint aColNum) {
     parsejdouble2nesteddoubleV(aEnv, aJArray, aStart, (double **)(intptr_t)rPtr, 0, aRowNum, aColNum);
+}
+JNIEXPORT void JNICALL Java_jse_clib_NestedDoubleCPointer_fill1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jdouble aValue, jint aRowNum, jint aColNum) {
+    double **tPtr = (double **)(intptr_t)rPtr;
+    for (jsize i = 0; i < aRowNum; ++i) {
+        double *tBuf = tPtr[i];
+        if (tBuf == NULL) break;
+        for (jsize j = 0; j < aColNum; ++j) {
+            tBuf[j] = (double)aValue;
+        }
+    }
 }
 JNIEXPORT void JNICALL Java_jse_clib_NestedDoubleCPointer_parse2dest_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jdoubleArray rJArray, jint aStart, jint aRowNum, jint aColNum) {
     parsenesteddouble2jdoubleV(aEnv, rJArray, aStart, (const double **)(intptr_t)aPtr, 0, aRowNum, aColNum);

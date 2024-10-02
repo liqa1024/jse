@@ -227,7 +227,6 @@ public class CPointer {
     public NestedDoubleCPointer asNestedDoubleCPointer() {return new NestedDoubleCPointer(mPtr);}
     
     static void rangeCheck(int jArraySize, int aCount) {
-        if (!OPERATION_CHECK) return;
         if (aCount > jArraySize) throw new IndexOutOfBoundsException(aCount+" > "+jArraySize);
     }
 }

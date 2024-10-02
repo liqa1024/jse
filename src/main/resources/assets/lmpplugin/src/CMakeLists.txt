@@ -39,7 +39,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
 endif()
 
 
-# ad jse jar path
+# add jse jar path
 add_definitions(-DJVM_CLASS_PATH="-Djava.class.path=$ENV{JSE_JAR_PATH_DEF}")
 add_definitions(-DJVM_XMX="-Xmx$ENV{JSE_JVM_XMX}")
 

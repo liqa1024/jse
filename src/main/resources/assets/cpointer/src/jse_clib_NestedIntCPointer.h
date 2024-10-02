@@ -9,11 +9,19 @@ extern "C" {
 #endif
 /*
  * Class:     jse_clib_NestedIntCPointer
- * Method:    fill_
+ * Method:    fill0
  * Signature: (J[IIII)V
  */
-JNIEXPORT void JNICALL Java_jse_clib_NestedIntCPointer_fill_1
+JNIEXPORT void JNICALL Java_jse_clib_NestedIntCPointer_fill0
   (JNIEnv *, jclass, jlong, jintArray, jint, jint, jint);
+
+/*
+ * Class:     jse_clib_NestedIntCPointer
+ * Method:    fill1
+ * Signature: (JIII)V
+ */
+JNIEXPORT void JNICALL Java_jse_clib_NestedIntCPointer_fill1
+  (JNIEnv *, jclass, jlong, jint, jint, jint);
 
 /*
  * Class:     jse_clib_NestedIntCPointer
