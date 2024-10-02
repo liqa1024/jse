@@ -14,13 +14,15 @@ JNIEXPORT void JNICALL Java_jse_clib_NestedIntCPointer_fill0(JNIEnv *aEnv, jclas
     parsejint2nestedintV(aEnv, aJArray, aStart, (int **)(intptr_t)rPtr, 0, aRowNum, aColNum);
 }
 JNIEXPORT void JNICALL Java_jse_clib_NestedIntCPointer_fill1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jint aValue, jint aRowNum, jint aColNum) {
-    int **tPtr = (int **)(intptr_t)rPtr;
+    int **itt = (int **)(intptr_t)rPtr;
     for (jsize i = 0; i < aRowNum; ++i) {
-        int *tBuf = tPtr[i];
-        if (tBuf == NULL) break;
+        int *it = *itt;
+        if (it == NULL) break;
         for (jsize j = 0; j < aColNum; ++j) {
-            tBuf[j] = (int)aValue;
+            *it = (int)aValue;
+            ++it;
         }
+        ++itt;
     }
 }
 JNIEXPORT void JNICALL Java_jse_clib_NestedIntCPointer_parse2dest_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jintArray rJArray, jint aStart, jint aRowNum, jint aColNum) {

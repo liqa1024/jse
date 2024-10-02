@@ -17,9 +17,10 @@ JNIEXPORT void JNICALL Java_jse_clib_DoubleCPointer_fill0(JNIEnv *aEnv, jclass a
     parsejdouble2doubleV(aEnv, aJArray, aStart, (double *)(intptr_t)rPtr, 0, aCount);
 }
 JNIEXPORT void JNICALL Java_jse_clib_DoubleCPointer_fill1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jdouble aValue, jint aCount) {
-    double *tPtr = (double *)(intptr_t)rPtr;
+    double *it = (double *)(intptr_t)rPtr;
     for (jsize i = 0; i < aCount; ++i) {
-        tPtr[i] = (double)aValue;
+        *it = (double)aValue;
+        ++it;
     }
 }
 JNIEXPORT void JNICALL Java_jse_clib_DoubleCPointer_parse2dest_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jdoubleArray rJArray, jint aStart, jint aCount) {

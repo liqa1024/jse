@@ -14,13 +14,15 @@ JNIEXPORT void JNICALL Java_jse_clib_NestedDoubleCPointer_fill0(JNIEnv *aEnv, jc
     parsejdouble2nesteddoubleV(aEnv, aJArray, aStart, (double **)(intptr_t)rPtr, 0, aRowNum, aColNum);
 }
 JNIEXPORT void JNICALL Java_jse_clib_NestedDoubleCPointer_fill1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jdouble aValue, jint aRowNum, jint aColNum) {
-    double **tPtr = (double **)(intptr_t)rPtr;
+    double **itt = (double **)(intptr_t)rPtr;
     for (jsize i = 0; i < aRowNum; ++i) {
-        double *tBuf = tPtr[i];
-        if (tBuf == NULL) break;
+        double *it = *itt;
+        if (it == NULL) break;
         for (jsize j = 0; j < aColNum; ++j) {
-            tBuf[j] = (double)aValue;
+            *it = (double)aValue;
+            ++it;
         }
+        ++itt;
     }
 }
 JNIEXPORT void JNICALL Java_jse_clib_NestedDoubleCPointer_parse2dest_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jdoubleArray rJArray, jint aStart, jint aRowNum, jint aColNum) {

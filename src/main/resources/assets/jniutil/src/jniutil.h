@@ -386,6 +386,7 @@ static inline void parsenested##CTYPE##2##JTYPE##V(JNIEnv *aEnv, JTYPE##Array rJ
             *ji = (JTYPE)(*bi);                                                                                                             \
             ++ji; ++bi;                                                                                                                     \
         }                                                                                                                                   \
+        ++bbi;                                                                                                                              \
     }                                                                                                                                       \
     (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rJArray, rBuf, 0);                                                                         \
 }                                                                                                                                           \
@@ -438,6 +439,7 @@ static inline void parse##JTYPE##2nested##CTYPE##V(JNIEnv *aEnv, JTYPE##Array aJ
             *bi = (CTYPE)(*ji);                                                                                                             \
             ++ji; ++bi;                                                                                                                     \
         }                                                                                                                                   \
+        ++bbi;                                                                                                                              \
     }                                                                                                                                       \
     (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aJArray, aBuf, JNI_ABORT);                                                                 \
 }                                                                                                                                           \
