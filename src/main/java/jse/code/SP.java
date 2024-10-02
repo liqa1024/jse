@@ -618,6 +618,9 @@ public class SP {
         /** 用于内部使用的 python 函数 */
         private static IBinaryFullOperator<Object, Object, String> GET_ATTRIBUTE = null;
         private static ITernaryConsumer<Object, String, Object> SET_ATTRIBUTE = null;
+        /** python 部分不能跨线程，这里不去主动检测 */
+        private static Thread INIT_THREAD = null;
+        public static boolean isValidThread() {return INIT_THREAD == Thread.currentThread();}
         
         
         /** python like stuffs，exec 不会获取返回值，eval 获取返回值 */
@@ -804,6 +807,7 @@ public class SP {
         @SuppressWarnings("unchecked")
         private static void initInterpreter_() {
             JEP_INTERP = new jep.SharedInterpreter();
+            INIT_THREAD = Thread.currentThread();
             JEP_INTERP.exec("import sys");
             // python 函数获取
             JEP_INTERP.exec("def __JSE_GET_ATTRIBUTE__(obj, name):\n    return obj.__getattribute__(name)");

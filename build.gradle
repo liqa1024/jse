@@ -22,7 +22,7 @@ sourceSets {
             srcDirs = ['src/main/java', 'src/rareevent/java', 'src/voronoi/java', 'src/nnap/java']
         }
         resources {
-            srcDirs = ['src/main/resources']
+            srcDirs = ['src/main/resources', 'src/nnap/resources']
             exclude(
                 'assets/cpointer/src/.*/', 'assets/cpointer/src/build/', 'assets/cpointer/src/*build*/',
                 'assets/jniutil/src/.*/', 'assets/jniutil/src/build/', 'assets/jniutil/src/*build*/',
@@ -30,7 +30,8 @@ sourceSets {
                 'assets/mpi/src/.*/', 'assets/mpi/src/build/', 'assets/mpi/src/*build*/',
                 'assets/lmp/src/.*/', 'assets/lmp/src/build/', 'assets/lmp/src/*build*/',
                 'assets/lmpplugin/src/.*/', 'assets/lmpplugin/src/build/', 'assets/lmpplugin/src/*build*/',
-                'assets/jep/jep*-src/'
+                'assets/jep/jep*-src/',
+                'assets/nnap/src/.*/', 'assets/nnap/src/build/', 'assets/nnap/src/*build*/',
             )
         }
     }
@@ -113,6 +114,10 @@ dependencies {
     implementation('com.jcraft:jzlib:1.1.3')                        // ssh 压缩传输，并且提供压缩指令支持
 //  implementation('com.googlecode.json-simple:json-simple:1.1')    // 小的 json 读写支持，现在直接使用 groovy-json
     
+    // pytorch
+//  implementation('org.bytedeco:pytorch:2.1.2-1.5.10')             // 默认不直接使用 platform 版本，而是需要时自动下载对应 jar 包，减少包的大小；现在改回直接手动链接 pytorch
+//  implementation('ai.djl.pytorch:pytorch-engine:0.30.0')          // 使用 djl 的 pytorch 引擎来运行 pytorch；现在直接使用 bytedeco 的满血版 pytorch
+//  implementation('org.slf4j:slf4j-nop:2.0.16')                    // 不需要 djl 的 log 信息；现在直接使用 bytedeco 的满血版 pytorch
     
     // jep 依赖
     jepImplementation('org.jetbrains:annotations:24.1.0')           // idea 调试支持
@@ -159,6 +164,7 @@ tasks.register('downloadSource') {
     mkdir('./release/src')
     // 直接硬编码下载第三方库的源码文件
     if (!file('./release/src/groovy-4.0.21-sources.jar').exists()) ant.get(src: 'https://repo1.maven.org/maven2/org/apache/groovy/groovy/4.0.21/groovy-4.0.21-sources.jar', dest: './release/src')
+//    if (!file('./release/src/api-0.30.0-sources.jar').exists()) ant.get(src: 'https://repo1.maven.org/maven2/ai/djl/api/0.30.0/api-0.30.0-sources.jar', dest: './release/src')
 }
 
 

@@ -584,6 +584,48 @@ static inline void throwExceptionLMP(JNIEnv *aEnv, const char *aErrStr) {
 #endif
 }
 
+static inline void throwExceptionTorch(JNIEnv *aEnv, const char *aErrStr) {
+    const char *tClazzName = "jse/clib/TorchException";
+    const char *tInitSig = "(Ljava/lang/String;)V";
+#ifdef __cplusplus
+    // find class runtime due to asm
+    jclass tClazz = aEnv->FindClass(tClazzName);
+    if (tClazz == NULL) {
+        fprintf(stderr, "Couldn't find %s\n", tClazzName);
+        return;
+    }
+    jmethodID tInit = aEnv->GetMethodID(tClazz, "<init>", tInitSig);
+    if (tInit == NULL) {
+        fprintf(stderr, "Couldn't find %s.<init>%s\n", tClazzName, tInitSig);
+        return;
+    }
+    jstring tJErrStr = aEnv->NewStringUTF(aErrStr);
+    jthrowable tException = (jthrowable)aEnv->NewObject(tClazz, tInit, tJErrStr);
+    aEnv->Throw(tException);
+    aEnv->DeleteLocalRef(tException);
+    aEnv->DeleteLocalRef(tJErrStr);
+    aEnv->DeleteLocalRef(tClazz);
+#else
+    // find class runtime due to asm
+    jclass tClazz = (*aEnv)->FindClass(aEnv, tClazzName);
+    if (tClazz == NULL) {
+        fprintf(stderr, "Couldn't find %s\n", tClazzName);
+        return;
+    }
+    jmethodID tInit = (*aEnv)->GetMethodID(aEnv, tClazz, "<init>", tInitSig);
+    if (tInit == NULL) {
+        fprintf(stderr, "Couldn't find %s.<init>%s\n", tClazzName, tInitSig);
+        return;
+    }
+    jstring tJErrStr = (*aEnv)->NewStringUTF(aEnv, aErrStr);
+    jthrowable tException = (jthrowable)(*aEnv)->NewObject(aEnv, tClazz, tInit, tJErrStr);
+    (*aEnv)->Throw(aEnv, tException);
+    (*aEnv)->DeleteLocalRef(aEnv, tException);
+    (*aEnv)->DeleteLocalRef(aEnv, tJErrStr);
+    (*aEnv)->DeleteLocalRef(aEnv, tClazz);
+#endif
+}
+
 
 #ifdef __cplusplus
 }

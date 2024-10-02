@@ -58,6 +58,7 @@ import org.apache.groovy.util.Maps;
 import org.codehaus.groovy.runtime.DefaultGroovyMethods;
 import org.codehaus.groovy.runtime.IOGroovyMethods;
 import org.codehaus.groovy.runtime.StringGroovyMethods;
+import org.codehaus.groovy.util.CharSequenceReader;
 import org.jetbrains.annotations.*;
 
 import java.awt.*;
@@ -72,6 +73,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -835,6 +838,25 @@ public class UT {
     }
     
     public static class Text {
+        
+        public static Reader toReader_(CharSequence aStr) {return new CharSequenceReader(aStr);}
+        public static BufferedReader toReader(CharSequence aStr) {return new BufferedReader(toReader_(aStr));}
+        public static void eachLine(final CharSequence aStr, final Consumer<String> aCon) throws IOException {
+            try (BufferedReader tReader = toReader(aStr)) {
+                String tLine;
+                while ((tLine = tReader.readLine()) != null) aCon.accept(tLine);
+            }
+        }
+        public static void eachLine(final CharSequence aStr, final BiConsumer<String, Integer> aCon) throws IOException {
+            try (BufferedReader tReader = toReader(aStr)) {
+                int tLineNum = 0;
+                String tLine;
+                while ((tLine = tReader.readLine()) != null) {
+                    aCon.accept(tLine, tLineNum);
+                    ++tLineNum;
+                }
+            }
+        }
         
         public static String[] toArray(Collection<? extends CharSequence> aLines) {
             String[] rArray = new String[aLines.size()];

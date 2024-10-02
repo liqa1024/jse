@@ -18,6 +18,7 @@
       <excludeFolder url="file://$MODULE_DIR$/vasp" />
       <excludeFolder url="file://$MODULE_DIR$/lib/cpointer" />
       <excludeFolder url="file://$MODULE_DIR$/lib/lmpplugin" />
+      <excludeFolder url="file://$MODULE_DIR$/lib/nnap" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
