@@ -23,6 +23,34 @@ import static jse.math.MathEX.SH_LARGEST_L;
  */
 public class Basis {
     
+    public interface IBasis {
+        double rcut();
+        RowMatrix eval(int aTypeNum, IDxyzTypeIterable aNL);
+        List<RowMatrix> evalPartial(int aTypeNum, boolean aCalBasis, IDxyzTypeIterable aNL);
+    }
+    
+    public static class SphericalChebyshev implements IBasis {
+        public final static int DEFAULT_NMAX = 5;
+        public final static int DEFAULT_LMAX = 6;
+        public final static double DEFAULT_RCUT = 6.2;
+        
+        private final int mNMax, mLMax;
+        private final double mRCut;
+        public SphericalChebyshev(int aNMax, int aLMax, double aRCut) {
+            mNMax = aNMax; mLMax = aLMax; mRCut = aRCut;
+        }
+        
+        @Override public double rcut() {
+            return mRCut;
+        }
+        @Override public RowMatrix eval(int aTypeNum, IDxyzTypeIterable aNL) {
+            return sphericalChebyshev(aTypeNum, mNMax, mLMax, mRCut, aNL);
+        }
+        @Override public List<RowMatrix> evalPartial(int aTypeNum, boolean aCalBasis, IDxyzTypeIterable aNL) {
+            return sphericalChebyshevPartial(aTypeNum, mNMax, mLMax, mRCut, aCalBasis, aNL);
+        }
+    }
+    
     @FunctionalInterface public interface IDxyzTypeIterable {void forEachDxyzType(IDxyzTypeDo aDxyzTypeDo);}
     @FunctionalInterface public interface IDxyzTypeDo {void run(double aDx, double aDy, double aDz, int aType);}
     

@@ -1,12 +1,24 @@
 package jsex.nnap;
 
+import jse.atom.IAtomData;
+import jse.atom.MonatomicParameterCalculator;
+import jse.cache.MatrixCache;
+import jse.cache.VectorCache;
 import jse.clib.DoubleCPointer;
 import jse.clib.TorchException;
 import jse.code.UT;
+import jse.code.collection.IntList;
+import jse.math.matrix.RowMatrix;
+import jse.math.vector.IVector;
+import jse.math.vector.Vectors;
 import jse.parallel.IAutoShutdown;
+import org.apache.groovy.util.Maps;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.IOException;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,7 +47,48 @@ public class NNAP implements IAutoShutdown {
     
     private final long mModelPtr;
     private boolean mDead = false;
+    
+    private final @Unmodifiable List<String> mElems;
+    private final IVector mRefEngs;
+    private final IVector mNormVec;
+    private final Basis.IBasis mBasis;
+    
+    @SuppressWarnings("unchecked")
     public NNAP(Map<?, ?> aModelInfo) throws TorchException {
+        Number tVersion = (Number)aModelInfo.get("version");
+        if (tVersion != null) {
+            int tVersionValue = tVersion.intValue();
+            if (tVersionValue != 1) throw new IllegalArgumentException("Unsupported version: " + tVersionValue);
+        }
+        List<String> tElems = (List<String>)aModelInfo.get("elems");
+        if (tElems == null) throw new IllegalArgumentException("No elems in ModelInfo");
+        mElems = tElems;
+        List<? extends Number> tRefEngs = (List<? extends Number>)aModelInfo.get("ref_engs");
+        if (tRefEngs == null) throw new IllegalArgumentException("No ref_engs in ModelInfo");
+        mRefEngs = Vectors.from(tRefEngs);
+        List<? extends Number> tNormVec = (List<? extends Number>)aModelInfo.get("norm_vec");
+        if (tNormVec == null) throw new IllegalArgumentException("No norm_vec in ModelInfo");
+        mNormVec = Vectors.from(tNormVec);
+        
+        Map<String, ?> tBasis = (Map<String, ?>)aModelInfo.get("basis");
+        if (tBasis == null) {
+            tBasis = Maps.of(
+                "type", "spherical_chebyshev",
+                "nmax", Basis.SphericalChebyshev.DEFAULT_NMAX,
+                "lmax", Basis.SphericalChebyshev.DEFAULT_LMAX,
+                "rcut", Basis.SphericalChebyshev.DEFAULT_RCUT
+            );
+        }
+        Object tBasisType = tBasis.get("type");
+        if (tBasisType == null) {
+            tBasisType = "spherical_chebyshev";
+        }
+        if (!tBasisType.equals("spherical_chebyshev")) throw new IllegalArgumentException("Unsupported basis type: " + tBasisType);
+        mBasis = new Basis.SphericalChebyshev(
+            ((Number)UT.Code.getWithDefault(tBasis, Basis.SphericalChebyshev.DEFAULT_NMAX, "nmax")).intValue(),
+            ((Number)UT.Code.getWithDefault(tBasis, Basis.SphericalChebyshev.DEFAULT_LMAX, "lmax")).intValue(),
+            ((Number)UT.Code.getWithDefault(tBasis, Basis.SphericalChebyshev.DEFAULT_RCUT, "rcut")).doubleValue()
+        );
         Object tModel = aModelInfo.get("model");
         if (tModel == null) throw new IllegalArgumentException("No model data in ModelInfo");
         byte[] tModelBytes = Base64.getDecoder().decode(tModel.toString());
@@ -56,29 +109,95 @@ public class NNAP implements IAutoShutdown {
     }
     private static native void shutdown0(long aModelPtr);
     
-    public double forward(double[] aX, int aStart, int aCount) throws TorchException {
+    
+    protected IAtomData reorderSymbols(IAtomData aAtomData) {
+        if (mElems.size() != aAtomData.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of AtomData: " + aAtomData.atomTypeNumber() + ", model: " + mElems.size());
+        List<String> tAtomDataSymbols = aAtomData.symbols();
+        if (tAtomDataSymbols==null || tAtomDataSymbols.equals(mElems)) return aAtomData;
+        int[] tAtomDataType2newType = new int[tAtomDataSymbols.size()+1];
+        for (int i = 0; i < tAtomDataSymbols.size(); ++i) {
+            String tElem = tAtomDataSymbols.get(i);
+            int idx = mElems.indexOf(tElem);
+            if (idx < 0) throw new IllegalArgumentException("Invalid element ("+tElem+") in AtomData");
+            tAtomDataType2newType[i+1] = idx+1;
+        }
+        return aAtomData.opt().mapType(atom -> tAtomDataType2newType[atom.type()]);
+    }
+    
+    /**
+     * 使用 nnap 计算给定原子结构每个原子的能量值
+     * @param aMPC 此原子的 mpc 或者原子结构本身
+     * @return 每个原子能量组成的向量
+     * @author liqa
+     */
+    public IVector calEnergies(final MonatomicParameterCalculator aMPC) throws TorchException {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        if (mElems.size() != aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
+        IVector rEngs = VectorCache.getVec(aMPC.atomNumber());
+        // 获取需要缓存的近邻列表
+        final IntList @Nullable[] tNLToBuffer = aMPC.getNLWhichNeedBuffer_(mBasis.rcut(), -1, false);
+        aMPC.pool_().parfor(rEngs.size(), i -> {
+            RowMatrix tBasis = mBasis.eval(aMPC.atomTypeNumber(), dxyzTypeDo -> {
+                aMPC.nl_().forEachNeighbor(i, mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
+                    dxyzTypeDo.run(dx, dy, dz, aMPC.atomType_().get(idx));
+                    // 还是需要顺便统计近邻进行缓存
+                    if (tNLToBuffer != null) {tNLToBuffer[i].add(idx);}
+                });
+            });
+            tBasis.asVecRow().div2this(mNormVec);
+            double tPred;
+            try {tPred = forward(tBasis.internalData(), tBasis.internalDataShift(), tBasis.internalDataSize());}
+            catch (TorchException e) {throw new RuntimeException(e);}
+            MatrixCache.returnMat(tBasis);
+            tPred += mRefEngs.get(aMPC.atomType_().get(i)-1);
+            rEngs.set(i, tPred);
+        });
+        return rEngs;
+    }
+    public IVector calEnergies(IAtomData aAtomData) throws TorchException {
+        aAtomData = reorderSymbols(aAtomData);
+        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData)) {return calEnergies(tMPC);}
+    }
+    /**
+     * 使用 nnap 计算给定原子结构的总能量
+     * @param aMPC 此原子的 mpc 或者原子结构本身
+     * @return 总能量
+     * @author liqa
+     */
+    public double calEnergy(MonatomicParameterCalculator aMPC) throws TorchException {
+        IVector tEngs = calEnergies(aMPC);
+        double tTotEng = tEngs.sum();
+        VectorCache.returnVec(tEngs);
+        return tTotEng;
+    }
+    public double calEnergy(IAtomData aAtomData) throws TorchException {
+        aAtomData = reorderSymbols(aAtomData);
+        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData)) {return calEnergy(tMPC);}
+    }
+    
+    
+    protected double forward(double[] aX, int aStart, int aCount) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         rangeCheck(aX.length, aStart+aCount);
         return forward0(mModelPtr, aX, aStart, aCount);
     }
-    public double forward(double[] aX, int aCount) throws TorchException {return forward(aX, 0, aCount);}
-    public double forward(double[] aX) throws TorchException {return forward(aX, aX.length);}
-    public double forward(DoubleCPointer aX, int aCount) throws TorchException {return forward1(mModelPtr, aX.ptr_(), aCount);}
+    protected double forward(double[] aX, int aCount) throws TorchException {return forward(aX, 0, aCount);}
+    protected double forward(double[] aX) throws TorchException {return forward(aX, aX.length);}
+    protected double forward(DoubleCPointer aX, int aCount) throws TorchException {return forward1(mModelPtr, aX.ptr_(), aCount);}
     private static native double forward0(long aModelPtr, double[] aX, int aStart, int aCount) throws TorchException;
     private static native double forward1(long aModelPtr, long aXPtr, int aCount) throws TorchException;
     
-    public double backward(double[] aX, int aStart, double[] rGradX, int rStart, int aCount) throws TorchException {
+    protected double backward(double[] aX, int aStart, double[] rGradX, int rStart, int aCount) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         rangeCheck(aX.length, aStart+aCount);
         rangeCheck(rGradX.length, rStart+aCount);
         return backward0(mModelPtr, aX, aStart, rGradX, rStart, aCount);
     }
-    public double backward(double[] aX, double[] rGradX, int aCount) throws TorchException {return backward(aX, 0, rGradX, 0, aCount);}
-    public double backward(double[] aX, double[] rGradX) throws TorchException {return backward(aX, rGradX, aX.length);}
-    public double backward(DoubleCPointer aX, DoubleCPointer rGradX, int aCount) throws TorchException {return backward1(mModelPtr, aX.ptr_(), rGradX.ptr_(), aCount);}
+    protected double backward(double[] aX, double[] rGradX, int aCount) throws TorchException {return backward(aX, 0, rGradX, 0, aCount);}
+    protected double backward(double[] aX, double[] rGradX) throws TorchException {return backward(aX, rGradX, aX.length);}
+    protected double backward(DoubleCPointer aX, DoubleCPointer rGradX, int aCount) throws TorchException {return backward1(mModelPtr, aX.ptr_(), rGradX.ptr_(), aCount);}
     private static native double backward0(long aModelPtr, double[] aX, int aStart, double[] rGradX, int rStart, int aCount) throws TorchException;
     private static native double backward1(long aModelPtr, long aXPtr, long rGradXPtr, int aCount) throws TorchException;
-    
     
     static void rangeCheck(int jArraySize, int aCount) {
         if (aCount > jArraySize) throw new IndexOutOfBoundsException(aCount+" > "+jArraySize);
