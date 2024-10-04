@@ -139,22 +139,26 @@ public class NNAP implements IAutoShutdown {
         Vector rEngs = VectorCache.getVec(aMPC.atomNumber());
         // 获取需要缓存的近邻列表
         final IntList @Nullable[] tNLToBuffer = aMPC.getNLWhichNeedBuffer_(mBasis.rcut(), -1, false);
-        aMPC.pool_().parfor(rEngs.size(), i -> {
-            RowMatrix tBasis = mBasis.eval(aMPC.atomTypeNumber(), dxyzTypeDo -> {
-                aMPC.nl_().forEachNeighbor(i, mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
-                    dxyzTypeDo.run(dx, dy, dz, aMPC.atomType_().get(idx));
-                    // 还是需要顺便统计近邻进行缓存
-                    if (tNLToBuffer != null) {tNLToBuffer[i].add(idx);}
+        try {
+            aMPC.pool_().parforWithException(rEngs.size(), null, null, (i, threadID) -> {
+                RowMatrix tBasis = mBasis.eval(aMPC.atomTypeNumber(), dxyzTypeDo -> {
+                    aMPC.nl_().forEachNeighbor(i, mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
+                        dxyzTypeDo.run(dx, dy, dz, aMPC.atomType_().get(idx));
+                        // 还是需要顺便统计近邻进行缓存
+                        if (tNLToBuffer != null) {tNLToBuffer[i].add(idx);}
+                    });
                 });
+                tBasis.asVecRow().div2this(mNormVec);
+                double tPred = forward(tBasis.internalData(), tBasis.internalDataShift(), tBasis.internalDataSize());
+                MatrixCache.returnMat(tBasis);
+                tPred += mRefEngs.get(aMPC.atomType_().get(i)-1);
+                rEngs.set(i, tPred);
             });
-            tBasis.asVecRow().div2this(mNormVec);
-            double tPred;
-            try {tPred = forward(tBasis.internalData(), tBasis.internalDataShift(), tBasis.internalDataSize());}
-            catch (TorchException e) {throw new RuntimeException(e);}
-            MatrixCache.returnMat(tBasis);
-            tPred += mRefEngs.get(aMPC.atomType_().get(i)-1);
-            rEngs.set(i, tPred);
-        });
+        } catch (TorchException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         return rEngs;
     }
     public Vector calEnergies(IAtomData aAtomData) throws TorchException {
@@ -224,37 +228,41 @@ public class NNAP implements IAutoShutdown {
         if (mElems.size() != aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
         // 获取需要缓存的近邻列表
         final IntList @Nullable[] tNLToBuffer = aMPC.getNLWhichNeedBuffer_(mBasis.rcut(), -1, false);
-        aMPC.pool_().parfor(rForcesX.size(), i -> {
-            List<@NotNull RowMatrix> tOut = mBasis.evalPartial(aMPC.atomTypeNumber(), dxyzTypeDo -> {
-                aMPC.nl_().forEachNeighbor(i, mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
-                    dxyzTypeDo.run(dx, dy, dz, aMPC.atomType_().get(idx));
-                    // 还是需要顺便统计近邻进行缓存
-                    if (tNLToBuffer != null) {tNLToBuffer[i].add(idx);}
+        try {
+            aMPC.pool_().parforWithException(rForcesX.size(), null, null, (i, threadID) -> {
+                List<@NotNull RowMatrix> tOut = mBasis.evalPartial(aMPC.atomTypeNumber(), dxyzTypeDo -> {
+                    aMPC.nl_().forEachNeighbor(i, mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
+                        dxyzTypeDo.run(dx, dy, dz, aMPC.atomType_().get(idx));
+                        // 还是需要顺便统计近邻进行缓存
+                        if (tNLToBuffer != null) {tNLToBuffer[i].add(idx);}
+                    });
                 });
+                RowMatrix tBasisPx = tOut.get(0); tBasisPx.asVecRow().div2this(mNormVec);
+                RowMatrix tBasisPy = tOut.get(1); tBasisPy.asVecRow().div2this(mNormVec);
+                RowMatrix tBasisPz = tOut.get(2); tBasisPz.asVecRow().div2this(mNormVec);
+                RowMatrix tBasis = tOut.get(3); tBasis.asVecRow().div2this(mNormVec);
+                
+                Vector tPredPartial = VectorCache.getVec(tBasis.rowNumber()*tBasis.columnNumber());
+                double tPred = backward(tBasis.internalData(), tBasis.internalDataShift(), tPredPartial.internalData(), tPredPartial.internalDataShift(), tBasis.internalDataSize());
+                if (rEnergies != null) {
+                    tPred += mRefEngs.get(aMPC.atomType_().get(i)-1);
+                    rEnergies.set(i, tPred);
+                }
+                rForcesX.set(i, -2.0 * tPredPartial.opt().dot(tBasisPx.asVecRow()));
+                rForcesY.set(i, -2.0 * tPredPartial.opt().dot(tBasisPy.asVecRow()));
+                rForcesZ.set(i, -2.0 * tPredPartial.opt().dot(tBasisPz.asVecRow()));
+                VectorCache.returnVec(tPredPartial);
+                
+                MatrixCache.returnMat(tBasis);
+                MatrixCache.returnMat(tBasisPx);
+                MatrixCache.returnMat(tBasisPy);
+                MatrixCache.returnMat(tBasisPz);
             });
-            RowMatrix tBasisPx = tOut.get(0); tBasisPx.asVecRow().div2this(mNormVec);
-            RowMatrix tBasisPy = tOut.get(1); tBasisPy.asVecRow().div2this(mNormVec);
-            RowMatrix tBasisPz = tOut.get(2); tBasisPz.asVecRow().div2this(mNormVec);
-            RowMatrix tBasis = tOut.get(3); tBasis.asVecRow().div2this(mNormVec);
-            
-            double tPred;
-            Vector tPredPartial = VectorCache.getVec(tBasis.rowNumber()*tBasis.columnNumber());
-            try {tPred = backward(tBasis.internalData(), tBasis.internalDataShift(), tPredPartial.internalData(), tPredPartial.internalDataShift(), tBasis.internalDataSize());}
-            catch (TorchException e) {throw new RuntimeException(e);}
-            if (rEnergies != null) {
-                tPred += mRefEngs.get(aMPC.atomType_().get(i)-1);
-                rEnergies.set(i, tPred);
-            }
-            rForcesX.set(i, -2.0 * tPredPartial.opt().dot(tBasisPx.asVecRow()));
-            rForcesY.set(i, -2.0 * tPredPartial.opt().dot(tBasisPy.asVecRow()));
-            rForcesZ.set(i, -2.0 * tPredPartial.opt().dot(tBasisPz.asVecRow()));
-            VectorCache.returnVec(tPredPartial);
-            
-            MatrixCache.returnMat(tBasis);
-            MatrixCache.returnMat(tBasisPx);
-            MatrixCache.returnMat(tBasisPy);
-            MatrixCache.returnMat(tBasisPz);
-        });
+        } catch (TorchException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
     
     

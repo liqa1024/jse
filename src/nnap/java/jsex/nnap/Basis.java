@@ -10,6 +10,7 @@ import jse.math.vector.IComplexVector;
 import jse.math.vector.IComplexVectorOperation;
 import jse.math.vector.IVector;
 import jse.math.vector.Vectors;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,6 +25,7 @@ import static jse.math.MathEX.SH_LARGEST_L;
  */
 public class Basis {
     
+    @ApiStatus.Experimental
     public interface IBasis {
         double rcut();
         RowMatrix eval(int aTypeNum, IDxyzTypeIterable aNL);
