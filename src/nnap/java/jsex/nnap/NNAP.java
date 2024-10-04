@@ -15,9 +15,7 @@ import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 import jse.parallel.IAutoShutdown;
 import org.apache.groovy.util.Maps;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
+import org.jetbrains.annotations.*;
 
 import java.io.IOException;
 import java.util.Base64;
@@ -48,16 +46,18 @@ public class NNAP implements IAutoShutdown {
     }
     private static native void setSingleThread0() throws TorchException;
     
-    private final long mModelPtr;
+    protected final long mModelPtr;
     private boolean mDead = false;
+    private final int mThreadNumber;
     
-    private final @Unmodifiable List<String> mElems;
-    private final IVector mRefEngs;
-    private final IVector mNormVec;
-    private final Basis.IBasis mBasis;
+    protected final @Unmodifiable List<String> mElems;
+    protected final IVector mRefEngs;
+    protected final IVector mNormVec;
+    protected final Basis.IBasis mBasis;
     
     @SuppressWarnings("unchecked")
-    public NNAP(Map<?, ?> aModelInfo) throws TorchException {
+    public NNAP(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws TorchException {
+        mThreadNumber = aThreadNumber;
         Number tVersion = (Number)aModelInfo.get("version");
         if (tVersion != null) {
             int tVersionValue = tVersion.intValue();
@@ -98,9 +98,11 @@ public class NNAP implements IAutoShutdown {
         mModelPtr = load1(tModelBytes, tModelBytes.length);
         if (mModelPtr==0 || mModelPtr==-1) throw new TorchException("Failed to load Torch Model");
     }
-    public NNAP(String aModelPath) throws TorchException, IOException {
-        this(aModelPath.endsWith(".yaml") || aModelPath.endsWith(".yml") ? UT.IO.yaml2map(aModelPath) : UT.IO.json2map(aModelPath));
+    public NNAP(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws TorchException, IOException {
+        this(aModelPath.endsWith(".yaml") || aModelPath.endsWith(".yml") ? UT.IO.yaml2map(aModelPath) : UT.IO.json2map(aModelPath), aThreadNumber);
     }
+    public NNAP(Map<?, ?> aModelInfo) throws TorchException {this(aModelInfo, 1);}
+    public NNAP(String aModelPath) throws TorchException, IOException {this(aModelPath, 1);}
     private static native long load0(String aModelPath) throws TorchException;
     private static native long load1(byte[] aModelBytes, int aSize) throws TorchException;
     
@@ -111,6 +113,9 @@ public class NNAP implements IAutoShutdown {
         }
     }
     private static native void shutdown0(long aModelPtr);
+    public boolean isShutdown() {return mDead;}
+    public int threadNumber() {return mThreadNumber;}
+    @VisibleForTesting public int nthreads() {return threadNumber();}
     
     
     protected IAtomData reorderSymbols(IAtomData aAtomData) {
@@ -164,7 +169,7 @@ public class NNAP implements IAutoShutdown {
     public Vector calEnergies(IAtomData aAtomData) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         aAtomData = reorderSymbols(aAtomData);
-        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData)) {return calEnergies(tMPC);}
+        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergies(tMPC);}
     }
     /**
      * 使用 nnap 计算给定原子结构的总能量
@@ -182,7 +187,7 @@ public class NNAP implements IAutoShutdown {
     public double calEnergy(IAtomData aAtomData) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         aAtomData = reorderSymbols(aAtomData);
-        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData)) {return calEnergy(tMPC);}
+        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergy(tMPC);}
     }
     
     /**
@@ -200,7 +205,7 @@ public class NNAP implements IAutoShutdown {
     public RowMatrix calForces(IAtomData aAtomData) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         aAtomData = reorderSymbols(aAtomData);
-        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData)) {return calForces(tMPC);}
+        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calForces(tMPC);}
     }
     
     /**
@@ -221,7 +226,7 @@ public class NNAP implements IAutoShutdown {
     public List<Vector> calEnergyForces(IAtomData aAtomData) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         aAtomData = reorderSymbols(aAtomData);
-        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData)) {return calEnergyForces(tMPC);}
+        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyForces(tMPC);}
     }
     protected void calEnergyForces_(final MonatomicParameterCalculator aMPC, final @Nullable IVector rEnergies, final @NotNull IVector rForcesX, final @NotNull IVector rForcesY, final @NotNull IVector rForcesZ) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
