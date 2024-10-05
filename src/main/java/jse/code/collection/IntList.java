@@ -97,7 +97,8 @@ public class IntList implements ISlice, IDataShell<int[]> {
         mSize = 0;
     }
     public void forEach(IntConsumer aCon) {
-        for (int i = 0; i < mSize; ++i) aCon.accept(mData[i]);
+        final int tSize = mSize;
+        for (int i = 0; i < tSize; ++i) aCon.accept(mData[i]);
     }
     
     public List<Integer> asList() {
@@ -126,6 +127,12 @@ public class IntList implements ISlice, IDataShell<int[]> {
     public void removeLast() {
         if (isEmpty()) throw new NoSuchElementException("Cannot removeLast() from an empty IntList");
         --mSize;
+    }
+    @ApiStatus.Experimental
+    public boolean contains(int aValue) {
+        final int tSize = mSize;
+        for (int i = 0; i < tSize; ++i) if (mData[i] == aValue) return true;
+        return false;
     }
     
     @Override public final boolean equals(Object aRHS) {

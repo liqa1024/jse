@@ -2,17 +2,18 @@ package jsex.nnap;
 
 import com.google.common.collect.Lists;
 import jse.atom.IAtomData;
+import jse.atom.IXYZ;
 import jse.atom.MonatomicParameterCalculator;
+import jse.atom.XYZ;
 import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
 import jse.clib.DoubleCPointer;
 import jse.clib.TorchException;
 import jse.code.UT;
+import jse.code.collection.ISlice;
 import jse.code.collection.IntList;
 import jse.math.matrix.RowMatrix;
-import jse.math.vector.IVector;
-import jse.math.vector.Vector;
-import jse.math.vector.Vectors;
+import jse.math.vector.*;
 import jse.parallel.IAutoShutdown;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.*;
@@ -145,11 +146,13 @@ public class NNAP implements IAutoShutdown {
     public Vector calEnergies(final MonatomicParameterCalculator aMPC) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (mElems.size() != aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
-        Vector rEngs = VectorCache.getVec(aMPC.atomNumber());
+        // 统一存储常量
+        final int tAtomNumber = aMPC.atomNumber();
+        Vector rEngs = VectorCache.getVec(tAtomNumber);
         // 获取需要缓存的近邻列表
         final IntList @Nullable[] tNLToBuffer = aMPC.getNLWhichNeedBuffer_(mBasis.rcut(), -1, false);
         try {
-            aMPC.pool_().parforWithException(rEngs.size(), null, null, (i, threadID) -> {
+            aMPC.pool_().parforWithException(tAtomNumber, null, null, (i, threadID) -> {
                 RowMatrix tBasis = mBasis.eval(aMPC.atomTypeNumber(), dxyzTypeDo -> {
                     aMPC.nl_().forEachNeighbor(i, mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
                         dxyzTypeDo.run(dx, dy, dz, aMPC.atomType_().get(idx));
@@ -176,6 +179,45 @@ public class NNAP implements IAutoShutdown {
         try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergies(tMPC);}
     }
     /**
+     * 使用 nnap 计算给定原子结构指定原子的能量
+     * @param aMPC 此原子的 mpc 或者原子结构本身
+     * @param aIndices 需要计算的原子的索引（从 0 开始）
+     * @return 此原子的能量组成的向量
+     * @author liqa
+     */
+    public Vector calEnergiesAt(final MonatomicParameterCalculator aMPC, ISlice aIndices) throws TorchException {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        if (mElems.size() != aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
+        // 统一存储常量
+        final int tSize = aIndices.size();
+        Vector rEngs = VectorCache.getVec(tSize);
+        try {
+            aMPC.pool_().parforWithException(tSize, null, null, (i, threadID) -> {
+                final int cIdx = aIndices.get(i);
+                RowMatrix tBasis = mBasis.eval(aMPC.atomTypeNumber(), dxyzTypeDo -> {
+                    aMPC.nl_().forEachNeighbor(cIdx, mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
+                        dxyzTypeDo.run(dx, dy, dz, aMPC.atomType_().get(idx));
+                    });
+                });
+                tBasis.asVecRow().div2this(mNormVec);
+                double tPred = forward(threadID, tBasis.internalData(), tBasis.internalDataShift(), tBasis.internalDataSize());
+                MatrixCache.returnMat(tBasis);
+                tPred += mRefEngs.get(aMPC.atomType_().get(cIdx)-1);
+                rEngs.set(i, tPred);
+            });
+        } catch (TorchException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return rEngs;
+    }
+    public Vector calEnergiesAt(IAtomData aAtomData, ISlice aIndices) throws TorchException {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        aAtomData = reorderSymbols(aAtomData);
+        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergiesAt(tMPC, aIndices);}
+    }
+    /**
      * 使用 nnap 计算给定原子结构的总能量
      * @param aMPC 此原子的 mpc 或者原子结构本身
      * @return 总能量
@@ -193,6 +235,91 @@ public class NNAP implements IAutoShutdown {
         aAtomData = reorderSymbols(aAtomData);
         try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergy(tMPC);}
     }
+    
+    /**
+     * 计算移动前后的能量差，只计算移动影响的近邻列表中的原子，可以加快计算速度
+     * @param aMPC 此原子的 mpc 或者原子结构本身
+     * @param aI 移动原子的索引
+     * @param aDx x 方向移动的距离
+     * @param aDy y 方向移动的距离
+     * @param aDz z 方向移动的距离
+     * @param aRestoreMPC 计算完成后是否还原 MPC 的状态，默认为 {@code true}
+     * @return 移动后能量 - 移动前能量
+     */
+    public double calEnergyDiffMove(MonatomicParameterCalculator aMPC, int aI, double aDx, double aDy, double aDz, boolean aRestoreMPC) throws TorchException {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        if (mElems.size() != aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
+        XYZ oXYZ = new XYZ(aMPC.atomDataXYZ_().row(aI));
+        IIntVector oNL = aMPC.getNeighborList(oXYZ, mBasis.rcut());
+        XYZ nXYZ = oXYZ.plus(aDx, aDy, aDz);
+        IIntVector nNL = aMPC.getNeighborList(nXYZ, mBasis.rcut());
+        // 合并近邻列表，这里简单遍历实现
+        final IntList tNL = new IntList(oNL.size());
+        oNL.forEach(idx -> {
+            if (!tNL.contains(idx)) tNL.add(idx);
+        });
+        nNL.forEach(idx -> {
+            if (!tNL.contains(idx)) tNL.add(idx);
+        });
+        Vector oEngs = calEnergiesAt(aMPC, tNL);
+        double oEng = oEngs.sum();
+        VectorCache.returnVec(oEngs);
+        Vector nEngs = calEnergiesAt(aMPC.setAtomXYZ(aI, nXYZ), tNL);
+        double nEng = nEngs.sum();
+        VectorCache.returnVec(nEngs);
+        if (aRestoreMPC) aMPC.setAtomXYZ(aI, oXYZ);
+        return nEng - oEng;
+    }
+    public double calEnergyDiffMove(MonatomicParameterCalculator aMPC, int aI, double aDx, double aDy, double aDz) throws TorchException {return calEnergyDiffMove(aMPC, aI, aDx, aDy, aDz, true);}
+    public double calEnergyDiffMove(IAtomData aAtomData, int aI, double aDx, double aDy, double aDz) throws TorchException {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        aAtomData = reorderSymbols(aAtomData);
+        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyDiffMove(tMPC, aI, aDx, aDy, aDz);}
+    }
+    public double calEnergyDiffMove(MonatomicParameterCalculator aMPC, int aI, IXYZ aDxyz) throws TorchException {return calEnergyDiffMove(aMPC, aI, aDxyz.x(), aDxyz.y(), aDxyz.z());}
+    public double calEnergyDiffMove(IAtomData aAtomData, int aI, IXYZ aDxyz) throws TorchException {return calEnergyDiffMove(aAtomData, aI, aDxyz.x(), aDxyz.y(), aDxyz.z());}
+    /**
+     * 计算交换种类前后的能量差，只计算交换影响的近邻列表中的原子，可以加快计算速度
+     * @param aMPC 此原子的 mpc 或者原子结构本身
+     * @param aI 需要交换种类的第一个原子索引
+     * @param aJ 需要交换种类的第二个原子索引
+     * @param aRestoreMPC 计算完成后是否还原 MPC 的状态，默认为 {@code true}
+     * @return 交换后能量 - 交换前能量
+     */
+    public double calEnergyDiffSwap(MonatomicParameterCalculator aMPC, int aI, int aJ, boolean aRestoreMPC) throws TorchException {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        if (mElems.size() != aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
+        int oTypeI = aMPC.atomType_().get(aI);
+        int oTypeJ = aMPC.atomType_().get(aJ);
+        if (oTypeI == oTypeJ) return 0.0;
+        IIntVector iNL = aMPC.getNeighborList(aI, mBasis.rcut());
+        IIntVector jNL = aMPC.getNeighborList(aJ, mBasis.rcut());
+        // 合并近邻列表，这里简单遍历实现
+        final IntList tNL = new IntList(iNL.size()+1);
+        tNL.add(aI);
+        iNL.forEach(idx -> {
+            if (!tNL.contains(idx)) tNL.add(idx);
+        });
+        if (!tNL.contains(aJ)) tNL.add(aJ);
+        jNL.forEach(idx -> {
+            if (!tNL.contains(idx)) tNL.add(idx);
+        });
+        Vector oEngs = calEnergiesAt(aMPC, tNL);
+        double oEng = oEngs.sum();
+        VectorCache.returnVec(oEngs);
+        Vector nEngs = calEnergiesAt(aMPC.setAtomType(aI, oTypeJ).setAtomType(aJ, oTypeI), tNL);
+        double nEng = nEngs.sum();
+        VectorCache.returnVec(nEngs);
+        if (aRestoreMPC) aMPC.setAtomType(aI, oTypeI).setAtomType(aJ, oTypeJ);
+        return nEng - oEng;
+    }
+    public double calEnergyDiffSwap(MonatomicParameterCalculator aMPC, int aI, int aJ) throws TorchException {return calEnergyDiffSwap(aMPC, aI, aJ, true);}
+    public double calEnergyDiffSwap(IAtomData aAtomData, int aI, int aJ) throws TorchException {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        aAtomData = reorderSymbols(aAtomData);
+        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyDiffSwap(tMPC, aI, aJ);}
+    }
+    
     
     /**
      * 使用 nnap 计算给定原子结构每个原子和受力

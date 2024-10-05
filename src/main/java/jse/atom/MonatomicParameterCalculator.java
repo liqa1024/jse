@@ -979,7 +979,7 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
      * 直接获取近邻列表的 api，不包括自身
      * @author liqa
      */
-    public IIntVector getNeighborList(int aIdx, double aRMax, int aNnn) {
+    public IntVector getNeighborList(int aIdx, double aRMax, int aNnn) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
         // 获取缓存近邻列表，这里只需要进行遍历 idx
@@ -991,10 +991,10 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         mNL.forEachNeighbor(aIdx, aRMax, aNnn, (x, y, z, idx, dx, dy, dz) -> rNL.add(idx));
         return rNL.build();
     }
-    public IIntVector getNeighborList(int aIdx, double aRMax) {return getNeighborList(aIdx, aRMax, -1);}
-    public IIntVector getNeighborList(int aIdx              ) {return getNeighborList(aIdx, mUnitLen*R_NEAREST_MUL);}
+    public IntVector getNeighborList(int aIdx, double aRMax) {return getNeighborList(aIdx, aRMax, -1);}
+    public IntVector getNeighborList(int aIdx              ) {return getNeighborList(aIdx, mUnitLen*R_NEAREST_MUL);}
     
-    @ApiStatus.Internal public IIntVector getNeighborList_(double aX, double aY, double aZ, double aRMax, int aNnn) {
+    @ApiStatus.Internal public IntVector getNeighborList_(double aX, double aY, double aZ, double aRMax, int aNnn) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
         // 由于 lammps 精度的问题，需要将超出边界的进行平移
@@ -1024,9 +1024,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         mNL.forEachNeighbor(aX, aY, aZ, aRMax, aNnn, (x, y, z, idx, dx, dy, dz) -> rNL.add(idx));
         return rNL.build();
     }
-    public IIntVector getNeighborList(IXYZ aXYZ, double aRMax, int aNnn) {return getNeighborList_(aXYZ.x(), aXYZ.y(), aXYZ.z(), aRMax, aNnn);}
-    public IIntVector getNeighborList(IXYZ aXYZ, double aRMax          ) {return getNeighborList(aXYZ, aRMax, -1);}
-    public IIntVector getNeighborList(IXYZ aXYZ                        ) {return getNeighborList(aXYZ, mUnitLen*R_NEAREST_MUL);}
+    public IntVector getNeighborList(IXYZ aXYZ, double aRMax, int aNnn) {return getNeighborList_(aXYZ.x(), aXYZ.y(), aXYZ.z(), aRMax, aNnn);}
+    public IntVector getNeighborList(IXYZ aXYZ, double aRMax          ) {return getNeighborList(aXYZ, aRMax, -1);}
+    public IntVector getNeighborList(IXYZ aXYZ                        ) {return getNeighborList(aXYZ, mUnitLen*R_NEAREST_MUL);}
     
     
     /** 用于分割模拟盒，判断给定 XYZ 或者 idx 处的原子是否在需要考虑的区域中 */
