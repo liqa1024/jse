@@ -274,7 +274,7 @@ public class NNAP implements IAutoShutdown {
     public double calEnergyDiffMove(IAtomData aAtomData, int aI, double aDx, double aDy, double aDz) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         aAtomData = reorderSymbols(aAtomData);
-        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyDiffMove(tMPC, aI, aDx, aDy, aDz);}
+        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyDiffMove(tMPC, aI, aDx, aDy, aDz, false);}
     }
     public double calEnergyDiffMove(MonatomicParameterCalculator aMPC, int aI, IXYZ aDxyz) throws TorchException {return calEnergyDiffMove(aMPC, aI, aDxyz.x(), aDxyz.y(), aDxyz.z());}
     public double calEnergyDiffMove(IAtomData aAtomData, int aI, IXYZ aDxyz) throws TorchException {return calEnergyDiffMove(aAtomData, aI, aDxyz.x(), aDxyz.y(), aDxyz.z());}
@@ -317,7 +317,7 @@ public class NNAP implements IAutoShutdown {
     public double calEnergyDiffSwap(IAtomData aAtomData, int aI, int aJ) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         aAtomData = reorderSymbols(aAtomData);
-        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyDiffSwap(tMPC, aI, aJ);}
+        try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyDiffSwap(tMPC, aI, aJ, false);}
     }
     
     
