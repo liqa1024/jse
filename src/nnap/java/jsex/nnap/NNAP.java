@@ -86,6 +86,7 @@ public class NNAP implements IAutoShutdown {
         }
         if (!tBasisType.equals("spherical_chebyshev")) throw new IllegalArgumentException("Unsupported basis type: " + tBasisType);
         mBasis = new Basis.SphericalChebyshev(
+            mElems.size(),
             ((Number)UT.Code.getWithDefault(tBasis, Basis.SphericalChebyshev.DEFAULT_NMAX, "nmax")).intValue(),
             ((Number)UT.Code.getWithDefault(tBasis, Basis.SphericalChebyshev.DEFAULT_LMAX, "lmax")).intValue(),
             ((Number)UT.Code.getWithDefault(tBasis, Basis.SphericalChebyshev.DEFAULT_RCUT, "rcut")).doubleValue()
@@ -121,7 +122,7 @@ public class NNAP implements IAutoShutdown {
     
     
     protected IAtomData reorderSymbols(IAtomData aAtomData) {
-        if (mElems.size() != aAtomData.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of AtomData: " + aAtomData.atomTypeNumber() + ", model: " + mElems.size());
+        if (mElems.size() < aAtomData.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of AtomData: " + aAtomData.atomTypeNumber() + ", model: " + mElems.size());
         List<String> tAtomDataSymbols = aAtomData.symbols();
         if (tAtomDataSymbols==null || tAtomDataSymbols.equals(mElems)) return aAtomData;
         int[] tAtomDataType2newType = new int[tAtomDataSymbols.size()+1];
@@ -142,7 +143,7 @@ public class NNAP implements IAutoShutdown {
      */
     public Vector calEnergies(final MonatomicParameterCalculator aMPC) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
-        if (mElems.size() != aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
+        if (mElems.size() < aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
         // 统一存储常量
         final int tAtomNumber = aMPC.atomNumber();
         Vector rEngs = VectorCache.getVec(tAtomNumber);
@@ -150,7 +151,7 @@ public class NNAP implements IAutoShutdown {
         final IntList @Nullable[] tNLToBuffer = aMPC.getNLWhichNeedBuffer_(mBasis.rcut(), -1, false);
         try {
             aMPC.pool_().parforWithException(tAtomNumber, null, null, (i, threadID) -> {
-                RowMatrix tBasis = mBasis.eval(aMPC.atomTypeNumber(), dxyzTypeDo -> {
+                RowMatrix tBasis = mBasis.eval(dxyzTypeDo -> {
                     aMPC.nl_().forEachNeighbor(i, mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
                         dxyzTypeDo.run(dx, dy, dz, aMPC.atomType_().get(idx));
                         // 还是需要顺便统计近邻进行缓存
@@ -184,14 +185,14 @@ public class NNAP implements IAutoShutdown {
      */
     public Vector calEnergiesAt(final MonatomicParameterCalculator aMPC, ISlice aIndices) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
-        if (mElems.size() != aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
+        if (mElems.size() < aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
         // 统一存储常量
         final int tSize = aIndices.size();
         Vector rEngs = VectorCache.getVec(tSize);
         try {
             aMPC.pool_().parforWithException(tSize, null, null, (i, threadID) -> {
                 final int cIdx = aIndices.get(i);
-                RowMatrix tBasis = mBasis.eval(aMPC.atomTypeNumber(), dxyzTypeDo -> {
+                RowMatrix tBasis = mBasis.eval(dxyzTypeDo -> {
                     aMPC.nl_().forEachNeighbor(cIdx, mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
                         dxyzTypeDo.run(dx, dy, dz, aMPC.atomType_().get(idx));
                     });
@@ -245,7 +246,7 @@ public class NNAP implements IAutoShutdown {
      */
     public double calEnergyDiffMove(MonatomicParameterCalculator aMPC, int aI, double aDx, double aDy, double aDz, boolean aRestoreMPC) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
-        if (mElems.size() != aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
+        if (mElems.size() < aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
         XYZ oXYZ = new XYZ(aMPC.atomDataXYZ_().row(aI));
         IIntVector oNL = aMPC.getNeighborList(oXYZ, mBasis.rcut());
         XYZ nXYZ = oXYZ.plus(aDx, aDy, aDz);
@@ -285,7 +286,7 @@ public class NNAP implements IAutoShutdown {
      */
     public double calEnergyDiffSwap(MonatomicParameterCalculator aMPC, int aI, int aJ, boolean aRestoreMPC) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
-        if (mElems.size() != aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
+        if (mElems.size() < aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
         int oTypeI = aMPC.atomType_().get(aI);
         int oTypeJ = aMPC.atomType_().get(aJ);
         if (oTypeI == oTypeJ) return 0.0;
@@ -413,7 +414,7 @@ public class NNAP implements IAutoShutdown {
     
     public void calEnergyForcesVirials(final MonatomicParameterCalculator aMPC, final @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
-        if (mElems.size() != aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
+        if (mElems.size() < aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + mElems.size());
         // 统一存储常量
         final int tAtomNumber = aMPC.atomNumber();
         final int tThreadNumber = aMPC.threadNumber();
@@ -451,7 +452,7 @@ public class NNAP implements IAutoShutdown {
                 final @Nullable IVector tVirialsXY = rVirialsXY!=null ? rVirialsXYPar[threadID] : null;
                 final @Nullable IVector tVirialsXZ = rVirialsXZ!=null ? rVirialsXZPar[threadID] : null;
                 final @Nullable IVector tVirialsYZ = rVirialsYZ!=null ? rVirialsYZPar[threadID] : null;
-                final List<@NotNull RowMatrix> tOut = mBasis.evalPartial(aMPC.atomTypeNumber(), true, true, dxyzTypeDo -> {
+                final List<@NotNull RowMatrix> tOut = mBasis.evalPartial(true, true, dxyzTypeDo -> {
                     aMPC.nl_().forEachNeighbor(i, mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
                         dxyzTypeDo.run(dx, dy, dz, aMPC.atomType_().get(idx));
                         // 还是需要顺便统计近邻进行缓存

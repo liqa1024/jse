@@ -241,20 +241,20 @@ public class LmpPlugin {
          * 在这里执行主要的 pair 的计算部分
          * @author liqa
          */
-        public abstract void compute();
+        public abstract void compute() throws Exception;
         
         /**
          * lammps {@code pair_coeff} 会调用的方法，用于设置参数
          * @param aArgs 参数的字符串数组
          * @author liqa
          */
-        public abstract void coeff(String... aArgs);
+        public abstract void coeff(String... aArgs) throws Exception;
         
         /**
          * lammps pair 初始化调用，主要用于在这里设置需要的近邻列表样式
          * @author liqa
          */
-        public void initStyle() {neighborRequestDefault();}
+        public void initStyle() throws Exception {neighborRequestDefault();}
         
         /**
          * lammps pair 初始化某两个种类 {@code i} {@code j}，用于获取这两个种类间的截断半径值
@@ -263,7 +263,7 @@ public class LmpPlugin {
          * @return 种类 {@code i} {@code j} 之间的截断半径
          * @author liqa
          */
-        public abstract double initOne(int i, int j);
+        public abstract double initOne(int i, int j) throws Exception;
         
         
         /// lammps pair 提供的接口

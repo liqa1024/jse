@@ -27,9 +27,9 @@ public class Basis {
     @ApiStatus.Experimental
     public interface IBasis {
         double rcut();
-        RowMatrix eval(int aTypeNum, IDxyzTypeIterable aNL);
-        List<@NotNull RowMatrix> evalPartial(int aTypeNum, boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL);
-        default List<@NotNull RowMatrix> evalPartial(int aTypeNum, IDxyzTypeIterable aNL) {return evalPartial(aTypeNum, true, false, aNL);}
+        RowMatrix eval(IDxyzTypeIterable aNL);
+        List<@NotNull RowMatrix> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL);
+        default List<@NotNull RowMatrix> evalPartial(IDxyzTypeIterable aNL) {return evalPartial(true, false, aNL);}
     }
     
     public static class SphericalChebyshev implements IBasis {
@@ -37,20 +37,23 @@ public class Basis {
         public final static int DEFAULT_LMAX = 6;
         public final static double DEFAULT_RCUT = 6.2;
         
+        private final int mTypeNum;
         private final int mNMax, mLMax;
         private final double mRCut;
-        public SphericalChebyshev(int aNMax, int aLMax, double aRCut) {
-            mNMax = aNMax; mLMax = aLMax; mRCut = aRCut;
+        public SphericalChebyshev(int aTypeNum, int aNMax, int aLMax, double aRCut) {
+            mTypeNum = aTypeNum;
+            mNMax = aNMax; mLMax = aLMax;
+            mRCut = aRCut;
         }
         
         @Override public double rcut() {
             return mRCut;
         }
-        @Override public RowMatrix eval(int aTypeNum, IDxyzTypeIterable aNL) {
-            return sphericalChebyshev(aTypeNum, mNMax, mLMax, mRCut, aNL);
+        @Override public RowMatrix eval(IDxyzTypeIterable aNL) {
+            return sphericalChebyshev(mTypeNum, mNMax, mLMax, mRCut, aNL);
         }
-        @Override public List<@NotNull RowMatrix> evalPartial(int aTypeNum, boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL) {
-            return sphericalChebyshevPartial(aTypeNum, mNMax, mLMax, mRCut, aCalBasis, aCalCross, aNL);
+        @Override public List<@NotNull RowMatrix> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL) {
+            return sphericalChebyshevPartial(mTypeNum, mNMax, mLMax, mRCut, aCalBasis, aCalCross, aNL);
         }
     }
     
