@@ -56,7 +56,6 @@ public class NNAP implements IAutoShutdown {
         public IVector normVec() {return mNormVec;}
         public Basis.IBasis basis() {return mBasis;}
         
-        
         @SuppressWarnings("unchecked")
         private SingleNNAP(int aTypeNum, Map<String, ?> aModelInfo) throws TorchException {
             Object tSymbol = aModelInfo.get("symbol");
@@ -401,47 +400,42 @@ public class NNAP implements IAutoShutdown {
     }
     
     /**
-     * 使用 nnap 计算给定原子结构的应力
-     * @param aAtomData 原子结构本身，由于考虑了速度，暂不提供 MPC 版本
+     * 使用 nnap 计算给定原子结构的应力具体可以参见：
+     * <a href="https://en.wikipedia.org/wiki/Virial_stress">
+     * Virial stress - Wikipedia </a>
+     * @param aAtomData 原子结构本身或者 MPC，使用 MPC 时统一不考虑速度部分
+     * @param aIdealGas 是否考虑理想气体部分（速度效应部分），默认为 {@code false}
      * @return 按照 {@code [xx, yy, zz, xy, xz, yz]} 顺序排列的应力值
      * @author liqa
      */
-    public List<Double> calStress(IAtomData aAtomData) throws TorchException {
+    public List<Double> calStress(IAtomData aAtomData, boolean aIdealGas) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         aAtomData = reorderSymbols(aAtomData);
         final int tAtomNum = aAtomData.atomNumber();
         try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {
-            Vector rVirialsXX = VectorCache.getVec(tAtomNum);
-            Vector rVirialsYY = VectorCache.getVec(tAtomNum);
-            Vector rVirialsZZ = VectorCache.getVec(tAtomNum);
-            Vector rVirialsXY = VectorCache.getVec(tAtomNum);
-            Vector rVirialsXZ = VectorCache.getVec(tAtomNum);
-            Vector rVirialsYZ = VectorCache.getVec(tAtomNum);
-            calEnergyForcesVirials(tMPC, null, null, null, null, rVirialsXX, rVirialsYY, rVirialsZZ, rVirialsXY, rVirialsXZ, rVirialsYZ);
-            double tStressXX = rVirialsXX.sum();
-            double tStressYY = rVirialsYY.sum();
-            double tStressZZ = rVirialsZZ.sum();
-            double tStressXY = rVirialsXY.sum();
-            double tStressXZ = rVirialsXZ.sum();
-            double tStressYZ = rVirialsYZ.sum();
-            VectorCache.returnVec(rVirialsYZ);
-            VectorCache.returnVec(rVirialsXZ);
-            VectorCache.returnVec(rVirialsXY);
-            VectorCache.returnVec(rVirialsZZ);
-            VectorCache.returnVec(rVirialsYY);
-            VectorCache.returnVec(rVirialsXX);
-            // 累加速度项
-            if (aAtomData.hasMass()) for (int i = 0; i < tAtomNum; ++i) {
+            List<Double> tStress = calStress(tMPC);
+            if (!aIdealGas || !aAtomData.hasMass() || !aAtomData.hasVelocity()) return tStress;
+            // 累加速度项，这里需要消去整体的平动
+            double vxTot = 0.0, vyTot = 0.0, vzTot = 0.0;
+            for (int i = 0; i < tAtomNum; ++i) {
+                IAtom tAtom = aAtomData.atom(i);
+                vxTot += tAtom.vx(); vyTot += tAtom.vy(); vzTot += tAtom.vz();
+            }
+            vxTot /= (double)tAtomNum;
+            vyTot /= (double)tAtomNum;
+            vzTot /= (double)tAtomNum;
+            double tStressXX = 0.0, tStressYY = 0.0, tStressZZ = 0.0, tStressXY = 0.0, tStressXZ = 0.0, tStressYZ = 0.0;
+            for (int i = 0; i < tAtomNum; ++i) {
                 IAtom tAtom = aAtomData.atom(i);
                 if (!tAtom.hasMass()) continue;
-                double vx = tAtom.vx(), vy = tAtom.vy(), vz = tAtom.vz();
+                double vx = tAtom.vx() - vxTot, vy = tAtom.vy() - vyTot, vz = tAtom.vz() - vzTot;
                 double tMass = tAtom.mass();
-                tStressXX += tMass * vx*vx;
-                tStressYY += tMass * vy*vy;
-                tStressZZ += tMass * vz*vz;
-                tStressXY += tMass * vx*vy;
-                tStressXZ += tMass * vx*vz;
-                tStressYZ += tMass * vy*vz;
+                tStressXX -= tMass * vx*vx;
+                tStressYY -= tMass * vy*vy;
+                tStressZZ -= tMass * vz*vz;
+                tStressXY -= tMass * vx*vy;
+                tStressXZ -= tMass * vx*vz;
+                tStressYZ -= tMass * vy*vz;
             }
             double tVolume = tMPC.volume();
             tStressXX /= tVolume;
@@ -450,8 +444,47 @@ public class NNAP implements IAutoShutdown {
             tStressXY /= tVolume;
             tStressXZ /= tVolume;
             tStressYZ /= tVolume;
-            return Lists.newArrayList(-tStressXX, -tStressYY, -tStressZZ, -tStressXY, -tStressXZ, -tStressYZ);
+            tStress.set(0, tStress.get(0) + tStressXX);
+            tStress.set(1, tStress.get(1) + tStressYY);
+            tStress.set(2, tStress.get(2) + tStressZZ);
+            tStress.set(3, tStress.get(3) + tStressXY);
+            tStress.set(4, tStress.get(4) + tStressXZ);
+            tStress.set(5, tStress.get(5) + tStressYZ);
+            return tStress;
         }
+    }
+    public List<Double> calStress(IAtomData aAtomData) throws TorchException {return calStress(aAtomData, false);}
+    public List<Double> calStress(MonatomicParameterCalculator aMPC) throws TorchException {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        if (atomTypeNumber() < aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + atomTypeNumber());
+        final int tAtomNum = aMPC.atomNumber();
+        Vector rVirialsXX = VectorCache.getVec(tAtomNum);
+        Vector rVirialsYY = VectorCache.getVec(tAtomNum);
+        Vector rVirialsZZ = VectorCache.getVec(tAtomNum);
+        Vector rVirialsXY = VectorCache.getVec(tAtomNum);
+        Vector rVirialsXZ = VectorCache.getVec(tAtomNum);
+        Vector rVirialsYZ = VectorCache.getVec(tAtomNum);
+        calEnergyForcesVirials(aMPC, null, null, null, null, rVirialsXX, rVirialsYY, rVirialsZZ, rVirialsXY, rVirialsXZ, rVirialsYZ);
+        double tStressXX = -rVirialsXX.sum();
+        double tStressYY = -rVirialsYY.sum();
+        double tStressZZ = -rVirialsZZ.sum();
+        double tStressXY = -rVirialsXY.sum();
+        double tStressXZ = -rVirialsXZ.sum();
+        double tStressYZ = -rVirialsYZ.sum();
+        VectorCache.returnVec(rVirialsYZ);
+        VectorCache.returnVec(rVirialsXZ);
+        VectorCache.returnVec(rVirialsXY);
+        VectorCache.returnVec(rVirialsZZ);
+        VectorCache.returnVec(rVirialsYY);
+        VectorCache.returnVec(rVirialsXX);
+        double tVolume = aMPC.volume();
+        tStressXX /= tVolume;
+        tStressYY /= tVolume;
+        tStressZZ /= tVolume;
+        tStressXY /= tVolume;
+        tStressXZ /= tVolume;
+        tStressYZ /= tVolume;
+        return Lists.newArrayList(tStressXX, tStressYY, tStressZZ, tStressXY, tStressXZ, tStressYZ);
     }
     
     /**
@@ -475,6 +508,13 @@ public class NNAP implements IAutoShutdown {
         try (MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyForces(tMPC);}
     }
     
+    /**
+     * 使用 nnap 计算所有需要的热力学量，需要注意的是，这里位力采用
+     * lammps 一致的定义，具体可以参见：
+     * <a href="https://en.wikipedia.org/wiki/Virial_stress">
+     * Virial stress - Wikipedia </a>
+     * @author liqa
+     */
     public void calEnergyForcesVirials(final MonatomicParameterCalculator aMPC, final @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (atomTypeNumber() < aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + atomTypeNumber());

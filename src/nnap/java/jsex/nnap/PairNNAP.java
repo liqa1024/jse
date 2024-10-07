@@ -127,9 +127,10 @@ public class PairNNAP extends LmpPlugin.Pair {
                 
                 // ev stuffs
                 if (evflag) {
-                    double delx = xtmp - xMat.get(j, 0);
-                    double dely = ytmp - xMat.get(j, 1);
-                    double delz = ztmp - xMat.get(j, 2);
+                    // 注意 jse 中的 dxyz 和 lammps 定义的相反
+                    double delx = xMat.get(j, 0) - xtmp;
+                    double dely = xMat.get(j, 1) - ytmp;
+                    double delz = xMat.get(j, 2) - ztmp;
                     evTallyXYZFull(i, 0.0, 0.0, fx+fx, fy+fy, fz+fz, delx, dely, delz);
                 }
             }
