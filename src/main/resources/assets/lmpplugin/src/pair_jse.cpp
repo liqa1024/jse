@@ -203,5 +203,6 @@ jint PairJSE::commNprocs() {
     return (jint) comm->nprocs;
 }
 jstring PairJSE::unitStyle() {
-    return mEnv->NewStringUTF(lmp->update->unit_style);
+    char *tUnits = lmp->update->unit_style;
+    return tUnits!=NULL ? mEnv->NewStringUTF(tUnits) : NULL;
 }
