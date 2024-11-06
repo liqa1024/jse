@@ -1451,8 +1451,12 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 // 计算 Y 并累加，考虑对称性只需要算 m=0~l 的部分
                 Func.sphericalHarmonics2Dest3(aL, dx, dy, dz, tY);
                 Qlmi.plus2this(tY);
-                // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
-                if (aHalf) Qlmj.plus2this(tY);
+                // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计；
+                // 注意反向的情况不一定对称，需要考虑 l
+                if (aHalf) {
+                    if ((aL&1)==1) Qlmj.minus2this(tY);
+                    else Qlmj.plus2this(tY);
+                }
                 
                 // 统计近邻
                 if (tNLToBuffer != null) {tNLToBuffer[i].add(idx);}
@@ -1521,8 +1525,12 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
                 // 计算 Y 并累加，考虑对称性只需要算 m=0~l 的部分
                 Func.sphericalHarmonics2Dest3(aL, dx, dy, dz, tY);
                 Qlmi.plus2this(tY);
-                // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
-                if (tHalfStat) Qlmj.plus2this(tY);
+                // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计；
+                // 注意反向的情况不一定对称，需要考虑 l
+                if (aHalf) {
+                    if ((aL&1)==1) Qlmj.minus2this(tY);
+                    else Qlmj.plus2this(tY);
+                }
                 
                 // 统计近邻
                 if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
