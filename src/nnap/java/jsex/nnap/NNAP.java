@@ -79,7 +79,7 @@ public class NNAP implements IAutoShutdown {
         public static @Nullable String REDIRECT_NNAP_LIB = OS.env("JSE_REDIRECT_NNAP_LIB");
     }
     
-    private final static String LIB_DIR = JAR_DIR+"nnap/" + UT.Code.uniqueID(VERSION, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+    private final static String LIB_DIR = JAR_DIR+"nnap/" + UT.Code.uniqueID(VERSION, Torch.HOME, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
     private final static String LIB_PATH;
     private final static String[] SRC_NAME = {
           "jsex_nnap_NNAP.cpp"

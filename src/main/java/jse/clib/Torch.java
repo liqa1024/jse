@@ -1,7 +1,9 @@
 package jse.clib;
 
+import jse.code.OS;
 import jse.code.SP;
 import jse.code.UT;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 
@@ -32,13 +34,18 @@ public class Torch {
         }
     }
     
+    public final static class Conf {
+        /** 手动设置 torch 的 home 目录，可以设置为自己的 python 环境中安装的 torch，从而避免重复安装 */
+        public static @Nullable String HOME = OS.env("JSE_TORCH_HOME");
+    }
+    
     public final static String VERSION = "2.5.1";
     
-    public final static String HOME = PYTHON_LIB_DIR+"torch/";
-    public final static String LIB_DIR = HOME+"lib/";
+    public final static String HOME;
+    public final static String LIB_DIR;
     public final static String[] LIB_PATHS;
     /** torch 不需要 llib_path 这种路径，而是直接通过 cmake 的支持，在 cmake 中设置一下路径即可自动链接 */
-    public final static String CMAKE_DIR = HOME+"share/cmake/Torch/";
+    public final static String CMAKE_DIR;
     /** 顺便表明了链接顺序 */
     private final static String[] LIB_NAMES = IS_WINDOWS ? new String[]{"asmjit", "libiomp5md", "fbgemm", "c10", "uv", "torch_cpu", "torch"} : new String[]{"torch"};
     
@@ -65,6 +72,12 @@ public class Torch {
     
     static {
         InitHelper.INITIALIZED = true;
+        
+        // 如果设置了自定义的 TORCH_HOME，并且改为使用此处的 torch；
+        // 这里简单处理，不去检测是否合理（或者后续有检测则统一检测方式）
+        HOME = Conf.HOME!=null ? UT.IO.toInternalValidDir(Conf.HOME) : PYTHON_LIB_DIR+"torch/";
+        LIB_DIR = HOME+"lib/";
+        CMAKE_DIR = HOME+"share/cmake/Torch/";
         
         // 如果不存在 torch 目录需要重新通过 pip 来安装
         if (!UT.IO.isDir(HOME)) {
