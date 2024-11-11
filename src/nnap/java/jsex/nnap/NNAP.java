@@ -62,9 +62,7 @@ public class NNAP implements IAutoShutdown {
          * 自定义构建 nnap 时使用的编译器，
          * cmake 有时不能自动检测到希望使用的编译器
          */
-        public static @Nullable String CMAKE_C_COMPILER   = OS.env("JSE_CMAKE_C_COMPILER_NNAP"  , jse.code.Conf.CMAKE_C_COMPILER);
         public static @Nullable String CMAKE_CXX_COMPILER = OS.env("JSE_CMAKE_CXX_COMPILER_NNAP", jse.code.Conf.CMAKE_CXX_COMPILER);
-        public static @Nullable String CMAKE_C_FLAGS      = OS.env("JSE_CMAKE_C_FLAGS_NNAP"     , jse.code.Conf.CMAKE_C_FLAGS);
         public static @Nullable String CMAKE_CXX_FLAGS    = OS.env("JSE_CMAKE_CXX_FLAGS_NNAP"   , jse.code.Conf.CMAKE_CXX_FLAGS);
         
         /**
@@ -77,7 +75,7 @@ public class NNAP implements IAutoShutdown {
         public static @Nullable String REDIRECT_NNAP_LIB = OS.env("JSE_REDIRECT_NNAP_LIB");
     }
     
-    private final static String LIB_DIR = JAR_DIR+"nnap/" + UT.Code.uniqueID(VERSION, Torch.HOME, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+    private final static String LIB_DIR = JAR_DIR+"nnap/" + UT.Code.uniqueID(VERSION, Torch.HOME, Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
     private final static String LIB_PATH;
     private final static String[] SRC_NAME = {
           "jsex_nnap_NNAP.cpp"
@@ -95,7 +93,7 @@ public class NNAP implements IAutoShutdown {
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
         LIB_PATH = new JNIUtil.LibBuilder("nnap", "NNAP", LIB_DIR, Conf.CMAKE_SETTING)
             .setSrc("nnap", SRC_NAME)
-            .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
+            .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
             .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_NNAP_LIB)
             .setCmakeLineOpt(line -> {
                 // 替换其中的 torch 库路径为设置好的路径
