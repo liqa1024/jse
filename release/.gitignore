@@ -1,17 +1,5 @@
 .*
 __*
 
-# lammps shit
-log.lammps
-
-# 手动设置的 idea 运行脚本的配置
-!/.idea
-/.idea/*
-!/.idea/modules.xml
-!/.idea/libraries
-!/.run
-# 手动设置的 vscode 运行脚本的配置
-!/.vscode
-
 !/.gitignore
 !/.gitattributes

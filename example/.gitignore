@@ -1,0 +1,8 @@
+.*
+_*
+__*
+
+# lammps shit
+log.lammps
+
+!/.gitignore
