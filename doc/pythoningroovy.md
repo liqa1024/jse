@@ -3,9 +3,7 @@
         - [环境要求](#环境要求)
         - [基本使用方法](#基本使用方法)
         - [NDArray 创建和使用](#ndarray-创建和使用)
-        - [安装仅 jse 使用的 python 库](#安装仅-jse-使用的-python-库)
-    - [python 中调用 jse（jep）]()
-    - [python 中调用 jse（py4j）]()
+    - [python 中调用 jse](jseinpython.md)
     - [matlab 中调用 jse]()
 - [**⟶ 目录**](contents.md)
 
@@ -75,7 +73,7 @@ jse 中所有对 python 的支持都位于
 通过 `SP.Python.get` / `SP.Python.getValue`
 类获取 python 的值（自动转换为 groovy 中的对象）：
 
-- 输入脚本（`jse example/cross/python1`
+- 输入脚本（`jse code/cross/python1`
   [⤤](../example/code/cross/python1.groovy)）：
     
     ```groovy
@@ -101,7 +99,7 @@ jse 中所有对 python 的支持都位于
 jse 中对于在 groovy 中调用 python 对象的属性提供了简化，
 在绝大多数情况下可以像原生对象一样使用：
 
-- 输入脚本（`jse example/cross/python2`
+- 输入脚本（`jse code/cross/python2`
   [⤤](../example/code/cross/python2.groovy)）：
     
     ```groovy
@@ -149,7 +147,7 @@ java 中的 jep.NDArray 对象 ⟶ 自动转换为 python 中的 ndarray 数据
 
 例如直接创建一个 `jep.NDArray` 对象并使用：
 
-- 输入脚本（`jse example/cross/python3`
+- 输入脚本（`jse code/cross/python3`
   [⤤](../example/code/cross/python3.groovy)）：
     
     ```groovy
@@ -179,7 +177,7 @@ java 中的 jep.NDArray 对象 ⟶ 自动转换为 python 中的 ndarray 数据
 将 `jse.math.vector.IVector` 和 `jse.math.matrix.IMatrix`
 转为 `jep.NDArray` 对象并使用：
 
-- 输入脚本（`jse example/cross/python4`
+- 输入脚本（`jse code/cross/python4`
   [⤤](../example/code/cross/python4.groovy)）：
     
     ```groovy
@@ -222,59 +220,3 @@ java 中的 jep.NDArray 对象 ⟶ 自动转换为 python 中的 ndarray 数据
      [41. 42. 43. 44. 45.]]
     (4, 5)
     ```
-
-
-## 安装仅 jse 使用的 python 库
-
-一般情况下，jse 可以直接使用当前 python 环境下所有的第三方库，
-但有时可能希望为 jse 安装专门的 python 库，则可以将其置于
-`${JSE_HOME}/lib/python`，例如安装了 ase 后的文件结构大致为：
-
-```
-${JSE_HOME}
-    ├─lib
-    │   ├─jep
-    │   ├─python
-    │   │   ├─ase
-    │   │   └─bin
-    │   └─jse-all.jar
-    └─jse
-```
-
-此时所有使用此目录下 jse 的 groovy 脚本都能检测到这个库，
-而一般的 python 环境不会检测到此库。
-
-也可以通过 `SP.Python.downloadPackage`
-和 `SP.Python.installPackage` 两个方法来通过 pip
-自动下载和安装 python 包到 `${JSE_HOME}/lib/python`，
-`downloadPackage` 会联网下载 pip 安装包到
-`${JSE_HOME}/lib/.pypkg`，而 `installPackage`
-会在此目录查找符合要求的跑进行安装。
-
-有时直接在 jse 目录下添加文件是不太现实的，
-从 `2.8.2` 版本后支持通过环境变量 `JSE_PYTHON_EXLIB_DIRS`
-来增加自定义路径的 python 库。
-例如设置这样设置环境变量：
-
-```shell
-export JSE_PYTHON_EXLIB_DIRS=/software/pypkg
-```
-
-将需要安装的 python 库置于上述目录即可，例如对于上述 ase 库：
-
-```
-software
-    └─pypkg
-        ├─ase
-        └─bin
-```
-
-`JSE_PYTHON_EXLIB_DIRS` 也支持设置多个路径，和 `PATH`
-类似，在 linux 下使用 `:` 分隔，在 windows 下使用 `;`
-分隔：
-
-```shell
-export JSE_PYTHON_EXLIB_DIRS=\
-/software/pypkg1:/software/pypkg2:$JSE_PYTHON_EXLIB_DIRS
-```
-

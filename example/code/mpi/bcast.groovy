@@ -24,11 +24,11 @@ println("bcast rand of <$me>: $r")
 MPI.shutdown()
 
 
-//OUTPUT (jse example/mpi/bcast):
+//OUTPUT (jse code/mpi/bcast):
 // rand of <0>: [84, 97, 58]
 // bcast rand of <0>: [84, 97, 58]
 
-//OUTPUT (mpiexec -np 4 jse example/mpi/bcast):
+//OUTPUT (mpiexec -np 4 jse code/mpi/bcast):
 // rand of <3>: [0, 0, 0]
 // rand of <2>: [0, 0, 0]
 // rand of <1>: [0, 0, 0]

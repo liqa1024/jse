@@ -31,7 +31,7 @@ jse 通过提交系统指令的方式来提交任务，类似
 在 windows 下则会解释为 [powershell 指令](https://learn.microsoft.com/en-us/powershell/scripting/overview?view=powershell-7.4)。
 一般来说两者可以使用相同的指令。
 
-- 输入脚本（`jse example/system/basic`
+- 输入脚本（`jse code/system/basic`
   [⤤](../example/code/system/basic.groovy)）：
     
     ```groovy
@@ -116,7 +116,7 @@ EXEC.setNoSTDOutput(false).setNoERROutput(false) // 重新打开标准输出和�
 jse 支持将任务提交到后台运行，而后继续进行后续运算（异步执行），
 这里提供 `submitSystem()` 方法来实现这个功能：
 
-- 输入脚本（`jse example/system/submit1`
+- 输入脚本（`jse code/system/submit1`
   [⤤](../example/code/system/submit1.groovy)）：
     
     ```groovy
@@ -153,7 +153,7 @@ jse 支持将任务提交到后台运行，而后继续进行后续运算（异�
 例如在 windows 下，如果不希望使用默认情况下的 powershell 来执行指令，
 可以创建一个更加经典的 cmd 类型的任务提交器：
 
-- 输入脚本（`jse example/system/custom`
+- 输入脚本（`jse code/system/custom`
   [⤤](../example/code/system/custom.groovy)）：
     
     ```groovy
@@ -196,7 +196,7 @@ jse 支持使用 ssh 向远程服务器来提交任务，这里基于
 的方式创建一个 ssh 任务提交器，并执行任务即可：
 
 
-- 输入脚本（`jse example/system/ssh1`
+- 输入脚本（`jse code/system/ssh1`
   [⤤](../example/code/system/ssh1.groovy)）：
     
     ```groovy

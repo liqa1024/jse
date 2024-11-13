@@ -55,7 +55,7 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
     // y2 = [1.000, 0.6049, 0.3086, 0.1111, 0.01235, 0.01235, 0.1111, 0.3086, 0.6049, 1.000]
     ```
     
-    > 脚本位置：`jse example/math/basic`
+    > 脚本位置：`jse code/math/basic`
     > [⤤](../example/code/math/basic.groovy)
     > 
     > 1. 其中 `linspace` 方法会创建一个线性间隔点的向量 `IVector`
@@ -94,7 +94,7 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
     // list = [0.000, 10.00, 20.00, 3.000]
     ```
     
-    > 脚本位置：`jse example/math/getset`
+    > 脚本位置：`jse code/math/getset`
     > [⤤](../example/code/math/getset.groovy)
     > 
     > 1. 当索引只有一个元素时，`IVector` 和 `List` 的行为一致，都是修改此位置的值
@@ -200,7 +200,7 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
     sinx.plus2this(cosx)
     // sinx = [1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000]
     ```
-    > 脚本位置：`jse example/math/opt2this`
+    > 脚本位置：`jse code/math/opt2this`
     > [⤤](../example/code/math/opt2this.groovy)
     > 
     
@@ -226,7 +226,7 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
     println(a.opt().cumsum()) // [0.000, 1.000, 3.000, 6.000, 10.00, 15.00, 21.00, 28.00, 36.00, 45.00]
     ```
     
-    > 脚本位置：`jse example/math/optdot`
+    > 脚本位置：`jse code/math/optdot`
     > [⤤](../example/code/math/optdot.groovy)
     > 
     
@@ -249,7 +249,7 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
     // a = [1.000, 2.500, 4.000, 5.500, 7.000, 8.500, 10.00, 11.50, 13.00, 14.50]
     ```
     
-    > 脚本位置：`jse example/math/optcom`
+    > 脚本位置：`jse code/math/optcom`
     > [⤤](../example/code/math/optcom.groovy)
     > 
 

@@ -82,7 +82,7 @@
     
 14. 交叉编程
     1. [groovy 中调用 python](pythoningroovy.md)
-    2. [python 中调用 jse]()
+    2. [python 中调用 jse](jseinpython.md)
     3. [matlab 中调用 jse]()
     
 15. [代码部分]()

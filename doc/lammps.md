@@ -24,7 +24,7 @@ jse 中使用 [`jse.lmp.Lmpdat`](../src/main/java/jse/lmp/Lmpdat.java) /
 [`jse.lmp.Data`](../src/main/java/jse/lmp/Data.java)
 来实现 lammps 的 data 文件读写：
 
-- 输入脚本（`jse example/lmp/data`
+- 输入脚本（`jse code/lmp/data`
   [⤤](../example/code/lmp/data.groovy)）：
     
     ```groovy
@@ -85,7 +85,7 @@ jse 中使用 [`jse.lmp.Lammpstrj`](../src/main/java/jse/lmp/Lammpstrj.java) /
 [`jse.lmp.Dump`](../src/main/java/jse/lmp/Dump.java)
 来实现 lammps 的 dump 文件读写：
 
-- 输入脚本（`jse example/lmp/dump`
+- 输入脚本（`jse code/lmp/dump`
   [⤤](../example/code/lmp/dump.groovy)）：
     
     ```groovy
@@ -122,7 +122,7 @@ jse 中使用 [`jse.lmp.Lammpstrj`](../src/main/java/jse/lmp/Lammpstrj.java) /
 这里可以通过 `dump[i].asTable()` 方法来将其转换成
 jse 表格 `ITable`，从而使用表格的操作方式来处理 dump 数据：
 
-- 输入脚本（`jse example/lmp/dumptable`
+- 输入脚本（`jse code/lmp/dumptable`
   [⤤](../example/code/lmp/dumptable.groovy)）：
     
     ```groovy
@@ -168,7 +168,7 @@ jse 中通用的原子数据接口
 而 `Lmpdat` 和 `Lammpstrj` 都实现了通过 `IAtomData`
 来初始化的方法 `of`，从而可以以此来实现相互转换：
 
-- 输入脚本（`jse example/lmp/transform`
+- 输入脚本（`jse code/lmp/transform`
   [⤤](../example/code/lmp/transform.groovy)）：
     
     ```groovy
@@ -217,7 +217,7 @@ jse 中通用的可修改的原子数据接口
 [`jse.atom.ISettableAtomData`](../src/main/java/jse/atom/ISettableAtomData.java)，
 从而可以使用 `ISettableAtomData` 提供的接口来修改原子数据：
 
-- 输入脚本（`jse example/lmp/setatom`
+- 输入脚本（`jse code/lmp/setatom`
   [⤤](../example/code/lmp/setatom.groovy)）：
     
     ```groovy
@@ -280,7 +280,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
 [`jse.lmp.Log`](../src/main/java/jse/lmp/Log.java)
 来实现 lammps 的 log 文件读取：
 
-- 输入脚本（`jse example/lmp/log`
+- 输入脚本（`jse code/lmp/log`
   [⤤](../example/code/lmp/log.groovy)）：
     
     ```groovy

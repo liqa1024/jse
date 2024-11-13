@@ -138,7 +138,7 @@ jse path/to/script
     from jse.lmp import Data, Dump
     ```
     
--   通过 `jse`  来运行此脚本而不是 `python`，从而让导入有效：
+-   通过 `jse` 来运行此脚本而不是 `python`，从而让导入有效：
     
     ```shell
     jse main.py
