@@ -32,7 +32,7 @@ jse 通过提交系统指令的方式来提交任务，类似
 一般来说两者可以使用相同的指令。
 
 - 输入脚本（`jse example/system/basic`
-  [⤤](../release/script/groovy/example/system/basic.groovy)）：
+  [⤤](../example/code/system/basic.groovy)）：
     
     ```groovy
     import static jse.code.OS.*
@@ -108,7 +108,7 @@ EXEC.setNoSTDOutput(false).setNoERROutput(false) // 重新打开标准输出和�
 --------------------------------
 
 关于输出控制的实例，可以参看脚本 `example/system/output`
-[⤤](../release/script/groovy/example/system/output.groovy)。
+[⤤](../example/code/system/output.groovy)。
 
 
 ## 后台任务提交
@@ -117,7 +117,7 @@ jse 支持将任务提交到后台运行，而后继续进行后续运算（异�
 这里提供 `submitSystem()` 方法来实现这个功能：
 
 - 输入脚本（`jse example/system/submit1`
-  [⤤](../release/script/groovy/example/system/submit1.groovy)）：
+  [⤤](../example/code/system/submit1.groovy)）：
     
     ```groovy
     import static jse.code.OS.*
@@ -141,7 +141,7 @@ jse 支持将任务提交到后台运行，而后继续进行后续运算（异�
 > [`Future<Integer>`](https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/Future.html) 
 > 用于管理这个异步任务，可以等待执行完成，取消任务等，
 > 具体可参看脚本 `example/system/submit2`
-> [⤤](../release/script/groovy/example/system/submit2.groovy)。
+> [⤤](../example/code/system/submit2.groovy)。
 > 
 
 
@@ -154,7 +154,7 @@ jse 支持将任务提交到后台运行，而后继续进行后续运算（异�
 可以创建一个更加经典的 cmd 类型的任务提交器：
 
 - 输入脚本（`jse example/system/custom`
-  [⤤](../release/script/groovy/example/system/custom.groovy)）：
+  [⤤](../example/code/system/custom.groovy)）：
     
     ```groovy
     import jse.system.CMD
@@ -197,7 +197,7 @@ jse 支持使用 ssh 向远程服务器来提交任务，这里基于
 
 
 - 输入脚本（`jse example/system/ssh1`
-  [⤤](../release/script/groovy/example/system/ssh1.groovy)）：
+  [⤤](../example/code/system/ssh1.groovy)）：
     
     ```groovy
     import jse.system.SSH
@@ -231,7 +231,7 @@ jse 支持使用 ssh 向远程服务器来提交任务，这里基于
 > ```
 > 
 > 具体实例以及 json 文件的写法可参看脚本 `example/system/ssh3`
-> [⤤](../release/script/groovy/example/system/ssh3.groovy)。
+> [⤤](../example/code/system/ssh3.groovy)。
 > 
 
 ### 免密连接
@@ -282,7 +282,7 @@ ssh-keygen -p -f .ssh/id_rsa -m pem
 进而实现自动上传和下载文件。
 
 具体实例可参看脚本 `example/system/ssh2`
-[⤤](../release/script/groovy/example/system/ssh2.groovy)。
+[⤤](../example/code/system/ssh2.groovy)。
 
 > 这里的输入输出文件**只支持相对路径**，而绝对路径通过上述
 > `LocalWorkingDir` 和 `RemoteWorkingDir` 来调整，

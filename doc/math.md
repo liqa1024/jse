@@ -56,7 +56,7 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
     ```
     
     > 脚本位置：`jse example/math/basic`
-    > [⤤](../release/script/groovy/example/math/basic.groovy)
+    > [⤤](../example/code/math/basic.groovy)
     > 
     > 1. 其中 `linspace` 方法会创建一个线性间隔点的向量 `IVector`
     > 
@@ -95,7 +95,7 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
     ```
     
     > 脚本位置：`jse example/math/getset`
-    > [⤤](../release/script/groovy/example/math/getset.groovy)
+    > [⤤](../example/code/math/getset.groovy)
     > 
     > 1. 当索引只有一个元素时，`IVector` 和 `List` 的行为一致，都是修改此位置的值
     > 
@@ -201,7 +201,7 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
     // sinx = [1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000]
     ```
     > 脚本位置：`jse example/math/opt2this`
-    > [⤤](../release/script/groovy/example/math/opt2this.groovy)
+    > [⤤](../example/code/math/opt2this.groovy)
     > 
     
 - **通用运算**
@@ -227,7 +227,7 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
     ```
     
     > 脚本位置：`jse example/math/optdot`
-    > [⤤](../release/script/groovy/example/math/optdot.groovy)
+    > [⤤](../example/code/math/optdot.groovy)
     > 
     
     `IVectorOperation` 中也提供了一些通用的运算可以实现任意的操作：
@@ -250,7 +250,7 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
     ```
     
     > 脚本位置：`jse example/math/optcom`
-    > [⤤](../release/script/groovy/example/math/optcom.groovy)
+    > [⤤](../example/code/math/optcom.groovy)
     > 
 
 

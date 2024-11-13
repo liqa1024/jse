@@ -17,7 +17,7 @@ jse 中使用 [`jse.vasp.POSCAR`](../src/main/java/jse/vasp/POSCAR.java)
 来实现 vasp 的 POSCAR 文件读写：
 
 - 输入脚本（`jse example/vasp/poscar`
-  [⤤](../release/script/groovy/example/vasp/poscar.groovy)）：
+  [⤤](../example/code/vasp/poscar.groovy)）：
     
     ```groovy
     import jse.vasp.POSCAR
@@ -66,7 +66,7 @@ jse 中使用 [`jse.vasp.XDATCAR`](../src/main/java/jse/vasp/XDATCAR.java)
 来实现 vasp 的 XDATCAR 文件读写：
 
 - 输入脚本（`jse example/vasp/xdatcar`
-  [⤤](../release/script/groovy/example/vasp/xdatcar.groovy)）：
+  [⤤](../example/code/vasp/xdatcar.groovy)）：
     
     ```groovy
     import jse.vasp.XDATCAR
@@ -107,7 +107,7 @@ jse 中通用的原子数据接口
 来初始化的方法 `of`，从而可以以此来实现相互转换：
 
 - 输入脚本（`jse example/vasp/transform`
-  [⤤](../release/script/groovy/example/vasp/transform.groovy)）：
+  [⤤](../example/code/vasp/transform.groovy)）：
     
     ```groovy
     import jse.vasp.XDATCAR

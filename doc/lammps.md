@@ -25,7 +25,7 @@ jse 中使用 [`jse.lmp.Lmpdat`](../src/main/java/jse/lmp/Lmpdat.java) /
 来实现 lammps 的 data 文件读写：
 
 - 输入脚本（`jse example/lmp/data`
-  [⤤](../release/script/groovy/example/lmp/data.groovy)）：
+  [⤤](../example/code/lmp/data.groovy)）：
     
     ```groovy
     import jse.lmp.Data
@@ -86,7 +86,7 @@ jse 中使用 [`jse.lmp.Lammpstrj`](../src/main/java/jse/lmp/Lammpstrj.java) /
 来实现 lammps 的 dump 文件读写：
 
 - 输入脚本（`jse example/lmp/dump`
-  [⤤](../release/script/groovy/example/lmp/dump.groovy)）：
+  [⤤](../example/code/lmp/dump.groovy)）：
     
     ```groovy
     import jse.lmp.Dump
@@ -123,7 +123,7 @@ jse 中使用 [`jse.lmp.Lammpstrj`](../src/main/java/jse/lmp/Lammpstrj.java) /
 jse 表格 `ITable`，从而使用表格的操作方式来处理 dump 数据：
 
 - 输入脚本（`jse example/lmp/dumptable`
-  [⤤](../release/script/groovy/example/lmp/dumptable.groovy)）：
+  [⤤](../example/code/lmp/dumptable.groovy)）：
     
     ```groovy
     import jse.lmp.Dump
@@ -169,7 +169,7 @@ jse 中通用的原子数据接口
 来初始化的方法 `of`，从而可以以此来实现相互转换：
 
 - 输入脚本（`jse example/lmp/transform`
-  [⤤](../release/script/groovy/example/lmp/transform.groovy)）：
+  [⤤](../example/code/lmp/transform.groovy)）：
     
     ```groovy
     import jse.lmp.Data
@@ -218,7 +218,7 @@ jse 中通用的可修改的原子数据接口
 从而可以使用 `ISettableAtomData` 提供的接口来修改原子数据：
 
 - 输入脚本（`jse example/lmp/setatom`
-  [⤤](../release/script/groovy/example/lmp/setatom.groovy)）：
+  [⤤](../example/code/lmp/setatom.groovy)）：
     
     ```groovy
     import jse.lmp.Data
@@ -281,7 +281,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
 来实现 lammps 的 log 文件读取：
 
 - 输入脚本（`jse example/lmp/log`
-  [⤤](../release/script/groovy/example/lmp/log.groovy)）：
+  [⤤](../example/code/lmp/log.groovy)）：
     
     ```groovy
     import jse.lmp.Log
@@ -417,7 +417,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     输出：`NativeLmp`，创建的 lammps 对象
     
     例子：`example/lmp/native`
-    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    [⤤](../example/code/lmp/native.groovy)
     
     > 注意：*输入1* 和 *输入2* 的顺序可以调换，当 `String[]`
     > 作为最末尾的参数时可以使用可变参数 `String...`。
@@ -440,7 +440,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     输出：`int`，使用的 lammps 的版本组成的整数
     
     例子：`example/lmp/native`
-    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    [⤤](../example/code/lmp/native.groovy)
     
     -----------------------------
     
@@ -460,7 +460,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     输入：`String`，字符串表示的输入文件路径
     
     例子：`example/lmp/native`
-    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    [⤤](../example/code/lmp/native.groovy)
     
     -----------------------------
     
@@ -471,7 +471,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     输入：`String`，字符串表示的 lammps 指令
     
     例子：`example/lmp/native`
-    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    [⤤](../example/code/lmp/native.groovy)
     
     -----------------------------
     
@@ -491,7 +491,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     输出：`int`，此时的原子总数目
     
     例子：`example/lmp/native`
-    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    [⤤](../example/code/lmp/native.groovy)
     
     -----------------------------
     
@@ -500,7 +500,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     输出：`int`，此时的原子种类数目
     
     例子：`example/lmp/native`
-    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    [⤤](../example/code/lmp/native.groovy)
     
     -----------------------------
     
@@ -509,7 +509,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     输出：`int`，此进程的原子数目
     
     例子：`example/lmp/native`
-    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    [⤤](../example/code/lmp/native.groovy)
     
     -----------------------------
     
@@ -518,7 +518,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     输出：`jse.lmp.Box`，此时的模拟盒数据（带有下边界 `xlo`, `ylo`, `zlo`）
     
     例子：`example/lmp/native`
-    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    [⤤](../example/code/lmp/native.groovy)
     
     -----------------------------
     
@@ -578,7 +578,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     输出：`IVector`，每个种类原子质量组成的向量
     
     例子：`example/lmp/native`
-    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    [⤤](../example/code/lmp/native.groovy)
     
     -----------------------------
     
@@ -602,7 +602,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     输出：`Lmpdat`，此时的完整原子数据
     
     例子：`example/lmp/native`
-    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    [⤤](../example/code/lmp/native.groovy)
     
     -----------------------------
     
@@ -614,7 +614,7 @@ jse 中使用 [`jse.lmp.Thermo`](../src/main/java/jse/lmp/Thermo.java) /
     对于 `loadData` 还支持 `IAtomData` 输入
     
     例子：`example/lmp/native`
-    [⤤](../release/script/groovy/example/lmp/native.groovy)
+    [⤤](../example/code/lmp/native.groovy)
     
     -----------------------------
     

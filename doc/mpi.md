@@ -154,9 +154,9 @@ MPI.shutdown() // `finalize()` has been used in java
     >
 
 具体实例可参看脚本 `example/mpi/bcast`
-[⤤](../release/script/groovy/example/mpi/bcast.groovy)
+[⤤](../example/code/mpi/bcast.groovy)
 以及 `example/mpi/split`
-[⤤](../release/script/groovy/example/mpi/split.groovy)。
+[⤤](../example/code/mpi/split.groovy)。
 
 
 ## 可选配置

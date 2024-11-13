@@ -40,7 +40,7 @@
     输出：`List<String>`，字符串组成的列表，每个元素为文件中的一行
     
     例子：`example/io/readwrite1`
-    [⤤](../release/script/groovy/example/io/readwrite1.groovy)
+    [⤤](../example/code/io/readwrite1.groovy)
     
     > 注意：文件不存在或者触发权限不够时会抛出异常
     > 
@@ -56,7 +56,7 @@
     输出：`String`，文件中所有字符串文本
     
     例子：`example/io/readwrite1`
-    [⤤](../release/script/groovy/example/io/readwrite1.groovy)
+    [⤤](../example/code/io/readwrite1.groovy)
     
     > 注意：文件不存在或者触发权限不够时会抛出异常
     > 
@@ -72,7 +72,7 @@
     输出：`byte[]`，二进制文件的数据
     
     例子：`example/io/readwrite2`
-    [⤤](../release/script/groovy/example/io/readwrite2.groovy)
+    [⤤](../example/code/io/readwrite2.groovy)
     
     > 注意：文件不存在或者触发权限不够时会抛出异常
     > 
@@ -94,9 +94,9 @@
     输入3（可选）：`OpenOption...`，设置写入的模式
     
     例子：`example/io/readwrite1`
-    [⤤](../release/script/groovy/example/io/readwrite1.groovy)，
+    [⤤](../example/code/io/readwrite1.groovy)，
     `example/io/readwrite2`
-    [⤤](../release/script/groovy/example/io/readwrite2.groovy)
+    [⤤](../example/code/io/readwrite2.groovy)
     
     > 注意：默认情况下会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建，
     > 给定的路径有同名的目录时会抛出异常；触发权限不够时会抛出异常
@@ -134,7 +134,7 @@
     输入：`String`，字符串表示的目录路径
     
     例子：`example/io/fileopt`
-    [⤤](../release/script/groovy/example/io/fileopt.groovy)
+    [⤤](../example/code/io/fileopt.groovy)
     
     > 注意：会递归创建子目录，触发权限不够时会抛出异常
     >
@@ -148,7 +148,7 @@
     输入：`String`，字符串表示的目录路径
     
     例子：`example/io/fileopt`
-    [⤤](../release/script/groovy/example/io/fileopt.groovy)
+    [⤤](../example/code/io/fileopt.groovy)
     
     > 注意：会递归删除嵌套的目录，触发权限不够时会抛出异常
     >
@@ -179,7 +179,7 @@
     输出：`boolean`，`true` 表示是目录，`false` 表示其他情况
     
     例子：`example/io/fileopt`
-    [⤤](../release/script/groovy/example/io/fileopt.groovy)
+    [⤤](../example/code/io/fileopt.groovy)
     
     > 注意：触发权限不够导致不能确定的情况也会返回 `false` 而不是抛出异常
     >
@@ -195,7 +195,7 @@
     输出：`boolean`，`true` 表示是文件，`false` 表示其他情况
     
     例子：`example/io/fileopt`
-    [⤤](../release/script/groovy/example/io/fileopt.groovy)
+    [⤤](../example/code/io/fileopt.groovy)
     
     > 注意：触发权限不够导致不能确定的情况也会返回 `false` 而不是抛出异常
     >
@@ -211,7 +211,7 @@
     输出：`boolean`，`true` 表示存在，`false` 表示其他情况
     
     例子：`example/io/fileopt`
-    [⤤](../release/script/groovy/example/io/fileopt.groovy)
+    [⤤](../example/code/io/fileopt.groovy)
     
     > 注意：触发权限不够导致不能确定的情况也会返回 `false` 而不是抛出异常
     >
@@ -225,7 +225,7 @@
     输入：`String`，字符串表示的文件路径
     
     例子：`example/io/fileopt`
-    [⤤](../release/script/groovy/example/io/fileopt.groovy)
+    [⤤](../example/code/io/fileopt.groovy)
     
     > 注意：不能移除有内容的文件夹（使用 `rmdir`），
     > 触发权限不够时会抛出异常，路径不存在则什么都不会做
@@ -242,7 +242,7 @@
     输入2：`String`，字符串表示的目标文件路径
     
     例子：`example/io/fileopt`
-    [⤤](../release/script/groovy/example/io/fileopt.groovy)
+    [⤤](../example/code/io/fileopt.groovy)
     
     > 注意：不支持复制有内容的文件夹，
     > 会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建，
@@ -260,7 +260,7 @@
     输入2：`String`，字符串表示的目标文件或目录路径
     
     例子：`example/io/fileopt`
-    [⤤](../release/script/groovy/example/io/fileopt.groovy)
+    [⤤](../example/code/io/fileopt.groovy)
     
     > 注意：一般情况下也支持直接移动有内容的文件夹，
     > 在不支持的情况下可以先使用 `copyDir` 后再使用 `removeDir` 来实现移动；
@@ -279,7 +279,7 @@
     输出：`String[]`，目录下的文件或目录名称组成的字符串数组，仅包含名称
     
     例子：`example/io/fileopt`
-    [⤤](../release/script/groovy/example/io/fileopt.groovy)
+    [⤤](../example/code/io/fileopt.groovy)
     
     > 注意：触发权限不够时会抛出异常
     >
@@ -299,7 +299,7 @@
     (`{String -> String}`)，一行源文件的字符串到一行目标文件字符串的映射
     
     例子：`example/io/fileopt`
-    [⤤](../release/script/groovy/example/io/fileopt.groovy)
+    [⤤](../example/code/io/fileopt.groovy)
     
     > 注意：会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建，
     > 目标路径有同名的目录时会抛出异常；触发权限不够时会抛出异常
@@ -318,7 +318,7 @@
     输出：`boolean`，`true` 表示相同，`false` 表示不相同
     
     例子：`example/io/fileopt`
-    [⤤](../release/script/groovy/example/io/fileopt.groovy)
+    [⤤](../example/code/io/fileopt.groovy)
     
     -----------------------------
     
@@ -370,7 +370,7 @@ jse 直接基于 [`groovy-json`](https://www.groovy-lang.org/processing-json.htm
     输出：`Map<?, ?>`，解析 json 文件得到的 `Map`
     
     例子：`example/io/datajsonyaml`
-    [⤤](../release/script/groovy/example/io/datajsonyaml.groovy)
+    [⤤](../example/code/io/datajsonyaml.groovy)
     
     > 注意：文件不存在或触发权限不够时会抛出异常
     > 
@@ -389,7 +389,7 @@ jse 直接基于 [`groovy-json`](https://www.groovy-lang.org/processing-json.htm
     让输出的文本更加可读（默认为 `false`）
     
     例子：`example/io/datajsonyaml`
-    [⤤](../release/script/groovy/example/io/datajsonyaml.groovy)
+    [⤤](../example/code/io/datajsonyaml.groovy)
     
     > 注意：会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建，
     > 目标路径有同名的目录时会抛出异常；触发权限不够时会抛出异常
@@ -409,7 +409,7 @@ jse 直接基于 [`groovy-yaml`](https://www.groovy-lang.org/processing-yaml.htm
     输出：`Map<?, ?>`，解析 yaml 文件得到的 `Map`
     
     例子：`example/io/datajsonyaml`
-    [⤤](../release/script/groovy/example/io/datajsonyaml.groovy)
+    [⤤](../example/code/io/datajsonyaml.groovy)
     
     > 注意：文件不存在或触发权限不够时会抛出异常
     > 
@@ -425,7 +425,7 @@ jse 直接基于 [`groovy-yaml`](https://www.groovy-lang.org/processing-yaml.htm
     输入2：`String`，字符串表示的输出 yaml 文件的路径
     
     例子：`example/io/datajsonyaml`
-    [⤤](../release/script/groovy/example/io/datajsonyaml.groovy)
+    [⤤](../example/code/io/datajsonyaml.groovy)
     
     > 注意：会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建，
     > 目标路径有同名的目录时会抛出异常；触发权限不够时会抛出异常
@@ -447,7 +447,7 @@ jse 对于内部的纯数字的矩阵和表格做了简单 csv 读写支持，
     输出：`IMatrix`，解析 csv 文件得到的矩阵数据
     
     例子：`example/io/datacsv`
-    [⤤](../release/script/groovy/example/io/datacsv.groovy)
+    [⤤](../example/code/io/datacsv.groovy)
     
     > 注意：只接受用 `,` 或者 *空格* 分隔的纯数字 csv 文件，
     > 这个文件的第一行可以是由字符串组成的头（不支持双引号 `"` 包围的字符串），
@@ -479,7 +479,7 @@ jse 对于内部的纯数字的矩阵和表格做了简单 csv 读写支持，
     如果设置要求数目和数据列数相同
     
     例子：`example/io/datacsv`
-    [⤤](../release/script/groovy/example/io/datacsv.groovy)
+    [⤤](../example/code/io/datacsv.groovy)
     
     > 注意：会使用 `,` 分隔数字，第一行可能是数据的头
     > （保证 `csv2data`/`csv2table` 能直接读取）；
@@ -544,7 +544,7 @@ jse 对于内部的纯数字的矩阵和表格做了简单 csv 读写支持，
     输出：`ITable`，解析 csv 文件得到的表格数据
     
     例子：`example/io/datacsv`
-    [⤤](../release/script/groovy/example/io/datacsv.groovy)
+    [⤤](../example/code/io/datacsv.groovy)
     
     > 注意：只接受用 `,` 或者 *空格* 分隔的纯数字 csv 文件，
     > 这个文件的第一行可以是由字符串组成的头（不支持双引号 `"` 包围的字符串），
@@ -565,7 +565,7 @@ jse 对于内部的纯数字的矩阵和表格做了简单 csv 读写支持，
     输入2：`String`，字符串表示的输出 csv 文件的路径
     
     例子：`example/io/datacsv`
-    [⤤](../release/script/groovy/example/io/datacsv.groovy)
+    [⤤](../example/code/io/datacsv.groovy)
     
     > 注意：会使用 `,` 分隔数字，第一行为表格数据的头
     > （保证 `csv2data`/`csv2table` 能直接读取）；
@@ -585,7 +585,7 @@ jse 对于内部的纯数字的矩阵和表格做了简单 csv 读写支持，
     [Apache Commons CSV 文档](https://commons.apache.org/proper/commons-csv/user-guide.html#Parsing_files)
     
     例子：`example/io/datacsv`
-    [⤤](../release/script/groovy/example/io/datacsv.groovy)
+    [⤤](../example/code/io/datacsv.groovy)
     
     > 注意：此方法基于 
     > [Apache Commons CSV](https://commons.apache.org/proper/commons-csv/)
@@ -609,7 +609,7 @@ jse 对于内部的纯数字的矩阵和表格做了简单 csv 读写支持，
     [Apache Commons CSV 文档](https://commons.apache.org/proper/commons-csv/user-guide.html#Parsing_files)
     
     例子：`example/io/datacsv`
-    [⤤](../release/script/groovy/example/io/datacsv.groovy)
+    [⤤](../example/code/io/datacsv.groovy)
     
     > 注意：此方法基于 
     > [Apache Commons CSV](https://commons.apache.org/proper/commons-csv/)
@@ -634,7 +634,7 @@ jse 直接基于 [`java.util.zip`](https://www.baeldung.com/java-compress-and-un
     输入2：`String`，字符串表示的输出目录路径
     
     例子：`example/io/zip`
-    [⤤](../release/script/groovy/example/io/zip.groovy)
+    [⤤](../example/code/io/zip.groovy)
     
     > 注意：会将内容直接解压到指定目录下，例如对于 `a.zip/x`，
     > `zip2dir('a.zip', 'b')` 则会将 `a.zip/x` 解压为 `b/x`。
@@ -657,7 +657,7 @@ jse 直接基于 [`java.util.zip`](https://www.baeldung.com/java-compress-and-un
     `java.util.zip.Deflater.DEFAULT_COMPRESSION`
     
     例子：`example/io/zip`
-    [⤤](../release/script/groovy/example/io/zip.groovy)
+    [⤤](../example/code/io/zip.groovy)
     
     > 注意：会将输入的目录直接转为 `.zip` 文件，例如对于 `a/x`，
     > `dir2zip('a', 'b.zip')` 则会将 `a/x` 压缩为 `b.zip/x`。
@@ -680,7 +680,7 @@ jse 直接基于 [`java.util.zip`](https://www.baeldung.com/java-compress-and-un
     `java.util.zip.Deflater.DEFAULT_COMPRESSION`
     
     例子：`example/io/zip`
-    [⤤](../release/script/groovy/example/io/zip.groovy)
+    [⤤](../example/code/io/zip.groovy)
     
     > 注意：会将输入的文件（或目录）压缩到 `.zip` 文件中，例如对于 `a/x`，`y`，
     > `files2zip(['a', 'y'], 'b.zip')` 则会将其压缩为：

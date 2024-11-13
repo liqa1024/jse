@@ -76,7 +76,7 @@ jse 中所有对 python 的支持都位于
 类获取 python 的值（自动转换为 groovy 中的对象）：
 
 - 输入脚本（`jse example/cross/python1`
-  [⤤](../release/script/groovy/example/cross/python1.groovy)）：
+  [⤤](../example/code/cross/python1.groovy)）：
     
     ```groovy
     import jse.code.SP
@@ -102,7 +102,7 @@ jse 中对于在 groovy 中调用 python 对象的属性提供了简化，
 在绝大多数情况下可以像原生对象一样使用：
 
 - 输入脚本（`jse example/cross/python2`
-  [⤤](../release/script/groovy/example/cross/python2.groovy)）：
+  [⤤](../example/code/cross/python2.groovy)）：
     
     ```groovy
     import jse.code.SP
@@ -150,7 +150,7 @@ java 中的 jep.NDArray 对象 ⟶ 自动转换为 python 中的 ndarray 数据
 例如直接创建一个 `jep.NDArray` 对象并使用：
 
 - 输入脚本（`jse example/cross/python3`
-  [⤤](../release/script/groovy/example/cross/python3.groovy)）：
+  [⤤](../example/code/cross/python3.groovy)）：
     
     ```groovy
     import jep.NDArray
@@ -180,7 +180,7 @@ java 中的 jep.NDArray 对象 ⟶ 自动转换为 python 中的 ndarray 数据
 转为 `jep.NDArray` 对象并使用：
 
 - 输入脚本（`jse example/cross/python4`
-  [⤤](../release/script/groovy/example/cross/python4.groovy)）：
+  [⤤](../example/code/cross/python4.groovy)）：
     
     ```groovy
     import jep.NDArray

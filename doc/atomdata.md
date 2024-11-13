@@ -34,7 +34,7 @@ println('box: ' + data.box())
 ```
 
 > 脚本位置：`jse example/atoms/init1`
-> [⤤](../release/script/groovy/example/atoms/init1.groovy)
+> [⤤](../example/code/atoms/init1.groovy)
 > 
 > 1. 如果三个方向重复次数一样（如 4），则三个参数 `2, 3, 4`
 > 可以简写只保留一个 `4`
@@ -77,7 +77,7 @@ println('box: ' + data.box())
 ```
 
 > 脚本位置：`jse example/atoms/init2`
-> [⤤](../release/script/groovy/example/atoms/init2.groovy)
+> [⤤](../example/code/atoms/init2.groovy)
 > 
 > 1. 手动创建一个简单立方的原胞，只有一个原子，位置为
 > `(0.0, 0.0, 0.0)`，id 为 `1`，type 为 `1`；
@@ -157,7 +157,7 @@ poscar.write('.temp/example/atoms/poscar')
 ```
 
 > 脚本位置：`jse example/atoms/transform`
-> [⤤](../release/script/groovy/example/atoms/transform.groovy)
+> [⤤](../example/code/atoms/transform.groovy)
 > 
 > 1. 创建一个 FCC 原子结构。
 > 
@@ -287,7 +287,7 @@ poscar.write('.temp/example/atoms/poscar')
     输出：`ISettableAtomData`，新创建的修改后的原子数据
     
     例子：`example/atoms/array`
-    [⤤](../release/script/groovy/example/atoms/array.groovy)
+    [⤤](../example/code/atoms/array.groovy)
     
     -----------------------------
     
