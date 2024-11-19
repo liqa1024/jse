@@ -69,21 +69,6 @@ public abstract class VectorFunc1 extends AbstractFunc1 implements IEqualInterva
     /** 批量修改的接口 */
     @Override public final void fill(double[] aData) {mData.fill(aData);}
     
-    
-    /** 获取结果，支持按照索引查找和按照 x 的值来查找 */
-    @Override public final double subs(double aX) {
-        int tI = MathEX.Code.ceil2int((aX-mX0)/mDx);
-        int tImm = tI-1;
-        
-        double tX1 = getX(tImm);
-        double tX2 = getX(tI);
-        
-        int tNx = Nx();
-        if      (tI <= 0  ) return MathEX.Func.interp1(tX1, tX2, getOutL_(tImm), tI==0 ? mData.get(0) : getOutL_(tI), aX);
-        else if (tI >= tNx) return MathEX.Func.interp1(tX1, tX2, tI==tNx ? mData.get(tNx-1) : getOutR_(tImm), getOutR_(tI), aX);
-        else return MathEX.Func.interp1(tX1, tX2, mData.get(tImm), mData.get(tI), aX);
-    }
-    
     /** 不进行边界检测的版本，带入 x 的情况永远不会超过边界（周期边界或者固定值），因此只提供索引的情况 */
     @Override public final double get(int aI) {return mData.get(aI);}
     @Override public final void set(int aI, double aV) {mData.set(aI, aV);}
@@ -111,15 +96,14 @@ public abstract class VectorFunc1 extends AbstractFunc1 implements IEqualInterva
     /** 还提供一个给函数专用的运算 */
     protected class VectorFunc1Operation_ extends VectorFunc1Operation {
         @Override protected VectorFunc1 thisFunc1_() {return VectorFunc1.this;}
-        /** 边界外的结果不保证正确性，这里简单起见统一都使用 ZeroBoundFunc1 来作为返回类型 */
-        @Override protected VectorFunc1 newFunc1_() {return ZeroBoundFunc1.zeros(x0(), dx(), Nx());}
+        /** 边界外的结果不保证正确性，这里简单起见统一都使用 ConstBoundFunc1 来作为返回类型 */
+        @Override protected VectorFunc1 newFunc1_() {return ConstBoundFunc1.zeros(x0(), dx(), Nx());}
     }
     @Override public IFunc1Operation operation() {return new VectorFunc1Operation_();}
     
     
     /** stuff to override，重写表明 x 超出了界限的情况下如何处理 */
-    protected abstract double getOutL_(int aI);
-    protected abstract double getOutR_(int aI);
+    public abstract double subs(double aX);
     public abstract VectorFunc1 newShell();
     protected abstract VectorFunc1 newInstance_(double aX0, double aDx, Vector aData);
 }

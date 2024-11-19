@@ -92,8 +92,8 @@ public abstract class ColumnMatrixFunc2 extends AbstractFunc2 implements IEqualI
     /** 还提供一个给函数专用的运算 */
     protected class ColumnMatrixFunc2Operation_ extends ColumnMatrixFunc2Operation {
         @Override protected ColumnMatrixFunc2 thisFunc2_() {return ColumnMatrixFunc2.this;}
-        /** 边界外的结果不保证正确性，这里简单起见统一都使用 ZeroBoundFunc2 来作为返回类型 */
-        @Override protected ColumnMatrixFunc2 newFunc2_() {return ZeroBoundFunc2.zeros(x0(), y0(), dx(), dy(), Nx(), Ny());}
+        /** 边界外的结果不保证正确性，这里简单起见统一都使用 ConstBoundFunc2 来作为返回类型 */
+        @Override protected ColumnMatrixFunc2 newFunc2_() {return ConstBoundFunc2.zeros(x0(), y0(), dx(), dy(), Nx(), Ny());}
     }
     @Override public IFunc2Operation operation() {return new ColumnMatrixFunc2Operation_();}
     

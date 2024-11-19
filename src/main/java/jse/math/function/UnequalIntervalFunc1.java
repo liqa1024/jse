@@ -13,7 +13,7 @@ import java.util.function.DoubleUnaryOperator;
  * @author liqa
  */
 @ApiStatus.Experimental
-public final class UnequalIntervalFunc1 extends AbstractFunc1 implements IZeroBoundFunc1 {
+public final class UnequalIntervalFunc1 extends AbstractFunc1 {
     /** 在这里提供一些常用的构造 */
     public static UnequalIntervalFunc1 zeros(int aNx, IVectorGetter aXGetter) {
         double[] rX = new double[aNx];
@@ -64,9 +64,9 @@ public final class UnequalIntervalFunc1 extends AbstractFunc1 implements IZeroBo
         tI = (-tI) - 1;
         int tImm = tI-1;
         
-        // 超过边界直接为 0
-        if (tImm < 0) return 0.0;
-        if (tI >= tNx) return 0.0;
+        // 现在超过边界返回边界值，可以避免很多问题
+        if (tImm < 0) return mF[0];
+        if (tI >= tNx) return mF[tNx-1];
         
         return MathEX.Func.interp1(mX[tImm], mX[tI], mF[tImm], mF[tI], aX);
     }
@@ -135,9 +135,4 @@ public final class UnequalIntervalFunc1 extends AbstractFunc1 implements IZeroBo
         @Override protected IFunc1 thisFunc1_() {return UnequalIntervalFunc1.this;}
         @Override protected IFunc1 newFunc1_() {return UnequalIntervalFunc1.zeros(Nx(), x());}
     };}
-    
-    
-    /** 提供额外的接口用于检测两端 */
-    @Override public double zeroBoundL() {return mX[0];}
-    @Override public double zeroBoundR() {return mX[Nx()-1];}
 }

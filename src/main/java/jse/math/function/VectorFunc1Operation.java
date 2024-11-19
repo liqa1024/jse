@@ -425,9 +425,9 @@ public abstract class VectorFunc1Operation extends AbstractFunc1Operation {
             for (int i = 0; i < tNx; ++i) {
                 double tF = tFunc1.get(i);
                 int imm = i - 1;
-                double tFmm = (imm < 0) ? tFunc1.getOutL_(imm) : tFunc1.get(imm);
+                double tFmm = (imm < 0) ? tFunc1.subs(tFunc1.getX(imm)) : tFunc1.get(imm);
                 int ipp = i + 1;
-                double tFpp = (ipp >= tNx) ? tFunc1.getOutR_(ipp) : tFunc1.get(ipp);
+                double tFpp = (ipp >= tNx) ? tFunc1.subs(tFunc1.getX(ipp)) : tFunc1.get(ipp);
                 rDest.set(i, 0.5*((tF-tFmm) + (tFpp-tF))/tDx);
             }
         } else {
@@ -466,9 +466,9 @@ public abstract class VectorFunc1Operation extends AbstractFunc1Operation {
         if (aConsiderBound) {
             for (int i = 0; i < tNx; ++i) {
                 int imm = i - 1;
-                double tFmm = (imm < 0) ? tFunc1.getOutL_(imm) : tFunc1.get(imm);
+                double tFmm = (imm < 0) ? tFunc1.subs(tFunc1.getX(imm)) : tFunc1.get(imm);
                 int ipp = i + 1;
-                double tFpp = (ipp >= tNx) ? tFunc1.getOutR_(ipp) : tFunc1.get(ipp);
+                double tFpp = (ipp >= tNx) ? tFunc1.subs(tFunc1.getX(ipp)) : tFunc1.get(ipp);
                 rDest.set(i, (tFmm + tFpp - 2*tFunc1.get(i)) / tDx2);
             }
         } else {
@@ -490,7 +490,7 @@ public abstract class VectorFunc1Operation extends AbstractFunc1Operation {
         double tDx2 = tThis.dx()/2.0;
         double tResult = 0.0;
         if (aConsiderBoundL) {
-            double tF = tThis.getOutL_(-1);
+            double tF = tThis.subs(tThis.getX(-1));
             tResult += tDx2*(tF + pF);
         }
         int tNx = tThis.Nx();
@@ -500,7 +500,7 @@ public abstract class VectorFunc1Operation extends AbstractFunc1Operation {
             pF = tF;
         }
         if (aConsiderBoundR) {
-            double tF = tThis.getOutR_(tNx);
+            double tF = tThis.subs(tThis.getX(tNx));
             tResult += tDx2*(tF + pF);
         }
         return tResult;
@@ -514,7 +514,7 @@ public abstract class VectorFunc1Operation extends AbstractFunc1Operation {
             double tResult = 0.0;
             double tDx2 = tThis.dx()/2.0;
             if (aConsiderBoundL) {
-                double tC = aConv.subs(tThis.getX(-1), k) * tThis.getOutL_(-1);
+                double tC = aConv.subs(tThis.getX(-1), k) * tThis.subs(tThis.getX(-1));
                 tResult += tDx2*(tC + pC);
             }
             int tNx = tThis.Nx();
@@ -524,7 +524,7 @@ public abstract class VectorFunc1Operation extends AbstractFunc1Operation {
                 pC = tC;
             }
             if (aConsiderBoundR) {
-                double tC = aConv.subs(tThis.getX(tNx), k) * tThis.getOutR_(tNx);
+                double tC = aConv.subs(tThis.getX(tNx), k) * tThis.subs(tThis.getX(tNx));
                 tResult += tDx2*(tC + pC);
             }
             return tResult;
@@ -537,7 +537,7 @@ public abstract class VectorFunc1Operation extends AbstractFunc1Operation {
             double tResult = 0.0;
             double tDx2 = tThis.dx()/2.0;
             if (aConsiderBoundL) {
-                double tC = aConv.subs(tThis.getOutL_(-1), tThis.getX(-1), k);
+                double tC = aConv.subs(tThis.subs(tThis.getX(-1)), tThis.getX(-1), k);
                 tResult += tDx2*(tC + pC);
             }
             int tNx = tThis.Nx();
@@ -547,7 +547,7 @@ public abstract class VectorFunc1Operation extends AbstractFunc1Operation {
                 pC = tC;
             }
             if (aConsiderBoundR) {
-                double tC = aConv.subs(tThis.getOutR_(tNx), tThis.getX(tNx), k);
+                double tC = aConv.subs(tThis.subs(tThis.getX(tNx)), tThis.getX(tNx), k);
                 tResult += tDx2*(tC + pC);
             }
             return tResult;

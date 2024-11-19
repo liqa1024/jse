@@ -29,8 +29,19 @@ public final class FixBoundFunc1 extends VectorFunc1 {
     }
     
     /** DoubleArrayFunc1 stuffs */
-    @Override protected double getOutL_(int aI) {return mBoundL;}
-    @Override protected double getOutR_(int aI) {return mBoundR;}
+    @Override public double subs(double aX) {
+        int tI = MathEX.Code.ceil2int((aX-mX0)/mDx);
+        int tImm = tI-1;
+        
+        double tX1 = getX(tImm);
+        double tX2 = getX(tI);
+        
+        int tNx = Nx();
+        
+        double tF1 = tImm<0 ? mBoundL : (tImm>=tNx ? mBoundR : mData.get(tImm));
+        double tF2 = tI  <0 ? mBoundL : (tI  >=tNx ? mBoundR : mData.get(tI));
+        return MathEX.Func.interp1(tX1, tX2, tF1, tF2, aX);
+    }
     @Override public int getINear(double aX) {return MathEX.Code.toRange(0, Nx()-1, super.getINear(aX));}
     
     @Override public FixBoundFunc1 newShell() {return new FixBoundFunc1(mX0, mDx, null).setBound(mBoundL, mBoundR);}

@@ -16,8 +16,19 @@ public final class ZeroBoundFunc1 extends VectorFunc1 implements IZeroBoundFunc1
     public ZeroBoundFunc1(IVector aX, IVector aF) {super(aX, aF);}
     
     /** DoubleArrayFunc1 stuffs */
-    @Override protected double getOutL_(int aI) {return 0.0;}
-    @Override protected double getOutR_(int aI) {return 0.0;}
+    @Override public double subs(double aX) {
+        int tI = MathEX.Code.ceil2int((aX-mX0)/mDx);
+        int tImm = tI-1;
+        
+        double tX1 = getX(tImm);
+        double tX2 = getX(tI);
+        
+        int tNx = Nx();
+        
+        double tF1 = (tImm<0 || tImm>=tNx) ? 0.0 : mData.get(tImm);
+        double tF2 = (tI  <0 || tI  >=tNx) ? 0.0 : mData.get(tI);
+        return MathEX.Func.interp1(tX1, tX2, tF1, tF2, aX);
+    }
     @Override public int getINear(double aX) {return MathEX.Code.toRange(0, Nx()-1, super.getINear(aX));}
     
     /** 提供额外的接口用于检测两端 */

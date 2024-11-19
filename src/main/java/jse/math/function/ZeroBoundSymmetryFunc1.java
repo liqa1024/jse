@@ -1,5 +1,6 @@
 package jse.math.function;
 
+import jse.math.MathEX;
 import jse.math.vector.IVector;
 import jse.math.vector.Vector;
 
@@ -15,11 +16,22 @@ public final class ZeroBoundSymmetryFunc1 extends VectorFunc1 implements IZeroBo
     public ZeroBoundSymmetryFunc1(IVector aX, IVector aF) {super(aX, aF);}
     
     /** DoubleArrayFunc1 stuffs */
-    @Override protected double getOutL_(int aI) {
-        aI = -aI;
-        return (aI < Nx()) ? mData.get(aI) : 0.0;
+    @Override public double subs(double aX) {
+        int tI = MathEX.Code.ceil2int((aX-mX0)/mDx);
+        int tImm = tI-1;
+        
+        double tX1 = getX(tImm);
+        double tX2 = getX(tI);
+        
+        int tNx = Nx();
+        
+        if (tImm < 0) tImm = -tImm;
+        if (tI   < 0) tI   = -tI;
+        
+        double tF1 = tImm>=tNx ? 0.0 : mData.get(tImm);
+        double tF2 = tI  >=tNx ? 0.0 : mData.get(tI);
+        return MathEX.Func.interp1(tX1, tX2, tF1, tF2, aX);
     }
-    @Override protected double getOutR_(int aI) {return 0.0;}
     @Override public int getINear(double aX) {
         int tI = super.getINear(aX);
         if (tI < 0) tI = -tI;

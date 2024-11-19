@@ -1,5 +1,6 @@
 package jse.math.function;
 
+import jse.math.MathEX;
 import jse.math.vector.IVector;
 import jse.math.vector.Vector;
 
@@ -15,15 +16,20 @@ public final class PBCFunc1 extends VectorFunc1 {
     public PBCFunc1(IVector aX, IVector aF) {super(aX, aF);}
     
     /** DoubleArrayFunc1 stuffs */
-    @Override protected double getOutL_(int aI) {
+    @Override public double subs(double aX) {
+        int tI = MathEX.Code.ceil2int((aX-mX0)/mDx);
+        int tImm = tI-1;
+        
+        double tX1 = getX(tImm);
+        double tX2 = getX(tI);
+        
         int tNx = Nx();
-        while (aI < 0) aI += tNx;
-        return mData.get(aI);
-    }
-    @Override protected double getOutR_(int aI) {
-        int tNx = Nx();
-        while (aI >= tNx) aI -= tNx;
-        return mData.get(aI);
+        
+        if      (tI   <  0  ) {do {tI   += tNx;} while (tI   <  0  );}
+        else if (tI   >= tNx) {do {tI   -= tNx;} while (tI   >= tNx);}
+        if      (tImm <  0  ) {do {tImm += tNx;} while (tImm <  0  );}
+        else if (tImm >= tNx) {do {tImm -= tNx;} while (tImm >= tNx);}
+        return MathEX.Func.interp1(tX1, tX2, mData.get(tImm), mData.get(tI), aX);
     }
     @Override public int getINear(double aX) {
         int tNx = Nx();

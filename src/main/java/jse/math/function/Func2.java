@@ -8,13 +8,13 @@ import static jse.math.MathEX.PI;
 
 /**
  * @author liqa
- * <p> 现在修改为专门获取一维函数的类，默认获取 {@link PBCFunc2} </p>
+ * <p> 现在修改为专门获取一维函数的类，默认获取 {@link ConstBoundFunc2} </p>
  */
 public class Func2 {
     private Func2() {}
     
-    public static PBCFunc2 zeros(double aX0, double aDx, int aNx) {return PBCFunc2.zeros(aX0, aDx, aNx);}
-    public static PBCFunc2 zeros(double aX0, double aY0, double aDx, double aDy, int aNx, int aNy) {return PBCFunc2.zeros(aX0, aY0, aDx, aDy, aNx, aNy);}
+    public static ConstBoundFunc2 zeros(double aX0, double aDx, int aNx) {return ConstBoundFunc2.zeros(aX0, aDx, aNx);}
+    public static ConstBoundFunc2 zeros(double aX0, double aY0, double aDx, double aDy, int aNx, int aNy) {return ConstBoundFunc2.zeros(aX0, aY0, aDx, aDy, aNx, aNy);}
     
     
     /**
