@@ -20,6 +20,8 @@ public class Conf {
     public static boolean DEBUG = OS.envZ("JSE_DEBUG", false);
     /** 运算是否开启边界检测，在 {@code jse 2.7.7} 以及更早的版本下不会直接检测 */
     public static boolean OPERATION_CHECK = OS.envZ("JSE_OPERATION_CHECK", true);
+    /** 是否直接包含工作目录到类的搜索路径，在 {@code jse 3.0.0} 之后会包含，这样可以简化项目结构，当然在复杂目录下运行脚本可能因为这个操作而存在延迟 */
+    public static boolean INCLUDE_WORKING_DIR = OS.envZ("JSE_INCLUDE_WORKING_DIR", true);
     
     /** 是否在 kernel 模式下开启 ThreadInterrupt，会在所有循环检测是否中断从而让中断总是有效，当然会影响性能 */
     public static boolean KERNEL_THREAD_INTERRUPT = OS.envZ("JSE_KERNEL_THREAD_INTERRUPT", true);

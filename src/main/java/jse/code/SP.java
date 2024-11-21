@@ -544,7 +544,9 @@ public class SP {
             // 重新指定 ClassLoader 为这个类的实际加载器
             GROOVY_SHELL = new GroovyShell(SP.class.getClassLoader(), new Binding(), GROOVY_CONF);
             // 现在运行目录也是 Groovy 脚本的类路径
-            GROOVY_SHELL.getClassLoader().addClasspath(OS.WORKING_DIR);
+            if (INCLUDE_WORKING_DIR) {
+            GROOVY_SHELL.getClassLoader().addClasspath(WORKING_DIR);
+            }
             // 指定默认的 Groovy 脚本的类路径
             GROOVY_SHELL.getClassLoader().addClasspath(UT.IO.toAbsolutePath(GROOVY_SP_DIR));
             // 增加一个 Groovy 的库的路径
@@ -792,17 +794,22 @@ public class SP {
             jep.MainInterpreter.setJepLibraryPath(UT.IO.toAbsolutePath(JEP_LIB_PATH));
             
             // 配置 Jep，这里只能配置一次；这里考虑了优先级，越能看到的优先级越高
-            jep.SharedInterpreter.setConfig(new JepConfig()
-                .addIncludePaths(WORKING_DIR,
-                                 UT.IO.toAbsolutePath(PYTHON_SP_DIR),
-                                 UT.IO.toAbsolutePath(PYTHON_LIB_DIR))
+            JepConfig rConfig = new JepConfig();
+            if (INCLUDE_WORKING_DIR) {
+            rConfig.addIncludePaths(WORKING_DIR);
+            }
+            rConfig.addIncludePaths(UT.IO.toAbsolutePath(PYTHON_SP_DIR),
+                                    UT.IO.toAbsolutePath(PYTHON_LIB_DIR))
                 .addIncludePaths(NewCollections.mapArray(PYTHON_EXLIB_DIRS, UT.IO::toAbsolutePath))
                 .addIncludePaths(UT.IO.toAbsolutePath(JEP_LIB_DIR))
                 .setClassLoader(Groovy.classLoader()) // 指定 Groovy 的 ClassLoader 从而可以直接导入 groovy 的类
                 .redirectStdout(System.out)
-                .redirectStdErr(System.err));
+                .redirectStdErr(System.err);
+            jep.SharedInterpreter.setConfig(rConfig);
             // 把 groovy 的类路径也加进去
+            if (INCLUDE_WORKING_DIR) {
             jep.ClassList.ADDITIONAL_CLASS_PATHS.add(WORKING_DIR);
+            }
             jep.ClassList.ADDITIONAL_CLASS_PATHS.add(UT.IO.toAbsolutePath(GROOVY_SP_DIR));
             jep.ClassList.ADDITIONAL_CLASS_PATHS.add(UT.IO.toAbsolutePath(GROOVY_LIB_DIR));
             for (String tGroovyExlibDir : GROOVY_EXLIB_DIRS) {
