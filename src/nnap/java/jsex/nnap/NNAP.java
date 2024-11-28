@@ -7,6 +7,7 @@ import jse.cache.VectorCache;
 import jse.clib.*;
 import jse.code.OS;
 import jse.code.UT;
+import jse.code.collection.AbstractCollections;
 import jse.code.collection.ISlice;
 import jse.code.collection.IntList;
 import jse.math.matrix.RowMatrix;
@@ -232,34 +233,46 @@ public class NNAP implements IAutoShutdown {
     @VisibleForTesting public int nthreads() {return threadNumber();}
     
     
-    protected IAtomData reorderSymbols(IAtomData aAtomData) {
-        if (mModels.size() < aAtomData.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of AtomData: " + aAtomData.atomTypeNumber() + ", model: " + mModels.size());
+    @ApiStatus.Internal
+    protected static IAtomData reorderSymbols_(List<String> aSymbols, IAtomData aAtomData) {
+        if (aSymbols.size() < aAtomData.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of AtomData: " + aAtomData.atomTypeNumber() + ", target: " + aSymbols.size());
         List<String> tAtomDataSymbols = aAtomData.symbols();
-        if (tAtomDataSymbols==null || sameOrder(tAtomDataSymbols)) return aAtomData;
+        if (tAtomDataSymbols==null || sameOrder_(aSymbols, tAtomDataSymbols)) return aAtomData;
         int[] tAtomDataType2newType = new int[tAtomDataSymbols.size()+1];
         for (int i = 0; i < tAtomDataSymbols.size(); ++i) {
             String tElem = tAtomDataSymbols.get(i);
-            int idx = indexOf(tElem);
+            int idx = indexOf_(aSymbols, tElem);
             if (idx < 0) throw new IllegalArgumentException("Invalid element ("+tElem+") in AtomData");
             tAtomDataType2newType[i+1] = idx+1;
         }
         return aAtomData.opt().mapType(atom -> tAtomDataType2newType[atom.type()]);
     }
-    public boolean sameOrder(List<String> aSymbols) {
-        for (int i = 0; i < aSymbols.size(); ++i) {
-            if (!aSymbols.get(i).equals(mModels.get(i).mSymbol)) {
+    @ApiStatus.Internal
+    protected static boolean sameOrder_(List<String> aSymbols, List<String> aDataSymbols) {
+        for (int i = 0; i < aDataSymbols.size(); ++i) {
+            if (!aDataSymbols.get(i).equals(aSymbols.get(i))) {
                 return false;
             }
         }
         return true;
     }
-    public int indexOf(String aSymbol) {
-        for (int i = 0; i < mModels.size(); ++i) {
-            if (aSymbol.equals(mModels.get(i).mSymbol)) {
+    @ApiStatus.Internal
+    protected static int indexOf_(List<String> aSymbols, String aSymbol) {
+        for (int i = 0; i < aSymbols.size(); ++i) {
+            if (aSymbol.equals(aSymbols.get(i))) {
                 return i;
             }
         }
         return -1;
+    }
+    public IAtomData reorderSymbols(IAtomData aAtomData) {
+        return reorderSymbols_(AbstractCollections.map(mModels, model -> model.mSymbol), aAtomData);
+    }
+    public boolean sameOrder(List<String> aDataSymbols) {
+        return sameOrder_(AbstractCollections.map(mModels, model -> model.mSymbol), aDataSymbols);
+    }
+    public int indexOf(String aSymbol) {
+        return indexOf_(AbstractCollections.map(mModels, model -> model.mSymbol), aSymbol);
     }
     
     /**

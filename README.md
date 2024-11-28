@@ -73,6 +73,8 @@ jse (Java Simulation Environment) 是
 参考 [基本使用方式](doc/usage.md)，
 详细接口介绍参考 [使用文档](doc/contents.md) 。
 
+现在也可以直接参考 [自动生成 JavaDoc](https://chanzylazer.github.io/jse-API/) 。
+
 
 # 编译项目
 本项目使用 [Gradle](https://gradle.org/) 进行管理（不需要安装 Gradle）。

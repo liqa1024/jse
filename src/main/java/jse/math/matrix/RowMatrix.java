@@ -4,7 +4,6 @@ import jse.code.collection.AbstractRandomAccessList;
 import jse.code.collection.DoubleList;
 import jse.code.iterator.IDoubleIterator;
 import jse.code.iterator.IDoubleSetIterator;
-import jse.math.vector.IVector;
 import jse.math.vector.IVectorGetter;
 import jse.math.vector.ShiftVector;
 import jse.math.vector.Vector;
@@ -43,7 +42,6 @@ public class RowMatrix extends DoubleArrayMatrix {
         private Builder(int aColNum) {mColNum = aColNum; mData = new DoubleList(Math.max(aColNum, DEFAULT_INIT_SIZE));}
         private Builder(int aColNum, int aInitSize) {mColNum = aColNum; mData = new DoubleList(Math.max(aColNum, aInitSize));}
         
-        public void addRow(IVector aRow) {mData.addAll(aRow);}
         public void addRow(IVectorGetter aRowGetter) {mData.addAll(mColNum, aRowGetter);}
         public void trimToSize() {mData.trimToSize();}
         

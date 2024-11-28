@@ -27,6 +27,10 @@ public class Basis {
     @ApiStatus.Experimental
     public interface IBasis {
         double rcut();
+        default int nrows() {return rowNumber();}
+        default int ncols() {return columnNumber();}
+        int rowNumber();
+        int columnNumber();
         RowMatrix eval(IDxyzTypeIterable aNL);
         List<@NotNull RowMatrix> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL);
         default List<@NotNull RowMatrix> evalPartial(IDxyzTypeIterable aNL) {return evalPartial(true, false, aNL);}
@@ -48,6 +52,12 @@ public class Basis {
         
         @Override public double rcut() {
             return mRCut;
+        }
+        @Override public int rowNumber() {
+            return mTypeNum>1 ? mNMax+mNMax+2 : mNMax+1;
+        }
+        @Override public int columnNumber() {
+            return mLMax+1;
         }
         @Override public RowMatrix eval(IDxyzTypeIterable aNL) {
             return sphericalChebyshev(mTypeNum, mNMax, mLMax, mRCut, aNL);
