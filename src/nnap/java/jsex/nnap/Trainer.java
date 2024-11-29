@@ -333,13 +333,21 @@ public class Trainer implements IAutoShutdown {
             SP.Python.exec(VAL_MODEL+".train()");
             for (int i = 0; i < aEpochs; ++i) {
                 double tLoss = ((Number)SP.Python.invoke(FN_TRAIN_STEP)).doubleValue();
+                double oLoss = mTrainLoss.isEmpty() ? Double.NaN : mTrainLoss.last();
                 mTrainLoss.add(tLoss);
+                double tTestLoss = Double.NaN;
                 if (mHasTest) {
-                    double tTestLoss = ((Number)SP.Python.invoke(FN_TEST_LOSS)).doubleValue();
+                    tTestLoss = ((Number)SP.Python.invoke(FN_TEST_LOSS)).doubleValue();
                     mTestLoss.add(tTestLoss);
-                    if (aPrintLog) UT.Timer.progressBar(String.format("loss: %.4g | %.4g", tLoss, tTestLoss));
-                } else {
-                    if (aPrintLog) UT.Timer.progressBar(String.format("loss: %.4g", tLoss));
+                }
+                if (!Double.isNaN(oLoss) && Math.abs(oLoss-tLoss)<(tLoss*1e-8)) {
+                    if (aPrintLog) for (int j = i; j < aEpochs; ++j) {
+                        UT.Timer.progressBar(mHasTest ? String.format("loss: %.4g | %.4g", tLoss, tTestLoss) : String.format("loss: %.4g", tLoss));
+                    }
+                    break;
+                }
+                if (aPrintLog) {
+                    UT.Timer.progressBar(mHasTest ? String.format("loss: %.4g | %.4g", tLoss, tTestLoss) : String.format("loss: %.4g", tLoss));
                 }
             }
         } finally {
