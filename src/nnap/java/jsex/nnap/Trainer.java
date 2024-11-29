@@ -39,7 +39,9 @@ public class Trainer implements IAutoShutdown {
         , CLASS_TOTAL_MODEL     = "__NNAP_TRAINER_TotalEnergyModel__"
         , FN_TRAIN_STEP         = "__NNAP_TRAINER_train_step__"
         , FN_TEST_LOSS          = "__NNAP_TRAINER_test_loss__"
+        , FN_CAL_MAE            = "__NNAP_TRAINER_cal_mae__"
         , VAL_MODEL             = "__NNAP_TRAINER_model__"
+        , VAL_MODEL_STATE_DICT  = "__NNAP_TRAINER_model_state_dict__"
         , VAL_OPTIMIZER         = "__NNAP_TRAINER_optimizer__"
         , VAL_LOSS_FN           = "__NNAP_TRAINER_loss_fn__"
         , VAL_TRAIN_BASE        = "__NNAP_TRAINER_train_base__"
@@ -64,10 +66,15 @@ public class Trainer implements IAutoShutdown {
         , VAL_SUB_BASE          = "__NNAP_TRAINER_sub_base__"
         , VAL_I                 = "__NNAP_TRAINER_i__"
         ;
+    private boolean mDead = false;
+    public boolean isShutdown() {return mDead;}
     @Override public void shutdown() {
-        SP.Python.removeValue(VAL_MODEL);
-        SP.Python.removeValue(VAL_OPTIMIZER);
-        SP.Python.removeValue(VAL_LOSS_FN);
+        if (!mDead) {
+            mDead = true;
+            if (mModelInited) SP.Python.removeValue(VAL_MODEL);
+            if (mOptimizerInited) SP.Python.removeValue(VAL_OPTIMIZER);
+            if (mLossFnInited) SP.Python.removeValue(VAL_LOSS_FN);
+        }
     }
     
     public static class Conf {
@@ -102,14 +109,14 @@ public class Trainer implements IAutoShutdown {
             "        self.ntypes = ntypes\n" +
             "        self.sub_models = torch.nn.ModuleList(["+CLASS_SINGLE_MODEL+"(input_dims[i], hidden_dims[i], bn_layers[i]) for i in range(ntypes)])\n" +
             "    \n" +
-            "    def forward(self, x, atom_numbers):\n" +
-            "        ylen = len(atom_numbers)\n" +
-            "        y = torch.zeros(ylen, device=atom_numbers.device, dtype=atom_numbers.dtype)\n" +
+            "    def forward(self, x, atom_nums):\n" +
+            "        ylen = len(atom_nums)\n" +
+            "        y = torch.zeros(ylen, device=atom_nums.device, dtype=atom_nums.dtype)\n" +
             "        for i in range(self.ntypes):\n" +
             "            sumidx = x[i][:, -1].long()\n" +
             "            xout = self.sub_models[i](x[i][:, :-1])\n" +
             "            y.scatter_add_(0, sumidx, xout)\n" +
-            "        y /= atom_numbers\n" +
+            "        y /= atom_nums\n" +
             "        return y";
         
         /** 训练一步的脚本函数，修改此值来实现自定义训练算法；默认使用 LBFGS 训练 */
@@ -137,11 +144,20 @@ public class Trainer implements IAutoShutdown {
     }
     static {
         SP.Python.exec("import torch");
+        SP.Python.exec("import copy");
         SP.Python.exec(Conf.INIT_SCRIPT);
         SP.Python.exec(Conf.SINGLE_MODEL_SCRIPT);
         SP.Python.exec(Conf.TOTAL_MODEL_SCRIPT);
         SP.Python.exec(Conf.TRAIN_STEP_SCRIPT);
         SP.Python.exec(Conf.TEST_LOSS_SCRIPT);
+        //noinspection ConcatenationWithEmptyString
+        SP.Python.exec("" +
+        "def "+FN_CAL_MAE+"(x, atom_nums, y):\n" +
+        "    "+VAL_MODEL+".eval()\n"+
+        "    with torch.no_grad():\n" +
+        "        pred = "+VAL_MODEL+"(x, atom_nums)\n" +
+        "    return (y - pred).abs().mean().item()"
+        );
     }
     
     protected final String[] mSymbols;
@@ -246,7 +262,7 @@ public class Trainer implements IAutoShutdown {
         }
     }
     /** 开始训练模型，这里直接训练给定的步数 */
-    public void train(int aEpochs, boolean aPrintLog) {
+    public void train(int aEpochs, boolean aEarlyStop, boolean aPrintLog) {
         // 在这里初始化模型，可以避免构造函数中调用多态方法的一些歧义
         if (!mModelInited) {
             initModel();
@@ -331,6 +347,8 @@ public class Trainer implements IAutoShutdown {
         try {
             if (aPrintLog) UT.Timer.progressBar("train", aEpochs);
             SP.Python.exec(VAL_MODEL+".train()");
+            double tMinLoss = Double.POSITIVE_INFINITY;
+            int tSelectEpoch = -1;
             for (int i = 0; i < aEpochs; ++i) {
                 double tLoss = ((Number)SP.Python.invoke(FN_TRAIN_STEP)).doubleValue();
                 double oLoss = mTrainLoss.isEmpty() ? Double.NaN : mTrainLoss.last();
@@ -339,6 +357,11 @@ public class Trainer implements IAutoShutdown {
                 if (mHasTest) {
                     tTestLoss = ((Number)SP.Python.invoke(FN_TEST_LOSS)).doubleValue();
                     mTestLoss.add(tTestLoss);
+                    if (aEarlyStop && tTestLoss<tMinLoss) {
+                        tSelectEpoch = i;
+                        tMinLoss = tTestLoss;
+                        SP.Python.exec(VAL_MODEL_STATE_DICT+" = copy.deepcopy("+VAL_MODEL+".state_dict())");
+                    }
                 }
                 if (!Double.isNaN(oLoss) && Math.abs(oLoss-tLoss)<(tLoss*1e-8)) {
                     if (aPrintLog) for (int j = i; j < aEpochs; ++j) {
@@ -349,6 +372,17 @@ public class Trainer implements IAutoShutdown {
                 if (aPrintLog) {
                     UT.Timer.progressBar(mHasTest ? String.format("loss: %.4g | %.4g", tLoss, tTestLoss) : String.format("loss: %.4g", tLoss));
                 }
+            }
+            if (aEarlyStop && tSelectEpoch>=0) {
+                SP.Python.exec(VAL_MODEL+".load_state_dict("+VAL_MODEL_STATE_DICT+"); del "+VAL_MODEL_STATE_DICT);
+                System.out.printf("Model at epoch = %d selected, test loss = %.4g\n", tSelectEpoch, tMinLoss);
+            }
+            double tMAE = ((Number)SP.Python.eval(FN_CAL_MAE+"("+VAL_TRAIN_BASE+", "+VAL_TRAIN_ATOM_NUM+", "+VAL_TRAIN_ENG+")")).doubleValue();
+            if (mHasTest) {
+                double tTestMAE = ((Number)SP.Python.eval(FN_CAL_MAE+"("+VAL_TEST_BASE+", "+VAL_TEST_ATOM_NUM+", "+VAL_TEST_ENG+")")).doubleValue();
+                System.out.printf("MAE-E: %.4g meV | %.4g meV\n", tMAE*1000, tTestMAE*1000);
+            } else {
+                System.out.printf("MAE-E: %.4g meV\n", tMAE*1000);
             }
         } finally {
             // 完事移除临时数据
