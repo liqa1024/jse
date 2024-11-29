@@ -454,13 +454,15 @@ public class NeighborListGetter implements IShutdownable {
             if (aIdx >= mAtomNum) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
             // 先统一处理一般情况
             final int tEnd = aHalf ? aIdx : mAtomNum;
-            for (int idx = 0; idx < tEnd; ++idx) if (idx != aIdx) {
+            for (int idx = 0; idx < tEnd; ++idx) {
                 final double tX = mAtomDataXYZ.get(idx, 0);
                 final double tY = mAtomDataXYZ.get(idx, 1);
                 final double tZ = mAtomDataXYZ.get(idx, 2);
                 if (mBox.isPrism()) {
                     assert mBoxA!=null && mBoxB!=null && mBoxC!=null;
+                    if (idx != aIdx) {
                     aXYZIdxDo.run(tX                           , tY                           , tZ                           , idx);
+                    }
                     aXYZIdxDo.run(tX+mBoxA.mX                  , tY+mBoxA.mY                  , tZ+mBoxA.mZ                  , idx);
                     aXYZIdxDo.run(tX-mBoxA.mX                  , tY-mBoxA.mY                  , tZ-mBoxA.mZ                  , idx);
                     aXYZIdxDo.run(tX+mBoxB.mX                  , tY+mBoxB.mY                  , tZ+mBoxB.mZ                  , idx);
@@ -488,7 +490,9 @@ public class NeighborListGetter implements IShutdownable {
                     aXYZIdxDo.run(tX-mBoxA.mX-mBoxB.mX+mBoxC.mX, tY-mBoxA.mY-mBoxB.mY+mBoxC.mY, tZ-mBoxA.mZ-mBoxB.mZ+mBoxC.mZ, idx);
                     aXYZIdxDo.run(tX-mBoxA.mX-mBoxB.mX-mBoxC.mX, tY-mBoxA.mY-mBoxB.mY-mBoxC.mY, tZ-mBoxA.mZ-mBoxB.mZ-mBoxC.mZ, idx);
                 } else {
+                    if (idx != aIdx) {
                     aXYZIdxDo.run(tX           , tY           , tZ           , idx);
+                    }
                     aXYZIdxDo.run(tX+mBoxXYZ.mX, tY           , tZ           , idx);
                     aXYZIdxDo.run(tX-mBoxXYZ.mX, tY           , tZ           , idx);
                     aXYZIdxDo.run(tX           , tY+mBoxXYZ.mY, tZ           , idx);
@@ -722,7 +726,7 @@ public class NeighborListGetter implements IShutdownable {
             if (aIdx >= mAtomNum) throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));
             // 先统一处理一般情况
             final int tEnd = aHalf ? aIdx : mAtomNum;
-            for (int idx = 0; idx < tEnd; ++idx) if (idx != aIdx) {
+            for (int idx = 0; idx < tEnd; ++idx) {
                 final double tX = mAtomDataXYZ.get(idx, 0);
                 final double tY = mAtomDataXYZ.get(idx, 1);
                 final double tZ = mAtomDataXYZ.get(idx, 2);
@@ -733,6 +737,7 @@ public class NeighborListGetter implements IShutdownable {
                     for (int j = -mMulY; j <= mMulY; ++j) {
                     double tDirBX = mBoxB.mX*j, tDirBY = mBoxB.mY*j, tDirBZ = mBoxB.mZ*j;
                     for (int k = -mMulZ; k <= mMulZ; ++k) {
+                        if (idx==aIdx && i==0 && j==0 && k==0) continue;
                         aXYZIdxDo.run(
                             tX + tDirAX + tDirBX + mBoxC.mX*k,
                             tY + tDirAY + tDirBY + mBoxC.mY*k,
@@ -745,6 +750,7 @@ public class NeighborListGetter implements IShutdownable {
                     for (int j = -mMulY; j <= mMulY; ++j) {
                     double tDirY = mBoxXYZ.mY*j;
                     for (int k = -mMulZ; k <= mMulZ; ++k) {
+                        if (idx==aIdx && i==0 && j==0 && k==0) continue;
                         aXYZIdxDo.run(
                             tX + tDirX,
                             tY + tDirY,
