@@ -147,12 +147,7 @@ public class NNAP implements IAutoShutdown {
                 tBasisType = "spherical_chebyshev";
             }
             if (!tBasisType.equals("spherical_chebyshev")) throw new IllegalArgumentException("Unsupported basis type: " + tBasisType);
-            mBasis = new Basis.SphericalChebyshev(
-                aTypeNum,
-                ((Number)UT.Code.getWithDefault(tBasis, Basis.SphericalChebyshev.DEFAULT_NMAX, "nmax")).intValue(),
-                ((Number)UT.Code.getWithDefault(tBasis, Basis.SphericalChebyshev.DEFAULT_LMAX, "lmax")).intValue(),
-                ((Number)UT.Code.getWithDefault(tBasis, Basis.SphericalChebyshev.DEFAULT_RCUT, "rcut")).doubleValue()
-            );
+            mBasis = Basis.SphericalChebyshev.load(aTypeNum, tBasis);
             Object tModel = aModelInfo.get("torch");
             if (tModel == null) throw new IllegalArgumentException("No torch data in ModelInfo");
             byte[] tModelBytes = Base64.getDecoder().decode(tModel.toString());

@@ -5,15 +5,19 @@ import jse.cache.ComplexMatrixCache;
 import jse.cache.ComplexVectorCache;
 import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
+import jse.code.UT;
+import jse.io.ISavable;
 import jse.math.MathEX;
 import jse.math.matrix.*;
 import jse.math.vector.*;
+import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static jse.math.MathEX.PI;
 import static jse.math.MathEX.SH_LARGEST_L;
@@ -25,7 +29,7 @@ import static jse.math.MathEX.SH_LARGEST_L;
 public class Basis {
     
     @ApiStatus.Experimental
-    public interface IBasis {
+    public interface IBasis extends ISavable {
         double rcut();
         default int nrows() {return rowNumber();}
         default int ncols() {return columnNumber();}
@@ -64,6 +68,23 @@ public class Basis {
         }
         @Override public List<@NotNull RowMatrix> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL) {
             return sphericalChebyshevPartial(mTypeNum, mNMax, mLMax, mRCut, aCalBasis, aCalCross, aNL);
+        }
+        
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        @Override public void save(Map rSaveTo) {
+            rSaveTo.put("type", "spherical_chebyshev");
+            rSaveTo.put("nmax", mNMax);
+            rSaveTo.put("lmax", mLMax);
+            rSaveTo.put("rcut", mRCut);
+        }
+        @SuppressWarnings("rawtypes")
+        public static SphericalChebyshev load(int aTypeNum, Map aMap) {
+            return new Basis.SphericalChebyshev(
+                aTypeNum,
+                ((Number) UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue(),
+                ((Number)UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),
+                ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue()
+            );
         }
     }
     

@@ -9,18 +9,19 @@ import jse.code.collection.AbstractCollections;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.code.collection.NewCollections;
+import jse.io.ISavable;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.IVector;
 import jse.math.vector.IntVector;
 import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 import jse.parallel.IAutoShutdown;
+import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * jse 实现的 nnap 训练器，这里简单起见直接通过 python 训练。
@@ -30,7 +31,10 @@ import java.util.Map;
  * @author liqa
  */
 @ApiStatus.Experimental
-public class Trainer implements IAutoShutdown {
+public class Trainer implements IAutoShutdown, ISavable {
+    
+    protected final static int VERSION = 1;
+    protected final static String DEFAULT_UNITS = "metal";
     protected final static int[] DEFAULT_HIDDEN_DIMS = {20, 20};
     protected final static boolean DEFAULT_BN_LAYER = true;
     /** 全局记录 python 中的变量名称 */
@@ -40,6 +44,7 @@ public class Trainer implements IAutoShutdown {
         , FN_TRAIN_STEP         = "__NNAP_TRAINER_train_step__"
         , FN_TEST_LOSS          = "__NNAP_TRAINER_test_loss__"
         , FN_CAL_MAE            = "__NNAP_TRAINER_cal_mae__"
+        , FN_MODEL2BYTES        = "__NNAP_TRAINER_model2bytes__"
         , VAL_MODEL             = "__NNAP_TRAINER_model__"
         , VAL_MODEL_STATE_DICT  = "__NNAP_TRAINER_model_state_dict__"
         , VAL_OPTIMIZER         = "__NNAP_TRAINER_optimizer__"
@@ -66,16 +71,6 @@ public class Trainer implements IAutoShutdown {
         , VAL_SUB_BASE          = "__NNAP_TRAINER_sub_base__"
         , VAL_I                 = "__NNAP_TRAINER_i__"
         ;
-    private boolean mDead = false;
-    public boolean isShutdown() {return mDead;}
-    @Override public void shutdown() {
-        if (!mDead) {
-            mDead = true;
-            if (mModelInited) SP.Python.removeValue(VAL_MODEL);
-            if (mOptimizerInited) SP.Python.removeValue(VAL_OPTIMIZER);
-            if (mLossFnInited) SP.Python.removeValue(VAL_LOSS_FN);
-        }
-    }
     
     public static class Conf {
         /** 全局初始化脚本，默认为设置串行；经过测试并行训练并不会明显更快 */
@@ -88,8 +83,8 @@ public class Trainer implements IAutoShutdown {
             "        super().__init__()\n" +
             "        self.in_layer = torch.nn.Linear(input_dim, hidden_dims[0])\n" +
             "        self.in_bn_layer = torch.nn.BatchNorm1d(hidden_dims[0]) if bn_layer else torch.nn.Identity()\n" +
-            "        self.hidden_layers = torch.nn.ModuleList([torch.nn.Linear(hidden_dims[i], hidden_dims[i]) for i in range(len(hidden_dims)-1)])\n" +
-            "        self.hidden_bn_layers = torch.nn.ModuleList([(torch.nn.BatchNorm1d(hidden_dims[i]) if bn_layer else torch.nn.Identity()) for i in range(len(hidden_dims)-1)])\n" +
+            "        self.hidden_layers = torch.nn.ModuleList([torch.nn.Linear(hidden_dims[i], hidden_dims[i+1]) for i in range(len(hidden_dims)-1)])\n" +
+            "        self.hidden_bn_layers = torch.nn.ModuleList([(torch.nn.BatchNorm1d(hidden_dims[i+1]) if bn_layer else torch.nn.Identity()) for i in range(len(hidden_dims)-1)])\n" +
             "        self.out_layer = torch.nn.Linear(hidden_dims[-1], 1)\n" +
             "        self.active = torch.nn.SiLU()\n" +
             "    \n" +
@@ -141,10 +136,24 @@ public class Trainer implements IAutoShutdown {
             "        pred = "+VAL_MODEL+"("+VAL_TEST_BASE+", "+VAL_TEST_ATOM_NUM+")\n" +
             "        loss = "+VAL_LOSS_FN+"(pred, "+VAL_TEST_ENG+")\n" +
             "    return loss.item()";
+        
+        /** 将模型转为字节的脚本，一般情况不需要重写 */
+        public static String MODEL2BYTES_SCRIPT =
+            "def "+FN_MODEL2BYTES+"(i):\n" +
+            "    sub_model = "+VAL_MODEL+".sub_models[i]\n" +
+            "    sub_model.eval()\n" +
+            "    input_ones = torch.ones(1, "+VAL_MODEL+".input_dims[i], dtype=torch.float64)\n" +
+            "    traced_script_module = torch.jit.trace(sub_model, input_ones)\n" +
+            "\n" +
+            "    buffer = io.BytesIO()\n" +
+            "    torch.jit.save(traced_script_module, buffer)\n" +
+            "    buffer.seek(0)\n" +
+            "    return buffer.read()";
     }
     static {
         SP.Python.exec("import torch");
         SP.Python.exec("import copy");
+        SP.Python.exec("import io");
         SP.Python.exec(Conf.INIT_SCRIPT);
         SP.Python.exec(Conf.SINGLE_MODEL_SCRIPT);
         SP.Python.exec(Conf.TOTAL_MODEL_SCRIPT);
@@ -158,7 +167,22 @@ public class Trainer implements IAutoShutdown {
         "        pred = "+VAL_MODEL+"(x, atom_nums)\n" +
         "    return (y - pred).abs().mean().item()"
         );
+        SP.Python.exec(Conf.MODEL2BYTES_SCRIPT);
     }
+    
+    private boolean mDead = false;
+    public boolean isShutdown() {return mDead;}
+    @Override public void shutdown() {
+        if (!mDead) {
+            mDead = true;
+            if (mModelInited) SP.Python.removeValue(VAL_MODEL);
+            if (mOptimizerInited) SP.Python.removeValue(VAL_OPTIMIZER);
+            if (mLossFnInited) SP.Python.removeValue(VAL_LOSS_FN);
+        }
+    }
+    
+    protected String mUnits = DEFAULT_UNITS;
+    public Trainer setUnits(String aUnits) {mUnits = aUnits; return this;}
     
     protected final String[] mSymbols;
     protected final IVector mRefEngs;
@@ -397,6 +421,8 @@ public class Trainer implements IAutoShutdown {
             }
         }
     }
+    public void train(int aEpochs, boolean aEarlyStop) {train(aEpochs, aEarlyStop, true);}
+    public void train(int aEpochs) {train(aEpochs, true);}
     
     @ApiStatus.Internal
     protected void calRefEngBaseAndAdd_(IAtomData aAtomData, double aEnergy, final DoubleList rEngData, DoubleList[] rBaseData) {
@@ -443,4 +469,32 @@ public class Trainer implements IAutoShutdown {
     /** 获取历史 loss 值 */
     public IVector trainLoss() {return mTrainLoss.asVec();}
     public IVector testLoss() {return mTestLoss.asVec();}
+    
+    /** 保存训练的势函数 */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Override public void save(Map rSaveTo) {
+        List rModels = new ArrayList();
+        for (int i = 0; i < mSymbols.length; ++i) {
+            Map rBasis = new LinkedHashMap();
+            mBasis[i].save(rBasis);
+            byte[] tModelByes = (byte[])SP.Python.invoke(FN_MODEL2BYTES, i);
+            rModels.add(Maps.of(
+                "symbol", mSymbols[i],
+                "ref_eng", mRefEngs.get(i),
+                "norm_vec", mNormVec[i].asList(),
+                "basis", rBasis,
+                "torch", Base64.getEncoder().encodeToString(tModelByes)
+            ));
+        }
+        rSaveTo.put("version", VERSION);
+        rSaveTo.put("units", mUnits);
+        rSaveTo.put("models", rModels);
+    }
+    @SuppressWarnings({"rawtypes"})
+    public void save(String aPath, boolean aPretty) throws IOException {
+        Map rJson = new LinkedHashMap();
+        save(rJson);
+        UT.IO.map2json(rJson, aPath, aPretty);
+    }
+    public void save(String aPath) throws IOException {save(aPath, false);}
 }
