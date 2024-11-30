@@ -1393,10 +1393,11 @@ public class UT {
         public static BufferedReader toReader     (String aFilePath)         throws IOException {return toReader(toAbsolutePath_(aFilePath));}
         public static BufferedReader toReader     (Path aPath)               throws IOException {return toReader(toInputStream(aPath));}
         public static BufferedReader toReader     (URL aFileURL)             throws IOException {return toReader(aFileURL.openStream());}
-        public static BufferedReader toReader     (InputStream aInputStream) throws IOException {return toReader(aInputStream, StandardCharsets.UTF_8);}
-        public static BufferedReader toReader     (InputStream aInputStream, Charset aCS) throws IOException {
+        public static BufferedReader toReader     (InputStream aInputStream) throws IOException {return toReader(aInputStream, StandardCharsets.UTF_8, true);}
+        public static BufferedReader toReader     (InputStream aInputStream, Charset aCS) throws IOException {return toReader(aInputStream, aCS, false);}
+        public static BufferedReader toReader     (InputStream aInputStream, Charset aCS, boolean aUseUnicodeReader) throws IOException {
             // 现在改为 UnicodeReader 实现，可以自动检测 UTF 的 BOM
-            return new BufferedReader(new UnicodeReader(aInputStream, aCS.name()));
+            return new BufferedReader(aUseUnicodeReader ? new UnicodeReader(aInputStream, aCS.name()) : new InputStreamReader(aInputStream, aCS));
         }
         
         /** misc stuffs */

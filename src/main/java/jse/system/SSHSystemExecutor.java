@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -171,7 +172,7 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
                 mOutTask = null;
             } else {
                 mOutTask = UT.Par.runAsync(() -> {
-                    try (BufferedReader tReader = UT.IO.toReader(mChannelExec.getInputStream()); UT.IO.IWriteln tWriteln = aWriteln) {
+                    try (BufferedReader tReader = UT.IO.toReader(mChannelExec.getInputStream(), StandardCharsets.UTF_8); UT.IO.IWriteln tWriteln = aWriteln) {
                         mChannelExec.connect();
                         String tLine;
                         while ((tLine = tReader.readLine()) != null) tWriteln.writeln(tLine);
