@@ -1,4 +1,4 @@
-package jsex.nnap;
+package jsex.nnap.basis;
 
 import com.google.common.collect.Lists;
 import jse.cache.ComplexMatrixCache;
@@ -6,12 +6,10 @@ import jse.cache.ComplexVectorCache;
 import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
 import jse.code.UT;
-import jse.io.ISavable;
 import jse.math.MathEX;
-import jse.math.matrix.*;
+import jse.math.matrix.ColumnComplexMatrix;
+import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
-import org.apache.groovy.util.Maps;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,147 +21,132 @@ import static jse.math.MathEX.PI;
 import static jse.math.MathEX.SH_LARGEST_L;
 
 /**
- * 所有 nnap 的基组/描述符实现暂时都会放在这里
- * @author liqa
+ * 一种基于 Chebyshev 多项式和球谐函数将原子局域环境展开成一个基组的方法，
+ * 主要用于作为机器学习的输入向量；这是 NNAP 中默认使用的原子基组。
+ * <p>
+ * 为了中间变量缓存利用效率，此类相同实例线程不安全，而不同实例之间线程安全
+ * <p>
+ * References:
+ * <a href="https://arxiv.org/abs/2211.03350v3">
+ * Efficient and accurate simulation of vitrification in multi-component metallic liquids with neural-network potentials </a>
+ * @author Su Rui, liqa
  */
-public class Basis {
-    
-    @ApiStatus.Experimental
-    public interface IBasis extends ISavable {
-        double rcut();
-        default int nrows() {return rowNumber();}
-        default int ncols() {return columnNumber();}
-        int rowNumber();
-        int columnNumber();
-        RowMatrix eval(IDxyzTypeIterable aNL);
-        List<@NotNull RowMatrix> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL);
-        default List<@NotNull RowMatrix> evalPartial(IDxyzTypeIterable aNL) {return evalPartial(true, false, aNL);}
-    }
-    
-    public static class SphericalChebyshev implements IBasis {
-        public final static int DEFAULT_NMAX = 5;
-        public final static int DEFAULT_LMAX = 6;
-        public final static double DEFAULT_RCUT = 6.2;
-        
-        private final int mTypeNum;
-        private final int mNMax, mLMax;
-        private final double mRCut;
-        public SphericalChebyshev(int aTypeNum, int aNMax, int aLMax, double aRCut) {
-            mTypeNum = aTypeNum;
-            mNMax = aNMax; mLMax = aLMax;
-            mRCut = aRCut;
-        }
-        
-        @Override public double rcut() {
-            return mRCut;
-        }
-        @Override public int rowNumber() {
-            return mTypeNum>1 ? mNMax+mNMax+2 : mNMax+1;
-        }
-        @Override public int columnNumber() {
-            return mLMax+1;
-        }
-        @Override public RowMatrix eval(IDxyzTypeIterable aNL) {
-            return sphericalChebyshev(mTypeNum, mNMax, mLMax, mRCut, aNL);
-        }
-        @Override public List<@NotNull RowMatrix> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL) {
-            return sphericalChebyshevPartial(mTypeNum, mNMax, mLMax, mRCut, aCalBasis, aCalCross, aNL);
-        }
-        
-        @SuppressWarnings({"rawtypes", "unchecked"})
-        @Override public void save(Map rSaveTo) {
-            rSaveTo.put("type", "spherical_chebyshev");
-            rSaveTo.put("nmax", mNMax);
-            rSaveTo.put("lmax", mLMax);
-            rSaveTo.put("rcut", mRCut);
-        }
-        @SuppressWarnings("rawtypes")
-        public static SphericalChebyshev load(int aTypeNum, Map aMap) {
-            return new Basis.SphericalChebyshev(
-                aTypeNum,
-                ((Number) UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue(),
-                ((Number)UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),
-                ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue()
-            );
-        }
-    }
-    
-    @FunctionalInterface public interface IDxyzTypeIterable {void forEachDxyzType(IDxyzTypeDo aDxyzTypeDo);}
-    @FunctionalInterface public interface IDxyzTypeDo {void run(double aDx, double aDy, double aDz, int aType);}
-    
+public class SphericalChebyshev implements IBasis {
     /** 需要的固定系数存储 */
-    private final static IVector SH_SQRT_LPM_LMM1; // sqrt((l+m)(l-m+1))
-    private final static IVector SH_SQRT_LPM1_LMM; // sqrt((l+m+1)(l-m))
+    private final static Vector SQRT_LPM_LMM1; // sqrt((l+m)(l-m+1))
+    private final static Vector SQRT_LPM1_LMM; // sqrt((l+m+1)(l-m))
     static {
         final int tSize = (SH_LARGEST_L+1)*(SH_LARGEST_L+1);
-        SH_SQRT_LPM_LMM1 = Vectors.NaN(tSize);
-        SH_SQRT_LPM1_LMM = Vectors.NaN(tSize);
+        SQRT_LPM_LMM1 = Vectors.NaN(tSize);
+        SQRT_LPM1_LMM = Vectors.NaN(tSize);
         int tStart = 0;
         for (int tL = 0; tL <= SH_LARGEST_L; ++tL) {
             for (int tM = -tL; tM <= tL; ++tM) {
-                SH_SQRT_LPM_LMM1.set(tStart+tL+tM, MathEX.Fast.sqrt((tL+tM) * (tL-tM+1)));
-                SH_SQRT_LPM1_LMM.set(tStart+tL+tM, MathEX.Fast.sqrt((tL+tM+1) * (tL-tM)));
+                SQRT_LPM_LMM1.set(tStart+tL+tM, MathEX.Fast.sqrt((tL+tM) * (tL-tM+1)));
+                SQRT_LPM1_LMM.set(tStart+tL+tM, MathEX.Fast.sqrt((tL+tM+1) * (tL-tM)));
             }
             tStart += tL+tL+1;
         }
     }
     
+    public final static int DEFAULT_NMAX = 5;
+    public final static int DEFAULT_LMAX = 6;
+    public final static double DEFAULT_RCUT = 6.2;
+    
+    private final int mTypeNum;
+    private final int mNMax, mLMax;
+    private final double mRCut;
     /**
-     * 一种基于 Chebyshev 多项式和球谐函数将原子局域环境展开成一个基组的方法，
-     * 主要用于作为机器学习的输入向量；这是 NNAP 中默认使用的原子基组。
-     * <p>
-     * References:
-     * <a href="https://arxiv.org/abs/2211.03350v3">
-     * Efficient and accurate simulation of vitrification in multi-component metallic liquids with neural-network potentials </a>
-     * @author Su Rui, liqa
-     * @param aTypeNum 原子种类数目，默认为 {@code 1}
+     * @param aTypeNum 原子种类数目
      * @param aNMax Chebyshev 多项式选取的最大阶数
      * @param aLMax 球谐函数中 l 选取的最大阶数
-     * @param aRCutOff 截断半径
-     * @param aNL 近邻列表遍历器
-     * @return 原子描述符矩阵组成的数组，n 为行，l 为列，因此 asVecRow 即为原本定义的基；如果存在超过一个种类则输出行数翻倍
+     * @param aRCut 截断半径
      */
-    public static RowMatrix sphericalChebyshev(final int aTypeNum, final int aNMax, final int aLMax, final double aRCutOff, IDxyzTypeIterable aNL) {
-        if (aNMax < 0) throw new IllegalArgumentException("Input n_max MUST be Non-Negative, input: "+aNMax);
-        if (aLMax < 0) throw new IllegalArgumentException("Input l_max MUST be Non-Negative, input: "+aLMax);
-        
-        final int tSizeN = aTypeNum>1 ? aNMax+aNMax+2 : aNMax+1;
-        final RowMatrix rFingerPrint = MatrixCache.getMatRow(tSizeN, aLMax+1);
+    public SphericalChebyshev(int aTypeNum, int aNMax, int aLMax, double aRCut) {
+        if (aNMax < 0) throw new IllegalArgumentException("Input nmax MUST be Non-Negative, input: "+aNMax);
+        if (aLMax < 0) throw new IllegalArgumentException("Input lmax MUST be Non-Negative, input: "+aLMax);
+        mTypeNum = aTypeNum;
+        mNMax = aNMax;
+        mLMax = aLMax;
+        mRCut = aRCut;
+    }
+    
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Override public void save(Map rSaveTo) {
+        rSaveTo.put("type", "spherical_chebyshev");
+        rSaveTo.put("nmax", mNMax);
+        rSaveTo.put("lmax", mLMax);
+        rSaveTo.put("rcut", mRCut);
+    }
+    @SuppressWarnings("rawtypes")
+    public static SphericalChebyshev load(int aTypeNum, Map aMap) {
+        return new SphericalChebyshev(
+            aTypeNum,
+            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue(),
+            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),
+            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue()
+        );
+    }
+    
+    /** @return {@inheritDoc} */
+    @Override public double rcut() {
+        return mRCut;
+    }
+    /**
+     * @return {@inheritDoc}；如果只有一个种类则为
+     * {@code nmax+1}，如果超过一个种类则为 {@code 2(nmax+1)}
+     */
+    @Override public int rowNumber() {
+        return mTypeNum>1 ? mNMax+mNMax+2 : mNMax+1;
+    }
+    /** @return {@inheritDoc}；具体为 {@code lmax+1} */
+    @Override public int columnNumber() {
+        return mLMax+1;
+    }
+    
+    /**
+     * {@inheritDoc}
+     * @param aNL 近邻列表遍历器
+     * @return {@inheritDoc}
+     */
+    @Override public RowMatrix eval(IDxyzTypeIterable aNL) {
+        final int tSizeN = rowNumber();
+        final RowMatrix rFingerPrint = MatrixCache.getMatRow(tSizeN, mLMax+1);
         
         // 需要存储所有的 l，n，m 的值来统一进行近邻求和
-        final ColumnComplexMatrix cnlm = ComplexMatrixCache.getZerosCol((aLMax+1)*(aLMax+1), tSizeN);
+        final ColumnComplexMatrix cnlm = ComplexMatrixCache.getZerosCol((mLMax+1)*(mLMax+1), tSizeN);
         // 缓存 Rn 数组
-        final IVector tRn = VectorCache.getVec(aNMax+1);
+        final IVector tRn = VectorCache.getVec(mNMax+1);
         // 全局暂存 Y 的数组，这样可以用来防止重复获取来提高效率
-        final IComplexVector tY = ComplexVectorCache.getVec((aLMax+1)*(aLMax+1));
+        final IComplexVector tY = ComplexVectorCache.getVec((mLMax+1)*(mLMax+1));
         
         // 遍历近邻计算 Ylm, Rn, fc
         aNL.forEachDxyzType((dx, dy, dz, type) -> {
             double dis = MathEX.Fast.hypot(dx, dy, dz);
-            if (dis >= aRCutOff) return; // 理论不会触发，因为在上层遍历时就排除了
-            if (type > aTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+aTypeNum+")");
+            if (dis >= mRCut) return; // 理论不会触发，因为在上层遍历时就排除了
+            if (type > mTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+mTypeNum+")");
             
             // 计算种类的权重
             double wt = ((type&1)==1) ? type : -type;
             // 计算截断函数 fc
-            double fc = MathEX.Fast.powFast(1.0 - MathEX.Fast.pow2(dis/aRCutOff), 4);
+            double fc = MathEX.Fast.powFast(1.0 - MathEX.Fast.pow2(dis/mRCut), 4);
             // 统一遍历一次计算 Rn
-            final double tX = 1.0 - 2.0*dis/aRCutOff;
+            final double tX = 1.0 - 2.0*dis/mRCut;
             tRn.fill(n -> MathEX.Func.chebyshev(n, tX));
             
             // 遍历求 n，l 的情况
-            MathEX.Func.sphericalHarmonicsFull2DestXYZDis_(aLMax, dx, dy, dz, dis, tY);
-            for (int tN = 0; tN <= aNMax; ++tN) {
+            MathEX.Func.sphericalHarmonicsFull2DestXYZDis_(mLMax, dx, dy, dz, dis, tY);
+            for (int tN = 0; tN <= mNMax; ++tN) {
                 // 现在提供了 mplus2this 支持将数乘到 tY 中后再加到 cijm，可以不用中间变量；
                 // 虽然看起来和使用 operate2this 效率基本一致，即使后者理论上应该还会创建一些 DoubleComplex；
                 // 总之至少没有反向优化，并且这样包装后更加不吃编译器的优化，也不存在一大坨 lambda 表达式，以及传入的 DoubleComplex 一定不是引用等这种约定
                 double tMul = fc * tRn.get(tN);
                 cnlm.col(tN).operation().mplus2this(tY, tMul);
-                if (aTypeNum > 1) cnlm.col(tN+aNMax+1).operation().mplus2this(tY, wt*tMul);
+                if (mTypeNum > 1) cnlm.col(tN+mNMax+1).operation().mplus2this(tY, wt*tMul);
             }
         });
         // 做标量积消去 m 项，得到此原子的 FP
-        for (int tN = 0; tN < tSizeN; ++tN) for (int tL = 0; tL <= aLMax; ++tL) {
+        for (int tN = 0; tN < tSizeN; ++tN) for (int tL = 0; tL <= mLMax; ++tL) {
             // 根据 sphericalHarmonicsFull2Dest 的约定这里需要这样索引
             int tStart = tL*tL;
             int tLen = tL+tL+1;
@@ -177,70 +160,65 @@ public class Basis {
         
         return rFingerPrint;
     }
-    public static RowMatrix sphericalChebyshev(int aNMax, int aLMax, double aRCutOff, IDxyzTypeIterable aNL) {return sphericalChebyshev(1, aNMax, aLMax, aRCutOff, aNL);}
     
     /**
-     * {@link #sphericalChebyshev} 对于 {@code xyz} 偏微分的计算结果，主要用于力的计算
+     * {@inheritDoc}
      * @param aCalBasis 控制是否同时计算基组本来的值，默认为 {@code true}
      * @param aCalCross 控制是否同时计算基组对于近邻原子坐标的偏导值，默认为 {@code false}
-     * @return {@code [fp, fpPx, fpPy, fpPz]}，如果关闭 aCalBasis 则第一项
-     * {@code fp} 为 null，如果开启 aCalBasis 则在后续追加近邻的偏导
-     * @author liqa
+     * @param aNL 近邻列表遍历器
+     * @return {@inheritDoc}
      */
-    public static List<RowMatrix> sphericalChebyshevPartial(final int aTypeNum, final int aNMax, final int aLMax, final double aRCutOff, final boolean aCalBasis, final boolean aCalCross, IDxyzTypeIterable aNL) {
-        if (aNMax < 0) throw new IllegalArgumentException("Input n_max MUST be Non-Negative, input: "+aNMax);
-        if (aLMax < 0) throw new IllegalArgumentException("Input l_max MUST be Non-Negative, input: "+aLMax);
-        
-        final int tSizeN = aTypeNum>1 ? aNMax+aNMax+2 : aNMax+1;
-        @Nullable RowMatrix rFingerPrint = aCalBasis ? MatrixCache.getMatRow(tSizeN, aLMax+1) : null;
-        RowMatrix rFingerPrintPx = MatrixCache.getMatRow(tSizeN, aLMax+1);
-        RowMatrix rFingerPrintPy = MatrixCache.getMatRow(tSizeN, aLMax+1);
-        RowMatrix rFingerPrintPz = MatrixCache.getMatRow(tSizeN, aLMax+1);
+    @Override public List<@NotNull RowMatrix> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL) {
+        final int tSizeN = rowNumber();
+        @Nullable RowMatrix rFingerPrint = aCalBasis ? MatrixCache.getMatRow(tSizeN, mLMax+1) : null;
+        RowMatrix rFingerPrintPx = MatrixCache.getMatRow(tSizeN, mLMax+1);
+        RowMatrix rFingerPrintPy = MatrixCache.getMatRow(tSizeN, mLMax+1);
+        RowMatrix rFingerPrintPz = MatrixCache.getMatRow(tSizeN, mLMax+1);
         @Nullable List<RowMatrix> rFingerPrintPxCross = aCalCross ? new ArrayList<>() : null;
         @Nullable List<RowMatrix> rFingerPrintPyCross = aCalCross ? new ArrayList<>() : null;
         @Nullable List<RowMatrix> rFingerPrintPzCross = aCalCross ? new ArrayList<>() : null;
         
         // 需要存储所有的 l，n，m 的值来统一进行近邻求和
-        final ColumnComplexMatrix cnlm = ComplexMatrixCache.getZerosCol((aLMax+1)*(aLMax+1), tSizeN);
-        final ColumnComplexMatrix cnlmPx = ComplexMatrixCache.getZerosCol((aLMax+1)*(aLMax+1), tSizeN);
-        final ColumnComplexMatrix cnlmPy = ComplexMatrixCache.getZerosCol((aLMax+1)*(aLMax+1), tSizeN);
-        final ColumnComplexMatrix cnlmPz = ComplexMatrixCache.getZerosCol((aLMax+1)*(aLMax+1), tSizeN);
+        final ColumnComplexMatrix cnlm = ComplexMatrixCache.getZerosCol((mLMax+1)*(mLMax+1), tSizeN);
+        final ColumnComplexMatrix cnlmPx = ComplexMatrixCache.getZerosCol((mLMax+1)*(mLMax+1), tSizeN);
+        final ColumnComplexMatrix cnlmPy = ComplexMatrixCache.getZerosCol((mLMax+1)*(mLMax+1), tSizeN);
+        final ColumnComplexMatrix cnlmPz = ComplexMatrixCache.getZerosCol((mLMax+1)*(mLMax+1), tSizeN);
         final @Nullable List<ColumnComplexMatrix> cnlmPxAll = aCalCross ? new ArrayList<>() : null;
         final @Nullable List<ColumnComplexMatrix> cnlmPyAll = aCalCross ? new ArrayList<>() : null;
         final @Nullable List<ColumnComplexMatrix> cnlmPzAll = aCalCross ? new ArrayList<>() : null;
         // 缓存 Rn 数组
-        final IVector tRn = VectorCache.getVec(aNMax+1);
-        final IVector tRnPx = VectorCache.getVec(aNMax+1);
-        final IVector tRnPy = VectorCache.getVec(aNMax+1);
-        final IVector tRnPz = VectorCache.getVec(aNMax+1);
+        final IVector tRn = VectorCache.getVec(mNMax+1);
+        final IVector tRnPx = VectorCache.getVec(mNMax+1);
+        final IVector tRnPy = VectorCache.getVec(mNMax+1);
+        final IVector tRnPz = VectorCache.getVec(mNMax+1);
         // 全局暂存 Y 的数组，这样可以用来防止重复获取来提高效率
-        final IComplexVector tY = ComplexVectorCache.getVec((aLMax+1)*(aLMax+1));
-        final IComplexVector tYPtheta = ComplexVectorCache.getVec((aLMax+1)*(aLMax+1));
-        final IComplexVector tYPphi = ComplexVectorCache.getVec((aLMax+1)*(aLMax+1));
-        final IComplexVector tYPx = ComplexVectorCache.getVec((aLMax+1)*(aLMax+1));
-        final IComplexVector tYPy = ComplexVectorCache.getVec((aLMax+1)*(aLMax+1));
-        final IComplexVector tYPz = ComplexVectorCache.getVec((aLMax+1)*(aLMax+1));
+        final IComplexVector tY = ComplexVectorCache.getVec((mLMax+1)*(mLMax+1));
+        final IComplexVector tYPtheta = ComplexVectorCache.getVec((mLMax+1)*(mLMax+1));
+        final IComplexVector tYPphi = ComplexVectorCache.getVec((mLMax+1)*(mLMax+1));
+        final IComplexVector tYPx = ComplexVectorCache.getVec((mLMax+1)*(mLMax+1));
+        final IComplexVector tYPy = ComplexVectorCache.getVec((mLMax+1)*(mLMax+1));
+        final IComplexVector tYPz = ComplexVectorCache.getVec((mLMax+1)*(mLMax+1));
         
         // 遍历近邻计算 Ylm, Rn, fc
         aNL.forEachDxyzType((dx, dy, dz, type) -> {
             double dis = MathEX.Fast.hypot(dx, dy, dz);
-            if (dis >= aRCutOff) return; // 理论不会触发，因为在上层遍历时就排除了
-            if (type > aTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+aTypeNum+")");
+            if (dis >= mRCut) return; // 理论不会触发，因为在上层遍历时就排除了
+            if (type > mTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+mTypeNum+")");
             
             // 计算种类的权重
             double wt = ((type&1)==1) ? type : -type;
             // 计算截断函数 fc 以及偏导数
-            double fcMul = 1.0 - MathEX.Fast.pow2(dis/aRCutOff);
+            double fcMul = 1.0 - MathEX.Fast.pow2(dis/mRCut);
             double fcMul3 = MathEX.Fast.pow3(fcMul);
             double fc = fcMul3 * fcMul;
-            double fcPMul = 8.0 * fcMul3 / (aRCutOff*aRCutOff);
+            double fcPMul = 8.0 * fcMul3 / (mRCut*mRCut);
             double fcPx = dx * fcPMul;
             double fcPy = dy * fcPMul;
             double fcPz = dz * fcPMul;
             // 统一遍历一次计算 Rn 以及偏导数
-            final double tX = 1.0 - 2.0*dis/aRCutOff;
+            final double tX = 1.0 - 2.0*dis/mRCut;
             tRn.fill(n -> MathEX.Func.chebyshev(n, tX));
-            final double tRnPMul = 2.0 / (dis*aRCutOff);
+            final double tRnPMul = 2.0 / (dis*mRCut);
             tRnPx.fill(n -> n==0 ? 0.0 : (n*MathEX.Func.chebyshev2(n-1, tX)*tRnPMul));
             tRnPy.fill(tRnPx);
             tRnPz.fill(tRnPx);
@@ -261,9 +239,9 @@ public class Basis {
                 cosPhi = dx / dxy;
                 sinPhi = dy / dxy;
             }
-            MathEX.Func.sphericalHarmonicsFull2Dest4_(aLMax, cosTheta, sinTheta, cosPhi, sinPhi, tY);
+            MathEX.Func.sphericalHarmonicsFull2Dest4_(mLMax, cosTheta, sinTheta, cosPhi, sinPhi, tY);
             if (dxyCloseZero) tYPphi.fill(0.0); // 这样来修复顶点的情况，此时另一边 tYPtheta 会恰好弥补使得全局连续
-            for (int tL = 0; tL <= aLMax; ++tL) {
+            for (int tL = 0; tL <= mLMax; ++tL) {
                 // 这里简单处理，使用这种遍历的方式来获取对应的 l 和 m
                 final int fL = tL;
                 final int tStart = fL*fL;
@@ -280,24 +258,24 @@ public class Basis {
                 subYPtheta.real().fill(i -> {
                     double out = 0.0;
                     if (i > 0) {
-                        out -= 0.5*SH_SQRT_LPM_LMM1.get(tStart+i)*cosPhi * subY.getReal(i-1);
-                        out += 0.5*SH_SQRT_LPM_LMM1.get(tStart+i)*sinPhi * subY.getImag(i-1);
+                        out -= 0.5*SQRT_LPM_LMM1.get(tStart+i)*cosPhi * subY.getReal(i-1);
+                        out += 0.5*SQRT_LPM_LMM1.get(tStart+i)*sinPhi * subY.getImag(i-1);
                     }
                     if (i < tLen-1) {
-                        out += 0.5*SH_SQRT_LPM1_LMM.get(tStart+i)*cosPhi * subY.getReal(i+1);
-                        out += 0.5*SH_SQRT_LPM1_LMM.get(tStart+i)*sinPhi * subY.getImag(i+1);
+                        out += 0.5*SQRT_LPM1_LMM.get(tStart+i)*cosPhi * subY.getReal(i+1);
+                        out += 0.5*SQRT_LPM1_LMM.get(tStart+i)*sinPhi * subY.getImag(i+1);
                     }
                     return out;
                 });
                 subYPtheta.imag().fill(i -> {
                     double out = 0.0;
                     if (i > 0) {
-                        out -= 0.5*SH_SQRT_LPM_LMM1.get(tStart+i)*cosPhi * subY.getImag(i-1);
-                        out -= 0.5*SH_SQRT_LPM_LMM1.get(tStart+i)*sinPhi * subY.getReal(i-1);
+                        out -= 0.5*SQRT_LPM_LMM1.get(tStart+i)*cosPhi * subY.getImag(i-1);
+                        out -= 0.5*SQRT_LPM_LMM1.get(tStart+i)*sinPhi * subY.getReal(i-1);
                     }
                     if (i < tLen-1) {
-                        out += 0.5*SH_SQRT_LPM1_LMM.get(tStart+i)*cosPhi * subY.getImag(i+1);
-                        out -= 0.5*SH_SQRT_LPM1_LMM.get(tStart+i)*sinPhi * subY.getReal(i+1);
+                        out += 0.5*SQRT_LPM1_LMM.get(tStart+i)*cosPhi * subY.getImag(i+1);
+                        out -= 0.5*SQRT_LPM1_LMM.get(tStart+i)*sinPhi * subY.getReal(i+1);
                     }
                     return out;
                 });
@@ -315,9 +293,9 @@ public class Basis {
             // 遍历求 n，l 的情况
             final ColumnComplexMatrix cnlmPxUpdate, cnlmPyUpdate, cnlmPzUpdate;
             if (aCalCross) {
-                cnlmPxUpdate = ComplexMatrixCache.getZerosCol((aLMax+1)*(aLMax+1), tSizeN);
-                cnlmPyUpdate = ComplexMatrixCache.getZerosCol((aLMax+1)*(aLMax+1), tSizeN);
-                cnlmPzUpdate = ComplexMatrixCache.getZerosCol((aLMax+1)*(aLMax+1), tSizeN);
+                cnlmPxUpdate = ComplexMatrixCache.getZerosCol((mLMax+1)*(mLMax+1), tSizeN);
+                cnlmPyUpdate = ComplexMatrixCache.getZerosCol((mLMax+1)*(mLMax+1), tSizeN);
+                cnlmPzUpdate = ComplexMatrixCache.getZerosCol((mLMax+1)*(mLMax+1), tSizeN);
                 cnlmPxAll.add(cnlmPxUpdate);
                 cnlmPyAll.add(cnlmPyUpdate);
                 cnlmPzAll.add(cnlmPzUpdate);
@@ -327,11 +305,11 @@ public class Basis {
                 cnlmPzUpdate = cnlmPz;
             }
             
-            for (int tN = 0; tN <= aNMax; ++tN) {
+            for (int tN = 0; tN <= mNMax; ++tN) {
                 // cnlm 部分
                 double tMul = fc * tRn.get(tN);
                 cnlm.col(tN).operation().mplus2this(tY, tMul);
-                if (aTypeNum > 1) cnlm.col(tN+aNMax+1).operation().mplus2this(tY, wt*tMul);
+                if (mTypeNum > 1) cnlm.col(tN+mNMax+1).operation().mplus2this(tY, wt*tMul);
                 // 微分部分
                 double tMulL = fc * tRnPx.get(tN);
                 double tMulR = fcPx * tRn.get(tN);
@@ -339,8 +317,8 @@ public class Basis {
                 tOpt.mplus2this(tY, tMulL);
                 tOpt.mplus2this(tYPx, tMul);
                 tOpt.mplus2this(tY, tMulR);
-                if (aTypeNum > 1) {
-                    tOpt = cnlmPxUpdate.col(tN+aNMax+1).operation();
+                if (mTypeNum > 1) {
+                    tOpt = cnlmPxUpdate.col(tN+mNMax+1).operation();
                     tOpt.mplus2this(tY, wt*tMulL);
                     tOpt.mplus2this(tYPx, wt*tMul);
                     tOpt.mplus2this(tY, wt*tMulR);
@@ -351,8 +329,8 @@ public class Basis {
                 tOpt.mplus2this(tY, tMulL);
                 tOpt.mplus2this(tYPy, tMul);
                 tOpt.mplus2this(tY, tMulR);
-                if (aTypeNum > 1) {
-                    tOpt = cnlmPyUpdate.col(tN+aNMax+1).operation();
+                if (mTypeNum > 1) {
+                    tOpt = cnlmPyUpdate.col(tN+mNMax+1).operation();
                     tOpt.mplus2this(tY, wt*tMulL);
                     tOpt.mplus2this(tYPy, wt*tMul);
                     tOpt.mplus2this(tY, wt*tMulR);
@@ -363,8 +341,8 @@ public class Basis {
                 tOpt.mplus2this(tY, tMulL);
                 tOpt.mplus2this(tYPz, tMul);
                 tOpt.mplus2this(tY, tMulR);
-                if (aTypeNum > 1) {
-                    tOpt = cnlmPzUpdate.col(tN+aNMax+1).operation();
+                if (mTypeNum > 1) {
+                    tOpt = cnlmPzUpdate.col(tN+mNMax+1).operation();
                     tOpt.mplus2this(tY, wt*tMulL);
                     tOpt.mplus2this(tYPz, wt*tMul);
                     tOpt.mplus2this(tY, wt*tMulR);
@@ -379,9 +357,9 @@ public class Basis {
             // 在这里初始化 cross 的 FingerPrint 偏导
             final int tNN = cnlmPxAll.size();
             for (int i = 0; i < tNN; ++i) {
-                rFingerPrintPxCross.add(MatrixCache.getMatRow(tSizeN, aLMax+1));
-                rFingerPrintPyCross.add(MatrixCache.getMatRow(tSizeN, aLMax+1));
-                rFingerPrintPzCross.add(MatrixCache.getMatRow(tSizeN, aLMax+1));
+                rFingerPrintPxCross.add(MatrixCache.getMatRow(tSizeN, mLMax+1));
+                rFingerPrintPyCross.add(MatrixCache.getMatRow(tSizeN, mLMax+1));
+                rFingerPrintPzCross.add(MatrixCache.getMatRow(tSizeN, mLMax+1));
             }
             // 基组对于近邻原子坐标的偏导值和这里直接计算结果差一个负号；
             // 由于实际计算力时需要近邻的原本基组值来反向传播，因此这里结果实际会传递给近邻用于累加，所以需要的就是 基组对于近邻原子坐标的偏导值
@@ -397,7 +375,7 @@ public class Basis {
         IVectorOperation subCilmRealOpt = subCilmReal.operation(), subCilmImagOpt = subCilmImag.operation();
         for (int tN = 0; tN < tSizeN; ++tN) {
             int tShift = tN * cnlm.rowNumber();
-            for (int tL = 0; tL <= aLMax; ++tL) {
+            for (int tL = 0; tL <= mLMax; ++tL) {
                 // 根据 sphericalHarmonicsFull2Dest 的约定这里需要这样索引
                 int tStart = tL*tL;
                 int tLen = tL+tL+1;
@@ -426,7 +404,7 @@ public class Basis {
                 RowMatrix tFingerPrintPzCrossI = rFingerPrintPzCross.get(i);
                 for (int tN = 0; tN < tSizeN; ++tN) {
                     int tShift = tN * cnlm.rowNumber();
-                    for (int tL = 0; tL <= aLMax; ++tL) {
+                    for (int tL = 0; tL <= mLMax; ++tL) {
                         int tStart = tL*tL;
                         int tLen = tL+tL+1;
                         double tMul = 4.0*PI/(double)tLen;
@@ -472,6 +450,4 @@ public class Basis {
         }
         return rOut;
     }
-    public static List<RowMatrix> sphericalChebyshevPartial(int aTypeNum, int aNMax, int aLMax, double aRCutOff, IDxyzTypeIterable aNL) {return sphericalChebyshevPartial(aTypeNum, aNMax, aLMax, aRCutOff, true, false, aNL);}
-    public static List<RowMatrix> sphericalChebyshevPartial(int aNMax, int aLMax, double aRCutOff, IDxyzTypeIterable aNL) {return sphericalChebyshevPartial(1, aNMax, aLMax, aRCutOff, aNL);}
 }

@@ -19,6 +19,8 @@ import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import jse.math.vector.Vector;
 import jse.parallel.IAutoShutdown;
+import jsex.nnap.basis.IBasis;
+import jsex.nnap.basis.SphericalChebyshev;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.*;
 
@@ -120,11 +122,12 @@ public class NNAP implements IAutoShutdown {
         private final String mSymbol;
         private final double mRefEng;
         private final IVector mNormVec;
-        private final Basis.IBasis mBasis;
+        private final IBasis[] mBasis;
         public String symbol() {return mSymbol;}
         public double refEng() {return mRefEng;}
         public IVector normVec() {return mNormVec;}
-        public Basis.IBasis basis() {return mBasis;}
+        public IBasis basis() {return basis(0);}
+        public IBasis basis(int aThreadID) {return mBasis[aThreadID];}
         
         @SuppressWarnings("unchecked")
         private SingleNNAP(int aTypeNum, Map<String, ?> aModelInfo) throws TorchException {
@@ -142,9 +145,9 @@ public class NNAP implements IAutoShutdown {
             if (tBasis == null) {
                 tBasis = Maps.of(
                     "type", "spherical_chebyshev",
-                    "nmax", Basis.SphericalChebyshev.DEFAULT_NMAX,
-                    "lmax", Basis.SphericalChebyshev.DEFAULT_LMAX,
-                    "rcut", Basis.SphericalChebyshev.DEFAULT_RCUT
+                    "nmax", SphericalChebyshev.DEFAULT_NMAX,
+                    "lmax", SphericalChebyshev.DEFAULT_LMAX,
+                    "rcut", SphericalChebyshev.DEFAULT_RCUT
                 );
             }
             Object tBasisType = tBasis.get("type");
@@ -152,7 +155,11 @@ public class NNAP implements IAutoShutdown {
                 tBasisType = "spherical_chebyshev";
             }
             if (!tBasisType.equals("spherical_chebyshev")) throw new IllegalArgumentException("Unsupported basis type: " + tBasisType);
-            mBasis = Basis.SphericalChebyshev.load(aTypeNum, tBasis);
+            mBasis = new IBasis[mThreadNumber];
+            for (int i = 0; i < mThreadNumber; ++i) {
+                //noinspection resource
+                mBasis[i] = SphericalChebyshev.load(aTypeNum, tBasis);
+            }
             Object tModel = aModelInfo.get("torch");
             if (tModel == null) throw new IllegalArgumentException("No torch data in ModelInfo");
             byte[] tModelBytes = Base64.getDecoder().decode(tModel.toString());
@@ -222,8 +229,13 @@ public class NNAP implements IAutoShutdown {
     @Override public void shutdown() {
         if (!mDead) {
             mDead = true;
-            for (SingleNNAP tModel : mModels) for (int i = 0; i < mThreadNumber; ++i) {
-                shutdown0(tModel.mModelPtrs[i]);
+            for (SingleNNAP tModel : mModels) {
+                for (int i = 0; i < mThreadNumber; ++i) {
+                    tModel.basis(i).shutdown();
+                }
+                for (int i = 0; i < mThreadNumber; ++i) {
+                    shutdown0(tModel.mModelPtrs[i]);
+                }
             }
         }
     }
@@ -386,14 +398,15 @@ public class NNAP implements IAutoShutdown {
         try {
             aMPC.pool_().parforWithException(tAtomNumber, null, null, (i, threadID) -> {
                 final SingleNNAP tModel = model(aMPC.atomType_().get(i));
-                RowMatrix tBasis = tModel.mBasis.eval(dxyzTypeDo -> {
-                    aMPC.nl_().forEachNeighbor(i, tModel.mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
+                final IBasis tBasis = tModel.basis(threadID);
+                RowMatrix tBasisValue = tBasis.eval(dxyzTypeDo -> {
+                    aMPC.nl_().forEachNeighbor(i, tBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
                         dxyzTypeDo.run(dx, dy, dz, aMPC.atomType_().get(idx));
                     });
                 });
-                tBasis.asVecRow().div2this(tModel.mNormVec);
-                double tPred = tModel.forward(threadID, tBasis.internalData(), tBasis.internalDataShift(), tBasis.internalDataSize());
-                MatrixCache.returnMat(tBasis);
+                tBasisValue.asVecRow().div2this(tModel.mNormVec);
+                double tPred = tModel.forward(threadID, tBasisValue.internalData(), tBasisValue.internalDataShift(), tBasisValue.internalDataSize());
+                MatrixCache.returnMat(tBasisValue);
                 tPred += tModel.mRefEng;
                 rEngs.set(i, tPred);
             });
@@ -426,14 +439,15 @@ public class NNAP implements IAutoShutdown {
             aMPC.pool_().parforWithException(tSize, null, null, (i, threadID) -> {
                 final int cIdx = aIndices.get(i);
                 final SingleNNAP tModel = model(aMPC.atomType_().get(cIdx));
-                RowMatrix tBasis = tModel.mBasis.eval(dxyzTypeDo -> {
-                    aMPC.nl_().forEachNeighbor(cIdx, tModel.mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
+                final IBasis tBasis = tModel.basis(threadID);
+                RowMatrix tBasisValue = tBasis.eval(dxyzTypeDo -> {
+                    aMPC.nl_().forEachNeighbor(cIdx, tBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
                         dxyzTypeDo.run(dx, dy, dz, aMPC.atomType_().get(idx));
                     });
                 });
-                tBasis.asVecRow().div2this(tModel.mNormVec);
-                double tPred = tModel.forward(threadID, tBasis.internalData(), tBasis.internalDataShift(), tBasis.internalDataSize());
-                MatrixCache.returnMat(tBasis);
+                tBasisValue.asVecRow().div2this(tModel.mNormVec);
+                double tPred = tModel.forward(threadID, tBasisValue.internalData(), tBasisValue.internalDataShift(), tBasisValue.internalDataSize());
+                MatrixCache.returnMat(tBasisValue);
                 tPred += tModel.mRefEng;
                 rEngs.set(i, tPred);
             });
@@ -483,9 +497,9 @@ public class NNAP implements IAutoShutdown {
         if (atomTypeNumber() < aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + atomTypeNumber());
         SingleNNAP tModel = model(aMPC.atomType_().get(aI));
         XYZ oXYZ = new XYZ(aMPC.atomDataXYZ_().row(aI));
-        IIntVector oNL = aMPC.getNeighborList(oXYZ, tModel.mBasis.rcut());
+        IIntVector oNL = aMPC.getNeighborList(oXYZ, tModel.basis().rcut());
         XYZ nXYZ = oXYZ.plus(aDx, aDy, aDz);
-        IIntVector nNL = aMPC.getNeighborList(nXYZ, tModel.mBasis.rcut());
+        IIntVector nNL = aMPC.getNeighborList(nXYZ, tModel.basis().rcut());
         // 合并近邻列表，这里简单遍历实现
         final IntList tNL = new IntList(oNL.size());
         oNL.forEach(idx -> {
@@ -525,8 +539,8 @@ public class NNAP implements IAutoShutdown {
         int oTypeI = aMPC.atomType_().get(aI);
         int oTypeJ = aMPC.atomType_().get(aJ);
         if (oTypeI == oTypeJ) return 0.0;
-        IIntVector iNL = aMPC.getNeighborList(aI, model(oTypeI).mBasis.rcut());
-        IIntVector jNL = aMPC.getNeighborList(aJ, model(oTypeJ).mBasis.rcut());
+        IIntVector iNL = aMPC.getNeighborList(aI, model(oTypeI).basis().rcut());
+        IIntVector jNL = aMPC.getNeighborList(aJ, model(oTypeJ).basis().rcut());
         // 合并近邻列表，这里简单遍历实现
         final IntList tNL = new IntList(iNL.size()+1);
         tNL.add(aI);
@@ -727,14 +741,15 @@ public class NNAP implements IAutoShutdown {
                 final @Nullable IVector tVirialsXZ = rVirialsXZ!=null ? rVirialsXZPar[threadID] : null;
                 final @Nullable IVector tVirialsYZ = rVirialsYZ!=null ? rVirialsYZPar[threadID] : null;
                 final SingleNNAP tModel = model(aMPC.atomType_().get(i));
-                final List<@NotNull RowMatrix> tOut = tModel.mBasis.evalPartial(true, true, dxyzTypeDo -> {
-                    aMPC.nl_().forEachNeighbor(i, tModel.mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
+                final IBasis tBasis = tModel.basis(threadID);
+                final List<@NotNull RowMatrix> tOut = tBasis.evalPartial(true, true, dxyzTypeDo -> {
+                    aMPC.nl_().forEachNeighbor(i, tBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
                         dxyzTypeDo.run(dx, dy, dz, aMPC.atomType_().get(idx));
                     });
                 });
-                RowMatrix tBasis = tOut.get(0); tBasis.asVecRow().div2this(tModel.mNormVec);
-                final Vector tPredPartial = VectorCache.getVec(tBasis.rowNumber()*tBasis.columnNumber());
-                double tPred = tModel.backward(threadID, tBasis.internalData(), tBasis.internalDataShift(), tPredPartial.internalData(), tPredPartial.internalDataShift(), tBasis.internalDataSize());
+                RowMatrix tBasisValue = tOut.get(0); tBasisValue.asVecRow().div2this(tModel.mNormVec);
+                final Vector tPredPartial = VectorCache.getVec(tBasisValue.rowNumber()*tBasisValue.columnNumber());
+                double tPred = tModel.backward(threadID, tBasisValue.internalData(), tBasisValue.internalDataShift(), tPredPartial.internalData(), tPredPartial.internalDataShift(), tBasisValue.internalDataSize());
                 tPredPartial.div2this(tModel.mNormVec);
                 if (rEnergies != null) {
                     tPred += tModel.mRefEng;
@@ -746,7 +761,7 @@ public class NNAP implements IAutoShutdown {
                 // 累加交叉项到近邻
                 final int tNN = (tOut.size()-4)/3;
                 final int[] j = {0};
-                aMPC.nl_().forEachNeighbor(i, tModel.mBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
+                aMPC.nl_().forEachNeighbor(i, tBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
                     double fx = -tPredPartial.opt().dot(tOut.get(4+j[0]).asVecRow());
                     double fy = -tPredPartial.opt().dot(tOut.get(4+tNN+j[0]).asVecRow());
                     double fz = -tPredPartial.opt().dot(tOut.get(4+tNN+tNN+j[0]).asVecRow());

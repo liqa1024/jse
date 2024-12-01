@@ -32,6 +32,7 @@ sourceSets {
                 'assets/lmpplugin/src/.*/', 'assets/lmpplugin/src/build/', 'assets/lmpplugin/src/*build*/',
                 'assets/jep/jep*-src/',
                 'assets/nnap/src/.*/', 'assets/nnap/src/build/', 'assets/nnap/src/*build*/',
+                'assets/__*'
             )
         }
     }

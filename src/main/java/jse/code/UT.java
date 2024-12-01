@@ -564,9 +564,21 @@ public class UT {
             double elapsedTime = TIMER.get();
             TIMER.reset();
             
-            int hours = MathEX.Code.floor2int(elapsedTime / 3600.0);
-            int minutes = MathEX.Code.floor2int(elapsedTime % 3600.0) / 60;
             double seconds = elapsedTime % 60.0;
+            if (elapsedTime < 3.0) {
+                System.out.printf("%s time: %.4g sec\n", aMsg, seconds);
+                return;
+            }
+            if (elapsedTime < 60.0) {
+                System.out.printf("%s time: %02.2f sec\n", aMsg, seconds);
+                return;
+            }
+            int minutes = MathEX.Code.floor2int(elapsedTime % 3600.0) / 60;
+            if (elapsedTime < 3600.0) {
+                System.out.printf("%s time: %02d min %02.2f sec\n", aMsg, minutes, seconds);
+                return;
+            }
+            int hours = MathEX.Code.floor2int(elapsedTime / 3600.0);
             System.out.printf("%s time: %02d hour %02d min %02.2f sec\n", aMsg, hours, minutes, seconds);
         }
         public static double toc(boolean aFlag) {

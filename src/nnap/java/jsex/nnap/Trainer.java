@@ -17,6 +17,7 @@ import jse.math.vector.IntVector;
 import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 import jse.parallel.IAutoShutdown;
+import jsex.nnap.basis.IBasis;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -75,7 +76,12 @@ public class Trainer implements IAutoShutdown, ISavable {
     
     public static class Conf {
         /** 全局初始化脚本，默认为设置串行；经过测试并行训练并不会明显更快 */
-        public static String INIT_SCRIPT = "torch.set_num_threads(1); torch.set_num_interop_threads(1)";
+        public static String INIT_SCRIPT =
+            "try:\n" +
+            "    torch.set_num_threads(1)\n" +
+            "    torch.set_num_interop_threads(1)\n" +
+            "except RuntimeError:\n" +
+            "    pass";
         
         /** 创建获取单粒子能量的模型的类，修改此值来实现自定义模型 */
         public static String SINGLE_MODEL_SCRIPT =
@@ -187,7 +193,7 @@ public class Trainer implements IAutoShutdown, ISavable {
     
     protected final String[] mSymbols;
     protected final IVector mRefEngs;
-    protected final Basis.IBasis[] mBasis;
+    protected final IBasis[] mBasis;
     protected final DoubleList[] mTrainBase; // 按照种类排序，然后内部是可扩展的具体数据，最后一列增加对应的能量的索引；现在使用这种 DoubleList 展开的形式存
     protected final RowMatrix[] mTrainBaseMat; // mTrainDataBase 的实际值，当然这个只是缓存结果
     protected final DoubleList mTrainEng = new DoubleList(64);
@@ -205,7 +211,7 @@ public class Trainer implements IAutoShutdown, ISavable {
     protected final DoubleList mTrainLoss = new DoubleList(64);
     protected final DoubleList mTestLoss = new DoubleList(64);
     
-    public Trainer(String[] aSymbols, IVector aRefEngs, Basis.IBasis[] aBasis, Map<String, ?> aModelSetting) {
+    public Trainer(String[] aSymbols, IVector aRefEngs, IBasis[] aBasis, Map<String, ?> aModelSetting) {
         if (aSymbols.length != aRefEngs.size()) throw new IllegalArgumentException("Symbols length does not match reference energies length.");
         if (aSymbols.length != aBasis.length) throw new IllegalArgumentException("Symbols length does not match reference basis length.");
         mSymbols = aSymbols;
@@ -227,11 +233,11 @@ public class Trainer implements IAutoShutdown, ISavable {
         mTestBaseMat = new RowMatrix[mSymbols.length];
         mModelSetting = aModelSetting;
     }
-    public Trainer(String[] aSymbols, IVector aRefEngs, Basis.IBasis aBasis, Map<String, ?> aModelSetting) {this(aSymbols, aRefEngs, repeatBasis_(aBasis, aSymbols.length), aModelSetting);}
-    public Trainer(String[] aSymbols, double[] aRefEngs, Basis.IBasis[] aBasis, Map<String, ?> aModelSetting) {this(aSymbols, Vectors.from(aRefEngs), aBasis, aModelSetting);}
-    public Trainer(String[] aSymbols, double[] aRefEngs, Basis.IBasis aBasis, Map<String, ?> aModelSetting) {this(aSymbols, aRefEngs, repeatBasis_(aBasis, aSymbols.length), aModelSetting);}
-    private static Basis.IBasis[] repeatBasis_(Basis.IBasis aBasis, int aLen) {
-        Basis.IBasis[] rOut = new Basis.IBasis[aLen];
+    public Trainer(String[] aSymbols, IVector aRefEngs, IBasis aBasis, Map<String, ?> aModelSetting) {this(aSymbols, aRefEngs, repeatBasis_(aBasis, aSymbols.length), aModelSetting);}
+    public Trainer(String[] aSymbols, double[] aRefEngs, IBasis[] aBasis, Map<String, ?> aModelSetting) {this(aSymbols, Vectors.from(aRefEngs), aBasis, aModelSetting);}
+    public Trainer(String[] aSymbols, double[] aRefEngs, IBasis aBasis, Map<String, ?> aModelSetting) {this(aSymbols, aRefEngs, repeatBasis_(aBasis, aSymbols.length), aModelSetting);}
+    private static IBasis[] repeatBasis_(IBasis aBasis, int aLen) {
+        IBasis[] rOut = new IBasis[aLen];
         Arrays.fill(rOut, aBasis);
         return rOut;
     }
@@ -433,7 +439,7 @@ public class Trainer implements IAutoShutdown, ISavable {
             for (int i = 0; i < tAtomNum; ++i) {
                 final int fI = i;
                 IAtom tAtom = aAtomData.atom(fI);
-                Basis.IBasis tBasis = mBasis[tAtom.type()-1];
+                IBasis tBasis = mBasis[tAtom.type()-1];
                 RowMatrix tBase = tBasis.eval(dxyzTypeDo -> {
                     tMPC.nl_().forEachNeighbor(fI, tBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
                         dxyzTypeDo.run(dx, dy, dz, tMPC.atomType_().get(idx));
