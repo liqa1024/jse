@@ -392,7 +392,91 @@ public class MathEX {
         }
         @ApiStatus.Internal
         public static void sphericalHarmonicsFull2Dest4_(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aCosTheta, double aSinTheta, double aCosPhi, double aSinPhi, IComplexVector rDest) {
-            normalizedLegendreFull2Dest_(aLMax, aCosTheta, aSinTheta, rDest);
+            // 现在统一通过实球谐函数的结果设置
+            realSphericalHarmonicsFull2Dest4_(aLMax, aCosTheta, aSinTheta, aCosPhi, aSinPhi, rDest.real());
+            for (int tM = 1; tM <= aLMax; ++tM) {
+                int tStartL = tM*tM+tM;
+                for (int tL = tM; tL <= aLMax; ++tL) {
+                    int tIdxPos = tStartL+tM;
+                    int tIdxNeg = tStartL-tM;
+                    double tRealYlmPos = rDest.getReal(tIdxPos);
+                    double tRealYlmNeg = rDest.getReal(tIdxNeg);
+                    rDest.setReal(tIdxPos, SQRT2_INV*tRealYlmPos); rDest.setImag(tIdxPos, SQRT2_INV*tRealYlmNeg);
+                    if ((tM&1)==1) {
+                    rDest.setReal(tIdxNeg, -SQRT2_INV*tRealYlmPos); rDest.setImag(tIdxNeg, SQRT2_INV*tRealYlmNeg);
+                    } else {
+                    rDest.setReal(tIdxNeg, SQRT2_INV*tRealYlmPos); rDest.setImag(tIdxNeg, -SQRT2_INV*tRealYlmNeg);
+                    }
+                    tStartL += tL+tL+2;
+                }
+            }
+        }
+        
+        /**
+         * 直接计算实球谐函数的结果，这样可以缩小数据的大小，并且减少后续进行 m 方向点乘需要的操作
+         * <p>
+         * 注意这里采用 <a href="https://arxiv.org/abs/1410.1748">
+         * Taweetham Limpanuparb, Josh Milthorpe. 2014 </a>
+         * 中定义的实球谐函数形式，相比 <a href="https://en.wikipedia.org/wiki/Spherical_harmonics">
+         * wikipedia 中 real spherical harmonics 定义 </a>
+         * 缺少一项 {@code (-1)^m}
+         * @author liqa
+         * @param aLMax 球谐函数参数 l，非负整数
+         * @param aTheta 球坐标下径向方向与 z 轴的角度
+         * @param aPhi 球坐标下径向方向在 xy 平面投影下和 x 轴的角度
+         * @return {@code l = 0 ~ aLMax}, {@code m = -l ~ l} 下所有实球谐函数值，按照 l 从小到大排列，先遍历 m 后遍历 l
+         */
+        public static Vector realSphericalHarmonicsFull(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aTheta, double aPhi) {
+            Vector rY = Vector.zeros((aLMax+1)*(aLMax+1));
+            realSphericalHarmonicsFull2Dest_(aLMax, aTheta, aPhi, rY);
+            return rY;
+        }
+        public static Vector realSphericalHarmonicsFull3(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aX, double aY, double aZ) {
+            Vector rY = Vector.zeros((aLMax+1)*(aLMax+1));
+            realSphericalHarmonicsFull2Dest3_(aLMax, aX, aY, aZ, rY);
+            return rY;
+        }
+        public static void realSphericalHarmonicsFull2Dest(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aTheta, double aPhi, IVector rDest) {
+            // 判断输入是否合法
+            if (rDest.size() < (aLMax+1)*(aLMax+1)) throw new IllegalArgumentException("Size of rDest MUST be GreaterOrEqual to (L+1)^2 ("+((aLMax+1)*(aLMax+1))+"), input: "+rDest.size());
+            realSphericalHarmonicsFull2Dest_(aLMax, aTheta, aPhi, rDest);
+        }
+        public static void realSphericalHarmonicsFull2Dest3(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aX, double aY, double aZ, IVector rDest) {
+            // 判断输入是否合法
+            if (rDest.size() < (aLMax+1)*(aLMax+1)) throw new IllegalArgumentException("Size of rDest MUST be GreaterOrEqual to (L+1)^2 ("+((aLMax+1)*(aLMax+1))+"), input: "+rDest.size());
+            realSphericalHarmonicsFull2Dest3_(aLMax, aX, aY, aZ, rDest);
+        }
+        private static void realSphericalHarmonicsFull2Dest_(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aTheta, double aPhi, IVector rDest) {
+            DoubleWrapper tJafamaDoubleWrapper = new DoubleWrapper(); // new 的损耗应该可以忽略掉
+            double tSinTheta = FastMath.sinAndCos(aTheta, tJafamaDoubleWrapper);
+            double tCosTheta = tJafamaDoubleWrapper.value;
+            double tSinPhi = FastMath.sinAndCos(aPhi, tJafamaDoubleWrapper);
+            double tCosPhi = tJafamaDoubleWrapper.value;
+            realSphericalHarmonicsFull2Dest4_(aLMax, tCosTheta, tSinTheta, tCosPhi, tSinPhi, rDest);
+        }
+        private static void realSphericalHarmonicsFull2Dest3_(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aX, double aY, double aZ, IVector rDest) {
+            realSphericalHarmonicsFull2DestXYZDis_(aLMax, aX, aY, aZ, Fast.hypot(aX, aY, aZ), rDest);
+        }
+        @ApiStatus.Internal
+        public static void realSphericalHarmonicsFull2DestXYZDis_(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aX, double aY, double aZ, double aDis, IVector rDest) {
+            double tXY = Fast.hypot(aX, aY);
+            double tCosTheta = aZ / aDis;
+            double tSinTheta = tXY / aDis;
+            double tCosPhi;
+            double tSinPhi;
+            // 注意避免 NaN 的情况
+            if (Code.numericEqual(tXY, 0.0)) {
+                tCosPhi = 1.0;
+                tSinPhi = 0.0;
+            } else {
+                tCosPhi = aX / tXY;
+                tSinPhi = aY / tXY;
+            }
+            realSphericalHarmonicsFull2Dest4_(aLMax, tCosTheta, tSinTheta, tCosPhi, tSinPhi, rDest);
+        }
+        @ApiStatus.Internal
+        public static void realSphericalHarmonicsFull2Dest4_(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aCosTheta, double aSinTheta, double aCosPhi, double aSinPhi, IVector rDest) {
+            realNormalizedLegendreFull2Dest_(aLMax, aCosTheta, aSinTheta, rDest);
             // 现在 m = 0 的情况不需要设置了
             double tSinMmmPhi = 0.0;
             double tCosMmmPhi = 1.0;
@@ -401,13 +485,14 @@ public class MathEX {
             final double tCosPhi2 = tCosMPhi+tCosMPhi;
             for (int tM = 1; tM <= aLMax; ++tM) {
                 int tStartL = tM*tM+tM;
+                // 对于实球谐函数这里的处理下需要多乘一个 sqrt(2)
+                final double fSqrt2CosMPhi = SQRT2*tCosMPhi;
+                final double fSqrt2SinMPhi = SQRT2*tSinMPhi;
                 for (int tL = tM; tL <= aLMax; ++tL) {
                     int tIdxPos = tStartL+tM;
                     int tIdxNeg = tStartL-tM;
-                    final double fCosMPhi = tCosMPhi;
-                    final double fSinMPhi = tSinMPhi;
-                    rDest.updateReal(tIdxPos, Plm -> fCosMPhi*Plm); rDest.updateImag(tIdxPos, Plm -> fSinMPhi*Plm);
-                    rDest.updateReal(tIdxNeg, Plm -> fCosMPhi*Plm); rDest.updateImag(tIdxNeg, Plm -> fSinMPhi*Plm);
+                    rDest.update(tIdxPos, Plm -> fSqrt2CosMPhi*Plm);
+                    rDest.update(tIdxNeg, Plm -> fSqrt2SinMPhi*Plm);
                     tStartL += tL+tL+2;
                 }
                 // 利用和差化积的递推公式来更新 tSinMPhi tCosMPhi
@@ -417,26 +502,26 @@ public class MathEX {
                 tSinMPhi = tSinMppPhi; tCosMPhi = tCosMppPhi;
             }
         }
-        private static void normalizedLegendreFull2Dest_(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aX, double aY, IComplexVector rDest) {
+        private static void realNormalizedLegendreFull2Dest_(@Range(from = 0, to = SH_LARGEST_L) int aLMax, double aX, double aY, IVector rDest) {
             // 直接设置到 rY 上，可以减少缓存的使用，并且可以简化实现
             double tPll = 0.28209479177387814347403972578039; // = sqrt(1/(4*PI))
             rDest.set(0, tPll);
             if (aLMax > 0) {
                 rDest.set(2, SQRT3 * aX * tPll);
                 tPll *= (-SQRT3DIV2 * aY);
-                setY_(rDest, 2, 1, tPll);
+                setRealY_(rDest, 2, 1, tPll);
                 int tStartL = 6, tStartLmm = 2, tStartLm2 = 0;
                 int tStartAB = 3;
                 for (int tL = 2; tL <= aLMax; ++tL) {
                     for (int tM = 0; tM < tL-1; ++tM) {
                         int tIdxAB = tStartAB+tM;
-                        double tPlm = SH_Alm.get(tIdxAB) * (aX*rDest.getReal(tStartLmm+tM) + SH_Blm.get(tIdxAB)*rDest.getReal(tStartLm2+tM));
+                        double tPlm = SH_Alm.get(tIdxAB) * (aX*rDest.get(tStartLmm+tM) + SH_Blm.get(tIdxAB)*rDest.get(tStartLm2+tM));
                         if (tM == 0) rDest.set(tStartL, tPlm);
-                        else setY_(rDest, tStartL, tM, tPlm);
+                        else setRealY_(rDest, tStartL, tM, tPlm);
                     }
-                    setY_(rDest, tStartL, tL-1, aX * Fast.sqrt(2.0*(tL-1) + 3.0) * tPll);
+                    setRealY_(rDest, tStartL, tL-1, aX * Fast.sqrt(2.0*(tL-1) + 3.0) * tPll);
                     tPll *= (-Fast.sqrt(1.0 + 0.5/(double)tL) * aY);
-                    setY_(rDest, tStartL, tL, tPll);
+                    setRealY_(rDest, tStartL, tL, tPll);
                     tStartLm2 = tStartLmm;
                     tStartLmm = tStartL;
                     tStartL += tL+tL+1+1;
@@ -444,15 +529,11 @@ public class MathEX {
                 }
             }
         }
-        private static void setY_(IComplexVector rY, int aIdxL0, int aM, double aValue) {
+        private static void setRealY_(IVector rY, int aIdxL0, int aM, double aValue) {
             int tIdxPos = aIdxL0+aM;
             int tIdxNeg = aIdxL0-aM;
-            rY.set(tIdxPos, aValue, aValue);
-            if ((aM&1)==1) {
-                rY.set(tIdxNeg, -aValue, aValue);
-            } else {
-                rY.set(tIdxNeg, aValue, -aValue);
-            }
+            rY.set(tIdxPos, aValue);
+            rY.set(tIdxNeg, aValue);
         }
         
         
@@ -520,7 +601,87 @@ public class MathEX {
         }
         @ApiStatus.Internal
         public static void sphericalHarmonics2Dest4_(@Range(from = 0, to = SH_LARGEST_L) int aL, double aCosTheta, double aSinTheta, double aCosPhi, double aSinPhi, IComplexVector rDest) {
-            normalizedLegendre2Dest_(aL, aCosTheta, aSinTheta, rDest);
+            // 现在统一通过实球谐函数的结果设置
+            realSphericalHarmonics2Dest4_(aL, aCosTheta, aSinTheta, aCosPhi, aSinPhi, rDest.real());
+            for (int tM = 1; tM <= aL; ++tM) {
+                int tIdxPos =  tM+aL;
+                int tIdxNeg = -tM+aL;
+                double tRealYlmPos = rDest.getReal(tIdxPos);
+                double tRealYlmNeg = rDest.getReal(tIdxNeg);
+                rDest.setReal(tIdxPos, SQRT2_INV*tRealYlmPos); rDest.setImag(tIdxPos, SQRT2_INV*tRealYlmNeg);
+                if ((tM&1)==1) {
+                rDest.setReal(tIdxNeg, -SQRT2_INV*tRealYlmPos); rDest.setImag(tIdxNeg, SQRT2_INV*tRealYlmNeg);
+                } else {
+                rDest.setReal(tIdxNeg, SQRT2_INV*tRealYlmPos); rDest.setImag(tIdxNeg, -SQRT2_INV*tRealYlmNeg);
+                }
+            }
+        }
+        
+        /**
+         * 直接计算实球谐函数的结果，这样可以缩小数据的大小，并且减少后续进行 m 方向点乘需要的操作
+         * <p>
+         * 注意这里采用 <a href="https://arxiv.org/abs/1410.1748">
+         * Taweetham Limpanuparb, Josh Milthorpe. 2014 </a>
+         * 中定义的实球谐函数形式，相比 <a href="https://en.wikipedia.org/wiki/Spherical_harmonics">
+         * wikipedia 中 real spherical harmonics 定义 </a>
+         * 缺少一项 {@code (-1)^m}
+         * @author liqa
+         * @param aL 球谐函数参数 l，非负整数
+         * @param aTheta 球坐标下径向方向与 z 轴的角度
+         * @param aPhi 球坐标下径向方向在 xy 平面投影下和 x 轴的角度
+         * @return {@code m = -l ~ l} 下所有实球谐函数值组成的向量
+         */
+        public static Vector realSphericalHarmonics(@Range(from = 0, to = SH_LARGEST_L) int aL, double aTheta, double aPhi) {
+            Vector rY = Vector.zeros(aL+aL+1);
+            realSphericalHarmonics2Dest_(aL, aTheta, aPhi, rY);
+            return rY;
+        }
+        public static Vector realSphericalHarmonics3(@Range(from = 0, to = SH_LARGEST_L) int aL, double aX, double aY, double aZ) {
+            Vector rY = Vector.zeros(aL+aL+1);
+            realSphericalHarmonics2Dest3_(aL, aX, aY, aZ, rY);
+            return rY;
+        }
+        public static void realSphericalHarmonics2Dest(@Range(from = 0, to = SH_LARGEST_L) int aL, double aTheta, double aPhi, IVector rDest) {
+            // 判断输入是否合法
+            if (rDest.size() < aL+aL+1) throw new IllegalArgumentException("Size of rY MUST be GreaterOrEqual to 2l+1 ("+(aL+aL+1)+"), input: "+rDest.size());
+            realSphericalHarmonics2Dest_(aL, aTheta, aPhi, rDest);
+        }
+        public static void realSphericalHarmonics2Dest3(@Range(from = 0, to = SH_LARGEST_L) int aL, double aX, double aY, double aZ, IVector rDest) {
+            // 判断输入是否合法
+            if (rDest.size() < aL+aL+1) throw new IllegalArgumentException("Size of rY MUST be GreaterOrEqual to 2l+1 ("+(aL+aL+1)+"), input: "+rDest.size());
+            realSphericalHarmonics2Dest3_(aL, aX, aY, aZ, rDest);
+        }
+        private static void realSphericalHarmonics2Dest_(@Range(from = 0, to = SH_LARGEST_L) int aL, double aTheta, double aPhi, IVector rDest) {
+            DoubleWrapper tJafamaDoubleWrapper = new DoubleWrapper(); // new 的损耗应该可以忽略掉
+            double tSinTheta = FastMath.sinAndCos(aTheta, tJafamaDoubleWrapper);
+            double tCosTheta = tJafamaDoubleWrapper.value;
+            double tSinPhi = FastMath.sinAndCos(aPhi, tJafamaDoubleWrapper);
+            double tCosPhi = tJafamaDoubleWrapper.value;
+            realSphericalHarmonics2Dest4_(aL, tCosTheta, tSinTheta, tCosPhi, tSinPhi, rDest);
+        }
+        private static void realSphericalHarmonics2Dest3_(@Range(from = 0, to = SH_LARGEST_L) int aL, double aX, double aY, double aZ, IVector rDest) {
+            realSphericalHarmonics2DestXYZDis_(aL, aX, aY, aZ, Fast.hypot(aX, aY, aZ), rDest);
+        }
+        @ApiStatus.Internal
+        public static void realSphericalHarmonics2DestXYZDis_(@Range(from = 0, to = SH_LARGEST_L) int aL, double aX, double aY, double aZ, double aDis, IVector rDest) {
+            double tXY = Fast.hypot(aX, aY);
+            double tCosTheta = aZ / aDis;
+            double tSinTheta = tXY / aDis;
+            double tCosPhi;
+            double tSinPhi;
+            // 注意避免 NaN 的情况
+            if (Code.numericEqual(tXY, 0.0)) {
+                tCosPhi = 1.0;
+                tSinPhi = 0.0;
+            } else {
+                tCosPhi = aX / tXY;
+                tSinPhi = aY / tXY;
+            }
+            realSphericalHarmonics2Dest4_(aL, tCosTheta, tSinTheta, tCosPhi, tSinPhi, rDest);
+        }
+        @ApiStatus.Internal
+        public static void realSphericalHarmonics2Dest4_(@Range(from = 0, to = SH_LARGEST_L) int aL, double aCosTheta, double aSinTheta, double aCosPhi, double aSinPhi, IVector rDest) {
+            realNormalizedLegendre2Dest_(aL, aCosTheta, aSinTheta, rDest);
             // 现在 m = 0 的情况不需要设置了
             double tSinMmmPhi = 0.0;
             double tCosMmmPhi = 1.0;
@@ -528,12 +689,13 @@ public class MathEX {
             double tCosMPhi = aCosPhi;
             final double tCosPhi2 = tCosMPhi+tCosMPhi;
             for (int tM = 1; tM <= aL; ++tM) {
+                // 对于实球谐函数这里的处理下需要多乘一个 sqrt(2)
+                final double fSqrt2CosMPhi = SQRT2*tCosMPhi;
+                final double fSqrt2SinMPhi = SQRT2*tSinMPhi;
                 int tIdxPos =  tM+aL;
                 int tIdxNeg = -tM+aL;
-                final double fCosMPhi = tCosMPhi;
-                final double fSinMPhi = tSinMPhi;
-                rDest.updateReal(tIdxPos, Plm -> fCosMPhi*Plm); rDest.updateImag(tIdxPos, Plm -> fSinMPhi*Plm);
-                rDest.updateReal(tIdxNeg, Plm -> fCosMPhi*Plm); rDest.updateImag(tIdxNeg, Plm -> fSinMPhi*Plm);
+                rDest.update(tIdxPos, Plm -> fSqrt2CosMPhi*Plm);
+                rDest.update(tIdxNeg, Plm -> fSqrt2SinMPhi*Plm);
                 // 利用和差化积的递推公式来更新 tSinMPhi tCosMPhi
                 double tSinMppPhi = tCosPhi2 * tSinMPhi - tSinMmmPhi;
                 double tCosMppPhi = tCosPhi2 * tCosMPhi - tCosMmmPhi;
@@ -541,7 +703,7 @@ public class MathEX {
                 tSinMPhi = tSinMppPhi; tCosMPhi = tCosMppPhi;
             }
         }
-        private static void normalizedLegendre2Dest_(@Range(from = 0, to = SH_LARGEST_L) int aL, double aX, double aY, IComplexVector rDest) {
+        private static void realNormalizedLegendre2Dest_(@Range(from = 0, to = SH_LARGEST_L) int aL, double aX, double aY, IVector rDest) {
             // 直接设置到 rY 上，可以减少缓存的使用，并且可以简化实现
             // 对于固定 l 的，改为这种迭代顺序
             switch (aL) {
@@ -552,7 +714,7 @@ public class MathEX {
             case 1: {
                 double tPll = 0.28209479177387814347403972578039;
                 rDest.set(1, SQRT3 * aX * tPll);
-                setY_(rDest, 1, 1, -SQRT3DIV2 * aY * tPll);
+                setRealY_(rDest, 1, 1, -SQRT3DIV2 * aY * tPll);
                 return;
             }
             default: {
@@ -571,14 +733,14 @@ public class MathEX {
                     int tLmm = 1, tLm2 = 0;
                     int tIdxAB = 3;
                     for (int tL = 2; tL <= aL; ++tL) {
-                        double tPl0 = SH_Alm.get(tIdxAB) * (aX*rDest.getReal(tLmm) + SH_Blm.get(tIdxAB)*rDest.getReal(tLm2));
+                        double tPl0 = SH_Alm.get(tIdxAB) * (aX*rDest.get(tLmm) + SH_Blm.get(tIdxAB)*rDest.get(tLm2));
                         rDest.set(tL, tPl0);
                         tLm2 = tLmm;
                         tLmm = tL;
                         tIdxAB += tL+1;
                     }
                     // 然后清空前面暂存结果即可
-                    for (int tM = 1; tM <= aL; ++tM) setY_(rDest, aL, tM, 0.0);
+                    for (int tM = 1; tM <= aL; ++tM) setRealY_(rDest, aL, tM, 0.0);
                     return;
                 }
                 
@@ -586,14 +748,14 @@ public class MathEX {
                 tPll *= SH_FACTORIAL2_2L_PLUS_1.get(aL);
                 
                 double tXDivY = aX/aY;
-                setY_(rDest, aL, aL, tPll);
-                setY_(rDest, aL, aL-1, -tXDivY * SH_SQRT_2L.get(aL) * tPll);
+                setRealY_(rDest, aL, aL, tPll);
+                setRealY_(rDest, aL, aL-1, -tXDivY * SH_SQRT_2L.get(aL) * tPll);
                 
                 for (int tM = aL-2; tM >= 0; --tM) {
                     int tIdxCD = tStartCDE+tM;
-                    double tPlm = tXDivY*SH_Clm.get(tIdxCD)*rDest.getReal(aL+tM+1) + SH_Dlm.get(tIdxCD)*rDest.getReal(aL+tM+2);
+                    double tPlm = tXDivY*SH_Clm.get(tIdxCD)*rDest.get(aL+tM+1) + SH_Dlm.get(tIdxCD)*rDest.get(aL+tM+2);
                     if (tM == 0) rDest.set(aL, tPlm);
-                    else setY_(rDest, aL, tM, tPlm);
+                    else setRealY_(rDest, aL, tM, tPlm);
                 }
                 //noinspection UnnecessaryReturnStatement
                 return;
