@@ -126,6 +126,9 @@ public interface IVectorOperation {
     void reverse2this();
     @VisibleForTesting default IVector refreverse() {return refReverse();}
     
+    /** 较为复杂的运算，只有遇到时专门增加；这里主要是为了保证和复数运算接口一致 */
+    void mplus2this(IVector aRHS, double aMul);
+    
     /** 各种排序操作 */
     void sort();
     /** 注意 aComp 传入的为 index */

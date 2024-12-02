@@ -1,13 +1,10 @@
 package jsex.nnap.basis;
 
 import com.google.common.collect.Lists;
-import jse.cache.ComplexMatrixCache;
-import jse.cache.ComplexVectorCache;
 import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
 import jse.code.UT;
 import jse.math.MathEX;
-import jse.math.matrix.RowComplexMatrix;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import org.jetbrains.annotations.NotNull;
@@ -17,8 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static jse.math.MathEX.PI;
-import static jse.math.MathEX.SH_LARGEST_L;
+import static jse.math.MathEX.*;
 
 /**
  * 一种基于 Chebyshev 多项式和球谐函数将原子局域环境展开成一个基组的方法，
@@ -106,16 +102,16 @@ public class SphericalChebyshev implements IBasis {
     }
     
     /** 一些缓存的中间变量，现在统一作为对象存储，对于这种大规模的缓存情况可以进一步提高效率 */
-    private @Nullable RowComplexMatrix mCnlm = null, mCnlmPx = null, mCnlmPy = null, mCnlmPz = null;
-    @NotNull RowComplexMatrix bufCnlm(boolean aClear) {if (mCnlm==null) {mCnlm = ComplexMatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1));} if (aClear) {mCnlm.fill(0.0);} return mCnlm;}
-    @NotNull RowComplexMatrix bufCnlmPx(boolean aClear) {if (mCnlmPx==null) {mCnlmPx = ComplexMatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1));} if (aClear) {mCnlmPx.fill(0.0);} return mCnlmPx;}
-    @NotNull RowComplexMatrix bufCnlmPy(boolean aClear) {if (mCnlmPy==null) {mCnlmPy = ComplexMatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1));} if (aClear) {mCnlmPy.fill(0.0);} return mCnlmPy;}
-    @NotNull RowComplexMatrix bufCnlmPz(boolean aClear) {if (mCnlmPz==null) {mCnlmPz = ComplexMatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1));} if (aClear) {mCnlmPz.fill(0.0);} return mCnlmPz;}
+    private @Nullable RowMatrix mCnlm = null, mCnlmPx = null, mCnlmPy = null, mCnlmPz = null;
+    @NotNull RowMatrix bufCnlm(boolean aClear) {if (mCnlm==null) {mCnlm = MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1));} if (aClear) {mCnlm.fill(0.0);} return mCnlm;}
+    @NotNull RowMatrix bufCnlmPx(boolean aClear) {if (mCnlmPx==null) {mCnlmPx = MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1));} if (aClear) {mCnlmPx.fill(0.0);} return mCnlmPx;}
+    @NotNull RowMatrix bufCnlmPy(boolean aClear) {if (mCnlmPy==null) {mCnlmPy = MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1));} if (aClear) {mCnlmPy.fill(0.0);} return mCnlmPy;}
+    @NotNull RowMatrix bufCnlmPz(boolean aClear) {if (mCnlmPz==null) {mCnlmPz = MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1));} if (aClear) {mCnlmPz.fill(0.0);} return mCnlmPz;}
     
-    private final List<RowComplexMatrix> mCnlmPxAll = new ArrayList<>(), mCnlmPyAll = new ArrayList<>(), mCnlmPzAll = new ArrayList<>();
-    @NotNull RowComplexMatrix bufCnlmPxAll(int i, boolean aClear) {while (mCnlmPxAll.size()<=i) {mCnlmPxAll.add(ComplexMatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1)));} RowComplexMatrix tCnlmPx = mCnlmPxAll.get(i); if (aClear) {tCnlmPx.fill(0.0);} return tCnlmPx;}
-    @NotNull RowComplexMatrix bufCnlmPyAll(int i, boolean aClear) {while (mCnlmPyAll.size()<=i) {mCnlmPyAll.add(ComplexMatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1)));} RowComplexMatrix tCnlmPy = mCnlmPyAll.get(i); if (aClear) {tCnlmPy.fill(0.0);} return tCnlmPy;}
-    @NotNull RowComplexMatrix bufCnlmPzAll(int i, boolean aClear) {while (mCnlmPzAll.size()<=i) {mCnlmPzAll.add(ComplexMatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1)));} RowComplexMatrix tCnlmPz = mCnlmPzAll.get(i); if (aClear) {tCnlmPz.fill(0.0);} return tCnlmPz;}
+    private final List<RowMatrix> mCnlmPxAll = new ArrayList<>(), mCnlmPyAll = new ArrayList<>(), mCnlmPzAll = new ArrayList<>();
+    @NotNull RowMatrix bufCnlmPxAll(int i, boolean aClear) {while (mCnlmPxAll.size()<=i) {mCnlmPxAll.add(MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1)));} RowMatrix tCnlmPx = mCnlmPxAll.get(i); if (aClear) {tCnlmPx.fill(0.0);} return tCnlmPx;}
+    @NotNull RowMatrix bufCnlmPyAll(int i, boolean aClear) {while (mCnlmPyAll.size()<=i) {mCnlmPyAll.add(MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1)));} RowMatrix tCnlmPy = mCnlmPyAll.get(i); if (aClear) {tCnlmPy.fill(0.0);} return tCnlmPy;}
+    @NotNull RowMatrix bufCnlmPzAll(int i, boolean aClear) {while (mCnlmPzAll.size()<=i) {mCnlmPzAll.add(MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1)));} RowMatrix tCnlmPz = mCnlmPzAll.get(i); if (aClear) {tCnlmPz.fill(0.0);} return tCnlmPz;}
     
     private @Nullable Vector mRn = null, mRnPx = null, mRnPy = null, mRnPz = null;
     @NotNull Vector bufRn(boolean aClear) {if (mRn==null) {mRn = VectorCache.getVec(mNMax+1);} if (aClear) {mRn.fill(0.0);} return mRn;}
@@ -123,32 +119,32 @@ public class SphericalChebyshev implements IBasis {
     @NotNull Vector bufRnPy(boolean aClear) {if (mRnPy==null) {mRnPy = VectorCache.getVec(mNMax+1);} if (aClear) {mRnPy.fill(0.0);} return mRnPy;}
     @NotNull Vector bufRnPz(boolean aClear) {if (mRnPz==null) {mRnPz = VectorCache.getVec(mNMax+1);} if (aClear) {mRnPz.fill(0.0);} return mRnPz;}
     
-    private @Nullable ComplexVector mY = null, mYPx = null, mYPy = null, mYPz = null, mYPphi = null, mYPtheta = null;
-    @NotNull ComplexVector bufY(boolean aClear) {if (mY==null) {mY = ComplexVectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mY.fill(0.0);} return mY;}
-    @NotNull ComplexVector bufYPx(boolean aClear) {if (mYPx==null) {mYPx = ComplexVectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPx.fill(0.0);} return mYPx;}
-    @NotNull ComplexVector bufYPy(boolean aClear) {if (mYPy==null) {mYPy = ComplexVectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPy.fill(0.0);} return mYPy;}
-    @NotNull ComplexVector bufYPz(boolean aClear) {if (mYPz==null) {mYPz = ComplexVectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPz.fill(0.0);} return mYPz;}
-    @NotNull ComplexVector bufYPphi(boolean aClear) {if (mYPphi==null) {mYPphi = ComplexVectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPphi.fill(0.0);} return mYPphi;}
-    @NotNull ComplexVector bufYPtheta(boolean aClear) {if (mYPtheta==null) {mYPtheta = ComplexVectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPtheta.fill(0.0);} return mYPtheta;}
+    private @Nullable Vector mY = null, mYPx = null, mYPy = null, mYPz = null, mYPphi = null, mYPtheta = null;
+    @NotNull Vector bufY(boolean aClear) {if (mY==null) {mY = VectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mY.fill(0.0);} return mY;}
+    @NotNull Vector bufYPx(boolean aClear) {if (mYPx==null) {mYPx = VectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPx.fill(0.0);} return mYPx;}
+    @NotNull Vector bufYPy(boolean aClear) {if (mYPy==null) {mYPy = VectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPy.fill(0.0);} return mYPy;}
+    @NotNull Vector bufYPz(boolean aClear) {if (mYPz==null) {mYPz = VectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPz.fill(0.0);} return mYPz;}
+    @NotNull Vector bufYPphi(boolean aClear) {if (mYPphi==null) {mYPphi = VectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPphi.fill(0.0);} return mYPphi;}
+    @NotNull Vector bufYPtheta(boolean aClear) {if (mYPtheta==null) {mYPtheta = VectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPtheta.fill(0.0);} return mYPtheta;}
     
     @Override public void shutdown() {
-        if (mCnlm != null) ComplexMatrixCache.returnMat(mCnlm);
-        if (mCnlmPx != null) ComplexMatrixCache.returnMat(mCnlmPx);
-        if (mCnlmPy != null) ComplexMatrixCache.returnMat(mCnlmPy);
-        if (mCnlmPz != null) ComplexMatrixCache.returnMat(mCnlmPz);
-        for (RowComplexMatrix cnlmPzSub : mCnlmPzAll) ComplexMatrixCache.returnMat(cnlmPzSub);
-        for (RowComplexMatrix cnlmPySub : mCnlmPyAll) ComplexMatrixCache.returnMat(cnlmPySub);
-        for (RowComplexMatrix cnlmPxSub : mCnlmPxAll) ComplexMatrixCache.returnMat(cnlmPxSub);
+        if (mCnlm != null) MatrixCache.returnMat(mCnlm);
+        if (mCnlmPx != null) MatrixCache.returnMat(mCnlmPx);
+        if (mCnlmPy != null) MatrixCache.returnMat(mCnlmPy);
+        if (mCnlmPz != null) MatrixCache.returnMat(mCnlmPz);
+        for (RowMatrix cnlmPzSub : mCnlmPzAll) MatrixCache.returnMat(cnlmPzSub);
+        for (RowMatrix cnlmPySub : mCnlmPyAll) MatrixCache.returnMat(cnlmPySub);
+        for (RowMatrix cnlmPxSub : mCnlmPxAll) MatrixCache.returnMat(cnlmPxSub);
         if (mRn != null) VectorCache.returnVec(mRn);
         if (mRnPx != null) VectorCache.returnVec(mRnPx);
         if (mRnPy != null) VectorCache.returnVec(mRnPy);
         if (mRnPz != null) VectorCache.returnVec(mRnPz);
-        if (mY != null) ComplexVectorCache.returnVec(mY);
-        if (mYPx != null) ComplexVectorCache.returnVec(mYPx);
-        if (mYPy != null) ComplexVectorCache.returnVec(mYPy);
-        if (mYPz != null) ComplexVectorCache.returnVec(mYPz);
-        if (mYPphi != null) ComplexVectorCache.returnVec(mYPphi);
-        if (mYPtheta != null) ComplexVectorCache.returnVec(mYPtheta);
+        if (mY != null) VectorCache.returnVec(mY);
+        if (mYPx != null) VectorCache.returnVec(mYPx);
+        if (mYPy != null) VectorCache.returnVec(mYPy);
+        if (mYPz != null) VectorCache.returnVec(mYPz);
+        if (mYPphi != null) VectorCache.returnVec(mYPphi);
+        if (mYPtheta != null) VectorCache.returnVec(mYPtheta);
     }
     
     /**
@@ -161,11 +157,11 @@ public class SphericalChebyshev implements IBasis {
         final RowMatrix rFingerPrint = MatrixCache.getMatRow(tSizeN, mLMax+1);
         
         // 需要存储所有的 l，n，m 的值来统一进行近邻求和
-        final RowComplexMatrix cnlm = bufCnlm(true);
+        final RowMatrix cnlm = bufCnlm(true);
         // 缓存 Rn 数组
         final IVector tRn = bufRn(false);
         // 全局暂存 Y 的数组，这样可以用来防止重复获取来提高效率
-        final IComplexVector tY = bufY(false);
+        final IVector tY = bufY(false);
         
         // 遍历近邻计算 Ylm, Rn, fc
         aNL.forEachDxyzType((dx, dy, dz, type) -> {
@@ -181,12 +177,10 @@ public class SphericalChebyshev implements IBasis {
             final double tX = 1.0 - 2.0*dis/mRCut;
             tRn.fill(n -> MathEX.Func.chebyshev(n, tX));
             
-            // 遍历求 n，l 的情况
-            MathEX.Func.sphericalHarmonicsFull2DestXYZDis_(mLMax, dx, dy, dz, dis, tY);
+            // 遍历求 n，l 的情况；现在采用实球谐函数进行计算
+            MathEX.Func.realSphericalHarmonicsFull2DestXYZDis_(mLMax, dx, dy, dz, dis, tY);
             for (int tN = 0; tN <= mNMax; ++tN) {
-                // 现在提供了 mplus2this 支持将数乘到 tY 中后再加到 cijm，可以不用中间变量；
-                // 虽然看起来和使用 operate2this 效率基本一致，即使后者理论上应该还会创建一些 DoubleComplex；
-                // 总之至少没有反向优化，并且这样包装后更加不吃编译器的优化，也不存在一大坨 lambda 表达式，以及传入的 DoubleComplex 一定不是引用等这种约定
+                // 现在统一使用 mplus2this 实现这个操作
                 double tMul = fc * tRn.get(tN);
                 cnlm.row(tN).operation().mplus2this(tY, tMul);
                 if (mTypeNum > 1) cnlm.row(tN+mNMax+1).operation().mplus2this(tY, wt*tMul);
@@ -221,22 +215,22 @@ public class SphericalChebyshev implements IBasis {
         @Nullable List<RowMatrix> rFingerPrintPzCross = aCalCross ? new ArrayList<>() : null;
         
         // 需要存储所有的 l，n，m 的值来统一进行近邻求和
-        final RowComplexMatrix cnlm = bufCnlm(true);
-        final RowComplexMatrix cnlmPx = bufCnlmPx(true);
-        final RowComplexMatrix cnlmPy = bufCnlmPy(true);
-        final RowComplexMatrix cnlmPz = bufCnlmPz(true);
+        final RowMatrix cnlm = bufCnlm(true);
+        final RowMatrix cnlmPx = bufCnlmPx(true);
+        final RowMatrix cnlmPy = bufCnlmPy(true);
+        final RowMatrix cnlmPz = bufCnlmPz(true);
         // 缓存 Rn 数组
         final IVector tRn = bufRn(false);
         final IVector tRnPx = bufRnPx(false);
         final IVector tRnPy = bufRnPy(false);
         final IVector tRnPz = bufRnPz(false);
         // 全局暂存 Y 的数组，这样可以用来防止重复获取来提高效率
-        final IComplexVector tY = bufY(false);
-        final IComplexVector tYPtheta = bufYPtheta(false);
-        final IComplexVector tYPphi = bufYPphi(false);
-        final IComplexVector tYPx = bufYPx(false);
-        final IComplexVector tYPy = bufYPy(false);
-        final IComplexVector tYPz = bufYPz(false);
+        final IVector tY = bufY(false);
+        final IVector tYPtheta = bufYPtheta(false);
+        final IVector tYPphi = bufYPphi(false);
+        final IVector tYPx = bufYPx(false);
+        final IVector tYPy = bufYPy(false);
+        final IVector tYPz = bufYPz(false);
         // 记录一下近邻数目（对于 cross 的情况）
         final int[] tNN = aCalCross ? new int[]{0} : null;
         
@@ -280,7 +274,8 @@ public class SphericalChebyshev implements IBasis {
                 cosPhi = dx / dxy;
                 sinPhi = dy / dxy;
             }
-            MathEX.Func.sphericalHarmonicsFull2Dest4_(mLMax, cosTheta, sinTheta, cosPhi, sinPhi, tY);
+            // 现在采用实球谐函数进行计算
+            MathEX.Func.realSphericalHarmonicsFull2Dest4_(mLMax, cosTheta, sinTheta, cosPhi, sinPhi, tY);
             if (dxyCloseZero) tYPphi.fill(0.0); // 这样来修复顶点的情况，此时另一边 tYPtheta 会恰好弥补使得全局连续
             for (int tL = 0; tL <= mLMax; ++tL) {
                 // 这里简单处理，使用这种遍历的方式来获取对应的 l 和 m
@@ -288,37 +283,50 @@ public class SphericalChebyshev implements IBasis {
                 final int tStart = fL*fL;
                 final int tLen = fL+fL+1;
                 final int tEnd = tStart + tLen;
-                IComplexVector subY = tY.subVec(tStart, tEnd);
+                IVector subY = tY.subVec(tStart, tEnd);
                 if (!dxyCloseZero) {
-                    IComplexVector subYPphi = tYPphi.subVec(tStart, tEnd);
-                    subYPphi.real().fill(i -> -(i-fL)*subY.getImag(i));
-                    subYPphi.imag().fill(i ->  (i-fL)*subY.getReal(i));
+                    IVector subYPphi = tYPphi.subVec(tStart, tEnd);
+                    subYPphi.fill(i -> -(i-fL)*subY.get(fL+fL-i));
                 }
-                // 这里实际运算比较复杂，因此直接分实部虚部运算
-                IComplexVector subYPtheta = tYPtheta.subVec(tStart, tEnd);
-                subYPtheta.real().fill(i -> {
-                    double out = 0.0;
-                    if (i > 0) {
-                        out -= 0.5*SQRT_LPM_LMM1.get(tStart+i)*cosPhi * subY.getReal(i-1);
-                        out += 0.5*SQRT_LPM_LMM1.get(tStart+i)*sinPhi * subY.getImag(i-1);
+                // 这里实际运算比较复杂，需要分多种情况考虑
+                IVector subYPtheta = tYPtheta.subVec(tStart, tEnd);
+                subYPtheta.fill(i -> {
+                    int m = i-fL;
+                    switch(m) {
+                        case 0: {
+                            if (fL == 0) return 0.0;
+                            return SQRT_LPM_LMM1.get(tStart+i)*SQRT2_INV * (cosPhi*subY.get(i+1) + sinPhi*subY.get(i-1));
+                        }
+                        case 1: {
+                            double out = -SQRT_LPM_LMM1.get(tStart+i)*SQRT2_INV * cosPhi*subY.get(i-1);
+                            if (fL > 1) {
+                                out += 0.5*SQRT_LPM1_LMM.get(tStart+i) * (cosPhi*subY.get(i+1) + sinPhi*subY.get(i-3));
+                            }
+                            return out;
+                        }
+                        case -1: {
+                            double out = -SQRT_LPM1_LMM.get(tStart+i)*SQRT2_INV * sinPhi*subY.get(i+1);
+                            if (fL > 1) {
+                                out += 0.5*SQRT_LPM_LMM1.get(tStart+i) * (cosPhi*subY.get(i-1) - sinPhi*subY.get(i+3));
+                            }
+                            return out;
+                        }
+                        default: {
+                            if (m > 0) {
+                                double out = -0.5*SQRT_LPM_LMM1.get(tStart+i) * (cosPhi*subY.get(i-1) - sinPhi*subY.get(fL-m+1));
+                                if (fL > m) {
+                                    out += 0.5*SQRT_LPM1_LMM.get(tStart+i) * (cosPhi*subY.get(i+1) + sinPhi*subY.get(fL-m-1));
+                                }
+                                return out;
+                            } else {
+                                double out = -0.5*SQRT_LPM1_LMM.get(tStart+i) * (cosPhi*subY.get(i+1) + sinPhi*subY.get(fL-m-1));
+                                if (fL > -m) {
+                                    out += 0.5*SQRT_LPM_LMM1.get(tStart+i) * (cosPhi*subY.get(i-1) - sinPhi*subY.get(fL-m+1));
+                                }
+                                return out;
+                            }
+                        }
                     }
-                    if (i < tLen-1) {
-                        out += 0.5*SQRT_LPM1_LMM.get(tStart+i)*cosPhi * subY.getReal(i+1);
-                        out += 0.5*SQRT_LPM1_LMM.get(tStart+i)*sinPhi * subY.getImag(i+1);
-                    }
-                    return out;
-                });
-                subYPtheta.imag().fill(i -> {
-                    double out = 0.0;
-                    if (i > 0) {
-                        out -= 0.5*SQRT_LPM_LMM1.get(tStart+i)*cosPhi * subY.getImag(i-1);
-                        out -= 0.5*SQRT_LPM_LMM1.get(tStart+i)*sinPhi * subY.getReal(i-1);
-                    }
-                    if (i < tLen-1) {
-                        out += 0.5*SQRT_LPM1_LMM.get(tStart+i)*cosPhi * subY.getImag(i+1);
-                        out -= 0.5*SQRT_LPM1_LMM.get(tStart+i)*sinPhi * subY.getReal(i+1);
-                    }
-                    return out;
                 });
             }
             // 最后转换为 xyz 的偏微分
@@ -332,7 +340,7 @@ public class SphericalChebyshev implements IBasis {
             tYPz.fill(0.0); tYPz.operation().mplus2this(tYPtheta, thetaPz);
             
             // 遍历求 n，l 的情况
-            final RowComplexMatrix cnlmPxUpdate, cnlmPyUpdate, cnlmPzUpdate;
+            final RowMatrix cnlmPxUpdate, cnlmPyUpdate, cnlmPzUpdate;
             if (aCalCross) {
                 int j = tNN[0]; ++tNN[0];
                 cnlmPxUpdate = bufCnlmPxAll(j, true);
@@ -352,7 +360,7 @@ public class SphericalChebyshev implements IBasis {
                 // 微分部分
                 double tMulL = fc * tRnPx.get(tN);
                 double tMulR = fcPx * tRn.get(tN);
-                IComplexVectorOperation tOpt = cnlmPxUpdate.row(tN).operation();
+                IVectorOperation tOpt = cnlmPxUpdate.row(tN).operation();
                 tOpt.mplus2this(tY, tMulL);
                 tOpt.mplus2this(tYPx, tMul);
                 tOpt.mplus2this(tY, tMulR);
@@ -411,11 +419,11 @@ public class SphericalChebyshev implements IBasis {
             }
         }
         // 做标量积消去 m 项，得到此原子的 FP
-        ShiftVector subCilmReal = new ShiftVector(cnlm.internalDataSize(), cnlm.internalDataShift(), cnlm.internalData()[0]), subCilmImag = new ShiftVector(cnlm.internalDataSize(), cnlm.internalDataShift(), cnlm.internalData()[1]);
-        ShiftVector subCilmPxReal = new ShiftVector(cnlmPx.internalDataSize(), cnlmPx.internalDataShift(), cnlmPx.internalData()[0]), subCilmPxImag = new ShiftVector(cnlmPx.internalDataSize(), cnlmPx.internalDataShift(), cnlmPx.internalData()[1]);
-        ShiftVector subCilmPyReal = new ShiftVector(cnlmPy.internalDataSize(), cnlmPy.internalDataShift(), cnlmPy.internalData()[0]), subCilmPyImag = new ShiftVector(cnlmPy.internalDataSize(), cnlmPy.internalDataShift(), cnlmPy.internalData()[1]);
-        ShiftVector subCilmPzReal = new ShiftVector(cnlmPz.internalDataSize(), cnlmPz.internalDataShift(), cnlmPz.internalData()[0]), subCilmPzImag = new ShiftVector(cnlmPz.internalDataSize(), cnlmPz.internalDataShift(), cnlmPz.internalData()[1]);
-        IVectorOperation subCilmRealOpt = subCilmReal.operation(), subCilmImagOpt = subCilmImag.operation();
+        ShiftVector subCilm = new ShiftVector(cnlm.internalDataSize(), cnlm.internalDataShift(), cnlm.internalData());
+        ShiftVector subCilmPx = new ShiftVector(cnlmPx.internalDataSize(), cnlmPx.internalDataShift(), cnlmPx.internalData());
+        ShiftVector subCilmPy = new ShiftVector(cnlmPy.internalDataSize(), cnlmPy.internalDataShift(), cnlmPy.internalData());
+        ShiftVector subCilmPz = new ShiftVector(cnlmPz.internalDataSize(), cnlmPz.internalDataShift(), cnlmPz.internalData());
+        IVectorOperation subCilmOpt = subCilm.operation();
         for (int tN = 0; tN < tSizeN; ++tN) {
             int tShift = tN * cnlm.columnNumber();
             for (int tL = 0; tL <= mLMax; ++tL) {
@@ -424,24 +432,24 @@ public class SphericalChebyshev implements IBasis {
                 int tLen = tL+tL+1;
                 double tMul = 4.0*PI/(double)tLen;
                 double tMul2 = tMul+tMul;
-                subCilmReal.setSize(tLen).setShift(tShift+tStart); subCilmImag.setSize(tLen).setShift(tShift+tStart);
-                subCilmPxReal.setSize(tLen).setShift(tShift+tStart); subCilmPxImag.setSize(tLen).setShift(tShift+tStart);
-                subCilmPyReal.setSize(tLen).setShift(tShift+tStart); subCilmPyImag.setSize(tLen).setShift(tShift+tStart);
-                subCilmPzReal.setSize(tLen).setShift(tShift+tStart); subCilmPzImag.setSize(tLen).setShift(tShift+tStart);
-                if (aCalBasis) rFingerPrint.set(tN, tL, tMul * (subCilmRealOpt.dot() + subCilmImagOpt.dot()));
-                rFingerPrintPx.set(tN, tL, tMul2 * (subCilmRealOpt.dot(subCilmPxReal) + subCilmImagOpt.dot(subCilmPxImag)));
-                rFingerPrintPy.set(tN, tL, tMul2 * (subCilmRealOpt.dot(subCilmPyReal) + subCilmImagOpt.dot(subCilmPyImag)));
-                rFingerPrintPz.set(tN, tL, tMul2 * (subCilmRealOpt.dot(subCilmPzReal) + subCilmImagOpt.dot(subCilmPzImag)));
+                subCilm.setSize(tLen).setShift(tShift+tStart);
+                subCilmPx.setSize(tLen).setShift(tShift+tStart);
+                subCilmPy.setSize(tLen).setShift(tShift+tStart);
+                subCilmPz.setSize(tLen).setShift(tShift+tStart);
+                if (aCalBasis) rFingerPrint.set(tN, tL, tMul * subCilmOpt.dot());
+                rFingerPrintPx.set(tN, tL, tMul2 * subCilmOpt.dot(subCilmPx));
+                rFingerPrintPy.set(tN, tL, tMul2 * subCilmOpt.dot(subCilmPy));
+                rFingerPrintPz.set(tN, tL, tMul2 * subCilmOpt.dot(subCilmPz));
             }
         }
         // 如果计算 cross，则需要这样设置 cross 的 FingerPrint 偏导
         if (aCalCross) {
             final int tNN_ = tNN[0];
             for (int i = 0; i < tNN_; ++i) {
-                RowComplexMatrix cnlmPxAllI = bufCnlmPxAll(i, false), cnlmPyAllI = bufCnlmPyAll(i, false), cnlmPzAllI = bufCnlmPzAll(i, false);
-                ShiftVector subCilmPxAllIReal = new ShiftVector(cnlmPxAllI.internalDataSize(), cnlmPxAllI.internalDataShift(), cnlmPxAllI.internalData()[0]), subCilmPxAllIImag = new ShiftVector(cnlmPxAllI.internalDataSize(), cnlmPxAllI.internalDataShift(), cnlmPxAllI.internalData()[1]);
-                ShiftVector subCilmPyAllIReal = new ShiftVector(cnlmPyAllI.internalDataSize(), cnlmPyAllI.internalDataShift(), cnlmPyAllI.internalData()[0]), subCilmPyAllIImag = new ShiftVector(cnlmPyAllI.internalDataSize(), cnlmPyAllI.internalDataShift(), cnlmPyAllI.internalData()[1]);
-                ShiftVector subCilmPzAllIReal = new ShiftVector(cnlmPzAllI.internalDataSize(), cnlmPzAllI.internalDataShift(), cnlmPzAllI.internalData()[0]), subCilmPzAllIImag = new ShiftVector(cnlmPzAllI.internalDataSize(), cnlmPzAllI.internalDataShift(), cnlmPzAllI.internalData()[1]);
+                RowMatrix cnlmPxAllI = bufCnlmPxAll(i, false), cnlmPyAllI = bufCnlmPyAll(i, false), cnlmPzAllI = bufCnlmPzAll(i, false);
+                ShiftVector subCilmPxAllI = new ShiftVector(cnlmPxAllI.internalDataSize(), cnlmPxAllI.internalDataShift(), cnlmPxAllI.internalData());
+                ShiftVector subCilmPyAllI = new ShiftVector(cnlmPyAllI.internalDataSize(), cnlmPyAllI.internalDataShift(), cnlmPyAllI.internalData());
+                ShiftVector subCilmPzAllI = new ShiftVector(cnlmPzAllI.internalDataSize(), cnlmPzAllI.internalDataShift(), cnlmPzAllI.internalData());
                 RowMatrix tFingerPrintPxCrossI = rFingerPrintPxCross.get(i);
                 RowMatrix tFingerPrintPyCrossI = rFingerPrintPyCross.get(i);
                 RowMatrix tFingerPrintPzCrossI = rFingerPrintPzCross.get(i);
@@ -452,13 +460,13 @@ public class SphericalChebyshev implements IBasis {
                         int tLen = tL+tL+1;
                         double tMul = 4.0*PI/(double)tLen;
                         double tMul2 = tMul+tMul;
-                        subCilmReal.setSize(tLen).setShift(tShift+tStart); subCilmImag.setSize(tLen).setShift(tShift+tStart);
-                        subCilmPxAllIReal.setSize(tLen).setShift(tShift+tStart); subCilmPxAllIImag.setSize(tLen).setShift(tShift+tStart);
-                        subCilmPyAllIReal.setSize(tLen).setShift(tShift+tStart); subCilmPyAllIImag.setSize(tLen).setShift(tShift+tStart);
-                        subCilmPzAllIReal.setSize(tLen).setShift(tShift+tStart); subCilmPzAllIImag.setSize(tLen).setShift(tShift+tStart);
-                        tFingerPrintPxCrossI.set(tN, tL, tMul2 * (subCilmRealOpt.dot(subCilmPxAllIReal) + subCilmImagOpt.dot(subCilmPxAllIImag)));
-                        tFingerPrintPyCrossI.set(tN, tL, tMul2 * (subCilmRealOpt.dot(subCilmPyAllIReal) + subCilmImagOpt.dot(subCilmPyAllIImag)));
-                        tFingerPrintPzCrossI.set(tN, tL, tMul2 * (subCilmRealOpt.dot(subCilmPzAllIReal) + subCilmImagOpt.dot(subCilmPzAllIImag)));
+                        subCilm.setSize(tLen).setShift(tShift+tStart);
+                        subCilmPxAllI.setSize(tLen).setShift(tShift+tStart);
+                        subCilmPyAllI.setSize(tLen).setShift(tShift+tStart);
+                        subCilmPzAllI.setSize(tLen).setShift(tShift+tStart);
+                        tFingerPrintPxCrossI.set(tN, tL, tMul2 * subCilmOpt.dot(subCilmPxAllI));
+                        tFingerPrintPyCrossI.set(tN, tL, tMul2 * subCilmOpt.dot(subCilmPyAllI));
+                        tFingerPrintPzCrossI.set(tN, tL, tMul2 * subCilmOpt.dot(subCilmPzAllI));
                     }
                 }
             }

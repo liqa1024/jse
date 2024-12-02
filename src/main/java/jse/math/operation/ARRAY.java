@@ -2144,4 +2144,10 @@ public class ARRAY {
             }
         }
     }
+    /** 一般向量也添加这个接口来保持一致 */
+    public static void mapMultiplyThenEbePlus2This(double[] rThis, int rShift, double[] aDataR, int aShiftR, double aMul, int aLength) {
+        final int rEnd = aLength + rShift;
+        if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] += aMul*aDataR[i];
+        else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] += aMul*aDataR[j];
+    }
 }

@@ -284,6 +284,14 @@ public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation
         return rVector;
     }
     
+    @Override public void mplus2this(IVector aRHS, double aMul) {
+        DoubleArrayVector rThis = thisVector_();
+        ebeCheck(rThis.size(), aRHS.size());
+        double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
+        if (tDataR != null) ARRAY.mapMultiplyThenEbePlus2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), aMul, rThis.internalDataSize());
+        else DATA.mapMultiplyThenEbePlus2This(rThis, aRHS, aMul);
+    }
+    
     /** 排序不自己实现 */
     @Override public void sort() {
         DoubleArrayVector rThis = thisVector_();

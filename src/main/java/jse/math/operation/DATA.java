@@ -1325,4 +1325,8 @@ public class DATA {
             si.setRealImag(si.real() + (lReal*rReal - lImag*rImag), si.imag() + (lImag*rReal + lReal*rImag));
         }
     }
+    /** 一般向量也添加此接口来保持一致 */
+    public static void mapMultiplyThenEbePlus2This(IHasDoubleSetIterator rThis, IHasDoubleIterator aRHS, final double aMul) {
+        ebeDo2This(rThis, aRHS, (lhs, rhs) -> (lhs + aMul*rhs));
+    }
 }

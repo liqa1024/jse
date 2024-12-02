@@ -150,6 +150,8 @@ public abstract class AbstractVectorOperation implements IVectorOperation {
     }
     @Override public void reverse2this() {DATA.reverse2This(thisVector_());}
     
+    @Override public void mplus2this(IVector aRHS, double aMul) {ebeCheck(thisVector_().size(), aRHS.size()); DATA.mapMultiplyThenEbePlus2This(thisVector_(), aRHS, aMul);}
+    
     /** 排序不自己实现 */
     @Override public void sort() {DATA.sort(thisVector_());}
     @Override public void sort(IntBinaryOperator aComp) {DATA.sort(thisVector_(), aComp);}
