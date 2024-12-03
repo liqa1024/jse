@@ -58,11 +58,11 @@ public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
     public void parfor(final int aSize, final IParforTask       aTask      ) {parfor(aSize, (i, threadID) -> aTask.run(i));}
     public void parfor(final int aSize, final IParforTaskWithID aTaskWithID) {parfor(aSize, null, null, aTaskWithID);}
     public void parfor(final int aSize, final @Nullable ITaskWithID aInitDo, final @Nullable ITaskWithID aFinalDo, final IParforTaskWithID aTaskWithID) {
-        try {parforWithException(aSize, aInitDo, aFinalDo, aTaskWithID::run);}
+        try {parforWithException(aSize, aInitDo==null ? null : aInitDo::run, aFinalDo==null ? null : aFinalDo::run, aTaskWithID::run);}
         catch (Exception e) {throw new RuntimeException(e);}
     }
     @ApiStatus.Experimental
-    public void parforWithException(final int aSize, final @Nullable ITaskWithID aInitDo, final @Nullable ITaskWithID aFinalDo, final IParforTaskWithIDAndException aTaskWithIDAndException) throws Exception {
+    public void parforWithException(final int aSize, final @Nullable ITaskWithIDAndException aInitDo, final @Nullable ITaskWithIDAndException aFinalDo, final IParforTaskWithIDAndException aTaskWithIDAndException) throws Exception {
         if (mDead) throw new RuntimeException("This ParforThreadPool is dead");
         if (aSize <= 0) return;
         // 串行的情况
@@ -84,12 +84,15 @@ public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
                     pool().execute(() -> {
                         assert mLocks != null;
                         mLocks[fId].lock(); // 加锁在结束后进行数据同步
-                        if (aInitDo != null) aInitDo.run(fId);
-                        for (int i = fId; i < aSize; i += tThreadNum) {
-                            try {aTaskWithIDAndException.run(i, fId);}
-                            catch (Exception e) {tException.set(e); break;}
+                        try {
+                            if (aInitDo != null) aInitDo.run(fId);
+                            for (int i = fId; i < aSize; i += tThreadNum) {
+                                aTaskWithIDAndException.run(i, fId);
+                            }
+                            if (aFinalDo != null) aFinalDo.run(fId);
+                        } catch (Exception e) {
+                            tException.set(e);
                         }
-                        if (aFinalDo != null) aFinalDo.run(fId);
                         // 认为不会在其他地方抛出错误，因此不做额外的 try-finally 操作
                         mLocks[fId].unlock();
                         tLatch.countDown();
@@ -103,20 +106,23 @@ public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
                     pool().execute(() -> {
                         assert mLocks != null;
                         mLocks[fId].lock(); // 加锁在结束后进行数据同步
-                        if (aInitDo != null) aInitDo.run(fId);
-                        while (true) {
-                            if (tException.get() != null) break;
-                            int i, ipp;
-                            // 采用 CAS 自旋锁来避免同步（虽然简单测试下来都没有什么性能损失）
-                            do {
-                                i = currentIdx.get();
-                                ipp = i + 1;
-                            } while (!currentIdx.compareAndSet(i, ipp));
-                            if (i >= aSize) break;
-                            try {aTaskWithIDAndException.run(i, fId);}
-                            catch (Exception e) {tException.set(e); break;}
+                        try {
+                            if (aInitDo != null) aInitDo.run(fId);
+                            while (true) {
+                                if (tException.get() != null) break;
+                                int i, ipp;
+                                // 采用 CAS 自旋锁来避免同步（虽然简单测试下来都没有什么性能损失）
+                                do {
+                                    i = currentIdx.get();
+                                    ipp = i + 1;
+                                } while (!currentIdx.compareAndSet(i, ipp));
+                                if (i >= aSize) break;
+                                aTaskWithIDAndException.run(i, fId);
+                            }
+                            if (aFinalDo != null) aFinalDo.run(fId);
+                        } catch (Exception e) {
+                            tException.set(e);
                         }
-                        if (aFinalDo != null) aFinalDo.run(fId);
                         // 认为不会在其他地方抛出错误，因此不做额外的 try-finally 操作
                         mLocks[fId].unlock();
                         tLatch.countDown();
@@ -194,6 +200,7 @@ public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
     @FunctionalInterface public interface ITaskWithID {void run(int threadID);}
     @FunctionalInterface public interface IParforTask {void run(int i);}
     @FunctionalInterface public interface IParforTaskWithID {void run(int i, int threadID);}
+    @FunctionalInterface public interface ITaskWithIDAndException {void run(int threadID) throws Exception;}
     @FunctionalInterface public interface IParforTaskWithIDAndException {void run(int i, int threadID) throws Exception;}
     @FunctionalInterface public interface IParwhileChecker {boolean noBreak();}
     @FunctionalInterface public interface IParwhileTaskWithID {void run(int threadID);}

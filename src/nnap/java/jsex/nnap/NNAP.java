@@ -26,6 +26,8 @@ import org.jetbrains.annotations.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.DoubleConsumer;
 
 import static jse.code.CS.VERSION;
 import static jse.code.OS.JAR_DIR;
@@ -117,12 +119,17 @@ public class NNAP implements IAutoShutdown {
     }
     private static native void setSingleThread0() throws TorchException;
     
+    /** 中间缓存批次数量，一次传入多个批次进入神经网络可以大大提高效率 */
+    public final static int BATCH_SIZE = 64;
+    
+    @SuppressWarnings("SameParameterValue")
     public class SingleNNAP {
         private final long[] mModelPtrs;
         private final String mSymbol;
         private final double mRefEng;
         private final IVector mNormVec;
         private final IBasis[] mBasis;
+        private final int mBasisSize;
         public String symbol() {return mSymbol;}
         public double refEng() {return mRefEng;}
         public IVector normVec() {return mNormVec;}
@@ -160,6 +167,7 @@ public class NNAP implements IAutoShutdown {
                 //noinspection resource
                 mBasis[i] = SphericalChebyshev.load(aTypeNum, tBasis);
             }
+            mBasisSize = mBasis[0].rowNumber()*mBasis[0].columnNumber();
             Object tModel = aModelInfo.get("torch");
             if (tModel == null) throw new IllegalArgumentException("No torch data in ModelInfo");
             byte[] tModelBytes = Base64.getDecoder().decode(tModel.toString());
@@ -169,7 +177,99 @@ public class NNAP implements IAutoShutdown {
                 if (tModelPtr==0 || tModelPtr==-1) throw new TorchException("Failed to load Torch Model");
                 mModelPtrs[i] = tModelPtr;
             }
+            mBatchedX = MatrixCache.getMatRow(BATCH_SIZE, mBasisSize, mThreadNumber);
+            mBatchedXGrad = MatrixCache.getMatRow(BATCH_SIZE, mBasisSize, mThreadNumber);
+            mBatchedY = VectorCache.getVec(BATCH_SIZE, mThreadNumber);
+            mBatchedPredDo = new DoubleConsumer[mThreadNumber][BATCH_SIZE];
+            mBatchedXGradDo = (Consumer<? super IVector>[][]) new Consumer[mThreadNumber][BATCH_SIZE];
+            mBatchedSize = new int[mThreadNumber];
         }
+        
+        private final List<RowMatrix> mBatchedX;
+        private final List<RowMatrix> mBatchedXGrad;
+        private final List<Vector> mBatchedY;
+        private final DoubleConsumer[][] mBatchedPredDo;
+        private final Consumer<? super IVector>[][] mBatchedXGradDo;
+        private final int[] mBatchedSize;
+        /** 提交批量 forward 接口，注意由于内部存储共享，因此不能和 {@link #submitBatchBackward} 混用，在使用 backward 前务必使用 {@link #clearSubmittedBatchForward} 清空缓存 */
+        protected void submitBatchForward(int aThreadID, IVector aX, DoubleConsumer aPredDo) throws TorchException {
+            DoubleConsumer[] tBatchedPredDo = mBatchedPredDo[aThreadID];
+            RowMatrix tBatchedX = mBatchedX.get(aThreadID);
+            int tBatchedSize = mBatchedSize[aThreadID];
+            tBatchedPredDo[tBatchedSize] = aPredDo;
+            tBatchedX.row(tBatchedSize).fill(aX);
+            ++tBatchedSize;
+            if (tBatchedSize == BATCH_SIZE) {
+                tBatchedSize = 0;
+                Vector tBatchedY = mBatchedY.get(aThreadID);
+                batchForward(aThreadID, tBatchedX.internalData(), tBatchedX.internalDataShift(), mBasisSize,
+                             tBatchedY.internalData(), tBatchedY.internalDataShift(), BATCH_SIZE);
+                for (int i = 0; i < BATCH_SIZE; ++i) {
+                    tBatchedPredDo[i].accept(tBatchedY.get(i));
+                }
+            }
+            mBatchedSize[aThreadID] = tBatchedSize;
+        }
+        protected void clearSubmittedBatchForward(int aThreadID) throws TorchException {
+            int tBatchedSize = mBatchedSize[aThreadID];
+            if (tBatchedSize == 0) return;
+            DoubleConsumer[] tBatchedPredDo = mBatchedPredDo[aThreadID];
+            RowMatrix tBatchedX = mBatchedX.get(aThreadID);
+            Vector tBatchedY = mBatchedY.get(aThreadID);
+            batchForward(aThreadID, tBatchedX.internalData(), tBatchedX.internalDataShift(), mBasisSize,
+                         tBatchedY.internalData(), tBatchedY.internalDataShift(), tBatchedSize);
+            for (int i = 0; i < tBatchedSize; ++i) {
+                tBatchedPredDo[i].accept(tBatchedY.get(i));
+            }
+            mBatchedSize[aThreadID] = 0;
+        }
+        protected void submitBatchForward(IVector aX, DoubleConsumer aPredDo) throws TorchException {submitBatchForward(0, aX, aPredDo);}
+        protected void clearSubmittedBatchForward() throws TorchException {clearSubmittedBatchForward(0);}
+        
+        /** 提交批量 forward 接口，注意由于内部存储共享，因此不能和 {@link #submitBatchForward} 混用，在使用 forward 前务必使用 {@link #clearSubmittedBatchBackward} 清空缓存 */
+        protected void submitBatchBackward(int aThreadID, IVector aX, @Nullable DoubleConsumer aPredDo, Consumer<? super IVector> aXGradDo) throws TorchException {
+            @Nullable DoubleConsumer[] tBatchedPredDo = mBatchedPredDo[aThreadID];
+            Consumer<? super IVector>[] tBatchedXGradDo = mBatchedXGradDo[aThreadID];
+            RowMatrix tBatchedX = mBatchedX.get(aThreadID);
+            int tBatchedSize = mBatchedSize[aThreadID];
+            tBatchedPredDo[tBatchedSize] = aPredDo;
+            tBatchedXGradDo[tBatchedSize] = aXGradDo;
+            tBatchedX.row(tBatchedSize).fill(aX);
+            ++tBatchedSize;
+            if (tBatchedSize == BATCH_SIZE) {
+                tBatchedSize = 0;
+                Vector tBatchedY = mBatchedY.get(aThreadID);
+                RowMatrix tBatchedXGrad = mBatchedXGrad.get(aThreadID);
+                batchBackward(aThreadID, tBatchedX.internalData(), tBatchedX.internalDataShift(), tBatchedXGrad.internalData(), tBatchedXGrad.internalDataShift(), mBasisSize,
+                              tBatchedY.internalData(), tBatchedY.internalDataShift(), BATCH_SIZE);
+                for (int i = 0; i < BATCH_SIZE; ++i) {
+                    @Nullable DoubleConsumer tPredDo = tBatchedPredDo[i];
+                    if (tPredDo != null) tPredDo.accept(tBatchedY.get(i));
+                    tBatchedXGradDo[i].accept(tBatchedXGrad.row(i));
+                }
+            }
+            mBatchedSize[aThreadID] = tBatchedSize;
+        }
+        protected void clearSubmittedBatchBackward(int aThreadID) throws TorchException {
+            int tBatchedSize = mBatchedSize[aThreadID];
+            if (tBatchedSize == 0) return;
+            @Nullable DoubleConsumer[] tBatchedPredDo = mBatchedPredDo[aThreadID];
+            Consumer<? super IVector>[] tBatchedXGradDo = mBatchedXGradDo[aThreadID];
+            RowMatrix tBatchedX = mBatchedX.get(aThreadID);
+            Vector tBatchedY = mBatchedY.get(aThreadID);
+            RowMatrix tBatchedXGrad = mBatchedXGrad.get(aThreadID);
+            batchBackward(aThreadID, tBatchedX.internalData(), tBatchedX.internalDataShift(), tBatchedXGrad.internalData(), tBatchedXGrad.internalDataShift(), mBasisSize,
+                          tBatchedY.internalData(), tBatchedY.internalDataShift(), tBatchedSize);
+            for (int i = 0; i < tBatchedSize; ++i) {
+                @Nullable DoubleConsumer tPredDo = tBatchedPredDo[i];
+                if (tPredDo != null) tPredDo.accept(tBatchedY.get(i));
+                tBatchedXGradDo[i].accept(tBatchedXGrad.row(i));
+            }
+            mBatchedSize[aThreadID] = 0;
+        }
+        protected void submitBatchBackward(IVector aX, @Nullable DoubleConsumer aPredDo, Consumer<? super IVector> aXGradDo) throws TorchException {submitBatchBackward(0, aX, aPredDo, aXGradDo);}
+        protected void clearSubmittedBatchBackward() throws TorchException {clearSubmittedBatchBackward(0);}
+        
         
         protected double forward(int aThreadID, double[] aX, int aStart, int aCount) throws TorchException {
             if (mDead) throw new IllegalStateException("This NNAP is dead");
@@ -226,6 +326,7 @@ public class NNAP implements IAutoShutdown {
     private final int mThreadNumber;
     public int atomTypeNumber() {return mModels.size();}
     public SingleNNAP model(int aType) {return mModels.get(aType-1);}
+    public @Unmodifiable List<SingleNNAP> models() {return mModels;}
     public String units() {return mUnits;}
     
     @SuppressWarnings("unchecked")
@@ -256,6 +357,9 @@ public class NNAP implements IAutoShutdown {
         if (!mDead) {
             mDead = true;
             for (SingleNNAP tModel : mModels) {
+                MatrixCache.returnMat(tModel.mBatchedX);
+                MatrixCache.returnMat(tModel.mBatchedXGrad);
+                VectorCache.returnVec(tModel.mBatchedY);
                 for (int i = 0; i < mThreadNumber; ++i) {
                     tModel.basis(i).shutdown();
                 }
@@ -422,7 +526,11 @@ public class NNAP implements IAutoShutdown {
         final int tAtomNumber = aMPC.atomNumber();
         Vector rEngs = VectorCache.getVec(tAtomNumber);
         try {
-            aMPC.pool_().parforWithException(tAtomNumber, null, null, (i, threadID) -> {
+            aMPC.pool_().parforWithException(tAtomNumber, null, threadID -> {
+                for (SingleNNAP tModel : mModels) {
+                    tModel.clearSubmittedBatchForward(threadID);
+                }
+            }, (i, threadID) -> {
                 final SingleNNAP tModel = model(aMPC.atomType_().get(i));
                 final IBasis tBasis = tModel.basis(threadID);
                 RowMatrix tBasisValue = tBasis.eval(dxyzTypeDo -> {
@@ -431,10 +539,11 @@ public class NNAP implements IAutoShutdown {
                     });
                 });
                 tBasisValue.asVecRow().div2this(tModel.mNormVec);
-                double tPred = tModel.forward(threadID, tBasisValue.internalData(), tBasisValue.internalDataShift(), tBasisValue.internalDataSize());
+                tModel.submitBatchForward(threadID, tBasisValue.asVecRow(), pred -> {
+                    pred += tModel.mRefEng;
+                    rEngs.set(i, pred);
+                });
                 MatrixCache.returnMat(tBasisValue);
-                tPred += tModel.mRefEng;
-                rEngs.set(i, tPred);
             });
         } catch (TorchException e) {
             throw e;
@@ -462,7 +571,11 @@ public class NNAP implements IAutoShutdown {
         final int tSize = aIndices.size();
         Vector rEngs = VectorCache.getVec(tSize);
         try {
-            aMPC.pool_().parforWithException(tSize, null, null, (i, threadID) -> {
+            aMPC.pool_().parforWithException(tSize, null, threadID -> {
+                for (SingleNNAP tModel : mModels) {
+                    tModel.clearSubmittedBatchForward(threadID);
+                }
+            }, (i, threadID) -> {
                 final int cIdx = aIndices.get(i);
                 final SingleNNAP tModel = model(aMPC.atomType_().get(cIdx));
                 final IBasis tBasis = tModel.basis(threadID);
@@ -472,10 +585,11 @@ public class NNAP implements IAutoShutdown {
                     });
                 });
                 tBasisValue.asVecRow().div2this(tModel.mNormVec);
-                double tPred = tModel.forward(threadID, tBasisValue.internalData(), tBasisValue.internalDataShift(), tBasisValue.internalDataSize());
+                tModel.submitBatchForward(threadID, tBasisValue.asVecRow(), pred -> {
+                    pred += tModel.mRefEng;
+                    rEngs.set(i, pred);
+                });
                 MatrixCache.returnMat(tBasisValue);
-                tPred += tModel.mRefEng;
-                rEngs.set(i, tPred);
             });
         } catch (TorchException e) {
             throw e;
@@ -756,7 +870,11 @@ public class NNAP implements IAutoShutdown {
         IVector @Nullable[] rVirialsXZPar = rVirialsXZ!=null ? new IVector[tThreadNumber] : null; if (rVirialsXZ != null) {rVirialsXZPar[0] = rVirialsXZ; for (int i = 1; i < tThreadNumber; ++i) {rVirialsXZPar[i] = VectorCache.getZeros(tAtomNumber);}}
         IVector @Nullable[] rVirialsYZPar = rVirialsYZ!=null ? new IVector[tThreadNumber] : null; if (rVirialsYZ != null) {rVirialsYZPar[0] = rVirialsYZ; for (int i = 1; i < tThreadNumber; ++i) {rVirialsYZPar[i] = VectorCache.getZeros(tAtomNumber);}}
         try {
-            aMPC.pool_().parforWithException(tAtomNumber, null, null, (i, threadID) -> {
+            aMPC.pool_().parforWithException(tAtomNumber, null, threadID -> {
+                for (SingleNNAP tModel : mModels) {
+                    tModel.clearSubmittedBatchBackward(threadID);
+                }
+            }, (i, threadID) -> {
                 final @Nullable IVector tForcesX = rForcesX!=null ? rForcesXPar[threadID] : null;
                 final @Nullable IVector tForcesY = rForcesY!=null ? rForcesYPar[threadID] : null;
                 final @Nullable IVector tForcesZ = rForcesZ!=null ? rForcesZPar[threadID] : null;
@@ -774,36 +892,35 @@ public class NNAP implements IAutoShutdown {
                     });
                 });
                 RowMatrix tBasisValue = tOut.get(0); tBasisValue.asVecRow().div2this(tModel.mNormVec);
-                final Vector tPredPartial = VectorCache.getVec(tBasisValue.rowNumber()*tBasisValue.columnNumber());
-                double tPred = tModel.backward(threadID, tBasisValue.internalData(), tBasisValue.internalDataShift(), tPredPartial.internalData(), tPredPartial.internalDataShift(), tBasisValue.internalDataSize());
-                tPredPartial.div2this(tModel.mNormVec);
-                if (rEnergies != null) {
-                    tPred += tModel.mRefEng;
-                    rEnergies.set(i, tPred);
-                }
-                if (tForcesX != null) tForcesX.add(i, -tPredPartial.opt().dot(tOut.get(1).asVecRow()));
-                if (tForcesY != null) tForcesY.add(i, -tPredPartial.opt().dot(tOut.get(2).asVecRow()));
-                if (tForcesZ != null) tForcesZ.add(i, -tPredPartial.opt().dot(tOut.get(3).asVecRow()));
-                // 累加交叉项到近邻
-                final int tNN = (tOut.size()-4)/3;
-                final int[] j = {0};
-                aMPC.nl_().forEachNeighbor(i, tBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
-                    double fx = -tPredPartial.opt().dot(tOut.get(4+j[0]).asVecRow());
-                    double fy = -tPredPartial.opt().dot(tOut.get(4+tNN+j[0]).asVecRow());
-                    double fz = -tPredPartial.opt().dot(tOut.get(4+tNN+tNN+j[0]).asVecRow());
-                    if (tForcesX != null) tForcesX.add(idx, fx);
-                    if (tForcesY != null) tForcesY.add(idx, fy);
-                    if (tForcesZ != null) tForcesZ.add(idx, fz);
-                    if (tVirialsXX != null) tVirialsXX.add(idx, dx*fx);
-                    if (tVirialsYY != null) tVirialsYY.add(idx, dy*fy);
-                    if (tVirialsZZ != null) tVirialsZZ.add(idx, dz*fz);
-                    if (tVirialsXY != null) tVirialsXY.add(idx, dx*fy);
-                    if (tVirialsXZ != null) tVirialsXZ.add(idx, dx*fz);
-                    if (tVirialsYZ != null) tVirialsYZ.add(idx, dy*fz);
-                    ++j[0];
+                tModel.submitBatchBackward(threadID, tBasisValue.asVecRow(), rEnergies==null ? null : pred -> {
+                    pred += tModel.mRefEng;
+                    rEnergies.set(i, pred);
+                }, xGrad -> {
+                    xGrad.div2this(tModel.mNormVec);
+                    if (tForcesX != null) tForcesX.add(i, -xGrad.opt().dot(tOut.get(1).asVecRow()));
+                    if (tForcesY != null) tForcesY.add(i, -xGrad.opt().dot(tOut.get(2).asVecRow()));
+                    if (tForcesZ != null) tForcesZ.add(i, -xGrad.opt().dot(tOut.get(3).asVecRow()));
+                    // 累加交叉项到近邻
+                    final int tNN = (tOut.size()-4)/3;
+                    final int[] j = {0};
+                    aMPC.nl_().forEachNeighbor(i, tBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
+                        double fx = -xGrad.opt().dot(tOut.get(4+j[0]).asVecRow());
+                        double fy = -xGrad.opt().dot(tOut.get(4+tNN+j[0]).asVecRow());
+                        double fz = -xGrad.opt().dot(tOut.get(4+tNN+tNN+j[0]).asVecRow());
+                        if (tForcesX != null) tForcesX.add(idx, fx);
+                        if (tForcesY != null) tForcesY.add(idx, fy);
+                        if (tForcesZ != null) tForcesZ.add(idx, fz);
+                        if (tVirialsXX != null) tVirialsXX.add(idx, dx*fx);
+                        if (tVirialsYY != null) tVirialsYY.add(idx, dy*fy);
+                        if (tVirialsZZ != null) tVirialsZZ.add(idx, dz*fz);
+                        if (tVirialsXY != null) tVirialsXY.add(idx, dx*fy);
+                        if (tVirialsXZ != null) tVirialsXZ.add(idx, dx*fz);
+                        if (tVirialsYZ != null) tVirialsYZ.add(idx, dy*fz);
+                        ++j[0];
+                    });
+                    // 注意要在这里归还中间变量，实际为延迟归还操作
+                    MatrixCache.returnMat(tOut);
                 });
-                VectorCache.returnVec(tPredPartial);
-                MatrixCache.returnMat(tOut);
             });
         } catch (TorchException e) {
             throw e;

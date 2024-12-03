@@ -9,7 +9,6 @@ import jse.lmp.LmpPlugin;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.IntVector;
 import jse.math.vector.LogicalVector;
-import jse.math.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -92,7 +91,7 @@ public class PairNNAP extends LmpPlugin.Pair {
             IntCPointer jlist = firstneigh.getAt(i);
             final int jnum = numneigh.getAt(i);
             final IntVector jlistVec = IntVectorCache.getVec(jnum);
-            LogicalVector jlistMask = LogicalVectorCache.getZeros(jnum);
+            final LogicalVector jlistMask = LogicalVectorCache.getZeros(jnum);
             jlist.parse2dest(jlistVec.internalData(), jlistVec.internalDataShift(), jlistVec.internalDataSize());
             
             final NNAP.SingleNNAP tNNAP = mNNAP.model(mLmpType2NNAPType[typei]);
@@ -113,50 +112,52 @@ public class PairNNAP extends LmpPlugin.Pair {
                     }
                 }
             });
-            // 反向传播
+            // 反向传播，现在改为批处理方式，可以大大提高效率
             RowMatrix tBasis = tOut.get(0); tBasis.asVecRow().div2this(tNNAP.normVec());
-            final Vector tPredPartial = VectorCache.getVec(tBasis.rowNumber()*tBasis.columnNumber());
-            double tPred = tNNAP.backward(tBasis.internalData(), tBasis.internalDataShift(), tPredPartial.internalData(), tPredPartial.internalDataShift(), tBasis.internalDataSize());
-            tPredPartial.div2this(tNNAP.normVec());
-            // 更新能量
-            if (eflag) {
-                double eng = tPred + tNNAP.refEng();
+            tNNAP.submitBatchBackward(tBasis.asVecRow(), eflag ? pred -> {
+                // 更新能量
+                double eng = pred + tNNAP.refEng();
                 // 由于不是瓶颈，并且不是频繁调用，因此这里不去专门优化
                 if (eflagGlobal) engVdwl.set(engVdwl.get()+eng);
                 if (eflagAtom) eatom.putAt(i, eatom.getAt(i)+eng);
-            }
-            // 更新自身的力
-            fMat.update(i, 0, v -> v - tPredPartial.opt().dot(tOut.get(1).asVecRow()));
-            fMat.update(i, 1, v -> v - tPredPartial.opt().dot(tOut.get(2).asVecRow()));
-            fMat.update(i, 2, v -> v - tPredPartial.opt().dot(tOut.get(3).asVecRow()));
-            // 然后再遍历一次，传播力和位力到近邻
-            final int tNN = (tOut.size()-4)/3;
-            int ji = 0;
-            for (int jj = 0; jj < jnum; ++jj) if (jlistMask.get(jj)) {
-                int j = jlistVec.get(jj);
-                j &= LmpPlugin.NEIGHMASK;
-                
-                final double fx = -tPredPartial.opt().dot(tOut.get(4+ji).asVecRow());
-                final double fy = -tPredPartial.opt().dot(tOut.get(4+tNN+ji).asVecRow());
-                final double fz = -tPredPartial.opt().dot(tOut.get(4+tNN+tNN+ji).asVecRow());
-                fMat.update(j, 0, v -> v + fx);
-                fMat.update(j, 1, v -> v + fy);
-                fMat.update(j, 2, v -> v + fz);
-                ++ji;
-                
-                // ev stuffs
-                if (evflag) {
-                    // 注意 jse 中的 dxyz 和 lammps 定义的相反
-                    double delx = xMat.get(j, 0) - xtmp;
-                    double dely = xMat.get(j, 1) - ytmp;
-                    double delz = xMat.get(j, 2) - ztmp;
-                    evTallyXYZFull(i, 0.0, 0.0, fx+fx, fy+fy, fz+fz, delx, dely, delz);
+            } : null, xGrad -> {
+                xGrad.div2this(tNNAP.normVec());
+                // 更新自身的力
+                fMat.update(i, 0, v -> v - xGrad.opt().dot(tOut.get(1).asVecRow()));
+                fMat.update(i, 1, v -> v - xGrad.opt().dot(tOut.get(2).asVecRow()));
+                fMat.update(i, 2, v -> v - xGrad.opt().dot(tOut.get(3).asVecRow()));
+                // 然后再遍历一次，传播力和位力到近邻
+                final int tNN = (tOut.size()-4)/3;
+                int ji = 0;
+                for (int jj = 0; jj < jnum; ++jj) if (jlistMask.get(jj)) {
+                    int j = jlistVec.get(jj);
+                    j &= LmpPlugin.NEIGHMASK;
+                    
+                    final double fx = -xGrad.opt().dot(tOut.get(4+ji).asVecRow());
+                    final double fy = -xGrad.opt().dot(tOut.get(4+tNN+ji).asVecRow());
+                    final double fz = -xGrad.opt().dot(tOut.get(4+tNN+tNN+ji).asVecRow());
+                    fMat.update(j, 0, v -> v + fx);
+                    fMat.update(j, 1, v -> v + fy);
+                    fMat.update(j, 2, v -> v + fz);
+                    ++ji;
+                    
+                    // ev stuffs
+                    if (evflag) {
+                        // 注意 jse 中的 dxyz 和 lammps 定义的相反
+                        double delx = xMat.get(j, 0) - xtmp;
+                        double dely = xMat.get(j, 1) - ytmp;
+                        double delz = xMat.get(j, 2) - ztmp;
+                        evTallyXYZFull(i, 0.0, 0.0, fx+fx, fy+fy, fz+fz, delx, dely, delz);
+                    }
                 }
-            }
-            VectorCache.returnVec(tPredPartial);
-            MatrixCache.returnMat(tOut);
-            LogicalVectorCache.returnVec(jlistMask);
-            IntVectorCache.returnVec(jlistVec);
+                // 同样这个返回需要放在里面延迟归还
+                MatrixCache.returnMat(tOut);
+                LogicalVectorCache.returnVec(jlistMask);
+                IntVectorCache.returnVec(jlistVec);
+            });
+        }
+        for (NNAP.SingleNNAP tNNAP : mNNAP.models()) {
+            tNNAP.clearSubmittedBatchBackward();
         }
         
         f.fill(fMat.internalData(), fMat.internalDataShift(), fMat.rowNumber(), fMat.columnNumber());
