@@ -234,7 +234,8 @@ JNIEXPORT void JNICALL Java_jsex_nnap_NNAP_batchBackward1(JNIEnv *aEnv, jclass a
     
     try {
         torch::Tensor tYTensor = tModulePtr->forward({tXTensor}).toTensor();
-        if (rY != NULL) std::memcpy((double *)(intptr_t)rY, tYTensor.contiguous().mutable_data_ptr<double>(), aBatchSize*sizeof(double));
+        double *rYBuf = (double *)(intptr_t)rY;
+        if (rYBuf != NULL) std::memcpy(rYBuf, tYTensor.contiguous().mutable_data_ptr<double>(), aBatchSize*sizeof(double));
         tYTensor.sum().backward();
         std::memcpy((double *)(intptr_t)rGradX, tXTensor.grad().contiguous().const_data_ptr<double>(), aBatchSize*aCount*sizeof(double));
     } catch (const std::exception &e) {
