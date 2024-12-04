@@ -277,14 +277,9 @@ public class SphericalChebyshev implements IBasis {
                 calYPtheta(cosPhi, sinPhi, tYPtheta.internalData(), tY.internalData(), tL);
             }
             // 最后转换为 xyz 的偏微分
-            final double thetaPx = -cosTheta * cosPhi / dis;
-            final double thetaPy = -cosTheta * sinPhi / dis;
-            final double thetaPz =  sinTheta / dis;
-            final double phiPx = dxyCloseZero ? 0.0 :  sinPhi / dxy;
-            final double phiPy = dxyCloseZero ? 0.0 : -cosPhi / dxy;
-            tYPx.fill(0.0); tYPx.operation().mplus2this(tYPtheta, thetaPx); if (!dxyCloseZero) tYPx.operation().mplus2this(tYPphi, phiPx);
-            tYPy.fill(0.0); tYPy.operation().mplus2this(tYPtheta, thetaPy); if (!dxyCloseZero) tYPy.operation().mplus2this(tYPphi, phiPy);
-            tYPz.fill(0.0); tYPz.operation().mplus2this(tYPtheta, thetaPz);
+            calYPxyz(cosTheta, sinTheta, cosPhi, sinPhi, dis, dxy, dxyCloseZero,
+                     tYPx.internalData(), tYPy.internalData(), tYPz.internalData(),
+                     tYPtheta.internalData(), tYPphi.internalData(), tY.size());
             
             // 遍历求 n，l 的情况
             final RowMatrix cnlmPxUpdate, cnlmPyUpdate, cnlmPzUpdate;
@@ -301,14 +296,14 @@ public class SphericalChebyshev implements IBasis {
             
             for (int tN = 0; tN <= mNMax; ++tN) {
                 ShiftVector cilm = cnlm.row(tN), cilmPx = cnlmPxUpdate.row(tN), cilmPy = cnlmPyUpdate.row(tN), cilmPz = cnlmPzUpdate.row(tN);
-                mplusCnlmPxyz(cilm.internalData(), cilmPx.internalData(), cilmPy.internalData(), cilmPz.internalData(), cilm.internalDataShift(),
+                mminusCnlmPxyz(cilm.internalData(), cilmPx.internalData(), cilmPy.internalData(), cilmPz.internalData(), cilm.internalDataShift(),
                               tY.internalData(), tYPx.internalData(), tYPy.internalData(), tYPz.internalData(),
                               fc, fcPx, fcPy, fcPz,
                               tRn.get(tN), tRnPx.get(tN), tRnPy.get(tN), tRnPz.get(tN),
                               1.0, cilm.size());
                 if (mTypeNum > 1) {
                     cilm = cnlm.row(tN+mNMax+1); cilmPx = cnlmPxUpdate.row(tN+mNMax+1); cilmPy = cnlmPyUpdate.row(tN+mNMax+1); cilmPz = cnlmPzUpdate.row(tN+mNMax+1);
-                    mplusCnlmPxyz(cilm.internalData(), cilmPx.internalData(), cilmPy.internalData(), cilmPz.internalData(), cilm.internalDataShift(),
+                    mminusCnlmPxyz(cilm.internalData(), cilmPx.internalData(), cilmPy.internalData(), cilmPz.internalData(), cilm.internalDataShift(),
                                   tY.internalData(), tYPx.internalData(), tYPy.internalData(), tYPz.internalData(),
                                   fc, fcPx, fcPy, fcPz,
                                   tRn.get(tN), tRnPx.get(tN), tRnPy.get(tN), tRnPz.get(tN),
@@ -318,7 +313,9 @@ public class SphericalChebyshev implements IBasis {
         });
         if (aCalCross) {
             final int tNN_ = tNN[0];
-            // 如果计算了 cross 的，则需要在这里手动累加一下 cnlm
+            // 如果计算了 cross 的，则需要在这里手动累加一下 cnlm。
+            // 这里为了减少计算量，偏导数统一都是负的，因此这里不需要增加负号；
+            // 由于实际计算力时需要近邻的原本基组值来反向传播，因此这里结果实际会传递给近邻用于累加，所以需要的就是 基组对于近邻原子坐标的偏导值
             for (int i = 0; i < tNN_; ++i) {
                 cnlmPx.plus2this(bufCnlmPxAll(i, false));
                 cnlmPy.plus2this(bufCnlmPyAll(i, false));
@@ -330,14 +327,12 @@ public class SphericalChebyshev implements IBasis {
                 rFingerPrintPyCross.add(MatrixCache.getMatRow(tSizeN, mLMax+1));
                 rFingerPrintPzCross.add(MatrixCache.getMatRow(tSizeN, mLMax+1));
             }
-            // 基组对于近邻原子坐标的偏导值和这里直接计算结果差一个负号；
-            // 由于实际计算力时需要近邻的原本基组值来反向传播，因此这里结果实际会传递给近邻用于累加，所以需要的就是 基组对于近邻原子坐标的偏导值
-            for (int i = 0; i < tNN_; ++i) {
-                bufCnlmPxAll(i, false).negative2this();
-                bufCnlmPyAll(i, false).negative2this();
-                bufCnlmPzAll(i, false).negative2this();
-            }
         }
+        // 因此在这里需要无论如何都给 cnlmPxyz 增加一个负号来翻转回来
+        cnlmPx.operation().negative2this();
+        cnlmPy.operation().negative2this();
+        cnlmPz.operation().negative2this();
+        
         // 做标量积消去 m 项，得到此原子的 FP
         cnlm2fpPxyz(cnlm.internalData(), cnlmPx.internalData(), cnlmPy.internalData(), cnlmPz.internalData(),
                     rFingerPrint==null ? null : rFingerPrint.internalData(), rFingerPrintPx.internalData(), rFingerPrintPy.internalData(), rFingerPrintPz.internalData(),
@@ -365,6 +360,15 @@ public class SphericalChebyshev implements IBasis {
         return rOut;
     }
     
+    
+    protected void validCrossCnlmPxyz(double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz,
+                                      double[] rCrossCnlmPx, double[] rCrossCnlmPy, double[] rCrossCnlmPz, int aLength) {
+        for (int i = 0; i < aLength; ++i) {
+            rCnlmPx[i] += rCrossCnlmPx[i];
+            rCnlmPy[i] += rCrossCnlmPy[i];
+            rCnlmPz[i] += rCrossCnlmPz[i];
+        }
+    }
     protected void calRnPxyz(double[] rRn, double[] rRnPx, double[] rRnPy, double[] rRnPz, int aNMax,
                              double aDis, double aRCut, double aDx, double aDy, double aDz) {
         final double tX = 1.0 - 2.0*aDis/aRCut;
@@ -386,7 +390,6 @@ public class SphericalChebyshev implements IBasis {
             rYPphi[tIdx+tM] = -tM * aY[tIdx-tM];
         }
     }
-    /** 热点优化，将计算 YPtheta 的部分放在一个循环中进行，让 java 优化整个运算 */
     protected void calYPtheta(double aCosPhi, double aSinPhi, double[] rYPtheta, double[] aY, int aL) {
         switch(aL) {
         case 0: {
@@ -421,12 +424,27 @@ public class SphericalChebyshev implements IBasis {
             return;
         }}
     }
+    protected void calYPxyz(double aCosTheta, double aSinTheta, double aCosPhi, double aSinPhi, double aDis, double aDxy, boolean aDxyCloseZero,
+                            double[] rYPx, double[] rYPy, double[] rYPz, double[] aYPtheta, double[] aYPphi, int aLength) {
+        final double thetaPx = -aCosTheta * aCosPhi / aDis;
+        final double thetaPy = -aCosTheta * aSinPhi / aDis;
+        final double thetaPz =  aSinTheta / aDis;
+        final double phiPx = aDxyCloseZero ? 0.0 :  aSinPhi / aDxy;
+        final double phiPy = aDxyCloseZero ? 0.0 : -aCosPhi / aDxy;
+        for (int i = 0; i < aLength; ++i) {
+            double tYPtheta = aYPtheta[i];
+            double tYPphi = aYPphi[i];
+            rYPx[i] = tYPtheta*thetaPx + tYPphi*phiPx;
+            rYPy[i] = tYPtheta*thetaPy + tYPphi*phiPy;
+            rYPz[i] = tYPtheta*thetaPz;
+        }
+    }
     /** 热点优化，累加 cnlm 部分放在一个循环中进行，让 java 优化整个运算 */
-    protected void mplusCnlmPxyz(double[] rCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz, int rShift,
-                                 double[] aY, double[] aYPx, double[] aYPy, double[] aYPz,
-                                 double aFc, double aFcPx, double aFcPy, double aFcPz,
-                                 double aRn, double aRnPx, double aRnPy, double aRnPz,
-                                 double aWt, int aLength) {
+    protected void mminusCnlmPxyz(double[] rCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz, int rShift,
+                                  double[] aY, double[] aYPx, double[] aYPy, double[] aYPz,
+                                  double aFc, double aFcPx, double aFcPy, double aFcPz,
+                                  double aRn, double aRnPx, double aRnPy, double aRnPz,
+                                  double aWt, int aLength) {
         double tMul = aWt*aFc*aRn;
         double tMulXL = aWt*aFc*aRnPx, tMulXR = aWt*aFcPx*aRn;
         double tMulYL = aWt*aFc*aRnPy, tMulYR = aWt*aFcPy*aRn;
@@ -434,9 +452,9 @@ public class SphericalChebyshev implements IBasis {
         for (int i = 0, j = rShift; i < aLength; ++i, ++j) {
             double tY = aY[i];
             rCnlm[j] += tMul*tY;
-            rCnlmPx[j] += (tMulXL*tY + tMul*aYPx[i] + tMulXR*tY);
-            rCnlmPy[j] += (tMulYL*tY + tMul*aYPy[i] + tMulYR*tY);
-            rCnlmPz[j] += (tMulZL*tY + tMul*aYPz[i] + tMulZR*tY);
+            rCnlmPx[j] -= (tMulXL*tY + tMul*aYPx[i] + tMulXR*tY);
+            rCnlmPy[j] -= (tMulYL*tY + tMul*aYPy[i] + tMulYR*tY);
+            rCnlmPz[j] -= (tMulZL*tY + tMul*aYPz[i] + tMulZR*tY);
         }
     }
     /** 热点优化，cnlm 转成 fp 放在一个循环中，让 java 优化整个运算 */
