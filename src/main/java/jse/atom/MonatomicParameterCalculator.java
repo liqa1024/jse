@@ -1,5 +1,6 @@
 package jse.atom;
 
+import com.google.common.collect.Lists;
 import jse.cache.*;
 import jse.code.CS;
 import jse.code.UT;
@@ -998,27 +999,9 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
         // 由于 lammps 精度的问题，需要将超出边界的进行平移
-        if (mBox.isPrism()) {
-            // 斜方情况需要转为 Direct 再 wrap，
-            // 完事后再转回 Cartesian
-            XYZ tBuf = new XYZ(aX, aY, aZ);
-            mBox.toDirect(tBuf);
-            if      (tBuf.mX <  0.0) {do {++tBuf.mX;} while (tBuf.mX <  0.0);}
-            else if (tBuf.mX >= 1.0) {do {--tBuf.mX;} while (tBuf.mX >= 1.0);}
-            if      (tBuf.mY <  0.0) {do {++tBuf.mY;} while (tBuf.mY <  0.0);}
-            else if (tBuf.mY >= 1.0) {do {--tBuf.mY;} while (tBuf.mY >= 1.0);}
-            if      (tBuf.mZ <  0.0) {do {++tBuf.mZ;} while (tBuf.mZ <  0.0);}
-            else if (tBuf.mZ >= 1.0) {do {--tBuf.mZ;} while (tBuf.mZ >= 1.0);}
-            mBox.toCartesian(tBuf);
-            aX = tBuf.mX; aY = tBuf.mY; aZ = tBuf.mZ;
-        } else {
-            if      (aX <  0.0     ) {do {aX += mBox.x();} while (aX <  0.0     );}
-            else if (aX >= mBox.x()) {do {aX -= mBox.x();} while (aX >= mBox.x());}
-            if      (aY <  0.0     ) {do {aY += mBox.y();} while (aY <  0.0     );}
-            else if (aY >= mBox.y()) {do {aY -= mBox.y();} while (aY >= mBox.y());}
-            if      (aZ <  0.0     ) {do {aZ += mBox.z();} while (aZ <  0.0     );}
-            else if (aZ >= mBox.z()) {do {aZ -= mBox.z();} while (aZ >= mBox.z());}
-        }
+        XYZ tBuf = new XYZ(aX, aY, aZ);
+        mBox.wrapPBC(tBuf);
+        aX = tBuf.mX; aY = tBuf.mY; aZ = tBuf.mZ;
         
         final IntVector.Builder rNL = IntVector.builder();
         mNL.forEachNeighbor(aX, aY, aZ, aRMax, aNnn, (x, y, z, idx, dx, dy, dz) -> rNL.add(idx));
@@ -1027,6 +1010,53 @@ public class MonatomicParameterCalculator extends AbstractThreadPool<ParforThrea
     public IntVector getNeighborList(IXYZ aXYZ, double aRMax, int aNnn) {return getNeighborList_(aXYZ.x(), aXYZ.y(), aXYZ.z(), aRMax, aNnn);}
     public IntVector getNeighborList(IXYZ aXYZ, double aRMax          ) {return getNeighborList(aXYZ, aRMax, -1);}
     public IntVector getNeighborList(IXYZ aXYZ                        ) {return getNeighborList(aXYZ, mUnitLen*R_NEAREST_MUL);}
+    
+    /**
+     * 直接获取包含坐标的完整近邻列表，不包括自身
+     * @author liqa
+     * @return 按照 {@code [x, y, z, idx]} 顺序排列的向量列表
+     */
+    public List<Vector> getFullNeighborList(int aIdx, double aRMax, int aNnn) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        // 目前这种情况都需要遍历一下
+        final Vector.Builder rNL = Vector.builder();
+        final Vector.Builder rX = Vector.builder();
+        final Vector.Builder rY = Vector.builder();
+        final Vector.Builder rZ = Vector.builder();
+        mNL.forEachNeighbor(aIdx, aRMax, aNnn, (x, y, z, idx, dx, dy, dz) -> {
+            rNL.add(idx);
+            rX.add(x);
+            rY.add(y);
+            rZ.add(z);
+        });
+        return Lists.newArrayList(rX.build(), rY.build(), rZ.build(), rNL.build());
+    }
+    public List<Vector> getFullNeighborList(int aIdx, double aRMax) {return getFullNeighborList(aIdx, aRMax, -1);}
+    public List<Vector> getFullNeighborList(int aIdx              ) {return getFullNeighborList(aIdx, mUnitLen*R_NEAREST_MUL);}
+    
+    @ApiStatus.Internal public List<Vector> getFullNeighborList_(double aX, double aY, double aZ, double aRMax, int aNnn) {
+        if (mDead) throw new RuntimeException("This Calculator is dead");
+        
+        // 由于 lammps 精度的问题，需要将超出边界的进行平移
+        XYZ tBuf = new XYZ(aX, aY, aZ);
+        mBox.wrapPBC(tBuf);
+        aX = tBuf.mX; aY = tBuf.mY; aZ = tBuf.mZ;
+        
+        final Vector.Builder rNL = Vector.builder();
+        final Vector.Builder rX = Vector.builder();
+        final Vector.Builder rY = Vector.builder();
+        final Vector.Builder rZ = Vector.builder();
+        mNL.forEachNeighbor(aX, aY, aZ, aRMax, aNnn, (x, y, z, idx, dx, dy, dz) -> {
+            rNL.add(idx);
+            rX.add(x);
+            rY.add(y);
+            rZ.add(z);
+        });
+        return Lists.newArrayList(rX.build(), rY.build(), rZ.build(), rNL.build());
+    }
+    public List<Vector> getFullNeighborList(IXYZ aXYZ, double aRMax, int aNnn) {return getFullNeighborList_(aXYZ.x(), aXYZ.y(), aXYZ.z(), aRMax, aNnn);}
+    public List<Vector> getFullNeighborList(IXYZ aXYZ, double aRMax          ) {return getFullNeighborList(aXYZ, aRMax, -1);}
+    public List<Vector> getFullNeighborList(IXYZ aXYZ                        ) {return getFullNeighborList(aXYZ, mUnitLen*R_NEAREST_MUL);}
     
     
     /** 用于分割模拟盒，判断给定 XYZ 或者 idx 处的原子是否在需要考虑的区域中 */
