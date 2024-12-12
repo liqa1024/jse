@@ -112,7 +112,7 @@ abstract class AbstractNDArray<T> {
             dimSize *= dimension;
         }
 
-        if (dimSize != dataLength) {
+        if (dimSize > dataLength) {
             StringBuilder sb = new StringBuilder();
             sb.append("NDArray data length ");
             sb.append(dataLength);
