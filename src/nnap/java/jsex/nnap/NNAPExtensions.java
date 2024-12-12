@@ -34,21 +34,10 @@ public class NNAPExtensions {
         }
         try {
             final List<RowMatrix> rFingerPrints = NewCollections.nulls(self.atomNumber());
-            
-            // 获取需要缓存的近邻列表
-            final IntList @Nullable[] tNLToBuffer = self.getNLWhichNeedBuffer_(aRCutOff, -1, false);
-            
             // 理论上只需要遍历一半从而加速这个过程，但由于实现较麻烦且占用过多内存（所有近邻的 Ylm, Rn, fc 都要存，会随着截断半径增加爆炸增涨），这里不考虑
             self.pool_().parfor(self.atomNumber(), (i, threadID) -> {
-                rFingerPrints.set(i, tBasis[threadID].eval(dxyzTypeDo -> {
-                    self.nl_().forEachNeighbor(i, aRCutOff, false, (x, y, z, idx, dx, dy, dz) -> {
-                        dxyzTypeDo.run(dx, dy, dz, self.atomType_().get(idx));
-                        // 还是需要顺便统计近邻进行缓存
-                        if (tNLToBuffer != null) {tNLToBuffer[i].add(idx);}
-                    });
-                }));
+                rFingerPrints.set(i, tBasis[threadID].eval(self, i));
             });
-            
             return rFingerPrints;
         } finally {
             for (int i = 0; i < tThreadNum; ++i) tBasis[i].shutdown();
@@ -77,19 +66,9 @@ public class NNAPExtensions {
         }
         try {
             final List<List<RowMatrix>> rOut = NewCollections.nulls(self.atomNumber());
-            
-            // 获取需要缓存的近邻列表
-            final IntList @Nullable[] tNLToBuffer = self.getNLWhichNeedBuffer_(aRCutOff, -1, false);
-            
             // 理论上只需要遍历一半从而加速这个过程，但由于实现较麻烦且占用过多内存（所有近邻的 Ylm, Rn, fc 都要存，会随着截断半径增加爆炸增涨），这里不考虑
             self.pool_().parfor(self.atomNumber(), (i, threadID) -> {
-                rOut.set(i, tBasis[threadID].evalPartial(aCalBasis, aCalCross, dxyzTypeDo -> {
-                    self.nl_().forEachNeighbor(i, aRCutOff, false, (x, y, z, idx, dx, dy, dz) -> {
-                        dxyzTypeDo.run(dx, dy, dz, self.atomType_().get(idx));
-                        // 还是需要顺便统计近邻进行缓存
-                        if (tNLToBuffer != null) {tNLToBuffer[i].add(idx);}
-                    });
-                }));
+                rOut.set(i, tBasis[threadID].evalPartial(aCalBasis, aCalCross, self, i));
             });
             
             return rOut;

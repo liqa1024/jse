@@ -1,5 +1,6 @@
 package jsex.nnap;
 
+import jep.python.PyObject;
 import jse.atom.IAtom;
 import jse.atom.IAtomData;
 import jse.atom.MonatomicParameterCalculator;
@@ -21,9 +22,11 @@ import jsex.nnap.basis.IBasis;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.IntUnaryOperator;
 
 /**
  * jse 实现的 nnap 训练器，这里简单起见直接通过 python 训练。
@@ -242,6 +245,20 @@ public class Trainer implements IAutoShutdown, ISavable {
         return rOut;
     }
     
+    public int atomTypeNumber() {return mSymbols.length;}
+    public PyObject model(int aType) {return SP.Python.getAs(PyObject.class, VAL_MODEL+".sub_models["+(aType-1)+"]");}
+    @SuppressWarnings("unchecked")
+    public @Unmodifiable List<PyObject> models() {return (List<PyObject>)SP.Python.getAs(List.class, VAL_MODEL+".sub_models");}
+    public IBasis basis(int aType) {return mBasis[aType-1];}
+    public @Unmodifiable List<IBasis> basis() {return AbstractCollections.from(mBasis);}
+    public String symbol(int aType) {return mSymbols[aType-1];}
+    public @Unmodifiable List<String> symbols() {return AbstractCollections.from(mSymbols);}
+    public String units() {return mUnits;}
+    
+    public IntUnaryOperator typeMap(IAtomData aAtomData) {return IBasis.typeMap_(symbols(), aAtomData);}
+    public boolean sameOrder(List<String> aDataSymbols) {return IBasis.sameOrder_(symbols(), aDataSymbols);}
+    public int indexOf(String aSymbol) {return IBasis.indexOf_(symbols(), aSymbol);}
+    
     /** 重写实现自定义模型创建 */
     protected void initModel() {
         @Nullable List<?> tHiddenDims = (List<?>)UT.Code.getWithDefault(mModelSetting, null, "hidden_dims", "nnarch");
@@ -433,20 +450,16 @@ public class Trainer implements IAutoShutdown, ISavable {
     
     @ApiStatus.Internal
     protected void calRefEngBaseAndAdd_(IAtomData aAtomData, double aEnergy, final DoubleList rEngData, DoubleList[] rBaseData) {
+        IntUnaryOperator tTypeMap = typeMap(aAtomData);
         // 由于数据集不完整因此这里不去做归一化
         final int tAtomNum = aAtomData.atomNumber();
         try (final MonatomicParameterCalculator tMPC = MonatomicParameterCalculator.of(aAtomData)) {
             for (int i = 0; i < tAtomNum; ++i) {
-                final int fI = i;
-                IAtom tAtom = aAtomData.atom(fI);
-                IBasis tBasis = mBasis[tAtom.type()-1];
-                RowMatrix tBase = tBasis.eval(dxyzTypeDo -> {
-                    tMPC.nl_().forEachNeighbor(fI, tBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
-                        dxyzTypeDo.run(dx, dy, dz, tMPC.atomType_().get(idx));
-                    });
-                });
-                rBaseData[tAtom.type()-1].addAll(tBase.asVecRow());
-                rBaseData[tAtom.type()-1].add(rEngData.size());
+                int tType = tTypeMap.applyAsInt(aAtomData.atom(i).type());
+                IBasis tBasis = basis(tType);
+                RowMatrix tBase = tBasis.eval(tMPC, i, tTypeMap);
+                rBaseData[tType-1].addAll(tBase.asVecRow());
+                rBaseData[tType-1].add(rEngData.size());
                 MatrixCache.returnMat(tBase);
             }
         }
@@ -458,20 +471,16 @@ public class Trainer implements IAutoShutdown, ISavable {
     }
     /** 增加一个训练集数据，目前只需要能量 */
     public void addTrainData(IAtomData aAtomData, double aEnergy) {
-        // 这里也重新排序原子数据的 symbol 顺序
-        NNAP.reorderSymbols_(AbstractCollections.from(mSymbols), aAtomData);
         // 添加数据
         calRefEngBaseAndAdd_(aAtomData, aEnergy, mTrainEng, mTrainBase);
         mTrainAtomNum.add(aAtomData.atomNumber());
     }
     /** 增加一个测试集数据，目前只需要能量 */
     public void addTestData(IAtomData aAtomData, double aEnergy) {
-        // 这里也重新排序原子数据的 symbol 顺序
-        NNAP.reorderSymbols_(AbstractCollections.from(mSymbols), aAtomData);
-        if (!mHasTest) mHasTest = true;
         // 添加数据
         calRefEngBaseAndAdd_(aAtomData, aEnergy, mTestEng, mTestBase);
         mTestAtomNum.add(aAtomData.atomNumber());
+        if (!mHasTest) mHasTest = true;
     }
     
     /** 获取历史 loss 值 */

@@ -4,11 +4,13 @@ import com.google.common.collect.Lists;
 import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
 import jse.code.UT;
+import jse.code.collection.AbstractCollections;
 import jse.math.MathEX;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,8 +53,24 @@ public class SphericalChebyshev implements IBasis {
     public final static double DEFAULT_RCUT = 6.2;
     
     private final int mTypeNum;
+    private final String @Nullable[] mSymbols;
     private final int mNMax, mLMax;
     private final double mRCut;
+    /**
+     * @param aSymbols 基组需要的元素排序
+     * @param aNMax Chebyshev 多项式选取的最大阶数
+     * @param aLMax 球谐函数中 l 选取的最大阶数
+     * @param aRCut 截断半径
+     */
+    public SphericalChebyshev(String @NotNull[] aSymbols, int aNMax, int aLMax, double aRCut) {
+        if (aNMax < 0) throw new IllegalArgumentException("Input nmax MUST be Non-Negative, input: "+aNMax);
+        if (aLMax < 0) throw new IllegalArgumentException("Input lmax MUST be Non-Negative, input: "+aLMax);
+        mSymbols = aSymbols;
+        mTypeNum = mSymbols.length;
+        mNMax = aNMax;
+        mLMax = aLMax;
+        mRCut = aRCut;
+    }
     /**
      * @param aTypeNum 原子种类数目
      * @param aNMax Chebyshev 多项式选取的最大阶数
@@ -62,6 +80,7 @@ public class SphericalChebyshev implements IBasis {
     public SphericalChebyshev(int aTypeNum, int aNMax, int aLMax, double aRCut) {
         if (aNMax < 0) throw new IllegalArgumentException("Input nmax MUST be Non-Negative, input: "+aNMax);
         if (aLMax < 0) throw new IllegalArgumentException("Input lmax MUST be Non-Negative, input: "+aLMax);
+        mSymbols = null;
         mTypeNum = aTypeNum;
         mNMax = aNMax;
         mLMax = aLMax;
@@ -74,6 +93,15 @@ public class SphericalChebyshev implements IBasis {
         rSaveTo.put("nmax", mNMax);
         rSaveTo.put("lmax", mLMax);
         rSaveTo.put("rcut", mRCut);
+    }
+    @SuppressWarnings("rawtypes")
+    public static SphericalChebyshev load(String @NotNull[] aSymbols, Map aMap) {
+        return new SphericalChebyshev(
+            aSymbols,
+            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue(),
+            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),
+            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue()
+        );
     }
     @SuppressWarnings("rawtypes")
     public static SphericalChebyshev load(int aTypeNum, Map aMap) {
@@ -100,6 +128,11 @@ public class SphericalChebyshev implements IBasis {
     @Override public int columnNumber() {
         return mLMax+1;
     }
+    /** @return {@inheritDoc} */
+    @Override public @Unmodifiable List<String> symbols() {
+        return mSymbols==null ? null : AbstractCollections.from(mSymbols);
+    }
+    @Override public boolean hasSymbol() {return mSymbols!=null;}
     
     /** 一些缓存的中间变量，现在统一作为对象存储，对于这种大规模的缓存情况可以进一步提高效率 */
     private @Nullable RowMatrix mCnlm = null, mCnlmPx = null, mCnlmPy = null, mCnlmPz = null;
