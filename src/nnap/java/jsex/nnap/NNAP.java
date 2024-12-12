@@ -603,11 +603,15 @@ public class NNAP implements IAutoShutdown {
     public double calEnergyDiffMove(MonatomicParameterCalculator aMPC, int aI, double aDx, double aDy, double aDz, boolean aRestoreMPC, IntUnaryOperator aTypeMap) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (atomTypeNumber() < aMPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of MPC: " + aMPC.atomTypeNumber() + ", model: " + atomTypeNumber());
-        SingleNNAP tModel = model(aTypeMap.applyAsInt(aMPC.atomType_().get(aI)));
+        // 采用最大的截断半径从而包含所有可能涉及发生了能量变换的原子
+        double tRCut = 0.0;
+        for (SingleNNAP tModel : models()) {
+            tRCut = Math.max(tRCut, tModel.basis().rcut());
+        }
         XYZ oXYZ = new XYZ(aMPC.atomDataXYZ_().row(aI));
-        IIntVector oNL = aMPC.getNeighborList(oXYZ, tModel.basis().rcut());
+        IIntVector oNL = aMPC.getNeighborList(oXYZ, tRCut);
         XYZ nXYZ = oXYZ.plus(aDx, aDy, aDz);
-        IIntVector nNL = aMPC.getNeighborList(nXYZ, tModel.basis().rcut());
+        IIntVector nNL = aMPC.getNeighborList(nXYZ, tRCut);
         // 合并近邻列表，这里简单遍历实现
         final IntList tNL = new IntList(oNL.size());
         oNL.forEach(idx -> {
@@ -651,8 +655,13 @@ public class NNAP implements IAutoShutdown {
         int oTypeI = aMPC.atomType_().get(aI);
         int oTypeJ = aMPC.atomType_().get(aJ);
         if (oTypeI == oTypeJ) return 0.0;
-        IIntVector iNL = aMPC.getNeighborList(aI, model(aTypeMap.applyAsInt(oTypeI)).basis().rcut());
-        IIntVector jNL = aMPC.getNeighborList(aJ, model(aTypeMap.applyAsInt(oTypeJ)).basis().rcut());
+        // 采用最大的截断半径从而包含所有可能涉及发生了能量变换的原子
+        double tRCut = 0.0;
+        for (SingleNNAP tModel : models()) {
+            tRCut = Math.max(tRCut, tModel.basis().rcut());
+        }
+        IIntVector iNL = aMPC.getNeighborList(aI, tRCut);
+        IIntVector jNL = aMPC.getNeighborList(aJ, tRCut);
         // 合并近邻列表，这里简单遍历实现
         final IntList tNL = new IntList(iNL.size()+1);
         tNL.add(aI);
