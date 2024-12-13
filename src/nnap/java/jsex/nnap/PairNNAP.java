@@ -87,7 +87,7 @@ public class PairNNAP extends LmpPlugin.Pair {
             final double xtmp = xMat.get(i, 0);
             final double ytmp = xMat.get(i, 1);
             final double ztmp = xMat.get(i, 2);
-            final int typei = type.getAt(i);
+            final int typei = typeVec.get(i);
             IntCPointer jlist = firstneigh.getAt(i);
             final int jnum = numneigh.getAt(i);
             final IntVector jlistVec = IntVectorCache.getVec(jnum);
