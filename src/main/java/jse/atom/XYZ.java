@@ -76,6 +76,7 @@ public final class XYZ extends AbstractSettableXYZ {
     @Override public XYZ abs() {return new XYZ(Math.abs(mX), Math.abs(mY), Math.abs(mZ));}
     @Override public void abs2this()  {mX = Math.abs(mX); mY = Math.abs(mY); mZ = Math.abs(mZ);}
     @Override public double norm() {return MathEX.Fast.hypot(mX, mY, mZ);}
+    @Override public double norm1() {return Math.abs(mX) + Math.abs(mY) + Math.abs(mZ);}
     
     @Override public XYZ plus(double aX, double aY, double aZ) {return new XYZ(mX+aX, mY+aY, mZ+aZ);}
     @Override public XYZ plus(double aRHS) {return new XYZ(mX+aRHS, mY+aRHS, mZ+aRHS);}

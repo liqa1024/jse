@@ -283,6 +283,10 @@ public abstract class DoubleArrayVectorOperation extends AbstractVectorOperation
         DoubleArrayVector tThis = thisVector_();
         return ARRAY.dotOfThis(tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());
     }
+    @Override public double norm1() {
+        DoubleArrayVector tThis = thisVector_();
+        return ARRAY.norm1OfThis(tThis.internalData(), tThis.internalDataShift(), tThis.internalDataSize());
+    }
     
     @Override public IVector reverse() {
         DoubleArrayVector tThis = thisVector_();

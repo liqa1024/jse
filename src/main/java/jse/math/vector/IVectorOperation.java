@@ -122,6 +122,7 @@ public interface IVectorOperation {
     double dot  (IVector aRHS);
     double dot  ();
     double norm ();
+    double norm1();
     
     IVector reverse     ();
     IVector refReverse  ();

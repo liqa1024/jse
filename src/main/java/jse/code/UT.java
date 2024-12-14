@@ -2339,6 +2339,7 @@ public class UT {
         public static double dot(IVector aVec) {return aVec.operation().dot();}
         public static double dot(IVector aLHS, IVector aRHS) {return aLHS.operation().dot(aRHS);}
         public static double norm(IVector aVec) {return aVec.operation().norm();}
+        public static double norm1(IVector aVec) {return aVec.operation().norm1();}
         
         public static Vector zeros(int aSize) {return Vectors.zeros(aSize);}
         public static Vector ones(int aSize) {return Vectors.ones(aSize);}

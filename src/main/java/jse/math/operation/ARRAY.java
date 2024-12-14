@@ -1342,42 +1342,42 @@ public class ARRAY {
     public static double sumOfThis(double[] aThis, int aShift, int aLength) {
         switch(aLength) {
         case 0:  {return 0.0;}
-        case 1:  {return sum1OfThis(aThis, aShift);}
-        case 2:  {return sum2OfThis(aThis, aShift);}
-        case 3:  {return sum3OfThis(aThis, aShift);}
-        case 4:  {return sum4OfThis(aThis, aShift);}
-        case 5:  {return sum5OfThis(aThis, aShift);}
-        case 6:  {return sum6OfThis(aThis, aShift);}
-        case 7:  {return sum7OfThis(aThis, aShift);}
-        case 8:  {return sum8OfThis(aThis, aShift);}
-        default: {return sumNOfThis(aThis, aShift, aLength);}
+        case 1:  {return sumOfThis1(aThis, aShift);}
+        case 2:  {return sumOfThis2(aThis, aShift);}
+        case 3:  {return sumOfThis3(aThis, aShift);}
+        case 4:  {return sumOfThis4(aThis, aShift);}
+        case 5:  {return sumOfThis5(aThis, aShift);}
+        case 6:  {return sumOfThis6(aThis, aShift);}
+        case 7:  {return sumOfThis7(aThis, aShift);}
+        case 8:  {return sumOfThis8(aThis, aShift);}
+        default: {return sumOfThisN(aThis, aShift, aLength);}
         }
     }
-    public static double sum1OfThis(double[] aThis, int aShift) {
+    public static double sumOfThis1(double[] aThis, int aShift) {
         return aThis[aShift];
     }
-    public static double sum2OfThis(double[] aThis, int aShift) {
+    public static double sumOfThis2(double[] aThis, int aShift) {
         return aThis[aShift] + aThis[aShift+1];
     }
-    public static double sum3OfThis(double[] aThis, int aShift) {
+    public static double sumOfThis3(double[] aThis, int aShift) {
         return aThis[aShift] + aThis[aShift+1] + aThis[aShift+2];
     }
-    public static double sum4OfThis(double[] aThis, int aShift) {
+    public static double sumOfThis4(double[] aThis, int aShift) {
         return aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3];
     }
-    public static double sum5OfThis(double[] aThis, int aShift) {
+    public static double sumOfThis5(double[] aThis, int aShift) {
         return aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3] + aThis[aShift+4];
     }
-    public static double sum6OfThis(double[] aThis, int aShift) {
+    public static double sumOfThis6(double[] aThis, int aShift) {
         return aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3] + aThis[aShift+4] + aThis[aShift+5];
     }
-    public static double sum7OfThis(double[] aThis, int aShift) {
+    public static double sumOfThis7(double[] aThis, int aShift) {
         return aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3] + aThis[aShift+4] + aThis[aShift+5] + aThis[aShift+6];
     }
-    public static double sum8OfThis(double[] aThis, int aShift) {
+    public static double sumOfThis8(double[] aThis, int aShift) {
         return aThis[aShift] + aThis[aShift+1] + aThis[aShift+2] + aThis[aShift+3] + aThis[aShift+4] + aThis[aShift+5] + aThis[aShift+6] + aThis[aShift+7];
     }
-    public static double sumNOfThis(double[] aThis, int aShift, int aLength) {
+    public static double sumOfThisN(double[] aThis, int aShift, int aLength) {
         // 对于求和类型运算，JIT 不会自动做 SIMD 优化，因此这里需要手动做
         final int tRest = aLength % 8;
         double rSum = 0.0;
@@ -1482,42 +1482,42 @@ public class ARRAY {
     public static double prodOfThis(double[] aThis, int aShift, int aLength) {
         switch(aLength) {
         case 0:  {return 0.0;}
-        case 1:  {return prod1OfThis(aThis, aShift);}
-        case 2:  {return prod2OfThis(aThis, aShift);}
-        case 3:  {return prod3OfThis(aThis, aShift);}
-        case 4:  {return prod4OfThis(aThis, aShift);}
-        case 5:  {return prod5OfThis(aThis, aShift);}
-        case 6:  {return prod6OfThis(aThis, aShift);}
-        case 7:  {return prod7OfThis(aThis, aShift);}
-        case 8:  {return prod8OfThis(aThis, aShift);}
-        default: {return prodNOfThis(aThis, aShift, aLength);}
+        case 1:  {return prodOfThis1(aThis, aShift);}
+        case 2:  {return prodOfThis2(aThis, aShift);}
+        case 3:  {return prodOfThis3(aThis, aShift);}
+        case 4:  {return prodOfThis4(aThis, aShift);}
+        case 5:  {return prodOfThis5(aThis, aShift);}
+        case 6:  {return prodOfThis6(aThis, aShift);}
+        case 7:  {return prodOfThis7(aThis, aShift);}
+        case 8:  {return prodOfThis8(aThis, aShift);}
+        default: {return prodOfThisN(aThis, aShift, aLength);}
         }
     }
-    public static double prod1OfThis(double[] aThis, int aShift) {
+    public static double prodOfThis1(double[] aThis, int aShift) {
         return aThis[aShift];
     }
-    public static double prod2OfThis(double[] aThis, int aShift) {
+    public static double prodOfThis2(double[] aThis, int aShift) {
         return aThis[aShift] * aThis[aShift+1];
     }
-    public static double prod3OfThis(double[] aThis, int aShift) {
+    public static double prodOfThis3(double[] aThis, int aShift) {
         return aThis[aShift] * aThis[aShift+1] * aThis[aShift+2];
     }
-    public static double prod4OfThis(double[] aThis, int aShift) {
+    public static double prodOfThis4(double[] aThis, int aShift) {
         return aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3];
     }
-    public static double prod5OfThis(double[] aThis, int aShift) {
+    public static double prodOfThis5(double[] aThis, int aShift) {
         return aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3] * aThis[aShift+4];
     }
-    public static double prod6OfThis(double[] aThis, int aShift) {
+    public static double prodOfThis6(double[] aThis, int aShift) {
         return aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3] * aThis[aShift+4] * aThis[aShift+5];
     }
-    public static double prod7OfThis(double[] aThis, int aShift) {
+    public static double prodOfThis7(double[] aThis, int aShift) {
         return aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3] * aThis[aShift+4] * aThis[aShift+5] * aThis[aShift+6];
     }
-    public static double prod8OfThis(double[] aThis, int aShift) {
+    public static double prodOfThis8(double[] aThis, int aShift) {
         return aThis[aShift] * aThis[aShift+1] * aThis[aShift+2] * aThis[aShift+3] * aThis[aShift+4] * aThis[aShift+5] * aThis[aShift+6] * aThis[aShift+7];
     }
-    public static double prodNOfThis(double[] aThis, int aShift, int aLength) {
+    public static double prodOfThisN(double[] aThis, int aShift, int aLength) {
         // 对于求和类型运算，JIT 不会自动做 SIMD 优化，因此这里需要手动做
         final int tRest = aLength % 8;
         double rProd = 1.0;
@@ -1936,40 +1936,40 @@ public class ARRAY {
     public static double dotOfThis(double[] aThis, int aShift, int aLength) {
         switch(aLength) {
         case 0:  {return 0.0;}
-        case 1:  {return dot1OfThis(aThis, aShift);}
-        case 2:  {return dot2OfThis(aThis, aShift);}
-        case 3:  {return dot3OfThis(aThis, aShift);}
-        case 4:  {return dot4OfThis(aThis, aShift);}
-        case 5:  {return dot5OfThis(aThis, aShift);}
-        case 6:  {return dot6OfThis(aThis, aShift);}
-        case 7:  {return dot7OfThis(aThis, aShift);}
-        case 8:  {return dot8OfThis(aThis, aShift);}
-        default: {return dotNOfThis(aThis, aShift, aLength);}
+        case 1:  {return dotOfThis1(aThis, aShift);}
+        case 2:  {return dotOfThis2(aThis, aShift);}
+        case 3:  {return dotOfThis3(aThis, aShift);}
+        case 4:  {return dotOfThis4(aThis, aShift);}
+        case 5:  {return dotOfThis5(aThis, aShift);}
+        case 6:  {return dotOfThis6(aThis, aShift);}
+        case 7:  {return dotOfThis7(aThis, aShift);}
+        case 8:  {return dotOfThis8(aThis, aShift);}
+        default: {return dotOfThisN(aThis, aShift, aLength);}
         }
     }
-    public static double dot1OfThis(double[] aThis, int aShift) {
+    public static double dotOfThis1(double[] aThis, int aShift) {
         double tData = aThis[aShift];
         return tData*tData;
     }
-    public static double dot2OfThis(double[] aThis, int aShift) {
+    public static double dotOfThis2(double[] aThis, int aShift) {
         double tData0 = aThis[aShift  ];
         double tData1 = aThis[aShift+1];
         return tData0*tData0 + tData1*tData1;
     }
-    public static double dot3OfThis(double[] aThis, int aShift) {
+    public static double dotOfThis3(double[] aThis, int aShift) {
         double tData0 = aThis[aShift  ];
         double tData1 = aThis[aShift+1];
         double tData2 = aThis[aShift+2];
         return tData0*tData0 + tData1*tData1 + tData2*tData2;
     }
-    public static double dot4OfThis(double[] aThis, int aShift) {
+    public static double dotOfThis4(double[] aThis, int aShift) {
         double tData0 = aThis[aShift  ];
         double tData1 = aThis[aShift+1];
         double tData2 = aThis[aShift+2];
         double tData3 = aThis[aShift+3];
         return tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3;
     }
-    public static double dot5OfThis(double[] aThis, int aShift) {
+    public static double dotOfThis5(double[] aThis, int aShift) {
         double tData0 = aThis[aShift  ];
         double tData1 = aThis[aShift+1];
         double tData2 = aThis[aShift+2];
@@ -1977,7 +1977,7 @@ public class ARRAY {
         double tData4 = aThis[aShift+4];
         return tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3 + tData4*tData4;
     }
-    public static double dot6OfThis(double[] aThis, int aShift) {
+    public static double dotOfThis6(double[] aThis, int aShift) {
         double tData0 = aThis[aShift  ];
         double tData1 = aThis[aShift+1];
         double tData2 = aThis[aShift+2];
@@ -1986,7 +1986,7 @@ public class ARRAY {
         double tData5 = aThis[aShift+5];
         return tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3 + tData4*tData4 + tData5*tData5;
     }
-    public static double dot7OfThis(double[] aThis, int aShift) {
+    public static double dotOfThis7(double[] aThis, int aShift) {
         double tData0 = aThis[aShift  ];
         double tData1 = aThis[aShift+1];
         double tData2 = aThis[aShift+2];
@@ -1996,7 +1996,7 @@ public class ARRAY {
         double tData6 = aThis[aShift+6];
         return tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3 + tData4*tData4 + tData5*tData5 + tData6*tData6;
     }
-    public static double dot8OfThis(double[] aThis, int aShift) {
+    public static double dotOfThis8(double[] aThis, int aShift) {
         double tData0 = aThis[aShift  ];
         double tData1 = aThis[aShift+1];
         double tData2 = aThis[aShift+2];
@@ -2007,7 +2007,7 @@ public class ARRAY {
         double tData7 = aThis[aShift+7];
         return tData0*tData0 + tData1*tData1 + tData2*tData2 + tData3*tData3 + tData4*tData4 + tData5*tData5 + tData6*tData6 + tData7*tData7;
     }
-    public static double dotNOfThis(double[] aThis, int aShift, int aLength) {
+    public static double dotOfThisN(double[] aThis, int aShift, int aLength) {
         // 对于求和类型运算，JIT 不会自动做 SIMD 优化，因此这里需要手动做
         final int tRest = aLength % 8;
         double rDot = 0.0;
@@ -2124,6 +2124,97 @@ public class ARRAY {
     public static double dotOfThis(double[][] aThis, int aShift, int aLength) {
         // 这样可以简化重复代码，并且保证部分情况下和实数的 dot 结果一致
         return dotOfThis(aThis[0], aShift, aLength) + dotOfThis(aThis[1], aShift, aLength);
+    }
+    
+    public static double norm1OfThis(double[] aThis, int aShift, int aLength) {
+        switch(aLength) {
+        case 0:  {return 0.0;}
+        case 1:  {return norm1OfThis1(aThis, aShift);}
+        case 2:  {return norm1OfThis2(aThis, aShift);}
+        case 3:  {return norm1OfThis3(aThis, aShift);}
+        case 4:  {return norm1OfThis4(aThis, aShift);}
+        case 5:  {return norm1OfThis5(aThis, aShift);}
+        case 6:  {return norm1OfThis6(aThis, aShift);}
+        case 7:  {return norm1OfThis7(aThis, aShift);}
+        case 8:  {return norm1OfThis8(aThis, aShift);}
+        default: {return norm1OfThisN(aThis, aShift, aLength);}
+        }
+    }
+    public static double norm1OfThis1(double[] aThis, int aShift) {
+        return Math.abs(aThis[aShift]);
+    }
+    public static double norm1OfThis2(double[] aThis, int aShift) {
+        return Math.abs(aThis[aShift]) + Math.abs(aThis[aShift+1]);
+    }
+    public static double norm1OfThis3(double[] aThis, int aShift) {
+        return Math.abs(aThis[aShift]) + Math.abs(aThis[aShift+1]) + Math.abs(aThis[aShift+2]);
+    }
+    public static double norm1OfThis4(double[] aThis, int aShift) {
+        return Math.abs(aThis[aShift]) + Math.abs(aThis[aShift+1]) + Math.abs(aThis[aShift+2]) + Math.abs(aThis[aShift+3]);
+    }
+    public static double norm1OfThis5(double[] aThis, int aShift) {
+        return Math.abs(aThis[aShift]) + Math.abs(aThis[aShift+1]) + Math.abs(aThis[aShift+2]) + Math.abs(aThis[aShift+3]) + Math.abs(aThis[aShift+4]);
+    }
+    public static double norm1OfThis6(double[] aThis, int aShift) {
+        return Math.abs(aThis[aShift]) + Math.abs(aThis[aShift+1]) + Math.abs(aThis[aShift+2]) + Math.abs(aThis[aShift+3]) + Math.abs(aThis[aShift+4]) + Math.abs(aThis[aShift+5]);
+    }
+    public static double norm1OfThis7(double[] aThis, int aShift) {
+        return Math.abs(aThis[aShift]) + Math.abs(aThis[aShift+1]) + Math.abs(aThis[aShift+2]) + Math.abs(aThis[aShift+3]) + Math.abs(aThis[aShift+4]) + Math.abs(aThis[aShift+5]) + Math.abs(aThis[aShift+6]);
+    }
+    public static double norm1OfThis8(double[] aThis, int aShift) {
+        return Math.abs(aThis[aShift]) + Math.abs(aThis[aShift+1]) + Math.abs(aThis[aShift+2]) + Math.abs(aThis[aShift+3]) + Math.abs(aThis[aShift+4]) + Math.abs(aThis[aShift+5]) + Math.abs(aThis[aShift+6]) + Math.abs(aThis[aShift+7]);
+    }
+    public static double norm1OfThisN(double[] aThis, int aShift, int aLength) {
+        // 对于求和类型运算，JIT 不会自动做 SIMD 优化，因此这里需要手动做
+        final int tRest = aLength % 8;
+        double rSum = 0.0;
+        // 先做 rest 的计算
+        switch(tRest) {
+        case 0: {
+            break;
+        }
+        case 1: {
+            rSum += Math.abs(aThis[aShift]);
+            ++aShift;
+            break;
+        }
+        case 2: {
+            rSum += (Math.abs(aThis[aShift]) + Math.abs(aThis[aShift+1]));
+            aShift+=2;
+            break;
+        }
+        case 3: {
+            rSum += (Math.abs(aThis[aShift]) + Math.abs(aThis[aShift+1]) + Math.abs(aThis[aShift+2]));
+            aShift+=3;
+            break;
+        }
+        case 4: {
+            rSum += (Math.abs(aThis[aShift]) + Math.abs(aThis[aShift+1]) + Math.abs(aThis[aShift+2]) + Math.abs(aThis[aShift+3]));
+            aShift+=4;
+            break;
+        }
+        case 5: {
+            rSum += (Math.abs(aThis[aShift]) + Math.abs(aThis[aShift+1]) + Math.abs(aThis[aShift+2]) + Math.abs(aThis[aShift+3]) + Math.abs(aThis[aShift+4]));
+            aShift+=5;
+            break;
+        }
+        case 6: {
+            rSum += (Math.abs(aThis[aShift]) + Math.abs(aThis[aShift+1]) + Math.abs(aThis[aShift+2]) + Math.abs(aThis[aShift+3]) + Math.abs(aThis[aShift+4]) + Math.abs(aThis[aShift+5]));
+            aShift+=6;
+            break;
+        }
+        case 7: {
+            rSum += (Math.abs(aThis[aShift]) + Math.abs(aThis[aShift+1]) + Math.abs(aThis[aShift+2]) + Math.abs(aThis[aShift+3]) + Math.abs(aThis[aShift+4]) + Math.abs(aThis[aShift+5]) + Math.abs(aThis[aShift+6]));
+            aShift+=7;
+            break;
+        }}
+        aLength -= tRest;
+        // 再做 simd 的计算
+        final int tEnd = aLength + aShift;
+        for (int i = aShift; i < tEnd; i+=8) {
+            rSum += (Math.abs(aThis[i]) + Math.abs(aThis[i+1]) + Math.abs(aThis[i+2]) + Math.abs(aThis[i+3]) + Math.abs(aThis[i+4]) + Math.abs(aThis[i+5]) + Math.abs(aThis[i+6]) + Math.abs(aThis[i+7]));
+        }
+        return rSum;
     }
     
     

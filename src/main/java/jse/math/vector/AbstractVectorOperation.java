@@ -139,6 +139,14 @@ public abstract class AbstractVectorOperation implements IVectorOperation {
         return rDot;
     }
     @Override public double norm() {return MathEX.Fast.sqrt(dot());}
+    @Override public double norm1() {
+        final IDoubleIterator it = thisVector_().iterator();
+        double rNorm1 = 0.0;
+        while (it.hasNext()) {
+            rNorm1 += Math.abs(it.next());
+        }
+        return rNorm1;
+    }
     
     @Override public IVector reverse() {IVector rVector = newVector_(); DATA.reverse2Dest(thisVector_(), rVector); return rVector;}
     @Override public IVector refReverse() {

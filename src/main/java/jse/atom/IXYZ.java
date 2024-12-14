@@ -99,13 +99,21 @@ public interface IXYZ {
     
     /** @return {@code new XYZ(-x(), -y(), -z())} */
     default XYZ negative() {return new XYZ(-x(), -y(), -z());}
-    /** @return {@code new XYZ(abs(x()), abs(y()), abs(z()))} */
+    /**
+     * @return {@code new XYZ(abs(x()), abs(y()), abs(z()))}
+     * @see Math#abs(double)
+     */
     default XYZ abs() {return new XYZ(Math.abs(x()), Math.abs(y()), Math.abs(z()));}
     /**
      * @return {@code sqrt(x()*x() + y()*y() + z()*z())}
      * @see Math#sqrt(double)
      */
     default double norm() {return MathEX.Fast.hypot(x(), y(), z());}
+    /**
+     * @return {@code abs(x()) + abs(y()) + abs(z())}
+     * @see Math#abs(double)
+     */
+    default double norm1() {return Math.abs(x()) + Math.abs(y()) + Math.abs(z());}
     
     /// 使用和 Groovy 重载运算符相同的名称，可以顺便实现重载运算符操作
     /** @return {@code new XYZ(x()+aRHS.x(), y()+aRHS.y(), z()+aRHS.z())} */
