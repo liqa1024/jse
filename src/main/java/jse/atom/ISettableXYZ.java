@@ -29,6 +29,7 @@ public interface ISettableXYZ extends IXYZ {
     }
     
     default void negative2this() {setXYZ(-x(), -y(), -z());}
+    default void abs2this()  {setXYZ(Math.abs(x()), Math.abs(y()), Math.abs(z()));}
     
     default void plus2this(IXYZ aRHS) {plus2this(aRHS.x(), aRHS.y(), aRHS.z());}
     default void plus2this(XYZ aRHS) {plus2this(aRHS.mX, aRHS.mY, aRHS.mZ);}

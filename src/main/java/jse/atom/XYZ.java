@@ -43,6 +43,8 @@ public final class XYZ extends AbstractSettableXYZ {
     @Override public XYZ setXYZ(IXYZ aXYZ) {return setXYZ(aXYZ.x(), aXYZ.y(), aXYZ.z());}
     
     /** 重写这些运算来优化多态调用的损失 */
+    @Override public double sum() {return mX + mY + mZ;}
+    @Override public double mean() {return (mX + mY + mZ)/3.0;}
     @Override public double prod() {return mX * mY * mZ;}
     @Override public double min() {return Math.min(Math.min(mX, mY), mZ);}
     @Override public double max() {return Math.max(Math.max(mX, mY), mZ);}
@@ -71,6 +73,8 @@ public final class XYZ extends AbstractSettableXYZ {
     
     @Override public XYZ negative() {return new XYZ(-mX, -mY, -mZ);}
     @Override public void negative2this() {mX = -mX; mY = -mY; mZ = -mZ;}
+    @Override public XYZ abs() {return new XYZ(Math.abs(mX), Math.abs(mY), Math.abs(mZ));}
+    @Override public void abs2this()  {mX = Math.abs(mX); mY = Math.abs(mY); mZ = Math.abs(mZ);}
     @Override public double norm() {return MathEX.Fast.hypot(mX, mY, mZ);}
     
     @Override public XYZ plus(double aX, double aY, double aZ) {return new XYZ(mX+aX, mY+aY, mZ+aZ);}
