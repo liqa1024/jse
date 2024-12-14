@@ -1,5 +1,6 @@
 package jse.atom;
 
+import jse.code.CS;
 import jse.math.vector.IVector;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
@@ -16,11 +17,15 @@ import java.util.List;
  * jse 的原子原则上采用 lammps 的类似定义，即除了原子的 {@code xyz} 坐标外，还包含一个原子的 {@code id}
  * 以及原子的种类编号 {@code type}，其中 {@code id} 和 {@code type} 和 lammps
  * 保持一致也从 {@code 1} 开始索引（保证读取 lammps data 文件后获取的结果一致）；{@code id}
- * 可以有任意的顺序，并且可以不连续，而 {@code type} 则会保证 {@code data.atom(i).type() <= data.ntypes()}；
- * 注意区分原子本身的 {@code id} 以及原子处于原子数据的位置索引 {@code idx}
+ * 可以有任意的顺序，并且可以不连续，而 {@code type} 则会保证 {@code data.atom(i).type() <= data.ntypes()}
+ * <p>
+ * 注意区分原子本身的 {@code id} 以及原子处于原子数据的位置索引
+ * {@code idx}，对于没有 {@code id} 的原子数据则会采用 {@code idx+1} 作为 id
  * <p>
  * jse 的原子数据统一在一个从原点开始的模拟盒内，因此一般来说不会出现坐标为负值的原子；
  * 对于存在下边界模拟盒的原子数据（例如 lammps 的 data），这里获取到的坐标会自动减去这个下边界。
+ * <p>
+ * 一般情况下，jse 的原子数据不会进行单位转换，也就是会统一保留读取的数据的原始值
  *
  * @see ISettableAtomData ISettableAtomData，对于可以修改的原子数据
  * @see AtomData AtomData，对于原子数据的默认实现
@@ -34,6 +39,7 @@ public interface IAtomData {
      * @return 按行排列的数组，每行对应一个原子，
      * 顺序为 {@code x, y, z, id, type, vx, vy, vz}
      * @see IAtom#data()
+     * @see CS#ATOM_DATA_KEYS
      */
     double[][] data();
     /**
@@ -41,6 +47,7 @@ public interface IAtomData {
      * @return 按行排列的数组，每行对应一个原子，
      * 顺序为 {@code x, y, z}
      * @see IAtom#dataXYZ()
+     * @see CS#ATOM_DATA_KEYS_XYZ
      */
     double[][] dataXYZ();
     /**
@@ -48,6 +55,7 @@ public interface IAtomData {
      * @return 按行排列的数组，每行对应一个原子，
      * 顺序为 {@code x, y, z, id}
      * @see IAtom#dataXYZID()
+     * @see CS#ATOM_DATA_KEYS_XYZID
      */
     double[][] dataXYZID();
     /**
@@ -55,6 +63,7 @@ public interface IAtomData {
      * @return 按行排列的数组，每行对应一个原子，
      * 顺序为 {@code id, type, x, y, z}
      * @see IAtom#dataSTD()
+     * @see CS#STD_ATOM_DATA_KEYS
      */
     double[][] dataSTD();
     /**
@@ -62,6 +71,7 @@ public interface IAtomData {
      * @return 按行排列的数组，每行对应一个原子，
      * 顺序为 {@code id, type, x, y, z, vx, vy, vz}
      * @see IAtom#dataAll()
+     * @see CS#ALL_ATOM_DATA_KEYS
      */
     double[][] dataAll();
     /**
@@ -69,6 +79,7 @@ public interface IAtomData {
      * @return 按行排列的数组，每行对应一个原子，
      * 顺序为 {@code vx, vy, vz}
      * @see IAtom#dataVelocities()
+     * @see CS#ATOM_DATA_KEYS_VELOCITY
      */
     double[][] dataVelocities();
     
@@ -77,7 +88,7 @@ public interface IAtomData {
      * @see IAtom#hasVelocity()
      */
     boolean hasVelocity();
-    /** @deprecated use {@link #hasVelocity} */
+    /** @deprecated use {@link #hasVelocity()} */
     @Deprecated default boolean hasVelocities() {return hasVelocity();}
     
     /**
@@ -85,7 +96,7 @@ public interface IAtomData {
      * @see IAtom
      */
     List<? extends IAtom> atoms();
-    /** @deprecated use {@link #atoms} */
+    /** @deprecated use {@link #atoms()} */
     @Deprecated default List<? extends IAtom> asList() {return atoms();}
     /**
      * 直接获取指定索引的原子，可以避免一次创建匿名列表的过程；
@@ -100,14 +111,14 @@ public interface IAtomData {
     int atomNumber();
     /** @see #atomNumber() */
     @VisibleForTesting default int natoms() {return atomNumber();}
-    /** @deprecated use {@link #atomNumber} or {@link #natoms} */
+    /** @deprecated use {@link #atomNumber()} or {@link #natoms()} */
     @Deprecated default int atomNum() {return atomNumber();}
     
     /** @return 原子种类的总数，可以大于实际真实包含的原子种类数目 */
     int atomTypeNumber();
     /** @see #atomTypeNumber() */
     @VisibleForTesting default int ntypes() {return atomTypeNumber();}
-    /** @deprecated use {@link #atomTypeNumber} or {@link #ntypes} */
+    /** @deprecated use {@link #atomTypeNumber()} or {@link #ntypes()} */
     @Deprecated default int atomTypeNum() {return atomTypeNumber();}
     
     /**
@@ -150,6 +161,7 @@ public interface IAtomData {
      * @return 指定种类编号的元素符号，如果不存在元素符号信息则会返回 {@code null}
      * @see IAtom#symbol()
      * @see IAtom#type()
+     * @see #hasSymbol()
      */
     @Nullable String symbol(int aType);
     
@@ -164,6 +176,7 @@ public interface IAtomData {
      * 如果不存在质量信息则会返回 {@code null}
      * @see IVector
      * @see IAtom#mass()
+     * @see #hasMass()
      */
     @Nullable IVector masses();
     /**
@@ -173,6 +186,7 @@ public interface IAtomData {
      * @return 指定种类编号的质量，如果不存在质量信息则会返回 {@link Double#NaN}
      * @see IAtom#mass()
      * @see IAtom#type()
+     * @see #hasMass()
      */
     double mass(int aType);
     
