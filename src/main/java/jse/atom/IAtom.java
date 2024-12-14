@@ -19,49 +19,6 @@ import org.jetbrains.annotations.Nullable;
  * @author liqa
  */
 public interface IAtom extends IXYZ {
-    /**
-     * 直接获取 {@code double[]} 数据，会进行一次值拷贝
-     * @return 顺序为 {@code x, y, z, id, type, vx, vy, vz} 的 {@code double[]} 数组
-     * @see IAtomData#data()
-     * @see CS#ATOM_DATA_KEYS
-     */
-    @Override default double[] data() {return new double[] {x(), y(), z(), id(), type(), vx(), vy(), vz()};}
-    /**
-     * 直接获取 {@code double[]} 数据，会进行一次值拷贝
-     * @return 顺序为 {@code x, y, z} 的 {@code double[]} 数组
-     * @see IAtomData#dataXYZ()
-     * @see CS#ATOM_DATA_KEYS_XYZ
-     */
-    default double[] dataXYZ() {return new double[] {x(), y(), z()};}
-    /**
-     * 直接获取 {@code double[]} 数据，会进行一次值拷贝
-     * @return 顺序为 {@code x, y, z, id} 的 {@code double[]} 数组
-     * @see IAtomData#dataXYZID()
-     * @see CS#ATOM_DATA_KEYS_XYZID
-     */
-    default double[] dataXYZID() {return new double[] {x(), y(), z(), id()};}
-    /**
-     * 直接获取 {@code double[]} 数据，会进行一次值拷贝
-     * @return 顺序为 {@code id, type, x, y, z} 的 {@code double[]} 数组
-     * @see IAtomData#dataSTD()
-     * @see CS#STD_ATOM_DATA_KEYS
-     */
-    default double[] dataSTD() {return new double[] {id(), type(), x(), y(), z()};}
-    /**
-     * 直接获取 {@code double[]} 数据，会进行一次值拷贝
-     * @return 顺序为 {@code id, type, x, y, z, vx, vy, vz} 的 {@code double[]} 数组
-     * @see IAtomData#dataAll()
-     * @see CS#ALL_ATOM_DATA_KEYS
-     */
-    default double[] dataAll() {return new double[] {id(), type(), x(), y(), z(), vx(), vy(), vz()};}
-    /**
-     * 直接获取 {@code double[]} 数据，会进行一次值拷贝
-     * @return 顺序为 {@code vx, vy, vz} 的 {@code double[]} 数组
-     * @see IAtomData#dataVelocities()
-     * @see CS#ATOM_DATA_KEYS_VELOCITY
-     */
-    default double[] dataVelocities() {return new double[] {vx(), vy(), vz()};}
-    
     /** @return 此原子的 x 坐标值 */
     double x();
     /** @return 此原子的 y 坐标值 */
@@ -131,4 +88,49 @@ public interface IAtom extends IXYZ {
     default double mass() {return Double.NaN;}
     /** @return 此原子是否包含质量信息 */
     default boolean hasMass() {return false;}
+    
+    
+    /// data stuffs
+    /**
+     * 直接获取 {@code double[]} 数据，会进行一次值拷贝
+     * @return 顺序为 {@code x, y, z, id, type, vx, vy, vz} 的 {@code double[]} 数组
+     * @see IAtomData#data()
+     * @see CS#ATOM_DATA_KEYS
+     */
+    @Override default double[] data() {return new double[] {x(), y(), z(), id(), type(), vx(), vy(), vz()};}
+    /**
+     * 直接获取 {@code double[]} 数据，会进行一次值拷贝
+     * @return 顺序为 {@code x, y, z} 的 {@code double[]} 数组
+     * @see IAtomData#dataXYZ()
+     * @see CS#ATOM_DATA_KEYS_XYZ
+     */
+    default double[] dataXYZ() {return new double[] {x(), y(), z()};}
+    /**
+     * 直接获取 {@code double[]} 数据，会进行一次值拷贝
+     * @return 顺序为 {@code x, y, z, id} 的 {@code double[]} 数组
+     * @see IAtomData#dataXYZID()
+     * @see CS#ATOM_DATA_KEYS_XYZID
+     */
+    default double[] dataXYZID() {return new double[] {x(), y(), z(), id()};}
+    /**
+     * 直接获取 {@code double[]} 数据，会进行一次值拷贝
+     * @return 顺序为 {@code id, type, x, y, z} 的 {@code double[]} 数组
+     * @see IAtomData#dataSTD()
+     * @see CS#STD_ATOM_DATA_KEYS
+     */
+    default double[] dataSTD() {return new double[] {id(), type(), x(), y(), z()};}
+    /**
+     * 直接获取 {@code double[]} 数据，会进行一次值拷贝
+     * @return 顺序为 {@code id, type, x, y, z, vx, vy, vz} 的 {@code double[]} 数组
+     * @see IAtomData#dataAll()
+     * @see CS#ALL_ATOM_DATA_KEYS
+     */
+    default double[] dataAll() {return new double[] {id(), type(), x(), y(), z(), vx(), vy(), vz()};}
+    /**
+     * 直接获取 {@code double[]} 数据，会进行一次值拷贝
+     * @return 顺序为 {@code vx, vy, vz} 的 {@code double[]} 数组
+     * @see IAtomData#dataVelocities()
+     * @see CS#ATOM_DATA_KEYS_VELOCITY
+     */
+    default double[] dataVelocities() {return new double[] {vx(), vy(), vz()};}
 }

@@ -35,63 +35,6 @@ import java.util.List;
  */
 public interface IAtomData {
     /**
-     * 直接获取 {@code double[][]} 数据，会进行一次值拷贝
-     * @return 按行排列的数组，每行对应一个原子，
-     * 顺序为 {@code x, y, z, id, type, vx, vy, vz}
-     * @see IAtom#data()
-     * @see CS#ATOM_DATA_KEYS
-     */
-    double[][] data();
-    /**
-     * 直接获取 {@code double[][]} 数据，会进行一次值拷贝
-     * @return 按行排列的数组，每行对应一个原子，
-     * 顺序为 {@code x, y, z}
-     * @see IAtom#dataXYZ()
-     * @see CS#ATOM_DATA_KEYS_XYZ
-     */
-    double[][] dataXYZ();
-    /**
-     * 直接获取 {@code double[][]} 数据，会进行一次值拷贝
-     * @return 按行排列的数组，每行对应一个原子，
-     * 顺序为 {@code x, y, z, id}
-     * @see IAtom#dataXYZID()
-     * @see CS#ATOM_DATA_KEYS_XYZID
-     */
-    double[][] dataXYZID();
-    /**
-     * 直接获取 {@code double[][]} 数据，会进行一次值拷贝
-     * @return 按行排列的数组，每行对应一个原子，
-     * 顺序为 {@code id, type, x, y, z}
-     * @see IAtom#dataSTD()
-     * @see CS#STD_ATOM_DATA_KEYS
-     */
-    double[][] dataSTD();
-    /**
-     * 直接获取 {@code double[][]} 数据，会进行一次值拷贝
-     * @return 按行排列的数组，每行对应一个原子，
-     * 顺序为 {@code id, type, x, y, z, vx, vy, vz}
-     * @see IAtom#dataAll()
-     * @see CS#ALL_ATOM_DATA_KEYS
-     */
-    double[][] dataAll();
-    /**
-     * 直接获取 {@code double[][]} 数据，会进行一次值拷贝
-     * @return 按行排列的数组，每行对应一个原子，
-     * 顺序为 {@code vx, vy, vz}
-     * @see IAtom#dataVelocities()
-     * @see CS#ATOM_DATA_KEYS_VELOCITY
-     */
-    double[][] dataVelocities();
-    
-    /**
-     * @return 此原子数据是否真实包含速度信息
-     * @see IAtom#hasVelocity()
-     */
-    boolean hasVelocity();
-    /** @deprecated use {@link #hasVelocity()} */
-    @Deprecated default boolean hasVelocities() {return hasVelocity();}
-    
-    /**
      * @return 内部原子引用组成的列表
      * @see IAtom
      */
@@ -141,6 +84,14 @@ public interface IAtomData {
      * @see IBox#isLmpStyle()
      */
     default boolean isLmpStyle() {return box().isLmpStyle();}
+    
+    /**
+     * @return 此原子数据是否真实包含速度信息
+     * @see IAtom#hasVelocity()
+     */
+    boolean hasVelocity();
+    /** @deprecated use {@link #hasVelocity()} */
+    @Deprecated default boolean hasVelocities() {return hasVelocity();}
     
     /**
      * @return 此原子数据是否包含元素符号信息
@@ -207,6 +158,57 @@ public interface IAtomData {
     IAtomDataOperation operation();
     /** @see #operation() */
     @VisibleForTesting default IAtomDataOperation opt() {return operation();}
+    
+    
+    /// data stuffs
+    /**
+     * 直接获取 {@code double[][]} 数据，会进行一次值拷贝
+     * @return 按行排列的数组，每行对应一个原子，
+     * 顺序为 {@code x, y, z, id, type, vx, vy, vz}
+     * @see IAtom#data()
+     * @see CS#ATOM_DATA_KEYS
+     */
+    double[][] data();
+    /**
+     * 直接获取 {@code double[][]} 数据，会进行一次值拷贝
+     * @return 按行排列的数组，每行对应一个原子，
+     * 顺序为 {@code x, y, z}
+     * @see IAtom#dataXYZ()
+     * @see CS#ATOM_DATA_KEYS_XYZ
+     */
+    double[][] dataXYZ();
+    /**
+     * 直接获取 {@code double[][]} 数据，会进行一次值拷贝
+     * @return 按行排列的数组，每行对应一个原子，
+     * 顺序为 {@code x, y, z, id}
+     * @see IAtom#dataXYZID()
+     * @see CS#ATOM_DATA_KEYS_XYZID
+     */
+    double[][] dataXYZID();
+    /**
+     * 直接获取 {@code double[][]} 数据，会进行一次值拷贝
+     * @return 按行排列的数组，每行对应一个原子，
+     * 顺序为 {@code id, type, x, y, z}
+     * @see IAtom#dataSTD()
+     * @see CS#STD_ATOM_DATA_KEYS
+     */
+    double[][] dataSTD();
+    /**
+     * 直接获取 {@code double[][]} 数据，会进行一次值拷贝
+     * @return 按行排列的数组，每行对应一个原子，
+     * 顺序为 {@code id, type, x, y, z, vx, vy, vz}
+     * @see IAtom#dataAll()
+     * @see CS#ALL_ATOM_DATA_KEYS
+     */
+    double[][] dataAll();
+    /**
+     * 直接获取 {@code double[][]} 数据，会进行一次值拷贝
+     * @return 按行排列的数组，每行对应一个原子，
+     * 顺序为 {@code vx, vy, vz}
+     * @see IAtom#dataVelocities()
+     * @see CS#ATOM_DATA_KEYS_VELOCITY
+     */
+    double[][] dataVelocities();
     
     
     /** @deprecated use {@link MonatomicParameterCalculator#of}*/ @Deprecated default MonatomicParameterCalculator getTypeMonatomicParameterCalculator(int aType, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return MonatomicParameterCalculator.of(operation().filterType(aType), aThreadNum);}
