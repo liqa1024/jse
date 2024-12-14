@@ -75,12 +75,16 @@ public interface IAtomData {
      */
     default double volume() {return box().volume();}
     /**
-     * @return 此原子数据模拟盒是否是三斜的
+     * @return 此原子数据模拟盒是否是三斜的；
+     * 这只是一个模拟盒类型检测，即可能存在模拟盒类型是三斜的，但是非对角项都为
+     * 0，此时依旧会返回 {@code true}
      * @see IBox#isPrism()
      */
     default boolean isPrism() {return box().isPrism();}
     /**
-     * @return 此原子数据模拟盒是否是下三角的（满足 lammps 的风格）
+     * @return 此原子数据模拟盒是否是下三角的（满足 lammps 的风格）；
+     * 这只是一个模拟盒类型检测，即可能存在模拟盒类型不是 lammps 风格的，但是上三角非对焦元都为
+     * 0，此时依旧会返回 {@code false}
      * @see IBox#isLmpStyle()
      */
     default boolean isLmpStyle() {return box().isLmpStyle();}
