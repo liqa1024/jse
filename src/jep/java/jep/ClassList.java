@@ -35,6 +35,7 @@ import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.regex.Pattern;
 
 /**
  * A singleton that searches for loaded classes from the JRE and the Java
@@ -50,6 +51,8 @@ public class ClassList implements ClassEnquirer {
     public final static List<String> ADDITIONAL_CLASS_PATHS = new ArrayList<>();
     /** 附加的遍历文件时，认为是类文件的后缀，默认只有 {@code .class} */
     public final static List<String> ADDITIONAL_CLASS_FILE_EXTENSION = new ArrayList<>();
+    /** java 报名判断正则表达式 */
+    public final static Pattern PACKAGE_NAME = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*$");
     /// jse stuff end
     
     
@@ -196,7 +199,7 @@ public class ClassList implements ClassEnquirer {
             String entry = file.getName();
             if (file.isDirectory()) {
                 // check invalid directory
-                if (!Character.isDigit(entry.charAt(0)) && !entry.contains(".") && !entry.contains(" ")) {
+                if (PACKAGE_NAME.matcher(entry).matches()) {
                     if (prefix != null && !prefix.isEmpty()) {
                         /*
                          * Include a . between directories only if there was a
