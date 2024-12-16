@@ -17,17 +17,29 @@ import java.util.List;
  *    {@link #atomNumber()}: 获取原子总数
  *    {@link #atomTypeNumber()}: 获取总原子种类数目
  * </pre>
- * @see IAtomData IAtomData，通用的原子数据接口
- * @see ISettableAtomData ISettableAtomData，可以修改的原子数据接口
- * @see SettableAtomData SettableAtomData，一般的可以修改的原子数据实现
- * @see AbstractAtomData AbstractAtomData，一般的原子数据抽象类
+ * @see IAtomData IAtomData: 通用的原子数据接口
+ * @see ISettableAtomData ISettableAtomData: 可以修改的原子数据接口
+ * @see SettableAtomData SettableAtomData: 一般的可以修改的原子数据实现
+ * @see AbstractAtomData AbstractAtomData: 一般的原子数据抽象类
  * @author liqa
  */
 public abstract class AbstractSettableAtomData extends AbstractAtomData implements ISettableAtomData {
     /**
-     * {@inheritDoc}
+     * 直接获取指定索引的原子，可以避免一次创建匿名列表的过程；
+     * 有关系 {@code atoms()[i] == atom(i)}
+     * <p>
+     * 由于返回的原子是引用，因此对其的修改会同时反应到原子数据内部：
+     * <pre> {@code
+     * def atom = data.atom(i)
+     * atom.x = 3.14
+     * assert data.atom(i).x() == 3.14
+     * } </pre>
+     *
      * @param aIdx {@inheritDoc}
      * @return {@inheritDoc}
+     * @see ISettableAtom
+     * @see AbstractSettableAtom_
+     * @see SettableAtomData SettableAtomData: 关于具体实现的例子
      *
      * @implSpec 一般来说需要返回一个引用可设置的原子，并且保证内部的 {@link ISettableAtom#index()},
      * {@link ISettableAtom#hasVelocity()} 等方法调用到 {@link ISettableAtom} 自身；一般通过返回
@@ -75,9 +87,6 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      *     }
      * }
      * } </pre>
-     * @see ISettableAtom
-     * @see AbstractSettableAtom_
-     * @see SettableAtomData SettableAtomData，关于具体实现的例子
      */
     @Override public abstract ISettableAtom atom(int aIdx);
     
@@ -88,6 +97,7 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      * @throws UnsupportedOperationException {@inheritDoc}
      * @see #atomTypeNumber()
      * @see IAtom#type()
+     * @see SettableAtomData SettableAtomData: 关于具体实现的例子
      */
     @Override public AbstractSettableAtomData setAtomTypeNumber(int aAtomTypeNum) {throw new UnsupportedOperationException("setAtomTypeNumber");}
     /**
@@ -113,6 +123,7 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      * @throws UnsupportedOperationException {@inheritDoc}
      * @see #symbols()
      * @see IAtom#symbol()
+     * @see SettableAtomData SettableAtomData: 关于具体实现的例子
      */
     @Override public AbstractSettableAtomData setSymbols(String... aSymbols) {throw new UnsupportedOperationException("setSymbols");}
     /**
@@ -121,6 +132,7 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      * @throws UnsupportedOperationException {@inheritDoc}
      * @see #hasSymbol()
      * @see #setSymbols(String...)
+     * @see SettableAtomData SettableAtomData: 关于具体实现的例子
      */
     @Override public AbstractSettableAtomData setNoSymbol() {throw new UnsupportedOperationException("setNoSymbol");}
     /**
@@ -182,7 +194,13 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
     }
     
     /**
-     * {@inheritDoc}
+     * 对于 {@link ISettableAtomData}，这里会获取到一个可以设置的原子对象
+     * {@link ISettableAtom}，由于返回的原子是引用，因此对其的修改会同时反应到原子数据内部。
+     * <p>
+     * 这里返回的列表本身同样也是一个引用对象，对列表的修改也会反应到原子数据内部，即
+     * {@code this.atoms().set(idx, atom)} 和 {@code this.setAtom(idx, atom)}
+     * 操作等价
+     *
      * @return {@inheritDoc}
      * @see ISettableAtom
      * @see #atom(int)

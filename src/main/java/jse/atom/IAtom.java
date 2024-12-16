@@ -12,10 +12,10 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * 继承 {@link IXYZ} 从而自动可以使用三维坐标的相关运算
  *
- * @see IXYZ IXYZ，通用的三维坐标接口
- * @see ISettableAtom ISettableAtom，可以修改的原子接口
- * @see Atom Atom，一般的原子实现
- * @see AtomFull AtomFull，包含速度信息的原子实现
+ * @see IXYZ IXYZ: 通用的三维坐标接口
+ * @see ISettableAtom ISettableAtom: 可以修改的原子接口
+ * @see Atom Atom: 一般的原子实现
+ * @see AtomFull AtomFull: 包含速度信息的原子实现
  * @author liqa
  */
 public interface IAtom extends IXYZ {

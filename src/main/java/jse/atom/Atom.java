@@ -13,9 +13,9 @@ package jse.atom;
  * 方法来获取属性，还可以通过直接访问成员变量 {@link #mX}, {@link #mY}, {@link #mZ},
  * {@link #mID}, {@link #mType} 来获取以及修改。
  *
- * @see IAtom IAtom，通用的原子接口
- * @see ISettableAtom ISettableAtom，可设置原子属性的原子接口
- * @see AtomFull AtomFull，包含更多信息的原子实现
+ * @see IAtom IAtom: 通用的原子接口
+ * @see ISettableAtom ISettableAtom: 可设置原子属性的原子接口
+ * @see AtomFull AtomFull: 包含更多信息的原子实现
  * @author liqa
  */
 public class Atom extends AbstractSettableAtom {

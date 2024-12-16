@@ -12,8 +12,8 @@ import org.jetbrains.annotations.NotNull;
  * } </pre>
  * 来创建一个三斜的模拟盒对象
  *
- * @see Box Box，一般的正交模拟盒实现
- * @see IBox IBox，通用的模拟盒接口
+ * @see Box Box: 一般的正交模拟盒实现
+ * @see IBox IBox: 通用的模拟盒接口
  * @author liqa
  */
 public final class BoxPrism implements IBox {

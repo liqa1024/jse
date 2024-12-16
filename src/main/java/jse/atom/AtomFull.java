@@ -15,9 +15,9 @@ package jse.atom;
  * {@link #mX}, {@link #mY}, {@link #mZ}, {@link #mID}, {@link #mType},
  * {@link #mVx}, {@link #mVy}, {@link #mVz} 来获取以及修改。
  *
- * @see IAtom IAtom，通用的原子接口
- * @see ISettableAtom ISettableAtom，可设置原子属性的原子接口
- * @see Atom Atom，一般的原子实现
+ * @see IAtom IAtom: 通用的原子接口
+ * @see ISettableAtom ISettableAtom: 可设置原子属性的原子接口
+ * @see Atom Atom: 一般的原子实现
  * @author liqa
  */
 public class AtomFull extends Atom {

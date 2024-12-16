@@ -14,9 +14,9 @@ import java.util.List;
  * 对于一般的使用，则可以通过 {@link #atom(int)} 以及 {@link #atoms()}
  * 获取的原子类型为 {@link ISettableAtom}，从而可以修改具体原子属性
  *
- * @see IAtomData IAtomData，通用的原子数据接口
- * @see SettableAtomData SettableAtomData，可修改的原子数据的默认实现
- * @see ISettableAtom ISettableAtom，可以修改的原子接口
+ * @see IAtomData IAtomData: 通用的原子数据接口
+ * @see SettableAtomData SettableAtomData: 可修改的原子数据的默认实现
+ * @see ISettableAtom ISettableAtom: 可以修改的原子接口
  * @author liqa
  */
 public interface ISettableAtomData extends IAtomData {

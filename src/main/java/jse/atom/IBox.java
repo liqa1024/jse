@@ -16,10 +16,10 @@ import jse.math.MathEX;
  * <p>
  * 继承 {@link IXYZ}，其中 x,y,z 对应于 {@link #ax()}, {@link #by()}, {@link #cz()}
  *
- * @see Box Box，一般的正交的模拟盒实现
- * @see BoxPrism BoxPrism，一般的三斜的模拟盒实现
- * @see IXYZ IXYZ，一般的三维向量接口
- * @see LmpBox LmpBox，对于包含上下边界的 lammps 模拟盒实现
+ * @see Box Box: 一般的正交的模拟盒实现
+ * @see BoxPrism BoxPrism: 一般的三斜的模拟盒实现
+ * @see IXYZ IXYZ: 一般的三维向量接口
+ * @see LmpBox LmpBox: 对于包含上下边界的 lammps 模拟盒实现
  * @author liqa
  */
 public interface IBox extends IXYZ {

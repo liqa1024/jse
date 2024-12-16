@@ -27,11 +27,11 @@ import java.util.List;
  * <p>
  * 一般情况下，jse 的原子数据不会进行单位转换，也就是会统一保留读取的数据的原始值
  *
- * @see ISettableAtomData ISettableAtomData，对于可以修改的原子数据
- * @see AtomData AtomData，对于原子数据的默认实现
- * @see SettableAtomData SettableAtomData，对于可修改的原子数据的默认实现
- * @see IAtom IAtom，对于 jse 中的原子定义
- * @see IBox IBox，对于 jse 中的模拟盒定义
+ * @see ISettableAtomData ISettableAtomData: 对于可以修改的原子数据
+ * @see AtomData AtomData: 对于原子数据的默认实现
+ * @see SettableAtomData SettableAtomData: 对于可修改的原子数据的默认实现
+ * @see IAtom IAtom: 对于 jse 中的原子定义
+ * @see IBox IBox: 对于 jse 中的模拟盒定义
  * @author liqa
  */
 public interface IAtomData {

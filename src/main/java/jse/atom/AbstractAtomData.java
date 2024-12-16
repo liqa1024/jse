@@ -21,16 +21,20 @@ import static jse.code.CS.ZL_STR;
  *    {@link #atomNumber()}: 获取原子总数
  *    {@link #atomTypeNumber()}: 获取总原子种类数目
  * </pre>
- * @see IAtomData IAtomData，通用的原子数据接口
- * @see AtomData AtomData，一般的原子数据实现
- * @see AbstractSettableAtomData AbstractSettableAtomData，可以修改的原子数据抽象类
+ * @see IAtomData IAtomData: 通用的原子数据接口
+ * @see AtomData AtomData: 一般的原子数据实现
+ * @see AbstractSettableAtomData AbstractSettableAtomData: 可以修改的原子数据抽象类
  * @author liqa
  */
 public abstract class AbstractAtomData implements IAtomData {
     /**
      * {@inheritDoc}
+     *
      * @param aIdx {@inheritDoc}
      * @return {@inheritDoc}
+     * @see IAtom
+     * @see AbstractAtom_
+     * @see AtomData AtomData: 关于具体实现的例子
      *
      * @implSpec 一般来说需要返回一个引用原子，并且保证内部的 {@link IAtom#index()},
      * {@link IAtom#hasVelocity()} 等方法调用到 {@link IAtomData} 自身；一般通过返回
@@ -53,37 +57,34 @@ public abstract class AbstractAtomData implements IAtomData {
      *     }
      * }
      * } </pre>
-     * @see IAtom
-     * @see AbstractAtom_
-     * @see AtomData AtomData，关于具体实现的例子
      */
     public abstract IAtom atom(int aIdx);
     /**
      * @return {@inheritDoc}
      * @see IBox
-     * @see AtomData AtomData，关于具体实现的例子
+     * @see AtomData AtomData: 关于具体实现的例子
      */
     public abstract IBox box();
     /**
      * @return {@inheritDoc}
-     * @see AtomData AtomData，关于具体实现的例子
+     * @see AtomData AtomData: 关于具体实现的例子
      */
     public abstract int atomNumber();
     /**
      * @return {@inheritDoc}
-     * @see AtomData AtomData，关于具体实现的例子
+     * @see AtomData AtomData: 关于具体实现的例子
      */
     public abstract int atomTypeNumber();
     
     /**
      * @return {@inheritDoc}
-     * @see AtomData AtomData，关于具体实现的例子
+     * @see AtomData AtomData: 关于具体实现的例子
      */
     @Override public boolean hasVelocity() {return false;}
     /**
      * @return {@inheritDoc}
      * @see IAtom#hasSymbol()
-     * @see AtomData AtomData，关于具体实现的例子
+     * @see AtomData AtomData: 关于具体实现的例子
      */
     @Override public boolean hasSymbol() {return false;}
     /**
@@ -93,13 +94,13 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see IAtom#symbol()
      * @see IAtom#type()
      * @see #hasSymbol()
-     * @see AtomData AtomData，关于具体实现的例子
+     * @see AtomData AtomData: 关于具体实现的例子
      */
     @Override public @Nullable String symbol(int aType) {return null;}
     /**
      * @return {@inheritDoc}
      * @see IAtom#hasMass()
-     * @see AtomData AtomData，关于具体实现的例子
+     * @see AtomData AtomData: 关于具体实现的例子
      */
     @Override public boolean hasMass() {return false;}
     /**
@@ -109,7 +110,7 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see IAtom#mass()
      * @see IAtom#type()
      * @see #hasMass()
-     * @see AtomData AtomData，关于具体实现的例子
+     * @see AtomData AtomData: 关于具体实现的例子
      */
     @Override public double mass(int aType) {return Double.NaN;}
     
@@ -302,6 +303,8 @@ public abstract class AbstractAtomData implements IAtomData {
      * @param aAtomNum 需要的原子数目
      * @param aBox 需要的模拟盒，默认为自身模拟盒的拷贝
      * @return 内部存储数据全为零的原子数据类型
+     * @implSpec 一定需要返回可修改的原子数据类型
+     * {@link ISettableAtomData}，并且要保证可以简单遍历修改属性
      */
     protected ISettableAtomData newZeros_(int aAtomNum, IBox aBox) {
         final boolean tHasVelocities = hasVelocity();

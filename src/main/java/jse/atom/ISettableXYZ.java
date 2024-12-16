@@ -14,8 +14,8 @@ import org.jetbrains.annotations.VisibleForTesting;
  * xyz.y *= 0.5
  * } </pre>
  *
- * @see XYZ XYZ，三维坐标的一般实现
- * @see IXYZ IXYZ，通用的 xyz 三维坐标接口
+ * @see XYZ XYZ: 三维坐标的一般实现
+ * @see IXYZ IXYZ: 通用的 xyz 三维坐标接口
  * @author liqa
  */
 public interface ISettableXYZ extends IXYZ {

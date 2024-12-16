@@ -3,8 +3,8 @@ package jse.atom;
 import org.jetbrains.annotations.VisibleForTesting;
 
 /**
- * 可以设置属性值的原子接口，通过 {{@link #setX(double)}, {@link #setY(double)},
- *  * {@link #setZ(double)} 来修改具体坐标值；通过 {@link #setID(int)}
+ * 可以设置属性值的原子接口，通过 {@link #setX(double)}, {@link #setY(double)},
+ * {@link #setZ(double)} 来修改具体坐标值；通过 {@link #setID(int)}
  * 来修改原子的 {@code id}，{@link #setType(int)} 来修改原子的种类编号。
  * <p>
  * 进一步提供了 {@link #getX()}, {@link #getY()}, {@link #getZ()},
@@ -18,10 +18,10 @@ import org.jetbrains.annotations.VisibleForTesting;
  * <p>
  * 继承 {@link ISettableXYZ} 从而自动可以使用三维坐标的相关运算
  *
- * @see IAtom IAtom，通用的原子接口
- * @see ISettableXYZ ISettableXYZ，可以设置的三维坐标接口
- * @see Atom Atom，一般的原子实现
- * @see AtomFull AtomFull，包含速度信息的原子实现
+ * @see IAtom IAtom: 通用的原子接口
+ * @see ISettableXYZ ISettableXYZ: 可以设置的三维坐标接口
+ * @see Atom Atom: 一般的原子实现
+ * @see AtomFull AtomFull: 包含速度信息的原子实现
  * @author liqa
  */
 public interface ISettableAtom extends IAtom, ISettableXYZ {

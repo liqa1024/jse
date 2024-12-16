@@ -19,9 +19,9 @@ import jse.math.vector.IVector;
  * <p>
  * 注意区分 xyz 数据格式 {@link DataXYZ}
  *
- * @see IXYZ IXYZ，通用的 xyz 坐标
- * @see ISettableXYZ ISettableXYZ，可修改坐标值的 xyz 坐标
- * @see DataXYZ DataXYZ，xyz 数据格式
+ * @see IXYZ IXYZ: 通用的 xyz 坐标
+ * @see ISettableXYZ ISettableXYZ: 可修改坐标值的 xyz 坐标
+ * @see DataXYZ DataXYZ: xyz 数据格式
  * @author liqa
  */
 public final class XYZ extends AbstractSettableXYZ {

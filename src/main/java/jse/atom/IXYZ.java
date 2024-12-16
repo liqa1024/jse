@@ -15,9 +15,9 @@ import java.util.List;
  * <p>
  * 注意区分 xyz 数据格式 {@link DataXYZ}
  *
- * @see XYZ XYZ，三维坐标的一般实现
- * @see ISettableXYZ ISettableXYZ，可以修改的 xyz 三维坐标接口
- * @see DataXYZ DataXYZ，xyz 数据格式
+ * @see XYZ XYZ: 三维坐标的一般实现
+ * @see ISettableXYZ ISettableXYZ: 可以修改的 xyz 三维坐标接口
+ * @see DataXYZ DataXYZ: xyz 数据格式
  * @author liqa
  */
 public interface IXYZ {
