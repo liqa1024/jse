@@ -1,7 +1,9 @@
 package jse.atom;
 
+import jse.code.UT;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.math.vector.IVector;
+import jse.math.vector.Vectors;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -113,6 +115,13 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
     @Override public AbstractSettableAtomData setSymbols(String... aSymbols) {throw new UnsupportedOperationException("setSymbols");}
     /**
      * {@inheritDoc}
+     * @see #setSymbols(String...)
+     * @see Collection
+     * @implSpec 需要调用 {@link #setSymbols(String...)} 或任何等价形式
+     */
+    @Override public AbstractSettableAtomData setSymbols(Collection<? extends CharSequence> aSymbols) {return setSymbols(UT.Text.toArray(aSymbols));}
+    /**
+     * {@inheritDoc}
      * @return {@inheritDoc}
      * @throws UnsupportedOperationException {@inheritDoc}
      * @see #hasSymbol()
@@ -133,14 +142,16 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      * {@inheritDoc}
      * @see #setMasses(double...)
      * @see Collection
+     * @implSpec 需要调用 {@link #setMasses(double...)} 或任何等价形式
      */
-    @Override public AbstractSettableAtomData setMasses(Collection<? extends Number> aMasses) {throw new UnsupportedOperationException("setMasses");}
+    @Override public AbstractSettableAtomData setMasses(Collection<? extends Number> aMasses) {return setMasses(Vectors.from(aMasses).internalData());}
     /**
      * {@inheritDoc}
      * @see #setMasses(double...)
      * @see IVector
+     * @implSpec 需要调用 {@link #setMasses(double...)} 或任何等价形式
      */
-    @Override public AbstractSettableAtomData setMasses(IVector aMasses) {throw new UnsupportedOperationException("setMasses");}
+    @Override public AbstractSettableAtomData setMasses(IVector aMasses) {return setMasses(aMasses.data());}
     /**
      * {@inheritDoc}
      * @return {@inheritDoc}

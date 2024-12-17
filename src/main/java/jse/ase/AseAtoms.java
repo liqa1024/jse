@@ -6,6 +6,7 @@ import jep.python.PyCallable;
 import jep.python.PyObject;
 import jse.atom.*;
 import jse.code.SP;
+import jse.code.UT;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.RowMatrix;
@@ -15,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -352,9 +354,11 @@ public class AseAtoms extends AbstractSettableAtomData {
             return rAseAtoms;
         }
     }
+    public static AseAtoms fromAtomData(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {return fromAtomData(aAtomData, UT.Text.toArray(aSymbols));}
     /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
     public static AseAtoms of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
     public static AseAtoms of(IAtomData aAtomData, String... aTypeNames) {return fromAtomData(aAtomData, aTypeNames);}
+    public static AseAtoms of(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {return fromAtomData(aAtomData, aSymbols);}
     public static AseAtoms of(PyObject aPyAtoms) throws JepException {return fromPyObject(aPyAtoms);}
     public static AseAtoms of(Object aAnyData) throws JepException {
         // 手动实现动态加载

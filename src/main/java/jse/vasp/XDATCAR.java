@@ -487,6 +487,9 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
         it.forEachRemaining(rXDATCAR::append);
         return rXDATCAR;
     }
+    public static XDATCAR fromAtomData(IAtomData aAtomData, Collection<? extends CharSequence> aTypeNames) {return fromAtomData(aAtomData, UT.Text.toArray(aTypeNames));}
+    public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aTypeNames) {return fromAtomDataList(aAtomDataList, UT.Text.toArray(aTypeNames));}
+    public static XDATCAR fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aTypeNames) {return fromAtomDataList(aAtomDataList, UT.Text.toArray(aTypeNames));}
     
     IMatrix getDirect_(IAtomData aAtomData) {
         // 这里只考虑一般的情况，这里直接遍历 atoms 来创建，
@@ -527,13 +530,17 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
     public static XDATCAR of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
     public static XDATCAR of(IAtomData aAtomData, String... aTypeNames) {return fromAtomData(aAtomData, aTypeNames);}
+    public static XDATCAR of(IAtomData aAtomData, Collection<? extends CharSequence> aTypeNames) {return fromAtomData(aAtomData, aTypeNames);}
     public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
     public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList, String... aTypeNames) {return fromAtomDataList(aAtomDataList, aTypeNames);}
+    public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aTypeNames) {return fromAtomDataList(aAtomDataList, aTypeNames);}
     public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
     public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList, String... aTypeNames) {return fromAtomDataList(aAtomDataList, aTypeNames);}
+    public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aTypeNames) {return fromAtomDataList(aAtomDataList, aTypeNames);}
     /** 再提供一个 IListWrapper 的接口保证 XDATCAR 也能输入 */
     public static XDATCAR of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList) {return fromAtomDataList(aAtomDataList.asList());}
     public static XDATCAR of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, String... aTypeNames) {return fromAtomDataList(aAtomDataList.asList(), aTypeNames);}
+    public static XDATCAR of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, Collection<? extends CharSequence> aTypeNames) {return fromAtomDataList(aAtomDataList.asList(), aTypeNames);}
     /** matlab stuffs */
     public static XDATCAR of_compat(Object[] aAtomDataArray) {return fromAtomData_compat(aAtomDataArray);}
     public static XDATCAR of_compat(Object[] aAtomDataArray, String... aTypeNames) {return fromAtomData_compat(aAtomDataArray, aTypeNames);}

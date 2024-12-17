@@ -138,6 +138,12 @@ public interface ISettableAtomData extends IAtomData {
      */
     ISettableAtomData setSymbols(String... aSymbols);
     /**
+     * 传入列表形式元素符号的设置元素符号实现
+     * @see #setSymbols(String...)
+     * @see Collection
+     */
+    ISettableAtomData setSymbols(Collection<? extends CharSequence> aSymbols);
+    /**
      * 设置此原子数据不再包含元素符号信息，在调用过后
      * {@link #hasSymbol()} 总是会返回 {@code false}
      * <p>

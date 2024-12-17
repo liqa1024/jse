@@ -20,6 +20,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import static jse.code.CS.MASS;
@@ -591,10 +592,14 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
             return new POSCAR(null, rBox, copyTypeNames(aTypeNames), rAtomNumbers, aSelectiveDynamics, rDirect, true, rIDs);
         }
     }
+    public static POSCAR fromAtomData(IAtomData aAtomData, Collection<? extends CharSequence> aTypeNames) {return fromAtomData(aAtomData, UT.Text.toArray(aTypeNames));}
+    public static POSCAR fromAtomData(IAtomData aAtomData, boolean aSelectiveDynamics, Collection<? extends CharSequence> aTypeNames) {return fromAtomData(aAtomData, aSelectiveDynamics, UT.Text.toArray(aTypeNames));}
     /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
     public static POSCAR of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
     public static POSCAR of(IAtomData aAtomData, String... aTypeNames) {return fromAtomData(aAtomData, aTypeNames);}
     public static POSCAR of(IAtomData aAtomData, boolean aSelectiveDynamics, String... aTypeNames) {return fromAtomData(aAtomData, aSelectiveDynamics, aTypeNames);}
+    public static POSCAR of(IAtomData aAtomData, Collection<? extends CharSequence> aTypeNames) {return fromAtomData(aAtomData, aTypeNames);}
+    public static POSCAR of(IAtomData aAtomData, boolean aSelectiveDynamics, Collection<? extends CharSequence> aTypeNames) {return fromAtomData(aAtomData, aSelectiveDynamics, aTypeNames);}
     
     
     /// 文件读写

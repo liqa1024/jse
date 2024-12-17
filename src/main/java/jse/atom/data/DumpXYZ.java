@@ -3,6 +3,7 @@ package jse.atom.data;
 import jse.atom.IAtomData;
 import jse.code.UT;
 import jse.code.collection.AbstractListWrapper;
+import jse.code.collection.IListGetter;
 import jse.code.collection.NewCollections;
 import org.jetbrains.annotations.Range;
 
@@ -12,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-
 
 /**
  * 多帧的 {@link DataXYZ}
@@ -68,11 +68,36 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
     public static DumpXYZ fromAtomData(IAtomData aAtomData) {
         return new DumpXYZ(DataXYZ.fromAtomData(aAtomData));
     }
+    public static DumpXYZ fromAtomData(IAtomData aAtomData, String... aSymbols) {
+        return new DumpXYZ(DataXYZ.fromAtomData(aAtomData, aSymbols));
+    }
     public static DumpXYZ fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList) {
         if (aAtomDataList == null) return new DumpXYZ();
         List<DataXYZ> rDumpXYZ = new ArrayList<>();
         for (IAtomData subAtomData : aAtomDataList) {
             rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData));
+        }
+        return new DumpXYZ(rDumpXYZ);
+    }
+    public static DumpXYZ fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, final String... aSymbols) {
+        return fromAtomDataList(aAtomDataList, i -> aSymbols);
+    }
+    @SuppressWarnings("unchecked")
+    public static DumpXYZ fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, IListGetter<Object> aSymbolsGetter) {
+        if (aAtomDataList == null) return new DumpXYZ();
+        List<DataXYZ> rDumpXYZ = new ArrayList<>();
+        int i = 0;
+        for (IAtomData subAtomData : aAtomDataList) {
+            Object tSymbols = aSymbolsGetter.get(i);
+            if (tSymbols instanceof String[]) {
+                rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData, (String[])tSymbols));
+            } else
+            if (tSymbols instanceof Collection) {
+                rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData, (Collection<? extends CharSequence>)tSymbols));
+            } else {
+                rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData));
+            }
+            ++i;
         }
         return new DumpXYZ(rDumpXYZ);
     }
@@ -84,6 +109,31 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
         }
         return new DumpXYZ(rDumpXYZ);
     }
+    public static DumpXYZ fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, final String... aSymbols) {
+        return fromAtomDataList(aAtomDataList, i -> aSymbols);
+    }
+    @SuppressWarnings("unchecked")
+    public static DumpXYZ fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, IListGetter<Object> aSymbolsGetter) {
+        if (aAtomDataList == null) return new DumpXYZ();
+        List<DataXYZ> rDumpXYZ = new ArrayList<>(aAtomDataList.size());
+        int i = 0;
+        for (IAtomData subAtomData : aAtomDataList) {
+            Object tSymbols = aSymbolsGetter.get(i);
+            if (tSymbols instanceof String[]) {
+                rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData, (String[])tSymbols));
+            } else
+            if (tSymbols instanceof Collection) {
+                rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData, (Collection<? extends CharSequence>)tSymbols));
+            } else {
+                rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData));
+            }
+            ++i;
+        }
+        return new DumpXYZ(rDumpXYZ);
+    }
+    public static DumpXYZ fromAtomData(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {return fromAtomData(aAtomData, UT.Text.toArray(aSymbols));}
+    public static DumpXYZ fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aSymbols) {return fromAtomDataList(aAtomDataList, UT.Text.toArray(aSymbols));}
+    public static DumpXYZ fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aSymbols) {return fromAtomDataList(aAtomDataList, UT.Text.toArray(aSymbols));}
     /** 对于 matlab 调用的兼容 */
     public static DumpXYZ fromAtomData_compat(Object[] aAtomDataArray) {
         if (aAtomDataArray==null || aAtomDataArray.length==0) return new DumpXYZ();
@@ -93,16 +143,35 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
         }
         return new DumpXYZ(rDumpXYZ);
     }
+    public static DumpXYZ fromAtomData_compat(Object[] aAtomDataArray, String... aSymbols) {
+        if (aAtomDataArray==null || aAtomDataArray.length==0) return new DumpXYZ();
+        List<DataXYZ> rDumpXYZ = new ArrayList<>();
+        for (Object subAtomData : aAtomDataArray) if (subAtomData instanceof IAtomData) {
+            rDumpXYZ.add(DataXYZ.fromAtomData((IAtomData)subAtomData, aSymbols));
+        }
+        return new DumpXYZ(rDumpXYZ);
+    }
     /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
     public static DumpXYZ zl() {return new DumpXYZ();}
     public static DumpXYZ of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
+    public static DumpXYZ of(IAtomData aAtomData, String... aSymbols) {return fromAtomData(aAtomData, aSymbols);}
+    public static DumpXYZ of(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {return fromAtomData(aAtomData, aSymbols);}
     public static DumpXYZ of(Iterable<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
+    public static DumpXYZ of(Iterable<? extends IAtomData> aAtomDataList, String... aSymbols) {return fromAtomDataList(aAtomDataList, aSymbols);}
+    public static DumpXYZ of(Iterable<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aSymbols) {return fromAtomDataList(aAtomDataList, aSymbols);}
+    public static DumpXYZ of(Iterable<? extends IAtomData> aAtomDataList, IListGetter<Object> aSymbolsGetter) {return fromAtomDataList(aAtomDataList, aSymbolsGetter);}
     public static DumpXYZ of(Collection<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
+    public static DumpXYZ of(Collection<? extends IAtomData> aAtomDataList, String... aSymbols) {return fromAtomDataList(aAtomDataList, aSymbols);}
+    public static DumpXYZ of(Collection<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aSymbols) {return fromAtomDataList(aAtomDataList, aSymbols);}
+    public static DumpXYZ of(Collection<? extends IAtomData> aAtomDataList, IListGetter<Object> aSymbolsGetter) {return fromAtomDataList(aAtomDataList, aSymbolsGetter);}
     /** 再提供一个 IListWrapper 的接口保证 DumpXYZ 也能输入 */
     public static DumpXYZ of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList) {return fromAtomDataList(aAtomDataList.asList());}
+    public static DumpXYZ of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, String... aSymbols) {return fromAtomDataList(aAtomDataList.asList(), aSymbols);}
+    public static DumpXYZ of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, Collection<? extends CharSequence> aSymbols) {return fromAtomDataList(aAtomDataList.asList(), aSymbols);}
+    public static DumpXYZ of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, IListGetter<Object> aSymbolsGetter) {return fromAtomDataList(aAtomDataList.asList(), aSymbolsGetter);}
     /** matlab stuffs */
     public static DumpXYZ of_compat(Object[] aAtomDataArray) {return fromAtomData_compat(aAtomDataArray);}
-    
+    public static DumpXYZ of_compat(Object[] aAtomDataArray, String... aSymbols) {return fromAtomData_compat(aAtomDataArray, aSymbols);}
     
     /// 文件读写
     /**

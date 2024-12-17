@@ -459,9 +459,11 @@ public class DataXYZ extends AbstractSettableAtomData {
             return new DataXYZ(tAtomNum, null, new LinkedHashMap<>(), rProperties, aAtomData.box().copy()).setSymbols(aSymbols);
         }
     }
+    public static DataXYZ fromAtomData(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {return fromAtomData(aAtomData, UT.Text.toArray(aSymbols));}
     /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
     public static DataXYZ of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
-    public static DataXYZ of(IAtomData aAtomData, String... aTypeNames) {return fromAtomData(aAtomData, aTypeNames);}
+    public static DataXYZ of(IAtomData aAtomData, String... aSymbols) {return fromAtomData(aAtomData, aSymbols);}
+    public static DataXYZ of(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {return fromAtomData(aAtomData, aSymbols);}
     
     
     /// 文件读写
