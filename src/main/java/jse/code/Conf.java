@@ -20,7 +20,7 @@ public class Conf {
     public static boolean DEBUG = OS.envZ("JSE_DEBUG", false);
     /** 运算是否开启边界检测，在 {@code jse 2.7.7} 以及更早的版本下不会直接检测 */
     public static boolean OPERATION_CHECK = OS.envZ("JSE_OPERATION_CHECK", true);
-    /** 是否将 groovy 的脚本库也添加到 jep 的 import hook 中，在 {@code jse 3.3.0} 之后不再默认包含，因此 python 中使用 groovy 包需要调用 {@link SP.Groovy} 来导入；这样可以加速 jep 初始化速度 */
+    /** 是否将 groovy 的脚本库也添加到 jep 的 import hook 中，在 {@code jse 3.2.2} 之后不再默认包含，因此 python 中使用 groovy 包需要调用 {@link SP.Groovy} 来导入；这样可以加速 jep 初始化速度 */
     public static boolean JEP_ADD_GROOVY_HOOK = OS.envZ("JSE_JEP_ADD_GROOVY_HOOK", false);
     /** 是否直接包含工作目录到类的搜索路径，在 {@code jse 3.0.0} 之后会包含，这样可以简化项目结构，当然在复杂目录下运行脚本可能因为这个操作而存在延迟 */
     public static boolean INCLUDE_WORKING_DIR = OS.envZ("JSE_INCLUDE_WORKING_DIR", true);
