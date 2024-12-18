@@ -3,6 +3,7 @@ package jse.atom;
 import jse.code.UT;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.math.vector.IVector;
+import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -111,6 +112,7 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      * @see #symbols()
      * @see IAtom#symbol()
      * @see SettableAtomData SettableAtomData: 关于具体实现的例子
+     * @implSpec 目前实现会要求对输入进行一次值拷贝，以避免存在可能的引用
      */
     @Override public AbstractSettableAtomData setSymbols(String... aSymbols) {throw new UnsupportedOperationException("setSymbols");}
     /**
@@ -136,22 +138,23 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      * @throws UnsupportedOperationException {@inheritDoc}
      * @see #masses()
      * @see IAtom#mass()
+     * @implSpec 需要调用 {@link #setMasses(IVector)} 或任何等价形式
      */
-    @Override public AbstractSettableAtomData setMasses(double... aMasses) {throw new UnsupportedOperationException("setMasses");}
+    @Override public AbstractSettableAtomData setMasses(double... aMasses) {return setMasses(new Vector(aMasses));}
     /**
      * {@inheritDoc}
      * @see #setMasses(double...)
      * @see Collection
-     * @implSpec 需要调用 {@link #setMasses(double...)} 或任何等价形式
+     * @implSpec 需要调用 {@link #setMasses(IVector)} 或任何等价形式
      */
-    @Override public AbstractSettableAtomData setMasses(Collection<? extends Number> aMasses) {return setMasses(Vectors.from(aMasses).internalData());}
+    @Override public AbstractSettableAtomData setMasses(Collection<? extends Number> aMasses) {return setMasses(Vectors.from(aMasses));}
     /**
      * {@inheritDoc}
      * @see #setMasses(double...)
      * @see IVector
-     * @implSpec 需要调用 {@link #setMasses(double...)} 或任何等价形式
+     * @implSpec 目前实现会要求对输入进行一次值拷贝，以避免存在可能的引用
      */
-    @Override public AbstractSettableAtomData setMasses(IVector aMasses) {return setMasses(aMasses.data());}
+    @Override public AbstractSettableAtomData setMasses(IVector aMasses) {throw new UnsupportedOperationException("setMasses");}
     /**
      * {@inheritDoc}
      * @return {@inheritDoc}
@@ -279,6 +282,7 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      * @param aAtom {@inheritDoc}
      * @see #atoms()
      * @see #atom(int)
+     * @implSpec 目前实现会要求对输入进行一次值拷贝，以避免存在可能的引用
      */
     @Override public void setAtom(int aIdx, IAtom aAtom) {
         ISettableAtom tAtom = this.atom(aIdx);
