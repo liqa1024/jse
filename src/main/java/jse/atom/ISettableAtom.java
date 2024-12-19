@@ -5,7 +5,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 /**
  * 可以设置属性值的原子接口，通过 {@link #setX(double)}, {@link #setY(double)},
  * {@link #setZ(double)} 来修改具体坐标值；通过 {@link #setID(int)}
- * 来修改原子的 {@code id}，{@link #setType(int)} 来修改原子的种类编号。
+ * 来修改原子的 id，{@link #setType(int)} 来修改原子的种类编号。
  * <p>
  * 进一步提供了 {@link #getX()}, {@link #getY()}, {@link #getZ()},
  * {@link #getId()}, {@link #getType()} 来获取属性，借助
@@ -21,31 +21,32 @@ import org.jetbrains.annotations.VisibleForTesting;
  * @see IAtom IAtom: 通用的原子接口
  * @see ISettableXYZ ISettableXYZ: 可以设置的三维坐标接口
  * @see Atom Atom: 一般的原子实现
+ * @see AtomID AtomID: 包含 {@code id} 的原子实现
  * @see AtomFull AtomFull: 包含速度信息的原子实现
  * @author liqa
  */
 public interface ISettableAtom extends IAtom, ISettableXYZ {
     /** @return {@inheritDoc} */
-    ISettableAtom copy();
+    @Override ISettableAtom copy();
     
     /**
      * {@inheritDoc}
      * @param aX {@inheritDoc}
      * @return {@inheritDoc}
      */
-    ISettableAtom setX(double aX);
+    @Override ISettableAtom setX(double aX);
     /**
      * {@inheritDoc}
      * @param aY {@inheritDoc}
      * @return {@inheritDoc}
      */
-    ISettableAtom setY(double aY);
+    @Override ISettableAtom setY(double aY);
     /**
      * {@inheritDoc}
      * @param aZ {@inheritDoc}
      * @return {@inheritDoc}
      */
-    ISettableAtom setZ(double aZ);
+    @Override ISettableAtom setZ(double aZ);
     /**
      * {@inheritDoc}
      * @param aX {@inheritDoc}
@@ -53,21 +54,21 @@ public interface ISettableAtom extends IAtom, ISettableXYZ {
      * @param aZ {@inheritDoc}
      * @return {@inheritDoc}
      */
-    default ISettableAtom setXYZ(double aX, double aY, double aZ) {return setX(aX).setY(aY).setZ(aZ);}
+    @Override default ISettableAtom setXYZ(double aX, double aY, double aZ) {return setX(aX).setY(aY).setZ(aZ);}
     /**
      * {@inheritDoc}
      * @param aXYZ {@inheritDoc}
      * @return {@inheritDoc}
      * @see IXYZ
      */
-    default ISettableAtom setXYZ(IXYZ aXYZ) {return setXYZ(aXYZ.x(), aXYZ.y(), aXYZ.z());}
+    @Override default ISettableAtom setXYZ(IXYZ aXYZ) {return setXYZ(aXYZ.x(), aXYZ.y(), aXYZ.z());}
     
     /**
      * 设置原子 id 值，从 1 开始
      * @param aID 需要设置的 id 值
      * @return 自身方便链式调用
      */
-    ISettableAtom setID(int aID);
+    default ISettableAtom setID(int aID) {throw new UnsupportedOperationException("setID");}
     /**
      * 设置原子种类编号，从 1 开始
      * @param aType 需要设置的种类编号

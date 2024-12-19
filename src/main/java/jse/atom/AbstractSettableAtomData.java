@@ -182,6 +182,8 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
         @Override public double mass() {return AbstractSettableAtomData.this.mass(type());}
         /** 转发 {@link AbstractSettableAtomData#hasMass()} */
         @Override public boolean hasMass() {return AbstractSettableAtomData.this.hasMass();}
+        /** {@link IAtomData} 内部的原子数据拷贝会统一返回带有 id 的原子 */
+        @Override public AtomID copy() {return hasVelocity() ? new AtomFull(this) : new AtomID(this);}
         
         /**
          * 为内部 id {@link #id_()} 包装一层检测 id

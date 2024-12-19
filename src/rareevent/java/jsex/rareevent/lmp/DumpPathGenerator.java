@@ -1,9 +1,6 @@
 package jsex.rareevent.lmp;
 
-import jse.atom.AbstractAtom;
-import jse.atom.AtomData;
-import jse.atom.IAtom;
-import jse.atom.IAtomData;
+import jse.atom.*;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 import jse.code.collection.AbstractRandomAccessList;
@@ -183,6 +180,7 @@ public class DumpPathGenerator extends AbstractHasAutoShutdown implements IPathG
                     @Override public int id() {return index+1;}
                     @Override public int type() {return (int)rData.get(index, TYPE_XYZ_TYPE_COL);}
                     @Override public int index() {return index;}
+                    @Override public AtomID copy() {return new AtomID(this);}
                 };
             }
             @Override public int size() {return tAtomNum;}

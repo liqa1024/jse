@@ -18,9 +18,10 @@ package jse.atom;
  * @see IAtom IAtom: 通用的原子接口
  * @see ISettableAtom ISettableAtom: 可设置原子属性的原子接口
  * @see Atom Atom: 一般的原子实现
+ * @see AtomID AtomID: 包含 id 信息的原子实现
  * @author liqa
  */
-public class AtomFull extends Atom {
+public class AtomFull extends AtomID {
     public double mVx, mVy, mVz;
     /**
      * 直接通过一个原子创建一个新的原子对象
@@ -41,6 +42,8 @@ public class AtomFull extends Atom {
         super();
         mVx = 0.0; mVy = 0.0; mVz = 0.0;
     }
+    /** @return {@inheritDoc} */
+    @Override public AtomFull copy() {return new AtomFull(this);}
     
     /** @return {@inheritDoc} */
     @Override public double vx() {return mVx;}

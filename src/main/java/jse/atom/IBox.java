@@ -53,7 +53,7 @@ public interface IBox extends IXYZ {
     default IXYZ c() {return new XYZ(cx(), cy(), cz());}
     
     /** @return {@inheritDoc} */
-    IBox copy();
+    @Override IBox copy();
     
     /**
      * 调用此方法可以避免创建临时 xyz 对象
@@ -122,9 +122,9 @@ public interface IBox extends IXYZ {
     double cz();
     
     /// IXYZ stuffs
-    /** @return {@link #ax()} */ default double x() {return ax();}
-    /** @return {@link #by()} */ default double y() {return by();}
-    /** @return {@link #cz()} */ default double z() {return cz();}
+    /** @return {@link #ax()} */ @Override default double x() {return ax();}
+    /** @return {@link #by()} */ @Override default double y() {return by();}
+    /** @return {@link #cz()} */ @Override default double z() {return cz();}
     
     /// lammps prism box stuffs
     /** @return {@link #bx()} */ default double xy() {return bx();}

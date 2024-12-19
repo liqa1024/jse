@@ -794,11 +794,11 @@ public class UT {
             // 获取原子数据，这里只有 XYZ 数据
             int tAtomNum = (aBytes.length - Double.BYTES*3) / (Double.BYTES*3);
             List<Atom> rAtoms = new ArrayList<>(tAtomNum);
-            for (int tID = 1; tID <= tAtomNum; ++tID) {
+            for (int i = 0; i < tAtomNum; ++i) {
                 tX = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
                 tY = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
                 tZ = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
-                rAtoms.add(new Atom(tX, tY, tZ, tID, 1));
+                rAtoms.add(new Atom(tX, tY, tZ));
             }
             // 返回结果
             return new AtomData(rAtoms, new Box(tX, tY, tZ));
@@ -837,12 +837,12 @@ public class UT {
             // 获取原子数据，这里只有 XYZ 数据
             int tAtomNum = (aBytes.length - Double.BYTES*3 - Integer.BYTES) / (Double.BYTES*3 + Integer.BYTES);
             List<Atom> rAtoms = new ArrayList<>(tAtomNum);
-            for (int tID = 1; tID <= tAtomNum; ++tID) {
+            for (int i = 0; i < tAtomNum; ++i) {
                 tX = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
                 tY = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
                 tZ = bytes2double(aBytes, tIdx); tIdx+=Double.BYTES;
                 tType = bytes2int(aBytes, tIdx); tIdx+=Integer.BYTES;
-                rAtoms.add(new Atom(tX, tY, tZ, tID, tType));
+                rAtoms.add(new Atom(tX, tY, tZ, tType));
             }
             // 返回结果
             return new AtomData(rAtoms, tAtomTypeNum, new Box(tX, tY, tZ));

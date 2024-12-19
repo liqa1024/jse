@@ -157,6 +157,8 @@ public abstract class AbstractAtomData implements IAtomData {
         @Override public double mass() {return AbstractAtomData.this.mass(type());}
         /** 转发 {@link AbstractAtomData#hasMass()} */
         @Override public boolean hasMass() {return AbstractAtomData.this.hasMass();}
+        /** {@link IAtomData} 内部的原子数据拷贝会统一返回带有 id 的原子 */
+        @Override public AtomID copy() {return hasVelocity() ? new AtomFull(this) : new AtomID(this);}
         
         /**
          * 为内部 id {@link #id_()} 包装一层检测 id
@@ -322,7 +324,7 @@ public abstract class AbstractAtomData implements IAtomData {
         final boolean tHasVelocities = hasVelocity();
         @Nullable List<@Nullable String> tSymbols = symbols();
         return new SettableAtomData(
-            NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (Atom::new)),
+            NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (AtomID::new)),
             atomTypeNumber(), box().copy(), tHasVelocities,
             tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR)
         );
@@ -338,7 +340,7 @@ public abstract class AbstractAtomData implements IAtomData {
         final boolean tHasVelocities = hasVelocity();
         @Nullable List<@Nullable String> tSymbols = symbols();
         return new SettableAtomData(
-            NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (Atom::new)),
+            NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (AtomID::new)),
             atomTypeNumber(), box().copy(), tHasVelocities,
             tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR)
         );
@@ -356,7 +358,7 @@ public abstract class AbstractAtomData implements IAtomData {
         final boolean tHasVelocities = hasVelocity();
         @Nullable List<@Nullable String> tSymbols = symbols();
         return new SettableAtomData(
-            NewCollections.from(aAtomNum, tHasVelocities ? (i -> new AtomFull()) : (i -> new Atom())),
+            NewCollections.from(aAtomNum, tHasVelocities ? (i -> new AtomFull()) : (i -> new AtomID())),
             atomTypeNumber(), aBox, tHasVelocities,
             tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR)
         );

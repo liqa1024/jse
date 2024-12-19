@@ -6,7 +6,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * 通用的原子接口，通过 {@link #x()}, {@link #y()},
  * {@link #z()} 来获取具体坐标值；通过 {@link #id()}
- * 来获取原子的 {@code id}，{@link #type()} 来获取原子的种类编号。
+ * 来获取原子的 id，{@link #type()} 来获取原子的种类编号。
  * <p>
  * {@code id} 和 {@code type} 和 lammps 保持一致从 {@code 1} 开始索引
  * <p>
@@ -15,23 +15,27 @@ import org.jetbrains.annotations.Nullable;
  * @see IXYZ IXYZ: 通用的三维坐标接口
  * @see ISettableAtom ISettableAtom: 可以修改的原子接口
  * @see Atom Atom: 一般的原子实现
+ * @see AtomID AtomID: 包含 id 的原子实现
  * @see AtomFull AtomFull: 包含速度信息的原子实现
  * @author liqa
  */
 public interface IAtom extends IXYZ {
     /** @return 此原子的 x 坐标值 */
-    double x();
+    @Override double x();
     /** @return 此原子的 y 坐标值 */
-    double y();
+    @Override double y();
     /** @return 此原子的 z 坐标值 */
-    double z();
+    @Override double z();
     /**
      * @return 此原子的 id，从 1 开始 (对应 lammps 中的原子
      * id)，如果不存在 id 属性则会返回 {@code index()+1}，
-     * 如果两者都不存在则会返回 {@code -1}
+     * 如果两者都不存在则会返回 {@code -1}；目前 jse 一般实现原子 ({@link Atom})
+     * 统一不再包含 id 信息，而在原子数据 {@link IAtomData}
+     * 中获取到的原子会统一包含此信息，或者使用 {@link AtomID} 和
+     * {@link AtomFull} 来包含此信息
      * @see #index()
      */
-    int id();
+    default int id() {return -1;}
     /** @return 此原子的种类编号，从 1 开始 (对应 lammps 中的原子 type) */
     int type();
     /**
@@ -41,7 +45,7 @@ public interface IAtom extends IXYZ {
     default int index() {return -1;}
     
     /** @return {@inheritDoc} */
-    IAtom copy();
+    @Override IAtom copy();
     
     /**
      * @return 此原子的 x 方向速度值，如果不存在速度则会返回 {@code 0.0}
@@ -71,7 +75,7 @@ public interface IAtom extends IXYZ {
     
     /**
      * @return 此原子的元素符号，如果不存在元素符号信息则会返回
-     * {@code null}；目前 jse 默认实现原子 ({@link Atom}, {@link AtomFull})
+     * {@code null}；目前 jse 默认实现原子 ({@link Atom}, {@link AtomID}, {@link AtomFull})
      * 不会包含元素符号信息以及质量信息，因此只有在原子数据
      * {@link IAtomData} 中获取到的原子才有可能包含此信息
      *
@@ -83,7 +87,7 @@ public interface IAtom extends IXYZ {
     default boolean hasSymbol() {return false;}
     /**
      * @return 此原子的质量，如果不存在质量信息则会返回
-     * {@link Double#NaN}；目前 jse 默认实现原子 ({@link Atom}, {@link AtomFull})
+     * {@link Double#NaN}；目前 jse 默认实现原子 ({@link Atom}, {@link AtomID}, {@link AtomFull})
      * 不会包含元素符号信息以及质量信息，因此只有在原子数据
      * {@link IAtomData} 中获取到的原子才有可能包含此信息
      *
