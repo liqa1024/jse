@@ -13,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.DoubleUnaryOperator;
@@ -46,7 +47,7 @@ public class RowMatrix extends DoubleArrayMatrix {
         public void trimToSize() {mData.trimToSize();}
         
         public RowMatrix build() {
-            DoubleList tData = mData;
+            DoubleList tData = Objects.requireNonNull(mData);
             mData = null; // 设为 null 防止再通过 Builder 来修改此数据
             return new RowMatrix(tData.size()/mColNum, mColNum, tData.internalData());
         }

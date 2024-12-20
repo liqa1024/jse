@@ -9,6 +9,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import static jse.math.vector.AbstractVector.*;
 
@@ -34,7 +35,7 @@ public class LogicalVector extends BooleanArrayVector {
         private Builder(int aInitSize) {super(aInitSize);}
         
         public LogicalVector build() {
-            boolean[] tData = mData;
+            boolean[] tData = Objects.requireNonNull(mData);
             mData = null; // 设为 null 防止再通过 Builder 来修改此数据
             return new LogicalVector(mSize, tData);
         }

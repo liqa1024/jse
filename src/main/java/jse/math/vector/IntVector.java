@@ -9,6 +9,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import static jse.math.vector.AbstractVector.*;
@@ -36,7 +37,7 @@ public class IntVector extends IntArrayVector {
         private Builder(int aInitSize) {super(aInitSize);}
         
         public IntVector build() {
-            int[] tData = mData;
+            int[] tData = Objects.requireNonNull(mData);
             mData = null; // 设为 null 防止再通过 Builder 来修改此数据
             return new IntVector(mSize, tData);
         }

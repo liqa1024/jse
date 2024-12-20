@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 import java.util.function.IntUnaryOperator;
@@ -52,7 +53,7 @@ public class RowIntMatrix extends IntArrayMatrix {
         public void trimToSize() {mData.trimToSize();}
         
         public RowIntMatrix build() {
-            IntList tData = mData;
+            IntList tData = Objects.requireNonNull(mData);
             mData = null; // 设为 null 防止再通过 Builder 来修改此数据
             return new RowIntMatrix(tData.size()/mColNum, mColNum, tData.internalData());
         }

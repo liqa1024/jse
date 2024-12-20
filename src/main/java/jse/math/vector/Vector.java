@@ -11,6 +11,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
 
 /**
@@ -35,7 +36,7 @@ public class Vector extends DoubleArrayVector {
         private Builder(int aInitSize) {super(aInitSize);}
         
         public Vector build() {
-            double[] tData = mData;
+            double[] tData = Objects.requireNonNull(mData);
             mData = null; // 设为 null 防止再通过 Builder 来修改此数据
             return new Vector(mSize, tData);
         }

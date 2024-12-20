@@ -16,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.DoubleUnaryOperator;
@@ -57,7 +58,7 @@ public class RowComplexMatrix extends BiDoubleArrayMatrix {
         public void trimToSize() {mData.trimToSize();}
         
         public RowComplexMatrix build() {
-            ComplexDoubleList tData = mData;
+            ComplexDoubleList tData = Objects.requireNonNull(mData);
             mData = null; // 设为 null 防止再通过 Builder 来修改此数据
             return new RowComplexMatrix(tData.size()/mColNum, mColNum, tData.internalData());
         }

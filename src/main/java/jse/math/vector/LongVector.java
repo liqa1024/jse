@@ -8,6 +8,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.LongUnaryOperator;
 
 import static jse.math.vector.AbstractVector.*;
@@ -35,7 +36,7 @@ public final class LongVector extends LongArrayVector {
         private Builder(int aInitSize) {super(aInitSize);}
 
         public LongVector build() {
-            long[] tData = mData;
+            long[] tData = Objects.requireNonNull(mData);
             mData = null; // 设为 null 防止再通过 Builder 来修改此数据
             return new LongVector(mSize, tData);
         }
