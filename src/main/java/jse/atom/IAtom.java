@@ -26,16 +26,30 @@ public interface IAtom extends IXYZ {
     @Override double y();
     /** @return 此原子的 z 坐标值 */
     @Override double z();
+    
     /**
-     * @return 此原子的 id，从 1 开始 (对应 lammps 中的原子
-     * id)，如果不存在 id 属性则会返回 {@code index()+1}，
-     * 如果两者都不存在则会返回 {@code -1}；目前 jse 一般实现原子 ({@link Atom})
-     * 统一不再包含 id 信息，而在原子数据 {@link IAtomData}
-     * 中获取到的原子会统一包含此信息，或者使用 {@link AtomID} 和
-     * {@link AtomFull} 来包含此信息
+     * 获取原子的 id 信息 (对应 lammps 中的原子 id)。
+     * <p>
+     * 可能存在原子不包含 id 信息 (甚至是大多数情况)，则会尝试返回
+     * {@code index()+1}，而当索引 {@link #index()} 也不存在时则会返回
+     * {@code -1}。
+     * <p>
+     * 现在 jse 的一般实现原子 {@link Atom} 统一不再包含 id
+     * 信息，因此会返回 {@code -1}；而在原子数据 {@link IAtomData} 中的原子由于索引
+     * {@link #index()} 总是合法，因此会返回 {@code >= 1} 的值。
+     * 可以根据 {@link #hasID()} 查看此原子是否真的包含 id 信息
+     * <p>
+     * 可以使用 {@link AtomID} 或者 {@link AtomFull} 来创建一个包含 id 信息的原子
+     *
+     * @return 此原子的 id，从 1 开始
+     * @see #hasID()
      * @see #index()
+     * @see AtomID
      */
     default int id() {return -1;}
+    /** @return 此原子是否真实包含 id 信息 */
+    default boolean hasID() {return false;}
+    
     /** @return 此原子的种类编号，从 1 开始 (对应 lammps 中的原子 type) */
     int type();
     /**
@@ -43,29 +57,35 @@ public interface IAtom extends IXYZ {
      * @see IAtomData
      */
     default int index() {return -1;}
+    /** @return 此原子是否包含索引信息 */
+    default boolean hasIndex() {return index()>=0;}
     
     /** @return {@inheritDoc} */
-    @Override IAtom copy();
+    @Override ISettableAtom copy();
     
     /**
      * @return 此原子的 x 方向速度值，如果不存在速度则会返回 {@code 0.0}
      * @see #hasVelocity()
+     * @see AtomFull AtomFull: 包含速度信息的原子
      */
     default double vx() {return 0.0;}
     /**
      * @return 此原子的 y 方向速度值，如果不存在速度则会返回 {@code 0.0}
      * @see #hasVelocity()
+     * @see AtomFull AtomFull: 包含速度信息的原子
      */
     default double vy() {return 0.0;}
     /**
      * @return 此原子的 z 方向速度值，如果不存在速度则会返回 {@code 0.0}
      * @see #hasVelocity()
+     * @see AtomFull AtomFull: 包含速度信息的原子
      */
     default double vz() {return 0.0;}
     /**
      * @return 此原子三个方向的速度值组成的 {@link IXYZ} 对象，如果不存在速度则会返回 {@code [0.0, 0.0, 0.0]}
      * @see #hasVelocity()
      * @see IXYZ
+     * @see AtomFull AtomFull: 包含速度信息的原子
      */
     default IXYZ vxyz() {return new XYZ(vx(), vy(), vz());}
     /** @return 此原子是否真实包含速度信息 */

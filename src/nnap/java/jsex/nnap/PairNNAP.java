@@ -185,10 +185,10 @@ public class PairNNAP extends LmpPlugin.Pair {
         mCutsq = new double[tArgLen];
         for (int type = 1; type < tArgLen; ++type) {
             String tElem = aArgs[2+type];
-            int idx = mNNAP.indexOf(tElem);
-            if (idx < 0) throw new IllegalArgumentException("Invalid element ("+tElem+") in pair_coeff");
-            mLmpType2NNAPType[type] = idx+1;
-            mCutoff[type] = mNNAP.model(idx+1).basis().rcut();
+            int tNNAPType = mNNAP.typeOf(tElem);
+            if (tNNAPType <= 0) throw new IllegalArgumentException("Invalid element ("+tElem+") in pair_coeff");
+            mLmpType2NNAPType[type] = tNNAPType;
+            mCutoff[type] = mNNAP.model(tNNAPType).basis().rcut();
             mCutsq[type] = mCutoff[type]*mCutoff[type];
         }
     }

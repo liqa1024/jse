@@ -255,9 +255,9 @@ public class Trainer implements IAutoShutdown, ISavable {
     public @Unmodifiable List<String> symbols() {return AbstractCollections.from(mSymbols);}
     public String units() {return mUnits;}
     
-    public IntUnaryOperator typeMap(IAtomData aAtomData) {return IBasis.typeMap_(symbols(), aAtomData);}
-    public boolean sameOrder(List<String> aDataSymbols) {return IBasis.sameOrder_(symbols(), aDataSymbols);}
-    public int indexOf(String aSymbol) {return IBasis.indexOf_(symbols(), aSymbol);}
+    public IntUnaryOperator typeMap(IAtomData aAtomData) {return IAtomData.typeMap_(symbols(), aAtomData);}
+    public boolean sameOrder(Collection<? extends CharSequence> aSymbolsIn) {return IAtomData.sameSymbolOrder_(symbols(), aSymbolsIn);}
+    public int typeOf(String aSymbol) {return IAtomData.typeOf_(symbols(), aSymbol);}
     
     /** 重写实现自定义模型创建 */
     protected void initModel() {

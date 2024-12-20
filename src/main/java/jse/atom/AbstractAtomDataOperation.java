@@ -107,7 +107,8 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
                         tX + tDirAX + tDirBX + tCx*k,
                         tY + tDirAY + tDirBY + tCy*k,
                         tZ + tDirAZ + tDirBZ + tCz*k
-                    ).setID(tShift + tID).setType(tType);
+                    ).setType(tType);
+                    if (tAtom.hasID()) rAtom.setID(tShift + tID);
                     if (tAtom.hasVelocity()) rAtom.setVxyz(tVx, tVy, tVz);
                 }}}
             } else {
@@ -122,7 +123,8 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
                         tX + tDirX,
                         tY + tDirY,
                         tZ + tCz*k
-                    ).setID(tShift + tID).setType(tType);
+                    ).setType(tType);
+                    if (tAtom.hasID()) rAtom.setID(tShift + tID);
                     if (tAtom.hasVelocity()) rAtom.setVxyz(tVx, tVy, tVz);
                 }}}
             }
@@ -166,14 +168,15 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
                     tBuf.mY -= MathEX.Code.floor(tBuf.mY);
                     tBuf.mZ -= MathEX.Code.floor(tBuf.mZ);
                     rBox.toCartesian(tBuf);
-                    subAtom.setXYZ(tBuf).setID(tAtom.id()).setType(tAtom.type());
+                    subAtom.setXYZ(tBuf).setType(tAtom.type());
                 } else {
                     subAtom.setXYZ(
                         tAtom.x() % rBox.x(),
                         tAtom.y() % rBox.y(),
                         tAtom.z() % rBox.z()
-                    ).setID(tAtom.id()).setType(tAtom.type());
+                    ).setType(tAtom.type());
                 }
+                if (tAtom.hasID()) subAtom.setID(tAtom.id());
                 if (tAtom.hasVelocity()) subAtom.setVxyz(tAtom.vx(), tAtom.vy(), tAtom.vz());
             }
             rSlice[i] = subAtomData;
@@ -236,7 +239,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     private IAtomData refAtomData_(List<? extends IAtom> aAtoms) {
         IAtomData tThis = thisAtomData_();
         @Nullable List<@Nullable String> tSymbols = tThis.symbols();
-        return new AtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
+        return new AtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasID(), tThis.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
     
     /** stuff to override */

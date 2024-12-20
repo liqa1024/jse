@@ -8,6 +8,5 @@ public interface IVaspCommonData {
     String @Nullable[] typeNames();
     IIntVector atomNumbers();
     boolean isCartesian();
-    @Nullable IIntVector ids();
     VaspBox box();
 }

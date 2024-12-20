@@ -44,6 +44,7 @@ public final class SettableAtomData extends AbstractSettableAtomData {
     private final @Unmodifiable List<? extends ISettableAtom> mAtoms;
     private final IBox mBox;
     private int mAtomTypeNum;
+    private final boolean mHasID;
     private final boolean mHasVelocity;
     private String @Nullable[] mSymbols;
     
@@ -54,13 +55,15 @@ public final class SettableAtomData extends AbstractSettableAtomData {
      * @param aAtoms 原子数据的原子列表，这里需要是可以设置的原子 {@link ISettableAtom}
      * @param aAtomTypeNum 需要的原子种类数目，如果实际原子种类编号大于此值会被截断
      * @param aBox 原子数目的模拟盒
+     * @param aHasID 原子数据是否包含 id 信息
      * @param aHasVelocity 原子数据是否包含速度信息
      * @param aSymbols 原子数据的元素符号信息
      */
-    public SettableAtomData(List<? extends ISettableAtom> aAtoms, int aAtomTypeNum, IBox aBox, boolean aHasVelocity, String... aSymbols) {
+    public SettableAtomData(List<? extends ISettableAtom> aAtoms, int aAtomTypeNum, IBox aBox, boolean aHasID, boolean aHasVelocity, String... aSymbols) {
         mAtoms = aAtoms;
         mBox = aBox;
         mAtomTypeNum = aAtomTypeNum;
+        mHasID = aHasID;
         mHasVelocity = aHasVelocity;
         mSymbols = (aSymbols==null || aSymbols.length==0) ? null : aSymbols;
     }
@@ -71,10 +74,11 @@ public final class SettableAtomData extends AbstractSettableAtomData {
      * @param aAtoms 原子数据的原子列表，这里需要是可以设置的原子 {@link ISettableAtom}
      * @param aAtomTypeNum 需要的原子种类数目，如果实际原子种类编号大于此值会被截断
      * @param aBox 原子数目的模拟盒
+     * @param aHasID 原子数据是否包含 id 信息
      * @param aHasVelocity 原子数据是否包含速度信息
      */
-    public SettableAtomData(List<? extends ISettableAtom> aAtoms, int aAtomTypeNum, IBox aBox, boolean aHasVelocity) {
-        this(aAtoms, aAtomTypeNum, aBox, aHasVelocity, (!aAtoms.isEmpty() && aAtoms.get(0).hasSymbol()) ? new String[aAtomTypeNum] : ZL_STR);
+    public SettableAtomData(List<? extends ISettableAtom> aAtoms, int aAtomTypeNum, IBox aBox, boolean aHasID, boolean aHasVelocity) {
+        this(aAtoms, aAtomTypeNum, aBox, aHasID, aHasVelocity, (!aAtoms.isEmpty() && aAtoms.get(0).hasSymbol()) ? new String[aAtomTypeNum] : ZL_STR);
         if (mSymbols != null) for (IAtom tAtom : aAtoms) {
             int tTypeMM = Math.min(tAtom.type(), mAtomTypeNum) - 1;
             if (mSymbols[tTypeMM] == null) mSymbols[tTypeMM] = tAtom.symbol();
@@ -86,11 +90,13 @@ public final class SettableAtomData extends AbstractSettableAtomData {
      * 现在会自动通过输入的原子列表自动检测种类数目，并且生成元素符号信息
      * @param aAtoms 原子数据的原子列表，这里需要是可以设置的原子 {@link ISettableAtom}
      * @param aBox 原子数目的模拟盒
+     * @param aHasID 原子数据是否包含 id 信息
      * @param aHasVelocity 原子数据是否包含速度信息
      */
-    public SettableAtomData(List<? extends ISettableAtom> aAtoms, IBox aBox, boolean aHasVelocity) {
+    public SettableAtomData(List<? extends ISettableAtom> aAtoms, IBox aBox, boolean aHasID, boolean aHasVelocity) {
         mAtoms = aAtoms;
         mBox = aBox;
+        mHasID = aHasID;
         mHasVelocity = aHasVelocity;
         int tAtomTypeNum = 1;
         for (IAtom tAtom : aAtoms) {
@@ -106,20 +112,20 @@ public final class SettableAtomData extends AbstractSettableAtomData {
     /**
      * 创建一个一般的可以设置的原子数据，内部直接存储输入的引用
      * <p>
-     * 现在会自动通过输入的原子列表检测是否包含速度信息，并且生成元素符号信息
+     * 现在会自动通过输入的原子列表检测是否包含 id 和速度信息，并且生成元素符号信息
      * @param aAtoms 原子数据的原子列表，这里需要是可以设置的原子 {@link ISettableAtom}
      * @param aAtomTypeNum 需要的原子种类数目，如果实际原子种类编号大于此值会被截断
      * @param aBox 原子数目的模拟盒
      */
-    public SettableAtomData(List<? extends ISettableAtom> aAtoms, int aAtomTypeNum, IBox aBox) {this(aAtoms, aAtomTypeNum, aBox, !aAtoms.isEmpty() && aAtoms.get(0).hasVelocity());}
+    public SettableAtomData(List<? extends ISettableAtom> aAtoms, int aAtomTypeNum, IBox aBox) {this(aAtoms, aAtomTypeNum, aBox, !aAtoms.isEmpty() && aAtoms.get(0).hasID(), !aAtoms.isEmpty() && aAtoms.get(0).hasVelocity());}
     /**
      * 创建一个一般的可以设置的原子数据，内部直接存储输入的引用
      * <p>
-     * 现在会自动通过输入的原子列表补全其他信息，包括种类数目，元素符号信息，以及是否包含速度信息
+     * 现在会自动通过输入的原子列表补全其他信息，包括种类数目，元素符号信息，以及是否包含 id 和速度信息
      * @param aAtoms 原子数据的原子列表，这里需要是可以设置的原子 {@link ISettableAtom}
      * @param aBox 原子数目的模拟盒
      */
-    public SettableAtomData(List<? extends ISettableAtom> aAtoms, IBox aBox) {this(aAtoms, aBox, !aAtoms.isEmpty() && aAtoms.get(0).hasVelocity());}
+    public SettableAtomData(List<? extends ISettableAtom> aAtoms, IBox aBox) {this(aAtoms, aBox, !aAtoms.isEmpty() && aAtoms.get(0).hasID(), !aAtoms.isEmpty() && aAtoms.get(0).hasVelocity());}
     
     /**
      * {@inheritDoc}
@@ -187,6 +193,11 @@ public final class SettableAtomData extends AbstractSettableAtomData {
         return this;
     }
     
+    /**
+     * @return {@inheritDoc}
+     * @see IAtom#hasID()
+     */
+    @Override public boolean hasID() {return mHasID;}
     /**
      * @return {@inheritDoc}
      * @see IAtom#hasVelocity()

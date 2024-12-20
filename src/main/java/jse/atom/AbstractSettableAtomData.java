@@ -172,6 +172,8 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      * @see #atom(int)
      */
     protected abstract class AbstractSettableAtom_ extends AbstractSettableAtom {
+        /** 转发 {@link AbstractAtomData#hasID()} */
+        @Override public boolean hasID() {return AbstractSettableAtomData.this.hasID();}
         /** 转发 {@link AbstractSettableAtomData#hasVelocity()} */
         @Override public boolean hasVelocity() {return AbstractSettableAtomData.this.hasVelocity();}
         /** 转发 {@link AbstractSettableAtomData#symbol(int)} */
@@ -182,14 +184,17 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
         @Override public double mass() {return AbstractSettableAtomData.this.mass(type());}
         /** 转发 {@link AbstractSettableAtomData#hasMass()} */
         @Override public boolean hasMass() {return AbstractSettableAtomData.this.hasMass();}
-        /** {@link IAtomData} 内部的原子数据拷贝会统一返回带有 id 的原子 */
-        @Override public AtomID copy() {return hasVelocity() ? new AtomFull(this) : new AtomID(this);}
         
         /**
          * 为内部 id {@link #id_()} 包装一层检测 id
-         * 是否存在，如果不存在则自动返回 {@link #index()}
+         * 是否存在，如果不存在或者 {@code id <= 0}
+         * 则自动返回 {@link #index()}
          */
-        @Override public int id() {int tID = id_(); return tID<=0 ? (index()+1) : tID;}
+        @Override public int id() {
+            if (!hasID()) return (index()+1);
+            int tID = id_();
+            return tID<=0 ? (index()+1) : tID;
+        }
         /**
          * 为内部 type {@link #type_()} 包装一层检测 type
          * 是否会超过 {@link #atomTypeNumber()}，如果超过了则自动截断
@@ -218,8 +223,15 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
         @Override public ISettableAtom setY(double aY) {setY_(aY); return this;}
         /** 为内部修改 z 值 {@link #setZ_(double)} 包装一层返回自身 */
         @Override public ISettableAtom setZ(double aZ) {setZ_(aZ); return this;}
-        /** 为内部修改 id 值 {@link #setID_(int)} 包装一层返回自身 */
-        @Override public ISettableAtom setID(int aID) {setID_(aID); return this;}
+        /**
+         * 为内部修改 id 值 {@link #setID_(int)} 包装一层检测是否确实存在 id
+         * ({@link #hasID()})，如果不存在则直接抛出错误 {@link UnsupportedOperationException}
+         */
+        @Override public ISettableAtom setID(int aID) {
+            if (!hasID()) throw new UnsupportedOperationException("setID");
+            setID_(aID);
+            return this;
+        }
         /**
          * 为内部修改 type 值 {@link #setType_(int)} 包装一层返回自身，
          * 并且自动检测 aType 过大后调用 {@link #setAtomTypeNumber(int)}
@@ -232,24 +244,36 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
             return this;
         }
         /**
-         * 为内部修改 vx 值 {@link #setVx_(double)} 包装一层检测是否存在确实速度
+         * 为内部修改 vx 值 {@link #setVx_(double)} 包装一层检测是否确实存在速度
          * ({@link #hasVelocity()})，如果不存在则直接抛出错误 {@link UnsupportedOperationException}
          */
-        @Override public ISettableAtom setVx(double aVx) {if (!hasVelocity()) throw new UnsupportedOperationException("setVx"); setVx_(aVx); return this;}
+        @Override public ISettableAtom setVx(double aVx) {
+            if (!hasVelocity()) throw new UnsupportedOperationException("setVx");
+            setVx_(aVx);
+            return this;
+        }
         /**
-         * 为内部修改 vy 值 {@link #setVy_(double)} 包装一层检测是否存在确实速度
+         * 为内部修改 vy 值 {@link #setVy_(double)} 包装一层检测是否确实存在速度
          * ({@link #hasVelocity()})，如果不存在则直接抛出错误 {@link UnsupportedOperationException}
          */
-        @Override public ISettableAtom setVy(double aVy) {if (!hasVelocity()) throw new UnsupportedOperationException("setVy"); setVy_(aVy); return this;}
+        @Override public ISettableAtom setVy(double aVy) {
+            if (!hasVelocity()) throw new UnsupportedOperationException("setVy");
+            setVy_(aVy);
+            return this;
+        }
         /**
-         * 为内部修改 vz 值 {@link #setVz_(double)} 包装一层检测是否存在确实速度
+         * 为内部修改 vz 值 {@link #setVz_(double)} 包装一层检测是否确实存在速度
          * ({@link #hasVelocity()})，如果不存在则直接抛出错误 {@link UnsupportedOperationException}
          */
-        @Override public ISettableAtom setVz(double aVz) {if (!hasVelocity()) throw new UnsupportedOperationException("setVz"); setVz_(aVz); return this;}
+        @Override public ISettableAtom setVz(double aVz) {
+            if (!hasVelocity()) throw new UnsupportedOperationException("setVz");
+            setVz_(aVz);
+            return this;
+        }
         
         /// stuff to override
         /** 可以直接实现的返回内部 id 值 */
-        protected abstract int id_();
+        protected int id_() {return -1;}
         /** 可以直接实现的返回内部 type 值 */
         protected abstract int type_();
         /** 可以直接实现的返回内部 vx 值 */
@@ -265,7 +289,7 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
         /** 可以直接实现的修改内部 z 值 */
         protected abstract void setZ_(double aZ);
         /** 可以直接实现的修改内部 id 值 */
-        protected abstract void setID_(int aID);
+        protected void setID_(int aID) {throw new RuntimeException();}
         /** 可以直接实现的修改内部 type 值 */
         protected abstract void setType_(int aType);
         /** 可以直接实现的修改内部 vx 值 */
@@ -276,6 +300,8 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
         protected void setVz_(double aVz) {throw new RuntimeException();}
         /** 对于 {@link IAtomData} 内部的原子一定要复写掉内部的 index 数据 */
         @Override public abstract int index();
+        /** 对于 {@link IAtomData} 内部的原子一定存在索引信息 */
+        @Override public boolean hasIndex() {return true;}
     }
     
     /**
@@ -288,7 +314,8 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      */
     @Override public void setAtom(int aIdx, IAtom aAtom) {
         ISettableAtom tAtom = this.atom(aIdx);
-        tAtom.setXYZ(aAtom).setID(aAtom.id()).setType(aAtom.type());
+        tAtom.setXYZ(aAtom).setType(aAtom.type());
+        if (aAtom.hasID()) tAtom.setID(aAtom.id());
         if (aAtom.hasVelocity()) tAtom.setVxyz(aAtom.vx(), aAtom.vy(), aAtom.vz());
     }
     

@@ -382,9 +382,9 @@ public class NNAP implements IAutoShutdown {
     public int threadNumber() {return mThreadNumber;}
     @VisibleForTesting public int nthreads() {return threadNumber();}
     
-    public IntUnaryOperator typeMap(IAtomData aAtomData) {return IBasis.typeMap_(symbols(), aAtomData);}
-    public boolean sameOrder(List<String> aDataSymbols) {return IBasis.sameOrder_(symbols(), aDataSymbols);}
-    public int indexOf(String aSymbol) {return IBasis.indexOf_(symbols(), aSymbol);}
+    public IntUnaryOperator typeMap(IAtomData aAtomData) {return IAtomData.typeMap_(symbols(), aAtomData);}
+    public boolean sameOrder(Collection<? extends CharSequence> aSymbolsIn) {return IAtomData.sameSymbolOrder_(symbols(), aSymbolsIn);}
+    public int typeOf(String aSymbol) {return IAtomData.typeOf_(symbols(), aSymbol);}
     
     /**
      * 转换为一个 ase 的计算器，可以方便接入已有的代码直接计算；

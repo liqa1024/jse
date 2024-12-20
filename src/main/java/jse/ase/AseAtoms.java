@@ -194,7 +194,6 @@ public class AseAtoms extends AbstractSettableAtomData {
             @Override public double x() {return mPositions.get(aIdx, XYZ_X_COL);}
             @Override public double y() {return mPositions.get(aIdx, XYZ_Y_COL);}
             @Override public double z() {return mPositions.get(aIdx, XYZ_Z_COL);}
-            @Override protected int id_() {return aIdx+1;}
             @Override protected int type_() {return mAtomicNumber2Type.get(mAtomicNumbers.get(aIdx));}
             @Override protected double vx_() {assert mMomenta!=null; return mMomenta.get(aIdx, STD_VX_COL)/mass()/ASE_VEL_MUL;}
             @Override protected double vy_() {assert mMomenta!=null; return mMomenta.get(aIdx, STD_VY_COL)/mass()/ASE_VEL_MUL;}
@@ -208,7 +207,6 @@ public class AseAtoms extends AbstractSettableAtomData {
             @Override protected void setX_(double aX) {mPositions.set(aIdx, XYZ_X_COL, aX);}
             @Override protected void setY_(double aY) {mPositions.set(aIdx, XYZ_Y_COL, aY);}
             @Override protected void setZ_(double aZ) {mPositions.set(aIdx, XYZ_Z_COL, aZ);}
-            @Override protected void setID_(int aID) {throw new UnsupportedOperationException("setID");}
             @Override protected void setType_(int aType) {mAtomicNumbers.set(aIdx, mType2AtomicNumber.get(aType));}
             @Override protected void setVx_(double aVx) {assert mMomenta!=null; mMomenta.set(aIdx, STD_VX_COL, aVx*mass()*ASE_VEL_MUL);}
             @Override protected void setVy_(double aVy) {assert mMomenta!=null; mMomenta.set(aIdx, STD_VY_COL, aVy*mass()*ASE_VEL_MUL);}

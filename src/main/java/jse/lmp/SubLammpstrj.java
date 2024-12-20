@@ -335,7 +335,9 @@ public class SubLammpstrj extends AbstractSettableAtomData {
     }
     
     
-    /** AbstractAtomData stuffs */
+    /// AbstractAtomData stuffs
+    /** @return {@inheritDoc} */
+    @Override public boolean hasID() {return mKeyID!=null;}
     @Override public boolean hasVelocity() {return mHasVelocities;}
     @Override public ISettableAtom atom(final int aIdx) {
         return new AbstractSettableAtom_() {
@@ -443,7 +445,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             }
             
             /** 如果没有 id 数据则 id 为顺序位置 +1 */
-            @Override protected int id_() {return mKeyID==null ? aIdx+1 : (int)mAtomData.get(aIdx, mKeyID);}
+            @Override protected int id_() {return mKeyID==null ? (aIdx+1) : (int)mAtomData.get(aIdx, mKeyID);}
             /** 如果没有 type 数据则 type 都为 1 */
             @Override protected int type_() {return mKeyType==null ? 1 : (int)mAtomData.get(aIdx, mKeyType);}
             /** 这里的速度是每个方向分别存储的，因此都需要判断一下 */

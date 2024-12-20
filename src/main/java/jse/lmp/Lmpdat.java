@@ -302,6 +302,8 @@ public class Lmpdat extends AbstractSettableAtomData {
     public IIntVector ids() {return mAtomID;}
     public IIntVector types() {return mAtomType;}
     public IMatrix positions() {return mAtomXYZ;}
+    /** @return {@inheritDoc} */
+    @Override public boolean hasID() {return true;}
     public @Nullable IMatrix velocities() {return mVelocities;}
     @Override public boolean hasVelocity() {return mVelocities != null;}
     @Override public boolean hasMass() {return mMasses!=null;}

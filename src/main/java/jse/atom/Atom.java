@@ -71,14 +71,14 @@ public class Atom extends AbstractSettableAtom {
     public Atom(IAtom aAtom) {this(aAtom.x(), aAtom.y(), aAtom.z(), aAtom.type());}
     /**
      * 旧版包含 {@code id} 信息的创建原子对象接口
-     * @deprecated use {@link AtomID}
+     * @deprecated use {@link AtomID} or remove {@code aID}
      */
     @Deprecated public Atom(double aX, double aY, double aZ, int aID, int aType) {
         throw new DeprecationException("`Atom` no longer contains `id` information. Remove the `id` parameter or use `AtomID`");
     }
     /**
      * 旧版包含 {@code id} 信息的创建原子对象接口
-     * @deprecated use {@link AtomID}
+     * @deprecated use {@link AtomID} or remove {@code aID}
      */
     @Deprecated public Atom(IXYZ aXYZ, int aID, int aType) {
         throw new DeprecationException("`Atom` no longer contains `id` information. Remove the `id` parameter or use `AtomID`");
@@ -96,6 +96,8 @@ public class Atom extends AbstractSettableAtom {
     @Override public int type() {return mType;}
     /** @return 此原子在 {@link IAtomData} 中的索引位置，对于这个独立的 Atom 则永远会返回 {@code -1} */
     @Override public final int index() {return -1;}
+    /** @return 此原子是否包含在 {@link IAtomData} 中的索引信息，对于这个独立的 Atom 则永远会返回 {@code false} */
+    @Override public final boolean hasIndex() {return false;}
     
     /// ISettableAtom stuffs
     /**

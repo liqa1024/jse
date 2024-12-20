@@ -59,7 +59,6 @@ public class AbstractAtoms {
                     @Override public int id() {return index+1;}
                     @Override public int type() {return 1;}
                     @Override public int index() {return index;}
-                    @Override public AtomID copy() {return new AtomID(this);}
                 };
             }
             @Override public int size() {
@@ -90,7 +89,6 @@ public class AbstractAtoms {
                     @Override public int id() {return index+1;}
                     @Override public int type() {return 1;}
                     @Override public int index() {return index;}
-                    @Override public AtomID copy() {return new AtomID(this);}
                 };
             }
             @Override public int size() {
@@ -121,7 +119,6 @@ public class AbstractAtoms {
                     @Override public int id() {return index+1;}
                     @Override public int type() {return 1;}
                     @Override public int index() {return index;}
-                    @Override public AtomID copy() {return new AtomID(this);}
                 };
             }
             @Override public int size() {
@@ -178,7 +175,6 @@ public class AbstractAtoms {
                     @Override public int id() {return index+1;}
                     @Override public int type() {return 1;}
                     @Override public int index() {return index;}
-                    @Override public AtomID copy() {return new AtomID(this);}
                 };
             }
             @Override public int size() {
@@ -236,15 +232,15 @@ public class AbstractAtoms {
                     @Override public double y() {return tSXYZ.mY + tAtom.y();}
                     @Override public double z() {return tSXYZ.mZ + tAtom.z();}
                     @Override public int id() {return tRepTotal*tLatticeNum + tAtom.id();} // 现在会基于原本的 id 进行扩展，这里不考虑特殊的 id 分布问题
+                    @Override public boolean hasID() {return tAtom.hasID();}
                     @Override public int type() {return tAtom.type();}
                     @Override public int index() {return index;}
-                    @Override public AtomID copy() {return new AtomID(this);}
                 };
             }
             @Override public int size() {
                 return tLatticeNum*aRepeatX*aRepeatY*aRepeatZ;
             }
-        }, aLattice.atomTypeNumber(), tBox, aLattice.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
+        }, aLattice.atomTypeNumber(), tBox, aLattice.hasID(), aLattice.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
     public static IAtomData from(IAtomData aLattice, int aRepeat) {return from(aLattice, aRepeat, aRepeat, aRepeat);}
 }

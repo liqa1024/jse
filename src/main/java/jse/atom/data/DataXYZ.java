@@ -340,7 +340,6 @@ public class DataXYZ extends AbstractSettableAtomData {
                 if (mSpecies == null) return 1;
                 return mSymbol2Type.get(mSpecies[aIdx]);
             }
-            @Override protected int id_() {return aIdx+1;}
             @Override protected double vx_() {assert mVelocities!=null; return mVelocities.get(aIdx, STD_VX_COL);}
             @Override protected double vy_() {assert mVelocities!=null; return mVelocities.get(aIdx, STD_VY_COL);}
             @Override protected double vz_() {assert mVelocities!=null; return mVelocities.get(aIdx, STD_VZ_COL);}
@@ -356,9 +355,6 @@ public class DataXYZ extends AbstractSettableAtomData {
             @Override protected void setZ_(double aZ) {
                 if (mPositions == null) throw new UnsupportedOperationException("`setZ` for DataXYZ without pos data");
                 mPositions.set(aIdx, XYZ_Z_COL, aZ);
-            }
-            @Override protected void setID_(int aID) {
-                throw new UnsupportedOperationException("setID");
             }
             @Override protected void setType_(int aType) {
                 if (mSpecies == null) throw new UnsupportedOperationException("`setType` for DataXYZ without species data");

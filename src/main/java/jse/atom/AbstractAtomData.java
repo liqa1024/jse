@@ -80,6 +80,11 @@ public abstract class AbstractAtomData implements IAtomData {
      * @return {@inheritDoc}
      * @see AtomData AtomData: 关于具体实现的例子
      */
+    @Override public boolean hasID() {return false;}
+    /**
+     * @return {@inheritDoc}
+     * @see AtomData AtomData: 关于具体实现的例子
+     */
     @Override public boolean hasVelocity() {return false;}
     /**
      * @return {@inheritDoc}
@@ -147,6 +152,8 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see #atom(int)
      */
     protected abstract class AbstractAtom_ extends AbstractAtom {
+        /** 转发 {@link AbstractAtomData#hasID()} */
+        @Override public boolean hasID() {return AbstractAtomData.this.hasID();}
         /** 转发 {@link AbstractAtomData#hasVelocity()} */
         @Override public boolean hasVelocity() {return AbstractAtomData.this.hasVelocity();}
         /** 转发 {@link AbstractAtomData#symbol(int)} */
@@ -157,14 +164,17 @@ public abstract class AbstractAtomData implements IAtomData {
         @Override public double mass() {return AbstractAtomData.this.mass(type());}
         /** 转发 {@link AbstractAtomData#hasMass()} */
         @Override public boolean hasMass() {return AbstractAtomData.this.hasMass();}
-        /** {@link IAtomData} 内部的原子数据拷贝会统一返回带有 id 的原子 */
-        @Override public AtomID copy() {return hasVelocity() ? new AtomFull(this) : new AtomID(this);}
         
         /**
          * 为内部 id {@link #id_()} 包装一层检测 id
-         * 是否存在，如果不存在则自动返回 {@link #index()}
+         * 是否存在，如果不存在或者 {@code id <= 0}
+         * 则自动返回 {@link #index()}
          */
-        @Override public int id() {int tID = id_(); return tID<=0 ? (index()+1) : tID;}
+        @Override public int id() {
+            if (!hasID()) return (index()+1);
+            int tID = id_();
+            return tID<=0 ? (index()+1) : tID;
+        }
         /**
          * 为内部 type {@link #type_()} 包装一层检测 type
          * 是否会超过 {@link #atomTypeNumber()}，如果超过了则自动截断
@@ -200,6 +210,8 @@ public abstract class AbstractAtomData implements IAtomData {
         protected double vz_() {return 0.0;}
         /** 对于 {@link IAtomData} 内部的原子一定要复写掉内部的 index 数据 */
         @Override public abstract int index();
+        /** 对于 {@link IAtomData} 内部的原子一定存在索引信息 */
+        @Override public boolean hasIndex() {return true;}
     }
     
     
@@ -322,10 +334,11 @@ public abstract class AbstractAtomData implements IAtomData {
      */
     @Override public ISettableAtomData copy() {
         final boolean tHasVelocities = hasVelocity();
+        final boolean tHasID = hasID();
         @Nullable List<@Nullable String> tSymbols = symbols();
         return new SettableAtomData(
-            NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (AtomID::new)),
-            atomTypeNumber(), box().copy(), tHasVelocities,
+            NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (tHasID ? (AtomID::new) : (Atom::new))),
+            atomTypeNumber(), box().copy(), tHasID, tHasVelocities,
             tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR)
         );
     }
@@ -338,10 +351,11 @@ public abstract class AbstractAtomData implements IAtomData {
      */
     protected ISettableAtomData newSame_() {
         final boolean tHasVelocities = hasVelocity();
+        final boolean tHasID = hasID();
         @Nullable List<@Nullable String> tSymbols = symbols();
         return new SettableAtomData(
-            NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (AtomID::new)),
-            atomTypeNumber(), box().copy(), tHasVelocities,
+            NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (tHasID ? (AtomID::new) : (Atom::new))),
+            atomTypeNumber(), box().copy(), tHasID, tHasVelocities,
             tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR)
         );
     }
@@ -356,10 +370,11 @@ public abstract class AbstractAtomData implements IAtomData {
      */
     protected ISettableAtomData newZeros_(int aAtomNum, IBox aBox) {
         final boolean tHasVelocities = hasVelocity();
+        final boolean tHasID = hasID();
         @Nullable List<@Nullable String> tSymbols = symbols();
         return new SettableAtomData(
-            NewCollections.from(aAtomNum, tHasVelocities ? (i -> new AtomFull()) : (i -> new AtomID())),
-            atomTypeNumber(), aBox, tHasVelocities,
+            NewCollections.from(aAtomNum, tHasVelocities ? (i -> new AtomFull()) : (tHasID ? (i -> new AtomID()) : (i -> new Atom()))),
+            atomTypeNumber(), aBox, tHasID, tHasVelocities,
             tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR)
         );
     }

@@ -43,13 +43,20 @@ public class AtomID extends Atom {
      * @param aType 原子的种类编号
      * @see IXYZ
      */
-    public AtomID(IXYZ aXYZ, int aID, int aType) {this(aXYZ.x(), aXYZ.y(), aXYZ.z(), aID, aType);}
+    public AtomID(IXYZ aXYZ, int aID, int aType) {
+        super(aXYZ, aType);
+        mID = aID;
+    }
     /**
      * 直接通过一个原子创建一个新的原子对象
      * @param aAtom 已有的任意原子对象
      * @see IAtom
      */
-    public AtomID(IAtom aAtom) {this(aAtom.x(), aAtom.y(), aAtom.z(), aAtom.id(), aAtom.type());}
+    public AtomID(IAtom aAtom) {
+        super(aAtom);
+        // 这里保持简单实现，依旧直接拷贝原本原子的 id 信息，和旧版一致的行为
+        mID = aAtom.id();
+    }
     /**
      * 创建一个默认的原子对象，{@code id==-1, type==1}，
      * 坐标值都为 {@code 0.0}
@@ -61,12 +68,20 @@ public class AtomID extends Atom {
     /** @return {@inheritDoc} */
     @Override public AtomID copy() {return new AtomID(this);}
     
-    /** @return {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @return {@inheritDoc}
+     * @see #hasID()
+     * @see #index()
+     */
     @Override public int id() {return mID;}
+    /** @return {@inheritDoc} */
+    @Override public boolean hasID() {return true;}
     /**
      * {@inheritDoc}
      * @param aID {@inheritDoc}
      * @return {@inheritDoc}
+     * @see #hasID()
      */
     @Override public AtomID setID(int aID) {mID = aID; return this;}
 }

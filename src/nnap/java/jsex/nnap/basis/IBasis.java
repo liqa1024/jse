@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.IntUnaryOperator;
 
@@ -36,52 +37,18 @@ public interface IBasis extends ISavable, IAutoShutdown {
     default IntUnaryOperator typeMap(IAtomData aAtomData) {
         List<String> tSymbols = symbols();
         if (tSymbols == null) throw new UnsupportedOperationException("`typeMap` for Basis without symbols");
-        return typeMap_(tSymbols, aAtomData);
+        return IAtomData.typeMap_(tSymbols, aAtomData);
     }
-    default boolean sameOrder(List<String> aDataSymbols) {
+    default boolean sameOrder(Collection<? extends CharSequence> aSymbolsIn) {
         List<String> tSymbols = symbols();
         if (tSymbols == null) throw new UnsupportedOperationException("`sameOrder` for Basis without symbols");
-        return sameOrder_(tSymbols, aDataSymbols);
+        return IAtomData.sameSymbolOrder_(tSymbols, aSymbolsIn);
     }
-    default int indexOf(String aSymbol) {
+    default int typeOf(String aSymbol) {
         List<String> tSymbols = symbols();
-        if (tSymbols == null) throw new UnsupportedOperationException("`indexOf` for Basis without symbols");
-        return indexOf_(tSymbols, aSymbol);
+        if (tSymbols == null) throw new UnsupportedOperationException("`typeOf` for Basis without symbols");
+        return IAtomData.typeOf_(tSymbols, aSymbol);
     }
-    
-    @ApiStatus.Internal
-    static IntUnaryOperator typeMap_(List<String> aSymbols, IAtomData aAtomData) {
-        if (aSymbols.size() < aAtomData.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of AtomData: " + aAtomData.atomTypeNumber() + ", target: " + aSymbols.size());
-        List<String> tAtomDataSymbols = aAtomData.symbols();
-        if (tAtomDataSymbols==null || sameOrder_(aSymbols, tAtomDataSymbols)) return type->type;
-        final int[] tAtomDataType2newType = new int[tAtomDataSymbols.size()+1];
-        for (int i = 0; i < tAtomDataSymbols.size(); ++i) {
-            String tElem = tAtomDataSymbols.get(i);
-            int idx = indexOf_(aSymbols, tElem);
-            if (idx < 0) throw new IllegalArgumentException("Invalid element ("+tElem+") in AtomData");
-            tAtomDataType2newType[i+1] = idx+1;
-        }
-        return type -> tAtomDataType2newType[type];
-    }
-    @ApiStatus.Internal
-    static boolean sameOrder_(List<String> aSymbols, List<String> aDataSymbols) {
-        for (int i = 0; i < aDataSymbols.size(); ++i) {
-            if (!aDataSymbols.get(i).equals(aSymbols.get(i))) {
-                return false;
-            }
-        }
-        return true;
-    }
-    @ApiStatus.Internal
-    static int indexOf_(List<String> aSymbols, String aSymbol) {
-        for (int i = 0; i < aSymbols.size(); ++i) {
-            if (aSymbol.equals(aSymbols.get(i))) {
-                return i;
-            }
-        }
-        return -1;
-    }
-    
     
     @FunctionalInterface interface IDxyzTypeIterable {void forEachDxyzType(IDxyzTypeDo aDxyzTypeDo);}
     @FunctionalInterface interface IDxyzTypeDo {void run(double aDx, double aDy, double aDz, int aType);}

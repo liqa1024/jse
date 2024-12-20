@@ -116,7 +116,7 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
     private ISettableAtomData refAtomData_(List<? extends ISettableAtom> aAtoms) {
         ISettableAtomData tThis = thisAtomData_();
         @Nullable List<@Nullable String> tSymbols = tThis.symbols();
-        return new SettableAtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
+        return new SettableAtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasID(), tThis.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
     
     /** stuff to override */

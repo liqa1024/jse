@@ -26,9 +26,6 @@ import org.jetbrains.annotations.VisibleForTesting;
  * @author liqa
  */
 public interface ISettableAtom extends IAtom, ISettableXYZ {
-    /** @return {@inheritDoc} */
-    @Override ISettableAtom copy();
-    
     /**
      * {@inheritDoc}
      * @param aX {@inheritDoc}
@@ -67,6 +64,7 @@ public interface ISettableAtom extends IAtom, ISettableXYZ {
      * 设置原子 id 值，从 1 开始
      * @param aID 需要设置的 id 值
      * @return 自身方便链式调用
+     * @see #hasID()
      */
     default ISettableAtom setID(int aID) {throw new UnsupportedOperationException("setID");}
     /**
