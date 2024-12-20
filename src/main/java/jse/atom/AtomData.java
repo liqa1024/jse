@@ -12,34 +12,49 @@ import static jse.code.CS.ZL_STR;
 /**
  * 一般的原子数据实现，用于从头直接创建原子数据
  * <p>
- * 一般来说，需要创建一个原子列表 {@code List<Atom>}
- * 以及所在的模拟盒信息 {@link Box}，由此即可创建 {@link AtomData}：
+ * 现在可以通过构造器 {@link #builder()} 来方便创建原子数据：
  * <pre> {@code
- * def atoms = [
- *     new Atom(0.0, 0.0, 0.0),
- *     new Atom(0.5, 0.5, 0.0),
- *     new Atom(0.5, 0.0, 0.5),
- *     new Atom(0.0, 0.5, 0.5)
- * ]
- * def box = new Box(1.0, 1.0, 1.0)
- * def data = new AtomData(atoms, box)
+ * def data = AtomData.builder()
+ *     .add(0.0, 0.0, 0.0)
+ *     .add(0.5, 0.5, 0.0)
+ *     .add(0.5, 0.0, 0.5)
+ *     .add(0.0, 0.5, 0.5)
+ *     .setBox(1.0, 1.0, 1.0)
+ *     .build()
  * } </pre>
- * 由此来创建一个 fcc 的晶胞
- * <p>
- * 这里的 {@link AtomData} 创建会直接将输入的原子列表 {@code atoms}
- * 以及模拟盒 {@code box} 作为内部的成员，不会进行值拷贝。
- * 因此此对象内部属性都是引用，相当于一种对于原子列表
- * {@code List<Atom>} 的包装
+ * 来直接创建一个 fcc 晶胞
  *
  * @author liqa
- * @see Atom Atom: 一般的原子实现
- * @see Box Box: 一般的正交的模拟盒实现
- * @see BoxPrism BoxPrism: 一般的三斜的模拟盒实现
  * @see IAtomData IAtomData: 通用的原子数据接口
  * @see SettableAtomData SettableAtomData: 一般的可以修改的原子数据实现
  * @see AbstractAtomData AbstractAtomData: 一般的原子数据抽象类
  */
 public final class AtomData extends AbstractAtomData {
+    /**
+     * 创建一个原子数据 {@link AtomData} 的构造器
+     * {@code AtomDataBuilder<AtomData>}，以此来快速构建原子数据：
+     * <pre> {@code
+     * def data = AtomData.builder()
+     *     .add(0.0, 0.0, 0.0)
+     *     .add(0.5, 0.5, 0.0)
+     *     .add(0.5, 0.0, 0.5)
+     *     .add(0.0, 0.5, 0.5)
+     *     .setBox(1.0, 1.0, 1.0)
+     *     .build()
+     * } </pre>
+     * 即可创建一个 fcc 晶胞
+     *
+     * @return {@link AtomData} 的构造器
+     * @see AtomDataBuilder
+     */
+    public static AtomDataBuilder<AtomData> builder() {
+        return new AtomDataBuilder<AtomData>() {
+            @Override AtomData newAtomData(List<ISettableAtom> aAtoms, int aAtomTypeNum, IBox aBox, boolean aHasID, boolean aHasVelocity, String[] aSymbols) {
+                return new AtomData(aAtoms, aAtomTypeNum, aBox, aHasID, aHasVelocity, aSymbols);
+            }
+        };
+    }
+    
     private final @Unmodifiable List<? extends IAtom> mAtoms;
     private final IBox mBox;
     private final int mAtomTypeNum;

@@ -64,7 +64,7 @@ public class Structures {
             @Override public int size() {
                 return 4*aRepeatX*aRepeatY*aRepeatZ;
             }
-        }, new Box(aCellSize*aRepeatX, aCellSize*aRepeatY, aCellSize*aRepeatZ));
+        }, 1, new Box(aCellSize*aRepeatX, aCellSize*aRepeatY, aCellSize*aRepeatZ));
     }
     public static IAtomData FCC(double aCellSize, int aRepeat) {return FCC(aCellSize, aRepeat, aRepeat, aRepeat);}
     @VisibleForTesting public static IAtomData fcc(double aCellSize, int aRepeatX, int aRepeatY, int aRepeatZ) {return FCC(aCellSize, aRepeatX, aRepeatY, aRepeatZ);}
@@ -94,7 +94,7 @@ public class Structures {
             @Override public int size() {
                 return 2*aRepeatX*aRepeatY*aRepeatZ;
             }
-        }, new Box(aCellSize*aRepeatX, aCellSize*aRepeatY, aCellSize*aRepeatZ));
+        }, 1, new Box(aCellSize*aRepeatX, aCellSize*aRepeatY, aCellSize*aRepeatZ));
     }
     public static IAtomData BCC(double aCellSize, int aRepeat) {return BCC(aCellSize, aRepeat, aRepeat, aRepeat);}
     @VisibleForTesting public static IAtomData bcc(double aCellSize, int aRepeatX, int aRepeatY, int aRepeatZ) {return BCC(aCellSize, aRepeatX, aRepeatY, aRepeatZ);}
@@ -124,7 +124,7 @@ public class Structures {
             @Override public int size() {
                 return aRepeatX*aRepeatY*aRepeatZ;
             }
-        }, new Box(aCellSize*aRepeatX, aCellSize*aRepeatY, aCellSize*aRepeatZ));
+        }, 1, new Box(aCellSize*aRepeatX, aCellSize*aRepeatY, aCellSize*aRepeatZ));
     }
     public static IAtomData SC(double aCellSize, int aRepeat) {return SC(aCellSize, aRepeat, aRepeat, aRepeat);}
     @VisibleForTesting public static IAtomData sc(double aCellSize, int aRepeatX, int aRepeatY, int aRepeatZ) {return SC(aCellSize, aRepeatX, aRepeatY, aRepeatZ);}
@@ -180,7 +180,7 @@ public class Structures {
             @Override public int size() {
                 return 4*aRepeatX*aRepeatY*aRepeatZ;
             }
-        }, new Box(aCellSize*aRepeatX, tCellSizeY*aRepeatY, aCellHeight*aRepeatZ));
+        }, 1, new Box(aCellSize*aRepeatX, tCellSizeY*aRepeatY, aCellHeight*aRepeatZ));
     }
     public static IAtomData HCP(double aCellSize,                     int aRepeatX, int aRepeatY, int aRepeatZ) {return HCP(aCellSize, aCellSize*SQRT83, aRepeatX, aRepeatY, aRepeatZ);}
     public static IAtomData HCP(double aCellSize, double aCellHeight, int aRepeat                             ) {return HCP(aCellSize, aCellHeight, aRepeat, aRepeat, aRepeat);}

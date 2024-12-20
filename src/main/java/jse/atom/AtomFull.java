@@ -3,12 +3,11 @@ package jse.atom;
 /**
  * 包含更多信息的原子实现，目前包含 {@code x, y, z, id, type, vx, vy, vz}。
  * <p>
- * 目前只提供创建后赋值的方法来构造：
+ * 直接通过：
  * <pre> {@code
- * def atom = new AtomFull()
- * atom.setX(x).setY(y).setZ(z)
- * atom.setVx(vx).setVy(vy).setVy(vy)
+ * def atom = new AtomFull(x, y, z, id, type, vx, vy, vz)
  * } </pre>
+ * 来创建一个自定义的原子
  * <p>
  * 除了通用的 {@link #x()}, {@link #y()}, {@link #z()}, {@link #id()}, {@link #type()},
  * {@link #vx()}, {@link #vy()}, {@link #vz()} 方法来获取属性，还可以通过直接访问成员变量
@@ -23,6 +22,24 @@ package jse.atom;
  */
 public class AtomFull extends AtomID {
     public double mVx, mVy, mVz;
+    
+    /**
+     * 创建一个原子对象
+     * @param aX 原子的 x 坐标
+     * @param aY 原子的 y 坐标
+     * @param aZ 原子的 z 坐标
+     * @param aID 原子的 id
+     * @param aType 原子的种类编号
+     * @param aVx 原子的 x 方向速度值
+     * @param aVy 原子的 y 方向速度值
+     * @param aVz 原子的 z 方向速度值
+     */
+    public AtomFull(double aX, double aY, double aZ, int aID, int aType, double aVx, double aVy, double aVz) {
+        super(aX, aY, aZ, aID, aType);
+        mVx = aVx;
+        mVy = aVy;
+        mVz = aVz;
+    }
     /**
      * 直接通过一个原子创建一个新的原子对象
      * @param aAtom 已有的任意原子对象

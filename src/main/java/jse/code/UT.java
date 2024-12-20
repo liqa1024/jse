@@ -801,7 +801,7 @@ public class UT {
                 rAtoms.add(new Atom(tX, tY, tZ));
             }
             // 返回结果
-            return new AtomData(rAtoms, new Box(tX, tY, tZ));
+            return new AtomData(rAtoms, 1, new Box(tX, tY, tZ));
         }
         
         /** {@link IAtomData} 的序列化和反序列化 */
