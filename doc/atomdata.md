@@ -15,7 +15,6 @@ jse 为所有的原子结构数据（`Lmpdat`，`Lammpstrj`，`POSCAR`）
 ## 结构创建
 
 对于晶体结构，可以使用
-[`jse.atom.AbstractAtoms`](../src/main/java/jse/atom/AbstractAtoms.java) /
 [`jse.atom.Structures`](../src/main/java/jse/atom/Structures.java)
 直接创建：
 
@@ -47,9 +46,8 @@ println('box: ' + data.box())
 >
 
 > **注意**：
-> 可以使用 `jse.atom.AbstractAtoms` 替换 `jse.atom.Structures`，
-> 两者使用方法完全相同；使用 `AbstractAtoms` 主要用来强调返回的原子数据
-> `IAtomData` 是一个抽象的引用数据，其没有经过值拷贝，并且不能直接修改。
+> `jse.atom.Structures` 返回的原子数据 `IAtomData`
+> 是一个抽象的引用数据，其没有经过值拷贝，并且不能直接修改。
 > 
 
 如果希望创建自定义的晶体结构，可以使用
