@@ -16,7 +16,18 @@ import java.util.Random;
 
 import static jse.code.CS.ZL_STR;
 
-
+/**
+ * 一般的可以设置的原子数据运算器的实现；
+ * 具体来说，子类最少需要实现：
+ * <pre>
+ *    {@link #thisAtomData_()}: 返回自身原子数据的引用，一般直接返回 ISettableAtomData.this
+ *    {@link #newSameSettableAtomData_()}: 创建一个新的拥有相同数据的可设置的原子数据 {@link ISettableAtomData}
+ *    {@link #newSettableAtomData_(int)}: 根据指定的原子数目，创建一个新的可设置原子数据 {@link ISettableAtomData}
+ *    {@link #newSettableAtomData_(int, IBox)}: 根据指定的原子数目和模拟盒，创建一个新的可设置原子数据 {@link ISettableAtomData}
+ * </pre>
+ * @author liqa
+ * @see ISettableAtomDataOperation
+ */
 public abstract class AbstractSettableAtomDataOperation extends AbstractAtomDataOperation implements ISettableAtomDataOperation {
     
     @Override public ISettableAtomData refSlice(ISlice aIndices) {return refAtomData_(AbstractCollections.slice(thisAtomData_().atoms(), aIndices));}
@@ -112,13 +123,13 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
     }
     
     
-    /** 用于方便内部使用 */
+    /// 用于方便内部使用
     private ISettableAtomData refAtomData_(List<? extends ISettableAtom> aAtoms) {
         ISettableAtomData tThis = thisAtomData_();
         @Nullable List<@Nullable String> tSymbols = tThis.symbols();
         return new SettableAtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasID(), tThis.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
     
-    /** stuff to override */
+    /// stuff to override
     protected abstract ISettableAtomData thisAtomData_();
 }

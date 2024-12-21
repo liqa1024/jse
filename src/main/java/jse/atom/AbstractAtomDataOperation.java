@@ -17,8 +17,16 @@ import static jse.code.CS.ZL_STR;
 
 
 /**
- * 一般的运算器的实现，默认会值拷贝一次并使用 {@code ArrayList<IAtom>} 来存储，尽管这会占据更多的内存
+ * 一般的原子数据运算器的实现；
+ * 具体来说，子类最少需要实现：
+ * <pre>
+ *    {@link #thisAtomData_()}: 返回自身原子数据的引用，一般直接返回 IAtomData.this
+ *    {@link #newSameSettableAtomData_()}: 创建一个新的拥有相同数据的可设置的原子数据 {@link ISettableAtomData}
+ *    {@link #newSettableAtomData_(int)}: 根据指定的原子数目，创建一个新的可设置原子数据 {@link ISettableAtomData}
+ *    {@link #newSettableAtomData_(int, IBox)}: 根据指定的原子数目和模拟盒，创建一个新的可设置原子数据 {@link ISettableAtomData}
+ * </pre>
  * @author liqa
+ * @see IAtomDataOperation
  */
 public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     
@@ -235,14 +243,14 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
         return rAtomData;
     }
     
-    /** 用于方便内部使用 */
+    /// 用于方便内部使用
     private IAtomData refAtomData_(List<? extends IAtom> aAtoms) {
         IAtomData tThis = thisAtomData_();
         @Nullable List<@Nullable String> tSymbols = tThis.symbols();
         return new AtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasID(), tThis.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
     
-    /** stuff to override */
+    /// stuff to override
     protected abstract IAtomData thisAtomData_();
     protected abstract ISettableAtomData newSameSettableAtomData_();
     protected abstract ISettableAtomData newSettableAtomData_(int aAtomNum);
