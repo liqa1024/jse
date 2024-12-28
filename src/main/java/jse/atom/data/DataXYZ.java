@@ -621,14 +621,16 @@ public class DataXYZ extends AbstractSettableAtomData {
             }
             if (tValueEnd < 0) return false;
             Object tValue = aComment.substring(tValueBegin, tValueEnd);
-            if (tValue.equals("T")) {
-                tValue = true;
-            } else
-            if (tValue.equals("F")) {
-                tValue = false;
-            } else {
-                Number tNumberValue = UT.Text.str2number((String)tValue);
-                if (tNumberValue != null) tValue = tNumberValue;
+            if (!tHasQuote) {
+                if (tValue.equals("T")) {
+                    tValue = true;
+                } else
+                if (tValue.equals("F")) {
+                    tValue = false;
+                } else {
+                    Number tNumberValue = UT.Text.str2number((String)tValue);
+                    if (tNumberValue != null) tValue = tNumberValue;
+                }
             }
             rParameters.put(aComment.substring(tKeyBegin, tKeyEnd), tValue);
             if (tHasQuote) ++tValueEnd;

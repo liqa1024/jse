@@ -143,4 +143,68 @@ public class CharScanner extends org.apache.groovy.json.internal.CharScanner {
         
         return value;
     }
+    
+    public static Number parseNumber(char[] buffer, int from, int to) {
+        Number value;
+        boolean simple = true;
+        int digitsPastPoint = 0;
+        
+        int index = from;
+        
+        if (buffer[index] == '-') {
+            index++;
+        }
+        
+        boolean foundDot = false;
+        for (; index < to; index++) {
+            char ch = buffer[index];
+            if (isNumberDigit(ch)) {
+                if (foundDot) {
+                    digitsPastPoint++;
+                }
+            } else if (ch == '.') {
+                if (foundDot) {
+                    die("unexpected character " + ch);
+                }
+                foundDot = true;
+            } else if (ch == 'E' || ch == 'e' || ch == '-' || ch == '+') {
+                simple = false;
+            } else {
+                die("unexpected character " + ch);
+            }
+        }
+        
+        if (digitsPastPoint >= powersOf10.length - 1) {
+            simple = false;
+        }
+        
+        final int length = index - from;
+        
+        if (!foundDot && simple) {
+            if (isInteger(buffer, from, length)) {
+                value = parseIntFromTo(buffer, from, index);
+            } else {
+                value = parseLongFromTo(buffer, from, index);
+            }
+        } else if (foundDot && simple) {
+            long lvalue;
+            
+            if (length < powersOf10.length) {
+                if (isInteger(buffer, from, length)) {
+                    lvalue = parseIntFromToIgnoreDot(buffer, from, index);
+                } else {
+                    lvalue = parseLongFromToIgnoreDot(buffer, from, index);
+                }
+                
+                double power = powersOf10[digitsPastPoint];
+                value = lvalue / power;
+            } else {
+                value = Double.parseDouble(new String(buffer, from, length));
+            }
+        } else {
+            value = Double.parseDouble(new String(buffer, from, index - from));
+        }
+        
+        return value;
+    }
 }

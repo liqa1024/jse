@@ -358,7 +358,8 @@ public class AseAtoms extends AbstractSettableAtomData {
     public static AseAtoms of(IAtomData aAtomData, String... aTypeNames) {return fromAtomData(aAtomData, aTypeNames);}
     public static AseAtoms of(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {return fromAtomData(aAtomData, aSymbols);}
     public static AseAtoms of(PyObject aPyAtoms) throws JepException {return fromPyObject(aPyAtoms);}
-    public static AseAtoms of(Object aAnyData) throws JepException {
+    /** 增加一个兼容的接口避免 python 中使用出错 */
+    public static AseAtoms of_compat(Object aAnyData) throws JepException {
         // 手动实现动态加载
         if (aAnyData instanceof PyObject) {
             return fromPyObject((PyObject)aAnyData);

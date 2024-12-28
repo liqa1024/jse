@@ -1,7 +1,6 @@
 package jsex.nnap;
 
 import jep.python.PyObject;
-import jse.atom.IAtom;
 import jse.atom.IAtomData;
 import jse.atom.MonatomicParameterCalculator;
 import jse.cache.MatrixCache;
@@ -461,12 +460,11 @@ public class Trainer implements IAutoShutdown, ISavable {
                 rBaseData[tType-1].addAll(tBase.asVecRow());
                 rBaseData[tType-1].add(rEngData.size());
                 MatrixCache.returnMat(tBase);
+                // 计算相对能量值
+                aEnergy -= mRefEngs.get(tType-1);
             }
         }
         // 这里后添加能量，这样 rEngData.size() 对应正确的索引
-        for (IAtom atom : aAtomData.atoms()) {
-            aEnergy -= mRefEngs.get(atom.type()-1);
-        }
         rEngData.add(aEnergy);
     }
     /** 增加一个训练集数据，目前只需要能量 */
