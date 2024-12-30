@@ -327,20 +327,21 @@ public class SphericalChebyshev implements IBasis {
                 cnlmPzUpdate = cnlmPz;
             }
             
-            for (int tN = 0; tN <= mNMax; ++tN) {
-                ShiftVector cilm = cnlm.row(tN), cilmPx = cnlmPxUpdate.row(tN), cilmPy = cnlmPyUpdate.row(tN), cilmPz = cnlmPzUpdate.row(tN);
-                mminusCnlmPxyz(cilm.internalData(), cilmPx.internalData(), cilmPy.internalData(), cilmPz.internalData(), cilm.internalDataShift(),
-                              tY.internalData(), tYPx.internalData(), tYPy.internalData(), tYPz.internalData(),
-                              fc, fcPx, fcPy, fcPz,
-                              tRn.get(tN), tRnPx.get(tN), tRnPy.get(tN), tRnPz.get(tN),
-                              1.0, cilm.size());
-                if (mTypeNum > 1) {
-                    cilm = cnlm.row(tN+mNMax+1); cilmPx = cnlmPxUpdate.row(tN+mNMax+1); cilmPy = cnlmPyUpdate.row(tN+mNMax+1); cilmPz = cnlmPzUpdate.row(tN+mNMax+1);
-                    mminusCnlmPxyz(cilm.internalData(), cilmPx.internalData(), cilmPy.internalData(), cilmPz.internalData(), cilm.internalDataShift(),
-                                  tY.internalData(), tYPx.internalData(), tYPy.internalData(), tYPz.internalData(),
-                                  fc, fcPx, fcPy, fcPz,
-                                  tRn.get(tN), tRnPx.get(tN), tRnPy.get(tN), tRnPz.get(tN),
-                                  wt, cilm.size());
+            if (mTypeNum > 1) {
+                for (int tN = 0; tN <= mNMax; ++tN) {
+                    mminusCnlmPxyz(cnlm.internalData(), cnlmPxUpdate.internalData(), cnlmPyUpdate.internalData(), cnlmPzUpdate.internalData(), cnlm.row(tN).internalDataShift(), cnlm.row(tN+mNMax+1).internalDataShift(),
+                                   tY.internalData(), tYPx.internalData(), tYPy.internalData(), tYPz.internalData(),
+                                   fc, fcPx, fcPy, fcPz,
+                                   tRn.get(tN), tRnPx.get(tN), tRnPy.get(tN), tRnPz.get(tN),
+                                   wt, cnlm.columnNumber());
+                }
+            } else {
+                for (int tN = 0; tN <= mNMax; ++tN) {
+                    mminusCnlmPxyz(cnlm.internalData(), cnlmPxUpdate.internalData(), cnlmPyUpdate.internalData(), cnlmPzUpdate.internalData(), cnlm.row(tN).internalDataShift(),
+                                   tY.internalData(), tYPx.internalData(), tYPy.internalData(), tYPz.internalData(),
+                                   fc, fcPx, fcPy, fcPz,
+                                   tRn.get(tN), tRnPx.get(tN), tRnPy.get(tN), tRnPz.get(tN),
+                                   cnlm.columnNumber());
                 }
             }
         });
@@ -466,18 +467,38 @@ public class SphericalChebyshev implements IBasis {
     protected void mminusCnlmPxyz(double[] rCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz, int rShift,
                                   double[] aY, double[] aYPx, double[] aYPy, double[] aYPz,
                                   double aFc, double aFcPx, double aFcPy, double aFcPz,
-                                  double aRn, double aRnPx, double aRnPy, double aRnPz,
-                                  double aWt, int aLength) {
-        double tMul = aWt*aFc*aRn;
-        double tMulXL = aWt*aFc*aRnPx, tMulXR = aWt*aFcPx*aRn;
-        double tMulYL = aWt*aFc*aRnPy, tMulYR = aWt*aFcPy*aRn;
-        double tMulZL = aWt*aFc*aRnPz, tMulZR = aWt*aFcPz*aRn;
+                                  double aRn, double aRnPx, double aRnPy, double aRnPz, int aLength) {
+        double tMul = aFc*aRn;
+        double tMulXL = aFc*aRnPx, tMulXR = aFcPx*aRn;
+        double tMulYL = aFc*aRnPy, tMulYR = aFcPy*aRn;
+        double tMulZL = aFc*aRnPz, tMulZR = aFcPz*aRn;
         for (int i = 0, j = rShift; i < aLength; ++i, ++j) {
             double tY = aY[i];
             rCnlm[j] += tMul*tY;
             rCnlmPx[j] -= (tMulXL*tY + tMul*aYPx[i] + tMulXR*tY);
             rCnlmPy[j] -= (tMulYL*tY + tMul*aYPy[i] + tMulYR*tY);
             rCnlmPz[j] -= (tMulZL*tY + tMul*aYPz[i] + tMulZR*tY);
+        }
+    }
+    protected void mminusCnlmPxyz(double[] rCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz, int rShift1, int rShift2,
+                                  double[] aY, double[] aYPx, double[] aYPy, double[] aYPz,
+                                  double aFc, double aFcPx, double aFcPy, double aFcPz,
+                                  double aRn, double aRnPx, double aRnPy, double aRnPz,
+                                  double aWt, int aLength) {
+        double tMul = aFc*aRn;
+        double tMulXL = aFc*aRnPx, tMulXR = aFcPx*aRn;
+        double tMulYL = aFc*aRnPy, tMulYR = aFcPy*aRn;
+        double tMulZL = aFc*aRnPz, tMulZR = aFcPz*aRn;
+        for (int i = 0, j = rShift1, k = rShift2; i < aLength; ++i, ++j, ++k) {
+            double tY = aY[i];
+            double tCnli = tMul*tY;
+            rCnlm[j] += tCnli; rCnlm[k] += aWt*tCnli;
+            double tCnliPx = tMulXL*tY + tMul*aYPx[i] + tMulXR*tY;
+            rCnlmPx[j] -= tCnliPx; rCnlmPx[k] -= aWt*tCnliPx;
+            double tCnliPy = tMulYL*tY + tMul*aYPy[i] + tMulYR*tY;
+            rCnlmPy[j] -= tCnliPy; rCnlmPy[k] -= aWt*tCnliPy;
+            double tCnliPz = tMulZL*tY + tMul*aYPz[i] + tMulZR*tY;
+            rCnlmPz[j] -= tCnliPz; rCnlmPz[k] -= aWt*tCnliPz;
         }
     }
     /** 热点优化，cnlm 转成 fp 放在一个循环中，让 java 优化整个运算 */
