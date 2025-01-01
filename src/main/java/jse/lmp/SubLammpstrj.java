@@ -339,6 +339,18 @@ public class SubLammpstrj extends AbstractSettableAtomData {
     /** @return {@inheritDoc} */
     @Override public boolean hasID() {return mKeyID!=null;}
     @Override public boolean hasVelocity() {return mHasVelocities;}
+    /**
+     * {@inheritDoc}
+     * <p>
+     * 现在 Lammpstrj 统一不对 unwrap 的原子坐标进行 wrap
+     * 处理，保证对于 unwrap 的数据也会获取到 unwrap 的坐标；
+     * 如果需要进行 wrap，可以调用 {@link ISettableAtomDataOperation#wrap2this()}
+     * 来手动 warp
+     * @param aIdx {@inheritDoc}
+     * @return {@inheritDoc}
+     * @see ISettableAtom
+     * @see #atoms()
+     */
     @Override public ISettableAtom atom(final int aIdx) {
         return new AbstractSettableAtom_() {
             @Override public int index() {return aIdx;}
@@ -346,22 +358,10 @@ public class SubLammpstrj extends AbstractSettableAtomData {
                 if (mKeyX == null) throw new UnsupportedOperationException("`x` for Lammpstrj without x data");
                 double tX = mAtomData.get(aIdx, mKeyX);
                 switch (mXType) {
-                case NORMAL: {
+                case NORMAL: case UNWRAPPED: {
                     return tX-mBox.xlo();
                 }
-                case UNWRAPPED: {
-                    double tBoxLoX = mBox.xlo();
-                    double tBoxHiX = mBox.xhi();
-                    double tBoxX = tBoxHiX - tBoxLoX;
-                    if      (tX <  tBoxLoX) {do {tX += tBoxX;} while (tX <  tBoxLoX);}
-                    else if (tX >= tBoxHiX) {do {tX -= tBoxX;} while (tX >= tBoxHiX);}
-                    return tX-tBoxLoX;
-                }
                 case SCALED: case SCALED_UNWRAPPED: {
-                    if (mXType == XYZType.SCALED_UNWRAPPED) {
-                        if      (tX <  0.0) {do {++tX;} while (tX <  0.0);}
-                        else if (tX >= 1.0) {do {--tX;} while (tX >= 1.0);}
-                    }
                     if (!isPrism()) {
                         return tX*mBox.x();
                     } else {
@@ -369,14 +369,6 @@ public class SubLammpstrj extends AbstractSettableAtomData {
                         if (mKeyZ==null || !(mZType==XYZType.SCALED || mZType==XYZType.SCALED_UNWRAPPED)) throw new UnsupportedOperationException("`x` for SCALED x in prism Lammpstrj without SCALED z data");
                         double tY = mAtomData.get(aIdx, mKeyY);
                         double tZ = mAtomData.get(aIdx, mKeyZ);
-                        if (mYType == XYZType.SCALED_UNWRAPPED) {
-                            if      (tY <  0.0) {do {++tY;} while (tY <  0.0);}
-                            else if (tY >= 1.0) {do {--tY;} while (tY >= 1.0);}
-                        }
-                        if (mZType == XYZType.SCALED_UNWRAPPED) {
-                            if      (tZ <  0.0) {do {++tZ;} while (tZ <  0.0);}
-                            else if (tZ >= 1.0) {do {--tZ;} while (tZ >= 1.0);}
-                        }
                         return mBox.x()*tX + mBox.xy()*tY + mBox.xz()*tZ;
                     }
                 }
@@ -387,31 +379,15 @@ public class SubLammpstrj extends AbstractSettableAtomData {
                 if (mKeyY == null) throw new UnsupportedOperationException("`y` for Lammpstrj without y data");
                 double tY = mAtomData.get(aIdx, mKeyY);
                 switch (mYType) {
-                case NORMAL: {
+                case NORMAL: case UNWRAPPED: {
                     return tY-mBox.ylo();
                 }
-                case UNWRAPPED: {
-                    double tBoxLoY = mBox.ylo();
-                    double tBoxHiY = mBox.yhi();
-                    double tBoxY = tBoxHiY - tBoxLoY;
-                    if      (tY <  tBoxLoY) {do {tY += tBoxY;} while (tY <  tBoxLoY);}
-                    else if (tY >= tBoxHiY) {do {tY -= tBoxY;} while (tY >= tBoxHiY);}
-                    return tY-tBoxLoY;
-                }
                 case SCALED: case SCALED_UNWRAPPED: {
-                    if (mYType == XYZType.SCALED_UNWRAPPED) {
-                        if      (tY <  0.0) {do {++tY;} while (tY <  0.0);}
-                        else if (tY >= 1.0) {do {--tY;} while (tY >= 1.0);}
-                    }
                     if (!isPrism()) {
                         return tY*mBox.y();
                     } else {
                         if (mKeyZ==null || !(mZType==XYZType.SCALED || mZType==XYZType.SCALED_UNWRAPPED)) throw new UnsupportedOperationException("`y` for SCALED y in prism Lammpstrj without SCALED z data");
                         double tZ = mAtomData.get(aIdx, mKeyZ);
-                        if (mZType == XYZType.SCALED_UNWRAPPED) {
-                            if      (tZ <  0.0) {do {++tZ;} while (tZ <  0.0);}
-                            else if (tZ >= 1.0) {do {--tZ;} while (tZ >= 1.0);}
-                        }
                         return mBox.y()*tY + mBox.yz()*tZ;
                     }
                 }
@@ -422,22 +398,10 @@ public class SubLammpstrj extends AbstractSettableAtomData {
                 if (mKeyZ == null) throw new UnsupportedOperationException("`z` for Lammpstrj without z data");
                 double tZ = mAtomData.get(aIdx, mKeyZ);
                 switch (mZType) {
-                case NORMAL: {
+                case NORMAL: case UNWRAPPED: {
                     return tZ-mBox.zlo();
                 }
-                case UNWRAPPED: {
-                    double tBoxLoZ = mBox.zlo();
-                    double tBoxHiZ = mBox.zhi();
-                    double tBoxZ = tBoxHiZ - tBoxLoZ;
-                    if      (tZ <  tBoxLoZ) {do {tZ += tBoxZ;} while (tZ <  tBoxLoZ);}
-                    else if (tZ >= tBoxHiZ) {do {tZ -= tBoxZ;} while (tZ >= tBoxHiZ);}
-                    return tZ-tBoxLoZ;
-                }
                 case SCALED: case SCALED_UNWRAPPED: {
-                    if (mZType == XYZType.SCALED_UNWRAPPED) {
-                        if      (tZ <  0.0) {do {++tZ;} while (tZ <  0.0);}
-                        else if (tZ >= 1.0) {do {--tZ;} while (tZ >= 1.0);}
-                    }
                     return tZ*mBox.z();
                 }
                 default: throw new RuntimeException();
@@ -539,18 +503,18 @@ public class SubLammpstrj extends AbstractSettableAtomData {
                     mBox.toDirect(mBuf);
                     // 根据类型选择需要设置的值
                     switch(mXType) {
-                    case NORMAL: case UNWRAPPED:        {mAtomData.set(aIdx, mKeyX,      aX); break;}
-                    case SCALED: case SCALED_UNWRAPPED: {mAtomData.set(aIdx, mKeyX, mBuf.mX); break;}
+                    case NORMAL: case UNWRAPPED:        {mAtomData.set(aIdx, mKeyX, aX+mBox.xlo()); break;}
+                    case SCALED: case SCALED_UNWRAPPED: {mAtomData.set(aIdx, mKeyX,       mBuf.mX); break;}
                     default: throw new RuntimeException();
                     }
                     switch(mYType) {
-                    case NORMAL: case UNWRAPPED:        {mAtomData.set(aIdx, mKeyY,      aY); break;}
-                    case SCALED: case SCALED_UNWRAPPED: {mAtomData.set(aIdx, mKeyY, mBuf.mY); break;}
+                    case NORMAL: case UNWRAPPED:        {mAtomData.set(aIdx, mKeyY, aY+mBox.ylo()); break;}
+                    case SCALED: case SCALED_UNWRAPPED: {mAtomData.set(aIdx, mKeyY,       mBuf.mY); break;}
                     default: throw new RuntimeException();
                     }
                     switch(mZType) {
-                    case NORMAL: case UNWRAPPED:        {mAtomData.set(aIdx, mKeyZ,      aZ); break;}
-                    case SCALED: case SCALED_UNWRAPPED: {mAtomData.set(aIdx, mKeyZ, mBuf.mZ); break;}
+                    case NORMAL: case UNWRAPPED:        {mAtomData.set(aIdx, mKeyZ, aZ+mBox.zlo()); break;}
+                    case SCALED: case SCALED_UNWRAPPED: {mAtomData.set(aIdx, mKeyZ,       mBuf.mZ); break;}
                     default: throw new RuntimeException();
                     }
                     return this;
