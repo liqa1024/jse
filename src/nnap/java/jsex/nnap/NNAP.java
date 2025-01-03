@@ -614,9 +614,7 @@ public class NNAP implements IAutoShutdown {
         IIntVector nNL = aAPC.getNeighborList(nXYZ, tRCut);
         // 合并近邻列表，这里简单遍历实现
         final IntList tNL = new IntList(oNL.size());
-        oNL.forEach(idx -> {
-            if (!tNL.contains(idx)) tNL.add(idx);
-        });
+        tNL.addAll(oNL);
         nNL.forEach(idx -> {
             if (!tNL.contains(idx)) tNL.add(idx);
         });
@@ -665,9 +663,7 @@ public class NNAP implements IAutoShutdown {
         // 合并近邻列表，这里简单遍历实现
         final IntList tNL = new IntList(iNL.size()+1);
         tNL.add(aI);
-        iNL.forEach(idx -> {
-            if (!tNL.contains(idx)) tNL.add(idx);
-        });
+        tNL.addAll(iNL);
         if (!tNL.contains(aJ)) tNL.add(aJ);
         jNL.forEach(idx -> {
             if (!tNL.contains(idx)) tNL.add(idx);
@@ -689,6 +685,48 @@ public class NNAP implements IAutoShutdown {
         IntUnaryOperator tTypeMap = typeMap(aAtomData);
         try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyDiffSwap(tAPC, aI, aJ, false, tTypeMap);}
     }
+    /**
+     * 计算翻转摸个元素种类前后的能量差，只计算翻转影响的近邻列表中的原子，可以加快计算速度
+     * @param aAPC 此原子的 apc 或者原子结构本身
+     * @param aI 需要翻转种类的原子索引
+     * @param aType 此原子需要翻转的种类编号，对应输入原子数据原始的种类编号，没有经过 aTypeMap（如果有的话）
+     * @param aRestoreAPC 计算完成后是否还原 APC 的状态，默认为 {@code true}
+     * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
+     * @return 翻转后能量 - 翻转前能量
+     */
+    public double calEnergyDiffFlip(AtomicParameterCalculator aAPC, int aI, int aType, boolean aRestoreAPC, IntUnaryOperator aTypeMap) throws TorchException {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        if (atomTypeNumber() < aAPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of APC: " + aAPC.atomTypeNumber() + ", model: " + atomTypeNumber());
+        int oType = aAPC.atomType_().get(aI);
+        if (oType == aType) return 0.0;
+        // 采用最大的截断半径从而包含所有可能涉及发生了能量变换的原子
+        double tRCut = 0.0;
+        for (SingleNNAP tModel : models()) {
+            tRCut = Math.max(tRCut, tModel.basis().rcut());
+        }
+        IIntVector iNL = aAPC.getNeighborList(aI, tRCut);
+        // 增加一个自身，这里简单创建新的列表实现
+        final IntList tNL = new IntList(iNL.size()+1);
+        tNL.add(aI);
+        tNL.addAll(iNL);
+        Vector oEngs = calEnergiesAt(aAPC, tNL, aTypeMap);
+        double oEng = oEngs.sum();
+        VectorCache.returnVec(oEngs);
+        Vector nEngs = calEnergiesAt(aAPC.setAtomType(aI, aType), tNL, aTypeMap);
+        double nEng = nEngs.sum();
+        VectorCache.returnVec(nEngs);
+        if (aRestoreAPC) aAPC.setAtomType(aI, oType);
+        return nEng - oEng;
+    }
+    public double calEnergyDiffFlip(AtomicParameterCalculator aAPC, int aI, int aType, IntUnaryOperator aTypeMap) throws TorchException {return calEnergyDiffFlip(aAPC, aI, aType, true, aTypeMap);}
+    public double calEnergyDiffFlip(AtomicParameterCalculator aAPC, int aI, int aType, boolean aRestoreAPC) throws TorchException {return calEnergyDiffFlip(aAPC, aI, aType, aRestoreAPC, type->type);}
+    public double calEnergyDiffFlip(AtomicParameterCalculator aAPC, int aI, int aType) throws TorchException {return calEnergyDiffFlip(aAPC, aI, aType, type->type);}
+    public double calEnergyDiffFlip(IAtomData aAtomData, int aI, int aType) throws TorchException {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        IntUnaryOperator tTypeMap = typeMap(aAtomData);
+        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyDiffFlip(tAPC, aI, aType, false, tTypeMap);}
+    }
+    
     
     
     /**
