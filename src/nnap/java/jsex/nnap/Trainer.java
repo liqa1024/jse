@@ -53,6 +53,7 @@ public class Trainer implements IAutoShutdown, ISavable {
         , VAL_MODEL_STATE_DICT  = "__NNAP_TRAINER_model_state_dict__"
         , VAL_OPTIMIZER         = "__NNAP_TRAINER_optimizer__"
         , VAL_LOSS_FN           = "__NNAP_TRAINER_loss_fn__"
+        , VAL_LOSS_FN_ENG       = "__NNAP_TRAINER_loss_fn_eng__"
         , VAL_TRAIN_BASE        = "__NNAP_TRAINER_train_base__"
         , VAL_TRAIN_BASE_J      = "__NNAP_TRAINER_train_base_J__"
         , VAL_TRAIN_ATOM_NUM    = "__NNAP_TRAINER_train_atom_num__"
@@ -104,7 +105,7 @@ public class Trainer implements IAutoShutdown, ISavable {
             "        x = self.out_layer(x)\n" +
             "        return torch.reshape(x, x.shape[:-1])";
         
-        /** 创建获取总能量的模型的类，修改此值来实现自定义模型；注意这里约定返回每原子能量，可以方便拟合以及 loss 函数的设计 */
+        /** 创建获取总能量的模型的类，修改此值来实现自定义模型；现在统一返回没平均的总能量 */
         public static String TOTAL_MODEL_SCRIPT =
             "class "+CLASS_TOTAL_MODEL+"(torch.nn.Module):\n" +
             "    def __init__(self, input_dims, hidden_dims, bn_layers, ntypes=1):\n" +
@@ -120,8 +121,15 @@ public class Trainer implements IAutoShutdown, ISavable {
             "            sumidx = x[i][:, -1].long()\n" +
             "            xout = self.sub_models[i](x[i][:, :-1])\n" +
             "            y.scatter_add_(0, sumidx, xout)\n" +
-            "        y /= atom_nums\n" +
             "        return y";
+        
+        /** 总 loss 函数，修改此值实现自定义 loss 函数，主要用于控制各种 loss 之间的比例 */
+        public static String LOSS_FN_SCRIPT =
+            "def "+VAL_LOSS_FN+"(pred_engs, target_engs):\n" +
+            "    return "+VAL_LOSS_FN_ENG+"(pred_engs, target_engs)";
+        
+        /** 用于计算能量的 loss 函数，修改此值实现自定义 loss 函数；目前默认采用 SmoothL1Loss */
+        public static String LOSS_FN_ENG_SCRIPT = VAL_LOSS_FN_ENG+"=torch.nn.SmoothL1Loss()";
         
         /** 训练一步的脚本函数，修改此值来实现自定义训练算法；默认使用 LBFGS 训练 */
         public static String TRAIN_STEP_SCRIPT =
@@ -130,6 +138,7 @@ public class Trainer implements IAutoShutdown, ISavable {
             "    def closure():\n" +
             "        "+VAL_OPTIMIZER+".zero_grad()\n" +
             "        pred = "+VAL_MODEL+"("+VAL_TRAIN_BASE+", "+VAL_TRAIN_ATOM_NUM+")\n" +
+            "        pred /= "+VAL_TRAIN_ATOM_NUM+"\n" +
             "        loss = "+VAL_LOSS_FN+"(pred, "+VAL_TRAIN_ENG+")\n" +
             "        loss.backward()\n" +
             "        return loss\n" +
@@ -143,6 +152,7 @@ public class Trainer implements IAutoShutdown, ISavable {
             "    "+VAL_MODEL+".eval()\n"+
             "    with torch.no_grad():\n" +
             "        pred = "+VAL_MODEL+"("+VAL_TEST_BASE+", "+VAL_TEST_ATOM_NUM+")\n" +
+            "        pred /= "+VAL_TEST_ATOM_NUM+"\n" +
             "        loss = "+VAL_LOSS_FN+"(pred, "+VAL_TEST_ENG+")\n" +
             "    return loss.item()";
         
@@ -166,6 +176,8 @@ public class Trainer implements IAutoShutdown, ISavable {
         SP.Python.exec(Conf.INIT_SCRIPT);
         SP.Python.exec(Conf.SINGLE_MODEL_SCRIPT);
         SP.Python.exec(Conf.TOTAL_MODEL_SCRIPT);
+        SP.Python.exec(Conf.LOSS_FN_ENG_SCRIPT);
+        SP.Python.exec(Conf.LOSS_FN_SCRIPT);
         SP.Python.exec(Conf.TRAIN_STEP_SCRIPT);
         SP.Python.exec(Conf.TEST_LOSS_SCRIPT);
         //noinspection ConcatenationWithEmptyString
@@ -174,7 +186,8 @@ public class Trainer implements IAutoShutdown, ISavable {
         "    "+VAL_MODEL+".eval()\n"+
         "    with torch.no_grad():\n" +
         "        pred = "+VAL_MODEL+"(x, atom_nums)\n" +
-        "    return (y - pred).abs().mean().item()"
+        "        pred /= atom_nums\n" +
+        "        return (y - pred).abs().mean().item()"
         );
         SP.Python.exec(Conf.MODEL2BYTES_SCRIPT);
     }
@@ -186,7 +199,6 @@ public class Trainer implements IAutoShutdown, ISavable {
             mDead = true;
             if (mModelInited) SP.Python.removeValue(VAL_MODEL);
             if (mOptimizerInited) SP.Python.removeValue(VAL_OPTIMIZER);
-            if (mLossFnInited) SP.Python.removeValue(VAL_LOSS_FN);
         }
     }
     
@@ -197,7 +209,7 @@ public class Trainer implements IAutoShutdown, ISavable {
     protected final IVector mRefEngs;
     protected final IBasis[] mBasis;
     protected final DoubleList[] mTrainBase; // 按照种类排序，然后内部是可扩展的具体数据，最后一列增加对应的能量的索引；现在使用这种 DoubleList 展开的形式存
-    protected final RowMatrix[] mTrainBaseMat; // mTrainDataBase 的实际值，当然这个只是缓存结果
+    protected final RowMatrix[] mTrainBaseMat; // mTrainDataBase 的实际值，这个只是缓存结果
     protected final DoubleList mTrainEng = new DoubleList(64);
     protected final IntList mTrainAtomNum = new IntList(64);
     protected final Vector[] mNormVec;
@@ -209,7 +221,6 @@ public class Trainer implements IAutoShutdown, ISavable {
     protected boolean mModelInited = false;
     protected final Map<String, ?> mModelSetting;
     protected boolean mOptimizerInited = false;
-    protected boolean mLossFnInited = false;
     protected final DoubleList mTrainLoss = new DoubleList(64);
     protected final DoubleList mTestLoss = new DoubleList(64);
     
@@ -293,10 +304,6 @@ public class Trainer implements IAutoShutdown, ISavable {
     protected void initOptimizer() {
         SP.Python.exec(VAL_OPTIMIZER+" = torch.optim.LBFGS("+VAL_MODEL+".parameters(), history_size=100, max_iter=5, line_search_fn='strong_wolfe')");
     }
-    /** 重写实现自定义损失函数创建，这里目前默认采用 SmoothL1Loss */
-    protected void initLossFn() {
-        SP.Python.exec(VAL_LOSS_FN+" = torch.nn.SmoothL1Loss()");
-    }
     /** 重写实现自定义归一化方案 */
     protected void initNormVec() {
         for (int i = 0; i < mTrainBase.length; ++i) {
@@ -319,11 +326,6 @@ public class Trainer implements IAutoShutdown, ISavable {
         if (!mOptimizerInited) {
             initOptimizer();
             mOptimizerInited = true;
-        }
-        // 同样在这里初始化损失函数
-        if (!mLossFnInited) {
-            initLossFn();
-            mLossFnInited = true;
         }
         if (aPrintLog) System.out.println("Init train data...");
         // 初始化矩阵数据
