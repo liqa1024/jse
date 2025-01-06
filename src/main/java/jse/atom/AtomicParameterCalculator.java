@@ -616,7 +616,8 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                 double dis = Fast.hypot(dx, dy, dz);
                 dnAll[0].updateNear(dis, g->g+1);
                 int tTypeB = mTypeVec.get(idx);
-                dnAll[(tTypeA*(tTypeA-1))/2 + tTypeB].updateNear(dis, g->g+1);
+                int tIdx = tTypeB<=tTypeA ? ((tTypeA*(tTypeA-1))/2 + tTypeB) : ((tTypeB*(tTypeB-1))/2 + tTypeA);
+                dnAll[tIdx].updateNear(dis, g->g+1);
             });
         });
         
@@ -946,7 +947,8 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                 tDeltaG.setX0(Fast.hypot(dx, dy, dz));
                 dnAll[0].plus2this(tDeltaG);
                 int tTypeB = mTypeVec.get(idx);
-                dnAll[(tTypeA*(tTypeA-1))/2 + tTypeB].plus2this(tDeltaG);
+                int tIdx = tTypeB<=tTypeA ? ((tTypeA*(tTypeA-1))/2 + tTypeB) : ((tTypeB*(tTypeB-1))/2 + tTypeA);
+                dnAll[tIdx].plus2this(tDeltaG);
             });
         });
         
