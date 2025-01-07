@@ -1,8 +1,11 @@
 package jsex.nnap;
 
+import jep.NDArray;
+import jep.python.PyCallable;
 import jep.python.PyObject;
 import jse.atom.IAtomData;
 import jse.atom.AtomicParameterCalculator;
+import jse.cache.IntVectorCache;
 import jse.cache.MatrixCache;
 import jse.code.SP;
 import jse.code.UT;
@@ -43,6 +46,7 @@ public class Trainer implements IAutoShutdown, ISavable {
     protected final static String DEFAULT_UNITS = "metal";
     protected final static int[] DEFAULT_HIDDEN_DIMS = {20, 20};
     protected final static boolean DEFAULT_BN_LAYER = true;
+    protected final static PyObject TORCH;
     /** 全局记录 python 中的变量名称 */
     protected final static String
           CLASS_SINGLE_MODEL                = "__NNAP_TRAINER_SingleEnergyModel__"
@@ -223,6 +227,7 @@ public class Trainer implements IAutoShutdown, ISavable {
     }
     static {
         SP.Python.exec("import torch");
+        TORCH = SP.Python.getClass("torch");
         SP.Python.exec("import copy");
         SP.Python.exec("import io");
         SP.Python.exec(Conf.INIT_SCRIPT);
@@ -272,8 +277,8 @@ public class Trainer implements IAutoShutdown, ISavable {
     protected final DoubleList[] mTrainBase; // 按照种类排序，内部是可扩展的具体数据；现在使用这种 DoubleList 展开的形式存
     protected final RowMatrix[] mTrainBaseMat; // mTrainDataBase 的实际值（按行排列），这个只是缓存结果
     protected final IntList[] mTrainBaseIndices; // 每个 base 对应的能量/数据的索引，按照种类排序
-    protected final List<List<RowMatrix>> mTrainBasePartial; // 按照种类排序，内部是每个原子的所有基组偏导值，每个基组偏导值按行排列，和交叉项以及 xyz 共同组成一个矩阵
-    protected final List<List<IntVector>> mTrainBasePartialIndices; // 每个 base partial 对应的力/全局原子的索引，按照种类排序
+    protected final List<List<PyObject>> mTrainBasePartial; // 按照种类排序，内部是每个原子的所有基组偏导值，每个基组偏导值按行排列，和交叉项以及 xyz 共同组成一个矩阵；为了减少内存占用现在统一直接存 torch tensor
+    protected final List<List<PyObject>> mTrainBasePartialIndices; // 每个 base partial 对应的力/全局原子的索引，按照种类排序；为了减少内存占用现在统一直接存 torch tensor
     protected final DoubleList mTrainEng = new DoubleList(64);
     protected final DoubleList mTrainForce = new DoubleList(64); // 这里的力数值直接展开成单个向量，通过 mTrainBasePartialIndices 来获取对应的索引
     protected final IntList mTrainAtomNum = new IntList(64);
@@ -281,8 +286,8 @@ public class Trainer implements IAutoShutdown, ISavable {
     protected final DoubleList[] mTestBase;
     protected final RowMatrix[] mTestBaseMat;
     protected final IntList[] mTestBaseIndices;
-    protected final List<List<RowMatrix>> mTestBasePartial;
-    protected final List<List<IntVector>> mTestBasePartialIndices;
+    protected final List<List<PyObject>> mTestBasePartial;
+    protected final List<List<PyObject>> mTestBasePartialIndices;
     protected final DoubleList mTestEng = new DoubleList(64);
     protected final DoubleList mTestForce = new DoubleList(64);
     protected final IntList mTestAtomNum = new IntList(64);
@@ -460,38 +465,22 @@ public class Trainer implements IAutoShutdown, ISavable {
             );
             SP.Python.exec(VAL_TRAIN_ENG+" /= "+VAL_TRAIN_ATOM_NUM);
             if (mHasForce) {
-                // 需要遍历填充 0，这里为了避免中间变量内存占用过高使用循环的写法
+                // 直接通过 torch.nn.utils.rnn.pad_sequence 来填充 0
+                SP.Python.exec(VAL_TRAIN_BASE_PARTIAL+" = [torch.nn.utils.rnn.pad_sequence("+VAL_SUB+", batch_first=True) for "+VAL_SUB+" in "+VAL_TRAIN_BASE_PARTIAL_J+"]");
+                SP.Python.exec(VAL_TRAIN_BASE_PARTIAL_INDICES+" = [torch.nn.utils.rnn.pad_sequence("+VAL_SUB+", batch_first=True).long() for "+VAL_SUB+" in "+VAL_TRAIN_BASE_PARTIAL_INDICES_J+"]");
                 //noinspection ConcatenationWithEmptyString
                 SP.Python.exec("" +
-                "from jse.code import UT\n" +
-                VAL_TRAIN_BASE_PARTIAL+" = [None] * len("+VAL_TRAIN_BASE_PARTIAL_J+")\n" +
-                VAL_TRAIN_BASE_PARTIAL_INDICES+" = [None] * len("+VAL_TRAIN_BASE_PARTIAL_J+")\n" +
-                "for "+VAL_I+" in range(len("+VAL_TRAIN_BASE_PARTIAL_J+")):\n" +
-                "    "+VAL_MAX+" = -1\n" +
-                "    UT.Timer.tic()\n" +
-                "    for "+VAL_SUB+" in "+VAL_TRAIN_BASE_PARTIAL_J+"["+VAL_I+"]:\n" +
-                "        "+VAL_MAX+" = max("+VAL_MAX+", "+VAL_SUB+".nrows())\n" +
-                "    UT.Timer.toc('cal max')\n" +
-                "    UT.Timer.tic()\n" +
-                "    "+VAL_TRAIN_BASE_PARTIAL+"["+VAL_I+"] = torch.zeros(len("+VAL_TRAIN_BASE_PARTIAL_J+"["+VAL_I+"]), "+VAL_MAX+", "+VAL_TRAIN_BASE_PARTIAL_J+"["+VAL_I+"][0].ncols(), dtype=torch.float64)\n" +
-                "    "+VAL_TRAIN_BASE_PARTIAL_INDICES+"["+VAL_I+"] = torch.zeros(len("+VAL_TRAIN_BASE_PARTIAL_J+"["+VAL_I+"]), "+VAL_MAX+", dtype=torch.int64)\n" +
-                "    UT.Timer.toc('init data')\n" +
-                "    UT.Timer.tic()\n" +
-                "    for "+VAL_J+" in range(len("+VAL_TRAIN_BASE_PARTIAL_J+"["+VAL_I+"])):\n" +
-                "        "+VAL_SUB+" = "+VAL_TRAIN_BASE_PARTIAL_J+"["+VAL_I+"]["+VAL_J+"]\n" +
-                "        "+VAL_TRAIN_BASE_PARTIAL+"["+VAL_I+"]["+VAL_J+", :"+VAL_SUB+".nrows(), :] = torch.tensor("+VAL_SUB+".asListRows(), dtype=torch.float64)\n" +
-                "        "+VAL_TRAIN_BASE_PARTIAL_INDICES+"["+VAL_I+"]["+VAL_J+", :"+VAL_SUB+".nrows()] = torch.tensor("+VAL_TRAIN_BASE_PARTIAL_INDICES_J+"["+VAL_I+"]["+VAL_J+"].asList(), dtype=torch.int64)\n" +
-                "    UT.Timer.toc('copy data')\n" +
-                "    "+VAL_TRAIN_BASE_PARTIAL+"["+VAL_I+"] /= "+VAL_NORM_VEC+"["+VAL_I+"]\n" +
-                "del "+VAL_SUB
+                "for "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC+" in zip("+VAL_TRAIN_BASE_PARTIAL+", "+VAL_NORM_VEC+"):\n" +
+                "    "+VAL_SUB_BASE+" /= "+VAL_SUB_NORM_VEC+"\n" +
+                "del "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC
                 );
                 SP.Python.exec(VAL_TRAIN_FORCE+" = torch.tensor("+VAL_TRAIN_FORCE_J+".asList(), dtype=torch.float64)");
                 // 此时基组值本身需要梯度
                 //noinspection ConcatenationWithEmptyString
                 SP.Python.exec("" +
-                "for "+VAL_SUB+" in "+VAL_TRAIN_BASE+":\n" +
-                "    "+VAL_SUB+".requires_grad_(True)\n" +
-                "del "+VAL_SUB
+                "for "+VAL_SUB_BASE+" in "+VAL_TRAIN_BASE+":\n" +
+                "    "+VAL_SUB_BASE+".requires_grad_(True)\n" +
+                "del "+VAL_SUB_BASE
                 );
             }
             if (mHasTest) {
@@ -507,23 +496,14 @@ public class Trainer implements IAutoShutdown, ISavable {
                 );
                 SP.Python.exec(VAL_TEST_ENG+" /= "+VAL_TEST_ATOM_NUM);
                 if (mHasForce) {
-                    // 需要遍历填充 0，这里为了避免中间变量内存占用过高使用循环的写法
+                    // 直接通过 torch.nn.utils.rnn.pad_sequence 来填充 0
+                    SP.Python.exec(VAL_TEST_BASE_PARTIAL+" = [torch.nn.utils.rnn.pad_sequence("+VAL_SUB+", batch_first=True) for "+VAL_SUB+" in "+VAL_TEST_BASE_PARTIAL_J+"]");
+                    SP.Python.exec(VAL_TEST_BASE_PARTIAL_INDICES+" = [torch.nn.utils.rnn.pad_sequence("+VAL_SUB+", batch_first=True).long() for "+VAL_SUB+" in "+VAL_TEST_BASE_PARTIAL_INDICES_J+"]");
                     //noinspection ConcatenationWithEmptyString
                     SP.Python.exec("" +
-                    VAL_TEST_BASE_PARTIAL+" = [None] * len("+VAL_TEST_BASE_PARTIAL_J+")\n" +
-                    VAL_TEST_BASE_PARTIAL_INDICES+" = [None] * len("+VAL_TEST_BASE_PARTIAL_J+")\n" +
-                    "for "+VAL_I+" in range(len("+VAL_TEST_BASE_PARTIAL_J+")):\n" +
-                    "    "+VAL_MAX+" = -1\n" +
-                    "    for "+VAL_SUB+" in "+VAL_TEST_BASE_PARTIAL_J+"["+VAL_I+"]:\n" +
-                    "        "+VAL_MAX+" = max("+VAL_MAX+", "+VAL_SUB+".nrows())\n" +
-                    "    "+VAL_TEST_BASE_PARTIAL+"["+VAL_I+"] = torch.zeros(len("+VAL_TEST_BASE_PARTIAL_J+"["+VAL_I+"]), "+VAL_MAX+", "+VAL_TEST_BASE_PARTIAL_J+"["+VAL_I+"][0].ncols(), dtype=torch.float64)\n" +
-                    "    "+VAL_TEST_BASE_PARTIAL_INDICES+"["+VAL_I+"] = torch.zeros(len("+VAL_TEST_BASE_PARTIAL_J+"["+VAL_I+"]), "+VAL_MAX+", dtype=torch.int64)\n" +
-                    "    for "+VAL_J+" in range(len("+VAL_TEST_BASE_PARTIAL_J+"["+VAL_I+"])):\n" +
-                    "        "+VAL_SUB+" = "+VAL_TEST_BASE_PARTIAL_J+"["+VAL_I+"]["+VAL_J+"]\n" +
-                    "        "+VAL_TEST_BASE_PARTIAL+"["+VAL_I+"]["+VAL_J+", :"+VAL_SUB+".nrows(), :] = torch.tensor("+VAL_SUB+".asListRows(), dtype=torch.float64)\n" +
-                    "        "+VAL_TEST_BASE_PARTIAL_INDICES+"["+VAL_I+"]["+VAL_J+", :"+VAL_SUB+".nrows()] = torch.tensor("+VAL_TEST_BASE_PARTIAL_INDICES_J+"["+VAL_I+"]["+VAL_J+"].asList(), dtype=torch.int64)\n" +
-                    "    "+VAL_TEST_BASE_PARTIAL+"["+VAL_I+"] /= "+VAL_NORM_VEC+"["+VAL_I+"]\n" +
-                    "del "+VAL_SUB
+                    "for "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC+" in zip("+VAL_TEST_BASE_PARTIAL+", "+VAL_NORM_VEC+"):\n" +
+                    "    "+VAL_SUB_BASE+" /= "+VAL_SUB_NORM_VEC+"\n" +
+                    "del "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC
                     );
                     SP.Python.exec(VAL_TEST_FORCE+" = torch.tensor("+VAL_TEST_FORCE_J+".asList(), dtype=torch.float64)");
                     // 此时基组值本身需要梯度
@@ -671,7 +651,7 @@ public class Trainer implements IAutoShutdown, ISavable {
     }
     @ApiStatus.Internal
     protected void calRefEngBasePartialAndAdd_(IAtomData aAtomData, double aEnergy, final DoubleList rEngData, DoubleList[] rBaseData, IntList[] rBaseIndices,
-                                               @NotNull IMatrix aForces, DoubleList rForceData, List<List<RowMatrix>> rBasePartial, List<List<IntVector>> rBasePartialIndices) {
+                                               @NotNull IMatrix aForces, DoubleList rForceData, List<List<PyObject>> rBasePartial, List<List<PyObject>> rBasePartialIndices) {
         IntUnaryOperator tTypeMap = typeMap(aAtomData);
         // 由于数据集不完整因此这里不去做归一化
         final int tAtomNum = aAtomData.atomNumber();
@@ -685,8 +665,8 @@ public class Trainer implements IAutoShutdown, ISavable {
                 rBaseIndices[tType-1].add(rEngData.size());
                 // 基组偏导和索引
                 int tRowNum = tOut.size()-1;
-                final RowMatrix tBasePartial = RowMatrix.zeros(tRowNum, tBasis.rowNumber()*tBasis.columnNumber());
-                final IntVector tBasePartialIndices = IntVector.zeros(tRowNum);
+                final RowMatrix tBasePartial = MatrixCache.getMatRow(tRowNum, tBasis.rowNumber()*tBasis.columnNumber());
+                final IntVector tBasePartialIndices = IntVectorCache.getVec(tRowNum);
                 final int tShift = rForceData.size();
                 tBasePartialIndices.set(0, tShift + 3*i);
                 tBasePartialIndices.set(1, tShift + 3*i + 1);
@@ -705,9 +685,17 @@ public class Trainer implements IAutoShutdown, ISavable {
                     tBasePartialIndices.set(5 + 3*j[0], tShift + 3*idx + 2);
                     ++j[0];
                 });
-                rBasePartial.get(tType-1).add(tBasePartial);
-                rBasePartialIndices.get(tType-1).add(tBasePartialIndices);
                 MatrixCache.returnMat(tOut);
+                // 将数据转换为 torch 的 tensor，这里最快的方式是利用 torch 的 from_numpy 进行转换
+                PyObject tPyBasePartial, tPyBasePartialIndices;
+                try (PyCallable tFromNumpy = TORCH.getAttr("from_numpy", PyCallable.class)) {
+                    tPyBasePartial = tFromNumpy.callAs(PyObject.class, new NDArray<>(tBasePartial.internalData(), tBasePartial.rowNumber(), tBasePartial.columnNumber()));
+                    tPyBasePartialIndices = tFromNumpy.callAs(PyObject.class, new NDArray<>(tBasePartialIndices.internalData(), tBasePartialIndices.size()));
+                }
+                rBasePartial.get(tType-1).add(tPyBasePartial);
+                rBasePartialIndices.get(tType-1).add(tPyBasePartialIndices);
+                MatrixCache.returnMat(tBasePartial);
+                IntVectorCache.returnVec(tBasePartialIndices);
                 // 计算相对能量值
                 aEnergy -= mRefEngs.get(tType-1);
             }
