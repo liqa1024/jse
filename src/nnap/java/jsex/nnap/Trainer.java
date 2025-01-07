@@ -215,7 +215,7 @@ public class Trainer implements IAutoShutdown, ISavable {
         /** 将模型转为字节的脚本，一般情况不需要重写 */
         public static String MODEL2BYTES_SCRIPT =
             "def "+FN_MODEL2BYTES+"(i):\n" +
-            "    sub_model = "+VAL_MODEL+".sub_models[i]\n" +
+            "    sub_model = "+VAL_MODEL+".sub_models[i].double()\n" +
             "    sub_model.eval()\n" +
             "    input_ones = torch.ones(1, "+VAL_MODEL+".input_dims[i], dtype=torch.float64)\n" +
             "    traced_script_module = torch.jit.trace(sub_model, input_ones)\n" +
@@ -270,6 +270,8 @@ public class Trainer implements IAutoShutdown, ISavable {
     
     protected String mUnits = DEFAULT_UNITS;
     public Trainer setUnits(String aUnits) {mUnits = aUnits; return this;}
+    protected boolean mTrainInFloat = true;
+    public Trainer setTrainInFloat(boolean aFlag) {mTrainInFloat = aFlag; return this;}
     
     protected final String[] mSymbols;
     protected final IVector mRefEngs;
@@ -380,7 +382,8 @@ public class Trainer implements IAutoShutdown, ISavable {
         SP.Python.setValue(VAL_BN_LAYERS, tBnLayers);
         SP.Python.setValue(VAL_NTYPES, mSymbols.length);
         try {
-            SP.Python.exec(VAL_MODEL+" = "+CLASS_TOTAL_MODEL+"("+VAL_INPUT_DIMS+", "+VAL_HIDDEN_DIMS+", "+VAL_BN_LAYERS+", ntypes="+VAL_NTYPES+").double()");
+            SP.Python.exec(VAL_MODEL+" = "+CLASS_TOTAL_MODEL+"("+VAL_INPUT_DIMS+", "+VAL_HIDDEN_DIMS+", "+VAL_BN_LAYERS+", ntypes="+VAL_NTYPES+")");
+            if (!mTrainInFloat) SP.Python.exec(VAL_MODEL+" = "+VAL_MODEL+".double()");
         } finally {
             SP.Python.removeValue(VAL_NTYPES);
             SP.Python.removeValue(VAL_BN_LAYERS);
@@ -452,11 +455,12 @@ public class Trainer implements IAutoShutdown, ISavable {
             }
         }
         try {
-            SP.Python.exec(VAL_NORM_VEC+" = [torch.tensor("+VAL_SUB+".asList(), dtype=torch.float64) for "+VAL_SUB+" in "+VAL_NORM_VEC_J+"]");
-            SP.Python.exec(VAL_TRAIN_BASE+" = [torch.tensor("+VAL_SUB+".asListRows(), dtype=torch.float64) for "+VAL_SUB+" in "+VAL_TRAIN_BASE_J+"]");
+            String tDType = mTrainInFloat ? "float32" : "float64";
+            SP.Python.exec(VAL_NORM_VEC+" = [torch.tensor("+VAL_SUB+".asList(), dtype=torch."+tDType+") for "+VAL_SUB+" in "+VAL_NORM_VEC_J+"]");
+            SP.Python.exec(VAL_TRAIN_BASE+" = [torch.tensor("+VAL_SUB+".asListRows(), dtype=torch."+tDType+") for "+VAL_SUB+" in "+VAL_TRAIN_BASE_J+"]");
             SP.Python.exec(VAL_TRAIN_BASE_INDICES+" = [torch.tensor("+VAL_SUB+".asList(), dtype=torch.int64) for "+VAL_SUB+" in "+VAL_TRAIN_BASE_INDICES_J+"]");
-            SP.Python.exec(VAL_TRAIN_ENG+" = torch.tensor("+VAL_TRAIN_ENG_J+".asList(), dtype=torch.float64)");
-            SP.Python.exec(VAL_TRAIN_ATOM_NUM+" = torch.tensor("+VAL_TRAIN_ATOM_NUM_J+".asList(), dtype=torch.float64)");
+            SP.Python.exec(VAL_TRAIN_ENG+" = torch.tensor("+VAL_TRAIN_ENG_J+".asList(), dtype=torch."+tDType+")");
+            SP.Python.exec(VAL_TRAIN_ATOM_NUM+" = torch.tensor("+VAL_TRAIN_ATOM_NUM_J+".asList(), dtype=torch."+tDType+")");
             //noinspection ConcatenationWithEmptyString
             SP.Python.exec("" +
             "for "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC+" in zip("+VAL_TRAIN_BASE+", "+VAL_NORM_VEC+"):\n" +
@@ -474,7 +478,7 @@ public class Trainer implements IAutoShutdown, ISavable {
                 "    "+VAL_SUB_BASE+" /= "+VAL_SUB_NORM_VEC+"\n" +
                 "del "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC
                 );
-                SP.Python.exec(VAL_TRAIN_FORCE+" = torch.tensor("+VAL_TRAIN_FORCE_J+".asList(), dtype=torch.float64)");
+                SP.Python.exec(VAL_TRAIN_FORCE+" = torch.tensor("+VAL_TRAIN_FORCE_J+".asList(), dtype=torch."+tDType+")");
                 // 此时基组值本身需要梯度
                 //noinspection ConcatenationWithEmptyString
                 SP.Python.exec("" +
@@ -484,10 +488,10 @@ public class Trainer implements IAutoShutdown, ISavable {
                 );
             }
             if (mHasTest) {
-                SP.Python.exec(VAL_TEST_BASE+" = [torch.tensor("+VAL_SUB+".asListRows(), dtype=torch.float64) for "+VAL_SUB+" in "+VAL_TEST_BASE_J+"]");
+                SP.Python.exec(VAL_TEST_BASE+" = [torch.tensor("+VAL_SUB+".asListRows(), dtype=torch."+tDType+") for "+VAL_SUB+" in "+VAL_TEST_BASE_J+"]");
                 SP.Python.exec(VAL_TEST_BASE_INDICES+" = [torch.tensor("+VAL_SUB+".asList(), dtype=torch.int64) for "+VAL_SUB+" in "+VAL_TEST_BASE_INDICES_J+"]");
-                SP.Python.exec(VAL_TEST_ENG+" = torch.tensor("+VAL_TEST_ENG_J+".asList(), dtype=torch.float64)");
-                SP.Python.exec(VAL_TEST_ATOM_NUM+" = torch.tensor("+VAL_TEST_ATOM_NUM_J+".asList(), dtype=torch.float64)");
+                SP.Python.exec(VAL_TEST_ENG+" = torch.tensor("+VAL_TEST_ENG_J+".asList(), dtype=torch."+tDType+")");
+                SP.Python.exec(VAL_TEST_ATOM_NUM+" = torch.tensor("+VAL_TEST_ATOM_NUM_J+".asList(), dtype=torch."+tDType+")");
                 //noinspection ConcatenationWithEmptyString
                 SP.Python.exec("" +
                 "for "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC+" in zip("+VAL_TEST_BASE+", "+VAL_NORM_VEC+"):\n" +
@@ -505,7 +509,7 @@ public class Trainer implements IAutoShutdown, ISavable {
                     "    "+VAL_SUB_BASE+" /= "+VAL_SUB_NORM_VEC+"\n" +
                     "del "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC
                     );
-                    SP.Python.exec(VAL_TEST_FORCE+" = torch.tensor("+VAL_TEST_FORCE_J+".asList(), dtype=torch.float64)");
+                    SP.Python.exec(VAL_TEST_FORCE+" = torch.tensor("+VAL_TEST_FORCE_J+".asList(), dtype=torch."+tDType+")");
                     // 此时基组值本身需要梯度
                     //noinspection ConcatenationWithEmptyString
                     SP.Python.exec("" +
@@ -690,6 +694,11 @@ public class Trainer implements IAutoShutdown, ISavable {
                 PyObject tPyBasePartial, tPyBasePartialIndices;
                 try (PyCallable tFromNumpy = TORCH.getAttr("from_numpy", PyCallable.class)) {
                     tPyBasePartial = tFromNumpy.callAs(PyObject.class, new NDArray<>(tBasePartial.internalData(), tBasePartial.rowNumber(), tBasePartial.columnNumber()));
+                    if (mTrainInFloat) {
+                        try (PyObject oPyBasePartial = tPyBasePartial; PyCallable tFloat = oPyBasePartial.getAttr("float", PyCallable.class)) {
+                            tPyBasePartial = tFloat.callAs(PyObject.class);
+                        }
+                    }
                     tPyBasePartialIndices = tFromNumpy.callAs(PyObject.class, new NDArray<>(tBasePartialIndices.internalData(), tBasePartialIndices.size()));
                 }
                 rBasePartial.get(tType-1).add(tPyBasePartial);
