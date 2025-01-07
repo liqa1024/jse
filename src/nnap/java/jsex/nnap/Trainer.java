@@ -57,6 +57,8 @@ public class Trainer implements IAutoShutdown, ISavable {
         , VAL_OPTIMIZER                     = "__NNAP_TRAINER_optimizer__"
         , VAL_LOSS_FN                       = "__NNAP_TRAINER_loss_fn__"
         , VAL_LOSS_FN_ENG                   = "__NNAP_TRAINER_loss_fn_eng__"
+        , VAL_LOSS_FN_FORCE                 = "__NNAP_TRAINER_loss_fn_force__"
+        , VAL_HAS_FORCE                     = "__NNAP_TRAINER_has_force__"
         , VAL_TRAIN_BASE                    = "__NNAP_TRAINER_train_base__"
         , VAL_TRAIN_BASE_J                  = "__NNAP_TRAINER_train_base_J__"
         , VAL_TRAIN_BASE_INDICES            = "__NNAP_TRAINER_train_base_indices__"
@@ -146,11 +148,15 @@ public class Trainer implements IAutoShutdown, ISavable {
         
         /** 总 loss 函数，修改此值实现自定义 loss 函数，主要用于控制各种 loss 之间的比例 */
         public static String LOSS_FN_SCRIPT =
-            "def "+VAL_LOSS_FN+"(pred_engs, target_engs):\n" +
-            "    return "+VAL_LOSS_FN_ENG+"(pred_engs, target_engs)";
+            "def "+VAL_LOSS_FN+"(pred_engs, target_engs, pred_forces=None, target_forces=None):\n" +
+            "    if pred_forces is None:\n" +
+            "        return "+VAL_LOSS_FN_ENG+"(pred_engs, target_engs)\n" +
+            "    return "+VAL_LOSS_FN_ENG+"(pred_engs, target_engs) + 0.1*"+VAL_LOSS_FN_FORCE+"(pred_forces, target_forces)";
         
         /** 用于计算能量的 loss 函数，修改此值实现自定义 loss 函数；目前默认采用 SmoothL1Loss */
         public static String LOSS_FN_ENG_SCRIPT = VAL_LOSS_FN_ENG+"=torch.nn.SmoothL1Loss()";
+        /** 用于计算能量的 loss 函数，修改此值实现自定义 loss 函数；目前默认采用 SmoothL1Loss */
+        public static String LOSS_FN_FORCE_SCRIPT = VAL_LOSS_FN_FORCE+"=torch.nn.SmoothL1Loss()";
         
         /** 通过网络编导和基组偏导数计算出力的函数，统一使用 torch 的运算方便反向传播计算导数，一般情况不需要重写 */
         public static String CAL_FORCES_SCRIPT =
@@ -169,8 +175,15 @@ public class Trainer implements IAutoShutdown, ISavable {
             "    def closure():\n" +
             "        "+VAL_OPTIMIZER+".zero_grad()\n" +
             "        pred = "+VAL_MODEL+"("+VAL_TRAIN_BASE+", "+VAL_TRAIN_BASE_INDICES+", "+VAL_TRAIN_ATOM_NUM+")\n" +
-            "        pred /= "+VAL_TRAIN_ATOM_NUM+"\n" +
-            "        loss = "+VAL_LOSS_FN+"(pred, "+VAL_TRAIN_ENG+")\n" +
+            "        if "+VAL_HAS_FORCE+":\n" +
+            "            pred_sum = pred.sum()\n" +
+            "            fp_grad = [torch.autograd.grad(pred_sum, sub_fp, create_graph=True)[0] for sub_fp in "+VAL_TRAIN_BASE+"]\n" +
+            "            pred_f = "+FN_CAL_FORCES+"(fp_grad, "+VAL_TRAIN_BASE_PARTIAL+", "+VAL_TRAIN_BASE_PARTIAL_INDICES+", "+VAL_TRAIN_ATOM_NUM+")\n" +
+            "            pred /= "+VAL_TRAIN_ATOM_NUM+"\n" +
+            "            loss = "+VAL_LOSS_FN+"(pred, "+VAL_TRAIN_ENG+", pred_f, "+VAL_TRAIN_FORCE+")\n" +
+            "        else:\n" +
+            "            pred /= "+VAL_TRAIN_ATOM_NUM+"\n" +
+            "            loss = "+VAL_LOSS_FN+"(pred, "+VAL_TRAIN_ENG+")\n" +
             "        loss.backward()\n" +
             "        return loss\n" +
             "    loss = closure()\n" +
@@ -181,10 +194,18 @@ public class Trainer implements IAutoShutdown, ISavable {
         public static String TEST_LOSS_SCRIPT =
             "def "+FN_TEST_LOSS+"():\n" +
             "    "+VAL_MODEL+".eval()\n"+
-            "    with torch.no_grad():\n" +
-            "        pred = "+VAL_MODEL+"("+VAL_TEST_BASE+", "+VAL_TEST_BASE_INDICES+", "+VAL_TEST_ATOM_NUM+")\n" +
-            "        pred /= "+VAL_TEST_ATOM_NUM+"\n" +
-            "        loss = "+VAL_LOSS_FN+"(pred, "+VAL_TEST_ENG+")\n" +
+            "    if not "+VAL_HAS_FORCE+":\n" +
+            "        with torch.no_grad():\n" +
+            "            pred = "+VAL_MODEL+"("+VAL_TEST_BASE+", "+VAL_TEST_BASE_INDICES+", "+VAL_TEST_ATOM_NUM+")\n" +
+            "            pred /= "+VAL_TEST_ATOM_NUM+"\n" +
+            "            loss = "+VAL_LOSS_FN+"(pred, "+VAL_TEST_ENG+")\n" +
+            "            return loss.item()\n" +
+            "    pred = "+VAL_MODEL+"("+VAL_TEST_BASE+", "+VAL_TEST_BASE_INDICES+", "+VAL_TEST_ATOM_NUM+")\n" +
+            "    pred_sum = pred.sum()\n" +
+            "    fp_grad = [torch.autograd.grad(pred_sum, sub_fp)[0] for sub_fp in "+VAL_TEST_BASE+"]\n" +
+            "    pred_f = "+FN_CAL_FORCES+"(fp_grad, "+VAL_TEST_BASE_PARTIAL+", "+VAL_TEST_BASE_PARTIAL_INDICES+", "+VAL_TEST_ATOM_NUM+")\n" +
+            "    pred /= "+VAL_TEST_ATOM_NUM+"\n" +
+            "    loss = "+VAL_LOSS_FN+"(pred, "+VAL_TEST_ENG+", pred_f, "+VAL_TEST_FORCE+")\n" +
             "    return loss.item()";
         
         /** 将模型转为字节的脚本，一般情况不需要重写 */
@@ -208,6 +229,7 @@ public class Trainer implements IAutoShutdown, ISavable {
         SP.Python.exec(Conf.SINGLE_MODEL_SCRIPT);
         SP.Python.exec(Conf.TOTAL_MODEL_SCRIPT);
         SP.Python.exec(Conf.LOSS_FN_ENG_SCRIPT);
+        SP.Python.exec(Conf.LOSS_FN_FORCE_SCRIPT);
         SP.Python.exec(Conf.LOSS_FN_SCRIPT);
         SP.Python.exec(Conf.CAL_FORCES_SCRIPT);
         SP.Python.exec(Conf.TRAIN_STEP_SCRIPT);
@@ -402,6 +424,7 @@ public class Trainer implements IAutoShutdown, ISavable {
         // 重新构建归一化向量
         initNormVec();
         // 构造 torch 数据，这里直接把数据放到 python 环境中变成一个 python 的全局变量
+        SP.Python.setValue(VAL_HAS_FORCE, mHasForce);
         SP.Python.setValue(VAL_NORM_VEC_J, mNormVec);
         SP.Python.setValue(VAL_TRAIN_BASE_J, mTrainBaseMat);
         SP.Python.setValue(VAL_TRAIN_BASE_INDICES_J, mTrainBaseIndices);
@@ -440,18 +463,25 @@ public class Trainer implements IAutoShutdown, ISavable {
                 // 需要遍历填充 0，这里为了避免中间变量内存占用过高使用循环的写法
                 //noinspection ConcatenationWithEmptyString
                 SP.Python.exec("" +
+                "from jse.code import UT\n" +
                 VAL_TRAIN_BASE_PARTIAL+" = [None] * len("+VAL_TRAIN_BASE_PARTIAL_J+")\n" +
                 VAL_TRAIN_BASE_PARTIAL_INDICES+" = [None] * len("+VAL_TRAIN_BASE_PARTIAL_J+")\n" +
                 "for "+VAL_I+" in range(len("+VAL_TRAIN_BASE_PARTIAL_J+")):\n" +
                 "    "+VAL_MAX+" = -1\n" +
+                "    UT.Timer.tic()\n" +
                 "    for "+VAL_SUB+" in "+VAL_TRAIN_BASE_PARTIAL_J+"["+VAL_I+"]:\n" +
                 "        "+VAL_MAX+" = max("+VAL_MAX+", "+VAL_SUB+".nrows())\n" +
+                "    UT.Timer.toc('cal max')\n" +
+                "    UT.Timer.tic()\n" +
                 "    "+VAL_TRAIN_BASE_PARTIAL+"["+VAL_I+"] = torch.zeros(len("+VAL_TRAIN_BASE_PARTIAL_J+"["+VAL_I+"]), "+VAL_MAX+", "+VAL_TRAIN_BASE_PARTIAL_J+"["+VAL_I+"][0].ncols(), dtype=torch.float64)\n" +
                 "    "+VAL_TRAIN_BASE_PARTIAL_INDICES+"["+VAL_I+"] = torch.zeros(len("+VAL_TRAIN_BASE_PARTIAL_J+"["+VAL_I+"]), "+VAL_MAX+", dtype=torch.int64)\n" +
+                "    UT.Timer.toc('init data')\n" +
+                "    UT.Timer.tic()\n" +
                 "    for "+VAL_J+" in range(len("+VAL_TRAIN_BASE_PARTIAL_J+"["+VAL_I+"])):\n" +
                 "        "+VAL_SUB+" = "+VAL_TRAIN_BASE_PARTIAL_J+"["+VAL_I+"]["+VAL_J+"]\n" +
                 "        "+VAL_TRAIN_BASE_PARTIAL+"["+VAL_I+"]["+VAL_J+", :"+VAL_SUB+".nrows(), :] = torch.tensor("+VAL_SUB+".asListRows(), dtype=torch.float64)\n" +
                 "        "+VAL_TRAIN_BASE_PARTIAL_INDICES+"["+VAL_I+"]["+VAL_J+", :"+VAL_SUB+".nrows()] = torch.tensor("+VAL_TRAIN_BASE_PARTIAL_INDICES_J+"["+VAL_I+"]["+VAL_J+"].asList(), dtype=torch.int64)\n" +
+                "    UT.Timer.toc('copy data')\n" +
                 "    "+VAL_TRAIN_BASE_PARTIAL+"["+VAL_I+"] /= "+VAL_NORM_VEC+"["+VAL_I+"]\n" +
                 "del "+VAL_SUB
                 );
