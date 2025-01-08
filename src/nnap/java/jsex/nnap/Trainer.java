@@ -45,7 +45,8 @@ public class Trainer implements IAutoShutdown, ISavable {
     protected final static int VERSION = 1;
     protected final static String DEFAULT_UNITS = "metal";
     protected final static int[] DEFAULT_HIDDEN_DIMS = {20, 20};
-    protected final static boolean DEFAULT_BN_LAYER = true;
+    protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
+    protected final static double DEFAULT_L2_LOSS_WEIGHT = 0.0;
     protected final static PyObject TORCH;
     /** 全局记录 python 中的变量名称 */
     protected final static String
@@ -62,7 +63,8 @@ public class Trainer implements IAutoShutdown, ISavable {
         , VAL_LOSS_FN_ENG                   = "__NNAP_TRAINER_loss_fn_eng__"
         , VAL_LOSS_FN_FORCE                 = "__NNAP_TRAINER_loss_fn_force__"
         , VAL_HAS_FORCE                     = "__NNAP_TRAINER_has_force__"
-        , VAL_FORCE_RATIO                   = "__NNAP_TRAINER_force_ratio__"
+        , VAL_FORCE_WEIGHT                  = "__NNAP_TRAINER_force_wright__"
+        , VAL_L2_LOSS_WEIGHT                = "__NNAP_TRAINER_l2_loss_wright__"
         , VAL_TRAIN_BASE                    = "__NNAP_TRAINER_train_base__"
         , VAL_TRAIN_BASE_J                  = "__NNAP_TRAINER_train_base_J__"
         , VAL_TRAIN_BASE_INDICES            = "__NNAP_TRAINER_train_base_indices__"
@@ -94,7 +96,6 @@ public class Trainer implements IAutoShutdown, ISavable {
         , VAL_TEST_FORCE                    = "__NNAP_TRAINER_test_force__"
         , VAL_TEST_FORCE_J                  = "__NNAP_TRAINER_test_force_J__"
         , VAL_NTYPES                        = "__NNAP_TRAINER_ntypes__"
-        , VAL_BN_LAYERS                     = "__NNAP_TRAINER_bn_layers__"
         , VAL_HIDDEN_DIMS                   = "__NNAP_TRAINER_hidden_dims__"
         , VAL_INPUT_DIMS                    = "__NNAP_TRAINER_input_dims__"
         , VAL_SUB_NORM_VEC                  = "__NNAP_TRAINER_sub_norm_vec__"
@@ -117,33 +118,41 @@ public class Trainer implements IAutoShutdown, ISavable {
         /** 创建获取单粒子能量的模型的类，修改此值来实现自定义模型 */
         public static String SINGLE_MODEL_SCRIPT =
             "class "+CLASS_SINGLE_MODEL+"(torch.nn.Module):\n" +
-            "    def __init__(self, input_dim, hidden_dims, bn_layer):\n" +
+            "    def __init__(self, input_dim, hidden_dims):\n" +
             "        super().__init__()\n" +
             "        self.in_layer = torch.nn.Linear(input_dim, hidden_dims[0])\n" +
-            "        self.in_bn_layer = torch.nn.BatchNorm1d(hidden_dims[0]) if bn_layer else torch.nn.Identity()\n" +
             "        self.hidden_layers = torch.nn.ModuleList([torch.nn.Linear(hidden_dims[i], hidden_dims[i+1]) for i in range(len(hidden_dims)-1)])\n" +
-            "        self.hidden_bn_layers = torch.nn.ModuleList([(torch.nn.BatchNorm1d(hidden_dims[i+1]) if bn_layer else torch.nn.Identity()) for i in range(len(hidden_dims)-1)])\n" +
             "        self.out_layer = torch.nn.Linear(hidden_dims[-1], 1)\n" +
             "        self.active = torch.nn.SiLU()\n" +
             "    \n" +
             "    def forward(self, x):\n" +
-            "        x = self.active(self.in_bn_layer(self.in_layer(x)))\n" +
-            "        for hidden_layer, hidden_bn_layer in zip(self.hidden_layers, self.hidden_bn_layers):\n" +
-            "            x = self.active(hidden_bn_layer(hidden_layer(x)))\n" +
+            "        x = self.active(self.in_layer(x))\n" +
+            "        for hidden_layer in self.hidden_layers:\n" +
+            "            x = self.active(hidden_layer(x))\n" +
             "        x = self.out_layer(x)\n" +
             "        return torch.reshape(x, x.shape[:-1])";
         
         /** 创建获取总能量的模型的类，一般情况不需要重写 */
         public static String TOTAL_MODEL_SCRIPT =
             "class "+CLASS_TOTAL_MODEL+"(torch.nn.Module):\n" +
-            "    def __init__(self, input_dims, hidden_dims, bn_layers, ntypes=1):\n" +
+            "    def __init__(self, input_dims, hidden_dims, ntypes=1):\n" +
             "        super().__init__()\n" +
             "        self.input_dims = input_dims\n" +
             "        self.ntypes = ntypes\n" +
-            "        self.sub_models = torch.nn.ModuleList(["+CLASS_SINGLE_MODEL+"(input_dims[i], hidden_dims[i], bn_layers[i]) for i in range(ntypes)])\n" +
+            "        self.sub_models = torch.nn.ModuleList(["+CLASS_SINGLE_MODEL+"(input_dims[i], hidden_dims[i]) for i in range(ntypes)])\n" +
             "    \n" +
             "    def forward(self, x):\n" +
             "        return [self.sub_models[i](x[i]) for i in range(self.ntypes)]\n" +
+            "    \n" +
+            "    def cal_l2_loss(self):\n" +
+            "        l2_loss = 0.0\n" +
+            "        nparams = 0\n" +
+            "        for param in self.parameters():\n" +
+            "            param = param.flatten()\n" +
+            "            l2_loss += param.dot(param).mean()\n" +
+            "            nparams += 1\n" +
+            "        l2_loss /= nparams\n" +
+            "        return l2_loss\n" +
             "    \n" +
             "    def cal_eng_force(self, fp, indices, atom_nums, xyz_grad=None, nl=None, create_graph=False):\n" +
             "        eng_all = self.forward(fp)\n" +
@@ -165,9 +174,10 @@ public class Trainer implements IAutoShutdown, ISavable {
         /** 总 loss 函数，修改此值实现自定义 loss 函数，主要用于控制各种 loss 之间的比例 */
         public static String LOSS_FN_SCRIPT =
             "def "+VAL_LOSS_FN+"(pred_engs, target_engs, pred_forces=None, target_forces=None):\n" +
+            "    eng_loss = "+VAL_LOSS_FN_ENG+"(pred_engs, target_engs)\n" +
             "    if pred_forces is None:\n" +
-            "        return "+VAL_LOSS_FN_ENG+"(pred_engs, target_engs)\n" +
-            "    return "+VAL_LOSS_FN_ENG+"(pred_engs, target_engs) + "+VAL_FORCE_RATIO+"*"+VAL_LOSS_FN_FORCE+"(pred_forces, target_forces)";
+            "        return eng_loss\n" +
+            "    return eng_loss + "+VAL_FORCE_WEIGHT+"*"+VAL_LOSS_FN_FORCE+"(pred_forces, target_forces)";
         
         /** 用于计算能量的 loss 函数，修改此值实现自定义 loss 函数；目前默认采用 SmoothL1Loss */
         public static String LOSS_FN_ENG_SCRIPT = VAL_LOSS_FN_ENG+"=torch.nn.SmoothL1Loss()";
@@ -176,23 +186,19 @@ public class Trainer implements IAutoShutdown, ISavable {
         
         /** 训练一步的脚本函数，修改此值来实现自定义训练算法；默认使用 LBFGS 训练 */
         public static String TRAIN_STEP_SCRIPT =
-            "def "+FN_TRAIN_STEP+"(train_force=False):\n" +
-            "    if not train_force:\n" +
-            "        "+VAL_MODEL+".train()\n"+
-            "        def closure():\n" +
-            "            "+VAL_OPTIMIZER+".zero_grad()\n" +
+            "def "+FN_TRAIN_STEP+"():\n" +
+            "    "+VAL_MODEL+".train()\n"+
+            "    def closure():\n" +
+            "        "+VAL_OPTIMIZER+".zero_grad()\n" +
+            "        if not "+VAL_HAS_FORCE+":\n" +
             "            pred = "+VAL_MODEL+".cal_eng_force("+VAL_TRAIN_BASE+", "+VAL_TRAIN_BASE_INDICES+", "+VAL_TRAIN_ATOM_NUM+")\n" +
             "            loss = "+VAL_LOSS_FN+"(pred, "+VAL_TRAIN_ENG+")\n" +
-            "            loss.backward()\n" +
-            "            return loss\n" +
-            "    else:\n" +
-            "        "+VAL_MODEL+".eval()\n"+
-            "        def closure():\n" +
-            "            "+VAL_OPTIMIZER+".zero_grad()\n" +
+            "        else:\n" +
             "            pred, pred_f = "+VAL_MODEL+".cal_eng_force("+VAL_TRAIN_BASE+", "+VAL_TRAIN_BASE_INDICES+", "+VAL_TRAIN_ATOM_NUM+", "+VAL_TRAIN_BASE_PARTIAL+", "+VAL_TRAIN_BASE_PARTIAL_INDICES+", True)\n" +
             "            loss = "+VAL_LOSS_FN+"(pred, "+VAL_TRAIN_ENG+", pred_f, "+VAL_TRAIN_FORCE+")\n" +
-            "            loss.backward()\n" +
-            "            return loss\n" +
+            "        loss += "+VAL_L2_LOSS_WEIGHT+"*"+VAL_MODEL+".cal_l2_loss()\n" +
+            "        loss.backward()\n" +
+            "        return loss\n" +
             "    loss = closure()\n" +
             "    "+VAL_OPTIMIZER+".step(closure)\n" +
             "    return loss.item()";
@@ -264,8 +270,10 @@ public class Trainer implements IAutoShutdown, ISavable {
     public Trainer setUnits(String aUnits) {mUnits = aUnits; return this;}
     protected boolean mTrainInFloat = true;
     public Trainer setTrainInFloat(boolean aFlag) {mTrainInFloat = aFlag; return this;}
-    protected double mForceRatio = 0.1;
-    public Trainer setForceRatio(double aRatio) {mForceRatio = aRatio; return this;}
+    protected double mForceWeight = DEFAULT_FORCE_WEIGHT;
+    public Trainer setForceWeight(double aWeight) {mForceWeight = aWeight; return this;}
+    protected double mL2LossWeight = DEFAULT_L2_LOSS_WEIGHT;
+    public Trainer setL2LossWeight(double aWeight) {mL2LossWeight = aWeight; return this;}
     
     protected final String[] mSymbols;
     protected final IVector mRefEngs;
@@ -363,24 +371,14 @@ public class Trainer implements IAutoShutdown, ISavable {
             final List<?> tSubDims = tHiddenDims;
             tHiddenDims = NewCollections.from(mSymbols.length, i -> tSubDims);
         }
-        @Nullable Object tBnLayers = UT.Code.getWithDefault(mModelSetting, null, "bn_layers", "bn_layer", "bn");
-        if (tBnLayers == null) {
-            tBnLayers = NewCollections.from(mSymbols.length, i -> DEFAULT_BN_LAYER);
-        }
-        if (tBnLayers instanceof Boolean) {
-            final Boolean tSubBnLayer = (Boolean)tBnLayers;
-            tBnLayers = NewCollections.from(mSymbols.length, i -> tSubBnLayer);
-        }
         SP.Python.setValue(VAL_INPUT_DIMS, NewCollections.map(mBasis, base -> base.rowNumber()*base.columnNumber()));
         SP.Python.setValue(VAL_HIDDEN_DIMS, tHiddenDims);
-        SP.Python.setValue(VAL_BN_LAYERS, tBnLayers);
         SP.Python.setValue(VAL_NTYPES, mSymbols.length);
         try {
-            SP.Python.exec(VAL_MODEL+" = "+CLASS_TOTAL_MODEL+"("+VAL_INPUT_DIMS+", "+VAL_HIDDEN_DIMS+", "+VAL_BN_LAYERS+", ntypes="+VAL_NTYPES+")");
+            SP.Python.exec(VAL_MODEL+" = "+CLASS_TOTAL_MODEL+"("+VAL_INPUT_DIMS+", "+VAL_HIDDEN_DIMS+", ntypes="+VAL_NTYPES+")");
             if (!mTrainInFloat) SP.Python.exec(VAL_MODEL+" = "+VAL_MODEL+".double()");
         } finally {
             SP.Python.removeValue(VAL_NTYPES);
-            SP.Python.removeValue(VAL_BN_LAYERS);
             SP.Python.removeValue(VAL_HIDDEN_DIMS);
             SP.Python.removeValue(VAL_INPUT_DIMS);
         }
@@ -427,7 +425,8 @@ public class Trainer implements IAutoShutdown, ISavable {
         initNormVec();
         // 构造 torch 数据，这里直接把数据放到 python 环境中变成一个 python 的全局变量
         SP.Python.setValue(VAL_HAS_FORCE, mHasForce);
-        SP.Python.setValue(VAL_FORCE_RATIO, mForceRatio);
+        SP.Python.setValue(VAL_FORCE_WEIGHT, mForceWeight);
+        SP.Python.setValue(VAL_L2_LOSS_WEIGHT, mL2LossWeight);
         SP.Python.setValue(VAL_NORM_VEC_J, mNormVec);
         SP.Python.setValue(VAL_TRAIN_BASE_J, mTrainBaseMat);
         SP.Python.setValue(VAL_TRAIN_BASE_INDICES_J, mTrainBaseIndices);
@@ -540,11 +539,10 @@ public class Trainer implements IAutoShutdown, ISavable {
         // 开始训练
         try {
             if (aPrintLog) UT.Timer.progressBar("train", aEpochs);
-            SP.Python.exec(VAL_MODEL+".train()");
             double tMinLoss = Double.POSITIVE_INFINITY;
             int tSelectEpoch = -1;
             for (int i = 0; i < aEpochs; ++i) {
-                double tLoss = ((Number)SP.Python.invoke(FN_TRAIN_STEP, mHasForce && i>aEpochs/2)).doubleValue();
+                double tLoss = ((Number)SP.Python.invoke(FN_TRAIN_STEP)).doubleValue();
                 double oLoss = mTrainLoss.isEmpty() ? Double.NaN : mTrainLoss.last();
                 mTrainLoss.add(tLoss);
                 double tTestLoss = Double.NaN;
