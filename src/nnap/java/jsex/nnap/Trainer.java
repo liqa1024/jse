@@ -47,6 +47,7 @@ public class Trainer implements IAutoShutdown, ISavable {
     protected final static int[] DEFAULT_HIDDEN_DIMS = {20, 20};
     protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
     protected final static double DEFAULT_L2_LOSS_WEIGHT = 0.0;
+    protected final static boolean DEFAULT_CLEAR_DATA_ON_TRAINING = true;
     protected final static PyObject TORCH;
     /** 全局记录 python 中的变量名称 */
     protected final static String
@@ -274,6 +275,9 @@ public class Trainer implements IAutoShutdown, ISavable {
     public Trainer setForceWeight(double aWeight) {mForceWeight = aWeight; return this;}
     protected double mL2LossWeight = DEFAULT_L2_LOSS_WEIGHT;
     public Trainer setL2LossWeight(double aWeight) {mL2LossWeight = aWeight; return this;}
+    protected boolean mClearDataOnTraining = DEFAULT_CLEAR_DATA_ON_TRAINING;
+    public Trainer setClearDataOnTraining(boolean aFlag) {mClearDataOnTraining = aFlag; return this;}
+    
     
     protected final String[] mSymbols;
     protected final IVector mRefEngs;
@@ -451,10 +455,26 @@ public class Trainer implements IAutoShutdown, ISavable {
         try {
             String tDType = mTrainInFloat ? "float32" : "float64";
             SP.Python.exec(VAL_NORM_VEC+" = [torch.tensor("+VAL_SUB+".asList(), dtype=torch."+tDType+") for "+VAL_SUB+" in "+VAL_NORM_VEC_J+"]");
-            SP.Python.exec(VAL_TRAIN_BASE+" = [torch.tensor("+VAL_SUB+".asListRows(), dtype=torch."+tDType+") for "+VAL_SUB+" in "+VAL_TRAIN_BASE_J+"]");
             SP.Python.exec(VAL_TRAIN_BASE_INDICES+" = [torch.tensor("+VAL_SUB+".asList(), dtype=torch.int64) for "+VAL_SUB+" in "+VAL_TRAIN_BASE_INDICES_J+"]");
             SP.Python.exec(VAL_TRAIN_ENG+" = torch.tensor("+VAL_TRAIN_ENG_J+".asList(), dtype=torch."+tDType+")");
             SP.Python.exec(VAL_TRAIN_ATOM_NUM+" = torch.tensor("+VAL_TRAIN_ATOM_NUM_J+".asList(), dtype=torch."+tDType+")");
+            // 这里将最大的 Base 数据也用 numpy 的方式转换
+            SP.Python.exec(VAL_TRAIN_BASE+" = []");
+            for (int i = 0; i < mSymbols.length; ++i) {
+                NDArray<double[]> tBaseNP = new NDArray<>(mTrainBaseMat[i].internalData(), mTrainBaseMat[i].rowNumber(), mTrainBaseMat[i].columnNumber());
+                SP.Python.setValue(VAL_SUB, tBaseNP);
+                SP.Python.exec(VAL_TRAIN_BASE+".append(torch.from_numpy("+VAL_SUB+(mTrainInFloat?").float())":"))"));
+            }
+            if (mClearDataOnTraining) {
+                for (int i = 0; i < mSymbols.length; ++i) {
+                    mTrainBase[i].clear();
+                    mTrainBaseIndices[i].clear();
+                    mTrainBase[i].clear();
+                    mTrainBaseMat[i] = null;
+                }
+                mTrainEng.clear();
+                mTrainAtomNum.clear();
+            }
             //noinspection ConcatenationWithEmptyString
             SP.Python.exec("" +
             "for "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC+" in zip("+VAL_TRAIN_BASE+", "+VAL_NORM_VEC+"):\n" +
@@ -463,9 +483,24 @@ public class Trainer implements IAutoShutdown, ISavable {
             );
             SP.Python.exec(VAL_TRAIN_ENG+" /= "+VAL_TRAIN_ATOM_NUM);
             if (mHasForce) {
-                // 直接通过 torch.nn.utils.rnn.pad_sequence 来填充 0
-                SP.Python.exec(VAL_TRAIN_BASE_PARTIAL+" = [torch.nn.utils.rnn.pad_sequence("+VAL_SUB+", batch_first=True) for "+VAL_SUB+" in "+VAL_TRAIN_BASE_PARTIAL_J+"]");
-                SP.Python.exec(VAL_TRAIN_BASE_PARTIAL_INDICES+" = [torch.nn.utils.rnn.pad_sequence("+VAL_SUB+", batch_first=True).long() for "+VAL_SUB+" in "+VAL_TRAIN_BASE_PARTIAL_INDICES_J+"]");
+                SP.Python.exec(VAL_TRAIN_BASE_PARTIAL+" = []");
+                SP.Python.exec(VAL_TRAIN_BASE_PARTIAL_INDICES+" = []");
+                for (int i = 0; i < mSymbols.length; ++i) {
+                    SP.Python.setValue(VAL_I, i);
+                    // 直接通过 torch.nn.utils.rnn.pad_sequence 来填充 0
+                    SP.Python.exec(VAL_TRAIN_BASE_PARTIAL+".append(torch.nn.utils.rnn.pad_sequence("+VAL_TRAIN_BASE_PARTIAL_J+"["+VAL_I+"], batch_first=True))");
+                    SP.Python.exec(VAL_TRAIN_BASE_PARTIAL_INDICES+".append(torch.nn.utils.rnn.pad_sequence("+VAL_TRAIN_BASE_PARTIAL_INDICES_J+"["+VAL_I+"], batch_first=True).long())");
+                    // 遍历过程中清空数据，进一步减少转换过程的内存占用峰值
+                    if (mClearDataOnTraining) {
+                        List<PyObject>
+                        tSub = mTrainBasePartial.get(i);
+                        tSub.forEach(PyObject::close);
+                        tSub.clear();
+                        tSub = mTrainBasePartialIndices.get(i);
+                        tSub.forEach(PyObject::close);
+                        tSub.clear();
+                    }
+                }
                 //noinspection ConcatenationWithEmptyString
                 SP.Python.exec("" +
                 "for "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC+" in zip("+VAL_TRAIN_BASE_PARTIAL+", "+VAL_NORM_VEC+"):\n" +
@@ -473,6 +508,9 @@ public class Trainer implements IAutoShutdown, ISavable {
                 "del "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC
                 );
                 SP.Python.exec(VAL_TRAIN_FORCE+" = torch.tensor("+VAL_TRAIN_FORCE_J+".asList(), dtype=torch."+tDType+")");
+                if (mClearDataOnTraining) {
+                    mTrainForce.clear();
+                }
                 // 此时基组值本身需要梯度
                 //noinspection ConcatenationWithEmptyString
                 SP.Python.exec("" +
@@ -482,10 +520,26 @@ public class Trainer implements IAutoShutdown, ISavable {
                 );
             }
             if (mHasTest) {
-                SP.Python.exec(VAL_TEST_BASE+" = [torch.tensor("+VAL_SUB+".asListRows(), dtype=torch."+tDType+") for "+VAL_SUB+" in "+VAL_TEST_BASE_J+"]");
                 SP.Python.exec(VAL_TEST_BASE_INDICES+" = [torch.tensor("+VAL_SUB+".asList(), dtype=torch.int64) for "+VAL_SUB+" in "+VAL_TEST_BASE_INDICES_J+"]");
                 SP.Python.exec(VAL_TEST_ENG+" = torch.tensor("+VAL_TEST_ENG_J+".asList(), dtype=torch."+tDType+")");
                 SP.Python.exec(VAL_TEST_ATOM_NUM+" = torch.tensor("+VAL_TEST_ATOM_NUM_J+".asList(), dtype=torch."+tDType+")");
+                // 这里将最大的 Base 数据也用 numpy 的方式转换
+                SP.Python.exec(VAL_TEST_BASE+" = []");
+                for (int i = 0; i < mSymbols.length; ++i) {
+                    NDArray<double[]> tBaseNP = new NDArray<>(mTestBaseMat[i].internalData(), mTestBaseMat[i].rowNumber(), mTestBaseMat[i].columnNumber());
+                    SP.Python.setValue(VAL_SUB, tBaseNP);
+                    SP.Python.exec(VAL_TEST_BASE+".append(torch.from_numpy("+VAL_SUB+(mTrainInFloat?").float())":"))"));
+                }
+                if (mClearDataOnTraining) {
+                    for (int i = 0; i < mSymbols.length; ++i) {
+                        mTestBase[i].clear();
+                        mTestBaseIndices[i].clear();
+                        mTestBase[i].clear();
+                        mTestBaseMat[i] = null;
+                    }
+                    mTestEng.clear();
+                    mTestAtomNum.clear();
+                }
                 //noinspection ConcatenationWithEmptyString
                 SP.Python.exec("" +
                 "for "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC+" in zip("+VAL_TEST_BASE+", "+VAL_NORM_VEC+"):\n" +
@@ -494,9 +548,24 @@ public class Trainer implements IAutoShutdown, ISavable {
                 );
                 SP.Python.exec(VAL_TEST_ENG+" /= "+VAL_TEST_ATOM_NUM);
                 if (mHasForce) {
-                    // 直接通过 torch.nn.utils.rnn.pad_sequence 来填充 0
-                    SP.Python.exec(VAL_TEST_BASE_PARTIAL+" = [torch.nn.utils.rnn.pad_sequence("+VAL_SUB+", batch_first=True) for "+VAL_SUB+" in "+VAL_TEST_BASE_PARTIAL_J+"]");
-                    SP.Python.exec(VAL_TEST_BASE_PARTIAL_INDICES+" = [torch.nn.utils.rnn.pad_sequence("+VAL_SUB+", batch_first=True).long() for "+VAL_SUB+" in "+VAL_TEST_BASE_PARTIAL_INDICES_J+"]");
+                    SP.Python.exec(VAL_TEST_BASE_PARTIAL+" = []");
+                    SP.Python.exec(VAL_TEST_BASE_PARTIAL_INDICES+" = []");
+                    for (int i = 0; i < mSymbols.length; ++i) {
+                        SP.Python.setValue(VAL_I, i);
+                        // 直接通过 torch.nn.utils.rnn.pad_sequence 来填充 0
+                        SP.Python.exec(VAL_TEST_BASE_PARTIAL+".append(torch.nn.utils.rnn.pad_sequence("+VAL_TEST_BASE_PARTIAL_J+"["+VAL_I+"], batch_first=True))");
+                        SP.Python.exec(VAL_TEST_BASE_PARTIAL_INDICES+".append(torch.nn.utils.rnn.pad_sequence("+VAL_TEST_BASE_PARTIAL_INDICES_J+"["+VAL_I+"], batch_first=True).long())");
+                        // 遍历过程中清空数据，进一步减少转换过程的内存占用峰值
+                        if (mClearDataOnTraining) {
+                            List<PyObject>
+                            tSub = mTestBasePartial.get(i);
+                            tSub.forEach(PyObject::close);
+                            tSub.clear();
+                            tSub = mTestBasePartialIndices.get(i);
+                            tSub.forEach(PyObject::close);
+                            tSub.clear();
+                        }
+                    }
                     //noinspection ConcatenationWithEmptyString
                     SP.Python.exec("" +
                     "for "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC+" in zip("+VAL_TEST_BASE_PARTIAL+", "+VAL_NORM_VEC+"):\n" +
@@ -504,6 +573,9 @@ public class Trainer implements IAutoShutdown, ISavable {
                     "del "+VAL_SUB_BASE+", "+VAL_SUB_NORM_VEC
                     );
                     SP.Python.exec(VAL_TEST_FORCE+" = torch.tensor("+VAL_TEST_FORCE_J+".asList(), dtype=torch."+tDType+")");
+                    if (mClearDataOnTraining) {
+                        mTestForce.clear();
+                    }
                     // 此时基组值本身需要梯度
                     //noinspection ConcatenationWithEmptyString
                     SP.Python.exec("" +
