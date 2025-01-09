@@ -5,6 +5,7 @@ import jep.python.PyCallable;
 import jep.python.PyObject;
 import jse.atom.IAtomData;
 import jse.atom.AtomicParameterCalculator;
+import jse.cache.IntMatrixCache;
 import jse.cache.IntVectorCache;
 import jse.cache.MatrixCache;
 import jse.code.SP;
@@ -15,6 +16,7 @@ import jse.code.collection.IntList;
 import jse.code.collection.NewCollections;
 import jse.io.ISavable;
 import jse.math.matrix.IMatrix;
+import jse.math.matrix.RowIntMatrix;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import jse.math.vector.Vector;
@@ -22,7 +24,6 @@ import jse.parallel.IAutoShutdown;
 import jsex.nnap.basis.IBasis;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
@@ -44,6 +45,7 @@ public class Trainer implements IAutoShutdown, ISavable {
     protected final static String DEFAULT_UNITS = "metal";
     protected final static int[] DEFAULT_HIDDEN_DIMS = {20, 20};
     protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
+    protected final static double DEFAULT_STRESS_WEIGHT = 1.0;
     protected final static double DEFAULT_L2_LOSS_WEIGHT = 0.0;
     protected final static boolean DEFAULT_CLEAR_DATA_ON_TRAINING = true;
     protected final static PyObject TORCH;
@@ -62,8 +64,11 @@ public class Trainer implements IAutoShutdown, ISavable {
         , VAL_LOSS_FN                       = "__NNAP_TRAINER_loss_fn__"
         , VAL_LOSS_FN_ENG                   = "__NNAP_TRAINER_loss_fn_eng__"
         , VAL_LOSS_FN_FORCE                 = "__NNAP_TRAINER_loss_fn_force__"
+        , VAL_LOSS_FN_STRESS                = "__NNAP_TRAINER_loss_fn_stress__"
         , VAL_HAS_FORCE                     = "__NNAP_TRAINER_has_force__"
-        , VAL_FORCE_WEIGHT                  = "__NNAP_TRAINER_force_wright__"
+        , VAL_HAS_STRESS                    = "__NNAP_TRAINER_has_stress__"
+        , VAL_FORCE_WEIGHT                  = "__NNAP_TRAINER_force_weight__"
+        , VAL_STRESS_WEIGHT                 = "__NNAP_TRAINER_stress_weight__"
         , VAL_L2_LOSS_WEIGHT                = "__NNAP_TRAINER_l2_loss_wright__"
         , VAL_NORM_VEC                      = "__NNAP_TRAINER_norm_vec__"
         , VAL_NORM_VEC_J                    = "__NNAP_TRAINER_norm_vec_J__"
@@ -94,15 +99,18 @@ public class Trainer implements IAutoShutdown, ISavable {
         /** python 中对应的 DataSet 类，内部存储 torch 的 tensor，一般情况不需要重写 */
         public static String DATA_SET_SCRIPT =
             "class "+CLASS_DATA_SET+":\n" +
-            "    def __init__(self, ntypes):\n" +
-            "        self.fp = [None]*ntypes\n" +
-            "        self.eng_indices = [None]*ntypes\n" +
-            "        self.fp_partial = ([None]*ntypes, [None]*ntypes)\n" +
-            "        self.force_indices = ([None]*ntypes, [None]*ntypes)\n" +
+            "    def __init__(self):\n" +
+            "        self.fp = []\n" +
+            "        self.eng_indices = []\n" +
+            "        self.fp_partial = ([], [])\n" +
+            "        self.force_indices = None\n" +
+            "        self.stress_indices = None\n" +
+            "        self.stress_dxyz = None\n" +
             "        self.eng = None\n" +
             "        self.force = None\n" +
             "        self.stress = None\n" +
-            "        self.atom_num = None";
+            "        self.atom_num = None\n" +
+            "        self.volume = None";
         
         /** 创建获取单粒子能量的模型的类，修改此值来实现自定义模型 */
         public static String SINGLE_MODEL_SCRIPT =
@@ -143,7 +151,11 @@ public class Trainer implements IAutoShutdown, ISavable {
             "        l2_loss /= nparams\n" +
             "        return l2_loss\n" +
             "    \n" +
-            "    def cal_eng_force(self, fp, indices, atom_nums, xyz_grad=None, indices_f=None, create_graph=False):\n" +
+            "    def cal_eng(self, fp, indices, atom_nums):\n" +
+            "        eng, _, _ = self.cal_eng_force_stress(fp, indices, atom_nums)\n" +
+            "        return eng\n" +
+            "    \n" +
+            "    def cal_eng_force_stress(self, fp, indices, atom_nums, xyz_grad=None, indices_f=None, indices_s=None, dxyz=None, volumes=None, create_graph=False):\n" +
             "        eng_all = self.forward(fp)\n" +
             "        eng_len = len(atom_nums)\n" +
             "        eng = torch.zeros(eng_len, device=atom_nums.device, dtype=atom_nums.dtype)\n" +
@@ -151,30 +163,51 @@ public class Trainer implements IAutoShutdown, ISavable {
             "            eng.scatter_add_(0, indices[i], eng_all[i])\n" +
             "        eng /= atom_nums\n" +
             "        if xyz_grad is None:\n" +
-            "            return eng\n" +
-            "        force_len = atom_nums.sum().long().item()*3\n" + // 这里直接把力全部展开成单个向量
-            "        force = torch.zeros(force_len, device=atom_nums.device, dtype=atom_nums.dtype)\n" +
+            "            return eng, None, None\n" +
+            "        force, stress = None, None\n" +
+            "        if indices_f is not None:\n" +
+            "            force_len = atom_nums.sum().long().item()*3\n" + // 这里直接把力全部展开成单个向量
+            "            force = torch.zeros(force_len, device=atom_nums.device, dtype=atom_nums.dtype)\n" +
+            "        if indices_s is not None:\n" +
+            "            stress_len = eng_len*6\n" + // 这里直接把应力全部展开成单个向量
+            "            stress = torch.zeros(stress_len, device=atom_nums.device, dtype=atom_nums.dtype)\n" +
             "        for i in range(self.ntypes):\n" +
             "            fp_grad = torch.autograd.grad(eng_all[i].sum(), fp[i], create_graph=create_graph)[0]\n" +
-            "            split_ = indices_f[0][i].shape[0]\n" +
-            "            force_all = -torch.bmm(xyz_grad[0][i], fp_grad[:split_, :].unsqueeze(-1))\n" +
-            "            force.scatter_add_(0, indices_f[0][i].flatten(), force_all.flatten())\n" +
-            "            force_all = -torch.bmm(xyz_grad[1][i], fp_grad[split_:, :].unsqueeze(-1))\n" +
-            "            force.scatter_add_(0, indices_f[1][i].flatten(), force_all.flatten())\n" +
-            "        return eng, force";
+            "            split_ = xyz_grad[0][i].shape[0]\n" +
+            "            force_all = torch.bmm(xyz_grad[0][i], fp_grad[:split_, :].unsqueeze(-1))\n" +
+            "            if indices_f is not None:\n" +
+            "                force.scatter_add_(0, indices_f[0][i].flatten(), force_all.flatten())\n" +
+            "            if indices_s is not None:\n" +
+            "                stress_all = force_all * dxyz[0][i]\n" + // 利用 boardcast 的特性，自动计算交叉项
+            "                stress.scatter_add_(0, indices_s[0][i].flatten(), stress_all.flatten())\n" +
+            "            force_all = torch.bmm(xyz_grad[1][i], fp_grad[split_:, :].unsqueeze(-1))\n" +
+            "            if indices_f is not None:\n" +
+            "                force.scatter_add_(0, indices_f[1][i].flatten(), force_all.flatten())\n" +
+            "            if indices_s is not None:\n" +
+            "                stress_all = force_all * dxyz[1][i]\n" + // 利用 boardcast 的特性，自动计算交叉项
+            "                stress.scatter_add_(0, indices_s[1][i].flatten(), stress_all.flatten())\n" +
+            "        if indices_f is not None:\n" +
+            "            force = -force\n" + // 这里统一补回负号，这样 stress 就不需要增加负号
+            "        if indices_s is not None:\n" +
+            "            stress = stress.reshape(eng_len, 6)\n" +
+            "            stress /= volumes.unsqueeze(-1)\n" + // 利用 boardcast 的特性统一消去体积
+            "            stress = stress.flatten()\n" +
+            "        return eng, force, stress";
         
         /** 总 loss 函数，修改此值实现自定义 loss 函数，主要用于控制各种 loss 之间的比例 */
         public static String LOSS_FN_SCRIPT =
-            "def "+VAL_LOSS_FN+"(pred_engs, target_engs, pred_forces=None, target_forces=None):\n" +
-            "    eng_loss = "+VAL_LOSS_FN_ENG+"(pred_engs, target_engs)\n" +
-            "    if pred_forces is None:\n" +
-            "        return eng_loss\n" +
-            "    return eng_loss + "+VAL_FORCE_WEIGHT+"*"+VAL_LOSS_FN_FORCE+"(pred_forces, target_forces)";
+            "def "+VAL_LOSS_FN+"(pred_e, target_e, pred_f=None, target_f=None, pred_s=None, target_s=None):\n" +
+            "    loss_e = "+VAL_LOSS_FN_ENG+"(pred_e, target_e)\n" +
+            "    loss_f = 0.0 if pred_f is None else "+VAL_LOSS_FN_FORCE+"(pred_f, target_f)\n" +
+            "    loss_s = 0.0 if pred_s is None else "+VAL_LOSS_FN_STRESS+"(pred_s, target_s)\n" +
+            "    return loss_e + "+VAL_FORCE_WEIGHT+"*loss_f + "+VAL_STRESS_WEIGHT+"*loss_s";
         
         /** 用于计算能量的 loss 函数，修改此值实现自定义 loss 函数；目前默认采用 SmoothL1Loss */
         public static String LOSS_FN_ENG_SCRIPT = VAL_LOSS_FN_ENG+"=torch.nn.SmoothL1Loss()";
-        /** 用于计算能量的 loss 函数，修改此值实现自定义 loss 函数；目前默认采用 SmoothL1Loss */
+        /** 用于计算力的 loss 函数，修改此值实现自定义 loss 函数；目前默认采用 SmoothL1Loss */
         public static String LOSS_FN_FORCE_SCRIPT = VAL_LOSS_FN_FORCE+"=torch.nn.SmoothL1Loss()";
+        /** 用于计算应力的 loss 函数，修改此值实现自定义 loss 函数；目前默认采用 SmoothL1Loss */
+        public static String LOSS_FN_STRESS_SCRIPT = VAL_LOSS_FN_STRESS+"=torch.nn.SmoothL1Loss()";
         
         /** 训练一步的脚本函数，修改此值来实现自定义训练算法；默认使用 LBFGS 训练 */
         public static String TRAIN_STEP_SCRIPT =
@@ -182,12 +215,13 @@ public class Trainer implements IAutoShutdown, ISavable {
             "    "+VAL_MODEL+".train()\n"+
             "    def closure():\n" +
             "        "+VAL_OPTIMIZER+".zero_grad()\n" +
-            "        if not "+VAL_HAS_FORCE+":\n" +
-            "            pred = "+VAL_MODEL+".cal_eng_force("+VAL_TRAIN_DATA+".fp, "+VAL_TRAIN_DATA+".eng_indices, "+VAL_TRAIN_DATA+".atom_num)\n" +
+            "        if not "+VAL_HAS_FORCE+" and not "+VAL_HAS_STRESS+":\n" +
+            "            pred = "+VAL_MODEL+".cal_eng("+VAL_TRAIN_DATA+".fp, "+VAL_TRAIN_DATA+".eng_indices, "+VAL_TRAIN_DATA+".atom_num)\n" +
             "            loss = "+VAL_LOSS_FN+"(pred, "+VAL_TRAIN_DATA+".eng)\n" +
             "        else:\n" +
-            "            pred, pred_f = "+VAL_MODEL+".cal_eng_force("+VAL_TRAIN_DATA+".fp, "+VAL_TRAIN_DATA+".eng_indices, "+VAL_TRAIN_DATA+".atom_num, "+VAL_TRAIN_DATA+".fp_partial, "+VAL_TRAIN_DATA+".force_indices, True)\n" +
-            "            loss = "+VAL_LOSS_FN+"(pred, "+VAL_TRAIN_DATA+".eng, pred_f, "+VAL_TRAIN_DATA+".force)\n" +
+            "            pred, pred_f, pred_s = "+VAL_MODEL+".cal_eng_force_stress("+VAL_TRAIN_DATA+".fp, "+VAL_TRAIN_DATA+".eng_indices, "+VAL_TRAIN_DATA+".atom_num, "+VAL_TRAIN_DATA+".fp_partial, "+VAL_TRAIN_DATA+".force_indices, "
+                                                                                    +VAL_TRAIN_DATA+".stress_indices, "+VAL_TRAIN_DATA+".stress_dxyz, "+VAL_TRAIN_DATA+".volume, create_graph=True)\n" +
+            "            loss = "+VAL_LOSS_FN+"(pred, "+VAL_TRAIN_DATA+".eng, pred_f, "+VAL_TRAIN_DATA+".force, pred_s, "+VAL_TRAIN_DATA+".stress)\n" +
             "        loss += "+VAL_L2_LOSS_WEIGHT+"*"+VAL_MODEL+".cal_l2_loss()\n" +
             "        loss.backward()\n" +
             "        return loss\n" +
@@ -199,13 +233,14 @@ public class Trainer implements IAutoShutdown, ISavable {
         public static String TEST_LOSS_SCRIPT =
             "def "+FN_TEST_LOSS+"():\n" +
             "    "+VAL_MODEL+".eval()\n"+
-            "    if not "+VAL_HAS_FORCE+":\n" +
+            "    if not "+VAL_HAS_FORCE+" and not "+VAL_HAS_STRESS+":\n" +
             "        with torch.no_grad():\n" +
-            "            pred = "+VAL_MODEL+".cal_eng_force("+VAL_TEST_DATA+".fp, "+VAL_TEST_DATA+".eng_indices, "+VAL_TEST_DATA+".atom_num)\n" +
+            "            pred = "+VAL_MODEL+".cal_eng("+VAL_TEST_DATA+".fp, "+VAL_TEST_DATA+".eng_indices, "+VAL_TEST_DATA+".atom_num)\n" +
             "            loss = "+VAL_LOSS_FN+"(pred, "+VAL_TEST_DATA+".eng)\n" +
             "            return loss.item()\n" +
-            "    pred, pred_f = "+VAL_MODEL+".cal_eng_force("+VAL_TEST_DATA+".fp, "+VAL_TEST_DATA+".eng_indices, "+VAL_TEST_DATA+".atom_num, "+VAL_TEST_DATA+".fp_partial, "+VAL_TEST_DATA+".force_indices)\n" +
-            "    loss = "+VAL_LOSS_FN+"(pred, "+VAL_TEST_DATA+".eng, pred_f, "+VAL_TEST_DATA+".force)\n" +
+            "    pred, pred_f, pred_s = "+VAL_MODEL+".cal_eng_force_stress("+VAL_TEST_DATA+".fp, "+VAL_TEST_DATA+".eng_indices, "+VAL_TEST_DATA+".atom_num, "+VAL_TEST_DATA+".fp_partial, "+VAL_TEST_DATA+".force_indices, "
+                                                                            +VAL_TEST_DATA+".stress_indices, "+VAL_TEST_DATA+".stress_dxyz, "+VAL_TEST_DATA+".volume)\n" +
+            "    loss = "+VAL_LOSS_FN+"(pred, "+VAL_TEST_DATA+".eng, pred_f, "+VAL_TEST_DATA+".force, pred_s, "+VAL_TEST_DATA+".stress)\n" +
             "    return loss.item()";
         
         /** 将模型转为字节的脚本，一般情况不需要重写 */
@@ -232,6 +267,7 @@ public class Trainer implements IAutoShutdown, ISavable {
         SP.Python.exec(Conf.TOTAL_MODEL_SCRIPT);
         SP.Python.exec(Conf.LOSS_FN_ENG_SCRIPT);
         SP.Python.exec(Conf.LOSS_FN_FORCE_SCRIPT);
+        SP.Python.exec(Conf.LOSS_FN_STRESS_SCRIPT);
         SP.Python.exec(Conf.LOSS_FN_SCRIPT);
         SP.Python.exec(Conf.TRAIN_STEP_SCRIPT);
         SP.Python.exec(Conf.TEST_LOSS_SCRIPT);
@@ -239,12 +275,15 @@ public class Trainer implements IAutoShutdown, ISavable {
         SP.Python.exec("" +
         "def "+FN_CAL_MAE+"(data):\n" +
         "    "+VAL_MODEL+".eval()\n"+
-        "    if not "+VAL_HAS_FORCE+":\n" +
+        "    if not "+VAL_HAS_FORCE+" and not "+VAL_HAS_STRESS+":\n" +
         "        with torch.no_grad():\n" +
-        "            pred = "+VAL_MODEL+".cal_eng_force(data.fp, data.eng_indices, data.atom_num)\n" +
-        "            return (data.eng - pred).abs().mean().item()\n" +
-        "    pred, pred_f = "+VAL_MODEL+".cal_eng_force(data.fp, data.eng_indices, data.atom_num, data.fp_partial, data.force_indices)\n" +
-        "    return (data.eng - pred).abs().mean().item(), (data.force - pred_f).abs().mean().item()"
+        "            pred = "+VAL_MODEL+".cal_eng(data.fp, data.eng_indices, data.atom_num)\n" +
+        "            return (data.eng - pred).abs().mean().item(), None, None\n" +
+        "    pred, pred_f, pred_s = "+VAL_MODEL+".cal_eng_force_stress(data.fp, data.eng_indices, data.atom_num, data.fp_partial, data.force_indices, data.stress_indices, data.stress_dxyz, data.volume)\n" +
+        "    mae = (data.eng - pred).abs().mean().item()\n" +
+        "    mae_f = None if pred_f is None else (data.force - pred_f).abs().mean().item()\n" +
+        "    mae_s = None if pred_s is None else (data.stress - pred_s).abs().mean().item()\n" +
+        "    return mae, mae_f, mae_s"
         );
         SP.Python.exec(Conf.MODEL2BYTES_SCRIPT);
     }
@@ -265,6 +304,8 @@ public class Trainer implements IAutoShutdown, ISavable {
     public Trainer setTrainInFloat(boolean aFlag) {mTrainInFloat = aFlag; return this;}
     protected double mForceWeight = DEFAULT_FORCE_WEIGHT;
     public Trainer setForceWeight(double aWeight) {mForceWeight = aWeight; return this;}
+    protected double mStressWeight = DEFAULT_STRESS_WEIGHT;
+    public Trainer setStressWeight(double aWeight) {mStressWeight = aWeight; return this;}
     protected double mL2LossWeight = DEFAULT_L2_LOSS_WEIGHT;
     public Trainer setL2LossWeight(double aWeight) {mL2LossWeight = aWeight; return this;}
     protected boolean mClearDataOnTraining = DEFAULT_CLEAR_DATA_ON_TRAINING;
@@ -283,28 +324,38 @@ public class Trainer implements IAutoShutdown, ISavable {
         public final List<List<PyObject>> mFpPartial;
         /** 每个 fp partial 对应的力的索引，按照种类排序；为了减少内存占用现在统一直接存 torch tensor */
         public final List<List<PyObject>> mForceIndices;
+        /** 每个 fp partial 对应的应力的索引，按照种类排序；为了减少内存占用现在统一直接存 torch tensor */
+        public final List<List<PyObject>> mStressIndices;
+        /** 每个 fp partial 对应的用于计算应力的 dxyz 值，按照种类排序；为了减少内存占用现在统一直接存 torch tensor */
+        public final List<List<PyObject>> mStressDxyz;
         /** 每个原子的近邻原子数列表 */
         public final IntList[] mNN;
         /** 每个原子数据结构对应的能量值 */
         public final DoubleList mEng = new DoubleList(64);
         /** 这里的力数值直接展开成单个向量，通过 mForceIndices 来获取对应的索引 */
         public final DoubleList mForce = new DoubleList(64);
-        /** 这里的压力数值直接展开成单个向量，通过 mStressIndices 来获取对应的索引 */
+        /** 这里的应力数值直接展开成单个向量，通过 mStressIndices 来获取对应的索引 */
         public final DoubleList mStress = new DoubleList(64);
         /** 每个原子数据结构对应的原子数 */
-        public final IntList mAtomNum = new IntList(64);
+        public final DoubleList mAtomNum = new DoubleList(64);
+        /** 每个原子数据结构对应的体积大小，目前主要用来计算应力 */
+        public final DoubleList mVolume = new DoubleList(64);
         
         protected DataSet(int aAtomTypeNum) {
             mFp = new DoubleList[aAtomTypeNum];
             mEngIndices = new IntList[aAtomTypeNum];
             mFpPartial = new ArrayList<>(aAtomTypeNum);
             mForceIndices = new ArrayList<>(aAtomTypeNum);
+            mStressIndices = new ArrayList<>(aAtomTypeNum);
+            mStressDxyz = new ArrayList<>(aAtomTypeNum);
             mNN = new IntList[aAtomTypeNum];
             for (int i = 0; i < aAtomTypeNum; ++i) {
                 mFp[i] = new DoubleList(64);
                 mEngIndices[i] = new IntList(64);
                 mFpPartial.add(new ArrayList<>(64));
                 mForceIndices.add(new ArrayList<>(64));
+                mStressIndices.add(new ArrayList<>(64));
+                mStressDxyz.add(new ArrayList<>(64));
                 mNN[i] = new IntList(64);
             }
             mFpMat = new RowMatrix[aAtomTypeNum];
@@ -325,17 +376,16 @@ public class Trainer implements IAutoShutdown, ISavable {
             SP.Python.setValue(VAL_DATA_J, this);
             String tDType = mTrainInFloat ? "float32" : "float64";
             try {
-                SP.Python.setValue(VAL_I, mSymbols.length);
-                SP.Python.exec(aPyDataSetName+" = "+CLASS_DATA_SET+"("+VAL_I+")");
+                SP.Python.exec(aPyDataSetName+" = "+CLASS_DATA_SET+"()");
                 SP.Python.exec(aPyDataSetName+".eng = torch.tensor("+VAL_DATA_J+".mEng.asList(), dtype=torch."+tDType+")");
                 SP.Python.exec(aPyDataSetName+".atom_num = torch.tensor("+VAL_DATA_J+".mAtomNum.asList(), dtype=torch."+tDType+")");
                 for (int i = 0; i < mSymbols.length; ++i) {
                     SP.Python.setValue(VAL_I, i);
-                    SP.Python.exec(aPyDataSetName+".eng_indices["+VAL_I+"] = torch.tensor("+VAL_DATA_J+".mEngIndices["+VAL_I+"].asList(), dtype=torch.int64)");
+                    SP.Python.exec(aPyDataSetName+".eng_indices.append(torch.tensor("+VAL_DATA_J+".mEngIndices["+VAL_I+"].asList(), dtype=torch.int64))");
                     // 这里将最大的 Base 数据也用 numpy 的方式转换
                     NDArray<double[]> tBaseNP = new NDArray<>(mFpMat[i].internalData(), mFpMat[i].rowNumber(), mFpMat[i].columnNumber());
                     SP.Python.setValue(VAL_SUB, tBaseNP);
-                    SP.Python.exec(aPyDataSetName+".fp["+VAL_I+"] = torch.from_numpy("+VAL_SUB+(mTrainInFloat?").float()":")"));
+                    SP.Python.exec(aPyDataSetName+".fp.append(torch.from_numpy("+VAL_SUB+(mTrainInFloat?").float())":"))"));
                 }
                 SP.Python.removeValue(VAL_SUB);
                 if (aClearData) {
@@ -355,22 +405,45 @@ public class Trainer implements IAutoShutdown, ISavable {
                 "del "+VAL_SUB_FP+", "+VAL_SUB_NORM_VEC
                 );
                 SP.Python.exec(aPyDataSetName+".eng /= "+aPyDataSetName+".atom_num");
-                // 训练力需要的额外数据
-                if (!mHasForce) return;
-                SP.Python.exec(aPyDataSetName+".force = torch.tensor("+VAL_DATA_J+".mForce.asList(), dtype=torch."+tDType+")");
-                if (aClearData) {
-                    mForce.clear();
+                // 训练力和应力需要的额外数据
+                if (!mHasForce && !mHasStress) return;
+                if (mHasForce) {
+                    SP.Python.exec(aPyDataSetName+".force_indices = ([], [])");
+                    SP.Python.exec(aPyDataSetName+".force = torch.tensor("+VAL_DATA_J+".mForce.asList(), dtype=torch."+tDType+")");
+                    if (aClearData) {
+                        mForce.clear();
+                    }
+                }
+                if (mHasStress) {
+                    SP.Python.exec(aPyDataSetName+".stress_indices = ([], [])");
+                    SP.Python.exec(aPyDataSetName+".stress_dxyz = ([], [])");
+                    SP.Python.exec(aPyDataSetName+".stress = torch.tensor("+VAL_DATA_J+".mStress.asList(), dtype=torch."+tDType+")");
+                    SP.Python.exec(aPyDataSetName+".volume = torch.tensor("+VAL_DATA_J+".mVolume.asList(), dtype=torch."+tDType+")");
+                    if (aClearData) {
+                        mStress.clear();
+                        mVolume.clear();
+                    }
                 }
                 for (int i = 0; i < mSymbols.length; ++i) {
                     // 先根据近邻数排序 FpPartial 和 Indices，拆分成两份来减少内存占用
                     final List<PyObject> tSubFpPartial = mFpPartial.get(i);
-                    final List<PyObject> tSubForceIndices = mForceIndices.get(i);
+                    final List<PyObject> tSubForceIndices = mHasForce ? mForceIndices.get(i) : null;
+                    final List<PyObject> tSubStressIndices = mHasStress ? mStressIndices.get(i) : null;
+                    final List<PyObject> tSubStressDxyz = mHasStress ? mStressDxyz.get(i) : null;
                     IntVector tSubNN = mNN[i].asVec();
                     IntVector tSortIndices = Vectors.range(tSubNN.size());
                     tSubNN.operation().biSort((ii, jj) -> {
-                        Collections.swap(tSubFpPartial, ii, jj);
-                        Collections.swap(tSubForceIndices, ii, jj);
                         tSortIndices.swap(ii, jj);
+                        Collections.swap(tSubFpPartial, ii, jj);
+                        if (mHasForce) {
+                            assert tSubForceIndices != null;
+                            Collections.swap(tSubForceIndices, ii, jj);
+                        }
+                        if (mHasStress) {
+                            assert tSubStressIndices != null;
+                            Collections.swap(tSubStressIndices, ii, jj);
+                            Collections.swap(tSubStressDxyz, ii, jj);
+                        }
                     });
                     SP.Python.setValue(VAL_INDICES, tSortIndices.internalData());
                     SP.Python.setValue(VAL_S, calBestSplit_(tSubNN));
@@ -379,17 +452,35 @@ public class Trainer implements IAutoShutdown, ISavable {
                     SP.Python.exec(aPyDataSetName+".fp["+VAL_I+"] = "+aPyDataSetName+".fp["+VAL_I+"]["+VAL_INDICES+", :]");
                     SP.Python.exec(aPyDataSetName+".eng_indices["+VAL_I+"] = "+aPyDataSetName+".eng_indices["+VAL_I+"]["+VAL_INDICES+"]");
                     // 直接通过 torch.nn.utils.rnn.pad_sequence 来填充 0
-                    SP.Python.exec(aPyDataSetName+".fp_partial[0]["+VAL_I+"] = torch.nn.utils.rnn.pad_sequence("+VAL_DATA_J+".mFpPartial["+VAL_I+"][:"+VAL_S+"], batch_first=True)");
-                    SP.Python.exec(aPyDataSetName+".fp_partial[1]["+VAL_I+"] = torch.nn.utils.rnn.pad_sequence("+VAL_DATA_J+".mFpPartial["+VAL_I+"]["+VAL_S+":], batch_first=True)");
-                    SP.Python.exec(aPyDataSetName+".force_indices[0]["+VAL_I+"] = torch.nn.utils.rnn.pad_sequence("+VAL_DATA_J+".mForceIndices["+VAL_I+"][:"+VAL_S+"], batch_first=True).long()");
-                    SP.Python.exec(aPyDataSetName+".force_indices[1]["+VAL_I+"] = torch.nn.utils.rnn.pad_sequence("+VAL_DATA_J+".mForceIndices["+VAL_I+"]["+VAL_S+":], batch_first=True).long()");
+                    SP.Python.exec(aPyDataSetName+".fp_partial[0].append(torch.nn.utils.rnn.pad_sequence("+VAL_DATA_J+".mFpPartial["+VAL_I+"][:"+VAL_S+"], batch_first=True))");
+                    SP.Python.exec(aPyDataSetName+".fp_partial[1].append(torch.nn.utils.rnn.pad_sequence("+VAL_DATA_J+".mFpPartial["+VAL_I+"]["+VAL_S+":], batch_first=True))");
+                    if (mHasForce) {
+                        SP.Python.exec(aPyDataSetName+".force_indices[0].append(torch.nn.utils.rnn.pad_sequence("+VAL_DATA_J+".mForceIndices["+VAL_I+"][:"+VAL_S+"], batch_first=True).long())");
+                        SP.Python.exec(aPyDataSetName+".force_indices[1].append(torch.nn.utils.rnn.pad_sequence("+VAL_DATA_J+".mForceIndices["+VAL_I+"]["+VAL_S+":], batch_first=True).long())");
+                    }
+                    if (mHasStress) {
+                        SP.Python.exec(aPyDataSetName+".stress_indices[0].append(torch.nn.utils.rnn.pad_sequence("+VAL_DATA_J+".mStressIndices["+VAL_I+"][:"+VAL_S+"], batch_first=True).long())");
+                        SP.Python.exec(aPyDataSetName+".stress_indices[1].append(torch.nn.utils.rnn.pad_sequence("+VAL_DATA_J+".mStressIndices["+VAL_I+"]["+VAL_S+":], batch_first=True).long())");
+                        SP.Python.exec(aPyDataSetName+".stress_dxyz[0].append(torch.nn.utils.rnn.pad_sequence("+VAL_DATA_J+".mStressDxyz["+VAL_I+"][:"+VAL_S+"], batch_first=True))");
+                        SP.Python.exec(aPyDataSetName+".stress_dxyz[1].append(torch.nn.utils.rnn.pad_sequence("+VAL_DATA_J+".mStressDxyz["+VAL_I+"]["+VAL_S+":], batch_first=True))");
+                    }
                     // 遍历过程中清空数据，进一步减少转换过程的内存占用峰值
                     if (aClearData) {
                         tSubFpPartial.forEach(PyObject::close);
                         tSubFpPartial.clear();
-                        tSubForceIndices.forEach(PyObject::close);
-                        tSubForceIndices.clear();
                         mNN[i].clear();
+                        if (mHasForce) {
+                            assert tSubForceIndices != null;
+                            tSubForceIndices.forEach(PyObject::close);
+                            tSubForceIndices.clear();
+                        }
+                        if (mHasStress) {
+                            assert tSubStressIndices != null;
+                            tSubStressIndices.forEach(PyObject::close);
+                            tSubStressIndices.clear();
+                            tSubStressDxyz.forEach(PyObject::close);
+                            tSubStressDxyz.clear();
+                        }
                     }
                 }
                 SP.Python.removeValue(VAL_INDICES);
@@ -537,7 +628,9 @@ public class Trainer implements IAutoShutdown, ISavable {
         initNormVec();
         // 构造 torch 数据，这里直接把数据放到 python 环境中变成一个 python 的全局变量
         SP.Python.setValue(VAL_HAS_FORCE, mHasForce);
+        SP.Python.setValue(VAL_HAS_STRESS, mHasStress);
         SP.Python.setValue(VAL_FORCE_WEIGHT, mForceWeight);
+        SP.Python.setValue(VAL_STRESS_WEIGHT, mStressWeight);
         SP.Python.setValue(VAL_L2_LOSS_WEIGHT, mL2LossWeight);
         SP.Python.setValue(VAL_NORM_VEC_J, mNormVec);
         SP.Python.exec(VAL_NORM_VEC+" = [torch.tensor("+VAL_SUB+".asList(), dtype=torch."+(mTrainInFloat?"float32":"float64")+") for "+VAL_SUB+" in "+VAL_NORM_VEC_J+"]");
@@ -579,20 +672,28 @@ public class Trainer implements IAutoShutdown, ISavable {
             }
             List<?> tMAE = (List<?>)SP.Python.eval(FN_CAL_MAE+"("+VAL_TRAIN_DATA+")");
             double tMAE_E = ((Number)tMAE.get(0)).doubleValue();
-            double tMAE_F = tMAE.size()>1 ? ((Number)tMAE.get(1)).doubleValue() : Double.NaN;
+            double tMAE_F = mHasForce ? ((Number)tMAE.get(1)).doubleValue() : Double.NaN;
+            double tMAE_S = mHasStress ? ((Number)tMAE.get(2)).doubleValue() : Double.NaN;
             if (!mHasTest) {
                 System.out.printf("MAE-E: %.4g meV\n", tMAE_E*1000);
                 if (mHasForce) {
                     System.out.printf("MAE-F: %.4g meV/A\n", tMAE_F*1000);
                 }
+                if (mHasStress) {
+                    System.out.printf("MAE-S: %.4g meV/A^3\n", tMAE_S*1000);
+                }
                 return;
             }
             List<?> tTestMAE = (List<?>)SP.Python.eval(FN_CAL_MAE+"("+VAL_TEST_DATA+")");
             double tTestMAE_E = ((Number)tTestMAE.get(0)).doubleValue();
-            double tTestMAE_F = tTestMAE.size()>1 ? ((Number)tTestMAE.get(1)).doubleValue() : Double.NaN;
+            double tTestMAE_F = mHasForce ? ((Number)tTestMAE.get(1)).doubleValue() : Double.NaN;
+            double tTestMAE_S = mHasStress ? ((Number)tTestMAE.get(2)).doubleValue() : Double.NaN;
             System.out.printf("MAE-E: %.4g meV | %.4g meV\n", tMAE_E*1000, tTestMAE_E*1000);
             if (mHasForce) {
                 System.out.printf("MAE-F: %.4g meV/A | %.4g meV/A\n", tMAE_F*1000, tTestMAE_F*1000);
+            }
+            if (mHasStress) {
+                System.out.printf("MAE-S: %.4g meV/A^3 | %.4g meV/A^3\n", tMAE_S*1000, tTestMAE_S*1000);
             }
         } finally {
             // 完事移除临时数据
@@ -627,7 +728,7 @@ public class Trainer implements IAutoShutdown, ISavable {
         rData.mEng.add(aEnergy);
     }
     @ApiStatus.Internal
-    protected void calRefEngFpPartialAndAdd_(IAtomData aAtomData, double aEnergy, @NotNull IMatrix aForces, DataSet rData) {
+    protected void calRefEngFpPartialAndAdd_(IAtomData aAtomData, double aEnergy, @Nullable IMatrix aForces, @Nullable IVector aStress, DataSet rData) {
         IntUnaryOperator tTypeMap = typeMap(aAtomData);
         // 由于数据集不完整因此这里不去做归一化
         final int tAtomNum = aAtomData.atomNumber();
@@ -639,31 +740,63 @@ public class Trainer implements IAutoShutdown, ISavable {
                 // 基组和索引
                 rData.mFp[tType-1].addAll(tOut.get(0).asVecRow());
                 rData.mEngIndices[tType-1].add(rData.mEng.size());
+                // 计算相对能量值
+                aEnergy -= mRefEngs.get(tType-1);
                 // 基组偏导和索引
                 int tRowNum = tOut.size()-1;
                 final RowMatrix tFpPartial = MatrixCache.getMatRow(tRowNum, tBasis.rowNumber()*tBasis.columnNumber());
-                final IntVector tForceIndices = IntVectorCache.getVec(tRowNum);
-                final int tShift = rData.mForce.size();
-                tForceIndices.set(0, tShift + 3*i);
-                tForceIndices.set(1, tShift + 3*i + 1);
-                tForceIndices.set(2, tShift + 3*i + 2);
                 tFpPartial.row(0).fill(tOut.get(1).asVecRow());
                 tFpPartial.row(1).fill(tOut.get(2).asVecRow());
                 tFpPartial.row(2).fill(tOut.get(3).asVecRow());
+                final IntVector tForceIndices = mHasForce ? IntVectorCache.getVec(tRowNum) : null;
+                final int tShiftF = mHasForce ? rData.mForce.size() : -1;
+                if (mHasForce) {
+                    tForceIndices.set(0, tShiftF + 3*i);
+                    tForceIndices.set(1, tShiftF + 3*i + 1);
+                    tForceIndices.set(2, tShiftF + 3*i + 2);
+                }
+                final RowIntMatrix tStressIndices = mHasStress ? IntMatrixCache.getMatRow(tRowNum, 2) : null;
+                final RowMatrix tStressDxyz = mHasStress ? MatrixCache.getMatRow(tRowNum, 2) : null;
+                final int tShiftS = mHasStress ? rData.mStress.size() : -1;
+                if (mHasStress) {
+                    // 按照目前展开约定，会是这个顺序
+                    tStressIndices.set(0, 0, tShiftS);   tStressIndices.set(0, 1, tShiftS+3);
+                    tStressIndices.set(1, 0, tShiftS+1); tStressIndices.set(1, 1, tShiftS+5);
+                    tStressIndices.set(2, 0, tShiftS+2); tStressIndices.set(2, 1, tShiftS+4);
+                    // 第二列用来计算交叉项，原子自身力不贡献应力
+                    tStressDxyz.set(0, 0, 0.0); tStressDxyz.set(0, 1, 0.0);
+                    tStressDxyz.set(1, 0, 0.0); tStressDxyz.set(1, 1, 0.0);
+                    tStressDxyz.set(2, 0, 0.0); tStressDxyz.set(2, 1, 0.0);
+                }
                 final int tNN = (tOut.size()-4)/3;
                 final int[] j = {0};
                 tAPC.nl_().forEachNeighbor(i, tBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
                     tFpPartial.row(3 + 3*j[0]).fill(tOut.get(4+j[0]).asVecRow());
                     tFpPartial.row(4 + 3*j[0]).fill(tOut.get(4+tNN+j[0]).asVecRow());
                     tFpPartial.row(5 + 3*j[0]).fill(tOut.get(4+tNN+tNN+j[0]).asVecRow());
-                    tForceIndices.set(3 + 3*j[0], tShift + 3*idx);
-                    tForceIndices.set(4 + 3*j[0], tShift + 3*idx + 1);
-                    tForceIndices.set(5 + 3*j[0], tShift + 3*idx + 2);
+                    if (mHasForce) {
+                        assert tForceIndices != null;
+                        tForceIndices.set(3 + 3*j[0], tShiftF + 3*idx);
+                        tForceIndices.set(4 + 3*j[0], tShiftF + 3*idx + 1);
+                        tForceIndices.set(5 + 3*j[0], tShiftF + 3*idx + 2);
+                    }
+                    if (mHasStress) {
+                        assert tStressIndices != null;
+                        // 按照目前展开约定，会是这个顺序
+                        tStressIndices.set(3 + 3*j[0], 0, tShiftS);   tStressIndices.set(3 + 3*j[0], 1, tShiftS+3);
+                        tStressIndices.set(4 + 3*j[0], 0, tShiftS+1); tStressIndices.set(4 + 3*j[0], 1, tShiftS+5);
+                        tStressIndices.set(5 + 3*j[0], 0, tShiftS+2); tStressIndices.set(5 + 3*j[0], 1, tShiftS+4);
+                        assert tStressDxyz != null;
+                        // 第二列用来计算交叉项
+                        tStressDxyz.set(3 + 3*j[0], 0, dx); tStressDxyz.set(3 + 3*j[0], 1, dy);
+                        tStressDxyz.set(4 + 3*j[0], 0, dy); tStressDxyz.set(4 + 3*j[0], 1, dz);
+                        tStressDxyz.set(5 + 3*j[0], 0, dz); tStressDxyz.set(5 + 3*j[0], 1, dx);
+                    }
                     ++j[0];
                 });
                 MatrixCache.returnMat(tOut);
                 // 将数据转换为 torch 的 tensor，这里最快的方式是利用 torch 的 from_numpy 进行转换
-                PyObject tPyFpPartial, tPyFpPartialIndices;
+                PyObject tPyFpPartial, tPyForceIndices=null, tPyStressIndices=null, tPyStressDxyz=null;
                 try (PyCallable tFromNumpy = TORCH.getAttr("from_numpy", PyCallable.class)) {
                     tPyFpPartial = tFromNumpy.callAs(PyObject.class, new NDArray<>(tFpPartial.internalData(), tFpPartial.rowNumber(), tFpPartial.columnNumber()));
                     if (mTrainInFloat) {
@@ -671,21 +804,52 @@ public class Trainer implements IAutoShutdown, ISavable {
                             tPyFpPartial = tFloat.callAs(PyObject.class);
                         }
                     }
-                    tPyFpPartialIndices = tFromNumpy.callAs(PyObject.class, new NDArray<>(tForceIndices.internalData(), tForceIndices.size()));
+                    if (mHasForce) {
+                        assert tForceIndices != null;
+                        tPyForceIndices = tFromNumpy.callAs(PyObject.class, new NDArray<>(tForceIndices.internalData(), tForceIndices.size()));
+                    }
+                    if (mHasStress) {
+                        assert tStressIndices != null;
+                        tPyStressIndices = tFromNumpy.callAs(PyObject.class, new NDArray<>(tStressIndices.internalData(), tStressIndices.rowNumber(), tStressIndices.columnNumber()));
+                        assert tStressDxyz != null;
+                        tPyStressDxyz = tFromNumpy.callAs(PyObject.class, new NDArray<>(tStressDxyz.internalData(), tStressDxyz.rowNumber(), tStressDxyz.columnNumber()));
+                        if (mTrainInFloat) {
+                            try (PyObject oPyStressDxyz = tPyStressDxyz; PyCallable tFloat = oPyStressDxyz.getAttr("float", PyCallable.class)) {
+                                tPyStressDxyz = tFloat.callAs(PyObject.class);
+                            }
+                        }
+                    }
                 }
                 rData.mFpPartial.get(tType-1).add(tPyFpPartial);
-                rData.mForceIndices.get(tType-1).add(tPyFpPartialIndices);
                 rData.mNN[tType-1].add(tNN);
                 MatrixCache.returnMat(tFpPartial);
-                IntVectorCache.returnVec(tForceIndices);
-                // 计算相对能量值
-                aEnergy -= mRefEngs.get(tType-1);
+                if (mHasForce) {
+                    assert tForceIndices != null;
+                    rData.mForceIndices.get(tType-1).add(tPyForceIndices);
+                    IntVectorCache.returnVec(tForceIndices);
+                }
+                if (mHasStress) {
+                    assert tStressIndices != null;
+                    rData.mStressIndices.get(tType-1).add(tPyStressIndices);
+                    IntMatrixCache.returnMat(tStressIndices);
+                    assert tStressDxyz != null;
+                    rData.mStressDxyz.get(tType-1).add(tPyStressDxyz);
+                    MatrixCache.returnMat(tStressDxyz);
+                }
             }
         }
         // 这里后添加能量，这样 rData.mEng.size() 对应正确的索引
         rData.mEng.add(aEnergy);
         // 这里后添加力，这样 rData.mForce.size() 对应正确的索引
-        rData.mForce.addAll(aForces.asVecRow());
+        if (mHasForce) {
+            assert aForces != null;
+            rData.mForce.addAll(aForces.asVecRow());
+        }
+        // 这里后添加应力应力，这样 rData.mStress.size() 对应正确的索引
+        if (mHasStress) {
+            assert aStress != null;
+            rData.mStress.addAll(aStress);
+        }
     }
     
     /**
@@ -711,12 +875,13 @@ public class Trainer implements IAutoShutdown, ISavable {
             if (!mHasStress && aStress!=null) throw new IllegalArgumentException("All data MUST NOT has stress when not add stress");
         }
         // 添加数据
-        if (mHasForce) {
-            calRefEngFpPartialAndAdd_(aAtomData, aEnergy, aForces, mTrainData);
+        if (mHasForce || mHasStress) {
+            calRefEngFpPartialAndAdd_(aAtomData, aEnergy, aForces, aStress, mTrainData);
         } else {
             calRefEngFpAndAdd_(aAtomData, aEnergy, mTrainData);
         }
         mTrainData.mAtomNum.add(aAtomData.atomNumber());
+        mTrainData.mVolume.add(aAtomData.volume());
         mHasData = true;
     }
     /**
@@ -752,12 +917,13 @@ public class Trainer implements IAutoShutdown, ISavable {
             if (!mHasStress && aStress!=null) throw new IllegalArgumentException("All data MUST NOT has stress when not add stress");
         }
         // 添加数据
-        if (mHasForce) {
-            calRefEngFpPartialAndAdd_(aAtomData, aEnergy, aForces, mTestData);
+        if (mHasForce || mHasStress) {
+            calRefEngFpPartialAndAdd_(aAtomData, aEnergy, aForces, aStress, mTestData);
         } else {
             calRefEngFpAndAdd_(aAtomData, aEnergy, mTestData);
         }
         mTestData.mAtomNum.add(aAtomData.atomNumber());
+        mTestData.mVolume.add(aAtomData.volume());
         if (!mHasTest) mHasTest = true;
     }
     /**
