@@ -39,7 +39,6 @@ import static jse.code.CS.STD_VZ_COL;
  * def jseAtoms = AseAtoms.of(pyAtoms)
  * } </pre>
  * 来将 {@link PyObject} 的 ase atoms 转换成 jse 的原子数据，通过：
- * 通过：
  * <pre> {@code
  * def pyAtoms = jseAtoms.toPyObject()
  * } </pre>
@@ -53,6 +52,9 @@ import static jse.code.CS.STD_VZ_COL;
  *
  * @see IAtomData IAtomData: 原子数据类型通用接口
  * @see PyObject
+ * @see #read(String) read(String): 通过 ase 来读取指定路径的原子结构数据
+ * @see #write(String) write(String): 通过 ase 来将原子结构数据写入指定路径
+ * @see #of(IAtomData) of(IAtomData): 将任意的原子数据转换成 AseAtoms 类型
  * @author liqa
  */
 public class AseAtoms extends AbstractSettableAtomData {
@@ -98,18 +100,72 @@ public class AseAtoms extends AbstractSettableAtomData {
     }
     
     /// 获取属性
+    /** @see #box() */
     @VisibleForTesting public IBox cell() {return box();}
+    /** @see #atomicNumbers() */
     @VisibleForTesting public IIntVector numbers() {return atomicNumbers();}
+    /**
+     * 直接获取所有的原子序数，对应 ase atoms 中的 {@code numbers()} 方法
+     * @return 原子序数组成的向量，按照原子索引排序
+     * @see IIntVector
+     */
     public IIntVector atomicNumbers() {return mAtomicNumbers;}
+    /**
+     * 直接获取所有的原子位置，对应 ase atoms 中的 {@code positions()} 方法
+     * @return 原子坐标组成的矩阵，按照原子索引按行排列，每行为 {@code x, y, z}
+     * @see IMatrix
+     */
     public IMatrix positions() {return mPositions;}
+    /**
+     * 直接获取所有的原子动量，对应 ase atoms 中的 {@code momenta()} 方法
+     * @return 原子动量组成的矩阵，按照原子索引按行排列，每行为 {@code px, py, pz}
+     * @see IMatrix
+     */
     public @Nullable IMatrix momenta() {return mMomenta;}
+    /**
+     * @return {@inheritDoc}
+     * @see IAtom#hasVelocity()
+     */
     @Override public boolean hasVelocity() {return mMomenta != null;}
+    /**
+     * @return {@inheritDoc}
+     * @see IAtom#hasSymbol()
+     */
     @Override public boolean hasSymbol() {return true;}
+    /**
+     * {@inheritDoc}
+     * @param aType {@inheritDoc}
+     * @return {@inheritDoc}
+     * @see IAtom#symbol()
+     * @see IAtom#type()
+     * @see #hasSymbol()
+     */
     @Override public String symbol(int aType) {return ATOMIC_NUMBER_TO_SYMBOL.get(mType2AtomicNumber.get(aType));}
+    /**
+     * @return {@inheritDoc}
+     * @see IAtom#hasMass()
+     */
     @Override public boolean hasMass() {return true;}
+    /**
+     * {@inheritDoc}
+     * @param aType {@inheritDoc}
+     * @return {@inheritDoc}
+     * @see IAtom#mass()
+     * @see IAtom#type()
+     * @see #hasMass()
+     */
     @Override public double mass(int aType) {return MASS.get(symbol(aType));}
     
-    /** 支持调整种类的顺序，这对于 ase atoms 比较重要 */
+    /**
+     * 直接调整元素符号的顺序，由于 ase atoms 中是采用一列原子序数来存储种类信息的，
+     * 因此并没有指明元素种类的编号顺序，在 jse 中默认会使用元素符号出现的顺序来排列种类编号，
+     * 而如果需要手动设置特定的编号顺序则需要通过类似 {@code data.setSymbolOrder('Cu', 'Zr')}
+     * 的方式设置顺序
+     * @param aSymbolOrder 需要的元素符号顺序
+     * @return 自身方便链式调用
+     * @throws IllegalArgumentException 如果包含非法的元素符号
+     * @see #setSymbols(String...)
+     */
     public AseAtoms setSymbolOrder(String... aSymbolOrder) {
         if (aSymbolOrder == null) aSymbolOrder = ZL_STR;
         if (aSymbolOrder.length > atomTypeNumber()) {
@@ -118,8 +174,10 @@ public class AseAtoms extends AbstractSettableAtomData {
             mType2AtomicNumber.subVec(0, oType2AtomicNumber.size()).fill(oType2AtomicNumber);
         }
         for (int tType = 1; tType <= aSymbolOrder.length; ++tType) {
-            @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(aSymbolOrder[tType-1]);
-            if (tAtomicNumber != null) mType2AtomicNumber.set(tType, tAtomicNumber);
+            String tSymbol = aSymbolOrder[tType-1];
+            @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(tSymbol);
+            if (tAtomicNumber == null) throw new IllegalArgumentException("symbol: " + tSymbol);
+            mType2AtomicNumber.set(tType, tAtomicNumber);
         }
         // 先更新 mAtomicNumber2Type
         validAtomicNumber2Type_();
@@ -140,7 +198,15 @@ public class AseAtoms extends AbstractSettableAtomData {
         return this;
     }
     
-    /** 支持直接修改 symbols，只会增大种类数，不会减少；少于种类数时会保留旧值 */
+    /**
+     * {@inheritDoc}
+     * @param aSymbols {@inheritDoc}
+     * @return {@inheritDoc}
+     * @throws IllegalArgumentException 如果包含非法的元素符号
+     * @see #symbols()
+     * @see IAtom#symbol()
+     * @see #setSymbolOrder(String...)
+     */
     @Override public AseAtoms setSymbols(String... aSymbols) {
         if (aSymbols==null || aSymbols.length==0) return this;
         if (aSymbols.length > atomTypeNumber()) {
@@ -149,15 +215,24 @@ public class AseAtoms extends AbstractSettableAtomData {
             mType2AtomicNumber.subVec(0, oType2AtomicNumber.size()).fill(oType2AtomicNumber);
         }
         for (int tType = 1; tType <= aSymbols.length; ++tType) {
-            @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(aSymbols[tType-1]);
-            if (tAtomicNumber != null) mType2AtomicNumber.set(tType, tAtomicNumber);
+            String tSymbol = aSymbols[tType-1];
+            @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(tSymbol);
+            if (tAtomicNumber == null) throw new IllegalArgumentException("symbol: " + tSymbol);
+            mType2AtomicNumber.set(tType, tAtomicNumber);
         }
         // 更新 mAtomicNumbers，此时需要旧的 mAtomicNumber2Type
         mAtomicNumbers.opt().map2this(i -> mType2AtomicNumber.get(mAtomicNumber2Type.get(i)));
         validAtomicNumber2Type_();
         return this;
     }
-    /** 设置原子种类数目 */
+    /**
+     * {@inheritDoc}
+     * @param aAtomTypeNum {@inheritDoc}
+     * @return {@inheritDoc}
+     * @throws UnsupportedOperationException 如果不包含元素符号信息
+     * @see #atomTypeNumber()
+     * @see IAtom#type()
+     */
     @Override public AseAtoms setAtomTypeNumber(int aAtomTypeNum) {
         int oTypeNum = atomTypeNumber();
         if (aAtomTypeNum == oTypeNum) return this;
@@ -184,10 +259,30 @@ public class AseAtoms extends AbstractSettableAtomData {
             mAtomicNumber2Type.put(mType2AtomicNumber.get(tType), tType);
         }
     }
+    /**
+     * {@inheritDoc}
+     * @return {@inheritDoc}
+     * @see #hasVelocity()
+     * @see #setHasVelocity()
+     */
     @Override public AseAtoms setNoVelocity() {mMomenta = null; return this;}
+    /**
+     * {@inheritDoc}
+     * @return {@inheritDoc}
+     * @see #hasVelocity()
+     * @see #setNoVelocity()
+     */
     @Override public AseAtoms setHasVelocity() {if (mMomenta == null) {mMomenta = RowMatrix.zeros(atomNumber(), ATOM_DATA_KEYS_VELOCITY.length);} return this;}
     
-    /** AbstractAtomData stuffs */
+    /// AbstractAtomData stuffs
+    /**
+     * {@inheritDoc}
+     * @param aIdx {@inheritDoc}
+     * @return {@inheritDoc}
+     * @see ISettableAtom
+     * @see #atom(int)
+     * @see #setAtom(int, IAtom)
+     */
     @Override public ISettableAtom atom(final int aIdx) {
         return new AbstractSettableAtom_() {
             @Override public int index() {return aIdx;}
@@ -224,12 +319,27 @@ public class AseAtoms extends AbstractSettableAtomData {
             @Override public double mass() {return MASS.get(symbol());}
         };
     }
+    /**
+     * @return {@inheritDoc}
+     * @see IBox
+     */
     @Override public IBox box() {return mBox;}
+    /** @return {@inheritDoc} */
     @Override public int atomNumber() {return mAtomicNumbers.size();}
+    /** @return {@inheritDoc} */
     @Override public int atomTypeNumber() {return mType2AtomicNumber.size()-1;}
     
-    /** 转换为 python 中的 ase 的 Atoms */
+    /**
+     * 转换为 python 中的 ase 的 Atoms，这里直接统一开启 pbc
+     * @return ase atoms 对应的 {@link PyObject}
+     */
     public PyObject toPyObject() throws JepException {return toPyObject(SP.Python.interpreter());}
+    /**
+     * 转换为 python 中的 ase 的 Atoms，这里直接统一开启 pbc
+     * @param aInterpreter 可选的自定义的 python 解释器，默认为 {@link SP.Python#interpreter()}
+     * @return ase atoms 对应的 {@link PyObject}
+     * @see SP.Python
+     */
     public PyObject toPyObject(@NotNull jep.Interpreter aInterpreter) throws JepException {
         aInterpreter.exec("from ase import Atoms");
         try (PyCallable tPyAtoms = aInterpreter.getValue("Atoms", PyCallable.class)) {
@@ -243,14 +353,23 @@ public class AseAtoms extends AbstractSettableAtomData {
         }
     }
     
-    /** 拷贝一份 AseAtoms */
+    /** @return {@inheritDoc} */
     @Override public AseAtoms copy() {
         AseAtoms rAseAtoms = new AseAtoms(mBox.copy(), mAtomicNumbers.copy(), mPositions.copy(), mType2AtomicNumber);
         if (mMomenta != null) rAseAtoms.mMomenta = mMomenta.copy();
         return rAseAtoms;
     }
     
-    /** 从 PyObject 来创建 */
+    /**
+     * 通过一个 ase atoms 对应的 {@link PyObject} 来创建对应的 jse 版
+     * {@link AseAtoms}，会重新拷贝一次内部数据加快频繁访问下的性能
+     * <p>
+     * {@link #of(PyObject)} 为等价的别名方法
+     *
+     * @param aPyAtoms 输入的 ase atoms 对象
+     * @return 创建的 jse 版 AseAtoms
+     * @see #of(PyObject)
+     */
     public static AseAtoms fromPyObject(PyObject aPyAtoms) throws JepException {
         NDArray<?> tPyCellArray;
         try (PyObject tPyCell = aPyAtoms.getAttr("cell", PyObject.class)) {
@@ -311,11 +430,36 @@ public class AseAtoms extends AbstractSettableAtomData {
         return rAseAtoms;
     }
     
-    /** 从 IAtomData 来创建，一般来说 AseAtoms 需要一个额外的 aSymbols 信息 */
+    /**
+     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 jse 版 {@link AseAtoms}
+     * <p>
+     * 默认会尝试自动从 {@link IAtomData} 获取元素符号信息，使用
+     * {@link #fromAtomData(IAtomData, String...)} 来手动指定元素符号信息
+     * <p>
+     * {@link #of(IAtomData)} 为等价的别名方法
+     *
+     * @param aAtomData 输入的原子数据
+     * @return 创建的 jse 版 AseAtoms
+     * @throws IllegalArgumentException 如果包含非法的元素符号
+     * @see #of(IAtomData)
+     * @see #fromAtomData(IAtomData, String...)
+     */
     public static AseAtoms fromAtomData(IAtomData aAtomData) {
         @Nullable List<@Nullable String> tSymbols = aAtomData.symbols();
         return fromAtomData(aAtomData, tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
+    /**
+     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 jse 版 {@link AseAtoms}
+     * <p>
+     * {@link #of(IAtomData, String...)} 为等价的别名方法
+     *
+     * @param aAtomData 输入的原子数据
+     * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
+     * @return 创建的 jse 版 AseAtoms
+     * @throws IllegalArgumentException 如果包含非法的元素符号
+     * @see #of(IAtomData, String...)
+     * @see #fromAtomData(IAtomData)
+     */
     public static AseAtoms fromAtomData(IAtomData aAtomData, String... aSymbols) {
         if (aSymbols == null) aSymbols = ZL_STR;
         // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
@@ -325,8 +469,10 @@ public class AseAtoms extends AbstractSettableAtomData {
         } else {
             IIntVector rType2AtomicNumber = Vectors.range(Math.max(aSymbols.length, aAtomData.atomTypeNumber())+1);
             for (int tType = 1; tType <= aSymbols.length; ++tType) {
-                @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(aSymbols[tType-1]);
-                if (tAtomicNumber != null) rType2AtomicNumber.set(tType, tAtomicNumber);
+                String tSymbol = aSymbols[tType-1];
+                @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(tSymbol);
+                if (tAtomicNumber == null) throw new IllegalArgumentException("symbol: " + tSymbol);
+                rType2AtomicNumber.set(tType, tAtomicNumber);
             }
             // 直接遍历拷贝数据
             int tAtomNum = aAtomData.atomNumber();
@@ -352,13 +498,53 @@ public class AseAtoms extends AbstractSettableAtomData {
             return rAseAtoms;
         }
     }
+    /**
+     * 传入列表形式元素符号的创建
+     * @see #fromAtomData(IAtomData, String...)
+     * @see Collection
+     */
     public static AseAtoms fromAtomData(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {return fromAtomData(aAtomData, UT.Text.toArray(aSymbols));}
-    /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
+    /**
+     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 jse 版 {@link AseAtoms}
+     * <p>
+     * 默认会尝试自动从 {@link IAtomData} 获取元素符号信息，使用
+     * {@link #of(IAtomData, String...)} 来手动指定元素符号信息
+     *
+     * @param aAtomData 输入的原子数据
+     * @return 创建的 jse 版 AseAtoms
+     * @throws IllegalArgumentException 如果包含非法的元素符号
+     * @see #of(IAtomData, String...)
+     */
     public static AseAtoms of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
-    public static AseAtoms of(IAtomData aAtomData, String... aTypeNames) {return fromAtomData(aAtomData, aTypeNames);}
+    /**
+     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 jse 版 {@link AseAtoms}
+     * @param aAtomData 输入的原子数据
+     * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
+     * @return 创建的 jse 版 AseAtoms
+     * @throws IllegalArgumentException 如果包含非法的元素符号
+     * @see #of(IAtomData)
+     */
+    public static AseAtoms of(IAtomData aAtomData, String... aSymbols) {return fromAtomData(aAtomData, aSymbols);}
+    /**
+     * 传入列表形式元素符号的转换
+     * @see #of(IAtomData, String...)
+     * @see Collection
+     */
     public static AseAtoms of(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {return fromAtomData(aAtomData, aSymbols);}
+    /**
+     * 通过一个 ase atoms 对应的 {@link PyObject} 来创建对应的 jse 版
+     * {@link AseAtoms}，会重新拷贝一次内部数据加快频繁访问下的性能
+     *
+     * @param aPyAtoms 输入的 ase atoms 对象
+     * @return 创建的 jse 版 AseAtoms
+     */
     public static AseAtoms of(PyObject aPyAtoms) throws JepException {return fromPyObject(aPyAtoms);}
-    /** 增加一个兼容的接口避免 python 中使用出错 */
+    /**
+     * python 中使用的兼容接口，避免 jep 检测重载方法失效
+     * @param aAnyData 任何的原子数据，可以是 jse 的 {@link IAtomData}，也可以是
+     *                 ase atoms 对应的 {@link PyObject}
+     * @return 创建的 jse 版 AseAtoms
+     */
     public static AseAtoms of_compat(Object aAnyData) throws JepException {
         // 手动实现动态加载
         if (aAnyData instanceof PyObject) {
@@ -372,15 +558,47 @@ public class AseAtoms extends AbstractSettableAtomData {
     }
     
     
-    /** 直接基于 ase 的读写 */
+    /// 直接基于 ase 的读写
+    /**
+     * 通过 ase 来读取原子数据文件
+     * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
+     * @return 读取得到的 {@link AseAtoms} 对象，如果有任何问题应该会抛出 {@link JepException}
+     * @see #read(String, Map)
+     * @see #write(String)
+     */
     public static AseAtoms read(String aFilePath) throws JepException {return read(SP.Python.interpreter(), aFilePath);}
+    /**
+     * 通过 ase 来读取原子数据文件
+     * @param aInterpreter 自定义的 python 解释器，默认为 {@link SP.Python#interpreter()}
+     * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
+     * @return 读取得到的 {@link AseAtoms} 对象，如果有任何问题应该会抛出 {@link JepException}
+     * @see #read(String)
+     * @see SP.Python
+     */
     public static AseAtoms read(@NotNull jep.Interpreter aInterpreter, String aFilePath) throws JepException {
         aInterpreter.exec("from ase.io import read");
         try (PyCallable tPyRead = aInterpreter.getValue("read", PyCallable.class)) {
             return fromPyObject(tPyRead.callAs(PyObject.class, aFilePath));
         }
     }
+    /**
+     * 通过 ase 来读取原子数据文件
+     * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
+     * @param aKWArgs 传入 {@code ase.io.read} 的其余参数，可以用来指定文件类型等
+     * @return 读取得到的 {@link AseAtoms} 对象，如果有任何问题应该会抛出 {@link JepException}
+     * @see #read(String)
+     * @see #write(String, Map)
+     */
     public static AseAtoms read(String aFilePath, Map<String, Object> aKWArgs) throws JepException {return read(SP.Python.interpreter(), aFilePath, aKWArgs);}
+    /**
+     * 通过 ase 来读取原子数据文件
+     * @param aInterpreter 自定义的 python 解释器，默认为 {@link SP.Python#interpreter()}
+     * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
+     * @param aKWArgs 传入 {@code ase.io.read} 的其余参数，可以用来指定文件类型等
+     * @return 读取得到的 {@link AseAtoms} 对象，如果有任何问题应该会抛出 {@link JepException}
+     * @see #read(String, Map)
+     * @see SP.Python
+     */
     public static AseAtoms read(@NotNull jep.Interpreter aInterpreter, String aFilePath, Map<String, Object> aKWArgs) throws JepException {
         aInterpreter.exec("from ase.io import read");
         try (PyCallable tPyRead = aInterpreter.getValue("read", PyCallable.class)) {
@@ -388,13 +606,41 @@ public class AseAtoms extends AbstractSettableAtomData {
         }
     }
     
+    /**
+     * 通过 ase 来写入原子数据文件
+     * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
+     * @see #write(String, Map)
+     * @see #read(String)
+     */
     public void write(String aFilePath) throws JepException {write(SP.Python.interpreter(), aFilePath);}
+    /**
+     * 通过 ase 来写入原子数据文件
+     * @param aInterpreter 自定义的 python 解释器，默认为 {@link SP.Python#interpreter()}
+     * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
+     * @see #write(String)
+     * @see SP.Python
+     */
     public void write(@NotNull jep.Interpreter aInterpreter, String aFilePath) throws JepException {
         try (PyCallable tPyWrite = toPyObject(aInterpreter).getAttr("write", PyCallable.class)) {
             tPyWrite.call(aFilePath);
         }
     }
+    /**
+     * 通过 ase 来写入原子数据文件
+     * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
+     * @param aKWArgs 传入 {@code ase.io.read} 的其余参数，可以用来指定文件类型等
+     * @see #write(String)
+     * @see #read(String, Map)
+     */
     public void write(String aFilePath, Map<String, Object> aKWArgs) throws JepException {write(SP.Python.interpreter(), aFilePath, aKWArgs);}
+    /**
+     * 通过 ase 来写入原子数据文件
+     * @param aInterpreter 自定义的 python 解释器，默认为 {@link SP.Python#interpreter()}
+     * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
+     * @param aKWArgs 传入 {@code ase.io.read} 的其余参数，可以用来指定文件类型等
+     * @see #write(String, Map)
+     * @see SP.Python
+     */
     public void write(@NotNull jep.Interpreter aInterpreter, String aFilePath, Map<String, Object> aKWArgs) throws JepException {
         try (PyCallable tPyWrite = toPyObject(aInterpreter).getAttr("write", PyCallable.class)) {
             tPyWrite.call(new Object[]{aFilePath}, aKWArgs);
