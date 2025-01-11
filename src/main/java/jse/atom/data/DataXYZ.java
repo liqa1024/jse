@@ -12,6 +12,7 @@ import jse.math.vector.*;
 import jse.math.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.BufferedReader;
@@ -105,6 +106,8 @@ public class DataXYZ extends AbstractSettableAtomData {
         mComment = aComment;
         return this;
     }
+    public boolean hasParameter(String aKey) {return mParameters.containsKey(aKey);}
+    public @Unmodifiable Map<String,Object> parameters() {return mParameters;}
     public Object parameter(String aKey) {return mParameters.get(aKey);}
     public DataXYZ setParameter(String aKey, Object aValue) {
         if (aKey.equals("Lattice")) throw new IllegalArgumentException("Lattice for DataXYZ parameter");
@@ -126,6 +129,8 @@ public class DataXYZ extends AbstractSettableAtomData {
         if (aKey.equals("Properties")) throw new IllegalArgumentException("Properties for DataXYZ parameter");
         return mParameters.remove(aKey);
     }
+    public boolean hasProperty(String aKey) {return mProperties.containsKey(aKey);}
+    public @Unmodifiable Map<String,Object> properties() {return mProperties;}
     public Object property(String aKey) {return mProperties.get(aKey);}
     public DataXYZ setProperty(String aKey, Object aValue) {
         if (mComment != null) {
