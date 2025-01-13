@@ -17,7 +17,7 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
-PairJSE::PairJSE(LAMMPS *lmp) : Pair(lmp) {
+PairJSE::PairJSE(LAMMPS *aLmp) : Pair(aLmp) {
     single_enable = 0;
     restartinfo = 0;
     manybody_flag = 1;
@@ -205,6 +205,9 @@ jint PairJSE::commMe() {
 }
 jint PairJSE::commNprocs() {
     return (jint) comm->nprocs;
+}
+jlong PairJSE::commWorld() {
+    return (jlong)(intptr_t)world;
 }
 jstring PairJSE::unitStyle() {
     char *tUnits = lmp->update->unit_style;

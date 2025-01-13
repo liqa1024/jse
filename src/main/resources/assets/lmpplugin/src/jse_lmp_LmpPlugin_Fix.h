@@ -203,6 +203,78 @@ JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setExtarray_1
 
 /*
  * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    neighborRequestDefault_
+ * Signature: (JD)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborRequestDefault_1
+  (JNIEnv *, jclass, jlong, jdouble);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    neighborRequestFull_
+ * Signature: (JD)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborRequestFull_1
+  (JNIEnv *, jclass, jlong, jdouble);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    neighborRequestOccasional_
+ * Signature: (JD)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborRequestOccasional_1
+  (JNIEnv *, jclass, jlong, jdouble);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    neighborRequestOccasionalFull_
+ * Signature: (JD)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborRequestOccasionalFull_1
+  (JNIEnv *, jclass, jlong, jdouble);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    neighborBuildOne_
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborBuildOne_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    neighborCutneighmin_
+ * Signature: (J)D
+ */
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborCutneighmin_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    neighborCutneighmax_
+ * Signature: (J)D
+ */
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborCutneighmax_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    neighborCuttype_
+ * Signature: (JI)D
+ */
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborCuttype_1
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    neighborSkin_
+ * Signature: (J)D
+ */
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborSkin_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
  * Method:    atomX_
  * Signature: (J)J
  */
@@ -247,6 +319,38 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomNlocal_1
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomNghost_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    listInum_
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_listInum_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    listIlist_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_listIlist_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    listNumneigh_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_listNumneigh_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    listFirstneigh_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_listFirstneigh_1
   (JNIEnv *, jclass, jlong);
 
 /*
@@ -319,6 +423,22 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commMe_1
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commNprocs_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    commWorld_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commWorld_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    commCutghostuser_
+ * Signature: (J)D
+ */
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commCutghostuser_1
   (JNIEnv *, jclass, jlong);
 
 /*

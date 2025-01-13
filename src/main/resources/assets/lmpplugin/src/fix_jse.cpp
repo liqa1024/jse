@@ -9,13 +9,16 @@
 #include "lammps/error.h"
 #include "lammps/force.h"
 #include "lammps/update.h"
+#include "lammps/neigh_list.h"
+#include "lammps/neighbor.h"
+#include "neigh_request.h"
 
 using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
-FixJSE::FixJSE(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg) {
-    if (narg < 4) error->all(FLERR, "Illegal fix jse command");
+FixJSE::FixJSE(LAMMPS *aLmp, int aArgc, char **aArgv) : Fix(aLmp, aArgc, aArgv) {
+    if (aArgc < 4) error->all(FLERR, "Illegal fix jse command");
     
     // init jni env
     if (mEnv == NULL) {
@@ -26,7 +29,7 @@ FixJSE::FixJSE(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg) {
     // init java LmpFix object
     jboolean tSuc = JSE_LMPFIX::cacheJClass(mEnv);
     if (JSE_LMPPLUGIN::exceptionCheck(mEnv) || !tSuc) error->all(FLERR, "Fail to cache class of java LmpFix");
-    jobject tObj = JSE_LMPFIX::newJObject(mEnv, arg[3], this, narg, arg);
+    jobject tObj = JSE_LMPFIX::newJObject(mEnv, aArgv[3], this, aArgc, aArgv);
     if (JSE_LMPPLUGIN::exceptionCheck(mEnv) || tObj==NULL) error->all(FLERR, "Fail to create java LmpFix object");
     if (mCore != NULL) mEnv->DeleteGlobalRef(mCore);
     mCore = mEnv->NewGlobalRef(tObj);
@@ -58,6 +61,9 @@ int FixJSE::setmask() {
 void FixJSE::init() {
     JSE_LMPFIX::init(mEnv, mCore);
     if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to init");
+}
+void FixJSE::init_list(int id, NeighList *ptr) {
+    mNL = ptr;
 }
 
 void FixJSE::setup(int vflag) {
@@ -218,6 +224,38 @@ void FixJSE::setExtarray(jboolean flag) {
     extarray = flag ? 1 : 0;
 }
 
+void FixJSE::neighborRequestDefault(jdouble rcut) {
+    NeighRequest *req = neighbor->add_request(this, NeighConst::REQ_DEFAULT);
+    if (rcut > 0.0) req->set_cutoff(rcut);
+}
+void FixJSE::neighborRequestFull(jdouble rcut) {
+    NeighRequest *req = neighbor->add_request(this, NeighConst::REQ_FULL);
+    if (rcut > 0.0) req->set_cutoff(rcut);
+}
+void FixJSE::neighborRequestOccasional(jdouble rcut) {
+    NeighRequest *req = neighbor->add_request(this, NeighConst::REQ_OCCASIONAL);
+    if (rcut > 0.0) req->set_cutoff(rcut);
+}
+void FixJSE::neighborRequestOccasionalFull(jdouble rcut) {
+    NeighRequest *req = neighbor->add_request(this, NeighConst::REQ_FULL | NeighConst::REQ_OCCASIONAL);
+    if (rcut > 0.0) req->set_cutoff(rcut);
+}
+void FixJSE::neighborBuildOne() {
+    if (mNL == NULL) error->all(FLERR, "No neighbor list in this fix");
+    neighbor->build_one(mNL);
+}
+jdouble FixJSE::neighborCutneighmin() {
+    return neighbor->cutneighmin;
+}
+jdouble FixJSE::neighborCutneighmax() {
+    return neighbor->cutneighmax;
+}
+jdouble FixJSE::neighborCuttype(jint type) {
+    return neighbor->cuttype[type];
+}
+jdouble FixJSE::neighborSkin() {
+    return neighbor->skin;
+}
 jlong FixJSE::atomX() {
     return (jlong)(intptr_t) atom->x;
 }
@@ -235,6 +273,22 @@ jint FixJSE::atomNlocal() {
 }
 jint FixJSE::atomNghost() {
     return (jint) atom->nghost;
+}
+jint FixJSE::listInum() {
+    if (mNL == NULL) error->all(FLERR, "No neighbor list in this fix");
+    return (jint) mNL->inum;
+}
+jlong FixJSE::listIlist() {
+    if (mNL == NULL) error->all(FLERR, "No neighbor list in this fix");
+    return (jlong)(intptr_t) mNL->ilist;
+}
+jlong FixJSE::listNumneigh() {
+    if (mNL == NULL) error->all(FLERR, "No neighbor list in this fix");
+    return (jlong)(intptr_t) mNL->numneigh;
+}
+jlong FixJSE::listFirstneigh() {
+    if (mNL == NULL) error->all(FLERR, "No neighbor list in this fix");
+    return (jlong)(intptr_t) mNL->firstneigh;
 }
 jdouble FixJSE::forceBoltz() {
     return force->boltz;
@@ -262,6 +316,12 @@ jint FixJSE::commMe() {
 }
 jint FixJSE::commNprocs() {
     return (jint) comm->nprocs;
+}
+jlong FixJSE::commWorld() {
+    return (jlong)(intptr_t)world;
+}
+jdouble FixJSE::commCutghostuser() {
+    return comm->cutghostuser;
 }
 jstring FixJSE::unitStyle() {
     char *tUnits = lmp->update->unit_style;

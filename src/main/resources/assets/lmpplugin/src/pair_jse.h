@@ -65,6 +65,7 @@ public:
     void virialFdotrCompute();
     jint commMe();
     jint commNprocs();
+    jlong commWorld();
     jstring unitStyle();
 };
 

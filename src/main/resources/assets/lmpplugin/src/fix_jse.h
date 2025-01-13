@@ -18,6 +18,7 @@ public:
     ~FixJSE() override;
     int setmask() override;
     void init() override;
+    void init_list(int, NeighList *) override;
     void setup(int) override;
     void min_setup(int) override;
     
@@ -46,6 +47,7 @@ public:
 protected:
     JNIEnv *mEnv = NULL;
     jobject mCore = NULL;
+    NeighList *mNL = NULL;
 
 public:
     void setForceReneighbor(jboolean);
@@ -69,12 +71,25 @@ public:
     void setExtvector(jboolean);
     void setExtarray(jboolean);
     
+    void neighborRequestDefault(jdouble);
+    void neighborRequestFull(jdouble);
+    void neighborRequestOccasional(jdouble);
+    void neighborRequestOccasionalFull(jdouble);
+    void neighborBuildOne();
+    jdouble neighborCutneighmin();
+    jdouble neighborCutneighmax();
+    jdouble neighborCuttype(jint);
+    jdouble neighborSkin();
     jlong atomX();
     jlong atomF();
     jlong atomType();
     jint atomNtypes();
     jint atomNlocal();
     jint atomNghost();
+    jint listInum();
+    jlong listIlist();
+    jlong listNumneigh();
+    jlong listFirstneigh();
     jdouble forceBoltz();
     jdouble dt();
     jlong ntimestep();
@@ -84,6 +99,8 @@ public:
     jlong endstep();
     jint commMe();
     jint commNprocs();
+    jlong commWorld();
+    jdouble commCutghostuser();
     jstring unitStyle();
 };
 

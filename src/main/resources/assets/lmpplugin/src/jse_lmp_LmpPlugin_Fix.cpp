@@ -65,6 +65,33 @@ JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setExtvector_1(JNIEnv *aE
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setExtarray_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jboolean aFlag) {
     ((FixJSE *)(intptr_t)aFixPtr)->setExtarray(aFlag);
 }
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborRequestDefault_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jdouble aRCut) {
+    ((FixJSE *)(intptr_t)aFixPtr)->neighborRequestDefault(aRCut);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborRequestFull_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jdouble aRCut) {
+    ((FixJSE *)(intptr_t)aFixPtr)->neighborRequestFull(aRCut);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborRequestOccasional_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jdouble aRCut) {
+    ((FixJSE *)(intptr_t)aFixPtr)->neighborRequestOccasional(aRCut);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborRequestOccasionalFull_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jdouble aRCut) {
+    ((FixJSE *)(intptr_t)aFixPtr)->neighborRequestOccasionalFull(aRCut);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborBuildOne_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    ((FixJSE *)(intptr_t)aFixPtr)->neighborBuildOne();
+}
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborCutneighmin_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->neighborCutneighmin();
+}
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborCutneighmax_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->neighborCutneighmax();
+}
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborCuttype_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aType) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->neighborCuttype(aType);
+}
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborSkin_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->neighborSkin();
+}
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomX_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->atomX();
 }
@@ -82,6 +109,18 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomNlocal_1(JNIEnv *aEnv
 }
 JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomNghost_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->atomNghost();
+}
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_listInum_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->listInum();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_listIlist_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->listIlist();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_listNumneigh_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->listNumneigh();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_listFirstneigh_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->listFirstneigh();
 }
 JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_forceBoltz_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->forceBoltz();
@@ -109,6 +148,12 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commMe_1(JNIEnv *aEnv, jc
 }
 JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commNprocs_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->commNprocs();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commWorld_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->commWorld();
+}
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commCutghostuser_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->commCutghostuser();
 }
 JNIEXPORT jstring JNICALL Java_jse_lmp_LmpPlugin_00024Fix_unitStyle_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->unitStyle();

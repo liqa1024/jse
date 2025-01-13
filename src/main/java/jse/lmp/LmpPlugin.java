@@ -5,6 +5,7 @@ import jse.code.OS;
 import jse.code.SP;
 import jse.code.UT;
 import jse.parallel.IAutoShutdown;
+import jse.parallel.MPI;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,7 +63,7 @@ public class LmpPlugin {
         public static @Nullable String REDIRECT_LMPPLUGIN_LIB = OS.env("JSE_REDIRECT_LMPPLUGIN_LIB");
     }
     
-    public final static String LIB_DIR = JAR_DIR+"lmpplugin/" + UT.Code.uniqueID(VERSION, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+    public final static String LIB_DIR = JAR_DIR+"lmpplugin/" + UT.Code.uniqueID(VERSION, NativeLmp.NATIVELMP_HOME, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
           "jse_lmp_LmpPlugin_Pair.cpp"
@@ -82,6 +83,7 @@ public class LmpPlugin {
         , "fix_jse.h"
         , "lammpsplugin.h"
         , "version.h"
+        , "neigh_request.h"
     };
     
     static {
@@ -300,6 +302,9 @@ public class LmpPlugin {
         protected final int commNprocs() {return commNprocs_(mPairPtr);}
         private native static int commNprocs_(long aPairPtr);
         
+        protected final MPI.Comm commWorld() {return MPI.Comm.of(commWorld_(mPairPtr));}
+        private native static long commWorld_(long aPairPtr);
+        
         protected final String unitStyle() {return unitStyle_(mPairPtr);}
         private native static String unitStyle_(long aPairPtr);
     }
@@ -460,6 +465,41 @@ public class LmpPlugin {
         protected final void setExtarray(boolean aFlag) {setExtarray_(mFixPtr, aFlag);}
         private native static void setExtarray_(long aFixPtr, boolean aFlag);
         
+        @SuppressWarnings("SameParameterValue")
+        protected final void neighborRequestDefault(double aRCut) {neighborRequestDefault_(mFixPtr, aRCut);}
+        protected final void neighborRequestDefault() {neighborRequestDefault(-1);}
+        private native static void neighborRequestDefault_(long aFixPtr, double aRCut);
+        
+        @SuppressWarnings("SameParameterValue")
+        protected final void neighborRequestFull(double aRCut) {neighborRequestFull_(mFixPtr, aRCut);}
+        protected final void neighborRequestFull() {neighborRequestFull(-1);}
+        private native static void neighborRequestFull_(long aFixPtr, double aRCut);
+        
+        @SuppressWarnings("SameParameterValue")
+        protected final void neighborRequestOccasional(double aRCut) {neighborRequestOccasional_(mFixPtr, aRCut);}
+        protected final void neighborRequestOccasional() {neighborRequestOccasional(-1);}
+        private native static void neighborRequestOccasional_(long aFixPtr, double aRCut);
+        
+        @SuppressWarnings("SameParameterValue")
+        protected final void neighborRequestOccasionalFull(double aRCut) {neighborRequestOccasionalFull_(mFixPtr, aRCut);}
+        protected final void neighborRequestOccasionalFull() {neighborRequestOccasionalFull(-1);}
+        private native static void neighborRequestOccasionalFull_(long aFixPtr, double aRCut);
+        
+        protected final void neighborBuildOne() {neighborBuildOne_(mFixPtr);}
+        private native static void neighborBuildOne_(long aFixPtr);
+        
+        protected final double neighborCutneighmin() {return neighborCutneighmin_(mFixPtr);}
+        private native static double neighborCutneighmin_(long aFixPtr);
+        
+        protected final double neighborCutneighmax() {return neighborCutneighmax_(mFixPtr);}
+        private native static double neighborCutneighmax_(long aFixPtr);
+        
+        protected final double neighborCuttype(int aType) {return neighborCuttype_(mFixPtr, aType);}
+        private native static double neighborCuttype_(long aFixPtr, int aType);
+        
+        protected final double neighborSkin() {return neighborSkin_(mFixPtr);}
+        private native static double neighborSkin_(long aFixPtr);
+        
         protected final NestedDoubleCPointer atomX() {return new NestedDoubleCPointer(atomX_(mFixPtr));}
         private native static long atomX_(long aFixPtr);
         
@@ -477,6 +517,18 @@ public class LmpPlugin {
         
         protected final int atomNghost() {return atomNghost_(mFixPtr);}
         private native static int atomNghost_(long aFixPtr);
+        
+        protected final int listInum() {return listInum_(mFixPtr);}
+        private native static int listInum_(long aFixPtr);
+        
+        protected final IntCPointer listIlist() {return new IntCPointer(listIlist_(mFixPtr));}
+        private native static long listIlist_(long aFixPtr);
+        
+        protected final IntCPointer listNumneigh() {return new IntCPointer(listNumneigh_(mFixPtr));}
+        private native static long listNumneigh_(long aFixPtr);
+        
+        protected final NestedIntCPointer listFirstneigh() {return new NestedIntCPointer(listFirstneigh_(mFixPtr));}
+        private native static long listFirstneigh_(long aFixPtr);
         
         protected final double forceBoltz() {return forceBoltz_(mFixPtr);}
         private native static double forceBoltz_(long aFixPtr);
@@ -504,6 +556,12 @@ public class LmpPlugin {
         
         protected final int commNprocs() {return commNprocs_(mFixPtr);}
         private native static int commNprocs_(long aFixPtr);
+        
+        protected final MPI.Comm commWorld() {return MPI.Comm.of(commWorld_(mFixPtr));}
+        private native static long commWorld_(long aFixPtr);
+        
+        protected final double commCutghostuser() {return commCutghostuser_(mFixPtr);}
+        private native static double commCutghostuser_(long aFixPtr);
         
         protected final String unitStyle() {return unitStyle_(mFixPtr);}
         private native static String unitStyle_(long aFixPtr);

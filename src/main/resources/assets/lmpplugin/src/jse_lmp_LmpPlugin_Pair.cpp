@@ -113,6 +113,9 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commMe_1(JNIEnv *aEnv, j
 JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commNprocs_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     return ((PairJSE *)(intptr_t)aPairPtr)->commNprocs();
 }
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commWorld_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
+    return ((PairJSE *)(intptr_t)aPairPtr)->commWorld();
+}
 JNIEXPORT jstring JNICALL Java_jse_lmp_LmpPlugin_00024Pair_unitStyle_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     return ((PairJSE *)(intptr_t)aPairPtr)->unitStyle();
 }
