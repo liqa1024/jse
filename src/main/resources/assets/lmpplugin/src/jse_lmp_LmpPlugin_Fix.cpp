@@ -92,11 +92,20 @@ JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborCuttype_1(JNIE
 JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborSkin_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->neighborSkin();
 }
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_igroup_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->igroup_();
+}
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_groupbit_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->groupbit_();
+}
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomX_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->atomX();
 }
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomF_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->atomF();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomMask_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->atomMask();
 }
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomType_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->atomType();

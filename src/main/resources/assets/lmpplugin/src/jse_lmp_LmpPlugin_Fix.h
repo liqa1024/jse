@@ -275,6 +275,22 @@ JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborSkin_1
 
 /*
  * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    igroup_
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_igroup_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    groupbit_
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_groupbit_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
  * Method:    atomX_
  * Signature: (J)J
  */
@@ -287,6 +303,14 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomX_1
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomF_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    atomMask_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomMask_1
   (JNIEnv *, jclass, jlong);
 
 /*

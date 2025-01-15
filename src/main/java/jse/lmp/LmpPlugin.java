@@ -500,11 +500,20 @@ public class LmpPlugin {
         protected final double neighborSkin() {return neighborSkin_(mFixPtr);}
         private native static double neighborSkin_(long aFixPtr);
         
+        protected final int igroup() {return igroup_(mFixPtr);}
+        private native static int igroup_(long aFixPtr);
+        
+        protected final int groupbit() {return groupbit_(mFixPtr);}
+        private native static int groupbit_(long aFixPtr);
+        
         protected final NestedDoubleCPointer atomX() {return new NestedDoubleCPointer(atomX_(mFixPtr));}
         private native static long atomX_(long aFixPtr);
         
         protected final NestedDoubleCPointer atomF() {return new NestedDoubleCPointer(atomF_(mFixPtr));}
         private native static long atomF_(long aFixPtr);
+        
+        protected final IntCPointer atomMask() {return new IntCPointer(atomMask_(mFixPtr));}
+        private native static long atomMask_(long aFixPtr);
         
         protected final IntCPointer atomType() {return new IntCPointer(atomType_(mFixPtr));}
         private native static long atomType_(long aFixPtr);

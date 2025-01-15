@@ -256,11 +256,20 @@ jdouble FixJSE::neighborCuttype(jint type) {
 jdouble FixJSE::neighborSkin() {
     return neighbor->skin;
 }
+jint FixJSE::igroup_() {
+    return (jint)igroup;
+}
+jint FixJSE::groupbit_() {
+    return (jint)groupbit;
+}
 jlong FixJSE::atomX() {
     return (jlong)(intptr_t) atom->x;
 }
 jlong FixJSE::atomF() {
     return (jlong)(intptr_t) atom->f;
+}
+jlong FixJSE::atomMask() {
+    return (jlong)(intptr_t) atom->mask;
 }
 jlong FixJSE::atomType() {
     return (jlong)(intptr_t) atom->type;

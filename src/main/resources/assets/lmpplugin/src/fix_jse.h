@@ -80,8 +80,11 @@ public:
     jdouble neighborCutneighmax();
     jdouble neighborCuttype(jint);
     jdouble neighborSkin();
+    jint igroup_();
+    jint groupbit_();
     jlong atomX();
     jlong atomF();
+    jlong atomMask();
     jlong atomType();
     jint atomNtypes();
     jint atomNlocal();
