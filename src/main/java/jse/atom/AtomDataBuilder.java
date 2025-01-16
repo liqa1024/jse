@@ -195,19 +195,21 @@ public abstract class AtomDataBuilder<R> {
         if (mSymbols == null) {
             if (mAtomTypeNum < aExpectedType) mAtomTypeNum = aExpectedType;
             mSymbols = new String[mAtomTypeNum];
-            mSymbols[mAtomTypeNum-1] = aSymbol;
-            return mAtomTypeNum;
+            mSymbols[aExpectedType-1] = aSymbol;
+            return aExpectedType;
         }
-        // 如果已经存在相同元素，则不考虑 aExpectedType；
+        // 如果 aExpectedType 部分为 null 或者相同则优先设置 symbol
+        if (aExpectedType <= mAtomTypeNum) {
+            if (mSymbols[aExpectedType-1]==null || mSymbols[aExpectedType-1].equals(aSymbol)) {
+                mSymbols[aExpectedType-1] = aSymbol;
+                return aExpectedType;
+            }
+        }
+        // 此时位置已经被占，优先考虑有相同元素的情况；
         // 注意需要考虑 mSymbols 比 mAtomTypeNum 还要长的情况
         int tType = IAtomData.typeOf_(AbstractCollections.from(mAtomTypeNum, i->mSymbols[i]), aSymbol);
         if (tType > 0) {
             return tType;
-        }
-        // 如果 aExpectedType 部分为 null 则设置 symbol
-        if (aExpectedType<=mAtomTypeNum && mSymbols[aExpectedType-1]==null) {
-            mSymbols[aExpectedType-1] = aSymbol;
-            return aExpectedType;
         }
         // 此时无论如何也不能塞进去了，直接扩容
         mAtomTypeNum = Math.max(mAtomTypeNum+1, aExpectedType);
