@@ -433,7 +433,7 @@ public class NNAP implements IAutoShutdown {
             }
         }
         if (!aSystemChanges && tAllInResults) return rResults;
-        IAtomData tAtoms = AseAtoms.of(aPyAseAtoms).setSymbolOrder(mSymbols);
+        IAtomData tAtoms = AseAtoms.of(aPyAseAtoms);
         // 遍历统计需要的量
         boolean tRequireEnergy = false;
         boolean tRequireForces = false;
@@ -459,10 +459,8 @@ public class NNAP implements IAutoShutdown {
         RowMatrix rForces = MatrixCache.getZerosRow(tAtoms.atomNumber(), 3);
         Vector rStress = VectorCache.getZeros(6);
         RowMatrix rStresses = MatrixCache.getZerosRow(tAtoms.atomNumber(), 6);
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(tAtoms)) {
-            calEnergyForceVirials(tAPC, rEnergies, rForces.col(0), rForces.col(1), rForces.col(2),
-                                  rStresses.col(0), rStresses.col(1), rStresses.col(2), rStresses.col(5), rStresses.col(4), rStresses.col(3));
-        }
+        calEnergyForceVirials(tAtoms, rEnergies, rForces.col(0), rForces.col(1), rForces.col(2),
+                              rStresses.col(0), rStresses.col(1), rStresses.col(2), rStresses.col(5), rStresses.col(4), rStresses.col(3));
         rStresses.operation().negative2this();
         for (int i = 0; i < 6; ++i) {
             rStress.set(i, rStresses.col(i).sum());
