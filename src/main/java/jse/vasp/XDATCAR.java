@@ -158,7 +158,7 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
         @Nullable String tSymbol = symbol(aType);
         return tSymbol==null ? Double.NaN : MASS.getOrDefault(tSymbol, Double.NaN);
     }
-    /** @deprecated use {@link #symbol} */
+    /** @deprecated use {@link #symbol(int)} */
     @Deprecated public @Nullable String typeName(int aType) {return symbol(aType);}
     public int atomNumber(String aKey) {
         int rAtomNum = 0;
@@ -166,8 +166,8 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
         return rAtomNum;
     }
     public int atomNumber(int aType) {return mAtomNumbers.get(aType-1);}
-    /** @deprecated use {@link #atomNumber} or {@link #natoms} */ @Deprecated public final int atomNum(String aType) {return atomNumber(aType);}
-    /** @deprecated use {@link #atomNumber} or {@link #natoms} */ @Deprecated public final int atomNum(int aType) {return atomNumber(aType);}
+    /** @deprecated use {@link #atomNumber(String)} or {@link #natoms(String)} */ @Deprecated public final int atomNum(String aType) {return atomNumber(aType);}
+    /** @deprecated use {@link #atomNumber(int)} or {@link #natoms(int)} */ @Deprecated public final int atomNum(int aType) {return atomNumber(aType);}
     /** 提供简写版本 */
     @VisibleForTesting public final int natoms(String aType) {return atomNumber(aType);}
     @VisibleForTesting public final int natoms(int aType) {return atomNumber(aType);}
@@ -178,15 +178,9 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     public List<IMatrix> directs() {return mList;}
     public @Override boolean isCartesian() {return mIsCartesian;}
     
-    /** @deprecated use {@link #box} */ @Deprecated public VaspBox vaspBox() {return box();}
-    /** @deprecated use {@link VaspBox#scale} */ @Deprecated public double vaspBoxScale() {return mBox.scale();}
-    /** @deprecated use {@code !}{@link #isPrism} */ @Deprecated public boolean isDiagBox() {return !isPrism();}
-    
-    /** boxScale stuffs */
-    public double boxScale() {return mBox.scale();}
-    public XDATCAR setBoxScale(double aBoxScale) {mBox.setScale(aBoxScale); return this;}
-    /** Groovy stuffs */
-    @VisibleForTesting public double getBoxScale() {return mBox.getScale();}
+    /** @deprecated use {@link #box()} */ @Deprecated public VaspBox vaspBox() {return box();}
+    /** @deprecated use {@link VaspBox#scale()} */ @Deprecated public double vaspBoxScale() {return mBox.scale();}
+    /** @deprecated use {@code !}{@link #isPrism()} */ @Deprecated public boolean isDiagBox() {return !isPrism();}
     
     /** 对于 XDATCAR 这些接口也同样可以获取到 */
     public VaspBox box() {return mBox;}
@@ -195,8 +189,8 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     public boolean isLmpStyle() {return mBox.isLmpStyle();}
     public int atomNumber() {return mAtomNumbers.sum();}
     public int atomTypeNumber() {return mAtomNumbers.size();}
-    /** @deprecated use {@link #atomNumber} or {@link #natoms} */ @Deprecated public final int atomNum() {return atomNumber();}
-    /** @deprecated use {@link #atomNumber} or {@link #natoms} */ @Deprecated public final int atomTypeNum() {return atomTypeNumber();}
+    /** @deprecated use {@link #atomNumber()} or {@link #natoms()} */ @Deprecated public final int atomNum() {return atomNumber();}
+    /** @deprecated use {@link #atomNumber()} or {@link #natoms()} */ @Deprecated public final int atomTypeNum() {return atomTypeNumber();}
     /** 提供简写版本 */
     @VisibleForTesting public final int natoms() {return atomNumber();}
     @VisibleForTesting public final int ntypes() {return atomTypeNumber();}
@@ -254,8 +248,8 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
             }
         }
     }
-    /** @deprecated use {@link #setSymbols} */ @Deprecated public XDATCAR setTypeNames(String... aSymbols) {return setSymbols(aSymbols);}
-    /** @deprecated use {@link #setNoSymbol} */ @Deprecated public XDATCAR setNoTypeName() {return setNoSymbol();}
+    /** @deprecated use {@link #setSymbols(String...)} */ @Deprecated public XDATCAR setTypeNames(String... aSymbols) {return setSymbols(aSymbols);}
+    /** @deprecated use {@link #setNoSymbol()} */ @Deprecated public XDATCAR setNoTypeName() {return setNoSymbol();}
     
     public XDATCAR setComment(@Nullable String aComment) {mComment = aComment; return this;}
     
@@ -305,109 +299,6 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
             }
         }
         mIsCartesian = false;
-        return this;
-    }
-    /** 修改模拟盒类型 */
-    public XDATCAR setBoxNormal() {
-        if (!isPrism()) return this;
-        VaspBox oBox = mBox;
-        mBox = new VaspBox(mBox);
-        // 如果是 direct 则不用转换数据
-        if (!mIsCartesian) return this;
-        // 如果原本的斜方模拟盒不存在斜方数据则直接返回
-        if (MathEX.Code.numericEqual(oBox.iay(), 0.0) && MathEX.Code.numericEqual(oBox.iaz(), 0.0)
-         && MathEX.Code.numericEqual(oBox.ibx(), 0.0) && MathEX.Code.numericEqual(oBox.ibz(), 0.0)
-         && MathEX.Code.numericEqual(oBox.icx(), 0.0) && MathEX.Code.numericEqual(oBox.icy(), 0.0)) return this;
-        // 否则将原子进行线性变换，这里绕过 scale 直接处理
-        IMatrix oInvIABC = oBox.inviabc();
-        for (IMatrix tDirect : mList) {
-            tDirect.operation().matmul2this(oInvIABC);
-            // 考虑计算误差带来的出边界的问题
-            tDirect.operation().map2this(v -> Math.abs(v)<MathEX.Code.DBL_EPSILON ? 0.0 : v);
-            // 手动转换回到 cartesian
-            tDirect.col(0).multiply2this(mBox.iax());
-            tDirect.col(1).multiply2this(mBox.iby());
-            tDirect.col(2).multiply2this(mBox.icz());
-        }
-        return this;
-    }
-    public XDATCAR setBoxPrism() {
-        if (isPrism()) return this;
-        return setBoxPrism(0.0, 0.0, 0.0);
-    }
-    public XDATCAR setBoxPrism(double aIXY, double aIXZ, double aIYZ) {return setBoxPrism(0.0, 0.0, aIXY, 0.0, aIXZ, aIYZ);}
-    public XDATCAR setBoxPrism(double aIAy, double aIAz, double aIBx, double aIBz, double aICx, double aICy) {
-        VaspBox oBox = mBox;
-        mBox = new VaspBoxPrism(mBox, aIAy, aIAz, aIBx, aIBz, aICx, aICy);
-        // 如果是 direct 则不用转换数据
-        if (!mIsCartesian) return this;
-        // 现在必须要求倾斜因子相同才可以跳过设置
-        if (MathEX.Code.numericEqual(oBox.iay(), aIAy) && MathEX.Code.numericEqual(oBox.iaz(), aIAz)
-         && MathEX.Code.numericEqual(oBox.ibx(), aIBx) && MathEX.Code.numericEqual(oBox.ibz(), aIBz)
-         && MathEX.Code.numericEqual(oBox.icx(), aICx) && MathEX.Code.numericEqual(oBox.icy(), aICy)) return this;
-        // 否则将原子进行线性变换，这里绕过 scale 直接处理
-        IMatrix oInvIABC = oBox.inviabc();
-        IMatrix tIABC = mBox.iabc();
-        final double tNorm = tIABC.asVecCol().operation().stat((norm, v) -> norm+Math.abs(v));
-        for (IMatrix tDirect : mList) {
-            if (oBox.isPrism()) {
-                tDirect.operation().matmul2this(oInvIABC);
-                // 考虑计算误差带来的出边界的问题
-                tDirect.operation().map2this(v -> Math.abs(v)<MathEX.Code.DBL_EPSILON ? 0.0 : v);
-            } else {
-                tDirect.col(0).div2this(oBox.iax());
-                tDirect.col(1).div2this(oBox.iby());
-                tDirect.col(2).div2this(oBox.icz());
-            }
-            // 手动转换回到 cartesian
-            tDirect.operation().matmul2this(tIABC);
-            // cartesian 其实也需要考虑计算误差带来的出边界的问题
-            tDirect.operation().map2this(v -> Math.abs(v)<MathEX.Code.DBL_EPSILON*tNorm ? 0.0 : v);
-        }
-        return this;
-    }
-    /** 调整模拟盒的 xyz 长度 */
-    public XDATCAR setBoxXYZ(double aIX, double aIY, double aIZ) {
-        VaspBox oBox = mBox;
-        mBox = oBox.isPrism() ?
-            new VaspBoxPrism(aIX, oBox.iay(), oBox.iaz(), oBox.ibx(), aIY, oBox.ibz(), oBox.icx(), oBox.icy(), aIZ, oBox.scale()) :
-            new VaspBox(aIX, aIY, aIZ, oBox.scale());
-        // 如果是 direct 则不用转换数据
-        if (!mIsCartesian) return this;
-        // 现在必须要求 xyz 长度相同才可以跳过设置
-        if (MathEX.Code.numericEqual(oBox.iax(), aIX) && MathEX.Code.numericEqual(oBox.iby(), aIY) && MathEX.Code.numericEqual(oBox.icz(), aIZ)) return this;
-        // 否则将原子进行线性变换，这里绕过 scale 直接处理
-        if (oBox.isPrism()) {
-            IMatrix oInvIABC = oBox.inviabc();
-            IMatrix tIABC = mBox.iabc();
-            final double tNorm = tIABC.asVecCol().operation().stat((norm, v) -> norm+Math.abs(v));
-            for (IMatrix tDirect : mList) {
-                tDirect.operation().matmul2this(oInvIABC);
-                // 考虑计算误差带来的出边界的问题
-                tDirect.operation().map2this(v -> Math.abs(v)<MathEX.Code.DBL_EPSILON ? 0.0 : v);
-                // 手动转换回到 cartesian
-                tDirect.operation().matmul2this(tIABC);
-                // cartesian 其实也需要考虑计算误差带来的出边界的问题
-                tDirect.operation().map2this(v -> Math.abs(v)<MathEX.Code.DBL_EPSILON*tNorm ? 0.0 : v);
-            }
-        } else {
-            for (IMatrix tDirect : mList) {
-                tDirect.col(0).div2this(oBox.iax());
-                tDirect.col(1).div2this(oBox.iby());
-                tDirect.col(2).div2this(oBox.icz());
-                // 手动转换回到 cartesian
-                tDirect.col(0).multiply2this(mBox.iax());
-                tDirect.col(1).multiply2this(mBox.iby());
-                tDirect.col(2).multiply2this(mBox.icz());
-            }
-        }
-        return this;
-    }
-    /** 密度归一化 */
-    public XDATCAR setDenseNormalized() {
-        double tScale = MathEX.Fast.cbrt(volume() / atomNumber());
-        // 直接通过调整 boxScale 来实现
-        mBox.setScale(mBox.scale() / tScale);
         return this;
     }
     

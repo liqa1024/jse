@@ -57,10 +57,10 @@ public final class SettableAtomData extends AbstractSettableAtomData {
     }
     
     private final @Unmodifiable List<? extends ISettableAtom> mAtoms;
-    private final IBox mBox;
+    private IBox mBox;
     private int mAtomTypeNum;
     private final boolean mHasID;
-    private final boolean mHasVelocity;
+    private boolean mHasVelocity;
     private String @Nullable[] mSymbols;
     
     /**
@@ -208,11 +208,25 @@ public final class SettableAtomData extends AbstractSettableAtomData {
         return this;
     }
     
+    @Override protected void setBox_(double aX, double aY, double aZ) {
+        mBox = new Box(aX, aY, aZ);
+    }
+    @Override protected void setBox_(double aAx, double aAy, double aAz, double aBx, double aBy, double aBz, double aCx, double aCy, double aCz) {
+        mBox = new BoxPrism(aAx, aAy, aAz, aBx, aBy, aBz, aCx, aCy, aCz);
+    }
+    
     /**
      * @return {@inheritDoc}
      * @see IAtom#hasID()
      */
     @Override public boolean hasID() {return mHasID;}
+    /**
+     * {@inheritDoc}
+     * @return {@inheritDoc}
+     * @see #hasVelocity()
+     * @see #setHasVelocity()
+     */
+    @Override public SettableAtomData setNoVelocity() {mHasVelocity = false; return this;}
     /**
      * @return {@inheritDoc}
      * @see IAtom#hasVelocity()

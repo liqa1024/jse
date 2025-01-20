@@ -49,27 +49,33 @@ public class LmpBox implements IBox {
     @Deprecated public final @NotNull IXYZ shiftedBox() {return new XYZ(this);}
     
     
-    /** 现在开放外部使用 */
+    /** 将任意的模拟盒转换成对应属性的 lammps 模拟盒 */
     public static LmpBox of(IBox aBox) {
         if (aBox.isLmpStyle()) {
             return aBox.isPrism() ? new LmpBoxPrism(aBox, aBox.xy(), aBox.xz(), aBox.yz()) : new LmpBox(aBox);
         } else {
-            // 否则需要转换成 lammps 的模拟盒，
-            // 公式参考 lammps 官方文档：https://docs.lammps.org/Howto_triclinic.html
-            XYZ tA = XYZ.toXYZ(aBox.a());
-            XYZ tB = XYZ.toXYZ(aBox.b());
-            XYZ tC = XYZ.toXYZ(aBox.c());
-            double tX = tA.norm();
-            double tXY = tB.dot(tA) / tX;
-            double tY = MathEX.Fast.sqrt(tB.dot() - tXY*tXY);
-            double tXZ = tC.dot(tA) / tX;
-            double tYZ = (tB.dot(tC) - tXY*tXZ) / tY;
-            double tZ = MathEX.Fast.sqrt(tC.dot() - tXZ*tXZ - tYZ*tYZ);
-            // 这里同样考虑由于计算误差导致的数值非正交问题
-            if (Math.abs(tXY) < MathEX.Code.DBL_EPSILON) tXY = 0.0;
-            if (Math.abs(tXZ) < MathEX.Code.DBL_EPSILON) tXZ = 0.0;
-            if (Math.abs(tYZ) < MathEX.Code.DBL_EPSILON) tYZ = 0.0;
-            return new LmpBoxPrism(tX, tY, tZ, tXY, tXZ, tYZ);
+            return of(aBox.a(), aBox.b(), aBox.c());
         }
+    }
+    /**
+     * 通用的将三个基向量形式转换成 lammps 的模拟盒，
+     * 公式参考 lammps 官方文档:
+     * <a href="https://docs.lammps.org/Howto_triclinic.html">Triclinic (non-orthogonal) simulation boxes</a>
+     */
+    public static LmpBox of(IXYZ aA, IXYZ aB, IXYZ aC) {
+        XYZ tA = XYZ.toXYZ(aA);
+        XYZ tB = XYZ.toXYZ(aB);
+        XYZ tC = XYZ.toXYZ(aC);
+        double tX = tA.norm();
+        double tXY = tB.dot(tA) / tX;
+        double tY = MathEX.Fast.sqrt(tB.dot() - tXY*tXY);
+        double tXZ = tC.dot(tA) / tX;
+        double tYZ = (tB.dot(tC) - tXY*tXZ) / tY;
+        double tZ = MathEX.Fast.sqrt(tC.dot() - tXZ*tXZ - tYZ*tYZ);
+        // 这里同样考虑由于计算误差导致的数值非正交问题
+        if (Math.abs(tXY) < MathEX.Code.DBL_EPSILON) tXY = 0.0;
+        if (Math.abs(tXZ) < MathEX.Code.DBL_EPSILON) tXZ = 0.0;
+        if (Math.abs(tYZ) < MathEX.Code.DBL_EPSILON) tYZ = 0.0;
+        return new LmpBoxPrism(tX, tY, tZ, tXY, tXZ, tYZ);
     }
 }

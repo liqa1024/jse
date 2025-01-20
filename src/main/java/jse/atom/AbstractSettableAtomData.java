@@ -280,19 +280,19 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      * @param aScale {@inheritDoc}
      * @throws UnsupportedOperationException {@inheritDoc}
      * @see IBox
-     * @implSpec 需要调用 {@link #setBoxScale_(double)} 来设置模拟盒，并在设置完后调用
+     * @implSpec 对于不同的模拟盒类型调用不同设置，保证模拟盒的类型不变，并在设置完后调用
      * {@link #scaleAtomPosition_(boolean, double)} 来调整原子位置，或者采用任何等价的实现形式
      */
     @Override public AbstractSettableAtomData setBoxScale(boolean aKeepAtomPosition, double aScale) {
-        setBoxScale_(aScale);
+        IBox oBox = box();
+        if (!oBox.isPrism()) setBox_(oBox.x()*aScale, oBox.y()*aScale, oBox.z()*aScale);
+        else if (oBox.isLmpStyle()) setBox_(oBox.x()*aScale, oBox.y()*aScale, oBox.z()*aScale, oBox.xy()*aScale, oBox.xz()*aScale, oBox.yz()*aScale);
+        else setBox_(oBox.ax()*aScale, oBox.ay()*aScale, oBox.az()*aScale,
+                     oBox.bx()*aScale, oBox.by()*aScale, oBox.bz()*aScale,
+                     oBox.cx()*aScale, oBox.cy()*aScale, oBox.cz()*aScale);
         scaleAtomPosition_(aKeepAtomPosition, aScale);
         return this;
     }
-    /**
-     * 内部使用的仅修改模拟盒的操作，实现用来支持模拟盒修改
-     * @see #setBox(double, double, double)
-     */
-    protected void setBoxScale_(double aScale) {throw new UnsupportedOperationException("setBoxScale");}
     /**
      * 内部使用的仅修改模拟盒的操作，实现用来支持模拟盒修改
      * @see #setBox(double, double, double)
@@ -317,7 +317,12 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
         if (aKeepAtomPosition) return;
         final int tAtomNum = atomNumber();
         for (int i = 0; i < tAtomNum; ++i) {
-            atom(i).multiply2this(aScale);
+            ISettableAtom tAtom = atom(i);
+            tAtom.multiply2this(aScale);
+            // 如果存在速度，则速度也需要做一次这样的变换
+            if (tAtom.hasVelocity()) {
+                tAtom.setVxyz(tAtom.vx()*aScale, tAtom.vy()*aScale, tAtom.vz()*aScale);
+            }
         }
     }
     /**
@@ -332,15 +337,29 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
         XYZ tBuf = new XYZ();
         if (tBox.isPrism() || aOldBox.isPrism()) {
             for (int i = 0; i < tAtomNum; ++i) {
+                ISettableAtom tAtom = atom(i);
+                tBuf.setXYZ(tAtom);
                 aOldBox.toDirect(tBuf);
                 tBox.toCartesian(tBuf);
-                atom(i).setXYZ(tBuf);
+                tAtom.setXYZ(tBuf);
+                // 如果存在速度，则速度也需要做一次这样的变换
+                if (tAtom.hasVelocity()) {
+                    tBuf.setXYZ(tAtom.vx(), tAtom.vy(), tAtom.vz());
+                    aOldBox.toDirect(tBuf);
+                    tBox.toCartesian(tBuf);
+                    tAtom.setVxyz(tBuf);
+                }
             }
         } else {
             tBuf.setXYZ(tBox);
             tBuf.div2this(aOldBox);
             for (int i = 0; i < tAtomNum; ++i) {
-                atom(i).multiply2this(tBuf);
+                ISettableAtom tAtom = atom(i);
+                tAtom.multiply2this(tBuf);
+                // 如果存在速度，则速度也需要做一次这样的变换
+                if (tAtom.hasVelocity()) {
+                    tAtom.setVxyz(tAtom.vx()*tBuf.mX, tAtom.vy()*tBuf.mY, tAtom.vz()*tBuf.mZ);
+                }
             }
         }
     }

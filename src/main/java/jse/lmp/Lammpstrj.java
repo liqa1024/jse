@@ -6,13 +6,10 @@ import jse.code.collection.AbstractCollections;
 import jse.code.collection.AbstractListWrapper;
 import jse.code.collection.NewCollections;
 import jse.math.table.ITable;
-import jse.math.vector.ILongVector;
 import jse.math.vector.ILongVectorGetter;
-import jse.math.vector.RefLongVector;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import org.jetbrains.annotations.Range;
-import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -56,60 +53,9 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
     @Override public Lammpstrj leftShift(IAtomData aAtomData) {return (Lammpstrj)super.leftShift(aAtomData);}
     @Override public Lammpstrj leftShift(Collection<? extends IAtomData> aAtomDataList) {return (Lammpstrj)super.leftShift(aAtomDataList);}
     
-    
-    // dump 额外的属性
-    public ILongVector allTimeStep() {
-        return new RefLongVector() {
-            @Override public long get(int aIdx) {return mList.get(aIdx).timeStep();}
-            @Override public int size() {return mList.size();}
-        };
-    }
-    public List<String[]> allBoxBounds() {return AbstractCollections.map(mList, SubLammpstrj::boxBounds);}
-    public List<LmpBox> allBox() {return AbstractCollections.map(mList, SubLammpstrj::box);}
-    /** @deprecated use {@link #allBox} */ @Deprecated public List<LmpBox> allLmpBox() {return allBox();}
-    public Lammpstrj setAllTimeStep(ILongVectorGetter aTimeStepGetter) {
-        int i = 0;
-        for (SubLammpstrj tSubLammpstrj : mList) {
-            tSubLammpstrj.setTimeStep(aTimeStepGetter.get(i));
-            ++i;
-        }
-        return this;
-    }
-    /** Groovy stuffs */
-    @VisibleForTesting public ILongVector getAllTimeStep() {return allTimeStep();}
-    
     /** 提供直接转为表格的接口 */
     public List<ITable> asTables() {
         return AbstractCollections.map(mList, SubLammpstrj::asTable);
-    }
-    
-    /** 修改模拟盒类型 */
-    public Lammpstrj setBoxNormal() {
-        for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setBoxNormal();
-        return this;
-    }
-    public Lammpstrj setBoxPrism() {
-        for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setBoxPrism();
-        return this;
-    }
-    public Lammpstrj setBoxPrism(double aXY, double aXZ, double aYZ) {
-        for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setBoxPrism(aXY, aXZ, aYZ);
-        return this;
-    }
-    /** 调整模拟盒的 xyz 长度 */
-    public Lammpstrj setBoxXYZ(double aX, double aY, double aZ) {
-        for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setBoxXYZ(aX, aY, aZ);
-        return this;
-    }
-    /** 设置缩放 */
-    public Lammpstrj setBoxScale(double aScale) {
-        for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setBoxScale(aScale);
-        return this;
-    }
-    /** 密度归一化, 返回自身来支持链式调用 */
-    public Lammpstrj setDenseNormalized() {
-        for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.setDenseNormalized();
-        return this;
     }
     
     /** 截断开头一部分, 返回自身来支持链式调用 */

@@ -13,6 +13,7 @@ import jse.math.vector.IIntVector;
 import jse.math.vector.IVector;
 import jse.math.vector.IntVector;
 import jse.math.vector.Vectors;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -23,8 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import static jse.code.CS.MASS;
-import static jse.code.CS.ZL_STR;
+import static jse.code.CS.*;
 
 /**
  * @author liqa
@@ -92,7 +92,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         @Nullable String tSymbol = symbol(aType);
         return tSymbol==null ? Double.NaN : MASS.getOrDefault(tSymbol, Double.NaN);
     }
-    /** @deprecated use {@link #symbol} */
+    /** @deprecated use {@link #symbol(int)} */
     @Deprecated public @Nullable String typeName(int aType) {return symbol(aType);}
     public int atomNumber(String aType) {
         int rAtomNum = 0;
@@ -100,8 +100,8 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         return rAtomNum;
     }
     public int atomNumber(int aType) {return mAtomNumbers.get(aType-1);}
-    /** @deprecated use {@link #atomNumber} or {@link #natoms} */ @Deprecated public final int atomNum(String aType) {return atomNumber(aType);}
-    /** @deprecated use {@link #atomNumber} or {@link #natoms} */ @Deprecated public final int atomNum(int aType) {return atomNumber(aType);}
+    /** @deprecated use {@link #atomNumber(String)} or {@link #natoms(String)} */ @Deprecated public final int atomNum(String aType) {return atomNumber(aType);}
+    /** @deprecated use {@link #atomNumber(int)} or {@link #natoms(int)} */ @Deprecated public final int atomNum(int aType) {return atomNumber(aType);}
     /** 提供简写版本 */
     @VisibleForTesting public final int natoms(String aType) {return atomNumber(aType);}
     @VisibleForTesting public final int natoms(int aType) {return atomNumber(aType);}
@@ -114,19 +114,9 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     public boolean isSelectiveDynamics() {return mSelectiveDynamics;}
     public POSCAR setSelectiveDynamics(boolean aSelectiveDynamics) {mSelectiveDynamics = aSelectiveDynamics; return this;}
     
-    /** @deprecated use {@link #box} */ @Deprecated public VaspBox vaspBox() {return box();}
-    /** @deprecated use {@link VaspBox#scale} */ @Deprecated public double vaspBoxScale() {return mBox.scale();}
-    /** @deprecated use {@code !}{@link #isPrism} */ @Deprecated public boolean isDiagBox() {return !isPrism();}
-    
-    /** boxScale stuffs */
-    public double boxScale() {return mBox.scale();}
-    public POSCAR setBoxScale(double aBoxScale) {
-        if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
-        mBox.setScale(aBoxScale);
-        return this;
-    }
-    /** Groovy stuffs */
-    @VisibleForTesting public double getBoxScale() {return mBox.getScale();}
+    /** @deprecated use {@link #box()} */ @Deprecated public VaspBox vaspBox() {return box();}
+    /** @deprecated use {@link VaspBox#scale()} */ @Deprecated public double vaspBoxScale() {return mBox.scale();}
+    /** @deprecated use {@code !}{@link #isPrism()} */ @Deprecated public boolean isDiagBox() {return !isPrism();}
     
     
     /** 支持直接修改 TypeNames，只会增大种类数，不会减少 */
@@ -183,8 +173,8 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
             }
         }
     }
-    /** @deprecated use {@link #setSymbols} */ @Deprecated public POSCAR setTypeNames(String... aSymbols) {return setSymbols(aSymbols);}
-    /** @deprecated use {@link #setNoSymbol} */ @Deprecated public POSCAR setNoTypeName() {return setNoSymbol();}
+    /** @deprecated use {@link #setSymbols(String...)} */ @Deprecated public POSCAR setTypeNames(String... aSymbols) {return setSymbols(aSymbols);}
+    /** @deprecated use {@link #setNoSymbol()} */ @Deprecated public POSCAR setNoTypeName() {return setNoSymbol();}
     
     public POSCAR setComment(@Nullable String aComment) {
         if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
@@ -238,99 +228,84 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         return this;
     }
     
-    /** 修改模拟盒类型 */
-    public POSCAR setBoxNormal() {
+    @Override protected void setBox_(double aX, double aY, double aZ) {
         if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
-        if (!isPrism()) return this;
-        VaspBox oBox = mBox;
-        mBox = new VaspBox(mBox);
-        // 如果是 direct 则不用转换数据
-        if (!mIsCartesian) return this;
-        // 如果原本的斜方模拟盒不存在斜方数据则直接返回
-        if (MathEX.Code.numericEqual(oBox.iay(), 0.0) && MathEX.Code.numericEqual(oBox.iaz(), 0.0)
-         && MathEX.Code.numericEqual(oBox.ibx(), 0.0) && MathEX.Code.numericEqual(oBox.ibz(), 0.0)
-         && MathEX.Code.numericEqual(oBox.icx(), 0.0) && MathEX.Code.numericEqual(oBox.icy(), 0.0)) return this;
-        // 否则将原子进行线性变换，这里绕过 scale 直接处理
-        mDirect.operation().matmul2this(oBox.inviabc());
-        // 考虑计算误差带来的出边界的问题，现在会自动靠近所有接近的整数值
-        mDirect.operation().map2this(v -> {
-            if (Math.abs(v) < MathEX.Code.DBL_EPSILON) return 0.0;
-            int tIntV = MathEX.Code.round2int(v);
-            if (MathEX.Code.numericEqual(v, tIntV)) return tIntV;
-            return v;
-        });
-        // 手动转换回到 cartesian
-        mDirect.col(0).multiply2this(mBox.iax());
-        mDirect.col(1).multiply2this(mBox.iby());
-        mDirect.col(2).multiply2this(mBox.icz());
-        return this;
-    }
-    public POSCAR setBoxPrism() {
-        if (isPrism()) return this;
-        return setBoxPrism(0.0, 0.0, 0.0);
-    }
-    public POSCAR setBoxPrism(double aIXY, double aIXZ, double aIYZ) {return setBoxPrism(0.0, 0.0, aIXY, 0.0, aIXZ, aIYZ);}
-    public POSCAR setBoxPrism(double aIAy, double aIAz, double aIBx, double aIBz, double aICx, double aICy) {
-        if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
-        VaspBox oBox = mBox;
-        mBox = new VaspBoxPrism(mBox, aIAy, aIAz, aIBx, aIBz, aICx, aICy);
-        // 如果是 direct 则不用转换数据
-        if (!mIsCartesian) return this;
-        // 现在必须要求倾斜因子相同才可以跳过设置
-        if (MathEX.Code.numericEqual(oBox.iay(), aIAy) && MathEX.Code.numericEqual(oBox.iaz(), aIAz)
-         && MathEX.Code.numericEqual(oBox.ibx(), aIBx) && MathEX.Code.numericEqual(oBox.ibz(), aIBz)
-         && MathEX.Code.numericEqual(oBox.icx(), aICx) && MathEX.Code.numericEqual(oBox.icy(), aICy)) return this;
-        // 否则将原子进行线性变换，这里绕过 scale 直接处理
-        if (oBox.isPrism()) {
-            mDirect.operation().matmul2this(oBox.inviabc());
-            // 由于后续存在处理，这里不处理计算误差带来的出边界的问题
-        } else {
-            mDirect.col(0).div2this(oBox.iax());
-            mDirect.col(1).div2this(oBox.iby());
-            mDirect.col(2).div2this(oBox.icz());
+        // 这里统一移除掉 scale 的数据，保证新的 box 合法性
+        if (mIsCartesian) {
+            mDirect.multiply2this(mBox.scale());
         }
-        // 手动转换回到 cartesian
-        IMatrix tIABC = mBox.iabc();
-        mDirect.operation().matmul2this(tIABC);
-        // cartesian 其实也需要考虑计算误差带来的出边界的问题
-        final double tNorm = tIABC.asVecCol().operation().stat((norm, v) -> norm+Math.abs(v));
-        mDirect.operation().map2this(v -> Math.abs(v)<MathEX.Code.DBL_EPSILON*tNorm ? 0.0 : v);
-        return this;
+        mBox = new VaspBox(aX, aY, aZ);
     }
-    /** 调整模拟盒的 xyz 长度 */
-    public POSCAR setBoxXYZ(double aIX, double aIY, double aIZ) {
+    @Override protected void setBox_(double aAx, double aAy, double aAz, double aBx, double aBy, double aBz, double aCx, double aCy, double aCz) {
         if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
-        VaspBox oBox = mBox;
-        mBox = oBox.isPrism() ?
-            new VaspBoxPrism(aIX, oBox.iay(), oBox.iaz(), oBox.ibx(), aIY, oBox.ibz(), oBox.icx(), oBox.icy(), aIZ, oBox.scale()) :
-            new VaspBox(aIX, aIY, aIZ, oBox.scale());
-        // 如果是 direct 则不用转换数据
-        if (!mIsCartesian) return this;
-        // 现在必须要求 xyz 长度相同才可以跳过设置
-        if (MathEX.Code.numericEqual(oBox.iax(), aIX) && MathEX.Code.numericEqual(oBox.iby(), aIY) && MathEX.Code.numericEqual(oBox.icz(), aIZ)) return this;
-        // 否则将原子进行线性变换，这里绕过 scale 直接处理
-        if (oBox.isPrism()) {
-            mDirect.operation().matmul2this(oBox.inviabc());
-            // 由于后续存在处理，这里不处理计算误差带来的出边界的问题
-            // 手动转换回到 cartesian
-            IMatrix tIABC = mBox.iabc();
-            mDirect.operation().matmul2this(tIABC);
-            // cartesian 其实也需要考虑计算误差带来的出边界的问题
-            final double tNorm = tIABC.asVecCol().operation().stat((norm, v) -> norm+Math.abs(v));
-            mDirect.operation().map2this(v -> Math.abs(v)<MathEX.Code.DBL_EPSILON*tNorm ? 0.0 : v);
-        } else {
-            mDirect.col(0).div2this(oBox.iax());
-            mDirect.col(1).div2this(oBox.iby());
-            mDirect.col(2).div2this(oBox.icz());
-            // 手动转换回到 cartesian
-            mDirect.col(0).multiply2this(mBox.iax());
-            mDirect.col(1).multiply2this(mBox.iby());
-            mDirect.col(2).multiply2this(mBox.icz());
+        // 这里统一移除掉 scale 的数据，保证新的 box 合法性
+        if (mIsCartesian) {
+            mDirect.multiply2this(mBox.scale());
         }
-        return this;
+        mBox = new VaspBoxPrism(aAx, aAy, aAz, aBx, aBy, aBz, aCx, aCy, aCz);
+    }
+    @Override protected void scaleAtomPosition_(boolean aKeepAtomPosition, double aScale) {
+        if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+        // 对于 Cartesian 和 Direct 要分开讨论
+        if (mIsCartesian) {
+            if (aKeepAtomPosition) return;
+            mDirect.multiply2this(aScale);
+            return;
+        }
+        if (!aKeepAtomPosition) return;
+        mDirect.div2this(aScale);
+    }
+    @Override protected void validAtomPosition_(boolean aKeepAtomPosition, IBox aOldBox) {
+        if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
+        // 对于 Cartesian 和 Direct 要分开讨论
+        final int tAtomNum = atomNumber();
+        XYZ tBuf = new XYZ();
+        if (mIsCartesian) {
+            if (aKeepAtomPosition) return;
+            if (mBox.isPrism() || aOldBox.isPrism()) {
+                for (int i = 0; i < tAtomNum; ++i) {
+                    tBuf.setXYZ(mDirect.get(i, 0), mDirect.get(i, 1), mDirect.get(i, 2));
+                    // 这样转换两次即可实现线性变换
+                    aOldBox.toDirect(tBuf);
+                    mBox.toCartesian(tBuf);
+                    mDirect.set(i, 0, tBuf.mX);
+                    mDirect.set(i, 1, tBuf.mY);
+                    mDirect.set(i, 2, tBuf.mZ);
+                }
+            } else {
+                tBuf.setXYZ(mBox);
+                tBuf.div2this(aOldBox);
+                mDirect.col(0).multiply2this(tBuf.mX);
+                mDirect.col(1).multiply2this(tBuf.mY);
+                mDirect.col(2).multiply2this(tBuf.mZ);
+            }
+            return;
+        }
+        if (!aKeepAtomPosition) return;
+        if (mBox.isPrism() || aOldBox.isPrism()) {
+            for (int i = 0; i < tAtomNum; ++i) {
+                tBuf.setXYZ(mDirect.get(i, 0), mDirect.get(i, 1), mDirect.get(i, 2));
+                // 对于 Direct 需要这样反向变换
+                aOldBox.toCartesian(tBuf);
+                mBox.toDirect(tBuf);
+                mDirect.set(i, 0, tBuf.mX);
+                mDirect.set(i, 1, tBuf.mY);
+                mDirect.set(i, 2, tBuf.mZ);
+            }
+        } else {
+            tBuf.setXYZ(aOldBox);
+            tBuf.div2this(mBox);
+            mDirect.col(0).multiply2this(tBuf.mX);
+            mDirect.col(1).multiply2this(tBuf.mY);
+            mDirect.col(2).multiply2this(tBuf.mZ);
+        }
     }
     
-    /** 密度归一化 */
+    /**
+     * 密度归一化
+     * @return 返回自身来支持链式调用
+     */
+    @ApiStatus.Obsolete
     public POSCAR setDenseNormalized() {
         if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
         double tScale = MathEX.Fast.cbrt(volume() / atomNumber());

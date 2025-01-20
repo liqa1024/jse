@@ -14,6 +14,7 @@ import jse.math.vector.IntVector;
 import jse.math.vector.Vectors;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
@@ -154,82 +155,43 @@ public class Lmpdat extends AbstractSettableAtomData {
         return null;
     }
     
-    /**
-     * 修改模拟盒类型
-     * @return 返回自身来支持链式调用
-     */
-    public Lmpdat setBoxNormal() {
-        if (!isPrism()) return this;
-        LmpBox oBox = mBox;
-        mBox = new LmpBox(mBox);
-        // 如果原本的斜方模拟盒不存在斜方数据则直接返回
-        if (MathEX.Code.numericEqual(oBox.xy(), 0.0) && MathEX.Code.numericEqual(oBox.xz(), 0.0) && MathEX.Code.numericEqual(oBox.yz(), 0.0)) return this;
-        // 否则将原子进行线性变换
-        XYZ tBuf = new XYZ();
-        for (int i = 0; i < mAtomNum; ++i) {
-            ISettableAtom tAtom = atom(i);
-            tBuf.setXYZ(tAtom);
-            // 这样转换两次即可实现线性变换
-            oBox.toDirect(tBuf);
-            mBox.toCartesian(tBuf);
-            tAtom.setXYZ(tBuf);
-            // 如果存在速度，则速度也需要做一次这样的变换
-            if (mVelocities != null) {
-                tBuf.setXYZ(tAtom.vx(), tAtom.vy(), tAtom.vz());
-                oBox.toDirect(tBuf);
-                mBox.toCartesian(tBuf);
-                tAtom.setVxyz(tBuf);
-            }
+    @Override protected void setBox_(double aX, double aY, double aZ) {
+        // 这里统一移除掉 boxlo 的数据，保证新的 box 合法性
+        mAtomXYZ.col(XYZ_X_COL).minus2this(mBox.xlo());
+        mAtomXYZ.col(XYZ_Y_COL).minus2this(mBox.ylo());
+        mAtomXYZ.col(XYZ_Z_COL).minus2this(mBox.zlo());
+        mBox = new LmpBox(aX, aY, aZ);
+    }
+    @Override protected void setBox_(double aX, double aY, double aZ, double aXY, double aXZ, double aYZ) {
+        // 这里统一移除掉 boxlo 的数据，保证新的 box 合法性
+        mAtomXYZ.col(XYZ_X_COL).minus2this(mBox.xlo());
+        mAtomXYZ.col(XYZ_Y_COL).minus2this(mBox.ylo());
+        mAtomXYZ.col(XYZ_Z_COL).minus2this(mBox.zlo());
+        mBox = new LmpBoxPrism(aX, aY, aZ, aXY, aXZ, aYZ);
+    }
+    @Override protected void setBox_(double aAx, double aAy, double aAz, double aBx, double aBy, double aBz, double aCx, double aCy, double aCz) {
+        // 这里统一移除掉 boxlo 的数据，保证新的 box 合法性
+        mAtomXYZ.col(XYZ_X_COL).minus2this(mBox.xlo());
+        mAtomXYZ.col(XYZ_Y_COL).minus2this(mBox.ylo());
+        mAtomXYZ.col(XYZ_Z_COL).minus2this(mBox.zlo());
+        mBox = LmpBox.of(new XYZ(aAx, aAy, aAz), new XYZ(aBx, aBy, aBz), new XYZ(aCx, aCy, aCz));
+    }
+    @Override protected void scaleAtomPosition_(boolean aKeepAtomPosition, double aScale) {
+        if (aKeepAtomPosition) return;
+        mAtomXYZ.multiply2this(aScale);
+        if (mVelocities != null) {
+            mVelocities.multiply2this(aScale);
         }
-        return this;
     }
-    public Lmpdat setBoxPrism() {
-        if (isPrism()) return this;
-        return setBoxPrism(0.0, 0.0, 0.0);
-    }
-    public Lmpdat setBoxPrism(double aXY, double aXZ, double aYZ) {
-        LmpBox oBox = mBox;
-        mBox = new LmpBoxPrism(mBox, aXY, aXZ, aYZ);
-        // 现在必须要求三个倾斜因子相同才可以跳过设置
-        if (MathEX.Code.numericEqual(oBox.xy(), aXY) && MathEX.Code.numericEqual(oBox.xz(), aXZ) && MathEX.Code.numericEqual(oBox.yz(), aYZ)) return this;
-        // 否则将原子进行线性变换
+    @Override protected void validAtomPosition_(boolean aKeepAtomPosition, IBox aOldBox) {
+        if (aKeepAtomPosition) return;
+        final int tAtomNum = atomNumber();
         XYZ tBuf = new XYZ();
-        for (int i = 0; i < mAtomNum; ++i) {
-            ISettableAtom tAtom = atom(i);
-            tBuf.setXYZ(tAtom);
-            // 这样转换两次即可实现线性变换
-            oBox.toDirect(tBuf);
-            mBox.toCartesian(tBuf);
-            tAtom.setXYZ(tBuf);
-            // 如果存在速度，则速度也需要做一次这样的变换
-            if (mVelocities != null) {
-                tBuf.setXYZ(tAtom.vx(), tAtom.vy(), tAtom.vz());
-                oBox.toDirect(tBuf);
-                mBox.toCartesian(tBuf);
-                tAtom.setVxyz(tBuf);
-            }
-        }
-        return this;
-    }
-    /** 调整模拟盒的 xyz 长度 */
-    public Lmpdat setBoxXYZ(double aX, double aY, double aZ) {
-        LmpBox oBox = mBox;
-        mBox = oBox.isPrism() ?
-            new LmpBoxPrism(aX, aY, aZ, oBox.xy(), oBox.xz(), oBox.yz()) :
-            new LmpBox(aX, aY, aZ);
-        // 现在必须要求 xyz 长度相同才可以跳过设置，需要注意 lo 之类的也要为 0，这里通过比较 hi 也相等来实现，可以包含更多情况
-        if (MathEX.Code.numericEqual(oBox.x(), aX) && MathEX.Code.numericEqual(oBox.y(), aY) && MathEX.Code.numericEqual(oBox.z(), aZ)
-        && MathEX.Code.numericEqual(oBox.xhi(), aX) && MathEX.Code.numericEqual(oBox.yhi(), aY) && MathEX.Code.numericEqual(oBox.zhi(), aZ)) return this;
-        // 这里顺便也会移除掉 boxlo 的数据，因此不使用 atom 修改
-        mAtomXYZ.col(XYZ_X_COL).minus2this(oBox.xlo());
-        mAtomXYZ.col(XYZ_Y_COL).minus2this(oBox.ylo());
-        mAtomXYZ.col(XYZ_Z_COL).minus2this(oBox.zlo());
-        if (oBox.isPrism()) {
-            XYZ tBuf = new XYZ();
-            for (int i = 0; i < mAtomNum; ++i) {
+        if (mBox.isPrism() || aOldBox.isPrism()) {
+            for (int i = 0; i < tAtomNum; ++i) {
                 tBuf.setXYZ(mAtomXYZ.get(i, XYZ_X_COL), mAtomXYZ.get(i, XYZ_Y_COL), mAtomXYZ.get(i, XYZ_Z_COL));
                 // 这样转换两次即可实现线性变换
-                oBox.toDirect(tBuf);
+                aOldBox.toDirect(tBuf);
                 mBox.toCartesian(tBuf);
                 mAtomXYZ.set(i, XYZ_X_COL, tBuf.mX);
                 mAtomXYZ.set(i, XYZ_Y_COL, tBuf.mY);
@@ -237,7 +199,7 @@ public class Lmpdat extends AbstractSettableAtomData {
                 // 如果存在速度，则速度也需要做一次这样的变换
                 if (mVelocities != null) {
                     tBuf.setXYZ(mVelocities.get(i, STD_VX_COL), mVelocities.get(i, STD_VY_COL), mVelocities.get(i, STD_VZ_COL));
-                    oBox.toDirect(tBuf);
+                    aOldBox.toDirect(tBuf);
                     mBox.toCartesian(tBuf);
                     mVelocities.set(i, STD_VX_COL, tBuf.mX);
                     mVelocities.set(i, STD_VY_COL, tBuf.mY);
@@ -245,55 +207,29 @@ public class Lmpdat extends AbstractSettableAtomData {
                 }
             }
         } else {
-            mAtomXYZ.col(XYZ_X_COL).div2this(oBox.x());
-            mAtomXYZ.col(XYZ_Y_COL).div2this(oBox.y());
-            mAtomXYZ.col(XYZ_Z_COL).div2this(oBox.z());
-            mAtomXYZ.col(XYZ_X_COL).multiply2this(mBox.x());
-            mAtomXYZ.col(XYZ_Y_COL).multiply2this(mBox.y());
-            mAtomXYZ.col(XYZ_Z_COL).multiply2this(mBox.z());
+            tBuf.setXYZ(mBox);
+            tBuf.div2this(aOldBox);
+            mAtomXYZ.col(XYZ_X_COL).multiply2this(tBuf.mX);
+            mAtomXYZ.col(XYZ_Y_COL).multiply2this(tBuf.mY);
+            mAtomXYZ.col(XYZ_Z_COL).multiply2this(tBuf.mZ);
+            // 如果存在速度，则速度也需要做一次这样的变换
+            if (mVelocities != null) {
+                mVelocities.col(STD_VX_COL).multiply2this(tBuf.mX);
+                mVelocities.col(STD_VY_COL).multiply2this(tBuf.mY);
+                mVelocities.col(STD_VZ_COL).multiply2this(tBuf.mZ);
+            }
         }
-        return this;
-    }
-    /** 设置缩放 */
-    public Lmpdat setBoxScale(double aScale) {
-        // 从逻辑上考虑，这里不对原本数据做值拷贝，
-        // 即使是斜方的也可以直接像这样进行缩放，
-        // 这里顺便也会移除掉 boxlo 的数据，因此不使用 atom 修改
-        IVector
-        tCol = mAtomXYZ.col(XYZ_X_COL);
-        tCol.minus2this(mBox.xlo());
-        tCol.multiply2this(aScale);
-        tCol = mAtomXYZ.col(XYZ_Y_COL);
-        tCol.minus2this(mBox.ylo());
-        tCol.multiply2this(aScale);
-        tCol = mAtomXYZ.col(XYZ_Z_COL);
-        tCol.minus2this(mBox.zlo());
-        tCol.multiply2this(aScale);
-        if (mVelocities != null) {
-        tCol = mVelocities.col(STD_VX_COL);
-        tCol.multiply2this(aScale);
-        tCol = mVelocities.col(STD_VY_COL);
-        tCol.multiply2this(aScale);
-        tCol = mVelocities.col(STD_VZ_COL);
-        tCol.multiply2this(aScale);
-        }
-        
-        // box 还是会重新创建，因为 box 的值这里约定是严格的常量，可以避免一些问题
-        mBox = isPrism() ?
-            new LmpBoxPrism(mBox.x()*aScale, mBox.y()*aScale, mBox.z()*aScale, mBox.xy()*aScale, mBox.xz()*aScale, mBox.yz()*aScale) :
-            new LmpBox(mBox.x()*aScale, mBox.y()*aScale, mBox.z()*aScale);
-        
-        return this;
     }
     
     /**
      * 密度归一化
      * @return 返回自身来支持链式调用
      */
+    @ApiStatus.Obsolete
     public Lmpdat setDenseNormalized() {
         double tScale = MathEX.Fast.cbrt(volume() / mAtomNum);
         tScale = 1.0 / tScale;
-        return setBoxScale(tScale);
+        return (Lmpdat)setBoxScale(tScale);
     }
     
     
