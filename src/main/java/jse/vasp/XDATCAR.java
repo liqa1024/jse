@@ -2,10 +2,7 @@ package jse.vasp;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-import jse.atom.IAtom;
-import jse.atom.IAtomData;
-import jse.atom.IBox;
-import jse.atom.XYZ;
+import jse.atom.*;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 import jse.code.collection.AbstractListWrapper;
@@ -195,6 +192,91 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     @VisibleForTesting public final int natoms() {return atomNumber();}
     @VisibleForTesting public final int ntypes() {return atomTypeNumber();}
     
+    /** XDATCAR 提供简单的修改模拟盒支持 */
+    public XDATCAR setBox(double aX, double aY, double aZ) {return setBox(false, aX, aY, aZ);}
+    public XDATCAR setBox(boolean aKeepAtomPosition, double aX, double aY, double aZ) {
+        // 这里统一移除掉 scale 的数据，保证新的 box 合法性
+        if (mIsCartesian) {
+            for (IMatrix tDirect : mList) tDirect.multiply2this(mBox.scale());
+        }
+        IBox oBox = mBox;
+        mBox = new VaspBox(aX, aY, aZ);
+        validAtomPosition_(aKeepAtomPosition, oBox);
+        return this;
+    }
+    public XDATCAR setBox(IXYZ aA, IXYZ aB, IXYZ aC) {return setBox(false, aA, aB, aC);}
+    public XDATCAR setBox(boolean aKeepAtomPosition, IXYZ aA, IXYZ aB, IXYZ aC) {
+        return setBox(aKeepAtomPosition,
+                      aA.x(), aA.y(), aA.z(),
+                      aB.x(), aB.y(), aB.z(),
+                      aC.x(), aC.y(), aC.z());
+    }
+    public XDATCAR setBox(double aX, double aY, double aZ, double aXY, double aXZ, double aYZ) {return setBox(false, aX, aY, aZ, aXY, aXZ, aYZ);}
+    public XDATCAR setBox(boolean aKeepAtomPosition, double aX, double aY, double aZ, double aXY, double aXZ, double aYZ) {
+        return setBox(aKeepAtomPosition,
+                      aX, 0.0, 0.0,
+                      aXY, aY, 0.0,
+                      aXZ, aYZ, aZ);
+    }
+    public XDATCAR setBox(double aAx, double aAy, double aAz, double aBx, double aBy, double aBz, double aCx, double aCy, double aCz) {return setBox(false, aAx, aAy, aAz, aBx, aBy, aBz, aCx, aCy, aCz);}
+    public XDATCAR setBox(boolean aKeepAtomPosition, double aAx, double aAy, double aAz, double aBx, double aBy, double aBz, double aCx, double aCy, double aCz) {
+        // 这里统一移除掉 scale 的数据，保证新的 box 合法性
+        if (mIsCartesian) {
+            for (IMatrix tDirect : mList) tDirect.multiply2this(mBox.scale());
+        }
+        IBox oBox = mBox;
+        mBox = new VaspBoxPrism(aAx, aAy, aAz, aBx, aBy, aBz, aCx, aCy, aCz);
+        validAtomPosition_(aKeepAtomPosition, oBox);
+        return this;
+    }
+    private void validAtomPosition_(boolean aKeepAtomPosition, IBox aOldBox) {
+        // 对于 Cartesian 和 Direct 要分开讨论
+        final int tAtomNum = atomNumber();
+        XYZ tBuf = new XYZ();
+        if (mIsCartesian) {
+            if (aKeepAtomPosition) return;
+            if (mBox.isPrism() || aOldBox.isPrism()) {
+                for (IMatrix tDirect : mList) for (int i = 0; i < tAtomNum; ++i) {
+                    tBuf.setXYZ(tDirect.get(i, 0), tDirect.get(i, 1), tDirect.get(i, 2));
+                    // 这样转换两次即可实现线性变换
+                    aOldBox.toDirect(tBuf);
+                    mBox.toCartesian(tBuf);
+                    tDirect.set(i, 0, tBuf.mX);
+                    tDirect.set(i, 1, tBuf.mY);
+                    tDirect.set(i, 2, tBuf.mZ);
+                }
+            } else {
+                tBuf.setXYZ(mBox);
+                tBuf.div2this(aOldBox);
+                for (IMatrix tDirect : mList) {
+                    tDirect.col(0).multiply2this(tBuf.mX);
+                    tDirect.col(1).multiply2this(tBuf.mY);
+                    tDirect.col(2).multiply2this(tBuf.mZ);
+                }
+            }
+            return;
+        }
+        if (!aKeepAtomPosition) return;
+        if (mBox.isPrism() || aOldBox.isPrism()) {
+            for (IMatrix tDirect : mList) for (int i = 0; i < tAtomNum; ++i) {
+                tBuf.setXYZ(tDirect.get(i, 0), tDirect.get(i, 1), tDirect.get(i, 2));
+                // 对于 Direct 需要这样反向变换
+                aOldBox.toCartesian(tBuf);
+                mBox.toDirect(tBuf);
+                tDirect.set(i, 0, tBuf.mX);
+                tDirect.set(i, 1, tBuf.mY);
+                tDirect.set(i, 2, tBuf.mZ);
+            }
+        } else {
+            tBuf.setXYZ(aOldBox);
+            tBuf.div2this(mBox);
+            for (IMatrix tDirect : mList) {
+                tDirect.col(0).multiply2this(tBuf.mX);
+                tDirect.col(1).multiply2this(tBuf.mY);
+                tDirect.col(2).multiply2this(tBuf.mZ);
+            }
+        }
+    }
     
     /** 支持直接修改 TypeNames，只会增大种类数，不会减少 */
     public XDATCAR setSymbols(String... aTypeNames) {
@@ -262,14 +344,16 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     public XDATCAR setCartesian() {
         if (mIsCartesian) return this;
         // 这里绕过 scale 直接处理
-        for (IMatrix tDirect : mList) {
-            if (isPrism()) {
-                IMatrix tIABC = mBox.iabc();
+        if (isPrism()) {
+            IMatrix tIABC = mBox.iabc();
+            for (IMatrix tDirect : mList) {
                 tDirect.operation().matmul2this(tIABC);
                 // cartesian 其实也需要考虑计算误差带来的出边界的问题（当然此时在另一端的就不好修复了）
                 final double tNorm = tIABC.asVecCol().operation().stat((norm, v) -> norm+Math.abs(v));
                 tDirect.operation().map2this(v -> Math.abs(v)<MathEX.Code.DBL_EPSILON*tNorm ? 0.0 : v);
-            } else {
+            }
+        } else {
+            for (IMatrix tDirect : mList) {
                 tDirect.col(0).multiply2this(mBox.iax());
                 tDirect.col(1).multiply2this(mBox.iby());
                 tDirect.col(2).multiply2this(mBox.icz());
@@ -281,9 +365,9 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     public XDATCAR setDirect() {
         if (!mIsCartesian) return this;
         // 这里绕过 scale 直接处理
-        IMatrix tInvIABC = mBox.inviabc();
-        for (IMatrix tDirect : mList) {
-            if (isPrism()) {
+        if (isPrism()) {
+            IMatrix tInvIABC = mBox.inviabc();
+            for (IMatrix tDirect : mList) {
                 tDirect.operation().matmul2this(tInvIABC);
                 // direct 需要考虑计算误差带来的出边界的问题，现在支持自动靠近所有整数值
                 tDirect.operation().map2this(v -> {
@@ -292,7 +376,9 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
                     if (MathEX.Code.numericEqual(v, tIntV)) return tIntV;
                     return v;
                 });
-            } else {
+            }
+        } else {
+            for (IMatrix tDirect : mList) {
                 tDirect.col(0).div2this(mBox.iax());
                 tDirect.col(1).div2this(mBox.iby());
                 tDirect.col(2).div2this(mBox.icz());
