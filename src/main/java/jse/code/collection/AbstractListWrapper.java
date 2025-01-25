@@ -1,10 +1,8 @@
 package jse.code.collection;
 
-import groovy.lang.Closure;
 import groovy.lang.EmptyRange;
 import groovy.lang.Range;
-import groovy.transform.stc.ClosureParams;
-import groovy.transform.stc.FirstParam;
+import jse.code.functional.IUnaryFullOperator;
 import org.codehaus.groovy.runtime.DefaultGroovyMethods;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -60,7 +58,7 @@ public abstract class AbstractListWrapper<R, T, E> {
     @VisibleForTesting @SuppressWarnings("rawtypes") public final List<R> getAt(EmptyRange aRange) {return DefaultGroovyMethods.getAt(asList(), aRange);}
     @VisibleForTesting @SuppressWarnings("rawtypes") public final List<R> getAt(Collection aIndices) {return DefaultGroovyMethods.getAt(asList(), aIndices);}
     @VisibleForTesting public final List<R> collect() {return NewCollections.map(mList, this::toOutput_);}
-    @VisibleForTesting public final <RR> List<RR> collect(final @ClosureParams(FirstParam.FirstGenericType.class) Closure<RR> aTransform) {return NewCollections.map(mList, v -> aTransform.call(toOutput_(v)));}
+    @VisibleForTesting public final <RR> List<RR> collect(final IUnaryFullOperator<RR, R> aTransform) {return NewCollections.map(mList, v -> aTransform.apply(toOutput_(v)));}
     @VisibleForTesting public AbstractListWrapper<R, T, E> leftShift(T aValue) {return append(aValue);}
     @VisibleForTesting public AbstractListWrapper<R, T, E> leftShift(Collection<? extends T> aList) {return appendAll(aList);}
 }
