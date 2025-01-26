@@ -9,6 +9,7 @@ import jse.atom.*;
 import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
 import jse.clib.*;
+import jse.code.CS;
 import jse.code.OS;
 import jse.code.SP;
 import jse.code.UT;
@@ -20,6 +21,7 @@ import jse.math.vector.*;
 import jse.math.vector.Vector;
 import jse.parallel.IAutoShutdown;
 import jsex.nnap.basis.IBasis;
+import jsex.nnap.basis.Mirror;
 import jsex.nnap.basis.SphericalChebyshev;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.*;
@@ -30,7 +32,6 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntUnaryOperator;
 
-import static jse.code.CS.VERSION;
 import static jse.code.OS.JAR_DIR;
 
 /**
@@ -82,8 +83,9 @@ public class NNAP implements IAutoShutdown {
         public static @Nullable String REDIRECT_NNAP_LIB = OS.env("JSE_REDIRECT_NNAP_LIB");
     }
     
-    private final static String LIB_DIR = JAR_DIR+"nnap/" + UT.Code.uniqueID(VERSION, Torch.HOME, Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
-    private final static String LIB_PATH;
+    public final static int VERSION = 2;
+    public final static String LIB_DIR = JAR_DIR+"nnap/" + UT.Code.uniqueID(CS.VERSION, VERSION, Torch.HOME, Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+    public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
           "jsex_nnap_NNAP.cpp"
         , "jsex_nnap_NNAP.h"
@@ -120,9 +122,75 @@ public class NNAP implements IAutoShutdown {
     /** 中间缓存批次数量，一次传入多个批次进入神经网络可以大大提高效率 */
     public final static int BATCH_SIZE = 64;
     
+    @SuppressWarnings("unchecked")
+    private @Nullable SingleNNAP initSingleNNAPFrom(int aType, Map<String, ?> aModelInfo) throws TorchException {
+        Map<String, ?> tBasis = (Map<String, ?>)aModelInfo.get("basis");
+        if (tBasis == null) {
+            tBasis = Maps.of(
+                "type", "spherical_chebyshev",
+                "nmax", SphericalChebyshev.DEFAULT_NMAX,
+                "lmax", SphericalChebyshev.DEFAULT_LMAX,
+                "rcut", SphericalChebyshev.DEFAULT_RCUT
+            );
+        }
+        Object tBasisType = tBasis.get("type");
+        if (tBasisType == null) {
+            tBasisType = "spherical_chebyshev";
+        }
+        if (tBasisType.equals("mirror")) return null; // mirror 情况延迟初始化
+        if (!tBasisType.equals("spherical_chebyshev")) throw new IllegalArgumentException("Unsupported basis type: " + tBasisType);
+        IBasis[] aBasis = new IBasis[mThreadNumber];
+        for (int i = 0; i < mThreadNumber; ++i) {
+            //noinspection resource
+            aBasis[i] = SphericalChebyshev.load(mSymbols, tBasis);
+        }
+        
+        Number tRefEng = (Number)aModelInfo.get("ref_eng");
+        if (tRefEng == null) throw new IllegalArgumentException("No ref_eng in ModelInfo");
+        double aRefEng = tRefEng.doubleValue();
+        List<? extends Number> tNormVec = (List<? extends Number>)aModelInfo.get("norm_vec");
+        if (tNormVec == null) throw new IllegalArgumentException("No norm_vec in ModelInfo");
+        IVector aNormVec = Vectors.from(tNormVec);
+        
+        Object tModel = aModelInfo.get("torch");
+        if (tModel == null) throw new IllegalArgumentException("No torch data in ModelInfo");
+        String aModel = tModel.toString();
+        return new SingleNNAP(aRefEng, aNormVec, aBasis, aModel);
+    }
+    @SuppressWarnings("unchecked")
+    private @Nullable SingleNNAP postInitSingleNNAPFrom(int aType, Map<String, ?> aModelInfo) throws TorchException {
+        Map<String, ?> tBasis = (Map<String, ?>)aModelInfo.get("basis");
+        if (tBasis == null) return null;
+        Object tBasisType = tBasis.get("type");
+        // 目前只考虑 mirror 的情况
+        if (!tBasisType.equals("mirror")) return null;
+        Object tMirror = tBasis.get("mirror");
+        if (tMirror == null) throw new IllegalArgumentException("Key `mirror` required for basis mirror");
+        int tMirrorType = ((Number)tMirror).intValue();
+        IBasis[] aBasis = new IBasis[mThreadNumber];
+        for (int i = 0; i < mThreadNumber; ++i) {
+            aBasis[i] = new Mirror(model(tMirrorType).basis(i), tMirrorType, aType);
+        }
+        // mirror 会强制这些额外值缺省
+        Number tRefEng = (Number)aModelInfo.get("ref_eng");
+        if (tRefEng != null) throw new IllegalArgumentException("ref_eng in mirror ModelInfo MUST be empty");
+        double aRefEng = model(tMirrorType).refEng();
+        
+        List<? extends Number> tNormVec = (List<? extends Number>)aModelInfo.get("norm_vec");
+        if (tNormVec != null) throw new IllegalArgumentException("norm_vec in mirror ModelInfo MUST be empty");
+        IVector aNormVec = model(tMirrorType).normVec();
+        
+        Object tModel = aModelInfo.get("torch");
+        if (tModel != null) throw new IllegalArgumentException("torch data in mirror ModelInfo MUST be empty");
+        String aModel = model(tMirrorType).mModel;
+        
+        return new SingleNNAP(aRefEng, aNormVec, aBasis, aModel);
+    }
+    
     @SuppressWarnings("SameParameterValue")
     public class SingleNNAP {
         private final NNAPModelPointers mModelPtrs;
+        private final String mModel;
         private final double mRefEng;
         private final IVector mNormVec;
         private final IBasis[] mBasis;
@@ -133,37 +201,13 @@ public class NNAP implements IAutoShutdown {
         public IBasis basis(int aThreadID) {return mBasis[aThreadID];}
         
         @SuppressWarnings("unchecked")
-        private SingleNNAP(Map<String, ?> aModelInfo) throws TorchException {
-            Number tRefEng = (Number)aModelInfo.get("ref_eng");
-            if (tRefEng == null) throw new IllegalArgumentException("No ref_eng in ModelInfo");
-            mRefEng = tRefEng.doubleValue();
-            List<? extends Number> tNormVec = (List<? extends Number>)aModelInfo.get("norm_vec");
-            if (tNormVec == null) throw new IllegalArgumentException("No norm_vec in ModelInfo");
-            mNormVec = Vectors.from(tNormVec);
-            
-            Map<String, ?> tBasis = (Map<String, ?>)aModelInfo.get("basis");
-            if (tBasis == null) {
-                tBasis = Maps.of(
-                    "type", "spherical_chebyshev",
-                    "nmax", SphericalChebyshev.DEFAULT_NMAX,
-                    "lmax", SphericalChebyshev.DEFAULT_LMAX,
-                    "rcut", SphericalChebyshev.DEFAULT_RCUT
-                );
-            }
-            Object tBasisType = tBasis.get("type");
-            if (tBasisType == null) {
-                tBasisType = "spherical_chebyshev";
-            }
-            if (!tBasisType.equals("spherical_chebyshev")) throw new IllegalArgumentException("Unsupported basis type: " + tBasisType);
-            mBasis = new IBasis[mThreadNumber];
-            for (int i = 0; i < mThreadNumber; ++i) {
-                //noinspection resource
-                mBasis[i] = SphericalChebyshev.load(mSymbols, tBasis);
-            }
+        private SingleNNAP(double aRefEng, IVector aNormVec, IBasis[] aBasis, String aModel) throws TorchException {
+            mRefEng = aRefEng;
+            mNormVec = aNormVec;
+            mBasis = aBasis;
             mBasisSize = mBasis[0].rowNumber()*mBasis[0].columnNumber();
-            Object tModel = aModelInfo.get("torch");
-            if (tModel == null) throw new IllegalArgumentException("No torch data in ModelInfo");
-            byte[] tModelBytes = Base64.getDecoder().decode(tModel.toString());
+            mModel = aModel;
+            byte[] tModelBytes = Base64.getDecoder().decode(aModel);
             long[] rModelPtrs = new long[mThreadNumber];
             for (int i = 0; i < mThreadNumber; ++i) {
                 long tModelPtr = load1(tModelBytes, tModelBytes.length);
@@ -337,21 +381,28 @@ public class NNAP implements IAutoShutdown {
         Number tVersion = (Number)aModelInfo.get("version");
         if (tVersion != null) {
             int tVersionValue = tVersion.intValue();
-            if (tVersionValue != 1) throw new IllegalArgumentException("Unsupported version: " + tVersionValue);
+            if (tVersionValue > VERSION) throw new IllegalArgumentException("Unsupported version: " + tVersionValue);
         }
         mUnits = UT.Code.toString(aModelInfo.get("units"));
         List<? extends Map<String, ?>> tModelInfos = (List<? extends Map<String, ?>>)aModelInfo.get("models");
         if (tModelInfos == null) throw new IllegalArgumentException("No models in ModelInfo");
         int tModelSize = tModelInfos.size();
         mSymbols = new String[tModelSize];
-        for (int i = 0; i < tModelSize; i++) {
+        for (int i = 0; i < tModelSize; ++i) {
             Object tSymbol = tModelInfos.get(i).get("symbol");
             if (tSymbol == null) throw new IllegalArgumentException("No symbol in ModelInfo");
             mSymbols[i] = tSymbol.toString();
         }
         mModels = new ArrayList<>(tModelSize);
-        for (Map<String, ?> tModelInfo : tModelInfos) {
-            mModels.add(new SingleNNAP(tModelInfo));
+        for (int i = 0; i < tModelSize; ++i) {
+            mModels.add(initSingleNNAPFrom(i+1, tModelInfos.get(i)));
+        }
+        for (int i = 0; i < tModelSize; ++i) {
+            SingleNNAP tModel = postInitSingleNNAPFrom(i+1, tModelInfos.get(i));
+            if (tModel != null) mModels.set(i, tModel);
+        }
+        for (int i = 0; i < tModelSize; ++i) {
+            if (mModels.get(i) == null) throw new IllegalArgumentException("Model init fail for type "+(i+1));
         }
     }
     public NNAP(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws TorchException, IOException {

@@ -8,6 +8,7 @@ import jse.atom.AtomicParameterCalculator;
 import jse.cache.IntMatrixCache;
 import jse.cache.IntVectorCache;
 import jse.cache.MatrixCache;
+import jse.cache.VectorCache;
 import jse.code.SP;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
@@ -15,6 +16,7 @@ import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.code.collection.NewCollections;
 import jse.io.ISavable;
+import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.RowIntMatrix;
 import jse.math.matrix.RowMatrix;
@@ -22,6 +24,7 @@ import jse.math.vector.*;
 import jse.math.vector.Vector;
 import jse.parallel.IAutoShutdown;
 import jsex.nnap.basis.IBasis;
+import jsex.nnap.basis.Mirror;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -41,7 +44,6 @@ import java.util.function.IntUnaryOperator;
 @ApiStatus.Experimental
 public class Trainer implements IAutoShutdown, ISavable {
     
-    protected final static int VERSION = 1;
     protected final static String DEFAULT_UNITS = "metal";
     protected final static int[] DEFAULT_HIDDEN_DIMS = {20, 20};
     protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
@@ -77,6 +79,7 @@ public class Trainer implements IAutoShutdown, ISavable {
         , VAL_TEST_DATA                     = "__NNAP_TRAINER_test_data__"
         , VAL_DATA_J                        = "__NNAP_TRAINER_data_J__"
         , VAL_NTYPES                        = "__NNAP_TRAINER_ntypes__"
+        , VAL_MIRROR_MAP                    = "__NNAP_TRAINER_mirror_map__"
         , VAL_HIDDEN_DIMS                   = "__NNAP_TRAINER_hidden_dims__"
         , VAL_INPUT_DIMS                    = "__NNAP_TRAINER_input_dims__"
         , VAL_SUB_NORM_VEC                  = "__NNAP_TRAINER_sub_norm_vec__"
@@ -133,11 +136,13 @@ public class Trainer implements IAutoShutdown, ISavable {
         /** 创建获取总能量的模型的类，一般情况不需要重写 */
         public static String TOTAL_MODEL_SCRIPT =
             "class "+CLASS_TOTAL_MODEL+"(torch.nn.Module):\n" +
-            "    def __init__(self, input_dims, hidden_dims, ntypes):\n" +
+            "    def __init__(self, input_dims, hidden_dims, mirror_map, ntypes):\n" +
             "        super().__init__()\n" +
             "        self.input_dims = input_dims\n" +
             "        self.ntypes = ntypes\n" +
-            "        self.sub_models = torch.nn.ModuleList(["+CLASS_SINGLE_MODEL+"(input_dims[i], hidden_dims[i]) for i in range(ntypes)])\n" +
+            "        self.sub_models = torch.nn.ModuleList([(None if i in mirror_map else "+CLASS_SINGLE_MODEL+"(input_dims[i], hidden_dims[i])) for i in range(ntypes)])\n" +
+            "        for k, v in mirror_map.items():\n" +
+            "             self.sub_models[k] = self.sub_models[v]\n" +
             "    \n" +
             "    def forward(self, x):\n" +
             "        return [self.sub_models[i](x[i]) for i in range(self.ntypes)]\n" +
@@ -552,6 +557,21 @@ public class Trainer implements IAutoShutdown, ISavable {
         mTrainData = new DataSet();
         mTestData = new DataSet();
         mModelSetting = aModelSetting;
+        // 简单遍历 basis 处理 mirror 的情况
+        for (int i = 0; i < mSymbols.length; ++i) if (mBasis[i] instanceof Mirror) {
+            Mirror tBasis = (Mirror)mBasis[i];
+            IBasis tMirrorBasis = tBasis.mirrorBasis();
+            int tMirrorType = tBasis.mirrorType();
+            if ((mBasis[tMirrorType-1]!=tMirrorBasis) || (tBasis.thisType()!=(i+1))) {
+                throw new IllegalArgumentException("Mirror Basis mismatch for type: "+(i+1));
+            }
+            double oRefEng = mRefEngs.get(i);
+            double tRefEng = mRefEngs.get(tMirrorType-1);
+            if (!Double.isNaN(oRefEng) && !MathEX.Code.numericEqual(oRefEng, tRefEng)) {
+                UT.Code.warning("RefEng of mirror mismatch for type: "+(i+1)+", overwrite with mirror values automatically");
+            }
+            mRefEngs.set(i, tRefEng);
+        }
     }
     public Trainer(String[] aSymbols, IVector aRefEngs, IBasis aBasis, Map<String, ?> aModelSetting) {this(aSymbols, aRefEngs, repeatBasis_(aBasis, aSymbols.length), aModelSetting);}
     public Trainer(String[] aSymbols, double[] aRefEngs, IBasis[] aBasis, Map<String, ?> aModelSetting) {this(aSymbols, Vectors.from(aRefEngs), aBasis, aModelSetting);}
@@ -586,11 +606,22 @@ public class Trainer implements IAutoShutdown, ISavable {
             final List<?> tSubDims = tHiddenDims;
             tHiddenDims = NewCollections.from(mSymbols.length, i -> tSubDims);
         }
+        Map<Integer, Integer> tMirrorMap = new HashMap<>();
+        for (int i = 0; i < mSymbols.length; ++i) if (mBasis[i] instanceof Mirror) {
+            int tMirror = ((Mirror)mBasis[i]).mirrorType()-1;
+            tMirrorMap.put(i, tMirror);
+            Object oSubDims = tHiddenDims.get(i);
+            Object tSubDims = tHiddenDims.get(tMirror);
+            if (oSubDims!=null && !oSubDims.equals(tSubDims)) {
+                UT.Code.warning("hidden_dims of mirror mismatch for type: "+(i+1)+", overwrite with mirror values automatically");
+            }
+        }
         SP.Python.setValue(VAL_INPUT_DIMS, NewCollections.map(mBasis, base -> base.rowNumber()*base.columnNumber()));
         SP.Python.setValue(VAL_HIDDEN_DIMS, tHiddenDims);
+        SP.Python.setValue(VAL_MIRROR_MAP, tMirrorMap);
         SP.Python.setValue(VAL_NTYPES, mSymbols.length);
         try {
-            SP.Python.exec(VAL_MODEL+" = "+CLASS_TOTAL_MODEL+"("+VAL_INPUT_DIMS+", "+VAL_HIDDEN_DIMS+", ntypes="+VAL_NTYPES+")");
+            SP.Python.exec(VAL_MODEL+" = "+CLASS_TOTAL_MODEL+"("+VAL_INPUT_DIMS+", "+VAL_HIDDEN_DIMS+", "+VAL_MIRROR_MAP+", ntypes="+VAL_NTYPES+")");
             if (!mTrainInFloat) SP.Python.exec(VAL_MODEL+" = "+VAL_MODEL+".double()");
         } finally {
             SP.Python.removeValue(VAL_NTYPES);
@@ -606,10 +637,25 @@ public class Trainer implements IAutoShutdown, ISavable {
     protected void initNormVec() {
         for (int i = 0; i < mSymbols.length; ++i) {
             mNormVec[i].fill(0.0);
-            for (IVector tRow : mTrainData.mFpMat[i].rows()) {
-                mNormVec[i].operation().operate2this(tRow, (lhs, rhs) -> lhs + Math.abs(rhs));
+        }
+        IVector tDiv = VectorCache.getZeros(mSymbols.length);
+        for (int i = 0; i < mSymbols.length; ++i) {
+            // 这里需要考虑 mirror 的情况，对于 mirror 的同时和对应的数据一起公用归一化向量
+            int j = i;
+            if (mBasis[i] instanceof Mirror) {
+                j = ((Mirror)mBasis[i]).mirrorType()-1;
             }
-            mNormVec[i].div2this(mTrainData.mFpMat[i].rowNumber());
+            for (IVector tRow : mTrainData.mFpMat[i].rows()) {
+                mNormVec[j].operation().operate2this(tRow, (lhs, rhs) -> lhs + Math.abs(rhs));
+            }
+            tDiv.add(j, mTrainData.mFpMat[i].rowNumber());
+        }
+        for (int i = 0; i < mSymbols.length; ++i) if (!(mBasis[i] instanceof Mirror)) {
+            mNormVec[i].div2this(tDiv.get(i));
+        }
+        VectorCache.returnVec(tDiv);
+        for (int i = 0; i < mSymbols.length; ++i) if (mBasis[i] instanceof Mirror) {
+            mNormVec[i] = mNormVec[((Mirror)mBasis[i]).mirrorType()-1];
         }
     }
     @ApiStatus.Internal
@@ -982,6 +1028,13 @@ public class Trainer implements IAutoShutdown, ISavable {
         for (int i = 0; i < mSymbols.length; ++i) {
             Map rBasis = new LinkedHashMap();
             mBasis[i].save(rBasis);
+            if (mBasis[i] instanceof Mirror) {
+                rModels.add(Maps.of(
+                    "symbol", mSymbols[i],
+                    "basis", rBasis
+                ));
+                continue;
+            }
             byte[] tModelByes = (byte[])SP.Python.invoke(FN_MODEL2BYTES, i);
             rModels.add(Maps.of(
                 "symbol", mSymbols[i],
@@ -991,7 +1044,7 @@ public class Trainer implements IAutoShutdown, ISavable {
                 "torch", Base64.getEncoder().encodeToString(tModelByes)
             ));
         }
-        rSaveTo.put("version", VERSION);
+        rSaveTo.put("version", NNAP.VERSION);
         rSaveTo.put("units", mUnits);
         rSaveTo.put("models", rModels);
     }
