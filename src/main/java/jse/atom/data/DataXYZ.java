@@ -944,10 +944,11 @@ public class DataXYZ extends AbstractSettableAtomData {
             if (tHasQuote) {
                 ++tValueBegin;
                 tValueEnd = aComment.indexOf('"', tValueBegin);
+                if (tValueEnd < 0) return false;
             } else {
                 tValueEnd = UT.Text.findBlankIndex(aComment, tValueBegin);
+                if (tValueEnd < 0) tValueEnd = tLen;
             }
-            if (tValueEnd < 0) return false;
             Object tValue = aComment.substring(tValueBegin, tValueEnd);
             if (!tHasQuote) {
                 if (tValue.equals("T")) {
