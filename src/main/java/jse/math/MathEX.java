@@ -1154,21 +1154,21 @@ public class MathEX {
             double tNorm = Math.abs(aLHS) + Math.abs(aRHS);
             if (tNorm < Double.MIN_NORMAL * EPS_MUL) return true; // 两个值都为零的情况，比这个值更小时乘以 epsilon() 会失效
             double tDiff = Math.abs(aLHS - aRHS);
-            return tDiff <= tNorm * DBL_EPSILON * EPS_MUL;
+            return tDiff <= tNorm * DBL_EPSILON;
         }
         public static boolean numericGreater(double aLHS, double aRHS) {
             double tNorm = Math.abs(aLHS) + Math.abs(aRHS);
             if (tNorm < Double.MIN_NORMAL * EPS_MUL) return false; // 两个值都为零的情况，比这个值更小时乘以 epsilon() 会失效
-            return aLHS - aRHS > tNorm * DBL_EPSILON * EPS_MUL;
+            return aLHS - aRHS > tNorm * DBL_EPSILON;
         }
         public static boolean numericLess(double aLHS, double aRHS) {
             double tNorm = Math.abs(aLHS) + Math.abs(aRHS);
             if (tNorm < Double.MIN_NORMAL * EPS_MUL) return false; // 两个值都为零的情况，比这个值更小时乘以 epsilon() 会失效
-            return aRHS - aLHS > tNorm * DBL_EPSILON * EPS_MUL;
+            return aRHS - aLHS > tNorm * DBL_EPSILON;
         }
         public final static int EPS_MUL = 8;
         /** {@link FastMath} will has lower accuracy */
-        public final static double DBL_EPSILON = 1.0e-12;
+        public final static double DBL_EPSILON = 1.0e-10;
         
         
         /** Translates Amount of aUnit1 to Amount of aUnit2. */

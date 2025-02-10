@@ -348,9 +348,6 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
             IMatrix tIABC = mBox.iabc();
             for (IMatrix tDirect : mList) {
                 tDirect.operation().matmul2this(tIABC);
-                // cartesian 其实也需要考虑计算误差带来的出边界的问题（当然此时在另一端的就不好修复了）
-                final double tNorm = tIABC.asVecCol().operation().stat((norm, v) -> norm+Math.abs(v));
-                tDirect.operation().map2this(v -> Math.abs(v)<MathEX.Code.DBL_EPSILON*tNorm ? 0.0 : v);
             }
         } else {
             for (IMatrix tDirect : mList) {
@@ -373,7 +370,7 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
                 tDirect.operation().map2this(v -> {
                     if (Math.abs(v) < MathEX.Code.DBL_EPSILON) return 0.0;
                     int tIntV = MathEX.Code.round2int(v);
-                    if (MathEX.Code.numericEqual(v, tIntV)) return tIntV;
+                    if (tIntV!=0 && MathEX.Code.numericEqual(v, tIntV)) return tIntV;
                     return v;
                 });
             }

@@ -195,9 +195,6 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         if (isPrism()) {
             IMatrix tIABC = mBox.iabc();
             mDirect.operation().matmul2this(tIABC);
-            // cartesian 其实也需要考虑计算误差带来的出边界的问题（当然此时在另一端的就不好修复了）
-            final double tNorm = tIABC.asVecCol().operation().stat((norm, v) -> norm+Math.abs(v));
-            mDirect.operation().map2this(v -> Math.abs(v)<MathEX.Code.DBL_EPSILON*tNorm ? 0.0 : v);
         } else {
             mDirect.col(0).multiply2this(mBox.iax());
             mDirect.col(1).multiply2this(mBox.iby());
@@ -221,7 +218,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         mDirect.operation().map2this(v -> {
             if (Math.abs(v) < MathEX.Code.DBL_EPSILON) return 0.0;
             int tIntV = MathEX.Code.round2int(v);
-            if (MathEX.Code.numericEqual(v, tIntV)) return tIntV;
+            if (tIntV!=0 && MathEX.Code.numericEqual(v, tIntV)) return tIntV;
             return v;
         });
         mIsCartesian = false;
