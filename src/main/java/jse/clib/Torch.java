@@ -20,11 +20,11 @@ import static jse.code.SP.PYTHON_PKG_DIR;
 public class Torch {
     private Torch() {}
     
-    /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
     public final static class InitHelper {
         private static volatile boolean INITIALIZED = false;
-        
+        /** @return {@link Torch} 库是否已经初始化完成 */
         public static boolean initialized() {return INITIALIZED;}
+        /** 初始化 {@link Torch} 库 */
         @SuppressWarnings({"ResultOfMethodCallIgnored", "UnnecessaryCallToStringValueOf"})
         public static void init() {
             // 手动调用此值来强制初始化
@@ -33,18 +33,26 @@ public class Torch {
     }
     
     public final static class Conf {
-        /** 手动设置 torch 的 home 目录，可以设置为自己的 python 环境中安装的 torch，从而避免重复安装 */
+        /**
+         * 手动设置 torch 的 home 目录，可以设置为自己的 python 环境中安装的 torch，从而避免重复安装
+         * <p>
+         * 也可使用环境变量 {@code JSE_TORCH_HOME} 来设置
+         */
         public static @Nullable String HOME = OS.env("JSE_TORCH_HOME");
         /** 指定此值来指定下载的 torch 版本 */
         public static String INDEX_URL = "https://download.pytorch.org/whl/cpu";
     }
     
+    /** 当前 {@link Torch} 所使用的版本号 */
     public final static String VERSION = "2.5.1";
     
+    /** 当前 {@link Torch} 库的根目录，结尾一定存在 {@code '/'} */
     public final static String HOME;
+    /** 当前 {@link Torch} 库所在的文件夹路径，结尾一定存在 {@code '/'} */
     public final static String LIB_DIR;
+    /** 当前 {@link Torch} 库的动态库路径，除了本体还会存在依赖，按照需要链接的顺序排序 */
     public final static String[] LIB_PATHS;
-    /** torch 不需要 llib_path 这种路径，而是直接通过 cmake 的支持，在 cmake 中设置一下路径即可自动链接 */
+    /** 当前 {@link Torch} 库需要链接的依赖目录，torch 不需要 llib_path 这种路径，而是直接通过 cmake 的支持，在 cmake 中设置一下路径即可自动链接 */
     public final static String CMAKE_DIR;
     /** 顺便表明了链接顺序 */
     private final static String[] LIB_NAMES = IS_WINDOWS ? new String[]{"asmjit", "libiomp5md", "fbgemm", "c10", "uv", "torch_cpu", "torch"} : new String[]{"torch"};

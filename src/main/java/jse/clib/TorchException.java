@@ -4,6 +4,11 @@ import jse.code.UT;
 
 import java.io.IOException;
 
+/**
+ * 调用 {@link Torch} 库中相关接口可能会抛出的异常的包装，
+ * 这里顺便移除了编译后抹除符号导致的无效栈信息
+ * @author liqa
+ */
 public final class TorchException extends Exception {
     public TorchException(String aMessage) {
         super(initMsg(aMessage));
