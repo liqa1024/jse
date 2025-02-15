@@ -1034,7 +1034,8 @@ public class NNAP implements IAutoShutdown {
         calEnergyForceVirials(aAPC, rEnergies, rForcesX, rForcesY, rForcesZ, rVirialsXX, rVirialsYY, rVirialsZZ, rVirialsXY, rVirialsXZ, rVirialsYZ, type->type);
     }
     
-    static void forceDot_(double[] aXGrad, int aShift, double[] aFpPx, double[] aFpPy, double[] aFpPz, int aLength, XYZ rBuf) {
+    @ApiStatus.Internal
+    public static void forceDot_(double[] aXGrad, int aShift, double[] aFpPx, double[] aFpPy, double[] aFpPz, int aLength, XYZ rBuf) {
         double rDotX = 0.0, rDotY = 0.0, rDotZ = 0.0;
         for (int i = 0, j = aShift; i < aLength; ++i, ++j) {
             double tXGrad = aXGrad[j];

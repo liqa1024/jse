@@ -34,6 +34,8 @@ public class SphericalChebyshev implements IBasis {
     /** 需要的固定系数存储 */
     private final static Vector SQRT_LPM_LMM1; // sqrt((l+m)(l-m+1))
     private final static Vector SQRT_LPM1_LMM; // sqrt((l+m+1)(l-m))
+    private final static double WIGNER_2_000, WIGNER_2_011, WIGNER_2_022, WIGNER_2_112;
+    private final static double WIGNER_4_000, WIGNER_4_011, WIGNER_4_022, WIGNER_4_033, WIGNER_4_044, WIGNER_4_112, WIGNER_4_224, WIGNER_4_123, WIGNER_4_134;
     static {
         final int tSize = (SH_LARGEST_L+1)*(SH_LARGEST_L+1);
         SQRT_LPM_LMM1 = Vectors.NaN(tSize);
@@ -46,45 +48,71 @@ public class SphericalChebyshev implements IBasis {
             }
             tStart += tL+tL+1;
         }
+        WIGNER_2_000 = MathEX.Func.wigner3j(2, 2, 2, 0, 0,  0);
+        WIGNER_2_011 = MathEX.Func.wigner3j(2, 2, 2, 0, 1, -1);
+        WIGNER_2_022 = MathEX.Func.wigner3j(2, 2, 2, 0, 2, -2);
+        WIGNER_2_112 = MathEX.Func.wigner3j(2, 2, 2, 1, 1, -2);
+        WIGNER_4_000 = MathEX.Func.wigner3j(4, 4, 4, 0, 0,  0);
+        WIGNER_4_011 = MathEX.Func.wigner3j(4, 4, 4, 0, 1, -1);
+        WIGNER_4_022 = MathEX.Func.wigner3j(4, 4, 4, 0, 2, -2);
+        WIGNER_4_033 = MathEX.Func.wigner3j(4, 4, 4, 0, 3, -3);
+        WIGNER_4_044 = MathEX.Func.wigner3j(4, 4, 4, 0, 4, -4);
+        WIGNER_4_112 = MathEX.Func.wigner3j(4, 4, 4, 1, 1, -2);
+        WIGNER_4_224 = MathEX.Func.wigner3j(4, 4, 4, 2, 2, -4);
+        WIGNER_4_123 = MathEX.Func.wigner3j(4, 4, 4, 1, 2, -3);
+        WIGNER_4_134 = MathEX.Func.wigner3j(4, 4, 4, 1, 3, -4);
     }
     
     public final static int DEFAULT_NMAX = 5;
     public final static int DEFAULT_LMAX = 6;
+    public final static int DEFAULT_L3MAX = 0;
     public final static double DEFAULT_RCUT = 6.2;
     
     private final int mTypeNum;
     private final String @Nullable[] mSymbols;
-    private final int mNMax, mLMax;
+    private final int mNMax, mLMax, mL3Max;
     private final double mRCut;
     /**
      * @param aSymbols 基组需要的元素排序
      * @param aNMax Chebyshev 多项式选取的最大阶数
      * @param aLMax 球谐函数中 l 选取的最大阶数
+     * @param aL3Max 三阶基组中球谐函数 l 选取的最大阶数，目前只支持到 {@code l = 5}
      * @param aRCut 截断半径
      */
-    public SphericalChebyshev(String @NotNull[] aSymbols, int aNMax, int aLMax, double aRCut) {
+    public SphericalChebyshev(String @NotNull[] aSymbols, int aNMax, int aLMax, int aL3Max, double aRCut) {
         if (aNMax < 0) throw new IllegalArgumentException("Input nmax MUST be Non-Negative, input: "+aNMax);
         if (aLMax < 0) throw new IllegalArgumentException("Input lmax MUST be Non-Negative, input: "+aLMax);
+        if (aL3Max<0 || aL3Max>5) throw new IllegalArgumentException("Input l3max MUST be in [0, 5], input: "+aL3Max);
         mSymbols = aSymbols;
         mTypeNum = mSymbols.length;
         mNMax = aNMax;
         mLMax = aLMax;
+        mL3Max = aL3Max;
         mRCut = aRCut;
+    }
+    public SphericalChebyshev(String @NotNull[] aSymbols, int aNMax, int aLMax, double aRCut) {
+        this(aSymbols, aNMax, aLMax, 0, aRCut);
     }
     /**
      * @param aTypeNum 原子种类数目
      * @param aNMax Chebyshev 多项式选取的最大阶数
      * @param aLMax 球谐函数中 l 选取的最大阶数
+     * @param aL3Max 三阶基组中球谐函数 l 选取的最大阶数，目前只支持到 {@code l = 3}
      * @param aRCut 截断半径
      */
-    public SphericalChebyshev(int aTypeNum, int aNMax, int aLMax, double aRCut) {
+    public SphericalChebyshev(int aTypeNum, int aNMax, int aLMax, int aL3Max, double aRCut) {
         if (aNMax < 0) throw new IllegalArgumentException("Input nmax MUST be Non-Negative, input: "+aNMax);
         if (aLMax < 0) throw new IllegalArgumentException("Input lmax MUST be Non-Negative, input: "+aLMax);
+        if (aL3Max<0 || aL3Max>5) throw new IllegalArgumentException("Input l3max MUST be in [0, 5], input: "+aL3Max);
         mSymbols = null;
         mTypeNum = aTypeNum;
         mNMax = aNMax;
         mLMax = aLMax;
+        mL3Max = aL3Max;
         mRCut = aRCut;
+    }
+    public SphericalChebyshev(int aTypeNum, int aNMax, int aLMax, double aRCut) {
+        this(aTypeNum, aNMax, aLMax, 0, aRCut);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -92,6 +120,7 @@ public class SphericalChebyshev implements IBasis {
         rSaveTo.put("type", "spherical_chebyshev");
         rSaveTo.put("nmax", mNMax);
         rSaveTo.put("lmax", mLMax);
+        rSaveTo.put("l3max", mL3Max);
         rSaveTo.put("rcut", mRCut);
     }
     @SuppressWarnings("rawtypes")
@@ -100,6 +129,7 @@ public class SphericalChebyshev implements IBasis {
             aSymbols,
             ((Number) UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue(),
             ((Number) UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),
+            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_L3MAX, "l3max")).intValue(),
             ((Number) UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue()
         );
     }
@@ -109,6 +139,7 @@ public class SphericalChebyshev implements IBasis {
             aTypeNum,
             ((Number) UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue(),
             ((Number) UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),
+            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_L3MAX, "l3max")).intValue(),
             ((Number) UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue()
         );
     }
@@ -124,9 +155,9 @@ public class SphericalChebyshev implements IBasis {
     @Override public int rowNumber() {
         return mTypeNum>1 ? mNMax+mNMax+2 : mNMax+1;
     }
-    /** @return {@inheritDoc}；具体为 {@code lmax+1} */
+    /** @return {@inheritDoc}；具体为 {@code lmax+1+(l3max/2)} */
     @Override public int columnNumber() {
-        return mLMax+1;
+        return mLMax+1+(mL3Max/2);
     }
     /** @return {@inheritDoc} */
     @Override public @Unmodifiable List<String> symbols() {
@@ -134,17 +165,26 @@ public class SphericalChebyshev implements IBasis {
     }
     @Override public boolean hasSymbol() {return mSymbols!=null;}
     
+    private int lmax_() {
+        return Math.max(mLMax, (mL3Max/2)*2);
+    }
+    private int lmAll_() {
+        int tLMax = lmax_();
+        return (tLMax+1)*(tLMax+1);
+    }
+    
+    
     /** 一些缓存的中间变量，现在统一作为对象存储，对于这种大规模的缓存情况可以进一步提高效率 */
     private @Nullable RowMatrix mCnlm = null, mCnlmPx = null, mCnlmPy = null, mCnlmPz = null;
-    @NotNull RowMatrix bufCnlm(boolean aClear) {if (mCnlm==null) {mCnlm = MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1));} if (aClear) {mCnlm.fill(0.0);} return mCnlm;}
-    @NotNull RowMatrix bufCnlmPx(boolean aClear) {if (mCnlmPx==null) {mCnlmPx = MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1));} if (aClear) {mCnlmPx.fill(0.0);} return mCnlmPx;}
-    @NotNull RowMatrix bufCnlmPy(boolean aClear) {if (mCnlmPy==null) {mCnlmPy = MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1));} if (aClear) {mCnlmPy.fill(0.0);} return mCnlmPy;}
-    @NotNull RowMatrix bufCnlmPz(boolean aClear) {if (mCnlmPz==null) {mCnlmPz = MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1));} if (aClear) {mCnlmPz.fill(0.0);} return mCnlmPz;}
+    @NotNull RowMatrix bufCnlm(boolean aClear) {if (mCnlm==null) {mCnlm = MatrixCache.getMatRow(rowNumber(), lmAll_());} if (aClear) {mCnlm.fill(0.0);} return mCnlm;}
+    @NotNull RowMatrix bufCnlmPx(boolean aClear) {if (mCnlmPx==null) {mCnlmPx = MatrixCache.getMatRow(rowNumber(), lmAll_());} if (aClear) {mCnlmPx.fill(0.0);} return mCnlmPx;}
+    @NotNull RowMatrix bufCnlmPy(boolean aClear) {if (mCnlmPy==null) {mCnlmPy = MatrixCache.getMatRow(rowNumber(), lmAll_());} if (aClear) {mCnlmPy.fill(0.0);} return mCnlmPy;}
+    @NotNull RowMatrix bufCnlmPz(boolean aClear) {if (mCnlmPz==null) {mCnlmPz = MatrixCache.getMatRow(rowNumber(), lmAll_());} if (aClear) {mCnlmPz.fill(0.0);} return mCnlmPz;}
     
     private final List<RowMatrix> mCnlmPxAll = new ArrayList<>(), mCnlmPyAll = new ArrayList<>(), mCnlmPzAll = new ArrayList<>();
-    @NotNull RowMatrix bufCnlmPxAll(int i, boolean aClear) {while (mCnlmPxAll.size()<=i) {mCnlmPxAll.add(MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1)));} RowMatrix tCnlmPx = mCnlmPxAll.get(i); if (aClear) {tCnlmPx.fill(0.0);} return tCnlmPx;}
-    @NotNull RowMatrix bufCnlmPyAll(int i, boolean aClear) {while (mCnlmPyAll.size()<=i) {mCnlmPyAll.add(MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1)));} RowMatrix tCnlmPy = mCnlmPyAll.get(i); if (aClear) {tCnlmPy.fill(0.0);} return tCnlmPy;}
-    @NotNull RowMatrix bufCnlmPzAll(int i, boolean aClear) {while (mCnlmPzAll.size()<=i) {mCnlmPzAll.add(MatrixCache.getMatRow(rowNumber(), (mLMax+1)*(mLMax+1)));} RowMatrix tCnlmPz = mCnlmPzAll.get(i); if (aClear) {tCnlmPz.fill(0.0);} return tCnlmPz;}
+    @NotNull RowMatrix bufCnlmPxAll(int i, boolean aClear) {while (mCnlmPxAll.size()<=i) {mCnlmPxAll.add(MatrixCache.getMatRow(rowNumber(), lmAll_()));} RowMatrix tCnlmPx = mCnlmPxAll.get(i); if (aClear) {tCnlmPx.fill(0.0);} return tCnlmPx;}
+    @NotNull RowMatrix bufCnlmPyAll(int i, boolean aClear) {while (mCnlmPyAll.size()<=i) {mCnlmPyAll.add(MatrixCache.getMatRow(rowNumber(), lmAll_()));} RowMatrix tCnlmPy = mCnlmPyAll.get(i); if (aClear) {tCnlmPy.fill(0.0);} return tCnlmPy;}
+    @NotNull RowMatrix bufCnlmPzAll(int i, boolean aClear) {while (mCnlmPzAll.size()<=i) {mCnlmPzAll.add(MatrixCache.getMatRow(rowNumber(), lmAll_()));} RowMatrix tCnlmPz = mCnlmPzAll.get(i); if (aClear) {tCnlmPz.fill(0.0);} return tCnlmPz;}
     
     private @Nullable Vector mRn = null, mRnPx = null, mRnPy = null, mRnPz = null;
     @NotNull Vector bufRn(boolean aClear) {if (mRn==null) {mRn = VectorCache.getVec(mNMax+1);} if (aClear) {mRn.fill(0.0);} return mRn;}
@@ -153,12 +193,12 @@ public class SphericalChebyshev implements IBasis {
     @NotNull Vector bufRnPz(boolean aClear) {if (mRnPz==null) {mRnPz = VectorCache.getVec(mNMax+1);} if (aClear) {mRnPz.fill(0.0);} return mRnPz;}
     
     private @Nullable Vector mY = null, mYPx = null, mYPy = null, mYPz = null, mYPphi = null, mYPtheta = null;
-    @NotNull Vector bufY(boolean aClear) {if (mY==null) {mY = VectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mY.fill(0.0);} return mY;}
-    @NotNull Vector bufYPx(boolean aClear) {if (mYPx==null) {mYPx = VectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPx.fill(0.0);} return mYPx;}
-    @NotNull Vector bufYPy(boolean aClear) {if (mYPy==null) {mYPy = VectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPy.fill(0.0);} return mYPy;}
-    @NotNull Vector bufYPz(boolean aClear) {if (mYPz==null) {mYPz = VectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPz.fill(0.0);} return mYPz;}
-    @NotNull Vector bufYPphi(boolean aClear) {if (mYPphi==null) {mYPphi = VectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPphi.fill(0.0);} return mYPphi;}
-    @NotNull Vector bufYPtheta(boolean aClear) {if (mYPtheta==null) {mYPtheta = VectorCache.getVec((mLMax+1)*(mLMax+1));} if (aClear) {mYPtheta.fill(0.0);} return mYPtheta;}
+    @NotNull Vector bufY(boolean aClear) {if (mY==null) {mY = VectorCache.getVec(lmAll_());} if (aClear) {mY.fill(0.0);} return mY;}
+    @NotNull Vector bufYPx(boolean aClear) {if (mYPx==null) {mYPx = VectorCache.getVec(lmAll_());} if (aClear) {mYPx.fill(0.0);} return mYPx;}
+    @NotNull Vector bufYPy(boolean aClear) {if (mYPy==null) {mYPy = VectorCache.getVec(lmAll_());} if (aClear) {mYPy.fill(0.0);} return mYPy;}
+    @NotNull Vector bufYPz(boolean aClear) {if (mYPz==null) {mYPz = VectorCache.getVec(lmAll_());} if (aClear) {mYPz.fill(0.0);} return mYPz;}
+    @NotNull Vector bufYPphi(boolean aClear) {if (mYPphi==null) {mYPphi = VectorCache.getVec(lmAll_());} if (aClear) {mYPphi.fill(0.0);} return mYPphi;}
+    @NotNull Vector bufYPtheta(boolean aClear) {if (mYPtheta==null) {mYPtheta = VectorCache.getVec(lmAll_());} if (aClear) {mYPtheta.fill(0.0);} return mYPtheta;}
     
     @Override public void shutdown() {
         if (mCnlm != null) MatrixCache.returnMat(mCnlm);
@@ -187,7 +227,7 @@ public class SphericalChebyshev implements IBasis {
      */
     @Override public RowMatrix eval(IDxyzTypeIterable aNL) {
         final int tSizeN = rowNumber();
-        final RowMatrix rFingerPrint = MatrixCache.getMatRow(tSizeN, mLMax+1);
+        final RowMatrix rFingerPrint = MatrixCache.getMatRow(tSizeN, columnNumber());
         
         // 需要存储所有的 l，n，m 的值来统一进行近邻求和
         final RowMatrix cnlm = bufCnlm(true);
@@ -197,6 +237,7 @@ public class SphericalChebyshev implements IBasis {
         final IVector tY = bufY(false);
         
         // 遍历近邻计算 Ylm, Rn, fc
+        final int tLMax = lmax_();
         aNL.forEachDxyzType((dx, dy, dz, type) -> {
             double dis = MathEX.Fast.hypot(dx, dy, dz);
             if (dis >= mRCut) return; // 理论不会触发，因为在上层遍历时就排除了
@@ -211,7 +252,7 @@ public class SphericalChebyshev implements IBasis {
             tRn.fill(n -> MathEX.Func.chebyshev(n, tX));
             
             // 遍历求 n，l 的情况；现在采用实球谐函数进行计算
-            MathEX.Func.realSphericalHarmonicsFull2DestXYZDis_(mLMax, dx, dy, dz, dis, tY);
+            MathEX.Func.realSphericalHarmonicsFull2DestXYZDis_(tLMax, dx, dy, dz, dis, tY);
             for (int tN = 0; tN <= mNMax; ++tN) {
                 // 现在统一使用 mplus2this 实现这个操作
                 double tMul = fc * tRn.get(tN);
@@ -220,11 +261,57 @@ public class SphericalChebyshev implements IBasis {
             }
         });
         // 做标量积消去 m 项，得到此原子的 FP
-        for (int tN = 0; tN < tSizeN; ++tN) for (int tL = 0; tL <= mLMax; ++tL) {
-            // 根据 sphericalHarmonicsFull2Dest 的约定这里需要这样索引
-            int tStart = tL*tL;
-            int tLen = tL+tL+1;
-            rFingerPrint.set(tN, tL, (4.0*PI/(double)tLen) * cnlm.row(tN).subVec(tStart, tStart+tLen).operation().dot());
+        for (int tN = 0; tN < tSizeN; ++tN) {
+            // 计算二阶部分，直接这样内积即可
+            for (int tL = 0; tL <= mLMax; ++tL) {
+                // 根据 sphericalHarmonicsFull2Dest 的约定这里需要这样索引
+                int tStart = tL*tL;
+                int tLen = tL+tL+1;
+                rFingerPrint.set(tN, tL, (4.0*PI/(double)tLen) * cnlm.row(tN).subVec(tStart, tStart+tLen).operation().dot());
+            }
+            // 计算三阶部分，直接手动计算
+            if (mL3Max > 1) {
+                final int tShift = 2*2 + 2;
+                double c20  = cnlm.get(tN, tShift);
+                double c21  = cnlm.get(tN, tShift+1);
+                double c2n1 = cnlm.get(tN, tShift-1);
+                double c22  = cnlm.get(tN, tShift+2);
+                double c2n2 = cnlm.get(tN, tShift-2);
+                double rFp3 = 0.0;
+                rFp3 += WIGNER_2_000 * c20*c20*c20;
+                rFp3 -= (3.0*WIGNER_2_011) * c20 * (c21*c21 + c2n1*c2n1);
+                rFp3 += (3.0*WIGNER_2_022) * c20 * (c22*c22 + c2n2*c2n2);
+                rFp3 += (3.0*SQRT2_INV*WIGNER_2_112) * c22 * (c21*c21 - c2n1*c2n1);
+                rFp3 += (6.0*SQRT2_INV*WIGNER_2_112) * c21*c2n1*c2n2;
+                rFingerPrint.set(tN, mLMax+1, rFp3);
+            }
+            if (mL3Max > 3) {
+                final int tShift = 4*4 + 4;
+                double c40  = cnlm.get(tN, tShift);
+                double c41  = cnlm.get(tN, tShift+1);
+                double c4n1 = cnlm.get(tN, tShift-1);
+                double c42  = cnlm.get(tN, tShift+2);
+                double c4n2 = cnlm.get(tN, tShift-2);
+                double c43  = cnlm.get(tN, tShift+3);
+                double c4n3 = cnlm.get(tN, tShift-3);
+                double c44  = cnlm.get(tN, tShift+4);
+                double c4n4 = cnlm.get(tN, tShift-4);
+                double rFp3 = 0.0;
+                rFp3 += WIGNER_4_000 * c40*c40*c40;
+                rFp3 -= (3.0*WIGNER_4_011) * c40 * (c41*c41 + c4n1*c4n1);
+                rFp3 += (3.0*WIGNER_4_022) * c40 * (c42*c42 + c4n2*c4n2);
+                rFp3 -= (3.0*WIGNER_4_033) * c40 * (c43*c43 + c4n3*c4n3);
+                rFp3 += (3.0*WIGNER_4_044) * c40 * (c44*c44 + c4n4*c4n4);
+                rFp3 += (3.0*SQRT2_INV*WIGNER_4_112) * c42 * (c41*c41 - c4n1*c4n1);
+                rFp3 += (6.0*SQRT2_INV*WIGNER_4_112) * c41*c4n1*c4n2;
+                rFp3 += (3.0*SQRT2_INV*WIGNER_4_224) * c44 * (c42*c42 - c4n2*c4n2);
+                rFp3 += (6.0*SQRT2_INV*WIGNER_4_224) * c42*c4n2*c4n4;
+                rFp3 -= (6.0*SQRT2_INV*WIGNER_4_123) * c41 * (c42*c43 + c4n2*c4n3);
+                rFp3 -= (6.0*SQRT2_INV*WIGNER_4_123) * c4n1 * (c42*c4n3 - c4n2*c43);
+                rFp3 += (6.0*SQRT2_INV*WIGNER_4_134) * c41 * (c43*c44 + c4n3*c4n4);
+                rFp3 += (6.0*SQRT2_INV*WIGNER_4_134) * c4n1 * (c43*c4n4 - c4n3*c44);
+                rFingerPrint.set(tN, mLMax+2, rFp3);
+            }
         }
         
         return rFingerPrint;
@@ -239,10 +326,11 @@ public class SphericalChebyshev implements IBasis {
      */
     @Override public List<@NotNull RowMatrix> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL) {
         final int tSizeN = rowNumber();
-        @Nullable RowMatrix rFingerPrint = aCalBasis ? MatrixCache.getMatRow(tSizeN, mLMax+1) : null;
-        RowMatrix rFingerPrintPx = MatrixCache.getMatRow(tSizeN, mLMax+1);
-        RowMatrix rFingerPrintPy = MatrixCache.getMatRow(tSizeN, mLMax+1);
-        RowMatrix rFingerPrintPz = MatrixCache.getMatRow(tSizeN, mLMax+1);
+        final int tSizeL = columnNumber();
+        @Nullable RowMatrix rFingerPrint = aCalBasis ? MatrixCache.getMatRow(tSizeN, tSizeL) : null;
+        RowMatrix rFingerPrintPx = MatrixCache.getMatRow(tSizeN, tSizeL);
+        RowMatrix rFingerPrintPy = MatrixCache.getMatRow(tSizeN, tSizeL);
+        RowMatrix rFingerPrintPz = MatrixCache.getMatRow(tSizeN, tSizeL);
         @Nullable List<RowMatrix> rFingerPrintPxCross = null;
         @Nullable List<RowMatrix> rFingerPrintPyCross = null;
         @Nullable List<RowMatrix> rFingerPrintPzCross = null;
@@ -268,6 +356,7 @@ public class SphericalChebyshev implements IBasis {
         final int[] tNN = {0};
         
         // 遍历近邻计算 Ylm, Rn, fc
+        final int tLMax = lmax_();
         aNL.forEachDxyzType((dx, dy, dz, type) -> {
             double dis = MathEX.Fast.hypot(dx, dy, dz);
             if (dis >= mRCut) return; // 理论不会触发，因为在上层遍历时就排除了
@@ -301,9 +390,9 @@ public class SphericalChebyshev implements IBasis {
                 sinPhi = dy / dxy;
             }
             // 现在采用实球谐函数进行计算
-            MathEX.Func.realSphericalHarmonicsFull2Dest4_(mLMax, cosTheta, sinTheta, cosPhi, sinPhi, tY);
+            MathEX.Func.realSphericalHarmonicsFull2Dest4_(tLMax, cosTheta, sinTheta, cosPhi, sinPhi, tY);
             if (dxyCloseZero) tYPphi.fill(0.0); // 这样来修复顶点的情况，此时另一边 tYPtheta 会恰好弥补使得全局连续
-            for (int tL = 0; tL <= mLMax; ++tL) {
+            for (int tL = 0; tL <= tLMax; ++tL) {
                 if (!dxyCloseZero) {
                     calYPphi(tYPphi.internalData(), tY.internalData(), tL);
                 }
@@ -356,9 +445,9 @@ public class SphericalChebyshev implements IBasis {
                 cnlmPz.plus2this(bufCnlmPzAll(i, false));
             }
             // 在这里初始化 cross 的 FingerPrint 偏导
-            rFingerPrintPxCross = MatrixCache.getMatRow(tSizeN, mLMax+1, tNN_);
-            rFingerPrintPyCross = MatrixCache.getMatRow(tSizeN, mLMax+1, tNN_);
-            rFingerPrintPzCross = MatrixCache.getMatRow(tSizeN, mLMax+1, tNN_);
+            rFingerPrintPxCross = MatrixCache.getMatRow(tSizeN, tSizeL, tNN_);
+            rFingerPrintPyCross = MatrixCache.getMatRow(tSizeN, tSizeL, tNN_);
+            rFingerPrintPzCross = MatrixCache.getMatRow(tSizeN, tSizeL, tNN_);
         }
         // 因此在这里需要无论如何都给 cnlmPxyz 增加一个负号来翻转回来
         cnlmPx.operation().negative2this();
@@ -368,7 +457,7 @@ public class SphericalChebyshev implements IBasis {
         // 做标量积消去 m 项，得到此原子的 FP
         cnlm2fpPxyz(cnlm.internalData(), cnlmPx.internalData(), cnlmPy.internalData(), cnlmPz.internalData(),
                     rFingerPrint==null ? null : rFingerPrint.internalData(), rFingerPrintPx.internalData(), rFingerPrintPy.internalData(), rFingerPrintPz.internalData(),
-                    tSizeN, mLMax);
+                    tSizeN, mLMax, mL3Max);
         // 如果计算 cross，则需要这样设置 cross 的 FingerPrint 偏导
         if (aCalCross) {
             final int tNN_ = tNN[0];
@@ -379,7 +468,7 @@ public class SphericalChebyshev implements IBasis {
                 RowMatrix tFingerPrintPzCrossI = rFingerPrintPzCross.get(i);
                 cnlm2fpPxyz(cnlm.internalData(), cnlmPxAllI.internalData(), cnlmPyAllI.internalData(), cnlmPzAllI.internalData(),
                             null, tFingerPrintPxCrossI.internalData(), tFingerPrintPyCrossI.internalData(), tFingerPrintPzCrossI.internalData(),
-                            tSizeN, mLMax);
+                            tSizeN, mLMax, mL3Max);
             }
         }
         
@@ -393,8 +482,8 @@ public class SphericalChebyshev implements IBasis {
     }
     
     
-    protected void calRnPxyz(double[] rRn, double[] rRnPx, double[] rRnPy, double[] rRnPz, int aNMax,
-                             double aDis, double aRCut, double aDx, double aDy, double aDz) {
+    protected static void calRnPxyz(double[] rRn, double[] rRnPx, double[] rRnPy, double[] rRnPz, int aNMax,
+                                    double aDis, double aRCut, double aDx, double aDy, double aDz) {
         final double tX = 1.0 - 2.0*aDis/aRCut;
         final double tRnPMul = 2.0 / (aDis*aRCut);
         rRn[0] = MathEX.Func.chebyshev(0, tX);
@@ -407,14 +496,14 @@ public class SphericalChebyshev implements IBasis {
             rRnPz[tN] = tRnP*aDz;
         }
     }
-    protected void calYPphi(double[] rYPphi, double[] aY, int aL) {
+    protected static void calYPphi(double[] rYPphi, double[] aY, int aL) {
         final int tStart = aL*aL;
         final int tIdx = tStart+aL;
         for (int tM = -aL; tM <= aL; ++tM) {
             rYPphi[tIdx+tM] = -tM * aY[tIdx-tM];
         }
     }
-    protected void calYPtheta(double aCosPhi, double aSinPhi, double[] rYPtheta, double[] aY, int aL) {
+    protected static void calYPtheta(double aCosPhi, double aSinPhi, double[] rYPtheta, double[] aY, int aL) {
         switch(aL) {
         case 0: {
             rYPtheta[0] = 0.0;
@@ -448,8 +537,8 @@ public class SphericalChebyshev implements IBasis {
             return;
         }}
     }
-    protected void calYPxyz(double aCosTheta, double aSinTheta, double aCosPhi, double aSinPhi, double aDis, double aDxy, boolean aDxyCloseZero,
-                            double[] rYPx, double[] rYPy, double[] rYPz, double[] aYPtheta, double[] aYPphi, int aLength) {
+    protected static void calYPxyz(double aCosTheta, double aSinTheta, double aCosPhi, double aSinPhi, double aDis, double aDxy, boolean aDxyCloseZero,
+                                   double[] rYPx, double[] rYPy, double[] rYPz, double[] aYPtheta, double[] aYPphi, int aLength) {
         final double thetaPx = -aCosTheta * aCosPhi / aDis;
         final double thetaPy = -aCosTheta * aSinPhi / aDis;
         final double thetaPz =  aSinTheta / aDis;
@@ -464,10 +553,10 @@ public class SphericalChebyshev implements IBasis {
         }
     }
     /** 热点优化，累加 cnlm 部分放在一个循环中进行，让 java 优化整个运算 */
-    protected void mminusCnlmPxyz(double[] rCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz, int rShift,
-                                  double[] aY, double[] aYPx, double[] aYPy, double[] aYPz,
-                                  double aFc, double aFcPx, double aFcPy, double aFcPz,
-                                  double aRn, double aRnPx, double aRnPy, double aRnPz, int aLength) {
+    protected static void mminusCnlmPxyz(double[] rCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz, int rShift,
+                                         double[] aY, double[] aYPx, double[] aYPy, double[] aYPz,
+                                         double aFc, double aFcPx, double aFcPy, double aFcPz,
+                                         double aRn, double aRnPx, double aRnPy, double aRnPz, int aLength) {
         double tMul = aFc*aRn;
         double tMulX = aFc*aRnPx + aFcPx*aRn;
         double tMulY = aFc*aRnPy + aFcPy*aRn;
@@ -480,11 +569,11 @@ public class SphericalChebyshev implements IBasis {
             rCnlmPz[j] -= (tMulZ*tY + tMul*aYPz[i]);
         }
     }
-    protected void mminusCnlmPxyz(double[] rCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz, int rShift1, int rShift2,
-                                  double[] aY, double[] aYPx, double[] aYPy, double[] aYPz,
-                                  double aFc, double aFcPx, double aFcPy, double aFcPz,
-                                  double aRn, double aRnPx, double aRnPy, double aRnPz,
-                                  double aWt, int aLength) {
+    protected static void mminusCnlmPxyz(double[] rCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz, int rShift1, int rShift2,
+                                         double[] aY, double[] aYPx, double[] aYPy, double[] aYPz,
+                                         double aFc, double aFcPx, double aFcPy, double aFcPz,
+                                         double aRn, double aRnPx, double aRnPy, double aRnPz,
+                                         double aWt, int aLength) {
         double tMul = aFc*aRn;
         double tMulX = aFc*aRnPx + aFcPx*aRn;
         double tMulY = aFc*aRnPy + aFcPy*aRn;
@@ -502,16 +591,169 @@ public class SphericalChebyshev implements IBasis {
         }
     }
     /** 热点优化，cnlm 转成 fp 放在一个循环中，让 java 优化整个运算 */
-    protected void cnlm2fpPxyz(double[] aCnlm, double[] aCnlmPx, double[] aCnlmPy, double[] aCnlmPz,
-                               double @Nullable[] rFp, double[] rFpPx, double[] rFpPy, double[] rFpPz,
-                               int aSizeN, int aLMax) {
+    protected static void cnlm2fpPxyz(double[] aCnlm, double[] aCnlmPx, double[] aCnlmPy, double[] aCnlmPz,
+                                      double @Nullable[] rFp, double[] rFpPx, double[] rFpPy, double[] rFpPz,
+                                      int aSizeN, int aLMax, int aL3Max) {
         final double tPI4 = 4.0*PI;
-        final int tColNum = (aLMax+1)*(aLMax+1);
-        final int tColNumFP = aLMax+1;
+        final int tLMax = Math.max(aLMax, (aL3Max/2)*2);
+        final int tColNum = (tLMax+1)*(tLMax+1);
+        final int tColNumFP = aLMax+1+(aL3Max/2);
         int tShift = 0, tShiftFP = 0;
         for (int tN = 0; tN < aSizeN; ++tN, tShift += tColNum, tShiftFP += tColNumFP) {
+            int tIdx, tIdxFP;
+            // 这里先计算三阶的部分
+            if (aL3Max > 1) {
+                tIdx = (2*2+2)+tShift; tIdxFP = aLMax+1+tShiftFP;
+                double c20  = aCnlm[tIdx  ], c20Px  = aCnlmPx[tIdx  ], c20Py  = aCnlmPy[tIdx  ], c20Pz  = aCnlmPz[tIdx  ];
+                double c21  = aCnlm[tIdx+1], c21Px  = aCnlmPx[tIdx+1], c21Py  = aCnlmPy[tIdx+1], c21Pz  = aCnlmPz[tIdx+1];
+                double c2n1 = aCnlm[tIdx-1], c2n1Px = aCnlmPx[tIdx-1], c2n1Py = aCnlmPy[tIdx-1], c2n1Pz = aCnlmPz[tIdx-1];
+                double c22  = aCnlm[tIdx+2], c22Px  = aCnlmPx[tIdx+2], c22Py  = aCnlmPy[tIdx+2], c22Pz  = aCnlmPz[tIdx+2];
+                double c2n2 = aCnlm[tIdx-2], c2n2Px = aCnlmPx[tIdx-2], c2n2Py = aCnlmPy[tIdx-2], c2n2Pz = aCnlmPz[tIdx-2];
+                double rFp3 = 0.0;
+                double rFp3Px = 0.0, rFp3Py = 0.0, rFp3Pz = 0.0;
+                // 这里做简单的合并同项优化，为了保证一定的可读性没有优化到最优
+                double tMul1 = WIGNER_2_000 * c20*c20;
+                double tMul2 = (-3.0*WIGNER_2_011)*(c21*c21 + c2n1*c2n1) + (3.0*WIGNER_2_022)*(c22*c22 + c2n2*c2n2);
+                double tMul = 3.0*tMul1 + tMul2;
+                rFp3Px += tMul*c20Px;
+                rFp3Py += tMul*c20Py;
+                rFp3Pz += tMul*c20Pz;
+                if (rFp != null) rFp3 += (tMul1 + tMul2)*c20;
+                
+                tMul1 = (-6.0*WIGNER_2_011) * c20*c21  + (6.0*SQRT2_INV*WIGNER_2_112) * c22*c21;
+                tMul2 = (-6.0*WIGNER_2_011) * c20*c2n1 - (6.0*SQRT2_INV*WIGNER_2_112) * c22*c2n1;
+                rFp3Px += tMul1*c21Px + tMul2*c2n1Px;
+                rFp3Py += tMul1*c21Py + tMul2*c2n1Py;
+                rFp3Pz += tMul1*c21Pz + tMul2*c2n1Pz;
+                
+                tMul1 = (6.0*WIGNER_2_022) * c20*c22;
+                tMul2 = (6.0*WIGNER_2_022) * c20*c2n2;
+                rFp3Px += tMul1*c22Px + tMul2*c2n2Px;
+                rFp3Py += tMul1*c22Py + tMul2*c2n2Py;
+                rFp3Pz += tMul1*c22Pz + tMul2*c2n2Pz;
+                
+                tMul = (3.0*SQRT2_INV*WIGNER_2_112) * (c21*c21 - c2n1*c2n1);
+                rFp3Px += tMul*c22Px;
+                rFp3Py += tMul*c22Py;
+                rFp3Pz += tMul*c22Pz;
+                if (rFp != null) rFp3 += tMul*c22;
+                
+                tMul = (6.0*SQRT2_INV*WIGNER_2_112) * c2n1*c2n2;
+                tMul1 = (6.0*SQRT2_INV*WIGNER_2_112) * c21*c2n2;
+                tMul2 = (6.0*SQRT2_INV*WIGNER_2_112) * c21*c2n1;
+                rFp3Px += tMul*c21Px + tMul1*c2n1Px + tMul2*c2n2Px;
+                rFp3Py += tMul*c21Py + tMul1*c2n1Py + tMul2*c2n2Py;
+                rFp3Pz += tMul*c21Pz + tMul1*c2n1Pz + tMul2*c2n2Pz;
+                if (rFp != null) rFp3 += tMul*c21;
+                rFpPx[tIdxFP] = rFp3Px;
+                rFpPy[tIdxFP] = rFp3Py;
+                rFpPz[tIdxFP] = rFp3Pz;
+                if (rFp != null) rFp[tIdxFP] = rFp3;
+            }
+            if (aL3Max > 3) {
+                tIdx = (4*4+4)+tShift; tIdxFP = aLMax+2+tShiftFP;
+                double c40  = aCnlm[tIdx  ], c40Px  = aCnlmPx[tIdx  ], c40Py  = aCnlmPy[tIdx  ], c40Pz  = aCnlmPz[tIdx  ];
+                double c41  = aCnlm[tIdx+1], c41Px  = aCnlmPx[tIdx+1], c41Py  = aCnlmPy[tIdx+1], c41Pz  = aCnlmPz[tIdx+1];
+                double c4n1 = aCnlm[tIdx-1], c4n1Px = aCnlmPx[tIdx-1], c4n1Py = aCnlmPy[tIdx-1], c4n1Pz = aCnlmPz[tIdx-1];
+                double c42  = aCnlm[tIdx+2], c42Px  = aCnlmPx[tIdx+2], c42Py  = aCnlmPy[tIdx+2], c42Pz  = aCnlmPz[tIdx+2];
+                double c4n2 = aCnlm[tIdx-2], c4n2Px = aCnlmPx[tIdx-2], c4n2Py = aCnlmPy[tIdx-2], c4n2Pz = aCnlmPz[tIdx-2];
+                double c43  = aCnlm[tIdx+3], c43Px  = aCnlmPx[tIdx+3], c43Py  = aCnlmPy[tIdx+3], c43Pz  = aCnlmPz[tIdx+3];
+                double c4n3 = aCnlm[tIdx-3], c4n3Px = aCnlmPx[tIdx-3], c4n3Py = aCnlmPy[tIdx-3], c4n3Pz = aCnlmPz[tIdx-3];
+                double c44  = aCnlm[tIdx+4], c44Px  = aCnlmPx[tIdx+4], c44Py  = aCnlmPy[tIdx+4], c44Pz  = aCnlmPz[tIdx+4];
+                double c4n4 = aCnlm[tIdx-4], c4n4Px = aCnlmPx[tIdx-4], c4n4Py = aCnlmPy[tIdx-4], c4n4Pz = aCnlmPz[tIdx-4];
+                double rFp3 = 0.0;
+                double rFp3Px = 0.0, rFp3Py = 0.0, rFp3Pz = 0.0;
+                // 这里做简单的合并同项优化，为了保证一定的可读性没有优化到最优
+                double tMul1 = WIGNER_4_000 * c40*c40;
+                double tMul2 = (-3.0*WIGNER_4_011)*(c41*c41 + c4n1*c4n1) + (3.0*WIGNER_4_022)*(c42*c42 + c4n2*c4n2) - (3.0*WIGNER_4_033)*(c43*c43 + c4n3*c4n3) + (3.0*WIGNER_4_044)*(c44*c44 + c4n4*c4n4);
+                double tMul = 3.0*tMul1 + tMul2;
+                rFp3Px += tMul*c40Px;
+                rFp3Py += tMul*c40Py;
+                rFp3Pz += tMul*c40Pz;
+                if (rFp != null) rFp3 += (tMul1 + tMul2)*c40;
+                
+                tMul1 = (-6.0*WIGNER_4_011) * c40*c41  + (6.0*SQRT2_INV*WIGNER_4_112) * c42*c41;
+                tMul2 = (-6.0*WIGNER_4_011) * c40*c4n1 - (6.0*SQRT2_INV*WIGNER_4_112) * c42*c4n1;
+                rFp3Px += tMul1*c41Px + tMul2*c4n1Px;
+                rFp3Py += tMul1*c41Py + tMul2*c4n1Py;
+                rFp3Pz += tMul1*c41Pz + tMul2*c4n1Pz;
+                
+                tMul1 = (6.0*WIGNER_4_022) * c40*c42  + (6.0*SQRT2_INV*WIGNER_4_224) * c44*c42;
+                tMul2 = (6.0*WIGNER_4_022) * c40*c4n2 - (6.0*SQRT2_INV*WIGNER_4_224) * c44*c4n2;
+                rFp3Px += tMul1*c42Px + tMul2*c4n2Px;
+                rFp3Py += tMul1*c42Py + tMul2*c4n2Py;
+                rFp3Pz += tMul1*c42Pz + tMul2*c4n2Pz;
+                
+                tMul1 = (-6.0*WIGNER_4_033) * c40*c43;
+                tMul2 = (-6.0*WIGNER_4_033) * c40*c4n3;
+                rFp3Px += tMul1*c43Px + tMul2*c4n3Px;
+                rFp3Py += tMul1*c43Py + tMul2*c4n3Py;
+                rFp3Pz += tMul1*c43Pz + tMul2*c4n3Pz;
+                
+                tMul1 = (6.0*WIGNER_4_044) * c40*c44;
+                tMul2 = (6.0*WIGNER_4_044) * c40*c4n4;
+                rFp3Px += tMul1*c44Px + tMul2*c4n4Px;
+                rFp3Py += tMul1*c44Py + tMul2*c4n4Py;
+                rFp3Pz += tMul1*c44Pz + tMul2*c4n4Pz;
+                
+                tMul = (3.0*SQRT2_INV*WIGNER_4_112) * (c41*c41 - c4n1*c4n1);
+                rFp3Px += tMul*c42Px;
+                rFp3Py += tMul*c42Py;
+                rFp3Pz += tMul*c42Pz;
+                if (rFp != null) rFp3 += tMul*c42;
+                tMul = (6.0*SQRT2_INV*WIGNER_4_112) * c4n1*c4n2;
+                tMul1 = (6.0*SQRT2_INV*WIGNER_4_112) * c41*c4n2;
+                tMul2 = (6.0*SQRT2_INV*WIGNER_4_112) * c41*c4n1;
+                rFp3Px += tMul*c41Px + tMul1*c4n1Px + tMul2*c4n2Px;
+                rFp3Py += tMul*c41Py + tMul1*c4n1Py + tMul2*c4n2Py;
+                rFp3Pz += tMul*c41Pz + tMul1*c4n1Pz + tMul2*c4n2Pz;
+                if (rFp != null) rFp3 += tMul*c41;
+                
+                tMul = (3.0*SQRT2_INV*WIGNER_4_224) * (c42*c42 - c4n2*c4n2);
+                rFp3Px += tMul*c44Px;
+                rFp3Py += tMul*c44Py;
+                rFp3Pz += tMul*c44Pz;
+                if (rFp != null) rFp3 += tMul*c44;
+                tMul = (6.0*SQRT2_INV*WIGNER_4_224) * c4n2*c4n4;
+                tMul1 = (6.0*SQRT2_INV*WIGNER_4_224) * c42*c4n4;
+                tMul2 = (6.0*SQRT2_INV*WIGNER_4_224) * c42*c4n2;
+                rFp3Px += tMul*c42Px + tMul1*c4n2Px + tMul2*c4n4Px;
+                rFp3Py += tMul*c42Py + tMul1*c4n2Py + tMul2*c4n4Py;
+                rFp3Pz += tMul*c42Pz + tMul1*c4n2Pz + tMul2*c4n4Pz;
+                if (rFp != null) rFp3 += tMul*c42;
+                
+                tMul1 = (-6.0*SQRT2_INV*WIGNER_4_123) * (c42*c43 + c4n2*c4n3) + (6.0*SQRT2_INV*WIGNER_4_134) * (c43*c44 + c4n3*c4n4);
+                tMul2 = (-6.0*SQRT2_INV*WIGNER_4_123) * (c42*c4n3 - c4n2*c43) + (6.0*SQRT2_INV*WIGNER_4_134) * (c43*c4n4 - c4n3*c44);
+                rFp3Px += tMul1*c41Px + tMul2*c4n1Px;
+                rFp3Py += tMul1*c41Py + tMul2*c4n1Py;
+                rFp3Pz += tMul1*c41Pz + tMul2*c4n1Pz;
+                if (rFp != null) rFp3 += tMul1*c41 + tMul2*c4n1;
+                
+                tMul1 = (-6.0*SQRT2_INV*WIGNER_4_123) * (c41*c43 + c4n1*c4n3);
+                tMul2 = (-6.0*SQRT2_INV*WIGNER_4_123) * (c41*c4n3 - c4n1*c43);
+                rFp3Px += tMul1*c42Px + tMul2*c4n2Px;
+                rFp3Py += tMul1*c42Py + tMul2*c4n2Py;
+                rFp3Pz += tMul1*c42Pz + tMul2*c4n2Pz;
+                
+                tMul1 = (6.0*SQRT2_INV*WIGNER_4_134) * (c41*c43 - c4n1*c4n3);
+                tMul2 = (6.0*SQRT2_INV*WIGNER_4_134) * (c41*c4n3 + c4n1*c43);
+                rFp3Px += tMul1*c44Px + tMul2*c4n4Px;
+                rFp3Py += tMul1*c44Py + tMul2*c4n4Py;
+                rFp3Pz += tMul1*c44Pz + tMul2*c4n4Pz;
+                
+                tMul1 = (-6.0*SQRT2_INV*WIGNER_4_123) * (c41*c42 - c4n1*c4n2) + (6.0*SQRT2_INV*WIGNER_4_134) * (c41*c44 + c4n1*c4n4);
+                tMul2 = (-6.0*SQRT2_INV*WIGNER_4_123) * (c41*c4n2 + c4n1*c42) + (6.0*SQRT2_INV*WIGNER_4_134) * (c41*c4n4 - c4n1*c44);
+                rFp3Px += tMul1*c43Px + tMul2*c4n3Px;
+                rFp3Py += tMul1*c43Py + tMul2*c4n3Py;
+                rFp3Pz += tMul1*c43Pz + tMul2*c4n3Pz;
+                
+                rFpPx[tIdxFP] = rFp3Px;
+                rFpPy[tIdxFP] = rFp3Py;
+                rFpPz[tIdxFP] = rFp3Pz;
+                if (rFp != null) rFp[tIdxFP] = rFp3;
+            }
             // l == 0
-            int tIdx = tShift, tIdxFP = tShiftFP;
+            tIdx = tShift; tIdxFP = tShiftFP;
             double tCnl0 = aCnlm[tIdx];
             double tMul = tPI4;
             double tMul2 = tMul+tMul;

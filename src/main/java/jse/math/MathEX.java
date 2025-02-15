@@ -41,12 +41,12 @@ public class MathEX {
     public final static double SQRT3_INV = 1.0/SQRT3;
     public final static double SQRT3DIV2 = Math.sqrt(3.0/2.0);
     
-    private final static IVector SH_Alm, SH_Blm; // 不动 m 改变 l 递归公式的前系数，只计算必要的（l >= 2, m <= l-2）
-    private final static IVector SH_Clm, SH_Dlm; // 不动 l 改变 m 递归公式的前系数，只计算必要的（l >= 2, m <= l-2）
-    private final static IVector SH_Elm; // Ylm 相对于原始的 Plm 归一化前系数，计算所有值
-    private final static IVector SH_FACTORIAL2_2L_PLUS_1; // (2l+1)!!
-    private final static IVector SH_SQRT_2L; // sqrt(2l)
-    public final static int SH_LARGEST_L = 1000;
+    private final static Vector SH_Alm, SH_Blm; // 不动 m 改变 l 递归公式的前系数，只计算必要的（l >= 2, m <= l-2）
+    private final static Vector SH_Clm, SH_Dlm; // 不动 l 改变 m 递归公式的前系数，只计算必要的（l >= 2, m <= l-2）
+    private final static Vector SH_Elm; // Ylm 相对于原始的 Plm 归一化前系数，计算所有值
+    private final static Vector SH_FACTORIAL2_2L_PLUS_1; // (2l+1)!!
+    private final static Vector SH_SQRT_2L; // sqrt(2l)
+    public final static int SH_LARGEST_L = 200;
     
     static {
         SH_FACTORIAL2_2L_PLUS_1 = Vectors.zeros(SH_LARGEST_L+1);
