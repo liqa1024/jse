@@ -114,7 +114,7 @@ public class PairNNAP extends LmpPlugin.Pair {
                 }
             });
             // 反向传播，现在改为批处理方式，可以大大提高效率
-            RowMatrix tBasis = tOut.get(0); tBasis.asVecRow().div2this(tNNAP.normVec());
+            RowMatrix tBasis = tOut.get(0); tNNAP.normBasis(tBasis.asVecRow());
             tNNAP.submitBatchBackward(tBasis.asVecRow(), eflag ? pred -> {
                 // 更新能量
                 double eng = pred + tNNAP.refEng();
@@ -122,7 +122,7 @@ public class PairNNAP extends LmpPlugin.Pair {
                 if (eflagGlobal) engVdwl.set(engVdwl.get()+eng);
                 if (eflagAtom) eatom.putAt(i, eatom.getAt(i)+eng);
             } : null, xGrad -> {
-                xGrad.div2this(tNNAP.normVec());
+                tNNAP.normBasisPartial(xGrad);
                 final XYZ rBuf = new XYZ();
                 // 更新自身的力
                 NNAP.forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tOut.get(1).internalData(), tOut.get(2).internalData(), tOut.get(3).internalData(), xGrad.internalDataSize(), rBuf);

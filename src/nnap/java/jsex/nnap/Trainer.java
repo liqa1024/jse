@@ -73,8 +73,10 @@ public class Trainer implements IAutoShutdown, ISavable {
         , VAL_FORCE_WEIGHT                  = "__NNAP_TRAINER_force_weight__"
         , VAL_STRESS_WEIGHT                 = "__NNAP_TRAINER_stress_weight__"
         , VAL_L2_LOSS_WEIGHT                = "__NNAP_TRAINER_l2_loss_wright__"
-        , VAL_NORM_VEC                      = "__NNAP_TRAINER_norm_vec__"
-        , VAL_NORM_VEC_J                    = "__NNAP_TRAINER_norm_vec_J__"
+        , VAL_NORM_MU                       = "__NNAP_TRAINER_norm_mu__"
+        , VAL_NORM_MU_J                     = "__NNAP_TRAINER_norm_mu_J__"
+        , VAL_NORM_SIGMA                    = "__NNAP_TRAINER_norm_sigma__"
+        , VAL_NORM_SIGMA_J                  = "__NNAP_TRAINER_norm_sigma_J__"
         , VAL_TRAIN_DATA                    = "__NNAP_TRAINER_train_data__"
         , VAL_TEST_DATA                     = "__NNAP_TRAINER_test_data__"
         , VAL_DATA_J                        = "__NNAP_TRAINER_data_J__"
@@ -82,9 +84,6 @@ public class Trainer implements IAutoShutdown, ISavable {
         , VAL_MIRROR_MAP                    = "__NNAP_TRAINER_mirror_map__"
         , VAL_HIDDEN_DIMS                   = "__NNAP_TRAINER_hidden_dims__"
         , VAL_INPUT_DIMS                    = "__NNAP_TRAINER_input_dims__"
-        , VAL_SUB_NORM_VEC                  = "__NNAP_TRAINER_sub_norm_vec__"
-        , VAL_SUB_FP                        = "__NNAP_TRAINER_sub_fp__"
-        , VAL_SUB_FP_B                      = "__NNAP_TRAINER_sub_fp_b__"
         , VAL_SUB                           = "__NNAP_TRAINER_sub__"
         , VAL_I                             = "__NNAP_TRAINER_i__"
         , VAL_S                             = "__NNAP_TRAINER_s__"
@@ -424,9 +423,10 @@ public class Trainer implements IAutoShutdown, ISavable {
                 }
                 //noinspection ConcatenationWithEmptyString
                 SP.Python.exec("" +
-                "for "+VAL_SUB_FP+", "+VAL_SUB_NORM_VEC+" in zip("+aPyDataSetName+".fp, "+VAL_NORM_VEC+"):\n" +
-                "    "+VAL_SUB_FP+" /= "+VAL_SUB_NORM_VEC+"\n" +
-                "del "+VAL_SUB_FP+", "+VAL_SUB_NORM_VEC
+                "for "+VAL_I+" in range(len("+aPyDataSetName+".fp)):\n" +
+                "    "+aPyDataSetName+".fp["+VAL_I+"] -= "+VAL_NORM_MU+"["+VAL_I+"]\n" +
+                "    "+aPyDataSetName+".fp["+VAL_I+"] /= "+VAL_NORM_SIGMA+"["+VAL_I+"]\n" +
+                "del "+VAL_I
                 );
                 SP.Python.exec(aPyDataSetName+".eng /= "+aPyDataSetName+".atom_num");
                 // 训练力和应力需要的额外数据
@@ -510,17 +510,17 @@ public class Trainer implements IAutoShutdown, ISavable {
                 SP.Python.removeValue(VAL_INDICES);
                 //noinspection ConcatenationWithEmptyString
                 SP.Python.exec("" +
-                "for "+VAL_SUB_FP+", "+VAL_SUB_FP_B+", "+VAL_SUB_NORM_VEC+" in zip("+aPyDataSetName+".fp_partial[0], "+aPyDataSetName+".fp_partial[1], "+VAL_NORM_VEC+"):\n" +
-                "    "+VAL_SUB_FP+" /= "+VAL_SUB_NORM_VEC+"\n" +
-                "    "+VAL_SUB_FP_B+" /= "+VAL_SUB_NORM_VEC+"\n" +
-                "del "+VAL_SUB_FP+", "+VAL_SUB_FP_B+", "+VAL_SUB_NORM_VEC
+                "for "+VAL_I+" in range(len("+aPyDataSetName+".fp_partial[0])):\n" +
+                "    "+aPyDataSetName+".fp_partial[0]["+VAL_I+"] /= "+VAL_NORM_SIGMA+"["+VAL_I+"]\n" +
+                "    "+aPyDataSetName+".fp_partial[1]["+VAL_I+"] /= "+VAL_NORM_SIGMA+"["+VAL_I+"]\n" +
+                "del "+VAL_I
                 );
                 // 此时基组值本身需要梯度
                 //noinspection ConcatenationWithEmptyString
                 SP.Python.exec("" +
-                "for "+VAL_SUB_FP+" in "+aPyDataSetName+".fp:\n" +
-                "    "+VAL_SUB_FP+".requires_grad_(True)\n" +
-                "del "+VAL_SUB_FP
+                "for "+VAL_SUB+" in "+aPyDataSetName+".fp:\n" +
+                "    "+VAL_SUB+".requires_grad_(True)\n" +
+                "del "+VAL_SUB
                 );
             } finally {
                 SP.Python.removeValue(VAL_DATA_J);
@@ -531,7 +531,7 @@ public class Trainer implements IAutoShutdown, ISavable {
     protected final String[] mSymbols;
     protected final IVector mRefEngs;
     protected final IBasis[] mBasis;
-    protected final Vector[] mNormVec;
+    protected final Vector[] mNormMu, mNormSigma;
     protected final DataSet mTrainData;
     protected final DataSet mTestData;
     protected boolean mHasData = false;
@@ -550,9 +550,12 @@ public class Trainer implements IAutoShutdown, ISavable {
         mSymbols = aSymbols;
         mRefEngs = aRefEngs;
         mBasis = aBasis;
-        mNormVec = new Vector[mSymbols.length];
+        mNormMu = new Vector[mSymbols.length];
+        mNormSigma = new Vector[mSymbols.length];
         for (int i = 0; i < mSymbols.length; ++i) {
-            mNormVec[i] = Vector.zeros(mBasis[i].rowNumber()*mBasis[i].columnNumber());
+            int tSize = mBasis[i].rowNumber()*mBasis[i].columnNumber();
+            mNormMu[i] = Vector.zeros(tSize);
+            mNormSigma[i] = Vector.zeros(tSize);
         }
         mTrainData = new DataSet();
         mTestData = new DataSet();
@@ -598,7 +601,7 @@ public class Trainer implements IAutoShutdown, ISavable {
     
     /** 重写实现自定义模型创建 */
     protected void initModel() {
-        @Nullable List<?> tHiddenDims = (List<?>)UT.Code.getWithDefault(mModelSetting, null, "hidden_dims", "nnarch");
+        @Nullable List<?> tHiddenDims = (List<?>)UT.Code.get(mModelSetting, "hidden_dims", "nnarch");
         if (tHiddenDims == null) {
             tHiddenDims = NewCollections.from(mSymbols.length, i -> DEFAULT_HIDDEN_DIMS);
         }
@@ -636,7 +639,8 @@ public class Trainer implements IAutoShutdown, ISavable {
     /** 重写实现自定义归一化方案 */
     protected void initNormVec() {
         for (int i = 0; i < mSymbols.length; ++i) {
-            mNormVec[i].fill(0.0);
+            mNormMu[i].fill(0.0);
+            mNormSigma[i].fill(0.0);
         }
         IVector tDiv = VectorCache.getZeros(mSymbols.length);
         for (int i = 0; i < mSymbols.length; ++i) {
@@ -646,16 +650,22 @@ public class Trainer implements IAutoShutdown, ISavable {
                 j = ((Mirror)mBasis[i]).mirrorType()-1;
             }
             for (IVector tRow : mTrainData.mFpMat[i].rows()) {
-                mNormVec[j].operation().operate2this(tRow, (lhs, rhs) -> lhs + Math.abs(rhs));
+                mNormMu[j].plus2this(tRow);
+                mNormSigma[j].operation().operate2this(tRow, (lhs, rhs) -> lhs + rhs*rhs);
             }
             tDiv.add(j, mTrainData.mFpMat[i].rowNumber());
         }
         for (int i = 0; i < mSymbols.length; ++i) if (!(mBasis[i] instanceof Mirror)) {
-            mNormVec[i].div2this(tDiv.get(i));
+            mNormMu[i].div2this(tDiv.get(i));
+            mNormSigma[i].div2this(tDiv.get(i));
+            mNormSigma[i].operation().operate2this(mNormMu[i], (lhs, rhs) -> lhs - rhs*rhs);
+            mNormSigma[i].operation().map2this(MathEX.Fast::sqrt);
         }
         VectorCache.returnVec(tDiv);
         for (int i = 0; i < mSymbols.length; ++i) if (mBasis[i] instanceof Mirror) {
-            mNormVec[i] = mNormVec[((Mirror)mBasis[i]).mirrorType()-1];
+            int tMirrorIdx = ((Mirror)mBasis[i]).mirrorType()-1;
+            mNormMu[i] = mNormMu[tMirrorIdx];
+            mNormSigma[i] = mNormSigma[tMirrorIdx];
         }
     }
     @ApiStatus.Internal
@@ -697,9 +707,12 @@ public class Trainer implements IAutoShutdown, ISavable {
         SP.Python.setValue(VAL_FORCE_WEIGHT, mForceWeight);
         SP.Python.setValue(VAL_STRESS_WEIGHT, mStressWeight);
         SP.Python.setValue(VAL_L2_LOSS_WEIGHT, mL2LossWeight);
-        SP.Python.setValue(VAL_NORM_VEC_J, mNormVec);
-        SP.Python.exec(VAL_NORM_VEC+" = [torch.tensor("+VAL_SUB+".asList(), dtype=torch."+(mTrainInFloat?"float32":"float64")+") for "+VAL_SUB+" in "+VAL_NORM_VEC_J+"]");
-        SP.Python.removeValue(VAL_NORM_VEC_J);
+        SP.Python.setValue(VAL_NORM_MU_J, mNormMu);
+        SP.Python.setValue(VAL_NORM_SIGMA_J, mNormSigma);
+        SP.Python.exec(VAL_NORM_MU+" = [torch.tensor("+VAL_SUB+".asList(), dtype=torch."+(mTrainInFloat?"float32":"float64")+") for "+VAL_SUB+" in "+VAL_NORM_MU_J+"]");
+        SP.Python.exec(VAL_NORM_SIGMA+" = [torch.tensor("+VAL_SUB+".asList(), dtype=torch."+(mTrainInFloat?"float32":"float64")+") for "+VAL_SUB+" in "+VAL_NORM_SIGMA_J+"]");
+        SP.Python.removeValue(VAL_NORM_MU_J);
+        SP.Python.removeValue(VAL_NORM_SIGMA_J);
         mTrainData.putData2Py_(VAL_TRAIN_DATA, mClearDataOnTraining);
         if (mHasTest) mTestData.putData2Py_(VAL_TEST_DATA, mClearDataOnTraining);
         // 开始训练
@@ -777,7 +790,8 @@ public class Trainer implements IAutoShutdown, ISavable {
             }
         } finally {
             // 完事移除临时数据
-            SP.Python.removeValue(VAL_NORM_VEC);
+            SP.Python.removeValue(VAL_NORM_MU);
+            SP.Python.removeValue(VAL_NORM_SIGMA);
             SP.Python.removeValue(VAL_TRAIN_DATA);
             if (mHasTest) {
                 SP.Python.removeValue(VAL_TEST_DATA);
@@ -1039,7 +1053,8 @@ public class Trainer implements IAutoShutdown, ISavable {
             rModels.add(Maps.of(
                 "symbol", mSymbols[i],
                 "ref_eng", mRefEngs.get(i),
-                "norm_vec", mNormVec[i].asList(),
+                "norm_mu", mNormMu[i].asList(),
+                "norm_sigma", mNormSigma[i].asList(),
                 "basis", rBasis,
                 "torch", Base64.getEncoder().encodeToString(tModelByes)
             ));

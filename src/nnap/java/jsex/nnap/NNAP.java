@@ -148,14 +148,16 @@ public class NNAP implements IAutoShutdown {
         Number tRefEng = (Number)aModelInfo.get("ref_eng");
         if (tRefEng == null) throw new IllegalArgumentException("No ref_eng in ModelInfo");
         double aRefEng = tRefEng.doubleValue();
-        List<? extends Number> tNormVec = (List<? extends Number>)aModelInfo.get("norm_vec");
-        if (tNormVec == null) throw new IllegalArgumentException("No norm_vec in ModelInfo");
-        IVector aNormVec = Vectors.from(tNormVec);
+        List<? extends Number> tNormSigma = (List<? extends Number>)UT.Code.get(aModelInfo, "norm_sigma", "norm_vec");
+        if (tNormSigma == null) throw new IllegalArgumentException("No norm_sigma/norm_vec in ModelInfo");
+        IVector aNormSigma = Vectors.from(tNormSigma);
+        List<? extends Number> tNormMu = (List<? extends Number>)aModelInfo.get("norm_mu");
+        IVector aNormMu = tNormMu==null ? Vectors.zeros(tNormSigma.size()) : Vectors.from(tNormMu);
         
         Object tModel = aModelInfo.get("torch");
         if (tModel == null) throw new IllegalArgumentException("No torch data in ModelInfo");
         String aModel = tModel.toString();
-        return new SingleNNAP(aRefEng, aNormVec, aBasis, aModel);
+        return new SingleNNAP(aRefEng, aNormMu, aNormSigma, aBasis, aModel);
     }
     @SuppressWarnings("unchecked")
     private @Nullable SingleNNAP postInitSingleNNAPFrom(int aType, Map<String, ?> aModelInfo) throws TorchException {
@@ -178,13 +180,14 @@ public class NNAP implements IAutoShutdown {
         
         List<? extends Number> tNormVec = (List<? extends Number>)aModelInfo.get("norm_vec");
         if (tNormVec != null) throw new IllegalArgumentException("norm_vec in mirror ModelInfo MUST be empty");
-        IVector aNormVec = model(tMirrorType).normVec();
+        IVector aNormMu = model(tMirrorType).normMu();
+        IVector aNormSigma = model(tMirrorType).normSigma();
         
         Object tModel = aModelInfo.get("torch");
         if (tModel != null) throw new IllegalArgumentException("torch data in mirror ModelInfo MUST be empty");
         String aModel = model(tMirrorType).mModel;
         
-        return new SingleNNAP(aRefEng, aNormVec, aBasis, aModel);
+        return new SingleNNAP(aRefEng, aNormMu, aNormSigma, aBasis, aModel);
     }
     
     @SuppressWarnings("SameParameterValue")
@@ -192,18 +195,29 @@ public class NNAP implements IAutoShutdown {
         private final NNAPModelPointers mModelPtrs;
         private final String mModel;
         private final double mRefEng;
-        private final IVector mNormVec;
+        private final IVector mNormMu, mNormSigma;
         private final IBasis[] mBasis;
         private final int mBasisSize;
+        
         public double refEng() {return mRefEng;}
-        public IVector normVec() {return mNormVec;}
+        public IVector normMu() {return mNormMu;}
+        public IVector normSigma() {return mNormSigma;}
         public IBasis basis() {return basis(0);}
         public IBasis basis(int aThreadID) {return mBasis[aThreadID];}
         
+        public void normBasis(IVector rFp) {
+            rFp.minus2this(mNormMu);
+            rFp.div2this(mNormSigma);
+        }
+        public void normBasisPartial(IVector rFp) {
+            rFp.div2this(mNormSigma);
+        }
+        
         @SuppressWarnings("unchecked")
-        private SingleNNAP(double aRefEng, IVector aNormVec, IBasis[] aBasis, String aModel) throws TorchException {
+        private SingleNNAP(double aRefEng, IVector aNormMu, IVector aNormSigma, IBasis[] aBasis, String aModel) throws TorchException {
             mRefEng = aRefEng;
-            mNormVec = aNormVec;
+            mNormMu = aNormMu;
+            mNormSigma = aNormSigma;
             mBasis = aBasis;
             mBasisSize = mBasis[0].rowNumber()*mBasis[0].columnNumber();
             mModel = aModel;
@@ -553,7 +567,7 @@ public class NNAP implements IAutoShutdown {
                 final SingleNNAP tModel = model(aTypeMap.applyAsInt(aAPC.atomType_().get(i)));
                 final IBasis tBasis = tModel.basis(threadID);
                 RowMatrix tBasisValue = tBasis.eval(aAPC, i, aTypeMap);
-                tBasisValue.asVecRow().div2this(tModel.mNormVec);
+                tModel.normBasis(tBasisValue.asVecRow());
                 tModel.submitBatchForward(threadID, tBasisValue.asVecRow(), pred -> {
                     pred += tModel.mRefEng;
                     rEngs.set(i, pred);
@@ -597,7 +611,7 @@ public class NNAP implements IAutoShutdown {
                 final SingleNNAP tModel = model(aTypeMap.applyAsInt(aAPC.atomType_().get(cIdx)));
                 final IBasis tBasis = tModel.basis(threadID);
                 RowMatrix tBasisValue = tBasis.eval(aAPC, cIdx, aTypeMap);
-                tBasisValue.asVecRow().div2this(tModel.mNormVec);
+                tModel.normBasis(tBasisValue.asVecRow());
                 tModel.submitBatchForward(threadID, tBasisValue.asVecRow(), pred -> {
                     pred += tModel.mRefEng;
                     rEngs.set(i, pred);
@@ -980,12 +994,12 @@ public class NNAP implements IAutoShutdown {
                 final SingleNNAP tModel = model(aTypeMap.applyAsInt(aAPC.atomType_().get(i)));
                 final IBasis tBasis = tModel.basis(threadID);
                 final List<@NotNull RowMatrix> tOut = tBasis.evalPartial(true, true, aAPC, i, aTypeMap);
-                RowMatrix tBasisValue = tOut.get(0); tBasisValue.asVecRow().div2this(tModel.mNormVec);
+                RowMatrix tBasisValue = tOut.get(0); tModel.normBasis(tBasisValue.asVecRow());
                 tModel.submitBatchBackward(threadID, tBasisValue.asVecRow(), rEnergies==null ? null : pred -> {
                     pred += tModel.mRefEng;
                     rEnergies.set(i, pred);
                 }, xGrad -> {
-                    xGrad.div2this(tModel.mNormVec);
+                    tModel.normBasisPartial(xGrad);
                     final XYZ rBuf = new XYZ();
                     forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tOut.get(1).internalData(), tOut.get(2).internalData(), tOut.get(3).internalData(), xGrad.internalDataSize(), rBuf);
                     if (tForcesX != null) tForcesX.add(i, -rBuf.mX);
