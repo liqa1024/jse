@@ -879,8 +879,8 @@ public class MathEX {
         public static double wigner3j(@Range(from = 0, to = SH_LARGEST_L) int aJ1, @Range(from = 0, to = SH_LARGEST_L) int aJ2, @Range(from = 0, to = SH_LARGEST_L) int aJ3, int aM1, int aM2, int aM3) {
             // 判断输入是否合法
             if (aM1 < -aJ1 || aM1 > aJ1) throw new IllegalArgumentException("Input m1 MUST be in range -j1 ~ j1, input: "+aM1);
-            if (aM2 < -aJ1 || aM2 > aJ2) throw new IllegalArgumentException("Input m2 MUST be in range -j2 ~ j2, input: "+aM2);
-            if (aM3 < -aJ1 || aM3 > aJ3) throw new IllegalArgumentException("Input m3 MUST be in range -j3 ~ j3, input: "+aM3);
+            if (aM2 < -aJ2 || aM2 > aJ2) throw new IllegalArgumentException("Input m2 MUST be in range -j2 ~ j2, input: "+aM2);
+            if (aM3 < -aJ3 || aM3 > aJ3) throw new IllegalArgumentException("Input m3 MUST be in range -j3 ~ j3, input: "+aM3);
             return wigner3j_(aJ1, aJ2, aJ3, aM1, aM2, aM3);
         }
         private static double wigner3j_(int aJ1, int aJ2, int aJ3, int aM1, int aM2, int aM3) {
