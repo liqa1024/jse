@@ -126,12 +126,7 @@ public class NNAP implements IAutoShutdown {
     private @Nullable SingleNNAP initSingleNNAPFrom(int aType, Map<String, ?> aModelInfo) throws TorchException {
         Map<String, ?> tBasis = (Map<String, ?>)aModelInfo.get("basis");
         if (tBasis == null) {
-            tBasis = Maps.of(
-                "type", "spherical_chebyshev",
-                "nmax", SphericalChebyshev.DEFAULT_NMAX,
-                "lmax", SphericalChebyshev.DEFAULT_LMAX,
-                "rcut", SphericalChebyshev.DEFAULT_RCUT
-            );
+            tBasis = Maps.of("type", "spherical_chebyshev");
         }
         Object tBasisType = tBasis.get("type");
         if (tBasisType == null) {
