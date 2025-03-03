@@ -148,8 +148,8 @@ public class DataXYZ extends AbstractSettableAtomData {
      * @see #hasMass()
      */
     @Override public double mass(int aType) {
-        if (!hasSymbol()) return Double.NaN;
-        return MASS.get(symbol(aType));
+        @Nullable String tSymbol = symbol(aType);
+        return tSymbol==null ? Double.NaN : MASS.getOrDefault(tSymbol, Double.NaN);
     }
     
     /// XYZ 特有的接口
@@ -642,7 +642,8 @@ public class DataXYZ extends AbstractSettableAtomData {
                 return mSpecies!=null ? mSpecies[aIdx] : null;
             }
             @Override public double mass() {
-                return hasSymbol() ? MASS.get(symbol()) : Double.NaN;
+                @Nullable String tSymbol = symbol();
+                return tSymbol==null ? Double.NaN : MASS.getOrDefault(tSymbol, Double.NaN);
             }
         };
     }

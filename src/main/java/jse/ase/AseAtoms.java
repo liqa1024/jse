@@ -154,7 +154,10 @@ public class AseAtoms extends AbstractSettableAtomData {
      * @see IAtom#type()
      * @see #hasMass()
      */
-    @Override public double mass(int aType) {return MASS.get(symbol(aType));}
+    @Override public double mass(int aType) {
+        @Nullable String tSymbol = symbol(aType);
+        return tSymbol==null ? Double.NaN : MASS.getOrDefault(tSymbol, Double.NaN);
+    }
     
     /**
      * 直接调整元素符号的顺序，由于 ase atoms 中是采用一列原子序数来存储种类信息的，
@@ -368,7 +371,10 @@ public class AseAtoms extends AbstractSettableAtomData {
             }
             
             @Override public String symbol() {return ATOMIC_NUMBER_TO_SYMBOL.get(mAtomicNumbers.get(aIdx));}
-            @Override public double mass() {return MASS.get(symbol());}
+            @Override public double mass() {
+                @Nullable String tSymbol = symbol();
+                return tSymbol==null ? Double.NaN : MASS.getOrDefault(tSymbol, Double.NaN);
+            }
         };
     }
     /**
@@ -538,7 +544,8 @@ public class AseAtoms extends AbstractSettableAtomData {
                 rPositions.set(i, XYZ_Y_COL, tAtom.y());
                 rPositions.set(i, XYZ_Z_COL, tAtom.z());
                 if (rMomenta != null) {
-                    double tMass = MASS.get(ATOMIC_NUMBER_TO_SYMBOL.get(rAtomicNumbers.get(i)));
+                    @Nullable String tSymbol = ATOMIC_NUMBER_TO_SYMBOL.get(rAtomicNumbers.get(i));
+                    double tMass = tSymbol==null ? Double.NaN : MASS.getOrDefault(tSymbol, Double.NaN);
                     rMomenta.set(i, STD_VX_COL, tAtom.vx()*tMass);
                     rMomenta.set(i, STD_VY_COL, tAtom.vy()*tMass);
                     rMomenta.set(i, STD_VZ_COL, tAtom.vz()*tMass);
