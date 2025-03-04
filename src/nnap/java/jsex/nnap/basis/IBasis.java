@@ -2,7 +2,7 @@ package jsex.nnap.basis;
 
 import jse.atom.IAtomData;
 import jse.atom.AtomicParameterCalculator;
-import jse.io.ISavable;
+import jse.code.io.ISavable;
 import jse.math.matrix.RowMatrix;
 import jse.parallel.IAutoShutdown;
 import org.jetbrains.annotations.ApiStatus;

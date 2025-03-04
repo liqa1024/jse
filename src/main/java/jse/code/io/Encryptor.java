@@ -1,4 +1,4 @@
-package jse.io;
+package jse.code.io;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;

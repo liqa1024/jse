@@ -1,4 +1,4 @@
-package jse.io;
+package jse.code.io;
 
 import static org.apache.groovy.json.internal.Exceptions.die;
 

@@ -1,4 +1,4 @@
-package jse.io;
+package jse.code.io;
 
 import jse.code.UT;
 import org.jetbrains.annotations.NotNull;

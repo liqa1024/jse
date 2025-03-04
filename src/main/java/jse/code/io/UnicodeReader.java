@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package jse.io;
+package jse.code.io;
 
 import org.jetbrains.annotations.NotNull;
 

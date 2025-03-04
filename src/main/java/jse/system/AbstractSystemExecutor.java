@@ -2,9 +2,6 @@ package jse.system;
 
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
-import jse.code.functional.IUnaryFullOperator;
-import jse.io.IIOFiles;
-import jse.io.MergedIOFiles;
 import jse.parallel.AbstractThreadPool;
 import jse.parallel.IExecutorEX;
 import org.jetbrains.annotations.NotNull;
@@ -41,10 +38,8 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
     protected final void printStackTrace(Throwable aThrowable) {if (!mNoERROutput) UT.Code.printStackTrace(aThrowable);}
     
     
-    @Override public final int system(String aCommand                                              ) {return system_(aCommand, STD_OUT_WRITELN);}
-    @Override public final int system(String aCommand, final String aOutFilePath                   ) {return system_(aCommand, fileWriteln(aOutFilePath));}
-    @Override public final int system(String aCommand                           , IIOFiles aIOFiles) {return system_(aCommand, STD_OUT_WRITELN, aIOFiles);}
-    @Override public final int system(String aCommand, final String aOutFilePath, IIOFiles aIOFiles) {return system_(aCommand, fileWriteln(aOutFilePath), aIOFiles);}
+    @Override public final int system(String aCommand                           ) {return system_(aCommand, STD_OUT_WRITELN);}
+    @Override public final int system(String aCommand, final String aOutFilePath) {return system_(aCommand, fileWriteln(aOutFilePath));}
     
     @Override public final List<String> system_str(String aCommand) {
         if (mDead) throw new RuntimeException("Can NOT do system from this Dead Executor.");
@@ -53,24 +48,9 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
         system_(aCommand, line->rList.add(line.toString()));
         return rList;
     }
-    @Override public final List<String> system_str(String aCommand, IIOFiles aIOFiles) {
-        if (mDead) throw new RuntimeException("Can NOT do system from this Dead Executor.");
-        if (aCommand==null || aCommand.isEmpty()) {
-            if (needSyncIOFiles()) synchronized (this) {
-                try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {printStackTrace(e); return AbstractCollections.zl();}
-                try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {printStackTrace(e); return AbstractCollections.zl();}
-            }
-            return AbstractCollections.zl();
-        }
-        final List<String> rList = new ArrayList<>();
-        system_(aCommand, line->rList.add(line.toString()), aIOFiles);
-        return rList;
-    }
     
-    @Override public final Future<Integer> submitSystem(String aCommand                                              ) {return submitSystem_(aCommand, STD_OUT_WRITELN);}
-    @Override public final Future<Integer> submitSystem(String aCommand, final String aOutFilePath                   ) {return submitSystem_(aCommand, fileWriteln(aOutFilePath));}
-    @Override public final Future<Integer> submitSystem(String aCommand                           , IIOFiles aIOFiles) {return submitSystem_(aCommand, STD_OUT_WRITELN, aIOFiles);}
-    @Override public final Future<Integer> submitSystem(String aCommand, final String aOutFilePath, IIOFiles aIOFiles) {return submitSystem_(aCommand, fileWriteln(aOutFilePath), aIOFiles);}
+    @Override public final Future<Integer> submitSystem(String aCommand                           ) {return submitSystem_(aCommand, STD_OUT_WRITELN);}
+    @Override public final Future<Integer> submitSystem(String aCommand, final String aOutFilePath) {return submitSystem_(aCommand, fileWriteln(aOutFilePath));}
     
     @Override public final Future<List<String>> submitSystem_str(String aCommand) {
         if (mDead) throw new RuntimeException("Can NOT submitSystem from this Dead Executor.");
@@ -79,58 +59,6 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
         final Future<Integer> tSystemTask = submitSystem_(aCommand, line->rList.add(line.toString()));
         return UT.Par.map(tSystemTask, v -> rList);
     }
-    @Override public final Future<List<String>> submitSystem_str(String aCommand, IIOFiles aIOFiles) {
-        if (mDead) throw new RuntimeException("Can NOT submitSystem from this Dead Executor.");
-        if (aCommand==null || aCommand.isEmpty()) {
-            if (needSyncIOFiles()) synchronized (this) {
-                try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {printStackTrace(e); return EPT_STR_FUTURE;}
-                try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {printStackTrace(e); return EPT_STR_FUTURE;}
-            }
-            return EPT_STR_FUTURE;
-        }
-        final List<String> rList = new ArrayList<>();
-        final Future<Integer> tSystemTask = submitSystem_(aCommand, line->rList.add(line.toString()), aIOFiles);
-        return UT.Par.map(tSystemTask, v -> rList);
-    }
-    
-    /** 批量任务直接遍历提交，使用 UT.Code.mergeAll 来管理 Future */
-    private List<String> mBatchCommands = new ArrayList<>();
-    private MergedIOFiles mBatchIOFiles = new MergedIOFiles();
-    @Override public final synchronized Future<List<Integer>> submitBatchSystem() {
-        if (needSyncIOFiles()) {
-            try {putFiles(mBatchIOFiles.getIFiles());} catch (Exception e) {printStackTrace(e); return ERR_FUTURES;}
-        }
-        List<Future<Integer>> rSystems = new ArrayList<>();
-        for (String tCommand : mBatchCommands) rSystems.add(submitSystem__(tCommand, STD_OUT_WRITELN));
-        SystemFuture<List<Integer>> tBatchSystem = toSystemFuture(UT.Par.mergeAll(rSystems));
-        // 如果下载文件是必要的，使用这个方法来在 tFuture 完成时自动下载附加文件
-        if (needSyncIOFiles()) {
-            // 注意 mBatchIOFiles 是易失的，因此需要拷贝一份输出文件列表；这里不考虑并行的情况，仅考虑传入的 aIOFiles 在函数结束时会被修改
-            final List<String> tOFiles = new ArrayList<>();
-            for (String tFile : mBatchIOFiles.getOFiles()) tOFiles.add(tFile);
-            tBatchSystem = toSystemFuture(tBatchSystem, exitValues -> {
-                if (exitValues == null) return null;
-                try {getFiles(tOFiles);}
-                catch (Exception e) {printStackTrace(e);}
-                return exitValues;
-            });
-        }
-        synchronized (this) {mRunningSystem.add(tBatchSystem);}
-        
-        mBatchCommands = new ArrayList<>();
-        mBatchIOFiles = new MergedIOFiles();
-        return tBatchSystem;
-    }
-    @Override public final synchronized void putBatchSystem(String aCommand) {
-        // 对于空指令专门优化，不添加到队列
-        if (aCommand != null && !aCommand.isEmpty()) mBatchCommands.add(aCommand);
-    }
-    @Override public final synchronized void putBatchSystem(String aCommand, IIOFiles aIOFiles) {
-        // 对于空指令专门优化，不添加到队列
-        if (aCommand != null && !aCommand.isEmpty()) mBatchCommands.add(aCommand);
-        mBatchIOFiles.merge(aIOFiles);
-    }
-    
     
     protected final static UT.IO.IWriteln NUL_WRITELN = line -> {/**/};
     protected final static UT.IO.IWriteln STD_OUT_WRITELN = System.out::println;
@@ -169,10 +97,10 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
             return mOut;
         }
         
-        private volatile List<IUnaryFullOperator<T, T>> mDoFinal = null;
+        private volatile List<Runnable> mDoFinal = null;
         private volatile T mOut = null;
         private volatile boolean mValidOut = false;
-        /** 加入同步保证最终操作（下载文件）是串行执行的 */
+        /** 加入同步保证最终操作是串行执行的 */
         private void doFinal() {
             if (mDoFinal!=null && !isCancelled() && isDone()) synchronized (AbstractSystemExecutor.this) {
                 if (mDoFinal == null) return;
@@ -180,7 +108,7 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
                     try {mOut = mFuture.get();} catch (Exception ignored) {}
                     mValidOut = true;
                 }
-                for (IUnaryFullOperator<T, T> tDo : mDoFinal) mOut = tDo.apply(mOut);
+                for (Runnable tDo : mDoFinal) tDo.run();
                 mDoFinal = null;
             }
         }
@@ -188,14 +116,11 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
     protected <T> SystemFuture<T> toSystemFuture(Future<T> aFuture) {
         return (aFuture instanceof SystemFuture) ? (SystemFuture<T>)aFuture : new SystemFuture<>(aFuture);
     }
-    protected <T> SystemFuture<T> toSystemFuture(Future<T> aFuture, IUnaryFullOperator<T, T> aDoFinal) {
+    protected <T> SystemFuture<T> toSystemFuture(Future<T> aFuture, Runnable aDoFinal) {
         SystemFuture<T> tSystemFuture = (aFuture instanceof SystemFuture) ? (SystemFuture<T>)aFuture : new SystemFuture<>(aFuture);
         if (tSystemFuture.mDoFinal == null) tSystemFuture.mDoFinal = new ArrayList<>();
         tSystemFuture.mDoFinal.add(aDoFinal);
         return tSystemFuture;
-    }
-    protected <T> SystemFuture<T> toSystemFuture(Future<T> aFuture, Runnable aDoFinal) {
-        return toSystemFuture(aFuture, out -> {aDoFinal.run(); return out;});
     }
     
     
@@ -216,7 +141,7 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
                         if (tSystem.isDone()) {
                             mRunningSystem.set(tIdx, UT.Code.last(mRunningSystem));
                             UT.Code.removeLast(mRunningSystem);
-                            // 这里执行一次保证完成时一定执行 final 语句，包括下载输出文件等
+                            // 这里执行一次保证完成时一定执行 final 语句
                             tSystem.doFinal();
                         } else {
                             ++tIdx;
@@ -270,69 +195,10 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
         }
         return tExitValue;
     }
-    private int system_(String aCommand, @NotNull UT.IO.IWriteln aWriteln, IIOFiles aIOFiles) {
-        if (mDead) throw new RuntimeException("Can NOT do system from this Dead Executor.");
-        if (aCommand==null || aCommand.isEmpty()) {
-            if (needSyncIOFiles()) synchronized (this) {
-                try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {printStackTrace(e); return -1;}
-                try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {printStackTrace(e); return -1;}
-            }
-            return 0;
-        }
-        int tExitValue = 0;
-        Future<Integer> tSystemTask = null;
-        try {
-            if (needSyncIOFiles()) synchronized (this) {putFiles(aIOFiles.getIFiles());}
-            tSystemTask = submitSystem_(aCommand, aWriteln);
-            tExitValue = tSystemTask.get();
-            if (needSyncIOFiles()) synchronized (this) {getFiles(aIOFiles.getOFiles());}
-        } catch (ExecutionException e) {
-            printStackTrace(e.getCause());
-            tExitValue = tExitValue==0 ? -1 : tExitValue;
-        } catch (Exception e) {
-            printStackTrace(e);
-            tExitValue = tExitValue==0 ? -1 : tExitValue;
-        } finally {
-            if (tSystemTask != null) tSystemTask.cancel(true);
-        }
-        return tExitValue;
-    }
     private Future<Integer> submitSystem_(String aCommand, @NotNull UT.IO.IWriteln aWriteln) {
         if (mDead) throw new RuntimeException("Can NOT submitSystem from this Dead Executor.");
         if (aCommand==null || aCommand.isEmpty()) return SUC_FUTURE;
         SystemFuture<Integer> tSystem = toSystemFuture(submitSystem__(aCommand, aWriteln));
-        synchronized (this) {mRunningSystem.add(tSystem);}
-        return tSystem;
-    }
-    private Future<Integer> submitSystem_(String aCommand, @NotNull UT.IO.IWriteln aWriteln, IIOFiles aIOFiles) {
-        if (mDead) throw new RuntimeException("Can NOT submitSystem from this Dead Executor.");
-        if (aCommand==null || aCommand.isEmpty()) {
-            if (needSyncIOFiles()) synchronized (this) {
-                try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {printStackTrace(e); return ERR_FUTURE;}
-                try {getFiles(aIOFiles.getOFiles());} catch (Exception e) {printStackTrace(e); return ERR_FUTURE;}
-            }
-            return SUC_FUTURE;
-        }
-        if (needSyncIOFiles()) synchronized (this) {
-            try {putFiles(aIOFiles.getIFiles());} catch (Exception e) {printStackTrace(e); return ERR_FUTURE;}
-        }
-        SystemFuture<Integer> tSystem = toSystemFuture(submitSystem__(aCommand, aWriteln));
-        // 如果下载文件是必要的，使用这个方法来在 tFuture 完成时自动下载附加文件
-        if (needSyncIOFiles()) {
-            // 注意 aIOFiles 是易失的，因此需要拷贝一份输出文件列表；这里不考虑并行的情况，仅考虑传入的 aIOFiles 在函数结束时会被修改
-            final List<String> tOFiles = new ArrayList<>();
-            for (String tFile : aIOFiles.getOFiles()) tOFiles.add(tFile);
-            tSystem = toSystemFuture(tSystem, exitValue -> {
-                if (exitValue==null || exitValue!=0) return exitValue;
-                try {
-                    getFiles(tOFiles);
-                } catch (Exception e) {
-                    printStackTrace(e);
-                    exitValue = -1;
-                }
-                return exitValue;
-            });
-        }
         synchronized (this) {mRunningSystem.add(tSystem);}
         return tSystem;
     }
@@ -347,5 +213,4 @@ public abstract class AbstractSystemExecutor extends AbstractThreadPool<IExecuto
     protected abstract Future<Integer> submitSystem__(String aCommand, @NotNull UT.IO.IWriteln aWriteln);
     protected abstract void putFiles_(Iterable<String> aFiles) throws Exception;
     protected abstract void getFiles_(Iterable<String> aFiles) throws Exception;
-    public abstract boolean needSyncIOFiles();
 }

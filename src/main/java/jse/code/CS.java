@@ -5,9 +5,6 @@ import jse.atom.AbstractXYZ;
 import jse.atom.IXYZ;
 import jse.code.collection.AbstractCollections;
 import jse.code.collection.AbstractRandomAccessList;
-import jse.io.IIOFiles;
-import jse.io.IOFiles;
-import jse.io.SettingType;
 import jse.math.SliceType;
 import jse.parallel.CompletedFuture;
 import jse.system.*;
@@ -87,18 +84,6 @@ public class CS {
     public final static long[]    ZL_LONG = new long[0];
     public final static byte[]    ZL_BYTE = new byte[0];
     public final static boolean[] ZL_BOOL = new boolean[0];
-    
-    /** IOFiles Keys */
-    public final static String
-          OUTPUT_FILE_KEY = "<out>"
-        , INFILE_SELF_KEY = "<self>"
-        , OFILE_KEY = "<o>"
-        , IFILE_KEY = "<i>"
-        ;
-    public final static SettingType
-          REMOVE = SettingType.REMOVE
-        , KEEP = SettingType.KEEP
-        ;
     
     /** Patterns */
     public final static Pattern BLANKS_OR_EMPTY = Pattern.compile("\\s*");
@@ -619,7 +604,6 @@ public class CS {
     
     
     /** SystemExecutor Stuffs */
-    public final static IIOFiles EPT_IOF = IOFiles.immutable();
     public final static Future<Integer> SUC_FUTURE = new CompletedFuture<>(0);
     public final static Future<Integer> ERR_FUTURE = new CompletedFuture<>(-1);
     public final static Future<List<Integer>> ERR_FUTURES = new CompletedFuture<>(Collections.singletonList(-1));

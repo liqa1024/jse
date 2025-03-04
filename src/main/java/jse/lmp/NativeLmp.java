@@ -13,7 +13,6 @@ import jse.clib.JNIUtil;
 import jse.clib.MiMalloc;
 import jse.code.OS;
 import jse.code.UT;
-import jse.io.IInFile;
 import jse.math.matrix.*;
 import jse.math.vector.IIntVector;
 import jse.math.vector.IVector;
@@ -385,19 +384,6 @@ public class NativeLmp implements IAutoShutdown {
         lammpsFile_(mLmpPtr.mPtr, UT.IO.toAbsolutePath(aPath));
     }
     private native static void lammpsFile_(long aLmpPtr, String aPath) throws LmpException;
-    
-    /**
-     * 提供一个更加易用的直接使用 {@link IInFile}
-     * 作为输入的 file 方法，底层会使用 {@link #commands}
-     * 来执行多行命令
-     * @param aLmpIn 需要读取的 lammps in 文件
-     * @author liqa
-     */
-    public void file(IInFile aLmpIn) throws IOException, LmpException {
-        if (mDead) throw new IllegalStateException("This NativeLmp is dead");
-        checkThread();
-        commands(aLmpIn.toLines().toArray(ZL_STR));
-    }
     
     /**
      * Process a single LAMMPS input command from a string.
