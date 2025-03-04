@@ -19,7 +19,9 @@ import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
 /**
- * Class containing useful Constants
+ * 包含许多全局常量（constants）的工具类
+ * @see UT UT: 通用方法工具类
+ * @see IO IO: 文件操作工具类
  * @author liqa
  */
 public class CS {

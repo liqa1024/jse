@@ -59,8 +59,16 @@ import static jse.code.CS.*;
 import static jse.code.Conf.*;
 
 /**
+ * 包含许多通用（utils）方法或者暂未独立方法的工具类
+ * @see UT.Code UT.Code: 代码使用的方法工具类
+ * @see UT.Par UT.Par: 并行方法工具类
+ * @see UT.Timer UT.Timer: 计时方法工具类
+ * @see UT.Plot UT.Plot: 绘图方法工具类
+ * @see UT.Math UT.Math: 数学方法工具类
+ * @see CS CS: 全局常量工具类
+ * @see OS OS: 系统操作工具类
+ * @see jse.code.IO IO: 文件操作工具类
  * @author liqa
- * <p> utils of this project </p>
  */
 public class UT {
     

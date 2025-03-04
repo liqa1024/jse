@@ -28,14 +28,15 @@ import static jse.code.CS.ZL_STR;
  * 现在变为独立的类而不是放在 {@link CS} 或 {@link UT} 中
  * @see ISystemExecutor ISystemExecutor: 独立的系统命令执行器
  * @see IO IO: 文件操作工具类
+ * @see OS.Slurm OS.Slurm: SLURM 针对对系统的下相关功能
  * @author liqa
  */
 public class OS {
-    /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
     public final static class InitHelper {
         private static volatile boolean INITIALIZED = false;
-        
+        /** @return {@link OS} 相关的静态常量是否已经初始化完成 */
         public static boolean initialized() {return INITIALIZED;}
+        /** 初始化 {@link OS} 相关的静态常量值 */
         @SuppressWarnings("ResultOfMethodCallIgnored")
         public static void init() {
             // 手动调用此值来强制初始化
@@ -43,21 +44,35 @@ public class OS {
         }
     }
     
+    /** 当前平台是否是 windows */
     public final static boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("windows");
+    /** 当前平台是否是 macos */
     public final static boolean IS_MAC = System.getProperty("os.name").toLowerCase().contains("mac");
+    /** linux 上不进行输出的重定向路径名，{@code "/dev/null"} */
     public final static String NO_LOG_LINUX = "/dev/null";
+    /** windows 上不进行输出的重定向路径名，{@code "NUL"} */
     public final static String NO_LOG_WIN = "NUL";
+    /** 不进行输出的重定向路径名，windows 下为 {@code "NUL"}，linux 下为 {@code "/dev/null"} */
     public final static String NO_LOG = IS_WINDOWS ? NO_LOG_WIN : NO_LOG_LINUX;
     
+    /** {@code System.getProperty("java.home")} 获取到的原始值，即运行此 jse 对应的 jdk 路径 */
     public final static String JAVA_HOME;
+    /** {@link #JAVA_HOME} 内部合法化文件夹后的路径，可以直接拼接文件名 */
     public final static String JAVA_HOME_DIR;
     
+    /** {@link OS} 内部执行系统指令使用的全局的 {@link ISystemExecutor}，在 linux 上为 {@link BashSystemExecutor}，windows 上为 {@link PowerShellSystemExecutor} */
     public final static ISystemExecutor EXEC;
+    /** 此 jse 核心 jar 文件的路径 */
     public final static String JAR_PATH;
+    /** 此 jse 核心 jar 文件所在的文件夹，已经内部合法化，可以直接拼接文件名 */
     public final static String JAR_DIR;
+    /** {@code System.getProperty("user.home")} 获取到的原始值，即此用户的用户目录 */
     public final static String USER_HOME;
+    /** {@link #USER_HOME} 内部合法化文件夹后的路径，可以直接拼接文件名 */
     public final static String USER_HOME_DIR;
+    /** 运行 jse 的目录（工作目录），已经内部合法化，可以直接拼接文件名 */
     public final static String WORKING_DIR;
+    /** {@link Path} 版本的 {@link #WORKING_DIR} */
     final static Path WORKING_DIR_PATH;
     
     static {
@@ -114,33 +129,83 @@ public class OS {
     }
     
     
-    /** 更加易用的获取环境变量的接口 */
+    /**
+     * 获取指定名称的环境变量值，即 {@link System#getenv(String)}
+     * 的包装方法，但是不再会抛出错误
+     * @param aName 需要获取的环境变量名称
+     * @return 环境变量值，如果不存在或者获取失败则会返回 {@code null}
+     */
     public static @Nullable String env(String aName) {
         try {return System.getenv(aName);}
         catch (Throwable ignored) {} // 获取失败不抛出错误，在 jse 中获取环境变量都是非必要的
         return null;
     }
+    /**
+     * 获取指定名称的环境变量值，即 {@link System#getenv(String)}
+     * 的包装方法，但是不再会抛出错误，并且在没有获取到的时候返回默认值
+     * @param aName 需要获取的环境变量名称
+     * @param aDefault 不存在值或者获取失败时使用的默认值
+     * @return 环境变量值，如果不存在或者获取失败则会返回 aDefault
+     */
     @Contract("_, !null -> !null")
     public static String env(String aName, String aDefault) {
         String tEnv = env(aName);
         return tEnv==null ? aDefault : tEnv;
     }
+    
+    /**
+     * 从环境变量获取路径值，认为路径使用 {@link File#pathSeparator} 分隔
+     * @param aName 需要获取的路径环境变量名称
+     * @return 路径数组，如果不存在或者获取失败则返回空数组
+     */
     public static String @NotNull[] envPath(String aName) {
         return envPath(aName, ZL_STR);
     }
+    /**
+     * 从环境变量获取路径值，认为路径使用 {@link File#pathSeparator}
+     * 分隔，并且在没有获取到的时候返回默认值
+     * @param aName 需要获取的路径环境变量名称
+     * @param aDefault 不存在值或者获取失败时使用的默认值
+     * @return 路径数组，如果不存在或者获取失败则返回 aDefault
+     */
     @Contract("_, !null -> !null")
     public static String[] envPath(String aName, String[] aDefault) {
         String tEnv = env(aName);
         return tEnv==null ? aDefault : tEnv.trim().split(File.pathSeparator);
     }
+    /**
+     * 获取一个整数环境变量值，并且在没有获取到的时候返回默认值
+     * @param aName 需要获取的整数环境变量名称
+     * @param aDefault 不存在值或者获取失败时使用的默认值
+     * @return 整数值，如果不存在或者获取失败则返回 aDefault
+     * @throws NumberFormatException 如果环境变量值不能解析为整数
+     */
     public static int envI(String aName, int aDefault) throws NumberFormatException {
         String tEnv = env(aName);
         return tEnv==null ? aDefault : Integer.parseInt(tEnv);
     }
+    /**
+     * 获取一个浮点数环境变量值，并且在没有获取到的时候返回默认值
+     * @param aName 需要获取的浮点数环境变量名称
+     * @param aDefault 不存在值或者获取失败时使用的默认值
+     * @return 浮点数值，如果不存在或者获取失败则返回 aDefault
+     * @throws NumberFormatException 如果环境变量值不能解析为浮点数
+     */
     public static double envD(String aName, double aDefault) throws NumberFormatException {
         String tEnv = env(aName);
         return tEnv==null ? aDefault : Double.parseDouble(tEnv);
     }
+    /**
+     * 获取一个布尔环境变量值，并且在没有获取到的时候返回默认值
+     * <p>
+     * 其中 {@code "true", "t", "on", "yes", "1"} 都会认为是
+     * {@code true}，{@code "false", "f", "off", "no", "0"} 都会认为是
+     * {@code false}，不区分大小写
+     * @param aName 需要获取的布尔环境变量名称
+     * @param aDefault 不存在值或者获取失败时使用的默认值
+     * @return 布尔值，如果不存在或者获取失败则返回 aDefault
+     * @throws NumberFormatException 如果环境变量值不符合上述格式要求
+     */
     public static boolean envZ(String aName, boolean aDefault) throws NumberFormatException {
         String tEnv = env(aName);
         if (tEnv == null) return aDefault;
@@ -152,35 +217,104 @@ public class OS {
         }
     }
     
-    /** 提供这些接口方便外部调用使用 */
+    /// ISystemExecutor stuffs
+    /**
+     * 通过终端执行一个系统命令，在 linux 上使用 bash，windows 上使用 powershell
+     * @param aCommand 需要执行的命令文本
+     * @return 指令的退出码
+     * @see ISystemExecutor#system(String)
+     */
     @VisibleForTesting public static int system(String aCommand) {return EXEC.system(aCommand);}
+    /**
+     * 通过终端执行一个系统命令，在 linux 上使用 bash，windows 上使用 powershell
+     * @param aCommand 需要执行的命令文本
+     * @param aOutFilePath 重定向输出文件路径
+     * @return 指令的退出码
+     * @see ISystemExecutor#system(String, String)
+     */
     @VisibleForTesting public static int system(String aCommand, String aOutFilePath) {return EXEC.system(aCommand, aOutFilePath);}
+    /**
+     * 提交一个后台系统命令并运行，在 linux 上使用 bash，windows 上使用 powershell
+     * @param aCommand 需要执行的命令文本
+     * @return 获取指令退出码的异步计算结果 {@link Future}
+     * @see ISystemExecutor#submitSystem(String)
+     * @see Future
+     */
     @VisibleForTesting public static Future<Integer> submitSystem(String aCommand) {return EXEC.submitSystem(aCommand);}
+    /**
+     * 提交一个后台系统命令并运行，在 linux 上使用 bash，windows 上使用 powershell
+     * @param aCommand 需要执行的命令文本
+     * @param aOutFilePath 重定向输出文件路径
+     * @return 获取指令退出码的异步计算结果 {@link Future}
+     * @see ISystemExecutor#submitSystem(String, String)
+     * @see Future
+     */
     @VisibleForTesting public static Future<Integer> submitSystem(String aCommand, String aOutFilePath) {return EXEC.submitSystem(aCommand, aOutFilePath);}
+    /**
+     * 通过终端执行一个系统命令，并获取输出到 {@link List}，在 linux 上使用 bash，windows 上使用 powershell
+     * @param aCommand 需要执行的命令文本
+     * @return 运行得到的输出，按行分隔
+     * @see ISystemExecutor#system_str(String)
+     */
     @VisibleForTesting public static List<String> system_str(String aCommand) {return EXEC.system_str(aCommand);}
+    /**
+     * 提交一个后台系统命令并运行，并获取输出到 {@link List}，在 linux 上使用 bash，windows 上使用 powershell
+     * @param aCommand 需要执行的命令文本
+     * @return 获取指令输出的异步计算结果 {@link Future}
+     * @see ISystemExecutor#submitSystem_str(String)
+     * @see Future
+     */
     @VisibleForTesting public static Future<List<String>> submitSystem_str(String aCommand) {return EXEC.submitSystem_str(aCommand);}
-    /** @deprecated use {@link #EXEC} */  @VisibleForTesting @Deprecated public static ISystemExecutor exec() {return EXEC;}
+    /** @deprecated use {@link #EXEC} */
+    @VisibleForTesting @Deprecated public static ISystemExecutor exec() {return EXEC;}
     
     
-    /** SLURM 相关，使用子类分割避免冗余初始化 */
+    /**
+     * 针对使用 SLURM 系统管理任务的相关功能，
+     * 主要包含对 SLURM 中常用的环境变量的统一获取，
+     * 自动资源分配，获取节点列表等
+     * @see jse.system.SRUNSystemExecutor SRUNSystemExecutor: 使用 srun 执行命令的执行器
+     * @author liqa
+     */
     public static class Slurm {
+        /** 是否是 SLURM 系统 */
         public final static boolean IS_SLURM;
+        /** 是否是通过 srun 运行，如果已经是 srun 运行则通常不能再调用 srun */
         public final static boolean IS_SRUN;
+        /** 在 srun 环境中当前进程的 id，对应环境变量 {@code SLURM_PROCID} */
         public final static int PROCID;
+        /** 在 srun 环境中的所有进程总数，对应环境变量 {@code SLURM_NTASKS} */
         public final static int NTASKS;
+        /** 当前分配到的资源中的每节点核心数，对于每个节点有不同核心数的情况下，为了兼容性会取最小值，对应环境变量 {@code SLURM_JOB_CPUS_PER_NODE} */
         public final static int CORES_PER_NODE;
+        /** 分配给每个进程的核心数，没有设置时为 {@code -1}，对应环境变量 {@code SLURM_CPUS_PER_TASK} */
         public final static int CORES_PER_TASK;
+        /** 单个任务的作业步限制，不能获取，默认为 40000 */
         public final static int MAX_STEP_COUNT;
+        /** 在 srun 环境中当前的 step id，对应环境变量 {@code SLURM_STEP_ID} */
         public final static int STEP_ID;
+        /** 当前的任务 id，对应环境变量 {@code SLURM_JOB_ID} */
         public final static int JOB_ID;
+        /** 当前的任务名称，对应环境变量 {@code SLURM_JOB_NAME} */
         public final static String JOB_NAME;
+        /** 当前任务所在节点 id，对应环境变量 {@code SLURM_NODEID} */
         public final static int NODEID;
+        /** 当前任务所在节点名称，对应环境变量 {@code SLURMD_NODENAME} */
         public final static String NODENAME;
+        /** 分配到的节点资源组成的列表，对应环境变量 {@code SLURM_NODELIST} */
         public final static List<String> NODE_LIST;
+        /** 用来获取 SLURM 资源的全局资源管理器 */
         public final static ResourcesManager RESOURCES_MANAGER;
         
         
-        /** slurm 的资源分配器，所有 slurm 资源申请统一先走这层防止资源分配失败 */
+        /**
+         * SLURM 资源管理器实现，这个资源管理器更改了 SLURM 分配资源的默认行为，
+         * 给定需要的进程数后，会优先分配到单个节点上，从而避免跨节点的通讯
+         * <p>
+         * 通过 {@link ResourcesManager#assignResource(int)} 来尝试分配资源，使用
+         * {@link ResourcesManager#creatJobStep(Resource, String)} 来为资源创建对应的提交任务命令，
+         * 并使用 {@link ResourcesManager#returnResource(Resource)} 来归还资源
+         */
         public final static class ResourcesManager {
             private final Map<String, Integer> mAllResources;
             private int mRestStepCount;
@@ -201,7 +335,11 @@ public class OS {
                 // 移除自身消耗的作业步，预留 100 步给外部使用
                 mRestStepCount = MAX_STEP_COUNT - 100;
             }
-            /** 根据需要的核心数来分配资源，返回节点和对应的可用核心数 */
+            /**
+             * 根据需要的核心数来分配资源，会尝试优先分配到一个节点上
+             * @param aTaskNum 需要的任务数（进程数）
+             * @return 分配得到的资源，包含分配得到的节点以及每节点的任务数，如果分配失败则返回 {@code null}
+             */
             public synchronized @Nullable Resource assignResource(final int aTaskNum) {
                 if (mWarning) {
                     mWarning = false; // 只警告一次
@@ -258,7 +396,10 @@ public class OS {
                 return null;
             }
             
-            /** 不指定时会分配目前最大核数的节点，保持不跨节点 */
+            /**
+             * 不指定时任务数的会分配资源，会使用目前最大核数的节点，并保持不跨节点
+             * @return 分配得到的资源，包含分配得到的节点以及每节点的任务数，如果分配失败则返回 {@code null}
+             */
             public synchronized @Nullable Resource assignResource() {
                 if (mWarning) {
                     mWarning = false; // 只警告一次
@@ -284,8 +425,11 @@ public class OS {
                 return null;
             }
             
-            /** 返回分配的资源 */
-            public synchronized void returnResource(Resource aResource) {
+            /**
+             * 归还分配的资源
+             * @param aResource 需要归还的资源
+             */
+            public synchronized void returnResource(@NotNull Resource aResource) {
                 int tIdx = 0;
                 for (String tNode : aResource.nodelist) {
                     final int tThisNodeNTasks = aResource.ntasksPerNodeList[tIdx];
@@ -294,8 +438,13 @@ public class OS {
                 }
             }
             
-            /** 获取提交作业步的指令 */
-            public synchronized @Nullable String creatJobStep(Resource aResource, String aCommand) {
+            /**
+             * 通过资源和命令来创建提交任务的 srun 指令
+             * @param aResource 需要使用的资源
+             * @param aCommand 需要提交的命令
+             * @return 使用当前资源的 srun 命令，如果创建失败则返回 {@code null}
+             */
+            public synchronized @Nullable String creatJobStep(@NotNull Resource aResource, String aCommand) {
                 // 超过作业步限制直接禁止分配
                 --mRestStepCount;
                 if (mRestStepCount < 0) {mRestStepCount = 0; return null;}
@@ -309,11 +458,12 @@ public class OS {
                 if (CORES_PER_TASK > 0) {
                 rCommand.add("--cpus-per-task");    rCommand.add(String.valueOf(1));
                 }
+                rCommand.add("--overlap"); // 这样就不强制要求环境变量设置 SLURM_OVERLAP=1 了
                 rCommand.add(aCommand);
                 return String.join(" ", rCommand);
             }
         }
-        /** slurm 的资源结构，限制很多已经尽力 */
+        /** slurm 的资源结构 */
         public final static class Resource {
             public final @Unmodifiable List<String> nodelist;
             public final int nodes;
