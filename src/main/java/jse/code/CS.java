@@ -8,6 +8,7 @@ import jse.code.collection.AbstractRandomAccessList;
 import jse.math.SliceType;
 import jse.parallel.CompletedFuture;
 import jse.system.*;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.awt.*;
 import java.io.*;
@@ -18,27 +19,26 @@ import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
 /**
+ * Class containing useful Constants
  * @author liqa
- * <p> Class containing useful Constants </p>
  */
 public class CS {
     /** version of jse */
     public final static String VERSION = "3.5.0";
     
-    /** a Random generator so I don't need to instantiate a new one all the time. */
+    /** 全局的随机数生成器，可以通过 {@link Random#setSeed(long)} 或者 {@link UT.Math#rng(long)} 来控制全局的随机流 */
     public final static Random RANDOM = new Random();
-    /** Marsaglia random # generator need lower one */
+    /** {@link UT.Code#randSeed} 生成的最大种子数（900000000），主要用于 lammps 输入，这是因为 Marsaglia 随机数生成器需要一个较小的种子输入 */
     public final static int MAX_SEED = 900000000;
     
-    public final static Object NULL = null;
-    
+    /** 全为 0 的 {@link IXYZ} 常量，不可修改 */
     public final static IXYZ XYZ_ZERO = new AbstractXYZ() {
         @Override public double x() {return 0.0;}
         @Override public double y() {return 0.0;}
         @Override public double z() {return 0.0;}
     };
     
-    /** MathEX stuffs */
+    /** {@link jse.math.MathEX} 中的使用常量，用于数组切片时传入表明这个维度全保留 */
     public final static SliceType ALL = SliceType.ALL;
     
     /** Sleep time stuff, ms */
@@ -55,52 +55,81 @@ public class CS {
         ;
     
     
-    /** AtomData stuffs */
+    /// AtomData stuffs
+    /** {@code ["x", "y", "z", "id", "type", "vx", "vy", "vz"]} */
     public final static String[] ATOM_DATA_KEYS = {"x", "y", "z", "id", "type", "vx", "vy", "vz"};
+    /** {@code ["vx", "vy", "vz"]} */
     public final static String[] ATOM_DATA_KEYS_VELOCITY = {"vx", "vy", "vz"};
+    /** {@code ["x", "y", "z"]} */
     public final static String[] ATOM_DATA_KEYS_XYZ = {"x", "y", "z"};
+    /** {@code ["x", "y", "z", "id"]} */
     public final static String[] ATOM_DATA_KEYS_XYZID = {"x", "y", "z", "id"};
+    /** {@code ["type", "x", "y", "z"]} */
     public final static String[] ATOM_DATA_KEYS_TYPE_XYZ = {"type", "x", "y", "z"};
+    /** {@code ["id", "type", "x", "y", "z"]} */
     public final static String[] ATOM_DATA_KEYS_ID_TYPE_XYZ = {"id", "type", "x", "y", "z"};
+    /** {@code ["id", "type", "x", "y", "z", "vx", "vy", "vz"]} */
     public final static String[] ALL_ATOM_DATA_KEYS = {"id", "type", "x", "y", "z", "vx", "vy", "vz"};
+    /** {@link #ATOM_DATA_KEYS_ID_TYPE_XYZ} */
     public final static String[] STD_ATOM_DATA_KEYS = ATOM_DATA_KEYS_ID_TYPE_XYZ; // 标准 AtomData 包含信息格式为 id type x y z
+    /** index of {@link #ATOM_DATA_KEYS} */
     public final static int DATA_X_COL = 0, DATA_Y_COL = 1, DATA_Z_COL = 2, DATA_ID_COL = 3, DATA_TYPE_COL = 4, DATA_VX_COL = 5, DATA_VY_COL = 6, DATA_VZ_COL = 7;
+    /** index of {@link #ATOM_DATA_KEYS_XYZ} */
     public final static int XYZ_X_COL = 0, XYZ_Y_COL = 1, XYZ_Z_COL = 2;
+    /** index of {@link #ATOM_DATA_KEYS_XYZID} */
     public final static int XYZID_X_COL = 0, XYZID_Y_COL = 1, XYZID_Z_COL = 2, XYZID_ID_COL = 3;
+    /** index of {@link #ATOM_DATA_KEYS_TYPE_XYZ} */
     public final static int TYPE_XYZ_TYPE_COL = 0, TYPE_XYZ_X_COL = 1, TYPE_XYZ_Y_COL = 2, TYPE_XYZ_Z_COL = 3;
+    /** index of {@link #ALL_ATOM_DATA_KEYS} */
     public final static int ALL_ID_COL = 0, ALL_TYPE_COL = 1, ALL_X_COL = 2, ALL_Y_COL = 3, ALL_Z_COL = 4, ALL_VX_COL = 5, ALL_VY_COL = 6, ALL_VZ_COL = 7;
+    /** index of {@link #STD_ATOM_DATA_KEYS} */
     public final static int STD_ID_COL = 0, STD_TYPE_COL = 1, STD_X_COL = 2, STD_Y_COL = 3, STD_Z_COL = 4;
+    /** index of {@link #ATOM_DATA_KEYS_VELOCITY} */
     public final static int STD_VX_COL = 0, STD_VY_COL = 1, STD_VZ_COL = 2;
     
+    /** {@link jse.atom.AtomicParameterCalculator} 参数计算默认使用的截断半径倍率 */
     public final static double R_NEAREST_MUL = 1.5;
     
-    /** const arrays */
+    /// const arrays
+    /** {@code OpenOption[0]} */
     public final static OpenOption[] ZL_OO = new OpenOption[0];
+    /** {@code String[0]} */
     public final static String[] ZL_STR = new String[0];
+    /** {@code Object[0]} */
     public final static Object[] ZL_OBJ = new Object[0];
+    /** {@code double[0][]} */
     public final static double[][] ZL_MAT = new double[0][];
+    /** {@code double[0]} */
     public final static double[]   ZL_VEC = new double[0];
+    /** {@code int[0]} */
     public final static int[]      ZL_INT = new int[0];
+    /** {@code long[0]} */
     public final static long[]    ZL_LONG = new long[0];
+    /** {@code byte[0]} */
     public final static byte[]    ZL_BYTE = new byte[0];
+    /** {@code boolean[0]} */
     public final static boolean[] ZL_BOOL = new boolean[0];
     
-    /** Patterns */
+    /// Patterns
+    /** 匹配空字符串或者空格的正则表达式，{@code \s*} */
     public final static Pattern BLANKS_OR_EMPTY = Pattern.compile("\\s*");
+    /** 匹配空字符串的正则表达式，{@code \s+} */
     public final static Pattern BLANKS = Pattern.compile("\\s+");
+    /** 匹配周围有任意空格的逗号的正则表达式，{@code \s*,\s*} */
     public final static Pattern COMMA = Pattern.compile("\\s*,\\s*");
+    /** 匹配周围有任意空格的逗号或者空格的正则表达式，{@code \s*[,\s]\s*} */
     public final static Pattern COMMA_OR_BLANKS = Pattern.compile("\\s*[,\\s]\\s*");
     
-    /** Boltzmann constant */
+    /** Boltzmann constant, eV/K */
     public final static double K_B = 0.0000861733262; // eV / K
-    /** Reduced Planck constant */
+    /** Reduced Planck constant, eV*ps */
     public final static double H_BAR = 6.582119514e-4; // eV * ps
     /** Avogadro constant */
     public final static double N_A = 6.02214076e23;
-    /** Electron volt */
+    /** Electron volt, {@code g * Å^2 / ps^2 == 0.1J} */
     public final static double E_V = 1.602176634e-20; // g * Å^2 / ps^2 == 0.1J
     
-    /** All atom name, start from 0 */
+    /** All atom name, start from 0, {@code SYMBOLS[0] == "H"} */
     public final static String[] SYMBOLS = {
         "H" , "He",
         "Li", "Be", "B" , "C" , "N" , "O" , "F" , "Ne",
@@ -112,11 +141,14 @@ public class CS {
         "Fr", "Ra", "Ac", "Th", "Pa", "U" , "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf",
         "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og"
     };
+    /** @deprecated use {@link #SYMBOLS} */
     public final static @Deprecated String[] ATOM_TYPE_NAMES = SYMBOLS;
+    /** convert atomic number to symbol, {@code ATOMIC_NUMBER_TO_SYMBOL[1] == "H"} */
     public final static List<String> ATOMIC_NUMBER_TO_SYMBOL = new AbstractRandomAccessList<String>() {
         @Override public String get(int index) {return SYMBOLS[index-1];}
         @Override public int size() {return SYMBOLS.length+1;}
     };
+    /** convert symbol to atomic number, {@code SYMBOL_TO_ATOMIC_NUMBER["H"] == 1} */
     public final static Map<String, Integer> SYMBOL_TO_ATOMIC_NUMBER = (new ImmutableMap.Builder<String, Integer>())
         .put("H" , 1)
         .put("He", 2)
@@ -238,7 +270,7 @@ public class CS {
         .put("Og", 118)
         .build();
     
-    /** All atomic mass */
+    /** All atomic mass, {@code MASS["H"] == 1.00794} */
     public final static Map<String, Double> MASS = (new ImmutableMap.Builder<String, Double>())
         .put("H" , 1.00794)
         .put("He", 4.002602)
@@ -359,7 +391,7 @@ public class CS {
         .put("Ts", 294.0)
         .put("Og", 294.0)
         .build();
-    /** All atomic color, from ovito */
+    /** All atomic color, from ovito, {@code COLOR["H"] == new Color(0xffffff)} */
     public final static Map<String, Color> COLOR = (new ImmutableMap.Builder<String, Color>())
         .put("H" , new Color(0xffffff))
         .put("He", new Color(0xd9ffff))
@@ -480,7 +512,7 @@ public class CS {
         .put("Ts", new Color(0xeb0026))
         .put("Og", new Color(0xeb0026))
         .build();
-    /** All atomic size, from ovito */
+    /** All atomic size, from ovito, {@code SIZE["H"] == 0.46} */
     public final static Map<String, Double> SIZE = (new ImmutableMap.Builder<String, Double>())
         .put("H" , 0.46)
         .put("He", 1.22)
@@ -603,12 +635,12 @@ public class CS {
         .build();
     
     
-    /** SystemExecutor Stuffs */
-    public final static Future<Integer> SUC_FUTURE = new CompletedFuture<>(0);
-    public final static Future<Integer> ERR_FUTURE = new CompletedFuture<>(-1);
-    public final static Future<List<Integer>> ERR_FUTURES = new CompletedFuture<>(Collections.singletonList(-1));
-    public final static Future<List<String>> EPT_STR_FUTURE = new CompletedFuture<>(AbstractCollections.zl());
-    public final static PrintStream NUL_PRINT_STREAM = new PrintStream(new OutputStream() {public void write(int b) {/**/}});
+    /// SystemExecutor Stuffs
+    @ApiStatus.Internal public final static Future<Integer> SUC_FUTURE = new CompletedFuture<>(0);
+    @ApiStatus.Internal public final static Future<Integer> ERR_FUTURE = new CompletedFuture<>(-1);
+    @ApiStatus.Internal public final static Future<List<Integer>> ERR_FUTURES = new CompletedFuture<>(Collections.singletonList(-1));
+    @ApiStatus.Internal public final static Future<List<String>> EPT_STR_FUTURE = new CompletedFuture<>(AbstractCollections.zl());
+    @ApiStatus.Internal public final static PrintStream NUL_PRINT_STREAM = new PrintStream(new OutputStream() {public void write(int b) {/**/}});
     
     
     /** @deprecated use {@link OS} */
