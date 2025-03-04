@@ -24,7 +24,6 @@ import jse.parallel.MPIException;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 

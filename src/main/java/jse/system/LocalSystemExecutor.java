@@ -129,7 +129,6 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
     
     
     /** 对于本地的不需要同步输入输出文件 */
-    protected final void putFiles_(Iterable<String> aFiles) {/**/}
-    protected final void getFiles_(Iterable<String> aFiles) {/**/}
-    public final boolean needSyncIOFiles() {return false;}
+    @Override protected final void putFiles_(Iterable<String> aFiles) {/**/}
+    @Override protected final void getFiles_(Iterable<String> aFiles) {/**/}
 }
