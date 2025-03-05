@@ -70,7 +70,12 @@ public class OS {
     public final static String USER_HOME;
     /** {@link #USER_HOME} 内部合法化文件夹后的路径，可以直接拼接文件名 */
     public final static String USER_HOME_DIR;
-    /** 运行 jse 的目录（工作目录），已经内部合法化，可以直接拼接文件名 */
+    /**
+     * 运行 jse 的目录（工作目录），已经内部合法化，可以直接拼接文件名
+     * <p>
+     * 在通过 matlab 调用 jar 使用时，获取到的工作目录会出错，
+     * 因此这里会统一执行系统命令获取真实的工作目录。
+     */
     public final static String WORKING_DIR;
     /** {@link Path} 版本的 {@link #WORKING_DIR} */
     final static Path WORKING_DIR_PATH;
