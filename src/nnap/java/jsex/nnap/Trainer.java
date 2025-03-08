@@ -392,7 +392,7 @@ public class Trainer implements IAutoShutdown, ISavable {
         @ApiStatus.Internal
         protected void initFpMat_() {
             for (int i = 0; i < mFp.length; ++i) {
-                final int tColNum = mBasis[i].rowNumber()*mBasis[i].columnNumber();
+                final int tColNum = mBasis[i].size();
                 final int tRowNum = mFp[i].size() / tColNum;
                 mFpMat[i] = new RowMatrix(tRowNum, tColNum, mFp[i].internalData());
             }
@@ -564,7 +564,7 @@ public class Trainer implements IAutoShutdown, ISavable {
         mNormMu = new Vector[mSymbols.length];
         mNormSigma = new Vector[mSymbols.length];
         for (int i = 0; i < mSymbols.length; ++i) {
-            int tSize = mBasis[i].rowNumber()*mBasis[i].columnNumber();
+            int tSize = mBasis[i].size();
             mNormMu[i] = Vector.zeros(tSize);
             mNormSigma[i] = Vector.zeros(tSize);
         }
@@ -630,7 +630,7 @@ public class Trainer implements IAutoShutdown, ISavable {
                 UT.Code.warning("hidden_dims of mirror mismatch for type: "+(i+1)+", overwrite with mirror values automatically");
             }
         }
-        SP.Python.setValue(VAL_INPUT_DIMS, NewCollections.map(mBasis, base -> base.rowNumber()*base.columnNumber()));
+        SP.Python.setValue(VAL_INPUT_DIMS, NewCollections.map(mBasis, IBasis::size));
         SP.Python.setValue(VAL_HIDDEN_DIMS, tHiddenDims);
         SP.Python.setValue(VAL_MIRROR_MAP, tMirrorMap);
         SP.Python.setValue(VAL_NTYPES, mSymbols.length);
@@ -886,10 +886,10 @@ public class Trainer implements IAutoShutdown, ISavable {
             for (int i = 0; i < tAtomNum; ++i) {
                 int tType = tTypeMap.applyAsInt(aAtomData.atom(i).type());
                 IBasis tBasis = basis(tType);
-                RowMatrix tFp = tBasis.eval(tAPC, i, tTypeMap);
-                rData.mFp[tType-1].addAll(tFp.asVecRow());
+                Vector tFp = tBasis.eval(tAPC, i, tTypeMap);
+                rData.mFp[tType-1].addAll(tFp);
                 rData.mEngIndices[tType-1].add(rData.mEng.size());
-                MatrixCache.returnMat(tFp);
+                VectorCache.returnVec(tFp);
                 // 计算相对能量值
                 aEnergy -= mRefEngs.get(tType-1);
             }
@@ -906,18 +906,18 @@ public class Trainer implements IAutoShutdown, ISavable {
             for (int i = 0; i < tAtomNum; ++i) {
                 int tType = tTypeMap.applyAsInt(aAtomData.atom(i).type());
                 IBasis tBasis = basis(tType);
-                List<RowMatrix> tOut = tBasis.evalPartial(true, true, tAPC, i, tTypeMap);
+                List<Vector> tOut = tBasis.evalPartial(true, true, tAPC, i, tTypeMap);
                 // 基组和索引
-                rData.mFp[tType-1].addAll(tOut.get(0).asVecRow());
+                rData.mFp[tType-1].addAll(tOut.get(0));
                 rData.mEngIndices[tType-1].add(rData.mEng.size());
                 // 计算相对能量值
                 aEnergy -= mRefEngs.get(tType-1);
                 // 基组偏导和索引
                 int tRowNum = tOut.size()-1;
-                final RowMatrix tFpPartial = MatrixCache.getMatRow(tRowNum, tBasis.rowNumber()*tBasis.columnNumber());
-                tFpPartial.row(0).fill(tOut.get(1).asVecRow());
-                tFpPartial.row(1).fill(tOut.get(2).asVecRow());
-                tFpPartial.row(2).fill(tOut.get(3).asVecRow());
+                final RowMatrix tFpPartial = MatrixCache.getMatRow(tRowNum, tBasis.size());
+                tFpPartial.row(0).fill(tOut.get(1));
+                tFpPartial.row(1).fill(tOut.get(2));
+                tFpPartial.row(2).fill(tOut.get(3));
                 final IntVector tForceIndices = mHasForce ? IntVectorCache.getVec(tRowNum) : null;
                 final int tShiftF = mHasForce ? rData.mForce.size() : -1;
                 if (mHasForce) {
@@ -941,9 +941,9 @@ public class Trainer implements IAutoShutdown, ISavable {
                 final int tNN = (tOut.size()-4)/3;
                 final int[] j = {0};
                 tAPC.nl_().forEachNeighbor(i, tBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
-                    tFpPartial.row(3 + 3*j[0]).fill(tOut.get(4+j[0]).asVecRow());
-                    tFpPartial.row(4 + 3*j[0]).fill(tOut.get(4+tNN+j[0]).asVecRow());
-                    tFpPartial.row(5 + 3*j[0]).fill(tOut.get(4+tNN+tNN+j[0]).asVecRow());
+                    tFpPartial.row(3 + 3*j[0]).fill(tOut.get(4+j[0]));
+                    tFpPartial.row(4 + 3*j[0]).fill(tOut.get(4+tNN+j[0]));
+                    tFpPartial.row(5 + 3*j[0]).fill(tOut.get(4+tNN+tNN+j[0]));
                     if (mHasForce) {
                         assert tForceIndices != null;
                         tForceIndices.set(3 + 3*j[0], tShiftF + 3*idx);
@@ -964,7 +964,7 @@ public class Trainer implements IAutoShutdown, ISavable {
                     }
                     ++j[0];
                 });
-                MatrixCache.returnMat(tOut);
+                VectorCache.returnVec(tOut);
                 // 将数据转换为 torch 的 tensor，这里最快的方式是利用 torch 的 from_numpy 进行转换
                 PyObject tPyFpPartial, tPyForceIndices=null, tPyStressIndices=null, tPyStressDxyz=null;
                 try (PyCallable tFromNumpy = TORCH.getAttr("from_numpy", PyCallable.class)) {
@@ -1128,12 +1128,12 @@ public class Trainer implements IAutoShutdown, ISavable {
             byte[] tModelByes = (byte[])SP.Python.invoke(FN_MODEL2BYTES, i);
             rModels.add(Maps.of(
                 "symbol", mSymbols[i],
+                "basis", rBasis,
                 "ref_eng", mRefEngs.get(i),
                 "norm_mu", mNormMu[i].asList(),
                 "norm_sigma", mNormSigma[i].asList(),
                 "norm_mu_eng", mNormMuEng,
                 "norm_sigma_eng", mNormSigmaEng,
-                "basis", rBasis,
                 "torch", Base64.getEncoder().encodeToString(tModelByes)
             ));
         }

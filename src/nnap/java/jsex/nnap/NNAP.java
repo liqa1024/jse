@@ -228,7 +228,7 @@ public class NNAP implements IAutoShutdown {
             mNormMuEng = aNormMuEng;
             mNormSigmaEng = aNormSigmaEng;
             mBasis = aBasis;
-            mBasisSize = mBasis[0].rowNumber()*mBasis[0].columnNumber();
+            mBasisSize = mBasis[0].size();
             mModel = aModel;
             byte[] tModelBytes = Base64.getDecoder().decode(aModel);
             long[] rModelPtrs = new long[mThreadNumber];
@@ -575,14 +575,14 @@ public class NNAP implements IAutoShutdown {
             }, (i, threadID) -> {
                 final SingleNNAP tModel = model(aTypeMap.applyAsInt(aAPC.atomType_().get(i)));
                 final IBasis tBasis = tModel.basis(threadID);
-                RowMatrix tBasisValue = tBasis.eval(aAPC, i, aTypeMap);
-                tModel.normBasis(tBasisValue.asVecRow());
-                tModel.submitBatchForward(threadID, tBasisValue.asVecRow(), pred -> {
+                Vector tBasisValue = tBasis.eval(aAPC, i, aTypeMap);
+                tModel.normBasis(tBasisValue);
+                tModel.submitBatchForward(threadID, tBasisValue, pred -> {
                     pred = tModel.denormEng(pred);
                     pred += tModel.mRefEng;
                     rEngs.set(i, pred);
                 });
-                MatrixCache.returnMat(tBasisValue);
+                VectorCache.returnVec(tBasisValue);
             });
         } catch (TorchException e) {
             throw e;
@@ -620,14 +620,14 @@ public class NNAP implements IAutoShutdown {
                 final int cIdx = aIndices.get(i);
                 final SingleNNAP tModel = model(aTypeMap.applyAsInt(aAPC.atomType_().get(cIdx)));
                 final IBasis tBasis = tModel.basis(threadID);
-                RowMatrix tBasisValue = tBasis.eval(aAPC, cIdx, aTypeMap);
-                tModel.normBasis(tBasisValue.asVecRow());
-                tModel.submitBatchForward(threadID, tBasisValue.asVecRow(), pred -> {
+                Vector tBasisValue = tBasis.eval(aAPC, cIdx, aTypeMap);
+                tModel.normBasis(tBasisValue);
+                tModel.submitBatchForward(threadID, tBasisValue, pred -> {
                     pred = tModel.denormEng(pred);
                     pred += tModel.mRefEng;
                     rEngs.set(i, pred);
                 });
-                MatrixCache.returnMat(tBasisValue);
+                VectorCache.returnVec(tBasisValue);
             });
         } catch (TorchException e) {
             throw e;
@@ -1004,9 +1004,9 @@ public class NNAP implements IAutoShutdown {
                 final @Nullable IVector tVirialsYZ = rVirialsYZ!=null ? rVirialsYZPar[threadID] : null;
                 final SingleNNAP tModel = model(aTypeMap.applyAsInt(aAPC.atomType_().get(i)));
                 final IBasis tBasis = tModel.basis(threadID);
-                final List<@NotNull RowMatrix> tOut = tBasis.evalPartial(true, true, aAPC, i, aTypeMap);
-                RowMatrix tBasisValue = tOut.get(0); tModel.normBasis(tBasisValue.asVecRow());
-                tModel.submitBatchBackward(threadID, tBasisValue.asVecRow(), rEnergies==null ? null : pred -> {
+                final List<@NotNull Vector> tOut = tBasis.evalPartial(true, true, aAPC, i, aTypeMap);
+                Vector tBasisValue = tOut.get(0); tModel.normBasis(tBasisValue);
+                tModel.submitBatchBackward(threadID, tBasisValue, rEnergies==null ? null : pred -> {
                     pred = tModel.denormEng(pred);
                     pred += tModel.mRefEng;
                     rEnergies.set(i, pred);
@@ -1038,7 +1038,7 @@ public class NNAP implements IAutoShutdown {
                         ++j[0];
                     });
                     // 注意要在这里归还中间变量，实际为延迟归还操作
-                    MatrixCache.returnMat(tOut);
+                    VectorCache.returnVec(tOut);
                 });
             });
         } catch (TorchException e) {

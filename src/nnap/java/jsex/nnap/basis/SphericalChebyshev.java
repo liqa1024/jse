@@ -270,14 +270,11 @@ public class SphericalChebyshev implements IBasis {
     }
     /**
      * @return {@inheritDoc}；如果只有一个种类则为
-     * {@code nmax+1}，如果超过一个种类则为 {@code 2(nmax+1)}
+     * {@code (nmax+1)(lmax+1)}，如果超过一个种类则为
+     * {@code 2(nmax+1)(lmax+1)}
      */
-    @Override public int rowNumber() {
-        return mTypeNum>1 ? mNMax+mNMax+2 : mNMax+1;
-    }
-    /** @return {@inheritDoc}；在不考虑三阶项时具体为 {@code lmax+1} */
-    @Override public int columnNumber() {
-        return mLMax+1 + (mL3Cross?L3NCOLS:L3NCOLS_NOCROSS)[mL3Max];
+    @Override public int size() {
+        return sizeN()*sizeL();
     }
     /** @return {@inheritDoc} */
     @Override public @Unmodifiable List<String> symbols() {
@@ -285,6 +282,12 @@ public class SphericalChebyshev implements IBasis {
     }
     @Override public boolean hasSymbol() {return mSymbols!=null;}
     
+    protected int sizeN() {
+        return mTypeNum>1 ? mNMax+mNMax+2 : mNMax+1;
+    }
+    protected int sizeL() {
+        return mLMax+1 + (mL3Cross?L3NCOLS:L3NCOLS_NOCROSS)[mL3Max];
+    }
     private int lmax_() {
         return Math.max(mLMax, mL3Max);
     }
@@ -296,15 +299,15 @@ public class SphericalChebyshev implements IBasis {
     
     /** 一些缓存的中间变量，现在统一作为对象存储，对于这种大规模的缓存情况可以进一步提高效率 */
     private @Nullable RowMatrix mCnlm = null, mCnlmPx = null, mCnlmPy = null, mCnlmPz = null;
-    @NotNull RowMatrix bufCnlm(boolean aClear) {if (mCnlm==null) {mCnlm = MatrixCache.getMatRow(rowNumber(), lmAll_());} if (aClear) {mCnlm.fill(0.0);} return mCnlm;}
-    @NotNull RowMatrix bufCnlmPx(boolean aClear) {if (mCnlmPx==null) {mCnlmPx = MatrixCache.getMatRow(rowNumber(), lmAll_());} if (aClear) {mCnlmPx.fill(0.0);} return mCnlmPx;}
-    @NotNull RowMatrix bufCnlmPy(boolean aClear) {if (mCnlmPy==null) {mCnlmPy = MatrixCache.getMatRow(rowNumber(), lmAll_());} if (aClear) {mCnlmPy.fill(0.0);} return mCnlmPy;}
-    @NotNull RowMatrix bufCnlmPz(boolean aClear) {if (mCnlmPz==null) {mCnlmPz = MatrixCache.getMatRow(rowNumber(), lmAll_());} if (aClear) {mCnlmPz.fill(0.0);} return mCnlmPz;}
+    @NotNull RowMatrix bufCnlm(boolean aClear) {if (mCnlm==null) {mCnlm = MatrixCache.getMatRow(sizeN(), lmAll_());} if (aClear) {mCnlm.fill(0.0);} return mCnlm;}
+    @NotNull RowMatrix bufCnlmPx(boolean aClear) {if (mCnlmPx==null) {mCnlmPx = MatrixCache.getMatRow(sizeN(), lmAll_());} if (aClear) {mCnlmPx.fill(0.0);} return mCnlmPx;}
+    @NotNull RowMatrix bufCnlmPy(boolean aClear) {if (mCnlmPy==null) {mCnlmPy = MatrixCache.getMatRow(sizeN(), lmAll_());} if (aClear) {mCnlmPy.fill(0.0);} return mCnlmPy;}
+    @NotNull RowMatrix bufCnlmPz(boolean aClear) {if (mCnlmPz==null) {mCnlmPz = MatrixCache.getMatRow(sizeN(), lmAll_());} if (aClear) {mCnlmPz.fill(0.0);} return mCnlmPz;}
     
     private final List<RowMatrix> mCnlmPxAll = new ArrayList<>(), mCnlmPyAll = new ArrayList<>(), mCnlmPzAll = new ArrayList<>();
-    @NotNull RowMatrix bufCnlmPxAll(int i, boolean aClear) {while (mCnlmPxAll.size()<=i) {mCnlmPxAll.add(MatrixCache.getMatRow(rowNumber(), lmAll_()));} RowMatrix tCnlmPx = mCnlmPxAll.get(i); if (aClear) {tCnlmPx.fill(0.0);} return tCnlmPx;}
-    @NotNull RowMatrix bufCnlmPyAll(int i, boolean aClear) {while (mCnlmPyAll.size()<=i) {mCnlmPyAll.add(MatrixCache.getMatRow(rowNumber(), lmAll_()));} RowMatrix tCnlmPy = mCnlmPyAll.get(i); if (aClear) {tCnlmPy.fill(0.0);} return tCnlmPy;}
-    @NotNull RowMatrix bufCnlmPzAll(int i, boolean aClear) {while (mCnlmPzAll.size()<=i) {mCnlmPzAll.add(MatrixCache.getMatRow(rowNumber(), lmAll_()));} RowMatrix tCnlmPz = mCnlmPzAll.get(i); if (aClear) {tCnlmPz.fill(0.0);} return tCnlmPz;}
+    @NotNull RowMatrix bufCnlmPxAll(int i, boolean aClear) {while (mCnlmPxAll.size()<=i) {mCnlmPxAll.add(MatrixCache.getMatRow(sizeN(), lmAll_()));} RowMatrix tCnlmPx = mCnlmPxAll.get(i); if (aClear) {tCnlmPx.fill(0.0);} return tCnlmPx;}
+    @NotNull RowMatrix bufCnlmPyAll(int i, boolean aClear) {while (mCnlmPyAll.size()<=i) {mCnlmPyAll.add(MatrixCache.getMatRow(sizeN(), lmAll_()));} RowMatrix tCnlmPy = mCnlmPyAll.get(i); if (aClear) {tCnlmPy.fill(0.0);} return tCnlmPy;}
+    @NotNull RowMatrix bufCnlmPzAll(int i, boolean aClear) {while (mCnlmPzAll.size()<=i) {mCnlmPzAll.add(MatrixCache.getMatRow(sizeN(), lmAll_()));} RowMatrix tCnlmPz = mCnlmPzAll.get(i); if (aClear) {tCnlmPz.fill(0.0);} return tCnlmPz;}
     
     private @Nullable Vector mRn = null, mRnPx = null, mRnPy = null, mRnPz = null;
     @NotNull Vector bufRn(boolean aClear) {if (mRn==null) {mRn = VectorCache.getVec(mNMax+1);} if (aClear) {mRn.fill(0.0);} return mRn;}
@@ -345,9 +348,9 @@ public class SphericalChebyshev implements IBasis {
      * @param aNL 近邻列表遍历器
      * @return {@inheritDoc}
      */
-    @Override public RowMatrix eval(IDxyzTypeIterable aNL) {
-        final int tSizeN = rowNumber();
-        final RowMatrix rFingerPrint = MatrixCache.getMatRow(tSizeN, columnNumber());
+    @Override public Vector eval(IDxyzTypeIterable aNL) {
+        final int tSizeN = sizeN();
+        final RowMatrix rFingerPrint = MatrixCache.getMatRow(tSizeN, sizeL());
         
         // 需要存储所有的 l，n，m 的值来统一进行近邻求和
         final RowMatrix cnlm = bufCnlm(true);
@@ -590,7 +593,7 @@ public class SphericalChebyshev implements IBasis {
             }
         }
         
-        return rFingerPrint;
+        return rFingerPrint.asVecRow();
     }
     
     /**
@@ -600,9 +603,9 @@ public class SphericalChebyshev implements IBasis {
      * @param aNL 近邻列表遍历器
      * @return {@inheritDoc}
      */
-    @Override public List<@NotNull RowMatrix> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL) {
-        final int tSizeN = rowNumber();
-        final int tSizeL = columnNumber();
+    @Override public List<@NotNull Vector> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL) {
+        final int tSizeN = sizeN();
+        final int tSizeL = sizeL();
         @Nullable RowMatrix rFingerPrint = aCalBasis ? MatrixCache.getMatRow(tSizeN, tSizeL) : null;
         RowMatrix rFingerPrintPx = MatrixCache.getMatRow(tSizeN, tSizeL);
         RowMatrix rFingerPrintPy = MatrixCache.getMatRow(tSizeN, tSizeL);
@@ -748,11 +751,11 @@ public class SphericalChebyshev implements IBasis {
             }
         }
         
-        List<RowMatrix> rOut = Lists.newArrayList(rFingerPrint, rFingerPrintPx, rFingerPrintPy, rFingerPrintPz);
+        List<Vector> rOut = Lists.newArrayList(rFingerPrint==null?null:rFingerPrint.asVecRow(), rFingerPrintPx.asVecRow(), rFingerPrintPy.asVecRow(), rFingerPrintPz.asVecRow());
         if (aCalCross) {
-            rOut.addAll(rFingerPrintPxCross);
-            rOut.addAll(rFingerPrintPyCross);
-            rOut.addAll(rFingerPrintPzCross);
+            rOut.addAll(AbstractCollections.map(rFingerPrintPxCross, RowMatrix::asVecRow));
+            rOut.addAll(AbstractCollections.map(rFingerPrintPyCross, RowMatrix::asVecRow));
+            rOut.addAll(AbstractCollections.map(rFingerPrintPzCross, RowMatrix::asVecRow));
         }
         return rOut;
     }

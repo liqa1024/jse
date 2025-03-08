@@ -1,6 +1,6 @@
 package jsex.nnap.basis;
 
-import jse.math.matrix.RowMatrix;
+import jse.math.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,18 +41,17 @@ public class Mirror implements IBasis {
     }
     
     @Override public double rcut() {return mMirrorBasis.rcut();}
-    @Override public int rowNumber() {return mMirrorBasis.rowNumber();}
-    @Override public int columnNumber() {return mMirrorBasis.columnNumber();}
+    @Override public int size() {return mMirrorBasis.size();}
     @Override public @Nullable List<String> symbols() {return mMirrorBasis.symbols();}
     
-    @Override public RowMatrix eval(IDxyzTypeIterable aNL) {
+    @Override public Vector eval(IDxyzTypeIterable aNL) {
         return mMirrorBasis.eval(dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
             if (type == mThisType) type = mMirrorType;
             else if (type == mMirrorType) type = mThisType;
             dxyzTypeDo.run(dx, dy, dz, type);
         }));
     }
-    @Override public List<@NotNull RowMatrix> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL) {
+    @Override public List<@NotNull Vector> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL) {
         return mMirrorBasis.evalPartial(aCalBasis, aCalCross, dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
             if (type == mThisType) type = mMirrorType;
             else if (type == mMirrorType) type = mThisType;

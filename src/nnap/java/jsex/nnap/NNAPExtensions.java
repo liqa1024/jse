@@ -2,7 +2,7 @@ package jsex.nnap;
 
 import jse.atom.AtomicParameterCalculator;
 import jse.code.collection.NewCollections;
-import jse.math.matrix.RowMatrix;
+import jse.math.vector.Vector;
 import jsex.nnap.basis.IBasis;
 import jsex.nnap.basis.SphericalChebyshev;
 
@@ -20,9 +20,9 @@ public class NNAPExtensions {
      * @param aNMax Chebyshev 多项式选取的最大阶数
      * @param aLMax 球谐函数中 l 选取的最大阶数
      * @param aRCutOff 截断半径
-     * @return 原子指纹矩阵组成的数组，n 为行，l 为列，因此 asVecRow 即为原本定义的基；如果存在超过一个种类则输出行数翻倍
+     * @return 原子描述符向量组成的列表；如果存在超过一个种类则输出长度翻倍
      */
-    public static List<RowMatrix> calBasisNNAP(final AtomicParameterCalculator self, final int aNMax, final int aLMax, final double aRCutOff) {
+    public static List<Vector> calBasisNNAP(final AtomicParameterCalculator self, final int aNMax, final int aLMax, final double aRCutOff) {
         if (self.isShutdown()) throw new RuntimeException("This Calculator is dead");
         final int tThreadNum = self.threadNumber();
         IBasis[] tBasis = new IBasis[tThreadNum];
@@ -31,7 +31,7 @@ public class NNAPExtensions {
             tBasis[i] = new SphericalChebyshev(self.atomTypeNumber(), aNMax, aLMax, aRCutOff);
         }
         try {
-            final List<RowMatrix> rFingerPrints = NewCollections.nulls(self.atomNumber());
+            final List<Vector> rFingerPrints = NewCollections.nulls(self.atomNumber());
             // 理论上只需要遍历一半从而加速这个过程，但由于实现较麻烦且占用过多内存（所有近邻的 Ylm, Rn, fc 都要存，会随着截断半径增加爆炸增涨），这里不考虑
             self.pool_().parfor(self.atomNumber(), (i, threadID) -> {
                 rFingerPrints.set(i, tBasis[threadID].eval(self, i));
@@ -54,7 +54,7 @@ public class NNAPExtensions {
      * @return {@code [fp, fpPx, fpPy, fpPz]}，如果关闭 aCalBasis 则第一项
      * {@code fp} 为 null，如果开启 aCalBasis 则在后续追加近邻的偏导
      */
-    public static List<List<RowMatrix>> calBasisPartialNNAP(final AtomicParameterCalculator self, final int aNMax, final int aLMax, final double aRCutOff, boolean aCalBasis, boolean aCalCross) {
+    public static List<List<Vector>> calBasisPartialNNAP(final AtomicParameterCalculator self, final int aNMax, final int aLMax, final double aRCutOff, boolean aCalBasis, boolean aCalCross) {
         if (self.isShutdown()) throw new RuntimeException("This Calculator is dead");
         final int tThreadNum = self.threadNumber();
         IBasis[] tBasis = new IBasis[tThreadNum];
@@ -63,7 +63,7 @@ public class NNAPExtensions {
             tBasis[i] = new SphericalChebyshev(self.atomTypeNumber(), aNMax, aLMax, aRCutOff);
         }
         try {
-            final List<List<RowMatrix>> rOut = NewCollections.nulls(self.atomNumber());
+            final List<List<Vector>> rOut = NewCollections.nulls(self.atomNumber());
             // 理论上只需要遍历一半从而加速这个过程，但由于实现较麻烦且占用过多内存（所有近邻的 Ylm, Rn, fc 都要存，会随着截断半径增加爆炸增涨），这里不考虑
             self.pool_().parfor(self.atomNumber(), (i, threadID) -> {
                 rOut.set(i, tBasis[threadID].evalPartial(aCalBasis, aCalCross, self, i));
@@ -74,6 +74,6 @@ public class NNAPExtensions {
             for (int i = 0; i < tThreadNum; ++i) tBasis[i].shutdown();
         }
     }
-    public static List<List<RowMatrix>> calBasisPartialNNAP(final AtomicParameterCalculator self, final int aNMax, final int aLMax, final double aRCutOff, boolean aCalBasis) {return calBasisPartialNNAP(self, aNMax, aLMax, aRCutOff, aCalBasis, false);}
-    public static List<List<RowMatrix>> calBasisPartialNNAP(final AtomicParameterCalculator self, final int aNMax, final int aLMax, final double aRCutOff) {return calBasisPartialNNAP(self, aNMax, aLMax, aRCutOff, true);}
+    public static List<List<Vector>> calBasisPartialNNAP(final AtomicParameterCalculator self, final int aNMax, final int aLMax, final double aRCutOff, boolean aCalBasis) {return calBasisPartialNNAP(self, aNMax, aLMax, aRCutOff, aCalBasis, false);}
+    public static List<List<Vector>> calBasisPartialNNAP(final AtomicParameterCalculator self, final int aNMax, final int aLMax, final double aRCutOff) {return calBasisPartialNNAP(self, aNMax, aLMax, aRCutOff, true);}
 }

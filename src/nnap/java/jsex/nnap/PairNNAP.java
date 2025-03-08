@@ -10,6 +10,7 @@ import jse.lmp.LmpPlugin;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.IntVector;
 import jse.math.vector.LogicalVector;
+import jse.math.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -97,7 +98,7 @@ public class PairNNAP extends LmpPlugin.Pair {
             
             final NNAP.SingleNNAP tNNAP = mNNAP.model(mLmpType2NNAPType[typei]);
             // 这里需要计算力，先计算基组偏导
-            final List<@NotNull RowMatrix> tOut = tNNAP.basis().evalPartial(true, true, dxyzTypeDo -> {
+            final List<@NotNull Vector> tOut = tNNAP.basis().evalPartial(true, true, dxyzTypeDo -> {
                 // 在这里遍历近邻列表
                 for (int jj = 0; jj < jnum; ++jj) {
                     int j = jlistVec.get(jj);
@@ -114,8 +115,8 @@ public class PairNNAP extends LmpPlugin.Pair {
                 }
             });
             // 反向传播，现在改为批处理方式，可以大大提高效率
-            RowMatrix tBasis = tOut.get(0); tNNAP.normBasis(tBasis.asVecRow());
-            tNNAP.submitBatchBackward(tBasis.asVecRow(), eflag ? pred -> {
+            Vector tBasis = tOut.get(0); tNNAP.normBasis(tBasis);
+            tNNAP.submitBatchBackward(tBasis, eflag ? pred -> {
                 // 更新能量
                 double eng = tNNAP.denormEng(pred) + tNNAP.refEng();
                 // 由于不是瓶颈，并且不是频繁调用，因此这里不去专门优化
@@ -156,7 +157,7 @@ public class PairNNAP extends LmpPlugin.Pair {
                     }
                 }
                 // 同样这个返回需要放在里面延迟归还
-                MatrixCache.returnMat(tOut);
+                VectorCache.returnVec(tOut);
                 LogicalVectorCache.returnVec(jlistMask);
                 IntVectorCache.returnVec(jlistVec);
             });
