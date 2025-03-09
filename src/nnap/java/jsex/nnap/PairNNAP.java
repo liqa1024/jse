@@ -98,7 +98,7 @@ public class PairNNAP extends LmpPlugin.Pair {
             
             final NNAP.SingleNNAP tNNAP = mNNAP.model(mLmpType2NNAPType[typei]);
             // 这里需要计算力，先计算基组偏导
-            final List<@NotNull Vector> tOut = tNNAP.basis().evalPartial(true, true, dxyzTypeDo -> {
+            final List<@NotNull Vector> tOut = tNNAP.basis().evalPartial(true, dxyzTypeDo -> {
                 // 在这里遍历近邻列表
                 for (int jj = 0; jj < jnum; ++jj) {
                     int j = jlistVec.get(jj);

@@ -87,19 +87,15 @@ public interface IBasis extends ISavable, IAutoShutdown {
     }
     
     /**
-     * 基组结果对于 {@code xyz} 偏微分的计算结果，主要用于力的计算
-     * @param aCalBasis 控制是否同时计算基组本来的值，默认为 {@code true}
+     * 基组结果对于 {@code xyz} 偏微分的计算结果，主要用于力的计算；会同时计算基组值本身
      * @param aCalCross 控制是否同时计算基组对于近邻原子坐标的偏导值，默认为 {@code false}
      * @param aNL 近邻列表遍历器
-     * @return {@code [fp, fpPx, fpPy, fpPz]}，如果关闭 aCalBasis 则第一项
-     * {@code fp} 为 null，如果开启 aCalBasis 则在后续追加近邻的偏导
+     * @return {@code [fp, fpPx, fpPy, fpPz]}，如果开启 aCalBasis 则在后续追加近邻的偏导
      */
-    List<@NotNull Vector> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL);
-    default List<@NotNull Vector> evalPartial(boolean aCalBasis, IDxyzTypeIterable aNL) {return evalPartial(aCalBasis, false, aNL);}
-    default List<@NotNull Vector> evalPartial(IDxyzTypeIterable aNL) {return evalPartial(true, aNL);}
+    List<@NotNull Vector> evalPartial(boolean aCalCross, IDxyzTypeIterable aNL);
+    default List<@NotNull Vector> evalPartial(IDxyzTypeIterable aNL) {return evalPartial(false, aNL);}
     /**
      * 基于 {@link AtomicParameterCalculator} 的近邻列表实现的通用的计算某个原子的基组偏导数功能
-     * @param aCalBasis 控制是否同时计算基组本来的值，默认为 {@code true}
      * @param aCalCross 控制是否同时计算基组对于近邻原子坐标的偏导值，默认为 {@code false}
      * @param aAPC 原子结构参数计算器，用来获取近邻列表
      * @param aIdx 需要计算基组的原子索引
@@ -107,40 +103,36 @@ public interface IBasis extends ISavable, IAutoShutdown {
      * @return {@code [fp, fpPx, fpPy, fpPz]}，如果关闭 aCalBasis 则第一项
      * {@code fp} 为 null，如果开启 aCalBasis 则在后续追加近邻的偏导
      */
-    default List<@NotNull Vector> evalPartial(boolean aCalBasis, boolean aCalCross, final AtomicParameterCalculator aAPC, final int aIdx, final IntUnaryOperator aTypeMap) {
-        return evalPartial(aCalBasis, aCalCross, dxyzTypeDo -> {
+    default List<@NotNull Vector> evalPartial(boolean aCalCross, final AtomicParameterCalculator aAPC, final int aIdx, final IntUnaryOperator aTypeMap) {
+        return evalPartial(aCalCross, dxyzTypeDo -> {
             aAPC.nl_().forEachNeighbor(aIdx, rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
                 dxyzTypeDo.run(dx, dy, dz, aTypeMap.applyAsInt(aAPC.atomType_().get(idx)));
             });
         });
     }
-    default List<@NotNull Vector> evalPartial(boolean aCalBasis, AtomicParameterCalculator aAPC, int aIdx, IntUnaryOperator aTypeMap) {return evalPartial(aCalBasis, false, aAPC, aIdx, aTypeMap);}
-    default List<@NotNull Vector> evalPartial(AtomicParameterCalculator aAPC, int aIdx, IntUnaryOperator aTypeMap) {return evalPartial(true, aAPC, aIdx, aTypeMap);}
-    default List<@NotNull Vector> evalPartial(boolean aCalBasis, boolean aCalCross, AtomicParameterCalculator aAPC, int aIdx) {return evalPartial(aCalBasis, aCalCross, aAPC, aIdx, type->type);}
-    default List<@NotNull Vector> evalPartial(boolean aCalBasis, AtomicParameterCalculator aAPC, int aIdx) {return evalPartial(aCalBasis, false, aAPC, aIdx);}
-    default List<@NotNull Vector> evalPartial(AtomicParameterCalculator aAPC, int aIdx) {return evalPartial(true, aAPC, aIdx);}
+    default List<@NotNull Vector> evalPartial(AtomicParameterCalculator aAPC, int aIdx, IntUnaryOperator aTypeMap) {return evalPartial(false, aAPC, aIdx, aTypeMap);}
+    default List<@NotNull Vector> evalPartial(boolean aCalCross, AtomicParameterCalculator aAPC, int aIdx) {return evalPartial(aCalCross, aAPC, aIdx, type->type);}
+    default List<@NotNull Vector> evalPartial(AtomicParameterCalculator aAPC, int aIdx) {return evalPartial(false, aAPC, aIdx);}
     /**
-     * 简单遍历计算给定原子数据所有基组偏导的实现，此实现适合对相同基组计算大量的原子结构；
+     * 简单遍历计算给定原子数据所有基组偏导的实现，会同时计算基组值本身，此实现适合对相同基组计算大量的原子结构；
      * 由于基组存储了元素排序，因此可以自动修正多个原子结构中元素排序不一致的问题
-     * @param aCalBasis 控制是否同时计算基组本来的值，默认为 {@code true}
      * @param aCalCross 控制是否同时计算基组对于近邻原子坐标的偏导值，默认为 {@code false}
      * @param aAtomData 原子结构数据
      * @return {@code [fp, fpPx, fpPy, fpPz]}，如果关闭 aCalBasis 则第一项
      * {@code fp} 为 null，如果开启 aCalBasis 则在后续追加近邻的偏导
      */
-    default List<List<Vector>> evalAllPartial(boolean aCalBasis, boolean aCalCross, IAtomData aAtomData) {
+    default List<List<Vector>> evalAllPartial(boolean aCalCross, IAtomData aAtomData) {
         IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
         int tAtomNum = aAtomData.atomNumber();
         List<List<Vector>> rOut = new ArrayList<>(tAtomNum);
         try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData)) {
             for (int i = 0; i < tAtomNum; ++i) {
-                rOut.add(evalPartial(aCalBasis, aCalCross, tAPC, i, tTypeMap));
+                rOut.add(evalPartial(aCalCross, tAPC, i, tTypeMap));
             }
         }
         return rOut;
     }
-    default List<List<Vector>> evalAllPartial(boolean aCalBasis, IAtomData aAtomData) {return evalAllPartial(aCalBasis, false, aAtomData);}
-    default List<List<Vector>> evalAllPartial(IAtomData aAtomData) {return evalAllPartial(true, aAtomData);}
+    default List<List<Vector>> evalAllPartial(IAtomData aAtomData) {return evalAllPartial(false, aAtomData);}
     
     @Override default void shutdown() {/**/}
 }

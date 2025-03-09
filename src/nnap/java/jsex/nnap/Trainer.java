@@ -906,7 +906,7 @@ public class Trainer implements IAutoShutdown, ISavable {
             for (int i = 0; i < tAtomNum; ++i) {
                 int tType = tTypeMap.applyAsInt(aAtomData.atom(i).type());
                 IBasis tBasis = basis(tType);
-                List<Vector> tOut = tBasis.evalPartial(true, true, tAPC, i, tTypeMap);
+                List<Vector> tOut = tBasis.evalPartial(true, tAPC, i, tTypeMap);
                 // 基组和索引
                 rData.mFp[tType-1].addAll(tOut.get(0));
                 rData.mEngIndices[tType-1].add(rData.mEng.size());

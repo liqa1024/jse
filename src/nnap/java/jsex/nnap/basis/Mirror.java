@@ -51,8 +51,8 @@ public class Mirror implements IBasis {
             dxyzTypeDo.run(dx, dy, dz, type);
         }));
     }
-    @Override public List<@NotNull Vector> evalPartial(boolean aCalBasis, boolean aCalCross, IDxyzTypeIterable aNL) {
-        return mMirrorBasis.evalPartial(aCalBasis, aCalCross, dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
+    @Override public List<@NotNull Vector> evalPartial(boolean aCalCross, IDxyzTypeIterable aNL) {
+        return mMirrorBasis.evalPartial(aCalCross, dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
             if (type == mThisType) type = mMirrorType;
             else if (type == mMirrorType) type = mThisType;
             dxyzTypeDo.run(dx, dy, dz, type);

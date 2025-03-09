@@ -1004,7 +1004,7 @@ public class NNAP implements IAutoShutdown {
                 final @Nullable IVector tVirialsYZ = rVirialsYZ!=null ? rVirialsYZPar[threadID] : null;
                 final SingleNNAP tModel = model(aTypeMap.applyAsInt(aAPC.atomType_().get(i)));
                 final IBasis tBasis = tModel.basis(threadID);
-                final List<@NotNull Vector> tOut = tBasis.evalPartial(true, true, aAPC, i, aTypeMap);
+                final List<@NotNull Vector> tOut = tBasis.evalPartial(true, aAPC, i, aTypeMap);
                 Vector tBasisValue = tOut.get(0); tModel.normBasis(tBasisValue);
                 tModel.submitBatchBackward(threadID, tBasisValue, rEnergies==null ? null : pred -> {
                     pred = tModel.denormEng(pred);
