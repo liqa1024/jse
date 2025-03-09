@@ -90,8 +90,6 @@ public class NNAP implements IAutoShutdown {
     };
     /** 记录所有已经初始化 torch 线程的开启的线程，因为 torch 设置线程数居然是线程独立的 */
     private final static Set<Long> INITIALIZED_THREAD = Collections.synchronizedSet(new HashSet<>());
-    @SuppressWarnings({"deprecation", "RedundantSuppression"})
-    private static long threadID_() {return Thread.currentThread().getId();}
     
     static {
         InitHelper.INITIALIZED = true;
@@ -115,9 +113,18 @@ public class NNAP implements IAutoShutdown {
         System.load(IO.toAbsolutePath(LIB_PATH));
         
         // 这里需要 torch 单线程
-        try {setSingleThread0();}
-        catch (TorchException ignored) {/* 可能已经设置过，这里就不考虑 */}
-        INITIALIZED_THREAD.add(threadID_());
+        setTorchSingleThread();
+    }
+    
+    /** 设置 torch 为单线程，初始 NNAP 时会自动调用，但在不同于初始线程下调用时需要重新设置 */
+    @SuppressWarnings({"deprecation", "RedundantSuppression"})
+    public static void setTorchSingleThread() {
+        long tThreadID = Thread.currentThread().getId();
+        if (!INITIALIZED_THREAD.contains(tThreadID)) {
+            INITIALIZED_THREAD.add(tThreadID);
+            try {setSingleThread0();}
+            catch (TorchException ignored) {/* 可能已经设置过，这里就不考虑 */}
+        }
     }
     private static native void setSingleThread0() throws TorchException;
     
@@ -574,13 +581,7 @@ public class NNAP implements IAutoShutdown {
         Vector rEngs = VectorCache.getVec(tAtomNumber);
         try {
             aAPC.pool_().parforWithException(tAtomNumber, threadID -> {
-                long tThreadID = threadID_();
-                if (!INITIALIZED_THREAD.contains(tThreadID)) {
-                    INITIALIZED_THREAD.add(tThreadID);
-                    // 这里需要再次设置 torch 单线程
-                    try {setSingleThread0();}
-                    catch (TorchException ignored) {/* 可能已经设置过，这里就不考虑 */}
-                }
+                if (aAPC.threadNumber() > 1) setTorchSingleThread();
             }, threadID -> {
                 for (SingleNNAP tModel : mModels) {
                     tModel.clearSubmittedBatchForward(threadID);
@@ -626,13 +627,7 @@ public class NNAP implements IAutoShutdown {
         Vector rEngs = VectorCache.getVec(tSize);
         try {
             aAPC.pool_().parforWithException(tSize, threadID -> {
-                long tThreadID = threadID_();
-                if (!INITIALIZED_THREAD.contains(tThreadID)) {
-                    INITIALIZED_THREAD.add(tThreadID);
-                    // 这里需要再次设置 torch 单线程
-                    try {setSingleThread0();}
-                    catch (TorchException ignored) {/* 可能已经设置过，这里就不考虑 */}
-                }
+                if (aAPC.threadNumber() > 1) setTorchSingleThread();
             }, threadID -> {
                 for (SingleNNAP tModel : mModels) {
                     tModel.clearSubmittedBatchForward(threadID);
@@ -1010,13 +1005,7 @@ public class NNAP implements IAutoShutdown {
         IVector @Nullable[] rVirialsYZPar = rVirialsYZ!=null ? new IVector[tThreadNumber] : null; if (rVirialsYZ != null) {rVirialsYZPar[0] = rVirialsYZ; for (int i = 1; i < tThreadNumber; ++i) {rVirialsYZPar[i] = VectorCache.getZeros(tAtomNumber);}}
         try {
             aAPC.pool_().parforWithException(tAtomNumber, threadID -> {
-                long tThreadID = threadID_();
-                if (!INITIALIZED_THREAD.contains(tThreadID)) {
-                    INITIALIZED_THREAD.add(tThreadID);
-                    // 这里需要再次设置 torch 单线程
-                    try {setSingleThread0();}
-                    catch (TorchException ignored) {/* 可能已经设置过，这里就不考虑 */}
-                }
+                if (aAPC.threadNumber() > 1) setTorchSingleThread();
             }, threadID -> {
                 for (SingleNNAP tModel : mModels) {
                     tModel.clearSubmittedBatchBackward(threadID);

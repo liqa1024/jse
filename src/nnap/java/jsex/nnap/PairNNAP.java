@@ -44,7 +44,11 @@ public class PairNNAP extends LmpPlugin.Pair {
         _INIT_FLAG = false;
     }
     
-    protected PairNNAP(long aPairPtr) {super(aPairPtr);}
+    protected PairNNAP(long aPairPtr) {
+        super(aPairPtr);
+        // 防止 NNAP 初始化线程和 PairNNAP 创建线程不同时设置失效
+        NNAP.setTorchSingleThread();
+    }
     
     @Override public void initStyle() {
         // nnap 需要完整的近邻列表，此时需要禁用 VirialFdotrCompute
