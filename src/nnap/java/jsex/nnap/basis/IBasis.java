@@ -38,6 +38,15 @@ public interface IBasis extends IHasSymbol, ISavable, IAutoShutdown {
     /** @return {@inheritDoc}；如果存在则会自动根据元素符号重新映射种类 */
     @Override default @Nullable List<@Nullable String> symbols() {return IHasSymbol.super.symbols();}
     
+    /**
+     * 检测此基组是否已经关闭，默认永远为 {@code false}（即使手动调用了
+     * {@link #shutdown()}），即默认不会去进行是否关闭的检测；
+     * 重写此函数来在调用计算时检测是否关闭
+     * @return 此基组是否已经关闭
+     */
+    default boolean isShutdown() {return false;}
+    @Override default void shutdown() {/**/}
+    
     @FunctionalInterface interface IDxyzTypeIterable {void forEachDxyzType(IDxyzTypeDo aDxyzTypeDo);}
     @FunctionalInterface interface IDxyzTypeDo {void run(double aDx, double aDy, double aDz, int aType);}
     
@@ -55,6 +64,7 @@ public interface IBasis extends IHasSymbol, ISavable, IAutoShutdown {
      * @return 原子描述符向量
      */
     default Vector eval(final AtomicParameterCalculator aAPC, final int aIdx, final IntUnaryOperator aTypeMap) {
+        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         return eval(dxyzTypeDo -> {
             aAPC.nl_().forEachNeighbor(aIdx, rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
                 dxyzTypeDo.run(dx, dy, dz, aTypeMap.applyAsInt(aAPC.atomType_().get(idx)));
@@ -69,6 +79,7 @@ public interface IBasis extends IHasSymbol, ISavable, IAutoShutdown {
      * @return 原子描述符向量组成的列表
      */
     default List<Vector> evalAll(IAtomData aAtomData) {
+        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
         int tAtomNum = aAtomData.atomNumber();
         List<Vector> rFingerPrints = new ArrayList<>(tAtomNum);
@@ -98,6 +109,7 @@ public interface IBasis extends IHasSymbol, ISavable, IAutoShutdown {
      * {@code fp} 为 null，如果开启 aCalBasis 则在后续追加近邻的偏导
      */
     default List<@NotNull Vector> evalPartial(boolean aCalCross, final AtomicParameterCalculator aAPC, final int aIdx, final IntUnaryOperator aTypeMap) {
+        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         return evalPartial(aCalCross, dxyzTypeDo -> {
             aAPC.nl_().forEachNeighbor(aIdx, rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
                 dxyzTypeDo.run(dx, dy, dz, aTypeMap.applyAsInt(aAPC.atomType_().get(idx)));
@@ -116,6 +128,7 @@ public interface IBasis extends IHasSymbol, ISavable, IAutoShutdown {
      * {@code fp} 为 null，如果开启 aCalBasis 则在后续追加近邻的偏导
      */
     default List<List<Vector>> evalAllPartial(boolean aCalCross, IAtomData aAtomData) {
+        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
         int tAtomNum = aAtomData.atomNumber();
         List<List<Vector>> rOut = new ArrayList<>(tAtomNum);
@@ -127,6 +140,4 @@ public interface IBasis extends IHasSymbol, ISavable, IAutoShutdown {
         return rOut;
     }
     default List<List<Vector>> evalAllPartial(IAtomData aAtomData) {return evalAllPartial(false, aAtomData);}
-    
-    @Override default void shutdown() {/**/}
 }

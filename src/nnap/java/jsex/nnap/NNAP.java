@@ -1,17 +1,11 @@
 package jsex.nnap;
 
-import com.google.common.collect.Lists;
-import jep.JepException;
-import jep.NDArray;
-import jep.python.PyObject;
-import jse.ase.AseAtoms;
 import jse.atom.*;
 import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
 import jse.clib.*;
 import jse.code.*;
 import jse.code.collection.ISlice;
-import jse.code.collection.IntList;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import jse.math.vector.Vector;
@@ -462,163 +456,31 @@ public class NNAP implements IPotential {
             }
         }
     }
-    public boolean isShutdown() {return mDead;}
-    public int threadNumber() {return mThreadNumber;}
+    @Override public boolean isShutdown() {return mDead;}
+    @Override public int threadNumber() {return mThreadNumber;}
     @VisibleForTesting public int nthreads() {return threadNumber();}
     
-    /**
-     * 转换为一个 ase 的计算器，可以方便接入已有的代码直接计算；
-     * 注意这里计算的压力统一按照 ase 的排序，也就是
-     * {@code [xx, yy, zz, yz, xz, xy]}
-     * <p>
-     * 创建的 ase 计算器和原本的 NNAP 为引用关系，因此两者只要关闭了其中一个，另一个也会同时关闭；
-     * 为了方便管理，这里统一采用手动关闭，因此也不实现 {@code __del__} 方法
-     * @return ase 计算器的 python 对象
-     */
-    public PyObject asAseCalculator() throws JepException {return asAseCalculator(SP.Python.interpreter());}
-    public PyObject asAseCalculator(@NotNull jep.Interpreter aInterpreter) throws JepException {
-        // 先定义这个计算器类，这里不考虑性能损失
-        //noinspection ConcatenationWithEmptyString
-        aInterpreter.exec("" +
-        "from ase.calculators.calculator import Calculator, all_changes, PropertyNotImplementedError\n" +
-        "class __NNAP_AseCalculator__(Calculator):\n" +
-        "    implemented_properties = ['energy', 'free_energy', 'energies', 'forces', 'stress', 'stresses']\n" +
-        "    \n" +
-        "    def __init__(self, jnnap, **kwargs):\n" +
-        "        super().__init__(**kwargs)\n" +
-        "        self.jnnap = jnnap\n" +
-        "    \n" +
-        "    def release(self):\n" +
-        "        self.jnnap.shutdown()\n" +
-        "    def shutdown(self):\n" +
-        "        self.jnnap.shutdown()\n" +
-        "    \n" +
-        "    def calculate(self, atoms=None, properties=['energy'], system_changes=all_changes):\n" +
-        "        super().calculate(atoms, properties, system_changes)\n" +
-        "        for p in properties:\n" +
-        "            if p not in self.implemented_properties:\n" +
-        "                raise PropertyNotImplementedError(p)\n" +
-        "        self.results = self.jnnap.calculate_(self.results, self.atoms, properties, len(system_changes)>0)"
-        );
-        return (PyObject)aInterpreter.invoke("__NNAP_AseCalculator__", this);
-    }
-    @ApiStatus.Internal
-    public Map<String, Object> calculate_(Map<String, Object> rResults, PyObject aPyAseAtoms, String[] aProperties, boolean aSystemChanges) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        boolean tAllInResults = true;
-        for (String tProperty : aProperties) {
-            if (!rResults.containsKey(tProperty)) {
-                tAllInResults = false;
-                break;
-            }
+    @Override public double rcut() {
+        double tRCut = 0.0;
+        for (SingleNNAP tModel : models()) {
+            tRCut = Math.max(tRCut, tModel.basis().rcut());
         }
-        if (!aSystemChanges && tAllInResults) return rResults;
-        IAtomData tAtoms = AseAtoms.of(aPyAseAtoms);
-        // 遍历统计需要的量
-        boolean tRequireEnergy = false;
-        boolean tRequireForces = false;
-        boolean tRequireStress = false;
-        for (String tProperty : aProperties) {
-            if (tProperty.equals("energy") || tProperty.equals("energies") || tProperty.equals("free_energy")) tRequireEnergy = true;
-            if (tProperty.equals("forces")) tRequireForces = true;
-            if (tProperty.equals("stress") || tProperty.equals("stresses")) tRequireStress = true;
-        }
-        // 只需要能量则直接使用简单的计算能量接口
-        if (!tRequireForces && !tRequireStress) {
-            assert tRequireEnergy;
-            Vector tEnergies = calEnergies(tAtoms);
-            double tEnergy = tEnergies.sum();
-            rResults.put("energy", tEnergy);
-            rResults.put("energies", new NDArray<>(tEnergies.internalData(), tEnergies.size()));
-            rResults.put("free_energy", tEnergy);
-            VectorCache.returnVec(tEnergies);
-            return rResults;
-        }
-        // 其余情况则统一全部计算
-        Vector rEnergies = VectorCache.getZeros(tAtoms.atomNumber());
-        RowMatrix rForces = MatrixCache.getZerosRow(tAtoms.atomNumber(), 3);
-        Vector rStress = VectorCache.getZeros(6);
-        RowMatrix rStresses = MatrixCache.getZerosRow(tAtoms.atomNumber(), 6);
-        calEnergyForceVirials(tAtoms, rEnergies, rForces.col(0), rForces.col(1), rForces.col(2),
-                              rStresses.col(0), rStresses.col(1), rStresses.col(2), rStresses.col(5), rStresses.col(4), rStresses.col(3));
-        rStresses.operation().negative2this();
-        for (int i = 0; i < 6; ++i) {
-            rStress.set(i, rStresses.col(i).sum());
-        }
-        rStress.div2this(tAtoms.volume());
-        double tEnergy = rEnergies.sum();
-        rResults.put("energy", tEnergy);
-        rResults.put("energies", new NDArray<>(rEnergies.internalData(), rEnergies.size()));
-        rResults.put("free_energy", tEnergy);
-        rResults.put("forces", new NDArray<>(rForces.internalData(), rForces.rowNumber(), rForces.columnNumber()));
-        rResults.put("stress", new NDArray<>(rStress.internalData(), rStress.size()));
-        rResults.put("stresses", new NDArray<>(rStresses.internalData(), rStresses.rowNumber(), rStresses.columnNumber()));
-        VectorCache.returnVec(rEnergies);
-        MatrixCache.returnMat(rForces);
-        VectorCache.returnVec(rStress);
-        MatrixCache.returnMat(rStresses);
-        return rResults;
-    }
-    
-    /**
-     * 使用 nnap 计算给定原子结构每个原子的能量值
-     * @param aAPC 此原子的 apc 或者原子结构本身
-     * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
-     * @return 每个原子能量组成的向量
-     * @author liqa
-     */
-    public Vector calEnergies(final AtomicParameterCalculator aAPC, final IntUnaryOperator aTypeMap) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        if (atomTypeNumber() < aAPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of APC: " + aAPC.atomTypeNumber() + ", model: " + atomTypeNumber());
-        // 统一存储常量
-        final int tAtomNumber = aAPC.atomNumber();
-        Vector rEngs = VectorCache.getVec(tAtomNumber);
-        try {
-            aAPC.pool_().parforWithException(tAtomNumber, threadID -> {
-                if (aAPC.threadNumber() > 1) setTorchSingleThread();
-            }, threadID -> {
-                for (SingleNNAP tModel : mModels) {
-                    tModel.clearSubmittedBatchForward(threadID);
-                }
-            }, (i, threadID) -> {
-                final SingleNNAP tModel = model(aTypeMap.applyAsInt(aAPC.atomType_().get(i)));
-                final IBasis tBasis = tModel.basis(threadID);
-                Vector tBasisValue = tBasis.eval(aAPC, i, aTypeMap);
-                tModel.normBasis(tBasisValue);
-                tModel.submitBatchForward(threadID, tBasisValue, pred -> {
-                    pred = tModel.denormEng(pred);
-                    pred += tModel.mRefEng;
-                    rEngs.set(i, pred);
-                });
-                VectorCache.returnVec(tBasisValue);
-            });
-        } catch (TorchException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return rEngs;
-    }
-    public Vector calEnergies(AtomicParameterCalculator aAPC) throws TorchException {return calEnergies(aAPC, type->type);}
-    public Vector calEnergies(IAtomData aAtomData) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        IntUnaryOperator tTypeMap = typeMap(aAtomData);
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergies(tAPC, tTypeMap);}
+        return tRCut;
     }
     /**
-     * 使用 nnap 计算给定原子结构指定原子的能量
-     * @param aAPC 此原子的 apc 或者原子结构本身
-     * @param aIndices 需要计算的原子的索引（从 0 开始）
-     * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
-     * @return 此原子的能量组成的向量
-     * @author liqa
+     * {@inheritDoc}
+     * @param aAPC {@inheritDoc}
+     * @param aIndices {@inheritDoc}
+     * @param aTypeMap {@inheritDoc}
+     * @return {@inheritDoc}
      */
-    public Vector calEnergiesAt(final AtomicParameterCalculator aAPC, final ISlice aIndices, final IntUnaryOperator aTypeMap) throws TorchException {
+    @Override public double calEnergyAt(final AtomicParameterCalculator aAPC, final ISlice aIndices, final IntUnaryOperator aTypeMap) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (atomTypeNumber() < aAPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of APC: " + aAPC.atomTypeNumber() + ", model: " + atomTypeNumber());
         // 统一存储常量
         final int tSize = aIndices.size();
-        Vector rEngs = VectorCache.getVec(tSize);
+        final int tThreadNumber = aAPC.threadNumber();
+        Vector rEngPar = VectorCache.getZeros(tThreadNumber);
         try {
             aAPC.pool_().parforWithException(tSize, threadID -> {
                 if (aAPC.threadNumber() > 1) setTorchSingleThread();
@@ -635,7 +497,7 @@ public class NNAP implements IPotential {
                 tModel.submitBatchForward(threadID, tBasisValue, pred -> {
                     pred = tModel.denormEng(pred);
                     pred += tModel.mRefEng;
-                    rEngs.set(i, pred);
+                    rEngPar.add(threadID, pred);
                 });
                 VectorCache.returnVec(tBasisValue);
             });
@@ -644,338 +506,80 @@ public class NNAP implements IPotential {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return rEngs;
-    }
-    public Vector calEnergiesAt(AtomicParameterCalculator aAPC, ISlice aIndices) throws TorchException {return calEnergiesAt(aAPC, aIndices, type->type);}
-    public Vector calEnergiesAt(IAtomData aAtomData, ISlice aIndices) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        IntUnaryOperator tTypeMap = typeMap(aAtomData);
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergiesAt(tAPC, aIndices, tTypeMap);}
-    }
-    /**
-     * 使用 nnap 计算给定原子结构的总能量
-     * @param aAPC 此原子的 apc 或者原子结构本身
-     * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
-     * @return 总能量
-     * @author liqa
-     */
-    public double calEnergy(AtomicParameterCalculator aAPC, IntUnaryOperator aTypeMap) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        Vector tEngs = calEnergies(aAPC, aTypeMap);
-        double tTotEng = tEngs.sum();
-        VectorCache.returnVec(tEngs);
-        return tTotEng;
-    }
-    public double calEnergy(AtomicParameterCalculator aAPC) throws TorchException {return calEnergy(aAPC, type->type);}
-    public double calEnergy(IAtomData aAtomData) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        IntUnaryOperator tTypeMap = typeMap(aAtomData);
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergy(tAPC, tTypeMap);}
-    }
-    
-    /**
-     * 计算移动前后的能量差，只计算移动影响的近邻列表中的原子，可以加快计算速度
-     * @param aAPC 此原子的 apc 或者原子结构本身
-     * @param aI 移动原子的索引
-     * @param aDx x 方向移动的距离
-     * @param aDy y 方向移动的距离
-     * @param aDz z 方向移动的距离
-     * @param aRestoreAPC 计算完成后是否还原 APC 的状态，默认为 {@code true}
-     * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
-     * @return 移动后能量 - 移动前能量
-     */
-    public double calEnergyDiffMove(AtomicParameterCalculator aAPC, int aI, double aDx, double aDy, double aDz, boolean aRestoreAPC, IntUnaryOperator aTypeMap) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        if (atomTypeNumber() < aAPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of APC: " + aAPC.atomTypeNumber() + ", model: " + atomTypeNumber());
-        // 采用最大的截断半径从而包含所有可能涉及发生了能量变换的原子
-        double tRCut = 0.0;
-        for (SingleNNAP tModel : models()) {
-            tRCut = Math.max(tRCut, tModel.basis().rcut());
-        }
-        XYZ oXYZ = new XYZ(aAPC.atomDataXYZ_().row(aI));
-        IIntVector oNL = aAPC.getNeighborList(oXYZ, tRCut);
-        XYZ nXYZ = oXYZ.plus(aDx, aDy, aDz);
-        IIntVector nNL = aAPC.getNeighborList(nXYZ, tRCut);
-        // 合并近邻列表，这里简单遍历实现
-        final IntList tNL = new IntList(oNL.size());
-        tNL.addAll(oNL);
-        nNL.forEach(idx -> {
-            if (!tNL.contains(idx)) tNL.add(idx);
-        });
-        Vector oEngs = calEnergiesAt(aAPC, tNL, aTypeMap);
-        double oEng = oEngs.sum();
-        VectorCache.returnVec(oEngs);
-        Vector nEngs = calEnergiesAt(aAPC.setAtomXYZ(aI, nXYZ), tNL, aTypeMap);
-        double nEng = nEngs.sum();
-        VectorCache.returnVec(nEngs);
-        if (aRestoreAPC) aAPC.setAtomXYZ(aI, oXYZ);
-        return nEng - oEng;
-    }
-    public double calEnergyDiffMove(AtomicParameterCalculator aAPC, int aI, double aDx, double aDy, double aDz, IntUnaryOperator aTypeMap) throws TorchException {return calEnergyDiffMove(aAPC, aI, aDx, aDy, aDz, true, aTypeMap);}
-    public double calEnergyDiffMove(AtomicParameterCalculator aAPC, int aI, double aDx, double aDy, double aDz, boolean aRestoreAPC) throws TorchException {return calEnergyDiffMove(aAPC, aI, aDx, aDy, aDz, aRestoreAPC, type->type);}
-    public double calEnergyDiffMove(AtomicParameterCalculator aAPC, int aI, double aDx, double aDy, double aDz) throws TorchException {return calEnergyDiffMove(aAPC, aI, aDx, aDy, aDz, type->type);}
-    public double calEnergyDiffMove(IAtomData aAtomData, int aI, double aDx, double aDy, double aDz) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        IntUnaryOperator tTypeMap = typeMap(aAtomData);
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyDiffMove(tAPC, aI, aDx, aDy, aDz, false, tTypeMap);}
-    }
-    public double calEnergyDiffMove(AtomicParameterCalculator aAPC, int aI, IXYZ aDxyz, IntUnaryOperator aTypeMap) throws TorchException {return calEnergyDiffMove(aAPC, aI, aDxyz.x(), aDxyz.y(), aDxyz.z(), aTypeMap);}
-    public double calEnergyDiffMove(AtomicParameterCalculator aAPC, int aI, IXYZ aDxyz) throws TorchException {return calEnergyDiffMove(aAPC, aI, aDxyz, type->type);}
-    public double calEnergyDiffMove(IAtomData aAtomData, int aI, IXYZ aDxyz) throws TorchException {return calEnergyDiffMove(aAtomData, aI, aDxyz.x(), aDxyz.y(), aDxyz.z());}
-    /**
-     * 计算交换种类前后的能量差，只计算交换影响的近邻列表中的原子，可以加快计算速度
-     * @param aAPC 此原子的 apc 或者原子结构本身
-     * @param aI 需要交换种类的第一个原子索引
-     * @param aJ 需要交换种类的第二个原子索引
-     * @param aRestoreAPC 计算完成后是否还原 APC 的状态，默认为 {@code true}
-     * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
-     * @return 交换后能量 - 交换前能量
-     */
-    public double calEnergyDiffSwap(AtomicParameterCalculator aAPC, int aI, int aJ, boolean aRestoreAPC, IntUnaryOperator aTypeMap) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        if (atomTypeNumber() < aAPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of APC: " + aAPC.atomTypeNumber() + ", model: " + atomTypeNumber());
-        int oTypeI = aAPC.atomType_().get(aI);
-        int oTypeJ = aAPC.atomType_().get(aJ);
-        if (oTypeI == oTypeJ) return 0.0;
-        // 采用最大的截断半径从而包含所有可能涉及发生了能量变换的原子
-        double tRCut = 0.0;
-        for (SingleNNAP tModel : models()) {
-            tRCut = Math.max(tRCut, tModel.basis().rcut());
-        }
-        IIntVector iNL = aAPC.getNeighborList(aI, tRCut);
-        IIntVector jNL = aAPC.getNeighborList(aJ, tRCut);
-        // 合并近邻列表，这里简单遍历实现
-        final IntList tNL = new IntList(iNL.size()+1);
-        tNL.add(aI);
-        tNL.addAll(iNL);
-        if (!tNL.contains(aJ)) tNL.add(aJ);
-        jNL.forEach(idx -> {
-            if (!tNL.contains(idx)) tNL.add(idx);
-        });
-        Vector oEngs = calEnergiesAt(aAPC, tNL, aTypeMap);
-        double oEng = oEngs.sum();
-        VectorCache.returnVec(oEngs);
-        Vector nEngs = calEnergiesAt(aAPC.setAtomType(aI, oTypeJ).setAtomType(aJ, oTypeI), tNL, aTypeMap);
-        double nEng = nEngs.sum();
-        VectorCache.returnVec(nEngs);
-        if (aRestoreAPC) aAPC.setAtomType(aI, oTypeI).setAtomType(aJ, oTypeJ);
-        return nEng - oEng;
-    }
-    public double calEnergyDiffSwap(AtomicParameterCalculator aAPC, int aI, int aJ, IntUnaryOperator aTypeMap) throws TorchException {return calEnergyDiffSwap(aAPC, aI, aJ, true, aTypeMap);}
-    public double calEnergyDiffSwap(AtomicParameterCalculator aAPC, int aI, int aJ, boolean aRestoreAPC) throws TorchException {return calEnergyDiffSwap(aAPC, aI, aJ, aRestoreAPC, type->type);}
-    public double calEnergyDiffSwap(AtomicParameterCalculator aAPC, int aI, int aJ) throws TorchException {return calEnergyDiffSwap(aAPC, aI, aJ, type->type);}
-    public double calEnergyDiffSwap(IAtomData aAtomData, int aI, int aJ) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        IntUnaryOperator tTypeMap = typeMap(aAtomData);
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyDiffSwap(tAPC, aI, aJ, false, tTypeMap);}
-    }
-    /**
-     * 计算翻转摸个元素种类前后的能量差，只计算翻转影响的近邻列表中的原子，可以加快计算速度
-     * @param aAPC 此原子的 apc 或者原子结构本身
-     * @param aI 需要翻转种类的原子索引
-     * @param aType 此原子需要翻转的种类编号，对应输入原子数据原始的种类编号，没有经过 aTypeMap（如果有的话）
-     * @param aRestoreAPC 计算完成后是否还原 APC 的状态，默认为 {@code true}
-     * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
-     * @return 翻转后能量 - 翻转前能量
-     */
-    public double calEnergyDiffFlip(AtomicParameterCalculator aAPC, int aI, int aType, boolean aRestoreAPC, IntUnaryOperator aTypeMap) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        if (atomTypeNumber() < aAPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of APC: " + aAPC.atomTypeNumber() + ", model: " + atomTypeNumber());
-        int oType = aAPC.atomType_().get(aI);
-        if (oType == aType) return 0.0;
-        // 采用最大的截断半径从而包含所有可能涉及发生了能量变换的原子
-        double tRCut = 0.0;
-        for (SingleNNAP tModel : models()) {
-            tRCut = Math.max(tRCut, tModel.basis().rcut());
-        }
-        IIntVector iNL = aAPC.getNeighborList(aI, tRCut);
-        // 增加一个自身，这里简单创建新的列表实现
-        final IntList tNL = new IntList(iNL.size()+1);
-        tNL.add(aI);
-        tNL.addAll(iNL);
-        Vector oEngs = calEnergiesAt(aAPC, tNL, aTypeMap);
-        double oEng = oEngs.sum();
-        VectorCache.returnVec(oEngs);
-        Vector nEngs = calEnergiesAt(aAPC.setAtomType(aI, aType), tNL, aTypeMap);
-        double nEng = nEngs.sum();
-        VectorCache.returnVec(nEngs);
-        if (aRestoreAPC) aAPC.setAtomType(aI, oType);
-        return nEng - oEng;
-    }
-    public double calEnergyDiffFlip(AtomicParameterCalculator aAPC, int aI, int aType, IntUnaryOperator aTypeMap) throws TorchException {return calEnergyDiffFlip(aAPC, aI, aType, true, aTypeMap);}
-    public double calEnergyDiffFlip(AtomicParameterCalculator aAPC, int aI, int aType, boolean aRestoreAPC) throws TorchException {return calEnergyDiffFlip(aAPC, aI, aType, aRestoreAPC, type->type);}
-    public double calEnergyDiffFlip(AtomicParameterCalculator aAPC, int aI, int aType) throws TorchException {return calEnergyDiffFlip(aAPC, aI, aType, type->type);}
-    public double calEnergyDiffFlip(IAtomData aAtomData, int aI, int aType) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        IntUnaryOperator tTypeMap = typeMap(aAtomData);
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyDiffFlip(tAPC, aI, aType, false, tTypeMap);}
+        double rEng = rEngPar.sum();
+        VectorCache.returnVec(rEngPar);
+        return rEng;
     }
     
     
-    
     /**
-     * 使用 nnap 计算给定原子结构每个原子和受力
-     * @param aAPC 此原子的 apc 或者原子结构本身
-     * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
-     * @return 每个原子力组成的矩阵，按行排列
-     * @author liqa
+     * {@inheritDoc}
+     * @param aAPC {@inheritDoc}
+     * @param rEnergies {@inheritDoc}
+     * @param rForcesX {@inheritDoc}
+     * @param rForcesY {@inheritDoc}
+     * @param rForcesZ {@inheritDoc}
+     * @param rVirialsXX {@inheritDoc}
+     * @param rVirialsYY {@inheritDoc}
+     * @param rVirialsZZ {@inheritDoc}
+     * @param rVirialsXY {@inheritDoc}
+     * @param rVirialsXZ {@inheritDoc}
+     * @param rVirialsYZ {@inheritDoc}
+     * @param aTypeMap {@inheritDoc}
      */
-    public RowMatrix calForces(AtomicParameterCalculator aAPC, IntUnaryOperator aTypeMap) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        RowMatrix rForces = MatrixCache.getMatRow(aAPC.atomNumber(), 3);
-        calEnergyForceVirials(aAPC, null, rForces.col(0), rForces.col(1), rForces.col(2), null, null, null, null, null, null, aTypeMap);
-        return rForces;
-    }
-    public RowMatrix calForces(AtomicParameterCalculator aAPC) throws TorchException {return calForces(aAPC, type->type);}
-    public RowMatrix calForces(IAtomData aAtomData) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        IntUnaryOperator tTypeMap = typeMap(aAtomData);
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calForces(tAPC, tTypeMap);}
-    }
-    
-    /**
-     * 使用 nnap 计算给定结构所有原子的单独应力，具体可以参见：
-     * <a href="https://en.wikipedia.org/wiki/Virial_stress">
-     * Virial stress - Wikipedia </a>
-     * @param aAtomData 原子结构本身或者 APC，使用 APC 时统一不考虑速度部分
-     * @param aIdealGas 是否考虑理想气体部分（速度效应部分），默认为 {@code false}
-     * @return 按照 {@code [xx, yy, zz, xy, xz, yz]} 顺序排列的应力向量
-     * @author liqa
-     */
-    public List<Vector> calStresses(IAtomData aAtomData, boolean aIdealGas) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        IntUnaryOperator tTypeMap = typeMap(aAtomData);
-        final int tAtomNum = aAtomData.atomNumber();
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {
-            List<Vector> tStresses = calStresses(tAPC, tTypeMap);
-            if (!aIdealGas || !aAtomData.hasMass() || !aAtomData.hasVelocity()) return tStresses;
-            // 累加速度项，这里需要消去整体的平动
-            double vxTot = 0.0, vyTot = 0.0, vzTot = 0.0;
-            for (int i = 0; i < tAtomNum; ++i) {
-                IAtom tAtom = aAtomData.atom(i);
-                vxTot += tAtom.vx(); vyTot += tAtom.vy(); vzTot += tAtom.vz();
-            }
-            vxTot /= (double)tAtomNum;
-            vyTot /= (double)tAtomNum;
-            vzTot /= (double)tAtomNum;
-            for (int i = 0; i < tAtomNum; ++i) {
-                IAtom tAtom = aAtomData.atom(i);
-                if (!tAtom.hasMass()) continue;
-                double vx = tAtom.vx() - vxTot, vy = tAtom.vy() - vyTot, vz = tAtom.vz() - vzTot;
-                double tMass = tAtom.mass();
-                tStresses.get(0).add(i, -tMass * vx*vx);
-                tStresses.get(1).add(i, -tMass * vy*vy);
-                tStresses.get(2).add(i, -tMass * vz*vz);
-                tStresses.get(3).add(i, -tMass * vx*vy);
-                tStresses.get(4).add(i, -tMass * vx*vz);
-                tStresses.get(5).add(i, -tMass * vy*vz);
-            }
-            return tStresses;
-        }
-    }
-    public List<Vector> calStresses(AtomicParameterCalculator aAPC, IntUnaryOperator aTypeMap) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        if (atomTypeNumber() < aAPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of APC: " + aAPC.atomTypeNumber() + ", model: " + atomTypeNumber());
-        final int tAtomNum = aAPC.atomNumber();
-        List<Vector> rStresses = VectorCache.getVec(tAtomNum, 6);
-        calEnergyForceVirials(aAPC, null, null, null, null, rStresses.get(0), rStresses.get(1), rStresses.get(2), rStresses.get(3), rStresses.get(4), rStresses.get(5), aTypeMap);
-        for (int i = 0; i < 6; ++i) {
-            rStresses.get(i).operation().negative2this();
-        }
-        return rStresses;
-    }
-    public List<Vector> calStresses(AtomicParameterCalculator aAPC) throws TorchException {return calStresses(aAPC, type->type);}
-    /**
-     * 使用 nnap 计算给定原子结构的应力，具体可以参见：
-     * <a href="https://en.wikipedia.org/wiki/Virial_stress">
-     * Virial stress - Wikipedia </a>
-     * @param aAtomData 原子结构本身或者 APC，使用 APC 时统一不考虑速度部分
-     * @param aIdealGas 是否考虑理想气体部分（速度效应部分），默认为 {@code false}
-     * @return 按照 {@code [xx, yy, zz, xy, xz, yz]} 顺序排列的应力值
-     * @author liqa
-     */
-    public List<Double> calStress(IAtomData aAtomData, boolean aIdealGas) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        List<Vector> tStresses = calStresses(aAtomData, aIdealGas);
-        double tStressXX = tStresses.get(0).sum();
-        double tStressYY = tStresses.get(1).sum();
-        double tStressZZ = tStresses.get(2).sum();
-        double tStressXY = tStresses.get(3).sum();
-        double tStressXZ = tStresses.get(4).sum();
-        double tStressYZ = tStresses.get(5).sum();
-        VectorCache.returnVec(tStresses);
-        double tVolume = aAtomData.volume();
-        tStressXX /= tVolume;
-        tStressYY /= tVolume;
-        tStressZZ /= tVolume;
-        tStressXY /= tVolume;
-        tStressXZ /= tVolume;
-        tStressYZ /= tVolume;
-        return Lists.newArrayList(tStressXX, tStressYY, tStressZZ, tStressXY, tStressXZ, tStressYZ);
-    }
-    public List<Double> calStress(IAtomData aAtomData) throws TorchException {return calStress(aAtomData, false);}
-    public List<Double> calStress(AtomicParameterCalculator aAPC, IntUnaryOperator aTypeMap) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        List<Vector> tStresses = calStresses(aAPC, aTypeMap);
-        double tStressXX = tStresses.get(0).sum();
-        double tStressYY = tStresses.get(1).sum();
-        double tStressZZ = tStresses.get(2).sum();
-        double tStressXY = tStresses.get(3).sum();
-        double tStressXZ = tStresses.get(4).sum();
-        double tStressYZ = tStresses.get(5).sum();
-        VectorCache.returnVec(tStresses);
-        double tVolume = aAPC.volume();
-        tStressXX /= tVolume;
-        tStressYY /= tVolume;
-        tStressZZ /= tVolume;
-        tStressXY /= tVolume;
-        tStressXZ /= tVolume;
-        tStressYZ /= tVolume;
-        return Lists.newArrayList(tStressXX, tStressYY, tStressZZ, tStressXY, tStressXZ, tStressYZ);
-    }
-    public List<Double> calStress(AtomicParameterCalculator aAPC) throws TorchException {return calStress(aAPC, type->type);}
-    
-    /**
-     * 使用 nnap 同时计算给定原子结构每个原子的能量和受力
-     * @param aAPC 此原子的 apc 或者原子结构本身
-     * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
-     * @return 按照 {@code [eng, fx, fy, fz]} 的顺序返回结果
-     * @author liqa
-     */
-    public List<Vector> calEnergyForces(AtomicParameterCalculator aAPC, IntUnaryOperator aTypeMap) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        Vector rEngs = VectorCache.getVec(aAPC.atomNumber());
-        Vector rForcesX = VectorCache.getVec(aAPC.atomNumber());
-        Vector rForcesY = VectorCache.getVec(aAPC.atomNumber());
-        Vector rForcesZ = VectorCache.getVec(aAPC.atomNumber());
-        calEnergyForceVirials(aAPC, rEngs, rForcesX, rForcesY, rForcesZ, null, null, null, null, null, null, aTypeMap);
-        return Lists.newArrayList(rEngs, rForcesX, rForcesY, rForcesZ);
-    }
-    public List<Vector> calEnergyForces(AtomicParameterCalculator aAPC) throws TorchException {return calEnergyForces(aAPC, type->type);}
-    public List<Vector> calEnergyForces(IAtomData aAtomData) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        IntUnaryOperator tTypeMap = typeMap(aAtomData);
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {return calEnergyForces(tAPC, tTypeMap);}
-    }
-    
-    /**
-     * 使用 nnap 计算所有需要的热力学量，需要注意的是，这里位力采用
-     * lammps 一致的定义，具体可以参见：
-     * <a href="https://en.wikipedia.org/wiki/Virial_stress">
-     * Virial stress - Wikipedia </a>
-     * @author liqa
-     */
-    public void calEnergyForceVirials(IAtomData aAtomData, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ) throws TorchException {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        IntUnaryOperator tTypeMap = typeMap(aAtomData);
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {calEnergyForceVirials(tAPC, rEnergies, rForcesX, rForcesY, rForcesZ, rVirialsXX, rVirialsYY, rVirialsZZ, rVirialsXY, rVirialsXZ, rVirialsYZ, tTypeMap);}
-    }
-    public void calEnergyForceVirials(final AtomicParameterCalculator aAPC, final @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ, IntUnaryOperator aTypeMap) throws TorchException {
+    @Override public void calEnergyForceVirials(final AtomicParameterCalculator aAPC, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ, IntUnaryOperator aTypeMap) throws TorchException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (atomTypeNumber() < aAPC.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of APC: " + aAPC.atomTypeNumber() + ", model: " + atomTypeNumber());
         // 统一存储常量
         final int tAtomNumber = aAPC.atomNumber();
         final int tThreadNumber = aAPC.threadNumber();
+        // 能量虽然不用累加，但在长度为一时需要累加计算总能量，此时也需要统一设置为 0
+        if (rEnergies != null) rEnergies.fill(0.0);
+        // 并行情况下存在并行写入的问题，因此需要这样操作
+        IVector @Nullable[] rEnergiesPar = rEnergies!=null ? new IVector[tThreadNumber] : null;
+        if (rEnergies != null) {
+            rEnergiesPar[0] = rEnergies;
+            for (int i = 1; i < tThreadNumber; ++i) {
+                rEnergiesPar[i] = VectorCache.getZeros(rEnergies.size());
+            }
+        }
+        // 特殊处理只需要计算能量的情况
+        if (rForcesX==null && rForcesY==null && rForcesZ==null &&
+            rVirialsXX==null && rVirialsYY==null && rVirialsZZ==null &&
+            rVirialsXY==null && rVirialsXZ==null && rVirialsYZ==null) {
+            if (rEnergies == null) return;
+            try {
+                aAPC.pool_().parforWithException(tAtomNumber, threadID -> {
+                    if (aAPC.threadNumber() > 1) setTorchSingleThread();
+                }, threadID -> {
+                    for (SingleNNAP tModel : mModels) {
+                        tModel.clearSubmittedBatchForward(threadID);
+                    }
+                }, (i, threadID) -> {
+                    final IVector tEnergies = rEnergiesPar[threadID];
+                    final SingleNNAP tModel = model(aTypeMap.applyAsInt(aAPC.atomType_().get(i)));
+                    final IBasis tBasis = tModel.basis(threadID);
+                    Vector tBasisValue = tBasis.eval(aAPC, i, aTypeMap);
+                    tModel.normBasis(tBasisValue);
+                    tModel.submitBatchForward(threadID, tBasisValue, pred -> {
+                        pred = tModel.denormEng(pred);
+                        pred += tModel.mRefEng;
+                        if (tEnergies.size() == 1) tEnergies.add(0, pred);
+                        else tEnergies.set(i, pred);
+                    });
+                    VectorCache.returnVec(tBasisValue);
+                });
+            } catch (TorchException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            for (int i = 1; i < tThreadNumber; ++i) {
+                rEnergies.plus2this(rEnergiesPar[i]);
+                VectorCache.returnVec(rEnergiesPar[i]);
+            }
+            return;
+        }
         // 力需要累加统计，所以统一设置为 0
         if (rForcesX != null) rForcesX.fill(0.0);
         if (rForcesY != null) rForcesY.fill(0.0);
@@ -991,12 +595,12 @@ public class NNAP implements IPotential {
         IVector @Nullable[] rForcesXPar = rForcesX!=null ? new IVector[tThreadNumber] : null; if (rForcesX != null) {rForcesXPar[0] = rForcesX; for (int i = 1; i < tThreadNumber; ++i) {rForcesXPar[i] = VectorCache.getZeros(tAtomNumber);}}
         IVector @Nullable[] rForcesYPar = rForcesY!=null ? new IVector[tThreadNumber] : null; if (rForcesY != null) {rForcesYPar[0] = rForcesY; for (int i = 1; i < tThreadNumber; ++i) {rForcesYPar[i] = VectorCache.getZeros(tAtomNumber);}}
         IVector @Nullable[] rForcesZPar = rForcesZ!=null ? new IVector[tThreadNumber] : null; if (rForcesZ != null) {rForcesZPar[0] = rForcesZ; for (int i = 1; i < tThreadNumber; ++i) {rForcesZPar[i] = VectorCache.getZeros(tAtomNumber);}}
-        IVector @Nullable[] rVirialsXXPar = rVirialsXX!=null ? new IVector[tThreadNumber] : null; if (rVirialsXX != null) {rVirialsXXPar[0] = rVirialsXX; for (int i = 1; i < tThreadNumber; ++i) {rVirialsXXPar[i] = VectorCache.getZeros(tAtomNumber);}}
-        IVector @Nullable[] rVirialsYYPar = rVirialsYY!=null ? new IVector[tThreadNumber] : null; if (rVirialsYY != null) {rVirialsYYPar[0] = rVirialsYY; for (int i = 1; i < tThreadNumber; ++i) {rVirialsYYPar[i] = VectorCache.getZeros(tAtomNumber);}}
-        IVector @Nullable[] rVirialsZZPar = rVirialsZZ!=null ? new IVector[tThreadNumber] : null; if (rVirialsZZ != null) {rVirialsZZPar[0] = rVirialsZZ; for (int i = 1; i < tThreadNumber; ++i) {rVirialsZZPar[i] = VectorCache.getZeros(tAtomNumber);}}
-        IVector @Nullable[] rVirialsXYPar = rVirialsXY!=null ? new IVector[tThreadNumber] : null; if (rVirialsXY != null) {rVirialsXYPar[0] = rVirialsXY; for (int i = 1; i < tThreadNumber; ++i) {rVirialsXYPar[i] = VectorCache.getZeros(tAtomNumber);}}
-        IVector @Nullable[] rVirialsXZPar = rVirialsXZ!=null ? new IVector[tThreadNumber] : null; if (rVirialsXZ != null) {rVirialsXZPar[0] = rVirialsXZ; for (int i = 1; i < tThreadNumber; ++i) {rVirialsXZPar[i] = VectorCache.getZeros(tAtomNumber);}}
-        IVector @Nullable[] rVirialsYZPar = rVirialsYZ!=null ? new IVector[tThreadNumber] : null; if (rVirialsYZ != null) {rVirialsYZPar[0] = rVirialsYZ; for (int i = 1; i < tThreadNumber; ++i) {rVirialsYZPar[i] = VectorCache.getZeros(tAtomNumber);}}
+        IVector @Nullable[] rVirialsXXPar = rVirialsXX!=null ? new IVector[tThreadNumber] : null; if (rVirialsXX != null) {rVirialsXXPar[0] = rVirialsXX; for (int i = 1; i < tThreadNumber; ++i) {rVirialsXXPar[i] = VectorCache.getZeros(rVirialsXX.size());}}
+        IVector @Nullable[] rVirialsYYPar = rVirialsYY!=null ? new IVector[tThreadNumber] : null; if (rVirialsYY != null) {rVirialsYYPar[0] = rVirialsYY; for (int i = 1; i < tThreadNumber; ++i) {rVirialsYYPar[i] = VectorCache.getZeros(rVirialsYY.size());}}
+        IVector @Nullable[] rVirialsZZPar = rVirialsZZ!=null ? new IVector[tThreadNumber] : null; if (rVirialsZZ != null) {rVirialsZZPar[0] = rVirialsZZ; for (int i = 1; i < tThreadNumber; ++i) {rVirialsZZPar[i] = VectorCache.getZeros(rVirialsZZ.size());}}
+        IVector @Nullable[] rVirialsXYPar = rVirialsXY!=null ? new IVector[tThreadNumber] : null; if (rVirialsXY != null) {rVirialsXYPar[0] = rVirialsXY; for (int i = 1; i < tThreadNumber; ++i) {rVirialsXYPar[i] = VectorCache.getZeros(rVirialsXY.size());}}
+        IVector @Nullable[] rVirialsXZPar = rVirialsXZ!=null ? new IVector[tThreadNumber] : null; if (rVirialsXZ != null) {rVirialsXZPar[0] = rVirialsXZ; for (int i = 1; i < tThreadNumber; ++i) {rVirialsXZPar[i] = VectorCache.getZeros(rVirialsXZ.size());}}
+        IVector @Nullable[] rVirialsYZPar = rVirialsYZ!=null ? new IVector[tThreadNumber] : null; if (rVirialsYZ != null) {rVirialsYZPar[0] = rVirialsYZ; for (int i = 1; i < tThreadNumber; ++i) {rVirialsYZPar[i] = VectorCache.getZeros(rVirialsYZ.size());}}
         try {
             aAPC.pool_().parforWithException(tAtomNumber, threadID -> {
                 if (aAPC.threadNumber() > 1) setTorchSingleThread();
@@ -1005,6 +609,7 @@ public class NNAP implements IPotential {
                     tModel.clearSubmittedBatchBackward(threadID);
                 }
             }, (i, threadID) -> {
+                final @Nullable IVector tEnergies = rEnergies!=null ? rEnergiesPar[threadID] : null;
                 final @Nullable IVector tForcesX = rForcesX!=null ? rForcesXPar[threadID] : null;
                 final @Nullable IVector tForcesY = rForcesY!=null ? rForcesYPar[threadID] : null;
                 final @Nullable IVector tForcesZ = rForcesZ!=null ? rForcesZPar[threadID] : null;
@@ -1018,10 +623,11 @@ public class NNAP implements IPotential {
                 final IBasis tBasis = tModel.basis(threadID);
                 final List<@NotNull Vector> tOut = tBasis.evalPartial(true, aAPC, i, aTypeMap);
                 Vector tBasisValue = tOut.get(0); tModel.normBasis(tBasisValue);
-                tModel.submitBatchBackward(threadID, tBasisValue, rEnergies==null ? null : pred -> {
+                tModel.submitBatchBackward(threadID, tBasisValue, tEnergies==null ? null : pred -> {
                     pred = tModel.denormEng(pred);
                     pred += tModel.mRefEng;
-                    rEnergies.set(i, pred);
+                    if (tEnergies.size() == 1) tEnergies.add(0, pred);
+                    else tEnergies.set(i, pred);
                 }, xGrad -> {
                     tModel.normBasisPartial(xGrad);
                     tModel.denormEngPartial(xGrad);
@@ -1041,12 +647,12 @@ public class NNAP implements IPotential {
                         if (tForcesX != null) tForcesX.add(idx, fx);
                         if (tForcesY != null) tForcesY.add(idx, fy);
                         if (tForcesZ != null) tForcesZ.add(idx, fz);
-                        if (tVirialsXX != null) tVirialsXX.add(idx, dx*fx);
-                        if (tVirialsYY != null) tVirialsYY.add(idx, dy*fy);
-                        if (tVirialsZZ != null) tVirialsZZ.add(idx, dz*fz);
-                        if (tVirialsXY != null) tVirialsXY.add(idx, dx*fy);
-                        if (tVirialsXZ != null) tVirialsXZ.add(idx, dx*fz);
-                        if (tVirialsYZ != null) tVirialsYZ.add(idx, dy*fz);
+                        if (tVirialsXX != null) tVirialsXX.add(tVirialsXX.size()==1?0:idx, dx*fx);
+                        if (tVirialsYY != null) tVirialsYY.add(tVirialsYY.size()==1?0:idx, dy*fy);
+                        if (tVirialsZZ != null) tVirialsZZ.add(tVirialsZZ.size()==1?0:idx, dz*fz);
+                        if (tVirialsXY != null) tVirialsXY.add(tVirialsXY.size()==1?0:idx, dx*fy);
+                        if (tVirialsXZ != null) tVirialsXZ.add(tVirialsXZ.size()==1?0:idx, dx*fz);
+                        if (tVirialsYZ != null) tVirialsYZ.add(tVirialsYZ.size()==1?0:idx, dy*fz);
                         ++j[0];
                     });
                     // 注意要在这里归还中间变量，实际为延迟归还操作
@@ -1059,6 +665,7 @@ public class NNAP implements IPotential {
             throw new RuntimeException(e);
         }
         // 累加其余线程的数据然后归还临时变量
+        if (rEnergies != null) {for (int i = 1; i < tThreadNumber; ++i) {rEnergies.plus2this(rEnergiesPar[i]); VectorCache.returnVec(rEnergiesPar[i]);}}
         if (rForcesZ != null) {for (int i = 1; i < tThreadNumber; ++i) {rForcesZ.plus2this(rForcesZPar[i]); VectorCache.returnVec(rForcesZPar[i]);}}
         if (rForcesY != null) {for (int i = 1; i < tThreadNumber; ++i) {rForcesY.plus2this(rForcesYPar[i]); VectorCache.returnVec(rForcesYPar[i]);}}
         if (rForcesX != null) {for (int i = 1; i < tThreadNumber; ++i) {rForcesX.plus2this(rForcesXPar[i]); VectorCache.returnVec(rForcesXPar[i]);}}
@@ -1068,9 +675,6 @@ public class NNAP implements IPotential {
         if (rVirialsZZ != null) {for (int i = 1; i < tThreadNumber; ++i) {rVirialsZZ.plus2this(rVirialsZZPar[i]); VectorCache.returnVec(rVirialsZZPar[i]);}}
         if (rVirialsYY != null) {for (int i = 1; i < tThreadNumber; ++i) {rVirialsYY.plus2this(rVirialsYYPar[i]); VectorCache.returnVec(rVirialsYYPar[i]);}}
         if (rVirialsXX != null) {for (int i = 1; i < tThreadNumber; ++i) {rVirialsXX.plus2this(rVirialsXXPar[i]); VectorCache.returnVec(rVirialsXXPar[i]);}}
-    }
-    public void calEnergyForceVirials(AtomicParameterCalculator aAPC, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ) throws TorchException {
-        calEnergyForceVirials(aAPC, rEnergies, rForcesX, rForcesY, rForcesZ, rVirialsXX, rVirialsYY, rVirialsZZ, rVirialsXY, rVirialsXZ, rVirialsYZ, type->type);
     }
     
     @ApiStatus.Internal

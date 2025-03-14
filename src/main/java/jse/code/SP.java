@@ -633,9 +633,8 @@ public class SP {
         
         /** 获取 shell 的交互式运行 */
         public static void runShell() throws JepException {
-            JEP_INTERP.set("jepInstance", JEP_INTERP);
-            JEP_INTERP.exec("from jep import console");
-            JEP_INTERP.exec("console.prompt(jepInstance)");
+            JEP_INTERP.exec("from jep.console import prompt as __jep_console_prompt__");
+            JEP_INTERP.invoke("__jep_console_prompt__", JEP_INTERP);
         }
         
         /** 直接运行文本的脚本 */
@@ -792,6 +791,9 @@ public class SP {
                         // 移动失败则尝试直接拷贝整个目录
                         IO.copyDir(tJepPyDir, tJepLibPyDir);
                     }
+                    // 拷贝 jse 需要的 python 脚本，也统一移动到此目录
+                    IO.removeDir(JEP_LIB_DIR+"jsepy/"); // 如果存在删除一下保证移动成功
+                    IO.copy(IO.getResource("jsepy/atom.py"), JEP_LIB_DIR+"jsepy/atom.py");
                     return tJepDir;})
                 .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS)
                 .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_JEP_LIB)

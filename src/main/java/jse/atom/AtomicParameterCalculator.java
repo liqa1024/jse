@@ -92,6 +92,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
     private volatile boolean mDead = false;
     /** 关闭这个参数计算器，现在不再强制要求手动关闭，但是手动调用可以提高性能 */
     @Override public void shutdown() {
+        if (mDead) return;
         mDead = true; super.shutdown();
         mNL.shutdown(); // 内部保证执行后内部的 mAtomDataXYZ 已经置为 null
         // 此时 APC 关闭，归还 mAtomDataXYZ，这种写法保证永远能获取到 mAtomDataXYZ 时都是合法的

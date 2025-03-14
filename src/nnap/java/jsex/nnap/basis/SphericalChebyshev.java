@@ -337,7 +337,11 @@ public class SphericalChebyshev implements IBasis {
     private final List<Vector> mRnAll = new ArrayList<>();
     @NotNull Vector bufRnAll(int i, boolean aClear) {while (mRnAll.size()<=i) {mRnAll.add(VectorCache.getVec(mNMax+1));} Vector tRn = mRnAll.get(i); if (aClear) {tRn.fill(0.0);} return tRn;}
     
+    private boolean mDead = false;
+    @Override public boolean isShutdown() {return mDead;}
     @Override public void shutdown() {
+        if (mDead) return;
+        mDead = true;
         if (mCnlm != null) MatrixCache.returnMat(mCnlm);
         if (mCnlmPx != null) VectorCache.returnVec(mCnlmPx);
         if (mCnlmPy != null) VectorCache.returnVec(mCnlmPy);
@@ -357,6 +361,7 @@ public class SphericalChebyshev implements IBasis {
     }
     
     protected RowMatrix calCnlm(IDxyzTypeIterable aNL, final boolean aBufferNL) {
+        if (mDead) throw new IllegalStateException("This Basis is dead");
         // 需要存储所有的 l，n，m 的值来统一进行近邻求和
         final RowMatrix cnlm = bufCnlm(true);
         // 缓存 Rn 数组
@@ -414,6 +419,8 @@ public class SphericalChebyshev implements IBasis {
      * @return {@inheritDoc}
      */
     @Override public Vector eval(IDxyzTypeIterable aNL) {
+        if (mDead) throw new IllegalStateException("This Basis is dead");
+        
         final int tSizeN = sizeN();
         final Vector rFingerPrint = VectorCache.getVec(tSizeN*sizeL());
         
@@ -434,6 +441,8 @@ public class SphericalChebyshev implements IBasis {
      * @return {@inheritDoc}
      */
     @Override public List<@NotNull Vector> evalPartial(boolean aCalCross, IDxyzTypeIterable aNL) {
+        if (mDead) throw new IllegalStateException("This Basis is dead");
+        
         final int tSizeN = sizeN();
         final int tSizeL = sizeL();
         Vector rFingerPrint = VectorCache.getVec(tSizeN*tSizeL);
