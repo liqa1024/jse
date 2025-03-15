@@ -391,16 +391,9 @@ public class AseAtoms extends AbstractSettableAtomData {
      * 转换为 python 中的 ase 的 Atoms，这里直接统一开启 pbc
      * @return ase atoms 对应的 {@link PyObject}
      */
-    public PyObject toPyObject() throws JepException {return toPyObject(SP.Python.interpreter());}
-    /**
-     * 转换为 python 中的 ase 的 Atoms，这里直接统一开启 pbc
-     * @param aInterpreter 可选的自定义的 python 解释器，默认为 {@link SP.Python#interpreter()}
-     * @return ase atoms 对应的 {@link PyObject}
-     * @see SP.Python
-     */
-    public PyObject toPyObject(@NotNull jep.Interpreter aInterpreter) throws JepException {
-        aInterpreter.exec("from ase import Atoms");
-        try (PyCallable tPyAtoms = aInterpreter.getValue("Atoms", PyCallable.class)) {
+    public PyObject toPyObject() throws JepException {
+        SP.Python.exec("from ase import Atoms");
+        try (PyCallable tPyAtoms = SP.Python.getValue("Atoms", PyCallable.class)) {
             return tPyAtoms.callAs(PyObject.class, Maps.of(
                 "cell"     , new double[][] {{mBox.ax(), mBox.ay(), mBox.az()}, {mBox.bx(), mBox.by(), mBox.bz()}, {mBox.cx(), mBox.cy(), mBox.cz()}},
                 "pbc"      , true,
@@ -625,18 +618,9 @@ public class AseAtoms extends AbstractSettableAtomData {
      * @see #read(String, Map)
      * @see #write(String)
      */
-    public static AseAtoms read(String aFilePath) throws JepException {return read(SP.Python.interpreter(), aFilePath);}
-    /**
-     * 通过 ase 来读取原子数据文件
-     * @param aInterpreter 自定义的 python 解释器，默认为 {@link SP.Python#interpreter()}
-     * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
-     * @return 读取得到的 {@link AseAtoms} 对象，如果有任何问题应该会抛出 {@link JepException}
-     * @see #read(String)
-     * @see SP.Python
-     */
-    public static AseAtoms read(@NotNull jep.Interpreter aInterpreter, String aFilePath) throws JepException {
-        aInterpreter.exec("from ase.io import read");
-        try (PyCallable tPyRead = aInterpreter.getValue("read", PyCallable.class)) {
+    public static AseAtoms read(String aFilePath) throws JepException {
+        SP.Python.exec("from ase.io import read");
+        try (PyCallable tPyRead = SP.Python.getValue("read", PyCallable.class)) {
             return fromPyObject(tPyRead.callAs(PyObject.class, aFilePath));
         }
     }
@@ -645,22 +629,11 @@ public class AseAtoms extends AbstractSettableAtomData {
      * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
      * @param aKWArgs 传入 {@code ase.io.read} 的其余参数，可以用来指定文件类型等
      * @return 读取得到的 {@link AseAtoms} 对象，如果有任何问题应该会抛出 {@link JepException}
-     * @see #read(String)
      * @see #write(String, Map)
      */
-    public static AseAtoms read(String aFilePath, Map<String, Object> aKWArgs) throws JepException {return read(SP.Python.interpreter(), aFilePath, aKWArgs);}
-    /**
-     * 通过 ase 来读取原子数据文件
-     * @param aInterpreter 自定义的 python 解释器，默认为 {@link SP.Python#interpreter()}
-     * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
-     * @param aKWArgs 传入 {@code ase.io.read} 的其余参数，可以用来指定文件类型等
-     * @return 读取得到的 {@link AseAtoms} 对象，如果有任何问题应该会抛出 {@link JepException}
-     * @see #read(String, Map)
-     * @see SP.Python
-     */
-    public static AseAtoms read(@NotNull jep.Interpreter aInterpreter, String aFilePath, Map<String, Object> aKWArgs) throws JepException {
-        aInterpreter.exec("from ase.io import read");
-        try (PyCallable tPyRead = aInterpreter.getValue("read", PyCallable.class)) {
+    public static AseAtoms read(String aFilePath, Map<String, Object> aKWArgs) throws JepException {
+        SP.Python.exec("from ase.io import read");
+        try (PyCallable tPyRead = SP.Python.getValue("read", PyCallable.class)) {
             return fromPyObject(tPyRead.callAs(PyObject.class, new Object[]{aFilePath}, aKWArgs));
         }
     }
@@ -671,16 +644,8 @@ public class AseAtoms extends AbstractSettableAtomData {
      * @see #write(String, Map)
      * @see #read(String)
      */
-    public void write(String aFilePath) throws JepException {write(SP.Python.interpreter(), aFilePath);}
-    /**
-     * 通过 ase 来写入原子数据文件
-     * @param aInterpreter 自定义的 python 解释器，默认为 {@link SP.Python#interpreter()}
-     * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
-     * @see #write(String)
-     * @see SP.Python
-     */
-    public void write(@NotNull jep.Interpreter aInterpreter, String aFilePath) throws JepException {
-        try (PyCallable tPyWrite = toPyObject(aInterpreter).getAttr("write", PyCallable.class)) {
+    public void write(String aFilePath) throws JepException {
+        try (PyObject tPyAtoms = toPyObject(); PyCallable tPyWrite = tPyAtoms.getAttr("write", PyCallable.class)) {
             tPyWrite.call(aFilePath);
         }
     }
@@ -688,20 +653,10 @@ public class AseAtoms extends AbstractSettableAtomData {
      * 通过 ase 来写入原子数据文件
      * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
      * @param aKWArgs 传入 {@code ase.io.read} 的其余参数，可以用来指定文件类型等
-     * @see #write(String)
      * @see #read(String, Map)
      */
-    public void write(String aFilePath, Map<String, Object> aKWArgs) throws JepException {write(SP.Python.interpreter(), aFilePath, aKWArgs);}
-    /**
-     * 通过 ase 来写入原子数据文件
-     * @param aInterpreter 自定义的 python 解释器，默认为 {@link SP.Python#interpreter()}
-     * @param aFilePath 任意的原子数据文件路径，通过 ase 自动识别类型
-     * @param aKWArgs 传入 {@code ase.io.read} 的其余参数，可以用来指定文件类型等
-     * @see #write(String, Map)
-     * @see SP.Python
-     */
-    public void write(@NotNull jep.Interpreter aInterpreter, String aFilePath, Map<String, Object> aKWArgs) throws JepException {
-        try (PyCallable tPyWrite = toPyObject(aInterpreter).getAttr("write", PyCallable.class)) {
+    public void write(String aFilePath, Map<String, Object> aKWArgs) throws JepException {
+        try (PyObject tPyAtoms = toPyObject(); PyCallable tPyWrite = tPyAtoms.getAttr("write", PyCallable.class)) {
             tPyWrite.call(new Object[]{aFilePath}, aKWArgs);
         }
     }

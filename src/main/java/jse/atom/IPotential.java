@@ -14,7 +14,6 @@ import jse.math.vector.IVector;
 import jse.math.vector.Vector;
 import jse.parallel.IAutoShutdown;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -54,26 +53,14 @@ public interface IPotential extends IAutoShutdown {
      * ase 的计算器 </a>，可以方便接入已有的代码直接计算；这里计算的压力统一按照 ase 的排序，也就是
      * {@code [xx, yy, zz, yz, xz, xy]}，确保兼容
      * <p>
-     * 创建的 ase 计算器和此势函数对象为引用关系，因此两者只要关闭了其中一个，另一个也会同时关闭，因此也不实现
-     * {@code __del__} 方法自动关闭，避免 java 这边的引用意外关闭。
+     * 为了支持需要关闭的势函数，创建的 ase 计算器也提供了 {@code shutdown()} 方法来进行关闭，
+     * 此时也会同步关闭内部引用的此势函数。不会实现 {@code __del__} 方法自动关闭，避免 java 这边的引用意外关闭。
      *
      * @return ase 计算器的 python 对象
      */
-    default PyObject asAseCalculator() throws JepException {return asAseCalculator(SP.Python.interpreter());}
-    /**
-     * 转换为一个 <a href="https://wiki.fysik.dtu.dk/ase/development/calculators.html">
-     * ase 的计算器 </a>，可以方便接入已有的代码直接计算；这里计算的压力统一按照 ase 的排序，也就是
-     * {@code [xx, yy, zz, yz, xz, xy]}，确保兼容
-     * <p>
-     * 创建的 ase 计算器和此势函数对象为引用关系，因此两者只要关闭了其中一个，另一个也会同时关闭，因此也不实现
-     * {@code __del__} 方法自动关闭，避免 java 这边的引用意外关闭。
-     *
-     * @param aInterpreter 需要使用的 python 解释器，默认为 {@link SP.Python#interpreter()}
-     * @return ase 计算器的 python 对象
-     */
-    default PyObject asAseCalculator(@NotNull jep.Interpreter aInterpreter) throws JepException {
-        aInterpreter.exec("from jsepy.atom import PotentialCalculator");
-        return (PyObject)aInterpreter.invoke("PotentialCalculator", this);
+    default PyObject asAseCalculator() throws JepException {
+        SP.Python.exec("from jsepy.atom import PotentialCalculator");
+        return (PyObject)SP.Python.invoke("PotentialCalculator", this);
     }
     @ApiStatus.Internal
     default Map<String, Object> calculate_(Map<String, Object> rResults, PyObject aPyAseAtoms, String[] aProperties, boolean aSystemChanges) throws Exception {

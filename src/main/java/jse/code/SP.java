@@ -25,8 +25,6 @@ import jse.clib.JNIUtil;
 import jse.clib.MiMalloc;
 import jse.code.collection.AbstractCollections;
 import jse.code.collection.NewCollections;
-import jse.code.functional.IBinaryFullOperator;
-import jse.code.functional.ITernaryConsumer;
 import jse.math.ComplexDouble;
 import jse.math.MathEX;
 import jse.math.function.Func1;
@@ -350,56 +348,6 @@ public class SP {
         return null;
     }
     
-    /** Wrapper of {@link GroovyObject} for matlab and jep usage */
-    public final static class GroovyObjectWrapper implements GroovyObject {
-        private final GroovyObject mObj;
-        GroovyObjectWrapper(GroovyObject aObj) {mObj = aObj;}
-        
-        @Override public Object invokeMethod(String name, Object args) {return of(mObj.invokeMethod(name, args));}
-        @Override public Object getProperty(String propertyName) {return of(mObj.getProperty(propertyName));}
-        @Override public void setProperty(String propertyName, Object newValue) {mObj.setProperty(propertyName, newValue);}
-        @Override public MetaClass getMetaClass() {return mObj.getMetaClass();}
-        @Override public void setMetaClass(MetaClass metaClass) {mObj.setMetaClass(metaClass);}
-        
-        @Override public String toString() {return mObj.toString();}
-        public GroovyObject unwrap() {return mObj;}
-        
-        /** 主要用来判断是否需要外包这一层 */
-        public static Object of(Object aObj) {
-            if ((aObj instanceof GroovyObjectWrapper) || (aObj instanceof PyObject)) return aObj;
-            else if (aObj instanceof GroovyObject) return new GroovyObjectWrapper((GroovyObject)aObj);
-            else return aObj;
-        }
-        
-        /** jep support */
-        private final Object funcUnwrap = new Object() {public GroovyObject __call__() {return unwrap();}};
-        public Object __getattribute__(final String attrName) {
-            if (!Python.InitHelper.initialized()) {
-                return getProperty(attrName);
-            }
-            // wrapper 带有的特有的函数
-            if (attrName.equals("unwrap")) {
-                return funcUnwrap;
-            }
-            // 直接回滚使用 mObj 的 __getattribute__，从而保证一致
-            return Python.GET_ATTRIBUTE.apply(mObj, attrName);
-        }
-        public void __setattr__(String attrName, Object newAttr) {
-            if (!Python.InitHelper.initialized()) {
-                setProperty(attrName, newAttr);
-                return;
-            }
-            // 直接回滚使用 mObj 的 __setattr__，从而保证一致
-            Python.SET_ATTRIBUTE.accept(mObj, attrName, newAttr);
-        }
-        
-        // 现在不再进行运算符重载之类的操作，因为 python 中更可能会使用 unwrap
-        // 的对象，为了和 unwrap 的使用保持一致这里不再提供重载；
-        // 注意到 python 中的类在 groovy 中会重载运算，而反之不会，这是因为 groovy
-        // 的结果更加应该看成是 java 的类，而不是独立的脚本
-    }
-    
-    
     /** 运行任意的脚本，自动检测脚本类型（根据后缀） */
     public static void run(String aScriptPath)                  throws Exception {run(aScriptPath, ZL_STR);}
     public static void run(String aScriptPath, String... aArgs) throws Exception {runScript(aScriptPath, aArgs);}
@@ -480,25 +428,25 @@ public class SP {
         /** python like stuffs，exec 不会获取返回值，eval 获取返回值 */
         public static void exec(String aText) throws Exception {GROOVY_SHELL.evaluate(aText, "ScriptJSE"+COUNTER.incrementAndGet()+".groovy");}
         public static void execFile(String aFilePath) throws Exception {GROOVY_SHELL.evaluate(toSourceFile(aFilePath));}
-        public static Object eval(String aText) throws Exception {return GroovyObjectWrapper.of(GROOVY_SHELL.evaluate(aText, "ScriptJSE"+COUNTER.incrementAndGet()+".groovy"));}
-        public static Object evalFile(String aFilePath) throws Exception {return GroovyObjectWrapper.of(GROOVY_SHELL.evaluate(toSourceFile(aFilePath)));}
+        public static Object eval(String aText) throws Exception {return GROOVY_SHELL.evaluate(aText, "ScriptJSE"+COUNTER.incrementAndGet()+".groovy");}
+        public static Object evalFile(String aFilePath) throws Exception {return GROOVY_SHELL.evaluate(toSourceFile(aFilePath));}
         
         /** 直接运行文本的脚本 */
         public static Object runText(String aText)                  throws Exception {return runText(aText, ZL_STR);}
-        public static Object runText(String aText, String... aArgs) throws Exception {return GroovyObjectWrapper.of(GROOVY_SHELL.run(aText, "ScriptJSE"+COUNTER.incrementAndGet()+".groovy", aArgs));}
+        public static Object runText(String aText, String... aArgs) throws Exception {return GROOVY_SHELL.run(aText, "ScriptJSE"+COUNTER.incrementAndGet()+".groovy", aArgs);}
         /** Groovy 现在也可以使用 getValue 来获取变量以及 setValue 设置变量（仅限于 Context 变量，这样可以保证效率） */
         public static Object get(String aValueName) throws Exception {return getValue(aValueName);}
         public static void set(String aValueName, Object aValue) throws Exception {setValue(aValueName, aValue);}
         public static void remove(String aValueName) throws Exception {removeValue(aValueName);}
         public static boolean hasValue(String aValueName) throws Exception {return GROOVY_SHELL.getContext().hasVariable(aValueName);}
-        public static Object getValue(String aValueName) throws Exception {return GroovyObjectWrapper.of(GROOVY_SHELL.getContext().getVariable(aValueName));}
+        public static Object getValue(String aValueName) throws Exception {return GROOVY_SHELL.getContext().getVariable(aValueName);}
         public static void setValue(String aValueName, Object aValue) throws Exception {GROOVY_SHELL.getContext().setVariable(aValueName, aValue);}
         public static void removeValue(String aValueName) throws Exception {GROOVY_SHELL.getContext().removeVariable(aValueName);}
         /** 运行脚本文件 */
         public static Object run(String aScriptPath)                  throws Exception {return run(aScriptPath, ZL_STR);}
         public static Object run(String aScriptPath, String... aArgs) throws Exception {return runScript(aScriptPath, aArgs);}
         public static Object runScript(String aScriptPath)                  throws Exception {return runScript(aScriptPath, ZL_STR);}
-        public static Object runScript(String aScriptPath, String... aArgs) throws Exception {return GroovyObjectWrapper.of(GROOVY_SHELL.run(toSourceFile(aScriptPath), aArgs));}
+        public static Object runScript(String aScriptPath, String... aArgs) throws Exception {return GROOVY_SHELL.run(toSourceFile(aScriptPath), aArgs);}
         /** 调用指定脚本中的方法，现在统一使用包名的做法 */
         public static Object invoke(String aMethodName)                  throws Exception {return invoke(aMethodName, ZL_OBJ);}
         public static Object invoke(String aMethodName, Object... aArgs) throws Exception {
@@ -512,13 +460,11 @@ public class SP {
                 aMethodName = aMethodName.substring(tLastDot+1);
             }
             // 现在统一使用使用 Groovy 的 InvokerHelper 来调用，更加通用，如果需要类型转换可以借助 setValue 走 groovy 的接口
-            return GroovyObjectWrapper.of(InvokerHelper.invokeMethod(tObj, aMethodName, aArgs));
+            return InvokerHelper.invokeMethod(tObj, aMethodName, aArgs);
         }
         /** 创建脚本类的实例 */
         public static Object newInstance(String aClassName)                  throws Exception {return newInstance(aClassName, ZL_OBJ);}
-        public static Object newInstance(String aClassName, Object... aArgs) throws Exception {
-            return GroovyObjectWrapper.of(InvokerHelper.invokeConstructorOf(getClass(aClassName), aArgs));
-        }
+        public static Object newInstance(String aClassName, Object... aArgs) throws Exception {return InvokerHelper.invokeConstructorOf(getClass(aClassName), aArgs);}
         // 现在不再支持关闭 GROOVY_SHELL 了，也没有必要关闭
         
         /** 现在这里也不进行包装，如果需要更加通用的调用可以借助 {@link InvokerHelper} */
@@ -616,39 +562,38 @@ public class SP {
         }
         /** 一样这里统一使用全局的一个解释器 */
         private static jep.Interpreter JEP_INTERP = null;
-        /** 用于内部使用的 python 函数 */
-        private static IBinaryFullOperator<Object, Object, String> GET_ATTRIBUTE = null;
-        private static ITernaryConsumer<Object, String, Object> SET_ATTRIBUTE = null;
-        /** python 部分不能跨线程，这里不去主动检测 */
+        private static final ThreadLocal<jep.Interpreter> THREAD_LOCAL_JEP_INTERP = new ThreadLocal<>();
+        /** python 部分不能跨线程 */
         private static Thread INIT_THREAD = null;
         public static boolean isValidThread() {return INIT_THREAD == Thread.currentThread();}
         
         
         /** python like stuffs，exec 不会获取返回值，eval 获取返回值 */
-        public static void exec(String aText) throws JepException {JEP_INTERP.exec(aText);}
-        public static void execFile(String aFilePath) throws JepException, IOException {JEP_INTERP.runScript(validScriptPath(aFilePath));}
+        public static void exec(String aText) throws JepException {interpreter().exec(aText);}
+        public static void execFile(String aFilePath) throws JepException, IOException {interpreter().runScript(validScriptPath(aFilePath));}
         /** 由于 jep 的特性，这里可以直接使用 getValue 指定 eval */
-        public static Object eval(String aText) throws JepException {return JEP_INTERP.getValue(aText);}
+        public static Object eval(String aText) throws JepException {return interpreter().getValue(aText);}
         // python 脚本文件不会有返回值
         
         /** 获取 shell 的交互式运行 */
         public static void runShell() throws JepException {
-            JEP_INTERP.exec("from jep.console import prompt as __jep_console_prompt__");
-            JEP_INTERP.invoke("__jep_console_prompt__", JEP_INTERP);
+            jep.Interpreter tInterp = interpreter();
+            tInterp.exec("from jep.console import prompt as __jep_console_prompt__");
+            tInterp.invoke("__jep_console_prompt__", tInterp);
         }
         
         /** 直接运行文本的脚本 */
         public static void runText(String aText)                  throws JepException {runText(aText, ZL_STR);}
-        public static void runText(String aText, String... aArgs) throws JepException {setArgs_("", aArgs); JEP_INTERP.exec(aText);}
+        public static void runText(String aText, String... aArgs) throws JepException {setArgs_("", aArgs); interpreter().exec(aText);}
         /** Python 还可以使用 getValue 来获取变量以及 setValue 设置变量（原则上同样仅限于 Context 变量，允许可以超出 Context 但是不保证支持） */
         public static Object get(String aValueName) throws JepException {return getValue(aValueName);}
         public static void set(String aValueName, Object aValue) throws JepException {setValue(aValueName, aValue);}
         public static void remove(String aValueName) throws JepException {removeValue(aValueName);}
-        public static boolean hasValue(String aValueName) throws JepException {return (Boolean)JEP_INTERP.getValue("('"+aValueName+"' in globals()) or ('"+aValueName+"' in locals())");}
-        public static Object getValue(String aValueName) throws JepException {return JEP_INTERP.getValue(aValueName);}
-        public static <T> T getValue(String aValueName, Class<T> aClazz) throws JepException {return JEP_INTERP.getValue(aValueName, aClazz);}
-        public static void setValue(String aValueName, Object aValue) throws JepException {JEP_INTERP.set(aValueName, aValue);}
-        public static void removeValue(String aValueName) throws JepException {JEP_INTERP.exec("del "+aValueName);}
+        public static boolean hasValue(String aValueName) throws JepException {return (Boolean)interpreter().getValue("('"+aValueName+"' in globals()) or ('"+aValueName+"' in locals())");}
+        public static Object getValue(String aValueName) throws JepException {return interpreter().getValue(aValueName);}
+        public static <T> T getValue(String aValueName, Class<T> aClazz) throws JepException {return interpreter().getValue(aValueName, aClazz);}
+        public static void setValue(String aValueName, Object aValue) throws JepException {interpreter().set(aValueName, aValue);}
+        public static void removeValue(String aValueName) throws JepException {interpreter().exec("del "+aValueName);}
         /** 运行脚本文件 */
         public static void run(String aScriptPath)                  throws JepException, IOException {run(aScriptPath, ZL_STR);}
         public static void run(String aScriptPath, String... aArgs) throws JepException, IOException {runScript(aScriptPath, aArgs);}
@@ -656,22 +601,22 @@ public class SP {
         public static void runScript(String aScriptPath, String... aArgs) throws JepException, IOException {
             // 现在不再保存旧的 sys.argv，如果需要可以在外部代码自行保存
             setArgs_(aScriptPath, aArgs);
-            JEP_INTERP.runScript(validScriptPath(aScriptPath));
+            interpreter().runScript(validScriptPath(aScriptPath));
         }
         /** 调用方法，python 中需要结合 import 使用 */
         public static Object invoke(String aMethodName)                  throws JepException {return invoke(aMethodName, ZL_OBJ);}
-        public static Object invoke(String aMethodName, Map<String, Object> aKWArgs) throws JepException {return JEP_INTERP.invoke(aMethodName, aKWArgs);}
-        public static Object invoke(String aMethodName, Object[] aArgs, Map<String, Object> aKWArgs) throws JepException {return JEP_INTERP.invoke(aMethodName, aArgs, aKWArgs);}
+        public static Object invoke(String aMethodName, Map<String, Object> aKWArgs) throws JepException {return interpreter().invoke(aMethodName, aKWArgs);}
+        public static Object invoke(String aMethodName, Object[] aArgs, Map<String, Object> aKWArgs) throws JepException {return interpreter().invoke(aMethodName, aArgs, aKWArgs);}
         @SuppressWarnings("unchecked")
         public static Object invoke(String aMethodName, Object... aArgs) throws JepException {
-            if (aArgs == null || aArgs.length == 0) return JEP_INTERP.invoke(aMethodName);
-            if (aArgs.length == 1 && (aArgs[0] instanceof Map)) return JEP_INTERP.invoke(aMethodName, (Map<String, Object>)aArgs[0]);
+            if (aArgs == null || aArgs.length == 0) return interpreter().invoke(aMethodName);
+            if (aArgs.length == 1 && (aArgs[0] instanceof Map)) return interpreter().invoke(aMethodName, (Map<String, Object>)aArgs[0]);
             if (aArgs.length > 1 && (aArgs[aArgs.length-1] instanceof Map)) {
                 Object[] tArgs = new Object[aArgs.length-1];
                 System.arraycopy(aArgs, 0, tArgs, 0, aArgs.length-1);
-                return JEP_INTERP.invoke(aMethodName, tArgs, (Map<String, Object>)aArgs[aArgs.length-1]);
+                return interpreter().invoke(aMethodName, tArgs, (Map<String, Object>)aArgs[aArgs.length-1]);
             }
-            return JEP_INTERP.invoke(aMethodName, aArgs);
+            return interpreter().invoke(aMethodName, aArgs);
         }
         /** 创建 Python 实例，这里可以直接将类名当作函数调用即可 */
         public static Object newInstance(String aClassName)                  throws JepException {return newInstance(aClassName, ZL_OBJ);}
@@ -680,13 +625,13 @@ public class SP {
         public static Object newInstance(String aClassName, Object... aArgs) throws JepException {return invoke(aClassName, aArgs);}
         
         /** 提供一个手动关闭 JEP_INTERP 的接口 */
-        public static void close() throws JepException {if (JEP_INTERP != null) {JEP_INTERP.close(); JEP_INTERP = null; GET_ATTRIBUTE = null; SET_ATTRIBUTE = null;}}
+        public static void close() throws JepException {if (JEP_INTERP != null) {JEP_INTERP.close(); JEP_INTERP = null;}}
         public static boolean isClosed() {return JEP_INTERP == null;}
         /** 提供一个手动刷新 JEP_INTERP 的接口，可以将关闭的重新打开，会清空所有创建的 python 变量 */
         public static void refresh() throws JepException {close(); initInterpreter_();}
         
         /** 似乎是不再需要这层包装了 */
-        public static PyObject getClass(String aClassName) throws JepException {return JEP_INTERP.getValue(aClassName, PyObject.class);}
+        public static PyObject getClass(String aClassName) throws JepException {return interpreter().getValue(aClassName, PyObject.class);}
         
         /** 现在和 Groovy 逻辑保持一致，调用任何 run 都会全局重置 args 值 */
         private static void setArgs_(String aFirst, String[] aArgs) {
@@ -697,67 +642,98 @@ public class SP {
         }
         
         /** Python 提供额外的接口，获取同时做类型检查并转换 */
-        public static <T> T getAs(Class<T> aExpectedType, String aValueName) throws JepException {return JEP_INTERP.getValue(aValueName, aExpectedType);}
-        /** 直接获取底层的 Interpreter */
-        public static jep.Interpreter interpreter() {return JEP_INTERP;}
+        public static <T> T getAs(Class<T> aExpectedType, String aValueName) throws JepException {return interpreter().getValue(aValueName, aExpectedType);}
+        /** 获取当前线程合法的 Interpreter，如果没有创建则直接返回 {@code null} */
+        public static jep.Interpreter interpreter() {return isValidThread() ? JEP_INTERP : THREAD_LOCAL_JEP_INTERP.get();}
         
-        /** Python 提供额外的接口，提供专门的 parfor 带有线程独立的 Interpreter，这种写法可以保证 jse 的 python 环境一定成功初始化 */
-        public static void parforWithInterpreter(int aSize, @ClosureParams(value= FromString.class, options={"jep.Interpreter", "jep.Interpreter,int", "jep.Interpreter,int,int"}) final Closure<?> aGroovyTask) {parforWithInterpreter(aSize, PARFOR_THREAD_NUMBER, aGroovyTask);}
-        @SuppressWarnings({"resource", "UnnecessaryReturnStatement"})
-        public static void parforWithInterpreter(int aSize, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value= FromString.class, options={"jep.Interpreter", "jep.Interpreter,int", "jep.Interpreter,int,int"}) final Closure<?> aGroovyTask) {
+        /** Python 提供额外的接口，提供专门的 parfor 并自动初始化一个线程独立的 Interpreter，这种写法可以保证 jse 的 python 环境一定成功初始化 */
+        public static void parforWithInterpreter(int aSize, @ClosureParams(value= FromString.class, options={"int", "int,int", "int,int,jep.Interpreter"}) final Closure<?> aGroovyTask) {parforWithInterpreter(aSize, PARFOR_THREAD_NUMBER, aGroovyTask);}
+        @SuppressWarnings({"resource", "UnnecessaryReturnStatement", "Convert2MethodRef"})
+        public static void parforWithInterpreter(int aSize, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value= FromString.class, options={"int", "int,int", "int,int,jep.Interpreter"}) final Closure<?> aGroovyTask) {
+            if (!isValidThread()) throw new IllegalStateException("`parforWithInterpreter` can only be called through the main thread");
             // 这里约定了线程数为 1 时一定是主线程串行执行，并且其余情况下一定会创建新线程运行，主线程只进行等待
             if (aThreadNum == 1) {
                 switch(aGroovyTask.getMaximumNumberOfParameters()) {
-                case 3:  {UT.Par.pool(aThreadNum).parfor(aSize, (i, threadID) -> aGroovyTask.call(JEP_INTERP, i, threadID)); return;}
-                case 2:  {UT.Par.pool(aThreadNum).parfor(aSize, (i, threadID) -> aGroovyTask.call(JEP_INTERP, i)); return;}
-                default: {UT.Par.pool(aThreadNum).parfor(aSize, (i, threadID) -> aGroovyTask.call(JEP_INTERP)); return;}
+                case 3:  {UT.Par.pool(aThreadNum).parfor(aSize, (i, threadID) -> aGroovyTask.call(i, threadID, JEP_INTERP)); return;}
+                case 2:  {UT.Par.pool(aThreadNum).parfor(aSize, (i, threadID) -> aGroovyTask.call(i, threadID)); return;}
+                default: {UT.Par.pool(aThreadNum).parfor(aSize, (i, threadID) -> aGroovyTask.call(i)); return;}
                 }
             }
             final jep.Interpreter[] tInterpreters = new jep.Interpreter[aThreadNum];
-            ParforThreadPool.ITaskWithID tInitDo = threadID -> tInterpreters[threadID] = new jep.SharedInterpreter();
-            ParforThreadPool.ITaskWithID tFinalDo = threadID -> tInterpreters[threadID].close();
+            ParforThreadPool.ITaskWithID tInitDo = threadID -> {
+                tInterpreters[threadID] = new jep.SharedInterpreter();
+                THREAD_LOCAL_JEP_INTERP.set(tInterpreters[threadID]);
+            };
+            ParforThreadPool.ITaskWithID tFinalDo = threadID -> {
+                THREAD_LOCAL_JEP_INTERP.remove();
+                tInterpreters[threadID].close();
+            };
             switch(aGroovyTask.getMaximumNumberOfParameters()) {
-            case 3:  {UT.Par.pool(aThreadNum).parfor(aSize, tInitDo, tFinalDo, (i, threadID) -> aGroovyTask.call(tInterpreters[threadID], i, threadID)); return;}
-            case 2:  {UT.Par.pool(aThreadNum).parfor(aSize, tInitDo, tFinalDo, (i, threadID) -> aGroovyTask.call(tInterpreters[threadID], i)); return;}
-            default: {UT.Par.pool(aThreadNum).parfor(aSize, tInitDo, tFinalDo, (i, threadID) -> aGroovyTask.call(tInterpreters[threadID])); return;}
+            case 3:  {UT.Par.pool(aThreadNum).parfor(aSize, tInitDo, tFinalDo, (i, threadID) -> aGroovyTask.call(i, threadID, tInterpreters[threadID])); return;}
+            case 2:  {UT.Par.pool(aThreadNum).parfor(aSize, tInitDo, tFinalDo, (i, threadID) -> aGroovyTask.call(i, threadID)); return;}
+            default: {UT.Par.pool(aThreadNum).parfor(aSize, tInitDo, tFinalDo, (i, threadID) -> aGroovyTask.call(i)); return;}
             }
         }
-        public static void parwhileWithInterpreter(ParforThreadPool.IParwhileChecker aChecker, @ClosureParams(value= FromString.class, options={"jep.Interpreter", "jep.Interpreter,int"}) final Closure<?> aGroovyTask) {parwhileWithInterpreter(aChecker, PARFOR_THREAD_NUMBER, aGroovyTask);}
-        @SuppressWarnings({"resource", "UnnecessaryReturnStatement"})
-        public static void parwhileWithInterpreter(ParforThreadPool.IParwhileChecker aChecker, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value= FromString.class, options={"jep.Interpreter", "jep.Interpreter,int"}) final Closure<?> aGroovyTask) {
+        public static void parwhileWithInterpreter(ParforThreadPool.IParwhileChecker aChecker, @ClosureParams(value= FromString.class, options={"int", "int,jep.Interpreter"}) final Closure<?> aGroovyTask) {parwhileWithInterpreter(aChecker, PARFOR_THREAD_NUMBER, aGroovyTask);}
+        @SuppressWarnings({"resource", "UnnecessaryReturnStatement", "Convert2MethodRef"})
+        public static void parwhileWithInterpreter(ParforThreadPool.IParwhileChecker aChecker, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value= FromString.class, options={"int", "int,jep.Interpreter"}) final Closure<?> aGroovyTask) {
+            if (!isValidThread()) throw new IllegalStateException("`parwhileWithInterpreter` can only be called through the main thread");
             // 这里约定了线程数为 1 时一定是主线程串行执行，并且其余情况下一定会创建新线程运行，主线程只进行等待
             if (aThreadNum == 1) {
                 if (aGroovyTask.getMaximumNumberOfParameters() == 2) {
-                    UT.Par.pool(aThreadNum).parwhile(aChecker, threadID -> aGroovyTask.call(JEP_INTERP, threadID));
+                    UT.Par.pool(aThreadNum).parwhile(aChecker, threadID -> aGroovyTask.call(threadID, JEP_INTERP));
                     return;
                 }
-                UT.Par.pool(aThreadNum).parwhile(aChecker, threadID -> aGroovyTask.call(JEP_INTERP));
+                UT.Par.pool(aThreadNum).parwhile(aChecker, threadID -> aGroovyTask.call(threadID));
                 return;
             }
             final jep.Interpreter[] tInterpreters = new jep.Interpreter[aThreadNum];
-            ParforThreadPool.ITaskWithID tInitDo = threadID -> tInterpreters[threadID] = new jep.SharedInterpreter();
-            ParforThreadPool.ITaskWithID tFinalDo = threadID -> tInterpreters[threadID].close();
+            ParforThreadPool.ITaskWithID tInitDo = threadID -> {
+                tInterpreters[threadID] = new jep.SharedInterpreter();
+                THREAD_LOCAL_JEP_INTERP.set(tInterpreters[threadID]);
+            };
+            ParforThreadPool.ITaskWithID tFinalDo = threadID -> {
+                THREAD_LOCAL_JEP_INTERP.remove();
+                tInterpreters[threadID].close();
+            };
             if (aGroovyTask.getMaximumNumberOfParameters() == 2) {
-                UT.Par.pool(aThreadNum).parwhile(aChecker, tInitDo, tFinalDo, threadID -> aGroovyTask.call(tInterpreters[threadID], threadID));
+                UT.Par.pool(aThreadNum).parwhile(aChecker, tInitDo, tFinalDo, threadID -> aGroovyTask.call(threadID, tInterpreters[threadID]));
                 return;
             }
-            UT.Par.pool(aThreadNum).parwhile(aChecker, tInitDo, tFinalDo, threadID -> aGroovyTask.call(tInterpreters[threadID]));
+            UT.Par.pool(aThreadNum).parwhile(aChecker, tInitDo, tFinalDo, threadID -> aGroovyTask.call(threadID));
             return;
         }
         
         public static <U> Future<U> callAsyncWithInterpreter(@ClosureParams(value=SimpleType.class, options="jep.Interpreter") final Closure<U> aGroovyTask) {
+            if (!isValidThread()) throw new IllegalStateException("`callAsyncWithInterpreter` can only be called through the main thread");
             return UT.Par.callAsync(() -> {
-                try (jep.Interpreter interp = new jep.SharedInterpreter()) {return aGroovyTask.call(interp);}
+                try (jep.Interpreter interp = new jep.SharedInterpreter()) {
+                    THREAD_LOCAL_JEP_INTERP.set(interp);
+                    U tOut = aGroovyTask.call(interp);
+                    THREAD_LOCAL_JEP_INTERP.remove();
+                    return tOut;
+                }
             });
         }
         public static <U> Future<U> supplyAsyncWithInterpreter(@ClosureParams(value=SimpleType.class, options="jep.Interpreter") final Closure<U> aGroovyTask) {
+            if (!isValidThread()) throw new IllegalStateException("`supplyAsyncWithInterpreter` can only be called through the main thread");
             return UT.Par.supplyAsync(() -> {
-                try (jep.Interpreter interp = new jep.SharedInterpreter()) {return aGroovyTask.call(interp);}
+                try (jep.Interpreter interp = new jep.SharedInterpreter()) {
+                    THREAD_LOCAL_JEP_INTERP.set(interp);
+                    U tOut = aGroovyTask.call(interp);
+                    THREAD_LOCAL_JEP_INTERP.remove();
+                    return tOut;
+                }
             });
         }
         public static Future<Void> runAsyncWithInterpreter(@ClosureParams(value=SimpleType.class, options="jep.Interpreter") final Closure<?> aGroovyTask) {
+            if (!isValidThread()) throw new IllegalStateException("`runAsyncWithInterpreter` can only be called through the main thread");
             return UT.Par.runAsync(() -> {
-                try (jep.Interpreter interp = new jep.SharedInterpreter()) {aGroovyTask.call(interp);}
+                try (jep.Interpreter interp = new jep.SharedInterpreter()) {
+                    THREAD_LOCAL_JEP_INTERP.set(interp);
+                    aGroovyTask.call(interp);
+                    THREAD_LOCAL_JEP_INTERP.remove();
+                }
             });
         }
         
@@ -833,16 +809,10 @@ public class SP {
             initInterpreter_();
         }
         /** 初始化内部的 JEP_INTERP，主要用于减少重复代码 */
-        @SuppressWarnings("unchecked")
         private static void initInterpreter_() {
             JEP_INTERP = new jep.SharedInterpreter();
             INIT_THREAD = Thread.currentThread();
             JEP_INTERP.exec("import sys");
-            // python 函数获取
-            JEP_INTERP.exec("def __JSE_GET_ATTRIBUTE__(obj, name):\n    return obj.__getattribute__(name)");
-            JEP_INTERP.exec("def __JSE_SET_ATTRIBUTE__(obj, name, value):\n    return obj.__setattr__(name, value)");
-            GET_ATTRIBUTE = (IBinaryFullOperator<Object, Object, String>)JEP_INTERP.getValue("__JSE_GET_ATTRIBUTE__", IBinaryFullOperator.class);
-            SET_ATTRIBUTE = (ITernaryConsumer<Object, String, Object>)JEP_INTERP.getValue("__JSE_SET_ATTRIBUTE__", ITernaryConsumer.class);
             // 简单的 matplotlab 支持
             if (!KERNEL_SHOW_FIGURE && Main.IS_KERNEL()) {
                 //noinspection ConcatenationWithEmptyString

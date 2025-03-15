@@ -10,7 +10,6 @@ import jse.code.collection.ISlice;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.IVector;
 import jse.math.vector.Vector;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -92,10 +91,6 @@ public class AseCalculator implements IPotential {
      * @return {@inheritDoc}
      */
     @Override public PyObject asAseCalculator() throws JepException {return mCalc;}
-    /** 对于已经是 ase 计算器不能自定义 python 解释器，因此应当使用 {@link #asAseCalculator()} */
-    @Override public PyObject asAseCalculator(@NotNull jep.Interpreter aInterpreter) throws JepException {
-        throw new UnsupportedOperationException("custom interpreter for AseCalculator");
-    }
     
     /** 常规的 ase 计算器不支持计算部分原子能量，因此会直接抛出 {@link UnsupportedOperationException} */
     @Override public double calEnergyAt(IAtomData aAPC, ISlice aIndices) {
