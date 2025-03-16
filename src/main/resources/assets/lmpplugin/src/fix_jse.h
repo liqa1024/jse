@@ -52,6 +52,8 @@ protected:
 public:
     void setForceReneighbor(jboolean);
     void setNextReneighbor(jlong);
+    void setBoxChange(jint);
+    void setNoChangeBox(jboolean);
     jlong nextReneighbor();
     void setNevery(jint);
     void setEnergyGlobalFlag(jboolean);
@@ -71,6 +73,8 @@ public:
     void setExtvector(jboolean);
     void setExtarray(jboolean);
     
+    jint findVariable(jstring);
+    jdouble computeVariable(jint);
     void neighborRequestDefault(jdouble);
     void neighborRequestFull(jdouble);
     void neighborRequestOccasional(jdouble);
@@ -90,6 +94,22 @@ public:
     jint atomNlocal();
     jint atomNghost();
     jint atomNmax();
+    jlong domainXy();
+    jlong domainXz();
+    jlong domainYz();
+    jdouble domainXprd();
+    jdouble domainYprd();
+    jdouble domainZprd();
+    jlong domainH();
+    jlong domainHInv();
+    jlong domainBoxlo();
+    jlong domainBoxhi();
+    void domainX2lamda1(jint);
+    void domainX2lamda2(jlong, jlong);
+    void domainLamda2x1(jint);
+    void domainLamda2x2(jlong, jlong);
+    void domainSetGlobalBox();
+    void domainSetLocalBox();
     jint listGnum();
     jint listInum();
     jlong listIlist();

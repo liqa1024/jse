@@ -5,6 +5,12 @@ extern "C" {
 
 using namespace LAMMPS_NS;
 
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setBoxChange_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aFlag) {
+    ((FixJSE *)(intptr_t)aFixPtr)->setBoxChange(aFlag);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setNoChangeBox_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jboolean aFlag) {
+    ((FixJSE *)(intptr_t)aFixPtr)->setNoChangeBox(aFlag);
+}
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setForceReneighbor_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jboolean aFlag) {
     ((FixJSE *)(intptr_t)aFixPtr)->setForceReneighbor(aFlag);
 }
@@ -65,6 +71,12 @@ JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setExtvector_1(JNIEnv *aE
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setExtarray_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jboolean aFlag) {
     ((FixJSE *)(intptr_t)aFixPtr)->setExtarray(aFlag);
 }
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_findVariable_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jstring aName) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->findVariable(aName);
+}
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_computeVariable_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aIdx) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->computeVariable(aIdx);
+}
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborRequestDefault_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jdouble aRCut) {
     ((FixJSE *)(intptr_t)aFixPtr)->neighborRequestDefault(aRCut);
 }
@@ -121,6 +133,54 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomNmax_1(JNIEnv *aEnv, 
 }
 JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomNghost_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->atomNghost();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainXy_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainXy();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainXz_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainXz();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainYz_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainYz();
+}
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainXprd_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainXprd();
+}
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainYprd_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainYprd();
+}
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainZprd_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainZprd();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainH_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainH();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainHInv_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainHInv();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainBoxlo_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainBoxlo();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainBoxhi_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainBoxhi();
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainX2lamda_1__JI(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aN) {
+    ((FixJSE *)(intptr_t)aFixPtr)->domainX2lamda1(aN);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainX2lamda_1__JJJ(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jlong aX, jlong rLamda) {
+    ((FixJSE *)(intptr_t)aFixPtr)->domainX2lamda2(aX, rLamda);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainLamda2x_1__JI(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aN) {
+    ((FixJSE *)(intptr_t)aFixPtr)->domainLamda2x1(aN);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainLamda2x_1__JJJ(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jlong aLamda, jlong rX) {
+    ((FixJSE *)(intptr_t)aFixPtr)->domainLamda2x2(aLamda, rX);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainSetGlobalBox_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    ((FixJSE *)(intptr_t)aFixPtr)->domainSetGlobalBox();
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainSetLocalBox_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    ((FixJSE *)(intptr_t)aFixPtr)->domainSetLocalBox();
 }
 JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_listGnum_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->listGnum();

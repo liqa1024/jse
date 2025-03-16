@@ -5,6 +5,12 @@ extern "C" {
 
 using namespace LAMMPS_NS;
 
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_findVariable_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jstring aName) {
+    return ((PairJSE *)(intptr_t)aPairPtr)->findVariable(aName);
+}
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Pair_computeVariable_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jint aIdx) {
+    return ((PairJSE *)(intptr_t)aPairPtr)->computeVariable(aIdx);
+}
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_neighborRequestDefault_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     ((PairJSE *)(intptr_t)aPairPtr)->neighborRequestDefault();
 }

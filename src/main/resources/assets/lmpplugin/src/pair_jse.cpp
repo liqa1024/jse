@@ -8,10 +8,12 @@
 #include "lammps/comm.h"
 #include "lammps/error.h"
 #include "lammps/force.h"
+#include "lammps/input.h"
 #include "lammps/memory.h"
 #include "lammps/update.h"
 #include "lammps/neigh_list.h"
 #include "lammps/neighbor.h"
+#include "lammps/variable.h"
 
 using namespace LAMMPS_NS;
 
@@ -97,6 +99,16 @@ double PairJSE::init_one(int i, int j) {
 }
 
 /* ---------------------------------------------------------------------- */
+jint PairJSE::findVariable(jstring name) {
+    char *name_c = parseStr(mEnv, name);
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "parse name");
+    int ivar = input->variable->find(name_c);
+    FREE(name_c);
+    return (jint)ivar;
+}
+jdouble PairJSE::computeVariable(jint ivar) {
+    return input->variable->compute_equal(ivar);
+}
 
 void PairJSE::neighborRequestDefault() {
     neighbor->add_request(this, NeighConst::REQ_DEFAULT);

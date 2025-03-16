@@ -9,6 +9,22 @@ extern "C" {
 #endif
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    findVariable_
+ * Signature: (JLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_findVariable_1
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    computeVariable_
+ * Signature: (JI)D
+ */
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Pair_computeVariable_1
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
  * Method:    neighborRequestDefault_
  * Signature: (J)V
  */

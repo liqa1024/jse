@@ -29,6 +29,8 @@ protected:
     virtual void allocate();
     
 public:
+    jint findVariable(jstring);
+    jdouble computeVariable(jint);
     void neighborRequestDefault();
     void neighborRequestFull();
     void noVirialFdotrCompute();

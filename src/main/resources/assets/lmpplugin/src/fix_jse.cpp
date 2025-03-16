@@ -6,12 +6,15 @@
 
 #include "lammps/atom.h"
 #include "lammps/comm.h"
+#include "lammps/domain.h"
 #include "lammps/error.h"
 #include "lammps/force.h"
+#include "lammps/input.h"
 #include "lammps/pair.h"
 #include "lammps/update.h"
 #include "lammps/neigh_list.h"
 #include "lammps/neighbor.h"
+#include "lammps/variable.h"
 #include "neigh_request.h"
 
 using namespace LAMMPS_NS;
@@ -164,11 +167,28 @@ double FixJSE::compute_array(int i, int j) {
 }
 
 /* ---------------------------------------------------------------------- */
+jint FixJSE::findVariable(jstring name) {
+    char *name_c = parseStr(mEnv, name);
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "parse name");
+    int ivar = input->variable->find(name_c);
+    FREE(name_c);
+    return (jint)ivar;
+}
+jdouble FixJSE::computeVariable(jint ivar) {
+    return input->variable->compute_equal(ivar);
+}
+
 void FixJSE::setForceReneighbor(jboolean flag) {
     force_reneighbor = flag ? 1 : 0;
 }
 void FixJSE::setNextReneighbor(jlong timestep) {
     next_reneighbor = (bigint)timestep;
+}
+void FixJSE::setBoxChange(jint flag) {
+    box_change = (int)flag;
+}
+void FixJSE::setNoChangeBox(jboolean flag) {
+    no_change_box = flag ? 1 : 0;
 }
 jlong FixJSE::nextReneighbor() {
     return (jlong)next_reneighbor;
@@ -286,6 +306,54 @@ jint FixJSE::atomNghost() {
 }
 jint FixJSE::atomNmax() {
     return (jint) atom->nmax;
+}
+jlong FixJSE::domainXy() {
+    return (jlong)(intptr_t) &(domain->xy);
+}
+jlong FixJSE::domainXz() {
+    return (jlong)(intptr_t) &(domain->xz);
+}
+jlong FixJSE::domainYz() {
+    return (jlong)(intptr_t) &(domain->yz);
+}
+jdouble FixJSE::domainXprd() {
+    return domain->xprd;
+}
+jdouble FixJSE::domainYprd() {
+    return domain->yprd;
+}
+jdouble FixJSE::domainZprd() {
+    return domain->zprd;
+}
+jlong FixJSE::domainH() {
+    return (jlong)(intptr_t) domain->h;
+}
+jlong FixJSE::domainHInv() {
+    return (jlong)(intptr_t) domain->h_inv;
+}
+jlong FixJSE::domainBoxlo() {
+    return (jlong)(intptr_t) domain->boxlo;
+}
+jlong FixJSE::domainBoxhi() {
+    return (jlong)(intptr_t) domain->boxhi;
+}
+void FixJSE::domainX2lamda1(jint n) {
+    domain->x2lamda((int)n);
+}
+void FixJSE::domainX2lamda2(jlong x, jlong lamda) {
+    domain->x2lamda((double *)(intptr_t)x, (double *)(intptr_t)lamda);
+}
+void FixJSE::domainLamda2x1(jint n) {
+    domain->lamda2x((int)n);
+}
+void FixJSE::domainLamda2x2(jlong lamda, jlong x) {
+    domain->lamda2x((double *)(intptr_t)lamda, (double *)(intptr_t)x);
+}
+void FixJSE::domainSetGlobalBox() {
+    domain->set_global_box();
+}
+void FixJSE::domainSetLocalBox() {
+    domain->set_local_box();
 }
 jint FixJSE::listGnum() {
     if (mNL == NULL) error->all(FLERR, "No neighbor list in this fix");

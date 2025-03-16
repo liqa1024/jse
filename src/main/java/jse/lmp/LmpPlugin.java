@@ -8,6 +8,7 @@ import jse.code.UT;
 import jse.parallel.IAutoShutdown;
 import jse.parallel.MPI;
 import org.codehaus.groovy.runtime.InvokerHelper;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -193,6 +194,18 @@ public class LmpPlugin {
         
         
         /// lammps pair 提供的接口
+        protected final int findVariable(String aName) {
+            if (aName == null) throw new NullPointerException();
+            return findVariable_(mPairPtr, aName);
+        }
+        private native static int findVariable_(long aPairPtr, @NotNull String name);
+        
+        protected final double computeVariable(int aIdx) {
+            if (aIdx < 0) throw new IndexOutOfBoundsException(String.valueOf(aIdx));
+            return computeVariable_(mPairPtr, aIdx);
+        }
+        private native static double computeVariable_(long aPairPtr, int ivar);
+        
         protected final void neighborRequestDefault() {neighborRequestDefault_(mPairPtr);}
         private native static void neighborRequestDefault_(long aPairPtr);
         
@@ -338,6 +351,19 @@ public class LmpPlugin {
             , MIN_PRE_REVERSE           = 1 << 20
             , MIN_POST_FORCE            = 1 << 21
             ;
+        public final static int
+              NO_BOX_CHANGE     = 0
+            , BOX_CHANGE_ANY    = 1
+            , BOX_CHANGE_DOMAIN = 1 << 1
+            , BOX_CHANGE_X      = 1 << 2
+            , BOX_CHANGE_Y      = 1 << 3
+            , BOX_CHANGE_Z      = 1 << 4
+            , BOX_CHANGE_YZ     = 1 << 5
+            , BOX_CHANGE_XZ     = 1 << 6
+            , BOX_CHANGE_XY     = 1 << 7
+            , BOX_CHANGE_SIZE   = BOX_CHANGE_X  | BOX_CHANGE_Y  | BOX_CHANGE_Z
+            , BOX_CHANGE_SHAPE  = BOX_CHANGE_YZ | BOX_CHANGE_XZ | BOX_CHANGE_XY
+            ;
         
         /**
          * 通过反射来获取类，可以是文件路径，也可以是类路径；
@@ -412,6 +438,12 @@ public class LmpPlugin {
         
         
         /// lammps fix 提供的接口
+        protected final void setBoxChange(int aFlag) {setBoxChange_(mFixPtr, aFlag);}
+        private native static void setBoxChange_(long aFixPtr, int aFlag);
+        
+        protected final void setNoChangeBox(boolean aFlag) {setNoChangeBox_(mFixPtr, aFlag);}
+        private native static void setNoChangeBox_(long aFixPtr, boolean aFlag);
+        
         protected final void setForceReneighbor(boolean aFlag) {setForceReneighbor_(mFixPtr, aFlag);}
         private native static void setForceReneighbor_(long aFixPtr, boolean aFlag);
         
@@ -471,6 +503,18 @@ public class LmpPlugin {
         
         protected final void setExtarray(boolean aFlag) {setExtarray_(mFixPtr, aFlag);}
         private native static void setExtarray_(long aFixPtr, boolean aFlag);
+        
+        protected final int findVariable(String aName) {
+            if (aName == null) throw new NullPointerException();
+            return findVariable_(mFixPtr, aName);
+        }
+        private native static int findVariable_(long aFixPtr, @NotNull String aName);
+        
+        protected final double computeVariable(int aIdx) {
+            if (aIdx < 0) throw new IndexOutOfBoundsException(String.valueOf(aIdx));
+            return computeVariable_(mFixPtr, aIdx);
+        }
+        private native static double computeVariable_(long aFixPtr, int aIdx);
         
         @SuppressWarnings("SameParameterValue")
         protected final void neighborRequestDefault(double aRCut) {neighborRequestDefault_(mFixPtr, aRCut);}
@@ -536,6 +580,54 @@ public class LmpPlugin {
         
         protected final int atomNghost() {return atomNghost_(mFixPtr);}
         private native static int atomNghost_(long aFixPtr);
+        
+        protected final DoubleCPointer domainXy() {return new DoubleCPointer(domainXy_(mFixPtr));}
+        private native static long domainXy_(long aFixPtr);
+        
+        protected final DoubleCPointer domainXz() {return new DoubleCPointer(domainXz_(mFixPtr));}
+        private native static long domainXz_(long aFixPtr);
+        
+        protected final DoubleCPointer domainYz() {return new DoubleCPointer(domainYz_(mFixPtr));}
+        private native static long domainYz_(long aFixPtr);
+        
+        protected final double domainXprd() {return domainXprd_(mFixPtr);}
+        private native static double domainXprd_(long aFixPtr);
+        
+        protected final double domainYprd() {return domainYprd_(mFixPtr);}
+        private native static double domainYprd_(long aFixPtr);
+        
+        protected final double domainZprd() {return domainZprd_(mFixPtr);}
+        private native static double domainZprd_(long aFixPtr);
+        
+        protected final DoubleCPointer domainH() {return new DoubleCPointer(domainH_(mFixPtr));}
+        private native static long domainH_(long aFixPtr);
+        
+        protected final DoubleCPointer domainHInv() {return new DoubleCPointer(domainHInv_(mFixPtr));}
+        private native static long domainHInv_(long aFixPtr);
+        
+        protected final DoubleCPointer domainBoxlo() {return new DoubleCPointer(domainBoxlo_(mFixPtr));}
+        private native static long domainBoxlo_(long aFixPtr);
+        
+        protected final DoubleCPointer domainBoxhi() {return new DoubleCPointer(domainBoxhi_(mFixPtr));}
+        private native static long domainBoxhi_(long aFixPtr);
+        
+        protected final void domainX2lamda(int aN) {domainX2lamda_(mFixPtr, aN);}
+        private native static void domainX2lamda_(long aFixPtr, int aN);
+        
+        protected final void domainX2lamda(DoubleCPointer aX, DoubleCPointer rLamda) {domainX2lamda_(mFixPtr, aX.ptr_(), rLamda.ptr_());}
+        private native static void domainX2lamda_(long aFixPtr, long aX, long rLamda);
+        
+        protected final void domainLamda2x(int aN) {domainLamda2x_(mFixPtr, aN);}
+        private native static void domainLamda2x_(long aFixPtr, int aN);
+        
+        protected final void domainLamda2x(DoubleCPointer aLamda, DoubleCPointer rX) {domainLamda2x_(mFixPtr, aLamda.ptr_(), rX.ptr_());}
+        private native static void domainLamda2x_(long aFixPtr, long aLamda, long rX);
+        
+        protected final void domainSetGlobalBox() {domainSetGlobalBox_(mFixPtr);}
+        private native static void domainSetGlobalBox_(long aFixPtr);
+        
+        protected final void domainSetLocalBox() {domainSetLocalBox_(mFixPtr);}
+        private native static void domainSetLocalBox_(long aFixPtr);
         
         protected final int listGnum() {return listGnum_(mFixPtr);}
         private native static int listGnum_(long aFixPtr);
