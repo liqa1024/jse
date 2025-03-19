@@ -647,12 +647,12 @@ public class NNAP implements IPairPotential {
                         if (tForcesX != null) tForcesX.add(idx, fx);
                         if (tForcesY != null) tForcesY.add(idx, fy);
                         if (tForcesZ != null) tForcesZ.add(idx, fz);
-                        if (tVirialsXX != null) tVirialsXX.add(tVirialsXX.size()==1?0:idx, dx*fx);
-                        if (tVirialsYY != null) tVirialsYY.add(tVirialsYY.size()==1?0:idx, dy*fy);
-                        if (tVirialsZZ != null) tVirialsZZ.add(tVirialsZZ.size()==1?0:idx, dz*fz);
-                        if (tVirialsXY != null) tVirialsXY.add(tVirialsXY.size()==1?0:idx, dx*fy);
-                        if (tVirialsXZ != null) tVirialsXZ.add(tVirialsXZ.size()==1?0:idx, dx*fz);
-                        if (tVirialsYZ != null) tVirialsYZ.add(tVirialsYZ.size()==1?0:idx, dy*fz);
+                        if (tVirialsXX != null) tVirialsXX.add(tVirialsXX.size()==1?0:i, dx*fx);
+                        if (tVirialsYY != null) tVirialsYY.add(tVirialsYY.size()==1?0:i, dy*fy);
+                        if (tVirialsZZ != null) tVirialsZZ.add(tVirialsZZ.size()==1?0:i, dz*fz);
+                        if (tVirialsXY != null) tVirialsXY.add(tVirialsXY.size()==1?0:i, dx*fy);
+                        if (tVirialsXZ != null) tVirialsXZ.add(tVirialsXZ.size()==1?0:i, dx*fz);
+                        if (tVirialsYZ != null) tVirialsYZ.add(tVirialsYZ.size()==1?0:i, dy*fz);
                         ++j[0];
                     });
                     // 注意要在这里归还中间变量，实际为延迟归还操作
