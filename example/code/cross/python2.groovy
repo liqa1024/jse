@@ -5,8 +5,8 @@ import jse.code.SP
 // 导入 numpy 和 matplotlib.pyplot，并作为 np 和 plt
 SP.Python.exec('import numpy')
 SP.Python.exec('import matplotlib.pyplot')
-np = SP.Python.getClass('numpy')
-plt = SP.Python.getClass('matplotlib.pyplot')
+def np = SP.Python.getClass('numpy')
+def plt = SP.Python.getClass('matplotlib.pyplot')
 
 // 可以像在 python 中一样的方法来使用，输出会自动转为 groovy 对象
 def x = np.linspace(0.0, 2.0*np.pi, 20)

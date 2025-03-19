@@ -2,7 +2,7 @@
     - [groovy 中调用 python](pythoningroovy.md)
     - [python 中调用 jse](jseinpython.md)
         - [基本使用方法](#基本使用方法)
-        - [数据类型转换](#数据类型转换)
+        - [和 numpy 的结合使用](#和-numpy-的结合使用)
         - [安装仅 jse 使用的 python 库](#安装仅-jse-使用的-python-库)
     - [matlab 中调用 jse]()
 - [**⟶ 目录**](contents.md)
@@ -61,45 +61,61 @@ jse main.py
     ```
 
 
-## 数据类型转换
+## 和 numpy 的结合使用
 
-由于 python 中并不强调类型，而 java 中强调，因此在交叉使用时可能会出现一些问题。
-jep 已经自动处理大部分常见的数据类型转换，但是不是所有（特别是对于 jse 中的类型），
-这里列出一些常见的问题和处理方法。
+jse 提供了对 numpy 数组 `ndarray` 的支持，对于需要 `ndarray`
+的情况，许多 jse 的类型提供了 `numpy()` 方法来直接转换成
+`ndarray`。目前 `jse.atom.IXYZ`, `jse.atom.IAtom`, `jse.atom.IAtomData`, 
+`jse.math.vector.IVector`, `jse.math.matrix.IMatrix`, `jse.math.table.ITable`
+都支持直接转换成 numpy 的数组：
 
--   **NDArray 的处理**
-    
-    在 python 中常常会使用 numpy 的 ndarray
-    存储数组信息，而绝大部分 jse 的函数不会接受这个类型，最简单的方法是使用：
+
+- 输入脚本（`jse code/cross/jse2.py`
+  [⤤](../example/code/cross/jse2.py)）：
     
     ```python
-    a_list = list(a)
+    from jse.lmp import Lmpdat
+    
+    data = Lmpdat.read('lmp/data/CuFCC108.lmpdat')
+    dataNp = data.numpy()
+    print(dataNp.shape)
+    print(dataNp)
     ```
     
-    将其转为 python 的 `list` 类型，此时会自动转换成 java
-    的 `List` 类型。
+    > 数据按行排列，顺序为 `x, y, z, id, type, vx, vy, vz`
+    > 
     
--   **jse Vector 的处理**
+- 输出：
     
-    许多 jse 函数会返回 jse 的向量 `Vector` 类型，其当然可以像正常的 java
-    类一样在 python 中直接使用，但需要注意这并不是 numpy 的
-    ndarray，因此不能作为 numpy 或者 matplotlib 的输入。
-    可以通过：
+    ```
+    (108, 8)
+    [[  0.      0.      0.      1.      1.      0.      0.      0.   ]
+     [  1.805   1.805   0.      2.      1.      0.      0.      0.   ]
+     [  1.805   0.      1.805   3.      1.      0.      0.      0.   ]
+     [  0.      1.805   1.805   4.      1.      0.      0.      0.   ]
+     ...
+     [  9.025   7.22    9.025 107.      1.      0.      0.      0.   ]
+     [  7.22    9.025   9.025 108.      1.      0.      0.      0.   ]]
+    ```
+
+对于需要 jse 向量或矩阵的输入的函数，可以通过
+`jse.math.vector.Vectors` 或 `jse.math.matrix.Matrices`
+中的 `fromNumpy` 方法将 numpy 数组转换成对应的
+jse 向量或矩阵：
+
+- 输入脚本（`jse code/cross/jse3.py`
+  [⤤](../example/code/cross/jse3.py)）：
     
     ```python
-    a_np = np.array(a.asList())
+    import numpy as np
+    from jse.code import IO
+    from jse.math.vector import Vectors
+    
+    x = np.linspace(0.0, 2.0*np.pi, 20)
+    y = np.sin(x)
+    
+    IO.cols2csv([Vectors.fromNumpy(x), Vectors.fromNumpy(y)], '.temp/example/cross/sin.csv')
     ```
-    
-    将其先转为 list，然后再转换成 numpy 的 ndarray。
-    
-    > 注意这里 jse 的 Vector 并没有专门重载 python
-    > 的运算符，因此不能通过方括号 `[]` 进行索引，因此需要直接调用方法：
-    >
-    > ```python
-    > a.set(1, 3.14)
-    > print(a.get(0))
-    > ```
-    >
 
 
 ## 安装仅 jse 使用的 python 库

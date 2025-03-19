@@ -1,20 +1,17 @@
 package code.cross
 
-import jep.NDArray
 import jse.code.SP
+import jse.math.vector.Vectors
 
-// 注意 as double[] 必要，groovy 默认会创建 ArrayList 而不是 double[]
-def a = new NDArray([1, 2, 3, 4, 5, 6] as double[], 3, 2)
-
-SP.Python.set('a', a)
-SP.Python.exec('print(type(a))')
+SP.Python.exec('import numpy as np')
+SP.Python.exec('a = np.array([1, 2, 3, 4, 5, 6])')
 SP.Python.exec('print(a)')
-SP.Python.exec('print(a.shape)')
+
+def a = Vectors.fromNumpy(SP.Python.get('a'))
+println(a)
 
 
 //OUTPUT:
-// <class 'numpy.ndarray'>
-// [[1. 2.]
-//  [3. 4.]
-//  [5. 6.]]
-// (3, 2)
+// [1 2 3 4 5 6]
+// 6-length Integer Vector:
+//  1 2 3 4 5 6

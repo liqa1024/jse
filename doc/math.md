@@ -258,13 +258,15 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
 
 - **转换为其他类型**
     
+    通过 `numpy()` 方法可以直接将向量或矩阵转为对应类型的
+    numpy 中的数组 `ndarray`，从而方便在 python 中结合
+    numpy 使用。
+    
     通过 `data()` 方法可以将 `IVector` 转为 `double[]`，
     此方法统一会创建一个新的 `size()` 长度的 `double[]`
     并将数据拷贝进去。
     `double[]` 类型对于跨语言编程会有更好的兼容性，
-    例如在 matlab 中则会自动转换成 matlab 的向量数据，
-    而在 jep 中可以作为 `jep.NDArray` 的内部数据输入（详见
-    [NDArray 创建和使用](pythoningroovy.md#ndarray-创建和使用)）
+    例如在 matlab 中则会自动转换成 matlab 的向量数据。
     
     通过 `asList()` 方法可以将 `IVector` 转为 `List<Double>`，
     此方法统一**不会进行值拷贝**，因此得到的 `List<Double>`
@@ -276,6 +278,13 @@ jse 在 [`jse.code.UT.Math`](../src/main/java/jse/code/UT.java)
     分别转为单列矩阵或者单行矩阵 `IMatrix`，
     此方法统一**不会进行值拷贝**，因此得到的 `IMatrix`
     为关于此 `IVector` 的引用，两者的修改都会直接同步。
+    
+- **通过 numpy 的数组直接创建**
+    
+    可以通过工具类 `jse.math.vector.Vectors` 以及
+    `jse.math.matrix.Matrices` 中的 `fromNumpy`
+    方法来通过 numpy 中的数组 `ndarray` 来创建一个
+    jse 的向量。
     
 - **通过 `List` 直接创建**
     

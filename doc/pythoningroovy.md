@@ -2,7 +2,7 @@
     - [groovy 中调用 python](pythoningroovy.md)
         - [环境要求](#环境要求)
         - [基本使用方法](#基本使用方法)
-        - [NDArray 创建和使用](#ndarray-创建和使用)
+        - [NDArray 的使用](#ndarray-的使用)
     - [python 中调用 jse](jseinpython.md)
     - [matlab 中调用 jse]()
 - [**⟶ 目录**](contents.md)
@@ -108,8 +108,8 @@ jse 中对于在 groovy 中调用 python 对象的属性提供了简化，
     // 导入 numpy 和 matplotlib.pyplot，并作为 np 和 plt
     SP.Python.exec('import numpy')
     SP.Python.exec('import matplotlib.pyplot')
-    np = SP.Python.getClass('numpy')
-    plt = SP.Python.getClass('matplotlib.pyplot')
+    def np = SP.Python.getClass('numpy')
+    def plt = SP.Python.getClass('matplotlib.pyplot')
 
     // 可以像在 python 中一样的方法来使用，输出会自动转为 groovy 对象
     def x = np.linspace(0.0, 2.0*np.pi, 20)
@@ -135,88 +135,59 @@ jse 中对于在 groovy 中调用 python 对象的属性提供了简化，
     ```
 
 
-## NDArray 创建和使用
+## NDArray 的使用
 
-许多 python 中的方法会使用 numpy 的 ndarray 作为输入，
-jep 提供了更加快速直接的方法创建一个 ndarray：
+许多 python 中的方法会使用 numpy 的数组 `ndarray`，jep
+在 java 侧提供了一个等价的 `jep.NDArray` 类。现在
+jse 提供了更方便的接口来将 jse 内的向量和 `jep.NDArray` 进行转换。
 
-```
-任意 java 中的数据 ⟶ java 中的 double[] 数据 ⟶
-java 中的 jep.NDArray 对象 ⟶ 自动转换为 python 中的 ndarray 数据
-```
-
-例如直接创建一个 `jep.NDArray` 对象并使用：
+对于输出 `ndarray` 的 python 方法，确认其维数后，调用
+`jse.math.vector.Vectors` 或 `jse.math.matrix.Matrices`
+中的 `fromNumpy` 方法即可创建对应的 jse 向量或矩阵：
 
 - 输入脚本（`jse code/cross/python3`
   [⤤](../example/code/cross/python3.groovy)）：
     
     ```groovy
-    import jep.NDArray
     import jse.code.SP
-    
-    def a = new NDArray([1, 2, 3, 4, 5, 6] as double[], 3, 2)
+    import jse.math.vector.Vectors
 
-    SP.Python.set('a', a)
-    SP.Python.exec('print(type(a))')
+    SP.Python.exec('import numpy as np')
+    SP.Python.exec('a = np.array([1, 2, 3, 4, 5, 6])')
     SP.Python.exec('print(a)')
-    SP.Python.exec('print(a.shape)')
+
+    def a = Vectors.fromNumpy(SP.Python.get('a'))
+    println(a)
     ```
-    
-    > 注意 `as double[]` 必要，因为 groovy 默认会创建 `ArrayList` 而不是 `double[]`
-    
+     
 - 输出：
     
     ```
-    <class 'numpy.ndarray'>
-    [[1. 2.]
-     [3. 4.]
-     [5. 6.]]
-    (3, 2)
+    [1 2 3 4 5 6]
+    6-length Integer Vector:
+    1 2 3 4 5 6
     ```
 
-将 `jse.math.vector.IVector` 和 `jse.math.matrix.IMatrix`
-转为 `jep.NDArray` 对象并使用：
+
+对于需要输入 `ndarray` 的方法，可以通过调用 `jse.math.vector.IVector`
+或 `jse.math.matrix.IMatrix` 中的 `numpy()` 方法将其转换为
+`jep.NDArray`，即可自动被 jep 识别并转换使用：
 
 - 输入脚本（`jse code/cross/python4`
   [⤤](../example/code/cross/python4.groovy)）：
     
     ```groovy
-    import jep.NDArray
     import jse.code.SP
-    import jse.math.matrix.Matrices
-    import jse.math.vector.Vectors
+    import static jse.code.UT.Math.*
 
-    def vec = Vectors.from([1, 2, 3, 4, 5, 6])
+    def x = linspace(0.0, 2.0*pi, 20)
+    def y = sin(x)
 
-    def mat = Matrices.from([
-        [11, 12, 13, 14, 15],
-        [21, 22, 23, 24, 25],
-        [31, 32, 33, 34, 35],
-        [41, 42, 43, 44, 45]
-    ])
+    SP.Python.exec('import matplotlib.pyplot')
+    def plt = SP.Python.getClass('matplotlib.pyplot')
 
-    // 转为 NDArray，使用 data() 方法数据拷贝到 double[]
-    def a = new NDArray(vec.data(), vec.size())
-    // NDArray 的矩阵按行排列，需要先使用 asVecRow() 按行转为向量
-    def b = new NDArray(mat.asVecRow().data(), mat.nrows(), mat.ncols())
-
-    SP.Python.set('a', a)
-    SP.Python.exec('print(a)')
-    SP.Python.exec('print(a.shape)')
-
-    SP.Python.set('b', b)
-    SP.Python.exec('print(b)')
-    SP.Python.exec('print(b.shape)')
+    plt.figure(figsize: [4, 3])
+    plt.plot(x.numpy(), y.numpy())
+    plt.show()
     ```
-    
-- 输出：
-    
-    ```
-    [1. 2. 3. 4. 5. 6.]
-    (6,)
-    [[11. 12. 13. 14. 15.]
-     [21. 22. 23. 24. 25.]
-     [31. 32. 33. 34. 35.]
-     [41. 42. 43. 44. 45.]]
-    (4, 5)
-    ```
+
