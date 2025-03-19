@@ -954,9 +954,9 @@ public class NativeLmp implements IAutoShutdown {
      * 更加易用的方法，类似于 lammps 的 {@code read_data} 命令，但是不需要走文件管理器；
      * 实际实现过程有些区别
      * @param aLmpdat 作为输入的原子数据
-     * @author liqa
+     * @param aDiscardID 是否直接丢弃原子的 id 信息，让 lammps 自动创建 id，默认为 {@code false}
      */
-    public void loadLmpdat(final Lmpdat aLmpdat) throws LmpException {
+    public void loadLmpdat(final Lmpdat aLmpdat, boolean aDiscardID) throws LmpException {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         checkThread();
         LmpBox tBox = aLmpdat.box();
@@ -972,27 +972,29 @@ public class NativeLmp implements IAutoShutdown {
         if (!Double.isNaN(tMass)) {
         command(String.format("mass            %d %f", tType, tMass));
         }}
-        IIntVector tIDs = aLmpdat.ids(); IntVector tBufIDs = tIDs.toBuf();
+        IIntVector tIDs = aLmpdat.ids();
+        @Nullable IntVector tBufIDs = aDiscardID ? null : tIDs.toBuf();
         IIntVector tTypes = aLmpdat.types(); IntVector tBufTypes = tTypes.toBuf();
         IVector tPositionsVec = aLmpdat.positions().asVecRow(); Vector tBufPositionsVec = tPositionsVec.toBuf();
         @Nullable IMatrix tVelocities = aLmpdat.velocities();
         @Nullable IVector tVelocitiesVec = tVelocities==null ? null : tVelocities.asVecRow();
         @Nullable Vector tBufVelocitiesVec = tVelocitiesVec==null ? null : tVelocitiesVec.toBuf();
         try {
-            lammpsCreateAtoms_(mLmpPtr.mPtr, aLmpdat.atomNumber(), tBufIDs.internalData(), tBufTypes.internalData(), tBufPositionsVec.internalData(), tBufVelocitiesVec==null ? null : tBufVelocitiesVec.internalData(), null, false);
+            lammpsCreateAtoms_(mLmpPtr.mPtr, aLmpdat.atomNumber(), tBufIDs==null ? null : tBufIDs.internalData(), tBufTypes.internalData(), tBufPositionsVec.internalData(), tBufVelocitiesVec==null ? null : tBufVelocitiesVec.internalData(), null, false);
         } finally {
-            tIDs.releaseBuf(tBufIDs, true);
+            if (tBufIDs!=null) tIDs.releaseBuf(tBufIDs, true);
             tTypes.releaseBuf(tBufTypes, true);
             tPositionsVec.releaseBuf(tBufPositionsVec, true);
             if (tVelocitiesVec!=null && tBufVelocitiesVec!=null) tVelocitiesVec.releaseBuf(tBufVelocitiesVec, true);
         }
     }
-    public void loadData(IAtomData aAtomData) throws LmpException {
+    public void loadLmpdat(Lmpdat aLmpdat) throws LmpException {loadLmpdat(aLmpdat, false);}
+    public void loadData(IAtomData aAtomData, boolean aDiscardID) throws LmpException {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         checkThread();
         // 需要统一转换成 lammps style 的 box
         if (!aAtomData.isLmpStyle()) {aAtomData = Lmpdat.of(aAtomData);}
-        if (aAtomData instanceof Lmpdat) {loadLmpdat((Lmpdat)aAtomData); return;}
+        if (aAtomData instanceof Lmpdat) {loadLmpdat((Lmpdat)aAtomData, aDiscardID); return;}
         IBox tBox = aAtomData.box();
         if (tBox.isPrism()) {
         command(String.format("region          box prism 0 %f 0 %f 0 %f %f %f %f", tBox.x(), tBox.y(), tBox.z(), tBox.xy(), tBox.xz(), tBox.yz()));
@@ -1006,8 +1008,10 @@ public class NativeLmp implements IAutoShutdown {
         if (!Double.isNaN(tMass)) {
         command(String.format("mass            %d %f", tType, tMass));
         }}
-        creatAtoms(aAtomData.atoms());
+        creatAtoms(aAtomData.atoms(), false, aDiscardID);
     }
+    public void loadData(IAtomData aAtomData) throws LmpException {loadData(aAtomData, false);}
+    public void loadData(Lmpdat aLmpdat, boolean aDiscardID) throws LmpException {loadLmpdat(aLmpdat, aDiscardID);}
     public void loadData(Lmpdat aLmpdat) throws LmpException {loadLmpdat(aLmpdat);}
     
     /**
@@ -1016,19 +1020,25 @@ public class NativeLmp implements IAutoShutdown {
      * This function is a wrapper around the {@code lammps_create_atoms()} function of the C-library interface.
      * @param aAtoms List of Atoms
      * @param aShrinkExceed whether to expand shrink-wrap boundaries if atoms are outside the box (false in default)
+     * @param aDiscardID 是否直接丢弃原子的 id 信息，让 lammps 自动创建 id，默认为 {@code false}
      */
-    public void creatAtoms(List<? extends IAtom> aAtoms, boolean aShrinkExceed) throws LmpException {
+    public void creatAtoms(List<? extends IAtom> aAtoms, boolean aShrinkExceed, boolean aDiscardID) throws LmpException {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         checkThread();
-        final boolean tHasVelocities = UT.Code.first(aAtoms).hasVelocity();
+        final IAtom tFirst = UT.Code.first(aAtoms);
+        final boolean tHasVelocities = tFirst.hasVelocity();
+        final boolean tHasID = !aDiscardID && tFirst.hasID();
         final int tAtomNum = aAtoms.size();
-        int[] rID = IntArrayCache.getArray(tAtomNum);
+        int[] rID = tHasID ? IntArrayCache.getArray(tAtomNum) : null;
         int[] rType = IntArrayCache.getArray(tAtomNum);
         double[] rXYZ = DoubleArrayCache.getArray(tAtomNum*3);
         double[] rVelocities = tHasVelocities ? DoubleArrayCache.getArray(tAtomNum*3) : null;
         int i = 0, j1 = 0, j2 = 0;
         for (IAtom tAtom : aAtoms) {
-            rID[i] = tAtom.id();
+            if (tHasID) {
+                int tID = tAtom.id();
+                rID[i] = tID<=0 ? (i+1) : tID;
+            }
             rType[i] = tAtom.type();
             ++i;
             rXYZ[j1] = tAtom.x(); ++j1;
@@ -1041,15 +1051,14 @@ public class NativeLmp implements IAutoShutdown {
             }
         }
         lammpsCreateAtoms_(mLmpPtr.mPtr, tAtomNum, rID, rType, rXYZ, rVelocities, null, aShrinkExceed);
-        IntArrayCache.returnArray(rID);
+        if (tHasID) IntArrayCache.returnArray(rID);
         IntArrayCache.returnArray(rType);
         DoubleArrayCache.returnArray(rXYZ);
         if (tHasVelocities) DoubleArrayCache.returnArray(rVelocities);
     }
-    public void creatAtoms(List<? extends IAtom> aAtoms) throws LmpException {
-        creatAtoms(aAtoms, false);
-    }
-    private native static void lammpsCreateAtoms_(long aLmpPtr, int aAtomNum, int @NotNull[] aID, int @NotNull[] aType, double @NotNull[] aXYZ, double @Nullable[] aVelocities, int @Nullable[] aImage, boolean aShrinkExceed) throws LmpException;
+    public void creatAtoms(List<? extends IAtom> aAtoms, boolean aShrinkExceed) throws LmpException {creatAtoms(aAtoms, aShrinkExceed, false);}
+    public void creatAtoms(List<? extends IAtom> aAtoms) throws LmpException {creatAtoms(aAtoms, false);}
+    private native static void lammpsCreateAtoms_(long aLmpPtr, int aAtomNum, int @Nullable[] aID, int @NotNull[] aType, double @NotNull[] aXYZ, double @Nullable[] aVelocities, int @Nullable[] aImage, boolean aShrinkExceed) throws LmpException;
     
     /**
      * lammps clear 指令

@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  */
 public class CS {
     /** version of jse */
-    public final static String VERSION = "3.6.0b";
+    public final static String VERSION = "3.6.0e";
     
     /** 全局的随机数生成器，可以通过 {@link Random#setSeed(long)} 或者 {@link UT.Math#rng(long)} 来控制全局的随机流 */
     public final static Random RANDOM = new Random();

@@ -99,6 +99,11 @@ public class AseCalculator implements IPotential {
     private boolean mDead = false;
     /** @return 此 ase 计算器是否已经关闭 */
     @Override public boolean isShutdown() {return mDead;}
+    /**
+     * 关闭此 ase 计算器，会时尝试调用内部引用的 ase
+     * 计算器的 {@code release} 或 {@code shutdown}
+     * 进行关闭，并同时会移除 java 对其的引用。
+     */
     @Override public void shutdown() {
         if (mDead) return;
         mDead = true;
@@ -152,6 +157,11 @@ public class AseCalculator implements IPotential {
      */
     @Override public void calEnergyForceVirials(IAtomData aAtomData, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ) throws JepException {
         if (mDead) throw new IllegalStateException("This Potential is dead");
+        final boolean tRequirePreAtomEnergy = rEnergies!=null && rEnergies.size()!=1;
+        final boolean tRequireTotalEnergy = rEnergies!=null && rEnergies.size()==1;
+        final boolean tRequireForce = rForcesX!=null || rForcesY!=null || rForcesZ!=null;
+        final boolean tRequirePreAtomStress = (rVirialsXX!=null && rVirialsXX.size()!=1) || (rVirialsYY!=null && rVirialsYY.size()!=1) || (rVirialsZZ!=null && rVirialsZZ.size()!=1) || (rVirialsXY!=null && rVirialsXY.size()!=1) || (rVirialsXZ!=null && rVirialsXZ.size()!=1) || (rVirialsYZ!=null && rVirialsYZ.size()!=1);
+        final boolean tRequireTotalStress = (rVirialsXX!=null && rVirialsXX.size()==1) || (rVirialsYY!=null && rVirialsYY.size()==1) || (rVirialsZZ!=null && rVirialsZZ.size()==1) || (rVirialsXY!=null && rVirialsXY.size()==1) || (rVirialsXZ!=null && rVirialsXZ.size()==1) || (rVirialsYZ!=null && rVirialsYZ.size()==1);
         // 这里为了兼容性，还是采用通过 atoms 来调用计算参数的实现方法
         AseAtoms tAtoms = AseAtoms.of(aAtomData);
         PyObject tPyAtoms = tAtoms.toPyObject();
@@ -159,67 +169,64 @@ public class AseCalculator implements IPotential {
         try {
             tPyAtoms.setAttr("calc", mCalc);
             // 按照难度逆序计算，可以利用 ase 计算器的缓存特性避免重复计算
-            if (rVirialsXX!=null || rVirialsYY!=null || rVirialsZZ!=null || rVirialsXY!=null || rVirialsXZ!=null || rVirialsYZ!=null) {
-                double tVolume = aAtomData.volume();
+            RowMatrix tVirials = null;
+            if (tRequirePreAtomStress) {
+                if (!mPerAtomStressSupport) throw new UnsupportedOperationException("calc stresses not supported");
+                NDArray<?> tPyStresses;
+                try (PyCallable tGetStresses = tPyAtoms.getAttr("get_stresses", PyCallable.class)) {
+                    tPyStresses = tGetStresses.callAs(NDArray.class);
+                }
+                tVirials = new RowMatrix(tPyStresses.getDimensions()[0], tPyStresses.getDimensions()[1], (double[])tPyStresses.getData());
+                tVirials.negative2this();
+            }
+            Vector tVirial = null;
+            if (tRequireTotalStress) {
                 if (!mStressSupport) throw new UnsupportedOperationException("calc stress not supported");
                 NDArray<?> tPyStress;
                 try (PyCallable tGetStress = tPyAtoms.getAttr("get_stress", PyCallable.class)) {
                     tPyStress = tGetStress.callAs(NDArray.class);
                 }
-                Vector tStress = new Vector(tPyStress.getDimensions()[0], (double[])tPyStress.getData());
-                if ((rVirialsXX==null||rVirialsXX.size()==1) && (rVirialsYY==null||rVirialsYY.size()==1) && (rVirialsZZ==null||rVirialsZZ.size()==1) &&
-                    (rVirialsXY==null||rVirialsXY.size()==1) && (rVirialsXZ==null||rVirialsXZ.size()==1) && (rVirialsYZ==null||rVirialsYZ.size()==1)) {
-                    if (rVirialsXX != null) {rVirialsXX.set(0, -tStress.get(0)*tVolume);}
-                    if (rVirialsYY != null) {rVirialsYY.set(0, -tStress.get(1)*tVolume);}
-                    if (rVirialsZZ != null) {rVirialsZZ.set(0, -tStress.get(2)*tVolume);}
-                    if (rVirialsXY != null) {rVirialsXY.set(0, -tStress.get(5)*tVolume);}
-                    if (rVirialsXZ != null) {rVirialsXZ.set(0, -tStress.get(4)*tVolume);}
-                    if (rVirialsYZ != null) {rVirialsYZ.set(0, -tStress.get(3)*tVolume);}
-                } else {
-                    // ase 不同计算器的每原子压力定义可能不同，因此可能不会得到正确的位力，但这样统一处理可以保证使用 stress 相关接口获取到的依旧是 ase 中定义的应力
-                    if (!mPerAtomStressSupport) throw new UnsupportedOperationException("calc stresses not supported");
-                    NDArray<?> tPyStresses;
-                    try (PyCallable tGetStresses = tPyAtoms.getAttr("get_stresses", PyCallable.class)) {
-                        tPyStresses = tGetStresses.callAs(NDArray.class);
-                    }
-                    RowMatrix tStresses = new RowMatrix(tPyStresses.getDimensions()[0], tPyStresses.getDimensions()[1], (double[])tPyStresses.getData());
-                    if (rVirialsXX != null) {if (rVirialsXX.size()==1) {rVirialsXX.set(0, -tStress.get(0)*tVolume);} else {rVirialsXX.fill(tStresses.col(0)); rVirialsXX.negative2this();}}
-                    if (rVirialsYY != null) {if (rVirialsYY.size()==1) {rVirialsYY.set(0, -tStress.get(1)*tVolume);} else {rVirialsYY.fill(tStresses.col(1)); rVirialsYY.negative2this();}}
-                    if (rVirialsZZ != null) {if (rVirialsZZ.size()==1) {rVirialsZZ.set(0, -tStress.get(2)*tVolume);} else {rVirialsZZ.fill(tStresses.col(2)); rVirialsZZ.negative2this();}}
-                    if (rVirialsXY != null) {if (rVirialsXY.size()==1) {rVirialsXY.set(0, -tStress.get(5)*tVolume);} else {rVirialsXY.fill(tStresses.col(5)); rVirialsXY.negative2this();}}
-                    if (rVirialsXZ != null) {if (rVirialsXZ.size()==1) {rVirialsXZ.set(0, -tStress.get(4)*tVolume);} else {rVirialsXZ.fill(tStresses.col(4)); rVirialsXZ.negative2this();}}
-                    if (rVirialsYZ != null) {if (rVirialsYZ.size()==1) {rVirialsYZ.set(0, -tStress.get(3)*tVolume);} else {rVirialsYZ.fill(tStresses.col(3)); rVirialsYZ.negative2this();}}
-                }
+                tVirial = new Vector(tPyStress.getDimensions()[0], (double[])tPyStress.getData());
+                tVirial.negative2this();
+                tVirial.multiply2this(aAtomData.volume());
             }
-            if (rForcesX!=null || rForcesY!=null || rForcesZ!=null) {
+            if (rVirialsXX!=null) {if (rVirialsXX.size()==1) {assert tVirial!=null; rVirialsXX.set(0, tVirial.get(0));} else {assert tVirials!=null; rVirialsXX.fill(tVirials.col(0));}}
+            if (rVirialsYY!=null) {if (rVirialsYY.size()==1) {assert tVirial!=null; rVirialsYY.set(0, tVirial.get(1));} else {assert tVirials!=null; rVirialsYY.fill(tVirials.col(1));}}
+            if (rVirialsZZ!=null) {if (rVirialsZZ.size()==1) {assert tVirial!=null; rVirialsZZ.set(0, tVirial.get(2));} else {assert tVirials!=null; rVirialsZZ.fill(tVirials.col(2));}}
+            if (rVirialsXY!=null) {if (rVirialsXY.size()==1) {assert tVirial!=null; rVirialsXY.set(0, tVirial.get(5));} else {assert tVirials!=null; rVirialsXY.fill(tVirials.col(5));}}
+            if (rVirialsXZ!=null) {if (rVirialsXZ.size()==1) {assert tVirial!=null; rVirialsXZ.set(0, tVirial.get(4));} else {assert tVirials!=null; rVirialsXZ.fill(tVirials.col(4));}}
+            if (rVirialsYZ!=null) {if (rVirialsYZ.size()==1) {assert tVirial!=null; rVirialsYZ.set(0, tVirial.get(3));} else {assert tVirials!=null; rVirialsYZ.fill(tVirials.col(3));}}
+            
+            RowMatrix tForces = null;
+            if (tRequireForce) {
                 if (!mForceSupport) throw new UnsupportedOperationException("calc forces not supported");
                 NDArray<?> tPyForces;
                 try (PyCallable tGetForces = tPyAtoms.getAttr("get_forces", PyCallable.class)) {
                     tPyForces = tGetForces.callAs(NDArray.class);
                 }
-                RowMatrix tForces = new RowMatrix(tPyForces.getDimensions()[0], tPyForces.getDimensions()[1], (double[])tPyForces.getData());
-                if (rForcesX != null) {rForcesX.fill(tForces.col(0));}
-                if (rForcesY != null) {rForcesY.fill(tForces.col(1));}
-                if (rForcesZ != null) {rForcesZ.fill(tForces.col(2));}
+                tForces = new RowMatrix(tPyForces.getDimensions()[0], tPyForces.getDimensions()[1], (double[])tPyForces.getData());
             }
-            if (rEnergies != null) {
-                if (rEnergies.size() == 1) {
-                    if (!mEnergySupport) throw new UnsupportedOperationException("calc energy not supported");
-                    double tPyEnergy;
-                    try (PyCallable tGetEnergy = tPyAtoms.getAttr("get_potential_energy", PyCallable.class)) {
-                        tPyEnergy = tGetEnergy.callAs(Number.class).doubleValue();
-                    }
-                    rEnergies.set(0, tPyEnergy);
-                } else {
-                    if (!mPerAtomEnergySupport) throw new UnsupportedOperationException("calc energies not supported");
-                    NDArray<?> tPyEnergies;
-                    try (PyCallable tGetEnergies = tPyAtoms.getAttr("get_potential_energies", PyCallable.class)) {
-                        tPyEnergies = tGetEnergies.callAs(NDArray.class);
-                    }
-                    Vector tEnergies = new Vector(tPyEnergies.getDimensions()[0], (double[])tPyEnergies.getData());
-                    rEnergies.fill(tEnergies);
+            if (rForcesX!=null) {assert tForces!=null; rForcesX.fill(tForces.col(0));}
+            if (rForcesY!=null) {assert tForces!=null; rForcesY.fill(tForces.col(1));}
+            if (rForcesZ!=null) {assert tForces!=null; rForcesZ.fill(tForces.col(2));}
+            
+            Vector tEnergies = null;
+            if (tRequirePreAtomEnergy) {
+                if (!mPerAtomEnergySupport) throw new UnsupportedOperationException("calc energies not supported");
+                NDArray<?> tPyEnergies;
+                try (PyCallable tGetEnergies = tPyAtoms.getAttr("get_potential_energies", PyCallable.class)) {
+                    tPyEnergies = tGetEnergies.callAs(NDArray.class);
+                }
+                tEnergies = new Vector(tPyEnergies.getDimensions()[0], (double[])tPyEnergies.getData());
+            }
+            double tEnergy = Double.NaN;
+            if (tRequireTotalEnergy) {
+                if (!mEnergySupport) throw new UnsupportedOperationException("calc energy not supported");
+                try (PyCallable tGetEnergy = tPyAtoms.getAttr("get_potential_energy", PyCallable.class)) {
+                    tEnergy = tGetEnergy.callAs(Number.class).doubleValue();
                 }
             }
+            if (rEnergies!=null) {if (rEnergies.size()==1) {rEnergies.set(0, tEnergy);} else {assert tEnergies!=null; rEnergies.fill(tEnergies);}}
         } finally {
             if (!mKeepLastAtoms) tPyAtoms.close();
         }
