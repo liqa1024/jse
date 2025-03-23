@@ -23,6 +23,8 @@ import java.util.List;
  * 的结果一致，即力和应力的单位会统一通过能量和距离来得到。
  * 例如对于 {@code metal} 单位，lammps 压力单位为
  * {@code bar}，而这里会统一进行单位转换，确保单位为 {@code eV/Å^3}
+ * <p>
+ * 由于 {@link NativeLmp} 的特性，此类线程不安全，并且要求访问线程和创建线程一致
  *
  * @see NativeLmp NativeLmp: 原生调用 lammps 接口
  * @see IPotential IPotential: 通用的势函数接口

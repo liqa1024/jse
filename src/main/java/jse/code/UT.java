@@ -17,8 +17,6 @@ import jse.code.functional.IIndexFilter;
 import jse.code.functional.IUnaryFullOperator;
 import jse.code.iterator.IHasDoubleIterator;
 import jse.code.iterator.IHasIntIterator;
-import jse.code.task.TaskCall;
-import jse.code.task.TaskRun;
 import jse.code.timer.FixedTimer;
 import jse.math.ComplexDouble;
 import jse.math.IComplexDouble;
@@ -454,20 +452,26 @@ public class UT {
     
     public static class Hack {
         
-        public static TaskCall<Object> getCallableOfMethod_(Class<?> aClazz, final @Nullable Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {
+        public static Callable<Object> getCallableOfMethod_(Class<?> aClazz, final @Nullable Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {
             final Object[] fArgs = (aArgs == null) ? new Object[0] : aArgs;
             final Method m = findMethod_(aClazz, aMethodName, fArgs);
             if (m == null) throw new NoSuchMethodException("No such method: " + aMethodName);
             convertArgs_(fArgs, m.getParameterTypes());
-            return new TaskCall<>(() -> m.invoke(aInstance, fArgs));
+            return () -> m.invoke(aInstance, fArgs);
         }
-        public static TaskCall<Object> getCallableOfStaticMethod(String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException, ClassNotFoundException {
+        public static Callable<Object> getCallableOfStaticMethod(String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException, ClassNotFoundException {
             Class<?> aClazz = Class.forName(aClassName);
             return getCallableOfMethod_(aClazz, null, aMethodName, aArgs);
         }
-        public static TaskRun          getRunnableOfStaticMethod(              String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException, ClassNotFoundException {return getCallableOfStaticMethod(aClassName, aMethodName, aArgs).toRunnable();}
-        public static TaskCall<Object> getCallableOfMethod      (final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {return getCallableOfMethod_(aInstance.getClass(), aInstance, aMethodName, aArgs);}
-        public static TaskRun          getRunnableOfMethod      (final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {return getCallableOfMethod(aInstance, aMethodName, aArgs).toRunnable();}
+        public static Runnable getRunnableOfStaticMethod(String aClassName, String aMethodName, Object... aArgs) throws NoSuchMethodException, ClassNotFoundException {
+            final Callable<Object> tCall = getCallableOfStaticMethod(aClassName, aMethodName, aArgs);
+            return () -> {try {tCall.call();} catch (Exception e) {throw new RuntimeException(e);}};
+        }
+        public static Callable<Object> getCallableOfMethod(final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {return getCallableOfMethod_(aInstance.getClass(), aInstance, aMethodName, aArgs);}
+        public static Runnable getRunnableOfMethod(final @NotNull Object aInstance, String aMethodName, Object... aArgs) throws NoSuchMethodException {
+            final Callable<Object> tCall = getCallableOfMethod(aInstance, aMethodName, aArgs);
+            return () -> {try {tCall.call();} catch (Exception e) {throw new RuntimeException(e);}};
+        }
         
         public static @Nullable Method findMethod_(Class<?> aClazz, String aMethodName, Object @NotNull... aArgs) {
             Method[] tAllMethods = aClazz.getMethods();

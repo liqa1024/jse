@@ -63,10 +63,10 @@ import static jse.math.MathEX.*;
  * <p>
  * 此类线程不安全（主要由于近邻列表缓存），但不同实例之间线程安全
  *
- * @author liqa
  * @see IAtomData IAtomData: 关于 jse 中原子数据的实现和定义
  * @see APC APC: AtomicParameterCalculator 的简称
  * @see NeighborListGetter NeighborListGetter: jse 目前的近邻列表实现
+ * @author liqa
  */
 public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPool> {
     /** 缓存近邻列表从而避免重复计算距离，这里设置缓存的大小，设置为 0 关闭缓存；即使现在优化了近邻列表获取，缓存依旧能大幅加速近邻遍历 */

@@ -32,6 +32,8 @@ import static jse.code.Conf.WORKING_DIR_OF;
  * 的结果一致，即力和应力的单位会统一通过能量和距离来得到。
  * 例如对于 {@code metal} 单位，lammps 压力单位为
  * {@code bar}，而这里会统一进行单位转换，确保单位为 {@code eV/Å^3}
+ * <p>
+ * 此类线程安全，包括多个线程同时访问同一个实例
  *
  * @see LmpPotential LmpPotential: 原生调用 lammps 实现的 lammps 势函数
  * @see IPotential IPotential: 通用的势函数接口
@@ -48,11 +50,13 @@ public class SystemLmpPotential extends AbstractLmpPotential {
      * @param aExec 希望使用的系统命令执行器 {@link ISystemExecutor}，默认为 {@link OS#EXEC}
      * @param aShutdownExec 是否会在关闭此势函数时，自动关闭内部的系统执行器，默认在手动传入 aExec 时为 {@code true}，不传入时为 {@code false}
      */
-    public SystemLmpPotential(String aPairStyle, String aPairCoeff, ISystemExecutor aExec, boolean aShutdownExec) {
+    public SystemLmpPotential(String aPairStyle, String aPairCoeff, ISystemExecutor aExec, boolean aShutdownExec) throws IOException {
         super(aPairStyle, aPairCoeff);
         mExec = aExec;
         mShutdownExec = aShutdownExec;
-        mWorkingDir = WORKING_DIR_OF("LMP@"+ UT.Code.randID());
+        // 使用相对路径提高 exec 的兼容性
+        mWorkingDir = WORKING_DIR_OF("LMP@"+ UT.Code.randID(), true);
+        IO.makeDir(mWorkingDir);
     }
     /**
      * 根据输入的 aPairStyle 和 aPairCoeff 创建一个命令运行 lammps 计算的势函数
@@ -60,13 +64,13 @@ public class SystemLmpPotential extends AbstractLmpPotential {
      * @param aPairCoeff lammps pair 需要设置的参数，对应 lammps 命令 {@code pair_coeff}
      * @param aExec 希望使用的系统命令执行器 {@link ISystemExecutor}，默认为 {@link OS#EXEC}，默认在关闭时会同时自动关闭
      */
-    public SystemLmpPotential(String aPairStyle, String aPairCoeff, ISystemExecutor aExec) {this(aPairStyle, aPairCoeff, aExec, true);}
+    public SystemLmpPotential(String aPairStyle, String aPairCoeff, ISystemExecutor aExec) throws IOException {this(aPairStyle, aPairCoeff, aExec, true);}
     /**
      * 根据输入的 aPairStyle 和 aPairCoeff 创建一个命令运行 lammps 计算的势函数
      * @param aPairStyle 希望使用的 lammps 中的 pair 样式，对应 lammps 命令 {@code pair_style}
      * @param aPairCoeff lammps pair 需要设置的参数，对应 lammps 命令 {@code pair_coeff}
      */
-    public SystemLmpPotential(String aPairStyle, String aPairCoeff) {this(aPairStyle, aPairCoeff, OS.EXEC, false);}
+    public SystemLmpPotential(String aPairStyle, String aPairCoeff) throws IOException {this(aPairStyle, aPairCoeff, OS.EXEC, false);}
     
     private String mLmpCommand = "lmp";
     /**
@@ -114,10 +118,11 @@ public class SystemLmpPotential extends AbstractLmpPotential {
         final boolean tRequireForce = rForcesX!=null || rForcesY!=null || rForcesZ!=null;
         final boolean tRequirePreAtomStress = (rVirialsXX!=null && rVirialsXX.size()!=1) || (rVirialsYY!=null && rVirialsYY.size()!=1) || (rVirialsZZ!=null && rVirialsZZ.size()!=1) || (rVirialsXY!=null && rVirialsXY.size()!=1) || (rVirialsXZ!=null && rVirialsXZ.size()!=1) || (rVirialsYZ!=null && rVirialsYZ.size()!=1);
         final boolean tRequireTotalStress = (rVirialsXX!=null && rVirialsXX.size()==1) || (rVirialsYY!=null && rVirialsYY.size()==1) || (rVirialsZZ!=null && rVirialsZZ.size()==1) || (rVirialsXY!=null && rVirialsXY.size()==1) || (rVirialsXZ!=null && rVirialsXZ.size()==1) || (rVirialsYZ!=null && rVirialsYZ.size()==1);
+        String tUniqueID = UT.Code.randID();
         // 事先准备输入 data 文件
         Lmpdat tData = Lmpdat.of(aAtomData, Vectors.ones(aAtomData.atomTypeNumber()));
         tData.ids().fill(i -> i+1); // 清空可能存在的 id，简化排序问题
-        String tDataPath = mWorkingDir+"data";
+        String tDataPath = mWorkingDir+"data-"+tUniqueID;
         tData.write(tDataPath);
         // 准备输入 in 文件
         List<String> rLmpIn = new ArrayList<>();
@@ -151,7 +156,7 @@ public class SystemLmpPotential extends AbstractLmpPotential {
         if (tRequirePreAtomStress) {
             rLmpIn.add("compute stress_atom all stress/atom NULL");
         }
-        String tDumpPath = mWorkingDir+"dump";
+        String tDumpPath = mWorkingDir+"dump-"+tUniqueID;
         List<String> rDumpCustom = new ArrayList<>(10);
         if (tRequireForce) {
             rDumpCustom.add("fx");
@@ -174,10 +179,11 @@ public class SystemLmpPotential extends AbstractLmpPotential {
         // 通过 run 0 来触发计算
         rLmpIn.add("run  0");
         // 运行 lammps
-        String tInPath = mWorkingDir+"in";
+        String tInPath = mWorkingDir+"in-"+tUniqueID;
         IO.write(tInPath, rLmpIn);
-        String tLogPath = mWorkingDir+"log";
-        mExec.system(mLmpCommand+" -in "+tInPath+" -log "+tLogPath+" -screen none");
+        String tLogPath = mWorkingDir+"log-"+tUniqueID;
+        int tExitCode = mExec.system(mLmpCommand+" -in "+tInPath+" -log "+tLogPath+" -screen none");
+        if (tExitCode != 0) throw new RuntimeException("Lammps run failed, exit code: " + tExitCode);
         
         // 直接获取结果
         Thermo tLog = Thermo.read(tLogPath);

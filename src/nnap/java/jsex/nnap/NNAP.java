@@ -34,6 +34,7 @@ import static jse.code.OS.JAR_DIR;
  * <p>
  * 现在这个类会自动回收内部的 torch 模型指针，因此不需要担心内存泄漏的问题了；
  * 当然即使如此依旧建议手动调用 {@link #shutdown()} 来及时释放资源
+ *
  * @author liqa
  */
 public class NNAP implements IPairPotential {
