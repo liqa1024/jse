@@ -89,12 +89,12 @@ public class Main {
                 return;
             }
             case "-groovy": {
-                SP.Groovy.runShell();
-                return;
+                if (aArgs.length < 3) {SP.Groovy.runShell(); return;}
+                break;
             }
             case "-python": {
-                SP.Python.runShell();
-                return;
+                if (aArgs.length < 3) {SP.Python.runShell(); return;}
+                break;
             }
             case "-idea": {
                 // 先是项目文件
@@ -220,79 +220,80 @@ public class Main {
                 return;
             }
             default: {
-                if (aArgs.length < 3) {printHelp(System.err); return;}
-                tValue = aArgs[2];
-                String[] tArgs = new String[aArgs.length-3];
-                if (tArgs.length > 0) System.arraycopy(aArgs, 3, tArgs, 0, tArgs.length);
-                switch (tOption) {
-                case "-t": case "-text": case "-groovytext": {
-                    SP.Groovy.runText(tValue, tArgs);
+                break;
+            }}
+            if (aArgs.length < 3) {printHelp(System.err); return;}
+            tValue = aArgs[2];
+            String[] tArgs = new String[aArgs.length-3];
+            if (tArgs.length > 0) System.arraycopy(aArgs, 3, tArgs, 0, tArgs.length);
+            switch (tOption) {
+            case "-t": case "-text": case "-groovytext": {
+                SP.Groovy.runText(tValue, tArgs);
+                return;
+            }
+            case "-pythontext": {
+                SP.Python.runText(tValue, tArgs);
+                return;
+            }
+            case "-f": case "-file": {
+                SP.runScript(tValue, tArgs);
+                return;
+            }
+            case "-groovy": {
+                SP.Groovy.runScript(tValue, tArgs);
+                return;
+            }
+            case "-python": {
+                SP.Python.runScript(tValue, tArgs);
+                return;
+            }
+            case "-i": case "-invoke": {
+                int tLastDot = tValue.lastIndexOf(".");
+                if (tLastDot < 0) {
+                    System.err.println("ERROR: Invalid method name: " + tValue);
                     return;
                 }
-                case "-pythontext": {
-                    SP.Python.runText(tValue, tArgs);
-                    return;
-                }
-                case "-f": case "-file": {
-                    SP.runScript(tValue, tArgs);
-                    return;
-                }
-                case "-groovy": {
-                    SP.Groovy.runScript(tValue, tArgs);
-                    return;
-                }
-                case "-python": {
-                    SP.Python.runScript(tValue, tArgs);
-                    return;
-                }
-                case "-i": case "-invoke": {
-                    int tLastDot = tValue.lastIndexOf(".");
-                    if (tLastDot < 0) {
-                        System.err.println("ERROR: Invalid method name: " + tValue);
-                        return;
-                    }
-                    String tPackageName = tValue.substring(0, tLastDot);
-                    String tMethodName = tValue.substring(tLastDot+1);
+                String tPackageName = tValue.substring(0, tLastDot);
+                String tMethodName = tValue.substring(tLastDot+1);
+                try {
+                    UT.Hack.getRunnableOfStaticMethod(tPackageName, tMethodName, (Object[])tArgs).run();
+                } catch (ClassNotFoundException e) {
+                    tLastDot = tPackageName.lastIndexOf(".");
+                    String tClassName = tPackageName.substring(0, tLastDot);
+                    String tFieldName = tPackageName.substring(tLastDot+1);
+                    Class<?> aClazz;
                     try {
-                        UT.Hack.getRunnableOfStaticMethod(tPackageName, tMethodName, (Object[])tArgs).run();
-                    } catch (ClassNotFoundException e) {
-                        tLastDot = tPackageName.lastIndexOf(".");
-                        String tClassName = tPackageName.substring(0, tLastDot);
-                        String tFieldName = tPackageName.substring(tLastDot+1);
-                        Class<?> aClazz;
-                        try {
-                            aClazz = Class.forName(tClassName);
-                        } catch (ClassNotFoundException ex) {
-                            throw new ClassNotFoundException(tPackageName+" nor "+tClassName);
-                        }
-                        Object tInstance;
-                        try {
-                            tInstance = aClazz.getField(tFieldName).get(null);
-                        } catch (NoSuchFieldException | NullPointerException ex) {
-                            throw e;
-                        }
-                        UT.Hack.getRunnableOfMethod(tInstance, tMethodName, (Object[])tArgs).run();
+                        aClazz = Class.forName(tClassName);
+                    } catch (ClassNotFoundException ex) {
+                        throw new ClassNotFoundException(tPackageName+" nor "+tClassName);
                     }
-                    return;
+                    Object tInstance;
+                    try {
+                        tInstance = aClazz.getField(tFieldName).get(null);
+                    } catch (NoSuchFieldException | NullPointerException ex) {
+                        throw e;
+                    }
+                    UT.Hack.getRunnableOfMethod(tInstance, tMethodName, (Object[])tArgs).run();
                 }
-                case "-jupyterkernel": {
-                    IS_KERNEL = true;
-                    JupyterSocket.JUPYTER_LOGGER.setLevel(Level.WARNING);
-                    
-                    String tContents = IO.readAllText(tValue);
-                    KernelConnectionProperties tConnProps = KernelConnectionProperties.parse(tContents);
-                    JupyterConnection tConnection = new JupyterConnection(tConnProps);
-                    
-                    SP.JupyterKernel tKernel = new SP.JupyterKernel();
-                    tKernel.becomeHandlerForConnection(tConnection);
-                    tConnection.connect();
-                    tConnection.waitUntilClose();
-                    return;
-                }
-                default: {
-                    printHelp(System.err);
-                    return;
-                }}
+                return;
+            }
+            case "-jupyterkernel": {
+                IS_KERNEL = true;
+                JupyterSocket.JUPYTER_LOGGER.setLevel(Level.WARNING);
+                
+                String tContents = IO.readAllText(tValue);
+                KernelConnectionProperties tConnProps = KernelConnectionProperties.parse(tContents);
+                JupyterConnection tConnection = new JupyterConnection(tConnProps);
+                
+                SP.JupyterKernel tKernel = new SP.JupyterKernel();
+                tKernel.becomeHandlerForConnection(tConnection);
+                tConnection.connect();
+                tConnection.waitUntilClose();
+                return;
+            }
+            default: {
+                printHelp(System.err);
+                return;
             }}
         } catch (CompilationFailedException e) {
             System.err.println(e);
