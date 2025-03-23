@@ -40,17 +40,16 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
     @Override protected Future<Integer> submitSystem__(String aCommand, @NotNull IO.IWriteln aWriteln) {
         // 对于空指令专门优化，不执行操作
         if (aCommand == null || aCommand.isEmpty()) return SUC_FUTURE;
-        
         return new LocalSystemFuture(aCommand, aWriteln);
     }
     
-    private final class LocalSystemFuture implements Future<Integer> {
+    class LocalSystemFuture implements Future<Integer> {
         private final static int TRY_TIMES = 100;
         
         private final @Nullable Process mProcess;
         private final Future<Void> mErrTask, mOutTask;
         private volatile boolean mCancelled = false;
-        private LocalSystemFuture(String aCommand, final @NotNull IO.IWriteln aWriteln) {
+        LocalSystemFuture(String aCommand, final @NotNull IO.IWriteln aWriteln) {
             // 执行指令
             Process tProcess;
             try {

@@ -143,13 +143,11 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
     
     /** 通过 ssh 直接执行命令 */
     @Override protected Future<Integer> submitSystem__(String aCommand, @NotNull IO.IWriteln aWriteln) {
-        final SSHSystemFuture tFuture = new SSHSystemFuture(aCommand, aWriteln);
-        // 增加结束时都断开连接的任务
-        return toSystemFuture(tFuture, () -> {if (tFuture.mChannelExec != null) tFuture.mChannelExec.disconnect();});
+        return new SSHSystemFuture(aCommand, aWriteln);
     }
     @Override protected long sleepTime() {return SSH_SLEEP_TIME;}
     
-    private final class SSHSystemFuture implements Future<Integer> {
+    private final class SSHSystemFuture implements IDoFinalFuture<Integer> {
         private final @Nullable ChannelExec mChannelExec;
         private volatile boolean mCancelled = false;
         private final @Nullable Future<Void> mOutTask;
@@ -182,6 +180,9 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
             }
         }
         
+        @Override public void doFinal() {
+            if (mChannelExec != null) mChannelExec.disconnect();
+        }
         @Override public boolean cancel(boolean mayInterruptIfRunning) {
             if (mChannelExec == null) return false;
             if (mayInterruptIfRunning && mChannelExec.isConnected()) {

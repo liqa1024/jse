@@ -89,9 +89,21 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
         String tCommand = RESOURCES_MANAGER.creatJobStep(tResource, "bash "+tTempScriptPath); // 使用 bash 执行不需要考虑权限的问题
         // 获取指令失败直接输出错误
         if (tCommand == null) {UT.Code.warning("Create SLURM job step Failed"); returnResource(tResource); return ERR_FUTURE;}
-        // 任务完成后需要归还任务
-        final Slurm.Resource fResource = tResource;
-        return toSystemFuture(super.submitSystem__(tCommand, aWriteln), () -> returnResource(fResource));
+        // 任务完成后需要归还资源
+        return new SRUNSystemFuture(aCommand, aWriteln, tResource);
+    }
+    private final class SRUNSystemFuture extends LocalSystemFuture implements IDoFinalFuture<Integer> {
+        private final Slurm.Resource mResource;
+        private SRUNSystemFuture(String aCommand, @NotNull IO.IWriteln aWriteln, Slurm.Resource aResource) {
+            super(aCommand, aWriteln);
+            mResource = aResource;
+        }
+        private volatile boolean mFinalDone = false;
+        @Override public synchronized void doFinal() {
+            if (mFinalDone) return;
+            mFinalDone = true;
+            returnResource(mResource);
+        }
     }
     
     /** 程序结束时删除自己的临时工作目录，并归还资源 */
