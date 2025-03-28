@@ -17,6 +17,8 @@ import jse.code.functional.IIndexFilter;
 import jse.code.functional.IUnaryFullOperator;
 import jse.code.iterator.IHasDoubleIterator;
 import jse.code.iterator.IHasIntIterator;
+import jse.code.random.IRandom;
+import jse.code.random.LocalRandom;
 import jse.code.timer.FixedTimer;
 import jse.math.ComplexDouble;
 import jse.math.IComplexDouble;
@@ -111,19 +113,19 @@ public class UT {
          * Get the random seed for lammps usage
          * @author liqa
          */
-        public static int randSeed() {return RANDOM.nextInt(MAX_SEED) + 1;}
-        public static int randSeed(long aSeed) {return new LocalRandom(aSeed).nextInt(MAX_SEED) + 1;}
+        public static int randSeed() {return randSeed(RANDOM);}
+        public static int randSeed(long aSeed) {return randSeed(new LocalRandom(aSeed));}
+        public static int randSeed(IRandom aRng) {return aRng.nextInt(MAX_SEED) + 1;}
         
         /**
          * MPI version of {@link #randSeed},
          * will get the same rand seed for all process
          * @author liqa
          */
-        public static int randSeed(MPI.Comm aComm, int aRoot) throws MPIException {
-            return aComm.bcastI(aComm.rank()==aRoot ? Code.randSeed() : -1, aRoot);
-        }
-        public static int randSeed(MPI.Comm aComm, int aRoot, long aSeed) throws MPIException {
-            return aComm.bcastI(aComm.rank()==aRoot ? Code.randSeed(aSeed) : -1, aRoot);
+        public static int randSeed(MPI.Comm aComm, int aRoot) throws MPIException {return randSeed(aComm, aRoot, RANDOM);}
+        public static int randSeed(MPI.Comm aComm, int aRoot, long aSeed) throws MPIException {return randSeed(aComm, aRoot, new LocalRandom(aSeed));}
+        public static int randSeed(MPI.Comm aComm, int aRoot, IRandom aRng) throws MPIException {
+            return aComm.bcastI(aComm.rank()==aRoot ? Code.randSeed(aRng) : -1, aRoot);
         }
         
         
@@ -137,11 +139,10 @@ public class UT {
          * 这个修改会修改随机流，导致部分结果会和和旧版本不同
          * @author liqa
          */
-        public static String randID() {
-            return Integer.toHexString(RANDOM.nextInt());
-        }
-        public static String randID(long aSeed) {
-            return Integer.toHexString(new LocalRandom(aSeed).nextInt());
+        public static String randID() {return randID(RANDOM);}
+        public static String randID(long aSeed) {return randID(new LocalRandom(aSeed));}
+        public static String randID(IRandom aRng) {
+            return Integer.toHexString(aRng.nextInt());
         }
         
         /**
@@ -149,11 +150,10 @@ public class UT {
          * will get the same rand ID for all process
          * @author liqa
          */
-        public static String randID(MPI.Comm aComm, int aRoot) throws MPIException {
-            return Integer.toHexString(aComm.bcastI(aComm.rank()==aRoot ? RANDOM.nextInt() : 0, aRoot));
-        }
-        public static String randID(MPI.Comm aComm, int aRoot, long aSeed) throws MPIException {
-            return Integer.toHexString(aComm.bcastI(aComm.rank()==aRoot ? new LocalRandom(aSeed).nextInt() : 0, aRoot));
+        public static String randID(MPI.Comm aComm, int aRoot) throws MPIException {return randID(aComm, aRoot, RANDOM);}
+        public static String randID(MPI.Comm aComm, int aRoot, long aSeed) throws MPIException {return randID(aComm, aRoot, new LocalRandom(aSeed));}
+        public static String randID(MPI.Comm aComm, int aRoot, IRandom aRng) throws MPIException {
+            return Integer.toHexString(aComm.bcastI(aComm.rank()==aRoot ? aRng.nextInt() : 0, aRoot));
         }
         
         /**
@@ -271,6 +271,62 @@ public class UT {
     }
     
     public static class Par {
+        /**
+         * 根据需要的大小以及种子来创建多个拆分的随机数生成器，主要用于多线程环境下使用。通过
+         * {@link java.util.SplittableRandom} 同时实现并行访问的高效性以及避免了可能的周期重复问题。
+         * <p>
+         * 这里通过父随机流连续拆分的方式，保证得到的随机流都尽可能分散
+         * @param aSize 需要的随机流数目
+         * @param aSeed 可选的随机流种子，默认通过 {@link CS#RANDOM} 自动生成
+         * @return 拆分创建的随机流
+         */
+        public static IRandom[] splitRandoms(int aSize, long aSeed) {
+            SplittableRandom tRNG0 = new SplittableRandom(aSeed);
+            final IRandom[] tRNGs = new IRandom[aSize];
+            tRNGs[0] = IRandom.of(tRNG0);
+            for (int i = 1; i < aSize; ++i) tRNGs[i] = IRandom.of(tRNG0.split());
+            return tRNGs;
+        }
+        /**
+         * 根据需要的大小来创建多个拆分的随机数生成器，主要用于多线程环境下使用。通过
+         * {@link java.util.SplittableRandom} 同时实现并行访问的高效性以及避免了可能的周期重复问题。
+         * <p>
+         * 这里通过父随机流连续拆分的方式，保证得到的随机流都尽可能分散
+         * @param aSize 需要的随机流数目
+         * @return 拆分创建的随机流
+         */
+        public static IRandom[] splitRandoms(int aSize) {
+            return splitRandoms(aSize, RANDOM.nextLong());
+        }
+        
+        /**
+         * 根据种子创建能在 MPI 环境下使用的对应的拆分后的随机流，通过
+         * {@link java.util.SplittableRandom} 同时实现并行访问的高效性以及避免了可能的周期重复问题。
+         * <p>
+         * 这里通过父随机流连续拆分的方式，保证得到的随机流都尽可能分散
+         * @param aComm 需要进行拆分随机流的 MPI 通讯器
+         * @param aSeed 生成的随机流种子，默认通过 {@code rank==0} 进程的 {@link CS#RANDOM} 自动生成
+         * @return 拆分后的随机流，保证每个进程是独立的
+         */
+        public static IRandom splitRandom(MPI.Comm aComm, long aSeed) throws MPIException {
+            final SplittableRandom tRNG0 = new SplittableRandom(aSeed);
+            SplittableRandom tRNG = tRNG0;
+            final int tRank = aComm.rank();
+            for (int i = 0; i < tRank; ++i) tRNG = tRNG0.split();
+            return IRandom.of(tRNG);
+        }
+        /**
+         * 根据种子创建能在 MPI 环境下使用的对应的拆分后的随机流，通过
+         * {@link java.util.SplittableRandom} 同时实现并行访问的高效性以及避免了可能的周期重复问题。
+         * <p>
+         * 这里通过父随机流连续拆分的方式，保证得到的随机流都尽可能分散
+         * @param aComm 需要进行拆分随机流的 MPI 通讯器
+         * @return 拆分后的随机流，保证每个进程是独立的
+         */
+        public static IRandom splitRandom(MPI.Comm aComm) throws MPIException {
+            return splitRandom(aComm, aComm.bcastL(aComm.rank()==0 ? RANDOM.nextLong() : -1, 0));
+        }
+        
         /** 改为全局的 pool 缓存来避免总是创建 */
         private static @Nullable ParforThreadPool POOL = null;
         public static @NotNull ParforThreadPool pool(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
@@ -1212,8 +1268,8 @@ public class UT {
         public static double rand() {return RANDOM.nextDouble();}
         public static double randn() {return RANDOM.nextGaussian();}
         public static int randi(int aBound) {return RANDOM.nextInt(aBound);}
-        public static Random rng(long aSeed) {RANDOM.setSeed(aSeed); return RANDOM;}
-        public static Random rng() {return RANDOM;}
+        public static IRandom rng(long aSeed) {RANDOM_.setSeed(aSeed); return RANDOM;}
+        public static IRandom rng() {return RANDOM;}
         
         
         /// vectors

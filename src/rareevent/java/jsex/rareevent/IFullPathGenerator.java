@@ -2,10 +2,9 @@ package jsex.rareevent;
 
 
 import jse.atom.IAtomData;
+import jse.code.random.IRandom;
 import jse.parallel.IAutoShutdown;
 import org.jetbrains.annotations.ApiStatus;
-
-import static jse.code.CS.RANDOM;
 
 /**
  * 各种稀有事件采样方法内部使用的类，需要能够从给定的输出点随机生成一个完整路径，
@@ -18,11 +17,8 @@ import static jse.code.CS.RANDOM;
  */
 @ApiStatus.Experimental
 public interface IFullPathGenerator<T> extends IAutoShutdown {
-    /** 由于路径具有随机性，不能返回可以重复访问的 Iterable */
-    ITimeAndParameterIterator<? extends T> fullPathInit(long aSeed);
-    ITimeAndParameterIterator<? extends T> fullPathFrom(T aStart, long aSeed);
-    default ITimeAndParameterIterator<? extends T> fullPathInit() {return fullPathInit(RANDOM.nextLong());}
-    default ITimeAndParameterIterator<? extends T> fullPathFrom(T aStart) {return fullPathFrom(aStart, RANDOM.nextLong());}
+    ITimeAndParameterIterator<? extends T> fullPathInit(IRandom aRNG);
+    ITimeAndParameterIterator<? extends T> fullPathFrom(T aStart, IRandom aRNG);
     
     default void shutdown() {/**/}
 }

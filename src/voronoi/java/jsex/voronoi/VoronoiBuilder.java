@@ -27,6 +27,8 @@ import jse.atom.XYZ;
 import jse.atom.IXYZ;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
+import jse.code.random.IRandom;
+import jse.code.random.LocalRandom;
 import jse.math.MathEX;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -598,7 +600,7 @@ public final class VoronoiBuilder {
     private Tetrahedron mLast;
     
     /** 独立的随机数生成器 */
-    final Random mRNG;
+    final IRandom mRNG;
     /** 存储所有的插入的节点，按照插入顺序保留方便使用 */
     final List<Vertex> mAllVertex = new ArrayList<>();
     /** 存储所有的创建的四面体，这个是无序的 */
@@ -676,8 +678,8 @@ public final class VoronoiBuilder {
     
     /** 构造函数 */
     public VoronoiBuilder() {this(RANDOM);}
-    public VoronoiBuilder(long aSeed) {this(new Random(aSeed));}
-    VoronoiBuilder(Random aRNG) {
+    public VoronoiBuilder(long aSeed) {this(new LocalRandom(aSeed));}
+    VoronoiBuilder(IRandom aRNG) {
         mRNG = aRNG;
         mCheck = mRNG.nextInt();
         // 初始的极大四面体，保证所有点都会在其内部；这样降低对称性，让 2D 情况更好处理

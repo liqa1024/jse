@@ -1,6 +1,7 @@
 package jse.math.vector;
 
 import jep.NDArray;
+import jse.code.random.IRandom;
 import jse.math.SliceType;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.code.collection.ISlice;
@@ -15,7 +16,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Random;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 import java.util.function.IntUnaryOperator;
@@ -291,8 +291,7 @@ public abstract class AbstractIntVector implements IIntVector {
     
     @Override public final void sort() {operation().sort();}
     @Override public final void shuffle() {operation().shuffle();}
-    @Override public final void shuffle(Random aRng) {operation().shuffle(aRng::nextInt);}
-    @Override public final void shuffle(IntUnaryOperator aRng) {operation().shuffle(aRng);}
+    @Override public final void shuffle(IRandom aRng) {operation().shuffle(aRng);}
     
     /** Groovy 的部分，增加向量切片操作 */
     @VisibleForTesting @Override public int call(int aIdx) {return get(aIdx);}

@@ -1,17 +1,17 @@
-package jse.parallel;
+package jse.code.random;
 
-import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-
 /**
- * 完全使用局部变量的随机数生成器，应该可以改善并行下的性能问题；
- * 此类线程不安全，但不同实例间线程安全；
- * 所有实现均参考 {@link java.util.Random}
+ * 完全使用局部变量的随机数生成器，所有实现均参考
+ * {@link java.util.Random} 从而保证随机流完全一致
+ * <p>
+ * 此类线程不安全，但不同实例间线程安全
+ * <p>
+ * 如果是需要并行使用随机流，为了避免随机流碰撞应当使用
+ * {@link jse.code.UT.Par#splitRandoms(int, long)} 来创建均匀分割的随机流
  */
-public class LocalRandom {
-    private static final String BAD_BOUND = "bound must be positive";
-    
+public class LocalRandom implements IRandom {
     private long seed;
     private static final long multiplier = 0x5DEECE66DL;
     private static final long addend = 0xBL;
@@ -54,16 +54,17 @@ public class LocalRandom {
         return (int)(this.seed >>> (48 - bits));
     }
     
-    public void nextBytes(byte[] bytes) {
+    @Override public void nextBytes(byte[] bytes) {
         for (int i = 0, len = bytes.length; i < len; )
             for (int rnd = nextInt(), n = Math.min(len - i, Integer.SIZE/Byte.SIZE); n-- > 0; rnd >>= Byte.SIZE)
                 bytes[i++] = (byte)rnd;
     }
-    public int nextInt() {return next(32);}
+    @Override public int nextInt() {return next(32);}
     
-    public int nextInt(int bound) {
-        if (bound <= 0)
+    @Override public int nextInt(int bound) {
+        if (bound <= 0) {
             throw new IllegalArgumentException(BAD_BOUND);
+        }
         int r = next(31);
         int m = bound - 1;
         if ((bound & m) == 0)  // i.e., bound is a power of 2
@@ -76,27 +77,27 @@ public class LocalRandom {
         return r;
     }
     
-    public long nextLong() {
+    @Override public long nextLong() {
         // it's okay that the bottom word remains signed.
         return ((long)(next(32)) << 32) + next(32);
     }
     
-    public boolean nextBoolean() {
+    @Override public boolean nextBoolean() {
         return next(1) != 0;
     }
     
-    public float nextFloat() {
+    @Override public float nextFloat() {
         return next(24) / ((float)(1 << 24));
     }
     
-    public double nextDouble() {
+    @Override public double nextDouble() {
         return (((long)(next(26)) << 27) + next(27)) * DOUBLE_UNIT;
     }
     
     private double nextNextGaussian;
     private boolean haveNextNextGaussian = false;
     
-    public double nextGaussian() {
+    @Override public double nextGaussian() {
         // See Knuth, TAOCP, Vol. 2, 3rd edition, Section 3.4.1 Algorithm C.
         if (haveNextNextGaussian) {
             haveNextNextGaussian = false;
@@ -113,28 +114,6 @@ public class LocalRandom {
             haveNextNextGaussian = true;
             return v1 * multiplier;
         }
-    }
-    
-    
-    /** 使用 LocalRandom 的 shuffle */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public static void shuffle(List<?> rList, LocalRandom aRNG) {
-        int size = rList.size();
-        if (size < SHUFFLE_THRESHOLD || rList instanceof RandomAccess) {
-            for (int i=size; i>1; --i) Collections.swap(rList, i-1, aRNG.nextInt(i));
-        } else {
-            Object[] arr = rList.toArray();
-            // Shuffle array
-            for (int i=size; i>1; --i) swap(arr, i-1, aRNG.nextInt(i));
-            ListIterator it = rList.listIterator();
-            for (Object e : arr) {it.next(); it.set(e);}
-        }
-    }
-    private static final int SHUFFLE_THRESHOLD = 5;
-    private static void swap(Object[] arr, int i, int j) {
-        Object tmp = arr[i];
-        arr[i] = arr[j];
-        arr[j] = tmp;
     }
 }
 

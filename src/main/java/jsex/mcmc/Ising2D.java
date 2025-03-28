@@ -1,10 +1,12 @@
 package jsex.mcmc;
 
 import jse.code.CS;
+import jse.code.UT;
+import jse.code.random.IRandom;
+import jse.code.random.LocalRandom;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.Matrices;
-import jse.parallel.LocalRandom;
 import jse.math.vector.IVector;
 import jse.math.vector.Vectors;
 import jse.parallel.AbstractThreadPool;
@@ -14,14 +16,13 @@ import org.jetbrains.annotations.Range;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
 import static jse.code.CS.RANDOM;
 
 
 /**
  * 简单的蒙特卡洛模拟二维 Ising 模型，
- * 支持并行
+ * 支持并行，相同对象线程不安全
  * @author liqa
  */
 public class Ising2D extends AbstractThreadPool<ParforThreadPool> {
@@ -30,7 +31,7 @@ public class Ising2D extends AbstractThreadPool<ParforThreadPool> {
     
     private final double mJ, mH;
     /** 可定义的主随机数生成器，默认为 {@link CS#RANDOM} */
-    private final Random mRNG;
+    private final IRandom mRNG;
     
     /**
      * 按照给定参数构造一个模拟二维 Ising 模型的模拟器，有：
@@ -39,23 +40,17 @@ public class Ising2D extends AbstractThreadPool<ParforThreadPool> {
      * @param aJ 哈密顿量中的参数 J
      * @param aH 哈密顿量中的参数 H
      * @param aThreadNum 计算使用的线程数，默认为 1
-     * @param aRNG 可自定义的随机数生成器
+     * @param aSeed 可自定义的随机流种子，默认通过 {@link CS#RANDOM} 自动生成
      * @param aNoCompetitive 内部 parfor 是否是竞争的，默认为 false，在固定种子后为 true 来保证结果一致
      */
-    Ising2D(double aJ, double aH, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, Random aRNG, boolean aNoCompetitive) {
+    Ising2D(double aJ, double aH, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, long aSeed, boolean aNoCompetitive) {
         super(new ParforThreadPool(aThreadNum, aNoCompetitive));
         mJ = aJ; mH = aH;
-        mRNG = aRNG;
+        mRNG = new LocalRandom(aSeed);
     }
-    public Ising2D(double aJ, double aH, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, long aSeed) {this(aJ, aH, aThreadNum, new Random(aSeed), true);}
-    public Ising2D(double aJ, double aH, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(aJ, aH, aThreadNum, RANDOM, false);}
+    public Ising2D(double aJ, double aH, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, long aSeed) {this(aJ, aH, aThreadNum, aSeed, true);}
+    public Ising2D(double aJ, double aH, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(aJ, aH, aThreadNum, RANDOM.nextLong(), false);}
     public Ising2D(double aJ, double aH) {this(aJ, aH, 1);}
-    
-    private long[] genSeeds_(int aSize) {
-        long[] rSeeds = new long[aSize];
-        for (int i = 0; i < aSize; ++i) rSeeds[i] = mRNG.nextLong();
-        return rSeeds;
-    }
     
     /** 获取一个随机的初始结构 */
     public IMatrix initSpins(int aRowNum, int aColNum) {
@@ -116,8 +111,8 @@ public class Ising2D extends AbstractThreadPool<ParforThreadPool> {
         final IVector rSumE2 = aStat ? Vectors.zeros(tThreadNum) : null;
         final IVector rSumM2 = aStat ? Vectors.zeros(tThreadNum) : null;
         
-        // 为了保证结果可重复，这里统一为每个线程生成一个种子，用于创建 LocalRandom
-        final long[] tSeeds = genSeeds_(tThreadNum);
+        // 为了并行使用随机数生成器，这里统一采用 UT.Par.splitRandoms
+        final IRandom[] tRNGs = UT.Par.splitRandoms(tThreadNum, mRNG.nextLong());
         
         pool().parfor(aSpinsList.size(), (l, threadID) -> {
             // 开始之前先初始统计物理量，初始值不计入统计
@@ -129,7 +124,7 @@ public class Ising2D extends AbstractThreadPool<ParforThreadPool> {
             double subSumM2 = Double.NaN;
             // 从共享内存中获取数据
             IMatrix tSpins = aSpinsList.get(l);
-            LocalRandom tRNG = new LocalRandom(tSeeds[threadID]);
+            IRandom tRNG = tRNGs[threadID];
             if (aStat) {
                 tE = statE(tSpins);
                 tM = tSpins.operation().sum();

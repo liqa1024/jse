@@ -2,13 +2,13 @@ package jsex.rareevent.lmp;
 
 import jse.atom.IAtomData;
 import jse.code.collection.NewCollections;
+import jse.code.random.IRandom;
 import jse.lmp.LmpException;
 import jse.lmp.Lmpdat;
 import jse.lmp.NativeLmp;
 import jse.math.vector.IVector;
 import jse.math.vector.Vectors;
 import jse.parallel.IAutoShutdown;
-import jse.parallel.LocalRandom;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import jsex.rareevent.IFullPathGenerator;
@@ -33,7 +33,7 @@ import static jse.code.CS.MAX_SEED;
  * <p>
  * 由于 lammps 的特性，此类线程不安全，并且要求所有方法都由相同的线程调用
  * <p>
- * 现在统一对于包含 {@link MPI.Comm} 不进行自动关闭的管理，和 {@link NativeLmp} 一致，
+ * 现在统一对于包含 {@link MPI.Comm} 不进行自动关闭的管理，
  * 这样可以简单处理很多情况
  * @author liqa
  */
@@ -101,8 +101,8 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
     NativeLmpFullPathGenerator setReturnLast() {mReturnLast = true; return this;}
     
     
-    @Override public ITimeAndParameterIterator<Lmpdat> fullPathFrom(IAtomData aStart, long aSeed) {return new NativeLmpIterator(aStart, aSeed);}
-    @Override public ITimeAndParameterIterator<Lmpdat> fullPathInit(long aSeed) {return new NativeLmpIterator(null, aSeed);}
+    @Override public ITimeAndParameterIterator<Lmpdat> fullPathFrom(IAtomData aStart, IRandom aRNG) {return new NativeLmpIterator(aStart, aRNG);}
+    @Override public ITimeAndParameterIterator<Lmpdat> fullPathInit(IRandom aRNG) {return new NativeLmpIterator(null, aRNG);}
     
     private class NativeLmpIterator implements ITimeAndParameterIterator<Lmpdat>, IAutoShutdown {
         /** 一些状态存储，专门优化第一次调用 */
@@ -112,14 +112,13 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
         private boolean mNextIsFromNativeLmp = false;
         /** 路径部分 */
         private @NotNull Lmpdat mNext;
-        /** 此路径的局部随机数生成器，由于约定了相同实例线程不安全，并且考虑到可能存在的高并发需求，因此直接使用 {@link LocalRandom} */
-        private final LocalRandom mRNG;
+        private final IRandom mRNG;
         
         /** 创建时进行初始化 */
-        NativeLmpIterator(@Nullable IAtomData aStart, long aSeed) {
+        NativeLmpIterator(@Nullable IAtomData aStart, IRandom aRNG) {
             if (mUsing) throw new RuntimeException("NativeLmpFullPathGenerator can ONLY have ONE active path.");
             mUsing = true;
-            mRNG = new LocalRandom(aSeed);
+            mRNG = aRNG;
             mNext = aStart==null ? mInitPoints.get(mRNG.nextInt(mInitPoints.size())) : ((aStart instanceof Lmpdat) ? (Lmpdat)aStart : Lmpdat.fromAtomData(aStart));
         }
         

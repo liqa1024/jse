@@ -1,6 +1,7 @@
 package jse.math.vector;
 
 import jse.code.functional.ISwapper;
+import jse.code.random.IRandom;
 import jse.math.operation.DATA;
 
 import java.util.function.*;
@@ -90,12 +91,12 @@ public abstract class AbstractIntVectorOperation implements IIntVectorOperation 
     @Override public void biSort(ISwapper aSwapper) {DATA.biSort(thisVector_(), aSwapper);}
     @Override public void biSort(ISwapper aSwapper, IntBinaryOperator aComp) {DATA.biSort(thisVector_(), aSwapper, aComp);}
     
-    @Override public final void shuffle() {shuffle(RANDOM::nextInt);}
-    @Override public void shuffle(IntUnaryOperator aRng) {
+    @Override public final void shuffle() {shuffle(RANDOM);}
+    @Override public void shuffle(IRandom aRng) {
         final IIntVector tThis = thisVector_();
         final int tSize = tThis.size();
         for (int i = tSize; i > 1; --i) {
-            tThis.swap(i-1, aRng.applyAsInt(i));
+            tThis.swap(i-1, aRng.nextInt(i));
         }
     }
     

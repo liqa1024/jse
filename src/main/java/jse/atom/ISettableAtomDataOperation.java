@@ -4,13 +4,13 @@ import jse.code.collection.ISlice;
 import jse.code.functional.IFilter;
 import jse.code.functional.IIndexFilter;
 import jse.code.functional.IUnaryFullOperator;
+import jse.code.random.IRandom;
 import jse.math.vector.IVector;
 import jse.math.vector.IntVector;
 import jse.math.vector.Vectors;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
-import java.util.Random;
 
 import static jse.code.CS.RANDOM;
 
@@ -61,12 +61,12 @@ public interface ISettableAtomDataOperation extends IAtomDataOperation {
     /** 将 {@link #mapType(IUnaryFullOperator)} 的运算结果直接设置到自身 */
     default void mapType2this(IUnaryFullOperator<Integer, ? super IAtom> aOperator) {mapType2this(1, aOperator);}
     
-    /** 将 {@link #mapTypeRandom(Random, IVector)} 的运算结果直接设置到自身 */
-    void mapTypeRandom2this(Random aRandom, IVector aTypeWeights);
+    /** 将 {@link #mapTypeRandom(IRandom, IVector)} 的运算结果直接设置到自身 */
+    void mapTypeRandom2this(IRandom aRandom, IVector aTypeWeights);
     /** 将 {@link #mapTypeRandom(IVector)} 的运算结果直接设置到自身 */
     default void mapTypeRandom2this(IVector aTypeWeights) {mapTypeRandom2this(RANDOM, aTypeWeights);}
-    /** 将 {@link #mapTypeRandom(Random, double...)} 的运算结果直接设置到自身 */
-    default void mapTypeRandom2this(Random aRandom, double... aTypeWeights) {
+    /** 将 {@link #mapTypeRandom(IRandom, double...)} 的运算结果直接设置到自身 */
+    default void mapTypeRandom2this(IRandom aRandom, double... aTypeWeights) {
         // 特殊输入直接抛出错误
         if (aTypeWeights == null || aTypeWeights.length == 0) throw new RuntimeException("TypeWeights Must be not empty");
         mapTypeRandom2this(aRandom, Vectors.from(aTypeWeights));
@@ -74,12 +74,12 @@ public interface ISettableAtomDataOperation extends IAtomDataOperation {
     /** 将 {@link #mapTypeRandom(double...)} 的运算结果直接设置到自身 */
     default void mapTypeRandom2this(double... aTypeWeights) {mapTypeRandom2this(RANDOM, aTypeWeights);}
     
-    /** 将 {@link #perturbXYZGaussian(Random, double)} 的运算结果直接设置到自身 */
-    void perturbXYZGaussian2this(Random aRandom, double aSigma);
+    /** 将 {@link #perturbXYZGaussian(IRandom, double)} 的运算结果直接设置到自身 */
+    void perturbXYZGaussian2this(IRandom aRandom, double aSigma);
     /** 将 {@link #perturbXYZGaussian(double)} 的运算结果直接设置到自身 */
     default void perturbXYZGaussian2this(double aSigma) {perturbXYZGaussian2this(RANDOM, aSigma);}
-    /** 将 {@link #perturbXYZ(Random, double)} 的运算结果直接设置到自身 */
-    @VisibleForTesting default void perturbXYZ2this(Random aRandom, double aSigma) {perturbXYZGaussian2this(aRandom, aSigma);}
+    /** 将 {@link #perturbXYZ(IRandom, double)} 的运算结果直接设置到自身 */
+    @VisibleForTesting default void perturbXYZ2this(IRandom aRandom, double aSigma) {perturbXYZGaussian2this(aRandom, aSigma);}
     /** 将 {@link #perturbXYZ(double)} 的运算结果直接设置到自身 */
     @VisibleForTesting default void perturbXYZ2this(double aSigma) {perturbXYZGaussian2this(aSigma);}
     

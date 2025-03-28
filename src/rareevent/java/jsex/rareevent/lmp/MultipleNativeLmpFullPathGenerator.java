@@ -2,6 +2,8 @@ package jsex.rareevent.lmp;
 
 import jse.atom.IAtomData;
 import jse.code.UT;
+import jse.code.random.IRandom;
+import jse.code.random.LocalRandom;
 import jse.code.timer.AccumulatedTimer;
 import jse.code.timer.FixedTimer;
 import jse.lmp.LmpException;
@@ -38,7 +40,7 @@ import static jse.code.CS.FILE_SYSTEM_SLEEP_TIME;
  * <p>
  * 要求这些方法是线程安全的，可以同一个实例并行运行同一个方法，注意获取到的容器是线程不安全的（不同实例间线程安全）
  * <p>
- * 现在统一对于包含 {@link MPI.Comm} 不进行自动关闭的管理，和 {@link NativeLmp} 一致，
+ * 现在统一对于包含 {@link MPI.Comm} 不进行自动关闭的管理，
  * 这样可以简单处理很多情况
  * @author liqa
  */
@@ -137,15 +139,15 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
     public static void withOf(MPI.Comm aLmpComm, @Nullable List<Integer> aLmpRoots, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList,                     double[] aMesses, double aTemperature, String aPairStyle, String aPairCoeff,                                                    Consumer<? super MultipleNativeLmpFullPathGenerator> aDoLater) throws Exception {withOf_(MPI.Comm.WORLD, 0, aLmpComm, aLmpRoots, new NativeLmpFullPathGenerator(aLmpComm, aParameterCalculator, aInitAtomDataList, aMesses, aTemperature, aPairStyle, aPairCoeff), aDoLater);}
     
     
-    @Override public ITimeAndParameterIterator<Lmpdat> fullPathFrom(IAtomData aStart, long aSeed) {
+    @Override public ITimeAndParameterIterator<Lmpdat> fullPathFrom(IAtomData aStart, IRandom aRNG) {
         if (mWorldMe != mWorldRoot) throw new RuntimeException("fullPathFrom can ONLY be called from WorldRoot ("+mWorldRoot+")");
         if (mDead) throw new RuntimeException("This MultipleNativeLmpFullPathGenerator is dead");
-        return new RemotePathIterator(aStart, aSeed);
+        return new RemotePathIterator(aStart, aRNG);
     }
-    @Override public ITimeAndParameterIterator<Lmpdat> fullPathInit(long aSeed) {
+    @Override public ITimeAndParameterIterator<Lmpdat> fullPathInit(IRandom aRNG) {
         if (mWorldMe != mWorldRoot) throw new RuntimeException("fullPathInit can ONLY be called from WorldRoot ("+mWorldRoot+")");
         if (mDead) throw new RuntimeException("This MultipleNativeLmpFullPathGenerator is dead");
-        return new RemotePathIterator(null, aSeed);
+        return new RemotePathIterator(null, aRNG);
     }
     
     /** 用于 MPI 收发信息的 tags */
@@ -216,7 +218,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                 case PATH_INIT: {
                     long tSeed = getSeed_();
                     if (mIt != null) mIt.shutdown();
-                    mIt = mPathGen.fullPathInit(tSeed);
+                    mIt = mPathGen.fullPathInit(new LocalRandom(tSeed)); // 暂定通过发送种子来传递随机流
                     if (mLmpMe == 0) {
                         mWorldComm.send(mWorldRoot, PATH_INIT_FINISHED);
                     }
@@ -232,7 +234,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                     }
                     tStart = Lmpdat.bcast(tStart, 0, mLmpComm);
                     if (mIt != null) mIt.shutdown();
-                    mIt = mPathGen.fullPathFrom(tStart, tSeed);
+                    mIt = mPathGen.fullPathFrom(tStart, new LocalRandom(tSeed)); // 暂定通过发送种子来传递随机流
                     if (mLmpMe == 0) {
                         mWorldComm.send(mWorldRoot, PATH_FROM_FINISHED);
                     }
@@ -420,7 +422,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
     private class RemotePathIterator implements ITimeAndParameterIterator<Lmpdat>, IAutoShutdown {
         private int mLmpRoot;
         /** 创建时进行初始化 */
-        RemotePathIterator(@Nullable IAtomData aStart, long aSeed) {
+        RemotePathIterator(@Nullable IAtomData aStart, IRandom aRNG) {
             // 尝试获取对应 lmp 根节点发送数据
             @Nullable Integer tLmpRoot = mLmpRoots.pollLast();
             if (NO_LMP_IN_WORLD_ROOT && tLmpRoot!=null && tLmpRoot==mWorldRoot) {mLmpRoots.addLast(tLmpRoot); tLmpRoot = null;}
@@ -439,7 +441,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                 // 根据输入发送创建一个 path 的任务
                 mWorldComm.sendB(aStart==null ? PATH_INIT : PATH_FROM, mLmpRoot, JOB_TYPE);
                 // 无论怎样都先发送种子
-                mWorldComm.sendL(aSeed, mLmpRoot, SEED);
+                mWorldComm.sendL(aRNG.nextLong(), mLmpRoot, SEED);
                 if (aStart != null) {
                     // from 需要发送整个 Lmpdat
                     Lmpdat tStart = (aStart instanceof Lmpdat) ? (Lmpdat)aStart : Lmpdat.fromAtomData(aStart);

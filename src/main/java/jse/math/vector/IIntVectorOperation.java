@@ -1,6 +1,7 @@
 package jse.math.vector;
 
 import jse.code.functional.ISwapper;
+import jse.code.random.IRandom;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.function.*;
@@ -90,5 +91,5 @@ public interface IIntVectorOperation {
     
     /** IntegerVector 特有的操作 */
     void shuffle();
-    void shuffle(IntUnaryOperator aRng);
+    void shuffle(IRandom aRng);
 }

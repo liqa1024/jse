@@ -5,6 +5,7 @@ import jse.code.collection.ISlice;
 import jse.code.functional.IFilter;
 import jse.code.functional.IIndexFilter;
 import jse.code.functional.IUnaryFullOperator;
+import jse.code.random.IRandom;
 import jse.math.vector.IIntVector;
 import jse.math.vector.IVector;
 import jse.math.vector.IntVector;
@@ -12,7 +13,6 @@ import jse.math.vector.Vectors;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
-import java.util.Random;
 
 import static jse.code.CS.RANDOM;
 
@@ -171,9 +171,9 @@ public interface IAtomDataOperation {
      * @param aTypeWeights 每个种类的权重
      * @return 新创建的修改后的 {@link ISettableAtomData}
      * @see #mapTypeRandom(double...)
-     * @see Random
+     * @see IRandom
      */
-    default ISettableAtomData mapTypeRandom(Random aRandom, double... aTypeWeights) {
+    default ISettableAtomData mapTypeRandom(IRandom aRandom, double... aTypeWeights) {
         // 特殊输入直接抛出错误
         if (aTypeWeights == null || aTypeWeights.length == 0) throw new RuntimeException("TypeWeights Must be not empty");
         return mapTypeRandom(aRandom, Vectors.from(aTypeWeights));
@@ -186,10 +186,10 @@ public interface IAtomDataOperation {
     default ISettableAtomData mapTypeRandom(IVector aTypeWeights) {return mapTypeRandom(RANDOM, aTypeWeights);}
     /**
      * 传入 jse 向量 {@link IVector} 版本的随机种类映射
-     * @see #mapTypeRandom(Random, double...)
+     * @see #mapTypeRandom(IRandom, double...)
      * @see IVector
      */
-    ISettableAtomData mapTypeRandom(Random aRandom, IVector aTypeWeights);
+    ISettableAtomData mapTypeRandom(IRandom aRandom, IVector aTypeWeights);
     
     
     /**
@@ -207,13 +207,13 @@ public interface IAtomDataOperation {
      * @param aSigma 高斯分布的标准差
      * @return 新创建的修改后的 {@link ISettableAtomData}
      * @see #perturbXYZGaussian(double)
-     * @see Random
+     * @see IRandom
      */
-    ISettableAtomData perturbXYZGaussian(Random aRandom, double aSigma);
+    ISettableAtomData perturbXYZGaussian(IRandom aRandom, double aSigma);
     /** @see #perturbXYZGaussian(double) */
     @VisibleForTesting default ISettableAtomData perturbXYZ(double aSigma) {return perturbXYZGaussian(aSigma);}
-    /** @see #perturbXYZGaussian(Random, double) */
-    @VisibleForTesting default ISettableAtomData perturbXYZ(Random aRandom, double aSigma) {return perturbXYZGaussian(aRandom, aSigma);}
+    /** @see #perturbXYZGaussian(IRandom, double) */
+    @VisibleForTesting default ISettableAtomData perturbXYZ(IRandom aRandom, double aSigma) {return perturbXYZGaussian(aRandom, aSigma);}
     
     /**
      * 使用周期边界条件将出界的原子移动回到盒内；

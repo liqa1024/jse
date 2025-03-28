@@ -11,6 +11,7 @@ import jse.code.iterator.IHasIntIterator;
 import jse.code.iterator.IHasIntSetIterator;
 import jse.code.iterator.IIntIterator;
 import jse.code.iterator.IIntSetIterator;
+import jse.code.random.IRandom;
 import jse.math.SliceType;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -18,7 +19,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Random;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 import java.util.function.IntUnaryOperator;
@@ -158,8 +158,7 @@ public interface IIntVector extends ISwapper, ISlice, IHasIntIterator, IHasIntSe
     
     void sort();
     void shuffle();
-    void shuffle(Random aRng);
-    void shuffle(IntUnaryOperator aRng);
+    void shuffle(IRandom aRng);
     
     /** Groovy 的部分，增加向量切片操作 */
     @VisibleForTesting int call(int aIdx);

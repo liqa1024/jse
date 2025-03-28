@@ -5,6 +5,7 @@ import jse.code.collection.*;
 import jse.code.functional.IFilter;
 import jse.code.functional.IIndexFilter;
 import jse.code.functional.IUnaryFullOperator;
+import jse.code.random.IRandom;
 import jse.math.MathEX;
 import jse.math.vector.ILogicalVector;
 import jse.math.vector.IVector;
@@ -65,13 +66,13 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
         return rAtomData;
     }
     
-    @Override public ISettableAtomData mapTypeRandom(Random aRandom, IVector aTypeWeights) {
+    @Override public ISettableAtomData mapTypeRandom(IRandom aRandom, IVector aTypeWeights) {
         ISettableAtomData rAtomData = newSameSettableAtomData_();
         rAtomData.operation().mapTypeRandom2this(aRandom, aTypeWeights);
         return rAtomData;
     }
     
-    @Override public ISettableAtomData perturbXYZGaussian(Random aRandom, double aSigma) {
+    @Override public ISettableAtomData perturbXYZGaussian(IRandom aRandom, double aSigma) {
         ISettableAtomData rAtomData = newSameSettableAtomData_();
         rAtomData.operation().perturbXYZGaussian2this(aRandom, aSigma);
         return rAtomData;

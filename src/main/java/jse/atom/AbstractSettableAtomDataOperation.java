@@ -5,6 +5,7 @@ import jse.code.collection.ISlice;
 import jse.code.functional.IIndexFilter;
 import jse.code.functional.IUnaryFullOperator;
 import jse.code.iterator.IIntIterator;
+import jse.code.random.IRandom;
 import jse.math.MathEX;
 import jse.math.vector.IIntVector;
 import jse.math.vector.IVector;
@@ -12,7 +13,6 @@ import jse.math.vector.IntVector;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Random;
 
 import static jse.code.CS.ZL_STR;
 
@@ -58,7 +58,7 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
         if (tThis.atomTypeNumber() < aMinTypeNum) tThis.setAtomTypeNumber(aMinTypeNum);
     }
     
-    @Override public void mapTypeRandom2this(Random aRandom, IVector aTypeWeights) {
+    @Override public void mapTypeRandom2this(IRandom aRandom, IVector aTypeWeights) {
         int tAtomNum = thisAtomData_().atomNumber();
         int tMaxType = aTypeWeights.size();
         for (int i = 0; i < tMaxType; ++i) {
@@ -87,7 +87,7 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
         mapType2this(tMaxType, atom -> it.next());
     }
     
-    @Override public void perturbXYZGaussian2this(Random aRandom, double aSigma) {
+    @Override public void perturbXYZGaussian2this(IRandom aRandom, double aSigma) {
         final ISettableAtomData tThis = thisAtomData_();
         final int tAtomNum = tThis.atomNumber();
         for (int i = 0; i < tAtomNum; ++i) {

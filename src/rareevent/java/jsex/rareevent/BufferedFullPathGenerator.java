@@ -1,7 +1,7 @@
 package jsex.rareevent;
 
 import jse.atom.IAtomData;
-import jse.parallel.LocalRandom;
+import jse.code.random.IRandom;
 import jse.parallel.AbstractHasAutoShutdown;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -29,8 +29,8 @@ public class BufferedFullPathGenerator<T> extends AbstractHasAutoShutdown implem
     @Override public BufferedFullPathGenerator<T> setDoNotShutdown(boolean aDoNotShutdown) {setDoNotShutdown_(aDoNotShutdown); return this;}
     
     /** 这里还是保持一致，第一个值为 aStart（或等价于 aStart）*/
-    @Override public ITimeAndParameterIterator<T> fullPathFrom(T aStart, long aSeed) {return new BufferedIterator(aStart, aSeed);}
-    @Override public ITimeAndParameterIterator<T> fullPathInit(long aSeed) {return new BufferedIterator(aSeed);}
+    @Override public ITimeAndParameterIterator<T> fullPathFrom(T aStart, IRandom aRNG) {return new BufferedIterator(aStart, aRNG);}
+    @Override public ITimeAndParameterIterator<T> fullPathInit(IRandom aRNG) {return new BufferedIterator(aRNG);}
     
     private class BufferedIterator implements ITimeAndParameterIterator<T> {
         /** 专门优化第一次调用，不去创建路径，因为可能直接满足条件 */
@@ -41,18 +41,16 @@ public class BufferedFullPathGenerator<T> extends AbstractHasAutoShutdown implem
         /** 时间部分 */
         private double mStartTime = Double.NaN;
         private double mTimeConsumed = 0.0;
-        /** 此路径的局部随机数生成器，由于约定了相同实例线程不安全，并且考虑到可能存在的高并发需求，因此直接使用 {@link LocalRandom} */
-        private final LocalRandom mRNG;
+        private final IRandom mRNG;
         
         /** 创建时进行初始化 */
-        BufferedIterator(T aStart, long aSeed) {
-            mRNG = new LocalRandom(aSeed);
+        BufferedIterator(T aStart, IRandom aRNG) {
+            mRNG = aRNG;
             mNext = aStart;
         }
-        BufferedIterator(long aSeed) {
-            mRNG = new LocalRandom(aSeed);
-            // 现在自动构造初始点，不直接使用传入的 aSeed 可以保证随机数生成器的独立性
-            mNext = mPathGenerator.initPoint(mRNG.nextLong());
+        BufferedIterator(IRandom aRNG) {
+            mRNG = aRNG;
+            mNext = mPathGenerator.initPoint(mRNG);
         }
         
         /** 内部使用，初始化 mBuffer，会同时初始化 mNext，mStartTime，并累加 mTimeConsumed */
@@ -62,7 +60,7 @@ public class BufferedFullPathGenerator<T> extends AbstractHasAutoShutdown implem
             List<? extends T> tBufferPath;
             do {
                 // 获取路径，这里都使用原始的点
-                tBufferPath = mPathGenerator.pathFrom(mNext, mRNG.nextLong());
+                tBufferPath = mPathGenerator.pathFrom(mNext, mRNG);
                 // 更新路径迭代器
                 mPathIt = tBufferPath.iterator();
                 // 由于存在约定，一定有一个 next，跳过

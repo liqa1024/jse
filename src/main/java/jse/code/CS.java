@@ -5,6 +5,7 @@ import jse.atom.AbstractXYZ;
 import jse.atom.IXYZ;
 import jse.code.collection.AbstractCollections;
 import jse.code.collection.AbstractRandomAccessList;
+import jse.code.random.IRandom;
 import jse.math.SliceType;
 import jse.parallel.CompletedFuture;
 import jse.system.*;
@@ -28,8 +29,10 @@ public class CS {
     /** version of jse */
     public final static String VERSION = "3.7.0c";
     
-    /** 全局的随机数生成器，可以通过 {@link Random#setSeed(long)} 或者 {@link UT.Math#rng(long)} 来控制全局的随机流 */
-    public final static Random RANDOM = new Random();
+    /** 内部使用的全局随机数生成器 */
+    @ApiStatus.Internal public final static Random RANDOM_ = new Random();
+    /** 全局的随机数生成器，可以通过 {@link UT.Math#rng(long)} 来控制全局的随机流 */
+    public final static IRandom RANDOM = IRandom.of(RANDOM_);
     /** {@link UT.Code#randSeed} 生成的最大种子数（900000000），主要用于 lammps 输入，这是因为 Marsaglia 随机数生成器需要一个较小的种子输入 */
     public final static int MAX_SEED = 900000000;
     

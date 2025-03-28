@@ -8,6 +8,8 @@ import jse.code.collection.AbstractCollections;
 import jse.code.collection.DoublePair;
 import jse.code.functional.IIndexFilter;
 import jse.code.io.ISavable;
+import jse.code.random.IRandom;
+import jse.code.random.LocalRandom;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.vector.*;
@@ -93,7 +95,7 @@ public class DecisionTree implements ISavable {
         /** 停止搜寻最小 Gini 指数的阈值 */
         private double mStopGini = 0.0001;
         /** 可定义的随机数生成器，默认为 {@link CS#RANDOM} */
-        private Random mRNG = RANDOM;
+        private IRandom mRNG = RANDOM;
         
         private final int mSampleNum;
         private final int mInputDim;
@@ -114,7 +116,7 @@ public class DecisionTree implements ISavable {
         public Builder setMinImpurity(double aMinImpurity) {mMinImpurity = Math.max(0.0, aMinImpurity); return this;}
         public Builder setMinSample(int aMinSample) {mMinSample = Math.max(1, aMinSample); return this;}
         public Builder setStopGini(double aStopGini) {mStopGini = Math.max(0.0, aStopGini); return this;}
-        public Builder setRNG(long aSeed) {mRNG = new Random(aSeed); return this;}
+        public Builder setRNG(long aSeed) {mRNG = new LocalRandom(aSeed); return this;}
         
         
         /** 构造并返回决策树 */

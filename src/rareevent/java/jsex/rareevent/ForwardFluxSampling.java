@@ -5,6 +5,8 @@ import jse.atom.IAtomData;
 import jse.code.CS;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
+import jse.code.random.IRandom;
+import jse.code.random.LocalRandom;
 import jse.math.MathEX;
 import jse.math.vector.*;
 import jse.parallel.*;
@@ -41,7 +43,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     /** 界面数目-1，即 n */
     private final int mN;
     /** 可定义的主随机数生成器，默认为 {@link CS#RANDOM} */
-    private Random mRNG = RANDOM;
+    private IRandom mRNG = RANDOM;
     /** 此 FFS 是否是竞争性的，默认开启，当自定义了种子后会自动关闭保证结果一致 */
     private boolean mNoCompetitive = false;
     /** 是否在运行时显示进度条 */
@@ -127,7 +129,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     
     
     /** 参数设置，用来减少构造函数的重载数目，返回自身来支持链式调用 */
-    public ForwardFluxSampling<T> setRNG(long aSeed) {mRNG = new Random(aSeed); mNoCompetitive = true; return this;}
+    public ForwardFluxSampling<T> setRNG(long aSeed) {mRNG = new LocalRandom(aSeed); mNoCompetitive = true; return this;}
     public ForwardFluxSampling<T> setStep1Mul(int aStep1Mul) {mStep1Mul = Math.max(1, aStep1Mul); return this;}
     public ForwardFluxSampling<T> setMaxPathNum(long aMaxPathNum) {mMaxPathNum = Math.max(mN0, aMaxPathNum); return this;}
     public ForwardFluxSampling<T> setCutoff(double aCutoff) {mCutoff = MathEX.Code.toRange(0.0, 0.5, aCutoff); return this;}
@@ -262,7 +264,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     /** 期望向后运行直到 lambdaA 的路径，在向前运行时会进行剪枝，用于过程 1 使用 */
     private class BackwardPath implements IAutoShutdown {
         private final ITimeAndParameterIterator<? extends T> mPath;
-        private final LocalRandom mRNG_;
+        private final IRandom mRNG_;
         private @Nullable Point mCurrentPoint = null;
         private double mTimeConsumed = 0.0;
         private long mPointNum = 0;
@@ -278,10 +280,9 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         }
         
         
-        private BackwardPath(long aSeed) {
-            mRNG_ = new LocalRandom(aSeed);
-            // 现在自动构造这个路径，不直接使用传入的 aSeed 可以保证随机数生成器的独立性
-            mPath = mFullPathGenerator.fullPathInit(mRNG_.nextLong());
+        private BackwardPath(IRandom aRNG) {
+            mRNG_ = aRNG;
+            mPath = mFullPathGenerator.fullPathInit(aRNG);
         }
         double timeConsumed() {return mTimeConsumed;}
         long pointNum() {return mPointNum;}
@@ -377,15 +378,13 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     }
     
     /** 统计一个路径所有的从 A 第一次到达 λ0 的点以及这个过程总共花费的时间 */
-    Step1Return doStep1(int aN0, List<Point> rPointsOnLambda, long aSeed) {
-        LocalRandom tRNG = new LocalRandom(aSeed);
-        
+    Step1Return doStep1(int aN0, List<Point> rPointsOnLambda, IRandom aRNG) {
         long rPathNum = 0;
         long rPointNum = 0;
         double rN0Eff = 0.0;
         double rTotTime0 = 0.0;
         // 获取初始路径的迭代器，并由此找到到达 A 的起始位置，一般来说直接初始化的点都会在 A，但是不一定
-        BackwardPath tPath = new BackwardPath(tRNG.nextLong()); ++rPathNum;
+        BackwardPath tPath = new BackwardPath(aRNG); ++rPathNum;
         Point tRoot = tPath.nextUntilReachLambdaAOrLambdaB(false); // 此过程不会记录耗时
         try {
             while (tRoot == null) {
@@ -399,7 +398,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 }
                 rPointNum += tPath.pointNum();
                 tPath.close();
-                tPath = new BackwardPath(tRNG.nextLong()); ++rPathNum;
+                tPath = new BackwardPath(aRNG); ++rPathNum;
                 tRoot = tPath.nextUntilReachLambdaAOrLambdaB(false); // 此过程不会记录耗时
             }
             
@@ -434,7 +433,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                     do {
                         rPointNum += tPath.pointNum();
                         tPath.close();
-                        tPath = new BackwardPath(tRNG.nextLong()); ++rPathNum;
+                        tPath = new BackwardPath(aRNG); ++rPathNum;
                         tRoot = tPath.nextUntilReachLambdaAOrLambdaB(false); // 此过程不会记录耗时
                     } while (tRoot == null);
                     // 直接重新找下一个 λ0
@@ -449,7 +448,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                     do {
                         rPointNum += tPath.pointNum();
                         tPath.close();
-                        tPath = new BackwardPath(tRNG.nextLong()); ++rPathNum;
+                        tPath = new BackwardPath(aRNG); ++rPathNum;
                         tRoot = tPath.nextUntilReachLambdaAOrLambdaB(false); // 此过程不会记录耗时
                     } while (tRoot == null);
                 }
@@ -467,7 +466,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     /** 期望向前运行直到下一个界面的路径，在向后运行时会进行剪枝，用于过程 2 使用 */
     private class ForwardPath implements IAutoShutdown {
         private final ITimeAndParameterIterator<? extends T> mPath;
-        private final LocalRandom mRNG_;
+        private final IRandom mRNG_;
         private final Point mStart;
         private long mPointNum = 0;
         /** pruning stuffs */
@@ -481,11 +480,10 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             mDead = true;
         }
         
-        private ForwardPath(Point aStart, long aSeed) {
-            mRNG_ = new LocalRandom(aSeed);
+        private ForwardPath(Point aStart, IRandom aRNG) {
+            mRNG_ = aRNG;
             mStart = aStart;
-            // 现在自动构造这个路径，不直接使用传入的 aSeed 可以保证随机数生成器的独立性
-            mPath = mFullPathGenerator.fullPathFrom(aStart.value, mRNG_.nextLong());
+            mPath = mFullPathGenerator.fullPathFrom(aStart.value, aRNG);
         }
         long pointNum() {return mPointNum;}
         
@@ -569,10 +567,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     }
     
     /** 统计一个路径所有的从 λi 第一次到达 λi+1 的点 */
-    private Step2Return doStep2(int aNipp, List<Point> rPointsOnLambda, long aMaxPathNum, long aSeed) {
+    private Step2Return doStep2(int aNipp, List<Point> rPointsOnLambda, long aMaxPathNum, IRandom aRNG) {
         final double tLambdaNext = mSurfaces.get(mStep+1);
-        LocalRandom tRNG = new LocalRandom(aSeed);
-        
         long rPathNum = 0;
         long rPointNum = 0;
         double rMi = 0.0;
@@ -585,7 +581,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             // 由于涉及了标记的修改过程，这里需要串行处理；虽然涉及了线程间竞争的问题，但是这个不会影响结果
             synchronized (this) {
                 // 现在统一改回随机获取，由于统计时考虑了权重这里不需要考虑权重
-                int tIndex = tRNG.nextInt(oPointsOnLambda.size());
+                int tIndex = aRNG.nextInt(oPointsOnLambda.size());
                 tStart = oPointsOnLambda.get(tIndex); ++rPointNum;
                 // 第一个点特殊处理，如果第一个点就已经穿过了 λi+1，则需要记录这个点，并且要保证这个点只会在下一个面上出现一次；
                 // 为了修正误差，会增加其倍数 multiple 来增加其统计时的权重
@@ -610,7 +606,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 }
             }
             // 构造向前路径
-            if (tStart != null) try (ForwardPath tPath = new ForwardPath(tStart, tRNG.nextLong())) {
+            if (tStart != null) try (ForwardPath tPath = new ForwardPath(tStart, aRNG)) {
                 // 获取下一个点
                 Point tNext = tPath.nextUntilReachLambdaNextOrLambdaA();
                 // 无论什么结果都需要增加 Mi
@@ -647,12 +643,6 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         return new Step2Return(rMi, rNippEff, rPointNum, rPathNum, rReachMaxPathNum);
     }
     
-    private long[] genSeeds_(int aSize) {
-        long[] rSeeds = new long[aSize];
-        for (int i = 0; i < aSize; ++i) rSeeds[i] = mRNG.nextLong();
-        return rSeeds;
-    }
-    
     private static String double2str_(double aValue) {
         int tIntValue = (int)aValue;
         if (tIntValue == aValue) return String.valueOf(tIntValue);
@@ -671,6 +661,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             mStepFinished = false;
             
             int tThreadNum = pool().threadNumber();
+            // 为了并行使用随机数生成器，这里统一采用 UT.Par.splitRandoms
+            final IRandom[] tRNGs = UT.Par.splitRandoms(tThreadNum, mRNG.nextLong());
             // 每个线程独立的返回值
             final Step1Return[] tStep1ReturnBuffer = new Step1Return[tThreadNum];
             // 统计从 A 到达 λ0，运行直到采集到的点数目超过 mN0*mStep1Mul
@@ -679,7 +671,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 // 在竞争的情况下不需要统一生成种子
                 if (mProgressBar) UT.Timer.progressBar(double2str_(mSurfaceA)+" -> "+double2str_(mSurfaces.first()), (long)mN0*mStep1Mul);
                 pool().parfor(tThreadNum, i -> {
-                    tStep1ReturnBuffer[i] = doStep1(mN0*mStep1Mul, mPointsOnLambda, mRNG.nextLong());
+                    tStep1ReturnBuffer[i] = doStep1(mN0*mStep1Mul, mPointsOnLambda, tRNGs[i]);
                 });
             } else {
                 // 非竞争的写法，每个线程都分别采集到 mN0*mStep1Mul/nThreads 才算结束
@@ -688,11 +680,9 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 final List<Point>[] tPointsOnLambdaBuffer = (List<Point>[]) new List[tThreadNum];
                 tPointsOnLambdaBuffer[0] = mPointsOnLambda;
                 for (int i = 1; i < tThreadNum; ++i) tPointsOnLambdaBuffer[i] = new ArrayList<>(subN0);
-                // 为了保证结果可重复，这里统一为每个线程生成一个种子，用于内部创建 LocalRandom
-                final long[] tSeeds = genSeeds_(tThreadNum);
                 if (mProgressBar) UT.Timer.progressBar(double2str_(mSurfaceA)+" -> "+double2str_(mSurfaces.first()), (long)subN0*tThreadNum);
                 pool().parfor(tThreadNum, i -> {
-                    tStep1ReturnBuffer[i] = doStep1(subN0, tPointsOnLambdaBuffer[i], tSeeds[i]);
+                    tStep1ReturnBuffer[i] = doStep1(subN0, tPointsOnLambdaBuffer[i], tRNGs[i]);
                 });
                 for (int i = 1; i < tThreadNum; ++i) mPointsOnLambda.addAll(tPointsOnLambdaBuffer[i]);
             }
@@ -762,6 +752,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             final int tNipp = Math.min(mN0, oPointsOnLambda.size());
             
             int tThreadNum = pool().threadNumber();
+            // 为了并行使用随机数生成器，这里统一采用 UT.Par.splitRandoms
+            final IRandom[] tRNGs = UT.Par.splitRandoms(tThreadNum, mRNG.nextLong());
             // 每个线程独立的返回值
             final Step2Return[] tStep2ReturnBuffer = new Step2Return[tThreadNum];
             // 统计从 λi 第一次到达 λi+1 的点
@@ -771,7 +763,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 // 在竞争的情况下不需要统一生成种子
                 if (mProgressBar) UT.Timer.progressBar(double2str_(oLambda)+" -> "+double2str_(tLambdaNext), tNipp);
                 pool().parfor(tThreadNum, i -> {
-                    tStep2ReturnBuffer[i] = doStep2(tNipp, mPointsOnLambda, subMaxPathNum, mRNG.nextLong());
+                    tStep2ReturnBuffer[i] = doStep2(tNipp, mPointsOnLambda, subMaxPathNum, tRNGs[i]);
                 });
             } else {
                 // 非竞争的方式，每个线程都分别采集到 mN0/nThreads 才算结束
@@ -781,11 +773,9 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 final List<Point>[] tPointsOnLambdaBuffer = (List<Point>[]) new List[tThreadNum];
                 tPointsOnLambdaBuffer[0] = mPointsOnLambda;
                 for (int i = 1; i < tThreadNum; ++i) tPointsOnLambdaBuffer[i] = new ArrayList<>(subNipp);
-                // 为了保证结果可重复，这里统一为每个线程生成一个种子，用于内部创建 LocalRandom
-                final long[] tSeeds = genSeeds_(tThreadNum);
                 if (mProgressBar) UT.Timer.progressBar(double2str_(oLambda)+" -> "+double2str_(tLambdaNext), (long)subNipp*tThreadNum);
                 pool().parfor(tThreadNum, i -> {
-                    tStep2ReturnBuffer[i] = doStep2(subNipp, tPointsOnLambdaBuffer[i], subMaxPathNum, tSeeds[i]);
+                    tStep2ReturnBuffer[i] = doStep2(subNipp, tPointsOnLambdaBuffer[i], subMaxPathNum, tRNGs[i]);
                 });
                 for (int i = 1; i < tThreadNum; ++i) mPointsOnLambda.addAll(tPointsOnLambdaBuffer[i]);
             }

@@ -6,11 +6,11 @@ import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 import jse.code.collection.NewCollections;
 import jse.code.io.ISavable;
+import jse.code.random.IRandom;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.vector.*;
 import jse.parallel.AbstractThreadPool;
-import jse.parallel.LocalRandom;
 import jse.parallel.ParforThreadPool;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Range;
@@ -121,11 +121,6 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
     public static RandomForest load(Map<?, ?> aLoadFrom) {return load(aLoadFrom, PARFOR_THREAD_NUMBER);}
     
     
-    private static long[] genSeeds_(int aSize, Random aRNG) {
-        long[] rSeeds = new long[aSize];
-        for (int i = 0; i < aSize; ++i) rSeeds[i] = aRNG.nextLong();
-        return rSeeds;
-    }
     /**
      * 根据输入参数直接构造随机森林，对于随机森林，
      * 决策树内部的参数不再重要，因此这里也不再直接提供接口
@@ -136,9 +131,9 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
      * @param aTreeNum 创建的决策树数目，默认为 1000
      * @param aTrainRatio 每个决策树使用总样本数的比例，默认为 0.01
      * @param aThreadNum 随机森林使用的线程数，默认为处理器线程数
-     * @param aRNG 可自定义的随机数生成器，默认为 {@link CS#RANDOM}
+     * @param aSeed 可自定义的随机流种子，默认通过 {@link CS#RANDOM} 自动生成
      */
-    RandomForest(final boolean aNoPBar, final @Unmodifiable List<? extends IVector> aTrainDataInput, final ILogicalVector aTrainDataOutput, int aTreeNum, double aTrainRatio, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, Random aRNG, boolean aNoCompetitive) {
+    RandomForest(final boolean aNoPBar, final @Unmodifiable List<? extends IVector> aTrainDataInput, final ILogicalVector aTrainDataOutput, int aTreeNum, double aTrainRatio, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, long aSeed, boolean aNoCompetitive) {
         super(new ParforThreadPool(aThreadNum, aNoCompetitive));
         
         // 输入输出样本数应匹配
@@ -148,18 +143,18 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
         // 获取训练需要的样本数
         final int tTrainSampleNum = Math.max(1, MathEX.Code.round2int(tSampleNum * aTrainRatio));
         
-        // 为了保证结果可重复，这里统一为每个线程生成一个种子，用于创建 LocalRandom
-        final long[] tSeeds = genSeeds_(threadNumber(), aRNG);
+        // 为了并行使用随机数生成器，这里统一采用 UT.Par.splitRandoms
+        final IRandom[] tRNGs = UT.Par.splitRandoms(threadNumber(), aSeed);
         // 统一创建好 mTrees 避免并行写入的问题
         mTrees = NewCollections.nulls(aTreeNum);
         
         // 并行创建随机森林
         if (!aNoPBar) UT.Timer.progressBar("RandomForest Init", aTreeNum);
         pool().parfor(aTreeNum, (i, threadID) -> {
-            LocalRandom tRNG = new LocalRandom(tSeeds[threadID]);
+            IRandom tRNG = tRNGs[threadID];
             // 随机选取部分样本集
             IIntVector tRandIndex = Vectors.range(tSampleNum);
-            tRandIndex.shuffle(tRNG::nextInt);
+            tRandIndex.shuffle(tRNG);
             tRandIndex = tRandIndex.subVec(0, tTrainSampleNum);
             List<? extends IVector> subTrainDataInput = AbstractCollections.slice(aTrainDataInput, tRandIndex);
             ILogicalVector subTrainDataOutput = aTrainDataOutput.refSlicer().get(tRandIndex);
@@ -171,14 +166,14 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
         // 统一设置回竞争形式的 pool，预测开启非竞争可以提高效率
         if (aThreadNum!=1 && !aNoCompetitive) setPool(new ParforThreadPool(aThreadNum, true));
     }
-    RandomForest(@Unmodifiable List<? extends IVector> aTrainDataInput, ILogicalVector aTrainDataOutput, int aTreeNum, double aTrainRatio, int aThreadNum, Random aRNG, boolean aNoCompetitive) {
-        this(false, aTrainDataInput, aTrainDataOutput, aTreeNum, aTrainRatio, aThreadNum, aRNG, aNoCompetitive);
+    RandomForest(@Unmodifiable List<? extends IVector> aTrainDataInput, ILogicalVector aTrainDataOutput, int aTreeNum, double aTrainRatio, int aThreadNum, long aSeed, boolean aNoCompetitive) {
+        this(false, aTrainDataInput, aTrainDataOutput, aTreeNum, aTrainRatio, aThreadNum, aSeed, aNoCompetitive);
     }
     public RandomForest(@Unmodifiable List<? extends IVector> aTrainDataInput, ILogicalVector aTrainDataOutput, int aTreeNum, double aTrainRatio, int aThreadNum, long aSeed) {
-        this(aTrainDataInput, aTrainDataOutput, aTreeNum, aTrainRatio, aThreadNum, new Random(aSeed), true);
+        this(aTrainDataInput, aTrainDataOutput, aTreeNum, aTrainRatio, aThreadNum, aSeed, true);
     }
     public RandomForest(@Unmodifiable List<? extends IVector> aTrainDataInput, ILogicalVector aTrainDataOutput, int aTreeNum, double aTrainRatio, int aThreadNum) {
-        this(aTrainDataInput, aTrainDataOutput, aTreeNum, aTrainRatio, aThreadNum, RANDOM, false);
+        this(aTrainDataInput, aTrainDataOutput, aTreeNum, aTrainRatio, aThreadNum, RANDOM.nextLong(), false);
     }
     public RandomForest(@Unmodifiable List<? extends IVector> aTrainDataInput, ILogicalVector aTrainDataOutput, int aTreeNum, double aTrainRatio) {
         this(aTrainDataInput, aTrainDataOutput, aTreeNum, aTrainRatio, PARFOR_THREAD_NUMBER);
@@ -188,10 +183,10 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
     }
     
     public RandomForest(boolean aNoPBar, @Unmodifiable List<? extends IVector> aTrainDataInput, ILogicalVector aTrainDataOutput, int aTreeNum, double aTrainRatio, int aThreadNum, long aSeed) {
-        this(aNoPBar, aTrainDataInput, aTrainDataOutput, aTreeNum, aTrainRatio, aThreadNum, new Random(aSeed), true);
+        this(aNoPBar, aTrainDataInput, aTrainDataOutput, aTreeNum, aTrainRatio, aThreadNum, aSeed, true);
     }
     public RandomForest(boolean aNoPBar, @Unmodifiable List<? extends IVector> aTrainDataInput, ILogicalVector aTrainDataOutput, int aTreeNum, double aTrainRatio, int aThreadNum) {
-        this(aNoPBar, aTrainDataInput, aTrainDataOutput, aTreeNum, aTrainRatio, aThreadNum, RANDOM, false);
+        this(aNoPBar, aTrainDataInput, aTrainDataOutput, aTreeNum, aTrainRatio, aThreadNum, RANDOM.nextLong(), false);
     }
     public RandomForest(boolean aNoPBar, @Unmodifiable List<? extends IVector> aTrainDataInput, ILogicalVector aTrainDataOutput, int aTreeNum, double aTrainRatio) {
         this(aNoPBar, aTrainDataInput, aTrainDataOutput, aTreeNum, aTrainRatio, PARFOR_THREAD_NUMBER);
