@@ -40,5 +40,44 @@ public interface ISlice {
             @Override public int size() {return 1;}
         };
     }
+    static ISlice of(final int aIndex0, final int aIndex1) {
+        return new ISlice() {
+            @Override public int get(int aIdx) {
+                switch(aIdx) {
+                case 0: {return aIndex0;}
+                case 1: {return aIndex1;}
+                default: {throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));}
+                }
+            }
+            @Override public int size() {return 2;}
+        };
+    }
+    static ISlice of(final int aIndex0, final int aIndex1, final int aIndex2) {
+        return new ISlice() {
+            @Override public int get(int aIdx) {
+                switch(aIdx) {
+                case 0: {return aIndex0;}
+                case 1: {return aIndex1;}
+                case 2: {return aIndex2;}
+                default: {throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));}
+                }
+            }
+            @Override public int size() {return 3;}
+        };
+    }
+    static ISlice of(final int aIndex0, final int aIndex1, final int aIndex2, final int aIndex3) {
+        return new ISlice() {
+            @Override public int get(int aIdx) {
+                switch(aIdx) {
+                case 0: {return aIndex0;}
+                case 1: {return aIndex1;}
+                case 2: {return aIndex2;}
+                case 3: {return aIndex3;}
+                default: {throw new IndexOutOfBoundsException(String.format("Index: %d", aIdx));}
+                }
+            }
+            @Override public int size() {return 4;}
+        };
+    }
     static ISlice zl() {return ZL_SLICE;}
 }

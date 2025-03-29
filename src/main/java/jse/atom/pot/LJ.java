@@ -134,6 +134,11 @@ public class LJ implements IPairPotential {
      * @return {@inheritDoc}
      */
     @Override public double rcut() {return mCutMax;}
+    /**
+     * {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override public boolean newton() {return true;}
     
     private int mThreadNum = 1;
     /**

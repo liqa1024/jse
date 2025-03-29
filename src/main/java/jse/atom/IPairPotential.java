@@ -56,6 +56,16 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      * @return 势函数的（最大）截断半径
      */
     default double rcut() {return -1;}
+    /**
+     * 标记此势函数是否符合牛顿第三定律，即，原子的力是否能够分解成每个原子之间的对力之和，
+     * 并且这些相互的对力是大小相同方向相反的
+     * <p>
+     * 在这里还要求总能量是所有对的能量之和，而每原子能量定义是占有这些对的一半的能量；
+     * 在满足这个要求的情况下，计算单粒子移动、翻转、种类交换时的能量差可以跟进一步的优化，
+     * 直接只需要考虑修改的原子自身的能量变化即可
+     * @return 此势函数是否符合牛顿第三定律
+     */
+    default boolean newton() {return false;}
     
     /**
      * 通过此势函数计算给定原子参数计算器 {@link AtomicParameterCalculator} 中每个原子的能量值
@@ -282,10 +292,18 @@ public interface IPairPotential extends IPotential, IHasSymbol {
             if (aRestoreAPC) aAPC.setAtomXYZ(aI, oX, oY, oZ);
             return nEng - oEng;
         }
-        // 采用最大的截断半径从而包含所有可能涉及发生了能量变换的原子
         XYZ oXYZ = new XYZ(aAPC.atomDataXYZ_().row(aI));
-        IIntVector oNL = aAPC.getNeighborList(oXYZ, tRCut);
         XYZ nXYZ = oXYZ.plus(aDx, aDy, aDz);
+        // newton 势只需要考虑移动中心原子即可
+        if (newton()) {
+            ISlice tNL = ISlice.of(aI);
+            double oEng = calEnergyAt(aAPC, tNL, aTypeMap);
+            double nEng = calEnergyAt(aAPC.setAtomXYZ(aI, nXYZ), tNL, aTypeMap);
+            if (aRestoreAPC) aAPC.setAtomXYZ(aI, oXYZ);
+            return (nEng - oEng)*2.0;
+        }
+        // 采用最大的截断半径从而包含所有可能涉及发生了能量变换的原子
+        IIntVector oNL = aAPC.getNeighborList(oXYZ, tRCut);
         IIntVector nNL = aAPC.getNeighborList(nXYZ, tRCut);
         // 合并近邻列表，这里简单遍历实现
         final IntList tNL = new IntList(oNL.size());
@@ -422,6 +440,14 @@ public interface IPairPotential extends IPotential, IHasSymbol {
             if (aRestoreAPC) aAPC.setAtomType(aI, oTypeI).setAtomType(aJ, oTypeJ);
             return nEng - oEng;
         }
+        // newton 势只需要考虑交换的两原子即可
+        if (newton()) {
+            ISlice tNL = ISlice.of(aI, aJ);
+            double oEng = calEnergyAt(aAPC, tNL, aTypeMap);
+            double nEng = calEnergyAt(aAPC.setAtomType(aI, oTypeJ).setAtomType(aJ, oTypeI), tNL, aTypeMap);
+            if (aRestoreAPC) aAPC.setAtomType(aI, oTypeI).setAtomType(aJ, oTypeJ);
+            return (nEng - oEng)*2.0;
+        }
         // 采用最大的截断半径从而包含所有可能涉及发生了能量变换的原子
         IIntVector iNL = aAPC.getNeighborList(aI, tRCut);
         IIntVector jNL = aAPC.getNeighborList(aJ, tRCut);
@@ -524,6 +550,14 @@ public interface IPairPotential extends IPotential, IHasSymbol {
             double nEng = calEnergy(aAPC.setAtomType(aI, aType), aTypeMap);
             if (aRestoreAPC) aAPC.setAtomType(aI, oType);
             return nEng - oEng;
+        }
+        // newton 势只需要考虑翻转中心原子即可
+        if (newton()) {
+            ISlice tNL = ISlice.of(aI);
+            double oEng = calEnergyAt(aAPC, tNL, aTypeMap);
+            double nEng = calEnergyAt(aAPC.setAtomType(aI, aType), tNL, aTypeMap);
+            if (aRestoreAPC) aAPC.setAtomType(aI, oType);
+            return (nEng - oEng)*2.0;
         }
         // 采用最大的截断半径从而包含所有可能涉及发生了能量变换的原子
         IIntVector iNL = aAPC.getNeighborList(aI, tRCut);
