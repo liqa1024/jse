@@ -83,7 +83,7 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
         // 获取指令失败直接输出错误
         if (tCommand == null) {UT.Code.warning("Create SLURM job step Failed"); returnResource(tResource); return ERR_FUTURE;}
         // 任务完成后需要归还资源
-        return new SRUNSystemFuture(aCommand, aWriteln, tResource);
+        return new SRUNSystemFuture(tCommand, aWriteln, tResource);
     }
     private final class SRUNSystemFuture extends LocalSystemFuture implements IDoFinalFuture<Integer> {
         private final Slurm.Resource mResource;
