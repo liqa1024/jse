@@ -82,12 +82,13 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
             }
         }
         
+        public void doFinal() {/**/}
         @Override public boolean cancel(boolean mayInterruptIfRunning) {
             if (mProcess == null) return false;
             if (mayInterruptIfRunning && mProcess.isAlive()) {
                 mProcess.destroy(); // anyway, 总之是没有办法在 java 中直接发送 ctrl-c 到指定进程的
                 for (int i = 0; i < TRY_TIMES; ++i) {
-                    if (!mProcess.isAlive()) {mCancelled = true; return true;}
+                    if (!mProcess.isAlive()) {mCancelled = true; doFinal(); return true;}
                     try {Thread.sleep(SYNC_SLEEP_TIME);}
                     catch (InterruptedException e) {return false;}
                 }
@@ -102,6 +103,7 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
             mErrTask.get();
             mOutTask.get();
             if (mCancelled) throw new CancellationException();
+            doFinal();
             return tExitValue;
         }
         @Override public Integer get(long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
@@ -123,6 +125,7 @@ public class LocalSystemExecutor extends AbstractSystemExecutor {
             if (tRestTime <= 0) throw new TimeoutException();
             mOutTask.get(tRestTime, TimeUnit.NANOSECONDS);
             if (mCancelled) throw new CancellationException();
+            doFinal();
             return tExitValue;
         }
     }
