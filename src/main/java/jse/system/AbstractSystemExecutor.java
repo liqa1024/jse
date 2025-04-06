@@ -6,9 +6,7 @@ import jse.code.collection.AbstractCollections;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -67,21 +65,22 @@ public abstract class AbstractSystemExecutor implements ISystemExecutor {
     /// IHasThreadPool stuffs
     protected long sleepTime() {return SYNC_SLEEP_TIME_2;}
     private volatile boolean mDead = false;
-    private final List<Future<?>> mRunningSystem = new ArrayList<>();
+    private final Set<Future<?>> mRunningSystem = new LinkedHashSet<>();
     @Override public final void shutdown() {
-        if (!mDead) {
-            mDead = true;
-            // 在这里添加携程等待完成后执行 shutdownFinal()
-            UT.Par.runAsync(() -> {
-                try {
-                    awaitTermination();
-                } catch (InterruptedException e) {
-                    printStackTrace(e);
-                } finally {
-                    shutdownFinal();
-                }
-            });
+        if (mDead) return;
+        mDead = true;
+        if (isTerminated()) {
+            shutdownFinal();
+            return;
         }
+        // 在这里添加携程等待完成后执行 shutdownFinal()
+        UT.Par.runAsync(() -> {
+            try {
+                awaitTermination();
+            } catch (InterruptedException e) {
+                printStackTrace(e);
+            }
+        });
     }
     @Override public final void shutdownNow() {
         // 会直接强制取消所有任务，然后回到一般 shutdown
@@ -96,14 +95,7 @@ public abstract class AbstractSystemExecutor implements ISystemExecutor {
     }
     @Override public final boolean isShutdown() {return mDead;}
     @Override public final synchronized int jobNumber() {
-        final Iterator<Future<?>> it = mRunningSystem.iterator();
-        while (it.hasNext()) {
-            final Future<?> tSystem = it.next();
-            if (tSystem.isDone()) {
-                it.remove();
-                if (tSystem instanceof IDoFinalFuture) ((IDoFinalFuture<?>)tSystem).doFinal();
-            }
-        }
+        mRunningSystem.removeIf(Future::isDone);
         return mRunningSystem.size();
     }
     @Override public final int threadNumber() {return 1;}
@@ -117,6 +109,7 @@ public abstract class AbstractSystemExecutor implements ISystemExecutor {
     @SuppressWarnings("BusyWait")
     @Override public void awaitTermination() throws InterruptedException {
         while (!isTerminated()) Thread.sleep(sleepTime());
+        shutdownFinal();
     }
     
     
@@ -128,7 +121,9 @@ public abstract class AbstractSystemExecutor implements ISystemExecutor {
         Future<Integer> tSystemTask = null;
         try {
             tSystemTask = submitSystem__(aCommand, aWriteln);
+            synchronized (this) {mRunningSystem.add(tSystemTask);}
             tExitValue = tSystemTask.get();
+            synchronized (this) {mRunningSystem.remove(tSystemTask);}
         } catch (ExecutionException e) {
             printStackTrace(e.getCause());
             tExitValue = -1;
@@ -136,7 +131,10 @@ public abstract class AbstractSystemExecutor implements ISystemExecutor {
             printStackTrace(e);
             tExitValue = -1;
         } finally {
-            if (tSystemTask != null) tSystemTask.cancel(true);
+            if (tSystemTask != null) {
+                tSystemTask.cancel(true);
+                synchronized (this) {mRunningSystem.remove(tSystemTask);}
+            }
         }
         return tExitValue;
     }
