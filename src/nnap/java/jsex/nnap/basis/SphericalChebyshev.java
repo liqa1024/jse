@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
 import jse.code.UT;
-import jse.code.collection.AbstractCollections;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.math.MathEX;
@@ -13,7 +12,6 @@ import jse.math.operation.ARRAY;
 import jse.math.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.List;
