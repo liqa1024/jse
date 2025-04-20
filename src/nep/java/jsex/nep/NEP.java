@@ -1,5 +1,6 @@
 package jsex.nep;
 
+import jse.cache.DoubleArrayCache;
 import jse.clib.IntCPointer;
 import jse.clib.NestedIntCPointer;
 import jse.code.IO;
@@ -880,7 +881,7 @@ public class NEP {
         double[] dy = {-r12[0] * r12[1] * d12inv, (1.0 - r12[1] * r12[1]) * d12inv, -r12[1] * r12[2] * d12inv};
         double[] dz = {-r12[0] * r12[2] * d12inv, -r12[1] * r12[2] * d12inv, (1.0 - r12[2] * r12[2]) * d12inv};
         
-        double[] z_pow = new double[L+1];
+        double[] z_pow = DoubleArrayCache.getArray(L+1);
         z_pow[0] = 1.0;
         for (int n = 1; n <= L; ++n) {
             z_pow[n] = r12[2] * z_pow[n-1];
@@ -962,6 +963,7 @@ public class NEP {
                 }
             }
         }
+        DoubleArrayCache.returnArray(z_pow);
     }
     
     static void accumulate_f12(int L_max, int num_L, int n, int n_max_angular_plus_1, 
@@ -1038,7 +1040,7 @@ public class NEP {
     static void accumulate_s_one(int L, double x12, double y12, double z12, double fn, double[] s) {
         int s_index = L * L - 1;
         
-        double[] z_pow = new double[L+1];
+        double[] z_pow = DoubleArrayCache.getArray(L+1);
         z_pow[0] = 1.0;
         for (int n = 1; n <= L; ++n) {
             z_pow[n] = z12 * z_pow[n-1];
@@ -1083,6 +1085,7 @@ public class NEP {
                 complex_product(x12, y12, real_part, imag_part);
             }
         }
+        DoubleArrayCache.returnArray(z_pow);
     }
     
     static void accumulate_s(int L_max, double d12, double x12, double y12, double z12, double fn, double[] s) {
@@ -1190,6 +1193,8 @@ public class NEP {
     static void construct_table_radial_or_angular(int version, int num_types, int num_types_sq, 
                                                   int n_max, int basis_size, double rc, double rcinv, 
                                                   double[] c, int shift, double[] gn, double[] gnp) {
+        double[] fn12 = DoubleArrayCache.getArray(MAX_NUM_N);
+        double[] fnp12 = DoubleArrayCache.getArray(MAX_NUM_N);
         for (int table_index = 0; table_index < table_length; ++table_index) {
             double d12 = table_index * table_resolution * rc;
             double[] fc12 = {0.0}, fcp12 = {0.0};
@@ -1197,8 +1202,6 @@ public class NEP {
             for (int t1 = 0; t1 < num_types; ++t1) {
                 for (int t2 = 0; t2 < num_types; ++t2) {
                     int t12 = t1 * num_types + t2;
-                    double[] fn12 = new double[MAX_NUM_N];
-                    double[] fnp12 = new double[MAX_NUM_N];
                     find_fn_and_fnp(basis_size, rcinv, d12, fc12[0], fcp12[0], fn12, fnp12);
                     for (int n = 0; n <= n_max; ++n) {
                         double gn12 = 0.0;
@@ -1214,6 +1217,8 @@ public class NEP {
                 }
             }
         }
+        DoubleArrayCache.returnArray(fn12);
+        DoubleArrayCache.returnArray(fnp12);
     }
     
     static void find_descriptor_for_lammps(ParaMB paramb, ANN annmb, int nlocal, int N,
@@ -1221,10 +1226,14 @@ public class NEP {
                                            int[] g_type, int[] type_map, RowMatrix g_pos,
                                            double[] g_gn_radial, double[] g_gn_angular,
                                            double[] g_Fp, double[] g_sum_fxyz, double[] g_total_potential, double[] g_potential) {
+        double[] q = DoubleArrayCache.getArray(MAX_DIM);
+        double[] fn12 = DoubleArrayCache.getArray(MAX_NUM_N);
+        double[] s = DoubleArrayCache.getArray(NUM_OF_ABC);
+        double[] Fp = DoubleArrayCache.getArray(MAX_DIM), latent_space = DoubleArrayCache.getArray(MAX_NEURON);
         for (int ii = 0; ii < N; ++ii) {
             int n1 = g_ilist.getAt(ii);
             int t1 = type_map[g_type[n1]]; // from LAMMPS to NEP convention
-            double[] q = new double[MAX_DIM];
+            Arrays.fill(q, 0.0);
             
             int g_NNn1 = g_NN.getAt(n1);
             for (int i1 = 0; i1 < g_NNn1; ++i1) {
@@ -1255,7 +1264,6 @@ public class NEP {
                         rcinv = 1.0 / rc;
                     }
                     find_fc(rc, rcinv, d12, fc12);
-                    double[] fn12 = new double[MAX_NUM_N];
                     find_fn(paramb.basis_size_radial, rcinv, d12, fc12[0], fn12);
                     for (int n = 0; n <= paramb.n_max_radial; ++n) {
                         double gn12 = 0.0;
@@ -1270,7 +1278,7 @@ public class NEP {
             }
             
             for (int n = 0; n <= paramb.n_max_angular; ++n) {
-                double[] s = new double[NUM_OF_ABC];
+                Arrays.fill(s, 0.0);
                 for (int i1 = 0; i1 < g_NNn1; ++i1) {
                     int n2 = g_NL.getAt(n1, i1);
                     double[] r12 = {g_pos.get(n2, 0) - g_pos.get(n1, 0), g_pos.get(n2, 1) - g_pos.get(n1, 1), g_pos.get(n2, 2) - g_pos.get(n1, 2)};
@@ -1299,7 +1307,6 @@ public class NEP {
                             rcinv = 1.0 / rc;
                         }
                         find_fc(rc, rcinv, d12, fc12);
-                        double[] fn12 = new double[MAX_NUM_N];
                         find_fn(paramb.basis_size_angular, rcinv, d12, fc12[0], fn12);
                         double gn12 = 0.0;
                         for (int k = 0; k <= paramb.basis_size_angular; ++k) {
@@ -1319,7 +1326,8 @@ public class NEP {
                 q[d] = q[d] * paramb.q_scaler[d];
             }
             double[] F = {0.0};
-            double[] Fp = new double[MAX_DIM], latent_space = new double[MAX_NEURON];
+            Arrays.fill(Fp, 0.0);
+            Arrays.fill(latent_space, 0.0);
             
             if (paramb.version == 5) {
                 apply_ann_one_layer_nep5(annmb.dim, annmb.num_neurons1, annmb.w0[t1], annmb.b0[t1], annmb.w1[t1], annmb.b1, q, F, Fp, latent_space);
@@ -1335,6 +1343,11 @@ public class NEP {
                 g_Fp[d * nlocal + n1] = Fp[d] * paramb.q_scaler[d];
             }
         }
+        DoubleArrayCache.returnArray(latent_space);
+        DoubleArrayCache.returnArray(Fp);
+        DoubleArrayCache.returnArray(s);
+        DoubleArrayCache.returnArray(fn12);
+        DoubleArrayCache.returnArray(q);
     }
     
     static void find_force_radial_for_lammps(ParaMB paramb, ANN annmb, int nlocal, int N,
@@ -1342,6 +1355,8 @@ public class NEP {
                                              int[] g_type, int[] type_map, RowMatrix g_pos, double[] g_Fp,
                                              double[] g_gnp_radial,
                                              RowMatrix g_force, double[] g_total_virial, RowMatrix g_virial) {
+        double[] fn12 = DoubleArrayCache.getArray(MAX_NUM_N);
+        double[] fnp12 = DoubleArrayCache.getArray(MAX_NUM_N);
         for (int ii = 0; ii < N; ++ii) {
             int n1 = g_ilist.getAt(ii);
             int t1 = type_map[g_type[n1]]; // from LAMMPS to NEP convention
@@ -1380,8 +1395,6 @@ public class NEP {
                         rcinv = 1.0 / rc;
                     }
                     find_fc_and_fcp(rc, rcinv, d12, fc12, fcp12);
-                    double[] fn12 = new double[MAX_NUM_N];
-                    double[] fnp12 = new double[MAX_NUM_N];
                     find_fn_and_fnp(paramb.basis_size_radial, rcinv, d12, fc12[0], fcp12[0], fn12, fnp12);
                     for (int n = 0; n <= paramb.n_max_radial; ++n) {
                         double gnp12 = 0.0;
@@ -1423,6 +1436,8 @@ public class NEP {
                 }
             }
         }
+        DoubleArrayCache.returnArray(fn12);
+        DoubleArrayCache.returnArray(fnp12);
     }
     
     static void find_force_angular_for_lammps(ParaMB paramb, ANN annmb, int nlocal, int N,
@@ -1430,10 +1445,12 @@ public class NEP {
                                               int[] g_type, int[] type_map, RowMatrix g_pos, double[] g_Fp, double[] g_sum_fxyz,
                                               double[] g_gn_angular, double[] g_gnp_angular,
                                               RowMatrix g_force, double[] g_total_virial, RowMatrix g_virial) {
+        double[] Fp = DoubleArrayCache.getArray(MAX_DIM_ANGULAR);
+        double[] sum_fxyz = DoubleArrayCache.getArray(NUM_OF_ABC * MAX_NUM_N);
+        double[] fn12 = DoubleArrayCache.getArray(MAX_NUM_N);
+        double[] fnp12 = DoubleArrayCache.getArray(MAX_NUM_N);
         for (int ii = 0; ii < N; ++ii) {
             int n1 = g_ilist.getAt(ii);
-            double[] Fp = new double[MAX_DIM_ANGULAR];
-            double[] sum_fxyz = new double[NUM_OF_ABC * MAX_NUM_N];
             for (int d = 0; d < paramb.dim_angular; ++d) {
                 Fp[d] = g_Fp[(paramb.n_max_radial + 1 + d) * nlocal + n1];
             }
@@ -1476,8 +1493,6 @@ public class NEP {
                         rcinv = 1.0 / rc;
                     }
                     find_fc_and_fcp(rc, rcinv, d12, fc12, fcp12);
-                    double[] fn12 = new double[MAX_NUM_N];
-                    double[] fnp12 = new double[MAX_NUM_N];
                     find_fn_and_fnp(paramb.basis_size_angular, rcinv, d12, fc12[0], fcp12[0], fn12, fnp12);
                     for (int n = 0; n <= paramb.n_max_angular; ++n) {
                         double gn12 = 0.0;
@@ -1517,6 +1532,10 @@ public class NEP {
                 }
             }
         }
+        DoubleArrayCache.returnArray(Fp);
+        DoubleArrayCache.returnArray(sum_fxyz);
+        DoubleArrayCache.returnArray(fn12);
+        DoubleArrayCache.returnArray(fnp12);
     }
     
     static void find_force_ZBL_for_lammps(ParaMB paramb, ZBL zbl, int N,
@@ -1555,7 +1574,7 @@ public class NEP {
                         t2 = type1;
                     }
                     int zbl_index = t1 * zbl.num_types - (t1 * (t1 - 1)) / 2 + (t2 - t1);
-                    double[] ZBL_para = new double[10];
+                    double[] ZBL_para = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
                     for (int i = 0; i < 10; ++i) {
                         ZBL_para[i] = zbl.para[10 * zbl_index + i];
                     }

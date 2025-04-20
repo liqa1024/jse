@@ -1,5 +1,7 @@
 package jsex.nep;
 
+import jse.cache.DoubleArrayCache;
+import jse.cache.IntArrayCache;
 import jse.cache.MatrixCache;
 import jse.clib.DoubleCPointer;
 import jse.clib.IntCPointer;
@@ -56,10 +58,10 @@ public class PairNEP extends LmpPlugin.Pair {
         
         int nlocal = atomNlocal();
         int nghost = atomNghost();
-        int[] typeBuf = new int[nlocal+nghost];
-        type.parse2dest(typeBuf);
+        int[] typeBuf = IntArrayCache.getArray(nlocal+nghost);
         RowMatrix xMat = MatrixCache.getMatRow(nlocal+nghost, 3);
         RowMatrix fMat = MatrixCache.getMatRow(nlocal+nghost, 3);
+        type.parse2dest(typeBuf);
         x.parse2dest(xMat.internalData(), xMat.internalDataShift(), xMat.rowNumber(), xMat.columnNumber());
         f.parse2dest(fMat.internalData(), fMat.internalDataShift(), fMat.rowNumber(), fMat.columnNumber());
         
@@ -68,7 +70,7 @@ public class PairNEP extends LmpPlugin.Pair {
         double[] eatomBuf = null;
         RowMatrix cvatomMat = null;
         if (eflagAtom) {
-            eatomBuf = new double[nlocal];
+            eatomBuf = DoubleArrayCache.getArray(nlocal);
             eatom.parse2dest(eatomBuf);
         }
         if (cvflagAtom) {
@@ -91,11 +93,16 @@ public class PairNEP extends LmpPlugin.Pair {
         }
         if (eflagAtom) {
             eatom.fill(eatomBuf);
+            DoubleArrayCache.returnArray(eatomBuf);
         }
         if (cvflagAtom) {
             cvatom.fill(cvatomMat.internalData(), cvatomMat.internalDataShift(), cvatomMat.rowNumber(), cvatomMat.columnNumber());
+            MatrixCache.returnMat(cvatomMat);
         }
         f.fill(fMat.internalData(), fMat.internalDataShift(), fMat.rowNumber(), fMat.columnNumber());
+        IntArrayCache.returnArray(typeBuf);
+        MatrixCache.returnMat(fMat);
+        MatrixCache.returnMat(xMat);
     }
     
     @Override public void coeff(String... aArgs) throws Exception {
