@@ -17,6 +17,7 @@ public:
     PairJSE(class LAMMPS *);
     ~PairJSE() override;
     void compute(int, int) override;
+    double single(int, int, int, int, double, double, double, double &) override;
     void settings(int, char **) override;
     void coeff(int, char **) override;
     void init_style() override;
@@ -31,9 +32,16 @@ protected:
 public:
     jint findVariable(jstring);
     jdouble computeVariable(jint);
+    void setSingleEnable(jboolean);
+    void setOneCoeff(jboolean);
+    void setManybodyFlag(jboolean);
+    void setUnitConvertFlag(jint);
+    void setNoVirialFdotrCompute(jboolean);
+    void setFinitecutflag(jboolean);
+    void setGhostneigh(jboolean);
+    void setCentroidstressflag(jint);
     void neighborRequestDefault();
     void neighborRequestFull();
-    void noVirialFdotrCompute();
     jlong atomX();
     jlong atomF();
     jlong atomType();
@@ -54,6 +62,7 @@ public:
     jlong eatom_();
     jlong virial_();
     jlong vatom_();
+    jlong cvatom_();
     void evTally(jint, jint, jint, jboolean, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble);
     void evTallyFull(jint, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble);
     void evTallyXYZ(jint, jint, jint, jboolean, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble);
@@ -62,6 +71,7 @@ public:
     jboolean vflagEither();
     jboolean vflagGlobal();
     jboolean vflagAtom();
+    jboolean cvflagAtom();
     jboolean eflagEither();
     jboolean eflagGlobal();
     jboolean eflagAtom();

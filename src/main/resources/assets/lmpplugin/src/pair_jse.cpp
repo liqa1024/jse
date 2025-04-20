@@ -50,6 +50,12 @@ void PairJSE::compute(int eflag, int vflag) {
     if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to compute");
 }
 
+double PairJSE::single(int i, int j, int itype, int jtype, double rsq, double factor_coul, double factor_lj, double &fforce) {
+    double out = JSE_LMPPAIR::single(mEnv, mCore, i, j, itype, jtype, rsq, factor_coul, factor_lj, fforce);
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call single");
+    return out;
+}
+
 void PairJSE::allocate() {
     allocated = 1;
     int n = atom->ntypes + 1;
@@ -62,7 +68,7 @@ void PairJSE::allocate() {
 
 /** global settings, init LmpPair here */
 void PairJSE::settings(int aArgc, char **aArgv) {
-    if (aArgc != 1) error->all(FLERR, "Illegal pair_style jse command");
+    if (aArgc < 1) error->all(FLERR, "Illegal pair_style jse command");
     
     // init jni env
     if (mEnv == NULL) {
@@ -78,6 +84,9 @@ void PairJSE::settings(int aArgc, char **aArgv) {
     if (mCore != NULL) mEnv->DeleteGlobalRef(mCore);
     mCore = mEnv->NewGlobalRef(tObj);
     mEnv->DeleteLocalRef(tObj);
+    // call settings in LmpPair
+    JSE_LMPPAIR::settings(mEnv, mCore, aArgc, aArgv);
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call settings");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -111,14 +120,35 @@ jdouble PairJSE::computeVariable(jint ivar) {
     return input->variable->compute_equal(ivar);
 }
 
+void PairJSE::setSingleEnable(jboolean flag) {
+    single_enable = flag ? 1 : 0;
+}
+void PairJSE::setOneCoeff(jboolean flag) {
+    one_coeff = flag ? 1 : 0;
+}
+void PairJSE::setManybodyFlag(jboolean flag) {
+    manybody_flag = flag ? 1 : 0;
+}
+void PairJSE::setUnitConvertFlag(jint flag) {
+    unit_convert_flag = (int)flag;
+}
+void PairJSE::setNoVirialFdotrCompute(jboolean flag) {
+    no_virial_fdotr_compute = flag ? 1 : 0;
+}
+void PairJSE::setFinitecutflag(jboolean flag) {
+    finitecutflag = flag ? 1 : 0;
+}
+void PairJSE::setGhostneigh(jboolean flag) {
+    ghostneigh = flag ? 1 : 0;
+}
+void PairJSE::setCentroidstressflag(jint flag) {
+    centroidstressflag = (int)flag;
+}
 void PairJSE::neighborRequestDefault() {
     neighbor->add_request(this, NeighConst::REQ_DEFAULT);
 }
 void PairJSE::neighborRequestFull() {
     neighbor->add_request(this, NeighConst::REQ_FULL);
-}
-void PairJSE::noVirialFdotrCompute() {
-    no_virial_fdotr_compute = 1;
 }
 jlong PairJSE::atomX() {
     return (jlong)(intptr_t) atom->x;
@@ -180,6 +210,9 @@ jlong PairJSE::virial_() {
 jlong PairJSE::vatom_() {
     return (jlong)(intptr_t) vatom;
 }
+jlong PairJSE::cvatom_() {
+    return (jlong)(intptr_t) cvatom;
+}
 void PairJSE::evTally(jint i, jint j, jint nlocal, jboolean newtonPair, jdouble evdwl, jdouble ecoul, jdouble fpair, jdouble delx, jdouble dely, jdouble delz) {
     ev_tally((int)i, (int)j, (int)nlocal, (int)newtonPair, (double)evdwl, (double)ecoul, (double)fpair, (double)delx, (double)dely, (double)delz);
 }
@@ -203,6 +236,9 @@ jboolean PairJSE::vflagGlobal() {
 }
 jboolean PairJSE::vflagAtom() {
     return vflag_atom ? JNI_TRUE : JNI_FALSE;
+}
+jboolean PairJSE::cvflagAtom() {
+    return cvflag_atom ? JNI_TRUE : JNI_FALSE;
 }
 jboolean PairJSE::eflagEither() {
     return eflag_either ? JNI_TRUE : JNI_FALSE;

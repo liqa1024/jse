@@ -11,7 +11,9 @@ extern jclass STRING_CLAZZ;
 jobject newJObject(JNIEnv *, char *, void *);
 
 void compute(JNIEnv *, jobject);
+double single(JNIEnv *, jobject, int, int, int, int, double, double, double, double &);
 void coeff(JNIEnv *, jobject, int, char **);
+void settings(JNIEnv *, jobject, int, char **);
 void initStyle(JNIEnv *, jobject);
 double initOne(JNIEnv *, jobject, int, int);
 void shutdown(JNIEnv *, jobject);

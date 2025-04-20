@@ -117,7 +117,8 @@ public class LmpPlugin {
             // 确保 LmpPlugin 已经确实初始化
             LmpPlugin.InitHelper.init();
         }
-        
+        /** 目前认为这些值永远都不会变 */
+        public final static int CENTROID_SAME = 0, CENTROID_AVAIL = 1, CENTROID_NOTAVAIL = 2;
         
         /**
          * 通过反射来获取类，可以是文件路径，也可以是类路径；
@@ -125,7 +126,6 @@ public class LmpPlugin {
          * @param aClassNameOrPath 类路径的名称或者是 groovy 的脚本文件路径
          * @param aPairPtr lammps jse pair 对应类的指针
          * @return 需要的对象
-         * @author liqa
          */
         public static Pair of(String aClassNameOrPath, long aPairPtr) throws Exception {
             Class<?> tClazz;
@@ -147,26 +147,45 @@ public class LmpPlugin {
         protected final long mPairPtr;
         /**
          * @param aPairPtr lammps jse pair 对应类的指针
-         * @author liqa
          */
         protected Pair(long aPairPtr) {mPairPtr = aPairPtr;}
         
         /**
          * 在这里执行主要的 pair 的计算部分
-         * @author liqa
          */
         public abstract void compute() throws Exception;
         
         /**
+         * 在这里执行 pair 的每个原子对作用的计算部分
+         */
+        public double single(int i, int j, int itype, int jtype, double rsq, double factor_coul, double factor_lj, DoubleCPointer fforce) throws Exception {
+            throw new UnsupportedOperationException("single");
+        }
+        private double single_(int i, int j, int itype, int jtype, double rsq, double factor_coul, double factor_lj, long fforce) throws Exception {
+            return single(i, j, itype, jtype, rsq, factor_coul, factor_lj, new DoubleCPointer(fforce));
+        }
+        
+        /**
          * lammps {@code pair_coeff} 会调用的方法，用于设置参数
          * @param aArgs 参数的字符串数组
-         * @author liqa
          */
         public abstract void coeff(String... aArgs) throws Exception;
         
         /**
+         * lammps {@code pair_style} 会调用的方法，主要用于在这里设置 pair 的各种性质
+         * <p>
+         * 默认情况下 pair jse 设置为：
+         * <pre> {@code
+         * single_enable = 0
+         * restartinfo = 0
+         * manybody_flag = 1
+         * } </pre>
+         * @param aArgs {@code pair_style} 传入的参数，第一个参数永远是 pair 的类名
+         */
+        public void settings(String... aArgs) throws Exception {/**/}
+        
+        /**
          * lammps pair 初始化调用，主要用于在这里设置需要的近邻列表样式
-         * @author liqa
          */
         public void initStyle() throws Exception {neighborRequestDefault();}
         
@@ -175,13 +194,11 @@ public class LmpPlugin {
          * @param i 种类 {@code i}，从 {@code 1} 开始
          * @param j 种类 {@code j}，从 {@code 1} 开始
          * @return 种类 {@code i} {@code j} 之间的截断半径
-         * @author liqa
          */
         public abstract double initOne(int i, int j) throws Exception;
         
         /**
          * lammps pair 析构时调用，用于手动释放一些资源
-         * @author liqa
          */
         @Override public void shutdown() {/**/}
         
@@ -199,14 +216,36 @@ public class LmpPlugin {
         }
         private native static double computeVariable_(long aPairPtr, int ivar);
         
+        protected final void setSingleEnable(boolean aFlag) {setSingleEnable_(mPairPtr, aFlag);}
+        private native static void setSingleEnable_(long aPairPtr, boolean aFlag);
+        
+        protected final void setOneCoeff(boolean aFlag) {setOneCoeff_(mPairPtr, aFlag);}
+        private native static void setOneCoeff_(long aPairPtr, boolean aFlag);
+        
+        protected final void setManybodyFlag(boolean aFlag) {setManybodyFlag_(mPairPtr, aFlag);}
+        private native static void setManybodyFlag_(long aPairPtr, boolean aFlag);
+        
+        protected final void setUnitConvertFlag(int aFlag) {setUnitConvertFlag_(mPairPtr, aFlag);}
+        private native static void setUnitConvertFlag_(long aPairPtr, int aFlag);
+        
+        protected final void setNoVirialFdotrCompute(boolean aFlag) {setNoVirialFdotrCompute_(mPairPtr, aFlag);}
+        protected final void noVirialFdotrCompute() {setNoVirialFdotrCompute_(mPairPtr, true);}
+        private native static void setNoVirialFdotrCompute_(long aPairPtr, boolean aFlag);
+        
+        protected final void setFinitecutflag(boolean aFlag) {setFinitecutflag_(mPairPtr, aFlag);}
+        private native static void setFinitecutflag_(long aPairPtr, boolean aFlag);
+        
+        protected final void setGhostneigh(boolean aFlag) {setGhostneigh_(mPairPtr, aFlag);}
+        private native static void setGhostneigh_(long aPairPtr, boolean aFlag);
+        
+        protected final void setCentroidstressflag(int aFlag) {setCentroidstressflag_(mPairPtr, aFlag);}
+        private native static void setCentroidstressflag_(long aPairPtr, int aFlag);
+        
         protected final void neighborRequestDefault() {neighborRequestDefault_(mPairPtr);}
         private native static void neighborRequestDefault_(long aPairPtr);
         
         protected final void neighborRequestFull() {neighborRequestFull_(mPairPtr);}
         private native static void neighborRequestFull_(long aPairPtr);
-        
-        protected final void noVirialFdotrCompute() {noVirialFdotrCompute_(mPairPtr);}
-        private native static void noVirialFdotrCompute_(long aPairPtr);
         
         protected final NestedDoubleCPointer atomX() {return new NestedDoubleCPointer(atomX_(mPairPtr));}
         private native static long atomX_(long aPairPtr);
@@ -270,6 +309,9 @@ public class LmpPlugin {
         protected final NestedDoubleCPointer vatom() {return new NestedDoubleCPointer(vatom_(mPairPtr));}
         private native static long vatom_(long aPairPtr);
         
+        protected final NestedDoubleCPointer cvatom() {return new NestedDoubleCPointer(cvatom_(mPairPtr));}
+        private native static long cvatom_(long aPairPtr);
+        
         protected final void evTally(int i, int j, int nlocal, boolean newtonPair, double evdwl, double ecoul, double fpair, double delx, double dely, double delz) {evTally_(mPairPtr, i, j, nlocal, newtonPair, evdwl, ecoul, fpair, delx, dely, delz);}
         private native static void evTally_(long aPairPtr, int i, int j, int nlocal, boolean newtonPair, double evdwl, double ecoul, double fpair, double delx, double dely, double delz);
         
@@ -293,6 +335,9 @@ public class LmpPlugin {
         
         protected final boolean vflagAtom() {return vflagAtom_(mPairPtr);}
         private native static boolean vflagAtom_(long aPairPtr);
+        
+        protected final boolean cvflagAtom() {return cvflagAtom_(mPairPtr);}
+        private native static boolean cvflagAtom_(long aPairPtr);
         
         protected final boolean eflagEither() {return eflagEither_(mPairPtr);}
         private native static boolean eflagEither_(long aPairPtr);
@@ -324,6 +369,10 @@ public class LmpPlugin {
     
     
     public static abstract class Fix implements IAutoShutdown {
+        static {
+            // 确保 LmpPlugin 已经确实初始化
+            LmpPlugin.InitHelper.init();
+        }
         /** 目前认为这些值永远都不会变 */
         public final static int
               INITIAL_INTEGRATE         = 1
@@ -389,7 +438,6 @@ public class LmpPlugin {
          * @param aFixPtr lammps jse fix 对应类的指针
          * @param aArgs 初始化 fix 的参数，这个参数和 lammps fix 参数保持一致为完整的参数，因此一般来说需要从
          *        {@code aArgs[4]} 来获取后续参数
-         * @author liqa
          */
         protected Fix(long aFixPtr, String... aArgs) {mFixPtr = aFixPtr;}
         
@@ -401,7 +449,6 @@ public class LmpPlugin {
         
         /**
          * lammps fix 析构时调用，用于手动释放一些资源
-         * @author liqa
          */
         @Override public void shutdown() {/**/}
         

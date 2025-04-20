@@ -74,22 +74,7 @@ endif()
 
 
 # add lammps
-option(JSE_LAMMPS_IS_OLD "Build based on old version lammps (like version below 18Sep2020)" OFF)
-option(JSE_LAMMPS_HAS_EXCEPTIONS "Build based on lammps which has error handling" ON)
-option(JSE_LAMMPS_EXCEPTIONS_NULL_SUPPORT "NULL support for lammps_has_error" ON)
-
-if(JSE_LAMMPS_IS_OLD)
-    add_definitions(-DLAMMPS_OLD)
-endif()
-
-if(JSE_LAMMPS_HAS_EXCEPTIONS)
-    add_definitions(-DLAMMPS_EXCEPTIONS)
-endif()
-
-if(JSE_LAMMPS_EXCEPTIONS_NULL_SUPPORT)
-    add_definitions(-DLAMMPS_EXCEPTIONS_NULL_SUPPORT)
-endif()
-
+add_definitions(-DLAMMPS_EXCEPTIONS)
 include_directories("$ENV{JSE_LMP_INCLUDE_DIR}")
 target_link_libraries(lmpplugin "$ENV{JSE_LMP_LIB_PATH}")
 

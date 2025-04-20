@@ -33,7 +33,9 @@ void JSE_LMPPAIR::uncacheJClass(JNIEnv *aEnv) {
 
 static jmethodID sOf = 0;
 static jmethodID sCompute = 0;
+static jmethodID sSingle = 0;
 static jmethodID sCoeff = 0;
+static jmethodID sSettings = 0;
 static jmethodID sInitStyle = 0;
 static jmethodID sShutdown = 0;
 static jmethodID sInitOne = 0;
@@ -55,6 +57,14 @@ void JSE_LMPPAIR::compute(JNIEnv *aEnv, jobject aSelf) {
         aEnv->CallVoidMethod(aSelf, sCompute);
     }
 }
+double JSE_LMPPAIR::single(JNIEnv *aEnv, jobject aSelf, int i, int j, int itype, int jtype, double rsq, double factor_coul, double factor_lj, double &fforce) {
+    fforce = 0.0;
+    double *tPtr = &fforce;
+    if (sSingle || (sSingle = aEnv->GetMethodID(LMPPAIR_CLAZZ, "single_", "(IIIIDDDJ)D"))) {
+        return aEnv->CallDoubleMethod(aSelf, sSingle, (jint)i, (jint)j, (jint)itype, (jint)jtype, rsq, rsq, factor_coul, factor_lj, (jlong)(intptr_t)tPtr);
+    }
+    return 0.0;
+}
 void JSE_LMPPAIR::coeff(JNIEnv *aEnv, jobject aSelf, int aArgc, char **aArgv) {
     jobjectArray tJArgs = aEnv->NewObjectArray(aArgc, STRING_CLAZZ, NULL);
     for (int i = 0; i < aArgc; ++i) {
@@ -64,6 +74,18 @@ void JSE_LMPPAIR::coeff(JNIEnv *aEnv, jobject aSelf, int aArgc, char **aArgv) {
     }
     if (sCoeff || (sCoeff = aEnv->GetMethodID(LMPPAIR_CLAZZ, "coeff", "([Ljava/lang/String;)V"))) {
         aEnv->CallVoidMethod(aSelf, sCoeff, tJArgs);
+    }
+    aEnv->DeleteLocalRef(tJArgs);
+}
+void JSE_LMPPAIR::settings(JNIEnv *aEnv, jobject aSelf, int aArgc, char **aArgv) {
+    jobjectArray tJArgs = aEnv->NewObjectArray(aArgc, STRING_CLAZZ, NULL);
+    for (int i = 0; i < aArgc; ++i) {
+        jstring tStr = aEnv->NewStringUTF(aArgv[i]);
+        aEnv->SetObjectArrayElement(tJArgs, i, tStr);
+        aEnv->DeleteLocalRef(tStr);
+    }
+    if (sSettings || (sSettings = aEnv->GetMethodID(LMPPAIR_CLAZZ, "settings", "([Ljava/lang/String;)V"))) {
+        aEnv->CallVoidMethod(aSelf, sSettings, tJArgs);
     }
     aEnv->DeleteLocalRef(tJArgs);
 }

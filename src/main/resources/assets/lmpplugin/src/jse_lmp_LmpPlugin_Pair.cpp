@@ -13,14 +13,35 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_findVariable_1(JNIEnv *a
 JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Pair_computeVariable_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jint aIdx) {
     return ((PairJSE *)(intptr_t)aPairPtr)->computeVariable(aIdx);
 }
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setSingleEnable_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jboolean aFlag) {
+    ((PairJSE *)(intptr_t)aPairPtr)->setSingleEnable(aFlag);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setOneCoeff_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jboolean aFlag) {
+    ((PairJSE *)(intptr_t)aPairPtr)->setOneCoeff(aFlag);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setManybodyFlag_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jboolean aFlag) {
+    ((PairJSE *)(intptr_t)aPairPtr)->setManybodyFlag(aFlag);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setUnitConvertFlag_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jint aFlag) {
+    ((PairJSE *)(intptr_t)aPairPtr)->setUnitConvertFlag(aFlag);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setNoVirialFdotrCompute_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jboolean aFlag) {
+    ((PairJSE *)(intptr_t)aPairPtr)->setNoVirialFdotrCompute(aFlag);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setFinitecutflag_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jboolean aFlag) {
+    ((PairJSE *)(intptr_t)aPairPtr)->setFinitecutflag(aFlag);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setGhostneigh_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jboolean aFlag) {
+    ((PairJSE *)(intptr_t)aPairPtr)->setGhostneigh(aFlag);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setCentroidstressflag_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jint aFlag) {
+    ((PairJSE *)(intptr_t)aPairPtr)->setCentroidstressflag(aFlag);
+}
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_neighborRequestDefault_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     ((PairJSE *)(intptr_t)aPairPtr)->neighborRequestDefault();
 }
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_neighborRequestFull_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     ((PairJSE *)(intptr_t)aPairPtr)->neighborRequestFull();
-}
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_noVirialFdotrCompute_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
-    ((PairJSE *)(intptr_t)aPairPtr)->noVirialFdotrCompute();
 }
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomX_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     return ((PairJSE *)(intptr_t)aPairPtr)->atomX();
@@ -82,6 +103,9 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_virial_1(JNIEnv *aEnv, 
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vatom_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     return ((PairJSE *)(intptr_t)aPairPtr)->vatom_();
 }
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_cvatom_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
+    return ((PairJSE *)(intptr_t)aPairPtr)->cvatom_();
+}
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evTally_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jint i, jint j, jint nlocal, jboolean newtonPair, jdouble evdwl, jdouble ecoul, jdouble fpair, jdouble delx, jdouble dely, jdouble delz) {
     ((PairJSE *)(intptr_t)aPairPtr)->evTally(i, j, nlocal, newtonPair, evdwl, ecoul, fpair, delx, dely, delz);
 }
@@ -105,6 +129,9 @@ JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagGlobal_1(JNIEnv
 }
 JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagAtom_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     return ((PairJSE *)(intptr_t)aPairPtr)->vflagAtom();
+}
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_cvflagAtom_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
+    return ((PairJSE *)(intptr_t)aPairPtr)->cvflagAtom();
 }
 JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_eflagEither_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     return ((PairJSE *)(intptr_t)aPairPtr)->eflagEither();

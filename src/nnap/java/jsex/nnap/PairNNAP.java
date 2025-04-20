@@ -50,10 +50,14 @@ public class PairNNAP extends LmpPlugin.Pair {
         NNAP.setTorchSingleThread();
     }
     
-    @Override public void initStyle() {
-        // nnap 需要完整的近邻列表，此时需要禁用 VirialFdotrCompute
-        neighborRequestFull();
+    @Override public void settings(String... aArgs) {
+        // 此时需要禁用 VirialFdotrCompute
         noVirialFdotrCompute();
+    }
+    
+    @Override public void initStyle() {
+        // nnap 需要完整的近邻列表
+        neighborRequestFull();
     }
     
     /**

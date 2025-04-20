@@ -25,6 +25,70 @@ JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Pair_computeVariable_1
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    setSingleEnable_
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setSingleEnable_1
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    setOneCoeff_
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setOneCoeff_1
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    setManybodyFlag_
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setManybodyFlag_1
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    setUnitConvertFlag_
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setUnitConvertFlag_1
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    setNoVirialFdotrCompute_
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setNoVirialFdotrCompute_1
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    setFinitecutflag_
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setFinitecutflag_1
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    setGhostneigh_
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setGhostneigh_1
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    setCentroidstressflag_
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setCentroidstressflag_1
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
  * Method:    neighborRequestDefault_
  * Signature: (J)V
  */
@@ -37,14 +101,6 @@ JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_neighborRequestDefault_1
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_neighborRequestFull_1
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    noVirialFdotrCompute_
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_noVirialFdotrCompute_1
   (JNIEnv *, jclass, jlong);
 
 /*
@@ -209,6 +265,14 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vatom_1
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    cvatom_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_cvatom_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
  * Method:    evTally_
  * Signature: (JIIIZDDDDDD)V
  */
@@ -269,6 +333,14 @@ JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagGlobal_1
  * Signature: (J)Z
  */
 JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagAtom_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    cvflagAtom_
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_cvflagAtom_1
   (JNIEnv *, jclass, jlong);
 
 /*
