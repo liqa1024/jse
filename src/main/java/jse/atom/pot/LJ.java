@@ -168,7 +168,7 @@ public class LJ implements IPairPotential {
             final int cIdx = aIndices.get(i);
             final int cType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(cIdx));
             // 计算部分原子能量不使用半数遍历优化
-            aAPC.nl_().forEachNeighbor(cIdx, mCutMax, false, (x, y, z, idx, dx, dy, dz) -> {
+            aAPC.nl_().forEachNeighbor(cIdx, mCutMax, (x, y, z, idx, dx, dy, dz) -> {
                 int tType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(idx));
                 double rsq = dx*dx + dy*dy + dz*dz;
                 if (rsq >= mCutsq[cType][tType]) return;

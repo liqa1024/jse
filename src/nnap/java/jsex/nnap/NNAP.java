@@ -641,7 +641,7 @@ public class NNAP implements IPairPotential {
                     // 累加交叉项到近邻
                     final int tNN = (tOut.size()-4)/3;
                     final int[] j = {0};
-                    aAPC.nl_().forEachNeighbor(i, tBasis.rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
+                    aAPC.nl_().forEachNeighbor(i, tBasis.rcut(), (x, y, z, idx, dx, dy, dz) -> {
                         forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tOut.get(4+j[0]).internalData(), tOut.get(4+tNN+j[0]).internalData(), tOut.get(4+tNN+tNN+j[0]).internalData(), xGrad.internalDataSize(), rBuf);
                         double fx = -rBuf.mX;
                         double fy = -rBuf.mY;

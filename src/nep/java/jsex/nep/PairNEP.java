@@ -137,7 +137,7 @@ public class PairNEP extends LmpPlugin.Pair {
         mNEP.update_type_map(tTypeNum, mTypeMap, tElements);
         
         // get cutoff from NEP model
-        mCutoff = mNEP.paramb.rc_radial;
+        mCutoff = Math.max(mNEP.paramb.rc_radial, mNEP.paramb.rc_angular);
         mCutoffsq = mCutoff * mCutoff;
     }
     protected double mCutoff = Double.NaN;

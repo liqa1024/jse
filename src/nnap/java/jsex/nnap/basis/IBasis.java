@@ -67,7 +67,7 @@ public interface IBasis extends IHasSymbol, ISavable, IAutoShutdown {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
         return eval(dxyzTypeDo -> {
-            aAPC.nl_().forEachNeighbor(aIdx, rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
+            aAPC.nl_().forEachNeighbor(aIdx, rcut(), (x, y, z, idx, dx, dy, dz) -> {
                 dxyzTypeDo.run(dx, dy, dz, aTypeMap.applyAsInt(aAPC.atomType_().get(idx)));
             });
         });
@@ -113,7 +113,7 @@ public interface IBasis extends IHasSymbol, ISavable, IAutoShutdown {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
         return evalPartial(aCalCross, dxyzTypeDo -> {
-            aAPC.nl_().forEachNeighbor(aIdx, rcut(), false, (x, y, z, idx, dx, dy, dz) -> {
+            aAPC.nl_().forEachNeighbor(aIdx, rcut(), (x, y, z, idx, dx, dy, dz) -> {
                 dxyzTypeDo.run(dx, dy, dz, aTypeMap.applyAsInt(aAPC.atomType_().get(idx)));
             });
         });
