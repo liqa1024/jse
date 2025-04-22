@@ -80,6 +80,7 @@ public class LmpPlugin {
         , "lammpsplugin.h"
         , "version.h"
         , "neigh_request.h"
+        , "STUBS/mpi.h"
     };
     
     static {

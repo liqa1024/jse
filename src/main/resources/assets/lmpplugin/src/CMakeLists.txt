@@ -70,6 +70,8 @@ if(MPI_CXX_FOUND)
     set(MPI_CXX_SKIP_MPICXX TRUE)
     
     target_link_libraries(lmpplugin MPI::MPI_CXX)
+else()
+    include_directories(STUBS)
 endif()
 
 
