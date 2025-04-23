@@ -755,7 +755,10 @@ public class DataXYZ extends AbstractSettableAtomData {
             rProperties.put("species", rSpecies);
             rProperties.put("pos", rPositions);
             if (rVelocities != null) rProperties.put("velo", rVelocities);
-            return new DataXYZ(tAtomNum, null, new LinkedHashMap<>(), rProperties, aAtomData.box().copy()).setSymbols(aSymbols);
+            // 转换时默认增加 T T T 的 pbc
+            Map<String, Object> rParameters = new LinkedHashMap<>();
+            rParameters.put("pbc", "T T T");
+            return new DataXYZ(tAtomNum, null, rParameters, rProperties, aAtomData.box().copy()).setSymbols(aSymbols);
         }
     }
     /**
@@ -1033,6 +1036,10 @@ public class DataXYZ extends AbstractSettableAtomData {
                     rLine.append(":I:");
                     rLine.append(((IIntMatrix)tValue).columnNumber());
                 }
+            }
+            // 如果不存在 pbc 参数，则自动写入一个 T T T
+            if (!mParameters.containsKey("pbc")) {
+                rLine.append(" pbc=\"T T T\"");
             }
             for (Map.Entry<String, Object> tEntry : mParameters.entrySet()) {
                 Object tValue = tEntry.getValue();
