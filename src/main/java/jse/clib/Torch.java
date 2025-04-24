@@ -5,6 +5,9 @@ import jse.code.OS;
 import jse.code.SP;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.BufferedReader;
+import java.nio.charset.Charset;
+
 import static jse.code.Conf.LIB_NAME_IN;
 import static jse.code.OS.IS_WINDOWS;
 import static jse.code.SP.PYTHON_LIB_DIR;
@@ -80,7 +83,23 @@ public class Torch {
             }
         }
         // 尝试下载包
-        System.out.printf("TORCH INIT INFO: No correct torch package in %s, downloading...\n", PYTHON_PKG_DIR);
+        System.out.printf("TORCH INIT INFO: No correct torch package in %s, you can:\n", PYTHON_PKG_DIR);
+        System.out.println("  - Set the environment variable `JSE_TORCH_HOME` to torch path, like: path/to/Python/Python312/Lib/site-packages/torch");
+        System.out.printf( "  - Move the correct torch whl (%s) to %s, url: https://download.pytorch.org/whl/torch/\n", VERSION, PYTHON_PKG_DIR);
+        System.out.println("  - Auto download torch by jse.");
+        System.out.println("Download torch ? (Y/n)");
+        BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
+        String tLine = tReader.readLine();
+        while (true) {
+            if (tLine.equalsIgnoreCase("n")) {
+                throw new Exception("TORCH INIT ERROR: No correct torch package in "+PYTHON_PKG_DIR);
+            }
+            if (tLine.isEmpty() || tLine.equalsIgnoreCase("y")) {
+                break;
+            }
+            System.out.println("Download torch ? (Y/n)");
+        }
+        System.out.println("TORCH INIT INFO: Downloading torch...");
         int tExitCode = SP.Python.downloadPackage("torch=="+VERSION, null, null, Conf.INDEX_URL);
         if (tExitCode != 0) {
             throw new Exception("TORCH INIT ERROR: torch download Failed: " + tExitCode);

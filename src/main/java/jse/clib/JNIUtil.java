@@ -1,6 +1,7 @@
 package jse.clib;
 
 import jse.code.IO;
+import jse.code.OS;
 import jse.code.UT;
 import jse.code.functional.IUnaryFullOperator;
 import org.jetbrains.annotations.ApiStatus;
@@ -203,7 +204,10 @@ public class JNIUtil {
         EXEC.setNoSTDOutput().setNoERROutput();
         boolean tNoCmake = EXEC.system("cmake --version") != 0;
         EXEC.setNoSTDOutput(false).setNoERROutput(false);
-        if (tNoCmake) throw new Exception(aInfoProjectName+" BUILD ERROR: No cmake environment.");
+        if (tNoCmake) {
+            System.err.println("No cmake found, you can download cmake from: https://cmake.org/download/");
+            throw new Exception(aInfoProjectName+" BUILD ERROR: No cmake environment.");
+        }
         // 从内部资源解压到临时目录
         String tWorkingDir = WORKING_DIR_OF(aProjectName+"@"+UT.Code.randID());
         // 如果已经存在则先删除
@@ -241,7 +245,16 @@ public class JNIUtil {
         EXEC.setNoSTDOutput(false).setWorkingDir(null);
         // 简单检测一下是否编译成功
         @Nullable String tLibName = LIB_NAME_IN(aLibDir, aProjectName);
-        if (tLibName == null) throw new Exception(aInfoProjectName+" BUILD ERROR: Build Failed, No "+aProjectName+" lib in '"+aLibDir+"'");
+        if (tLibName == null) {
+            System.err.println("Build Failed, this may be caused by the lack of a C/C++ compiler");
+            if (IS_WINDOWS) {
+                System.err.println("  For Windows, you can use MSVC: https://visualstudio.microsoft.com/vs/features/cplusplus/");
+            } else {
+                System.err.println("  For Liunx/Mac, you can use GCC: https://gcc.gnu.org/");
+                System.err.println("  For Ubuntu, you can use `sudo apt install g++`");
+            }
+            throw new Exception(aInfoProjectName+" BUILD ERROR: Build Failed, No "+aProjectName+" lib in '"+aLibDir+"'");
+        }
         // 完事后移除临时解压得到的源码
         IO.removeDir(tWorkingDir);
         System.out.println(aInfoProjectName+" INIT INFO: "+aProjectName+" successfully installed.");

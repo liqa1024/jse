@@ -27,7 +27,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.io.BufferedReader;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.util.*;
 
 import static jse.code.OS.*;
@@ -214,7 +216,24 @@ public class NativeLmp implements IAutoShutdown {
                 // 如果有 NATIVELMP_SRC_DIR 但是不合法，则需要下载 lammps
                 if (NATIVELMP_SRC_DIR!=null && !IO.isDir(NATIVELMP_SRC_DIR)) {
                     String tNativeLmpZipPath = wd+"lammps-"+NATIVELMP_TAG+".zip";
-                    System.out.printf("NATIVE_LMP INIT INFO: No lammps in %s, downloading the source code...\n", NATIVELMP_SRC_DIR);
+                    System.out.printf("NATIVE_LMP INIT INFO: No lammps in %s, you can:\n", NATIVELMP_SRC_DIR);
+                    System.out.println("  - Set the environment variable `JSE_LMP_HOME` to lammps path,");
+                    System.out.println("    where have $JSE_LMP_HOME/lib/liblammps.so, $JSE_LMP_HOME/includes/lammps/...");
+                    System.out.println("  - Move your lammps to "+NATIVELMP_SRC_DIR);
+                    System.out.printf( "  - Auto download lammps (%s) by jse.\n", Conf.LMP_TAG);
+                    System.out.println("Download lammps ? (Y/n)");
+                    BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
+                    String tLine = tReader.readLine();
+                    while (true) {
+                        if (tLine.equalsIgnoreCase("n")) {
+                            throw new Exception("NATIVE_LMP INIT ERROR: No lammps in "+NATIVELMP_SRC_DIR);
+                        }
+                        if (tLine.isEmpty() || tLine.equalsIgnoreCase("y")) {
+                            break;
+                        }
+                        System.out.println("Download lammps ? (Y/n)");
+                    }
+                    System.out.println("NATIVE_LMP INIT INFO: Downloading the source code...");
                     IO.copy(URI.create(String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.zip", NATIVELMP_TAG)).toURL(), tNativeLmpZipPath);
                     System.out.println("NATIVE_LMP INIT INFO: lammps source code downloading finished.");
                     // 解压 lammps 到临时目录，如果已经存在则直接清空此目录

@@ -747,6 +747,18 @@ public class SP {
             
             // 依赖 jniutil
             JNIUtil.InitHelper.init();
+            // 需要 python 环境
+            EXEC.setNoSTDOutput().setNoERROutput();
+            boolean tNoPython = EXEC.system("python --version") != 0;
+            if (tNoPython) {
+                tNoPython = EXEC.system("python3 --version") != 0;
+            }
+            EXEC.setNoSTDOutput(false).setNoERROutput(false);
+            if (tNoPython) {
+                System.err.println("No python found, you can download python from: https://www.python.org/downloads/");
+                System.err.println("  If you need numpy, you need to install numpy before running: `pip install numpy==1.26.4`");
+                throw new RuntimeException("JEP BUILD ERROR: No python environment.");
+            }
             // 现在直接使用 JNIUtil.buildLib 来统一初始化
             JEP_LIB_PATH = new JNIUtil.LibBuilder("jep", "JEP", JEP_LIB_DIR, Conf.CMAKE_SETTING)
                 .setSrcDirIniter(wd -> {
