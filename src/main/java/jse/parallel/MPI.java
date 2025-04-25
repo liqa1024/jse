@@ -1280,8 +1280,8 @@ public class MPI {
                     System.err.println("  For Windows, you can use MS-MPI: https://www.microsoft.com/en-us/download/details.aspx?id=105289");
                     System.err.println("  BOTH 'msmpisetup.exe' and 'msmpisdk.msi' are needed.");
                 } else {
-                    System.err.println("  For Liunx/Mac, you can use MPICH: https://www.mpich.org/downloads/");
-                    System.err.println("  For Ubuntu, you can use `sudo apt install libmpich-dev`");
+                    System.err.println("  For Liunx/Mac, you can use OpenMPI: https://www.open-mpi.org/");
+                    System.err.println("  For Ubuntu, you can use `sudo apt install libopenmpi-dev`");
                 }
                 throw new RuntimeException("MPI BUILD ERROR: No MPI environment.");
             }
