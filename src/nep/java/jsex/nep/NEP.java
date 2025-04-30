@@ -1937,7 +1937,7 @@ public class NEP implements IPairPotential {
             int t1 = aTypeMap.applyAsInt(aAPC.atomType_().get(n1)) - 1;
             Arrays.fill(q, 0.0);
             
-            aAPC.nl_().forEachNeighbor(n1, paramb.rc_radial, (x, y, z, n2, dx, dy, dz) -> {
+            aAPC.nl_().forEachNeighbor(n1, paramb.rc_radial, (dx, dy, dz, n2) -> {
                 double d12 = hypot(dx, dy, dz);
                 int t2 = aTypeMap.applyAsInt(aAPC.atomType_().get(n2)) - 1;
                 
@@ -1975,7 +1975,7 @@ public class NEP implements IPairPotential {
             for (int n = 0; n <= paramb.n_max_angular; ++n) {
                 Arrays.fill(s, 0.0);
                 final int fn = n;
-                aAPC.nl_().forEachNeighbor(n1, paramb.rc_angular, (x, y, z, n2, dx, dy, dz) -> {
+                aAPC.nl_().forEachNeighbor(n1, paramb.rc_angular, (dx, dy, dz, n2) -> {
                     double d12 = hypot(dx, dy, dz);
                     int t2 = aTypeMap.applyAsInt(aAPC.atomType_().get(n2)) - 1;
                     
@@ -2047,7 +2047,7 @@ public class NEP implements IPairPotential {
             int zi = paramb.atomic_numbers[type1] + 1;
             double pow_zi = pow(zi, 0.23);
             double max_rc_outer = 2.5;
-            aAPC.nl_().forEachNeighbor(n1, max_rc_outer, (x, y, z, n2, dx, dy, dz) -> {
+            aAPC.nl_().forEachNeighbor(n1, max_rc_outer, (dx, dy, dz, n2) -> {
                 double d12 = hypot(dx, dy, dz);
                 double d12inv = 1.0 / d12;
                 double[] f = {0.0}, fp = {0.0};
@@ -2098,7 +2098,7 @@ public class NEP implements IPairPotential {
             int t1 = aTypeMap.applyAsInt(aAPC.atomType_().get(n1)) - 1;
             Arrays.fill(q, 0.0);
             
-            aAPC.nl_().forEachNeighbor(n1, paramb.rc_radial, (x, y, z, n2, dx, dy, dz) -> {
+            aAPC.nl_().forEachNeighbor(n1, paramb.rc_radial, (dx, dy, dz, n2) -> {
                 double d12 = hypot(dx, dy, dz);
                 int t2 = aTypeMap.applyAsInt(aAPC.atomType_().get(n2)) - 1;
                 
@@ -2136,7 +2136,7 @@ public class NEP implements IPairPotential {
             for (int n = 0; n <= paramb.n_max_angular; ++n) {
                 Arrays.fill(s, 0.0);
                 final int fn = n;
-                aAPC.nl_().forEachNeighbor(n1, paramb.rc_angular, (x, y, z, n2, dx, dy, dz) -> {
+                aAPC.nl_().forEachNeighbor(n1, paramb.rc_angular, (dx, dy, dz, n2) -> {
                     double d12 = hypot(dx, dy, dz);
                     int t2 = aTypeMap.applyAsInt(aAPC.atomType_().get(n2)) - 1;
                     
@@ -2211,7 +2211,7 @@ public class NEP implements IPairPotential {
         for (int n1 = 0; n1 < N; ++n1) {
             int t1 = aTypeMap.applyAsInt(aAPC.atomType_().get(n1)) - 1;
             final int fn1 = n1;
-            aAPC.nl_().forEachNeighbor(n1, paramb.rc_radial, (x, y, z, n2, dx, dy, dz) -> {
+            aAPC.nl_().forEachNeighbor(n1, paramb.rc_radial, (dx, dy, dz, n2) -> {
                 int t2 = aTypeMap.applyAsInt(aAPC.atomType_().get(n2)) - 1;
                 double d12 = hypot(dx, dy, dz);
                 double d12inv = 1.0 / d12;
@@ -2311,7 +2311,7 @@ public class NEP implements IPairPotential {
             
             int t1 = aTypeMap.applyAsInt(aAPC.atomType_().get(n1)) - 1;
             final int fn1 = n1;
-            aAPC.nl_().forEachNeighbor(n1, paramb.rc_angular, (x, y, z, n2, dx, dy, dz) -> {
+            aAPC.nl_().forEachNeighbor(n1, paramb.rc_angular, (dx, dy, dz, n2) -> {
                 double d12 = hypot(dx, dy, dz);
                 int t2 = aTypeMap.applyAsInt(aAPC.atomType_().get(n2)) - 1;
                 double[] r12 = {dx, dy, dz};
@@ -2402,7 +2402,7 @@ public class NEP implements IPairPotential {
             double pow_zi = pow(zi, 0.23);
             double max_rc_outer = 2.5;
             final int fn1 = n1;
-            aAPC.nl_().forEachNeighbor(n1, max_rc_outer, (x, y, z, n2, dx, dy, dz) -> {
+            aAPC.nl_().forEachNeighbor(n1, max_rc_outer, (dx, dy, dz, n2) -> {
                 double d12 = hypot(dx, dy, dz);
                 double d12inv = 1.0 / d12;
                 double[] f = {0.0}, fp = {0.0};

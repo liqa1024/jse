@@ -403,7 +403,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 使用 mNL 的专门获取近邻距离的方法
         pool().parfor(mAtomNum, (i, threadID) -> {
             final IFunc1 dn = dnPar[threadID];
-            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dx, dy, dz) -> {
+            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (dx, dy, dz, idx) -> {
                 dn.updateNear(Fast.hypot(dx, dy, dz), g->g+1);
             });
         });
@@ -457,7 +457,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             if (tTypeI==aTypeA || tTypeI==aTypeB) {
                 final int tTypeJ = tTypeI==aTypeA ? aTypeB : aTypeA;
                 final IFunc1 dn = dnPar[threadID];
-                mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dx, dy, dz) -> {
+                mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (dx, dy, dz, idx) -> {
                     if (mTypeVec.get(idx) == tTypeJ) {
                         dn.updateNear(Fast.hypot(dx, dy, dz), g->g+1);
                     }
@@ -534,7 +534,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         pool().parfor(mAtomNum, (i, threadID) -> {
             final int tTypeA = mTypeVec.get(i);
             final IFunc1[] dnAll = dnAllPar.get(threadID);
-            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (x, y, z, idx, dx, dy, dz) -> {
+            mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (dx, dy, dz, idx) -> {
                 double dis = Fast.hypot(dx, dy, dz);
                 dnAll[0].updateNear(dis, g->g+1);
                 int tTypeB = mTypeVec.get(idx);
@@ -606,7 +606,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         pool().parfor(mAtomNum, (i, threadID) -> {
             final IFunc1 dn = dnPar[threadID];
             final IZeroBoundFunc1 tDeltaG = tDeltaGPar[threadID];
-            mNL.forEachNeighbor(i, aRMax+tRShift, true, (x, y, z, idx, dx, dy, dz) -> {
+            mNL.forEachNeighbor(i, aRMax+tRShift, true, (dx, dy, dz, idx) -> {
                 tDeltaG.setX0(Fast.hypot(dx, dy, dz));
                 dn.plus2this(tDeltaG);
             });
@@ -673,7 +673,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                 final int tTypeJ = tTypeI==aTypeA ? aTypeB : aTypeA;
                 final IFunc1 dn = dnPar[threadID];
                 final IZeroBoundFunc1 tDeltaG = tDeltaGPar[threadID];
-                mNL.forEachNeighbor(i, aRMax+tRShift, true, (x, y, z, idx, dx, dy, dz) -> {
+                mNL.forEachNeighbor(i, aRMax+tRShift, true, (dx, dy, dz, idx) -> {
                     if (mTypeVec.get(idx) == tTypeJ) {
                         tDeltaG.setX0(Fast.hypot(dx, dy, dz));
                         dn.plus2this(tDeltaG);
@@ -764,7 +764,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             final int tTypeA = mTypeVec.get(i);
             final IFunc1[] dnAll = dnAllPar.get(threadID);
             final IZeroBoundFunc1 tDeltaG = tDeltaGPar[threadID];
-            mNL.forEachNeighbor(i, aRMax+tRShift, true, (x, y, z, idx, dx, dy, dz) -> {
+            mNL.forEachNeighbor(i, aRMax+tRShift, true, (dx, dy, dz, idx) -> {
                 tDeltaG.setX0(Fast.hypot(dx, dy, dz));
                 dnAll[0].plus2this(tDeltaG);
                 int tTypeB = mTypeVec.get(idx);
@@ -1159,7 +1159,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         
         // 如果为 null 则直接遍历指定 idx，如果需要重复使用则直接在外部缓存即可
         final IntVector.Builder rNL = IntVector.builder();
-        mNL.forEachNeighbor(aIdx, aRMax, aNnn, (x, y, z, idx, dx, dy, dz) -> rNL.add(idx));
+        mNL.forEachNeighbor(aIdx, aRMax, aNnn, (dx, dy, dz, idx) -> rNL.add(idx));
         return rNL.build();
     }
     /**
@@ -1204,7 +1204,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         aX = tBuf.mX; aY = tBuf.mY; aZ = tBuf.mZ;
         
         final IntVector.Builder rNL = IntVector.builder();
-        mNL.forEachNeighbor(aX, aY, aZ, aRMax, aNnn, (x, y, z, idx, dx, dy, dz) -> rNL.add(idx));
+        mNL.forEachNeighbor(aX, aY, aZ, aRMax, aNnn, (dx, dy, dz, idx) -> rNL.add(idx));
         return rNL.build();
     }
     /**
@@ -1271,16 +1271,19 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      */
     public List<Vector> getFullNeighborList(int aIdx, double aRMax, int aNnn) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
+        final double cX = mAtomDataXYZ.get(aIdx, 0);
+        final double cY = mAtomDataXYZ.get(aIdx, 1);
+        final double cZ = mAtomDataXYZ.get(aIdx, 2);
         // 目前这种情况都需要遍历一下
         final Vector.Builder rNL = Vector.builder();
         final Vector.Builder rX = Vector.builder();
         final Vector.Builder rY = Vector.builder();
         final Vector.Builder rZ = Vector.builder();
-        mNL.forEachNeighbor(aIdx, aRMax, aNnn, (x, y, z, idx, dx, dy, dz) -> {
+        mNL.forEachNeighbor(aIdx, aRMax, aNnn, (dx, dy, dz, idx) -> {
             rNL.add(idx);
-            rX.add(x);
-            rY.add(y);
-            rZ.add(z);
+            rX.add(cX+dx);
+            rY.add(cY+dy);
+            rZ.add(cZ+dz);
         });
         return Lists.newArrayList(rX.build(), rY.build(), rZ.build(), rNL.build());
     }
@@ -1329,7 +1332,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         final Vector.Builder rX = Vector.builder();
         final Vector.Builder rY = Vector.builder();
         final Vector.Builder rZ = Vector.builder();
-        mNL.forEachNeighbor(tX, tY, tZ, aRMax, aNnn, (x, y, z, idx, dx, dy, dz) -> {
+        mNL.forEachNeighbor(tX, tY, tZ, aRMax, aNnn, (dx, dy, dz, idx) -> {
             rNL.add(idx);
             rX.add(aX+dx);
             rY.add(aY+dy);
@@ -1743,7 +1746,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             aNL[aIdx].forEach(aIdxDo);
         } else {
             // aNL 为 null，则使用 mNL 完整遍历
-            mNL.forEachNeighbor(aIdx, aRMax, aNnn, aHalf, (x, y, z, idx, dx, dy, dz) -> aIdxDo.accept(idx));
+            mNL.forEachNeighbor(aIdx, aRMax, aNnn, aHalf, (dx, dy, dz, idx) -> aIdxDo.accept(idx));
         }
     }
     @ApiStatus.Experimental
@@ -1753,7 +1756,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             aNL[aIdx].forEach(aIdxDo);
         } else {
             // aNL 为 null，则使用 mNL 完整遍历
-            mNL.forEachNeighbor(aIdx, aRMax, aNnn, aHalf, aRegion, (x, y, z, idx, dx, dy, dz) -> aIdxDo.accept(idx));
+            mNL.forEachNeighbor(aIdx, aRMax, aNnn, aHalf, aRegion, (dx, dy, dz, idx) -> aIdxDo.accept(idx));
         }
     }
     
@@ -1800,7 +1803,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             // 一次计算一行
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算 Ylm
-            mNL.forEachNeighbor(i, aRNearest, aNnn, aHalf, (x, y, z, idx, dx, dy, dz) -> {
+            mNL.forEachNeighbor(i, aRNearest, aNnn, aHalf, (dx, dy, dz, idx) -> {
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
                 IComplexVector Qlmj = null;
                 if (aHalf) {
@@ -1894,7 +1897,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算 Ylm
             final int fI = i;
-            mNL.forEachNeighbor(fI, aRNearest, aNnn, aHalf, aMPIInfo::inRegin, (x, y, z, idx, dx, dy, dz) -> {
+            mNL.forEachNeighbor(fI, aRNearest, aNnn, aHalf, aMPIInfo::inRegin, (dx, dy, dz, idx) -> {
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
                 boolean tHalfStat = aHalf && aMPIInfo.inRegin(idx);
                 IComplexVector Qlmj = null;

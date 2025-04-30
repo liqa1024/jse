@@ -168,7 +168,7 @@ public class LJ implements IPairPotential {
             final int cIdx = aIndices.get(i);
             final int cType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(cIdx));
             // 计算部分原子能量不使用半数遍历优化
-            aAPC.nl_().forEachNeighbor(cIdx, mCutMax, (x, y, z, idx, dx, dy, dz) -> {
+            aAPC.nl_().forEachNeighbor(cIdx, mCutMax, (dx, dy, dz, idx) -> {
                 int tType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(idx));
                 double rsq = dx*dx + dy*dy + dz*dz;
                 if (rsq >= mCutsq[cType][tType]) return;
@@ -223,7 +223,7 @@ public class LJ implements IPairPotential {
                 final IVector tEnergies = rEnergiesPar[threadID];
                 final int cType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(i));
                 // 全遍历开启半数优化
-                aAPC.nl_().forEachNeighbor(i, mCutMax, true, (x, y, z, idx, dx, dy, dz) -> {
+                aAPC.nl_().forEachNeighbor(i, mCutMax, true, (dx, dy, dz, idx) -> {
                     int tType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(idx));
                     double rsq = dx*dx + dy*dy + dz*dz;
                     if (rsq >= mCutsq[cType][tType]) return;
@@ -276,7 +276,7 @@ public class LJ implements IPairPotential {
             final @Nullable IVector tVirialsYZ = rVirialsYZ!=null ? rVirialsYZPar[threadID] : null;
             final int cType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(i));
             // 全遍历开启半数优化
-            aAPC.nl_().forEachNeighbor(i, mCutMax, true, (x, y, z, idx, dx, dy, dz) -> {
+            aAPC.nl_().forEachNeighbor(i, mCutMax, true, (dx, dy, dz, idx) -> {
                 int tType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(idx));
                 double rsq = dx*dx + dy*dy + dz*dz;
                 if (rsq >= mCutsq[cType][tType]) return;

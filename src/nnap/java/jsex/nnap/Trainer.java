@@ -937,7 +937,7 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
                 }
                 final int tNN = (tOut.size()-4)/3;
                 final int[] j = {0};
-                tAPC.nl_().forEachNeighbor(i, tBasis.rcut(), (x, y, z, idx, dx, dy, dz) -> {
+                tAPC.nl_().forEachNeighbor(i, tBasis.rcut(), (dx, dy, dz, idx) -> {
                     tFpPartial.row(3 + 3*j[0]).fill(tOut.get(4+j[0]));
                     tFpPartial.row(4 + 3*j[0]).fill(tOut.get(4+tNN+j[0]));
                     tFpPartial.row(5 + 3*j[0]).fill(tOut.get(4+tNN+tNN+j[0]));
