@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static jse.code.Conf.*;
@@ -88,7 +89,13 @@ public class JNIUtil {
     
     
     private final static String BUILD_DIR_NAME = IS_WINDOWS ? "build-win" : (IS_MAC ? "build-mac" : "build");
-    private final static Pattern BUILD_DIR_INVALID_NAME = Pattern.compile("[^a-zA-Z0-9_\\-./\\\\]");
+    private final static Pattern BUILD_DIR_INVALID_NAME = Pattern.compile("[^a-zA-Z0-9_\\-./\\\\@!#$%^&*()+=]");
+    private static boolean containsAnyInvalidChar_(String aDir) {
+        if (IS_WINDOWS && IO.isAbsolutePath(aDir)) {
+            aDir = aDir.substring(2);
+        }
+        return BUILD_DIR_INVALID_NAME.matcher(aDir).find();
+    }
     
     /** 现在将一些通用的 cmake 编译 jni 库流程统一放在这里，减少重复的代码 */
     @ApiStatus.Internal
@@ -216,9 +223,9 @@ public class JNIUtil {
         String tWorkingDirName = "build-"+aProjectName+"@"+UT.Code.randID() + "/";
         String tWorkingDir = JAR_DIR + tWorkingDirName;
         // 判断路径是否存在非法字符，如果存在则改为到用户目录编译
-        if (BUILD_DIR_INVALID_NAME.matcher(tWorkingDir).find()) {
+        if (containsAnyInvalidChar_(tWorkingDir)) {
             String tWorkingDir2 = USER_HOME_DIR + tWorkingDirName;
-            if (!BUILD_DIR_INVALID_NAME.matcher(tWorkingDir2).find()) {
+            if (!containsAnyInvalidChar_(tWorkingDir2)) {
                 tWorkingDir = tWorkingDir2;
             } else {
                 System.err.println(aInfoProjectName+" INIT WARNING: Build directory ("+tWorkingDir+") contains inappropriate characters, build may fail.");
