@@ -29,7 +29,7 @@ sourceSets {
                 'assets/dlfcn/src/.*/', 'assets/dlfcn/src/build/', 'assets/dlfcn/src/*build*/',
                 'assets/mpi/src/.*/', 'assets/mpi/src/build/', 'assets/mpi/src/*build*/',
                 'assets/lmp/src/.*/', 'assets/lmp/src/build/', 'assets/lmp/src/*build*/',
-                'assets/lmpplugin/src/.*/', 'assets/lmpplugin/src/build/', 'assets/lmpplugin/src/*build*/',
+                'assets/lmp/plugin/src/.*/', 'assets/lmp/plugin/src/build/', 'assets/lmp/plugin/src/*build*/',
                 'assets/jep/jep*-src/',
                 'assets/nnap/src/.*/', 'assets/nnap/src/build/', 'assets/nnap/src/*build*/',
                 'assets/nnap/basis/src/.*/', 'assets/nnap/basis/src/build/', 'assets/nnap/basis/src/*build*/',

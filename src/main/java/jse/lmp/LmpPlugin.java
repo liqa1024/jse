@@ -59,7 +59,7 @@ public class LmpPlugin {
         public static @Nullable String REDIRECT_LMPPLUGIN_LIB = OS.env("JSE_REDIRECT_LMPPLUGIN_LIB");
     }
     
-    public final static String LIB_DIR = JAR_DIR+"lmpplugin/" + UT.Code.uniqueID(VERSION, NativeLmp.NATIVELMP_HOME, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+    public final static String LIB_DIR = JAR_DIR+"lmp/plugin/" + UT.Code.uniqueID(VERSION, NativeLmp.NATIVELMP_HOME, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
           "jse_lmp_LmpPlugin_Pair.cpp"
@@ -95,7 +95,7 @@ public class LmpPlugin {
         NativeLmp.InitHelper.init();
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
         LIB_PATH = new JNIUtil.LibBuilder("lmpplugin", "LMPPLUGIN", LIB_DIR, Conf.CMAKE_SETTING)
-            .setSrc("lmpplugin", SRC_NAME)
+            .setSrc("lmp/plugin", SRC_NAME)
             .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
             .setCmakeLineOpt(line -> {
                 // 替换其中的 lammps 库路径为设置好的路径

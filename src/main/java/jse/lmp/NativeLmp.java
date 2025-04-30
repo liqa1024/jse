@@ -276,7 +276,7 @@ public class NativeLmp implements IAutoShutdown {
         
         // 现在 uniqueID 不再包含这个 tag（确实当时也想到了），因为已经包含到了 LMP_HOME 中
         // 在这里初始化保证顺序合理
-        LMPJNI_LIB_DIR = LMP_ROOT + UT.Code.uniqueID(VERSION, NATIVELMP_HOME, Conf.USE_MIMALLOC, Conf.HAS_EXCEPTIONS, Conf.EXCEPTIONS_NULL_SUPPORT, Conf.CMAKE_C_COMPILER_LMPJNI, Conf.CMAKE_CXX_COMPILER_LMPJNI, Conf.CMAKE_C_FLAGS_LMPJNI, Conf.CMAKE_CXX_FLAGS_LMPJNI, Conf.CMAKE_SETTING_LMPJNI) + "/";
+        LMPJNI_LIB_DIR = LMP_ROOT+"jni/" + UT.Code.uniqueID(VERSION, NATIVELMP_HOME, Conf.USE_MIMALLOC, Conf.HAS_EXCEPTIONS, Conf.EXCEPTIONS_NULL_SUPPORT, Conf.CMAKE_C_COMPILER_LMPJNI, Conf.CMAKE_CXX_COMPILER_LMPJNI, Conf.CMAKE_C_FLAGS_LMPJNI, Conf.CMAKE_CXX_FLAGS_LMPJNI, Conf.CMAKE_SETTING_LMPJNI) + "/";
         // 这样来统一增加 lmpjni 需要的默认额外设置，
         // 先添加 Conf.CMAKE_SETTING_LMPJNI，这样保证确定的优先级
         Map<String, String> rCmakeSettingLmpJNI = new LinkedHashMap<>(Conf.CMAKE_SETTING_LMPJNI);
