@@ -1323,17 +1323,17 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 由于 lammps 精度的问题，需要将超出边界的进行平移
         XYZ tBuf = new XYZ(aX, aY, aZ);
         mBox.wrapPBC(tBuf);
-        aX = tBuf.mX; aY = tBuf.mY; aZ = tBuf.mZ;
+        double tX = tBuf.mX, tY = tBuf.mY, tZ = tBuf.mZ;
         
         final Vector.Builder rNL = Vector.builder();
         final Vector.Builder rX = Vector.builder();
         final Vector.Builder rY = Vector.builder();
         final Vector.Builder rZ = Vector.builder();
-        mNL.forEachNeighbor(aX, aY, aZ, aRMax, aNnn, (x, y, z, idx, dx, dy, dz) -> {
+        mNL.forEachNeighbor(tX, tY, tZ, aRMax, aNnn, (x, y, z, idx, dx, dy, dz) -> {
             rNL.add(idx);
-            rX.add(x);
-            rY.add(y);
-            rZ.add(z);
+            rX.add(aX+dx);
+            rY.add(aY+dy);
+            rZ.add(aZ+dz);
         });
         return Lists.newArrayList(rX.build(), rY.build(), rZ.build(), rNL.build());
     }
