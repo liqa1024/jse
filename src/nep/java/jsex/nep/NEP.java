@@ -1064,43 +1064,50 @@ public class NEP implements IPairPotential {
         double[] dy = {-r12[0] * r12[1] * d12inv, (1.0 - r12[1] * r12[1]) * d12inv, -r12[1] * r12[2] * d12inv};
         double[] dz = {-r12[0] * r12[2] * d12inv, -r12[1] * r12[2] * d12inv, (1.0 - r12[2] * r12[2]) * d12inv};
         
-        final int L = 1;
         double[] z_pow = {1.0, 0.0};
         z_pow[1] = r12[2] * z_pow[0];
         
         double[] real_part = {1.0};
         double[] imag_part = {0.0};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            double dz_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 1
-                z_factor += Z_COEFFICIENT_1[n1][n2] * z_pow[n2];
-                if (n2 > 0) {
-                    dz_factor += Z_COEFFICIENT_1[n1][n2] * n2 * z_pow[n2 - 1];
-                }
-            }
-            if (n1 == 0) {
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += s[0] * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            } else {
-                double real_part_n1 = n1 * real_part[0];
-                double imag_part_n1 = n1 * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    double[] real_part_dx = {dx[d]};
-                    double[] imag_part_dy = {dy[d]};
-                    complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-                    f12[d] += (s[2 * n1 - 1] * real_part_dx[0] + s[2 * n1 - 0] * imag_part_dy[0]) * z_factor * fn;
-                }
-                complex_product(r12[0], r12[1], real_part, imag_part);
-                double xy_temp = s[2 * n1 - 1] * real_part[0] + s[2 * n1 - 0] * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += xy_temp * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            }
+        
+        double z_factor = 0.0;
+        double dz_factor = 0.0;
+        // L == 1
+        z_factor += Z_COEFFICIENT_1[0][1] * z_pow[1];
+        dz_factor += Z_COEFFICIENT_1[0][1] * 1 * z_pow[0];
+        f12[0] += s[0] * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += s[0] * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += s[0] * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
+        
+        z_factor = 0.0;
+        dz_factor = 0.0;
+        // L == 1
+        z_factor += Z_COEFFICIENT_1[1][0] * z_pow[0];
+        double real_part_n1 = 1 * real_part[0];
+        double imag_part_n1 = 1 * imag_part[0];
+        {
+            double[] real_part_dx = {dx[0]};
+            double[] imag_part_dy = {dy[0]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[0] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
         }
+        {
+            double[] real_part_dx = {dx[1]};
+            double[] imag_part_dy = {dy[1]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[1] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[2]};
+            double[] imag_part_dy = {dy[2]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[2] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
+        }
+        complex_product(r12[0], r12[1], real_part, imag_part);
+        double xy_temp = s[1] * real_part[0] + s[2] * imag_part[0];
+        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
     }
     static void accumulate_f12_one_2(double d12inv, double fn, double fnp,
                                      double[] s, double[] r12, double[] f12) {
@@ -1108,45 +1115,82 @@ public class NEP implements IPairPotential {
         double[] dy = {-r12[0] * r12[1] * d12inv, (1.0 - r12[1] * r12[1]) * d12inv, -r12[1] * r12[2] * d12inv};
         double[] dz = {-r12[0] * r12[2] * d12inv, -r12[1] * r12[2] * d12inv, (1.0 - r12[2] * r12[2]) * d12inv};
         
-        final int L = 2;
         double[] z_pow = {1.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = r12[2] * z_pow[n-1];
-        }
+        z_pow[1] = r12[2] * z_pow[0];
+        z_pow[2] = r12[2] * z_pow[1];
         
         double[] real_part = {1.0};
         double[] imag_part = {0.0};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            double dz_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 2
-                z_factor += Z_COEFFICIENT_2[n1][n2] * z_pow[n2];
-                if (n2 > 0) {
-                    dz_factor += Z_COEFFICIENT_2[n1][n2] * n2 * z_pow[n2 - 1];
-                }
-            }
-            if (n1 == 0) {
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += s[0] * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            } else {
-                double real_part_n1 = n1 * real_part[0];
-                double imag_part_n1 = n1 * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    double[] real_part_dx = {dx[d]};
-                    double[] imag_part_dy = {dy[d]};
-                    complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-                    f12[d] += (s[2 * n1 - 1] * real_part_dx[0] + s[2 * n1 - 0] * imag_part_dy[0]) * z_factor * fn;
-                }
-                complex_product(r12[0], r12[1], real_part, imag_part);
-                double xy_temp = s[2 * n1 - 1] * real_part[0] + s[2 * n1 - 0] * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += xy_temp * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            }
+        double z_factor = 0.0;
+        double dz_factor = 0.0;
+        // L == 2
+        z_factor += Z_COEFFICIENT_2[0][0] * z_pow[0];
+        z_factor += Z_COEFFICIENT_2[0][2] * z_pow[2];
+        dz_factor += Z_COEFFICIENT_2[0][2] * 2 * z_pow[2 - 1];
+        f12[0] += s[0] * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += s[0] * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += s[0] * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
+
+        z_factor = 0.0;
+        dz_factor = 0.0;
+        // L == 2
+        z_factor += Z_COEFFICIENT_2[1][1] * z_pow[1];
+        dz_factor += Z_COEFFICIENT_2[1][1] * 1 * z_pow[0];
+        double real_part_n1 = 1 * real_part[0];
+        double imag_part_n1 = 1 * imag_part[0];
+        {
+            double[] real_part_dx = {dx[0]};
+            double[] imag_part_dy = {dy[0]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[0] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
         }
+        {
+            double[] real_part_dx = {dx[1]};
+            double[] imag_part_dy = {dy[1]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[1] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[2]};
+            double[] imag_part_dy = {dy[2]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[2] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
+        }
+        complex_product(r12[0], r12[1], real_part, imag_part);
+        double xy_temp = s[1] * real_part[0] + s[2] * imag_part[0];
+        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
+        
+        z_factor = 0.0;
+        dz_factor = 0.0;
+        // L == 2
+        z_factor += Z_COEFFICIENT_2[2][0] * z_pow[0];
+        real_part_n1 = 2 * real_part[0];
+        imag_part_n1 = 2 * imag_part[0];
+        {
+            double[] real_part_dx = {dx[0]};
+            double[] imag_part_dy = {dy[0]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[0] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[1]};
+            double[] imag_part_dy = {dy[1]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[1] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[2]};
+            double[] imag_part_dy = {dy[2]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[2] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
+        }
+        complex_product(r12[0], r12[1], real_part, imag_part);
+        xy_temp = s[3] * real_part[0] + s[4] * imag_part[0];
+        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
     }
     static void accumulate_f12_one_3(double d12inv, double fn, double fnp,
                                      double[] s, double[] r12, double[] f12) {
@@ -1154,45 +1198,117 @@ public class NEP implements IPairPotential {
         double[] dy = {-r12[0] * r12[1] * d12inv, (1.0 - r12[1] * r12[1]) * d12inv, -r12[1] * r12[2] * d12inv};
         double[] dz = {-r12[0] * r12[2] * d12inv, -r12[1] * r12[2] * d12inv, (1.0 - r12[2] * r12[2]) * d12inv};
         
-        final int L = 3;
         double[] z_pow = {1.0, 0.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = r12[2] * z_pow[n-1];
-        }
+        z_pow[1] = r12[2] * z_pow[0];
+        z_pow[2] = r12[2] * z_pow[1];
+        z_pow[3] = r12[2] * z_pow[2];
         
         double[] real_part = {1.0};
         double[] imag_part = {0.0};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            double dz_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 3
-                z_factor += Z_COEFFICIENT_3[n1][n2] * z_pow[n2];
-                if (n2 > 0) {
-                    dz_factor += Z_COEFFICIENT_3[n1][n2] * n2 * z_pow[n2 - 1];
-                }
-            }
-            if (n1 == 0) {
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += s[0] * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            } else {
-                double real_part_n1 = n1 * real_part[0];
-                double imag_part_n1 = n1 * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    double[] real_part_dx = {dx[d]};
-                    double[] imag_part_dy = {dy[d]};
-                    complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-                    f12[d] += (s[2 * n1 - 1] * real_part_dx[0] + s[2 * n1 - 0] * imag_part_dy[0]) * z_factor * fn;
-                }
-                complex_product(r12[0], r12[1], real_part, imag_part);
-                double xy_temp = s[2 * n1 - 1] * real_part[0] + s[2 * n1 - 0] * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += xy_temp * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            }
+        
+        double z_factor = 0.0;
+        double dz_factor = 0.0;
+        // L == 3
+        z_factor += Z_COEFFICIENT_3[0][1] * z_pow[1];
+        dz_factor += Z_COEFFICIENT_3[0][1] * 1 * z_pow[0];
+        z_factor += Z_COEFFICIENT_3[0][3] * z_pow[3];
+        dz_factor += Z_COEFFICIENT_3[0][3] * 3 * z_pow[2];
+        f12[0] += s[0] * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += s[0] * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += s[0] * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
+        
+        z_factor = 0.0;
+        dz_factor = 0.0;
+        // L == 3
+        z_factor += Z_COEFFICIENT_3[1][0] * z_pow[0];
+        z_factor += Z_COEFFICIENT_3[1][2] * z_pow[2];
+        dz_factor += Z_COEFFICIENT_3[1][2] * 2 * z_pow[2 - 1];
+        double real_part_n1 = 1 * real_part[0];
+        double imag_part_n1 = 1 * imag_part[0];
+        {
+            double[] real_part_dx = {dx[0]};
+            double[] imag_part_dy = {dy[0]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[0] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
         }
+        {
+            double[] real_part_dx = {dx[1]};
+            double[] imag_part_dy = {dy[1]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[1] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[2]};
+            double[] imag_part_dy = {dy[2]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[2] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
+        }
+        complex_product(r12[0], r12[1], real_part, imag_part);
+        double xy_temp = s[1] * real_part[0] + s[2] * imag_part[0];
+        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
+        
+        z_factor = 0.0;
+        dz_factor = 0.0;
+        // L == 3
+        z_factor += Z_COEFFICIENT_3[2][1] * z_pow[1];
+        dz_factor += Z_COEFFICIENT_3[2][1] * 1 * z_pow[0];
+        real_part_n1 = 2 * real_part[0];
+        imag_part_n1 = 2 * imag_part[0];
+        {
+            double[] real_part_dx = {dx[0]};
+            double[] imag_part_dy = {dy[0]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[0] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[1]};
+            double[] imag_part_dy = {dy[1]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[1] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[2]};
+            double[] imag_part_dy = {dy[2]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[2] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
+        }
+        complex_product(r12[0], r12[1], real_part, imag_part);
+        xy_temp = s[2 * 2 - 1] * real_part[0] + s[4] * imag_part[0];
+        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
+        
+        z_factor = 0.0;
+        dz_factor = 0.0;
+        // L == 3
+        z_factor += Z_COEFFICIENT_3[3][0] * z_pow[0];
+        real_part_n1 = 3 * real_part[0];
+        imag_part_n1 = 3 * imag_part[0];
+        {
+            double[] real_part_dx = {dx[0]};
+            double[] imag_part_dy = {dy[0]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[0] += (s[5] * real_part_dx[0] + s[6] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[1]};
+            double[] imag_part_dy = {dy[1]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[1] += (s[5] * real_part_dx[0] + s[6] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[2]};
+            double[] imag_part_dy = {dy[2]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[2] += (s[5] * real_part_dx[0] + s[6] * imag_part_dy[0]) * z_factor * fn;
+        }
+        complex_product(r12[0], r12[1], real_part, imag_part);
+        xy_temp = s[5] * real_part[0] + s[6] * imag_part[0];
+        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
     }
     static void accumulate_f12_one_4(double d12inv, double fn, double fnp,
                                      double[] s, double[] r12, double[] f12) {
@@ -1200,45 +1316,152 @@ public class NEP implements IPairPotential {
         double[] dy = {-r12[0] * r12[1] * d12inv, (1.0 - r12[1] * r12[1]) * d12inv, -r12[1] * r12[2] * d12inv};
         double[] dz = {-r12[0] * r12[2] * d12inv, -r12[1] * r12[2] * d12inv, (1.0 - r12[2] * r12[2]) * d12inv};
         
-        final int L = 4;
         double[] z_pow = {1.0, 0.0, 0.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = r12[2] * z_pow[n-1];
-        }
+        z_pow[1] = r12[2] * z_pow[0];
+        z_pow[2] = r12[2] * z_pow[1];
+        z_pow[3] = r12[2] * z_pow[2];
+        z_pow[4] = r12[2] * z_pow[3];
         
         double[] real_part = {1.0};
         double[] imag_part = {0.0};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            double dz_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 4
-                z_factor += Z_COEFFICIENT_4[n1][n2] * z_pow[n2];
-                if (n2 > 0) {
-                    dz_factor += Z_COEFFICIENT_4[n1][n2] * n2 * z_pow[n2 - 1];
-                }
-            }
-            if (n1 == 0) {
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += s[0] * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            } else {
-                double real_part_n1 = n1 * real_part[0];
-                double imag_part_n1 = n1 * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    double[] real_part_dx = {dx[d]};
-                    double[] imag_part_dy = {dy[d]};
-                    complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-                    f12[d] += (s[2 * n1 - 1] * real_part_dx[0] + s[2 * n1 - 0] * imag_part_dy[0]) * z_factor * fn;
-                }
-                complex_product(r12[0], r12[1], real_part, imag_part);
-                double xy_temp = s[2 * n1 - 1] * real_part[0] + s[2 * n1 - 0] * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += xy_temp * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            }
+    
+        double z_factor = 0.0;
+        double dz_factor = 0.0;
+        // L == 4
+        z_factor += Z_COEFFICIENT_4[0][0] * z_pow[0];
+        z_factor += Z_COEFFICIENT_4[0][2] * z_pow[2];
+        dz_factor += Z_COEFFICIENT_4[0][2] * 2 * z_pow[1];
+        z_factor += Z_COEFFICIENT_4[0][4] * z_pow[4];
+        dz_factor += Z_COEFFICIENT_4[0][4] * 4 * z_pow[3];
+        f12[0] += s[0] * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += s[0] * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += s[0] * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
+
+        z_factor = 0.0;
+        dz_factor = 0.0;
+        // L == 4
+        z_factor += Z_COEFFICIENT_4[1][1] * z_pow[1];
+        dz_factor += Z_COEFFICIENT_4[1][1] * 1 * z_pow[0];
+        z_factor += Z_COEFFICIENT_4[1][3] * z_pow[3];
+        dz_factor += Z_COEFFICIENT_4[1][3] * 3 * z_pow[2];
+        double real_part_n1 = 1 * real_part[0];
+        double imag_part_n1 = 1 * imag_part[0];
+        {
+            double[] real_part_dx = {dx[0]};
+            double[] imag_part_dy = {dy[0]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[0] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
         }
+        {
+            double[] real_part_dx = {dx[1]};
+            double[] imag_part_dy = {dy[1]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[1] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[2]};
+            double[] imag_part_dy = {dy[2]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[2] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
+        }
+        complex_product(r12[0], r12[1], real_part, imag_part);
+        double xy_temp = s[1] * real_part[0] + s[2] * imag_part[0];
+        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
+
+        z_factor = 0.0;
+        dz_factor = 0.0;
+        // L == 4
+        z_factor += Z_COEFFICIENT_4[2][0] * z_pow[0];
+        z_factor += Z_COEFFICIENT_4[2][2] * z_pow[2];
+        dz_factor += Z_COEFFICIENT_4[2][2] * 2 * z_pow[2 - 1];
+        real_part_n1 = 2 * real_part[0];
+        imag_part_n1 = 2 * imag_part[0];
+        {
+            double[] real_part_dx = {dx[0]};
+            double[] imag_part_dy = {dy[0]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[0] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[1]};
+            double[] imag_part_dy = {dy[1]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[1] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[2]};
+            double[] imag_part_dy = {dy[2]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[2] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
+        }
+        complex_product(r12[0], r12[1], real_part, imag_part);
+        xy_temp = s[3] * real_part[0] + s[4] * imag_part[0];
+        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
+        
+        z_factor = 0.0;
+        dz_factor = 0.0;
+        // L == 4
+        z_factor += Z_COEFFICIENT_4[3][1] * z_pow[1];
+        dz_factor += Z_COEFFICIENT_4[3][1] * 1 * z_pow[0];
+        real_part_n1 = 3 * real_part[0];
+        imag_part_n1 = 3 * imag_part[0];
+        {
+            double[] real_part_dx = {dx[0]};
+            double[] imag_part_dy = {dy[0]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[0] += (s[5] * real_part_dx[0] + s[6] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[1]};
+            double[] imag_part_dy = {dy[1]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[1] += (s[5] * real_part_dx[0] + s[6] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[2]};
+            double[] imag_part_dy = {dy[2]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[2] += (s[5] * real_part_dx[0] + s[6] * imag_part_dy[0]) * z_factor * fn;
+        }
+        complex_product(r12[0], r12[1], real_part, imag_part);
+        xy_temp = s[5] * real_part[0] + s[6] * imag_part[0];
+        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
+        
+        z_factor = 0.0;
+        dz_factor = 0.0;
+        // L == 4
+        z_factor += Z_COEFFICIENT_4[4][0] * z_pow[0];
+        real_part_n1 = 4 * real_part[0];
+        imag_part_n1 = 4 * imag_part[0];
+        {
+            double[] real_part_dx = {dx[0]};
+            double[] imag_part_dy = {dy[0]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[0] += (s[7] * real_part_dx[0] + s[8] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[1]};
+            double[] imag_part_dy = {dy[1]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[1] += (s[7] * real_part_dx[0] + s[8] * imag_part_dy[0]) * z_factor * fn;
+        }
+        {
+            double[] real_part_dx = {dx[2]};
+            double[] imag_part_dy = {dy[2]};
+            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
+            f12[2] += (s[7] * real_part_dx[0] + s[8] * imag_part_dy[0]) * z_factor * fn;
+        }
+        complex_product(r12[0], r12[1], real_part, imag_part);
+        xy_temp = s[7] * real_part[0] + s[8] * imag_part[0];
+        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
+        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
+        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
     }
     static void accumulate_f12_one_5(double d12inv, double fn, double fnp,
                                      double[] s, double[] r12, double[] f12) {
@@ -1497,112 +1720,154 @@ public class NEP implements IPairPotential {
     }
     
     static void accumulate_s_one_1(double x12, double y12, double z12, double fn, double[] s) {
-        final int L = 1;
-        int s_index = L * L - 1;
+        int s_index = 0;
         
         double[] z_pow = {1.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = z12 * z_pow[n-1];
-        }
+        z_pow[1] = z12 * z_pow[0];
+        
         double[] real_part = {x12};
         double[] imag_part = {y12};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 1
-                z_factor += Z_COEFFICIENT_1[n1][n2] * z_pow[n2];
-            }
-            z_factor *= fn;
-            if (n1 == 0) {
-                s[s_index++] += z_factor;
-            } else {
-                s[s_index++] += z_factor * real_part[0];
-                s[s_index++] += z_factor * imag_part[0];
-                complex_product(x12, y12, real_part, imag_part);
-            }
-        }
+        double z_factor = 0.0;
+        // L == 1
+        z_factor += Z_COEFFICIENT_1[0][1] * z_pow[1];
+        z_factor *= fn;
+        s[s_index++] += z_factor;
+        
+        z_factor = 0.0;
+        // L == 1
+        z_factor += Z_COEFFICIENT_1[1][0] * z_pow[0];
+        z_factor *= fn;
+        s[s_index++] += z_factor * real_part[0];
+        s[s_index++] += z_factor * imag_part[0];
+        complex_product(x12, y12, real_part, imag_part);
     }
     static void accumulate_s_one_2(double x12, double y12, double z12, double fn, double[] s) {
-        final int L = 2;
-        int s_index = L * L - 1;
+        int s_index = 3;
         
         double[] z_pow = {1.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = z12 * z_pow[n-1];
-        }
+        z_pow[1] = z12 * z_pow[0];
+        z_pow[2] = z12 * z_pow[1];
+        
         double[] real_part = {x12};
         double[] imag_part = {y12};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 2
-                z_factor += Z_COEFFICIENT_2[n1][n2] * z_pow[n2];
-            }
-            z_factor *= fn;
-            if (n1 == 0) {
-                s[s_index++] += z_factor;
-            } else {
-                s[s_index++] += z_factor * real_part[0];
-                s[s_index++] += z_factor * imag_part[0];
-                complex_product(x12, y12, real_part, imag_part);
-            }
-        }
+        double z_factor = 0.0;
+        // L == 2
+        z_factor += Z_COEFFICIENT_2[0][0] * z_pow[0];
+        z_factor += Z_COEFFICIENT_2[0][2] * z_pow[2];
+        z_factor *= fn;
+        s[s_index++] += z_factor;
+        
+        z_factor = 0.0;
+        // L == 2
+        z_factor += Z_COEFFICIENT_2[1][1] * z_pow[1];
+        z_factor *= fn;
+        s[s_index++] += z_factor * real_part[0];
+        s[s_index++] += z_factor * imag_part[0];
+        complex_product(x12, y12, real_part, imag_part);
+        
+        z_factor = 0.0;
+        // L == 2
+        z_factor += Z_COEFFICIENT_2[2][0] * z_pow[0];
+        z_factor *= fn;
+        s[s_index++] += z_factor * real_part[0];
+        s[s_index++] += z_factor * imag_part[0];
+        complex_product(x12, y12, real_part, imag_part);
     }
     static void accumulate_s_one_3(double x12, double y12, double z12, double fn, double[] s) {
-        final int L = 3;
-        int s_index = L * L - 1;
+        int s_index = 8;
         
         double[] z_pow = {1.0, 0.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = z12 * z_pow[n-1];
-        }
+        z_pow[1] = z12 * z_pow[0];
+        z_pow[2] = z12 * z_pow[1];
+        z_pow[3] = z12 * z_pow[2];
+        
         double[] real_part = {x12};
         double[] imag_part = {y12};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 3
-                z_factor += Z_COEFFICIENT_3[n1][n2] * z_pow[n2];
-            }
-            z_factor *= fn;
-            if (n1 == 0) {
-                s[s_index++] += z_factor;
-            } else {
-                s[s_index++] += z_factor * real_part[0];
-                s[s_index++] += z_factor * imag_part[0];
-                complex_product(x12, y12, real_part, imag_part);
-            }
-        }
+        double z_factor = 0.0;
+        // L == 3
+        z_factor += Z_COEFFICIENT_3[0][1] * z_pow[1];
+        z_factor += Z_COEFFICIENT_3[0][3] * z_pow[3];
+        z_factor *= fn;
+        s[s_index++] += z_factor;
+
+        z_factor = 0.0;
+        // L == 3
+        z_factor += Z_COEFFICIENT_3[1][0] * z_pow[0];
+        z_factor += Z_COEFFICIENT_3[1][2] * z_pow[2];
+        z_factor *= fn;
+        s[s_index++] += z_factor * real_part[0];
+        s[s_index++] += z_factor * imag_part[0];
+        complex_product(x12, y12, real_part, imag_part);
+
+        z_factor = 0.0;
+        // L == 3
+        z_factor += Z_COEFFICIENT_3[2][1] * z_pow[1];
+        z_factor *= fn;
+        s[s_index++] += z_factor * real_part[0];
+        s[s_index++] += z_factor * imag_part[0];
+        complex_product(x12, y12, real_part, imag_part);
+
+        z_factor = 0.0;
+        // L == 3
+        z_factor += Z_COEFFICIENT_3[3][0] * z_pow[0];
+        z_factor *= fn;
+        s[s_index++] += z_factor * real_part[0];
+        s[s_index++] += z_factor * imag_part[0];
+        complex_product(x12, y12, real_part, imag_part);
     }
     static void accumulate_s_one_4(double x12, double y12, double z12, double fn, double[] s) {
         final int L = 4;
-        int s_index = L * L - 1;
+        int s_index = 15;
         
         double[] z_pow = {1.0, 0.0, 0.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = z12 * z_pow[n-1];
-        }
+        z_pow[1] = z12 * z_pow[0];
+        z_pow[2] = z12 * z_pow[1];
+        z_pow[3] = z12 * z_pow[2];
+        z_pow[4] = z12 * z_pow[3];
+        
         double[] real_part = {x12};
         double[] imag_part = {y12};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 4
-                z_factor += Z_COEFFICIENT_4[n1][n2] * z_pow[n2];
-            }
-            z_factor *= fn;
-            if (n1 == 0) {
-                s[s_index++] += z_factor;
-            } else {
-                s[s_index++] += z_factor * real_part[0];
-                s[s_index++] += z_factor * imag_part[0];
-                complex_product(x12, y12, real_part, imag_part);
-            }
-        }
+        double z_factor = 0.0;
+        // L == 4
+        z_factor += Z_COEFFICIENT_4[0][0] * z_pow[0];
+        z_factor += Z_COEFFICIENT_4[0][2] * z_pow[2];
+        z_factor += Z_COEFFICIENT_4[0][4] * z_pow[4];
+        z_factor *= fn;
+        s[s_index++] += z_factor;
+
+        z_factor = 0.0;
+        // L == 4
+        z_factor += Z_COEFFICIENT_4[1][1] * z_pow[1];
+        z_factor += Z_COEFFICIENT_4[1][3] * z_pow[3];
+        z_factor *= fn;
+        s[s_index++] += z_factor * real_part[0];
+        s[s_index++] += z_factor * imag_part[0];
+        complex_product(x12, y12, real_part, imag_part);
+
+        z_factor = 0.0;
+        // L == 4
+        z_factor += Z_COEFFICIENT_4[2][0] * z_pow[0];
+        z_factor += Z_COEFFICIENT_4[2][2] * z_pow[2];
+        z_factor *= fn;
+        s[s_index++] += z_factor * real_part[0];
+        s[s_index++] += z_factor * imag_part[0];
+        complex_product(x12, y12, real_part, imag_part);
+
+        z_factor = 0.0;
+        // L == 4
+        z_factor += Z_COEFFICIENT_4[3][1] * z_pow[1];
+        z_factor *= fn;
+        s[s_index++] += z_factor * real_part[0];
+        s[s_index++] += z_factor * imag_part[0];
+        complex_product(x12, y12, real_part, imag_part);
+
+        z_factor = 0.0;
+        // L == 4
+        z_factor += Z_COEFFICIENT_4[4][0] * z_pow[0];
+        z_factor *= fn;
+        s[s_index++] += z_factor * real_part[0];
+        s[s_index++] += z_factor * imag_part[0];
+        complex_product(x12, y12, real_part, imag_part);
     }
     static void accumulate_s_one_5(double x12, double y12, double z12, double fn, double[] s) {
         final int L = 5;
