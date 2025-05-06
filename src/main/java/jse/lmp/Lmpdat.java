@@ -68,8 +68,7 @@ public class Lmpdat extends AbstractSettableAtomData {
         mAtomXYZ = aAtomXYZ;
         // 根据 atomID 获取原子数目
         mAtomNum = aAtomID.size();
-        // 会根据 aMasses 的长度自适应调整原子种类数目
-        mAtomTypeNum = aMasses==null ? aAtomTypeNum : Math.max(aAtomTypeNum, aMasses.size());
+        mAtomTypeNum = aAtomTypeNum;
         mVelocities = aVelocities;
         // 初始化 mSymbols
         validSymbols_();
