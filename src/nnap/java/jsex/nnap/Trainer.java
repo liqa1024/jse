@@ -10,6 +10,7 @@ import jse.cache.IntMatrixCache;
 import jse.cache.IntVectorCache;
 import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
+import jse.clib.Torch;
 import jse.code.IO;
 import jse.code.SP;
 import jse.code.UT;
@@ -269,6 +270,9 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
             "    return buffer.read()";
     }
     static {
+        // 简单直接依赖 Torch
+        Torch.InitHelper.init();
+        
         SP.Python.exec("import torch");
         TORCH = SP.Python.getClass("torch");
         SP.Python.exec("import copy");
