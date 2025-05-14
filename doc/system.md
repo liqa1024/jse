@@ -244,7 +244,7 @@ jse 支持使用 ssh 向远程服务器来提交任务，这里基于
     
     ```powershell
     ssh-keygen -m pem -t rsa -b 4096
-    cat ~/.ssh/id_rsa.pub | ssh username@hostname "mkdir -p ~/.ssh && cat >> ~/.ssh/  authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+    cat ~/.ssh/id_rsa.pub | ssh username@hostname "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
     ```
     
 - **liunx:**

@@ -43,11 +43,11 @@ public class Torch {
          */
         public static @Nullable String HOME = OS.env("JSE_TORCH_HOME");
         /** 指定此值来指定下载的 torch 版本 */
-        public static String INDEX_URL = "https://download.pytorch.org/whl/cpu";
+        public static @Nullable String INDEX_URL = "https://download.pytorch.org/whl/cpu";
     }
     
     /** 当前 {@link Torch} 所使用的版本号 */
-    public final static String VERSION = "2.5.1";
+    public final static String VERSION = "2.7.0";
     
     /** 当前 {@link Torch} 库的根目录，结尾一定存在 {@code '/'} */
     public final static String HOME;
@@ -57,8 +57,14 @@ public class Torch {
     public final static String[] LIB_PATHS;
     /** 当前 {@link Torch} 库需要链接的依赖目录，torch 不需要 llib_path 这种路径，而是直接通过 cmake 的支持，在 cmake 中设置一下路径即可自动链接 */
     public final static String CMAKE_DIR;
-    /** 顺便表明了链接顺序 */
-    private final static String[] LIB_NAMES = IS_WINDOWS ? new String[]{"asmjit", "libiomp5md", "fbgemm", "c10", "uv", "torch_cpu", "torch"} : new String[]{"torch"};
+    
+    /// 记录需要链接的动态库名称，windows 需要手动按顺序指定对应的所有依赖
+    private final static String[] LIB_NAMES = {"torch"};
+    private final static String[] FULL_LIB_NAMES = {"asmjit", "libiomp5md", "fbgemm", "c10", "uv", "torch_cpu", "torch"};
+    private final static String[] FULL_LIB_NAMES_CUDA = {
+        "asmjit", "libiomp5md", "fbgemm", "c10", "uv", "nvJitLink_120_0", "cudart64_12", "cufft64_11", "cudnn64_9", "cupti64_2025.1.0",
+        "cublasLt64_12", "cublas64_12", "c10_cuda", "cusparse64_12", "cusolver64_11", "torch_cpu", "torch_cuda", "torch"
+    };
     
     
     private static void initTorch_() throws Exception {
@@ -129,10 +135,17 @@ public class Torch {
             try {initTorch_();}
             catch (Exception e) {throw new RuntimeException(e);}
         }
-        // 先统一查找一下 torch 的 c++ 库路径
-        LIB_PATHS = new String[LIB_NAMES.length];
-        for (int i = 0; i < LIB_NAMES.length; ++i) {
-            LIB_PATHS[i] = LIB_DIR + LIB_NAME_IN(LIB_DIR, LIB_NAMES[i]);
+        // 先统一查找一下 torch 的 c++ 库路径，自动检测 torch 是否是 cuda
+        String[] tLibNames;
+        if (!IS_WINDOWS) {
+            tLibNames = LIB_NAMES;
+        } else {
+            String tCudaName = LIB_NAME_IN(LIB_DIR, "torch_cuda");
+            tLibNames = tCudaName!=null ? FULL_LIB_NAMES_CUDA : FULL_LIB_NAMES;
+        }
+        LIB_PATHS = new String[tLibNames.length];
+        for (int i = 0; i < tLibNames.length; ++i) {
+            LIB_PATHS[i] = LIB_DIR + LIB_NAME_IN(LIB_DIR, tLibNames[i]);
         }
         // 这里顺便加载 torch 的 c++ 库，简单测试对 python 的使用似乎没有影响
         for (String tLibPath : LIB_PATHS) {
