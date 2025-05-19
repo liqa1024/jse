@@ -7,7 +7,6 @@ import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 import jse.code.collection.IntList;
 import jse.code.collection.NewCollections;
-import jse.code.functional.IIndexFilter;
 import jse.code.functional.IUnaryFullOperator;
 import jse.math.ComplexDouble;
 import jse.math.MathEX;
@@ -26,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.IntConsumer;
 
 import static jse.code.CS.R_NEAREST_MUL;
 import static jse.math.MathEX.*;
@@ -69,11 +67,6 @@ import static jse.math.MathEX.*;
  * @author liqa
  */
 public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPool> {
-    /** 缓存近邻列表从而避免重复计算距离，这里设置缓存的大小，设置为 0 关闭缓存；即使现在优化了近邻列表获取，缓存依旧能大幅加速近邻遍历 */
-    public static int BUFFER_NL_NUM = 8;
-    /** 最大的缓存近邻截断半径关于单位距离的倍率，过高的值的近邻列表缓存对内存是个灾难 */
-    public static double BUFFER_NL_RMAX = 4.0;
-    
     private IMatrix mAtomDataXYZ; // 现在改为 Matrix 存储，每行为一个原子的 xyz 数据
     private final IBox mBox;
     
@@ -110,13 +103,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             IntVectorCache.returnVec(oTypeVec);
         } else {
             UT.Code.warning("Thread of shutdown() and init should be SAME in AtomicParameterCalculator");
-        }
-        if (tThread == mInitBufferNLThread) {
-            if (mBufferedNL != null) {
-                BufferedNL oBufferedNL = mBufferedNL;
-                mBufferedNL = null;
-                sBufferedNLCache.returnObject(oBufferedNL);
-            }
         }
     }
     /** 立刻关闭参数计算器，这里和 {@link #shutdown()} 行为一致 */
@@ -340,8 +326,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         XYZ tBuf = new XYZ();
         setValidXYZ_(mBox, mAtomDataXYZ, aX, aY, aZ, aIdx, tBuf);
         mNL.updateAtomXYZ_(aIdx, oX, oY, oZ, tBuf);
-        // 这里简单处理，直接清空缓存列表
-        if (mBufferedNL != null) mBufferedNL.reset();
         return this;
     }
     /**
@@ -1152,11 +1136,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      */
     public IntVector getNeighborList(int aIdx, double aRMax, int aNnn) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
-        
-        // 获取缓存近邻列表，这里只需要进行遍历 idx
-        IntList @Nullable[] tNL = getValidBufferedNL_(aRMax, aNnn, false);
-        if (tNL != null) return tNL[aIdx].copy2vec();
-        
         // 如果为 null 则直接遍历指定 idx，如果需要重复使用则直接在外部缓存即可
         final IntVector.Builder rNL = IntVector.builder();
         mNL.forEachNeighbor(aIdx, aRMax, aNnn, (dx, dy, dz, idx) -> rNL.add(idx));
@@ -1612,155 +1591,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
     }
     
     
-    private static class BufferedNL {
-        private final static int INIT_NL_SIZE = 16;
-        
-        private final IVector mBufferedNLRMax;
-        private final boolean[] mBufferedNLHalf;
-        private final int[] mBufferedNLMPI;
-        private final int[] mBufferedNLNnn;
-        private final IntList[][] mBufferedNL;
-        private int mAtomNum;
-        private int mSize;
-        private int mIdx;
-        
-        BufferedNL(int aSize, int aAtomNum) {
-            mAtomNum = aAtomNum;
-            mSize = aSize;
-            mIdx = 0;
-            mBufferedNLRMax = Vectors.NaN(mSize);
-            mBufferedNLHalf = new boolean[mSize];
-            mBufferedNLMPI = new int[mSize];
-            mBufferedNLNnn = new int[mSize];
-            mBufferedNL = new IntList[mSize][];
-        }
-        
-        int size() {return mSize;}
-        void setSize(int aSize) {mSize = aSize;}
-        int dataLength() {return mBufferedNL.length;}
-        void reset() {mIdx = 0; mBufferedNLRMax.fill(Double.NaN);}
-        void setAtomNum(int aAtomNum) {mAtomNum = aAtomNum;}
-        
-        
-        /**
-         * 根据参数获取合适的 NL 用于缓存，
-         * 此时 null 表示没有合适的缓存的近邻列表
-         */
-        IntList @Nullable[] getValidBufferedNL(double aRMax, int aNnn, boolean aHalf, int aMPISize) {
-            // 直接遍历搜索
-            for (int i = 0; i < mSize; ++i) {
-                if (mBufferedNLNnn[i]==aNnn && mBufferedNLHalf[i]==aHalf && mBufferedNLMPI[i]==aMPISize) {
-                    IntList @Nullable[] tNL = mBufferedNL[i];
-                    if (tNL == null) continue;
-                    double tNLRMax = mBufferedNLRMax.get(i);
-                    if (Double.isNaN(tNLRMax)) continue;
-                    if (MathEX.Code.numericEqual(tNLRMax, aRMax)) return tNL;
-                }
-            }
-            return null;
-        }
-        
-        /**
-         * 根据参数获取合适的 NL 用于缓存，
-         * 此时不会返回 null
-         */
-        IntList @NotNull[] getValidNLToBuffer(double aRMax, int aNnn, boolean aHalf, int aMPISize) {
-            // 这里直接根据 mIdx 返回
-            mBufferedNLRMax.set(mIdx, aRMax);
-            mBufferedNLHalf[mIdx] = aHalf;
-            mBufferedNLMPI[mIdx]= aMPISize;
-            mBufferedNLNnn[mIdx] = aNnn;
-            @Nullable IntList @Nullable[] tNL = mBufferedNL[mIdx];
-            if (tNL==null || tNL.length<mAtomNum) {
-                IntList @Nullable[] oNL = tNL;
-                tNL = new IntList[mAtomNum];
-                if (oNL != null) System.arraycopy(oNL, 0, tNL, 0, oNL.length);
-            }
-            mBufferedNL[mIdx] = tNL;
-            for (int i = 0; i < mAtomNum; ++i) {
-                @Nullable IntList subNL = tNL[i];
-                if (subNL == null) {
-                    subNL = new IntList(INIT_NL_SIZE);
-                    tNL[i] = subNL;
-                } else {
-                    subNL.clear();
-                }
-            }
-            ++mIdx;
-            if (mIdx == mSize) mIdx = 0;
-            return tNL;
-        }
-    }
-    
-    // 简单处理这里直接缓存整个对象，而内部不再缓存
-    private @Nullable BufferedNL mBufferedNL = null;
-    private @Nullable Thread mInitBufferNLThread = null;
-    private final static IObjectPool<BufferedNL> sBufferedNLCache = new ThreadLocalObjectCachePool<>();
-    
-    private void initBufferNL_() {
-        if (mBufferedNL != null) return;
-        if (BUFFER_NL_NUM <= 0) return;
-        mBufferedNL = sBufferedNLCache.getObject();
-        if (mBufferedNL==null || mBufferedNL.dataLength()<BUFFER_NL_NUM) {
-            mBufferedNL = new BufferedNL(BUFFER_NL_NUM, mAtomNum);
-        } else {
-            mBufferedNL.setSize(BUFFER_NL_NUM);
-            mBufferedNL.setAtomNum(mAtomNum);
-            mBufferedNL.reset();
-        }
-        mInitBufferNLThread = Thread.currentThread();
-        if (mInitBufferNLThread != mInitThread) UT.Code.warning("Thread of initBufferNL() and init should be SAME in AtomicParameterCalculator");
-    }
-    
-    /// 根据参数获取合适的 NL 用于缓存，此时 null 表示关闭了近邻列表缓存或者没有合适的缓存的近邻列表
-    @ApiStatus.Experimental
-    @ApiStatus.Internal public IntList @Nullable[] getValidBufferedNL_(double aRMax, int aNnn, boolean aHalf, int aMPISize) {
-        initBufferNL_();
-        if (mBufferedNL == null) return null;
-        return mBufferedNL.getValidBufferedNL(aRMax, aNnn, aHalf, aMPISize);
-    }
-    @ApiStatus.Experimental
-    @ApiStatus.Internal public IntList @Nullable[] getValidBufferedNL_(double aRMax, int aNnn, boolean aHalf) {
-        return getValidBufferedNL_(aRMax, aNnn, aHalf, 1);
-    }
-    
-    /// 根据参数获取合适的 NL 用于缓存，此时 null 表示已经有了缓存或者关闭了近邻列表缓存或者参数非法（近邻半径过大）
-    @ApiStatus.Experimental
-    @ApiStatus.Internal public IntList @Nullable[] getNLWhichNeedBuffer_(double aRMax, int aNnn, boolean aHalf, int aMPISize) {
-        initBufferNL_();
-        if (mBufferedNL == null) return null;
-        if (aRMax > BUFFER_NL_RMAX*mUnitLen) return null;
-        if (mBufferedNL.getValidBufferedNL(aRMax, aNnn, aHalf, aMPISize) != null) return null;
-        return mBufferedNL.getValidNLToBuffer(aRMax, aNnn, aHalf, aMPISize);
-    }
-    @ApiStatus.Experimental
-    @ApiStatus.Internal public IntList @Nullable[] getNLWhichNeedBuffer_(double aRMax, int aNnn, boolean aHalf) {
-        return getNLWhichNeedBuffer_(aRMax, aNnn, aHalf, 1);
-    }
-    
-    /// 会自动使用缓存的近邻列表遍历，用于减少重复代码
-    @ApiStatus.Experimental
-    @ApiStatus.Internal public void forEachNeighbor_(IntList @Nullable[] aNL, int aIdx, double aRMax, int aNnn, boolean aHalf, IntConsumer aIdxDo) {
-        if (aNL != null) {
-            // 如果 aNL 不为 null，则直接使用 aNL 遍历
-            aNL[aIdx].forEach(aIdxDo);
-        } else {
-            // aNL 为 null，则使用 mNL 完整遍历
-            mNL.forEachNeighbor(aIdx, aRMax, aNnn, aHalf, (dx, dy, dz, idx) -> aIdxDo.accept(idx));
-        }
-    }
-    @ApiStatus.Experimental
-    @ApiStatus.Internal public void forEachNeighbor_(IntList @Nullable[] aNL, int aIdx, double aRMax, int aNnn, boolean aHalf, IIndexFilter aRegion, IntConsumer aIdxDo) {
-        if (aNL != null) {
-            // 如果 aNL 不为 null，则直接使用 aNL 遍历
-            aNL[aIdx].forEach(aIdxDo);
-        } else {
-            // aNL 为 null，则使用 mNL 完整遍历
-            mNL.forEachNeighbor(aIdx, aRMax, aNnn, aHalf, aRegion, (dx, dy, dz, idx) -> aIdxDo.accept(idx));
-        }
-    }
-    
-    
     /**
      * 计算所有粒子的近邻球谐函数的平均，即 Qlm；
      * 返回一个复数矩阵，行为原子，列为 m
@@ -1791,9 +1621,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 全局暂存 Y 的数组，这样可以用来防止重复获取来提高效率
         final List<? extends IComplexVector> tYPar = ComplexVectorCache.getVec(aL+aL+1, threadNumber());
         
-        // 获取需要缓存的近邻列表
-        final IntList @Nullable[] tNLToBuffer = getNLWhichNeedBuffer_(aRNearest, aNnn, aHalf);
-        
         // 遍历计算 Qlm，只对这个最耗时的部分进行并行优化
         pool().parfor(mAtomNum, (i, threadID) -> {
             // 先获取这个线程的 Qlm, tNN
@@ -1818,10 +1645,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                     if ((aL&1)==1) Qlmj.minus2this(tY);
                     else Qlmj.plus2this(tY);
                 }
-                
-                // 统计近邻
-                if (tNLToBuffer != null) {tNLToBuffer[i].add(idx);}
-                
                 // 统计近邻数
                 tNN.increment(i);
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
@@ -1888,9 +1711,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 全局暂存 Y 和 P 的数组，这样可以用来防止重复获取来提高效率
         final IComplexVector tY = ComplexVectorCache.getVec(aL+aL+1);
         
-        // 获取需要缓存的近邻列表
-        final IntList @Nullable[] tNLToBuffer = getNLWhichNeedBuffer_(aRNearest, aNnn, aHalf, aMPIInfo.mSize);
-        
         // 遍历计算 Qlm，这里直接判断原子位置是否是需要计算的然后跳过
         for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             // 一次计算一行
@@ -1913,10 +1733,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                     if ((aL&1)==1) Qlmj.minus2this(tY);
                     else Qlmj.plus2this(tY);
                 }
-                
-                // 统计近邻
-                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
-                
                 // 统计近邻数
                 tNN.increment(fI);
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
@@ -2002,11 +1818,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnQ<=0;
         
-        // 获取缓存近邻列表，这里只需要进行遍历 idx
-        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestQ, aNnnQ, aHalf);
-        // 如果为 null 还需要获取需要缓存的近邻列表
-        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestQ, aNnnQ, aHalf) : null;
-        
         // 遍历计算 qlm
         for (int i = 0; i < mAtomNum; ++i) {
             // 一次计算一行
@@ -2017,17 +1828,13 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             qlmi.fill(Qlmi);
             // 再累加近邻
             final int fI = i;
-            forEachNeighbor_(tNL, fI, aRNearestQ, aNnnQ, aHalf, idx -> {
+            mNL.forEachNeighbor(i, aRNearestQ, aNnnQ, aHalf, (dx, dy, dz, idx) -> {
                 // 直接按行累加即可
                 qlmi.plus2this(Qlm.row(idx));
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要进行累加
                 if (aHalf) {
                     qlm.row(idx).plus2this(Qlmi);
                 }
-                
-                // 统计近邻
-                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
-                
                 // 统计近邻数
                 tNN.increment(fI);
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
@@ -2110,11 +1917,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnQ<=0;
         
-        // 获取缓存近邻列表，这里只需要进行遍历 idx
-        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestQ, aNnnQ, aHalf, aMPIInfo.mSize);
-        // 如果为 null 还需要获取需要缓存的近邻列表
-        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestQ, aNnnQ, aHalf, aMPIInfo.mSize) : null;
-        
         // 遍历计算 Qlm，这里直接判断原子位置是否是需要计算的然后跳过
         for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             // 一次计算一行
@@ -2125,7 +1927,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             qlmi.fill(Qlmi);
             // 再累加近邻
             final int fI = i;
-            forEachNeighbor_(tNL, fI, aRNearestQ, aNnnQ, aHalf, aMPIInfo::inRegin, idx -> {
+            mNL.forEachNeighbor(fI, aRNearestQ, aNnnQ, aHalf, aMPIInfo::inRegin, (dx, dy, dz, idx) -> {
                 // 直接按行累加即可
                 qlmi.plus2this(Qlm.row(idx));
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计，但如果不在区域内则不需要统计
@@ -2133,10 +1935,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                 if (tHalfStat) {
                     qlm.row(idx).plus2this(Qlmi);
                 }
-                
-                // 统计近邻
-                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
-                
                 // 统计近邻数
                 tNN.increment(fI);
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
@@ -2795,18 +2593,13 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             Qlmi.div2this(Qlmi.operation().norm());
         }
         
-        // 获取缓存近邻列表，这里只需要进行遍历 idx
-        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestS, aNnnS, aHalf);
-        // 如果为 null 还需要获取需要缓存的近邻列表
-        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestS, aNnnS, aHalf) : null;
-        
         // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
         for (int i = 0; i < mAtomNum; ++i) {
             // 统一获取行向量
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            forEachNeighbor_(tNL, fI, aRNearestS, aNnnS, aHalf, idx -> {
+            mNL.forEachNeighbor(i, aRNearestS, aNnnS, aHalf, (dx, dy, dz, idx) -> {
                 // 统一获取行向量
                 IComplexVector Qlmj = Qlm.row(idx);
                 // 计算复向量的点乘
@@ -2819,8 +2612,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                         tConnectCount.increment(idx);
                     }
                 }
-                // 统计近邻
-                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
             });
         }
         
@@ -2915,18 +2706,13 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             Qlmi.div2this(Qlmi.operation().norm());
         }
         
-        // 获取缓存近邻列表，这里只需要进行遍历 idx
-        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestS, aNnnS, aHalf, aMPIInfo.mSize);
-        // 如果为 null 还需要获取需要缓存的近邻列表
-        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestS, aNnnS, aHalf, aMPIInfo.mSize) : null;
-        
         // 计算近邻上 Qlm 的标量积，根据标量积来统计连接数
         for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             // 统一获取行向量
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            forEachNeighbor_(tNL, fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, idx -> {
+            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, (dx, dy, dz, idx) -> {
                 // 统一获取行向量
                 IComplexVector Qlmj = Qlm.row(idx);
                 // 计算复向量的点乘
@@ -2940,8 +2726,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                         tConnectCount.increment(idx);
                     }
                 }
-                // 统计近邻
-                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
             });
         }
         
@@ -3063,18 +2847,13 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             qlmi.div2this(qlmi.operation().norm());
         }
         
-        // 获取缓存近邻列表，这里只需要进行遍历 idx
-        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestS, aNnnS, aHalf);
-        // 如果为 null 还需要获取需要缓存的近邻列表
-        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestS, aNnnS, aHalf) : null;
-        
         // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
         for (int i = 0; i < mAtomNum; ++i) {
             // 统一获取行向量
             final IComplexVector qlmi = qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            forEachNeighbor_(tNL, fI, aRNearestS, aNnnS, aHalf, idx -> {
+            mNL.forEachNeighbor(i, aRNearestS, aNnnS, aHalf, (dx, dy, dz, idx) -> {
                 // 统一获取行向量
                 IComplexVector qlmj = qlm.row(idx);
                 // 计算复向量的点乘
@@ -3087,8 +2866,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                         tConnectCount.increment(idx);
                     }
                 }
-                // 统计近邻
-                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
             });
         }
         
@@ -3175,18 +2952,13 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             qlmi.div2this(qlmi.operation().norm());
         }
         
-        // 获取缓存近邻列表，这里只需要进行遍历 idx
-        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestS, aNnnS, aHalf, aMPIInfo.mSize);
-        // 如果为 null 还需要获取需要缓存的近邻列表
-        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestS, aNnnS, aHalf, aMPIInfo.mSize) : null;
-        
         // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
         for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             // 统一获取行向量
             final IComplexVector qlmi = qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            forEachNeighbor_(tNL, fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, idx -> {
+            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, (dx, dy, dz, idx) -> {
                 // 统一获取行向量
                 IComplexVector qlmj = qlm.row(idx);
                 // 计算复向量的点乘
@@ -3200,8 +2972,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                         tConnectCount.increment(idx);
                     }
                 }
-                // 统计近邻
-                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
             });
         }
         
@@ -3329,18 +3099,13 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             Qlmi.div2this(Qlmi.operation().norm());
         }
         
-        // 获取缓存近邻列表，这里只需要进行遍历 idx
-        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestS, aNnnS, aHalf);
-        // 如果为 null 还需要获取需要缓存的近邻列表
-        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestS, aNnnS, aHalf) : null;
-        
         // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
         for (int i = 0; i < mAtomNum; ++i) {
             // 统一获取行向量
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            forEachNeighbor_(tNL, fI, aRNearestS, aNnnS, aHalf, idx -> {
+            mNL.forEachNeighbor(i, aRNearestS, aNnnS, aHalf, (dx, dy, dz, idx) -> {
                 // 统一获取行向量
                 IComplexVector Qlmj = Qlm.row(idx);
                 // 计算复向量的点乘
@@ -3353,10 +3118,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                         tConnectRatio.increment(idx);
                     }
                 }
-                
-                // 统计近邻
-                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
-                
                 // 统计近邻数
                 tNN.increment(fI);
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
@@ -3462,18 +3223,13 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             Qlmi.div2this(Qlmi.operation().norm());
         }
         
-        // 获取缓存近邻列表，这里只需要进行遍历 idx
-        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestS, aNnnS, aHalf, aMPIInfo.mSize);
-        // 如果为 null 还需要获取需要缓存的近邻列表
-        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestS, aNnnS, aHalf, aMPIInfo.mSize) : null;
-        
         // 计算近邻上 Qlm 的标量积，根据标量积来统计连接数
         for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             // 统一获取行向量
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            forEachNeighbor_(tNL, fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, idx -> {
+            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, (dx, dy, dz, idx) -> {
                 // 统一获取行向量
                 IComplexVector Qlmj = Qlm.row(idx);
                 // 计算复向量的点乘
@@ -3487,10 +3243,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                         tConnectRatio.increment(idx);
                     }
                 }
-                
-                // 统计近邻
-                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
-                
                 // 统计近邻数
                 tNN.increment(fI);
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
@@ -3623,18 +3375,13 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             qlmi.div2this(qlmi.operation().norm());
         }
         
-        // 获取缓存近邻列表，这里只需要进行遍历 idx
-        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestS, aNnnS, aHalf);
-        // 如果为 null 还需要获取需要缓存的近邻列表
-        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestS, aNnnS, aHalf) : null;
-        
         // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
         for (int i = 0; i < mAtomNum; ++i) {
             // 统一获取行向量
             final IComplexVector qlmi = qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            forEachNeighbor_(tNL, fI, aRNearestS, aNnnS, aHalf, idx -> {
+            mNL.forEachNeighbor(i, aRNearestS, aNnnS, aHalf, (dx, dy, dz, idx) -> {
                 // 统一获取行向量
                 IComplexVector qlmj = qlm.row(idx);
                 // 计算复向量的点乘
@@ -3647,10 +3394,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                         tConnectRatio.increment(idx);
                     }
                 }
-                
-                // 统计近邻
-                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
-                
                 // 统计近邻数
                 tNN.increment(fI);
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
@@ -3748,18 +3491,13 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             qlmi.div2this(qlmi.operation().norm());
         }
         
-        // 获取缓存近邻列表，这里只需要进行遍历 idx
-        IntList @Nullable[] tNL = getValidBufferedNL_(aRNearestS, aNnnS, aHalf, aMPIInfo.mSize);
-        // 如果为 null 还需要获取需要缓存的近邻列表
-        final IntList @Nullable[] tNLToBuffer = tNL==null ? getNLWhichNeedBuffer_(aRNearestS, aNnnS, aHalf, aMPIInfo.mSize) : null;
-        
         // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
         for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
             // 统一获取行向量
             final IComplexVector qlmi = qlm.row(i);
             // 遍历近邻计算连接数
             final int fI = i;
-            forEachNeighbor_(tNL, fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, idx -> {
+            mNL.forEachNeighbor(fI, aRNearestS, aNnnS, aHalf, aMPIInfo::inRegin, (dx, dy, dz, idx) -> {
                 // 统一获取行向量
                 IComplexVector qlmj = qlm.row(idx);
                 // 计算复向量的点乘
@@ -3773,10 +3511,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                         tConnectRatio.increment(idx);
                     }
                 }
-                
-                // 统计近邻
-                if (tNLToBuffer != null) {tNLToBuffer[fI].add(idx);}
-                
                 // 统计近邻数
                 tNN.increment(fI);
                 // 如果开启 half 遍历的优化，对称的对面的粒子也要增加这个统计
