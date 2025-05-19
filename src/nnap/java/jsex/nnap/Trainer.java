@@ -887,7 +887,9 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
             for (int i = 0; i < tAtomNum; ++i) {
                 int tType = tTypeMap.applyAsInt(aAtomData.atom(i).type());
                 IBasis tBasis = basis(tType);
-                Vector tFp = tBasis.eval(tAPC, i, tTypeMap);
+                // 这里依旧采用缓存的写法
+                Vector tFp = VectorCache.getVec(tBasis.size());
+                tBasis.eval(tAPC, i, tTypeMap, tFp);
                 rData.mFp[tType-1].addAll(tFp);
                 rData.mEngIndices[tType-1].add(rData.mEng.size());
                 VectorCache.returnVec(tFp);
@@ -907,18 +909,28 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
             for (int i = 0; i < tAtomNum; ++i) {
                 int tType = tTypeMap.applyAsInt(aAtomData.atom(i).type());
                 IBasis tBasis = basis(tType);
-                List<Vector> tOut = tBasis.evalPartial(true, tAPC, i, tTypeMap);
+                // 这里依旧采用缓存的写法
+                final int tBasisSize = tBasis.size();
+                Vector tFp = VectorCache.getVec(tBasisSize);
+                Vector tFpPx = VectorCache.getVec(tBasisSize);
+                Vector tFpPy = VectorCache.getVec(tBasisSize);
+                Vector tFpPz = VectorCache.getVec(tBasisSize);
+                DoubleList tFpPxCross = new DoubleList(1024);
+                DoubleList tFpPyCross = new DoubleList(1024);
+                DoubleList tFpPzCross = new DoubleList(1024);
+                tBasis.evalPartial(tAPC, i, tTypeMap, tFp, tFpPx, tFpPy, tFpPz, tFpPxCross, tFpPyCross, tFpPzCross);
                 // 基组和索引
-                rData.mFp[tType-1].addAll(tOut.get(0));
+                rData.mFp[tType-1].addAll(tFp);
                 rData.mEngIndices[tType-1].add(rData.mEng.size());
                 // 计算相对能量值
                 aEnergy -= mRefEngs.get(tType-1);
                 // 基组偏导和索引
-                int tRowNum = tOut.size()-1;
+                final int tNN = tFpPxCross.size()/tBasisSize;
+                int tRowNum = tNN*3 + 3;
                 final RowMatrix tFpPartial = MatrixCache.getMatRow(tRowNum, tBasis.size());
-                tFpPartial.row(0).fill(tOut.get(1));
-                tFpPartial.row(1).fill(tOut.get(2));
-                tFpPartial.row(2).fill(tOut.get(3));
+                tFpPartial.row(0).fill(tFpPx);
+                tFpPartial.row(1).fill(tFpPy);
+                tFpPartial.row(2).fill(tFpPz);
                 final IntVector tForceIndices = mHasForce ? IntVectorCache.getVec(tRowNum) : null;
                 final int tShiftF = mHasForce ? rData.mForce.size() : -1;
                 if (mHasForce) {
@@ -939,12 +951,11 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
                     tStressDxyz.set(1, 0, 0.0); tStressDxyz.set(1, 1, 0.0);
                     tStressDxyz.set(2, 0, 0.0); tStressDxyz.set(2, 1, 0.0);
                 }
-                final int tNN = (tOut.size()-4)/3;
                 final int[] j = {0};
                 tAPC.nl_().forEachNeighbor(i, tBasis.rcut(), (dx, dy, dz, idx) -> {
-                    tFpPartial.row(3 + 3*j[0]).fill(tOut.get(4+j[0]));
-                    tFpPartial.row(4 + 3*j[0]).fill(tOut.get(4+tNN+j[0]));
-                    tFpPartial.row(5 + 3*j[0]).fill(tOut.get(4+tNN+tNN+j[0]));
+                    tFpPartial.row(3 + 3*j[0]).fill(new ShiftVector(tBasisSize, tBasisSize*j[0], tFpPxCross.internalData()));
+                    tFpPartial.row(4 + 3*j[0]).fill(new ShiftVector(tBasisSize, tBasisSize*j[0], tFpPyCross.internalData()));
+                    tFpPartial.row(5 + 3*j[0]).fill(new ShiftVector(tBasisSize, tBasisSize*j[0], tFpPzCross.internalData()));
                     if (mHasForce) {
                         assert tForceIndices != null;
                         tForceIndices.set(3 + 3*j[0], tShiftF + 3*idx);
@@ -965,7 +976,10 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
                     }
                     ++j[0];
                 });
-                VectorCache.returnVec(tOut);
+                VectorCache.returnVec(tFp);
+                VectorCache.returnVec(tFpPx);
+                VectorCache.returnVec(tFpPy);
+                VectorCache.returnVec(tFpPz);
                 // 将数据转换为 torch 的 tensor，这里最快的方式是利用 torch 的 from_numpy 进行转换
                 PyObject tPyFpPartial, tPyForceIndices=null, tPyStressIndices=null, tPyStressDxyz=null;
                 try (PyCallable tFromNumpy = TORCH.getAttr("from_numpy", PyCallable.class)) {

@@ -1,16 +1,14 @@
 package jsex.nnap.basis;
 
-import jse.atom.IAtomData;
 import jse.atom.AtomicParameterCalculator;
 import jse.atom.IHasSymbol;
+import jse.code.collection.DoubleList;
 import jse.code.io.ISavable;
 import jse.math.vector.Vector;
 import jse.parallel.IAutoShutdown;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntUnaryOperator;
 
@@ -53,93 +51,93 @@ public interface IBasis extends IHasSymbol, ISavable, IAutoShutdown {
     /**
      * 通用的计算基组的接口，可以自定义任何近邻列表获取器来实现
      * @param aNL 近邻列表遍历器
-     * @return 原子描述符向量
+     * @param rFp 计算输出的原子描述符向量
      */
-    Vector eval(IDxyzTypeIterable aNL);
+    void eval(IDxyzTypeIterable aNL, Vector rFp);
     /**
      * 基于 {@link AtomicParameterCalculator} 的近邻列表实现的通用的计算某个原子的基组功能
      * @param aAPC 原子结构参数计算器，用来获取近邻列表
      * @param aIdx 需要计算基组的原子索引
      * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
-     * @return 原子描述符向量
+     * @param rFp 计算输出的原子描述符向量
      */
-    default Vector eval(final AtomicParameterCalculator aAPC, final int aIdx, final IntUnaryOperator aTypeMap) {
+    default void eval(final AtomicParameterCalculator aAPC, final int aIdx, final IntUnaryOperator aTypeMap, Vector rFp) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
-        return eval(dxyzTypeDo -> {
+        eval(dxyzTypeDo -> {
             aAPC.nl_().forEachNeighbor(aIdx, rcut(), (dx, dy, dz, idx) -> {
                 dxyzTypeDo.run(dx, dy, dz, aTypeMap.applyAsInt(aAPC.atomType_().get(idx)));
             });
-        });
+        }, rFp);
     }
-    default Vector eval(AtomicParameterCalculator aAPC, int aIdx) {return eval(aAPC, aIdx, type->type);}
-    /**
-     * 简单遍历计算给定原子数据所有基组的实现，此实现适合对相同基组计算大量的原子结构；
-     * 由于基组存储了元素排序，因此可以自动修正多个原子结构中元素排序不一致的问题
-     * @param aAtomData 原子结构数据
-     * @return 原子描述符向量组成的列表
-     */
-    default List<Vector> evalAll(IAtomData aAtomData) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
-        int tAtomNum = aAtomData.atomNumber();
-        List<Vector> rFingerPrints = new ArrayList<>(tAtomNum);
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData)) {
-            for (int i = 0; i < tAtomNum; ++i) {
-                rFingerPrints.add(eval(tAPC, i, tTypeMap));
-            }
-        }
-        return rFingerPrints;
-    }
+    default void eval(AtomicParameterCalculator aAPC, int aIdx, Vector rFp) {eval(aAPC, aIdx, type->type, rFp);}
     
     /**
      * 基组结果对于 {@code xyz} 偏微分的计算结果，主要用于力的计算；会同时计算基组值本身
-     * @param aCalCross 控制是否同时计算基组对于近邻原子坐标的偏导值，默认为 {@code false}
      * @param aNL 近邻列表遍历器
-     * @return {@code [fp, fpPx, fpPy, fpPz]}，如果开启 aCalBasis 则在后续追加近邻的偏导
+     * @param rFp 计算输出的原子描述符向量
+     * @param rFpPx 计算输出的原子描述符向量对于坐标 x 的偏导数
+     * @param rFpPy 计算输出的原子描述符向量对于坐标 y 的偏导数
+     * @param rFpPz 计算输出的原子描述符向量对于坐标 z 的偏导数
      */
-    List<@NotNull Vector> evalPartial(boolean aCalCross, IDxyzTypeIterable aNL);
-    default List<@NotNull Vector> evalPartial(IDxyzTypeIterable aNL) {return evalPartial(false, aNL);}
+    void evalPartial(IDxyzTypeIterable aNL, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz);
+    /**
+     * 基组结果对于 {@code xyz} 偏微分的计算结果，主要用于力的计算；会同时计算基组值本身
+     * @param aNL 近邻列表遍历器
+     * @param rFp 计算输出的原子描述符向量
+     * @param rFpPx 计算输出的原子描述符向量对于坐标 x 的偏导数
+     * @param rFpPy 计算输出的原子描述符向量对于坐标 y 的偏导数
+     * @param rFpPz 计算输出的原子描述符向量对于坐标 z 的偏导数
+     * @param rFpPxCross 计算输出的原子描述符向量对于近邻原子坐标 x 的偏导数，会自动根据近邻列表扩容
+     * @param rFpPyCross 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，会自动根据近邻列表扩容
+     * @param rFpPzCross 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，会自动根据近邻列表扩容
+     */
+    void evalPartial(IDxyzTypeIterable aNL, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz, DoubleList rFpPxCross, DoubleList rFpPyCross, DoubleList rFpPzCross);
     /**
      * 基于 {@link AtomicParameterCalculator} 的近邻列表实现的通用的计算某个原子的基组偏导数功能
-     * @param aCalCross 控制是否同时计算基组对于近邻原子坐标的偏导值，默认为 {@code false}
      * @param aAPC 原子结构参数计算器，用来获取近邻列表
      * @param aIdx 需要计算基组的原子索引
      * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
-     * @return {@code [fp, fpPx, fpPy, fpPz]}，如果关闭 aCalBasis 则第一项
-     * {@code fp} 为 null，如果开启 aCalBasis 则在后续追加近邻的偏导
+     * @param rFp 计算输出的原子描述符向量
+     * @param rFpPx 计算输出的原子描述符向量对于坐标 x 的偏导数
+     * @param rFpPy 计算输出的原子描述符向量对于坐标 y 的偏导数
+     * @param rFpPz 计算输出的原子描述符向量对于坐标 z 的偏导数
      */
-    default List<@NotNull Vector> evalPartial(boolean aCalCross, final AtomicParameterCalculator aAPC, final int aIdx, final IntUnaryOperator aTypeMap) {
+    default void evalPartial(AtomicParameterCalculator aAPC, int aIdx, IntUnaryOperator aTypeMap, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
-        return evalPartial(aCalCross, dxyzTypeDo -> {
+        evalPartial(dxyzTypeDo -> {
             aAPC.nl_().forEachNeighbor(aIdx, rcut(), (dx, dy, dz, idx) -> {
                 dxyzTypeDo.run(dx, dy, dz, aTypeMap.applyAsInt(aAPC.atomType_().get(idx)));
             });
-        });
+        }, rFp, rFpPx, rFpPy, rFpPz);
     }
-    default List<@NotNull Vector> evalPartial(AtomicParameterCalculator aAPC, int aIdx, IntUnaryOperator aTypeMap) {return evalPartial(false, aAPC, aIdx, aTypeMap);}
-    default List<@NotNull Vector> evalPartial(boolean aCalCross, AtomicParameterCalculator aAPC, int aIdx) {return evalPartial(aCalCross, aAPC, aIdx, type->type);}
-    default List<@NotNull Vector> evalPartial(AtomicParameterCalculator aAPC, int aIdx) {return evalPartial(false, aAPC, aIdx);}
     /**
-     * 简单遍历计算给定原子数据所有基组偏导的实现，会同时计算基组值本身，此实现适合对相同基组计算大量的原子结构；
-     * 由于基组存储了元素排序，因此可以自动修正多个原子结构中元素排序不一致的问题
-     * @param aCalCross 控制是否同时计算基组对于近邻原子坐标的偏导值，默认为 {@code false}
-     * @param aAtomData 原子结构数据
-     * @return {@code [fp, fpPx, fpPy, fpPz]}，如果关闭 aCalBasis 则第一项
-     * {@code fp} 为 null，如果开启 aCalBasis 则在后续追加近邻的偏导
+     * 基于 {@link AtomicParameterCalculator} 的近邻列表实现的通用的计算某个原子的基组偏导数功能
+     * @param aAPC 原子结构参数计算器，用来获取近邻列表
+     * @param aIdx 需要计算基组的原子索引
+     * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
+     * @param rFp 计算输出的原子描述符向量
+     * @param rFpPx 计算输出的原子描述符向量对于坐标 x 的偏导数
+     * @param rFpPy 计算输出的原子描述符向量对于坐标 y 的偏导数
+     * @param rFpPz 计算输出的原子描述符向量对于坐标 z 的偏导数
+     * @param rFpPxCross 计算输出的原子描述符向量对于近邻原子坐标 x 的偏导数，会自动根据近邻列表扩容
+     * @param rFpPyCross 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，会自动根据近邻列表扩容
+     * @param rFpPzCross 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，会自动根据近邻列表扩容
      */
-    default List<List<Vector>> evalAllPartial(boolean aCalCross, IAtomData aAtomData) {
+    default void evalPartial(AtomicParameterCalculator aAPC, int aIdx, IntUnaryOperator aTypeMap, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz, DoubleList rFpPxCross, DoubleList rFpPyCross, DoubleList rFpPzCross) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
-        int tAtomNum = aAtomData.atomNumber();
-        List<List<Vector>> rOut = new ArrayList<>(tAtomNum);
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData)) {
-            for (int i = 0; i < tAtomNum; ++i) {
-                rOut.add(evalPartial(aCalCross, tAPC, i, tTypeMap));
-            }
-        }
-        return rOut;
+        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
+        evalPartial(dxyzTypeDo -> {
+            aAPC.nl_().forEachNeighbor(aIdx, rcut(), (dx, dy, dz, idx) -> {
+                dxyzTypeDo.run(dx, dy, dz, aTypeMap.applyAsInt(aAPC.atomType_().get(idx)));
+            });
+        }, rFp, rFpPx, rFpPy, rFpPz, rFpPxCross, rFpPyCross, rFpPzCross);
     }
-    default List<List<Vector>> evalAllPartial(IAtomData aAtomData) {return evalAllPartial(false, aAtomData);}
+    default void evalPartial(AtomicParameterCalculator aAPC, int aIdx, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz) {
+        evalPartial(aAPC, aIdx, type->type, rFp, rFpPx, rFpPy, rFpPz);
+    }
+    default void evalPartial(AtomicParameterCalculator aAPC, int aIdx, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz, DoubleList rFpPxCross, DoubleList rFpPyCross, DoubleList rFpPzCross) {
+        evalPartial(aAPC, aIdx, type->type, rFp, rFpPx, rFpPy, rFpPz, rFpPxCross, rFpPyCross, rFpPzCross);
+    }
 }

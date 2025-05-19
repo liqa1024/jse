@@ -1,10 +1,8 @@
 package jsex.nnap.basis;
 
+import jse.code.collection.DoubleList;
 import jse.math.vector.Vector;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,18 +44,25 @@ public class Mirror implements IBasis {
     @Override public boolean hasSymbol() {return mMirrorBasis.hasSymbol();}
     @Override public String symbol(int aType) {return mMirrorBasis.symbol(aType);}
     
-    @Override public Vector eval(IDxyzTypeIterable aNL) {
-        return mMirrorBasis.eval(dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
+    @Override public void eval(IDxyzTypeIterable aNL, Vector rFp) {
+        mMirrorBasis.eval(dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
             if (type == mThisType) type = mMirrorType;
             else if (type == mMirrorType) type = mThisType;
             dxyzTypeDo.run(dx, dy, dz, type);
-        }));
+        }), rFp);
     }
-    @Override public List<@NotNull Vector> evalPartial(boolean aCalCross, IDxyzTypeIterable aNL) {
-        return mMirrorBasis.evalPartial(aCalCross, dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
+    @Override public void evalPartial(IDxyzTypeIterable aNL, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz) {
+        mMirrorBasis.evalPartial(dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
             if (type == mThisType) type = mMirrorType;
             else if (type == mMirrorType) type = mThisType;
             dxyzTypeDo.run(dx, dy, dz, type);
-        }));
+        }), rFp, rFpPx, rFpPy, rFpPz);
+    }
+    @Override public void evalPartial(IDxyzTypeIterable aNL, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz, DoubleList rFpPxCross, DoubleList rFpPyCross, DoubleList rFpPzCross) {
+        mMirrorBasis.evalPartial(dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
+            if (type == mThisType) type = mMirrorType;
+            else if (type == mMirrorType) type = mThisType;
+            dxyzTypeDo.run(dx, dy, dz, type);
+        }), rFp, rFpPx, rFpPy, rFpPz, rFpPxCross, rFpPyCross, rFpPzCross);
     }
 }

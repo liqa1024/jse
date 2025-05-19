@@ -7,14 +7,17 @@ import jse.code.CS;
 import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;
+import jse.code.collection.ArrayLists;
 import jse.code.collection.DoubleList;
-import jse.math.matrix.RowMatrix;
+import jse.code.timer.AccumulatedTimer;
+import jse.math.MathEX;
 import jse.math.vector.ShiftVector;
 import jse.math.vector.Vector;
 import jsex.nnap.NNAP;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,87 +153,108 @@ public class SphericalChebyshevNative extends SphericalChebyshev {
     }
     
     
-    private final DoubleList mFingerPrintPxCross = new DoubleList(1024), mFingerPrintPyCross = new DoubleList(1024), mFingerPrintPzCross = new DoubleList(1024);
+    public static final AccumulatedTimer sNativeTimer = new AccumulatedTimer();
     
-    /**
-     * {@inheritDoc}
-     * @param aCalCross 控制是否同时计算基组对于近邻原子坐标的偏导值，默认为 {@code false}
-     * @param aNL 近邻列表遍历器
-     * @return {@inheritDoc}
-     */
-    @Override public List<@NotNull Vector> evalPartial(boolean aCalCross, IDxyzTypeIterable aNL) {
+    @Override public void eval(IDxyzTypeIterable aNL, Vector rFp) {
+        if (mDead) throw new IllegalStateException("This Basis is dead");
+        // 统一缓存近邻列表
+        buildNL(aNL);
+        final int tNN = mDxAll.size();
+        // 现在直接计算基组
+        eval0(mDxAll.internalData(), mDyAll.internalData(), mDzAll.internalData(), mTypeAll.internalData(), tNN,
+              bufRn(false).internalData(), bufY(false).internalData(), bufCnlm(true).internalData(), rFp.internalData(),
+              mTypeNum, mRCut, mNMax, mLMax, mL3Max, mL3Cross);
+    }
+    
+    @Override public void evalPartial(IDxyzTypeIterable aNL, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz, @Nullable DoubleList rFpPxCross, @Nullable DoubleList rFpPyCross, @Nullable DoubleList rFpPzCross) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
         
         final int tSizeN = sizeN();
         final int tSizeL = sizeL();
         final int tSizeFP = tSizeN*tSizeL;
-        Vector rFingerPrint = VectorCache.getVec(tSizeFP);
-        // 先统一计算 cnlm 并缓存近邻
-        final RowMatrix cnlm = calCnlm(aNL, true);
+        // 统一缓存近邻列表
+        buildNL(aNL);
         final int tNN = mDxAll.size();
-        // 做标量积消去 m 项，得到此原子的 FP
-        cnlm2fp(cnlm.internalData(), rFingerPrint.internalData(),
-                tSizeN, mLMax, mL3Max, mL3Cross);
         
-        // 下面计算偏导部分
-        final Vector rFingerPrintPx = VectorCache.getZeros(tSizeFP);
-        final Vector rFingerPrintPy = VectorCache.getZeros(tSizeFP);
-        final Vector rFingerPrintPz = VectorCache.getZeros(tSizeFP);
-        final @Nullable List<Vector> rFingerPrintPxCross = aCalCross ? VectorCache.getVec(tSizeFP, tNN) : null;
-        final @Nullable List<Vector> rFingerPrintPyCross = aCalCross ? VectorCache.getVec(tSizeFP, tNN) : null;
-        final @Nullable List<Vector> rFingerPrintPzCross = aCalCross ? VectorCache.getVec(tSizeFP, tNN) : null;
-        // 缓存 cnlm 偏导数数据，现在只需要特定 n 下的一行即可
-        final Vector cnlmPx = bufCnlmPx(false);
-        final Vector cnlmPy = bufCnlmPy(false);
-        final Vector cnlmPz = bufCnlmPz(false);
-        // 缓存 Rn 数组
-        final Vector tRnPx = bufRnPx(false);
-        final Vector tRnPy = bufRnPy(false);
-        final Vector tRnPz = bufRnPz(false);
-        // 全局暂存 Y 的数组，这样可以用来防止重复获取来提高效率
-        final Vector tYPtheta = bufYPtheta(false);
-        final Vector tYPphi = bufYPphi(false);
-        final Vector tYPx = bufYPx(false);
-        final Vector tYPy = bufYPy(false);
-        final Vector tYPz = bufYPz(false);
+        // 确保 Rn Y 的长度
+        int tMinSize = tNN * (mNMax+1);
+        mRnAll.ensureCapacity(tMinSize);
+        while (mRnAll.size()<tMinSize) mRnAll.add(0.0);
+        int tLMax = Math.max(mLMax, mL3Max);
+        int tLMAll = (tLMax+1)*(tLMax+1);
+        tMinSize = tNN * tLMAll;
+        mYAll.ensureCapacity(tMinSize);
+        while (mYAll.size()<tMinSize) mYAll.add(0.0);
         
-        // mFingerPrintPxCross 需要传入完整单个数组，这里采用内部对象的方法实现
-        if (aCalCross) {
-            mFingerPrintPxCross.clear(); mFingerPrintPxCross.addZeros(tNN*tSizeFP);
-            mFingerPrintPyCross.clear(); mFingerPrintPyCross.addZeros(tNN*tSizeFP);
-            mFingerPrintPzCross.clear(); mFingerPrintPzCross.addZeros(tNN*tSizeFP);
+        // 初始化偏导数相关值
+        rFpPx.fill(0.0);
+        rFpPy.fill(0.0);
+        rFpPz.fill(0.0);
+        if (rFpPxCross != null) {
+            assert rFpPyCross!=null && rFpPzCross!=null;
+            rFpPxCross.clear(); rFpPxCross.addZeros(tNN*tSizeFP);
+            rFpPyCross.clear(); rFpPyCross.addZeros(tNN*tSizeFP);
+            rFpPzCross.clear(); rFpPzCross.addZeros(tNN*tSizeFP);
         }
         
+        // 现在直接计算基组偏导
         evalPartial0(mDxAll.internalData(), mDyAll.internalData(), mDzAll.internalData(), mTypeAll.internalData(), tNN,
-                     mRnAll.internalData(), tRnPx.internalData(), tRnPy.internalData(), tRnPz.internalData(),
-                     mYAll.internalData(), tYPtheta.internalData(), tYPphi.internalData(), tYPx.internalData(), tYPy.internalData(), tYPz.internalData(),
-                     cnlm.internalData(), cnlmPx.internalData(), cnlmPy.internalData(), cnlmPz.internalData(),
-                     rFingerPrintPx.internalData(), rFingerPrintPy.internalData(), rFingerPrintPz.internalData(),
-                     aCalCross?mFingerPrintPxCross.internalData():null,
-                     aCalCross?mFingerPrintPyCross.internalData():null,
-                     aCalCross?mFingerPrintPzCross.internalData():null,
+                     mRnAll.internalData(), bufRnPx(false).internalData(), bufRnPy(false).internalData(), bufRnPz(false).internalData(),
+                     mYAll.internalData(), bufYPtheta(false).internalData(), bufYPphi(false).internalData(), bufYPx(false).internalData(), bufYPy(false).internalData(), bufYPz(false).internalData(),
+                     bufCnlm(true).internalData(), bufCnlmPx(false).internalData(), bufCnlmPy(false).internalData(), bufCnlmPz(false).internalData(),
+                     rFp.internalData(), rFpPx.internalData(), rFpPy.internalData(), rFpPz.internalData(),
+                     rFpPxCross!=null?rFpPxCross.internalData():null,
+                     rFpPyCross!=null?rFpPyCross.internalData():null,
+                     rFpPzCross!=null?rFpPzCross.internalData():null,
                      mTypeNum, mRCut, mNMax, mLMax, mL3Max, mL3Cross);
-        
-        if (aCalCross) {
-            for (int j = 0; j < tNN; ++j) rFingerPrintPxCross.get(j).fill(new ShiftVector(tSizeFP, j*tSizeFP, mFingerPrintPxCross.internalData()));
-            for (int j = 0; j < tNN; ++j) rFingerPrintPyCross.get(j).fill(new ShiftVector(tSizeFP, j*tSizeFP, mFingerPrintPyCross.internalData()));
-            for (int j = 0; j < tNN; ++j) rFingerPrintPzCross.get(j).fill(new ShiftVector(tSizeFP, j*tSizeFP, mFingerPrintPzCross.internalData()));
-        }
-        
-        List<Vector> rOut = Lists.newArrayList(rFingerPrint, rFingerPrintPx, rFingerPrintPy, rFingerPrintPz);
-        if (aCalCross) {
-            rOut.addAll(rFingerPrintPxCross);
-            rOut.addAll(rFingerPrintPyCross);
-            rOut.addAll(rFingerPrintPzCross);
-        }
-        return rOut;
     }
     
+    void buildNL(IDxyzTypeIterable aNL) {
+        // 缓存情况需要先清空这些
+        mDxAll.clear(); mDyAll.clear(); mDzAll.clear();
+        mTypeAll.clear();
+        aNL.forEachDxyzType((dx, dy, dz, type) -> {
+            double dis = MathEX.Fast.hypot(dx, dy, dz);
+            if (dis >= mRCut) return; // 理论不会触发，因为在上层遍历时就排除了
+            if (type > mTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+mTypeNum+")");
+            // 简单缓存近邻列表
+            mDxAll.add(dx); mDyAll.add(dy); mDzAll.add(dz);
+            mTypeAll.add(type);
+        });
+    }
+    
+    static void eval0(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
+                      double[] rRn, double[] rY, double[] rCnlm, double[] rFingerPrint,
+                      int aTypeNum, double aRCut, int aNMax, int aLMax, int aL3Max, boolean aL3Cross) {
+        if (aL3Max > 4) throw new IllegalArgumentException("l3max > 4 for native SphericalChebyshev");
+        final int tSizeN = aTypeNum>1 ? aNMax+aNMax+2 : aNMax+1;
+        final int tSizeL = aLMax+1 + (aL3Cross?L3NCOLS:L3NCOLS_NOCROSS)[aL3Max];
+        final int tLMax = Math.max(aLMax, aL3Max);
+        final int tLMAll = (tLMax+1)*(tLMax+1);
+        if (tLMax > 20) throw new IllegalArgumentException("lmax > 20 for native SphericalChebyshev");
+        rangeCheck(aNlDx.length, aNN);
+        rangeCheck(aNlDy.length, aNN);
+        rangeCheck(aNlDz.length, aNN);
+        rangeCheck(aNlType.length, aNN);
+        rangeCheck(rRn.length, aNMax+1);
+        rangeCheck(rY.length, tLMAll);
+        rangeCheck(rCnlm.length, tSizeN*tLMAll);
+        rangeCheck(rFingerPrint.length, tSizeN*tSizeL);
+        sNativeTimer.from();
+        eval1(aNlDx, aNlDy, aNlDz, aNlType, aNN,
+                 rRn, rY, rCnlm, rFingerPrint,
+                 aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL3Cross);
+        sNativeTimer.to();
+    }
+    private static native void eval1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
+                                     double[] rRn, double[] rY, double[] rCnlm, double[] rFingerPrint,
+                                     int aTypeNum, double aRCut, int aNMax, int aLMax, int aL3Max, boolean aL3Cross);
+    
     static void evalPartial0(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
-                             double[] aNlRn, double[] rRnPx, double[] rRnPy, double[] rRnPz,
-                             double[] aNlY, double[] rYPtheta, double[] rYPphi, double[] rYPx, double[] rYPy, double[] rYPz,
-                             double[] aCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz,
-                             double[] rFingerPrintPx, double[] rFingerPrintPy, double[] rFingerPrintPz,
+                             double[] rNlRn, double[] rRnPx, double[] rRnPy, double[] rRnPz,
+                             double[] rNlY, double[] rYPtheta, double[] rYPphi, double[] rYPx, double[] rYPy, double[] rYPz,
+                             double[] rCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz,
+                             double[] rFingerPrint, double[] rFingerPrintPx, double[] rFingerPrintPy, double[] rFingerPrintPz,
                              double @Nullable[] rFingerPrintPxCross, double @Nullable[] rFingerPrintPyCross, double @Nullable[] rFingerPrintPzCross,
                              int aTypeNum, double aRCut, int aNMax, int aLMax, int aL3Max, boolean aL3Cross) {
         if (aL3Max > 4) throw new IllegalArgumentException("l3max > 4 for native SphericalChebyshev");
@@ -243,39 +267,42 @@ public class SphericalChebyshevNative extends SphericalChebyshev {
         rangeCheck(aNlDy.length, aNN);
         rangeCheck(aNlDz.length, aNN);
         rangeCheck(aNlType.length, aNN);
-        rangeCheck(aNlRn.length, aNN*(aNMax+1));
+        rangeCheck(rNlRn.length, aNN*(aNMax+1));
         rangeCheck(rRnPx.length, aNMax+1);
         rangeCheck(rRnPy.length, aNMax+1);
         rangeCheck(rRnPz.length, aNMax+1);
-        rangeCheck(aNlY.length, aNN*tLMAll);
+        rangeCheck(rNlY.length, aNN*tLMAll);
         rangeCheck(rYPtheta.length, tLMAll);
         rangeCheck(rYPphi.length, tLMAll);
         rangeCheck(rYPx.length, tLMAll);
         rangeCheck(rYPy.length, tLMAll);
         rangeCheck(rYPz.length, tLMAll);
-        rangeCheck(aCnlm.length, tSizeN*tLMAll);
+        rangeCheck(rCnlm.length, tSizeN*tLMAll);
         rangeCheck(rCnlmPx.length, tLMAll);
         rangeCheck(rCnlmPy.length, tLMAll);
         rangeCheck(rCnlmPz.length, tLMAll);
+        rangeCheck(rFingerPrint.length, tSizeN*tSizeL);
         rangeCheck(rFingerPrintPx.length, tSizeN*tSizeL);
         rangeCheck(rFingerPrintPy.length, tSizeN*tSizeL);
         rangeCheck(rFingerPrintPz.length, tSizeN*tSizeL);
         if (rFingerPrintPxCross != null) rangeCheck(rFingerPrintPxCross.length, aNN*tSizeN*tSizeL);
         if (rFingerPrintPyCross != null) rangeCheck(rFingerPrintPyCross.length, aNN*tSizeN*tSizeL);
         if (rFingerPrintPzCross != null) rangeCheck(rFingerPrintPzCross.length, aNN*tSizeN*tSizeL);
+        sNativeTimer.from();
         evalPartial1(aNlDx, aNlDy, aNlDz, aNlType, aNN,
-                     aNlRn, rRnPx, rRnPy, rRnPz,
-                     aNlY, rYPtheta, rYPphi, rYPx, rYPy, rYPz,
-                     aCnlm, rCnlmPx, rCnlmPy, rCnlmPz,
-                     rFingerPrintPx, rFingerPrintPy, rFingerPrintPz,
+                     rNlRn, rRnPx, rRnPy, rRnPz,
+                     rNlY, rYPtheta, rYPphi, rYPx, rYPy, rYPz,
+                     rCnlm, rCnlmPx, rCnlmPy, rCnlmPz,
+                     rFingerPrint, rFingerPrintPx, rFingerPrintPy, rFingerPrintPz,
                      rFingerPrintPxCross, rFingerPrintPyCross, rFingerPrintPzCross,
                      aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL3Cross);
+        sNativeTimer.to();
     }
     private static native void evalPartial1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
-                                            double[] aNlRn, double[] rRnPx, double[] rRnPy, double[] rRnPz,
-                                            double[] aNlY, double[] rYPtheta, double[] rYPphi, double[] rYPx, double[] rYPy, double[] rYPz,
-                                            double[] aCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz,
-                                            double[] rFingerPrintPx, double[] rFingerPrintPy, double[] rFingerPrintPz,
+                                            double[] rNlRn, double[] rRnPx, double[] rRnPy, double[] rRnPz,
+                                            double[] rNlY, double[] rYPtheta, double[] rYPphi, double[] rYPx, double[] rYPy, double[] rYPz,
+                                            double[] rCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz,
+                                            double[] rFingerPrint, double[] rFingerPrintPx, double[] rFingerPrintPy, double[] rFingerPrintPz,
                                             double @Nullable[] rFingerPrintPxCross, double @Nullable[] rFingerPrintPyCross, double @Nullable[] rFingerPrintPzCross,
                                             int aTypeNum, double aRCut, int aNMax, int aLMax, int aL3Max, boolean aL3Cross);
     

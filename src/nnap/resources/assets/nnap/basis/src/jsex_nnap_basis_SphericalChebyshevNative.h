@@ -21,11 +21,19 @@ extern "C" {
 #define jsex_nnap_basis_SphericalChebyshevNative_DEFAULT_RCUT 6.2
 /*
  * Class:     jsex_nnap_basis_SphericalChebyshevNative
+ * Method:    eval1
+ * Signature: ([D[D[D[II[D[D[D[DIDIIIZ)V
+ */
+JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshevNative_eval1
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdouble, jint, jint, jint, jboolean);
+
+/*
+ * Class:     jsex_nnap_basis_SphericalChebyshevNative
  * Method:    evalPartial1
- * Signature: ([D[D[D[II[D[D[D[D[D[D[D[D[D[D[D[D[D[D[D[D[D[D[D[DIDIIIZ)V
+ * Signature: ([D[D[D[II[D[D[D[D[D[D[D[D[D[D[D[D[D[D[D[D[D[D[D[D[DIDIIIZ)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshevNative_evalPartial1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdouble, jint, jint, jint, jboolean);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdouble, jint, jint, jint, jboolean);
 
 #ifdef __cplusplus
 }

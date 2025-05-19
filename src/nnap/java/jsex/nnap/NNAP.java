@@ -5,6 +5,7 @@ import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
 import jse.clib.*;
 import jse.code.*;
+import jse.code.collection.DoubleList;
 import jse.code.collection.ISlice;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
@@ -504,7 +505,9 @@ public class NNAP implements IPairPotential {
                 final int cIdx = aIndices.get(i);
                 final SingleNNAP tModel = model(aTypeMap.applyAsInt(aAPC.atomType_().get(cIdx)));
                 final IBasis tBasis = tModel.basis(threadID);
-                Vector tBasisValue = tBasis.eval(aAPC, cIdx, aTypeMap);
+                // 目前还是采用缓存实现
+                Vector tBasisValue = VectorCache.getVec(tBasis.size());
+                tBasis.eval(aAPC, cIdx, aTypeMap, tBasisValue);
                 tModel.normBasis(tBasisValue);
                 tModel.submitBatchForward(threadID, tBasisValue, pred -> {
                     pred = tModel.denormEng(pred);
@@ -571,7 +574,9 @@ public class NNAP implements IPairPotential {
                     final IVector tEnergies = rEnergiesPar[threadID];
                     final SingleNNAP tModel = model(aTypeMap.applyAsInt(aAPC.atomType_().get(i)));
                     final IBasis tBasis = tModel.basis(threadID);
-                    Vector tBasisValue = tBasis.eval(aAPC, i, aTypeMap);
+                    // 目前还是采用缓存实现
+                    Vector tBasisValue = VectorCache.getVec(tBasis.size());
+                    tBasis.eval(aAPC, i, aTypeMap, tBasisValue);
                     tModel.normBasis(tBasisValue);
                     tModel.submitBatchForward(threadID, tBasisValue, pred -> {
                         pred = tModel.denormEng(pred);
@@ -632,9 +637,18 @@ public class NNAP implements IPairPotential {
                 final @Nullable IVector tVirialsYZ = rVirialsYZ!=null ? rVirialsYZPar[threadID] : null;
                 final SingleNNAP tModel = model(aTypeMap.applyAsInt(aAPC.atomType_().get(i)));
                 final IBasis tBasis = tModel.basis(threadID);
-                final List<@NotNull Vector> tOut = tBasis.evalPartial(true, aAPC, i, aTypeMap);
-                Vector tBasisValue = tOut.get(0); tModel.normBasis(tBasisValue);
-                tModel.submitBatchBackward(threadID, tBasisValue, tEnergies==null ? null : pred -> {
+                // 目前还是采用缓存实现
+                final int tBasisSize = tBasis.size();
+                Vector tFp = VectorCache.getVec(tBasisSize);
+                Vector tFpPx = VectorCache.getVec(tBasisSize);
+                Vector tFpPy = VectorCache.getVec(tBasisSize);
+                Vector tFpPz = VectorCache.getVec(tBasisSize);
+                DoubleList tFpPxCross = new DoubleList(1024);
+                DoubleList tFpPyCross = new DoubleList(1024);
+                DoubleList tFpPzCross = new DoubleList(1024);
+                tBasis.evalPartial(aAPC, i, aTypeMap, tFp, tFpPx, tFpPy, tFpPz, tFpPxCross, tFpPyCross, tFpPzCross);
+                tModel.normBasis(tFp);
+                tModel.submitBatchBackward(threadID, tFp, tEnergies==null ? null : pred -> {
                     pred = tModel.denormEng(pred);
                     pred += tModel.mRefEng;
                     tEnergies.add(tEnergies.size()==1?0:i, pred);
@@ -642,15 +656,14 @@ public class NNAP implements IPairPotential {
                     tModel.normBasisPartial(xGrad);
                     tModel.denormEngPartial(xGrad);
                     final XYZ rBuf = new XYZ();
-                    forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tOut.get(1).internalData(), tOut.get(2).internalData(), tOut.get(3).internalData(), xGrad.internalDataSize(), rBuf);
+                    forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tFpPx.internalData(), tFpPy.internalData(), tFpPz.internalData(), xGrad.internalDataSize(), 0, rBuf);
                     if (tForcesX != null) tForcesX.add(i, -rBuf.mX);
                     if (tForcesY != null) tForcesY.add(i, -rBuf.mY);
                     if (tForcesZ != null) tForcesZ.add(i, -rBuf.mZ);
                     // 累加交叉项到近邻
-                    final int tNN = (tOut.size()-4)/3;
                     final int[] j = {0};
                     aAPC.nl_().forEachNeighbor(i, tBasis.rcut(), (dx, dy, dz, idx) -> {
-                        forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tOut.get(4+j[0]).internalData(), tOut.get(4+tNN+j[0]).internalData(), tOut.get(4+tNN+tNN+j[0]).internalData(), xGrad.internalDataSize(), rBuf);
+                        forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tFpPxCross.internalData(), tFpPyCross.internalData(), tFpPzCross.internalData(), xGrad.internalDataSize(), tBasisSize*j[0], rBuf);
                         double fx = -rBuf.mX;
                         double fy = -rBuf.mY;
                         double fz = -rBuf.mZ;
@@ -666,7 +679,10 @@ public class NNAP implements IPairPotential {
                         ++j[0];
                     });
                     // 注意要在这里归还中间变量，实际为延迟归还操作
-                    VectorCache.returnVec(tOut);
+                    VectorCache.returnVec(tFp);
+                    VectorCache.returnVec(tFpPx);
+                    VectorCache.returnVec(tFpPy);
+                    VectorCache.returnVec(tFpPz);
                 });
             });
         } catch (TorchException e) {
@@ -688,9 +704,9 @@ public class NNAP implements IPairPotential {
     }
     
     @ApiStatus.Internal
-    public static void forceDot_(double[] aXGrad, int aShift, double[] aFpPx, double[] aFpPy, double[] aFpPz, int aLength, XYZ rBuf) {
+    public static void forceDot_(double[] aXGrad, int aShift, double[] aFpPx, double[] aFpPy, double[] aFpPz, int aLength, int aShiftFp, XYZ rBuf) {
         double rDotX = 0.0, rDotY = 0.0, rDotZ = 0.0;
-        for (int i = 0, j = aShift; i < aLength; ++i, ++j) {
+        for (int ii = 0, i = aShiftFp, j = aShift; ii < aLength; ++ii, ++i, ++j) {
             double tXGrad = aXGrad[j];
             rDotX += tXGrad * aFpPx[i];
             rDotY += tXGrad * aFpPy[i];

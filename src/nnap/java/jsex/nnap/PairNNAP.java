@@ -6,14 +6,13 @@ import jse.clib.DoubleCPointer;
 import jse.clib.IntCPointer;
 import jse.clib.NestedDoubleCPointer;
 import jse.clib.NestedIntCPointer;
+import jse.code.collection.DoubleList;
+import jse.code.timer.AccumulatedTimer;
 import jse.lmp.LmpPlugin;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.IntVector;
 import jse.math.vector.LogicalVector;
 import jse.math.vector.Vector;
-import org.jetbrains.annotations.NotNull;
-
-import java.util.List;
 
 /**
  * {@link LmpPlugin.Pair} 的 NNAP 版本，在 lammps
@@ -63,6 +62,9 @@ public class PairNNAP extends LmpPlugin.Pair {
         neighborRequestFull();
     }
     
+    public static final AccumulatedTimer sBasisTimer = new AccumulatedTimer();
+    public static final AccumulatedTimer sFDotTimer = new AccumulatedTimer();
+    
     /**
      * 这里为了和 lammps 接口保持一致，并不完全按照 java 中的代码风格编写
      */
@@ -107,8 +109,17 @@ public class PairNNAP extends LmpPlugin.Pair {
             jlist.parse2dest(jlistVec.internalData(), jlistVec.internalDataShift(), jlistVec.internalDataSize());
             
             final NNAP.SingleNNAP tNNAP = mNNAP.model(mLmpType2NNAPType[typei]);
+            final int tBasisSize = tNNAP.basis().size();
             // 这里需要计算力，先计算基组偏导
-            final List<@NotNull Vector> tOut = tNNAP.basis().evalPartial(true, dxyzTypeDo -> {
+            Vector tFp = VectorCache.getVec(tBasisSize);
+            Vector tFpPx = VectorCache.getVec(tBasisSize);
+            Vector tFpPy = VectorCache.getVec(tBasisSize);
+            Vector tFpPz = VectorCache.getVec(tBasisSize);
+            DoubleList tFpPxCross = new DoubleList(1024);
+            DoubleList tFpPyCross = new DoubleList(1024);
+            DoubleList tFpPzCross = new DoubleList(1024);
+            sBasisTimer.from();
+            tNNAP.basis().evalPartial(dxyzTypeDo -> {
                 // 在这里遍历近邻列表
                 for (int jj = 0; jj < jnum; ++jj) {
                     int j = jlistVec.get(jj);
@@ -123,10 +134,11 @@ public class PairNNAP extends LmpPlugin.Pair {
                         dxyzTypeDo.run(delx, dely, delz, mLmpType2NNAPType[typeVec.get(j)]);
                     }
                 }
-            });
+            }, tFp, tFpPx, tFpPy, tFpPz, tFpPxCross, tFpPyCross, tFpPzCross);
+            sBasisTimer.to();
             // 反向传播，现在改为批处理方式，可以大大提高效率
-            Vector tBasis = tOut.get(0); tNNAP.normBasis(tBasis);
-            tNNAP.submitBatchBackward(tBasis, eflag ? pred -> {
+            tNNAP.normBasis(tFp);
+            tNNAP.submitBatchBackward(tFp, eflag ? pred -> {
                 // 更新能量
                 double eng = tNNAP.denormEng(pred) + tNNAP.refEng();
                 // 由于不是瓶颈，并且不是频繁调用，因此这里不去专门优化
@@ -137,18 +149,21 @@ public class PairNNAP extends LmpPlugin.Pair {
                 tNNAP.denormEngPartial(xGrad);
                 final XYZ rBuf = new XYZ();
                 // 更新自身的力
-                NNAP.forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tOut.get(1).internalData(), tOut.get(2).internalData(), tOut.get(3).internalData(), xGrad.internalDataSize(), rBuf);
+                sFDotTimer.from();
+                NNAP.forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tFpPx.internalData(), tFpPy.internalData(), tFpPz.internalData(), xGrad.internalDataSize(), 0, rBuf);
+                sFDotTimer.to();
                 fMat.update(i, 0, v -> v - rBuf.mX);
                 fMat.update(i, 1, v -> v - rBuf.mY);
                 fMat.update(i, 2, v -> v - rBuf.mZ);
                 // 然后再遍历一次，传播力和位力到近邻
-                final int tNN = (tOut.size()-4)/3;
                 int ji = 0;
                 for (int jj = 0; jj < jnum; ++jj) if (jlistMask.get(jj)) {
                     int j = jlistVec.get(jj);
                     j &= LmpPlugin.NEIGHMASK;
                     
-                    NNAP.forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tOut.get(4+ji).internalData(), tOut.get(4+tNN+ji).internalData(), tOut.get(4+tNN+tNN+ji).internalData(), xGrad.internalDataSize(), rBuf);
+                    sFDotTimer.from();
+                    NNAP.forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tFpPxCross.internalData(), tFpPyCross.internalData(), tFpPzCross.internalData(), xGrad.internalDataSize(), tBasisSize*ji, rBuf);
+                    sFDotTimer.to();
                     final double fx = -rBuf.mX;
                     final double fy = -rBuf.mY;
                     final double fz = -rBuf.mZ;
@@ -167,7 +182,10 @@ public class PairNNAP extends LmpPlugin.Pair {
                     }
                 }
                 // 同样这个返回需要放在里面延迟归还
-                VectorCache.returnVec(tOut);
+                VectorCache.returnVec(tFp);
+                VectorCache.returnVec(tFpPx);
+                VectorCache.returnVec(tFpPy);
+                VectorCache.returnVec(tFpPz);
                 LogicalVectorCache.returnVec(jlistMask);
                 IntVectorCache.returnVec(jlistVec);
             });
