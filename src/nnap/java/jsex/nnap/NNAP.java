@@ -83,7 +83,7 @@ public class NNAP implements IPairPotential {
         public static @Nullable String REDIRECT_NNAP_LIB = OS.env("JSE_REDIRECT_NNAP_LIB");
     }
     
-    public final static int VERSION = 2;
+    public final static int VERSION = 3;
     public final static String LIB_DIR = JAR_DIR+"nnap/jni/" + UT.Code.uniqueID(CS.VERSION, VERSION, Torch.HOME, Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
@@ -598,19 +598,19 @@ public class NNAP implements IPairPotential {
                 }, xGrad -> {
                     tModel.normBasisPartial(xGrad);
                     tModel.denormEngPartial(xGrad);
-                    final XYZ rBuf = new XYZ();
+                    final double[] rBuf = {0.0, 0.0, 0.0};
                     forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tFpPx.internalData(), tFpPy.internalData(), tFpPz.internalData(), xGrad.internalDataSize(), 0, rBuf);
                     if (rForceAccumulator != null) {
-                        rForceAccumulator.add(threadID, cIdx, -1, rBuf.mX, rBuf.mY, rBuf.mZ);
+                        rForceAccumulator.add(threadID, cIdx, -1, rBuf[0], rBuf[1], rBuf[2]);
                     }
                     // 累加交叉项到近邻
                     final int[] j = {0};
                     nl.forEachDxyzTypeIdx(tBasis.rcut(), (dx, dy, dz, type, idx) -> {
                         // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查
                         forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tFpPxCross.internalData(), tFpPyCross.internalData(), tFpPzCross.internalData(), xGrad.internalDataSize(), tBasisSize*j[0], rBuf);
-                        double fx = -rBuf.mX;
-                        double fy = -rBuf.mY;
-                        double fz = -rBuf.mZ;
+                        double fx = -rBuf[0];
+                        double fy = -rBuf[1];
+                        double fz = -rBuf[2];
                         if (rForceAccumulator != null) {
                             rForceAccumulator.add(threadID, -1, idx, fx, fy, fz);
                         }
@@ -628,8 +628,8 @@ public class NNAP implements IPairPotential {
         }
     }
     
-    @ApiStatus.Internal
-    public static void forceDot_(double[] aXGrad, int aShift, double[] aFpPx, double[] aFpPy, double[] aFpPz, int aLength, int aShiftFp, XYZ rBuf) {
+    private static void forceDot_(double[] aXGrad, int aShift, double[] aFpPx, double[] aFpPy, double[] aFpPz, int aLength, int aShiftFp, double[] rBuf) {
+        // 考虑到不开启 avx512 优化的请跨下和 c 的性能基本一样，而专门开启存在重复代码，因此暂保留不仅优化
         double rDotX = 0.0, rDotY = 0.0, rDotZ = 0.0;
         for (int ii = 0, i = aShiftFp, j = aShift; ii < aLength; ++ii, ++i, ++j) {
             double tXGrad = aXGrad[j];
@@ -637,9 +637,8 @@ public class NNAP implements IPairPotential {
             rDotY += tXGrad * aFpPy[i];
             rDotZ += tXGrad * aFpPz[i];
         }
-        rBuf.setXYZ(rDotX, rDotY, rDotZ);
+        rBuf[0] = rDotX; rBuf[1] = rDotY; rBuf[2] = rDotZ;
     }
-    
     
     private static native double forward0(long aModelPtr, double[] aX, int aStart, int aCount) throws TorchException;
     private static native double forward1(long aModelPtr, long aXPtr, int aCount) throws TorchException;

@@ -7,6 +7,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef jsex_nnap_NNAP_VERSION
+#define jsex_nnap_NNAP_VERSION 3L
 #undef jsex_nnap_NNAP_BATCH_SIZE
 #define jsex_nnap_NNAP_BATCH_SIZE 64L
 /*

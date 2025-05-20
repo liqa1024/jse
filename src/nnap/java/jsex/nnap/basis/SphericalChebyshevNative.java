@@ -6,7 +6,6 @@ import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
-import jse.code.timer.AccumulatedTimer;
 import jse.math.MathEX;
 import jse.math.vector.Vector;
 import jsex.nnap.NNAP;
@@ -146,9 +145,6 @@ public class SphericalChebyshevNative extends SphericalChebyshev {
         );
     }
     
-    
-    public static final AccumulatedTimer sNativeTimer = new AccumulatedTimer();
-    
     @Override public void eval(IDxyzTypeIterable aNL, Vector rFp) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
         // 统一缓存近邻列表
@@ -234,11 +230,9 @@ public class SphericalChebyshevNative extends SphericalChebyshev {
         rangeCheck(rY.length, tLMAll);
         rangeCheck(rCnlm.length, tSizeN*tLMAll);
         rangeCheck(rFingerPrint.length, tSizeN*tSizeL);
-        sNativeTimer.from();
         eval1(aNlDx, aNlDy, aNlDz, aNlType, aNN,
                  rRn, rY, rCnlm, rFingerPrint,
                  aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL3Cross);
-        sNativeTimer.to();
     }
     private static native void eval1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
                                      double[] rRn, double[] rY, double[] rCnlm, double[] rFingerPrint,
@@ -282,7 +276,6 @@ public class SphericalChebyshevNative extends SphericalChebyshev {
         if (rFingerPrintPxCross != null) rangeCheck(rFingerPrintPxCross.length, aNN*tSizeN*tSizeL);
         if (rFingerPrintPyCross != null) rangeCheck(rFingerPrintPyCross.length, aNN*tSizeN*tSizeL);
         if (rFingerPrintPzCross != null) rangeCheck(rFingerPrintPzCross.length, aNN*tSizeN*tSizeL);
-        sNativeTimer.from();
         evalPartial1(aNlDx, aNlDy, aNlDz, aNlType, aNN,
                      rNlRn, rRnPx, rRnPy, rRnPz,
                      rNlY, rYPtheta, rYPphi, rYPx, rYPy, rYPz,
@@ -290,7 +283,6 @@ public class SphericalChebyshevNative extends SphericalChebyshev {
                      rFingerPrint, rFingerPrintPx, rFingerPrintPy, rFingerPrintPz,
                      rFingerPrintPxCross, rFingerPrintPyCross, rFingerPrintPzCross,
                      aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL3Cross);
-        sNativeTimer.to();
     }
     private static native void evalPartial1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
                                             double[] rNlRn, double[] rRnPx, double[] rRnPy, double[] rRnPz,
