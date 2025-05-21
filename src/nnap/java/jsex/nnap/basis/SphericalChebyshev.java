@@ -127,40 +127,6 @@ public class SphericalChebyshev implements IBasis {
         mYPphi = VectorCache.getVec(mLMAll);
         mYPtheta = VectorCache.getVec(mLMAll);
     }
-    
-    /**
-     * @param aSymbols 基组需要的元素排序
-     * @param aNMax Chebyshev 多项式选取的最大阶数
-     * @param aLMax 球谐函数中 l 选取的最大阶数
-     * @param aL3Max 三阶基组中球谐函数 l 选取的最大阶数，目前只支持到 {@code l = 4}
-     * @param aL3Cross 三阶基组中球谐函数是否考虑交叉项，默认为 {@code true}
-     * @param aRCut 截断半径
-     * @param aWType 控制多个种类情况下的处理方式，默认为 {@link #WTYPE_DEFAULT}
-     */
-    public SphericalChebyshev(String @NotNull[] aSymbols, int aNMax, int aLMax, int aL3Max, boolean aL3Cross, double aRCut, int aWType) {
-        this(aSymbols, aSymbols.length, aNMax, aLMax, aL3Max, aL3Cross, aRCut, aWType);
-    }
-    /**
-     * @param aSymbols 基组需要的元素排序
-     * @param aNMax Chebyshev 多项式选取的最大阶数
-     * @param aLMax 球谐函数中 l 选取的最大阶数
-     * @param aL3Max 三阶基组中球谐函数 l 选取的最大阶数，目前只支持到 {@code l = 4}
-     * @param aL3Cross 三阶基组中球谐函数是否考虑交叉项，默认为 {@code true}
-     * @param aRCut 截断半径
-     */
-    public SphericalChebyshev(String @NotNull[] aSymbols, int aNMax, int aLMax, int aL3Max, boolean aL3Cross, double aRCut) {
-        this(aSymbols, aNMax, aLMax, aL3Max, aL3Cross, aRCut, WTYPE_DEFAULT);
-    }
-    /**
-     * @param aSymbols 基组需要的元素排序
-     * @param aNMax Chebyshev 多项式选取的最大阶数
-     * @param aLMax 球谐函数中 l 选取的最大阶数
-     * @param aL3Max 三阶基组中球谐函数 l 选取的最大阶数，目前只支持到 {@code l = 4}
-     * @param aRCut 截断半径
-     */
-    public SphericalChebyshev(String @NotNull[] aSymbols, int aNMax, int aLMax, int aL3Max, double aRCut) {
-        this(aSymbols, aNMax, aLMax, aL3Max, DEFAULT_L3CROSS, aRCut);
-    }
     /**
      * @param aSymbols 基组需要的元素排序
      * @param aNMax Chebyshev 多项式选取的最大阶数
@@ -168,41 +134,7 @@ public class SphericalChebyshev implements IBasis {
      * @param aRCut 截断半径
      */
     public SphericalChebyshev(String @NotNull[] aSymbols, int aNMax, int aLMax, double aRCut) {
-        this(aSymbols, aNMax, aLMax, DEFAULT_L3MAX, aRCut);
-    }
-    
-    /**
-     * @param aTypeNum 原子种类数目
-     * @param aNMax Chebyshev 多项式选取的最大阶数
-     * @param aLMax 球谐函数中 l 选取的最大阶数
-     * @param aL3Max 三阶基组中球谐函数 l 选取的最大阶数，目前只支持到 {@code l = 4}
-     * @param aL3Cross 三阶基组中球谐函数是否考虑交叉项，默认为 {@code true}
-     * @param aRCut 截断半径
-     * @param aWType 控制多个种类情况下的处理方式，默认为 {@link #WTYPE_DEFAULT}
-     */
-    public SphericalChebyshev(int aTypeNum, int aNMax, int aLMax, int aL3Max, boolean aL3Cross, double aRCut, int aWType) {
-        this(null, aTypeNum, aNMax, aLMax, aL3Max, aL3Cross, aRCut, aWType);
-    }
-    /**
-     * @param aTypeNum 原子种类数目
-     * @param aNMax Chebyshev 多项式选取的最大阶数
-     * @param aLMax 球谐函数中 l 选取的最大阶数
-     * @param aL3Max 三阶基组中球谐函数 l 选取的最大阶数，目前只支持到 {@code l = 4}
-     * @param aL3Cross 三阶基组中球谐函数是否考虑交叉项，默认为 {@code true}
-     * @param aRCut 截断半径
-     */
-    public SphericalChebyshev(int aTypeNum, int aNMax, int aLMax, int aL3Max, boolean aL3Cross, double aRCut) {
-        this(aTypeNum, aNMax, aLMax, aL3Max, aL3Cross, aRCut, WTYPE_DEFAULT);
-    }
-    /**
-     * @param aTypeNum 原子种类数目
-     * @param aNMax Chebyshev 多项式选取的最大阶数
-     * @param aLMax 球谐函数中 l 选取的最大阶数
-     * @param aL3Max 三阶基组中球谐函数 l 选取的最大阶数，目前只支持到 {@code l = 4}
-     * @param aRCut 截断半径
-     */
-    public SphericalChebyshev(int aTypeNum, int aNMax, int aLMax, int aL3Max, double aRCut) {
-        this(aTypeNum, aNMax, aLMax, aL3Max, DEFAULT_L3CROSS, aRCut);
+        this(aSymbols, aSymbols.length, aNMax, aLMax, DEFAULT_L3MAX, DEFAULT_L3CROSS, aRCut, WTYPE_DEFAULT);
     }
     /**
      * @param aTypeNum 原子种类数目
@@ -211,7 +143,7 @@ public class SphericalChebyshev implements IBasis {
      * @param aRCut 截断半径
      */
     public SphericalChebyshev(int aTypeNum, int aNMax, int aLMax, double aRCut) {
-        this(aTypeNum, aNMax, aLMax, DEFAULT_L3MAX, aRCut);
+        this(null, aTypeNum, aNMax, aLMax, DEFAULT_L3MAX, DEFAULT_L3CROSS, aRCut, WTYPE_DEFAULT);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -227,7 +159,7 @@ public class SphericalChebyshev implements IBasis {
     @SuppressWarnings("rawtypes")
     public static SphericalChebyshev load(String @NotNull[] aSymbols, Map aMap) {
         return new SphericalChebyshev(
-            aSymbols,
+            aSymbols, aSymbols.length,
             ((Number) UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue(),
             ((Number) UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),
             ((Number) UT.Code.getWithDefault(aMap, DEFAULT_L3MAX, "l3max")).intValue(),
@@ -239,7 +171,7 @@ public class SphericalChebyshev implements IBasis {
     @SuppressWarnings("rawtypes")
     public static SphericalChebyshev load(int aTypeNum, Map aMap) {
         return new SphericalChebyshev(
-            aTypeNum,
+            null, aTypeNum,
             ((Number) UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue(),
             ((Number) UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),
             ((Number) UT.Code.getWithDefault(aMap, DEFAULT_L3MAX, "l3max")).intValue(),
