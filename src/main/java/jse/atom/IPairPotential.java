@@ -308,8 +308,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
                 final int cType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(cIdx));
                 neighborListDo.run(threadID, i, cType, (rmax, dxyzTypeDo) -> {
                     // 计算部分原子能量总是不使用半数遍历优化
-                    aAPC.nl_().forEachNeighbor(cIdx, rmax, (dx, dy, dz, idx) -> {
-                        if ((!tNLChecked) && (dx*dx + dy*dy + dz*dz >= rmax*rmax)) return;
+                    aAPC.nl_().forEachNeighbor(cIdx, rmax, false, !tNLChecked, (dx, dy, dz, idx) -> {
                         int tType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(idx));
                         dxyzTypeDo.run(dx, dy, dz, tType, idx);
                     });
@@ -795,8 +794,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
                     final int cType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(i));
                     neighborListDo.run(threadID, i, cType, (rmax, dxyzTypeDo) -> {
                         // 根据 neighborListHalf 来确定是否开启半数优化
-                        aAPC.nl_().forEachNeighbor(i, rmax, tNLHalf, (dx, dy, dz, idx) -> {
-                            if ((!tNLChecked) && (dx*dx + dy*dy + dz*dz >= rmax*rmax)) return;
+                        aAPC.nl_().forEachNeighbor(i, rmax, tNLHalf, !tNLChecked, (dx, dy, dz, idx) -> {
                             int tType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(idx));
                             dxyzTypeDo.run(dx, dy, dz, tType, idx);
                         });
@@ -856,8 +854,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
                 final int cType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(i));
                 neighborListDo.run(threadID, i, cType, (rmax, dxyzTypeDo) -> {
                     // 根据 neighborListHalf 来确定是否开启半数优化
-                    aAPC.nl_().forEachNeighbor(i, rmax, tNLHalf, (dx, dy, dz, idx) -> {
-                        if ((!tNLChecked) && (dx*dx + dy*dy + dz*dz >= rmax*rmax)) return;
+                    aAPC.nl_().forEachNeighbor(i, rmax, tNLHalf, !tNLChecked, (dx, dy, dz, idx) -> {
                         int tType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(idx));
                         dxyzTypeDo.run(dx, dy, dz, tType, idx);
                     });

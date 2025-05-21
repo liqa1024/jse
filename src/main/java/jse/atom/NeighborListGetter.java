@@ -1013,11 +1013,21 @@ public class NeighborListGetter implements IShutdownable {
      * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子
      * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据；
      *             开启后会直接输出 MHT 距离，默认则会输出几何距离的平方
+     * @param aCheck 是否进行截断半径的判断
      */
-     void forEachNeighbor_(final int aIDX, final double aRMax, boolean aHalf, boolean aMHT, @Nullable IIndexFilter aRegion, final IDxyzIdxDo aDxyzIdxDo) {
+     void forEachNeighbor_(final int aIDX, final double aRMax, boolean aHalf, boolean aMHT, boolean aCheck, @Nullable IIndexFilter aRegion, final IDxyzIdxDo aDxyzIdxDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
         final double cX = mAtomDataXYZ.get(aIDX, 0), cY = mAtomDataXYZ.get(aIDX, 1), cZ = mAtomDataXYZ.get(aIDX, 2);
+        if (!aCheck) {
+            getProperLinkedCell(aRMax).forEachNeighbor(aIDX, aHalf, aRegion, (x, y, z, idx) -> {
+                // 会自动处理 idx 相同以及 half 的情况
+                double tDx = x - cX;
+                double tDy = y - cY;
+                double tDz = z - cZ;
+                aDxyzIdxDo.run(tDx, tDy, tDz, idx);
+            });
+        } else
         if (aMHT) {
             getProperLinkedCell(aRMax).forEachNeighbor(aIDX, aHalf, aRegion, (x, y, z, idx) -> {
                 // 内部会自动处理 idx 相同以及 half 的情况
@@ -1039,8 +1049,8 @@ public class NeighborListGetter implements IShutdownable {
             });
         }
     }
-    void forEachNeighbor_(int aIDX, double aRMax, boolean aHalf, boolean aMHT, IDxyzIdxDo aDxyzIdxDo) {
-        forEachNeighbor_(aIDX, aRMax, aHalf, aMHT, null, aDxyzIdxDo);
+    void forEachNeighbor_(int aIDX, double aRMax, boolean aHalf, boolean aMHT, boolean aCheck, IDxyzIdxDo aDxyzIdxDo) {
+        forEachNeighbor_(aIDX, aRMax, aHalf, aMHT, aCheck, null, aDxyzIdxDo);
     }
     
     /**
@@ -1053,10 +1063,20 @@ public class NeighborListGetter implements IShutdownable {
      * @param aRMax 最大的近邻半径
      * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据；
      *             开启后会直接输出 MHT 距离，默认则会输出几何距离的平方
+     * @param aCheck 是否进行截断半径的判断
      */
-    void forEachNeighbor_(double aX, double aY, double aZ, final double aRMax, boolean aMHT, final IDxyzIdxDo aDxyzIdxDo) {
+    void forEachNeighbor_(double aX, double aY, double aZ, final double aRMax, boolean aMHT, boolean aCheck, final IDxyzIdxDo aDxyzIdxDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
+        if (!aCheck) {
+            getProperLinkedCell(aRMax).forEachNeighbor(aX, aY, aZ, (x, y, z, idx) -> {
+                // 会自动处理 idx 相同以及 half 的情况
+                double tDx = x - aX;
+                double tDy = y - aY;
+                double tDz = z - aZ;
+                aDxyzIdxDo.run(tDx, tDy, tDz, idx);
+            });
+        } else
         if (aMHT) {
             getProperLinkedCell(aRMax).forEachNeighbor(aX, aY, aZ, (x, y, z, idx) -> {
                 double tDx = x - aX;
@@ -1146,13 +1166,14 @@ public class NeighborListGetter implements IShutdownable {
      * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子（当设置了最大近邻后建议关闭，否则会爆出警告）
      * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据；
      *             开启后会直接输出 MHT 距离，默认则会输出几何距离的平方
+     * @param aCheck 是否进行截断半径的判断
      */
-    void forEachNeighbor_(final int aIDX, final double aRMax, int aNnn, boolean aHalf, boolean aMHT, @Nullable IIndexFilter aRegion, IDxyzIdxDo aDxyzIdxDo) {
+    void forEachNeighbor_(final int aIDX, final double aRMax, int aNnn, boolean aHalf, boolean aMHT, boolean aCheck, @Nullable IIndexFilter aRegion, IDxyzIdxDo aDxyzIdxDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
         // 特殊输入处理，直接回到没有限制的情况
         if (aNnn <= 0) {
-            forEachNeighbor_(aIDX, aRMax, aHalf, aMHT, aRegion, aDxyzIdxDo);
+            forEachNeighbor_(aIDX, aRMax, aHalf, aMHT, aCheck, aRegion, aDxyzIdxDo);
             return;
         }
         // 如果有限制 aNnn 则 aHalf 会有意外的结果，因此会警告建议关闭
@@ -1185,8 +1206,8 @@ public class NeighborListGetter implements IShutdownable {
         // 然后直接遍历得到的近邻列表，这里再手动处理 half 的情况
         rNN.forEachNeighbor(aIDX, aHalf, aRegion, aDxyzIdxDo);
     }
-    void forEachNeighbor_(int aIDX, double aRMax, int aNnn, boolean aHalf, boolean aMHT, IDxyzIdxDo aDxyzIdxDo) {
-        forEachNeighbor_(aIDX, aRMax, aNnn, aHalf, aMHT, null, aDxyzIdxDo);
+    void forEachNeighbor_(int aIDX, double aRMax, int aNnn, boolean aHalf, boolean aMHT, boolean aCheck, IDxyzIdxDo aDxyzIdxDo) {
+        forEachNeighbor_(aIDX, aRMax, aNnn, aHalf, aMHT, aCheck, null, aDxyzIdxDo);
     }
     
     /**
@@ -1203,13 +1224,14 @@ public class NeighborListGetter implements IShutdownable {
      * @param aNnn 最大的最近邻数目（Number of Nearest Neighbor list）
      * @param aMHT 是否采用曼哈顿距离（MHT: ManHaTtan distance）来作为距离的判据；
      *             开启后会直接输出 MHT 距离，默认则会输出几何距离的平方
+     * @param aCheck 是否进行截断半径的判断
      */
-    void forEachNeighbor_(double aX, double aY, double aZ, final double aRMax, int aNnn, boolean aMHT, IDxyzIdxDo aDxyzIdxDo) {
+    void forEachNeighbor_(double aX, double aY, double aZ, final double aRMax, int aNnn, boolean aMHT, boolean aCheck, IDxyzIdxDo aDxyzIdxDo) {
         if (mDead) throw new RuntimeException("This NeighborListGetter is dead");
         
         // 特殊输入处理，直接回到没有限制的情况
         if (aNnn <= 0) {
-            forEachNeighbor_(aX, aY, aZ, aRMax, aMHT, aDxyzIdxDo);
+            forEachNeighbor_(aX, aY, aZ, aRMax, aMHT, aCheck, aDxyzIdxDo);
             return;
         }
         
@@ -1245,24 +1267,27 @@ public class NeighborListGetter implements IShutdownable {
      * @param aIDX 中心粒子的 index
      * @param aRMax 最大的近邻半径
      * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子（默认为 false）
+     * @param aCheck 是否进行截断半径的判断（默认为 true）
      */
-    public void forEachNeighbor(int  aIDX, double aRMax, boolean aHalf, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aIDX, aRMax, aHalf, false, aDxyzIdxDo);}
+    public void forEachNeighbor(int  aIDX, double aRMax, boolean aHalf, boolean aCheck, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aIDX, aRMax, aHalf, false, aCheck, aDxyzIdxDo);}
+    public void forEachNeighbor(int  aIDX, double aRMax, boolean aHalf, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor(aIDX, aRMax, aHalf, true, aDxyzIdxDo);}
     public void forEachNeighbor(int  aIDX, double aRMax, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor(aIDX, aRMax, false, aDxyzIdxDo);}
-    public void forEachNeighbor(double aX, double aY, double aZ, double aRMax, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aX, aY, aZ, aRMax, false, aDxyzIdxDo);}
+    public void forEachNeighbor(double aX, double aY, double aZ, double aRMax, boolean aCheck, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aX, aY, aZ, aRMax, false, aCheck, aDxyzIdxDo);}
+    public void forEachNeighbor(double aX, double aY, double aZ, double aRMax, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor(aX, aY, aZ, aRMax, true, aDxyzIdxDo);}
     public void forEachNeighbor(IXYZ aXYZ, double aRMax, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor(aXYZ.x(), aXYZ.y(), aXYZ.z(), aRMax, aDxyzIdxDo);}
     /**
      * 增加的限制最大近邻数目的遍历方法
      * @author liqa
      */
-    public void forEachNeighbor(int  aIDX, double aRMax, int aNnn, boolean aHalf, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aIDX, aRMax, aNnn, aHalf, false, aDxyzIdxDo);}
+    public void forEachNeighbor(int  aIDX, double aRMax, int aNnn, boolean aHalf, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aIDX, aRMax, aNnn, aHalf, false, true, aDxyzIdxDo);}
     public void forEachNeighbor(int  aIDX, double aRMax, int aNnn, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor(aIDX, aRMax, aNnn, false, aDxyzIdxDo);}
-    public void forEachNeighbor(double aX, double aY, double aZ, double aRMax, int aNnn, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aX, aY, aZ, aRMax, aNnn, false, aDxyzIdxDo);}
+    public void forEachNeighbor(double aX, double aY, double aZ, double aRMax, int aNnn, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aX, aY, aZ, aRMax, aNnn, false, true, aDxyzIdxDo);}
     public void forEachNeighbor(IXYZ aXYZ, double aRMax, int aNnn, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor(aXYZ.x(), aXYZ.y(), aXYZ.z(), aRMax, aNnn, aDxyzIdxDo);}
     /**
      * 使用给定区域限制下遍历时，合法 half 遍历的方法
      * @author liqa
      */
-    public void forEachNeighbor(int aIDX, double aRMax, int aNnn, boolean aHalf, IIndexFilter aRegion, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aIDX, aRMax, aNnn, aHalf, false, aRegion, aDxyzIdxDo);}
+    public void forEachNeighbor(int aIDX, double aRMax, int aNnn, boolean aHalf, IIndexFilter aRegion, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aIDX, aRMax, aNnn, aHalf, false, true, aRegion, aDxyzIdxDo);}
     
     
     /**
@@ -1275,17 +1300,17 @@ public class NeighborListGetter implements IShutdownable {
      * @param aRMaxMHT 最大的近邻半径，曼哈顿距离
      * @param aHalf 是否考虑 index 对易后一致的情况，只遍历一半的原子（默认为 false）
      */
-    public void forEachNeighborMHT(int  aIDX, double aRMaxMHT, boolean aHalf, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aIDX, aRMaxMHT, aHalf, true, aDxyzIdxDo);}
+    public void forEachNeighborMHT(int  aIDX, double aRMaxMHT, boolean aHalf, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aIDX, aRMaxMHT, aHalf, true, true, aDxyzIdxDo);}
     public void forEachNeighborMHT(int  aIDX, double aRMaxMHT, IDxyzIdxDo aDxyzIdxDo) {forEachNeighborMHT(aIDX, aRMaxMHT, false, aDxyzIdxDo);}
-    public void forEachNeighborMHT(double aX, double aY, double aZ, double aRMaxMHT, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aX, aY, aZ, aRMaxMHT, true, aDxyzIdxDo);}
+    public void forEachNeighborMHT(double aX, double aY, double aZ, double aRMaxMHT, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aX, aY, aZ, aRMaxMHT, true, true, aDxyzIdxDo);}
     public void forEachNeighborMHT(IXYZ aXYZ, double aRMaxMHT, IDxyzIdxDo aDxyzIdxDo) {forEachNeighborMHT(aXYZ.x(), aXYZ.y(), aXYZ.z(), aRMaxMHT, aDxyzIdxDo);}
     /**
      * 增加的限制最大近邻数目的遍历方法
      * @author liqa
      */
-    public void forEachNeighborMHT(int  aIDX, double aRMax, int aNnn, boolean aHalf, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aIDX, aRMax, aNnn, aHalf, true, aDxyzIdxDo);}
+    public void forEachNeighborMHT(int  aIDX, double aRMax, int aNnn, boolean aHalf, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aIDX, aRMax, aNnn, aHalf, true, true, aDxyzIdxDo);}
     public void forEachNeighborMHT(int  aIDX, double aRMax, int aNnn, IDxyzIdxDo aDxyzIdxDo) {forEachNeighborMHT(aIDX, aRMax, aNnn, false, aDxyzIdxDo);}
-    public void forEachNeighborMHT(double aX, double aY, double aZ, double aRMax, int aNnn, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aX, aY, aZ, aRMax, aNnn, true, aDxyzIdxDo);}
+    public void forEachNeighborMHT(double aX, double aY, double aZ, double aRMax, int aNnn, IDxyzIdxDo aDxyzIdxDo) {forEachNeighbor_(aX, aY, aZ, aRMax, aNnn, true, true, aDxyzIdxDo);}
     public void forEachNeighborMHT(IXYZ aXYZ, double aRMax, int aNnn, IDxyzIdxDo aDxyzIdxDo) {forEachNeighborMHT(aXYZ.x(), aXYZ.y(), aXYZ.z(), aRMax, aNnn, aDxyzIdxDo);}
     
     
