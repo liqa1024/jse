@@ -1,23 +1,15 @@
 package jsex.nnap.basis;
 
 import jse.cache.VectorCache;
-import jse.clib.JNIUtil;
-import jse.code.CS;
-import jse.code.IO;
-import jse.code.OS;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.math.MathEX;
 import jse.math.vector.Vector;
-import jsex.nnap.NNAP;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
-
-import static jse.code.OS.JAR_DIR;
 
 /**
  * 一种基于 Chebyshev 多项式和球谐函数将原子局域环境展开成一个基组的方法，
@@ -41,87 +33,16 @@ public class SphericalChebyshev implements IBasis {
         @SuppressWarnings({"ResultOfMethodCallIgnored", "UnnecessaryCallToStringValueOf"})
         public static void init() {
             // 手动调用此值来强制初始化
-            if (!INITIALIZED) String.valueOf(LIB_PATH);
+            if (!INITIALIZED) String.valueOf(_INIT_FLAG);
         }
     }
     
-    public final static class Conf {
-        /**
-         * 自定义构建 native nnap basis 的 cmake 参数设置，
-         * 会在构建时使用 -D ${key}=${value} 传入
-         */
-        public final static Map<String, String> CMAKE_SETTING = new LinkedHashMap<>();
-        
-        public static final int NONE = -1;
-        public static final int COMPAT = 0;
-        public static final int BASE = 1;
-        public static final int MAX = 2;
-        /**
-         * 自定义 native nnap basis 需要采用的优化等级，默认为 1（基础优化），
-         * 会开启 AVX2 指令集，在大多数现代处理器上能兼容运行
-         */
-        public static int OPT_LEVEL = OS.envI("JSE_NNAPBASIS_OPT_LEVEL", BASE);
-        
-        /**
-         * 自定义构建 native nnap basis 时使用的编译器，
-         * cmake 有时不能自动检测到希望使用的编译器
-         */
-        public static @Nullable String CMAKE_C_COMPILER   = OS.env("JSE_CMAKE_C_COMPILER_NNAPBASIS"  , jse.code.Conf.CMAKE_C_COMPILER);
-        public static @Nullable String CMAKE_C_FLAGS      = OS.env("JSE_CMAKE_C_FLAGS_NNAPBASIS"     , jse.code.Conf.CMAKE_C_FLAGS);
-        public static @Nullable String CMAKE_CXX_COMPILER = OS.env("JSE_CMAKE_CXX_COMPILER_NNAPBASIS", jse.code.Conf.CMAKE_CXX_COMPILER);
-        public static @Nullable String CMAKE_CXX_FLAGS    = OS.env("JSE_CMAKE_CXX_FLAGS_NNAPBASIS"   , jse.code.Conf.CMAKE_CXX_FLAGS);
-        
-        /** 重定向 native nnap basis 动态库的路径 */
-        public static @Nullable String REDIRECT_NNAPBASIS_LIB = OS.env("JSE_REDIRECT_NNAPBASIS_LIB");
-    }
-    
-    public final static String LIB_DIR = JAR_DIR+"nnap/basis/" + UT.Code.uniqueID(CS.VERSION, NNAP.VERSION, Conf.OPT_LEVEL, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
-    public final static String LIB_PATH;
-    private final static String[] SRC_NAME = {
-          "jsex_nnap_basis_SphericalChebyshev.c"
-        , "jsex_nnap_basis_SphericalChebyshev.h"
-    };
-    
+    private final static boolean _INIT_FLAG;
     static {
         InitHelper.INITIALIZED = true;
-        // 不直接依赖 nnap
-        
-        // 先添加 Conf.CMAKE_SETTING，这样保证确定的优先级
-        Map<String, String> rCmakeSetting = new LinkedHashMap<>(Conf.CMAKE_SETTING);
-        switch(Conf.OPT_LEVEL) {
-        case Conf.MAX: {
-            rCmakeSetting.put("JSE_OPT_MAX",    "ON");
-            rCmakeSetting.put("JSE_OPT_BASE",   "OFF");
-            rCmakeSetting.put("JSE_OPT_COMPAT", "OFF");
-            break;
-        }
-        case Conf.BASE: {
-            rCmakeSetting.put("JSE_OPT_MAX",    "OFF");
-            rCmakeSetting.put("JSE_OPT_BASE",   "ON");
-            rCmakeSetting.put("JSE_OPT_COMPAT", "OFF");
-            break;
-        }
-        case Conf.COMPAT: {
-            rCmakeSetting.put("JSE_OPT_MAX",    "OFF");
-            rCmakeSetting.put("JSE_OPT_BASE",   "OFF");
-            rCmakeSetting.put("JSE_OPT_COMPAT", "ON");
-            break;
-        }
-        case Conf.NONE: {
-            rCmakeSetting.put("JSE_OPT_MAX",    "OFF");
-            rCmakeSetting.put("JSE_OPT_BASE",   "OFF");
-            rCmakeSetting.put("JSE_OPT_COMPAT", "OFF");
-            break;
-        }}
-        // 现在直接使用 JNIUtil.buildLib 来统一初始化
-        LIB_PATH = new JNIUtil.LibBuilder("nnapbasis", "NATIVE_NNAP_BASIS", LIB_DIR, rCmakeSetting)
-            .setSrc("nnap/basis", SRC_NAME)
-            .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS)
-            .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
-            .setRedirectLibPath(Conf.REDIRECT_NNAPBASIS_LIB)
-            .get();
-        // 设置库路径
-        System.load(IO.toAbsolutePath(LIB_PATH));
+        // 确保 BASIS 已经确实初始化
+        BASIS.InitHelper.init();
+        _INIT_FLAG = false;
     }
     
     final static int[] L3NCOLS = {0, 0, 2, 4, 9}, L3NCOLS_NOCROSS = {0, 0, 1, 1, 2};
@@ -403,14 +324,14 @@ public class SphericalChebyshev implements IBasis {
     void eval0(int aNN, Vector rFp) {
         if (mL3Max > 4) throw new IllegalArgumentException("l3max > 4 for SphericalChebyshev");
         if (mLMaxMax > 20) throw new IllegalArgumentException("lmax > 20 for SphericalChebyshev");
-        rangeCheck(mNlDx.size(), aNN);
-        rangeCheck(mNlDy.size(), aNN);
-        rangeCheck(mNlDz.size(), aNN);
-        rangeCheck(mNlType.size(), aNN);
-        rangeCheck(mRn.size(), mNMax+1);
-        rangeCheck(mY.size(), mLMAll);
-        rangeCheck(mCnlm.size(), mSizeN*mLMAll);
-        rangeCheck(rFp.size(), mSize);
+        BASIS.rangeCheck(mNlDx.size(), aNN);
+        BASIS.rangeCheck(mNlDy.size(), aNN);
+        BASIS.rangeCheck(mNlDz.size(), aNN);
+        BASIS.rangeCheck(mNlType.size(), aNN);
+        BASIS.rangeCheck(mRn.size(), mNMax+1);
+        BASIS.rangeCheck(mY.size(), mLMAll);
+        BASIS.rangeCheck(mCnlm.size(), mSizeN*mLMAll);
+        BASIS.rangeCheck(rFp.size(), mSize);
         eval1(mNlDx.internalData(), mNlDy.internalData(), mNlDz.internalData(), mNlType.internalData(), aNN,
               mRn.internalData(), mY.internalData(), mCnlm.internalData(), rFp.internalData(),
               mTypeNum, mRCut, mNMax, mLMax, mL3Max, mL3Cross);
@@ -423,31 +344,31 @@ public class SphericalChebyshev implements IBasis {
                       @Nullable DoubleList rFpPxCross, @Nullable DoubleList rFpPyCross, @Nullable DoubleList rFpPzCross) {
         if (mL3Max > 4) throw new IllegalArgumentException("l3max > 4 for SphericalChebyshev");
         if (mLMaxMax > 20) throw new IllegalArgumentException("lmax > 20 for SphericalChebyshev");
-        rangeCheck(mNlDx.size(), aNN);
-        rangeCheck(mNlDy.size(), aNN);
-        rangeCheck(mNlDz.size(), aNN);
-        rangeCheck(mNlType.size(), aNN);
-        rangeCheck(mNlRn.size(), aNN*(mNMax+1));
-        rangeCheck(mRnPx.size(), mNMax+1);
-        rangeCheck(mRnPy.size(), mNMax+1);
-        rangeCheck(mRnPz.size(), mNMax+1);
-        rangeCheck(mNlY.size(), aNN*mLMAll);
-        rangeCheck(mYPtheta.size(), mLMAll);
-        rangeCheck(mYPphi.size(), mLMAll);
-        rangeCheck(mYPx.size(), mLMAll);
-        rangeCheck(mYPy.size(), mLMAll);
-        rangeCheck(mYPz.size(), mLMAll);
-        rangeCheck(mCnlm.size(), mSizeN*mLMAll);
-        rangeCheck(mCnlmPx.size(), mLMAll);
-        rangeCheck(mCnlmPy.size(), mLMAll);
-        rangeCheck(mCnlmPz.size(), mLMAll);
-        rangeCheck(rFp.size(), mSize);
-        rangeCheck(rFpPx.size(), mSize);
-        rangeCheck(rFpPy.size(), mSize);
-        rangeCheck(rFpPz.size(), mSize);
-        if (rFpPxCross != null) rangeCheck(rFpPxCross.size(), aNN*mSize);
-        if (rFpPyCross != null) rangeCheck(rFpPyCross.size(), aNN*mSize);
-        if (rFpPzCross != null) rangeCheck(rFpPzCross.size(), aNN*mSize);
+        BASIS.rangeCheck(mNlDx.size(), aNN);
+        BASIS.rangeCheck(mNlDy.size(), aNN);
+        BASIS.rangeCheck(mNlDz.size(), aNN);
+        BASIS.rangeCheck(mNlType.size(), aNN);
+        BASIS.rangeCheck(mNlRn.size(), aNN*(mNMax+1));
+        BASIS.rangeCheck(mRnPx.size(), mNMax+1);
+        BASIS.rangeCheck(mRnPy.size(), mNMax+1);
+        BASIS.rangeCheck(mRnPz.size(), mNMax+1);
+        BASIS.rangeCheck(mNlY.size(), aNN*mLMAll);
+        BASIS.rangeCheck(mYPtheta.size(), mLMAll);
+        BASIS.rangeCheck(mYPphi.size(), mLMAll);
+        BASIS.rangeCheck(mYPx.size(), mLMAll);
+        BASIS.rangeCheck(mYPy.size(), mLMAll);
+        BASIS.rangeCheck(mYPz.size(), mLMAll);
+        BASIS.rangeCheck(mCnlm.size(), mSizeN*mLMAll);
+        BASIS.rangeCheck(mCnlmPx.size(), mLMAll);
+        BASIS.rangeCheck(mCnlmPy.size(), mLMAll);
+        BASIS.rangeCheck(mCnlmPz.size(), mLMAll);
+        BASIS.rangeCheck(rFp.size(), mSize);
+        BASIS.rangeCheck(rFpPx.size(), mSize);
+        BASIS.rangeCheck(rFpPy.size(), mSize);
+        BASIS.rangeCheck(rFpPz.size(), mSize);
+        if (rFpPxCross != null) BASIS.rangeCheck(rFpPxCross.size(), aNN*mSize);
+        if (rFpPyCross != null) BASIS.rangeCheck(rFpPyCross.size(), aNN*mSize);
+        if (rFpPzCross != null) BASIS.rangeCheck(rFpPzCross.size(), aNN*mSize);
         evalPartial1(mNlDx.internalData(), mNlDy.internalData(), mNlDz.internalData(), mNlType.internalData(), aNN,
                      mNlRn.internalData(), mRnPx.internalData(), mRnPy.internalData(), mRnPz.internalData(),
                      mNlY.internalData(), mYPtheta.internalData(), mYPphi.internalData(), mYPx.internalData(), mYPy.internalData(), mYPz.internalData(),
@@ -465,8 +386,4 @@ public class SphericalChebyshev implements IBasis {
                                             double[] rFingerPrint, double[] rFingerPrintPx, double[] rFingerPrintPy, double[] rFingerPrintPz,
                                             double @Nullable[] rFingerPrintPxCross, double @Nullable[] rFingerPrintPyCross, double @Nullable[] rFingerPrintPzCross,
                                             int aTypeNum, double aRCut, int aNMax, int aLMax, int aL3Max, boolean aL3Cross);
-    
-    static void rangeCheck(int jArraySize, int aCount) {
-        if (aCount > jArraySize) throw new IndexOutOfBoundsException(aCount+" > "+jArraySize);
-    }
 }

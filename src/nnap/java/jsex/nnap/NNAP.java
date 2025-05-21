@@ -9,6 +9,7 @@ import jse.code.collection.DoubleList;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import jse.math.vector.Vector;
+import jsex.nnap.basis.BASIS;
 import jsex.nnap.basis.IBasis;
 import jsex.nnap.basis.Mirror;
 import jsex.nnap.basis.SphericalChebyshev;
@@ -216,13 +217,8 @@ public class NNAP implements IPairPotential {
         public IBasis basis(int aThreadID) {return mBasis[aThreadID];}
         
         /// 现在使用全局的缓存实现，可以进一步减少内存池的调用操作
-        private final Vector[][] mFp;
-        private final Vector[][] mFpPx;
-        private final Vector[][] mFpPy;
-        private final Vector[][] mFpPz;
-        private final DoubleList[][] mFpPxCross;
-        private final DoubleList[][] mFpPyCross;
-        private final DoubleList[][] mFpPzCross;
+        private final Vector[][] mFp, mFpPx, mFpPy, mFpPz;
+        private final DoubleList[][] mFpPxCross, mFpPyCross, mFpPzCross;
         
         private Vector bufFp(int aThreadID) {return mFp[aThreadID][mBatchedSize[aThreadID]];}
         private Vector bufFpPx(int aThreadID) {return mFpPx[aThreadID][mBatchedSize[aThreadID]];}
@@ -231,6 +227,26 @@ public class NNAP implements IPairPotential {
         private DoubleList bufFpPxCross(int aThreadID) {return mFpPxCross[aThreadID][mBatchedSize[aThreadID]];}
         private DoubleList bufFpPyCross(int aThreadID) {return mFpPyCross[aThreadID][mBatchedSize[aThreadID]];}
         private DoubleList bufFpPzCross(int aThreadID) {return mFpPzCross[aThreadID][mBatchedSize[aThreadID]];}
+        
+        private final DoubleList[] mForceX, mForceY, mForceZ;
+        private DoubleList bufForceX(int aThreadID, int aSizeMin) {
+            DoubleList tForceX = mForceX[aThreadID];
+            int tSize = tForceX.size();
+            if (tSize < aSizeMin) tForceX.addZeros(aSizeMin - tSize);
+            return tForceX;
+        }
+        private DoubleList bufForceY(int aThreadID, int aSizeMin) {
+            DoubleList tForceY = mForceY[aThreadID];
+            int tSize = tForceY.size();
+            if (tSize < aSizeMin) tForceY.addZeros(aSizeMin - tSize);
+            return tForceY;
+        }
+        private DoubleList bufForceZ(int aThreadID, int aSizeMin) {
+            DoubleList tForceZ = mForceZ[aThreadID];
+            int tSize = tForceZ.size();
+            if (tSize < aSizeMin) tForceZ.addZeros(aSizeMin - tSize);
+            return tForceZ;
+        }
         
         public void normBasis(IVector rFp) {
             rFp.minus2this(mNormMu);
@@ -291,6 +307,14 @@ public class NNAP implements IPairPotential {
                 mFpPxCross[i][j] = new DoubleList(1024);
                 mFpPyCross[i][j] = new DoubleList(1024);
                 mFpPzCross[i][j] = new DoubleList(1024);
+            }
+            mForceX = new DoubleList[mThreadNumber];
+            mForceY = new DoubleList[mThreadNumber];
+            mForceZ = new DoubleList[mThreadNumber];
+            for (int i = 0; i < mThreadNumber; ++i) {
+                mForceX[i] = new DoubleList(16);
+                mForceY[i] = new DoubleList(16);
+                mForceZ[i] = new DoubleList(16);
             }
         }
         
@@ -573,16 +597,17 @@ public class NNAP implements IPairPotential {
                 final SingleNNAP tModel = model(cType);
                 final IBasis tBasis = tModel.basis(threadID);
                 final int tBasisSize = tBasis.size();
-                Vector tFp = tModel.bufFp(threadID);
-                Vector tFpPx = tModel.bufFpPx(threadID);
-                Vector tFpPy = tModel.bufFpPy(threadID);
-                Vector tFpPz = tModel.bufFpPz(threadID);
-                DoubleList tFpPxCross = tModel.bufFpPxCross(threadID);
-                DoubleList tFpPyCross = tModel.bufFpPyCross(threadID);
-                DoubleList tFpPzCross = tModel.bufFpPzCross(threadID);
+                final Vector tFp = tModel.bufFp(threadID);
+                final Vector tFpPx = tModel.bufFpPx(threadID);
+                final Vector tFpPy = tModel.bufFpPy(threadID);
+                final Vector tFpPz = tModel.bufFpPz(threadID);
+                final DoubleList tFpPxCross = tModel.bufFpPxCross(threadID);
+                final DoubleList tFpPyCross = tModel.bufFpPyCross(threadID);
+                final DoubleList tFpPzCross = tModel.bufFpPzCross(threadID);
                 tBasis.evalPartial(dxyzTypeDo -> {
                     nl.forEachDxyzTypeIdx(tBasis.rcut(), (dx, dy, dz, type, idx) -> dxyzTypeDo.run(dx, dy, dz, type));
                 }, tFp, tFpPx, tFpPy, tFpPz, tFpPxCross, tFpPyCross, tFpPzCross);
+                final int tNN = tFpPxCross.size()/tBasisSize;
                 tModel.normBasis(tFp);
                 tModel.submitBatchBackward(threadID, tFp, rEnergyAccumulator==null ? null : pred -> {
                     pred = tModel.denormEng(pred);
@@ -591,19 +616,21 @@ public class NNAP implements IPairPotential {
                 }, xGrad -> {
                     tModel.normBasisPartial(xGrad);
                     tModel.denormEngPartial(xGrad);
-                    final double[] rBuf = {0.0, 0.0, 0.0};
-                    forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tFpPx.internalData(), tFpPy.internalData(), tFpPz.internalData(), xGrad.internalDataSize(), 0, rBuf);
+                    final DoubleList tForceX = tModel.bufForceX(threadID, tNN+1);
+                    final DoubleList tForceY = tModel.bufForceY(threadID, tNN+1);
+                    final DoubleList tForceZ = tModel.bufForceZ(threadID, tNN+1);
+                    BASIS.forceDot0(xGrad.internalData(), tFpPx.internalData(), tFpPy.internalData(), tFpPz.internalData(), xGrad.internalDataShift(), xGrad.internalDataSize(),
+                                    tFpPxCross.internalData(), tFpPyCross.internalData(), tFpPzCross.internalData(), tForceX.internalData(), tForceY.internalData(), tForceZ.internalData(), tNN);
                     if (rForceAccumulator != null) {
-                        rForceAccumulator.add(threadID, cIdx, -1, rBuf[0], rBuf[1], rBuf[2]);
+                        rForceAccumulator.add(threadID, cIdx, -1, tForceX.get(0), tForceY.get(0), tForceZ.get(0));
                     }
                     // 累加交叉项到近邻
-                    final int[] j = {0};
+                    final int[] j = {1};
                     nl.forEachDxyzTypeIdx(tBasis.rcut(), (dx, dy, dz, type, idx) -> {
                         // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查
-                        forceDot_(xGrad.internalData(), xGrad.internalDataShift(), tFpPxCross.internalData(), tFpPyCross.internalData(), tFpPzCross.internalData(), xGrad.internalDataSize(), tBasisSize*j[0], rBuf);
-                        double fx = -rBuf[0];
-                        double fy = -rBuf[1];
-                        double fz = -rBuf[2];
+                        double fx = -tForceX.get(j[0]);
+                        double fy = -tForceY.get(j[0]);
+                        double fz = -tForceZ.get(j[0]);
                         if (rForceAccumulator != null) {
                             rForceAccumulator.add(threadID, -1, idx, fx, fy, fz);
                         }
@@ -619,18 +646,6 @@ public class NNAP implements IPairPotential {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-    
-    private static void forceDot_(double[] aXGrad, int aShift, double[] aFpPx, double[] aFpPy, double[] aFpPz, int aLength, int aShiftFp, double[] rBuf) {
-        // 考虑到不开启 avx512 优化的请跨下和 c 的性能基本一样，而专门开启存在重复代码，因此暂保留不仅优化
-        double rDotX = 0.0, rDotY = 0.0, rDotZ = 0.0;
-        for (int ii = 0, i = aShiftFp, j = aShift; ii < aLength; ++ii, ++i, ++j) {
-            double tXGrad = aXGrad[j];
-            rDotX += tXGrad * aFpPx[i];
-            rDotY += tXGrad * aFpPy[i];
-            rDotZ += tXGrad * aFpPz[i];
-        }
-        rBuf[0] = rDotX; rBuf[1] = rDotY; rBuf[2] = rDotZ;
     }
     
     private static native double forward0(long aModelPtr, double[] aX, int aStart, int aCount) throws TorchException;

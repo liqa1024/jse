@@ -88,9 +88,9 @@ public interface IBasis extends IHasSymbol, ISavable, IAutoShutdown {
      * @param rFpPx 计算输出的原子描述符向量对于坐标 x 的偏导数
      * @param rFpPy 计算输出的原子描述符向量对于坐标 y 的偏导数
      * @param rFpPz 计算输出的原子描述符向量对于坐标 z 的偏导数
-     * @param rFpPxCross 计算输出的原子描述符向量对于近邻原子坐标 x 的偏导数，会自动根据近邻列表扩容
-     * @param rFpPyCross 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，会自动根据近邻列表扩容
-     * @param rFpPzCross 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，会自动根据近邻列表扩容
+     * @param rFpPxCross 计算输出的原子描述符向量对于近邻原子坐标 x 的偏导数，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPyCross 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPzCross 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，会自动清空旧值并根据近邻列表扩容
      */
     void evalPartial(IDxyzTypeIterable aNL, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz, DoubleList rFpPxCross, DoubleList rFpPyCross, DoubleList rFpPzCross);
     /**
@@ -121,9 +121,9 @@ public interface IBasis extends IHasSymbol, ISavable, IAutoShutdown {
      * @param rFpPx 计算输出的原子描述符向量对于坐标 x 的偏导数
      * @param rFpPy 计算输出的原子描述符向量对于坐标 y 的偏导数
      * @param rFpPz 计算输出的原子描述符向量对于坐标 z 的偏导数
-     * @param rFpPxCross 计算输出的原子描述符向量对于近邻原子坐标 x 的偏导数，会自动根据近邻列表扩容
-     * @param rFpPyCross 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，会自动根据近邻列表扩容
-     * @param rFpPzCross 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，会自动根据近邻列表扩容
+     * @param rFpPxCross 计算输出的原子描述符向量对于近邻原子坐标 x 的偏导数，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPyCross 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPzCross 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，会自动清空旧值并根据近邻列表扩容
      */
     default void evalPartial(AtomicParameterCalculator aAPC, int aIdx, IntUnaryOperator aTypeMap, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz, DoubleList rFpPxCross, DoubleList rFpPyCross, DoubleList rFpPzCross) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
