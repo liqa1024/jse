@@ -1,5 +1,7 @@
 package jsex.nnap.basis;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableBiMap;
 import jse.cache.VectorCache;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
@@ -53,8 +55,14 @@ public class SphericalChebyshev implements IBasis {
     public final static boolean DEFAULT_L3CROSS = true;
     public final static double DEFAULT_RCUT = 6.0; // 现在默认值统一为 6
     
-    public final static int WTYPE_DEFAULT = 0, WTYPE_SINGLE = 1, WTYPE_FULL = 2;
-    private final static int[] ALL_WTYPE = {WTYPE_DEFAULT, WTYPE_SINGLE, WTYPE_FULL};
+    public final static int WTYPE_DEFAULT = 0, WTYPE_NONE = -1, WTYPE_SINGLE = 1, WTYPE_FULL = 2, WTYPE_EXFULL = 3;
+    private final static BiMap<String, Integer> ALL_WTYPE = ImmutableBiMap.<String, Integer>builder()
+        .put("default", WTYPE_DEFAULT)
+        .put("none", WTYPE_NONE)
+        .put("single", WTYPE_SINGLE)
+        .put("full", WTYPE_FULL)
+        .put("exfull", WTYPE_EXFULL)
+        .build();
     
     final int mTypeNum;
     final String @Nullable[] mSymbols;
@@ -82,7 +90,7 @@ public class SphericalChebyshev implements IBasis {
         if (aNMax < 0) throw new IllegalArgumentException("Input nmax MUST be Non-Negative, input: "+aNMax);
         if (aLMax<0 || aLMax>20) throw new IllegalArgumentException("Input lmax MUST be in [0, 20], input: "+aLMax);
         if (aL3Max<0 || aL3Max>4) throw new IllegalArgumentException("Input l3max MUST be in [0, 4], input: "+aL3Max);
-        if (!UT.Code.contains(ALL_WTYPE, aWType)) throw new IllegalArgumentException("Input wtype MUST be in {0, 1, 2}, input: "+ aWType);
+        if (!ALL_WTYPE.containsValue(aWType)) throw new IllegalArgumentException("Input wtype MUST be in {-1, 0, 1, 2, 3}, input: "+ aWType);
         mSymbols = aSymbols;
         mTypeNum = aTypeNum;
         mNMax = aNMax;
@@ -93,10 +101,15 @@ public class SphericalChebyshev implements IBasis {
         mWType = aWType;
         
         switch(mWType) {
+        case WTYPE_EXFULL: {
+            mSizeN = mTypeNum>1 ? (mTypeNum+1)*(mNMax+1) : (mNMax+1);
+            break;
+        }
         case WTYPE_FULL: {
             mSizeN = mTypeNum*(mNMax+1);
             break;
         }
+        case WTYPE_NONE:
         case WTYPE_SINGLE: {
             mSizeN = mNMax+1;
             break;
@@ -158,30 +171,36 @@ public class SphericalChebyshev implements IBasis {
         rSaveTo.put("l3max", mL3Max);
         rSaveTo.put("l3cross", mL3Cross);
         rSaveTo.put("rcut", mRCut);
-        rSaveTo.put("wtype", mWType);
+        rSaveTo.put("wtype", ALL_WTYPE.inverse().get(mWType));
+    }
+    
+    private static int getWType_(@Nullable Object aType) {
+        if (aType == null) return WTYPE_DEFAULT;
+        if (aType instanceof Number) return ((Number)aType).intValue();
+        return ALL_WTYPE.get(aType.toString());
     }
     @SuppressWarnings("rawtypes")
     public static SphericalChebyshev load(String @NotNull[] aSymbols, Map aMap) {
         return new SphericalChebyshev(
             aSymbols, aSymbols.length,
-            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue(),
-            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),
-            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_L3MAX, "l3max")).intValue(),
+            ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue(),
+            ((Number)UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),
+            ((Number)UT.Code.getWithDefault(aMap, DEFAULT_L3MAX, "l3max")).intValue(),
             (Boolean)UT.Code.getWithDefault(aMap, DEFAULT_L3CROSS, "l3cross"),
-            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
-            ((Number) UT.Code.getWithDefault(aMap, WTYPE_DEFAULT, "wtype")).intValue()
+            ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
+            getWType_(UT.Code.get(aMap, "wtype"))
         );
     }
     @SuppressWarnings("rawtypes")
     public static SphericalChebyshev load(int aTypeNum, Map aMap) {
         return new SphericalChebyshev(
             null, aTypeNum,
-            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue(),
-            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),
-            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_L3MAX, "l3max")).intValue(),
+            ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue(),
+            ((Number)UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),
+            ((Number)UT.Code.getWithDefault(aMap, DEFAULT_L3MAX, "l3max")).intValue(),
             (Boolean)UT.Code.getWithDefault(aMap, DEFAULT_L3CROSS, "l3cross"),
-            ((Number) UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
-            ((Number) UT.Code.getWithDefault(aMap, WTYPE_DEFAULT, "wtype")).intValue()
+            ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
+            getWType_(UT.Code.get(aMap, "wtype"))
         );
     }
     

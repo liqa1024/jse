@@ -19,10 +19,14 @@ extern "C" {
 #define jsex_nnap_basis_SphericalChebyshev_DEFAULT_RCUT 6.0
 #undef jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT
 #define jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT 0L
+#undef jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE
+#define jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE -1L
 #undef jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE
 #define jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE 1L
 #undef jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL
 #define jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL 2L
+#undef jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL
+#define jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL 3L
 /*
  * Class:     jsex_nnap_basis_SphericalChebyshev
  * Method:    eval1

@@ -1436,6 +1436,20 @@ static inline void calCnlm(double *aNlDx, double *aNlDy, double *aNlDz, jint *aN
         realSphericalHarmonicsFull4(aLMaxMax, dx, dy, dz, dis, tY);
         // cal cnlm
         switch(aWType) {
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL: {
+            jint tShift = 0;
+            if (aTypeNum == 1) {
+                for (jint tN = 0; tN <= aNMax; ++tN, tShift+=aLMAll) {
+                    mplusCnlm(rCnlm+tShift, tY, fc, tRn[tN], aLMAll);
+                }
+            } else {
+                jint tShiftWt = (aNMax+1)*aLMAll*type;
+                for (jint tN = 0; tN <= aNMax; ++tN, tShift+=aLMAll, tShiftWt+=aLMAll) {
+                    mplusCnlmWt(rCnlm+tShift, rCnlm+tShiftWt, tY, fc, tRn[tN], 1.0, aLMAll);
+                }
+            }
+            break;
+        }
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL: {
             jint tShift = (aNMax+1)*aLMAll*(type-1);
             for (jint tN = 0; tN <= aNMax; ++tN, tShift+=aLMAll) {
@@ -1443,6 +1457,7 @@ static inline void calCnlm(double *aNlDx, double *aNlDy, double *aNlDz, jint *aN
             }
             break;
         }
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
             jint tShift = 0;
             for (jint tN = 0; tN <= aNMax; ++tN, tShift+=aLMAll) {
@@ -1509,10 +1524,15 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_eval1(JNIEnv *aEn
     // const init
     jint tSizeN;
     switch(aWType) {
+    case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL: {
+        tSizeN = aTypeNum>1 ? (aTypeNum+1)*(aNMax+1) : (aNMax+1);
+        break;
+    }
     case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL: {
         tSizeN = aTypeNum*(aNMax+1);
         break;
     }
+    case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
     case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
         tSizeN = aNMax+1;
         break;
@@ -1624,10 +1644,15 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial1(JNIE
     // const init
     jint tSizeN;
     switch(aWType) {
+    case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL: {
+        tSizeN = aTypeNum>1 ? (aTypeNum+1)*(aNMax+1) : (aNMax+1);
+        break;
+    }
     case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL: {
         tSizeN = aTypeNum*(aNMax+1);
         break;
     }
+    case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
     case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
         tSizeN = aNMax+1;
         break;
@@ -1673,7 +1698,9 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial1(JNIE
             calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, wt, dx, dy, dz);
             break;
         }
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL:
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
             calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, 1.0, dx, dy, dz);
             break;
@@ -1712,6 +1739,36 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial1(JNIE
                  tYPtheta, tYPphi, tLMAll);
         // cal cnlmPxyz
         switch(aWType) {
+                    case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL: {
+            for (jint tN=0, tShift=0, tShiftFP=0; tN <= aNMax; ++tN, tShift+=tLMAll, tShiftFP+=tSizeL) {
+                // cal cnlmPxyz first
+                calCnlmPxyz(tCnlmPx, tCnlmPy, tCnlmPz,
+                            tY, tYPx, tYPy, tYPz,
+                            fc, fcPx, fcPy, fcPz,
+                            tRn[tN], tRnPx[tN], tRnPy[tN], tRnPz[tN],
+                            tLMAll);
+                // accumulate to fp
+                jint tShiftFPC = tShiftFP + j*(tSizeN*tSizeL);
+                cnlm2fpPxyz(tCnlm+tShift, tCnlmPx, tCnlmPy, tCnlmPz,
+                            tFingerPrintPx+tShiftFP, tFingerPrintPy+tShiftFP, tFingerPrintPz+tShiftFP,
+                            tFingerPrintPxCross==NULL ? NULL : (tFingerPrintPxCross+tShiftFPC),
+                            tFingerPrintPyCross==NULL ? NULL : (tFingerPrintPyCross+tShiftFPC),
+                            tFingerPrintPzCross==NULL ? NULL : (tFingerPrintPzCross+tShiftFPC),
+                            1.0, aLMax, aL3Max, aL3Cross);
+                if (aTypeNum > 1) {
+                    jint tShift0 = tShift + (aNMax+1)*tLMAll*type;
+                    jint tShiftFP0 = tShiftFP + (aNMax+1)*tSizeL*type;
+                    tShiftFPC = tShiftFP0 + j*(tSizeN*tSizeL);
+                    cnlm2fpPxyz(tCnlm+tShift0, tCnlmPx, tCnlmPy, tCnlmPz,
+                                tFingerPrintPx+tShiftFP0, tFingerPrintPy+tShiftFP0, tFingerPrintPz+tShiftFP0,
+                                tFingerPrintPxCross==NULL ? NULL : (tFingerPrintPxCross+tShiftFPC),
+                                tFingerPrintPyCross==NULL ? NULL : (tFingerPrintPyCross+tShiftFPC),
+                                tFingerPrintPzCross==NULL ? NULL : (tFingerPrintPzCross+tShiftFPC),
+                                1.0, aLMax, aL3Max, aL3Cross);
+                }
+            }
+            break;
+        }
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL: {
             jint tShift = (aNMax+1)*tLMAll*(type-1);
             jint tShiftFP = (aNMax+1)*tSizeL*(type-1);
@@ -1733,6 +1790,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial1(JNIE
             }
             break;
         }
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
             for (jint tN=0, tShift=0, tShiftFP=0; tN <= aNMax; ++tN, tShift+=tLMAll, tShiftFP+=tSizeL) {
                 // cal cnlmPxyz first
