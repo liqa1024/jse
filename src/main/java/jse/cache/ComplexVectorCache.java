@@ -1,7 +1,6 @@
 package jse.cache;
 
 import jse.code.collection.AbstractCollections;
-import jse.math.vector.BiDoubleArrayVector;
 import jse.math.vector.ComplexVector;
 import jse.math.vector.IComplexVector;
 import org.jetbrains.annotations.NotNull;
@@ -22,9 +21,15 @@ import java.util.List;
 public class ComplexVectorCache {
     private ComplexVectorCache() {}
     
-    interface ICacheableComplexVector {}
+    interface ICacheableComplexVector {
+        double[][] internalData();
+        void setReturned();
+    }
     final static class CacheableComplexVector extends ComplexVector implements ICacheableComplexVector {
         public CacheableComplexVector(int aSize, double[][] aData) {super(aSize, aData);}
+        /** 从缓存中获取的数据一律不允许进行后续修改 */
+        @Override public void setInternalData(double[][] aData) {throw new UnsupportedOperationException();}
+        @Override public void setReturned() {mData = null;}
     }
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isFromCache(IComplexVector aVector) {
@@ -33,10 +38,10 @@ public class ComplexVectorCache {
     
     public static void returnVec(@NotNull IComplexVector aComplexVector) {
         if (!isFromCache(aComplexVector)) throw new IllegalArgumentException("Return ComplexVector MUST be from cache");
-        BiDoubleArrayVector tBiDoubleArrayVector = (BiDoubleArrayVector)aComplexVector;
-        double @Nullable[][] tData = tBiDoubleArrayVector.internalData();
+        ICacheableComplexVector tCacheableComplexVector = (ICacheableComplexVector)aComplexVector;
+        double @Nullable[][] tData = tCacheableComplexVector.internalData();
         if (tData == null) throw new IllegalStateException("Redundant return ComplexVector");
-        tBiDoubleArrayVector.setInternalData(null);
+        tCacheableComplexVector.setReturned();
         DoubleArrayCache.returnArrayFrom(2, i -> tData[1-i]);
     }
     public static void returnVec(final @NotNull List<? extends @NotNull IComplexVector> aComplexVectorList) {
@@ -48,10 +53,10 @@ public class ComplexVectorCache {
             if (tArrayReal == null) {
                 IComplexVector tComplexVector = aComplexVectorList.get(i/2);
                 if (!isFromCache(tComplexVector)) throw new IllegalArgumentException("Return ComplexVector MUST be from cache");
-                BiDoubleArrayVector tBiDoubleArrayVector = (BiDoubleArrayVector)tComplexVector;
-                double @Nullable[][] tData = tBiDoubleArrayVector.internalData();
+                ICacheableComplexVector tCacheableComplexVector = (ICacheableComplexVector)tComplexVector;
+                double @Nullable[][] tData = tCacheableComplexVector.internalData();
                 if (tData == null) throw new IllegalStateException("Redundant return ComplexVector");
-                tBiDoubleArrayVector.setInternalData(null);
+                tCacheableComplexVector.setReturned();
                 tArrayBuffer[0] = tData[0];
                 return tData[1];
             } else {

@@ -158,6 +158,7 @@ public class LongList implements IDataShell<long[]> {
     /** IDataShell stuffs */
     @Override public int internalDataSize() {return size();}
     @Override public void setInternalData(long[] aData) {mData = aData;}
+    @Override public void setInternalDataSize(int aSize) {mSize = aSize;}
     
     @Override public long[] internalData() {return mData;}
     @ApiStatus.Internal @Override public long @Nullable[] getIfHasSameOrderData(Object aObj) {

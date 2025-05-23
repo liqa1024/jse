@@ -23,16 +23,25 @@ import java.util.List;
 public class ComplexMatrixCache {
     private ComplexMatrixCache() {}
     
-    interface ICacheableComplexMatrix {}
+    interface ICacheableComplexMatrix {
+        double[][] internalData();
+        void setReturned();
+    }
     final static class CacheableColumnComplexMatrix extends ColumnComplexMatrix implements ICacheableComplexMatrix {
         public CacheableColumnComplexMatrix(int aRowNum, int aColNum, double[][] aData) {super(aRowNum, aColNum, aData);}
         /** 重写这些方法来让这个 cache 可以顺利相互转换 */
         @Override public ComplexVectorCache.CacheableComplexVector asVecCol() {return new ComplexVectorCache.CacheableComplexVector(internalDataSize(), internalData());}
+        /** 从缓存中获取的数据一律不允许进行后续修改 */
+        @Override public void setInternalData(double[][] aData) {throw new UnsupportedOperationException();}
+        @Override public void setReturned() {mData = null;}
     }
     final static class CacheableRowComplexMatrix extends RowComplexMatrix implements ICacheableComplexMatrix {
         public CacheableRowComplexMatrix(int aRowNum, int aColNum, double[][] aData) {super(aRowNum, aColNum, aData);}
         /** 重写这些方法来让这个 cache 可以顺利相互转换 */
         @Override public ComplexVectorCache.CacheableComplexVector asVecRow() {return new ComplexVectorCache.CacheableComplexVector(internalDataSize(), internalData());}
+        /** 从缓存中获取的数据一律不允许进行后续修改 */
+        @Override public void setInternalData(double[][] aData) {throw new UnsupportedOperationException();}
+        @Override public void setReturned() {mData = null;}
     }
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isFromCache(IComplexMatrix aComplexMatrix) {
@@ -41,10 +50,10 @@ public class ComplexMatrixCache {
     
     public static void returnMat(@NotNull IComplexMatrix aComplexMatrix) {
         if (!isFromCache(aComplexMatrix)) throw new IllegalArgumentException("Return ComplexMatrix MUST be from cache");
-        BiDoubleArrayMatrix tBiDoubleArrayMatrix = (BiDoubleArrayMatrix)aComplexMatrix;
-        double @Nullable[][] tData = tBiDoubleArrayMatrix.internalData();
+        ICacheableComplexMatrix tCacheableComplexMatrix = (ICacheableComplexMatrix)aComplexMatrix;
+        double @Nullable[][] tData = tCacheableComplexMatrix.internalData();
         if (tData == null) throw new IllegalStateException("Redundant return ComplexMatrix");
-        tBiDoubleArrayMatrix.setInternalData(null);
+        tCacheableComplexMatrix.setReturned();
         DoubleArrayCache.returnArrayFrom(2, i -> tData[1-i]);
     }
     public static void returnMat(final @NotNull List<? extends @NotNull IComplexMatrix> aComplexMatrixList) {
@@ -56,10 +65,10 @@ public class ComplexMatrixCache {
             if (tArrayReal == null) {
                 IComplexMatrix tComplexMatrix = aComplexMatrixList.get(i/2);
                 if (!isFromCache(tComplexMatrix)) throw new IllegalArgumentException("Return ComplexMatrix MUST be from cache");
-                BiDoubleArrayMatrix tBiDoubleArrayMatrix = (BiDoubleArrayMatrix)tComplexMatrix;
-                double @Nullable[][] tData = tBiDoubleArrayMatrix.internalData();
+                ICacheableComplexMatrix tCacheableComplexMatrix = (ICacheableComplexMatrix)tComplexMatrix;
+                double @Nullable[][] tData = tCacheableComplexMatrix.internalData();
                 if (tData == null) throw new IllegalStateException("Redundant return ComplexMatrix");
-                tBiDoubleArrayMatrix.setInternalData(null);
+                tCacheableComplexMatrix.setReturned();
                 tArrayBuffer[0] = tData[0];
                 return tData[1];
             } else {

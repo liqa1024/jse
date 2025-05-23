@@ -160,6 +160,7 @@ public class DoubleList implements IDataShell<double[]> {
     /** IDataShell stuffs */
     @Override public int internalDataSize() {return size();}
     @Override public void setInternalData(double[] aData) {mData = aData;}
+    @Override public void setInternalDataSize(int aSize) {mSize = aSize;}
     
     @Override public double[] internalData() {return mData;}
     @ApiStatus.Internal @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {

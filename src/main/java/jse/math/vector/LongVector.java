@@ -54,8 +54,7 @@ public class LongVector extends LongArrayVector {
     public LongVector(long[] aData) {this(aData.length, aData);}
     
     /** 提供额外的接口来直接设置底层参数 */
-    public LongVector setSize(int aSize) {mSize = aSize; return this;}
-    public int dataLength() {return mData.length;}
+    @Override public void setInternalDataSize(int aSize) {mSize = aSize;}
     
     /** IIntegerVector stuffs */
     @Override public final long get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx];}

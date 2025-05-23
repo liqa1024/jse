@@ -2,7 +2,6 @@ package jse.cache;
 
 import jse.code.collection.AbstractCollections;
 import jse.math.vector.IIntVector;
-import jse.math.vector.IntArrayVector;
 import jse.math.vector.IntVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,9 +21,15 @@ import java.util.List;
 public class IntVectorCache {
     private IntVectorCache() {}
     
-    interface ICacheableIntVector {}
+    interface ICacheableIntVector {
+        int[] internalData();
+        void setReturned();
+    }
     final static class CacheableIntVector extends IntVector implements ICacheableIntVector {
         public CacheableIntVector(int aSize, int[] aData) {super(aSize, aData);}
+        /** 从缓存中获取的数据一律不允许进行后续修改 */
+        @Override public void setInternalData(int[] aData) {throw new UnsupportedOperationException();}
+        @Override public void setReturned() {mData = null;}
     }
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isFromCache(IIntVector aVector) {
@@ -33,10 +38,10 @@ public class IntVectorCache {
     
     public static void returnVec(@NotNull IIntVector aVector) {
         if (!isFromCache(aVector)) throw new IllegalArgumentException("Return IntVector MUST be from cache");
-        IntArrayVector tIntArrayVector = (IntArrayVector)aVector;
-        int @Nullable[] tData = tIntArrayVector.internalData();
+        ICacheableIntVector tCacheableIntVector = (ICacheableIntVector)aVector;
+        int @Nullable[] tData = tCacheableIntVector.internalData();
         if (tData == null) throw new IllegalStateException("Redundant return IntVector");
-        tIntArrayVector.setInternalData(null);
+        tCacheableIntVector.setReturned();
         IntArrayCache.returnArray(tData);
     }
     public static void returnVec(final @NotNull List<? extends @NotNull IIntVector> aVectorList) {
@@ -45,10 +50,10 @@ public class IntVectorCache {
         IntArrayCache.returnArrayFrom(aVectorList.size(), i -> {
             IIntVector tVector = aVectorList.get(i);
             if (!isFromCache(tVector)) throw new IllegalArgumentException("Return IntVector MUST be from cache");
-            IntArrayVector tIntArrayVector = (IntArrayVector)tVector;
-            int @Nullable[] tData = tIntArrayVector.internalData();
+            ICacheableIntVector tCacheableIntVector = (ICacheableIntVector)tVector;
+            int @Nullable[] tData = tCacheableIntVector.internalData();
             if (tData == null) throw new IllegalStateException("Redundant return IntVector");
-            tIntArrayVector.setInternalData(null);
+            tCacheableIntVector.setReturned();
             return tData;
         });
     }

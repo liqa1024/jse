@@ -1,7 +1,6 @@
 package jse.cache;
 
 import jse.code.collection.AbstractCollections;
-import jse.math.vector.BooleanArrayVector;
 import jse.math.vector.ILogicalVector;
 import jse.math.vector.LogicalVector;
 import org.jetbrains.annotations.NotNull;
@@ -22,9 +21,15 @@ import java.util.List;
 public class LogicalVectorCache {
     private LogicalVectorCache() {}
     
-    interface ICacheableLogicalVector {}
+    interface ICacheableLogicalVector {
+        boolean[] internalData();
+        void setReturned();
+    }
     final static class CacheableLogicalVector extends LogicalVector implements ICacheableLogicalVector {
         public CacheableLogicalVector(int aSize, boolean[] aData) {super(aSize, aData);}
+        /** 从缓存中获取的数据一律不允许进行后续修改 */
+        @Override public void setInternalData(boolean[] aData) {throw new UnsupportedOperationException();}
+        @Override public void setReturned() {mData = null;}
     }
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     static boolean isFromCache(ILogicalVector aVector) {
@@ -33,10 +38,10 @@ public class LogicalVectorCache {
     
     public static void returnVec(@NotNull ILogicalVector aVector) {
         if (!isFromCache(aVector)) throw new IllegalArgumentException("Return LogicalVector MUST be from cache");
-        BooleanArrayVector tBooleanArrayVector = (BooleanArrayVector)aVector;
-        boolean @Nullable[] tData = tBooleanArrayVector.internalData();
+        ICacheableLogicalVector tCacheableLogicalVector = (ICacheableLogicalVector)aVector;
+        boolean @Nullable[] tData = tCacheableLogicalVector.internalData();
         if (tData == null) throw new IllegalStateException("Redundant return LogicalVector");
-        tBooleanArrayVector.setInternalData(null);
+        tCacheableLogicalVector.setReturned();
         BooleanArrayCache.returnArray(tData);
     }
     public static void returnVec(final @NotNull List<? extends @NotNull ILogicalVector> aVectorList) {
@@ -45,10 +50,10 @@ public class LogicalVectorCache {
         BooleanArrayCache.returnArrayFrom(aVectorList.size(), i -> {
             ILogicalVector tVector = aVectorList.get(i);
             if (!isFromCache(tVector)) throw new IllegalArgumentException("Return LogicalVector MUST be from cache");
-            BooleanArrayVector tBooleanArrayVector = (BooleanArrayVector)tVector;
-            boolean @Nullable[] tData = tBooleanArrayVector.internalData();
+            ICacheableLogicalVector tCacheableLogicalVector = (ICacheableLogicalVector)tVector;
+            boolean @Nullable[] tData = tCacheableLogicalVector.internalData();
             if (tData == null) throw new IllegalStateException("Redundant return LogicalVector");
-            tBooleanArrayVector.setInternalData(null);
+            tCacheableLogicalVector.setReturned();
             return tData;
         });
     }

@@ -117,21 +117,21 @@ public final class BASIS {
     
     @ApiStatus.Internal
     public static void forceDot0(double[] aXGrad, double[] aFpPx, double[] aFpPy, double[] aFpPz, int aShift, int aLength, double[] aFpPxCross, double[] aFpPyCross, double[] aFpPzCross, double[] rFx, double[] rFy, double[] rFz, int aNN) {
-        rangeCheck(aXGrad.length, aShift+aLength);
-        rangeCheck(aFpPx.length, aLength);
-        rangeCheck(aFpPy.length, aLength);
-        rangeCheck(aFpPz.length, aLength);
-        rangeCheck(aFpPxCross.length, aLength*aNN);
-        rangeCheck(aFpPyCross.length, aLength*aNN);
-        rangeCheck(aFpPzCross.length, aLength*aNN);
-        rangeCheck(rFx.length, aNN+1);
-        rangeCheck(rFy.length, aNN+1);
-        rangeCheck(rFz.length, aNN+1);
+        sizeCheck(aXGrad.length, aShift+aLength);
+        sizeCheck(aFpPx.length, aLength);
+        sizeCheck(aFpPy.length, aLength);
+        sizeCheck(aFpPz.length, aLength);
+        sizeCheck(aFpPxCross.length, aLength*aNN);
+        sizeCheck(aFpPyCross.length, aLength*aNN);
+        sizeCheck(aFpPzCross.length, aLength*aNN);
+        sizeCheck(rFx.length, aNN+1);
+        sizeCheck(rFy.length, aNN+1);
+        sizeCheck(rFz.length, aNN+1);
         forceDot1(aXGrad, aFpPx, aFpPy, aFpPz, aShift, aLength, aFpPxCross, aFpPyCross, aFpPzCross, rFx, rFy, rFz, aNN);
     }
     private static native void forceDot1(double[] aXGrad, double[] aFpPx, double[] aFpPy, double[] aFpPz, int aShift, int aLength, double[] aFpPxCross, double[] aFpPyCross, double[] aFpPzCross, double[] rFx, double[] rFy, double[] rFz, int aNN);
     
-    static void rangeCheck(int jArraySize, int aCount) {
+    static void sizeCheck(int jArraySize, int aCount) {
         if (aCount > jArraySize) throw new IndexOutOfBoundsException(aCount+" > "+jArraySize);
     }
 }

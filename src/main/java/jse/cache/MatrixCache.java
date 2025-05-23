@@ -2,7 +2,6 @@ package jse.cache;
 
 import jse.code.collection.AbstractCollections;
 import jse.math.matrix.ColumnMatrix;
-import jse.math.matrix.DoubleArrayMatrix;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.RowMatrix;
 import org.jetbrains.annotations.NotNull;
@@ -23,16 +22,25 @@ import java.util.List;
 public class MatrixCache {
     private MatrixCache() {}
     
-    interface ICacheableMatrix {}
+    interface ICacheableMatrix {
+        double[] internalData();
+        void setReturned();
+    }
     final static class CacheableColumnMatrix extends ColumnMatrix implements ICacheableMatrix {
         public CacheableColumnMatrix(int aRowNum, int aColNum, double[] aData) {super(aRowNum, aColNum, aData);}
         /** 重写这些方法来让这个 cache 可以顺利相互转换 */
         @Override public VectorCache.CacheableVector asVecCol() {return new VectorCache.CacheableVector(internalDataSize(), internalData());}
+        /** 从缓存中获取的数据一律不允许进行后续修改 */
+        @Override public void setInternalData(double[] aData) {throw new UnsupportedOperationException();}
+        @Override public void setReturned() {mData = null;}
     }
     final static class CacheableRowMatrix extends RowMatrix implements ICacheableMatrix {
         public CacheableRowMatrix(int aRowNum, int aColNum, double[] aData) {super(aRowNum, aColNum, aData);}
         /** 重写这些方法来让这个 cache 可以顺利相互转换 */
         @Override public VectorCache.CacheableVector asVecRow() {return new VectorCache.CacheableVector(internalDataSize(), internalData());}
+        /** 从缓存中获取的数据一律不允许进行后续修改 */
+        @Override public void setInternalData(double[] aData) {throw new UnsupportedOperationException();}
+        @Override public void setReturned() {mData = null;}
     }
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isFromCache(IMatrix aMatrix) {
@@ -41,10 +49,10 @@ public class MatrixCache {
     
     public static void returnMat(@NotNull IMatrix aMatrix) {
         if (!isFromCache(aMatrix)) throw new IllegalArgumentException("Return Matrix MUST be from cache");
-        DoubleArrayMatrix tDoubleArrayMatrix = (DoubleArrayMatrix)aMatrix;
-        double @Nullable[] tData = tDoubleArrayMatrix.internalData();
+        ICacheableMatrix tCacheableMatrix = (ICacheableMatrix)aMatrix;
+        double @Nullable[] tData = tCacheableMatrix.internalData();
         if (tData == null) throw new IllegalStateException("Redundant return Matrix");
-        tDoubleArrayMatrix.setInternalData(null);
+        tCacheableMatrix.setReturned();
         DoubleArrayCache.returnArray(tData);
     }
     public static void returnMat(final @NotNull List<? extends @NotNull IMatrix> aMatrixList) {
@@ -53,10 +61,10 @@ public class MatrixCache {
         DoubleArrayCache.returnArrayFrom(aMatrixList.size(), i -> {
             IMatrix tMatrix = aMatrixList.get(i);
             if (!isFromCache(tMatrix)) throw new IllegalArgumentException("Return Matrix MUST be from cache");
-            DoubleArrayMatrix tDoubleArrayMatrix = (DoubleArrayMatrix)tMatrix;
-            double @Nullable[] tData = tDoubleArrayMatrix.internalData();
+            ICacheableMatrix tCacheableMatrix = (ICacheableMatrix)tMatrix;
+            double @Nullable[] tData = tCacheableMatrix.internalData();
             if (tData == null) throw new IllegalStateException("Redundant return Matrix");
-            tDoubleArrayMatrix.setInternalData(null);
+            tCacheableMatrix.setReturned();
             return tData;
         });
     }

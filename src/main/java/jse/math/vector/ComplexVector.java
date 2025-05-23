@@ -56,8 +56,7 @@ public class ComplexVector extends BiDoubleArrayVector {
     public ComplexVector(double[][] aData) {this(Math.min(aData[0].length, aData[1].length), aData);}
     
     /** 提供额外的接口来直接设置底层参数 */
-    public final ComplexVector setSize(int aSize) {mSize = aSize; return this;}
-    public final int dataLength() {return Math.min(mData[0].length, mData[1].length);}
+    @Override public void setInternalDataSize(int aSize) {mSize = aSize;}
     
     /** IComplexVector stuffs */
     @Override public final ComplexDouble get(int aIdx) {rangeCheck(aIdx, mSize); return new ComplexDouble(mData[0][aIdx], mData[1][aIdx]);}

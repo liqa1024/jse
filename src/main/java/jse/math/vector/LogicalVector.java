@@ -53,8 +53,7 @@ public class LogicalVector extends BooleanArrayVector {
     public LogicalVector(boolean[] aData) {this(aData.length, aData);}
     
     /** 提供额外的接口来直接设置底层参数 */
-    public final LogicalVector setSize(int aSize) {mSize = aSize; return this;}
-    public final int dataLength() {return mData.length;}
+    @Override public void setInternalDataSize(int aSize) {mSize = aSize;}
     
     /** ILogicalVector stuffs */
     @Override public final boolean get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx];}

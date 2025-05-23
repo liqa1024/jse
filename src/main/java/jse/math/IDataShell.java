@@ -11,7 +11,9 @@ import java.lang.reflect.Array;
  * @author liqa
  */
 public interface IDataShell<D> {
-    void setInternalData(D aData);
+    default void setInternalData(D aData) {throw new UnsupportedOperationException();}
+    default void setInternalDataSize(int aSize) {throw new UnsupportedOperationException();}
+    default void setInternalDataShift(int aShift) {throw new UnsupportedOperationException();}
     D internalData();
     /** 返回需要使用的 data 长度，因为可能会通过 setData 导致 data 过长 */
     int internalDataSize();

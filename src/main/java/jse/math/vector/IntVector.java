@@ -55,8 +55,7 @@ public class IntVector extends IntArrayVector {
     public IntVector(int[] aData) {this(aData.length, aData);}
     
     /** 提供额外的接口来直接设置底层参数 */
-    public final IntVector setSize(int aSize) {mSize = aSize; return this;}
-    public final int dataLength() {return mData.length;}
+    @Override public void setInternalDataSize(int aSize) {mSize = aSize;}
     
     /** IIntegerVector stuffs */
     @Override public final int get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx];}

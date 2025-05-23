@@ -170,6 +170,7 @@ public class IntList implements ISlice, IDataShell<int[]> {
     /** IDataShell stuffs */
     @Override public int internalDataSize() {return size();}
     @Override public void setInternalData(int[] aData) {mData = aData;}
+    @Override public void setInternalDataSize(int aSize) {mSize = aSize;}
     
     @Override public int[] internalData() {return mData;}
     @ApiStatus.Internal @Override public int @Nullable[] getIfHasSameOrderData(Object aObj) {

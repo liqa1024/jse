@@ -22,10 +22,8 @@ public final class ShiftIntVector extends IntArrayVector {
     public ShiftIntVector(int aShift, int[] aData) {this(aData.length-aShift, aShift, aData);}
     
     /** 提供额外的接口来直接设置底层参数 */
-    public int shift() {return mShift;}
-    public ShiftIntVector setSize(int aSize) {mSize = aSize; return this;}
-    public ShiftIntVector setShift(int aShift) {mShift = aShift; return this;}
-    public int dataLength() {return mData.length;}
+    @Override public void setInternalDataSize(int aSize) {mSize = aSize;}
+    @Override public void setInternalDataShift(int aShift) {mShift = aShift;}
     
     /** ILogicalVector stuffs */
     @Override public int get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx + mShift];}
@@ -50,7 +48,7 @@ public final class ShiftIntVector extends IntArrayVector {
         return null;
     }
     /** 需要指定平移的距离保证优化运算的正确性 */
-    @Override public int internalDataShift() {return shift();}
+    @Override public int internalDataShift() {return mShift;}
     
     
     /** Optimize stuffs，subVec 切片直接返回  {@link ShiftIntVector} */

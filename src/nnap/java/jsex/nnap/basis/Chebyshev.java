@@ -228,12 +228,12 @@ public class Chebyshev extends NNAPWTypeBasis implements IBasis {
     }
     
     void eval0(int aNN, Vector rFp) {
-        BASIS.rangeCheck(mNlDx.size(), aNN);
-        BASIS.rangeCheck(mNlDy.size(), aNN);
-        BASIS.rangeCheck(mNlDz.size(), aNN);
-        BASIS.rangeCheck(mNlType.size(), aNN);
-        BASIS.rangeCheck(mRn.size(), mNMax+1);
-        BASIS.rangeCheck(rFp.size(), mSize);
+        BASIS.sizeCheck(mNlDx.size(), aNN);
+        BASIS.sizeCheck(mNlDy.size(), aNN);
+        BASIS.sizeCheck(mNlDz.size(), aNN);
+        BASIS.sizeCheck(mNlType.size(), aNN);
+        BASIS.sizeCheck(mRn.size(), mNMax+1);
+        BASIS.sizeCheck(rFp.size(), mSize);
         eval1(mNlDx.internalData(), mNlDy.internalData(), mNlDz.internalData(), mNlType.internalData(), aNN,
               mRn.internalData(), rFp.internalData(),
               mTypeNum, mRCut, mNMax, mWType);
@@ -244,22 +244,22 @@ public class Chebyshev extends NNAPWTypeBasis implements IBasis {
     
     void evalPartial0(int aNN, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz,
                       @Nullable DoubleList rFpPxCross, @Nullable DoubleList rFpPyCross, @Nullable DoubleList rFpPzCross) {
-        BASIS.rangeCheck(mNlDx.size(), aNN);
-        BASIS.rangeCheck(mNlDy.size(), aNN);
-        BASIS.rangeCheck(mNlDz.size(), aNN);
-        BASIS.rangeCheck(mNlType.size(), aNN);
-        BASIS.rangeCheck(mNlRn.size(), aNN*(mNMax+1));
-        BASIS.rangeCheck(mRnPx.size(), mNMax+1);
-        BASIS.rangeCheck(mRnPy.size(), mNMax+1);
-        BASIS.rangeCheck(mRnPz.size(), mNMax+1);
-        BASIS.rangeCheck(mCheby2.size(), mNMax);
-        BASIS.rangeCheck(rFp.size(), mSize);
-        BASIS.rangeCheck(rFpPx.size(), mSize);
-        BASIS.rangeCheck(rFpPy.size(), mSize);
-        BASIS.rangeCheck(rFpPz.size(), mSize);
-        if (rFpPxCross != null) BASIS.rangeCheck(rFpPxCross.size(), aNN*mSize);
-        if (rFpPyCross != null) BASIS.rangeCheck(rFpPyCross.size(), aNN*mSize);
-        if (rFpPzCross != null) BASIS.rangeCheck(rFpPzCross.size(), aNN*mSize);
+        BASIS.sizeCheck(mNlDx.size(), aNN);
+        BASIS.sizeCheck(mNlDy.size(), aNN);
+        BASIS.sizeCheck(mNlDz.size(), aNN);
+        BASIS.sizeCheck(mNlType.size(), aNN);
+        BASIS.sizeCheck(mNlRn.size(), aNN*(mNMax+1));
+        BASIS.sizeCheck(mRnPx.size(), mNMax+1);
+        BASIS.sizeCheck(mRnPy.size(), mNMax+1);
+        BASIS.sizeCheck(mRnPz.size(), mNMax+1);
+        BASIS.sizeCheck(mCheby2.size(), mNMax);
+        BASIS.sizeCheck(rFp.size(), mSize);
+        BASIS.sizeCheck(rFpPx.size(), mSize);
+        BASIS.sizeCheck(rFpPy.size(), mSize);
+        BASIS.sizeCheck(rFpPz.size(), mSize);
+        if (rFpPxCross != null) BASIS.sizeCheck(rFpPxCross.size(), aNN*mSize);
+        if (rFpPyCross != null) BASIS.sizeCheck(rFpPyCross.size(), aNN*mSize);
+        if (rFpPzCross != null) BASIS.sizeCheck(rFpPzCross.size(), aNN*mSize);
         evalPartial1(mNlDx.internalData(), mNlDy.internalData(), mNlDz.internalData(), mNlType.internalData(), aNN,
                      mNlRn.internalData(), mRnPx.internalData(), mRnPy.internalData(), mRnPz.internalData(), mCheby2.internalData(),
                      rFp.internalData(), rFpPx.internalData(), rFpPy.internalData(), rFpPz.internalData(),

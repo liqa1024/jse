@@ -1,7 +1,6 @@
 package jse.cache;
 
 import jse.code.collection.AbstractCollections;
-import jse.math.vector.DoubleArrayVector;
 import jse.math.vector.IVector;
 import jse.math.vector.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -22,9 +21,15 @@ import java.util.List;
 public class VectorCache {
     private VectorCache() {}
     
-    interface ICacheableVector {}
+    interface ICacheableVector {
+        double[] internalData();
+        void setReturned();
+    }
     final static class CacheableVector extends Vector implements ICacheableVector {
         public CacheableVector(int aSize, double[] aData) {super(aSize, aData);}
+        /** 从缓存中获取的数据一律不允许进行后续修改 */
+        @Override public void setInternalData(double[] aData) {throw new UnsupportedOperationException();}
+        @Override public void setReturned() {mData = null;}
     }
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isFromCache(IVector aVector) {
@@ -33,10 +38,10 @@ public class VectorCache {
     
     public static void returnVec(@NotNull IVector aVector) {
         if (!isFromCache(aVector)) throw new IllegalArgumentException("Return Vector MUST from cache");
-        DoubleArrayVector tDoubleArrayVector = (DoubleArrayVector)aVector;
-        double @Nullable[] tData = tDoubleArrayVector.internalData();
+        ICacheableVector tCacheableVector = (ICacheableVector)aVector;
+        double @Nullable[] tData = tCacheableVector.internalData();
         if (tData == null) throw new IllegalStateException("Redundant return Vector");
-        tDoubleArrayVector.setInternalData(null);
+        tCacheableVector.setReturned();
         DoubleArrayCache.returnArray(tData);
     }
     public static void returnVec(final @NotNull List<? extends @NotNull IVector> aVectorList) {
@@ -45,10 +50,10 @@ public class VectorCache {
         DoubleArrayCache.returnArrayFrom(aVectorList.size(), i -> {
             IVector tVector = aVectorList.get(i);
             if (!isFromCache(tVector)) throw new IllegalArgumentException("Return Vector MUST from cache");
-            DoubleArrayVector tDoubleArrayVector = (DoubleArrayVector)tVector;
-            double @Nullable[] tData = tDoubleArrayVector.internalData();
+            ICacheableVector tCacheableVector = (ICacheableVector)tVector;
+            double @Nullable[] tData = tCacheableVector.internalData();
             if (tData == null) throw new IllegalStateException("Redundant return Vector");
-            tDoubleArrayVector.setInternalData(null);
+            tCacheableVector.setReturned();
             return tData;
         });
     }
