@@ -1,7 +1,7 @@
 package jsex.nnap.basis;
 
 import jse.code.collection.DoubleList;
-import jse.math.vector.Vector;
+import jse.math.vector.DoubleArrayVector;
 
 import java.util.Map;
 
@@ -44,21 +44,21 @@ public class Mirror implements IBasis {
     @Override public boolean hasSymbol() {return mMirrorBasis.hasSymbol();}
     @Override public String symbol(int aType) {return mMirrorBasis.symbol(aType);}
     
-    @Override public void eval(IDxyzTypeIterable aNL, Vector rFp) {
+    @Override public void eval(IDxyzTypeIterable aNL, DoubleArrayVector rFp) {
         mMirrorBasis.eval(dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
             if (type == mThisType) type = mMirrorType;
             else if (type == mMirrorType) type = mThisType;
             dxyzTypeDo.run(dx, dy, dz, type);
         }), rFp);
     }
-    @Override public void evalPartial(IDxyzTypeIterable aNL, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz) {
+    @Override public void evalPartial(IDxyzTypeIterable aNL, DoubleArrayVector rFp, DoubleArrayVector rFpPx, DoubleArrayVector rFpPy, DoubleArrayVector rFpPz) {
         mMirrorBasis.evalPartial(dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
             if (type == mThisType) type = mMirrorType;
             else if (type == mMirrorType) type = mThisType;
             dxyzTypeDo.run(dx, dy, dz, type);
         }), rFp, rFpPx, rFpPy, rFpPz);
     }
-    @Override public void evalPartial(IDxyzTypeIterable aNL, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz, DoubleList rFpPxCross, DoubleList rFpPyCross, DoubleList rFpPzCross) {
+    @Override public void evalPartial(IDxyzTypeIterable aNL, DoubleArrayVector rFp, DoubleArrayVector rFpPx, DoubleArrayVector rFpPy, DoubleArrayVector rFpPz, DoubleList rFpPxCross, DoubleList rFpPyCross, DoubleList rFpPzCross) {
         mMirrorBasis.evalPartial(dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
             if (type == mThisType) type = mMirrorType;
             else if (type == mMirrorType) type = mThisType;

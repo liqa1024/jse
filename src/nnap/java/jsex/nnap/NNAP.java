@@ -630,8 +630,8 @@ public class NNAP implements IPairPotential {
                     final DoubleList tForceX = tModel.bufForceX(threadID, tNN+1);
                     final DoubleList tForceY = tModel.bufForceY(threadID, tNN+1);
                     final DoubleList tForceZ = tModel.bufForceZ(threadID, tNN+1);
-                    BASIS.forceDot0(xGrad.internalData(), tFpPx.internalData(), tFpPy.internalData(), tFpPz.internalData(), xGrad.internalDataShift(), xGrad.internalDataSize(),
-                                    tFpPxCross.internalData(), tFpPyCross.internalData(), tFpPzCross.internalData(), tForceX.internalData(), tForceY.internalData(), tForceZ.internalData(), tNN);
+                    BASIS.forceDot0(xGrad, tFpPx, tFpPy, tFpPz,
+                                    tFpPxCross, tFpPyCross, tFpPzCross, tForceX, tForceY, tForceZ, tNN);
                     if (rForceAccumulator != null) {
                         rForceAccumulator.add(threadID, cIdx, -1, tForceX.get(0), tForceY.get(0), tForceZ.get(0));
                     }

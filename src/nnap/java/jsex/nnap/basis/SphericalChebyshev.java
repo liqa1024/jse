@@ -4,7 +4,9 @@ import jse.cache.VectorCache;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
+import jse.math.IDataShell;
 import jse.math.MathEX;
+import jse.math.vector.DoubleArrayVector;
 import jse.math.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -12,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 import static jsex.nnap.basis.BASIS.lengthCheck;
+import static jsex.nnap.basis.BASIS.lengthCheckI;
 
 /**
  * 一种基于 Chebyshev 多项式和球谐函数将原子局域环境展开成一个基组的方法，
@@ -198,20 +201,6 @@ public class SphericalChebyshev extends NNAPWTypeBasis implements IBasis {
      */
     @Override public @Nullable String symbol(int aType) {return mSymbols==null ? null : mSymbols[aType-1];}
     
-    
-    private void validYAllSize(int aNN) {
-        int tMinSize = aNN * mLMAll;
-        int tSize = mNlY.size();
-        if (tSize >= tMinSize) return;
-        mNlY.addZeros(tMinSize-tSize);
-    }
-    private void validRnAllSize(int aNN) {
-        int tMinSize = aNN * (mNMax+1);
-        int tSize = mNlRn.size();
-        if (tSize >= tMinSize) return;
-        mNlRn.addZeros(tMinSize-tSize);
-    }
-    
     boolean mDead = false;
     @Override public boolean isShutdown() {return mDead;}
     @Override public void shutdown() {
@@ -234,46 +223,48 @@ public class SphericalChebyshev extends NNAPWTypeBasis implements IBasis {
         VectorCache.returnVec(mYPtheta);
     }
     
-    @Override public void eval(IDxyzTypeIterable aNL, Vector rFp) {
+    @Override public void eval(IDxyzTypeIterable aNL, DoubleArrayVector rFp) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
+        int tSizeFp = rFp.size();
+        if (mSize > tSizeFp) throw new IndexOutOfBoundsException(mSize+" > "+tSizeFp);
         
         // 统一缓存近邻列表
         buildNL(aNL);
         final int tNN = mNlDx.size();
         
-        // cnlm 需要累加，因此需要事先清空
-        mCnlm.fill(0.0);
-        
         // 现在直接计算基组
         eval0(tNN, rFp);
     }
     
-    @Override public final void evalPartial(IDxyzTypeIterable aNL, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz) {
+    @Override public final void evalPartial(IDxyzTypeIterable aNL, DoubleArrayVector rFp, DoubleArrayVector rFpPx, DoubleArrayVector rFpPy, DoubleArrayVector rFpPz) {
         evalPartial(aNL, rFp, rFpPx, rFpPy, rFpPz, null, null, null);
     }
-    @Override public void evalPartial(IDxyzTypeIterable aNL, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz, @Nullable DoubleList rFpPxCross, @Nullable DoubleList rFpPyCross, @Nullable DoubleList rFpPzCross) {
+    @Override public void evalPartial(IDxyzTypeIterable aNL, DoubleArrayVector rFp, DoubleArrayVector rFpPx, DoubleArrayVector rFpPy, DoubleArrayVector rFpPz, @Nullable DoubleList rFpPxCross, @Nullable DoubleList rFpPyCross, @Nullable DoubleList rFpPzCross) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
+        int tSizeFp = rFp.size();
+        int tSizeFpPx = rFpPx.size();
+        int tSizeFpPy = rFpPy.size();
+        int tSizeFpPz = rFpPz.size();
+        if (mSize > tSizeFp) throw new IndexOutOfBoundsException(mSize+" > "+tSizeFp);
+        if (mSize > tSizeFpPx) throw new IndexOutOfBoundsException(mSize+" > "+tSizeFpPx);
+        if (mSize > tSizeFpPy) throw new IndexOutOfBoundsException(mSize+" > "+tSizeFpPy);
+        if (mSize > tSizeFpPz) throw new IndexOutOfBoundsException(mSize+" > "+tSizeFpPz);
         
         // 统一缓存近邻列表
         buildNL(aNL);
         final int tNN = mNlDx.size();
         
         // 确保 Rn Y 的长度
-        validYAllSize(tNN);
-        validRnAllSize(tNN);
-        
-        // cnlm 需要累加，因此需要事先清空
-        mCnlm.fill(0.0);
+        validSize_(mNlY, tNN*mLMAll);
+        validSize_(mNlRn, tNN*(mNMax+1));
         
         // 初始化偏导数相关值
-        rFpPx.fill(0.0);
-        rFpPy.fill(0.0);
-        rFpPz.fill(0.0);
+        int tSizeAll = tSizeFp + rFp.internalDataShift();
         if (rFpPxCross != null) {
             assert rFpPyCross!=null && rFpPzCross!=null;
-            rFpPxCross.clear(); rFpPxCross.addZeros(tNN*mSize);
-            rFpPyCross.clear(); rFpPyCross.addZeros(tNN*mSize);
-            rFpPzCross.clear(); rFpPzCross.addZeros(tNN*mSize);
+            validSize_(rFpPxCross, tNN*tSizeAll);
+            validSize_(rFpPyCross, tNN*tSizeAll);
+            validSize_(rFpPzCross, tNN*tSizeAll);
         }
         
         // 现在直接计算基组偏导
@@ -294,33 +285,36 @@ public class SphericalChebyshev extends NNAPWTypeBasis implements IBasis {
         });
     }
     
-    void eval0(int aNN, Vector rFp) {
-        eval1(lengthCheck(mNlDx.internalData(), aNN), lengthCheck(mNlDy.internalData(), aNN), lengthCheck(mNlDz.internalData(), aNN), lengthCheck(mNlType.internalData(), aNN), aNN,
-              lengthCheck(mRn.internalData(), mNMax+1), lengthCheck(mY.internalData(), mLMAll), lengthCheck(mCnlm.internalData(), mSizeN*mLMAll), lengthCheck(rFp.internalData(), mSize),
+    void eval0(int aNN, IDataShell<double[]> rFp) {
+        int tShiftFp = rFp.internalDataShift();
+        eval1(lengthCheck(mNlDx, aNN), lengthCheck(mNlDy, aNN), lengthCheck(mNlDz, aNN), lengthCheckI(mNlType, aNN), aNN,
+              lengthCheck(mRn, mNMax+1), lengthCheck(mY, mLMAll), lengthCheck(mCnlm, mSizeN*mLMAll), lengthCheck(rFp, mSize, tShiftFp), tShiftFp,
               mTypeNum, mRCut, mNMax, mLMax, mNoRadial, mL3Max, mL3Cross, mWType);
     }
     private static native void eval1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
-                                     double[] rRn, double[] rY, double[] rCnlm, double[] rFp,
+                                     double[] rRn, double[] rY, double[] rCnlm, double[] rFp, int aShiftFp,
                                      int aTypeNum, double aRCut, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, int aWType);
     
-    void evalPartial0(int aNN, Vector rFp, Vector rFpPx, Vector rFpPy, Vector rFpPz,
-                      @Nullable DoubleList rFpPxCross, @Nullable DoubleList rFpPyCross, @Nullable DoubleList rFpPzCross) {
-        evalPartial1(lengthCheck(mNlDx.internalData(), aNN), lengthCheck(mNlDy.internalData(), aNN), lengthCheck(mNlDz.internalData(), aNN), lengthCheck(mNlType.internalData(), aNN), aNN,
-                     lengthCheck(mNlRn.internalData(), aNN*(mNMax+1)), lengthCheck(mRnPx.internalData(), mNMax+1), lengthCheck(mRnPy.internalData(), mNMax+1), lengthCheck(mRnPz.internalData(), mNMax+1), lengthCheck(mCheby2.internalData(), mNMax),
-                     lengthCheck(mNlY.internalData(), aNN*mLMAll), lengthCheck(mYPtheta.internalData(), mLMAll), lengthCheck(mYPphi.internalData(), mLMAll),
-                     lengthCheck(mYPx.internalData(), mLMAll), lengthCheck(mYPy.internalData(), mLMAll), lengthCheck(mYPz.internalData(), mLMAll),
-                     lengthCheck(mCnlm.internalData(), mSizeN*mLMAll), lengthCheck(mCnlmPx.internalData(), mLMAll), lengthCheck(mCnlmPy.internalData(), mLMAll), lengthCheck(mCnlmPz.internalData(), mLMAll),
-                     lengthCheck(rFp.internalData(), mSize), lengthCheck(rFpPx.internalData(), mSize), lengthCheck(rFpPy.internalData(), mSize), lengthCheck(rFpPz.internalData(), mSize),
-                     rFpPxCross!=null?lengthCheck(rFpPxCross.internalData(), aNN*mSize):null,
-                     rFpPyCross!=null?lengthCheck(rFpPyCross.internalData(), aNN*mSize):null,
-                     rFpPzCross!=null?lengthCheck(rFpPzCross.internalData(), aNN*mSize):null,
+    void evalPartial0(int aNN, IDataShell<double[]> rFp, IDataShell<double[]> rFpPx, IDataShell<double[]> rFpPy, IDataShell<double[]> rFpPz,
+                      @Nullable IDataShell<double[]> rFpPxCross, @Nullable IDataShell<double[]> rFpPyCross, @Nullable IDataShell<double[]> rFpPzCross) {
+        int tShiftFp = rFp.internalDataShift();
+        int tSizeFp = rFp.internalDataSize();
+        evalPartial1(lengthCheck(mNlDx, aNN), lengthCheck(mNlDy, aNN), lengthCheck(mNlDz, aNN), lengthCheckI(mNlType, aNN), aNN,
+                     lengthCheck(mNlRn, aNN*(mNMax+1)), lengthCheck(mRnPx, mNMax+1), lengthCheck(mRnPy, mNMax+1), lengthCheck(mRnPz, mNMax+1), lengthCheck(mCheby2, mNMax),
+                     lengthCheck(mNlY, aNN*mLMAll), lengthCheck(mYPtheta, mLMAll), lengthCheck(mYPphi, mLMAll),
+                     lengthCheck(mYPx, mLMAll), lengthCheck(mYPy, mLMAll), lengthCheck(mYPz, mLMAll),
+                     lengthCheck(mCnlm, mSizeN*mLMAll), lengthCheck(mCnlmPx, mLMAll), lengthCheck(mCnlmPy, mLMAll), lengthCheck(mCnlmPz, mLMAll),
+                     lengthCheck(rFp, mSize, tShiftFp), lengthCheck(rFpPx, mSize, tShiftFp), lengthCheck(rFpPy, mSize, tShiftFp), lengthCheck(rFpPz, mSize, tShiftFp), tSizeFp, tShiftFp,
+                     rFpPxCross!=null?lengthCheck(rFpPxCross, aNN*(tSizeFp+tShiftFp)):null,
+                     rFpPyCross!=null?lengthCheck(rFpPyCross, aNN*(tSizeFp+tShiftFp)):null,
+                     rFpPzCross!=null?lengthCheck(rFpPzCross, aNN*(tSizeFp+tShiftFp)):null,
                      mTypeNum, mRCut, mNMax, mLMax, mNoRadial, mL3Max, mL3Cross, mWType);
     }
     private static native void evalPartial1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
                                             double[] rNlRn, double[] rRnPx, double[] rRnPy, double[] rRnPz, double[] rCheby2,
                                             double[] rNlY, double[] rYPtheta, double[] rYPphi, double[] rYPx, double[] rYPy, double[] rYPz,
                                             double[] rCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz,
-                                            double[] rFp, double[] rFpPx, double[] rFpPy, double[] rFpPz,
+                                            double[] rFp, double[] rFpPx, double[] rFpPy, double[] rFpPz, int aSizeFp, int aShiftFp,
                                             double @Nullable[] rFpPxCross, double @Nullable[] rFpPyCross, double @Nullable[] rFpPzCross,
                                             int aTypeNum, double aRCut, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, int aWType);
 }

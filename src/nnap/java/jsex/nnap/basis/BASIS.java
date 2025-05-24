@@ -5,6 +5,7 @@ import jse.code.CS;
 import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;
+import jse.math.IDataShell;
 import jsex.nnap.NNAP;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -116,20 +117,33 @@ public final class BASIS {
     }
     
     @ApiStatus.Internal
-    public static void forceDot0(double[] aXGrad, double[] aFpPx, double[] aFpPy, double[] aFpPz, int aShift, int aLength, double[] aFpPxCross, double[] aFpPyCross, double[] aFpPzCross, double[] rFx, double[] rFy, double[] rFz, int aNN) {
-        forceDot1(lengthCheck(aXGrad, aShift+aLength),
-                  lengthCheck(aFpPx, aLength), lengthCheck(aFpPy, aLength), lengthCheck(aFpPz, aLength), aShift, aLength,
-                  lengthCheck(aFpPxCross, aLength*aNN), lengthCheck(aFpPyCross, aLength*aNN), lengthCheck(aFpPzCross, aLength*aNN),
+    public static void forceDot0(IDataShell<double[]> aXGrad, IDataShell<double[]> aFpPx, IDataShell<double[]> aFpPy, IDataShell<double[]> aFpPz,
+                                 IDataShell<double[]> aFpPxCross, IDataShell<double[]> aFpPyCross, IDataShell<double[]> aFpPzCross, IDataShell<double[]> rFx, IDataShell<double[]> rFy, IDataShell<double[]> rFz, int aNN) {
+        int tLength = aXGrad.internalDataSize();
+        int tShift = aXGrad.internalDataShift();
+        forceDot1(lengthCheck(aXGrad, tLength, tShift),
+                  lengthCheck(aFpPx, tLength), lengthCheck(aFpPy, tLength), lengthCheck(aFpPz, tLength), tShift, tLength,
+                  lengthCheck(aFpPxCross, tLength*aNN), lengthCheck(aFpPyCross, tLength*aNN), lengthCheck(aFpPzCross, tLength*aNN),
                   lengthCheck(rFx, aNN+1), lengthCheck(rFy, aNN+1), lengthCheck(rFz, aNN+1), aNN);
     }
     private static native void forceDot1(double[] aXGrad, double[] aFpPx, double[] aFpPy, double[] aFpPz, int aShift, int aLength, double[] aFpPxCross, double[] aFpPyCross, double[] aFpPzCross, double[] rFx, double[] rFy, double[] rFz, int aNN);
     
-    static int[] lengthCheck(int[] jArray, int aLength) {
-        if (aLength > jArray.length) throw new IndexOutOfBoundsException(aLength+" > "+jArray.length);
-        return jArray;
+    static int[] lengthCheckI(IDataShell<int[]> aData, int aLength) {
+        return lengthCheckI(aData, aLength, 0);
     }
-    static double[] lengthCheck(double[] jArray, int aLength) {
-        if (aLength > jArray.length) throw new IndexOutOfBoundsException(aLength+" > "+jArray.length);
-        return jArray;
+    static int[] lengthCheckI(IDataShell<int[]> aData, int aLength, int aShift) {
+        int[] tData = aData.internalData();
+        if (aLength+aShift > tData.length) throw new IndexOutOfBoundsException((aLength+aShift)+" > "+tData.length);
+        if (aShift != aData.internalDataShift()) throw new IllegalStateException("data shift mismatch");
+        return tData;
+    }
+    static double[] lengthCheck(IDataShell<double[]> aData, int aLength) {
+        return lengthCheck(aData, aLength, 0);
+    }
+    static double[] lengthCheck(IDataShell<double[]> aData, int aLength, int aShift) {
+        double[] tData = aData.internalData();
+        if (aLength+aShift > tData.length) throw new IndexOutOfBoundsException((aLength+aShift)+" > "+tData.length);
+        if (aShift != aData.internalDataShift()) throw new IllegalStateException("data shift mismatch");
+        return tData;
     }
 }
