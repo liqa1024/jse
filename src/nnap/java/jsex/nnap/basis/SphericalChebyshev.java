@@ -276,8 +276,7 @@ public class SphericalChebyshev extends NNAPWTypeBasis implements IBasis {
         mNlDx.clear(); mNlDy.clear(); mNlDz.clear();
         mNlType.clear();
         aNL.forEachDxyzType((dx, dy, dz, type) -> {
-            double dis = MathEX.Fast.hypot(dx, dy, dz);
-            if (dis >= mRCut) return; // 理论不会触发，因为在上层遍历时就排除了
+            // 现在不再检测距离，因为需要处理合并情况下截断不一致的情况
             if (type > mTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+mTypeNum+")");
             // 简单缓存近邻列表
             mNlDx.add(dx); mNlDy.add(dy); mNlDz.add(dz);

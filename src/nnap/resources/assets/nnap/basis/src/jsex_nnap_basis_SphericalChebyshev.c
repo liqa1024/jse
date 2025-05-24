@@ -1282,6 +1282,8 @@ static inline void calCnlm(double *aNlDx, double *aNlDy, double *aNlDz, jint *aN
         jint type = aNlType[j];
         double dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
         double dis = sqrt(dx*dx + dy*dy + dz*dz);
+        // check rcut for merge
+        if (dis >= aRCut) continue;
         // cal fc
         double fc = pow4_jse(1.0 - pow2_jse(dis/aRCut));
         // cal Rn
@@ -1566,9 +1568,24 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial1(JNIE
     
     // loop for neighbor
     for (jint j = 0; j < aNN; ++j) {
+        // clear fpPxyz here
+        jint tShiftFpC = j*(aSizeFp+aShiftFp) + aShiftFp;
+        double *tFpPxCross_ = tFpPxCross==NULL ? NULL : (tFpPxCross+tShiftFpC);
+        double *tFpPyCross_ = tFpPyCross==NULL ? NULL : (tFpPyCross+tShiftFpC);
+        double *tFpPzCross_ = tFpPzCross==NULL ? NULL : (tFpPzCross+tShiftFpC);
+        if (tFpPxCross != NULL) {
+            for (jint i = 0; i < tSize; ++i) {
+                tFpPxCross_[i] = 0.0;
+                tFpPyCross_[i] = 0.0;
+                tFpPzCross_[i] = 0.0;
+            }
+        }
+        // init nl
         jint type = tNlType[j];
         double dx = tNlDx[j], dy = tNlDy[j], dz = tNlDz[j];
         double dis = sqrt(dx*dx + dy*dy + dz*dz);
+        // check rcut for merge
+        if (dis >= aRCut) continue;
         // cal fc
         double fcMul = 1.0 - pow2_jse(dis/aRCut);
         double fcMul3 = pow3_jse(fcMul);
@@ -1627,18 +1644,6 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial1(JNIE
         calYPxyz(cosTheta, sinTheta, cosPhi, sinPhi, dis, dxy, dxyCloseZero,
                  tYPx, tYPy, tYPz,
                  tYPtheta, tYPphi, tLMAll);
-        // clear fpPxyz here
-        jint tShiftFpC = j*(aSizeFp+aShiftFp) + aShiftFp;
-        double *tFpPxCross_ = tFpPxCross==NULL ? NULL : (tFpPxCross+tShiftFpC);
-        double *tFpPyCross_ = tFpPyCross==NULL ? NULL : (tFpPyCross+tShiftFpC);
-        double *tFpPzCross_ = tFpPzCross==NULL ? NULL : (tFpPzCross+tShiftFpC);
-        if (tFpPxCross != NULL) {
-            for (jint i = 0; i < tSize; ++i) {
-                tFpPxCross_[i] = 0.0;
-                tFpPyCross_[i] = 0.0;
-                tFpPzCross_[i] = 0.0;
-            }
-        }
         // cal cnlmPxyz
         switch(aWType) {
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL: {

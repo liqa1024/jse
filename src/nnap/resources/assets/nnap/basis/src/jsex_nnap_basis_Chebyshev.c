@@ -13,6 +13,8 @@ static inline void calFp(double *aNlDx, double *aNlDy, double *aNlDz, jint *aNlT
         jint type = aNlType[j];
         double dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
         double dis = sqrt(dx*dx + dy*dy + dz*dz);
+        // check rcut for merge
+        if (dis >= aRCut) continue;
         // cal fc
         double fc = pow4_jse(1.0 - pow2_jse(dis/aRCut));
         // cal Rn
@@ -244,9 +246,24 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalPartial1(JNIEnv *aEnv,
     
     // loop for neighbor
     for (jint j = 0; j < aNN; ++j) {
+        // clear fpPxyz here
+        jint tShiftFpC = j*(aSizeFp+aShiftFp) + aShiftFp;
+        double *tFpPxCross_ = tFpPxCross==NULL ? NULL : (tFpPxCross+tShiftFpC);
+        double *tFpPyCross_ = tFpPyCross==NULL ? NULL : (tFpPyCross+tShiftFpC);
+        double *tFpPzCross_ = tFpPzCross==NULL ? NULL : (tFpPzCross+tShiftFpC);
+        if (tFpPxCross != NULL) {
+            for (jint i = 0; i < tSize; ++i) {
+                tFpPxCross_[i] = 0.0;
+                tFpPyCross_[i] = 0.0;
+                tFpPzCross_[i] = 0.0;
+            }
+        }
+        // init nl
         jint type = tNlType[j];
         double dx = tNlDx[j], dy = tNlDy[j], dz = tNlDz[j];
         double dis = sqrt(dx*dx + dy*dy + dz*dz);
+        // check rcut for merge
+        if (dis >= aRCut) continue;
         // cal fc
         double fcMul = 1.0 - pow2_jse(dis/aRCut);
         double fcMul3 = pow3_jse(fcMul);
@@ -276,18 +293,6 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalPartial1(JNIEnv *aEnv,
         default: {
             break;
         }}
-        // clear fpPxyz here
-        jint tShiftFpC = j*(aSizeFp+aShiftFp) + aShiftFp;
-        double *tFpPxCross_ = tFpPxCross==NULL ? NULL : (tFpPxCross+tShiftFpC);
-        double *tFpPyCross_ = tFpPyCross==NULL ? NULL : (tFpPyCross+tShiftFpC);
-        double *tFpPzCross_ = tFpPzCross==NULL ? NULL : (tFpPzCross+tShiftFpC);
-        if (tFpPxCross != NULL) {
-            for (jint i = 0; i < tSize; ++i) {
-                tFpPxCross_[i] = 0.0;
-                tFpPyCross_[i] = 0.0;
-                tFpPzCross_[i] = 0.0;
-            }
-        }
         // cal fpPxyz
         switch(aWType) {
         case jsex_nnap_basis_Chebyshev_WTYPE_EXFULL: {

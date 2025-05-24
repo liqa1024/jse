@@ -154,6 +154,12 @@ public class NNAP implements IPairPotential {
             }
             break;
         }
+        case "merge": {
+            for (int i = 0; i < mThreadNumber; ++i) {
+                aBasis[i] = Merge.load(mSymbols, tBasis);
+            }
+            break;
+        }
         default: {
             throw new IllegalArgumentException("Unsupported basis type: " + tBasisType);
         }}
