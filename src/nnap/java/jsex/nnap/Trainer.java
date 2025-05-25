@@ -26,7 +26,7 @@ import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import jse.math.vector.Vector;
 import jse.parallel.IAutoShutdown;
-import jsex.nnap.basis.IBasis;
+import jsex.nnap.basis.Basis;
 import jsex.nnap.basis.Mirror;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.ApiStatus;
@@ -545,7 +545,7 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
     
     protected final String[] mSymbols;
     protected final IVector mRefEngs;
-    protected final IBasis[] mBasis;
+    protected final Basis[] mBasis;
     protected final Vector[] mNormMu, mNormSigma;
     protected double mNormMuEng = 0.0, mNormSigmaEng = 0.0;
     protected final DataSet mTrainData;
@@ -560,7 +560,7 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
     protected final DoubleList mTrainLoss = new DoubleList(64);
     protected final DoubleList mTestLoss = new DoubleList(64);
     
-    public Trainer(String[] aSymbols, IVector aRefEngs, IBasis[] aBasis, Map<String, ?> aModelSetting) {
+    public Trainer(String[] aSymbols, IVector aRefEngs, Basis[] aBasis, Map<String, ?> aModelSetting) {
         if (aSymbols.length != aRefEngs.size()) throw new IllegalArgumentException("Symbols length does not match reference energies length.");
         if (aSymbols.length != aBasis.length) throw new IllegalArgumentException("Symbols length does not match reference basis length.");
         mSymbols = aSymbols;
@@ -579,7 +579,7 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
         // 简单遍历 basis 处理 mirror 的情况
         for (int i = 0; i < mSymbols.length; ++i) if (mBasis[i] instanceof Mirror) {
             Mirror tBasis = (Mirror)mBasis[i];
-            IBasis tMirrorBasis = tBasis.mirrorBasis();
+            Basis tMirrorBasis = tBasis.mirrorBasis();
             int tMirrorType = tBasis.mirrorType();
             if ((mBasis[tMirrorType-1]!=tMirrorBasis) || (tBasis.thisType()!=(i+1))) {
                 throw new IllegalArgumentException("Mirror Basis mismatch for type: "+(i+1));
@@ -592,11 +592,11 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
             mRefEngs.set(i, tRefEng);
         }
     }
-    public Trainer(String[] aSymbols, IVector aRefEngs, IBasis aBasis, Map<String, ?> aModelSetting) {this(aSymbols, aRefEngs, repeatBasis_(aBasis, aSymbols.length), aModelSetting);}
-    public Trainer(String[] aSymbols, double[] aRefEngs, IBasis[] aBasis, Map<String, ?> aModelSetting) {this(aSymbols, Vectors.from(aRefEngs), aBasis, aModelSetting);}
-    public Trainer(String[] aSymbols, double[] aRefEngs, IBasis aBasis, Map<String, ?> aModelSetting) {this(aSymbols, aRefEngs, repeatBasis_(aBasis, aSymbols.length), aModelSetting);}
-    private static IBasis[] repeatBasis_(IBasis aBasis, int aLen) {
-        IBasis[] rOut = new IBasis[aLen];
+    public Trainer(String[] aSymbols, IVector aRefEngs, Basis aBasis, Map<String, ?> aModelSetting) {this(aSymbols, aRefEngs, repeatBasis_(aBasis, aSymbols.length), aModelSetting);}
+    public Trainer(String[] aSymbols, double[] aRefEngs, Basis[] aBasis, Map<String, ?> aModelSetting) {this(aSymbols, Vectors.from(aRefEngs), aBasis, aModelSetting);}
+    public Trainer(String[] aSymbols, double[] aRefEngs, Basis aBasis, Map<String, ?> aModelSetting) {this(aSymbols, aRefEngs, repeatBasis_(aBasis, aSymbols.length), aModelSetting);}
+    private static Basis[] repeatBasis_(Basis aBasis, int aLen) {
+        Basis[] rOut = new Basis[aLen];
         Arrays.fill(rOut, aBasis);
         return rOut;
     }
@@ -605,8 +605,8 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
     public PyObject model(int aType) {return SP.Python.getAs(PyObject.class, VAL_MODEL+".sub_models["+(aType-1)+"]");}
     @SuppressWarnings("unchecked")
     public @Unmodifiable List<PyObject> models() {return (List<PyObject>)SP.Python.getAs(List.class, VAL_MODEL+".sub_models");}
-    public IBasis basis(int aType) {return mBasis[aType-1];}
-    public @Unmodifiable List<IBasis> basis() {return AbstractCollections.from(mBasis);}
+    public Basis basis(int aType) {return mBasis[aType-1];}
+    public @Unmodifiable List<Basis> basis() {return AbstractCollections.from(mBasis);}
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return mSymbols[aType-1];}
     public String units() {return mUnits;}
@@ -631,7 +631,7 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
                 UT.Code.warning("hidden_dims of mirror mismatch for type: "+(i+1)+", overwrite with mirror values automatically");
             }
         }
-        SP.Python.setValue(VAL_INPUT_DIMS, NewCollections.map(mBasis, IBasis::size));
+        SP.Python.setValue(VAL_INPUT_DIMS, NewCollections.map(mBasis, Basis::size));
         SP.Python.setValue(VAL_HIDDEN_DIMS, tHiddenDims);
         SP.Python.setValue(VAL_MIRROR_MAP, tMirrorMap);
         SP.Python.setValue(VAL_NTYPES, mSymbols.length);
@@ -886,7 +886,7 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
         try (final AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData)) {
             for (int i = 0; i < tAtomNum; ++i) {
                 int tType = tTypeMap.applyAsInt(aAtomData.atom(i).type());
-                IBasis tBasis = basis(tType);
+                Basis tBasis = basis(tType);
                 // 这里依旧采用缓存的写法
                 Vector tFp = VectorCache.getVec(tBasis.size());
                 tBasis.eval(tAPC, i, tTypeMap, tFp);
@@ -908,7 +908,7 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
         try (final AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData)) {
             for (int i = 0; i < tAtomNum; ++i) {
                 int tType = tTypeMap.applyAsInt(aAtomData.atom(i).type());
-                IBasis tBasis = basis(tType);
+                Basis tBasis = basis(tType);
                 // 这里依旧采用缓存的写法
                 final int tBasisSize = tBasis.size();
                 Vector tFp = VectorCache.getVec(tBasisSize);

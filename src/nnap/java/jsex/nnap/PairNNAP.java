@@ -1,12 +1,10 @@
 package jsex.nnap;
 
-import jse.atom.IPairPotential;
 import jse.cache.*;
 import jse.clib.DoubleCPointer;
 import jse.clib.IntCPointer;
 import jse.clib.NestedDoubleCPointer;
 import jse.clib.NestedIntCPointer;
-import jse.code.collection.Pair;
 import jse.lmp.LmpPlugin;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
@@ -97,7 +95,6 @@ public class PairNNAP extends LmpPlugin.Pair {
         numneigh.parse2dest(numneighVec.internalData(), numneighVec.internalDataShift(), numneighVec.internalDataSize());
         int numneighSum = numneighVec.sum();
         IntVector firstneighVec = IntVectorCache.getVec(numneighSum);
-        LogicalVector firstneighMask = LogicalVectorCache.getZeros(numneighSum);
         int tStart = 0;
         for (int i = 0; i < nlocal; ++i) {
             int tSize = numneighVec.get(i);
@@ -129,36 +126,17 @@ public class PairNNAP extends LmpPlugin.Pair {
                 final int jnum = numneighVec.get(i);
                 final int jstartneigh = startneighVec.get(i);
                 final IIntVector jlistVec = firstneighVec.subVec(jstartneigh, jstartneigh+jnum);
-                final ILogicalVector jlistMask = firstneighMask.subVec(jstartneigh, jstartneigh+jnum);
-                final boolean[] jlistMaskValid = {false};
-                final double[] oRMax = {Double.NaN};
                 // 遍历近邻
                 neighborListDo.run(0, i, mLmpType2NNAPType[typei], (aRMax, aDxyzTypeIdxDo) -> {
-                    if (!jlistMaskValid[0]) {
-                        for (int jj = 0; jj < jnum; ++jj) {
-                            int j = jlistVec.get(jj);
-                            j &= LmpPlugin.NEIGHMASK;
-                            // 注意 jse 中的 dxyz 和 lammps 定义的相反
-                            double delx = xMat.get(j, 0) - xtmp;
-                            double dely = xMat.get(j, 1) - ytmp;
-                            double delz = xMat.get(j, 2) - ztmp;
-                            double rsq = delx*delx + dely*dely + delz*delz;
-                            if (rsq < mCutsq[typei]) {
-                                jlistMask.set(jj, true);
-                                aDxyzTypeIdxDo.run(delx, dely, delz, mLmpType2NNAPType[typeVec.get(j)], j);
-                            }
-                        }
-                        jlistMaskValid[0] = true;
-                        oRMax[0] = aRMax;
-                    } else {
-                        if (oRMax[0] != aRMax) throw new IllegalStateException();
-                        for (int jj = 0; jj < jnum; ++jj) if (jlistMask.get(jj)) {
-                            int j = jlistVec.get(jj);
-                            j &= LmpPlugin.NEIGHMASK;
-                            // 注意 jse 中的 dxyz 和 lammps 定义的相反
-                            double delx = xMat.get(j, 0) - xtmp;
-                            double dely = xMat.get(j, 1) - ytmp;
-                            double delz = xMat.get(j, 2) - ztmp;
+                    for (int jj = 0; jj < jnum; ++jj) {
+                        int j = jlistVec.get(jj);
+                        j &= LmpPlugin.NEIGHMASK;
+                        // 注意 jse 中的 dxyz 和 lammps 定义的相反
+                        double delx = xMat.get(j, 0) - xtmp;
+                        double dely = xMat.get(j, 1) - ytmp;
+                        double delz = xMat.get(j, 2) - ztmp;
+                        double rsq = delx*delx + dely*dely + delz*delz;
+                        if (rsq < mCutsq[typei]) {
                             aDxyzTypeIdxDo.run(delx, dely, delz, mLmpType2NNAPType[typeVec.get(j)], j);
                         }
                     }
@@ -213,7 +191,6 @@ public class PairNNAP extends LmpPlugin.Pair {
             MatrixCache.returnMat(vatomMat);
         }
         f.fill(fMat.internalData(), fMat.internalDataShift(), fMat.rowNumber(), fMat.columnNumber());
-        LogicalVectorCache.returnVec(firstneighMask);
         IntVectorCache.returnVec(startneighVec);
         IntVectorCache.returnVec(numneighVec);
         IntVectorCache.returnVec(firstneighVec);

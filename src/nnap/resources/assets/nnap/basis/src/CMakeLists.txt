@@ -10,7 +10,7 @@ endif()
 
 
 set(SOURCE_FILES
-    jsex_nnap_basis_BASIS.c
+    jsex_nnap_basis_Basis.c
     jsex_nnap_basis_SphericalChebyshev.c
     jsex_nnap_basis_Chebyshev.c)
 add_library(nnapbasis SHARED ${SOURCE_FILES})

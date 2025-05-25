@@ -3,7 +3,7 @@ package jsex.nnap;
 import jse.atom.AtomicParameterCalculator;
 import jse.cache.VectorCache;
 import jse.math.vector.Vector;
-import jsex.nnap.basis.IBasis;
+import jsex.nnap.basis.Basis;
 import jsex.nnap.basis.SphericalChebyshev;
 
 import java.util.List;
@@ -25,7 +25,7 @@ public class NNAPExtensions {
     public static List<Vector> calBasisNNAP(final AtomicParameterCalculator self, final int aNMax, final int aLMax, final double aRCutOff) {
         if (self.isShutdown()) throw new RuntimeException("This Calculator is dead");
         final int tThreadNum = self.threadNumber();
-        IBasis[] tBasis = new IBasis[tThreadNum];
+        Basis[] tBasis = new Basis[tThreadNum];
         for (int i = 0; i < tThreadNum; ++i) {
             //noinspection resource
             tBasis[i] = new SphericalChebyshev(self.atomTypeNumber(), aNMax, aLMax, aRCutOff);

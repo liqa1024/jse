@@ -12,9 +12,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
-import static jsex.nnap.basis.BASIS.lengthCheck;
-import static jsex.nnap.basis.BASIS.lengthCheckI;
-
 /**
  * 一种仅使用 Chebyshev 多项式将原子局域环境展开成一个基组的方法，
  * 主要用于作为机器学习的输入向量；这不会包含角向序，但是速度可以很快。
@@ -28,27 +25,7 @@ import static jsex.nnap.basis.BASIS.lengthCheckI;
  * Efficient and accurate simulation of vitrification in multi-component metallic liquids with neural-network potentials </a>
  * @author Su Rui, liqa
  */
-public class Chebyshev extends NNAPWTypeBasis implements IBasis {
-    /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
-    public final static class InitHelper {
-        private static volatile boolean INITIALIZED = false;
-        
-        public static boolean initialized() {return INITIALIZED;}
-        @SuppressWarnings({"ResultOfMethodCallIgnored", "UnnecessaryCallToStringValueOf"})
-        public static void init() {
-            // 手动调用此值来强制初始化
-            if (!INITIALIZED) String.valueOf(_INIT_FLAG);
-        }
-    }
-    
-    private final static boolean _INIT_FLAG;
-    static {
-        InitHelper.INITIALIZED = true;
-        // 确保 BASIS 已经确实初始化
-        BASIS.InitHelper.init();
-        _INIT_FLAG = false;
-    }
-    
+public class Chebyshev extends NNAPWTypeBasis {
     public final static int DEFAULT_NMAX = 5;
     public final static double DEFAULT_RCUT = 6.0; // 现在默认值统一为 6
     
@@ -61,10 +38,7 @@ public class Chebyshev extends NNAPWTypeBasis implements IBasis {
     final int mSize;
     
     /** 一些缓存的中间变量，现在统一作为对象存储，对于这种大规模的缓存情况可以进一步提高效率 */
-    private final Vector mRn, mRnPx, mRnPy, mRnPz, mCheby2;
-    
-    final DoubleList mNlDx = new DoubleList(16), mNlDy = new DoubleList(16), mNlDz = new DoubleList(16);
-    final IntList mNlType = new IntList(16);
+    final Vector mRn, mRnPx, mRnPy, mRnPz, mCheby2;
     final DoubleList mNlRn = new DoubleList(128);
     
     Chebyshev(String @Nullable[] aSymbols, int aTypeNum, int aNMax, double aRCut, int aWType) {
@@ -164,71 +138,50 @@ public class Chebyshev extends NNAPWTypeBasis implements IBasis {
         VectorCache.returnVec(mCheby2);
     }
     
-    @Override public void eval(IDxyzTypeIterable aNL, DoubleArrayVector rFp) {
+    @Override
+    public void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
-        int tSizeFp = rFp.size();
-        if (mSize > tSizeFp) throw new IndexOutOfBoundsException(mSize+" > "+tSizeFp);
-        
-        // 统一缓存近邻列表
-        buildNL(aNL);
-        final int tNN = mNlDx.size();
         
         // 现在直接计算基组
-        eval0(tNN, rFp);
+        eval0(aNlDx, aNlDy, aNlDz, aNlType, rFp);
     }
     
-    @Override public void evalPartial(IDxyzTypeIterable aNL, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
+    @Override
+    public void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
-        int tSizeFp = rFp.size();
-        if (mSize > tSizeFp) throw new IndexOutOfBoundsException(mSize+" > "+tSizeFp);
         
-        // 统一缓存近邻列表
-        buildNL(aNL);
-        final int tNN = mNlDx.size();
-        
+        final int tNN = aNlDx.size();
         // 确保 Rn 的长度
         validSize_(mNlRn, tNN*(mNMax+1));
-        
         // 初始化偏导数相关值
-        int tSizeAll = tSizeFp + rFp.internalDataShift();
+        int tSizeAll = rFp.size() + rFp.internalDataShift();
         validSize_(rFpPx, tNN*tSizeAll);
         validSize_(rFpPy, tNN*tSizeAll);
         validSize_(rFpPz, tNN*tSizeAll);
         
         // 现在直接计算基组偏导
-        evalPartial0(tNN, rFp, rFpPx, rFpPy, rFpPz);
+        evalPartial0(aNlDx, aNlDy, aNlDz, aNlType, rFp, rFpPx, rFpPy, rFpPz);
     }
     
-    void buildNL(IDxyzTypeIterable aNL) {
-        // 缓存情况需要先清空这些
-        mNlDx.clear(); mNlDy.clear(); mNlDz.clear();
-        mNlType.clear();
-        aNL.forEachDxyzType((dx, dy, dz, type) -> {
-            // 现在不再检测距离，因为需要处理合并情况下截断不一致的情况
-            if (type > mTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+mTypeNum+")");
-            // 简单缓存近邻列表
-            mNlDx.add(dx); mNlDy.add(dy); mNlDz.add(dz);
-            mNlType.add(type);
-        });
-    }
-    
-    void eval0(int aNN, IDataShell<double[]> rFp) {
+    void eval0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType, IDataShell<double[]> rFp) {
+        int tNN = aNlDx.internalDataSize();
         int tShiftFp = rFp.internalDataShift();
-        eval1(lengthCheck(mNlDx, aNN), lengthCheck(mNlDy, aNN), lengthCheck(mNlDz, aNN), lengthCheckI(mNlType, aNN), aNN,
-              lengthCheck(mRn, mNMax+1), lengthCheck(rFp, mSize, tShiftFp), tShiftFp,
+        eval1(aNlDx.internalDataWithLengthCheck(tNN), aNlDy.internalDataWithLengthCheck(tNN), aNlDz.internalDataWithLengthCheck(tNN), aNlType.internalDataWithLengthCheck(tNN), tNN,
+              mRn.internalDataWithLengthCheck(mNMax+1), rFp.internalDataWithLengthCheck(mSize, tShiftFp), tShiftFp,
               mTypeNum, mRCut, mNMax, mWType);
     }
     private static native void eval1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
                                      double[] rRn, double[] rFp, int aShiftFp,
                                      int aTypeNum, double aRCut, int aNMax, int aWType);
     
-    void evalPartial0(int aNN, IDataShell<double[]> rFp, IDataShell<double[]> rFpPx, IDataShell<double[]> rFpPy, IDataShell<double[]> rFpPz) {
+    void evalPartial0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType, IDataShell<double[]> rFp, IDataShell<double[]> rFpPx, IDataShell<double[]> rFpPy, IDataShell<double[]> rFpPz) {
+        int tNN = aNlDx.internalDataSize();
         int tShiftFp = rFp.internalDataShift();
         int tSizeFp = rFp.internalDataSize();
-        evalPartial1(lengthCheck(mNlDx, aNN), lengthCheck(mNlDy, aNN), lengthCheck(mNlDz, aNN), lengthCheckI(mNlType, aNN), aNN,
-                     lengthCheck(mNlRn, aNN*(mNMax+1)), lengthCheck(mRnPx, mNMax+1), lengthCheck(mRnPy, mNMax+1), lengthCheck(mRnPz, mNMax+1), lengthCheck(mCheby2, mNMax),
-                     lengthCheck(rFp, mSize, tShiftFp), tSizeFp, tShiftFp,
-                     lengthCheck(rFpPx, aNN*(tSizeFp+tShiftFp)), lengthCheck(rFpPy, aNN*(tSizeFp+tShiftFp)), lengthCheck(rFpPz, aNN*(tSizeFp+tShiftFp)),
+        evalPartial1(aNlDx.internalDataWithLengthCheck(tNN), aNlDy.internalDataWithLengthCheck(tNN), aNlDz.internalDataWithLengthCheck(tNN), aNlType.internalDataWithLengthCheck(tNN), tNN,
+                     mNlRn.internalDataWithLengthCheck(tNN*(mNMax+1)), mRnPx.internalDataWithLengthCheck(mNMax+1), mRnPy.internalDataWithLengthCheck(mNMax+1), mRnPz.internalDataWithLengthCheck(mNMax+1), mCheby2.internalDataWithLengthCheck(mNMax),
+                     rFp.internalDataWithLengthCheck(mSize, tShiftFp), tSizeFp, tShiftFp,
+                     rFpPx.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp)), rFpPy.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp)), rFpPz.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp)),
                      mTypeNum, mRCut, mNMax, mWType);
     }
     private static native void evalPartial1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,

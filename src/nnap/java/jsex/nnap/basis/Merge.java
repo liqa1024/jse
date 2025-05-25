@@ -1,6 +1,7 @@
 package jsex.nnap.basis;
 
 import jse.code.collection.DoubleList;
+import jse.code.collection.IntList;
 import jse.code.collection.NewCollections;
 import jse.math.vector.DoubleArrayVector;
 import jse.math.vector.ShiftVector;
@@ -15,22 +16,22 @@ import static jse.code.CS.ZL_STR;
  * 使用多个基组的合并基组，用于实现自定义的高效基组
  * @author liqa
  */
-public class Merge implements IBasis {
+public class Merge extends Basis {
     
-    private final IBasis[] mMergeBasis;
+    private final Basis[] mMergeBasis;
     private final double mRCut;
     private final int mSize, mTypeNum;
     private final String @Nullable[] mSymbols;
     private final ShiftVector[] mFpShell;
     
-    public Merge(IBasis... aMergeBasis) {
+    public Merge(Basis... aMergeBasis) {
         if (aMergeBasis==null || aMergeBasis.length==0) throw new IllegalArgumentException("Merge basis can not be null or empty");
         double tRCut = Double.NEGATIVE_INFINITY;
         int tSize = 0;
         int tTypeNum = -1;
         @Nullable List<String> tSymbols = null;
         Boolean tHasSymbols = null;
-        for (IBasis tBasis : aMergeBasis) {
+        for (Basis tBasis : aMergeBasis) {
             if (!(tBasis instanceof SphericalChebyshev) && !(tBasis instanceof Chebyshev)) {
                 throw new IllegalArgumentException("MergeBasis should be SphericalChebyshev or Chebyshev");
             }
@@ -92,7 +93,7 @@ public class Merge implements IBasis {
         Object tObj = aMap.get("basis");
         if (tObj == null) throw new IllegalArgumentException("Key `basis` required for merge load");
         List<Map> tList = (List<Map>)tObj;
-        IBasis[] tMergeBasis = new IBasis[tList.size()];
+        Basis[] tMergeBasis = new Basis[tList.size()];
         for (int i = 0; i < tMergeBasis.length; ++i) {
             Map tMap = tList.get(i);
             Object tType = tMap.get("type");
@@ -119,7 +120,7 @@ public class Merge implements IBasis {
         Object tObj = aMap.get("basis");
         if (tObj == null) throw new IllegalArgumentException("Key `basis` required for merge load");
         List<Map> tList = (List<Map>)tObj;
-        IBasis[] tMergeBasis = new IBasis[tList.size()];
+        Basis[] tMergeBasis = new Basis[tList.size()];
         for (int i = 0; i < tMergeBasis.length; ++i) {
             Map tMap = tList.get(i);
             Object tType = tMap.get("type");
@@ -142,22 +143,24 @@ public class Merge implements IBasis {
         return new Merge(tMergeBasis);
     }
     
-    @Override public void eval(IDxyzTypeIterable aNL, DoubleArrayVector rFp) {
+    @Override
+    public void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
         int tSizeFp = rFp.size();
         if (mSize > tSizeFp) throw new IndexOutOfBoundsException(mSize+" > "+tSizeFp);
         for (int i = 0; i < mMergeBasis.length; ++i) {
             ShiftVector tFp = mFpShell[i];
             tFp.setInternalData(rFp.internalData());
-            mMergeBasis[i].eval(aNL, tFp);
+            mMergeBasis[i].eval_(aNlDx, aNlDy, aNlDz, aNlType, tFp);
         }
     }
-    @Override public void evalPartial(IDxyzTypeIterable aNL, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
+    @Override
+    public void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
         int tSizeFp = rFp.size();
         if (mSize > tSizeFp) throw new IndexOutOfBoundsException(mSize+" > "+tSizeFp);
         for (int i = 0; i < mMergeBasis.length; ++i) {
             ShiftVector tFp = mFpShell[i];
             tFp.setInternalData(rFp.internalData());
-            mMergeBasis[i].evalPartial(aNL, tFp, rFpPx, rFpPy, rFpPz);
+            mMergeBasis[i].evalPartial_(aNlDx, aNlDy, aNlDz, aNlType, tFp, rFpPx, rFpPy, rFpPz);
         }
     }
 }

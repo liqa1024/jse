@@ -1,6 +1,7 @@
 package jsex.nnap.basis;
 
 import jse.code.collection.DoubleList;
+import jse.code.collection.IntList;
 import jse.math.vector.DoubleArrayVector;
 
 import java.util.Map;
@@ -11,17 +12,17 @@ import java.util.Map;
  * 目前主要用于实现 ising 模型
  * @author liqa
  */
-public class Mirror implements IBasis {
+public class Mirror extends Basis {
     
-    private final IBasis mMirrorBasis;
+    private final Basis mMirrorBasis;
     private final int mMirrorType, mThisType;
-    public Mirror(IBasis aMirrorBasis, int aMirrorType, int aThisType) {
+    public Mirror(Basis aMirrorBasis, int aMirrorType, int aThisType) {
         if (aMirrorBasis instanceof Mirror) throw new IllegalArgumentException("MirrorBasis MUST NOT be Mirror");
         mMirrorBasis = aMirrorBasis;
         mMirrorType = aMirrorType;
         mThisType = aThisType;
     }
-    public IBasis mirrorBasis() {return mMirrorBasis;}
+    public Basis mirrorBasis() {return mMirrorBasis;}
     public int mirrorType() {return mMirrorType;}
     public int thisType() {return mThisType;}
     
@@ -31,7 +32,7 @@ public class Mirror implements IBasis {
         rSaveTo.put("mirror", mMirrorType);
     }
     @SuppressWarnings("rawtypes")
-    public static Mirror load(IBasis aMirrorBasis, int aThisType, Map aMap) {
+    public static Mirror load(Basis aMirrorBasis, int aThisType, Map aMap) {
         Object tMirror = aMap.get("mirror");
         if (tMirror == null) throw new IllegalArgumentException("Key `mirror` required for mirror load");
         int tMirrorType = ((Number)tMirror).intValue();
@@ -44,18 +45,25 @@ public class Mirror implements IBasis {
     @Override public boolean hasSymbol() {return mMirrorBasis.hasSymbol();}
     @Override public String symbol(int aType) {return mMirrorBasis.symbol(aType);}
     
-    @Override public void eval(IDxyzTypeIterable aNL, DoubleArrayVector rFp) {
-        mMirrorBasis.eval(dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
-            if (type == mThisType) type = mMirrorType;
-            else if (type == mMirrorType) type = mThisType;
-            dxyzTypeDo.run(dx, dy, dz, type);
-        }), rFp);
+    private final IntList mMirrorNlType = new IntList(16);
+    private void buildNlType_(IntList aNlType) {
+        mMirrorNlType.clear();
+        mMirrorNlType.ensureCapacity(aNlType.size());
+        aNlType.forEach(type -> {
+            if (type == mThisType) mMirrorNlType.add(mMirrorType);
+            else if (type == mMirrorType) mMirrorNlType.add(mThisType);
+            else mMirrorNlType.add(type);
+        });
     }
-    @Override public void evalPartial(IDxyzTypeIterable aNL, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
-        mMirrorBasis.evalPartial(dxyzTypeDo -> aNL.forEachDxyzType((dx, dy, dz, type) -> {
-            if (type == mThisType) type = mMirrorType;
-            else if (type == mMirrorType) type = mThisType;
-            dxyzTypeDo.run(dx, dy, dz, type);
-        }), rFp, rFpPx, rFpPy, rFpPz);
+    
+    @Override
+    public void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
+        buildNlType_(aNlType);
+        mMirrorBasis.eval_(aNlDx, aNlDy, aNlDz, mMirrorNlType, rFp);
+    }
+    @Override
+    public void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
+        buildNlType_(aNlType);
+        mMirrorBasis.evalPartial_(aNlDx, aNlDy, aNlDz, mMirrorNlType, rFp, rFpPx, rFpPy, rFpPz);
     }
 }

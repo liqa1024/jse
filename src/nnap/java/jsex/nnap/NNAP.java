@@ -1,11 +1,14 @@
 package jsex.nnap;
 
 import jse.atom.*;
+import jse.cache.IntVectorCache;
 import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
 import jse.clib.*;
 import jse.code.*;
 import jse.code.collection.DoubleList;
+import jse.code.collection.IntList;
+import jse.math.IDataShell;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import jse.math.vector.Vector;
@@ -15,8 +18,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.DoubleConsumer;
 
 import static jse.code.OS.JAR_DIR;
 
@@ -92,7 +93,7 @@ public class NNAP implements IPairPotential {
         // 依赖 jniutil
         JNIUtil.InitHelper.init();
         // 依赖 nnapbasis
-        BASIS.InitHelper.init();
+        Basis.InitHelper.init();
         // 这里不直接依赖 LmpPlugin
         
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
@@ -137,7 +138,7 @@ public class NNAP implements IPairPotential {
         if (tBasisType == null) {
             tBasisType = "spherical_chebyshev";
         }
-        IBasis[] aBasis = new IBasis[mThreadNumber];
+        Basis[] aBasis = new Basis[mThreadNumber];
         switch(tBasisType.toString()) {
         case "mirror": {
             return null; // mirror 情况延迟初始化
@@ -192,7 +193,7 @@ public class NNAP implements IPairPotential {
         Object tMirror = tBasis.get("mirror");
         if (tMirror == null) throw new IllegalArgumentException("Key `mirror` required for basis mirror");
         int tMirrorType = ((Number)tMirror).intValue();
-        IBasis[] aBasis = new IBasis[mThreadNumber];
+        Basis[] aBasis = new Basis[mThreadNumber];
         for (int i = 0; i < mThreadNumber; ++i) {
             aBasis[i] = new Mirror(model(tMirrorType).basis(i), tMirrorType, aType);
         }
@@ -222,7 +223,7 @@ public class NNAP implements IPairPotential {
         private final double mRefEng;
         private final IVector mNormMu, mNormSigma;
         private final double mNormMuEng, mNormSigmaEng;
-        private final IBasis[] mBasis;
+        private final Basis[] mBasis;
         private final int mBasisSize;
         
         public double refEng() {return mRefEng;}
@@ -230,35 +231,42 @@ public class NNAP implements IPairPotential {
         public IVector normSigma() {return mNormSigma;}
         public double normMuEng() {return mNormMuEng;}
         public double normSigmaEng() {return mNormSigmaEng;}
-        public IBasis basis() {return basis(0);}
-        public IBasis basis(int aThreadID) {return mBasis[aThreadID];}
+        public Basis basis() {return basis(0);}
+        public Basis basis(int aThreadID) {return mBasis[aThreadID];}
         
         /// 现在使用全局的缓存实现，可以进一步减少内存池的调用操作
         private final Vector[][] mFp;
         private final DoubleList[][] mFpPx, mFpPy, mFpPz;
+        private final DoubleList[][] mNlDx, mNlDy, mNlDz;
+        private final IntList[][] mNlType, mNlIdx;
         
         private Vector bufFp(int aThreadID) {return mFp[aThreadID][mBatchedSize[aThreadID]];}
         private DoubleList bufFpPx(int aThreadID) {return mFpPx[aThreadID][mBatchedSize[aThreadID]];}
         private DoubleList bufFpPy(int aThreadID) {return mFpPy[aThreadID][mBatchedSize[aThreadID]];}
         private DoubleList bufFpPz(int aThreadID) {return mFpPz[aThreadID][mBatchedSize[aThreadID]];}
+        private DoubleList bufNlDx(int aThreadID) {return mNlDx[aThreadID][mBatchedSize[aThreadID]];}
+        private DoubleList bufNlDy(int aThreadID) {return mNlDy[aThreadID][mBatchedSize[aThreadID]];}
+        private DoubleList bufNlDz(int aThreadID) {return mNlDz[aThreadID][mBatchedSize[aThreadID]];}
+        private IntList bufNlType(int aThreadID) {return mNlType[aThreadID][mBatchedSize[aThreadID]];}
+        private IntList bufNlIdx(int aThreadID) {return mNlIdx[aThreadID][mBatchedSize[aThreadID]];}
         
         private final DoubleList[] mForceX, mForceY, mForceZ;
         private DoubleList bufForceX(int aThreadID, int aSizeMin) {
             DoubleList tForceX = mForceX[aThreadID];
-            int tSize = tForceX.size();
-            if (tSize < aSizeMin) tForceX.addZeros(aSizeMin - tSize);
+            tForceX.ensureCapacity(aSizeMin);
+            tForceX.setInternalDataSize(aSizeMin);
             return tForceX;
         }
         private DoubleList bufForceY(int aThreadID, int aSizeMin) {
             DoubleList tForceY = mForceY[aThreadID];
-            int tSize = tForceY.size();
-            if (tSize < aSizeMin) tForceY.addZeros(aSizeMin - tSize);
+            tForceY.ensureCapacity(aSizeMin);
+            tForceY.setInternalDataSize(aSizeMin);
             return tForceY;
         }
         private DoubleList bufForceZ(int aThreadID, int aSizeMin) {
             DoubleList tForceZ = mForceZ[aThreadID];
-            int tSize = tForceZ.size();
-            if (tSize < aSizeMin) tForceZ.addZeros(aSizeMin - tSize);
+            tForceZ.ensureCapacity(aSizeMin);
+            tForceZ.setInternalDataSize(aSizeMin);
             return tForceZ;
         }
         
@@ -276,8 +284,7 @@ public class NNAP implements IPairPotential {
             rEngPartial.multiply2this(mNormSigmaEng);
         }
         
-        @SuppressWarnings("unchecked")
-        private SingleNNAP(double aRefEng, IVector aNormMu, IVector aNormSigma, double aNormMuEng, double aNormSigmaEng, IBasis[] aBasis, String aModel) throws TorchException {
+        private SingleNNAP(double aRefEng, IVector aNormMu, IVector aNormSigma, double aNormMuEng, double aNormSigmaEng, Basis[] aBasis, String aModel) throws TorchException {
             mRefEng = aRefEng;
             mNormMu = aNormMu;
             mNormSigma = aNormSigma;
@@ -302,19 +309,28 @@ public class NNAP implements IPairPotential {
             mBatchedX = MatrixCache.getMatRow(BATCH_SIZE, mBasisSize, mThreadNumber);
             mBatchedXGrad = MatrixCache.getMatRow(BATCH_SIZE, mBasisSize, mThreadNumber);
             mBatchedY = VectorCache.getVec(BATCH_SIZE, mThreadNumber);
-            mBatchedPredDo = new DoubleConsumer[mThreadNumber][BATCH_SIZE];
-            mBatchedXGradDo = (Consumer<? super IVector>[][]) new Consumer[mThreadNumber][BATCH_SIZE];
+            mBatchedCIdx = IntVectorCache.getVec(BATCH_SIZE, mThreadNumber);
             mBatchedSize = new int[mThreadNumber];
             
             mFp = new Vector[mThreadNumber][BATCH_SIZE];
             mFpPx = new DoubleList[mThreadNumber][BATCH_SIZE];
             mFpPy = new DoubleList[mThreadNumber][BATCH_SIZE];
             mFpPz = new DoubleList[mThreadNumber][BATCH_SIZE];
+            mNlDx = new DoubleList[mThreadNumber][BATCH_SIZE];
+            mNlDy = new DoubleList[mThreadNumber][BATCH_SIZE];
+            mNlDz = new DoubleList[mThreadNumber][BATCH_SIZE];
+            mNlType = new IntList[mThreadNumber][BATCH_SIZE];
+            mNlIdx = new IntList[mThreadNumber][BATCH_SIZE];
             for (int i = 0; i < mThreadNumber; ++i) for (int j = 0; j < BATCH_SIZE; ++j) {
                 mFp[i][j] = VectorCache.getVec(mBasisSize);
                 mFpPx[i][j] = new DoubleList(1024);
                 mFpPy[i][j] = new DoubleList(1024);
                 mFpPz[i][j] = new DoubleList(1024);
+                mNlDx[i][j] = new DoubleList(16);
+                mNlDy[i][j] = new DoubleList(16);
+                mNlDz[i][j] = new DoubleList(16);
+                mNlType[i][j] = new IntList(16);
+                mNlIdx[i][j] = new IntList(16);
             }
             mForceX = new DoubleList[mThreadNumber];
             mForceY = new DoubleList[mThreadNumber];
@@ -326,137 +342,158 @@ public class NNAP implements IPairPotential {
             }
         }
         
+        private final List<IntVector> mBatchedCIdx;
         private final List<RowMatrix> mBatchedX;
         private final List<RowMatrix> mBatchedXGrad;
         private final List<Vector> mBatchedY;
-        private final DoubleConsumer[][] mBatchedPredDo;
-        private final Consumer<? super IVector>[][] mBatchedXGradDo;
         private final int[] mBatchedSize;
-        /** 提交批量 forward 接口，注意由于内部存储共享，因此不能和 {@link #submitBatchBackward} 混用，在使用 backward 前务必使用 {@link #clearSubmittedBatchForward} 清空缓存 */
-        public void submitBatchForward(int aThreadID, IVector aX, DoubleConsumer aPredDo) throws TorchException {
-            DoubleConsumer[] tBatchedPredDo = mBatchedPredDo[aThreadID];
+        
+        private void pred2energy_(int aThreadID, double aPred, int cIdx, IEnergyAccumulator rEnergyAccumulator) {
+            aPred = denormEng(aPred);
+            aPred += mRefEng;
+            rEnergyAccumulator.add(aThreadID, cIdx, -1, aPred);
+        }
+        private void xgrad2forcevirial_(int aThreadID, ShiftVector aXGrad, DoubleList aFpPx, DoubleList aFpPy, DoubleList aFpPz, DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlIdx, int cIdx,
+                                        @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) {
+            normBasisPartial(aXGrad);
+            denormEngPartial(aXGrad);
+            final int tNN = aNlIdx.size();
+            DoubleList tForceX = bufForceX(aThreadID, tNN);
+            DoubleList tForceY = bufForceY(aThreadID, tNN);
+            DoubleList tForceZ = bufForceZ(aThreadID, tNN);
+            Basis.forceDot(aXGrad, aFpPx, aFpPy, aFpPz, tForceX, tForceY, tForceZ, tNN);
+            // 累加交叉项到近邻
+            for (int j = 0; j < tNN; ++j) {
+                double dx = aNlDx.get(j);
+                double dy = aNlDy.get(j);
+                double dz = aNlDz.get(j);
+                int idx = aNlIdx.get(j);
+                // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查
+                double fx = -tForceX.get(j);
+                double fy = -tForceY.get(j);
+                double fz = -tForceZ.get(j);
+                if (rForceAccumulator != null) {
+                    rForceAccumulator.add(aThreadID, cIdx, idx, fx, fy, fz);
+                }
+                if (rVirialAccumulator != null) {
+                    rVirialAccumulator.add(aThreadID, cIdx, -1, dx*fx, dy*fy, dz*fz, dx*fy, dx*fz, dy*fz);
+                }
+            }
+        }
+        void submitBatchCalEnergy(int aThreadID, IVector aX, int cIdx, IEnergyAccumulator rEnergyAccumulator) throws TorchException {
+            IntVector tBatchedCIdx = mBatchedCIdx.get(aThreadID);
             RowMatrix tBatchedX = mBatchedX.get(aThreadID);
             int tBatchedSize = mBatchedSize[aThreadID];
-            tBatchedPredDo[tBatchedSize] = aPredDo;
+            tBatchedCIdx.set(tBatchedSize, cIdx);
             tBatchedX.row(tBatchedSize).fill(aX);
             ++tBatchedSize;
             if (tBatchedSize == BATCH_SIZE) {
                 tBatchedSize = 0;
                 Vector tBatchedY = mBatchedY.get(aThreadID);
-                batchForward(aThreadID, tBatchedX.internalData(), tBatchedX.internalDataShift(), mBasisSize,
-                             tBatchedY.internalData(), tBatchedY.internalDataShift(), BATCH_SIZE);
+                batchForward(aThreadID, tBatchedX, mBasisSize, tBatchedY, BATCH_SIZE);
                 for (int i = 0; i < BATCH_SIZE; ++i) {
-                    tBatchedPredDo[i].accept(tBatchedY.get(i));
+                    pred2energy_(aThreadID, tBatchedY.get(i), tBatchedCIdx.get(i), rEnergyAccumulator);
                 }
             }
             mBatchedSize[aThreadID] = tBatchedSize;
         }
-        public void clearSubmittedBatchForward(int aThreadID) throws TorchException {
+        void clearSubmittedBatchCalEnergy(int aThreadID, IEnergyAccumulator rEnergyAccumulator) throws TorchException {
             int tBatchedSize = mBatchedSize[aThreadID];
             if (tBatchedSize == 0) return;
-            DoubleConsumer[] tBatchedPredDo = mBatchedPredDo[aThreadID];
+            IntVector tBatchedCIdx = mBatchedCIdx.get(aThreadID);
             RowMatrix tBatchedX = mBatchedX.get(aThreadID);
             Vector tBatchedY = mBatchedY.get(aThreadID);
-            batchForward(aThreadID, tBatchedX.internalData(), tBatchedX.internalDataShift(), mBasisSize,
-                         tBatchedY.internalData(), tBatchedY.internalDataShift(), tBatchedSize);
+            batchForward(aThreadID, tBatchedX, mBasisSize, tBatchedY, tBatchedSize);
             for (int i = 0; i < tBatchedSize; ++i) {
-                tBatchedPredDo[i].accept(tBatchedY.get(i));
+                pred2energy_(aThreadID, tBatchedY.get(i), tBatchedCIdx.get(i), rEnergyAccumulator);
             }
             mBatchedSize[aThreadID] = 0;
         }
-        public void submitBatchForward(IVector aX, DoubleConsumer aPredDo) throws TorchException {submitBatchForward(0, aX, aPredDo);}
-        public void clearSubmittedBatchForward() throws TorchException {clearSubmittedBatchForward(0);}
         
-        /** 提交批量 forward 接口，注意由于内部存储共享，因此不能和 {@link #submitBatchForward} 混用，在使用 forward 前务必使用 {@link #clearSubmittedBatchBackward} 清空缓存 */
-        public void submitBatchBackward(int aThreadID, IVector aX, @Nullable DoubleConsumer aPredDo, Consumer<? super ShiftVector> aXGradDo) throws TorchException {
-            @Nullable DoubleConsumer[] tBatchedPredDo = mBatchedPredDo[aThreadID];
-            Consumer<? super ShiftVector>[] tBatchedXGradDo = mBatchedXGradDo[aThreadID];
+        void submitBatchCalEnergyForceVirial(int aThreadID, IVector aX, int cIdx, @Nullable IEnergyAccumulator rEnergyAccumulator, @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) throws TorchException {
+            IntVector tBatchedCIdx = mBatchedCIdx.get(aThreadID);
             RowMatrix tBatchedX = mBatchedX.get(aThreadID);
             int tBatchedSize = mBatchedSize[aThreadID];
-            tBatchedPredDo[tBatchedSize] = aPredDo;
-            tBatchedXGradDo[tBatchedSize] = aXGradDo;
+            tBatchedCIdx.set(tBatchedSize, cIdx);
             tBatchedX.row(tBatchedSize).fill(aX);
             ++tBatchedSize;
             if (tBatchedSize == BATCH_SIZE) {
                 tBatchedSize = 0;
                 Vector tBatchedY = mBatchedY.get(aThreadID);
                 RowMatrix tBatchedXGrad = mBatchedXGrad.get(aThreadID);
-                batchBackward(aThreadID, tBatchedX.internalData(), tBatchedX.internalDataShift(), tBatchedXGrad.internalData(), tBatchedXGrad.internalDataShift(), mBasisSize,
-                              tBatchedY.internalData(), tBatchedY.internalDataShift(), BATCH_SIZE);
+                batchBackward(aThreadID, tBatchedX, tBatchedXGrad, mBasisSize, tBatchedY, BATCH_SIZE);
                 for (int i = 0; i < BATCH_SIZE; ++i) {
-                    @Nullable DoubleConsumer tPredDo = tBatchedPredDo[i];
-                    if (tPredDo != null) tPredDo.accept(tBatchedY.get(i));
-                    tBatchedXGradDo[i].accept(tBatchedXGrad.row(i));
+                    int cIdxI = tBatchedCIdx.get(i);
+                    if (rEnergyAccumulator != null) pred2energy_(aThreadID, tBatchedY.get(i), cIdxI, rEnergyAccumulator);
+                    xgrad2forcevirial_(aThreadID, tBatchedXGrad.row(i), mFpPx[aThreadID][i], mFpPy[aThreadID][i], mFpPz[aThreadID][i],
+                                       mNlDx[aThreadID][i], mNlDy[aThreadID][i], mNlDz[aThreadID][i], mNlIdx[aThreadID][i],
+                                       cIdxI, rForceAccumulator, rVirialAccumulator);
                 }
             }
             mBatchedSize[aThreadID] = tBatchedSize;
         }
-        public void clearSubmittedBatchBackward(int aThreadID) throws TorchException {
+        void clearSubmittedBatchCalEnergyForceVirial(int aThreadID, @Nullable IEnergyAccumulator rEnergyAccumulator, @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) throws TorchException {
             int tBatchedSize = mBatchedSize[aThreadID];
             if (tBatchedSize == 0) return;
-            @Nullable DoubleConsumer[] tBatchedPredDo = mBatchedPredDo[aThreadID];
-            Consumer<? super IVector>[] tBatchedXGradDo = mBatchedXGradDo[aThreadID];
+            IntVector tBatchedCIdx = mBatchedCIdx.get(aThreadID);
             RowMatrix tBatchedX = mBatchedX.get(aThreadID);
             Vector tBatchedY = mBatchedY.get(aThreadID);
             RowMatrix tBatchedXGrad = mBatchedXGrad.get(aThreadID);
-            batchBackward(aThreadID, tBatchedX.internalData(), tBatchedX.internalDataShift(), tBatchedXGrad.internalData(), tBatchedXGrad.internalDataShift(), mBasisSize,
-                          tBatchedY.internalData(), tBatchedY.internalDataShift(), tBatchedSize);
+            batchBackward(aThreadID, tBatchedX, tBatchedXGrad, mBasisSize, tBatchedY, tBatchedSize);
             for (int i = 0; i < tBatchedSize; ++i) {
-                @Nullable DoubleConsumer tPredDo = tBatchedPredDo[i];
-                if (tPredDo != null) tPredDo.accept(tBatchedY.get(i));
-                tBatchedXGradDo[i].accept(tBatchedXGrad.row(i));
+                int cIdxI = tBatchedCIdx.get(i);
+                if (rEnergyAccumulator != null) pred2energy_(aThreadID, tBatchedY.get(i), cIdxI, rEnergyAccumulator);
+                xgrad2forcevirial_(aThreadID, tBatchedXGrad.row(i), mFpPx[aThreadID][i], mFpPy[aThreadID][i], mFpPz[aThreadID][i],
+                                   mNlDx[aThreadID][i], mNlDy[aThreadID][i], mNlDz[aThreadID][i], mNlIdx[aThreadID][i],
+                                   cIdxI, rForceAccumulator, rVirialAccumulator);
             }
             mBatchedSize[aThreadID] = 0;
         }
-        public void submitBatchBackward(IVector aX, @Nullable DoubleConsumer aPredDo, Consumer<? super ShiftVector> aXGradDo) throws TorchException {submitBatchBackward(0, aX, aPredDo, aXGradDo);}
-        public void clearSubmittedBatchBackward() throws TorchException {clearSubmittedBatchBackward(0);}
         
         
-        public double forward(int aThreadID, double[] aX, int aStart, int aCount) throws TorchException {
+        public double forward(int aThreadID, IDataShell<double[]> aX) throws TorchException {
             if (mDead) throw new IllegalStateException("This NNAP is dead");
-            rangeCheck(aX.length, aStart+aCount);
-            return forward0(mModelPtrs.mPtrs[aThreadID], aX, aStart, aCount);
+            int tCount = aX.internalDataSize();
+            int tStart = aX.internalDataShift();
+            return forward0(mModelPtrs.mPtrs[aThreadID], aX.internalDataWithLengthCheck(tCount, tStart), tStart, tCount);
         }
-        public double forward(double[] aX, int aStart, int aCount) throws TorchException {return forward(0, aX, aStart, aCount);}
-        public double forward(double[] aX, int aCount) throws TorchException {return forward(aX, 0, aCount);}
-        public double forward(double[] aX) throws TorchException {return forward(aX, aX.length);}
+        public double forward(IDataShell<double[]> aX) throws TorchException {return forward(0, aX);}
         public double forward(int aThreadID, DoubleCPointer aX, int aCount) throws TorchException {return forward1(mModelPtrs.mPtrs[aThreadID], aX.ptr_(), aCount);}
         public double forward(DoubleCPointer aX, int aCount) throws TorchException {return forward(0, aX, aCount);}
         
-        public void batchForward(int aThreadID, double[] aX, int aStart, int aCount, double[] rY, int rYStart, int aBatchSize) throws TorchException {
+        public void batchForward(int aThreadID, IDataShell<double[]> aX, int aCount, IDataShell<double[]> rY, int aBatchSize) throws TorchException {
             if (mDead) throw new IllegalStateException("This NNAP is dead");
-            rangeCheck(aX.length, aStart+aCount);
-            rangeCheck(rY.length, rYStart+aBatchSize);
-            batchForward0(mModelPtrs.mPtrs[aThreadID], aX, aStart, aCount, rY, rYStart, aBatchSize);
+            int tStart = aX.internalDataShift();
+            int rYStart = rY.internalDataShift();
+            batchForward0(mModelPtrs.mPtrs[aThreadID], aX.internalDataWithLengthCheck(aCount*aBatchSize, tStart), tStart, aCount, rY.internalDataWithLengthCheck(aBatchSize, rYStart), rYStart, aBatchSize);
         }
-        public void batchForward(double[] aX, int aStart, int aCount, double[] rY, int rYStart, int aBatchSize) throws TorchException {batchForward(0, aX, aStart, aCount, rY, rYStart, aBatchSize);}
-        public void batchForward(double[] aX, int aCount, double[] rY, int aBatchSize) throws TorchException {batchForward(aX, 0, aCount, rY, 0, aBatchSize);}
-        public void batchForward(double[] aX, double[] rY) throws TorchException {batchForward(aX, aX.length/rY.length, rY, rY.length);}
+        public void batchForward(IDataShell<double[]> aX, int aCount, IDataShell<double[]> rY, int aBatchSize) throws TorchException {batchForward(0, aX, aCount, rY, aBatchSize);}
+        public void batchForward(IDataShell<double[]> aX, IDataShell<double[]> rY, int aBatchSize) throws TorchException {batchForward(aX, aX.internalDataSize()/aBatchSize, rY, aBatchSize);}
+        public void batchForward(IDataShell<double[]> aX, IDataShell<double[]> rY) throws TorchException {batchForward(aX, rY, rY.internalDataSize());}
         public void batchForward(int aThreadID, DoubleCPointer aX, int aCount, DoubleCPointer rY, int aBatchSize) throws TorchException {batchForward1(mModelPtrs.mPtrs[aThreadID], aX.ptr_(), aCount, rY.ptr_(), aBatchSize);}
         public void batchForward(DoubleCPointer aX, int aCount, DoubleCPointer rY, int aBatchSize) throws TorchException {batchForward(0, aX, aCount, rY, aBatchSize);}
         
-        public double backward(int aThreadID, double[] aX, int aStart, double[] rGradX, int rStart, int aCount) throws TorchException {
+        public double backward(int aThreadID, IDataShell<double[]> aX, IDataShell<double[]> rGradX) throws TorchException {
             if (mDead) throw new IllegalStateException("This NNAP is dead");
-            rangeCheck(aX.length, aStart+aCount);
-            rangeCheck(rGradX.length, rStart+aCount);
-            return backward0(mModelPtrs.mPtrs[aThreadID], aX, aStart, rGradX, rStart, aCount);
+            int tCount = aX.internalDataSize();
+            int tStart = aX.internalDataShift();
+            int rStart = rGradX.internalDataShift();
+            return backward0(mModelPtrs.mPtrs[aThreadID], aX.internalDataWithLengthCheck(tCount, tStart), tStart, rGradX.internalDataWithLengthCheck(tCount, tStart), rStart, tCount);
         }
-        public double backward(double[] aX, int aStart, double[] rGradX, int rStart, int aCount) throws TorchException {return backward(0, aX, aStart, rGradX, rStart, aCount);}
-        public double backward(double[] aX, double[] rGradX, int aCount) throws TorchException {return backward(aX, 0, rGradX, 0, aCount);}
-        public double backward(double[] aX, double[] rGradX) throws TorchException {return backward(aX, rGradX, aX.length);}
+        public double backward(IDataShell<double[]> aX, IDataShell<double[]> rGradX) throws TorchException {return backward(0, aX, rGradX);}
         public double backward(int aThreadID, DoubleCPointer aX, DoubleCPointer rGradX, int aCount) throws TorchException {return backward1(mModelPtrs.mPtrs[aThreadID], aX.ptr_(), rGradX.ptr_(), aCount);}
         public double backward(DoubleCPointer aX, DoubleCPointer rGradX, int aCount) throws TorchException {return backward(0, aX, rGradX, aCount);}
         
-        public void batchBackward(int aThreadID, double[] aX, int aStart, double[] rGradX, int rStart, int aCount, double @Nullable[] rY, int rYStart, int aBatchSize) throws TorchException {
+        public void batchBackward(int aThreadID, IDataShell<double[]> aX, IDataShell<double[]> rGradX, int aCount, @Nullable IDataShell<double[]> rY, int aBatchSize) throws TorchException {
             if (mDead) throw new IllegalStateException("This NNAP is dead");
-            rangeCheck(aX.length, aStart+aCount*aBatchSize);
-            rangeCheck(rGradX.length, rStart+aCount*aBatchSize);
-            if (rY != null) rangeCheck(rY.length, rYStart+aBatchSize);
-            batchBackward0(mModelPtrs.mPtrs[aThreadID], aX, aStart, rGradX, rStart, aCount, rY, rYStart, aBatchSize);
+            int tStart = aX.internalDataShift();
+            int rStart = rGradX.internalDataShift();
+            int rYStart = rY==null ? 0 : rY.internalDataShift();
+            batchBackward0(mModelPtrs.mPtrs[aThreadID], aX.internalDataWithLengthCheck(aCount*aBatchSize, tStart), tStart, rGradX.internalDataWithLengthCheck(aCount*aBatchSize, rStart), rStart, aCount, rY==null?null:rY.internalDataWithLengthCheck(aBatchSize, rYStart), rYStart, aBatchSize);
         }
-        public void batchBackward(double[] aX, int aStart, double[] rGradX, int rStart, int aCount, double @Nullable[] rY, int rYStart, int aBatchSize) throws TorchException {batchBackward(0, aX, aStart, rGradX, rStart, aCount, rY, rYStart, aBatchSize);}
-        public void batchBackward(double[] aX, double[] rGradX, int aCount, double @Nullable[] rY, int aBatchSize) throws TorchException {batchBackward(aX, 0, rGradX, 0, aCount, rY, 0, aBatchSize);}
-        public void batchBackward(double[] aX, double[] rGradX, double[] rY) throws TorchException {batchBackward(aX, rGradX, aX.length/rY.length, rY, rY.length);}
+        public void batchBackward(IDataShell<double[]> aX, IDataShell<double[]> rGradX, int aCount, @Nullable IDataShell<double[]> rY, int aBatchSize) throws TorchException {batchBackward(0, aX, rGradX, aCount, rY, aBatchSize);}
+        public void batchBackward(IDataShell<double[]> aX, IDataShell<double[]> rGradX, @Nullable IDataShell<double[]> rY, int aBatchSize) throws TorchException {batchBackward(aX, rGradX, aX.internalDataSize()/aBatchSize, rY, aBatchSize);}
+        public void batchBackward(IDataShell<double[]> aX, IDataShell<double[]> rGradX, IDataShell<double[]> rY) throws TorchException {batchBackward(aX, rGradX, rY, rY.internalDataSize());}
         public void batchBackward(int aThreadID, DoubleCPointer aX, DoubleCPointer rGradX, int aCount, @Nullable DoubleCPointer rY, int aBatchSize) throws TorchException {batchBackward1(mModelPtrs.mPtrs[aThreadID], aX.ptr_(), rGradX.ptr_(), aCount, rY==null ? 0 : rY.ptr_(), aBatchSize);}
         public void batchBackward(DoubleCPointer aX, DoubleCPointer rGradX, int aCount, @Nullable DoubleCPointer rY, int aBatchSize) throws TorchException {batchBackward(0, aX, rGradX, aCount, rY, aBatchSize);}
         
@@ -518,6 +555,7 @@ public class NNAP implements IPairPotential {
                 MatrixCache.returnMat(tModel.mBatchedX);
                 MatrixCache.returnMat(tModel.mBatchedXGrad);
                 VectorCache.returnVec(tModel.mBatchedY);
+                IntVectorCache.returnVec(tModel.mBatchedCIdx);
                 for (int i = 0; i < mThreadNumber; ++i) for (int j = 0; j < BATCH_SIZE; ++j) {
                     VectorCache.returnVec(tModel.mFp[i][j]);
                 }
@@ -541,6 +579,21 @@ public class NNAP implements IPairPotential {
         return tRCut;
     }
     
+    
+    private void buildNL_(IDxyzTypeIdxIterable aNL, double aRCut, DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, IntList aNlIdx) {
+        final int tTypeNum = atomTypeNumber();
+        // 缓存情况需要先清空这些
+        aNlDx.clear(); aNlDy.clear(); aNlDz.clear();
+        aNlType.clear(); aNlIdx.clear();
+        aNL.forEachDxyzTypeIdx(aRCut, (dx, dy, dz, type, idx) -> {
+            // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查
+            if (type > tTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+tTypeNum+")");
+            // 简单缓存近邻列表
+            aNlDx.add(dx); aNlDy.add(dy); aNlDz.add(dz);
+            aNlType.add(type); aNlIdx.add(idx);
+        });
+    }
+    
     /**
      * {@inheritDoc}
      * @param aAtomNumber {@inheritDoc}
@@ -555,23 +608,21 @@ public class NNAP implements IPairPotential {
                 if (tThreadNum > 1) setTorchSingleThread();
             }, threadID -> {
                 for (SingleNNAP tModel : mModels) {
-                    tModel.clearSubmittedBatchForward(threadID);
+                    tModel.clearSubmittedBatchCalEnergy(threadID, rEnergyAccumulator);
                 }
             }, (threadID, cIdx, cType, nl) -> {
-                final SingleNNAP tModel = model(cType);
-                final IBasis tBasis = tModel.basis(threadID);
-                // 目前还是采用缓存实现
-                Vector tFp = VectorCache.getVec(tBasis.size());
-                tBasis.eval(dxyzTypeDo -> {
-                    nl.forEachDxyzTypeIdx(tBasis.rcut(), (dx, dy, dz, type, idx) -> dxyzTypeDo.run(dx, dy, dz, type));
-                }, tFp);
+                SingleNNAP tModel = model(cType);
+                Basis tBasis = tModel.basis(threadID);
+                DoubleList tNlDx = tModel.bufNlDx(threadID);
+                DoubleList tNlDy = tModel.bufNlDy(threadID);
+                DoubleList tNlDz = tModel.bufNlDz(threadID);
+                IntList tNlType = tModel.bufNlType(threadID);
+                IntList tNlIdx = tModel.bufNlIdx(threadID);
+                buildNL_(nl, tBasis.rcut(), tNlDx, tNlDy, tNlDz, tNlType, tNlIdx);
+                Vector tFp = tModel.bufFp(threadID);
+                tBasis.eval_(tNlDx, tNlDy, tNlDz, tNlType, tFp);
                 tModel.normBasis(tFp);
-                tModel.submitBatchForward(threadID, tFp, pred -> {
-                    pred = tModel.denormEng(pred);
-                    pred += tModel.mRefEng;
-                    rEnergyAccumulator.add(threadID, cIdx, -1, pred);
-                });
-                VectorCache.returnVec(tFp);
+                tModel.submitBatchCalEnergy(threadID, tFp, cIdx, rEnergyAccumulator);
             });
         } catch (TorchException e) {
             throw e;
@@ -596,48 +647,24 @@ public class NNAP implements IPairPotential {
                 if (tThreadNum > 1) setTorchSingleThread();
             }, threadID -> {
                 for (SingleNNAP tModel : mModels) {
-                    tModel.clearSubmittedBatchBackward(threadID);
+                    tModel.clearSubmittedBatchCalEnergyForceVirial(threadID, rEnergyAccumulator, rForceAccumulator, rVirialAccumulator);
                 }
             }, (threadID, cIdx, cType, nl) -> {
-                final SingleNNAP tModel = model(cType);
-                final IBasis tBasis = tModel.basis(threadID);
-                final int tBasisSize = tBasis.size();
-                final Vector tFp = tModel.bufFp(threadID);
-                final DoubleList tFpPx = tModel.bufFpPx(threadID);
-                final DoubleList tFpPy = tModel.bufFpPy(threadID);
-                final DoubleList tFpPz = tModel.bufFpPz(threadID);
-                tBasis.evalPartial(dxyzTypeDo -> {
-                    nl.forEachDxyzTypeIdx(tBasis.rcut(), (dx, dy, dz, type, idx) -> dxyzTypeDo.run(dx, dy, dz, type));
-                }, tFp, tFpPx, tFpPy, tFpPz);
-                final int tNN = tFpPx.size()/tBasisSize;
+                SingleNNAP tModel = model(cType);
+                Basis tBasis = tModel.basis(threadID);
+                DoubleList tNlDx = tModel.bufNlDx(threadID);
+                DoubleList tNlDy = tModel.bufNlDy(threadID);
+                DoubleList tNlDz = tModel.bufNlDz(threadID);
+                IntList tNlType = tModel.bufNlType(threadID);
+                IntList tNlIdx = tModel.bufNlIdx(threadID);
+                buildNL_(nl, tBasis.rcut(), tNlDx, tNlDy, tNlDz, tNlType, tNlIdx);
+                Vector tFp = tModel.bufFp(threadID);
+                DoubleList tFpPx = tModel.bufFpPx(threadID);
+                DoubleList tFpPy = tModel.bufFpPy(threadID);
+                DoubleList tFpPz = tModel.bufFpPz(threadID);
+                tBasis.evalPartial_(tNlDx, tNlDy, tNlDz, tNlType, tFp, tFpPx, tFpPy, tFpPz);
                 tModel.normBasis(tFp);
-                tModel.submitBatchBackward(threadID, tFp, rEnergyAccumulator==null ? null : pred -> {
-                    pred = tModel.denormEng(pred);
-                    pred += tModel.mRefEng;
-                    rEnergyAccumulator.add(threadID, cIdx, -1, pred);
-                }, xGrad -> {
-                    tModel.normBasisPartial(xGrad);
-                    tModel.denormEngPartial(xGrad);
-                    final DoubleList tForceX = tModel.bufForceX(threadID, tNN);
-                    final DoubleList tForceY = tModel.bufForceY(threadID, tNN);
-                    final DoubleList tForceZ = tModel.bufForceZ(threadID, tNN);
-                    BASIS.forceDot0(xGrad, tFpPx, tFpPy, tFpPz, tForceX, tForceY, tForceZ, tNN);
-                    // 累加交叉项到近邻
-                    final int[] j = {0};
-                    nl.forEachDxyzTypeIdx(tBasis.rcut(), (dx, dy, dz, type, idx) -> {
-                        // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查
-                        double fx = -tForceX.get(j[0]);
-                        double fy = -tForceY.get(j[0]);
-                        double fz = -tForceZ.get(j[0]);
-                        if (rForceAccumulator != null) {
-                            rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
-                        }
-                        if (rVirialAccumulator != null) {
-                            rVirialAccumulator.add(threadID, cIdx, -1, dx*fx, dy*fy, dz*fz, dx*fy, dx*fz, dy*fz);
-                        }
-                        ++j[0];
-                    });
-                });
+                tModel.submitBatchCalEnergyForceVirial(threadID, tFp, cIdx, rEnergyAccumulator, rForceAccumulator, rVirialAccumulator);
             });
         } catch (TorchException e) {
             throw e;
@@ -654,8 +681,4 @@ public class NNAP implements IPairPotential {
     private static native double backward1(long aModelPtr, long aXPtr, long rGradXPtr, int aCount) throws TorchException;
     private static native void batchBackward0(long aModelPtr, double[] aX, int aStart, double[] rGradX, int rStart, int aCount, double @Nullable[] rY, int rYStart, int aBatchSize) throws TorchException;
     private static native void batchBackward1(long aModelPtr, long aXPtr, long rGradXPtr, int aCount, long rYPtr, int aBatchSize) throws TorchException;
-    
-    static void rangeCheck(int jArraySize, int aCount) {
-        if (aCount > jArraySize) throw new IndexOutOfBoundsException(aCount+" > "+jArraySize);
-    }
 }

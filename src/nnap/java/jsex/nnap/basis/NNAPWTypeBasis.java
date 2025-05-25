@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableBiMap;
 import jse.code.collection.DoubleList;
 import org.jetbrains.annotations.Nullable;
 
-class NNAPWTypeBasis {
+abstract class NNAPWTypeBasis extends Basis {
     public final static int WTYPE_DEFAULT = 0, WTYPE_NONE = -1, WTYPE_SINGLE = 1, WTYPE_FULL = 2, WTYPE_EXFULL = 3;
     final static BiMap<String, Integer> ALL_WTYPE = ImmutableBiMap.<String, Integer>builder()
         .put("default", WTYPE_DEFAULT)

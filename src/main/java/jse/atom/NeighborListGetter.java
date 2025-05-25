@@ -282,6 +282,7 @@ public class NeighborListGetter implements IShutdownable {
                 if (k >= mSizeZ) {tIsMirror = true; k -= mSizeZ; tDirZ =  mBoxXYZ.mZ;}
                 else if (k < 0)  {tIsMirror = true; k += mSizeZ; tDirZ = -mBoxXYZ.mZ;}
             }
+            // TODO: new MirrorCell 会成为瓶颈
             return tIsMirror ? new MirrorCell(mCells.get(idx(i, j, k)), tDirX, tDirY, tDirZ) : mCells.get(idx(i, j, k));
         }
         /** 现在改为 for-each 的形式来避免单一返回值的问题 */
