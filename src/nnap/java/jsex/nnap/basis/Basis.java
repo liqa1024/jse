@@ -2,7 +2,7 @@ package jsex.nnap.basis;
 
 import jse.atom.AtomicParameterCalculator;
 import jse.atom.IHasSymbol;
-import jse.clib.*;
+import jse.clib.JNIUtil;
 import jse.code.CS;
 import jse.code.IO;
 import jse.code.OS;
@@ -80,8 +80,6 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
           "basis_util.h"
         , "jsex_nnap_basis_Basis.c"
         , "jsex_nnap_basis_Basis.h"
-        , "jsex_nnap_basis_Mirror.c"
-        , "jsex_nnap_basis_Mirror.h"
         , "jsex_nnap_basis_SphericalChebyshev.c"
         , "jsex_nnap_basis_SphericalChebyshev.h"
         , "jsex_nnap_basis_Chebyshev.c"
@@ -90,8 +88,6 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     
     static {
         InitHelper.INITIALIZED = true;
-        // 依赖 cpointer
-        CPointer.InitHelper.init();
         // 不直接依赖 nnap
         
         // 先添加 Conf.CMAKE_SETTING，这样保证确定的优先级
@@ -133,15 +129,15 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     }
     
     @ApiStatus.Internal
-    public static void forceDot(IDataShell<double[]> aXGrad, DoubleCPointer aFpPx, DoubleCPointer aFpPy, DoubleCPointer aFpPz,
+    public static void forceDot(IDataShell<double[]> aXGrad, IDataShell<double[]> aFpPx, IDataShell<double[]> aFpPy, IDataShell<double[]> aFpPz,
                                 IDataShell<double[]> rFx, IDataShell<double[]> rFy, IDataShell<double[]> rFz, int aNN) {
         int tLength = aXGrad.internalDataSize();
         int tShift = aXGrad.internalDataShift();
         forceDot1(aXGrad.internalDataWithLengthCheck(tLength, tShift), tShift, tLength,
-                  aFpPx.ptr_(), aFpPy.ptr_(), aFpPz.ptr_(),
+                  aFpPx.internalDataWithLengthCheck(tLength*aNN), aFpPy.internalDataWithLengthCheck(tLength*aNN), aFpPz.internalDataWithLengthCheck(tLength*aNN),
                   rFx.internalDataWithLengthCheck(aNN), rFy.internalDataWithLengthCheck(aNN), rFz.internalDataWithLengthCheck(aNN), aNN);
     }
-    private static native void forceDot1(double[] aXGrad, int aShift, int aLength, long aFpPx, long aFpPy, long aFpPz, double[] rFx, double[] rFy, double[] rFz, int aNN);
+    private static native void forceDot1(double[] aXGrad, int aShift, int aLength, double[] aFpPx, double[] aFpPy, double[] aFpPz, double[] rFx, double[] rFy, double[] rFz, int aNN);
     
     
     /** @return 基组需要的近邻截断半径 */
@@ -168,7 +164,6 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     @Override public final void shutdown() {
         if (mDead) return;
         mDead = true;
-        if (mCPointers != null) mCPointers.dispose();
         shutdown_();
     }
     protected void shutdown_() {/**/}
@@ -179,65 +174,8 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     
     private final DoubleList mNlDx = new DoubleList(16), mNlDy = new DoubleList(16), mNlDz = new DoubleList(16);
     private final IntList mNlType = new IntList(16);
-    private BasisCachePointers mCPointers = null;
     
-    private void initCachePointers_() {
-        if (mCPointers != null) return;
-        mCPointers = new BasisCachePointers(this, new GrowableDoubleCPointer[]{
-            new GrowableDoubleCPointer(16), new GrowableDoubleCPointer(16), new GrowableDoubleCPointer(16), // nldx, nldy, nldz
-            new GrowableDoubleCPointer(size()), new GrowableDoubleCPointer(1024), new GrowableDoubleCPointer(1024), new GrowableDoubleCPointer(1024) // fp, fppx, fppy, fppz
-        }, new GrowableIntCPointer[]{
-            new GrowableIntCPointer(16) // nltype
-        });
-    }
-    private DoubleCPointer bufNlDx(int aNN) {
-        initCachePointers_();
-        GrowableDoubleCPointer tNlDx = mCPointers.mDoublePointers[0];
-        tNlDx.ensureCapacity(aNN);
-        return tNlDx;
-    }
-    private DoubleCPointer bufNlDy(int aNN) {
-        initCachePointers_();
-        GrowableDoubleCPointer tNlDy = mCPointers.mDoublePointers[1];
-        tNlDy.ensureCapacity(aNN);
-        return tNlDy;
-    }
-    private DoubleCPointer bufNlDz(int aNN) {
-        initCachePointers_();
-        GrowableDoubleCPointer tNlDz = mCPointers.mDoublePointers[2];
-        tNlDz.ensureCapacity(aNN);
-        return tNlDz;
-    }
-    private IntCPointer bufNlType(int aNN) {
-        initCachePointers_();
-        GrowableIntCPointer tNlType = mCPointers.mIntPointers[0];
-        tNlType.ensureCapacity(aNN);
-        return tNlType;
-    }
-    private DoubleCPointer bufFp() {
-        initCachePointers_();
-        return mCPointers.mDoublePointers[3];
-    }
-    private DoubleCPointer bufFpPx(int aCount) {
-        initCachePointers_();
-        GrowableDoubleCPointer tNlFpPx = mCPointers.mDoublePointers[4];
-        tNlFpPx.ensureCapacity(aCount);
-        return tNlFpPx;
-    }
-    private DoubleCPointer bufFpPy(int aCount) {
-        initCachePointers_();
-        GrowableDoubleCPointer tNlFpPy = mCPointers.mDoublePointers[5];
-        tNlFpPy.ensureCapacity(aCount);
-        return tNlFpPy;
-    }
-    private DoubleCPointer bufFpPz(int aCount) {
-        initCachePointers_();
-        GrowableDoubleCPointer tNlFpPz = mCPointers.mDoublePointers[6];
-        tNlFpPz.ensureCapacity(aCount);
-        return tNlFpPz;
-    }
-    
-    private int buildNL_(IDxyzTypeIterable aNL) {
+    private void buildNL_(IDxyzTypeIterable aNL) {
         final int tTypeNum = atomTypeNumber();
         // 缓存情况需要先清空这些
         mNlDx.clear(); mNlDy.clear(); mNlDz.clear();
@@ -249,12 +187,6 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
             mNlDx.add(dx); mNlDy.add(dy); mNlDz.add(dz);
             mNlType.add(type);
         });
-        return mNlDx.size();
-    }
-    
-    private static void validSize_(DoubleList aData, int aSize) {
-        aData.ensureCapacity(aSize);
-        aData.setInternalDataSize(aSize);
     }
     
     /**
@@ -263,11 +195,10 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      * @param aNlDy 由近邻原子的 dy 组成的列表
      * @param aNlDz 由近邻原子的 dz 组成的列表
      * @param aNlType 由近邻原子的 type 组成的列表
-     * @param aNN 近邻列表数目
      * @param rFp 计算输出的原子描述符向量
      */
     @ApiStatus.Internal
-    public abstract void eval_(DoubleCPointer aNlDx, DoubleCPointer aNlDy, DoubleCPointer aNlDz, IntCPointer aNlType, int aNN, DoubleCPointer rFp);
+    public abstract void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp);
     /**
      * 通用的计算基组的接口，可以自定义任何近邻列表获取器来实现
      * @param aNL 近邻列表遍历器
@@ -275,18 +206,8 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      */
     public final void eval(IDxyzTypeIterable aNL, DoubleArrayVector rFp) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
-        int tNN = buildNL_(aNL);
-        DoubleCPointer tNlDx = bufNlDx(tNN);
-        DoubleCPointer tNlDy = bufNlDy(tNN);
-        DoubleCPointer tNlDz = bufNlDz(tNN);
-        IntCPointer tNlType = bufNlType(tNN);
-        tNlDx.fill(mNlDx.internalData(), mNlDx.internalDataSize());
-        tNlDy.fill(mNlDy.internalData(), mNlDy.internalDataSize());
-        tNlDz.fill(mNlDz.internalData(), mNlDz.internalDataSize());
-        tNlType.fill(mNlType.internalData(), mNlType.internalDataSize());
-        DoubleCPointer tFp = bufFp();
-        eval_(tNlDx, tNlDy, tNlDz, tNlType, tNN, tFp);
-        tFp.parse2dest(rFp.internalData(), rFp.internalDataShift(), size());
+        buildNL_(aNL);
+        eval_(mNlDx, mNlDy, mNlDz, mNlType, rFp);
     }
     /**
      * 基于 {@link AtomicParameterCalculator} 的近邻列表实现的通用的计算某个原子的基组功能
@@ -312,17 +233,14 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      * @param aNlDy 由近邻原子的 dy 组成的列表
      * @param aNlDz 由近邻原子的 dz 组成的列表
      * @param aNlType 由近邻原子的 type 组成的列表
-     * @param aNN 近邻列表数目
      * @param rFp 计算输出的原子描述符向量
-     * @param aSizeFp 传入的 rFp 实际长度，用于写入 fpPxyz 时控制每个原子的统一偏移
-     * @param aShiftFp 传入的 rFp 进行的 shift 长度，用于写入 fpPxyz 时统一进行偏移
      * @param rFpPx 计算输出的原子描述符向量对于近邻原子坐标 x 的偏导数，会自动清空旧值并根据近邻列表扩容
      * @param rFpPy 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，会自动清空旧值并根据近邻列表扩容
      * @param rFpPz 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，会自动清空旧值并根据近邻列表扩容
      */
     @ApiStatus.Internal
-    public abstract void evalPartial_(DoubleCPointer aNlDx, DoubleCPointer aNlDy, DoubleCPointer aNlDz, IntCPointer aNlType, int aNN,
-                                      DoubleCPointer rFp, int aSizeFp, int aShiftFp, DoubleCPointer rFpPx, DoubleCPointer rFpPy, DoubleCPointer rFpPz);
+    public abstract void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType,
+                                      DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz);
     /**
      * 基组结果对于 {@code xyz} 偏微分的计算结果，主要用于力的计算；会同时计算基组值本身
      * @param aNL 近邻列表遍历器
@@ -333,31 +251,8 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      */
     public final void evalPartial(IDxyzTypeIterable aNL, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
-        int tNN = buildNL_(aNL);
-        DoubleCPointer tNlDx = bufNlDx(tNN);
-        DoubleCPointer tNlDy = bufNlDy(tNN);
-        DoubleCPointer tNlDz = bufNlDz(tNN);
-        IntCPointer tNlType = bufNlType(tNN);
-        tNlDx.fill(mNlDx.internalData(), mNlDx.internalDataSize());
-        tNlDy.fill(mNlDy.internalData(), mNlDy.internalDataSize());
-        tNlDz.fill(mNlDz.internalData(), mNlDz.internalDataSize());
-        tNlType.fill(mNlType.internalData(), mNlType.internalDataSize());
-        DoubleCPointer tFp = bufFp();
-        // 初始化偏导数相关值
-        int tSizeFp = rFp.size();
-        int tShiftFp = rFp.internalDataShift();
-        int tSizeAll = tNN*(tSizeFp+tShiftFp);
-        validSize_(rFpPx, tSizeAll);
-        validSize_(rFpPy, tSizeAll);
-        validSize_(rFpPz, tSizeAll);
-        DoubleCPointer tFpPx = bufFpPx(tSizeAll);
-        DoubleCPointer tFpPy = bufFpPy(tSizeAll);
-        DoubleCPointer tFpPz = bufFpPz(tSizeAll);
-        evalPartial_(tNlDx, tNlDy, tNlDz, tNlType, tNN, tFp, tSizeFp, tShiftFp, tFpPx, tFpPy, tFpPz);
-        tFp.parse2dest(rFp.internalData(), rFp.internalDataShift(), size());
-        tFpPx.parse2dest(rFpPx.internalData(), rFpPx.internalDataShift(), tSizeAll);
-        tFpPy.parse2dest(rFpPy.internalData(), rFpPy.internalDataShift(), tSizeAll);
-        tFpPz.parse2dest(rFpPz.internalData(), rFpPz.internalDataShift(), tSizeAll);
+        buildNL_(aNL);
+        evalPartial_(mNlDx, mNlDy, mNlDz, mNlType, rFp, rFpPx, rFpPy, rFpPz);
     }
     /**
      * 基于 {@link AtomicParameterCalculator} 的近邻列表实现的通用的计算某个原子的基组偏导数功能

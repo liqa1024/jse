@@ -40,8 +40,6 @@ public class PairNNAP extends LmpPlugin.Pair {
     
     protected PairNNAP(long aPairPtr) {
         super(aPairPtr);
-        // 防止 NNAP 初始化线程和 PairNNAP 创建线程不同时设置失效
-        NNAP.setTorchSingleThread();
     }
     
     @Override public void settings(String... aArgs) throws Exception {

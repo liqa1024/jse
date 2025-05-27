@@ -1,5 +1,5 @@
-#include "jsex_nnap_NNAP.h"
-#include "jsex_nnap_NNAPModelPointers.h"
+#include "jsex_nnap_model_TorchModel.h"
+#include "jsex_nnap_model_TorchPointer.h"
 #include "jniutil.h"
 
 #include <torch/torch.h>
@@ -9,7 +9,7 @@
 
 extern "C" {
 
-JNIEXPORT void JNICALL Java_jsex_nnap_NNAP_setSingleThread0(JNIEnv *aEnv, jclass aClazz) {
+JNIEXPORT void JNICALL Java_jsex_nnap_model_TorchModel_setSingleThread0(JNIEnv *aEnv, jclass aClazz) {
     try {
         torch::set_num_threads(1);
         torch::set_num_interop_threads(1);
@@ -18,7 +18,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_NNAP_setSingleThread0(JNIEnv *aEnv, jclass
     }
 }
 
-JNIEXPORT jlong JNICALL Java_jsex_nnap_NNAP_load0(JNIEnv *aEnv, jclass aClazz, jstring aModelPath) {
+JNIEXPORT jlong JNICALL Java_jsex_nnap_model_TorchModel_load0(JNIEnv *aEnv, jclass aClazz, jstring aModelPath) {
     char *tModelPath = parseStr(aEnv, aModelPath);
     torch::jit::Module *tModulePtr = NULL;
     try {
@@ -31,7 +31,7 @@ JNIEXPORT jlong JNICALL Java_jsex_nnap_NNAP_load0(JNIEnv *aEnv, jclass aClazz, j
     return (jlong)(intptr_t)tModulePtr;
 }
 
-JNIEXPORT jlong JNICALL Java_jsex_nnap_NNAP_load1(JNIEnv *aEnv, jclass aClazz, jbyteArray aModelBytes, jint aSize) {
+JNIEXPORT jlong JNICALL Java_jsex_nnap_model_TorchModel_load1(JNIEnv *aEnv, jclass aClazz, jbyteArray aModelBytes, jint aSize) {
     void *tBuf = aEnv->GetPrimitiveArrayCritical(aModelBytes, NULL);
     torch::jit::Module *tModulePtr = NULL;
     try {
@@ -48,11 +48,11 @@ JNIEXPORT jlong JNICALL Java_jsex_nnap_NNAP_load1(JNIEnv *aEnv, jclass aClazz, j
     return (jlong)(intptr_t)tModulePtr;
 }
 
-JNIEXPORT void JNICALL Java_jsex_nnap_NNAPModelPointers_dispose0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr) {
+JNIEXPORT void JNICALL Java_jsex_nnap_model_TorchPointer_dispose0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr) {
     delete (torch::jit::Module *)(intptr_t)aModelPtr;
 }
 
-JNIEXPORT jdouble JNICALL Java_jsex_nnap_NNAP_forward0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jdoubleArray aX, jint aStart, jint aCount) {
+JNIEXPORT jdouble JNICALL Java_jsex_nnap_model_TorchModel_forward0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jdoubleArray aX, jint aStart, jint aCount) {
     torch::jit::Module *tModulePtr = (torch::jit::Module *)(intptr_t)aModelPtr;
     jboolean tAnyErr = JNI_FALSE;
     torch::Tensor tXTensor;
@@ -76,7 +76,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_NNAP_forward0(JNIEnv *aEnv, jclass aCla
     if (tAnyErr) return 0.0;
     return tY;
 }
-JNIEXPORT jdouble JNICALL Java_jsex_nnap_NNAP_forward1(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jlong aX, jint aCount) {
+JNIEXPORT jdouble JNICALL Java_jsex_nnap_model_TorchModel_forward1(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jlong aX, jint aCount) {
     torch::jit::Module *tModulePtr = (torch::jit::Module *)(intptr_t)aModelPtr;
     jboolean tAnyErr = JNI_FALSE;
     torch::Tensor tXTensor;
@@ -99,7 +99,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_NNAP_forward1(JNIEnv *aEnv, jclass aCla
     if (tAnyErr) return 0.0;
     return tY;
 }
-JNIEXPORT void JNICALL Java_jsex_nnap_NNAP_batchForward0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jdoubleArray aX, jint aStart, jint aCount, jdoubleArray rY, jint rYStart, jint aBatchSize) {
+JNIEXPORT void JNICALL Java_jsex_nnap_model_TorchModel_batchForward0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jdoubleArray aX, jint aStart, jint aCount, jdoubleArray rY, jint rYStart, jint aBatchSize) {
     torch::jit::Module *tModulePtr = (torch::jit::Module *)(intptr_t)aModelPtr;
     jboolean tAnyErr = JNI_FALSE;
     torch::Tensor tXTensor;
@@ -122,7 +122,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_NNAP_batchForward0(JNIEnv *aEnv, jclass aC
     }
     if (tAnyErr) return;
 }
-JNIEXPORT void JNICALL Java_jsex_nnap_NNAP_batchForward1(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jlong aX, jint aCount, jlong rY, jint aBatchSize) {
+JNIEXPORT void JNICALL Java_jsex_nnap_model_TorchModel_batchForward1(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jlong aX, jint aCount, jlong rY, jint aBatchSize) {
     torch::jit::Module *tModulePtr = (torch::jit::Module *)(intptr_t)aModelPtr;
     jboolean tAnyErr = JNI_FALSE;
     torch::Tensor tXTensor;
@@ -145,7 +145,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_NNAP_batchForward1(JNIEnv *aEnv, jclass aC
     if (tAnyErr) return;
 }
 
-JNIEXPORT jdouble JNICALL Java_jsex_nnap_NNAP_backward0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jdoubleArray aX, jint aStart, jdoubleArray rGradX, jint rStart, jint aCount) {
+JNIEXPORT jdouble JNICALL Java_jsex_nnap_model_TorchModel_backward0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jdoubleArray aX, jint aStart, jdoubleArray rGradX, jint rStart, jint aCount) {
     torch::jit::Module *tModulePtr = (torch::jit::Module *)(intptr_t)aModelPtr;
     jboolean tAnyErr = JNI_FALSE;
     torch::Tensor tXTensor;
@@ -171,7 +171,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_NNAP_backward0(JNIEnv *aEnv, jclass aCl
     if (tAnyErr) return 0.0;
     return tY;
 }
-JNIEXPORT jdouble JNICALL Java_jsex_nnap_NNAP_backward1(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jlong aX, jlong rGradX, jint aCount) {
+JNIEXPORT jdouble JNICALL Java_jsex_nnap_model_TorchModel_backward1(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jlong aX, jlong rGradX, jint aCount) {
     torch::jit::Module *tModulePtr = (torch::jit::Module *)(intptr_t)aModelPtr;
     jboolean tAnyErr = JNI_FALSE;
     torch::Tensor tXTensor;
@@ -196,7 +196,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_NNAP_backward1(JNIEnv *aEnv, jclass aCl
     if (tAnyErr) return 0.0;
     return tY;
 }
-JNIEXPORT void JNICALL Java_jsex_nnap_NNAP_batchBackward0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jdoubleArray aX, jint aStart, jdoubleArray rGradX, jint rStart, jint aCount, jdoubleArray rY, jint rYStart, jint aBatchSize) {
+JNIEXPORT void JNICALL Java_jsex_nnap_model_TorchModel_batchBackward0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jdoubleArray aX, jint aStart, jdoubleArray rGradX, jint rStart, jint aCount, jdoubleArray rY, jint rYStart, jint aBatchSize) {
     torch::jit::Module *tModulePtr = (torch::jit::Module *)(intptr_t)aModelPtr;
     jboolean tAnyErr = JNI_FALSE;
     torch::Tensor tXTensor;
@@ -220,7 +220,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_NNAP_batchBackward0(JNIEnv *aEnv, jclass a
     }
     if (tAnyErr) return;
 }
-JNIEXPORT void JNICALL Java_jsex_nnap_NNAP_batchBackward1(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jlong aX, jlong rGradX, jint aCount, jlong rY, jint aBatchSize) {
+JNIEXPORT void JNICALL Java_jsex_nnap_model_TorchModel_batchBackward1(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jlong aX, jlong rGradX, jint aCount, jlong rY, jint aBatchSize) {
     torch::jit::Module *tModulePtr = (torch::jit::Module *)(intptr_t)aModelPtr;
     jboolean tAnyErr = JNI_FALSE;
     torch::Tensor tXTensor;

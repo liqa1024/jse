@@ -1,9 +1,8 @@
 package jsex.nnap.basis;
 
-import jse.clib.DoubleCPointer;
-import jse.clib.GrowableDoubleCPointer;
-import jse.clib.GrowableIntCPointer;
-import jse.clib.IntCPointer;
+import jse.code.collection.DoubleList;
+import jse.code.collection.IntList;
+import jse.math.vector.DoubleArrayVector;
 
 import java.util.Map;
 
@@ -22,10 +21,6 @@ public class Mirror extends Basis {
         mMirrorBasis = aMirrorBasis;
         mMirrorType = aMirrorType;
         mThisType = aThisType;
-        
-        mCPointers = new BasisCachePointers(this, new GrowableDoubleCPointer[0], new GrowableIntCPointer[] {
-            new GrowableIntCPointer(16)
-        });
     }
     public Basis mirrorBasis() {return mMirrorBasis;}
     public int mirrorType() {return mMirrorType;}
@@ -51,28 +46,30 @@ public class Mirror extends Basis {
     @Override public String symbol(int aType) {return mMirrorBasis.symbol(aType);}
     
     @Override protected void shutdown_() {
-        mCPointers.dispose();
         mMirrorBasis.shutdown();
     }
     
-    private final BasisCachePointers mCPointers;
-    private IntCPointer buildNlType0(IntCPointer aNlType, int aNN) {
-        GrowableIntCPointer tMirrorNlType = mCPointers.mIntPointers[0];
-        tMirrorNlType.ensureCapacity(aNN);
-        buildNlType1(aNlType.ptr_(), tMirrorNlType.ptr_(), aNN, mMirrorType, mThisType);
-        return tMirrorNlType;
+    private final IntList mMirrorNlType = new IntList(16);
+    private void buildNlType_(IntList aNlType) {
+        mMirrorNlType.clear();
+        mMirrorNlType.ensureCapacity(aNlType.size());
+        aNlType.forEach(type -> {
+            if (type == mThisType) mMirrorNlType.add(mMirrorType);
+            else if (type == mMirrorType) mMirrorNlType.add(mThisType);
+            else mMirrorNlType.add(type);
+        });
     }
-    private static native void buildNlType1(long aNlType, long rMirrorNlType, int aNN, int aMirrorType, int aThisType);
     
     @Override
-    public void eval_(DoubleCPointer aNlDx, DoubleCPointer aNlDy, DoubleCPointer aNlDz, IntCPointer aNlType, int aNN, DoubleCPointer rFp) {
+    public void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        mMirrorBasis.eval_(aNlDx, aNlDy, aNlDz, buildNlType0(aNlType, aNN), aNN, rFp);
+        buildNlType_(aNlType);
+        mMirrorBasis.eval_(aNlDx, aNlDy, aNlDz, mMirrorNlType, rFp);
     }
     @Override
-    public void evalPartial_(DoubleCPointer aNlDx, DoubleCPointer aNlDy, DoubleCPointer aNlDz, IntCPointer aNlType, int aNN,
-                             DoubleCPointer rFp, int aSizeFp, int aShiftFp, DoubleCPointer rFpPx, DoubleCPointer rFpPy, DoubleCPointer rFpPz) {
+    public void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        mMirrorBasis.evalPartial_(aNlDx, aNlDy, aNlDz, buildNlType0(aNlType, aNN), aNN, rFp, aSizeFp, aShiftFp, rFpPx, rFpPy, rFpPz);
+        buildNlType_(aNlType);
+        mMirrorBasis.evalPartial_(aNlDx, aNlDy, aNlDz, mMirrorNlType, rFp, rFpPx, rFpPy, rFpPz);
     }
 }

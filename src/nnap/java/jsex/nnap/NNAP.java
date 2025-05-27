@@ -1,20 +1,22 @@
 package jsex.nnap;
 
-import jse.atom.*;
-import jse.clib.*;
-import jse.code.*;
+import jse.atom.IPairPotential;
+import jse.cache.VectorCache;
+import jse.code.IO;
+import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
-import jse.math.vector.*;
+import jse.math.vector.IVector;
+import jse.math.vector.Vector;
+import jse.math.vector.Vectors;
 import jsex.nnap.basis.*;
-import jsex.nnap.model.FeedForward;
-import jsex.nnap.model.Model;
-import jsex.nnap.model.TorchModel;
+import jsex.nnap.model.*;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.*;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * jse 实现的 nnap，所有 nnap 相关能量和力的计算都在此实现，
@@ -36,17 +38,31 @@ import java.util.*;
  */
 @SuppressWarnings("deprecation")
 public class NNAP implements IPairPotential {
+    /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
+    public final static class InitHelper {
+        private static volatile boolean INITIALIZED = false;
+        
+        public static boolean initialized() {return INITIALIZED;}
+        @SuppressWarnings({"ResultOfMethodCallIgnored", "UnnecessaryCallToStringValueOf"})
+        public static void init() {
+            // 手动调用此值来强制初始化
+            if (!INITIALIZED) String.valueOf(VERSION);
+        }
+    }
     
-    public final static int VERSION = 3;
+    public final static int VERSION;
     
     static {
+        InitHelper.INITIALIZED = true;
         // 依赖 nnapbasis
         Basis.InitHelper.init();
         // 这里不直接依赖 LmpPlugin
+        
+        VERSION = 3;
     }
     
     @SuppressWarnings("unchecked")
-    private @Nullable SingleNNAP initSingleNNAPFrom(int aType, Map<String, ?> aModelInfo) throws TorchException {
+    private @Nullable SingleNNAP initSingleNNAPFrom(int aType, Map<String, ?> aModelInfo) throws Exception {
         Map<String, ?> tBasis = (Map<String, ?>)aModelInfo.get("basis");
         if (tBasis == null) {
             tBasis = Maps.of("type", "spherical_chebyshev");
@@ -120,7 +136,7 @@ public class NNAP implements IPairPotential {
         return new SingleNNAP(aRefEng, aNormMu, aNormSigma, aNormMuEng, aNormSigmaEng, aBasis, aModel);
     }
     @SuppressWarnings("unchecked")
-    private @Nullable SingleNNAP postInitSingleNNAPFrom(int aType, Map<String, ?> aModelInfo) throws TorchException {
+    private @Nullable SingleNNAP postInitSingleNNAPFrom(int aType, Map<String, ?> aModelInfo) {
         Map<String, ?> tBasis = (Map<String, ?>)aModelInfo.get("basis");
         if (tBasis == null) return null;
         Object tBasisType = tBasis.get("type");
@@ -173,17 +189,21 @@ public class NNAP implements IPairPotential {
         public Model model(int aThreadID) {return mModel[aThreadID];}
         
         /// 现在使用全局的缓存实现，可以进一步减少内存池的调用操作
-        private final NNAPCachePointers mCachePtrs;
+        private final Vector[] mFp, mFpGrad;
+        private final DoubleList[] mFpPx, mFpPy, mFpPz;
+        private final DoubleList[] mNlDx, mNlDy, mNlDz;
+        private final IntList[] mNlType, mNlIdx;
         
-        private DoubleCPointer bufFp(int aThreadID) {return mCachePtrs.mFp[aThreadID];}
-        private GrowableDoubleCPointer bufFpPx(int aThreadID) {return mCachePtrs.mFpPx[aThreadID];}
-        private GrowableDoubleCPointer bufFpPy(int aThreadID) {return mCachePtrs.mFpPy[aThreadID];}
-        private GrowableDoubleCPointer bufFpPz(int aThreadID) {return mCachePtrs.mFpPz[aThreadID];}
-        private GrowableDoubleCPointer bufNlDx(int aThreadID) {return mCachePtrs.mNlDx[aThreadID];}
-        private GrowableDoubleCPointer bufNlDy(int aThreadID) {return mCachePtrs.mNlDy[aThreadID];}
-        private GrowableDoubleCPointer bufNlDz(int aThreadID) {return mCachePtrs.mNlDz[aThreadID];}
-        private GrowableIntCPointer bufNlType(int aThreadID) {return mCachePtrs.mNlType[aThreadID];}
-        private GrowableIntCPointer bufNlIdx(int aThreadID) {return mCachePtrs.mNlIdx[aThreadID];}
+        private Vector bufFp(int aThreadID) {return mFp[aThreadID];}
+        private Vector bufFpGrad(int aThreadID) {return mFpGrad[aThreadID];}
+        private DoubleList bufFpPx(int aThreadID) {return mFpPx[aThreadID];}
+        private DoubleList bufFpPy(int aThreadID) {return mFpPy[aThreadID];}
+        private DoubleList bufFpPz(int aThreadID) {return mFpPz[aThreadID];}
+        private DoubleList bufNlDx(int aThreadID) {return mNlDx[aThreadID];}
+        private DoubleList bufNlDy(int aThreadID) {return mNlDy[aThreadID];}
+        private DoubleList bufNlDz(int aThreadID) {return mNlDz[aThreadID];}
+        private IntList bufNlType(int aThreadID) {return mNlType[aThreadID];}
+        private IntList bufNlIdx(int aThreadID) {return mNlIdx[aThreadID];}
         
         private final DoubleList[] mForceX, mForceY, mForceZ;
         private DoubleList bufForceX(int aThreadID, int aSizeMin) {
@@ -219,7 +239,7 @@ public class NNAP implements IPairPotential {
             rEngPartial.multiply2this(mNormSigmaEng);
         }
         
-        private SingleNNAP(double aRefEng, IVector aNormMu, IVector aNormSigma, double aNormMuEng, double aNormSigmaEng, Basis[] aBasis, Model[] aModel) throws TorchException {
+        private SingleNNAP(double aRefEng, IVector aNormMu, IVector aNormSigma, double aNormMuEng, double aNormSigmaEng, Basis[] aBasis, Model[] aModel) {
             mRefEng = aRefEng;
             mNormMu = aNormMu;
             mNormSigma = aNormSigma;
@@ -227,58 +247,36 @@ public class NNAP implements IPairPotential {
             mNormSigmaEng = aNormSigmaEng;
             mBasis = aBasis;
             mModel = aModel;
+            int tBasisSize = mBasis[0].size();
             
-            mCachePtrs = new NNAPCachePointers(this, mThreadNumber, mBasis[0].size());
-            mForceX = new DoubleList[mThreadNumber];
-            mForceY = new DoubleList[mThreadNumber];
-            mForceZ = new DoubleList[mThreadNumber];
+            mFp = new Vector[mThreadNumber];
+            mFpGrad = new Vector[mThreadNumber];
+            mFpPx = new DoubleList[mThreadNumber];
+            mFpPy = new DoubleList[mThreadNumber];
+            mFpPz = new DoubleList[mThreadNumber];
             mNlDx = new DoubleList[mThreadNumber];
             mNlDy = new DoubleList[mThreadNumber];
             mNlDz = new DoubleList[mThreadNumber];
             mNlType = new IntList[mThreadNumber];
             mNlIdx = new IntList[mThreadNumber];
+            mForceX = new DoubleList[mThreadNumber];
+            mForceY = new DoubleList[mThreadNumber];
+            mForceZ = new DoubleList[mThreadNumber];
             for (int i = 0; i < mThreadNumber; ++i) {
-                mForceX[i] = new DoubleList(16);
-                mForceY[i] = new DoubleList(16);
-                mForceZ[i] = new DoubleList(16);
+                mFp[i] = VectorCache.getVec(tBasisSize);
+                mFpGrad[i] = VectorCache.getVec(tBasisSize);
+                mFpPx[i] = new DoubleList(1024);
+                mFpPy[i] = new DoubleList(1024);
+                mFpPz[i] = new DoubleList(1024);
                 mNlDx[i] = new DoubleList(16);
                 mNlDy[i] = new DoubleList(16);
                 mNlDz[i] = new DoubleList(16);
                 mNlType[i] = new IntList(16);
                 mNlIdx[i] = new IntList(16);
+                mForceX[i] = new DoubleList(16);
+                mForceY[i] = new DoubleList(16);
+                mForceZ[i] = new DoubleList(16);
             }
-        }
-        
-        /// 统一缓存的近邻列表相关变量，用于快速和 c 内存交互
-        private final DoubleList[] mNlDx, mNlDy, mNlDz;
-        private final IntList[] mNlType, mNlIdx;
-        
-        int buildNL(int aThreadID, IDxyzTypeIdxIterable aNL, GrowableDoubleCPointer aNlDx, GrowableDoubleCPointer aNlDy, GrowableDoubleCPointer aNlDz, GrowableIntCPointer aNlType, GrowableIntCPointer aNlIdx) {
-            final int tTypeNum = atomTypeNumber();
-            final DoubleList tNlDx = mNlDx[aThreadID], tNlDy = mNlDy[aThreadID], tNlDz = mNlDz[aThreadID];
-            final IntList tNlType = mNlType[aThreadID], tNlIdx = mNlIdx[aThreadID];
-            // 缓存情况需要先清空这些
-            tNlDx.clear(); tNlDy.clear(); tNlDz.clear();
-            tNlType.clear(); tNlIdx.clear();
-            aNL.forEachDxyzTypeIdx(basis(aThreadID).rcut(), (dx, dy, dz, type, idx) -> {
-                // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查
-                if (type > tTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+tTypeNum+")");
-                // 简单缓存近邻列表
-                tNlDx.add(dx); tNlDy.add(dy); tNlDz.add(dz);
-                tNlType.add(type); tNlIdx.add(idx);
-            });
-            final int tNN = tNlDx.size();
-            aNlDx.ensureCapacity(tNN);
-            aNlDy.ensureCapacity(tNN);
-            aNlDz.ensureCapacity(tNN);
-            aNlType.ensureCapacity(tNN);
-            aNlIdx.ensureCapacity(tNN);
-            aNlDx.fill(tNlDx.internalData(), tNlDx.internalDataSize());
-            aNlDy.fill(tNlDy.internalData(), tNlDy.internalDataSize());
-            aNlDz.fill(tNlDz.internalData(), tNlDz.internalDataSize());
-            aNlType.fill(tNlType.internalData(), tNlType.internalDataSize());
-            aNlIdx.fill(tNlIdx.internalData(), tNlIdx.internalDataSize());
-            return tNN;
         }
     }
     private boolean mIsTorch = false;
@@ -295,7 +293,7 @@ public class NNAP implements IPairPotential {
     public String units() {return mUnits;}
     
     @SuppressWarnings("unchecked")
-    public NNAP(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws TorchException {
+    public NNAP(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
         mThreadNumber = aThreadNumber;
         Number tVersion = (Number)aModelInfo.get("version");
         if (tVersion != null) {
@@ -324,17 +322,20 @@ public class NNAP implements IPairPotential {
             if (mModels.get(i) == null) throw new IllegalArgumentException("Model init fail for type "+(i+1));
         }
     }
-    public NNAP(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws TorchException, IOException {
+    public NNAP(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
         this(aModelPath.endsWith(".yaml") || aModelPath.endsWith(".yml") ? IO.yaml2map(aModelPath) : IO.json2map(aModelPath), aThreadNumber);
     }
-    public NNAP(Map<?, ?> aModelInfo) throws TorchException {this(aModelInfo, 1);}
-    public NNAP(String aModelPath) throws TorchException, IOException {this(aModelPath, 1);}
+    public NNAP(Map<?, ?> aModelInfo) throws Exception {this(aModelInfo, 1);}
+    public NNAP(String aModelPath) throws Exception {this(aModelPath, 1);}
     
     @Override public void shutdown() {
         if (mDead) return;
         mDead = true;
         for (SingleNNAP tModel : mModels) {
-            tModel.mCachePtrs.dispose();
+            for (int i = 0; i < mThreadNumber; ++i) {
+                VectorCache.returnVec(tModel.mFp[i]);
+                VectorCache.returnVec(tModel.mFpGrad[i]);
+            }
             for (int i = 0; i < mThreadNumber; ++i) {
                 tModel.basis(i).shutdown();
             }
@@ -355,6 +356,20 @@ public class NNAP implements IPairPotential {
     }
     
     
+    private void buildNL_(IDxyzTypeIdxIterable aNL, double aRCut, DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, IntList aNlIdx) {
+        final int tTypeNum = atomTypeNumber();
+        // 缓存情况需要先清空这些
+        aNlDx.clear(); aNlDy.clear(); aNlDz.clear();
+        aNlType.clear(); aNlIdx.clear();
+        aNL.forEachDxyzTypeIdx(aRCut, (dx, dy, dz, type, idx) -> {
+            // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查
+            if (type > tTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+tTypeNum+")");
+            // 简单缓存近邻列表
+            aNlDx.add(dx); aNlDy.add(dy); aNlDz.add(dz);
+            aNlType.add(type); aNlIdx.add(idx);
+        });
+    }
+    
     /**
      * {@inheritDoc}
      * @param aAtomNumber {@inheritDoc}
@@ -370,14 +385,14 @@ public class NNAP implements IPairPotential {
             SingleNNAP tModel = model(cType);
             Basis tBasis = tModel.basis(threadID);
             Model tModel_ = tModel.model(threadID);
-            GrowableDoubleCPointer tNlDx = tModel.bufNlDx(threadID);
-            GrowableDoubleCPointer tNlDy = tModel.bufNlDy(threadID);
-            GrowableDoubleCPointer tNlDz = tModel.bufNlDz(threadID);
-            GrowableIntCPointer tNlType = tModel.bufNlType(threadID);
-            GrowableIntCPointer tNlIdx = tModel.bufNlIdx(threadID);
-            int tNN = tModel.buildNL(threadID, nl, tNlDx, tNlDy, tNlDz, tNlType, tNlIdx);
-            DoubleCPointer tFp = tModel.bufFp(threadID);
-            tBasis.eval_(tNlDx, tNlDy, tNlDz, tNlType, tNN, tFp);
+            DoubleList tNlDx = tModel.bufNlDx(threadID);
+            DoubleList tNlDy = tModel.bufNlDy(threadID);
+            DoubleList tNlDz = tModel.bufNlDz(threadID);
+            IntList tNlType = tModel.bufNlType(threadID);
+            IntList tNlIdx = tModel.bufNlIdx(threadID);
+            buildNL_(nl, tBasis.rcut(), tNlDx, tNlDy, tNlDz, tNlType, tNlIdx);
+            Vector tFp = tModel.bufFp(threadID);
+            tBasis.eval_(tNlDx, tNlDy, tNlDz, tNlType, tFp);
             tModel.normBasis(tFp);
             double tPred = tModel_.forward(tFp);
             tPred = tModel.denormEng(tPred);
@@ -397,59 +412,56 @@ public class NNAP implements IPairPotential {
     @Override public void calEnergyForceVirial(int aAtomNumber, INeighborListGetter aNeighborListGetter, @Nullable IEnergyAccumulator rEnergyAccumulator, @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         final int tThreadNum = threadNumber();
-        try {
-            aNeighborListGetter.forEachNLWithException(threadID -> {
-                if (mIsTorch && tThreadNum>1) TorchModel.setSingleThread();
-            }, null, (threadID, cIdx, cType, nl) -> {
-                SingleNNAP tModel = model(cType);
-                Basis tBasis = tModel.basis(threadID);
-                Model tModel_ = tModel.model(threadID);
-                GrowableDoubleCPointer tNlDx = tModel.bufNlDx(threadID);
-                GrowableDoubleCPointer tNlDy = tModel.bufNlDy(threadID);
-                GrowableDoubleCPointer tNlDz = tModel.bufNlDz(threadID);
-                GrowableIntCPointer tNlType = tModel.bufNlType(threadID);
-                GrowableIntCPointer tNlIdx = tModel.bufNlIdx(threadID);
-                int tNN = tModel.buildNL(threadID, nl, tNlDx, tNlDy, tNlDz, tNlType, tNlIdx);
-                int tBasisSize = tBasis.size();
-                DoubleCPointer tFp = tModel.bufFp(threadID);
-                GrowableDoubleCPointer tFpPx = tModel.bufFpPx(threadID); tFpPx.ensureCapacity(tBasisSize*tNN);
-                GrowableDoubleCPointer tFpPy = tModel.bufFpPy(threadID); tFpPy.ensureCapacity(tBasisSize*tNN);
-                GrowableDoubleCPointer tFpPz = tModel.bufFpPz(threadID); tFpPz.ensureCapacity(tBasisSize*tNN);
-                tBasis.evalPartial_(tNlDx, tNlDy, tNlDz, tNlType, tNN, tFp, tBasisSize, 0, tFpPx, tFpPy, tFpPz);
-                tModel.normBasis(tFp);
-                double tPred = tModel_.backward(tFp, tFpGrad);
-                
-                if (rEnergyAccumulator != null) {
-                    tPred = tModel.denormEng(tPred);
-                    tPred += tModel.mRefEng;
-                    rEnergyAccumulator.add(threadID, cIdx, -1, tPred);
+        aNeighborListGetter.forEachNLWithException(threadID -> {
+            if (mIsTorch && tThreadNum>1) TorchModel.setSingleThread();
+        }, null, (threadID, cIdx, cType, nl) -> {
+            SingleNNAP tModel = model(cType);
+            Basis tBasis = tModel.basis(threadID);
+            Model tModel_ = tModel.model(threadID);
+            DoubleList tNlDx = tModel.bufNlDx(threadID);
+            DoubleList tNlDy = tModel.bufNlDy(threadID);
+            DoubleList tNlDz = tModel.bufNlDz(threadID);
+            IntList tNlType = tModel.bufNlType(threadID);
+            IntList tNlIdx = tModel.bufNlIdx(threadID);
+            buildNL_(nl, tBasis.rcut(), tNlDx, tNlDy, tNlDz, tNlType, tNlIdx);
+            final int tNN = tNlDx.size();
+            Vector tFp = tModel.bufFp(threadID);
+            Vector tFpGrad = tModel.bufFpGrad(threadID);
+            DoubleList tFpPx = tModel.bufFpPx(threadID);
+            DoubleList tFpPy = tModel.bufFpPy(threadID);
+            DoubleList tFpPz = tModel.bufFpPz(threadID);
+            tBasis.evalPartial_(tNlDx, tNlDy, tNlDz, tNlType, tFp, tFpPx, tFpPy, tFpPz);
+            tModel.normBasis(tFp);
+            double tPred = tModel_.backward(tFp, tFpGrad);
+            
+            if (rEnergyAccumulator != null) {
+                tPred = tModel.denormEng(tPred);
+                tPred += tModel.mRefEng;
+                rEnergyAccumulator.add(threadID, cIdx, -1, tPred);
+            }
+            tModel.normBasisPartial(tFpGrad);
+            tModel.denormEngPartial(tFpGrad);
+            DoubleList tForceX = tModel.bufForceX(threadID, tNN);
+            DoubleList tForceY = tModel.bufForceY(threadID, tNN);
+            DoubleList tForceZ = tModel.bufForceZ(threadID, tNN);
+            Basis.forceDot(tFpGrad, tFpPx, tFpPy, tFpPz, tForceX, tForceY, tForceZ, tNN);
+            // 累加交叉项到近邻
+            for (int j = 0; j < tNN; ++j) {
+                double dx = tNlDx.get(j);
+                double dy = tNlDy.get(j);
+                double dz = tNlDz.get(j);
+                int idx = tNlIdx.get(j);
+                // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查
+                double fx = -tForceX.get(j);
+                double fy = -tForceY.get(j);
+                double fz = -tForceZ.get(j);
+                if (rForceAccumulator != null) {
+                    rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
                 }
-                tModel.normBasisPartial(tFpGrad);
-                tModel.denormEngPartial(tFpGrad);
-                DoubleList tForceX = tModel.bufForceX(threadID, tNN);
-                DoubleList tForceY = tModel.bufForceY(threadID, tNN);
-                DoubleList tForceZ = tModel.bufForceZ(threadID, tNN);
-                Basis.forceDot(tFpGrad, tFpPx, tFpPy, tFpPz, tForceX, tForceY, tForceZ, tNN);
-                // 累加交叉项到近邻
-                for (int j = 0; j < tNN; ++j) {
-                    double dx = tNlDx.get(j);
-                    double dy = tNlDy.get(j);
-                    double dz = tNlDz.get(j);
-                    int idx = tNlIdx.get(j);
-                    // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查
-                    double fx = -tForceX.get(j);
-                    double fy = -tForceY.get(j);
-                    double fz = -tForceZ.get(j);
-                    if (rForceAccumulator != null) {
-                        rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
-                    }
-                    if (rVirialAccumulator != null) {
-                        rVirialAccumulator.add(threadID, cIdx, -1, dx*fx, dy*fy, dz*fz, dx*fy, dx*fz, dy*fz);
-                    }
+                if (rVirialAccumulator != null) {
+                    rVirialAccumulator.add(threadID, cIdx, -1, dx*fx, dy*fy, dz*fz, dx*fy, dx*fz, dy*fz);
                 }
-            });
-        } catch (Exception e) {
-            throw e;
-        }
+            }
+        });
     }
 }

@@ -1,8 +1,10 @@
 package jsex.nnap.basis;
 
-import jse.clib.DoubleCPointer;
-import jse.clib.IntCPointer;
+import jse.code.collection.DoubleList;
+import jse.code.collection.IntList;
 import jse.code.collection.NewCollections;
+import jse.math.vector.DoubleArrayVector;
+import jse.math.vector.ShiftVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,7 +22,7 @@ public class Merge extends Basis {
     private final double mRCut;
     private final int mSize, mTypeNum;
     private final String @Nullable[] mSymbols;
-    private final int[] mSizeFpArr, mShiftFpArr;
+    private final ShiftVector[] mFpShell;
     
     public Merge(Basis... aMergeBasis) {
         if (aMergeBasis==null || aMergeBasis.length==0) throw new IllegalArgumentException("Merge basis can not be null or empty");
@@ -63,13 +65,11 @@ public class Merge extends Basis {
         mTypeNum = tTypeNum;
         mSymbols = tSymbols==null ? null : tSymbols.toArray(ZL_STR);
         // init fp shell
-        mSizeFpArr = new int[mMergeBasis.length];
-        mShiftFpArr = new int[mMergeBasis.length];
+        mFpShell = new ShiftVector[mMergeBasis.length];
         int tShiftFp = 0;
         for (int i = 0; i < mMergeBasis.length; ++i) {
             int tSizeFp = mSize - tShiftFp;
-            mSizeFpArr[i] = tSizeFp;
-            mShiftFpArr[i] = tShiftFp;
+            mFpShell[i] = new ShiftVector(tSizeFp, tShiftFp, null);
             tShiftFp += mMergeBasis[i].size();
         }
     }
@@ -150,18 +150,25 @@ public class Merge extends Basis {
     }
     
     @Override
-    public void eval_(DoubleCPointer aNlDx, DoubleCPointer aNlDy, DoubleCPointer aNlDz, IntCPointer aNlType, int aNN, DoubleCPointer rFp) {
+    public void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        int tSizeFp = rFp.size();
+        if (mSize > tSizeFp) throw new IndexOutOfBoundsException(mSize+" > "+tSizeFp);
         for (int i = 0; i < mMergeBasis.length; ++i) {
-            mMergeBasis[i].eval_(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp.plus(mShiftFpArr[i]));
+            ShiftVector tFp = mFpShell[i];
+            tFp.setInternalData(rFp.internalData());
+            mMergeBasis[i].eval_(aNlDx, aNlDy, aNlDz, aNlType, tFp);
         }
     }
     @Override
-    public void evalPartial_(DoubleCPointer aNlDx, DoubleCPointer aNlDy, DoubleCPointer aNlDz, IntCPointer aNlType, int aNN,
-                             DoubleCPointer rFp, int aSizeFp, int aShiftFp, DoubleCPointer rFpPx, DoubleCPointer rFpPy, DoubleCPointer rFpPz) {
+    public void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        int tSizeFp = rFp.size();
+        if (mSize > tSizeFp) throw new IndexOutOfBoundsException(mSize+" > "+tSizeFp);
         for (int i = 0; i < mMergeBasis.length; ++i) {
-            mMergeBasis[i].evalPartial_(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp.plus(mShiftFpArr[i]), mSizeFpArr[i], mShiftFpArr[i], rFpPx, rFpPy, rFpPz);
+            ShiftVector tFp = mFpShell[i];
+            tFp.setInternalData(rFp.internalData());
+            mMergeBasis[i].evalPartial_(aNlDx, aNlDy, aNlDz, aNlType, tFp, rFpPx, rFpPy, rFpPz);
         }
     }
 }

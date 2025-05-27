@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(nnap CXX)
+project(nnaptorch CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -9,8 +9,8 @@ endif()
 
 
 set(SOURCE_FILES
-    jsex_nnap_NNAP.cpp)
-add_library(nnap SHARED ${SOURCE_FILES})
+    jsex_nnap_model_TorchModel.cpp)
+add_library(nnaptorch SHARED ${SOURCE_FILES})
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -22,7 +22,7 @@ endif()
 find_package(JNI)
 if(JNI_FOUND)
     include_directories(${JNI_INCLUDE_DIRS})
-    target_link_libraries(nnap ${JNI_LIBRARIES})
+    target_link_libraries(nnaptorch ${JNI_LIBRARIES})
 else()
     message(FATAL_ERROR "No Java Environment Found")
 endif()
@@ -38,7 +38,7 @@ if(JSE_USE_MIMALLOC)
     add_definitions(-DUSE_MIMALLOC)
     
     include_directories("$ENV{JSE_MIMALLOC_INCLUDE_DIR}")
-    target_link_libraries(nnap "$ENV{JSE_MIMALLOC_LIB_PATH}")
+    target_link_libraries(nnaptorch "$ENV{JSE_MIMALLOC_LIB_PATH}")
 endif()
 
 
@@ -47,5 +47,5 @@ set(Torch_DIR "$ENV{JSE_TORCH_CMAKE_DIR}")
 find_package(Torch REQUIRED)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
-target_link_libraries(nnap "${TORCH_LIBRARIES}")
+target_link_libraries(nnaptorch "${TORCH_LIBRARIES}")
 

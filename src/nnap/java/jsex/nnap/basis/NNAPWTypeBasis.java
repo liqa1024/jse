@@ -2,6 +2,7 @@ package jsex.nnap.basis;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
+import jse.code.collection.DoubleList;
 import org.jetbrains.annotations.Nullable;
 
 abstract class NNAPWTypeBasis extends Basis {
@@ -38,5 +39,10 @@ abstract class NNAPWTypeBasis extends Basis {
         default: {
             throw new IllegalStateException();
         }}
+    }
+    
+    static void validSize_(DoubleList aData, int aSize) {
+        aData.ensureCapacity(aSize);
+        aData.setInternalDataSize(aSize);
     }
 }

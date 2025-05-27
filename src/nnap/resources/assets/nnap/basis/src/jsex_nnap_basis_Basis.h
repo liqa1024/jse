@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     jsex_nnap_basis_Basis
  * Method:    forceDot1
- * Signature: ([DIIJJJ[D[D[DI)V
+ * Signature: ([DII[D[D[D[D[D[DI)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_Basis_forceDot1
-  (JNIEnv *, jclass, jdoubleArray, jint, jint, jlong, jlong, jlong, jdoubleArray, jdoubleArray, jdoubleArray, jint);
+  (JNIEnv *, jclass, jdoubleArray, jint, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint);
 
 #ifdef __cplusplus
 }

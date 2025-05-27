@@ -1265,12 +1265,12 @@ static inline void cnlm2fpPxyz(double *aCnlm, double *aCnlmPx, double *aCnlmPy, 
 }
 
 
-static inline void calCnlm(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, jint aNN,
+static inline void calCnlm(double *aNlDx, double *aNlDy, double *aNlDz, jint *aNlType, jint aNN,
                            double *rNlRn, double *rNlY, double *rCnlm, jboolean aBufferNl,
                            jint aTypeNum, double aRCut, jint aNMax, jint aLMaxMax, jint aLMAll, jint aWType) {
     // loop for neighbor
     for (jint j = 0; j < aNN; ++j) {
-        jint type = (jint)aNlType[j];
+        jint type = aNlType[j];
         double dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
         double dis = sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
@@ -1358,19 +1358,30 @@ static inline void cnlm2fp(double *aCnlm, double *rFp, jint aSizeN, jint aSizeL,
 }
 
 
-JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_eval0(JNIEnv *aEnv, jclass aClazz,
-        jlong aNlDx, jlong aNlDy, jlong aNlDz, jlong aNlType, jint aNN,
-        jlong rRn, jlong rY, jlong rCnlm, jlong rFp,
+JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_eval1(JNIEnv *aEnv, jclass aClazz,
+        jdoubleArray aNlDx, jdoubleArray aNlDy, jdoubleArray aNlDz, jintArray aNlType, jint aNN,
+        jdoubleArray rRn, jdoubleArray rY, jdoubleArray rCnlm, jdoubleArray rFp, jint aShiftFp,
         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial, jint aL3Max, jboolean aL3Cross, jint aWType) {
-    // array init
-    double *tNlDx = (double *)(intptr_t)aNlDx;
-    double *tNlDy = (double *)(intptr_t)aNlDy;
-    double *tNlDz = (double *)(intptr_t)aNlDz;
-    int *tNlType = (int *)(intptr_t)aNlType;
-    double *tRn = (double *)(intptr_t)rRn;
-    double *tY = (double *)(intptr_t)rY;
-    double *tCnlm = (double *)(intptr_t)rCnlm;
-    double *tFp = (double *)(intptr_t)rFp;
+    // java array init
+#ifdef __cplusplus
+    double *tNlDx = (double *)aEnv->GetPrimitiveArrayCritical(aNlDx, NULL);
+    double *tNlDy = (double *)aEnv->GetPrimitiveArrayCritical(aNlDy, NULL);
+    double *tNlDz = (double *)aEnv->GetPrimitiveArrayCritical(aNlDz, NULL);
+    jint *tNlType = (jint *)aEnv->GetPrimitiveArrayCritical(aNlType, NULL);
+    double *tRn = (double *)aEnv->GetPrimitiveArrayCritical(rRn, NULL);
+    double *tY = (double *)aEnv->GetPrimitiveArrayCritical(rY, NULL);
+    double *tCnlm = (double *)aEnv->GetPrimitiveArrayCritical(rCnlm, NULL);
+    double *tFp = (double *)aEnv->GetPrimitiveArrayCritical(rFp, NULL);
+#else
+    double *tNlDx = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aNlDx, NULL);
+    double *tNlDy = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aNlDy, NULL);
+    double *tNlDz = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aNlDz, NULL);
+    jint *tNlType = (jint *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aNlType, NULL);
+    double *tRn = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rRn, NULL);
+    double *tY = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rY, NULL);
+    double *tCnlm = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rCnlm, NULL);
+    double *tFp = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rFp, NULL);
+#endif
     
     // const init
     jint tSizeN;
@@ -1401,6 +1412,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_eval0(JNIEnv *aEn
     const jint tLMAll = (tLMax+1)*(tLMax+1);
     const jint tSizeCnlm = tSizeN*tLMAll;
     // clear cnlm first
+    double *tFp_ = tFp + aShiftFp;
     for (jint i = 0; i < tSizeCnlm; ++i) {
         tCnlm[i] = 0.0;
     }
@@ -1408,40 +1420,87 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_eval0(JNIEnv *aEn
     calCnlm(tNlDx, tNlDy, tNlDz, tNlType, aNN,
             tRn, tY, tCnlm, JNI_FALSE,
             aTypeNum, aRCut, aNMax, tLMax, tLMAll, aWType);
-    cnlm2fp(tCnlm, tFp, tSizeN, tSizeL, aLMax, aNoRadial, aL3Max, aL3Cross, tLMAll);
+    cnlm2fp(tCnlm, tFp_, tSizeN, tSizeL, aLMax, aNoRadial, aL3Max, aL3Cross, tLMAll);
+    
+    // release java array
+#ifdef __cplusplus
+    aEnv->ReleasePrimitiveArrayCritical(aNlDx, tNlDx, JNI_ABORT);
+    aEnv->ReleasePrimitiveArrayCritical(aNlDy, tNlDy, JNI_ABORT);
+    aEnv->ReleasePrimitiveArrayCritical(aNlDz, tNlDz, JNI_ABORT);
+    aEnv->ReleasePrimitiveArrayCritical(aNlType, tNlType, JNI_ABORT);
+    aEnv->ReleasePrimitiveArrayCritical(rRn, tRn, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rY, tY, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rCnlm, tCnlm, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rFp, tFp, 0);
+#else
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aNlDx, tNlDx, JNI_ABORT);
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aNlDy, tNlDy, JNI_ABORT);
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aNlDz, tNlDz, JNI_ABORT);
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aNlType, tNlType, JNI_ABORT);
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rRn, rRn, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rY, rY, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rCnlm, tCnlm, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rFp, tFp, 0);
+#endif
 }
 
-JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial0(JNIEnv *aEnv, jclass aClazz,
-        jlong aNlDx, jlong aNlDy, jlong aNlDz, jlong aNlType, jint aNN,
-        jlong rNlRn, jlong rRnPx, jlong rRnPy, jlong rRnPz, jlong rCheby2,
-        jlong rNlY, jlong rYPtheta, jlong rYPphi, jlong rYPx, jlong rYPy, jlong rYPz,
-        jlong rCnlm, jlong rCnlmPx, jlong rCnlmPy, jlong rCnlmPz,
-        jlong rFp, jint aSizeFp, jint aShiftFp, jlong rFpPx, jlong rFpPy, jlong rFpPz,
+JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial1(JNIEnv *aEnv, jclass aClazz,
+        jdoubleArray aNlDx, jdoubleArray aNlDy, jdoubleArray aNlDz, jintArray aNlType, jint aNN,
+        jdoubleArray rNlRn, jdoubleArray rRnPx, jdoubleArray rRnPy, jdoubleArray rRnPz, jdoubleArray rCheby2,
+        jdoubleArray rNlY, jdoubleArray rYPtheta, jdoubleArray rYPphi, jdoubleArray rYPx, jdoubleArray rYPy, jdoubleArray rYPz,
+        jdoubleArray rCnlm, jdoubleArray rCnlmPx, jdoubleArray rCnlmPy, jdoubleArray rCnlmPz,
+        jdoubleArray rFp, jint aSizeFp, jint aShiftFp, jdoubleArray rFpPx, jdoubleArray rFpPy, jdoubleArray rFpPz,
         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial, jint aL3Max, jboolean aL3Cross, jint aWType) {
-    // array init
-    double *tNlDx = (double *)(intptr_t)aNlDx;
-    double *tNlDy = (double *)(intptr_t)aNlDy;
-    double *tNlDz = (double *)(intptr_t)aNlDz;
-    int *tNlType = (int *)(intptr_t)aNlType;
-    double *tNlRn = (double *)(intptr_t)rNlRn;
-    double *tRnPx = (double *)(intptr_t)rRnPx;
-    double *tRnPy = (double *)(intptr_t)rRnPy;
-    double *tRnPz = (double *)(intptr_t)rRnPz;
-    double *tCheby2 = (double *)(intptr_t)rCheby2;
-    double *tNlY = (double *)(intptr_t)rNlY;
-    double *tYPtheta = (double *)(intptr_t)rYPtheta;
-    double *tYPphi = (double *)(intptr_t)rYPphi;
-    double *tYPx = (double *)(intptr_t)rYPx;
-    double *tYPy = (double *)(intptr_t)rYPy;
-    double *tYPz = (double *)(intptr_t)rYPz;
-    double *tCnlm = (double *)(intptr_t)rCnlm;
-    double *tCnlmPx = (double *)(intptr_t)rCnlmPx;
-    double *tCnlmPy = (double *)(intptr_t)rCnlmPy;
-    double *tCnlmPz = (double *)(intptr_t)rCnlmPz;
-    double *tFp = (double *)(intptr_t)rFp;
-    double *tFpPx = (double *)(intptr_t)rFpPx;
-    double *tFpPy = (double *)(intptr_t)rFpPy;
-    double *tFpPz = (double *)(intptr_t)rFpPz;
+    // java array init
+#ifdef __cplusplus
+    double *tNlDx = (double *)aEnv->GetPrimitiveArrayCritical(aNlDx, NULL);
+    double *tNlDy = (double *)aEnv->GetPrimitiveArrayCritical(aNlDy, NULL);
+    double *tNlDz = (double *)aEnv->GetPrimitiveArrayCritical(aNlDz, NULL);
+    jint *tNlType = (jint *)aEnv->GetPrimitiveArrayCritical(aNlType, NULL);
+    double *tNlRn = (double *)aEnv->GetPrimitiveArrayCritical(rNlRn, NULL);
+    double *tRnPx = (double *)aEnv->GetPrimitiveArrayCritical(rRnPx, NULL);
+    double *tRnPy = (double *)aEnv->GetPrimitiveArrayCritical(rRnPy, NULL);
+    double *tRnPz = (double *)aEnv->GetPrimitiveArrayCritical(rRnPz, NULL);
+    double *tCheby2 = (double *)aEnv->GetPrimitiveArrayCritical(rCheby2, NULL);
+    double *tNlY = (double *)aEnv->GetPrimitiveArrayCritical(rNlY, NULL);
+    double *tYPtheta = (double *)aEnv->GetPrimitiveArrayCritical(rYPtheta, NULL);
+    double *tYPphi = (double *)aEnv->GetPrimitiveArrayCritical(rYPphi, NULL);
+    double *tYPx = (double *)aEnv->GetPrimitiveArrayCritical(rYPx, NULL);
+    double *tYPy = (double *)aEnv->GetPrimitiveArrayCritical(rYPy, NULL);
+    double *tYPz = (double *)aEnv->GetPrimitiveArrayCritical(rYPz, NULL);
+    double *tCnlm = (double *)aEnv->GetPrimitiveArrayCritical(rCnlm, NULL);
+    double *tCnlmPx = (double *)aEnv->GetPrimitiveArrayCritical(rCnlmPx, NULL);
+    double *tCnlmPy = (double *)aEnv->GetPrimitiveArrayCritical(rCnlmPy, NULL);
+    double *tCnlmPz = (double *)aEnv->GetPrimitiveArrayCritical(rCnlmPz, NULL);
+    double *tFp = (double *)aEnv->GetPrimitiveArrayCritical(rFp, NULL);
+    double *tFpPx = (double *)aEnv->GetPrimitiveArrayCritical(rFpPx, NULL);
+    double *tFpPy = (double *)aEnv->GetPrimitiveArrayCritical(rFpPy, NULL);
+    double *tFpPz = (double *)aEnv->GetPrimitiveArrayCritical(rFpPz, NULL);
+#else
+    double *tNlDx = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aNlDx, NULL);
+    double *tNlDy = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aNlDy, NULL);
+    double *tNlDz = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aNlDz, NULL);
+    jint *tNlType = (jint *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aNlType, NULL);
+    double *tNlRn = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rNlRn, NULL);
+    double *tRnPx = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rRnPx, NULL);
+    double *tRnPy = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rRnPy, NULL);
+    double *tRnPz = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rRnPz, NULL);
+    double *tCheby2 = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rCheby2, NULL);
+    double *tNlY = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rNlY, NULL);
+    double *tYPtheta = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rYPtheta, NULL);
+    double *tYPphi = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rYPphi, NULL);
+    double *tYPx = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rYPx, NULL);
+    double *tYPy = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rYPy, NULL);
+    double *tYPz = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rYPz, NULL);
+    double *tCnlm = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rCnlm, NULL);
+    double *tCnlmPx = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rCnlmPx, NULL);
+    double *tCnlmPy = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rCnlmPy, NULL);
+    double *tCnlmPz = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rCnlmPz, NULL);
+    double *tFp = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rFp, NULL);
+    double *tFpPx = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rFpPx, NULL);
+    double *tFpPy = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rFpPy, NULL);
+    double *tFpPz = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rFpPz, NULL);
+#endif
 
     // const init
     jint tSizeN;
@@ -1473,6 +1532,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial0(JNIE
     const jint tSizeCnlm = tSizeN*tLMAll;
     const jint tSize = tSizeN*tSizeL;
     // clear cnlm first
+    double *tFp_ = tFp + aShiftFp;
     for (jint i = 0; i < tSizeCnlm; ++i) {
         tCnlm[i] = 0.0;
     }
@@ -1480,7 +1540,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial0(JNIE
     calCnlm(tNlDx, tNlDy, tNlDz, tNlType, aNN,
             tNlRn, tNlY, tCnlm, JNI_TRUE,
             aTypeNum, aRCut, aNMax, tLMax, tLMAll, aWType);
-    cnlm2fp(tCnlm, tFp, tSizeN, tSizeL, aLMax, aNoRadial, aL3Max, aL3Cross, tLMAll);
+    cnlm2fp(tCnlm, tFp_, tSizeN, tSizeL, aLMax, aNoRadial, aL3Max, aL3Cross, tLMAll);
     
     // loop for neighbor
     for (jint j = 0; j < aNN; ++j) {
@@ -1495,7 +1555,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial0(JNIE
             tFpPz_[i] = 0.0;
         }
         // init nl
-        jint type = (jint)tNlType[j];
+        jint type = tNlType[j];
         double dx = tNlDx[j], dy = tNlDy[j], dz = tNlDz[j];
         double dis = sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
@@ -1643,6 +1703,56 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial0(JNIE
             break;
         }}
     }
+    // release java array
+#ifdef __cplusplus
+    aEnv->ReleasePrimitiveArrayCritical(aNlDx, tNlDx, JNI_ABORT);
+    aEnv->ReleasePrimitiveArrayCritical(aNlDy, tNlDy, JNI_ABORT);
+    aEnv->ReleasePrimitiveArrayCritical(aNlDz, tNlDz, JNI_ABORT);
+    aEnv->ReleasePrimitiveArrayCritical(aNlType, tNlType, JNI_ABORT);
+    aEnv->ReleasePrimitiveArrayCritical(rNlRn, tNlRn, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rRnPx, tRnPx, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rRnPy, tRnPy, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rRnPz, tRnPz, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rCheby2, tCheby2, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rNlY, tNlY, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rYPtheta, tYPtheta, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rYPphi, tYPphi, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rYPx, tYPx, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rYPy, tYPy, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rYPz, tYPz, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rCnlm, tCnlm, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rCnlmPx, tCnlmPx, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rCnlmPy, tCnlmPy, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rCnlmPz, tCnlmPz, JNI_ABORT); // buffer only
+    aEnv->ReleasePrimitiveArrayCritical(rFp, tFp, 0);
+    aEnv->ReleasePrimitiveArrayCritical(rFpPx, tFpPx, 0);
+    aEnv->ReleasePrimitiveArrayCritical(rFpPy, tFpPy, 0);
+    aEnv->ReleasePrimitiveArrayCritical(rFpPz, tFpPz, 0);
+#else
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aNlDx, tNlDx, JNI_ABORT);
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aNlDy, tNlDy, JNI_ABORT);
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aNlDz, tNlDz, JNI_ABORT);
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aNlType, tNlType, JNI_ABORT);
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rNlRn, tNlRn, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rRnPx, tRnPx, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rRnPy, tRnPy, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rRnPz, tRnPz, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rCheby2, tCheby2, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rNlY, tNlY, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rYPtheta, tYPtheta, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rYPphi, tYPphi, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rYPx, tYPx, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rYPy, tYPy, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rYPz, tYPz, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rCnlm, tCnlm, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rCnlmPx, tCnlmPx, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rCnlmPy, tCnlmPy, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rCnlmPz, tCnlmPz, JNI_ABORT); // buffer only
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rFp, tFp, 0);
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rFpPx, tFpPx, 0);
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rFpPy, tFpPy, 0);
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rFpPz, tFpPz, 0);
+#endif
 }
 
 #ifdef __cplusplus

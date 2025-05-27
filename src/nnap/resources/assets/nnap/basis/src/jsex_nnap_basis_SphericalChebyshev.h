@@ -31,19 +31,19 @@ extern "C" {
 #define jsex_nnap_basis_SphericalChebyshev_DEFAULT_RCUT 6.0
 /*
  * Class:     jsex_nnap_basis_SphericalChebyshev
- * Method:    eval0
- * Signature: (JJJJIJJJJIDIIZIZI)V
+ * Method:    eval1
+ * Signature: ([D[D[D[II[D[D[D[DIIDIIZIZI)V
  */
-JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_eval0
-  (JNIEnv *, jclass, jlong, jlong, jlong, jlong, jint, jlong, jlong, jlong, jlong, jint, jdouble, jint, jint, jboolean, jint, jboolean, jint);
+JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_eval1
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jint, jdouble, jint, jint, jboolean, jint, jboolean, jint);
 
 /*
  * Class:     jsex_nnap_basis_SphericalChebyshev
- * Method:    evalPartial0
- * Signature: (JJJJIJJJJJJJJJJJJJJJJIIJJJIDIIZIZI)V
+ * Method:    evalPartial1
+ * Signature: ([D[D[D[II[D[D[D[D[D[D[D[D[D[D[D[D[D[D[D[DII[D[D[DIDIIZIZI)V
  */
-JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial0
-  (JNIEnv *, jclass, jlong, jlong, jlong, jlong, jint, jlong, jlong, jlong, jlong, jlong, jlong, jlong, jlong, jlong, jlong, jlong, jlong, jlong, jlong, jlong, jlong, jint, jint, jlong, jlong, jlong, jint, jdouble, jint, jint, jboolean, jint, jboolean, jint);
+JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalPartial1
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jint, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdouble, jint, jint, jboolean, jint, jboolean, jint);
 
 #ifdef __cplusplus
 }

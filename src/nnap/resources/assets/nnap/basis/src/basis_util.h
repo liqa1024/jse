@@ -1,6 +1,5 @@
 #include <jni.h>
 #include <math.h>
-#include <stdint.h>
 
 #ifndef BASIS_UTIL_H
 #define BASIS_UTIL_H
