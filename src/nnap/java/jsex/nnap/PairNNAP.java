@@ -74,6 +74,8 @@ public class PairNNAP extends LmpPlugin.Pair {
         
         int inum = listInum();
         IntCPointer ilist = listIlist();
+        IntCPointer numneigh = listNumneigh();
+        NestedIntCPointer firstneigh = listFirstneigh();
         
         // 优化部分，将这些经常访问的数据全部缓存来加速遍历
         int nlocal = atomNlocal();
@@ -84,22 +86,6 @@ public class PairNNAP extends LmpPlugin.Pair {
         x.parse2dest(xMat.internalData(), xMat.internalDataShift(), xMat.rowNumber(), xMat.columnNumber());
         f.parse2dest(fMat.internalData(), fMat.internalDataShift(), fMat.rowNumber(), fMat.columnNumber());
         type.parse2dest(typeVec.internalData(), typeVec.internalDataShift(), typeVec.internalDataSize());
-        
-        // 专门缓存所有的近邻列表，由于 NNAP 内部 batch 需要长期可用的近邻列表
-        IntCPointer numneigh = listNumneigh();
-        NestedIntCPointer firstneigh = listFirstneigh();
-        IntVector numneighVec = IntVectorCache.getVec(nlocal);
-        IntVector startneighVec = IntVectorCache.getVec(nlocal);
-        numneigh.parse2dest(numneighVec.internalData(), numneighVec.internalDataShift(), numneighVec.internalDataSize());
-        int numneighSum = numneighVec.sum();
-        IntVector firstneighVec = IntVectorCache.getVec(numneighSum);
-        int tStart = 0;
-        for (int i = 0; i < nlocal; ++i) {
-            int tSize = numneighVec.get(i);
-            firstneigh.getAt(i).parse2dest(firstneighVec.internalData(), tStart+firstneighVec.internalDataShift(), tSize);
-            startneighVec.set(i, tStart);
-            tStart += tSize;
-        }
         
         final double[] engBuf = {0.0};
         final double[] virialBuf = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -121,9 +107,10 @@ public class PairNNAP extends LmpPlugin.Pair {
                 final double ytmp = xMat.get(i, 1);
                 final double ztmp = xMat.get(i, 2);
                 final int typei = typeVec.get(i);
-                final int jnum = numneighVec.get(i);
-                final int jstartneigh = startneighVec.get(i);
-                final IIntVector jlistVec = firstneighVec.subVec(jstartneigh, jstartneigh+jnum);
+                IntCPointer jlist = firstneigh.getAt(i);
+                final int jnum = numneigh.getAt(i);
+                final IntVector jlistVec = IntVectorCache.getVec(jnum);
+                jlist.parse2dest(jlistVec.internalData(), jlistVec.internalDataShift(), jlistVec.internalDataSize());
                 // 遍历近邻
                 neighborListDo.run(0, i, mLmpType2NNAPType[typei], (aRMax, aDxyzTypeIdxDo) -> {
                     for (int jj = 0; jj < jnum; ++jj) {
@@ -139,6 +126,7 @@ public class PairNNAP extends LmpPlugin.Pair {
                         }
                     }
                 });
+                IntVectorCache.returnVec(jlistVec);
             }
             if (finalDo != null) finalDo.run(0);
         }, !eflag ? null : (threadID, cIdx, idx, eng) -> {
@@ -189,9 +177,6 @@ public class PairNNAP extends LmpPlugin.Pair {
             MatrixCache.returnMat(vatomMat);
         }
         f.fill(fMat.internalData(), fMat.internalDataShift(), fMat.rowNumber(), fMat.columnNumber());
-        IntVectorCache.returnVec(startneighVec);
-        IntVectorCache.returnVec(numneighVec);
-        IntVectorCache.returnVec(firstneighVec);
         IntVectorCache.returnVec(typeVec);
         MatrixCache.returnMat(fMat);
         MatrixCache.returnMat(xMat);
