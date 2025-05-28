@@ -1,5 +1,5 @@
 #include "jsex_nnap_basis_SphericalChebyshev.h"
-#include "basis_util.h"
+#include "nnap_util.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -292,39 +292,8 @@ static inline void calL2_(double *aCnlm, double *rFp, jint aLMax, jboolean aNoRa
         tFp[0] = tMul * (tCnl0*tCnl0);
         ++tFp;
     }
-    if (aLMax == 0) return;
-    // l = 1
-    tCnl0 = aCnlm[1]; double tCnl1 = aCnlm[1+1], tCnl2 = aCnlm[1+2];
-    tMul = PI4/3;
-    tFp[0] = tMul * (tCnl0*tCnl0 + tCnl1*tCnl1 + tCnl2*tCnl2);
-    if (aLMax == 1) return;
-    // l = 2
-    tCnl0 = aCnlm[4]; tCnl1 = aCnlm[4+1]; tCnl2 = aCnlm[4+2]; double tCnl3 = aCnlm[4+3], tCnl4 = aCnlm[4+4];
-    tMul = PI4/5;
-    tFp[1] = tMul * (tCnl0*tCnl0 + tCnl1*tCnl1 + tCnl2*tCnl2 + tCnl3*tCnl3 + tCnl4*tCnl4);
-    if (aLMax == 2) return;
-    // l = 3
-    tCnl0 = aCnlm[9]; tCnl1 = aCnlm[9+1]; tCnl2 = aCnlm[9+2]; tCnl3 = aCnlm[9+3]; tCnl4 = aCnlm[9+4]; double tCnl5 = aCnlm[9+5], tCnl6 = aCnlm[9+6];
-    tMul = PI4/7;
-    tFp[2] = tMul * (tCnl0*tCnl0 + tCnl1*tCnl1 + tCnl2*tCnl2 + tCnl3*tCnl3 + tCnl4*tCnl4 + tCnl5*tCnl5 + tCnl6*tCnl6);
-    if (aLMax == 3) return;
-    // l = 4
-    tCnl0 = aCnlm[16]; tCnl1 = aCnlm[16+1]; tCnl2 = aCnlm[16+2]; tCnl3 = aCnlm[16+3]; tCnl4 = aCnlm[16+4]; tCnl5 = aCnlm[16+5]; tCnl6 = aCnlm[16+6]; double tCnl7 = aCnlm[16+7], tCnl8 = aCnlm[16+8];
-    tMul = PI4/9;
-    tFp[3] = tMul * (tCnl0*tCnl0 + tCnl1*tCnl1 + tCnl2*tCnl2 + tCnl3*tCnl3 + tCnl4*tCnl4 + tCnl5*tCnl5 + tCnl6*tCnl6 + tCnl7*tCnl7 + tCnl8*tCnl8);
-    if (aLMax == 4) return;
-    // l = 5
-    tCnl0 = aCnlm[25]; tCnl1 = aCnlm[25+1]; tCnl2 = aCnlm[25+2]; tCnl3 = aCnlm[25+3]; tCnl4 = aCnlm[25+4]; tCnl5 = aCnlm[25+5]; tCnl6 = aCnlm[25+6]; tCnl7 = aCnlm[25+7]; tCnl8 = aCnlm[25+8]; double tCnl9 = aCnlm[25+9], tCnl10 = aCnlm[25+10];
-    tMul = PI4/11;
-    tFp[4] = tMul * (tCnl0*tCnl0 + tCnl1*tCnl1 + tCnl2*tCnl2 + tCnl3*tCnl3 + tCnl4*tCnl4 + tCnl5*tCnl5 + tCnl6*tCnl6 + tCnl7*tCnl7 + tCnl8*tCnl8 + tCnl9*tCnl9 + tCnl10*tCnl10);
-    if (aLMax == 5) return;
-    // l = 6
-    tCnl0 = aCnlm[36]; tCnl1 = aCnlm[36+1]; tCnl2 = aCnlm[36+2]; tCnl3 = aCnlm[36+3]; tCnl4 = aCnlm[36+4]; tCnl5 = aCnlm[36+5]; tCnl6 = aCnlm[36+6]; tCnl7 = aCnlm[36+7]; tCnl8 = aCnlm[36+8]; tCnl9 = aCnlm[36+9]; tCnl10 = aCnlm[36+10]; double tCnl11 = aCnlm[36+11], tCnl12 = aCnlm[36+12];
-    tMul = PI4/13;
-    tFp[5] = tMul * (tCnl0*tCnl0 + tCnl1*tCnl1 + tCnl2*tCnl2 + tCnl3*tCnl3 + tCnl4*tCnl4 + tCnl5*tCnl5 + tCnl6*tCnl6 + tCnl7*tCnl7 + tCnl8*tCnl8 + tCnl9*tCnl9 + tCnl10*tCnl10 + tCnl11*tCnl11 + tCnl12*tCnl12);
-    if (aLMax == 6) return;
     // else
-    for (jint tL = 7; tL <= aLMax; ++tL) {
+    for (jint tL = 1; tL <= aLMax; ++tL) {
         jint tLen = tL+tL+1;
         double rDot = dot_jse(aCnlm + (tL*tL), tLen);
         tMul = PI4/(double)tLen;
@@ -613,56 +582,13 @@ static inline void calL2p_(double *aCnlm, double *aCnlmPx, double *aCnlmPy, doub
         tFpPz[0] += tMul * (tCnl0*aCnlmPz[0]);
         ++tFpPx; ++tFpPy; ++tFpPz;
     }
-    if (aLMax == 0) return;
-    // l = 1
-    tCnl0 = aCnlm[1]; double tCnl1 = aCnlm[1+1], tCnl2 = aCnlm[1+2];
-    tMul = aWt*(PI4/3 + PI4/3);
-    tFpPx[0] += tMul * (tCnl0*aCnlmPx[1] + tCnl1*aCnlmPx[1+1] + tCnl2*aCnlmPx[1+2]);
-    tFpPy[0] += tMul * (tCnl0*aCnlmPy[1] + tCnl1*aCnlmPy[1+1] + tCnl2*aCnlmPy[1+2]);
-    tFpPz[0] += tMul * (tCnl0*aCnlmPz[1] + tCnl1*aCnlmPz[1+1] + tCnl2*aCnlmPz[1+2]);
-    if (aLMax == 1) return;
-    // l = 2
-    tCnl0 = aCnlm[4]; tCnl1 = aCnlm[4+1]; tCnl2 = aCnlm[4+2]; double tCnl3 = aCnlm[4+3], tCnl4 = aCnlm[4+4];
-    tMul = aWt*(PI4/5 + PI4/5);
-    tFpPx[1] += tMul * (tCnl0*aCnlmPx[4] + tCnl1*aCnlmPx[4+1] + tCnl2*aCnlmPx[4+2] + tCnl3*aCnlmPx[4+3] + tCnl4*aCnlmPx[4+4]);
-    tFpPy[1] += tMul * (tCnl0*aCnlmPy[4] + tCnl1*aCnlmPy[4+1] + tCnl2*aCnlmPy[4+2] + tCnl3*aCnlmPy[4+3] + tCnl4*aCnlmPy[4+4]);
-    tFpPz[1] += tMul * (tCnl0*aCnlmPz[4] + tCnl1*aCnlmPz[4+1] + tCnl2*aCnlmPz[4+2] + tCnl3*aCnlmPz[4+3] + tCnl4*aCnlmPz[4+4]);
-    if (aLMax == 2) return;
-    // l = 3
-    tCnl0 = aCnlm[9]; tCnl1 = aCnlm[9+1]; tCnl2 = aCnlm[9+2]; tCnl3 = aCnlm[9+3]; tCnl4 = aCnlm[9+4]; double tCnl5 = aCnlm[9+5], tCnl6 = aCnlm[9+6];
-    tMul = aWt*(PI4/7 + PI4/7);
-    tFpPx[2] += tMul * (tCnl0*aCnlmPx[9] + tCnl1*aCnlmPx[9+1] + tCnl2*aCnlmPx[9+2] + tCnl3*aCnlmPx[9+3] + tCnl4*aCnlmPx[9+4] + tCnl5*aCnlmPx[9+5] + tCnl6*aCnlmPx[9+6]);
-    tFpPy[2] += tMul * (tCnl0*aCnlmPy[9] + tCnl1*aCnlmPy[9+1] + tCnl2*aCnlmPy[9+2] + tCnl3*aCnlmPy[9+3] + tCnl4*aCnlmPy[9+4] + tCnl5*aCnlmPy[9+5] + tCnl6*aCnlmPy[9+6]);
-    tFpPz[2] += tMul * (tCnl0*aCnlmPz[9] + tCnl1*aCnlmPz[9+1] + tCnl2*aCnlmPz[9+2] + tCnl3*aCnlmPz[9+3] + tCnl4*aCnlmPz[9+4] + tCnl5*aCnlmPz[9+5] + tCnl6*aCnlmPz[9+6]);
-    if (aLMax == 3) return;
-    // l = 4
-    tCnl0 = aCnlm[16]; tCnl1 = aCnlm[16+1]; tCnl2 = aCnlm[16+2]; tCnl3 = aCnlm[16+3]; tCnl4 = aCnlm[16+4]; tCnl5 = aCnlm[16+5]; tCnl6 = aCnlm[16+6]; double tCnl7 = aCnlm[16+7], tCnl8 = aCnlm[16+8];
-    tMul = aWt*(PI4/9 + PI4/9);
-    tFpPx[3] += tMul * (tCnl0*aCnlmPx[16] + tCnl1*aCnlmPx[16+1] + tCnl2*aCnlmPx[16+2] + tCnl3*aCnlmPx[16+3] + tCnl4*aCnlmPx[16+4] + tCnl5*aCnlmPx[16+5] + tCnl6*aCnlmPx[16+6] + tCnl7*aCnlmPx[16+7] + tCnl8*aCnlmPx[16+8]);
-    tFpPy[3] += tMul * (tCnl0*aCnlmPy[16] + tCnl1*aCnlmPy[16+1] + tCnl2*aCnlmPy[16+2] + tCnl3*aCnlmPy[16+3] + tCnl4*aCnlmPy[16+4] + tCnl5*aCnlmPy[16+5] + tCnl6*aCnlmPy[16+6] + tCnl7*aCnlmPy[16+7] + tCnl8*aCnlmPy[16+8]);
-    tFpPz[3] += tMul * (tCnl0*aCnlmPz[16] + tCnl1*aCnlmPz[16+1] + tCnl2*aCnlmPz[16+2] + tCnl3*aCnlmPz[16+3] + tCnl4*aCnlmPz[16+4] + tCnl5*aCnlmPz[16+5] + tCnl6*aCnlmPz[16+6] + tCnl7*aCnlmPz[16+7] + tCnl8*aCnlmPz[16+8]);
-    if (aLMax == 4) return;
-    // l = 5
-    tCnl0 = aCnlm[25]; tCnl1 = aCnlm[25+1]; tCnl2 = aCnlm[25+2]; tCnl3 = aCnlm[25+3]; tCnl4 = aCnlm[25+4]; tCnl5 = aCnlm[25+5]; tCnl6 = aCnlm[25+6]; tCnl7 = aCnlm[25+7]; tCnl8 = aCnlm[25+8]; double tCnl9 = aCnlm[25+9], tCnl10 = aCnlm[25+10];
-    tMul = aWt*(PI4/11 + PI4/11);
-    tFpPx[4] += tMul * (tCnl0*aCnlmPx[25] + tCnl1*aCnlmPx[25+1] + tCnl2*aCnlmPx[25+2] + tCnl3*aCnlmPx[25+3] + tCnl4*aCnlmPx[25+4] + tCnl5*aCnlmPx[25+5] + tCnl6*aCnlmPx[25+6] + tCnl7*aCnlmPx[25+7] + tCnl8*aCnlmPx[25+8] + tCnl9*aCnlmPx[25+9] + tCnl10*aCnlmPx[25+10]);
-    tFpPy[4] += tMul * (tCnl0*aCnlmPy[25] + tCnl1*aCnlmPy[25+1] + tCnl2*aCnlmPy[25+2] + tCnl3*aCnlmPy[25+3] + tCnl4*aCnlmPy[25+4] + tCnl5*aCnlmPy[25+5] + tCnl6*aCnlmPy[25+6] + tCnl7*aCnlmPy[25+7] + tCnl8*aCnlmPy[25+8] + tCnl9*aCnlmPy[25+9] + tCnl10*aCnlmPy[25+10]);
-    tFpPz[4] += tMul * (tCnl0*aCnlmPz[25] + tCnl1*aCnlmPz[25+1] + tCnl2*aCnlmPz[25+2] + tCnl3*aCnlmPz[25+3] + tCnl4*aCnlmPz[25+4] + tCnl5*aCnlmPz[25+5] + tCnl6*aCnlmPz[25+6] + tCnl7*aCnlmPz[25+7] + tCnl8*aCnlmPz[25+8] + tCnl9*aCnlmPz[25+9] + tCnl10*aCnlmPz[25+10]);
-    if (aLMax == 5) return;
-    // l = 6
-    tCnl0 = aCnlm[36]; tCnl1 = aCnlm[36+1]; tCnl2 = aCnlm[36+2]; tCnl3 = aCnlm[36+3]; tCnl4 = aCnlm[36+4]; tCnl5 = aCnlm[36+5]; tCnl6 = aCnlm[36+6]; tCnl7 = aCnlm[36+7]; tCnl8 = aCnlm[36+8]; tCnl9 = aCnlm[36+9]; tCnl10 = aCnlm[36+10]; double tCnl11 = aCnlm[36+11], tCnl12 = aCnlm[36+12];
-    tMul = aWt*(PI4/13 + PI4/13);
-    tFpPx[5] += tMul * (tCnl0*aCnlmPx[36] + tCnl1*aCnlmPx[36+1] + tCnl2*aCnlmPx[36+2] + tCnl3*aCnlmPx[36+3] + tCnl4*aCnlmPx[36+4] + tCnl5*aCnlmPx[36+5] + tCnl6*aCnlmPx[36+6] + tCnl7*aCnlmPx[36+7] + tCnl8*aCnlmPx[36+8] + tCnl9*aCnlmPx[36+9] + tCnl10*aCnlmPx[36+10] + tCnl11*aCnlmPx[36+11] + tCnl12*aCnlmPx[36+12]);
-    tFpPy[5] += tMul * (tCnl0*aCnlmPy[36] + tCnl1*aCnlmPy[36+1] + tCnl2*aCnlmPy[36+2] + tCnl3*aCnlmPy[36+3] + tCnl4*aCnlmPy[36+4] + tCnl5*aCnlmPy[36+5] + tCnl6*aCnlmPy[36+6] + tCnl7*aCnlmPy[36+7] + tCnl8*aCnlmPy[36+8] + tCnl9*aCnlmPy[36+9] + tCnl10*aCnlmPy[36+10] + tCnl11*aCnlmPy[36+11] + tCnl12*aCnlmPy[36+12]);
-    tFpPz[5] += tMul * (tCnl0*aCnlmPz[36] + tCnl1*aCnlmPz[36+1] + tCnl2*aCnlmPz[36+2] + tCnl3*aCnlmPz[36+3] + tCnl4*aCnlmPz[36+4] + tCnl5*aCnlmPz[36+5] + tCnl6*aCnlmPz[36+6] + tCnl7*aCnlmPz[36+7] + tCnl8*aCnlmPz[36+8] + tCnl9*aCnlmPz[36+9] + tCnl10*aCnlmPz[36+10] + tCnl11*aCnlmPz[36+11] + tCnl12*aCnlmPz[36+12]);
-    if (aLMax == 6) return;
     // else
-    for (jint l = 7; l <= aLMax; ++l) {
+    for (jint l = 1; l <= aLMax; ++l) {
         const jint tStart = l*l;
         const jint tLen = l+l+1;
         const jint tEnd = tStart+tLen;
         double rDotPx = 0.0, rDotPy = 0.0, rDotPz = 0.0;
-        for (jint i=tStart; i < tEnd; ++i) {
+        for (jint i = tStart; i < tEnd; ++i) {
             double tCnlm = aCnlm[i];
             rDotPx += tCnlm*aCnlmPx[i];
             rDotPy += tCnlm*aCnlmPy[i];

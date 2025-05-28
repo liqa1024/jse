@@ -1,5 +1,5 @@
 #include "jsex_nnap_basis_Chebyshev.h"
-#include "basis_util.h"
+#include "nnap_util.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -297,13 +297,13 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalPartial1(JNIEnv *aEnv,
                 for (jint n = 0; n <= aNMax; ++n) {
                     // cal subFpPxyz first
                     const double tRnn = tRn[n];
-                    const double subFpPx = -(fc*tRnPx[n] + fcPx*tRnn);
-                    const double subFpPy = -(fc*tRnPy[n] + fcPy*tRnn);
-                    const double subFpPz = -(fc*tRnPz[n] + fcPz*tRnn);
+                    const double subFpPx = fc*tRnPx[n] + fcPx*tRnn;
+                    const double subFpPy = fc*tRnPy[n] + fcPy*tRnn;
+                    const double subFpPz = fc*tRnPz[n] + fcPz*tRnn;
                     // accumulate to fp
-                    tFpPx_[n] += subFpPx; tFpPxWt[n] += subFpPx;
-                    tFpPy_[n] += subFpPy; tFpPyWt[n] += subFpPy;
-                    tFpPz_[n] += subFpPz; tFpPzWt[n] += subFpPz;
+                    tFpPx_[n] -= subFpPx; tFpPxWt[n] -= subFpPx;
+                    tFpPy_[n] -= subFpPy; tFpPyWt[n] -= subFpPy;
+                    tFpPz_[n] -= subFpPz; tFpPzWt[n] -= subFpPz;
                 }
             }
             break;
@@ -352,13 +352,13 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalPartial1(JNIEnv *aEnv,
                 for (jint n = 0; n <= aNMax; ++n) {
                     // cal subFpPxyz first
                     const double tRnn = tRn[n];
-                    const double subFpPx = -(fc*tRnPx[n] + fcPx*tRnn);
-                    const double subFpPy = -(fc*tRnPy[n] + fcPy*tRnn);
-                    const double subFpPz = -(fc*tRnPz[n] + fcPz*tRnn);
+                    const double subFpPx = fc*tRnPx[n] + fcPx*tRnn;
+                    const double subFpPy = fc*tRnPy[n] + fcPy*tRnn;
+                    const double subFpPz = fc*tRnPz[n] + fcPz*tRnn;
                     // accumulate to fp
-                    tFpPx_[n] += subFpPx; tFpPxWt[n] += wt*subFpPx;
-                    tFpPy_[n] += subFpPy; tFpPyWt[n] += wt*subFpPy;
-                    tFpPz_[n] += subFpPz; tFpPzWt[n] += wt*subFpPz;
+                    tFpPx_[n] -= subFpPx; tFpPxWt[n] -= wt*subFpPx;
+                    tFpPy_[n] -= subFpPy; tFpPyWt[n] -= wt*subFpPy;
+                    tFpPz_[n] -= subFpPz; tFpPzWt[n] -= wt*subFpPz;
                 }
             }
             break;

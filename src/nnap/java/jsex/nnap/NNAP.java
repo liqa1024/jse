@@ -90,7 +90,7 @@ public class NNAP implements IPairPotential {
     public final static String LIB_DIR = JAR_DIR+"nnap/jni/" + UT.Code.uniqueID(CS.VERSION, VERSION, Conf.OPT_LEVEL, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
-          "basis_util.h"
+          "nnap_util.h"
         , "jsex_nnap_NNAP.c"
         , "jsex_nnap_NNAP.h"
         , "jsex_nnap_nn_FeedForward.c"

@@ -1,5 +1,5 @@
 #include "jsex_nnap_nn_FeedForward.h"
-#include <math.h>
+#include "nnap_util.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,10 +27,7 @@ static inline double forward(double *aX, jint aInputDim, jint *aHiddenDims, jint
     for (jint i = 0; i < tEnd; ++i) {
         const jint tOutSize = aHiddenDims[i];
         for (jint j = 0; j < tOutSize; ++j) {
-            double rDot = tBiases[j];
-            for (jint k = 0; k < tInSize; ++k) {
-                rDot += tInput[k] * tWeights[k];
-            }
+            double rDot = dotAB_jse(tInput, tWeights, tInSize) + tBiases[j];
             if (tGrad == NULL) {
                 tOutput[j] = silu(rDot);
             } else {
@@ -50,10 +47,7 @@ static inline double forward(double *aX, jint aInputDim, jint *aHiddenDims, jint
     double rOut = aOutputBias;
     const jint tOutSize = aHiddenDims[tEnd];
     for (jint j = 0; j < tOutSize; ++j) {
-        double rDot = tBiases[j];
-        for (jint k = 0; k < tInSize; ++k) {
-            rDot += tInput[k] * tWeights[k];
-        }
+        double rDot = dotAB_jse(tInput, tWeights, tInSize) + tBiases[j];
         double tOutputWeight = aOutputWeight[j];
         if (tGrad == NULL) {
             rOut += silu(rDot) * tOutputWeight;
@@ -147,27 +141,21 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_backward1(JNIEnv *aEnv, 
     const jint tEnd = aHiddenNumber - 1;
     double *tGrad = tHiddenGrads;
     double *tOutput = tHiddenOutputs;
-    jint tInSize = aInputDim;
     for (jint i = 0; i < tEnd; ++i) {
         const jint tOutSize = tHiddenDims[i];
         tGrad += tOutSize;
         tOutput += tOutSize;
-        tInSize = tOutSize;
     }
     // begin backward, last layer has been specially optimized
     double *tInput = tGrad;
     double *tWeights = tHiddenWeightsBackward;
-    tInSize = tHiddenDims[tEnd];
+    jint tInSize = tHiddenDims[tEnd];
     for (jint i = tEnd-1; i >= 0; --i) {
         const jint tOutSize = tHiddenDims[i];
         tGrad -= tOutSize;
         tOutput -= tOutSize;
         for (jint j = 0; j < tOutSize; ++j) {
-            double rDot = 0.0;
-            for (jint k = 0; k < tInSize; ++k) {
-                rDot += tInput[k] * tWeights[k];
-            }
-            tOutput[j] = rDot * tGrad[j];
+            tOutput[j] = dotAB_jse(tInput, tWeights, tInSize) * tGrad[j];
             tWeights += tInSize;
         }
         tInput = tOutput;
@@ -175,11 +163,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_backward1(JNIEnv *aEnv, 
     }
     // to input layer
     for (jint j = 0; j < aInputDim; ++j) {
-        double rDot = 0.0;
-        for (jint k = 0; k < tInSize; ++k) {
-            rDot += tInput[k] * tWeights[k];
-        }
-        tGradX_[j] = rDot;
+        tGradX_[j] = dotAB_jse(tInput, tWeights, tInSize);
         tWeights += tInSize;
     }
     
