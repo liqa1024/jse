@@ -555,10 +555,10 @@ static inline void calCnlmPxyz(double *rCnlmPx, double *rCnlmPy, double *rCnlmPz
                                double *aY, double *aYPx, double *aYPy, double *aYPz,
                                double aFc, double aFcPx, double aFcPy, double aFcPz,
                                double aRn, double aRnPx, double aRnPy, double aRnPz, jint aLength) {
-    const double tMul = -(aFc*aRn);
-    const double tMulX = -(aFc*aRnPx + aFcPx*aRn);
-    const double tMulY = -(aFc*aRnPy + aFcPy*aRn);
-    const double tMulZ = -(aFc*aRnPz + aFcPz*aRn);
+    const double tMul = aFc*aRn;
+    const double tMulX = aFc*aRnPx + aFcPx*aRn;
+    const double tMulY = aFc*aRnPy + aFcPy*aRn;
+    const double tMulZ = aFc*aRnPz + aFcPz*aRn;
     for (jint i = 0; i < aLength; ++i) {
         const double tY = aY[i];
         rCnlmPx[i] = tMulX*tY + tMul*aYPx[i];

@@ -285,9 +285,9 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalPartial1(JNIEnv *aEnv,
                 for (jint n = 0; n <= aNMax; ++n) {
                     // cal subFpPxyz and accumulate to fp
                     const double tRnn = tRn[n];
-                    tFpPx_[n] -= (fc*tRnPx[n] + fcPx*tRnn);
-                    tFpPy_[n] -= (fc*tRnPy[n] + fcPy*tRnn);
-                    tFpPz_[n] -= (fc*tRnPz[n] + fcPz*tRnn);
+                    tFpPx_[n] += (fc*tRnPx[n] + fcPx*tRnn);
+                    tFpPy_[n] += (fc*tRnPy[n] + fcPy*tRnn);
+                    tFpPz_[n] += (fc*tRnPz[n] + fcPz*tRnn);
                 }
             } else {
                 jint tShiftFp = (aNMax+1)*type;
@@ -301,9 +301,9 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalPartial1(JNIEnv *aEnv,
                     const double subFpPy = fc*tRnPy[n] + fcPy*tRnn;
                     const double subFpPz = fc*tRnPz[n] + fcPz*tRnn;
                     // accumulate to fp
-                    tFpPx_[n] -= subFpPx; tFpPxWt[n] -= subFpPx;
-                    tFpPy_[n] -= subFpPy; tFpPyWt[n] -= subFpPy;
-                    tFpPz_[n] -= subFpPz; tFpPzWt[n] -= subFpPz;
+                    tFpPx_[n] += subFpPx; tFpPxWt[n] += subFpPx;
+                    tFpPy_[n] += subFpPy; tFpPyWt[n] += subFpPy;
+                    tFpPz_[n] += subFpPz; tFpPzWt[n] += subFpPz;
                 }
             }
             break;
@@ -316,9 +316,9 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalPartial1(JNIEnv *aEnv,
             for (jint n = 0; n <= aNMax; ++n) {
                 // cal subFpPxyz and accumulate to fp
                 const double tRnn = tRn[n];
-                tFpPxWt[n] -= (fc*tRnPx[n] + fcPx*tRnn);
-                tFpPyWt[n] -= (fc*tRnPy[n] + fcPy*tRnn);
-                tFpPzWt[n] -= (fc*tRnPz[n] + fcPz*tRnn);
+                tFpPxWt[n] += (fc*tRnPx[n] + fcPx*tRnn);
+                tFpPyWt[n] += (fc*tRnPy[n] + fcPy*tRnn);
+                tFpPzWt[n] += (fc*tRnPz[n] + fcPz*tRnn);
             }
             break;
         }
@@ -327,9 +327,9 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalPartial1(JNIEnv *aEnv,
             for (jint n = 0; n <= aNMax; ++n) {
                 // cal subFpPxyz and accumulate to fp
                 const double tRnn = tRn[n];
-                tFpPx_[n] -= (fc*tRnPx[n] + fcPx*tRnn);
-                tFpPy_[n] -= (fc*tRnPy[n] + fcPy*tRnn);
-                tFpPz_[n] -= (fc*tRnPz[n] + fcPz*tRnn);
+                tFpPx_[n] += (fc*tRnPx[n] + fcPx*tRnn);
+                tFpPy_[n] += (fc*tRnPy[n] + fcPy*tRnn);
+                tFpPz_[n] += (fc*tRnPz[n] + fcPz*tRnn);
             }
             break;
         }
@@ -338,9 +338,9 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalPartial1(JNIEnv *aEnv,
                 for (jint n = 0; n <= aNMax; ++n) {
                     // cal subFpPxyz and accumulate to fp
                     const double tRnn = tRn[n];
-                    tFpPx_[n] -= (fc*tRnPx[n] + fcPx*tRnn);
-                    tFpPy_[n] -= (fc*tRnPy[n] + fcPy*tRnn);
-                    tFpPz_[n] -= (fc*tRnPz[n] + fcPz*tRnn);
+                    tFpPx_[n] += (fc*tRnPx[n] + fcPx*tRnn);
+                    tFpPy_[n] += (fc*tRnPy[n] + fcPy*tRnn);
+                    tFpPz_[n] += (fc*tRnPz[n] + fcPz*tRnn);
                 }
             } else {
                 // cal weight of type here
@@ -356,9 +356,9 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalPartial1(JNIEnv *aEnv,
                     const double subFpPy = fc*tRnPy[n] + fcPy*tRnn;
                     const double subFpPz = fc*tRnPz[n] + fcPz*tRnn;
                     // accumulate to fp
-                    tFpPx_[n] -= subFpPx; tFpPxWt[n] -= wt*subFpPx;
-                    tFpPy_[n] -= subFpPy; tFpPyWt[n] -= wt*subFpPy;
-                    tFpPz_[n] -= subFpPz; tFpPzWt[n] -= wt*subFpPz;
+                    tFpPx_[n] += subFpPx; tFpPxWt[n] += wt*subFpPx;
+                    tFpPy_[n] += subFpPy; tFpPyWt[n] += wt*subFpPy;
+                    tFpPz_[n] += subFpPz; tFpPzWt[n] += wt*subFpPz;
                 }
             }
             break;

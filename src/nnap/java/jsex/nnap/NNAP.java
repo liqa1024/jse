@@ -560,9 +560,9 @@ public class NNAP implements IPairPotential {
                 double dz = tNlDz.get(j);
                 int idx = tNlIdx.get(j);
                 // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查
-                double fx = -tForceX.get(j);
-                double fy = -tForceY.get(j);
-                double fz = -tForceZ.get(j);
+                double fx = tForceX.get(j);
+                double fy = tForceY.get(j);
+                double fz = tForceZ.get(j);
                 if (rForceAccumulator != null) {
                     rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
                 }
