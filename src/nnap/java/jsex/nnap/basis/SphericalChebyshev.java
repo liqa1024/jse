@@ -225,8 +225,8 @@ public class SphericalChebyshev extends NNAPWTypeBasis {
     void eval0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType, IDataShell<double[]> rFp) {
         int tNN = aNlDx.internalDataSize();
         int tShiftFp = rFp.internalDataShift();
-        eval1(aNlDx.internalDataWithLengthCheck(tNN), aNlDy.internalDataWithLengthCheck(tNN), aNlDz.internalDataWithLengthCheck(tNN), aNlType.internalDataWithLengthCheck(tNN), tNN,
-              mRn.internalDataWithLengthCheck(mNMax+1), mY.internalDataWithLengthCheck(mLMAll), mCnlm.internalDataWithLengthCheck(mSizeN*mLMAll), rFp.internalDataWithLengthCheck(mSize, tShiftFp), tShiftFp,
+        eval1(aNlDx.internalDataWithLengthCheck(tNN, 0), aNlDy.internalDataWithLengthCheck(tNN, 0), aNlDz.internalDataWithLengthCheck(tNN, 0), aNlType.internalDataWithLengthCheck(tNN, 0), tNN,
+              mRn.internalDataWithLengthCheck(mNMax+1, 0), mY.internalDataWithLengthCheck(mLMAll, 0), mCnlm.internalDataWithLengthCheck(mSizeN*mLMAll, 0), rFp.internalDataWithLengthCheck(mSize, tShiftFp), tShiftFp,
               mTypeNum, mRCut, mNMax, mLMax, mNoRadial, mL3Max, mL3Cross, mWType);
     }
     private static native void eval1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
@@ -238,13 +238,13 @@ public class SphericalChebyshev extends NNAPWTypeBasis {
         int tNN = aNlDx.internalDataSize();
         int tShiftFp = rFp.internalDataShift();
         int tSizeFp = rFp.internalDataSize();
-        evalPartial1(aNlDx.internalDataWithLengthCheck(tNN), aNlDy.internalDataWithLengthCheck(tNN), aNlDz.internalDataWithLengthCheck(tNN), aNlType.internalDataWithLengthCheck(tNN), tNN,
-                     mNlRn.internalDataWithLengthCheck(tNN*(mNMax+1)), mRnPx.internalDataWithLengthCheck(mNMax+1), mRnPy.internalDataWithLengthCheck(mNMax+1), mRnPz.internalDataWithLengthCheck(mNMax+1), mCheby2.internalDataWithLengthCheck(mNMax),
-                     mNlY.internalDataWithLengthCheck(tNN*mLMAll), mYPtheta.internalDataWithLengthCheck(mLMAll), mYPphi.internalDataWithLengthCheck(mLMAll),
-                     mYPx.internalDataWithLengthCheck(mLMAll), mYPy.internalDataWithLengthCheck(mLMAll), mYPz.internalDataWithLengthCheck(mLMAll),
-                     mCnlm.internalDataWithLengthCheck(mSizeN*mLMAll), mCnlmPx.internalDataWithLengthCheck(mLMAll), mCnlmPy.internalDataWithLengthCheck(mLMAll), mCnlmPz.internalDataWithLengthCheck(mLMAll),
+        evalPartial1(aNlDx.internalDataWithLengthCheck(tNN, 0), aNlDy.internalDataWithLengthCheck(tNN, 0), aNlDz.internalDataWithLengthCheck(tNN, 0), aNlType.internalDataWithLengthCheck(tNN, 0), tNN,
+                     mNlRn.internalDataWithLengthCheck(tNN*(mNMax+1), 0), mRnPx.internalDataWithLengthCheck(mNMax+1, 0), mRnPy.internalDataWithLengthCheck(mNMax+1, 0), mRnPz.internalDataWithLengthCheck(mNMax+1, 0), mCheby2.internalDataWithLengthCheck(mNMax, 0),
+                     mNlY.internalDataWithLengthCheck(tNN*mLMAll, 0), mYPtheta.internalDataWithLengthCheck(mLMAll, 0), mYPphi.internalDataWithLengthCheck(mLMAll, 0),
+                     mYPx.internalDataWithLengthCheck(mLMAll, 0), mYPy.internalDataWithLengthCheck(mLMAll, 0), mYPz.internalDataWithLengthCheck(mLMAll, 0),
+                     mCnlm.internalDataWithLengthCheck(mSizeN*mLMAll, 0), mCnlmPx.internalDataWithLengthCheck(mLMAll, 0), mCnlmPy.internalDataWithLengthCheck(mLMAll, 0), mCnlmPz.internalDataWithLengthCheck(mLMAll, 0),
                      rFp.internalDataWithLengthCheck(mSize, tShiftFp), tSizeFp, tShiftFp,
-                     rFpPx.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp)), rFpPy.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp)), rFpPz.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp)),
+                     rFpPx.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp), 0), rFpPy.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp), 0), rFpPz.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp), 0),
                      mTypeNum, mRCut, mNMax, mLMax, mNoRadial, mL3Max, mL3Cross, mWType);
     }
     private static native void evalPartial1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,

@@ -7,6 +7,7 @@ import jse.code.collection.IntList;
 import jse.code.io.ISavable;
 import jse.math.vector.DoubleArrayVector;
 import jse.parallel.IAutoShutdown;
+import jsex.nnap.NNAP;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,6 +22,10 @@ import java.util.function.IntUnaryOperator;
  */
 @ApiStatus.Experimental
 public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
+    static {
+        // 依赖 nnap
+        NNAP.InitHelper.init();
+    }
     
     /** @return 基组需要的近邻截断半径 */
     public abstract double rcut();

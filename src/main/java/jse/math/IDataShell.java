@@ -38,26 +38,6 @@ public interface IDataShell<D> {
     
     /** @throws IllegalArgumentException 当内部数据不是数组 */
     @ApiStatus.Experimental
-    default D internalDataWithLengthCheck() {
-        D tData = internalData();
-        int tLen = Array.getLength(tData);
-        int tSize = internalDataSize();
-        int tShift = internalDataShift();
-        if (tSize+tShift > tLen) throw new IndexOutOfBoundsException((tSize+tShift)+" > "+tLen);
-        return tData;
-    }
-    /** @throws IllegalArgumentException 当内部数据不是数组 */
-    @ApiStatus.Experimental
-    default D internalDataWithLengthCheck(int aSize) {
-        if (aSize > internalDataSize()) throw new IllegalArgumentException("data size mismatch");
-        D tData = internalData();
-        int tLen = Array.getLength(tData);
-        int tShift = internalDataShift();
-        if (aSize+tShift > tLen) throw new IndexOutOfBoundsException((aSize+tShift)+" > "+tLen);
-        return tData;
-    }
-    /** @throws IllegalArgumentException 当内部数据不是数组 */
-    @ApiStatus.Experimental
     default D internalDataWithLengthCheck(int aSize, int aShift) {
         if (aSize > internalDataSize()) throw new IllegalArgumentException("data size mismatch");
         if (aShift != internalDataShift()) throw new IllegalArgumentException("data shift mismatch");

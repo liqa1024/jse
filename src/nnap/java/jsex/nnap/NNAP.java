@@ -94,6 +94,8 @@ public class NNAP implements IPairPotential {
           "basis_util.h"
         , "jsex_nnap_NNAP.c"
         , "jsex_nnap_NNAP.h"
+        , "jsex_nnap_nn_FeedForward.c"
+        , "jsex_nnap_nn_FeedForward.h"
         , "jsex_nnap_basis_SphericalChebyshev.c"
         , "jsex_nnap_basis_SphericalChebyshev.h"
         , "jsex_nnap_basis_Chebyshev.c"
@@ -143,12 +145,12 @@ public class NNAP implements IPairPotential {
     }
     
     static void forceDot(IDataShell<double[]> aXGrad, IDataShell<double[]> aFpPx, IDataShell<double[]> aFpPy, IDataShell<double[]> aFpPz,
-                                IDataShell<double[]> rFx, IDataShell<double[]> rFy, IDataShell<double[]> rFz, int aNN) {
+                         IDataShell<double[]> rFx, IDataShell<double[]> rFy, IDataShell<double[]> rFz, int aNN) {
         int tLength = aXGrad.internalDataSize();
         int tShift = aXGrad.internalDataShift();
         forceDot1(aXGrad.internalDataWithLengthCheck(tLength, tShift), tShift, tLength,
-                  aFpPx.internalDataWithLengthCheck(tLength*aNN), aFpPy.internalDataWithLengthCheck(tLength*aNN), aFpPz.internalDataWithLengthCheck(tLength*aNN),
-                  rFx.internalDataWithLengthCheck(aNN), rFy.internalDataWithLengthCheck(aNN), rFz.internalDataWithLengthCheck(aNN), aNN);
+                  aFpPx.internalDataWithLengthCheck(tLength*aNN, 0), aFpPy.internalDataWithLengthCheck(tLength*aNN, 0), aFpPz.internalDataWithLengthCheck(tLength*aNN, 0),
+                  rFx.internalDataWithLengthCheck(aNN, 0), rFy.internalDataWithLengthCheck(aNN, 0), rFz.internalDataWithLengthCheck(aNN, 0), aNN);
     }
     private static native void forceDot1(double[] aXGrad, int aShift, int aLength, double[] aFpPx, double[] aFpPy, double[] aFpPz, double[] rFx, double[] rFy, double[] rFz, int aNN);
     
@@ -213,18 +215,29 @@ public class NNAP implements IPairPotential {
             }
             return new SingleNNAP(aRefEng, aNormMu, aNormSigma, aNormMuEng, aNormSigmaEng, aBasis, aNN);
         }
-        Map<String, ?> tModel = (Map<String, ?>)aModelInfo.get("model");
+        Map<String, ?> tModel = (Map<String, ?>)aModelInfo.get("nn");
         Object tModelType = tModel.get("type");
         if (tModelType == null) {
-            tModelType = "FFNN";
+            tModelType = "feed_forward";
         }
-        if (tModelType.toString().equals("FFNN")) {
+        switch(tModelType.toString()) {
+        case "feed_forward": {
             for (int i = 0; i < mThreadNumber; ++i) {
                 aNN[i] = FeedForward.load(tModel);
             }
-        } else {
-            throw new IllegalArgumentException("Unsupported model type: " + tBasisType);
+            break;
         }
+        case "torch": {
+            mIsTorch = true;
+            for (int i = 0; i < mThreadNumber; ++i) {
+                //noinspection resource
+                aNN[i] = new TorchModel(tModel.get("model").toString());
+            }
+            break;
+        }
+        default: {
+            throw new IllegalArgumentException("Unsupported model type: " + tBasisType);
+        }}
         return new SingleNNAP(aRefEng, aNormMu, aNormSigma, aNormMuEng, aNormSigmaEng, aBasis, aNN);
     }
     @SuppressWarnings("unchecked")

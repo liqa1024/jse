@@ -2,6 +2,7 @@ package jsex.nnap.nn;
 
 import jse.math.vector.DoubleArrayVector;
 import jse.parallel.IAutoShutdown;
+import jsex.nnap.NNAP;
 
 /**
  * 通用的 nnap 神经网络部分实现
@@ -10,6 +11,11 @@ import jse.parallel.IAutoShutdown;
  * @author liqa
  */
 public abstract class NeuralNetwork implements IAutoShutdown {
+    static {
+        // 依赖 nnap
+        NNAP.InitHelper.init();
+    }
+    
     public abstract double forward(DoubleArrayVector aX) throws Exception;
     public abstract double backward(DoubleArrayVector aX, DoubleArrayVector rGradX) throws Exception;
     

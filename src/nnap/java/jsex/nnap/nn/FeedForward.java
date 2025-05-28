@@ -1,14 +1,14 @@
 package jsex.nnap.nn;
 
-import jse.cache.VectorCache;
 import jse.code.UT;
-import jse.math.MathEX;
+import jse.code.collection.DoubleList;
+import jse.math.IDataShell;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.DoubleArrayVector;
-import jse.math.vector.IVector;
 import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
+import jsex.nnap.NNAP;
 
 import java.util.List;
 import java.util.Map;
@@ -22,41 +22,42 @@ import java.util.Map;
  * @author liqa
  */
 public class FeedForward extends NeuralNetwork {
-    final int mInputDim;
-    final int[] mHiddenDims;
-    final int mHiddenNumber;
-    final RowMatrix[] mHiddenWeights;
-    final Vector[] mHiddenBiases;
-    final Vector mOutputWeight;
-    final double mOutputBias;
+    private final int mInputDim;
+    private final int[] mHiddenDims;
+    private final IDataShell<double[]> mHiddenWeights;
+    private final IDataShell<double[]> mHiddenBiases;
+    private final IDataShell<double[]> mOutputWeight;
+    private final double mOutputBias;
+    private final int mHiddenNumber, mHiddenWeightsSize, mHiddenBiasesSize, mOutputWeightSize;
     
-    public FeedForward(int aInputDim, int[] aHiddenDims, RowMatrix[] aHiddenWeights, Vector[] aHiddenBiases, Vector aOutputWeight, double aOutputBias) {
+    /// 缓存中间变量
+    private final IDataShell<double[]> mHiddenOutputs, mHiddenGrads;
+    
+    FeedForward(int aInputDim, int[] aHiddenDims, IDataShell<double[]> aHiddenWeights, IDataShell<double[]> aHiddenBiases, IDataShell<double[]> aOutputWeight, double aOutputBias) {
         mInputDim = aInputDim;
         mHiddenDims = aHiddenDims;
         mHiddenNumber = aHiddenDims.length;
         if (mHiddenNumber == 0) throw new IllegalArgumentException("At least one hidden layer is required");
-        if (aHiddenWeights.length != mHiddenNumber) throw new IllegalArgumentException("The number of hidden weights mismatch");
-        if (aHiddenBiases.length != mHiddenNumber) throw new IllegalArgumentException("The number of hidden biases mismatch");
+        int tHiddenWeightsSize = 0;
+        int tHiddenBiasesSize = 0;
+        int tColNum = aInputDim;
+        for (int tHiddenDim : aHiddenDims) {
+            tHiddenWeightsSize += tColNum * tHiddenDim;
+            tHiddenBiasesSize += tHiddenDim;
+            tColNum = tHiddenDim;
+        }
+        mHiddenWeightsSize = tHiddenWeightsSize;
+        mHiddenBiasesSize = tHiddenBiasesSize;
         mHiddenWeights = aHiddenWeights;
         mHiddenBiases = aHiddenBiases;
+        if (mHiddenWeights.internalDataSize() != mHiddenWeightsSize) throw new IllegalArgumentException("The size of hidden weights mismatch");
+        if (mHiddenBiases.internalDataSize() != mHiddenBiasesSize) throw new IllegalArgumentException("The size of hidden biases mismatch");
         mOutputWeight = aOutputWeight;
         mOutputBias = aOutputBias;
-        int tColNum = mInputDim;
-        for (int i = 0; i < mHiddenNumber; ++i) {
-            if (mHiddenWeights[i].columnNumber() != tColNum) throw new IllegalArgumentException("Column number of hidden weight '"+i+"' mismatch");
-            if (mHiddenWeights[i].rowNumber() != mHiddenDims[i]) throw new IllegalArgumentException("Row number of hidden weight '"+i+"' mismatch");
-            if (mHiddenBiases[i].size() != mHiddenDims[i]) throw new IllegalArgumentException("Size of hidden bias '"+i+"' mismatch");
-            tColNum = mHiddenDims[i];
-        }
-        if (mOutputWeight.size() != mHiddenDims[mHiddenNumber-1]) throw new IllegalArgumentException("Size of output weight mismatch");
-        
-        mHiddenOutputs = new Vector[mHiddenNumber-1];
-        mHiddenGrads = new Vector[mHiddenNumber];
-        for (int i = 0; i < mHiddenNumber; i++) {
-            if (i < mHiddenOutputs.length) mHiddenOutputs[i] = VectorCache.getVec(mHiddenDims[i]);
-            mHiddenGrads[i] = VectorCache.getVec(mHiddenDims[i]);
-        }
-        
+        mOutputWeightSize = mHiddenDims[mHiddenNumber-1];
+        if (mOutputWeight.internalDataSize() != mOutputWeightSize) throw new IllegalArgumentException("The size of output weight mismatch");
+        mHiddenOutputs = Vectors.zeros(mHiddenBiasesSize);
+        mHiddenGrads = Vectors.zeros(mHiddenBiasesSize);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -67,117 +68,66 @@ public class FeedForward extends NeuralNetwork {
         for (int i = 0; i < aHiddenDims.length; ++i) {
             aHiddenDims[i] = ((Number)tHiddenDims.get(i)).intValue();
         }
+        int tHiddenNumber = aHiddenDims.length;
+        if (tHiddenNumber == 0) throw new IllegalArgumentException("At least one hidden layer is required");
+        int tHiddenWeightsSize = 0;
+        int tHiddenBiasesSize = 0;
+        int tColNum = aInputDim;
+        for (int tHiddenDim : aHiddenDims) {
+            tHiddenWeightsSize += tColNum * tHiddenDim;
+            tHiddenBiasesSize += tHiddenDim;
+            tColNum = tHiddenDim;
+        }
         List<?> tHiddenWeights = (List<?>)UT.Code.get(aMap, "hidden_weights");
-        RowMatrix[] aHiddenWeights = new RowMatrix[tHiddenWeights.size()];
-        for (int i = 0; i < aHiddenWeights.length; ++i) {
-            aHiddenWeights[i] = Matrices.fromRows((List<?>)tHiddenWeights.get(i));
+        if (tHiddenWeights.size() != tHiddenNumber) throw new IllegalArgumentException("The number of hidden weights mismatch");
+        DoubleList aHiddenWeights = new DoubleList(tHiddenWeightsSize);
+        tColNum = aInputDim;
+        for (int i = 0; i < tHiddenNumber; ++i) {
+            RowMatrix tWeight = Matrices.fromRows((List<?>)tHiddenWeights.get(i));
+            if (tWeight.columnNumber() != tColNum) throw new IllegalArgumentException("Column number of hidden weight '"+i+"' mismatch");
+            if (tWeight.rowNumber() != aHiddenDims[i]) throw new IllegalArgumentException("Row number of hidden weight '"+i+"' mismatch");
+            aHiddenWeights.addAll(tWeight.asVecRow());
+            tColNum = aHiddenDims[i];
         }
         List<?> tHiddenBiases = (List<?>)UT.Code.get(aMap, "hidden_biases");
-        Vector[] aHiddenBiases = new Vector[tHiddenBiases.size()];
-        for (int i = 0; i < aHiddenBiases.length; ++i) {
-            aHiddenBiases[i] = Vectors.from((List<? extends Number>)tHiddenBiases.get(i));
+        if (tHiddenBiases.size() != tHiddenNumber) throw new IllegalArgumentException("The number of hidden biases mismatch");
+        DoubleList aHiddenBiases = new DoubleList(tHiddenBiasesSize);
+        for (int i = 0; i < tHiddenNumber; ++i) {
+            Vector tBias = Vectors.from((List<? extends Number>)tHiddenBiases.get(i));
+            if (tBias.size() != aHiddenDims[i]) throw new IllegalArgumentException("Size of hidden bias '"+i+"' mismatch");
+            aHiddenBiases.addAll(tBias);
         }
         Vector aOutputWeight = Vectors.from((List<? extends Number>)aMap.get("output_weight"));
         double aOutputBias = ((Number)aMap.get("output_bias")).doubleValue();
+        if (aOutputWeight.size() != aHiddenDims[tHiddenNumber-1]) throw new IllegalArgumentException("Size of output weight mismatch");
         
         return new FeedForward(aInputDim, aHiddenDims, aHiddenWeights, aHiddenBiases, aOutputWeight, aOutputBias);
     }
     
-    
-    /// 缓存中间变量
-    private final Vector[] mHiddenOutputs, mHiddenGrads;
-    
-    @Override protected void shutdown_() {
-        for (int i = 0; i < mHiddenNumber; ++i) {
-            if (i < mHiddenOutputs.length) VectorCache.returnVec(mHiddenOutputs[i]);
-            VectorCache.returnVec(mHiddenGrads[i]);
-        }
-    }
-    static double silu(double aX) {
-        return aX / (1.0 + MathEX.Fast.exp(-aX));
-    }
-    static double siluGrad(double aX) {
-        double tSigmoid = 1.0 / (1.0 + MathEX.Fast.exp(-aX));
-        return tSigmoid * (1 + aX * (1 - tSigmoid));
-    }
-    
-    double forward_(DoubleArrayVector aX, boolean aRequireGrad) {
-        IVector tInput = aX;
-        int tInSize = mInputDim;
-        final int tEnd = mHiddenNumber - 1;
-        for (int i = 0; i < tEnd; ++i) {
-            IVector tOutput = mHiddenOutputs[i];
-            IVector tGrad = aRequireGrad ? mHiddenGrads[i] : null;
-            RowMatrix tWeights = mHiddenWeights[i];
-            Vector tBiases = mHiddenBiases[i];
-            int tOutSize = mHiddenDims[i];
-            for (int j = 0; j < tOutSize; ++j) {
-                IVector tRow = tWeights.row(j);
-                double rSum = tBiases.get(j);
-                for (int k = 0; k < tInSize; ++k) {
-                    rSum += tInput.get(k) * tRow.get(k);
-                }
-                tOutput.set(j, silu(rSum));
-                if (aRequireGrad) tGrad.set(j, siluGrad(rSum));
-            }
-            tInput = tOutput;
-            tInSize = tOutSize;
-        }
-        // 最后一层特殊优化
-        double rOut = mOutputBias;
-        IVector tGrad = aRequireGrad ? mHiddenGrads[tEnd] : null;
-        RowMatrix tWeights = mHiddenWeights[tEnd];
-        Vector tBiases = mHiddenBiases[tEnd];
-        int tOutSize = mHiddenDims[tEnd];
-        for (int j = 0; j < tOutSize; ++j) {
-            IVector tRow = tWeights.row(j);
-            double rSum = tBiases.get(j);
-            for (int k = 0; k < tInSize; ++k) {
-                rSum += tInput.get(k) * tRow.get(k);
-            }
-            double tWeight = mOutputWeight.get(j);
-            rOut += silu(rSum) * tWeight;
-            if (aRequireGrad) tGrad.set(j, siluGrad(rSum) * tWeight);
-        }
-        return rOut;
-    }
-    
     @Override public double forward(DoubleArrayVector aX) {
-        return forward_(aX, false);
+        return forward0(aX);
     }
+    double forward0(IDataShell<double[]> aX) {
+        if (mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
+        int tShiftX = aX.internalDataShift();
+        return forward1(aX.internalDataWithLengthCheck(mInputDim, tShiftX), tShiftX, mInputDim, mHiddenDims, mHiddenNumber,
+                        mHiddenWeights.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mHiddenBiases.internalDataWithLengthCheck(mHiddenBiasesSize, 0),
+                        mOutputWeight.internalDataWithLengthCheck(mOutputWeightSize, 0), mOutputBias, mHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize, 0));
+    }
+    private static native double forward1(double[] aX, int aShiftX, int aInputDim, int[] aHiddenDims, int aHiddenNumber,
+                                          double[] aHiddenWeights, double[] aHiddenBiases, double[] aOutputWeight, double aOutputBias, double[] rHiddenOutputs);
     
     @Override public double backward(DoubleArrayVector aX, DoubleArrayVector rGradX) {
-        double tY = forward_(aX, true);
-        // 开始反向传播，最后一层已经经过特殊优化
-        final int tEnd = mHiddenNumber - 1;
-        IVector tInput = mHiddenGrads[tEnd];
-        int tInputSize = mHiddenDims[tEnd];
-        for (int i = tEnd-1; i >= 0; --i) {
-            IVector tGrad = mHiddenGrads[i];
-            IVector tOutput = mHiddenOutputs[i];
-            RowMatrix tWeights = mHiddenWeights[i+1];
-            int tOutSize = mHiddenDims[i];
-            for (int j = 0; j < tOutSize; ++j) {
-                IVector tCol = tWeights.col(j);
-                double rSum = 0.0;
-                for (int k = 0; k < tInputSize; ++k) {
-                    rSum += tInput.get(k) * tCol.get(k);
-                }
-                tOutput.set(j, rSum * tGrad.get(j));
-            }
-            tInput = tOutput;
-            tInputSize = tOutSize;
-        }
-        // 输入层赋值
-        RowMatrix tWeights = mHiddenWeights[0];
-        for (int j = 0; j < mInputDim; ++j) {
-            IVector tCol = tWeights.col(j);
-            double rSum = 0.0;
-            for (int k = 0; k < tInputSize; ++k) {
-                rSum += tInput.get(k) * tCol.get(k);
-            }
-            rGradX.set(j, rSum);
-        }
-        return tY;
+        return backward0(aX, rGradX);
     }
+    double backward0(IDataShell<double[]> aX, IDataShell<double[]> rGradX) {
+        if (mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
+        int tShiftX = aX.internalDataShift();
+        int tShiftGradX = rGradX.internalDataShift();
+        return backward1(aX.internalDataWithLengthCheck(mInputDim, tShiftX), tShiftX, rGradX.internalDataWithLengthCheck(mInputDim, tShiftGradX), tShiftGradX, mInputDim, mHiddenDims, mHiddenNumber,
+                         mHiddenWeights.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mHiddenBiases.internalDataWithLengthCheck(mHiddenBiasesSize, 0),
+                         mOutputWeight.internalDataWithLengthCheck(mOutputWeightSize, 0), mOutputBias, mHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mHiddenGrads.internalDataWithLengthCheck(mHiddenBiasesSize, 0));
+    }
+    private static native double backward1(double[] aX, int aShiftX, double [] rGradX, int aShiftGradX, int aInputDim, int[] aHiddenDims, int aHiddenNumber,
+                                          double[] aHiddenWeights, double[] aHiddenBiases, double[] aOutputWeight, double aOutputBias, double[] rHiddenOutputs, double[] rHiddenGrads);
 }
