@@ -18,10 +18,10 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_forward1
 /*
  * Class:     jsex_nnap_nn_FeedForward
  * Method:    backward1
- * Signature: ([DI[DII[II[D[D[DD[D[D)D
+ * Signature: ([DI[DII[II[D[D[D[DD[D[D)D
  */
 JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_backward1
-  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jint, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdouble, jdoubleArray, jdoubleArray);
+  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jint, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdouble, jdoubleArray, jdoubleArray);
 
 #ifdef __cplusplus
 }

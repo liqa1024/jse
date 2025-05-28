@@ -114,13 +114,14 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_forward1(JNIEnv *aEnv, j
 
 JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_backward1(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aX, jint aShiftX, jdoubleArray rGradX, jint aShiftGradX, jint aInputDim, jintArray aHiddenDims, jint aHiddenNumber,
-        jdoubleArray aHiddenWeights, jdoubleArray aHiddenBiases, jdoubleArray aOutputWeight, jdouble aOutputBias, jdoubleArray rHiddenOutputs, jdoubleArray rHiddenGrads) {
+        jdoubleArray aHiddenWeights, jdoubleArray aHiddenWeightsBackward, jdoubleArray aHiddenBiases, jdoubleArray aOutputWeight, jdouble aOutputBias, jdoubleArray rHiddenOutputs, jdoubleArray rHiddenGrads) {
     // java array init
 #ifdef __cplusplus
     double *tX = (double *)aEnv->GetPrimitiveArrayCritical(aX, NULL);
     double *tGradX = (double *)aEnv->GetPrimitiveArrayCritical(rGradX, NULL);
     jint *tHiddenDims = (jint *)aEnv->GetPrimitiveArrayCritical(aHiddenDims, NULL);
     double *tHiddenWeights = (double *)aEnv->GetPrimitiveArrayCritical(aHiddenWeights, NULL);
+    double *tHiddenWeightsBackward = (double *)aEnv->GetPrimitiveArrayCritical(aHiddenWeightsBackward, NULL);
     double *tHiddenBiases = (double *)aEnv->GetPrimitiveArrayCritical(aHiddenBiases, NULL);
     double *tOutputWeight = (double *)aEnv->GetPrimitiveArrayCritical(aOutputWeight, NULL);
     double *tHiddenOutputs = (double *)aEnv->GetPrimitiveArrayCritical(rHiddenOutputs, NULL);
@@ -130,6 +131,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_backward1(JNIEnv *aEnv, 
     double *tGradX = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rGradX, NULL);
     jint *tHiddenDims = (jint *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aHiddenDims, NULL);
     double *tHiddenWeights = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aHiddenWeights, NULL);
+    double *tHiddenWeightsBackward = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aHiddenWeightsBackward, NULL);
     double *tHiddenBiases = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aHiddenBiases, NULL);
     double *tOutputWeight = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, aOutputWeight, NULL);
     double *tHiddenOutputs = (double *)(*aEnv)->GetPrimitiveArrayCritical(aEnv, rHiddenOutputs, NULL);
@@ -145,42 +147,40 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_backward1(JNIEnv *aEnv, 
     const jint tEnd = aHiddenNumber - 1;
     double *tGrad = tHiddenGrads;
     double *tOutput = tHiddenOutputs;
-    double *tWeights = tHiddenWeights;
     jint tInSize = aInputDim;
     for (jint i = 0; i < tEnd; ++i) {
         const jint tOutSize = tHiddenDims[i];
         tGrad += tOutSize;
         tOutput += tOutSize;
-        tWeights += (tInSize*tOutSize);
         tInSize = tOutSize;
     }
-    tWeights += (tInSize*tHiddenDims[tEnd]);
-    double *tInput = tGrad;
     // begin backward, last layer has been specially optimized
+    double *tInput = tGrad;
+    double *tWeights = tHiddenWeightsBackward;
     tInSize = tHiddenDims[tEnd];
     for (jint i = tEnd-1; i >= 0; --i) {
         const jint tOutSize = tHiddenDims[i];
         tGrad -= tOutSize;
         tOutput -= tOutSize;
-        tWeights -= (tInSize*tOutSize);
         for (jint j = 0; j < tOutSize; ++j) {
             double rDot = 0.0;
             for (jint k = 0; k < tInSize; ++k) {
-                rDot += tInput[k] * tWeights[k*tOutSize + j];
+                rDot += tInput[k] * tWeights[k];
             }
             tOutput[j] = rDot * tGrad[j];
+            tWeights += tInSize;
         }
         tInput = tOutput;
         tInSize = tOutSize;
     }
     // to input layer
-    tWeights = tHiddenWeights;
     for (jint j = 0; j < aInputDim; ++j) {
         double rDot = 0.0;
         for (jint k = 0; k < tInSize; ++k) {
-            rDot += tInput[k] * tWeights[k*aInputDim + j];
+            rDot += tInput[k] * tWeights[k];
         }
         tGradX_[j] = rDot;
+        tWeights += tInSize;
     }
     
     // release java array
@@ -189,6 +189,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_backward1(JNIEnv *aEnv, 
     aEnv->ReleasePrimitiveArrayCritical(rGradX, tGradX, 0);
     aEnv->ReleasePrimitiveArrayCritical(aHiddenDims, tHiddenDims, JNI_ABORT);
     aEnv->ReleasePrimitiveArrayCritical(aHiddenWeights, tHiddenWeights, JNI_ABORT);
+    aEnv->ReleasePrimitiveArrayCritical(aHiddenWeightsBackward, tHiddenWeightsBackward, JNI_ABORT);
     aEnv->ReleasePrimitiveArrayCritical(aHiddenBiases, tHiddenBiases, JNI_ABORT);
     aEnv->ReleasePrimitiveArrayCritical(aOutputWeight, tOutputWeight, JNI_ABORT);
     aEnv->ReleasePrimitiveArrayCritical(rHiddenOutputs, tHiddenOutputs, JNI_ABORT); // buffer only
@@ -198,6 +199,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_backward1(JNIEnv *aEnv, 
     (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rGradX, tGradX, 0);
     (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aHiddenDims, tHiddenDims, JNI_ABORT);
     (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aHiddenWeights, tHiddenWeights, JNI_ABORT);
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aHiddenWeightsBackward, tHiddenWeightsBackward, JNI_ABORT);
     (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aHiddenBiases, tHiddenBiases, JNI_ABORT);
     (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aOutputWeight, tOutputWeight, JNI_ABORT);
     (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, rHiddenOutputs, tHiddenOutputs, JNI_ABORT); // buffer only
