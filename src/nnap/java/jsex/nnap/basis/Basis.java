@@ -75,6 +75,10 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
             mNlType.add(type);
         });
     }
+    static void validSize_(DoubleList aData, int aSize) {
+        aData.ensureCapacity(aSize);
+        aData.setInternalDataSize(aSize);
+    }
     
     /**
      * 内部使用的计算基组接口，现在统一采用外部预先构造的近邻列表，从而可以避免重复遍历近邻
@@ -121,9 +125,9 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      * @param aNlDz 由近邻原子的 dz 组成的列表
      * @param aNlType 由近邻原子的 type 组成的列表
      * @param rFp 计算输出的原子描述符向量
-     * @param rFpPx 计算输出的原子描述符向量对于近邻原子坐标 x 的偏导数，会自动清空旧值并根据近邻列表扩容
-     * @param rFpPy 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，会自动清空旧值并根据近邻列表扩容
-     * @param rFpPz 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPx 计算输出的原子描述符向量对于近邻原子坐标 x 的偏导数，要求已经是合适的大小，后续实现不会实际扩容
+     * @param rFpPy 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，要求已经是合适的大小，后续实现不会实际扩容
+     * @param rFpPz 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，要求已经是合适的大小，后续实现不会实际扩容
      */
     @ApiStatus.Internal
     public abstract void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType,
@@ -139,6 +143,11 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     public final void evalPartial(IDxyzTypeIterable aNL, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
         buildNL_(aNL);
+        // 初始化偏导数相关值
+        int tSizeAll = mNlDx.size() * (rFp.size() + rFp.internalDataShift());
+        validSize_(rFpPx, tSizeAll);
+        validSize_(rFpPy, tSizeAll);
+        validSize_(rFpPz, tSizeAll);
         evalPartial_(mNlDx, mNlDy, mNlDz, mNlType, rFp, rFpPx, rFpPy, rFpPz);
     }
     /**

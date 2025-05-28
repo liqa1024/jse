@@ -1,12 +1,11 @@
 package jsex.nnap.basis;
 
-import jse.cache.VectorCache;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.math.IDataShell;
 import jse.math.vector.DoubleArrayVector;
-import jse.math.vector.Vector;
+import jse.math.vector.Vectors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +37,7 @@ public class Chebyshev extends NNAPWTypeBasis {
     final int mSize;
     
     /** 一些缓存的中间变量，现在统一作为对象存储，对于这种大规模的缓存情况可以进一步提高效率 */
-    final Vector mRn, mRnPx, mRnPy, mRnPz, mCheby2;
+    final IDataShell<double[]> mRn, mRnPx, mRnPy, mRnPz, mCheby2;
     final DoubleList mNlRn = new DoubleList(128);
     
     Chebyshev(String @Nullable[] aSymbols, int aTypeNum, int aNMax, double aRCut, int aWType) {
@@ -53,11 +52,11 @@ public class Chebyshev extends NNAPWTypeBasis {
         
         mSize = sizeN_(mNMax, mTypeNum, mWType);
         
-        mRn = VectorCache.getVec(mNMax+1);
-        mRnPx = VectorCache.getVec(mNMax+1);
-        mRnPy = VectorCache.getVec(mNMax+1);
-        mRnPz = VectorCache.getVec(mNMax+1);
-        mCheby2 = VectorCache.getVec(mNMax);
+        mRn = Vectors.zeros(mNMax+1);
+        mRnPx = Vectors.zeros(mNMax+1);
+        mRnPy = Vectors.zeros(mNMax+1);
+        mRnPz = Vectors.zeros(mNMax+1);
+        mCheby2 = Vectors.zeros(mNMax);
     }
     /**
      * @param aSymbols 基组需要的元素排序
@@ -126,14 +125,6 @@ public class Chebyshev extends NNAPWTypeBasis {
      */
     @Override public @Nullable String symbol(int aType) {return mSymbols==null ? null : mSymbols[aType-1];}
     
-    @Override protected void shutdown_() {
-        VectorCache.returnVec(mRn);
-        VectorCache.returnVec(mRnPx);
-        VectorCache.returnVec(mRnPy);
-        VectorCache.returnVec(mRnPz);
-        VectorCache.returnVec(mCheby2);
-    }
-    
     @Override
     public void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
@@ -147,14 +138,8 @@ public class Chebyshev extends NNAPWTypeBasis {
                              DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         
-        final int tNN = aNlDx.size();
         // 确保 Rn 的长度
-        validSize_(mNlRn, tNN*(mNMax+1));
-        // 初始化偏导数相关值
-        int tSizeAll = rFp.size() + rFp.internalDataShift();
-        validSize_(rFpPx, tNN*tSizeAll);
-        validSize_(rFpPy, tNN*tSizeAll);
-        validSize_(rFpPz, tNN*tSizeAll);
+        validSize_(mNlRn, aNlDx.size()*(mNMax+1));
         
         // 现在直接计算基组偏导
         evalPartial0(aNlDx, aNlDy, aNlDz, aNlType, rFp, rFpPx, rFpPy, rFpPz);

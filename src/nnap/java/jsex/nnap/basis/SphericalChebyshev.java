@@ -1,12 +1,11 @@
 package jsex.nnap.basis;
 
-import jse.cache.VectorCache;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.math.IDataShell;
 import jse.math.vector.DoubleArrayVector;
-import jse.math.vector.Vector;
+import jse.math.vector.Vectors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,10 +45,10 @@ public class SphericalChebyshev extends NNAPWTypeBasis {
     final int mLMaxMax, mLMAll;
     
     /** 一些缓存的中间变量，现在统一作为对象存储，对于这种大规模的缓存情况可以进一步提高效率 */
-    private final Vector mCnlm;
-    private final Vector mCnlmPx, mCnlmPy, mCnlmPz;
-    private final Vector mRn, mRnPx, mRnPy, mRnPz, mCheby2;
-    private final Vector mY, mYPx, mYPy, mYPz, mYPphi, mYPtheta;
+    private final IDataShell<double[]> mCnlm;
+    private final IDataShell<double[]> mCnlmPx, mCnlmPy, mCnlmPz;
+    private final IDataShell<double[]> mRn, mRnPx, mRnPy, mRnPz, mCheby2;
+    private final IDataShell<double[]> mY, mYPx, mYPy, mYPz, mYPphi, mYPtheta;
     
     final DoubleList mNlY = new DoubleList(1024);
     final DoubleList mNlRn = new DoubleList(128);
@@ -76,23 +75,23 @@ public class SphericalChebyshev extends NNAPWTypeBasis {
         mLMaxMax = Math.max(mLMax, mL3Max);
         mLMAll = (mLMaxMax+1)*(mLMaxMax+1);
         
-        mCnlm = VectorCache.getVec(mSizeN*mLMAll);
-        mCnlmPx = VectorCache.getVec(mLMAll);
-        mCnlmPy = VectorCache.getVec(mLMAll);
-        mCnlmPz = VectorCache.getVec(mLMAll);
+        mCnlm = Vectors.zeros(mSizeN*mLMAll);
+        mCnlmPx = Vectors.zeros(mLMAll);
+        mCnlmPy = Vectors.zeros(mLMAll);
+        mCnlmPz = Vectors.zeros(mLMAll);
         
-        mRn = VectorCache.getVec(mNMax+1);
-        mRnPx = VectorCache.getVec(mNMax+1);
-        mRnPy = VectorCache.getVec(mNMax+1);
-        mRnPz = VectorCache.getVec(mNMax+1);
-        mCheby2 = VectorCache.getVec(mNMax);
+        mRn = Vectors.zeros(mNMax+1);
+        mRnPx = Vectors.zeros(mNMax+1);
+        mRnPy = Vectors.zeros(mNMax+1);
+        mRnPz = Vectors.zeros(mNMax+1);
+        mCheby2 = Vectors.zeros(mNMax);
         
-        mY = VectorCache.getVec(mLMAll);
-        mYPx = VectorCache.getVec(mLMAll);
-        mYPy = VectorCache.getVec(mLMAll);
-        mYPz = VectorCache.getVec(mLMAll);
-        mYPphi = VectorCache.getVec(mLMAll);
-        mYPtheta = VectorCache.getVec(mLMAll);
+        mY = Vectors.zeros(mLMAll);
+        mYPx = Vectors.zeros(mLMAll);
+        mYPy = Vectors.zeros(mLMAll);
+        mYPz = Vectors.zeros(mLMAll);
+        mYPphi = Vectors.zeros(mLMAll);
+        mYPtheta = Vectors.zeros(mLMAll);
     }
     /**
      * @param aSymbols 基组需要的元素排序
@@ -175,29 +174,9 @@ public class SphericalChebyshev extends NNAPWTypeBasis {
      */
     @Override public @Nullable String symbol(int aType) {return mSymbols==null ? null : mSymbols[aType-1];}
     
-    @Override protected void shutdown_() {
-        VectorCache.returnVec(mCnlm);
-        VectorCache.returnVec(mCnlmPx);
-        VectorCache.returnVec(mCnlmPy);
-        VectorCache.returnVec(mCnlmPz);
-        VectorCache.returnVec(mRn);
-        VectorCache.returnVec(mRnPx);
-        VectorCache.returnVec(mRnPy);
-        VectorCache.returnVec(mRnPz);
-        VectorCache.returnVec(mCheby2);
-        VectorCache.returnVec(mY);
-        VectorCache.returnVec(mYPx);
-        VectorCache.returnVec(mYPy);
-        VectorCache.returnVec(mYPz);
-        VectorCache.returnVec(mYPphi);
-        VectorCache.returnVec(mYPtheta);
-    }
-    
     @Override
     public void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        
-        
         
         // 现在直接计算基组
         eval0(aNlDx, aNlDy, aNlDz, aNlType, rFp);
@@ -212,11 +191,6 @@ public class SphericalChebyshev extends NNAPWTypeBasis {
         // 确保 Rn Y 的长度
         validSize_(mNlY, tNN*mLMAll);
         validSize_(mNlRn, tNN*(mNMax+1));
-        // 初始化偏导数相关值
-        int tSizeAll = rFp.size() + rFp.internalDataShift();
-        validSize_(rFpPx, tNN*tSizeAll);
-        validSize_(rFpPy, tNN*tSizeAll);
-        validSize_(rFpPz, tNN*tSizeAll);
         
         // 现在直接计算基组偏导
         evalPartial0(aNlDx, aNlDy, aNlDz, aNlType, rFp, rFpPx, rFpPy, rFpPz);

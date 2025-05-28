@@ -1,7 +1,6 @@
 package jsex.nnap;
 
 import jse.atom.IPairPotential;
-import jse.cache.VectorCache;
 import jse.clib.JNIUtil;
 import jse.code.CS;
 import jse.code.IO;
@@ -298,17 +297,24 @@ public class NNAP implements IPairPotential {
         private final DoubleList[] mFpPx, mFpPy, mFpPz;
         private final DoubleList[] mNlDx, mNlDy, mNlDz;
         private final IntList[] mNlType, mNlIdx;
-        
-        private Vector bufFp(int aThreadID) {return mFp[aThreadID];}
-        private Vector bufFpGrad(int aThreadID) {return mFpGrad[aThreadID];}
-        private DoubleList bufFpPx(int aThreadID) {return mFpPx[aThreadID];}
-        private DoubleList bufFpPy(int aThreadID) {return mFpPy[aThreadID];}
-        private DoubleList bufFpPz(int aThreadID) {return mFpPz[aThreadID];}
-        private DoubleList bufNlDx(int aThreadID) {return mNlDx[aThreadID];}
-        private DoubleList bufNlDy(int aThreadID) {return mNlDy[aThreadID];}
-        private DoubleList bufNlDz(int aThreadID) {return mNlDz[aThreadID];}
-        private IntList bufNlType(int aThreadID) {return mNlType[aThreadID];}
-        private IntList bufNlIdx(int aThreadID) {return mNlIdx[aThreadID];}
+        private DoubleList bufFpPx(int aThreadID, int aSizeMin) {
+            DoubleList tFpPx = mFpPx[aThreadID];
+            tFpPx.ensureCapacity(aSizeMin);
+            tFpPx.setInternalDataSize(aSizeMin);
+            return tFpPx;
+        }
+        private DoubleList bufFpPy(int aThreadID, int aSizeMin) {
+            DoubleList tFpPy = mFpPy[aThreadID];
+            tFpPy.ensureCapacity(aSizeMin);
+            tFpPy.setInternalDataSize(aSizeMin);
+            return tFpPy;
+        }
+        private DoubleList bufFpPz(int aThreadID, int aSizeMin) {
+            DoubleList tFpPz = mFpPz[aThreadID];
+            tFpPz.ensureCapacity(aSizeMin);
+            tFpPz.setInternalDataSize(aSizeMin);
+            return tFpPz;
+        }
         
         private final DoubleList[] mForceX, mForceY, mForceZ;
         private DoubleList bufForceX(int aThreadID, int aSizeMin) {
@@ -368,8 +374,8 @@ public class NNAP implements IPairPotential {
             mForceY = new DoubleList[mThreadNumber];
             mForceZ = new DoubleList[mThreadNumber];
             for (int i = 0; i < mThreadNumber; ++i) {
-                mFp[i] = VectorCache.getVec(tBasisSize);
-                mFpGrad[i] = VectorCache.getVec(tBasisSize);
+                mFp[i] = Vectors.zeros(tBasisSize);
+                mFpGrad[i] = Vectors.zeros(tBasisSize);
                 mFpPx[i] = new DoubleList(1024);
                 mFpPy[i] = new DoubleList(1024);
                 mFpPz[i] = new DoubleList(1024);
@@ -438,10 +444,6 @@ public class NNAP implements IPairPotential {
         mDead = true;
         for (SingleNNAP tModel : mModels) {
             for (int i = 0; i < mThreadNumber; ++i) {
-                VectorCache.returnVec(tModel.mFp[i]);
-                VectorCache.returnVec(tModel.mFpGrad[i]);
-            }
-            for (int i = 0; i < mThreadNumber; ++i) {
                 tModel.basis(i).shutdown();
             }
             for (int i = 0; i < mThreadNumber; ++i) {
@@ -490,13 +492,13 @@ public class NNAP implements IPairPotential {
             SingleNNAP tModel = model(cType);
             Basis tBasis = tModel.basis(threadID);
             NeuralNetwork tNN = tModel.nn(threadID);
-            DoubleList tNlDx = tModel.bufNlDx(threadID);
-            DoubleList tNlDy = tModel.bufNlDy(threadID);
-            DoubleList tNlDz = tModel.bufNlDz(threadID);
-            IntList tNlType = tModel.bufNlType(threadID);
-            IntList tNlIdx = tModel.bufNlIdx(threadID);
+            DoubleList tNlDx = tModel.mNlDx[threadID];
+            DoubleList tNlDy = tModel.mNlDy[threadID];
+            DoubleList tNlDz = tModel.mNlDz[threadID];
+            IntList tNlType = tModel.mNlType[threadID];
+            IntList tNlIdx = tModel.mNlIdx[threadID];
             buildNL_(nl, tBasis.rcut(), tNlDx, tNlDy, tNlDz, tNlType, tNlIdx);
-            Vector tFp = tModel.bufFp(threadID);
+            Vector tFp = tModel.mFp[threadID];
             tBasis.eval_(tNlDx, tNlDy, tNlDz, tNlType, tFp);
             tModel.normBasis(tFp);
             double tPred = tNN.forward(tFp);
@@ -522,19 +524,20 @@ public class NNAP implements IPairPotential {
         }, null, (threadID, cIdx, cType, nl) -> {
             SingleNNAP tModel = model(cType);
             Basis tBasis = tModel.basis(threadID);
+            final int tBasisSize = tBasis.size();
             NeuralNetwork tNN = tModel.nn(threadID);
-            DoubleList tNlDx = tModel.bufNlDx(threadID);
-            DoubleList tNlDy = tModel.bufNlDy(threadID);
-            DoubleList tNlDz = tModel.bufNlDz(threadID);
-            IntList tNlType = tModel.bufNlType(threadID);
-            IntList tNlIdx = tModel.bufNlIdx(threadID);
+            DoubleList tNlDx = tModel.mNlDx[threadID];
+            DoubleList tNlDy = tModel.mNlDy[threadID];
+            DoubleList tNlDz = tModel.mNlDz[threadID];
+            IntList tNlType = tModel.mNlType[threadID];
+            IntList tNlIdx = tModel.mNlIdx[threadID];
             buildNL_(nl, tBasis.rcut(), tNlDx, tNlDy, tNlDz, tNlType, tNlIdx);
             final int tNeiNum = tNlDx.size();
-            Vector tFp = tModel.bufFp(threadID);
-            Vector tFpGrad = tModel.bufFpGrad(threadID);
-            DoubleList tFpPx = tModel.bufFpPx(threadID);
-            DoubleList tFpPy = tModel.bufFpPy(threadID);
-            DoubleList tFpPz = tModel.bufFpPz(threadID);
+            Vector tFp = tModel.mFp[threadID];
+            Vector tFpGrad = tModel.mFpGrad[threadID];
+            DoubleList tFpPx = tModel.bufFpPx(threadID, tNeiNum*tBasisSize);
+            DoubleList tFpPy = tModel.bufFpPy(threadID, tNeiNum*tBasisSize);
+            DoubleList tFpPz = tModel.bufFpPz(threadID, tNeiNum*tBasisSize);
             tBasis.evalPartial_(tNlDx, tNlDy, tNlDz, tNlType, tFp, tFpPx, tFpPy, tFpPz);
             tModel.normBasis(tFp);
             double tPred = tNN.backward(tFp, tFpGrad);

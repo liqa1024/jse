@@ -40,9 +40,4 @@ abstract class NNAPWTypeBasis extends Basis {
             throw new IllegalStateException();
         }}
     }
-    
-    static void validSize_(DoubleList aData, int aSize) {
-        aData.ensureCapacity(aSize);
-        aData.setInternalDataSize(aSize);
-    }
 }
