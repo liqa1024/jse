@@ -1,11 +1,14 @@
 package jsex.nnap.basis;
 
 import jse.atom.AtomicParameterCalculator;
+import jse.atom.IAtomData;
 import jse.atom.IHasSymbol;
+import jse.cache.VectorCache;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.code.io.ISavable;
 import jse.math.vector.DoubleArrayVector;
+import jse.math.vector.Vector;
 import jse.parallel.IAutoShutdown;
 import jsex.nnap.NNAP;
 import org.jetbrains.annotations.ApiStatus;
@@ -117,6 +120,25 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
         }, rFp);
     }
     public final void eval(AtomicParameterCalculator aAPC, int aIdx, DoubleArrayVector rFp) {eval(aAPC, aIdx, type->type, rFp);}
+    
+    /**
+     * 简单遍历计算给定原子数据所有基组的实现，此实现适合对相同基组计算大量的原子结构；
+     * 由于基组存储了元素排序，因此可以自动修正多个原子结构中元素排序不一致的问题
+     * @param aAtomData 原子结构数据
+     * @return 原子描述符向量组成的列表
+     */
+    public final List<Vector> evalAll(IAtomData aAtomData) {
+        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
+        int tAtomNum = aAtomData.atomNumber();
+        List<Vector> rFps = VectorCache.getVec(size(), tAtomNum);
+        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData)) {
+            for (int i = 0; i < tAtomNum; ++i) {
+                eval(tAPC, i, tTypeMap, rFps.get(i));
+            }
+        }
+        return rFps;
+    }
     
     /**
      * 内部使用的计算基组以及偏导数接口，现在统一采用外部预先构造的近邻列表，从而可以避免重复遍历近邻
