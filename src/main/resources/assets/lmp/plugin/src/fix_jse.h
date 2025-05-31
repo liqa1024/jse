@@ -90,6 +90,7 @@ public:
     jlong atomF();
     jlong atomMask();
     jlong atomType();
+    jlong atomNatoms();
     jint atomNtypes();
     jint atomNlocal();
     jint atomNghost();

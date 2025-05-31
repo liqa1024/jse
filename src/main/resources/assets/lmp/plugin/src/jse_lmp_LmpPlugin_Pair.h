@@ -7,6 +7,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef jse_lmp_LmpPlugin_Pair_CENTROID_SAME
+#define jse_lmp_LmpPlugin_Pair_CENTROID_SAME 0L
+#undef jse_lmp_LmpPlugin_Pair_CENTROID_AVAIL
+#define jse_lmp_LmpPlugin_Pair_CENTROID_AVAIL 1L
+#undef jse_lmp_LmpPlugin_Pair_CENTROID_NOTAVAIL
+#define jse_lmp_LmpPlugin_Pair_CENTROID_NOTAVAIL 2L
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
  * Method:    findVariable_
@@ -125,6 +131,14 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomF_1
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomType_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    atomNatoms_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomNatoms_1
   (JNIEnv *, jclass, jlong);
 
 /*

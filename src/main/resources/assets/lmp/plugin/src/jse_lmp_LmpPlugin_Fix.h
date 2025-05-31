@@ -377,6 +377,14 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomType_1
 
 /*
  * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    atomNatoms_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomNatoms_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
  * Method:    atomNtypes_
  * Signature: (J)I
  */

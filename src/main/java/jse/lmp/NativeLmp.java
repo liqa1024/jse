@@ -467,12 +467,12 @@ public class NativeLmp implements IAutoShutdown {
      * This is a wrapper around the {@code lammps_get_natoms()} function of the C-library interface.
      * @return number of atoms
      */
-    public int atomNumber() throws LmpException {
+    public long atomNumber() throws LmpException {
         checkThread();
-        return (int)lammpsGetNatoms_(mLmpPtr.mPtr);
+        return (long)lammpsGetNatoms_(mLmpPtr.mPtr);
     }
-    /** @deprecated use {@link #atomNumber} or {@link #natoms} */ @Deprecated public final int atomNum() throws LmpException {return atomNumber();}
-    @VisibleForTesting public int natoms() throws LmpException {return atomNumber();}
+    /** @deprecated use {@link #atomNumber} or {@link #natoms} */ @Deprecated public final long atomNum() throws LmpException {return atomNumber();}
+    @VisibleForTesting public long natoms() throws LmpException {return atomNumber();}
     private native static double lammpsGetNatoms_(long aLmpPtr) throws LmpException;
     
     /**
@@ -692,7 +692,7 @@ public class NativeLmp implements IAutoShutdown {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         if (aName == null) throw new NullPointerException();
         checkThread();
-        RowMatrix rData = MatrixCache.getMatRow(atomNumber(), aColNum);
+        RowMatrix rData = MatrixCache.getMatRow((int)atomNumber(), aColNum);
         lammpsGatherConcat_(mLmpPtr.mPtr, aName, aIsDouble, aColNum, rData.internalData());
         return rData;
     }
@@ -700,7 +700,7 @@ public class NativeLmp implements IAutoShutdown {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         if (aName == null) throw new NullPointerException();
         checkThread();
-        RowIntMatrix rData = IntMatrixCache.getMatRow(atomNumber(), aColNum);
+        RowIntMatrix rData = IntMatrixCache.getMatRow((int)atomNumber(), aColNum);
         lammpsGatherConcatInt_(mLmpPtr.mPtr, aName, aColNum, rData.internalData());
         return rData;
     }
@@ -815,7 +815,7 @@ public class NativeLmp implements IAutoShutdown {
             }
             default: throw new IllegalArgumentException("Invalid DataType: " + aDataType);
             }
-            RowMatrix rData = MatrixCache.getMatRow(atomNumber(), tColNum==0?1:tColNum);
+            RowMatrix rData = MatrixCache.getMatRow((int)atomNumber(), tColNum==0?1:tColNum);
             lammpsGatherCompute_(mLmpPtr.mPtr, aName, tColNum, rData.internalData());
             return rData;
         }

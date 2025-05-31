@@ -124,6 +124,9 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomMask_1(JNIEnv *aEnv,
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomType_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->atomType();
 }
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomNatoms_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->atomNatoms();
+}
 JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomNtypes_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->atomNtypes();
 }

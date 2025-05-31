@@ -159,6 +159,9 @@ jlong PairJSE::atomF() {
 jlong PairJSE::atomType() {
     return (jlong)(intptr_t) atom->type;
 }
+jlong PairJSE::atomNatoms() {
+    return (jlong) atom->natoms;
+}
 jint PairJSE::atomNtypes() {
     return (jint) atom->ntypes;
 }

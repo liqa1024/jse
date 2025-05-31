@@ -296,6 +296,9 @@ jlong FixJSE::atomMask() {
 jlong FixJSE::atomType() {
     return (jlong)(intptr_t) atom->type;
 }
+jlong FixJSE::atomNatoms() {
+    return (jlong) atom->natoms;
+}
 jint FixJSE::atomNtypes() {
     return (jint) atom->ntypes;
 }

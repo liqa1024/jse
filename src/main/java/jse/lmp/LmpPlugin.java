@@ -259,6 +259,9 @@ public class LmpPlugin {
         protected final IntCPointer atomType() {return new IntCPointer(atomType_(mPairPtr));}
         private native static long atomType_(long aPairPtr);
         
+        protected final long atomNatoms() {return atomNatoms_(mPairPtr);}
+        private native static long atomNatoms_(long aPairPtr);
+        
         protected final int atomNtypes() {return atomNtypes_(mPairPtr);}
         private native static int atomNtypes_(long aPairPtr);
         
@@ -611,6 +614,9 @@ public class LmpPlugin {
         
         protected final IntCPointer atomType() {return new IntCPointer(atomType_(mFixPtr));}
         private native static long atomType_(long aFixPtr);
+        
+        protected final long atomNatoms() {return atomNatoms_(mFixPtr);}
+        private native static long atomNatoms_(long aFixPtr);
         
         protected final int atomNtypes() {return atomNtypes_(mFixPtr);}
         private native static int atomNtypes_(long aFixPtr);
