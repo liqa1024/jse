@@ -433,6 +433,14 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomNghost_1
 
 /*
  * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    domainTriclinic_
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainTriclinic_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
  * Method:    domainXy_
  * Signature: (J)J
  */
@@ -509,6 +517,54 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainBoxlo_1
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainBoxhi_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    domainBoxloLamda_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainBoxloLamda_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    domainBoxhiLamda_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainBoxhiLamda_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    domainSublo_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainSublo_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    domainSubhi_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainSubhi_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    domainSubloLamda_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainSubloLamda_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    domainSubhiLamda_
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainSubhiLamda_1
   (JNIEnv *, jclass, jlong);
 
 /*

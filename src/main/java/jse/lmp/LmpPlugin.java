@@ -725,6 +725,9 @@ public class LmpPlugin {
         protected final int atomNghost() {return atomNghost_(mFixPtr);}
         private native static int atomNghost_(long aFixPtr);
         
+        protected final boolean domainTriclinic() {return domainTriclinic_(mFixPtr);}
+        private native static boolean domainTriclinic_(long aFixPtr);
+        
         protected final DoubleCPointer domainXy() {return new DoubleCPointer(domainXy_(mFixPtr));}
         private native static long domainXy_(long aFixPtr);
         
@@ -754,6 +757,24 @@ public class LmpPlugin {
         
         protected final DoubleCPointer domainBoxhi() {return new DoubleCPointer(domainBoxhi_(mFixPtr));}
         private native static long domainBoxhi_(long aFixPtr);
+        
+        protected final DoubleCPointer domainBoxloLamda() {return new DoubleCPointer(domainBoxloLamda_(mFixPtr));}
+        private native static long domainBoxloLamda_(long aFixPtr);
+        
+        protected final DoubleCPointer domainBoxhiLamda() {return new DoubleCPointer(domainBoxhiLamda_(mFixPtr));}
+        private native static long domainBoxhiLamda_(long aFixPtr);
+        
+        protected final DoubleCPointer domainSublo() {return new DoubleCPointer(domainSublo_(mFixPtr));}
+        private native static long domainSublo_(long aFixPtr);
+        
+        protected final DoubleCPointer domainSubhi() {return new DoubleCPointer(domainSubhi_(mFixPtr));}
+        private native static long domainSubhi_(long aFixPtr);
+        
+        protected final DoubleCPointer domainSubloLamda() {return new DoubleCPointer(domainSubloLamda_(mFixPtr));}
+        private native static long domainSubloLamda_(long aFixPtr);
+        
+        protected final DoubleCPointer domainSubhiLamda() {return new DoubleCPointer(domainSubhiLamda_(mFixPtr));}
+        private native static long domainSubhiLamda_(long aFixPtr);
         
         protected final void domainX2lamda(int aN) {domainX2lamda_(mFixPtr, aN);}
         private native static void domainX2lamda_(long aFixPtr, int aN);

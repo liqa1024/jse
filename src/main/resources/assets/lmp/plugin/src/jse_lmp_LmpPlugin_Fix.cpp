@@ -145,6 +145,9 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomNmax_1(JNIEnv *aEnv, 
 JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_atomNghost_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->atomNghost();
 }
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainTriclinic_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainTriclinic();
+}
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainXy_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->domainXy();
 }
@@ -174,6 +177,24 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainBoxlo_1(JNIEnv *aE
 }
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainBoxhi_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->domainBoxhi();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainBoxloLamda_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainBoxloLamda();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainBoxhiLamda_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainBoxhiLamda();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainSublo_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainSublo();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainSubhi_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainSubhi();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainSubloLamda_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainSubloLamda();
+}
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainSubhiLamda_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    return ((FixJSE *)(intptr_t)aFixPtr)->domainSubhiLamda();
 }
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_domainX2lamda_1__JI(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aN) {
     ((FixJSE *)(intptr_t)aFixPtr)->domainX2lamda1(aN);

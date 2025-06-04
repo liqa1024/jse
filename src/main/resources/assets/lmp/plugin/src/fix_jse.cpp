@@ -336,6 +336,9 @@ jint FixJSE::atomNghost() {
 jint FixJSE::atomNmax() {
     return (jint) atom->nmax;
 }
+jboolean FixJSE::domainTriclinic() {
+    return (domain->triclinic) ? JNI_TRUE : JNI_FALSE;
+}
 jlong FixJSE::domainXy() {
     return (jlong)(intptr_t) &(domain->xy);
 }
@@ -365,6 +368,24 @@ jlong FixJSE::domainBoxlo() {
 }
 jlong FixJSE::domainBoxhi() {
     return (jlong)(intptr_t) domain->boxhi;
+}
+jlong FixJSE::domainBoxloLamda() {
+    return (jlong)(intptr_t) domain->boxlo_lamda;
+}
+jlong FixJSE::domainBoxhiLamda() {
+    return (jlong)(intptr_t) domain->boxhi_lamda;
+}
+jlong FixJSE::domainSublo() {
+    return (jlong)(intptr_t) domain->sublo;
+}
+jlong FixJSE::domainSubhi() {
+    return (jlong)(intptr_t) domain->subhi;
+}
+jlong FixJSE::domainSubloLamda() {
+    return (jlong)(intptr_t) domain->sublo_lamda;
+}
+jlong FixJSE::domainSubhiLamda() {
+    return (jlong)(intptr_t) domain->subhi_lamda;
 }
 void FixJSE::domainX2lamda1(jint n) {
     domain->x2lamda((int)n);

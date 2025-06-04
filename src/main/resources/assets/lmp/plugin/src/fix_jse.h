@@ -102,6 +102,7 @@ public:
     jint atomNlocal();
     jint atomNghost();
     jint atomNmax();
+    jboolean domainTriclinic();
     jlong domainXy();
     jlong domainXz();
     jlong domainYz();
@@ -112,6 +113,12 @@ public:
     jlong domainHInv();
     jlong domainBoxlo();
     jlong domainBoxhi();
+    jlong domainBoxloLamda();
+    jlong domainBoxhiLamda();
+    jlong domainSublo();
+    jlong domainSubhi();
+    jlong domainSubloLamda();
+    jlong domainSubhiLamda();
     void domainX2lamda1(jint);
     void domainX2lamda2(jlong, jlong);
     void domainLamda2x1(jint);
