@@ -31,6 +31,14 @@ JNIEXPORT jlong JNICALL Java_jse_clib_CPointer_calloc_1
 JNIEXPORT void JNICALL Java_jse_clib_CPointer_free_1
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     jse_clib_CPointer
+ * Method:    memcpy_
+ * Signature: (JJI)V
+ */
+JNIEXPORT void JNICALL Java_jse_clib_CPointer_memcpy_1
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
 #ifdef __cplusplus
 }
 #endif

@@ -93,6 +93,17 @@ public class IntCPointer extends CPointer {
         fill1(mPtr, aValue, aCount);
     }
     private native static void fill1(long rPtr, int aValue, int aCount);
+    /**
+     * 将另一个 c 指针的数据填充到此 c 指针对应的内存中
+     * <p>
+     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
+     *
+     * @param aData 输入的任意 c 指针数据
+     * @param aCount 需要读取的 aData 的长度，实际为 {@code aCount * TYPE_SIZE}
+     */
+    public void fill(CPointer aData, int aCount) {
+        aData.memcpy(this, aCount*TYPE_SIZE);
+    }
     
     /**
      * 将此 c 指针对应的内存数值写入 jse 的 {@code IDataShell<int[]>} 中

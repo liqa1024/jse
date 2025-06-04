@@ -189,6 +189,23 @@ public class CPointer {
     }
     
     /**
+     * 直接调用 c 中的 {@code memcpy} 来将此数组值拷贝到另一个 c 数组中
+     * <p>
+     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
+     * <p>
+     * 为了避免歧义，特定类型的指针直接提供对应的 {@code fill} 方法，从而这里的
+     * {@code aCount} 永远和 c 中的 {@code memcpy} 参数一致
+     *
+     * @param rDest 需要拷贝的目标 c 指针
+     * @param aCount 需要拷贝的数据长度
+     */
+    public void memcpy(CPointer rDest, int aCount) {
+        if (isNull() || rDest.isNull()) throw new NullPointerException();
+        memcpy_(mPtr, rDest.mPtr, aCount);
+    }
+    protected native static void memcpy_(long aSrc, long rDest, int aCount);
+    
+    /**
      * 将此对象转换成一个整数的 c 指针 {@link IntCPointer}，类似在 c
      * 中使用 {@code (int *)ptr} 来进行强制类型转换
      * @return 整数的 c 指针包装类
