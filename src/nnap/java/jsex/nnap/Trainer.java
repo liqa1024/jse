@@ -46,7 +46,6 @@ import java.util.function.IntUnaryOperator;
  */
 @ApiStatus.Experimental
 public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
-    
     protected final static String DEFAULT_UNITS = "metal";
     protected final static int[] DEFAULT_HIDDEN_DIMS = {32, 32}; // 现在统一默认为 32, 32
     protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
@@ -57,6 +56,18 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
     protected final static PyObject TORCH;
     protected final static PyCallable TRAINER;
     
+    /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
+    public final static class InitHelper {
+        private static volatile boolean INITIALIZED = false;
+        
+        public static boolean initialized() {return INITIALIZED;}
+        @SuppressWarnings({"ResultOfMethodCallIgnored", "UnnecessaryCallToStringValueOf"})
+        public static void init() {
+            // 手动调用此值来强制初始化
+            if (!INITIALIZED) String.valueOf(TRAINER);
+        }
+    }
+    
     public static class Conf {
         /** pytorch 训练时采用的线程数 */
         public static int THREAD_NUMBER = 4;
@@ -64,6 +75,7 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
         public static @Nullable String INIT_SCRIPT = null;
     }
     static {
+        InitHelper.INITIALIZED = true;
         // 依赖 Python
         SP.Python.InitHelper.init();
         // 简单直接依赖 Torch
