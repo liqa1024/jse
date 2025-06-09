@@ -73,8 +73,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      */
     public void fill(IDataShell<double[]> aData, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
-        int tStart = aData.internalDataShift();
-        fill0(mPtr, aData.internalDataWithLengthCheck(aRowNum*aColNum, tStart), tStart, aRowNum, aColNum);
+        fill0(mPtr, aData.internalDataWithLengthCheck(aRowNum*aColNum), aData.internalDataShift(), aRowNum, aColNum);
     }
     /**
      * 将 java 的 {@code double[]} 填充到此嵌套 c 指针对应的内存中，认为数据按行排列且每个内部的
@@ -131,8 +130,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      */
     public void parse2dest(IDataShell<double[]> rDest, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
-        int tStart = rDest.internalDataShift();
-        parse2dest_(mPtr, rDest.internalDataWithLengthCheck(aRowNum*aColNum, tStart), tStart, aRowNum, aColNum);
+        parse2dest_(mPtr, rDest.internalDataWithLengthCheck(aRowNum*aColNum), rDest.internalDataShift(), aRowNum, aColNum);
     }
     /**
      * 将此嵌套 c 指针对应的内存数值写入 java 的 {@code double[]} 中，认为数据按行排列且每个内部的

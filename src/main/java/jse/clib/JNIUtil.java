@@ -65,6 +65,38 @@ public class JNIUtil {
     , JTYPE_LONG    = 7
     , JTYPE_FLOAT   = 8
     ;
+    /** 检测 java 数组类型 */
+    public static int jarrayType(Object aJArray) {
+        if (aJArray == null) {
+            return JTYPE_NULL;
+        } else
+        if (aJArray instanceof byte[]) {
+            return JTYPE_BYTE;
+        } else
+        if (aJArray instanceof double[]) {
+            return JTYPE_DOUBLE;
+        } else
+        if (aJArray instanceof boolean[]) {
+            return JTYPE_BOOLEAN;
+        } else
+        if (aJArray instanceof char[]) {
+            return JTYPE_CHAR;
+        } else
+        if (aJArray instanceof short[]) {
+            return JTYPE_SHORT;
+        } else
+        if (aJArray instanceof int[]) {
+            return JTYPE_INT;
+        } else
+        if (aJArray instanceof long[]) {
+            return JTYPE_LONG;
+        } else
+        if (aJArray instanceof float[]) {
+            return JTYPE_FLOAT;
+        } else {
+            throw new IllegalArgumentException("Invalid array type: " + aJArray.getClass().getName());
+        }
+    }
     
     private static void initJNIUtil_() throws Exception {
         // 直接从内部资源解压到需要目录，如果已经存在则先删除

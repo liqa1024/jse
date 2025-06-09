@@ -60,9 +60,7 @@ public class DoubleCPointer extends CPointer {
      */
     public void fill(IDataShell<double[]> aData) {
         if (isNull()) throw new NullPointerException();
-        int tStart = aData.internalDataShift();
-        int tCount = aData.internalDataSize();
-        fill0(mPtr, aData.internalDataWithLengthCheck(tCount, tStart), tStart, tCount);
+        fill0(mPtr, aData.internalDataWithLengthCheck(), aData.internalDataShift(), aData.internalDataSize());
     }
     /**
      * 将 java 的 {@code double[]} 填充到此 c 指针对应的内存中
@@ -114,9 +112,7 @@ public class DoubleCPointer extends CPointer {
      */
     public void parse2dest(IDataShell<double[]> rDest) {
         if (isNull()) throw new NullPointerException();
-        int tStart = rDest.internalDataShift();
-        int tCount = rDest.internalDataSize();
-        parse2dest_(mPtr, rDest.internalDataWithLengthCheck(tCount, tStart), tStart, tCount);
+        parse2dest_(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
     }
     /**
      * 将此 c 指针对应的内存数值写入 java 的 {@code double[]} 中

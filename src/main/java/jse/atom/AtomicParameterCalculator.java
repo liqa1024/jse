@@ -1451,8 +1451,8 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         
         private boolean mInitialized = false;
         private double mEdgeRMax = Double.NaN;
+        private int mBufSize = -1, mBufStart = -1;
         private IntVector mCounts;
-        private IntVector mDispls;
         private IntVector mBuf2Idx;
         private void initCountsAll_() {initCountsEdge_(Double.NaN);}
         private void initCountsEdge_(double aRMax) {
@@ -1466,7 +1466,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             // 如果已经初始化过记得归还旧资源
             if (mInitialized) {
                 IntVectorCache.returnVec(mCounts);
-                IntVectorCache.returnVec(mDispls);
                 IntVectorCache.returnVec(mBuf2Idx);
             }
             mInitialized = true;
@@ -1491,15 +1490,15 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                 mCounts.increment(tRank);
             }
             mBuf2Idx = IntVectorCache.getVec(mAtomNum);
-            mDispls = IntVectorCache.getVec(mSize+1); // Displs 增加一个长度来存储所有长度，并且可以不用在循环中判断
-            mDispls.set(0, 0);
+            int tStart = 0;
             for (int i = 0; i < mSize; ++i) {
-                int tStart = mDispls.get(i);
                 int tCount = mCounts.get(i);
                 int tEnd = tStart+tCount;
                 mBuf2Idx.subVec(tStart, tEnd).fill(rBuf2Idx[i]);
-                mDispls.set(i+1, tEnd);
+                if (i == mRank) mBufStart = tStart;
+                tStart = tEnd;
             }
+            mBufSize = tStart;
             IntArrayCache.returnArrayFrom(mSize, i -> rBuf2Idx[i]);
         }
         
@@ -1518,30 +1517,25 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             else initCountsEdge_(aRMax);
             
             final int tMul = rData.columnNumber();
-            final int tBufSize = mDispls.last();
             // 先创建临时的同步数组
-            RowComplexMatrix rBuf = ComplexMatrixCache.getMatRow(tBufSize, tMul);
+            RowComplexMatrix rBuf = ComplexMatrixCache.getMatRow(mBufSize, tMul);
             try {
                 // 通过 buf2idx, counts 和 displs 来将需要的数据放入 rBuf 指定位置
-                final int tStart = mDispls.get(mRank);
-                final int tEnd = tStart + mCounts.get(mRank);
-                for (int i = tStart; i < tEnd; ++i) {
+                final int tEnd = mBufStart + mCounts.get(mRank);
+                for (int i = mBufStart; i < tEnd; ++i) {
                     rBuf.row(i).fill(rData.row(mBuf2Idx.get(i)));
                 }
                 // 使用 allgatherv 收集所有 buf，注意实际 mCounts 和 mDispls 需要临时增倍；
                 // 这样会导致线程不安全，当然这里 MPIInfo 都是在调用计算函数时临时创建的，因此也不存在这个问题
                 mCounts.multiply2this(tMul);
-                mDispls.multiply2this(tMul);
                 try {
-                    double[][] tData = rBuf.internalData();
-                    mComm.allgatherv(tData[0], mCounts.internalData(), mDispls.internalData());
-                    mComm.allgatherv(tData[1], mCounts.internalData(), mDispls.internalData());
+                    mComm.allgatherv(rBuf.real(), mCounts.internalData());
+                    mComm.allgatherv(rBuf.imag(), mCounts.internalData());
                 } finally {
                     mCounts.div2this(tMul);
-                    mDispls.div2this(tMul);
                 }
                 // 将在 buf 中的数据重新设回 rData
-                for (int i = 0; i < tBufSize; ++i) {
+                for (int i = 0; i < mBufSize; ++i) {
                     rData.row(mBuf2Idx.get(i)).fill(rBuf.row(i));
                 }
             } finally {
@@ -1555,21 +1549,18 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             if (Double.isNaN(aRMax) || aRMax+aRMax>=mCellSize.min()) initCountsAll_();
             else initCountsEdge_(aRMax);
             
-            final int tBufSize = mDispls.last();
             // 先创建临时的同步数组
-            Vector rBuf = VectorCache.getVec(tBufSize);
+            Vector rBuf = VectorCache.getVec(mBufSize);
             try {
                 // 通过 buf2idx, counts 和 displs 来将需要的数据放入 rBuf 指定位置
-                final int tStart = mDispls.get(mRank);
-                final int tEnd = tStart + mCounts.get(mRank);
-                for (int i = tStart; i < tEnd; ++i) {
+                final int tEnd = mBufStart + mCounts.get(mRank);
+                for (int i = mBufStart; i < tEnd; ++i) {
                     rBuf.set(i, rData.get(mBuf2Idx.get(i)));
                 }
                 // 使用 allgatherv 收集所有 buf
-                double[] tData = rBuf.internalData();
-                mComm.allgatherv(tData, mCounts.internalData(), mDispls.internalData());
+                mComm.allgatherv(rBuf, mCounts.internalData());
                 // 将在 buf 中的数据重新设回 qlm
-                for (int i = 0; i < tBufSize; ++i) {
+                for (int i = 0; i < mBufSize; ++i) {
                     rData.set(mBuf2Idx.get(i), rBuf.get(i));
                 }
             } finally {
@@ -1584,7 +1575,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             mDead = true;
             if (mInitialized) {
                 IntVectorCache.returnVec(mCounts);
-                IntVectorCache.returnVec(mDispls);
                 IntVectorCache.returnVec(mBuf2Idx);
             }
         }

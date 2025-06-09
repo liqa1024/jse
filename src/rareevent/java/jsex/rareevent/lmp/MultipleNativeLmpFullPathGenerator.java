@@ -315,7 +315,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                             , mLmpTimer.get()
                             , mCalTimer.get()
                             , mWaitTimer.get()
-                        }, 4, mWorldRoot, TIMER_INFO);
+                        }, 0, 4, mWorldRoot, TIMER_INFO);
                     }
                     if (mLmpMe == 0) {
                         mWorldComm.send(mWorldRoot, TIMER_GET_FINISHED);
@@ -403,7 +403,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
         for (int tLmpRoot : mLmpRoots) {
             if (aExcludeWorldRoot && tLmpRoot==mWorldRoot) continue;
             mWorldComm.sendB(TIMER_GET, tLmpRoot, JOB_TYPE);
-            mWorldComm.recv(rTimeBuf, 4, tLmpRoot, TIMER_INFO);
+            mWorldComm.recv(rTimeBuf, 0, 4, tLmpRoot, TIMER_INFO);
             mWorldComm.recv(tLmpRoot, TIMER_GET_FINISHED);
             rTotal  += rTimeBuf[0];
             rLmp    += rTimeBuf[1];

@@ -7,8 +7,10 @@ import jse.code.collection.AbstractCollections;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.table.ITable;
+import jse.math.table.Table;
 import jse.math.table.Tables;
 import jse.math.vector.IVector;
+import jse.math.vector.ShiftVector;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import org.jetbrains.annotations.ApiStatus;
@@ -27,7 +29,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
     
     private long mTimeStep;
     private final String[] mBoxBounds;
-    private final ITable mAtomData;
+    private final Table mAtomData;
     private int mAtomTypeNum;
     private LmpBox mBox;
     
@@ -44,7 +46,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
     /** 提供直接转为表格的接口 */
     public ITable asTable() {return mAtomData;}
     
-    SubLammpstrj(long aTimeStep, String[] aBoxBounds, LmpBox aBox, ITable aAtomData) {
+    SubLammpstrj(long aTimeStep, String[] aBoxBounds, LmpBox aBox, Table aAtomData) {
         mTimeStep = aTimeStep;
         mBoxBounds = aBoxBounds;
         mBox = aBox;
@@ -561,7 +563,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             return new SubLammpstrj(aTimeStep, Arrays.copyOf(tSubLammpstrj.mBoxBounds, tSubLammpstrj.mBoxBounds.length), tSubLammpstrj.mBox.copy(), tSubLammpstrj.mAtomData.copy());
         } else {
             final int tAtomNum = aAtomData.atomNumber();
-            ITable rAtomData;
+            Table rAtomData;
             // 一般的情况，需要考虑斜方的模拟盒的情况
             IBox tBox = aAtomData.box();
             LmpBox rBox = LmpBox.of(tBox);
@@ -663,7 +665,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         int tAtomNum;
         String[] aBoxBounds;
         LmpBox aBox;
-        final ITable aAtomData;
+        final Table aAtomData;
         
         // 读取时间步数
         IO.Text.findLineContaining(aReader, "ITEM: TIMESTEP", true); tLine=aReader.readLine();
@@ -794,15 +796,15 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             , Double.doubleToLongBits(aSubLammpstrj.mBox.zlo())
             , Double.doubleToLongBits(aSubLammpstrj.mBox.zhi())
             , aSubLammpstrj.mTimeStep
-        }, LAMMPSTRJ_INFO_LEN, aDest, LAMMPSTRJ_INFO);
+        }, 0, LAMMPSTRJ_INFO_LEN, aDest, LAMMPSTRJ_INFO);
         // 必要信息发送完成后分别发送 atomDataKeys 和 atomData，这里按列发送，先统一发送 key 再统一发送数据
         for (String subDataKey : aSubLammpstrj.mAtomData.heads()) aComm.sendStr(subDataKey, aDest, DATA_KEY);
-        for (IVector subData : aSubLammpstrj.mAtomData.asMatrix().cols()) aComm.send(subData, aDest, DATA);
+        for (ShiftVector subData : aSubLammpstrj.mAtomData.asMatrix().cols()) aComm.send(subData, aDest, DATA);
     }
     public static SubLammpstrj recv(int aSource, MPI.Comm aComm) throws MPIException {
         // 同样先接收必要信息，[AtomNum | AtomDataKeyNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, TimeStep]
         long[] tLammpstrjInfo = new long[LAMMPSTRJ_INFO_LEN];
-        aComm.recv(tLammpstrjInfo, LAMMPSTRJ_INFO_LEN, aSource, LAMMPSTRJ_INFO);
+        aComm.recv(tLammpstrjInfo, 0, LAMMPSTRJ_INFO_LEN, aSource, LAMMPSTRJ_INFO);
         long tData = tLammpstrjInfo[0];
         final int tAtomNum = UT.Serial.toIntL(tData, 0);
         final int tAtomDataKeyNum = UT.Serial.toIntL(tData, 1);
@@ -810,8 +812,8 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         // 由于 Table 可以扩容，并且要和和 read 保持一致，不使用缓存的数据
         String[] tAtomDataKeys = new String[tAtomDataKeyNum];
         for (int i = 0; i < tAtomDataKeyNum; ++i) tAtomDataKeys[i] = aComm.recvStr(aSource, DATA_KEY);
-        ITable rAtomData = Tables.zeros(tAtomNum, tAtomDataKeys);
-        for (IVector subData : rAtomData.asMatrix().cols()) aComm.recv(subData, aSource, DATA);
+        Table rAtomData = Tables.zeros(tAtomNum, tAtomDataKeys);
+        for (ShiftVector subData : rAtomData.asMatrix().cols()) aComm.recv(subData, aSource, DATA);
         // 创建 SubLammpstrj
         return new SubLammpstrj(tTimeStep, BOX_BOUND, new LmpBox(
             Double.longBitsToDouble(tLammpstrjInfo[1]), Double.longBitsToDouble(tLammpstrjInfo[2]),
@@ -839,15 +841,15 @@ public class SubLammpstrj extends AbstractSettableAtomData {
                 , Double.doubleToLongBits(aSubLammpstrj.mBox.zlo())
                 , Double.doubleToLongBits(aSubLammpstrj.mBox.zhi())
                 , aSubLammpstrj.mTimeStep
-            }, LAMMPSTRJ_INFO_LEN, aRoot);
+            }, 0, LAMMPSTRJ_INFO_LEN, aRoot);
             // 必要信息发送完成后分别发送 atomDataKeys 和 atomData，这里按列发送，先统一发送 key 再统一发送数据
             for (String subDataKey : aSubLammpstrj.mAtomData.heads()) aComm.bcastStr(subDataKey, aRoot);
-            for (IVector subData : aSubLammpstrj.mAtomData.asMatrix().cols()) aComm.bcast(subData, aRoot);
+            for (ShiftVector subData : aSubLammpstrj.mAtomData.asMatrix().cols()) aComm.bcast(subData, aRoot);
             return aSubLammpstrj;
         } else {
             // 同样先接收必要信息，[AtomNum | AtomDataKeyNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, TimeStep]
             long[] tLammpstrjInfo = new long[LAMMPSTRJ_INFO_LEN];
-            aComm.bcast(tLammpstrjInfo, LAMMPSTRJ_INFO_LEN, aRoot);
+            aComm.bcast(tLammpstrjInfo, 0, LAMMPSTRJ_INFO_LEN, aRoot);
             long tData = tLammpstrjInfo[0];
             final int tAtomNum = UT.Serial.toIntL(tData, 0);
             final int tAtomDataKeyNum = UT.Serial.toIntL(tData, 1);
@@ -855,8 +857,8 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             // 由于 Table 可以扩容，并且要和和 read 保持一致，不使用缓存的数据
             String[] tAtomDataKeys = new String[tAtomDataKeyNum];
             for (int i = 0; i < tAtomDataKeyNum; ++i) tAtomDataKeys[i] = aComm.bcastStr(null, aRoot);
-            ITable rAtomData = Tables.zeros(tAtomNum, tAtomDataKeys);
-            for (IVector subData : rAtomData.asMatrix().cols()) aComm.bcast(subData, aRoot);
+            Table rAtomData = Tables.zeros(tAtomNum, tAtomDataKeys);
+            for (ShiftVector subData : rAtomData.asMatrix().cols()) aComm.bcast(subData, aRoot);
             // 创建 SubLammpstrj
             return new SubLammpstrj(tTimeStep, BOX_BOUND, new LmpBox(
                 Double.longBitsToDouble(tLammpstrjInfo[1]), Double.longBitsToDouble(tLammpstrjInfo[2]),
