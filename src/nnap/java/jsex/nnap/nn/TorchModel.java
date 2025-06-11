@@ -123,17 +123,14 @@ public class TorchModel extends NeuralNetwork {
     
     @Override public double forward(DoubleArrayVector aX) throws TorchException {
         if (isShutdown()) throw new IllegalStateException("This Model is dead");
-        int tCount = aX.internalDataSize();
-        int tStart = aX.internalDataShift();
-        return forward0(mPtr.mPtr, aX.internalDataWithLengthCheck(tCount, tStart), tStart, tCount);
+        return forward0(mPtr.mPtr, aX.internalDataWithLengthCheck(), aX.internalDataShift(), aX.internalDataSize());
     }
     
     @Override public double backward(DoubleArrayVector aX, DoubleArrayVector rGradX) throws TorchException {
         if (isShutdown()) throw new IllegalStateException("This Model is dead");
         int tCount = aX.internalDataSize();
-        int tStart = aX.internalDataShift();
-        int rStart = rGradX.internalDataShift();
-        return backward0(mPtr.mPtr, aX.internalDataWithLengthCheck(tCount, tStart), tStart, rGradX.internalDataWithLengthCheck(tCount, tStart), rStart, tCount);
+        return backward0(mPtr.mPtr, aX.internalDataWithLengthCheck(), aX.internalDataShift(),
+                         rGradX.internalDataWithLengthCheck(tCount), rGradX.internalDataShift(), tCount);
     }
     
     private static native long load0(String aModelPath) throws TorchException;

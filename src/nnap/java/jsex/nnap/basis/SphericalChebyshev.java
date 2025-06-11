@@ -198,9 +198,8 @@ public class SphericalChebyshev extends NNAPWTypeBasis {
     
     void eval0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType, IDataShell<double[]> rFp) {
         int tNN = aNlDx.internalDataSize();
-        int tShiftFp = rFp.internalDataShift();
         eval1(aNlDx.internalDataWithLengthCheck(tNN, 0), aNlDy.internalDataWithLengthCheck(tNN, 0), aNlDz.internalDataWithLengthCheck(tNN, 0), aNlType.internalDataWithLengthCheck(tNN, 0), tNN,
-              mRn.internalDataWithLengthCheck(mNMax+1, 0), mY.internalDataWithLengthCheck(mLMAll, 0), mCnlm.internalDataWithLengthCheck(mSizeN*mLMAll, 0), rFp.internalDataWithLengthCheck(mSize, tShiftFp), tShiftFp,
+              mRn.internalDataWithLengthCheck(mNMax+1, 0), mY.internalDataWithLengthCheck(mLMAll, 0), mCnlm.internalDataWithLengthCheck(mSizeN*mLMAll, 0), rFp.internalDataWithLengthCheck(mSize), rFp.internalDataShift(),
               mTypeNum, mRCut, mNMax, mLMax, mNoRadial, mL3Max, mL3Cross, mWType);
     }
     private static native void eval1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
@@ -217,7 +216,7 @@ public class SphericalChebyshev extends NNAPWTypeBasis {
                      mNlY.internalDataWithLengthCheck(tNN*mLMAll, 0), mYPtheta.internalDataWithLengthCheck(mLMAll, 0), mYPphi.internalDataWithLengthCheck(mLMAll, 0),
                      mYPx.internalDataWithLengthCheck(mLMAll, 0), mYPy.internalDataWithLengthCheck(mLMAll, 0), mYPz.internalDataWithLengthCheck(mLMAll, 0),
                      mCnlm.internalDataWithLengthCheck(mSizeN*mLMAll, 0), mCnlmPx.internalDataWithLengthCheck(mLMAll, 0), mCnlmPy.internalDataWithLengthCheck(mLMAll, 0), mCnlmPz.internalDataWithLengthCheck(mLMAll, 0),
-                     rFp.internalDataWithLengthCheck(mSize, tShiftFp), tSizeFp, tShiftFp,
+                     rFp.internalDataWithLengthCheck(mSize), tSizeFp, tShiftFp,
                      rFpPx.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp), 0), rFpPy.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp), 0), rFpPz.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp), 0),
                      mTypeNum, mRCut, mNMax, mLMax, mNoRadial, mL3Max, mL3Cross, mWType);
     }

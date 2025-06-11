@@ -118,8 +118,7 @@ public class FeedForward extends NeuralNetwork {
     }
     double forward0(IDataShell<double[]> aX) {
         if (mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
-        int tShiftX = aX.internalDataShift();
-        return forward1(aX.internalDataWithLengthCheck(mInputDim, tShiftX), tShiftX, mInputDim, mHiddenDims, mHiddenNumber,
+        return forward1(aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), mInputDim, mHiddenDims, mHiddenNumber,
                         mHiddenWeights.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mHiddenBiases.internalDataWithLengthCheck(mHiddenBiasesSize, 0),
                         mOutputWeight.internalDataWithLengthCheck(mOutputWeightSize, 0), mOutputBias,
                         mHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize, 0));
@@ -133,9 +132,7 @@ public class FeedForward extends NeuralNetwork {
     }
     double backward0(IDataShell<double[]> aX, IDataShell<double[]> rGradX) {
         if (mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
-        int tShiftX = aX.internalDataShift();
-        int tShiftGradX = rGradX.internalDataShift();
-        return backward1(aX.internalDataWithLengthCheck(mInputDim, tShiftX), tShiftX, rGradX.internalDataWithLengthCheck(mInputDim, tShiftGradX), tShiftGradX, mInputDim, mHiddenDims, mHiddenNumber,
+        return backward1(aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), rGradX.internalDataWithLengthCheck(mInputDim), rGradX.internalDataShift(), mInputDim, mHiddenDims, mHiddenNumber,
                          mHiddenWeights.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mHiddenWeightsBackward.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mHiddenBiases.internalDataWithLengthCheck(mHiddenBiasesSize, 0),
                          mOutputWeight.internalDataWithLengthCheck(mOutputWeightSize, 0), mOutputBias,
                          mHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mHiddenGrads.internalDataWithLengthCheck(mHiddenBiasesSize, 0));

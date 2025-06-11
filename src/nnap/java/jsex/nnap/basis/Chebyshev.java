@@ -147,9 +147,8 @@ public class Chebyshev extends NNAPWTypeBasis {
     
     void eval0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType, IDataShell<double[]> rFp) {
         int tNN = aNlDx.internalDataSize();
-        int tShiftFp = rFp.internalDataShift();
         eval1(aNlDx.internalDataWithLengthCheck(tNN, 0), aNlDy.internalDataWithLengthCheck(tNN, 0), aNlDz.internalDataWithLengthCheck(tNN, 0), aNlType.internalDataWithLengthCheck(tNN, 0), tNN,
-              mRn.internalDataWithLengthCheck(mNMax+1, 0), rFp.internalDataWithLengthCheck(mSize, tShiftFp), tShiftFp,
+              mRn.internalDataWithLengthCheck(mNMax+1, 0), rFp.internalDataWithLengthCheck(mSize), rFp.internalDataShift(),
               mTypeNum, mRCut, mNMax, mWType);
     }
     private static native void eval1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
@@ -163,7 +162,7 @@ public class Chebyshev extends NNAPWTypeBasis {
         int tSizeFp = rFp.internalDataSize();
         evalPartial1(aNlDx.internalDataWithLengthCheck(tNN, 0), aNlDy.internalDataWithLengthCheck(tNN, 0), aNlDz.internalDataWithLengthCheck(tNN, 0), aNlType.internalDataWithLengthCheck(tNN, 0), tNN,
                      mNlRn.internalDataWithLengthCheck(tNN*(mNMax+1), 0), mRnPx.internalDataWithLengthCheck(mNMax+1, 0), mRnPy.internalDataWithLengthCheck(mNMax+1, 0), mRnPz.internalDataWithLengthCheck(mNMax+1, 0), mCheby2.internalDataWithLengthCheck(mNMax, 0),
-                     rFp.internalDataWithLengthCheck(mSize, tShiftFp), tSizeFp, tShiftFp,
+                     rFp.internalDataWithLengthCheck(mSize), tSizeFp, tShiftFp,
                      rFpPx.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp), 0), rFpPy.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp), 0), rFpPz.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp), 0),
                      mTypeNum, mRCut, mNMax, mWType);
     }

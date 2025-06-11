@@ -155,8 +155,7 @@ public class NNAP implements IPairPotential {
     static void forceDot(IDataShell<double[]> aXGrad, IDataShell<double[]> aFpPx, IDataShell<double[]> aFpPy, IDataShell<double[]> aFpPz,
                          IDataShell<double[]> rFx, IDataShell<double[]> rFy, IDataShell<double[]> rFz, int aNN) {
         int tLength = aXGrad.internalDataSize();
-        int tShift = aXGrad.internalDataShift();
-        forceDot1(aXGrad.internalDataWithLengthCheck(tLength, tShift), tShift, tLength,
+        forceDot1(aXGrad.internalDataWithLengthCheck(), aXGrad.internalDataShift(), tLength,
                   aFpPx.internalDataWithLengthCheck(tLength*aNN, 0), aFpPy.internalDataWithLengthCheck(tLength*aNN, 0), aFpPz.internalDataWithLengthCheck(tLength*aNN, 0),
                   rFx.internalDataWithLengthCheck(aNN, 0), rFy.internalDataWithLengthCheck(aNN, 0), rFz.internalDataWithLengthCheck(aNN, 0), aNN);
     }
