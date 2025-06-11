@@ -75,6 +75,22 @@ extern "C" {
 #endif
 
 /** jarray to buf stuffs */
+static inline void *getJArrayBuf(JNIEnv *aEnv, jarray aJArray) {
+#ifdef __cplusplus
+    return aEnv->GetPrimitiveArrayCritical(aJArray, NULL);
+#else
+    return (*aEnv)->GetPrimitiveArrayCritical(aEnv, aJArray, NULL);
+#endif
+}
+
+static inline void releaseJArrayBuf(JNIEnv *aEnv, jarray aJArray, void *aBuf, jint aMode) {
+#ifdef __cplusplus
+    aEnv->ReleasePrimitiveArrayCritical(aJArray, aBuf, aMode);
+#else
+    (*aEnv)->ReleasePrimitiveArrayCritical(aEnv, aJArray, aBuf, aMode);
+#endif
+}
+
 static inline void parseBuf2JArrayV(JNIEnv *aEnv, jobject rJArray, jsize aJStart, jint aJArrayType, const void *aBuf, jsize aBStart, jsize aLen) {
     if (rJArray==NULL || aBuf==NULL) return;
     switch (aJArrayType) {
@@ -145,6 +161,20 @@ static inline void *allocBuf(jint aJArrayType, jsize aSize) {
 }
 static inline void freeBuf(void *aBuf) {
     if (aBuf != NULL) FREE(aBuf);
+}
+static inline void *shiftBuf(void *aBuf, jint aJArrayType, jint aShift) {
+    if (aBuf == NULL) return NULL;
+    switch (aJArrayType) {
+    case JTYPE_BYTE:    {return (jbyte    *)aBuf + aShift;}
+    case JTYPE_DOUBLE:  {return (jdouble  *)aBuf + aShift;}
+    case JTYPE_BOOLEAN: {return (jboolean *)aBuf + aShift;}
+    case JTYPE_CHAR:    {return (jchar    *)aBuf + aShift;}
+    case JTYPE_SHORT:   {return (jshort   *)aBuf + aShift;}
+    case JTYPE_INT:     {return (jint     *)aBuf + aShift;}
+    case JTYPE_LONG:    {return (jlong    *)aBuf + aShift;}
+    case JTYPE_FLOAT:   {return (jfloat   *)aBuf + aShift;}
+    default:            {return NULL;}
+    }
 }
 
 

@@ -89,6 +89,13 @@ public class MPI {
         public static @Nullable String CMAKE_CXX_FLAGS    = OS.env("JSE_CMAKE_CXX_FLAGS_MPI"   , jse.code.Conf.CMAKE_CXX_FLAGS);
         
         /**
+         * 是否在通讯之前拷贝一份 java array，在 {@code 3.8.0}
+         * 之前统一都会进行一次拷贝，现在默认不会进行拷贝而尝试获取原始指针，
+         * 这在绝大多数情况下都能提高 mpi 的性能。
+         */
+        public static boolean COPY_JARRAY = OS.envZ("JSE_COPY_JARRAY_MPI", false);
+        
+        /**
          * 对于 mpijni，是否使用 {@link MiMalloc} 来加速 c 的内存分配，
          * 这对于 java 数组和 c 数组的转换很有效
          */
@@ -1019,7 +1026,7 @@ public class MPI {
     public static class Native {
         private Native() {}
         
-        private final static String MPIJNI_LIB_DIR = JAR_DIR+"mpi/" + UT.Code.uniqueID(VERSION, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+        private final static String MPIJNI_LIB_DIR = JAR_DIR+"mpi/" + UT.Code.uniqueID(VERSION, Conf.COPY_JARRAY, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
         private final static String MPIJNI_LIB_PATH;
         private final static String[] MPIJNI_SRC_NAME = {
               "jse_parallel_MPI_Native.c"
@@ -1051,8 +1058,11 @@ public class MPI {
                 }
                 throw new RuntimeException("MPI BUILD ERROR: No MPI environment.");
             }
+            // 先添加 Conf.CMAKE_SETTING，这样保证确定的优先级
+            Map<String, String> rCmakeSetting = new LinkedHashMap<>(Conf.CMAKE_SETTING);
+            rCmakeSetting.put("JSE_COPY_JARRAY", Conf.COPY_JARRAY ? "ON" : "OFF");
             // 现在直接使用 JNIUtil.buildLib 来统一初始化
-            MPIJNI_LIB_PATH = new JNIUtil.LibBuilder("mpijni", "MPI", MPIJNI_LIB_DIR, Conf.CMAKE_SETTING)
+            MPIJNI_LIB_PATH = new JNIUtil.LibBuilder("mpijni", "MPI", MPIJNI_LIB_DIR, rCmakeSetting)
                 .setSrc("mpi", MPIJNI_SRC_NAME)
                 .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
                 .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_MPIJNI_LIB)

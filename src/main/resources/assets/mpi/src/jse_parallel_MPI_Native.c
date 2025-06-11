@@ -166,25 +166,46 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allgather0(JNIEnv 
     MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
     MPI_Datatype tRecvType = (MPI_Datatype)(intptr_t)aRecvType;
     MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+#ifdef COPY_JARRAY
     int tSize, tRank;
     int tExitCode = getSizeAndRank(tComm, &tSize, &tRank);
     if (exceptionCheckMPI(aEnv, tExitCode)) return;
     jsize tTotSize = (jsize)(aRecvCount*tSize);
     void *rRecvBuf = allocBuf(aRecvJType, tTotSize);
+#else
+    int tExitCode;
+    void *rRecvBufInternal = getJArrayBuf(aEnv, (jarray)rRecvArray);
+    void *rRecvBuf = shiftBuf(rRecvBufInternal, aRecvJType, aRecvStart);
+#endif
     if (aInPlace) {
+#ifdef COPY_JARRAY
         jsize tStart = aRecvCount*tRank;
         parseJArray2BufV(aEnv, rRecvArray, aRecvStart+tStart, aRecvJType, rRecvBuf, tStart, aRecvCount);
+#endif
         tExitCode = MPI_Allgather(MPI_IN_PLACE, 0, tSendType, rRecvBuf, aRecvCount, tRecvType, tComm);
         exceptionCheckMPI(aEnv, tExitCode);
     } else {
+#ifdef COPY_JARRAY
         void *tSendBuf = allocBuf(aSendJType, aSendCount);
         parseJArray2BufV(aEnv, aSendArray, aSendStart, aSendJType, tSendBuf, 0, aSendCount);
+#else
+        void *tSendBufInternal = getJArrayBuf(aEnv, (jarray)aSendArray);
+        void *tSendBuf = shiftBuf(tSendBufInternal, aSendJType, aSendStart);
+#endif
         tExitCode = MPI_Allgather(tSendBuf, aSendCount, tSendType, rRecvBuf, aRecvCount, tRecvType, tComm);
         exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
         freeBuf(tSendBuf);
+#else
+        releaseJArrayBuf(aEnv, (jarray)aSendArray, tSendBufInternal, JNI_ABORT); // read mode
+#endif
     }
+#ifdef COPY_JARRAY
     parseBuf2JArrayV(aEnv, rRecvArray, aRecvStart, aRecvJType, rRecvBuf, 0, tTotSize);
     freeBuf(rRecvBuf);
+#else
+    releaseJArrayBuf(aEnv, (jarray)rRecvArray, rRecvBufInternal, 0); // write mode
+#endif
 }
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allgather1(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jlong aSendPtr, jint aSendCount, jlong aSendType, jlong rRecvPtr, jint aRecvCount, jlong aRecvType, jlong aComm) {
     MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
@@ -212,22 +233,42 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allgatherv0(JNIEnv
     parsejint2int(aEnv, aRecvCounts, tRecvCounts, tSize);
     tDispls[0] = 0;
     for (int i = 0; i < tSize; ++i) tDispls[i+1] = tDispls[i] + tRecvCounts[i];
+#ifdef COPY_JARRAY
     int tTotSize = tDispls[tSize];
     void *rRecvBuf = allocBuf(aRecvJType, tTotSize);
+#else
+    void *rRecvBufInternal = getJArrayBuf(aEnv, (jarray)rRecvArray);
+    void *rRecvBuf = shiftBuf(rRecvBufInternal, aRecvJType, aRecvStart);
+#endif
     if (aInPlace) {
+#ifdef COPY_JARRAY
         jsize tStart = tDispls[tRank];
         parseJArray2BufV(aEnv, rRecvArray, aRecvStart+tStart, aRecvJType, rRecvBuf, tStart, tRecvCounts[tRank]);
+#endif
         tExitCode = MPI_Allgatherv(MPI_IN_PLACE, 0, tSendType, rRecvBuf, tRecvCounts, tDispls, tRecvType, tComm);
         exceptionCheckMPI(aEnv, tExitCode);
     } else {
+#ifdef COPY_JARRAY
         void *tSendBuf = allocBuf(aSendJType, aSendCount);
         parseJArray2BufV(aEnv, aSendArray, aSendStart, aSendJType, tSendBuf, 0, aSendCount);
+#else
+        void *tSendBufInternal = getJArrayBuf(aEnv, (jarray)aSendArray);
+        void *tSendBuf = shiftBuf(tSendBufInternal, aSendJType, aSendStart);
+#endif
         tExitCode = MPI_Allgatherv(tSendBuf, aSendCount, tSendType, rRecvBuf, tRecvCounts, tDispls, tRecvType, tComm);
         exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
         freeBuf(tSendBuf);
+#else
+        releaseJArrayBuf(aEnv, (jarray)aSendArray, tSendBufInternal, JNI_ABORT); // read mode
+#endif
     }
+#ifdef COPY_JARRAY
     parseBuf2JArrayV(aEnv, rRecvArray, aRecvStart, aRecvJType, rRecvBuf, 0, tTotSize);
     freeBuf(rRecvBuf);
+#else
+    releaseJArrayBuf(aEnv, (jarray)rRecvArray, rRecvBufInternal, 0); // write mode
+#endif
     FREE(tRecvCounts);
     FREE(tDispls    );
 }
@@ -236,7 +277,7 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allgatherv1(JNIEnv
     MPI_Datatype tRecvType = (MPI_Datatype)(intptr_t)aRecvType;
     MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
     int tSize;
-    int tExitCode = MPI_Comm_size(aComm, &tSize);
+    int tExitCode = MPI_Comm_size(tComm, &tSize);
     if (exceptionCheckMPI(aEnv, tExitCode)) return;
     int *tRecvCounts = MALLOCN_TP(int, tSize);
     int *tDispls     = MALLOCN_TP(int, tSize);
@@ -259,20 +300,40 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allreduce0(JNIEnv 
     MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
     MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
     MPI_Op tOp = (MPI_Op)(intptr_t)aOp;
+#ifdef COPY_JARRAY
     void *rRecvBuf = allocBuf(aJDataType, aCount);
+#else
+    void *rRecvBufInternal = getJArrayBuf(aEnv, (jarray)rRecvArray);
+    void *rRecvBuf = shiftBuf(rRecvBufInternal, aJDataType, aRecvStart);
+#endif
     if (aInPlace) {
+#ifdef COPY_JARRAY
         parseJArray2BufV(aEnv, rRecvArray, aRecvStart, aJDataType, rRecvBuf, 0, aCount);
+#endif
         int tExitCode = MPI_Allreduce(MPI_IN_PLACE, rRecvBuf, aCount, tDataType, tOp, tComm);
         exceptionCheckMPI(aEnv, tExitCode);
     } else {
+#ifdef COPY_JARRAY
         void *tSendBuf = allocBuf(aJDataType, aCount);
         parseJArray2BufV(aEnv, aSendArray, aSendStart, aJDataType, tSendBuf, 0, aCount);
+#else
+        void *tSendBufInternal = getJArrayBuf(aEnv, (jarray)aSendArray);
+        void *tSendBuf = shiftBuf(tSendBufInternal, aJDataType, aSendStart);
+#endif
         int tExitCode = MPI_Allreduce(tSendBuf, rRecvBuf, aCount, tDataType, tOp, tComm);
         exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
         freeBuf(tSendBuf);
+#else
+        releaseJArrayBuf(aEnv, (jarray)aSendArray, tSendBufInternal, JNI_ABORT); // read mode
+#endif
     }
+#ifdef COPY_JARRAY
     parseBuf2JArrayV(aEnv, rRecvArray, aRecvStart, aJDataType, rRecvBuf, 0, aCount);
     freeBuf(rRecvBuf);
+#else
+    releaseJArrayBuf(aEnv, (jarray)rRecvArray, rRecvBufInternal, 0); // write mode
+#endif
 }
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Allreduce1(JNIEnv *aEnv, jclass aClazz, jboolean aInPlace, jlong aSendPtr, jlong rRecvPtr, jint aCount, jlong aDataType, jlong aOp, jlong aComm) {
     MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
@@ -308,17 +369,33 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Bcast0(JNIEnv *aEn
     int tRank;
     int tExitCode = MPI_Comm_rank(tComm, &tRank);
     if (exceptionCheckMPI(aEnv, tExitCode)) return;
+#ifdef COPY_JARRAY
     void *rBuf = allocBuf(aJDataType, aCount);
+#else
+    void *rBufInternal = getJArrayBuf(aEnv, (jarray)rArray);
+    void *rBuf = shiftBuf(rBufInternal, aJDataType, aStart);
+#endif
     if (tRank == aRoot) {
+#ifdef COPY_JARRAY
         parseJArray2BufV(aEnv, rArray, aStart, aJDataType, rBuf, 0, aCount);
+#endif
         tExitCode = MPI_Bcast(rBuf, aCount, tDataType, aRoot, tComm);
         exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
+        freeBuf(rBuf);
+#else
+        releaseJArrayBuf(aEnv, (jarray)rArray, rBufInternal, JNI_ABORT); // read mode
+#endif
     } else {
         tExitCode = MPI_Bcast(rBuf, aCount, tDataType, aRoot, tComm);
         exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
         parseBuf2JArrayV(aEnv, rArray, aStart, aJDataType, rBuf, 0, aCount);
+        freeBuf(rBuf);
+#else
+        releaseJArrayBuf(aEnv, (jarray)rArray, rBufInternal, 0); // write mode
+#endif
     }
-    freeBuf(rBuf);
 }
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Bcast1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jint aCount, jlong aDataType, jint aRoot, jlong aComm) {
     MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
@@ -344,32 +421,61 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Gather0(JNIEnv *aE
     int tExitCode = getSizeAndRank(tComm, &tSize, &tRank);
     if (exceptionCheckMPI(aEnv, tExitCode)) return;
     if (tRank == aRoot) {
+#ifdef COPY_JARRAY
         jsize tTotSize = (jsize)(aRecvCount*tSize);
         void *rRecvBuf = allocBuf(aRecvJType, tTotSize);
+#else
+        void *rRecvBufInternal = getJArrayBuf(aEnv, (jarray)rRecvArray);
+        void *rRecvBuf = shiftBuf(rRecvBufInternal, aRecvJType, aRecvStart);
+#endif
         if (aInPlace) {
+#ifdef COPY_JARRAY
             jsize tStart = aRecvCount*tRank;
             parseJArray2BufV(aEnv, rRecvArray, aRecvStart+tStart, aRecvJType, rRecvBuf, tStart, aRecvCount);
+#endif
             tExitCode = MPI_Gather(MPI_IN_PLACE, 0, tSendType, rRecvBuf, aRecvCount, tRecvType, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
         } else {
+#ifdef COPY_JARRAY
             void *tSendBuf = allocBuf(aSendJType, aSendCount);
             parseJArray2BufV(aEnv, aSendArray, aSendStart, aSendJType, tSendBuf, 0, aSendCount);
+#else
+            void *tSendBufInternal = getJArrayBuf(aEnv, (jarray)aSendArray);
+            void *tSendBuf = shiftBuf(tSendBufInternal, aSendJType, aSendStart);
+#endif
             tExitCode = MPI_Gather(tSendBuf, aSendCount, tSendType, rRecvBuf, aRecvCount, tRecvType, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
             freeBuf(tSendBuf);
+#else
+            releaseJArrayBuf(aEnv, (jarray)aSendArray, tSendBufInternal, JNI_ABORT); // read mode
+#endif
         }
+#ifdef COPY_JARRAY
         parseBuf2JArrayV(aEnv, rRecvArray, aRecvStart, aRecvJType, rRecvBuf, 0, tTotSize);
         freeBuf(rRecvBuf);
+#else
+        releaseJArrayBuf(aEnv, (jarray)rRecvArray, rRecvBufInternal, 0); // write mode
+#endif
     } else {
         if (aInPlace) {
             throwExceptionMPI(aEnv, "MPI_IN_PLACE can ONLY be set in Root for MPI_Gather", -1);
             return;
         } else {
+#ifdef COPY_JARRAY
             void *tSendBuf = allocBuf(aSendJType, aSendCount);
             parseJArray2BufV(aEnv, aSendArray, aSendStart, aSendJType, tSendBuf, 0, aSendCount);
+#else
+            void *tSendBufInternal = getJArrayBuf(aEnv, (jarray)aSendArray);
+            void *tSendBuf = shiftBuf(tSendBufInternal, aSendJType, aSendStart);
+#endif
             tExitCode = MPI_Gather(tSendBuf, aSendCount, tSendType, NULL, 0, tRecvType, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
             freeBuf(tSendBuf);
+#else
+            releaseJArrayBuf(aEnv, (jarray)aSendArray, tSendBufInternal, JNI_ABORT); // read mode
+#endif
         }
     }
 }
@@ -414,22 +520,42 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Gatherv0(JNIEnv *a
         parsejint2int(aEnv, aRecvCounts, tRecvCounts, tSize);
         tDispls[0] = 0;
         for (int i = 0; i < tSize; ++i) tDispls[i+1] = tDispls[i] + tRecvCounts[i];
+#ifdef COPY_JARRAY
         int tTotSize = tDispls[tSize];
         void *rRecvBuf = allocBuf(aRecvJType, tTotSize);
+#else
+        void *rRecvBufInternal = getJArrayBuf(aEnv, (jarray)rRecvArray);
+        void *rRecvBuf = shiftBuf(rRecvBufInternal, aRecvJType, aRecvStart);
+#endif
         if (aInPlace) {
+#ifdef COPY_JARRAY
             jsize tStart = tDispls[tRank];
             parseJArray2BufV(aEnv, rRecvArray, aRecvStart+tStart, aRecvJType, rRecvBuf, tStart, tRecvCounts[tRank]);
+#endif
             tExitCode = MPI_Gatherv(MPI_IN_PLACE, 0, tSendType, rRecvBuf, tRecvCounts, tDispls, tRecvType, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
         } else {
+#ifdef COPY_JARRAY
             void *tSendBuf = allocBuf(aSendJType, aSendCount);
             parseJArray2BufV(aEnv, aSendArray, aSendStart, aSendJType, tSendBuf, 0, aSendCount);
+#else
+            void *tSendBufInternal = getJArrayBuf(aEnv, (jarray)aSendArray);
+            void *tSendBuf = shiftBuf(tSendBufInternal, aSendJType, aSendStart);
+#endif
             tExitCode = MPI_Gatherv(tSendBuf, aSendCount, tSendType, rRecvBuf, tRecvCounts, tDispls, tRecvType, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
             freeBuf(tSendBuf);
+#else
+            releaseJArrayBuf(aEnv, (jarray)aSendArray, tSendBufInternal, JNI_ABORT); // read mode
+#endif
         }
+#ifdef COPY_JARRAY
         parseBuf2JArrayV(aEnv, rRecvArray, aRecvStart, aRecvJType, rRecvBuf, 0, tTotSize);
         freeBuf(rRecvBuf);
+#else
+        releaseJArrayBuf(aEnv, (jarray)rRecvArray, rRecvBufInternal, 0); // write mode
+#endif
         FREE(tRecvCounts);
         FREE(tDispls    );
     } else {
@@ -437,11 +563,20 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Gatherv0(JNIEnv *a
             throwExceptionMPI(aEnv, "MPI_IN_PLACE can ONLY be set in Root for MPI_Gatherv", -1);
             return;
         } else {
+#ifdef COPY_JARRAY
             void *tSendBuf = allocBuf(aSendJType, aSendCount);
             parseJArray2BufV(aEnv, aSendArray, aSendStart, aSendJType, tSendBuf, 0, aSendCount);
+#else
+            void *tSendBufInternal = getJArrayBuf(aEnv, (jarray)aSendArray);
+            void *tSendBuf = shiftBuf(tSendBufInternal, aSendJType, aSendStart);
+#endif
             tExitCode = MPI_Gatherv(tSendBuf, aSendCount, tSendType, NULL, NULL, NULL, tRecvType, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
             freeBuf(tSendBuf);
+#else
+            releaseJArrayBuf(aEnv, (jarray)aSendArray, tSendBufInternal, JNI_ABORT); // read mode
+#endif
         }
     }
 }
@@ -488,30 +623,59 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Reduce0(JNIEnv *aE
     int tExitCode = MPI_Comm_rank(tComm, &tRank);
     if (exceptionCheckMPI(aEnv, tExitCode)) return;
     if (tRank == aRoot) {
+#ifdef COPY_JARRAY
         void *rRecvBuf = allocBuf(aJDataType, aCount);
+#else
+        void *rRecvBufInternal = getJArrayBuf(aEnv, (jarray)rRecvArray);
+        void *rRecvBuf = shiftBuf(rRecvBufInternal, aJDataType, aRecvStart);
+#endif
         if (aInPlace) {
+#ifdef COPY_JARRAY
             parseJArray2BufV(aEnv, rRecvArray, aRecvStart, aJDataType, rRecvBuf, 0, aCount);
+#endif
             tExitCode = MPI_Reduce(MPI_IN_PLACE, rRecvBuf, aCount, tDataType, tOp, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
         } else {
+#ifdef COPY_JARRAY
             void *tSendBuf = allocBuf(aJDataType, aCount);
             parseJArray2BufV(aEnv, aSendArray, aSendStart, aJDataType, tSendBuf, 0, aCount);
+#else
+            void *tSendBufInternal = getJArrayBuf(aEnv, (jarray)aSendArray);
+            void *tSendBuf = shiftBuf(tSendBufInternal, aJDataType, aSendStart);
+#endif
             tExitCode = MPI_Reduce(tSendBuf, rRecvBuf, aCount, tDataType, tOp, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
             freeBuf(tSendBuf);
+#else
+            releaseJArrayBuf(aEnv, (jarray)aSendArray, tSendBufInternal, JNI_ABORT); // read mode
+#endif
         }
+#ifdef COPY_JARRAY
         parseBuf2JArrayV(aEnv, rRecvArray, aRecvStart, aJDataType, rRecvBuf, 0, aCount);
         freeBuf(rRecvBuf);
+#else
+        releaseJArrayBuf(aEnv, (jarray)rRecvArray, rRecvBufInternal, 0); // write mode
+#endif
     } else {
         if (aInPlace) {
             throwExceptionMPI(aEnv, "MPI_IN_PLACE can ONLY be set in Root for MPI_Reduce", -1);
             return;
         } else {
+#ifdef COPY_JARRAY
             void *tSendBuf = allocBuf(aJDataType, aCount);
             parseJArray2BufV(aEnv, aSendArray, aSendStart, aJDataType, tSendBuf, 0, aCount);
+#else
+            void *tSendBufInternal = getJArrayBuf(aEnv, (jarray)aSendArray);
+            void *tSendBuf = shiftBuf(tSendBufInternal, aJDataType, aSendStart);
+#endif
             tExitCode = MPI_Reduce(tSendBuf, NULL, aCount, tDataType, tOp, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
             freeBuf(tSendBuf);
+#else
+            releaseJArrayBuf(aEnv, (jarray)aSendArray, tSendBufInternal, JNI_ABORT); // read mode
+#endif
         }
     }
 }
@@ -560,30 +724,57 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Scatter0(JNIEnv *a
     int tExitCode = getSizeAndRank(tComm, &tSize, &tRank);
     if (exceptionCheckMPI(aEnv, tExitCode)) return;
     if (tRank == aRoot) {
+#ifdef COPY_JARRAY
         jsize tTotSize = (jsize)(aSendCount*tSize);
         void *tSendBuf = allocBuf(aSendJType, tTotSize);
         parseJArray2BufV(aEnv, aSendArray, aSendStart, aSendJType, tSendBuf, 0, tTotSize);
+#else
+        void *tSendBufInternal = getJArrayBuf(aEnv, (jarray)aSendArray);
+        void *tSendBuf = shiftBuf(tSendBufInternal, aSendJType, aSendStart);
+#endif
         if (aInPlace) {
             tExitCode = MPI_Scatter(tSendBuf, aSendCount, tSendType, MPI_IN_PLACE, 0, tRecvType, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
         } else {
+#ifdef COPY_JARRAY
             void *rRecvBuf = allocBuf(aRecvJType, aRecvCount);
+#else
+            void *rRecvBufInternal = getJArrayBuf(aEnv, (jarray)rRecvArray);
+            void *rRecvBuf = shiftBuf(rRecvBufInternal, aRecvJType, aRecvStart);
+#endif
             tExitCode = MPI_Scatter(tSendBuf, aSendCount, tSendType, rRecvBuf, aRecvCount, tRecvType, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
             parseBuf2JArrayV(aEnv, rRecvArray, aRecvStart, aRecvJType, rRecvBuf, 0, aRecvCount);
             freeBuf(rRecvBuf);
+#else
+            releaseJArrayBuf(aEnv, (jarray)rRecvArray, rRecvBufInternal, 0); // write mode
+#endif
         }
+#ifdef COPY_JARRAY
         freeBuf(tSendBuf);
+#else
+        releaseJArrayBuf(aEnv, (jarray)aSendArray, tSendBufInternal, JNI_ABORT); // read mode
+#endif
     } else {
         if (aInPlace) {
             throwExceptionMPI(aEnv, "MPI_IN_PLACE can ONLY be set in Root for MPI_Scatter", -1);
             return;
         } else {
+#ifdef COPY_JARRAY
             void *rRecvBuf = allocBuf(aRecvJType, aRecvCount);
+#else
+            void *rRecvBufInternal = getJArrayBuf(aEnv, (jarray)rRecvArray);
+            void *rRecvBuf = shiftBuf(rRecvBufInternal, aRecvJType, aRecvStart);
+#endif
             tExitCode = MPI_Scatter(NULL, 0, tSendType, rRecvBuf, aRecvCount, tRecvType, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
             parseBuf2JArrayV(aEnv, rRecvArray, aRecvStart, aRecvJType, rRecvBuf, 0, aRecvCount);
             freeBuf(rRecvBuf);
+#else
+            releaseJArrayBuf(aEnv, (jarray)rRecvArray, rRecvBufInternal, 0); // write mode
+#endif
         }
     }
 }
@@ -628,20 +819,38 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Scatterv0(JNIEnv *
         parsejint2int(aEnv, aSendCounts, tSendCounts, tSize);
         tDispls[0] = 0;
         for (int i = 0; i < tSize; ++i) tDispls[i+1] = tDispls[i] + tSendCounts[i];
+#ifdef COPY_JARRAY
         int tTotSize = tDispls[tSize];
         void *tSendBuf = allocBuf(aSendJType, tTotSize);
         parseJArray2BufV(aEnv, aSendArray, aSendStart, aSendJType, tSendBuf, 0, tTotSize);
+#else
+        void *tSendBufInternal = getJArrayBuf(aEnv, (jarray)aSendArray);
+        void *tSendBuf = shiftBuf(tSendBufInternal, aSendJType, aSendStart);
+#endif
         if (aInPlace) {
             tExitCode = MPI_Scatterv(tSendBuf, tSendCounts, tDispls, tSendType, MPI_IN_PLACE, 0, tRecvType, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
         } else {
+#ifdef COPY_JARRAY
             void *rRecvBuf = allocBuf(aRecvJType, aRecvCount);
+#else
+            void *rRecvBufInternal = getJArrayBuf(aEnv, (jarray)rRecvArray);
+            void *rRecvBuf = shiftBuf(rRecvBufInternal, aRecvJType, aRecvStart);
+#endif
             tExitCode = MPI_Scatterv(tSendBuf, tSendCounts, tDispls, tSendType, rRecvBuf, aRecvCount, tRecvType, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
             parseBuf2JArrayV(aEnv, rRecvArray, aRecvStart, aRecvJType, rRecvBuf, 0, aRecvCount);
             freeBuf(rRecvBuf);
+#else
+            releaseJArrayBuf(aEnv, (jarray)rRecvArray, rRecvBufInternal, 0); // write mode
+#endif
         }
+#ifdef COPY_JARRAY
         freeBuf(tSendBuf);
+#else
+        releaseJArrayBuf(aEnv, (jarray)aSendArray, tSendBufInternal, JNI_ABORT); // read mode
+#endif
         FREE(tSendCounts);
         FREE(tDispls    );
     } else {
@@ -649,11 +858,20 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Scatterv0(JNIEnv *
             throwExceptionMPI(aEnv, "MPI_IN_PLACE can ONLY be set in Root for MPI_Scatterv", -1);
             return;
         } else {
+#ifdef COPY_JARRAY
             void *rRecvBuf = allocBuf(aRecvJType, aRecvCount);
+#else
+            void *rRecvBufInternal = getJArrayBuf(aEnv, (jarray)rRecvArray);
+            void *rRecvBuf = shiftBuf(rRecvBufInternal, aRecvJType, aRecvStart);
+#endif
             tExitCode = MPI_Scatterv(NULL, NULL, NULL, tSendType, rRecvBuf, aRecvCount, tRecvType, aRoot, tComm);
             exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
             parseBuf2JArrayV(aEnv, rRecvArray, aRecvStart, aRecvJType, rRecvBuf, 0, aRecvCount);
             freeBuf(rRecvBuf);
+#else
+            releaseJArrayBuf(aEnv, (jarray)rRecvArray, rRecvBufInternal, 0); // write mode
+#endif
         }
     }
 }
@@ -794,11 +1012,20 @@ JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Group_1union(JNIE
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Send0(JNIEnv *aEnv, jclass aClazz, jobject aArray, jint aStart, jint aCount, jlong aDataType, jint aJDataType, jint aDest, jint aTag, jlong aComm) {
     MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
     MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+#ifdef COPY_JARRAY
     void *tBuf = allocBuf(aJDataType, aCount);
     parseJArray2BufV(aEnv, aArray, aStart, aJDataType, tBuf, 0, aCount);
+#else
+    void *tBufInternal = getJArrayBuf(aEnv, (jarray)aArray);
+    void *tBuf = shiftBuf(tBufInternal, aJDataType, aStart);
+#endif
     int tExitCode = MPI_Send(tBuf, aCount, tDataType, aDest, aTag, tComm);
     exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
     freeBuf(tBuf);
+#else
+    releaseJArrayBuf(aEnv, (jarray)aArray, tBufInternal, JNI_ABORT); // read mode
+#endif
 }
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Send1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jint aCount, jlong aDataType, jint aDest, jint aTag, jlong aComm) {
     MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
@@ -819,11 +1046,20 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1SendF(JNIEnv *aEnv
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Recv0(JNIEnv *aEnv, jclass aClazz, jobject rArray, jint aStart, jint aCount, jlong aDataType, jint aJDataType, jint aSource, jint aTag, jlong aComm) {
     MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
     MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+#ifdef COPY_JARRAY
     void *rBuf = allocBuf(aJDataType, aCount);
+#else
+    void *rBufInternal = getJArrayBuf(aEnv, (jarray)rArray);
+    void *rBuf = shiftBuf(rBufInternal, aJDataType, aStart);
+#endif
     int tExitCode = MPI_Recv(rBuf, aCount, tDataType, aSource, aTag, tComm, MPI_STATUS_IGNORE); // no return Status, because its field name is unstable
     exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
     parseBuf2JArrayV(aEnv, rArray, aStart, aJDataType, rBuf, 0, aCount);
     freeBuf(rBuf);
+#else
+    releaseJArrayBuf(aEnv, (jarray)rArray, rBufInternal, 0); // write mode
+#endif
 }
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Recv1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jint aCount, jlong aDataType, jint aSource, jint aTag, jlong aComm) {
     MPI_Datatype tDataType = (MPI_Datatype)(intptr_t)aDataType;
@@ -845,14 +1081,26 @@ JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Sendrecv0(JNIEnv *
     MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;
     MPI_Datatype tRecvType = (MPI_Datatype)(intptr_t)aRecvType;
     MPI_Comm tComm = (MPI_Comm)(intptr_t)aComm;
+#ifdef COPY_JARRAY
     void *tSendBuf = allocBuf(aSendJType, aSendCount);
     parseJArray2BufV(aEnv, aSendArray, aSendStart, aSendJType, tSendBuf, 0, aSendCount);
     void *rRecvBuf = allocBuf(aRecvJType, aRecvCount);
+#else
+    void *tSendBufInternal = getJArrayBuf(aEnv, (jarray)aSendArray);
+    void *tSendBuf = shiftBuf(tSendBufInternal, aSendJType, aSendStart);
+    void *rRecvBufInternal = getJArrayBuf(aEnv, (jarray)rRecvArray);
+    void *rRecvBuf = shiftBuf(rRecvBufInternal, aRecvJType, aRecvStart);
+#endif
     int tExitCode = MPI_Sendrecv(tSendBuf, aSendCount, tSendType, aDest, aSendTag, rRecvBuf, aRecvCount, tRecvType, aSource, aRecvTag, tComm, MPI_STATUS_IGNORE); // no return Status, because its field name is unstable
     exceptionCheckMPI(aEnv, tExitCode);
+#ifdef COPY_JARRAY
     parseBuf2JArrayV(aEnv, rRecvArray, aRecvStart, aRecvJType, rRecvBuf, 0, aRecvCount);
     freeBuf(tSendBuf);
     freeBuf(rRecvBuf);
+#else
+    releaseJArrayBuf(aEnv, (jarray)aSendArray, tSendBufInternal, JNI_ABORT); // read mode
+    releaseJArrayBuf(aEnv, (jarray)rRecvArray, rRecvBufInternal, 0); // write mode
+#endif
 }
 JNIEXPORT void JNICALL Java_jse_parallel_MPI_00024Native_MPI_1Sendrecv1(JNIEnv *aEnv, jclass aClazz, jlong aSendPtr, jint aSendCount, jlong aSendType, jint aDest, jint aSendTag, jlong rRecvPtr, jint aRecvCount, jlong aRecvType, jint aSource, jint aRecvTag, jlong aComm) {
     MPI_Datatype tSendType = (MPI_Datatype)(intptr_t)aSendType;

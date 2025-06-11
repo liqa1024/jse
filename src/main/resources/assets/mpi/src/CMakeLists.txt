@@ -71,3 +71,10 @@ if(JSE_USE_MIMALLOC)
     target_link_libraries(mpijni "$ENV{JSE_MIMALLOC_LIB_PATH}")
 endif()
 
+
+# copy jarray
+option(JSE_COPY_JARRAY "Copy jarray when communicate" OFF)
+if(JSE_COPY_JARRAY)
+    add_definitions(-DCOPY_JARRAY)
+endif()
+
