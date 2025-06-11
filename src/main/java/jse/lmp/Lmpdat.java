@@ -282,7 +282,7 @@ public class Lmpdat extends AbstractSettableAtomData {
     @Override protected Lmpdat newZeros_(int aAtomNum, IBox aBox) {return new Lmpdat(mAtomTypeNum, LmpBox.of(aBox), mMasses==null?null:mMasses.copy(), IntVector.zeros(aAtomNum), IntVector.zeros(aAtomNum), RowMatrix.zeros(aAtomNum, mAtomXYZ.columnNumber()), mVelocities==null?null:RowMatrix.zeros(aAtomNum, mVelocities.columnNumber()));}
     
     /** 从 IAtomData 来创建，一般来说 Lmpdat 需要一个额外的质量信息 */
-    public static Lmpdat fromAtomData(IAtomData aAtomData) {return fromAtomData_(aAtomData, aAtomData.masses());}
+    public static Lmpdat fromAtomData(IAtomData aAtomData) {return fromAtomData_(aAtomData, Vectors.from(aAtomData.masses()));}
     public static Lmpdat fromAtomData(IAtomData aAtomData, IVector aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
     public static Lmpdat fromAtomData(IAtomData aAtomData, Collection<? extends Number> aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
     public static Lmpdat fromAtomData(IAtomData aAtomData, double... aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
