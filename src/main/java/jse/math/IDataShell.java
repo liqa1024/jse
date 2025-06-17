@@ -1,5 +1,6 @@
 package jse.math;
 
+import jse.code.Conf;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,7 +50,11 @@ public interface IDataShell<D> {
     /** @throws IllegalArgumentException 当内部数据不是数组 */
     @ApiStatus.Experimental
     default D internalDataWithLengthCheck(int aSize) {
-        if (aSize > internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+        if (Conf.OPERATION_CHECK) {
+            if (aSize != internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+        } else {
+            if (aSize > internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+        }
         int tShift = internalDataShift();
         D tData = internalData();
         int tLen = Array.getLength(tData);
@@ -59,7 +64,11 @@ public interface IDataShell<D> {
     /** @throws IllegalArgumentException 当内部数据不是数组 */
     @ApiStatus.Experimental
     default D internalDataWithLengthCheck(int aSize, int aShift) {
-        if (aSize > internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+        if (Conf.OPERATION_CHECK) {
+            if (aSize != internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+        } else {
+            if (aSize > internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+        }
         if (aShift != internalDataShift()) throw new IllegalArgumentException("data shift mismatch");
         D tData = internalData();
         int tLen = Array.getLength(tData);

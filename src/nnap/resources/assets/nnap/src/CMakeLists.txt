@@ -10,7 +10,6 @@ endif()
 
 
 set(SOURCE_FILES
-    jsex_nnap_NNAP.c
     jsex_nnap_nn_FeedForward.c
     jsex_nnap_basis_SphericalChebyshev.c
     jsex_nnap_basis_Chebyshev.c)

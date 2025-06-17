@@ -8,7 +8,6 @@ import jse.math.matrix.RowMatrix;
 import jse.math.vector.DoubleArrayVector;
 import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
-import jsex.nnap.NNAP;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -113,6 +112,9 @@ public class FeedForward extends NeuralNetwork {
         return new FeedForward(aInputDim, aHiddenDims, aHiddenWeights, aHiddenWeightsBackward, aHiddenBiases, aOutputWeight, aOutputBias);
     }
     
+    @Override public int inputSize() {
+        return mInputDim;
+    }
     @Override public double forward(DoubleArrayVector aX) {
         return forward0(aX);
     }

@@ -9,9 +9,7 @@ import jse.code.OS;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
-import jse.math.IDataShell;
 import jse.math.vector.IVector;
-import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 import jsex.nnap.basis.*;
 import jsex.nnap.nn.*;
@@ -98,8 +96,6 @@ public class NNAP implements IPairPotential {
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
           "nnap_util.h"
-        , "jsex_nnap_NNAP.c"
-        , "jsex_nnap_NNAP.h"
         , "jsex_nnap_nn_FeedForward.c"
         , "jsex_nnap_nn_FeedForward.h"
         , "jsex_nnap_basis_SphericalChebyshev.c"
@@ -152,16 +148,6 @@ public class NNAP implements IPairPotential {
         System.load(IO.toAbsolutePath(LIB_PATH));
     }
     
-    static void forceDot(IDataShell<double[]> aXGrad, IDataShell<double[]> aFpPx, IDataShell<double[]> aFpPy, IDataShell<double[]> aFpPz,
-                         IDataShell<double[]> rFx, IDataShell<double[]> rFy, IDataShell<double[]> rFz, int aNN) {
-        int tLength = aXGrad.internalDataSize();
-        forceDot1(aXGrad.internalDataWithLengthCheck(), aXGrad.internalDataShift(), tLength,
-                  aFpPx.internalDataWithLengthCheck(tLength*aNN, 0), aFpPy.internalDataWithLengthCheck(tLength*aNN, 0), aFpPz.internalDataWithLengthCheck(tLength*aNN, 0),
-                  rFx.internalDataWithLengthCheck(aNN, 0), rFy.internalDataWithLengthCheck(aNN, 0), rFz.internalDataWithLengthCheck(aNN, 0), aNN);
-    }
-    private static native void forceDot1(double[] aXGrad, int aShift, int aLength, double[] aFpPx, double[] aFpPy, double[] aFpPz, double[] rFx, double[] rFy, double[] rFz, int aNN);
-    
-    
     @SuppressWarnings("unchecked")
     private @Nullable SingleNNAP initSingleNNAPFrom(int aType, Map<String, ?> aModelInfo) throws Exception {
         Map<String, ?> tBasis = (Map<String, ?>)aModelInfo.get("basis");
@@ -200,8 +186,7 @@ public class NNAP implements IPairPotential {
         }}
         
         Number tRefEng = (Number)aModelInfo.get("ref_eng");
-        if (tRefEng == null) throw new IllegalArgumentException("No ref_eng in ModelInfo");
-        double aRefEng = tRefEng.doubleValue();
+        double aRefEng = tRefEng==null ? 0.0 : tRefEng.doubleValue();
         List<? extends Number> tNormSigma = (List<? extends Number>)UT.Code.get(aModelInfo, "norm_sigma", "norm_vec");
         if (tNormSigma == null) throw new IllegalArgumentException("No norm_sigma/norm_vec in ModelInfo");
         IVector aNormSigma = Vectors.from(tNormSigma);
@@ -211,16 +196,17 @@ public class NNAP implements IPairPotential {
         double aNormSigmaEng = tNormSigmaEng==null ? 1.0 : tNormSigmaEng.doubleValue();
         Number tNormMuEng = (Number)aModelInfo.get("norm_mu_eng");
         double aNormMuEng = tNormMuEng==null ? 0.0 : tNormMuEng.doubleValue();
+        aNormMuEng += aRefEng;
         
         NeuralNetwork[] aNN = new NeuralNetwork[mThreadNumber];
         Object tModelObj = aModelInfo.get("torch");
         if (tModelObj != null) {
             mIsTorch = true;
             for (int i = 0; i < mThreadNumber; ++i) {
-                //noinspection resource
-                aNN[i] = new TorchModel(tModelObj.toString());
+                NeuralNetwork tNN = new TorchModel(aBasis[0].size(), tModelObj.toString());
+                aNN[i] = new NormedNeuralNetwork(tNN, aNormMu, aNormSigma, aNormMuEng, aNormSigmaEng);
             }
-            return new SingleNNAP(aRefEng, aNormMu, aNormSigma, aNormMuEng, aNormSigmaEng, aBasis, aNN);
+            return new SingleNNAP(aBasis, aNN);
         }
         Map<String, ?> tModel = (Map<String, ?>)aModelInfo.get("nn");
         Object tModelType = tModel.get("type");
@@ -230,22 +216,23 @@ public class NNAP implements IPairPotential {
         switch(tModelType.toString()) {
         case "feed_forward": {
             for (int i = 0; i < mThreadNumber; ++i) {
-                aNN[i] = FeedForward.load(tModel);
+                NeuralNetwork tNN = FeedForward.load(tModel);
+                aNN[i] = new NormedNeuralNetwork(tNN, aNormMu, aNormSigma, aNormMuEng, aNormSigmaEng);
             }
             break;
         }
         case "torch": {
             mIsTorch = true;
             for (int i = 0; i < mThreadNumber; ++i) {
-                //noinspection resource
-                aNN[i] = new TorchModel(tModel.get("model").toString());
+                NeuralNetwork tNN = new TorchModel(aBasis[0].size(), tModel.get("model").toString());
+                aNN[i] = new NormedNeuralNetwork(tNN, aNormMu, aNormSigma, aNormMuEng, aNormSigmaEng);
             }
             break;
         }
         default: {
             throw new IllegalArgumentException("Unsupported model type: " + tBasisType);
         }}
-        return new SingleNNAP(aRefEng, aNormMu, aNormSigma, aNormMuEng, aNormSigmaEng, aBasis, aNN);
+        return new SingleNNAP(aBasis, aNN);
     }
     @SuppressWarnings("unchecked")
     private @Nullable SingleNNAP postInitSingleNNAPFrom(int aType, Map<String, ?> aModelInfo) {
@@ -264,14 +251,8 @@ public class NNAP implements IPairPotential {
         // mirror 会强制这些额外值缺省
         Number tRefEng = (Number)aModelInfo.get("ref_eng");
         if (tRefEng != null) throw new IllegalArgumentException("ref_eng in mirror ModelInfo MUST be empty");
-        double aRefEng = model(tMirrorType).refEng();
-        
         List<? extends Number> tNormVec = (List<? extends Number>)aModelInfo.get("norm_vec");
         if (tNormVec != null) throw new IllegalArgumentException("norm_vec in mirror ModelInfo MUST be empty");
-        IVector aNormMu = model(tMirrorType).normMu();
-        IVector aNormSigma = model(tMirrorType).normSigma();
-        double aNormMuEng = model(tMirrorType).normMuEng();
-        double aNormSigmaEng = model(tMirrorType).normSigmaEng();
         
         Object tModel = aModelInfo.get("torch");
         if (tModel != null) throw new IllegalArgumentException("torch data in mirror ModelInfo MUST be empty");
@@ -279,50 +260,22 @@ public class NNAP implements IPairPotential {
         if (tModel != null) throw new IllegalArgumentException("model data in mirror ModelInfo MUST be empty");
         // 现在直接采用引用写法，因为不会存在同时调用的情况
         NeuralNetwork[] aNN = model(tMirrorType).mNN;
-        return new SingleNNAP(aRefEng, aNormMu, aNormSigma, aNormMuEng, aNormSigmaEng, aBasis, aNN);
+        return new SingleNNAP(aBasis, aNN);
     }
     
     @SuppressWarnings("SameParameterValue")
     public class SingleNNAP {
         private final NeuralNetwork[] mNN;
-        private final double mRefEng;
-        private final IVector mNormMu, mNormSigma;
-        private final double mNormMuEng, mNormSigmaEng;
         private final Basis[] mBasis;
         
-        public double refEng() {return mRefEng;}
-        public IVector normMu() {return mNormMu;}
-        public IVector normSigma() {return mNormSigma;}
-        public double normMuEng() {return mNormMuEng;}
-        public double normSigmaEng() {return mNormSigmaEng;}
         public Basis basis() {return basis(0);}
         public Basis basis(int aThreadID) {return mBasis[aThreadID];}
         public NeuralNetwork nn() {return nn(0);}
         public NeuralNetwork nn(int aThreadID) {return mNN[aThreadID];}
         
         /// 现在使用全局的缓存实现，可以进一步减少内存池的调用操作
-        private final Vector[] mFp, mFpGrad;
-        private final DoubleList[] mFpPx, mFpPy, mFpPz;
         private final DoubleList[] mNlDx, mNlDy, mNlDz;
         private final IntList[] mNlType, mNlIdx;
-        private DoubleList bufFpPx(int aThreadID, int aSizeMin) {
-            DoubleList tFpPx = mFpPx[aThreadID];
-            tFpPx.ensureCapacity(aSizeMin);
-            tFpPx.setInternalDataSize(aSizeMin);
-            return tFpPx;
-        }
-        private DoubleList bufFpPy(int aThreadID, int aSizeMin) {
-            DoubleList tFpPy = mFpPy[aThreadID];
-            tFpPy.ensureCapacity(aSizeMin);
-            tFpPy.setInternalDataSize(aSizeMin);
-            return tFpPy;
-        }
-        private DoubleList bufFpPz(int aThreadID, int aSizeMin) {
-            DoubleList tFpPz = mFpPz[aThreadID];
-            tFpPz.ensureCapacity(aSizeMin);
-            tFpPz.setInternalDataSize(aSizeMin);
-            return tFpPz;
-        }
         
         private final DoubleList[] mForceX, mForceY, mForceZ;
         private DoubleList bufForceX(int aThreadID, int aSizeMin) {
@@ -344,35 +297,10 @@ public class NNAP implements IPairPotential {
             return tForceZ;
         }
         
-        public void normBasis(IVector rFp) {
-            rFp.minus2this(mNormMu);
-            rFp.div2this(mNormSigma);
-        }
-        public void normBasisPartial(IVector rFp) {
-            rFp.div2this(mNormSigma);
-        }
-        public double denormEng(double aEng) {
-            return aEng*mNormSigmaEng + mNormMuEng;
-        }
-        public void denormEngPartial(IVector rEngPartial) {
-            rEngPartial.multiply2this(mNormSigmaEng);
-        }
-        
-        private SingleNNAP(double aRefEng, IVector aNormMu, IVector aNormSigma, double aNormMuEng, double aNormSigmaEng, Basis[] aBasis, NeuralNetwork[] aNN) {
-            mRefEng = aRefEng;
-            mNormMu = aNormMu;
-            mNormSigma = aNormSigma;
-            mNormMuEng = aNormMuEng;
-            mNormSigmaEng = aNormSigmaEng;
+        private SingleNNAP(Basis[] aBasis, NeuralNetwork[] aNN) {
             mBasis = aBasis;
             mNN = aNN;
-            int tBasisSize = mBasis[0].size();
             
-            mFp = new Vector[mThreadNumber];
-            mFpGrad = new Vector[mThreadNumber];
-            mFpPx = new DoubleList[mThreadNumber];
-            mFpPy = new DoubleList[mThreadNumber];
-            mFpPz = new DoubleList[mThreadNumber];
             mNlDx = new DoubleList[mThreadNumber];
             mNlDy = new DoubleList[mThreadNumber];
             mNlDz = new DoubleList[mThreadNumber];
@@ -382,11 +310,6 @@ public class NNAP implements IPairPotential {
             mForceY = new DoubleList[mThreadNumber];
             mForceZ = new DoubleList[mThreadNumber];
             for (int i = 0; i < mThreadNumber; ++i) {
-                mFp[i] = Vectors.zeros(tBasisSize);
-                mFpGrad[i] = Vectors.zeros(tBasisSize);
-                mFpPx[i] = new DoubleList(1024);
-                mFpPy[i] = new DoubleList(1024);
-                mFpPz[i] = new DoubleList(1024);
                 mNlDx[i] = new DoubleList(16);
                 mNlDy[i] = new DoubleList(16);
                 mNlDz[i] = new DoubleList(16);
@@ -506,13 +429,8 @@ public class NNAP implements IPairPotential {
             IntList tNlType = tModel.mNlType[threadID];
             IntList tNlIdx = tModel.mNlIdx[threadID];
             buildNL_(nl, tBasis.rcut(), tNlDx, tNlDy, tNlDz, tNlType, tNlIdx);
-            Vector tFp = tModel.mFp[threadID];
-            tBasis.eval_(tNlDx, tNlDy, tNlDz, tNlType, tFp);
-            tModel.normBasis(tFp);
-            double tPred = tNN.forward(tFp);
-            tPred = tModel.denormEng(tPred);
-            tPred += tModel.mRefEng;
-            rEnergyAccumulator.add(threadID, cIdx, -1, tPred);
+            double tEng = tBasis.evalEnergy(tNlDx, tNlDy, tNlDz, tNlType, tNN);
+            rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
         });
     }
     
@@ -532,7 +450,6 @@ public class NNAP implements IPairPotential {
         }, null, (threadID, cIdx, cType, nl) -> {
             SingleNNAP tModel = model(cType);
             Basis tBasis = tModel.basis(threadID);
-            final int tBasisSize = tBasis.size();
             NeuralNetwork tNN = tModel.nn(threadID);
             DoubleList tNlDx = tModel.mNlDx[threadID];
             DoubleList tNlDy = tModel.mNlDy[threadID];
@@ -541,26 +458,14 @@ public class NNAP implements IPairPotential {
             IntList tNlIdx = tModel.mNlIdx[threadID];
             buildNL_(nl, tBasis.rcut(), tNlDx, tNlDy, tNlDz, tNlType, tNlIdx);
             final int tNeiNum = tNlDx.size();
-            Vector tFp = tModel.mFp[threadID];
-            Vector tFpGrad = tModel.mFpGrad[threadID];
-            DoubleList tFpPx = tModel.bufFpPx(threadID, tNeiNum*tBasisSize);
-            DoubleList tFpPy = tModel.bufFpPy(threadID, tNeiNum*tBasisSize);
-            DoubleList tFpPz = tModel.bufFpPz(threadID, tNeiNum*tBasisSize);
-            tBasis.evalPartial_(tNlDx, tNlDy, tNlDz, tNlType, tFp, tFpPx, tFpPy, tFpPz);
-            tModel.normBasis(tFp);
-            double tPred = tNN.backward(tFp, tFpGrad);
-            
-            if (rEnergyAccumulator != null) {
-                tPred = tModel.denormEng(tPred);
-                tPred += tModel.mRefEng;
-                rEnergyAccumulator.add(threadID, cIdx, -1, tPred);
-            }
-            tModel.normBasisPartial(tFpGrad);
-            tModel.denormEngPartial(tFpGrad);
             DoubleList tForceX = tModel.bufForceX(threadID, tNeiNum);
             DoubleList tForceY = tModel.bufForceY(threadID, tNeiNum);
             DoubleList tForceZ = tModel.bufForceZ(threadID, tNeiNum);
-            forceDot(tFpGrad, tFpPx, tFpPy, tFpPz, tForceX, tForceY, tForceZ, tNeiNum);
+            double tEng = tBasis.evalEnergyForce(tNlDx, tNlDy, tNlDz, tNlType, tNN, tForceX, tForceY, tForceZ);
+            
+            if (rEnergyAccumulator != null) {
+                rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
+            }
             // 累加交叉项到近邻
             for (int j = 0; j < tNeiNum; ++j) {
                 double dx = tNlDx.get(j);

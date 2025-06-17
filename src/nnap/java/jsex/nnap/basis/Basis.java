@@ -9,8 +9,10 @@ import jse.code.collection.IntList;
 import jse.code.io.ISavable;
 import jse.math.vector.DoubleArrayVector;
 import jse.math.vector.Vector;
+import jse.math.vector.Vectors;
 import jse.parallel.IAutoShutdown;
 import jsex.nnap.NNAP;
+import jsex.nnap.nn.NeuralNetwork;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,10 +64,26 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     @FunctionalInterface public interface IDxyzTypeIterable {void forEachDxyzType(IDxyzTypeDo aDxyzTypeDo);}
     @FunctionalInterface public interface IDxyzTypeDo {void run(double aDx, double aDy, double aDz, int aType);}
     
-    private final DoubleList mNlDx = new DoubleList(16), mNlDy = new DoubleList(16), mNlDz = new DoubleList(16);
-    private final IntList mNlType = new IntList(16);
+    private DoubleList mNlDx = null, mNlDy = null, mNlDz = null;
+    private IntList mNlType = null;
+    private Vector mFp = null, mFpGrad = null;
+    
+    private void initCacheFp_() {
+        if (mFp != null) return;
+        int tSize = size();
+        mFp = Vectors.zeros(tSize);
+        mFpGrad = Vectors.zeros(tSize);
+    }
+    private void initCacheNl_() {
+        if (mNlDx != null) return;
+        mNlDx = new DoubleList(16);
+        mNlDy = new DoubleList(16);
+        mNlDz = new DoubleList(16);
+        mNlType = new IntList(16);
+    }
     
     private void buildNL_(IDxyzTypeIterable aNL) {
+        initCacheNl_();
         final int tTypeNum = atomTypeNumber();
         // 缓存情况需要先清空这些
         mNlDx.clear(); mNlDy.clear(); mNlDz.clear();
@@ -83,6 +101,50 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
         aData.setInternalDataSize(aSize);
     }
     
+    protected abstract void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, boolean aBufferNl);
+    protected abstract void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz);
+    protected abstract void evalPartialAndForceDot_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aFpGrad, DoubleList rFx, DoubleList rFy, DoubleList rFz);
+    
+    /**
+     * 内部使用的直接计算能量的接口，现在统一采用外部预先构造的近邻列表，从而可以避免重复遍历近邻
+     * @param aNlDx 由近邻原子的 dx 组成的列表
+     * @param aNlDy 由近邻原子的 dy 组成的列表
+     * @param aNlDz 由近邻原子的 dz 组成的列表
+     * @param aNlType 由近邻原子的 type 组成的列表
+     * @param aNN 需要进行计算的神经网络
+     * @return 计算得到的能量值
+     */
+    @ApiStatus.Internal
+    public final double evalEnergy(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, NeuralNetwork aNN) throws Exception {
+        initCacheFp_();
+        eval_(aNlDx, aNlDy, aNlDz, aNlType, mFp, false);
+        return aNN.forward(mFp);
+    }
+    
+    /**
+     * 内部使用的直接计算能量和力的接口，现在统一采用外部预先构造的近邻列表，从而可以避免重复遍历近邻
+     * <p>
+     * 直接给出能量和力可以避免大量偏导数的缓存，并且简化稀疏偏导的细节处理
+     * @param aNlDx 由近邻原子的 dx 组成的列表
+     * @param aNlDy 由近邻原子的 dy 组成的列表
+     * @param aNlDz 由近邻原子的 dz 组成的列表
+     * @param aNlType 由近邻原子的 type 组成的列表
+     * @param aNN 需要进行计算的神经网络
+     * @param rFx 计算得到的原子对于近邻原子 x 方向的力，要求已经是合适的大小，后续实现不会实际扩容
+     * @param rFy 计算得到的原子对于近邻原子 y 方向的力，要求已经是合适的大小，后续实现不会实际扩容
+     * @param rFz 计算得到的原子对于近邻原子 z 方向的力，要求已经是合适的大小，后续实现不会实际扩容
+     * @return 计算得到的能量值
+     */
+    @ApiStatus.Internal
+    public final double evalEnergyForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, NeuralNetwork aNN, DoubleList rFx, DoubleList rFy, DoubleList rFz) throws Exception {
+        initCacheFp_();
+        eval_(aNlDx, aNlDy, aNlDz, aNlType, mFp, true);
+        double tEng = aNN.backward(mFp, mFpGrad);
+        evalPartialAndForceDot_(aNlDx, aNlDy, aNlDz, aNlType, mFpGrad, rFx, rFy, rFz);
+        return tEng;
+    }
+    
+    
     /**
      * 内部使用的计算基组接口，现在统一采用外部预先构造的近邻列表，从而可以避免重复遍历近邻
      * @param aNlDx 由近邻原子的 dx 组成的列表
@@ -92,7 +154,9 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      * @param rFp 计算输出的原子描述符向量
      */
     @ApiStatus.Internal
-    public abstract void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp);
+    public final void eval(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
+        eval_(aNlDx, aNlDy, aNlDz, aNlType, rFp, false);
+    }
     /**
      * 通用的计算基组的接口，可以自定义任何近邻列表获取器来实现
      * @param aNL 近邻列表遍历器
@@ -101,7 +165,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     public final void eval(IDxyzTypeIterable aNL, DoubleArrayVector rFp) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
         buildNL_(aNL);
-        eval_(mNlDx, mNlDy, mNlDz, mNlType, rFp);
+        eval(mNlDx, mNlDy, mNlDz, mNlType, rFp);
     }
     /**
      * 基于 {@link AtomicParameterCalculator} 的近邻列表实现的通用的计算某个原子的基组功能
@@ -152,8 +216,10 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      * @param rFpPz 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，要求已经是合适的大小，后续实现不会实际扩容
      */
     @ApiStatus.Internal
-    public abstract void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType,
-                                      DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz);
+    public final void evalPartial(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
+        eval_(aNlDx, aNlDy, aNlDz, aNlType, rFp, true);
+        evalPartial_(aNlDx, aNlDy, aNlDz, aNlType, rFpPx, rFpPy, rFpPz);
+    }
     /**
      * 基组结果对于 {@code xyz} 偏微分的计算结果，主要用于力的计算；会同时计算基组值本身
      * @param aNL 近邻列表遍历器
@@ -170,7 +236,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
         validSize_(rFpPx, tSizeAll);
         validSize_(rFpPy, tSizeAll);
         validSize_(rFpPz, tSizeAll);
-        evalPartial_(mNlDx, mNlDy, mNlDz, mNlType, rFp, rFpPx, rFpPy, rFpPz);
+        evalPartial(mNlDx, mNlDy, mNlDz, mNlType, rFp, rFpPx, rFpPy, rFpPz);
     }
     /**
      * 基于 {@link AtomicParameterCalculator} 的近邻列表实现的通用的计算某个原子的基组偏导数功能

@@ -24,18 +24,26 @@ extern "C" {
 /*
  * Class:     jsex_nnap_basis_Chebyshev
  * Method:    eval1
- * Signature: ([D[D[D[II[D[DIIDII)V
+ * Signature: ([D[D[D[II[D[DIZIDII)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_eval1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jint, jint, jdouble, jint, jint);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint);
 
 /*
  * Class:     jsex_nnap_basis_Chebyshev
  * Method:    evalPartial1
- * Signature: ([D[D[D[II[D[D[D[D[D[DII[D[D[DIDII)V
+ * Signature: ([D[D[D[II[D[D[D[D[DII[D[D[DIDII)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalPartial1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jint, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdouble, jint, jint);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jint, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdouble, jint, jint);
+
+/*
+ * Class:     jsex_nnap_basis_Chebyshev
+ * Method:    evalPartialAndForceDot1
+ * Signature: ([D[D[D[II[D[D[D[D[D[DI[D[D[DIDII)V
+ */
+JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalPartialAndForceDot1
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdouble, jint, jint);
 
 #ifdef __cplusplus
 }

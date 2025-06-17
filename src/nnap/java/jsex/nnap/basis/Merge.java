@@ -1,5 +1,6 @@
 package jsex.nnap.basis;
 
+import jse.code.Conf;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.code.collection.NewCollections;
@@ -18,13 +19,13 @@ import static jse.code.CS.ZL_STR;
  */
 public class Merge extends Basis {
     
-    private final Basis[] mMergeBasis;
+    private final MergeableBasis[] mMergeBasis;
     private final double mRCut;
     private final int mSize, mTypeNum;
     private final String @Nullable[] mSymbols;
-    private final ShiftVector[] mFpShell;
+    private final ShiftVector[] mFpShell, mFpGradShell;
     
-    public Merge(Basis... aMergeBasis) {
+    public Merge(MergeableBasis... aMergeBasis) {
         if (aMergeBasis==null || aMergeBasis.length==0) throw new IllegalArgumentException("Merge basis can not be null or empty");
         double tRCut = Double.NEGATIVE_INFINITY;
         int tSize = 0;
@@ -66,11 +67,13 @@ public class Merge extends Basis {
         mSymbols = tSymbols==null ? null : tSymbols.toArray(ZL_STR);
         // init fp shell
         mFpShell = new ShiftVector[mMergeBasis.length];
+        mFpGradShell = new ShiftVector[mMergeBasis.length];
         int tShiftFp = 0;
         for (int i = 0; i < mMergeBasis.length; ++i) {
-            int tSizeFp = mSize - tShiftFp;
+            int tSizeFp = mMergeBasis[i].size();
             mFpShell[i] = new ShiftVector(tSizeFp, tShiftFp, null);
-            tShiftFp += mMergeBasis[i].size();
+            mFpGradShell[i] = new ShiftVector(tSizeFp, tShiftFp, null);
+            tShiftFp += tSizeFp;
         }
     }
     @Override public double rcut() {return mRCut;}
@@ -99,7 +102,7 @@ public class Merge extends Basis {
         Object tObj = aMap.get("basis");
         if (tObj == null) throw new IllegalArgumentException("Key `basis` required for merge load");
         List<Map> tList = (List<Map>)tObj;
-        Basis[] tMergeBasis = new Basis[tList.size()];
+        MergeableBasis[] tMergeBasis = new MergeableBasis[tList.size()];
         for (int i = 0; i < tMergeBasis.length; ++i) {
             Map tMap = tList.get(i);
             Object tType = tMap.get("type");
@@ -126,7 +129,7 @@ public class Merge extends Basis {
         Object tObj = aMap.get("basis");
         if (tObj == null) throw new IllegalArgumentException("Key `basis` required for merge load");
         List<Map> tList = (List<Map>)tObj;
-        Basis[] tMergeBasis = new Basis[tList.size()];
+        MergeableBasis[] tMergeBasis = new MergeableBasis[tList.size()];
         for (int i = 0; i < tMergeBasis.length; ++i) {
             Map tMap = tList.get(i);
             Object tType = tMap.get("type");
@@ -150,25 +153,37 @@ public class Merge extends Basis {
     }
     
     @Override
-    public void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
+    protected void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, boolean aBufferNl) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        int tSizeFp = rFp.size();
-        if (mSize > tSizeFp) throw new IndexOutOfBoundsException(mSize+" > "+tSizeFp);
+        if (Conf.OPERATION_CHECK) {
+            if (mSize != rFp.size()) throw new IllegalArgumentException("data size mismatch");
+        } else {
+            if (mSize > rFp.size()) throw new IllegalArgumentException("data size mismatch");
+        }
         for (int i = 0; i < mMergeBasis.length; ++i) {
             ShiftVector tFp = mFpShell[i];
             tFp.setInternalData(rFp.internalData());
-            mMergeBasis[i].eval_(aNlDx, aNlDy, aNlDz, aNlType, tFp);
+            mMergeBasis[i].eval_(aNlDx, aNlDy, aNlDz, aNlType, tFp, aBufferNl);
         }
     }
     @Override
-    public void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
+    protected void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        int tSizeFp = rFp.size();
-        if (mSize > tSizeFp) throw new IndexOutOfBoundsException(mSize+" > "+tSizeFp);
         for (int i = 0; i < mMergeBasis.length; ++i) {
             ShiftVector tFp = mFpShell[i];
-            tFp.setInternalData(rFp.internalData());
-            mMergeBasis[i].evalPartial_(aNlDx, aNlDy, aNlDz, aNlType, tFp, rFpPx, rFpPy, rFpPz);
+            int tShiftFp = tFp.internalDataShift();
+            mMergeBasis[i].evalPartialWithShift_(aNlDx, aNlDy, aNlDz, aNlType, tShiftFp, mSize-tShiftFp-tFp.internalDataSize(), rFpPx, rFpPy, rFpPz);
+        }
+    }
+    @Override
+    protected void evalPartialAndForceDot_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aFpGrad, DoubleList rFx, DoubleList rFy, DoubleList rFz) {
+        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        // 这里需要手动清空旧值
+        mMergeBasis[0].clearForce_(rFx, rFy, rFz);
+        for (int i = 0; i < mMergeBasis.length; ++i) {
+            ShiftVector tFpGrad = mFpGradShell[i];
+            tFpGrad.setInternalData(aFpGrad.internalData());
+            mMergeBasis[i].evalPartialAndForceDotAccumulate_(aNlDx, aNlDy, aNlDz, aNlType, tFpGrad, rFx, rFy, rFz);
         }
     }
 }

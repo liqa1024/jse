@@ -24,7 +24,7 @@ import java.util.Map;
  * Efficient and accurate simulation of vitrification in multi-component metallic liquids with neural-network potentials </a>
  * @author Su Rui, liqa
  */
-public class SphericalChebyshev extends NNAPWTypeBasis {
+public class SphericalChebyshev extends WTypeBasis {
     final static int[] L3NCOLS = {0, 0, 2, 4, 9}, L3NCOLS_NOCROSS = {0, 0, 1, 1, 2};
     
     public final static int DEFAULT_NMAX = 5;
@@ -47,8 +47,8 @@ public class SphericalChebyshev extends NNAPWTypeBasis {
     /** 一些缓存的中间变量，现在统一作为对象存储，对于这种大规模的缓存情况可以进一步提高效率 */
     private final IDataShell<double[]> mCnlm;
     private final IDataShell<double[]> mCnlmPx, mCnlmPy, mCnlmPz;
-    private final IDataShell<double[]> mRn, mRnPx, mRnPy, mRnPz, mCheby2;
-    private final IDataShell<double[]> mY, mYPx, mYPy, mYPz, mYPphi, mYPtheta;
+    private final IDataShell<double[]> mRnPx, mRnPy, mRnPz, mCheby2;
+    private final IDataShell<double[]> mYPx, mYPy, mYPz, mYPphi, mYPtheta;
     
     final DoubleList mNlY = new DoubleList(1024);
     final DoubleList mNlRn = new DoubleList(128);
@@ -80,13 +80,11 @@ public class SphericalChebyshev extends NNAPWTypeBasis {
         mCnlmPy = Vectors.zeros(mLMAll);
         mCnlmPz = Vectors.zeros(mLMAll);
         
-        mRn = Vectors.zeros(mNMax+1);
         mRnPx = Vectors.zeros(mNMax+1);
         mRnPy = Vectors.zeros(mNMax+1);
         mRnPz = Vectors.zeros(mNMax+1);
         mCheby2 = Vectors.zeros(mNMax);
         
-        mY = Vectors.zeros(mLMAll);
         mYPx = Vectors.zeros(mLMAll);
         mYPy = Vectors.zeros(mLMAll);
         mYPz = Vectors.zeros(mLMAll);
@@ -175,16 +173,7 @@ public class SphericalChebyshev extends NNAPWTypeBasis {
     @Override public @Nullable String symbol(int aType) {return mSymbols==null ? null : mSymbols[aType-1];}
     
     @Override
-    public void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        
-        // 现在直接计算基组
-        eval0(aNlDx, aNlDy, aNlDz, aNlType, rFp);
-    }
-    
-    @Override
-    public void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType,
-                             DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
+    protected void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, boolean aBufferNl) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         
         final int tNN = aNlDx.size();
@@ -192,38 +181,74 @@ public class SphericalChebyshev extends NNAPWTypeBasis {
         validSize_(mNlY, tNN*mLMAll);
         validSize_(mNlRn, tNN*(mNMax+1));
         
-        // 现在直接计算基组偏导
-        evalPartial0(aNlDx, aNlDy, aNlDz, aNlType, rFp, rFpPx, rFpPy, rFpPz);
+        // 现在直接计算基组
+        eval0(aNlDx, aNlDy, aNlDz, aNlType, rFp, aBufferNl);
     }
     
-    void eval0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType, IDataShell<double[]> rFp) {
+    @Override
+    protected void evalPartialWithShift_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType,
+                                         int aShiftFp, int aRestFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
+        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        
+        // 现在直接计算基组偏导
+        evalPartial0(aNlDx, aNlDy, aNlDz, aNlType, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz);
+    }
+    
+    @Override
+    protected void evalPartialAndForceDotAccumulate_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType,
+                                                     DoubleArrayVector aFpGrad, DoubleList rFx, DoubleList rFy, DoubleList rFz) {
+        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        
+        // 现在直接计算力
+        evalPartialAndForceDot0(aNlDx, aNlDy, aNlDz, aNlType, aFpGrad, rFx, rFy, rFz);
+    }
+    
+    
+    void eval0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType, IDataShell<double[]> rFp, boolean aBufferNl) {
         int tNN = aNlDx.internalDataSize();
         eval1(aNlDx.internalDataWithLengthCheck(tNN, 0), aNlDy.internalDataWithLengthCheck(tNN, 0), aNlDz.internalDataWithLengthCheck(tNN, 0), aNlType.internalDataWithLengthCheck(tNN, 0), tNN,
-              mRn.internalDataWithLengthCheck(mNMax+1, 0), mY.internalDataWithLengthCheck(mLMAll, 0), mCnlm.internalDataWithLengthCheck(mSizeN*mLMAll, 0), rFp.internalDataWithLengthCheck(mSize), rFp.internalDataShift(),
+              mNlRn.internalDataWithLengthCheck(tNN*(mNMax+1), 0), mNlY.internalDataWithLengthCheck(tNN*mLMAll, 0), mCnlm.internalDataWithLengthCheck(mSizeN*mLMAll, 0),
+              rFp.internalDataWithLengthCheck(mSize), rFp.internalDataShift(), aBufferNl,
               mTypeNum, mRCut, mNMax, mLMax, mNoRadial, mL3Max, mL3Cross, mWType);
     }
     private static native void eval1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
-                                     double[] rRn, double[] rY, double[] rCnlm, double[] rFp, int aShiftFp,
+                                     double[] rNlRn, double[] rNlY, double[] rCnlm, double[] rFp, int aShiftFp, boolean aBufferNl,
                                      int aTypeNum, double aRCut, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, int aWType);
     
     void evalPartial0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType,
-                      IDataShell<double[]> rFp, IDataShell<double[]> rFpPx, IDataShell<double[]> rFpPy, IDataShell<double[]> rFpPz) {
+                      int aShiftFp, int aRestFp, IDataShell<double[]> rFpPx, IDataShell<double[]> rFpPy, IDataShell<double[]> rFpPz) {
         int tNN = aNlDx.internalDataSize();
-        int tShiftFp = rFp.internalDataShift();
-        int tSizeFp = rFp.internalDataSize();
+        int tSizeTot = aShiftFp + aRestFp + mSize;
         evalPartial1(aNlDx.internalDataWithLengthCheck(tNN, 0), aNlDy.internalDataWithLengthCheck(tNN, 0), aNlDz.internalDataWithLengthCheck(tNN, 0), aNlType.internalDataWithLengthCheck(tNN, 0), tNN,
                      mNlRn.internalDataWithLengthCheck(tNN*(mNMax+1), 0), mRnPx.internalDataWithLengthCheck(mNMax+1, 0), mRnPy.internalDataWithLengthCheck(mNMax+1, 0), mRnPz.internalDataWithLengthCheck(mNMax+1, 0), mCheby2.internalDataWithLengthCheck(mNMax, 0),
                      mNlY.internalDataWithLengthCheck(tNN*mLMAll, 0), mYPtheta.internalDataWithLengthCheck(mLMAll, 0), mYPphi.internalDataWithLengthCheck(mLMAll, 0),
                      mYPx.internalDataWithLengthCheck(mLMAll, 0), mYPy.internalDataWithLengthCheck(mLMAll, 0), mYPz.internalDataWithLengthCheck(mLMAll, 0),
                      mCnlm.internalDataWithLengthCheck(mSizeN*mLMAll, 0), mCnlmPx.internalDataWithLengthCheck(mLMAll, 0), mCnlmPy.internalDataWithLengthCheck(mLMAll, 0), mCnlmPz.internalDataWithLengthCheck(mLMAll, 0),
-                     rFp.internalDataWithLengthCheck(mSize), tSizeFp, tShiftFp,
-                     rFpPx.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp), 0), rFpPy.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp), 0), rFpPz.internalDataWithLengthCheck(tNN*(tSizeFp+tShiftFp), 0),
+                     aShiftFp, aRestFp, rFpPx.internalDataWithLengthCheck(tNN*tSizeTot, 0), rFpPy.internalDataWithLengthCheck(tNN*tSizeTot, 0), rFpPz.internalDataWithLengthCheck(tNN*tSizeTot, 0),
                      mTypeNum, mRCut, mNMax, mLMax, mNoRadial, mL3Max, mL3Cross, mWType);
     }
     private static native void evalPartial1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
-                                            double[] rNlRn, double[] rRnPx, double[] rRnPy, double[] rRnPz, double[] rCheby2,
-                                            double[] rNlY, double[] rYPtheta, double[] rYPphi, double[] rYPx, double[] rYPy, double[] rYPz,
-                                            double[] rCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz,
-                                            double[] rFp, int aSizeFp, int aShiftFp, double[] rFpPx, double[] rFpPy, double[] rFpPz,
+                                            double[] aNlRn, double[] rRnPx, double[] rRnPy, double[] rRnPz, double[] rCheby2,
+                                            double[] aNlY, double[] rYPtheta, double[] rYPphi, double[] rYPx, double[] rYPy, double[] rYPz,
+                                            double[] aCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz,
+                                            int aShiftFp, int aRestFp, double[] rFpPx, double[] rFpPy, double[] rFpPz,
                                             int aTypeNum, double aRCut, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, int aWType);
+    
+    void evalPartialAndForceDot0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType,
+                                 IDataShell<double[]> aFpGrad, IDataShell<double[]> rFx, IDataShell<double[]> rFy, IDataShell<double[]> rFz) {
+        int tNN = aNlDx.internalDataSize();
+        evalPartialAndForceDot1(aNlDx.internalDataWithLengthCheck(tNN, 0), aNlDy.internalDataWithLengthCheck(tNN, 0), aNlDz.internalDataWithLengthCheck(tNN, 0), aNlType.internalDataWithLengthCheck(tNN, 0), tNN,
+                                mNlRn.internalDataWithLengthCheck(tNN*(mNMax+1), 0), mRnPx.internalDataWithLengthCheck(mNMax+1, 0), mRnPy.internalDataWithLengthCheck(mNMax+1, 0), mRnPz.internalDataWithLengthCheck(mNMax+1, 0), mCheby2.internalDataWithLengthCheck(mNMax, 0),
+                                mNlY.internalDataWithLengthCheck(tNN*mLMAll, 0), mYPtheta.internalDataWithLengthCheck(mLMAll, 0), mYPphi.internalDataWithLengthCheck(mLMAll, 0),
+                                mYPx.internalDataWithLengthCheck(mLMAll, 0), mYPy.internalDataWithLengthCheck(mLMAll, 0), mYPz.internalDataWithLengthCheck(mLMAll, 0),
+                                mCnlm.internalDataWithLengthCheck(mSizeN*mLMAll, 0), mCnlmPx.internalDataWithLengthCheck(mLMAll, 0), mCnlmPy.internalDataWithLengthCheck(mLMAll, 0), mCnlmPz.internalDataWithLengthCheck(mLMAll, 0),
+                                aFpGrad.internalDataWithLengthCheck(mSize), aFpGrad.internalDataShift(), rFx.internalDataWithLengthCheck(tNN, 0), rFy.internalDataWithLengthCheck(tNN, 0), rFz.internalDataWithLengthCheck(tNN, 0),
+                                mTypeNum, mRCut, mNMax, mLMax, mNoRadial, mL3Max, mL3Cross, mWType);
+    }
+    private static native void evalPartialAndForceDot1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
+                                                       double[] aNlRn, double[] rRnPx, double[] rRnPy, double[] rRnPz, double[] rCheby2,
+                                                       double[] aNlY, double[] rYPtheta, double[] rYPphi, double[] rYPx, double[] rYPy, double[] rYPz,
+                                                       double[] aCnlm, double[] rCnlmPx, double[] rCnlmPy, double[] rCnlmPz,
+                                                       double[] aFpGrad, int aShiftFp, double[] rFx, double[] rFy, double[] rFz,
+                                                       int aTypeNum, double aRCut, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, int aWType);
 }

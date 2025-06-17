@@ -107,8 +107,10 @@ public class TorchModel extends NeuralNetwork {
     
     
     private final TorchPointer mPtr;
+    private final int mInputDim;
     
-    public TorchModel(String aModel) throws TorchException {
+    public TorchModel(int aInputDim, String aModel) throws TorchException {
+        mInputDim = aInputDim;
         byte[] tModelBytes = Base64.getDecoder().decode(aModel);
         long tModelPtr = load1(tModelBytes, tModelBytes.length);
         if (tModelPtr==0 || tModelPtr==-1) {
@@ -121,16 +123,18 @@ public class TorchModel extends NeuralNetwork {
         mPtr.dispose();
     }
     
+    @Override public int inputSize() {
+        return mInputDim;
+    }
     @Override public double forward(DoubleArrayVector aX) throws TorchException {
         if (isShutdown()) throw new IllegalStateException("This Model is dead");
-        return forward0(mPtr.mPtr, aX.internalDataWithLengthCheck(), aX.internalDataShift(), aX.internalDataSize());
+        return forward0(mPtr.mPtr, aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), mInputDim);
     }
     
     @Override public double backward(DoubleArrayVector aX, DoubleArrayVector rGradX) throws TorchException {
         if (isShutdown()) throw new IllegalStateException("This Model is dead");
-        int tCount = aX.internalDataSize();
-        return backward0(mPtr.mPtr, aX.internalDataWithLengthCheck(), aX.internalDataShift(),
-                         rGradX.internalDataWithLengthCheck(tCount), rGradX.internalDataShift(), tCount);
+        return backward0(mPtr.mPtr, aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(),
+                         rGradX.internalDataWithLengthCheck(mInputDim), rGradX.internalDataShift(), mInputDim);
     }
     
     private static native long load0(String aModelPath) throws TorchException;

@@ -49,6 +49,7 @@ public class Mirror extends Basis {
         mMirrorBasis.shutdown();
     }
     
+    private boolean mMirrorNlTypeValid = false;
     private final IntList mMirrorNlType = new IntList(16);
     private void buildNlType_(IntList aNlType) {
         mMirrorNlType.clear();
@@ -58,18 +59,31 @@ public class Mirror extends Basis {
             else if (type == mMirrorType) mMirrorNlType.add(mThisType);
             else mMirrorNlType.add(type);
         });
+        mMirrorNlTypeValid = true;
     }
     
     @Override
-    public void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
+    protected void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, boolean aBufferNl) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (mMirrorNlTypeValid) throw new IllegalStateException();
         buildNlType_(aNlType);
-        mMirrorBasis.eval_(aNlDx, aNlDy, aNlDz, mMirrorNlType, rFp);
+        mMirrorBasis.eval_(aNlDx, aNlDy, aNlDz, mMirrorNlType, rFp, aBufferNl);
+        if (!aBufferNl) mMirrorNlTypeValid = false;
     }
     @Override
-    public void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
+    protected void evalPartial_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        buildNlType_(aNlType);
-        mMirrorBasis.evalPartial_(aNlDx, aNlDy, aNlDz, mMirrorNlType, rFp, rFpPx, rFpPy, rFpPz);
+        // 由于 evalPartial_ 总是在 eval_ 之后调用的，此时不需要重新构造 mMirrorNlType
+        if (!mMirrorNlTypeValid) throw new IllegalStateException();
+        mMirrorBasis.evalPartial_(aNlDx, aNlDy, aNlDz, mMirrorNlType, rFpPx, rFpPy, rFpPz);
+        mMirrorNlTypeValid = false;
+    }
+    @Override
+    protected void evalPartialAndForceDot_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aFpGrad, DoubleList rFx, DoubleList rFy, DoubleList rFz) {
+        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        // 由于 evalPartial_ 总是在 eval_ 之后调用的，此时不需要重新构造 mMirrorNlType
+        if (!mMirrorNlTypeValid) throw new IllegalStateException();
+        mMirrorBasis.evalPartialAndForceDot_(aNlDx, aNlDy, aNlDz, mMirrorNlType, aFpGrad, rFx, rFy, rFz);
+        mMirrorNlTypeValid = false;
     }
 }

@@ -16,6 +16,7 @@ public abstract class NeuralNetwork implements IAutoShutdown {
         NNAP.InitHelper.init();
     }
     
+    public abstract int inputSize();
     public abstract double forward(DoubleArrayVector aX) throws Exception;
     public abstract double backward(DoubleArrayVector aX, DoubleArrayVector rGradX) throws Exception;
     
