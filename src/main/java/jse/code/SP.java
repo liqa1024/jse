@@ -40,9 +40,11 @@ import org.codehaus.groovy.runtime.InvokerHelper;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.Future;
@@ -553,6 +555,8 @@ public class SP {
         public final static String JEP_VERSION = "4.2.0", ASE_VERSION = "3.25.0";
         /** 检测到的 python prefix 路径位置，已经合法化可以直接拼接路径 */
         public final static String PYTHON_PREFIX_DIR;
+        /** 是否有 numpy 支持，除了检测 numpy 包，也会据此强制要求 jni 编译时开启相应支持 */
+        public final static boolean NUMPY_SUPPORT;
         /** jep 二进制库路径 */
         public final static String JEP_LIB_DIR;
         public final static String JEP_LIB_PATH;
@@ -749,7 +753,7 @@ public class SP {
             // 依赖 jniutil
             JNIUtil.InitHelper.init();
             
-            // 需要 python 环境，由于总是需要执行 python 来
+            // 需要 python 环境，由于总是需要执行 python 来获取相关信息，因此这里统一检测
             boolean tUsePython3 = false;
             EXEC.setNoSTDOutput().setNoERROutput();
             boolean tNoPython = EXEC.system("python --version") != 0;
@@ -757,18 +761,45 @@ public class SP {
                 tNoPython = EXEC.system("python3 --version") != 0;
                 if (!tNoPython) tUsePython3 =  true;
             }
+            // 顺便获取 numpy 支持情况
+            boolean tNumpySupport = true;
+            if (!tNoPython) {
+                tNumpySupport = EXEC.system((tUsePython3?"python3":"python") + " -c 'import numpy'") == 0;
+            }
+            NUMPY_SUPPORT = tNumpySupport;
             EXEC.setNoSTDOutput(false).setNoERROutput(false);
             if (tNoPython) {
                 System.err.println("No python found, you can download python from: https://www.python.org/downloads/");
                 System.err.println("  If you need numpy, you need to install numpy before running: `pip install numpy==1.26.4`");
                 throw new RuntimeException("JEP BUILD ERROR: No python environment.");
             }
-            String tPrefix = EXEC.system_str((tUsePython3 ? "python3" : "python") + " -c 'import sys; print(sys.prefix)'").get(0);
+            // 获取 python 路径，不同 python 版本支持
+            String tPrefix = EXEC.system_str((tUsePython3?"python3":"python") + " -c 'import sys; print(sys.prefix)'").get(0);
             PYTHON_PREFIX_DIR = IO.exists(tPrefix) ? IO.toInternalValidDir(tPrefix) : null;
-            JEP_LIB_DIR = JAR_DIR+"jep/" + UT.Code.uniqueID(JAVA_HOME, VERSION, PYTHON_PREFIX_DIR, JEP_VERSION, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_SETTING) + "/";
+            // 通过上述属性决定使用的 jep 路径
+            JEP_LIB_DIR = JAR_DIR+"jep/" + UT.Code.uniqueID(JAVA_HOME, VERSION, PYTHON_PREFIX_DIR, JEP_VERSION, NUMPY_SUPPORT, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_SETTING) + "/";
             
+            // 先添加 Conf.CMAKE_SETTING，这样保证确定的优先级
+            Map<String, String> rCmakeSetting = new LinkedHashMap<>(Conf.CMAKE_SETTING);
+            rCmakeSetting.put("JSE_JEP_NUMPY_SUPPORT", NUMPY_SUPPORT ? "ON" : "OFF");
             // 现在直接使用 JNIUtil.buildLib 来统一初始化
-            JEP_LIB_PATH = new JNIUtil.LibBuilder("jep", "JEP", JEP_LIB_DIR, Conf.CMAKE_SETTING)
+            JEP_LIB_PATH = new JNIUtil.LibBuilder("jep", "JEP", JEP_LIB_DIR, rCmakeSetting)
+                .setEnvChecker(() -> {
+                    // 在这里输出没有 numpy 的警告，保证无 numpy 情况下只会警告一次
+                    if (!NUMPY_SUPPORT) {
+                        System.out.println("JEP INIT INFO: No numpy in python, you can install numpy by `pip install numpy==1.26.4`,");
+                        System.out.println("  or build jep without numpy support.");
+                        System.out.println("Build jep without numpy support? (y/N)");
+                        BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
+                        String tLine = tReader.readLine();
+                        while (!tLine.equalsIgnoreCase("y")) {
+                            if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
+                                throw new Exception("JEP INIT ERROR: No numpy in python.");
+                            }
+                            System.out.println("Build jep without numpy support? (y/N)");
+                        }
+                    }
+                })
                 .setSrcDirIniter(wd -> {
                     // 首先获取源码路径，这里直接从 resource 里输出
                     String tJepZipPath = wd+"jep-"+JEP_VERSION+".zip";

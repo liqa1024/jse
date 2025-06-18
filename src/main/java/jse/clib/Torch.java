@@ -93,7 +93,7 @@ public class Torch {
         System.out.println("  - Set the environment variable `JSE_TORCH_HOME` to torch path, like: path/to/Python/Python312/Lib/site-packages/torch");
         System.out.printf( "  - Move the correct torch whl (%s) to %s, url: https://download.pytorch.org/whl/torch/\n", VERSION, PYTHON_PKG_DIR);
         System.out.println("  - Auto download torch by jse.");
-        System.out.println("Download torch ? (Y/n)");
+        System.out.println("Download torch? (Y/n)");
         BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
         String tLine = tReader.readLine();
         while (true) {
@@ -103,7 +103,7 @@ public class Torch {
             if (tLine.isEmpty() || tLine.equalsIgnoreCase("y")) {
                 break;
             }
-            System.out.println("Download torch ? (Y/n)");
+            System.out.println("Download torch? (Y/n)");
         }
         System.out.println("TORCH INIT INFO: Downloading torch...");
         int tExitCode = SP.Python.downloadPackage("torch=="+VERSION, null, null, Conf.INDEX_URL);

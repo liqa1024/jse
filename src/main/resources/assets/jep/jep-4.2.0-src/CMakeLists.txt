@@ -89,20 +89,20 @@ set(SOURCE_FILES
 add_library(jep SHARED ${SOURCE_FILES})
 
 
-if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
     set(BUILD_SHARED_LIBS ON)
-endif ()
+endif()
 
 
 # add jni
 find_package(JNI)
-if (JNI_FOUND)
+if(JNI_FOUND)
     include_directories(${JNI_INCLUDE_DIRS})
     target_link_libraries(jep ${JNI_LIBRARIES})
-else ()
+else()
     message(FATAL_ERROR "No java development environment found")
-endif(JNI_FOUND)
+endif()
 
 
 # add jniutil (jstring to char *, fopen)
@@ -120,37 +120,41 @@ endif()
 
 
 # add python
+option(JSE_JEP_NUMPY_SUPPORT "Numpy support (force)" ON)
 find_package(Python3 COMPONENTS Development)
-if (Python3_Development_FOUND)
+if(Python3_Development_FOUND)
     add_definitions(-DPYTHON_LDLIBRARY="${Python3_LIBRARIES}")
     
     include_directories(${Python3_INCLUDE_DIRS})
     target_link_libraries(jep Python3::Python)
     
     # add numpy
-    find_package(Python3 COMPONENTS Development NumPy)
-    if (Python3_NumPy_FOUND)
-        add_definitions(-DJEP_NUMPY_ENABLED=1)
-        
-        include_directories(${Python3_NumPy_INCLUDE_DIRS})
-        target_link_libraries(jep Python3::NumPy)
-    else ()
-        message(NOTICE "numpy not found, running without numpy support")
+    if(JSE_JEP_NUMPY_SUPPORT)
+        find_package(Python3 COMPONENTS Development NumPy)
+        if(Python3_NumPy_FOUND)
+            add_definitions(-DJEP_NUMPY_ENABLED=1)
+            
+            include_directories(${Python3_NumPy_INCLUDE_DIRS})
+            target_link_libraries(jep Python3::NumPy)
+        else()
+            message(FATAL_ERROR "numpy development environment not found")
+        endif()
+    else()
         add_definitions(-DJEP_NUMPY_ENABLED=0)
-    endif(Python3_NumPy_FOUND)
-else ()
+    endif()
+else()
     message(FATAL_ERROR "No python3 development environment found")
-endif(Python3_Development_FOUND)
+endif()
 
 
 # jep defines
 add_definitions(-DPACKAGE=jep)
 add_definitions(-DUSE_DEALLOC=1)
 add_definitions(-DVERSION="4.2.0")
-if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_definitions(-DWIN32=1)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS=1)
-endif ()
+endif()
 
 # auto-convert BigDecimal internal
 add_definitions(-DAUTOCONVERT_BIGDECIMAL)

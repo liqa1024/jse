@@ -187,14 +187,14 @@ public class JNIUtil {
                     if (aForce) {
                         throw new Exception(mInfoProjectName +" INIT ERROR: No MPI environment.");
                     }
-                    System.out.println("build "+ mProjectName +" without MPI support ? (y/N)");
+                    System.out.println("build "+ mProjectName +" without MPI support? (y/N)");
                     BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
                     String tLine = tReader.readLine();
                     while (!tLine.equalsIgnoreCase("y")) {
                         if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
                             throw new Exception(mInfoProjectName +" INIT ERROR: No MPI environment.");
                         }
-                        System.out.println("build "+ mProjectName +" without MPI support ? (y/N)");
+                        System.out.println("build "+ mProjectName +" without MPI support? (y/N)");
                     }
                 }
             };
@@ -224,7 +224,7 @@ public class JNIUtil {
         
         @Override public String get() {
             // 如果开启了 USE_MIMALLOC 则增加 MiMalloc 依赖
-            if (mUseMiMalloc !=null && mUseMiMalloc) MiMalloc.InitHelper.init();
+            if (mUseMiMalloc!=null && mUseMiMalloc) MiMalloc.InitHelper.init();
             String tLibPath;
             if (mRedirectLibPath == null) {
                 @Nullable String tLibName = LIB_NAME_IN(mLibDir, mProjectName);
@@ -244,23 +244,16 @@ public class JNIUtil {
         }
         
         
-        private String cmakeInitCmd_() {
+        private String cmakeInitCmd_() throws IOException {
             // 设置参数，这里使用 List 来构造这个长指令
             List<String> rCommand = new ArrayList<>();
             rCommand.add("cmake");
             // 这里设置 C/C++ 编译器（如果有）
-            if (mCmakeCCompiler != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + mCmakeCCompiler);}
+            if (mCmakeCCompiler   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + mCmakeCCompiler);}
             if (mCmakeCxxCompiler != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ mCmakeCxxCompiler);}
-            if (mCmakeCFlags != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS='"    + mCmakeCFlags +"'");}
-            if (mCmakeCxxFlags != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS='"  + mCmakeCxxFlags +"'");}
-            // 初始化使用上一个目录的 CMakeList.txt
-            rCommand.add(mCmakeInitDir);
-            return String.join(" ", rCommand);
-        }
-        private String cmakeSettingCmd_() throws IOException {
-            // 设置参数，这里使用 List 来构造这个长指令
-            List<String> rCommand = new ArrayList<>();
-            rCommand.add("cmake");
+            if (mCmakeCFlags      != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS='"    + mCmakeCFlags +"'");}
+            if (mCmakeCxxFlags    != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS='"  + mCmakeCxxFlags +"'");}
+            // 配置其余的参数设置
             if (mUseMiMalloc != null) {
                 rCommand.add("-D"); rCommand.add("JSE_USE_MIMALLOC="+(mUseMiMalloc ?"ON":"OFF"));
             }
@@ -276,7 +269,8 @@ public class JNIUtil {
             for (Map.Entry<String, String> tEntry : mCmakeSettings.entrySet()) {
                 rCommand.add("-D"); rCommand.add(String.format("%s=%s", tEntry.getKey(), tEntry.getValue()));
             }
-            rCommand.add(".");
+            // 初始化使用上一个目录的 CMakeList.txt
+            rCommand.add(mCmakeInitDir);
             return String.join(" ", rCommand);
         }
         private @NotNull String initLib_() throws Exception {
@@ -330,10 +324,8 @@ public class JNIUtil {
             String tBuildDir = mBuildDirIniter.init(tSrcDir);
             // 直接通过系统指令来编译库，关闭输出
             EXEC.setNoSTDOutput().setWorkingDir(tBuildDir);
-            // 初始化 cmake
+            // 现在初始化 cmake 和参数设置放在一起执行
             EXEC.system(cmakeInitCmd_());
-            // 设置参数
-            EXEC.system(cmakeSettingCmd_());
             // 最后进行构造操作
             EXEC.system("cmake --build . --config Release");
             EXEC.setNoSTDOutput(false).setWorkingDir(null);
