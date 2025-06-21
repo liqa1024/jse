@@ -86,7 +86,7 @@ public class MiMalloc {
     
     
     /** 当前 {@link MiMalloc} 所使用的版本号 */
-    public final static String VERSION = "2.1.7";
+    public final static String VERSION = "2.2.4";
     
     /** 当前 {@link MiMalloc} 库的根目录，结尾一定存在 {@code '/'} */
     public final static String HOME = JAR_DIR+"mimalloc/" + UT.Code.uniqueID(JAVA_HOME, CS.VERSION, MiMalloc.VERSION, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
