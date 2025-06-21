@@ -858,6 +858,14 @@ public class SP {
             jep.ClassList.ADDITIONAL_CLASS_PATHS.addAll(JAR_LIB_PATHS);
             // 初始化 JEP_INTERP
             initInterpreter_();
+            // 简单验证链接的 python 是否一致
+            if (PYTHON_PREFIX_DIR != null) {
+                tPrefix = JEP_INTERP.getValue("sys.prefix").toString();
+                if (!IO.samePath(tPrefix, PYTHON_PREFIX_DIR)) {
+                    UT.Code.warning("python prefix detected by jep compile ('"+tPrefix+"') seems to be inconsistent with the expected ('"+PYTHON_PREFIX_DIR+"'), \n" +
+                                    "  you may need to adjust the python related env and delete the jep lib dir ('"+JEP_LIB_DIR+"') to recompile.");
+                }
+            }
         }
         /** 初始化内部的 JEP_INTERP，主要用于减少重复代码 */
         private static void initInterpreter_() {
