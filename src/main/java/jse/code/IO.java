@@ -412,6 +412,19 @@ public class IO {
         public static @Nullable String findLineContaining(BufferedReader aReader, String aContainStr) throws IOException {return findLineContaining(aReader, aContainStr, false);}
         
         /**
+         * 读取 aReader 直到非空行
+         * @param aReader 用来读取的 {@link BufferedReader}
+         * @return 找到非空的行，如果没有找到则返回 {@code null}
+         */
+        public static @Nullable String findLineNoBlank(BufferedReader aReader) throws IOException {
+            String tLine;
+            while ((tLine = aReader.readLine()) != null) {
+                if (!isBlank(tLine)) return tLine;
+            }
+            return null;
+        }
+        
+        /**
          * Splits a string separated by blank characters into multiple strings
          * <p>
          * will automatically ignore multiple spaces and the beginning and end spaces, we have:

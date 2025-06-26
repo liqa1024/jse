@@ -67,6 +67,12 @@ public interface IAtomData extends IHasSymbol {
     @Deprecated default int atomTypeNum() {return atomTypeNumber();}
     
     /**
+     * @return 原子键种类的总数，可以大于实际真实包含的原子键种类数目，当不存在键信息时返回 {@code 0}
+     * @see #hasBond()
+     */
+    int bondTypeNumber();
+    
+    /**
      * @return 此原子数据对应的模拟盒
      * @see IBox
      */
@@ -96,6 +102,16 @@ public interface IAtomData extends IHasSymbol {
      * @see IAtom#hasID()
      */
     boolean hasID();
+    /**
+     * @return 此原子数据是否包含键信息
+     * @see IAtom#hasBond()
+     */
+    boolean hasBond();
+    /**
+     * @return 此原子数据是否包含键的 id 信息
+     * @see IBond#hasID()
+     */
+    boolean hasBondID();
     /**
      * @return 此原子数据是否真实包含速度信息
      * @see IAtom#hasVelocity()

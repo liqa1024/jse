@@ -64,6 +64,8 @@ public class CS {
     public final static String[] ATOM_DATA_KEYS = {"x", "y", "z", "id", "type", "vx", "vy", "vz"};
     /** {@code ["vx", "vy", "vz"]} */
     public final static String[] ATOM_DATA_KEYS_VELOCITY = {"vx", "vy", "vz"};
+    /** {@code ["type", "id1", "id2"]} */
+    public final static String[] ATOM_DATA_KEYS_BOND = {"type", "id1", "id2"};
     /** {@code ["x", "y", "z"]} */
     public final static String[] ATOM_DATA_KEYS_XYZ = {"x", "y", "z"};
     /** {@code ["x", "y", "z", "id"]} */
@@ -72,6 +74,8 @@ public class CS {
     public final static String[] ATOM_DATA_KEYS_TYPE_XYZ = {"type", "x", "y", "z"};
     /** {@code ["id", "type", "x", "y", "z"]} */
     public final static String[] ATOM_DATA_KEYS_ID_TYPE_XYZ = {"id", "type", "x", "y", "z"};
+    /** {@code ["id", "type", "mol", "charge", "x", "y", "z"]} */
+    public final static String[] ATOM_DATA_KEYS_ID_TYPE_MOL_CHARGE_XYZ = {"id", "type", "mol", "charge", "x", "y", "z"};
     /** {@code ["id", "type", "x", "y", "z", "vx", "vy", "vz"]} */
     public final static String[] ALL_ATOM_DATA_KEYS = {"id", "type", "x", "y", "z", "vx", "vy", "vz"};
     /** {@link #ATOM_DATA_KEYS_ID_TYPE_XYZ} */
@@ -90,6 +94,8 @@ public class CS {
     public final static int STD_ID_COL = 0, STD_TYPE_COL = 1, STD_X_COL = 2, STD_Y_COL = 3, STD_Z_COL = 4;
     /** index of {@link #ATOM_DATA_KEYS_VELOCITY} */
     public final static int STD_VX_COL = 0, STD_VY_COL = 1, STD_VZ_COL = 2;
+    /** index of {@link #ATOM_DATA_KEYS_BOND} */
+    public final static int STD_BOND_TYPE_COL = 0, STD_BOND_ID1_COL = 1, STD_BOND_ID2_COL = 2;
     
     /** {@link jse.atom.AtomicParameterCalculator} 参数计算默认使用的截断半径倍率 */
     public final static double R_NEAREST_MUL = 1.5;

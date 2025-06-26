@@ -447,8 +447,10 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      * @see #atom(int)
      */
     protected abstract class AbstractSettableAtom_ extends AbstractSettableAtom {
-        /** 转发 {@link AbstractAtomData#hasID()} */
+        /** 转发 {@link AbstractSettableAtomData#hasID()} */
         @Override public boolean hasID() {return AbstractSettableAtomData.this.hasID();}
+        /** 转发 {@link AbstractSettableAtomData#hasBond()} */
+        @Override public boolean hasBond() {return AbstractSettableAtomData.this.hasBond();}
         /** 转发 {@link AbstractSettableAtomData#hasVelocity()} */
         @Override public boolean hasVelocity() {return AbstractSettableAtomData.this.hasVelocity();}
         /** 转发 {@link AbstractSettableAtomData#symbol(int)} */

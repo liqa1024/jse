@@ -4,6 +4,8 @@ import jep.NDArray;
 import jse.code.CS;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 /**
  * 通用的原子接口，通过 {@link #x()}, {@link #y()},
  * {@link #z()} 来获取具体坐标值；通过 {@link #id()}
@@ -50,6 +52,17 @@ public interface IAtom extends IXYZ {
     default int id() {return -1;}
     /** @return 此原子是否真实包含 id 信息 */
     default boolean hasID() {return false;}
+    
+    /**
+     * @return 此原子连接的键的信息，如果不存在则会返回
+     * {@code null}；jse 实现统一会保证键连接是完全的，即
+     * {@code i-j} 键对于 {@code i} 和 {@code j} 统一都会包含
+     *
+     * @see #hasBond()
+     */
+    default List<? extends IBond> bonds() {return null;}
+    /** @return 此原子是否包含键信息 */
+    default boolean hasBond() {return false;}
     
     /** @return 此原子的种类编号，从 1 开始 (对应 lammps 中的原子 type) */
     int type();

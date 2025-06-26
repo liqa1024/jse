@@ -76,12 +76,27 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see AtomData AtomData: 关于具体实现的例子
      */
     public abstract int atomTypeNumber();
+    /**
+     * @return {@inheritDoc}
+     * @see #hasBond()
+     */
+    @Override public int bondTypeNumber() {return 0;}
     
     /**
      * @return {@inheritDoc}
      * @see AtomData AtomData: 关于具体实现的例子
      */
     @Override public boolean hasID() {return false;}
+    /**
+     * @return {@inheritDoc}
+     * @see IAtom#hasBond()
+     */
+    @Override public boolean hasBond() {return false;}
+    /**
+     * @return {@inheritDoc}
+     * @see IBond#hasID()
+     */
+    @Override public boolean hasBondID() {return false;}
     /**
      * @return {@inheritDoc}
      * @see AtomData AtomData: 关于具体实现的例子
@@ -144,6 +159,8 @@ public abstract class AbstractAtomData implements IAtomData {
     protected abstract class AbstractAtom_ extends AbstractAtom {
         /** 转发 {@link AbstractAtomData#hasID()} */
         @Override public boolean hasID() {return AbstractAtomData.this.hasID();}
+        /** 转发 {@link AbstractAtomData#hasBond()} */
+        @Override public boolean hasBond() {return AbstractAtomData.this.hasBond();}
         /** 转发 {@link AbstractAtomData#hasVelocity()} */
         @Override public boolean hasVelocity() {return AbstractAtomData.this.hasVelocity();}
         /** 转发 {@link AbstractAtomData#symbol(int)} */
@@ -202,6 +219,27 @@ public abstract class AbstractAtomData implements IAtomData {
         @Override public abstract int index();
         /** 对于 {@link IAtomData} 内部的原子一定存在索引信息 */
         @Override public boolean hasIndex() {return true;}
+    }
+    
+    /**
+     * 对于 {@link IAtomData} 内部的原子的一个一般原子键实现，帮助实现重复的部分；
+     * 主要转发了 {@link IBond#hasID()} 到相对应的 {@link IAtomData} 内的方法；并且对于一些边界情况进行自动处理
+     * @see IAtom#bonds()
+     */
+    protected abstract class AbstractBond_ extends AbstractBond {
+        /** 转发 {@link AbstractAtomData#hasBondID()} */
+        @Override public boolean hasID() {return AbstractAtomData.this.hasBondID();}
+        /**
+         * 为内部 type {@link #type_()} 包装一层检测 type
+         * 是否会超过 {@link #bondTypeNumber()}，如果超过了则自动截断
+         */
+        @Override public int type() {return Math.min(type_(), bondTypeNumber());}
+        /** bondAtom 可以直接通过 {@link #atom(int)} 获取 */
+        @Override public IAtom bondAtom() {return atom(bondIndex());}
+        
+        /// stuff to override
+        /** 可以直接实现的返回内部 type 值 */
+        protected abstract int type_();
     }
     
     
