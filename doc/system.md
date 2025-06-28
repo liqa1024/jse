@@ -235,15 +235,15 @@ jse 支持使用 ssh 向远程服务器来提交任务，这里基于
 
 ### 免密连接
 
-这里同样支持免密连接 ssh，但是 jsch 只支持经典格式的 openSSH 密钥，
-因此在生成密钥时需要加上 `-m pem` 参数，具体操作如下：
+这里同样支持免密连接 ssh，并且现在新版 jsch 应该支持任意格式的 openSSH
+密钥，因此只需要常规配置免密连接后即可省略 `password` 参数，具体操作如下：
 
 - **windows:**
     
     在 powershell 中输入：
     
     ```powershell
-    ssh-keygen -m pem -t rsa -b 4096
+    ssh-keygen -t rsa -b 4096
     cat ~/.ssh/id_rsa.pub | ssh username@hostname "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
     ```
     
@@ -252,23 +252,31 @@ jse 支持使用 ssh 向远程服务器来提交任务，这里基于
     直接在终端输入：
     
     ```shell
-    ssh-keygen -m pem -t rsa -b 4096
+    ssh-keygen -t rsa -b 4096
     ssh-copy-id username@hostname
     ```
   
 > **注意**: 需要将 `username` 和 `hostname` 分别替换成用户名以及服务器地址。
 > 
 
-如果已经有了密钥并且实现了免密连接，但是 jsch 不支持现在的密钥格式，
-则可通过这个指令来修改密钥格式：
+现在也支持其他高级格式的密钥，例如对于 ssh-ed25519：
 
 ```shell
-ssh-keygen -p -f .ssh/id_rsa -m pem
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
 ```
 
-> 创建 ssh 任务提交器时不提供密码则会自动使用位于
-> `~/.ssh/id_rsa` 的密钥进行验证。
-> 
+不过由于默认会自动使用位于 `~/.ssh/id_rsa` 的密钥进行验证，因此需要手动设置密钥路径：
+
+```groovy
+import jse.system.SSH
+
+def ssh = new SSH(
+    hostname: '127.0.0.1',
+    username: 'admin',
+    key: '~/.ssh/id_ed25519'
+)
+```
+
 
 ### SSH 参数 API
 
