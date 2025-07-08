@@ -34,6 +34,21 @@ public interface IOptimizer {
     IOptimizer setLossFuncGrad(ILossFuncGrad aLossFuncGrad);
     
     /**
+     * 设置需要线搜索，这里统一使用
+     * <a href="https://en.wikipedia.org/wiki/Backtracking_line_search">Armijo 线搜索</a>
+     * @param aGamma Armijo 线搜索中的参数 gamma，默认为 {@code 0.5}
+     * @param aC1 Armijo 线搜索中的参数 c1，默认为 {@code 0.0001}
+     * @return 自身方便链式调用
+     */
+    IOptimizer setLineSearch(double aGamma, double aC1);
+    /**
+     * 设置需要线搜索，这里统一使用
+     * <a href="https://en.wikipedia.org/wiki/Backtracking_line_search">Armijo 线搜索</a>
+     * @return 自身方便链式调用
+     */
+    default IOptimizer setLineSearch() {return setLineSearch(0.5, 0.0001);}
+    
+    /**
      * 执行优化，并更新输入的参数
      * @param aMaxStep 最多的优化步数
      * @param aPrintLog 是否在优化过程中输出中间信息，默认为 {@code true}

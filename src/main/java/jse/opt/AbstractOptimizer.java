@@ -15,6 +15,21 @@ public abstract class AbstractOptimizer implements IOptimizer {
     protected IVector mParameter = null, mParameterStep = null;
     protected ILossFunc mLossFunc = null;
     protected ILossFuncGrad mLossFuncGrad = null;
+    protected double mGamma = Double.NaN, mC1 = Double.NaN;
+    protected boolean mLineSearch = false;
+    
+    private IVector mGrad = null;
+    private boolean mGradValid = false;
+    
+    /**
+     * 调用此方法设置当前 {@link #mParameter}
+     * 下对应的梯度，可用于线搜索之类的算法直接使用
+     * @param aGrad 需要设置的梯度值
+     */
+    protected void setGrad(IVector aGrad) {
+        mGrad.fill(aGrad);
+        mGradValid = true;
+    }
     
     /**
      * {@inheritDoc}
@@ -24,6 +39,7 @@ public abstract class AbstractOptimizer implements IOptimizer {
     @Override public AbstractOptimizer setParameter(IVector aParameter) {
         mParameter = aParameter;
         if (mParameter != null) mParameterStep = Vectors.zeros(aParameter.size());
+        if (mParameter != null) mGrad = Vectors.zeros(aParameter.size());
         return this;
     }
     /**
@@ -44,6 +60,18 @@ public abstract class AbstractOptimizer implements IOptimizer {
         mLossFuncGrad = aLossFuncGrad;
         return this;
     }
+    /**
+     * {@inheritDoc}
+     * @param aGamma {@inheritDoc}
+     * @param aC1 {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override public AbstractOptimizer setLineSearch(double aGamma, double aC1) {
+        mGamma = aGamma;
+        mC1 = aC1;
+        mLineSearch = true;
+        return this;
+    }
     
     /**
      * {@inheritDoc}
@@ -56,8 +84,10 @@ public abstract class AbstractOptimizer implements IOptimizer {
         double oLoss = Double.NaN;
         for (int step = 0; step < aMaxStep; ++step) {
             double tLoss = calStep();
+            if (mLineSearch) lineSearch(tLoss);
             if (checkBreak(tLoss, oLoss)) break;
             applyStep();
+            if (mLineSearch) mGradValid = false;
             printLog(step, tLoss);
             oLoss = tLoss;
         }
@@ -70,10 +100,30 @@ public abstract class AbstractOptimizer implements IOptimizer {
         if (mParameter == null) throw new IllegalStateException("no parameter set");
     }
     /**
-     * 计算参数需要的迭代长度，并将计算结果写入 {@link #mParameterStep}
+     * 计算参数需要的迭代长度，并将计算结果写入 {@link #mParameterStep}。
+     * 如果计算了梯度，应当调用 {@link #setGrad(IVector)} 设置梯度从而避免重复计算
      * @return 顺便返回得到的 loss 值
      */
     protected abstract double calStep();
+    /**
+     * 应用线搜索，这里使用 Armijo 线搜索。
+     * 将线搜索结果写入 {@link #mParameterStep}
+     */
+    protected void lineSearch(double aLoss) {
+        if (!mGradValid) {
+            if (mLossFuncGrad == null) throw new IllegalStateException("no loss func gradient set");
+            mLossFuncGrad.call(mParameter, mGrad);
+        }
+        while (true) {
+            if (mLossFunc == null) throw new IllegalStateException("no loss func set");
+            double tTarget = aLoss + mC1*mGrad.operation().dot(mParameterStep);
+            mParameter.plus2this(mParameterStep);
+            double tLoss = mLossFunc.call(mParameter);
+            mParameter.minus2this(mParameterStep);
+            if (tLoss <= tTarget) return;
+            mParameterStep.multiply2this(mGamma);
+        }
+    }
     /**
      * 应用迭代步长，默认直接运算 {@code mParameter.plus2this(mParameterStep)}。
      * 重写来实现自定义的更新策略

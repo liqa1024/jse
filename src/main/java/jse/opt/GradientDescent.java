@@ -30,6 +30,7 @@ public class GradientDescent extends AbstractOptimizer {
     protected double calStep() {
         if (mLossFuncGrad == null) throw new IllegalStateException("no loss func gradient set");
         double tLoss = mLossFuncGrad.call(mParameter, mParameterStep);
+        setGrad(mParameterStep);
         mParameterStep.multiply2this(-mEta);
         return tLoss;
     }
