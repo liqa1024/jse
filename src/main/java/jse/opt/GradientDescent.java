@@ -25,13 +25,12 @@ public class GradientDescent extends AbstractOptimizer {
     
     /**
      * {@inheritDoc}
+     * @param aStep {@inheritDoc}
      * @return {@inheritDoc}
      */
-    protected double calStep() {
-        if (mLossFuncGrad == null) throw new IllegalStateException("no loss func gradient set");
-        double tLoss = mLossFuncGrad.call(mParameter, mParameterStep);
-        setGrad(mParameterStep);
-        mParameterStep.multiply2this(-mEta);
+    @Override protected double calStep(int aStep) {
+        double tLoss = eval(true);
+        grad().operation().multiply2dest(-mEta, mParameterStep);
         return tLoss;
     }
 }
