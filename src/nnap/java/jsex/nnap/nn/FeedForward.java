@@ -165,19 +165,19 @@ public class FeedForward extends NeuralNetwork {
     
     public IVector parameters() {
         final int tEndHW = mHiddenWeightsSize;
-        final int tEndHB = tEndHW + mHiddenBiasesSize;
-        final int tEndOW = tEndHB + mOutputWeightSize;
-        final int tEndOB = tEndOW + 1;
+        final int tEndOW = tEndHW + mOutputWeightSize;
+        final int tEndHB = tEndOW + mHiddenBiasesSize;
+        final int tEndOB = tEndHB + 1;
         return new RefVector() {
             @Override public double get(int aIdx) {
                 if (aIdx < tEndHW) {
                     return mHiddenWeights.get(aIdx);
                 } else
-                if (aIdx < tEndHB) {
-                    return mHiddenBiases.get(aIdx-tEndHW);
-                } else
                 if (aIdx < tEndOW) {
-                    return mOutputWeight.get(aIdx-tEndHB);
+                    return mOutputWeight.get(aIdx-tEndHW);
+                } else
+                if (aIdx < tEndHB) {
+                    return mHiddenBiases.get(aIdx-tEndOW);
                 } else
                 if (aIdx < tEndOB) {
                     return mOutputBias;
@@ -190,11 +190,11 @@ public class FeedForward extends NeuralNetwork {
                     mHiddenWeights.set(aIdx, aValue);
                     mHiddenWeightsBackward.set(mIndexToBackward.get(aIdx), aValue);
                 } else
-                if (aIdx < tEndHB) {
-                    mHiddenBiases.set(aIdx-tEndHW, aValue);
-                } else
                 if (aIdx < tEndOW) {
-                    mOutputWeight.set(aIdx-tEndHB, aValue);
+                    mOutputWeight.set(aIdx-tEndHW, aValue);
+                } else
+                if (aIdx < tEndHB) {
+                    mHiddenBiases.set(aIdx-tEndOW, aValue);
                 } else
                 if (aIdx < tEndOB) {
                     mOutputBias = aValue;

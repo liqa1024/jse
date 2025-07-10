@@ -90,15 +90,15 @@ static inline jdouble backward(jdouble *aX, jdouble *rGradX, jdouble *rGradPara,
     if (rGradPara != NULL) {
         jint tLastHiddenSize = aHiddenDims[tEnd];
         rGradWeights += tInSize*tLastHiddenSize;
-        rGradBiases = rGradWeights;
-        for (jint i = 0; i < aHiddenNumber; ++i) {
-            rGradBiases += aHiddenDims[i];
-        }
-        jdouble *rGradOutWeights = rGradBiases;
+        jdouble *rGradOutWeights = rGradWeights;
         for (jint j = 0; j < tLastHiddenSize; ++j) {
             rGradOutWeights[j] = tOutput[j]; // rGradOutWeights is the last output
         }
-        rGradOutWeights[tLastHiddenSize] = 1.0; // rGradOutBias always 1
+        rGradBiases = rGradOutWeights+tLastHiddenSize;
+        for (jint i = 0; i < aHiddenNumber; ++i) {
+            rGradBiases += aHiddenDims[i];
+        }
+        *rGradBiases = 1.0; // rGradOutBias always 1
     }
     // begin backward, last layer has been specially optimized
     jdouble *tInput = tGrad;
