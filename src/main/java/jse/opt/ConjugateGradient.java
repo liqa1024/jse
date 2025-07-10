@@ -11,9 +11,9 @@ import jse.math.vector.Vectors;
  * p_0 <- -r_0
  * for each k:
  *   x_k <- x_k + eta * p_k
- *   r_k+1 <- df/dx_k
- *   b_k+1 <- (r_(k+1) · (r_(k+1) - r_k)) / (r_k · r_k)
- *   p_k+1 <- -r_k+1 + b_k+1 p_k
+ *   r_(k+1) <- df/dx_k
+ *   b_(k+1) <- (r_(k+1) · (r_(k+1) - r_k)) / (r_k · r_k)
+ *   p_(k+1) <- -r_k+1 + b_k+1 p_k
  * } </pre>
  * 主要可以避免 Fletcher-Reeves 实现中收敛性差的问题
  * <p>

@@ -69,8 +69,8 @@ public abstract class AbstractOptimizer implements IOptimizer {
      */
     @Override public AbstractOptimizer setParameter(IVector aParameter) {
         mParameter = aParameter;
-        if (mParameter != null) mParameterStep = Vectors.zeros(aParameter.size());
-        if (mParameter != null) mGrad = Vectors.zeros(aParameter.size());
+        if (aParameter != null) mParameterStep = Vectors.zeros(aParameter.size());
+        if (aParameter != null) mGrad = Vectors.zeros(aParameter.size());
         invalidGrad();
         reset();
         return this;
