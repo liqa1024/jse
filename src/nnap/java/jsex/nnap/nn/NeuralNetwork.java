@@ -18,7 +18,7 @@ public abstract class NeuralNetwork implements IAutoShutdown {
     
     public abstract int inputSize();
     public abstract double forward(DoubleArrayVector aX) throws Exception;
-    public abstract double backward(DoubleArrayVector aX, DoubleArrayVector rGrad) throws Exception;
+    public abstract double backward(DoubleArrayVector aX, DoubleArrayVector rGradX) throws Exception;
     
     private boolean mDead = false;
     /** @return 此模型是否已经关闭 */

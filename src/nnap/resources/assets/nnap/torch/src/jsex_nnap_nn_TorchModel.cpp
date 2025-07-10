@@ -145,7 +145,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_TorchModel_batchForward1(JNIEnv *aEnv, 
     if (tAnyErr) return;
 }
 
-JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_TorchModel_backward0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jdoubleArray aX, jint aStart, jdoubleArray rGrad, jint rStart, jint aCount) {
+JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_TorchModel_backward0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jdoubleArray aX, jint aStart, jdoubleArray rGradX, jint rStart, jint aCount) {
     torch::jit::Module *tModulePtr = (torch::jit::Module *)(intptr_t)aModelPtr;
     jboolean tAnyErr = JNI_FALSE;
     torch::Tensor tXTensor;
@@ -163,7 +163,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_TorchModel_backward0(JNIEnv *aEnv, j
         torch::Tensor tYTensor = tModulePtr->forward({tXTensor}).toTensor();
         tY = tYTensor.item<double>();
         torch::Tensor tGrad = torch::autograd::grad({tYTensor.sum()}, {tXTensor})[0];
-        parsedouble2jdoubleV(aEnv, rGrad, rStart, tGrad.contiguous().const_data_ptr<double>(), 0, aCount);
+        parsedouble2jdoubleV(aEnv, rGradX, rStart, tGrad.contiguous().const_data_ptr<double>(), 0, aCount);
     } catch (const std::exception &e) {
         tAnyErr = JNI_TRUE;
         throwExceptionTorch(aEnv, e.what());
@@ -171,7 +171,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_TorchModel_backward0(JNIEnv *aEnv, j
     if (tAnyErr) return 0.0;
     return tY;
 }
-JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_TorchModel_backward1(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jlong aX, jlong rGrad, jint aCount) {
+JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_TorchModel_backward1(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jlong aX, jlong rGradX, jint aCount) {
     torch::jit::Module *tModulePtr = (torch::jit::Module *)(intptr_t)aModelPtr;
     jboolean tAnyErr = JNI_FALSE;
     torch::Tensor tXTensor;
@@ -188,7 +188,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_TorchModel_backward1(JNIEnv *aEnv, j
         torch::Tensor tYTensor = tModulePtr->forward({tXTensor}).toTensor();
         tY = tYTensor.item<double>();
         torch::Tensor tGrad = torch::autograd::grad({tYTensor.sum()}, {tXTensor})[0];
-        std::memcpy((double *)(intptr_t)rGrad, tGrad.contiguous().const_data_ptr<double>(), aCount*sizeof(double));
+        std::memcpy((double *)(intptr_t)rGradX, tGrad.contiguous().const_data_ptr<double>(), aCount*sizeof(double));
     } catch (const std::exception &e) {
         tAnyErr = JNI_TRUE;
         throwExceptionTorch(aEnv, e.what());
@@ -196,7 +196,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_TorchModel_backward1(JNIEnv *aEnv, j
     if (tAnyErr) return 0.0;
     return tY;
 }
-JNIEXPORT void JNICALL Java_jsex_nnap_nn_TorchModel_batchBackward0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jdoubleArray aX, jint aStart, jdoubleArray rGrad, jint rStart, jint aCount, jdoubleArray rY, jint rYStart, jint aBatchSize) {
+JNIEXPORT void JNICALL Java_jsex_nnap_nn_TorchModel_batchBackward0(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jdoubleArray aX, jint aStart, jdoubleArray rGradX, jint rStart, jint aCount, jdoubleArray rY, jint rYStart, jint aBatchSize) {
     torch::jit::Module *tModulePtr = (torch::jit::Module *)(intptr_t)aModelPtr;
     jboolean tAnyErr = JNI_FALSE;
     torch::Tensor tXTensor;
@@ -213,14 +213,14 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_TorchModel_batchBackward0(JNIEnv *aEnv,
         torch::Tensor tYTensor = tModulePtr->forward({tXTensor}).toTensor();
         if (rY != NULL) parsedouble2jdoubleV(aEnv, rY, rYStart, tYTensor.contiguous().mutable_data_ptr<double>(), 0, aBatchSize);
         torch::Tensor tGrad = torch::autograd::grad({tYTensor.sum()}, {tXTensor})[0];
-        parsedouble2jdoubleV(aEnv, rGrad, rStart, tGrad.contiguous().const_data_ptr<double>(), 0, aBatchSize*aCount);
+        parsedouble2jdoubleV(aEnv, rGradX, rStart, tGrad.contiguous().const_data_ptr<double>(), 0, aBatchSize*aCount);
     } catch (const std::exception &e) {
         tAnyErr = JNI_TRUE;
         throwExceptionTorch(aEnv, e.what());
     }
     if (tAnyErr) return;
 }
-JNIEXPORT void JNICALL Java_jsex_nnap_nn_TorchModel_batchBackward1(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jlong aX, jlong rGrad, jint aCount, jlong rY, jint aBatchSize) {
+JNIEXPORT void JNICALL Java_jsex_nnap_nn_TorchModel_batchBackward1(JNIEnv *aEnv, jclass aClazz, jlong aModelPtr, jlong aX, jlong rGradX, jint aCount, jlong rY, jint aBatchSize) {
     torch::jit::Module *tModulePtr = (torch::jit::Module *)(intptr_t)aModelPtr;
     jboolean tAnyErr = JNI_FALSE;
     torch::Tensor tXTensor;
@@ -237,7 +237,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_TorchModel_batchBackward1(JNIEnv *aEnv,
         double *rYBuf = (double *)(intptr_t)rY;
         if (rYBuf != NULL) std::memcpy(rYBuf, tYTensor.contiguous().mutable_data_ptr<double>(), aBatchSize*sizeof(double));
         torch::Tensor tGrad = torch::autograd::grad({tYTensor.sum()}, {tXTensor})[0];
-        std::memcpy((double *)(intptr_t)rGrad, tGrad.contiguous().const_data_ptr<double>(), aBatchSize*aCount*sizeof(double));
+        std::memcpy((double *)(intptr_t)rGradX, tGrad.contiguous().const_data_ptr<double>(), aBatchSize*aCount*sizeof(double));
     } catch (const std::exception &e) {
         tAnyErr = JNI_TRUE;
         throwExceptionTorch(aEnv, e.what());

@@ -30,14 +30,9 @@ import static jse.code.OS.JAVA_HOME;
  * <a href="https://link.springer.com/article/10.1007/s40843-024-2953-9">
  * Efficient and accurate simulation of vitrification in multi-component metallic liquids with neural-network potentials </a>
  * <p>
- * 这里使用 pytorch 来实现神经网络的部分
+ * 此类设计时确保不同对象之间线程安全，而不同线程访问相同的对象线程不安全
  * <p>
- * 考虑到 Torch 本身的内存安全性，此类设计时确保不同对象之间线程安全，
- * 而不同线程访问相同的对象线程不安全
- * <p>
- * 由于需要并行来绕开 GIL，并且考虑到效率问题，这里需要使用原生的 pytorch
- * <p>
- * 现在这个类会自动回收内部的 torch 模型指针，因此不需要担心内存泄漏的问题了；
+ * 现在这个类会自动回收内部可能存在的 torch 模型指针，因此不需要担心内存泄漏的问题了；
  * 当然即使如此依旧建议手动调用 {@link #shutdown()} 来及时释放资源
  *
  * @author liqa

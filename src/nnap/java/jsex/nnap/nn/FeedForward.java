@@ -164,9 +164,9 @@ public class FeedForward extends NeuralNetwork {
     }
     
     public IVector parameters() {
-        final int tEndHW = mHiddenWeights.internalDataSize();
-        final int tEndHB = tEndHW + mHiddenBiases.internalDataSize();
-        final int tEndOW = tEndHB + mOutputWeight.internalDataSize();
+        final int tEndHW = mHiddenWeightsSize;
+        final int tEndHB = tEndHW + mHiddenBiasesSize;
+        final int tEndOW = tEndHB + mOutputWeightSize;
         final int tEndOB = tEndOW + 1;
         return new RefVector() {
             @Override public double get(int aIdx) {
@@ -225,17 +225,17 @@ public class FeedForward extends NeuralNetwork {
                                           double[] aHiddenWeights, double[] aHiddenBiases, double[] aOutputWeight, double aOutputBias,
                                           double[] rHiddenOutputs);
     
-    @Override public double backward(DoubleArrayVector aX, DoubleArrayVector rGrad) {
-        return backward0(aX, rGrad);
+    @Override public double backward(DoubleArrayVector aX, DoubleArrayVector rGradX) {
+        return backward0(aX, rGradX);
     }
-    double backward0(IDataShell<double[]> aX, IDataShell<double[]> rGrad) {
+    double backward0(IDataShell<double[]> aX, IDataShell<double[]> rGradX) {
         if (mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
-        return backward1(aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), rGrad.internalDataWithLengthCheck(mInputDim), rGrad.internalDataShift(), mInputDim, mHiddenDims, mHiddenNumber,
+        return backward1(aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), rGradX.internalDataWithLengthCheck(mInputDim), rGradX.internalDataShift(), mInputDim, mHiddenDims, mHiddenNumber,
                          mHiddenWeights.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mHiddenWeightsBackward.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mHiddenBiases.internalDataWithLengthCheck(mHiddenBiasesSize, 0),
                          mOutputWeight.internalDataWithLengthCheck(mOutputWeightSize, 0), mOutputBias,
                          mHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mHiddenGrads.internalDataWithLengthCheck(mHiddenBiasesSize, 0));
     }
-    private static native double backward1(double[] aX, int aShiftX, double [] rGrad, int aShiftGrad, int aInputDim, int[] aHiddenDims, int aHiddenNumber,
+    private static native double backward1(double[] aX, int aShiftX, double [] rGradX, int aShiftGradX, int aInputDim, int[] aHiddenDims, int aHiddenNumber,
                                            double[] aHiddenWeights, double[] aHiddenWeightsBackward, double[] aHiddenBiases, double[] aOutputWeight, double aOutputBias,
                                            double[] rHiddenOutputs, double[] rHiddenGrads);
 }

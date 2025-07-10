@@ -133,10 +133,10 @@ public class TorchModel extends NeuralNetwork {
         return forward0(mPtr.mPtr, aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), mInputDim);
     }
     
-    @Override public double backward(DoubleArrayVector aX, DoubleArrayVector rGrad) throws TorchException {
+    @Override public double backward(DoubleArrayVector aX, DoubleArrayVector rGradX) throws TorchException {
         if (isShutdown()) throw new IllegalStateException("This Model is dead");
         return backward0(mPtr.mPtr, aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(),
-                         rGrad.internalDataWithLengthCheck(mInputDim), rGrad.internalDataShift(), mInputDim);
+                         rGradX.internalDataWithLengthCheck(mInputDim), rGradX.internalDataShift(), mInputDim);
     }
     
     private static native long load0(String aModelPath) throws TorchException;
@@ -146,8 +146,8 @@ public class TorchModel extends NeuralNetwork {
     private static native double forward1(long aModelPtr, long aXPtr, int aCount) throws TorchException;
     private static native void batchForward0(long aModelPtr, double[] aX, int aStart, int aCount, double[] rY, int rYStart, int aBatchSize) throws TorchException;
     private static native void batchForward1(long aModelPtr, long aXPtr, int aCount, long rYPtr, int aBatchSize) throws TorchException;
-    private static native double backward0(long aModelPtr, double[] aX, int aStart, double[] rGrad, int rStart, int aCount) throws TorchException;
-    private static native double backward1(long aModelPtr, long aXPtr, long rGradPtr, int aCount) throws TorchException;
-    private static native void batchBackward0(long aModelPtr, double[] aX, int aStart, double[] rGrad, int rStart, int aCount, double @Nullable[] rY, int rYStart, int aBatchSize) throws TorchException;
-    private static native void batchBackward1(long aModelPtr, long aXPtr, long rGradPtr, int aCount, long rYPtr, int aBatchSize) throws TorchException;
+    private static native double backward0(long aModelPtr, double[] aX, int aStart, double[] rGradX, int rStart, int aCount) throws TorchException;
+    private static native double backward1(long aModelPtr, long aXPtr, long rGradXPtr, int aCount) throws TorchException;
+    private static native void batchBackward0(long aModelPtr, double[] aX, int aStart, double[] rGradX, int rStart, int aCount, double @Nullable[] rY, int rYStart, int aBatchSize) throws TorchException;
+    private static native void batchBackward1(long aModelPtr, long aXPtr, long rGradXPtr, int aCount, long rYPtr, int aBatchSize) throws TorchException;
 }
