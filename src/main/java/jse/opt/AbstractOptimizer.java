@@ -16,8 +16,9 @@ public abstract class AbstractOptimizer implements IOptimizer {
     
     private ILossFunc mLossFunc = null;
     private ILossFuncGrad mLossFuncGrad = null;
-    private double mGamma = Double.NaN, mC1 = Double.NaN;
-    private boolean mLineSearch = false;
+    
+    protected double mGamma = Double.NaN, mC1 = Double.NaN;
+    protected boolean mLineSearch = false;
     
     private IVector mGrad = null;
     private boolean mGradValid = false;
@@ -107,6 +108,10 @@ public abstract class AbstractOptimizer implements IOptimizer {
     }
     @Override public AbstractOptimizer setLineSearch() {
         return setLineSearchArmijo(0.5, 0.0001);
+    }
+    @Override public AbstractOptimizer setNoLineSearch() {
+        mLineSearch = false;
+        return this;
     }
     
     /**

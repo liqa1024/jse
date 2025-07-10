@@ -16,6 +16,8 @@ import jse.math.vector.Vectors;
  *   p_k+1 <- -r_k+1 + b_k+1 p_k
  * } </pre>
  * 主要可以避免 Fletcher-Reeves 实现中收敛性差的问题
+ * <p>
+ * 默认会打开 {@link #setLineSearch()} 来达到 cg 应有的收敛速度
  *
  * @see IOptimizer
  * @author liqa
@@ -31,13 +33,13 @@ public class ConjugateGradient extends AbstractOptimizer {
      */
     public ConjugateGradient(double aEta) {
         mEta = aEta;
+        setLineSearch();
     }
     /**
      * 创建一个共轭梯度优化器
      * @see #ConjugateGradient(double)
      */
     public ConjugateGradient() {this(0.1);}
-    
     
     /**
      * {@inheritDoc}
@@ -55,6 +57,49 @@ public class ConjugateGradient extends AbstractOptimizer {
      */
     @Override public void reset() {
         mIsFirst = true;
+    }
+    
+    /**
+     * {@link ConjugateGradient} 需要使用更加精确的线搜索来保证收敛速度
+     * @param aStep {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override protected int lineSearch(int aStep, double aLoss) {
+        int tStep = 0;
+        double tAlpha = 1.0;
+        double tGradA = grad().operation().dot(mParameterStep);
+        if (tGradA >= 0) throw new IllegalStateException("positive gradient");
+        // CG 总是会执行一次线搜索，从而找到合适的长度
+        mParameter.plus2this(mParameterStep);
+        double tLoss = eval();
+        mParameter.minus2this(mParameterStep);
+        // 二次样条拟合
+        double tA = (tLoss - aLoss - tGradA*tAlpha) / (tAlpha*tAlpha);
+        // 若拟合得到 tA < 0，则说明此区域不是正定的，保留原本步长即可
+        if (tA <= 0) return tStep;
+        // 获取适合的 tAlpha
+        tAlpha = Math.min(-tGradA / (2*tA), 2.0);
+        ++tStep;
+        while (true) {
+            double tTarget = aLoss + mC1*tGradA*tAlpha;
+            mParameter.operation().mplus2this(mParameterStep, tAlpha);
+            tLoss = eval();
+            mParameter.operation().mplus2this(mParameterStep, -tAlpha);
+            if (tLoss <= tTarget) {
+                mParameterStep.multiply2this(tAlpha);
+                return tStep;
+            }
+            // 不满足则再次二次样条拟合
+            tA = (tLoss - aLoss - tGradA*tAlpha) / (tAlpha*tAlpha);
+            // 若拟合得到 tA < 0，则说明此区域不是正定的，保留原本步长即可
+            if (tA <= 0) {
+                mParameterStep.multiply2this(tAlpha);
+                return tStep;
+            }
+            // 获取适合的 tAlpha
+            tAlpha = Math.min(-tGradA / (2*tA), 2.0);
+            ++tStep;
+        }
     }
     
     /**

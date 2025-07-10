@@ -39,6 +39,12 @@ public interface IOptimizer {
      * @return 自身方便链式调用
      */
     IOptimizer setLineSearch();
+    /**
+     * 关闭线搜索
+     * @return 自身方便链式调用
+     */
+    IOptimizer setNoLineSearch();
+    
     
     /**
      * 执行优化，并更新输入的参数
