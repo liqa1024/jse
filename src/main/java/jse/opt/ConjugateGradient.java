@@ -25,11 +25,12 @@ import jse.math.vector.Vectors;
 public class ConjugateGradient extends AbstractOptimizer {
     protected IVector mLastGrad = null, mLastStep = null;
     protected boolean mIsFirst = true;
+    protected boolean mAdaptiveEta = true;
     protected double mEta;
     
     /**
      * 创建一个共轭梯度优化器
-     * @param aEta 使用的迭代步长，默认为 {@code 0.1}
+     * @param aEta 使用的初始迭代步长，默认为 {@code 0.1}
      */
     public ConjugateGradient(double aEta) {
         mEta = aEta;
@@ -59,6 +60,11 @@ public class ConjugateGradient extends AbstractOptimizer {
         mIsFirst = true;
     }
     
+    public ConjugateGradient setAdaptiveEta(boolean aAdaptiveEta) {
+        mAdaptiveEta = aAdaptiveEta;
+        return this;
+    }
+    
     /**
      * {@link ConjugateGradient} 需要使用更加精确的线搜索来保证收敛速度
      * @param aStep {@inheritDoc}
@@ -78,7 +84,7 @@ public class ConjugateGradient extends AbstractOptimizer {
         // 若拟合得到 tA < 0，则说明此区域不是正定的，保留原本步长即可
         if (tA <= 0) return tStep;
         // 获取适合的 tAlpha
-        tAlpha = Math.min(-tGradA / (2*tA), 2.0);
+        tAlpha = Math.min(-tGradA / (2*tA), 3.0*tAlpha);
         ++tStep;
         while (true) {
             double tTarget = aLoss + mC1*tGradA*tAlpha;
@@ -87,6 +93,10 @@ public class ConjugateGradient extends AbstractOptimizer {
             mParameter.operation().mplus2this(mParameterStep, -tAlpha);
             if (tLoss <= tTarget) {
                 mParameterStep.multiply2this(tAlpha);
+                if (mAdaptiveEta) {
+                    if (tAlpha > 2.0) mEta *= 2.0;
+                    else if (tAlpha < 0.5) mEta *= 0.5;
+                }
                 return tStep;
             }
             // 不满足则再次二次样条拟合
@@ -94,10 +104,14 @@ public class ConjugateGradient extends AbstractOptimizer {
             // 若拟合得到 tA < 0，则说明此区域不是正定的，保留原本步长即可
             if (tA <= 0) {
                 mParameterStep.multiply2this(tAlpha);
+                if (mAdaptiveEta) {
+                    if (tAlpha > 2.0) mEta *= 2.0;
+                    else if (tAlpha < 0.5) mEta *= 0.5;
+                }
                 return tStep;
             }
             // 获取适合的 tAlpha
-            tAlpha = Math.min(-tGradA / (2*tA), 2.0);
+            tAlpha = Math.min(-tGradA / (2*tA), 3.0*tAlpha);
             ++tStep;
         }
     }
