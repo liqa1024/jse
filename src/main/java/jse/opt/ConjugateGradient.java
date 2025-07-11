@@ -1,15 +1,16 @@
 package jse.opt;
 
 import jse.math.vector.IVector;
+import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 
 /**
  * 共轭梯度算法实现优化器，这里采用
  * Polak-Ribiere 的变体实现（和 lammps 一致）：
  * <pre> {@code
- * r_0 <- df/dx
+ * r_0 <- df/dx_0
  * p_0 <- -r_0
- * for each k:
+ * for-each k:
  *   x_k <- x_k + eta * p_k
  *   r_(k+1) <- df/dx_k
  *   b_(k+1) <- (r_(k+1) · (r_(k+1) - r_k)) / (r_k · r_k)
@@ -23,7 +24,7 @@ import jse.math.vector.Vectors;
  * @author liqa
  */
 public class ConjugateGradient extends AbstractOptimizer {
-    protected IVector mLastGrad = null, mLastStep = null;
+    protected Vector mLastGrad = null, mLastStep = null;
     protected boolean mIsFirst = true;
     protected boolean mAdaptiveEta = true;
     protected double mEta;
@@ -49,8 +50,8 @@ public class ConjugateGradient extends AbstractOptimizer {
      */
     @Override public ConjugateGradient setParameter(IVector aParameter) {
         super.setParameter(aParameter);
-        mLastGrad = Vectors.zeros(aParameter.size());
-        mLastStep = Vectors.zeros(aParameter.size());
+        if (aParameter != null) mLastGrad = Vectors.zeros(aParameter.size());
+        if (aParameter != null) mLastStep = Vectors.zeros(aParameter.size());
         return this;
     }
     /**

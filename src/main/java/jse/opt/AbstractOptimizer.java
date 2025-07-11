@@ -158,7 +158,9 @@ public abstract class AbstractOptimizer implements IOptimizer {
         int tStep = 0;
         IVector tGrad = grad();
         while (true) {
-            double tTarget = aLoss + mC1*tGrad.operation().dot(mParameterStep);
+            double tGradA = tGrad.operation().dot(mParameterStep);
+            if (tGradA >= 0) throw new IllegalStateException("positive gradient");
+            double tTarget = aLoss + mC1*tGradA;
             mParameter.plus2this(mParameterStep);
             double tLoss = eval();
             mParameter.minus2this(mParameterStep);

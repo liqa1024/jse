@@ -2,6 +2,7 @@ package jse.opt;
 
 import jse.math.MathEX;
 import jse.math.vector.IVector;
+import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 
 /**
@@ -24,7 +25,7 @@ public class Adam extends AbstractOptimizer {
     protected double mBeta1, mBeta2;
     protected double mEps;
     
-    protected IVector mMomentum = null, mVariance = null;
+    protected Vector mMomentum = null, mVariance = null;
     protected double mBeta1Prod = 1.0, mBeta2Prod = 1.0;
     
     /**
