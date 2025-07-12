@@ -7,9 +7,7 @@ import jse.cache.VectorCache;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.code.io.ISavable;
-import jse.math.vector.DoubleArrayVector;
-import jse.math.vector.Vector;
-import jse.math.vector.Vectors;
+import jse.math.vector.*;
 import jse.parallel.IAutoShutdown;
 import jsex.nnap.NNAP;
 import jsex.nnap.nn.NeuralNetwork;
@@ -67,12 +65,16 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     private DoubleList mNlDx = null, mNlDy = null, mNlDz = null;
     private IntList mNlType = null;
     private Vector mFp = null, mNNGrad = null;
+    private IntVector mFpGradNlSize = null;
+    private final IntVector mFpGradNlIndexShell = new IntVector(0, null), mFpGradFpIndexShell = new IntVector(0, null);
+    private final Vector mFpPxShell = new Vector(0, null), mFpPyShell = new Vector(0, null), mFpPzShell = new Vector(0, null);
     
     private void initCacheFp_() {
         if (mFp != null) return;
         int tSize = size();
         mFp = Vectors.zeros(tSize);
         mNNGrad = Vectors.zeros(tSize);
+        mFpGradNlSize = IntVector.zeros(tSize);
     }
     private void initCacheNl_() {
         if (mNlDx != null) return;
@@ -100,10 +102,16 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
         aData.ensureCapacity(aSize);
         aData.setInternalDataSize(aSize);
     }
+    static void validSize_(IntList aData, int aSize) {
+        aData.ensureCapacity(aSize);
+        aData.setInternalDataSize(aSize);
+    }
     
-    protected abstract void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, boolean aBufferNl);
-    protected abstract void evalGrad_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz);
+    protected abstract void eval_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, @Nullable IntArrayVector rFpGradNlSize, boolean aBufferNl);
+    protected abstract void evalGrad_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, IntArrayVector aFpGradNlSize, IntArrayVector rFpGradNlIndex, IntArrayVector rFpGradFpIndex, DoubleArrayVector rFpPx, DoubleArrayVector rFpPy, DoubleArrayVector rFpPz);
     protected abstract void evalGradAndForceDot_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList rFx, DoubleList rFy, DoubleList rFz);
+    @Deprecated
+    protected abstract void evalGrad_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz);
     
     /**
      * 内部使用的直接计算能量的接口，现在统一采用外部预先构造的近邻列表，从而可以避免重复遍历近邻
@@ -117,7 +125,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     @ApiStatus.Internal
     public final double evalEnergy(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, NeuralNetwork aNN) throws Exception {
         initCacheFp_();
-        eval_(aNlDx, aNlDy, aNlDz, aNlType, mFp, false);
+        eval_(aNlDx, aNlDy, aNlDz, aNlType, mFp, null, false);
         return aNN.forward(mFp);
     }
     
@@ -138,7 +146,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     @ApiStatus.Internal
     public final double evalEnergyForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, NeuralNetwork aNN, DoubleList rFx, DoubleList rFy, DoubleList rFz) throws Exception {
         initCacheFp_();
-        eval_(aNlDx, aNlDy, aNlDz, aNlType, mFp, true);
+        eval_(aNlDx, aNlDy, aNlDz, aNlType, mFp, null, true);
         double tEng = aNN.backward(mFp, mNNGrad);
         evalGradAndForceDot_(aNlDx, aNlDy, aNlDz, aNlType, mNNGrad, rFx, rFy, rFz);
         return tEng;
@@ -155,7 +163,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      */
     @ApiStatus.Internal
     public final void eval(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
-        eval_(aNlDx, aNlDy, aNlDz, aNlType, rFp, false);
+        eval_(aNlDx, aNlDy, aNlDz, aNlType, rFp, null, false);
     }
     /**
      * 通用的计算基组的接口，可以自定义任何近邻列表获取器来实现
@@ -206,6 +214,83 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     
     /**
      * 内部使用的计算基组以及偏导数接口，现在统一采用外部预先构造的近邻列表，从而可以避免重复遍历近邻
+     * <p>
+     * 改为不等长模式从而减少内存占用以及加速运算，为了方便实现以及性能考虑，实际遍历顺序为先遍历描述符后遍历近邻最后遍历其余合并项
+     * @param aNlDx 由近邻原子的 dx 组成的列表
+     * @param aNlDy 由近邻原子的 dy 组成的列表
+     * @param aNlDz 由近邻原子的 dz 组成的列表
+     * @param aNlType 由近邻原子的 type 组成的列表
+     * @param rFp 计算输出的原子描述符向量
+     * @param rFpGradNlIndex 计算输出的每个描述符的偏导数对应使用的近邻列表的索引，会自动清空旧值并根据近邻列表扩容
+     * @param rFpGradFpIndex 计算输出的每个描述符的偏导数对应的描述符的索引，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPx 计算输出的原子描述符向量对于近邻原子坐标 x 的偏导数，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPy 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPz 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，会自动清空旧值并根据近邻列表扩容
+     */
+    @ApiStatus.Internal
+    public final void evalGrad(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, IntList rFpGradNlIndex, IntList rFpGradFpIndex, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
+        initCacheFp_();
+        eval_(aNlDx, aNlDy, aNlDz, aNlType, rFp, mFpGradNlSize, true);
+        int tSizeAll = mFpGradNlSize.sum();
+        validSize_(rFpGradNlIndex, tSizeAll);
+        validSize_(rFpGradFpIndex, tSizeAll);
+        mFpGradNlIndexShell.setInternalData(rFpGradNlIndex.internalData()); mFpGradNlIndexShell.setInternalDataSize(tSizeAll);
+        mFpGradFpIndexShell.setInternalData(rFpGradFpIndex.internalData()); mFpGradFpIndexShell.setInternalDataSize(tSizeAll);
+        validSize_(rFpPx, tSizeAll);
+        validSize_(rFpPy, tSizeAll);
+        validSize_(rFpPz, tSizeAll);
+        mFpPxShell.setInternalData(rFpPx.internalData()); mFpPxShell.setInternalDataSize(tSizeAll);
+        mFpPyShell.setInternalData(rFpPy.internalData()); mFpPyShell.setInternalDataSize(tSizeAll);
+        mFpPzShell.setInternalData(rFpPz.internalData()); mFpPzShell.setInternalDataSize(tSizeAll);
+        evalGrad_(aNlDx, aNlDy, aNlDz, aNlType, mFpGradNlSize, mFpGradNlIndexShell, mFpGradFpIndexShell, mFpPxShell, mFpPyShell, mFpPzShell);
+    }
+    /**
+     * 基组结果对于 {@code xyz} 偏微分的计算结果，主要用于力的计算；会同时计算基组值本身
+     * <p>
+     * 改为不等长模式从而减少内存占用以及加速运算，为了方便实现以及性能考虑，实际遍历顺序为先遍历描述符后遍历近邻最后遍历其余合并项
+     * @param aNL 近邻列表遍历器
+     * @param rFp 计算输出的原子描述符向量
+     * @param rFpGradNlIndex 计算输出的每个描述符的偏导数对应使用的近邻列表的索引，会自动清空旧值并根据近邻列表扩容
+     * @param rFpGradFpIndex 计算输出的每个描述符的偏导数对应的描述符的索引，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPx 计算输出的原子描述符向量对于近邻原子坐标 x 的偏导数，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPy 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPz 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，会自动清空旧值并根据近邻列表扩容
+     */
+    public final void evalGrad(IDxyzTypeIterable aNL, DoubleArrayVector rFp, IntList rFpGradNlIndex, IntList rFpGradFpIndex, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
+        if (mDead) throw new IllegalStateException("This Basis is dead");
+        buildNL_(aNL);
+        evalGrad(mNlDx, mNlDy, mNlDz, mNlType, rFp, rFpGradNlIndex, rFpGradFpIndex, rFpPx, rFpPy, rFpPz);
+    }
+    /**
+     * 基于 {@link AtomicParameterCalculator} 的近邻列表实现的通用的计算某个原子的基组偏导数功能
+     * <p>
+     * 改为不等长模式从而减少内存占用以及加速运算，为了方便实现以及性能考虑，实际遍历顺序为先遍历描述符后遍历近邻最后遍历其余合并项
+     * @param aAPC 原子结构参数计算器，用来获取近邻列表
+     * @param aIdx 需要计算基组的原子索引
+     * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
+     * @param rFp 计算输出的原子描述符向量
+     * @param rFpGradNlIndex 计算输出的每个描述符的偏导数对应使用的近邻列表的索引，会自动清空旧值并根据近邻列表扩容
+     * @param rFpGradFpIndex 计算输出的每个描述符的偏导数对应的描述符的索引，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPx 计算输出的原子描述符向量对于近邻原子坐标 x 的偏导数，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPy 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，会自动清空旧值并根据近邻列表扩容
+     * @param rFpPz 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，会自动清空旧值并根据近邻列表扩容
+     */
+    public final void evalGrad(AtomicParameterCalculator aAPC, int aIdx, IntUnaryOperator aTypeMap, DoubleArrayVector rFp, IntList rFpGradNlIndex, IntList rFpGradFpIndex, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
+        if (mDead) throw new IllegalStateException("This Basis is dead");
+        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
+        evalGrad(dxyzTypeDo -> {
+            aAPC.nl_().forEachNeighbor(aIdx, rcut(), (dx, dy, dz, idx) -> {
+                dxyzTypeDo.run(dx, dy, dz, aTypeMap.applyAsInt(aAPC.atomType_().get(idx)));
+            });
+        }, rFp, rFpGradNlIndex, rFpGradFpIndex, rFpPx, rFpPy, rFpPz);
+    }
+    public final void evalGrad(AtomicParameterCalculator aAPC, int aIdx, DoubleArrayVector rFp, IntList rFpGradNlIndex, IntList rFpGradFpIndex, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
+        evalGrad(aAPC, aIdx, type->type, rFp, rFpGradNlIndex, rFpGradFpIndex, rFpPx, rFpPy, rFpPz);
+    }
+    
+    
+    /**
+     * 内部使用的计算基组以及偏导数接口，现在统一采用外部预先构造的近邻列表，从而可以避免重复遍历近邻
      * @param aNlDx 由近邻原子的 dx 组成的列表
      * @param aNlDy 由近邻原子的 dy 组成的列表
      * @param aNlDz 由近邻原子的 dz 组成的列表
@@ -215,9 +300,10 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      * @param rFpPy 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，要求已经是合适的大小，后续实现不会实际扩容
      * @param rFpPz 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，要求已经是合适的大小，后续实现不会实际扩容
      */
+    @Deprecated
     @ApiStatus.Internal
     public final void evalGrad(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
-        eval_(aNlDx, aNlDy, aNlDz, aNlType, rFp, true);
+        eval_(aNlDx, aNlDy, aNlDz, aNlType, rFp, null, true);
         evalGrad_(aNlDx, aNlDy, aNlDz, aNlType, rFpPx, rFpPy, rFpPz);
     }
     /**
@@ -228,11 +314,12 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      * @param rFpPy 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，会自动清空旧值并根据近邻列表扩容
      * @param rFpPz 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，会自动清空旧值并根据近邻列表扩容
      */
+    @Deprecated
     public final void evalGrad(IDxyzTypeIterable aNL, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
         buildNL_(aNL);
         // 初始化偏导数相关值
-        int tSizeAll = mNlDx.size() * (rFp.size() + rFp.internalDataShift());
+        int tSizeAll = mNlDx.size() * rFp.size();
         validSize_(rFpPx, tSizeAll);
         validSize_(rFpPy, tSizeAll);
         validSize_(rFpPz, tSizeAll);
@@ -248,6 +335,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      * @param rFpPy 计算输出的原子描述符向量对于近邻原子坐标 y 的偏导数，会自动清空旧值并根据近邻列表扩容
      * @param rFpPz 计算输出的原子描述符向量对于近邻原子坐标 z 的偏导数，会自动清空旧值并根据近邻列表扩容
      */
+    @Deprecated
     public final void evalGrad(AtomicParameterCalculator aAPC, int aIdx, IntUnaryOperator aTypeMap, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
         typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
@@ -257,6 +345,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
             });
         }, rFp, rFpPx, rFpPy, rFpPz);
     }
+    @Deprecated
     public final void evalGrad(AtomicParameterCalculator aAPC, int aIdx, DoubleArrayVector rFp, DoubleList rFpPx, DoubleList rFpPy, DoubleList rFpPz) {
         evalGrad(aAPC, aIdx, type->type, rFp, rFpPx, rFpPy, rFpPz);
     }

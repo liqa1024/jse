@@ -24,18 +24,18 @@ extern "C" {
 /*
  * Class:     jsex_nnap_basis_Chebyshev
  * Method:    eval1
- * Signature: ([D[D[D[II[D[DIZIDII)V
+ * Signature: ([D[D[D[II[D[DI[IIZIDII)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_eval1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jint, jintArray, jint, jboolean, jint, jdouble, jint, jint);
 
 /*
  * Class:     jsex_nnap_basis_Chebyshev
  * Method:    evalGrad1
- * Signature: ([D[D[D[II[D[D[D[D[DII[D[D[DIDII)V
+ * Signature: ([D[D[D[II[D[D[D[D[D[II[II[DI[DI[DIIDII)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalGrad1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jint, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdouble, jint, jint);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jintArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jdouble, jint, jint);
 
 /*
  * Class:     jsex_nnap_basis_Chebyshev
@@ -44,6 +44,14 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalGrad1
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalGradAndForceDot1
   (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdouble, jint, jint);
+
+/*
+ * Class:     jsex_nnap_basis_Chebyshev
+ * Method:    evalGradWithShift1
+ * Signature: ([D[D[D[II[D[D[D[D[DII[D[D[DIDII)V
+ */
+JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalGradWithShift1
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jint, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdouble, jint, jint);
 
 #ifdef __cplusplus
 }

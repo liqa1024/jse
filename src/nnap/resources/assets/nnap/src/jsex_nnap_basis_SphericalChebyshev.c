@@ -203,27 +203,27 @@ static inline void realNormalizedLegendreFull(jint aLMax, jdouble aX, jdouble aY
         rDest[2-1] = tPll;
         jint tStartL = 6, tStartLmm = 2, tStartLm2 = 0;
         jint tStartAB = 3;
-        for (jint tL = 2; tL <= aLMax; ++tL) {
-            for (jint tM = 0; tM < tL-1; ++tM) {
-                jint tIdxAB = tStartAB+tM;
-                jdouble tPlm = SH_Alm[tIdxAB] * (aX*rDest[tStartLmm+tM] + SH_Blm[tIdxAB]*rDest[tStartLm2+tM]);
-                if (tM == 0) {
+        for (jint l = 2; l <= aLMax; ++l) {
+            for (jint m = 0; m < l-1; ++m) {
+                jint tIdxAB = tStartAB+m;
+                jdouble tPlm = SH_Alm[tIdxAB] * (aX*rDest[tStartLmm+m] + SH_Blm[tIdxAB]*rDest[tStartLm2+m]);
+                if (m == 0) {
                     rDest[tStartL] = tPlm;
                 } else {
-                    rDest[tStartL+tM] = tPlm;
-                    rDest[tStartL-tM] = tPlm;
+                    rDest[tStartL+m] = tPlm;
+                    rDest[tStartL-m] = tPlm;
                 }
             }
-            jdouble tPlm = aX * sqrt(2.0*(tL-1) + 3.0) * tPll;
-            rDest[tStartL+(tL-1)] = tPlm;
-            rDest[tStartL-(tL-1)] = tPlm;
-            tPll *= (-sqrt(1.0 + 0.5/(double)tL) * aY);
-            rDest[tStartL+tL] = tPll;
-            rDest[tStartL-tL] = tPll;
+            jdouble tPlm = aX * sqrt(2.0*(l-1) + 3.0) * tPll;
+            rDest[tStartL+(l-1)] = tPlm;
+            rDest[tStartL-(l-1)] = tPlm;
+            tPll *= (-sqrt(1.0 + 0.5/(double)l) * aY);
+            rDest[tStartL+l] = tPll;
+            rDest[tStartL-l] = tPll;
             tStartLm2 = tStartLmm;
             tStartLmm = tStartL;
-            tStartL += tL+tL+1+1;
-            tStartAB += tL+1;
+            tStartL += l+l+1+1;
+            tStartAB += l+1;
         }
     }
 }
@@ -249,14 +249,14 @@ static inline void realSphericalHarmonicsFull4(jint aLMax, jdouble aX, jdouble a
     jdouble tSinMPhi = tSinPhi;
     jdouble tCosMPhi = tCosPhi;
     const jdouble tCosPhi2 = tCosMPhi+tCosMPhi;
-    for (jint tM = 1; tM <= aLMax; ++tM) {
-        jint tStartL = tM*tM+tM;
+    for (jint m = 1; m <= aLMax; ++m) {
+        jint tStartL = m*m+m;
         const jdouble fSqrt2CosMPhi = SQRT2*tCosMPhi;
         const jdouble fSqrt2SinMPhi = SQRT2*tSinMPhi;
-        for (jint tL = tM; tL <= aLMax; ++tL) {
-            rDest[tStartL+tM] *= fSqrt2CosMPhi;
-            rDest[tStartL-tM] *= fSqrt2SinMPhi;
-            tStartL += tL+tL+2;
+        for (jint l = m; l <= aLMax; ++l) {
+            rDest[tStartL+m] *= fSqrt2CosMPhi;
+            rDest[tStartL-m] *= fSqrt2SinMPhi;
+            tStartL += l+l+2;
         }
         jdouble tSinMppPhi = tCosPhi2 * tSinMPhi - tSinMmmPhi;
         jdouble tCosMppPhi = tCosPhi2 * tCosMPhi - tCosMmmPhi;
@@ -280,6 +280,17 @@ static inline void mplusCnlmWt(jdouble *rCnlm, jdouble *rCnlmWt, jdouble *aY, jd
         rCnlmWt[i] += aWt*tCnli;
     }
 }
+static inline void countFpGradNlSize(jint *rFpGradNlSize, jint aLength) {
+    for (jint i = 0; i < aLength; ++i) {
+        ++rFpGradNlSize[i];
+    }
+}
+static inline void countFpGradNlSizeWt(jint *rFpGradNlSize, jint *rFpGradNlSizeWt, jint aLength) {
+    for (jint i = 0; i < aLength; ++i) {
+        ++rFpGradNlSize[i];
+        ++rFpGradNlSizeWt[i];
+    }
+}
 
 static inline void calL2_(jdouble *aCnlm, jdouble *rFp, jint aLMax, jboolean aNoRadial) {
     // l == 0
@@ -293,11 +304,11 @@ static inline void calL2_(jdouble *aCnlm, jdouble *rFp, jint aLMax, jboolean aNo
         ++tFp;
     }
     // else
-    for (jint tL = 1; tL <= aLMax; ++tL) {
-        jint tLen = tL+tL+1;
-        jdouble rDot = dot_jse(aCnlm + (tL*tL), tLen);
+    for (jint l = 1; l <= aLMax; ++l) {
+        jint tLen = l+l+1;
+        jdouble rDot = dot_jse(aCnlm + (l*l), tLen);
         tMul = PI4/(jdouble)tLen;
-        tFp[tL-1] = tMul * rDot;
+        tFp[l-1] = tMul * rDot;
     }
 }
 static inline void calL3_(jdouble *aCnlm, jdouble *rFp, jint aLMax, jboolean aNoRadial, jint aL3Max, jboolean aL3Cross) {
@@ -523,15 +534,15 @@ static inline void calYPtheta(jdouble aCosPhi, jdouble aSinPhi, jdouble *rYPthet
         rYPtheta[tIdx] = tMul * (aCosPhi*aY[tIdx+1] + aSinPhi*aY[tIdx-1]);
         rYPtheta[tIdx+1] = -tMul * aCosPhi*aY[tIdx];
         rYPtheta[tIdx-1] = -tMul * aSinPhi*aY[tIdx];
-        for (jint tM = 2; tM <= aL; ++tM) {
-            tMul = -0.5*SQRT_LPM_LMM1[tIdx+tM];
-            rYPtheta[tIdx+tM] = tMul * (aCosPhi*aY[tIdx+tM-1] - aSinPhi*aY[tIdx-tM+1]);
-            rYPtheta[tIdx-tM] = tMul * (aCosPhi*aY[tIdx-tM+1] + aSinPhi*aY[tIdx+tM-1]);
+        for (jint m = 2; m <= aL; ++m) {
+            tMul = -0.5*SQRT_LPM_LMM1[tIdx+m];
+            rYPtheta[tIdx+m] = tMul * (aCosPhi*aY[tIdx+m-1] - aSinPhi*aY[tIdx-m+1]);
+            rYPtheta[tIdx-m] = tMul * (aCosPhi*aY[tIdx-m+1] + aSinPhi*aY[tIdx+m-1]);
         }
-        for (jint tM = 1; tM < aL; ++tM) {
-            tMul = 0.5*SQRT_LPM1_LMM[tIdx+tM];
-            rYPtheta[tIdx+tM] += tMul * (aCosPhi*aY[tIdx+tM+1] + aSinPhi*aY[tIdx-tM-1]);
-            rYPtheta[tIdx-tM] += tMul * (aCosPhi*aY[tIdx-tM-1] - aSinPhi*aY[tIdx+tM+1]);
+        for (jint m = 1; m < aL; ++m) {
+            tMul = 0.5*SQRT_LPM1_LMM[tIdx+m];
+            rYPtheta[tIdx+m] += tMul * (aCosPhi*aY[tIdx+m+1] + aSinPhi*aY[tIdx-m-1]);
+            rYPtheta[tIdx-m] += tMul * (aCosPhi*aY[tIdx-m-1] - aSinPhi*aY[tIdx+m+1]);
         }
         return;
     }}
@@ -1298,11 +1309,16 @@ static inline void cnlm2fxyz(jdouble *aCnlm, jdouble *aCnlmPx, jdouble *aCnlmPy,
             aNNGrad, rFx, rFy, rFz,
             aWt, aLMax, aNoRadial, aL3Max, aL3Cross);
 }
-
+static inline void assignGradIndex(jint *rFpGradNlIndex, jint aNlIndex, jint *rFpGradFpIndex, jint aFpIndexStart, jint aLength) {
+    for (jint i = 0, j = aFpIndexStart; i < aLength; ++i, ++j) {
+        rFpGradNlIndex[i] = aNlIndex;
+        rFpGradFpIndex[i] = j;
+    }
+}
 
 static inline void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
-                           jdouble *rNlRn, jdouble *rNlY, jdouble *rCnlm, jboolean aBufferNl,
-                           jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMaxMax, jint aLMAll, jint aWType) {
+                           jdouble *rNlRn, jdouble *rNlY, jdouble *rCnlm, jint *rFpGradNlSize,
+                           jboolean aBufferNl, jint aTypeNum, jdouble aRCut, jint aSizeL, jint aNMax, jint aLMaxMax, jint aLMAll, jint aWType) {
     // loop for neighbor
     for (jint j = 0; j < aNN; ++j) {
         jint type = aNlType[j];
@@ -1334,46 +1350,55 @@ static inline void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint 
         // cal cnlm
         switch(aWType) {
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL: {
-            jint tShift = 0;
+            jint tShift = 0, tShiftFp = 0;
             if (aTypeNum == 1) {
-                for (jint tN = 0; tN <= aNMax; ++tN, tShift+=aLMAll) {
-                    mplusCnlm(rCnlm+tShift, tY, fc, tRn[tN], aLMAll);
+                for (jint n = 0; n <= aNMax; ++n, tShift+=aLMAll, tShiftFp+=aSizeL) {
+                    mplusCnlm(rCnlm+tShift, tY, fc, tRn[n], aLMAll);
+                    if (rFpGradNlSize!=NULL) countFpGradNlSize(rFpGradNlSize+tShiftFp, aSizeL);
                 }
             } else {
                 jint tShiftWt = (aNMax+1)*aLMAll*type;
-                for (jint tN = 0; tN <= aNMax; ++tN, tShift+=aLMAll, tShiftWt+=aLMAll) {
-                    mplusCnlmWt(rCnlm+tShift, rCnlm+tShiftWt, tY, fc, tRn[tN], 1.0, aLMAll);
+                jint tShiftFpWt = (aNMax+1)*aSizeL*type;
+                for (jint n = 0; n <= aNMax; ++n, tShift+=aLMAll, tShiftWt+=aLMAll, tShiftFp+=aSizeL, tShiftFpWt+=aSizeL) {
+                    mplusCnlmWt(rCnlm+tShift, rCnlm+tShiftWt, tY, fc, tRn[n], 1.0, aLMAll);
+                    if (rFpGradNlSize!=NULL) countFpGradNlSizeWt(rFpGradNlSize+tShiftFp, rFpGradNlSize+tShiftFpWt, aSizeL);
                 }
             }
             break;
         }
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL: {
             jint tShift = (aNMax+1)*aLMAll*(type-1);
-            for (jint tN = 0; tN <= aNMax; ++tN, tShift+=aLMAll) {
-                mplusCnlm(rCnlm+tShift, tY, fc, tRn[tN], aLMAll);
+            jint tShiftFp = (aNMax+1)*aSizeL*(type-1);
+            for (jint n = 0; n <= aNMax; ++n, tShift+=aLMAll, tShiftFp+=aSizeL) {
+                mplusCnlm(rCnlm+tShift, tY, fc, tRn[n], aLMAll);
+                if (rFpGradNlSize!=NULL) countFpGradNlSize(rFpGradNlSize+tShiftFp, aSizeL);
             }
             break;
         }
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
-            jint tShift = 0;
-            for (jint tN = 0; tN <= aNMax; ++tN, tShift+=aLMAll) {
-                mplusCnlm(rCnlm+tShift, tY, fc, tRn[tN], aLMAll);
+            jint tShift = 0, tShiftFp = 0;
+            for (jint n = 0; n <= aNMax; ++n, tShift+=aLMAll, tShiftFp+=aSizeL) {
+                mplusCnlm(rCnlm+tShift, tY, fc, tRn[n], aLMAll);
+                if (rFpGradNlSize!=NULL) countFpGradNlSize(rFpGradNlSize+tShiftFp, aSizeL);
             }
             break;
         }
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
-            jint tShift = 0;
+            jint tShift = 0, tShiftFp = 0;
             if (aTypeNum == 1) {
-                for (jint tN = 0; tN <= aNMax; ++tN, tShift+=aLMAll) {
-                    mplusCnlm(rCnlm+tShift, tY, fc, tRn[tN], aLMAll);
+                for (jint n = 0; n <= aNMax; ++n, tShift+=aLMAll, tShiftFp+=aSizeL) {
+                    mplusCnlm(rCnlm+tShift, tY, fc, tRn[n], aLMAll);
+                    if (rFpGradNlSize!=NULL) countFpGradNlSize(rFpGradNlSize+tShiftFp, aSizeL);
                 }
             } else {
                 // cal weight of type here
                 jdouble wt = ((type&1)==1) ? type : -type;
                 jint tShiftWt = (aNMax+1)*aLMAll;
-                for (jint tN = 0; tN <= aNMax; ++tN, tShift+=aLMAll, tShiftWt+=aLMAll) {
-                    mplusCnlmWt(rCnlm+tShift, rCnlm+tShiftWt, tY, fc, tRn[tN], wt, aLMAll);
+                jint tShiftFpWt = (aNMax+1)*aSizeL;
+                for (jint n = 0; n <= aNMax; ++n, tShift+=aLMAll, tShiftWt+=aLMAll, tShiftFp+=aSizeL, tShiftFpWt+=aSizeL) {
+                    mplusCnlmWt(rCnlm+tShift, rCnlm+tShiftWt, tY, fc, tRn[n], wt, aLMAll);
+                    if (rFpGradNlSize!=NULL) countFpGradNlSizeWt(rFpGradNlSize+tShiftFp, rFpGradNlSize+tShiftFpWt, aSizeL);
                 }
             }
             break;
@@ -1386,17 +1411,44 @@ static inline void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint 
 
 static inline void cnlm2fp(jdouble *aCnlm, jdouble *rFp, jint aSizeN, jint aSizeL, jint aLMax, jboolean aNoRadial, jint aL3Max, jboolean aL3Cross, jint tLMAll) {
     jint tShift = 0, tShiftFP = 0;
-    for (jint tN = 0; tN < aSizeN; ++tN, tShift+=tLMAll, tShiftFP+=aSizeL) {
+    for (jint n = 0; n < aSizeN; ++n, tShift+=tLMAll, tShiftFP+=aSizeL) {
         calL2_(aCnlm+tShift, rFp+tShiftFP, aLMax, aNoRadial);
         calL3_(aCnlm+tShift, rFp+tShiftFP, aLMax, aNoRadial, aL3Max, aL3Cross);
     }
 }
 
 
+#undef JSE_NNAP_CONSTANT_INIT_SphericalChebyshev
+#define JSE_NNAP_CONSTANT_INIT_SphericalChebyshev               \
+jint tSizeN;                                                    \
+switch(aWType) {                                                \
+case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL: {         \
+    tSizeN = aTypeNum>1 ? (aTypeNum+1)*(aNMax+1) : (aNMax+1);   \
+    break;                                                      \
+}                                                               \
+case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL: {           \
+    tSizeN = aTypeNum*(aNMax+1);                                \
+    break;                                                      \
+}                                                               \
+case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:             \
+case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {         \
+    tSizeN = aNMax+1;                                           \
+    break;                                                      \
+}                                                               \
+case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {        \
+    tSizeN = aTypeNum>1 ? (aNMax+aNMax+2) : (aNMax+1);          \
+    break;                                                      \
+}                                                               \
+default: {                                                      \
+    tSizeN = 0;                                                 \
+    break;                                                      \
+}}                                                              \
+
+
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_eval1(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aNlDx, jdoubleArray aNlDy, jdoubleArray aNlDz, jintArray aNlType, jint aNN,
-        jdoubleArray rNlRn, jdoubleArray rNlY, jdoubleArray rCnlm, jdoubleArray rFp, jint aShiftFp, jboolean aBufferNl,
-        jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial, jint aL3Max, jboolean aL3Cross, jint aWType) {
+        jdoubleArray rNlRn, jdoubleArray rNlY, jdoubleArray rCnlm, jdoubleArray rFp, jint aShiftFp, jintArray rFpGradNlSize, jint aShiftFpGradNlSize,
+        jboolean aBufferNl, jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial, jint aL3Max, jboolean aL3Cross, jint aWType) {
     // java array init
     jdouble *tNlDx = (jdouble *)getJArrayBuf(aEnv, aNlDx);
     jdouble *tNlDy = (jdouble *)getJArrayBuf(aEnv, aNlDy);
@@ -1406,44 +1458,25 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_eval1(JNIEnv *aEn
     jdouble *tNlY = (jdouble *)getJArrayBuf(aEnv, rNlY);
     jdouble *tCnlm = (jdouble *)getJArrayBuf(aEnv, rCnlm);
     jdouble *tFp = (jdouble *)getJArrayBuf(aEnv, rFp);
+    jint *tFpGradNlSize = rFpGradNlSize==NULL ? NULL : (jint *)getJArrayBuf(aEnv, rFpGradNlSize);
     
     // const init
-    jint tSizeN;
-    switch(aWType) {
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL: {
-        tSizeN = aTypeNum>1 ? (aTypeNum+1)*(aNMax+1) : (aNMax+1);
-        break;
-    }
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL: {
-        tSizeN = aTypeNum*(aNMax+1);
-        break;
-    }
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
-        tSizeN = aNMax+1;
-        break;
-    }
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
-        tSizeN = aTypeNum>1 ? (aNMax+aNMax+2) : (aNMax+1);
-        break;
-    }
-    default: {
-        tSizeN = 0;
-        break;
-    }}
+    JSE_NNAP_CONSTANT_INIT_SphericalChebyshev
     const jint tSizeL = (aNoRadial?aLMax:(aLMax+1)) + (aL3Cross?L3NCOLS:L3NCOLS_NOCROSS)[aL3Max];
     const jint tLMax = aLMax>aL3Max ? aLMax : aL3Max;
     const jint tLMAll = (tLMax+1)*(tLMax+1);
     const jint tSizeCnlm = tSizeN*tLMAll;
     // clear cnlm first
     jdouble *tFp_ = tFp + aShiftFp;
+    jint *tFpGradNlSize_ = tFpGradNlSize==NULL ? NULL : (tFpGradNlSize+aShiftFpGradNlSize);
     for (jint i = 0; i < tSizeCnlm; ++i) {
         tCnlm[i] = 0.0;
+        if (tFpGradNlSize_!=NULL) tFpGradNlSize_[i] = 0;
     }
     // do cal
     calCnlm(tNlDx, tNlDy, tNlDz, tNlType, aNN,
-            tNlRn, tNlY, tCnlm, aBufferNl,
-            aTypeNum, aRCut, aNMax, tLMax, tLMAll, aWType);
+            tNlRn, tNlY, tCnlm, tFpGradNlSize_,
+            aBufferNl, aTypeNum, aRCut, tSizeL, aNMax, tLMax, tLMAll, aWType);
     cnlm2fp(tCnlm, tFp_, tSizeN, tSizeL, aLMax, aNoRadial, aL3Max, aL3Cross, tLMAll);
     
     // release java array
@@ -1455,14 +1488,17 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_eval1(JNIEnv *aEn
     releaseJArrayBuf(aEnv, rNlY, tNlY, aBufferNl?0:JNI_ABORT);
     releaseJArrayBuf(aEnv, rCnlm, tCnlm, aBufferNl?0:JNI_ABORT);
     releaseJArrayBuf(aEnv, rFp, tFp, 0);
+    if (rFpGradNlSize!=NULL) releaseJArrayBuf(aEnv, rFpGradNlSize, tFpGradNlSize, 0);
 }
+
 
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGrad1(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aNlDx, jdoubleArray aNlDy, jdoubleArray aNlDz, jintArray aNlType, jint aNN,
         jdoubleArray aNlRn, jdoubleArray rRnPx, jdoubleArray rRnPy, jdoubleArray rRnPz, jdoubleArray rCheby2,
         jdoubleArray aNlY, jdoubleArray rYPtheta, jdoubleArray rYPphi, jdoubleArray rYPx, jdoubleArray rYPy, jdoubleArray rYPz,
         jdoubleArray aCnlm, jdoubleArray rCnlmPx, jdoubleArray rCnlmPy, jdoubleArray rCnlmPz,
-        jint aShiftFp, jint aRestFp, jdoubleArray rFpPx, jdoubleArray rFpPy, jdoubleArray rFpPz,
+        jintArray rFpGradNlIndex, jint aShiftFpGradNlIndex, jintArray rFpGradFpIndex, jint aShiftFpGradFpIndex,
+        jdoubleArray rFpPx, jint aShiftFpPx, jdoubleArray rFpPy, jint aShiftFpPy, jdoubleArray rFpPz, jint aShiftFpPz,
         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial, jint aL3Max, jboolean aL3Cross, jint aWType) {
     // java array init
     jdouble *tNlDx = (jdouble *)getJArrayBuf(aEnv, aNlDx);
@@ -1484,60 +1520,32 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGrad1(JNIEnv 
     jdouble *tCnlmPx = (jdouble *)getJArrayBuf(aEnv, rCnlmPx);
     jdouble *tCnlmPy = (jdouble *)getJArrayBuf(aEnv, rCnlmPy);
     jdouble *tCnlmPz = (jdouble *)getJArrayBuf(aEnv, rCnlmPz);
+    jint *tFpGradNlIndex = (jint *)getJArrayBuf(aEnv, rFpGradNlIndex);
+    jint *tFpGradFpIndex = (jint *)getJArrayBuf(aEnv, rFpGradFpIndex);
     jdouble *tFpPx = (jdouble *)getJArrayBuf(aEnv, rFpPx);
     jdouble *tFpPy = (jdouble *)getJArrayBuf(aEnv, rFpPy);
     jdouble *tFpPz = (jdouble *)getJArrayBuf(aEnv, rFpPz);
     
     // const init
-    jint tSizeN;
-    switch(aWType) {
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL: {
-        tSizeN = aTypeNum>1 ? (aTypeNum+1)*(aNMax+1) : (aNMax+1);
-        break;
-    }
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL: {
-        tSizeN = aTypeNum*(aNMax+1);
-        break;
-    }
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
-        tSizeN = aNMax+1;
-        break;
-    }
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
-        tSizeN = aTypeNum>1 ? (aNMax+aNMax+2) : (aNMax+1);
-        break;
-    }
-    default: {
-        tSizeN = 0;
-        break;
-    }}
     const jint tSizeL = (aNoRadial?aLMax:(aLMax+1)) + (aL3Cross?L3NCOLS:L3NCOLS_NOCROSS)[aL3Max];
     const jint tLMax = aLMax>aL3Max ? aLMax : aL3Max;
     const jint tLMAll = (tLMax+1)*(tLMax+1);
-    const jint tSize = tSizeN*tSizeL;
-    
+
+    jint tShiftFpP = 0;
     // loop for neighbor
     for (jint j = 0; j < aNN; ++j) {
-        // init fpPxyz
-        jint tShiftFpP = j*(aShiftFp+tSize+aRestFp) + aShiftFp;
-        jdouble *tFpPx_ = tFpPx+tShiftFpP;
-        jdouble *tFpPy_ = tFpPy+tShiftFpP;
-        jdouble *tFpPz_ = tFpPz+tShiftFpP;
         // init nl
         jint type = tNlType[j];
         jdouble dx = tNlDx[j], dy = tNlDy[j], dz = tNlDz[j];
         jdouble dis = sqrt((double)(dx*dx + dy*dy + dz*dz));
         // check rcut for merge
-        if (dis >= aRCut) {
-            // clear fpPxyz here
-            for (jint i = 0; i < tSize; ++i) {
-                tFpPx_[i] = 0.0;
-                tFpPy_[i] = 0.0;
-                tFpPz_[i] = 0.0;
-            }
-            continue;
-        }
+        if (dis >= aRCut) continue;
+        // init fpPxyz
+        jint *tFpGradNlIndex_ = tFpGradNlIndex + tShiftFpP + aShiftFpGradNlIndex;
+        jint *tFpGradFpIndex_ = tFpGradFpIndex + tShiftFpP + aShiftFpGradFpIndex;
+        jdouble *tFpPx_ = tFpPx + tShiftFpP + aShiftFpPx;
+        jdouble *tFpPy_ = tFpPy + tShiftFpP + aShiftFpPy;
+        jdouble *tFpPz_ = tFpPz + tShiftFpP + aShiftFpPz;
         // cal fc
         jdouble fcMul = 1.0 - pow2_jse(dis/aRCut);
         jdouble fcMul3 = pow3_jse(fcMul);
@@ -1599,12 +1607,258 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGrad1(JNIEnv 
         // cal cnlmPxyz
         switch(aWType) {
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL: {
-            for (jint tN=0, tShift=0, tShiftFp=0; tN <= aNMax; ++tN, tShift+=tLMAll, tShiftFp+=tSizeL) {
+            for (jint n=0, tShift=0, tShiftFp=0; n <= aNMax; ++n, tShift+=tLMAll, tShiftFp+=tSizeL) {
                 // cal cnlmPxyz first
                 calCnlmPxyz(tCnlmPx, tCnlmPy, tCnlmPz,
                             tY, tYPx, tYPy, tYPz,
                             fc, fcPx, fcPy, fcPz,
-                            tRn[tN], tRnPx[tN], tRnPy[tN], tRnPz[tN],
+                            tRn[n], tRnPx[n], tRnPy[n], tRnPz[n],
+                            tLMAll);
+                // set to fp
+                cnlm2fpPxyz(tCnlm+tShift, tCnlmPx, tCnlmPy, tCnlmPz,
+                            tFpPx_+tShiftFp, tFpPy_+tShiftFp, tFpPz_+tShiftFp,
+                            1.0, aLMax, aNoRadial, aL3Max, aL3Cross);
+                if (aTypeNum > 1) {
+                    jint tShift0 = tShift + (aNMax+1)*tLMAll*type;
+                    jint tShiftFp0 = tShiftFp + (aNMax+1)*tSizeL;
+                    cnlm2fpPxyz(tCnlm+tShift0, tCnlmPx, tCnlmPy, tCnlmPz,
+                                tFpPx_+tShiftFp0, tFpPy_+tShiftFp0, tFpPz_+tShiftFp0,
+                                1.0, aLMax, aNoRadial, aL3Max, aL3Cross);
+                }
+            }
+            jint tSizeFpP = tSizeL*(aNMax+1);
+            assignGradIndex(tFpGradNlIndex_, j, tFpGradFpIndex_, 0, tSizeFpP);
+            tShiftFpP += tSizeFpP;
+            if (aTypeNum > 1) {
+                assignGradIndex(tFpGradNlIndex_+tSizeFpP, j, tFpGradFpIndex_+tSizeFpP, tSizeFpP*type, tSizeFpP);
+                tShiftFpP += tSizeFpP;
+            }
+            break;
+        }
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL: {
+            jint tShift = (aNMax+1)*tLMAll*(type-1);
+            for (jint n=0, tShiftFp=0; n <= aNMax; ++n, tShift+=tLMAll, tShiftFp+=tSizeL) {
+                // cal cnlmPxyz first
+                calCnlmPxyz(tCnlmPx, tCnlmPy, tCnlmPz,
+                            tY, tYPx, tYPy, tYPz,
+                            fc, fcPx, fcPy, fcPz,
+                            tRn[n], tRnPx[n], tRnPy[n], tRnPz[n],
+                            tLMAll);
+                // set to fp
+                cnlm2fpPxyz(tCnlm+tShift, tCnlmPx, tCnlmPy, tCnlmPz,
+                            tFpPx_+tShiftFp, tFpPy_+tShiftFp, tFpPz_+tShiftFp,
+                            1.0, aLMax, aNoRadial, aL3Max, aL3Cross);
+            }
+            jint tSizeFpP = tSizeL*(aNMax+1);
+            assignGradIndex(tFpGradNlIndex_, j, tFpGradFpIndex_, tSizeFpP*(type-1), tSizeFpP);
+            tShiftFpP += tSizeFpP;
+            break;
+        }
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
+            for (jint n=0, tShift=0, tShiftFp=0; n <= aNMax; ++n, tShift+=tLMAll, tShiftFp+=tSizeL) {
+                // cal cnlmPxyz first
+                calCnlmPxyz(tCnlmPx, tCnlmPy, tCnlmPz,
+                            tY, tYPx, tYPy, tYPz,
+                            fc, fcPx, fcPy, fcPz,
+                            tRn[n], tRnPx[n], tRnPy[n], tRnPz[n],
+                            tLMAll);
+                // set to fp
+                cnlm2fpPxyz(tCnlm+tShift, tCnlmPx, tCnlmPy, tCnlmPz,
+                            tFpPx_+tShiftFp, tFpPy_+tShiftFp, tFpPz_+tShiftFp,
+                            1.0, aLMax, aNoRadial, aL3Max, aL3Cross);
+            }
+            jint tSizeFpP = tSizeL*(aNMax+1);
+            assignGradIndex(tFpGradNlIndex_, j, tFpGradFpIndex_, 0, tSizeFpP);
+            tShiftFpP += tSizeFpP;
+            break;
+        }
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
+            // cal weight of type here
+            jdouble wt = ((type&1)==1) ? type : -type;
+            for (jint n=0, tShift=0, tShiftFp=0; n <= aNMax; ++n, tShift+=tLMAll, tShiftFp+=tSizeL) {
+                // cal cnlmPxyz first
+                calCnlmPxyz(tCnlmPx, tCnlmPy, tCnlmPz,
+                            tY, tYPx, tYPy, tYPz,
+                            fc, fcPx, fcPy, fcPz,
+                            tRn[n], tRnPx[n], tRnPy[n], tRnPz[n],
+                            tLMAll);
+                // set to fp
+                cnlm2fpPxyz(tCnlm+tShift, tCnlmPx, tCnlmPy, tCnlmPz,
+                            tFpPx_+tShiftFp, tFpPy_+tShiftFp, tFpPz_+tShiftFp,
+                            1.0, aLMax, aNoRadial, aL3Max, aL3Cross);
+                if (aTypeNum > 1) {
+                    jint tShift0 = tShift + (aNMax+1)*tLMAll;
+                    jint tShiftFp0 = tShiftFp + (aNMax+1)*tSizeL;
+                    cnlm2fpPxyz(tCnlm+tShift0, tCnlmPx, tCnlmPy, tCnlmPz,
+                                tFpPx_+tShiftFp0, tFpPy_+tShiftFp0, tFpPz_+tShiftFp0,
+                                wt, aLMax, aNoRadial, aL3Max, aL3Cross);
+                }
+            }
+            jint tSizeFpP = tSizeL*(aNMax+1);
+            assignGradIndex(tFpGradNlIndex_, j, tFpGradFpIndex_, 0, tSizeFpP);
+            tShiftFpP += tSizeFpP;
+            if (aTypeNum > 1) {
+                assignGradIndex(tFpGradNlIndex_+tSizeFpP, j, tFpGradFpIndex_+tSizeFpP, tSizeFpP, tSizeFpP);
+                tShiftFpP += tSizeFpP;
+            }
+            break;
+        }
+        default: {
+            break;
+        }}
+    }
+    // release java array
+    releaseJArrayBuf(aEnv, aNlDx, tNlDx, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aNlDy, tNlDy, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aNlDz, tNlDz, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aNlType, tNlType, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aNlRn, tNlRn, JNI_ABORT);
+    releaseJArrayBuf(aEnv, rRnPx, tRnPx, JNI_ABORT); // buffer only
+    releaseJArrayBuf(aEnv, rRnPy, tRnPy, JNI_ABORT); // buffer only
+    releaseJArrayBuf(aEnv, rRnPz, tRnPz, JNI_ABORT); // buffer only
+    releaseJArrayBuf(aEnv, rCheby2, tCheby2, JNI_ABORT); // buffer only
+    releaseJArrayBuf(aEnv, aNlY, tNlY, JNI_ABORT);
+    releaseJArrayBuf(aEnv, rYPtheta, tYPtheta, JNI_ABORT); // buffer only
+    releaseJArrayBuf(aEnv, rYPphi, tYPphi, JNI_ABORT); // buffer only
+    releaseJArrayBuf(aEnv, rYPx, tYPx, JNI_ABORT); // buffer only
+    releaseJArrayBuf(aEnv, rYPy, tYPy, JNI_ABORT); // buffer only
+    releaseJArrayBuf(aEnv, rYPz, tYPz, JNI_ABORT); // buffer only
+    releaseJArrayBuf(aEnv, aCnlm, tCnlm, JNI_ABORT);
+    releaseJArrayBuf(aEnv, rCnlmPx, tCnlmPx, JNI_ABORT); // buffer only
+    releaseJArrayBuf(aEnv, rCnlmPy, tCnlmPy, JNI_ABORT); // buffer only
+    releaseJArrayBuf(aEnv, rCnlmPz, tCnlmPz, JNI_ABORT); // buffer only
+    releaseJArrayBuf(aEnv, rFpGradNlIndex, tFpGradNlIndex, 0);
+    releaseJArrayBuf(aEnv, rFpGradFpIndex, tFpGradFpIndex, 0);
+    releaseJArrayBuf(aEnv, rFpPx, tFpPx, 0);
+    releaseJArrayBuf(aEnv, rFpPy, tFpPy, 0);
+    releaseJArrayBuf(aEnv, rFpPz, tFpPz, 0);
+}
+
+JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGradWithShift1(JNIEnv *aEnv, jclass aClazz,
+        jdoubleArray aNlDx, jdoubleArray aNlDy, jdoubleArray aNlDz, jintArray aNlType, jint aNN,
+        jdoubleArray aNlRn, jdoubleArray rRnPx, jdoubleArray rRnPy, jdoubleArray rRnPz, jdoubleArray rCheby2,
+        jdoubleArray aNlY, jdoubleArray rYPtheta, jdoubleArray rYPphi, jdoubleArray rYPx, jdoubleArray rYPy, jdoubleArray rYPz,
+        jdoubleArray aCnlm, jdoubleArray rCnlmPx, jdoubleArray rCnlmPy, jdoubleArray rCnlmPz,
+        jint aShiftFp, jint aRestFp, jdoubleArray rFpPx, jdoubleArray rFpPy, jdoubleArray rFpPz,
+        jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial, jint aL3Max, jboolean aL3Cross, jint aWType) {
+    // java array init
+    jdouble *tNlDx = (jdouble *)getJArrayBuf(aEnv, aNlDx);
+    jdouble *tNlDy = (jdouble *)getJArrayBuf(aEnv, aNlDy);
+    jdouble *tNlDz = (jdouble *)getJArrayBuf(aEnv, aNlDz);
+    jint *tNlType = (jint *)getJArrayBuf(aEnv, aNlType);
+    jdouble *tNlRn = (jdouble *)getJArrayBuf(aEnv, aNlRn);
+    jdouble *tRnPx = (jdouble *)getJArrayBuf(aEnv, rRnPx);
+    jdouble *tRnPy = (jdouble *)getJArrayBuf(aEnv, rRnPy);
+    jdouble *tRnPz = (jdouble *)getJArrayBuf(aEnv, rRnPz);
+    jdouble *tCheby2 = (jdouble *)getJArrayBuf(aEnv, rCheby2);
+    jdouble *tNlY = (jdouble *)getJArrayBuf(aEnv, aNlY);
+    jdouble *tYPtheta = (jdouble *)getJArrayBuf(aEnv, rYPtheta);
+    jdouble *tYPphi = (jdouble *)getJArrayBuf(aEnv, rYPphi);
+    jdouble *tYPx = (jdouble *)getJArrayBuf(aEnv, rYPx);
+    jdouble *tYPy = (jdouble *)getJArrayBuf(aEnv, rYPy);
+    jdouble *tYPz = (jdouble *)getJArrayBuf(aEnv, rYPz);
+    jdouble *tCnlm = (jdouble *)getJArrayBuf(aEnv, aCnlm);
+    jdouble *tCnlmPx = (jdouble *)getJArrayBuf(aEnv, rCnlmPx);
+    jdouble *tCnlmPy = (jdouble *)getJArrayBuf(aEnv, rCnlmPy);
+    jdouble *tCnlmPz = (jdouble *)getJArrayBuf(aEnv, rCnlmPz);
+    jdouble *tFpPx = (jdouble *)getJArrayBuf(aEnv, rFpPx);
+    jdouble *tFpPy = (jdouble *)getJArrayBuf(aEnv, rFpPy);
+    jdouble *tFpPz = (jdouble *)getJArrayBuf(aEnv, rFpPz);
+    
+    // const init
+    JSE_NNAP_CONSTANT_INIT_SphericalChebyshev
+    const jint tSizeL = (aNoRadial?aLMax:(aLMax+1)) + (aL3Cross?L3NCOLS:L3NCOLS_NOCROSS)[aL3Max];
+    const jint tLMax = aLMax>aL3Max ? aLMax : aL3Max;
+    const jint tLMAll = (tLMax+1)*(tLMax+1);
+    const jint tSize = tSizeN*tSizeL;
+    
+    // loop for neighbor
+    for (jint j = 0; j < aNN; ++j) {
+        // init fpPxyz
+        jint tShiftFpP = j*(aShiftFp+tSize+aRestFp) + aShiftFp;
+        jdouble *tFpPx_ = tFpPx+tShiftFpP;
+        jdouble *tFpPy_ = tFpPy+tShiftFpP;
+        jdouble *tFpPz_ = tFpPz+tShiftFpP;
+        // always clear fpPxyz
+        for (jint i = 0; i < tSize; ++i) {
+            tFpPx_[i] = 0.0;
+            tFpPy_[i] = 0.0;
+            tFpPz_[i] = 0.0;
+        }
+        // init nl
+        jint type = tNlType[j];
+        jdouble dx = tNlDx[j], dy = tNlDy[j], dz = tNlDz[j];
+        jdouble dis = sqrt((double)(dx*dx + dy*dy + dz*dz));
+        // check rcut for merge
+        if (dis >= aRCut) continue;
+        // cal fc
+        jdouble fcMul = 1.0 - pow2_jse(dis/aRCut);
+        jdouble fcMul3 = pow3_jse(fcMul);
+        jdouble fc = fcMul3 * fcMul;
+        jdouble fcPMul = 8.0 * fcMul3 / (aRCut*aRCut);
+        jdouble fcPx = dx * fcPMul;
+        jdouble fcPy = dy * fcPMul;
+        jdouble fcPz = dz * fcPMul;
+        // cal Rn
+        jdouble *tRn = tNlRn + j*(aNMax+1);
+        const jdouble tRnX = 1.0 - 2.0*dis/aRCut;
+        chebyshev2Full(aNMax-1, tRnX, tCheby2);
+        switch(aWType) {
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
+            // cal weight of type here
+            jdouble wt = ((type&1)==1) ? type : -type;
+            calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, wt, dx, dy, dz);
+            break;
+        }
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL:
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL:
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
+            calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, 1.0, dx, dy, dz);
+            break;
+        }
+        default: {
+            break;
+        }}
+        // cal Ylm
+        jdouble dxy = hypot(dx, dy);
+        jdouble cosTheta = dz / dis;
+        jdouble sinTheta = dxy / dis;
+        jdouble cosPhi;
+        jdouble sinPhi;
+        jboolean dxyCloseZero = numericEqual_jse(dxy, 0.0);
+        if (dxyCloseZero) {
+            cosPhi = 1.0;
+            sinPhi = 0.0;
+        } else {
+            cosPhi = dx / dxy;
+            sinPhi = dy / dxy;
+        }
+        jdouble *tY = tNlY + j*tLMAll;
+        if (dxyCloseZero) {
+            // fix singularity
+            for (jint k = 0; k < tLMAll; ++k) tYPphi[k] = 0.0;
+        }
+        for (jint tL = 0; tL <= tLMax; ++tL) {
+            if (!dxyCloseZero) {
+                calYPphi(tYPphi, tY, tL);
+            }
+            calYPtheta(cosPhi, sinPhi, tYPtheta, tY, tL);
+        }
+        // conert to Pxyz
+        calYPxyz(cosTheta, sinTheta, cosPhi, sinPhi, dis, dxy, dxyCloseZero,
+                 tYPx, tYPy, tYPz,
+                 tYPtheta, tYPphi, tLMAll);
+        // cal cnlmPxyz
+        switch(aWType) {
+        case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL: {
+            for (jint n=0, tShift=0, tShiftFp=0; n <= aNMax; ++n, tShift+=tLMAll, tShiftFp+=tSizeL) {
+                // cal cnlmPxyz first
+                calCnlmPxyz(tCnlmPx, tCnlmPy, tCnlmPz,
+                            tY, tYPx, tYPy, tYPz,
+                            fc, fcPx, fcPy, fcPz,
+                            tRn[n], tRnPx[n], tRnPy[n], tRnPz[n],
                             tLMAll);
                 // set to fp
                 cnlm2fpPxyz(tCnlm+tShift, tCnlmPx, tCnlmPy, tCnlmPz,
@@ -1623,12 +1877,12 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGrad1(JNIEnv 
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL: {
             jint tShift = (aNMax+1)*tLMAll*(type-1);
             jint tShiftFp = (aNMax+1)*tSizeL*(type-1);
-            for (jint tN=0; tN <= aNMax; ++tN, tShift+=tLMAll, tShiftFp+=tSizeL) {
+            for (jint n=0; n <= aNMax; ++n, tShift+=tLMAll, tShiftFp+=tSizeL) {
                 // cal cnlmPxyz first
                 calCnlmPxyz(tCnlmPx, tCnlmPy, tCnlmPz,
                             tY, tYPx, tYPy, tYPz,
                             fc, fcPx, fcPy, fcPz,
-                            tRn[tN], tRnPx[tN], tRnPy[tN], tRnPz[tN],
+                            tRn[n], tRnPx[n], tRnPy[n], tRnPz[n],
                             tLMAll);
                 // set to fp
                 cnlm2fpPxyz(tCnlm+tShift, tCnlmPx, tCnlmPy, tCnlmPz,
@@ -1639,12 +1893,12 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGrad1(JNIEnv 
         }
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
-            for (jint tN=0, tShift=0, tShiftFp=0; tN <= aNMax; ++tN, tShift+=tLMAll, tShiftFp+=tSizeL) {
+            for (jint n=0, tShift=0, tShiftFp=0; n <= aNMax; ++n, tShift+=tLMAll, tShiftFp+=tSizeL) {
                 // cal cnlmPxyz first
                 calCnlmPxyz(tCnlmPx, tCnlmPy, tCnlmPz,
                             tY, tYPx, tYPy, tYPz,
                             fc, fcPx, fcPy, fcPz,
-                            tRn[tN], tRnPx[tN], tRnPy[tN], tRnPz[tN],
+                            tRn[n], tRnPx[n], tRnPy[n], tRnPz[n],
                             tLMAll);
                 // set to fp
                 cnlm2fpPxyz(tCnlm+tShift, tCnlmPx, tCnlmPy, tCnlmPz,
@@ -1656,12 +1910,12 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGrad1(JNIEnv 
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
             // cal weight of type here
             jdouble wt = ((type&1)==1) ? type : -type;
-            for (jint tN=0, tShift=0, tShiftFp=0; tN <= aNMax; ++tN, tShift+=tLMAll, tShiftFp+=tSizeL) {
+            for (jint n=0, tShift=0, tShiftFp=0; n <= aNMax; ++n, tShift+=tLMAll, tShiftFp+=tSizeL) {
                 // cal cnlmPxyz first
                 calCnlmPxyz(tCnlmPx, tCnlmPy, tCnlmPz,
                             tY, tYPx, tYPy, tYPz,
                             fc, fcPx, fcPy, fcPz,
-                            tRn[tN], tRnPx[tN], tRnPy[tN], tRnPz[tN],
+                            tRn[n], tRnPx[n], tRnPy[n], tRnPz[n],
                             tLMAll);
                 // set to fp
                 cnlm2fpPxyz(tCnlm+tShift, tCnlmPx, tCnlmPy, tCnlmPz,
@@ -1705,6 +1959,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGrad1(JNIEnv 
     releaseJArrayBuf(aEnv, rFpPy, tFpPy, 0);
     releaseJArrayBuf(aEnv, rFpPz, tFpPz, 0);
 }
+
 
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGradAndForceDot1(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aNlDx, jdoubleArray aNlDy, jdoubleArray aNlDz, jintArray aNlType, jint aNN,
@@ -1819,12 +2074,12 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGradAndForceD
         // cal cnlmPxyz
         switch(aWType) {
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL: {
-            for (jint tN=0, tShift=0, tShiftFp=0; tN <= aNMax; ++tN, tShift+=tLMAll, tShiftFp+=tSizeL) {
+            for (jint n=0, tShift=0, tShiftFp=0; n <= aNMax; ++n, tShift+=tLMAll, tShiftFp+=tSizeL) {
                 // cal cnlmPxyz first
                 calCnlmPxyz(tCnlmPx, tCnlmPy, tCnlmPz,
                             tY, tYPx, tYPy, tYPz,
                             fc, fcPx, fcPy, fcPz,
-                            tRn[tN], tRnPx[tN], tRnPy[tN], tRnPz[tN],
+                            tRn[n], tRnPx[n], tRnPy[n], tRnPz[n],
                             tLMAll);
                 // accumulate to force
                 cnlm2fxyz(tCnlm+tShift, tCnlmPx, tCnlmPy, tCnlmPz,
@@ -1843,12 +2098,12 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGradAndForceD
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL: {
             jint tShift = (aNMax+1)*tLMAll*(type-1);
             jint tShiftFp = (aNMax+1)*tSizeL*(type-1);
-            for (jint tN=0; tN <= aNMax; ++tN, tShift+=tLMAll, tShiftFp+=tSizeL) {
+            for (jint n=0; n <= aNMax; ++n, tShift+=tLMAll, tShiftFp+=tSizeL) {
                 // cal cnlmPxyz first
                 calCnlmPxyz(tCnlmPx, tCnlmPy, tCnlmPz,
                             tY, tYPx, tYPy, tYPz,
                             fc, fcPx, fcPy, fcPz,
-                            tRn[tN], tRnPx[tN], tRnPy[tN], tRnPz[tN],
+                            tRn[n], tRnPx[n], tRnPy[n], tRnPz[n],
                             tLMAll);
                 // accumulate to force
                 cnlm2fxyz(tCnlm+tShift, tCnlmPx, tCnlmPy, tCnlmPz,
@@ -1859,12 +2114,12 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGradAndForceD
         }
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
-            for (jint tN=0, tShift=0, tShiftFp=0; tN <= aNMax; ++tN, tShift+=tLMAll, tShiftFp+=tSizeL) {
+            for (jint n=0, tShift=0, tShiftFp=0; n <= aNMax; ++n, tShift+=tLMAll, tShiftFp+=tSizeL) {
                 // cal cnlmPxyz first
                 calCnlmPxyz(tCnlmPx, tCnlmPy, tCnlmPz,
                             tY, tYPx, tYPy, tYPz,
                             fc, fcPx, fcPy, fcPz,
-                            tRn[tN], tRnPx[tN], tRnPy[tN], tRnPz[tN],
+                            tRn[n], tRnPx[n], tRnPy[n], tRnPz[n],
                             tLMAll);
                 // accumulate to force
                 cnlm2fxyz(tCnlm+tShift, tCnlmPx, tCnlmPy, tCnlmPz,
@@ -1876,12 +2131,12 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGradAndForceD
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
             // cal weight of type here
             jdouble wt = ((type&1)==1) ? type : -type;
-            for (jint tN=0, tShift=0, tShiftFp=0; tN <= aNMax; ++tN, tShift+=tLMAll, tShiftFp+=tSizeL) {
+            for (jint n=0, tShift=0, tShiftFp=0; n <= aNMax; ++n, tShift+=tLMAll, tShiftFp+=tSizeL) {
                 // cal cnlmPxyz first
                 calCnlmPxyz(tCnlmPx, tCnlmPy, tCnlmPz,
                             tY, tYPx, tYPy, tYPz,
                             fc, fcPx, fcPy, fcPz,
-                            tRn[tN], tRnPx[tN], tRnPy[tN], tRnPz[tN],
+                            tRn[n], tRnPx[n], tRnPy[n], tRnPz[n],
                             tLMAll);
                 // accumulate to force
                 cnlm2fxyz(tCnlm+tShift, tCnlmPx, tCnlmPy, tCnlmPz,

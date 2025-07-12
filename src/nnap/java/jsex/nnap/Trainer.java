@@ -44,7 +44,7 @@ import java.util.function.IntUnaryOperator;
  * 通过重写方法来实现自定义的功能
  * @author liqa
  */
-@ApiStatus.Experimental
+@Deprecated
 public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
     protected final static String DEFAULT_UNITS = "metal";
     protected final static int[] DEFAULT_HIDDEN_DIMS = {32, 32}; // 现在统一默认为 32, 32
