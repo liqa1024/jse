@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  */
 public class CS {
     /** version of jse */
-    public final static String VERSION = "3.8.2b";
+    public final static String VERSION = "3.8.2c";
     
     /** 内部使用的全局随机数生成器 */
     @ApiStatus.Internal public final static Random RANDOM_ = new Random();

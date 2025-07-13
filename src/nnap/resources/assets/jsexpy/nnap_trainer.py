@@ -262,7 +262,7 @@ class Trainer:
     def load_checkpoint(self):
         self.model.load_state_dict(self.model_state_dict)
     
-    def model(self, i: int):
+    def model_at(self, i: int):
         return self.model.sub_models[i]
     
     def models(self):

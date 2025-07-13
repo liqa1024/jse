@@ -342,7 +342,7 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
     
     @Override public int atomTypeNumber() {return mSymbols.length;}
     public PyObject model(int aType) {
-        try (PyCallable fModel = mTrainer.getAttr("model", PyCallable.class)) {
+        try (PyCallable fModel = mTrainer.getAttr("model_at", PyCallable.class)) {
             return fModel.callAs(PyObject.class, aType-1);
         }
     }
