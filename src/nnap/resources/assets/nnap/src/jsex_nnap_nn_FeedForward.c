@@ -48,7 +48,7 @@ static inline jdouble forward(jdouble *aX, jint aInputDim, jint *aHiddenDims, ji
                 tGrad[j] = rGradDot;
                 tGradGrad[j] = rGradGradDot;
             }
-            tWeights+=tInSize;
+            tWeights += tInSize;
         }
         tInput = tOutput;
         tOutput += tOutSize;
@@ -62,7 +62,6 @@ static inline jdouble forward(jdouble *aX, jint aInputDim, jint *aHiddenDims, ji
     const jint tOutSize = aHiddenDims[tEnd];
     for (jint j = 0; j < tOutSize; ++j) {
         jdouble rDot = dotAB_jse(tInput, tWeights, tInSize) + tBiases[j];
-        jdouble tOutputWeight = aOutputWeight[j];
         if (tGrad == NULL) {
             tOutput[j] = silu(rDot);
         } else
@@ -76,6 +75,7 @@ static inline jdouble forward(jdouble *aX, jint aInputDim, jint *aHiddenDims, ji
             tGrad[j] = rGradDot;
             tGradGrad[j] = rGradGradDot;
         }
+        jdouble tOutputWeight = aOutputWeight[j];
         rOut += tOutput[j] * tOutputWeight;
         tWeights += tInSize;
     }
@@ -112,13 +112,13 @@ static inline void backward(jdouble *aX, jdouble *rGradX, jdouble *rGradPara,
         rGradWeights += tInSize*tLastHiddenSize;
         jdouble *rGradOutWeights = rGradWeights;
         for (jint j = 0; j < tLastHiddenSize; ++j) {
-            rGradOutWeights[j] = tX[j]; // rGradOutWeights is the last output
+            rGradOutWeights[j] += tX[j]; // rGradOutWeights is the last output
         }
         rGradBiases = rGradOutWeights+tLastHiddenSize;
         for (jint i = 0; i < aHiddenNumber; ++i) {
             rGradBiases += aHiddenDims[i];
         }
-        *rGradBiases = 1.0; // rGradOutBias always 1
+        *rGradBiases += 1.0; // rGradOutBias always 1
     }
     // begin backward
     tInSize = aHiddenDims[tEnd];
@@ -139,9 +139,9 @@ static inline void backward(jdouble *aX, jdouble *rGradX, jdouble *rGradPara,
             rGradBiases -= tInSize;
             for (jint j = 0; j < tInSize; ++j) {
                 jdouble tSubGrad3 = tGrad3Before[j];
-                rGradBiases[j] = tSubGrad3;
+                rGradBiases[j] += tSubGrad3;
                 for (jint k = 0; k < tOutSize; ++k) {
-                    rGradWeights[k] = tSubGrad3 * tX[k];
+                    rGradWeights[k] += tSubGrad3 * tX[k];
                 }
                 rGradWeights += tOutSize;
             }
@@ -161,9 +161,9 @@ static inline void backward(jdouble *aX, jdouble *rGradX, jdouble *rGradPara,
         rGradBiases -= tInSize;
         for (jint j = 0; j < tInSize; ++j) {
             jdouble tSubGrad3 = tGrad3Before[j];
-            rGradBiases[j] = tSubGrad3;
+            rGradBiases[j] += tSubGrad3;
             for (jint k = 0; k < aInputDim; ++k) {
-                rGradWeights[k] = tSubGrad3 * aX[k];
+                rGradWeights[k] += tSubGrad3 * aX[k];
             }
             rGradWeights += aInputDim;
         }
@@ -173,6 +173,190 @@ static inline void backward(jdouble *aX, jdouble *rGradX, jdouble *rGradPara,
             rGradX[j] = dotAB_jse(tGrad3Before, tWeights, tInSize);
             tWeights += tInSize;
         }
+    }
+}
+static inline void gradBackward(jdouble *aX, jdouble *rGradXGradPara,
+                                jint aInputDim, jint *aHiddenDims, jint aHiddenNumber, jdouble *aHiddenWeights, jdouble *aHiddenWeightsBackward, jdouble *aOutputWeight,
+                                jdouble *aHiddenOutputs, jdouble *aHiddenGrads, jdouble *aHiddenGrads2, jdouble *aHiddenGrads3, jdouble *aHiddenGradGrads,
+                                jdouble *rHiddenMatOutputGrads, jdouble *rHiddenMatGradGrads, jdouble *rHiddenMatGradGrads2) {
+    // size init
+    jint tHiddenWeightsSize = 0;
+    jint tHiddenBiasesSize = 0;
+    jint tColNum = aInputDim;
+    for (jint i = 0; i < aHiddenNumber; ++i) {
+        jint tHiddenDim = aHiddenDims[i];
+        tHiddenWeightsSize += tColNum * tHiddenDim;
+        tHiddenBiasesSize += tHiddenDim;
+        tColNum = tHiddenDim;
+    }
+    jint tOutputWeightSize = aHiddenDims[aHiddenNumber-1];
+    jint tParaSize = tHiddenWeightsSize+tOutputWeightSize + tHiddenBiasesSize+1;
+    // ptr init
+    jdouble *tGrad = aHiddenGrads;
+    jdouble *tGrad2 = aHiddenGrads2;
+    jdouble *tGrad3 = aHiddenGrads3;
+    jdouble *tGradGrad = aHiddenGradGrads;
+    jdouble *tX = aHiddenOutputs;
+    jdouble *rMatXGrad = rHiddenMatOutputGrads;
+    jdouble *rMatGradGrad = rHiddenMatGradGrads;
+    jdouble *rMatGradGrad2 = rHiddenMatGradGrads2;
+    
+    /// backward backward
+    // diff W0 ij
+    jint tShiftParaWeight = 0;
+    jint tShiftParaBias = 0;
+    jint tInSize = aInputDim;
+    jint tOutSize = aHiddenDims[0];
+    for (jint i = 0; i < tOutSize; ++i) {
+        jdouble tSubGrad3 = tGrad3[i];
+        jint tShift = i * tInSize;
+        for (jint j = 0; j < tInSize; ++j) {
+            rGradXGradPara[j*tParaSize + tShift + j] += tSubGrad3;
+        }
+    }
+    // G^0 ik
+    jdouble *tWeights = aHiddenWeights;
+    for (jint i = 0; i < tOutSize; ++i) {
+        for (jint k = 0; k < aInputDim; ++k) {
+            rMatGradGrad2[i + k*tOutSize] = tWeights[k];
+        }
+        tWeights += aInputDim;
+    }
+    const jint tEnd = aHiddenNumber - 1;
+    for (jint l = 0; l < tEnd; ++l) {
+        // Gl ik, G~l ik
+        for (jint k = 0; k < aInputDim; ++k) {
+            for (jint i = 0; i < tOutSize; ++i) {
+                rMatGradGrad[i] = tGrad2[i] * rMatGradGrad2[i];
+                rMatGradGrad2[i] = tGrad[i] * rMatGradGrad2[i];
+            }
+            rMatGradGrad += tOutSize;
+            rMatGradGrad2 += tOutSize;
+        }
+        rMatGradGrad2 -= tOutSize*aInputDim;
+        tGrad += tOutSize;
+        tGrad2 += tOutSize;
+        tGrad3 += tOutSize;
+        tGradGrad += tOutSize;
+        tX += tOutSize;
+        // diff Wl+1 ij
+        tShiftParaWeight += tInSize*tOutSize;
+        tShiftParaBias += tOutSize;
+        tInSize = tOutSize;
+        tOutSize = aHiddenDims[l+1];
+        for (jint k = 0; k < aInputDim; ++k) {
+            jdouble *tGradXGradWeight = rGradXGradPara + k*tParaSize + tShiftParaWeight;
+            for (jint i = 0; i < tOutSize; ++i) {
+                jdouble tSubGrad3 = tGrad3[i];
+                for (jint j = 0; j < tInSize; ++j) {
+                    tGradXGradWeight[j] += tSubGrad3 * rMatGradGrad2[j];
+                }
+                tGradXGradWeight += tInSize;
+            }
+            rMatGradGrad2 += tInSize;
+        }
+        // G^l+1 ik
+        jdouble *rMatGradGrad3 = rMatGradGrad2;
+        rMatGradGrad2 -= tInSize*aInputDim;
+        jdouble *tWeights_ = tWeights;
+        for (jint k = 0; k < aInputDim; ++k) {
+            for (jint i = 0; i < tOutSize; ++i) {
+                rMatGradGrad3[i] = dotAB_jse(tWeights_, rMatGradGrad2, tInSize);
+                tWeights_ += tInSize;
+            }
+            tWeights_ = tWeights;
+            rMatGradGrad2 += tInSize;
+            rMatGradGrad3 += tOutSize;
+        }
+        tWeights += tOutSize*tInSize;
+    }
+    // Gend ik, Wo ik
+    tOutSize = aHiddenDims[tEnd];
+    for (jint k = 0; k < aInputDim; ++k) {
+        jdouble *tGradXGradWeight = rGradXGradPara + k*tParaSize + tHiddenWeightsSize;
+        for (jint i = 0; i < tOutSize; ++i) {
+            rMatGradGrad[i] = aOutputWeight[i] * rMatGradGrad2[i];
+            tGradXGradWeight[i] += tGrad[i] * rMatGradGrad2[i];
+        }
+        rMatGradGrad += tOutSize;
+        rMatGradGrad2 += tOutSize;
+    }
+    rMatGradGrad -= tOutSize*aInputDim;
+    /// backward forward
+    // X^end ik
+    for (jint k = 0; k < aInputDim; ++k) {
+        for (jint i = 0; i < tOutSize; ++i) {
+            rMatXGrad[i] = tGradGrad[i] * rMatGradGrad[i];
+        }
+        rMatXGrad += tOutSize;
+        rMatGradGrad += tOutSize;
+    }
+    rMatXGrad -= tOutSize*aInputDim;
+    rMatGradGrad -= tOutSize*aInputDim;
+    tWeights = aHiddenWeightsBackward;
+    tShiftParaWeight = tHiddenWeightsSize;
+    tShiftParaBias = tHiddenWeightsSize+tOutputWeightSize + tHiddenBiasesSize;
+    for (int l = tEnd; l > 0; --l) {
+        // bl ik, Wl ijk
+        tInSize = aHiddenDims[l-1];
+        tGrad -= tInSize;
+        tGradGrad -= tInSize;
+        tX -= tInSize;
+        tShiftParaWeight -= tInSize*tOutSize;
+        tShiftParaBias -= tOutSize;
+        for (jint k = 0; k < aInputDim; ++k) {
+            jdouble *tGradXGradWeight = rGradXGradPara + k*tParaSize + tShiftParaWeight;
+            jdouble *tGradXGradBias = rGradXGradPara + k*tParaSize + tShiftParaBias;
+            for (jint i = 0; i < tOutSize; ++i) {
+                jdouble tSubMatXGrad = rMatXGrad[i];
+                tGradXGradBias[i] += tSubMatXGrad;
+                for (jint j = 0; j < tInSize; ++j) {
+                    tGradXGradWeight[j] += tX[j] * tSubMatXGrad;
+                }
+                tGradXGradWeight += tInSize;
+            }
+            rMatXGrad += tOutSize;
+        }
+        // Xl-1 ik
+        jdouble *rMatXGrad2 = rMatXGrad;
+        rMatXGrad -= tOutSize*aInputDim;
+        jdouble *tWeights_ = tWeights;
+        for (jint k = 0; k < aInputDim; ++k) {
+            for (jint i = 0; i < tInSize; ++i) {
+                rMatXGrad2[i] = dotAB_jse(tWeights_, rMatXGrad, tOutSize);
+                tWeights_ += tOutSize;
+            }
+            tWeights_ = tWeights;
+            rMatXGrad += tOutSize;
+            rMatXGrad2 += tInSize;
+        }
+        tWeights += tOutSize*tInSize;
+        // X^l-1 ik
+        tOutSize = tInSize;
+        rMatGradGrad -= tOutSize*aInputDim;
+        for (jint k = 0; k < aInputDim; ++k) {
+            for (jint i = 0; i < tOutSize; ++i) {
+                rMatXGrad[i] = tGradGrad[i]*rMatGradGrad[i] + tGrad[i]*rMatXGrad[i];
+            }
+            rMatXGrad += tOutSize;
+            rMatGradGrad += tOutSize;
+        }
+        rMatXGrad -= tOutSize*aInputDim;
+        rMatGradGrad -= tOutSize*aInputDim;
+    }
+    // b0 ik, W0 ijk
+    for (jint k = 0; k < aInputDim; ++k) {
+        jdouble *tGradXGradWeight = rGradXGradPara + k*tParaSize;
+        jdouble *tGradXGradBias = rGradXGradPara + k*tParaSize + tHiddenWeightsSize+tOutputWeightSize;
+        for (jint i = 0; i < tOutSize; ++i) {
+            jdouble tSubMatXGrad = rMatXGrad[i];
+            tGradXGradBias[i] += tSubMatXGrad;
+            for (jint j = 0; j < aInputDim; ++j) {
+                tGradXGradWeight[j] += aX[j] * tSubMatXGrad;
+            }
+            tGradXGradWeight += aInputDim;
+        }
+        rMatXGrad += tOutSize;
     }
 }
 
@@ -278,13 +462,13 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_backward1(JNIEnv *aEnv, jcl
 }
 
 JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_gradBackward1(JNIEnv *aEnv, jclass aClazz,
-        jdoubleArray aX, jint aShiftX, jdoubleArray rGradX, jint aShiftGradX, jdoubleArray rGradXGradPara, jint aShiftGradXGradPara,
+        jdoubleArray aX, jint aShiftX, jdoubleArray aGradX, jint aShiftGradX, jdoubleArray rGradXGradPara, jint aShiftGradXGradPara,
         jint aInputDim, jintArray aHiddenDims, jint aHiddenNumber, jdoubleArray aHiddenWeights, jdoubleArray aHiddenWeightsBackward, jdoubleArray aOutputWeight,
         jdoubleArray aHiddenOutputs, jdoubleArray aHiddenGrads, jdoubleArray aHiddenGrads2, jdoubleArray aHiddenGrads3, jdoubleArray aHiddenGradGrads,
-        jdoubleArray rHiddenMatOutputGrads, jdoubleArray rHiddenMatGradGrads) {
+        jdoubleArray rHiddenMatOutputGrads, jdoubleArray rHiddenMatGradGrads, jdoubleArray rHiddenMatGradGrads2) {
     // java array init
     jdouble *tX = (jdouble *)getJArrayBuf(aEnv, aX);
-    jdouble *tGradX = (jdouble *)getJArrayBuf(aEnv, rGradX);
+    jdouble *tGradX = (jdouble *)getJArrayBuf(aEnv, aGradX);
     jdouble *tGradXGradPara = (jdouble *)getJArrayBuf(aEnv, rGradXGradPara);
     jint *tHiddenDims = (jint *)getJArrayBuf(aEnv, aHiddenDims);
     jdouble *tHiddenWeights = (jdouble *)getJArrayBuf(aEnv, aHiddenWeights);
@@ -297,16 +481,17 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_gradBackward1(JNIEnv *aEnv,
     jdouble *tHiddenGradGrads = (jdouble *)getJArrayBuf(aEnv, aHiddenGradGrads);
     jdouble *tHiddenMatOutputGrads = (jdouble *)getJArrayBuf(aEnv, rHiddenMatOutputGrads);
     jdouble *tHiddenMatGradGrads = (jdouble *)getJArrayBuf(aEnv, rHiddenMatGradGrads);
+    jdouble *tHiddenMatGradGrads2 = (jdouble *)getJArrayBuf(aEnv, rHiddenMatGradGrads2);
     
-    gradBackward(tX+aShiftX, tGradX+aShiftGradX, tGradXGradPara+aShiftGradXGradPara,
+    gradBackward(tX+aShiftX, tGradXGradPara+aShiftGradXGradPara,
                  aInputDim, tHiddenDims, aHiddenNumber,
                  tHiddenWeights, tHiddenWeightsBackward, tOutputWeight,
                  tHiddenOutputs, tHiddenGrads, tHiddenGrads2, tHiddenGrads3, tHiddenGradGrads,
-                 tHiddenMatOutputGrads, tHiddenMatGradGrads);
+                 tHiddenMatOutputGrads, tHiddenMatGradGrads, tHiddenMatGradGrads2);
     
     // release java array
     releaseJArrayBuf(aEnv, aX, tX, JNI_ABORT);
-    releaseJArrayBuf(aEnv, rGradX, tGradX, 0);
+    releaseJArrayBuf(aEnv, aGradX, tGradX, JNI_ABORT);
     releaseJArrayBuf(aEnv, rGradXGradPara, tGradXGradPara, 0);
     releaseJArrayBuf(aEnv, aHiddenDims, tHiddenDims, JNI_ABORT);
     releaseJArrayBuf(aEnv, aHiddenWeights, tHiddenWeights, JNI_ABORT);
@@ -319,6 +504,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_gradBackward1(JNIEnv *aEnv,
     releaseJArrayBuf(aEnv, aHiddenGradGrads, tHiddenGradGrads, JNI_ABORT);
     releaseJArrayBuf(aEnv, rHiddenMatOutputGrads, tHiddenMatOutputGrads, JNI_ABORT); // buffer only
     releaseJArrayBuf(aEnv, rHiddenMatGradGrads, tHiddenMatGradGrads, JNI_ABORT); // buffer only
+    releaseJArrayBuf(aEnv, rHiddenMatGradGrads2, tHiddenMatGradGrads2, JNI_ABORT); // buffer only
 }
 
 #ifdef __cplusplus
