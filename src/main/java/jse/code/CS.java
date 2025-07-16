@@ -111,10 +111,14 @@ public class CS {
     public final static double[][] ZL_MAT = new double[0][];
     /** {@code double[0]} */
     public final static double[]   ZL_VEC = new double[0];
+    /** {@code float[0]} */
+    public final static float[]  ZL_FLOAT = new float[0];
     /** {@code int[0]} */
     public final static int[]      ZL_INT = new int[0];
     /** {@code long[0]} */
     public final static long[]    ZL_LONG = new long[0];
+    /** {@code short[0]} */
+    public final static short[]  ZL_SHORT = new short[0];
     /** {@code byte[0]} */
     public final static byte[]    ZL_BYTE = new byte[0];
     /** {@code boolean[0]} */

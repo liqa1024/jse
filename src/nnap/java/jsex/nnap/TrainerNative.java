@@ -3,7 +3,9 @@ package jsex.nnap;
 import jse.atom.AtomicParameterCalculator;
 import jse.atom.IAtomData;
 import jse.code.collection.DoubleList;
+import jse.code.collection.FloatList;
 import jse.code.collection.IntList;
+import jse.code.collection.ShortList;
 import jse.code.timer.AccumulatedTimer;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
@@ -43,9 +45,9 @@ public class TrainerNative {
         /** 按照原子结构排列，每个原子结构中每个原子对应一个向量（不同种类可能长度不等）*/
         public final List<Vector[]> mFp = new ArrayList<>(64);
         /** 按照原子结构排列，每个原子结构中每个原子对应一个向量，根据近邻列表展开（不同原子长度不等）*/
-        public final List<Vector[]> mFpPx = new ArrayList<>(64), mFpPy = new ArrayList<>(64), mFpPz = new ArrayList<>(64);
+        public final List<Object[]> mFpPx = new ArrayList<>(64), mFpPy = new ArrayList<>(64), mFpPz = new ArrayList<>(64);
         /** 按照原子结构排列，每个原子结构中每个原子对应一个向量，根据近邻列表展开（不同原子长度不等）*/
-        public final List<IntVector[]> mFpGradNlIndex = new ArrayList<>(64), mFpGradFpIndex = new ArrayList<>(64);
+        public final List<Object[]> mFpGradNlIndex = new ArrayList<>(64), mFpGradFpIndex = new ArrayList<>(64);
         /** 每个原子数据结构对应的能量值 */
         public final DoubleList mEng = new DoubleList(64);
         /** 这里力数据使用 List 存储，每个原子结构一组 */
@@ -68,7 +70,6 @@ public class TrainerNative {
     private final Vector mFpBuf, mGradFpBuf;
     private final Vector mGradParaBuf;
     private final List<RowMatrix> mGradFpGradParaBuf;
-    private final RowMatrix mGradFpGradParaTansBuf;
     private final DoubleList mForceNlXBuf, mForceNlYBuf, mForceNlZBuf;
     private final DoubleList mForceXBuf, mForceYBuf, mForceZBuf;
     private final DoubleList mLossGradForceXBuf, mLossGradForceYBuf, mLossGradForceZBuf;
@@ -77,6 +78,7 @@ public class TrainerNative {
     private final int mBasisSize, mParaSize;
     
     protected double mForceWeight = DEFAULT_FORCE_WEIGHT;
+    protected boolean mHalfCache = true;
     
     private static void validSize_(DoubleList aData, int aSize) {
         aData.ensureCapacity(aSize);
@@ -119,7 +121,6 @@ public class TrainerNative {
         mParaSize = tPara.size();
         mGradParaBuf = Vectors.zeros(mParaSize);
         mGradFpGradParaBuf = new ArrayList<>(16);
-        mGradFpGradParaTansBuf = RowMatrix.zeros(mParaSize, mBasisSize);
         mOptimizer.setParameter(tPara);
         mOptimizer.setLossFunc(() -> calLoss(null));
         mOptimizer.setLossFuncGrad(this::calLoss);
@@ -132,6 +133,7 @@ public class TrainerNative {
     }
     
     protected double calLoss(@Nullable Vector rGrad) {
+        final boolean tHalfCache = mHalfCache;
         if (rGrad!=null) rGrad.fill(0.0);
         double rLoss = 0.0;
         for (int i = 0; i < mTrainData.mSize; ++i) {
@@ -151,11 +153,11 @@ public class TrainerNative {
             } else {
                 double rEng = 0.0;
                 Vector[] tFp = mTrainData.mFp.get(i);
-                Vector[] tFpPx = mTrainData.mFpPx.get(i);
-                Vector[] tFpPy = mTrainData.mFpPy.get(i);
-                Vector[] tFpPz = mTrainData.mFpPz.get(i);
-                IntVector[] tFpGradNlIndex = mTrainData.mFpGradNlIndex.get(i);
-                IntVector[] tFpGradFpIndex = mTrainData.mFpGradFpIndex.get(i);
+                Object[] tFpPx = mTrainData.mFpPx.get(i);
+                Object[] tFpPy = mTrainData.mFpPy.get(i);
+                Object[] tFpPz = mTrainData.mFpPz.get(i);
+                Object[] tFpGradNlIndex = mTrainData.mFpGradNlIndex.get(i);
+                Object[] tFpGradFpIndex = mTrainData.mFpGradFpIndex.get(i);
                 IntVector[] tNl = mTrainData.mNl.get(i);
                 final int tAtomNum = tFp.length;
                 mForceXBuf.clear(); mForceXBuf.addZeros(tAtomNum);
@@ -175,21 +177,20 @@ public class TrainerNative {
                     rEng += rGrad==null ? mNN.evalGrad(mFpBuf, mGradFpBuf) : mNN.forwardGradBackward(mFpBuf, mGradFpBuf, mGradParaBuf, mGradFpGradParaBuf.get(k).asVecRow());
                     NN_TIMER.to();
                     // cal force
-                    Vector tSubFpPx = tFpPx[k], tSubFpPy = tFpPy[k], tSubFpPz = tFpPz[k];
-                    IntVector tSubFpGradNlIndex = tFpGradNlIndex[k], tSubFpGradFpIndex = tFpGradFpIndex[k];
                     IntVector tSubNl = tNl[k];
                     int tNlSize = tSubNl.size();
                     INDEX1_TIMER.from();
                     mForceNlXBuf.clear(); mForceNlXBuf.addZeros(tNlSize);
                     mForceNlYBuf.clear(); mForceNlYBuf.addZeros(tNlSize);
                     mForceNlZBuf.clear(); mForceNlZBuf.addZeros(tNlSize);
-                    int tFpGradSize = tSubFpPx.size();
-                    for (int ii = 0; ii < tFpGradSize; ++ii) {
-                        int j = tSubFpGradNlIndex.get(ii);
-                        double tGradFpI = mGradFpBuf.get(tSubFpGradFpIndex.get(ii));
-                        mForceNlXBuf.set(j, mForceNlXBuf.get(j) + tSubFpPx.get(ii)*tGradFpI);
-                        mForceNlYBuf.set(j, mForceNlYBuf.get(j) + tSubFpPy.get(ii)*tGradFpI);
-                        mForceNlZBuf.set(j, mForceNlZBuf.get(j) + tSubFpPz.get(ii)*tGradFpI);
+                    if (tHalfCache) {
+                        forwardForceIndexFMA_(mForceNlXBuf.internalData(), mForceNlYBuf.internalData(), mForceNlZBuf.internalData(), mGradFpBuf.internalData(),
+                                              ((FloatList)tFpPx[k]).internalData(), ((FloatList)tFpPy[k]).internalData(), ((FloatList)tFpPz[k]).internalData(),
+                                              ((ShortList)tFpGradNlIndex[k]).internalData(), ((ShortList)tFpGradFpIndex[k]).internalData(), ((FloatList)tFpPx[k]).size());
+                    } else {
+                        forwardForceIndexFMA_(mForceNlXBuf.internalData(), mForceNlYBuf.internalData(), mForceNlZBuf.internalData(), mGradFpBuf.internalData(),
+                                              ((DoubleList)tFpPx[k]).internalData(), ((DoubleList)tFpPy[k]).internalData(), ((DoubleList)tFpPz[k]).internalData(),
+                                              ((IntList)tFpGradNlIndex[k]).internalData(), ((IntList)tFpGradFpIndex[k]).internalData(), ((DoubleList)tFpPx[k]).size());
                     }
                     INDEX1_TIMER.to();
                     NL_TIMER.from();
@@ -253,16 +254,20 @@ public class TrainerNative {
                     }
                     NL_TIMER.to();
                     mLossGradFp.fill(0.0);
-                    Vector tSubFpPx = tFpPx[k], tSubFpPy = tFpPy[k], tSubFpPz = tFpPz[k];
-                    IntVector tSubFpGradNlIndex = tFpGradNlIndex[k], tSubFpGradFpIndex = tFpGradFpIndex[k];
-                    int tFpGradSize = tSubFpPx.size();
                     INDEX2_TIMER.from();
-                    lossForceIndexFMA_(mLossGradFp.internalData(), mLossGradForceNlXBuf.internalData(), mLossGradForceNlYBuf.internalData(), mLossGradForceNlZBuf.internalData(),
-                                       tSubFpPx.internalData(), tSubFpPy.internalData(), tSubFpPz.internalData(), tSubFpGradNlIndex.internalData(), tSubFpGradFpIndex.internalData(), tFpGradSize);
+                    if (tHalfCache) {
+                        backwardForceIndexFMA_(mLossGradFp.internalData(), mLossGradForceNlXBuf.internalData(), mLossGradForceNlYBuf.internalData(), mLossGradForceNlZBuf.internalData(),
+                                               ((FloatList)tFpPx[k]).internalData(), ((FloatList)tFpPy[k]).internalData(), ((FloatList)tFpPy[k]).internalData(),
+                                               ((ShortList)tFpGradNlIndex[k]).internalData(), ((ShortList)tFpGradFpIndex[k]).internalData(), ((FloatList)tFpPx[k]).size());
+                    } else {
+                        backwardForceIndexFMA_(mLossGradFp.internalData(), mLossGradForceNlXBuf.internalData(), mLossGradForceNlYBuf.internalData(), mLossGradForceNlZBuf.internalData(),
+                                               ((DoubleList)tFpPx[k]).internalData(), ((DoubleList)tFpPy[k]).internalData(), ((DoubleList)tFpPy[k]).internalData(),
+                                               ((IntList)tFpGradNlIndex[k]).internalData(), ((IntList)tFpGradFpIndex[k]).internalData(), ((DoubleList)tFpPx[k]).size());
+                    }
                     INDEX2_TIMER.to();
-                    RowMatrix tGradFpGradPara = mGradFpGradParaBuf.get(k);
                     MPLUS_TIMER.from();
-                    lossForceParaFMA_(rGrad.internalData(), mLossGradFp.internalData(), tGradFpGradPara.internalData(), mBasisSize, mParaSize);
+                    RowMatrix tGradFpGradPara = mGradFpGradParaBuf.get(k);
+                    backwardForceParaFMA_(rGrad.internalData(), mLossGradFp.internalData(), tGradFpGradPara.internalData(), mBasisSize, mParaSize);
                     MPLUS_TIMER.to();
                 }
             }
@@ -271,8 +276,28 @@ public class TrainerNative {
         return rLoss / mTrainData.mSize;
     }
     
-    static void lossForceIndexFMA_(double[] rLossGradFp, double[] aLossGradForceNlX, double[] aLossGradForceNlY, double[] aLossGradForceNlZ,
-                                   double[] aFpPx, double[] aFpPy, double[] aFpPz, int[] aFpGradNlIndex, int[] aFpGradFpIndex, int aFpGradSize) {
+    static void forwardForceIndexFMA_(double[] rForceNlX, double[] rForceNlY, double[] rForceNlZ, double[] aGradFp,
+                                      float[] aFpPx, float[] aFpPy, float[] aFpPz, short[] aFpGradNlIndex, short[] aFpGradFpIndex, int aFpGradSize) {
+        for (int ii = 0; ii < aFpGradSize; ++ii) {
+            int j = aFpGradNlIndex[ii];
+            double tGradFpI = aGradFp[aFpGradFpIndex[ii]];
+            rForceNlX[j] += aFpPx[ii]*tGradFpI;
+            rForceNlY[j] += aFpPy[ii]*tGradFpI;
+            rForceNlZ[j] += aFpPz[ii]*tGradFpI;
+        }
+    }
+    static void forwardForceIndexFMA_(double[] rForceNlX, double[] rForceNlY, double[] rForceNlZ, double[] aGradFp,
+                                      double[] aFpPx, double[] aFpPy, double[] aFpPz, int[] aFpGradNlIndex, int[] aFpGradFpIndex, int aFpGradSize) {
+        for (int ii = 0; ii < aFpGradSize; ++ii) {
+            int j = aFpGradNlIndex[ii];
+            double tGradFpI = aGradFp[aFpGradFpIndex[ii]];
+            rForceNlX[j] += aFpPx[ii]*tGradFpI;
+            rForceNlY[j] += aFpPy[ii]*tGradFpI;
+            rForceNlZ[j] += aFpPz[ii]*tGradFpI;
+        }
+    }
+    static void backwardForceIndexFMA_(double[] rLossGradFp, double[] aLossGradForceNlX, double[] aLossGradForceNlY, double[] aLossGradForceNlZ,
+                                       float[] aFpPx, float[] aFpPy, float[] aFpPz, short[] aFpGradNlIndex, short[] aFpGradFpIndex, int aFpGradSize) {
         for (int ii = 0; ii < aFpGradSize; ++ii) {
             int j = aFpGradNlIndex[ii];
             int fpi = aFpGradFpIndex[ii];
@@ -281,7 +306,17 @@ public class TrainerNative {
                               + aLossGradForceNlZ[j]*aFpPz[ii];
         }
     }
-    static void lossForceParaFMA_(double[] rGradPara, double[] aLossGradFp, double[] aGradFpGradPara, int aBasisSize, int aParaSize) {
+    static void backwardForceIndexFMA_(double[] rLossGradFp, double[] aLossGradForceNlX, double[] aLossGradForceNlY, double[] aLossGradForceNlZ,
+                                       double[] aFpPx, double[] aFpPy, double[] aFpPz, int[] aFpGradNlIndex, int[] aFpGradFpIndex, int aFpGradSize) {
+        for (int ii = 0; ii < aFpGradSize; ++ii) {
+            int j = aFpGradNlIndex[ii];
+            int fpi = aFpGradFpIndex[ii];
+            rLossGradFp[fpi] += aLossGradForceNlX[j]*aFpPx[ii]
+                              + aLossGradForceNlY[j]*aFpPy[ii]
+                              + aLossGradForceNlZ[j]*aFpPz[ii];
+        }
+    }
+    static void backwardForceParaFMA_(double[] rGradPara, double[] aLossGradFp, double[] aGradFpGradPara, int aBasisSize, int aParaSize) {
         for (int fpi = 0, tShift = 0; fpi < aBasisSize; ++fpi, tShift+=aParaSize) {
             double tLossGradFp = aLossGradFp[fpi];
             for (int parai = 0, i = tShift; parai < aParaSize; ++parai, ++i) {
@@ -316,8 +351,8 @@ public class TrainerNative {
         final int tAtomNum = aAtomData.atomNumber();
         try (final AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData)) {
             Vector[] rFp = new Vector[tAtomNum];
-            Vector[] rFpPx = new Vector[tAtomNum], rFpPy = new Vector[tAtomNum], rFpPz = new Vector[tAtomNum];
-            IntVector[] rFpGradNlIndex = new IntVector[tAtomNum], rFpGradFpIndex = new IntVector[tAtomNum];
+            Object[] rFpPx = new Object[tAtomNum], rFpPy = new Object[tAtomNum], rFpPz = new Object[tAtomNum];
+            Object[] rFpGradNlIndex = new Object[tAtomNum], rFpGradFpIndex = new Object[tAtomNum];
             IntVector[] rNl = new IntVector[tAtomNum];
             rData.mFp.add(rFp);
             rData.mFpPx.add(rFpPx); rData.mFpPy.add(rFpPy); rData.mFpPz.add(rFpPz);
@@ -328,11 +363,16 @@ public class TrainerNative {
                 DoubleList tFpPx = new DoubleList(1024), tFpPy = new DoubleList(1024), tFpPz = new DoubleList(1024);
                 IntList tFpGradNlIndex = new IntList(1024), tFpGradFpIndex = new IntList(1024);
                 mBasis.evalGrad(tAPC, i, tFp, tFpGradNlIndex, tFpGradFpIndex, tFpPx, tFpPy, tFpPz);
-                tFpPx.trimToSize(); tFpPy.trimToSize(); tFpPz.trimToSize();
-                tFpGradNlIndex.trimToSize(); tFpGradFpIndex.trimToSize();
                 rFp[i] = tFp;
-                rFpPx[i] = tFpPx.asVec(); rFpPy[i] = tFpPy.asVec(); rFpPz[i] = tFpPz.asVec();
-                rFpGradNlIndex[i] = tFpGradNlIndex.asVec(); rFpGradFpIndex[i] = tFpGradFpIndex.asVec();
+                if (mHalfCache) {
+                    rFpPx[i] = floatFrom_(tFpPx); rFpPy[i] = floatFrom_(tFpPy); rFpPz[i] = floatFrom_(tFpPz);
+                    rFpGradNlIndex[i] = shortFrom_(tFpGradNlIndex); rFpGradFpIndex[i] = shortFrom_(tFpGradFpIndex);
+                } else {
+                    tFpPx.trimToSize(); tFpPy.trimToSize(); tFpPz.trimToSize();
+                    tFpGradNlIndex.trimToSize(); tFpGradFpIndex.trimToSize();
+                    rFpPx[i] = tFpPx; rFpPy[i] = tFpPy; rFpPz[i] = tFpPz;
+                    rFpGradNlIndex[i] = tFpGradNlIndex; rFpGradFpIndex[i] = tFpGradFpIndex;
+                }
                 // 计算相对能量值
                 aEnergy -= mRefEng;
                 // 增加近邻列表，这里直接重新添加
@@ -349,6 +389,17 @@ public class TrainerNative {
             rData.mForceZ.add(Vectors.from(aForces.col(2)));
         }
         ++rData.mSize;
+    }
+    
+    static FloatList floatFrom_(DoubleList aDoubleList) {
+        FloatList rList = new FloatList(aDoubleList.size());
+        aDoubleList.forEach(v -> rList.add((float)v));
+        return rList;
+    }
+    static ShortList shortFrom_(IntList aIntList) {
+        ShortList rList = new ShortList(aIntList.size());
+        aIntList.forEach(v -> rList.add((short)v));
+        return rList;
     }
     
     public void addTrainData(IAtomData aAtomData, double aEnergy, @Nullable IMatrix aForces) {
