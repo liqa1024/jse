@@ -5,6 +5,10 @@ import jse.math.vector.IVector;
 import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+
 import static jse.math.MathEX.Code.DBL_EPSILON;
 
 /**
@@ -262,6 +266,7 @@ public abstract class AbstractOptimizer implements IOptimizer {
         /**/
     }
     
+    public final static DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
     
     /**
      * 应用迭代步长，默认直接运算 {@code mParameter.plus2this(mParameterStep)}。
@@ -279,17 +284,18 @@ public abstract class AbstractOptimizer implements IOptimizer {
      * @param aLoss 当前的 loss 值
      */
     protected void printLog(int aStep, int aLineSearchStep, double aLoss) {
-        if (aStep == 0) System.out.printf("%12s %18s %12s\n", "step", "loss", "max_step");
+        if (aStep == 0) System.out.printf("%12s %12s %18s %12s\n", "step", "time", "loss", "max_step");
         double tMaxStep = 0.0;
         final int tSize = mParameterStep.size();
         for (int i = 0; i < tSize; ++i) {
             double tStep = Math.abs(mParameterStep.get(i));
             if (tStep > tMaxStep) tMaxStep = tStep;
         }
+        String tTime = LocalDateTime.now().format(DATE_FMT);
         if (aLineSearchStep > 0) {
-            System.out.printf("%12d %18.12g %12.6g  (line search: %d)\n", aStep, aLoss, tMaxStep, aLineSearchStep);
+            System.out.printf("%12d %12s %18.12g %12.6g  (line search: %d)\n", aStep, tTime, aLoss, tMaxStep, aLineSearchStep);
         } else {
-            System.out.printf("%12d %18.12g %12.6g\n", aStep, aLoss, tMaxStep);
+            System.out.printf("%12d %12s %18.12g %12.6g\n", aStep, tTime, aLoss, tMaxStep);
         }
     }
     /**

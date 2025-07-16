@@ -62,13 +62,14 @@ public class TrainerNative {
     protected final double mRefEng;
     
     private final Vector mFpBuf, mGradFpBuf;
-    private final Vector mGradParaBuf1, mGradParaBuf2;
-    private final RowMatrix mGradFpGradParaBuf;
+    private final Vector mGradParaBuf;
+    private final List<RowMatrix> mGradFpGradParaBuf;
     private final DoubleList mForceNlXBuf, mForceNlYBuf, mForceNlZBuf;
     private final DoubleList mForceXBuf, mForceYBuf, mForceZBuf;
-    private final List<Vector> mForceGradNlXBuf, mForceGradNlYBuf, mForceGradNlZBuf;
-    private final List<Vector> mForceGradXBuf, mForceGradYBuf, mForceGradZBuf;
-    private final int mParaSize;
+    private final DoubleList mLossGradForceXBuf, mLossGradForceYBuf, mLossGradForceZBuf;
+    private final DoubleList mLossGradForceNlXBuf, mLossGradForceNlYBuf, mLossGradForceNlZBuf;
+    private final Vector mLossGradFp;
+    private final int mBasisSize, mParaSize;
     
     protected double mForceWeight = DEFAULT_FORCE_WEIGHT;
     
@@ -76,21 +77,9 @@ public class TrainerNative {
         aData.ensureCapacity(aSize);
         aData.setInternalDataSize(aSize);
     }
-    private void validForceGradNl_(int aSize) {
-        for (Vector tGrad : mForceGradNlXBuf) tGrad.fill(0.0);
-        for (Vector tGrad : mForceGradNlYBuf) tGrad.fill(0.0);
-        for (Vector tGrad : mForceGradNlZBuf) tGrad.fill(0.0);
-        while (mForceGradNlXBuf.size() < aSize) mForceGradNlXBuf.add(Vectors.zeros(mParaSize));
-        while (mForceGradNlYBuf.size() < aSize) mForceGradNlYBuf.add(Vectors.zeros(mParaSize));
-        while (mForceGradNlZBuf.size() < aSize) mForceGradNlZBuf.add(Vectors.zeros(mParaSize));
-    }
-    private void validForceGrad_(int aSize) {
-        for (Vector tGrad : mForceGradXBuf) tGrad.fill(0.0);
-        for (Vector tGrad : mForceGradYBuf) tGrad.fill(0.0);
-        for (Vector tGrad : mForceGradZBuf) tGrad.fill(0.0);
-        while (mForceGradXBuf.size() < aSize) mForceGradXBuf.add(Vectors.zeros(mParaSize));
-        while (mForceGradYBuf.size() < aSize) mForceGradYBuf.add(Vectors.zeros(mParaSize));
-        while (mForceGradZBuf.size() < aSize) mForceGradZBuf.add(Vectors.zeros(mParaSize));
+    private void validGradFpGradPara_(int aSize) {
+        for (RowMatrix tPara : mGradFpGradParaBuf) tPara.fill(0.0);
+        while (mGradFpGradParaBuf.size() < aSize) mGradFpGradParaBuf.add(RowMatrix.zeros(mBasisSize, mParaSize));
     }
     
     TrainerNative(double aRefEng, Basis aBasis, FeedForward aNN, IOptimizer aOptimizer) {
@@ -100,220 +89,176 @@ public class TrainerNative {
         
         mTrainData = new DataSet();
         mTestData = new DataSet();
-        int tSize = mBasis.size();
-        mNormMu = Vector.zeros(tSize);
-        mNormSigma = Vector.zeros(tSize);
-        mFpBuf = Vector.zeros(tSize);
-        mGradFpBuf = Vector.zeros(tSize);
+        mBasisSize = mBasis.size();
+        mNormMu = Vector.zeros(mBasisSize);
+        mNormSigma = Vector.zeros(mBasisSize);
+        mFpBuf = Vector.zeros(mBasisSize);
+        mGradFpBuf = Vector.zeros(mBasisSize);
         mForceNlXBuf = new DoubleList(16);
         mForceNlYBuf = new DoubleList(16);
         mForceNlZBuf = new DoubleList(16);
         mForceXBuf = new DoubleList(16);
         mForceYBuf = new DoubleList(16);
         mForceZBuf = new DoubleList(16);
-        mForceGradNlXBuf = new ArrayList<>(16);
-        mForceGradNlYBuf = new ArrayList<>(16);
-        mForceGradNlZBuf = new ArrayList<>(16);
-        mForceGradXBuf = new ArrayList<>(16);
-        mForceGradYBuf = new ArrayList<>(16);
-        mForceGradZBuf = new ArrayList<>(16);
+        mLossGradForceNlXBuf = new DoubleList(16);
+        mLossGradForceNlYBuf = new DoubleList(16);
+        mLossGradForceNlZBuf = new DoubleList(16);
+        mLossGradForceXBuf = new DoubleList(16);
+        mLossGradForceYBuf = new DoubleList(16);
+        mLossGradForceZBuf = new DoubleList(16);
+        mLossGradFp = Vector.zeros(mBasisSize);
         
         mOptimizer = aOptimizer;
         IVector tPara = mNN.parameters();
         mParaSize = tPara.size();
-        mGradParaBuf1 = Vectors.zeros(mParaSize);
-        mGradParaBuf2 = Vectors.zeros(mParaSize);
-        mGradFpGradParaBuf = RowMatrix.zeros(tSize, mParaSize);
+        mGradParaBuf = Vectors.zeros(mParaSize);
+        mGradFpGradParaBuf = new ArrayList<>(16);
         mOptimizer.setParameter(tPara);
-        mOptimizer.setLossFunc(() -> {
-            double rLoss = 0.0;
-            for (int i = 0; i < mTrainData.mSize; ++i) {
-                //noinspection IfStatementWithIdenticalBranches
-                if (!mHasForce) {
-                    double rEng = 0.0;
-                    Vector[] tFp = mTrainData.mFp.get(i);
-                    for (Vector tSubFp : tFp) {
-                        mFpBuf.fill(j -> (tSubFp.get(j) - mNormMu.get(j)) / mNormSigma.get(j));
-                        rEng += mNN.eval(mFpBuf);
-                    }
-                    rEng /= tFp.length;
-                    double tErr = rEng - (mTrainData.mEng.get(i) - mNormMuEng)/mNormSigmaEng;
-                    rLoss += tErr*tErr;
-                } else {
-                    double rEng = 0.0;
-                    Vector[] tFp = mTrainData.mFp.get(i);
-                    Vector[] tFpPx = mTrainData.mFpPx.get(i);
-                    Vector[] tFpPy = mTrainData.mFpPy.get(i);
-                    Vector[] tFpPz = mTrainData.mFpPz.get(i);
-                    IntVector[] tFpGradNlIndex = mTrainData.mFpGradNlIndex.get(i);
-                    IntVector[] tFpGradFpIndex = mTrainData.mFpGradFpIndex.get(i);
-                    IntVector[] tNl = mTrainData.mNl.get(i);
-                    final int tAtomNum = tFp.length;
-                    mForceXBuf.clear(); mForceXBuf.addZeros(tAtomNum);
-                    mForceYBuf.clear(); mForceYBuf.addZeros(tAtomNum);
-                    mForceZBuf.clear(); mForceZBuf.addZeros(tAtomNum);
-                    for (int k = 0; k < tAtomNum; ++k) {
-                        // cal energy
-                        Vector tSubFp = tFp[k];
-                        mFpBuf.fill(j -> (tSubFp.get(j) - mNormMu.get(j)) / mNormSigma.get(j));
-                        rEng += mNN.evalGrad(mFpBuf, mGradFpBuf);
-                        // cal force
-                        Vector tSubFpPx = tFpPx[k], tSubFpPy = tFpPy[k], tSubFpPz = tFpPz[k];
-                        IntVector tSubFpGradNlIndex = tFpGradNlIndex[k], tSubFpGradFpIndex = tFpGradFpIndex[k];
-                        IntVector tSubNl = tNl[k];
-                        int tNlSize = tSubNl.size();
-                        mForceNlXBuf.clear(); mForceNlXBuf.addZeros(tNlSize);
-                        mForceNlYBuf.clear(); mForceNlYBuf.addZeros(tNlSize);
-                        mForceNlZBuf.clear(); mForceNlZBuf.addZeros(tNlSize);
-                        int tFpGradSize = tSubFpPx.size();
-                        for (int ii = 0; ii < tFpGradSize; ++ii) {
-                            int j = tSubFpGradNlIndex.get(ii);
-                            double tGradFpI = mGradFpBuf.get(tSubFpGradFpIndex.get(ii));
-                            mForceNlXBuf.set(j, mForceNlXBuf.get(j) + tSubFpPx.get(ii)*tGradFpI);
-                            mForceNlYBuf.set(j, mForceNlYBuf.get(j) + tSubFpPy.get(ii)*tGradFpI);
-                            mForceNlZBuf.set(j, mForceNlZBuf.get(j) + tSubFpPz.get(ii)*tGradFpI);
-                        }
-                        for (int j = 0; j < tNlSize; ++j) {
-                            double fx = mForceNlXBuf.get(j);
-                            double fy = mForceNlYBuf.get(j);
-                            double fz = mForceNlZBuf.get(j);
-                            mForceXBuf.set(k, mForceXBuf.get(k) - fx);
-                            mForceYBuf.set(k, mForceYBuf.get(k) - fy);
-                            mForceZBuf.set(k, mForceZBuf.get(k) - fz);
-                            int nlk = tSubNl.get(j);
-                            mForceXBuf.set(nlk, mForceXBuf.get(nlk) + fx);
-                            mForceYBuf.set(nlk, mForceYBuf.get(nlk) + fy);
-                            mForceZBuf.set(nlk, mForceZBuf.get(nlk) + fz);
-                        }
-                    }
-                    // energy error
-                    rEng /= tAtomNum;
-                    double tErr = rEng - (mTrainData.mEng.get(i) - mNormMuEng)/mNormSigmaEng;
-                    rLoss += tErr*tErr;
-                    // force error
-                    double tLossForce = 0.0;
-                    Vector tForceX = mTrainData.mForceX.get(i), tForceY = mTrainData.mForceY.get(i), tForceZ = mTrainData.mForceZ.get(i);
-                    for (int k = 0; k < tAtomNum; ++k) {
-                        double tErrX = mForceXBuf.get(k) - tForceX.get(k)/mNormSigmaEng;
-                        double tErrY = mForceYBuf.get(k) - tForceY.get(k)/mNormSigmaEng;
-                        double tErrZ = mForceZBuf.get(k) - tForceZ.get(k)/mNormSigmaEng;
-                        tLossForce += (tErrX*tErrX + tErrY*tErrY + tErrZ*tErrZ);
-                    }
-                    rLoss += mForceWeight * tLossForce;
-                }
-            }
-            return rLoss / mTrainData.mSize;
-        });
-        mOptimizer.setLossFuncGrad(grad -> {
-            grad.fill(0.0);
-            double rLoss = 0.0;
-            for (int i = 0; i < mTrainData.mSize; ++i) {
-                //noinspection IfStatementWithIdenticalBranches
-                if (!mHasForce) {
-                    double rEng = 0.0;
-                    Vector[] tFp = mTrainData.mFp.get(i);
-                    mGradParaBuf2.fill(0.0);
-                    for (Vector tSubFp : tFp) {
-                        mFpBuf.fill(j -> (tSubFp.get(j) - mNormMu.get(j)) / mNormSigma.get(j));
-                        rEng += aNN.forwardBackward(mFpBuf, mGradParaBuf2);
-                    }
-                    rEng /= tFp.length;
-                    double tErr = rEng - (mTrainData.mEng.get(i) - mNormMuEng)/mNormSigmaEng;
-                    grad.operation().mplus2this(mGradParaBuf2, 2.0 * tErr / tFp.length);
-                    rLoss += tErr*tErr;
-                } else {
-                    double rEng = 0.0;
-                    Vector[] tFp = mTrainData.mFp.get(i);
-                    Vector[] tFpPx = mTrainData.mFpPx.get(i);
-                    Vector[] tFpPy = mTrainData.mFpPy.get(i);
-                    Vector[] tFpPz = mTrainData.mFpPz.get(i);
-                    IntVector[] tFpGradNlIndex = mTrainData.mFpGradNlIndex.get(i);
-                    IntVector[] tFpGradFpIndex = mTrainData.mFpGradFpIndex.get(i);
-                    IntVector[] tNl = mTrainData.mNl.get(i);
-                    final int tAtomNum = tFp.length;
-                    mForceXBuf.clear(); mForceXBuf.addZeros(tAtomNum);
-                    mForceYBuf.clear(); mForceYBuf.addZeros(tAtomNum);
-                    mForceZBuf.clear(); mForceZBuf.addZeros(tAtomNum);
-                    validForceGrad_(tAtomNum);
-                    mGradParaBuf2.fill(0.0);
-                    for (int k = 0; k < tAtomNum; ++k) {
-                        // cal energy
-                        Vector tSubFp = tFp[k];
-                        mFpBuf.fill(j -> (tSubFp.get(j) - mNormMu.get(j)) / mNormSigma.get(j));
-                        mGradFpGradParaBuf.fill(0.0);
-                        rEng += aNN.forwardGradBackward(mFpBuf, mGradFpBuf, mGradParaBuf2, mGradFpGradParaBuf.asVecRow());
-                        // cal force
-                        Vector tSubFpPx = tFpPx[k], tSubFpPy = tFpPy[k], tSubFpPz = tFpPz[k];
-                        IntVector tSubFpGradNlIndex = tFpGradNlIndex[k], tSubFpGradFpIndex = tFpGradFpIndex[k];
-                        IntVector tSubNl = tNl[k];
-                        int tNlSize = tSubNl.size();
-                        mForceNlXBuf.clear(); mForceNlXBuf.addZeros(tNlSize);
-                        mForceNlYBuf.clear(); mForceNlYBuf.addZeros(tNlSize);
-                        mForceNlZBuf.clear(); mForceNlZBuf.addZeros(tNlSize);
-                        validForceGradNl_(tNlSize);
-                        int tFpGradSize = tSubFpPx.size();
-                        for (int ii = 0; ii < tFpGradSize; ++ii) {
-                            int j = tSubFpGradNlIndex.get(ii);
-                            double tGradFpI = mGradFpBuf.get(tSubFpGradFpIndex.get(ii));
-                            ShiftVector tGradFpIGradPara = mGradFpGradParaBuf.row(tSubFpGradFpIndex.get(ii));
-                            mForceNlXBuf.set(j, mForceNlXBuf.get(j) + tSubFpPx.get(ii)*tGradFpI);
-                            mForceNlYBuf.set(j, mForceNlYBuf.get(j) + tSubFpPy.get(ii)*tGradFpI);
-                            mForceNlZBuf.set(j, mForceNlZBuf.get(j) + tSubFpPz.get(ii)*tGradFpI);
-                            mForceGradNlXBuf.get(j).operation().mplus2this(tGradFpIGradPara, tSubFpPx.get(ii));
-                            mForceGradNlYBuf.get(j).operation().mplus2this(tGradFpIGradPara, tSubFpPy.get(ii));
-                            mForceGradNlZBuf.get(j).operation().mplus2this(tGradFpIGradPara, tSubFpPz.get(ii));
-                        }
-                        for (int j = 0; j < tNlSize; ++j) {
-                            double fx = mForceNlXBuf.get(j);
-                            double fy = mForceNlYBuf.get(j);
-                            double fz = mForceNlZBuf.get(j);
-                            mForceXBuf.set(k, mForceXBuf.get(k) - fx);
-                            mForceYBuf.set(k, mForceYBuf.get(k) - fy);
-                            mForceZBuf.set(k, mForceZBuf.get(k) - fz);
-                            int nlk = tSubNl.get(j);
-                            mForceXBuf.set(nlk, mForceXBuf.get(nlk) + fx);
-                            mForceYBuf.set(nlk, mForceYBuf.get(nlk) + fy);
-                            mForceZBuf.set(nlk, mForceZBuf.get(nlk) + fz);
-                            
-                            mForceGradXBuf.get(k).operation().minus2this(mForceGradNlXBuf.get(j));
-                            mForceGradYBuf.get(k).operation().minus2this(mForceGradNlYBuf.get(j));
-                            mForceGradZBuf.get(k).operation().minus2this(mForceGradNlZBuf.get(j));
-                            mForceGradXBuf.get(nlk).operation().plus2this(mForceGradNlXBuf.get(j));
-                            mForceGradYBuf.get(nlk).operation().plus2this(mForceGradNlYBuf.get(j));
-                            mForceGradZBuf.get(nlk).operation().plus2this(mForceGradNlZBuf.get(j));
-                        }
-                    }
-                    // energy error
-                    rEng /= tAtomNum;
-                    double tErr = rEng - (mTrainData.mEng.get(i) - mNormMuEng)/mNormSigmaEng;
-                    grad.operation().mplus2this(mGradParaBuf2, 2.0 * tErr / tAtomNum);
-                    rLoss += tErr*tErr;
-                    // force error
-                    double tLossForce = 0.0;
-                    mGradParaBuf2.fill(0.0);
-                    Vector tForceX = mTrainData.mForceX.get(i), tForceY = mTrainData.mForceY.get(i), tForceZ = mTrainData.mForceZ.get(i);
-                    for (int k = 0; k < tAtomNum; ++k) {
-                        double tErrX = mForceXBuf.get(k) - tForceX.get(k)/mNormSigmaEng;
-                        double tErrY = mForceYBuf.get(k) - tForceY.get(k)/mNormSigmaEng;
-                        double tErrZ = mForceZBuf.get(k) - tForceZ.get(k)/mNormSigmaEng;
-                        mGradParaBuf2.operation().mplus2this(mForceGradXBuf.get(k), 2.0*tErrX);
-                        mGradParaBuf2.operation().mplus2this(mForceGradYBuf.get(k), 2.0*tErrY);
-                        mGradParaBuf2.operation().mplus2this(mForceGradZBuf.get(k), 2.0*tErrZ);
-                        tLossForce += (tErrX*tErrX + tErrY*tErrY + tErrZ*tErrZ);
-                    }
-                    grad.operation().mplus2this(mGradParaBuf2, mForceWeight);
-                    rLoss += mForceWeight * tLossForce;
-                }
-            }
-            grad.div2this(mTrainData.mSize);
-            return rLoss / mTrainData.mSize;
-        });
+        mOptimizer.setLossFunc(() -> calLoss(null));
+        mOptimizer.setLossFuncGrad(this::calLoss);
     }
     public TrainerNative(double aRefEng, Basis aBasis, IOptimizer aOptimizer) {
         this(aRefEng, aBasis, FeedForward.init(aBasis.size(), DEFAULT_HIDDEN_DIMS), aOptimizer);
     }
     public TrainerNative(double aRefEng, Basis aBasis) {
         this(aRefEng, aBasis, new Adam());
+    }
+    
+    protected double calLoss(@Nullable IVector rGrad) {
+        if (rGrad!=null) rGrad.fill(0.0);
+        double rLoss = 0.0;
+        for (int i = 0; i < mTrainData.mSize; ++i) {
+            //noinspection IfStatementWithIdenticalBranches
+            if (!mHasForce) {
+                double rEng = 0.0;
+                Vector[] tFp = mTrainData.mFp.get(i);
+                if (rGrad!=null) mGradParaBuf.fill(0.0);
+                for (Vector tSubFp : tFp) {
+                    mFpBuf.fill(j -> (tSubFp.get(j) - mNormMu.get(j)) / mNormSigma.get(j));
+                    rEng += rGrad==null ? mNN.eval(mFpBuf) : mNN.forwardBackward(mFpBuf, mGradParaBuf);
+                }
+                rEng /= tFp.length;
+                double tErr = rEng - (mTrainData.mEng.get(i) - mNormMuEng)/mNormSigmaEng;
+                if (rGrad!=null) rGrad.operation().mplus2this(mGradParaBuf, 2.0 * tErr / tFp.length);
+                rLoss += tErr*tErr;
+            } else {
+                double rEng = 0.0;
+                Vector[] tFp = mTrainData.mFp.get(i);
+                Vector[] tFpPx = mTrainData.mFpPx.get(i);
+                Vector[] tFpPy = mTrainData.mFpPy.get(i);
+                Vector[] tFpPz = mTrainData.mFpPz.get(i);
+                IntVector[] tFpGradNlIndex = mTrainData.mFpGradNlIndex.get(i);
+                IntVector[] tFpGradFpIndex = mTrainData.mFpGradFpIndex.get(i);
+                IntVector[] tNl = mTrainData.mNl.get(i);
+                final int tAtomNum = tFp.length;
+                mForceXBuf.clear(); mForceXBuf.addZeros(tAtomNum);
+                mForceYBuf.clear(); mForceYBuf.addZeros(tAtomNum);
+                mForceZBuf.clear(); mForceZBuf.addZeros(tAtomNum);
+                if (rGrad!=null) {
+                    mGradParaBuf.fill(0.0);
+                    validGradFpGradPara_(tAtomNum);
+                }
+                for (int k = 0; k < tAtomNum; ++k) {
+                    // cal energy
+                    Vector tSubFp = tFp[k];
+                    mFpBuf.fill(j -> (tSubFp.get(j) - mNormMu.get(j)) / mNormSigma.get(j));
+                    rEng += rGrad==null ? mNN.evalGrad(mFpBuf, mGradFpBuf) : mNN.forwardGradBackward(mFpBuf, mGradFpBuf, mGradParaBuf, mGradFpGradParaBuf.get(k).asVecRow());
+                    // cal force
+                    Vector tSubFpPx = tFpPx[k], tSubFpPy = tFpPy[k], tSubFpPz = tFpPz[k];
+                    IntVector tSubFpGradNlIndex = tFpGradNlIndex[k], tSubFpGradFpIndex = tFpGradFpIndex[k];
+                    IntVector tSubNl = tNl[k];
+                    int tNlSize = tSubNl.size();
+                    mForceNlXBuf.clear(); mForceNlXBuf.addZeros(tNlSize);
+                    mForceNlYBuf.clear(); mForceNlYBuf.addZeros(tNlSize);
+                    mForceNlZBuf.clear(); mForceNlZBuf.addZeros(tNlSize);
+                    int tFpGradSize = tSubFpPx.size();
+                    for (int ii = 0; ii < tFpGradSize; ++ii) {
+                        int j = tSubFpGradNlIndex.get(ii);
+                        double tGradFpI = mGradFpBuf.get(tSubFpGradFpIndex.get(ii));
+                        mForceNlXBuf.set(j, mForceNlXBuf.get(j) + tSubFpPx.get(ii)*tGradFpI);
+                        mForceNlYBuf.set(j, mForceNlYBuf.get(j) + tSubFpPy.get(ii)*tGradFpI);
+                        mForceNlZBuf.set(j, mForceNlZBuf.get(j) + tSubFpPz.get(ii)*tGradFpI);
+                    }
+                    for (int j = 0; j < tNlSize; ++j) {
+                        double fx = mForceNlXBuf.get(j);
+                        double fy = mForceNlYBuf.get(j);
+                        double fz = mForceNlZBuf.get(j);
+                        mForceXBuf.set(k, mForceXBuf.get(k) - fx);
+                        mForceYBuf.set(k, mForceYBuf.get(k) - fy);
+                        mForceZBuf.set(k, mForceZBuf.get(k) - fz);
+                        int nlk = tSubNl.get(j);
+                        mForceXBuf.set(nlk, mForceXBuf.get(nlk) + fx);
+                        mForceYBuf.set(nlk, mForceYBuf.get(nlk) + fy);
+                        mForceZBuf.set(nlk, mForceZBuf.get(nlk) + fz);
+                    }
+                }
+                // energy error
+                rEng /= tAtomNum;
+                double tErr = rEng - (mTrainData.mEng.get(i) - mNormMuEng)/mNormSigmaEng;
+                if (rGrad!=null) rGrad.operation().mplus2this(mGradParaBuf, 2.0 * tErr / tAtomNum);
+                rLoss += tErr*tErr;
+                // force error
+                double tLossForce = 0.0;
+                mGradParaBuf.fill(0.0);
+                if (rGrad != null) {
+                    mLossGradForceXBuf.clear(); mLossGradForceXBuf.addZeros(tAtomNum);
+                    mLossGradForceYBuf.clear(); mLossGradForceYBuf.addZeros(tAtomNum);
+                    mLossGradForceZBuf.clear(); mLossGradForceZBuf.addZeros(tAtomNum);
+                }
+                Vector tForceX = mTrainData.mForceX.get(i), tForceY = mTrainData.mForceY.get(i), tForceZ = mTrainData.mForceZ.get(i);
+                for (int k = 0; k < tAtomNum; ++k) {
+                    double tErrX = mForceXBuf.get(k) - tForceX.get(k)/mNormSigmaEng;
+                    double tErrY = mForceYBuf.get(k) - tForceY.get(k)/mNormSigmaEng;
+                    double tErrZ = mForceZBuf.get(k) - tForceZ.get(k)/mNormSigmaEng;
+                    if (rGrad != null) {
+                        mLossGradForceXBuf.set(k, mForceWeight*2.0*tErrX);
+                        mLossGradForceYBuf.set(k, mForceWeight*2.0*tErrY);
+                        mLossGradForceZBuf.set(k, mForceWeight*2.0*tErrZ);
+                    }
+                    tLossForce += (tErrX*tErrX + tErrY*tErrY + tErrZ*tErrZ);
+                }
+                rLoss += mForceWeight * tLossForce;
+                // backward for force error
+                if (rGrad==null) continue;
+                for (int k = 0; k < tAtomNum; ++k) {
+                    IntVector tSubNl = tNl[k];
+                    int tNlSize = tSubNl.size();
+                    double tLossGradForceX = mLossGradForceXBuf.get(k);
+                    double tLossGradForceY = mLossGradForceYBuf.get(k);
+                    double tLossGradForceZ = mLossGradForceZBuf.get(k);
+                    mLossGradForceNlXBuf.clear(); mLossGradForceNlXBuf.addZeros(tNlSize);
+                    mLossGradForceNlYBuf.clear(); mLossGradForceNlYBuf.addZeros(tNlSize);
+                    mLossGradForceNlZBuf.clear(); mLossGradForceNlZBuf.addZeros(tNlSize);
+                    for (int j = 0; j < tNlSize; ++j) {
+                        int nlk = tSubNl.get(j);
+                        mLossGradForceNlXBuf.set(j, mLossGradForceXBuf.get(nlk) - tLossGradForceX);
+                        mLossGradForceNlYBuf.set(j, mLossGradForceYBuf.get(nlk) - tLossGradForceY);
+                        mLossGradForceNlZBuf.set(j, mLossGradForceZBuf.get(nlk) - tLossGradForceZ);
+                    }
+                    mLossGradFp.fill(0.0);
+                    Vector tSubFpPx = tFpPx[k], tSubFpPy = tFpPy[k], tSubFpPz = tFpPz[k];
+                    IntVector tSubFpGradNlIndex = tFpGradNlIndex[k], tSubFpGradFpIndex = tFpGradFpIndex[k];
+                    int tFpGradSize = tSubFpPx.size();
+                    for (int ii = 0; ii < tFpGradSize; ++ii) {
+                        int j = tSubFpGradNlIndex.get(ii);
+                        int fpi = tSubFpGradFpIndex.get(ii);
+                        mLossGradFp.add(fpi, mLossGradForceNlXBuf.get(j)*tSubFpPx.get(ii));
+                        mLossGradFp.add(fpi, mLossGradForceNlYBuf.get(j)*tSubFpPy.get(ii));
+                        mLossGradFp.add(fpi, mLossGradForceNlZBuf.get(j)*tSubFpPz.get(ii));
+                    }
+                    RowMatrix tGradFpGradPara = mGradFpGradParaBuf.get(k);
+                    for (int parai = 0; parai < mParaSize; ++parai) {
+                        double rLossGradPara = 0.0;
+                        for  (int fpi = 0; fpi < mBasisSize; ++fpi) {
+                            rLossGradPara += mLossGradFp.get(fpi) * tGradFpGradPara.get(fpi, parai);
+                        }
+                        rGrad.add(parai, rLossGradPara);
+                    }
+                }
+            }
+        }
+        if (rGrad!=null) rGrad.div2this(mTrainData.mSize);
+        return rLoss / mTrainData.mSize;
     }
     
     
