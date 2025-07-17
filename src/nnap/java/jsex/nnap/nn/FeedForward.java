@@ -7,6 +7,7 @@ import jse.math.MathEX;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -34,8 +35,7 @@ public class FeedForward extends NeuralNetwork implements ISavable {
     private final int mHiddenNumber, mHiddenWeightsSize, mHiddenBiasesSize, mOutputWeightSize;
     
     /// 缓存中间变量
-    private final Vector mHiddenOutputs, mHiddenGrads, mHiddenGrads2, mHiddenGrads3, mHiddenGradGrads;
-    private final Vector mHiddenMatOutputGrads, mHiddenMatGradGrads, mHiddenMatGradGrads2;
+    private final Vector mHiddenOutputs, mHiddenGrads, mHiddenGrads2, mHiddenGrads3;
     
     FeedForward(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenWeightsBackward, IntVector aIndexToBackward, Vector aHiddenBiases, Vector aOutputWeight, double aOutputBias) {
         mInputDim = aInputDim;
@@ -67,10 +67,6 @@ public class FeedForward extends NeuralNetwork implements ISavable {
         mHiddenGrads = Vectors.zeros(mHiddenBiasesSize);
         mHiddenGrads2 = Vectors.zeros(mHiddenBiasesSize);
         mHiddenGrads3 = Vectors.zeros(mHiddenBiasesSize);
-        mHiddenGradGrads = Vectors.zeros(mHiddenBiasesSize);
-        mHiddenMatOutputGrads = Vectors.zeros(mInputDim*mHiddenBiasesSize);
-        mHiddenMatGradGrads = Vectors.zeros(mInputDim*mHiddenBiasesSize);
-        mHiddenMatGradGrads2 = Vectors.zeros(mInputDim*mHiddenBiasesSize);
     }
     
     public static FeedForward init(int aInputDim, int[] aHiddenDims) {
@@ -217,6 +213,13 @@ public class FeedForward extends NeuralNetwork implements ISavable {
         rSaveTo.put("output_bias", mOutputBias);
     }
     
+    public int parameterSize() {
+        return mHiddenWeightsSize+mOutputWeightSize + mHiddenBiasesSize+1;
+    }
+    public int hiddenSize() {
+        return mHiddenBiasesSize;
+    }
+    
     public IVector parameters() {
         final int tEndHW = mHiddenWeightsSize;
         final int tEndOW = tEndHW + mOutputWeightSize;
@@ -266,75 +269,100 @@ public class FeedForward extends NeuralNetwork implements ISavable {
         return mInputDim;
     }
     @Override public double eval(DoubleArrayVector aX) {
-        return forward0(aX, false);
+        return forward(aX, null, null);
     }
-    double forward0(IDataShell<double[]> aX, boolean aRequireGrad) {
+    public double forward(DoubleArrayVector aX, @Nullable DoubleArrayVector rHiddenOutputs, @Nullable DoubleArrayVector rHiddenGrads) {
+        boolean aRequireGrad = rHiddenOutputs!=null;
+        if (aRequireGrad && rHiddenGrads==null) throw new NullPointerException();
+        return forward0(aX, aRequireGrad?rHiddenOutputs:mHiddenOutputs, aRequireGrad?rHiddenGrads:null);
+    }
+    double forward0(IDataShell<double[]> aX, @NotNull IDataShell<double[]> rHiddenOutputs, @Nullable IDataShell<double[]> rHiddenGrads) {
         if (mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
         return forward1(aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), mInputDim, mHiddenDims, mHiddenNumber,
                         mHiddenWeights.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mHiddenBiases.internalDataWithLengthCheck(mHiddenBiasesSize, 0),
                         mOutputWeight.internalDataWithLengthCheck(mOutputWeightSize, 0), mOutputBias,
-                        mHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize, 0), aRequireGrad?mHiddenGrads.internalDataWithLengthCheck(mHiddenBiasesSize, 0):null);
+                        rHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize), rHiddenOutputs.internalDataShift(),
+                        rHiddenGrads==null?null:rHiddenGrads.internalDataWithLengthCheck(mHiddenBiasesSize), rHiddenGrads==null?0:rHiddenGrads.internalDataShift());
     }
     private static native double forward1(double[] aX, int aShiftX, int aInputDim, int[] aHiddenDims, int aHiddenNumber,
                                           double[] aHiddenWeights, double[] aHiddenBiases, double[] aOutputWeight, double aOutputBias,
-                                          double[] rHiddenOutputs, double[] rHiddenGrads);
+                                          double[] rHiddenOutputs, int aShiftOutputs, double[] rHiddenGrads, int aShiftGrads);
     
     @Override public double evalGrad(DoubleArrayVector aX, DoubleArrayVector rGradX) {
-        return forwardGrad0(aX, rGradX, null, false);
+        return forwardGrad(aX, rGradX, null, null, null, null, null);
     }
-    double forwardGrad0(IDataShell<double[]> aX, IDataShell<double[]> rGradX, @Nullable IDataShell<double[]> rGradPara, boolean aRequireGradGrad) {
+    public double forwardGrad(DoubleArrayVector aX, DoubleArrayVector rGradX, @Nullable DoubleArrayVector rHiddenOutputs, @Nullable DoubleArrayVector rHiddenGrads,
+                              @Nullable DoubleArrayVector rHiddenGrads2, @Nullable DoubleArrayVector rHiddenGrads3, @Nullable DoubleArrayVector rHiddenGradGrads) {
+        boolean aRequireGradGrad = rHiddenOutputs!=null;
+        if (aRequireGradGrad) {
+            if (rHiddenGrads==null) throw new NullPointerException();
+            if (rHiddenGrads2==null) throw new NullPointerException();
+            if (rHiddenGrads3==null) throw new NullPointerException();
+            if (rHiddenGradGrads==null) throw new NullPointerException();
+        }
+        return forwardGrad0(aX, rGradX, aRequireGradGrad?rHiddenOutputs:mHiddenOutputs, aRequireGradGrad?rHiddenGrads:mHiddenGrads,
+                            aRequireGradGrad?rHiddenGrads:mHiddenGrads2, aRequireGradGrad?rHiddenGrads:mHiddenGrads3, aRequireGradGrad?rHiddenGradGrads:null);
+    }
+    double forwardGrad0(IDataShell<double[]> aX, IDataShell<double[]> rGradX, @NotNull IDataShell<double[]> rHiddenOutputs, @NotNull IDataShell<double[]> rHiddenGrads,
+                        @NotNull IDataShell<double[]> rHiddenGrads2, @NotNull IDataShell<double[]> rHiddenGrads3, @Nullable IDataShell<double[]> rHiddenGradGrads) {
         if (mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
         return forwardGrad1(aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), rGradX.internalDataWithLengthCheck(mInputDim), rGradX.internalDataShift(),
-                            rGradPara==null?null:rGradPara.internalDataWithLengthCheck(mHiddenWeightsSize+mHiddenBiasesSize+mOutputWeightSize+1), rGradPara==null?0:rGradPara.internalDataShift(),
                             mInputDim, mHiddenDims, mHiddenNumber,
                             mHiddenWeights.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mHiddenWeightsBackward.internalDataWithLengthCheck(mHiddenWeightsSize, 0),
                             mHiddenBiases.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mOutputWeight.internalDataWithLengthCheck(mOutputWeightSize, 0), mOutputBias,
-                            mHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mHiddenGrads.internalDataWithLengthCheck(mHiddenBiasesSize, 0),
-                            aRequireGradGrad?mHiddenGrads2.internalDataWithLengthCheck(mHiddenBiasesSize, 0):null, aRequireGradGrad?mHiddenGrads3.internalDataWithLengthCheck(mHiddenBiasesSize, 0):null, aRequireGradGrad?mHiddenGradGrads.internalDataWithLengthCheck(mHiddenBiasesSize, 0):null);
+                            rHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize), rHiddenOutputs.internalDataShift(),
+                            rHiddenGrads.internalDataWithLengthCheck(mHiddenBiasesSize), rHiddenGrads.internalDataShift(),
+                            rHiddenGrads2.internalDataWithLengthCheck(mHiddenBiasesSize), rHiddenGrads2.internalDataShift(),
+                            rHiddenGrads3.internalDataWithLengthCheck(mHiddenBiasesSize), rHiddenGrads3.internalDataShift(),
+                            rHiddenGradGrads==null?null:rHiddenGradGrads.internalDataWithLengthCheck(mHiddenBiasesSize), rHiddenGradGrads==null?0:rHiddenGradGrads.internalDataShift());
     }
-    private static native double forwardGrad1(double[] aX, int aShiftX, double[] rGradX, int aShiftGradX, double[] rGradPara, int aShiftGradPara,
+    private static native double forwardGrad1(double[] aX, int aShiftX, double[] rGradX, int aShiftGradX,
                                               int aInputDim, int[] aHiddenDims, int aHiddenNumber,
                                               double[] aHiddenWeights, double[] aHiddenWeightsBackward, double[] aHiddenBiases, double[] aOutputWeight, double aOutputBias,
-                                              double[] rHiddenOutputs, double[] rHiddenGrads,
-                                              double[] rHiddenGrads2, double[] rHiddenGrads3, double[] rHiddenGradGrads);
+                                              double[] rHiddenOutputs, int aShiftOutputs, double[] rHiddenGrads, int aShiftGrads,
+                                              double[] rHiddenGrads2, int aShiftGrads2, double[] rHiddenGrads3, int aShiftGrads3, double[] rHiddenGradGrads, int aShiftGradGrads);
     
     
-    public double forwardBackward(DoubleArrayVector aX, DoubleArrayVector rGradPara) {
-        double tOut = forward0(aX, true);
-        backward0(aX, rGradPara);
-        return tOut;
+    public void backward(double aY, DoubleArrayVector aX, DoubleArrayVector rGradPara, DoubleArrayVector aHiddenOutputs, DoubleArrayVector aHiddenGrads) {
+        backward0(aY, aX, rGradPara, aHiddenOutputs, aHiddenGrads);
     }
-    void backward0(IDataShell<double[]> aX, IDataShell<double[]> rGradPara) {
+    void backward0(double aY, IDataShell<double[]> aX, IDataShell<double[]> rGradPara, IDataShell<double[]> aHiddenOutputs, IDataShell<double[]> aHiddenGrads) {
         if (mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
-        backward1(aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), rGradPara.internalDataWithLengthCheck(mHiddenWeightsSize+mHiddenBiasesSize+mOutputWeightSize+1), rGradPara.internalDataShift(),
+        backward1(aY, aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), rGradPara.internalDataWithLengthCheck(mHiddenWeightsSize+mHiddenBiasesSize+mOutputWeightSize+1), rGradPara.internalDataShift(),
                   mInputDim, mHiddenDims, mHiddenNumber,
                   mHiddenWeightsBackward.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mOutputWeight.internalDataWithLengthCheck(mOutputWeightSize, 0),
-                  mHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mHiddenGrads.internalDataWithLengthCheck(mHiddenBiasesSize, 0));
+                  aHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize), aHiddenOutputs.internalDataShift(),
+                  aHiddenGrads.internalDataWithLengthCheck(mHiddenBiasesSize), aHiddenGrads.internalDataShift(),
+                  mHiddenGrads3.internalDataWithLengthCheck(mHiddenBiasesSize, 0));
     }
-    private static native void backward1(double[] aX, int aShiftX, double[] rGradPara, int aShiftGradPara,
+    private static native void backward1(double aY, double[] aX, int aShiftX, double[] rGradPara, int aShiftGradPara,
                                          int aInputDim, int[] aHiddenDims, int aHiddenNumber,
                                          double[] aHiddenWeightsBackward, double[] aOutputWeight,
-                                         double[] rHiddenOutputs, double[] rHiddenGrads);
+                                         double[] aHiddenOutputs, int aShiftOutputs, double[] aHiddenGrads, int aShiftGrads, double[] rHiddenGrads3);
     
-    public double forwardGradBackward(DoubleArrayVector aX, DoubleArrayVector rGradX, DoubleArrayVector rGradPara, DoubleArrayVector rGradXGradPara) {
-        double tOut = forwardGrad0(aX, rGradX, rGradPara, true);
-        gradBackward0(aX, rGradX, rGradXGradPara);
-        return tOut;
+    public void gradBackward(DoubleArrayVector aGradX, DoubleArrayVector aX, DoubleArrayVector rGradXGradPara, DoubleArrayVector aHiddenOutputs, DoubleArrayVector aHiddenGrads,
+                             DoubleArrayVector aHiddenGrads2, DoubleArrayVector aHiddenGrads3, DoubleArrayVector aHiddenGradGrads) {
+        gradBackward0(aGradX, aX, rGradXGradPara, aHiddenOutputs, aHiddenGrads, aHiddenGrads2, aHiddenGrads3, aHiddenGradGrads);
     }
-    void gradBackward0(IDataShell<double[]> aX, IDataShell<double[]> aGradX, IDataShell<double[]> rGradXGradPara) {
+    void gradBackward0(IDataShell<double[]> aGradX, IDataShell<double[]> aX, IDataShell<double[]> rGradXGradPara, IDataShell<double[]> aHiddenOutputs, IDataShell<double[]> aHiddenGrads,
+                       IDataShell<double[]> aHiddenGrads2, IDataShell<double[]> aHiddenGrads3, IDataShell<double[]> aHiddenGradGrads) {
         if (mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
         int tParaSize = mHiddenWeightsSize+mHiddenBiasesSize+mOutputWeightSize+1;
-        int tMatSize = mInputDim*mHiddenBiasesSize;
         gradBackward1(aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), aGradX.internalDataWithLengthCheck(mInputDim), aGradX.internalDataShift(),
                       rGradXGradPara.internalDataWithLengthCheck(mInputDim*tParaSize), rGradXGradPara.internalDataShift(),
                       mInputDim, mHiddenDims, mHiddenNumber,
                       mHiddenWeights.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mHiddenWeightsBackward.internalDataWithLengthCheck(mHiddenWeightsSize, 0),  mOutputWeight.internalDataWithLengthCheck(mOutputWeightSize, 0),
-                      mHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mHiddenGrads.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mHiddenGrads2.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mHiddenGrads3.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mHiddenGradGrads.internalDataWithLengthCheck(mHiddenBiasesSize, 0),
-                      mHiddenMatOutputGrads.internalDataWithLengthCheck(tMatSize, 0), mHiddenMatGradGrads.internalDataWithLengthCheck(tMatSize, 0), mHiddenMatGradGrads2.internalDataWithLengthCheck(tMatSize, 0));
+                      aHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize), aHiddenOutputs.internalDataShift(),
+                      aHiddenGrads.internalDataWithLengthCheck(mHiddenBiasesSize), aHiddenGrads.internalDataShift(),
+                      aHiddenGrads2.internalDataWithLengthCheck(mHiddenBiasesSize), aHiddenGrads2.internalDataShift(),
+                      aHiddenGrads3.internalDataWithLengthCheck(mHiddenBiasesSize), aHiddenGrads3.internalDataShift(),
+                      aHiddenGradGrads.internalDataWithLengthCheck(mHiddenBiasesSize), aHiddenGradGrads.internalDataShift(),
+                      mHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mHiddenGrads2.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mHiddenGrads3.internalDataWithLengthCheck(mHiddenBiasesSize, 0));
     }
-    private static native void gradBackward1(double[] aX, int aShiftX, double[] aGradX, int aShiftGradX, double[] rGradXGradPara, int aShiftGradXGradPara,
+    private static native void gradBackward1(double[] aGradX, int aShiftGradX, double[] aX, int aShiftX, double[] rGradXGradPara, int aShiftGradXGradPara,
                                              int aInputDim, int[] aHiddenDims, int aHiddenNumber,
                                              double[] aHiddenWeights, double[] aHiddenWeightsBackward, double[] aOutputWeight,
-                                             double[] aHiddenOutputs, double[] aHiddenGrads, double[] aHiddenGrads2, double[] aHiddenGrads3, double[] aHiddenGradGrads,
-                                             double[] rHiddenMatOutputGrads, double[] rHiddenMatGradGrads, double[] rHiddenMatGradGrads2);
+                                             double[] aHiddenOutputs, int aShiftOutputs, double[] aHiddenGrads, int aShiftGrads,
+                                             double[] aHiddenGrads2, int aShiftGrads2, double[] aHiddenGrads3, int aShiftGrads3, double[] aHiddenGradGrads, int aShiftGradGrads,
+                                             double[] rHiddenOutputs2, double[] rHiddenGrads4, double[] rHiddenGrads5);
 }

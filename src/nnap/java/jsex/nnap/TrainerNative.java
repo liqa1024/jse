@@ -11,7 +11,6 @@ import jse.code.io.ISavable;
 import jse.code.timer.AccumulatedTimer;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
-import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import jse.math.vector.Vector;
 import jse.opt.IOptimizer;
@@ -43,8 +42,8 @@ public class TrainerNative implements IHasSymbol, ISavable {
     protected final static double DEFAULT_STRESS_WEIGHT = 1.0;
     protected final static double DEFAULT_L2_LOSS_WEIGHT = 0.001;
     
-    public final static AccumulatedTimer INIT_TIMER = new AccumulatedTimer(), NN_TIMER = new AccumulatedTimer(), NL_TIMER = new AccumulatedTimer(),
-        INDEX1_TIMER = new AccumulatedTimer(), INDEX2_TIMER = new AccumulatedTimer(), MPLUS_TIMER = new AccumulatedTimer();
+    public final static AccumulatedTimer NN_TIMER = new AccumulatedTimer(), NL_TIMER = new AccumulatedTimer(),
+        INDEX1_TIMER = new AccumulatedTimer(), INDEX2_TIMER = new AccumulatedTimer();
     
     protected static class DataSet {
         public int mSize = 0;
@@ -78,14 +77,13 @@ public class TrainerNative implements IHasSymbol, ISavable {
     protected double mNormMuEng = 0.0, mNormSigmaEng = 0.0;
     
     private final Vector[] mFpBuf, mGradFpBuf;
-    private final Vector[] mGradParaBuf;
-    private final List<List<RowMatrix>> mGradFpGradParaBuf;
+    private final List<List<Vector>> mHiddenOutputsBuf, mHiddenGradsBuf, mHiddenGrads2Buf, mHiddenGrads3Buf, mHiddenGradGradsBuf;
     private final DoubleList mForceNlXBuf, mForceNlYBuf, mForceNlZBuf;
     private final DoubleList mForceXBuf, mForceYBuf, mForceZBuf;
     private final DoubleList mLossGradForceXBuf, mLossGradForceYBuf, mLossGradForceZBuf;
     private final DoubleList mLossGradForceNlXBuf, mLossGradForceNlYBuf, mLossGradForceNlZBuf;
     private final Vector[] mLossGradFp;
-    private final int[] mBasisSizes, mParaSizes;
+    private final int[] mParaSizes, mHiddenSizes;
     
     protected boolean mFullCache = false;
     public TrainerNative setFullCache(boolean aFlag) {mFullCache = aFlag; return this;}
@@ -96,15 +94,29 @@ public class TrainerNative implements IHasSymbol, ISavable {
     protected String mUnits = DEFAULT_UNITS;
     public TrainerNative setUnits(String aUnits) {mUnits = aUnits; return this;}
     
-    private void validGradFpGradPara_(IntVector aAtomType) {
+    private void validHiddenBuf_(IntVector aAtomType, boolean aRequireGradBackward) {
         int tAtomNum = aAtomType.size();
         for (int typei = 0; typei < mTypeNum; ++typei) {
-            List<RowMatrix> tGradFpGradParaBuf = mGradFpGradParaBuf.get(typei);
-            while (tGradFpGradParaBuf.size() < tAtomNum) {
-                tGradFpGradParaBuf.add(RowMatrix.zeros(mBasisSizes[typei], mParaSizes[typei]));
+            List<Vector> tHiddenOutputsBuf = mHiddenOutputsBuf.get(typei);
+            List<Vector> tHiddenGradsBuf = mHiddenGradsBuf.get(typei);
+            List<Vector> tHiddenGrads2Buf = mHiddenGrads2Buf.get(typei);
+            List<Vector> tHiddenGrads3Buf = mHiddenGrads3Buf.get(typei);
+            List<Vector> tHiddenGradGradsBuf = mHiddenGradGradsBuf.get(typei);
+            while (tHiddenOutputsBuf.size() < tAtomNum) tHiddenOutputsBuf.add(Vector.zeros(mHiddenSizes[typei]));
+            while (tHiddenGradsBuf.size() < tAtomNum) tHiddenGradsBuf.add(Vector.zeros(mHiddenSizes[typei]));
+            if (aRequireGradBackward) {
+                while (tHiddenGrads2Buf.size() < tAtomNum) tHiddenGrads2Buf.add(Vector.zeros(mHiddenSizes[typei]));
+                while (tHiddenGrads3Buf.size() < tAtomNum) tHiddenGrads3Buf.add(Vector.zeros(mHiddenSizes[typei]));
+                while (tHiddenGradGradsBuf.size() < tAtomNum) tHiddenGradGradsBuf.add(Vector.zeros(mHiddenSizes[typei]));
             }
             for (int i = 0; i < tAtomNum; ++i) if (typei == aAtomType.get(i)-1) {
-                tGradFpGradParaBuf.get(i).fill(0.0);
+                tHiddenOutputsBuf.get(i).fill(0.0);
+                tHiddenGradsBuf.get(i).fill(0.0);
+                if (aRequireGradBackward) {
+                    tHiddenGrads2Buf.get(i).fill(0.0);
+                    tHiddenGrads3Buf.get(i).fill(0.0);
+                    tHiddenGradGradsBuf.get(i).fill(0.0);
+                }
             }
         }
     }
@@ -121,22 +133,28 @@ public class TrainerNative implements IHasSymbol, ISavable {
         
         mTrainData = new DataSet();
         mTestData = new DataSet();
-        mBasisSizes = new int[mTypeNum];
         mNormMu = new Vector[mTypeNum];
         mNormSigma = new Vector[mTypeNum];
         mFpBuf = new Vector[mTypeNum];
         mGradFpBuf = new Vector[mTypeNum];
         mLossGradFp = new Vector[mTypeNum];
-        mGradFpGradParaBuf = new ArrayList<>(mTypeNum);
+        mHiddenOutputsBuf = new ArrayList<>(mTypeNum);
+        mHiddenGradsBuf = new ArrayList<>(mTypeNum);
+        mHiddenGrads2Buf = new ArrayList<>(mTypeNum);
+        mHiddenGrads3Buf = new ArrayList<>(mTypeNum);
+        mHiddenGradGradsBuf = new ArrayList<>(mTypeNum);
         for (int i = 0; i < mTypeNum; ++i) {
             int tBasisSize = mBasis[i].size();
-            mBasisSizes[i] = tBasisSize;
             mNormMu[i] = Vector.zeros(tBasisSize);
             mNormSigma[i] = Vector.zeros(tBasisSize);
             mFpBuf[i] = Vector.zeros(tBasisSize);
             mGradFpBuf[i] = Vector.zeros(tBasisSize);
             mLossGradFp[i] = Vector.zeros(tBasisSize);
-            mGradFpGradParaBuf.add(new ArrayList<>(16));
+            mHiddenOutputsBuf.add(new ArrayList<>(16));
+            mHiddenGradsBuf.add(new ArrayList<>(16));
+            mHiddenGrads2Buf.add(new ArrayList<>(16));
+            mHiddenGrads3Buf.add(new ArrayList<>(16));
+            mHiddenGradGradsBuf.add(new ArrayList<>(16));
         }
         mForceNlXBuf = new DoubleList(16);
         mForceNlYBuf = new DoubleList(16);
@@ -152,7 +170,7 @@ public class TrainerNative implements IHasSymbol, ISavable {
         mLossGradForceZBuf = new DoubleList(16);
         
         mParaSizes = new int[mTypeNum];
-        mGradParaBuf = new Vector[mTypeNum];
+        mHiddenSizes = new int[mTypeNum];
         final IVector[] tParas = new IVector[mTypeNum];
         int rTotParaSize = 0;
         for (int i = 0; i < mTypeNum; ++i) {
@@ -160,7 +178,7 @@ public class TrainerNative implements IHasSymbol, ISavable {
             int tParaSize = tPara.size();
             tParas[i] = tPara;
             mParaSizes[i] = tParaSize;
-            mGradParaBuf[i] = Vectors.zeros(tParaSize);
+            mHiddenSizes[i] = mNN[i].hiddenSize();
             rTotParaSize += tParaSize;
         }
         final int fTotParaSize = rTotParaSize;
@@ -227,6 +245,14 @@ public class TrainerNative implements IHasSymbol, ISavable {
     public @Unmodifiable List<FeedForward> models() {return AbstractCollections.from(mNN);}
     public String units() {return mUnits;}
     
+    protected int paraShift(int aType) {
+        int rShiftPara = 0;
+        for (int typei = 0; typei < aType-1; ++typei) {
+            rShiftPara += mParaSizes[typei];
+        }
+        return rShiftPara;
+    }
+    
     protected double calLoss(DataSet aData, @Nullable Vector rGrad) {
         final boolean tFullCache = mFullCache;
         if (rGrad!=null) rGrad.fill(0.0);
@@ -238,7 +264,7 @@ public class TrainerNative implements IHasSymbol, ISavable {
                 Vector[] tFp = aData.mFp.get(i);
                 final int tAtomNum = tFp.length;
                 if (rGrad != null) {
-                    for (Vector tGradPara : mGradParaBuf) tGradPara.fill(0.0);
+                    validHiddenBuf_(tAtomType, false);
                 }
                 double rEng = 0.0;
                 for (int k = 0; k < tAtomNum; ++k) {
@@ -248,20 +274,26 @@ public class TrainerNative implements IHasSymbol, ISavable {
                     Vector tNormMu = mNormMu[tType-1];
                     Vector tNormSigma = mNormSigma[tType-1];
                     tFpBuf.fill(j -> (tSubFp.get(j) - tNormMu.get(j)) / tNormSigma.get(j));
-                    rEng += rGrad==null ? mNN[tType-1].eval(tFpBuf) : mNN[tType-1].forwardBackward(tFpBuf, mGradParaBuf[tType-1]);
+                    rEng += rGrad==null ? mNN[tType-1].eval(tFpBuf) :
+                                          mNN[tType-1].forward(tFpBuf, mHiddenOutputsBuf.get(tType-1).get(k), mHiddenGradsBuf.get(tType-1).get(k));
                 }
                 rEng /= tAtomNum;
-                double tErr = rEng - (aData.mEng.get(i) - mNormMuEng)/mNormSigmaEng;
-                if (rGrad!=null) {
-                    double tMul = 2.0 * tErr / tAtomNum;
-                    int tShift = 0;
-                    for (int typei = 0; typei < mTypeNum; ++typei) {
-                        int tParaSize = mParaSizes[typei];
-                        rGrad.subVec(tShift, tShift+tParaSize).operation().mplus2this(mGradParaBuf[typei], tMul);
-                        tShift += tParaSize;
-                    }
+                double tErrEng = rEng - (aData.mEng.get(i) - mNormMuEng)/mNormSigmaEng;
+                rLoss += tErrEng * tErrEng;
+                /// backward
+                if (rGrad==null) continue;
+                double tLossGradEng = 2.0 * tErrEng / tAtomNum;
+                for (int k = 0; k < tAtomNum; ++k) {
+                    int tType = tAtomType.get(k);
+                    Vector tSubFp = tFp[k];
+                    Vector tFpBuf = mFpBuf[tType-1];
+                    Vector tNormMu = mNormMu[tType-1];
+                    Vector tNormSigma = mNormSigma[tType-1];
+                    tFpBuf.fill(j -> (tSubFp.get(j) - tNormMu.get(j)) / tNormSigma.get(j));
+                    int tShiftPara = paraShift(tType);
+                    mNN[tType-1].backward(tLossGradEng, tFpBuf, rGrad.subVec(tShiftPara, tShiftPara+mParaSizes[tType-1]),
+                                          mHiddenOutputsBuf.get(tType-1).get(k), mHiddenGradsBuf.get(tType-1).get(k));
                 }
-                rLoss += tErr*tErr;
             } else {
                 IntVector tAtomType = aData.mAtomType.get(i);
                 Vector[] tFp = aData.mFp.get(i);
@@ -276,10 +308,7 @@ public class TrainerNative implements IHasSymbol, ISavable {
                 mForceYBuf.clear(); mForceYBuf.addZeros(tAtomNum);
                 mForceZBuf.clear(); mForceZBuf.addZeros(tAtomNum);
                 if (rGrad != null) {
-                    for (Vector tGradPara : mGradParaBuf) tGradPara.fill(0.0);
-                    INIT_TIMER.from();
-                    validGradFpGradPara_(tAtomType);
-                    INIT_TIMER.to();
+                    validHiddenBuf_(tAtomType, true);
                 }
                 double rEng = 0.0;
                 for (int k = 0; k < tAtomNum; ++k) {
@@ -292,7 +321,9 @@ public class TrainerNative implements IHasSymbol, ISavable {
                     tFpBuf.fill(j -> (tSubFp.get(j) - tNormMu.get(j)) / tNormSigma.get(j));
                     // cal energy
                     NN_TIMER.from();
-                    rEng += rGrad==null ? mNN[tType-1].evalGrad(tFpBuf, tGradFpBuf) : mNN[tType-1].forwardGradBackward(tFpBuf, tGradFpBuf, mGradParaBuf[tType-1], mGradFpGradParaBuf.get(tType-1).get(k).asVecRow());
+                    rEng += rGrad==null ? mNN[tType-1].evalGrad(tFpBuf, tGradFpBuf) :
+                                          mNN[tType-1].forwardGrad(tFpBuf, tGradFpBuf, mHiddenOutputsBuf.get(tType-1).get(k), mHiddenGradsBuf.get(tType-1).get(k),
+                                                                   mHiddenGrads2Buf.get(tType-1).get(k), mHiddenGrads3Buf.get(tType-1).get(k), mHiddenGradGradsBuf.get(tType-1).get(k));
                     NN_TIMER.to();
                     // cal force
                     IntVector tSubNl = tNl[k];
@@ -328,17 +359,8 @@ public class TrainerNative implements IHasSymbol, ISavable {
                 }
                 // energy error
                 rEng /= tAtomNum;
-                double tErr = rEng - (aData.mEng.get(i) - mNormMuEng)/mNormSigmaEng;
-                if (rGrad != null) {
-                    double tMul = 2.0 * tErr / tAtomNum;
-                    int tShift = 0;
-                    for (int typei = 0; typei < mTypeNum; ++typei) {
-                        int tParaSize = mParaSizes[typei];
-                        rGrad.subVec(tShift, tShift+tParaSize).operation().mplus2this(mGradParaBuf[typei], tMul);
-                        tShift += tParaSize;
-                    }
-                }
-                rLoss += tErr*tErr;
+                double tErrEng = rEng - (aData.mEng.get(i) - mNormMuEng)/mNormSigmaEng;
+                rLoss += tErrEng*tErrEng;
                 // force error
                 double tLossForce = 0.0;
                 if (rGrad != null) {
@@ -349,22 +371,34 @@ public class TrainerNative implements IHasSymbol, ISavable {
                 double tForceLossMul = mForceWeight / (tAtomNum*3);
                 Vector tForceX = aData.mForceX.get(i), tForceY = aData.mForceY.get(i), tForceZ = aData.mForceZ.get(i);
                 for (int k = 0; k < tAtomNum; ++k) {
-                    double tErrX = mForceXBuf.get(k) - tForceX.get(k)/mNormSigmaEng;
-                    double tErrY = mForceYBuf.get(k) - tForceY.get(k)/mNormSigmaEng;
-                    double tErrZ = mForceZBuf.get(k) - tForceZ.get(k)/mNormSigmaEng;
+                    double tErrForceX = mForceXBuf.get(k) - tForceX.get(k)/mNormSigmaEng;
+                    double tErrForceY = mForceYBuf.get(k) - tForceY.get(k)/mNormSigmaEng;
+                    double tErrForceZ = mForceZBuf.get(k) - tForceZ.get(k)/mNormSigmaEng;
                     if (rGrad != null) {
-                        mLossGradForceXBuf.set(k, 2.0*tForceLossMul*tErrX);
-                        mLossGradForceYBuf.set(k, 2.0*tForceLossMul*tErrY);
-                        mLossGradForceZBuf.set(k, 2.0*tForceLossMul*tErrZ);
+                        mLossGradForceXBuf.set(k, 2.0*tForceLossMul*tErrForceX);
+                        mLossGradForceYBuf.set(k, 2.0*tForceLossMul*tErrForceY);
+                        mLossGradForceZBuf.set(k, 2.0*tForceLossMul*tErrForceZ);
                     }
-                    tLossForce += (tErrX*tErrX + tErrY*tErrY + tErrZ*tErrZ);
+                    tLossForce += (tErrForceX*tErrForceX + tErrForceY*tErrForceY + tErrForceZ*tErrForceZ);
                 }
                 rLoss += tForceLossMul * tLossForce;
-                // backward for force error
+                /// backward
                 if (rGrad==null) continue;
+                double tLossGradEng = 2.0 * tErrEng / tAtomNum;
                 for (int k = 0; k < tAtomNum; ++k) {
+                    // energy loss grad
                     int tType = tAtomType.get(k);
+                    Vector tSubFp = tFp[k];
+                    Vector tFpBuf = mFpBuf[tType-1];
+                    Vector tNormMu = mNormMu[tType-1];
                     Vector tNormSigma = mNormSigma[tType-1];
+                    tFpBuf.fill(j -> (tSubFp.get(j) - tNormMu.get(j)) / tNormSigma.get(j));
+                    int tShiftPara = paraShift(tType);
+                    NN_TIMER.from();
+                    mNN[tType-1].backward(tLossGradEng, tFpBuf, rGrad.subVec(tShiftPara, tShiftPara+mParaSizes[tType-1]),
+                                          mHiddenOutputsBuf.get(tType-1).get(k), mHiddenGradsBuf.get(tType-1).get(k));
+                    NN_TIMER.to();
+                    // force loss grad
                     Vector tLossGradFp = mLossGradFp[tType-1];
                     IntVector tSubNl = tNl[k];
                     int tNlSize = tSubNl.size();
@@ -394,13 +428,11 @@ public class TrainerNative implements IHasSymbol, ISavable {
                                                ((ShortList)tFpGradNlIndex[k]).internalData(), ((ShortList)tFpGradFpIndex[k]).internalData(), ((FloatList)tFpPx[k]).size());
                     }
                     INDEX2_TIMER.to();
-                    int rShiftPara = 0;
-                    for (int typei = 0; typei < tType-1; ++typei) {
-                        rShiftPara += mParaSizes[typei];
-                    }
-                    MPLUS_TIMER.from();
-                    backwardForceParaFMA_(rGrad.internalData(), rShiftPara, tLossGradFp.internalData(), mGradFpGradParaBuf.get(tType-1).get(k).internalData(), mBasisSizes[tType-1], mParaSizes[tType-1]);
-                    MPLUS_TIMER.to();
+                    NN_TIMER.from();
+                    mNN[tType-1].gradBackward(tLossGradFp, tFpBuf, rGrad.subVec(tShiftPara, tShiftPara+mParaSizes[tType-1]),
+                                              mHiddenOutputsBuf.get(tType-1).get(k), mHiddenGradsBuf.get(tType-1).get(k),
+                                              mHiddenGrads2Buf.get(tType-1).get(k), mHiddenGrads3Buf.get(tType-1).get(k), mHiddenGradGradsBuf.get(tType-1).get(k));
+                    NN_TIMER.to();
                 }
             }
         }
@@ -450,14 +482,6 @@ public class TrainerNative implements IHasSymbol, ISavable {
             rLossGradFp[fpi] += (aLossGradForceNlX[j]*aFpPx[ii]
                                + aLossGradForceNlY[j]*aFpPy[ii]
                                + aLossGradForceNlZ[j]*aFpPz[ii])/tNormSigma;
-        }
-    }
-    static void backwardForceParaFMA_(double[] rGradPara, int tShiftPara, double[] aLossGradFp, double[] aGradFpGradPara, int aBasisSize, int aParaSize) {
-        for (int fpi = 0, tShift = 0; fpi < aBasisSize; ++fpi, tShift+=aParaSize) {
-            double tLossGradFp = aLossGradFp[fpi];
-            for (int parai = 0, i = tShift, j = tShiftPara; parai < aParaSize; ++parai, ++i, ++j) {
-                rGradPara[j] += tLossGradFp * aGradFpGradPara[i];
-            }
         }
     }
     
