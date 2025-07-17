@@ -8,7 +8,6 @@ import jse.code.IO;
 import jse.code.UT;
 import jse.code.collection.*;
 import jse.code.io.ISavable;
-import jse.code.timer.AccumulatedTimer;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.vector.*;
@@ -21,6 +20,7 @@ import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
 import java.util.*;
@@ -41,9 +41,6 @@ public class TrainerNative implements IHasSymbol, ISavable {
     protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
     protected final static double DEFAULT_STRESS_WEIGHT = 1.0;
     protected final static double DEFAULT_L2_LOSS_WEIGHT = 0.001;
-    
-    public final static AccumulatedTimer NN_TIMER = new AccumulatedTimer(), NL_TIMER = new AccumulatedTimer(),
-        INDEX1_TIMER = new AccumulatedTimer(), INDEX2_TIMER = new AccumulatedTimer();
     
     protected static class DataSet {
         public int mSize = 0;
@@ -320,15 +317,12 @@ public class TrainerNative implements IHasSymbol, ISavable {
                     Vector tGradFpBuf = mGradFpBuf[tType-1];
                     tFpBuf.fill(j -> (tSubFp.get(j) - tNormMu.get(j)) / tNormSigma.get(j));
                     // cal energy
-                    NN_TIMER.from();
                     rEng += rGrad==null ? mNN[tType-1].evalGrad(tFpBuf, tGradFpBuf) :
                                           mNN[tType-1].forwardGrad(tFpBuf, tGradFpBuf, mHiddenOutputsBuf.get(tType-1).get(k), mHiddenGradsBuf.get(tType-1).get(k),
                                                                    mHiddenGrads2Buf.get(tType-1).get(k), mHiddenGrads3Buf.get(tType-1).get(k), mHiddenGradGradsBuf.get(tType-1).get(k));
-                    NN_TIMER.to();
                     // cal force
                     IntVector tSubNl = tNl[k];
                     int tNlSize = tSubNl.size();
-                    INDEX1_TIMER.from();
                     mForceNlXBuf.clear(); mForceNlXBuf.addZeros(tNlSize);
                     mForceNlYBuf.clear(); mForceNlYBuf.addZeros(tNlSize);
                     mForceNlZBuf.clear(); mForceNlZBuf.addZeros(tNlSize);
@@ -341,8 +335,6 @@ public class TrainerNative implements IHasSymbol, ISavable {
                                               ((FloatList)tFpPx[k]).internalData(), ((FloatList)tFpPy[k]).internalData(), ((FloatList)tFpPz[k]).internalData(), tNormSigma.internalData(),
                                               ((ShortList)tFpGradNlIndex[k]).internalData(), ((ShortList)tFpGradFpIndex[k]).internalData(), ((FloatList)tFpPx[k]).size());
                     }
-                    INDEX1_TIMER.to();
-                    NL_TIMER.from();
                     for (int j = 0; j < tNlSize; ++j) {
                         double fx = mForceNlXBuf.get(j);
                         double fy = mForceNlYBuf.get(j);
@@ -355,7 +347,6 @@ public class TrainerNative implements IHasSymbol, ISavable {
                         mForceYBuf.set(nlk, mForceYBuf.get(nlk) + fy);
                         mForceZBuf.set(nlk, mForceZBuf.get(nlk) + fz);
                     }
-                    NL_TIMER.to();
                 }
                 // energy error
                 rEng /= tAtomNum;
@@ -394,10 +385,8 @@ public class TrainerNative implements IHasSymbol, ISavable {
                     Vector tNormSigma = mNormSigma[tType-1];
                     tFpBuf.fill(j -> (tSubFp.get(j) - tNormMu.get(j)) / tNormSigma.get(j));
                     int tShiftPara = paraShift(tType);
-                    NN_TIMER.from();
                     mNN[tType-1].backward(tLossGradEng, tFpBuf, rGrad.subVec(tShiftPara, tShiftPara+mParaSizes[tType-1]),
                                           mHiddenOutputsBuf.get(tType-1).get(k), mHiddenGradsBuf.get(tType-1).get(k));
-                    NN_TIMER.to();
                     // force loss grad
                     Vector tLossGradFp = mLossGradFp[tType-1];
                     IntVector tSubNl = tNl[k];
@@ -405,7 +394,6 @@ public class TrainerNative implements IHasSymbol, ISavable {
                     double tLossGradForceX = mLossGradForceXBuf.get(k);
                     double tLossGradForceY = mLossGradForceYBuf.get(k);
                     double tLossGradForceZ = mLossGradForceZBuf.get(k);
-                    NL_TIMER.from();
                     mLossGradForceNlXBuf.clear(); mLossGradForceNlXBuf.addZeros(tNlSize);
                     mLossGradForceNlYBuf.clear(); mLossGradForceNlYBuf.addZeros(tNlSize);
                     mLossGradForceNlZBuf.clear(); mLossGradForceNlZBuf.addZeros(tNlSize);
@@ -415,9 +403,7 @@ public class TrainerNative implements IHasSymbol, ISavable {
                         mLossGradForceNlYBuf.set(j, mLossGradForceYBuf.get(nlk) - tLossGradForceY);
                         mLossGradForceNlZBuf.set(j, mLossGradForceZBuf.get(nlk) - tLossGradForceZ);
                     }
-                    NL_TIMER.to();
                     tLossGradFp.fill(0.0);
-                    INDEX2_TIMER.from();
                     if (tFullCache) {
                         backwardForceIndexFMA_(tLossGradFp.internalData(), mLossGradForceNlXBuf.internalData(), mLossGradForceNlYBuf.internalData(), mLossGradForceNlZBuf.internalData(),
                                                ((DoubleList)tFpPx[k]).internalData(), ((DoubleList)tFpPy[k]).internalData(), ((DoubleList)tFpPz[k]).internalData(), tNormSigma.internalData(),
@@ -427,12 +413,9 @@ public class TrainerNative implements IHasSymbol, ISavable {
                                                ((FloatList)tFpPx[k]).internalData(), ((FloatList)tFpPy[k]).internalData(), ((FloatList)tFpPz[k]).internalData(), tNormSigma.internalData(),
                                                ((ShortList)tFpGradNlIndex[k]).internalData(), ((ShortList)tFpGradFpIndex[k]).internalData(), ((FloatList)tFpPx[k]).size());
                     }
-                    INDEX2_TIMER.to();
-                    NN_TIMER.from();
                     mNN[tType-1].gradBackward(tLossGradFp, tFpBuf, rGrad.subVec(tShiftPara, tShiftPara+mParaSizes[tType-1]),
                                               mHiddenOutputsBuf.get(tType-1).get(k), mHiddenGradsBuf.get(tType-1).get(k),
                                               mHiddenGrads2Buf.get(tType-1).get(k), mHiddenGrads3Buf.get(tType-1).get(k), mHiddenGradGradsBuf.get(tType-1).get(k));
-                    NN_TIMER.to();
                 }
             }
         }
@@ -699,4 +682,10 @@ public class TrainerNative implements IHasSymbol, ISavable {
         IO.map2json(rJson, aPath, aPretty);
     }
     public void save(String aPath) throws IOException {save(aPath, false);}
+    
+    /** 转换旧版势函数到新的版本的工具方法 */
+    @SuppressWarnings("deprecation")
+    @VisibleForTesting public static void convert(String aOldPath, String aNewPath) throws IOException {
+        TrainerTorch.convert(aOldPath, aNewPath);
+    }
 }

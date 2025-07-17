@@ -40,12 +40,11 @@ import java.util.function.IntUnaryOperator;
 /**
  * jse 实现的 nnap 训练器，这里简单起见直接通过 python 训练。
  * 这里直接通过全局的 python 解释器执行
- * <p>
- * 通过重写方法来实现自定义的功能
+ * @deprecated 现在使用纯 jse 实现 {@link TrainerNative}，效率更高
  * @author liqa
  */
 @Deprecated
-public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
+public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
     protected final static String DEFAULT_UNITS = "metal";
     protected final static int[] DEFAULT_HIDDEN_DIMS = {32, 32}; // 现在统一默认为 32, 32
     protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
@@ -118,15 +117,15 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
     }
     
     protected PyObject mTrainer = TRAINER.callAs(PyObject.class, DEFAULT_FORCE_WEIGHT, DEFAULT_STRESS_WEIGHT, DEFAULT_L2_LOSS_WEIGHT, DEFAULT_TRAIN_IN_FLOAT);
-    public Trainer setForceWeight(double aWeight) {mTrainer.setAttr("force_weight", aWeight); return this;}
-    public Trainer setStressWeight(double aWeight) {mTrainer.setAttr("stress_weight", aWeight); return this;}
-    public Trainer setL2LossWeight(double aWeight) {mTrainer.setAttr("l2_loss_weight", aWeight); return this;}
-    public Trainer setTrainInFloat(boolean aFlag) {mTrainer.setAttr("train_in_float", aFlag); return this;}
+    public TrainerTorch setForceWeight(double aWeight) {mTrainer.setAttr("force_weight", aWeight); return this;}
+    public TrainerTorch setStressWeight(double aWeight) {mTrainer.setAttr("stress_weight", aWeight); return this;}
+    public TrainerTorch setL2LossWeight(double aWeight) {mTrainer.setAttr("l2_loss_weight", aWeight); return this;}
+    public TrainerTorch setTrainInFloat(boolean aFlag) {mTrainer.setAttr("train_in_float", aFlag); return this;}
     
     protected String mUnits = DEFAULT_UNITS;
-    public Trainer setUnits(String aUnits) {mUnits = aUnits; return this;}
+    public TrainerTorch setUnits(String aUnits) {mUnits = aUnits; return this;}
     protected boolean mClearDataOnTraining = DEFAULT_CLEAR_DATA_ON_TRAINING;
-    public Trainer setClearDataOnTraining(boolean aFlag) {mClearDataOnTraining = aFlag; return this;}
+    public TrainerTorch setClearDataOnTraining(boolean aFlag) {mClearDataOnTraining = aFlag; return this;}
     
     
     /** 所有训练相关的数据放在这里，同来减少训练集和测试集使用时的重复代码 */
@@ -281,7 +280,7 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
     protected final DoubleList mTrainLoss = new DoubleList(64);
     protected final DoubleList mTestLoss = new DoubleList(64);
     
-    public Trainer(String[] aSymbols, IVector aRefEngs, Basis[] aBasis, Map<String, ?> aModelSetting) {
+    public TrainerTorch(String[] aSymbols, IVector aRefEngs, Basis[] aBasis, Map<String, ?> aModelSetting) {
         if (aSymbols.length != aRefEngs.size()) throw new IllegalArgumentException("Symbols length does not match reference energies length.");
         if (aSymbols.length != aBasis.length) throw new IllegalArgumentException("Symbols length does not match reference basis length.");
         mSymbols = aSymbols;
@@ -331,9 +330,9 @@ public class Trainer implements IHasSymbol, IAutoShutdown, ISavable {
         }
         
     }
-    public Trainer(String[] aSymbols, IVector aRefEngs, Basis aBasis, Map<String, ?> aModelSetting) {this(aSymbols, aRefEngs, repeatBasis_(aBasis, aSymbols.length), aModelSetting);}
-    public Trainer(String[] aSymbols, double[] aRefEngs, Basis[] aBasis, Map<String, ?> aModelSetting) {this(aSymbols, Vectors.from(aRefEngs), aBasis, aModelSetting);}
-    public Trainer(String[] aSymbols, double[] aRefEngs, Basis aBasis, Map<String, ?> aModelSetting) {this(aSymbols, aRefEngs, repeatBasis_(aBasis, aSymbols.length), aModelSetting);}
+    public TrainerTorch(String[] aSymbols, IVector aRefEngs, Basis aBasis, Map<String, ?> aModelSetting) {this(aSymbols, aRefEngs, repeatBasis_(aBasis, aSymbols.length), aModelSetting);}
+    public TrainerTorch(String[] aSymbols, double[] aRefEngs, Basis[] aBasis, Map<String, ?> aModelSetting) {this(aSymbols, Vectors.from(aRefEngs), aBasis, aModelSetting);}
+    public TrainerTorch(String[] aSymbols, double[] aRefEngs, Basis aBasis, Map<String, ?> aModelSetting) {this(aSymbols, aRefEngs, repeatBasis_(aBasis, aSymbols.length), aModelSetting);}
     private static Basis[] repeatBasis_(Basis aBasis, int aLen) {
         Basis[] rOut = new Basis[aLen];
         Arrays.fill(rOut, aBasis);

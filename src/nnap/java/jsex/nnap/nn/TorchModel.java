@@ -72,7 +72,7 @@ public class TorchModel extends NeuralNetwork {
         InitHelper.INITIALIZED = true;
         UT.Code.warning("TorchModel in nnap has been deprecated due to efficiency issues and is now only running in compatibility mode, which limits its speed. \n" +
                         "It is recommended to convert the existing potential file or retrain it.\n" +
-                        "Note: you can convert old potential file via `jse -i jsex.nnap.Trainer.convert path/to/old/nnpot.json path/to/new/nnpot.json`");
+                        "Note: you can convert old potential file via `jse -i jsex.nnap.TrainerTorch.convert path/to/old/nnpot.json path/to/new/nnpot.json`");
         // 依赖 torch
         Torch.InitHelper.init();
         // 依赖 jniutil
