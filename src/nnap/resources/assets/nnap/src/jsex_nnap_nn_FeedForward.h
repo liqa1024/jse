@@ -10,34 +10,34 @@ extern "C" {
 /*
  * Class:     jsex_nnap_nn_FeedForward
  * Method:    forward1
- * Signature: ([DII[II[D[D[DD[D[D)D
+ * Signature: ([DII[II[D[D[DD[DI[DI)D
  */
 JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_forward1
-  (JNIEnv *, jclass, jdoubleArray, jint, jint, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdouble, jdoubleArray, jdoubleArray);
+  (JNIEnv *, jclass, jdoubleArray, jint, jint, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdouble, jdoubleArray, jint, jdoubleArray, jint);
 
 /*
  * Class:     jsex_nnap_nn_FeedForward
  * Method:    forwardGrad1
- * Signature: ([DI[DI[DII[II[D[D[D[DD[D[D[D[D[D)D
+ * Signature: ([DI[DII[II[D[D[D[DD[DI[DI[DI[DI[DI)D
  */
 JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_forwardGrad1
-  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdouble, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray);
+  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jint, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdouble, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint);
 
 /*
  * Class:     jsex_nnap_nn_FeedForward
  * Method:    backward1
- * Signature: ([DI[DII[II[D[D[D[D)V
+ * Signature: (D[DI[DII[II[D[D[DI[DI[D[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_backward1
-  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jint, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray);
+  (JNIEnv *, jclass, jdouble, jdoubleArray, jint, jdoubleArray, jint, jint, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray);
 
 /*
  * Class:     jsex_nnap_nn_FeedForward
  * Method:    gradBackward1
- * Signature: ([DI[DI[DII[II[D[D[D[D[D[D[D[D[D[D[D)V
+ * Signature: ([DI[DI[DII[II[D[D[D[DI[DI[DI[DI[DI[D[D[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_gradBackward1
-  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray);
+  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray);
 
 #ifdef __cplusplus
 }
