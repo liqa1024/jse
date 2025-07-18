@@ -21,7 +21,9 @@ import static jse.code.CS.RANDOM;
  * <p>
  * 仅支持输出单个数值的网络
  * <p>
- * 由于内部会缓存中间结果，因此此类一般来说相同实例线程不安全，而不同实例之间线程安全
+ * 由于内部会缓存中间结果，因此此类一般来说相同实例线程不安全，而不同实例之间线程安全；
+ * 可以通过 {@link #threadSafeRef()} 来创建一个线程安全的引用（拷贝内部缓存）
+ *
  * @author liqa
  */
 public class FeedForward extends NeuralNetwork implements ISavable {
@@ -31,13 +33,13 @@ public class FeedForward extends NeuralNetwork implements ISavable {
     private final IntVector mIndexToBackward;
     private final Vector mHiddenBiases;
     private final Vector mOutputWeight;
-    private double mOutputBias;
+    private final double[] mOutputBias;
     private final int mHiddenNumber, mHiddenWeightsSize, mHiddenBiasesSize, mOutputWeightSize;
     
     /// 缓存中间变量
     private final Vector mHiddenOutputs, mHiddenGrads, mHiddenGrads2, mHiddenGrads3;
     
-    FeedForward(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenWeightsBackward, IntVector aIndexToBackward, Vector aHiddenBiases, Vector aOutputWeight, double aOutputBias) {
+    private FeedForward(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenWeightsBackward, IntVector aIndexToBackward, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
         mInputDim = aInputDim;
         mHiddenDims = aHiddenDims;
         mHiddenNumber = aHiddenDims.length;
@@ -63,10 +65,15 @@ public class FeedForward extends NeuralNetwork implements ISavable {
         mOutputBias = aOutputBias;
         mOutputWeightSize = mHiddenDims[mHiddenNumber-1];
         if (mOutputWeight.internalDataSize() != mOutputWeightSize) throw new IllegalArgumentException("The size of output weight mismatch");
+        if (mOutputBias.length != 1) throw new IllegalArgumentException("The size of output biases mismatch");
         mHiddenOutputs = Vectors.zeros(mHiddenBiasesSize);
         mHiddenGrads = Vectors.zeros(mHiddenBiasesSize);
         mHiddenGrads2 = Vectors.zeros(mHiddenBiasesSize);
         mHiddenGrads3 = Vectors.zeros(mHiddenBiasesSize);
+    }
+    
+    public FeedForward threadSafeRef() {
+        return new FeedForward(mInputDim, mHiddenDims, mHiddenWeights, mHiddenWeightsBackward, mIndexToBackward, mHiddenBiases, mOutputWeight, mOutputBias);
     }
     
     public static FeedForward init(int aInputDim, int[] aHiddenDims) {
@@ -116,7 +123,7 @@ public class FeedForward extends NeuralNetwork implements ISavable {
         double tBoundB = MathEX.Fast.sqrt(1.0 / tColNum); // Kaiming 均匀初始化
         double aOutputBias = RANDOM.nextDouble(-tBoundB, tBoundB);
         
-        return new FeedForward(aInputDim, aHiddenDims, aHiddenWeights, aHiddenWeightsBackward, aIndexToBackward, aHiddenBiases, aOutputWeight, aOutputBias);
+        return new FeedForward(aInputDim, aHiddenDims, aHiddenWeights, aHiddenWeightsBackward, aIndexToBackward, aHiddenBiases, aOutputWeight, new double[]{aOutputBias});
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -179,7 +186,7 @@ public class FeedForward extends NeuralNetwork implements ISavable {
         double aOutputBias = ((Number)aMap.get("output_bias")).doubleValue();
         if (aOutputWeight.size() != aHiddenDims[tHiddenNumber-1]) throw new IllegalArgumentException("Size of output weight mismatch");
         
-        return new FeedForward(aInputDim, aHiddenDims, aHiddenWeights, aHiddenWeightsBackward, aIndexToBackward, aHiddenBiases, aOutputWeight, aOutputBias);
+        return new FeedForward(aInputDim, aHiddenDims, aHiddenWeights, aHiddenWeightsBackward, aIndexToBackward, aHiddenBiases, aOutputWeight, new double[]{aOutputBias});
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -210,7 +217,7 @@ public class FeedForward extends NeuralNetwork implements ISavable {
         }
         rSaveTo.put("hidden_biases", rHiddenBiases);
         rSaveTo.put("output_weight", mOutputWeight.asList());
-        rSaveTo.put("output_bias", mOutputBias);
+        rSaveTo.put("output_bias", mOutputBias[0]);
     }
     
     public int parameterSize() {
@@ -237,7 +244,7 @@ public class FeedForward extends NeuralNetwork implements ISavable {
                     return mHiddenBiases.get(aIdx-tEndOW);
                 } else
                 if (aIdx < tEndOB) {
-                    return mOutputBias;
+                    return mOutputBias[0];
                 } else {
                     throw new IndexOutOfBoundsException(String.valueOf(aIdx));
                 }
@@ -254,7 +261,7 @@ public class FeedForward extends NeuralNetwork implements ISavable {
                     mHiddenBiases.set(aIdx-tEndOW, aValue);
                 } else
                 if (aIdx < tEndOB) {
-                    mOutputBias = aValue;
+                    mOutputBias[0] = aValue;
                 } else {
                     throw new IndexOutOfBoundsException(String.valueOf(aIdx));
                 }
@@ -280,7 +287,7 @@ public class FeedForward extends NeuralNetwork implements ISavable {
         if (mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
         return forward1(aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), mInputDim, mHiddenDims, mHiddenNumber,
                         mHiddenWeights.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mHiddenBiases.internalDataWithLengthCheck(mHiddenBiasesSize, 0),
-                        mOutputWeight.internalDataWithLengthCheck(mOutputWeightSize, 0), mOutputBias,
+                        mOutputWeight.internalDataWithLengthCheck(mOutputWeightSize, 0), mOutputBias[0],
                         rHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize), rHiddenOutputs.internalDataShift(),
                         rHiddenGrads==null?null:rHiddenGrads.internalDataWithLengthCheck(mHiddenBiasesSize), rHiddenGrads==null?0:rHiddenGrads.internalDataShift());
     }
@@ -309,7 +316,7 @@ public class FeedForward extends NeuralNetwork implements ISavable {
         return forwardGrad1(aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), rGradX.internalDataWithLengthCheck(mInputDim), rGradX.internalDataShift(),
                             mInputDim, mHiddenDims, mHiddenNumber,
                             mHiddenWeights.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mHiddenWeightsBackward.internalDataWithLengthCheck(mHiddenWeightsSize, 0),
-                            mHiddenBiases.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mOutputWeight.internalDataWithLengthCheck(mOutputWeightSize, 0), mOutputBias,
+                            mHiddenBiases.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mOutputWeight.internalDataWithLengthCheck(mOutputWeightSize, 0), mOutputBias[0],
                             rHiddenOutputs.internalDataWithLengthCheck(mHiddenBiasesSize), rHiddenOutputs.internalDataShift(),
                             rHiddenGrads.internalDataWithLengthCheck(mHiddenBiasesSize), rHiddenGrads.internalDataShift(),
                             rHiddenGrads2.internalDataWithLengthCheck(mHiddenBiasesSize), rHiddenGrads2.internalDataShift(),

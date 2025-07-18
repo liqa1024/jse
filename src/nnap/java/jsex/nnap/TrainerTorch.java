@@ -44,6 +44,7 @@ import java.util.function.IntUnaryOperator;
  * @author liqa
  */
 @Deprecated
+@SuppressWarnings("DeprecatedIsStillUsed")
 public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
     protected final static String DEFAULT_UNITS = "metal";
     protected final static int[] DEFAULT_HIDDEN_DIMS = {32, 32}; // 现在统一默认为 32, 32
