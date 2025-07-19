@@ -18,6 +18,9 @@ import jse.opt.LBFGS;
 import jse.parallel.AbstractThreadPool;
 import jse.parallel.ParforThreadPool;
 import jsex.nnap.basis.Basis;
+import jsex.nnap.basis.Chebyshev;
+import jsex.nnap.basis.Merge;
+import jsex.nnap.basis.SphericalChebyshev;
 import jsex.nnap.nn.FeedForward;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.*;
@@ -68,14 +71,21 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         public final List<Object[]> mFpPx = new ArrayList<>(64), mFpPy = new ArrayList<>(64), mFpPz = new ArrayList<>(64);
         /** 按照原子结构排列，每个原子结构中每个原子对应一个向量，根据近邻列表展开（不同原子长度不等）*/
         public final List<Object[]> mFpGradNlIndex = new ArrayList<>(64), mFpGradFpIndex = new ArrayList<>(64);
-        /** 每个原子数据结构对应的能量值 */
+        /** 每个原子数据结构对应的每原子能量值 */
         public final DoubleList mEng = new DoubleList(64);
         /** 这里力数据使用 List 存储，每个原子结构一组 */
         public final List<Vector> mForceX = new ArrayList<>(64), mForceY = new ArrayList<>(64), mForceZ = new ArrayList<>(64);
-        /** 近邻列表，每个原子结构一组，每个原子对应一个近邻列表向量 */
-        public final List<IntVector[]> mNl = new ArrayList<>(64);
+        /** 每个原子数据结构对应的压力值 */
+        public final DoubleList mStressXX = new DoubleList(64), mStressYY = new DoubleList(64), mStressZZ = new DoubleList(64),
+                                mStressXY = new DoubleList(64), mStressXZ = new DoubleList(64), mStressYZ = new DoubleList(64);
         /** 原子种类，每个原子结构一组 */
         public final List<IntVector> mAtomType = new ArrayList<>(64);
+        /** 近邻列表，每个原子结构一组，每个原子对应一个近邻列表向量 */
+        public final List<Object[]> mNl = new ArrayList<>(64);
+        /** 近邻原子坐标差，每个原子结构一组，每个原子对应一个近邻列表向量 */
+        public final List<Object[]> mNlDx = new ArrayList<>(64), mNlDy = new ArrayList<>(64), mNlDz = new ArrayList<>(64);
+        /** 每个原子数据结构对应的总体积值 */
+        public final DoubleList mVolume = new DoubleList(64);
     }
     
     protected final IOptimizer mOptimizer;
@@ -88,6 +98,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     protected final DataSet mTestData;
     protected boolean mHasData = false;
     protected boolean mHasForce = false;
+    protected boolean mHasStress = false;
     protected boolean mHasTest = false;
     protected final Vector[] mNormMu, mNormSigma;
     protected double mNormMuEng = 0.0, mNormSigmaEng = 0.0;
@@ -100,7 +111,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     protected int mEpoch = -1;
     protected int mSelectEpoch = -1;
     protected double mMinLoss = Double.POSITIVE_INFINITY;
-    protected final List<Map<?, ?>> mNNData;
+    protected final Vector[] mSelectParas;
     
     private final Vector[][] mFpBuf, mGradFpBuf;
     private final List<List<List<Vector>>> mHiddenOutputsBuf, mHiddenGradsBuf, mHiddenGrads2Buf, mHiddenGrads3Buf, mHiddenGradGradsBuf;
@@ -180,21 +191,24 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
     }
     
-    Trainer(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, String[] aSymbols, IVector aRefEngs, Basis[] aBasis, FeedForward[] aNN, IOptimizer aOptimizer) {
+    Trainer(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, Map<String, ?> aArgs) {
         super(new ParforThreadPool(aThreadNumber));
-        if (aSymbols.length != aRefEngs.size()) throw new IllegalArgumentException("Symbols length does not match reference energies length.");
-        if (aSymbols.length != aBasis.length) throw new IllegalArgumentException("Symbols length does not match reference basis length.");
-        if (aSymbols.length != aNN.length) throw new IllegalArgumentException("Symbols length does not match neural network length.");
-        mSymbols = aSymbols;
-        mRefEngs = aRefEngs;
-        mBasis = aBasis;
+        mSymbols = symbolsFrom_(aArgs);
         mTypeNum = mSymbols.length;
+        mRefEngs = refEngsFrom_(mTypeNum, aArgs);
+        mBasis = basisFrom_(mSymbols, aArgs);
+        FeedForward[] tNN = nnFrom_(mBasis, aArgs);
+        mOptimizer = new LBFGS(100).setLineSearch();
+        
+        if (mTypeNum != mRefEngs.size()) throw new IllegalArgumentException("Symbols length does not match reference energies length.");
+        if (mTypeNum != mBasis.length) throw new IllegalArgumentException("Symbols length does not match reference basis length.");
+        if (mTypeNum != tNN.length) throw new IllegalArgumentException("Symbols length does not match neural network length.");
         
         mNN = new FeedForward[aThreadNumber][mTypeNum];
         for (int i = 0; i < mTypeNum; ++i) {
-            mNN[0][i] = aNN[i];
+            mNN[0][i] = tNN[i];
             for (int ti = 1; ti < aThreadNumber; ++ti) {
-                mNN[ti][i] = aNN[i].threadSafeRef();
+                mNN[ti][i] = tNN[i].threadSafeRef();
             }
         }
         
@@ -275,7 +289,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         mParaSizes = new int[mTypeNum];
         mHiddenSizes = new int[mTypeNum];
         mParaWeightSizes = new int[mTypeNum];
-        mNNData = new ArrayList<>(mTypeNum);
+        mSelectParas = new Vector[mTypeNum];
         mParas = new IVector[mTypeNum];
         int rTotParaSize = 0;
         for (int i = 0; i < mTypeNum; ++i) {
@@ -286,7 +300,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             rTotParaSize += tParaSize;
             mHiddenSizes[i] = mNN[0][i].hiddenSize();
             mParaWeightSizes[i] = mNN[0][i].parameterWeightSize();
-            mNNData.add(new LinkedHashMap<>());
+            mSelectParas[i] = Vector.zeros(tParaSize);
         }
         mGradParaBuf = new Vector[aThreadNumber];
         for (int ti = 1; ti < aThreadNumber; ++ti) {
@@ -294,7 +308,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
         
         final int fTotParaSize = rTotParaSize;
-        mOptimizer = aOptimizer.setParameter(new RefVector() {
+        mOptimizer.setParameter(new RefVector() {
             @Override public double get(int aIdx) {
                 int tIdx = aIdx;
                 for (int i = 0; i < mTypeNum; ++i) {
@@ -333,7 +347,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 if (tLossTest < mMinLoss) {
                     mSelectEpoch = mEpoch;
                     mMinLoss = tLossTest;
-                    for (int i = 0; i < mTypeNum; ++i) mNN[0][i].save(mNNData.get(i));
+                    for (int i = 0; i < mTypeNum; ++i) mSelectParas[i].fill(mParas[i]);
                 }
                 if (printLog) UT.Timer.progressBar(String.format("loss: %.4g | %.4g", loss, tLossTest));
             } else {
@@ -347,7 +361,6 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     }
     /**
      * 创建一个 nnap 的训练器
-     * @param aBasis 执行的每个种类对应的基组
      * @param aArgs 其余训练其参数，具体为：
      * <dl>
      *   <dt>symbols:</dt>
@@ -364,17 +377,34 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
      *     <dd>指定 loss 函数中 l2 正则化的权重</dd>
      *   <dt>units (可选，默认为 'metal'):</dt>
      *     <dd>指定势函数的单位</dd>
+     *   <dt>basis (可选):</dt>
+     *     <dd>
+     *       指定基组的具体参数，包含：
+     *       <dl>
+     *       <dt>type (可选，默认为 "spherical_chebyshev"):</dt>
+     *          <dd>指定基组的种类</dd>
+     *       <dt>lmax (可选，默认为 6):</dt>
+     *          <dd>指定基组角向序使用的最大 l</dd>
+     *       <dt>nmax (可选，默认为 5):</dt>
+     *          <dd>指定基组径向序使用的最大 n</dd>
+     *       <dt>rcut (可选，默认为 6.0):</dt>
+     *          <dd>指定基组的截断半径</dd>
+     *       </dl>
+     *       输入列表形式则为每个种类单独设置不同的基组参数
+     *     </dd>
      *   <dt>nn (可选):</dt>
-     *     <dd>指定神经网络具体结构，包含：
+     *     <dd>
+     *       指定神经网络具体结构，包含：
      *       <dl>
      *       <dt>hidden_dims (可选，默认为 [32, 32]):</dt>
      *          <dd>指定神经网络每个隐藏层的神经元数目</dd>
      *       </dl>
+     *       输入列表形式则为每个种类单独设置不同的神经网络参数
      *     </dd>
      * </dl>
      */
-    public Trainer(Basis[] aBasis, Map<String, ?> aArgs) {
-        this(threadNumberFrom_(aArgs), symbolsFrom_(aArgs), refEngsFrom_(aArgs), aBasis, nnFrom_(aBasis, aArgs), new LBFGS(100).setLineSearch());
+    public Trainer(Map<String, ?> aArgs) {
+        this(threadNumberFrom_(aArgs), aArgs);
         @Nullable Number tForceWeight = (Number)UT.Code.get(aArgs, "force_weight");
         if (tForceWeight != null) {
             setForceWeight(tForceWeight.doubleValue());
@@ -392,27 +422,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             setUnits(tUnits.toString());
         }
     }
-    public Trainer(Basis aBasis, Map<String, ?> aArgs) {
-        this(repeatBasis_(aBasis, typeNumberFrom_(aArgs)), aArgs);
-    }
     
-    private static Basis[] repeatBasis_(Basis aBasis, int aLen) {
-        Basis[] rOut = new Basis[aLen];
-        Arrays.fill(rOut, aBasis);
-        return rOut;
-    }
-    private static int typeNumberFrom_(Map<String, ?> aArgs) {
-        @Nullable Object tSymbols = UT.Code.get(aArgs, "symbols", "elems", "species");
-        if (tSymbols == null) throw new IllegalArgumentException("args of trainer MUST contain `symbols`");
-        if (tSymbols instanceof Collection) {
-            return ((Collection<?>)tSymbols).size();
-        } else
-        if (tSymbols instanceof Object[]) {
-            return ((Object[])tSymbols).length;
-        } else {
-            throw new IllegalArgumentException("invalid type of symbols: " + tSymbols.getClass().getName());
-        }
-    }
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static String[] symbolsFrom_(Map<String, ?> aArgs) {
         @Nullable Object tSymbols = UT.Code.get(aArgs, "symbols", "elems", "species");
@@ -427,9 +437,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
     }
     @SuppressWarnings("unchecked")
-    private static IVector refEngsFrom_(Map<String, ?> aArgs) {
+    private static IVector refEngsFrom_(int aTypeNum, Map<String, ?> aArgs) {
         @Nullable Object refEngs = UT.Code.get(aArgs, "ref_engs", "reference_energies", "erefs");
-        if (refEngs == null) return Vectors.zeros(typeNumberFrom_(aArgs));
+        if (refEngs == null) return Vectors.zeros(aTypeNum);
         if (refEngs instanceof Collection) {
             return Vectors.from((Collection<? extends Number>)refEngs);
         } else
@@ -442,35 +452,75 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             throw new IllegalArgumentException("invalid type of ref_engs: " + refEngs.getClass().getName());
         }
     }
+    private static Basis[] basisFrom_(String[] aSymbols, Map<String, ?> aArgs) {
+        @Nullable Object tBasis = UT.Code.get(aArgs, "basis");
+        if (tBasis == null) {
+            tBasis = Maps.of("type", "spherical_chebyshev");
+        }
+        if (tBasis instanceof Map) {
+            Map<?, ?> tSubBasis = (Map<?, ?>)tBasis;
+            tBasis = NewCollections.from(aSymbols.length, i -> tSubBasis);
+        }
+        List<?> tBasisList = (List<?>)tBasis;
+        Basis[] rBasis = new Basis[aSymbols.length];
+        for (int i = 0; i < rBasis.length; ++i) {
+            Map<?, ?> tBasisMap = (Map<?, ?>)tBasisList.get(i);
+            Object tBasisType = tBasisMap.get("type");
+            if (tBasisType == null) {
+                tBasisType = "spherical_chebyshev";
+            }
+            switch(tBasisType.toString()) {
+            case "spherical_chebyshev": {
+                rBasis[i] = SphericalChebyshev.load(aSymbols, tBasisMap);
+                break;
+            }
+            case "chebyshev": {
+                rBasis[i] = Chebyshev.load(aSymbols, tBasisMap);
+                break;
+            }
+            case "merge": {
+                rBasis[i] = Merge.load(aSymbols, tBasisMap);
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Unsupported basis type: " + tBasisType);
+            }}
+        }
+        return rBasis;
+    }
     private static int threadNumberFrom_(Map<String, ?> aArgs) {
         return ((Number)UT.Code.getWithDefault(aArgs, DEFAULT_THREAD_NUMBER, "thread_number", "thread_num", "nthreads")).intValue();
     }
     private static FeedForward[] nnFrom_(Basis[] aBasis, Map<String, ?> aArgs) {
-        @Nullable Map<?, ?> tNNSetting = (Map<?, ?>)UT.Code.get(aArgs, "nn");
-        @Nullable List<?> tHiddenDims = tNNSetting==null ? null : (List<?>)UT.Code.get(tNNSetting, "hidden_dims", "nnarch");
-        List<int[]> tHiddenDimsArr;
-        if (tHiddenDims == null) {
-            tHiddenDimsArr = NewCollections.from(aBasis.length, i -> DEFAULT_HIDDEN_DIMS);
-        } else
-        if (tHiddenDims.get(0) instanceof Number) {
-            final int[] tSubDimsArr = new int[tHiddenDims.size()];
-            for (int i = 0; i < tSubDimsArr.length; ++i) {
-                tSubDimsArr[i] = ((Number)tHiddenDims.get(i)).intValue();
-            }
-            tHiddenDimsArr = NewCollections.from(aBasis.length, i -> tSubDimsArr);
-        } else {
-            tHiddenDimsArr = NewCollections.from(aBasis.length, i -> {
-                List<?> tSubDims = (List<?>)tHiddenDims.get(i);
-                int[] tSubDimsArr = new int[tSubDims.size()];
-                for (int j = 0; j < tSubDimsArr.length; ++j) {
-                    tSubDimsArr[j] = ((Number)tSubDims.get(j)).intValue();
-                }
-                return tSubDimsArr;
-            });
+        @Nullable Object tNNSetting = UT.Code.get(aArgs, "nn");
+        if (tNNSetting == null) {
+            tNNSetting = new LinkedHashMap<>();
+        }
+        if (tNNSetting instanceof Map) {
+            Map<?, ?> tSubNNSetting = (Map<?, ?>)tNNSetting;
+            tNNSetting = NewCollections.from(aBasis.length, i -> tSubNNSetting);
         }
         FeedForward[] rOut = new FeedForward[aBasis.length];
+        List<?> tNNSettingList = (List<?>)tNNSetting;
         for (int i = 0; i < rOut.length; ++i) {
-            rOut[i] = FeedForward.init(aBasis[i].size(), tHiddenDimsArr.get(i));
+            Map<?, ?> tNNSettingMap = (Map<?, ?>)tNNSettingList.get(i);
+            @Nullable Object tHiddenDims = UT.Code.get(tNNSettingMap, "hidden_dims", "nnarch");
+            int[] tHiddenDimsArr;
+            if (tHiddenDims == null) {
+                tHiddenDimsArr = DEFAULT_HIDDEN_DIMS;
+            } else
+            if (tHiddenDims instanceof int[]) {
+                tHiddenDimsArr = Arrays.copyOf((int[])tHiddenDims, ((int[])tHiddenDims).length);
+            } else
+            if (tHiddenDims instanceof List) {
+                tHiddenDimsArr = new int[((List<?>)tHiddenDims).size()];
+                for (int j = 0; j < tHiddenDimsArr.length; ++j) {
+                    tHiddenDimsArr[j] = ((Number)((List<?>)tHiddenDims).get(j)).intValue();
+                }
+            } else {
+                throw new IllegalArgumentException("invalid type of hidden_dims: " + tHiddenDims.getClass().getName());
+            }
+            rOut[i] = FeedForward.init(aBasis[i].size(), tHiddenDimsArr);
         }
         return rOut;
     }
@@ -526,6 +576,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         final DataSet tData = aTest ? mTestData : mTrainData;
         final boolean tRequireGrad = rGrad!=null;
         final boolean tFullCache = mFullCache;
+        final boolean tHasStress = mHasStress;
         final int tThreadNum = threadNumber();
         if (tRequireGrad) {
             mGradParaBuf[0] = rGrad;
@@ -543,7 +594,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             IntVector tAtomType = tData.mAtomType.get(i);
             Vector[] tFp = tData.mFp.get(i);
             int tAtomNum = tFp.length;
-            if (!mHasForce) {
+            if (!mHasForce && !tHasStress) {
                 if (tRequireGrad) {
                     validHiddenBuf_(threadID, tAtomType, false);
                 }
@@ -578,7 +629,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 }
                 return;
             }
-            DoubleWrapper rLossGradForce = new DoubleWrapper(0.0);
+            DoubleWrapper rLossGradForceX = new DoubleWrapper(0.0), rLossGradForceY = new DoubleWrapper(0.0), rLossGradForceZ = new DoubleWrapper(0.0);
+            DoubleWrapper rLossGradStressXX = new DoubleWrapper(0.0), rLossGradStressYY = new DoubleWrapper(0.0), rLossGradStressZZ = new DoubleWrapper(0.0);
+            DoubleWrapper rLossGradStressXY = new DoubleWrapper(0.0), rLossGradStressXZ = new DoubleWrapper(0.0), rLossGradStressYZ = new DoubleWrapper(0.0);
             Vector[] tGradFpBuf = mGradFpBuf[threadID];
             Vector[] tLossGradFp = mLossGradFp[threadID];
             List<List<Vector>> tHiddenGrads2Buf = mHiddenGrads2Buf.get(threadID);
@@ -601,14 +654,24 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             Object[] tFpPz = tData.mFpPz.get(i);
             Object[] tFpGradNlIndex = tData.mFpGradNlIndex.get(i);
             Object[] tFpGradFpIndex = tData.mFpGradFpIndex.get(i);
-            IntVector[] tNl = tData.mNl.get(i);
-            tForceXBuf.clear(); tForceXBuf.addZeros(tAtomNum);
-            tForceYBuf.clear(); tForceYBuf.addZeros(tAtomNum);
-            tForceZBuf.clear(); tForceZBuf.addZeros(tAtomNum);
+            Object[] tNl = tData.mNl.get(i);
+            Object[] tNlDx = null, tNlDy = null, tNlDz = null;
+            if (tHasStress) {
+                tNlDx = tData.mNlDx.get(i);
+                tNlDy = tData.mNlDy.get(i);
+                tNlDz = tData.mNlDz.get(i);
+            }
+            double tVolume = tData.mVolume.get(i);
+            if (mHasForce) {
+                tForceXBuf.clear(); tForceXBuf.addZeros(tAtomNum);
+                tForceYBuf.clear(); tForceYBuf.addZeros(tAtomNum);
+                tForceZBuf.clear(); tForceZBuf.addZeros(tAtomNum);
+            }
             if (tRequireGrad) {
                 validHiddenBuf_(threadID, tAtomType, true);
             }
             double rEng = 0.0;
+            double rStressXX = 0.0, rStressYY = 0.0, rStressZZ = 0.0, rStressXY = 0.0, rStressXZ = 0.0, rStressYZ = 0.0;
             for (int k = 0; k < tAtomNum; ++k) {
                 int tType = tAtomType.get(k);
                 Vector tSubFp = tFp[k];
@@ -622,8 +685,22 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                                                                 tHiddenGrads2Buf.get(tType-1).get(k), tHiddenGrads3Buf.get(tType-1).get(k), tHiddenGradGradsBuf.get(tType-1).get(k))
                                      : tNN[tType-1].evalGrad(tSubFpBuf, tSubGradFpBuf);
                 // cal force
-                IntVector tSubNl = tNl[k];
-                int tNlSize = tSubNl.size();
+                IntList tSubNl = null;
+                ShortList tSubNlS = null;
+                DoubleList tSubNlDx = null, tSubNlDy = null, tSubNlDz = null;
+                FloatList tSubNlDxF = null, tSubNlDyF = null, tSubNlDzF = null;
+                if (tFullCache) {
+                    tSubNl = (IntList)tNl[k];
+                    if (tHasStress) {
+                        tSubNlDx = (DoubleList)tNlDx[k]; tSubNlDy = (DoubleList)tNlDy[k]; tSubNlDz = (DoubleList)tNlDz[k];
+                    }
+                } else {
+                    tSubNlS = (ShortList)tNl[k];
+                    if (tHasStress) {
+                        tSubNlDxF = (FloatList)tNlDx[k]; tSubNlDyF = (FloatList)tNlDy[k]; tSubNlDzF = (FloatList)tNlDz[k];
+                    }
+                }
+                int tNlSize = tFullCache ? tSubNl.size() : tSubNlS.size();
                 tForceNlXBuf.clear(); tForceNlXBuf.addZeros(tNlSize);
                 tForceNlYBuf.clear(); tForceNlYBuf.addZeros(tNlSize);
                 tForceNlZBuf.clear(); tForceNlZBuf.addZeros(tNlSize);
@@ -640,14 +717,29 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                     double fx = tForceNlXBuf.get(j);
                     double fy = tForceNlYBuf.get(j);
                     double fz = tForceNlZBuf.get(j);
-                    tForceXBuf.set(k, tForceXBuf.get(k) - fx);
-                    tForceYBuf.set(k, tForceYBuf.get(k) - fy);
-                    tForceZBuf.set(k, tForceZBuf.get(k) - fz);
-                    int nlk = tSubNl.get(j);
-                    tForceXBuf.set(nlk, tForceXBuf.get(nlk) + fx);
-                    tForceYBuf.set(nlk, tForceYBuf.get(nlk) + fy);
-                    tForceZBuf.set(nlk, tForceZBuf.get(nlk) + fz);
+                    int nlk = tFullCache ? tSubNl.get(j) : tSubNlS.get(j);
+                    if (mHasForce) {
+                        tForceXBuf.set(k, tForceXBuf.get(k) - fx);
+                        tForceYBuf.set(k, tForceYBuf.get(k) - fy);
+                        tForceZBuf.set(k, tForceZBuf.get(k) - fz);
+                        tForceXBuf.set(nlk, tForceXBuf.get(nlk) + fx);
+                        tForceYBuf.set(nlk, tForceYBuf.get(nlk) + fy);
+                        tForceZBuf.set(nlk, tForceZBuf.get(nlk) + fz);
+                    }
+                    // cal stress here
+                    if (tHasStress) {
+                        double dx = tFullCache ? tSubNlDx.get(j) : tSubNlDxF.get(j);
+                        double dy = tFullCache ? tSubNlDy.get(j) : tSubNlDyF.get(j);
+                        double dz = tFullCache ? tSubNlDz.get(j) : tSubNlDzF.get(j);
+                        rStressXX += dx * fx; rStressYY += dy * fy; rStressZZ += dz * fz;
+                        rStressXY += dx * fy; rStressXZ += dx * fz; rStressYZ += dy * fz;
+                    }
                 }
+            }
+            // cal stress here
+            if (tHasStress) {
+                rStressXX = -rStressXX/tVolume; rStressYY = -rStressYY/tVolume; rStressZZ = -rStressZZ/tVolume;
+                rStressXY = -rStressXY/tVolume; rStressXZ = -rStressXZ/tVolume; rStressYZ = -rStressYZ/tVolume;
             }
             // energy error
             rEng /= tAtomNum;
@@ -655,29 +747,65 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                                            : aLossFuncEng.call(rEng, (tData.mEng.get(i) - mNormMuEng)/mNormSigmaEng);
             rLoss.add(0, tLossEng / tData.mSize);
             // force error
-            double tLossForce = 0.0;
-            if (tRequireGrad) {
-                tLossGradForceXBuf.clear(); tLossGradForceXBuf.addZeros(tAtomNum);
-                tLossGradForceYBuf.clear(); tLossGradForceYBuf.addZeros(tAtomNum);
-                tLossGradForceZBuf.clear(); tLossGradForceZBuf.addZeros(tAtomNum);
-            }
-            double tForceLossMul = mForceWeight / (tData.mAtomSize*3);
-            Vector tForceX = tData.mForceX.get(i), tForceY = tData.mForceY.get(i), tForceZ = tData.mForceZ.get(i);
-            for (int k = 0; k < tAtomNum; ++k) {
+            if (mHasForce) {
+                double tLossForce = 0.0;
                 if (tRequireGrad) {
-                    tLossForce += aLossFuncGradForce.call(tForceXBuf.get(k), tForceX.get(k)/mNormSigmaEng, rLossGradForce); tLossGradForceXBuf.set(k, tForceLossMul*rLossGradForce.value());
-                    tLossForce += aLossFuncGradForce.call(tForceYBuf.get(k), tForceY.get(k)/mNormSigmaEng, rLossGradForce); tLossGradForceYBuf.set(k, tForceLossMul*rLossGradForce.value());
-                    tLossForce += aLossFuncGradForce.call(tForceZBuf.get(k), tForceZ.get(k)/mNormSigmaEng, rLossGradForce); tLossGradForceZBuf.set(k, tForceLossMul*rLossGradForce.value());
-                } else {
-                    tLossForce += aLossFuncForce.call(tForceXBuf.get(k), tForceX.get(k)/mNormSigmaEng);
-                    tLossForce += aLossFuncForce.call(tForceYBuf.get(k), tForceY.get(k)/mNormSigmaEng);
-                    tLossForce += aLossFuncForce.call(tForceZBuf.get(k), tForceZ.get(k)/mNormSigmaEng);
+                    tLossGradForceXBuf.clear(); tLossGradForceXBuf.addZeros(tAtomNum);
+                    tLossGradForceYBuf.clear(); tLossGradForceYBuf.addZeros(tAtomNum);
+                    tLossGradForceZBuf.clear(); tLossGradForceZBuf.addZeros(tAtomNum);
                 }
+                double tForceLossMul = mForceWeight / (tData.mAtomSize*3);
+                Vector tForceX = tData.mForceX.get(i), tForceY = tData.mForceY.get(i), tForceZ = tData.mForceZ.get(i);
+                for (int k = 0; k < tAtomNum; ++k) {
+                    if (tRequireGrad) {
+                        tLossForce += aLossFuncGradForce.call(tForceXBuf.get(k), tForceX.get(k)/mNormSigmaEng, rLossGradForceX);
+                        tLossForce += aLossFuncGradForce.call(tForceYBuf.get(k), tForceY.get(k)/mNormSigmaEng, rLossGradForceY);
+                        tLossForce += aLossFuncGradForce.call(tForceZBuf.get(k), tForceZ.get(k)/mNormSigmaEng, rLossGradForceZ);
+                        tLossGradForceXBuf.set(k, tForceLossMul*rLossGradForceX.value());
+                        tLossGradForceYBuf.set(k, tForceLossMul*rLossGradForceY.value());
+                        tLossGradForceZBuf.set(k, tForceLossMul*rLossGradForceZ.value());
+                    } else {
+                        tLossForce += aLossFuncForce.call(tForceXBuf.get(k), tForceX.get(k)/mNormSigmaEng);
+                        tLossForce += aLossFuncForce.call(tForceYBuf.get(k), tForceY.get(k)/mNormSigmaEng);
+                        tLossForce += aLossFuncForce.call(tForceZBuf.get(k), tForceZ.get(k)/mNormSigmaEng);
+                    }
+                }
+                rLoss.add(1, tForceLossMul*tLossForce);
             }
-            rLoss.add(1, tForceLossMul*tLossForce);
+            // stress error
+            if (tHasStress) {
+                double tLossStress = 0.0;
+                if (tRequireGrad) {
+                    tLossStress += aLossFuncGradStress.call(rStressXX, tData.mStressXX.get(i)/mNormSigmaEng, rLossGradStressXX);
+                    tLossStress += aLossFuncGradStress.call(rStressYY, tData.mStressYY.get(i)/mNormSigmaEng, rLossGradStressYY);
+                    tLossStress += aLossFuncGradStress.call(rStressZZ, tData.mStressZZ.get(i)/mNormSigmaEng, rLossGradStressZZ);
+                    tLossStress += aLossFuncGradStress.call(rStressXY, tData.mStressXY.get(i)/mNormSigmaEng, rLossGradStressXY);
+                    tLossStress += aLossFuncGradStress.call(rStressXZ, tData.mStressXZ.get(i)/mNormSigmaEng, rLossGradStressXZ);
+                    tLossStress += aLossFuncGradStress.call(rStressYZ, tData.mStressYZ.get(i)/mNormSigmaEng, rLossGradStressYZ);
+                } else {
+                    tLossStress += aLossFuncStress.call(rStressXX, tData.mStressXX.get(i)/mNormSigmaEng);
+                    tLossStress += aLossFuncStress.call(rStressYY, tData.mStressYY.get(i)/mNormSigmaEng);
+                    tLossStress += aLossFuncStress.call(rStressZZ, tData.mStressZZ.get(i)/mNormSigmaEng);
+                    tLossStress += aLossFuncStress.call(rStressXY, tData.mStressXY.get(i)/mNormSigmaEng);
+                    tLossStress += aLossFuncStress.call(rStressXZ, tData.mStressXZ.get(i)/mNormSigmaEng);
+                    tLossStress += aLossFuncStress.call(rStressYZ, tData.mStressYZ.get(i)/mNormSigmaEng);
+                }
+                rLoss.add(2, mStressWeight*tLossStress/(tData.mSize*6));
+            }
             /// backward
             if (!tRequireGrad) return;
             double tLossGradEng = rLossGradEng.value() / (tAtomNum*tData.mSize);
+            double tLossGradStressXX = 0.0, tLossGradStressYY = 0.0, tLossGradStressZZ = 0.0;
+            double tLossGradStressXY = 0.0, tLossGradStressXZ = 0.0, tLossGradStressYZ = 0.0;
+            if (tHasStress) {
+                double tMul = -mStressWeight / (tVolume*tData.mSize*6);
+                tLossGradStressXX = tMul * rLossGradStressXX.value();
+                tLossGradStressYY = tMul * rLossGradStressYY.value();
+                tLossGradStressZZ = tMul * rLossGradStressZZ.value();
+                tLossGradStressXY = tMul * rLossGradStressXY.value();
+                tLossGradStressXZ = tMul * rLossGradStressXZ.value();
+                tLossGradStressYZ = tMul * rLossGradStressYZ.value();
+            }
             for (int k = 0; k < tAtomNum; ++k) {
                 // energy loss grad
                 int tType = tAtomType.get(k);
@@ -691,19 +819,51 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                                       tHiddenOutputsBuf.get(tType-1).get(k), tHiddenGradsBuf.get(tType-1).get(k));
                 // force loss grad
                 Vector tSubLossGradFp = tLossGradFp[tType-1];
-                IntVector tSubNl = tNl[k];
-                int tNlSize = tSubNl.size();
-                double tLossGradForceX = tLossGradForceXBuf.get(k);
-                double tLossGradForceY = tLossGradForceYBuf.get(k);
-                double tLossGradForceZ = tLossGradForceZBuf.get(k);
+                IntList tSubNl = null;
+                ShortList tSubNlS = null;
+                DoubleList tSubNlDx = null, tSubNlDy = null, tSubNlDz = null;
+                FloatList tSubNlDxF = null, tSubNlDyF = null, tSubNlDzF = null;
+                if (tFullCache) {
+                    tSubNl = (IntList)tNl[k];
+                    if (tHasStress) {
+                        tSubNlDx = (DoubleList)tNlDx[k]; tSubNlDy = (DoubleList)tNlDy[k]; tSubNlDz = (DoubleList)tNlDz[k];
+                    }
+                } else {
+                    tSubNlS = (ShortList)tNl[k];
+                    if (tHasStress) {
+                        tSubNlDxF = (FloatList)tNlDx[k]; tSubNlDyF = (FloatList)tNlDy[k]; tSubNlDzF = (FloatList)tNlDz[k];
+                    }
+                }
+                int tNlSize = tFullCache ? tSubNl.size() : tSubNlS.size();
+                double tLossGradForceX = 0.0, tLossGradForceY = 0.0, tLossGradForceZ = 0.0;
+                if (mHasForce) {
+                    tLossGradForceX = tLossGradForceXBuf.get(k);
+                    tLossGradForceY = tLossGradForceYBuf.get(k);
+                    tLossGradForceZ = tLossGradForceZBuf.get(k);
+                }
                 tLossGradForceNlXBuf.clear(); tLossGradForceNlXBuf.addZeros(tNlSize);
                 tLossGradForceNlYBuf.clear(); tLossGradForceNlYBuf.addZeros(tNlSize);
                 tLossGradForceNlZBuf.clear(); tLossGradForceNlZBuf.addZeros(tNlSize);
                 for (int j = 0; j < tNlSize; ++j) {
-                    int nlk = tSubNl.get(j);
-                    tLossGradForceNlXBuf.set(j, tLossGradForceXBuf.get(nlk) - tLossGradForceX);
-                    tLossGradForceNlYBuf.set(j, tLossGradForceYBuf.get(nlk) - tLossGradForceY);
-                    tLossGradForceNlZBuf.set(j, tLossGradForceZBuf.get(nlk) - tLossGradForceZ);
+                    int nlk = tFullCache ? tSubNl.get(j) : tSubNlS.get(j);
+                    double rLossGradForceNlX = 0.0, rLossGradForceNlY = 0.0, rLossGradForceNlZ = 0.0;
+                    if (mHasForce) {
+                        rLossGradForceNlX += tLossGradForceXBuf.get(nlk) - tLossGradForceX;
+                        rLossGradForceNlY += tLossGradForceYBuf.get(nlk) - tLossGradForceY;
+                        rLossGradForceNlZ += tLossGradForceZBuf.get(nlk) - tLossGradForceZ;
+                    }
+                    // stress loss grad here
+                    if (tHasStress) {
+                        double dx = tFullCache ? tSubNlDx.get(j) : tSubNlDxF.get(j);
+                        double dy = tFullCache ? tSubNlDy.get(j) : tSubNlDyF.get(j);
+                        double dz = tFullCache ? tSubNlDz.get(j) : tSubNlDzF.get(j);
+                        rLossGradForceNlX += dx*tLossGradStressXX;
+                        rLossGradForceNlY += dy*tLossGradStressYY + dx*tLossGradStressXY;
+                        rLossGradForceNlZ += dz*tLossGradStressZZ + dx*tLossGradStressXZ + dy*tLossGradStressYZ;
+                    }
+                    tLossGradForceNlXBuf.set(j, rLossGradForceNlX);
+                    tLossGradForceNlYBuf.set(j, rLossGradForceNlY);
+                    tLossGradForceNlZBuf.set(j, rLossGradForceNlZ);
                 }
                 tSubLossGradFp.fill(0.0);
                 if (tFullCache) {
@@ -821,9 +981,11 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         rData.mEng.add(aEnergy/tAtomNum);
         ++rData.mSize;
         rData.mAtomSize += tAtomNum;
+        rData.mVolume.add(aAtomData.volume());
     }
     @ApiStatus.Internal
-    protected void calRefEngFpPartialAndAdd_(IAtomData aAtomData, double aEnergy, @Nullable IMatrix aForces, DataSet rData) {
+    protected void calRefEngFpPartialAndAdd_(IAtomData aAtomData, double aEnergy, @Nullable IMatrix aForces, @Nullable IVector aStress, DataSet rData) {
+        final boolean tHasStress = mHasStress;
         IntUnaryOperator tTypeMap = typeMap(aAtomData);
         // 由于数据集不完整因此这里不去做归一化
         final int tAtomNum = aAtomData.atomNumber();
@@ -832,12 +994,14 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             Vector[] rFp = new Vector[tAtomNum];
             Object[] rFpPx = new Object[tAtomNum], rFpPy = new Object[tAtomNum], rFpPz = new Object[tAtomNum];
             Object[] rFpGradNlIndex = new Object[tAtomNum], rFpGradFpIndex = new Object[tAtomNum];
-            IntVector[] rNl = new IntVector[tAtomNum];
+            Object[] rNl = new Object[tAtomNum];
+            Object[] rNlDx = new Object[tAtomNum], rNlDy = new Object[tAtomNum], rNlDz = new Object[tAtomNum];
             rData.mAtomType.add(rAtomType);
             rData.mFp.add(rFp);
             rData.mFpPx.add(rFpPx); rData.mFpPy.add(rFpPy); rData.mFpPz.add(rFpPz);
             rData.mFpGradNlIndex.add(rFpGradNlIndex); rData.mFpGradFpIndex.add(rFpGradFpIndex);
             rData.mNl.add(rNl);
+            rData.mNlDx.add(rNlDx); rData.mNlDy.add(rNlDy); rData.mNlDz.add(rNlDz);
             for (int i = 0; i < tAtomNum; ++i) {
                 int tType = tTypeMap.applyAsInt(aAtomData.atom(i).type());
                 rAtomType.set(i, tType);
@@ -859,7 +1023,29 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 // 计算相对能量值
                 aEnergy -= mRefEngs.get(tType-1);
                 // 增加近邻列表，这里直接重新添加
-                rNl[i] = tAPC.getNeighborList(i, tBasis.rcut());
+                IntList tNl = new IntList(16);
+                DoubleList tNlDx = tHasStress ? new DoubleList(16) : null;
+                DoubleList tNlDy = tHasStress ? new DoubleList(16) : null;
+                DoubleList tNlDz = tHasStress ? new DoubleList(16) : null;
+                tAPC.nl_().forEachNeighbor(i, tBasis.rcut(), (dx, dy, dz, idx) -> {
+                    tNl.add(idx);
+                    if (tHasStress) {
+                        tNlDx.add(dx); tNlDy.add(dy); tNlDz.add(dz);
+                    }
+                });
+                if (mFullCache) {
+                    tNl.trimToSize();
+                    rNl[i] = tNl;
+                    if (tHasStress) {
+                        tNlDx.trimToSize(); tNlDy.trimToSize(); tNlDz.trimToSize();
+                        rNlDx[i] = tNlDx; rNlDy[i] = tNlDy; rNlDz[i] = tNlDz;
+                    }
+                } else {
+                    rNl[i] = shortFrom_(tNl);
+                    if (tHasStress) {
+                        rNlDx[i] = floatFrom_(tNlDx); rNlDy[i] = floatFrom_(tNlDy); rNlDz[i] = floatFrom_(tNlDz);
+                    }
+                }
             }
         }
         // 这里后添加能量，这样 rData.mEng.size() 对应正确的索引
@@ -871,8 +1057,19 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             rData.mForceY.add(Vectors.from(aForces.col(1)));
             rData.mForceZ.add(Vectors.from(aForces.col(2)));
         }
+        // 这里后添加应力应力，这样 rData.mStress.size() 对应正确的索引
+        if (tHasStress) {
+            assert aStress != null;
+            rData.mStressXX.add(aStress.get(0));
+            rData.mStressYY.add(aStress.get(1));
+            rData.mStressZZ.add(aStress.get(2));
+            rData.mStressXY.add(aStress.get(3));
+            rData.mStressXZ.add(aStress.get(4));
+            rData.mStressYZ.add(aStress.get(5));
+        }
         ++rData.mSize;
         rData.mAtomSize += tAtomNum;
+        rData.mVolume.add(aAtomData.volume());
     }
     
     static FloatList floatFrom_(DoubleList aDoubleList) {
@@ -886,48 +1083,85 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         return rList;
     }
     
-    public void addTrainData(IAtomData aAtomData, double aEnergy, @Nullable IMatrix aForces) {
+    /**
+     * 增加一个训练集数据
+     * <p>
+     * 目前方便起见，如果有力则所有数据统一都要有力
+     * @param aAtomData 原子结构数据
+     * @param aEnergy 此原子结构数据的总能量
+     * @param aForces 可选的每个原子的力，按行排列，每列对应 x,y,z 方向的力
+     * @param aStress 可选的原子结构数据的应力值，按照 {@code [xx, yy, zz, xy, xz, yz]} 顺序排列
+     * @see IAtomData
+     * @see IMatrix
+     */
+    public void addTrainData(IAtomData aAtomData, double aEnergy, @Nullable IMatrix aForces, @Nullable IVector aStress) {
         if (!mHasData) {
             mHasData = true;
             mHasForce = aForces!=null;
+            mHasStress = aStress!=null;
         } else {
             if (mHasForce && aForces==null) throw new IllegalArgumentException("All data MUST has forces when add force");
             if (!mHasForce && aForces!=null) throw new IllegalArgumentException("All data MUST NOT has forces when not add force");
+            if (mHasStress && aStress==null) throw new IllegalArgumentException("All data MUST has stress when add stress");
+            if (!mHasStress && aStress!=null) throw new IllegalArgumentException("All data MUST NOT has stress when not add stress");
         }
         // 添加数据
-        if (mHasForce) {
-            calRefEngFpPartialAndAdd_(aAtomData, aEnergy, aForces, mTrainData);
+        if (mHasForce || mHasStress) {
+            calRefEngFpPartialAndAdd_(aAtomData, aEnergy, aForces, aStress, mTrainData);
         } else {
             calRefEngFpAndAdd_(aAtomData, aEnergy, mTrainData);
         }
     }
     /**
-     * {@code addTrainData(aAtomData, aEnergy, null)}
-     * @see #addTrainData(IAtomData, double, IMatrix)
+     * {@code addTrainData(aAtomData, aEnergy, aForces, null)}
+     * @see #addTrainData(IAtomData, double, IMatrix, IVector)
      */
-    public void addTrainData(IAtomData aAtomData, double aEnergy) {addTrainData(aAtomData, aEnergy, null);}
-    
-    public void addTestData(IAtomData aAtomData, double aEnergy, @Nullable IMatrix aForces) {
+    public void addTrainData(IAtomData aAtomData, double aEnergy, IMatrix aForces) {addTrainData(aAtomData, aEnergy, aForces, null);}
+    /**
+     * {@code addTrainData(aAtomData, aEnergy, null, null)}
+     * @see #addTrainData(IAtomData, double, IMatrix, IVector)
+     */
+    public void addTrainData(IAtomData aAtomData, double aEnergy) {addTrainData(aAtomData, aEnergy, null, null);}
+    /**
+     * 增加一个测试集数据
+     * <p>
+     * 目前方便起见，如果有力则所有数据统一都要有力
+     * @param aAtomData 原子结构数据
+     * @param aEnergy 此原子结构数据的总能量
+     * @param aForces 可选的每个原子的力，按行排列，每列对应 x,y,z 方向的力
+     * @param aStress 可选的原子结构数据的应力值，按照 {@code [xx, yy, zz, xy, xz, yz]} 顺序排列
+     * @see IAtomData
+     * @see IMatrix
+     */
+    public void addTestData(IAtomData aAtomData, double aEnergy, @Nullable IMatrix aForces, @Nullable IVector aStress) {
         if (!mHasData) {
             mHasData = true;
             mHasForce = aForces!=null;
+            mHasStress = aStress!=null;
         } else {
             if (mHasForce && aForces==null) throw new IllegalArgumentException("All data MUST has forces when add force");
             if (!mHasForce && aForces!=null) throw new IllegalArgumentException("All data MUST NOT has forces when not add force");
+            if (mHasStress && aStress==null) throw new IllegalArgumentException("All data MUST has stress when add stress");
+            if (!mHasStress && aStress!=null) throw new IllegalArgumentException("All data MUST NOT has stress when not add stress");
         }
         // 添加数据
-        if (mHasForce) {
-            calRefEngFpPartialAndAdd_(aAtomData, aEnergy, aForces, mTestData);
+        if (mHasForce || mHasStress) {
+            calRefEngFpPartialAndAdd_(aAtomData, aEnergy, aForces, aStress, mTestData);
         } else {
             calRefEngFpAndAdd_(aAtomData, aEnergy, mTestData);
         }
         if (!mHasTest) mHasTest = true;
     }
     /**
-     * {@code addTestData(aAtomData, aEnergy, null)}
-     * @see #addTestData(IAtomData, double, IMatrix)
+     * {@code addTestData(aAtomData, aEnergy, aForces, null)}
+     * @see #addTestData(IAtomData, double, IMatrix, IVector)
      */
-    public void addTestData(IAtomData aAtomData, double aEnergy) {addTestData(aAtomData, aEnergy, null);}
+    public void addTestData(IAtomData aAtomData, double aEnergy, IMatrix aForces) {addTestData(aAtomData, aEnergy, aForces, null);}
+    /**
+     * {@code addTestData(aAtomData, aEnergy, null, null)}
+     * @see #addTestData(IAtomData, double, IMatrix, IVector)
+     */
+    public void addTestData(IAtomData aAtomData, double aEnergy) {addTestData(aAtomData, aEnergy, null, null);}
     
     /** 获取历史 loss 值 */
     public IVector trainLoss() {return mTrainLoss.asVec();}
@@ -1014,13 +1248,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
         // 应用早停
         if (aEarlyStop && mSelectEpoch>=0) {
-            int tThreadNum = threadNumber();
-            for (int i = 0; i < mTypeNum; ++i) {
-                mNN[0][i] = FeedForward.load(mNNData.get(i));
-                for (int ti = 1; ti < tThreadNum; ++ti) {
-                    mNN[ti][i] = mNN[0][i].threadSafeRef();
-                }
-            }
+            for (int i = 0; i < mTypeNum; ++i) mParas[i].fill(mSelectParas[i]);
             if (aPrintLog) System.out.printf("Model at epoch = %d selected, test loss = %.4g\n", mSelectEpoch+1, mMinLoss);
             mSelectEpoch = -1;
             mMinLoss = Double.POSITIVE_INFINITY;
@@ -1039,9 +1267,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         if (mHasForce) {
             System.out.printf("Loss-F : %.4g (%s)\n", tLossF, IO.Text.percent(tLossF/tLossTot));
         }
-//        if (mHasStress) {
-//            System.out.printf("Loss-S : %.4g (%s)\n", tLossS, IO.Text.percent(tLossS/tLossTot));
-//        }
+        if (mHasStress) {
+            System.out.printf("Loss-S : %.4g (%s)\n", tLossS, IO.Text.percent(tLossS/tLossTot));
+        }
         Vector tMAE = VectorCache.getVec(4);
         calMAE(false, tMAE);
         double tMAE_E = tMAE.get(0);
@@ -1055,9 +1283,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 if (mHasForce) {
                     System.out.printf("MAE-F: %.4g meV/A\n", tMAE_F*1000);
                 }
-//                if (mHasStress) {
-//                    System.out.printf("MAE-S: %.4g meV/A^3\n", tMAE_S*1000);
-//                }
+                if (mHasStress) {
+                    System.out.printf("MAE-S: %.4g meV/A^3\n", tMAE_S*1000);
+                }
                 break;
             }
             case "real":{
@@ -1065,9 +1293,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 if (mHasForce) {
                     System.out.printf("MAE-F: %.4g kcal/mol/A\n", tMAE_F);
                 }
-//                if (mHasStress) {
-//                    System.out.printf("MAE-S: %.4g kcal/mol/A^3\n", tMAE_S);
-//                }
+                if (mHasStress) {
+                    System.out.printf("MAE-S: %.4g kcal/mol/A^3\n", tMAE_S);
+                }
                 break;
             }
             default: {
@@ -1075,9 +1303,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 if (mHasForce) {
                     System.out.printf("MAE-F: %.4g\n", tMAE_F);
                 }
-//                if (mHasStress) {
-//                    System.out.printf("MAE-S: %.4g\n", tMAE_S);
-//                }
+                if (mHasStress) {
+                    System.out.printf("MAE-S: %.4g\n", tMAE_S);
+                }
                 break;
             }}
             return;
@@ -1094,9 +1322,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             if (mHasForce) {
                 System.out.printf("MAE-F: %.4g meV/A | %.4g meV/A\n", tMAE_F*1000, tTestMAE_F*1000);
             }
-//            if (mHasStress) {
-//                System.out.printf("MAE-S: %.4g meV/A^3 | %.4g meV/A^3\n", tMAE_S*1000, tTestMAE_S*1000);
-//            }
+            if (mHasStress) {
+                System.out.printf("MAE-S: %.4g meV/A^3 | %.4g meV/A^3\n", tMAE_S*1000, tTestMAE_S*1000);
+            }
             break;
         }
         case "real":{
@@ -1104,9 +1332,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             if (mHasForce) {
                 System.out.printf("MAE-F: %.4g kcal/mol/A | %.4g kcal/mol/A\n", tMAE_F, tTestMAE_F);
             }
-//            if (mHasStress) {
-//                System.out.printf("MAE-S: %.4g kcal/mol/A^3 | %.4g kcal/mol/A^3\n", tMAE_S, tTestMAE_S);
-//            }
+            if (mHasStress) {
+                System.out.printf("MAE-S: %.4g kcal/mol/A^3 | %.4g kcal/mol/A^3\n", tMAE_S, tTestMAE_S);
+            }
             break;
         }
         default: {
@@ -1114,9 +1342,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             if (mHasForce) {
                 System.out.printf("MAE-F: %.4g | %.4g\n", tMAE_F, tTestMAE_F);
             }
-//            if (mHasStress) {
-//                System.out.printf("MAE-S: %.4g | %.4g\n", tMAE_S, tTestMAE_S);
-//            }
+            if (mHasStress) {
+                System.out.printf("MAE-S: %.4g | %.4g\n", tMAE_S, tTestMAE_S);
+            }
             break;
         }}
     }
