@@ -60,13 +60,13 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     };
     public final static ILossFunc LOSS_SMOOTHL1 = (pred, real) -> {
         double tErr = Math.abs(pred - real);
-        return tErr>=1.0 ? tErr : (tErr*tErr);
+        return tErr>=1.0 ? (tErr-0.5) : (0.5*tErr*tErr);
     };
     public final static ILossFuncGrad LOSS_SMOOTHL1_G = (pred, real, grad) -> {
         double tErr = pred - real;
         double tErrAbs = Math.abs(tErr);
-        grad.mValue = tErrAbs>=1.0 ? (tErr>=0?1.0:-1.0) : (2.0*tErr);
-        return tErrAbs>=1.0 ? tErrAbs : (tErr*tErr);
+        grad.mValue = tErrAbs>=1.0 ? (tErr>=0?1.0:-1.0) : tErr;
+        return tErrAbs>=1.0 ? (tErrAbs-0.5) : (0.5*tErr*tErr);
     };
     
     protected static class DataSet {
