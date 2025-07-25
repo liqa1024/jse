@@ -1,5 +1,4 @@
 #include "lammpsplugin.h"
-#include "version.h"
 
 #include "pair_jse.h"
 #include "fix_jse.h"

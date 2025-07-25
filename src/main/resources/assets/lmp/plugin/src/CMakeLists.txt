@@ -79,6 +79,7 @@ endif()
 
 # add lammps
 add_definitions(-DLAMMPS_EXCEPTIONS)
+add_definitions(-DLAMMPS_VERSION="$ENV{JSE_LMP_VERSION}")
 include_directories("$ENV{JSE_LMP_INCLUDE_DIR}")
 target_link_libraries(lmpplugin "$ENV{JSE_LMP_LIB_PATH}")
 

@@ -83,7 +83,7 @@ public class NativeLmp implements IAutoShutdown {
          * 这里简单实现，不使用 git 来自动识别最新稳定版本
          */
         public static String LMP_TAG = OS.env("JSE_LMP_TAG");
-        private final static String DEFAULT_LMP_TAG = "stable_2Aug2023_update2";
+        private final static String DEFAULT_LMP_TAG = "stable_29Aug2024_update4";
         
         /**
          * 自定义构建 lammps 的 cmake 参数设置，
@@ -209,6 +209,7 @@ public class NativeLmp implements IAutoShutdown {
         Map<String, String> rCmakeSettingNativeLmp = new LinkedHashMap<>(Conf.CMAKE_SETTING);
         rCmakeSettingNativeLmp.put("BUILD_SHARED_LIBS",      "ON");
         rCmakeSettingNativeLmp.put("LAMMPS_EXCEPTIONS:BOOL", "ON");
+        rCmakeSettingNativeLmp.put("PKG_PLUGIN",             "ON"); // 现在统一打开插件支持
         rCmakeSettingNativeLmp.put("CMAKE_BUILD_TYPE",       "Release");
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
         NATIVELMP_LIB_PATH = new JNIUtil.LibBuilder("lammps", "NATIVE_LMP", NATIVELMP_LIB_DIR, rCmakeSettingNativeLmp)
@@ -376,6 +377,18 @@ public class NativeLmp implements IAutoShutdown {
         return lammpsVersion_(mLmpPtr.mPtr);
     }
     private native static int lammpsVersion_(long aLmpPtr) throws LmpException;
+    
+    /**
+     * 获取 LAMMPS 的字符串版本，为 version.h 中定义的 {@code LAMMPS_VERSION}
+     *
+     * 主要用于 {@link LmpPlugin} 初始化使用
+     * @return 字符串版本
+     */
+    public String versionStr() throws LmpException {
+        checkThread();
+        return lammpsVersionStr_(mLmpPtr.mPtr);
+    }
+    private native static String lammpsVersionStr_(long aLmpPtr) throws LmpException;
     
     /**
      * Get the MPI communicator in use by the current LAMMPS instance

@@ -55,6 +55,9 @@ public class LmpPlugin {
         /** 启动的 jvm 的最大内存，默认为 1g 用来防止 mpi 运行 java 导致内存溢出 */
         public static String JVM_XMX = "1g";
         
+        /** 插件依赖的 lammps 版本字符串，默认自动检测 */
+        public static String LMP_VERSION = null;
+        
         /** 重定向 lmpplugin 动态库的路径，用于自定义编译这个库的过程，或者重新实现 lmpplugin 的接口 */
         public static @Nullable String REDIRECT_LMPPLUGIN_LIB = OS.env("JSE_REDIRECT_LMPPLUGIN_LIB");
     }
@@ -90,9 +93,19 @@ public class LmpPlugin {
         JNIUtil.InitHelper.init();
         // 依赖 cpointer
         CPointer.InitHelper.init();
-        // 依赖 lmpjni，且需要开启了 PLUGIN 插件
-        NativeLmp.Conf.CMAKE_SETTING.put("PKG_PLUGIN", "ON");
+        // 依赖 lmpjni
         NativeLmp.InitHelper.init();
+        // 获取 lammps 版本字符串
+        final String tLmpVersion;
+        if (Conf.LMP_VERSION != null) {
+            tLmpVersion = Conf.LMP_VERSION;
+        } else {
+            try (NativeLmp tLmp = new NativeLmp()) {
+                tLmpVersion = tLmp.versionStr();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
         LIB_PATH = new JNIUtil.LibBuilder("lmpplugin", "LMPPLUGIN", LIB_DIR, Conf.CMAKE_SETTING)
             .setMPIChecker() // 现在也会检测 mpi
@@ -102,6 +115,8 @@ public class LmpPlugin {
                 // 替换其中的 lammps 库路径为设置好的路径
                 line = line.replace("$ENV{JSE_LMP_INCLUDE_DIR}", NativeLmp.NATIVELMP_INCLUDE_DIR.replace("\\", "\\\\"))  // 注意反斜杠的转义问题
                            .replace("$ENV{JSE_LMP_LIB_PATH}"   , NativeLmp.NATIVELMP_LLIB_PATH  .replace("\\", "\\\\")); // 注意反斜杠的转义问题
+                // 替换 lammps 版本为设置值
+                line = line.replace("$ENV{JSE_LMP_VERSION}", tLmpVersion);
                 // 替换其中的 jvm 库路径为自动检测到的路径
                 line = line.replace("$ENV{JSE_JVM_LIB_PATH_DEF}", JVM.LIB_PATH.replace("\\", "\\\\\\\\")); // 注意反斜杠的转义问题
                 // 替换 jvm 启动设置

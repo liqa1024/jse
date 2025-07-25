@@ -101,6 +101,14 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsOpen_1___3Ljava_lang_String
 JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsVersion_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
     return (jint)lammps_version((void *)(intptr_t)aLmpPtr);
 }
+JNIEXPORT jstring JNICALL Java_jse_lmp_NativeLmp_lammpsVersionStr_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
+    char *tVersionStr = (char *)lammps_extract_global((void *)(intptr_t)aLmpPtr, "lammps_version");
+#ifdef __cplusplus
+    return aEnv->NewStringUTF(tVersionStr);
+#else
+    return (*aEnv)->NewStringUTF(aEnv, tVersionStr);
+#endif
+}
 
 JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsComm_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
 #ifdef LAMMPS_OLD

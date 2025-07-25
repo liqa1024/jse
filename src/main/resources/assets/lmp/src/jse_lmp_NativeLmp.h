@@ -51,6 +51,14 @@ JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsVersion_1
 
 /*
  * Class:     jse_lmp_NativeLmp
+ * Method:    lammpsVersionStr_
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_jse_lmp_NativeLmp_lammpsVersionStr_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_NativeLmp
  * Method:    lammpsComm_
  * Signature: (J)J
  */
