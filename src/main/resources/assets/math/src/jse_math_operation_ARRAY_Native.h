@@ -9,6 +9,22 @@ extern "C" {
 #endif
 /*
  * Class:     jse_math_operation_ARRAY_Native
+ * Method:    sumOfThis_
+ * Signature: ([DII)D
+ */
+JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_sumOfThis_1
+  (JNIEnv *, jclass, jdoubleArray, jint, jint);
+
+/*
+ * Class:     jse_math_operation_ARRAY_Native
+ * Method:    prodOfThis_
+ * Signature: ([DII)D
+ */
+JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_prodOfThis_1
+  (JNIEnv *, jclass, jdoubleArray, jint, jint);
+
+/*
+ * Class:     jse_math_operation_ARRAY_Native
  * Method:    dot_
  * Signature: ([DI[DII)D
  */

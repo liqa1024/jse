@@ -1203,6 +1203,7 @@ public class ARRAY {
     
     /** stat stuff */
     public static double sumOfThis(double[] aThis, int aShift, int aLength) {
+        if (NATIVE_OPERATION) return Native.sumOfThis(aThis, aShift, aLength);
         switch(aLength) {
         case 0:  {return 0.0;}
         case 1:  {return sumOfThis1(aThis, aShift);}
@@ -1343,6 +1344,7 @@ public class ARRAY {
     }
     
     public static double prodOfThis(double[] aThis, int aShift, int aLength) {
+        if (NATIVE_OPERATION) return Native.prodOfThis(aThis, aShift, aLength);
         switch(aLength) {
         case 0:  {return 0.0;}
         case 1:  {return prodOfThis1(aThis, aShift);}
@@ -2247,10 +2249,21 @@ public class ARRAY {
             System.load(IO.toAbsolutePath(LIB_PATH));
         }
         
-        
         static void lengthCheck(int aNeed, int aLength) {
             if (aNeed<0 || aNeed>aLength) throw new IndexOutOfBoundsException("need = " + aNeed + ", length = " + aLength);
         }
+        
+        public static double sumOfThis(double[] aThis, int aShift, int aLength) {
+            lengthCheck(aLength+aShift, aThis.length);
+            return sumOfThis_(aThis, aShift, aLength);
+        }
+        private native static double sumOfThis_(double[] aThis, int aShift, int aLength);
+        
+        public static double prodOfThis(double[] aThis, int aShift, int aLength) {
+            lengthCheck(aLength+aShift, aThis.length);
+            return prodOfThis_(aThis, aShift, aLength);
+        }
+        private native static double prodOfThis_(double[] aThis, int aShift, int aLength);
         
         public static double dot(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, int aLength) {
             lengthCheck(aLength+aShiftL, aDataL.length);
