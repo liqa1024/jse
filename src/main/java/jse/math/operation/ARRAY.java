@@ -4,14 +4,25 @@ import com.mastfrog.util.sort.Sort;
 import groovy.lang.Closure;
 import groovy.transform.stc.ClosureParams;
 import groovy.transform.stc.SimpleType;
+import jse.clib.JNIUtil;
+import jse.code.IO;
+import jse.code.OS;
+import jse.code.UT;
 import jse.code.functional.*;
 import jse.math.ComplexDouble;
 import jse.math.IComplexDouble;
 import jse.math.vector.*;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.*;
 
+import static jse.code.CS.VERSION;
+import static jse.code.Conf.NATIVE_OPERATION;
+import static jse.code.OS.JAR_DIR;
+import static jse.code.OS.JAVA_HOME;
 import static jse.code.UT.Code.toComplexDouble;
 
 
@@ -1594,6 +1605,7 @@ public class ARRAY {
     }
     
     public static double dot(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, int aLength) {
+        if (NATIVE_OPERATION) return Native.dot(aDataL, aShiftL, aDataR, aShiftR, aLength);
         switch(aLength) {
         case 0:  {return 0.0;}
         case 1:  {return dot1(aDataL, aShiftL, aDataR, aShiftR);}
@@ -1607,6 +1619,7 @@ public class ARRAY {
         default: {return dotN(aDataL, aShiftL, aDataR, aShiftR, aLength);}
         }
     }
+    
     public static double dot1(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR) {
         return aDataL[aShiftL]*aDataR[aShiftR];
     }
@@ -1786,6 +1799,7 @@ public class ARRAY {
     
     /** 现在这个方法更快了 */
     public static double dotOfThis(double[] aThis, int aShift, int aLength) {
+        if (NATIVE_OPERATION) return Native.dotOfThis(aThis, aShift, aLength);
         switch(aLength) {
         case 0:  {return 0.0;}
         case 1:  {return dotOfThis1(aThis, aShift);}
@@ -2111,5 +2125,144 @@ public class ARRAY {
         final int rEnd = aLength + rShift;
         if (rShift == aShiftR) for (int i = rShift; i < rEnd; ++i) rThis[i] += aMul*aDataR[i];
         else for (int i = rShift, j = aShiftR; i < rEnd; ++i, ++j) rThis[i] += aMul*aDataR[j];
+    }
+    
+    
+    public static class Native {
+        public final static class InitHelper {
+            private static volatile boolean INITIALIZED = false;
+            /** @return {@link ARRAY} 相关的 JNI 库是否已经初始化完成 */
+            public static boolean initialized() {return INITIALIZED;}
+            /** 初始化 {@link ARRAY} 相关的 JNI 库 */
+            @SuppressWarnings("ResultOfMethodCallIgnored")
+            public static void init() {
+                if (!INITIALIZED) String.valueOf(LIB_PATH);
+            }
+        }
+        
+        public final static class Conf {
+            /**
+             * 自定义构建 math 的 cmake 参数设置，
+             * 会在构建时使用 -D ${key}=${value} 传入
+             */
+            public final static Map<String, String> CMAKE_SETTING = new LinkedHashMap<>();
+            
+            public static final int NONE = -1;
+            public static final int COMPAT = 0;
+            public static final int BASE = 1;
+            public static final int MAX = 2;
+            /**
+             * 自定义 math 需要采用的优化等级，默认为 1（基础优化），
+             * 会开启 AVX2 指令集，在大多数现代处理器上能兼容运行
+             */
+            public static int OPT_LEVEL = OS.envI("JSE_MATH_OPT_LEVEL", BASE);
+            
+            /**
+             * 自定义构建 math 时使用的编译器，
+             * cmake 有时不能自动检测到希望使用的编译器
+             * <p>
+             * 也可使用环境变量 {@code JSE_CMAKE_C_COMPILER_MATH} 来设置
+             */
+            public static @Nullable String CMAKE_C_COMPILER   = OS.env("JSE_CMAKE_C_COMPILER_MATH"  , jse.code.Conf.CMAKE_C_COMPILER);
+            /**
+             * 自定义构建 math 时使用的编译器，
+             * cmake 有时不能自动检测到希望使用的编译器
+             * <p>
+             * 也可使用环境变量 {@code JSE_CMAKE_CXX_COMPILER_MATH} 来设置
+             */
+            public static @Nullable String CMAKE_CXX_COMPILER = OS.env("JSE_CMAKE_CXX_COMPILER_MATH", jse.code.Conf.CMAKE_CXX_COMPILER);
+            /**
+             * 自定义构建 math 时使用的编译器，
+             * cmake 有时不能自动检测到希望使用的编译器
+             * <p>
+             * 也可使用环境变量 {@code JSE_CMAKE_C_FLAGS_MATH} 来设置
+             */
+            public static @Nullable String CMAKE_C_FLAGS      = OS.env("JSE_CMAKE_C_FLAGS_MATH"     , jse.code.Conf.CMAKE_C_FLAGS);
+            /**
+             * 自定义构建 math 时使用的编译器，
+             * cmake 有时不能自动检测到希望使用的编译器
+             * <p>
+             * 也可使用环境变量 {@code JSE_CMAKE_CXX_FLAGS_MATH} 来设置
+             */
+            public static @Nullable String CMAKE_CXX_FLAGS    = OS.env("JSE_CMAKE_CXX_FLAGS_MATH"   , jse.code.Conf.CMAKE_CXX_FLAGS);
+            
+            /**
+             * 重定向 math 动态库的路径，用于自定义编译这个库的过程，或者重新实现 math 的接口
+             * <p>
+             * 也可使用环境变量 {@code JSE_REDIRECT_MATH_LIB} 来设置
+             */
+            public static @Nullable String REDIRECT_MATH_LIB = OS.env("JSE_REDIRECT_MATH_LIB");
+        }
+        
+        /** 当前 {@link ARRAY} JNI 库所在的文件夹路径，结尾一定存在 {@code '/'} */
+        public final static String LIB_DIR = JAR_DIR+"math/" + UT.Code.uniqueID(JAVA_HOME, VERSION, Conf.OPT_LEVEL, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+        /** 当前 {@link ARRAY} JNI 库的路径 */
+        public final static String LIB_PATH;
+        private final static String[] SRC_NAME = {
+            "jse_math_operation_ARRAY_Native.c"
+            , "jse_math_operation_ARRAY_Native.h"
+        };
+        
+        static {
+            InitHelper.INITIALIZED = true;
+            // 依赖 jniutil
+            JNIUtil.InitHelper.init();
+            // 这里不直接依赖 LmpPlugin
+            
+            // 先添加 Conf.CMAKE_SETTING，这样保证确定的优先级
+            Map<String, String> rCmakeSetting = new LinkedHashMap<>(Conf.CMAKE_SETTING);
+            switch(Conf.OPT_LEVEL) {
+            case Conf.MAX: {
+                rCmakeSetting.put("JSE_OPT_MAX",    "ON");
+                rCmakeSetting.put("JSE_OPT_BASE",   "OFF");
+                rCmakeSetting.put("JSE_OPT_COMPAT", "OFF");
+                break;
+            }
+            case Conf.BASE: {
+                rCmakeSetting.put("JSE_OPT_MAX",    "OFF");
+                rCmakeSetting.put("JSE_OPT_BASE",   "ON");
+                rCmakeSetting.put("JSE_OPT_COMPAT", "OFF");
+                break;
+            }
+            case Conf.COMPAT: {
+                rCmakeSetting.put("JSE_OPT_MAX",    "OFF");
+                rCmakeSetting.put("JSE_OPT_BASE",   "OFF");
+                rCmakeSetting.put("JSE_OPT_COMPAT", "ON");
+                break;
+            }
+            case Conf.NONE: {
+                rCmakeSetting.put("JSE_OPT_MAX",    "OFF");
+                rCmakeSetting.put("JSE_OPT_BASE",   "OFF");
+                rCmakeSetting.put("JSE_OPT_COMPAT", "OFF");
+                break;
+            }}
+            // 现在直接使用 JNIUtil.buildLib 来统一初始化
+            LIB_PATH = new JNIUtil.LibBuilder("math", "MATH", LIB_DIR, rCmakeSetting)
+                .setSrc("math", SRC_NAME)
+                .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS)
+                .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
+                .setRedirectLibPath(Conf.REDIRECT_MATH_LIB)
+                .get();
+            // 设置库路径
+            System.load(IO.toAbsolutePath(LIB_PATH));
+        }
+        
+        
+        static void lengthCheck(int aNeed, int aLength) {
+            if (aNeed<0 || aNeed>aLength) throw new IndexOutOfBoundsException("need = " + aNeed + ", length = " + aLength);
+        }
+        
+        public static double dot(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, int aLength) {
+            lengthCheck(aLength+aShiftL, aDataL.length);
+            lengthCheck(aLength+aShiftR, aDataR.length);
+            return dot_(aDataL, aShiftL, aDataR, aShiftR, aLength);
+        }
+        private native static double dot_(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, int aLength);
+        
+        public static double dotOfThis(double[] aThis, int aShift, int aLength) {
+            lengthCheck(aLength+aShift, aThis.length);
+            return dotOfThis_(aThis, aShift, aLength);
+        }
+        private native static double dotOfThis_(double[] aThis, int aShift, int aLength);
     }
 }

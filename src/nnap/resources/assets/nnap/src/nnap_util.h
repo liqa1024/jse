@@ -46,15 +46,14 @@ static inline jboolean numericEqual_jse(jdouble aLHS, jdouble aRHS) {
 
 static inline jdouble dot_jse(jdouble *aArray, jint aLen) {
     jdouble rDot = 0.0;
-    for (int i = 0; i < aLen; ++i) {
-        jdouble tValue = aArray[i];
-        rDot += tValue*tValue;
+    for (jint i = 0; i < aLen; ++i) {
+        rDot += aArray[i]*aArray[i];
     }
     return rDot;
 }
 static inline jdouble dotAB_jse(jdouble *aArrayL, jdouble *aArrayR, jint aLen) {
     jdouble rDot = 0.0;
-    for (int i = 0; i < aLen; ++i) {
+    for (jint i = 0; i < aLen; ++i) {
         rDot += aArrayL[i]*aArrayR[i];
     }
     return rDot;

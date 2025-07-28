@@ -45,6 +45,15 @@ public class Conf {
      */
     public static boolean OPERATION_CHECK = OS.envZ("JSE_OPERATION_CHECK", true);
     /**
+     * 部分运算是否开启 native 优化来尽可能提高速度，开启后需要有编译器环境保证实时编译，
+     * 并且为了保证速度计算结果不再符合 ieee 标准（不同机器结果不完全一致）
+     * <p>
+     * 默认为 {@code false}
+     * <p>
+     * 也可使用环境变量 {@code JSE_NATIVE_OPERATION} 来设置
+     */
+    public static boolean NATIVE_OPERATION = OS.envZ("JSE_NATIVE_OPERATION", false);
+    /**
      * 是否将 groovy 的脚本库也添加到 jep 的 {@code import hook} 中，在 {@code jse 3.2.2}
      * 之后不再默认包含，因此 python 中使用 groovy 包需要调用 {@link SP.Groovy#getClass(String)} 来导入
      * <p>
