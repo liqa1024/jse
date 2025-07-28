@@ -38,6 +38,7 @@ import java.util.function.IntUnaryOperator;
 public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHasSymbol, ISavable {
     protected final static String DEFAULT_UNITS = "metal";
     protected final static int[] DEFAULT_HIDDEN_DIMS = {32, 32}; // 现在统一默认为 32, 32
+    protected final static double DEFAULT_ENERGY_WEIGHT = 1.0;
     protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
     protected final static double DEFAULT_STRESS_WEIGHT = 1.0;
     protected final static double DEFAULT_L2_LOSS_WEIGHT = 0.001;
@@ -132,6 +133,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     protected boolean mFullCache = false;
     public Trainer setFullCache(boolean aFlag) {mFullCache = aFlag; return this;}
     
+    protected double mEnergyWeight = DEFAULT_ENERGY_WEIGHT;
+    public Trainer setEnergyWeight(double aWeight) {mEnergyWeight = aWeight; return this;}
     protected double mForceWeight = DEFAULT_FORCE_WEIGHT;
     public Trainer setForceWeight(double aWeight) {mForceWeight = aWeight; return this;}
     protected double mStressWeight = DEFAULT_STRESS_WEIGHT;
@@ -163,6 +166,10 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         mLossFuncEng = aLossFunc; mLossFuncGradEng = aLossFuncGrad;
         mLossFuncForce = aLossFunc; mLossFuncGradForce = aLossFuncGrad;
         mLossFuncStress = aLossFunc; mLossFuncGradStress = aLossFuncGrad;
+        return this;
+    }
+    public Trainer reset() {
+        mOptimizer.reset();
         return this;
     }
     
@@ -402,6 +409,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
      *     <dd>指定每个元素的参考能量</dd>
      *   <dt>thread_number (可选，默认为 4):</dt>
      *     <dd>指定训练时使用的线程数</dd>
+     *   <dt>energy_weight (可选，默认为 1.0):</dt>
+     *     <dd>指定 loss 函数中能量的权重</dd>
      *   <dt>force_weight (可选，默认为 0.1):</dt>
      *     <dd>指定 loss 函数中力的权重</dd>
      *   <dt>stress_weight (可选，默认为 1.0):</dt>
@@ -438,6 +447,10 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
      */
     public Trainer(Map<String, ?> aArgs) {
         this(threadNumberFrom_(aArgs), aArgs);
+        @Nullable Number tEnergyWeight = (Number)UT.Code.get(aArgs, "energy_weight", "eng_weight");
+        if (tEnergyWeight != null) {
+            setEnergyWeight(tEnergyWeight.doubleValue());
+        }
         @Nullable Number tForceWeight = (Number)UT.Code.get(aArgs, "force_weight");
         if (tForceWeight != null) {
             setForceWeight(tForceWeight.doubleValue());
@@ -622,6 +635,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                  LOSS_ABSOLUTE, LOSS_ABSOLUTE_G,
                  LOSS_ABSOLUTE, LOSS_ABSOLUTE_G);
         rMAE.multiply2this(mNormSigmaEng);
+        rMAE.update(0, v -> v/mEnergyWeight);
         rMAE.update(1, v -> v/mForceWeight);
         rMAE.update(2, v -> v/mStressWeight);
     }
@@ -671,10 +685,10 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 rEng /= tAtomNum;
                 double tLossEng = tRequireGrad ? aLossFuncGradEng.call(rEng, (tData.mEng.get(i) - mNormMuEng)/mNormSigmaEng, rLossGradEng)
                                                : aLossFuncEng.call(rEng, (tData.mEng.get(i) - mNormMuEng)/mNormSigmaEng);
-                rLoss.add(0, tLossEng / tData.mSize);
+                rLoss.add(0, mEnergyWeight * tLossEng / tData.mSize);
                 /// backward
                 if (!tRequireGrad) return;
-                double tLossGradEng = rLossGradEng.value() / (tAtomNum*tData.mSize);
+                double tLossGradEng = mEnergyWeight * rLossGradEng.value() / (tAtomNum*tData.mSize);
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
                     if (mBasis[tType-1] instanceof Mirror) {
@@ -810,7 +824,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             rEng /= tAtomNum;
             double tLossEng = tRequireGrad ? aLossFuncGradEng.call(rEng, (tData.mEng.get(i) - mNormMuEng)/mNormSigmaEng, rLossGradEng)
                                            : aLossFuncEng.call(rEng, (tData.mEng.get(i) - mNormMuEng)/mNormSigmaEng);
-            rLoss.add(0, tLossEng / tData.mSize);
+            rLoss.add(0, mEnergyWeight * tLossEng / tData.mSize);
             // force error
             if (mHasForce) {
                 double tLossForce = 0.0;
@@ -859,7 +873,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             }
             /// backward
             if (!tRequireGrad) return;
-            double tLossGradEng = rLossGradEng.value() / (tAtomNum*tData.mSize);
+            double tLossGradEng = mEnergyWeight * rLossGradEng.value() / (tAtomNum*tData.mSize);
             double tLossGradStressXX = 0.0, tLossGradStressYY = 0.0, tLossGradStressZZ = 0.0;
             double tLossGradStressXY = 0.0, tLossGradStressXZ = 0.0, tLossGradStressYZ = 0.0;
             if (tHasStress) {
