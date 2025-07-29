@@ -1,8 +1,8 @@
 #include "jniutil.h"
 #include <math.h>
 
-#ifndef BASIS_UTIL_H
-#define BASIS_UTIL_H
+#ifndef NNAP_UTIL_H
+#define NNAP_UTIL_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -95,4 +95,4 @@ static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdo
 #endif
 
 
-#endif //BASIS_UTIL_H
+#endif //NNAP_UTIL_H

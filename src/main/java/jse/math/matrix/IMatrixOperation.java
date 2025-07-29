@@ -1,8 +1,6 @@
 package jse.math.matrix;
 
 import jse.math.vector.IVector;
-import jse.parallel.ParforThreadPool;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 import java.util.function.*;
 
@@ -100,20 +98,6 @@ public interface IMatrixOperation {
     void lmatmul2this(IMatrix aRHS);
     void  matmul2dest(IMatrix aRHS, IMatrix rDest);
     void lmatmul2dest(IMatrix aRHS, IMatrix rDest);
-    // 并行的接口
-    @ApiStatus.Experimental IMatrix  matmul_par(IMatrix aRHS);
-    @ApiStatus.Experimental IMatrix lmatmul_par(IMatrix aRHS);
-    @ApiStatus.Experimental IMatrix  matmul_par(IMatrix aRHS, int aTreadNum);
-    @ApiStatus.Experimental IMatrix lmatmul_par(IMatrix aRHS, int aTreadNum);
-    @ApiStatus.Experimental IMatrix  matmul_par(IMatrix aRHS, ParforThreadPool aPool);
-    @ApiStatus.Experimental IMatrix lmatmul_par(IMatrix aRHS, ParforThreadPool aPool);
-    // 并行矩阵乘法不提供 2this 的接口
-    @ApiStatus.Experimental void  matmul2dest_par(IMatrix aRHS, IMatrix rDest);
-    @ApiStatus.Experimental void lmatmul2dest_par(IMatrix aRHS, IMatrix rDest);
-    @ApiStatus.Experimental void  matmul2dest_par(IMatrix aRHS, IMatrix rDest, int aTreadNum);
-    @ApiStatus.Experimental void lmatmul2dest_par(IMatrix aRHS, IMatrix rDest, int aTreadNum);
-    @ApiStatus.Experimental void  matmul2dest_par(IMatrix aRHS, IMatrix rDest, ParforThreadPool aPool);
-    @ApiStatus.Experimental void lmatmul2dest_par(IMatrix aRHS, IMatrix rDest, ParforThreadPool aPool);
     
     IVector sumOfCols   ();
     IVector sumOfRows   ();

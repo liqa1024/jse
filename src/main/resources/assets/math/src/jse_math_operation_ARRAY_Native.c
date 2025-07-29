@@ -1,47 +1,9 @@
 #include "jse_math_operation_ARRAY_Native.h"
-
-#include "jniutil.h"
-#include <math.h>
+#include "math_util.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-static inline jdouble sum_jse(jdouble *aArray, jint aLen) {
-    jdouble rSum = 0.0;
-    for (jint i = 0; i < aLen; ++i) {
-        rSum += aArray[i];
-    }
-    return rSum;
-}
-static inline jdouble prod_jse(jdouble *aArray, jint aLen) {
-    jdouble rProd = 1.0;
-    for (jint i = 0; i < aLen; ++i) {
-        rProd *= aArray[i];
-    }
-    return rProd;
-}
-static inline jdouble dot_jse(jdouble *aArray, jint aLen) {
-    jdouble rDot = 0.0;
-    for (jint i = 0; i < aLen; ++i) {
-        rDot += aArray[i]*aArray[i];
-    }
-    return rDot;
-}
-static inline jdouble dotAB_jse(jdouble *aArrayL, jdouble *aArrayR, jint aLen) {
-    jdouble rDot = 0.0;
-    for (jint i = 0; i < aLen; ++i) {
-        rDot += aArrayL[i]*aArrayR[i];
-    }
-    return rDot;
-}
-static inline jdouble norm1_jse(jdouble *aArray, jint aLen) {
-    jdouble rNorm = 0.0;
-    for (jint i = 0; i < aLen; ++i) {
-        rNorm += fabs((double)aArray[i]);
-    }
-    return rNorm;
-}
 
 JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_sumOfThis_1(JNIEnv *aEnv, jclass aClazz,
     jdoubleArray aThis, jint aShift, jint aLength) {

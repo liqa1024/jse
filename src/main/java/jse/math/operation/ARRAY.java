@@ -2161,6 +2161,12 @@ public class ARRAY {
             public static int OPT_LEVEL = OS.envI("JSE_MATH_OPT_LEVEL", BASE);
             
             /**
+             * 自定义 match 内部循环使用的 batch size，
+             * 一般来说不需要专门调整
+             */
+            public static int BATCH_SIZE = OS.envI("JSE_MATH_BATCH_SIZE", 64);
+            
+            /**
              * 自定义构建 math 时使用的编译器，
              * cmake 有时不能自动检测到希望使用的编译器
              * <p>
@@ -2198,12 +2204,13 @@ public class ARRAY {
         }
         
         /** 当前 {@link ARRAY} JNI 库所在的文件夹路径，结尾一定存在 {@code '/'} */
-        public final static String LIB_DIR = JAR_DIR+"math/" + UT.Code.uniqueID(JAVA_HOME, VERSION, Conf.OPT_LEVEL, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+        public final static String LIB_DIR = JAR_DIR+"math/" + UT.Code.uniqueID(JAVA_HOME, VERSION, Conf.OPT_LEVEL, Conf.BATCH_SIZE, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
         /** 当前 {@link ARRAY} JNI 库的路径 */
         public final static String LIB_PATH;
         private final static String[] SRC_NAME = {
-            "jse_math_operation_ARRAY_Native.c"
+              "jse_math_operation_ARRAY_Native.c"
             , "jse_math_operation_ARRAY_Native.h"
+            , "math_util.h"
         };
         
         static {
@@ -2239,6 +2246,7 @@ public class ARRAY {
                 rCmakeSetting.put("JSE_OPT_COMPAT", "OFF");
                 break;
             }}
+            rCmakeSetting.put("JSE_BATCH_SIZE", String.valueOf(Conf.BATCH_SIZE));
             // 现在直接使用 JNIUtil.buildLib 来统一初始化
             LIB_PATH = new JNIUtil.LibBuilder("math", "MATH", LIB_DIR, rCmakeSetting)
                 .setSrc("math", SRC_NAME)
