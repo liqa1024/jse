@@ -1,6 +1,7 @@
 package jse.math.matrix;
 
 import jse.cache.VectorCache;
+import jse.code.Conf;
 import jse.code.iterator.IDoubleIterator;
 import jse.code.iterator.IDoubleSetOnlyIterator;
 import jse.math.operation.ARRAY;
@@ -416,6 +417,17 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         final int tRowNum = aLHS.rowNumber();
         final int tColNum = aRHS.columnNumber();
         final int tMidNum = aLHS.columnNumber();
+        // 尝试使用 native 接口
+        if (Conf.NATIVE_OPERATION) {
+            if (aLHS instanceof RowMatrix && aRHS instanceof ColumnMatrix) {
+                RowMatrix rBuf = rDest.toBufRow(true);
+                ARRAY.Native.matmulRC2Dest(((RowMatrix)aLHS).internalData(), 0,
+                                           ((ColumnMatrix)aRHS).internalData(), 0,
+                                           rBuf.internalData(), 0, tRowNum, tColNum, tMidNum);
+                rDest.releaseBuf(rBuf);
+                return;
+            }
+        }
         // 特殊情况处理
         if (tMidNum == 0) return;
         // 现在对于串行的版本默认都不进行分块，更加简洁且很多情况下都更快

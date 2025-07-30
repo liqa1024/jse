@@ -78,6 +78,93 @@ static inline jdouble norm1_jse(jdouble *aArray, jint aLen) {
     }
     return rNorm;
 }
+static inline void fill_jse(jdouble *rArray, jdouble aValue, jint aLen) {
+    for (jint i = 0; i < aLen; ++i) {
+        rArray[i] = aValue;
+    }
+}
+
+static inline void matmulRC_jse(jdouble *aDataRowL, jdouble *aDataColR, jdouble *rDestRow, jint aRowNum, jint aColNum, jint aMidNum) {
+    jdouble *tBufL = aDataRowL;
+    for (jint i = 0; i < aRowNum; ++i, tBufL+=aMidNum) {
+        jdouble *tBufR = aDataColR;
+        for (jint j = 0; j < aColNum; ++j, tBufR+=aMidNum) {
+            jdouble rDot = 0.0;
+            for (jint k = 0; k < aMidNum; ++k) {
+                rDot += tBufL[k]*tBufR[k];
+            }
+            rDestRow[j] = rDot;
+        }
+        rDestRow += aColNum;
+    }
+}
+
+
+static inline void blockMatmul_jse(jdouble *aBlockL, jdouble *aBlockR, jdouble *rBlockD, jint aColNum, jint aMidNum) {
+    jdouble *tBufL = aBlockL;
+    for (jint i = 0; i < JSE_BLOCK_SIZE; ++i, tBufL+=aMidNum) {
+        jdouble *tBufR = aBlockR;
+        for (jint j = 0; j < JSE_BLOCK_SIZE; ++j, tBufR+=aMidNum) {
+            jdouble rDot = 0.0;
+            for (jint k = 0; k < JSE_BLOCK_SIZE; ++k) {
+                rDot += tBufL[k]*tBufR[k];
+            }
+            rBlockD[j] += rDot;
+        }
+        rBlockD += aColNum;
+    }
+}
+static inline void blockMatmulV_jse(jdouble *aBlockL, jdouble *aBlockR, jdouble *rBlockD, jint aColNum, jint aMidNum, jint aBlockRowNum, jint aBlockColNum, jint aBlockMidNum) {
+    jdouble *tBufL = aBlockL;
+    for (jint i = 0; i < aBlockRowNum; ++i, tBufL+=aMidNum) {
+        jdouble *tBufR = aBlockR;
+        for (jint j = 0; j < aBlockColNum; ++j, tBufR+=aMidNum) {
+            jdouble rDot = 0.0;
+            for (jint k = 0; k < aBlockMidNum; ++k) {
+                rDot += tBufL[k]*tBufR[k];
+            }
+            rBlockD[j] += rDot;
+        }
+        rBlockD += aColNum;
+    }
+}
+
+
+static inline void matmulBlockRC_jse(jdouble *aDataRowL, jdouble *aDataColR, jdouble *rDestRow, jboolean aRestDest, jint aRowNum, jint aColNum, jint aMidNum) {
+    if (aRestDest) {
+        fill_jse(rDestRow, 0.0, aRowNum*aColNum);
+    }
+    const jint blockRowNum = aRowNum / JSE_BLOCK_SIZE;
+    const jint blockColNum = aColNum / JSE_BLOCK_SIZE;
+    const jint blockMidNum = aMidNum / JSE_BLOCK_SIZE;
+    const jint restRowNum = aRowNum % JSE_BLOCK_SIZE;
+    const jint restColNum = aColNum % JSE_BLOCK_SIZE;
+    const jint restMidNum = aMidNum % JSE_BLOCK_SIZE;
+    
+    jdouble *tBufL = aDataRowL;
+    jdouble *tBufD = rDestRow;
+    for (jint rowB = 0; rowB <= blockRowNum; ++rowB, tBufL+=JSE_BLOCK_SIZE*aMidNum, tBufD+=JSE_BLOCK_SIZE*aColNum) {
+        const jint tBlockRowNum = rowB==blockRowNum ? restRowNum : JSE_BLOCK_SIZE;
+        if (tBlockRowNum == 0) continue;
+        jdouble *tBufR = aDataColR;
+        jdouble *tBufBufD = tBufD;
+        for (jint colB = 0; colB <= blockColNum; ++colB, tBufR+=JSE_BLOCK_SIZE*aMidNum, tBufBufD+=JSE_BLOCK_SIZE) {
+            const jint tBlockColNum = colB==blockColNum ? restColNum : JSE_BLOCK_SIZE;
+            if (tBlockColNum == 0) continue;
+            jdouble *tBufBufL = tBufL;
+            jdouble *tBufBufR = tBufR;
+            for (jint midB = 0; midB <= blockMidNum; ++midB, tBufBufL+=JSE_BLOCK_SIZE, tBufBufR+=JSE_BLOCK_SIZE) {
+                const jint tBlockMidNum = midB==blockMidNum ? restMidNum : JSE_BLOCK_SIZE;
+                if (tBlockMidNum == 0) continue;
+                if (colB==blockColNum || rowB==blockRowNum || midB==blockMidNum) {
+                    blockMatmulV_jse(tBufBufL, tBufBufR, tBufBufD, aColNum, aMidNum, tBlockRowNum, tBlockColNum, tBlockMidNum);
+                } else {
+                    blockMatmul_jse(tBufBufL, tBufBufR, tBufBufD, aColNum, aMidNum);
+                }
+            }
+        }
+    }
+}
 
 #ifdef __cplusplus
 }

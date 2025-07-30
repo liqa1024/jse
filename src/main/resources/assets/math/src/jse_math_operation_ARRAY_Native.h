@@ -47,6 +47,14 @@ JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_dotOfThis_1
 JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_norm1OfThis_1
   (JNIEnv *, jclass, jdoubleArray, jint, jint);
 
+/*
+ * Class:     jse_math_operation_ARRAY_Native
+ * Method:    matmulRC2Dest_
+ * Signature: ([DI[DI[DIIII)V
+ */
+JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRC2Dest_1
+  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jint, jint);
+
 #ifdef __cplusplus
 }
 #endif

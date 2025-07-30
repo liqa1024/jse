@@ -45,7 +45,9 @@ include_directories("$ENV{JSE_JNIUTIL_INCLUDE_DIR}")
 
 # native optimize
 set(JSE_BATCH_SIZE 64 CACHE STRING "batch size of inter loop")
+set(JSE_BLOCK_SIZE 128 CACHE STRING "block size of matrix multiply")
 add_definitions(-DJSE_BATCH_SIZE=${JSE_BATCH_SIZE})
+add_definitions(-DJSE_BLOCK_SIZE=${JSE_BLOCK_SIZE})
 
 option(JSE_OPT_MAX "Use the most aggressive optimization settings (like AVX512)" OFF)
 option(JSE_OPT_BASE "Use basic optimization settings" ON)

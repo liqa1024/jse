@@ -67,6 +67,22 @@ JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_norm1OfThis_
     return tOut;
 }
 
+JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRC2Dest_1(JNIEnv *aEnv, jclass aClazz,
+    jdoubleArray aDataRowL, jint aShiftL, jdoubleArray aDataColR, jint aShiftR,
+    jdoubleArray rDestRow, jint rShift, jint aRowNum, jint aColNum, jint aMidNum) {
+    // java array init
+    jdouble *tDataRowL = (jdouble *)getJArrayBuf(aEnv, aDataRowL);
+    jdouble *tDataColR = (jdouble *)getJArrayBuf(aEnv, aDataColR);
+    jdouble *tDestRow = (jdouble *)getJArrayBuf(aEnv, rDestRow);
+    
+    matmulRC_jse(tDataRowL+aShiftL, tDataColR+aShiftR, tDestRow+rShift, aRowNum, aColNum, aMidNum);
+    
+    // release java array
+    releaseJArrayBuf(aEnv, aDataRowL, tDataRowL, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aDataColR, tDataColR, JNI_ABORT);
+    releaseJArrayBuf(aEnv, rDestRow, tDestRow, 0);
+}
+
 #ifdef __cplusplus
 }
 #endif

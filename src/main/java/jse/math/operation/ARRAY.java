@@ -2292,5 +2292,15 @@ public class ARRAY {
             return norm1OfThis_(aThis, aShift, aLength);
         }
         private native static double norm1OfThis_(double[] aThis, int aShift, int aLength);
+        
+        public static void matmulRC2Dest(double[] aDataRowL, int aShiftL, double[] aDataColR, int aShiftR,
+                                         double[] rDestRow, int rShift, int aRowNum, int aColNum, int aMidNum) {
+            lengthCheck(aRowNum*aMidNum + aShiftL, aDataRowL.length);
+            lengthCheck(aMidNum*aColNum + aShiftR, aDataColR.length);
+            lengthCheck(aRowNum*aColNum + rShift, rDestRow.length);
+            matmulRC2Dest_(aDataRowL, aShiftL, aDataColR, aShiftR, rDestRow, rShift, aRowNum, aColNum, aMidNum);
+        }
+        private native static void matmulRC2Dest_(double[] aDataRowL, int aShiftL, double[] aDataColR, int aShiftR,
+                                                  double[] rDestRow, int rShift, int aRowNum, int aColNum, int aMidNum);
     }
 }
