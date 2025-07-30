@@ -83,6 +83,40 @@ static inline void fill_jse(jdouble *rArray, jdouble aValue, jint aLen) {
         rArray[i] = aValue;
     }
 }
+static inline void fillAB_jse(jdouble *rArrayA, jdouble *aArrayB, jint aLen) {
+    for (jint i = 0; i < aLen; ++i) {
+        rArrayA[i] = aArrayB[i];
+    }
+}
+
+static inline void matmulRC2This_jse(jdouble *rThisRowL, jdouble *aDataColR, jdouble *rBufRow, jint aRowNum, jint aColNum) {
+    jdouble *tBufL = rThisRowL;
+    for (jint i = 0; i < aRowNum; ++i, tBufL+=aColNum) {
+        fillAB_jse(rBufRow, tBufL, aColNum);
+        jdouble *tBufR = aDataColR;
+        for (jint j = 0; j < aColNum; ++j, tBufR+=aColNum) {
+            jdouble rDot = 0.0;
+            for (jint k = 0; k < aColNum; ++k) {
+                rDot += rBufRow[k]*tBufR[k];
+            }
+            tBufL[j] = rDot;
+        }
+    }
+}
+static inline void lmatmulCR2This_jse(jdouble *rThisColL, jdouble *aDataRowR, jdouble *rBufCol, jint aRowNum, jint aColNum) {
+    jdouble *tBufL = rThisColL;
+    for (jint j = 0; j < aColNum; ++j, tBufL+=aRowNum){
+        fillAB_jse(rBufCol, tBufL, aRowNum);
+        jdouble *tBufR = aDataRowR;
+        for (jint i = 0; i < aRowNum; ++i, tBufR+=aRowNum) {
+            jdouble rDot = 0.0;
+            for (jint k = 0; k < aRowNum; ++k) {
+                rDot += rBufCol[k]*tBufR[k];
+            }
+            tBufL[i] = rDot;
+        }
+    }
+}
 
 static inline void matmulRCR_jse(jdouble *aDataRowL, jdouble *aDataColR, jdouble *rDestRow, jint aRowNum, jint aColNum, jint aMidNum) {
     jdouble *tBufL = aDataRowL;

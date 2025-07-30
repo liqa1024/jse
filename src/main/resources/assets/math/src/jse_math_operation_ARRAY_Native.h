@@ -49,6 +49,22 @@ JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_norm1OfThis_
 
 /*
  * Class:     jse_math_operation_ARRAY_Native
+ * Method:    matmulRC2This_
+ * Signature: ([DI[DI[DII)V
+ */
+JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRC2This_1
+  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint);
+
+/*
+ * Class:     jse_math_operation_ARRAY_Native
+ * Method:    lmatmulCR2This_
+ * Signature: ([DI[DI[DII)V
+ */
+JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_lmatmulCR2This_1
+  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint);
+
+/*
+ * Class:     jse_math_operation_ARRAY_Native
  * Method:    matmulRCR2Dest_
  * Signature: ([DI[DI[DIIII)V
  */

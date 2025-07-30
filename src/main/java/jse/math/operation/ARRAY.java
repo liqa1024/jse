@@ -2293,6 +2293,22 @@ public class ARRAY {
         }
         private native static double norm1OfThis_(double[] aThis, int aShift, int aLength);
         
+        public static void matmulRC2This(double[] rThisRowL, int aShiftL, double[] aDataColR, int aShiftR, double[] rBufRow, int aRowNum, int aColNum) {
+            lengthCheck(aRowNum*aColNum + aShiftL, rThisRowL.length);
+            lengthCheck(aColNum*aColNum + aShiftR, aDataColR.length);
+            lengthCheck(aColNum, rBufRow.length);
+            matmulRC2This_(rThisRowL, aShiftL, aDataColR, aShiftR, rBufRow, aRowNum, aColNum);
+        }
+        private native static void matmulRC2This_(double[] rThisRowL, int aShiftL, double[] aDataColR, int aShiftR, double[] rBufRow, int aRowNum, int aColNum);
+        
+        public static void lmatmulCR2This(double[] rThisColL, int aShiftL, double[] aDataRowR, int aShiftR, double[] rBufCol, int aRowNum, int aColNum) {
+            lengthCheck(aRowNum*aColNum + aShiftL, rThisColL.length);
+            lengthCheck(aRowNum*aRowNum + aShiftR, aDataRowR.length);
+            lengthCheck(aRowNum, rBufCol.length);
+            lmatmulCR2This_(rThisColL, aShiftL, aDataRowR, aShiftR, rBufCol, aRowNum, aColNum);
+        }
+        private native static void lmatmulCR2This_(double[] rThisColL, int aShiftL, double[] aDataRowR, int aShiftR, double[] rBufCol, int aRowNum, int aColNum);
+        
         public static void matmulRCR2Dest(double[] aDataRowL, int aShiftL, double[] aDataColR, int aShiftR,
                                           double[] rDestRow, int rShiftD, int aRowNum, int aColNum, int aMidNum) {
             lengthCheck(aRowNum*aMidNum + aShiftL, aDataRowL.length);
