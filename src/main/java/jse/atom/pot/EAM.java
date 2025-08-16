@@ -4,8 +4,9 @@ import jse.atom.IPairPotential;
 import jse.cache.VectorCache;
 import jse.code.IO;
 import jse.math.MathEX;
-import jse.math.function.Func1;
+import jse.math.function.ConstBoundFunc1;
 import jse.math.function.IFunc1;
+import jse.math.function.ZeroBoundFunc1;
 import jse.math.vector.IVector;
 import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
@@ -31,7 +32,7 @@ import static jse.code.CS.UNITS;
  * <p>
  * 这里不去专门优化单粒子移动、翻转、种类交换时的能量差的计算，因为这需要缓存电荷密度值
  * <p>
- * 这里采用和 lammps 类似的方法来实现数值函数样条的计算。
+ * 这里采用简单的线性插值的方法获取数值函数值，而不是样条，因此某些情况下可能会有精度问题。
  *
  * @author liqa
  */
@@ -99,18 +100,25 @@ public class EAM implements IPairPotential {
                 double tRCut = Double.parseDouble(tTokens[4]);
                 mCutsq = tRCut*tRCut;
                 mCut = tRCut;
-                mFRho = new IFunc1[] {Func1.zeros(0, tDRho, tNRho)};
-                mRhoR = new IFunc1[][] {{Func1.zeros(0, tDR, tNR)}};
-                mPhiR = new IFunc1[][] {{Func1.zeros(0, tDR, tNR)}};
+                mFRho = new IFunc1[] {ConstBoundFunc1.zeros(0, tDRho, tNRho)};
+                mRhoR = new IFunc1[][] {{ConstBoundFunc1.zeros(0, tDR, tNR)}};
+                mPhiR = new IFunc1[][] {{ConstBoundFunc1.zeros(0, tDR, tNR)}};
                 IVector tData = readData_(tReader, tNRho+tNR+tNR);
                 mFRho[0].fill(tData.subVec(0, tNRho));
                 mPhiR[0][0].fill(tData.subVec(tNRho, tNRho+tNR));
                 mRhoR[0][0].fill(tData.subVec(tNRho+tNR, tNRho+tNR+tNR));
                 // Z(r) -> phi(r)
                 mPhiR[0][0].operation().mapFull2this((z, r) -> EAM_MUL * z*z / r);
-                mFRhoGrad = new IFunc1[] {mFRho[0].operation().gradient(true)};
-                mRhoRGrad = new IFunc1[][] {{mRhoR[0][0].operation().gradient(true)}};
-                mPhiRGrad = new IFunc1[][] {{mPhiR[0][0].operation().gradient(true)}};
+                mFRhoGrad = new IFunc1[] {ZeroBoundFunc1.zeros(tDRho*0.5, tDRho, tNRho-1)};
+                mRhoRGrad = new IFunc1[][] {{ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1)}};
+                mPhiRGrad = new IFunc1[][] {{ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1)}};
+                for (int i = 0; i < tNRho-1; ++i) {
+                    mFRhoGrad[0].set(i, (mFRho[0].get(i+1) - mFRho[0].get(i)) / tDRho);
+                }
+                for (int i = 0; i < tNR-1; ++i) {
+                    mRhoRGrad[0][0].set(i, (mRhoR[0][0].get(i+1) - mRhoR[0][0].get(i)) / tDR);
+                    mPhiRGrad[0][0].set(i, (mPhiR[0][0].get(i+1) - mPhiR[0][0].get(i)) / tDR);
+                }
                 break;
             }
             case "alloy": case "fs": case "adp": {
@@ -147,32 +155,44 @@ public class EAM implements IPairPotential {
                     mLatticeConsts[i] = Double.parseDouble(tTokens[2]);
                     mLatticeTypes[i] = tTokens[3];
                     IVector tData = readData_(tReader, tNRho + (tIsFs?(mTypeNum*tNR):tNR));
-                    mFRho[i] = Func1.zeros(0, tDRho, tNRho);
+                    mFRho[i] = ConstBoundFunc1.zeros(0, tDRho, tNRho);
                     mFRho[i].fill(tData.subVec(0, tNRho));
-                    mFRhoGrad[i] = mFRho[i].operation().gradient(true);
+                    mFRhoGrad[i] = ZeroBoundFunc1.zeros(tDRho*0.5, tDRho, tNRho-1);
+                    for (int k = 0; k < tNRho-1; ++k) {
+                        mFRhoGrad[i].set(k, (mFRho[i].get(k+1) - mFRho[i].get(k)) / tDRho);
+                    }
                     if (tIsFs) {
                         int tShift = tNRho;
                         for (int j = 0; j < mTypeNum; ++j) {
-                            mRhoR[j][i] = Func1.zeros(0, tDR, tNR);
+                            mRhoR[j][i] = ConstBoundFunc1.zeros(0, tDR, tNR);
                             mRhoR[j][i].fill(tData.subVec(tShift, tShift+tNR));
-                            mRhoRGrad[j][i] = mRhoR[j][i].operation().gradient(true);
+                            mRhoRGrad[j][i] = ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1);
+                            for (int k = 0; k < tNRho-1; ++k) {
+                                mRhoRGrad[j][i].set(k, (mRhoR[j][i].get(k+1) - mRhoR[j][i].get(k)) / tDR);
+                            }
                             tShift += tNR;
                         }
                     } else {
-                        mRhoR[0][i] = Func1.zeros(0, tDR, tNR);
+                        mRhoR[0][i] = ConstBoundFunc1.zeros(0, tDR, tNR);
                         mRhoR[0][i].fill(tData.subVec(tNRho, tNRho+tNR));
-                        mRhoRGrad[0][i] = mRhoR[0][i].operation().gradient(true);
+                        mRhoRGrad[0][i] = ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1);
+                        for (int k = 0; k < tNRho-1; ++k) {
+                            mRhoRGrad[0][i].set(k, (mRhoR[0][i].get(k+1) - mRhoR[0][i].get(k)) / tDR);
+                        }
                     }
                 }
                 IVector tData = readData_(tReader, (1+mTypeNum)*mTypeNum/2 * tNR);
                 int tShift = 0;
                 for (int i = 0; i < mTypeNum; ++i) {
                     for (int j = 0; j <= i; ++j) {
-                        mPhiR[i][j] = Func1.zeros(0, tDR, tNR);
+                        mPhiR[i][j] = ConstBoundFunc1.zeros(0, tDR, tNR);
                         mPhiR[i][j].fill(tData.subVec(tShift, tShift+tNR));
                         // r * phi(r) -> phi(r)
                         mPhiR[i][j].f().div2this(mPhiR[i][j].x());
-                        mPhiRGrad[i][j] = mPhiR[i][j].operation().gradient(true);
+                        mPhiRGrad[i][j] = ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1);
+                        for (int k = 0; k < tNRho-1; ++k) {
+                            mPhiRGrad[i][j].set(k, (mPhiR[i][j].get(k+1) - mPhiR[i][j].get(k)) / tDR);
+                        }
                         if (j != i) {
                             mPhiR[j][i] = mPhiR[i][j];
                             mPhiRGrad[j][i] = mPhiRGrad[i][j];
