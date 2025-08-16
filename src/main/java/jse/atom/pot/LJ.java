@@ -131,12 +131,17 @@ public class LJ implements IPairPotential {
      * {@inheritDoc}
      * @return {@inheritDoc}
      */
-    @Override public boolean newton() {return true;}
+    @Override public boolean manybody() {return false;}
     /**
      * {@inheritDoc}
      * @return {@inheritDoc}
      */
     @Override public boolean neighborListChecked() {return true;}
+    /**
+     * {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override public boolean neighborListHalf() {return true;}
 
     
     private int mThreadNum = 1;

@@ -72,6 +72,9 @@ public interface IPairPotential extends IPotential, IHasSymbol {
     @FunctionalInterface interface IEnergyAccumulator {
         void add(int aThreadID, int cIdx, int aIdx, double aEnergy);
     }
+    @FunctionalInterface interface IEnergyPartAccumulator {
+        void add(int aThreadID, int cIdx, double aEnergy);
+    }
     /** 力累加接口，用于接收力计算结果 */
     @FunctionalInterface interface IForceAccumulator {
         void add(int aThreadID, int cIdx, int aIdx, double aForceX, double aForceY, double aForceZ);
@@ -95,15 +98,12 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      */
     default double rcutMax() {return -1;}
     /**
-     * 标记此势函数是否符合牛顿第三定律，即，原子的力是否能够分解成每个原子之间的对力之和，
-     * 并且这些相互的对力是大小相同方向相反的
-     * <p>
-     * 在这里还要求总能量是所有对的能量之和，而每原子能量定义是占有这些对的一半的能量；
-     * 在满足这个要求的情况下，计算单粒子移动、翻转、种类交换时的能量差可以跟进一步的优化，
+     * 标记此势函数是否是多体势，当不是多体势时，能量可以表示为每两个原子对之间的能量和。
+     * 此时计算单粒子移动、翻转、种类交换时的能量差可以更进一步的优化，
      * 直接只需要考虑修改的原子自身的能量变化即可
-     * @return 此势函数是否符合牛顿第三定律
+     * @return 此势函数是否是多体势
      */
-    default boolean newton() {return false;}
+    default boolean manybody() {return true;}
     /**
      * 标记此势函数内部的通用近邻遍历内核实现是否已经检查了超出截断的原子，
      * 如果已经检查了则外部实现可以不再进行二次检查。
@@ -111,11 +111,10 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      */
     default boolean neighborListChecked() {return false;}
     /**
-     * 标记此势函数内部的通用近邻遍历内核实现是否总是认为是一半的近邻列表遍历，
-     * 默认会和 {@link #newton()} 标记一致
+     * 标记此势函数内部的通用近邻遍历内核实现是否总是认为是一半的近邻列表遍历
      * @return 此势函数内核实现中是否认为是一半的近邻列表遍历
      */
-    default boolean neighborListHalf() {return newton();}
+    default boolean neighborListHalf() {return false;}
     
     
     /**
@@ -299,13 +298,12 @@ public interface IPairPotential extends IPotential, IHasSymbol {
         int tThreadNum = threadNumber();
         aAPC.setThreadNumber(tThreadNum);
         Vector rEngPar = VectorCache.getZeros(tThreadNum);
-        final double tMul = neighborListHalf() ? 0.5 : 1.0;
         final boolean tNLChecked = neighborListChecked();
-        calEnergy(aAPC.atomNumber(), (initDo, finalDo, neighborListDo) -> {
+        calEnergyPart(aAPC.atomNumber(), (initDo, finalDo, neighborListDo) -> {
             aAPC.pool_().parforWithException(aIndices.size(), initDo, finalDo, (i, threadID) -> {
                 final int cIdx = aIndices.get(i);
                 final int cType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(cIdx));
-                neighborListDo.run(threadID, i, cType, (rmax, dxyzTypeDo) -> {
+                neighborListDo.run(threadID, cIdx, cType, (rmax, dxyzTypeDo) -> {
                     // 计算部分原子能量总是不使用半数遍历优化
                     aAPC.nl_().forEachNeighbor(cIdx, rmax, false, !tNLChecked, (dx, dy, dz, idx) -> {
                         int tType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(idx));
@@ -313,8 +311,8 @@ public interface IPairPotential extends IPotential, IHasSymbol {
                     });
                 });
             });
-        }, (threadID, cIdx, idx, eng) -> {
-            rEngPar.add(threadID, eng*tMul);
+        }, (threadID, cIdx, eng) -> {
+            rEngPar.add(threadID, eng);
         });
         double rEng = rEngPar.sum();
         VectorCache.returnVec(rEngPar);
@@ -374,8 +372,8 @@ public interface IPairPotential extends IPotential, IHasSymbol {
         }
         XYZ oXYZ = new XYZ(aAPC.atomDataXYZ_().row(aI));
         XYZ nXYZ = oXYZ.plus(aDx, aDy, aDz);
-        // newton 势只需要考虑移动中心原子即可
-        if (newton()) {
+        // 非 manybody 势只需要考虑移动中心原子即可
+        if (!manybody()) {
             ISlice tNL = ISlice.of(aI);
             double oEng = calEnergyAt(aAPC, tNL, aTypeMap);
             double nEng = calEnergyAt(aAPC.setAtomXYZ(aI, nXYZ), tNL, aTypeMap);
@@ -520,8 +518,8 @@ public interface IPairPotential extends IPotential, IHasSymbol {
             if (aRestoreAPC) aAPC.setAtomType(aI, oTypeI).setAtomType(aJ, oTypeJ);
             return nEng - oEng;
         }
-        // newton 势只需要考虑交换的两原子即可
-        if (newton()) {
+        // 非 manybody 势只需要考虑交换的两原子即可
+        if (!manybody()) {
             ISlice tNL = ISlice.of(aI, aJ);
             double oEng = calEnergyAt(aAPC, tNL, aTypeMap);
             double nEng = calEnergyAt(aAPC.setAtomType(aI, oTypeJ).setAtomType(aJ, oTypeI), tNL, aTypeMap);
@@ -631,8 +629,8 @@ public interface IPairPotential extends IPotential, IHasSymbol {
             if (aRestoreAPC) aAPC.setAtomType(aI, oType);
             return nEng - oEng;
         }
-        // newton 势只需要考虑翻转中心原子即可
-        if (newton()) {
+        // 非 manybody 势只需要考虑翻转中心原子即可
+        if (!manybody()) {
             ISlice tNL = ISlice.of(aI);
             double oEng = calEnergyAt(aAPC, tNL, aTypeMap);
             double nEng = calEnergyAt(aAPC.setAtomType(aI, aType), tNL, aTypeMap);
@@ -714,9 +712,32 @@ public interface IPairPotential extends IPotential, IHasSymbol {
         try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, threadNumber())) {return calEnergyDiffFlip(tAPC, aI, aType, false, tTypeMap);}
     }
     
+    /**
+     * 通过此势函数计算给定的部分的近邻列表获取器包含的原子能量，将计算值传入 rEnergyAccumulator；
+     * 由于是部分的，因此近邻列表总是完整的
+     * @param aAtomNumber 遍历中涉及到的最大的原子数 {@code (idx < atomNumber)}
+     * @param aNeighborListGetter 通用的近邻列表获取器
+     * @param rEnergyAccumulator 接受能量的收集器
+     * @throws Exception 特殊实现下可选的抛出异常
+     */
+    @ApiStatus.Experimental
+    default void calEnergyPart(int aAtomNumber, INeighborListGetter aNeighborListGetter, IEnergyPartAccumulator rEnergyAccumulator) throws Exception {
+        final double tMul = neighborListHalf() ? 0.5 : 1.0;
+        calEnergy(aAtomNumber, aNeighborListGetter, (threadID, cIdx, idx, eng) -> {
+            // 对于根据键累加的能量增加二次累加修正
+            if (cIdx>=0 && idx>=0) {
+                rEnergyAccumulator.add(threadID, cIdx, eng*tMul);
+            } else
+            if (cIdx>=0) {
+                rEnergyAccumulator.add(threadID, cIdx, eng);
+            } else {
+                throw new IllegalStateException();
+            }
+        });
+    }
     
     /**
-     * 通过此势函数计算并给定近邻列表获取器包含的原子能量，将计算值传入 rEnergyAccumulator
+     * 通过此势函数计算给定近邻列表获取器包含的原子能量，将计算值传入 rEnergyAccumulator
      * @param aAtomNumber 遍历中涉及到的最大的原子数 {@code (idx < atomNumber)}
      * @param aNeighborListGetter 通用的近邻列表获取器
      * @param rEnergyAccumulator 接受能量的收集器
@@ -726,7 +747,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
     void calEnergy(int aAtomNumber, INeighborListGetter aNeighborListGetter, IEnergyAccumulator rEnergyAccumulator) throws Exception;
     
     /**
-     * 通过此势函数计算并给定近邻列表获取器包含的原子的能量力和位力，分别将计算值传入 rEnergyAccumulator, rForceAccumulator, rVirialAccumulator
+     * 通过此势函数计算给定近邻列表获取器包含的原子的能量力和位力，分别将计算值传入 rEnergyAccumulator, rForceAccumulator, rVirialAccumulator
      * @param aAtomNumber 遍历中涉及到的最大的原子数 {@code (idx < atomNumber)}
      * @param aNeighborListGetter 通用的近邻列表获取器
      * @param rEnergyAccumulator 接受能量的收集器，{@code null} 表示不需要此值
