@@ -4,9 +4,6 @@ import jse.atom.IPairPotential;
 import jse.cache.VectorCache;
 import jse.code.IO;
 import jse.math.MathEX;
-import jse.math.function.ConstBoundFunc1;
-import jse.math.function.IFunc1;
-import jse.math.function.ZeroBoundFunc1;
 import jse.math.vector.IVector;
 import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
@@ -32,7 +29,7 @@ import static jse.code.CS.UNITS;
  * <p>
  * 这里不去专门优化单粒子移动、翻转、种类交换时的能量差的计算，因为这需要缓存电荷密度值
  * <p>
- * 这里采用简单的线性插值的方法获取数值函数值，而不是样条，因此某些情况下可能会有精度问题。
+ * 这里采用 lammps 使用的样条算法进行插值。
  *
  * @author liqa
  */
@@ -50,11 +47,72 @@ public class EAM implements IPairPotential {
         }
     }
     
+    /** lammps 中使用的快速样条 */
+    static class FastSpline {
+        private final double mDx;
+        private final int mNx;
+        private final double[][] mSplines;
+        FastSpline(double aDx, IVector aData) {
+            mDx = aDx;
+            mNx = aData.size();
+            mSplines = new double[mNx][7];
+            
+            // 样条参数计算，参考 lammps 相关代码
+            for (int m = 0; m < mNx; ++m) {
+                mSplines[m][6] = aData.get(m);
+            }
+            mSplines[0][5] = mSplines[1][6] - mSplines[0][6];
+            mSplines[1][5] = 0.5 * (mSplines[2][6] - mSplines[0][6]);
+            mSplines[mNx-2][5] = 0.5 * (mSplines[mNx-1][6] - mSplines[mNx-3][6]);
+            mSplines[mNx-1][5] = mSplines[mNx-1][6] - mSplines[mNx-2][6];
+            
+            for (int m = 2; m < mNx-2; ++m) {
+                mSplines[m][5] = ((mSplines[m-2][6] - mSplines[m+2][6]) + 8.0*(mSplines[m+1][6] - mSplines[m-1][6])) / 12.0;
+            }
+            for (int m = 0; m < mNx-1; ++m) {
+                mSplines[m][4] = 3.0*(mSplines[m+1][6] - mSplines[m][6]) - 2.0*mSplines[m][5] - mSplines[m+1][5];
+                mSplines[m][3] = mSplines[m][5] + mSplines[m+1][5] - 2.0*(mSplines[m+1][6] - mSplines[m][6]);
+            }
+            mSplines[mNx-1][4] = 0.0;
+            mSplines[mNx-1][3] = 0.0;
+            
+            for (int m = 0; m < mNx; ++m) {
+                mSplines[m][2] = mSplines[m][5]/mDx;
+                mSplines[m][1] = 2.0*mSplines[m][4]/mDx;
+                mSplines[m][0] = 3.0*mSplines[m][3]/mDx;
+            }
+        }
+        
+        double subs(double aX) {
+            double p = aX/mDx;
+            int m = MathEX.Code.floor2int(p);
+            if (m >= mNx) m = mNx-1;
+            p -= m;
+            if (p > 1.0) p = 1.0;
+            double[] coeff = mSplines[m];
+            return ((coeff[3]*p + coeff[4])*p + coeff[5])*p + coeff[6];
+        }
+        double subsGrad(double aX) {
+            double p = aX/mDx;
+            int m = MathEX.Code.floor2int(p);
+            if (m >= mNx) m = mNx-1;
+            p -= m;
+            if (p > 1.0) p = 1.0;
+            double[] coeff = mSplines[m];
+            return (coeff[0]*p + coeff[1])*p + coeff[2];
+        }
+    }
+    
     private final double mCut, mCutsq;
+    private final double mDRho, mDR;
+    private final int mNRho, mNR;
     private final String mHeader;
-    private final IFunc1[] mFRho, mFRhoGrad;
-    private final IFunc1[][] mRhoR, mPhiR, mRhoRGrad, mPhiRGrad;
-    private final IFunc1 @Nullable[][] mUR, mWR, mURGrad, mWRGrad;
+    private final IVector[] mFRho;
+    private final IVector[][] mRhoR, mRPhiR;
+    private final IVector @Nullable[][] mUR, mWR;
+    private final FastSpline[] mFRhoSpline;
+    private final FastSpline[][] mRhoRSpline, mRPhiRSpline;
+    private final FastSpline @Nullable[][] mURSpline, mWRSpline;
     private final int mTypeNum;
     private final String[] mSymbols, mLatticeTypes;
     private final int[] mAtomicNumbers;
@@ -94,33 +152,26 @@ public class EAM implements IPairPotential {
                 mLatticeConsts = new double[] {Double.parseDouble(tTokens[2])};
                 mLatticeTypes = new String[] {tTokens[3]};
                 tTokens = IO.Text.splitBlank(tReader.readLine());
-                int tNRho = Integer.parseInt(tTokens[0]);
-                double tDRho = Double.parseDouble(tTokens[1]);
-                int tNR = Integer.parseInt(tTokens[2]);
-                double tDR = Double.parseDouble(tTokens[3]);
+                mNRho = Integer.parseInt(tTokens[0]);
+                mDRho = Double.parseDouble(tTokens[1]);
+                mNR = Integer.parseInt(tTokens[2]);
+                mDR = Double.parseDouble(tTokens[3]);
                 double tRCut = Double.parseDouble(tTokens[4]);
                 mCutsq = tRCut*tRCut;
                 mCut = tRCut;
-                mFRho = new IFunc1[] {ConstBoundFunc1.zeros(0, tDRho, tNRho)};
-                mRhoR = new IFunc1[][] {{ConstBoundFunc1.zeros(0, tDR, tNR)}};
-                mPhiR = new IFunc1[][] {{ConstBoundFunc1.zeros(0, tDR, tNR)}};
-                IVector tData = readData_(tReader, tNRho+tNR+tNR);
-                mFRho[0].fill(tData.subVec(0, tNRho));
-                mPhiR[0][0].fill(tData.subVec(tNRho, tNRho+tNR));
-                mRhoR[0][0].fill(tData.subVec(tNRho+tNR, tNRho+tNR+tNR));
-                // Z(r) -> phi(r)
-                mPhiR[0][0].operation().mapFull2this((z, r) -> EAM_MUL * z*z / r);
-                mFRhoGrad = new IFunc1[] {ZeroBoundFunc1.zeros(tDRho*0.5, tDRho, tNRho-1)};
-                mRhoRGrad = new IFunc1[][] {{ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1)}};
-                mPhiRGrad = new IFunc1[][] {{ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1)}};
-                for (int i = 0; i < tNRho-1; ++i) {
-                    mFRhoGrad[0].set(i, (mFRho[0].get(i+1) - mFRho[0].get(i)) / tDRho);
-                }
-                for (int i = 0; i < tNR-1; ++i) {
-                    mRhoRGrad[0][0].set(i, (mRhoR[0][0].get(i+1) - mRhoR[0][0].get(i)) / tDR);
-                    mPhiRGrad[0][0].set(i, (mPhiR[0][0].get(i+1) - mPhiR[0][0].get(i)) / tDR);
-                }
-                mUR = null; mWR = null; mURGrad = null; mWRGrad = null;
+                mFRho = new IVector[1];
+                mRhoR = new IVector[1][1];
+                mRPhiR = new IVector[1][1];
+                IVector tData = readData_(tReader, mNRho+mNR+mNR);
+                mFRho[0] = tData.subVec(0, mNRho);
+                mRPhiR[0][0] = tData.subVec(mNRho, mNRho+mNR);
+                mRhoR[0][0] = tData.subVec(mNRho+mNR, mNRho+mNR+mNR);
+                // Z(r) -> r*phi(r)
+                mRPhiR[0][0].operation().map2this(z -> EAM_MUL * z*z);
+                mFRhoSpline = new FastSpline[] {new FastSpline(mDRho, mFRho[0])};
+                mRhoRSpline = new FastSpline[][] {{new FastSpline(mDR, mRhoR[0][0])}};
+                mRPhiRSpline = new FastSpline[][] {{new FastSpline(mDR, mRPhiR[0][0])}};
+                mUR = null; mWR = null; mURSpline = null; mWRSpline = null;
                 break;
             }
             case "alloy": case "fs": case "adp": {
@@ -138,106 +189,80 @@ public class EAM implements IPairPotential {
                 mLatticeConsts = new double[mTypeNum];
                 mLatticeTypes = new String[mTypeNum];
                 tTokens = IO.Text.splitBlank(tReader.readLine());
-                int tNRho = Integer.parseInt(tTokens[0]);
-                double tDRho = Double.parseDouble(tTokens[1]);
-                int tNR = Integer.parseInt(tTokens[2]);
-                double tDR = Double.parseDouble(tTokens[3]);
+                mNRho = Integer.parseInt(tTokens[0]);
+                mDRho = Double.parseDouble(tTokens[1]);
+                mNR = Integer.parseInt(tTokens[2]);
+                mDR = Double.parseDouble(tTokens[3]);
                 double tRCut = Double.parseDouble(tTokens[4]);
                 mCutsq = tRCut*tRCut;
                 mCut = tRCut;
-                mFRho = new IFunc1[mTypeNum];
-                mRhoR = new IFunc1[tIsFs?mTypeNum:1][mTypeNum];
-                mPhiR = new IFunc1[mTypeNum][mTypeNum];
-                mFRhoGrad = new IFunc1[mTypeNum];
-                mRhoRGrad = new IFunc1[tIsFs?mTypeNum:1][mTypeNum];
-                mPhiRGrad = new IFunc1[mTypeNum][mTypeNum];
+                mFRho = new IVector[mTypeNum];
+                mRhoR = new IVector[tIsFs?mTypeNum:1][mTypeNum];
+                mRPhiR = new IVector[mTypeNum][mTypeNum];
+                mFRhoSpline = new FastSpline[mTypeNum];
+                mRhoRSpline = new FastSpline[tIsFs?mTypeNum:1][mTypeNum];
+                mRPhiRSpline = new FastSpline[mTypeNum][mTypeNum];
                 for (int i = 0; i < mTypeNum; ++i) {
                     tTokens = IO.Text.splitBlank(tReader.readLine());
                     mAtomicNumbers[i] = Integer.parseInt(tTokens[0]);
                     mMasses[i] = Double.parseDouble(tTokens[1]);
                     mLatticeConsts[i] = Double.parseDouble(tTokens[2]);
                     mLatticeTypes[i] = tTokens[3];
-                    IVector tData = readData_(tReader, tNRho + (tIsFs?(mTypeNum*tNR):tNR));
-                    mFRho[i] = ConstBoundFunc1.zeros(0, tDRho, tNRho);
-                    mFRho[i].fill(tData.subVec(0, tNRho));
-                    mFRhoGrad[i] = ZeroBoundFunc1.zeros(tDRho*0.5, tDRho, tNRho-1);
-                    for (int k = 0; k < tNRho-1; ++k) {
-                        mFRhoGrad[i].set(k, (mFRho[i].get(k+1) - mFRho[i].get(k)) / tDRho);
-                    }
+                    IVector tData = readData_(tReader, mNRho + (tIsFs?(mTypeNum*mNR):mNR));
+                    mFRho[i] = tData.subVec(0, mNRho);
+                    mFRhoSpline[i] = new FastSpline(mDRho, mFRho[i]);
                     if (tIsFs) {
-                        int tShift = tNRho;
+                        int tShift = mNRho;
                         for (int j = 0; j < mTypeNum; ++j) {
-                            mRhoR[j][i] = ConstBoundFunc1.zeros(0, tDR, tNR);
-                            mRhoR[j][i].fill(tData.subVec(tShift, tShift+tNR));
-                            mRhoRGrad[j][i] = ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1);
-                            for (int k = 0; k < tNRho-1; ++k) {
-                                mRhoRGrad[j][i].set(k, (mRhoR[j][i].get(k+1) - mRhoR[j][i].get(k)) / tDR);
-                            }
-                            tShift += tNR;
+                            mRhoR[j][i] = tData.subVec(tShift, tShift+mNR);
+                            mRhoRSpline[j][i] = new FastSpline(mDR, mRhoR[j][i]);
+                            tShift += mNR;
                         }
                     } else {
-                        mRhoR[0][i] = ConstBoundFunc1.zeros(0, tDR, tNR);
-                        mRhoR[0][i].fill(tData.subVec(tNRho, tNRho+tNR));
-                        mRhoRGrad[0][i] = ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1);
-                        for (int k = 0; k < tNR-1; ++k) {
-                            mRhoRGrad[0][i].set(k, (mRhoR[0][i].get(k+1) - mRhoR[0][i].get(k)) / tDR);
-                        }
+                        mRhoR[0][i] = tData.subVec(mNRho, mNRho+mNR);
+                        mRhoRSpline[0][i] = new FastSpline(mDR, mRhoR[0][i]);
                     }
                 }
-                IVector tData = readData_(tReader, (1+mTypeNum)*mTypeNum/2 * tNR);
+                IVector tData = readData_(tReader, (1+mTypeNum)*mTypeNum/2 * mNR);
                 int tShift = 0;
                 for (int i = 0; i < mTypeNum; ++i) for (int j = 0; j <= i; ++j) {
-                    mPhiR[i][j] = ConstBoundFunc1.zeros(0, tDR, tNR);
-                    mPhiR[i][j].fill(tData.subVec(tShift, tShift+tNR));
-                    // r * phi(r) -> phi(r)
-                    mPhiR[i][j].f().div2this(mPhiR[i][j].x());
-                    mPhiRGrad[i][j] = ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1);
-                    for (int k = 0; k < tNR-1; ++k) {
-                        mPhiRGrad[i][j].set(k, (mPhiR[i][j].get(k+1) - mPhiR[i][j].get(k)) / tDR);
-                    }
+                    mRPhiR[i][j] = tData.subVec(tShift, tShift+mNR);
+                    mRPhiRSpline[i][j] = new FastSpline(mDR, mRPhiR[i][j]);
                     if (j != i) {
-                        mPhiR[j][i] = mPhiR[i][j];
-                        mPhiRGrad[j][i] = mPhiRGrad[i][j];
+                        mRPhiR[j][i] = mRPhiR[i][j];
+                        mRPhiRSpline[j][i] = mRPhiRSpline[i][j];
                     }
-                    tShift += tNR;
+                    tShift += mNR;
                 }
                 if (!tIsAdp) {
-                    mUR = null; mWR = null; mURGrad = null; mWRGrad = null;
+                    mUR = null; mWR = null; mURSpline = null; mWRSpline = null;
                     break;
                 }
-                mUR = new IFunc1[mTypeNum][mTypeNum];
-                mWR = new IFunc1[mTypeNum][mTypeNum];
-                mURGrad = new IFunc1[mTypeNum][mTypeNum];
-                mWRGrad = new IFunc1[mTypeNum][mTypeNum];
-                tData = readData_(tReader, (1+mTypeNum)*mTypeNum/2 * tNR);
+                mUR = new IVector[mTypeNum][mTypeNum];
+                mWR = new IVector[mTypeNum][mTypeNum];
+                mURSpline = new FastSpline[mTypeNum][mTypeNum];
+                mWRSpline = new FastSpline[mTypeNum][mTypeNum];
+                tData = readData_(tReader, (1+mTypeNum)*mTypeNum/2 * mNR);
                 tShift = 0;
                 for (int i = 0; i < mTypeNum; ++i) for (int j = 0; j <= i; ++j) {
-                    mUR[i][j] = ConstBoundFunc1.zeros(0, tDR, tNR);
-                    mUR[i][j].fill(tData.subVec(tShift, tShift+tNR));
-                    mURGrad[i][j] = ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1);
-                    for (int k = 0; k < tNR-1; ++k) {
-                        mURGrad[i][j].set(k, (mUR[i][j].get(k+1) - mUR[i][j].get(k)) / tDR);
-                    }
+                    mUR[i][j] = tData.subVec(tShift, tShift+mNR);
+                    mURSpline[i][j] = new FastSpline(mDR, mUR[i][j]);
                     if (j != i) {
                         mUR[j][i] = mUR[i][j];
-                        mURGrad[j][i] = mURGrad[i][j];
+                        mURSpline[j][i] = mURSpline[i][j];
                     }
-                    tShift += tNR;
+                    tShift += mNR;
                 }
-                tData = readData_(tReader, (1+mTypeNum)*mTypeNum/2 * tNR);
+                tData = readData_(tReader, (1+mTypeNum)*mTypeNum/2 * mNR);
                 tShift = 0;
                 for (int i = 0; i < mTypeNum; ++i) for (int j = 0; j <= i; ++j) {
-                    mWR[i][j] = ConstBoundFunc1.zeros(0, tDR, tNR);
-                    mWR[i][j].fill(tData.subVec(tShift, tShift+tNR));
-                    mWRGrad[i][j] = ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1);
-                    for (int k = 0; k < tNR-1; ++k) {
-                        mWRGrad[i][j].set(k, (mWR[i][j].get(k+1) - mWR[i][j].get(k)) / tDR);
-                    }
+                    mWR[i][j] = tData.subVec(tShift, tShift+mNR);
+                    mWRSpline[i][j] = new FastSpline(mDR, mWR[i][j]);
                     if (j != i) {
                         mWR[j][i] = mWR[i][j];
-                        mWRGrad[j][i] = mWRGrad[i][j];
+                        mWRSpline[j][i] = mWRSpline[i][j];
                     }
-                    tShift += tNR;
+                    tShift += mNR;
                 }
                 break;
             }
@@ -341,17 +366,19 @@ public class EAM implements IPairPotential {
                 double rsq = dx*dx + dy*dy + dz*dz;
                 if (rsq >= mCutsq) return;
                 double r = MathEX.Fast.sqrt(rsq);
-                double deng = 0.5 * mPhiR[cType-1][type-1].subs(r);
+                double deng = 0.5 * mRPhiRSpline[cType-1][type-1].subs(r) / r;
                 rEnergyAccumulator.add(threadID, cIdx, deng);
-                tRho.add(cIdx, mRhoR[mRhoR.length==1?0:(cType-1)][type-1].subs(r));
+                tRho.add(cIdx, mRhoRSpline[mRhoR.length==1?0:(cType-1)][type-1].subs(r));
                 if (mUR != null) {
-                    double u = mUR[cType-1][type-1].subs(r);
+                    assert mURSpline != null;
+                    double u = mURSpline[cType-1][type-1].subs(r);
                     tMuX.add(cIdx, u*dx);
                     tMuY.add(cIdx, u*dy);
                     tMuZ.add(cIdx, u*dz);
                 }
                 if (mWR != null) {
-                    double w = mWR[cType-1][type-1].subs(r);
+                    assert mWRSpline != null;
+                    double w = mWRSpline[cType-1][type-1].subs(r);
                     tLambdaXX.add(cIdx, w*dx*dx);
                     tLambdaYY.add(cIdx, w*dy*dy);
                     tLambdaZZ.add(cIdx, w*dz*dz);
@@ -386,7 +413,7 @@ public class EAM implements IPairPotential {
             tLambdaXZ.plus2this(tLambdaXZPar.get(i));
         }
         aNeighborListGetter.forEachNL((threadID, cIdx, cType, nl) -> {
-            double deng = mFRho[cType-1].subs(tRho.get(cIdx));
+            double deng = mFRhoSpline[cType-1].subs(tRho.get(cIdx));
             if (mUR != null) {
                 double mx = tMuX.get(cIdx);
                 double my = tMuY.get(cIdx);
@@ -456,29 +483,29 @@ public class EAM implements IPairPotential {
                 double rsq = dx*dx + dy*dy + dz*dz;
                 if (rsq >= mCutsq) return;
                 double r = MathEX.Fast.sqrt(rsq);
-                double deng = mPhiR[cType-1][type-1].subs(r);
+                double deng = mRPhiRSpline[cType-1][type-1].subs(r) / r;
                 rEnergyAccumulator.add(threadID, cIdx, idx, deng);
-                tRho.add(cIdx, mRhoR[mRhoR.length==1?0:(cType-1)][type-1].subs(r));
-                tRho.add(idx, mRhoR[mRhoR.length==1?0:(type-1)][cType-1].subs(r));
+                tRho.add(cIdx, mRhoRSpline[mRhoR.length==1?0:(cType-1)][type-1].subs(r));
+                tRho.add(idx, mRhoRSpline[mRhoR.length==1?0:(type-1)][cType-1].subs(r));
                 if (mUR != null) {
-                    double u = mUR[cType-1][type-1].subs(r);
+                    assert mURSpline != null;
+                    double u = mURSpline[cType-1][type-1].subs(r);
                     tMuX.add(cIdx, u*dx);
                     tMuY.add(cIdx, u*dy);
                     tMuZ.add(cIdx, u*dz);
-                    u = mUR[type-1][cType-1].subs(r);
                     tMuX.add(idx, -u*dx);
                     tMuY.add(idx, -u*dy);
                     tMuZ.add(idx, -u*dz);
                 }
                 if (mWR != null) {
-                    double w = mWR[cType-1][type-1].subs(r);
+                    assert mWRSpline != null;
+                    double w = mWRSpline[cType-1][type-1].subs(r);
                     tLambdaXX.add(cIdx, w*dx*dx);
                     tLambdaYY.add(cIdx, w*dy*dy);
                     tLambdaZZ.add(cIdx, w*dz*dz);
                     tLambdaXY.add(cIdx, w*dx*dy);
                     tLambdaYZ.add(cIdx, w*dy*dz);
                     tLambdaXZ.add(cIdx, w*dx*dz);
-                    w = mWR[type-1][cType-1].subs(r);
                     tLambdaXX.add(idx, w*dx*dx);
                     tLambdaYY.add(idx, w*dy*dy);
                     tLambdaZZ.add(idx, w*dz*dz);
@@ -513,7 +540,7 @@ public class EAM implements IPairPotential {
             tLambdaXZ.plus2this(tLambdaXZPar.get(i));
         }
         aNeighborListGetter.forEachNL((threadID, cIdx, cType, nl) -> {
-            double deng = mFRho[cType-1].subs(tRho.get(cIdx));
+            double deng = mFRhoSpline[cType-1].subs(tRho.get(cIdx));
             if (mUR != null) {
                 double mx = tMuX.get(cIdx);
                 double my = tMuY.get(cIdx);
@@ -586,10 +613,11 @@ public class EAM implements IPairPotential {
                 double rsq = dx*dx + dy*dy + dz*dz;
                 if (rsq >= mCutsq) return;
                 double r = MathEX.Fast.sqrt(rsq);
-                tRho.add(cIdx, mRhoR[mRhoR.length==1?0:(cType-1)][type-1].subs(r));
-                tRho.add(idx, mRhoR[mRhoR.length==1?0:(type-1)][cType-1].subs(r));
+                tRho.add(cIdx, mRhoRSpline[mRhoR.length==1?0:(cType-1)][type-1].subs(r));
+                tRho.add(idx, mRhoRSpline[mRhoR.length==1?0:(type-1)][cType-1].subs(r));
                 if (mUR != null) {
-                    double u = mUR[cType-1][type-1].subs(r);
+                    assert mURSpline != null;
+                    double u = mURSpline[cType-1][type-1].subs(r);
                     tMuX.add(cIdx, u*dx);
                     tMuY.add(cIdx, u*dy);
                     tMuZ.add(cIdx, u*dz);
@@ -598,7 +626,8 @@ public class EAM implements IPairPotential {
                     tMuZ.add(idx, -u*dz);
                 }
                 if (mWR != null) {
-                    double w = mWR[cType-1][type-1].subs(r);
+                    assert mWRSpline != null;
+                    double w = mWRSpline[cType-1][type-1].subs(r);
                     tLambdaXX.add(cIdx, w*dx*dx);
                     tLambdaYY.add(cIdx, w*dy*dy);
                     tLambdaZZ.add(cIdx, w*dz*dz);
@@ -611,10 +640,6 @@ public class EAM implements IPairPotential {
                     tLambdaXY.add(idx, w*dx*dy);
                     tLambdaYZ.add(idx, w*dy*dz);
                     tLambdaXZ.add(idx, w*dx*dz);
-                }
-                if (rEnergyAccumulator != null) {
-                    double deng = mPhiR[cType-1][type-1].subs(r);
-                    rEnergyAccumulator.add(threadID, cIdx, idx, deng);
                 }
             });
         });
@@ -643,22 +668,25 @@ public class EAM implements IPairPotential {
             tLambdaXZ.plus2this(tLambdaXZPar.get(i));
         }
         aNeighborListGetter.forEachNL((threadID, cIdx, cType, nl) -> {
-            final double fpi = mFRhoGrad[cType-1].subs(tRho.get(cIdx));
+            final double fpi = mFRhoSpline[cType-1].subsGrad(tRho.get(cIdx));
             nl.forEachDxyzTypeIdx(mCut, (dx, dy, dz, type, idx) -> {
                 double rsq = dx*dx + dy*dy + dz*dz;
                 if (rsq >= mCutsq) return;
                 double r = MathEX.Fast.sqrt(rsq);
                 double recip = 1.0/r;
-                double phip = mPhiRGrad[cType-1][type-1].subs(r);
-                double fpj = mFRhoGrad[type-1].subs(tRho.get(idx));
-                double rhojp = mRhoRGrad[mRhoR.length==1?0:(cType-1)][type-1].subs(r);
-                double rhoip = mRhoRGrad[mRhoR.length==1?0:(type-1)][cType-1].subs(r);
+                double rphi = mRPhiRSpline[cType-1][type-1].subs(r);
+                double rphip = mRPhiRSpline[cType-1][type-1].subsGrad(r);
+                double fpj = mFRhoSpline[type-1].subsGrad(tRho.get(idx));
+                double rhojp = mRhoRSpline[mRhoR.length==1?0:(cType-1)][type-1].subsGrad(r);
+                double rhoip = mRhoRSpline[mRhoR.length==1?0:(type-1)][cType-1].subsGrad(r);
+                double phi = rphi*recip;
+                double phip = rphip*recip - phi*recip;
                 double fpair = -(fpi*rhojp + fpj*rhoip + phip) * recip;
                 double fx = dx*fpair, fy = dy*fpair, fz = dz*fpair;
                 if (mUR != null) {
-                    assert mURGrad != null;
-                    double u = mUR[cType-1][type-1].subs(r);
-                    double up = mURGrad[cType-1][type-1].subs(r);
+                    assert mURSpline != null;
+                    double u = mURSpline[cType-1][type-1].subs(r);
+                    double up = mURSpline[cType-1][type-1].subsGrad(r);
                     double dmx = tMuX.get(cIdx) - tMuX.get(idx);
                     double dmy = tMuY.get(cIdx) - tMuY.get(idx);
                     double dmz = tMuZ.get(cIdx) - tMuZ.get(idx);
@@ -668,9 +696,9 @@ public class EAM implements IPairPotential {
                     fz -= (dmz*u + dm3*up*dz*recip);
                 }
                 if (mWR != null) {
-                    assert mWRGrad != null;
-                    double w = mWR[cType-1][type-1].subs(r);
-                    double wp = mWRGrad[cType-1][type-1].subs(r);
+                    assert mWRSpline != null;
+                    double w = mWRSpline[cType-1][type-1].subs(r);
+                    double wp = mWRSpline[cType-1][type-1].subsGrad(r);
                     double slxx = tLambdaXX.get(cIdx) + tLambdaXX.get(idx);
                     double slyy = tLambdaYY.get(cIdx) + tLambdaYY.get(idx);
                     double slzz = tLambdaZZ.get(cIdx) + tLambdaZZ.get(idx);
@@ -690,9 +718,12 @@ public class EAM implements IPairPotential {
                 if (rVirialAccumulator != null) {
                     rVirialAccumulator.add(threadID, cIdx, idx, dx*fx, dy*fy, dz*fz, dx*fy, dx*fz, dy*fz);
                 }
+                if (rEnergyAccumulator != null) {
+                    rEnergyAccumulator.add(threadID, cIdx, idx, phi);
+                }
             });
             if (rEnergyAccumulator != null) {
-                double deng = mFRho[cType-1].subs(tRho.get(cIdx));
+                double deng = mFRhoSpline[cType-1].subs(tRho.get(cIdx));
                 if (mUR != null) {
                     double mx = tMuX.get(cIdx);
                     double my = tMuY.get(cIdx);
