@@ -54,6 +54,7 @@ public class EAM implements IPairPotential {
     private final String mHeader;
     private final IFunc1[] mFRho, mFRhoGrad;
     private final IFunc1[][] mRhoR, mPhiR, mRhoRGrad, mPhiRGrad;
+    private final IFunc1 @Nullable[][] mUR, mWR, mURGrad, mWRGrad;
     private final int mTypeNum;
     private final String[] mSymbols, mLatticeTypes;
     private final int[] mAtomicNumbers;
@@ -119,10 +120,12 @@ public class EAM implements IPairPotential {
                     mRhoRGrad[0][0].set(i, (mRhoR[0][0].get(i+1) - mRhoR[0][0].get(i)) / tDR);
                     mPhiRGrad[0][0].set(i, (mPhiR[0][0].get(i+1) - mPhiR[0][0].get(i)) / tDR);
                 }
+                mUR = null; mWR = null; mURGrad = null; mWRGrad = null;
                 break;
             }
             case "alloy": case "fs": case "adp": {
                 boolean tIsFs = aFormat.equals("fs");
+                boolean tIsAdp = aFormat.equals("adp");
                 mHeader = tReader.readLine() + "\n" +
                           tReader.readLine() + "\n" +
                           tReader.readLine();
@@ -176,29 +179,65 @@ public class EAM implements IPairPotential {
                         mRhoR[0][i] = ConstBoundFunc1.zeros(0, tDR, tNR);
                         mRhoR[0][i].fill(tData.subVec(tNRho, tNRho+tNR));
                         mRhoRGrad[0][i] = ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1);
-                        for (int k = 0; k < tNRho-1; ++k) {
+                        for (int k = 0; k < tNR-1; ++k) {
                             mRhoRGrad[0][i].set(k, (mRhoR[0][i].get(k+1) - mRhoR[0][i].get(k)) / tDR);
                         }
                     }
                 }
                 IVector tData = readData_(tReader, (1+mTypeNum)*mTypeNum/2 * tNR);
                 int tShift = 0;
-                for (int i = 0; i < mTypeNum; ++i) {
-                    for (int j = 0; j <= i; ++j) {
-                        mPhiR[i][j] = ConstBoundFunc1.zeros(0, tDR, tNR);
-                        mPhiR[i][j].fill(tData.subVec(tShift, tShift+tNR));
-                        // r * phi(r) -> phi(r)
-                        mPhiR[i][j].f().div2this(mPhiR[i][j].x());
-                        mPhiRGrad[i][j] = ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1);
-                        for (int k = 0; k < tNRho-1; ++k) {
-                            mPhiRGrad[i][j].set(k, (mPhiR[i][j].get(k+1) - mPhiR[i][j].get(k)) / tDR);
-                        }
-                        if (j != i) {
-                            mPhiR[j][i] = mPhiR[i][j];
-                            mPhiRGrad[j][i] = mPhiRGrad[i][j];
-                        }
-                        tShift += tNR;
+                for (int i = 0; i < mTypeNum; ++i) for (int j = 0; j <= i; ++j) {
+                    mPhiR[i][j] = ConstBoundFunc1.zeros(0, tDR, tNR);
+                    mPhiR[i][j].fill(tData.subVec(tShift, tShift+tNR));
+                    // r * phi(r) -> phi(r)
+                    mPhiR[i][j].f().div2this(mPhiR[i][j].x());
+                    mPhiRGrad[i][j] = ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1);
+                    for (int k = 0; k < tNR-1; ++k) {
+                        mPhiRGrad[i][j].set(k, (mPhiR[i][j].get(k+1) - mPhiR[i][j].get(k)) / tDR);
                     }
+                    if (j != i) {
+                        mPhiR[j][i] = mPhiR[i][j];
+                        mPhiRGrad[j][i] = mPhiRGrad[i][j];
+                    }
+                    tShift += tNR;
+                }
+                if (!tIsAdp) {
+                    mUR = null; mWR = null; mURGrad = null; mWRGrad = null;
+                    break;
+                }
+                mUR = new IFunc1[mTypeNum][mTypeNum];
+                mWR = new IFunc1[mTypeNum][mTypeNum];
+                mURGrad = new IFunc1[mTypeNum][mTypeNum];
+                mWRGrad = new IFunc1[mTypeNum][mTypeNum];
+                tData = readData_(tReader, (1+mTypeNum)*mTypeNum/2 * tNR);
+                tShift = 0;
+                for (int i = 0; i < mTypeNum; ++i) for (int j = 0; j <= i; ++j) {
+                    mUR[i][j] = ConstBoundFunc1.zeros(0, tDR, tNR);
+                    mUR[i][j].fill(tData.subVec(tShift, tShift+tNR));
+                    mURGrad[i][j] = ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1);
+                    for (int k = 0; k < tNR-1; ++k) {
+                        mURGrad[i][j].set(k, (mUR[i][j].get(k+1) - mUR[i][j].get(k)) / tDR);
+                    }
+                    if (j != i) {
+                        mUR[j][i] = mUR[i][j];
+                        mURGrad[j][i] = mURGrad[i][j];
+                    }
+                    tShift += tNR;
+                }
+                tData = readData_(tReader, (1+mTypeNum)*mTypeNum/2 * tNR);
+                tShift = 0;
+                for (int i = 0; i < mTypeNum; ++i) for (int j = 0; j <= i; ++j) {
+                    mWR[i][j] = ConstBoundFunc1.zeros(0, tDR, tNR);
+                    mWR[i][j].fill(tData.subVec(tShift, tShift+tNR));
+                    mWRGrad[i][j] = ZeroBoundFunc1.zeros(tDR*0.5, tDR, tNR-1);
+                    for (int k = 0; k < tNR-1; ++k) {
+                        mWRGrad[i][j].set(k, (mWR[i][j].get(k+1) - mWR[i][j].get(k)) / tDR);
+                    }
+                    if (j != i) {
+                        mWR[j][i] = mWR[i][j];
+                        mWRGrad[j][i] = mWRGrad[i][j];
+                    }
+                    tShift += tNR;
                 }
                 break;
             }
@@ -277,27 +316,110 @@ public class EAM implements IPairPotential {
      */
     @Override public void calEnergyPart(int aAtomNumber, INeighborListGetter aNeighborListGetter, IEnergyPartAccumulator rEnergyAccumulator) {
         int tThreadNum = threadNumber();
-        List<Vector> tRhoPar = VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tRhoPar = VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tMuXPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tMuYPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tMuZPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaXXPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaYYPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaZZPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaXYPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaXZPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaYZPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
         aNeighborListGetter.forEachNL((threadID, cIdx, cType, nl) -> {
             final Vector tRho = tRhoPar.get(threadID);
+            final Vector tMuX = mUR==null ? null : tMuXPar.get(threadID);
+            final Vector tMuY = mUR==null ? null : tMuYPar.get(threadID);
+            final Vector tMuZ = mUR==null ? null : tMuZPar.get(threadID);
+            final Vector tLambdaXX = mWR==null ? null : tLambdaXXPar.get(threadID);
+            final Vector tLambdaYY = mWR==null ? null : tLambdaYYPar.get(threadID);
+            final Vector tLambdaZZ = mWR==null ? null : tLambdaZZPar.get(threadID);
+            final Vector tLambdaXY = mWR==null ? null : tLambdaXYPar.get(threadID);
+            final Vector tLambdaXZ = mWR==null ? null : tLambdaXZPar.get(threadID);
+            final Vector tLambdaYZ = mWR==null ? null : tLambdaYZPar.get(threadID);
             nl.forEachDxyzTypeIdx(mCut, (dx, dy, dz, type, idx) -> {
                 double rsq = dx*dx + dy*dy + dz*dz;
                 if (rsq >= mCutsq) return;
                 double r = MathEX.Fast.sqrt(rsq);
                 double deng = 0.5 * mPhiR[cType-1][type-1].subs(r);
                 rEnergyAccumulator.add(threadID, cIdx, deng);
-                if (mRhoR.length == 1) {
-                    tRho.add(cIdx, mRhoR[0][type-1].subs(r));
-                } else {
-                    tRho.add(cIdx, mRhoR[cType-1][type-1].subs(r));
+                tRho.add(cIdx, mRhoR[mRhoR.length==1?0:(cType-1)][type-1].subs(r));
+                if (mUR != null) {
+                    double u = mUR[cType-1][type-1].subs(r);
+                    tMuX.add(cIdx, u*dx);
+                    tMuY.add(cIdx, u*dy);
+                    tMuZ.add(cIdx, u*dz);
+                }
+                if (mWR != null) {
+                    double w = mWR[cType-1][type-1].subs(r);
+                    tLambdaXX.add(cIdx, w*dx*dx);
+                    tLambdaYY.add(cIdx, w*dy*dy);
+                    tLambdaZZ.add(cIdx, w*dz*dz);
+                    tLambdaXY.add(cIdx, w*dx*dy);
+                    tLambdaYZ.add(cIdx, w*dy*dz);
+                    tLambdaXZ.add(cIdx, w*dx*dz);
                 }
             });
         });
         Vector tRho = tRhoPar.get(0);
         for (int i = 1; i < tThreadNum; ++i) tRho.plus2this(tRhoPar.get(i));
+        Vector tMuX = mUR==null ? null : tMuXPar.get(0);
+        Vector tMuY = mUR==null ? null : tMuYPar.get(0);
+        Vector tMuZ = mUR==null ? null : tMuZPar.get(0);
+        if (mUR != null) for (int i = 1; i < tThreadNum; ++i) {
+            tMuX.plus2this(tMuXPar.get(i));
+            tMuY.plus2this(tMuYPar.get(i));
+            tMuZ.plus2this(tMuZPar.get(i));
+        }
+        Vector tLambdaXX = mWR==null ? null : tLambdaXXPar.get(0);
+        Vector tLambdaYY = mWR==null ? null : tLambdaYYPar.get(0);
+        Vector tLambdaZZ = mWR==null ? null : tLambdaZZPar.get(0);
+        Vector tLambdaXY = mWR==null ? null : tLambdaXYPar.get(0);
+        Vector tLambdaYZ = mWR==null ? null : tLambdaYZPar.get(0);
+        Vector tLambdaXZ = mWR==null ? null : tLambdaXZPar.get(0);
+        if (mWR != null) for (int i = 1; i < tThreadNum; ++i) {
+            tLambdaXX.plus2this(tLambdaXXPar.get(i));
+            tLambdaYY.plus2this(tLambdaYYPar.get(i));
+            tLambdaZZ.plus2this(tLambdaZZPar.get(i));
+            tLambdaXY.plus2this(tLambdaXYPar.get(i));
+            tLambdaYZ.plus2this(tLambdaYZPar.get(i));
+            tLambdaXZ.plus2this(tLambdaXZPar.get(i));
+        }
         aNeighborListGetter.forEachNL((threadID, cIdx, cType, nl) -> {
-            rEnergyAccumulator.add(threadID, cIdx, mFRho[cType-1].subs(tRho.get(cIdx)));
+            double deng = mFRho[cType-1].subs(tRho.get(cIdx));
+            if (mUR != null) {
+                double mx = tMuX.get(cIdx);
+                double my = tMuY.get(cIdx);
+                double mz = tMuZ.get(cIdx);
+                deng += 0.5 * (mx*mx + my*my + mz*mz);
+            }
+            if (mWR != null) {
+                double lxx = tLambdaXX.get(cIdx);
+                double lyy = tLambdaYY.get(cIdx);
+                double lzz = tLambdaZZ.get(cIdx);
+                double lxy = tLambdaXY.get(cIdx);
+                double lxz = tLambdaXZ.get(cIdx);
+                double lyz = tLambdaYZ.get(cIdx);
+                deng += 0.5 * (lxx*lxx + lyy*lyy + lzz*lzz);
+                deng += (lxy*lxy + lxz*lxz + lyz*lyz);
+                double nu = lxx + lyy + lzz;
+                deng -= (1.0/6.0) * nu*nu;
+            }
+            rEnergyAccumulator.add(threadID, cIdx, deng);
         });
+        if (mWR != null) {
+            VectorCache.returnVec(tLambdaXXPar);
+            VectorCache.returnVec(tLambdaYYPar);
+            VectorCache.returnVec(tLambdaZZPar);
+            VectorCache.returnVec(tLambdaXYPar);
+            VectorCache.returnVec(tLambdaXZPar);
+            VectorCache.returnVec(tLambdaYZPar);
+        }
+        if (mUR != null) {
+            VectorCache.returnVec(tMuXPar);
+            VectorCache.returnVec(tMuYPar);
+            VectorCache.returnVec(tMuZPar);
+        }
         VectorCache.returnVec(tRhoPar);
     }
     
@@ -309,29 +431,122 @@ public class EAM implements IPairPotential {
      */
     @Override public void calEnergy(int aAtomNumber, INeighborListGetter aNeighborListGetter, IEnergyAccumulator rEnergyAccumulator) {
         int tThreadNum = threadNumber();
-        List<Vector> tRhoPar = VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tRhoPar = VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tMuXPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tMuYPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tMuZPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaXXPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaYYPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaZZPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaXYPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaXZPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaYZPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
         aNeighborListGetter.forEachNL((threadID, cIdx, cType, nl) -> {
             final Vector tRho = tRhoPar.get(threadID);
+            final Vector tMuX = mUR==null ? null : tMuXPar.get(threadID);
+            final Vector tMuY = mUR==null ? null : tMuYPar.get(threadID);
+            final Vector tMuZ = mUR==null ? null : tMuZPar.get(threadID);
+            final Vector tLambdaXX = mWR==null ? null : tLambdaXXPar.get(threadID);
+            final Vector tLambdaYY = mWR==null ? null : tLambdaYYPar.get(threadID);
+            final Vector tLambdaZZ = mWR==null ? null : tLambdaZZPar.get(threadID);
+            final Vector tLambdaXY = mWR==null ? null : tLambdaXYPar.get(threadID);
+            final Vector tLambdaXZ = mWR==null ? null : tLambdaXZPar.get(threadID);
+            final Vector tLambdaYZ = mWR==null ? null : tLambdaYZPar.get(threadID);
             nl.forEachDxyzTypeIdx(mCut, (dx, dy, dz, type, idx) -> {
                 double rsq = dx*dx + dy*dy + dz*dz;
                 if (rsq >= mCutsq) return;
                 double r = MathEX.Fast.sqrt(rsq);
                 double deng = mPhiR[cType-1][type-1].subs(r);
                 rEnergyAccumulator.add(threadID, cIdx, idx, deng);
-                if (mRhoR.length == 1) {
-                    tRho.add(cIdx, mRhoR[0][type-1].subs(r));
-                    tRho.add(idx, mRhoR[0][cType-1].subs(r));
-                } else {
-                    tRho.add(cIdx, mRhoR[cType-1][type-1].subs(r));
-                    tRho.add(idx, mRhoR[type-1][cType-1].subs(r));
+                tRho.add(cIdx, mRhoR[mRhoR.length==1?0:(cType-1)][type-1].subs(r));
+                tRho.add(idx, mRhoR[mRhoR.length==1?0:(type-1)][cType-1].subs(r));
+                if (mUR != null) {
+                    double u = mUR[cType-1][type-1].subs(r);
+                    tMuX.add(cIdx, u*dx);
+                    tMuY.add(cIdx, u*dy);
+                    tMuZ.add(cIdx, u*dz);
+                    u = mUR[type-1][cType-1].subs(r);
+                    tMuX.add(idx, -u*dx);
+                    tMuY.add(idx, -u*dy);
+                    tMuZ.add(idx, -u*dz);
+                }
+                if (mWR != null) {
+                    double w = mWR[cType-1][type-1].subs(r);
+                    tLambdaXX.add(cIdx, w*dx*dx);
+                    tLambdaYY.add(cIdx, w*dy*dy);
+                    tLambdaZZ.add(cIdx, w*dz*dz);
+                    tLambdaXY.add(cIdx, w*dx*dy);
+                    tLambdaYZ.add(cIdx, w*dy*dz);
+                    tLambdaXZ.add(cIdx, w*dx*dz);
+                    w = mWR[type-1][cType-1].subs(r);
+                    tLambdaXX.add(idx, w*dx*dx);
+                    tLambdaYY.add(idx, w*dy*dy);
+                    tLambdaZZ.add(idx, w*dz*dz);
+                    tLambdaXY.add(idx, w*dx*dy);
+                    tLambdaYZ.add(idx, w*dy*dz);
+                    tLambdaXZ.add(idx, w*dx*dz);
                 }
             });
         });
         Vector tRho = tRhoPar.get(0);
         for (int i = 1; i < tThreadNum; ++i) tRho.plus2this(tRhoPar.get(i));
+        Vector tMuX = mUR==null ? null : tMuXPar.get(0);
+        Vector tMuY = mUR==null ? null : tMuYPar.get(0);
+        Vector tMuZ = mUR==null ? null : tMuZPar.get(0);
+        if (mUR != null) for (int i = 1; i < tThreadNum; ++i) {
+            tMuX.plus2this(tMuXPar.get(i));
+            tMuY.plus2this(tMuYPar.get(i));
+            tMuZ.plus2this(tMuZPar.get(i));
+        }
+        Vector tLambdaXX = mWR==null ? null : tLambdaXXPar.get(0);
+        Vector tLambdaYY = mWR==null ? null : tLambdaYYPar.get(0);
+        Vector tLambdaZZ = mWR==null ? null : tLambdaZZPar.get(0);
+        Vector tLambdaXY = mWR==null ? null : tLambdaXYPar.get(0);
+        Vector tLambdaYZ = mWR==null ? null : tLambdaYZPar.get(0);
+        Vector tLambdaXZ = mWR==null ? null : tLambdaXZPar.get(0);
+        if (mWR != null) for (int i = 1; i < tThreadNum; ++i) {
+            tLambdaXX.plus2this(tLambdaXXPar.get(i));
+            tLambdaYY.plus2this(tLambdaYYPar.get(i));
+            tLambdaZZ.plus2this(tLambdaZZPar.get(i));
+            tLambdaXY.plus2this(tLambdaXYPar.get(i));
+            tLambdaYZ.plus2this(tLambdaYZPar.get(i));
+            tLambdaXZ.plus2this(tLambdaXZPar.get(i));
+        }
         aNeighborListGetter.forEachNL((threadID, cIdx, cType, nl) -> {
-            rEnergyAccumulator.add(threadID, cIdx, -1, mFRho[cType-1].subs(tRho.get(cIdx)));
+            double deng = mFRho[cType-1].subs(tRho.get(cIdx));
+            if (mUR != null) {
+                double mx = tMuX.get(cIdx);
+                double my = tMuY.get(cIdx);
+                double mz = tMuZ.get(cIdx);
+                deng += 0.5 * (mx*mx + my*my + mz*mz);
+            }
+            if (mWR != null) {
+                double lxx = tLambdaXX.get(cIdx);
+                double lyy = tLambdaYY.get(cIdx);
+                double lzz = tLambdaZZ.get(cIdx);
+                double lxy = tLambdaXY.get(cIdx);
+                double lxz = tLambdaXZ.get(cIdx);
+                double lyz = tLambdaYZ.get(cIdx);
+                deng += 0.5 * (lxx*lxx + lyy*lyy + lzz*lzz);
+                deng += (lxy*lxy + lxz*lxz + lyz*lyz);
+                double nu = lxx + lyy + lzz;
+                deng -= (1.0/6.0) * nu*nu;
+            }
+            rEnergyAccumulator.add(threadID, cIdx, -1, deng);
         });
+        if (mWR != null) {
+            VectorCache.returnVec(tLambdaXXPar);
+            VectorCache.returnVec(tLambdaYYPar);
+            VectorCache.returnVec(tLambdaZZPar);
+            VectorCache.returnVec(tLambdaXYPar);
+            VectorCache.returnVec(tLambdaXZPar);
+            VectorCache.returnVec(tLambdaYZPar);
+        }
+        if (mUR != null) {
+            VectorCache.returnVec(tMuXPar);
+            VectorCache.returnVec(tMuYPar);
+            VectorCache.returnVec(tMuZPar);
+        }
         VectorCache.returnVec(tRhoPar);
     }
     
@@ -346,45 +561,172 @@ public class EAM implements IPairPotential {
      */
     @Override public void calEnergyForceVirial(int aAtomNumber, INeighborListGetter aNeighborListGetter, @Nullable IEnergyAccumulator rEnergyAccumulator, @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) throws Exception {
         int tThreadNum = threadNumber();
-        List<Vector> tRhoPar = VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tRhoPar = VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tMuXPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tMuYPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tMuZPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaXXPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaYYPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaZZPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaXYPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaXZPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
+        final List<Vector> tLambdaYZPar = mWR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
         aNeighborListGetter.forEachNL((threadID, cIdx, cType, nl) -> {
             final Vector tRho = tRhoPar.get(threadID);
+            final Vector tMuX = mUR==null ? null : tMuXPar.get(threadID);
+            final Vector tMuY = mUR==null ? null : tMuYPar.get(threadID);
+            final Vector tMuZ = mUR==null ? null : tMuZPar.get(threadID);
+            final Vector tLambdaXX = mWR==null ? null : tLambdaXXPar.get(threadID);
+            final Vector tLambdaYY = mWR==null ? null : tLambdaYYPar.get(threadID);
+            final Vector tLambdaZZ = mWR==null ? null : tLambdaZZPar.get(threadID);
+            final Vector tLambdaXY = mWR==null ? null : tLambdaXYPar.get(threadID);
+            final Vector tLambdaXZ = mWR==null ? null : tLambdaXZPar.get(threadID);
+            final Vector tLambdaYZ = mWR==null ? null : tLambdaYZPar.get(threadID);
             nl.forEachDxyzTypeIdx(mCut, (dx, dy, dz, type, idx) -> {
                 double rsq = dx*dx + dy*dy + dz*dz;
                 if (rsq >= mCutsq) return;
                 double r = MathEX.Fast.sqrt(rsq);
                 tRho.add(cIdx, mRhoR[mRhoR.length==1?0:(cType-1)][type-1].subs(r));
                 tRho.add(idx, mRhoR[mRhoR.length==1?0:(type-1)][cType-1].subs(r));
+                if (mUR != null) {
+                    double u = mUR[cType-1][type-1].subs(r);
+                    tMuX.add(cIdx, u*dx);
+                    tMuY.add(cIdx, u*dy);
+                    tMuZ.add(cIdx, u*dz);
+                    tMuX.add(idx, -u*dx);
+                    tMuY.add(idx, -u*dy);
+                    tMuZ.add(idx, -u*dz);
+                }
+                if (mWR != null) {
+                    double w = mWR[cType-1][type-1].subs(r);
+                    tLambdaXX.add(cIdx, w*dx*dx);
+                    tLambdaYY.add(cIdx, w*dy*dy);
+                    tLambdaZZ.add(cIdx, w*dz*dz);
+                    tLambdaXY.add(cIdx, w*dx*dy);
+                    tLambdaYZ.add(cIdx, w*dy*dz);
+                    tLambdaXZ.add(cIdx, w*dx*dz);
+                    tLambdaXX.add(idx, w*dx*dx);
+                    tLambdaYY.add(idx, w*dy*dy);
+                    tLambdaZZ.add(idx, w*dz*dz);
+                    tLambdaXY.add(idx, w*dx*dy);
+                    tLambdaYZ.add(idx, w*dy*dz);
+                    tLambdaXZ.add(idx, w*dx*dz);
+                }
                 if (rEnergyAccumulator != null) {
                     double deng = mPhiR[cType-1][type-1].subs(r);
                     rEnergyAccumulator.add(threadID, cIdx, idx, deng);
                 }
             });
         });
-        Vector tRho = tRhoPar.get(0);
+        final Vector tRho = tRhoPar.get(0);
         for (int i = 1; i < tThreadNum; ++i) tRho.plus2this(tRhoPar.get(i));
+        final Vector tMuX = mUR==null ? null : tMuXPar.get(0);
+        final Vector tMuY = mUR==null ? null : tMuYPar.get(0);
+        final Vector tMuZ = mUR==null ? null : tMuZPar.get(0);
+        if (mUR != null) for (int i = 1; i < tThreadNum; ++i) {
+            tMuX.plus2this(tMuXPar.get(i));
+            tMuY.plus2this(tMuYPar.get(i));
+            tMuZ.plus2this(tMuZPar.get(i));
+        }
+        final Vector tLambdaXX = mWR==null ? null : tLambdaXXPar.get(0);
+        final Vector tLambdaYY = mWR==null ? null : tLambdaYYPar.get(0);
+        final Vector tLambdaZZ = mWR==null ? null : tLambdaZZPar.get(0);
+        final Vector tLambdaXY = mWR==null ? null : tLambdaXYPar.get(0);
+        final Vector tLambdaYZ = mWR==null ? null : tLambdaYZPar.get(0);
+        final Vector tLambdaXZ = mWR==null ? null : tLambdaXZPar.get(0);
+        if (mWR != null) for (int i = 1; i < tThreadNum; ++i) {
+            tLambdaXX.plus2this(tLambdaXXPar.get(i));
+            tLambdaYY.plus2this(tLambdaYYPar.get(i));
+            tLambdaZZ.plus2this(tLambdaZZPar.get(i));
+            tLambdaXY.plus2this(tLambdaXYPar.get(i));
+            tLambdaYZ.plus2this(tLambdaYZPar.get(i));
+            tLambdaXZ.plus2this(tLambdaXZPar.get(i));
+        }
         aNeighborListGetter.forEachNL((threadID, cIdx, cType, nl) -> {
             final double fpi = mFRhoGrad[cType-1].subs(tRho.get(cIdx));
             nl.forEachDxyzTypeIdx(mCut, (dx, dy, dz, type, idx) -> {
                 double rsq = dx*dx + dy*dy + dz*dz;
                 if (rsq >= mCutsq) return;
                 double r = MathEX.Fast.sqrt(rsq);
+                double recip = 1.0/r;
                 double phip = mPhiRGrad[cType-1][type-1].subs(r);
                 double fpj = mFRhoGrad[type-1].subs(tRho.get(idx));
                 double rhojp = mRhoRGrad[mRhoR.length==1?0:(cType-1)][type-1].subs(r);
                 double rhoip = mRhoRGrad[mRhoR.length==1?0:(type-1)][cType-1].subs(r);
-                double fpair = -(fpi*rhojp + fpj*rhoip + phip) / r;
+                double fpair = -(fpi*rhojp + fpj*rhoip + phip) * recip;
+                double fx = dx*fpair, fy = dy*fpair, fz = dz*fpair;
+                if (mUR != null) {
+                    assert mURGrad != null;
+                    double u = mUR[cType-1][type-1].subs(r);
+                    double up = mURGrad[cType-1][type-1].subs(r);
+                    double dmx = tMuX.get(cIdx) - tMuX.get(idx);
+                    double dmy = tMuY.get(cIdx) - tMuY.get(idx);
+                    double dmz = tMuZ.get(cIdx) - tMuZ.get(idx);
+                    double dm3 = dmx*dx + dmy*dy + dmz*dz;
+                    fx -= (dmx*u + dm3*up*dx*recip);
+                    fy -= (dmy*u + dm3*up*dy*recip);
+                    fz -= (dmz*u + dm3*up*dz*recip);
+                }
+                if (mWR != null) {
+                    assert mWRGrad != null;
+                    double w = mWR[cType-1][type-1].subs(r);
+                    double wp = mWRGrad[cType-1][type-1].subs(r);
+                    double slxx = tLambdaXX.get(cIdx) + tLambdaXX.get(idx);
+                    double slyy = tLambdaYY.get(cIdx) + tLambdaYY.get(idx);
+                    double slzz = tLambdaZZ.get(cIdx) + tLambdaZZ.get(idx);
+                    double slxy = tLambdaXY.get(cIdx) + tLambdaXY.get(idx);
+                    double slyz = tLambdaYZ.get(cIdx) + tLambdaYZ.get(idx);
+                    double slxz = tLambdaXZ.get(cIdx) + tLambdaXZ.get(idx);
+                    double sl3 = slxx*dx*dx + slyy*dy*dy + slzz*dz*dz
+                        + 2.0 * (slxy*dx*dy + slyz*dy*dz + slxz*dx*dz);
+                    double snu = slxx + slyy + slzz;
+                    fx -= (2.0*w*(slxx*dx + slxy*dy + slxz*dz) + wp*dx*recip*sl3 - (1.0/3.0)*snu*(wp*r + 2.0*w)*dx);
+                    fy -= (2.0*w*(slxy*dx + slyy*dy + slyz*dz) + wp*dy*recip*sl3 - (1.0/3.0)*snu*(wp*r + 2.0*w)*dy);
+                    fz -= (2.0*w*(slxz*dx + slyz*dy + slzz*dz) + wp*dz*recip*sl3 - (1.0/3.0)*snu*(wp*r + 2.0*w)*dz);
+                }
                 if (rForceAccumulator != null) {
-                    rForceAccumulator.add(threadID, cIdx, idx, dx*fpair, dy*fpair, dz*fpair);
+                    rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
                 }
                 if (rVirialAccumulator != null) {
-                    rVirialAccumulator.add(threadID, cIdx, idx, dx*dx*fpair, dy*dy*fpair, dz*dz*fpair, dx*dy*fpair, dx*dz*fpair, dy*dz*fpair);
+                    rVirialAccumulator.add(threadID, cIdx, idx, dx*fx, dy*fy, dz*fz, dx*fy, dx*fz, dy*fz);
                 }
             });
             if (rEnergyAccumulator != null) {
-                rEnergyAccumulator.add(threadID, cIdx, -1, mFRho[cType-1].subs(tRho.get(cIdx)));
+                double deng = mFRho[cType-1].subs(tRho.get(cIdx));
+                if (mUR != null) {
+                    double mx = tMuX.get(cIdx);
+                    double my = tMuY.get(cIdx);
+                    double mz = tMuZ.get(cIdx);
+                    deng += 0.5 * (mx*mx + my*my + mz*mz);
+                }
+                if (mWR != null) {
+                    double lxx = tLambdaXX.get(cIdx);
+                    double lyy = tLambdaYY.get(cIdx);
+                    double lzz = tLambdaZZ.get(cIdx);
+                    double lxy = tLambdaXY.get(cIdx);
+                    double lxz = tLambdaXZ.get(cIdx);
+                    double lyz = tLambdaYZ.get(cIdx);
+                    deng += 0.5 * (lxx*lxx + lyy*lyy + lzz*lzz);
+                    deng += (lxy*lxy + lxz*lxz + lyz*lyz);
+                    double nu = lxx + lyy + lzz;
+                    deng -= (1.0/6.0) * nu*nu;
+                }
+                rEnergyAccumulator.add(threadID, cIdx, -1, deng);
             }
         });
+        if (mWR != null) {
+            VectorCache.returnVec(tLambdaXXPar);
+            VectorCache.returnVec(tLambdaYYPar);
+            VectorCache.returnVec(tLambdaZZPar);
+            VectorCache.returnVec(tLambdaXYPar);
+            VectorCache.returnVec(tLambdaXZPar);
+            VectorCache.returnVec(tLambdaYZPar);
+        }
+        if (mUR != null) {
+            VectorCache.returnVec(tMuXPar);
+            VectorCache.returnVec(tMuYPar);
+            VectorCache.returnVec(tMuZPar);
+        }
         VectorCache.returnVec(tRhoPar);
     }
 }
