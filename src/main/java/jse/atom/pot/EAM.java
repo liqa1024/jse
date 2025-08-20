@@ -4,9 +4,13 @@ import jse.atom.IPairPotential;
 import jse.cache.VectorCache;
 import jse.code.IO;
 import jse.math.MathEX;
+import jse.math.function.ConstBoundFunc1;
+import jse.math.function.IFunc1;
+import jse.math.function.ZeroBoundFunc1;
 import jse.math.vector.IVector;
 import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,7 +33,7 @@ import static jse.code.CS.UNITS;
  * <p>
  * 这里不去专门优化单粒子移动、翻转、种类交换时的能量差的计算，因为这需要缓存电荷密度值
  * <p>
- * 这里采用 lammps 使用的样条算法进行插值。
+ * 这里默认采用 lammps 使用的样条算法进行插值，考虑到样条插值并不总是收敛，有时需要主动关闭这个。
  *
  * @author liqa
  */
@@ -37,6 +41,8 @@ public class EAM implements IPairPotential {
     public final static class Conf {
         /** 是否使用 lammps 中采用的低精度 hartree 和 bohr，从而让结果和 lammps 一致 */
         public static boolean USE_LAMMPS_PRECISION = true;
+        /** 是否使用 lammps 中使用的样条插值，从而让结果和 lammps 一致；样条插值并不总是收敛，因此有时需要手动关闭 */
+        public static boolean USE_SPLINE = true;
     }
     private final static double EAM_MUL;
     static {
@@ -47,8 +53,33 @@ public class EAM implements IPairPotential {
         }
     }
     
+    interface ISpline {
+        double subs(double aX);
+        double subsGrad(double aX);
+    }
+    
+    /** 简单的线性样条插值 */
+    static class LinearSpline implements ISpline {
+        private final IFunc1 mFunc, mFuncGrad;
+        LinearSpline(double aDx, IVector aData) {
+            int tN = aData.size();
+            mFunc = ConstBoundFunc1.zeros(0, aDx, tN);
+            mFunc.fill(aData);
+            mFuncGrad = ZeroBoundFunc1.zeros(aDx*0.5, aDx, tN-1);
+            for (int i = 0; i < tN-1; ++i) {
+                mFuncGrad.set(i, (aData.get(i+1) - aData.get(i)) / aDx);
+            }
+        }
+        @Override public double subs(double aX) {
+            return mFunc.subs(aX);
+        }
+        @Override public double subsGrad(double aX) {
+            return mFuncGrad.subs(aX);
+        }
+    }
+    
     /** lammps 中使用的快速样条 */
-    static class FastSpline {
+    static class FastSpline implements ISpline {
         private final double mDx;
         private final int mNx;
         private final double[][] mSplines;
@@ -83,7 +114,7 @@ public class EAM implements IPairPotential {
             }
         }
         
-        double subs(double aX) {
+        @Override public double subs(double aX) {
             double p = aX/mDx;
             int m = MathEX.Code.floor2int(p);
             if (m >= mNx) m = mNx-1;
@@ -92,7 +123,7 @@ public class EAM implements IPairPotential {
             double[] coeff = mSplines[m];
             return ((coeff[3]*p + coeff[4])*p + coeff[5])*p + coeff[6];
         }
-        double subsGrad(double aX) {
+        @Override public double subsGrad(double aX) {
             double p = aX/mDx;
             int m = MathEX.Code.floor2int(p);
             if (m >= mNx) m = mNx-1;
@@ -110,9 +141,9 @@ public class EAM implements IPairPotential {
     private final IVector[] mFRho;
     private final IVector[][] mRhoR, mRPhiR;
     private final IVector @Nullable[][] mUR, mWR;
-    private final FastSpline[] mFRhoSpline;
-    private final FastSpline[][] mRhoRSpline, mRPhiRSpline;
-    private final FastSpline @Nullable[][] mURSpline, mWRSpline;
+    private final ISpline[] mFRhoSpline;
+    private final ISpline[][] mRhoRSpline, mRPhiRSpline;
+    private final ISpline @Nullable[][] mURSpline, mWRSpline;
     private final int mTypeNum;
     private final String[] mSymbols, mLatticeTypes;
     private final int[] mAtomicNumbers;
@@ -168,9 +199,9 @@ public class EAM implements IPairPotential {
                 mRhoR[0][0] = tData.subVec(mNRho+mNR, mNRho+mNR+mNR);
                 // Z(r) -> r*phi(r)
                 mRPhiR[0][0].operation().map2this(z -> EAM_MUL * z*z);
-                mFRhoSpline = new FastSpline[] {new FastSpline(mDRho, mFRho[0])};
-                mRhoRSpline = new FastSpline[][] {{new FastSpline(mDR, mRhoR[0][0])}};
-                mRPhiRSpline = new FastSpline[][] {{new FastSpline(mDR, mRPhiR[0][0])}};
+                mFRhoSpline = new ISpline[] {Conf.USE_SPLINE ? new FastSpline(mDRho, mFRho[0]) : new LinearSpline(mDRho, mFRho[0])};
+                mRhoRSpline = new ISpline[][] {{Conf.USE_SPLINE ? new FastSpline(mDR, mRhoR[0][0]) : new LinearSpline(mDR, mRhoR[0][0])}};
+                mRPhiRSpline = new ISpline[][] {{Conf.USE_SPLINE ? new FastSpline(mDR, mRPhiR[0][0]) : new LinearSpline(mDR, mRPhiR[0][0])}};
                 mUR = null; mWR = null; mURSpline = null; mWRSpline = null;
                 break;
             }
@@ -199,9 +230,9 @@ public class EAM implements IPairPotential {
                 mFRho = new IVector[mTypeNum];
                 mRhoR = new IVector[tIsFs?mTypeNum:1][mTypeNum];
                 mRPhiR = new IVector[mTypeNum][mTypeNum];
-                mFRhoSpline = new FastSpline[mTypeNum];
-                mRhoRSpline = new FastSpline[tIsFs?mTypeNum:1][mTypeNum];
-                mRPhiRSpline = new FastSpline[mTypeNum][mTypeNum];
+                mFRhoSpline = new ISpline[mTypeNum];
+                mRhoRSpline = new ISpline[tIsFs?mTypeNum:1][mTypeNum];
+                mRPhiRSpline = new ISpline[mTypeNum][mTypeNum];
                 for (int i = 0; i < mTypeNum; ++i) {
                     tTokens = IO.Text.splitBlank(tReader.readLine());
                     mAtomicNumbers[i] = Integer.parseInt(tTokens[0]);
@@ -210,24 +241,24 @@ public class EAM implements IPairPotential {
                     mLatticeTypes[i] = tTokens[3];
                     IVector tData = readData_(tReader, mNRho + (tIsFs?(mTypeNum*mNR):mNR));
                     mFRho[i] = tData.subVec(0, mNRho);
-                    mFRhoSpline[i] = new FastSpline(mDRho, mFRho[i]);
+                    mFRhoSpline[i] = Conf.USE_SPLINE ? new FastSpline(mDRho, mFRho[i]) : new LinearSpline(mDRho, mFRho[i]);
                     if (tIsFs) {
                         int tShift = mNRho;
                         for (int j = 0; j < mTypeNum; ++j) {
                             mRhoR[j][i] = tData.subVec(tShift, tShift+mNR);
-                            mRhoRSpline[j][i] = new FastSpline(mDR, mRhoR[j][i]);
+                            mRhoRSpline[j][i] = Conf.USE_SPLINE ? new FastSpline(mDR, mRhoR[j][i]) : new LinearSpline(mDR, mRhoR[j][i]);
                             tShift += mNR;
                         }
                     } else {
                         mRhoR[0][i] = tData.subVec(mNRho, mNRho+mNR);
-                        mRhoRSpline[0][i] = new FastSpline(mDR, mRhoR[0][i]);
+                        mRhoRSpline[0][i] = Conf.USE_SPLINE ? new FastSpline(mDR, mRhoR[0][i]) : new LinearSpline(mDR, mRhoR[0][i]);
                     }
                 }
                 IVector tData = readData_(tReader, (1+mTypeNum)*mTypeNum/2 * mNR);
                 int tShift = 0;
                 for (int i = 0; i < mTypeNum; ++i) for (int j = 0; j <= i; ++j) {
                     mRPhiR[i][j] = tData.subVec(tShift, tShift+mNR);
-                    mRPhiRSpline[i][j] = new FastSpline(mDR, mRPhiR[i][j]);
+                    mRPhiRSpline[i][j] = Conf.USE_SPLINE ? new FastSpline(mDR, mRPhiR[i][j]) : new LinearSpline(mDR, mRPhiR[i][j]);
                     if (j != i) {
                         mRPhiR[j][i] = mRPhiR[i][j];
                         mRPhiRSpline[j][i] = mRPhiRSpline[i][j];
@@ -240,13 +271,13 @@ public class EAM implements IPairPotential {
                 }
                 mUR = new IVector[mTypeNum][mTypeNum];
                 mWR = new IVector[mTypeNum][mTypeNum];
-                mURSpline = new FastSpline[mTypeNum][mTypeNum];
-                mWRSpline = new FastSpline[mTypeNum][mTypeNum];
+                mURSpline = new ISpline[mTypeNum][mTypeNum];
+                mWRSpline = new ISpline[mTypeNum][mTypeNum];
                 tData = readData_(tReader, (1+mTypeNum)*mTypeNum/2 * mNR);
                 tShift = 0;
                 for (int i = 0; i < mTypeNum; ++i) for (int j = 0; j <= i; ++j) {
                     mUR[i][j] = tData.subVec(tShift, tShift+mNR);
-                    mURSpline[i][j] = new FastSpline(mDR, mUR[i][j]);
+                    mURSpline[i][j] = Conf.USE_SPLINE ? new FastSpline(mDR, mUR[i][j]) : new LinearSpline(mDR, mUR[i][j]);
                     if (j != i) {
                         mUR[j][i] = mUR[i][j];
                         mURSpline[j][i] = mURSpline[i][j];
@@ -257,7 +288,7 @@ public class EAM implements IPairPotential {
                 tShift = 0;
                 for (int i = 0; i < mTypeNum; ++i) for (int j = 0; j <= i; ++j) {
                     mWR[i][j] = tData.subVec(tShift, tShift+mNR);
-                    mWRSpline[i][j] = new FastSpline(mDR, mWR[i][j]);
+                    mWRSpline[i][j] = Conf.USE_SPLINE ? new FastSpline(mDR, mWR[i][j]) : new LinearSpline(mDR, mWR[i][j]);
                     if (j != i) {
                         mWR[j][i] = mWR[i][j];
                         mWRSpline[j][i] = mWRSpline[i][j];
@@ -277,6 +308,103 @@ public class EAM implements IPairPotential {
      */
     public EAM(String aFilePath) throws IOException {
         this(aFilePath, null);
+    }
+    
+    @ApiStatus.Experimental
+    public IFunc1 frho(int aType) {
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, mDRho, mNRho);
+        tOut.fill(mFRho[aType-1]);
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public IFunc1 frhoSpline(int aType, int aN) {
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, (mDRho*mNRho)/aN, aN);
+        tOut.fill(rho -> mFRhoSpline[aType-1].subs(rho));
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public IFunc1 frhoGradSpline(int aType, int aN) {
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, (mDRho*mNRho)/aN, aN);
+        tOut.fill(rho -> mFRhoSpline[aType-1].subsGrad(rho));
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public IFunc1 rhor(int aType1, int aType2) {
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, mDR, mNR);
+        tOut.fill(mRhoR[mRhoR.length==1?0:(aType1-1)][aType2-1]);
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public IFunc1 rhorSpline(int aType1, int aType2, int aN) {
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, (mDR*mNR)/aN, aN);
+        tOut.fill(rho -> mRhoRSpline[mRhoR.length==1?0:(aType1-1)][aType2-1].subs(rho));
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public IFunc1 rhorGradSpline(int aType1, int aType2, int aN) {
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, (mDR*mNR)/aN, aN);
+        tOut.fill(rho -> mRhoRSpline[mRhoR.length==1?0:(aType1-1)][aType2-1].subsGrad(rho));
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public IFunc1 rphir(int aType1, int aType2) {
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, mDR, mNR);
+        tOut.fill(mRPhiR[aType1-1][aType2-1]);
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public IFunc1 rphirSpline(int aType1, int aType2, int aN) {
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, (mDR*mNR)/aN, aN);
+        tOut.fill(rho -> mRPhiRSpline[aType1-1][aType2-1].subs(rho));
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public IFunc1 rphirGradSpline(int aType1, int aType2, int aN) {
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, (mDR*mNR)/aN, aN);
+        tOut.fill(rho -> mRPhiRSpline[aType1-1][aType2-1].subsGrad(rho));
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public @Nullable IFunc1 ur(int aType1, int aType2) {
+        if (mUR == null) return null;
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, mDR, mNR);
+        tOut.fill(mUR[aType1-1][aType2-1]);
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public @Nullable IFunc1 urSpline(int aType1, int aType2, int aN) {
+        if (mURSpline == null) return null;
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, (mDR*mNR)/aN, aN);
+        tOut.fill(rho -> mURSpline[aType1-1][aType2-1].subs(rho));
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public @Nullable IFunc1 urGradSpline(int aType1, int aType2, int aN) {
+        if (mURSpline == null) return null;
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, (mDR*mNR)/aN, aN);
+        tOut.fill(rho -> mURSpline[aType1-1][aType2-1].subsGrad(rho));
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public @Nullable IFunc1 wr(int aType1, int aType2) {
+        if (mWR == null) return null;
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, mDR, mNR);
+        tOut.fill(mWR[aType1-1][aType2-1]);
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public @Nullable IFunc1 wrSpline(int aType1, int aType2, int aN) {
+        if (mWRSpline == null) return null;
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, (mDR*mNR)/aN, aN);
+        tOut.fill(rho -> mWRSpline[aType1-1][aType2-1].subs(rho));
+        return tOut;
+    }
+    @ApiStatus.Experimental
+    public @Nullable IFunc1 wrGradSpline(int aType1, int aType2, int aN) {
+        if (mWRSpline == null) return null;
+        IFunc1 tOut = ConstBoundFunc1.zeros(0, (mDR*mNR)/aN, aN);
+        tOut.fill(rho -> mWRSpline[aType1-1][aType2-1].subsGrad(rho));
+        return tOut;
     }
     
     private static IVector readData_(BufferedReader aReader, int aSize) throws IOException {
