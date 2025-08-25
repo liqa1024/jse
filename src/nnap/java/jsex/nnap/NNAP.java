@@ -91,12 +91,12 @@ public class NNAP implements IPairPotential {
     public final static String LIB_DIR = JAR_DIR+"nnap/jni/" + UT.Code.uniqueID(JAVA_HOME, CS.VERSION, NNAP.VERSION, Conf.OPT_LEVEL, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
-          "nnap_util.h"
-        , "jsex_nnap_nn_FeedForward.c"
+          "nnap_util.hpp"
+        , "jsex_nnap_nn_FeedForward.cpp"
         , "jsex_nnap_nn_FeedForward.h"
-        , "jsex_nnap_basis_SphericalChebyshev.c"
+        , "jsex_nnap_basis_SphericalChebyshev.cpp"
         , "jsex_nnap_basis_SphericalChebyshev.h"
-        , "jsex_nnap_basis_Chebyshev.c"
+        , "jsex_nnap_basis_Chebyshev.cpp"
         , "jsex_nnap_basis_Chebyshev.h"
     };
     

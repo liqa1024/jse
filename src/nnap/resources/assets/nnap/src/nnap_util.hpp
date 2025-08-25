@@ -1,12 +1,10 @@
-#include "jniutil.h"
-#include <math.h>
-
 #ifndef NNAP_UTIL_H
 #define NNAP_UTIL_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "jniutil.h"
+#include <cmath>
+
+namespace JSE_NNAP {
 
 #undef JSE_DBL_MIN_NORMAL
 #define JSE_DBL_MIN_NORMAL (2.2250738585072014E-308)
@@ -27,31 +25,47 @@ extern "C" {
 #undef PI4
 #define PI4 (12.566370614359172)
 
-static inline jdouble pow2_jse(jdouble value) {
+static inline jdouble pow2(jdouble value) {
     return value * value;
 }
-static inline jdouble pow3_jse(jdouble value) {
+static inline jdouble pow3(jdouble value) {
     return value * value * value;
 }
-static inline jdouble pow4_jse(jdouble value) {
+static inline jdouble pow4(jdouble value) {
     jdouble value2 = value * value;
     return value2 * value2;
 }
-static inline jboolean numericEqual_jse(jdouble aLHS, jdouble aRHS) {
+static inline jboolean numericEqual(jdouble aLHS, jdouble aRHS) {
     jdouble tNorm = fabs((double)aLHS) + fabs((double)aRHS);
     if (tNorm < JSE_DBL_MIN_NORMAL * JSE_EPS_MUL) return JNI_TRUE;
     jdouble tDiff = fabs((double)(aLHS - aRHS));
     return (tDiff <= tNorm * JSE_DBL_EPSILON) ? JNI_TRUE : JNI_FALSE;
 }
 
-static inline jdouble dot_jse(jdouble *aArray, jint aLen) {
+template <jint N>
+static inline jdouble dot(jdouble *aArray) {
+    jdouble rDot = 0.0;
+    for (jint i = 0; i < N; ++i) {
+        rDot += aArray[i]*aArray[i];
+    }
+    return rDot;
+}
+static inline jdouble dot(jdouble *aArray, jint aLen) {
     jdouble rDot = 0.0;
     for (jint i = 0; i < aLen; ++i) {
         rDot += aArray[i]*aArray[i];
     }
     return rDot;
 }
-static inline jdouble dotAB_jse(jdouble *aArrayL, jdouble *aArrayR, jint aLen) {
+template <jint N>
+static inline jdouble dot(jdouble *aArrayL, jdouble *aArrayR) {
+    jdouble rDot = 0.0;
+    for (jint i = 0; i < N; ++i) {
+        rDot += aArrayL[i]*aArrayR[i];
+    }
+    return rDot;
+}
+static inline jdouble dot(jdouble *aArrayL, jdouble *aArrayR, jint aLen) {
     jdouble rDot = 0.0;
     for (jint i = 0; i < aLen; ++i) {
         rDot += aArrayL[i]*aArrayR[i];
@@ -59,12 +73,32 @@ static inline jdouble dotAB_jse(jdouble *aArrayL, jdouble *aArrayR, jint aLen) {
     return rDot;
 }
 
+template <jint N>
+static inline void chebyshevFull(jdouble aX, jdouble *rDest) {
+    if (N < 0) return;
+    rDest[0] = 1.0;
+    if (N == 0) return;
+    rDest[1] = aX;
+    for (jint n = 2; n <= N; ++n) {
+        rDest[n] = 2.0*aX*rDest[n-1] - rDest[n-2];
+    }
+}
 static inline void chebyshevFull(jint aN, jdouble aX, jdouble *rDest) {
     if (aN < 0) return;
     rDest[0] = 1.0;
     if (aN == 0) return;
     rDest[1] = aX;
     for (jint n = 2; n <= aN; ++n) {
+        rDest[n] = 2.0*aX*rDest[n-1] - rDest[n-2];
+    }
+}
+template <jint N>
+static inline void chebyshev2Full(jdouble aX, jdouble *rDest) {
+    if (N < 0) return;
+    rDest[0] = 1.0;
+    if (N == 0) return;
+    rDest[1] = 2.0*aX;
+    for (jint n = 2; n <= N; ++n) {
         rDest[n] = 2.0*aX*rDest[n-1] - rDest[n-2];
     }
 }
@@ -78,6 +112,18 @@ static inline void chebyshev2Full(jint aN, jdouble aX, jdouble *rDest) {
     }
 }
 
+template <jint N>
+static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdouble *aCheby2,
+                             jdouble aDis, jdouble aRCut, jdouble aWt, jdouble aDx, jdouble aDy, jdouble aDz) {
+    const jdouble tRnPMul = 2.0 * aWt / (aDis*aRCut);
+    rRnPx[0] = 0.0; rRnPy[0] = 0.0; rRnPz[0] = 0.0;
+    for (jint n = 1; n <= N; ++n) {
+        const jdouble tRnP = n*tRnPMul*aCheby2[n-1];
+        rRnPx[n] = tRnP*aDx;
+        rRnPy[n] = tRnP*aDy;
+        rRnPz[n] = tRnP*aDz;
+    }
+}
 static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdouble *aCheby2, jint aNMax,
                              jdouble aDis, jdouble aRCut, jdouble aWt, jdouble aDx, jdouble aDy, jdouble aDz) {
     const jdouble tRnPMul = 2.0 * aWt / (aDis*aRCut);
@@ -90,9 +136,6 @@ static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdo
     }
 }
 
-#ifdef __cplusplus
 }
-#endif
-
 
 #endif //NNAP_UTIL_H

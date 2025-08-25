@@ -1,9 +1,7 @@
 #include "jsex_nnap_basis_SphericalChebyshev.h"
-#include "nnap_util.h"
+#include "nnap_util.hpp"
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 #define SH_LARGEST_L (20)
 
@@ -234,7 +232,7 @@ static inline void realSphericalHarmonicsFull4(jint aLMax, jdouble aX, jdouble a
     jdouble tCosPhi;
     jdouble tSinPhi;
     // avoid nan
-    if (numericEqual_jse(tXY, 0.0)) {
+    if (JSE_NNAP::numericEqual(tXY, 0.0)) {
         tCosPhi = 1.0;
         tSinPhi = 0.0;
     } else {
@@ -306,7 +304,7 @@ static inline void calL2_(jdouble *aCnlm, jdouble *rFp, jint aLMax, jboolean aNo
     // else
     for (jint l = 1; l <= aLMax; ++l) {
         jint tLen = l+l+1;
-        jdouble rDot = dot_jse(aCnlm + (l*l), tLen);
+        jdouble rDot = JSE_NNAP::dot(aCnlm + (l*l), tLen);
         tMul = PI4/(jdouble)tLen;
         tFp[l-1] = tMul * rDot;
     }
@@ -1900,11 +1898,11 @@ static inline void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint 
         // check rcut for merge
         if (dis >= aRCut) continue;
         // cal fc
-        jdouble fc = pow4_jse(1.0 - pow2_jse(dis/aRCut));
+        jdouble fc = JSE_NNAP::pow4(1.0 - JSE_NNAP::pow2(dis/aRCut));
         // cal Rn
         jdouble tRnX = 1.0 - 2.0*dis/aRCut;
         jdouble *tRn = aBufferNl ? (rNlRn + j*(aNMax+1)) : rNlRn;
-        chebyshevFull(aNMax, tRnX, tRn);
+        JSE_NNAP::chebyshevFull(aNMax, tRnX, tRn);
         switch(aWType) {
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
             // cal weight of type here
@@ -2125,8 +2123,8 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGrad1(JNIEnv 
         jdouble *tFpPy_ = tFpPy + tShiftFpP + aShiftFpPy;
         jdouble *tFpPz_ = tFpPz + tShiftFpP + aShiftFpPz;
         // cal fc
-        jdouble fcMul = 1.0 - pow2_jse(dis/aRCut);
-        jdouble fcMul3 = pow3_jse(fcMul);
+        jdouble fcMul = 1.0 - JSE_NNAP::pow2(dis/aRCut);
+        jdouble fcMul3 = JSE_NNAP::pow3(fcMul);
         jdouble fc = fcMul3 * fcMul;
         jdouble fcPMul = 8.0 * fcMul3 / (aRCut*aRCut);
         jdouble fcPx = dx * fcPMul;
@@ -2135,19 +2133,19 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGrad1(JNIEnv 
         // cal Rn
         jdouble *tRn = tNlRn + j*(aNMax+1);
         const jdouble tRnX = 1.0 - 2.0*dis/aRCut;
-        chebyshev2Full(aNMax-1, tRnX, tCheby2);
+        JSE_NNAP::chebyshev2Full(aNMax-1, tRnX, tCheby2);
         switch(aWType) {
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
             // cal weight of type here
             jdouble wt = ((type&1)==1) ? type : -type;
-            calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, wt, dx, dy, dz);
+            JSE_NNAP::calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, wt, dx, dy, dz);
             break;
         }
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
-            calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, 1.0, dx, dy, dz);
+            JSE_NNAP::calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, 1.0, dx, dy, dz);
             break;
         }
         default: {
@@ -2159,7 +2157,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGrad1(JNIEnv 
         jdouble sinTheta = dxy / dis;
         jdouble cosPhi;
         jdouble sinPhi;
-        jboolean dxyCloseZero = numericEqual_jse(dxy, 0.0);
+        jboolean dxyCloseZero = JSE_NNAP::numericEqual(dxy, 0.0);
         if (dxyCloseZero) {
             cosPhi = 1.0;
             sinPhi = 0.0;
@@ -2371,8 +2369,8 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGradWithShift
         // check rcut for merge
         if (dis >= aRCut) continue;
         // cal fc
-        jdouble fcMul = 1.0 - pow2_jse(dis/aRCut);
-        jdouble fcMul3 = pow3_jse(fcMul);
+        jdouble fcMul = 1.0 - JSE_NNAP::pow2(dis/aRCut);
+        jdouble fcMul3 = JSE_NNAP::pow3(fcMul);
         jdouble fc = fcMul3 * fcMul;
         jdouble fcPMul = 8.0 * fcMul3 / (aRCut*aRCut);
         jdouble fcPx = dx * fcPMul;
@@ -2381,19 +2379,19 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGradWithShift
         // cal Rn
         jdouble *tRn = tNlRn + j*(aNMax+1);
         const jdouble tRnX = 1.0 - 2.0*dis/aRCut;
-        chebyshev2Full(aNMax-1, tRnX, tCheby2);
+        JSE_NNAP::chebyshev2Full(aNMax-1, tRnX, tCheby2);
         switch(aWType) {
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
             // cal weight of type here
             jdouble wt = ((type&1)==1) ? type : -type;
-            calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, wt, dx, dy, dz);
+            JSE_NNAP::calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, wt, dx, dy, dz);
             break;
         }
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
-            calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, 1.0, dx, dy, dz);
+            JSE_NNAP::calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, 1.0, dx, dy, dz);
             break;
         }
         default: {
@@ -2405,7 +2403,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGradWithShift
         jdouble sinTheta = dxy / dis;
         jdouble cosPhi;
         jdouble sinPhi;
-        jboolean dxyCloseZero = numericEqual_jse(dxy, 0.0);
+        jboolean dxyCloseZero = JSE_NNAP::numericEqual(dxy, 0.0);
         if (dxyCloseZero) {
             cosPhi = 1.0;
             sinPhi = 0.0;
@@ -2601,8 +2599,8 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGradAndForceD
         jdouble *tFy_ = tFy + j;
         jdouble *tFz_ = tFz + j;
         // cal fc
-        jdouble fcMul = 1.0 - pow2_jse(dis/aRCut);
-        jdouble fcMul3 = pow3_jse(fcMul);
+        jdouble fcMul = 1.0 - JSE_NNAP::pow2(dis/aRCut);
+        jdouble fcMul3 = JSE_NNAP::pow3(fcMul);
         jdouble fc = fcMul3 * fcMul;
         jdouble fcPMul = 8.0 * fcMul3 / (aRCut*aRCut);
         jdouble fcPx = dx * fcPMul;
@@ -2611,19 +2609,19 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGradAndForceD
         // cal Rn
         jdouble *tRn = tNlRn + j*(aNMax+1);
         const jdouble tRnX = 1.0 - 2.0*dis/aRCut;
-        chebyshev2Full(aNMax-1, tRnX, tCheby2);
+        JSE_NNAP::chebyshev2Full(aNMax-1, tRnX, tCheby2);
         switch(aWType) {
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
             // cal weight of type here
             jdouble wt = ((type&1)==1) ? type : -type;
-            calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, wt, dx, dy, dz);
+            JSE_NNAP::calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, wt, dx, dy, dz);
             break;
         }
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
         case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
-            calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, 1.0, dx, dy, dz);
+            JSE_NNAP::calRnPxyz(tRnPx, tRnPy, tRnPz, tCheby2, aNMax, dis, aRCut, 1.0, dx, dy, dz);
             break;
         }
         default: {
@@ -2635,7 +2633,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGradAndForceD
         jdouble sinTheta = dxy / dis;
         jdouble cosPhi;
         jdouble sinPhi;
-        jboolean dxyCloseZero = numericEqual_jse(dxy, 0.0);
+        jboolean dxyCloseZero = JSE_NNAP::numericEqual(dxy, 0.0);
         if (dxyCloseZero) {
             cosPhi = 1.0;
             sinPhi = 0.0;
@@ -2848,6 +2846,4 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_evalGradAndForceD
     releaseJArrayBuf(aEnv, rFz, tFz, 0);
 }
 
-#ifdef __cplusplus
 }
-#endif

@@ -1,9 +1,6 @@
 #include "jsex_nnap_nn_FeedForward.h"
-#include "nnap_util.h"
+#include "nnap_util.hpp"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 static inline jdouble silu(jdouble aX) {
     return aX / (1.0 + exp(-aX));
@@ -34,7 +31,7 @@ static inline jdouble forward(jdouble *aX, jint aInputDim, jint *aHiddenDims, ji
     for (jint i = 0; i < tEnd; ++i) {
         const jint tOutSize = aHiddenDims[i];
         for (jint j = 0; j < tOutSize; ++j) {
-            jdouble rDot = dotAB_jse(tInput, tWeights, tInSize) + tBiases[j];
+            jdouble rDot = JSE_NNAP::dot(tInput, tWeights, tInSize) + tBiases[j];
             if (rGrad == NULL) {
                 rOutput[j] = silu(rDot);
             } else
@@ -61,7 +58,7 @@ static inline jdouble forward(jdouble *aX, jint aInputDim, jint *aHiddenDims, ji
     jdouble rOut = aOutputBias;
     const jint tOutSize = aHiddenDims[tEnd];
     for (jint j = 0; j < tOutSize; ++j) {
-        jdouble rDot = dotAB_jse(tInput, tWeights, tInSize) + tBiases[j];
+        jdouble rDot = JSE_NNAP::dot(tInput, tWeights, tInSize) + tBiases[j];
         if (rGrad == NULL) {
             rOutput[j] = silu(rDot);
         } else
@@ -148,7 +145,7 @@ static inline void backward(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdoubl
             rGradWeights -= tWeightSize;
         }
         for (jint j = 0; j < tOutSize; ++j) {
-            rGrad2[j] = dotAB_jse(tGrad3Before, tWeights, tInSize);
+            rGrad2[j] = JSE_NNAP::dot(tGrad3Before, tWeights, tInSize);
             rGrad3[j] = rGrad2[j] * tGrad[j];
             tWeights += tInSize;
         }
@@ -170,7 +167,7 @@ static inline void backward(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdoubl
     }
     if (rGradX != NULL) {
         for (jint j = 0; j < aInputDim; ++j) {
-            rGradX[j] = dotAB_jse(tGrad3Before, tWeights, tInSize);
+            rGradX[j] = JSE_NNAP::dot(tGrad3Before, tWeights, tInSize);
             tWeights += tInSize;
         }
     }
@@ -211,7 +208,7 @@ static inline void gradBackward(jdouble *aGradXGrad, jdouble *aX, jdouble *rGrad
     // G^0 i
     jdouble *tWeights = aHiddenWeights;
     for (jint i = 0; i < tOutSize; ++i) {
-        rGrad5[i] = dotAB_jse(aGradXGrad, tWeights, tInSize);
+        rGrad5[i] = JSE_NNAP::dot(aGradXGrad, tWeights, tInSize);
         tWeights += tInSize;
     }
     const jint tEnd = aHiddenNumber - 1;
@@ -240,7 +237,7 @@ static inline void gradBackward(jdouble *aGradXGrad, jdouble *aX, jdouble *rGrad
         // G^l+1 ik
         jdouble *rGrad6 = rGrad5 + tInSize;
         for (jint i = 0; i < tOutSize; ++i) {
-            rGrad6[i] = dotAB_jse(tWeights, rGrad5, tInSize);
+            rGrad6[i] = JSE_NNAP::dot(tWeights, rGrad5, tInSize);
             tWeights += tInSize;
         }
         rGrad4 += tInSize;
@@ -277,7 +274,7 @@ static inline void gradBackward(jdouble *aGradXGrad, jdouble *aX, jdouble *rGrad
         // Xl-1 ik
         jdouble *rX3 = rX2 + tOutSize;
         for (jint i = 0; i < tInSize; ++i) {
-            rX3[i] = dotAB_jse(tWeights, rX2, tOutSize);
+            rX3[i] = JSE_NNAP::dot(tWeights, rX2, tOutSize);
             tWeights += tOutSize;
         }
         rX2 += tOutSize;
@@ -302,6 +299,9 @@ static inline void gradBackward(jdouble *aGradXGrad, jdouble *aX, jdouble *rGrad
         rGradWeights += aInputDim;
     }
 }
+
+
+extern "C" {
 
 JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_forward1(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aX, jint aShiftX, jint aInputDim, jintArray aHiddenDims, jint aHiddenNumber,
@@ -457,6 +457,4 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_gradBackward1(JNIEnv *aEnv,
     releaseJArrayBuf(aEnv, rHiddenGrads5, tHiddenGrads5, JNI_ABORT); // buffer only
 }
 
-#ifdef __cplusplus
 }
-#endif
