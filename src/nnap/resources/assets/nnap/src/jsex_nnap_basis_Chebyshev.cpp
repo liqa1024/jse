@@ -5,7 +5,40 @@
 template <jint NMAX, jint WTYPE, jboolean SINGLE_TYPE, jboolean NL_SIZE>
 static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                          jdouble *rNlRn, jdouble *rFp, jint *rFpGradNlSize,
-                         jboolean aBufferNl, jdouble aRCut) {
+                         jboolean aBufferNl, jint aTypeNum, jdouble aRCut) {
+    // const init
+    jint tSizeFp;
+    switch(WTYPE) {
+    case jsex_nnap_basis_Chebyshev_WTYPE_EXFULL: {
+        tSizeFp = SINGLE_TYPE ? (NMAX+1) : (aTypeNum+1)*(NMAX+1);
+        break;
+    }
+    case jsex_nnap_basis_Chebyshev_WTYPE_FULL: {
+        tSizeFp = aTypeNum*(NMAX+1);
+        break;
+    }
+    case jsex_nnap_basis_Chebyshev_WTYPE_NONE:
+    case jsex_nnap_basis_Chebyshev_WTYPE_SINGLE: {
+        tSizeFp = NMAX+1;
+        break;
+    }
+    case jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT: {
+        tSizeFp = SINGLE_TYPE ? (NMAX+1) : (NMAX+NMAX+2);
+        break;
+    }
+    default: {
+        tSizeFp = 0;
+        break;
+    }}
+    // clear fp first
+    for (jint i = 0; i < tSizeFp; ++i) {
+        rFp[i] = 0.0;
+    }
+    if (NL_SIZE) {
+        for (jint i = 0; i < tSizeFp; ++i) {
+            rFpGradNlSize[i] = 0;
+        }
+    }
     // loop for neighbor
     for (jint j = 0; j < aNN; ++j) {
         jint type = aNlType[j];
@@ -27,50 +60,54 @@ static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *a
             }
         }
         // cal fp
-        if (SINGLE_TYPE || WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_NONE || WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_SINGLE) {
+        if (SINGLE_TYPE ||
+            WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_NONE ||
+            WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_SINGLE ||
+            WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
+            jint tShiftFp;
+            if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
+                tShiftFp = (NMAX+1)*(type-1);
+            } else {
+                tShiftFp = 0;
+            }
+            jdouble *tFp = rFp+tShiftFp;
+            jint *tFpGradNlSize;
+            if (NL_SIZE) {
+                tFpGradNlSize = rFpGradNlSize+tShiftFp;
+            }
             for (jint n = 0; n <= NMAX; ++n) {
-                rFp[n] += fc*tRn[n];
-                if (NL_SIZE) ++rFpGradNlSize[n];
+                tFp[n] += fc*tRn[n];
+                if (NL_SIZE) ++tFpGradNlSize[n];
             }
             continue;
         }
         jdouble wt;
         jint tShiftFp;
         jdouble *tFpWt;
-        switch(WTYPE) {
-        case jsex_nnap_basis_Chebyshev_WTYPE_EXFULL: {
+        if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_EXFULL) {
             wt = 1.0;
             tShiftFp = (NMAX+1)*type;
             tFpWt = rFp+tShiftFp;
-            break;
-        }
-        case jsex_nnap_basis_Chebyshev_WTYPE_FULL: {
-            wt = 1.0;
-            tShiftFp = (NMAX+1)*(type-1);
-            tFpWt = rFp+tShiftFp;
-            break;
-        }
-        case jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT: {
+        } else
+        if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT) {
             // cal weight of type here
             wt = ((type&1)==1) ? type : -type;
             tShiftFp = NMAX+1;
             tFpWt = rFp+tShiftFp;
-            break;
-        }
-        default: {
+        } else {
             continue;
-        }}
+        }
         jint *tFpGradNlSizeWt;
         if (NL_SIZE) {
             tFpGradNlSizeWt = rFpGradNlSize+tShiftFp;
         }
         for (jint n = 0; n <= NMAX; ++n) {
             jdouble tFpn = fc*tRn[n];
+            rFp[n] += tFpn;
             tFpWt[n] += wt*tFpn;
-            if (NL_SIZE) ++tFpGradNlSizeWt[n];
-            if (WTYPE != jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
-                rFp[n] += tFpn;
-                if (NL_SIZE) ++rFpGradNlSize[n];
+            if (NL_SIZE) {
+                ++rFpGradNlSize[n];
+                ++tFpGradNlSizeWt[n];
             }
         }
     }
@@ -78,90 +115,90 @@ static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *a
 template <jint WTYPE, jboolean SINGLE_TYPE, jboolean NL_SIZE>
 static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                          jdouble *rNlRn, jdouble *rFp, jint *rFpGradNlSize,
-                         jboolean aBufferNl, jdouble aRCut, jint aNMax) {
+                         jboolean aBufferNl, jint aTypeNum, jdouble aRCut, jint aNMax) {
     switch (aNMax) {
     case 0: {
-        calFp<0, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<0, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 1: {
-        calFp<1, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<1, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 2: {
-        calFp<2, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<2, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 3: {
-        calFp<3, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<3, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 4: {
-        calFp<4, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<4, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 5: {
-        calFp<5, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<5, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 6: {
-        calFp<6, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<6, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 7: {
-        calFp<7, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<7, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 8: {
-        calFp<8, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<8, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 9: {
-        calFp<9, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<9, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 10: {
-        calFp<10, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<10, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 11: {
-        calFp<11, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<11, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 12: {
-        calFp<12, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<12, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 13: {
-        calFp<13, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<13, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 14: {
-        calFp<14, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<14, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 15: {
-        calFp<15, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<15, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 16: {
-        calFp<16, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<16, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 17: {
-        calFp<17, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<17, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 18: {
-        calFp<18, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<18, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 19: {
-        calFp<19, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<19, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     case 20: {
-        calFp<20, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut);
+        calFp<20, WTYPE, SINGLE_TYPE, NL_SIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut);
         return;
     }
     default: {
@@ -174,15 +211,15 @@ static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *a
                          jboolean aBufferNl, jint aTypeNum, jdouble aRCut, jint aNMax) {
     if (aTypeNum == 1) {
         if (rFpGradNlSize == NULL) {
-            calFp<WTYPE, JNI_TRUE, JNI_FALSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut, aNMax);
+            calFp<WTYPE, JNI_TRUE, JNI_FALSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut, aNMax);
         } else {
-            calFp<WTYPE, JNI_TRUE, JNI_TRUE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut, aNMax);
+            calFp<WTYPE, JNI_TRUE, JNI_TRUE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut, aNMax);
         }
     } else {
         if (rFpGradNlSize == NULL) {
-            calFp<WTYPE, JNI_FALSE, JNI_FALSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut, aNMax);
+            calFp<WTYPE, JNI_FALSE, JNI_FALSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut, aNMax);
         } else {
-            calFp<WTYPE, JNI_FALSE, JNI_TRUE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aRCut, aNMax);
+            calFp<WTYPE, JNI_FALSE, JNI_TRUE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut, aNMax);
         }
     }
 }
@@ -219,25 +256,49 @@ static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *a
 template <jint NMAX, jint WTYPE, jboolean SINGLE_TYPE, jboolean SPARSE>
 static inline void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                              jdouble *aNlRn, jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdouble *rCheby2,
-                             jint *rFpGradNlIndex, jint *rFpGradFpIndex, jint aShiftFp, jint aRestFp, jint aSizeFp,
-                             jdouble *rFpPx, jdouble *rFpPy, jdouble *rFpPz, jdouble aRCut) {
-        
+                             jint *rFpGradNlIndex, jint *rFpGradFpIndex, jint aShiftFp, jint aRestFp,
+                             jdouble *rFpPx, jdouble *rFpPy, jdouble *rFpPz, jint aTypeNum, jdouble aRCut) {
+    // const init
+    jint tSizeFp;
+    switch(WTYPE) {
+    case jsex_nnap_basis_Chebyshev_WTYPE_EXFULL: {
+        tSizeFp = SINGLE_TYPE ? (NMAX+1) : (aTypeNum+1)*(NMAX+1);
+        break;
+    }
+    case jsex_nnap_basis_Chebyshev_WTYPE_FULL: {
+        tSizeFp = aTypeNum*(NMAX+1);
+        break;
+    }
+    case jsex_nnap_basis_Chebyshev_WTYPE_NONE:
+    case jsex_nnap_basis_Chebyshev_WTYPE_SINGLE: {
+        tSizeFp = NMAX+1;
+        break;
+    }
+    case jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT: {
+        tSizeFp = SINGLE_TYPE ? (NMAX+1) : (NMAX+NMAX+2);
+        break;
+    }
+    default: {
+        tSizeFp = 0;
+        break;
+    }}
+    
     jint tShiftFpP = 0;
     // loop for neighbor
     for (jint j = 0; j < aNN; ++j) {
-        jdouble *tFpPx_, *tFpPy_, *tFpPz_;
-        jint *tFpGradNlIndex_, *tFpGradFpIndex_;
+        jdouble *tFpPx, *tFpPy, *tFpPz;
+        jint *tFpGradNlIndex, *tFpGradFpIndex;
         if (!SPARSE) {
             // init fpPxyz
-            tShiftFpP = j*(aShiftFp+aSizeFp+aRestFp) + aShiftFp;
-            tFpPx_ = rFpPx + tShiftFpP;
-            tFpPy_ = rFpPy + tShiftFpP;
-            tFpPz_ = rFpPz + tShiftFpP;
+            tShiftFpP = j*(aShiftFp+tSizeFp+aRestFp) + aShiftFp;
+            tFpPx = rFpPx + tShiftFpP;
+            tFpPy = rFpPy + tShiftFpP;
+            tFpPz = rFpPz + tShiftFpP;
             // always clear fpPxyz
-            for (jint i = 0; i < aSizeFp; ++i) {
-                tFpPx_[i] = 0.0;
-                tFpPy_[i] = 0.0;
-                tFpPz_[i] = 0.0;
+            for (jint i = 0; i < tSizeFp; ++i) {
+                tFpPx[i] = 0.0;
+                tFpPy[i] = 0.0;
+                tFpPz[i] = 0.0;
             }
         }
         // init nl
@@ -248,11 +309,11 @@ static inline void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
         if (dis >= aRCut) continue;
         if (SPARSE) {
             // init fpPxyz
-            tFpGradNlIndex_ = rFpGradNlIndex + tShiftFpP;
-            tFpGradFpIndex_ = rFpGradFpIndex + tShiftFpP;
-            tFpPx_ = rFpPx + tShiftFpP;
-            tFpPy_ = rFpPy + tShiftFpP;
-            tFpPz_ = rFpPz + tShiftFpP;
+            tFpGradNlIndex = rFpGradNlIndex + tShiftFpP;
+            tFpGradFpIndex = rFpGradFpIndex + tShiftFpP;
+            tFpPx = rFpPx + tShiftFpP;
+            tFpPy = rFpPy + tShiftFpP;
+            tFpPz = rFpPz + tShiftFpP;
         }
         // cal fc
         jdouble fcMul = 1.0 - JSE_NNAP::pow2(dis/aRCut);
@@ -274,7 +335,24 @@ static inline void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
             JSE_NNAP::calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, 1.0, dx, dy, dz);
         }
         // cal fpPxyz
-        if (SINGLE_TYPE || WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_NONE || WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_SINGLE) {
+        if (SINGLE_TYPE ||
+            WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_NONE ||
+            WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_SINGLE ||
+            WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
+            jint tShiftFp;
+            if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
+                tShiftFp = SPARSE ? 0 : (NMAX+1)*(type-1);
+            } else {
+                tShiftFp = 0;
+            }
+            jdouble *tFpPx_ = tFpPx+tShiftFp;
+            jdouble *tFpPy_ = tFpPy+tShiftFp;
+            jdouble *tFpPz_ = tFpPz+tShiftFp;
+            jint *tFpGradNlIndex_, *tFpGradFpIndex_;
+            if (SPARSE) {
+                tFpGradNlIndex_ = tFpGradNlIndex+tShiftFp;
+                tFpGradFpIndex_ = tFpGradFpIndex+tShiftFp;
+            }
             for (jint n = 0; n <= NMAX; ++n) {
                 // cal subFpPxyz and set to fp
                 const jdouble tRnn = tRn[n];
@@ -283,7 +361,11 @@ static inline void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
                 tFpPz_[n] = (fc*rRnPz[n] + fcPz*tRnn);
                 if (SPARSE) {
                     tFpGradNlIndex_[n] = j;
-                    tFpGradFpIndex_[n] = n;
+                    if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
+                        tFpGradFpIndex_[n] = n + (NMAX+1)*(type-1);
+                    } else {
+                        tFpGradFpIndex_[n] = n;
+                    }
                 }
             }
             if (SPARSE) {
@@ -293,32 +375,23 @@ static inline void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
         }
         jdouble wt;
         jint tShiftFp;
-        switch(WTYPE) {
-        case jsex_nnap_basis_Chebyshev_WTYPE_EXFULL: {
+        if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_EXFULL) {
             wt = 1.0;
             tShiftFp = SPARSE ? (NMAX+1) : (NMAX+1)*type;
-            break;
-        }
-        case jsex_nnap_basis_Chebyshev_WTYPE_FULL: {
-            wt = 1.0;
-            tShiftFp = SPARSE ? 0 : (NMAX+1)*(type-1);
-            break;
-        }
-        case jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT: {
+        } else
+        if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT) {
             wt = ((type&1)==1) ? type : -type;
             tShiftFp = NMAX+1;
-            break;
-        }
-        default: {
+        } else {
             continue;
-        }}
-        jdouble *tFpPxWt = tFpPx_+tShiftFp;
-        jdouble *tFpPyWt = tFpPy_+tShiftFp;
-        jdouble *tFpPzWt = tFpPz_+tShiftFp;
+        }
+        jdouble *tFpPxWt = tFpPx+tShiftFp;
+        jdouble *tFpPyWt = tFpPy+tShiftFp;
+        jdouble *tFpPzWt = tFpPz+tShiftFp;
         jint *tFpGradNlIndexWt, *tFpGradFpIndexWt;
         if (SPARSE) {
-            tFpGradNlIndexWt = tFpGradNlIndex_+tShiftFp;
-            tFpGradFpIndexWt = tFpGradFpIndex_+tShiftFp;
+            tFpGradNlIndexWt = tFpGradNlIndex+tShiftFp;
+            tFpGradFpIndexWt = tFpGradFpIndex+tShiftFp;
         }
         for (jint n = 0; n <= NMAX; ++n) {
             // cal subFpPxyz first
@@ -327,10 +400,12 @@ static inline void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
             const jdouble subFpPy = fc*rRnPy[n] + fcPy*tRnn;
             const jdouble subFpPz = fc*rRnPz[n] + fcPz*tRnn;
             // set to fp
-            tFpPxWt[n] = wt*subFpPx;
-            tFpPyWt[n] = wt*subFpPy;
-            tFpPzWt[n] = wt*subFpPz;
+            tFpPx[n] = subFpPx; tFpPxWt[n] = wt*subFpPx;
+            tFpPy[n] = subFpPy; tFpPyWt[n] = wt*subFpPy;
+            tFpPz[n] = subFpPz; tFpPzWt[n] = wt*subFpPz;
             if (SPARSE) {
+                tFpGradNlIndex[n] = j;
+                tFpGradFpIndex[n] = n;
                 tFpGradNlIndexWt[n] = j;
                 if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_EXFULL) {
                     tFpGradFpIndexWt[n] = n + (NMAX+1)*type;
@@ -338,113 +413,100 @@ static inline void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
                     tFpGradFpIndexWt[n] = n + (NMAX+1);
                 }
             }
-            if (WTYPE != jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
-                tFpPx_[n] = subFpPx;
-                tFpPy_[n] = subFpPy;
-                tFpPz_[n] = subFpPz;
-                if (SPARSE) {
-                    tFpGradNlIndex_[n] = j;
-                    tFpGradFpIndex_[n] = n;
-                }
-            }
         }
         if (SPARSE) {
-            if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
-                tShiftFpP += (NMAX+1);
-            } else {
-                tShiftFpP += (NMAX+NMAX+2);
-            }
+            tShiftFpP += (NMAX+NMAX+2);
         }
     }
 }
 template <jint WTYPE, jboolean SINGLE_TYPE, jboolean SPARSE>
 static inline void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                              jdouble *aNlRn, jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdouble *rCheby2,
-                             jint *rFpGradNlIndex, jint *rFpGradFpIndex, jint aShiftFp, jint aRestFp, jint aSizeFp,
-                             jdouble *rFpPx, jdouble *rFpPy, jdouble *rFpPz, jdouble aRCut, jint aNMax) {
+                             jint *rFpGradNlIndex, jint *rFpGradFpIndex, jint aShiftFp, jint aRestFp,
+                             jdouble *rFpPx, jdouble *rFpPy, jdouble *rFpPz, jint aTypeNum, jdouble aRCut, jint aNMax) {
     switch (aNMax) {
     case 0: {
-        calFpGrad<0, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<0, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 1: {
-        calFpGrad<1, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<1, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 2: {
-        calFpGrad<2, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<2, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 3: {
-        calFpGrad<3, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<3, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 4: {
-        calFpGrad<4, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<4, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 5: {
-        calFpGrad<5, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<5, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 6: {
-        calFpGrad<6, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<6, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 7: {
-        calFpGrad<7, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<7, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 8: {
-        calFpGrad<8, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<8, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 9: {
-        calFpGrad<9, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<9, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 10: {
-        calFpGrad<10, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<10, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 11: {
-        calFpGrad<11, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<11, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 12: {
-        calFpGrad<12, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<12, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 13: {
-        calFpGrad<13, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<13, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 14: {
-        calFpGrad<14, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<14, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 15: {
-        calFpGrad<15, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<15, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 16: {
-        calFpGrad<16, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<16, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 17: {
-        calFpGrad<17, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<17, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 18: {
-        calFpGrad<18, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<18, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 19: {
-        calFpGrad<19, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<19, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     case 20: {
-        calFpGrad<20, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut);
+        calFpGrad<20, WTYPE, SINGLE_TYPE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut);
         return;
     }
     default: {
@@ -454,39 +516,39 @@ static inline void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
 template <jint WTYPE, jboolean SPARSE>
 static inline void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                              jdouble *aNlRn, jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdouble *rCheby2,
-                             jint *rFpGradNlIndex, jint *rFpGradFpIndex, jint aShiftFp, jint aRestFp, jint aSizeFp,
+                             jint *rFpGradNlIndex, jint *rFpGradFpIndex, jint aShiftFp, jint aRestFp,
                              jdouble *rFpPx, jdouble *rFpPy, jdouble *rFpPz, jint aTypeNum, jdouble aRCut, jint aNMax) {
     if (aTypeNum == 1) {
-        calFpGrad<WTYPE, JNI_TRUE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut, aNMax);
+        calFpGrad<WTYPE, JNI_TRUE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax);
     } else {
-        calFpGrad<WTYPE, JNI_FALSE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aRCut, aNMax);
+        calFpGrad<WTYPE, JNI_FALSE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax);
     }
 }
 template <jboolean SPARSE>
 static inline void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                              jdouble *aNlRn, jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdouble *rCheby2,
-                             jint *rFpGradNlIndex, jint *rFpGradFpIndex, jint aShiftFp, jint aRestFp, jint aSizeFp,
+                             jint *rFpGradNlIndex, jint *rFpGradFpIndex, jint aShiftFp, jint aRestFp,
                              jdouble *rFpPx, jdouble *rFpPy, jdouble *rFpPz,
                              jint aTypeNum, jdouble aRCut, jint aNMax, jint aWType) {
     switch(aWType) {
     case jsex_nnap_basis_Chebyshev_WTYPE_EXFULL: {
-        calFpGrad<jsex_nnap_basis_Chebyshev_WTYPE_EXFULL, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax);
+        calFpGrad<jsex_nnap_basis_Chebyshev_WTYPE_EXFULL, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax);
         return;
     }
     case jsex_nnap_basis_Chebyshev_WTYPE_FULL: {
-        calFpGrad<jsex_nnap_basis_Chebyshev_WTYPE_FULL, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax);
+        calFpGrad<jsex_nnap_basis_Chebyshev_WTYPE_FULL, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax);
         return;
     }
     case jsex_nnap_basis_Chebyshev_WTYPE_NONE: {
-        calFpGrad<jsex_nnap_basis_Chebyshev_WTYPE_NONE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax);
+        calFpGrad<jsex_nnap_basis_Chebyshev_WTYPE_NONE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax);
         return;
     }
     case jsex_nnap_basis_Chebyshev_WTYPE_SINGLE: {
-        calFpGrad<jsex_nnap_basis_Chebyshev_WTYPE_SINGLE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax);
+        calFpGrad<jsex_nnap_basis_Chebyshev_WTYPE_SINGLE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax);
         return;
     }
     case jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT: {
-        calFpGrad<jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, aSizeFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax);
+        calFpGrad<jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax);
         return;
     }
     default: {
@@ -528,9 +590,19 @@ static inline void calFpAndForceDot(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNl
         }
         // cal fxyz
         jdouble tGradFc = 0.0;
-        if (SINGLE_TYPE || WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_NONE || WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_SINGLE) {
+        if (SINGLE_TYPE ||
+            WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_NONE ||
+            WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_SINGLE ||
+            WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
+            jint tShiftFp;
+            if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
+                tShiftFp = (NMAX+1)*(type-1);
+            } else {
+                tShiftFp = 0;
+            }
+            jdouble *tNNGrad = aNNGrad+tShiftFp;
             for (jint n = 0; n <= NMAX; ++n) {
-                jdouble tGradRn = aNNGrad[n];
+                jdouble tGradRn = tNNGrad[n];
                 jdouble tRnn = tRn[n];
                 tGradFc += tRnn * tGradRn;
                 tGradRn *= fc;
@@ -541,33 +613,19 @@ static inline void calFpAndForceDot(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNl
         } else {
             jdouble wt;
             jint tShiftFp;
-            switch(WTYPE) {
-            case jsex_nnap_basis_Chebyshev_WTYPE_EXFULL: {
+            if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_EXFULL) {
                 wt = 1.0;
                 tShiftFp = (NMAX+1)*type;
-                break;
-            }
-            case jsex_nnap_basis_Chebyshev_WTYPE_FULL: {
-                wt = 1.0;
-                tShiftFp = (NMAX+1)*(type-1);
-                break;
-            }
-            case jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT: {
+            } else
+            if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT) {
                 wt = ((type&1)==1) ? type : -type;
                 tShiftFp = NMAX+1;
-                break;
-            }
-            default: {
+            } else {
                 continue;
-            }}
+            }
             jdouble *tNNGradWt = aNNGrad+tShiftFp;
             for (jint n = 0; n <= NMAX; ++n) {
-                jdouble tGradRn;
-                if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
-                    tGradRn = wt*tNNGradWt[n];
-                } else {
-                    tGradRn = aNNGrad[n] + wt*tNNGradWt[n];
-                }
+                jdouble tGradRn = aNNGrad[n] + wt*tNNGradWt[n];
                 jdouble tRnn = tRn[n];
                 tGradFc += tRnn * tGradRn;
                 tGradRn *= fc;
@@ -715,31 +773,6 @@ static inline void calFpAndForceDot(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNl
     }}
 }
 
-#undef JSE_NNAP_CONSTANT_INIT_Chebyshev
-#define JSE_NNAP_CONSTANT_INIT_Chebyshev                        \
-jint tSize;                                                     \
-switch(aWType) {                                                \
-case jsex_nnap_basis_Chebyshev_WTYPE_EXFULL: {                  \
-    tSize = aTypeNum>1 ? (aTypeNum+1)*(aNMax+1) : (aNMax+1);    \
-    break;                                                      \
-}                                                               \
-case jsex_nnap_basis_Chebyshev_WTYPE_FULL: {                    \
-    tSize = aTypeNum*(aNMax+1);                                 \
-    break;                                                      \
-}                                                               \
-case jsex_nnap_basis_Chebyshev_WTYPE_NONE:                      \
-case jsex_nnap_basis_Chebyshev_WTYPE_SINGLE: {                  \
-    tSize = aNMax+1;                                            \
-    break;                                                      \
-}                                                               \
-case jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT: {                 \
-    tSize = aTypeNum>1 ? (aNMax+aNMax+2) : (aNMax+1);           \
-    break;                                                      \
-}                                                               \
-default: {                                                      \
-    tSize = 0;                                                  \
-    break;                                                      \
-}}                                                              \
 
 
 extern "C" {
@@ -757,22 +790,9 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_eval1(JNIEnv *aEnv, jclass
     jdouble *tFp = (jdouble *)getJArrayBuf(aEnv, rFp);
     jint *tFpGradNlSize = rFpGradNlSize==NULL ? NULL : (jint *)getJArrayBuf(aEnv, rFpGradNlSize);
     
-    // const init
-    JSE_NNAP_CONSTANT_INIT_Chebyshev
-    // clear fp first
-    jdouble *tFp_ = tFp + aShiftFp;
-    for (jint i = 0; i < tSize; ++i) {
-        tFp_[i] = 0.0;
-    }
-    jint *tFpGradNlSize_ = tFpGradNlSize==NULL ? NULL : (tFpGradNlSize+aShiftFpGradNlSize);
-    if (tFpGradNlSize_ != NULL) {
-        for (jint i = 0; i < tSize; ++i) {
-            tFpGradNlSize_[i] = 0;
-        }
-    }
     // do cal
     calFp(tNlDx, tNlDy, tNlDz, tNlType, aNN,
-          tNlRn, tFp_, tFpGradNlSize_,
+          tNlRn, tFp+aShiftFp, tFpGradNlSize==NULL ? NULL : (tFpGradNlSize+aShiftFpGradNlSize),
           aBufferNl, aTypeNum, aRCut, aNMax, aWType);
     
     // release java array
@@ -811,7 +831,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalGrad1(JNIEnv *aEnv, jc
     calFpGrad<JNI_TRUE>(tNlDx, tNlDy, tNlDz, tNlType, aNN,
                         tNlRn, tRnPx, tRnPy, tRnPz, tCheby2,
                         tFpGradNlIndex+aShiftFpGradNlIndex, tFpGradFpIndex+aShiftFpGradFpIndex,
-                        0, 0, 0,
+                        0, 0,
                         tFpPx+aShiftFpPx, tFpPy+aShiftFpPy, tFpPz+aShiftFpPz,
                         aTypeNum, aRCut, aNMax, aWType);
     
@@ -851,13 +871,10 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_evalGradWithShift1(JNIEnv 
     jdouble *tFpPy = (jdouble *)getJArrayBuf(aEnv, rFpPy);
     jdouble *tFpPz = (jdouble *)getJArrayBuf(aEnv, rFpPz);
     
-    // const init
-    JSE_NNAP_CONSTANT_INIT_Chebyshev
-    
     calFpGrad<JNI_FALSE>(tNlDx, tNlDy, tNlDz, tNlType, aNN,
                          tNlRn, tRnPx, tRnPy, tRnPz, tCheby2,
                          NULL, NULL,
-                         aShiftFp, aRestFp, tSize,
+                         aShiftFp, aRestFp,
                          tFpPx, tFpPy, tFpPz,
                          aTypeNum, aRCut, aNMax, aWType);
     

@@ -83,15 +83,6 @@ static inline void chebyshevFull(jdouble aX, jdouble *rDest) {
         rDest[n] = 2.0*aX*rDest[n-1] - rDest[n-2];
     }
 }
-static inline void chebyshevFull(jint aN, jdouble aX, jdouble *rDest) {
-    if (aN < 0) return;
-    rDest[0] = 1.0;
-    if (aN == 0) return;
-    rDest[1] = aX;
-    for (jint n = 2; n <= aN; ++n) {
-        rDest[n] = 2.0*aX*rDest[n-1] - rDest[n-2];
-    }
-}
 template <jint N>
 static inline void chebyshev2Full(jdouble aX, jdouble *rDest) {
     if (N < 0) return;
@@ -102,15 +93,6 @@ static inline void chebyshev2Full(jdouble aX, jdouble *rDest) {
         rDest[n] = 2.0*aX*rDest[n-1] - rDest[n-2];
     }
 }
-static inline void chebyshev2Full(jint aN, jdouble aX, jdouble *rDest) {
-    if (aN < 0) return;
-    rDest[0] = 1.0;
-    if (aN == 0) return;
-    rDest[1] = 2.0*aX;
-    for (jint n = 2; n <= aN; ++n) {
-        rDest[n] = 2.0*aX*rDest[n-1] - rDest[n-2];
-    }
-}
 
 template <jint N>
 static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdouble *aCheby2,
@@ -118,17 +100,6 @@ static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdo
     const jdouble tRnPMul = 2.0 * aWt / (aDis*aRCut);
     rRnPx[0] = 0.0; rRnPy[0] = 0.0; rRnPz[0] = 0.0;
     for (jint n = 1; n <= N; ++n) {
-        const jdouble tRnP = n*tRnPMul*aCheby2[n-1];
-        rRnPx[n] = tRnP*aDx;
-        rRnPy[n] = tRnP*aDy;
-        rRnPz[n] = tRnP*aDz;
-    }
-}
-static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdouble *aCheby2, jint aNMax,
-                             jdouble aDis, jdouble aRCut, jdouble aWt, jdouble aDx, jdouble aDy, jdouble aDz) {
-    const jdouble tRnPMul = 2.0 * aWt / (aDis*aRCut);
-    rRnPx[0] = 0.0; rRnPy[0] = 0.0; rRnPz[0] = 0.0;
-    for (jint n = 1; n <= aNMax; ++n) {
         const jdouble tRnP = n*tRnPMul*aCheby2[n-1];
         rRnPx[n] = tRnP*aDx;
         rRnPy[n] = tRnP*aDy;
