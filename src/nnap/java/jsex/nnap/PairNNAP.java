@@ -5,6 +5,7 @@ import jse.clib.DoubleCPointer;
 import jse.clib.IntCPointer;
 import jse.clib.NestedDoubleCPointer;
 import jse.clib.NestedIntCPointer;
+import jse.code.collection.IntList;
 import jse.lmp.LmpPlugin;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
@@ -98,35 +99,47 @@ public class PairNNAP extends LmpPlugin.Pair {
             vatom.parse2dest(vatomMat);
         }
         
+        // 将原子序号改为按照种类排序，这样可以利用缓存机制
+        for (int ti = 0; ti < mTypeNum; ++ti) {
+            mTypeIlist[ti].clear();
+        }
+        for (int ii = 0; ii < inum; ++ii) {
+            int i = ilist.getAt(ii);
+            final int typei = typeVec.get(i);
+            mTypeIlist[typei-1].add(i);
+        }
         // loop over neighbors of atoms
         mNNAP.calEnergyForceVirial(nlocal, (initDo, finalDo, neighborListDo) -> {
             if (initDo != null) initDo.run(0);
-            for (int ii = 0; ii < inum; ++ii) {
-                int i = ilist.getAt(ii);
-                final double xtmp = xMat.get(i, 0);
-                final double ytmp = xMat.get(i, 1);
-                final double ztmp = xMat.get(i, 2);
-                final int typei = typeVec.get(i);
-                IntCPointer jlist = firstneigh.getAt(i);
-                final int jnum = numneigh.getAt(i);
-                final IntVector jlistVec = IntVectorCache.getVec(jnum);
-                jlist.parse2dest(jlistVec);
-                // 遍历近邻
-                neighborListDo.run(0, i, mLmpType2NNAPType[typei], (aRMax, aDxyzTypeIdxDo) -> {
-                    for (int jj = 0; jj < jnum; ++jj) {
-                        int j = jlistVec.get(jj);
-                        j &= LmpPlugin.NEIGHMASK;
-                        // 注意 jse 中的 dxyz 和 lammps 定义的相反
-                        double delx = xMat.get(j, 0) - xtmp;
-                        double dely = xMat.get(j, 1) - ytmp;
-                        double delz = xMat.get(j, 2) - ztmp;
-                        double rsq = delx*delx + dely*dely + delz*delz;
-                        if (rsq < mCutsq[typei]) {
-                            aDxyzTypeIdxDo.run(delx, dely, delz, mLmpType2NNAPType[typeVec.get(j)], j);
+            for (IntList tSubIlist : mTypeIlist) {
+                final int tSubInum = tSubIlist.size();
+                for (int ii = 0; ii < tSubInum; ++ii) {
+                    int i = tSubIlist.get(ii);
+                    final double xtmp = xMat.get(i, 0);
+                    final double ytmp = xMat.get(i, 1);
+                    final double ztmp = xMat.get(i, 2);
+                    final int typei = typeVec.get(i);
+                    IntCPointer jlist = firstneigh.getAt(i);
+                    final int jnum = numneigh.getAt(i);
+                    final IntVector jlistVec = IntVectorCache.getVec(jnum);
+                    jlist.parse2dest(jlistVec);
+                    // 遍历近邻
+                    neighborListDo.run(0, i, mLmpType2NNAPType[typei], (aRMax, aDxyzTypeIdxDo) -> {
+                        for (int jj = 0; jj < jnum; ++jj) {
+                            int j = jlistVec.get(jj);
+                            j &= LmpPlugin.NEIGHMASK;
+                            // 注意 jse 中的 dxyz 和 lammps 定义的相反
+                            double delx = xMat.get(j, 0) - xtmp;
+                            double dely = xMat.get(j, 1) - ytmp;
+                            double delz = xMat.get(j, 2) - ztmp;
+                            double rsq = delx*delx + dely*dely + delz*delz;
+                            if (rsq < mCutsq[typei]) {
+                                aDxyzTypeIdxDo.run(delx, dely, delz, mLmpType2NNAPType[typeVec.get(j)], j);
+                            }
                         }
-                    }
-                });
-                IntVectorCache.returnVec(jlistVec);
+                    });
+                    IntVectorCache.returnVec(jlistVec);
+                }
             }
             if (finalDo != null) finalDo.run(0);
         }, !eflag ? null : (threadID, cIdx, idx, eng) -> {
@@ -192,9 +205,9 @@ public class PairNNAP extends LmpPlugin.Pair {
             String tLmpUnits = unitStyle();
             if (tLmpUnits!=null && !tLmpUnits.equals(tNNAPUnits)) throw new IllegalArgumentException("Invalid units ("+tLmpUnits+") for this model ("+tNNAPUnits+")");
         }
-        int tTypeNum = atomNtypes();
+        mTypeNum = atomNtypes();
         int tArgLen = aArgs.length-2;
-        if (tArgLen-1 != tTypeNum) throw new IllegalArgumentException("Elements number in pair_coeff not match ntypes ("+tTypeNum+").");
+        if (tArgLen-1 != mTypeNum) throw new IllegalArgumentException("Elements number in pair_coeff not match ntypes ("+mTypeNum+").");
         mLmpType2NNAPType = new int[tArgLen];
         mCutoff = new double[tArgLen];
         mCutsq = new double[tArgLen];
@@ -206,11 +219,17 @@ public class PairNNAP extends LmpPlugin.Pair {
             mCutoff[type] = mNNAP.model(tNNAPType).basis().rcut();
             mCutsq[type] = mCutoff[type]*mCutoff[type];
         }
+        mTypeIlist = new IntList[mTypeNum];
+        for (int ti = 0; ti < mTypeNum; ++ti) {
+            mTypeIlist[ti] = new IntList(16);
+        }
     }
     protected NNAP mNNAP = null;
     protected int[] mLmpType2NNAPType = null;
     protected double[] mCutoff = null;
     protected double[] mCutsq = null;
+    protected int mTypeNum = -1;
+    private IntList[] mTypeIlist = null;
     
     @Override public double initOne(int i, int j) {
         return mCutoff[i];
