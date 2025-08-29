@@ -269,52 +269,9 @@ public class NNAP implements IPairPotential {
         public NeuralNetwork nn() {return nn(0);}
         public NeuralNetwork nn(int aThreadID) {return mNN[aThreadID];}
         
-        /// 现在使用全局的缓存实现，可以进一步减少内存池的调用操作
-        private final DoubleList[] mNlDx, mNlDy, mNlDz;
-        private final IntList[] mNlType, mNlIdx;
-        
-        private final DoubleList[] mForceX, mForceY, mForceZ;
-        private DoubleList bufForceX(int aThreadID, int aSizeMin) {
-            DoubleList tForceX = mForceX[aThreadID];
-            tForceX.ensureCapacity(aSizeMin);
-            tForceX.setInternalDataSize(aSizeMin);
-            return tForceX;
-        }
-        private DoubleList bufForceY(int aThreadID, int aSizeMin) {
-            DoubleList tForceY = mForceY[aThreadID];
-            tForceY.ensureCapacity(aSizeMin);
-            tForceY.setInternalDataSize(aSizeMin);
-            return tForceY;
-        }
-        private DoubleList bufForceZ(int aThreadID, int aSizeMin) {
-            DoubleList tForceZ = mForceZ[aThreadID];
-            tForceZ.ensureCapacity(aSizeMin);
-            tForceZ.setInternalDataSize(aSizeMin);
-            return tForceZ;
-        }
-        
         private SingleNNAP(Basis[] aBasis, NeuralNetwork[] aNN) {
             mBasis = aBasis;
             mNN = aNN;
-            
-            mNlDx = new DoubleList[mThreadNumber];
-            mNlDy = new DoubleList[mThreadNumber];
-            mNlDz = new DoubleList[mThreadNumber];
-            mNlType = new IntList[mThreadNumber];
-            mNlIdx = new IntList[mThreadNumber];
-            mForceX = new DoubleList[mThreadNumber];
-            mForceY = new DoubleList[mThreadNumber];
-            mForceZ = new DoubleList[mThreadNumber];
-            for (int i = 0; i < mThreadNumber; ++i) {
-                mNlDx[i] = new DoubleList(16);
-                mNlDy[i] = new DoubleList(16);
-                mNlDz[i] = new DoubleList(16);
-                mNlType[i] = new IntList(16);
-                mNlIdx[i] = new IntList(16);
-                mForceX[i] = new DoubleList(16);
-                mForceY[i] = new DoubleList(16);
-                mForceZ[i] = new DoubleList(16);
-            }
         }
     }
     private boolean mIsTorch = false;
@@ -329,6 +286,30 @@ public class NNAP implements IPairPotential {
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return mSymbols[aType-1];}
     public String units() {return mUnits;}
+    
+    /// 现在使用全局的缓存实现，可以进一步减少内存池的调用操作
+    private final DoubleList[] mNlDx, mNlDy, mNlDz;
+    private final IntList[] mNlType, mNlIdx;
+    
+    private final DoubleList[] mForceX, mForceY, mForceZ;
+    private DoubleList bufForceX(int aThreadID, int aSizeMin) {
+        DoubleList tForceX = mForceX[aThreadID];
+        tForceX.ensureCapacity(aSizeMin);
+        tForceX.setInternalDataSize(aSizeMin);
+        return tForceX;
+    }
+    private DoubleList bufForceY(int aThreadID, int aSizeMin) {
+        DoubleList tForceY = mForceY[aThreadID];
+        tForceY.ensureCapacity(aSizeMin);
+        tForceY.setInternalDataSize(aSizeMin);
+        return tForceY;
+    }
+    private DoubleList bufForceZ(int aThreadID, int aSizeMin) {
+        DoubleList tForceZ = mForceZ[aThreadID];
+        tForceZ.ensureCapacity(aSizeMin);
+        tForceZ.setInternalDataSize(aSizeMin);
+        return tForceZ;
+    }
     
     @SuppressWarnings("unchecked")
     public NNAP(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
@@ -358,6 +339,25 @@ public class NNAP implements IPairPotential {
         }
         for (int i = 0; i < tModelSize; ++i) {
             if (mModels.get(i) == null) throw new IllegalArgumentException("Model init fail for type "+(i+1));
+        }
+        
+        mNlDx = new DoubleList[mThreadNumber];
+        mNlDy = new DoubleList[mThreadNumber];
+        mNlDz = new DoubleList[mThreadNumber];
+        mNlType = new IntList[mThreadNumber];
+        mNlIdx = new IntList[mThreadNumber];
+        mForceX = new DoubleList[mThreadNumber];
+        mForceY = new DoubleList[mThreadNumber];
+        mForceZ = new DoubleList[mThreadNumber];
+        for (int i = 0; i < mThreadNumber; ++i) {
+            mNlDx[i] = new DoubleList(16);
+            mNlDy[i] = new DoubleList(16);
+            mNlDz[i] = new DoubleList(16);
+            mNlType[i] = new IntList(16);
+            mNlIdx[i] = new IntList(16);
+            mForceX[i] = new DoubleList(16);
+            mForceY[i] = new DoubleList(16);
+            mForceZ[i] = new DoubleList(16);
         }
     }
     public NNAP(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
@@ -419,11 +419,11 @@ public class NNAP implements IPairPotential {
             SingleNNAP tModel = model(cType);
             Basis tBasis = tModel.basis(threadID);
             NeuralNetwork tNN = tModel.nn(threadID);
-            DoubleList tNlDx = tModel.mNlDx[threadID];
-            DoubleList tNlDy = tModel.mNlDy[threadID];
-            DoubleList tNlDz = tModel.mNlDz[threadID];
-            IntList tNlType = tModel.mNlType[threadID];
-            IntList tNlIdx = tModel.mNlIdx[threadID];
+            DoubleList tNlDx = mNlDx[threadID];
+            DoubleList tNlDy = mNlDy[threadID];
+            DoubleList tNlDz = mNlDz[threadID];
+            IntList tNlType = mNlType[threadID];
+            IntList tNlIdx = mNlIdx[threadID];
             buildNL_(nl, tBasis.rcut(), tNlDx, tNlDy, tNlDz, tNlType, tNlIdx);
             double tEng = tBasis.evalEnergy(tNlDx, tNlDy, tNlDz, tNlType, tNN);
             rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
@@ -447,16 +447,16 @@ public class NNAP implements IPairPotential {
             SingleNNAP tModel = model(cType);
             Basis tBasis = tModel.basis(threadID);
             NeuralNetwork tNN = tModel.nn(threadID);
-            DoubleList tNlDx = tModel.mNlDx[threadID];
-            DoubleList tNlDy = tModel.mNlDy[threadID];
-            DoubleList tNlDz = tModel.mNlDz[threadID];
-            IntList tNlType = tModel.mNlType[threadID];
-            IntList tNlIdx = tModel.mNlIdx[threadID];
+            DoubleList tNlDx = mNlDx[threadID];
+            DoubleList tNlDy = mNlDy[threadID];
+            DoubleList tNlDz = mNlDz[threadID];
+            IntList tNlType = mNlType[threadID];
+            IntList tNlIdx = mNlIdx[threadID];
             buildNL_(nl, tBasis.rcut(), tNlDx, tNlDy, tNlDz, tNlType, tNlIdx);
             final int tNeiNum = tNlDx.size();
-            DoubleList tForceX = tModel.bufForceX(threadID, tNeiNum);
-            DoubleList tForceY = tModel.bufForceY(threadID, tNeiNum);
-            DoubleList tForceZ = tModel.bufForceZ(threadID, tNeiNum);
+            DoubleList tForceX = bufForceX(threadID, tNeiNum);
+            DoubleList tForceY = bufForceY(threadID, tNeiNum);
+            DoubleList tForceZ = bufForceZ(threadID, tNeiNum);
             double tEng = tBasis.evalEnergyForce(tNlDx, tNlDy, tNlDz, tNlType, tNN, tForceX, tForceY, tForceZ);
             
             if (rEnergyAccumulator != null) {
