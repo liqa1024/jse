@@ -84,7 +84,7 @@ abstract class WTypeBasis extends MergeableBasis {
         }}
     }
     
-    public void initParameters() {
+    @Override public void initParameters() {
         if (mDenseWeight == null) return;
         mDenseWeight.assignRow(() -> RANDOM.nextDouble(-1, 1));
     }

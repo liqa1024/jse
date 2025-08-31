@@ -71,7 +71,7 @@ public class Chebyshev extends WTypeBasis {
         this(null, aTypeNum, aNMax, aRCut, WTYPE_DEFAULT, null);
     }
     
-    public Chebyshev threadSafeRef() {
+    @Override public Chebyshev threadSafeRef() {
         return new Chebyshev(mSymbols, mTypeNum, mNMax, mRCut, mWType, mDenseWeight);
     }
     

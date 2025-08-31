@@ -9,6 +9,7 @@ import jse.code.OS;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
+import jse.code.collection.NewCollections;
 import jse.math.vector.IVector;
 import jse.math.vector.Vectors;
 import jsex.nnap.basis.*;
@@ -145,42 +146,15 @@ public class NNAP implements IPairPotential {
     }
     
     @SuppressWarnings("unchecked")
-    private @Nullable SingleNNAP initSingleNNAPFrom(int aType, Map<String, ?> aModelInfo) throws Exception {
-        Map<String, ?> tBasis = (Map<String, ?>)aModelInfo.get("basis");
-        if (tBasis == null) {
-            tBasis = Maps.of("type", "spherical_chebyshev");
-        }
-        Object tBasisType = tBasis.get("type");
-        if (tBasisType == null) {
-            tBasisType = "spherical_chebyshev";
-        }
-        Basis[] aBasis = new Basis[mThreadNumber];
-        switch(tBasisType.toString()) {
-        case "mirror": {
-            return null; // mirror 情况延迟初始化
-        }
-        case "spherical_chebyshev": {
-            for (int i = 0; i < mThreadNumber; ++i) {
-                aBasis[i] = SphericalChebyshev.load(mSymbols, tBasis);
-            }
-            break;
-        }
-        case "chebyshev": {
-            for (int i = 0; i < mThreadNumber; ++i) {
-                aBasis[i] = Chebyshev.load(mSymbols, tBasis);
-            }
-            break;
-        }
-        case "merge": {
-            for (int i = 0; i < mThreadNumber; ++i) {
-                aBasis[i] = Merge.load(mSymbols, tBasis);
-            }
-            break;
-        }
-        default: {
-            throw new IllegalArgumentException("Unsupported basis type: " + tBasisType);
-        }}
+    private @Nullable SingleNNAP initSingleNNAPFrom(Basis aBasis, Map<String, ?> aModelInfo) throws Exception {
+        // mirror 情况延迟初始化
+        if (aBasis instanceof Mirror) return null;
         
+        Basis[] aBasisPar = new Basis[mThreadNumber];
+        aBasisPar[0] = aBasis;
+        for (int i = 1; i < mThreadNumber; ++i) {
+            aBasisPar[i] = aBasis.threadSafeRef();
+        }
         Number tRefEng = (Number)aModelInfo.get("ref_eng");
         double aRefEng = tRefEng==null ? 0.0 : tRefEng.doubleValue();
         List<? extends Number> tNormSigma = (List<? extends Number>)UT.Code.get(aModelInfo, "norm_sigma", "norm_vec");
@@ -199,10 +173,10 @@ public class NNAP implements IPairPotential {
         if (tModelObj != null) {
             mIsTorch = true;
             for (int i = 0; i < mThreadNumber; ++i) {
-                NeuralNetwork tNN = new TorchModel(aBasis[0].size(), tModelObj.toString());
+                NeuralNetwork tNN = new TorchModel(aBasis.size(), tModelObj.toString());
                 aNN[i] = new NormedNeuralNetwork(tNN, aNormMu, aNormSigma, aNormMuEng, aNormSigmaEng);
             }
-            return new SingleNNAP(aBasis, aNN);
+            return new SingleNNAP(aBasisPar, aNN);
         }
         Map<String, ?> tModel = (Map<String, ?>)aModelInfo.get("nn");
         Object tModelType = tModel.get("type");
@@ -220,30 +194,27 @@ public class NNAP implements IPairPotential {
         case "torch": {
             mIsTorch = true;
             for (int i = 0; i < mThreadNumber; ++i) {
-                NeuralNetwork tNN = new TorchModel(aBasis[0].size(), tModel.get("model").toString());
+                NeuralNetwork tNN = new TorchModel(aBasis.size(), tModel.get("model").toString());
                 aNN[i] = new NormedNeuralNetwork(tNN, aNormMu, aNormSigma, aNormMuEng, aNormSigmaEng);
             }
             break;
         }
         default: {
-            throw new IllegalArgumentException("Unsupported model type: " + tBasisType);
+            throw new IllegalArgumentException("Unsupported model type: " + tModelType);
         }}
-        return new SingleNNAP(aBasis, aNN);
+        return new SingleNNAP(aBasisPar, aNN);
     }
     @SuppressWarnings("unchecked")
-    private @Nullable SingleNNAP postInitSingleNNAPFrom(int aType, Map<String, ?> aModelInfo) {
-        Map<String, ?> tBasis = (Map<String, ?>)aModelInfo.get("basis");
-        if (tBasis == null) return null;
-        Object tBasisType = tBasis.get("type");
+    private @Nullable SingleNNAP postInitSingleNNAPFrom(Basis aBasis, Map<String, ?> aModelInfo) {
         // 目前只考虑 mirror 的情况
-        if (!tBasisType.equals("mirror")) return null;
-        Object tMirror = tBasis.get("mirror");
-        if (tMirror == null) throw new IllegalArgumentException("Key `mirror` required for basis mirror");
-        int tMirrorType = ((Number)tMirror).intValue();
-        Basis[] aBasis = new Basis[mThreadNumber];
-        for (int i = 0; i < mThreadNumber; ++i) {
-            aBasis[i] = new Mirror(model(tMirrorType).basis(i), tMirrorType, aType);
+        if (!(aBasis instanceof Mirror)) return null;
+        
+        Basis[] aBasisPar = new Basis[mThreadNumber];
+        aBasisPar[0] = aBasis;
+        for (int i = 1; i < mThreadNumber; ++i) {
+            aBasisPar[i] = aBasis.threadSafeRef();
         }
+        int tMirrorType = ((Mirror)aBasis).mirrorType();
         // mirror 会强制这些额外值缺省
         Number tRefEng = (Number)aModelInfo.get("ref_eng");
         if (tRefEng != null) throw new IllegalArgumentException("ref_eng in mirror ModelInfo MUST be empty");
@@ -255,12 +226,12 @@ public class NNAP implements IPairPotential {
         tModel = aModelInfo.get("model");
         if (tModel != null) throw new IllegalArgumentException("model data in mirror ModelInfo MUST be empty");
         // 现在直接采用引用写法，因为不会存在同时调用的情况
-        NeuralNetwork[] aNN = model(tMirrorType).mNN;
-        return new SingleNNAP(aBasis, aNN);
+        NeuralNetwork[] aNN = mModels.get(tMirrorType-1).mNN;
+        return new SingleNNAP(aBasisPar, aNN);
     }
     
     @SuppressWarnings("SameParameterValue")
-    public class SingleNNAP {
+    public static class SingleNNAP {
         private final NeuralNetwork[] mNN;
         private final Basis[] mBasis;
         
@@ -329,12 +300,16 @@ public class NNAP implements IPairPotential {
             if (tSymbol == null) throw new IllegalArgumentException("No symbol in ModelInfo");
             mSymbols[i] = tSymbol.toString();
         }
+        Basis[] tBasis = Basis.load(mSymbols, NewCollections.map(tModelInfos, info -> {
+            Object tBasisInfo = info.get("basis");
+            return tBasisInfo!=null ? tBasisInfo : Maps.of("type", "spherical_chebyshev");
+        }));
         mModels = new ArrayList<>(tModelSize);
         for (int i = 0; i < tModelSize; ++i) {
-            mModels.add(initSingleNNAPFrom(i+1, tModelInfos.get(i)));
+            mModels.add(initSingleNNAPFrom(tBasis[i], tModelInfos.get(i)));
         }
         for (int i = 0; i < tModelSize; ++i) {
-            SingleNNAP tModel = postInitSingleNNAPFrom(i+1, tModelInfos.get(i));
+            SingleNNAP tModel = postInitSingleNNAPFrom(tBasis[i], tModelInfos.get(i));
             if (tModel != null) mModels.set(i, tModel);
         }
         for (int i = 0; i < tModelSize; ++i) {

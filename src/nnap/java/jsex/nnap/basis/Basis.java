@@ -15,20 +15,78 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.IntUnaryOperator;
 
 /**
  * 通用的 nnap 基组/描述符实现
  * <p>
- * 由于内部会缓存近邻列表，因此此类相同实例线程不安全，而不同实例之间线程安全
+ * 由于内部会缓存近邻列表，因此此类相同实例线程不安全，而不同实例之间线程安全；
+ * 可以通过 {@link #threadSafeRef()} 来创建一个线程安全的引用（拷贝内部缓存）
+ *
  * @author liqa
  */
-@ApiStatus.Experimental
 public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     static {
         // 依赖 nnap
         NNAP.InitHelper.init();
     }
+    
+    /** 提供直接加载完整基组的通用接口 */
+    @SuppressWarnings("rawtypes")
+    public static Basis[] load(String @Nullable[] aSymbols, List aData) {
+        final int tTypeNum = aData.size();
+        if (aSymbols!=null && aSymbols.length!=tTypeNum) throw new IllegalArgumentException("Input size of symbols and data list mismatch");
+        Basis[] rBasis = new Basis[tTypeNum];
+        for (int i = 0; i < tTypeNum; ++i) {
+            Map tBasisMap = (Map)aData.get(i);
+            Object tBasisType = tBasisMap.get("type");
+            if (tBasisType == null) {
+                tBasisType = "spherical_chebyshev";
+            }
+            switch(tBasisType.toString()) {
+            case "mirror": {
+                break; // mirror 情况延迟初始化
+            }
+            case "spherical_chebyshev": {
+                rBasis[i] = aSymbols==null ? SphericalChebyshev.load(tTypeNum, tBasisMap)
+                                           : SphericalChebyshev.load(aSymbols, tBasisMap);
+                break;
+            }
+            case "chebyshev": {
+                rBasis[i] = aSymbols==null ? Chebyshev.load(tTypeNum, tBasisMap)
+                                           : Chebyshev.load(aSymbols, tBasisMap);
+                break;
+            }
+            case "merge": {
+                rBasis[i] = aSymbols==null ? Merge.load(tTypeNum, tBasisMap)
+                                           : Merge.load(aSymbols, tBasisMap);
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Unsupported basis type: " + tBasisType);
+            }}
+        }
+        for (int i = 0; i < tTypeNum; ++i) {
+            Map tBasisMap = (Map)aData.get(i);
+            Object tBasisType = tBasisMap.get("type");
+            if (!tBasisType.equals("mirror")) continue;
+            Object tMirror = tBasisMap.get("mirror");
+            if (tMirror == null) throw new IllegalArgumentException("Key `mirror` required for basis mirror");
+            int tMirrorType = ((Number)tMirror).intValue();
+            rBasis[i] = new Mirror(rBasis[tMirrorType-1], tMirrorType, i+1);
+        }
+        return rBasis;
+    }
+    @SuppressWarnings("rawtypes")
+    public static Basis[] load(List aData) {
+        return load(null, aData);
+    }
+    
+    /** @return 线程安全的引用对象，保证读取调用是线程安全的 */
+    public abstract Basis threadSafeRef();
+    /** 随机初始化内部可能存在的可拟合参数 */
+    public void initParameters() {/**/}
     
     /** @return 基组需要的近邻截断半径 */
     public abstract double rcut();

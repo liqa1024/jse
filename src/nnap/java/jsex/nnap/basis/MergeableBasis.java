@@ -7,6 +7,9 @@ import jse.math.vector.DoubleArrayVector;
 
 public abstract class MergeableBasis extends Basis {
     
+    /** @return {@inheritDoc} */
+    @Override public abstract MergeableBasis threadSafeRef();
+    
     static void clearForce_(DoubleList rFx, DoubleList rFy, DoubleList rFz) {
         final int tSize = rFx.internalDataSize();
         if (Conf.OPERATION_CHECK) {

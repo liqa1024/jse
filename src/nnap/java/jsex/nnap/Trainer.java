@@ -535,53 +535,15 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             Map<?, ?> tSubBasis = (Map<?, ?>)tBasis;
             tBasis = NewCollections.from(aSymbols.length, i -> tSubBasis);
         }
-        List<?> tBasisList = (List<?>)tBasis;
-        Basis[][] rBasis = new Basis[aThreadNum][aSymbols.length];
-        for (int i = 0; i < aSymbols.length; ++i) {
-            Map<?, ?> tBasisMap = (Map<?, ?>)tBasisList.get(i);
-            Object tBasisType = tBasisMap.get("type");
-            if (tBasisType == null) {
-                tBasisType = "spherical_chebyshev";
-            }
-            switch(tBasisType.toString()) {
-            case "mirror": {
-                break; // mirror 情况延迟初始化
-            }
-            case "spherical_chebyshev": {
-                SphericalChebyshev tSubBasis = SphericalChebyshev.load(aSymbols, tBasisMap);
-                rBasis[0][i] = tSubBasis; tSubBasis.initParameters();
-                for (int ti = 1; ti < aThreadNum; ++ti) {
-                    rBasis[ti][i] = tSubBasis.threadSafeRef();
-                }
-                break;
-            }
-            case "chebyshev": {
-                Chebyshev tSubBasis = Chebyshev.load(aSymbols, tBasisMap);
-                rBasis[0][i] = tSubBasis; tSubBasis.initParameters();
-                for (int ti = 1; ti < aThreadNum; ++ti) {
-                    rBasis[ti][i] = tSubBasis.threadSafeRef();
-                }
-                break;
-            }
-            case "merge": {
-                for (int ti = 0; ti < aThreadNum; ++ti) {
-                    rBasis[ti][i] = Merge.load(aSymbols, tBasisMap);
-                }
-                break;
-            }
-            default: {
-                throw new IllegalArgumentException("Unsupported basis type: " + tBasisType);
-            }}
+        Basis[][] rBasis = new Basis[aThreadNum][];
+        rBasis[0] = Basis.load(aSymbols, (List<?>)tBasis);
+        for (Basis tSubBasis : rBasis[0]) {
+            tSubBasis.initParameters();
         }
-        for (int i = 0; i < aSymbols.length; ++i) {
-            Map<?, ?> tBasisMap = (Map<?, ?>)tBasisList.get(i);
-            Object tBasisType = tBasisMap.get("type");
-            if (!tBasisType.equals("mirror")) continue;
-            Object tMirror = tBasisMap.get("mirror");
-            if (tMirror == null) throw new IllegalArgumentException("Key `mirror` required for basis mirror");
-            int tMirrorType = ((Number)tMirror).intValue();
-            for (int ti = 0; ti < aThreadNum; ++ti) {
-                rBasis[ti][i] = new Mirror(rBasis[ti][tMirrorType-1], tMirrorType, i+1);
+        for (int ti = 1; ti < aThreadNum; ++ti) {
+            rBasis[ti] = new Basis[aSymbols.length];
+            for (int i = 0; i < aSymbols.length; ++i) {
+                rBasis[ti][i] = rBasis[0][i].threadSafeRef();
             }
         }
         return rBasis;

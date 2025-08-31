@@ -108,7 +108,7 @@ public class SphericalChebyshev extends WTypeBasis {
         this(null, aTypeNum, aNMax, aLMax, DEFAULT_NORADIAL, DEFAULT_L3MAX, DEFAULT_L3CROSS, aRCut, WTYPE_DEFAULT, null);
     }
     
-    public SphericalChebyshev threadSafeRef() {
+    @Override public SphericalChebyshev threadSafeRef() {
         return new SphericalChebyshev(mSymbols, mTypeNum, mNMax, mLMax, mNoRadial, mL3Max, mL3Cross, mRCut, mWType, mDenseWeight);
     }
     

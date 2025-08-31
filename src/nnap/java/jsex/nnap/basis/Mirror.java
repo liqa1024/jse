@@ -28,6 +28,11 @@ public class Mirror extends Basis {
     public int mirrorType() {return mMirrorType;}
     public int thisType() {return mThisType;}
     
+    @Override public Mirror threadSafeRef() {
+        return new Mirror(mMirrorBasis.threadSafeRef(), mMirrorType, mThisType);
+    }
+    // mirror 本身没有参数，因此 initPara 依旧是 no-op
+    
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override public void save(Map rSaveTo) {
         rSaveTo.put("type", "mirror");

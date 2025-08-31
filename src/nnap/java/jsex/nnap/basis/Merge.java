@@ -13,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
+import static jse.code.CS.RANDOM;
 import static jse.code.CS.ZL_STR;
 
 /**
@@ -92,6 +93,17 @@ public class Merge extends Basis {
             tShiftFp += tSizeFp;
         }
     }
+    @Override public Merge threadSafeRef() {
+        MergeableBasis[] rBasis = new MergeableBasis[mMergeBasis.length];
+        for (int i = 0; i < mMergeBasis.length; ++i) {
+            rBasis[i] = mMergeBasis[i].threadSafeRef();
+        }
+        return new Merge(rBasis);
+    }
+    @Override public void initParameters() {
+        for (Basis tBasis : mMergeBasis) tBasis.initParameters();
+    }
+    
     @Override public double rcut() {return mRCut;}
     @Override public int size() {return mSize;}
     @Override public int atomTypeNumber() {return mTypeNum;}
