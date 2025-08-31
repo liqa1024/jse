@@ -2016,12 +2016,10 @@ static void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlT
             jint tShift = 0, tShiftFp = 0;
             for (jint k = 0; k < aDenseSize; ++k) {
                 jdouble wt = tDenseWeight[type-1];
-                for (jint n=0, tShift_=0; n <= aNMax; ++n, tShift_+=tLMAll) {
+                for (jint n=0, tShift_=0; n <= aNMax; ++n, tShift_+=tLMAll, tShift+=tLMAll, tShiftFp+=tSizeL) {
                     cnlm2fpPxyz<LMAX, NO_RADIAL, L3MAX, L3CROSS>(aCnlm+tShift, rCnlmPx+tShift_, rCnlmPy+tShift_, rCnlmPz+tShift_,
                                                                  tFpPx+tShiftFp, tFpPy+tShiftFp, tFpPz+tShiftFp, wt);
                 }
-                tShift += tLMAll;
-                tShiftFp += tSizeL;
                 tDenseWeight += aTypeNum;
             }
             if (SPARSE) {
