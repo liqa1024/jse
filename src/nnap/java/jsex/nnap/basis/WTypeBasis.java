@@ -14,30 +14,30 @@ import java.util.Map;
 import static jse.code.CS.RANDOM;
 
 abstract class WTypeBasis extends MergeableBasis {
-    public final static int WTYPE_DEFAULT = 0, WTYPE_NONE = -1, WTYPE_SINGLE = 1, WTYPE_FULL = 2, WTYPE_EXFULL = 3, WTYPE_DENSE = 4;
+    public final static int WTYPE_DEFAULT = 0, WTYPE_NONE = -1, WTYPE_SINGLE = 1, WTYPE_FULL = 2, WTYPE_EXFULL = 3, WTYPE_FUSE = 4;
     final static BiMap<String, Integer> ALL_WTYPE = ImmutableBiMap.<String, Integer>builder()
         .put("default", WTYPE_DEFAULT)
         .put("none", WTYPE_NONE)
         .put("single", WTYPE_SINGLE)
         .put("full", WTYPE_FULL)
         .put("exfull", WTYPE_EXFULL)
-        .put("dense", WTYPE_DENSE)
+        .put("fuse", WTYPE_FUSE)
         .build();
-    public final static int DEFAULT_DENSE_SIZE = 1;
+    public final static int DEFAULT_FUSE_SIZE = 1;
     
     final int mTypeNum;
     final int mWType;
-    final @Nullable RowMatrix mDenseWeight;
+    final @Nullable RowMatrix mFuseWeight;
     
-    WTypeBasis(int aTypeNum, int aWType, @Nullable RowMatrix aDenseWeight) {
+    WTypeBasis(int aTypeNum, int aWType, @Nullable RowMatrix aFuseWeight) {
         if (aTypeNum <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+aTypeNum);
         if (!ALL_WTYPE.containsValue(aWType)) throw new IllegalArgumentException("Input wtype MUST be in {-1, 0, 1, 2, 3, 4}, input: "+ aWType);
-        if (aWType==WTYPE_DENSE && aDenseWeight==null) throw new IllegalArgumentException("Input dense_weight MUST NOT be null when wtype=='dense'");
+        if (aWType==WTYPE_FUSE && aFuseWeight==null) throw new IllegalArgumentException("Input fuse_weight MUST NOT be null when wtype=='fuse'");
         mTypeNum = aTypeNum;
         mWType = aWType;
-        mDenseWeight = aDenseWeight;
-        if (mDenseWeight!=null && mDenseWeight.columnNumber()!=mTypeNum) throw new IllegalArgumentException("Column number of dense weight mismatch");
-        if (mDenseWeight!=null && mDenseWeight.rowNumber()==0) throw new IllegalArgumentException("Row number of dense weight MUST be non-zero");
+        mFuseWeight = aFuseWeight;
+        if (mFuseWeight!=null && mFuseWeight.columnNumber()!=mTypeNum) throw new IllegalArgumentException("Column number of fuse weight mismatch");
+        if (mFuseWeight!=null && mFuseWeight.rowNumber()==0) throw new IllegalArgumentException("Row number of fuse weight MUST be non-zero");
     }
     WTypeBasis(int aTypeNum, int aWType) {
         this(aTypeNum, aWType, null);
@@ -51,14 +51,14 @@ abstract class WTypeBasis extends MergeableBasis {
         return ALL_WTYPE.get(tType.toString());
     }
     @SuppressWarnings("rawtypes")
-    static @Nullable RowMatrix getDenseWeight_(Map aMap, int aWType, int aTypeNum) {
-        if (aWType != WTYPE_DENSE) return null;
-        Object tDenseWeight = aMap.get("dense_weight");
-        if (tDenseWeight != null) {
-            return Matrices.fromRows((List<?>)tDenseWeight);
+    static @Nullable RowMatrix getFuseWeight_(Map aMap, int aWType, int aTypeNum) {
+        if (aWType != WTYPE_FUSE) return null;
+        Object tFuseWeight = aMap.get("fuse_weight");
+        if (tFuseWeight != null) {
+            return Matrices.fromRows((List<?>)tFuseWeight);
         }
-        int tDenseSize = ((Number) UT.Code.getWithDefault(aMap, DEFAULT_DENSE_SIZE, "dense_size")).intValue();
-        return Matrices.zeros(tDenseSize, aTypeNum);
+        int tFuseSize = ((Number) UT.Code.getWithDefault(aMap, DEFAULT_FUSE_SIZE, "fuse_size")).intValue();
+        return Matrices.zeros(tFuseSize, aTypeNum);
     }
     
     int sizeN_(int aNMax) {
@@ -76,9 +76,9 @@ abstract class WTypeBasis extends MergeableBasis {
         case WTYPE_DEFAULT: {
             return mTypeNum>1 ? (aNMax+aNMax+2) : (aNMax+1);
         }
-        case WTYPE_DENSE: {
-            assert mDenseWeight != null;
-            return mDenseWeight.rowNumber() * (aNMax+1);
+        case WTYPE_FUSE: {
+            assert mFuseWeight != null;
+            return mFuseWeight.rowNumber() * (aNMax+1);
         }
         default: {
             throw new IllegalStateException();
@@ -86,17 +86,17 @@ abstract class WTypeBasis extends MergeableBasis {
     }
     
     @Override public void initParameters() {
-        if (mDenseWeight == null) return;
-        mDenseWeight.assignRow(() -> RANDOM.nextDouble(-1, 1));
+        if (mFuseWeight == null) return;
+        mFuseWeight.assignRow(() -> RANDOM.nextDouble(-1, 1));
         // 确保权重归一化
-        for (IVector tRow : mDenseWeight.rows()) {
+        for (IVector tRow : mFuseWeight.rows()) {
             tRow.div2this(tRow.operation().norm1() / mTypeNum);
         }
     }
     @Override public IVector parameters() {
-        if (mWType != WTYPE_DENSE) return null;
-        assert mDenseWeight != null;
-        return mDenseWeight.asVecRow();
+        if (mWType != WTYPE_FUSE) return null;
+        assert mFuseWeight != null;
+        return mFuseWeight.asVecRow();
     }
-    @Override public boolean hasParameters() {return mWType==WTYPE_DENSE;}
+    @Override public boolean hasParameters() {return mWType==WTYPE_FUSE;}
 }
