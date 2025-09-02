@@ -51,8 +51,9 @@ public class SphericalChebyshev extends WTypeBasis {
     private final IDataShell<double[]> mRnPx, mRnPy, mRnPz, mCheby2;
     private final IDataShell<double[]> mYPx, mYPy, mYPz, mYPphi, mYPtheta;
     
-    final DoubleList mNlY = new DoubleList(1024);
-    final DoubleList mNlRn = new DoubleList(128);
+    private final DoubleList mNlBnlm = new DoubleList(1024);
+    private final DoubleList mNlY = new DoubleList(1024);
+    private final DoubleList mNlRn = new DoubleList(128);
     
     SphericalChebyshev(String @Nullable[] aSymbols, int aTypeNum, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, double aRCut, int aWType, @Nullable RowMatrix aFuseWeight) {
         super(aTypeNum, aWType, aFuseWeight);
@@ -193,6 +194,20 @@ public class SphericalChebyshev extends WTypeBasis {
         eval0(aNlDx, aNlDy, aNlDz, aNlType, rFp, rFpGradNlSize, aBufferNl);
     }
     
+    @Override @ApiStatus.Internal
+    public void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara) {
+        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        
+        // 如果不是 fuse 直接返回不走 native
+        if (mWType != WTYPE_FUSE) return;
+        
+        final int tNN = aNlDx.size();
+        // 确保 bnlm 的长度
+        validSize_(mNlBnlm, tNN*(mNMax+1)*mLMAll);
+        
+        backward0(aNlDx, aNlDy, aNlDz, aNlType, aGradFp, rGradPara);
+    }
+    
     @Override
     protected void evalGrad_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType,
                              IntArrayVector aFpGradNlSize, IntArrayVector rFpGradNlIndex, IntArrayVector rFpGradFpIndex,
@@ -201,16 +216,6 @@ public class SphericalChebyshev extends WTypeBasis {
         
         // 现在直接计算基组偏导
         evalGrad0(aNlDx, aNlDy, aNlDz, aNlType, rFpGradNlIndex, rFpGradFpIndex, rFpPx, rFpPy, rFpPz);
-    }
-    
-    @Override @ApiStatus.Internal
-    public void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        
-        // 如果不是 fuse 直接返回不走 native
-        if (mWType != WTYPE_FUSE) return;
-        
-//        backward0(aNlDx, aNlDy, aNlDz, aNlType, aGradFp, rGradPara);
     }
     
     @Override
@@ -234,6 +239,20 @@ public class SphericalChebyshev extends WTypeBasis {
     private static native void eval1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
                                      double[] rNlRn, double[] rNlY, double[] rCnlm, double[] rFp, int aShiftFp, int @Nullable[] rFpNlSize, int aShiftFpNlSize,
                                      boolean aBufferNl, int aTypeNum, double aRCut, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, int aWType, double[] aFuseWeight, int aFuseSize);
+    
+    void backward0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType, IDataShell<double[]> aGradFp, IDataShell<double[]> rGradPara) {
+        assert mFuseWeight != null;
+        int tNN = aNlDx.internalDataSize();
+        backward1(aNlDx.internalDataWithLengthCheck(tNN, 0), aNlDy.internalDataWithLengthCheck(tNN, 0), aNlDz.internalDataWithLengthCheck(tNN, 0), aNlType.internalDataWithLengthCheck(tNN, 0), tNN,
+                  mRnPx.internalDataWithLengthCheck(mNMax+1, 0), mYPx.internalDataWithLengthCheck(mLMAll, 0), mCnlm.internalDataWithLengthCheck(mSizeN*mLMAll, 0), mNlBnlm.internalDataWithLengthCheck(tNN*(mNMax+1)*mLMAll, 0),
+                  mGradCnlm.internalDataWithLengthCheck(mSizeN*mLMAll, 0), aGradFp.internalDataWithLengthCheck(mSize), aGradFp.internalDataShift(),
+                  rGradPara.internalDataWithLengthCheck(mFuseWeight.internalDataSize()), rGradPara.internalDataShift(),
+                  mTypeNum, mRCut, mNMax, mLMax, mNoRadial, mL3Max, mL3Cross, mWType, mFuseWeight.internalDataWithLengthCheck(), mFuseWeight.rowNumber());
+    }
+    private static native void backward1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
+                                         double[] rRn, double[] rY, double[] rCnlm, double[] rNlBnlm, double[] rGradCnlm,
+                                         double[] aGradFp, int aShiftGradFp, double[] aGradPara, int aShiftGradPara,
+                                         int aTypeNum, double aRCut, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, int aWType, double[] aFuseWeight, int aFuseSize);
     
     void evalGrad0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType,
                    IDataShell<int[]> rFpGradNlIndex, IDataShell<int[]> rFpGradFpIndex, IDataShell<double[]> rFpPx, IDataShell<double[]> rFpPy, IDataShell<double[]> rFpPz) {

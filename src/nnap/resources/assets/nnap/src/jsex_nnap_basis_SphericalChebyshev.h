@@ -41,6 +41,14 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_eval1
 
 /*
  * Class:     jsex_nnap_basis_SphericalChebyshev
+ * Method:    backward1
+ * Signature: ([D[D[D[II[D[D[D[D[D[DI[DIIDIIZIZI[DI)V
+ */
+JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_backward1
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jint, jdouble, jint, jint, jboolean, jint, jboolean, jint, jdoubleArray, jint);
+
+/*
+ * Class:     jsex_nnap_basis_SphericalChebyshev
  * Method:    evalGrad1
  * Signature: ([D[D[D[II[D[D[D[D[D[D[D[D[D[D[D[D[D[D[D[II[II[DI[DI[DIIDIIZIZI[DI)V
  */

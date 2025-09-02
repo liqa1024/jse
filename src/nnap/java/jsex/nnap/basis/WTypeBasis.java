@@ -47,7 +47,9 @@ abstract class WTypeBasis extends MergeableBasis {
         @Nullable Object tType = UT.Code.get(aMap, "wtype");
         if (tType == null) return WTYPE_DEFAULT;
         if (tType instanceof Number) return ((Number)tType).intValue();
-        return ALL_WTYPE.get(tType.toString());
+        @Nullable Integer tOut = ALL_WTYPE.get(tType.toString());
+        if (tOut == null) throw new IllegalArgumentException("Input wtype MUST be in {default, none, full, exfull, fuse}, input: "+tType);
+        return tOut;
     }
     @SuppressWarnings("rawtypes")
     static @Nullable RowMatrix getFuseWeight_(Map aMap, int aWType, int aTypeNum) {

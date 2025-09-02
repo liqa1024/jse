@@ -38,8 +38,8 @@ public class Chebyshev extends WTypeBasis {
     final int mSize;
     
     /** 一些缓存的中间变量，现在统一作为对象存储，对于这种大规模的缓存情况可以进一步提高效率 */
-    final IDataShell<double[]> mRnPx, mRnPy, mRnPz, mCheby2;
-    final DoubleList mNlRn = new DoubleList(128);
+    private final IDataShell<double[]> mRnPx, mRnPy, mRnPz, mCheby2;
+    private final DoubleList mNlRn = new DoubleList(128);
     
     Chebyshev(String @Nullable[] aSymbols, int aTypeNum, int aNMax, double aRCut, int aWType, @Nullable RowMatrix aFuseWeight) {
         super(aTypeNum, aWType, aFuseWeight);

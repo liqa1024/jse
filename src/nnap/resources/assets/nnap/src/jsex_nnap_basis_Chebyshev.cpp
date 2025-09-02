@@ -126,6 +126,10 @@ template <jint NMAX, jint WTYPE>
 static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                         jdouble *rRn, jdouble *aGradFp, jdouble *rGradPara,
                         jint aTypeNum, jdouble aRCut, jint aFuseSize) noexcept {
+    static_assert(WTYPE!=jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT &&
+                  WTYPE!=jsex_nnap_basis_Chebyshev_WTYPE_NONE &&
+                  WTYPE!=jsex_nnap_basis_Chebyshev_WTYPE_FULL &&
+                  WTYPE!=jsex_nnap_basis_Chebyshev_WTYPE_EXFULL, "WTYPE INVALID");
     // loop for neighbor
     for (jint j = 0, ji = -1; j < aNN; ++j) {
         jint type = aNlType[j];
