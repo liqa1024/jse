@@ -113,7 +113,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     protected boolean mHasStress = false;
     protected boolean mHasTest = false;
     protected final Vector[] mNormMu, mNormSigma;
-    protected final Vector[] mGradMu, mGradSigma;
+    protected final Vector[][] mGradMu, mGradSigma;
     protected double mNormMuEng = 0.0, mNormSigmaEng = 0.0;
     protected final DoubleList mTrainLoss = new DoubleList(64);
     protected final DoubleList mTestLoss = new DoubleList(64);
@@ -130,7 +130,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     protected double mMinLoss = Double.POSITIVE_INFINITY;
     protected final Vector[] mSelectParas;
     
-    private final IntVector mDivBuf;
+    private final IntVector[] mDivBuf;
     private final Vector[][] mFpBuf, mGradFpBuf;
     private final List<List<List<Vector>>> mHiddenOutputsBuf, mHiddenGradsBuf, mHiddenGrads2Buf, mHiddenGrads3Buf, mHiddenGradGradsBuf;
     private final DoubleList[] mForceNlXBuf, mForceNlYBuf, mForceNlZBuf;
@@ -296,15 +296,21 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         
         mNormMu = new Vector[mTypeNum];
         mNormSigma = new Vector[mTypeNum];
-        mGradMu = new Vector[mTypeNum];
-        mGradSigma = new Vector[mTypeNum];
-        mDivBuf = IntVector.zeros(mTypeNum);
         for (int i = 0; i < mTypeNum; ++i) {
             int tBasisSize = mBasis[0][i].size();
             mNormMu[i] = Vector.zeros(tBasisSize);
             mNormSigma[i] = Vector.zeros(tBasisSize);
-            mGradMu[i] = Vector.zeros(tBasisSize);
-            mGradSigma[i] = Vector.zeros(tBasisSize);
+        }
+        mGradMu = new Vector[aThreadNumber][mTypeNum];
+        mGradSigma = new Vector[aThreadNumber][mTypeNum];
+        mDivBuf = new IntVector[aThreadNumber];
+        for (int ti = 0; ti < aThreadNumber; ++ti) {
+            mDivBuf[ti] = IntVector.zeros(mTypeNum);
+            for (int i = 0; i < mTypeNum; ++i) {
+                int tBasisSize = mBasis[0][i].size();
+                mGradMu[ti][i] = Vector.zeros(tBasisSize);
+                mGradSigma[ti][i] = Vector.zeros(tBasisSize);
+            }
         }
         mFpBuf = new Vector[aThreadNumber][];
         mGradFpBuf = new Vector[aThreadNumber][];
@@ -1073,17 +1079,22 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         });
         // 在这里进行 train basis 归一化部分的反向传播
         if (mTrainBasis && tRequireGrad) {
-            Basis[] tBasis = mBasis[0];
-            for (int i = 0; i < mTypeNum; ++i) {
-                mGradSigma[i].fill(0.0);
+            for (int ti = 0; ti < tThreadNum; ++ti) {
+                for (int i = 0; i < mTypeNum; ++i) {
+                    mGradSigma[ti][i].fill(0.0);
+                    mGradMu[ti][i].fill(0.0);
+                }
+                mDivBuf[ti].fill(0);
             }
             // 先遍历一次得到 grad sigma2
-            mDivBuf.fill(0);
-            for (int i = 0; i < tData.mSize; ++i) {
+            pool().parfor(tData.mSize, (i, threadID) -> {
+                Basis[] tBasis = mBasis[threadID];
                 IntVector tAtomType = tData.mAtomType.get(i);
                 int tAtomNum = tAtomType.size();
                 Vector[] tGradNormFp = tData.mGradNormFp.get(i);
                 Vector[] tFp = tData.mFp.get(i);
+                Vector[] rGradSigma = mGradSigma[threadID];
+                IntVector rDivBuf = mDivBuf[threadID];
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
                     // 归一化系数同样对于 mirror 的会采用镜像的种类
@@ -1094,22 +1105,28 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                     Vector tSubGradNormFp = tGradNormFp[k];
                     Vector tSigma = mNormSigma[tType-1];
                     Vector tMu = mNormMu[tType-1];
-                    Vector rGradSigma = mGradSigma[tType-1];
-                    final int tSizeFp = rGradSigma.size();
+                    Vector rGradSigma_ = rGradSigma[tType-1];
+                    final int tSizeFp = rGradSigma_.size();
                     for (int ii = 0; ii < tSizeFp; ++ii) {
                         double sigma = tSigma.get(ii);
                         double rhs = (tSubFp.get(ii)-tMu.get(ii)) / (2.0*sigma*sigma*sigma) * tSubGradNormFp.get(ii);
-                        rGradSigma.add(ii, -rhs);
+                        rGradSigma_.add(ii, -rhs);
                     }
                     // 顺便累加统计数目
-                    mDivBuf.increment(tType-1);
+                    rDivBuf.increment(tType-1);
                 }
+            });
+            for (int ti = 1; ti < tThreadNum; ++ti) {
+                for (int i = 0; i < mTypeNum; ++i) {
+                    mGradSigma[0][i].plus2this(mGradSigma[ti][i]);
+                }
+                mDivBuf[0].plus2this(mDivBuf[ti]);
             }
             // 简单遍历更新 grad mu
             for (int i = 0; i < mTypeNum; ++i) {
-                Vector rGradMu = mGradMu[i];
+                Vector rGradMu = mGradMu[0][i];
                 Vector tMu = mNormMu[i];
-                Vector tGradSigma = mGradSigma[i];
+                Vector tGradSigma = mGradSigma[0][i];
                 final int tSizeFp = tGradSigma.size();
                 for (int ii = 0; ii < tSizeFp; ++ii) {
                     double rhs = 2.0 * tMu.get(ii) * tGradSigma.get(ii);
@@ -1117,36 +1134,44 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 }
             }
             // 再次全部遍历更新 grad fp，顺便更新 grad mu
-            for (int i = 0; i < tData.mSize; ++i) {
+            pool().parfor(tData.mSize, (i, threadID) -> {
+                Basis[] tBasis = mBasis[threadID];
                 IntVector tAtomType = tData.mAtomType.get(i);
                 int tAtomNum = tAtomType.size();
                 Vector[] tGradNormFp = tData.mGradNormFp.get(i);
                 Vector[] rGradFp = tData.mGradFp.get(i);
                 Vector[] tFp = tData.mFp.get(i);
+                Vector[] rGradMu = mGradMu[threadID];
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
                     // 归一化系数同样对于 mirror 的会采用镜像的种类
                     if (tBasis[tType-1] instanceof Mirror) {
                         tType = ((Mirror)tBasis[tType-1]).mirrorType();
                     }
-                    int tDivI = mDivBuf.get(tType-1);
+                    int tDivI = mDivBuf[0].get(tType-1);
                     Vector tSubFp = tFp[k];
-                    Vector tGradSigma = mGradSigma[tType-1];
+                    Vector tGradSigma = mGradSigma[0][tType-1];
                     Vector rSubGradFp = rGradFp[k];
                     Vector tSubGradNormFp = tGradNormFp[k];
                     Vector tSigma = mNormSigma[tType-1];
-                    Vector rGradMu = mGradMu[tType-1];
+                    Vector rGradMu_ = rGradMu[tType-1];
                     final int tSizeFp = rSubGradFp.size();
                     for (int ii = 0; ii < tSizeFp; ++ii) {
                         double rhs1 = 2.0 / (double)tDivI * tSubFp.get(ii) * tGradSigma.get(ii);
                         rSubGradFp.add(ii, rhs1);
                         double rhs2 = tSubGradNormFp.get(ii) / tSigma.get(ii);
-                        rGradMu.add(ii, -rhs2);
+                        rGradMu_.add(ii, -rhs2);
                     }
+                }
+            });
+            for (int ti = 1; ti < tThreadNum; ++ti) {
+                for (int i = 0; i < mTypeNum; ++i) {
+                    mGradMu[0][i].plus2this(mGradMu[ti][i]);
                 }
             }
             // 最后全部遍历更新 mu 分支的 grad fp
-            for (int i = 0; i < tData.mSize; ++i) {
+            pool().parfor(tData.mSize, (i, threadID) -> {
+                Basis[] tBasis = mBasis[threadID];
                 IntVector tAtomType = tData.mAtomType.get(i);
                 int tAtomNum = tAtomType.size();
                 Vector[] rGradFp = tData.mGradFp.get(i);
@@ -1156,8 +1181,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                     if (tBasis[tType-1] instanceof Mirror) {
                         tType = ((Mirror)tBasis[tType-1]).mirrorType();
                     }
-                    int tDivI = mDivBuf.get(tType-1);
-                    Vector tGradMu = mGradMu[tType-1];
+                    int tDivI = mDivBuf[0].get(tType-1);
+                    Vector tGradMu = mGradMu[0][tType-1];
                     Vector rSubGradFp = rGradFp[k];
                     final int tSizeFp = rSubGradFp.size();
                     for (int ii = 0; ii < tSizeFp; ++ii) {
@@ -1165,10 +1190,10 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                         rSubGradFp.add(ii, rhs);
                     }
                 }
-            }
-            // 并行遍历，调用反向传播获取最终的梯度
+            });
+            // 最终遍历，调用反向传播获取最终的梯度
             pool().parfor(tData.mSize, (i, threadID) -> {
-                Basis[] tBasis_ = mBasis[threadID];
+                Basis[] tBasis = mBasis[threadID];
                 Vector tGradPara = mGradParaBuf[threadID];
                 ShortList[] tNl = tData.mNl.get(i);
                 FloatList[] tNlDx = tData.mNlDx.get(i), tNlDy = tData.mNlDy.get(i), tNlDz = tData.mNlDz.get(i);
@@ -1180,13 +1205,13 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
                     // 归一化系数同样对于 mirror 的会采用镜像的种类
-                    if (tBasis_[tType-1] instanceof Mirror) {
-                        tType = ((Mirror)tBasis_[tType-1]).mirrorType();
+                    if (tBasis[tType-1] instanceof Mirror) {
+                        tType = ((Mirror)tBasis[tType-1]).mirrorType();
                     }
                     Vector rSubGradFp = rGradFp[k];
                     int tShiftBasisPara = basisParaShift(tType);
                     initNl(tNl[k], tNlDx[k], tNlDy[k], tNlDz[k], tAtomType, tNlTypeBuf, tNlDxBuf, tNlDyBuf, tNlDzBuf);
-                    tBasis_[tType-1].backward(tNlDxBuf, tNlDyBuf, tNlDzBuf, tNlTypeBuf, rSubGradFp, tGradPara.subVec(tShiftBasisPara, tShiftBasisPara+mBasisParaSizes[tType-1]));
+                    tBasis[tType-1].backward(tNlDxBuf, tNlDyBuf, tNlDzBuf, tNlTypeBuf, rSubGradFp, tGradPara.subVec(tShiftBasisPara, tShiftBasisPara+mBasisParaSizes[tType-1]));
                 }
             });
         }
@@ -1506,7 +1531,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             mNormMu[i].fill(0.0);
             mNormSigma[i].fill(0.0);
         }
-        mDivBuf.fill(0);
+        mDivBuf[0].fill(0);
         for (int i = 0; i < mTrainData.mSize; ++i) {
             IntVector tAtomType = mTrainData.mAtomType.get(i);
             Vector[] tFp = mTrainData.mFp.get(i);
@@ -1520,11 +1545,11 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 Vector tSubFp = tFp[k];
                 mNormMu[tType-1].plus2this(tSubFp);
                 mNormSigma[tType-1].operation().operate2this(tSubFp, (lhs, rhs) -> lhs + rhs * rhs);
-                mDivBuf.increment(tType-1);
+                mDivBuf[0].increment(tType-1);
             }
         }
         for (int i = 0; i < mTypeNum; ++i) if (!(mBasis[0][i] instanceof Mirror)) {
-            int tDivI = mDivBuf.get(i);
+            int tDivI = mDivBuf[0].get(i);
             if (tDivI == 0) {
                 UT.Code.warning("number of atoms of type `"+mSymbols[i]+"` is zero, check your input or dataset.");
                 mNormMu[i].fill(0.0);
