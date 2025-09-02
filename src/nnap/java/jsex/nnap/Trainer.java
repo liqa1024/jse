@@ -3,7 +3,6 @@ package jsex.nnap;
 import jse.atom.AtomicParameterCalculator;
 import jse.atom.IAtomData;
 import jse.atom.IHasSymbol;
-import jse.cache.IntVectorCache;
 import jse.cache.VectorCache;
 import jse.code.IO;
 import jse.code.UT;
@@ -773,7 +772,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             initFp_(tData);
         }
         final boolean tRequireGrad = rGrad!=null;
-        final boolean tCacheFpGrad = mCacheFpGrad;
+        final boolean tCacheFpGrad = mCacheFpGrad && (!mTrainBasis);
         final int tThreadNum = threadNumber();
         if (tRequireGrad) {
             mGradParaBuf[0] = rGrad;
@@ -797,7 +796,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             double tVolume = tData.mVolume.get(i);
             Vector[] tFpBuf = mFpBuf[threadID];
             Vector[] tFp = tData.mFp.get(i);
-            if (mTrainBasis || (!mHasForce && !mHasStress)) {
+            if ((mTrainBasis && !aTest) || (!mHasForce && !mHasStress)) {
                 if (tRequireGrad) {
                     validHiddenBuf_(threadID, tAtomType, false);
                 }
