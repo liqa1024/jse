@@ -88,6 +88,10 @@ abstract class WTypeBasis extends MergeableBasis {
     @Override public void initParameters() {
         if (mDenseWeight == null) return;
         mDenseWeight.assignRow(() -> RANDOM.nextDouble(-1, 1));
+        // 确保权重归一化
+        for (IVector tRow : mDenseWeight.rows()) {
+            tRow.div2this(tRow.operation().norm1() / mTypeNum);
+        }
     }
     @Override public IVector parameters() {
         if (mWType != WTYPE_DENSE) return null;

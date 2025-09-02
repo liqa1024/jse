@@ -109,6 +109,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     protected boolean mHasForce = false;
     protected boolean mHasStress = false;
     protected boolean mHasTest = false;
+    protected boolean mNormInited = false;
     protected final Vector[] mNormMu, mNormSigma;
     protected double mNormMuEng = 0.0, mNormSigmaEng = 0.0;
     protected final DoubleList mTrainLoss = new DoubleList(64);
@@ -1466,9 +1467,12 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         mMinLoss = Double.POSITIVE_INFINITY;
         // 在这里初始化所有的 fp
         initFp();
-        // 重新构建归一化参数
-        initNormBasis();
-        initNormEng();
+        // 构建归一化参数，注意由于和神经网络绑定，因此这个不能重新构建
+        if (!mNormInited) {
+            initNormBasis();
+            initNormEng();
+            mNormInited = true;
+        }
         // 开始训练
         if (aPrintLog) {
             UT.Timer.progressBar(Maps.of(
