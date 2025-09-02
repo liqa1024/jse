@@ -424,8 +424,8 @@ static inline void chebyshev2Full(jint aN, jdouble aX, jdouble *rDest) noexcept 
 
 template <jint N>
 static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdouble *aCheby2,
-                             jdouble aDis, jdouble aRCut, jdouble aWt, jdouble aDx, jdouble aDy, jdouble aDz) noexcept {
-    const jdouble tRnPMul = 2.0 * aWt / (aDis*aRCut);
+                             jdouble aDis, jdouble aRCut, jdouble aDx, jdouble aDy, jdouble aDz) noexcept {
+    const jdouble tRnPMul = 2.0 / (aDis*aRCut);
     rRnPx[0] = 0.0; rRnPy[0] = 0.0; rRnPz[0] = 0.0;
     for (jint n = 1; n <= N; ++n) {
         const jdouble tRnP = n*tRnPMul*aCheby2[n-1];
@@ -435,8 +435,8 @@ static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdo
     }
 }
 static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdouble *aCheby2, jint aNMax,
-                             jdouble aDis, jdouble aRCut, jdouble aWt, jdouble aDx, jdouble aDy, jdouble aDz) noexcept {
-    const jdouble tRnPMul = 2.0 * aWt / (aDis*aRCut);
+                             jdouble aDis, jdouble aRCut, jdouble aDx, jdouble aDy, jdouble aDz) noexcept {
+    const jdouble tRnPMul = 2.0 / (aDis*aRCut);
     rRnPx[0] = 0.0; rRnPy[0] = 0.0; rRnPz[0] = 0.0;
     for (jint n = 1; n <= aNMax; ++n) {
         const jdouble tRnP = n*tRnPMul*aCheby2[n-1];

@@ -17,8 +17,7 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
         tSizeFp = aTypeNum*(NMAX+1);
         break;
     }
-    case jsex_nnap_basis_Chebyshev_WTYPE_NONE:
-    case jsex_nnap_basis_Chebyshev_WTYPE_SINGLE: {
+    case jsex_nnap_basis_Chebyshev_WTYPE_NONE: {
         tSizeFp = NMAX+1;
         break;
     }
@@ -57,13 +56,6 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
         jdouble tRnX = 1.0 - 2.0*dis/aRCut;
         jdouble *tRn = aBufferNl ? (rNlRn + ji*(NMAX+1)) : rNlRn;
         JSE_NNAP::chebyshevFull<NMAX>(tRnX, tRn);
-        if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_SINGLE) {
-            // cal weight of type here
-            jdouble wt = ((type&1)==1) ? type : -type;
-            for (jint n = 0; n <= NMAX; ++n) {
-                tRn[n] *= wt;
-            }
-        }
         // cal fp
         if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FUSE) {
             jdouble *tFuseWeight = aFuseWeight;
@@ -80,7 +72,6 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
             continue;
         }
         if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_NONE ||
-            WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_SINGLE ||
             WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_FULL || aTypeNum==1) {
             jint tShiftFp;
             if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
@@ -184,8 +175,7 @@ static void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlT
         tSizeFp = aTypeNum*(NMAX+1);
         break;
     }
-    case jsex_nnap_basis_Chebyshev_WTYPE_NONE:
-    case jsex_nnap_basis_Chebyshev_WTYPE_SINGLE: {
+    case jsex_nnap_basis_Chebyshev_WTYPE_NONE: {
         tSizeFp = NMAX+1;
         break;
     }
@@ -247,13 +237,7 @@ static void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlT
         jdouble *tRn = aNlRn + ji*(NMAX+1);
         const jdouble tRnX = 1.0 - 2.0*dis/aRCut;
         JSE_NNAP::chebyshev2Full<NMAX-1>(tRnX, rCheby2);
-        if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_SINGLE) {
-            // cal weight of type here
-            jdouble wt = ((type&1)==1) ? type : -type;
-            JSE_NNAP::calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, wt, dx, dy, dz);
-        } else {
-            JSE_NNAP::calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, 1.0, dx, dy, dz);
-        }
+        JSE_NNAP::calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, dx, dy, dz);
         // cal fpPxyz
         if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FUSE) {
             jdouble *tFuseWeight = aFuseWeight;
@@ -293,7 +277,6 @@ static void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlT
             continue;
         }
         if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_NONE ||
-            WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_SINGLE ||
             WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_FULL || aTypeNum==1) {
             jint tShiftFp;
             if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
@@ -402,13 +385,7 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
         jdouble *tRn = aNlRn + ji*(NMAX+1);
         const jdouble tRnX = 1.0 - 2.0*dis/aRCut;
         JSE_NNAP::chebyshev2Full<NMAX-1>(tRnX, rCheby2);
-        if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_SINGLE) {
-            // cal weight of type here
-            jdouble wt = ((type&1)==1) ? type : -type;
-            JSE_NNAP::calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, wt, dx, dy, dz);
-        } else {
-            JSE_NNAP::calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, 1.0, dx, dy, dz);
-        }
+        JSE_NNAP::calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, dx, dy, dz);
         jdouble *tGradRn;
         if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FUSE) {
             tGradRn = rCheby2;
@@ -441,7 +418,6 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
             }
         } else
         if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_NONE ||
-            WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_SINGLE ||
             WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_FULL || aTypeNum==1) {
             jint tShiftFp;
             if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
@@ -607,10 +583,6 @@ static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *a
     }
     case jsex_nnap_basis_Chebyshev_WTYPE_NONE: {
         calFp<jsex_nnap_basis_Chebyshev_WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut, aNMax, aFuseWeight, aFuseSize);
-        return;
-    }
-    case jsex_nnap_basis_Chebyshev_WTYPE_SINGLE: {
-        calFp<jsex_nnap_basis_Chebyshev_WTYPE_SINGLE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut, aNMax, aFuseWeight, aFuseSize);
         return;
     }
     case jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT: {
@@ -843,10 +815,6 @@ static inline void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
         calFpGrad<jsex_nnap_basis_Chebyshev_WTYPE_NONE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax, aFuseWeight, aFuseSize);
         return;
     }
-    case jsex_nnap_basis_Chebyshev_WTYPE_SINGLE: {
-        calFpGrad<jsex_nnap_basis_Chebyshev_WTYPE_SINGLE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax, aFuseWeight, aFuseSize);
-        return;
-    }
     case jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT: {
         calFpGrad<jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax, aFuseWeight, aFuseSize);
         return;
@@ -970,10 +938,6 @@ static inline void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint
     }
     case jsex_nnap_basis_Chebyshev_WTYPE_NONE: {
         calForce<jsex_nnap_basis_Chebyshev_WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, aNNGrad, rFx, rFy, rFz, aTypeNum, aRCut, aNMax, aFuseWeight, aFuseSize);
-        return;
-    }
-    case jsex_nnap_basis_Chebyshev_WTYPE_SINGLE: {
-        calForce<jsex_nnap_basis_Chebyshev_WTYPE_SINGLE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, aNNGrad, rFx, rFy, rFz, aTypeNum, aRCut, aNMax, aFuseWeight, aFuseSize);
         return;
     }
     case jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT: {

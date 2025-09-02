@@ -11,8 +11,6 @@ extern "C" {
 #define jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT 0L
 #undef jsex_nnap_basis_Chebyshev_WTYPE_NONE
 #define jsex_nnap_basis_Chebyshev_WTYPE_NONE -1L
-#undef jsex_nnap_basis_Chebyshev_WTYPE_SINGLE
-#define jsex_nnap_basis_Chebyshev_WTYPE_SINGLE 1L
 #undef jsex_nnap_basis_Chebyshev_WTYPE_FULL
 #define jsex_nnap_basis_Chebyshev_WTYPE_FULL 2L
 #undef jsex_nnap_basis_Chebyshev_WTYPE_EXFULL

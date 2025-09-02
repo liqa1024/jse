@@ -14,11 +14,10 @@ import java.util.Map;
 import static jse.code.CS.RANDOM;
 
 abstract class WTypeBasis extends MergeableBasis {
-    public final static int WTYPE_DEFAULT = 0, WTYPE_NONE = -1, WTYPE_SINGLE = 1, WTYPE_FULL = 2, WTYPE_EXFULL = 3, WTYPE_FUSE = 4;
+    public final static int WTYPE_DEFAULT = 0, WTYPE_NONE = -1, WTYPE_FULL = 2, WTYPE_EXFULL = 3, WTYPE_FUSE = 4;
     final static BiMap<String, Integer> ALL_WTYPE = ImmutableBiMap.<String, Integer>builder()
         .put("default", WTYPE_DEFAULT)
         .put("none", WTYPE_NONE)
-        .put("single", WTYPE_SINGLE)
         .put("full", WTYPE_FULL)
         .put("exfull", WTYPE_EXFULL)
         .put("fuse", WTYPE_FUSE)
@@ -31,7 +30,7 @@ abstract class WTypeBasis extends MergeableBasis {
     
     WTypeBasis(int aTypeNum, int aWType, @Nullable RowMatrix aFuseWeight) {
         if (aTypeNum <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+aTypeNum);
-        if (!ALL_WTYPE.containsValue(aWType)) throw new IllegalArgumentException("Input wtype MUST be in {-1, 0, 1, 2, 3, 4}, input: "+ aWType);
+        if (!ALL_WTYPE.containsValue(aWType)) throw new IllegalArgumentException("Input wtype MUST be in {-1, 0, 2, 3, 4}, input: "+ aWType);
         if (aWType==WTYPE_FUSE && aFuseWeight==null) throw new IllegalArgumentException("Input fuse_weight MUST NOT be null when wtype=='fuse'");
         mTypeNum = aTypeNum;
         mWType = aWType;
@@ -69,8 +68,7 @@ abstract class WTypeBasis extends MergeableBasis {
         case WTYPE_FULL: {
             return mTypeNum*(aNMax+1);
         }
-        case WTYPE_NONE:
-        case WTYPE_SINGLE: {
+        case WTYPE_NONE: {
             return aNMax+1;
         }
         case WTYPE_DEFAULT: {

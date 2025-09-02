@@ -1746,13 +1746,6 @@ static void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTyp
         jdouble tRnX = 1.0 - 2.0*dis/aRCut;
         jdouble *tRn = aBufferNl ? (rNlRn + ji*(aNMax+1)) : rNlRn;
         JSE_NNAP::chebyshevFull(aNMax, tRnX, tRn);
-        if (WTYPE == jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE) {
-            // cal weight of type here
-            jdouble wt = ((type&1)==1) ? type : -type;
-            for (jint n = 0; n <= aNMax; ++n) {
-                tRn[n] *= wt;
-            }
-        }
         // cal Y
         jdouble *tY = aBufferNl ? (rNlY + ji*LMALL) : rNlY;
         realSphericalHarmonicsFull4<LMAXMAX>(dx, dy, dz, dis, tY);
@@ -1775,7 +1768,6 @@ static void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTyp
             continue;
         }
         if (WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE ||
-            WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE ||
             WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL || aTypeNum==1) {
             jint tShift, tShiftFp;
             if (WTYPE == jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL) {
@@ -1846,8 +1838,7 @@ static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *a
         tSizeN = aTypeNum*(aNMax+1);
         break;
     }
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
+    case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE: {
         tSizeN = aNMax+1;
         break;
     }
@@ -1905,8 +1896,7 @@ static void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlT
         tSizeN = aTypeNum*(aNMax+1);
         break;
     }
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
+    case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE: {
         tSizeN = aNMax+1;
         break;
     }
@@ -1972,13 +1962,7 @@ static void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlT
         jdouble *tRn = aNlRn + ji*(aNMax+1);
         const jdouble tRnX = 1.0 - 2.0*dis/aRCut;
         JSE_NNAP::chebyshev2Full(aNMax-1, tRnX, rCheby2);
-        if (WTYPE == jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE) {
-            // cal weight of type here
-            jdouble wt = ((type&1)==1) ? type : -type;
-            JSE_NNAP::calRnPxyz(rRnPx, rRnPy, rRnPz, rCheby2, aNMax, dis, aRCut, wt, dx, dy, dz);
-        } else {
-            JSE_NNAP::calRnPxyz(rRnPx, rRnPy, rRnPz, rCheby2, aNMax, dis, aRCut, 1.0, dx, dy, dz);
-        }
+        JSE_NNAP::calRnPxyz(rRnPx, rRnPy, rRnPz, rCheby2, aNMax, dis, aRCut, dx, dy, dz);
         // cal Ylm
         jdouble dxy = hypot(dx, dy);
         jdouble cosTheta = dz / dis;
@@ -2029,7 +2013,6 @@ static void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlT
             continue;
         }
         if (WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE ||
-            WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE ||
             WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL || aTypeNum==1) {
             jint tShift, tShiftFp;
             if (WTYPE == jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL) {
@@ -2112,8 +2095,7 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
         tSizeN = aTypeNum*(aNMax+1);
         break;
     }
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE:
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
+    case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE: {
         tSizeN = aNMax+1;
         break;
     }
@@ -2164,13 +2146,7 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
         jdouble *tRn = aNlRn + ji*(aNMax+1);
         const jdouble tRnX = 1.0 - 2.0*dis/aRCut;
         JSE_NNAP::chebyshev2Full(aNMax-1, tRnX, rCheby2);
-        if (WTYPE == jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE) {
-            // cal weight of type here
-            jdouble wt = ((type&1)==1) ? type : -type;
-            JSE_NNAP::calRnPxyz(rRnPx, rRnPy, rRnPz, rCheby2, aNMax, dis, aRCut, wt, dx, dy, dz);
-        } else {
-            JSE_NNAP::calRnPxyz(rRnPx, rRnPy, rRnPz, rCheby2, aNMax, dis, aRCut, 1.0, dx, dy, dz);
-        }
+        JSE_NNAP::calRnPxyz(rRnPx, rRnPy, rRnPz, rCheby2, aNMax, dis, aRCut, dx, dy, dz);
         // cal Ylm
         jdouble dxy = hypot(dx, dy);
         jdouble cosTheta = dz / dis;
@@ -2242,7 +2218,6 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
             }
         } else
         if (WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE ||
-            WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE ||
             WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL || aTypeNum==1) {
             jdouble *tGradCnlm;
             if (WTYPE == jsex_nnap_basis_SphericalChebyshev_WTYPE_FULL) {
@@ -2425,10 +2400,6 @@ static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *a
         calFp<jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rNlY, rCnlm, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut, aNMax, aLMax, aNoRadial, aL3Max, aL3Cross, aFuseWeight, aFuseSize);
         return;
     }
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
-        calFp<jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rNlY, rCnlm, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut, aNMax, aLMax, aNoRadial, aL3Max, aL3Cross, aFuseWeight, aFuseSize);
-        return;
-    }
     case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
         calFp<jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rNlRn, rNlY, rCnlm, rFp, rFpGradNlSize, aBufferNl, aTypeNum, aRCut, aNMax, aLMax, aNoRadial, aL3Max, aL3Cross, aFuseWeight, aFuseSize);
         return;
@@ -2575,10 +2546,6 @@ static inline void calFpGrad(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
         calFpGrad<jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, aNlY, rYPtheta, rYPphi, rYPx, rYPy, rYPz, aCnlm, rCnlmPx, rCnlmPy, rCnlmPz, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax, aLMax, aNoRadial, aL3Max, aL3Cross, aFuseWeight, aFuseSize);
         return;
     }
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
-        calFpGrad<jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, aNlY, rYPtheta, rYPphi, rYPx, rYPy, rYPz, aCnlm, rCnlmPx, rCnlmPy, rCnlmPz, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax, aLMax, aNoRadial, aL3Max, aL3Cross, aFuseWeight, aFuseSize);
-        return;
-    }
     case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
         calFpGrad<jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT, SPARSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, aNlY, rYPtheta, rYPphi, rYPx, rYPy, rYPz, aCnlm, rCnlmPx, rCnlmPy, rCnlmPz, rFpGradNlIndex, rFpGradFpIndex, aShiftFp, aRestFp, rFpPx, rFpPy, rFpPz, aTypeNum, aRCut, aNMax, aLMax, aNoRadial, aL3Max, aL3Cross, aFuseWeight, aFuseSize);
         return;
@@ -2718,10 +2685,6 @@ static inline void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint
     }
     case jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE: {
         calForce<jsex_nnap_basis_SphericalChebyshev_WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, aNlY, rYPtheta, rYPphi, rYPx, rYPy, rYPz, aCnlm, rGradCnlm, rGradBnlm, aNNGrad, rFx, rFy, rFz, aTypeNum, aRCut, aNMax, aLMax, aNoRadial, aL3Max, aL3Cross, aFuseWeight, aFuseSize);
-        return;
-    }
-    case jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE: {
-        calForce<jsex_nnap_basis_SphericalChebyshev_WTYPE_SINGLE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNlRn, rRnPx, rRnPy, rRnPz, rCheby2, aNlY, rYPtheta, rYPphi, rYPx, rYPy, rYPz, aCnlm, rGradCnlm, rGradBnlm, aNNGrad, rFx, rFy, rFz, aTypeNum, aRCut, aNMax, aLMax, aNoRadial, aL3Max, aL3Cross, aFuseWeight, aFuseSize);
         return;
     }
     case jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT: {
