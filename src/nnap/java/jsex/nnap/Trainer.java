@@ -854,7 +854,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                     } else {
                         Vector rSubGradNormFp = tGradFpBuf[tType-1];
                         Vector rSubGradFp = rGradFp[k];
-                        tNN[tType-1].backward(tLossGradEng, tSubFpBuf, tGradPara.subVec(tShiftPara, tShiftPara+mParaSizes[tType-1]), rSubGradNormFp,
+                        rSubGradNormFp.fill(0.0);
+                        tNN[tType-1].backward(tLossGradEng, tSubFpBuf, rSubGradNormFp, tGradPara.subVec(tShiftPara, tShiftPara+mParaSizes[tType-1]),
                                               tHiddenOutputsBuf.get(tType-1).get(k), tHiddenGradsBuf.get(tType-1).get(k));
                         rSubGradNormFp.operation().div2dest(tSubNormSigma, rSubGradFp);
                         if (mFixNorm) {

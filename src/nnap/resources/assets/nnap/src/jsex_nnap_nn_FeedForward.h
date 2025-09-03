@@ -34,10 +34,10 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_backward1
 /*
  * Class:     jsex_nnap_nn_FeedForward
  * Method:    gradBackward1
- * Signature: ([DI[DI[DII[II[D[D[D[DI[DI[DI[DI[DI[D[D[D)V
+ * Signature: ([DI[DI[DI[DII[II[D[D[D[DI[DI[DI[DI[DI[D[D[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_gradBackward1
-  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray);
+  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray);
 
 #ifdef __cplusplus
 }

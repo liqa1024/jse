@@ -228,6 +228,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     public final void eval(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
         eval_(aNlDx, aNlDy, aNlDz, aNlType, rFp, null, false);
     }
+    
     /**
      * 内部使用的反向传播计算关于可拟合参量梯度的方法，这里为了实现以及训练器中使用简单不采取缓存而是包含所需的向前过程。
      * @param aNlDx 由近邻原子的 dx 组成的列表

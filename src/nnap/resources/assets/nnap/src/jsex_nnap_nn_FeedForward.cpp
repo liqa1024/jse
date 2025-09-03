@@ -167,12 +167,12 @@ static inline void backward(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdoubl
     }
     if (rGradX != NULL) {
         for (jint j = 0; j < aInputDim; ++j) {
-            rGradX[j] = JSE_NNAP::dot(tGrad3Before, tWeights, tInSize);
+            rGradX[j] += JSE_NNAP::dot(tGrad3Before, tWeights, tInSize);
             tWeights += tInSize;
         }
     }
 }
-static inline void gradBackward(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradPara,
+static inline void gradBackward(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdouble *rGradPara,
                                 jint aInputDim, jint *aHiddenDims, jint aHiddenNumber, jdouble *aHiddenWeights, jdouble *aHiddenWeightsBackward, jdouble *aOutputWeight,
                                 jdouble *aHiddenOutputs, jdouble *aHiddenGrads, jdouble *aHiddenGrads2, jdouble *aHiddenGrads3, jdouble *aHiddenGradGrads,
                                 jdouble *rHiddenOutputs2, jdouble *rHiddenGrads4, jdouble *rHiddenGrads5) noexcept {
@@ -298,6 +298,12 @@ static inline void gradBackward(jdouble *aGradXGrad, jdouble *aX, jdouble *rGrad
         }
         rGradWeights += aInputDim;
     }
+    if (rGradX != NULL) {
+        for (jint j = 0; j < aInputDim; ++j) {
+            rGradX[j] += JSE_NNAP::dot(rX2, tWeights, tInSize);
+            tWeights += tInSize;
+        }
+    }
 }
 
 
@@ -355,7 +361,11 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_forwardGrad1(JNIEnv *aEn
                            tHiddenWeights, tHiddenBiases, tOutputWeight, aOutputBias,
                            tHiddenOutputs+aShiftOutputs, tHiddenGrads+aShiftGrads, tHiddenGradGrads==NULL?NULL:(tHiddenGradGrads+aShiftGradGrads));
     
-    backward(1.0, tX+aShiftX, tGradX+aShiftGradX, NULL,
+    jdouble *tGradX_ = tGradX + aShiftGradX;
+    for (jint i = 0; i < aInputDim; ++i) {
+        tGradX_[i] = 0.0;
+    }
+    backward(1.0, tX+aShiftX, tGradX_, NULL,
              aInputDim, tHiddenDims, aHiddenNumber, tHiddenWeightsBackward, tOutputWeight,
              tHiddenOutputs+aShiftOutputs, tHiddenGrads+aShiftGrads,
              tHiddenGrads2+aShiftGrads2, tHiddenGrads3+aShiftGrads3);
@@ -378,15 +388,15 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_FeedForward_forwardGrad1(JNIEnv *aEn
 }
 
 JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_backward1(JNIEnv *aEnv, jclass aClazz,
-        jdouble aYGrad, jdoubleArray aX, jint aShiftX, jdoubleArray rGradPara, jint aShiftGradPara, jdoubleArray rGradX, jint aShiftGradX,
+        jdouble aYGrad, jdoubleArray aX, jint aShiftX, jdoubleArray rGradX, jint aShiftGradX, jdoubleArray rGradPara, jint aShiftGradPara,
         jint aInputDim, jintArray aHiddenDims, jint aHiddenNumber,
         jdoubleArray aHiddenWeightsBackward, jdoubleArray aOutputWeight,
         jdoubleArray aHiddenOutputs, jint aShiftOutputs, jdoubleArray aHiddenGrads, jint aShiftGrads,
         jdoubleArray rHiddenGrads2, jdoubleArray rHiddenGrads3) {
     // java array init
     jdouble *tX = (jdouble *)getJArrayBuf(aEnv, aX);
-    jdouble *tGradPara = (jdouble *)getJArrayBuf(aEnv, rGradPara);
     jdouble *tGradX = rGradX==NULL ? NULL : (jdouble *)getJArrayBuf(aEnv, rGradX);
+    jdouble *tGradPara = (jdouble *)getJArrayBuf(aEnv, rGradPara);
     jint *tHiddenDims = (jint *)getJArrayBuf(aEnv, aHiddenDims);
     jdouble *tHiddenWeightsBackward = (jdouble *)getJArrayBuf(aEnv, aHiddenWeightsBackward);
     jdouble *tOutputWeight = (jdouble *)getJArrayBuf(aEnv, aOutputWeight);
@@ -401,8 +411,8 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_backward1(JNIEnv *aEnv, jcl
     
     // release java array
     releaseJArrayBuf(aEnv, aX, tX, JNI_ABORT);
-    releaseJArrayBuf(aEnv, rGradPara, tGradPara, 0);
     if (rGradX!=NULL) releaseJArrayBuf(aEnv, rGradX, tGradX, 0);
+    releaseJArrayBuf(aEnv, rGradPara, tGradPara, 0);
     releaseJArrayBuf(aEnv, aHiddenDims, tHiddenDims, JNI_ABORT);
     releaseJArrayBuf(aEnv, aHiddenWeightsBackward, tHiddenWeightsBackward, JNI_ABORT);
     releaseJArrayBuf(aEnv, aOutputWeight, tOutputWeight, JNI_ABORT);
@@ -413,7 +423,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_backward1(JNIEnv *aEnv, jcl
 }
 
 JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_gradBackward1(JNIEnv *aEnv, jclass aClazz,
-        jdoubleArray aGradXGrad, jint aShiftGradXGrad, jdoubleArray aX, jint aShiftX, jdoubleArray rGradPara, jint aShiftGradPara,
+        jdoubleArray aGradXGrad, jint aShiftGradXGrad, jdoubleArray aX, jint aShiftX, jdoubleArray rGradX, jint aShiftGradX, jdoubleArray rGradPara, jint aShiftGradPara,
         jint aInputDim, jintArray aHiddenDims, jint aHiddenNumber, jdoubleArray aHiddenWeights, jdoubleArray aHiddenWeightsBackward, jdoubleArray aOutputWeight,
         jdoubleArray aHiddenOutputs, jint aShiftOutputs, jdoubleArray aHiddenGrads, jint aShiftGrads,
         jdoubleArray aHiddenGrads2, jint aShiftGrads2, jdoubleArray aHiddenGrads3, jint aShiftGrads3, jdoubleArray aHiddenGradGrads, jint aShiftGradGrads,
@@ -421,6 +431,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_gradBackward1(JNIEnv *aEnv,
     // java array init
     jdouble *tGradXGrad = (jdouble *)getJArrayBuf(aEnv, aGradXGrad);
     jdouble *tX = (jdouble *)getJArrayBuf(aEnv, aX);
+    jdouble *tGradX = rGradX==NULL ? NULL : (jdouble *)getJArrayBuf(aEnv, rGradX);
     jdouble *tGradPara = (jdouble *)getJArrayBuf(aEnv, rGradPara);
     jint *tHiddenDims = (jint *)getJArrayBuf(aEnv, aHiddenDims);
     jdouble *tHiddenWeights = (jdouble *)getJArrayBuf(aEnv, aHiddenWeights);
@@ -435,7 +446,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_gradBackward1(JNIEnv *aEnv,
     jdouble *tHiddenGrads4 = (jdouble *)getJArrayBuf(aEnv, rHiddenGrads4);
     jdouble *tHiddenGrads5 = (jdouble *)getJArrayBuf(aEnv, rHiddenGrads5);
     
-    gradBackward(tGradXGrad+aShiftGradXGrad, tX+aShiftX, tGradPara+aShiftGradPara,
+    gradBackward(tGradXGrad+aShiftGradXGrad, tX+aShiftX, tGradX==NULL?NULL:tGradX+aShiftGradX, tGradPara+aShiftGradPara,
                  aInputDim, tHiddenDims, aHiddenNumber,
                  tHiddenWeights, tHiddenWeightsBackward, tOutputWeight,
                  tHiddenOutputs+aShiftOutputs, tHiddenGrads+aShiftGrads,
@@ -443,8 +454,9 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_FeedForward_gradBackward1(JNIEnv *aEnv,
                  tHiddenOutputs2, tHiddenGrads4, tHiddenGrads5);
     
     // release java array
-    releaseJArrayBuf(aEnv, aX, tX, JNI_ABORT);
     releaseJArrayBuf(aEnv, aGradXGrad, tGradXGrad, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aX, tX, JNI_ABORT);
+    if (rGradX!=NULL) releaseJArrayBuf(aEnv, rGradX, tGradX, 0);
     releaseJArrayBuf(aEnv, rGradPara, tGradPara, 0);
     releaseJArrayBuf(aEnv, aHiddenDims, tHiddenDims, JNI_ABORT);
     releaseJArrayBuf(aEnv, aHiddenWeights, tHiddenWeights, JNI_ABORT);
