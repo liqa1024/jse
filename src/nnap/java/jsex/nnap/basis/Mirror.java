@@ -3,7 +3,9 @@ package jsex.nnap.basis;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.math.vector.DoubleArrayVector;
+import jse.math.vector.IVector;
 import jse.math.vector.IntArrayVector;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -31,8 +33,10 @@ public class Mirror extends Basis {
     @Override public Mirror threadSafeRef() {
         return new Mirror(mMirrorBasis.threadSafeRef(), mMirrorType, mThisType);
     }
-    // mirror 本身没有参数，因此 initPara 依旧是 no-op
-    // mirror 本身没有参数，因此不提供参数接口
+    // 虽然 mirror 本身没有参数，但是为了逻辑一致这里依旧转发这些接口
+    @Override public void initParameters() {mMirrorBasis.initParameters();}
+    @Override public IVector parameters() {return mMirrorBasis.parameters();}
+    @Override public boolean hasParameters() {return mMirrorBasis.hasParameters();}
     
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override public void save(Map rSaveTo) {
@@ -77,6 +81,15 @@ public class Mirror extends Basis {
         buildNlType_(aNlType);
         mMirrorBasis.eval_(aNlDx, aNlDy, aNlDz, mMirrorNlType, rFp, rFpGradNlSize, aBufferNl);
         if (!aBufferNl) mMirrorNlTypeValid = false;
+    }
+    @Override @ApiStatus.Internal
+    public void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara) {
+        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (mMirrorNlTypeValid) throw new IllegalStateException();
+        buildNlType_(aNlType);
+        mMirrorBasis.backward(aNlDx, aNlDy, aNlDz, mMirrorNlType, aGradFp, rGradPara);
+        // backward 总是独立的
+        mMirrorNlTypeValid = false;
     }
     @Override
     protected void evalGrad_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, IntArrayVector aFpGradNlSize, IntArrayVector rFpGradNlIndex, IntArrayVector rFpGradFpIndex, DoubleArrayVector rFpPx, DoubleArrayVector rFpPy, DoubleArrayVector rFpPz) {

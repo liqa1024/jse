@@ -429,7 +429,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         rTotParaSize = 0;
         mBasisParaSizes = new int[mTypeNum];
         mBasisParas = new IVector[mTypeNum];
-        for (int i = 0; i < mTypeNum; ++i) {
+        for (int i = 0; i < mTypeNum; ++i) if (!(mBasis[0][i] instanceof Mirror)) {
             IVector tBasisPara = mBasis[0][i].hasParameters() ? mBasis[0][i].parameters() : null;
             int tBasisParaSize = tBasisPara==null ? 0 : tBasisPara.size();
             mBasisParas[i] = tBasisPara;
@@ -633,7 +633,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
         Basis[][] rBasis = new Basis[aThreadNum][];
         rBasis[0] = Basis.load(aSymbols, (List<?>)tBasis);
-        for (Basis tSubBasis : rBasis[0]) {
+        for (Basis tSubBasis : rBasis[0]) if (!(tSubBasis instanceof Mirror)) {
             tSubBasis.initParameters();
         }
         for (int ti = 1; ti < aThreadNum; ++ti) {
@@ -803,8 +803,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 double rEng = 0.0;
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
-                    if (tBasis[tType-1] instanceof Mirror) {
-                        tType = ((Mirror)tBasis[tType-1]).mirrorType();
+                    Basis tSubBasis = tBasis[tType-1];
+                    if (tSubBasis instanceof Mirror) {
+                        tType = ((Mirror)tSubBasis).mirrorType();
                     }
                     Vector tSubFp = tFp[k];
                     Vector tSubFpBuf = tFpBuf[tType-1];
@@ -825,8 +826,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 double tLossGradEng = mEnergyWeight * rLossGradEng.value() / (tAtomNum*tData.mSize);
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
-                    if (tBasis[tType-1] instanceof Mirror) {
-                        tType = ((Mirror)tBasis[tType-1]).mirrorType();
+                    Basis tSubBasis = tBasis[tType-1];
+                    if (tSubBasis instanceof Mirror) {
+                        tType = ((Mirror)tSubBasis).mirrorType();
                     }
                     Vector tSubFp = tFp[k];
                     Vector tSubFpBuf = tFpBuf[tType-1];
@@ -846,7 +848,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                         if (mFixNorm) {
                             int tShiftBasisPara = basisParaShift(tType);
                             initNl(tNl[k], tNlDx[k], tNlDy[k], tNlDz[k], tAtomType, tNlTypeBuf, tNlDxBuf, tNlDyBuf, tNlDzBuf);
-                            tBasis[tType-1].backward(tNlDxBuf, tNlDyBuf, tNlDzBuf, tNlTypeBuf, rSubGradFp, tGradPara.subVec(tShiftBasisPara, tShiftBasisPara+mBasisParaSizes[tType-1]));
+                            tSubBasis.backward(tNlDxBuf, tNlDyBuf, tNlDzBuf, tNlTypeBuf, rSubGradFp, tGradPara.subVec(tShiftBasisPara, tShiftBasisPara+mBasisParaSizes[tType-1]));
                         }
                     }
                 }
@@ -901,8 +903,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             double rStressXX = 0.0, rStressYY = 0.0, rStressZZ = 0.0, rStressXY = 0.0, rStressXZ = 0.0, rStressYZ = 0.0;
             for (int k = 0; k < tAtomNum; ++k) {
                 int tType = tAtomType.get(k);
-                if (tBasis[tType-1] instanceof Mirror) {
-                    tType = ((Mirror)tBasis[tType-1]).mirrorType();
+                Basis tSubBasis = tBasis[tType-1];
+                if (tSubBasis instanceof Mirror) {
+                    tType = ((Mirror)tSubBasis).mirrorType();
                 }
                 Vector tSubFp = tFp[k];
                 Vector tSubFpBuf = tFpBuf[tType-1];
@@ -927,7 +930,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                                           tFpGradNlIndex[k].internalData(), tFpGradFpIndex[k].internalData(), tFpPx[k].size());
                 } else {
                     initNl(tSubNl, tSubNlDx, tSubNlDy, tSubNlDz, tAtomType, tNlTypeBuf, tNlDxBuf, tNlDyBuf, tNlDzBuf);
-                    tBasis[tType-1].evalGrad(tNlDxBuf, tNlDyBuf, tNlDzBuf, tNlTypeBuf, tSubFpBuf, tFpGradNlIndexBuf.get(k), tFpGradFpIndexBuf.get(k), tFpPxBuf.get(k), tFpPyBuf.get(k), tFpPzBuf.get(k));
+                    tSubBasis.evalGrad(tNlDxBuf, tNlDyBuf, tNlDzBuf, tNlTypeBuf, tSubFpBuf, tFpGradNlIndexBuf.get(k), tFpGradFpIndexBuf.get(k), tFpPxBuf.get(k), tFpPyBuf.get(k), tFpPzBuf.get(k));
                     forwardForceIndexFMA_(tForceNlXBuf.internalData(), tForceNlYBuf.internalData(), tForceNlZBuf.internalData(), tSubGradFpBuf.internalData(),
                                           tFpPxBuf.get(k).internalData(), tFpPyBuf.get(k).internalData(), tFpPzBuf.get(k).internalData(), tSubNormSigma.internalData(),
                                           tFpGradNlIndexBuf.get(k).internalData(), tFpGradFpIndexBuf.get(k).internalData(), tFpPxBuf.get(k).size());
@@ -1028,8 +1031,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             for (int k = 0; k < tAtomNum; ++k) {
                 // energy loss grad
                 int tType = tAtomType.get(k);
-                if (tBasis[tType-1] instanceof Mirror) {
-                    tType = ((Mirror)tBasis[tType-1]).mirrorType();
+                Basis tSubBasis = tBasis[tType-1];
+                if (tSubBasis instanceof Mirror) {
+                    tType = ((Mirror)tSubBasis).mirrorType();
                 }
                 Vector tSubFp = tFp[k];
                 Vector tSubFpBuf = tFpBuf[tType-1];
@@ -1110,8 +1114,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
                     // 归一化系数同样对于 mirror 的会采用镜像的种类
-                    if (tBasis[tType-1] instanceof Mirror) {
-                        tType = ((Mirror)tBasis[tType-1]).mirrorType();
+                    Basis tSubBasis = tBasis[tType-1];
+                    if (tSubBasis instanceof Mirror) {
+                        tType = ((Mirror)tSubBasis).mirrorType();
                     }
                     Vector tSubFp = tFp[k];
                     Vector tSubGradNormFp = tGradNormFp[k];
@@ -1157,8 +1162,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
                     // 归一化系数同样对于 mirror 的会采用镜像的种类
-                    if (tBasis[tType-1] instanceof Mirror) {
-                        tType = ((Mirror)tBasis[tType-1]).mirrorType();
+                    Basis tSubBasis = tBasis[tType-1];
+                    if (tSubBasis instanceof Mirror) {
+                        tType = ((Mirror)tSubBasis).mirrorType();
                     }
                     int tDivI = mDivBuf[0].get(tType-1);
                     Vector tSubFp = tFp[k];
@@ -1190,8 +1196,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
                     // 归一化系数同样对于 mirror 的会采用镜像的种类
-                    if (tBasis[tType-1] instanceof Mirror) {
-                        tType = ((Mirror)tBasis[tType-1]).mirrorType();
+                    Basis tSubBasis = tBasis[tType-1];
+                    if (tSubBasis instanceof Mirror) {
+                        tType = ((Mirror)tSubBasis).mirrorType();
                     }
                     int tDivI = mDivBuf[0].get(tType-1);
                     Vector tGradMu = mGradMu[0][tType-1];
@@ -1217,13 +1224,14 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
                     // 归一化系数同样对于 mirror 的会采用镜像的种类
-                    if (tBasis[tType-1] instanceof Mirror) {
-                        tType = ((Mirror)tBasis[tType-1]).mirrorType();
+                    Basis tSubBasis = tBasis[tType-1];
+                    if (tSubBasis instanceof Mirror) {
+                        tType = ((Mirror)tSubBasis).mirrorType();
                     }
                     Vector rSubGradFp = rGradFp[k];
                     int tShiftBasisPara = basisParaShift(tType);
                     initNl(tNl[k], tNlDx[k], tNlDy[k], tNlDz[k], tAtomType, tNlTypeBuf, tNlDxBuf, tNlDyBuf, tNlDzBuf);
-                    tBasis[tType-1].backward(tNlDxBuf, tNlDyBuf, tNlDzBuf, tNlTypeBuf, rSubGradFp, tGradPara.subVec(tShiftBasisPara, tShiftBasisPara+mBasisParaSizes[tType-1]));
+                    tSubBasis.backward(tNlDxBuf, tNlDyBuf, tNlDzBuf, tNlTypeBuf, rSubGradFp, tGradPara.subVec(tShiftBasisPara, tShiftBasisPara+mBasisParaSizes[tType-1]));
                 }
             });
         }
