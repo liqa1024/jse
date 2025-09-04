@@ -393,15 +393,6 @@ static inline void chebyshevFull(jdouble aX, jdouble *rDest) noexcept {
         rDest[n] = 2.0*aX*rDest[n-1] - rDest[n-2];
     }
 }
-static inline void chebyshevFull(jint aN, jdouble aX, jdouble *rDest) noexcept {
-    if (aN < 0) return;
-    rDest[0] = 1.0;
-    if (aN == 0) return;
-    rDest[1] = aX;
-    for (jint n = 2; n <= aN; ++n) {
-        rDest[n] = 2.0*aX*rDest[n-1] - rDest[n-2];
-    }
-}
 template <jint N>
 static inline void chebyshev2Full(jdouble aX, jdouble *rDest) noexcept {
     if (N < 0) return;
@@ -412,25 +403,39 @@ static inline void chebyshev2Full(jdouble aX, jdouble *rDest) noexcept {
         rDest[n] = 2.0*aX*rDest[n-1] - rDest[n-2];
     }
 }
-static inline void chebyshev2Full(jint aN, jdouble aX, jdouble *rDest) noexcept {
-    if (aN < 0) return;
-    rDest[0] = 1.0;
-    if (aN == 0) return;
-    rDest[1] = 2.0*aX;
-    for (jint n = 2; n <= aN; ++n) {
-        rDest[n] = 2.0*aX*rDest[n-1] - rDest[n-2];
-    }
-}
 
-static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdouble *aCheby2, jint aNMax,
-                             jdouble aDis, jdouble aRCut, jdouble aDx, jdouble aDy, jdouble aDz) noexcept {
-    const jdouble tRnPMul = 2.0 / (aDis*aRCut);
-    rRnPx[0] = 0.0; rRnPy[0] = 0.0; rRnPz[0] = 0.0;
-    for (jint n = 1; n <= aNMax; ++n) {
-        const jdouble tRnP = n*tRnPMul*aCheby2[n-1];
-        rRnPx[n] = tRnP*aDx;
-        rRnPy[n] = tRnP*aDy;
-        rRnPz[n] = tRnP*aDz;
+static inline jdouble calFc(jdouble aDis, jdouble aRCut) noexcept {
+    return pow4(1.0 - pow2(aDis/aRCut));
+}
+template <jint N>
+static inline void calRn(jdouble *rRn, jdouble aDis, jdouble aRCut) noexcept {
+    jdouble tRnX = 1.0 - 2.0*aDis/aRCut;
+    chebyshevFull<N>(tRnX, rRn);
+}
+static inline void calRn(jdouble *rRn, jint aNMax, jdouble aDis, jdouble aRCut) noexcept {
+    switch (aNMax) {
+    case 0: {calRn<0>(rRn, aDis, aRCut); return;}
+    case 1: {calRn<1>(rRn, aDis, aRCut); return;}
+    case 2: {calRn<2>(rRn, aDis, aRCut); return;}
+    case 3: {calRn<3>(rRn, aDis, aRCut); return;}
+    case 4: {calRn<4>(rRn, aDis, aRCut); return;}
+    case 5: {calRn<5>(rRn, aDis, aRCut); return;}
+    case 6: {calRn<6>(rRn, aDis, aRCut); return;}
+    case 7: {calRn<7>(rRn, aDis, aRCut); return;}
+    case 8: {calRn<8>(rRn, aDis, aRCut); return;}
+    case 9: {calRn<9>(rRn, aDis, aRCut); return;}
+    case 10: {calRn<10>(rRn, aDis, aRCut); return;}
+    case 11: {calRn<11>(rRn, aDis, aRCut); return;}
+    case 12: {calRn<12>(rRn, aDis, aRCut); return;}
+    case 13: {calRn<13>(rRn, aDis, aRCut); return;}
+    case 14: {calRn<14>(rRn, aDis, aRCut); return;}
+    case 15: {calRn<15>(rRn, aDis, aRCut); return;}
+    case 16: {calRn<16>(rRn, aDis, aRCut); return;}
+    case 17: {calRn<17>(rRn, aDis, aRCut); return;}
+    case 18: {calRn<18>(rRn, aDis, aRCut); return;}
+    case 19: {calRn<19>(rRn, aDis, aRCut); return;}
+    case 20: {calRn<20>(rRn, aDis, aRCut); return;}
+    default: {return;}
     }
 }
 
@@ -446,7 +451,7 @@ template <jint N>
 static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdouble *rCheby2,
                              jdouble aDis, jdouble aRCut, jdouble aDx, jdouble aDy, jdouble aDz) noexcept {
     const jdouble tRnX = 1.0 - 2.0*aDis/aRCut;
-    JSE_NNAP::chebyshev2Full<N-1>(tRnX, rCheby2);
+    chebyshev2Full<N-1>(tRnX, rCheby2);
     const jdouble tRnPMul = 2.0 / (aDis*aRCut);
     rRnPx[0] = 0.0; rRnPy[0] = 0.0; rRnPz[0] = 0.0;
     for (jint n = 1; n <= N; ++n) {
@@ -454,6 +459,33 @@ static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdo
         rRnPx[n] = tRnP*aDx;
         rRnPy[n] = tRnP*aDy;
         rRnPz[n] = tRnP*aDz;
+    }
+}
+static inline void calRnPxyz(jdouble *rRnPx, jdouble *rRnPy, jdouble *rRnPz, jdouble *rCheby2, jint aNMax,
+                             jdouble aDis, jdouble aRCut, jdouble aDx, jdouble aDy, jdouble aDz) noexcept {
+    switch (aNMax) {
+    case 0: {calRnPxyz<0>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 1: {calRnPxyz<1>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 2: {calRnPxyz<2>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 3: {calRnPxyz<3>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 4: {calRnPxyz<4>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 5: {calRnPxyz<5>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 6: {calRnPxyz<6>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 7: {calRnPxyz<7>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 8: {calRnPxyz<8>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 9: {calRnPxyz<9>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 10: {calRnPxyz<10>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 11: {calRnPxyz<11>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 12: {calRnPxyz<12>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 13: {calRnPxyz<13>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 14: {calRnPxyz<14>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 15: {calRnPxyz<15>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 16: {calRnPxyz<16>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 17: {calRnPxyz<17>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 18: {calRnPxyz<18>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 19: {calRnPxyz<19>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    case 20: {calRnPxyz<20>(rRnPx, rRnPy, rRnPz, rCheby2, aDis, aRCut, aDx, aDy, aDz); return;}
+    default: {return;}
     }
 }
 

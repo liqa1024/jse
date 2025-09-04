@@ -256,7 +256,7 @@ static inline void gradBackward(jdouble *aGradXGrad, jdouble *aX, jdouble *rGrad
     }
     rGradBiases += tOutSize;
     tWeights = aHiddenWeightsBackward;
-    for (int l = tEnd; l > 0; --l) {
+    for (jint l = tEnd; l > 0; --l) {
         // bl i, Wl ij
         tInSize = aHiddenDims[l-1];
         tX -= tInSize;

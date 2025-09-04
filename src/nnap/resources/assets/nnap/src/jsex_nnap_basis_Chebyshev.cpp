@@ -1,6 +1,64 @@
 #include "jsex_nnap_basis_Chebyshev.h"
 #include "nnap_util.hpp"
 
+template <jint NMAX>
+static inline void mplusFp(jdouble *rFp, jdouble aFc, jdouble *aRn) noexcept {
+    for (jint n = 0; n <= NMAX; ++n) {
+        rFp[n] += aFc*aRn[n];
+    }
+}
+template <jint NMAX>
+static inline void mplusFpWt(jdouble *rFp, jdouble *rFpWt, jdouble aFc, jdouble *aRn, jdouble aWt) noexcept {
+    jdouble tFcWt = aFc*aWt;
+    for (jint n = 0; n <= NMAX; ++n) {
+        jdouble tRnn = aRn[n];
+        rFp[n] += aFc*tRnn;
+        rFpWt[n] += tFcWt*tRnn;
+    }
+}
+
+template <jint NMAX>
+static inline void gradRn2Fxyz(jint j, jdouble *aGradRn, jdouble aFc, jdouble *aRn,
+                               jdouble aFcPx, jdouble aFcPy, jdouble aFcPz,
+                               jdouble *aRnPx, jdouble *aRnPy, jdouble *aRnPz,
+                               jdouble *rFx, jdouble *rFy, jdouble *rFz) noexcept {
+    jdouble tGradFc = 0.0;
+    jdouble rFxj = 0.0, rFyj = 0.0, rFzj = 0.0;
+    for (jint n = 0; n <= NMAX; ++n) {
+        jdouble tGradRnn = aGradRn[n];
+        jdouble tRnn = aRn[n];
+        tGradFc += tRnn * tGradRnn;
+        tGradRnn *= aFc;
+        rFxj += tGradRnn*aRnPx[n];
+        rFyj += tGradRnn*aRnPy[n];
+        rFzj += tGradRnn*aRnPz[n];
+    }
+    rFxj += aFcPx*tGradFc;
+    rFyj += aFcPy*tGradFc;
+    rFzj += aFcPz*tGradFc;
+    rFx[j] += rFxj; rFy[j] += rFyj; rFz[j] += rFzj;
+}
+template <jint NMAX>
+static inline void gradRnWt2Fxyz(jint j, jdouble *aGradRn, jdouble *aGradRnWt, jdouble aFc, jdouble *aRn, jdouble aWt,
+                                 jdouble aFcPx, jdouble aFcPy, jdouble aFcPz,
+                                 jdouble *aRnPx, jdouble *aRnPy, jdouble *aRnPz,
+                                 jdouble *rFx, jdouble *rFy, jdouble *rFz) noexcept {
+    jdouble tGradFc = 0.0;
+    jdouble rFxj = 0.0, rFyj = 0.0, rFzj = 0.0;
+    for (jint n = 0; n <= NMAX; ++n) {
+        jdouble tGradRnn = aGradRn[n] + aWt*aGradRnWt[n];
+        jdouble tRnn = aRn[n];
+        tGradFc += tRnn * tGradRnn;
+        tGradRnn *= aFc;
+        rFxj += tGradRnn*aRnPx[n];
+        rFyj += tGradRnn*aRnPy[n];
+        rFzj += tGradRnn*aRnPz[n];
+    }
+    rFxj += aFcPx*tGradFc;
+    rFyj += aFcPy*tGradFc;
+    rFzj += aFcPz*tGradFc;
+    rFx[j] += rFxj; rFy[j] += rFyj; rFz[j] += rFzj;
+}
 
 template <jint NMAX, jint WTYPE>
 static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN, jdouble *rFp,
@@ -55,60 +113,37 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
         if (dis >= aRCut) continue;
         ++ji;
         // cal fc
-        jdouble fc = JSE_NNAP::pow4(1.0 - JSE_NNAP::pow2(dis/aRCut));
+        jdouble fc = JSE_NNAP::calFc(dis, aRCut);
         if (aFullCache) rNlFc[ji] = fc;
         // cal Rn
-        jdouble tRnX = 1.0 - 2.0*dis/aRCut;
         if (aFullCache) rRn = rNlRn + ji*(NMAX+1);
-        JSE_NNAP::chebyshevFull<NMAX>(tRnX, rRn);
+        JSE_NNAP::calRn<NMAX>(rRn, dis, aRCut);
         // cal fp
         if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FUSE) {
             jdouble *tFuseWeight = aFuseWeight;
             jdouble *tFp = rFp;
             for (jint k = 0; k < aFuseSize; ++k) {
-                jdouble wt = tFuseWeight[type-1];
-                for (jint n = 0; n <= NMAX; ++n) {
-                    tFp[n] += wt*fc*rRn[n];
-                }
+                jdouble fcWt = fc * tFuseWeight[type-1];
+                mplusFp<NMAX>(tFp, fcWt, rRn);
                 tFp += (NMAX+1);
                 tFuseWeight += aTypeNum;
             }
-            continue;
-        }
-        if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_NONE ||
-            WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_FULL || aTypeNum==1) {
-            jint tShiftFp;
-            if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
-                tShiftFp = (NMAX+1)*(type-1);
-            } else {
-                tShiftFp = 0;
-            }
-            jdouble *tFp = rFp+tShiftFp;
-            for (jint n = 0; n <= NMAX; ++n) {
-                tFp[n] += fc*rRn[n];
-            }
-            continue;
-        }
-        jdouble wt;
-        jint tShiftFp;
-        jdouble *tFpWt;
+        } else
+        if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_NONE || aTypeNum==1) {
+            mplusFp<NMAX>(rFp, fc, rRn);
+        } else
+        if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
+            jdouble *tFp = rFp + (NMAX+1)*(type-1);
+            mplusFp<NMAX>(tFp, fc, rRn);
+        } else
         if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_EXFULL) {
-            wt = 1.0;
-            tShiftFp = (NMAX+1)*type;
-            tFpWt = rFp+tShiftFp;
+            jdouble *tFpWt = rFp + (NMAX+1)*type;
+            mplusFpWt<NMAX>(rFp, tFpWt, fc, rRn, 1.0);
         } else
         if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT) {
-            // cal weight of type here
-            wt = ((type&1)==1) ? type : -type;
-            tShiftFp = NMAX+1;
-            tFpWt = rFp+tShiftFp;
-        } else {
-            continue;
-        }
-        for (jint n = 0; n <= NMAX; ++n) {
-            jdouble tFpn = fc*rRn[n];
-            rFp[n] += tFpn;
-            tFpWt[n] += wt*tFpn;
+            jdouble wt = ((type&1)==1) ? type : -type;
+            jdouble *tFpWt = rFp + (NMAX+1);
+            mplusFpWt<NMAX>(rFp, tFpWt, fc, rRn, wt);
         }
     }
 }
@@ -151,28 +186,6 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
             continue;
         }
     }
-}
-
-template <jint NMAX>
-static inline void gradRn2Fxyz(jint j, jdouble *aGradRn, jdouble aFc, jdouble *aRn,
-                               jdouble aFcPx, jdouble aFcPy, jdouble aFcPz,
-                               jdouble *aRnPx, jdouble *aRnPy, jdouble *aRnPz,
-                               jdouble *rFx, jdouble *rFy, jdouble *rFz) {
-    jdouble tGradFc = 0.0;
-    double rFxj = 0.0, rFyj = 0.0, rFzj = 0.0;
-    for (jint n = 0; n <= NMAX; ++n) {
-        jdouble tGradRnn = aGradRn[n];
-        jdouble tRnn = aRn[n];
-        tGradFc += tRnn * tGradRnn;
-        tGradRnn *= aFc;
-        rFxj += tGradRnn*aRnPx[n];
-        rFyj += tGradRnn*aRnPy[n];
-        rFzj += tGradRnn*aRnPz[n];
-    }
-    rFxj += aFcPx*tGradFc;
-    rFyj += aFcPy*tGradFc;
-    rFzj += aFcPz*tGradFc;
-    rFx[j] += rFxj; rFy[j] += rFyj; rFz[j] += rFzj;
 }
 
 template <jint NMAX, jint WTYPE>
@@ -227,9 +240,8 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
             rRnPz = rNlRnPz + ji*(NMAX+1);
         }
         JSE_NNAP::calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, dx, dy, dz);
-        jdouble *tGradRn;
         if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_FUSE) {
-            tGradRn = rCheby2;
+            jdouble *tGradRn = rCheby2;
             for (jint n = 0; n <= NMAX; ++n) {
                 tGradRn[n] = 0.0;
             }
@@ -243,32 +255,26 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
                 tNNGrad += (NMAX+1);
                 tFuseWeight += aTypeNum;
             }
-        } else
-        if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
-            tGradRn = aNNGrad + (NMAX+1)*(type-1);
+            gradRn2Fxyz<NMAX>(j, tGradRn, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rFx, rFy, rFz);
         } else
         if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_NONE || aTypeNum==1) {
-            tGradRn = aNNGrad;
+            gradRn2Fxyz<NMAX>(j, aNNGrad, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rFx, rFy, rFz);
+        } else
+        if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_FULL) {
+            jdouble *tGradRn = aNNGrad + (NMAX+1)*(type-1);
+            gradRn2Fxyz<NMAX>(j, tGradRn, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rFx, rFy, rFz);
         } else
         if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_EXFULL) {
-            tGradRn = rCheby2;
             jdouble *tNNGradWt = aNNGrad + (NMAX+1)*type;
-            for (jint n = 0; n <= NMAX; ++n) {
-                tGradRn[n] = aNNGrad[n] + tNNGradWt[n];
-            }
+            gradRnWt2Fxyz<NMAX>(j, aNNGrad, tNNGradWt, fc, tRn, 1.0, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rFx, rFy, rFz);
         } else
         if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT) {
-            tGradRn = rCheby2;
             jdouble wt = ((type&1)==1) ? type : -type;
             jdouble *tNNGradWt = aNNGrad + (NMAX+1);
-            for (jint n = 0; n <= NMAX; ++n) {
-                tGradRn[n] = aNNGrad[n] + wt*tNNGradWt[n];
-            }
+            gradRnWt2Fxyz<NMAX>(j, aNNGrad, tNNGradWt, fc, tRn, wt, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rFx, rFy, rFz);
         } else {
             continue;
         }
-        // cal fxyz
-        gradRn2Fxyz<NMAX>(j, tGradRn, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rFx, rFy, rFz);
     }
 }
 
@@ -699,7 +705,6 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_Chebyshev_forwardForce1(JNIEnv *aEnv
     jdouble *tFz = (jdouble *)getJArrayBuf(aEnv, rFz);
     jdouble *tForwardCache = (jdouble *)getJArrayBuf(aEnv, aForwardCache);
     jdouble *tForwardForceCache = (jdouble *)getJArrayBuf(aEnv, rForwardForceCache);
-    
     jdouble *tFuseWeight = aFuseWeight==NULL ? NULL : (jdouble *)getJArrayBuf(aEnv, aFuseWeight);
     
     calForce(tNlDx, tNlDy, tNlDz, tNlType, aNN,

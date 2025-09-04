@@ -150,13 +150,22 @@ public class SphericalChebyshev extends WTypeBasis {
     @Override public @Nullable String symbol(int aType) {return mSymbols==null ? null : mSymbols[aType-1];}
     
     @Override protected int forwardCacheSize_(int aNN, boolean aFullCache) {
-        return aFullCache ? aNN*(mNMax+1 + 1 + mLMAll + (mNMax+1)*mLMAll + mSizeN*mLMAll)
+        if (mWType != WTYPE_FUSE) {
+            return aFullCache ? (aNN*(mNMax+1 + 1 + mLMAll) + mSizeN*mLMAll)
+                              : (mNMax+1 + mLMAll + mSizeN*mLMAll);
+        }
+        return aFullCache ? (aNN*(mNMax+1 + 1 + mLMAll + (mNMax+1)*mLMAll) + mSizeN*mLMAll)
                           : (mNMax+1 + mLMAll + (mNMax+1)*mLMAll + mSizeN*mLMAll);
     }
     @Override protected int backwardCacheSize_(int aNN) {
+        if (mWType != WTYPE_FUSE) return 0;
         return mSizeN*mLMAll;
     }
     @Override protected int forwardForceCacheSize_(int aNN, boolean aFullCache) {
+        if (mWType != WTYPE_FUSE) {
+            return aFullCache ? (3*aNN*(mNMax+1 + 1 + mLMAll) + (mNMax+1) + 2*mLMAll + mSizeN*mLMAll)
+                              : (4*(mNMax+1) + 5*mLMAll + mSizeN*mLMAll);
+        }
         return aFullCache ? (3*aNN*(mNMax+1 + 1 + mLMAll + (mNMax+1)*mLMAll) + (mNMax+1) + 2*mLMAll + mSizeN*mLMAll)
                           : (4*(mNMax+1) + 5*mLMAll + (mNMax+1)*mLMAll + mSizeN*mLMAll);
     }
@@ -198,8 +207,8 @@ public class SphericalChebyshev extends WTypeBasis {
     }
     private static native void forward1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN, double[] rFp, int aShiftFp,
                                         double[] rForwardCache, int aForwardCacheShift, boolean aFullCache,
-                                        int aTypeNum, double aRCut, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, int aWType,
-                                        double[] aFuseWeight, int aFuseSize);
+                                        int aTypeNum, double aRCut, int aNMax, int aLMax, boolean aNoRadial,
+                                        int aL3Max, boolean aL3Cross, int aWType, double[] aFuseWeight, int aFuseSize);
     
     void backward0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType, IDataShell<double[]> aGradFp, IDataShell<double[]> rGradPara, IDataShell<double[]> aForwardCache, IDataShell<double[]> rBackwardCache) {
         assert mFuseWeight != null;
@@ -209,14 +218,13 @@ public class SphericalChebyshev extends WTypeBasis {
                   rGradPara.internalDataWithLengthCheck(mFuseWeight.internalDataSize()), rGradPara.internalDataShift(),
                   aForwardCache.internalDataWithLengthCheck(forwardCacheSize_(tNN, true)), aForwardCache.internalDataShift(),
                   rBackwardCache.internalDataWithLengthCheck(backwardCacheSize_(tNN)), rBackwardCache.internalDataShift(),
-                  mTypeNum, mRCut, mNMax, mLMax, mNoRadial, mL3Max, mL3Cross, mWType,
-                  mFuseWeight.internalDataWithLengthCheck(), mFuseSize);
+                  mTypeNum, mRCut, mNMax, mLMax, mNoRadial, mL3Max, mL3Cross, mWType, mFuseSize);
     }
     private static native void backward1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
                                          double[] aGradFp, int aShiftGradFp, double[] aGradPara, int aShiftGradPara,
                                          double[] aForwardCache, int aForwardCacheShift, double[] rBackwardCache, int aBackwardCacheShift,
-                                         int aTypeNum, double aRCut, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, int aWType,
-                                         double[] aFuseWeight, int aFuseSize);
+                                         int aTypeNum, double aRCut, int aNMax, int aLMax, boolean aNoRadial,
+                                         int aL3Max, boolean aL3Cross, int aWType, int aFuseSize);
     
     void forwardForce0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType, IDataShell<double[]> aNNGrad, IDataShell<double[]> rFx, IDataShell<double[]> rFy, IDataShell<double[]> rFz, IDataShell<double[]> aForwardCache, IDataShell<double[]> rForwardForceCache, boolean aFullCache) {
         int tNN = aNlDx.internalDataSize();
@@ -230,6 +238,6 @@ public class SphericalChebyshev extends WTypeBasis {
     private static native void forwardForce1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
                                              double[] aNNGrad, int aShiftFp, double[] rFx, double[] rFy, double[] rFz,
                                              double[] aForwardCache, int aForwardCacheShift, double[] rForwardForceCache, int aForwardForceCacheShift, boolean aFullCache,
-                                             int aTypeNum, double aRCut, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, int aWType,
-                                             double[] aFuseWeight, int aFuseSize);
+                                             int aTypeNum, double aRCut, int aNMax, int aLMax, boolean aNoRadial,
+                                             int aL3Max, boolean aL3Cross, int aWType, double[] aFuseWeight, int aFuseSize);
 }
