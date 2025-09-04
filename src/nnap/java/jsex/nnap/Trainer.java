@@ -891,12 +891,14 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             DoubleWrapper rLossGradForceX = new DoubleWrapper(0.0), rLossGradForceY = new DoubleWrapper(0.0), rLossGradForceZ = new DoubleWrapper(0.0);
             DoubleWrapper rLossGradStressXX = new DoubleWrapper(0.0), rLossGradStressYY = new DoubleWrapper(0.0), rLossGradStressZZ = new DoubleWrapper(0.0);
             DoubleWrapper rLossGradStressXY = new DoubleWrapper(0.0), rLossGradStressXZ = new DoubleWrapper(0.0), rLossGradStressYZ = new DoubleWrapper(0.0);
+            
             List<List<Vector>> tHiddenGrads2Buf = mHiddenGrads2Buf.get(threadID);
             List<List<Vector>> tHiddenGrads3Buf = mHiddenGrads3Buf.get(threadID);
             List<List<Vector>> tHiddenGradGradsBuf = mHiddenGradGradsBuf.get(threadID);
             List<DoubleList> tBaisForwardForceBuf = mBasisForwardForceBuf.get(threadID);
             DoubleList tBaisBackwardForceBuf = mBasisBackwardForceBuf[threadID];
-            List<List<Vector>> tGradFpBuf = mGradFpBuf.get(threadID);
+            while (tBaisForwardForceBuf.size() < tAtomNum) tBaisForwardForceBuf.add(new DoubleList(128));
+            
             DoubleList tForceXBuf = mForceXBuf[threadID];
             DoubleList tForceYBuf = mForceYBuf[threadID];
             DoubleList tForceZBuf = mForceZBuf[threadID];
@@ -909,6 +911,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             DoubleList tLossGradForceNlXBuf = mLossGradForceNlXBuf[threadID];
             DoubleList tLossGradForceNlYBuf = mLossGradForceNlYBuf[threadID];
             DoubleList tLossGradForceNlZBuf = mLossGradForceNlZBuf[threadID];
+            List<List<Vector>> tGradFpBuf = mGradFpBuf.get(threadID);
             for (int typei = 0; typei < mTypeNum; ++typei) if (!(mBasis[0][typei] instanceof Mirror)) {
                 int tSize = mBasis[0][typei].size();
                 List<Vector> tSubGradFpBuf = tGradFpBuf.get(typei);
@@ -922,7 +925,6 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             if (tRequireGrad) {
                 validHiddenBuf_(threadID, tAtomType, true);
             }
-            while (tBaisForwardForceBuf.size() < tAtomNum) tBaisForwardForceBuf.add(new DoubleList(128));
             double rEng = 0.0;
             double rStressXX = 0.0, rStressYY = 0.0, rStressZZ = 0.0, rStressXY = 0.0, rStressXZ = 0.0, rStressYZ = 0.0;
             for (int k = 0; k < tAtomNum; ++k) {
@@ -947,6 +949,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 rEng += tRequireGrad ? tNN[tType-1].forwardGrad(tSubNormFp, tSubGradFpBuf, tHiddenOutputsBuf.get(tType-1).get(k), tHiddenGradsBuf.get(tType-1).get(k),
                                                                 tHiddenGrads2Buf.get(tType-1).get(k), tHiddenGrads3Buf.get(tType-1).get(k), tHiddenGradGradsBuf.get(tType-1).get(k))
                                      : tNN[tType-1].evalGrad(tSubNormFp, tSubGradFpBuf);
+                tSubGradFpBuf.div2this(tSubNormSigma);
                 // cal force
                 int tNlSize = tSubNl.size();
                 tForceNlXBuf.ensureCapacity(tNlSize); tForceNlXBuf.setInternalDataSize(tNlSize);
