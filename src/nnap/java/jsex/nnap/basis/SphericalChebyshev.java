@@ -169,11 +169,13 @@ public class SphericalChebyshev extends WTypeBasis {
         forward0(aNlDx, aNlDy, aNlDz, aNlType, rFp, rForwardCache, aFullCache);
     }
     @Override
-    protected void backward_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleArrayVector aForwardCache, DoubleArrayVector rBackwardCache) {
+    protected void backward_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleArrayVector aForwardCache, DoubleArrayVector rBackwardCache, boolean aKeepCache) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         
         // 如果不是 fuse 直接返回不走 native
         if (mWType!=WTYPE_FUSE) return;
+        // 如果不保留旧值则在这里清空
+        if (!aKeepCache) rBackwardCache.fill(0.0);
         
         backward0(aNlDx, aNlDy, aNlDz, aNlType, aGradFp, rGradPara, aForwardCache, rBackwardCache);
     }

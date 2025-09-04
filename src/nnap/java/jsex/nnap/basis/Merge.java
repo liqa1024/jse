@@ -274,7 +274,7 @@ public class Merge extends Basis {
         }
     }
     @Override
-    public final void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache) {
+    public final void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache, boolean aKeepCache) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         if (Conf.OPERATION_CHECK) {
             if (mSize != aGradFp.size()) throw new IllegalArgumentException("data size mismatch");
@@ -300,7 +300,7 @@ public class Merge extends Basis {
             ShiftVector tBackwardCache = mBackwardCacheShell[i];
             tBackwardCache.setInternalData(rBackwardCache.internalData());
             tBackwardCache.setInternalDataShift(tBackwardCacheShift);
-            mMergeBasis[i].backward_(aNlDx, aNlDy, aNlDz, aNlType, tGradFp, tGradPara, tForwardCache, tBackwardCache);
+            mMergeBasis[i].backward_(aNlDx, aNlDy, aNlDz, aNlType, tGradFp, tGradPara, tForwardCache, tBackwardCache, aKeepCache);
             tFpShift += tGradFp.internalDataSize();
             tParaShift += tGradPara.internalDataSize();
             tCacheShift += tForwardCache.internalDataSize();

@@ -1880,9 +1880,9 @@ static inline void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint
 
 extern "C" {
 
-JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_eval1(JNIEnv *aEnv, jclass aClazz,
+JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forward1(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aNlDx, jdoubleArray aNlDy, jdoubleArray aNlDz, jintArray aNlType, jint aNN,
-        jdoubleArray rNlRn, jdoubleArray rNlY, jdoubleArray rCnlm, jdoubleArray rFp, jint aShiftFp, jboolean aBufferNl,
+        jdoubleArray rFp, jint aShiftFp, jdoubleArray rForwardCache, jint aForwardCacheShift, jboolean aFullCache,
         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial, jint aL3Max, jboolean aL3Cross, jint aWType, jdoubleArray aFuseWeight, jint aFuseSize) {
     // java array init
     jdouble *tNlDx = (jdouble *)getJArrayBuf(aEnv, aNlDx);

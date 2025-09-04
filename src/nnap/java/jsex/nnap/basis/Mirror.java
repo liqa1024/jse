@@ -80,11 +80,11 @@ public class Mirror extends Basis {
         if (rForwardCache==null) mMirrorNlTypeValid = false;
     }
     @Override
-    public final void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache) {
+    public final void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache, boolean aKeepCache) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         // 由于 backward 总是在 forward 之后调用，此时不需要重新构造 mMirrorNlType
         if (!mMirrorNlTypeValid) throw new IllegalStateException();
-        mMirrorBasis.backward(aNlDx, aNlDy, aNlDz, mMirrorNlType, aGradFp, rGradPara, aForwardCache, rBackwardCache);
+        mMirrorBasis.backward(aNlDx, aNlDy, aNlDz, mMirrorNlType, aGradFp, rGradPara, aForwardCache, rBackwardCache, aKeepCache);
         mMirrorNlTypeValid = false;
     }
     @Override

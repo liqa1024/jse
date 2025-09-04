@@ -146,9 +146,10 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      * @param rGradPara 计算输出的（loss）关于可拟合参数的梯度
      * @param aForwardCache 需要的向前传播的完整缓存值
      * @param rBackwardCache 计算反向传播过程中需要使用的缓存，会自动扩容到合适长度
+     * @param aKeepCache 标记是否保留输入的 {@code rBackwardCache} 旧值，在某些情况需要这些值来实现带有依赖的反向传播
      */
     @ApiStatus.Internal
-    public void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache) {/**/}
+    public void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache, boolean aKeepCache) {/**/}
     
     /**
      * 结合了反向传播的向前传播计算力，并可选输出传播过程中的缓存值
@@ -181,7 +182,6 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     @ApiStatus.Internal
     public final double evalEnergy(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, NeuralNetwork aNN) throws Exception {
         initCacheFp_();
-        mForwardCache.clear();
         forward(aNlDx, aNlDy, aNlDz, aNlType, mFp, mForwardCache, false);
         return aNN.eval(mFp);
     }
@@ -202,7 +202,6 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     @ApiStatus.Internal
     public final double evalEnergyForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, NeuralNetwork aNN, DoubleList rFx, DoubleList rFy, DoubleList rFz) throws Exception {
         initCacheFp_();
-        mForwardCache.clear(); mForwardForceCache.clear();
         forward(aNlDx, aNlDy, aNlDz, aNlType, mFp, mForwardCache, true);
         double tEng = aNN.evalGrad(mFp, mNNGrad);
         forwardForce(aNlDx, aNlDy, aNlDz, aNlType, mNNGrad, rFx, rFy, rFz, mForwardCache, mForwardForceCache, false);
@@ -246,16 +245,8 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
         });
     }
     static void validCache_(DoubleList rCache, int aSize) {
-        // 合法化缓存，由于部分缓存使用会利用旧值，为了保证清空逻辑，这里在长度不够时使用 addZeros 来扩容
-        int tSize = rCache.size();
-        if (tSize > aSize) {
-            rCache.setInternalDataSize(aSize);
-        } else {
-            int tRest = aSize - tSize;
-            if (tRest > 0) {
-                rCache.addZeros(tRest);
-            }
-        }
+        rCache.ensureCapacity(aSize);
+        rCache.setInternalDataSize(aSize);
     }
     
     /**
@@ -268,7 +259,6 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      */
     @ApiStatus.Internal
     public final void eval(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp) {
-        mForwardCache.clear();
         forward(aNlDx, aNlDy, aNlDz, aNlType, rFp, mForwardCache, false);
     }
     /**

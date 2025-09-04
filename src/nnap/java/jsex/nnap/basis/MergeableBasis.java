@@ -29,13 +29,13 @@ public abstract class MergeableBasis extends Basis {
     protected abstract void forward_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleArrayVector rForwardCache, boolean aFullCache);
     
     @Override
-    public final void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache) {
+    public final void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache, boolean aKeepCache) {
         mForwardCacheShell.setInternalData(aForwardCache.internalData()); mForwardCacheShell.setInternalDataSize(aForwardCache.size());
         validCache_(rBackwardCache, backwardCacheSize_(aNlDx.size()));
         mBackwardCacheShell.setInternalData(rBackwardCache.internalData()); mBackwardCacheShell.setInternalDataSize(rBackwardCache.size());
-        backward_(aNlDx, aNlDy, aNlDz, aNlType, aGradFp, rGradPara, mForwardCacheShell, mBackwardCacheShell);
+        backward_(aNlDx, aNlDy, aNlDz, aNlType, aGradFp, rGradPara, mForwardCacheShell, mBackwardCacheShell, aKeepCache);
     }
-    protected abstract void backward_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleArrayVector aForwardCache, DoubleArrayVector rBackwardCache);
+    protected abstract void backward_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleArrayVector aForwardCache, DoubleArrayVector rBackwardCache, boolean aKeepCache);
     
     
     static void clearForce_(DoubleList rFx, DoubleList rFy, DoubleList rFz) {
