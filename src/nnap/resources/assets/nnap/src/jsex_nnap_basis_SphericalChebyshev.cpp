@@ -1433,26 +1433,25 @@ static void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTyp
         }
     }
     // loop for neighbor
-    for (jint j = 0, ji = -1; j < aNN; ++j) {
+    for (jint j = 0; j < aNN; ++j) {
         jint type = aNlType[j];
         jdouble dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
         jdouble dis = sqrt((double)(dx*dx + dy*dy + dz*dz));
         // check rcut for merge
         if (dis >= aRCut) continue;
-        ++ji;
         // cal fc
         jdouble fc = JSE_NNAP::calFc(dis, aRCut);
-        if (aFullCache) rNlFc[ji] = fc;
+        if (aFullCache) rNlFc[j] = fc;
         // cal Rn
-        if (aFullCache) rRn = rNlRn + ji*(aNMax+1);
+        if (aFullCache) rRn = rNlRn + j*(aNMax+1);
         JSE_NNAP::calRn(rRn, aNMax, dis, aRCut);
         // cal Y
-        if (aFullCache) rY = rNlY + ji*LMALL;
+        if (aFullCache) rY = rNlY + j*LMALL;
         realSphericalHarmonicsFull4<LMAXMAX>(dx, dy, dz, dis, rY);
         // cal cnlm
         if (WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_FUSE) {
             // cal bnlm
-            if (aFullCache) rBnlm = rNlBnlm + ji*tSizeBnlm;
+            if (aFullCache) rBnlm = rNlBnlm + j*tSizeBnlm;
             calBnlm<LMALL>(rBnlm, rY, fc, rRn, aNMax);
             // mplus2cnlm
             jdouble *tFuseWeight = aFuseWeight;
@@ -1563,14 +1562,13 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
         calGradL3_<L3MAX, L3CROSS>(tCnlm+tShift, rGradCnlm+tShift, aGradFp+tShiftFp, LMAX, NO_RADIAL);
     }
     // plus to para
-    for (jint j = 0, ji = -1; j < aNN; ++j) {
+    for (jint j = 0; j < aNN; ++j) {
         jint type = aNlType[j];
         jdouble dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
         jdouble dis = sqrt((double)(dx*dx + dy*dy + dz*dz));
         // check rcut for merge
         if (dis >= aRCut) continue;
-        ++ji;
-        jdouble *tBnlm = tNlBnlm + ji*tSizeBnlm;
+        jdouble *tBnlm = tNlBnlm + j*tSizeBnlm;
         if (WTYPE == jsex_nnap_basis_SphericalChebyshev_WTYPE_FUSE) {
             jdouble *tGradPara = rGradPara;
             jdouble *tGradCnlm = rGradCnlm;
@@ -1674,44 +1672,43 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
         calGradL3_<L3MAX, L3CROSS>(tCnlm+tShift, rGradCnlm+tShift, aNNGrad+tShiftFp, LMAX, NO_RADIAL);
     }
     // loop for neighbor
-    for (jint j = 0, ji = -1; j < aNN; ++j) {
+    for (jint j = 0; j < aNN; ++j) {
         // init nl
         jint type = aNlType[j];
         jdouble dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
         jdouble dis = sqrt((double)(dx*dx + dy*dy + dz*dz));
         // check rcut for merge
         if (dis >= aRCut) continue;
-        ++ji;
         // get fc Rn Y
-        jdouble fc = tNlFc[ji];
-        jdouble *tRn = tNlRn + ji*(aNMax+1);
-        jdouble *tY = tNlY + ji*tLMAll;
+        jdouble fc = tNlFc[j];
+        jdouble *tRn = tNlRn + j*(aNMax+1);
+        jdouble *tY = tNlY + j*tLMAll;
         // cal fcPxyz
         jdouble fcPx, fcPy, fcPz;
         JSE_NNAP::calFcPxyz(&fcPx, &fcPy, &fcPz, dis, aRCut, dx, dy, dz);
         if (aFullCache) {
-            rNlFcPx[ji] = fcPx;
-            rNlFcPy[ji] = fcPy;
-            rNlFcPz[ji] = fcPz;
+            rNlFcPx[j] = fcPx;
+            rNlFcPy[j] = fcPy;
+            rNlFcPz[j] = fcPz;
         }
         // cal RnPxyz
         if (aFullCache) {
-            rRnPx = rNlRnPx + ji*(aNMax+1);
-            rRnPy = rNlRnPy + ji*(aNMax+1);
-            rRnPz = rNlRnPz + ji*(aNMax+1);
+            rRnPx = rNlRnPx + j*(aNMax+1);
+            rRnPy = rNlRnPy + j*(aNMax+1);
+            rRnPz = rNlRnPz + j*(aNMax+1);
         }
         JSE_NNAP::calRnPxyz(rRnPx, rRnPy, rRnPz, rCheby2, aNMax, dis, aRCut, dx, dy, dz);
         // cal Ylm
         if (aFullCache) {
-            rYPx = rNlYPx + ji*tLMAll;
-            rYPy = rNlYPy + ji*tLMAll;
-            rYPz = rNlYPz + ji*tLMAll;
+            rYPx = rNlYPx + j*tLMAll;
+            rYPy = rNlYPy + j*tLMAll;
+            rYPz = rNlYPz + j*tLMAll;
         }
         calYPxyz<tLMaxMax, tLMAll>(tY, dx, dy, dz, dis, rYPx, rYPy, rYPz, rYPtheta, rYPphi);
         // cal fxyz
         if (WTYPE == jsex_nnap_basis_SphericalChebyshev_WTYPE_FUSE) {
             if (aFullCache) {
-                rGradBnlm = rNlGradBnlm + ji*tSizeBnlm;
+                rGradBnlm = rNlGradBnlm + j*tSizeBnlm;
             }
             for (jint k = 0; k < tSizeBnlm; ++k) {
                 rGradBnlm[k] = 0.0;
