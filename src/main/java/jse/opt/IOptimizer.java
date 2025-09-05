@@ -85,4 +85,10 @@ public interface IOptimizer {
      * 会清空档期缓存的 loss 值以及梯度，防止算法出现问题。
      */
     void markLossFuncChanged();
+    
+    /**
+     * 标记参数状态发生变化，这里还包括参数长度改变的情况；
+     * 会清空所有缓存来避免出现问题
+     */
+    void markParameterChanged();
 }

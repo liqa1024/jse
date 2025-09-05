@@ -94,8 +94,11 @@ public abstract class AbstractOptimizer implements IOptimizer {
     
     /** {@inheritDoc} */
     @Override public void markLossFuncChanged() {
-        invalidLoss();
-        reset();
+        setLossFunc(mLossFunc).setLossFuncGrad(mLossFuncGrad);
+    }
+    /** {@inheritDoc} */
+    @Override public void markParameterChanged() {
+        setParameter(mParameter);
     }
     
     /**
