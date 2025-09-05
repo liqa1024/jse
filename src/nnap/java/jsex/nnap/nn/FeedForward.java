@@ -325,7 +325,7 @@ public class FeedForward extends NeuralNetwork implements ISavable {
     public void backward(double aYGrad, DoubleArrayVector aX, DoubleArrayVector rGradPara, DoubleArrayVector aHiddenOutputs, DoubleArrayVector aHiddenGrads) {
         backward0(aYGrad, aX, null, rGradPara, aHiddenOutputs, aHiddenGrads);
     }
-    public void backward(double aYGrad, DoubleArrayVector aX, DoubleArrayVector rGradX, DoubleArrayVector rGradPara, DoubleArrayVector aHiddenOutputs, DoubleArrayVector aHiddenGrads) {
+    public void backward(double aYGrad, DoubleArrayVector aX, @Nullable DoubleArrayVector rGradX, DoubleArrayVector rGradPara, DoubleArrayVector aHiddenOutputs, DoubleArrayVector aHiddenGrads) {
         backward0(aYGrad, aX, rGradX, rGradPara, aHiddenOutputs, aHiddenGrads);
     }
     void backward0(double aYGrad, IDataShell<double[]> aX, @Nullable IDataShell<double[]> rGradX, IDataShell<double[]> rGradPara, IDataShell<double[]> aHiddenOutputs, IDataShell<double[]> aHiddenGrads) {
@@ -348,7 +348,7 @@ public class FeedForward extends NeuralNetwork implements ISavable {
                              DoubleArrayVector aHiddenGrads2, DoubleArrayVector aHiddenGrads3, DoubleArrayVector aHiddenGradGrads) {
         gradBackward0(aGradXGrad, aX, null, rGradPara, aHiddenOutputs, aHiddenGrads, aHiddenGrads2, aHiddenGrads3, aHiddenGradGrads);
     }
-    public void gradBackward(DoubleArrayVector aGradXGrad, DoubleArrayVector aX, DoubleArrayVector rGradX, DoubleArrayVector rGradPara, DoubleArrayVector aHiddenOutputs, DoubleArrayVector aHiddenGrads,
+    public void gradBackward(DoubleArrayVector aGradXGrad, DoubleArrayVector aX, @Nullable DoubleArrayVector rGradX, DoubleArrayVector rGradPara, DoubleArrayVector aHiddenOutputs, DoubleArrayVector aHiddenGrads,
                              DoubleArrayVector aHiddenGrads2, DoubleArrayVector aHiddenGrads3, DoubleArrayVector aHiddenGradGrads) {
         gradBackward0(aGradXGrad, aX, rGradX, rGradPara, aHiddenOutputs, aHiddenGrads, aHiddenGrads2, aHiddenGrads3, aHiddenGradGrads);
     }

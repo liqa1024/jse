@@ -154,7 +154,7 @@ public class Chebyshev extends WTypeBasis {
         forwardForce0(aNlDx, aNlDy, aNlDz, aNlType, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache);
     }
     @Override
-    protected void backwardForce_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, DoubleArrayVector rGradPara,
+    protected void backwardForce_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, @Nullable DoubleArrayVector rGradPara,
                                   DoubleArrayVector aForwardCache, DoubleArrayVector aForwardForceCache, DoubleArrayVector rBackwardCache, DoubleArrayVector rBackwardForceCache, boolean aKeepCache, boolean aFixBasis) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         
@@ -201,12 +201,14 @@ public class Chebyshev extends WTypeBasis {
     
     void backwardForce0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType,
                         IDataShell<double[]> aNNGrad, IDataShell<double[]> aGradFx, IDataShell<double[]> aGradFy, IDataShell<double[]> aGradFz,
-                        IDataShell<double[]> rGradNNGrad, IDataShell<double[]> rGradPara, IDataShell<double[]> aForwardCache, IDataShell<double[]> aForwardForceCache, boolean aFixBasis) {
+                        IDataShell<double[]> rGradNNGrad, @Nullable IDataShell<double[]> rGradPara, IDataShell<double[]> aForwardCache, IDataShell<double[]> aForwardForceCache, boolean aFixBasis) {
         int tNN = aNlDx.internalDataSize();
+        if (mFuseWeight!=null && !aFixBasis && rGradPara==null) throw new NullPointerException();
+        boolean tNoPassGradPara = mFuseWeight==null || aFixBasis;
         backwardForce1(aNlDx.internalDataWithLengthCheck(tNN, 0), aNlDy.internalDataWithLengthCheck(tNN, 0), aNlDz.internalDataWithLengthCheck(tNN, 0), aNlType.internalDataWithLengthCheck(tNN, 0), tNN,
                        aNNGrad.internalDataWithLengthCheck(mSize), aNNGrad.internalDataShift(), aGradFx.internalDataWithLengthCheck(tNN, 0), aGradFy.internalDataWithLengthCheck(tNN, 0), aGradFz.internalDataWithLengthCheck(tNN, 0),
                        rGradNNGrad.internalDataWithLengthCheck(mSize), rGradNNGrad.internalDataShift(),
-                       mFuseWeight==null?null:rGradPara.internalDataWithLengthCheck(mFuseWeight.internalDataSize()), mFuseWeight==null?0:rGradPara.internalDataShift(),
+                       tNoPassGradPara?null:rGradPara.internalDataWithLengthCheck(mFuseWeight.internalDataSize()), tNoPassGradPara?0:rGradPara.internalDataShift(),
                        aForwardCache.internalDataWithLengthCheck(forwardCacheSize_(tNN, true)), aForwardCache.internalDataShift(),
                        aForwardForceCache.internalDataWithLengthCheck(forwardForceCacheSize_(tNN, true)), aForwardForceCache.internalDataShift(), aFixBasis,
                        mTypeNum, mRCut, mNMax, mWType, mFuseWeight==null?null:mFuseWeight.internalDataWithLengthCheck(), mFuseSize);

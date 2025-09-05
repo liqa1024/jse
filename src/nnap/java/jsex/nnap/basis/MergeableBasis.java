@@ -5,6 +5,7 @@ import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.math.vector.DoubleArrayVector;
 import jse.math.vector.Vector;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class MergeableBasis extends Basis {
     
@@ -71,7 +72,7 @@ public abstract class MergeableBasis extends Basis {
     protected abstract void forwardForceAccumulate_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList rFx, DoubleList rFy, DoubleList rFz, DoubleArrayVector aForwardCache, DoubleArrayVector rForwardForceCache, boolean aFullCache);
     
     @Override
-    public final void backwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, DoubleArrayVector rGradPara,
+    public final void backwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, @Nullable DoubleArrayVector rGradPara,
                                     DoubleList aForwardCache, DoubleList aForwardForceCache, DoubleList rBackwardCache, DoubleList rBackwardForceCache, boolean aKeepCache, boolean aFixBasis) {
         // backward 都进行累加，因此不需要清空旧值
         mForwardCacheShell.setInternalData(aForwardCache.internalData()); mForwardCacheShell.setInternalDataSize(aForwardCache.size());
@@ -82,6 +83,6 @@ public abstract class MergeableBasis extends Basis {
         mBackwardForceCacheShell.setInternalData(rBackwardForceCache.internalData()); mBackwardForceCacheShell.setInternalDataSize(rBackwardForceCache.size());
         backwardForce_(aNlDx, aNlDy, aNlDz, aNlType, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, mForwardCacheShell, mForwardForceCacheShell, mBackwardCacheShell, mBackwardForceCacheShell, aKeepCache, aFixBasis);
     }
-    protected abstract void backwardForce_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, DoubleArrayVector rGradPara,
+    protected abstract void backwardForce_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, @Nullable DoubleArrayVector rGradPara,
                                            DoubleArrayVector aForwardCache, DoubleArrayVector aForwardForceCache, DoubleArrayVector rBackwardCache, DoubleArrayVector rBackwardForceCache, boolean aKeepCache, boolean aFixBasis);
 }

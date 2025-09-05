@@ -184,15 +184,12 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      * @param rBackwardCache 可选计算输出的对于 backward 缓存使用的修改，部分基组会存在此依赖项，会自动扩容到合适长度
      * @param rBackwardForceCache 计算力反向传播过程中需要使用的缓存，会自动扩容到合适长度
      * @param aKeepCache 标记是否保留输入的 {@code rBackwardForceCache} 旧值
-     * @param aFixBasis 标记是否固定基组，当固定基组时不会进行考虑基组可变的反向传播分支（rGradPara, rBackwardCache）
+     * @param aFixBasis 标记是否固定基组，当固定基组时不会进行考虑基组可变的反向传播分支（rGradPara）
      */
     @ApiStatus.Internal
-    public abstract void backwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, DoubleArrayVector rGradPara,
+    public abstract void backwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, @Nullable DoubleArrayVector rGradPara,
                                        DoubleList aForwardCache, DoubleList aForwardForceCache, DoubleList rBackwardCache, DoubleList rBackwardForceCache, boolean aKeepCache, boolean aFixBasis);
     
-    
-    @FunctionalInterface public interface IDxyzTypeIterable {void forEachDxyzType(IDxyzTypeDo aDxyzTypeDo);}
-    @FunctionalInterface public interface IDxyzTypeDo {void run(double aDx, double aDy, double aDz, int aType);}
     
     private DoubleList mNlDx = null, mNlDy = null, mNlDz = null;
     private IntList mNlType = null;
@@ -204,21 +201,6 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
         mNlDy = new DoubleList(16);
         mNlDz = new DoubleList(16);
         mNlType = new IntList(16);
-    }
-    
-    private void buildNL_(IDxyzTypeIterable aNL) {
-        initCacheNl_();
-        final int tTypeNum = atomTypeNumber();
-        // 缓存情况需要先清空这些
-        mNlDx.clear(); mNlDy.clear(); mNlDz.clear();
-        mNlType.clear();
-        aNL.forEachDxyzType((dx, dy, dz, type) -> {
-            // 现在不再检测距离，因为需要处理合并情况下截断不一致的情况
-            if (type > tTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+tTypeNum+")");
-            // 简单缓存近邻列表
-            mNlDx.add(dx); mNlDy.add(dy); mNlDz.add(dz);
-            mNlType.add(type);
-        });
     }
     static void validCache_(DoubleList rCache, int aSize) {
         rCache.ensureCapacity(aSize);
@@ -238,16 +220,6 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
         forward(aNlDx, aNlDy, aNlDz, aNlType, rFp, mForwardCache, false);
     }
     /**
-     * 通用的计算基组的接口，可以自定义任何近邻列表获取器来实现
-     * @param aNL 近邻列表遍历器
-     * @param rFp 计算输出的原子描述符向量
-     */
-    public final void eval(IDxyzTypeIterable aNL, DoubleArrayVector rFp) {
-        if (mDead) throw new IllegalStateException("This Basis is dead");
-        buildNL_(aNL);
-        eval(mNlDx, mNlDy, mNlDz, mNlType, rFp);
-    }
-    /**
      * 基于 {@link AtomicParameterCalculator} 的近邻列表实现的通用的计算某个原子的基组功能
      * @param aAPC 原子结构参数计算器，用来获取近邻列表
      * @param aIdx 需要计算基组的原子索引
@@ -257,11 +229,20 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     public final void eval(final AtomicParameterCalculator aAPC, final int aIdx, final IntUnaryOperator aTypeMap, DoubleArrayVector rFp) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
         typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
-        eval(dxyzTypeDo -> {
-            aAPC.nl_().forEachNeighbor(aIdx, rcut(), (dx, dy, dz, idx) -> {
-                dxyzTypeDo.run(dx, dy, dz, aTypeMap.applyAsInt(aAPC.atomType_().get(idx)));
-            });
-        }, rFp);
+        // 构造近邻列表缓存
+        initCacheNl_();
+        final int tTypeNum = atomTypeNumber();
+        // 缓存情况需要先清空这些
+        mNlDx.clear(); mNlDy.clear(); mNlDz.clear();
+        mNlType.clear();
+        aAPC.nl_().forEachNeighbor(aIdx, rcut(), (dx, dy, dz, idx) -> {
+            int type = aTypeMap.applyAsInt(aAPC.atomType_().get(idx));
+            if (type > tTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+tTypeNum+")");
+            // 简单缓存近邻列表
+            mNlDx.add(dx); mNlDy.add(dy); mNlDz.add(dz);
+            mNlType.add(type);
+        });
+        eval(mNlDx, mNlDy, mNlDz, mNlType, rFp);
     }
     public final void eval(AtomicParameterCalculator aAPC, int aIdx, DoubleArrayVector rFp) {eval(aAPC, aIdx, type->type, rFp);}
     

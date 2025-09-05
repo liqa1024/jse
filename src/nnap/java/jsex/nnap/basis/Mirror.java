@@ -4,6 +4,7 @@ import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.math.vector.DoubleArrayVector;
 import jse.math.vector.IVector;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
@@ -58,7 +59,6 @@ public class Mirror extends Basis {
         mMirrorBasis.shutdown();
     }
     
-    private boolean mMirrorNlTypeValid = false;
     private final IntList mMirrorNlType = new IntList(16);
     private void buildNlType_(IntList aNlType) {
         mMirrorNlType.clear();
@@ -68,40 +68,35 @@ public class Mirror extends Basis {
             else if (type == mMirrorType) mMirrorNlType.add(mThisType);
             else mMirrorNlType.add(type);
         });
-        mMirrorNlTypeValid = true;
     }
     
     @Override
     public final void forward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleList rForwardCache, boolean aFullCache) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        if (mMirrorNlTypeValid) throw new IllegalStateException();
+        // 现在可以有任意的调用顺序，因此这里简单处理都进行一次缓存
         buildNlType_(aNlType);
         mMirrorBasis.forward(aNlDx, aNlDy, aNlDz, mMirrorNlType, rFp, rForwardCache, aFullCache);
-        if (rForwardCache==null) mMirrorNlTypeValid = false;
     }
     @Override
     public final void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache, boolean aKeepCache) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        // 由于 backward 总是在 forward 之后调用，此时不需要重新构造 mMirrorNlType
-        if (!mMirrorNlTypeValid) throw new IllegalStateException();
+        // 现在可以有任意的调用顺序，因此这里简单处理都进行一次缓存
+        buildNlType_(aNlType);
         mMirrorBasis.backward(aNlDx, aNlDy, aNlDz, mMirrorNlType, aGradFp, rGradPara, aForwardCache, rBackwardCache, aKeepCache);
-        mMirrorNlTypeValid = false;
     }
     @Override
     public final void forwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList rFx, DoubleList rFy, DoubleList rFz, DoubleList aForwardCache, DoubleList rForwardForceCache, boolean aFullCache) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        // 由于 forwardForce 总是在 forward 之后调用，此时不需要重新构造 mMirrorNlType
-        if (!mMirrorNlTypeValid) throw new IllegalStateException();
+        // 现在可以有任意的调用顺序，因此这里简单处理都进行一次缓存
+        buildNlType_(aNlType);
         mMirrorBasis.forwardForce(aNlDx, aNlDy, aNlDz, mMirrorNlType, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache);
-        mMirrorNlTypeValid = false;
     }
     @Override
-    public final void backwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, DoubleArrayVector rGradPara,
+    public final void backwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, @Nullable DoubleArrayVector rGradPara,
                                     DoubleList aForwardCache, DoubleList aForwardForceCache, DoubleList rBackwardCache, DoubleList rBackwardForceCache, boolean aKeepCache, boolean aFixBasis) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
-        // 由于 backwardForce 总是在 forwardForce 之后调用，此时不需要重新构造 mMirrorNlType
-        if (!mMirrorNlTypeValid) throw new IllegalStateException();
+        // 现在可以有任意的调用顺序，因此这里简单处理都进行一次缓存
+        buildNlType_(aNlType);
         mMirrorBasis.backwardForce(aNlDx, aNlDy, aNlDz, mMirrorNlType, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aKeepCache, aFixBasis);
-        mMirrorNlTypeValid = false;
     }
 }
