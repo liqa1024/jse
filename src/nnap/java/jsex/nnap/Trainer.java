@@ -1376,7 +1376,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         // 开始训练
         if (aPrintLog) {
             UT.Timer.progressBar(Maps.of(
-                "name", mTrainBasis ? "train(B)" : "train",
+                "name", "train",
                 "max", aEpochs,
                 "length", 100
             ));
