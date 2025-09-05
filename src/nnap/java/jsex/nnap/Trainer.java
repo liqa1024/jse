@@ -1390,7 +1390,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
         // 应用早停
         if (aEarlyStop && mSelectEpoch>=0) {
-            mParas.fill(mSelectEpoch);
+            mParas.fill(mSelectParas);
             mOptimizer.markParameterChanged();
             if (aPrintLog) System.out.printf("Model at epoch = %d selected, test loss = %.4g\n", mSelectEpoch+1, mMinLoss);
             mSelectEpoch = -1;
@@ -1407,10 +1407,10 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         VectorCache.returnVec(tLossDetail);
         System.out.printf("Loss-L2: %.4g (%s)\n", tLossL2, IO.Text.percent(tLossL2/tLossTot));
         System.out.printf("Loss-E : %.4g (%s)\n", tLossE, IO.Text.percent(tLossE/tLossTot));
-        if (!mTrainBasis && mHasForce) {
+        if (mHasForce) {
             System.out.printf("Loss-F : %.4g (%s)\n", tLossF, IO.Text.percent(tLossF/tLossTot));
         }
-        if (!mTrainBasis && mHasStress) {
+        if (mHasStress) {
             System.out.printf("Loss-S : %.4g (%s)\n", tLossS, IO.Text.percent(tLossS/tLossTot));
         }
         Vector tMAE = VectorCache.getVec(4);
@@ -1423,30 +1423,30 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             switch(mUnits) {
             case "metal": {
                 System.out.printf("MAE-E: %.4g meV\n", tMAE_E*1000);
-                if (!mTrainBasis && mHasForce) {
+                if (mHasForce) {
                     System.out.printf("MAE-F: %.4g meV/A\n", tMAE_F*1000);
                 }
-                if (!mTrainBasis && mHasStress) {
+                if (mHasStress) {
                     System.out.printf("MAE-S: %.4g meV/A^3\n", tMAE_S*1000);
                 }
                 break;
             }
             case "real":{
                 System.out.printf("MAE-E: %.4g kcal/mol\n", tMAE_E);
-                if (!mTrainBasis && mHasForce) {
+                if (mHasForce) {
                     System.out.printf("MAE-F: %.4g kcal/mol/A\n", tMAE_F);
                 }
-                if (!mTrainBasis && mHasStress) {
+                if (mHasStress) {
                     System.out.printf("MAE-S: %.4g kcal/mol/A^3\n", tMAE_S);
                 }
                 break;
             }
             default: {
                 System.out.printf("MAE-E: %.4g\n", tMAE_E);
-                if (!mTrainBasis && mHasForce) {
+                if (mHasForce) {
                     System.out.printf("MAE-F: %.4g\n", tMAE_F);
                 }
-                if (!mTrainBasis && mHasStress) {
+                if (mHasStress) {
                     System.out.printf("MAE-S: %.4g\n", tMAE_S);
                 }
                 break;
@@ -1462,30 +1462,30 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         switch(mUnits) {
         case "metal": {
             System.out.printf("MAE-E: %.4g meV | %.4g meV\n", tMAE_E*1000, tTestMAE_E*1000);
-            if (!mTrainBasis && mHasForce) {
+            if (mHasForce) {
                 System.out.printf("MAE-F: %.4g meV/A | %.4g meV/A\n", tMAE_F*1000, tTestMAE_F*1000);
             }
-            if (!mTrainBasis && mHasStress) {
+            if (mHasStress) {
                 System.out.printf("MAE-S: %.4g meV/A^3 | %.4g meV/A^3\n", tMAE_S*1000, tTestMAE_S*1000);
             }
             break;
         }
         case "real":{
             System.out.printf("MAE-E: %.4g kcal/mol | %.4g kcal/mol\n", tMAE_E, tTestMAE_E);
-            if (!mTrainBasis && mHasForce) {
+            if (mHasForce) {
                 System.out.printf("MAE-F: %.4g kcal/mol/A | %.4g kcal/mol/A\n", tMAE_F, tTestMAE_F);
             }
-            if (!mTrainBasis && mHasStress) {
+            if (mHasStress) {
                 System.out.printf("MAE-S: %.4g kcal/mol/A^3 | %.4g kcal/mol/A^3\n", tMAE_S, tTestMAE_S);
             }
             break;
         }
         default: {
             System.out.printf("MAE-E: %.4g | %.4g\n", tMAE_E, tTestMAE_E);
-            if (!mTrainBasis && mHasForce) {
+            if (mHasForce) {
                 System.out.printf("MAE-F: %.4g | %.4g\n", tMAE_F, tTestMAE_F);
             }
-            if (!mTrainBasis && mHasStress) {
+            if (mHasStress) {
                 System.out.printf("MAE-S: %.4g | %.4g\n", tMAE_S, tTestMAE_S);
             }
             break;

@@ -146,7 +146,7 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
         if (aFullCache) rRn = rNlRn + j*(NMAX+1);
         JSE_NNAP::calRn<NMAX>(rRn, dis, aRCut);
         // cal fp
-        if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_FUSE) {
+        if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_FUSE) {
             jdouble *tFuseWeight = aFuseWeight;
             jdouble *tFp = rFp;
             for (jint k = 0; k < aFuseSize; ++k) {
@@ -163,11 +163,11 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
             jdouble *tFp = rFp + (NMAX+1)*(type-1);
             mplusFp<NMAX>(tFp, fc, rRn);
         } else
-        if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_EXFULL) {
+        if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_EXFULL) {
             jdouble *tFpWt = rFp + (NMAX+1)*type;
             mplusFpWt<NMAX>(rFp, tFpWt, fc, rRn, 1.0);
         } else
-        if (WTYPE == jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT) {
+        if (WTYPE==jsex_nnap_basis_Chebyshev_WTYPE_DEFAULT) {
             jdouble wt = ((type&1)==1) ? type : -type;
             jdouble *tFpWt = rFp + (NMAX+1);
             mplusFpWt<NMAX>(rFp, tFpWt, fc, rRn, wt);

@@ -1470,11 +1470,11 @@ static void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTyp
             jdouble *tCnlm = rCnlm + tSizeBnlm*(type-1);
             mplusCnlm<LMALL>(tCnlm, rY, fc, rRn, aNMax);
         } else
-        if (WTYPE == jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL) {
+        if (WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL) {
             jdouble *tCnlmWt = rCnlm + tSizeBnlm*type;
             mplusCnlmWt<LMALL>(rCnlm, tCnlmWt, rY, fc, rRn, 1.0, aNMax);
         } else
-        if (WTYPE == jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT) {
+        if (WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_DEFAULT) {
             jdouble wt = ((type&1)==1) ? type : -type;
             jdouble *tCnlmWt = rCnlm + tSizeBnlm;
             mplusCnlmWt<LMALL>(rCnlm, tCnlmWt, rY, fc, rRn, wt, aNMax);
@@ -1542,7 +1542,7 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
                   WTYPE!=jsex_nnap_basis_SphericalChebyshev_WTYPE_EXFULL, "WTYPE INVALID");
     // const init
     jint tSizeN;
-    if (WTYPE == jsex_nnap_basis_SphericalChebyshev_WTYPE_FUSE) {
+    if (WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_FUSE) {
         tSizeN = aFuseSize*(aNMax+1);
     } else {
         tSizeN = 0;
@@ -1569,7 +1569,7 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
         // check rcut for merge
         if (dis >= aRCut) continue;
         jdouble *tBnlm = tNlBnlm + j*tSizeBnlm;
-        if (WTYPE == jsex_nnap_basis_SphericalChebyshev_WTYPE_FUSE) {
+        if (WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_FUSE) {
             jdouble *tGradPara = rGradPara;
             jdouble *tGradCnlm = rGradCnlm;
             for (jint fi = 0; fi < aFuseSize; ++fi) {
@@ -1706,7 +1706,7 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
         }
         calYPxyz<tLMaxMax, tLMAll>(tY, dx, dy, dz, dis, rYPx, rYPy, rYPz, rYPtheta, rYPphi);
         // cal fxyz
-        if (WTYPE == jsex_nnap_basis_SphericalChebyshev_WTYPE_FUSE) {
+        if (WTYPE==jsex_nnap_basis_SphericalChebyshev_WTYPE_FUSE) {
             if (aFullCache) {
                 rGradBnlm = rNlGradBnlm + j*tSizeBnlm;
             }
