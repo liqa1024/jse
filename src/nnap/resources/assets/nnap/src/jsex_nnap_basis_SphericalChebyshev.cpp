@@ -335,44 +335,66 @@ static inline void realSphericalHarmonicsFull4(jdouble aX, jdouble aY, jdouble a
     realSphericalHarmonicsFull4InterLoop_<8, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest);
 }
 
-template <jint NMAX, jint LMALL>
-static inline void calBnlm(jdouble *rBnlm, jdouble *aY, jdouble aFc, jdouble *aRn) noexcept {
-    jdouble *tBnlm = rBnlm;
+template <jint NMAX, jint LMALL, jboolean MPLUS, jboolean WT>
+static inline void setormplusCnlm_(jdouble *rCnlm, jdouble *rCnlmWt, jdouble *aY, jdouble aFc, jdouble *aRn, jdouble aWt) noexcept {
+    jdouble *tCnlm = rCnlm;
+    jdouble *tCnlmWt = rCnlmWt;
     for (jint n = 0; n <= NMAX; ++n) {
         jdouble tMul = aFc*aRn[n];
         for (jint k = 0; k < LMALL; ++k) {
-            tBnlm[k] = tMul*aY[k];
+            jdouble tValue = tMul*aY[k];
+            if (MPLUS) {
+                tCnlm[k] += tValue;
+                if (WT) tCnlmWt[k] += aWt*tValue;
+            } else {
+                tCnlm[k] = tValue;
+                if (WT) tCnlmWt[k] = aWt*tValue;
+            }
         }
-        tBnlm += LMALL;
+        tCnlm += LMALL;
+        if (WT) tCnlmWt += LMALL;
+    }
+}
+template <jint LMALL, jboolean MPLUS, jboolean WT>
+static inline void setormplusCnlm_(jdouble *rCnlm, jdouble *rCnlmWt, jdouble *aY, jdouble aFc, jdouble *aRn, jdouble aWt, jint aNMax) noexcept {
+    switch (aNMax) {
+    case 0: {setormplusCnlm_<0, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 1: {setormplusCnlm_<1, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 2: {setormplusCnlm_<2, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 3: {setormplusCnlm_<3, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 4: {setormplusCnlm_<4, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 5: {setormplusCnlm_<5, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 6: {setormplusCnlm_<6, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 7: {setormplusCnlm_<7, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 8: {setormplusCnlm_<8, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 9: {setormplusCnlm_<9, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 10: {setormplusCnlm_<10, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 11: {setormplusCnlm_<11, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 12: {setormplusCnlm_<12, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 13: {setormplusCnlm_<13, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 14: {setormplusCnlm_<14, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 15: {setormplusCnlm_<15, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 16: {setormplusCnlm_<16, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 17: {setormplusCnlm_<17, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 18: {setormplusCnlm_<18, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 19: {setormplusCnlm_<19, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    case 20: {setormplusCnlm_<20, LMALL, MPLUS, WT>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
+    default: {return;}
     }
 }
 template <jint LMALL>
 static inline void calBnlm(jdouble *rBnlm, jdouble *aY, jdouble aFc, jdouble *aRn, jint aNMax) noexcept {
-    switch (aNMax) {
-    case 0: {calBnlm<0, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 1: {calBnlm<1, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 2: {calBnlm<2, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 3: {calBnlm<3, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 4: {calBnlm<4, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 5: {calBnlm<5, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 6: {calBnlm<6, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 7: {calBnlm<7, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 8: {calBnlm<8, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 9: {calBnlm<9, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 10: {calBnlm<10, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 11: {calBnlm<11, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 12: {calBnlm<12, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 13: {calBnlm<13, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 14: {calBnlm<14, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 15: {calBnlm<15, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 16: {calBnlm<16, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 17: {calBnlm<17, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 18: {calBnlm<18, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 19: {calBnlm<19, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    case 20: {calBnlm<20, LMALL>(rBnlm, aY, aFc, aRn); return;}
-    default: {return;}
-    }
+    setormplusCnlm_<LMALL, JNI_FALSE, JNI_FALSE>(rBnlm, NULL, aY, aFc, aRn, 0, aNMax);
 }
+template <jint LMALL>
+static inline void mplusCnlm(jdouble *rCnlm, jdouble *aY, jdouble aFc, jdouble *aRn, jint aNMax) noexcept {
+    setormplusCnlm_<LMALL, JNI_TRUE, JNI_FALSE>(rCnlm, NULL, aY, aFc, aRn, 0, aNMax);
+}
+template <jint LMALL>
+static inline void mplusCnlmWt(jdouble *rCnlm, jdouble *rCnlmWt, jdouble *aY, jdouble aFc, jdouble *aRn, jdouble aWt, jint aNMax) noexcept {
+    setormplusCnlm_<LMALL, JNI_TRUE, JNI_TRUE>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt, aNMax);
+}
+
 template <jint N>
 static inline void mplusBnlm2Cnlm(jdouble *rCnlm, jdouble *aBnlm, jdouble aWt) noexcept {
     for (jint i = 0; i < N; ++i) {
@@ -407,88 +429,6 @@ static inline void mplusBnlm2Cnlm(jdouble *rCnlm, jdouble *aBnlm, jdouble aWt, j
     }
 }
 
-template <jint NMAX, jint LMALL>
-static inline void mplusCnlm(jdouble *rCnlm, jdouble *aY, jdouble aFc, jdouble *aRn) noexcept {
-    jdouble *tCnlm = rCnlm;
-    for (jint n = 0; n <= NMAX; ++n) {
-        jdouble tMul = aFc*aRn[n];
-        for (jint k = 0; k < LMALL; ++k) {
-            tCnlm[k] += tMul*aY[k];
-        }
-        tCnlm += LMALL;
-    }
-}
-template <jint LMALL>
-static inline void mplusCnlm(jdouble *rCnlm, jdouble *aY, jdouble aFc, jdouble *aRn, jint aNMax) noexcept {
-    switch (aNMax) {
-    case 0: {mplusCnlm<0, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 1: {mplusCnlm<1, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 2: {mplusCnlm<2, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 3: {mplusCnlm<3, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 4: {mplusCnlm<4, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 5: {mplusCnlm<5, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 6: {mplusCnlm<6, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 7: {mplusCnlm<7, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 8: {mplusCnlm<8, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 9: {mplusCnlm<9, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 10: {mplusCnlm<10, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 11: {mplusCnlm<11, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 12: {mplusCnlm<12, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 13: {mplusCnlm<13, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 14: {mplusCnlm<14, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 15: {mplusCnlm<15, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 16: {mplusCnlm<16, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 17: {mplusCnlm<17, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 18: {mplusCnlm<18, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 19: {mplusCnlm<19, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    case 20: {mplusCnlm<20, LMALL>(rCnlm, aY, aFc, aRn); return;}
-    default: {return;}
-    }
-}
-template <jint NMAX, jint LMALL>
-static inline void mplusCnlmWt(jdouble *rCnlm, jdouble *rCnlmWt, jdouble *aY, jdouble aFc, jdouble *aRn, jdouble aWt) noexcept {
-    jdouble *tCnlm = rCnlm;
-    jdouble *tCnlmWt = rCnlmWt;
-    for (jint n = 0; n <= NMAX; ++n) {
-        jdouble tMul = aFc*aRn[n];
-        jdouble tMulWt = aWt*tMul;
-        for (jint k = 0; k < LMALL; ++k) {
-            jdouble subY = aY[k];
-            tCnlm[k] += tMul*subY;
-            tCnlmWt[k] += tMulWt*subY;
-        }
-        tCnlm += LMALL;
-        tCnlmWt += LMALL;
-    }
-}
-template <jint LMALL>
-static inline void mplusCnlmWt(jdouble *rCnlm, jdouble *rCnlmWt, jdouble *aY, jdouble aFc, jdouble *aRn, jdouble aWt, jint aNMax) noexcept {
-    switch (aNMax) {
-    case 0: {mplusCnlmWt<0, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 1: {mplusCnlmWt<1, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 2: {mplusCnlmWt<2, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 3: {mplusCnlmWt<3, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 4: {mplusCnlmWt<4, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 5: {mplusCnlmWt<5, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 6: {mplusCnlmWt<6, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 7: {mplusCnlmWt<7, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 8: {mplusCnlmWt<8, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 9: {mplusCnlmWt<9, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 10: {mplusCnlmWt<10, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 11: {mplusCnlmWt<11, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 12: {mplusCnlmWt<12, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 13: {mplusCnlmWt<13, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 14: {mplusCnlmWt<14, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 15: {mplusCnlmWt<15, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 16: {mplusCnlmWt<16, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 17: {mplusCnlmWt<17, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 18: {mplusCnlmWt<18, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 19: {mplusCnlmWt<19, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    case 20: {mplusCnlmWt<20, LMALL>(rCnlm, rCnlmWt, aY, aFc, aRn, aWt); return;}
-    default: {return;}
-    }
-}
-
 template <jint LMALL>
 static inline jdouble dotBnlmGradCnlm(jdouble *aBnlm, jdouble *aGradCnlm, jint aNMax) noexcept {
     switch (aNMax) {
@@ -517,29 +457,34 @@ static inline jdouble dotBnlmGradCnlm(jdouble *aBnlm, jdouble *aGradCnlm, jint a
     }
 }
 
-template <jint LMALL>
-static inline void gradBnlm2Fxyz(jint j, jdouble *aGradBnlm, jdouble *rGradY,
-                                 jdouble *aY, jdouble aFc, jdouble *aRn, jint aNMax,
-                                 jdouble aFcPx, jdouble aFcPy, jdouble aFcPz,
-                                 jdouble *aRnPx, jdouble *aRnPy, jdouble *aRnPz,
-                                 jdouble *aYPx, jdouble *aYPy, jdouble *aYPz,
-                                 jdouble *rFx, jdouble *rFy, jdouble *rFz) noexcept {
+template <jint LMALL, jboolean WT>
+static inline void gradCnlm2Fxyz_(jint j, jdouble *aGradCnlm, jdouble *aGradCnlmWt, jdouble *rGradY,
+                                  jdouble *aY, jdouble aFc, jdouble *aRn, jdouble aWt, jint aNMax,
+                                  jdouble aFcPx, jdouble aFcPy, jdouble aFcPz,
+                                  jdouble *aRnPx, jdouble *aRnPy, jdouble *aRnPz,
+                                  jdouble *aYPx, jdouble *aYPy, jdouble *aYPz,
+                                  jdouble *rFx, jdouble *rFy, jdouble *rFz) noexcept {
     // clear gradY here
     for (jint k = 0; k < LMALL; ++k) {
         rGradY[k] = 0.0;
     }
     jdouble tGradFc = 0.0;
     jdouble rFxj = 0.0, rFyj = 0.0, rFzj = 0.0;
-    jdouble *tGradBnlm = aGradBnlm;
-    for (jint n = 0; n <= aNMax; ++n, tGradBnlm+=LMALL) {
+    jdouble *tGradCnlm = aGradCnlm;
+    jdouble *tGradCnlmWt = aGradCnlmWt;
+    for (jint n = 0; n <= aNMax; ++n) {
         jdouble tRnn = aRn[n];
         jdouble tMul = aFc * tRnn;
         jdouble tGradRn = 0.0;
         for (jint k = 0; k < LMALL; ++k) {
-            jdouble subGradBnlm = tGradBnlm[k];
+            jdouble subGradBnlm = tGradCnlm[k];
+            if (WT) subGradBnlm += aWt*tGradCnlmWt[k];
             rGradY[k] += tMul * subGradBnlm;
             tGradRn += aY[k] * subGradBnlm;
         }
+        tGradCnlm += LMALL;
+        if (WT) tGradCnlmWt += LMALL;
+        
         tGradFc += tRnn * tGradRn;
         tGradRn *= aFc;
         rFxj += tGradRn*aRnPx[n];
@@ -558,45 +503,14 @@ static inline void gradBnlm2Fxyz(jint j, jdouble *aGradBnlm, jdouble *rGradY,
     rFx[j] += rFxj; rFy[j] += rFyj; rFz[j] += rFzj;
 }
 template <jint LMALL>
-static inline void gradCnlmWt2Fxyz(jint j, jdouble *aGradCnlm, jdouble *aGradCnlmWt, jdouble *rGradY,
-                                   jdouble *aY, jdouble aFc, jdouble *aRn, jdouble aWt, jint aNMax,
-                                   jdouble aFcPx, jdouble aFcPy, jdouble aFcPz,
-                                   jdouble *aRnPx, jdouble *aRnPy, jdouble *aRnPz,
-                                   jdouble *aYPx, jdouble *aYPy, jdouble *aYPz,
-                                   jdouble *rFx, jdouble *rFy, jdouble *rFz) noexcept {
-    // clear gradY here
-    for (jint k = 0; k < LMALL; ++k) {
-        rGradY[k] = 0.0;
-    }
-    jdouble tGradFc = 0.0;
-    jdouble rFxj = 0.0, rFyj = 0.0, rFzj = 0.0;
-    jdouble *tGradCnlm = aGradCnlm;
-    jdouble *tGradCnlmWt = aGradCnlmWt;
-    for (jint n = 0; n <= aNMax; ++n, tGradCnlm+=LMALL, tGradCnlmWt+=LMALL) {
-        jdouble tRnn = aRn[n];
-        jdouble tMul = aFc * tRnn;
-        jdouble tGradRn = 0.0;
-        for (jint k = 0; k < LMALL; ++k) {
-            jdouble subGradBnlm = tGradCnlm[k] + aWt*tGradCnlmWt[k];
-            rGradY[k] += tMul * subGradBnlm;
-            tGradRn += aY[k] * subGradBnlm;
-        }
-        tGradFc += tRnn * tGradRn;
-        tGradRn *= aFc;
-        rFxj += tGradRn*aRnPx[n];
-        rFyj += tGradRn*aRnPy[n];
-        rFzj += tGradRn*aRnPz[n];
-    }
-    for (jint k = 0; k < LMALL; ++k) {
-        jdouble subGradY = rGradY[k];
-        rFxj += subGradY*aYPx[k];
-        rFyj += subGradY*aYPy[k];
-        rFzj += subGradY*aYPz[k];
-    }
-    rFxj += aFcPx*tGradFc;
-    rFyj += aFcPy*tGradFc;
-    rFzj += aFcPz*tGradFc;
-    rFx[j] += rFxj; rFy[j] += rFyj; rFz[j] += rFzj;
+static inline void gradBnlm2Fxyz(jint j, jdouble *aGradBnlm, jdouble *rGradY, jdouble *aY, jdouble aFc, jdouble *aRn, jint aNMax, jdouble aFcPx, jdouble aFcPy, jdouble aFcPz,
+                                 jdouble *aRnPx, jdouble *aRnPy, jdouble *aRnPz, jdouble *aYPx, jdouble *aYPy, jdouble *aYPz, jdouble *rFx, jdouble *rFy, jdouble *rFz) noexcept {
+    gradCnlm2Fxyz_<LMALL, JNI_FALSE>(j, aGradBnlm, NULL, rGradY, aY, aFc, aRn, 0, aNMax, aFcPx, aFcPy, aFcPz, aRnPx, aRnPy, aRnPz, aYPx, aYPy, aYPz, rFx, rFy, rFz);
+}
+template <jint LMALL>
+static inline void gradCnlmWt2Fxyz(jint j, jdouble *aGradCnlm, jdouble *aGradCnlmWt, jdouble *rGradY, jdouble *aY, jdouble aFc, jdouble *aRn, jdouble aWt, jint aNMax, jdouble aFcPx, jdouble aFcPy, jdouble aFcPz,
+                                   jdouble *aRnPx, jdouble *aRnPy, jdouble *aRnPz, jdouble *aYPx, jdouble *aYPy, jdouble *aYPz, jdouble *rFx, jdouble *rFy, jdouble *rFz) noexcept {
+    gradCnlm2Fxyz_<LMALL, JNI_TRUE>(j, aGradCnlm, aGradCnlmWt, rGradY, aY, aFc, aRn, aWt, aNMax, aFcPx, aFcPy, aFcPz, aRnPx, aRnPy, aRnPz, aYPx, aYPy, aYPz, rFx, rFy, rFz);
 }
 
 template <jint LMALL, jboolean MPLUS, jboolean WT>
