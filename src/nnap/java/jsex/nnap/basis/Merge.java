@@ -351,7 +351,7 @@ public class Merge extends Basis {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         initForwardCacheShell_(aNlDx.size(), true);
         initForwardForceCacheShell_(aNlDx.size(), true);
-        initBackwardCacheShell_(aNlDx.size());
+        validCache_(rBackwardCache, initBackwardCacheShell_(aNlDx.size()));
         validCache_(rBackwardForceCache, initBackwardForceCacheShell_(aNlDx.size()));
         int tGFpShift = aNNGrad.internalDataShift(), tGGFpShift = rGradNNGrad.internalDataShift(), tParaShift = rGradPara.internalDataShift();
         int tCacheShift = 0, tForceCacheShift = 0, tBackwardCacheShift = 0, tBackwardForceCacheShift = 0;

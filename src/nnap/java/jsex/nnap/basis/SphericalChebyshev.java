@@ -204,7 +204,10 @@ public class SphericalChebyshev extends WTypeBasis {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         
         // 如果不保留旧值则在这里清空
-        if (!aKeepCache) rBackwardForceCache.fill(0.0);
+        if (!aKeepCache) {
+            rBackwardCache.fill(0.0);
+            rBackwardForceCache.fill(0.0);
+        }
         
 //        backwardForce0(aNlDx, aNlDy, aNlDz, aNlType, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, aFixBasis);
     }

@@ -181,7 +181,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      * @param rGradPara 可选计算输出的 (loss) 关于可拟合参数的梯度
      * @param aForwardCache 需要的向前传播的完整缓存值
      * @param aForwardForceCache 需要的力向前传播的完整缓存值
-     * @param rBackwardCache 可选计算输出的对于 backward 缓存使用的修改，部分基组会存在此依赖项
+     * @param rBackwardCache 可选计算输出的对于 backward 缓存使用的修改，部分基组会存在此依赖项，会自动扩容到合适长度
      * @param rBackwardForceCache 计算力反向传播过程中需要使用的缓存，会自动扩容到合适长度
      * @param aKeepCache 标记是否保留输入的 {@code rBackwardForceCache} 旧值
      * @param aFixBasis 标记是否固定基组，当固定基组时不会进行考虑基组可变的反向传播分支（rGradPara, rBackwardCache）

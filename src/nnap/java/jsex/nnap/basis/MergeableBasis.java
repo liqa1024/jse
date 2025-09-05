@@ -76,6 +76,7 @@ public abstract class MergeableBasis extends Basis {
         // backward 都进行累加，因此不需要清空旧值
         mForwardCacheShell.setInternalData(aForwardCache.internalData()); mForwardCacheShell.setInternalDataSize(aForwardCache.size());
         mForwardForceCacheShell.setInternalData(aForwardForceCache.internalData()); mForwardForceCacheShell.setInternalDataSize(aForwardForceCache.size());
+        validCache_(rBackwardCache, backwardCacheSize_(aNlDx.size()));
         mBackwardCacheShell.setInternalData(rBackwardCache.internalData()); mBackwardCacheShell.setInternalDataSize(rBackwardCache.size());
         validCache_(rBackwardForceCache, backwardForceCacheSize_(aNlDx.size()));
         mBackwardForceCacheShell.setInternalData(rBackwardForceCache.internalData()); mBackwardForceCacheShell.setInternalDataSize(rBackwardForceCache.size());
