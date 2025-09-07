@@ -1170,35 +1170,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                     rLossGradMu.add(ii, -rhs);
                 }
             }
-            // 最后全部遍历更新 grad fp
-            pool().parfor(tData.mSize, (i, threadID) -> {
-                Basis[] tBasis = mBasis[threadID];
-                IntVector tAtomType = tData.mAtomType.get(i);
-                int tAtomNum = tAtomType.size();
-                
-                Vector[] tFp = mFpFullBuf.get(i);
-                Vector[] rLossGradFp = mLossGradFpFullBuf.get(i);
-                
-                for (int k = 0; k < tAtomNum; ++k) {
-                    int tType = tAtomType.get(k);
-                    // 归一化系数同样对于 mirror 的会采用镜像的种类
-                    Basis tSubBasis = tBasis[tType-1];
-                    if (tSubBasis instanceof Mirror) {
-                        tType = ((Mirror)tSubBasis).mirrorType();
-                    }
-                    int tDivI = mNormDiv.get(tType-1);
-                    Vector tSubFp = tFp[k];
-                    Vector tLossGradSigma = mLossGradSigma[0][tType-1];
-                    Vector tLossGradMu = mLossGradMu[0][tType-1];
-                    Vector rSubLossGradFp = rLossGradFp[k];
-                    final int tSizeFp = rSubLossGradFp.size();
-                    for (int ii = 0; ii < tSizeFp; ++ii) {
-                        double rhs = (2.0*tSubFp.get(ii)*tLossGradSigma.get(ii) + tLossGradMu.get(ii)) / (double)tDivI;
-                        rSubLossGradFp.add(ii, rhs);
-                    }
-                }
-            });
-            // 最终遍历，调用反向传播获取最终的梯度
+            // 最后全部遍历更新 grad fp，并调用反向传播获取最终的梯度；现在这两步可以合并从而减少缓存使用
             pool().parfor(tData.mSize, (i, threadID) -> {
                 Basis[] tBasis = mBasis[threadID];
                 IntVector tAtomType = tData.mAtomType.get(i);
@@ -1211,9 +1183,10 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 DoubleList tBaisBackwardBuf = mBasisBackwardBuf[threadID];
                 while (tBaisForwardBuf.size() < tAtomNum) tBaisForwardBuf.add(new DoubleList(128));
                 
-                Vector[] rFpBuf = mFpFullBuf.get(i);
-                Vector[] tLossGradFp = mLossGradFpFullBuf.get(i);
+                Vector[] rFp = mFpBuf[threadID];
+                Vector[] rLossGradFp = mLossGradFpFullBuf.get(i);
                 Vector rGradPara = mGradParaBuf[threadID];
+                
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
                     // 归一化系数同样对于 mirror 的会采用镜像的种类
@@ -1221,12 +1194,25 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                     if (tSubBasis instanceof Mirror) {
                         tType = ((Mirror)tSubBasis).mirrorType();
                     }
+                    // 由于全部缓存前向部分不实际，总是需要重新计算，因此这里就顺便也算基组
+                    Vector rSubFp = rFp[tType-1];
                     IntList tSubNlType = tNlType[k];
                     DoubleList tSubNlDx = tNlDx[k], tSubNlDy = tNlDy[k], tSubNlDz = tNlDz[k];
+                    
+                    tSubBasis.forward(tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType, rSubFp, tBaisForwardBuf.get(k), true);
+                    // 最后的 更新 grad fp
+                    int tDivI = mNormDiv.get(tType-1);
+                    Vector tLossGradSigma = mLossGradSigma[0][tType-1];
+                    Vector tLossGradMu = mLossGradMu[0][tType-1];
+                    Vector rSubLossGradFp = rLossGradFp[k];
+                    final int tSizeFp = rSubLossGradFp.size();
+                    for (int ii = 0; ii < tSizeFp; ++ii) {
+                        double rhs = (2.0*rSubFp.get(ii)*tLossGradSigma.get(ii) + tLossGradMu.get(ii)) / (double)tDivI;
+                        rSubLossGradFp.add(ii, rhs);
+                    }
+                    // 反向传播
                     int tShiftBasisPara = basisParaShift(tType);
-                    // 由于是重新全遍历，并且考虑到全部缓存不切实际，因此这里只能重复再次计算
-                    tSubBasis.forward(tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType, rFpBuf[k], tBaisForwardBuf.get(k), true);
-                    tSubBasis.backward(tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType, tLossGradFp[k],
+                    tSubBasis.backward(tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType, rSubLossGradFp,
                                        rGradPara.subVec(tShiftBasisPara, tShiftBasisPara+mBasisParaSizes[tType-1]),
                                        tBaisForwardBuf.get(k), tBaisBackwardBuf, false);
                 }
