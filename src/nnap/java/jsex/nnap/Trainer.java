@@ -139,6 +139,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     private final Vector[][] mLossGradFp, mLossGradGradFp;
     private final Vector[][] mLossGradMu, mLossGradSigma;
     
+    private boolean mBasisParaChanged = false;
     private boolean mFullBufInit = false;
     private final List<Vector[]> mLossGradFpFullBuf = new ArrayList<>(64);
     private final List<DoubleList[]> mBasisBackwardFullBuf = new ArrayList<>(64);
@@ -530,6 +531,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                         IVector tPara = mBasisParas[i];
                         assert tPara != null;
                         tPara.set(tIdx, aValue);
+                        // 修改基组系数时增加标记，用于告知需要重新初始化归一化系数
+                        mBasisParaChanged = true;
                         return;
                     }
                     tIdx -= tBasisParaSize;
@@ -803,16 +806,19 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                             ILossFunc aLossFuncStress, ILossFuncGrad aLossFuncGradStress) {
         final DataSet tData = aTest ? mTestData : mTrainData;
         final boolean tRequireGrad = rGrad!=null;
+        if (aTest && tRequireGrad) throw new IllegalStateException();
         final boolean tTrainBasis = mTrainBasis;
         final boolean tFixNorm = mFixNorm;
         final int tThreadNum = threadNumber();
         if (tTrainBasis && !tFixNorm) {
-            // 在这里初始化需要的缓存
-            validFullBuf_(mHasForce||mHasStress);
-            // 这里简单每次调用重新计算 fp 并更新归一化系数
-            initNormBasis();
-            // 需要在这里初始化相关梯度
+            if (mBasisParaChanged) {
+                // 这里简单每次调用重新计算 fp 并更新归一化系数
+                initNormBasis();
+                mBasisParaChanged = false;
+            }
             if (tRequireGrad) {
+                // 在这里初始化需要的缓存
+                validFullBuf_(mHasForce||mHasStress);
                 for (int ti = 0; ti < tThreadNum; ++ti) for (int i = 0; i < mTypeNum; ++i) {
                     mLossGradSigma[ti][i].fill(0.0);
                     mLossGradMu[ti][i].fill(0.0);
@@ -847,7 +853,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             
             Vector[] rLossGradMu = null, rLossGradSigma = null;
             Vector[] rLossGradFpFullBuf = null;
-            if (tTrainBasis && !tFixNorm) {
+            if (tRequireGrad && tTrainBasis && !tFixNorm) {
                 rLossGradMu = mLossGradMu[threadID];
                 rLossGradSigma = mLossGradSigma[threadID];
                 rLossGradFpFullBuf = mLossGradFpFullBuf.get(i);
@@ -940,7 +946,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             while (tBaisForwardForceBuf.size() < tAtomNum) tBaisForwardForceBuf.add(new DoubleList(128));
             
             DoubleList[] tBasisBackwardFullBuf = null;
-            if (tTrainBasis && !tFixNorm) {
+            if (tRequireGrad && tTrainBasis && !tFixNorm) {
                 tBasisBackwardFullBuf = mBasisBackwardFullBuf.get(i);
             }
             Vector[] tGradFp = mGradFpBuf[threadID];
@@ -1520,6 +1526,10 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 mNormSigma[i].operation().map2this(v -> {
                     double rOut;
                     if (MathEX.Code.numericEqual(v, 0.0)) {
+                        if (mTrainBasis && !mFixNorm) {
+                            throw new IllegalArgumentException("The input basis causes ill normalization sigma, which can lead to incorrect results when optimizing the basis with adaptive normalization coefficient.\n" +
+                                                               "Check your input or dataset or turn-on it with `setFixNorm(true)`");
+                        }
                         rOut = 1.0;
                     } else {
                         rOut = MathEX.Fast.sqrt(v);
