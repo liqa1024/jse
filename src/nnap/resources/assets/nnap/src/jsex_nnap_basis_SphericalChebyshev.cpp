@@ -221,10 +221,10 @@ static constexpr jdouble SQRT_1P1D2L[SH_LARGEST_L+1] = {
 template <jint L>
 static inline void realNormalizedLegendreInterLoop_(jdouble aX, jdouble aY, jdouble *rDest, jdouble &rPll) noexcept {
     static_assert(L > 1, "INVALID L");
-    const jint tStartL = L*L + L;
-    const jint tStartLmm = (L-1)*(L-1) + (L-1);
-    const jint tStartLm2 = (L-2)*(L-2) + (L-2);
-    const jint tStartAB = L*(L+1)/2;
+    constexpr jint tStartL = L*L + L;
+    constexpr jint tStartLmm = (L-1)*(L-1) + (L-1);
+    constexpr jint tStartLm2 = (L-2)*(L-2) + (L-2);
+    constexpr jint tStartAB = L*(L+1)/2;
     rDest[tStartL] = SH_Alm[tStartAB] * (aX*rDest[tStartLmm] + SH_Blm[tStartAB]*rDest[tStartLm2]);
     for (jint m = 1; m < L-1; ++m) {
         jdouble tPlm = SH_Alm[tStartAB+m] * (aX*rDest[tStartLmm+m] + SH_Blm[tStartAB+m]*rDest[tStartLm2+m]);
@@ -279,8 +279,8 @@ static inline void realSphericalHarmonicsFull4InterLoop_(jdouble aCosPhi2, jdoub
         rDest[l*l+l + M] *= fSqrt2CosMPhi;
         rDest[l*l+l - M] *= fSqrt2SinMPhi;
     }
-    jdouble tSinMppPhi = aCosPhi2 * rSinMPhi - rSinMmmPhi;
-    jdouble tCosMppPhi = aCosPhi2 * rCosMPhi - rCosMmmPhi;
+    const jdouble tSinMppPhi = aCosPhi2 * rSinMPhi - rSinMmmPhi;
+    const jdouble tCosMppPhi = aCosPhi2 * rCosMPhi - rCosMmmPhi;
     rSinMmmPhi = rSinMPhi; rCosMmmPhi = rCosMPhi;
     rSinMPhi = tSinMppPhi; rCosMPhi = tCosMppPhi;
 }
@@ -559,7 +559,7 @@ static inline void mplusGradNNGradCnlmWt(jdouble *rGradNNGradCnlm, jdouble *rGra
 
 template <jint L>
 static inline void calL2Sub_(jdouble *aCnlm, jdouble *rFp) noexcept {
-    const jint tLen = L+L+1;
+    constexpr jint tLen = L+L+1;
     const jdouble rDot = JSE_NNAP::dot<tLen>(aCnlm + (L*L));
     rFp[L-1] = (PI4/(jdouble)tLen) * rDot;
 }
@@ -599,7 +599,7 @@ static void calL2_(jdouble *aCnlm, jdouble *rFp) noexcept {
 }
 static jdouble calL3_222_(jdouble *aCnlm) noexcept {
     jdouble rFp3 = 0.0;
-    const jint s2 = 2*2+2;
+    constexpr jint s2 = 2*2+2;
     for (jint i = 0; i < L3_SIZE_222; ++i) {
         const jint m1 = L3_INDEX_222[i][0];
         const jint m2 = L3_INDEX_222[i][1];
@@ -610,8 +610,8 @@ static jdouble calL3_222_(jdouble *aCnlm) noexcept {
 }
 static jdouble calL3_112_(jdouble *aCnlm) noexcept {
     jdouble rFp3 = 0.0;
-    const jint s1 = 1+1;
-    const jint s2 = 2*2+2;
+    constexpr jint s1 = 1+1;
+    constexpr jint s2 = 2*2+2;
     for (jint i = 0; i < L3_SIZE_112; ++i) {
         const jint m1 = L3_INDEX_112[i][0];
         const jint m2 = L3_INDEX_112[i][1];
@@ -622,8 +622,8 @@ static jdouble calL3_112_(jdouble *aCnlm) noexcept {
 }
 static jdouble calL3_233_(jdouble *aCnlm) noexcept {
     jdouble rFp3 = 0.0;
-    const jint s2 = 2*2+2;
-    const jint s3 = 3*3+3;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s3 = 3*3+3;
     for (jint i = 0; i < L3_SIZE_233; ++i) {
         const jint m1 = L3_INDEX_233[i][0];
         const jint m2 = L3_INDEX_233[i][1];
@@ -634,9 +634,9 @@ static jdouble calL3_233_(jdouble *aCnlm) noexcept {
 }
 static jdouble calL3_123_(jdouble *aCnlm) noexcept {
     jdouble rFp3 = 0.0;
-    const jint s1 = 1+1;
-    const jint s2 = 2*2+2;
-    const jint s3 = 3*3+3;
+    constexpr jint s1 = 1+1;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s3 = 3*3+3;
     for (jint i = 0; i < L3_SIZE_123; ++i) {
         const jint m1 = L3_INDEX_123[i][0];
         const jint m2 = L3_INDEX_123[i][1];
@@ -647,7 +647,7 @@ static jdouble calL3_123_(jdouble *aCnlm) noexcept {
 }
 static jdouble calL3_444_(jdouble *aCnlm) noexcept {
     jdouble rFp3 = 0.0;
-    const jint s4 = 4*4+4;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_444; ++i) {
         const jint m1 = L3_INDEX_444[i][0];
         const jint m2 = L3_INDEX_444[i][1];
@@ -658,8 +658,8 @@ static jdouble calL3_444_(jdouble *aCnlm) noexcept {
 }
 static jdouble calL3_224_(jdouble *aCnlm) noexcept {
     jdouble rFp3 = 0.0;
-    const jint s2 = 2*2+2;
-    const jint s4 = 4*4+4;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_224; ++i) {
         const jint m1 = L3_INDEX_224[i][0];
         const jint m2 = L3_INDEX_224[i][1];
@@ -670,8 +670,8 @@ static jdouble calL3_224_(jdouble *aCnlm) noexcept {
 }
 static jdouble calL3_334_(jdouble *aCnlm) noexcept {
     jdouble rFp3 = 0.0;
-    const jint s3 = 3*3+3;
-    const jint s4 = 4*4+4;
+    constexpr jint s3 = 3*3+3;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_334; ++i) {
         const jint m1 = L3_INDEX_334[i][0];
         const jint m2 = L3_INDEX_334[i][1];
@@ -682,8 +682,8 @@ static jdouble calL3_334_(jdouble *aCnlm) noexcept {
 }
 static jdouble calL3_244_(jdouble *aCnlm) noexcept {
     jdouble rFp3 = 0.0;
-    const jint s2 = 2*2+2;
-    const jint s4 = 4*4+4;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_244; ++i) {
         const jint m1 = L3_INDEX_244[i][0];
         const jint m2 = L3_INDEX_244[i][1];
@@ -694,9 +694,9 @@ static jdouble calL3_244_(jdouble *aCnlm) noexcept {
 }
 static jdouble calL3_134_(jdouble *aCnlm) noexcept {
     jdouble rFp3 = 0.0;
-    const jint s1 = 1+1;
-    const jint s3 = 3*3+3;
-    const jint s4 = 4*4+4;
+    constexpr jint s1 = 1+1;
+    constexpr jint s3 = 3*3+3;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_134; ++i) {
         const jint m1 = L3_INDEX_134[i][0];
         const jint m2 = L3_INDEX_134[i][1];
@@ -729,8 +729,8 @@ static void calL3_(jdouble *aCnlm, jdouble *rFp) noexcept {
 
 template <jint L>
 static inline void calYPphi(jdouble *rYPphi, jdouble *aY) noexcept {
-    const jint tStart = L*L;
-    const jint tIdx = tStart+L;
+    constexpr jint tStart = L*L;
+    constexpr jint tIdx = tStart+L;
     for (jint m = -L; m <= L; ++m) {
         rYPphi[tIdx+m] = -m * aY[tIdx-m];
     }
@@ -743,16 +743,16 @@ static inline void calYPtheta(jdouble aCosPhi, jdouble aSinPhi, jdouble *rYPthet
         return;
     }
     case 1: {
-        const jdouble tMul = SQRT_LPM_LMM1[2]*SQRT2_INV;
+        constexpr jdouble tMul = SQRT_LPM_LMM1[2]*SQRT2_INV;
         rYPtheta[1] = -tMul * aSinPhi*aY[2];
         rYPtheta[2] =  tMul * (aCosPhi*aY[3] + aSinPhi*aY[1]);
         rYPtheta[3] = -tMul * aCosPhi*aY[2];
         return;
     }
     default: {
-        const jint tStart = L*L;
-        const jint tIdx = tStart+L;
-        const jdouble tMul = SQRT_LPM_LMM1[tIdx]*SQRT2_INV;
+        constexpr jint tStart = L*L;
+        constexpr jint tIdx = tStart+L;
+        constexpr jdouble tMul = SQRT_LPM_LMM1[tIdx]*SQRT2_INV;
         rYPtheta[tIdx] = tMul * (aCosPhi*aY[tIdx+1] + aSinPhi*aY[tIdx-1]);
         rYPtheta[tIdx+1] = -tMul * aCosPhi*aY[tIdx];
         rYPtheta[tIdx-1] = -tMul * aSinPhi*aY[tIdx];
@@ -816,12 +816,12 @@ static inline void convertYPPhiPtheta2YPxyz(jdouble aCosTheta, jdouble aSinTheta
 template <jint LMAX, jint LMALL>
 static inline void calYPxyz(jdouble *aY, jdouble aDx, jdouble aDy, jdouble aDz, jdouble aDis,
                             jdouble *rYPx, jdouble *rYPy, jdouble *rYPz, jdouble *rYPtheta, jdouble *rYPphi) noexcept {
-    jdouble dxy = hypot(aDx, aDy);
-    jdouble cosTheta = aDz / aDis;
-    jdouble sinTheta = dxy / aDis;
+    const jdouble dxy = hypot(aDx, aDy);
+    const jdouble cosTheta = aDz / aDis;
+    const jdouble sinTheta = dxy / aDis;
     jdouble cosPhi;
     jdouble sinPhi;
-    jboolean dxyCloseZero = JSE_NNAP::numericEqual(dxy, 0.0);
+    const jboolean dxyCloseZero = JSE_NNAP::numericEqual(dxy, 0.0);
     if (dxyCloseZero) {
         cosPhi = 1.0;
         sinPhi = 0.0;
@@ -841,10 +841,10 @@ static inline void calYPxyz(jdouble *aY, jdouble aDx, jdouble aDy, jdouble aDz, 
 
 template <jint L>
 static inline void calGradL2Sub_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aNNGrad) noexcept {
-    const jint tStart = L*L;
-    const jint tLen = L+L+1;
-    const jint tEnd = tStart+tLen;
-    const jdouble tMul = 2.0 * PI4/(jdouble)tLen;
+    constexpr jint tStart = L*L;
+    constexpr jint tLen = L+L+1;
+    constexpr jint tEnd = tStart+tLen;
+    constexpr jdouble tMul = 2.0 * PI4/(jdouble)tLen;
     jdouble subNNGrad = aNNGrad[L-1];
     for (jint i = tStart; i < tEnd; ++i) {
         rGradCnlm[i] += tMul * aCnlm[i] * subNNGrad;
@@ -884,7 +884,7 @@ static void calGradL2_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aNNGrad) noe
     calGradL2Sub_<12>(aCnlm, rGradCnlm, tNNGrad);
 }
 static void calGradL3_222_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s2 = 2*2+2;
+    constexpr jint s2 = 2*2+2;
     for (jint i = 0; i < L3_SIZE_222; ++i) {
         const jint m1 = L3_INDEX_222[i][0];
         const jint m2 = L3_INDEX_222[i][1];
@@ -896,8 +896,8 @@ static void calGradL3_222_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGra
     }
 }
 static void calGradL3_112_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s1 = 1+1;
-    const jint s2 = 2*2+2;
+    constexpr jint s1 = 1+1;
+    constexpr jint s2 = 2*2+2;
     for (jint i = 0; i < L3_SIZE_112; ++i) {
         const jint m1 = L3_INDEX_112[i][0];
         const jint m2 = L3_INDEX_112[i][1];
@@ -909,8 +909,8 @@ static void calGradL3_112_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGra
     }
 }
 static void calGradL3_233_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s2 = 2*2+2;
-    const jint s3 = 3*3+3;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s3 = 3*3+3;
     for (jint i = 0; i < L3_SIZE_233; ++i) {
         const jint m1 = L3_INDEX_233[i][0];
         const jint m2 = L3_INDEX_233[i][1];
@@ -922,9 +922,9 @@ static void calGradL3_233_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGra
     }
 }
 static void calGradL3_123_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s1 = 1+1;
-    const jint s2 = 2*2+2;
-    const jint s3 = 3*3+3;
+    constexpr jint s1 = 1+1;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s3 = 3*3+3;
     for (jint i = 0; i < L3_SIZE_123; ++i) {
         const jint m1 = L3_INDEX_123[i][0];
         const jint m2 = L3_INDEX_123[i][1];
@@ -936,7 +936,7 @@ static void calGradL3_123_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGra
     }
 }
 static void calGradL3_444_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s4 = 4*4+4;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_444; ++i) {
         const jint m1 = L3_INDEX_444[i][0];
         const jint m2 = L3_INDEX_444[i][1];
@@ -948,8 +948,8 @@ static void calGradL3_444_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGra
     }
 }
 static void calGradL3_224_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s2 = 2*2+2;
-    const jint s4 = 4*4+4;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_224; ++i) {
         const jint m1 = L3_INDEX_224[i][0];
         const jint m2 = L3_INDEX_224[i][1];
@@ -961,8 +961,8 @@ static void calGradL3_224_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGra
     }
 }
 static void calGradL3_334_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s3 = 3*3+3;
-    const jint s4 = 4*4+4;
+    constexpr jint s3 = 3*3+3;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_334; ++i) {
         const jint m1 = L3_INDEX_334[i][0];
         const jint m2 = L3_INDEX_334[i][1];
@@ -974,8 +974,8 @@ static void calGradL3_334_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGra
     }
 }
 static void calGradL3_244_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s2 = 2*2+2;
-    const jint s4 = 4*4+4;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_244; ++i) {
         const jint m1 = L3_INDEX_244[i][0];
         const jint m2 = L3_INDEX_244[i][1];
@@ -987,9 +987,9 @@ static void calGradL3_244_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGra
     }
 }
 static void calGradL3_134_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s1 = 1+1;
-    const jint s3 = 3*3+3;
-    const jint s4 = 4*4+4;
+    constexpr jint s1 = 1+1;
+    constexpr jint s3 = 3*3+3;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_134; ++i) {
         const jint m1 = L3_INDEX_134[i][0];
         const jint m2 = L3_INDEX_134[i][1];
@@ -1024,8 +1024,8 @@ static void calGradL3_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aNNGrad) noe
 
 template <jint L>
 static inline void calGradNNGradL2Sub_(jdouble *aCnlm, jdouble *aGradNNGradCnlm, jdouble *rGradNNGrad) noexcept {
-    const jint tStart = L*L;
-    const jint tLen = L+L+1;
+    constexpr jint tStart = L*L;
+    constexpr jint tLen = L+L+1;
     const jdouble rDot = JSE_NNAP::dot<tLen>(aCnlm+tStart, aGradNNGradCnlm+tStart);
     rGradNNGrad[L-1] = (2.0 * PI4/(jdouble)tLen) * rDot;
 }
@@ -1064,7 +1064,7 @@ static void calGradNNGradL2_(jdouble *aCnlm, jdouble *aGradNNGradCnlm, jdouble *
 }
 static jdouble calGradNNGradL3_222_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) noexcept {
     jdouble rGGFp3 = 0.0;
-    const jint s2 = 2*2+2;
+    constexpr jint s2 = 2*2+2;
     for (jint i = 0; i < L3_SIZE_222; ++i) {
         const jint m1 = L3_INDEX_222[i][0];
         const jint m2 = L3_INDEX_222[i][1];
@@ -1077,8 +1077,8 @@ static jdouble calGradNNGradL3_222_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) no
 }
 static jdouble calGradNNGradL3_112_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) noexcept {
     jdouble rGGFp3 = 0.0;
-    const jint s1 = 1+1;
-    const jint s2 = 2*2+2;
+    constexpr jint s1 = 1+1;
+    constexpr jint s2 = 2*2+2;
     for (jint i = 0; i < L3_SIZE_112; ++i) {
         const jint m1 = L3_INDEX_112[i][0];
         const jint m2 = L3_INDEX_112[i][1];
@@ -1091,8 +1091,8 @@ static jdouble calGradNNGradL3_112_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) no
 }
 static jdouble calGradNNGradL3_233_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) noexcept {
     jdouble rGGFp3 = 0.0;
-    const jint s2 = 2*2+2;
-    const jint s3 = 3*3+3;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s3 = 3*3+3;
     for (jint i = 0; i < L3_SIZE_233; ++i) {
         const jint m1 = L3_INDEX_233[i][0];
         const jint m2 = L3_INDEX_233[i][1];
@@ -1105,9 +1105,9 @@ static jdouble calGradNNGradL3_233_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) no
 }
 static jdouble calGradNNGradL3_123_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) noexcept {
     jdouble rGGFp3 = 0.0;
-    const jint s1 = 1+1;
-    const jint s2 = 2*2+2;
-    const jint s3 = 3*3+3;
+    constexpr jint s1 = 1+1;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s3 = 3*3+3;
     for (jint i = 0; i < L3_SIZE_123; ++i) {
         const jint m1 = L3_INDEX_123[i][0];
         const jint m2 = L3_INDEX_123[i][1];
@@ -1120,7 +1120,7 @@ static jdouble calGradNNGradL3_123_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) no
 }
 static jdouble calGradNNGradL3_444_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) noexcept {
     jdouble rGGFp3 = 0.0;
-    const jint s4 = 4*4+4;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_444; ++i) {
         const jint m1 = L3_INDEX_444[i][0];
         const jint m2 = L3_INDEX_444[i][1];
@@ -1133,8 +1133,8 @@ static jdouble calGradNNGradL3_444_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) no
 }
 static jdouble calGradNNGradL3_224_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) noexcept {
     jdouble rGGFp3 = 0.0;
-    const jint s2 = 2*2+2;
-    const jint s4 = 4*4+4;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_224; ++i) {
         const jint m1 = L3_INDEX_224[i][0];
         const jint m2 = L3_INDEX_224[i][1];
@@ -1147,8 +1147,8 @@ static jdouble calGradNNGradL3_224_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) no
 }
 static jdouble calGradNNGradL3_334_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) noexcept {
     jdouble rGGFp3 = 0.0;
-    const jint s3 = 3*3+3;
-    const jint s4 = 4*4+4;
+    constexpr jint s3 = 3*3+3;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_334; ++i) {
         const jint m1 = L3_INDEX_334[i][0];
         const jint m2 = L3_INDEX_334[i][1];
@@ -1161,8 +1161,8 @@ static jdouble calGradNNGradL3_334_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) no
 }
 static jdouble calGradNNGradL3_244_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) noexcept {
     jdouble rGGFp3 = 0.0;
-    const jint s2 = 2*2+2;
-    const jint s4 = 4*4+4;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_244; ++i) {
         const jint m1 = L3_INDEX_244[i][0];
         const jint m2 = L3_INDEX_244[i][1];
@@ -1175,9 +1175,9 @@ static jdouble calGradNNGradL3_244_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) no
 }
 static jdouble calGradNNGradL3_134_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) noexcept {
     jdouble rGGFp3 = 0.0;
-    const jint s1 = 1+1;
-    const jint s3 = 3*3+3;
-    const jint s4 = 4*4+4;
+    constexpr jint s1 = 1+1;
+    constexpr jint s3 = 3*3+3;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_134; ++i) {
         const jint m1 = L3_INDEX_134[i][0];
         const jint m2 = L3_INDEX_134[i][1];
@@ -1215,7 +1215,7 @@ static void calGradCnlmL2_(jdouble *rGradCnlm, jdouble *aGradNNGradCnlm, jdouble
     calGradL2_<LMAX, NO_RADIAL>(aGradNNGradCnlm, rGradCnlm, aNNGrad);
 }
 static void calGradCnlmL3_222_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGradNNGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s2 = 2*2+2;
+    constexpr jint s2 = 2*2+2;
     for (jint i = 0; i < L3_SIZE_222; ++i) {
         const jint m1 = L3_INDEX_222[i][0];
         const jint m2 = L3_INDEX_222[i][1];
@@ -1227,8 +1227,8 @@ static void calGradCnlmL3_222_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGra
     }
 }
 static void calGradCnlmL3_112_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGradNNGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s1 = 1+1;
-    const jint s2 = 2*2+2;
+    constexpr jint s1 = 1+1;
+    constexpr jint s2 = 2*2+2;
     for (jint i = 0; i < L3_SIZE_112; ++i) {
         const jint m1 = L3_INDEX_112[i][0];
         const jint m2 = L3_INDEX_112[i][1];
@@ -1240,8 +1240,8 @@ static void calGradCnlmL3_112_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGra
     }
 }
 static void calGradCnlmL3_233_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGradNNGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s2 = 2*2+2;
-    const jint s3 = 3*3+3;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s3 = 3*3+3;
     for (jint i = 0; i < L3_SIZE_233; ++i) {
         const jint m1 = L3_INDEX_233[i][0];
         const jint m2 = L3_INDEX_233[i][1];
@@ -1253,9 +1253,9 @@ static void calGradCnlmL3_233_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGra
     }
 }
 static void calGradCnlmL3_123_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGradNNGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s1 = 1+1;
-    const jint s2 = 2*2+2;
-    const jint s3 = 3*3+3;
+    constexpr jint s1 = 1+1;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s3 = 3*3+3;
     for (jint i = 0; i < L3_SIZE_123; ++i) {
         const jint m1 = L3_INDEX_123[i][0];
         const jint m2 = L3_INDEX_123[i][1];
@@ -1267,7 +1267,7 @@ static void calGradCnlmL3_123_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGra
     }
 }
 static void calGradCnlmL3_444_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGradNNGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s4 = 4*4+4;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_444; ++i) {
         const jint m1 = L3_INDEX_444[i][0];
         const jint m2 = L3_INDEX_444[i][1];
@@ -1279,8 +1279,8 @@ static void calGradCnlmL3_444_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGra
     }
 }
 static void calGradCnlmL3_224_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGradNNGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s2 = 2*2+2;
-    const jint s4 = 4*4+4;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_224; ++i) {
         const jint m1 = L3_INDEX_224[i][0];
         const jint m2 = L3_INDEX_224[i][1];
@@ -1292,8 +1292,8 @@ static void calGradCnlmL3_224_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGra
     }
 }
 static void calGradCnlmL3_334_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGradNNGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s3 = 3*3+3;
-    const jint s4 = 4*4+4;
+    constexpr jint s3 = 3*3+3;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_334; ++i) {
         const jint m1 = L3_INDEX_334[i][0];
         const jint m2 = L3_INDEX_334[i][1];
@@ -1305,8 +1305,8 @@ static void calGradCnlmL3_334_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGra
     }
 }
 static void calGradCnlmL3_244_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGradNNGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s2 = 2*2+2;
-    const jint s4 = 4*4+4;
+    constexpr jint s2 = 2*2+2;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_244; ++i) {
         const jint m1 = L3_INDEX_244[i][0];
         const jint m2 = L3_INDEX_244[i][1];
@@ -1318,9 +1318,9 @@ static void calGradCnlmL3_244_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGra
     }
 }
 static void calGradCnlmL3_134_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGradNNGradCnlm, jdouble aSubNNGrad) noexcept {
-    const jint s1 = 1+1;
-    const jint s3 = 3*3+3;
-    const jint s4 = 4*4+4;
+    constexpr jint s1 = 1+1;
+    constexpr jint s3 = 3*3+3;
+    constexpr jint s4 = 4*4+4;
     for (jint i = 0; i < L3_SIZE_134; ++i) {
         const jint m1 = L3_INDEX_134[i][0];
         const jint m2 = L3_INDEX_134[i][1];
@@ -1460,9 +1460,9 @@ static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *a
         tSizeN = 0;
         break;
     }}
-    const jint tSizeL = (NO_RADIAL?LMAX:(LMAX+1)) + (L3CROSS?L3NCOLS:L3NCOLS_NOCROSS)[L3MAX];
-    const jint tLMaxMax = LMAX>L3MAX ? LMAX : L3MAX;
-    const jint tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
+    constexpr jint tSizeL = (NO_RADIAL?LMAX:(LMAX+1)) + (L3CROSS?L3NCOLS:L3NCOLS_NOCROSS)[L3MAX];
+    constexpr jint tLMaxMax = LMAX>L3MAX ? LMAX : L3MAX;
+    constexpr jint tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
     const jint tSizeCnlm = tSizeN*tLMAll;
     // init cache
     jdouble *rCnlm = rForwardCache;
@@ -1522,9 +1522,9 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
     } else {
         tSizeN = 0;
     }
-    const jint tSizeL = (NO_RADIAL?LMAX:(LMAX+1)) + (L3CROSS?L3NCOLS:L3NCOLS_NOCROSS)[L3MAX];
-    const jint tLMaxMax = LMAX>L3MAX ? LMAX : L3MAX;
-    const jint tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
+    constexpr jint tSizeL = (NO_RADIAL?LMAX:(LMAX+1)) + (L3CROSS?L3NCOLS:L3NCOLS_NOCROSS)[L3MAX];
+    constexpr jint tLMaxMax = LMAX>L3MAX ? LMAX : L3MAX;
+    constexpr jint tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
     const jint tSizeCnlm = tSizeN*tLMAll;
     // init cache
     jdouble *tCnlm = aForwardCache;
@@ -1689,9 +1689,9 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
         tSizeN = 0;
         break;
     }}
-    const jint tSizeL = (NO_RADIAL?LMAX:(LMAX+1)) + (L3CROSS?L3NCOLS:L3NCOLS_NOCROSS)[L3MAX];
-    const jint tLMaxMax = LMAX>L3MAX ? LMAX : L3MAX;
-    const jint tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
+    constexpr jint tSizeL = (NO_RADIAL?LMAX:(LMAX+1)) + (L3CROSS?L3NCOLS:L3NCOLS_NOCROSS)[L3MAX];
+    constexpr jint tLMaxMax = LMAX>L3MAX ? LMAX : L3MAX;
+    constexpr jint tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
     const jint tSizeCnlm = tSizeN*tLMAll;
     // init cache
     jdouble *tCnlm = aForwardCache;
@@ -1834,9 +1834,9 @@ static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
         tSizeN = 0;
         break;
     }}
-    const jint tSizeL = (NO_RADIAL?LMAX:(LMAX+1)) + (L3CROSS?L3NCOLS:L3NCOLS_NOCROSS)[L3MAX];
-    const jint tLMaxMax = LMAX>L3MAX ? LMAX : L3MAX;
-    const jint tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
+    constexpr jint tSizeL = (NO_RADIAL?LMAX:(LMAX+1)) + (L3CROSS?L3NCOLS:L3NCOLS_NOCROSS)[L3MAX];
+    constexpr jint tLMaxMax = LMAX>L3MAX ? LMAX : L3MAX;
+    constexpr jint tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
     const jint tSizeCnlm = tSizeN*tLMAll;
     // init cache
     jdouble *tCnlm = aForwardCache;
