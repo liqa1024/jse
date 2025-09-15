@@ -1242,9 +1242,12 @@ static inline void calGradL3SubSub_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble 
     constexpr jint i3 = L3_INDEX[L3IDX][SUBIDX][2];
     constexpr jdouble coeff = L3_COEFF[L3IDX][SUBIDX];
     const jdouble tMul = coeff * aSubNNGrad;
-    rGradCnlm[i1] += tMul * aCnlm[i2]*aCnlm[i3];
-    rGradCnlm[i2] += tMul * aCnlm[i1]*aCnlm[i3];
-    rGradCnlm[i3] += tMul * aCnlm[i1]*aCnlm[i2];
+    const jdouble tCnlm1 = aCnlm[i1];
+    const jdouble tCnlm2 = aCnlm[i2];
+    const jdouble tCnlm3 = aCnlm[i3];
+    rGradCnlm[i1] += tMul * tCnlm2*tCnlm3;
+    rGradCnlm[i2] += tMul * tCnlm1*tCnlm3;
+    rGradCnlm[i3] += tMul * tCnlm1*tCnlm2;
 }
 template <jint L3IDX>
 static void calGradL3Sub_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble aSubNNGrad) noexcept {
@@ -1449,9 +1452,12 @@ static inline jdouble calGradNNGradL3SubSub_(jdouble *aCnlm, jdouble *aGradNNGra
     constexpr jint i2 = L3_INDEX[L3IDX][SUBIDX][1];
     constexpr jint i3 = L3_INDEX[L3IDX][SUBIDX][2];
     constexpr jdouble coeff = L3_COEFF[L3IDX][SUBIDX];
-    rGGFp3 += coeff * aGradNNGradCnlm[i1]*aCnlm[i2]*aCnlm[i3];
-    rGGFp3 += coeff * aCnlm[i1]*aGradNNGradCnlm[i2]*aCnlm[i3];
-    rGGFp3 += coeff * aCnlm[i1]*aCnlm[i2]*aGradNNGradCnlm[i3];
+    const jdouble tCnlm1 = aCnlm[i1];
+    const jdouble tCnlm2 = aCnlm[i2];
+    const jdouble tCnlm3 = aCnlm[i3];
+    rGGFp3 += coeff * aGradNNGradCnlm[i1]*tCnlm2*tCnlm3;
+    rGGFp3 += coeff * tCnlm1*aGradNNGradCnlm[i2]*tCnlm3;
+    rGGFp3 += coeff * tCnlm1*tCnlm2*aGradNNGradCnlm[i3];
     return rGGFp3;
 }
 template <jint L3IDX>
@@ -1623,9 +1629,15 @@ static inline void calGradCnlmL3SubSub_(jdouble *aCnlm, jdouble *rGradCnlm, jdou
     constexpr jint i3 = L3_INDEX[L3IDX][SUBIDX][2];
     constexpr jdouble coeff = L3_COEFF[L3IDX][SUBIDX];
     const jdouble tMul = coeff * aSubNNGrad;
-    rGradCnlm[i1] += tMul * (aGradNNGradCnlm[i2]*aCnlm[i3] + aCnlm[i2]*aGradNNGradCnlm[i3]);
-    rGradCnlm[i2] += tMul * (aGradNNGradCnlm[i1]*aCnlm[i3] + aCnlm[i1]*aGradNNGradCnlm[i3]);
-    rGradCnlm[i3] += tMul * (aGradNNGradCnlm[i1]*aCnlm[i2] + aCnlm[i1]*aGradNNGradCnlm[i2]);
+    const jdouble tCnlm1 = aCnlm[i1];
+    const jdouble tCnlm2 = aCnlm[i2];
+    const jdouble tCnlm3 = aCnlm[i3];
+    const jdouble tGGCnlm1 = aGradNNGradCnlm[i1];
+    const jdouble tGGCnlm2 = aGradNNGradCnlm[i2];
+    const jdouble tGGCnlm3 = aGradNNGradCnlm[i3];
+    rGradCnlm[i1] += tMul * (tGGCnlm2*tCnlm3 + tCnlm2*tGGCnlm3);
+    rGradCnlm[i2] += tMul * (tGGCnlm1*tCnlm3 + tCnlm1*tGGCnlm3);
+    rGradCnlm[i3] += tMul * (tGGCnlm1*tCnlm2 + tCnlm1*tGGCnlm2);
 }
 template <jint L3IDX>
 static void calGradCnlmL3Sub_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aGradNNGradCnlm, jdouble aSubNNGrad) noexcept {
