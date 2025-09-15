@@ -1865,10 +1865,10 @@ static inline jdouble calGradNNGradL3SubSub_(jdouble *aCnlm, jdouble *aGradNNGra
     const jdouble tCnlm1 = aCnlm[i1];
     const jdouble tCnlm2 = aCnlm[i2];
     const jdouble tCnlm3 = aCnlm[i3];
-    rGGFp3 += coeff * aGradNNGradCnlm[i1]*tCnlm2*tCnlm3;
-    rGGFp3 += coeff * tCnlm1*aGradNNGradCnlm[i2]*tCnlm3;
-    rGGFp3 += coeff * tCnlm1*tCnlm2*aGradNNGradCnlm[i3];
-    return rGGFp3;
+    rGGFp3 += aGradNNGradCnlm[i1]*tCnlm2*tCnlm3;
+    rGGFp3 += tCnlm1*aGradNNGradCnlm[i2]*tCnlm3;
+    rGGFp3 += tCnlm1*tCnlm2*aGradNNGradCnlm[i3];
+    return coeff*rGGFp3;
 }
 template <jint L3IDX>
 static jdouble calGradNNGradL3Sub_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) noexcept {
@@ -2039,11 +2039,11 @@ static inline jdouble calGradNNGradL4SubSub_(jdouble *aCnlm, jdouble *aGradNNGra
     const jdouble tCnlm2 = aCnlm[i2];
     const jdouble tCnlm3 = aCnlm[i3];
     const jdouble tCnlm4 = aCnlm[i4];
-    rGGFp4 += coeff * aGradNNGradCnlm[i1]*tCnlm2*tCnlm3*tCnlm4;
-    rGGFp4 += coeff * tCnlm1*aGradNNGradCnlm[i2]*tCnlm3*tCnlm4;
-    rGGFp4 += coeff * tCnlm1*tCnlm2*aGradNNGradCnlm[i3]*tCnlm4;
-    rGGFp4 += coeff * tCnlm1*tCnlm2*tCnlm3*aGradNNGradCnlm[i4];
-    return rGGFp4;
+    rGGFp4 += aGradNNGradCnlm[i1]*tCnlm2*tCnlm3*tCnlm4;
+    rGGFp4 += tCnlm1*aGradNNGradCnlm[i2]*tCnlm3*tCnlm4;
+    rGGFp4 += tCnlm1*tCnlm2*aGradNNGradCnlm[i3]*tCnlm4;
+    rGGFp4 += tCnlm1*tCnlm2*tCnlm3*aGradNNGradCnlm[i4];
+    return coeff*rGGFp4;
 }
 template <jint L4IDX>
 static jdouble calGradNNGradL4Sub_(jdouble *aCnlm, jdouble *aGradNNGradCnlm) noexcept {
