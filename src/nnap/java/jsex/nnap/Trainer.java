@@ -776,6 +776,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
         FeedForward[] rOut = new FeedForward[aBasis.length];
         List<?> tNNSettingList = (List<?>)tNNSetting;
+        if (aBasis.length!=tNNSettingList.size()) {
+            throw new IllegalArgumentException("Input size of symbols and nn mismatch");
+        }
         for (int i = 0; i < rOut.length; ++i) {
             // mirror 情况延迟初始化
             if (aBasis[i] instanceof Mirror) {

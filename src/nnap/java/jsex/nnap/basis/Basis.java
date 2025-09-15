@@ -36,7 +36,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     @SuppressWarnings("rawtypes")
     public static Basis[] load(String @Nullable[] aSymbols, List aData) {
         final int tTypeNum = aData.size();
-        if (aSymbols!=null && aSymbols.length!=tTypeNum) throw new IllegalArgumentException("Input size of symbols and data list mismatch");
+        if (aSymbols!=null && aSymbols.length!=tTypeNum) throw new IllegalArgumentException("Input size of symbols and basis mismatch");
         Basis[] rBasis = new Basis[tTypeNum];
         for (int i = 0; i < tTypeNum; ++i) {
             Map tBasisMap = (Map)aData.get(i);
