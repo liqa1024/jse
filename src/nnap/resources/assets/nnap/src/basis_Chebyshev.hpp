@@ -82,30 +82,13 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
     // const init
     jint tSizeFp;
     switch(WTYPE) {
-    case WTYPE_EXFULL: {
-        tSizeFp = (aTypeNum+1)*(NMAX+1);
-        break;
+    case WTYPE_EXFULL:  {tSizeFp = (aTypeNum+1)*(NMAX+1); break;}
+    case WTYPE_FULL:    {tSizeFp = aTypeNum*(NMAX+1);     break;}
+    case WTYPE_NONE:    {tSizeFp = NMAX+1;                break;}
+    case WTYPE_DEFAULT: {tSizeFp = (NMAX+NMAX+2);         break;}
+    case WTYPE_FUSE:    {tSizeFp = aFuseSize*(NMAX+1);    break;}
+    default:            {tSizeFp = 0;                     break;}
     }
-    case WTYPE_FULL: {
-        tSizeFp = aTypeNum*(NMAX+1);
-        break;
-    }
-    case WTYPE_NONE: {
-        tSizeFp = NMAX+1;
-        break;
-    }
-    case WTYPE_DEFAULT: {
-        tSizeFp = (NMAX+NMAX+2);
-        break;
-    }
-    case WTYPE_FUSE: {
-        tSizeFp = aFuseSize*(NMAX+1);
-        break;
-    }
-    default: {
-        tSizeFp = 0;
-        break;
-    }}
     // init cache
     jdouble *rRn = NULL;
     jdouble *rNlRn = NULL, *rNlFc = NULL;
@@ -166,10 +149,7 @@ template <jint NMAX, jint WTYPE>
 static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                         jdouble *aGradFp, jdouble *rGradPara, jdouble *aForwardCache,
                         jint aTypeNum, jdouble aRCut, jint aFuseSize) noexcept {
-    static_assert(WTYPE!=WTYPE_DEFAULT &&
-                  WTYPE!=WTYPE_NONE &&
-                  WTYPE!=WTYPE_FULL &&
-                  WTYPE!=WTYPE_EXFULL, "WTYPE INVALID");
+    static_assert(WTYPE!=WTYPE_DEFAULT && WTYPE!=WTYPE_NONE && WTYPE!=WTYPE_FULL && WTYPE!=WTYPE_EXFULL, "WTYPE INVALID");
     // init cache
     jdouble *tNlRn = aForwardCache;
     jdouble *tNlFc = tNlRn + aNN*(NMAX+1);

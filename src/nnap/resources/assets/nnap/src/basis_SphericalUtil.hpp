@@ -617,32 +617,19 @@ static inline void realNormalizedLegendreInterLoopSubSub_(jdouble aX, jdouble *r
 }
 template <jint L>
 static inline void realNormalizedLegendreInterLoopSub_(jdouble aX, jdouble *rDest) noexcept {
-    if (L-1==0) return;
-    realNormalizedLegendreInterLoopSubSub_<0, L>(aX, rDest);
-    if (L-1==1) return;
-    realNormalizedLegendreInterLoopSubSub_<1, L>(aX, rDest);
-    if (L-1==2) return;
-    realNormalizedLegendreInterLoopSubSub_<2, L>(aX, rDest);
-    if (L-1==3) return;
-    realNormalizedLegendreInterLoopSubSub_<3, L>(aX, rDest);
-    if (L-1==4) return;
-    realNormalizedLegendreInterLoopSubSub_<4, L>(aX, rDest);
-    if (L-1==5) return;
-    realNormalizedLegendreInterLoopSubSub_<5, L>(aX, rDest);
-    if (L-1==6) return;
-    realNormalizedLegendreInterLoopSubSub_<6, L>(aX, rDest);
-    if (L-1==7) return;
-    realNormalizedLegendreInterLoopSubSub_<7, L>(aX, rDest);
-    if (L-1==8) return;
-    realNormalizedLegendreInterLoopSubSub_<8, L>(aX, rDest);
-    if (L-1==9) return;
-    realNormalizedLegendreInterLoopSubSub_<9, L>(aX, rDest);
-    if (L-1==10) return;
-    realNormalizedLegendreInterLoopSubSub_<10, L>(aX, rDest);
-    if (L-1==11) return;
-    realNormalizedLegendreInterLoopSubSub_<11, L>(aX, rDest);
-    if (L-1==12) return;
-    realNormalizedLegendreInterLoopSubSub_<12, L>(aX, rDest);
+    if (L-1==0) {return;} realNormalizedLegendreInterLoopSubSub_<0, L>(aX, rDest);
+    if (L-1==1) {return;} realNormalizedLegendreInterLoopSubSub_<1, L>(aX, rDest);
+    if (L-1==2) {return;} realNormalizedLegendreInterLoopSubSub_<2, L>(aX, rDest);
+    if (L-1==3) {return;} realNormalizedLegendreInterLoopSubSub_<3, L>(aX, rDest);
+    if (L-1==4) {return;} realNormalizedLegendreInterLoopSubSub_<4, L>(aX, rDest);
+    if (L-1==5) {return;} realNormalizedLegendreInterLoopSubSub_<5, L>(aX, rDest);
+    if (L-1==6) {return;} realNormalizedLegendreInterLoopSubSub_<6, L>(aX, rDest);
+    if (L-1==7) {return;} realNormalizedLegendreInterLoopSubSub_<7, L>(aX, rDest);
+    if (L-1==8) {return;} realNormalizedLegendreInterLoopSubSub_<8, L>(aX, rDest);
+    if (L-1==9) {return;} realNormalizedLegendreInterLoopSubSub_<9, L>(aX, rDest);
+    if (L-1==10) {return;} realNormalizedLegendreInterLoopSubSub_<10, L>(aX, rDest);
+    if (L-1==11) {return;} realNormalizedLegendreInterLoopSubSub_<11, L>(aX, rDest);
+    if (L-1==12) {return;} realNormalizedLegendreInterLoopSubSub_<12, L>(aX, rDest);
 }
 template <jint L>
 static inline void realNormalizedLegendreInterLoop_(jdouble aX, jdouble aY, jdouble *rDest, jdouble &rPll) noexcept {
@@ -666,26 +653,16 @@ static inline void realNormalizedLegendreFull(jdouble aX, jdouble aY, jdouble *r
     rDest[2+1] = tPll;
     rDest[2-1] = tPll;
     if (LMAX == 1) return;
-    realNormalizedLegendreInterLoop_<2>(aX, aY, rDest, tPll);
-    if (LMAX == 2) return;
-    realNormalizedLegendreInterLoop_<3>(aX, aY, rDest, tPll);
-    if (LMAX == 3) return;
-    realNormalizedLegendreInterLoop_<4>(aX, aY, rDest, tPll);
-    if (LMAX == 4) return;
-    realNormalizedLegendreInterLoop_<5>(aX, aY, rDest, tPll);
-    if (LMAX == 5) return;
-    realNormalizedLegendreInterLoop_<6>(aX, aY, rDest, tPll);
-    if (LMAX == 6) return;
-    realNormalizedLegendreInterLoop_<7>(aX, aY, rDest, tPll);
-    if (LMAX == 7) return;
-    realNormalizedLegendreInterLoop_<8>(aX, aY, rDest, tPll);
-    if (LMAX == 8) return;
-    realNormalizedLegendreInterLoop_<9>(aX, aY, rDest, tPll);
-    if (LMAX == 9) return;
-    realNormalizedLegendreInterLoop_<10>(aX, aY, rDest, tPll);
-    if (LMAX == 10) return;
-    realNormalizedLegendreInterLoop_<11>(aX, aY, rDest, tPll);
-    if (LMAX == 11) return;
+    realNormalizedLegendreInterLoop_<2>(aX, aY, rDest, tPll); if (LMAX == 2) return;
+    realNormalizedLegendreInterLoop_<3>(aX, aY, rDest, tPll); if (LMAX == 3) return;
+    realNormalizedLegendreInterLoop_<4>(aX, aY, rDest, tPll); if (LMAX == 4) return;
+    realNormalizedLegendreInterLoop_<5>(aX, aY, rDest, tPll); if (LMAX == 5) return;
+    realNormalizedLegendreInterLoop_<6>(aX, aY, rDest, tPll); if (LMAX == 6) return;
+    realNormalizedLegendreInterLoop_<7>(aX, aY, rDest, tPll); if (LMAX == 7) return;
+    realNormalizedLegendreInterLoop_<8>(aX, aY, rDest, tPll); if (LMAX == 8) return;
+    realNormalizedLegendreInterLoop_<9>(aX, aY, rDest, tPll); if (LMAX == 9) return;
+    realNormalizedLegendreInterLoop_<10>(aX, aY, rDest, tPll); if (LMAX == 10) return;
+    realNormalizedLegendreInterLoop_<11>(aX, aY, rDest, tPll); if (LMAX == 11) return;
     realNormalizedLegendreInterLoop_<12>(aX, aY, rDest, tPll);
 }
 
@@ -696,30 +673,18 @@ static inline void realSphericalHarmonicsFull4InterLoopSubSub_(jdouble aSqrt2Cos
 }
 template <jint M, jint LMAX>
 static inline void realSphericalHarmonicsFull4InterLoopSub_(jdouble aSqrt2CosMPhi, jdouble aSqrt2SinMPhi, jdouble *rDest) noexcept {
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+0>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest);
-    if (LMAX==M+0) return;
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+1>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest);
-    if (LMAX==M+1) return;
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+2>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest);
-    if (LMAX==M+2) return;
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+3>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest);
-    if (LMAX==M+3) return;
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+4>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest);
-    if (LMAX==M+4) return;
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+5>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest);
-    if (LMAX==M+5) return;
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+6>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest);
-    if (LMAX==M+6) return;
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+7>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest);
-    if (LMAX==M+7) return;
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+8>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest);
-    if (LMAX==M+8) return;
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+9>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest);
-    if (LMAX==M+9) return;
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+10>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest);
-    if (LMAX==M+10) return;
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+11>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest);
-    if (LMAX==M+11) return;
+    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+0>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+0) return;
+    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+1>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+1) return;
+    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+2>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+2) return;
+    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+3>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+3) return;
+    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+4>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+4) return;
+    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+5>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+5) return;
+    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+6>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+6) return;
+    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+7>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+7) return;
+    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+8>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+8) return;
+    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+9>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+9) return;
+    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+10>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+10) return;
+    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+11>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+11) return;
     realSphericalHarmonicsFull4InterLoopSubSub_<M, M+12>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest);
 }
 template <jint M, jint LMAX>
@@ -740,7 +705,7 @@ static inline void realSphericalHarmonicsFull4(jdouble aX, jdouble aY, jdouble a
     jdouble tCosPhi;
     jdouble tSinPhi;
     // avoid nan
-    if (JSE_NNAP::numericEqual(tXY, 0.0)) {
+    if (numericEqual(tXY, 0.0)) {
         tCosPhi = 1.0;
         tSinPhi = 0.0;
     } else {
@@ -756,28 +721,17 @@ static inline void realSphericalHarmonicsFull4(jdouble aX, jdouble aY, jdouble a
     jdouble rSinMPhi = tSinPhi;
     jdouble rCosMPhi = tCosPhi;
     const jdouble tCosPhi2 = rCosMPhi+rCosMPhi;
-    realSphericalHarmonicsFull4InterLoop_<1, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest);
-    if (LMAX == 1) return;
-    realSphericalHarmonicsFull4InterLoop_<2, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest);
-    if (LMAX == 2) return;
-    realSphericalHarmonicsFull4InterLoop_<3, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest);
-    if (LMAX == 3) return;
-    realSphericalHarmonicsFull4InterLoop_<4, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest);
-    if (LMAX == 4) return;
-    realSphericalHarmonicsFull4InterLoop_<5, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest);
-    if (LMAX == 5) return;
-    realSphericalHarmonicsFull4InterLoop_<6, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest);
-    if (LMAX == 6) return;
-    realSphericalHarmonicsFull4InterLoop_<7, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest);
-    if (LMAX == 7) return;
-    realSphericalHarmonicsFull4InterLoop_<8, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest);
-    if (LMAX == 8) return;
-    realSphericalHarmonicsFull4InterLoop_<9, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest);
-    if (LMAX == 9) return;
-    realSphericalHarmonicsFull4InterLoop_<10, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest);
-    if (LMAX == 10) return;
-    realSphericalHarmonicsFull4InterLoop_<11, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest);
-    if (LMAX == 11) return;
+    realSphericalHarmonicsFull4InterLoop_<1, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX == 1) return;
+    realSphericalHarmonicsFull4InterLoop_<2, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX == 2) return;
+    realSphericalHarmonicsFull4InterLoop_<3, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX == 3) return;
+    realSphericalHarmonicsFull4InterLoop_<4, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX == 4) return;
+    realSphericalHarmonicsFull4InterLoop_<5, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX == 5) return;
+    realSphericalHarmonicsFull4InterLoop_<6, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX == 6) return;
+    realSphericalHarmonicsFull4InterLoop_<7, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX == 7) return;
+    realSphericalHarmonicsFull4InterLoop_<8, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX == 8) return;
+    realSphericalHarmonicsFull4InterLoop_<9, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX == 9) return;
+    realSphericalHarmonicsFull4InterLoop_<10, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX == 10) return;
+    realSphericalHarmonicsFull4InterLoop_<11, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX == 11) return;
     realSphericalHarmonicsFull4InterLoop_<12, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest);
 }
 
@@ -825,30 +779,18 @@ static inline void calYPtheta(jdouble aCosPhi, jdouble aSinPhi, jdouble *rYPthet
 }
 template <jint LMAX>
 static void calYPphiPtheta(jdouble *rYPphi, jdouble aCosPhi, jdouble aSinPhi, jdouble *rYPtheta, jdouble *aY) noexcept {
-    calYPphi<0>(rYPphi, aY); calYPtheta<0>(aCosPhi, aSinPhi, rYPtheta, aY);
-    if (LMAX == 0) return;
-    calYPphi<1>(rYPphi, aY); calYPtheta<1>(aCosPhi, aSinPhi, rYPtheta, aY);
-    if (LMAX == 1) return;
-    calYPphi<2>(rYPphi, aY); calYPtheta<2>(aCosPhi, aSinPhi, rYPtheta, aY);
-    if (LMAX == 2) return;
-    calYPphi<3>(rYPphi, aY); calYPtheta<3>(aCosPhi, aSinPhi, rYPtheta, aY);
-    if (LMAX == 3) return;
-    calYPphi<4>(rYPphi, aY); calYPtheta<4>(aCosPhi, aSinPhi, rYPtheta, aY);
-    if (LMAX == 4) return;
-    calYPphi<5>(rYPphi, aY); calYPtheta<5>(aCosPhi, aSinPhi, rYPtheta, aY);
-    if (LMAX == 5) return;
-    calYPphi<6>(rYPphi, aY); calYPtheta<6>(aCosPhi, aSinPhi, rYPtheta, aY);
-    if (LMAX == 6) return;
-    calYPphi<7>(rYPphi, aY); calYPtheta<7>(aCosPhi, aSinPhi, rYPtheta, aY);
-    if (LMAX == 7) return;
-    calYPphi<8>(rYPphi, aY); calYPtheta<8>(aCosPhi, aSinPhi, rYPtheta, aY);
-    if (LMAX == 8) return;
-    calYPphi<9>(rYPphi, aY); calYPtheta<9>(aCosPhi, aSinPhi, rYPtheta, aY);
-    if (LMAX == 9) return;
-    calYPphi<10>(rYPphi, aY); calYPtheta<10>(aCosPhi, aSinPhi, rYPtheta, aY);
-    if (LMAX == 10) return;
-    calYPphi<11>(rYPphi, aY); calYPtheta<11>(aCosPhi, aSinPhi, rYPtheta, aY);
-    if (LMAX == 11) return;
+    calYPphi<0>(rYPphi, aY); calYPtheta<0>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX == 0) return;
+    calYPphi<1>(rYPphi, aY); calYPtheta<1>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX == 1) return;
+    calYPphi<2>(rYPphi, aY); calYPtheta<2>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX == 2) return;
+    calYPphi<3>(rYPphi, aY); calYPtheta<3>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX == 3) return;
+    calYPphi<4>(rYPphi, aY); calYPtheta<4>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX == 4) return;
+    calYPphi<5>(rYPphi, aY); calYPtheta<5>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX == 5) return;
+    calYPphi<6>(rYPphi, aY); calYPtheta<6>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX == 6) return;
+    calYPphi<7>(rYPphi, aY); calYPtheta<7>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX == 7) return;
+    calYPphi<8>(rYPphi, aY); calYPtheta<8>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX == 8) return;
+    calYPphi<9>(rYPphi, aY); calYPtheta<9>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX == 9) return;
+    calYPphi<10>(rYPphi, aY); calYPtheta<10>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX == 10) return;
+    calYPphi<11>(rYPphi, aY); calYPtheta<11>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX == 11) return;
     calYPphi<12>(rYPphi, aY); calYPtheta<12>(aCosPhi, aSinPhi, rYPtheta, aY);
 }
 template <jint N>
@@ -867,15 +809,16 @@ static inline void convertYPPhiPtheta2YPxyz(jdouble aCosTheta, jdouble aSinTheta
         rYPz[i] = tYPtheta*thetaPz;
     }
 }
-template <jint LMAX, jint LMALL>
+template <jint LMAX>
 static inline void calYPxyz(jdouble *aY, jdouble aDx, jdouble aDy, jdouble aDz, jdouble aDis,
                             jdouble *rYPx, jdouble *rYPy, jdouble *rYPz, jdouble *rYPtheta, jdouble *rYPphi) noexcept {
+    constexpr jint tLMAll = (LMAX+1)*(LMAX+1);
     const jdouble dxy = hypot(aDx, aDy);
     const jdouble cosTheta = aDz / aDis;
     const jdouble sinTheta = dxy / aDis;
     jdouble cosPhi;
     jdouble sinPhi;
-    const jboolean dxyCloseZero = JSE_NNAP::numericEqual(dxy, 0.0);
+    const jboolean dxyCloseZero = numericEqual(dxy, 0.0);
     if (dxyCloseZero) {
         cosPhi = 1.0;
         sinPhi = 0.0;
@@ -886,11 +829,11 @@ static inline void calYPxyz(jdouble *aY, jdouble aDx, jdouble aDy, jdouble aDz, 
     calYPphiPtheta<LMAX>(rYPphi, cosPhi, sinPhi, rYPtheta, aY);
     if (dxyCloseZero) {
         // fix singularity
-        for (jint k = 0; k < LMALL; ++k) rYPphi[k] = 0.0;
+        for (jint k = 0; k < tLMAll; ++k) rYPphi[k] = 0.0;
     }
     // conert to Pxyz
-    convertYPPhiPtheta2YPxyz<LMALL>(cosTheta, sinTheta, cosPhi, sinPhi, aDis, dxy, dxyCloseZero,
-                                    rYPx, rYPy, rYPz, rYPtheta, rYPphi);
+    convertYPPhiPtheta2YPxyz<tLMAll>(cosTheta, sinTheta, cosPhi, sinPhi, aDis, dxy, dxyCloseZero,
+                                     rYPx, rYPy, rYPz, rYPtheta, rYPphi);
 }
 
 
@@ -992,27 +935,27 @@ static inline void mplusBnlm2Cnlm(jdouble *rCnlm, jdouble *aBnlm, jdouble aWt, j
 template <jint LMALL>
 static inline jdouble dotBnlmGradCnlm(jdouble *aBnlm, jdouble *aGradCnlm, jint aNMax) noexcept {
     switch (aNMax) {
-    case 0: {return JSE_NNAP::dot<(0+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 1: {return JSE_NNAP::dot<(1+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 2: {return JSE_NNAP::dot<(2+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 3: {return JSE_NNAP::dot<(3+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 4: {return JSE_NNAP::dot<(4+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 5: {return JSE_NNAP::dot<(5+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 6: {return JSE_NNAP::dot<(6+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 7: {return JSE_NNAP::dot<(7+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 8: {return JSE_NNAP::dot<(8+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 9: {return JSE_NNAP::dot<(9+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 10: {return JSE_NNAP::dot<(10+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 11: {return JSE_NNAP::dot<(11+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 12: {return JSE_NNAP::dot<(12+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 13: {return JSE_NNAP::dot<(13+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 14: {return JSE_NNAP::dot<(14+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 15: {return JSE_NNAP::dot<(15+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 16: {return JSE_NNAP::dot<(16+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 17: {return JSE_NNAP::dot<(17+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 18: {return JSE_NNAP::dot<(18+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 19: {return JSE_NNAP::dot<(19+1)*LMALL>(aBnlm, aGradCnlm);}
-    case 20: {return JSE_NNAP::dot<(20+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 0: {return dot<(0+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 1: {return dot<(1+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 2: {return dot<(2+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 3: {return dot<(3+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 4: {return dot<(4+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 5: {return dot<(5+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 6: {return dot<(6+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 7: {return dot<(7+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 8: {return dot<(8+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 9: {return dot<(9+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 10: {return dot<(10+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 11: {return dot<(11+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 12: {return dot<(12+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 13: {return dot<(13+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 14: {return dot<(14+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 15: {return dot<(15+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 16: {return dot<(16+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 17: {return dot<(17+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 18: {return dot<(18+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 19: {return dot<(19+1)*LMALL>(aBnlm, aGradCnlm);}
+    case 20: {return dot<(20+1)*LMALL>(aBnlm, aGradCnlm);}
     default: {return 0.0;}
     }
 }
@@ -1124,7 +1067,7 @@ static inline void mplusGradNNGradCnlmWt(jdouble *rGradNNGradCnlm, jdouble *rGra
 template <jint L>
 static inline void calL2Sub_(jdouble *aCnlm, jdouble *rFp) noexcept {
     constexpr jint tLen = L+L+1;
-    const jdouble rDot = JSE_NNAP::dot<tLen>(aCnlm + (L*L));
+    const jdouble rDot = dot<tLen>(aCnlm + (L*L));
     rFp[L-1] = (PI4/(jdouble)tLen) * rDot;
 }
 template <jint LMAX, jboolean NO_RADIAL>
@@ -1137,28 +1080,17 @@ static void calL2_(jdouble *aCnlm, jdouble *rFp) noexcept {
         ++tFp;
     }
     if (LMAX == 0) return;
-    calL2Sub_<1>(aCnlm, tFp);
-    if (LMAX == 1) return;
-    calL2Sub_<2>(aCnlm, tFp);
-    if (LMAX == 2) return;
-    calL2Sub_<3>(aCnlm, tFp);
-    if (LMAX == 3) return;
-    calL2Sub_<4>(aCnlm, tFp);
-    if (LMAX == 4) return;
-    calL2Sub_<5>(aCnlm, tFp);
-    if (LMAX == 5) return;
-    calL2Sub_<6>(aCnlm, tFp);
-    if (LMAX == 6) return;
-    calL2Sub_<7>(aCnlm, tFp);
-    if (LMAX == 7) return;
-    calL2Sub_<8>(aCnlm, tFp);
-    if (LMAX == 8) return;
-    calL2Sub_<9>(aCnlm, tFp);
-    if (LMAX == 9) return;
-    calL2Sub_<10>(aCnlm, tFp);
-    if (LMAX == 10) return;
-    calL2Sub_<11>(aCnlm, tFp);
-    if (LMAX == 11) return;
+    calL2Sub_<1>(aCnlm, tFp); if (LMAX == 1) return;
+    calL2Sub_<2>(aCnlm, tFp); if (LMAX == 2) return;
+    calL2Sub_<3>(aCnlm, tFp); if (LMAX == 3) return;
+    calL2Sub_<4>(aCnlm, tFp); if (LMAX == 4) return;
+    calL2Sub_<5>(aCnlm, tFp); if (LMAX == 5) return;
+    calL2Sub_<6>(aCnlm, tFp); if (LMAX == 6) return;
+    calL2Sub_<7>(aCnlm, tFp); if (LMAX == 7) return;
+    calL2Sub_<8>(aCnlm, tFp); if (LMAX == 8) return;
+    calL2Sub_<9>(aCnlm, tFp); if (LMAX == 9) return;
+    calL2Sub_<10>(aCnlm, tFp); if (LMAX == 10) return;
+    calL2Sub_<11>(aCnlm, tFp); if (LMAX == 11) return;
     calL2Sub_<12>(aCnlm, tFp);
 }
 template <jboolean NO_RADIAL>
@@ -1547,28 +1479,17 @@ static void calGradL2_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aNNGrad) noe
         ++tNNGrad;
     }
     if (LMAX == 0) return;
-    calGradL2Sub_<1>(aCnlm, rGradCnlm, tNNGrad);
-    if (LMAX == 1) return;
-    calGradL2Sub_<2>(aCnlm, rGradCnlm, tNNGrad);
-    if (LMAX == 2) return;
-    calGradL2Sub_<3>(aCnlm, rGradCnlm, tNNGrad);
-    if (LMAX == 3) return;
-    calGradL2Sub_<4>(aCnlm, rGradCnlm, tNNGrad);
-    if (LMAX == 4) return;
-    calGradL2Sub_<5>(aCnlm, rGradCnlm, tNNGrad);
-    if (LMAX == 5) return;
-    calGradL2Sub_<6>(aCnlm, rGradCnlm, tNNGrad);
-    if (LMAX == 6) return;
-    calGradL2Sub_<7>(aCnlm, rGradCnlm, tNNGrad);
-    if (LMAX == 7) return;
-    calGradL2Sub_<8>(aCnlm, rGradCnlm, tNNGrad);
-    if (LMAX == 8) return;
-    calGradL2Sub_<9>(aCnlm, rGradCnlm, tNNGrad);
-    if (LMAX == 9) return;
-    calGradL2Sub_<10>(aCnlm, rGradCnlm, tNNGrad);
-    if (LMAX == 10) return;
-    calGradL2Sub_<11>(aCnlm, rGradCnlm, tNNGrad);
-    if (LMAX == 11) return;
+    calGradL2Sub_<1>(aCnlm, rGradCnlm, tNNGrad); if (LMAX == 1) return;
+    calGradL2Sub_<2>(aCnlm, rGradCnlm, tNNGrad); if (LMAX == 2) return;
+    calGradL2Sub_<3>(aCnlm, rGradCnlm, tNNGrad); if (LMAX == 3) return;
+    calGradL2Sub_<4>(aCnlm, rGradCnlm, tNNGrad); if (LMAX == 4) return;
+    calGradL2Sub_<5>(aCnlm, rGradCnlm, tNNGrad); if (LMAX == 5) return;
+    calGradL2Sub_<6>(aCnlm, rGradCnlm, tNNGrad); if (LMAX == 6) return;
+    calGradL2Sub_<7>(aCnlm, rGradCnlm, tNNGrad); if (LMAX == 7) return;
+    calGradL2Sub_<8>(aCnlm, rGradCnlm, tNNGrad); if (LMAX == 8) return;
+    calGradL2Sub_<9>(aCnlm, rGradCnlm, tNNGrad); if (LMAX == 9) return;
+    calGradL2Sub_<10>(aCnlm, rGradCnlm, tNNGrad); if (LMAX == 10) return;
+    calGradL2Sub_<11>(aCnlm, rGradCnlm, tNNGrad); if (LMAX == 11) return;
     calGradL2Sub_<12>(aCnlm, rGradCnlm, tNNGrad);
 }
 template <jboolean NO_RADIAL>
@@ -1951,7 +1872,7 @@ template <jint L>
 static inline void calGradNNGradL2Sub_(jdouble *aCnlm, jdouble *aGradNNGradCnlm, jdouble *rGradNNGrad) noexcept {
     constexpr jint tStart = L*L;
     constexpr jint tLen = L+L+1;
-    const jdouble rDot = JSE_NNAP::dot<tLen>(aCnlm+tStart, aGradNNGradCnlm+tStart);
+    const jdouble rDot = dot<tLen>(aCnlm+tStart, aGradNNGradCnlm+tStart);
     rGradNNGrad[L-1] = (2.0 * PI4/(jdouble)tLen) * rDot;
 }
 template <jint LMAX, jboolean NO_RADIAL>
@@ -1963,28 +1884,17 @@ static void calGradNNGradL2_(jdouble *aCnlm, jdouble *aGradNNGradCnlm, jdouble *
         ++tGradNNGrad;
     }
     if (LMAX == 0) return;
-    calGradNNGradL2Sub_<1>(aCnlm, aGradNNGradCnlm, tGradNNGrad);
-    if (LMAX == 1) return;
-    calGradNNGradL2Sub_<2>(aCnlm, aGradNNGradCnlm, tGradNNGrad);
-    if (LMAX == 2) return;
-    calGradNNGradL2Sub_<3>(aCnlm, aGradNNGradCnlm, tGradNNGrad);
-    if (LMAX == 3) return;
-    calGradNNGradL2Sub_<4>(aCnlm, aGradNNGradCnlm, tGradNNGrad);
-    if (LMAX == 4) return;
-    calGradNNGradL2Sub_<5>(aCnlm, aGradNNGradCnlm, tGradNNGrad);
-    if (LMAX == 5) return;
-    calGradNNGradL2Sub_<6>(aCnlm, aGradNNGradCnlm, tGradNNGrad);
-    if (LMAX == 6) return;
-    calGradNNGradL2Sub_<7>(aCnlm, aGradNNGradCnlm, tGradNNGrad);
-    if (LMAX == 7) return;
-    calGradNNGradL2Sub_<8>(aCnlm, aGradNNGradCnlm, tGradNNGrad);
-    if (LMAX == 8) return;
-    calGradNNGradL2Sub_<9>(aCnlm, aGradNNGradCnlm, tGradNNGrad);
-    if (LMAX == 9) return;
-    calGradNNGradL2Sub_<10>(aCnlm, aGradNNGradCnlm, tGradNNGrad);
-    if (LMAX == 10) return;
-    calGradNNGradL2Sub_<11>(aCnlm, aGradNNGradCnlm, tGradNNGrad);
-    if (LMAX == 11) return;
+    calGradNNGradL2Sub_<1>(aCnlm, aGradNNGradCnlm, tGradNNGrad); if (LMAX == 1) return;
+    calGradNNGradL2Sub_<2>(aCnlm, aGradNNGradCnlm, tGradNNGrad); if (LMAX == 2) return;
+    calGradNNGradL2Sub_<3>(aCnlm, aGradNNGradCnlm, tGradNNGrad); if (LMAX == 3) return;
+    calGradNNGradL2Sub_<4>(aCnlm, aGradNNGradCnlm, tGradNNGrad); if (LMAX == 4) return;
+    calGradNNGradL2Sub_<5>(aCnlm, aGradNNGradCnlm, tGradNNGrad); if (LMAX == 5) return;
+    calGradNNGradL2Sub_<6>(aCnlm, aGradNNGradCnlm, tGradNNGrad); if (LMAX == 6) return;
+    calGradNNGradL2Sub_<7>(aCnlm, aGradNNGradCnlm, tGradNNGrad); if (LMAX == 7) return;
+    calGradNNGradL2Sub_<8>(aCnlm, aGradNNGradCnlm, tGradNNGrad); if (LMAX == 8) return;
+    calGradNNGradL2Sub_<9>(aCnlm, aGradNNGradCnlm, tGradNNGrad); if (LMAX == 9) return;
+    calGradNNGradL2Sub_<10>(aCnlm, aGradNNGradCnlm, tGradNNGrad); if (LMAX == 10) return;
+    calGradNNGradL2Sub_<11>(aCnlm, aGradNNGradCnlm, tGradNNGrad); if (LMAX == 11) return;
     calGradNNGradL2Sub_<12>(aCnlm, aGradNNGradCnlm, tGradNNGrad);
 }
 template <jboolean NO_RADIAL>

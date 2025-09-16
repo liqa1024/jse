@@ -123,30 +123,13 @@ static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *a
     // const init
     jint tSizeN;
     switch(WTYPE) {
-    case WTYPE_EXFULL: {
-        tSizeN = (aTypeNum+1)*(aNMax+1);
-        break;
+    case WTYPE_EXFULL:  {tSizeN = (aTypeNum+1)*(aNMax+1); break;}
+    case WTYPE_FULL:    {tSizeN = aTypeNum*(aNMax+1);     break;}
+    case WTYPE_NONE:    {tSizeN = aNMax+1;                break;}
+    case WTYPE_DEFAULT: {tSizeN = (aNMax+aNMax+2);        break;}
+    case WTYPE_FUSE:    {tSizeN = aFuseSize*(aNMax+1);    break;}
+    default:            {tSizeN = 0;                      break;}
     }
-    case WTYPE_FULL: {
-        tSizeN = aTypeNum*(aNMax+1);
-        break;
-    }
-    case WTYPE_NONE: {
-        tSizeN = aNMax+1;
-        break;
-    }
-    case WTYPE_DEFAULT: {
-        tSizeN = (aNMax+aNMax+2);
-        break;
-    }
-    case WTYPE_FUSE: {
-        tSizeN = aFuseSize*(aNMax+1);
-        break;
-    }
-    default: {
-        tSizeN = 0;
-        break;
-    }}
     const jint tSizeL = (aNoRadial?aLMax:(aLMax+1)) + (aL3Cross?L3NCOLS:L3NCOLS_NOCROSS)[aL3Max] + (aL4Cross?L4NCOLS:L4NCOLS_NOCROSS)[aL4Max];
     const jint tLMaxMax = aLMax>aL3Max ? (aLMax>aL4Max?aLMax:aL4Max) : (aL3Max>aL4Max?aL3Max:aL4Max);
     const jint tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
@@ -220,10 +203,7 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
                         jdouble *aGradFp, jdouble *rGradPara, jdouble *aForwardCache, jdouble *rBackwardCache,
                         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial,
                         jint aL3Max, jboolean aL3Cross, jint aL4Max, jboolean aL4Cross, jint aFuseSize) noexcept {
-    static_assert(WTYPE!=WTYPE_DEFAULT &&
-                  WTYPE!=WTYPE_NONE &&
-                  WTYPE!=WTYPE_FULL &&
-                  WTYPE!=WTYPE_EXFULL, "WTYPE INVALID");
+    static_assert(WTYPE!=WTYPE_DEFAULT && WTYPE!=WTYPE_NONE && WTYPE!=WTYPE_FULL && WTYPE!=WTYPE_EXFULL, "WTYPE INVALID");
     // const init
     jint tSizeN;
     if (WTYPE==WTYPE_FUSE) {
@@ -333,7 +313,7 @@ static void calForceMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
             rYPy = rNlYPy + j*tLMAll;
             rYPz = rNlYPz + j*tLMAll;
         }
-        calYPxyz<LMAXMAX, tLMAll>(tY, dx, dy, dz, dis, rYPx, rYPy, rYPz, rYPtheta, rYPphi);
+        calYPxyz<LMAXMAX>(tY, dx, dy, dz, dis, rYPx, rYPy, rYPz, rYPtheta, rYPphi);
         // cal fxyz
         if (WTYPE==WTYPE_FUSE) {
             if (FULL_CACHE) {
@@ -414,30 +394,13 @@ static inline void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint
     // const init
     jint tSizeN;
     switch(WTYPE) {
-    case WTYPE_EXFULL: {
-        tSizeN = (aTypeNum+1)*(aNMax+1);
-        break;
+    case WTYPE_EXFULL:  {tSizeN = (aTypeNum+1)*(aNMax+1); break;}
+    case WTYPE_FULL:    {tSizeN = aTypeNum*(aNMax+1);     break;}
+    case WTYPE_NONE:    {tSizeN = aNMax+1;                break;}
+    case WTYPE_DEFAULT: {tSizeN = (aNMax+aNMax+2);        break;}
+    case WTYPE_FUSE:    {tSizeN = aFuseSize*(aNMax+1);    break;}
+    default:            {tSizeN = 0;                      break;}
     }
-    case WTYPE_FULL: {
-        tSizeN = aTypeNum*(aNMax+1);
-        break;
-    }
-    case WTYPE_NONE: {
-        tSizeN = aNMax+1;
-        break;
-    }
-    case WTYPE_DEFAULT: {
-        tSizeN = (aNMax+aNMax+2);
-        break;
-    }
-    case WTYPE_FUSE: {
-        tSizeN = aFuseSize*(aNMax+1);
-        break;
-    }
-    default: {
-        tSizeN = 0;
-        break;
-    }}
     const jint tSizeL = (aNoRadial?aLMax:(aLMax+1)) + (aL3Cross?L3NCOLS:L3NCOLS_NOCROSS)[aL3Max] + (aL4Cross?L4NCOLS:L4NCOLS_NOCROSS)[aL4Max];
     const jint tLMaxMax = aLMax>aL3Max ? (aLMax>aL4Max?aLMax:aL4Max) : (aL3Max>aL4Max?aL3Max:aL4Max);
     const jint tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
@@ -586,30 +549,13 @@ static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
     // const init
     jint tSizeN;
     switch(WTYPE) {
-    case WTYPE_EXFULL: {
-        tSizeN = (aTypeNum+1)*(aNMax+1);
-        break;
+    case WTYPE_EXFULL:  {tSizeN = (aTypeNum+1)*(aNMax+1); break;}
+    case WTYPE_FULL:    {tSizeN = aTypeNum*(aNMax+1);     break;}
+    case WTYPE_NONE:    {tSizeN = aNMax+1;                break;}
+    case WTYPE_DEFAULT: {tSizeN = (aNMax+aNMax+2);        break;}
+    case WTYPE_FUSE:    {tSizeN = aFuseSize*(aNMax+1);    break;}
+    default:            {tSizeN = 0;                      break;}
     }
-    case WTYPE_FULL: {
-        tSizeN = aTypeNum*(aNMax+1);
-        break;
-    }
-    case WTYPE_NONE: {
-        tSizeN = aNMax+1;
-        break;
-    }
-    case WTYPE_DEFAULT: {
-        tSizeN = (aNMax+aNMax+2);
-        break;
-    }
-    case WTYPE_FUSE: {
-        tSizeN = aFuseSize*(aNMax+1);
-        break;
-    }
-    default: {
-        tSizeN = 0;
-        break;
-    }}
     const jint tSizeL = (aNoRadial?aLMax:(aLMax+1)) + (aL3Cross?L3NCOLS:L3NCOLS_NOCROSS)[aL3Max] + (aL4Cross?L4NCOLS:L4NCOLS_NOCROSS)[aL4Max];
     const jint tLMaxMax = aLMax>aL3Max ? (aLMax>aL4Max?aLMax:aL4Max) : (aL3Max>aL4Max?aL3Max:aL4Max);
     const jint tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
