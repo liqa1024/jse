@@ -1464,10 +1464,10 @@ static inline void calGradL2Sub_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aN
     constexpr jint tStart = L*L;
     constexpr jint tLen = L+L+1;
     constexpr jint tEnd = tStart+tLen;
-    constexpr jdouble tMul = 2.0 * PI4/(jdouble)tLen;
-    jdouble subNNGrad = aNNGrad[L-1];
+    constexpr jdouble tCoeff = 2.0 * PI4/(jdouble)tLen;
+    const jdouble tMul = tCoeff * aNNGrad[L-1];
     for (jint i = tStart; i < tEnd; ++i) {
-        rGradCnlm[i] += tMul * aCnlm[i] * subNNGrad;
+        rGradCnlm[i] += tMul * aCnlm[i];
     }
 }
 template <jint LMAX, jboolean NO_RADIAL>
@@ -1475,7 +1475,7 @@ static void calGradL2_(jdouble *aCnlm, jdouble *rGradCnlm, jdouble *aNNGrad) noe
     // l = 0
     jdouble *tNNGrad = aNNGrad;
     if (!NO_RADIAL) {
-        rGradCnlm[0] += (PI4+PI4) * aCnlm[0] * tNNGrad[0];
+        rGradCnlm[0] += (PI4+PI4) * tNNGrad[0] * aCnlm[0];
         ++tNNGrad;
     }
     if (LMAX == 0) return;
