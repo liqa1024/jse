@@ -312,6 +312,9 @@ jint FixJSE::groupbit_() {
 jlong FixJSE::atomX() {
     return (jlong)(intptr_t) atom->x;
 }
+jlong FixJSE::atomV() {
+    return (jlong)(intptr_t) atom->v;
+}
 jlong FixJSE::atomF() {
     return (jlong)(intptr_t) atom->f;
 }
@@ -320,6 +323,9 @@ jlong FixJSE::atomMask() {
 }
 jlong FixJSE::atomType() {
     return (jlong)(intptr_t) atom->type;
+}
+jlong FixJSE::atomMass() {
+    return (jlong)(intptr_t) atom->mass;
 }
 jlong FixJSE::atomNatoms() {
     return (jlong) atom->natoms;

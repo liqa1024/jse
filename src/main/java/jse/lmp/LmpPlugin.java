@@ -316,11 +316,17 @@ public class LmpPlugin {
         protected final NestedDoubleCPointer atomX() {return new NestedDoubleCPointer(atomX_(mPairPtr));}
         private native static long atomX_(long aPairPtr);
         
+        protected final NestedDoubleCPointer atomV() {return new NestedDoubleCPointer(atomV_(mPairPtr));}
+        private native static long atomV_(long aPairPtr);
+        
         protected final NestedDoubleCPointer atomF() {return new NestedDoubleCPointer(atomF_(mPairPtr));}
         private native static long atomF_(long aPairPtr);
         
         protected final IntCPointer atomType() {return new IntCPointer(atomType_(mPairPtr));}
         private native static long atomType_(long aPairPtr);
+        
+        protected final DoubleCPointer atomMass() {return new DoubleCPointer(atomMass_(mPairPtr));}
+        private native static long atomMass_(long aPairPtr);
         
         protected final long atomNatoms() {return atomNatoms_(mPairPtr);}
         private native static long atomNatoms_(long aPairPtr);
@@ -718,6 +724,9 @@ public class LmpPlugin {
         protected final NestedDoubleCPointer atomX() {return new NestedDoubleCPointer(atomX_(mFixPtr));}
         private native static long atomX_(long aFixPtr);
         
+        protected final NestedDoubleCPointer atomV() {return new NestedDoubleCPointer(atomV_(mFixPtr));}
+        private native static long atomV_(long aFixPtr);
+        
         protected final NestedDoubleCPointer atomF() {return new NestedDoubleCPointer(atomF_(mFixPtr));}
         private native static long atomF_(long aFixPtr);
         
@@ -726,6 +735,9 @@ public class LmpPlugin {
         
         protected final IntCPointer atomType() {return new IntCPointer(atomType_(mFixPtr));}
         private native static long atomType_(long aFixPtr);
+        
+        protected final DoubleCPointer atomMass() {return new DoubleCPointer(atomMass_(mFixPtr));}
+        private native static long atomMass_(long aPairPtr);
         
         protected final long atomNatoms() {return atomNatoms_(mFixPtr);}
         private native static long atomNatoms_(long aFixPtr);

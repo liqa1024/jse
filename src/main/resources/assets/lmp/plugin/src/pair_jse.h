@@ -52,8 +52,10 @@ public:
     void neighborRequestDefault();
     void neighborRequestFull();
     jlong atomX();
+    jlong atomV();
     jlong atomF();
     jlong atomType();
+    jlong atomMass();
     jlong atomNatoms();
     jint atomNtypes();
     jint atomNlocal();

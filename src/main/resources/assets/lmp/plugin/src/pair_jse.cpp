@@ -182,11 +182,17 @@ void PairJSE::neighborRequestFull() {
 jlong PairJSE::atomX() {
     return (jlong)(intptr_t) atom->x;
 }
+jlong PairJSE::atomV() {
+    return (jlong)(intptr_t) atom->v;
+}
 jlong PairJSE::atomF() {
     return (jlong)(intptr_t) atom->f;
 }
 jlong PairJSE::atomType() {
     return (jlong)(intptr_t) atom->type;
+}
+jlong PairJSE::atomMass() {
+    return (jlong)(intptr_t) atom->mass;
 }
 jlong PairJSE::atomNatoms() {
     return (jlong) atom->natoms;

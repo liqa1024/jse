@@ -94,9 +94,11 @@ public:
     jint igroup_();
     jint groupbit_();
     jlong atomX();
+    jlong atomV();
     jlong atomF();
     jlong atomMask();
     jlong atomType();
+    jlong atomMass();
     jlong atomNatoms();
     jint atomNtypes();
     jint atomNlocal();
