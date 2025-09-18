@@ -3,8 +3,8 @@ package jsex.nnap.basis;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import jse.code.UT;
+import jse.math.matrix.ColumnMatrix;
 import jse.math.matrix.Matrices;
-import jse.math.matrix.RowMatrix;
 import jse.math.vector.IVector;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,10 +28,10 @@ abstract class WTypeBasis extends MergeableBasis {
     final int mNMax;
     final int mWType;
     final int mSizeN;
-    final @Nullable RowMatrix mFuseWeight;
+    final @Nullable ColumnMatrix mFuseWeight;
     final int mFuseSize;
     
-    WTypeBasis(int aTypeNum, int aNMax, int aWType, @Nullable RowMatrix aFuseWeight) {
+    WTypeBasis(int aTypeNum, int aNMax, int aWType, @Nullable ColumnMatrix aFuseWeight) {
         if (aTypeNum <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+aTypeNum);
         if (aNMax<0 || aNMax>20) throw new IllegalArgumentException("Input nmax MUST be in [0, 20], input: "+aNMax);
         if (!ALL_WTYPE.containsValue(aWType)) throw new IllegalArgumentException("Input wtype MUST be in {-1, 0, 2, 3, 4, 5}, input: "+ aWType);
@@ -89,14 +89,17 @@ abstract class WTypeBasis extends MergeableBasis {
         return tOut;
     }
     @SuppressWarnings("rawtypes")
-    static @Nullable RowMatrix getFuseWeight_(Map aMap, int aWType, int aTypeNum, int aNMax) {
+    static @Nullable ColumnMatrix getFuseWeight_(Map aMap, int aWType, int aTypeNum, int aNMax) {
         if (aWType!=WTYPE_FUSE) return null;
         Object tFuseWeight = aMap.get("fuse_weight");
         if (tFuseWeight != null) {
-            return Matrices.fromRows((List<?>)tFuseWeight);
+            List<?> tRows = (List<?>)tFuseWeight;
+            ColumnMatrix tMat = ColumnMatrix.zeros(tRows.size(), aTypeNum);
+            tMat.fillWithRows(tRows);
+            return tMat;
         }
         int tFuseSize = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_FUSE_SIZE, "fuse_size")).intValue();
-        return Matrices.zeros(tFuseSize, aTypeNum);
+        return ColumnMatrix.zeros(tFuseSize, aTypeNum);
     }
     
     @Override public void initParameters() {
@@ -111,7 +114,7 @@ abstract class WTypeBasis extends MergeableBasis {
     @Override public IVector parameters() {
         if (mWType!=WTYPE_FUSE) return null;
         assert mFuseWeight != null;
-        return mFuseWeight.asVecRow();
+        return mFuseWeight.asVecCol();
     }
     @Override public boolean hasParameters() {return mWType==WTYPE_FUSE;}
 }

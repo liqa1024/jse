@@ -4,7 +4,7 @@ import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.math.IDataShell;
-import jse.math.matrix.RowMatrix;
+import jse.math.matrix.ColumnMatrix;
 import jse.math.vector.DoubleArrayVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -45,7 +45,7 @@ public class SphericalChebyshev extends WTypeBasis {
     final int mSizeL, mSize;
     final int mLMaxMax, mLMAll;
     
-    SphericalChebyshev(String @Nullable[] aSymbols, int aTypeNum, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, int aL4Max, boolean aL4Cross, double aRCut, int aWType, @Nullable RowMatrix aFuseWeight) {
+    SphericalChebyshev(String @Nullable[] aSymbols, int aTypeNum, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, int aL4Max, boolean aL4Cross, double aRCut, int aWType, @Nullable ColumnMatrix aFuseWeight) {
         super(aTypeNum, aNMax, aWType, aFuseWeight);
         if (aLMax<0 || aLMax>12) throw new IllegalArgumentException("Input lmax MUST be in [0, 12], input: "+aLMax);
         if (aL3Max<0 || aL3Max>6) throw new IllegalArgumentException("Input l3max MUST be in [0, 6], input: "+aL3Max);
@@ -107,7 +107,7 @@ public class SphericalChebyshev extends WTypeBasis {
         int aTypeNum = aSymbols.length;
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
         int aWType = getWType_(aMap);
-        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum, aNMax);
+        ColumnMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum, aNMax);
         return new SphericalChebyshev(
             aSymbols, aTypeNum, aNMax,
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),
@@ -124,7 +124,7 @@ public class SphericalChebyshev extends WTypeBasis {
     public static SphericalChebyshev load(int aTypeNum, Map aMap) {
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
         int aWType = getWType_(aMap);
-        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum, aNMax);
+        ColumnMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum, aNMax);
         return new SphericalChebyshev(
             null, aTypeNum, aNMax,
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue(),

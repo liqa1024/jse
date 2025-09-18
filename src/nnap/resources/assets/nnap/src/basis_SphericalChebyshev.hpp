@@ -53,12 +53,11 @@ static void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTyp
             if (FULL_CACHE) rBnlm = rNlBnlm + j*tSizeBnlm;
             calBnlm<tLMAll>(rBnlm, rY, fc, rRn, aNMax);
             // mplus2cnlm
-            jdouble *tFuseWeight = aFuseWeight;
+            jdouble *tFuseWeight = aFuseWeight + aFuseSize*(type-1);
             jdouble *tCnlm = rCnlm;
             for (jint k = 0; k < aFuseSize; ++k) {
-                jdouble wt = tFuseWeight[type-1];
+                jdouble wt = tFuseWeight[k];
                 mplusBnlm2Cnlm<tLMAll>(tCnlm, rBnlm, wt, aNMax);
-                tFuseWeight += aTypeNum;
                 tCnlm += tSizeBnlm;
             }
         } else
@@ -115,11 +114,11 @@ static void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTyp
 }
 
 template <jint WTYPE>
-static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
-                         jdouble *rFp, jdouble *rForwardCache, jboolean aFullCache,
-                         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial,
-                         jint aL3Max, jboolean aL3Cross, jint aL4Max, jboolean aL4Cross,
-                         jdouble *aFuseWeight, jint aFuseSize) noexcept {
+static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
+                  jdouble *rFp, jdouble *rForwardCache, jboolean aFullCache,
+                  jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial,
+                  jint aL3Max, jboolean aL3Cross, jint aL4Max, jboolean aL4Cross,
+                  jdouble *aFuseWeight, jint aFuseSize) noexcept {
     // const init
     jint tSizeN;
     switch(WTYPE) {
@@ -166,11 +165,10 @@ static void calBackwardMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, 
         if (dis >= aRCut) continue;
         jdouble *tBnlm = aNlBnlm + j*tSizeBnlm;
         if (WTYPE==WTYPE_FUSE) {
-            jdouble *tGradPara = rGradPara;
+            jdouble *tGradPara = rGradPara + aFuseSize*(type-1);
             jdouble *tGradCnlm = aGradCnlm;
-            for (jint fi = 0; fi < aFuseSize; ++fi) {
-                tGradPara[type-1] += dotBnlmGradCnlm<tLMAll>(tBnlm, tGradCnlm, aNMax);
-                tGradPara += aTypeNum;
+            for (jint k = 0; k < aFuseSize; ++k) {
+                tGradPara[k] += dotBnlmGradCnlm<tLMAll>(tBnlm, tGradCnlm, aNMax);
                 tGradCnlm += tSizeBnlm;
             }
             continue;
@@ -322,12 +320,11 @@ static void calForceMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
             for (jint k = 0; k < tSizeBnlm; ++k) {
                 rGradBnlm[k] = 0.0;
             }
-            jdouble *tFuseWeight = aFuseWeight;
+            jdouble *tFuseWeight = aFuseWeight + aFuseSize*(type-1);
             jdouble *tGradCnlm = aGradCnlm;
             for (jint k = 0; k < aFuseSize; ++k) {
-                jdouble wt = tFuseWeight[type-1];
+                jdouble wt = tFuseWeight[k];
                 mplusBnlm2Cnlm<tLMAll>(rGradBnlm, tGradCnlm, wt, aNMax);
-                tFuseWeight += aTypeNum;
                 tGradCnlm += tSizeBnlm;
             }
             gradBnlm2Fxyz<tLMAll>(j, rGradBnlm, rYPtheta, tY, fc, tRn, aNMax, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rYPx, rYPy, rYPz, rFx, rFy, rFz);
@@ -385,12 +382,12 @@ static void calForceMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
     }
 }
 template <jint WTYPE>
-static inline void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
-                            jdouble *aNNGrad, jdouble *rFx, jdouble *rFy, jdouble *rFz,
-                            jdouble *aForwardCache, jdouble *rForwardForceCache, jboolean aFullCache,
-                            jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial,
-                            jint aL3Max, jboolean aL3Cross, jint aL4Max, jboolean aL4Cross,
-                            jdouble *aFuseWeight, jint aFuseSize) noexcept {
+static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
+                     jdouble *aNNGrad, jdouble *rFx, jdouble *rFy, jdouble *rFz,
+                     jdouble *aForwardCache, jdouble *rForwardForceCache, jboolean aFullCache,
+                     jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial,
+                     jint aL3Max, jboolean aL3Cross, jint aL4Max, jboolean aL4Cross,
+                     jdouble *aFuseWeight, jint aFuseSize) noexcept {
     // const init
     jint tSizeN;
     switch(WTYPE) {
@@ -476,21 +473,19 @@ static void calBackwardForceMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aN
         // mplus to gradNNgrad
         if (WTYPE==WTYPE_FUSE) {
             calGradNNGradBnlm<tLMAll>(rGradNNGradBnlm, tY, fc, tRn, aNMax, tYPx, tYPy, tYPz, rGradNNGradY, fcPx, fcPy, fcPz, tRnPx, tRnPy, tRnPz, tGradFx, tGradFy, tGradFz);
-            jdouble *tFuseWeight = aFuseWeight;
+            jdouble *tFuseWeight = aFuseWeight + aFuseSize*(type-1);
             jdouble *tGradNNGradCnlm = rGradNNGradCnlm;
             for (jint k = 0; k < aFuseSize; ++k) {
-                jdouble wt = tFuseWeight[type-1];
+                jdouble wt = tFuseWeight[k];
                 mplusBnlm2Cnlm<tLMAll>(tGradNNGradCnlm, rGradNNGradBnlm, wt, aNMax);
                 tGradNNGradCnlm += tSizeBnlm;
-                tFuseWeight += aTypeNum;
             }
             if (!aFixBasis) {
-                jdouble *tGradPara = rGradPara;
+                jdouble *tGradPara = rGradPara + aFuseSize*(type-1);
                 jdouble *tNNGradCnlm = aNNGradCnlm;
                 for (jint k = 0; k < aFuseSize; ++k) {
-                    tGradPara[type-1] += dotBnlmGradCnlm<tLMAll>(tNNGradCnlm, rGradNNGradBnlm, aNMax);
+                    tGradPara[k] += dotBnlmGradCnlm<tLMAll>(tNNGradCnlm, rGradNNGradBnlm, aNMax);
                     tNNGradCnlm += tSizeBnlm;
-                    tGradPara += aTypeNum;
                 }
             }
         } else

@@ -117,13 +117,12 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
         calRn<NMAX>(rRn, dis, aRCut);
         // cal fp
         if (WTYPE==WTYPE_FUSE) {
-            jdouble *tFuseWeight = aFuseWeight;
+            jdouble *tFuseWeight = aFuseWeight + aFuseSize*(type-1);
             jdouble *tFp = rFp;
             for (jint k = 0; k < aFuseSize; ++k) {
-                jdouble fcWt = fc * tFuseWeight[type-1];
+                jdouble fcWt = fc * tFuseWeight[k];
                 mplusFp<NMAX>(tFp, fcWt, rRn);
                 tFp += (NMAX+1);
-                tFuseWeight += aTypeNum;
             }
         } else
         if (WTYPE==WTYPE_NONE) {
@@ -166,11 +165,10 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
         // plus to para
         if (WTYPE==WTYPE_FUSE) {
             jdouble *tGradFp = aGradFp;
-            jdouble *tGradPara = rGradPara;
+            jdouble *tGradPara = rGradPara + aFuseSize*(type-1);
             for (jint k = 0; k < aFuseSize; ++k) {
-                tGradPara[type-1] += fc * dot<NMAX+1>(tRn, tGradFp);
+                tGradPara[k] += fc * dot<NMAX+1>(tRn, tGradFp);
                 tGradFp += (NMAX+1);
-                tGradPara += aTypeNum;
             }
             continue;
         }
@@ -233,13 +231,12 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
             for (jint n = 0; n <= NMAX; ++n) {
                 tGradRn[n] = 0.0;
             }
-            jdouble *tFuseWeight = aFuseWeight;
+            jdouble *tFuseWeight = aFuseWeight + aFuseSize*(type-1);
             jdouble *tNNGrad = aNNGrad;
             for (jint k = 0; k < aFuseSize; ++k) {
-                jdouble wt = tFuseWeight[type-1];
+                jdouble wt = tFuseWeight[k];
                 mplusFp<NMAX>(tGradRn, wt, tNNGrad);
                 tNNGrad += (NMAX+1);
-                tFuseWeight += aTypeNum;
             }
             gradRn2Fxyz<NMAX>(j, tGradRn, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rFx, rFy, rFz);
         } else
@@ -307,21 +304,19 @@ static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
                 jdouble tGradNNGradRn_ = tRnPx[n]*tGradFx + tRnPy[n]*tGradFy + tRnPz[n]*tGradFz;
                 rGradNNGradRn[n] = tRn[n]*tGradNNGradFc + fc*tGradNNGradRn_;
             }
-            jdouble *tFuseWeight = aFuseWeight;
+            jdouble *tFuseWeight = aFuseWeight + aFuseSize*(type-1);
             jdouble *tGradNNGrad = rGradNNGrad;
             for (jint k = 0; k < aFuseSize; ++k) {
-                jdouble wt = tFuseWeight[type-1];
+                jdouble wt = tFuseWeight[k];
                 mplusFp<NMAX>(tGradNNGrad, wt, rGradNNGradRn);
                 tGradNNGrad += (NMAX+1);
-                tFuseWeight += aTypeNum;
             }
             if (!aFixBasis) {
-                jdouble *tGradPara = rGradPara;
+                jdouble *tGradPara = rGradPara + aFuseSize*(type-1);
                 jdouble *tNNGrad = aNNGrad;
                 for (jint k = 0; k < aFuseSize; ++k) {
-                    tGradPara[type-1] += dot<NMAX+1>(tNNGrad, rGradNNGradRn);
+                    tGradPara[k] += dot<NMAX+1>(tNNGrad, rGradNNGradRn);
                     tNNGrad += (NMAX+1);
-                    tGradPara += aTypeNum;
                 }
             }
         } else

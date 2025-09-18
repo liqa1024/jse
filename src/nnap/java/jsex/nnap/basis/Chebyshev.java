@@ -4,7 +4,7 @@ import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.math.IDataShell;
-import jse.math.matrix.RowMatrix;
+import jse.math.matrix.ColumnMatrix;
 import jse.math.vector.DoubleArrayVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +33,7 @@ public class Chebyshev extends WTypeBasis {
     
     final int mSize;
     
-    Chebyshev(String @Nullable[] aSymbols, int aTypeNum, int aNMax, double aRCut, int aWType, @Nullable RowMatrix aFuseWeight) {
+    Chebyshev(String @Nullable[] aSymbols, int aTypeNum, int aNMax, double aRCut, int aWType, @Nullable ColumnMatrix aFuseWeight) {
         super(aTypeNum, aNMax, aWType, aFuseWeight);
         mSymbols = aSymbols;
         mRCut = aRCut;
@@ -75,7 +75,7 @@ public class Chebyshev extends WTypeBasis {
         int aTypeNum = aSymbols.length;
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
         int aWType = getWType_(aMap);
-        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum, aNMax);
+        ColumnMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum, aNMax);
         return new Chebyshev(
             aSymbols, aTypeNum, aNMax,
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
@@ -86,7 +86,7 @@ public class Chebyshev extends WTypeBasis {
     public static Chebyshev load(int aTypeNum, Map aMap) {
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
         int aWType = getWType_(aMap);
-        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum, aNMax);
+        ColumnMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum, aNMax);
         return new Chebyshev(
             null, aTypeNum, aNMax,
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
