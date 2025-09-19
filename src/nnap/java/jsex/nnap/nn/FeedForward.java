@@ -116,14 +116,14 @@ public class FeedForward extends NeuralNetwork implements ISavable {
         tShift = 0;
         tColNum = mInputDim;
         for (int tHiddenDim : mHiddenDims) {
-            double tBound = MathEX.Fast.sqrt(1.0 / tColNum); // Kaiming 均匀初始化
+            double tBound = MathEX.Fast.sqrt(1.0 / tColNum); // 偏置也使用 Kaiming 均匀初始化，和 pytorch 默认保持一致
             mHiddenBiases.subVec(tShift, tShift+tHiddenDim).assign(() -> RANDOM.nextDouble(-tBound, tBound));
             tShift += tHiddenDim;
             tColNum = tHiddenDim;
         }
-        double tBound = MathEX.Fast.sqrt(6.0 / tColNum); // Kaiming 均匀初始化
+        double tBound = MathEX.Fast.sqrt(3.0 / tColNum); // Kaiming 均匀初始化，注意输出层没有激活函数因此权重需要调整
         mOutputWeight.assign(() -> RANDOM.nextDouble(-tBound, tBound));
-        double tBoundB = MathEX.Fast.sqrt(1.0 / tColNum); // Kaiming 均匀初始化
+        double tBoundB = MathEX.Fast.sqrt(1.0 / tColNum); // 偏置也使用 Kaiming 均匀初始化，和 pytorch 默认保持一致
         mOutputBias[0] = RANDOM.nextDouble(-tBoundB, tBoundB);
     }
     
