@@ -16,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
 import java.util.*;
+import java.util.function.BooleanSupplier;
 
 import static jse.code.CS.RANDOM;
 
@@ -32,6 +33,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     private final static int DEFAULT_MAX_STAT_TIMES = 10;
     private final static long DEFAULT_PRUNING_STEP = 1000;
     
+    private final Object mLocker = this;
     private final IFullPathGenerator<T> mFullPathGenerator;
     
     private final IVector mSurfaces;
@@ -271,6 +273,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         /** pruning stuffs */
         private int mPruningIndex = mPruningPolicy==TIME_DEPENDENT ? 0 : mPruningThreshold;
         private double mPruningMul = 1.0;
+        /** stop stuffs */
+        private final BooleanSupplier mStopChecker;
         
         private boolean mDead = false;
         @Override public void shutdown() {
@@ -280,15 +284,16 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         }
         
         
-        private BackwardPath(IRandom aRNG) {
+        private BackwardPath(IRandom aRNG, BooleanSupplier aStopChecker) {
             mRNG_ = aRNG;
             mPath = mFullPathGenerator.fullPathInit(aRNG);
+            mStopChecker = aStopChecker;
         }
         double timeConsumed() {return mTimeConsumed;}
         long pointNum() {return mPointNum;}
         
-        /** 运行 mPath 直到到达 aLambda0，没有另一种情况以及 pruning */
-        @NotNull Point nextUntilReachLambda0() {
+        /** 运行 mPath 直到到达 aLambda0，没有 pruning 但是可以中断 */
+        @Nullable Point nextUntilReachLambda0() {
             if (mCurrentPoint == null || mDead) throw new RuntimeException();
             double oTimeConsumed = mPath.timeConsumed();
             Point tRoot = mCurrentPoint;
@@ -303,9 +308,16 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                     mCurrentPoint = new Point(tRoot, tRawPoint, tLambda, tRoot.multiple);
                     return mCurrentPoint;
                 }
+                // 中断检测
+                if (mStopChecker.getAsBoolean()) {
+                    mTimeConsumed += (mPath.timeConsumed() - oTimeConsumed) * tRoot.multiple;
+                    mCurrentPoint = null;
+                    shutdown(); // 中断后不再有 path，从而让 next 相关操作非法
+                    return null;
+                }
             }
         }
-        /** 运行 mPath 直到到达 aLambdaA 或者到达 aLambdaB，这里存在 pruning */
+        /** 运行 mPath 直到到达 aLambdaA 或者到达 aLambdaB，这里存在 pruning 或中断 */
         @Nullable Point nextUntilReachLambdaAOrLambdaB(boolean aStatTime) {
             if (mDead) throw new RuntimeException();
             double oTimeConsumed = aStatTime ? mPath.timeConsumed() : Double.NaN;
@@ -358,6 +370,13 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                         mPruningMul /= (1.0 - mPruningProb);
                     }
                 }
+                // 中断检测
+                if (mStopChecker.getAsBoolean()) {
+                    if (aStatTime) mTimeConsumed += (mPath.timeConsumed() - oTimeConsumed) * mPruningMul;
+                    mCurrentPoint = null;
+                    shutdown(); // 中断后不再有 path，从而让 next 相关操作非法
+                    return null;
+                }
             }
         }
         @Nullable Point nextUntilReachLambdaAOrLambdaB() {return nextUntilReachLambdaAOrLambdaB(true);}
@@ -383,11 +402,25 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         long rPointNum = 0;
         double rN0Eff = 0.0;
         double rTotTime0 = 0.0;
+        final BooleanSupplier aStopChecker = () -> {
+            if (!mNoCompetitive) {
+                // 如果是竞争的需要进行同步
+                synchronized (mLocker) {
+                    return rPointsOnLambda.size() >= aN0;
+                }
+            } else {
+                return rPointsOnLambda.size() >= aN0;
+            }
+        };
         // 获取初始路径的迭代器，并由此找到到达 A 的起始位置，一般来说直接初始化的点都会在 A，但是不一定
-        BackwardPath tPath = new BackwardPath(aRNG); ++rPathNum;
+        BackwardPath tPath = new BackwardPath(aRNG, aStopChecker); ++rPathNum;
         Point tRoot = tPath.nextUntilReachLambdaAOrLambdaB(false); // 此过程不会记录耗时
         try {
             while (tRoot == null) {
+                // 开始之前总是检测是否达标
+                if (aStopChecker.getAsBoolean()) {
+                    new Step1Return(rN0Eff, rTotTime0, rPointNum, rPathNum);
+                }
                 if (rPathNum == 1) {
                     UT.Code.warning("Init path failed, you may need to check your first point.\n" +
                                     "This is usually due to the first point already having a large lambda.");
@@ -398,17 +431,21 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 }
                 rPointNum += tPath.pointNum();
                 tPath.close();
-                tPath = new BackwardPath(aRNG); ++rPathNum;
+                tPath = new BackwardPath(aRNG, aStopChecker); ++rPathNum;
                 tRoot = tPath.nextUntilReachLambdaAOrLambdaB(false); // 此过程不会记录耗时
             }
             
             // 开始一般情况处理
             while (true) {
+                // 开始之前总是检测是否达标
+                if (aStopChecker.getAsBoolean()) break;
                 // 找到起始点后开始记录穿过 λ0 的点
                 Point tPoint = tPath.nextUntilReachLambda0();
+                // 如果点为 null 则一定已经可以停止了，简单 break
+                if (tPoint == null) break;
                 if (!mNoCompetitive) {
                     // 如果是竞争的需要进行同步
-                    synchronized (this) {
+                    synchronized (mLocker) {
                         rPointsOnLambda.add(tPoint);
                     }
                 } else {
@@ -417,14 +454,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 rN0Eff += tPoint.multiple;
                 if (mProgressBar) UT.Timer.progressBar();
                 // 每记录一个点查看总数是否达标
-                if (!mNoCompetitive) {
-                    // 如果是竞争的需要进行同步
-                    synchronized (this) {
-                        if (rPointsOnLambda.size() >= aN0) break;
-                    }
-                } else {
-                    if (rPointsOnLambda.size() >= aN0) break;
-                }
+                if (aStopChecker.getAsBoolean()) break;
                 // 如果此时恰好到达 B 则重新回到 A（对于只有一个界面的情况）
                 if (tPoint.lambda >= mSurfaces.last()) {
                     // 重设路径之前记得先保存旧的时间
@@ -433,8 +463,10 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                     do {
                         rPointNum += tPath.pointNum();
                         tPath.close();
-                        tPath = new BackwardPath(aRNG); ++rPathNum;
+                        tPath = new BackwardPath(aRNG, aStopChecker); ++rPathNum;
                         tRoot = tPath.nextUntilReachLambdaAOrLambdaB(false); // 此过程不会记录耗时
+                        // 如果是 null 则还需要检查是否已经达标
+                        if (tRoot==null && aStopChecker.getAsBoolean()) break;
                     } while (tRoot == null);
                     // 直接重新找下一个 λ0
                     continue;
@@ -443,13 +475,17 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 tRoot = tPath.nextUntilReachLambdaAOrLambdaB();
                 // 如果没有回到 A 则需要重设路径
                 if (tRoot==null || tRoot.lambda > mSurfaceA) {
+                    // 如果是 null 则还需要检查是否已经达标
+                    if (tRoot==null && aStopChecker.getAsBoolean()) break;
                     // 重设路径之前记得先保存旧的时间
                     rTotTime0 += tPath.timeConsumed();
                     do {
                         rPointNum += tPath.pointNum();
                         tPath.close();
-                        tPath = new BackwardPath(aRNG); ++rPathNum;
+                        tPath = new BackwardPath(aRNG, aStopChecker); ++rPathNum;
                         tRoot = tPath.nextUntilReachLambdaAOrLambdaB(false); // 此过程不会记录耗时
+                        // 如果是 null 则还需要检查是否已经达标
+                        if (tRoot==null && aStopChecker.getAsBoolean()) break;
                     } while (tRoot == null);
                 }
             }
@@ -472,6 +508,8 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         /** pruning stuffs */
         private int mPruningIndex = mPruningPolicy==TIME_DEPENDENT ? 0 : (mStep-mPruningThreshold);
         private double mPruningMul = 1.0;
+        /** stop stuffs */
+        private final BooleanSupplier mStopChecker;
         
         private boolean mDead = false;
         @Override public void shutdown() {
@@ -480,14 +518,15 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             mDead = true;
         }
         
-        private ForwardPath(Point aStart, IRandom aRNG) {
+        private ForwardPath(Point aStart, IRandom aRNG, BooleanSupplier aStopChecker) {
             mRNG_ = aRNG;
             mStart = aStart;
             mPath = mFullPathGenerator.fullPathFrom(aStart.value, aRNG);
+            mStopChecker = aStopChecker;
         }
         long pointNum() {return mPointNum;}
         
-        /** 运行 mPath 直到到达 aLambdaNext 或者到达 aLambdaA，这里存在 pruning */
+        /** 运行 mPath 直到到达 aLambdaNext 或者到达 aLambdaA，这里存在 pruning 或者中断 */
         @Nullable Point nextUntilReachLambdaNextOrLambdaA() {
             if (mDead) throw new RuntimeException();
             final double tLambdaNext = mSurfaces.get(mStep+1);
@@ -547,6 +586,11 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                         }
                     }
                 }
+                // 中断检测
+                if (mStopChecker.getAsBoolean()) {
+                    shutdown(); // 中断后不再有 path，从而让 next 相关操作非法
+                    return null;
+                }
             }
         }
     }
@@ -574,12 +618,24 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         double rMi = 0.0;
         double rNippEff = 0.0;
         boolean rReachMaxPathNum = false;
+        final BooleanSupplier aStopChecker = () -> {
+            if (!mNoCompetitive) {
+                // 如果是竞争的需要进行同步
+                synchronized (mLocker) {
+                    return rPointsOnLambda.size() >= aNipp;
+                }
+            } else {
+                return rPointsOnLambda.size() >= aNipp;
+            }
+        };
         
         while (true) {
+            // 开始之前总是检测是否达标
+            if (aStopChecker.getAsBoolean()) break;
             // 获取开始点
             Point tStart;
             // 由于涉及了标记的修改过程，这里需要串行处理；虽然涉及了线程间竞争的问题，但是这个不会影响结果
-            synchronized (this) {
+            synchronized (mLocker) {
                 // 现在统一改回随机获取，由于统计时考虑了权重这里不需要考虑权重
                 int tIndex = aRNG.nextInt(oPointsOnLambda.size());
                 tStart = oPointsOnLambda.get(tIndex); ++rPointNum;
@@ -606,10 +662,12 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 }
             }
             // 构造向前路径
-            if (tStart != null) try (ForwardPath tPath = new ForwardPath(tStart, aRNG)) {
+            if (tStart != null) try (ForwardPath tPath = new ForwardPath(tStart, aRNG, aStopChecker)) {
                 // 获取下一个点
                 Point tNext = tPath.nextUntilReachLambdaNextOrLambdaA();
-                // 无论什么结果都需要增加 Mi
+                // 如果是中断的 null 则直接退出
+                if (tNext==null && aStopChecker.getAsBoolean()) break;
+                // 其余无论什么结果都需要增加 Mi
                 rMi += tStart.multiple;
                 ++rPathNum;
                 rPointNum += tPath.pointNum();
@@ -617,7 +675,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 if (tNext != null) {
                     if (!mNoCompetitive) {
                         // 如果是竞争的需要进行同步
-                        synchronized (this) {
+                        synchronized (mLocker) {
                             rPointsOnLambda.add(tNext);
                         }
                     } else {
@@ -628,14 +686,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 }
             }
             // 这里统一检测点的总数是否达标，以及中断条件
-            if (!mNoCompetitive) {
-                // 如果是竞争的需要进行同步
-                synchronized (this) {
-                    if (rPointsOnLambda.size() >= aNipp) break;
-                }
-            } else {
-                if (rPointsOnLambda.size() >= aNipp) break;
-            }
+            if (aStopChecker.getAsBoolean()) break;
             // 如果使用的路径数超过设定也直接退出
             if (rPathNum > aMaxPathNum) {rReachMaxPathNum = true; break;}
         }
