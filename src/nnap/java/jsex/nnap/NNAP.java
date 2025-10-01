@@ -87,7 +87,7 @@ public class NNAP implements IPairPotential {
         public static @Nullable String REDIRECT_NNAPBASIS_LIB = OS.env("JSE_REDIRECT_NNAP_LIB");
     }
     
-    public final static int VERSION = 4;
+    public final static int VERSION = 5;
     public final static String LIB_DIR = JAR_DIR+"nnap/jni/" + UT.Code.uniqueID(JAVA_HOME, CS.VERSION, NNAP.VERSION, Conf.OPT_LEVEL, Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
@@ -207,7 +207,6 @@ public class NNAP implements IPairPotential {
         }}
         return new SingleNNAP(aBasisPar, aNN);
     }
-    @SuppressWarnings("unchecked")
     private @Nullable SingleNNAP postInitSingleNNAPFrom(Basis aBasis, Map<String, ?> aModelInfo) {
         // 目前只考虑 mirror 的情况
         if (!(aBasis instanceof Mirror)) return null;
@@ -221,8 +220,8 @@ public class NNAP implements IPairPotential {
         // mirror 会强制这些额外值缺省
         Number tRefEng = (Number)aModelInfo.get("ref_eng");
         if (tRefEng != null) throw new IllegalArgumentException("ref_eng in mirror ModelInfo MUST be empty");
-        List<? extends Number> tNormVec = (List<? extends Number>)aModelInfo.get("norm_vec");
-        if (tNormVec != null) throw new IllegalArgumentException("norm_vec in mirror ModelInfo MUST be empty");
+        Object tNormObj = UT.Code.get(aModelInfo, "norm_vec", "norm_sigma", "norm_mu", "norm_sigma_eng", "norm_mu_eng");
+        if (tNormObj != null) throw new IllegalArgumentException("norm_vec/norm_sigma/norm_mu/norm_sigma_eng/norm_mu_eng in mirror ModelInfo MUST be empty");
         
         Object tModel = aModelInfo.get("torch");
         if (tModel != null) throw new IllegalArgumentException("torch data in mirror ModelInfo MUST be empty");

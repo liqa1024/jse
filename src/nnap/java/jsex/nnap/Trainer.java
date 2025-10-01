@@ -98,6 +98,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     protected final FeedForward[][] mNN;
     protected final DataSet mTrainData;
     protected final DataSet mTestData;
+    protected final boolean mIsRetrain;
     protected boolean mHasData = false;
     protected boolean mHasForce = false;
     protected boolean mHasStress = false;
@@ -143,7 +144,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     private final List<Vector[]> mLossGradFpFullBuf = new ArrayList<>(64);
     private final List<DoubleList[]> mBasisBackwardFullBuf = new ArrayList<>(64);
     
-    private IntList[] mTypeIlist;
+    private final IntList[] mTypeIlist;
     
     
     /**
@@ -186,7 +187,10 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     public Trainer setForceNormFormula(boolean aFlag) {
         if (mForceNormFormula == aFlag) return this;
         if (!aFlag) clearFullBuf_();
-        if (aFlag) setTrainNorm(false);
+        if (aFlag) {
+            if (mIsRetrain) throw new IllegalArgumentException("force norm formula is invalid for retraining");
+            setTrainNorm(false);
+        }
         mForceNormFormula = aFlag;
         mOptimizer.markLossFuncChanged();
         return this;
@@ -336,13 +340,36 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
     }
     
-    Trainer(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, Map<String, ?> aArgs) {
+    @SuppressWarnings("unchecked")
+    Trainer(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, Map<String, ?> aArgs, @Nullable Map<String, ?> aModelInfo) {
         super(new ParforThreadPool(aThreadNumber));
-        mSymbols = symbolsFrom_(aArgs);
-        mTypeNum = mSymbols.length;
-        mRefEngs = refEngsFrom_(mTypeNum, aArgs);
-        mBasis = basisFrom_(mSymbols, aThreadNumber, aArgs);
-        FeedForward[] tNN = nnFrom_(mBasis[0], aArgs);
+        final FeedForward[] tNN;
+        final @Nullable List<? extends Map<String, ?>> tModelInfos;
+        if (aModelInfo != null) {
+            mIsRetrain = true;
+            // 为了避免代码耦合，这里还是重新实现读取
+            Number tVersion = (Number)aModelInfo.get("version");
+            if (tVersion != null) {
+                int tVersionValue = tVersion.intValue();
+                if (tVersionValue > NNAP.VERSION) throw new IllegalArgumentException("Unsupported version: " + tVersionValue);
+            }
+            mUnits = UT.Code.toString(aModelInfo.get("units"));
+            tModelInfos = (List<? extends Map<String, ?>>)aModelInfo.get("models");
+            if (tModelInfos == null) throw new IllegalArgumentException("No models in ModelInfo");
+            mSymbols = symbolsFromModelInfo_(aArgs, tModelInfos);
+            mTypeNum = mSymbols.length;
+            mBasis = basisFromModelInfo_(mSymbols, aThreadNumber, aArgs, tModelInfos);
+            mRefEngs = refEngsFromModelInfo_(mBasis[0], aArgs, tModelInfos);
+            tNN = nnFromModelInfo_(mBasis[0], aArgs, tModelInfos);
+        } else {
+            mIsRetrain = false;
+            tModelInfos = null;
+            mSymbols = symbolsFrom_(aArgs);
+            mTypeNum = mSymbols.length;
+            mRefEngs = refEngsFrom_(mTypeNum, aArgs);
+            mBasis = basisFrom_(mSymbols, aThreadNumber, aArgs);
+            tNN = nnFrom_(mBasis[0], aArgs);
+        }
         mOptimizer = new LBFGS(100).setLineSearch();
         
         if (mTypeNum != mRefEngs.size()) throw new IllegalArgumentException("Symbols length does not match reference energies length.");
@@ -393,6 +420,11 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             rTotBasisSize += tBasisSize;
         }
         mTotBasisSize = rTotBasisSize;
+        // 对于重新训练的情况，在这里读取已有的归一化系数
+        if (tModelInfos != null) {
+            initNormFromModelInfo_(tModelInfos);
+            mNormInit = true;
+        }
         
         mLossGradMu = new Vector[aThreadNumber][];
         mLossGradSigma = new Vector[aThreadNumber][];
@@ -643,7 +675,48 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     }
     /**
      * 创建一个 nnap 的训练器
-     * @param aArgs 其余训练其参数，具体为：
+     * @param aArgs 训练参数
+     * @param aModelInfo 可选的旧的模型数据，用于继续训练。当传入时训练参数仅可选：
+     * <dl>
+     *   <dt>thread_number (可选，默认为 4):</dt>
+     *     <dd>指定训练时使用的线程数</dd>
+     *   <dt>energy_weight (可选，默认为 1.0):</dt>
+     *     <dd>指定 loss 函数中能量的权重</dd>
+     *   <dt>force_weight (可选，默认为 0.1):</dt>
+     *     <dd>指定 loss 函数中力的权重</dd>
+     *   <dt>stress_weight (可选，默认为 1.0):</dt>
+     *     <dd>指定 loss 函数中压力的权重</dd>
+     *   <dt>l2_weight (可选，默认为 0.001):</dt>
+     *     <dd>指定 loss 函数中 l2 正则化的权重</dd>
+     * </dl>
+     */
+    public Trainer(Map<String, ?> aArgs, @Nullable Map<String, ?> aModelInfo) {
+        this(threadNumberFrom_(aArgs), aArgs, aModelInfo);
+        @Nullable Number tEnergyWeight = (Number)UT.Code.get(aArgs, "energy_weight", "eng_weight");
+        if (tEnergyWeight != null) {
+            setEnergyWeight(tEnergyWeight.doubleValue());
+        }
+        @Nullable Number tForceWeight = (Number)UT.Code.get(aArgs, "force_weight");
+        if (tForceWeight != null) {
+            setForceWeight(tForceWeight.doubleValue());
+        }
+        @Nullable Number tStressWeight = (Number)UT.Code.get(aArgs, "stress_weight");
+        if (tStressWeight != null) {
+            setStressWeight(tStressWeight.doubleValue());
+        }
+        @Nullable Number tL2Weight = (Number)UT.Code.get(aArgs, "l2_weight", "l2_loss_weight", "l2loss_weight");
+        if (tL2Weight != null) {
+            setL2LossWeight(tL2Weight.doubleValue());
+        }
+        @Nullable Object tUnits = UT.Code.get(aArgs, "units");
+        if (tUnits != null) {
+            if (aModelInfo!=null) throw new IllegalArgumentException("args of trainer can NOT contain `units` for retraining");
+            setUnits(tUnits.toString());
+        }
+    }
+    /**
+     * 创建一个 nnap 的训练器
+     * @param aArgs 训练参数，具体为：
      * <dl>
      *   <dt>symbols:</dt>
      *     <dd>指定元素列表</dd>
@@ -688,27 +761,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
      * </dl>
      */
     public Trainer(Map<String, ?> aArgs) {
-        this(threadNumberFrom_(aArgs), aArgs);
-        @Nullable Number tEnergyWeight = (Number)UT.Code.get(aArgs, "energy_weight", "eng_weight");
-        if (tEnergyWeight != null) {
-            setEnergyWeight(tEnergyWeight.doubleValue());
-        }
-        @Nullable Number tForceWeight = (Number)UT.Code.get(aArgs, "force_weight");
-        if (tForceWeight != null) {
-            setForceWeight(tForceWeight.doubleValue());
-        }
-        @Nullable Number tStressWeight = (Number)UT.Code.get(aArgs, "stress_weight");
-        if (tStressWeight != null) {
-            setStressWeight(tStressWeight.doubleValue());
-        }
-        @Nullable Number tL2Weight = (Number)UT.Code.get(aArgs, "l2_weight", "l2_loss_weight", "l2loss_weight");
-        if (tL2Weight != null) {
-            setL2LossWeight(tL2Weight.doubleValue());
-        }
-        @Nullable Object tUnits = UT.Code.get(aArgs, "units");
-        if (tUnits != null) {
-            setUnits(tUnits.toString());
-        }
+        this(aArgs, null);
     }
     
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -723,6 +776,18 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         } else {
             throw new IllegalArgumentException("invalid type of symbols: " + tSymbols.getClass().getName());
         }
+    }
+    private static String[] symbolsFromModelInfo_(Map<String, ?> aArgs, List<? extends Map<String, ?>> aModelInfos) {
+        @Nullable Object tObj = UT.Code.get(aArgs, "symbols", "elems", "species");
+        if (tObj != null) throw new IllegalArgumentException("args of trainer can NOT contain `symbols` for retraining");
+        final int tModelSize = aModelInfos.size();
+        String[] tSymbols = new String[tModelSize];
+        for (int i = 0; i < tModelSize; ++i) {
+            Object tSymbol = aModelInfos.get(i).get("symbol");
+            if (tSymbol == null) throw new IllegalArgumentException("No symbol in ModelInfo");
+            tSymbols[i] = tSymbol.toString();
+        }
+        return tSymbols;
     }
     @SuppressWarnings("unchecked")
     private static IVector refEngsFrom_(int aTypeNum, Map<String, ?> aArgs) {
@@ -740,6 +805,23 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             throw new IllegalArgumentException("invalid type of ref_engs: " + refEngs.getClass().getName());
         }
     }
+    private static IVector refEngsFromModelInfo_(Basis[] aBasis, Map<String, ?> aArgs, List<? extends Map<String, ?>> aModelInfos) {
+        @Nullable Object tObj = UT.Code.get(aArgs, "ref_engs", "reference_energies", "erefs");
+        if (tObj != null) throw new IllegalArgumentException("args of trainer can NOT contain `ref_engs` for retraining");
+        final int tTypeNum = aBasis.length;
+        IVector tRefEngs = Vectors.zeros(tTypeNum);
+        for (int i = 0; i < tTypeNum; ++i) {
+            Number tRefEng = (Number)aModelInfos.get(i).get("ref_eng");
+            if (aBasis[i] instanceof Mirror) {
+                // mirror 会强制这些额外值缺省
+                if (tRefEng != null) throw new IllegalArgumentException("ref_eng in mirror ModelInfo MUST be empty");
+                tRefEngs.set(i, Double.NaN);
+            } else {
+                tRefEngs.set(i, tRefEng==null?0.0:tRefEng.doubleValue());
+            }
+        }
+        return tRefEngs;
+    }
     private static Basis[][] basisFrom_(String[] aSymbols, int aThreadNum, Map<String, ?> aArgs) {
         @Nullable Object tBasis = UT.Code.get(aArgs, "basis");
         if (tBasis == null) {
@@ -754,6 +836,22 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         for (Basis tSubBasis : rBasis[0]) if (!(tSubBasis instanceof Mirror)) {
             tSubBasis.initParameters();
         }
+        for (int ti = 1; ti < aThreadNum; ++ti) {
+            rBasis[ti] = new Basis[aSymbols.length];
+            for (int i = 0; i < aSymbols.length; ++i) {
+                rBasis[ti][i] = rBasis[0][i].threadSafeRef();
+            }
+        }
+        return rBasis;
+    }
+    private static Basis[][] basisFromModelInfo_(String[] aSymbols, int aThreadNum, Map<String, ?> aArgs, List<? extends Map<String, ?>> aModelInfos) {
+        @Nullable Object tObj = UT.Code.get(aArgs, "basis");
+        if (tObj != null) throw new IllegalArgumentException("args of trainer can NOT contain `basis` for retraining");
+        Basis[][] rBasis = new Basis[aThreadNum][];
+        rBasis[0] = Basis.load(aSymbols, NewCollections.map(aModelInfos, info -> {
+            Object tBasisInfo = info.get("basis");
+            return tBasisInfo!=null ? tBasisInfo : Maps.of("type", "spherical_chebyshev");
+        }));
         for (int ti = 1; ti < aThreadNum; ++ti) {
             rBasis[ti] = new Basis[aSymbols.length];
             for (int i = 0; i < aSymbols.length; ++i) {
@@ -813,6 +911,89 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             UT.Code.warning("hidden_dims of mirror for type: "+(i+1)+" will be overwritten with mirror values automatically");
         }
         return rOut;
+    }
+    @SuppressWarnings("unchecked")
+    private static FeedForward[] nnFromModelInfo_(Basis[] aBasis, Map<String, ?> aArgs, List<? extends Map<String, ?>> aModelInfos) {
+        @Nullable Object tObj = UT.Code.get(aArgs, "nn");
+        if (tObj != null) throw new IllegalArgumentException("args of trainer can NOT contain `nn` for retraining");
+        final int tTypeNum = aBasis.length;
+        FeedForward[] rOut = new FeedForward[tTypeNum];
+        for (int i = 0; i < tTypeNum; ++i) {
+            // mirror 情况延迟初始化
+            if (aBasis[i] instanceof Mirror) {
+                continue;
+            }
+            Map<String, ?> tModelInfo = aModelInfos.get(i);
+            Object tModelObj = tModelInfo.get("torch");
+            if (tModelObj != null) throw new IllegalArgumentException("nn type in Model info can NOT be torch");
+            Map<String, ?> tModel = (Map<String, ?>)tModelInfo.get("nn");
+            Object tModelType = tModel.get("type");
+            if (tModelType == null) {
+                tModelType = "feed_forward";
+            }
+            switch(tModelType.toString()) {
+            case "feed_forward": {
+                rOut[i] = FeedForward.load(tModel);
+                break;
+            }
+            case "torch": {
+                throw new IllegalArgumentException("nn type in Model info can NOT be torch");
+            }
+            default: {
+                throw new IllegalArgumentException("Unsupported model type: " + tModelType);
+            }}
+        }
+        for (int i = 0; i < rOut.length; ++i) if (aBasis[i] instanceof Mirror) {
+            Map<String, ?> tModelInfo = aModelInfos.get(i);
+            // mirror 会强制这些额外值缺省
+            Object tModel = tModelInfo.get("torch");
+            if (tModel != null) throw new IllegalArgumentException("torch data in mirror ModelInfo MUST be empty");
+            tModel = tModelInfo.get("model");
+            if (tModel != null) throw new IllegalArgumentException("model data in mirror ModelInfo MUST be empty");
+        }
+        return rOut;
+    }
+    @SuppressWarnings("unchecked")
+    private void initNormFromModelInfo_(List<? extends Map<String, ?>> aModelInfos) {
+        for (int i = 0; i < mTypeNum; ++i) {
+            mNormMu2[i].fill(0.0);
+            mNormSigma2[i].fill(1.0);
+        }
+        for (int i = 0; i < mTypeNum; ++i) {
+            Map<String, ?> tModelInfo = aModelInfos.get(i);
+            if (mBasis[0][i] instanceof Mirror) {
+                // mirror 会强制这些额外值缺省
+                Object tNormObj = UT.Code.get(tModelInfo, "norm_vec", "norm_sigma", "norm_mu", "norm_sigma_eng", "norm_mu_eng");
+                if (tNormObj != null) throw new IllegalArgumentException("norm_vec/norm_sigma/norm_mu/norm_sigma_eng/norm_mu_eng in mirror ModelInfo MUST be empty");
+            } else {
+                List<? extends Number> tNormSigma = (List<? extends Number>)UT.Code.get(tModelInfo, "norm_sigma", "norm_vec");
+                if (tNormSigma == null) throw new IllegalArgumentException("No norm_sigma/norm_vec in ModelInfo");
+                mNormSigma[i].fill(tNormSigma);
+                List<? extends Number> tNormMu = (List<? extends Number>)tModelInfo.get("norm_mu");
+                if (tNormMu != null) {
+                    mNormMu[i].fill(tNormMu);
+                } else {
+                    mNormMu[i].fill(0.0);
+                }
+                Number tNormSigmaEng = (Number)tModelInfo.get("norm_sigma_eng");
+                double oNormSigmaEng = mNormSigmaEng;
+                mNormSigmaEng = tNormSigmaEng==null ? 1.0 : tNormSigmaEng.doubleValue();
+                if (i!=0 && !MathEX.Code.numericEqual(oNormSigmaEng, mNormSigmaEng)) {
+                    throw new IllegalArgumentException("Norm sigma energy mismatch for type: "+(i+1)+", it's invalid for retraining");
+                }
+                Number tNormMuEng = (Number)tModelInfo.get("norm_mu_eng");
+                double oNormMuEng = mNormMuEng;
+                mNormMuEng = tNormMuEng==null ? 0.0 : tNormMuEng.doubleValue();
+                if (i!=0 && !MathEX.Code.numericEqual(oNormMuEng, mNormMuEng)) {
+                    throw new IllegalArgumentException("Norm mu energy mismatch for type: "+(i+1)+", it's invalid for retraining");
+                }
+            }
+        }
+        for (int i = 0; i < mTypeNum; ++i) if (mBasis[0][i] instanceof Mirror) {
+            int tMirrorIdx = ((Mirror)mBasis[0][i]).mirrorType()-1;
+            mNormMu[i] = mNormMu[tMirrorIdx];
+            mNormSigma[i] = mNormSigma[tMirrorIdx];
+        }
     }
     
     @Override public int atomTypeNumber() {return mTypeNum;}
@@ -1802,7 +1983,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         // 开始训练
         if (aPrintLog) {
             UT.Timer.progressBar(Maps.of(
-                "name", "train",
+                "name", mIsRetrain ? "retrain" : "train",
                 "max", aEpochs,
                 "length", 100
             ));
