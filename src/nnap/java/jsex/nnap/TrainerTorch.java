@@ -693,35 +693,34 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
         for (int i = 0; i < mSymbols.length; ++i) {
             Map rBasis = new LinkedHashMap();
             mBasis[i].save(rBasis);
+            Map rModel = new LinkedHashMap();
+            rModel.put("symbol", mSymbols[i]);
+            rModel.put("basis", rBasis);
+            if (i == 0) {
+                rModel.put("norm_mu_eng", mNormMuEng);
+                rModel.put("norm_sigma_eng", mNormSigmaEng);
+            }
             if (mBasis[i] instanceof Mirror) {
-                rModels.add(Maps.of(
-                    "symbol", mSymbols[i],
-                    "basis", rBasis
-                ));
+                rModels.add(rModel);
                 continue;
             }
             List<?> tModelState;
             try (PyCallable fSaveModel = mTrainer.getAttr("save_model", PyCallable.class)) {
                 tModelState = fSaveModel.callAs(List.class, i);
             }
-            rModels.add(Maps.of(
-                "symbol", mSymbols[i],
-                "basis", rBasis,
-                "ref_eng", mRefEngs.get(i),
-                "norm_mu", mNormMu[i].asList(),
-                "norm_sigma", mNormSigma[i].asList(),
-                "norm_mu_eng", mNormMuEng,
-                "norm_sigma_eng", mNormSigmaEng,
-                "nn", Maps.of(
-                    "type", "feed_forward",
-                    "input_dim", tModelState.get(0),
-                    "hidden_dims", tModelState.get(1),
-                    "hidden_weights", tModelState.get(2),
-                    "hidden_biases", tModelState.get(3),
-                    "output_weight", tModelState.get(4),
-                    "output_bias", tModelState.get(5)
-                )
+            rModel.put("ref_eng", mRefEngs.get(i));
+            rModel.put("norm_mu", mNormMu[i].asList());
+            rModel.put("norm_sigma", mNormSigma[i].asList());
+            rModel.put("nn", Maps.of(
+                "type", "feed_forward",
+                "input_dim", tModelState.get(0),
+                "hidden_dims", tModelState.get(1),
+                "hidden_weights", tModelState.get(2),
+                "hidden_biases", tModelState.get(3),
+                "output_weight", tModelState.get(4),
+                "output_bias", tModelState.get(5)
             ));
+            rModels.add(rModel);
         }
         rSaveTo.put("version", NNAP.VERSION);
         rSaveTo.put("units", mUnits);
@@ -739,7 +738,7 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
     @SuppressWarnings({"rawtypes", "unchecked"}) @VisibleForTesting
     public static void convert(String aOldPath, String aNewPath) throws IOException {
         Map rInfo = (aOldPath.endsWith(".yaml") || aOldPath.endsWith(".yml")) ? IO.yaml2map(aOldPath) : IO.json2map(aOldPath);
-        rInfo.put("version", NNAP.VERSION); // 更新为最新的版本，保证旧的 nnap 直接报错不兼容
+        rInfo.put("version", NNAP.VERSION); // 直接更新为最新的版本，保证旧的 nnap 直接报错不兼容
         List<Map> tModels = (List<Map>)rInfo.get("models");
         for (Map tModel : tModels) {
             Object tTorch = tModel.remove("torch");

@@ -1007,12 +1007,16 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             mNormMu2[i].fill(0.0);
             mNormSigma2[i].fill(1.0);
         }
+        Number tNormSigmaEng = null, tNormMuEng = null;
         for (int i = 0; i < mTypeNum; ++i) {
             Map<String, ?> tModelInfo = aModelInfos.get(i);
+            // 现在优先读取 norm eng
+            if (tNormSigmaEng == null) tNormSigmaEng = (Number)tModelInfo.get("norm_sigma_eng");
+            if (tNormMuEng == null) tNormMuEng = (Number)tModelInfo.get("norm_mu_eng");
             if (mBasis[0][i] instanceof Mirror) {
                 // mirror 会强制这些额外值缺省
-                Object tNormObj = UT.Code.get(tModelInfo, "norm_vec", "norm_sigma", "norm_mu", "norm_sigma_eng", "norm_mu_eng");
-                if (tNormObj != null) throw new IllegalArgumentException("norm_vec/norm_sigma/norm_mu/norm_sigma_eng/norm_mu_eng in mirror ModelInfo MUST be empty");
+                Object tNormObj = UT.Code.get(tModelInfo, "norm_vec", "norm_sigma", "norm_mu");
+                if (tNormObj != null) throw new IllegalArgumentException("norm_vec/norm_sigma/norm_mu in mirror ModelInfo MUST be empty");
             } else {
                 List<? extends Number> tNormSigma = (List<? extends Number>)UT.Code.get(tModelInfo, "norm_sigma", "norm_vec");
                 if (tNormSigma == null) throw new IllegalArgumentException("No norm_sigma/norm_vec in ModelInfo");
@@ -1023,20 +1027,10 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 } else {
                     mNormMu[i].fill(0.0);
                 }
-                Number tNormSigmaEng = (Number)tModelInfo.get("norm_sigma_eng");
-                double oNormSigmaEng = mNormSigmaEng;
-                mNormSigmaEng = tNormSigmaEng==null ? 1.0 : tNormSigmaEng.doubleValue();
-                if (i!=0 && !MathEX.Code.numericEqual(oNormSigmaEng, mNormSigmaEng)) {
-                    throw new IllegalArgumentException("Norm sigma energy mismatch for type: "+(i+1)+", it's invalid for retraining");
-                }
-                Number tNormMuEng = (Number)tModelInfo.get("norm_mu_eng");
-                double oNormMuEng = mNormMuEng;
-                mNormMuEng = tNormMuEng==null ? 0.0 : tNormMuEng.doubleValue();
-                if (i!=0 && !MathEX.Code.numericEqual(oNormMuEng, mNormMuEng)) {
-                    throw new IllegalArgumentException("Norm mu energy mismatch for type: "+(i+1)+", it's invalid for retraining");
-                }
             }
         }
+        mNormSigmaEng = tNormSigmaEng==null ? 1.0 : tNormSigmaEng.doubleValue();
+        mNormMuEng = tNormMuEng==null ? 0.0 : tNormMuEng.doubleValue();
         for (int i = 0; i < mTypeNum; ++i) if (mBasis[0][i] instanceof Mirror) {
             int tMirrorIdx = ((Mirror)mBasis[0][i]).mirrorType()-1;
             mNormMu[i] = mNormMu[tMirrorIdx];
@@ -2286,25 +2280,24 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         for (int i = 0; i < mTypeNum; ++i) {
             Map rBasis = new LinkedHashMap();
             mBasis[0][i].save(rBasis);
+            Map rModel = new LinkedHashMap();
+            rModel.put("symbol", mSymbols[i]);
+            rModel.put("basis", rBasis);
+            if (i == 0) {
+                rModel.put("norm_mu_eng", mNormMuEng);
+                rModel.put("norm_sigma_eng", mNormSigmaEng);
+            }
             if (mBasis[0][i] instanceof Mirror) {
-                rModels.add(Maps.of(
-                    "symbol", mSymbols[i],
-                    "basis", rBasis
-                ));
+                rModels.add(rModel);
                 continue;
             }
             Map rNN = new LinkedHashMap();
             mNN[0][i].save(rNN);
-            rModels.add(Maps.of(
-                "symbol", mSymbols[i],
-                "basis", rBasis,
-                "ref_eng", mRefEngs.get(i),
-                "norm_mu", mNormMu[i].asList(),
-                "norm_sigma", mNormSigma[i].asList(),
-                "norm_mu_eng", mNormMuEng,
-                "norm_sigma_eng", mNormSigmaEng,
-                "nn", rNN
-            ));
+            rModel.put("ref_eng", mRefEngs.get(i));
+            rModel.put("norm_mu", mNormMu[i].asList());
+            rModel.put("norm_sigma", mNormSigma[i].asList());
+            rModel.put("nn", rNN);
+            rModels.add(rModel);
         }
         rSaveTo.put("version", NNAP.VERSION);
         rSaveTo.put("units", mUnits);

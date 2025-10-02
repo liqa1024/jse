@@ -165,11 +165,8 @@ public class NNAP implements IPairPotential {
         IVector aNormSigma = Vectors.from(tNormSigma);
         List<? extends Number> tNormMu = (List<? extends Number>)aModelInfo.get("norm_mu");
         IVector aNormMu = tNormMu==null ? Vectors.zeros(tNormSigma.size()) : Vectors.from(tNormMu);
-        Number tNormSigmaEng = (Number)aModelInfo.get("norm_sigma_eng");
-        double aNormSigmaEng = tNormSigmaEng==null ? 1.0 : tNormSigmaEng.doubleValue();
-        Number tNormMuEng = (Number)aModelInfo.get("norm_mu_eng");
-        double aNormMuEng = tNormMuEng==null ? 0.0 : tNormMuEng.doubleValue();
-        aNormMuEng += aRefEng;
+        double aNormSigmaEng = mNormSigmaEng;
+        double aNormMuEng = mNormMuEng + aRefEng;
         
         NeuralNetwork[] aNN = new NeuralNetwork[mThreadNumber];
         Object tModelObj = aModelInfo.get("torch");
@@ -220,8 +217,8 @@ public class NNAP implements IPairPotential {
         // mirror 会强制这些额外值缺省
         Number tRefEng = (Number)aModelInfo.get("ref_eng");
         if (tRefEng != null) throw new IllegalArgumentException("ref_eng in mirror ModelInfo MUST be empty");
-        Object tNormObj = UT.Code.get(aModelInfo, "norm_vec", "norm_sigma", "norm_mu", "norm_sigma_eng", "norm_mu_eng");
-        if (tNormObj != null) throw new IllegalArgumentException("norm_vec/norm_sigma/norm_mu/norm_sigma_eng/norm_mu_eng in mirror ModelInfo MUST be empty");
+        Object tNormObj = UT.Code.get(aModelInfo, "norm_vec", "norm_sigma", "norm_mu");
+        if (tNormObj != null) throw new IllegalArgumentException("norm_vec/norm_sigma/norm_mu in mirror ModelInfo MUST be empty");
         
         Object tModel = aModelInfo.get("torch");
         if (tModel != null) throw new IllegalArgumentException("torch data in mirror ModelInfo MUST be empty");
@@ -256,6 +253,7 @@ public class NNAP implements IPairPotential {
         }
     }
     private boolean mIsTorch = false;
+    private final double mNormMuEng, mNormSigmaEng;
     private final List<SingleNNAP> mModels;
     private final String[] mSymbols;
     private final @Nullable String mUnits;
@@ -315,6 +313,14 @@ public class NNAP implements IPairPotential {
             Object tBasisInfo = info.get("basis");
             return tBasisInfo!=null ? tBasisInfo : Maps.of("type", "spherical_chebyshev");
         }));
+        // 这里优先读取 norm eng
+        Number tNormSigmaEng = null, tNormMuEng = null;
+        for (int i = 0; i < tModelSize; ++i) {
+            if (tNormSigmaEng == null) tNormSigmaEng = (Number)tModelInfos.get(i).get("norm_sigma_eng");
+            if (tNormMuEng == null) tNormMuEng = (Number)tModelInfos.get(i).get("norm_mu_eng");
+        }
+        mNormSigmaEng = tNormSigmaEng==null ? 1.0 : tNormSigmaEng.doubleValue();
+        mNormMuEng = tNormMuEng==null ? 0.0 : tNormMuEng.doubleValue();
         mModels = new ArrayList<>(tModelSize);
         for (int i = 0; i < tModelSize; ++i) {
             mModels.add(initSingleNNAPFrom(tBasis[i], tModelInfos.get(i)));
