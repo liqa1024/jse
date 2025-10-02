@@ -11,6 +11,7 @@ import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.vector.*;
 import jse.math.vector.Vector;
+import jse.opt.Adam;
 import jse.opt.IOptimizer;
 import jse.opt.LBFGS;
 import jse.parallel.AbstractThreadPool;
@@ -70,7 +71,6 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     
     protected static class DataSet {
         public int mSize = 0;
-        public int mAtomSize = 0;
         /** 每个原子数据结构对应的每原子能量值 */
         public final DoubleList mEng = new DoubleList(64);
         /** 这里力数据使用 List 存储，每个原子结构一组 */
@@ -90,7 +90,6 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         public final DoubleList mVolume = new DoubleList(64);
     }
     
-    protected final IOptimizer mOptimizer;
     protected final int mTypeNum;
     protected final String[] mSymbols;
     protected final IVector mRefEngs;
@@ -117,10 +116,13 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     protected final Vector[] mNormMu2, mNormSigma2;
     protected final IVector mParas;
     
-    protected int mEpoch = -1;
+    protected int mStepsPerEpoch = 1;
+    protected int mStep = -1;
+    protected int mEpoch = -1, mNEpochs = -1;
     protected int mSelectEpoch = -1;
     protected double mMinLoss = Double.POSITIVE_INFINITY;
     protected final Vector mSelectParas;
+    private IntVector mAllSliceTrain = null;
     
     
     /// buffer stuffs
@@ -146,6 +148,48 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     
     private final IntList[] mTypeIlist;
     
+    
+    protected IOptimizer mOptimizer = new LBFGS(100).setLineSearch();
+    protected int mBatchSize = -1;
+    public Trainer setOptimizer(Map<String, ?> aOptArgs) {
+        if (aOptArgs == null) {
+            aOptArgs = Maps.of("type", "lbfgs");
+        }
+        Object tOptType = aOptArgs.get("type");
+        if (tOptType == null) {
+            tOptType = "lbfgs";
+        }
+        switch(tOptType.toString()) {
+        case "lbfgs": case "LBFGS": {
+            mBatchSize = ((Number)UT.Code.getWithDefault(aOptArgs, -1, "batch_size", "batchsize")).intValue();
+            int tM = ((Number)UT.Code.getWithDefault(aOptArgs, 100, "history_size", "history", "m")).intValue();
+            mOptimizer = new LBFGS(tM).setLineSearch();
+            break;
+        }
+        case "adam": case "Adam": {
+            mBatchSize = ((Number)UT.Code.getWithDefault(aOptArgs, 512, "batch_size", "batchsize")).intValue();
+            double tEta = ((Number)UT.Code.getWithDefault(aOptArgs, 0.001, "learning_rate", "lr", "eta")).doubleValue();
+            double tBeta1 = ((Number)UT.Code.getWithDefault(aOptArgs, 0.9, "beta1")).doubleValue();
+            double tBeta2 = ((Number)UT.Code.getWithDefault(aOptArgs, 0.999, "beta2")).doubleValue();
+            double tEps = ((Number)UT.Code.getWithDefault(aOptArgs, 1e-8, "epsilon", "eps")).doubleValue();
+            mOptimizer = new Adam(tEta, tBeta1, tBeta2, tEps);
+            break;
+        }
+        default: {
+            throw new IllegalArgumentException("Unsupported optimizer type: " + tOptType);
+        }}
+        if (mBatchSize > 0) setForceNormFormula(false);
+        initOptimizer_();
+        return this;
+    }
+    public Trainer setLearningRate(double aLearningRate) {
+        if (mOptimizer instanceof Adam) {
+            ((Adam)mOptimizer).setLearningRate(aLearningRate);
+        } else {
+            throw new UnsupportedOperationException("Only Adam optimizer can set learning rate");
+        }
+        return this;
+    }
     
     /**
      * 设置开启训练基组内可拟合参数
@@ -188,7 +232,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         if (mForceNormFormula == aFlag) return this;
         if (!aFlag) clearFullBuf_();
         if (aFlag) {
-            if (mIsRetrain) throw new IllegalArgumentException("force norm formula is invalid for retraining");
+            if (mIsRetrain) throw new UnsupportedOperationException("force norm formula is invalid for retraining");
+            if (mBatchSize > 0) throw new UnsupportedOperationException("force norm formula is invalid for batch training");
             setTrainNorm(false);
         }
         mForceNormFormula = aFlag;
@@ -370,7 +415,6 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             mBasis = basisFrom_(mSymbols, aThreadNumber, aArgs);
             tNN = nnFrom_(mBasis[0], aArgs);
         }
-        mOptimizer = new LBFGS(100).setLineSearch();
         
         if (mTypeNum != mRefEngs.size()) throw new IllegalArgumentException("Symbols length does not match reference energies length.");
         if (mTypeNum != mBasis[0].length) throw new IllegalArgumentException("Symbols length does not match reference basis length.");
@@ -648,30 +692,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 }
             }
         };
-        mOptimizer.setParameter(mParas)
-        .setLossFunc(() -> calLoss(false))
-        .setLossFuncGrad(grad -> calLoss(false, grad))
-        .setLogPrinter((step, lineSearchStep, loss, printLog) -> {
-            mEpoch = step;
-            mTrainLoss.add(loss);
-            if (mHasTest) {
-                double tLossTest = calLoss(true);
-                mTestLoss.add(tLossTest);
-                if (tLossTest < mMinLoss) {
-                    mSelectEpoch = mEpoch;
-                    mMinLoss = tLossTest;
-                    mSelectParas.setInternalDataSize(mParas.size());
-                    mSelectParas.fill(mParas);
-                }
-                if (printLog) UT.Timer.progressBar(String.format("loss: %.4g | %.4g", loss, tLossTest));
-            } else {
-                if (printLog) UT.Timer.progressBar(String.format("loss: %.4g", loss));
-            }
-        })
-        .setBreakChecker((step, loss, lastLoss, parameterStep) -> {
-            if (step==0 || Double.isNaN(lastLoss)) return false;
-            return Math.abs(lastLoss-loss) < Math.abs(lastLoss)*1e-7;
-        });
+        initOptimizer_();
     }
     /**
      * 创建一个 nnap 的训练器
@@ -688,10 +709,25 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
      *     <dd>指定 loss 函数中压力的权重</dd>
      *   <dt>l2_weight (可选，默认为 0.001):</dt>
      *     <dd>指定 loss 函数中 l2 正则化的权重</dd>
+     *   <dt>optimizer (可选):</dt>
+     *     <dd>
+     *       指定优化器的具体参数，包含：
+     *       <dl>
+     *       <dt>type (可选，默认为 "lbfgs", 可选 "adam"):</dt>
+     *          <dd>指定优化器的种类</dd>
+     *       <dt>batch_size (可选，lbfgs 默认为 -1, adam 默认为 512):</dt>
+     *          <dd>指定随机优化器采用的 batch_size</dd>
+     *       </dl>
+     *     </dd>
      * </dl>
      */
+    @SuppressWarnings("unchecked")
     public Trainer(Map<String, ?> aArgs, @Nullable Map<String, ?> aModelInfo) {
         this(threadNumberFrom_(aArgs), aArgs, aModelInfo);
+        @Nullable Map<String, ?> tOptim = (Map<String, ?>)UT.Code.get(aArgs, "optimizer", "optim", "opt");
+        if (tOptim != null) {
+            setOptimizer(tOptim);
+        }
         @Nullable Number tEnergyWeight = (Number)UT.Code.get(aArgs, "energy_weight", "eng_weight");
         if (tEnergyWeight != null) {
             setEnergyWeight(tEnergyWeight.doubleValue());
@@ -757,6 +793,18 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
      *          <dd>指定神经网络每个隐藏层的神经元数目</dd>
      *       </dl>
      *       输入列表形式则为每个种类单独设置不同的神经网络参数
+     *     </dd>
+     *   <dt>optimizer (可选):</dt>
+     *     <dd>
+     *       指定优化器的具体参数，包含：
+     *       <dl>
+     *       <dt>type (可选，默认为 "lbfgs"):</dt>
+     *          <dd>指定优化器的种类</dd>
+     *       <dt>history_size (可选，默认为 100):</dt>
+     *          <dd>指定 lbfgs 优化器采用的历史缓存大小</dd>
+     *       <dt>batch_size (可选，默认为 512):</dt>
+     *          <dd>指定随机优化器采用的 batch_size</dd>
+     *       </dl>
      *     </dd>
      * </dl>
      */
@@ -996,6 +1044,76 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
     }
     
+    private String epochStr_(int aEpoch) {
+        String tNEpochs = String.valueOf(mNEpochs);
+        String tCEpochs = String.format("%0"+tNEpochs.length()+"d", aEpoch+1);
+        return "epoch: "+tCEpochs;
+    }
+    private void initOptimizer_() {
+        final int[] tLossDiv = {0};
+        final double[] tLossTot = {0.0};
+        mOptimizer.setParameter(mParas)
+        .setLossFunc(() -> calLoss(false))
+        .setLossFuncGrad(grad -> calLoss(false, grad))
+        .setLogPrinter((step, lineSearchStep, loss, printLog) -> {
+            mStep = step;
+            mEpoch = step / mStepsPerEpoch;
+            int tStepIdx = step % mStepsPerEpoch;
+            if (mBatchSize > 0) {
+                int tRestSize = mTrainData.mSize % mBatchSize;
+                int tBatchSize = (tStepIdx==mStepsPerEpoch-1) ? (tRestSize+mBatchSize) : mBatchSize;
+                tLossDiv[0] += tBatchSize;
+                tLossTot[0] += tBatchSize * loss;
+                if (tStepIdx == mStepsPerEpoch-1) {
+                    if (mEpoch != mNEpochs-1) {
+                        mAllSliceTrain.shuffle();
+                        mSliceTrain = mAllSliceTrain.subVec(0, (mStepsPerEpoch==1) ? (tRestSize+mBatchSize) : mBatchSize);
+                    }
+                } else {
+                    int tStart = (tStepIdx+1) * mBatchSize;
+                    int tEnd = tStart + mBatchSize;
+                    if (tStepIdx+1 == mStepsPerEpoch-1) tEnd += tRestSize;
+                    mSliceTrain = mAllSliceTrain.subVec(tStart, tEnd);
+                    if (printLog) UT.Timer.progressBar(String.format("loss: %.4g", tLossTot[0]/tLossDiv[0]));
+                }
+            } else {
+                mSliceTrain = mFullSliceTrain;
+            }
+            if (tStepIdx == mStepsPerEpoch-1) {
+                if (mBatchSize > 0) {
+                    loss = tLossTot[0]/tLossDiv[0];
+                    tLossDiv[0] = 0;
+                    tLossTot[0] = 0.0;
+                }
+                mTrainLoss.add(loss);
+                if (mHasTest) {
+                    double tLossTest = calLoss(true);
+                    mTestLoss.add(tLossTest);
+                    if (tLossTest < mMinLoss) {
+                        mSelectEpoch = mEpoch;
+                        mMinLoss = tLossTest;
+                        mSelectParas.setInternalDataSize(mParas.size());
+                        mSelectParas.fill(mParas);
+                    }
+                    if (printLog) UT.Timer.progressBar(String.format("loss: %.4g | %.4g", loss, tLossTest));
+                } else {
+                    if (printLog) UT.Timer.progressBar(String.format("loss: %.4g", loss));
+                }
+                if (printLog && mBatchSize>0 && mEpoch!=mNEpochs-1) {
+                    UT.Timer.progressBar(Maps.of(
+                        "name", epochStr_(mEpoch+1),
+                        "max", mStepsPerEpoch,
+                        "length", 100
+                    ));
+                }
+            }
+        })
+        .setBreakChecker((step, loss, lastLoss, parameterStep) -> {
+            if (step==0 || Double.isNaN(lastLoss)) return false;
+            return Math.abs(lastLoss-loss) < Math.abs(lastLoss)*1e-7;
+        });
+    }
+    
     @Override public int atomTypeNumber() {return mTypeNum;}
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return mSymbols[aType-1];}
@@ -1032,23 +1150,43 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     @FunctionalInterface public interface ILossFunc {double call(double aPred, double aReal);}
     @FunctionalInterface public interface ILossFuncGrad {double call(double aPred, double aReal, DoubleWrapper rGrad);}
     
+    private final ISlice mFullSliceTest = new ISlice() {
+        @Override public int get(int aIdx) {
+            if (aIdx >= mTestData.mSize) throw new IndexOutOfBoundsException();
+            return aIdx;
+        }
+        @Override public int size() {
+            return mTestData.mSize;
+        }
+    };
+    private final ISlice mFullSliceTrain = new ISlice() {
+        @Override public int get(int aIdx) {
+            if (aIdx >= mTrainData.mSize) throw new IndexOutOfBoundsException();
+            return aIdx;
+        }
+        @Override public int size() {
+            return mTrainData.mSize;
+        }
+    };
+    private ISlice mSliceTrain = null;
+    
     protected double calLoss(boolean aTest) {
         return calLoss(aTest, null);
     }
     protected double calLoss(boolean aTest, @Nullable Vector rGrad) {
-        return calLoss(aTest, null, rGrad);
+        return calLoss(aTest, false, null, rGrad);
     }
     protected double calLossDetail(boolean aTest, @Nullable Vector rLossDetail) {
-        return calLoss(aTest, rLossDetail, null);
+        return calLoss(aTest, true, rLossDetail, null);
     }
-    protected double calLoss(boolean aTest, @Nullable Vector rLossDetail, @Nullable Vector rGrad) {
-        return calLoss_(aTest, rLossDetail, rGrad,
+    protected double calLoss(boolean aTest, boolean aFull, @Nullable Vector rLossDetail, @Nullable Vector rGrad) {
+        return calLoss_(aTest, aTest ? mFullSliceTest : (aFull?mFullSliceTrain:mSliceTrain), rLossDetail, rGrad,
                         mLossFuncEng, mLossFuncGradEng,
                         mLossFuncForce, mLossFuncGradForce,
                         mLossFuncStress, mLossFuncGradStress);
     }
     protected void calMAE(boolean aTest, Vector rMAE) {
-        calLoss_(aTest, rMAE, null,
+        calLoss_(aTest, aTest?mFullSliceTest:mFullSliceTrain, rMAE, null,
                  LOSS_ABSOLUTE, LOSS_ABSOLUTE_G,
                  LOSS_ABSOLUTE, LOSS_ABSOLUTE_G,
                  LOSS_ABSOLUTE, LOSS_ABSOLUTE_G);
@@ -1057,7 +1195,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         rMAE.update(1, v -> v/mForceWeight);
         rMAE.update(2, v -> v/mStressWeight);
     }
-    private double calLoss_(boolean aTest, @Nullable Vector rLossDetail, @Nullable Vector rGrad,
+    private double calLoss_(boolean aTest, ISlice aSlice, @Nullable Vector rLossDetail, @Nullable Vector rGrad,
                             ILossFunc aLossFuncEng, ILossFuncGrad aLossFuncGradEng,
                             ILossFunc aLossFuncForce, ILossFuncGrad aLossFuncGradForce,
                             ILossFunc aLossFuncStress, ILossFuncGrad aLossFuncGradStress) {
@@ -1091,8 +1229,17 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 tGradPara.fill(0.0);
             }
         }
+        // 遍历统计总原子数
+        final int tSliceSize = aSlice.size();
+        int tAtomSize = 0;
+        for (int si = 0; si < tSliceSize; ++si) {
+            final int i = aSlice.get(si);
+            tAtomSize += tData.mAtomType.get(i).size();
+        }
+        final int fAtomSize = tAtomSize;
         List<Vector> rLossPar = VectorCache.getZeros(4, tThreadNum);
-        pool().parfor(tData.mSize, (i, threadID) -> {
+        pool().parfor(tSliceSize, (si, threadID) -> {
+            final int i = aSlice.get(si);
             Basis[] tBasis = mBasis[threadID];
             FeedForward[] tNN = mNN[threadID];
             Vector rLoss = rLossPar.get(threadID);
@@ -1148,10 +1295,10 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 rEng /= tAtomNum;
                 double tLossEng = tRequireGrad ? aLossFuncGradEng.call(rEng, (tData.mEng.get(i) - mNormMuEng)/mNormSigmaEng, rLossGradEng)
                                                : aLossFuncEng.call(rEng, (tData.mEng.get(i) - mNormMuEng)/mNormSigmaEng);
-                rLoss.add(0, mEnergyWeight * tLossEng / tData.mSize);
+                rLoss.add(0, mEnergyWeight * tLossEng / tSliceSize);
                 /// backward
                 if (!tRequireGrad) return;
-                double tLossGradEng = mEnergyWeight * rLossGradEng.value() / (tAtomNum*tData.mSize);
+                double tLossGradEng = mEnergyWeight * rLossGradEng.value() / (tAtomNum*tSliceSize);
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
                     Basis tSubBasis = tBasis[tType-1];
@@ -1334,7 +1481,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             rEng /= tAtomNum;
             double tLossEng = tRequireGrad ? aLossFuncGradEng.call(rEng, (tData.mEng.get(i) - mNormMuEng)/mNormSigmaEng, rLossGradEng)
                                            : aLossFuncEng.call(rEng, (tData.mEng.get(i) - mNormMuEng)/mNormSigmaEng);
-            rLoss.add(0, mEnergyWeight * tLossEng / tData.mSize);
+            rLoss.add(0, mEnergyWeight * tLossEng / tSliceSize);
             // force error
             if (mHasForce) {
                 double tLossForce = 0.0;
@@ -1343,7 +1490,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                     tLossGradForceYBuf.clear(); tLossGradForceYBuf.addZeros(tAtomNum);
                     tLossGradForceZBuf.clear(); tLossGradForceZBuf.addZeros(tAtomNum);
                 }
-                double tForceLossMul = mForceWeight / (tData.mAtomSize*3);
+                double tForceLossMul = mForceWeight / (fAtomSize*3);
                 Vector tForceX = tData.mForceX.get(i), tForceY = tData.mForceY.get(i), tForceZ = tData.mForceZ.get(i);
                 for (int k = 0; k < tAtomNum; ++k) {
                     if (tRequireGrad) {
@@ -1379,15 +1526,15 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                     tLossStress += aLossFuncStress.call(rStressXZ, tData.mStressXZ.get(i)/mNormSigmaEng);
                     tLossStress += aLossFuncStress.call(rStressYZ, tData.mStressYZ.get(i)/mNormSigmaEng);
                 }
-                rLoss.add(2, mStressWeight*tLossStress/(tData.mSize*6));
+                rLoss.add(2, mStressWeight*tLossStress/(tSliceSize*6));
             }
             /// backward
             if (!tRequireGrad) return;
-            double tLossGradEng = mEnergyWeight * rLossGradEng.value() / (tAtomNum*tData.mSize);
+            double tLossGradEng = mEnergyWeight * rLossGradEng.value() / (tAtomNum*tSliceSize);
             double tLossGradStressXX = 0.0, tLossGradStressYY = 0.0, tLossGradStressZZ = 0.0;
             double tLossGradStressXY = 0.0, tLossGradStressXZ = 0.0, tLossGradStressYZ = 0.0;
             if (mHasStress) {
-                double tMul = -mStressWeight / (tVolume*tData.mSize*6);
+                double tMul = -mStressWeight / (tVolume*tSliceSize*6);
                 tLossGradStressXX = tMul * rLossGradStressXX.value();
                 tLossGradStressYY = tMul * rLossGradStressYY.value();
                 tLossGradStressZZ = tMul * rLossGradStressZZ.value();
@@ -1575,7 +1722,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 }
             }
             // 最后全部遍历更新 grad fp，并调用反向传播获取最终的梯度；现在这两步可以合并从而减少缓存使用
-            pool().parfor(tData.mSize, (i, threadID) -> {
+            pool().parfor(tSliceSize, (si, threadID) -> {
+                final int i = aSlice.get(si);
                 Basis[] tBasis = mBasis[threadID];
                 IntVector tAtomType = tData.mAtomType.get(i);
                 int tAtomNum = tAtomType.size();
@@ -1745,7 +1893,6 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             rData.mStressYZ.add(aStress.get(5));
         }
         ++rData.mSize;
-        rData.mAtomSize += tAtomNum;
         rData.mVolume.add(tAtomData.volume());
     }
     
@@ -1970,7 +2117,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     }
     
     /** 开始训练模型，这里直接训练给定的步数 */
-    public void train(int aEpochs, boolean aEarlyStop, boolean aPrintLog) {
+    public void train(int aNEpochs, boolean aEarlyStop, boolean aPrintLog) {
+        mNEpochs = aNEpochs;
         // 清空旧的早停存储
         mMinLoss = Double.POSITIVE_INFINITY;
         // 初始化归一化参数，现在只会初始化一次
@@ -1980,17 +2128,44 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             initNormBasis();
             mNormInit = true;
         }
+        if (mBatchSize > 0) {
+            // 统计 batch 情况
+            mStepsPerEpoch = mTrainData.mSize/mBatchSize;
+            // 初始化 batch 分割
+            mAllSliceTrain = Vectors.range(mTrainData.mSize);
+            mAllSliceTrain.shuffle();
+            mSliceTrain = mAllSliceTrain.subVec(0, mStepsPerEpoch==1 ? mTrainData.mSize : mBatchSize);
+        } else {
+            mStepsPerEpoch = 1;
+            mSliceTrain = mFullSliceTrain;
+        }
         // 开始训练
         if (aPrintLog) {
-            UT.Timer.progressBar(Maps.of(
-                "name", mIsRetrain ? "retrain" : "train",
-                "max", aEpochs,
-                "length", 100
-            ));
+            if (mBatchSize > 0) {
+                UT.Timer.progressBar(Maps.of(
+                    "name", epochStr_(0),
+                    "max", mStepsPerEpoch,
+                    "length", 100
+                ));
+            } else {
+                UT.Timer.progressBar(Maps.of(
+                    "name", mIsRetrain ? "retrain" : "train",
+                    "max", aNEpochs,
+                    "length", mHasTest ? 100 : 80
+                ));
+            }
         }
-        mOptimizer.run(aEpochs, aPrintLog);
-        if (aPrintLog) for (int i = mEpoch +1; i < aEpochs; ++i) {
-            UT.Timer.progressBar(mHasTest ? String.format("loss: %.4g | %.4g", mTrainLoss.last(), mTestLoss.last()) : String.format("loss: %.4g", mTrainLoss.last()));
+        mOptimizer.run(aNEpochs*mStepsPerEpoch, aPrintLog);
+        if (aPrintLog) {
+            if (mBatchSize > 0) {
+                for (int i = mStep%mStepsPerEpoch + 1; i < mStepsPerEpoch; ++i) {
+                    UT.Timer.progressBar(mHasTest ? String.format("loss: %.4g | %.4g", mTrainLoss.last(), mTestLoss.last()) : String.format("loss: %.4g", mTrainLoss.last()));
+                }
+            } else {
+                for (int i = mEpoch+1; i < aNEpochs; ++i) {
+                    UT.Timer.progressBar(mHasTest ? String.format("loss: %.4g | %.4g", mTrainLoss.last(), mTestLoss.last()) : String.format("loss: %.4g", mTrainLoss.last()));
+                }
+            }
         }
         // 应用早停
         if (aEarlyStop && mSelectEpoch>=0) {
