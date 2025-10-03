@@ -6,9 +6,6 @@ import jep.python.PyObject;
 import jse.atom.IAtomData;
 import jse.atom.AtomicParameterCalculator;
 import jse.atom.IHasSymbol;
-import jse.cache.IntMatrixCache;
-import jse.cache.IntVectorCache;
-import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
 import jse.clib.Torch;
 import jse.code.IO;
@@ -21,13 +18,12 @@ import jse.code.collection.NewCollections;
 import jse.code.io.ISavable;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
-import jse.math.matrix.RowIntMatrix;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import jse.math.vector.Vector;
 import jse.parallel.IAutoShutdown;
 import jsex.nnap.basis.Basis;
-import jsex.nnap.basis.Mirror;
+import jsex.nnap.basis.MirrorBasis;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -299,8 +295,8 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
         mTestData = new DataSet();
         mModelSetting = aModelSetting;
         // 简单遍历 basis 处理 mirror 的情况
-        for (int i = 0; i < mSymbols.length; ++i) if (mBasis[i] instanceof Mirror) {
-            Mirror tBasis = (Mirror)mBasis[i];
+        for (int i = 0; i < mSymbols.length; ++i) if (mBasis[i] instanceof MirrorBasis) {
+            MirrorBasis tBasis = (MirrorBasis)mBasis[i];
             Basis tMirrorBasis = tBasis.mirrorBasis();
             int tMirrorType = tBasis.mirrorType();
             if ((mBasis[tMirrorType-1]!=tMirrorBasis) || (tBasis.thisType()!=(i+1))) {
@@ -351,8 +347,8 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
             tHiddenDims = NewCollections.from(mSymbols.length, i -> tSubDims);
         }
         Map<Integer, Integer> tMirrorMap = new HashMap<>();
-        for (int i = 0; i < mSymbols.length; ++i) if (mBasis[i] instanceof Mirror) {
-            int tMirror = ((Mirror)mBasis[i]).mirrorType()-1;
+        for (int i = 0; i < mSymbols.length; ++i) if (mBasis[i] instanceof MirrorBasis) {
+            int tMirror = ((MirrorBasis)mBasis[i]).mirrorType()-1;
             tMirrorMap.put(i, tMirror);
             Object oSubDims = tHiddenDims.get(i);
             Object tSubDims = tHiddenDims.get(tMirror);
@@ -373,8 +369,8 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
         for (int i = 0; i < mSymbols.length; ++i) {
             // 这里需要考虑 mirror 的情况，对于 mirror 的同时和对应的数据一起公用归一化向量
             int j = i;
-            if (mBasis[i] instanceof Mirror) {
-                j = ((Mirror)mBasis[i]).mirrorType()-1;
+            if (mBasis[i] instanceof MirrorBasis) {
+                j = ((MirrorBasis)mBasis[i]).mirrorType()-1;
             }
             for (IVector tRow : mTrainData.mFpMat[i].rows()) {
                 mNormMu[j].plus2this(tRow);
@@ -382,15 +378,15 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
             }
             tDiv.add(j, mTrainData.mFpMat[i].rowNumber());
         }
-        for (int i = 0; i < mSymbols.length; ++i) if (!(mBasis[i] instanceof Mirror)) {
+        for (int i = 0; i < mSymbols.length; ++i) if (!(mBasis[i] instanceof MirrorBasis)) {
             mNormMu[i].div2this(tDiv.get(i));
             mNormSigma[i].div2this(tDiv.get(i));
             mNormSigma[i].operation().operate2this(mNormMu[i], (lhs, rhs) -> lhs - rhs*rhs);
             mNormSigma[i].operation().map2this(MathEX.Fast::sqrt);
         }
         VectorCache.returnVec(tDiv);
-        for (int i = 0; i < mSymbols.length; ++i) if (mBasis[i] instanceof Mirror) {
-            int tMirrorIdx = ((Mirror)mBasis[i]).mirrorType()-1;
+        for (int i = 0; i < mSymbols.length; ++i) if (mBasis[i] instanceof MirrorBasis) {
+            int tMirrorIdx = ((MirrorBasis)mBasis[i]).mirrorType()-1;
             mNormMu[i] = mNormMu[tMirrorIdx];
             mNormSigma[i] = mNormSigma[tMirrorIdx];
         }
@@ -700,7 +696,7 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
                 rModel.put("norm_mu_eng", mNormMuEng);
                 rModel.put("norm_sigma_eng", mNormSigmaEng);
             }
-            if (mBasis[i] instanceof Mirror) {
+            if (mBasis[i] instanceof MirrorBasis) {
                 rModels.add(rModel);
                 continue;
             }

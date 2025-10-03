@@ -151,7 +151,7 @@ public class NNAP implements IPairPotential {
     @SuppressWarnings("unchecked")
     private @Nullable SingleNNAP initSingleNNAPFrom(Basis aBasis, Map<String, ?> aModelInfo) throws Exception {
         // mirror 情况延迟初始化
-        if (aBasis instanceof Mirror) return null;
+        if (aBasis instanceof MirrorBasis) return null;
         
         Basis[] aBasisPar = new Basis[mThreadNumber];
         aBasisPar[0] = aBasis;
@@ -206,14 +206,14 @@ public class NNAP implements IPairPotential {
     }
     private @Nullable SingleNNAP postInitSingleNNAPFrom(Basis aBasis, Map<String, ?> aModelInfo) {
         // 目前只考虑 mirror 的情况
-        if (!(aBasis instanceof Mirror)) return null;
+        if (!(aBasis instanceof MirrorBasis)) return null;
         
         Basis[] aBasisPar = new Basis[mThreadNumber];
         aBasisPar[0] = aBasis;
         for (int i = 1; i < mThreadNumber; ++i) {
             aBasisPar[i] = aBasis.threadSafeRef();
         }
-        int tMirrorType = ((Mirror)aBasis).mirrorType();
+        int tMirrorType = ((MirrorBasis)aBasis).mirrorType();
         // mirror 会强制这些额外值缺省
         Number tRefEng = (Number)aModelInfo.get("ref_eng");
         if (tRefEng != null) throw new IllegalArgumentException("ref_eng in mirror ModelInfo MUST be empty");

@@ -16,8 +16,8 @@ import static jse.code.CS.*;
  * 使用多个基组的合并基组，用于实现自定义的高效基组
  * @author liqa
  */
-public class Merge extends Basis {
-    private final MergeableBasis[] mMergeBasis;
+public class MergedBasis extends Basis {
+    private final MergeableBasis[] mMergedBasis;
     private final double mRCut;
     private final int mSize, mTotParaSize, mTypeNum;
     private final @Nullable IVector[] mParas;
@@ -26,14 +26,14 @@ public class Merge extends Basis {
     private final ShiftVector[] mFpShell, mNNGradShell, mGradNNGradShell, mParaShell;
     private final ShiftVector[] mForwardCacheShell, mBackwardCacheShell, mForwardForceCacheShell, mBackwardForceCacheShell;
     
-    public Merge(MergeableBasis... aMergeBasis) {
-        if (aMergeBasis==null || aMergeBasis.length==0) throw new IllegalArgumentException("Merge basis can not be null or empty");
+    public MergedBasis(MergeableBasis... aMergedBasis) {
+        if (aMergedBasis ==null || aMergedBasis.length==0) throw new IllegalArgumentException("Merge basis can not be null or empty");
         double tRCut = Double.NEGATIVE_INFINITY;
         int tSize = 0;
         int tTypeNum = -1;
         @Nullable List<String> tSymbols = null;
         Boolean tHasSymbols = null;
-        for (Basis tBasis : aMergeBasis) {
+        for (Basis tBasis : aMergedBasis) {
             if (!(tBasis instanceof SphericalChebyshev) && !(tBasis instanceof Chebyshev)) {
                 throw new IllegalArgumentException("MergeBasis should be SphericalChebyshev or Chebyshev");
             }
@@ -61,18 +61,18 @@ public class Merge extends Basis {
             }
             tTypeNum = Math.min(tBasis.atomTypeNumber(), tTypeNum);
         }
-        mMergeBasis = aMergeBasis;
+        mMergedBasis = aMergedBasis;
         mRCut = tRCut;
         mSize = tSize;
         mTypeNum = tTypeNum;
         mSymbols = tSymbols==null ? null : tSymbols.toArray(ZL_STR);
         // init para stuff
-        mParas = new IVector[mMergeBasis.length];
-        mParaSizes = new int[mMergeBasis.length];
-        mParaShell = new ShiftVector[mMergeBasis.length];
+        mParas = new IVector[mMergedBasis.length];
+        mParaSizes = new int[mMergedBasis.length];
+        mParaShell = new ShiftVector[mMergedBasis.length];
         int tTotParaSize = 0;
-        for (int i = 0; i < mMergeBasis.length; ++i) {
-            IVector tPara = mMergeBasis[i].hasParameters() ? mMergeBasis[i].parameters() : null;
+        for (int i = 0; i < mMergedBasis.length; ++i) {
+            IVector tPara = mMergedBasis[i].hasParameters() ? mMergedBasis[i].parameters() : null;
             mParas[i] = tPara;
             int tSizePara = tPara==null ? 0 : tPara.size();
             mParaSizes[i] = tSizePara;
@@ -81,15 +81,15 @@ public class Merge extends Basis {
         }
         mTotParaSize = tTotParaSize;
         // init fp shell
-        mFpShell = new ShiftVector[mMergeBasis.length];
-        mNNGradShell = new ShiftVector[mMergeBasis.length];
-        mGradNNGradShell = new ShiftVector[mMergeBasis.length];
-        mForwardCacheShell = new ShiftVector[mMergeBasis.length];
-        mBackwardCacheShell = new ShiftVector[mMergeBasis.length];
-        mForwardForceCacheShell = new ShiftVector[mMergeBasis.length];
-        mBackwardForceCacheShell = new ShiftVector[mMergeBasis.length];
-        for (int i = 0; i < mMergeBasis.length; ++i) {
-            int tSizeFp = mMergeBasis[i].size();
+        mFpShell = new ShiftVector[mMergedBasis.length];
+        mNNGradShell = new ShiftVector[mMergedBasis.length];
+        mGradNNGradShell = new ShiftVector[mMergedBasis.length];
+        mForwardCacheShell = new ShiftVector[mMergedBasis.length];
+        mBackwardCacheShell = new ShiftVector[mMergedBasis.length];
+        mForwardForceCacheShell = new ShiftVector[mMergedBasis.length];
+        mBackwardForceCacheShell = new ShiftVector[mMergedBasis.length];
+        for (int i = 0; i < mMergedBasis.length; ++i) {
+            int tSizeFp = mMergedBasis[i].size();
             mFpShell[i] = new ShiftVector(tSizeFp, 0, null);
             mNNGradShell[i] = new ShiftVector(tSizeFp, 0, null);
             mGradNNGradShell[i] = new ShiftVector(tSizeFp, 0, null);
@@ -99,21 +99,21 @@ public class Merge extends Basis {
             mBackwardForceCacheShell[i] = new ShiftVector(0, 0, null);
         }
     }
-    @Override public Merge threadSafeRef() {
-        MergeableBasis[] rBasis = new MergeableBasis[mMergeBasis.length];
-        for (int i = 0; i < mMergeBasis.length; ++i) {
-            rBasis[i] = mMergeBasis[i].threadSafeRef();
+    @Override public MergedBasis threadSafeRef() {
+        MergeableBasis[] rBasis = new MergeableBasis[mMergedBasis.length];
+        for (int i = 0; i < mMergedBasis.length; ++i) {
+            rBasis[i] = mMergedBasis[i].threadSafeRef();
         }
-        return new Merge(rBasis);
+        return new MergedBasis(rBasis);
     }
     @Override public void initParameters() {
-        for (Basis tBasis : mMergeBasis) tBasis.initParameters();
+        for (Basis tBasis : mMergedBasis) tBasis.initParameters();
     }
     @Override public IVector parameters() {
         return new RefVector() {
             @Override public double get(int aIdx) {
                 int tIdx = aIdx;
-                for (int i = 0; i < mMergeBasis.length; ++i) {
+                for (int i = 0; i < mMergedBasis.length; ++i) {
                     int tParaSize = mParaSizes[i];
                     if (tIdx < tParaSize) {
                         IVector tPara = mParas[i];
@@ -126,7 +126,7 @@ public class Merge extends Basis {
             }
             @Override public void set(int aIdx, double aValue) {
                 int tIdx = aIdx;
-                for (int i = 0; i < mMergeBasis.length; ++i) {
+                for (int i = 0; i < mMergedBasis.length; ++i) {
                     int tParaSize = mParaSizes[i];
                     if (tIdx < tParaSize) {
                         IVector tPara = mParas[i];
@@ -144,7 +144,7 @@ public class Merge extends Basis {
         };
     }
     @Override public boolean hasParameters() {
-        for (Basis tBasis : mMergeBasis) {
+        for (Basis tBasis : mMergedBasis) {
             if (tBasis.hasParameters()) return true;
         }
         return false;
@@ -157,7 +157,7 @@ public class Merge extends Basis {
     @Override public String symbol(int aType) {return mSymbols==null ? null : mSymbols[aType-1];}
     
     @Override protected void shutdown_() {
-        for (Basis tBasis : mMergeBasis) {
+        for (Basis tBasis : mMergedBasis) {
             tBasis.shutdown();
         }
     }
@@ -165,14 +165,14 @@ public class Merge extends Basis {
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override public void save(Map rSaveTo) {
         rSaveTo.put("type", "merge");
-        List<Map> tMergeBasis = NewCollections.from(mMergeBasis.length, i -> new LinkedHashMap<>());
-        for (int i = 0; i < mMergeBasis.length; ++i) {
-            mMergeBasis[i].save(tMergeBasis.get(i));
+        List<Map> tMergeBasis = NewCollections.from(mMergedBasis.length, i -> new LinkedHashMap<>());
+        for (int i = 0; i < mMergedBasis.length; ++i) {
+            mMergedBasis[i].save(tMergeBasis.get(i));
         }
         rSaveTo.put("basis", tMergeBasis);
     }
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public static Merge load(String @NotNull[] aSymbols, Map aMap) {
+    public static MergedBasis load(String @NotNull[] aSymbols, Map aMap) {
         Object tObj = aMap.get("basis");
         if (tObj == null) throw new IllegalArgumentException("Key `basis` required for merge load");
         List<Map> tList = (List<Map>)tObj;
@@ -196,10 +196,10 @@ public class Merge extends Basis {
                 throw new IllegalArgumentException("Unsupported basis type: " + tType);
             }}
         }
-        return new Merge(tMergeBasis);
+        return new MergedBasis(tMergeBasis);
     }
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public static Merge load(int aTypeNum, Map aMap) {
+    public static MergedBasis load(int aTypeNum, Map aMap) {
         Object tObj = aMap.get("basis");
         if (tObj == null) throw new IllegalArgumentException("Key `basis` required for merge load");
         List<Map> tList = (List<Map>)tObj;
@@ -223,13 +223,13 @@ public class Merge extends Basis {
                 throw new IllegalArgumentException("Unsupported basis type: " + tType);
             }}
         }
-        return new Merge(tMergeBasis);
+        return new MergedBasis(tMergeBasis);
     }
     
     private int initForwardCacheShell_(int aNN, boolean aFullCache) {
         int rTotSize = 0;
-        for (int i = 0; i < mMergeBasis.length; ++i) {
-            int tSize = mMergeBasis[i].forwardCacheSize_(aNN, aFullCache);
+        for (int i = 0; i < mMergedBasis.length; ++i) {
+            int tSize = mMergedBasis[i].forwardCacheSize_(aNN, aFullCache);
             mForwardCacheShell[i].setInternalDataSize(tSize);
             rTotSize += tSize;
         }
@@ -237,8 +237,8 @@ public class Merge extends Basis {
     }
     private int initBackwardCacheShell_(int aNN) {
         int rTotSize = 0;
-        for (int i = 0; i < mMergeBasis.length; ++i) {
-            int tSize = mMergeBasis[i].backwardCacheSize_(aNN);
+        for (int i = 0; i < mMergedBasis.length; ++i) {
+            int tSize = mMergedBasis[i].backwardCacheSize_(aNN);
             mBackwardCacheShell[i].setInternalDataSize(tSize);
             rTotSize += tSize;
         }
@@ -246,8 +246,8 @@ public class Merge extends Basis {
     }
     private int initForwardForceCacheShell_(int aNN, boolean aFullCache) {
         int rTotSize = 0;
-        for (int i = 0; i < mMergeBasis.length; ++i) {
-            int tSize = mMergeBasis[i].forwardForceCacheSize_(aNN, aFullCache);
+        for (int i = 0; i < mMergedBasis.length; ++i) {
+            int tSize = mMergedBasis[i].forwardForceCacheSize_(aNN, aFullCache);
             mForwardForceCacheShell[i].setInternalDataSize(tSize);
             rTotSize += tSize;
         }
@@ -255,8 +255,8 @@ public class Merge extends Basis {
     }
     private int initBackwardForceCacheShell_(int aNN) {
         int rTotSize = 0;
-        for (int i = 0; i < mMergeBasis.length; ++i) {
-            int tSize = mMergeBasis[i].backwardForceCacheSize_(aNN);
+        for (int i = 0; i < mMergedBasis.length; ++i) {
+            int tSize = mMergedBasis[i].backwardForceCacheSize_(aNN);
             mBackwardForceCacheShell[i].setInternalDataSize(tSize);
             rTotSize += tSize;
         }
@@ -274,14 +274,14 @@ public class Merge extends Basis {
         validCache_(rForwardCache, initForwardCacheShell_(aNlDx.size(), aFullCache));
         int tFpShift = rFp.internalDataShift();
         int tCacheShift = 0;
-        for (int i = 0; i < mMergeBasis.length; ++i) {
+        for (int i = 0; i < mMergedBasis.length; ++i) {
             ShiftVector tFp = mFpShell[i];
             tFp.setInternalData(rFp.internalData());
             tFp.setInternalDataShift(tFpShift);
             ShiftVector tForwardCache = mForwardCacheShell[i];
             tForwardCache.setInternalData(rForwardCache.internalData());
             tForwardCache.setInternalDataShift(tCacheShift);
-            mMergeBasis[i].forward_(aNlDx, aNlDy, aNlDz, aNlType, tFp, tForwardCache, aFullCache);
+            mMergedBasis[i].forward_(aNlDx, aNlDy, aNlDz, aNlType, tFp, tForwardCache, aFullCache);
             tFpShift += tFp.internalDataSize();
             tCacheShift += tForwardCache.internalDataSize();
         }
@@ -300,7 +300,7 @@ public class Merge extends Basis {
         validCache_(rBackwardCache, initBackwardCacheShell_(aNlDx.size()));
         int tFpShift = aGradFp.internalDataShift(), tParaShift = rGradPara.internalDataShift();
         int tCacheShift = 0, tBackwardCacheShift = 0;
-        for (int i = 0; i < mMergeBasis.length; ++i) {
+        for (int i = 0; i < mMergedBasis.length; ++i) {
             ShiftVector tGradFp = mFpShell[i];
             tGradFp.setInternalData(aGradFp.internalData());
             tGradFp.setInternalDataShift(tFpShift);
@@ -313,7 +313,7 @@ public class Merge extends Basis {
             ShiftVector tBackwardCache = mBackwardCacheShell[i];
             tBackwardCache.setInternalData(rBackwardCache.internalData());
             tBackwardCache.setInternalDataShift(tBackwardCacheShift);
-            mMergeBasis[i].backward_(aNlDx, aNlDy, aNlDz, aNlType, tGradFp, tGradPara, tForwardCache, tBackwardCache, aKeepCache);
+            mMergedBasis[i].backward_(aNlDx, aNlDy, aNlDz, aNlType, tGradFp, tGradPara, tForwardCache, tBackwardCache, aKeepCache);
             tFpShift += tGradFp.internalDataSize();
             tParaShift += tGradPara.internalDataSize();
             tCacheShift += tForwardCache.internalDataSize();
@@ -329,7 +329,7 @@ public class Merge extends Basis {
         validCache_(rForwardForceCache, initForwardForceCacheShell_(aNlDx.size(), aFullCache));
         int tFpShift = aNNGrad.internalDataShift();
         int tCacheShift = 0, tForceCacheShift = 0;
-        for (int i = 0; i < mMergeBasis.length; ++i) {
+        for (int i = 0; i < mMergedBasis.length; ++i) {
             ShiftVector tNNGrad = mNNGradShell[i];
             tNNGrad.setInternalData(aNNGrad.internalData());
             tNNGrad.setInternalDataShift(tFpShift);
@@ -339,7 +339,7 @@ public class Merge extends Basis {
             ShiftVector tForwardForceCache = mForwardForceCacheShell[i];
             tForwardForceCache.setInternalData(rForwardForceCache.internalData());
             tForwardForceCache.setInternalDataShift(tForceCacheShift);
-            mMergeBasis[i].forwardForceAccumulate_(aNlDx, aNlDy, aNlDz, aNlType, tNNGrad, rFx, rFy, rFz, tForwardCache, tForwardForceCache, aFullCache);
+            mMergedBasis[i].forwardForceAccumulate_(aNlDx, aNlDy, aNlDz, aNlType, tNNGrad, rFx, rFy, rFz, tForwardCache, tForwardForceCache, aFullCache);
             tFpShift += tNNGrad.internalDataSize();
             tCacheShift += tForwardCache.internalDataSize();
             tForceCacheShift += tForwardForceCache.internalDataSize();
@@ -355,7 +355,7 @@ public class Merge extends Basis {
         validCache_(rBackwardForceCache, initBackwardForceCacheShell_(aNlDx.size()));
         int tGFpShift = aNNGrad.internalDataShift(), tGGFpShift = rGradNNGrad.internalDataShift(), tParaShift = rGradPara==null?0:rGradPara.internalDataShift();
         int tCacheShift = 0, tForceCacheShift = 0, tBackwardCacheShift = 0, tBackwardForceCacheShift = 0;
-        for (int i = 0; i < mMergeBasis.length; ++i) {
+        for (int i = 0; i < mMergedBasis.length; ++i) {
             ShiftVector tNNGrad = mNNGradShell[i];
             tNNGrad.setInternalData(aNNGrad.internalData());
             tNNGrad.setInternalDataShift(tGFpShift);
@@ -377,7 +377,7 @@ public class Merge extends Basis {
             ShiftVector tBackwardForceCache = mBackwardForceCacheShell[i];
             tBackwardForceCache.setInternalData(rBackwardForceCache.internalData());
             tBackwardForceCache.setInternalDataShift(tBackwardForceCacheShift);
-            mMergeBasis[i].backwardForce_(aNlDx, aNlDy, aNlDz, aNlType, tNNGrad, aGradFx, aGradFy, aGradFz, tGradNNGrad, tGradPara, tForwardCache, tForwardForceCache, tBackwardCache, tBackwardForceCache, aKeepCache, aFixBasis);
+            mMergedBasis[i].backwardForce_(aNlDx, aNlDy, aNlDz, aNlType, tNNGrad, aGradFx, aGradFy, aGradFz, tGradNNGrad, tGradPara, tForwardCache, tForwardForceCache, tBackwardCache, tBackwardForceCache, aKeepCache, aFixBasis);
             tGFpShift += tNNGrad.internalDataSize();
             tGGFpShift += tGradNNGrad.internalDataSize();
             if (rGradPara!=null) tParaShift += tGradPara.internalDataSize();

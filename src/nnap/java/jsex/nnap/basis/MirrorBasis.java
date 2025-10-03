@@ -14,12 +14,12 @@ import java.util.Map;
  * 目前主要用于实现 ising 模型
  * @author liqa
  */
-public class Mirror extends Basis {
+public class MirrorBasis extends Basis {
     
     private final Basis mMirrorBasis;
     private final int mMirrorType, mThisType;
-    public Mirror(Basis aMirrorBasis, int aMirrorType, int aThisType) {
-        if (aMirrorBasis instanceof Mirror) throw new IllegalArgumentException("MirrorBasis MUST NOT be Mirror");
+    public MirrorBasis(Basis aMirrorBasis, int aMirrorType, int aThisType) {
+        if (aMirrorBasis instanceof MirrorBasis) throw new IllegalArgumentException("MirrorBasis MUST NOT be Mirror");
         mMirrorBasis = aMirrorBasis;
         mMirrorType = aMirrorType;
         mThisType = aThisType;
@@ -28,8 +28,8 @@ public class Mirror extends Basis {
     public int mirrorType() {return mMirrorType;}
     public int thisType() {return mThisType;}
     
-    @Override public Mirror threadSafeRef() {
-        return new Mirror(mMirrorBasis.threadSafeRef(), mMirrorType, mThisType);
+    @Override public MirrorBasis threadSafeRef() {
+        return new MirrorBasis(mMirrorBasis.threadSafeRef(), mMirrorType, mThisType);
     }
     // 虽然 mirror 本身没有参数，但是为了逻辑一致这里依旧转发这些接口
     @Override public void initParameters() {mMirrorBasis.initParameters();}
@@ -40,13 +40,6 @@ public class Mirror extends Basis {
     @Override public void save(Map rSaveTo) {
         rSaveTo.put("type", "mirror");
         rSaveTo.put("mirror", mMirrorType);
-    }
-    @SuppressWarnings("rawtypes")
-    public static Mirror load(Basis aMirrorBasis, int aThisType, Map aMap) {
-        Object tMirror = aMap.get("mirror");
-        if (tMirror == null) throw new IllegalArgumentException("Key `mirror` required for mirror load");
-        int tMirrorType = ((Number)tMirror).intValue();
-        return new Mirror(aMirrorBasis, tMirrorType, aThisType);
     }
     
     @Override public double rcut() {return mMirrorBasis.rcut();}

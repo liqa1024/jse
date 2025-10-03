@@ -45,8 +45,8 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
                 tBasisType = "spherical_chebyshev";
             }
             switch(tBasisType.toString()) {
-            case "mirror": {
-                break; // mirror 情况延迟初始化
+            case "mirror": case "share": {
+                break; // mirror/share 情况延迟初始化
             }
             case "spherical_chebyshev": {
                 rBasis[i] = aSymbols==null ? SphericalChebyshev.load(tTypeNum, tBasisMap)
@@ -59,8 +59,8 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
                 break;
             }
             case "merge": {
-                rBasis[i] = aSymbols==null ? Merge.load(tTypeNum, tBasisMap)
-                                           : Merge.load(aSymbols, tBasisMap);
+                rBasis[i] = aSymbols==null ? MergedBasis.load(tTypeNum, tBasisMap)
+                                           : MergedBasis.load(aSymbols, tBasisMap);
                 break;
             }
             default: {
@@ -70,11 +70,24 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
         for (int i = 0; i < tTypeNum; ++i) {
             Map tBasisMap = (Map)aData.get(i);
             Object tBasisType = tBasisMap.get("type");
-            if (!tBasisType.equals("mirror")) continue;
-            Object tMirror = tBasisMap.get("mirror");
-            if (tMirror == null) throw new IllegalArgumentException("Key `mirror` required for basis mirror");
-            int tMirrorType = ((Number)tMirror).intValue();
-            rBasis[i] = new Mirror(rBasis[tMirrorType-1], tMirrorType, i+1);
+            switch(tBasisType.toString()) {
+            case "mirror": {
+                Object tMirror = tBasisMap.get("mirror");
+                if (tMirror == null) throw new IllegalArgumentException("Key `mirror` required for basis mirror");
+                int tMirrorType = ((Number)tMirror).intValue();
+                rBasis[i] = new MirrorBasis(rBasis[tMirrorType-1].threadSafeRef(), tMirrorType, i+1);
+                break;
+            }
+            case "share": {
+                Object tShare = tBasisMap.get("share");
+                if (tShare == null) throw new IllegalArgumentException("Key `share` required for basis share");
+                int tSharedType = ((Number)tShare).intValue();
+                rBasis[i] = new SharedBasis(rBasis[tSharedType-1].threadSafeRef(), tSharedType);
+                break;
+            }
+            default: {
+                continue;
+            }}
         }
         return rBasis;
     }

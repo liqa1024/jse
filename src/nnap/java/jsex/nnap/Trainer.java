@@ -346,7 +346,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     private void validFpAtomsBuf_(int aThreadID, int aAtomNum, boolean aRequireGradBackward) {
         List<List<Vector>> tFpBuf = mFpAtomsBuf.get(aThreadID);
         List<List<Vector>> tGradFpBuf = mGradNormFpAtomsBuf.get(aThreadID);
-        for (int typei = 0; typei < mTypeNum; ++typei) if (!(mBasis[0][typei] instanceof Mirror)) {
+        for (int typei = 0; typei < mTypeNum; ++typei) if (!(mBasis[0][typei] instanceof MirrorBasis)) {
             int tSize = mBasis[0][typei].size();
             List<Vector> tSubFpBuf = tFpBuf.get(typei);
             List<Vector> tSubGradFpBuf = tGradFpBuf.get(typei);
@@ -363,7 +363,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         List<List<Vector>> tHiddenGrads2Buf = mHiddenGrads2Buf.get(aThreadID);
         List<List<Vector>> tHiddenGrads3Buf = mHiddenGrads3Buf.get(aThreadID);
         List<List<Vector>> tHiddenGradGradsBuf = mHiddenGradGradsBuf.get(aThreadID);
-        for (int typei = 0; typei < mTypeNum; ++typei) if (!(mBasis[0][typei] instanceof Mirror)) {
+        for (int typei = 0; typei < mTypeNum; ++typei) if (!(mBasis[0][typei] instanceof MirrorBasis)) {
             List<Vector> tHiddenOutputs = tHiddenOutputsBuf.get(typei);
             List<Vector> tHiddenGrads = tHiddenGradsBuf.get(typei);
             List<Vector> tHiddenGrads2 = tHiddenGrads2Buf.get(typei);
@@ -378,8 +378,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             }
             for (int i = 0; i < tAtomNum; ++i) {
                 int typeii = aAtomType.get(i)-1;
-                if (mBasis[0][typeii] instanceof Mirror) {
-                    typeii = ((Mirror) mBasis[0][typeii]).mirrorType() - 1;
+                if (mBasis[0][typeii] instanceof MirrorBasis) {
+                    typeii = ((MirrorBasis) mBasis[0][typeii]).mirrorType() - 1;
                 }
                 if (typei != typeii) continue;
                 tHiddenOutputs.get(i).fill(0.0);
@@ -429,8 +429,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         if (mTypeNum != tNN.length) throw new IllegalArgumentException("Symbols length does not match neural network length.");
         
         // 简单遍历 basis 验证 mirror 的情况
-        for (int i = 0; i < mSymbols.length; ++i) if (mBasis[0][i] instanceof Mirror) {
-            Mirror tBasis = (Mirror)mBasis[0][i];
+        for (int i = 0; i < mSymbols.length; ++i) if (mBasis[0][i] instanceof MirrorBasis) {
+            MirrorBasis tBasis = (MirrorBasis)mBasis[0][i];
             int tMirrorType = tBasis.mirrorType();
             double oRefEng = mRefEngs.get(i);
             double tRefEng = mRefEngs.get(tMirrorType-1);
@@ -535,7 +535,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             mBasisBackwardForceBuf[ti] = tBasisBackwardForceBuf;
             for (int i = 0; i < mTypeNum; ++i) {
                 int tBasisSize = mBasisSizes[i];
-                if (mBasis[0][i] instanceof Mirror) {
+                if (mBasis[0][i] instanceof MirrorBasis) {
                     tFpAtomsBuf.add(null);
                     tGradNormFpAtomsBuf.add(null);
                     tHiddenOutputsBuf.add(null);
@@ -592,7 +592,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         mNNParaWeightSizes = new int[mTypeNum];
         mNNParas = new IVector[mTypeNum];
         int rTotParaSize = 0;
-        for (int i = 0; i < mTypeNum; ++i) if (!(mBasis[0][i] instanceof Mirror)) {
+        for (int i = 0; i < mTypeNum; ++i) if (!(mBasis[0][i] instanceof MirrorBasis)) {
             IVector tPara = mNN[0][i].parameters();
             int tParaSize = tPara.size();
             mNNParas[i] = tPara;
@@ -606,7 +606,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         rTotParaSize = 0;
         mBasisParaSizes = new int[mTypeNum];
         mBasisParas = new IVector[mTypeNum];
-        for (int i = 0; i < mTypeNum; ++i) if (!(mBasis[0][i] instanceof Mirror)) {
+        for (int i = 0; i < mTypeNum; ++i) if (!(mBasis[0][i] instanceof MirrorBasis) && !(mBasis[0][i] instanceof SharedBasis)) {
             IVector tBasisPara = mBasis[0][i].hasParameters() ? mBasis[0][i].parameters() : null;
             int tBasisParaSize = tBasisPara==null ? 0 : tBasisPara.size();
             mBasisParas[i] = tBasisPara;
@@ -870,7 +870,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         IVector tRefEngs = Vectors.zeros(tTypeNum);
         for (int i = 0; i < tTypeNum; ++i) {
             Number tRefEng = (Number)aModelInfos.get(i).get("ref_eng");
-            if (aBasis[i] instanceof Mirror) {
+            if (aBasis[i] instanceof MirrorBasis) {
                 // mirror 会强制这些额外值缺省
                 if (tRefEng != null) throw new IllegalArgumentException("ref_eng in mirror ModelInfo MUST be empty");
                 tRefEngs.set(i, Double.NaN);
@@ -880,18 +880,24 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
         return tRefEngs;
     }
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private static Basis[][] basisFrom_(String[] aSymbols, int aThreadNum, Map<String, ?> aArgs) {
         @Nullable Object tBasis = UT.Code.get(aArgs, "basis");
         if (tBasis == null) {
             tBasis = Maps.of("type", "spherical_chebyshev");
         }
         if (tBasis instanceof Map) {
+            // 现在这种情况其余的种类采用 share 基组
             Map<?, ?> tSubBasis = (Map<?, ?>)tBasis;
-            tBasis = NewCollections.from(aSymbols.length, i -> tSubBasis);
+            tBasis = new ArrayList(aSymbols.length);
+            ((ArrayList)tBasis).add(tSubBasis);
+            for (int i = 1; i < aSymbols.length; ++i) {
+                ((ArrayList)tBasis).add(Maps.of("type", "share", "share", 1));
+            }
         }
         Basis[][] rBasis = new Basis[aThreadNum][];
         rBasis[0] = Basis.load(aSymbols, (List<?>)tBasis);
-        for (Basis tSubBasis : rBasis[0]) if (!(tSubBasis instanceof Mirror)) {
+        for (Basis tSubBasis : rBasis[0]) if (!(tSubBasis instanceof MirrorBasis) && !(tSubBasis instanceof SharedBasis)) {
             tSubBasis.initParameters();
         }
         for (int ti = 1; ti < aThreadNum; ++ti) {
@@ -928,7 +934,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
         if (tNNSetting instanceof Map) {
             Map<?, ?> tSubNNSetting = (Map<?, ?>)tNNSetting;
-            tNNSetting = NewCollections.from(aBasis.length, i -> (aBasis[i] instanceof Mirror) ? null : tSubNNSetting);
+            tNNSetting = NewCollections.from(aBasis.length, i -> (aBasis[i] instanceof MirrorBasis) ? null : tSubNNSetting);
         }
         FeedForward[] rOut = new FeedForward[aBasis.length];
         List<?> tNNSettingList = (List<?>)tNNSetting;
@@ -937,7 +943,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
         for (int i = 0; i < rOut.length; ++i) {
             // mirror 情况延迟初始化
-            if (aBasis[i] instanceof Mirror) {
+            if (aBasis[i] instanceof MirrorBasis) {
                 continue;
             }
             Map<?, ?> tNNSettingMap = (Map<?, ?>)tNNSettingList.get(i);
@@ -961,7 +967,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             rOut[i] = new FeedForward(aBasis[i].size(), tHiddenDimsArr);
             rOut[i].initParameters();
         }
-        for (int i = 0; i < rOut.length; ++i) if (aBasis[i] instanceof Mirror) {
+        for (int i = 0; i < rOut.length; ++i) if (aBasis[i] instanceof MirrorBasis) {
             @Nullable Map<?, ?> tNNSettingMap = (Map<?, ?>)tNNSettingList.get(i);
             if (tNNSettingMap == null) continue;
             @Nullable Object tHiddenDims = UT.Code.get(tNNSettingMap, "hidden_dims", "nnarch");
@@ -978,7 +984,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         FeedForward[] rOut = new FeedForward[tTypeNum];
         for (int i = 0; i < tTypeNum; ++i) {
             // mirror 情况延迟初始化
-            if (aBasis[i] instanceof Mirror) {
+            if (aBasis[i] instanceof MirrorBasis) {
                 continue;
             }
             Map<String, ?> tModelInfo = aModelInfos.get(i);
@@ -1001,7 +1007,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 throw new IllegalArgumentException("Unsupported model type: " + tModelType);
             }}
         }
-        for (int i = 0; i < rOut.length; ++i) if (aBasis[i] instanceof Mirror) {
+        for (int i = 0; i < rOut.length; ++i) if (aBasis[i] instanceof MirrorBasis) {
             Map<String, ?> tModelInfo = aModelInfos.get(i);
             // mirror 会强制这些额外值缺省
             Object tModel = tModelInfo.get("torch");
@@ -1023,7 +1029,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             // 现在优先读取 norm eng
             if (tNormSigmaEng == null) tNormSigmaEng = (Number)tModelInfo.get("norm_sigma_eng");
             if (tNormMuEng == null) tNormMuEng = (Number)tModelInfo.get("norm_mu_eng");
-            if (mBasis[0][i] instanceof Mirror) {
+            if (mBasis[0][i] instanceof MirrorBasis) {
                 // mirror 会强制这些额外值缺省
                 Object tNormObj = UT.Code.get(tModelInfo, "norm_vec", "norm_sigma", "norm_mu");
                 if (tNormObj != null) throw new IllegalArgumentException("norm_vec/norm_sigma/norm_mu in mirror ModelInfo MUST be empty");
@@ -1041,8 +1047,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
         mNormSigmaEng = tNormSigmaEng==null ? 1.0 : tNormSigmaEng.doubleValue();
         mNormMuEng = tNormMuEng==null ? 0.0 : tNormMuEng.doubleValue();
-        for (int i = 0; i < mTypeNum; ++i) if (mBasis[0][i] instanceof Mirror) {
-            int tMirrorIdx = ((Mirror)mBasis[0][i]).mirrorType()-1;
+        for (int i = 0; i < mTypeNum; ++i) if (mBasis[0][i] instanceof MirrorBasis) {
+            int tMirrorIdx = ((MirrorBasis)mBasis[0][i]).mirrorType()-1;
             mNormMu[i] = mNormMu[tMirrorIdx];
             mNormSigma[i] = mNormSigma[tMirrorIdx];
         }
@@ -1279,8 +1285,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
                     Basis tSubBasis = tBasis[tType-1];
-                    if (tSubBasis instanceof Mirror) {
-                        tType = ((Mirror)tSubBasis).mirrorType();
+                    if (tSubBasis instanceof MirrorBasis) {
+                        tType = ((MirrorBasis)tSubBasis).mirrorType();
                     }
                     Vector tSubFp = tFpBuf.get(tType-1).get(k);
                     Vector tSubNormFp = tNormFp[tType-1];
@@ -1306,8 +1312,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 for (int k = 0; k < tAtomNum; ++k) {
                     int tType = tAtomType.get(k);
                     Basis tSubBasis = tBasis[tType-1];
-                    if (tSubBasis instanceof Mirror) {
-                        tType = ((Mirror)tSubBasis).mirrorType();
+                    if (tSubBasis instanceof MirrorBasis) {
+                        tType = ((MirrorBasis)tSubBasis).mirrorType();
                     }
                     Vector tSubFp = tFpBuf.get(tType-1).get(k);
                     Vector tSubNormFp = tNormFp[tType-1];
@@ -1351,9 +1357,10 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                             rSubLossGradFp.div2this(mNormSigma2[tType-1]);
                         }
                         rSubLossGradFp.div2this(tNormSigma);
-                        int tShiftBasisPara = basisParaShift(tType);
+                        int tBasisType = (tSubBasis instanceof SharedBasis) ? ((SharedBasis)tSubBasis).sharedType() : tType;
+                        int tShiftBasisPara = basisParaShift(tBasisType);
                         tSubBasis.backward(tNlDx[k], tNlDy[k], tNlDz[k], tNlType[k], rSubLossGradFp,
-                                           tGradPara.subVec(tShiftBasisPara, tShiftBasisPara+mBasisParaSizes[tType-1]),
+                                           tGradPara.subVec(tShiftBasisPara, tShiftBasisPara+mBasisParaSizes[tBasisType-1]),
                                            tBaisForwardBuf.get(k), tBaisBackwardBuf, false);
                     }
                     if (tTrainBasis && tForceNormFormula) {
@@ -1417,8 +1424,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             for (int k = 0; k < tAtomNum; ++k) {
                 int tType = tAtomType.get(k);
                 Basis tSubBasis = tBasis[tType-1];
-                if (tSubBasis instanceof Mirror) {
-                    tType = ((Mirror)tSubBasis).mirrorType();
+                if (tSubBasis instanceof MirrorBasis) {
+                    tType = ((MirrorBasis)tSubBasis).mirrorType();
                 }
                 IntList tSubNl = tNl[k], tSubNlType = tNlType[k];
                 DoubleList tSubNlDx = tNlDx[k], tSubNlDy = tNlDy[k], tSubNlDz = tNlDz[k];
@@ -1549,8 +1556,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             for (int k = 0; k < tAtomNum; ++k) {
                 int tType = tAtomType.get(k);
                 Basis tSubBasis = tBasis[tType-1];
-                if (tSubBasis instanceof Mirror) {
-                    tType = ((Mirror)tSubBasis).mirrorType();
+                if (tSubBasis instanceof MirrorBasis) {
+                    tType = ((MirrorBasis)tSubBasis).mirrorType();
                 }
                 // force loss grad
                 IntList tSubNl = tNl[k], tSubNlType = tNlType[k];
@@ -1588,8 +1595,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 }
                 DoubleArrayVector tLossGradBasisPara = null;
                 if (tTrainBasis) {
-                    int tShiftBasisPara = basisParaShift(tType);
-                    tLossGradBasisPara = tGradPara.subVec(tShiftBasisPara, tShiftBasisPara+mBasisParaSizes[tType-1]);
+                    int tBasisType = (tSubBasis instanceof SharedBasis) ? ((SharedBasis)tSubBasis).sharedType() : tType;
+                    int tShiftBasisPara = basisParaShift(tBasisType);
+                    tLossGradBasisPara = tGradPara.subVec(tShiftBasisPara, tShiftBasisPara+mBasisParaSizes[tBasisType-1]);
                 }
                 DoubleArrayVector tLossGradSigma = null, tLossGradMu = null;
                 if (tTrainNorm) {
@@ -1750,8 +1758,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                     int tType = tAtomType.get(k);
                     // 归一化系数同样对于 mirror 的会采用镜像的种类
                     Basis tSubBasis = tBasis[tType-1];
-                    if (tSubBasis instanceof Mirror) {
-                        tType = ((Mirror)tSubBasis).mirrorType();
+                    if (tSubBasis instanceof MirrorBasis) {
+                        tType = ((MirrorBasis)tSubBasis).mirrorType();
                     }
                     // 由于全部缓存前向部分不实际，总是需要重新计算，因此这里就顺便也算基组
                     Vector rSubFp = rFp[tType-1];
@@ -1769,9 +1777,10 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                         rSubLossGradFp.add(ii, rhs);
                     }
                     // 反向传播
-                    int tShiftBasisPara = basisParaShift(tType);
+                    int tBasisType = (tSubBasis instanceof SharedBasis) ? ((SharedBasis)tSubBasis).sharedType() : tType;
+                    int tShiftBasisPara = basisParaShift(tBasisType);
                     tSubBasis.backward(tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType, rSubLossGradFp,
-                                       rGradPara.subVec(tShiftBasisPara, tShiftBasisPara+mBasisParaSizes[tType-1]),
+                                       rGradPara.subVec(tShiftBasisPara, tShiftBasisPara+mBasisParaSizes[tBasisType-1]),
                                        tBaisForwardBuf, tHasGradGrad?tBasisBackwardFullBuf[k]:tBaisBackwardBuf, tHasGradGrad);
                 }
             });
@@ -2032,8 +2041,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 int tType = tAtomType.get(k);
                 // 这里需要考虑 mirror 的情况，对于 mirror 的同时和对应的数据一起公用归一化向量
                 Basis tSubBasis = tBasis[tType-1];
-                if (tSubBasis instanceof Mirror) {
-                    tType = ((Mirror)tSubBasis).mirrorType();
+                if (tSubBasis instanceof MirrorBasis) {
+                    tType = ((MirrorBasis)tSubBasis).mirrorType();
                 }
                 // 现在实时计算基组而不是缓存
                 Vector tSubFp = tFp[tType-1];
@@ -2054,7 +2063,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             mNormDiv.plus2this(tDivPar[ti]);
             IntVectorCache.returnVec(tDivPar[ti]);
         }
-        for (int i = 0; i < mTypeNum; ++i) if (!(mBasis[0][i] instanceof Mirror)) {
+        for (int i = 0; i < mTypeNum; ++i) if (!(mBasis[0][i] instanceof MirrorBasis)) {
             int tDivI = mNormDiv.get(i);
             if (tDivI == 0) {
                 UT.Code.warning("number of atoms of type `"+mSymbols[i]+"` is zero, check your input or dataset.");
@@ -2079,8 +2088,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 });
             }
         }
-        for (int i = 0; i < mTypeNum; ++i) if (mBasis[0][i] instanceof Mirror) {
-            int tMirrorIdx = ((Mirror)mBasis[0][i]).mirrorType()-1;
+        for (int i = 0; i < mTypeNum; ++i) if (mBasis[0][i] instanceof MirrorBasis) {
+            int tMirrorIdx = ((MirrorBasis)mBasis[0][i]).mirrorType()-1;
             mNormMu[i] = mNormMu[tMirrorIdx];
             mNormSigma[i] = mNormSigma[tMirrorIdx];
         }
@@ -2297,7 +2306,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 rModel.put("norm_mu_eng", mNormMuEng);
                 rModel.put("norm_sigma_eng", mNormSigmaEng);
             }
-            if (mBasis[0][i] instanceof Mirror) {
+            if (mBasis[0][i] instanceof MirrorBasis) {
                 rModels.add(rModel);
                 continue;
             }
