@@ -2158,7 +2158,7 @@ public class ARRAY {
              * 自定义 math 需要采用的优化等级，默认为 1（基础优化），
              * 会开启 AVX2 指令集，在大多数现代处理器上能兼容运行
              */
-            public static int OPT_LEVEL = OS.envI("JSE_MATH_OPT_LEVEL", BASE);
+            public static int OPTIM_LEVEL = OS.envI("JSE_MATH_OPTIM_LEVEL", BASE);
             
             /**
              * 自定义 match 内部循环使用的 batch size，
@@ -2204,7 +2204,7 @@ public class ARRAY {
         }
         
         /** 当前 {@link ARRAY} JNI 库所在的文件夹路径，结尾一定存在 {@code '/'} */
-        public final static String LIB_DIR = JAR_DIR+"math/" + UT.Code.uniqueID(JAVA_HOME, VERSION, Conf.OPT_LEVEL, Conf.BATCH_SIZE, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+        public final static String LIB_DIR = JAR_DIR+"math/" + UT.Code.uniqueID(JAVA_HOME, VERSION, Conf.OPTIM_LEVEL, Conf.BATCH_SIZE, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
         /** 当前 {@link ARRAY} JNI 库的路径 */
         public final static String LIB_PATH;
         private final static String[] SRC_NAME = {
@@ -2221,29 +2221,29 @@ public class ARRAY {
             
             // 先添加 Conf.CMAKE_SETTING，这样保证确定的优先级
             Map<String, String> rCmakeSetting = new LinkedHashMap<>(Conf.CMAKE_SETTING);
-            switch(Conf.OPT_LEVEL) {
+            switch(Conf.OPTIM_LEVEL) {
             case Conf.MAX: {
-                rCmakeSetting.put("JSE_OPT_MAX",    "ON");
-                rCmakeSetting.put("JSE_OPT_BASE",   "OFF");
-                rCmakeSetting.put("JSE_OPT_COMPAT", "OFF");
+                rCmakeSetting.put("JSE_OPTIM_MAX",    "ON");
+                rCmakeSetting.put("JSE_OPTIM_BASE",   "OFF");
+                rCmakeSetting.put("JSE_OPTIM_COMPAT", "OFF");
                 break;
             }
             case Conf.BASE: {
-                rCmakeSetting.put("JSE_OPT_MAX",    "OFF");
-                rCmakeSetting.put("JSE_OPT_BASE",   "ON");
-                rCmakeSetting.put("JSE_OPT_COMPAT", "OFF");
+                rCmakeSetting.put("JSE_OPTIM_MAX",    "OFF");
+                rCmakeSetting.put("JSE_OPTIM_BASE",   "ON");
+                rCmakeSetting.put("JSE_OPTIM_COMPAT", "OFF");
                 break;
             }
             case Conf.COMPAT: {
-                rCmakeSetting.put("JSE_OPT_MAX",    "OFF");
-                rCmakeSetting.put("JSE_OPT_BASE",   "OFF");
-                rCmakeSetting.put("JSE_OPT_COMPAT", "ON");
+                rCmakeSetting.put("JSE_OPTIM_MAX",    "OFF");
+                rCmakeSetting.put("JSE_OPTIM_BASE",   "OFF");
+                rCmakeSetting.put("JSE_OPTIM_COMPAT", "ON");
                 break;
             }
             case Conf.NONE: {
-                rCmakeSetting.put("JSE_OPT_MAX",    "OFF");
-                rCmakeSetting.put("JSE_OPT_BASE",   "OFF");
-                rCmakeSetting.put("JSE_OPT_COMPAT", "OFF");
+                rCmakeSetting.put("JSE_OPTIM_MAX",    "OFF");
+                rCmakeSetting.put("JSE_OPTIM_BASE",   "OFF");
+                rCmakeSetting.put("JSE_OPTIM_COMPAT", "OFF");
                 break;
             }}
             rCmakeSetting.put("JSE_BATCH_SIZE", String.valueOf(Conf.BATCH_SIZE));

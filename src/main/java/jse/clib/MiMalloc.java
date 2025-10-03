@@ -129,7 +129,7 @@ public class MiMalloc {
                 return tMiDir;})
             .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
             .setRedirectLibPath(Conf.REDIRECT_MIMALLOC_LIB)
-            .setCmakeLineOpt(null)
+            .setCmakeLineOp(null)
             .get();
         if (Conf.REDIRECT_MIMALLOC_LIB == null) {
             @Nullable String tLLibName = LLIB_NAME_IN(LIB_DIR, "mimalloc");

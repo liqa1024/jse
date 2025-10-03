@@ -1,4 +1,4 @@
-package jse.opt;
+package jse.optim;
 
 import jse.math.vector.IVector;
 import jse.math.vector.Vector;

@@ -68,7 +68,7 @@ public class NNAP implements IPairPotential {
          * 自定义 nnap 需要采用的优化等级，默认为 1（基础优化），
          * 会开启 AVX2 指令集，在大多数现代处理器上能兼容运行
          */
-        public static int OPT_LEVEL = OS.envI("JSE_NNAP_OPT_LEVEL", BASE);
+        public static int OPTIM_LEVEL = OS.envI("JSE_NNAP_OPTIM_LEVEL", BASE);
         
         /**
          * 自定义构建 nnap 时使用的编译器，
@@ -88,7 +88,7 @@ public class NNAP implements IPairPotential {
     }
     
     public final static int VERSION = 5;
-    public final static String LIB_DIR = JAR_DIR+"nnap/jni/" + UT.Code.uniqueID(JAVA_HOME, CS.VERSION, NNAP.VERSION, Conf.OPT_LEVEL, Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+    public final static String LIB_DIR = JAR_DIR+"nnap/jni/" + UT.Code.uniqueID(JAVA_HOME, CS.VERSION, NNAP.VERSION, Conf.OPTIM_LEVEL, Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
           "nnap_util.hpp"
@@ -113,29 +113,29 @@ public class NNAP implements IPairPotential {
         
         // 先添加 Conf.CMAKE_SETTING，这样保证确定的优先级
         Map<String, String> rCmakeSetting = new LinkedHashMap<>(Conf.CMAKE_SETTING);
-        switch(Conf.OPT_LEVEL) {
+        switch(Conf.OPTIM_LEVEL) {
         case Conf.MAX: {
-            rCmakeSetting.put("JSE_OPT_MAX",    "ON");
-            rCmakeSetting.put("JSE_OPT_BASE",   "OFF");
-            rCmakeSetting.put("JSE_OPT_COMPAT", "OFF");
+            rCmakeSetting.put("JSE_OPTIM_MAX",    "ON");
+            rCmakeSetting.put("JSE_OPTIM_BASE",   "OFF");
+            rCmakeSetting.put("JSE_OPTIM_COMPAT", "OFF");
             break;
         }
         case Conf.BASE: {
-            rCmakeSetting.put("JSE_OPT_MAX",    "OFF");
-            rCmakeSetting.put("JSE_OPT_BASE",   "ON");
-            rCmakeSetting.put("JSE_OPT_COMPAT", "OFF");
+            rCmakeSetting.put("JSE_OPTIM_MAX",    "OFF");
+            rCmakeSetting.put("JSE_OPTIM_BASE",   "ON");
+            rCmakeSetting.put("JSE_OPTIM_COMPAT", "OFF");
             break;
         }
         case Conf.COMPAT: {
-            rCmakeSetting.put("JSE_OPT_MAX",    "OFF");
-            rCmakeSetting.put("JSE_OPT_BASE",   "OFF");
-            rCmakeSetting.put("JSE_OPT_COMPAT", "ON");
+            rCmakeSetting.put("JSE_OPTIM_MAX",    "OFF");
+            rCmakeSetting.put("JSE_OPTIM_BASE",   "OFF");
+            rCmakeSetting.put("JSE_OPTIM_COMPAT", "ON");
             break;
         }
         case Conf.NONE: {
-            rCmakeSetting.put("JSE_OPT_MAX",    "OFF");
-            rCmakeSetting.put("JSE_OPT_BASE",   "OFF");
-            rCmakeSetting.put("JSE_OPT_COMPAT", "OFF");
+            rCmakeSetting.put("JSE_OPTIM_MAX",    "OFF");
+            rCmakeSetting.put("JSE_OPTIM_BASE",   "OFF");
+            rCmakeSetting.put("JSE_OPTIM_COMPAT", "OFF");
             break;
         }}
         // 现在直接使用 JNIUtil.buildLib 来统一初始化

@@ -233,7 +233,7 @@ public class JNIUtil {
         public LibBuilder setUseMiMalloc(@Nullable Boolean aUseMiMalloc) {mUseMiMalloc = aUseMiMalloc; return this;}
         public LibBuilder setRebuild(boolean aRebuild) {mRebuild = aRebuild; return this;}
         public LibBuilder setRedirectLibPath(@Nullable String aRedirectLibPath) {mRedirectLibPath = aRedirectLibPath; return this;}
-        public LibBuilder setCmakeLineOpt(@Nullable IUnaryFullOperator<? extends CharSequence, ? super String> aCmakeLineOpt) {mCmakeLineOpt = aCmakeLineOpt; return this;}
+        public LibBuilder setCmakeLineOp(@Nullable IUnaryFullOperator<? extends CharSequence, ? super String> aCmakeLineOpt) {mCmakeLineOpt = aCmakeLineOpt; return this;}
         
         @Override public String get() {
             // 如果开启了 USE_MIMALLOC 则增加 MiMalloc 依赖

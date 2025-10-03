@@ -83,7 +83,7 @@ public class TorchModel extends NeuralNetwork {
             .setSrc("nnap/torch", SRC_NAME)
             .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
             .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_NNAPTORCH_LIB)
-            .setCmakeLineOpt(line -> {
+            .setCmakeLineOp(line -> {
                 // 替换其中的 torch 库路径为设置好的路径
                 line = line.replace("$ENV{JSE_TORCH_CMAKE_DIR}", Torch.CMAKE_DIR.replace("\\", "\\\\")); // 注意反斜杠的转义问题
                 return line;

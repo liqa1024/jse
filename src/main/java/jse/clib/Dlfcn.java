@@ -78,7 +78,7 @@ public class Dlfcn {
             .setSrc("dlfcn", SRC_NAME)
             .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS)
             .setRedirectLibPath(Conf.REDIRECT_DLFCN_LIB)
-            .setCmakeLineOpt(null)
+            .setCmakeLineOp(null)
             .get();
         // 设置库路径，这里直接使用 System.load
         System.load(IO.toAbsolutePath(LIB_PATH));

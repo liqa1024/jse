@@ -273,7 +273,7 @@ public class NativeLmp implements IAutoShutdown {
             .setCmakeInitDir("../cmake")
             .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
             .setRebuild(Conf.REBUILD).setRedirectLibPath(Conf.REDIRECT_LMP_LIB)
-            .setCmakeLineOpt(null)
+            .setCmakeLineOp(null)
             .get();
         if (Conf.REDIRECT_LMP_LIB == null) {
             @Nullable String tNativeLmpLLibName = LLIB_NAME_IN(NATIVELMP_LIB_DIR, "lammps");
@@ -297,7 +297,7 @@ public class NativeLmp implements IAutoShutdown {
             .setSrc("lmp", LMPJNI_SRC_NAME)
             .setCmakeCCompiler(Conf.CMAKE_C_COMPILER_LMPJNI).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER_LMPJNI).setCmakeCFlags(Conf.CMAKE_C_FLAGS_LMPJNI).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS_LMPJNI)
             .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_LMPJNI_LIB)
-            .setCmakeLineOpt(line -> {
+            .setCmakeLineOp(line -> {
                 // 替换其中的 lammps 库路径为设置好的路径
                 line = line.replace("$ENV{JSE_LMP_INCLUDE_DIR}", NATIVELMP_INCLUDE_DIR.replace("\\", "\\\\"))  // 注意反斜杠的转义问题
                            .replace("$ENV{JSE_LMP_LIB_PATH}"   , NATIVELMP_LLIB_PATH  .replace("\\", "\\\\")); // 注意反斜杠的转义问题
