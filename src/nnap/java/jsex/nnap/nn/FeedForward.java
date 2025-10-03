@@ -28,17 +28,17 @@ import static jse.code.CS.RANDOM;
  * @author liqa
  */
 public class FeedForward extends NeuralNetwork implements ISavable {
-    private final int mInputDim;
-    private final int[] mHiddenDims;
-    private final Vector mHiddenWeights, mHiddenWeightsBackward;
-    private final IntVector mIndexToBackward;
-    private final Vector mHiddenBiases;
-    private final Vector mOutputWeight;
-    private final double[] mOutputBias;
-    private final int mHiddenNumber, mHiddenWeightsSize, mHiddenBiasesSize, mOutputWeightSize;
+    final int mInputDim;
+    final int[] mHiddenDims;
+    final Vector mHiddenWeights, mHiddenWeightsBackward;
+    final IntVector mIndexToBackward;
+    final Vector mHiddenBiases;
+    final Vector mOutputWeight;
+    final double[] mOutputBias;
+    final int mHiddenNumber, mHiddenWeightsSize, mHiddenBiasesSize, mOutputWeightSize;
     
     /// 缓存中间变量
-    private final Vector mHiddenOutputs, mHiddenGrads, mHiddenGrads2, mHiddenGrads3;
+    final Vector mHiddenOutputs, mHiddenGrads, mHiddenGrads2, mHiddenGrads3;
     
     private FeedForward(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenWeightsBackward, IntVector aIndexToBackward, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
         mInputDim = aInputDim;
