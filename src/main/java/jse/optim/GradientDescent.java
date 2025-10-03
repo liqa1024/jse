@@ -28,6 +28,16 @@ public class GradientDescent extends AbstractOptimizer {
     
     /**
      * {@inheritDoc}
+     * @param aLearningRate {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override public GradientDescent setLearningRate(double aLearningRate) {
+        mEta = aLearningRate;
+        return this;
+    }
+    
+    /**
+     * {@inheritDoc}
      * @param aStep {@inheritDoc}
      * @param aParameter {@inheritDoc}
      * @param rParameterStep {@inheritDoc}

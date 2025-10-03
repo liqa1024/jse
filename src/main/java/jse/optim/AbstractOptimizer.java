@@ -187,6 +187,14 @@ public abstract class AbstractOptimizer implements IOptimizer {
         return this;
     }
     
+    /**
+     * {@inheritDoc}
+     * @param aLearningRate {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override public AbstractOptimizer setLearningRate(double aLearningRate) {
+        throw new UnsupportedOperationException();
+    }
     
     /**
      * {@inheritDoc}

@@ -45,6 +45,16 @@ public class ConjugateGradient extends AbstractOptimizer {
     
     /**
      * {@inheritDoc}
+     * @param aLearningRate {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override public ConjugateGradient setLearningRate(double aLearningRate) {
+        mEta = aLearningRate;
+        return this;
+    }
+    
+    /**
+     * {@inheritDoc}
      * @param aParameter {@inheritDoc}
      * @return {@inheritDoc}
      */

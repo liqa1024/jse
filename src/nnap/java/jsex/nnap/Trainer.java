@@ -162,8 +162,11 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         switch(tOptType.toString()) {
         case "lbfgs": case "LBFGS": {
             mBatchSize = ((Number)UT.Code.getWithDefault(aOptArgs, -1, "batch_size", "batchsize")).intValue();
+            double tEta = ((Number)UT.Code.getWithDefault(aOptArgs, 0.001, "learning_rate", "lr", "eta")).doubleValue();
             int tM = ((Number)UT.Code.getWithDefault(aOptArgs, 100, "history_size", "history", "m")).intValue();
-            mOptimizer = new LBFGS(tM).setLineSearch();
+            mOptimizer = new LBFGS(tM).setLearningRate(tEta);
+            if (mBatchSize > 0) mOptimizer.setNoLineSearch(); // batch 情况下不能线搜索，因为线搜索会使用上一步的梯度
+            else mOptimizer.setLineSearch();
             break;
         }
         case "adam": case "Adam": {
@@ -183,11 +186,16 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         return this;
     }
     public Trainer setLearningRate(double aLearningRate) {
-        if (mOptimizer instanceof Adam) {
-            ((Adam)mOptimizer).setLearningRate(aLearningRate);
-        } else {
-            throw new UnsupportedOperationException("Only Adam optimizer can set learning rate");
+        mOptimizer.setLearningRate(aLearningRate);
+        return this;
+    }
+    public Trainer setBatchSize(int aBatchSize) {
+        mBatchSize = aBatchSize;
+        if (mOptimizer instanceof LBFGS) {
+            if (mBatchSize > 0) mOptimizer.setNoLineSearch(); // batch 情况下不能线搜索，因为线搜索会使用上一步的梯度
+            else mOptimizer.setLineSearch();
         }
+        if (mBatchSize > 0) setForceNormFormula(false);
         return this;
     }
     
@@ -715,6 +723,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
      *       <dl>
      *       <dt>type (可选，默认为 "lbfgs", 可选 "adam"):</dt>
      *          <dd>指定优化器的种类</dd>
+     *       <dt>lr (可选，默认为 0.001):</dt>
+     *          <dd>指定随机优化器采用的学习率</dd>
      *       <dt>batch_size (可选，lbfgs 默认为 -1, adam 默认为 512):</dt>
      *          <dd>指定随机优化器采用的 batch_size</dd>
      *       </dl>
@@ -798,11 +808,11 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
      *     <dd>
      *       指定优化器的具体参数，包含：
      *       <dl>
-     *       <dt>type (可选，默认为 "lbfgs"):</dt>
+     *       <dt>type (可选，默认为 "lbfgs", 可选 "adam"):</dt>
      *          <dd>指定优化器的种类</dd>
-     *       <dt>history_size (可选，默认为 100):</dt>
-     *          <dd>指定 lbfgs 优化器采用的历史缓存大小</dd>
-     *       <dt>batch_size (可选，默认为 512):</dt>
+     *       <dt>lr (可选，默认为 0.001):</dt>
+     *          <dd>指定随机优化器采用的学习率</dd>
+     *       <dt>batch_size (可选，lbfgs 默认为 -1, adam 默认为 512):</dt>
      *          <dd>指定随机优化器采用的 batch_size</dd>
      *       </dl>
      *     </dd>

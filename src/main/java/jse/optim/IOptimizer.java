@@ -61,6 +61,13 @@ public interface IOptimizer {
      */
     IOptimizer setBreakChecker(IBreakChecker aBreakChecker);
     
+    /**
+     * 设置学习率
+     * @param aLearningRate 新的学习率
+     * @return 自身方便链式调用
+     */
+    IOptimizer setLearningRate(double aLearningRate);
+    
     
     /**
      * 执行优化，并更新输入的参数

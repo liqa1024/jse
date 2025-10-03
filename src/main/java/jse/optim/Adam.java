@@ -53,13 +53,12 @@ public class Adam extends AbstractOptimizer {
      */
     public Adam() {this(0.001);}
     
-    
     /**
-     * 设置学习率
-     * @param aLearningRate 新的学习率
-     * @return 自身方便链式调用
+     * {@inheritDoc}
+     * @param aLearningRate {@inheritDoc}
+     * @return {@inheritDoc}
      */
-    public Adam setLearningRate(double aLearningRate) {
+    @Override public Adam setLearningRate(double aLearningRate) {
         mEta = aLearningRate;
         return this;
     }

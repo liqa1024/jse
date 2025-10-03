@@ -34,7 +34,7 @@ import jse.math.vector.Vectors;
  * @author liqa
  */
 public class LBFGS extends AbstractOptimizer {
-    public final static double FIRST_ETA = 0.01, UPDATE_EPS = 1e-10;
+    public final static double UPDATE_EPS = 1e-10;
     
     protected Vector mLastPara = null, mLastGrad = null;
     protected Vector[] mMemS, mMemY;
@@ -42,6 +42,7 @@ public class LBFGS extends AbstractOptimizer {
     protected double[] mAlpha;
     protected int mMemorySize, mUsedMemorySize = 0;
     protected boolean mIsFirst = true;
+    protected double mEta = 0.01, mEtaIncrement = 0.01;
     
     /**
      * 创建一个 LBFGS 优化器
@@ -58,6 +59,16 @@ public class LBFGS extends AbstractOptimizer {
      * 创建一个 LBFGS 优化器
      */
     public LBFGS() {this(20);}
+    
+    /**
+     * {@inheritDoc}
+     * @param aLearningRate {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override public LBFGS setLearningRate(double aLearningRate) {
+        mEta = mEtaIncrement = aLearningRate;
+        return this;
+    }
     
     /**
      * {@inheritDoc}
@@ -101,7 +112,8 @@ public class LBFGS extends AbstractOptimizer {
         IVector tGrad = grad();
         if (mIsFirst) {
             mIsFirst = false;
-            tGrad.operation().multiply2dest(-FIRST_ETA, rParameterStep); // 实际第一步会减小步长来确保收敛
+            // 只在无线搜索时第一步会减小步长来确保收敛
+            tGrad.operation().multiply2dest(mLineSearch ? -1.0 : -mEta, rParameterStep);
             mLastPara.fill(aParameter);
             mLastGrad.fill(tGrad);
             return;
@@ -146,7 +158,8 @@ public class LBFGS extends AbstractOptimizer {
         }
         // 特殊处理没有缓存的情况
         if (mUsedMemorySize == 0) {
-            tGrad.operation().multiply2dest(-FIRST_ETA, rParameterStep); // 实际第一步会减小步长来确保收敛
+            // 只在无线搜索时第一步会减小步长来确保收敛
+            tGrad.operation().multiply2dest(mLineSearch ? -1.0 : -mEta, rParameterStep);
             return;
         }
         // 开始两轮循环的 LBFGS 过程
@@ -160,6 +173,13 @@ public class LBFGS extends AbstractOptimizer {
             double tBeta = mMemRho[m] * mMemY[m].operation().dot(rParameterStep);
             rParameterStep.operation().mplus2this(mMemS[m], mAlpha[m] - tBeta);
         }
-        rParameterStep.negative2this();
+        if (mLineSearch) {
+            rParameterStep.negative2this();
+        } else {
+            // 无线搜索情况下现在会增加学习率限制来确保稳定性
+            double tEta = mEta + mUsedMemorySize*mUsedMemorySize*mEtaIncrement;
+            if (tEta > 1.0) tEta = 1.0;
+            rParameterStep.multiply2this(-tEta);
+        }
     }
 }
