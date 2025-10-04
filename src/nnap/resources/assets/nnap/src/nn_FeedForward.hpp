@@ -165,19 +165,15 @@ static void backward_(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGr
     }
     if (rGradPara != NULL) {
         jint tLastHiddenSize = aHiddenDims[tEnd];
-        jdouble *rGradOutWeights;
         if (SHARE) {
             rGradSharedWeights += tSharedInSize*tLastHiddenSize;
             if (!aSharedFlags[tEnd]) {
                 rGradNoSharedWeights += tInSize*tLastHiddenSize;
             }
-            rGradOutWeights = rGradNoSharedWeights; // output weights
+            mplus(rGradNoSharedWeights, aYGrad, tX, tLastHiddenSize); // output weights
         } else {
             rGradWeights += tInSize*tLastHiddenSize;
-            rGradOutWeights = rGradWeights;
-        }
-        for (jint j = 0; j < tLastHiddenSize; ++j) {
-            rGradOutWeights[j] += aYGrad*tX[j];
+            mplus(rGradWeights, aYGrad, tX, tLastHiddenSize);
         }
         if (SHARE) {
             rGradSharedBiases = rGradSharedWeights+tLastHiddenSize;
@@ -196,7 +192,7 @@ static void backward_(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGr
             }
         }
         if (SHARE) {
-            *rGradNoSharedBiases += aYGrad;
+            *rGradNoSharedBiases += aYGrad; // output bias
         } else {
             *rGradBiases += aYGrad;
         }
@@ -240,11 +236,9 @@ static void backward_(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGr
             rGradWeights -= tWeightSize;
             rGradBiases -= tInSize;
             for (jint j = 0; j < tInSize; ++j) {
-                jdouble tSubGrad3 = tGrad3Before[j];
+                const jdouble tSubGrad3 = tGrad3Before[j];
                 rGradBiases[j] += tSubGrad3;
-                for (jint k = 0; k < tOutSize; ++k) {
-                    rGradWeights[k] += tSubGrad3 * tX[k];
-                }
+                mplus(rGradWeights, tSubGrad3, tX, tOutSize);
                 rGradWeights += tOutSize;
             }
             if (!SHARE) {
@@ -282,11 +276,9 @@ static void backward_(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGr
         rGradWeights -= aInputDim*tInSize;
         rGradBiases -= tInSize;
         for (jint j = 0; j < tInSize; ++j) {
-            jdouble tSubGrad3 = tGrad3Before[j];
+            const jdouble tSubGrad3 = tGrad3Before[j];
             rGradBiases[j] += tSubGrad3;
-            for (jint k = 0; k < aInputDim; ++k) {
-                rGradWeights[k] += tSubGrad3 * aX[k];
-            }
+            mplus(rGradWeights, tSubGrad3, aX, aInputDim);
             rGradWeights += aInputDim;
         }
     }
@@ -368,10 +360,7 @@ static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdo
         rGradSharedWeights += tOutSize*tSharedInSize;
     }
     for (jint i = 0; i < tOutSize; ++i) {
-        jdouble tSubGrad3 = tGrad3[i];
-        for (jint j = 0; j < tInSize; ++j) {
-            rGradWeights[j] += aGradXGrad[j]*tSubGrad3;
-        }
+        mplus(rGradWeights, tGrad3[i], aGradXGrad, tInSize);
         rGradWeights += tInSize;
     }
     // G^0 i
@@ -430,10 +419,7 @@ static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdo
             rGradSharedWeights += tOutSize*tSharedInSize;
         }
         for (jint i = 0; i < tOutSize; ++i) {
-            jdouble tSubGrad3 = tGrad3[i];
-            for (jint j = 0; j < tInSize; ++j) {
-                rGradWeights[j] += tSubGrad3 * rGrad5[j];
-            }
+            mplus(rGradWeights, tGrad3[i], rGrad5, tInSize);
             rGradWeights += tInSize;
         }
         // G^l+1 ik
@@ -502,11 +488,9 @@ static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdo
         rGradWeights -= tInSize*tOutSize;
         rGradBiases -= tOutSize;
         for (jint i = 0; i < tOutSize; ++i) {
-            jdouble tSubX2 = rX2[i];
+            const jdouble tSubX2 = rX2[i];
             rGradBiases[i] += tSubX2;
-            for (jint j = 0; j < tInSize; ++j) {
-                rGradWeights[j] += tX[j] * tSubX2;
-            }
+            mplus(rGradWeights, tSubX2, tX, tInSize);
             rGradWeights += tInSize;
         }
         if (!SHARE) {
@@ -550,11 +534,9 @@ static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdo
     rGradBiases -= tOutSize;
     rGradWeights -= aInputDim*tOutSize;
     for (jint i = 0; i < tOutSize; ++i) {
-        jdouble tSubX2 = rX2[i];
+        const jdouble tSubX2 = rX2[i];
         rGradBiases[i] += tSubX2;
-        for (jint j = 0; j < aInputDim; ++j) {
-            rGradWeights[j] += aX[j]*tSubX2;
-        }
+        mplus(rGradWeights, tSubX2, aX, aInputDim);
         rGradWeights += aInputDim;
     }
     if (rGradX != NULL) {
