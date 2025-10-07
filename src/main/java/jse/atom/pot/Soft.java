@@ -153,11 +153,14 @@ public class Soft implements IPairPotential {
                 double r = MathEX.Fast.sqrt(rsq);
                 double arg = MathEX.PI * r / mCut[cType][type];
                 double fpair = r<=0.0 ? 0.0 : (mPrefactor[cType][type] * MathEX.Fast.sin(arg) * MathEX.PI/mCut[cType][type]/r);
+                double fx = dx*fpair;
+                double fy = dy*fpair;
+                double fz = dz*fpair;
                 if (rForceAccumulator != null) {
-                    rForceAccumulator.add(threadID, cIdx, idx, dx*fpair, dy*fpair, dz*fpair);
+                    rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
                 }
                 if (rVirialAccumulator != null) {
-                    rVirialAccumulator.add(threadID, cIdx, idx, dx*dx*fpair, dy*dy*fpair, dz*dz*fpair, dx*dy*fpair, dx*dz*fpair, dy*dz*fpair);
+                    rVirialAccumulator.add(threadID, cIdx, idx, fx, fy, fz, dx, dy, dz);
                 }
                 if (rEnergyAccumulator != null) {
                     double deng = mPrefactor[cType][type] * (1.0 + MathEX.Fast.cos(arg));

@@ -148,7 +148,7 @@ public class SystemLmpPotential extends AbstractLmpPotential {
      * @param rVirialsXZ {@inheritDoc}
      * @param rVirialsYZ {@inheritDoc}
      */
-    @Override public void calEnergyForceVirials(IAtomData aAtomData, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ) throws IOException {
+    @Override public void calEnergyForceVirials(IAtomData aAtomData, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ, @Nullable IVector rVirialsYX, @Nullable IVector rVirialsZX, @Nullable IVector rVirialsZY) throws IOException {
         if (mDead) throw new IllegalStateException("This Potential is dead");
         // 统一判断需要的类型
         final boolean tRequirePreAtomEnergy = rEnergies!=null && rEnergies.size()!=1;
@@ -156,6 +156,8 @@ public class SystemLmpPotential extends AbstractLmpPotential {
         final boolean tRequireForce = rForcesX!=null || rForcesY!=null || rForcesZ!=null;
         final boolean tRequirePreAtomStress = (rVirialsXX!=null && rVirialsXX.size()!=1) || (rVirialsYY!=null && rVirialsYY.size()!=1) || (rVirialsZZ!=null && rVirialsZZ.size()!=1) || (rVirialsXY!=null && rVirialsXY.size()!=1) || (rVirialsXZ!=null && rVirialsXZ.size()!=1) || (rVirialsYZ!=null && rVirialsYZ.size()!=1);
         final boolean tRequireTotalStress = (rVirialsXX!=null && rVirialsXX.size()==1) || (rVirialsYY!=null && rVirialsYY.size()==1) || (rVirialsZZ!=null && rVirialsZZ.size()==1) || (rVirialsXY!=null && rVirialsXY.size()==1) || (rVirialsXZ!=null && rVirialsXZ.size()==1) || (rVirialsYZ!=null && rVirialsYZ.size()==1);
+        // 简单实现 lammps 计算统一不支持 9 项压力（绝大部分原生的势没做支持），为了确保严谨语义要求输出时直接报错
+        if (rVirialsYX!=null || rVirialsZX!=null || rVirialsZY!=null) throw new UnsupportedOperationException("LmpPotential not support 9 columns stresses");
         String tUniqueID = UT.Code.randID();
         IO.makeDir(mChecker.mWorkingDir);
         // 事先准备输入 data 文件

@@ -45,6 +45,8 @@ public class PairNNAP extends LmpPlugin.Pair {
     
     @Override public void settings(String... aArgs) throws Exception {
         super.settings(aArgs);
+        // nnap 支持 centroidstress
+        setCentroidstressflag(CENTROID_AVAIL);
         // 限制只能调用一次 pair_coeff
         setOneCoeff(true);
         // 此时需要禁用 VirialFdotrCompute
@@ -64,10 +66,12 @@ public class PairNNAP extends LmpPlugin.Pair {
         boolean vflag = vflagEither();
         boolean eflagAtom = eflagAtom();
         boolean vflagAtom = vflagAtom();
+        boolean cvflagAtom = cvflagAtom();
         DoubleCPointer engVdwl = engVdwl();
         DoubleCPointer eatom = eatom();
         DoubleCPointer virial = virial();
         NestedDoubleCPointer vatom = vatom();
+        NestedDoubleCPointer cvatom = cvatom();
         
         NestedDoubleCPointer x = atomX();
         NestedDoubleCPointer f = atomF();
@@ -91,12 +95,16 @@ public class PairNNAP extends LmpPlugin.Pair {
         final double[] engBuf = {0.0};
         final double[] virialBuf = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
         final Vector eatomVec = eflagAtom ? VectorCache.getVec(nlocal) : null;
-        final RowMatrix vatomMat = vflagAtom ? MatrixCache.getMatRow(nlocal, 6) : null;
+        final RowMatrix vatomMat = vflagAtom ? MatrixCache.getMatRow(nlocal+nghost, 6) : null;
+        final RowMatrix cvatomMat = cvflagAtom ? MatrixCache.getMatRow(nlocal+nghost, 9) : null;
         if (eflagAtom) {
             eatom.parse2dest(eatomVec);
         }
         if (vflagAtom) {
             vatom.parse2dest(vatomMat);
+        }
+        if (cvflagAtom) {
+            cvatom.parse2dest(cvatomMat);
         }
         
         // 将原子序号改为按照种类排序，这样可以利用缓存机制
@@ -155,21 +163,32 @@ public class PairNNAP extends LmpPlugin.Pair {
             fMat.update(idx, 0, v -> v + fx);
             fMat.update(idx, 1, v -> v + fy);
             fMat.update(idx, 2, v -> v + fz);
-        }, !vflag ? null : (threadID, cIdx, idx, vxx, vyy, vzz, vxy, vxz, vyz) -> {
-            if (idx >= 0) throw new IllegalStateException();
-            virialBuf[0] += vxx;
-            virialBuf[1] += vyy;
-            virialBuf[2] += vzz;
-            virialBuf[3] += vxy;
-            virialBuf[4] += vxz;
-            virialBuf[5] += vyz;
+        }, !vflag ? null : (threadID, cIdx, idx, fx, fy, fz, dx, dy, dz) -> {
+            if (cIdx >= 0) throw new IllegalStateException();
+            virialBuf[0] += dx*fx;
+            virialBuf[1] += dy*fy;
+            virialBuf[2] += dz*fz;
+            virialBuf[3] += dx*fy;
+            virialBuf[4] += dx*fz;
+            virialBuf[5] += dy*fz;
             if (vflagAtom) {
-                vatomMat.update(cIdx, 0, v -> v + vxx);
-                vatomMat.update(cIdx, 1, v -> v + vyy);
-                vatomMat.update(cIdx, 2, v -> v + vzz);
-                vatomMat.update(cIdx, 3, v -> v + vxy);
-                vatomMat.update(cIdx, 4, v -> v + vxz);
-                vatomMat.update(cIdx, 5, v -> v + vyz);
+                vatomMat.update(idx, 0, v -> v + dx*fx);
+                vatomMat.update(idx, 1, v -> v + dy*fy);
+                vatomMat.update(idx, 2, v -> v + dz*fz);
+                vatomMat.update(idx, 3, v -> v + dx*fy);
+                vatomMat.update(idx, 4, v -> v + dx*fz);
+                vatomMat.update(idx, 5, v -> v + dy*fz);
+            }
+            if (cvflagAtom) {
+                cvatomMat.update(idx, 0, v -> v + dx*fx);
+                cvatomMat.update(idx, 1, v -> v + dy*fy);
+                cvatomMat.update(idx, 2, v -> v + dz*fz);
+                cvatomMat.update(idx, 3, v -> v + dx*fy);
+                cvatomMat.update(idx, 4, v -> v + dx*fz);
+                cvatomMat.update(idx, 5, v -> v + dy*fz);
+                cvatomMat.update(idx, 6, v -> v + dy*fx);
+                cvatomMat.update(idx, 7, v -> v + dz*fx);
+                cvatomMat.update(idx, 8, v -> v + dz*fy);
             }
         });
         
@@ -188,6 +207,10 @@ public class PairNNAP extends LmpPlugin.Pair {
         if (vflagAtom) {
             vatom.fill(vatomMat);
             MatrixCache.returnMat(vatomMat);
+        }
+        if (cvflagAtom) {
+            cvatom.fill(cvatomMat);
+            MatrixCache.returnMat(cvatomMat);
         }
         f.fill(fMat);
         IntVectorCache.returnVec(typeVec);

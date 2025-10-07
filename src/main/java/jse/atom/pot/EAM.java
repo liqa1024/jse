@@ -946,7 +946,7 @@ public class EAM implements IPairPotential {
                     rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
                 }
                 if (rVirialAccumulator != null) {
-                    rVirialAccumulator.add(threadID, cIdx, idx, dx*fx, dy*fy, dz*fz, dx*fy, dx*fz, dy*fz);
+                    rVirialAccumulator.add(threadID, cIdx, idx, fx, fy, fz, dx, dy, dz);
                 }
                 if (rEnergyAccumulator != null) {
                     rEnergyAccumulator.add(threadID, cIdx, idx, phi);

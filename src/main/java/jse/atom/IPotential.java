@@ -45,6 +45,8 @@ public interface IPotential extends IAutoShutdown {
     default boolean perAtomEnergySupport() {return true;}
     /** @return 是否支持计算每原子的压力 */
     default boolean perAtomStressSupport() {return true;}
+    /** @return 是否支持计算 9 列的每原子压力 */
+    default boolean centroidPerAtomStressSupport() {return false;}
     
     /**
      * 转换为一个 <a href="https://wiki.fysik.dtu.dk/ase/development/calculators.html">
@@ -174,17 +176,28 @@ public interface IPotential extends IAutoShutdown {
      * 使用此势函数计算给定原子数据 {@link IAtomData} 中所有原子的单独应力，具体可以参见：
      * <a href="https://en.wikipedia.org/wiki/Virial_stress">
      * Virial stress - Wikipedia </a>
+     * <p>
+     * 每原子位力的定义具有一定任意性，这里的实现优先采用 GPUMD 中使用的更具对称性的定义，
+     * 在多体势的情况下可能会和 LAMMPS 存在出入。具体可参考：
+     * <a href="https://arxiv.org/abs/1503.06565">
+     * Force and heat current formulas for many-body potentials in molecular dynamics simulation with
+     * applications to thermal conductivity calculations </a>
+     *
      * @param aAtomData 需要计算应力的原子数据
      * @param aIdealGas 是否考虑理想气体部分（速度效应部分），默认为 {@code false}
-     * @return 按照 {@code [xx, yy, zz, xy, xz, yz]} 顺序排列的应力向量
+     * @return 按照 {@code [xx, yy, zz, xy, xz, yz, yx, zx, zy]} 顺序排列的应力向量，
+     *         如果不支持 9 列的输出则只输出 {@code [xx, yy, zz, xy, xz, yz]}
      * @throws Exception 特殊实现下可选的抛出异常
      */
     default List<Vector> calStresses(IAtomData aAtomData, boolean aIdealGas) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
         final int tAtomNum = aAtomData.atomNumber();
-        List<Vector> rStresses = VectorCache.getVec(tAtomNum, 6);
-        calEnergyForceVirials(aAtomData, null, null, null, null, rStresses.get(0), rStresses.get(1), rStresses.get(2), rStresses.get(3), rStresses.get(4), rStresses.get(5));
-        for (int i = 0; i < 6; ++i) {
+        final boolean tCentroid = centroidPerAtomStressSupport();
+        final int tColNum = tCentroid ? 9 : 6;
+        List<Vector> rStresses = VectorCache.getVec(tAtomNum, tColNum);
+        calEnergyForceVirials(aAtomData, null, null, null, null, rStresses.get(0), rStresses.get(1), rStresses.get(2), rStresses.get(3), rStresses.get(4), rStresses.get(5),
+                              tCentroid?rStresses.get(6):null, tCentroid?rStresses.get(7):null, tCentroid?rStresses.get(8):null);
+        for (int i = 0; i < tColNum; ++i) {
             rStresses.get(i).operation().negative2this();
         }
         if (!aIdealGas || !aAtomData.hasMass() || !aAtomData.hasVelocity()) return rStresses;
@@ -208,6 +221,11 @@ public interface IPotential extends IAutoShutdown {
             rStresses.get(3).add(i, -tMass * vx*vy);
             rStresses.get(4).add(i, -tMass * vx*vz);
             rStresses.get(5).add(i, -tMass * vy*vz);
+            if (tCentroid) {
+                rStresses.get(6).add(i, -tMass * vy*vx);
+                rStresses.get(7).add(i, -tMass * vz*vx);
+                rStresses.get(8).add(i, -tMass * vz*vy);
+            }
         }
         return rStresses;
     }
@@ -215,8 +233,16 @@ public interface IPotential extends IAutoShutdown {
      * 使用此势函数计算给定原子数据 {@link IAtomData} 中所有原子的单独应力，具体可以参见：
      * <a href="https://en.wikipedia.org/wiki/Virial_stress">
      * Virial stress - Wikipedia </a>
+     * <p>
+     * 每原子位力的定义具有一定任意性，这里的实现优先采用 GPUMD 中使用的更具对称性的定义，
+     * 在多体势的情况下可能会和 LAMMPS 存在出入。具体可参考：
+     * <a href="https://arxiv.org/abs/1503.06565">
+     * Force and heat current formulas for many-body potentials in molecular dynamics simulation with
+     * applications to thermal conductivity calculations </a>
+     *
      * @param aAtomData 需要计算应力的原子数据
-     * @return 按照 {@code [xx, yy, zz, xy, xz, yz]} 顺序排列的应力向量
+     * @return 按照 {@code [xx, yy, zz, xy, xz, yz, yx, zx, zy]} 顺序排列的应力向量，
+     *         如果不支持 9 列的输出则只输出 {@code [xx, yy, zz, xy, xz, yz]}
      * @throws Exception 特殊实现下可选的抛出异常
      */
     default List<Vector> calStresses(IAtomData aAtomData) throws Exception {return calStresses(aAtomData, false);}
@@ -479,6 +505,41 @@ public interface IPotential extends IAutoShutdown {
      * lammps 一致的定义，具体可以参见：
      * <a href="https://en.wikipedia.org/wiki/Virial_stress">
      * Virial stress - Wikipedia </a>
+     * <p>
+     * 每原子位力的定义具有一定任意性，这里的实现优先采用 GPUMD 中使用的更具对称性的定义，
+     * 在多体势的情况下可能会和 LAMMPS 存在出入。具体可参考：
+     * <a href="https://arxiv.org/abs/1503.06565">
+     * Force and heat current formulas for many-body potentials in molecular dynamics simulation with
+     * applications to thermal conductivity calculations </a>
+     *
+     * @param aAtomData 需要计算性质的原子数据
+     * @param rEnergies 存储计算输出的每原子能量值，{@code null} 表示不需要能量，长度为 {@code 1} 表示只需要体系的总能量
+     * @param rForcesX 存储计算输出的 x 方向力值，{@code null} 表示不需要此值
+     * @param rForcesY 存储计算输出的 y 方向力值，{@code null} 表示不需要此值
+     * @param rForcesZ 存储计算输出的 z 方向力值，{@code null} 表示不需要此值
+     * @param rVirialsXX 存储计算输出的 xx 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsYY 存储计算输出的 yy 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsZZ 存储计算输出的 zz 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsXY 存储计算输出的 xy 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsXZ 存储计算输出的 xz 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsYZ 存储计算输出的 yz 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsYX 存储计算输出的 yx 分量的每原子位力值，默认为 {@code null} 表示不需要此值
+     * @param rVirialsZX 存储计算输出的 zx 分量的每原子位力值，默认为 {@code null} 表示不需要此值
+     * @param rVirialsZY 存储计算输出的 zy 分量的每原子位力值，默认为 {@code null} 表示不需要此值
+     * @throws Exception 特殊实现下可选的抛出异常
+     */
+    void calEnergyForceVirials(IAtomData aAtomData, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ, @Nullable IVector rVirialsYX, @Nullable IVector rVirialsZX, @Nullable IVector rVirialsZY) throws Exception;
+    /**
+     * 使用此势函数计算所有需要的性质，需要注意的是，这里位力需要采用
+     * lammps 一致的定义，具体可以参见：
+     * <a href="https://en.wikipedia.org/wiki/Virial_stress">
+     * Virial stress - Wikipedia </a>
+     * <p>
+     * 每原子位力的定义具有一定任意性，这里的实现优先采用 GPUMD 中使用的更具对称性的定义，
+     * 在多体势的情况下可能会和 LAMMPS 存在出入。具体可参考：
+     * <a href="https://arxiv.org/abs/1503.06565">
+     * Force and heat current formulas for many-body potentials in molecular dynamics simulation with
+     * applications to thermal conductivity calculations </a>
      *
      * @param aAtomData 需要计算性质的原子数据
      * @param rEnergies 存储计算输出的每原子能量值，{@code null} 表示不需要能量，长度为 {@code 1} 表示只需要体系的总能量
@@ -493,5 +554,7 @@ public interface IPotential extends IAutoShutdown {
      * @param rVirialsYZ 存储计算输出的 yz 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
      * @throws Exception 特殊实现下可选的抛出异常
      */
-    void calEnergyForceVirials(IAtomData aAtomData, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ) throws Exception;
+    default void calEnergyForceVirials(IAtomData aAtomData, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ) throws Exception {
+        calEnergyForceVirials(aAtomData, rEnergies, rForcesX, rForcesY, rForcesZ, rVirialsXX, rVirialsYY, rVirialsZZ, rVirialsXY, rVirialsXZ, rVirialsYZ, null, null, null);
+    }
 }

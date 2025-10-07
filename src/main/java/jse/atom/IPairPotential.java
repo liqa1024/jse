@@ -30,6 +30,8 @@ import java.util.function.IntUnaryOperator;
  */
 public interface IPairPotential extends IPotential, IHasSymbol {
     
+    /** @return 是否支持计算 9 列的每原子压力 */
+    @Override default boolean centroidPerAtomStressSupport() {return true;}
     /** @return 此势函数支持的原子种类数目，默认为 {@code -1} 表示没有种类数目限制 */
     @Override default int atomTypeNumber() {return -1;}
     /** @return {@inheritDoc}；如果存在则会自动根据元素符号重新映射种类 */
@@ -81,7 +83,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
     }
     /** 位力累加接口，用于接收位力计算结果 */
     @FunctionalInterface interface IVirialAccumulator {
-        void add(int aThreadID, int cIdx, int aIdx, double aVirialXX, double aVirialYY, double aVirialZZ, double aVirialsXY, double aVirialsXZ, double aVirialsYZ);
+        void add(int aThreadID, int cIdx, int aIdx, double aForceX, double aForceY, double aForceZ, double aDx, double aDy, double aDz);
     }
     
     /**
@@ -206,17 +208,28 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      * 使用此势函数计算给定原子参数计算器 {@link AtomicParameterCalculator} 中所有原子的单独应力，具体可以参见：
      * <a href="https://en.wikipedia.org/wiki/Virial_stress">
      * Virial stress - Wikipedia </a>
+     * <p>
+     * 每原子位力的定义具有一定任意性，这里的实现优先采用 GPUMD 中使用的更具对称性的定义，
+     * 在多体势的情况下可能会和 LAMMPS 存在出入。具体可参考：
+     * <a href="https://arxiv.org/abs/1503.06565">
+     * Force and heat current formulas for many-body potentials in molecular dynamics simulation with
+     * applications to thermal conductivity calculations </a>
+     *
      * @param aAPC 需要计算应力的原子参数计算器，主要通过此计算器来获取近邻列表
      * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
-     * @return 按照 {@code [xx, yy, zz, xy, xz, yz]} 顺序排列的应力向量
+     * @return 按照 {@code [xx, yy, zz, xy, xz, yz, yx, zx, zy]} 顺序排列的应力向量，
+     *         如果不支持 9 列的输出则只输出 {@code [xx, yy, zz, xy, xz, yz]}
      * @throws Exception 特殊实现下可选的抛出异常
      */
     default List<Vector> calStresses(AtomicParameterCalculator aAPC, IntUnaryOperator aTypeMap) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
         typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
-        List<Vector> rStresses = VectorCache.getVec(aAPC.atomNumber(), 6);
-        calEnergyForceVirials(aAPC, null, null, null, null, rStresses.get(0), rStresses.get(1), rStresses.get(2), rStresses.get(3), rStresses.get(4), rStresses.get(5), aTypeMap);
-        for (int i = 0; i < 6; ++i) {
+        final boolean tCentroid = centroidPerAtomStressSupport();
+        final int tColNum = tCentroid ? 9 : 6;
+        List<Vector> rStresses = VectorCache.getVec(aAPC.atomNumber(), tColNum);
+        calEnergyForceVirials(aAPC, null, null, null, null, rStresses.get(0), rStresses.get(1), rStresses.get(2), rStresses.get(3), rStresses.get(4), rStresses.get(5),
+                              tCentroid?rStresses.get(6):null, tCentroid?rStresses.get(7):null, tCentroid?rStresses.get(8):null, aTypeMap);
+        for (int i = 0; i < tColNum; ++i) {
             rStresses.get(i).operation().negative2this();
         }
         return rStresses;
@@ -226,12 +239,19 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      * <a href="https://en.wikipedia.org/wiki/Virial_stress">
      * Virial stress - Wikipedia </a>
      * <p>
+     * 每原子位力的定义具有一定任意性，这里的实现优先采用 GPUMD 中使用的更具对称性的定义，
+     * 在多体势的情况下可能会和 LAMMPS 存在出入。具体可参考：
+     * <a href="https://arxiv.org/abs/1503.06565">
+     * Force and heat current formulas for many-body potentials in molecular dynamics simulation with
+     * applications to thermal conductivity calculations </a>
+     * <p>
      * 此时由于参数计算器不会包含元素符号信息，因此不会尝试进行种类映射，为了保证种类正确可以使用
      * {@link #calStresses(AtomicParameterCalculator, IntUnaryOperator)}
      * 来手动指定种类编号的映射
      *
      * @param aAPC 需要计算应力的原子参数计算器，主要通过此计算器来获取近邻列表
-     * @return 按照 {@code [xx, yy, zz, xy, xz, yz]} 顺序排列的应力向量
+     * @return 按照 {@code [xx, yy, zz, xy, xz, yz, yx, zx, zy]} 顺序排列的应力向量，
+     *         如果不支持 9 列的输出则只输出 {@code [xx, yy, zz, xy, xz, yz]}
      * @throws Exception 特殊实现下可选的抛出异常
      */
     default List<Vector> calStresses(AtomicParameterCalculator aAPC) throws Exception {return calStresses(aAPC, type->type);}
@@ -240,6 +260,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      * 使用此势函数计算给定原子参数计算器 {@link AtomicParameterCalculator} 原子结构的应力，具体可以参见：
      * <a href="https://en.wikipedia.org/wiki/Virial_stress">
      * Virial stress - Wikipedia </a>
+     *
      * @param aAPC 需要计算应力的原子参数计算器，主要通过此计算器来获取近邻列表
      * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
      * @return 按照 {@code [xx, yy, zz, xy, xz, yz]} 顺序排列的应力值
@@ -763,6 +784,12 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      * lammps 一致的定义，具体可以参见：
      * <a href="https://en.wikipedia.org/wiki/Virial_stress">
      * Virial stress - Wikipedia </a>
+     * <p>
+     * 每原子位力的定义具有一定任意性，这里的实现优先采用 GPUMD 中使用的更具对称性的定义，
+     * 在多体势的情况下可能会和 LAMMPS 存在出入。具体可参考：
+     * <a href="https://arxiv.org/abs/1503.06565">
+     * Force and heat current formulas for many-body potentials in molecular dynamics simulation with
+     * applications to thermal conductivity calculations </a>
      *
      * @param aAPC 需要计算性质的原子参数计算器，主要通过此计算器来获取近邻列表
      * @param rEnergies 存储计算输出的每原子能量值，{@code null} 表示不需要能量，长度为 {@code 1} 表示只需要体系的总能量
@@ -775,16 +802,19 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      * @param rVirialsXY 存储计算输出的 xy 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
      * @param rVirialsXZ 存储计算输出的 xz 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
      * @param rVirialsYZ 存储计算输出的 yz 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsYX 存储计算输出的 yx 分量的每原子位力值，默认为 {@code null} 表示不需要此值
+     * @param rVirialsZX 存储计算输出的 zx 分量的每原子位力值，默认为 {@code null} 表示不需要此值
+     * @param rVirialsZY 存储计算输出的 zy 分量的每原子位力值，默认为 {@code null} 表示不需要此值
      * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
      * @throws Exception 特殊实现下可选的抛出异常
      */
-    default void calEnergyForceVirials(AtomicParameterCalculator aAPC, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ, IntUnaryOperator aTypeMap) throws Exception {
+    default void calEnergyForceVirials(AtomicParameterCalculator aAPC, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ, @Nullable IVector rVirialsYX, @Nullable IVector rVirialsZX, @Nullable IVector rVirialsZY, IntUnaryOperator aTypeMap) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
         typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
         // 统一存储常量
         final boolean tCalEnergy = rEnergies!=null;
         final boolean tCalForce = rForcesX!=null || rForcesY!=null || rForcesZ!=null;
-        final boolean tCalVirial = rVirialsXX!=null || rVirialsYY!=null || rVirialsZZ!=null || rVirialsXY!=null || rVirialsXZ!=null || rVirialsYZ!=null;
+        final boolean tCalVirial = rVirialsXX!=null || rVirialsYY!=null || rVirialsZZ!=null || rVirialsXY!=null || rVirialsXZ!=null || rVirialsYZ!=null || rVirialsYX!=null || rVirialsZX!=null || rVirialsZY!=null;
         final int tTypeNum = atomTypeNumber();
         final int tAtomNum = aAPC.atomNumber();
         final int tThreadNum = threadNumber();
@@ -858,6 +888,9 @@ public interface IPairPotential extends IPotential, IHasSymbol {
         if (rVirialsXY != null) rVirialsXY.fill(0.0);
         if (rVirialsXZ != null) rVirialsXZ.fill(0.0);
         if (rVirialsYZ != null) rVirialsYZ.fill(0.0);
+        if (rVirialsYX != null) rVirialsYX.fill(0.0);
+        if (rVirialsZX != null) rVirialsZX.fill(0.0);
+        if (rVirialsZY != null) rVirialsZY.fill(0.0);
         // 并行情况下存在并行写入的问题，因此需要这样操作
         IVector @Nullable[] rForcesXPar = rForcesX!=null ? new IVector[tThreadNum] : null; if (rForcesX != null) {rForcesXPar[0] = rForcesX; for (int i = 1; i < tThreadNum; ++i) {rForcesXPar[i] = VectorCache.getZeros(tAtomNum);}}
         IVector @Nullable[] rForcesYPar = rForcesY!=null ? new IVector[tThreadNum] : null; if (rForcesY != null) {rForcesYPar[0] = rForcesY; for (int i = 1; i < tThreadNum; ++i) {rForcesYPar[i] = VectorCache.getZeros(tAtomNum);}}
@@ -868,6 +901,9 @@ public interface IPairPotential extends IPotential, IHasSymbol {
         IVector @Nullable[] rVirialsXYPar = rVirialsXY!=null ? new IVector[tThreadNum] : null; if (rVirialsXY != null) {rVirialsXYPar[0] = rVirialsXY; for (int i = 1; i < tThreadNum; ++i) {rVirialsXYPar[i] = VectorCache.getZeros(rVirialsXY.size());}}
         IVector @Nullable[] rVirialsXZPar = rVirialsXZ!=null ? new IVector[tThreadNum] : null; if (rVirialsXZ != null) {rVirialsXZPar[0] = rVirialsXZ; for (int i = 1; i < tThreadNum; ++i) {rVirialsXZPar[i] = VectorCache.getZeros(rVirialsXZ.size());}}
         IVector @Nullable[] rVirialsYZPar = rVirialsYZ!=null ? new IVector[tThreadNum] : null; if (rVirialsYZ != null) {rVirialsYZPar[0] = rVirialsYZ; for (int i = 1; i < tThreadNum; ++i) {rVirialsYZPar[i] = VectorCache.getZeros(rVirialsYZ.size());}}
+        IVector @Nullable[] rVirialsYXPar = rVirialsYX!=null ? new IVector[tThreadNum] : null; if (rVirialsYX != null) {rVirialsYXPar[0] = rVirialsYX; for (int i = 1; i < tThreadNum; ++i) {rVirialsYXPar[i] = VectorCache.getZeros(rVirialsYX.size());}}
+        IVector @Nullable[] rVirialsZXPar = rVirialsZX!=null ? new IVector[tThreadNum] : null; if (rVirialsZX != null) {rVirialsZXPar[0] = rVirialsZX; for (int i = 1; i < tThreadNum; ++i) {rVirialsZXPar[i] = VectorCache.getZeros(rVirialsZX.size());}}
+        IVector @Nullable[] rVirialsZYPar = rVirialsZY!=null ? new IVector[tThreadNum] : null; if (rVirialsZY != null) {rVirialsZYPar[0] = rVirialsZY; for (int i = 1; i < tThreadNum; ++i) {rVirialsZYPar[i] = VectorCache.getZeros(rVirialsZY.size());}}
         // 遍历所有原子计算力
         calEnergyForceVirial(tAtomNum, (initDo, finalDo, neighborListDo) -> {
             aAPC.pool_().parforWithException(tAtomNum, initDo, finalDo, (i, threadID) -> {
@@ -921,37 +957,49 @@ public interface IPairPotential extends IPotential, IHasSymbol {
             } else {
                 throw new IllegalStateException();
             }
-        }, !tCalVirial ? null : (threadID, cIdx, idx, vxx, vyy, vzz, vxy, vxz, vyz) -> {
+        }, !tCalVirial ? null : (threadID, cIdx, idx, fx, fy, fz, dx, dy, dz) -> {
             final @Nullable IVector tVirialsXX = rVirialsXX!=null ? rVirialsXXPar[threadID] : null;
             final @Nullable IVector tVirialsYY = rVirialsYY!=null ? rVirialsYYPar[threadID] : null;
             final @Nullable IVector tVirialsZZ = rVirialsZZ!=null ? rVirialsZZPar[threadID] : null;
             final @Nullable IVector tVirialsXY = rVirialsXY!=null ? rVirialsXYPar[threadID] : null;
             final @Nullable IVector tVirialsXZ = rVirialsXZ!=null ? rVirialsXZPar[threadID] : null;
             final @Nullable IVector tVirialsYZ = rVirialsYZ!=null ? rVirialsYZPar[threadID] : null;
+            final @Nullable IVector tVirialsYX = rVirialsYX!=null ? rVirialsYXPar[threadID] : null;
+            final @Nullable IVector tVirialsZX = rVirialsZX!=null ? rVirialsZXPar[threadID] : null;
+            final @Nullable IVector tVirialsZY = rVirialsZY!=null ? rVirialsZYPar[threadID] : null;
             // 根据每个 idx 来控制位力具体累加的逻辑
             if (cIdx>=0 && idx>=0) {
-                if (tVirialsXX != null) {if (tVirialsXX.size()==1) {tVirialsXX.add(0, vxx);} else {tVirialsXX.add(cIdx, 0.5*vxx); tVirialsXX.add(idx, 0.5*vxx);}}
-                if (tVirialsYY != null) {if (tVirialsYY.size()==1) {tVirialsYY.add(0, vyy);} else {tVirialsYY.add(cIdx, 0.5*vyy); tVirialsYY.add(idx, 0.5*vyy);}}
-                if (tVirialsZZ != null) {if (tVirialsZZ.size()==1) {tVirialsZZ.add(0, vzz);} else {tVirialsZZ.add(cIdx, 0.5*vzz); tVirialsZZ.add(idx, 0.5*vzz);}}
-                if (tVirialsXY != null) {if (tVirialsXY.size()==1) {tVirialsXY.add(0, vxy);} else {tVirialsXY.add(cIdx, 0.5*vxy); tVirialsXY.add(idx, 0.5*vxy);}}
-                if (tVirialsXZ != null) {if (tVirialsXZ.size()==1) {tVirialsXZ.add(0, vxz);} else {tVirialsXZ.add(cIdx, 0.5*vxz); tVirialsXZ.add(idx, 0.5*vxz);}}
-                if (tVirialsYZ != null) {if (tVirialsYZ.size()==1) {tVirialsYZ.add(0, vyz);} else {tVirialsYZ.add(cIdx, 0.5*vyz); tVirialsYZ.add(idx, 0.5*vyz);}}
+                if (tVirialsXX != null) {if (tVirialsXX.size()==1) {tVirialsXX.add(0, dx*fx);} else {tVirialsXX.add(cIdx, 0.5*dx*fx); tVirialsXX.add(idx, 0.5*dx*fx);}}
+                if (tVirialsYY != null) {if (tVirialsYY.size()==1) {tVirialsYY.add(0, dy*fy);} else {tVirialsYY.add(cIdx, 0.5*dy*fy); tVirialsYY.add(idx, 0.5*dy*fy);}}
+                if (tVirialsZZ != null) {if (tVirialsZZ.size()==1) {tVirialsZZ.add(0, dz*fz);} else {tVirialsZZ.add(cIdx, 0.5*dz*fz); tVirialsZZ.add(idx, 0.5*dz*fz);}}
+                if (tVirialsXY != null) {if (tVirialsXY.size()==1) {tVirialsXY.add(0, dx*fy);} else {tVirialsXY.add(cIdx, 0.5*dx*fy); tVirialsXY.add(idx, 0.5*dx*fy);}}
+                if (tVirialsXZ != null) {if (tVirialsXZ.size()==1) {tVirialsXZ.add(0, dx*fz);} else {tVirialsXZ.add(cIdx, 0.5*dx*fz); tVirialsXZ.add(idx, 0.5*dx*fz);}}
+                if (tVirialsYZ != null) {if (tVirialsYZ.size()==1) {tVirialsYZ.add(0, dy*fz);} else {tVirialsYZ.add(cIdx, 0.5*dy*fz); tVirialsYZ.add(idx, 0.5*dy*fz);}}
+                if (tVirialsYX != null) {tVirialsYX.add(cIdx, 0.5*dy*fx); tVirialsYX.add(idx, 0.5*dy*fx);}
+                if (tVirialsZX != null) {tVirialsZX.add(cIdx, 0.5*dz*fx); tVirialsZX.add(idx, 0.5*dz*fx);}
+                if (tVirialsZY != null) {tVirialsZY.add(cIdx, 0.5*dz*fy); tVirialsZY.add(idx, 0.5*dz*fy);}
             } else
             if (cIdx>=0) {
-                if (tVirialsXX != null) {if (tVirialsXX.size()==1) {tVirialsXX.add(0, vxx);} else {tVirialsXX.add(cIdx, vxx);}}
-                if (tVirialsYY != null) {if (tVirialsYY.size()==1) {tVirialsYY.add(0, vyy);} else {tVirialsYY.add(cIdx, vyy);}}
-                if (tVirialsZZ != null) {if (tVirialsZZ.size()==1) {tVirialsZZ.add(0, vzz);} else {tVirialsZZ.add(cIdx, vzz);}}
-                if (tVirialsXY != null) {if (tVirialsXY.size()==1) {tVirialsXY.add(0, vxy);} else {tVirialsXY.add(cIdx, vxy);}}
-                if (tVirialsXZ != null) {if (tVirialsXZ.size()==1) {tVirialsXZ.add(0, vxz);} else {tVirialsXZ.add(cIdx, vxz);}}
-                if (tVirialsYZ != null) {if (tVirialsYZ.size()==1) {tVirialsYZ.add(0, vyz);} else {tVirialsYZ.add(cIdx, vyz);}}
+                if (tVirialsXX != null) {if (tVirialsXX.size()==1) {tVirialsXX.add(0, dx*fx);} else {tVirialsXX.add(cIdx, dx*fx);}}
+                if (tVirialsYY != null) {if (tVirialsYY.size()==1) {tVirialsYY.add(0, dy*fy);} else {tVirialsYY.add(cIdx, dy*fy);}}
+                if (tVirialsZZ != null) {if (tVirialsZZ.size()==1) {tVirialsZZ.add(0, dz*fz);} else {tVirialsZZ.add(cIdx, dz*fz);}}
+                if (tVirialsXY != null) {if (tVirialsXY.size()==1) {tVirialsXY.add(0, dx*fy);} else {tVirialsXY.add(cIdx, dx*fy);}}
+                if (tVirialsXZ != null) {if (tVirialsXZ.size()==1) {tVirialsXZ.add(0, dx*fz);} else {tVirialsXZ.add(cIdx, dx*fz);}}
+                if (tVirialsYZ != null) {if (tVirialsYZ.size()==1) {tVirialsYZ.add(0, dy*fz);} else {tVirialsYZ.add(cIdx, dy*fz);}}
+                if (tVirialsYX != null) {tVirialsYX.add(cIdx, dy*fx);}
+                if (tVirialsZX != null) {tVirialsZX.add(cIdx, dz*fx);}
+                if (tVirialsZY != null) {tVirialsZY.add(cIdx, dz*fy);}
             } else
             if (idx>=0) {
-                if (tVirialsXX != null) {if (tVirialsXX.size()==1) {tVirialsXX.add(0, vxx);} else {tVirialsXX.add(idx, vxx);}}
-                if (tVirialsYY != null) {if (tVirialsYY.size()==1) {tVirialsYY.add(0, vyy);} else {tVirialsYY.add(idx, vyy);}}
-                if (tVirialsZZ != null) {if (tVirialsZZ.size()==1) {tVirialsZZ.add(0, vzz);} else {tVirialsZZ.add(idx, vzz);}}
-                if (tVirialsXY != null) {if (tVirialsXY.size()==1) {tVirialsXY.add(0, vxy);} else {tVirialsXY.add(idx, vxy);}}
-                if (tVirialsXZ != null) {if (tVirialsXZ.size()==1) {tVirialsXZ.add(0, vxz);} else {tVirialsXZ.add(idx, vxz);}}
-                if (tVirialsYZ != null) {if (tVirialsYZ.size()==1) {tVirialsYZ.add(0, vyz);} else {tVirialsYZ.add(idx, vyz);}}
+                if (tVirialsXX != null) {if (tVirialsXX.size()==1) {tVirialsXX.add(0, dx*fx);} else {tVirialsXX.add(idx, dx*fx);}}
+                if (tVirialsYY != null) {if (tVirialsYY.size()==1) {tVirialsYY.add(0, dy*fy);} else {tVirialsYY.add(idx, dy*fy);}}
+                if (tVirialsZZ != null) {if (tVirialsZZ.size()==1) {tVirialsZZ.add(0, dz*fz);} else {tVirialsZZ.add(idx, dz*fz);}}
+                if (tVirialsXY != null) {if (tVirialsXY.size()==1) {tVirialsXY.add(0, dx*fy);} else {tVirialsXY.add(idx, dx*fy);}}
+                if (tVirialsXZ != null) {if (tVirialsXZ.size()==1) {tVirialsXZ.add(0, dx*fz);} else {tVirialsXZ.add(idx, dx*fz);}}
+                if (tVirialsYZ != null) {if (tVirialsYZ.size()==1) {tVirialsYZ.add(0, dy*fz);} else {tVirialsYZ.add(idx, dy*fz);}}
+                if (tVirialsYX != null) {tVirialsYX.add(idx, dy*fx);}
+                if (tVirialsZX != null) {tVirialsZX.add(idx, dz*fx);}
+                if (tVirialsZY != null) {tVirialsZY.add(idx, dz*fy);}
             } else {
                 throw new IllegalStateException();
             }
@@ -961,6 +1009,9 @@ public interface IPairPotential extends IPotential, IHasSymbol {
         if (rForcesZ != null) {for (int i = 1; i < tThreadNum; ++i) {rForcesZ.plus2this(rForcesZPar[i]); VectorCache.returnVec(rForcesZPar[i]);}}
         if (rForcesY != null) {for (int i = 1; i < tThreadNum; ++i) {rForcesY.plus2this(rForcesYPar[i]); VectorCache.returnVec(rForcesYPar[i]);}}
         if (rForcesX != null) {for (int i = 1; i < tThreadNum; ++i) {rForcesX.plus2this(rForcesXPar[i]); VectorCache.returnVec(rForcesXPar[i]);}}
+        if (rVirialsZY != null) {for (int i = 1; i < tThreadNum; ++i) {rVirialsZY.plus2this(rVirialsZYPar[i]); VectorCache.returnVec(rVirialsZYPar[i]);}}
+        if (rVirialsZX != null) {for (int i = 1; i < tThreadNum; ++i) {rVirialsZX.plus2this(rVirialsZXPar[i]); VectorCache.returnVec(rVirialsZXPar[i]);}}
+        if (rVirialsYX != null) {for (int i = 1; i < tThreadNum; ++i) {rVirialsYX.plus2this(rVirialsYXPar[i]); VectorCache.returnVec(rVirialsYXPar[i]);}}
         if (rVirialsYZ != null) {for (int i = 1; i < tThreadNum; ++i) {rVirialsYZ.plus2this(rVirialsYZPar[i]); VectorCache.returnVec(rVirialsYZPar[i]);}}
         if (rVirialsXZ != null) {for (int i = 1; i < tThreadNum; ++i) {rVirialsXZ.plus2this(rVirialsXZPar[i]); VectorCache.returnVec(rVirialsXZPar[i]);}}
         if (rVirialsXY != null) {for (int i = 1; i < tThreadNum; ++i) {rVirialsXY.plus2this(rVirialsXYPar[i]); VectorCache.returnVec(rVirialsXYPar[i]);}}
@@ -974,6 +1025,76 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      * lammps 一致的定义，具体可以参见：
      * <a href="https://en.wikipedia.org/wiki/Virial_stress">
      * Virial stress - Wikipedia </a>
+     * <p>
+     * 每原子位力的定义具有一定任意性，这里的实现优先采用 GPUMD 中使用的更具对称性的定义，
+     * 在多体势的情况下可能会和 LAMMPS 存在出入。具体可参考：
+     * <a href="https://arxiv.org/abs/1503.06565">
+     * Force and heat current formulas for many-body potentials in molecular dynamics simulation with
+     * applications to thermal conductivity calculations </a>
+     *
+     * @param aAPC 需要计算性质的原子参数计算器，主要通过此计算器来获取近邻列表
+     * @param rEnergies 存储计算输出的每原子能量值，{@code null} 表示不需要能量，长度为 {@code 1} 表示只需要体系的总能量
+     * @param rForcesX 存储计算输出的 x 方向力值，{@code null} 表示不需要此值
+     * @param rForcesY 存储计算输出的 y 方向力值，{@code null} 表示不需要此值
+     * @param rForcesZ 存储计算输出的 z 方向力值，{@code null} 表示不需要此值
+     * @param rVirialsXX 存储计算输出的 xx 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsYY 存储计算输出的 yy 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsZZ 存储计算输出的 zz 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsXY 存储计算输出的 xy 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsXZ 存储计算输出的 xz 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsYZ 存储计算输出的 yz 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param aTypeMap 计算器中元素种类到基组定义的种类序号的一个映射，默认不做映射
+     * @throws Exception 特殊实现下可选的抛出异常
+     */
+    default void calEnergyForceVirials(AtomicParameterCalculator aAPC, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ, IntUnaryOperator aTypeMap) throws Exception {
+        calEnergyForceVirials(aAPC, rEnergies, rForcesX, rForcesY, rForcesZ, rVirialsXX, rVirialsYY, rVirialsZZ, rVirialsXY, rVirialsXZ, rVirialsYZ, null, null, null, aTypeMap);
+    }
+    /**
+     * 使用此势函数计算所有需要的性质，需要注意的是，这里位力需要采用
+     * lammps 一致的定义，具体可以参见：
+     * <a href="https://en.wikipedia.org/wiki/Virial_stress">
+     * Virial stress - Wikipedia </a>
+     * <p>
+     * 每原子位力的定义具有一定任意性，这里的实现优先采用 GPUMD 中使用的更具对称性的定义，
+     * 在多体势的情况下可能会和 LAMMPS 存在出入。具体可参考：
+     * <a href="https://arxiv.org/abs/1503.06565">
+     * Force and heat current formulas for many-body potentials in molecular dynamics simulation with
+     * applications to thermal conductivity calculations </a>
+     * <p>
+     * 此时由于参数计算器不会包含元素符号信息，因此不会尝试进行种类映射，为了保证种类正确可以使用
+     * {@link #calEnergyForceVirials(AtomicParameterCalculator, IVector, IVector, IVector, IVector, IVector, IVector, IVector, IVector, IVector, IVector, IVector, IVector, IVector, IntUnaryOperator)}
+     * 来手动指定种类编号的映射
+     *
+     * @param aAPC 需要计算性质的原子参数计算器，主要通过此计算器来获取近邻列表
+     * @param rEnergies 存储计算输出的每原子能量值，{@code null} 表示不需要能量，长度为 {@code 1} 表示只需要体系的总能量
+     * @param rForcesX 存储计算输出的 x 方向力值，{@code null} 表示不需要此值
+     * @param rForcesY 存储计算输出的 y 方向力值，{@code null} 表示不需要此值
+     * @param rForcesZ 存储计算输出的 z 方向力值，{@code null} 表示不需要此值
+     * @param rVirialsXX 存储计算输出的 xx 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsYY 存储计算输出的 yy 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsZZ 存储计算输出的 zz 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsXY 存储计算输出的 xy 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsXZ 存储计算输出的 xz 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsYZ 存储计算输出的 yz 分量的每原子位力值，{@code null} 表示不需要此值，长度为 {@code 1} 表示只需要此分量下体系的总位力值
+     * @param rVirialsYX 存储计算输出的 yx 分量的每原子位力值，默认为 {@code null} 表示不需要此值
+     * @param rVirialsZX 存储计算输出的 zx 分量的每原子位力值，默认为 {@code null} 表示不需要此值
+     * @param rVirialsZY 存储计算输出的 zy 分量的每原子位力值，默认为 {@code null} 表示不需要此值
+     * @throws Exception 特殊实现下可选的抛出异常
+     */
+    default void calEnergyForceVirials(AtomicParameterCalculator aAPC, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ, @Nullable IVector rVirialsYX, @Nullable IVector rVirialsZX, @Nullable IVector rVirialsZY) throws Exception {
+        calEnergyForceVirials(aAPC, rEnergies, rForcesX, rForcesY, rForcesZ, rVirialsXX, rVirialsYY, rVirialsZZ, rVirialsXY, rVirialsXZ, rVirialsYZ, rVirialsYX, rVirialsZX, rVirialsZY, type->type);
+    }
+    /**
+     * 使用此势函数计算所有需要的性质，需要注意的是，这里位力需要采用
+     * lammps 一致的定义，具体可以参见：
+     * <a href="https://en.wikipedia.org/wiki/Virial_stress">
+     * Virial stress - Wikipedia </a>
+     * <p>
+     * 每原子位力的定义具有一定任意性，这里的实现优先采用 GPUMD 中使用的更具对称性的定义，
+     * 在多体势的情况下可能会和 LAMMPS 存在出入。具体可参考：
+     * <a href="https://arxiv.org/abs/1503.06565">
+     * Force and heat current formulas for many-body potentials in molecular dynamics simulation with
+     * applications to thermal conductivity calculations </a>
      * <p>
      * 此时由于参数计算器不会包含元素符号信息，因此不会尝试进行种类映射，为了保证种类正确可以使用
      * {@link #calEnergyForceVirials(AtomicParameterCalculator, IVector, IVector, IVector, IVector, IVector, IVector, IVector, IVector, IVector, IVector, IntUnaryOperator)}
@@ -1008,11 +1129,14 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      * @param rVirialsXY {@inheritDoc}
      * @param rVirialsXZ {@inheritDoc}
      * @param rVirialsYZ {@inheritDoc}
+     * @param rVirialsYX {@inheritDoc}
+     * @param rVirialsZX {@inheritDoc}
+     * @param rVirialsZY {@inheritDoc}
      * @throws Exception {@inheritDoc}
      */
-    @Override default void calEnergyForceVirials(IAtomData aAtomData, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ) throws Exception {
+    @Override default void calEnergyForceVirials(IAtomData aAtomData, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ, @Nullable IVector rVirialsYX, @Nullable IVector rVirialsZX, @Nullable IVector rVirialsZY) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
         IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, threadNumber())) {calEnergyForceVirials(tAPC, rEnergies, rForcesX, rForcesY, rForcesZ, rVirialsXX, rVirialsYY, rVirialsZZ, rVirialsXY, rVirialsXZ, rVirialsYZ, tTypeMap);}
+        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, threadNumber())) {calEnergyForceVirials(tAPC, rEnergies, rForcesX, rForcesY, rForcesZ, rVirialsXX, rVirialsYY, rVirialsZZ, rVirialsXY, rVirialsXZ, rVirialsYZ, rVirialsYX, rVirialsZX, rVirialsZY, tTypeMap);}
     }
 }

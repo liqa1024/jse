@@ -433,7 +433,8 @@ public class NNAP implements IPairPotential {
                     rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
                 }
                 if (rVirialAccumulator != null) {
-                    rVirialAccumulator.add(threadID, cIdx, -1, dx*fx, dy*fy, dz*fz, dx*fy, dx*fz, dy*fz);
+                    // GPUMD 给出的更具对称性的形式要求累加到近邻的 index 上
+                    rVirialAccumulator.add(threadID, -1, idx, fx, fy, fz, dx, dy, dz);
                 }
             }
         });

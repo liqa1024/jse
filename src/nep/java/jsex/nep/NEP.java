@@ -2273,7 +2273,7 @@ public class NEP implements IPairPotential {
                     rForceAccumulator.add(threadID, cIdx, idx, f12[0], f12[1], f12[2]);
                 }
                 if (rVirialAccumulator != null) {
-                    rVirialAccumulator.add(threadID, cIdx, -1, dx*f12[0], dy*f12[1], dz*f12[2], dx*f12[1], dx*f12[2], dy*f12[2]);
+                    rVirialAccumulator.add(threadID, -1, idx, f12[0], f12[1], f12[2], dx, dy, dz);
                 }
             });
         });
@@ -2348,7 +2348,7 @@ public class NEP implements IPairPotential {
                     rForceAccumulator.add(threadID, cIdx, idx, f12[0], f12[1], f12[2]);
                 }
                 if (rVirialAccumulator != null) {
-                    rVirialAccumulator.add(threadID, cIdx, -1, dx*f12[0], dy*f12[1], dz*f12[2], dx*f12[1], dx*f12[2], dy*f12[2]);
+                    rVirialAccumulator.add(threadID, -1, idx, f12[0], f12[1], f12[2], dx, dy, dz);
                 }
             });
         });
@@ -2408,7 +2408,8 @@ public class NEP implements IPairPotential {
                     rForceAccumulator.add(threadID, cIdx, idx, f12[0], f12[1], f12[2]);
                 }
                 if (rVirialAccumulator != null) {
-                    rVirialAccumulator.add(threadID, cIdx, -1, dx*f12[0], dy*f12[1], dz*f12[2], dx*f12[1], dx*f12[2], dy*f12[2]);
+                    // 原则上这里累加到任何位置都是等价的，不过这里保持一致
+                    rVirialAccumulator.add(threadID, -1, idx, f12[0], f12[1], f12[2], dx, dy, dz);
                 }
                 if (rEnergyAccumulator != null) {
                     rEnergyAccumulator.add(threadID, cIdx, -1, f[0]*0.5);

@@ -194,11 +194,14 @@ public class LJ implements IPairPotential {
                 double r2inv = 1.0 / rsq;
                 double r6inv = r2inv*r2inv*r2inv;
                 double fpair = r2inv*r6inv*(mLJ1[cType][type]*r6inv - mLJ2[cType][type]);
+                double fx = dx*fpair;
+                double fy = dy*fpair;
+                double fz = dz*fpair;
                 if (rForceAccumulator != null) {
-                    rForceAccumulator.add(threadID, cIdx, idx, dx*fpair, dy*fpair, dz*fpair);
+                    rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
                 }
                 if (rVirialAccumulator != null) {
-                    rVirialAccumulator.add(threadID, cIdx, idx, dx*dx*fpair, dy*dy*fpair, dz*dz*fpair, dx*dy*fpair, dx*dz*fpair, dy*dz*fpair);
+                    rVirialAccumulator.add(threadID, cIdx, idx, fx, fy, fz, dx, dy, dz);
                 }
                 if (rEnergyAccumulator != null) {
                     double deng = r6inv*(mLJ3[cType][type]*r6inv - mLJ4[cType][type]);

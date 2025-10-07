@@ -155,13 +155,15 @@ public class AseCalculator implements IPotential {
      * @param rVirialsXZ {@inheritDoc}
      * @param rVirialsYZ {@inheritDoc}
      */
-    @Override public void calEnergyForceVirials(IAtomData aAtomData, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ) throws JepException {
+    @Override public void calEnergyForceVirials(IAtomData aAtomData, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ, @Nullable IVector rVirialsYX, @Nullable IVector rVirialsZX, @Nullable IVector rVirialsZY) throws JepException {
         if (mDead) throw new IllegalStateException("This Potential is dead");
         final boolean tRequirePreAtomEnergy = rEnergies!=null && rEnergies.size()!=1;
         final boolean tRequireTotalEnergy = rEnergies!=null && rEnergies.size()==1;
         final boolean tRequireForce = rForcesX!=null || rForcesY!=null || rForcesZ!=null;
         final boolean tRequirePreAtomStress = (rVirialsXX!=null && rVirialsXX.size()!=1) || (rVirialsYY!=null && rVirialsYY.size()!=1) || (rVirialsZZ!=null && rVirialsZZ.size()!=1) || (rVirialsXY!=null && rVirialsXY.size()!=1) || (rVirialsXZ!=null && rVirialsXZ.size()!=1) || (rVirialsYZ!=null && rVirialsYZ.size()!=1);
         final boolean tRequireTotalStress = (rVirialsXX!=null && rVirialsXX.size()==1) || (rVirialsYY!=null && rVirialsYY.size()==1) || (rVirialsZZ!=null && rVirialsZZ.size()==1) || (rVirialsXY!=null && rVirialsXY.size()==1) || (rVirialsXZ!=null && rVirialsXZ.size()==1) || (rVirialsYZ!=null && rVirialsYZ.size()==1);
+        // ase 计算器不支持 9 项压力，为了确保严谨语义要求输出时直接报错
+        if (rVirialsYX!=null || rVirialsZX!=null || rVirialsZY!=null) throw new UnsupportedOperationException("ASE calculator not support 9 columns stresses");
         // 这里为了兼容性，还是采用通过 atoms 来调用计算参数的实现方法
         AseAtoms tAtoms = AseAtoms.of(aAtomData);
         PyObject tPyAtoms = tAtoms.toPyObject();
