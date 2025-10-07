@@ -1203,6 +1203,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             }
         })
         .setBreakChecker((step, loss, lastLoss, parameterStep) -> {
+            if (mBatchSize > 0) return false; // 分 batch 情况永远不跳出，因为梯度随机
             if (step==0 || Double.isNaN(lastLoss)) return false;
             return Math.abs(lastLoss-loss) < Math.abs(lastLoss)*1e-7;
         });
@@ -2311,14 +2312,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
         mOptimizer.run(aNEpochs*mStepsPerEpoch, aPrintLog);
         if (aPrintLog) {
-            if (mBatchSize > 0) {
-                for (int i = mStep%mStepsPerEpoch + 1; i < mStepsPerEpoch; ++i) {
-                    UT.Timer.progressBar(mHasTest ? String.format("loss: %.4g | %.4g", mTrainLoss.last(), mTestLoss.last()) : String.format("loss: %.4g", mTrainLoss.last()));
-                }
-            } else {
-                for (int i = mEpoch+1; i < aNEpochs; ++i) {
-                    UT.Timer.progressBar(mHasTest ? String.format("loss: %.4g | %.4g", mTrainLoss.last(), mTestLoss.last()) : String.format("loss: %.4g", mTrainLoss.last()));
-                }
+            // 只会在不分 batch 时需要补全进度条
+            if (mBatchSize <= 0) for (int i = mEpoch + 1; i < aNEpochs; ++i) {
+                UT.Timer.progressBar(mHasTest ? String.format("loss: %.4g | %.4g", mTrainLoss.last(), mTestLoss.last()) : String.format("loss: %.4g", mTrainLoss.last()));
             }
         }
         // 应用早停
