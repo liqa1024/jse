@@ -2307,6 +2307,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     public double statSpeed(boolean aTest, double aMaxTimeSecond) throws Exception {
         DataSet tData = aTest ? mTestData : mTrainData;
         final int tDataSize = tData.mSize;
+        IntVector tSlice = Vectors.range(tDataSize);
+        tSlice.shuffle();
         
         Basis[] tBasis = mBasis[0];
         NeuralNetwork[] tNN = mNN[0];
@@ -2323,63 +2325,69 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         
         AccumulatedTimer tTimer = new AccumulatedTimer();
         long tSteps = 0;
-        while (tTimer.get() < aMaxTimeSecond) {
+        while (tTimer.get() < aMaxTimeSecond) for (int si = 0; si < tDataSize; ++si) {
+            final int i = tSlice.get(si);
+            IntVector tAtomType = tData.mAtomType.get(i);
+            final int tAtomNum = tAtomType.size();
+            
+            IntList[] tNl = tData.mNl.get(i), tNlType = tData.mNlType.get(i);
+            DoubleList[] tNlDx = tData.mNlDx.get(i), tNlDy = tData.mNlDy.get(i), tNlDz = tData.mNlDz.get(i);
+            
+            while (tBaisForwardBuf.size() < tAtomNum) tBaisForwardBuf.add(new DoubleList(128));
+            while (tBaisForwardForceBuf.size() < tAtomNum) tBaisForwardForceBuf.add(new DoubleList(128));
+            
+            tForceXBuf.clear();
+            tForceXBuf.addZeros(tAtomNum);
+            tForceYBuf.clear();
+            tForceYBuf.addZeros(tAtomNum);
+            tForceZBuf.clear();
+            tForceZBuf.addZeros(tAtomNum);
+            
             tTimer.from();
-            for (int i = 0; i < tDataSize; ++i) {
-                IntVector tAtomType = tData.mAtomType.get(i);
-                final int tAtomNum = tAtomType.size();
+            for (int k = 0; k < tAtomNum; ++k) {
+                int tType = tAtomType.get(k);
+                Basis tSubBasis = tBasis[tType - 1];
+                NeuralNetwork tSubNN = tNN[tType - 1];
                 
-                IntList[] tNl = tData.mNl.get(i), tNlType = tData.mNlType.get(i);
-                DoubleList[] tNlDx = tData.mNlDx.get(i), tNlDy = tData.mNlDy.get(i), tNlDz = tData.mNlDz.get(i);
+                IntList tSubNl = tNl[k], tSubNlType = tNlType[k];
+                DoubleList tSubNlDx = tNlDx[k], tSubNlDy = tNlDy[k], tSubNlDz = tNlDz[k];
                 
-                while (tBaisForwardBuf.size() < tAtomNum) tBaisForwardBuf.add(new DoubleList(128));
-                while (tBaisForwardForceBuf.size() < tAtomNum) tBaisForwardForceBuf.add(new DoubleList(128));
+                DoubleList tSubBaisForwardBuf = tBaisForwardBuf.get(k);
+                Vector tSubFp = tFp[tType - 1];
+                Vector tSubGradFp = tGradFp[tType - 1];
+                Vector tNormMu = mNormMu[tType - 1];
+                Vector tNormSigma = mNormSigma[tType - 1];
                 
-                tForceXBuf.clear(); tForceXBuf.addZeros(tAtomNum);
-                tForceYBuf.clear(); tForceYBuf.addZeros(tAtomNum);
-                tForceZBuf.clear(); tForceZBuf.addZeros(tAtomNum);
+                int tNlSize = tSubNl.size();
+                tForceNlXBuf.ensureCapacity(tNlSize);
+                tForceNlXBuf.setInternalDataSize(tNlSize);
+                tForceNlYBuf.ensureCapacity(tNlSize);
+                tForceNlYBuf.setInternalDataSize(tNlSize);
+                tForceNlZBuf.ensureCapacity(tNlSize);
+                tForceNlZBuf.setInternalDataSize(tNlSize);
                 
-                for (int k = 0; k < tAtomNum; ++k) {
-                    int tType = tAtomType.get(k);
-                    Basis tSubBasis = tBasis[tType-1];
-                    NeuralNetwork tSubNN = tNN[tType-1];
-                    
-                    IntList tSubNl = tNl[k], tSubNlType = tNlType[k];
-                    DoubleList tSubNlDx = tNlDx[k], tSubNlDy = tNlDy[k], tSubNlDz = tNlDz[k];
-                    
-                    DoubleList tSubBaisForwardBuf = tBaisForwardBuf.get(k);
-                    Vector tSubFp = tFp[tType-1];
-                    Vector tSubGradFp = tGradFp[tType-1];
-                    Vector tNormMu = mNormMu[tType-1];
-                    Vector tNormSigma = mNormSigma[tType-1];
-                    
-                    int tNlSize = tSubNl.size();
-                    tForceNlXBuf.ensureCapacity(tNlSize); tForceNlXBuf.setInternalDataSize(tNlSize);
-                    tForceNlYBuf.ensureCapacity(tNlSize); tForceNlYBuf.setInternalDataSize(tNlSize);
-                    tForceNlZBuf.ensureCapacity(tNlSize); tForceNlZBuf.setInternalDataSize(tNlSize);
-                    
-                    tSubBasis.forward(tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType, tSubFp, tSubBaisForwardBuf, true);
-                    tSubFp.fill(ii -> (tSubFp.get(ii) - tNormMu.get(ii)) / tNormSigma.get(ii));
-                    tSubNN.evalGrad(tSubFp, tSubGradFp);
-                    tSubGradFp.div2this(tNormSigma);
-                    tSubBasis.forwardForce(tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType, tSubGradFp, tForceNlXBuf, tForceNlYBuf, tForceNlZBuf, tSubBaisForwardBuf, tBaisForwardForceBuf.get(k), false);
-                    
-                    for (int j = 0; j < tNlSize; ++j) {
-                        double fx = tForceNlXBuf.get(j);
-                        double fy = tForceNlYBuf.get(j);
-                        double fz = tForceNlZBuf.get(j);
-                        int nlk = tSubNl.get(j);
-                        tForceXBuf.set(k, tForceXBuf.get(k) - fx);
-                        tForceYBuf.set(k, tForceYBuf.get(k) - fy);
-                        tForceZBuf.set(k, tForceZBuf.get(k) - fz);
-                        tForceXBuf.set(nlk, tForceXBuf.get(nlk) + fx);
-                        tForceYBuf.set(nlk, tForceYBuf.get(nlk) + fy);
-                        tForceZBuf.set(nlk, tForceZBuf.get(nlk) + fz);
-                    }
+                tSubBasis.forward(tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType, tSubFp, tSubBaisForwardBuf, true);
+                tSubFp.fill(ii -> (tSubFp.get(ii) - tNormMu.get(ii)) / tNormSigma.get(ii));
+                tSubNN.evalGrad(tSubFp, tSubGradFp);
+                tSubGradFp.div2this(tNormSigma);
+                tSubBasis.forwardForce(tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType, tSubGradFp, tForceNlXBuf, tForceNlYBuf, tForceNlZBuf, tSubBaisForwardBuf, tBaisForwardForceBuf.get(k), false);
+                
+                for (int j = 0; j < tNlSize; ++j) {
+                    double fx = tForceNlXBuf.get(j);
+                    double fy = tForceNlYBuf.get(j);
+                    double fz = tForceNlZBuf.get(j);
+                    int nlk = tSubNl.get(j);
+                    tForceXBuf.set(k, tForceXBuf.get(k) - fx);
+                    tForceYBuf.set(k, tForceYBuf.get(k) - fy);
+                    tForceZBuf.set(k, tForceZBuf.get(k) - fz);
+                    tForceXBuf.set(nlk, tForceXBuf.get(nlk) + fx);
+                    tForceYBuf.set(nlk, tForceYBuf.get(nlk) + fy);
+                    tForceZBuf.set(nlk, tForceZBuf.get(nlk) + fz);
                 }
-                tSteps += tAtomNum;
             }
             tTimer.to();
+            tSteps += tAtomNum;
+            if (tTimer.get() >= aMaxTimeSecond) break;
         }
         return tSteps / (tTimer.get()*1000);
     }
@@ -2552,7 +2560,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         try {
             statSpeed(1.0); // 预热 1 s
             double tSpeed = statSpeed(2.0);
-            System.out.printf("FORCE SPEED: %.4g atom-steps/ms\n", tSpeed);
+            System.out.printf("Speed: %.4g atom-steps/ms\n", tSpeed);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
