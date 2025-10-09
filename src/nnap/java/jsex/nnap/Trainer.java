@@ -7,6 +7,7 @@ import jse.code.IO;
 import jse.code.UT;
 import jse.code.collection.*;
 import jse.code.io.ISavable;
+import jse.code.timer.AccumulatedTimer;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.vector.*;
@@ -2293,6 +2294,107 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         mOptimizer.markLossFuncChanged();
     }
     
+    
+    /**
+     * 统计势函数的计算力的速度，会强制串行来保证结果有效性
+     * <p>
+     * 一般需要二次调用确保预热来得到正确的测量结果
+     *
+     * @param aTest 是否使用测试集进行速度统计，默认在有测试集时总是使用测试集
+     * @param aMaxTimeSecond 统计的最长时间，单位为秒
+     * @return 统计得到的平均每毫秒（ms）调用的原子力的次数
+     */
+    public double statSpeed(boolean aTest, double aMaxTimeSecond) throws Exception {
+        DataSet tData = aTest ? mTestData : mTrainData;
+        final int tDataSize = tData.mSize;
+        
+        Basis[] tBasis = mBasis[0];
+        NeuralNetwork[] tNN = mNN[0];
+        Vector[] tFp = mFpBuf[0];
+        Vector[] tGradFp = mGradFpBuf[0];
+        DoubleList tForceXBuf = mForceXBuf[0];
+        DoubleList tForceYBuf = mForceYBuf[0];
+        DoubleList tForceZBuf = mForceZBuf[0];
+        DoubleList tForceNlXBuf = mForceNlXBuf[0];
+        DoubleList tForceNlYBuf = mForceNlYBuf[0];
+        DoubleList tForceNlZBuf = mForceNlZBuf[0];
+        List<DoubleList> tBaisForwardBuf = mBasisForwardAtomsBuf.get(0);
+        List<DoubleList> tBaisForwardForceBuf = mBasisForwardForceAtomsBuf.get(0);
+        
+        AccumulatedTimer tTimer = new AccumulatedTimer();
+        long tSteps = 0;
+        while (tTimer.get() < aMaxTimeSecond) {
+            tTimer.from();
+            for (int i = 0; i < tDataSize; ++i) {
+                IntVector tAtomType = tData.mAtomType.get(i);
+                final int tAtomNum = tAtomType.size();
+                
+                IntList[] tNl = tData.mNl.get(i), tNlType = tData.mNlType.get(i);
+                DoubleList[] tNlDx = tData.mNlDx.get(i), tNlDy = tData.mNlDy.get(i), tNlDz = tData.mNlDz.get(i);
+                
+                while (tBaisForwardBuf.size() < tAtomNum) tBaisForwardBuf.add(new DoubleList(128));
+                while (tBaisForwardForceBuf.size() < tAtomNum) tBaisForwardForceBuf.add(new DoubleList(128));
+                
+                tForceXBuf.clear(); tForceXBuf.addZeros(tAtomNum);
+                tForceYBuf.clear(); tForceYBuf.addZeros(tAtomNum);
+                tForceZBuf.clear(); tForceZBuf.addZeros(tAtomNum);
+                
+                for (int k = 0; k < tAtomNum; ++k) {
+                    int tType = tAtomType.get(k);
+                    Basis tSubBasis = tBasis[tType-1];
+                    NeuralNetwork tSubNN = tNN[tType-1];
+                    
+                    IntList tSubNl = tNl[k], tSubNlType = tNlType[k];
+                    DoubleList tSubNlDx = tNlDx[k], tSubNlDy = tNlDy[k], tSubNlDz = tNlDz[k];
+                    
+                    DoubleList tSubBaisForwardBuf = tBaisForwardBuf.get(k);
+                    Vector tSubFp = tFp[tType-1];
+                    Vector tSubGradFp = tGradFp[tType-1];
+                    Vector tNormMu = mNormMu[tType-1];
+                    Vector tNormSigma = mNormSigma[tType-1];
+                    
+                    int tNlSize = tSubNl.size();
+                    tForceNlXBuf.ensureCapacity(tNlSize); tForceNlXBuf.setInternalDataSize(tNlSize);
+                    tForceNlYBuf.ensureCapacity(tNlSize); tForceNlYBuf.setInternalDataSize(tNlSize);
+                    tForceNlZBuf.ensureCapacity(tNlSize); tForceNlZBuf.setInternalDataSize(tNlSize);
+                    
+                    tSubBasis.forward(tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType, tSubFp, tSubBaisForwardBuf, true);
+                    tSubFp.fill(ii -> (tSubFp.get(ii) - tNormMu.get(ii)) / tNormSigma.get(ii));
+                    tSubNN.evalGrad(tSubFp, tSubGradFp);
+                    tSubGradFp.div2this(tNormSigma);
+                    tSubBasis.forwardForce(tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType, tSubGradFp, tForceNlXBuf, tForceNlYBuf, tForceNlZBuf, tSubBaisForwardBuf, tBaisForwardForceBuf.get(k), false);
+                    
+                    for (int j = 0; j < tNlSize; ++j) {
+                        double fx = tForceNlXBuf.get(j);
+                        double fy = tForceNlYBuf.get(j);
+                        double fz = tForceNlZBuf.get(j);
+                        int nlk = tSubNl.get(j);
+                        tForceXBuf.set(k, tForceXBuf.get(k) - fx);
+                        tForceYBuf.set(k, tForceYBuf.get(k) - fy);
+                        tForceZBuf.set(k, tForceZBuf.get(k) - fz);
+                        tForceXBuf.set(nlk, tForceXBuf.get(nlk) + fx);
+                        tForceYBuf.set(nlk, tForceYBuf.get(nlk) + fy);
+                        tForceZBuf.set(nlk, tForceZBuf.get(nlk) + fz);
+                    }
+                }
+                tSteps += tAtomNum;
+            }
+            tTimer.to();
+        }
+        return tSteps / (tTimer.get()*1000);
+    }
+    /**
+     * 统计势函数的计算力的速度，会强制串行来保证结果有效性
+     * <p>
+     * 一般需要二次调用确保预热来得到正确的测量结果
+     *
+     * @param aMaxTimeSecond 统计的最长时间，单位为秒
+     * @return 统计得到的平均每毫秒（ms）调用的原子力的次数
+     */
+    public double statSpeed(double aMaxTimeSecond) throws Exception {
+        return statSpeed(mHasTest, aMaxTimeSecond);
+    }
+    
     /** 开始训练模型，这里直接训练给定的步数 */
     public void train(int aNEpochs, boolean aEarlyStop, boolean aPrintLog) {
         mNEpochs = aNEpochs;
@@ -2407,45 +2509,53 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 }
                 break;
             }}
-            return;
+        } else {
+            Vector tTestMAE = VectorCache.getVec(4);
+            calMAE(true, tTestMAE);
+            double tTestMAE_E = tTestMAE.get(0);
+            double tTestMAE_F = tTestMAE.get(1);
+            double tTestMAE_S = tTestMAE.get(2);
+            VectorCache.returnVec(tTestMAE);
+            switch(mUnits) {
+            case "metal": {
+                System.out.printf("MAE-E: %.4g meV | %.4g meV\n", tMAE_E*1000, tTestMAE_E*1000);
+                if (mHasForce) {
+                    System.out.printf("MAE-F: %.4g meV/A | %.4g meV/A\n", tMAE_F*1000, tTestMAE_F*1000);
+                }
+                if (mHasStress) {
+                    System.out.printf("MAE-S: %.4g meV/A^3 | %.4g meV/A^3\n", tMAE_S*1000, tTestMAE_S*1000);
+                }
+                break;
+            }
+            case "real":{
+                System.out.printf("MAE-E: %.4g kcal/mol | %.4g kcal/mol\n", tMAE_E, tTestMAE_E);
+                if (mHasForce) {
+                    System.out.printf("MAE-F: %.4g kcal/mol/A | %.4g kcal/mol/A\n", tMAE_F, tTestMAE_F);
+                }
+                if (mHasStress) {
+                    System.out.printf("MAE-S: %.4g kcal/mol/A^3 | %.4g kcal/mol/A^3\n", tMAE_S, tTestMAE_S);
+                }
+                break;
+            }
+            default: {
+                System.out.printf("MAE-E: %.4g | %.4g\n", tMAE_E, tTestMAE_E);
+                if (mHasForce) {
+                    System.out.printf("MAE-F: %.4g | %.4g\n", tMAE_F, tTestMAE_F);
+                }
+                if (mHasStress) {
+                    System.out.printf("MAE-S: %.4g | %.4g\n", tMAE_S, tTestMAE_S);
+                }
+                break;
+            }}
         }
-        Vector tTestMAE = VectorCache.getVec(4);
-        calMAE(true, tTestMAE);
-        double tTestMAE_E = tTestMAE.get(0);
-        double tTestMAE_F = tTestMAE.get(1);
-        double tTestMAE_S = tTestMAE.get(2);
-        VectorCache.returnVec(tTestMAE);
-        switch(mUnits) {
-        case "metal": {
-            System.out.printf("MAE-E: %.4g meV | %.4g meV\n", tMAE_E*1000, tTestMAE_E*1000);
-            if (mHasForce) {
-                System.out.printf("MAE-F: %.4g meV/A | %.4g meV/A\n", tMAE_F*1000, tTestMAE_F*1000);
-            }
-            if (mHasStress) {
-                System.out.printf("MAE-S: %.4g meV/A^3 | %.4g meV/A^3\n", tMAE_S*1000, tTestMAE_S*1000);
-            }
-            break;
+        // 测试速度并打印速度信息
+        try {
+            statSpeed(1.0); // 预热 1 s
+            double tSpeed = statSpeed(2.0);
+            System.out.printf("FORCE SPEED: %.4g atom-steps/ms\n", tSpeed);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        case "real":{
-            System.out.printf("MAE-E: %.4g kcal/mol | %.4g kcal/mol\n", tMAE_E, tTestMAE_E);
-            if (mHasForce) {
-                System.out.printf("MAE-F: %.4g kcal/mol/A | %.4g kcal/mol/A\n", tMAE_F, tTestMAE_F);
-            }
-            if (mHasStress) {
-                System.out.printf("MAE-S: %.4g kcal/mol/A^3 | %.4g kcal/mol/A^3\n", tMAE_S, tTestMAE_S);
-            }
-            break;
-        }
-        default: {
-            System.out.printf("MAE-E: %.4g | %.4g\n", tMAE_E, tTestMAE_E);
-            if (mHasForce) {
-                System.out.printf("MAE-F: %.4g | %.4g\n", tMAE_F, tTestMAE_F);
-            }
-            if (mHasStress) {
-                System.out.printf("MAE-S: %.4g | %.4g\n", tMAE_S, tTestMAE_S);
-            }
-            break;
-        }}
     }
     public void train(int aEpochs, boolean aEarlyStop) {train(aEpochs, aEarlyStop, true);}
     public void train(int aEpochs) {train(aEpochs, true);}
