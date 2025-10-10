@@ -2,7 +2,6 @@ package jsex.nnap.nn;
 
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
-import jse.code.io.ISavable;
 import jse.math.IDataShell;
 import jse.math.MathEX;
 import jse.math.matrix.Matrices;
