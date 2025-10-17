@@ -399,7 +399,9 @@ public class NativeLmp implements IAutoShutdown {
     /**
      * Get the MPI communicator in use by the current LAMMPS instance
      * <p>
-     * This is a wrapper around the {@code lammps_file()} function of the C-library interface.
+     * This is a wrapper around the {@code lammps_get_mpi_comm()} function of the Fortran-library interface,
+     * and convert it to the C language representation by using {@code MPI_Comm_f2c()}.
+     * <p>
      * It will return {@code null} if the LAMMPS library was compiled without MPI support.
      * @return the {@link MPI.Comm} of this NativeLmp
      */

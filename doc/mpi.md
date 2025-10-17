@@ -25,7 +25,7 @@
     需要系统至少拥有 C 编译器（对于 MSVC 需要 C++ 编译器）。
     
     例如对于 windows 需要
-    [MSVC](https://visualstudio.microsoft.com/zh-hans/vs/features/cplusplus/)
+    [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/)
     ，对于 linux 需要
     [GCC](https://gcc.gnu.org/)
     （当然也可以选择其他的编译器）

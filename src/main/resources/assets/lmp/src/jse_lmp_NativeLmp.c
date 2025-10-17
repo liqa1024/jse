@@ -57,6 +57,15 @@ static inline jboolean exceptionCheckMPI(JNIEnv *aEnv, int aExitCode) {
     throwExceptionMPI(aEnv, rErrStr, aExitCode);
     return JNI_TRUE;
 }
+
+static inline jlong lammpsGetMpiComm(void *aLmpPtr) {
+#ifdef LAMMPS_OLD
+    throwExceptionLMP(aEnv, "Cannot access `lammps_get_mpi_comm` when LAMMPS_IS_OLD");
+    return 0;
+#else
+    return (jlong)MPI_Comm_f2c(lammps_get_mpi_comm(aLmpPtr));
+#endif
+}
 #endif
 
 
@@ -111,12 +120,7 @@ JNIEXPORT jstring JNICALL Java_jse_lmp_NativeLmp_lammpsVersionStr_1(JNIEnv *aEnv
 }
 
 JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsComm_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
-#ifdef LAMMPS_OLD
-    throwExceptionLMP(aEnv, "Function `lammpsComm` is INVALID when LAMMPS_IS_OLD");
-    return 0;
-#else
-    return (jlong)lammps_get_mpi_comm((void *)(intptr_t)aLmpPtr);
-#endif
+    return lammpsGetMpiComm((void *)(intptr_t)aLmpPtr);
 }
 JNIEXPORT jboolean JNICALL Java_jse_lmp_NativeLmp_lammpsLibMpi_1(JNIEnv *aEnv, jclass aClazz) {
 #ifdef LAMMPS_LIB_MPI
@@ -230,7 +234,9 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsGatherConcat_1(JNIEnv *aEnv,
     int tLocalAtomNum = lammps_extract_setting(tLmpPtr, "nlocal"); if (exceptionCheckLMP(aEnv, tLmpPtr)) return;
 #ifdef LAMMPS_LIB_MPI
     // init MPI_Comm stuffs
-    MPI_Comm tLmpComm = (MPI_Comm)(intptr_t)lammps_get_mpi_comm(tLmpPtr);
+    jlong tLmpComm_ = lammpsGetMpiComm(tLmpPtr);
+    if (tLmpComm_ == 0) return;
+    MPI_Comm tLmpComm = (MPI_Comm)(intptr_t)tLmpComm_;
     int tLmpMe, tLmpNP;
     int tExitCodeMPI;
     tExitCodeMPI = MPI_Comm_rank(tLmpComm, &tLmpMe); if (exceptionCheckMPI(aEnv, tExitCodeMPI)) return;
@@ -327,7 +333,9 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsGatherConcatInt_1(JNIEnv *aE
     int tLocalAtomNum = lammps_extract_setting(tLmpPtr, "nlocal"); if (exceptionCheckLMP(aEnv, tLmpPtr)) return;
 #ifdef LAMMPS_LIB_MPI
     // init MPI_Comm stuffs
-    MPI_Comm tLmpComm = (MPI_Comm)(intptr_t)lammps_get_mpi_comm(tLmpPtr);
+    jlong tLmpComm_ = lammpsGetMpiComm(tLmpPtr);
+    if (tLmpComm_ == 0) return;
+    MPI_Comm tLmpComm = (MPI_Comm)(intptr_t)tLmpComm_;
     int tLmpMe, tLmpNP;
     int tExitCodeMPI;
     tExitCodeMPI = MPI_Comm_rank(tLmpComm, &tLmpMe); if (exceptionCheckMPI(aEnv, tExitCodeMPI)) return;
@@ -484,7 +492,9 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsGatherCompute_1(JNIEnv *aEnv
     int tLocalAtomNum = lammps_extract_setting(tLmpPtr, "nlocal"); if (exceptionCheckLMP(aEnv, tLmpPtr)) return;
 #ifdef LAMMPS_LIB_MPI
     // init MPI_Comm stuffs
-    MPI_Comm tLmpComm = (MPI_Comm)(intptr_t)lammps_get_mpi_comm(tLmpPtr);
+    jlong tLmpComm_ = lammpsGetMpiComm(tLmpPtr);
+    if (tLmpComm_ == 0) return;
+    MPI_Comm tLmpComm = (MPI_Comm)(intptr_t)tLmpComm_;
     int tLmpMe, tLmpNP;
     int tExitCodeMPI;
     tExitCodeMPI = MPI_Comm_rank(tLmpComm, &tLmpMe); if (exceptionCheckMPI(aEnv, tExitCodeMPI)) return;
