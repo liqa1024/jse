@@ -1006,12 +1006,12 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         if (tNNSetting instanceof Map) {
             Map tSubNNSetting = (Map)tNNSetting;
             tNNSetting = new ArrayList(aBasis.length);
-            // 单 map 输入下特殊处理，只需要单个 shared_flags 即可
-            @Nullable Object tSharedFlags = tSubNNSetting.remove("shared_flags");
+            // 单 map 输入下特殊处理，只需要单个 shared_hidden_dims 即可
+            @Nullable Object tSharedHiddenDims = tSubNNSetting.remove("shared_hidden_dims");
             tSubNNSetting.put("type", "feed_forward");
             ((List)tNNSetting).add(tSubNNSetting);
-            if (tSharedFlags != null) {
-                tSubNNSetting = Maps.of("type", "shared_feed_forward", "share", 1, "shared_flags", tSharedFlags);
+            if (tSharedHiddenDims != null) {
+                tSubNNSetting = Maps.of("type", "shared_feed_forward", "share", 1, "shared_hidden_dims", tSharedHiddenDims);
             }
             for (int i = 1; i < aBasis.length; ++i) {
                 ((List)tNNSetting).add(tSubNNSetting);
@@ -1078,20 +1078,20 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 Object tShare = tNNSettingMap.get("share");
                 if (tShare == null) throw new IllegalArgumentException("Key `share` required for shared_feed_forward");
                 int tSharedType = ((Number)tShare).intValue();
-                Object tSharedFlags = UT.Code.get(tNNSettingMap, "shared_flags");
-                boolean[] tSharedFlagsArr;
-                if (tSharedFlags instanceof boolean[]) {
-                    tSharedFlagsArr = Arrays.copyOf((boolean[])tSharedFlags, ((boolean[])tSharedFlags).length);
+                Object tSharedHiddenDims = UT.Code.get(tNNSettingMap, "shared_hidden_dims");
+                int[] tSharedHiddenDimsArr;
+                if (tSharedHiddenDims instanceof int[]) {
+                    tSharedHiddenDimsArr = Arrays.copyOf((int[])tSharedHiddenDims, ((int[])tSharedHiddenDims).length);
                 } else
-                if (tSharedFlags instanceof List) {
-                    tSharedFlagsArr = new boolean[((List<?>)tSharedFlags).size()];
-                    for (int j = 0; j < tSharedFlagsArr.length; ++j) {
-                        tSharedFlagsArr[j] = (Boolean)((List<?>)tSharedFlags).get(j);
+                if (tSharedHiddenDims instanceof List) {
+                    tSharedHiddenDimsArr = new int[((List<?>)tSharedHiddenDims).size()];
+                    for (int j = 0; j < tSharedHiddenDimsArr.length; ++j) {
+                        tSharedHiddenDimsArr[j] = ((Number)((List<?>)tSharedHiddenDims).get(j)).intValue();
                     }
                 } else {
-                    throw new IllegalArgumentException("invalid type of shared_flags: " + tSharedFlags.getClass().getName());
+                    throw new IllegalArgumentException("invalid type of shared_hidden_dims: " + tSharedHiddenDims.getClass().getName());
                 }
-                SharedFeedForward tNN = new SharedFeedForward(aBasis[i].size(), (FeedForward)rOut[0][tSharedType-1].threadSafeRef(), tSharedType, tSharedFlagsArr);
+                SharedFeedForward tNN = new SharedFeedForward(aBasis[i].size(), (FeedForward)rOut[0][tSharedType-1].threadSafeRef(), tSharedType, tSharedHiddenDimsArr);
                 tNN.initParameters(false);
                 rOut[0][i] = tNN;
             }
@@ -1101,7 +1101,6 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
         return rOut;
     }
-    @SuppressWarnings("deprecation")
     private static NeuralNetwork[][] nnFromModelInfo_(Basis[] aBasis, int aThreadNum, Map<String, ?> aArgs, List<? extends Map<String, ?>> aModelInfos) throws Exception {
         @Nullable Object tObj = UT.Code.get(aArgs, "nn");
         if (tObj != null) throw new IllegalArgumentException("args of trainer can NOT contain `nn` for retraining");
@@ -1111,10 +1110,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             Object tModelInfo = info.get("torch");
             if (tModelInfo != null) throw new IllegalArgumentException("nn type in Model info can NOT be torch");
             return info.get("nn");
-        }));
-        for (int i = 0; i < tTypeNum; ++i) {
-            if (rOut[0][i] instanceof jsex.nnap.nn.TorchModel) throw new IllegalArgumentException("nn type in Model info can NOT be torch");
-        }
+        }), true);
         for (int ti = 1; ti < aThreadNum; ++ti) {
             rOut[ti] = new NeuralNetwork[tTypeNum];
             for (int i = 0; i < tTypeNum; ++i) {

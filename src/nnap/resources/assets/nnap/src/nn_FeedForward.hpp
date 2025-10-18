@@ -21,7 +21,7 @@ static inline jdouble siluGradGrad(jdouble aX, jdouble *rGrad, jdouble *rGradGra
 }
 
 template <jboolean SHARE>
-static jdouble forward_(jdouble *aX, jint aInputDim, jint aSharedInputDim, jint *aHiddenDims, jboolean *aSharedFlags, jint aHiddenNumber,
+static jdouble forward_(jdouble *aX, jint aInputDim, jint *aHiddenDims, jint *aSharedHiddenDims, jint aHiddenNumber,
                         jdouble *aHiddenWeights, jdouble *aSharedHiddenWeights, jdouble *aHiddenBiases, jdouble *aSharedHiddenBiases, jdouble *aOutputWeight, jdouble aOutputBias,
                         jdouble *rHiddenOutputs, jdouble *rHiddenGrads, jdouble *rHiddenGradGrads) noexcept {
     jdouble *tInput = aX;
@@ -31,7 +31,7 @@ static jdouble forward_(jdouble *aX, jint aInputDim, jint aSharedInputDim, jint 
     jdouble *tSharedWeights = NULL, *tSharedBiases = NULL;
     jdouble *tNoSharedWeights = NULL, *tNoSharedBiases = NULL;
     jdouble *tWeights = NULL, *tBiases = NULL;
-    jint tInSize = aInputDim, tSharedInSize = aSharedInputDim;
+    jint tInSize = aInputDim;
     if (SHARE) {
         tNoSharedWeights = aHiddenWeights; tNoSharedBiases = aHiddenBiases;
         tSharedWeights = aSharedHiddenWeights; tSharedBiases = aSharedHiddenBiases;
@@ -41,20 +41,20 @@ static jdouble forward_(jdouble *aX, jint aInputDim, jint aSharedInputDim, jint 
     const jint tEnd = aHiddenNumber - 1;
     for (jint i = 0; i < tEnd; ++i) {
         const jint tOutSize = aHiddenDims[i];
+        jint tNoSharedOutSize = -1;
         if (SHARE) {
-            if (aSharedFlags[i]) {
-                tWeights = tSharedWeights;
-                tBiases = tSharedBiases;
-            } else {
-                tWeights = tNoSharedWeights;
-                tBiases = tNoSharedBiases;
-                tNoSharedWeights += tOutSize*tInSize;
-                tNoSharedBiases += tOutSize;
-            }
-            tSharedWeights += tOutSize*tSharedInSize;
-            tSharedBiases += tOutSize;
+            tNoSharedOutSize = tOutSize-aSharedHiddenDims[i];
+            // shared last
+            tWeights = tNoSharedWeights;
+            tBiases = tNoSharedBiases;
         }
         for (jint j = 0; j < tOutSize; ++j) {
+            if (SHARE) {
+                if (j == tNoSharedOutSize) {
+                    tWeights = tSharedWeights + tNoSharedOutSize*tInSize;
+                    tBiases = tSharedBiases;
+                }
+            }
             jdouble rDot = dot(tInput, tWeights, tInSize) + tBiases[j];
             tWeights += tInSize;
             if (rGrad == NULL) {
@@ -71,28 +71,37 @@ static jdouble forward_(jdouble *aX, jint aInputDim, jint aSharedInputDim, jint 
                 rGradGrad[j] = rGradGradDot;
             }
         }
-        if (!SHARE) {
+        if (SHARE) {
+            tNoSharedWeights += tNoSharedOutSize*tInSize;
+            tNoSharedBiases += tNoSharedOutSize;
+            tSharedWeights += tOutSize*tInSize;
+            tSharedBiases += tOutSize;
+        } else {
             tBiases += tOutSize;
         }
         tInput = rOutput;
         rOutput += tOutSize;
         if (rGrad != NULL) rGrad += tOutSize;
         if (rGradGrad != NULL) rGradGrad += tOutSize;
-        tSharedInSize = tInSize = tOutSize;
+        tInSize = tOutSize;
     }
     // special optimize for last layer
     jdouble rOut = aOutputBias;
     const jint tOutSize = aHiddenDims[tEnd];
+    jint tNoSharedOutSize = -1;
     if (SHARE) {
-        if (aSharedFlags[tEnd]) {
-            tWeights = tSharedWeights;
-            tBiases = tSharedBiases;
-        } else {
-            tWeights = tNoSharedWeights;
-            tBiases = tNoSharedBiases;
-        }
+        tNoSharedOutSize = tOutSize-aSharedHiddenDims[tEnd];
+        // shared last
+        tWeights = tNoSharedWeights;
+        tBiases = tNoSharedBiases;
     }
     for (jint j = 0; j < tOutSize; ++j) {
+        if (SHARE) {
+            if (j == tNoSharedOutSize) {
+                tWeights = tSharedWeights + tNoSharedOutSize*tInSize;
+                tBiases = tSharedBiases;
+            }
+        }
         jdouble rDot = dot(tInput, tWeights, tInSize) + tBiases[j];
         tWeights += tInSize;
         if (rGrad == NULL) {
@@ -114,15 +123,15 @@ static jdouble forward_(jdouble *aX, jint aInputDim, jint aSharedInputDim, jint 
     return rOut;
 }
 static inline jdouble forward(jdouble *aX, jint aInputDim, jint *aHiddenDims, jint aHiddenNumber, jdouble *aHiddenWeights, jdouble *aHiddenBiases, jdouble *aOutputWeight, jdouble aOutputBias, jdouble *rHiddenOutputs, jdouble *rHiddenGrads, jdouble *rHiddenGradGrads) noexcept {
-    return forward_<JNI_FALSE>(aX, aInputDim, -1, aHiddenDims, NULL, aHiddenNumber, aHiddenWeights, NULL, aHiddenBiases, NULL, aOutputWeight, aOutputBias, rHiddenOutputs, rHiddenGrads, rHiddenGradGrads);
+    return forward_<JNI_FALSE>(aX, aInputDim, aHiddenDims, NULL, aHiddenNumber, aHiddenWeights, NULL, aHiddenBiases, NULL, aOutputWeight, aOutputBias, rHiddenOutputs, rHiddenGrads, rHiddenGradGrads);
 }
-static inline jdouble forward(jdouble *aX, jint aInputDim, jint aSharedInputDim, jint *aHiddenDims, jboolean *aSharedFlags, jint aHiddenNumber, jdouble *aHiddenWeights, jdouble *aSharedHiddenWeights, jdouble *aHiddenBiases, jdouble *aSharedHiddenBiases, jdouble *aOutputWeight, jdouble aOutputBias, jdouble *rHiddenOutputs, jdouble *rHiddenGrads, jdouble *rHiddenGradGrads) noexcept {
-    return forward_<JNI_TRUE>(aX, aInputDim, aSharedInputDim, aHiddenDims, aSharedFlags, aHiddenNumber, aHiddenWeights, aSharedHiddenWeights, aHiddenBiases, aSharedHiddenBiases, aOutputWeight, aOutputBias, rHiddenOutputs, rHiddenGrads, rHiddenGradGrads);
+static inline jdouble forward(jdouble *aX, jint aInputDim, jint *aHiddenDims, jint *aSharedHiddenDims, jint aHiddenNumber, jdouble *aHiddenWeights, jdouble *aSharedHiddenWeights, jdouble *aHiddenBiases, jdouble *aSharedHiddenBiases, jdouble *aOutputWeight, jdouble aOutputBias, jdouble *rHiddenOutputs, jdouble *rHiddenGrads, jdouble *rHiddenGradGrads) noexcept {
+    return forward_<JNI_TRUE>(aX, aInputDim, aHiddenDims, aSharedHiddenDims, aHiddenNumber, aHiddenWeights, aSharedHiddenWeights, aHiddenBiases, aSharedHiddenBiases, aOutputWeight, aOutputBias, rHiddenOutputs, rHiddenGrads, rHiddenGradGrads);
 }
 
 template <jboolean SHARE>
 static void backward_(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGradPara, jdouble *rGradSharedPara,
-                      jint aInputDim, jint aSharedInputDim, jint *aHiddenDims, jboolean *aSharedFlags, jint aHiddenNumber,
+                      jint aInputDim, jint *aHiddenDims, jint *aSharedHiddenDims, jint aHiddenNumber,
                       jdouble *aHiddenWeightsBackward, jdouble *aSharedHiddenWeightsBackward, jdouble *aOutputWeight,
                       jdouble *aHiddenOutputs, jdouble *aHiddenGrads, jdouble *rHiddenGrads2, jdouble *rHiddenGrads3) noexcept {
     // switch to last layer
@@ -134,7 +143,7 @@ static void backward_(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGr
     jdouble *rGradSharedWeights = NULL, *rGradSharedBiases = NULL;
     jdouble *rGradNoSharedWeights = NULL, *rGradNoSharedBiases = NULL;
     jdouble *rGradWeights = NULL, *rGradBiases = NULL;
-    jint tInSize = -1, tSharedInSize = -1;
+    jint tInSize = -1;
     if (rGradPara != NULL) {
         if (SHARE) {
             rGradSharedWeights = rGradSharedPara;
@@ -143,7 +152,6 @@ static void backward_(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGr
             rGradWeights = rGradPara;
         }
         tInSize = aInputDim;
-        tSharedInSize = aSharedInputDim;
     }
     for (jint i = 0; i < tEnd; ++i) {
         const jint tOutSize = aHiddenDims[i];
@@ -153,54 +161,52 @@ static void backward_(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGr
         tX += tOutSize;
         if (rGradPara != NULL) {
             if (SHARE) {
-                rGradSharedWeights += tSharedInSize*tOutSize;
-                if (!aSharedFlags[i]) {
-                    rGradNoSharedWeights += tInSize*tOutSize;
-                }
+                const jint tNoSharedOutSize = tOutSize-aSharedHiddenDims[i];
+                rGradSharedWeights += tInSize*tOutSize;
+                rGradNoSharedWeights += tInSize*tNoSharedOutSize;
             } else {
                 rGradWeights += tInSize*tOutSize;
             }
-            tSharedInSize = tInSize = tOutSize;
+            tInSize = tOutSize;
         }
     }
     if (rGradPara != NULL) {
         jint tLastHiddenSize = aHiddenDims[tEnd];
         if (SHARE) {
-            rGradSharedWeights += tSharedInSize*tLastHiddenSize;
-            if (!aSharedFlags[tEnd]) {
-                rGradNoSharedWeights += tInSize*tLastHiddenSize;
-            }
+            jint tLastNoSharedHiddenSize = tLastHiddenSize-aSharedHiddenDims[tEnd];
+            rGradSharedWeights += tInSize*tLastHiddenSize;
+            rGradNoSharedWeights += tInSize*tLastNoSharedHiddenSize;
             // output weights
-            mplus(aSharedFlags[aHiddenNumber]?rGradSharedWeights:rGradNoSharedWeights, aYGrad, tX, tLastHiddenSize);
+            mplus(aSharedHiddenDims[aHiddenNumber]==1?rGradSharedWeights:rGradNoSharedWeights, aYGrad, tX, tLastHiddenSize);
         } else {
             rGradWeights += tInSize*tLastHiddenSize;
             mplus(rGradWeights, aYGrad, tX, tLastHiddenSize);
         }
         if (SHARE) {
             rGradSharedBiases = rGradSharedWeights+tLastHiddenSize;
-            rGradNoSharedBiases = rGradNoSharedWeights+tLastHiddenSize;
+            rGradNoSharedBiases = rGradNoSharedWeights+tLastHiddenSize; // output weights, same size
         } else {
             rGradBiases = rGradWeights+tLastHiddenSize;
         }
         for (jint i = 0; i < aHiddenNumber; ++i) {
             if (SHARE) {
-                rGradSharedBiases += aHiddenDims[i];
-                if (!aSharedFlags[i]) {
-                    rGradNoSharedBiases += aHiddenDims[i];
-                }
+                const jint tHiddenDim = aHiddenDims[i];
+                const jint tNoSharedHiddenDim = tHiddenDim-aSharedHiddenDims[i];
+                rGradSharedBiases += tHiddenDim;
+                rGradNoSharedBiases += tNoSharedHiddenDim;
             } else {
                 rGradBiases += aHiddenDims[i];
             }
         }
         if (SHARE) {
             // output bias
-            *(aSharedFlags[aHiddenNumber]?rGradSharedBiases:rGradNoSharedBiases) += aYGrad;
+            *(aSharedHiddenDims[aHiddenNumber]==1?rGradSharedBiases:rGradNoSharedBiases) += aYGrad;
         } else {
             *rGradBiases += aYGrad;
         }
     }
     // begin backward
-    tSharedInSize = tInSize = aHiddenDims[tEnd];
+    tInSize = aHiddenDims[tEnd];
     for (jint j = 0; j < tInSize; ++j) {
         rGrad3[j] = aYGrad * tGrad[j] * aOutputWeight[j];
     }
@@ -220,24 +226,33 @@ static void backward_(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGr
         rGrad2 -= tOutSize;
         rGrad3 -= tOutSize;
         tX -= tOutSize;
+        jint tSharedInSize = -1;
+        jint tNoSharedInSize = -1;
+        if (SHARE) {
+            tSharedInSize = aSharedHiddenDims[i+1];
+            tNoSharedInSize = tInSize-tSharedInSize;
+        }
         if (rGradPara != NULL) {
             jint tWeightSize = tOutSize*tInSize;
             if (SHARE) {
-                if (aSharedFlags[i+1]) {
-                    rGradWeights = rGradSharedWeights;
-                    rGradBiases = rGradSharedBiases;
-                } else {
-                    rGradWeights = rGradNoSharedWeights;
-                    rGradBiases = rGradNoSharedBiases;
-                    rGradNoSharedWeights -= tWeightSize;
-                    rGradNoSharedBiases -= tInSize;
-                }
-                rGradSharedWeights -= tOutSize*tSharedInSize;
-                rGradSharedBiases -= tSharedInSize;
+                rGradNoSharedWeights -= tOutSize*tNoSharedInSize;
+                rGradNoSharedBiases -= tNoSharedInSize;
+                rGradSharedWeights -= tWeightSize;
+                rGradSharedBiases -= tInSize;
+                // shared last
+                rGradWeights = rGradNoSharedWeights;
+                rGradBiases = rGradNoSharedBiases;
+            } else {
+                rGradWeights -= tWeightSize;
+                rGradBiases -= tInSize;
             }
-            rGradWeights -= tWeightSize;
-            rGradBiases -= tInSize;
             for (jint j = 0; j < tInSize; ++j) {
+                if (SHARE) {
+                    if (j == tNoSharedInSize) {
+                        rGradWeights = rGradSharedWeights + tOutSize*tNoSharedInSize;
+                        rGradBiases = rGradSharedBiases;
+                    }
+                }
                 const jdouble tSubGrad3 = tGrad3Before[j];
                 rGradBiases[j] += tSubGrad3;
                 mplus(rGradWeights, tSubGrad3, tX, tOutSize);
@@ -247,37 +262,49 @@ static void backward_(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGr
                 rGradWeights -= tWeightSize;
             }
         }
-        if (SHARE) {
-            if (aSharedFlags[i+1]) {
-                tWeights = tSharedWeights;
-            } else {
-                tWeights = tNoSharedWeights;
-                tNoSharedWeights += tOutSize*tInSize;
-            }
-            tSharedWeights += tOutSize*tSharedInSize;
-        }
         for (jint j = 0; j < tOutSize; ++j) {
-            rGrad2[j] = dot(tGrad3Before, tWeights, tInSize);
+            if (SHARE) {
+                // shared last
+                rGrad2[j] = dot(tGrad3Before, tNoSharedWeights, tNoSharedInSize)
+                          + dot(tGrad3Before+tNoSharedInSize, tSharedWeights+tNoSharedInSize, tSharedInSize);
+                tNoSharedWeights += tNoSharedInSize;
+                tSharedWeights += tInSize;
+            } else {
+                rGrad2[j] = dot(tGrad3Before, tWeights, tInSize);
+                tWeights += tInSize;
+            }
             rGrad3[j] = rGrad2[j] * tGrad[j];
-            tWeights += tInSize;
         }
         tGrad3Before = rGrad3;
-        tSharedInSize = tInSize = tOutSize;
+        tInSize = tOutSize;
     }
     // to input layer
+    jint tSharedInSize = -1;
+    jint tNoSharedInSize = -1;
+    if (SHARE) {
+        tSharedInSize = aSharedHiddenDims[0];
+        tNoSharedInSize = tInSize-tSharedInSize;
+    }
     if (rGradPara != NULL) {
         if (SHARE) {
-            if (aSharedFlags[0]) {
-                rGradWeights = rGradSharedWeights;
-                rGradBiases = rGradSharedBiases;
-            } else {
-                rGradWeights = rGradNoSharedWeights;
-                rGradBiases = rGradNoSharedBiases;
-            }
+            rGradNoSharedWeights -= aInputDim*tNoSharedInSize;
+            rGradNoSharedBiases -= tNoSharedInSize;
+            rGradSharedWeights -= aInputDim*tInSize;
+            rGradSharedBiases -= tInSize;
+            // shared last
+            rGradWeights = rGradNoSharedWeights;
+            rGradBiases = rGradNoSharedBiases;
+        } else {
+            rGradWeights -= aInputDim*tInSize;
+            rGradBiases -= tInSize;
         }
-        rGradWeights -= aInputDim*tInSize;
-        rGradBiases -= tInSize;
         for (jint j = 0; j < tInSize; ++j) {
+            if (SHARE) {
+                if (j == tNoSharedInSize) {
+                    rGradWeights = rGradSharedWeights + aInputDim*tNoSharedInSize;
+                    rGradBiases = rGradSharedBiases;
+                }
+            }
             const jdouble tSubGrad3 = tGrad3Before[j];
             rGradBiases[j] += tSubGrad3;
             mplus(rGradWeights, tSubGrad3, aX, aInputDim);
@@ -285,29 +312,30 @@ static void backward_(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGr
         }
     }
     if (rGradX != NULL) {
-        if (SHARE) {
-            if (aSharedFlags[0]) {
-                tWeights = tSharedWeights;
-            } else {
-                tWeights = tNoSharedWeights;
-            }
-        }
         for (jint j = 0; j < aInputDim; ++j) {
-            rGradX[j] += dot(tGrad3Before, tWeights, tInSize);
+            if (SHARE) {
+                // shared last
+                rGradX[j] += dot(tGrad3Before, tNoSharedWeights, tNoSharedInSize)
+                           + dot(tGrad3Before+tNoSharedInSize, tSharedWeights+tNoSharedInSize, tSharedInSize);
+                tNoSharedWeights += tNoSharedInSize;
+                tSharedWeights += tInSize;
+            } else {
+                rGradX[j] += dot(tGrad3Before, tWeights, tInSize);
+            }
             tWeights += tInSize;
         }
     }
 }
 static inline void backward(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGradPara, jint aInputDim, jint *aHiddenDims, jint aHiddenNumber, jdouble *aHiddenWeightsBackward, jdouble *aOutputWeight, jdouble *aHiddenOutputs, jdouble *aHiddenGrads, jdouble *rHiddenGrads2, jdouble *rHiddenGrads3) noexcept {
-    backward_<JNI_FALSE>(aYGrad, aX, rGradX, rGradPara, NULL, aInputDim, -1, aHiddenDims, NULL, aHiddenNumber, aHiddenWeightsBackward, NULL, aOutputWeight, aHiddenOutputs, aHiddenGrads, rHiddenGrads2, rHiddenGrads3);
+    backward_<JNI_FALSE>(aYGrad, aX, rGradX, rGradPara, NULL, aInputDim, aHiddenDims, NULL, aHiddenNumber, aHiddenWeightsBackward, NULL, aOutputWeight, aHiddenOutputs, aHiddenGrads, rHiddenGrads2, rHiddenGrads3);
 }
-static inline void backward(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGradPara, jdouble *rGradSharedPara, jint aInputDim, jint aSharedInputDim, jint *aHiddenDims, jboolean *aSharedFlags, jint aHiddenNumber, jdouble *aHiddenWeightsBackward, jdouble *aSharedHiddenWeightsBackward, jdouble *aOutputWeight, jdouble *aHiddenOutputs, jdouble *aHiddenGrads, jdouble *rHiddenGrads2, jdouble *rHiddenGrads3) noexcept {
-    backward_<JNI_TRUE>(aYGrad, aX, rGradX, rGradPara, rGradSharedPara, aInputDim, aSharedInputDim, aHiddenDims, aSharedFlags, aHiddenNumber, aHiddenWeightsBackward, aSharedHiddenWeightsBackward, aOutputWeight, aHiddenOutputs, aHiddenGrads, rHiddenGrads2, rHiddenGrads3);
+static inline void backward(jdouble aYGrad, jdouble *aX, jdouble *rGradX, jdouble *rGradPara, jdouble *rGradSharedPara, jint aInputDim, jint *aHiddenDims, jint *aSharedHiddenDims, jint aHiddenNumber, jdouble *aHiddenWeightsBackward, jdouble *aSharedHiddenWeightsBackward, jdouble *aOutputWeight, jdouble *aHiddenOutputs, jdouble *aHiddenGrads, jdouble *rHiddenGrads2, jdouble *rHiddenGrads3) noexcept {
+    backward_<JNI_TRUE>(aYGrad, aX, rGradX, rGradPara, rGradSharedPara, aInputDim, aHiddenDims, aSharedHiddenDims, aHiddenNumber, aHiddenWeightsBackward, aSharedHiddenWeightsBackward, aOutputWeight, aHiddenOutputs, aHiddenGrads, rHiddenGrads2, rHiddenGrads3);
 }
 
 template <jboolean SHARE>
 static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdouble *rGradPara, jdouble *rGradSharedPara,
-                          jint aInputDim, jint aSharedInputDim, jint *aHiddenDims, jboolean *aSharedFlags, jint aHiddenNumber,
+                          jint aInputDim, jint *aHiddenDims, jint *aSharedHiddenDims, jint aHiddenNumber,
                           jdouble *aHiddenWeights, jdouble *aSharedHiddenWeights, jdouble *aHiddenWeightsBackward, jdouble *aSharedHiddenWeightsBackward, jdouble *aOutputWeight,
                           jdouble *aHiddenOutputs, jdouble *aHiddenGrads, jdouble *aHiddenGrads2, jdouble *aHiddenGrads3, jdouble *aHiddenGradGrads,
                           jdouble *rHiddenOutputs2, jdouble *rHiddenGrads4, jdouble *rHiddenGrads5) noexcept {
@@ -323,7 +351,7 @@ static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdo
     jdouble *rGradSharedWeights = NULL, *rGradSharedBiases = NULL;
     jdouble *rGradNoSharedWeights = NULL, *rGradNoSharedBiases = NULL;
     jdouble *rGradWeights = NULL, *rGradBiases = NULL;
-    jint tColNum = aInputDim, tSharedColNum = aSharedInputDim;
+    jint tColNum = aInputDim;
     if (SHARE) {
         rGradSharedWeights = rGradSharedPara; rGradSharedBiases = rGradSharedPara;
         rGradNoSharedWeights = rGradPara; rGradNoSharedBiases = rGradPara;
@@ -333,37 +361,42 @@ static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdo
     for (jint i = 0; i < aHiddenNumber; ++i) {
         jint tHiddenDim = aHiddenDims[i];
         if (SHARE) {
-            if (!aSharedFlags[i]) {
-                rGradNoSharedBiases += tColNum*tHiddenDim;
-            }
-            rGradSharedBiases += tSharedColNum*tHiddenDim;
+            jint tNoSharedHiddenDim = tHiddenDim - aSharedHiddenDims[i];
+            rGradNoSharedBiases += tColNum*tNoSharedHiddenDim;
+            rGradSharedBiases += tColNum*tHiddenDim;
         } else {
             rGradBiases += tColNum*tHiddenDim;
         }
-        tSharedColNum = tColNum = tHiddenDim;
+        tColNum = tHiddenDim;
     }
     if (SHARE) {
-        rGradNoSharedBiases += aHiddenDims[aHiddenNumber-1];
+        rGradNoSharedBiases += aHiddenDims[aHiddenNumber-1]; // output weights, same size
         rGradSharedBiases += aHiddenDims[aHiddenNumber-1];
     } else {
         rGradBiases += aHiddenDims[aHiddenNumber-1];
     }
     /// backward backward
     // diff W0 ij
-    jint tInSize = aInputDim, tSharedInSize = aSharedInputDim;
+    jint tInSize = aInputDim;
     jint tOutSize = aHiddenDims[0];
+    jint tNoSharedOutSize = -1;
     if (SHARE) {
-        if (aSharedFlags[0]) {
-            rGradWeights = rGradSharedWeights;
-        } else {
-            rGradWeights = rGradNoSharedWeights;
-            rGradNoSharedWeights += tOutSize*tInSize;
-        }
-        rGradSharedWeights += tOutSize*tSharedInSize;
+        tNoSharedOutSize = tOutSize-aSharedHiddenDims[0];
+        // shared last
+        rGradWeights = rGradNoSharedWeights;
     }
     for (jint i = 0; i < tOutSize; ++i) {
+        if (SHARE) {
+            if (i == tNoSharedOutSize) {
+                rGradWeights = rGradSharedWeights + tNoSharedOutSize*tInSize;
+            }
+        }
         mplus(rGradWeights, tGrad3[i], aGradXGrad, tInSize);
         rGradWeights += tInSize;
+    }
+    if (SHARE) {
+        rGradNoSharedWeights += tNoSharedOutSize*tInSize;
+        rGradSharedWeights += tOutSize*tInSize;
     }
     // G^0 i
     jdouble *tSharedWeights = NULL;
@@ -376,17 +409,21 @@ static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdo
         tWeights = aHiddenWeights;
     }
     if (SHARE) {
-        if (aSharedFlags[0]) {
-            tWeights = tSharedWeights;
-        } else {
-            tWeights = tNoSharedWeights;
-            tNoSharedWeights += tOutSize*tInSize;
-        }
-        tSharedWeights += tOutSize*tSharedInSize;
+        // shared last
+        tWeights = tNoSharedWeights;
     }
     for (jint i = 0; i < tOutSize; ++i) {
+        if (SHARE) {
+            if (i == tNoSharedOutSize) {
+                tWeights = tSharedWeights + tNoSharedOutSize*tInSize;
+            }
+        }
         rGrad5[i] = dot(aGradXGrad, tWeights, tInSize);
         tWeights += tInSize;
+    }
+    if (SHARE) {
+        tNoSharedWeights += tNoSharedOutSize*tInSize;
+        tSharedWeights += tOutSize*tInSize;
     }
     const jint tEnd = aHiddenNumber - 1;
     for (jint l = 0; l < tEnd; ++l) {
@@ -401,43 +438,50 @@ static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdo
         tGradGrad += tOutSize;
         tX += tOutSize;
         if (SHARE) {
-            if (!aSharedFlags[l]) {
-                rGradNoSharedBiases += tOutSize;
-            }
+            rGradNoSharedBiases += tNoSharedOutSize;
             rGradSharedBiases += tOutSize;
         } else {
             rGradBiases += tOutSize;
         }
         // diff Wl+1 ij
-        tSharedInSize = tInSize = tOutSize;
+        tInSize = tOutSize;
         tOutSize = aHiddenDims[l+1];
         if (SHARE) {
-            if (aSharedFlags[l+1]) {
-                rGradWeights = rGradSharedWeights;
-            } else {
-                rGradWeights = rGradNoSharedWeights;
-                rGradNoSharedWeights += tOutSize*tInSize;
-            }
-            rGradSharedWeights += tOutSize*tSharedInSize;
+            tNoSharedOutSize = tOutSize-aSharedHiddenDims[l+1];
+            // shared last
+            rGradWeights = rGradNoSharedWeights;
         }
         for (jint i = 0; i < tOutSize; ++i) {
+            if (SHARE) {
+                if (i == tNoSharedOutSize) {
+                    rGradWeights = rGradSharedWeights + tNoSharedOutSize*tInSize;
+                }
+            }
             mplus(rGradWeights, tGrad3[i], rGrad5, tInSize);
             rGradWeights += tInSize;
         }
+        if (SHARE) {
+            rGradNoSharedWeights += tNoSharedOutSize*tInSize;
+            rGradSharedWeights += tOutSize*tInSize;
+        }
         // G^l+1 ik
         if (SHARE) {
-            if (aSharedFlags[l+1]) {
-                tWeights = tSharedWeights;
-            } else {
-                tWeights = tNoSharedWeights;
-                tNoSharedWeights += tOutSize*tInSize;
-            }
-            tSharedWeights += tOutSize*tSharedInSize;
+            // shared last
+            tWeights = tNoSharedWeights;
         }
         jdouble *rGrad6 = rGrad5 + tInSize;
         for (jint i = 0; i < tOutSize; ++i) {
+            if (SHARE) {
+                if (i == tNoSharedOutSize) {
+                    tWeights = tSharedWeights + tNoSharedOutSize*tInSize;
+                }
+            }
             rGrad6[i] = dot(tWeights, rGrad5, tInSize);
             tWeights += tInSize;
+        }
+        if (SHARE) {
+            tNoSharedWeights += tNoSharedOutSize*tInSize;
+            tSharedWeights += tOutSize*tInSize;
         }
         rGrad4 += tInSize;
         rGrad5 += tInSize;
@@ -445,7 +489,10 @@ static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdo
     // Gend i, Wo i
     tOutSize = aHiddenDims[tEnd];
     if (SHARE) {
-        rGradWeights = aSharedFlags[aHiddenNumber]?rGradSharedWeights:rGradNoSharedWeights; // output weights
+        tNoSharedOutSize = tOutSize-aSharedHiddenDims[tEnd];
+    }
+    if (SHARE) {
+        rGradWeights = aSharedHiddenDims[aHiddenNumber]==1?rGradSharedWeights:rGradNoSharedWeights; // output weights
     }
     for (jint i = 0; i < tOutSize; ++i) {
         rGrad4[i] = aOutputWeight[i] * rGrad5[i];
@@ -457,9 +504,7 @@ static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdo
         rX2[i] = tGradGrad[i] * rGrad4[i];
     }
     if (SHARE) {
-        if (!aSharedFlags[tEnd]) {
-            rGradNoSharedBiases += tOutSize;
-        }
+        rGradNoSharedBiases += tNoSharedOutSize;
         rGradSharedBiases += tOutSize;
     } else {
         rGradBiases += tOutSize;
@@ -472,24 +517,32 @@ static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdo
     }
     for (jint l = tEnd; l > 0; --l) {
         // bl i, Wl ij
-        tSharedInSize = tInSize = aHiddenDims[l-1];
+        tInSize = aHiddenDims[l-1];
         tX -= tInSize;
+        jint tSharedOutSize = -1;
         if (SHARE) {
-            if (aSharedFlags[l]) {
-                rGradWeights = rGradSharedWeights;
-                rGradBiases = rGradSharedBiases;
-            } else {
-                rGradWeights = rGradNoSharedWeights;
-                rGradBiases = rGradNoSharedBiases;
-                rGradNoSharedWeights -= tInSize*tOutSize;
-                rGradNoSharedBiases -= tOutSize;
-            }
-            rGradSharedWeights -= tOutSize*tSharedInSize;
-            rGradSharedBiases -= tOutSize;
+            tSharedOutSize = aSharedHiddenDims[l];
+            tNoSharedOutSize = tOutSize-tSharedOutSize;
         }
-        rGradWeights -= tInSize*tOutSize;
-        rGradBiases -= tOutSize;
+        if (SHARE) {
+            rGradNoSharedWeights -= tNoSharedOutSize*tInSize;
+            rGradNoSharedBiases -= tNoSharedOutSize;
+            rGradSharedWeights -= tOutSize*tInSize;
+            rGradSharedBiases -= tOutSize;
+            // shared last
+            rGradWeights = rGradNoSharedWeights;
+            rGradBiases = rGradNoSharedBiases;
+        } else {
+            rGradWeights -= tInSize*tOutSize;
+            rGradBiases -= tOutSize;
+        }
         for (jint i = 0; i < tOutSize; ++i) {
+            if (SHARE) {
+                if (i == tNoSharedOutSize) {
+                    rGradWeights = rGradSharedWeights + tNoSharedOutSize*tInSize;
+                    rGradBiases = rGradSharedBiases;
+                }
+            }
             const jdouble tSubX2 = rX2[i];
             rGradBiases[i] += tSubX2;
             mplus(rGradWeights, tSubX2, tX, tInSize);
@@ -499,19 +552,18 @@ static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdo
             rGradWeights -= tInSize*tOutSize;
         }
         // Xl-1 ik
-        if (SHARE) {
-            if (aSharedFlags[l]) {
-                tWeights = tSharedWeights;
-            } else {
-                tWeights = tNoSharedWeights;
-                tNoSharedWeights += tOutSize*tInSize;
-            }
-            tSharedWeights += tOutSize*tSharedInSize;
-        }
         jdouble *rX3 = rX2 + tOutSize;
         for (jint i = 0; i < tInSize; ++i) {
-            rX3[i] = dot(tWeights, rX2, tOutSize);
-            tWeights += tOutSize;
+            if (SHARE) {
+                // shared last
+                rX3[i] = dot(tNoSharedWeights, rX2, tNoSharedOutSize)
+                       + dot(tSharedWeights+tNoSharedOutSize, rX2+tNoSharedOutSize, tSharedOutSize);
+                tNoSharedWeights += tNoSharedOutSize;
+                tSharedWeights += tOutSize;
+            } else {
+                rX3[i] = dot(tWeights, rX2, tOutSize);
+                tWeights += tOutSize;
+            }
         }
         rX2 += tOutSize;
         // X^l-1 ik
@@ -524,42 +576,55 @@ static void gradBackward_(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdo
         }
     }
     // b0 i, W0 ij
+    jint tSharedOutSize = -1;
     if (SHARE) {
-        if (aSharedFlags[0]) {
-            rGradWeights = rGradSharedWeights;
-            rGradBiases = rGradSharedBiases;
-        } else {
-            rGradWeights = rGradNoSharedWeights;
-            rGradBiases = rGradNoSharedBiases;
-        }
+        tSharedOutSize = aSharedHiddenDims[0];
+        tNoSharedOutSize = tOutSize-tSharedOutSize;
     }
-    rGradBiases -= tOutSize;
-    rGradWeights -= aInputDim*tOutSize;
+    if (SHARE) {
+        rGradNoSharedWeights -= aInputDim*tNoSharedOutSize;
+        rGradNoSharedBiases -= tNoSharedOutSize;
+        rGradSharedWeights -= aInputDim*tOutSize;
+        rGradSharedBiases -= tOutSize;
+        // shared last
+        rGradWeights = rGradNoSharedWeights;
+        rGradBiases = rGradNoSharedBiases;
+    } else {
+        rGradBiases -= tOutSize;
+        rGradWeights -= aInputDim*tOutSize;
+    }
     for (jint i = 0; i < tOutSize; ++i) {
+        if (SHARE) {
+            if (i == tNoSharedOutSize) {
+                rGradWeights = rGradSharedWeights + aInputDim*tNoSharedOutSize;
+                rGradBiases = rGradSharedBiases;
+            }
+        }
         const jdouble tSubX2 = rX2[i];
         rGradBiases[i] += tSubX2;
         mplus(rGradWeights, tSubX2, aX, aInputDim);
         rGradWeights += aInputDim;
     }
     if (rGradX != NULL) {
-        if (SHARE) {
-            if (aSharedFlags[0]) {
-                tWeights = tSharedWeights;
-            } else {
-                tWeights = tNoSharedWeights;
-            }
-        }
         for (jint j = 0; j < aInputDim; ++j) {
-            rGradX[j] += dot(rX2, tWeights, tInSize);
-            tWeights += tInSize;
+            if (SHARE) {
+                // shared last
+                rGradX[j] += dot(rX2, tNoSharedWeights, tNoSharedOutSize)
+                           + dot(rX2+tNoSharedOutSize, tSharedWeights+tNoSharedOutSize, tSharedOutSize);
+                tNoSharedWeights += tNoSharedOutSize;
+                tSharedWeights += tOutSize;
+            } else {
+                rGradX[j] += dot(rX2, tWeights, tOutSize);
+                tWeights += tOutSize;
+            }
         }
     }
 }
 static inline void gradBackward(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdouble *rGradPara, jint aInputDim, jint *aHiddenDims, jint aHiddenNumber, jdouble *aHiddenWeights, jdouble *aHiddenWeightsBackward, jdouble *aOutputWeight, jdouble *aHiddenOutputs, jdouble *aHiddenGrads, jdouble *aHiddenGrads2, jdouble *aHiddenGrads3, jdouble *aHiddenGradGrads, jdouble *rHiddenOutputs2, jdouble *rHiddenGrads4, jdouble *rHiddenGrads5) noexcept {
-    gradBackward_<JNI_FALSE>(aGradXGrad, aX, rGradX, rGradPara, NULL, aInputDim, -1, aHiddenDims, NULL, aHiddenNumber, aHiddenWeights, NULL, aHiddenWeightsBackward, NULL, aOutputWeight, aHiddenOutputs, aHiddenGrads, aHiddenGrads2, aHiddenGrads3, aHiddenGradGrads, rHiddenOutputs2, rHiddenGrads4, rHiddenGrads5);
+    gradBackward_<JNI_FALSE>(aGradXGrad, aX, rGradX, rGradPara, NULL, aInputDim, aHiddenDims, NULL, aHiddenNumber, aHiddenWeights, NULL, aHiddenWeightsBackward, NULL, aOutputWeight, aHiddenOutputs, aHiddenGrads, aHiddenGrads2, aHiddenGrads3, aHiddenGradGrads, rHiddenOutputs2, rHiddenGrads4, rHiddenGrads5);
 }
-static inline void gradBackward(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdouble *rGradPara, jdouble *rGradSharedPara, jint aInputDim, jint aSharedInputDim, jint *aHiddenDims, jboolean *aSharedFlags, jint aHiddenNumber, jdouble *aHiddenWeights, jdouble *aSharedHiddenWeights, jdouble *aHiddenWeightsBackward, jdouble *aSharedHiddenWeightsBackward, jdouble *aOutputWeight, jdouble *aHiddenOutputs, jdouble *aHiddenGrads, jdouble *aHiddenGrads2, jdouble *aHiddenGrads3, jdouble *aHiddenGradGrads, jdouble *rHiddenOutputs2, jdouble *rHiddenGrads4, jdouble *rHiddenGrads5) noexcept {
-    gradBackward_<JNI_TRUE>(aGradXGrad, aX, rGradX, rGradPara, rGradSharedPara, aInputDim, aSharedInputDim, aHiddenDims, aSharedFlags, aHiddenNumber, aHiddenWeights, aSharedHiddenWeights, aHiddenWeightsBackward, aSharedHiddenWeightsBackward, aOutputWeight, aHiddenOutputs, aHiddenGrads, aHiddenGrads2, aHiddenGrads3, aHiddenGradGrads, rHiddenOutputs2, rHiddenGrads4, rHiddenGrads5);
+static inline void gradBackward(jdouble *aGradXGrad, jdouble *aX, jdouble *rGradX, jdouble *rGradPara, jdouble *rGradSharedPara, jint aInputDim, jint *aHiddenDims, jint *aSharedHiddenDims, jint aHiddenNumber, jdouble *aHiddenWeights, jdouble *aSharedHiddenWeights, jdouble *aHiddenWeightsBackward, jdouble *aSharedHiddenWeightsBackward, jdouble *aOutputWeight, jdouble *aHiddenOutputs, jdouble *aHiddenGrads, jdouble *aHiddenGrads2, jdouble *aHiddenGrads3, jdouble *aHiddenGradGrads, jdouble *rHiddenOutputs2, jdouble *rHiddenGrads4, jdouble *rHiddenGrads5) noexcept {
+    gradBackward_<JNI_TRUE>(aGradXGrad, aX, rGradX, rGradPara, rGradSharedPara, aInputDim, aHiddenDims, aSharedHiddenDims, aHiddenNumber, aHiddenWeights, aSharedHiddenWeights, aHiddenWeightsBackward, aSharedHiddenWeightsBackward, aOutputWeight, aHiddenOutputs, aHiddenGrads, aHiddenGrads2, aHiddenGrads3, aHiddenGradGrads, rHiddenOutputs2, rHiddenGrads4, rHiddenGrads5);
 }
 
 }

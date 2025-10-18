@@ -18,7 +18,9 @@ import static jse.code.CS.RANDOM;
 import static jse.code.CS.ZL_DOUBLE;
 
 /**
- * 可以共享部分层的前馈神经网络 (FFNN) 实现，原生实现在非 batch 的情况下可以有最快的性能
+ * 可以共享部分神经元的前馈神经网络 (FFNN) 实现，原生实现在非 batch 的情况下可以有最快的性能
+ * <p>
+ * 物理意义上来说，共享的部分代表通用的近邻信息，独立部分代表中心原子的信息
  * <p>
  * 仅支持输出单个数值的网络，且输出层不可共享
  * <p>
@@ -34,7 +36,7 @@ public class SharedFeedForward extends NeuralNetwork {
     public int sharedType() {return mSharedType;}
     
     private final int mInputDim;
-    private final boolean[] mSharedFlags;
+    private final int[] mSharedHiddenDims;
     private final Vector mHiddenWeights, mHiddenWeightsBackward;
     private final IntVector mIndexToBackward;
     private final Vector mHiddenBiases;
@@ -42,32 +44,32 @@ public class SharedFeedForward extends NeuralNetwork {
     private final double[] mOutputBias;
     private final int mHiddenNumber, mHiddenWeightsSize, mSharedHiddenWeightsSize, mHiddenBiasesSize, mSharedHiddenBiasesSize, mOutputWeightSize, mOutputBiasSize;
     
-    private SharedFeedForward(int aInputDim, FeedForward aSharedFeedForward, int aSharedType, boolean[] aSharedFlags, Vector aHiddenWeights, Vector aHiddenWeightsBackward, IntVector aIndexToBackward, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
+    private SharedFeedForward(int aInputDim, FeedForward aSharedFeedForward, int aSharedType, int[] aSharedHiddenDims, Vector aHiddenWeights, Vector aHiddenWeightsBackward, IntVector aIndexToBackward, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
         mInputDim = aInputDim;
         mShare = aSharedFeedForward;
         mSharedType = aSharedType;
-        // 旧版兼容
-        if (aSharedFlags.length == mShare.mHiddenNumber) {
-            boolean[] oSharedFlags = aSharedFlags;
-            aSharedFlags = new boolean[oSharedFlags.length+1];
-            System.arraycopy(oSharedFlags, 0, aSharedFlags, 0, oSharedFlags.length);
+        // 最后值缺省支持
+        if (aSharedHiddenDims.length == mShare.mHiddenNumber) {
+            int[] oSharedHiddenDims = aSharedHiddenDims;
+            aSharedHiddenDims = new int[oSharedHiddenDims.length+1];
+            System.arraycopy(oSharedHiddenDims, 0, aSharedHiddenDims, 0, oSharedHiddenDims.length);
         }
-        mSharedFlags = aSharedFlags;
-        mHiddenNumber = mSharedFlags.length-1;
+        mSharedHiddenDims = aSharedHiddenDims;
+        mHiddenNumber = mSharedHiddenDims.length-1;
         if (mHiddenNumber != mShare.mHiddenNumber) throw new IllegalArgumentException("Hidden number mismatch");
-        if (mSharedFlags[0] && mInputDim!=mShare.mInputDim) throw new IllegalArgumentException("Input dimensions mismatch for shared first layer");
+        if (mInputDim != mShare.mInputDim) throw new IllegalArgumentException("Input dimensions mismatch for shared nn");
         int tHiddenWeightsSize = 0, tSharedHiddenWeightsSize = 0;
         int tHiddenBiasesSize = 0, tSharedHiddenBiasesSize = 0;
         int tColNum = mInputDim;
         for (int i = 0; i < mHiddenNumber; ++i) {
             int tHiddenDim = mShare.mHiddenDims[i];
-            if (!mSharedFlags[i]) {
-                tHiddenWeightsSize += tColNum * tHiddenDim;
-                tHiddenBiasesSize += tHiddenDim;
-            } else {
-                tSharedHiddenWeightsSize += tColNum * tHiddenDim;
-                tSharedHiddenBiasesSize += tHiddenDim;
-            }
+            int tSharedHiddenDim = mSharedHiddenDims[i];
+            if (tSharedHiddenDim<0 || tSharedHiddenDim>tHiddenDim) throw new IllegalArgumentException("invalid shared dimension: "+tSharedHiddenDim+" vs "+tHiddenDim);
+            int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
+            tHiddenWeightsSize += tColNum * tNoSharedHiddenDim;
+            tHiddenBiasesSize += tNoSharedHiddenDim;
+            tSharedHiddenWeightsSize += tColNum * tSharedHiddenDim;
+            tSharedHiddenBiasesSize += tSharedHiddenDim;
             tColNum = tHiddenDim;
         }
         mHiddenWeightsSize = tHiddenWeightsSize; mSharedHiddenWeightsSize = tSharedHiddenWeightsSize;
@@ -79,87 +81,94 @@ public class SharedFeedForward extends NeuralNetwork {
         if (mHiddenWeights.internalDataSize() != mHiddenWeightsSize) throw new IllegalArgumentException("The size of hidden weights mismatch");
         if (mHiddenWeightsBackward.internalDataSize() != mHiddenWeightsSize) throw new IllegalArgumentException("The size of backward hidden weights mismatch");
         if (mHiddenBiases.internalDataSize() != mHiddenBiasesSize) throw new IllegalArgumentException("The size of hidden biases mismatch");
-        mOutputWeightSize = mSharedFlags[mHiddenNumber] ? 0 : mShare.mHiddenDims[mHiddenNumber-1];
-        mOutputBiasSize = mSharedFlags[mHiddenNumber] ? 0 : 1;
+        int tSharedOutputDim = mSharedHiddenDims[mHiddenNumber];
+        if (tSharedOutputDim<0 || tSharedOutputDim>1) throw new IllegalArgumentException("invalid shared dimension: "+tSharedOutputDim+" vs "+1);
+        mOutputWeightSize = tSharedOutputDim==1 ? 0 : mShare.mHiddenDims[mHiddenNumber-1];
+        mOutputBiasSize = tSharedOutputDim==1 ? 0 : 1;
         mOutputWeight = aOutputWeight==null ? Vectors.zeros(mOutputWeightSize) : aOutputWeight;
         mOutputBias = aOutputBias==null ? new double[mOutputBiasSize] : aOutputBias;
         if (mOutputWeight.internalDataSize() != mOutputWeightSize) throw new IllegalArgumentException("The size of output weight mismatch");
         if (mOutputBias.length != mOutputBiasSize) throw new IllegalArgumentException("The size of output biases mismatch");
     }
-    public SharedFeedForward(int aInputDim, FeedForward aSharedFeedForward, int aSharedType, boolean[] aSharedFlags, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
-        this(aInputDim, aSharedFeedForward, aSharedType, aSharedFlags, aHiddenWeights, null, null, aHiddenBiases, aOutputWeight, aOutputBias);
+    public SharedFeedForward(int aInputDim, FeedForward aSharedFeedForward, int aSharedType, int[] aSharedHiddenDims, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
+        this(aInputDim, aSharedFeedForward, aSharedType, aSharedHiddenDims, aHiddenWeights, null, null, aHiddenBiases, aOutputWeight, aOutputBias);
         int tColNum = mInputDim;
         int tShift = 0;
         for (int i = 0; i < mHiddenNumber; ++i) {
             int tHiddenDim = mShare.mHiddenDims[i];
-            if (!mSharedFlags[i]) {
-                int tSize = tHiddenDim*tColNum;
-                final int fColNum = tColNum;
-                final int tShiftB = mHiddenWeightsSize-tShift-tSize;
-                mIndexToBackward.subVec(tShift, tShift+tSize).fill(ii -> {
-                    int row = ii / fColNum;
-                    int col = ii % fColNum;
-                    return col*tHiddenDim + row + tShiftB;
-                });
-                tShift += tSize;
-            }
+            int tSharedHiddenDim = mSharedHiddenDims[i];
+            int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
+            int tSize = tNoSharedHiddenDim*tColNum;
+            final int fColNum = tColNum;
+            final int tShiftB = mHiddenWeightsSize-tShift-tSize;
+            mIndexToBackward.subVec(tShift, tShift+tSize).fill(ii -> {
+                int row = ii / fColNum;
+                int col = ii % fColNum;
+                return col*tNoSharedHiddenDim + row + tShiftB;
+            });
+            tShift += tSize;
             tColNum = tHiddenDim;
         }
         for (int i = 0; i < mHiddenWeightsSize; ++i) {
             mHiddenWeightsBackward.set(mIndexToBackward.get(i), mHiddenWeights.get(i));
         }
     }
-    public SharedFeedForward(int aInputDim, FeedForward aSharedFeedForward, int aSharedType, boolean[] aSharedFlags) {
-        this(aInputDim, aSharedFeedForward, aSharedType, aSharedFlags, null, null, null, null);
+    public SharedFeedForward(int aInputDim, FeedForward aSharedFeedForward, int aSharedType, int[] aSharedHiddenDims) {
+        this(aInputDim, aSharedFeedForward, aSharedType, aSharedHiddenDims, null, null, null, null);
     }
     
     @Override public SharedFeedForward threadSafeRef() {
-        return new SharedFeedForward(mInputDim, mShare.threadSafeRef(), mSharedType, mSharedFlags, mHiddenWeights, mHiddenWeightsBackward, mIndexToBackward, mHiddenBiases, mOutputWeight, mOutputBias);
+        return new SharedFeedForward(mInputDim, mShare.threadSafeRef(), mSharedType, mSharedHiddenDims, mHiddenWeights, mHiddenWeightsBackward, mIndexToBackward, mHiddenBiases, mOutputWeight, mOutputBias);
     }
     
     // 这里包含时只处理实际计算流中涉及的参数部分
     public void initParameters(boolean aIncludeShare) {
-        int tColNum = mInputDim, tSharedColNum = mShare.mInputDim;
+        int tColNum = mInputDim;
         int tShift = 0, tShiftShare = 0;
         for (int i = 0; i < mHiddenNumber; ++i) {
             int tHiddenDim = mShare.mHiddenDims[i];
-            int tSize = tHiddenDim*tColNum;
-            int tSharedSize = tHiddenDim*tSharedColNum;
+            int tSharedHiddenDim = mSharedHiddenDims[i];
+            int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
             double tBound = MathEX.Fast.sqrt(6.0 / tColNum); // Kaiming 均匀初始化
-            if (!mSharedFlags[i]) {
-                mHiddenWeights.subVec(tShift, tShift+tSize).assign(() -> RANDOM.nextDouble(-tBound, tBound));
-                tShift += tSize;
-            } else
+            int tSize = tNoSharedHiddenDim*tColNum;
+            mHiddenWeights.subVec(tShift, tShift+tSize).assign(() -> RANDOM.nextDouble(-tBound, tBound));
+            tShift += tSize;
             if (aIncludeShare) {
+                tShiftShare += tSize;
+                int tSharedSize = tSharedHiddenDim*tColNum;
                 mShare.mHiddenWeights.subVec(tShiftShare, tShiftShare+tSharedSize).assign(() -> RANDOM.nextDouble(-tBound, tBound));
+                tShiftShare += tSharedSize; // shared last
             }
-            tShiftShare += tSharedSize;
-            tSharedColNum = tColNum = tHiddenDim;
+            tColNum = tHiddenDim;
         }
         for (int i = 0; i < mHiddenWeightsSize; ++i) {
             mHiddenWeightsBackward.set(mIndexToBackward.get(i), mHiddenWeights.get(i));
         }
-        if (aIncludeShare) for (int i = 0; i < mShare.mHiddenWeightsSize; ++i) {
-            mShare.mHiddenWeightsBackward.set(mShare.mIndexToBackward.get(i), mShare.mHiddenWeights.get(i));
+        if (aIncludeShare) {
+            // 这里简单处理，所有数据进行同步
+            for (int i = 0; i < mShare.mHiddenWeightsSize; ++i) {
+                mShare.mHiddenWeightsBackward.set(mShare.mIndexToBackward.get(i), mShare.mHiddenWeights.get(i));
+            }
         }
         tShift = 0; tShiftShare = 0;
         tColNum = mInputDim;
         for (int i = 0; i < mHiddenNumber; ++i) {
             int tHiddenDim = mShare.mHiddenDims[i];
+            int tSharedHiddenDim = mSharedHiddenDims[i];
+            int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
             double tBound = MathEX.Fast.sqrt(1.0 / tColNum); // 偏置也使用 Kaiming 均匀初始化，和 pytorch 默认保持一致
-            if (!mSharedFlags[i]) {
-                mHiddenBiases.subVec(tShift, tShift+tHiddenDim).assign(() -> RANDOM.nextDouble(-tBound, tBound));
-                tShift += tHiddenDim;
-            } else
+            mHiddenBiases.subVec(tShift, tShift+tNoSharedHiddenDim).assign(() -> RANDOM.nextDouble(-tBound, tBound));
+            tShift += tNoSharedHiddenDim;
             if (aIncludeShare) {
-                mShare.mHiddenBiases.subVec(tShiftShare, tShiftShare+tHiddenDim).assign(() -> RANDOM.nextDouble(-tBound, tBound));
+                tShiftShare += tNoSharedHiddenDim;
+                mShare.mHiddenBiases.subVec(tShiftShare, tShiftShare+tSharedHiddenDim).assign(() -> RANDOM.nextDouble(-tBound, tBound));
+                tShiftShare += tSharedHiddenDim; // shared last
             }
-            tShiftShare += tHiddenDim;
             tColNum = tHiddenDim;
         }
         double tBound = MathEX.Fast.sqrt(3.0 / tColNum); // Kaiming 均匀初始化，注意输出层没有激活函数因此权重需要调整
         double tBoundB = MathEX.Fast.sqrt(1.0 / tColNum); // 偏置也使用 Kaiming 均匀初始化，和 pytorch 默认保持一致
-        if (!mSharedFlags[mHiddenNumber]) {
+        if (mSharedHiddenDims[mHiddenNumber]==0) {
             mOutputWeight.assign(() -> RANDOM.nextDouble(-tBound, tBound));
             mOutputBias[0] = RANDOM.nextDouble(-tBoundB, tBoundB);
         } else
@@ -173,69 +182,64 @@ public class SharedFeedForward extends NeuralNetwork {
     static SharedFeedForward load_(FeedForward aSharedFeedForward, int aSharedType, Map aMap) {
         aSharedFeedForward = aSharedFeedForward.threadSafeRef(); // 这里统一进行线程安全引用获取，确保加载后的 nn 和传入的 nn 之间线程安全，这是所有 load 的语义
         int aInputDim = ((Number)UT.Code.get(aMap, "input_dim")).intValue();
-        List<?> tSharedFlags = (List<?>)UT.Code.get(aMap, "shared_flags");
-        boolean[] aSharedFlags = new boolean[tSharedFlags.size()];
-        for (int i = 0; i < aSharedFlags.length; ++i) {
-            aSharedFlags[i] = (Boolean)tSharedFlags.get(i);
+        List<?> tSharedHiddenDims = (List<?>)UT.Code.get(aMap, "shared_hidden_dims");
+        int[] aSharedHiddenDims = new int[tSharedHiddenDims.size()];
+        for (int i = 0; i < aSharedHiddenDims.length; ++i) {
+            aSharedHiddenDims[i] = ((Number)tSharedHiddenDims.get(i)).intValue();
         }
-        // 旧版兼容
-        if (aSharedFlags.length == aSharedFeedForward.mHiddenNumber) {
-            boolean[] oSharedFlags = aSharedFlags;
-            aSharedFlags = new boolean[oSharedFlags.length+1];
-            System.arraycopy(oSharedFlags, 0, aSharedFlags, 0, oSharedFlags.length);
+        // 最后值缺省支持
+        if (aSharedHiddenDims.length == aSharedFeedForward.mHiddenNumber) {
+            int[] oSharedHiddenDims = aSharedHiddenDims;
+            aSharedHiddenDims = new int[oSharedHiddenDims.length+1];
+            System.arraycopy(oSharedHiddenDims, 0, aSharedHiddenDims, 0, oSharedHiddenDims.length);
         }
-        int tHiddenNumber = aSharedFlags.length-1;
+        int tHiddenNumber = aSharedHiddenDims.length-1;
         if (tHiddenNumber != aSharedFeedForward.mHiddenNumber) throw new IllegalArgumentException("Hidden number mismatch");
         int tHiddenWeightsSize = 0;
         int tHiddenBiasesSize = 0;
-        int tNoSharedHiddenNumber = 0;
         int tColNum = aInputDim;
         for (int i = 0; i < tHiddenNumber; ++i) {
             int tHiddenDim = aSharedFeedForward.mHiddenDims[i];
-            if (!aSharedFlags[i]) {
-                tHiddenWeightsSize += tColNum * tHiddenDim;
-                tHiddenBiasesSize += tHiddenDim;
-                ++tNoSharedHiddenNumber;
-            }
+            int tSharedHiddenDim = aSharedHiddenDims[i];
+            if (tSharedHiddenDim<0 || tSharedHiddenDim>tHiddenDim) throw new IllegalArgumentException("invalid shared dimension: "+tSharedHiddenDim+" vs "+tHiddenDim);
+            int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
+            tHiddenWeightsSize += tColNum * tNoSharedHiddenDim;
+            tHiddenBiasesSize += tNoSharedHiddenDim;
             tColNum = tHiddenDim;
         }
         List<?> tHiddenWeights = (List<?>)UT.Code.get(aMap, "hidden_weights");
-        if (tHiddenWeights.size() != tNoSharedHiddenNumber) throw new IllegalArgumentException("The number of hidden weights mismatch");
+        if (tHiddenWeights.size() != tHiddenNumber) throw new IllegalArgumentException("The number of hidden weights mismatch");
         Vector aHiddenWeights = Vectors.zeros(tHiddenWeightsSize);
         tColNum = aInputDim;
         int tShift = 0;
-        int tIdx = 0;
         for (int i = 0; i < tHiddenNumber; ++i) {
             int tHiddenDim = aSharedFeedForward.mHiddenDims[i];
-            if (!aSharedFlags[i]) {
-                int tSize = tHiddenDim*tColNum;
-                RowMatrix tWeight = Matrices.fromRows((List<?>)tHiddenWeights.get(tIdx));
-                if (tWeight.columnNumber() != tColNum) throw new IllegalArgumentException("Column number of hidden weight '"+tIdx+"' mismatch");
-                if (tWeight.rowNumber() != tHiddenDim) throw new IllegalArgumentException("Row number of hidden weight '"+tIdx+"' mismatch");
-                aHiddenWeights.subVec(tShift, tShift+tSize).fill(tWeight.asVecRow());
-                tShift += tSize;
-                ++tIdx;
-            }
+            int tSharedHiddenDim = aSharedHiddenDims[i];
+            int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
+            int tSize = tNoSharedHiddenDim*tColNum;
+            RowMatrix tWeight = Matrices.fromRows((List<?>)tHiddenWeights.get(i));
+            if (tWeight.columnNumber() != tColNum) throw new IllegalArgumentException("Column number of hidden weight '"+i+"' mismatch");
+            if (tWeight.rowNumber() != tNoSharedHiddenDim) throw new IllegalArgumentException("Row number of hidden weight '"+i+"' mismatch");
+            aHiddenWeights.subVec(tShift, tShift+tSize).fill(tWeight.asVecRow());
+            tShift += tSize;
             tColNum = tHiddenDim;
         }
         List<?> tHiddenBiases = (List<?>)UT.Code.get(aMap, "hidden_biases");
-        if (tHiddenBiases.size() != tNoSharedHiddenNumber) throw new IllegalArgumentException("The number of hidden biases mismatch");
+        if (tHiddenBiases.size() != tHiddenNumber) throw new IllegalArgumentException("The number of hidden biases mismatch");
         Vector aHiddenBiases = Vectors.zeros(tHiddenBiasesSize);
         tShift = 0;
-        tIdx = 0;
         for (int i = 0; i < tHiddenNumber; ++i) {
             int tHiddenDim = aSharedFeedForward.mHiddenDims[i];
-            if (!aSharedFlags[i]) {
-                Vector tBias = Vectors.from((List<? extends Number>)tHiddenBiases.get(tIdx));
-                if (tBias.size() != tHiddenDim) throw new IllegalArgumentException("Size of hidden bias '"+tIdx+"' mismatch");
-                aHiddenBiases.subVec(tShift, tShift+tHiddenDim).fill(tBias);
-                tShift += tHiddenDim;
-                ++tIdx;
-            }
+            int tSharedHiddenDim = aSharedHiddenDims[i];
+            int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
+            Vector tBias = Vectors.from((List<? extends Number>)tHiddenBiases.get(i));
+            if (tBias.size() != tNoSharedHiddenDim) throw new IllegalArgumentException("Size of hidden bias '"+i+"' mismatch");
+            aHiddenBiases.subVec(tShift, tShift+tNoSharedHiddenDim).fill(tBias);
+            tShift += tNoSharedHiddenDim;
         }
         Vector aOutputWeight;
         double[] aOutputBias;
-        if (aSharedFlags[tHiddenNumber]) {
+        if (aSharedHiddenDims[tHiddenNumber]==1) {
             aOutputWeight = Vectors.zeros(0);
             aOutputBias = ZL_DOUBLE;
         } else {
@@ -243,27 +247,27 @@ public class SharedFeedForward extends NeuralNetwork {
             aOutputBias = new double[] {((Number)aMap.get("output_bias")).doubleValue()};
             if (aOutputWeight.size() != aSharedFeedForward.mHiddenDims[tHiddenNumber-1]) throw new IllegalArgumentException("Size of output weight mismatch");
         }
-        return new SharedFeedForward(aInputDim, aSharedFeedForward, aSharedType, aSharedFlags, aHiddenWeights, aHiddenBiases, aOutputWeight, aOutputBias);
+        return new SharedFeedForward(aInputDim, aSharedFeedForward, aSharedType, aSharedHiddenDims, aHiddenWeights, aHiddenBiases, aOutputWeight, aOutputBias);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override public void save(Map rSaveTo) {
         rSaveTo.put("type", "shared_feed_forward");
         rSaveTo.put("share", mSharedType);
-        rSaveTo.put("shared_flags", AbstractCollections.from(mSharedFlags));
+        rSaveTo.put("shared_hidden_dims", AbstractCollections.from(mSharedHiddenDims));
         rSaveTo.put("input_dim", mInputDim);
         List<List<List<Double>>> rHiddenWeights = new ArrayList<>(mHiddenNumber);
         int tColNum = mInputDim;
         int tShift = 0;
         for (int i = 0; i < mHiddenNumber; ++i) {
             int tHiddenDim = mShare.mHiddenDims[i];
-            if (!mSharedFlags[i]) {
-                List<List<Double>> tWeights = new ArrayList<>(tHiddenDim);
-                rHiddenWeights.add(tWeights);
-                for (int j = 0; j < tHiddenDim; ++j) {
-                    tWeights.add(mHiddenWeights.subVec(tShift, tShift+tColNum).asList());
-                    tShift += tColNum;
-                }
+            int tSharedHiddenDim = mSharedHiddenDims[i];
+            int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
+            List<List<Double>> tWeights = new ArrayList<>(tNoSharedHiddenDim);
+            rHiddenWeights.add(tWeights);
+            for (int j = 0; j < tNoSharedHiddenDim; ++j) {
+                tWeights.add(mHiddenWeights.subVec(tShift, tShift+tColNum).asList());
+                tShift += tColNum;
             }
             tColNum = tHiddenDim;
         }
@@ -272,13 +276,13 @@ public class SharedFeedForward extends NeuralNetwork {
         tShift = 0;
         for (int i = 0; i < mHiddenNumber; ++i) {
             int tHiddenDim = mShare.mHiddenDims[i];
-            if (!mSharedFlags[i]) {
-                rHiddenBiases.add(mHiddenBiases.subVec(tShift, tShift+tHiddenDim).asList());
-                tShift += tHiddenDim;
-            }
+            int tSharedHiddenDim = mSharedHiddenDims[i];
+            int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
+            rHiddenBiases.add(mHiddenBiases.subVec(tShift, tShift+tNoSharedHiddenDim).asList());
+            tShift += tNoSharedHiddenDim;
         }
         rSaveTo.put("hidden_biases", rHiddenBiases);
-        if (!mSharedFlags[mHiddenNumber]) {
+        if (mSharedHiddenDims[mHiddenNumber]==0) {
             rSaveTo.put("output_weight", mOutputWeight.asList());
             rSaveTo.put("output_bias", mOutputBias[0]);
         }
@@ -363,17 +367,17 @@ public class SharedFeedForward extends NeuralNetwork {
     }
     double forward0(IDataShell<double[]> aX, @NotNull IDataShell<double[]> rHiddenOutputs, @Nullable IDataShell<double[]> rHiddenGrads) {
         if (mShare.mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
-        if (mSharedFlags[0] && mInputDim!=mShare.mInputDim) throw new IllegalArgumentException("Input dimensions mismatch for shared first layer");
+        if (mInputDim != mShare.mInputDim) throw new IllegalArgumentException("Input dimensions mismatch");
         final int tHiddenSize = hiddenSize(true);
-        final boolean tShareOutput = mSharedFlags[mHiddenNumber];
-        return forward1(aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), mInputDim, mShare.mInputDim, mShare.mHiddenDims, mSharedFlags, mHiddenNumber,
+        final boolean tShareOutput = mSharedHiddenDims[mHiddenNumber]==1;
+        return forward1(aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), mInputDim, mShare.mHiddenDims, mSharedHiddenDims, mHiddenNumber,
                         mHiddenWeights.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mShare.mHiddenWeights.internalDataWithLengthCheck(mShare.mHiddenWeightsSize, 0),
                         mHiddenBiases.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mShare.mHiddenBiases.internalDataWithLengthCheck(mShare.mHiddenBiasesSize, 0),
                         (tShareOutput?mShare.mOutputWeight:mOutputWeight).internalDataWithLengthCheck(mShare.mOutputWeightSize, 0), tShareOutput?mShare.mOutputBias[0]:mOutputBias[0],
                         rHiddenOutputs.internalDataWithLengthCheck(tHiddenSize), rHiddenOutputs.internalDataShift(),
                         rHiddenGrads==null?null:rHiddenGrads.internalDataWithLengthCheck(tHiddenSize), rHiddenGrads==null?0:rHiddenGrads.internalDataShift());
     }
-    private static native double forward1(double[] aX, int aShiftX, int aInputDim, int aSharedInputDim, int[] aHiddenDims, boolean[] aSharedFlags, int aHiddenNumber,
+    private static native double forward1(double[] aX, int aShiftX, int aInputDim, int[] aHiddenDims, int[] aSharedHiddenDims, int aHiddenNumber,
                                           double[] aHiddenWeights, double[] aSharedHiddenWeights, double[] aHiddenBiases, double[] aSharedHiddenBiases, double[] aOutputWeight, double aOutputBias,
                                           double[] rHiddenOutputs, int aShiftOutputs, double[] rHiddenGrads, int aShiftGrads);
     
@@ -395,11 +399,11 @@ public class SharedFeedForward extends NeuralNetwork {
     double forwardGrad0(IDataShell<double[]> aX, IDataShell<double[]> rGradX, @NotNull IDataShell<double[]> rHiddenOutputs, @NotNull IDataShell<double[]> rHiddenGrads,
                         @NotNull IDataShell<double[]> rHiddenGrads2, @NotNull IDataShell<double[]> rHiddenGrads3, @Nullable IDataShell<double[]> rHiddenGradGrads) {
         if (mShare.mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
-        if (mSharedFlags[0] && mInputDim!=mShare.mInputDim) throw new IllegalArgumentException("Input dimensions mismatch for shared first layer");
+        if (mInputDim != mShare.mInputDim) throw new IllegalArgumentException("Input dimensions mismatch");
         final int tHiddenSize = hiddenSize(true);
-        final boolean tShareOutput = mSharedFlags[mHiddenNumber];
+        final boolean tShareOutput = mSharedHiddenDims[mHiddenNumber]==1;
         return forwardGrad1(aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), rGradX.internalDataWithLengthCheck(mInputDim), rGradX.internalDataShift(),
-                            mInputDim, mShare.mInputDim, mShare.mHiddenDims, mSharedFlags, mHiddenNumber,
+                            mInputDim, mShare.mHiddenDims, mSharedHiddenDims, mHiddenNumber,
                             mHiddenWeights.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mShare.mHiddenWeights.internalDataWithLengthCheck(mShare.mHiddenWeightsSize, 0),
                             mHiddenWeightsBackward.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mShare.mHiddenWeightsBackward.internalDataWithLengthCheck(mShare.mHiddenWeightsSize, 0),
                             mHiddenBiases.internalDataWithLengthCheck(mHiddenBiasesSize, 0), mShare.mHiddenBiases.internalDataWithLengthCheck(mShare.mHiddenBiasesSize, 0),
@@ -411,7 +415,7 @@ public class SharedFeedForward extends NeuralNetwork {
                             rHiddenGradGrads==null?null:rHiddenGradGrads.internalDataWithLengthCheck(tHiddenSize), rHiddenGradGrads==null?0:rHiddenGradGrads.internalDataShift());
     }
     private static native double forwardGrad1(double[] aX, int aShiftX, double[] rGradX, int aShiftGradX,
-                                              int aInputDim, int aSharedInputDim, int[] aHiddenDims, boolean[] aSharedFlags, int aHiddenNumber,
+                                              int aInputDim, int[] aHiddenDims, int[] aSharedHiddenDims, int aHiddenNumber,
                                               double[] aHiddenWeights, double[] aSharedHiddenWeights, double[] aHiddenWeightsBackward, double[] aSharedHiddenWeightsBackward,
                                               double[] aHiddenBiases, double[] aSharedHiddenBiases, double[] aOutputWeight, double aOutputBias,
                                               double[] rHiddenOutputs, int aShiftOutputs, double[] rHiddenGrads, int aShiftGrads,
@@ -426,14 +430,14 @@ public class SharedFeedForward extends NeuralNetwork {
     }
     void backward0(double aYGrad, IDataShell<double[]> aX, @Nullable IDataShell<double[]> rGradX, IDataShell<double[]> rGradPara, IDataShell<double[]> rGradSharedPara, IDataShell<double[]> aHiddenOutputs, IDataShell<double[]> aHiddenGrads) {
         if (mShare.mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
-        if (mSharedFlags[0] && mInputDim!=mShare.mInputDim) throw new IllegalArgumentException("Input dimensions mismatch for shared first layer");
+        if (mInputDim != mShare.mInputDim) throw new IllegalArgumentException("Input dimensions mismatch");
         final int tHiddenSize = hiddenSize(true);
-        final boolean tShareOutput = mSharedFlags[mHiddenNumber];
+        final boolean tShareOutput = mSharedHiddenDims[mHiddenNumber]==1;
         backward1(aYGrad, aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(),
                   rGradX==null?null:rGradX.internalDataWithLengthCheck(mInputDim), rGradX==null?0:rGradX.internalDataShift(),
                   rGradPara.internalDataWithLengthCheck(parameterSize(false)), rGradPara.internalDataShift(),
                   rGradSharedPara.internalDataWithLengthCheck(mShare.parameterSize()), rGradSharedPara.internalDataShift(),
-                  mInputDim, mShare.mInputDim, mShare.mHiddenDims, mSharedFlags, mHiddenNumber,
+                  mInputDim, mShare.mHiddenDims, mSharedHiddenDims, mHiddenNumber,
                   mHiddenWeightsBackward.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mShare.mHiddenWeightsBackward.internalDataWithLengthCheck(mShare.mHiddenWeightsSize, 0),
                   (tShareOutput?mShare.mOutputWeight:mOutputWeight).internalDataWithLengthCheck(mShare.mOutputWeightSize, 0),
                   aHiddenOutputs.internalDataWithLengthCheck(tHiddenSize), aHiddenOutputs.internalDataShift(),
@@ -441,7 +445,7 @@ public class SharedFeedForward extends NeuralNetwork {
                   mShare.mHiddenGrads2.internalDataWithLengthCheck(tHiddenSize, 0), mShare.mHiddenGrads3.internalDataWithLengthCheck(tHiddenSize, 0));
     }
     private static native void backward1(double aYGrad, double[] aX, int aShiftX,  double[] rGradX, int aShiftGradX, double[] rGradPara, int aShiftGradPara, double[] rGradSharedPara, int aShiftGradSharedPara,
-                                         int aInputDim, int aSharedInputDim, int[] aHiddenDims, boolean[] aSharedFlags, int aHiddenNumber,
+                                         int aInputDim, int[] aHiddenDims, int[] aSharedHiddenDims, int aHiddenNumber,
                                          double[] aHiddenWeightsBackward, double[] aSharedHiddenWeightsBackward, double[] aOutputWeight,
                                          double[] aHiddenOutputs, int aShiftOutputs, double[] aHiddenGrads, int aShiftGrads, double[] rHiddenGrads2, double[] rHiddenGrads3);
     
@@ -456,14 +460,14 @@ public class SharedFeedForward extends NeuralNetwork {
     void gradBackward0(IDataShell<double[]> aGradXGrad, IDataShell<double[]> aX, @Nullable IDataShell<double[]> rGradX, IDataShell<double[]> rGradPara, IDataShell<double[]> rGradSharedPara, IDataShell<double[]> aHiddenOutputs,
                        IDataShell<double[]> aHiddenGrads, IDataShell<double[]> aHiddenGrads2, IDataShell<double[]> aHiddenGrads3, IDataShell<double[]> aHiddenGradGrads) {
         if (mShare.mHiddenDims.length < mHiddenNumber) throw new IllegalArgumentException("data size mismatch");
-        if (mSharedFlags[0] && mInputDim!=mShare.mInputDim) throw new IllegalArgumentException("Input dimensions mismatch for shared first layer");
+        if (mInputDim != mShare.mInputDim) throw new IllegalArgumentException("Input dimensions mismatch");
         final int tHiddenSize = hiddenSize(true);
-        final boolean tShareOutput = mSharedFlags[mHiddenNumber];
+        final boolean tShareOutput = mSharedHiddenDims[mHiddenNumber]==1;
         gradBackward1(aGradXGrad.internalDataWithLengthCheck(mInputDim), aGradXGrad.internalDataShift(), aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(),
                       rGradX==null?null:rGradX.internalDataWithLengthCheck(mInputDim), rGradX==null?0:rGradX.internalDataShift(),
                       rGradPara.internalDataWithLengthCheck(parameterSize(false)), rGradPara.internalDataShift(),
                       rGradSharedPara.internalDataWithLengthCheck(mShare.parameterSize()), rGradSharedPara.internalDataShift(),
-                      mInputDim, mShare.mInputDim, mShare.mHiddenDims, mSharedFlags, mHiddenNumber,
+                      mInputDim, mShare.mHiddenDims, mSharedHiddenDims, mHiddenNumber,
                       mHiddenWeights.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mShare.mHiddenWeights.internalDataWithLengthCheck(mShare.mHiddenWeightsSize, 0),
                       mHiddenWeightsBackward.internalDataWithLengthCheck(mHiddenWeightsSize, 0), mShare.mHiddenWeightsBackward.internalDataWithLengthCheck(mShare.mHiddenWeightsSize, 0),
                       (tShareOutput?mShare.mOutputWeight:mOutputWeight).internalDataWithLengthCheck(mShare.mOutputWeightSize, 0),
@@ -475,7 +479,7 @@ public class SharedFeedForward extends NeuralNetwork {
                       mShare.mHiddenOutputs.internalDataWithLengthCheck(tHiddenSize, 0), mShare.mHiddenGrads2.internalDataWithLengthCheck(tHiddenSize, 0), mShare.mHiddenGrads3.internalDataWithLengthCheck(tHiddenSize, 0));
     }
     private static native void gradBackward1(double[] aGradXGrad, int aShiftGradXGrad, double[] aX, int aShiftX, double[] rGradX, int aShiftGradX, double[] rGradPara, int aShiftGradPara, double[] rGradSharedPara, int aShiftGradSharedPara,
-                                             int aInputDim, int aSharedInputDim, int[] aHiddenDims, boolean[] aSharedFlags, int aHiddenNumber,
+                                             int aInputDim, int[] aHiddenDims, int[] aSharedHiddenDims, int aHiddenNumber,
                                              double[] aHiddenWeights, double[] aSharedHiddenWeights, double[] aHiddenWeightsBackward, double[] aSharedHiddenWeightsBackward, double[] aOutputWeight,
                                              double[] aHiddenOutputs, int aShiftOutputs, double[] aHiddenGrads, int aShiftGrads,
                                              double[] aHiddenGrads2, int aShiftGrads2, double[] aHiddenGrads3, int aShiftGrads3, double[] aHiddenGradGrads, int aShiftGradGrads,

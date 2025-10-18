@@ -1,5 +1,6 @@
 package jsex.nnap.nn;
 
+import groovy.lang.DeprecationException;
 import jse.code.io.ISavable;
 import jse.math.vector.DoubleArrayVector;
 import jse.parallel.IAutoShutdown;
@@ -7,6 +8,7 @@ import jsex.nnap.NNAP;
 import jsex.nnap.basis.Basis;
 import jsex.nnap.basis.MirrorBasis;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,8 +25,8 @@ public abstract class NeuralNetwork implements IAutoShutdown, ISavable {
     }
     
     /** 提供直接加载完整神经网络的通用接口 */
-    @SuppressWarnings({"rawtypes", "deprecation"})
-    public static NeuralNetwork[] load(Basis[] aBasis, List aData) throws Exception {
+    @SuppressWarnings({"rawtypes", "deprecation", "unchecked"})
+    public static NeuralNetwork[] load(Basis[] aBasis, List aData, boolean aThrowDeprecate) throws Exception {
         final int tTypeNum = aData.size();
         if (aBasis.length!=tTypeNum) throw new IllegalArgumentException("Input size of basis and nn mismatch");
         NeuralNetwork[] rNN = new NeuralNetwork[tTypeNum];
@@ -47,6 +49,7 @@ public abstract class NeuralNetwork implements IAutoShutdown, ISavable {
                 break;
             }
             case "torch": {
+                if (aThrowDeprecate) throw new DeprecationException("torch nn is deprecated");
                 //noinspection resource
                 rNN[i] = new TorchModel(tBasis.size(), tModelMap.get("model").toString());
                 break;
@@ -69,10 +72,38 @@ public abstract class NeuralNetwork implements IAutoShutdown, ISavable {
                 Object tShare = tModelMap.get("share");
                 if (tShare == null) throw new IllegalArgumentException("Key `share` required for shared_feed_forward");
                 int tSharedType = ((Number)tShare).intValue();
-                rNN[i] = SharedFeedForward.load_((FeedForward)rNN[tSharedType-1].threadSafeRef(), tSharedType, tModelMap);
+                FeedForward tSharedNN = (FeedForward)rNN[tSharedType-1];
+                // 旧版分层 share 情况简单兼容
+                Object tSharedFlagsObj = tModelMap.get("shared_flags");
+                if (tSharedFlagsObj != null) {
+                    if (aThrowDeprecate) throw new DeprecationException("shared in layer nn is deprecated");
+                    List tSharedFlags = (List)tSharedFlagsObj;
+                    // 简单根据 share 结果组装参数，为了避免深度拷贝的问题，这里直接再次调用 save 简单处理
+                    Map aModelMap = new HashMap();
+                    tSharedNN.save(aModelMap);
+                    int tIdx = 0;
+                    for (int j = 0; j < tSharedNN.mHiddenNumber; ++j) {
+                        if (!(Boolean)tSharedFlags.get(j)) {
+                            ((List)aModelMap.get("hidden_weights")).set(j, ((List)tModelMap.get("hidden_weights")).get(tIdx));
+                            ((List)aModelMap.get("hidden_biases")).set(j, ((List)tModelMap.get("hidden_biases")).get(tIdx));
+                            ++tIdx;
+                        }
+                    }
+                    if (tSharedFlags.size()==tSharedNN.mHiddenNumber || (!(Boolean)tSharedFlags.get(tSharedNN.mHiddenNumber))) {
+                        aModelMap.put("output_weight", tModelMap.get("output_weight"));
+                        aModelMap.put("output_bias", tModelMap.get("output_bias"));
+                    }
+                    rNN[i] = FeedForward.load(aModelMap);
+                } else {
+                    rNN[i] = SharedFeedForward.load_(tSharedNN.threadSafeRef(), tSharedType, tModelMap);
+                }
             }
         }
         return rNN;
+    }
+    @SuppressWarnings("rawtypes")
+    public static NeuralNetwork[] load(Basis[] aBasis, List aData) throws Exception {
+        return load(aBasis, aData, false);
     }
     
     public abstract NeuralNetwork threadSafeRef() throws Exception;

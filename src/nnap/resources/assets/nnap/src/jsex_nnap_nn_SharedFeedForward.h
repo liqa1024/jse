@@ -10,34 +10,34 @@ extern "C" {
 /*
  * Class:     jsex_nnap_nn_SharedFeedForward
  * Method:    forward1
- * Signature: ([DIII[I[ZI[D[D[D[D[DD[DI[DI)D
+ * Signature: ([DII[I[II[D[D[D[D[DD[DI[DI)D
  */
 JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_SharedFeedForward_forward1
-  (JNIEnv *, jclass, jdoubleArray, jint, jint, jint, jintArray, jbooleanArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdouble, jdoubleArray, jint, jdoubleArray, jint);
+  (JNIEnv *, jclass, jdoubleArray, jint, jint, jintArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdouble, jdoubleArray, jint, jdoubleArray, jint);
 
 /*
  * Class:     jsex_nnap_nn_SharedFeedForward
  * Method:    forwardGrad1
- * Signature: ([DI[DIII[I[ZI[D[D[D[D[D[D[DD[DI[DI[DI[DI[DI)D
+ * Signature: ([DI[DII[I[II[D[D[D[D[D[D[DD[DI[DI[DI[DI[DI)D
  */
 JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_SharedFeedForward_forwardGrad1
-  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jint, jint, jintArray, jbooleanArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdouble, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint);
+  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jint, jintArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdouble, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint);
 
 /*
  * Class:     jsex_nnap_nn_SharedFeedForward
  * Method:    backward1
- * Signature: (D[DI[DI[DI[DIII[I[ZI[D[D[D[DI[DI[D[D)V
+ * Signature: (D[DI[DI[DI[DII[I[II[D[D[D[DI[DI[D[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_nn_SharedFeedForward_backward1
-  (JNIEnv *, jclass, jdouble, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jint, jintArray, jbooleanArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray);
+  (JNIEnv *, jclass, jdouble, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jintArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray);
 
 /*
  * Class:     jsex_nnap_nn_SharedFeedForward
  * Method:    gradBackward1
- * Signature: ([DI[DI[DI[DI[DIII[I[ZI[D[D[D[D[D[DI[DI[DI[DI[DI[D[D[D)V
+ * Signature: ([DI[DI[DI[DI[DII[I[II[D[D[D[D[D[DI[DI[DI[DI[DI[D[D[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_nn_SharedFeedForward_gradBackward1
-  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jint, jintArray, jbooleanArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray);
+  (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jintArray, jintArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray);
 
 #ifdef __cplusplus
 }

@@ -4,13 +4,13 @@
 extern "C" {
 
 JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_SharedFeedForward_forward1(JNIEnv *aEnv, jclass aClazz,
-        jdoubleArray aX, jint aShiftX, jint aInputDim, jint aSharedInputDim, jintArray aHiddenDims, jbooleanArray aSharedFlags, jint aHiddenNumber,
+        jdoubleArray aX, jint aShiftX, jint aInputDim, jintArray aHiddenDims, jintArray aSharedHiddenDims, jint aHiddenNumber,
         jdoubleArray aHiddenWeights, jdoubleArray aSharedHiddenWeights, jdoubleArray aHiddenBiases, jdoubleArray aSharedHiddenBiases, jdoubleArray aOutputWeight, jdouble aOutputBias,
         jdoubleArray rHiddenOutputs, jint aShiftOutputs, jdoubleArray rHiddenGrads, jint aShiftGrads) {
     // java array init
     jdouble *tX = (jdouble *)getJArrayBuf(aEnv, aX);
     jint *tHiddenDims = (jint *)getJArrayBuf(aEnv, aHiddenDims);
-    jboolean *tSharedFlags = (jboolean *)getJArrayBuf(aEnv, aSharedFlags);
+    jint *tSharedHiddenDims = (jint *)getJArrayBuf(aEnv, aSharedHiddenDims);
     jdouble *tHiddenWeights = (jdouble *)getJArrayBuf(aEnv, aHiddenWeights);
     jdouble *tSharedHiddenWeights = (jdouble *)getJArrayBuf(aEnv, aSharedHiddenWeights);
     jdouble *tHiddenBiases = (jdouble *)getJArrayBuf(aEnv, aHiddenBiases);
@@ -19,14 +19,14 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_SharedFeedForward_forward1(JNIEnv *a
     jdouble *tHiddenOutputs = (jdouble *)getJArrayBuf(aEnv, rHiddenOutputs);
     jdouble *tHiddenGrads = (jdouble *)getJArrayBuf(aEnv, rHiddenGrads); // nullable
     
-    jdouble tOut = JSE_NNAP::forward(tX+aShiftX, aInputDim, aSharedInputDim, tHiddenDims, tSharedFlags, aHiddenNumber,
+    jdouble tOut = JSE_NNAP::forward(tX+aShiftX, aInputDim, tHiddenDims, tSharedHiddenDims, aHiddenNumber,
                                      tHiddenWeights, tSharedHiddenWeights, tHiddenBiases, tSharedHiddenBiases, tOutputWeight, aOutputBias,
                                      tHiddenOutputs+aShiftOutputs, tHiddenGrads==NULL?NULL:(tHiddenGrads+aShiftGrads), NULL);
     
     // release java array
     releaseJArrayBuf(aEnv, aX, tX, JNI_ABORT);
     releaseJArrayBuf(aEnv, aHiddenDims, tHiddenDims, JNI_ABORT);
-    releaseJArrayBuf(aEnv, aSharedFlags, tSharedFlags, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aSharedHiddenDims, tSharedHiddenDims, JNI_ABORT);
     releaseJArrayBuf(aEnv, aHiddenWeights, tHiddenWeights, JNI_ABORT);
     releaseJArrayBuf(aEnv, aSharedHiddenWeights, tSharedHiddenWeights, JNI_ABORT);
     releaseJArrayBuf(aEnv, aHiddenBiases, tHiddenBiases, JNI_ABORT);
@@ -40,7 +40,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_SharedFeedForward_forward1(JNIEnv *a
 
 JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_SharedFeedForward_forwardGrad1(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aX, jint aShiftX, jdoubleArray rGradX, jint aShiftGradX,
-        jint aInputDim, jint aSharedInputDim, jintArray aHiddenDims, jbooleanArray aSharedFlags, jint aHiddenNumber,
+        jint aInputDim, jintArray aHiddenDims, jintArray aSharedHiddenDims, jint aHiddenNumber,
         jdoubleArray aHiddenWeights, jdoubleArray aSharedHiddenWeights, jdoubleArray aHiddenWeightsBackward, jdoubleArray aSharedHiddenWeightsBackward,
         jdoubleArray aHiddenBiases, jdoubleArray aSharedHiddenBiases, jdoubleArray aOutputWeight, jdouble aOutputBias,
         jdoubleArray rHiddenOutputs, jint aShiftOutputs, jdoubleArray rHiddenGrads, jint aShiftGrads,
@@ -49,7 +49,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_SharedFeedForward_forwardGrad1(JNIEn
     jdouble *tX = (jdouble *)getJArrayBuf(aEnv, aX);
     jdouble *tGradX = (jdouble *)getJArrayBuf(aEnv, rGradX);
     jint *tHiddenDims = (jint *)getJArrayBuf(aEnv, aHiddenDims);
-    jboolean *tSharedFlags = (jboolean *)getJArrayBuf(aEnv, aSharedFlags);
+    jint *tSharedHiddenDims = (jint *)getJArrayBuf(aEnv, aSharedHiddenDims);
     jdouble *tHiddenWeights = (jdouble *)getJArrayBuf(aEnv, aHiddenWeights);
     jdouble *tSharedHiddenWeights = (jdouble *)getJArrayBuf(aEnv, aSharedHiddenWeights);
     jdouble *tHiddenWeightsBackward = (jdouble *)getJArrayBuf(aEnv, aHiddenWeightsBackward);
@@ -63,7 +63,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_SharedFeedForward_forwardGrad1(JNIEn
     jdouble *tHiddenGrads3 = (jdouble *)getJArrayBuf(aEnv, rHiddenGrads3);
     jdouble *tHiddenGradGrads = (jdouble *)getJArrayBuf(aEnv, rHiddenGradGrads); // nullable
     
-    jdouble tOut = JSE_NNAP::forward(tX+aShiftX, aInputDim, aSharedInputDim, tHiddenDims, tSharedFlags, aHiddenNumber,
+    jdouble tOut = JSE_NNAP::forward(tX+aShiftX, aInputDim, tHiddenDims, tSharedHiddenDims, aHiddenNumber,
                                      tHiddenWeights, tSharedHiddenWeights, tHiddenBiases, tSharedHiddenBiases, tOutputWeight, aOutputBias,
                                      tHiddenOutputs+aShiftOutputs, tHiddenGrads+aShiftGrads, tHiddenGradGrads==NULL?NULL:(tHiddenGradGrads+aShiftGradGrads));
     
@@ -72,7 +72,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_SharedFeedForward_forwardGrad1(JNIEn
         tGradX_[i] = 0.0;
     }
     JSE_NNAP::backward(1.0, tX+aShiftX, tGradX_, NULL, NULL,
-                       aInputDim, aSharedInputDim, tHiddenDims, tSharedFlags, aHiddenNumber,
+                       aInputDim, tHiddenDims, tSharedHiddenDims, aHiddenNumber,
                        tHiddenWeightsBackward, tSharedHiddenWeightsBackward, tOutputWeight,
                        tHiddenOutputs+aShiftOutputs, tHiddenGrads+aShiftGrads,
                        tHiddenGrads2+aShiftGrads2, tHiddenGrads3+aShiftGrads3);
@@ -81,7 +81,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_SharedFeedForward_forwardGrad1(JNIEn
     releaseJArrayBuf(aEnv, aX, tX, JNI_ABORT);
     releaseJArrayBuf(aEnv, rGradX, tGradX, 0);
     releaseJArrayBuf(aEnv, aHiddenDims, tHiddenDims, JNI_ABORT);
-    releaseJArrayBuf(aEnv, aSharedFlags, tSharedFlags, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aSharedHiddenDims, tSharedHiddenDims, JNI_ABORT);
     releaseJArrayBuf(aEnv, aHiddenWeights, tHiddenWeights, JNI_ABORT);
     releaseJArrayBuf(aEnv, aSharedHiddenWeights, tSharedHiddenWeights, JNI_ABORT);
     releaseJArrayBuf(aEnv, aHiddenWeightsBackward, tHiddenWeightsBackward, JNI_ABORT);
@@ -101,7 +101,7 @@ JNIEXPORT jdouble JNICALL Java_jsex_nnap_nn_SharedFeedForward_forwardGrad1(JNIEn
 JNIEXPORT void JNICALL Java_jsex_nnap_nn_SharedFeedForward_backward1(JNIEnv *aEnv, jclass aClazz,
         jdouble aYGrad, jdoubleArray aX, jint aShiftX, jdoubleArray rGradX, jint aShiftGradX,
         jdoubleArray rGradPara, jint aShiftGradPara, jdoubleArray rGradSharedPara, jint aShiftGradSharedPara,
-        jint aInputDim, jint aSharedInputDim, jintArray aHiddenDims, jbooleanArray aSharedFlags, jint aHiddenNumber,
+        jint aInputDim, jintArray aHiddenDims, jintArray aSharedHiddenDims, jint aHiddenNumber,
         jdoubleArray aHiddenWeightsBackward, jdoubleArray aSharedHiddenWeightsBackward, jdoubleArray aOutputWeight,
         jdoubleArray aHiddenOutputs, jint aShiftOutputs, jdoubleArray aHiddenGrads, jint aShiftGrads,
         jdoubleArray rHiddenGrads2, jdoubleArray rHiddenGrads3) {
@@ -111,7 +111,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_SharedFeedForward_backward1(JNIEnv *aEn
     jdouble *tGradPara = (jdouble *)getJArrayBuf(aEnv, rGradPara);
     jdouble *tGradSharedPara = (jdouble *)getJArrayBuf(aEnv, rGradSharedPara);
     jint *tHiddenDims = (jint *)getJArrayBuf(aEnv, aHiddenDims);
-    jboolean *tSharedFlags = (jboolean *)getJArrayBuf(aEnv, aSharedFlags);
+    jint *tSharedHiddenDims = (jint *)getJArrayBuf(aEnv, aSharedHiddenDims);
     jdouble *tHiddenWeightsBackward = (jdouble *)getJArrayBuf(aEnv, aHiddenWeightsBackward);
     jdouble *tSharedHiddenWeightsBackward = (jdouble *)getJArrayBuf(aEnv, aSharedHiddenWeightsBackward);
     jdouble *tOutputWeight = (jdouble *)getJArrayBuf(aEnv, aOutputWeight);
@@ -121,7 +121,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_SharedFeedForward_backward1(JNIEnv *aEn
     jdouble *tHiddenGrads3 = (jdouble *)getJArrayBuf(aEnv, rHiddenGrads3);
     
     JSE_NNAP::backward(aYGrad, tX+aShiftX, tGradX==NULL?NULL:tGradX+aShiftGradX, tGradPara+aShiftGradPara, tGradSharedPara+aShiftGradSharedPara,
-                       aInputDim, aSharedInputDim, tHiddenDims, tSharedFlags, aHiddenNumber,
+                       aInputDim, tHiddenDims, tSharedHiddenDims, aHiddenNumber,
                        tHiddenWeightsBackward, tSharedHiddenWeightsBackward, tOutputWeight,
                        tHiddenOutputs+aShiftOutputs, tHiddenGrads+aShiftGrads, tHiddenGrads2, tHiddenGrads3);
     
@@ -131,7 +131,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_SharedFeedForward_backward1(JNIEnv *aEn
     releaseJArrayBuf(aEnv, rGradPara, tGradPara, 0);
     releaseJArrayBuf(aEnv, rGradSharedPara, tGradSharedPara, 0);
     releaseJArrayBuf(aEnv, aHiddenDims, tHiddenDims, JNI_ABORT);
-    releaseJArrayBuf(aEnv, aSharedFlags, tSharedFlags, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aSharedHiddenDims, tSharedHiddenDims, JNI_ABORT);
     releaseJArrayBuf(aEnv, aHiddenWeightsBackward, tHiddenWeightsBackward, JNI_ABORT);
     releaseJArrayBuf(aEnv, aSharedHiddenWeightsBackward, tSharedHiddenWeightsBackward, JNI_ABORT);
     releaseJArrayBuf(aEnv, aOutputWeight, tOutputWeight, JNI_ABORT);
@@ -144,7 +144,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_SharedFeedForward_backward1(JNIEnv *aEn
 JNIEXPORT void JNICALL Java_jsex_nnap_nn_SharedFeedForward_gradBackward1(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aGradXGrad, jint aShiftGradXGrad, jdoubleArray aX, jint aShiftX, jdoubleArray rGradX, jint aShiftGradX,
         jdoubleArray rGradPara, jint aShiftGradPara, jdoubleArray rGradSharedPara, jint aShiftGradSharedPara,
-        jint aInputDim, jint aSharedInputDim, jintArray aHiddenDims, jbooleanArray aSharedFlags, jint aHiddenNumber,
+        jint aInputDim, jintArray aHiddenDims, jintArray aSharedHiddenDims, jint aHiddenNumber,
         jdoubleArray aHiddenWeights, jdoubleArray aSharedHiddenWeights, jdoubleArray aHiddenWeightsBackward, jdoubleArray aSharedHiddenWeightsBackward, jdoubleArray aOutputWeight,
         jdoubleArray aHiddenOutputs, jint aShiftOutputs, jdoubleArray aHiddenGrads, jint aShiftGrads,
         jdoubleArray aHiddenGrads2, jint aShiftGrads2, jdoubleArray aHiddenGrads3, jint aShiftGrads3, jdoubleArray aHiddenGradGrads, jint aShiftGradGrads,
@@ -156,7 +156,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_SharedFeedForward_gradBackward1(JNIEnv 
     jdouble *tGradPara = (jdouble *)getJArrayBuf(aEnv, rGradPara);
     jdouble *tGradSharedPara = (jdouble *)getJArrayBuf(aEnv, rGradSharedPara);
     jint *tHiddenDims = (jint *)getJArrayBuf(aEnv, aHiddenDims);
-    jboolean *tSharedFlags = (jboolean *)getJArrayBuf(aEnv, aSharedFlags);
+    jint *tSharedHiddenDims = (jint *)getJArrayBuf(aEnv, aSharedHiddenDims);
     jdouble *tHiddenWeights = (jdouble *)getJArrayBuf(aEnv, aHiddenWeights);
     jdouble *tSharedHiddenWeights = (jdouble *)getJArrayBuf(aEnv, aSharedHiddenWeights);
     jdouble *tHiddenWeightsBackward = (jdouble *)getJArrayBuf(aEnv, aHiddenWeightsBackward);
@@ -172,7 +172,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_SharedFeedForward_gradBackward1(JNIEnv 
     jdouble *tHiddenGrads5 = (jdouble *)getJArrayBuf(aEnv, rHiddenGrads5);
     
     JSE_NNAP::gradBackward(tGradXGrad+aShiftGradXGrad, tX+aShiftX, tGradX==NULL?NULL:tGradX+aShiftGradX, tGradPara+aShiftGradPara, tGradSharedPara+aShiftGradSharedPara,
-                           aInputDim, aSharedInputDim, tHiddenDims, tSharedFlags, aHiddenNumber,
+                           aInputDim, tHiddenDims, tSharedHiddenDims, aHiddenNumber,
                            tHiddenWeights, tSharedHiddenWeights, tHiddenWeightsBackward, tSharedHiddenWeightsBackward, tOutputWeight,
                            tHiddenOutputs+aShiftOutputs, tHiddenGrads+aShiftGrads,
                            tHiddenGrads2+aShiftGrads2, tHiddenGrads3+aShiftGrads3, tHiddenGradGrads+aShiftGradGrads,
@@ -185,7 +185,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_nn_SharedFeedForward_gradBackward1(JNIEnv 
     releaseJArrayBuf(aEnv, rGradPara, tGradPara, 0);
     releaseJArrayBuf(aEnv, rGradSharedPara, tGradSharedPara, 0);
     releaseJArrayBuf(aEnv, aHiddenDims, tHiddenDims, JNI_ABORT);
-    releaseJArrayBuf(aEnv, aSharedFlags, tSharedFlags, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aSharedHiddenDims, tSharedHiddenDims, JNI_ABORT);
     releaseJArrayBuf(aEnv, aHiddenWeights, tHiddenWeights, JNI_ABORT);
     releaseJArrayBuf(aEnv, aSharedHiddenWeights, tSharedHiddenWeights, JNI_ABORT);
     releaseJArrayBuf(aEnv, aHiddenWeightsBackward, tHiddenWeightsBackward, JNI_ABORT);
