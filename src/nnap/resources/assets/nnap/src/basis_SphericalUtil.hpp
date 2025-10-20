@@ -1070,6 +1070,40 @@ static void mplusCnlmRFuse(jdouble *rCnlm, jdouble *aY, jdouble aFc, jdouble *aR
     }
 }
 
+template <jint LMAX>
+static void mplusAnlm(jdouble *rAnlm, jdouble *aCnlm, jdouble *aPostFuseWeight, jint aPostFuseSize, jint aSizeN) noexcept {
+    constexpr jint tLMAll = (LMAX+1)*(LMAX+1);
+    jdouble *tAnlm = rAnlm;
+    jdouble *tPostFuseWeight = aPostFuseWeight;
+    for (jint np = 0; np < aPostFuseSize; ++np) {
+        jdouble *tCnlm = aCnlm;
+        for (jint n = 0; n < aSizeN; ++n) {
+            mplus<tLMAll>(tAnlm, tPostFuseWeight[n], tCnlm);
+            tCnlm += tLMAll;
+        }
+        tPostFuseWeight += aSizeN;
+        tAnlm += tLMAll;
+    }
+}
+static void mplusAnlm(jdouble *rAnlm, jdouble *aCnlm, jdouble *aPostFuseWeight, jint aPostFuseSize, jint aSizeN, jint aLMax) noexcept {
+    switch (aLMax) {
+    case 0: {mplusAnlm<0>(rAnlm, aCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 1: {mplusAnlm<1>(rAnlm, aCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 2: {mplusAnlm<2>(rAnlm, aCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 3: {mplusAnlm<3>(rAnlm, aCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 4: {mplusAnlm<4>(rAnlm, aCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 5: {mplusAnlm<5>(rAnlm, aCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 6: {mplusAnlm<6>(rAnlm, aCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 7: {mplusAnlm<7>(rAnlm, aCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 8: {mplusAnlm<8>(rAnlm, aCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 9: {mplusAnlm<9>(rAnlm, aCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 10: {mplusAnlm<10>(rAnlm, aCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 11: {mplusAnlm<11>(rAnlm, aCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 12: {mplusAnlm<12>(rAnlm, aCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    default: {return;}
+    }
+}
+
 
 template <jint NMAX, jint LMAX>
 static void mplusGradParaFuse(jdouble *aGradCnlm, jdouble *aBnlm, jdouble *rGradPara, jint aType, jint aFuseSize) noexcept {
@@ -1185,6 +1219,72 @@ static void mplusGradParaRFuse(jdouble *aGradCnlm, jdouble *aY, jdouble aFc, jdo
     case 10: {mplusGradParaRFuse<10>(aGradCnlm, aY, aFc, aRn, rGradRnp, rGradPara, aType, aFuseSize, aNMax); return;}
     case 11: {mplusGradParaRFuse<11>(aGradCnlm, aY, aFc, aRn, rGradRnp, rGradPara, aType, aFuseSize, aNMax); return;}
     case 12: {mplusGradParaRFuse<12>(aGradCnlm, aY, aFc, aRn, rGradRnp, rGradPara, aType, aFuseSize, aNMax); return;}
+    default: {return;}
+    }
+}
+
+template <jint LMAX>
+static void mplusGradParaPostFuse(jdouble *aGradAnlm, jdouble *aCnlm, jdouble *rGradPara, jint aPostFuseSize, jint aSizeN) noexcept {
+    constexpr jint tLMAll = (LMAX+1)*(LMAX+1);
+    jdouble *tGradAnlm = aGradAnlm;
+    jdouble *tGradPara = rGradPara;
+    for (jint np = 0; np < aPostFuseSize; ++np) {
+        jdouble *tCnlm = aCnlm;
+        for (jint n = 0; n < aSizeN; ++n) {
+            tGradPara[n] += dot<tLMAll>(tGradAnlm, tCnlm);
+            tCnlm += tLMAll;
+        }
+        tGradPara += aSizeN;
+        tGradAnlm += tLMAll;
+    }
+}
+static void mplusGradParaPostFuse(jdouble *aGradAnlm, jdouble *aCnlm, jdouble *rGradPara, jint aPostFuseSize, jint aSizeN, jint aLMax) noexcept {
+    switch (aLMax) {
+    case 0: {mplusGradParaPostFuse<0>(aGradAnlm, aCnlm, rGradPara, aPostFuseSize, aSizeN); return;}
+    case 1: {mplusGradParaPostFuse<1>(aGradAnlm, aCnlm, rGradPara, aPostFuseSize, aSizeN); return;}
+    case 2: {mplusGradParaPostFuse<2>(aGradAnlm, aCnlm, rGradPara, aPostFuseSize, aSizeN); return;}
+    case 3: {mplusGradParaPostFuse<3>(aGradAnlm, aCnlm, rGradPara, aPostFuseSize, aSizeN); return;}
+    case 4: {mplusGradParaPostFuse<4>(aGradAnlm, aCnlm, rGradPara, aPostFuseSize, aSizeN); return;}
+    case 5: {mplusGradParaPostFuse<5>(aGradAnlm, aCnlm, rGradPara, aPostFuseSize, aSizeN); return;}
+    case 6: {mplusGradParaPostFuse<6>(aGradAnlm, aCnlm, rGradPara, aPostFuseSize, aSizeN); return;}
+    case 7: {mplusGradParaPostFuse<7>(aGradAnlm, aCnlm, rGradPara, aPostFuseSize, aSizeN); return;}
+    case 8: {mplusGradParaPostFuse<8>(aGradAnlm, aCnlm, rGradPara, aPostFuseSize, aSizeN); return;}
+    case 9: {mplusGradParaPostFuse<9>(aGradAnlm, aCnlm, rGradPara, aPostFuseSize, aSizeN); return;}
+    case 10: {mplusGradParaPostFuse<10>(aGradAnlm, aCnlm, rGradPara, aPostFuseSize, aSizeN); return;}
+    case 11: {mplusGradParaPostFuse<11>(aGradAnlm, aCnlm, rGradPara, aPostFuseSize, aSizeN); return;}
+    case 12: {mplusGradParaPostFuse<12>(aGradAnlm, aCnlm, rGradPara, aPostFuseSize, aSizeN); return;}
+    default: {return;}
+    }
+}
+
+template <jint LMAX>
+static void mplusGradAnlm(jdouble *aGradAnlm, jdouble *rGradCnlm, jdouble *aPostFuseWeight, jint aPostFuseSize, jint aSizeN) noexcept {
+    constexpr jint tLMAll = (LMAX+1)*(LMAX+1);
+    jdouble *tGradCnlm = rGradCnlm;
+    for (jint n = 0; n < aSizeN; ++n) {
+        jdouble *tGradAnlm = aGradAnlm;
+        for (jint np = 0; np < aPostFuseSize; ++np) {
+            mplus<tLMAll>(tGradCnlm, aPostFuseWeight[n + np*aSizeN], tGradAnlm);
+            tGradAnlm += tLMAll;
+        }
+        tGradCnlm += tLMAll;
+    }
+}
+static void mplusGradAnlm(jdouble *aGradAnlm, jdouble *rGradCnlm, jdouble *aPostFuseWeight, jint aPostFuseSize, jint aSizeN, jint aLMax) noexcept {
+    switch (aLMax) {
+    case 0: {mplusGradAnlm<0>(aGradAnlm, rGradCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 1: {mplusGradAnlm<1>(aGradAnlm, rGradCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 2: {mplusGradAnlm<2>(aGradAnlm, rGradCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 3: {mplusGradAnlm<3>(aGradAnlm, rGradCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 4: {mplusGradAnlm<4>(aGradAnlm, rGradCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 5: {mplusGradAnlm<5>(aGradAnlm, rGradCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 6: {mplusGradAnlm<6>(aGradAnlm, rGradCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 7: {mplusGradAnlm<7>(aGradAnlm, rGradCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 8: {mplusGradAnlm<8>(aGradAnlm, rGradCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 9: {mplusGradAnlm<9>(aGradAnlm, rGradCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 10: {mplusGradAnlm<10>(aGradAnlm, rGradCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 11: {mplusGradAnlm<11>(aGradAnlm, rGradCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
+    case 12: {mplusGradAnlm<12>(aGradAnlm, rGradCnlm, aPostFuseWeight, aPostFuseSize, aSizeN); return;}
     default: {return;}
     }
 }

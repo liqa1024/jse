@@ -3,7 +3,6 @@ package jsex.nnap.basis;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import jse.code.UT;
-import jse.math.MathEX;
 import jse.math.matrix.ColumnMatrix;
 import jse.math.vector.IVector;
 import org.jetbrains.annotations.Nullable;
@@ -42,34 +41,7 @@ abstract class WTypeBasis extends MergeableBasis {
         mNMax = aNMax;
         mWType = aWType;
         mFuseWeight = aFuseWeight;
-        switch(mWType) {
-        case WTYPE_EXFULL: {
-            mSizeN = mTypeNum>1 ? (mTypeNum+1)*(mNMax+1) : (mNMax+1);
-            break;
-        }
-        case WTYPE_FULL: {
-            mSizeN = mTypeNum*(mNMax+1);
-            break;
-        }
-        case WTYPE_NONE: {
-            mSizeN = mNMax+1;
-            break;
-        }
-        case WTYPE_DEFAULT: {
-            mSizeN = mTypeNum>1 ? (mNMax+mNMax+2) : (mNMax+1);
-            break;
-        }
-        case WTYPE_FUSE: {
-            mSizeN = mFuseWeight.rowNumber() * (mNMax+1);
-            break;
-        }
-        case WTYPE_RFUSE: {
-            mSizeN = mFuseWeight.rowNumber() / (mNMax+1);
-            break;
-        }
-        default: {
-            throw new IllegalStateException();
-        }}
+        mSizeN = getSizeN_(mWType, mTypeNum, mNMax, mFuseWeight);
         if (mWType == WTYPE_FUSE) {
             mFuseSize = mFuseWeight.rowNumber();
         } else
@@ -88,6 +60,30 @@ abstract class WTypeBasis extends MergeableBasis {
         this(aTypeNum, aNMax, aWType, null);
     }
     
+    static int getSizeN_(int aWType, int aTypeNum, int aNMax, ColumnMatrix aFuseWeight) {
+        switch(aWType) {
+        case WTYPE_EXFULL: {
+            return aTypeNum>1 ? (aTypeNum+1)*(aNMax+1) : (aNMax+1);
+        }
+        case WTYPE_FULL: {
+            return aTypeNum*(aNMax+1);
+        }
+        case WTYPE_NONE: {
+            return aNMax+1;
+        }
+        case WTYPE_DEFAULT: {
+            return aTypeNum>1 ? (aNMax+aNMax+2) : (aNMax+1);
+        }
+        case WTYPE_FUSE: {
+            return aFuseWeight.rowNumber() * (aNMax+1);
+        }
+        case WTYPE_RFUSE: {
+            return aFuseWeight.rowNumber() / (aNMax+1);
+        }
+        default: {
+            throw new IllegalStateException();
+        }}
+    }
     @SuppressWarnings("rawtypes")
     static int getWType_(Map aMap) {
         @Nullable Object tType = UT.Code.get(aMap, "wtype");
@@ -112,7 +108,7 @@ abstract class WTypeBasis extends MergeableBasis {
             return ColumnMatrix.zeros(tFuseSize, aTypeNum);
         }
         // aWType == WTYPE_RFUSE
-        int tFuseSize = ((Number) UT.Code.getWithDefault(aMap, aNMax+1, "fuse_size")).intValue();
+        int tFuseSize = ((Number)UT.Code.getWithDefault(aMap, aNMax+1, "fuse_size")).intValue();
         return ColumnMatrix.zeros(tFuseSize*(aNMax+1), aTypeNum);
     }
     

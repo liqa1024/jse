@@ -8,7 +8,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forward1(JNIEnv *
         jdoubleArray rFp, jint aShiftFp, jdoubleArray rForwardCache, jint aForwardCacheShift, jboolean aFullCache,
         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial,
         jint aL3Max, jboolean aL3Cross, jint aL4Max, jboolean aL4Cross,
-        jint aWType, jdoubleArray aFuseWeight, jint aFuseSize) {
+        jint aWType, jdoubleArray aFuseWeight, jint aFuseSize, jdoubleArray aPostFuseWeight, jint aPostFuseSize) {
     // java array init
     jdouble *tNlDx = (jdouble *)getJArrayBuf(aEnv, aNlDx);
     jdouble *tNlDy = (jdouble *)getJArrayBuf(aEnv, aNlDy);
@@ -17,11 +17,14 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forward1(JNIEnv *
     jdouble *tFp = (jdouble *)getJArrayBuf(aEnv, rFp);
     jdouble *tForwardCache = (jdouble *)getJArrayBuf(aEnv, rForwardCache);
     jdouble *tFuseWeight = (jdouble *)getJArrayBuf(aEnv, aFuseWeight); // nullable
+    jdouble *tPostFuseWeight = (jdouble *)getJArrayBuf(aEnv, aPostFuseWeight); // nullable
     
     JSE_NNAP::calFp(tNlDx, tNlDy, tNlDz, tNlType, aNN, tFp+aShiftFp,
                     tForwardCache+aForwardCacheShift, aFullCache,
                     aTypeNum, aRCut, aNMax, aLMax, aNoRadial,
-                    aL3Max, aL3Cross, aL4Max, aL4Cross, aWType, tFuseWeight, aFuseSize);
+                    aL3Max, aL3Cross, aL4Max, aL4Cross, aWType,
+                    tFuseWeight, aFuseSize,
+                    tPostFuseWeight, aPostFuseSize);
     
     // release java array
     releaseJArrayBuf(aEnv, aNlDx, tNlDx, JNI_ABORT);
@@ -31,6 +34,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forward1(JNIEnv *
     releaseJArrayBuf(aEnv, rFp, tFp, 0);
     releaseJArrayBuf(aEnv, rForwardCache, tForwardCache, 0);
     releaseJArrayBuf(aEnv, aFuseWeight, tFuseWeight, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aPostFuseWeight, tPostFuseWeight, JNI_ABORT);
 }
 
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_backward1(JNIEnv *aEnv, jclass aClazz,
@@ -38,7 +42,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_backward1(JNIEnv 
         jdoubleArray aGradFp, jint aShiftGradFp, jdoubleArray rGradPara, jint aShiftGradPara,
         jdoubleArray aForwardCache, jint aForwardCacheShift, jdoubleArray rBackwardCache, jint aBackwardCacheShift,
         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial, jint aL3Max, jboolean aL3Cross, jint aL4Max, jboolean aL4Cross,
-        jint aWType, jint aFuseSize) {
+        jint aWType, jint aFuseSize, jdoubleArray aPostFuseWeight, jint aPostFuseSize) {
     // java array init
     jdouble *tNlDx = (jdouble *)getJArrayBuf(aEnv, aNlDx);
     jdouble *tNlDy = (jdouble *)getJArrayBuf(aEnv, aNlDy);
@@ -48,12 +52,14 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_backward1(JNIEnv 
     jdouble *tGradPara = (jdouble *)getJArrayBuf(aEnv, rGradPara);
     jdouble *tForwardCache = (jdouble *)getJArrayBuf(aEnv, aForwardCache);
     jdouble *tBackwardCache = (jdouble *)getJArrayBuf(aEnv, rBackwardCache);
+    jdouble *tPostFuseWeight = (jdouble *)getJArrayBuf(aEnv, aPostFuseWeight); // nullable
     
     JSE_NNAP::calBackward(tNlDx, tNlDy, tNlDz, tNlType, aNN,
                           tGradFp+aShiftGradFp, tGradPara+aShiftGradPara,
                           tForwardCache+aForwardCacheShift, tBackwardCache+aBackwardCacheShift,
                           aTypeNum, aRCut, aNMax, aLMax, aNoRadial,
-                          aL3Max, aL3Cross, aL4Max, aL4Cross, aWType, aFuseSize);
+                          aL3Max, aL3Cross, aL4Max, aL4Cross, aWType, aFuseSize,
+                          tPostFuseWeight, aPostFuseSize);
     
     // release java array
     releaseJArrayBuf(aEnv, aNlDx, tNlDx, JNI_ABORT);
@@ -64,6 +70,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_backward1(JNIEnv 
     releaseJArrayBuf(aEnv, rGradPara, tGradPara, 0);
     releaseJArrayBuf(aEnv, aForwardCache, tForwardCache, JNI_ABORT);
     releaseJArrayBuf(aEnv, rBackwardCache, tBackwardCache, 0);
+    releaseJArrayBuf(aEnv, aPostFuseWeight, tPostFuseWeight, JNI_ABORT);
 }
 
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forwardForce1(JNIEnv *aEnv, jclass aClazz,
@@ -71,7 +78,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forwardForce1(JNI
         jdoubleArray aNNGrad, jint aShiftFp, jdoubleArray rFx, jdoubleArray rFy, jdoubleArray rFz,
         jdoubleArray aForwardCache, jint aForwardCacheShift, jdoubleArray rForwardForceCache, jint aForwardForceCacheShift, jboolean aFullCache,
         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial, jint aL3Max, jboolean aL3Cross, jint aL4Max, jboolean aL4Cross,
-        jint aWType, jdoubleArray aFuseWeight, jint aFuseSize) {
+        jint aWType, jdoubleArray aFuseWeight, jint aFuseSize, jdoubleArray aPostFuseWeight, jint aPostFuseSize) {
     // java array init
     jdouble *tNlDx = (jdouble *)getJArrayBuf(aEnv, aNlDx);
     jdouble *tNlDy = (jdouble *)getJArrayBuf(aEnv, aNlDy);
@@ -84,12 +91,15 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forwardForce1(JNI
     jdouble *tForwardCache = (jdouble *)getJArrayBuf(aEnv, aForwardCache);
     jdouble *tForwardForceCache = (jdouble *)getJArrayBuf(aEnv, rForwardForceCache);
     jdouble *tFuseWeight = (jdouble *)getJArrayBuf(aEnv, aFuseWeight); // nullable
+    jdouble *tPostFuseWeight = (jdouble *)getJArrayBuf(aEnv, aPostFuseWeight); // nullable
     
     JSE_NNAP::calForce(tNlDx, tNlDy, tNlDz, tNlType, aNN,
                        tNNGrad+aShiftFp, tFx, tFy, tFz,
                        tForwardCache+aForwardCacheShift, tForwardForceCache+aForwardForceCacheShift, aFullCache,
                        aTypeNum, aRCut, aNMax, aLMax, aNoRadial,
-                       aL3Max, aL3Cross, aL4Max, aL4Cross, aWType, tFuseWeight, aFuseSize);
+                       aL3Max, aL3Cross, aL4Max, aL4Cross, aWType,
+                       tFuseWeight, aFuseSize,
+                       tPostFuseWeight, aPostFuseSize);
     
     // release java array
     releaseJArrayBuf(aEnv, aNlDx, tNlDx, JNI_ABORT);
@@ -103,6 +113,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forwardForce1(JNI
     releaseJArrayBuf(aEnv, aForwardCache, tForwardCache, JNI_ABORT);
     releaseJArrayBuf(aEnv, rForwardForceCache, tForwardForceCache, 0);
     releaseJArrayBuf(aEnv, aFuseWeight, tFuseWeight, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aPostFuseWeight, tPostFuseWeight, JNI_ABORT);
 }
 
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_backwardForce1(JNIEnv *aEnv, jclass aClazz,
@@ -112,7 +123,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_backwardForce1(JN
         jdoubleArray aForwardCache, jint aForwardCacheShift, jdoubleArray aForwardForceCache, jint aForwardForceCacheShift,
         jdoubleArray rBackwardCache, jint aBackwardCacheShift, jdoubleArray rBackwardForceCache, jint aBackwardForceCacheShift, jboolean aFixBasis,
         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial, jint aL3Max, jboolean aL3Cross, jint aL4Max, jboolean aL4Cross,
-        jint aWType, jdoubleArray aFuseWeight, jint aFuseSize) {
+        jint aWType, jdoubleArray aFuseWeight, jint aFuseSize, jdoubleArray aPostFuseWeight, jint aPostFuseSize) {
     // java array init
     jdouble *tNlDx = (jdouble *)getJArrayBuf(aEnv, aNlDx);
     jdouble *tNlDy = (jdouble *)getJArrayBuf(aEnv, aNlDy);
@@ -129,6 +140,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_backwardForce1(JN
     jdouble *tBackwardCache = (jdouble *)getJArrayBuf(aEnv, rBackwardCache);
     jdouble *tBackwardForceCache = (jdouble *)getJArrayBuf(aEnv, rBackwardForceCache);
     jdouble *tFuseWeight = (jdouble *)getJArrayBuf(aEnv, aFuseWeight); // nullable
+    jdouble *tPostFuseWeight = (jdouble *)getJArrayBuf(aEnv, aPostFuseWeight); // nullable
     
     JSE_NNAP::calBackwardForce(tNlDx, tNlDy, tNlDz, tNlType, aNN,
                                tNNGrad+aShiftNNGrad, tGradFx, tGradFy, tGradFz,
@@ -136,7 +148,9 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_backwardForce1(JN
                                tForwardCache+aForwardCacheShift, tForwardForceCache+aForwardForceCacheShift,
                                tBackwardCache+aBackwardCacheShift, tBackwardForceCache+aBackwardForceCacheShift, aFixBasis,
                                aTypeNum, aRCut, aNMax, aLMax, aNoRadial,
-                               aL3Max, aL3Cross, aL4Max, aL4Cross, aWType, tFuseWeight, aFuseSize);
+                               aL3Max, aL3Cross, aL4Max, aL4Cross, aWType,
+                               tFuseWeight, aFuseSize,
+                               tPostFuseWeight, aPostFuseSize);
     
     // release java array
     releaseJArrayBuf(aEnv, aNlDx, tNlDx, JNI_ABORT);
@@ -154,6 +168,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_backwardForce1(JN
     releaseJArrayBuf(aEnv, rBackwardCache, tBackwardCache, 0);
     releaseJArrayBuf(aEnv, rBackwardForceCache, tBackwardForceCache, 0);
     releaseJArrayBuf(aEnv, aFuseWeight, tFuseWeight, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aPostFuseWeight, tPostFuseWeight, JNI_ABORT);
 }
 
 }
