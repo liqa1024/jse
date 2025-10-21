@@ -3,7 +3,8 @@ package jsex.nnap.basis;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import jse.code.UT;
-import jse.math.matrix.ColumnMatrix;
+import jse.math.matrix.Matrices;
+import jse.math.matrix.RowMatrix;
 import jse.math.vector.IVector;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,16 +23,15 @@ abstract class WTypeBasis extends MergeableBasis {
         .put("fuse", WTYPE_FUSE)
         .put("exfuse", WTYPE_EXFUSE)
         .build();
-    public final static int DEFAULT_FUSE_SIZE = 1;
     
     final int mTypeNum;
     final int mNMax;
     final int mWType;
     final int mSizeN;
-    final @Nullable ColumnMatrix mFuseWeight;
+    final @Nullable RowMatrix mFuseWeight;
     final int mFuseSize;
     
-    WTypeBasis(int aTypeNum, int aNMax, int aWType, @Nullable ColumnMatrix aFuseWeight) {
+    WTypeBasis(int aTypeNum, int aNMax, int aWType, @Nullable RowMatrix aFuseWeight) {
         if (aTypeNum <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+aTypeNum);
         if (aNMax<0 || aNMax>20) throw new IllegalArgumentException("Input nmax MUST be in [0, 20], input: "+aNMax);
         if (!ALL_WTYPE.containsValue(aWType)) throw new IllegalArgumentException("Input wtype MUST be in {-1, 0, 2, 3, 4, 6}, input: "+ aWType);
@@ -43,20 +43,20 @@ abstract class WTypeBasis extends MergeableBasis {
         mFuseWeight = aFuseWeight;
         mSizeN = getSizeN_(mWType, mTypeNum, mNMax, mFuseWeight);
         if (mWType==WTYPE_FUSE || mWType==WTYPE_EXFUSE) {
-            mFuseSize = mFuseWeight.rowNumber();
+            mFuseSize = mFuseWeight.columnNumber();
         } else {
-            mFuseSize = DEFAULT_FUSE_SIZE;
+            mFuseSize = 0;
         }
         if (mFuseWeight != null) {
-            if (mFuseWeight.columnNumber()!=mTypeNum) throw new IllegalArgumentException("Column number of fuse weight mismatch");
-            if (mFuseWeight.rowNumber()==0) throw new IllegalArgumentException("Row number of fuse weight MUST be non-zero");
+            if (mFuseWeight.rowNumber()!=mTypeNum) throw new IllegalArgumentException("Row number of fuse weight mismatch");
+            if (mFuseWeight.columnNumber()==0) throw new IllegalArgumentException("Column number of fuse weight MUST be non-zero");
         }
     }
     WTypeBasis(int aTypeNum, int aNMax, int aWType) {
         this(aTypeNum, aNMax, aWType, null);
     }
     
-    static int getSizeN_(int aWType, int aTypeNum, int aNMax, ColumnMatrix aFuseWeight) {
+    static int getSizeN_(int aWType, int aTypeNum, int aNMax, RowMatrix aFuseWeight) {
         switch(aWType) {
         case WTYPE_EXFULL: {
             return aTypeNum>1 ? (aTypeNum+1)*(aNMax+1) : (aNMax+1);
@@ -71,10 +71,10 @@ abstract class WTypeBasis extends MergeableBasis {
             return aTypeNum>1 ? (aNMax+aNMax+2) : (aNMax+1);
         }
         case WTYPE_FUSE: {
-            return aFuseWeight.rowNumber() * (aNMax+1);
+            return aFuseWeight.columnNumber() * (aNMax+1);
         }
         case WTYPE_EXFUSE: {
-            return (aFuseWeight.rowNumber()+1) * (aNMax+1);
+            return (aFuseWeight.columnNumber()+1) * (aNMax+1);
         }
         default: {
             throw new IllegalStateException();
@@ -90,17 +90,24 @@ abstract class WTypeBasis extends MergeableBasis {
         return tOut;
     }
     @SuppressWarnings("rawtypes")
-    static @Nullable ColumnMatrix getFuseWeight_(Map aMap, int aWType, int aTypeNum, int aNMax) {
+    static @Nullable RowMatrix getFuseWeight_(Map aMap, int aWType, int aTypeNum, int aNMax) {
         if (aWType!=WTYPE_FUSE && aWType!=WTYPE_EXFUSE) return null;
+        Object tFuseSize = UT.Code.get(aMap, "fuse_size");
         Object tFuseWeight = aMap.get("fuse_weight");
         if (tFuseWeight != null) {
-            List<?> tRows = (List<?>)tFuseWeight;
-            ColumnMatrix tMat = ColumnMatrix.zeros(tRows.size(), aTypeNum);
-            tMat.fillWithRows(tRows);
+            RowMatrix tMat;
+            if (tFuseSize == null) {
+                // 如果没有 fuse_size 则是旧版，按列读取
+                tMat = Matrices.fromCols((List<?>)tFuseWeight);
+            } else {
+                // 否则按行读取
+                tMat = Matrices.fromRows((List<?>)tFuseWeight);
+                if (tMat.columnNumber()!=((Number)tFuseSize).intValue()) throw new IllegalArgumentException("Column number of fuse weight mismatch");
+            }
             return tMat;
         }
-        int tFuseSize = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_FUSE_SIZE, "fuse_size")).intValue();
-        return ColumnMatrix.zeros(tFuseSize, aTypeNum);
+        if (tFuseSize == null) throw new IllegalArgumentException("Key `fuse_weight` or `fuse_size` required for fuse wtype");
+        return RowMatrix.zeros(aTypeNum, ((Number)tFuseSize).intValue());
     }
     
     @Override public void initParameters() {
@@ -108,14 +115,14 @@ abstract class WTypeBasis extends MergeableBasis {
         assert mFuseWeight != null;
         mFuseWeight.assignRow(() -> RANDOM.nextDouble(-1, 1));
         // 确保权重归一化，注意只有一种的情况下不专门归一化
-        if (mTypeNum > 1) for (IVector tRow : mFuseWeight.rows()) {
-            tRow.div2this(tRow.operation().norm1() / mTypeNum);
+        if (mTypeNum > 1) for (IVector tCol : mFuseWeight.cols()) {
+            tCol.div2this(tCol.operation().norm1() / mTypeNum);
         }
     }
     @Override public IVector parameters() {
         if (mWType!=WTYPE_FUSE && mWType!=WTYPE_EXFUSE) return null;
         assert mFuseWeight != null;
-        return mFuseWeight.asVecCol();
+        return mFuseWeight.asVecRow();
     }
     @Override public boolean hasParameters() {return mWType==WTYPE_FUSE || mWType==WTYPE_EXFUSE;}
 }

@@ -4,8 +4,7 @@ import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.math.IDataShell;
-import jse.math.MathEX;
-import jse.math.matrix.ColumnMatrix;
+import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -53,7 +52,7 @@ public class SphericalChebyshev extends WTypeBasis {
     final int mPostFuseSize;
     
     SphericalChebyshev(String @Nullable[] aSymbols, int aTypeNum, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, boolean aL3Cross, int aL4Max, boolean aL4Cross, double aRCut,
-                       int aWType, @Nullable ColumnMatrix aFuseWeight, @Nullable Vector aPostFuseWeight) {
+                       int aWType, @Nullable RowMatrix aFuseWeight, @Nullable Vector aPostFuseWeight) {
         super(aTypeNum, aNMax, aWType, aFuseWeight);
         if (aLMax<0 || aLMax>12) throw new IllegalArgumentException("Input lmax MUST be in [0, 12], input: "+aLMax);
         if (aL3Max<0 || aL3Max>6) throw new IllegalArgumentException("Input l3max MUST be in [0, 6], input: "+aL3Max);
@@ -114,10 +113,12 @@ public class SphericalChebyshev extends WTypeBasis {
         rSaveTo.put("rcut", mRCut);
         rSaveTo.put("wtype", ALL_WTYPE.inverse().get(mWType));
         if (mFuseWeight!=null) {
+            rSaveTo.put("fuse_size", mFuseSize);
             rSaveTo.put("fuse_weight", mFuseWeight.asListRows());
         }
+        rSaveTo.put("post_fuse", mPostFuseWeight!=null);
         if (mPostFuseWeight!=null) {
-            rSaveTo.put("post_fuse", true);
+            rSaveTo.put("post_fuse_size", mPostFuseSize);
             rSaveTo.put("post_fuse_weight", mPostFuseWeight.asList());
         }
     }
@@ -127,7 +128,7 @@ public class SphericalChebyshev extends WTypeBasis {
         int aTypeNum = aSymbols.length;
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
         int aWType = getWType_(aMap);
-        ColumnMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum, aNMax);
+        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum, aNMax);
         int tSizeN = getSizeN_(aWType, aTypeNum, aNMax, aFuseWeight);
         Vector aPostFuseWeight = getPostFuseWeight_(aMap, tSizeN);
         return new SphericalChebyshev(
@@ -146,7 +147,7 @@ public class SphericalChebyshev extends WTypeBasis {
     public static SphericalChebyshev load(int aTypeNum, Map aMap) {
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
         int aWType = getWType_(aMap);
-        ColumnMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum, aNMax);
+        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum, aNMax);
         int tSizeN = getSizeN_(aWType, aTypeNum, aNMax, aFuseWeight);
         Vector aPostFuseWeight = getPostFuseWeight_(aMap, tSizeN);
         return new SphericalChebyshev(
@@ -166,11 +167,15 @@ public class SphericalChebyshev extends WTypeBasis {
     static @Nullable Vector getPostFuseWeight_(Map aMap, int aSizeN) {
         Object tFlag = aMap.get("post_fuse");
         if (tFlag==null || (!(Boolean)tFlag)) return null;
+        Object tPostFuseSize = aMap.get("post_fuse_size");
         Object tPostFuseWeight = aMap.get("post_fuse_weight");
         if (tPostFuseWeight != null) {
-            return Vectors.from((List)tPostFuseWeight);
+            Vector tVec = Vectors.from((List)tPostFuseWeight);
+            if (tPostFuseSize != null) {
+                if (tVec.size()!=((Number)tPostFuseSize).intValue()*aSizeN) throw new IllegalArgumentException("Size of post fuse weight mismatch");
+            }
+            return tVec;
         }
-        Object tPostFuseSize = aMap.get("post_fuse_size");
         if (tPostFuseSize == null) throw new IllegalArgumentException("Key `post_fuse_weight` or `post_fuse_size` required for post_fuse");
         return Vector.zeros(((Number)tPostFuseSize).intValue() * aSizeN);
     }
