@@ -15,6 +15,9 @@ static constexpr jint WTYPE_FUSE    = 4;
 static constexpr jint WTYPE_RFUSE   = 5; // unused
 static constexpr jint WTYPE_EXFUSE  = 6;
 
+static constexpr jint FUSE_STYLE_LIMITED = 0;
+static constexpr jint FUSE_STYLE_EXTENSIVE = 1;
+
 static constexpr jdouble JSE_DBL_MIN_NORMAL = 2.2250738585072014E-308;
 static constexpr jint JSE_EPS_MUL = 8;
 static constexpr jdouble JSE_DBL_EPSILON = 1.0e-10;
