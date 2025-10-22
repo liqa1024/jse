@@ -186,19 +186,34 @@ public class SphericalChebyshev extends WTypeBasis {
         );
     }
     
+    private static Vector expandVec_(Vector aVec, int aLMaxMax) {
+        int tSize = aVec.size();
+        Vector tVec = Vector.zeros(tSize*(aLMaxMax+1));
+        for (int i = 0; i < tSize; ++i) for (int l = 0; l <= aLMaxMax; ++l) {
+            tVec.set(i*(aLMaxMax+1) + l, aVec.get(i));
+        }
+        return tVec;
+    }
     @SuppressWarnings({"rawtypes", "unchecked"})
     static @Nullable Vector getPostFuseWeight_(Map aMap, int aFuseStyle, int aSizeN, int aLMaxMax) {
         Object tFlag = aMap.get("post_fuse");
         if (tFlag==null || (!(Boolean)tFlag)) return null;
         Object tPostFuseSize = aMap.get("post_fuse_size");
         Object tPostFuseWeight = aMap.get("post_fuse_weight");
-        if (tPostFuseWeight != null) {
+        if (tPostFuseWeight!=null) {
             Vector tVec = Vectors.from((List)tPostFuseWeight);
-            if (tPostFuseSize != null) {
+            if (tPostFuseSize==null) {
+                // 旧版总是 limited，直接扩展兼容
+                tVec = expandVec_(tVec, aLMaxMax);
+            } else {
                 if (aFuseStyle==FUSE_STYLE_LIMITED) {
                     if (tVec.size()!=((Number)tPostFuseSize).intValue()*aSizeN) throw new IllegalArgumentException("Size of post fuse weight mismatch");
                 } else
                 if (aFuseStyle==FUSE_STYLE_EXTENSIVE) {
+                    // 如果长度为 tPostFuseSize*aSizeN 则说明时缺省，需要扩展兼容
+                    if (tVec.size()==((Number)tPostFuseSize).intValue()*aSizeN) {
+                        tVec = expandVec_(tVec, aLMaxMax);
+                    }
                     if (tVec.size()!=((Number)tPostFuseSize).intValue()*aSizeN*(aLMaxMax+1)) throw new IllegalArgumentException("Size of post fuse weight mismatch");
                 } else {
                     throw new IllegalStateException();
@@ -206,7 +221,7 @@ public class SphericalChebyshev extends WTypeBasis {
             }
             return tVec;
         }
-        if (tPostFuseSize == null) throw new IllegalArgumentException("Key `post_fuse_weight` or `post_fuse_size` required for post_fuse");
+        if (tPostFuseSize==null) throw new IllegalArgumentException("Key `post_fuse_weight` or `post_fuse_size` required for post_fuse");
         int tSize;
         if (aFuseStyle==FUSE_STYLE_LIMITED) {
             tSize = ((Number)tPostFuseSize).intValue()*aSizeN;
