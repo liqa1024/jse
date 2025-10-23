@@ -67,7 +67,9 @@ public class Chebyshev extends WTypeBasis {
         rSaveTo.put("nmax", mNMax);
         rSaveTo.put("rcut", mRCut);
         rSaveTo.put("wtype", ALL_WTYPE.inverse().get(mWType));
-        rSaveTo.put("fuse_style", ALL_FUSE_STYLE.inverse().get(mFuseStyle));
+        if (mFuseWeight!=null) {
+            rSaveTo.put("fuse_style", ALL_FUSE_STYLE.inverse().get(mFuseStyle));
+        }
         if (mFuseWeight!=null) {
             rSaveTo.put("fuse_size", mFuseSize);
             rSaveTo.put("fuse_weight", mFuseWeight.asListRows());

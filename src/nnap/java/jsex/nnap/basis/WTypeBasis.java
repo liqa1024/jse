@@ -107,21 +107,11 @@ abstract class WTypeBasis extends MergeableBasis {
     @SuppressWarnings("rawtypes")
     static int getFuseStyle_(Map aMap) {
         @Nullable Object tStyle = UT.Code.get(aMap, "fuse_style");
-        if (tStyle == null) return FUSE_STYLE_EXTENSIVE; // 现在默认为 EXTENSIVE，旧版根据 fuse_size 进行扩展兼容
+        if (tStyle == null) return FUSE_STYLE_LIMITED;
         if (tStyle instanceof Number) return ((Number)tStyle).intValue();
         @Nullable Integer tOut = ALL_FUSE_STYLE.get(tStyle.toString());
         if (tOut == null) throw new IllegalArgumentException("Input wtype MUST be in {limited, extensive}, input: "+tStyle);
         return tOut;
-    }
-    
-    private static RowMatrix expandMat_(RowMatrix aMat, int aTypeNum, int aNMax, int aLMaxMax) {
-        int tColNum = aMat.columnNumber();
-        int tRep = (aNMax+1)*(aLMaxMax+1);
-        RowMatrix tMat = RowMatrix.zeros(aTypeNum, tColNum*tRep);
-        for (int i = 0; i < tColNum; ++i) for (int j = 0; j < tRep; ++j) {
-            tMat.col(i*tRep + j).fill(aMat.col(i));
-        }
-        return tMat;
     }
     @SuppressWarnings("rawtypes")
     static @Nullable RowMatrix getFuseWeight_(Map aMap, int aWType, int aFuseStyle, int aTypeNum, int aNMax, int aLMaxMax) {
@@ -131,12 +121,7 @@ abstract class WTypeBasis extends MergeableBasis {
         if (tFuseWeight!=null) {
             if (tFuseSize==null) {
                 // 如果没有 fuse_size 则是旧版，按列读取
-                RowMatrix tMat = Matrices.fromCols((List<?>)tFuseWeight);
-                if (aFuseStyle==FUSE_STYLE_EXTENSIVE) {
-                    // 旧版总是 limited，直接扩展兼容
-                    tMat = expandMat_(tMat, aTypeNum, aNMax, aLMaxMax);
-                }
-                return tMat;
+                return Matrices.fromCols((List<?>)tFuseWeight);
             }
             // 否则按行读取
             RowMatrix tMat = Matrices.fromRows((List<?>)tFuseWeight);
@@ -144,10 +129,6 @@ abstract class WTypeBasis extends MergeableBasis {
                 if (tMat.columnNumber()!=((Number)tFuseSize).intValue()) throw new IllegalArgumentException("Column number of fuse weight mismatch");
             } else
             if (aFuseStyle==FUSE_STYLE_EXTENSIVE) {
-                // 如果长度恰好为 tFuseSize 则说明时缺省，需要扩展兼容
-                if (tMat.columnNumber()==((Number)tFuseSize).intValue()) {
-                    tMat = expandMat_(tMat, aTypeNum, aNMax, aLMaxMax);
-                }
                 if (tMat.columnNumber()!=((Number)tFuseSize).intValue()*(aNMax+1)*(aLMaxMax+1)) throw new IllegalArgumentException("Column number of fuse weight mismatch");
             } else {
                 throw new IllegalStateException();
