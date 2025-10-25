@@ -2399,6 +2399,17 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         return statSpeed(mHasTest, aMaxTimeSecond);
     }
     
+    /**
+     * 统计参数数目，这里会直接使用实际拟合的所有参数的数目，包含基组中的可拟合参数以及归一化系数参数。
+     * <p>
+     * 例如如果不开启拟合基组，则不会统计基组中的可拟合参数；如果开启了拟合归一化系数，则会统计归一化系数的数目。
+     *
+     * @return 参数数目 {@code mParas.size()}
+     */
+    public int statParameterNumber() {
+        return mParas.size();
+    }
+    
     /** 开始训练模型，这里直接训练给定的步数 */
     public void train(int aNEpochs, boolean aEarlyStop, boolean aPrintLog) {
         mNEpochs = aNEpochs;
@@ -2552,6 +2563,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 break;
             }}
         }
+        // 打印参数数目信息
+        System.out.printf("N-Paras: %,d\n", statParameterNumber());
         // 测试速度并打印速度信息
         try {
             statSpeed(1.0); // 预热 1 s
