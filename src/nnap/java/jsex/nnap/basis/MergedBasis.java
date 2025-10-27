@@ -188,6 +188,10 @@ public class MergedBasis extends Basis {
                 tMergeBasis[i] = SphericalChebyshev.load(aSymbols, tMap);
                 break;
             }
+            case "equivariant_spherical_chebyshev": case "equ_spherical_chebyshev": {
+                tMergeBasis[i] = EquivariantSphericalChebyshev.load(aSymbols, tMap);
+                break;
+            }
             case "chebyshev": {
                 tMergeBasis[i] = Chebyshev.load(aSymbols, tMap);
                 break;
@@ -213,6 +217,10 @@ public class MergedBasis extends Basis {
             switch(tType.toString()) {
             case "spherical_chebyshev": {
                 tMergeBasis[i] = SphericalChebyshev.load(aTypeNum, tMap);
+                break;
+            }
+            case "equivariant_spherical_chebyshev": case "equ_spherical_chebyshev": {
+                tMergeBasis[i] = EquivariantSphericalChebyshev.load(aTypeNum, tMap);
                 break;
             }
             case "chebyshev": {

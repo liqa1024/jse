@@ -606,6 +606,174 @@ static void mplusGradHnlm(jdouble *aGradHnlm, jdouble *aAnlm, jdouble *rGradAnlm
     }
 }
 
+template <jint LMAX, jint CGIDX, jint SUBIDX>
+static inline jdouble mplusGradNNGradHnlm2SubSub_(jdouble *aAnlm, jdouble *aGradNNGradAnlm) noexcept {
+    constexpr jint i1 = CG_INDEX1[LMAX][CGIDX][SUBIDX];
+    constexpr jint i2 = CG_INDEX2[LMAX][CGIDX][SUBIDX];
+    constexpr jdouble coeff = CG_COEFF[LMAX][CGIDX][SUBIDX];
+    return coeff * (aAnlm[i2]*aGradNNGradAnlm[i1] + aAnlm[i1]*aGradNNGradAnlm[i2]);
+}
+template <jint LMAX, jint CGIDX>
+static jdouble mplusGradNNGradHnlm2Sub_(jdouble *aAnlm, jdouble *aGradNNGradAnlm) noexcept {
+    constexpr jint tSize = CG_SIZE[LMAX][CGIDX];
+    jdouble rSubGGHnlm = 0.0;
+    if (tSize==0) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 0>(aAnlm, aGradNNGradAnlm);
+    if (tSize==1) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 1>(aAnlm, aGradNNGradAnlm);
+    if (tSize==2) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 2>(aAnlm, aGradNNGradAnlm);
+    if (tSize==3) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 3>(aAnlm, aGradNNGradAnlm);
+    if (tSize==4) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 4>(aAnlm, aGradNNGradAnlm);
+    if (tSize==5) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 5>(aAnlm, aGradNNGradAnlm);
+    if (tSize==6) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 6>(aAnlm, aGradNNGradAnlm);
+    if (tSize==7) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 7>(aAnlm, aGradNNGradAnlm);
+    if (tSize==8) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 8>(aAnlm, aGradNNGradAnlm);
+    if (tSize==9) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 9>(aAnlm, aGradNNGradAnlm);
+    if (tSize==10) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 10>(aAnlm, aGradNNGradAnlm);
+    if (tSize==11) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 11>(aAnlm, aGradNNGradAnlm);
+    if (tSize==12) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 12>(aAnlm, aGradNNGradAnlm);
+    if (tSize==13) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 13>(aAnlm, aGradNNGradAnlm);
+    if (tSize==14) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 14>(aAnlm, aGradNNGradAnlm);
+    if (tSize==15) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 15>(aAnlm, aGradNNGradAnlm);
+    if (tSize==16) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 16>(aAnlm, aGradNNGradAnlm);
+    if (tSize==17) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 17>(aAnlm, aGradNNGradAnlm);
+    if (tSize==18) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 18>(aAnlm, aGradNNGradAnlm);
+    if (tSize==19) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 19>(aAnlm, aGradNNGradAnlm);
+    if (tSize==20) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 20>(aAnlm, aGradNNGradAnlm);
+    if (tSize==21) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 21>(aAnlm, aGradNNGradAnlm);
+    if (tSize==22) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 22>(aAnlm, aGradNNGradAnlm);
+    if (tSize==23) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 23>(aAnlm, aGradNNGradAnlm);
+    if (tSize==24) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 24>(aAnlm, aGradNNGradAnlm);
+    if (tSize==25) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 25>(aAnlm, aGradNNGradAnlm);
+    if (tSize==26) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 26>(aAnlm, aGradNNGradAnlm);
+    if (tSize==27) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 27>(aAnlm, aGradNNGradAnlm);
+    if (tSize==28) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 28>(aAnlm, aGradNNGradAnlm);
+    if (tSize==29) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 29>(aAnlm, aGradNNGradAnlm);
+    if (tSize==30) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 30>(aAnlm, aGradNNGradAnlm);
+    if (tSize==31) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 31>(aAnlm, aGradNNGradAnlm);
+    if (tSize==32) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 32>(aAnlm, aGradNNGradAnlm);
+    if (tSize==33) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 33>(aAnlm, aGradNNGradAnlm);
+    if (tSize==34) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 34>(aAnlm, aGradNNGradAnlm);
+    if (tSize==35) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 35>(aAnlm, aGradNNGradAnlm);
+    if (tSize==36) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 36>(aAnlm, aGradNNGradAnlm);
+    if (tSize==37) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 37>(aAnlm, aGradNNGradAnlm);
+    if (tSize==38) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 38>(aAnlm, aGradNNGradAnlm);
+    if (tSize==39) {return rSubGGHnlm;} rSubGGHnlm += mplusGradNNGradHnlm2SubSub_<LMAX, CGIDX, 39>(aAnlm, aGradNNGradAnlm);
+    return rSubGGHnlm;
+}
+template <jint LMAX, jint LLMAX>
+static void mplusGradNNGradHnlm2_(jdouble *rGradNNGradHnlm, jdouble *aAnlm, jdouble *aGradNNGradAnlm) noexcept {
+    rGradNNGradHnlm[0] += mplusGradNNGradHnlm2Sub_<LMAX, 0>(aAnlm, aGradNNGradAnlm);
+    if (LLMAX==0) return;
+    rGradNNGradHnlm[1] += mplusGradNNGradHnlm2Sub_<LMAX, 1>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[2] += mplusGradNNGradHnlm2Sub_<LMAX, 2>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[3] += mplusGradNNGradHnlm2Sub_<LMAX, 3>(aAnlm, aGradNNGradAnlm);
+    if (LLMAX==1) return;
+    rGradNNGradHnlm[4] += mplusGradNNGradHnlm2Sub_<LMAX, 4>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[5] += mplusGradNNGradHnlm2Sub_<LMAX, 5>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[6] += mplusGradNNGradHnlm2Sub_<LMAX, 6>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[7] += mplusGradNNGradHnlm2Sub_<LMAX, 7>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[8] += mplusGradNNGradHnlm2Sub_<LMAX, 8>(aAnlm, aGradNNGradAnlm);
+    if (LLMAX==2) return;
+    rGradNNGradHnlm[9] += mplusGradNNGradHnlm2Sub_<LMAX, 9>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[10] += mplusGradNNGradHnlm2Sub_<LMAX, 10>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[11] += mplusGradNNGradHnlm2Sub_<LMAX, 11>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[12] += mplusGradNNGradHnlm2Sub_<LMAX, 12>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[13] += mplusGradNNGradHnlm2Sub_<LMAX, 13>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[14] += mplusGradNNGradHnlm2Sub_<LMAX, 14>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[15] += mplusGradNNGradHnlm2Sub_<LMAX, 15>(aAnlm, aGradNNGradAnlm);
+    if (LLMAX==3) return;
+    rGradNNGradHnlm[16] += mplusGradNNGradHnlm2Sub_<LMAX, 16>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[17] += mplusGradNNGradHnlm2Sub_<LMAX, 17>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[18] += mplusGradNNGradHnlm2Sub_<LMAX, 18>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[19] += mplusGradNNGradHnlm2Sub_<LMAX, 19>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[20] += mplusGradNNGradHnlm2Sub_<LMAX, 20>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[21] += mplusGradNNGradHnlm2Sub_<LMAX, 21>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[22] += mplusGradNNGradHnlm2Sub_<LMAX, 22>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[23] += mplusGradNNGradHnlm2Sub_<LMAX, 23>(aAnlm, aGradNNGradAnlm);
+    rGradNNGradHnlm[24] += mplusGradNNGradHnlm2Sub_<LMAX, 24>(aAnlm, aGradNNGradAnlm);
+}
+template <jint LMAX, jint LLMAX>
+static void mplusGradNNGradHnlm(jdouble *rGradNNGradHnlm, jdouble *aAnlm, jdouble *aGradNNGradAnlm, jint aEquSize) noexcept {
+    constexpr jint tLMAll = (LMAX+1)*(LMAX+1);
+    constexpr jint tLLMMAll = (LLMAX+1)*(LLMAX+1);
+    jdouble *tGradNNGradHnlm = rGradNNGradHnlm;
+    jdouble *tGradNNGradAnlm = aGradNNGradAnlm;
+    // v == 1
+    constexpr jint tMinLM = tLMAll>tLLMMAll ? tLLMMAll : tLMAll;
+    for (jint np = 0; np < aEquSize; ++np) {
+        for (jint i = 0; i < tMinLM; ++i) {
+            tGradNNGradHnlm[i] += tGradNNGradAnlm[i];
+        }
+        tGradNNGradHnlm += tLLMMAll;
+        tGradNNGradAnlm += tLMAll;
+    }
+    // v == 2
+    jdouble *tAnlm = aAnlm;
+    tGradNNGradAnlm = aGradNNGradAnlm;
+    for (jint np = 0; np < aEquSize; ++np) {
+        mplusGradNNGradHnlm2_<LMAX, LLMAX>(tGradNNGradHnlm, tAnlm, tGradNNGradAnlm);
+        tGradNNGradHnlm += tLLMMAll;
+        tGradNNGradAnlm += tLMAll;
+        tAnlm += tLMAll;
+    }
+}
+template <jint LMAX>
+    static void mplusGradNNGradHnlm(jdouble *rGradNNGradHnlm, jdouble *aAnlm, jdouble *aGradNNGradAnlm, jint aEquSize, jint aLLMax) noexcept {
+    switch (aLLMax) {
+    case 0: {mplusGradNNGradHnlm<LMAX, 0>(rGradNNGradHnlm, aAnlm, aGradNNGradAnlm, aEquSize); return;}
+    case 1: {mplusGradNNGradHnlm<LMAX, 1>(rGradNNGradHnlm, aAnlm, aGradNNGradAnlm, aEquSize); return;}
+    case 2: {mplusGradNNGradHnlm<LMAX, 2>(rGradNNGradHnlm, aAnlm, aGradNNGradAnlm, aEquSize); return;}
+    case 3: {mplusGradNNGradHnlm<LMAX, 3>(rGradNNGradHnlm, aAnlm, aGradNNGradAnlm, aEquSize); return;}
+    case 4: {mplusGradNNGradHnlm<LMAX, 4>(rGradNNGradHnlm, aAnlm, aGradNNGradAnlm, aEquSize); return;}
+    default: {return;}
+    }
+}
+static void mplusGradNNGradHnlm(jdouble *rGradNNGradHnlm, jdouble *aAnlm, jdouble *aGradNNGradAnlm, jint aEquSize, jint aLMax, jint aLLMax) noexcept {
+    switch (aLMax) {
+    case 0: {mplusGradNNGradHnlm<0>(rGradNNGradHnlm, aAnlm, aGradNNGradAnlm, aEquSize, aLLMax); return;}
+    case 1: {mplusGradNNGradHnlm<1>(rGradNNGradHnlm, aAnlm, aGradNNGradAnlm, aEquSize, aLLMax); return;}
+    case 2: {mplusGradNNGradHnlm<2>(rGradNNGradHnlm, aAnlm, aGradNNGradAnlm, aEquSize, aLLMax); return;}
+    case 3: {mplusGradNNGradHnlm<3>(rGradNNGradHnlm, aAnlm, aGradNNGradAnlm, aEquSize, aLLMax); return;}
+    case 4: {mplusGradNNGradHnlm<4>(rGradNNGradHnlm, aAnlm, aGradNNGradAnlm, aEquSize, aLLMax); return;}
+    default: {return;}
+    }
+}
+
+template <jint LMAX, jint LLMAX>
+static void mplusGradHnlmAnlm(jdouble *aNNGradHnlm, jdouble *rGradAnlm, jdouble *aGradNNGradAnlm, jint aEquSize) noexcept {
+    constexpr jint tLMAll = (LMAX+1)*(LMAX+1);
+    constexpr jint tLLMMAll = (LLMAX+1)*(LLMAX+1);
+    jdouble *tNNGradHnlm = aNNGradHnlm + tLLMMAll*aEquSize;
+    jdouble *tGradNNGradAnlm = aGradNNGradAnlm;
+    jdouble *tGradAnlm = rGradAnlm;
+    for (jint np = 0; np < aEquSize; ++np) {
+        mplusGradHnlm2_<LMAX, LLMAX>(tNNGradHnlm, tGradNNGradAnlm, tGradAnlm);
+        tNNGradHnlm += tLLMMAll;
+        tGradNNGradAnlm += tLMAll;
+        tGradAnlm += tLMAll;
+    }
+}
+template <jint LMAX>
+static void mplusGradHnlmAnlm(jdouble *aNNGradHnlm, jdouble *rGradAnlm, jdouble *aGradNNGradAnlm, jint aEquSize, jint aLLMax) noexcept {
+    switch (aLLMax) {
+    case 0: {mplusGradHnlmAnlm<LMAX, 0>(aNNGradHnlm, rGradAnlm, aGradNNGradAnlm, aEquSize); return;}
+    case 1: {mplusGradHnlmAnlm<LMAX, 1>(aNNGradHnlm, rGradAnlm, aGradNNGradAnlm, aEquSize); return;}
+    case 2: {mplusGradHnlmAnlm<LMAX, 2>(aNNGradHnlm, rGradAnlm, aGradNNGradAnlm, aEquSize); return;}
+    case 3: {mplusGradHnlmAnlm<LMAX, 3>(aNNGradHnlm, rGradAnlm, aGradNNGradAnlm, aEquSize); return;}
+    case 4: {mplusGradHnlmAnlm<LMAX, 4>(aNNGradHnlm, rGradAnlm, aGradNNGradAnlm, aEquSize); return;}
+    default: {return;}
+    }
+}
+static void mplusGradHnlmAnlm(jdouble *aNNGradHnlm, jdouble *rGradAnlm, jdouble *aGradNNGradAnlm, jint aEquSize, jint aLMax, jint aLLMax) noexcept {
+    switch (aLMax) {
+    case 0: {mplusGradHnlmAnlm<0>(aNNGradHnlm, rGradAnlm, aGradNNGradAnlm, aEquSize, aLLMax); return;}
+    case 1: {mplusGradHnlmAnlm<1>(aNNGradHnlm, rGradAnlm, aGradNNGradAnlm, aEquSize, aLLMax); return;}
+    case 2: {mplusGradHnlmAnlm<2>(aNNGradHnlm, rGradAnlm, aGradNNGradAnlm, aEquSize, aLLMax); return;}
+    case 3: {mplusGradHnlmAnlm<3>(aNNGradHnlm, rGradAnlm, aGradNNGradAnlm, aEquSize, aLLMax); return;}
+    case 4: {mplusGradHnlmAnlm<4>(aNNGradHnlm, rGradAnlm, aGradNNGradAnlm, aEquSize, aLLMax); return;}
+    default: {return;}
+    }
+}
+
 }
 
 #endif //BASIS_EQUIVARIANT_UTIL_H
