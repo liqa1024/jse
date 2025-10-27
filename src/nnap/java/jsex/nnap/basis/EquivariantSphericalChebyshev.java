@@ -29,22 +29,20 @@ import java.util.Map;
 public class EquivariantSphericalChebyshev extends SphericalChebyshev {
     public final static int DEFAULT_LMAX = 3;
     public final static int DEFAULT_LLMAX = 2;
-    public final static int DEFAULT_VMAX = 2;
     
     final int mSizeLL;
-    final int mLLMax, mVMax;
+    final int mLLMax;
     final int mLLMMAll;
     
     final Vector mEquWeight;
     final int mEquSize;
     final double[] mEquScale;
     
-    EquivariantSphericalChebyshev(String @Nullable[] aSymbols, int aTypeNum, int aNMax, int aLMax, int aL3Max, int aL4Max, int aLLMax, int aVMax, double aRCut,
+    EquivariantSphericalChebyshev(String @Nullable[] aSymbols, int aTypeNum, int aNMax, int aLMax, int aL3Max, int aL4Max, int aLLMax, double aRCut,
                                   int aWType, int aFuseStyle, RowMatrix aFuseWeight, Vector aEquWeight, double[] aEquScale) {
         super(aSymbols, aTypeNum, aNMax, aLMax, false, aL3Max, true, aL4Max, true, aRCut, aWType, aFuseStyle, aFuseWeight, aEquWeight, aEquScale);
         if (aLMax<0 || aLMax>4) throw new IllegalArgumentException("Input lmax MUST be in [0, 4], input: "+aLMax);
         if (aLLMax<0 || aLLMax>4) throw new IllegalArgumentException("Input llmax MUST be in [0, 4], input: "+aLLMax);
-        if (aVMax<1 || aVMax>2) throw new IllegalArgumentException("Input vmax MUST be in [1, 2], input: "+aLLMax);
         if (aL3Max>aLLMax) throw new IllegalArgumentException("Input l3max MUST be less than llmax, input: "+aL3Max+" vs "+aLLMax);
         if (aL4Max>aLLMax) throw new IllegalArgumentException("Input l4max MUST be less than llmax, input: "+aL4Max+" vs "+aLLMax);
         
@@ -54,14 +52,13 @@ public class EquivariantSphericalChebyshev extends SphericalChebyshev {
         if (mEquWeight==null) throw new IllegalStateException();
         
         mLLMax = aLLMax;
-        mVMax = aVMax;
         mLLMMAll = (mLLMax+1)*(mLLMax+1);
         mSizeLL = (mLLMax+1) + L3NCOLS[mL3Max] + L4NCOLS[mL4Max];
-        mSize = mEquSize*mVMax*mSizeLL;
+        mSize = mEquSize*2*mSizeLL;
     }
     
     @Override public EquivariantSphericalChebyshev threadSafeRef() {
-        return new EquivariantSphericalChebyshev(mSymbols, mTypeNum, mNMax, mLMax, mL3Max, mL4Max, mLLMax, mVMax, mRCut, mWType, mFuseStyle, mFuseWeight, mEquWeight, mEquScale);
+        return new EquivariantSphericalChebyshev(mSymbols, mTypeNum, mNMax, mLMax, mL3Max, mL4Max, mLLMax, mRCut, mWType, mFuseStyle, mFuseWeight, mEquWeight, mEquScale);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -72,7 +69,6 @@ public class EquivariantSphericalChebyshev extends SphericalChebyshev {
         rSaveTo.put("l3max", mL3Max);
         rSaveTo.put("l4max", mL4Max);
         rSaveTo.put("llmax", mLLMax);
-        rSaveTo.put("vmax", mVMax);
         rSaveTo.put("rcut", mRCut);
         rSaveTo.put("wtype", ALL_WTYPE.inverse().get(mWType));
         rSaveTo.put("fuse_style", ALL_FUSE_STYLE.inverse().get(mFuseStyle));
@@ -103,7 +99,6 @@ public class EquivariantSphericalChebyshev extends SphericalChebyshev {
         return new EquivariantSphericalChebyshev(
             aSymbols, aTypeNum, aNMax, aLMax, aL3Max, aL4Max,
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_LLMAX, "llmax")).intValue(),
-            ((Number)UT.Code.getWithDefault(aMap, DEFAULT_VMAX, "vmax")).intValue(),
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
             aWType, aFuseStyle, aFuseWeight, aEquWeight, new double[]{tEquScale}
         );
@@ -125,7 +120,6 @@ public class EquivariantSphericalChebyshev extends SphericalChebyshev {
         return new EquivariantSphericalChebyshev(
             null, aTypeNum, aNMax, aLMax, aL3Max, aL4Max,
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_LLMAX, "llmax")).intValue(),
-            ((Number)UT.Code.getWithDefault(aMap, DEFAULT_VMAX, "vmax")).intValue(),
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
             aWType, aFuseStyle, aFuseWeight, aEquWeight, new double[]{tEquScale}
         );
@@ -163,16 +157,16 @@ public class EquivariantSphericalChebyshev extends SphericalChebyshev {
     }
     
     @Override protected int forwardCacheSize_(int aNN, boolean aFullCache) {
-        return super.forwardCacheSize_(aNN, aFullCache) + mEquSize*mVMax*mLLMMAll;
+        return super.forwardCacheSize_(aNN, aFullCache) + mEquSize*2*mLLMMAll;
     }
     @Override protected int backwardCacheSize_(int aNN) {
-        return super.backwardCacheSize_(aNN) + mEquSize*mVMax*mLLMMAll;
+        return super.backwardCacheSize_(aNN) + mEquSize*2*mLLMMAll;
     }
     @Override protected int forwardForceCacheSize_(int aNN, boolean aFullCache) {
-        return super.forwardForceCacheSize_(aNN, aFullCache) + mEquSize*mVMax*mLLMMAll;
+        return super.forwardForceCacheSize_(aNN, aFullCache) + mEquSize*2*mLLMMAll;
     }
     @Override protected int backwardForceCacheSize_(int aNN) {
-        return super.backwardForceCacheSize_(aNN) + mEquSize*mVMax*mLLMMAll;
+        return super.backwardForceCacheSize_(aNN) + mEquSize*2*mLLMMAll;
     }
     
     
@@ -182,13 +176,13 @@ public class EquivariantSphericalChebyshev extends SphericalChebyshev {
         forward1(aNlDx.internalDataWithLengthCheck(tNN, 0), aNlDy.internalDataWithLengthCheck(tNN, 0), aNlDz.internalDataWithLengthCheck(tNN, 0), aNlType.internalDataWithLengthCheck(tNN, 0), tNN,
                  rFp.internalDataWithLengthCheck(mSize), rFp.internalDataShift(),
                  rForwardCache.internalDataWithLengthCheck(forwardCacheSize_(tNN, aFullCache)), rForwardCache.internalDataShift(), aFullCache,
-                 mTypeNum, mRCut, mNMax, mLMax, mL3Max, mL4Max, mLLMax, mVMax,
+                 mTypeNum, mRCut, mNMax, mLMax, mL3Max, mL4Max, mLLMax,
                  mWType, mFuseStyle, mFuseWeight==null?null:mFuseWeight.internalDataWithLengthCheck(), mFuseSize,
                  mEquWeight.internalDataWithLengthCheck(), mEquSize, mEquScale[0]);
     }
     private static native void forward1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN, double[] rFp, int aShiftFp,
                                         double[] rForwardCache, int aForwardCacheShift, boolean aFullCache,
-                                        int aTypeNum, double aRCut, int aNMax, int aLMax, int aL3Max, int aL4Max, int aLLMax, int aVMax,
+                                        int aTypeNum, double aRCut, int aNMax, int aLMax, int aL3Max, int aL4Max, int aLLMax,
                                         int aWType, int aFuseStyle, double[] aFuseWeight, int aFuseSize,
                                         double[] aEquWeight, int aEquSize, double aEquScale);
     
@@ -203,14 +197,14 @@ public class EquivariantSphericalChebyshev extends SphericalChebyshev {
                   rGradPara.internalDataWithLengthCheck(tParaSize), rGradPara.internalDataShift(),
                   aForwardCache.internalDataWithLengthCheck(forwardCacheSize_(tNN, true)), aForwardCache.internalDataShift(),
                   rBackwardCache.internalDataWithLengthCheck(backwardCacheSize_(tNN)), rBackwardCache.internalDataShift(),
-                  mTypeNum, mRCut, mNMax, mLMax, mL3Max, mL4Max, mLLMax, mVMax,
+                  mTypeNum, mRCut, mNMax, mLMax, mL3Max, mL4Max, mLLMax,
                   mWType, mFuseStyle, mFuseSize,
                   mEquWeight.internalDataWithLengthCheck(), mEquSize, mEquScale[0]);
     }
     private static native void backward1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
                                          double[] aGradFp, int aShiftGradFp, double[] rGradPara, int aShiftGradPara,
                                          double[] aForwardCache, int aForwardCacheShift, double[] rBackwardCache, int aBackwardCacheShift,
-                                         int aTypeNum, double aRCut, int aNMax, int aLMax, int aL3Max, int aL4Max, int aLLMax, int aVMax,
+                                         int aTypeNum, double aRCut, int aNMax, int aLMax, int aL3Max, int aL4Max, int aLLMax,
                                          int aWType, int aFuseStyle, int aFuseSize,
                                          double[] aEquWeight, int aEquSize, double aEquScale);
     
@@ -221,14 +215,14 @@ public class EquivariantSphericalChebyshev extends SphericalChebyshev {
                       aNNGrad.internalDataWithLengthCheck(mSize), aNNGrad.internalDataShift(), rFx.internalDataWithLengthCheck(tNN, 0), rFy.internalDataWithLengthCheck(tNN, 0), rFz.internalDataWithLengthCheck(tNN, 0),
                       aForwardCache.internalDataWithLengthCheck(forwardCacheSize_(tNN, true)), aForwardCache.internalDataShift(),
                       rForwardForceCache.internalDataWithLengthCheck(forwardForceCacheSize_(tNN, aFullCache)), rForwardForceCache.internalDataShift(), aFullCache,
-                      mTypeNum, mRCut, mNMax, mLMax, mL3Max, mL4Max, mLLMax, mVMax,
+                      mTypeNum, mRCut, mNMax, mLMax, mL3Max, mL4Max, mLLMax,
                       mWType, mFuseStyle, mFuseWeight==null?null:mFuseWeight.internalDataWithLengthCheck(), mFuseSize,
                       mEquWeight.internalDataWithLengthCheck(), mEquSize, mEquScale[0]);
     }
     private static native void forwardForce1(double[] aNlDx, double[] aNlDy, double[] aNlDz, int[] aNlType, int aNN,
                                              double[] aNNGrad, int aShiftNNGrad, double[] rFx, double[] rFy, double[] rFz,
                                              double[] aForwardCache, int aForwardCacheShift, double[] rForwardForceCache, int aForwardForceCacheShift, boolean aFullCache,
-                                             int aTypeNum, double aRCut, int aNMax, int aLMax, int aL3Max, int aL4Max, int aLLMax, int aVMax,
+                                             int aTypeNum, double aRCut, int aNMax, int aLMax, int aL3Max, int aL4Max, int aLLMax,
                                              int aWType, int aFuseStyle, double[] aFuseWeight, int aFuseSize,
                                              double[] aEquWeight, int aEquSize, double aEquScale);
     
@@ -252,7 +246,7 @@ public class EquivariantSphericalChebyshev extends SphericalChebyshev {
                        aForwardForceCache.internalDataWithLengthCheck(forwardForceCacheSize_(tNN, true)), aForwardForceCache.internalDataShift(),
                        rBackwardCache.internalDataWithLengthCheck(backwardCacheSize_(tNN)), rBackwardCache.internalDataShift(),
                        rBackwardForceCache.internalDataWithLengthCheck(backwardForceCacheSize_(tNN)), rBackwardForceCache.internalDataShift(), aFixBasis,
-                       mTypeNum, mRCut, mNMax, mLMax, mL3Max, mL4Max, mLLMax, mVMax,
+                       mTypeNum, mRCut, mNMax, mLMax, mL3Max, mL4Max, mLLMax,
                        mWType, mFuseStyle, mFuseWeight==null?null:mFuseWeight.internalDataWithLengthCheck(), mFuseSize,
                        mEquWeight.internalDataWithLengthCheck(), mEquSize, mEquScale[0]);
     }
@@ -261,7 +255,7 @@ public class EquivariantSphericalChebyshev extends SphericalChebyshev {
                                               double[] rGradNNGrad, int aShiftGradNNGrad, double[] rGradPara, int aShiftGradPara,
                                               double[] aForwardCache, int aForwardCacheShift, double[] aForwardForceCache, int aForwardForceCacheShift,
                                               double[] rBackwardCache, int aBackwardCacheShift, double[] rBackwardForceCache, int aBackwardForceCacheShift, boolean aFixBasis,
-                                              int aTypeNum, double aRCut, int aNMax, int aLMax, int aL3Max, int aL4Max, int aLLMax, int aVMax,
+                                              int aTypeNum, double aRCut, int aNMax, int aLMax, int aL3Max, int aL4Max, int aLLMax,
                                               int aWType, int aFuseStyle, double[] aFuseWeight, int aFuseSize,
                                               double[] aEquWeight, int aEquSize, double aEquScale);
 }

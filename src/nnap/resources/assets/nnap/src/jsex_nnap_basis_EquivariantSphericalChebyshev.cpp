@@ -6,7 +6,7 @@ extern "C" {
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_EquivariantSphericalChebyshev_forward1(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aNlDx, jdoubleArray aNlDy, jdoubleArray aNlDz, jintArray aNlType, jint aNN,
         jdoubleArray rFp, jint aShiftFp, jdoubleArray rForwardCache, jint aForwardCacheShift, jboolean aFullCache,
-        jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max, jint aLLMax, jint aVMax,
+        jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max, jint aLLMax,
         jint aWType, jint aFuseStyle, jdoubleArray aFuseWeight, jint aFuseSize,
         jdoubleArray aEquWeight, jint aEquSize, jdouble aEquScale) {
     // java array init
@@ -21,7 +21,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_EquivariantSphericalChebyshev_forwar
     
     JSE_NNAP::calFp(tNlDx, tNlDy, tNlDz, tNlType, aNN, tFp+aShiftFp,
                     tForwardCache+aForwardCacheShift, aFullCache,
-                    aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aLLMax, aVMax,
+                    aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aLLMax,
                     aWType, aFuseStyle, tFuseWeight, aFuseSize,
                     tEquWeight, aEquSize, aEquScale);
     
@@ -40,7 +40,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_EquivariantSphericalChebyshev_backwa
         jdoubleArray aNlDx, jdoubleArray aNlDy, jdoubleArray aNlDz, jintArray aNlType, jint aNN,
         jdoubleArray aGradFp, jint aShiftGradFp, jdoubleArray rGradPara, jint aShiftGradPara,
         jdoubleArray aForwardCache, jint aForwardCacheShift, jdoubleArray rBackwardCache, jint aBackwardCacheShift,
-        jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max, jint aLLMax, jint aVMax,
+        jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max, jint aLLMax,
         jint aWType, jint aFuseStyle, jint aFuseSize,
         jdoubleArray aEquWeight, jint aEquSize, jdouble aEquScale) {
     // java array init
@@ -57,7 +57,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_EquivariantSphericalChebyshev_backwa
     JSE_NNAP::calBackward(tNlDx, tNlDy, tNlDz, tNlType, aNN,
                           tGradFp+aShiftGradFp, tGradPara+aShiftGradPara,
                           tForwardCache+aForwardCacheShift, tBackwardCache+aBackwardCacheShift,
-                          aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aLLMax, aVMax,
+                          aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aLLMax,
                           aWType, aFuseStyle, aFuseSize,
                           tEquWeight, aEquSize, aEquScale);
     
@@ -77,7 +77,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_EquivariantSphericalChebyshev_forwar
         jdoubleArray aNlDx, jdoubleArray aNlDy, jdoubleArray aNlDz, jintArray aNlType, jint aNN,
         jdoubleArray aNNGrad, jint aShiftFp, jdoubleArray rFx, jdoubleArray rFy, jdoubleArray rFz,
         jdoubleArray aForwardCache, jint aForwardCacheShift, jdoubleArray rForwardForceCache, jint aForwardForceCacheShift, jboolean aFullCache,
-        jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max, jint aLLMax, jint aVMax,
+        jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max, jint aLLMax,
         jint aWType, jint aFuseStyle, jdoubleArray aFuseWeight, jint aFuseSize,
         jdoubleArray aEquWeight, jint aEquSize, jdouble aEquScale) {
     // java array init
@@ -97,7 +97,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_EquivariantSphericalChebyshev_forwar
     JSE_NNAP::calForce(tNlDx, tNlDy, tNlDz, tNlType, aNN,
                        tNNGrad+aShiftFp, tFx, tFy, tFz,
                        tForwardCache+aForwardCacheShift, tForwardForceCache+aForwardForceCacheShift, aFullCache,
-                       aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aLLMax, aVMax,
+                       aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aLLMax,
                        aWType, aFuseStyle, tFuseWeight, aFuseSize,
                        tEquWeight, aEquSize, aEquScale);
     
@@ -122,7 +122,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_EquivariantSphericalChebyshev_backwa
         jdoubleArray rGradNNGrad, jint aShiftGradNNGrad, jdoubleArray rGradPara, jint aShiftGradPara,
         jdoubleArray aForwardCache, jint aForwardCacheShift, jdoubleArray aForwardForceCache, jint aForwardForceCacheShift,
         jdoubleArray rBackwardCache, jint aBackwardCacheShift, jdoubleArray rBackwardForceCache, jint aBackwardForceCacheShift, jboolean aFixBasis,
-        jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max, jint aLLMax, jint aVMax,
+        jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max, jint aLLMax,
         jint aWType, jint aFuseStyle, jdoubleArray aFuseWeight, jint aFuseSize,
         jdoubleArray aEquWeight, jint aEquSize, jdouble aEquScale) {
     // java array init
@@ -148,7 +148,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_EquivariantSphericalChebyshev_backwa
                                tGradNNGrad+aShiftGradNNGrad, tGradPara==NULL?NULL:(tGradPara+aShiftGradPara),
                                tForwardCache+aForwardCacheShift, tForwardForceCache+aForwardForceCacheShift,
                                tBackwardCache+aBackwardCacheShift, tBackwardForceCache+aBackwardForceCacheShift, aFixBasis,
-                               aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aLLMax, aVMax,
+                               aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aLLMax,
                                aWType, aFuseStyle, tFuseWeight, aFuseSize,
                                tEquWeight, aEquSize, aEquScale);
     

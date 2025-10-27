@@ -430,7 +430,7 @@ static void mplusHnlm2_(jdouble *rHnlm, jdouble *aAnlm) noexcept {
     rHnlm[24] += mplusHnlm2Sub_<LMAX, 24>(aAnlm);
 }
 template <jint LMAX, jint LLMAX>
-static void mplusHnlm(jdouble *rHnlm, jdouble *aAnlm, jint aEquSize, jint aVMax) noexcept {
+static void mplusHnlm(jdouble *rHnlm, jdouble *aAnlm, jint aEquSize) noexcept {
     constexpr jint tLMAll = (LMAX+1)*(LMAX+1);
     constexpr jint tLLMMAll = (LLMAX+1)*(LLMAX+1);
     jdouble *tHnlm = rHnlm;
@@ -444,7 +444,6 @@ static void mplusHnlm(jdouble *rHnlm, jdouble *aAnlm, jint aEquSize, jint aVMax)
         tHnlm += tLLMMAll;
         tAnlm += tLMAll;
     }
-    if (aVMax == 1) return;
     // v == 2
     tAnlm = aAnlm;
     for (jint np = 0; np < aEquSize; ++np) {
@@ -454,23 +453,23 @@ static void mplusHnlm(jdouble *rHnlm, jdouble *aAnlm, jint aEquSize, jint aVMax)
     }
 }
 template <jint LMAX>
-static void mplusHnlm(jdouble *rHnlm, jdouble *aAnlm, jint aEquSize, jint aLLMax, jint aVMax) noexcept {
+static void mplusHnlm(jdouble *rHnlm, jdouble *aAnlm, jint aEquSize, jint aLLMax) noexcept {
     switch (aLLMax) {
-    case 0: {mplusHnlm<LMAX, 0>(rHnlm, aAnlm, aEquSize, aVMax); return;}
-    case 1: {mplusHnlm<LMAX, 1>(rHnlm, aAnlm, aEquSize, aVMax); return;}
-    case 2: {mplusHnlm<LMAX, 2>(rHnlm, aAnlm, aEquSize, aVMax); return;}
-    case 3: {mplusHnlm<LMAX, 3>(rHnlm, aAnlm, aEquSize, aVMax); return;}
-    case 4: {mplusHnlm<LMAX, 4>(rHnlm, aAnlm, aEquSize, aVMax); return;}
+    case 0: {mplusHnlm<LMAX, 0>(rHnlm, aAnlm, aEquSize); return;}
+    case 1: {mplusHnlm<LMAX, 1>(rHnlm, aAnlm, aEquSize); return;}
+    case 2: {mplusHnlm<LMAX, 2>(rHnlm, aAnlm, aEquSize); return;}
+    case 3: {mplusHnlm<LMAX, 3>(rHnlm, aAnlm, aEquSize); return;}
+    case 4: {mplusHnlm<LMAX, 4>(rHnlm, aAnlm, aEquSize); return;}
     default: {return;}
     }
 }
-static void mplusHnlm(jdouble *rHnlm, jdouble *aAnlm, jint aEquSize, jint aLMax, jint aLLMax, jint aVMax) noexcept {
+static void mplusHnlm(jdouble *rHnlm, jdouble *aAnlm, jint aEquSize, jint aLMax, jint aLLMax) noexcept {
     switch (aLMax) {
-    case 0: {mplusHnlm<0>(rHnlm, aAnlm, aEquSize, aLLMax, aVMax); return;}
-    case 1: {mplusHnlm<1>(rHnlm, aAnlm, aEquSize, aLLMax, aVMax); return;}
-    case 2: {mplusHnlm<2>(rHnlm, aAnlm, aEquSize, aLLMax, aVMax); return;}
-    case 3: {mplusHnlm<3>(rHnlm, aAnlm, aEquSize, aLLMax, aVMax); return;}
-    case 4: {mplusHnlm<4>(rHnlm, aAnlm, aEquSize, aLLMax, aVMax); return;}
+    case 0: {mplusHnlm<0>(rHnlm, aAnlm, aEquSize, aLLMax); return;}
+    case 1: {mplusHnlm<1>(rHnlm, aAnlm, aEquSize, aLLMax); return;}
+    case 2: {mplusHnlm<2>(rHnlm, aAnlm, aEquSize, aLLMax); return;}
+    case 3: {mplusHnlm<3>(rHnlm, aAnlm, aEquSize, aLLMax); return;}
+    case 4: {mplusHnlm<4>(rHnlm, aAnlm, aEquSize, aLLMax); return;}
     default: {return;}
     }
 }
@@ -561,7 +560,7 @@ static void mplusGradHnlm2_(jdouble *aGradHnlm, jdouble *aAnlm, jdouble *rGradAn
     mplusGradHnlm2Sub_<LMAX, 24>(aGradHnlm[24], aAnlm, rGradAnlm);
 }
 template <jint LMAX, jint LLMAX>
-static void mplusGradHnlm(jdouble *aGradHnlm, jdouble *aAnlm, jdouble *rGradAnlm, jint aEquSize, jint aVMax) noexcept {
+static void mplusGradHnlm(jdouble *aGradHnlm, jdouble *aAnlm, jdouble *rGradAnlm, jint aEquSize) noexcept {
     constexpr jint tLMAll = (LMAX+1)*(LMAX+1);
     constexpr jint tLLMMAll = (LLMAX+1)*(LLMAX+1);
     jdouble *tGradHnlm = aGradHnlm;
@@ -575,7 +574,6 @@ static void mplusGradHnlm(jdouble *aGradHnlm, jdouble *aAnlm, jdouble *rGradAnlm
         tGradHnlm += tLLMMAll;
         tGradAnlm += tLMAll;
     }
-    if (aVMax == 1) return;
     // v == 2
     jdouble *tAnlm = aAnlm;
     tGradAnlm = rGradAnlm;
@@ -587,23 +585,23 @@ static void mplusGradHnlm(jdouble *aGradHnlm, jdouble *aAnlm, jdouble *rGradAnlm
     }
 }
 template <jint LMAX>
-static void mplusGradHnlm(jdouble *aGradHnlm, jdouble *aAnlm, jdouble *rGradAnlm, jint aEquSize, jint aLLMax, jint aVMax) noexcept {
+static void mplusGradHnlm(jdouble *aGradHnlm, jdouble *aAnlm, jdouble *rGradAnlm, jint aEquSize, jint aLLMax) noexcept {
     switch (aLLMax) {
-    case 0: {mplusGradHnlm<LMAX, 0>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aVMax); return;}
-    case 1: {mplusGradHnlm<LMAX, 1>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aVMax); return;}
-    case 2: {mplusGradHnlm<LMAX, 2>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aVMax); return;}
-    case 3: {mplusGradHnlm<LMAX, 3>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aVMax); return;}
-    case 4: {mplusGradHnlm<LMAX, 4>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aVMax); return;}
+    case 0: {mplusGradHnlm<LMAX, 0>(aGradHnlm, aAnlm, rGradAnlm, aEquSize); return;}
+    case 1: {mplusGradHnlm<LMAX, 1>(aGradHnlm, aAnlm, rGradAnlm, aEquSize); return;}
+    case 2: {mplusGradHnlm<LMAX, 2>(aGradHnlm, aAnlm, rGradAnlm, aEquSize); return;}
+    case 3: {mplusGradHnlm<LMAX, 3>(aGradHnlm, aAnlm, rGradAnlm, aEquSize); return;}
+    case 4: {mplusGradHnlm<LMAX, 4>(aGradHnlm, aAnlm, rGradAnlm, aEquSize); return;}
     default: {return;}
     }
 }
-static void mplusGradHnlm(jdouble *aGradHnlm, jdouble *aAnlm, jdouble *rGradAnlm, jint aEquSize, jint aLMax, jint aLLMax, jint aVMax) noexcept {
+static void mplusGradHnlm(jdouble *aGradHnlm, jdouble *aAnlm, jdouble *rGradAnlm, jint aEquSize, jint aLMax, jint aLLMax) noexcept {
     switch (aLMax) {
-    case 0: {mplusGradHnlm<0>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aLLMax, aVMax); return;}
-    case 1: {mplusGradHnlm<1>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aLLMax, aVMax); return;}
-    case 2: {mplusGradHnlm<2>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aLLMax, aVMax); return;}
-    case 3: {mplusGradHnlm<3>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aLLMax, aVMax); return;}
-    case 4: {mplusGradHnlm<4>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aLLMax, aVMax); return;}
+    case 0: {mplusGradHnlm<0>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aLLMax); return;}
+    case 1: {mplusGradHnlm<1>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aLLMax); return;}
+    case 2: {mplusGradHnlm<2>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aLLMax); return;}
+    case 3: {mplusGradHnlm<3>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aLLMax); return;}
+    case 4: {mplusGradHnlm<4>(aGradHnlm, aAnlm, rGradAnlm, aEquSize, aLLMax); return;}
     default: {return;}
     }
 }
