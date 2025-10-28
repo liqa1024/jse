@@ -251,18 +251,18 @@ static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
 
 
 template <jint WTYPE, jint FSTYLE>
-static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
-                         jdouble *rFp, jdouble *rForwardCache, jboolean aFullCache,
-                         jint aTypeNum, jdouble aRCut, jint aNMax, jdouble *aFuseWeight, jint aFuseSize) noexcept {
+static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
+                  jdouble *rFp, jdouble *rForwardCache, jboolean aFullCache,
+                  jint aTypeNum, jdouble aRCut, jint aNMax, jdouble *aFuseWeight, jint aFuseSize) noexcept {
     if (aFullCache) {
         calFp<WTYPE, FSTYLE, JNI_TRUE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aTypeNum, aRCut, aNMax, aFuseWeight, aFuseSize);
     } else {
         calFp<WTYPE, FSTYLE, JNI_FALSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aTypeNum, aRCut, aNMax, aFuseWeight, aFuseSize);
     }
 }
-static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
-                         jdouble *rFp, jdouble *rForwardCache, jboolean aFullCache,
-                         jint aTypeNum, jdouble aRCut, jint aNMax, jint aWType, jint aFuseStyle, jdouble *aFuseWeight, jint aFuseSize) noexcept {
+static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
+                  jdouble *rFp, jdouble *rForwardCache, jboolean aFullCache,
+                  jint aTypeNum, jdouble aRCut, jint aNMax, jint aWType, jint aFuseStyle, jdouble *aFuseWeight, jint aFuseSize) noexcept {
     if (aTypeNum == 1) {
         switch(aWType) {
         case WTYPE_FUSE: {
@@ -332,9 +332,9 @@ static inline void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *a
 }
 
 
-static inline void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
-                               jdouble *aGradFp, jdouble *rGradPara, jdouble *aForwardCache,
-                               jint aTypeNum, jdouble aRCut, jint aNMax, jint aWType, jint aFuseStyle, jint aFuseSize) noexcept {
+static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
+                        jdouble *aGradFp, jdouble *rGradPara, jdouble *aForwardCache,
+                        jint aTypeNum, jdouble aRCut, jint aNMax, jint aWType, jint aFuseStyle, jint aFuseSize) noexcept {
     if (aWType==WTYPE_FUSE) {
         if (aFuseStyle==FUSE_STYLE_LIMITED) {
             calBackward<WTYPE_FUSE, FUSE_STYLE_LIMITED>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, aTypeNum, aRCut, aNMax, aFuseSize);
@@ -353,20 +353,20 @@ static inline void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, j
 
 
 template <jint WTYPE, jint FSTYLE>
-static inline void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
-                            jdouble *aNNGrad, jdouble *rFx, jdouble *rFy, jdouble *rFz,
-                            jdouble *aForwardCache, jdouble *rForwardForceCache, jboolean aFullCache,
-                            jint aTypeNum, jdouble aRCut, jint aNMax, jdouble *aFuseWeight, jint aFuseSize) noexcept {
+static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
+                     jdouble *aNNGrad, jdouble *rFx, jdouble *rFy, jdouble *rFz,
+                     jdouble *aForwardCache, jdouble *rForwardForceCache, jboolean aFullCache,
+                     jint aTypeNum, jdouble aRCut, jint aNMax, jdouble *aFuseWeight, jint aFuseSize) noexcept {
     if (aFullCache) {
         calForce<WTYPE, FSTYLE, JNI_TRUE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aTypeNum, aRCut, aNMax, aFuseWeight, aFuseSize);
     } else {
         calForce<WTYPE, FSTYLE, JNI_FALSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aTypeNum, aRCut, aNMax, aFuseWeight, aFuseSize);
     }
 }
-static inline void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
-                            jdouble *aNNGrad, jdouble *rFx, jdouble *rFy, jdouble *rFz,
-                            jdouble *aForwardCache, jdouble *rForwardForceCache, jboolean aFullCache,
-                            jint aTypeNum, jdouble aRCut, jint aNMax, jint aWType, jint aFuseStyle, jdouble *aFuseWeight, jint aFuseSize) noexcept {
+static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
+                     jdouble *aNNGrad, jdouble *rFx, jdouble *rFy, jdouble *rFz,
+                     jdouble *aForwardCache, jdouble *rForwardForceCache, jboolean aFullCache,
+                     jint aTypeNum, jdouble aRCut, jint aNMax, jint aWType, jint aFuseStyle, jdouble *aFuseWeight, jint aFuseSize) noexcept {
     if (aTypeNum == 1) {
         switch(aWType) {
         case WTYPE_FUSE: {
