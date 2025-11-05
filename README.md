@@ -1,84 +1,164 @@
-# 简介
-jse (Java Simulation Environment) 是
-使用 [java](https://en.wikipedia.org/wiki/Java_(programming_language))
-编写的模拟环境，目前提供了：
-- 通用的任务提交接口（bash，powershell，ssh，...）
-- 高效的 lammps 数据文件读写（data，dump，log）
-- 高效的 vasp 数据文件读写（POSCAR，XDATCAR）
-- *原生* 调用 lammps（不经过 python）
-- *原生* 的 MPI 支持（不经过 mpi4py）
-- 原子结构参量计算（RDF，SF，Q4/Q6/Ql，Voronoi）
-- 其他常见操作（文件读写，读写 csv、json、yaml，压缩解压，简单的绘图，...）
-- 高效的纯 java 数学库实现
-- 跨语言编程支持（python，matlab，java/groovy）
-- jupyter 支持（将 jse 作为 jupyter 内核）
+# Introduction
 
-> *原生（Native）* 指编写 C 代码并通过 [jni](https://www.baeldung.com/jni)
-> 来直接调用相关的动态库（`*.dll` / `*.so`）方法。
+jse (Java Simulation Environment) is a simulation environment written in Java, 
+designed to leverage Java's advanced language features and JIT runtime compilation 
+to provide a high-performance yet flexible program package. Current features include:
+
+- LAMMPS file I/O (data, dump, log)
+- VASP file I/O (POSCAR, XDATCAR)
+- Atomic structure parameter calculations (RDF, SF, BOOP)
+- Efficient implementations of common interatomic potentials (LJ, EAM, soft)
+- Efficient implementations of ML interatomic potentials (NNAP, NEP)
+- Generic parallel interface (parfor)
+- Slurm resource partitioning and high-throughput task management
+- Native LAMMPS calls and custom pair/fix implementations
+- MPI support
+- Python support
+- Jupyter support
+- Other common operations (csv/yaml/toml I/O, compression/decompression, basic plotting, ...)
+
+
+# Requirements
+
+## Core Functionality
+For basic operations, ensure you have a Java environment. jse requires at least JDK 8, 
+but newer JDK 21 is recommended for optimal performance. Download the Oracle JDK 
+[**here**](https://www.oracle.com/java/technologies/downloads/#java21).
+
+## Advanced Features (JNI)
+
+Features involving C/C++ calls via JNI require the following for automatic source compilation:
+
+- **C/C++ Compiler**
+    
+    - Windows: [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/)  
+    - Linux: [GCC](https://gcc.gnu.org/)
+
+- **CMake** (`>= 3.15`)
+    
+    Download from [cmake.org](https://cmake.org/)
+
+When these dependencies are installed, required libraries will compile automatically 
+during runtime. Additional software is needed for specific features:
+
+### MPI Support
+
+Requires an MPI development environment (for header files):  
+
+- Windows: [Microsoft MPI](https://www.microsoft.com/download/details.aspx?id=105289) 
+  (install both `msmpisdk.msi` and `msmpisetup.exe`)  
+- Linux (e.g., Ubuntu): `sudo apt install mpich`  
+
+### Python Support
+
+Requires Python development headers:  
+
+- Linux (e.g., Ubuntu): `sudo apt install python3-dev`,
+  a dedicated virtual environment is recommended:  
+  
+    ```shell
+    python -m venv jsepyenv
+    ```
+
+### LAMMPS Support
+
+LAMMPS is automatically downloaded and compiled by default. For custom installations:  
+
+1. Compile LAMMPS as a shared library:
+    
+    ```shell
+    cmake -D BUILD_SHARED_LIBS=ON .
+    ```
+
+2. For custom fixes/pairs (including NNAP support), enable the plugin package: 
+    
+    ```shell
+    cmake -D PKG_PLUGIN=ON .
+    ```
+
+3. Ensure your LAMMPS build directory has this structure:  
+   
+    ```text
+    build
+        ├─lib
+        │   └─liblammps.so
+        └─includes
+            └─lammps
+                ├─library.h
+                ...
+    ```
+
+4. Set the `JSE_LMP_HOME` environment variable:  
+    
+    ```shell
+    export JSE_LMP_HOME="path/to/lammps/build"
+    ```
+
+
+# Usage
+
+## Installation
+
+1. Download the latest release from [**Releases**](https://github.com/CHanzyLazer/jse/releases/latest)  
+2. Extract the package and add the directory to your `PATH` environment variable.  
+
+> Verify with `jse -v` (prints version info if successful).
 > 
 
+## Basic Usage
 
-# 软件特点
+Execute Groovy scripts via: 
 
-- **全栈**：
+```shell
+jse path/to/script.groovy
+```
+
+Python scripts are also supported:
+
+```shell
+jse path/to/script.py
+```
+
+> jse auto-detects Groovy/Python by file extension.
+> 
+
+## IntelliSense
+For Groovy IntelliSense in [IntelliJ IDEA](https://www.jetbrains.com/idea/):  
+
+1. Initialize the project directory (with IDEA closed):  
     
-    jse 提供了：
-    
+    ```shell
+    jse -idea
     ```
-    原子结构创建 ⟶ 上传文件 ⟶ 提交任务 ⟶ 执行任务
-    ⟶ 下载文件 ⟶ 读取文件 ⟶ 数据后处理 ⟶ 绘制结果
-    ⟶ 保存结果到文件
+
+2. Configure JDK in IDEA:  
+    
+    ```text
+    File → Project Structure → Project Settings → Project → SDK 
+    → Select installed JDK → Set language level → Apply
     ```
-    
-    全部过程的支持，实现了“全栈”的原子模拟支持，不需要频繁切换软件。
-    
-- **易用**：
-    
-    易安装：
-    - jse 通过 java 编写，确保了跨平台的兼容性。
-    - jse 90% 的功能不需要额外安装第三方依赖，这对于没有网络环境的地方尤为重要。
-    - jse 剩下的 jni 部分会在使用时自动编译确保兼容性。
-    
-    易使用：
-    - jse 通过 [groovy 语言](http://www.groovy-lang.org/)
-    使用，相比 C/fortran/java 更加简单，相比 python 更加高效。
-    - jse 支持使用现代的 IDE（[IntelliJ IDEA](https://www.jetbrains.com/idea/)）
-    调试 groovy 脚本，拥有完整的代码提示。
-    - jse 支持通过 python 或 matlab 使用，帮助习惯这些语言的人快速上手。
-    - jse 支持 jupyter 中使用，可以分段运行和调试。
-    
-    易扩展：
-    - jse 支持直接调用 python 脚本，因此可以通过现有的 python 库直接扩展功能。
-    - jse 支持直接扩展 jar 包，因此可以通过
-    [maven 仓库](https://mvnrepository.com/)
-    中现有的 java 库直接扩展功能。
-    
-- **高性能**：
-    
-    jse 通过 java 编写，理论上性能和 C/C++ 基本一致（大致比 python 快 100 倍，
-    一般情况下会比 fortran 快）
-    向量运算上考虑了
-    [SIMD](https://en.wikipedia.org/wiki/Single_instruction,_multiple_data)
-    优化，对于近邻搜索使用了类似
-    [Cell lists](https://en.wikipedia.org/wiki/Cell_lists)
-    的方法进行加速，最终会比常规的实现快 1000 倍以上。
-    
-    jse 基于
-    [java nio](https://en.wikipedia.org/wiki/Non-blocking_I/O_%28Java%29)
-    实现文件读写，通常可以利用完全硬盘的读写速度，
-    会比常规的 python 实现快 10 倍以上。
+
+# Compilation
+
+The project uses [Gradle](https://gradle.org/). Build with:
+
+```shell
+./gradlew build  # Outputs JAR to release/lib
+```
 
 
-# 如何使用
-参考 [基本使用方式](doc/usage.md)，
-详细接口介绍参考 [使用文档](doc/contents.md) 。
-
-现在也可以直接参考 [自动生成 JavaDoc](https://chanzylazer.github.io/jse-API/) 。
+# Citation
+*(To be added)*
 
 
-# 编译项目
-本项目使用 [Gradle](https://gradle.org/) 进行管理（不需要安装 Gradle）。
+# License
+*(To be added)*
 
-在根目录运行 `./gradlew build` 即可进行编译，
-默认会将 jar 文件输出到 `release/lib` 文件夹。
+
+# Acknowledgments
+Special thanks to:  
+- [jep](https://github.com/ninia/jep) for Python integration  
+- [SpencerPark/jupyter-jvm-basekernel](https://github.com/SpencerPark/jupyter-jvm-basekernel) for Jupyter support  
+- [mwiede/jsch](https://github.com/mwiede/jsch) for SSH connectivity  
+- [JFreeChart](https://www.jfree.org/jfreechart/) for plotting capabilities  
 
