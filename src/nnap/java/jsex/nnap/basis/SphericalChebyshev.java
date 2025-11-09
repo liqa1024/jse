@@ -74,7 +74,6 @@ public class SphericalChebyshev extends WTypeBasis {
         if (mLMaxMax!=Math.max(Math.max(mLMax, mL3Max), mL4Max)) throw new IllegalStateException();
         mLMAll = (mLMaxMax+1)*(mLMaxMax+1);
         
-        if (aPostFuseScale==null && aPostFuseWeight!=null) throw new IllegalArgumentException("Input post_fuse_weight MUST be null when has post_fuse_scale");
         mPostFuseWeight = aPostFuseWeight;
         if (mPostFuseWeight==null) {
             mPostFuseSize = 0;

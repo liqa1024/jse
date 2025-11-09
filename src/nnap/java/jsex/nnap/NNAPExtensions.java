@@ -4,7 +4,7 @@ import jse.atom.AtomicParameterCalculator;
 import jse.cache.VectorCache;
 import jse.math.vector.Vector;
 import jsex.nnap.basis.Basis;
-import jsex.nnap.basis.SphericalChebyshev;
+import jsex.nnap.basis.SimpleSphericalChebyshev;
 
 import java.util.List;
 
@@ -15,7 +15,8 @@ import java.util.List;
  */
 public class NNAPExtensions {
     /**
-     * 通过 {@link SphericalChebyshev} 实现的基组计算
+     * 通过 {@link SimpleSphericalChebyshev} 实现的基组计算，使用纯
+     * java 实现确保最高的兼容性以及接口的稳定性
      * @author Su Rui, liqa
      * @param aNMax Chebyshev 多项式选取的最大阶数
      * @param aLMax 球谐函数中 l 选取的最大阶数
@@ -28,7 +29,7 @@ public class NNAPExtensions {
         Basis[] tBasis = new Basis[tThreadNum];
         for (int i = 0; i < tThreadNum; ++i) {
             //noinspection resource
-            tBasis[i] = new SphericalChebyshev(self.atomTypeNumber(), aNMax, aLMax, aRCutOff);
+            tBasis[i] = new SimpleSphericalChebyshev(self.atomTypeNumber(), aNMax, aLMax, aRCutOff);
         }
         try {
             final List<Vector> rFingerPrints = VectorCache.getVec(tBasis[0].size(), self.atomNumber());
