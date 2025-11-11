@@ -9,6 +9,7 @@ import jse.code.collection.DoubleTriplet;
 import jse.code.collection.IListGetter;
 import jse.code.collection.IntDeque;
 import jse.code.iterator.IHasIntIterator;
+import jse.math.function.IFunc1Subs;
 import jse.math.vector.*;
 import net.jafama.DoubleWrapper;
 import net.jafama.FastMath;
@@ -1005,6 +1006,29 @@ public class MathEX {
     
     /// advance operations
     public static class Adv {
+        
+        /**
+         * 使用简单的梯形法对任意函数进行数值积分
+         * @author liqa
+         * @param aStart 开始值
+         * @param aEnd 结束值
+         * @param aN 拆分数目
+         * @param aFunc 任意一维函数
+         * @return 数值积分结果
+         */
+        public static double integral(double aStart, double aEnd, int aN, IFunc1Subs aFunc) {
+            double tStep = (aEnd-aStart)/(double)aN;
+            double oFunc = aFunc.subs(aStart);
+            double tX = tStep;
+            double rInt = 0.0;
+            for (int i = 0; i < aN; ++i) {
+                double tFunc = aFunc.subs(tX);
+                rInt += (oFunc + tFunc) * 0.5 * tStep;
+                oFunc = tFunc;
+                tX += tStep;
+            }
+            return rInt;
+        }
         
         /**
          * 线性拟合得到 y = a + bx

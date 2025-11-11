@@ -3,9 +3,9 @@ package jse.code.collection;
 import java.util.Objects;
 
 /**
+ * STL style pair,
+ * simple and more powerful
  * @author liqa
- * <p> STL style pair, 
- * simple and more powerful </p>
  */
 public final class Pair<A, B> implements IPair<A, B> {
     public A mFirst;
