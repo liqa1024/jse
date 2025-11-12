@@ -8,10 +8,7 @@ namespace JSE_NNAP {
 static constexpr jint SH_LARGEST_L = 20;
 
 static constexpr jint L3NCOLS[7] = {0, 0, 2, 4, 9, 14, 23};
-static constexpr jint L3NCOLS_NOCROSS[7] = {0, 0, 1, 1, 2, 2, 3};
-
 static constexpr jint L4NCOLS[4] = {0, 1, 3, 9};
-static constexpr jint L4NCOLS_NOCROSS[4] = {0, 1, 2, 3};
 
 // l = 2: 222 112
 // l = 3: 233 123

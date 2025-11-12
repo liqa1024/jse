@@ -87,8 +87,8 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
     const jint tSizeNp = aEquSize[aEquNumber-1];
     for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
         calL2_(rAnlm+tShift, rFp+tShiftFp, aLMax, JNI_FALSE);
-        calL3_(rAnlm+tShift, rFp+tShiftFp+tShiftL3, aL3Max, JNI_TRUE);
-        calL4_(rAnlm+tShift, rFp+tShiftFp+tShiftL4, aL4Max, JNI_TRUE);
+        calL3_(rAnlm+tShift, rFp+tShiftFp+tShiftL3, aL3Max);
+        calL4_(rAnlm+tShift, rFp+tShiftFp+tShiftL4, aL4Max);
     }
 }
 template <jint WTYPE, jint FSTYLE>
@@ -135,8 +135,8 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
     const jint tSizeNp = aEquSize[aEquNumber-1];
     for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
         calGradL2_(tHnlm+tShift, rGradHnlm+tShift, aGradFp+tShiftFp, aLMax, JNI_FALSE);
-        calGradL3_(tHnlm+tShift, rGradHnlm+tShift, aGradFp+tShiftFp+tShiftL3, aL3Max, JNI_TRUE);
-        calGradL4_(tHnlm+tShift, rGradHnlm+tShift, aGradFp+tShiftFp+tShiftL4, aL4Max, JNI_TRUE);
+        calGradL3_(tHnlm+tShift, rGradHnlm+tShift, aGradFp+tShiftFp+tShiftL3, aL3Max);
+        calGradL4_(tHnlm+tShift, rGradHnlm+tShift, aGradFp+tShiftFp+tShiftL4, aL4Max);
     }
     jdouble *tGradParaEqu = rGradPara;
     if (WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
@@ -248,8 +248,8 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
     const jint tSizeNp = aEquSize[aEquNumber-1];
     for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
         calGradL2_(tHnlm+tShift, rGradHnlm+tShift, aNNGrad+tShiftFp, aLMax, JNI_FALSE);
-        calGradL3_(tHnlm+tShift, rGradHnlm+tShift, aNNGrad+tShiftFp+tShiftL3, aL3Max, JNI_TRUE);
-        calGradL4_(tHnlm+tShift, rGradHnlm+tShift, aNNGrad+tShiftFp+tShiftL4, aL4Max, JNI_TRUE);
+        calGradL3_(tHnlm+tShift, rGradHnlm+tShift, aNNGrad+tShiftFp+tShiftL3, aL3Max);
+        calGradL4_(tHnlm+tShift, rGradHnlm+tShift, aNNGrad+tShiftFp+tShiftL4, aL4Max);
     }
     jdouble *tEquWeight = aEquWeight;
     if (FSTYLE==FUSE_STYLE_LIMITED) {
@@ -431,13 +431,13 @@ static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
     const jint tSizeNp = aEquSize[aEquNumber-1];
     for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
         calGradNNGradL2_(tAnlm+tShift, rGradNNGradAnlm+tShift, rGradNNGrad+tShiftFp, aLMax, JNI_FALSE);
-        calGradNNGradL3_(tAnlm+tShift, rGradNNGradAnlm+tShift, rGradNNGrad+tShiftFp+tShiftL3, aL3Max, JNI_TRUE);
-        calGradNNGradL4_(tAnlm+tShift, rGradNNGradAnlm+tShift, rGradNNGrad+tShiftFp+tShiftL4, aL4Max, JNI_TRUE);
+        calGradNNGradL3_(tAnlm+tShift, rGradNNGradAnlm+tShift, rGradNNGrad+tShiftFp+tShiftL3, aL3Max);
+        calGradNNGradL4_(tAnlm+tShift, rGradNNGradAnlm+tShift, rGradNNGrad+tShiftFp+tShiftL4, aL4Max);
     }
     if (!aFixBasis) for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
         calGradCnlmL2_(rGradAnlm+tShift, rGradNNGradAnlm+tShift, aNNGrad+tShiftFp, aLMax, JNI_FALSE);
-        calGradCnlmL3_(tAnlm+tShift, rGradAnlm+tShift, rGradNNGradAnlm+tShift, aNNGrad+tShiftFp+tShiftL3, aL3Max, JNI_TRUE);
-        calGradCnlmL4_(tAnlm+tShift, rGradAnlm+tShift, rGradNNGradAnlm+tShift, aNNGrad+tShiftFp+tShiftL4, aL4Max, JNI_TRUE);
+        calGradCnlmL3_(tAnlm+tShift, rGradAnlm+tShift, rGradNNGradAnlm+tShift, aNNGrad+tShiftFp+tShiftL3, aL3Max);
+        calGradCnlmL4_(tAnlm+tShift, rGradAnlm+tShift, rGradNNGradAnlm+tShift, aNNGrad+tShiftFp+tShiftL4, aL4Max);
     }
 }
 

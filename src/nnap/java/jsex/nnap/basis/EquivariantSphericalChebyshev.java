@@ -43,7 +43,7 @@ public class EquivariantSphericalChebyshev extends SphericalChebyshev {
     EquivariantSphericalChebyshev(String @Nullable[] aSymbols, int aTypeNum, int aNMax, int aLMax, int aL3Max, int aL4Max, double aRCut,
                                   int aWType, int aFuseStyle, RowMatrix aFuseWeight, Vector aEquWeight, double[] aEquScale, int[] aEquSize) {
         super(aSymbols, aTypeNum, aNMax, checkLMax_(aLMax), false,
-              checkL3Max_(aL3Max, aLMax), true, checkL4Max_(aL4Max, aLMax), true, aRCut,
+              checkL3Max_(aL3Max, aLMax), checkL4Max_(aL4Max, aLMax), aRCut,
               aWType, aFuseStyle, aFuseWeight, null, null);
         
         mEquWeight = aEquWeight;
