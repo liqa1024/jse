@@ -45,7 +45,7 @@ public class EquivariantSphericalChebyshev extends SphericalChebyshev {
         super(aSymbols, aTypeNum, aNMax, checkLMax_(aLMax), false,
               checkL3Max_(aL3Max, aLMax), checkL4Max_(aL4Max, aLMax), aRCut,
               aWType, aFuseStyle, aFuseWeight, null, null,
-              null, null, null, null);
+              null, null, null);
         
         mEquWeight = aEquWeight;
         mEquSize = aEquSize;

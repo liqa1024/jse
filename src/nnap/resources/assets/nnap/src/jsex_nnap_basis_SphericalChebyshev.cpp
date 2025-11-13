@@ -7,7 +7,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_calSystemScale1(J
         jdoubleArray aNlDx, jdoubleArray aNlDy, jdoubleArray aNlDz, jintArray aNlType, jint aNN,
         jdoubleArray rSystemScale, jint aShiftSystemScale, jdoubleArray rForwardCache, jint aForwardCacheShift,
         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMaxMax, jint aWType, jint aFuseSize,
-        jdoubleArray aRFuncScale, jdoubleArray aRFuncShift) {
+        jdoubleArray aRFuncScale) {
     // java array init
     jdouble *tNlDx = (jdouble *)getJArrayBuf(aEnv, aNlDx);
     jdouble *tNlDy = (jdouble *)getJArrayBuf(aEnv, aNlDy);
@@ -16,12 +16,11 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_calSystemScale1(J
     jdouble *tSystemScale = (jdouble *)getJArrayBuf(aEnv, rSystemScale);
     jdouble *tForwardCache = (jdouble *)getJArrayBuf(aEnv, rForwardCache);
     jdouble *tRFuncScale = (jdouble *)getJArrayBuf(aEnv, aRFuncScale);
-    jdouble *tRFuncShift = (jdouble *)getJArrayBuf(aEnv, aRFuncShift);
     
     JSE_NNAP::calSystemScale(tNlDx, tNlDy, tNlDz, tNlType, aNN,
                              tSystemScale+aShiftSystemScale, tForwardCache+aForwardCacheShift,
                              aTypeNum, aRCut, aNMax, aLMaxMax, aWType, aFuseSize,
-                             tRFuncScale, tRFuncShift);
+                             tRFuncScale);
     
     // release java array
     releaseJArrayBuf(aEnv, aNlDx, tNlDx, JNI_ABORT);
@@ -31,7 +30,6 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_calSystemScale1(J
     releaseJArrayBuf(aEnv, rSystemScale, tSystemScale, 0);
     releaseJArrayBuf(aEnv, rForwardCache, tForwardCache, JNI_ABORT); // cache only
     releaseJArrayBuf(aEnv, aRFuncScale, tRFuncScale, JNI_ABORT);
-    releaseJArrayBuf(aEnv, aRFuncShift, tRFuncShift, JNI_ABORT);
 }
 
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forward1(JNIEnv *aEnv, jclass aClazz,
@@ -40,7 +38,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forward1(JNIEnv *
         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jboolean aNoRadial,
         jint aL3Max, jint aL4Max, jint aWType, jint aFuseStyle,
         jdoubleArray aFuseWeight, jint aFuseSize, jdoubleArray aPostFuseWeight, jint aPostFuseSize, jdouble aPostFuseScale,
-        jdoubleArray aRFuncScale, jdoubleArray aRFuncShift, jdoubleArray aSystemScale, jboolean aSphScale) {
+        jdoubleArray aRFuncScale, jdoubleArray aSystemScale, jboolean aSphScale) {
     // java array init
     jdouble *tNlDx = (jdouble *)getJArrayBuf(aEnv, aNlDx);
     jdouble *tNlDy = (jdouble *)getJArrayBuf(aEnv, aNlDy);
@@ -51,7 +49,6 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forward1(JNIEnv *
     jdouble *tFuseWeight = (jdouble *)getJArrayBuf(aEnv, aFuseWeight); // nullable
     jdouble *tPostFuseWeight = (jdouble *)getJArrayBuf(aEnv, aPostFuseWeight); // nullable
     jdouble *tRFuncScale = (jdouble *)getJArrayBuf(aEnv, aRFuncScale);
-    jdouble *tRFuncShift = (jdouble *)getJArrayBuf(aEnv, aRFuncShift);
     jdouble *tSystemScale = (jdouble *)getJArrayBuf(aEnv, aSystemScale);
     
     JSE_NNAP::calFp(tNlDx, tNlDy, tNlDz, tNlType, aNN, tFp+aShiftFp,
@@ -60,7 +57,7 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forward1(JNIEnv *
                     aL3Max, aL4Max, aWType, aFuseStyle,
                     tFuseWeight, aFuseSize,
                     tPostFuseWeight, aPostFuseSize, aPostFuseScale,
-                    tRFuncScale, tRFuncShift, tSystemScale, aSphScale);
+                    tRFuncScale, tSystemScale, aSphScale);
     
     // release java array
     releaseJArrayBuf(aEnv, aNlDx, tNlDx, JNI_ABORT);
@@ -72,7 +69,6 @@ JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forward1(JNIEnv *
     releaseJArrayBuf(aEnv, aFuseWeight, tFuseWeight, JNI_ABORT);
     releaseJArrayBuf(aEnv, aPostFuseWeight, tPostFuseWeight, JNI_ABORT);
     releaseJArrayBuf(aEnv, aRFuncScale, tRFuncScale, JNI_ABORT);
-    releaseJArrayBuf(aEnv, aRFuncShift, tRFuncShift, JNI_ABORT);
     releaseJArrayBuf(aEnv, aSystemScale, tSystemScale, JNI_ABORT);
 }
 

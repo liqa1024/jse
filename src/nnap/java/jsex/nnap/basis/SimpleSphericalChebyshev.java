@@ -124,7 +124,7 @@ public class SimpleSphericalChebyshev extends Basis {
     @SuppressWarnings({"rawtypes", "unchecked"})
     public static SimpleSphericalChebyshev load(String @NotNull[] aSymbols, Map aMap) {
         int aTypeNum = aSymbols.length;
-        List<? extends Number> tRFuncScale = (List<? extends Number>)aMap.get("rfunc_scales");
+        List<? extends Number> tRFuncScale = (List<? extends Number>)UT.Code.get(aMap, "rfunc_scales", "rfunc_sigma");
         Vector aRFuncScales = tRFuncScale ==null ? null : Vectors.from(tRFuncScale);
         List<? extends Number> tRFuncShift = (List<? extends Number>)UT.Code.get(aMap, "rfunc_shifts", "rfunc_mu");
         Vector aRFuncShift = tRFuncShift==null ? null : Vectors.from(tRFuncShift);
@@ -143,7 +143,7 @@ public class SimpleSphericalChebyshev extends Basis {
     }
     @SuppressWarnings({"rawtypes", "unchecked"})
     public static SimpleSphericalChebyshev load(int aTypeNum, Map aMap) {
-        List<? extends Number> tRFuncScale = (List<? extends Number>)aMap.get("rfunc_scales");
+        List<? extends Number> tRFuncScale = (List<? extends Number>)UT.Code.get(aMap, "rfunc_scales", "rfunc_sigma");
         Vector aRFuncScales = tRFuncScale ==null ? null : Vectors.from(tRFuncScale);
         List<? extends Number> tRFuncShift = (List<? extends Number>)UT.Code.get(aMap, "rfunc_shifts", "rfunc_mu");
         Vector aRFuncShift = tRFuncShift==null ? null : Vectors.from(tRFuncShift);

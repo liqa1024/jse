@@ -38,18 +38,18 @@ extern "C" {
 /*
  * Class:     jsex_nnap_basis_SphericalChebyshev
  * Method:    calSystemScale1
- * Signature: ([D[D[D[II[DI[DIIDIIII[D[D)V
+ * Signature: ([D[D[D[II[DI[DIIDIIII[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_calSystemScale1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jdouble, jint, jint, jint, jint, jdoubleArray, jdoubleArray);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jdouble, jint, jint, jint, jint, jdoubleArray);
 
 /*
  * Class:     jsex_nnap_basis_SphericalChebyshev
  * Method:    forward1
- * Signature: ([D[D[D[II[DI[DIZIDIIZIIII[DI[DID[D[D[DZ)V
+ * Signature: ([D[D[D[II[DI[DIZIDIIZIIII[DI[DID[D[DZ)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_SphericalChebyshev_forward1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jboolean, jint, jint, jint, jint, jdoubleArray, jint, jdoubleArray, jint, jdouble, jdoubleArray, jdoubleArray, jdoubleArray, jboolean);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jboolean, jint, jint, jint, jint, jdoubleArray, jint, jdoubleArray, jint, jdouble, jdoubleArray, jdoubleArray, jboolean);
 
 /*
  * Class:     jsex_nnap_basis_SphericalChebyshev
