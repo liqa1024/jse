@@ -33,10 +33,6 @@ extern "C" {
 #define jsex_nnap_basis_EquivariantSphericalChebyshev_DEFAULT_L4MAX 0L
 #undef jsex_nnap_basis_EquivariantSphericalChebyshev_DEFAULT_NORADIAL
 #define jsex_nnap_basis_EquivariantSphericalChebyshev_DEFAULT_NORADIAL 0L
-#undef jsex_nnap_basis_EquivariantSphericalChebyshev_DEFAULT_L3CROSS
-#define jsex_nnap_basis_EquivariantSphericalChebyshev_DEFAULT_L3CROSS 1L
-#undef jsex_nnap_basis_EquivariantSphericalChebyshev_DEFAULT_L4CROSS
-#define jsex_nnap_basis_EquivariantSphericalChebyshev_DEFAULT_L4CROSS 1L
 #undef jsex_nnap_basis_EquivariantSphericalChebyshev_DEFAULT_RCUT
 #define jsex_nnap_basis_EquivariantSphericalChebyshev_DEFAULT_RCUT 6.0
 #undef jsex_nnap_basis_EquivariantSphericalChebyshev_DEFAULT_LMAX
@@ -44,34 +40,34 @@ extern "C" {
 /*
  * Class:     jsex_nnap_basis_EquivariantSphericalChebyshev
  * Method:    forward1
- * Signature: ([D[D[D[II[DI[DIZIDIIIIII[DI[D[I[DI)V
+ * Signature: ([D[D[D[II[DI[DIZIDIIIIII[DI[D[I[DI[D[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_EquivariantSphericalChebyshev_forward1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jint, jint, jint, jint, jdoubleArray, jint, jdoubleArray, jintArray, jdoubleArray, jint);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jint, jint, jint, jint, jdoubleArray, jint, jdoubleArray, jintArray, jdoubleArray, jint, jdoubleArray, jdoubleArray);
 
 /*
  * Class:     jsex_nnap_basis_EquivariantSphericalChebyshev
  * Method:    backward1
- * Signature: ([D[D[D[II[DI[DI[DI[DIIDIIIIIII[D[I[DI)V
+ * Signature: ([D[D[D[II[DI[DI[DI[DIIDIIIIIII[D[I[DI[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_EquivariantSphericalChebyshev_backward1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jdouble, jint, jint, jint, jint, jint, jint, jint, jdoubleArray, jintArray, jdoubleArray, jint);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jdouble, jint, jint, jint, jint, jint, jint, jint, jdoubleArray, jintArray, jdoubleArray, jint, jdoubleArray);
 
 /*
  * Class:     jsex_nnap_basis_EquivariantSphericalChebyshev
  * Method:    forwardForce1
- * Signature: ([D[D[D[II[DI[D[D[D[DI[DIZIDIIIIII[DI[D[I[DI)V
+ * Signature: ([D[D[D[II[DI[D[D[D[DI[DIZIDIIIIII[DI[D[I[DI[D[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_EquivariantSphericalChebyshev_forwardForce1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jint, jint, jint, jint, jdoubleArray, jint, jdoubleArray, jintArray, jdoubleArray, jint);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jint, jint, jint, jint, jdoubleArray, jint, jdoubleArray, jintArray, jdoubleArray, jint, jdoubleArray, jdoubleArray);
 
 /*
  * Class:     jsex_nnap_basis_EquivariantSphericalChebyshev
  * Method:    backwardForce1
- * Signature: ([D[D[D[II[DI[D[D[D[DI[DI[DI[DI[DI[DIZIDIIIIII[DI[D[I[DI)V
+ * Signature: ([D[D[D[II[DI[D[D[D[DI[DI[DI[DI[DI[DIZIDIIIIII[DI[D[I[DI[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_EquivariantSphericalChebyshev_backwardForce1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jint, jint, jint, jint, jdoubleArray, jint, jdoubleArray, jintArray, jdoubleArray, jint);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jint, jint, jint, jint, jdoubleArray, jint, jdoubleArray, jintArray, jdoubleArray, jint, jdoubleArray);
 
 #ifdef __cplusplus
 }

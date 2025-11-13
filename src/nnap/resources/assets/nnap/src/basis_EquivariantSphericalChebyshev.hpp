@@ -11,7 +11,8 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
                   jdouble *rFp, jdouble *rForwardCache, jboolean aFullCache,
                   jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
                   jdouble *aFuseWeight, jint aFuseSize,
-                  jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber) noexcept {
+                  jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber,
+                  jdouble *aRFuncScale, jdouble *aSystemScale) noexcept {
     // const init
     jint tSizeN;
     switch(WTYPE) {
@@ -39,7 +40,11 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
     // clear cnlm first
     fill(rCnlm, 0.0, tSizeCnlm);
     // do cal
-    calCnlm<WTYPE, FSTYLE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rCnlm, rForwardCacheElse, aFullCache, aRCut, aNMax, aLMax, aFuseWeight, aFuseSize, NULL, JNI_FALSE);
+    calCnlm<WTYPE, FSTYLE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rCnlm, rForwardCacheElse, aFullCache, aRCut, aNMax, aLMax, aFuseWeight, aFuseSize, aRFuncScale, JNI_TRUE);
+    // system scale here
+    for (jint n=0, tShift=0, tShiftS=0; n<tSizeN; ++n, tShift+=tLMAll, tShiftS+=aLMax+1) {
+        multiplyLM(rCnlm+tShift, aSystemScale+tShiftS, aLMax);
+    }
     // clear anlm first
     fill(rAnlm, 0.0, tSizeAnlm);
     // cnlm -> anlm
@@ -86,7 +91,7 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
     const jint tShiftL4 = tShiftL3 + L3NCOLS[aL3Max];
     const jint tSizeNp = aEquSize[aEquNumber-1];
     for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        calL2_(rAnlm+tShift, rFp+tShiftFp, aLMax, JNI_FALSE, JNI_FALSE);
+        calL2_(rAnlm+tShift, rFp+tShiftFp, aLMax, JNI_FALSE, JNI_TRUE);
         calL3_(rAnlm+tShift, rFp+tShiftFp+tShiftL3, aL3Max);
         calL4_(rAnlm+tShift, rFp+tShiftFp+tShiftL4, aL4Max);
     }
@@ -95,7 +100,8 @@ template <jint WTYPE, jint FSTYLE>
 static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                         jdouble *aGradFp, jdouble *rGradPara, jdouble *aForwardCache, jdouble *rBackwardCache,
                         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
-                        jint aFuseSize, jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber) noexcept {
+                        jint aFuseSize, jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber,
+                        jdouble *aSystemScale) noexcept {
     // const init
     jint tSizeN;
     switch(WTYPE) {
@@ -134,7 +140,7 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
     const jint tShiftL4 = tShiftL3 + L3NCOLS[aL3Max];
     const jint tSizeNp = aEquSize[aEquNumber-1];
     for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        calGradL2_(tHnlm+tShift, rGradHnlm+tShift, aGradFp+tShiftFp, aLMax, JNI_FALSE, JNI_FALSE);
+        calGradL2_(tHnlm+tShift, rGradHnlm+tShift, aGradFp+tShiftFp, aLMax, JNI_FALSE, JNI_TRUE);
         calGradL3_(tHnlm+tShift, rGradHnlm+tShift, aGradFp+tShiftFp+tShiftL3, aL3Max);
         calGradL4_(tHnlm+tShift, rGradHnlm+tShift, aGradFp+tShiftFp+tShiftL4, aL4Max);
     }
@@ -204,6 +210,10 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
     mplusGradParaPostFuse<FSTYLE>(rGradHnlm, tCnlm, tGradParaEqu, aEquSize[0], tSizeN, aLMax);
     if (WTYPE!=WTYPE_FUSE && WTYPE!=WTYPE_EXFUSE) return;
     mplusGradAnlm<FSTYLE>(rGradHnlm, rGradCnlm, aEquWeight, aEquSize[0], tSizeN, aLMax);
+    // system scale here
+    for (jint n=0, tShift=0, tShiftS=0; n<tSizeN; ++n, tShift+=tLMAll, tShiftS+=aLMax+1) {
+        multiplyLM(rGradCnlm+tShift, aSystemScale+tShiftS, aLMax);
+    }
     // plus to para
     calBackwardMainLoop<WTYPE, FSTYLE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rGradPara, rGradCnlm, tForwardCacheElse, rBackwardCacheElse, aRCut, aNMax, aLMax, aFuseSize);
 }
@@ -213,7 +223,8 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
                      jdouble *aForwardCache, jdouble *rForwardForceCache, jboolean aFullCache,
                      jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
                      jdouble *aFuseWeight, jint aFuseSize,
-                     jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber) noexcept {
+                     jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber,
+                     jdouble *aRFuncScale, jdouble *aSystemScale) noexcept {
     // const init
     jint tSizeN;
     switch(WTYPE) {
@@ -247,7 +258,7 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
     const jint tShiftL4 = tShiftL3 + L3NCOLS[aL3Max];
     const jint tSizeNp = aEquSize[aEquNumber-1];
     for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        calGradL2_(tHnlm+tShift, rGradHnlm+tShift, aNNGrad+tShiftFp, aLMax, JNI_FALSE, JNI_FALSE);
+        calGradL2_(tHnlm+tShift, rGradHnlm+tShift, aNNGrad+tShiftFp, aLMax, JNI_FALSE, JNI_TRUE);
         calGradL3_(tHnlm+tShift, rGradHnlm+tShift, aNNGrad+tShiftFp+tShiftL3, aL3Max);
         calGradL4_(tHnlm+tShift, rGradHnlm+tShift, aNNGrad+tShiftFp+tShiftL4, aL4Max);
     }
@@ -296,7 +307,11 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
     multiply(rGradHnlm, aEquScale[0], aEquSize[0]*tLMAll);
     // anlm -> cnlm
     mplusGradAnlm<FSTYLE>(rGradHnlm, rGradCnlm, aEquWeight, aEquSize[0], tSizeN, aLMax);
-    calForceMainLoop<WTYPE, FSTYLE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rGradCnlm, rFx, rFy, rFz, tForwardCacheElse, rForwardForceCacheElse, aFullCache, aRCut, aNMax, aLMax, aFuseWeight, aFuseSize, NULL);
+    // system scale here
+    for (jint n=0, tShift=0, tShiftS=0; n<tSizeN; ++n, tShift+=tLMAll, tShiftS+=aLMax+1) {
+        multiplyLM(rGradCnlm+tShift, aSystemScale+tShiftS, aLMax);
+    }
+    calForceMainLoop<WTYPE, FSTYLE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rGradCnlm, rFx, rFy, rFz, tForwardCacheElse, rForwardForceCacheElse, aFullCache, aRCut, aNMax, aLMax, aFuseWeight, aFuseSize, aRFuncScale);
 }
 template <jint WTYPE, jint FSTYLE>
 static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
@@ -306,7 +321,8 @@ static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
                              jdouble *rBackwardCache, jdouble *rBackwardForceCache, jboolean aFixBasis,
                              jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
                              jdouble *aFuseWeight, jint aFuseSize,
-                             jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber) noexcept {
+                             jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber,
+                             jdouble *aSystemScale) noexcept {
     // const init
     jint tSizeN;
     switch(WTYPE) {
@@ -347,7 +363,10 @@ static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
     
     // cal rGradNNGradCnlm
     calBackwardForceMainLoop<WTYPE, FSTYLE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rGradNNGradCnlm, aGradFx, aGradFy, aGradFz, tNNGradCnlm, rGradPara, tForwardCacheElse, tForwardForceCacheElse, rBackwardCacheElse, rBackwardForceCacheElse, aFixBasis, aRCut, aNMax, aLMax, aFuseWeight, aFuseSize);
-    
+    // system scale here
+    for (jint n=0, tShift=0, tShiftS=0; n<tSizeN; ++n, tShift+=tLMAll, tShiftS+=aLMax+1) {
+        multiplyLM(rGradNNGradCnlm+tShift, aSystemScale+tShiftS, aLMax);
+    }
     jdouble *tGradParaEqu = rGradPara;
     if (!aFixBasis) if (WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
         if (FSTYLE==FUSE_STYLE_LIMITED) {
@@ -430,12 +449,12 @@ static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
     const jint tShiftL4 = tShiftL3 + L3NCOLS[aL3Max];
     const jint tSizeNp = aEquSize[aEquNumber-1];
     for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        calGradNNGradL2_(tAnlm+tShift, rGradNNGradAnlm+tShift, rGradNNGrad+tShiftFp, aLMax, JNI_FALSE, JNI_FALSE);
+        calGradNNGradL2_(tAnlm+tShift, rGradNNGradAnlm+tShift, rGradNNGrad+tShiftFp, aLMax, JNI_FALSE, JNI_TRUE);
         calGradNNGradL3_(tAnlm+tShift, rGradNNGradAnlm+tShift, rGradNNGrad+tShiftFp+tShiftL3, aL3Max);
         calGradNNGradL4_(tAnlm+tShift, rGradNNGradAnlm+tShift, rGradNNGrad+tShiftFp+tShiftL4, aL4Max);
     }
     if (!aFixBasis) for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        calGradCnlmL2_(rGradAnlm+tShift, rGradNNGradAnlm+tShift, aNNGrad+tShiftFp, aLMax, JNI_FALSE, JNI_FALSE);
+        calGradCnlmL2_(rGradAnlm+tShift, rGradNNGradAnlm+tShift, aNNGrad+tShiftFp, aLMax, JNI_FALSE, JNI_TRUE);
         calGradCnlmL3_(tAnlm+tShift, rGradAnlm+tShift, rGradNNGradAnlm+tShift, aNNGrad+tShiftFp+tShiftL3, aL3Max);
         calGradCnlmL4_(tAnlm+tShift, rGradAnlm+tShift, rGradNNGradAnlm+tShift, aNNGrad+tShiftFp+tShiftL4, aL4Max);
     }
@@ -447,33 +466,35 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
                   jdouble *rFp, jdouble *rForwardCache, jboolean aFullCache,
                   jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
                   jint aFuseStyle, jdouble *aFuseWeight, jint aFuseSize,
-                  jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber) noexcept {
+                  jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber,
+                  jdouble *aRFuncScale, jdouble *aSystemScale) noexcept {
     if (aFuseStyle==FUSE_STYLE_LIMITED) {
-        calFp<WTYPE, FUSE_STYLE_LIMITED>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+        calFp<WTYPE, FUSE_STYLE_LIMITED>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
     } else {
-        calFp<WTYPE, FUSE_STYLE_EXTENSIVE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+        calFp<WTYPE, FUSE_STYLE_EXTENSIVE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
     }
 }
 static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                   jdouble *rFp, jdouble *rForwardCache, jboolean aFullCache,
                   jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
                   jint aWType, jint aFuseStyle, jdouble *aFuseWeight, jint aFuseSize,
-                  jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber) noexcept {
+                  jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber,
+                  jdouble *aRFuncScale, jdouble *aSystemScale) noexcept {
     if (aTypeNum == 1) {
         switch(aWType) {
         case WTYPE_FUSE: {
-            calFp<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calFp<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_EXFUSE: {
-            calFp<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calFp<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_NONE:
         case WTYPE_FULL:
         case WTYPE_EXFULL:
         case WTYPE_DEFAULT: {
-            calFp<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calFp<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         default: {
@@ -482,27 +503,27 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
     } else {
         switch(aWType) {
         case WTYPE_EXFULL: {
-            calFp<WTYPE_EXFULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calFp<WTYPE_EXFULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_FULL: {
-            calFp<WTYPE_FULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calFp<WTYPE_FULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_NONE: {
-            calFp<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calFp<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_DEFAULT: {
-            calFp<WTYPE_DEFAULT>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calFp<WTYPE_DEFAULT>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_FUSE: {
-            calFp<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calFp<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_EXFUSE: {
-            calFp<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calFp<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp, rForwardCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         default: {
@@ -515,33 +536,35 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
                         jdouble *aGradFp, jdouble *rGradPara, jdouble *aForwardCache, jdouble *rBackwardCache,
                         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
                         jint aFuseStyle, jint aFuseSize,
-                        jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber) noexcept {
+                        jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber,
+                        jdouble *aSystemScale) noexcept {
     if (aFuseStyle==FUSE_STYLE_LIMITED) {
-        calBackward<WTYPE, FUSE_STYLE_LIMITED>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+        calBackward<WTYPE, FUSE_STYLE_LIMITED>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
     } else {
-        calBackward<WTYPE, FUSE_STYLE_EXTENSIVE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+        calBackward<WTYPE, FUSE_STYLE_EXTENSIVE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
     }
 }
 static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                         jdouble *aGradFp, jdouble *rGradPara, jdouble *aForwardCache, jdouble *rBackwardCache,
                         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
                         jint aWType, jint aFuseStyle, jint aFuseSize,
-                        jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber) noexcept {
+                        jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber,
+                        jdouble *aSystemScale) noexcept {
     if (aTypeNum == 1) {
         switch(aWType) {
         case WTYPE_FUSE: {
-            calBackward<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackward<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_EXFUSE: {
-            calBackward<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackward<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_NONE:
         case WTYPE_FULL:
         case WTYPE_EXFULL:
         case WTYPE_DEFAULT: {
-            calBackward<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackward<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         default: {
@@ -550,27 +573,27 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
     } else {
         switch(aWType) {
         case WTYPE_EXFULL: {
-            calBackward<WTYPE_EXFULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackward<WTYPE_EXFULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_FULL: {
-            calBackward<WTYPE_FULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackward<WTYPE_FULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_NONE: {
-            calBackward<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackward<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_DEFAULT: {
-            calBackward<WTYPE_DEFAULT>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackward<WTYPE_DEFAULT>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_FUSE: {
-            calBackward<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackward<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_EXFUSE: {
-            calBackward<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackward<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aGradFp, rGradPara, aForwardCache, rBackwardCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         default: {
@@ -584,11 +607,12 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
                      jdouble *aForwardCache, jdouble *rForwardForceCache, jboolean aFullCache,
                      jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
                      jint aFuseStyle, jdouble *aFuseWeight, jint aFuseSize,
-                     jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber) noexcept {
+                     jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber,
+                     jdouble *aRFuncScale, jdouble *aSystemScale) noexcept {
     if (aFuseStyle==FUSE_STYLE_LIMITED) {
-        calForce<WTYPE, FUSE_STYLE_LIMITED>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+        calForce<WTYPE, FUSE_STYLE_LIMITED>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
     } else {
-        calForce<WTYPE, FUSE_STYLE_EXTENSIVE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+        calForce<WTYPE, FUSE_STYLE_EXTENSIVE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
     }
 }
 static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
@@ -596,22 +620,23 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
                      jdouble *aForwardCache, jdouble *rForwardForceCache, jboolean aFullCache,
                      jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
                      jint aWType, jint aFuseStyle, jdouble *aFuseWeight, jint aFuseSize,
-                     jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber) noexcept {
+                     jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber,
+                     jdouble *aRFuncScale, jdouble *aSystemScale) noexcept {
     if (aTypeNum == 1) {
         switch(aWType) {
         case WTYPE_FUSE: {
-            calForce<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calForce<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_EXFUSE: {
-            calForce<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calForce<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_NONE:
         case WTYPE_FULL:
         case WTYPE_EXFULL:
         case WTYPE_DEFAULT: {
-            calForce<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calForce<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         default: {
@@ -620,27 +645,27 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
     } else {
         switch(aWType) {
         case WTYPE_EXFULL: {
-            calForce<WTYPE_EXFULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calForce<WTYPE_EXFULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_FULL: {
-            calForce<WTYPE_FULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calForce<WTYPE_FULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_NONE: {
-            calForce<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calForce<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_DEFAULT: {
-            calForce<WTYPE_DEFAULT>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calForce<WTYPE_DEFAULT>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_FUSE: {
-            calForce<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calForce<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         case WTYPE_EXFUSE: {
-            calForce<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calForce<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aRFuncScale, aSystemScale);
             return;
         }
         default: {
@@ -656,11 +681,12 @@ static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
                              jdouble *rBackwardCache, jdouble *rBackwardForceCache, jboolean aFixBasis,
                              jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
                              jint aFuseStyle, jdouble *aFuseWeight, jint aFuseSize,
-                             jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber) noexcept {
+                             jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber,
+                             jdouble *aSystemScale) noexcept {
     if (aFuseStyle==FUSE_STYLE_LIMITED) {
-        calBackwardForce<WTYPE, FUSE_STYLE_LIMITED>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+        calBackwardForce<WTYPE, FUSE_STYLE_LIMITED>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
     } else {
-        calBackwardForce<WTYPE, FUSE_STYLE_EXTENSIVE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+        calBackwardForce<WTYPE, FUSE_STYLE_EXTENSIVE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
     }
 }
 static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
@@ -670,22 +696,23 @@ static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
                              jdouble *rBackwardCache, jdouble *rBackwardForceCache, jboolean aFixBasis,
                              jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
                              jint aWType, jint aFuseStyle, jdouble *aFuseWeight, jint aFuseSize,
-                             jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber) noexcept {
+                             jdouble *aEquWeight, jint *aEquSize, jdouble *aEquScale, jint aEquNumber,
+                             jdouble *aSystemScale) noexcept {
     if (aTypeNum == 1) {
         switch(aWType) {
         case WTYPE_FUSE: {
-            calBackwardForce<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackwardForce<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_EXFUSE: {
-            calBackwardForce<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackwardForce<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_NONE:
         case WTYPE_FULL:
         case WTYPE_EXFULL:
         case WTYPE_DEFAULT: {
-            calBackwardForce<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackwardForce<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         default: {
@@ -694,27 +721,27 @@ static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
     } else {
         switch(aWType) {
         case WTYPE_EXFULL: {
-            calBackwardForce<WTYPE_EXFULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackwardForce<WTYPE_EXFULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_FULL: {
-            calBackwardForce<WTYPE_FULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackwardForce<WTYPE_FULL>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_NONE: {
-            calBackwardForce<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackwardForce<WTYPE_NONE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_DEFAULT: {
-            calBackwardForce<WTYPE_DEFAULT>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackwardForce<WTYPE_DEFAULT>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_FUSE: {
-            calBackwardForce<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackwardForce<WTYPE_FUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         case WTYPE_EXFUSE: {
-            calBackwardForce<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber);
+            calBackwardForce<WTYPE_EXFUSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis, aTypeNum, aRCut, aNMax, aLMax, aL3Max, aL4Max, aFuseStyle, aFuseWeight, aFuseSize, aEquWeight, aEquSize, aEquScale, aEquNumber, aSystemScale);
             return;
         }
         default: {
