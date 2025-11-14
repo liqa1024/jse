@@ -895,12 +895,13 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             // 单 map 输入下特殊处理，只需要单个 shared_hidden_dims 即可
             @Nullable Object tSharedHiddenDims = tSubNNSetting.remove("shared_hidden_dims");
             tSubNNSetting.put("type", "feed_forward");
-            ((List)tNNSetting).add(tSubNNSetting);
+            ((List)tNNSetting).add((aBasis[0] instanceof MirrorBasis) ? null : tSubNNSetting);
             if (tSharedHiddenDims != null) {
+                if (aBasis[0] instanceof MirrorBasis) throw new IllegalArgumentException("shared nn CAN NOT share the mirror type (1)");
                 tSubNNSetting = Maps.of("type", "shared_feed_forward", "share", 1, "shared_hidden_dims", tSharedHiddenDims);
             }
             for (int i = 1; i < aBasis.length; ++i) {
-                ((List)tNNSetting).add(tSubNNSetting);
+                ((List)tNNSetting).add((aBasis[i] instanceof MirrorBasis) ? null : tSubNNSetting);
             }
         }
         NeuralNetwork[][] rOut = new NeuralNetwork[aThreadNum][aBasis.length];
@@ -964,6 +965,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 Object tShare = tNNSettingMap.get("share");
                 if (tShare == null) throw new IllegalArgumentException("Key `share` required for shared_feed_forward");
                 int tSharedType = ((Number)tShare).intValue();
+                if (aBasis[tSharedType-1] instanceof MirrorBasis) throw new IllegalArgumentException("shared nn CAN NOT share the mirror type ("+tSharedType+")");
                 Object tSharedHiddenDims = UT.Code.get(tNNSettingMap, "shared_hidden_dims");
                 int[] tSharedHiddenDimsArr;
                 if (tSharedHiddenDims instanceof int[]) {
@@ -982,7 +984,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 rOut[0][i] = tNN;
             }
         }
-        for (int ti = 1; ti < aThreadNum; ++ti) for (int i = 0; i < aBasis.length; ++i) {
+        for (int i = 0; i < aBasis.length; ++i) if (!(aBasis[i] instanceof MirrorBasis)) for (int ti = 1; ti < aThreadNum; ++ti) {
             rOut[ti][i] = rOut[0][i].threadSafeRef();
         }
         return rOut;
@@ -2025,17 +2027,20 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             tTimer.from();
             for (int k = 0; k < tAtomNum; ++k) {
                 int tType = tAtomType.get(k);
-                Basis tSubBasis = tBasis[tType - 1];
-                NeuralNetwork tSubNN = tNN[tType - 1];
+                Basis tSubBasis = tBasis[tType-1];
+                if (tSubBasis instanceof MirrorBasis) {
+                    tType = ((MirrorBasis)tSubBasis).mirrorType();
+                }
+                NeuralNetwork tSubNN = tNN[tType-1];
                 
                 IntList tSubNl = tNl[k], tSubNlType = tNlType[k];
                 DoubleList tSubNlDx = tNlDx[k], tSubNlDy = tNlDy[k], tSubNlDz = tNlDz[k];
                 
                 DoubleList tSubBaisForwardBuf = tBaisForwardBuf.get(k);
-                Vector tSubFp = tFp[tType - 1];
-                Vector tSubGradFp = tGradFp[tType - 1];
-                Vector tNormMu = mNormMu[tType - 1];
-                Vector tNormSigma = mNormSigma[tType - 1];
+                Vector tSubFp = tFp[tType-1];
+                Vector tSubGradFp = tGradFp[tType-1];
+                Vector tNormMu = mNormMu[tType-1];
+                Vector tNormSigma = mNormSigma[tType-1];
                 
                 int tNlSize = tSubNl.size();
                 tForceNlXBuf.ensureCapacity(tNlSize);
