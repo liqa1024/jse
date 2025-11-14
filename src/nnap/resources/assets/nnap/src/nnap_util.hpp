@@ -38,7 +38,7 @@ static inline jdouble pow3(jdouble value) noexcept {
     return value * value * value;
 }
 static inline jdouble pow4(jdouble value) noexcept {
-    jdouble value2 = value * value;
+    const jdouble value2 = value * value;
     return value2 * value2;
 }
 static inline jboolean numericEqual(jdouble aLHS, jdouble aRHS) noexcept {

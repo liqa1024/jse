@@ -4,11 +4,13 @@ import jse.atom.AtomicParameterCalculator;
 import jse.atom.IAtomData;
 import jse.atom.IHasSymbol;
 import jse.cache.VectorCache;
+import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.code.io.ISavable;
 import jse.math.vector.*;
 import jse.parallel.IAutoShutdown;
+import jse.parallel.ParforThreadPool;
 import jsex.nnap.NNAP;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -148,10 +150,10 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
                 rNlTypeList.add(tNlType);
             }
         }
-        initScale(rNlDxList, rNlDyList, rNlDzList, rNlTypeList);
+        initScale(rNlDxList, rNlDyList, rNlDzList, rNlTypeList, UT.Par.pool(1));
     }
     @ApiStatus.Internal
-    public void initScale(List<DoubleList> aNlDxList, List<DoubleList> aNlDyList, List<DoubleList> aNlDzList, List<IntList> aNlTypeList) {/**/}
+    public void initScale(List<DoubleList> aNlDxList, List<DoubleList> aNlDyList, List<DoubleList> aNlDzList, List<IntList> aNlTypeList, ParforThreadPool aPool) {/**/}
     
     /** @return 基组需要的近邻截断半径 */
     public abstract double rcut();

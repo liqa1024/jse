@@ -31,7 +31,7 @@ import static jse.code.CS.RANDOM;
  * MACE: Higher Order Equivariant Message Passing Neural Networks for Fast and Accurate Force Fields </a>
  * @author liqa
  */
-@ApiStatus.Experimental
+@ApiStatus.Experimental @ApiStatus.Obsolete
 public class EquivariantSphericalChebyshev extends SphericalChebyshev {
     public final static int DEFAULT_LMAX = 4;
     

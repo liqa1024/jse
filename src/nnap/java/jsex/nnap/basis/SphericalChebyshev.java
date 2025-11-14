@@ -4,10 +4,12 @@ import jse.cache.VectorCache;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
+import jse.code.collection.NewCollections;
 import jse.math.IDataShell;
 import jse.math.MathEX;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
+import jse.parallel.ParforThreadPool;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -367,7 +369,7 @@ public class SphericalChebyshev extends WTypeBasis {
         return mLMAll + mSizeN*mLMAll + tPostSize + mSize;
     }
     
-    @Override public void initScale(List<DoubleList> aNlDxList, List<DoubleList> aNlDyList, List<DoubleList> aNlDzList, List<IntList> aNlTypeList) {
+    @Override public void initScale(List<DoubleList> aNlDxList, List<DoubleList> aNlDyList, List<DoubleList> aNlDzList, List<IntList> aNlTypeList, ParforThreadPool aPool) {
         mAnyScale[0] = true;
         // 先初始化径向函数的缩放
         for (int n = 0; n <= mNMax; ++n) {
@@ -375,21 +377,26 @@ public class SphericalChebyshev extends WTypeBasis {
             double tScale = MathEX.Adv.integral(0.0, 1.0, 1000, r -> Math.abs(MathEX.Func.chebyshev(fn, 1 - 2*r)));
             mRFuncScale.set(fn, 1.0/tScale);
         }
-        // 遍历统计系统 scale TODO: 理论上需要支持并行来达到合理性能
-        final Vector tScaleTot = VectorCache.getZeros(mSizeN*(mLMaxMax+1));
-        final Vector tScale = VectorCache.getVec(mSizeN*(mLMaxMax+1));
-        final DoubleList rForwardCache = new DoubleList(16);
+        // 遍历统计系统 scale
+        final int tThreadNum = aPool.threadNumber();
+        final List<Vector> tScaleTotPar = VectorCache.getZeros(mSizeN*(mLMaxMax+1), tThreadNum);
+        final List<Vector> tScalePar = VectorCache.getVec(mSizeN*(mLMaxMax+1), tThreadNum);
+        final List<DoubleList> rForwardCachePar = NewCollections.from(tThreadNum, i -> new DoubleList(16));
         final int tSize = aNlDxList.size();
-        for (int i = 0; i < tSize; ++i) {
-            calSystemScale(aNlDxList.get(i), aNlDyList.get(i), aNlDzList.get(i), aNlTypeList.get(i), tScale, rForwardCache);
+        aPool.parfor(tSize, (i, threadID) -> {
+            Vector tScaleTot = tScaleTotPar.get(threadID);
+            Vector tScale = tScalePar.get(threadID);
+            calSystemScale(aNlDxList.get(i), aNlDyList.get(i), aNlDzList.get(i), aNlTypeList.get(i), tScale, rForwardCachePar.get(threadID));
             tScale.abs2this();
             tScaleTot.plus2this(tScale);
-        }
+        });
+        Vector tScaleTot = tScaleTotPar.get(0);
+        for (int i = 1; i < tThreadNum; ++i) tScaleTot.plus2this(tScaleTotPar.get(i));
         tScaleTot.div2this(tSize);
         tScaleTot.operation().ldiv2this(1.0);
         mSystemScale.fill(tScaleTot);
-        VectorCache.returnVec(tScale);
-        VectorCache.returnVec(tScaleTot);
+        VectorCache.returnVec(tScalePar);
+        VectorCache.returnVec(tScaleTotPar);
     }
     void calSystemScale(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rSystemScale, DoubleList rForwardCache) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");

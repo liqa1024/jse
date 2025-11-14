@@ -5,6 +5,7 @@ import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.code.collection.NewCollections;
 import jse.math.vector.*;
+import jse.parallel.ParforThreadPool;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -150,9 +151,9 @@ public class MergedBasis extends Basis {
         return false;
     }
     
-    @Override public void initScale(List<DoubleList> aNlDxList, List<DoubleList> aNlDyList, List<DoubleList> aNlDzList, List<IntList> aNlTypeList) {
+    @Override public void initScale(List<DoubleList> aNlDxList, List<DoubleList> aNlDyList, List<DoubleList> aNlDzList, List<IntList> aNlTypeList, ParforThreadPool aPool) {
         for (MergeableBasis tMergedBasis : mMergedBasis) {
-            tMergedBasis.initScale(aNlDxList, aNlDyList, aNlDzList, aNlTypeList);
+            tMergedBasis.initScale(aNlDxList, aNlDyList, aNlDzList, aNlTypeList, aPool);
         }
     }
     
