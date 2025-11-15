@@ -43,7 +43,6 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     protected final static double DEFAULT_ENERGY_WEIGHT = 1.0;
     protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
     protected final static double DEFAULT_STRESS_WEIGHT = 1.0;
-    protected final static double DEFAULT_L2_LOSS_WEIGHT = 0.001;
     protected final static int DEFAULT_THREAD_NUMBER = 4;
     
     public final static ILossFunc LOSS_SQUARE = (pred, real) -> {
@@ -277,9 +276,17 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         mOptimizer.markLossFuncChanged();
         return this;
     }
-    protected double mL2LossWeight = DEFAULT_L2_LOSS_WEIGHT;
+    protected boolean mL2Loss = false;
+    protected double mL2LossWeight = 0.0;
     public Trainer setL2LossWeight(double aWeight) {
+        mL2Loss = true;
         mL2LossWeight = aWeight;
+        mOptimizer.markLossFuncChanged();
+        return this;
+    }
+    public Trainer setL2Loss(boolean aFlag) {
+        if (mL2Loss == aFlag) return this;
+        mL2Loss = aFlag;
         mOptimizer.markLossFuncChanged();
         return this;
     }
@@ -1600,7 +1607,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             rLoss.plus2this(rLossPar.get(ti));
         }
         // l2 loss here
-        if (!aTest) {
+        if (mL2Loss && !aTest) {
             int tShift = 0;
             for (int i = 0; i < mTypeNum; ++i) {
                 IVector tParas = mNNParas[i];
@@ -2162,7 +2169,9 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         double tLossS = tLossDetail.get(2);
         double tLossL2 = tLossDetail.get(3);
         VectorCache.returnVec(tLossDetail);
-        System.out.printf("Loss-L2: %.4g (%s)\n", tLossL2, IO.Text.percent(tLossL2/tLossTot));
+        if (mL2Loss) {
+            System.out.printf("Loss-L2: %.4g (%s)\n", tLossL2, IO.Text.percent(tLossL2/tLossTot));
+        }
         System.out.printf("Loss-E : %.4g (%s)\n", tLossE, IO.Text.percent(tLossE/tLossTot));
         if (mHasForce) {
             System.out.printf("Loss-F : %.4g (%s)\n", tLossF, IO.Text.percent(tLossF/tLossTot));
