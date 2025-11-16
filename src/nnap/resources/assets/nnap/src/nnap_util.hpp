@@ -60,14 +60,14 @@ static inline void fill(jdouble *rArray, jdouble aValue, jint aLen) noexcept {
     }
 }
 template <jint N>
-static inline void fill(jdouble *rArrayL, jdouble *rArrayR) noexcept {
+static inline void fill(jdouble *rArrayL, jdouble *aArrayR) noexcept {
     for (jint i = 0; i < N; ++i) {
-        rArrayL[i] = rArrayR[i];
+        rArrayL[i] = aArrayR[i];
     }
 }
-static inline void fill(jdouble *rArrayL, jdouble *rArrayR, jint aLen) noexcept {
+static inline void fill(jdouble *rArrayL, jdouble *aArrayR, jint aLen) noexcept {
     for (jint i = 0; i < aLen; ++i) {
-        rArrayL[i] = rArrayR[i];
+        rArrayL[i] = aArrayR[i];
     }
 }
 

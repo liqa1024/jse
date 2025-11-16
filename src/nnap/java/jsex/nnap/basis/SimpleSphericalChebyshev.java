@@ -295,7 +295,7 @@ public class SimpleSphericalChebyshev extends Basis {
             double rDot = aCnlm.subVec(tShift, tShift+tLen).operation().dot();
             rDot /= (double)tLen;
             if (!mSphScale[0]) rDot *= MathEX.PI*4; // compat
-            if (mPolyScale[0]) rDot *= MathEX.SQRT2_INV;
+            if (mPolyScale[0]) rDot = MathEX.Fast.tanh(rDot);
             rFp.set(l, rDot);
             tShift += tLen;
         }
@@ -314,7 +314,7 @@ public class SimpleSphericalChebyshev extends Basis {
         rFp3 += (3.0*WIGNER_222_022) * c20 * (c22*c22 + c2n2*c2n2);
         rFp3 += (3.0*SQRT2_INV*WIGNER_222_112) * c22 * (c21*c21 - c2n1*c2n1);
         rFp3 += (6.0*SQRT2_INV*WIGNER_222_112) * c21*c2n1*c2n2;
-        if (mPolyScale[0]) rFp3 *= SQRT15_INV;
+        if (mPolyScale[0]) rFp3 = MathEX.Fast.tanh(rFp3);
         rFp.set(0, rFp3);
         /// l1 = l2 = 1, l3 = 2
         double c10  = aCnlm.get((1+1)  );
@@ -326,7 +326,7 @@ public class SimpleSphericalChebyshev extends Basis {
         rFp3 -= (2.0*WIGNER_112_011) * c10 * (c11*c21 + c1n1*c2n1);
         rFp3 += (SQRT2_INV*WIGNER_112_112) * c22 * (c11*c11 - c1n1*c1n1);
         rFp3 += (2.0*SQRT2_INV*WIGNER_112_112) * c11*c1n1*c2n2;
-        if (mPolyScale[0]) rFp3 *= SQRT15_INV;
+        if (mPolyScale[0]) rFp3 = MathEX.Fast.tanh(rFp3);
         rFp.set(1, rFp3);
         if (mL3Max == 2) return;
         /// l1 = 2, l2 = l3 = 3
@@ -352,7 +352,7 @@ public class SimpleSphericalChebyshev extends Basis {
         rFp3 -= (2.0*SQRT2_INV*WIGNER_233_123) * c2n1 * (c32*c3n3 - c3n2*c33);
         rFp3 -= (2.0*SQRT2_INV*WIGNER_233_213) * c22 * (c31*c33 + c3n1*c3n3);
         rFp3 -= (2.0*SQRT2_INV*WIGNER_233_213) * c2n2 * (c31*c3n3 - c3n1*c33);
-        if (mPolyScale[0]) rFp3 *= SQRT15_INV;
+        if (mPolyScale[0]) rFp3 = MathEX.Fast.tanh(rFp3);
         rFp.set(2, rFp3);
         /// l1 = 1, l2 = 2, l3 = 3
         rFp3 = 0.0;
@@ -367,7 +367,7 @@ public class SimpleSphericalChebyshev extends Basis {
         rFp3 += (SQRT2_INV*WIGNER_123_121) * c1n1 * (c2n2*c31 - c22*c3n1);
         rFp3 -= (SQRT2_INV*WIGNER_123_123) * c11 * (c22*c33 + c2n2*c3n3);
         rFp3 -= (SQRT2_INV*WIGNER_123_123) * c1n1 * (c22*c3n3 - c2n2*c33);
-        if (mPolyScale[0]) rFp3 *= SQRT15_INV;
+        if (mPolyScale[0]) rFp3 = MathEX.Fast.tanh(rFp3);
         rFp.set(3, rFp3);
         if (mL3Max == 3) return;
         /// l1 = l2 = l3 = 4
@@ -394,7 +394,7 @@ public class SimpleSphericalChebyshev extends Basis {
         rFp3 -= (6.0*SQRT2_INV*WIGNER_444_123) * c4n1 * (c42*c4n3 - c4n2*c43);
         rFp3 += (6.0*SQRT2_INV*WIGNER_444_134) * c41 * (c43*c44 + c4n3*c4n4);
         rFp3 += (6.0*SQRT2_INV*WIGNER_444_134) * c4n1 * (c43*c4n4 - c4n3*c44);
-        if (mPolyScale[0]) rFp3 *= SQRT15_INV;
+        if (mPolyScale[0]) rFp3 = MathEX.Fast.tanh(rFp3);
         rFp.set(4, rFp3);
         /// l1 = l2 = 2, l3 = 4
         rFp3 = 0.0;
@@ -411,7 +411,7 @@ public class SimpleSphericalChebyshev extends Basis {
         rFp3 += (2.0*SQRT2_INV*WIGNER_224_121) * c2n1 * (c2n2*c41 - c22*c4n1);
         rFp3 -= (2.0*SQRT2_INV*WIGNER_224_123) * c21 * (c22*c43 + c2n2*c4n3);
         rFp3 -= (2.0*SQRT2_INV*WIGNER_224_123) * c2n1 * (c22*c4n3 - c2n2*c43);
-        if (mPolyScale[0]) rFp3 *= SQRT15_INV;
+        if (mPolyScale[0]) rFp3 = MathEX.Fast.tanh(rFp3);
         rFp.set(5, rFp3);
         /// l1 = l2 = 3, l3 = 4
         rFp3 = 0.0;
@@ -436,7 +436,7 @@ public class SimpleSphericalChebyshev extends Basis {
         rFp3 -= (2.0*SQRT2_INV*WIGNER_334_231) * c3n2 * (c3n3*c41 - c33*c4n1);
         rFp3 += (2.0*SQRT2_INV*WIGNER_334_134) * c31 * (c33*c44 + c3n3*c4n4);
         rFp3 += (2.0*SQRT2_INV*WIGNER_334_134) * c3n1 * (c33*c4n4 - c3n3*c44);
-        if (mPolyScale[0]) rFp3 *= SQRT15_INV;
+        if (mPolyScale[0]) rFp3 = MathEX.Fast.tanh(rFp3);
         rFp.set(6, rFp3);
         /// l1 = 2, l2 = l3 = 4
         rFp3 = 0.0;
@@ -459,7 +459,7 @@ public class SimpleSphericalChebyshev extends Basis {
         rFp3 -= (2.0*SQRT2_INV*WIGNER_244_213) * c2n2 * (c41*c4n3 - c4n1*c43);
         rFp3 += (2.0*SQRT2_INV*WIGNER_244_134) * c21 * (c43*c44 + c4n3*c4n4);
         rFp3 += (2.0*SQRT2_INV*WIGNER_244_134) * c2n1 * (c43*c4n4 - c4n3*c44);
-        if (mPolyScale[0]) rFp3 *= SQRT15_INV;
+        if (mPolyScale[0]) rFp3 = MathEX.Fast.tanh(rFp3);
         rFp.set(7, rFp3);
         /// l1 = 1, l2 = 3, l3 = 4
         rFp3 = 0.0;
@@ -479,12 +479,11 @@ public class SimpleSphericalChebyshev extends Basis {
         rFp3 -= (SQRT2_INV*WIGNER_134_132) * c1n1 * (c3n3*c42 - c33*c4n2);
         rFp3 += (SQRT2_INV*WIGNER_134_134) * c11 * (c33*c44 + c3n3*c4n4);
         rFp3 += (SQRT2_INV*WIGNER_134_134) * c1n1 * (c33*c4n4 - c3n3*c44);
-        if (mPolyScale[0]) rFp3 *= SQRT15_INV;
+        if (mPolyScale[0]) rFp3 = MathEX.Fast.tanh(rFp3);
         rFp.set(8, rFp3);
     }
     
     public static final double SQRT_PI4 = MathEX.Fast.sqrt(MathEX.PI*4);
-    public static final double SQRT15_INV = 1.0/MathEX.Fast.sqrt(15);
     public static final double WIGNER_222_000, WIGNER_222_011, WIGNER_222_022, WIGNER_222_112;
     public static final double WIGNER_112_000, WIGNER_112_011, WIGNER_112_110, WIGNER_112_112;
     public static final double WIGNER_233_000, WIGNER_233_011, WIGNER_233_022, WIGNER_233_033, WIGNER_233_110, WIGNER_233_220, WIGNER_233_112, WIGNER_233_211, WIGNER_233_123, WIGNER_233_213;

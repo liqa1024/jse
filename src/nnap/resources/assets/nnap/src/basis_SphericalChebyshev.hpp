@@ -206,10 +206,12 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
     const jint tSizeL = (aNoRadial?aLMax:(aLMax+1)) + L3NCOLS[aL3Max] + L4NCOLS[aL4Max];
     const jint tLMaxMax = aLMax>aL3Max ? (aLMax>aL4Max?aLMax:aL4Max) : (aL3Max>aL4Max?aL3Max:aL4Max);
     const jint tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
+    const jint tSizeFp = aPostFuseWeight==NULL ? (tSizeN*tSizeL) : (aPostFuseSize*tSizeL);
     const jint tSizeCnlm = tSizeN*tLMAll;
     const jint tSizeAnlm = aPostFuseWeight==NULL ? 0 : (aPostFuseSize*tLMAll);
     // init cache
-    jdouble *rCnlm = rForwardCache;
+    jdouble *rFp_ = rForwardCache;
+    jdouble *rCnlm = rFp_ + tSizeFp;
     jdouble *rAnlm = rCnlm + tSizeCnlm;
     jdouble *rForwardCacheElse = rAnlm + tSizeAnlm;
     // clear cnlm first
@@ -232,18 +234,18 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
     }
     const jint tSizeL2 = aNoRadial?aLMax:(aLMax+1);
     const jint tSizeL3 = L3NCOLS[aL3Max];
-    const jint tSizeL4 = L4NCOLS[aL4Max];
     const jint tSizeNp = aPostFuseWeight==NULL ? tSizeN : aPostFuseSize;
     for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        calL2_(rAnlm+tShift, rFp+tShiftFp, aLMax, aNoRadial, aSphScale);
-        calL3_(rAnlm+tShift, rFp+tShiftFp+tSizeL2, aL3Max);
-        calL4_(rAnlm+tShift, rFp+tShiftFp+tSizeL2+tSizeL3, aL4Max);
-        if (aPolyScale) {
-            multiply(rFp+tShiftFp, SQRT2_INV, tSizeL2);
-            multiply(rFp+tShiftFp+tSizeL2, SQRT15_INV, tSizeL3);
-            multiply(rFp+tShiftFp+tSizeL2+tSizeL3, SQRT96_INV, tSizeL4);
+        calL2_(rAnlm+tShift, rFp_+tShiftFp, aLMax, aNoRadial, aSphScale);
+        calL3_(rAnlm+tShift, rFp_+tShiftFp+tSizeL2, aL3Max);
+        calL4_(rAnlm+tShift, rFp_+tShiftFp+tSizeL2+tSizeL3, aL4Max);
+    }
+    if (aPolyScale) {
+        for (jint i = 0; i < tSizeFp; ++i) {
+            rFp_[i] = tanh((double)rFp_[i]*0.5)*2.0;
         }
     }
+    fill(rFp, rFp_, tSizeFp);
 }
 
 template <jint WTYPE, jint FSTYLE>
@@ -302,7 +304,8 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
     const jint tSizeCnlm = tSizeN*tLMAll;
     const jint tSizeAnlm = aPostFuseWeight==NULL ? 0 : (aPostFuseSize*tLMAll);
     // init cache
-    jdouble *tCnlm = aForwardCache;
+    jdouble *tFp = aForwardCache;
+    jdouble *tCnlm = tFp + tSizeFp;
     jdouble *tAnlm = tCnlm + tSizeCnlm;
     jdouble *tForwardCacheElse = tAnlm + tSizeAnlm;
     jdouble *rGradFp = rBackwardCache;
@@ -319,18 +322,21 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
         tAnlm = tCnlm;
         rGradAnlm = rGradCnlm;
     }
-    fill(rGradFp, aGradFp, tSizeFp);
+    if (aPolyScale) {
+        for (jint i = 0; i < tSizeFp; ++i) {
+            const jdouble tSubFp = tFp[i];
+            rGradFp[i] += (1.0 - 0.25*tSubFp*tSubFp) * aGradFp[i];
+        }
+    } else {
+        for (jint i = 0; i < tSizeFp; ++i) {
+            rGradFp[i] += aGradFp[i];
+        }
+    }
     // cal grad cnlm
     const jint tSizeL2 = aNoRadial?aLMax:(aLMax+1);
     const jint tSizeL3 = L3NCOLS[aL3Max];
-    const jint tSizeL4 = L4NCOLS[aL4Max];
     const jint tSizeNp = aPostFuseWeight==NULL ? tSizeN : aPostFuseSize;
     for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        if (aPolyScale) {
-            multiply(rGradFp+tShiftFp, SQRT2_INV, tSizeL2);
-            multiply(rGradFp+tShiftFp+tSizeL2, SQRT15_INV, tSizeL3);
-            multiply(rGradFp+tShiftFp+tSizeL2+tSizeL3, SQRT96_INV, tSizeL4);
-        }
         calGradL2_(tAnlm+tShift, rGradAnlm+tShift, rGradFp+tShiftFp, aLMax, aNoRadial, aSphScale);
         calGradL3_(tAnlm+tShift, rGradAnlm+tShift, rGradFp+tShiftFp+tSizeL2, aL3Max);
         calGradL4_(tAnlm+tShift, rGradAnlm+tShift, rGradFp+tShiftFp+tSizeL2+tSizeL3, aL4Max);
@@ -517,7 +523,8 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
     const jint tSizeCnlm = tSizeN*tLMAll;
     const jint tSizeAnlm = aPostFuseWeight==NULL ? 0 : (aPostFuseSize*tLMAll);
     // init cache
-    jdouble *tCnlm = aForwardCache;
+    jdouble *tFp = aForwardCache;
+    jdouble *tCnlm = tFp + tSizeFp;
     jdouble *tAnlm = tCnlm + tSizeCnlm;
     jdouble *tForwardCacheElse = tAnlm + tSizeAnlm;
     jdouble *rNNGrad = rForwardForceCache;
@@ -531,17 +538,20 @@ static void calForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTy
         tAnlm = tCnlm;
         rGradAnlm = rGradCnlm;
     }
-    fill(rNNGrad, aNNGrad, tSizeFp);
+    if (aPolyScale) {
+        for (jint i = 0; i < tSizeFp; ++i) {
+            const jdouble tSubFp = tFp[i];
+            rNNGrad[i] = (1.0 - 0.25*tSubFp*tSubFp) * aNNGrad[i];
+        }
+    } else {
+        for (jint i = 0; i < tSizeFp; ++i) {
+            rNNGrad[i] = aNNGrad[i];
+        }
+    }
     const jint tSizeL2 = aNoRadial?aLMax:(aLMax+1);
     const jint tSizeL3 = L3NCOLS[aL3Max];
-    const jint tSizeL4 = L4NCOLS[aL4Max];
     const jint tSizeNp = aPostFuseWeight==NULL ? tSizeN : aPostFuseSize;
     for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        if (aPolyScale) {
-            multiply(rNNGrad+tShiftFp, SQRT2_INV, tSizeL2);
-            multiply(rNNGrad+tShiftFp+tSizeL2, SQRT15_INV, tSizeL3);
-            multiply(rNNGrad+tShiftFp+tSizeL2+tSizeL3, SQRT96_INV, tSizeL4);
-        }
         calGradL2_(tAnlm+tShift, rGradAnlm+tShift, rNNGrad+tShiftFp, aLMax, aNoRadial, aSphScale);
         calGradL3_(tAnlm+tShift, rGradAnlm+tShift, rNNGrad+tShiftFp+tSizeL2, aL3Max);
         calGradL4_(tAnlm+tShift, rGradAnlm+tShift, rNNGrad+tShiftFp+tSizeL2+tSizeL3, aL4Max);
@@ -636,6 +646,18 @@ static void calBackwardForceMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aN
         }
     }
 }
+template <jboolean PASS_BASIS>
+static void polyScaleGradGrad_(jdouble *aFp, jdouble *rGradFp, jdouble *aNNGrad, jdouble *aGradNNGrad0, jdouble *rGradNNGrad, jint aSizeFp) {
+    for (jint i = 0; i < aSizeFp; ++i) {
+        const jdouble tSubFp = aFp[i];
+        const jdouble tanhGradFp = 1.0 - 0.25*tSubFp*tSubFp;
+        const jdouble tSubGradNNGrad = aGradNNGrad0[i];
+        rGradNNGrad[i] += tSubGradNNGrad * tanhGradFp;
+        if (PASS_BASIS) {
+            rGradFp[i] += -0.5 * tSubFp * tanhGradFp * tSubGradNNGrad * aNNGrad[i];
+        }
+    }
+}
 template <jint WTYPE, jint FSTYLE>
 static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                              jdouble *aNNGrad, jdouble *aGradFx, jdouble *aGradFy, jdouble *aGradFz,
@@ -663,28 +685,28 @@ static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
     const jint tSizeCnlm = tSizeN*tLMAll;
     const jint tSizeAnlm = aPostFuseWeight==NULL ? 0 : (aPostFuseSize*tLMAll);
     // init cache
-    jdouble *tCnlm = aForwardCache;
+    jdouble *tFp = aForwardCache;
+    jdouble *tCnlm = tFp + tSizeFp;
     jdouble *tAnlm = tCnlm + tSizeCnlm;
     jdouble *tForwardCacheElse = tAnlm + tSizeAnlm;
     jdouble *tNNGrad = aForwardForceCache;
     jdouble *tNNGradCnlm = tNNGrad + tSizeFp;
     jdouble *tNNGradAnlm = tNNGradCnlm + tSizeCnlm;
     jdouble *tForwardForceCacheElse = tNNGradAnlm + tSizeAnlm;
+    jdouble *rGradFp = rBackwardCache;
     jdouble *rGradCnlm = NULL;
     jdouble *rGradAnlm = NULL;
     if (WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
-        rGradCnlm = rBackwardCache + tSizeFp;
+        rGradCnlm = rGradFp + tSizeFp;
         rGradAnlm = rGradCnlm + tSizeCnlm;
     } else {
-        rGradAnlm = rBackwardCache + tSizeFp;
+        rGradAnlm = rGradFp + tSizeFp;
     }
     jdouble *rBackwardCacheElse = rGradAnlm + tSizeAnlm;
-    jdouble *rSubGradNNGrad = rBackwardForceCache;
-    jdouble *rGradNNGradCnlm = rSubGradNNGrad + tSizeFp;
+    jdouble *rGradNNGrad_ = rBackwardForceCache;
+    jdouble *rGradNNGradCnlm = rGradNNGrad_ + tSizeFp;
     jdouble *rGradNNGradAnlm = rGradNNGradCnlm + tSizeCnlm;
     jdouble *rBackwardForceCacheElse = rGradNNGradAnlm + tSizeAnlm;
-    // cache only, so always clear
-    fill(rSubGradNNGrad, 0.0, tSizeFp);
     
     // cal rGradNNGradCnlm
     calBackwardForceMainLoop<WTYPE, FSTYLE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rGradNNGradCnlm, aGradFx, aGradFy, aGradFz, tNNGradCnlm, rGradPara, tForwardCacheElse, tForwardForceCacheElse, rBackwardCacheElse, rBackwardForceCacheElse, aFixBasis, aRCut, aNMax, tLMaxMax, aFuseWeight, aFuseSize);
@@ -718,19 +740,23 @@ static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
     // grad grad anlm to grad grad fp
     const jint tSizeL2 = aNoRadial?aLMax:(aLMax+1);
     const jint tSizeL3 = L3NCOLS[aL3Max];
-    const jint tSizeL4 = L4NCOLS[aL4Max];
     const jint tSizeNp = aPostFuseWeight==NULL ? tSizeN : aPostFuseSize;
     for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        calGradNNGradL2_(tAnlm+tShift, rGradNNGradAnlm+tShift, rSubGradNNGrad+tShiftFp, aLMax, aNoRadial, aSphScale);
-        calGradNNGradL3_(tAnlm+tShift, rGradNNGradAnlm+tShift, rSubGradNNGrad+tShiftFp+tSizeL2, aL3Max);
-        calGradNNGradL4_(tAnlm+tShift, rGradNNGradAnlm+tShift, rSubGradNNGrad+tShiftFp+tSizeL2+tSizeL3, aL4Max);
-        if (aPolyScale) {
-            multiply(rSubGradNNGrad+tShiftFp, SQRT2_INV, tSizeL2);
-            multiply(rSubGradNNGrad+tShiftFp+tSizeL2, SQRT15_INV, tSizeL3);
-            multiply(rSubGradNNGrad+tShiftFp+tSizeL2+tSizeL3, SQRT96_INV, tSizeL4);
+        calGradNNGradL2_(tAnlm+tShift, rGradNNGradAnlm+tShift, rGradNNGrad_+tShiftFp, aLMax, aNoRadial, aSphScale);
+        calGradNNGradL3_(tAnlm+tShift, rGradNNGradAnlm+tShift, rGradNNGrad_+tShiftFp+tSizeL2, aL3Max);
+        calGradNNGradL4_(tAnlm+tShift, rGradNNGradAnlm+tShift, rGradNNGrad_+tShiftFp+tSizeL2+tSizeL3, aL4Max);
+    }
+    if (aPolyScale) {
+        if (aFixBasis || (WTYPE!=WTYPE_FUSE && WTYPE!=WTYPE_EXFUSE && aPostFuseWeight==NULL)) {
+            polyScaleGradGrad_<JNI_FALSE>(tFp, rGradFp, aNNGrad, rGradNNGrad_, rGradNNGrad, tSizeFp);
+        } else {
+            polyScaleGradGrad_<JNI_TRUE>(tFp, rGradFp, aNNGrad, rGradNNGrad_, rGradNNGrad, tSizeFp);
+        }
+    } else {
+        for (jint i = 0; i < tSizeFp; ++i) {
+            rGradNNGrad[i] += rGradNNGrad_[i];
         }
     }
-    mplus(rGradNNGrad, 1.0, rSubGradNNGrad, tSizeFp);
     if (WTYPE!=WTYPE_FUSE && WTYPE!=WTYPE_EXFUSE && aPostFuseWeight==NULL) return;
     if (!aFixBasis) for (jint np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
         calGradCnlmL2_(rGradAnlm+tShift, rGradNNGradAnlm+tShift, tNNGrad+tShiftFp, aLMax, aNoRadial, aSphScale);
