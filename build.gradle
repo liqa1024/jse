@@ -137,8 +137,13 @@ shadowJar {
     archiveBaseName = 'jse'
     archiveClassifier = 'all'
     
-    // 指定主要运行类
-    manifest {attributes 'Main-Class': 'jse.Main'}
+    // 指定主要运行类，添加 jni 支持
+    manifest {
+        attributes(
+            'Main-Class': 'jse.Main',
+            'Enable-Native-Access': 'ALL-UNNAMED'
+        )
+    }
     
     // 现在只重命名实际遇到冲突的第三方库，避免意外的问题（主要是 matlab 自带的 jsch）
     relocate('com.jcraft.jsch', 'shade.com.jcraft.jsch')

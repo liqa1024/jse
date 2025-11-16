@@ -1,4 +1,4 @@
 moduleName=jse-all
-moduleVersion=2.7.4
+moduleVersion=3.13.0
 extensionClasses=jse.math.MathExtensions,jse.atom.XYZExtensions,jsex.voronoi.VoronoiExtensions,jsex.nnap.NNAPExtensions,org.apache.groovy.xml.extensions.XmlExtensions,org.apache.groovy.swing.extensions.SwingExtensions
 staticExtensionClasses=jsex.voronoi.VoronoiStaticExtensions
