@@ -12,7 +12,6 @@ endif()
 set(SOURCE_FILES
     jsex_nnap_nn_FeedForward.cpp
     jsex_nnap_nn_SharedFeedForward.cpp
-    jsex_nnap_basis_EquivariantSphericalChebyshev.cpp
     jsex_nnap_basis_SphericalChebyshev.cpp
     jsex_nnap_basis_Chebyshev.cpp)
 add_library(nnap SHARED ${SOURCE_FILES})
