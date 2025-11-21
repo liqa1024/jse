@@ -44,6 +44,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
     protected final static double DEFAULT_STRESS_WEIGHT = 1.0;
     protected final static int DEFAULT_THREAD_NUMBER = 4;
+    protected final static double DEFAULT_BASIS_MAX = 5.0;
     
     public final static ILossFunc LOSS_SQUARE = (pred, real) -> {
         double tErr = pred - real;
@@ -225,6 +226,16 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         return this;
     }
     protected boolean mBasisScale = false;
+    /**
+     * 设置基组最大值限制，现在会根据此值在基组归一化时进行缩放限制，提高描述能力
+     * @param aValue 设置值
+     * @return 自身方便链式调用
+     */
+    public Trainer setBasisMax(double aValue) {
+        mBasisMax = aValue;
+        return this;
+    }
+    protected double mBasisMax = DEFAULT_BASIS_MAX;
     /**
      * 设置是否对基组进行归一化，在一些不要求收敛速度的情况下，可以不进行归一化而只采用基组内部归一化的技术
      * @param aFlag 设置值
@@ -1878,6 +1889,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         final int tThreadNum = threadNumber();
         Vector[][] tMuPar = new Vector[tThreadNum][mTypeNum];
         Vector[][] tSigmaPar = new Vector[tThreadNum][mTypeNum];
+        Vector[][] tMaxPar = new Vector[tThreadNum][mTypeNum];
+        Vector[][] tMinPar = new Vector[tThreadNum][mTypeNum];
         IntVector[] tDivPar = new IntVector[tThreadNum];
         tMuPar[0] = mNormMu;
         tSigmaPar[0] = mNormSigma;
@@ -1888,6 +1901,12 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 tSigmaPar[ti][i] = VectorCache.getZeros(mBasisSizes[i]);
             }
             tDivPar[ti] = IntVectorCache.getZeros(mTypeNum);
+        }
+        for (int ti = 0; ti < tThreadNum; ++ti) {
+            for (int i = 0; i < mTypeNum; ++i) {
+                tMaxPar[ti][i] = VectorCache.getVec(mBasisSizes[i]); tMaxPar[ti][i].fill(Double.NEGATIVE_INFINITY);
+                tMinPar[ti][i] = VectorCache.getVec(mBasisSizes[i]); tMinPar[ti][i].fill(Double.POSITIVE_INFINITY);
+            }
         }
         pool().parfor(mTrainData.mSize, (i, threadID) -> {
             Basis[] tBasis = mBasis[threadID];
@@ -1900,6 +1919,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             Vector[] tFp = mFpBuf[threadID];
             Vector[] tNormMu = tMuPar[threadID];
             Vector[] tNormSigma = tSigmaPar[threadID];
+            Vector[] tMax = tMaxPar[threadID];
+            Vector[] tMin = tMinPar[threadID];
             IntVector tDiv = tDivPar[threadID];
             
             for (int k = 0; k < tAtomNum; ++k) {
@@ -1915,6 +1936,8 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 // 统计归一化系数
                 tNormMu[mShareNorm?0:(tType-1)].plus2this(tSubFp);
                 tNormSigma[mShareNorm?0:(tType-1)].operation().operate2this(tSubFp, (lhs, rhs) -> lhs + rhs * rhs);
+                tMax[mShareNorm?0:(tType-1)].operation().operate2this(tSubFp, Math::max);
+                tMin[mShareNorm?0:(tType-1)].operation().operate2this(tSubFp, Math::min);
                 tDiv.increment(mShareNorm?0:(tType-1));
             }
         });
@@ -1922,6 +1945,10 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             for (int i = 0; i < mTypeNum; ++i) {
                 mNormMu[i].plus2this(tMuPar[ti][i]);
                 mNormSigma[i].plus2this(tSigmaPar[ti][i]);
+                tMaxPar[0][i].operation().operate2this(tMaxPar[ti][i], Math::max);
+                tMinPar[0][i].operation().operate2this(tMinPar[ti][i], Math::min);
+                VectorCache.returnVec(tMaxPar[ti][i]);
+                VectorCache.returnVec(tMinPar[ti][i]);
                 VectorCache.returnVec(tMuPar[ti][i]);
                 VectorCache.returnVec(tSigmaPar[ti][i]);
             }
@@ -1937,8 +1964,15 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             } else {
                 mNormMu[i].div2this(tDivI);
                 mNormSigma[i].div2this(tDivI);
+                tMaxPar[0][i].minus2this(mNormMu[i]);
+                tMinPar[0][i].minus2this(mNormMu[i]);
+                tMinPar[0][i].abs2this();
+                tMaxPar[0][i].operation().operate2this(tMinPar[0][i], Math::max);
                 mNormSigma[i].operation().operate2this(mNormMu[i], (lhs, rhs) -> lhs - rhs*rhs);
-                mNormSigma[i].operation().map2this(v -> MathEX.Code.numericEqual(v, 0.0) ? 1.0 : MathEX.Fast.sqrt(v));
+                mNormSigma[i].operation().operate2this(tMaxPar[0][i], (v, max) -> {
+                    v = MathEX.Code.numericEqual(v, 0.0) ? 1.0 : MathEX.Fast.sqrt(v);
+                    return Math.max(v, max/mBasisMax);
+                });
             }
         }
         for (int i = 0; i < mTypeNum; ++i) if ((mShareNorm && i!=0) || (!mShareNorm && (mBasis[0][i] instanceof MirrorBasis))) {
