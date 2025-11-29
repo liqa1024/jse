@@ -10,7 +10,7 @@ template <jboolean FULL_CACHE>
 static void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                     jdouble *rCnlm, jdouble *rForwardCache,
                     jdouble aRCut, jint aNMax, jint aLMax,
-                    jdouble *aRFuseWeight, jint aRFuseSize, jdouble aRFuseScale,
+                    jdouble *aRFuseWeight, jint aRFuseSize,
                     jdouble *aRFuncScale) noexcept {
     const jint tLMAll = (aLMax+1)*(aLMax+1);
     // init cache
@@ -47,7 +47,6 @@ static void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTyp
         multiply(rY, SQRT_PI4, tLMAll);
         // cal rfuse
         calRFuse(rRFn, rRn, aRFuseWeight, aRFuseSize, aNMax);
-        multiply(rRFn, aRFuseScale, aRFuseSize);
         // mplus2cnlm
         mplusCnlmRFuse(rCnlm, rY, fc, rRFn, aRFuseSize, aLMax);
     }
@@ -55,20 +54,19 @@ static void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTyp
 static void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                     jdouble *rCnlm, jdouble *rForwardCache, jboolean aFullCache,
                     jdouble aRCut, jint aNMax, jint aLMax,
-                    jdouble *aRFuseWeight, jint aRFuseSize, jdouble aRFuseScale,
+                    jdouble *aRFuseWeight, jint aRFuseSize,
                     jdouble *aRFuncScale) noexcept {
     if (aFullCache) {
-        calCnlm<JNI_TRUE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rCnlm, rForwardCache, aRCut, aNMax, aLMax, aRFuseWeight, aRFuseSize, aRFuseScale, aRFuncScale);
+        calCnlm<JNI_TRUE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rCnlm, rForwardCache, aRCut, aNMax, aLMax, aRFuseWeight, aRFuseSize, aRFuncScale);
     } else {
-        calCnlm<JNI_FALSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rCnlm, rForwardCache, aRCut, aNMax, aLMax, aRFuseWeight, aRFuseSize, aRFuseScale, aRFuncScale);
+        calCnlm<JNI_FALSE>(aNlDx, aNlDy, aNlDz, aNlType, aNN, rCnlm, rForwardCache, aRCut, aNMax, aLMax, aRFuseWeight, aRFuseSize, aRFuncScale);
     }
 }
 static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                   jdouble *rFp, jdouble *rForwardCache, jboolean aFullCache,
                   jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
-                  jdouble *aRFuseWeight, jint aRFuseSize, jdouble aRFuseScale,
-                  jdouble *aEquFuseWeight, jint aEquFuseSize, jdouble aEquFuseScale,
-                  jdouble *aRFuncScale, jdouble *aSystemScale) noexcept {
+                  jdouble *aRFuseWeight, jint aRFuseSize, jdouble *aEquFuseWeight, jint aEquFuseSize,
+                  jdouble aEquFuseScale, jdouble *aRFuncScale, jdouble *aSystemScale) noexcept {
     // const init
     const jint tSizeL = aLMax+1+ L3NCOLS[aL3Max] + L4NCOLS[aL4Max];
     const jint tLMAll = (aLMax+1)*(aLMax+1);
@@ -82,7 +80,7 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
     fill(rCnlm, 0.0, tSizeCnlm);
     fill(rAnlm, 0.0, tSizeAnlm);
     // do cal
-    calCnlm(aNlDx, aNlDy, aNlDz, aNlType, aNN, rCnlm, rForwardCacheElse, aFullCache, aRCut, aNMax, aLMax, aRFuseWeight, aRFuseSize, aRFuseScale, aRFuncScale);
+    calCnlm(aNlDx, aNlDy, aNlDz, aNlType, aNN, rCnlm, rForwardCacheElse, aFullCache, aRCut, aNMax, aLMax, aRFuseWeight, aRFuseSize, aRFuncScale);
     // system scale here
     for (jint n=0, tShift=0, tShiftS=0; n<aRFuseSize; ++n, tShift+=tLMAll, tShiftS+=aLMax+1) {
         multiplyLM(rCnlm+tShift, aSystemScale+tShiftS, aLMax);
@@ -103,7 +101,7 @@ static void calFp(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType,
 
 static void calBackwardMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                                 jdouble *rGradPara, jdouble *aGradCnlm, jdouble *aForwardCache, jdouble *rBackwardCache,
-                                jdouble aRCut, jint aNMax, jint aLMax, jint aRFuseSize, jdouble aRFuseScale) {
+                                jdouble aRCut, jint aNMax, jint aLMax, jint aRFuseSize) {
     const jint tLMAll = (aLMax+1)*(aLMax+1);
     jdouble *tNlRn = aForwardCache;
     jdouble *tNlFc = tNlRn + aNN*(aNMax+1);
@@ -126,16 +124,14 @@ static void calBackwardMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, 
         // cnlm -> rfuse
         mplusGradCnlmRFuse(aGradCnlm, tY, fc, rGradRFn, aRFuseSize, aLMax);
         // mplus to gradPara
-        multiply(rGradRFn, aRFuseScale, aRFuseSize);
         mplusGradParaRFuse(rGradRFn, tRn, rGradPara, aRFuseSize, aNMax);
     }
 }
 static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
                         jdouble *aGradFp, jdouble *rGradPara, jdouble *aForwardCache, jdouble *rBackwardCache,
                         jint aTypeNum, jdouble aRCut, jint aNMax, jint aLMax, jint aL3Max, jint aL4Max,
-                        jint aRFuseSize, jdouble aRFuseScale,
-                        jdouble *aEquFuseWeight, jint aEquFuseSize, jdouble aEquFuseScale,
-                        jdouble *aSystemScale) noexcept {
+                        jint aRFuseSize, jdouble *aEquFuseWeight, jint aEquFuseSize,
+                        jdouble aEquFuseScale, jdouble *aSystemScale) noexcept {
     // const init
     const jint tSizeL = aLMax+1 + L3NCOLS[aL3Max] + L4NCOLS[aL4Max];
     const jint tLMAll = (aLMax+1)*(aLMax+1);
@@ -168,7 +164,7 @@ static void calBackward(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aN
         multiplyLM(rGradCnlm+tShift, aSystemScale+tShiftS, aLMax);
     }
     // plus to para
-    calBackwardMainLoop(aNlDx, aNlDy, aNlDz, aNlType, aNN, rGradPara, rGradCnlm, tForwardCacheElse, rBackwardCacheElse, aRCut, aNMax, aLMax, aRFuseSize, aRFuseScale);
+    calBackwardMainLoop(aNlDx, aNlDy, aNlDz, aNlType, aNN, rGradPara, rGradCnlm, tForwardCacheElse, rBackwardCacheElse, aRCut, aNMax, aLMax, aRFuseSize);
 }
 
 }

@@ -10,34 +10,34 @@ extern "C" {
 /*
  * Class:     jsex_nnap_basis_MultiLayerSphericalChebyshev
  * Method:    forward1
- * Signature: ([D[D[D[II[DI[DIZIDIIII[DID[DID[D[D)V
+ * Signature: ([D[D[D[II[DI[DIZIDIIII[DI[DID[D[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_MultiLayerSphericalChebyshev_forward1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jint, jint, jdoubleArray, jint, jdouble, jdoubleArray, jint, jdouble, jdoubleArray, jdoubleArray);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jint, jint, jdoubleArray, jint, jdoubleArray, jint, jdouble, jdoubleArray, jdoubleArray);
 
 /*
  * Class:     jsex_nnap_basis_MultiLayerSphericalChebyshev
  * Method:    backward1
- * Signature: ([D[D[D[II[DI[DI[DI[DIIDIIIIID[DID[D)V
+ * Signature: ([D[D[D[II[DI[DI[DI[DIIDIIIII[DID[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_MultiLayerSphericalChebyshev_backward1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jdouble, jint, jint, jint, jint, jint, jdouble, jdoubleArray, jint, jdouble, jdoubleArray);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jdouble, jint, jint, jint, jint, jint, jdoubleArray, jint, jdouble, jdoubleArray);
 
 /*
  * Class:     jsex_nnap_basis_MultiLayerSphericalChebyshev
  * Method:    forwardForce1
- * Signature: ([D[D[D[II[DI[D[D[D[DI[DIZIDIIII[DID[DID[D[D)V
+ * Signature: ([D[D[D[II[DI[D[D[D[DI[DIZIDIIII[DI[DID[D[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_MultiLayerSphericalChebyshev_forwardForce1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jint, jint, jdoubleArray, jint, jdouble, jdoubleArray, jint, jdouble, jdoubleArray, jdoubleArray);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jint, jint, jdoubleArray, jint, jdoubleArray, jint, jdouble, jdoubleArray, jdoubleArray);
 
 /*
  * Class:     jsex_nnap_basis_MultiLayerSphericalChebyshev
  * Method:    backwardForce1
- * Signature: ([D[D[D[II[DI[D[D[D[DI[DI[DI[DI[DI[DIZIDIIII[DID[DID[D)V
+ * Signature: ([D[D[D[II[DI[D[D[D[DI[DI[DI[DI[DI[DIZIDIIII[DI[DID[D)V
  */
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_MultiLayerSphericalChebyshev_backwardForce1
-  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jint, jint, jdoubleArray, jint, jdouble, jdoubleArray, jint, jdouble, jdoubleArray);
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jdoubleArray, jintArray, jint, jdoubleArray, jint, jdoubleArray, jdoubleArray, jdoubleArray, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jboolean, jint, jdouble, jint, jint, jint, jint, jdoubleArray, jint, jdoubleArray, jint, jdouble, jdoubleArray);
 
 #ifdef __cplusplus
 }
