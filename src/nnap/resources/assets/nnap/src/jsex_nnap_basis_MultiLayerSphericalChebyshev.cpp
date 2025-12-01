@@ -3,6 +3,28 @@
 
 extern "C" {
 
+JNIEXPORT void JNICALL Java_jsex_nnap_basis_MultiLayerSphericalChebyshev_forwardEmb0(JNIEnv *aEnv, jclass aClazz,
+        jdoubleArray aInputX, jdoubleArray rOutputEmb, jint aNMax, jdoubleArray aEmbWeights, jdoubleArray aEmbBiases, jintArray aEmbDims, jint aEmbNumber) {
+    jdouble *tInputX = (jdouble *)getJArrayBuf(aEnv, aInputX);
+    jdouble *tOutputEmb = (jdouble *)getJArrayBuf(aEnv, rOutputEmb);
+    jdouble *tEmbWeights = (jdouble *)getJArrayBuf(aEnv, aEmbWeights);
+    jdouble *tEmbBiases = (jdouble *)getJArrayBuf(aEnv, aEmbBiases);
+    jint *tEmbDims = (jint *)getJArrayBuf(aEnv, aEmbDims);
+
+    jint tEmbCacheSize = 0;
+    for (jint l = 0; l < aEmbNumber-1; ++l) {
+        tEmbCacheSize += tEmbDims[l];
+    }
+    jdouble *rEmbCache = MALLOCN_TP(jdouble, tEmbCacheSize);
+    JSE_NNAP::calEmbRn(tInputX, aNMax, tEmbWeights, tEmbBiases, tEmbDims, aEmbNumber, rEmbCache, NULL, tOutputEmb);
+    FREE(rEmbCache);
+
+    releaseJArrayBuf(aEnv, aInputX, tInputX, JNI_ABORT);
+    releaseJArrayBuf(aEnv, rOutputEmb, tOutputEmb, 0);
+    releaseJArrayBuf(aEnv, aEmbWeights, tEmbWeights, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aEmbBiases, tEmbBiases, JNI_ABORT);
+    releaseJArrayBuf(aEnv, aEmbDims, tEmbDims, JNI_ABORT);
+}
 JNIEXPORT void JNICALL Java_jsex_nnap_basis_MultiLayerSphericalChebyshev_forward1(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aNlDx, jdoubleArray aNlDy, jdoubleArray aNlDz, jintArray aNlType, jint aNN,
         jdoubleArray rFp, jint aShiftFp, jdoubleArray rForwardCache, jint aForwardCacheShift, jboolean aFullCache,

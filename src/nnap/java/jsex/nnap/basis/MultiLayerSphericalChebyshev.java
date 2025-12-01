@@ -10,6 +10,7 @@ import jse.math.vector.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 import java.util.List;
 import java.util.Map;
@@ -359,6 +360,13 @@ public class MultiLayerSphericalChebyshev extends MergeableBasis {
         backwardForce0(aNlDx, aNlDy, aNlDz, aNlType, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aFixBasis);
     }
     
+    @TestOnly
+    public void forwardEmb(Vector aInputX, Vector rOutputEmb) {
+        if (mEmbDims.length < mEmbNumber) throw new IllegalArgumentException("data size mismatch");
+        forwardEmb0(aInputX.internalDataWithLengthCheck(mNMax), rOutputEmb.internalDataWithLengthCheck(mEmbOutputDim), mNMax,
+                    mEmbWeights.internalDataWithLengthCheck(), mEmbBiases.internalDataWithLengthCheck(), mEmbDims, mEmbNumber);
+    }
+    private static native void forwardEmb0(double[] aInputX, double[] rOutputEmb, int aNMax, double[] aEmbWeights, double[] aEmbBiases, int[] aEmbDims, int aEmbNumber);
     
     void forward0(IDataShell<double[]> aNlDx, IDataShell<double[]> aNlDy, IDataShell<double[]> aNlDz, IDataShell<int[]> aNlType, IDataShell<double[]> rFp, IDataShell<double[]> rForwardCache, boolean aFullCache) {
         if (mEmbDims.length < mEmbNumber) throw new IllegalArgumentException("data size mismatch");

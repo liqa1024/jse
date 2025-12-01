@@ -9,6 +9,14 @@ extern "C" {
 #endif
 /*
  * Class:     jsex_nnap_basis_MultiLayerSphericalChebyshev
+ * Method:    forwardEmb0
+ * Signature: ([D[DI[D[D[II)V
+ */
+JNIEXPORT void JNICALL Java_jsex_nnap_basis_MultiLayerSphericalChebyshev_forwardEmb0
+  (JNIEnv *, jclass, jdoubleArray, jdoubleArray, jint, jdoubleArray, jdoubleArray, jintArray, jint);
+
+/*
+ * Class:     jsex_nnap_basis_MultiLayerSphericalChebyshev
  * Method:    forward1
  * Signature: ([D[D[D[II[DI[DIZIDIIII[D[D[II[DID[D[D)V
  */
