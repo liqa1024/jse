@@ -552,6 +552,17 @@ public class IO {
             return (Map<?, ?>) (new JsonSlurper()).parseText(aText);
         }
         /**
+         * 将一个 json 字符串转换成 {@link List}，这里直接调用了
+         * {@link JsonSlurper#parseText(String)}
+         * @param aText 需要解析的 json 字符串
+         * @return 解析得到的 {@link List}
+         * @see IO#json2list(String)
+         * @see IO.Text#list2json(List)
+         */
+        public static List<?> json2list(String aText) {
+            return (List<?>) (new JsonSlurper()).parseText(aText);
+        }
+        /**
          * 将一个 {@link Map} 转换成 json 格式的字符串，这里直接调用了
          * {@link JsonBuilder#toString()}
          * <p>
@@ -564,6 +575,20 @@ public class IO {
          */
         public static String map2json(Map<?, ?> aMap) {
             return map2json(aMap, false);
+        }
+        /**
+         * 将一个 {@link List} 转换成 json 格式的字符串，这里直接调用了
+         * {@link JsonBuilder#toString()}
+         * <p>
+         * 调用 {@link IO.Text#list2json(List, boolean)} 来输出格式化后更加易读的
+         * json 字符串。
+         * @param aList 需要编码成 json 的 {@link List}
+         * @return 编码得到的 json 字符串
+         * @see IO#list2json(List, String)
+         * @see IO.Text#json2list(String)
+         */
+        public static String list2json(List<?> aList) {
+            return list2json(aList, false);
         }
         /**
          * 将一个 {@link Map} 转换成 json 格式的字符串，这里直接调用了
@@ -580,6 +605,20 @@ public class IO {
             return aPretty ? tBuilder.toPrettyString() : tBuilder.toString();
         }
         /**
+         * 将一个 {@link List} 转换成 json 格式的字符串，这里直接调用了
+         * {@link JsonBuilder#toPrettyString()} 或 {@link JsonBuilder#toString()}
+         * @param aList 需要编码成 json 的 {@link List}
+         * @param aPretty 是否自动格式化字符串保证较易读的形式，默认为 {@code false}
+         * @return 编码得到的 json 字符串
+         * @see IO#list2json(List, String, boolean)
+         * @see IO.Text#json2list(String)
+         */
+        public static String list2json(List<?> aList, boolean aPretty) {
+            JsonBuilder tBuilder = new JsonBuilder();
+            tBuilder.call(aList);
+            return aPretty ? tBuilder.toPrettyString() : tBuilder.toString();
+        }
+        /**
          * 将一个 yaml 字符串转换成 {@link Map}，这里直接调用了
          * {@link YamlSlurper#parseText(String)}
          * @param aText 需要解析的 yaml 字符串
@@ -589,6 +628,17 @@ public class IO {
          */
         public static Map<?, ?> yaml2map(String aText) {
             return (Map<?, ?>) (new YamlSlurper()).parseText(aText);
+        }
+        /**
+         * 将一个 yaml 字符串转换成 {@link List}，这里直接调用了
+         * {@link YamlSlurper#parseText(String)}
+         * @param aText 需要解析的 yaml 字符串
+         * @return 解析得到的 {@link List}
+         * @see IO#yaml2list(String)
+         * @see IO.Text#list2yaml(List)
+         */
+        public static List<?> yaml2list(String aText) {
+            return (List<?>) (new YamlSlurper()).parseText(aText);
         }
         /**
          * 将一个 {@link Map} 转换成 yaml 格式的字符串，这里直接调用了
@@ -604,6 +654,19 @@ public class IO {
             return tBuilder.toString();
         }
         /**
+         * 将一个 {@link List} 转换成 yaml 格式的字符串，这里直接调用了
+         * {@link YamlBuilder#toString()}
+         * @param aList 需要编码成 yaml 的 {@link List}
+         * @return 编码得到的 yaml 字符串
+         * @see IO#list2yaml(List, String)
+         * @see IO.Text#yaml2list(String)
+         */
+        public static String list2yaml(List<?> aList) {
+            YamlBuilder tBuilder = new YamlBuilder();
+            tBuilder.call(aList);
+            return tBuilder.toString();
+        }
+        /**
          * 将一个 toml 字符串转换成 {@link Map}，这里直接调用了
          * {@link TomlSlurper#parseText(String)}
          * @param aText 需要解析的 toml 字符串
@@ -613,6 +676,17 @@ public class IO {
          */
         public static Map<?, ?> toml2map(String aText) {
             return (Map<?, ?>) (new TomlSlurper()).parseText(aText);
+        }
+        /**
+         * 将一个 toml 字符串转换成 {@link List}，这里直接调用了
+         * {@link TomlSlurper#parseText(String)}
+         * @param aText 需要解析的 toml 字符串
+         * @return 解析得到的 {@link List}
+         * @see IO#toml2list(String)
+         * @see IO.Text#list2toml(List)
+         */
+        public static List<?> toml2list(String aText) {
+            return (List<?>) (new TomlSlurper()).parseText(aText);
         }
         /**
          * 将一个 {@link Map} 转换成 toml 格式的字符串，这里直接调用了
@@ -625,6 +699,19 @@ public class IO {
         public static String map2toml(Map<?, ?> aMap) {
             TomlBuilder tBuilder = new TomlBuilder();
             tBuilder.call(aMap);
+            return tBuilder.toString();
+        }
+        /**
+         * 将一个 {@link List} 转换成 toml 格式的字符串，这里直接调用了
+         * {@link TomlBuilder#toString()}
+         * @param aList 需要编码成 toml 的 {@link List}
+         * @return 编码得到的 toml 字符串
+         * @see IO#list2toml(List, String)
+         * @see IO.Text#toml2list(String)
+         */
+        public static String list2toml(List<?> aList) {
+            TomlBuilder tBuilder = new TomlBuilder();
+            tBuilder.call(aList);
             return tBuilder.toString();
         }
     }
@@ -1736,6 +1823,18 @@ public class IO {
         try (Reader tReader = toReader(aFilePath)) {return json2map(tReader);}
     }
     /**
+     * 将一个 json 文件转换成 {@link List}，这里直接调用了
+     * {@link JsonSlurper#parse(Reader)} 实现
+     * @param aFilePath 需要读取并解析的 json 文件路径
+     * @return 解析得到的 {@link List}
+     * @throws IOException 输入文件不存在或触发权限不够时
+     * @see IO.Text#json2list(String)
+     * @see IO#list2json(List, String)
+     */
+    public static List<?> json2list(String aFilePath) throws IOException {
+        try (Reader tReader = toReader(aFilePath)) {return json2list(tReader);}
+    }
+    /**
      * 将一个 json 文件的读取流 {@link Reader} 转换成 {@link Map}，这里直接调用了
      * {@link JsonSlurper#parse(Reader)} 实现；主要用于内部使用
      * @param aReader 需要解析的 json 文件读取流，不会自动关闭
@@ -1744,6 +1843,16 @@ public class IO {
      */
     public static Map<?, ?> json2map(Reader aReader) {
         return (Map<?, ?>) (new JsonSlurper()).parse(aReader);
+    }
+    /**
+     * 将一个 json 文件的读取流 {@link Reader} 转换成 {@link List}，这里直接调用了
+     * {@link JsonSlurper#parse(Reader)} 实现；主要用于内部使用
+     * @param aReader 需要解析的 json 文件读取流，不会自动关闭
+     * @return 解析得到的 {@link List}
+     * @see IO#json2list(String)
+     */
+    public static List<?> json2list(Reader aReader) {
+        return (List<?>) (new JsonSlurper()).parse(aReader);
     }
     /**
      * 将一个 {@link Map} 保存成 json 格式的文本文件，这里直接调用了
@@ -1761,6 +1870,23 @@ public class IO {
      */
     public static void map2json(Map<?, ?> aMap, String aFilePath) throws IOException {
         map2json(aMap, aFilePath, false);
+    }
+    /**
+     * 将一个 {@link List} 保存成 json 格式的文本文件，这里直接调用了
+     * {@link JsonBuilder#writeTo(Writer)}；
+     * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
+     * <p>
+     * 调用 {@link IO#list2json(List, String, boolean)} 来输出格式化后更加易读的
+     * json 文件。
+     *
+     * @param aList 需要编码成 json 的 {@link List}
+     * @param aFilePath 需要保存的 json 文件路径
+     * @throws IOException 目标路径有同名的文件夹或触发权限不够时
+     * @see IO.Text#list2json(List)
+     * @see IO#json2list(String)
+     */
+    public static void list2json(List<?> aList, String aFilePath) throws IOException {
+        list2json(aList, aFilePath, false);
     }
     /**
      * 将一个 {@link Map} 保存成 json 格式的文本文件，这里直接调用了
@@ -1785,6 +1911,28 @@ public class IO {
         }
     }
     /**
+     * 将一个 {@link List} 保存成 json 格式的文本文件，这里直接调用了
+     * {@link JsonBuilder#writeTo(Writer)}；
+     * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
+     * @param aList 需要编码成 json 的 {@link List}
+     * @param aFilePath 需要保存的 json 文件路径
+     * @param aPretty 是否进行格式化来得到较易读的形式，默认为 {@code false}
+     * @throws IOException 目标路径有同名的文件夹或触发权限不够时
+     * @see IO.Text#list2json(List, boolean)
+     * @see IO#json2list(String)
+     */
+    public static void list2json(List<?> aList, String aFilePath, boolean aPretty) throws IOException {
+        try (Writer tWriter = toWriter(aFilePath)) {
+            JsonBuilder tBuilder = new JsonBuilder();
+            tBuilder.call(aList);
+            if (aPretty) {
+                tWriter.append(tBuilder.toPrettyString());
+            } else {
+                tBuilder.writeTo(tWriter);
+            }
+        }
+    }
+    /**
      * 将一个 yaml 文件转换成 {@link Map}，这里直接调用了
      * {@link YamlSlurper#parse(Reader)} 实现
      * @param aFilePath 需要读取并解析的 yaml 文件
@@ -1797,6 +1945,18 @@ public class IO {
         try (Reader tReader = toReader(aFilePath)) {return yaml2map(tReader);}
     }
     /**
+     * 将一个 yaml 文件转换成 {@link List}，这里直接调用了
+     * {@link YamlSlurper#parse(Reader)} 实现
+     * @param aFilePath 需要读取并解析的 yaml 文件
+     * @return 解析得到的 {@link List}
+     * @throws IOException 输入文件不存在或触发权限不够时
+     * @see IO.Text#yaml2list(String)
+     * @see IO#list2yaml(List, String)
+     */
+    public static List<?> yaml2list(String aFilePath) throws IOException {
+        try (Reader tReader = toReader(aFilePath)) {return yaml2list(tReader);}
+    }
+    /**
      * 将一个 yaml 文件的读取流 {@link Reader} 转换成 {@link Map}，这里直接调用了
      * {@link YamlSlurper#parse(Reader)} 实现；主要用于内部使用
      * @param aReader 需要解析的 yaml 文件读取流，不会自动关闭
@@ -1805,6 +1965,16 @@ public class IO {
      */
     public static Map<?, ?> yaml2map(Reader aReader) {
         return (Map<?, ?>) (new YamlSlurper()).parse(aReader);
+    }
+    /**
+     * 将一个 yaml 文件的读取流 {@link Reader} 转换成 {@link List}，这里直接调用了
+     * {@link YamlSlurper#parse(Reader)} 实现；主要用于内部使用
+     * @param aReader 需要解析的 yaml 文件读取流，不会自动关闭
+     * @return 解析得到的 {@link List}
+     * @see IO#yaml2list(String)
+     */
+    public static List<?> yaml2list(Reader aReader) {
+        return (List<?>) (new YamlSlurper()).parse(aReader);
     }
     /**
      * 将一个 {@link Map} 保存成 yaml 格式的文本文件，这里直接调用了
@@ -1824,6 +1994,23 @@ public class IO {
         }
     }
     /**
+     * 将一个 {@link List} 保存成 yaml 格式的文本文件，这里直接调用了
+     * {@link YamlBuilder#writeTo(Writer)}；
+     * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
+     * @param aList 需要编码成 yaml 的 {@link List}
+     * @param aFilePath 需要保存的 yaml 文件路径
+     * @throws IOException 目标路径有同名的文件夹或触发权限不够时
+     * @see IO.Text#list2yaml(List)
+     * @see IO#yaml2list(String)
+     */
+    public static void list2yaml(List<?> aList, String aFilePath) throws IOException {
+        try (Writer tWriter = toWriter(aFilePath)) {
+            YamlBuilder tBuilder = new YamlBuilder();
+            tBuilder.call(aList);
+            tBuilder.writeTo(tWriter);
+        }
+    }
+    /**
      * 将一个 toml 文件转换成 {@link Map}，这里直接调用了
      * {@link TomlSlurper#parse(Reader)} 实现
      * @param aFilePath 需要读取并解析的 toml 文件
@@ -1836,6 +2023,18 @@ public class IO {
         try (Reader tReader = toReader(aFilePath)) {return toml2map(tReader);}
     }
     /**
+     * 将一个 toml 文件转换成 {@link List}，这里直接调用了
+     * {@link TomlSlurper#parse(Reader)} 实现
+     * @param aFilePath 需要读取并解析的 toml 文件
+     * @return 解析得到的 {@link List}
+     * @throws IOException 输入文件不存在或触发权限不够时
+     * @see IO.Text#toml2list(String)
+     * @see IO#list2toml(List, String)
+     */
+    public static List<?> toml2list(String aFilePath) throws IOException {
+        try (Reader tReader = toReader(aFilePath)) {return toml2list(tReader);}
+    }
+    /**
      * 将一个 toml 文件的读取流 {@link Reader} 转换成 {@link Map}，这里直接调用了
      * {@link TomlSlurper#parse(Reader)} 实现；主要用于内部使用
      * @param aReader 需要解析的 toml 文件读取流，不会自动关闭
@@ -1844,6 +2043,16 @@ public class IO {
      */
     public static Map<?, ?> toml2map(Reader aReader) {
         return (Map<?, ?>) (new TomlSlurper()).parse(aReader);
+    }
+    /**
+     * 将一个 toml 文件的读取流 {@link Reader} 转换成 {@link List}，这里直接调用了
+     * {@link TomlSlurper#parse(Reader)} 实现；主要用于内部使用
+     * @param aReader 需要解析的 toml 文件读取流，不会自动关闭
+     * @return 解析得到的 {@link List}
+     * @see IO#toml2list(String)
+     */
+    public static List<?> toml2list(Reader aReader) {
+        return (List<?>) (new TomlSlurper()).parse(aReader);
     }
     /**
      * 将一个 {@link Map} 保存成 toml 格式的文本文件，这里直接调用了
@@ -1859,6 +2068,23 @@ public class IO {
         try (Writer tWriter = toWriter(aFilePath)) {
             TomlBuilder tBuilder = new TomlBuilder();
             tBuilder.call(aMap);
+            tBuilder.writeTo(tWriter);
+        }
+    }
+    /**
+     * 将一个 {@link List} 保存成 toml 格式的文本文件，这里直接调用了
+     * {@link TomlBuilder#writeTo(Writer)}；
+     * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
+     * @param aList 需要编码成 toml 的 {@link List}
+     * @param aFilePath 需要保存的 toml 文件路径
+     * @throws IOException 目标路径有同名的文件夹或触发权限不够时
+     * @see IO.Text#list2toml(List)
+     * @see IO#toml2list(String)
+     */
+    public static void list2toml(List<?> aList, String aFilePath) throws IOException {
+        try (Writer tWriter = toWriter(aFilePath)) {
+            TomlBuilder tBuilder = new TomlBuilder();
+            tBuilder.call(aList);
             tBuilder.writeTo(tWriter);
         }
     }
