@@ -2,6 +2,7 @@ package jsex.nnap;
 
 import jse.atom.*;
 import jse.cache.IntVectorCache;
+import jse.cache.LogicalVectorCache;
 import jse.cache.VectorCache;
 import jse.code.IO;
 import jse.code.UT;
@@ -111,6 +112,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     protected final DoubleList mTrainLoss = new DoubleList(64);
     protected final DoubleList mTestLoss = new DoubleList(64);
     protected boolean mNormInit = false;
+    protected boolean mFirstTrain = true;
     
     protected final int mTotNNParaSize, mTotBasisParaSize, mTotBasisSize;
     protected final int[] mNNParaSizes, mNNParaWeightSizes, mHiddenSizes;
@@ -1865,7 +1867,6 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         for (int i = 0; i < mTypeNum; ++i) if ((tShareNorm && i==0) || (!tShareNorm && !(mBasis[0][i] instanceof MirrorBasis))) {
             int tDivI = mNormDiv.get(i);
             if (tDivI == 0) {
-                UT.Code.warning("number of atoms of type `"+mSymbols[i]+"` is zero, check your input or dataset.");
                 mNormMu[i].fill(0.0);
                 mNormSigma[i].fill(1.0);
             } else {
@@ -1921,6 +1922,24 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
         mNormSigmaEng = tEng34 - tEng14;
         mOptimizer.markLossFuncChanged();
+    }
+    
+    protected void checkDataSet() {
+        ILogicalVector tHasData = LogicalVectorCache.getZeros(mTypeNum);
+        for (int i = 0; i < mTrainData.mSize; ++i) {
+            IntVector tAtomType = mTrainData.mAtomType.get(i);
+            int tAtomNum = tAtomType.size();
+            for (int k = 0; k < tAtomNum; ++k) {
+                // 这里不特地考虑 mirror，虽然 mirror 原则上可以没有，但是这也是一种不太合适的数据集，给出警告没有问题
+                tHasData.set(tAtomType.get(k), true);
+            }
+        }
+        for (int i = 0; i < mTypeNum; ++i) {
+            if (!tHasData.get(i)) {
+                UT.Code.warning("number of atoms of type `"+mSymbols[i]+"` is zero, check your input or dataset.");
+            }
+        }
+        LogicalVectorCache.returnVec(tHasData);
     }
     
     
@@ -2057,6 +2076,13 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             initNormEng();
             initNormBasis();
             mNormInit = true;
+        }
+        if (mFirstTrain) {
+            mFirstTrain = false;
+            if (!mIsRetrain) {
+                // 这里独立检测输入是否合适
+                checkDataSet();
+            }
         }
         if (mBatchSize > 0) {
             // 统计 batch 情况
