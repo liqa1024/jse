@@ -15,6 +15,7 @@ import jse.code.functional.IDoubleFilter;
 import jse.code.functional.IFilter;
 import jse.code.functional.IIndexFilter;
 import jse.code.functional.IUnaryFullOperator;
+import jse.code.io.DeepHash;
 import jse.code.iterator.IHasDoubleIterator;
 import jse.code.iterator.IHasIntIterator;
 import jse.code.random.IRandom;
@@ -130,11 +131,8 @@ public class UT {
         
         
         /**
-         * 现在改为（小于等于） 8 长度的 Base16 的字符串，
+         * 现在改为（小于等于）16 长度的 Base16 的字符串，
          * 这样和 uniqueID 同步并且可以避免 windows 下不区分大小写的问题
-         * <p>
-         * 虽然现在长度更低了导致哈希碰撞概率较高，但是实际应该影响不大，
-         * 并且也没有高效的方法实现返回 long 的 hashCode
          * <p>
          * 这个修改会修改随机流，导致部分结果会和和旧版本不同
          * @author liqa
@@ -142,7 +140,7 @@ public class UT {
         public static String randID() {return randID(RANDOM);}
         public static String randID(long aSeed) {return randID(new LocalRandom(aSeed));}
         public static String randID(IRandom aRng) {
-            return Integer.toHexString(aRng.nextInt());
+            return Long.toHexString(aRng.nextLong());
         }
         
         /**
@@ -153,15 +151,15 @@ public class UT {
         public static String randID(MPI.Comm aComm, int aRoot) throws MPIException {return randID(aComm, aRoot, RANDOM);}
         public static String randID(MPI.Comm aComm, int aRoot, long aSeed) throws MPIException {return randID(aComm, aRoot, new LocalRandom(aSeed));}
         public static String randID(MPI.Comm aComm, int aRoot, IRandom aRng) throws MPIException {
-            return Integer.toHexString(aComm.bcastI(aComm.rank()==aRoot ? aRng.nextInt() : 0, aRoot));
+            return Long.toHexString(aComm.bcastL(aComm.rank()==aRoot ? aRng.nextLong() : 0, aRoot));
         }
         
         /**
-         * Get the unique id in Base16, 8 length
+         * Get the unique id in Base16, 16 length
          * @author liqa
          */
         public static String uniqueID(Object... aObjects) {
-            return Integer.toHexString(Arrays.hashCode(aObjects));
+            return DeepHash.uniqueID16(aObjects);
         }
         
         
@@ -746,13 +744,13 @@ public class UT {
         
         
         
-        public static void int2bytes(int aI, byte[] rBytes, final int aPos) {
+        public static void int2bytes(int aI, byte[] rBytes, int aPos) {
             for (int i = aPos; i < aPos+4; ++i) {
                 rBytes[i] = (byte)(aI & 0xff);
                 aI >>= 8;
             }
         }
-        public static int bytes2int(byte[] aBytes, final int aPos) {
+        public static int bytes2int(byte[] aBytes, int aPos) {
             int rI = 0;
             for (int i = aPos+3; i >= aPos; --i) {
                 rI <<= 8;
@@ -761,13 +759,13 @@ public class UT {
             return rI;
         }
         
-        public static void long2bytes(long aL, byte[] rBytes, final int aPos) {
+        public static void long2bytes(long aL, byte[] rBytes, int aPos) {
             for (int i = aPos; i < aPos+8; ++i) {
                 rBytes[i] = (byte)(aL & 0xff);
                 aL >>= 8;
             }
         }
-        public static long bytes2long(byte[] aBytes, final int aPos) {
+        public static long bytes2long(byte[] aBytes, int aPos) {
             long rL = 0;
             for (int i = aPos+7; i >= aPos; --i) {
                 rL <<= 8;
@@ -775,8 +773,8 @@ public class UT {
             }
             return rL;
         }
-        public static void double2bytes(double aD, byte[] rBytes, final int aPos) {long2bytes(Double.doubleToLongBits(aD), rBytes, aPos);}
-        public static double bytes2double(byte[] aBytes, final int aPos) {return Double.longBitsToDouble(bytes2long(aBytes, aPos));}
+        public static void double2bytes(double aD, byte[] rBytes, int aPos) {long2bytes(Double.doubleToLongBits(aD), rBytes, aPos);}
+        public static double bytes2double(byte[] aBytes, int aPos) {return Double.longBitsToDouble(bytes2long(aBytes, aPos));}
         
         
         public static byte[] str2bytes(String aStr) {return aStr.getBytes(StandardCharsets.UTF_8);}
