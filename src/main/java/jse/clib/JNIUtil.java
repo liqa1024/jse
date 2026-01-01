@@ -179,45 +179,6 @@ public class JNIUtil {
         }
         public LibBuilder setMT() {return setMT(true);}
         public LibBuilder setMT(boolean aMT) {mMT = aMT; return this;}
-        public LibBuilder setMPIChecker() {return setMPIChecker(false);}
-        public LibBuilder setMPIChecker(final boolean aForce) {
-            // 通用的检测 mpi 接口
-            mEnvChecker.add(() -> {
-                EXEC.setNoSTDOutput().setNoERROutput();
-                boolean tNoMpi = EXEC.system("mpiexec --version") != 0;
-                if (tNoMpi) {
-                    tNoMpi = EXEC.system("mpiexec -?") != 0;
-                }
-                EXEC.setNoSTDOutput(false).setNoERROutput(false);
-                if (tNoMpi) {
-                    if (aForce) {
-                        System.err.println("No MPI found");
-                    } else {
-                        System.err.println(mInfoProjectName +" INIT WARNING: No MPI found for "+ mProjectName +" build");
-                    }
-                    if (IS_WINDOWS) {
-                        System.err.println("  For Windows, you can use MS-MPI: https://www.microsoft.com/en-us/download/details.aspx?id=105289");
-                        System.err.println("  BOTH 'msmpisetup.exe' and 'msmpisdk.msi' are needed.");
-                    } else {
-                        System.err.println("  For Liunx/Mac, you can use OpenMPI: https://www.open-mpi.org/");
-                        System.err.println("  For Ubuntu, you can use `sudo apt install libopenmpi-dev`");
-                    }
-                    if (aForce) {
-                        throw new Exception(mInfoProjectName +" INIT ERROR: No MPI environment.");
-                    }
-                    System.out.println("build "+ mProjectName +" without MPI support? (y/N)");
-                    BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
-                    String tLine = tReader.readLine();
-                    while (!tLine.equalsIgnoreCase("y")) {
-                        if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
-                            throw new Exception(mInfoProjectName +" INIT ERROR: No MPI environment.");
-                        }
-                        System.out.println("build "+ mProjectName +" without MPI support? (y/N)");
-                    }
-                }
-            });
-            return this;
-        }
         public LibBuilder setEnvChecker(IEnvChecker aEnvChecker) {mEnvChecker.add(aEnvChecker); return this;}
         public LibBuilder setSrc(final String aAssetsDirName, final String[] aSrcNames) {
             mSrcDirIniter = wd -> {

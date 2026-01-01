@@ -1025,8 +1025,8 @@ public class MPI {
     public static class Native {
         private Native() {}
         
-        private final static String MPIJNI_LIB_DIR = JAR_DIR+"mpi/" + UT.Code.uniqueID(JAVA_HOME, VERSION, Conf.COPY_JARRAY, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
-        private final static String MPIJNI_LIB_PATH;
+        public final static String MPIJNI_LIB_DIR;
+        public final static String MPIJNI_LIB_PATH;
         private final static String[] MPIJNI_SRC_NAME = {
               "jse_parallel_MPI_Native.c"
             , "jse_parallel_MPI_Native.h"
@@ -1037,12 +1037,17 @@ public class MPI {
         // 这对于一般的 MPI 实现应该都是没有问题的
         static {
             InitHelper.INITIALIZED = true;
+            
+            // 依赖 MPICore
+            MPICore.InitHelper.init();
+            if (!MPICore.VALID) throw new RuntimeException("No MPI support.");
             // 先添加 Conf.CMAKE_SETTING，这样保证确定的优先级
             Map<String, String> rCmakeSetting = new LinkedHashMap<>(Conf.CMAKE_SETTING);
             rCmakeSetting.put("JSE_COPY_JARRAY", Conf.COPY_JARRAY ? "ON" : "OFF");
+            // 不同 MPI 路径采用独立库
+            MPIJNI_LIB_DIR = JAR_DIR+"mpi/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION, MPICore.EXE_PATH, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, rCmakeSetting) + "/";
             // 现在直接使用 JNIUtil.buildLib 来统一初始化
             MPIJNI_LIB_PATH = new JNIUtil.LibBuilder("mpijni", "MPI", MPIJNI_LIB_DIR, rCmakeSetting)
-                .setMPIChecker(true) // 强制要求 mpi 环境
                 .setSrc("mpi", MPIJNI_SRC_NAME)
                 .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
                 .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_MPIJNI_LIB)

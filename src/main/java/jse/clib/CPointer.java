@@ -84,7 +84,7 @@ public class CPointer {
     }
     
     /** 当前 {@link CPointer} JNI 库所在的文件夹路径，结尾一定存在 {@code '/'} */
-    public final static String LIB_DIR = JAR_DIR+"cpointer/" + UT.Code.uniqueID(JAVA_HOME, VERSION, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+    public final static String LIB_DIR = JAR_DIR+"cpointer/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
     /** 当前 {@link CPointer} JNI 库的路径 */
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {

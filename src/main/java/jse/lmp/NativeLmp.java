@@ -167,6 +167,8 @@ public class NativeLmp implements IAutoShutdown {
     static {
         InitHelper.INITIALIZED = true;
         
+        // 依赖 MPICore
+        MPICore.InitHelper.init();
         // 这样来统一增加 nativelmp 需要的默认额外设置
         Map<String, String> rCmakeSettingNativeLmp = new LinkedHashMap<>();
         // 这里先添加一个简单的环境变量设置的 lammps pkg
@@ -193,7 +195,7 @@ public class NativeLmp implements IAutoShutdown {
             NATIVELMP_LIB_DIR = tNativeLmpBuildDir + "lib/";
         } else {
             // 否则直接版本隔离，采用内部 lammps
-            String tNativeLmpDir = LMP_ROOT+"core/" + UT.Code.uniqueID(JAVA_HOME, VERSION, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, rCmakeSettingNativeLmp) + "/";
+            String tNativeLmpDir = LMP_ROOT+"core/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION, MPICore.EXE_PATH, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, rCmakeSettingNativeLmp) + "/";
             NATIVELMP_INCLUDE_DIR = tNativeLmpDir + "includes/";
             NATIVELMP_LIB_DIR = tNativeLmpDir + "lib/";
         }
@@ -245,7 +247,21 @@ public class NativeLmp implements IAutoShutdown {
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
         NATIVELMP_LIB_PATH = new JNIUtil.LibBuilder("lammps", "NATIVE_LMP", NATIVELMP_LIB_DIR, rCmakeSettingNativeLmp)
             .setMT(Conf.USE_MT)
-            .setMPIChecker() // 现在也会检测 mpi
+            .setEnvChecker(() -> {
+                // 在这里输出没有 mpi 的警告，保证无 mpi 情况下只会警告一次
+                if (!MPICore.VALID) {
+                    System.out.println("NATIVE_LMP INIT INFO: No MPI support,");
+                    System.out.println("Build lammps without MPI support? (y/N)");
+                    BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
+                    String tLine = tReader.readLine();
+                    while (!tLine.equalsIgnoreCase("y")) {
+                        if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
+                            throw new Exception("NATIVE_LMP INIT ERROR: No MPI support.");
+                        }
+                        System.out.println("Build lammps without MPI support? (y/N)");
+                    }
+                }
+            })
             .setSrcDirIniter(wd -> {
                 // 对于是否有 fNativeLmpHome 采用不同逻辑
                 if (fNativeLmpHome!=null) {
@@ -300,7 +316,6 @@ public class NativeLmp implements IAutoShutdown {
         LMPJNI_LIB_DIR = LMP_ROOT+"jni/" + UT.Code.uniqueID(NATIVELMP_LIB_DIR, Conf.USE_MIMALLOC, rCmakeSettingLmpJNI) + "/";
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
         LMPJNI_LIB_PATH = new JNIUtil.LibBuilder("lmpjni", "LMP_JNI", LMPJNI_LIB_DIR, rCmakeSettingLmpJNI)
-            .setMPIChecker() // 现在也会检测 mpi
             .setSrc("lmp", LMPJNI_SRC_NAME)
             .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
             .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_LMPJNI_LIB)

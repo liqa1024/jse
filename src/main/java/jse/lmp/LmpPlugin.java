@@ -81,7 +81,6 @@ public class LmpPlugin {
         final String[] fLmpVersion = new String[1];
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
         LIB_PATH = new JNIUtil.LibBuilder("lmpplugin", "LMPPLUGIN", LIB_DIR, NativeLmp.Conf.CMAKE_SETTING_SHARE)
-            .setMPIChecker() // 现在也会检测 mpi
             .setEnvChecker(() -> {
                 // 获取 lammps 版本字符串
                 if (Conf.LMP_VERSION != null) {

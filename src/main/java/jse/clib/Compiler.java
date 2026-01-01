@@ -19,9 +19,9 @@ public class Compiler {
     /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
     public final static class InitHelper {
         private static volatile boolean INITIALIZED = false;
-        /** @return {@link Compiler} 相关的 JNI 库是否已经初始化完成 */
+        /** @return {@link Compiler} 相关的参数是否已经初始化完成 */
         public static boolean initialized() {return INITIALIZED;}
-        /** 初始化 {@link Compiler} 相关的 JNI 库 */
+        /** 初始化 {@link Compiler} 相关的参数 */
         @SuppressWarnings({"ResultOfMethodCallIgnored", "UnnecessaryCallToStringValueOf"})
         public static void init() {
             // 手动调用此值来强制初始化

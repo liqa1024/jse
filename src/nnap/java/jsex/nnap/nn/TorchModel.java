@@ -60,7 +60,7 @@ public class TorchModel extends NeuralNetwork {
         public static @Nullable String REDIRECT_NNAPTORCH_LIB = OS.env("JSE_REDIRECT_NNAPTORCH_LIB");
     }
     
-    public final static String LIB_DIR = JAR_DIR+"nnap/torch/" + UT.Code.uniqueID(JAVA_HOME, VERSION, Torch.HOME, Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+    public final static String LIB_DIR = JAR_DIR+"nnap/torch/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION, Torch.HOME, Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
           "jsex_nnap_nn_TorchModel.cpp"
