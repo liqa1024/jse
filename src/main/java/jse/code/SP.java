@@ -545,9 +545,6 @@ public class SP {
              * 这对于 java 数组和 c 数组的转换很有效
              */
             public static boolean USE_MIMALLOC = OS.envZ("JSE_USE_MIMALLOC_JEP", jse.code.Conf.USE_MIMALLOC);
-            
-            /** 重定向 jep 动态库的路径 */
-            public static @Nullable String REDIRECT_JEP_LIB = OS.env("JSE_REDIRECT_JEP_LIB");
         }
         
         
@@ -823,7 +820,7 @@ public class SP {
                     IO.copy(IO.getResource("jsepy/atom.py"), JEP_LIB_DIR+"jsepy/atom.py");
                     return tJepDir;})
                 .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS)
-                .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_JEP_LIB)
+                .setUseMiMalloc(Conf.USE_MIMALLOC)
                 .get();
             // 设置库路径
             jep.MainInterpreter.setJepLibraryPath(IO.toAbsolutePath(JEP_LIB_PATH));

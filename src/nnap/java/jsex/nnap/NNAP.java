@@ -83,9 +83,6 @@ public class NNAP implements IPairPotential {
          * 这对于 java 数组和 c 数组的转换很有效
          */
         public static boolean USE_MIMALLOC = OS.envZ("JSE_USE_MIMALLOC_NNAP", jse.code.Conf.USE_MIMALLOC);
-        
-        /** 重定向 nnap 动态库的路径 */
-        public static @Nullable String REDIRECT_NNAPBASIS_LIB = OS.env("JSE_REDIRECT_NNAP_LIB");
     }
     
     public final static int VERSION = 5;
@@ -148,7 +145,7 @@ public class NNAP implements IPairPotential {
         LIB_PATH = new JNIUtil.LibBuilder("nnap", "NNAP", LIB_DIR, rCmakeSetting)
             .setSrc("nnap", SRC_NAME)
             .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
-            .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_NNAPBASIS_LIB)
+            .setUseMiMalloc(Conf.USE_MIMALLOC)
             .get();
         // 设置库路径
         System.load(IO.toAbsolutePath(LIB_PATH));

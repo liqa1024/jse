@@ -2195,13 +2195,6 @@ public class ARRAY {
              * 也可使用环境变量 {@code JSE_CMAKE_CXX_FLAGS_MATH} 来设置
              */
             public static @Nullable String CMAKE_CXX_FLAGS    = OS.env("JSE_CMAKE_CXX_FLAGS_MATH"   , jse.code.Conf.CMAKE_CXX_FLAGS);
-            
-            /**
-             * 重定向 math 动态库的路径，用于自定义编译这个库的过程，或者重新实现 math 的接口
-             * <p>
-             * 也可使用环境变量 {@code JSE_REDIRECT_MATH_LIB} 来设置
-             */
-            public static @Nullable String REDIRECT_MATH_LIB = OS.env("JSE_REDIRECT_MATH_LIB");
         }
         
         /** 当前 {@link ARRAY} JNI 库所在的文件夹路径，结尾一定存在 {@code '/'} */
@@ -2250,7 +2243,6 @@ public class ARRAY {
                 .setSrc("math", SRC_NAME)
                 .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS)
                 .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
-                .setRedirectLibPath(Conf.REDIRECT_MATH_LIB)
                 .get();
             // 设置库路径
             System.load(IO.toAbsolutePath(LIB_PATH));

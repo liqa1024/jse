@@ -69,19 +69,6 @@ public class MiMalloc {
          * 也可使用环境变量 {@code JSE_CMAKE_CXX_FLAGS_MIMALLOC} 来设置
          */
         public static @Nullable String CMAKE_CXX_FLAGS    = OS.env("JSE_CMAKE_CXX_FLAGS_MIMALLOC"   , jse.code.Conf.CMAKE_CXX_FLAGS);
-        
-        /**
-         * 重定向 mimalloc 动态库的路径，主要用于作为重定向的 mpijni, lmpjni 等库的依赖导入
-         * <p>
-         * 也可使用环境变量 {@code JSE_REDIRECT_MIMALLOC_LIB} 来设置
-         */
-        public static @Nullable String REDIRECT_MIMALLOC_LIB = OS.env("JSE_REDIRECT_MIMALLOC_LIB");
-        /**
-         * 重定向 mimalloc 用于链接的库的路径，主要用于作为重定向的 mpijni, lmpjni 等库的依赖导入
-         * <p>
-         * 也可使用环境变量 {@code JSE_REDIRECT_MIMALLOC_LLIB} 来设置
-         */
-        public static @Nullable String REDIRECT_MIMALLOC_LLIB = OS.env("JSE_REDIRECT_MIMALLOC_LLIB", REDIRECT_MIMALLOC_LIB);
     }
     
     
@@ -131,15 +118,10 @@ public class MiMalloc {
                 IO.copy(tMiDir+"include/mimalloc.h", INCLUDE_DIR+"mimalloc.h");
                 return tMiDir;})
             .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
-            .setRedirectLibPath(Conf.REDIRECT_MIMALLOC_LIB)
             .setCmakeLineOp(null)
             .get();
-        if (Conf.REDIRECT_MIMALLOC_LIB == null) {
-            @Nullable String tLLibName = LLIB_NAME_IN(LIB_DIR, "mimalloc");
-            LLIB_PATH = tLLibName==null ? LIB_PATH : (LIB_DIR+tLLibName);
-        } else {
-            LLIB_PATH = Conf.REDIRECT_MIMALLOC_LLIB==null ? Conf.REDIRECT_MIMALLOC_LIB : Conf.REDIRECT_MIMALLOC_LLIB;
-        }
+        @Nullable String tLLibName = LLIB_NAME_IN(LIB_DIR, "mimalloc");
+        LLIB_PATH = tLLibName==null ? LIB_PATH : (LIB_DIR+tLLibName);
         // 设置库路径
         System.load(IO.toAbsolutePath(LIB_PATH));
     }

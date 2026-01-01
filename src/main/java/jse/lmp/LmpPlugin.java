@@ -42,9 +42,6 @@ public class LmpPlugin {
         /** 插件依赖的 lammps 版本字符串，默认自动检测 */
         public static String LMP_VERSION = null;
         private final static String DEFAULT_LMP_VERSION = "22 Jul 2025";
-        
-        /** 重定向 lmpplugin 动态库的路径，用于自定义编译这个库的过程，或者重新实现 lmpplugin 的接口 */
-        public static @Nullable String REDIRECT_LMPPLUGIN_LIB = OS.env("JSE_REDIRECT_LMPPLUGIN_LIB");
     }
     
     public final static String LIB_DIR;
@@ -96,7 +93,6 @@ public class LmpPlugin {
             })
             .setSrc("lmp/plugin", SRC_NAME)
             .setCmakeCxxCompiler(LmpCore.Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(LmpCore.Conf.CMAKE_CXX_FLAGS)
-            .setRedirectLibPath(Conf.REDIRECT_LMPPLUGIN_LIB)
             .setCmakeLineOp(line -> {
                 // 替换其中的 lammps 库路径为设置好的路径
                 line = line.replace("$ENV{JSE_LMP_INCLUDE_DIR}", LmpCore.INCLUDE_DIR.replace("\\", "\\\\"))  // 注意反斜杠的转义问题

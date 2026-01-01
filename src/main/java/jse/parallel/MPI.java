@@ -101,9 +101,6 @@ public class MPI {
          * 这对于 java 数组和 c 数组的转换很有效
          */
         public static boolean USE_MIMALLOC = OS.envZ("JSE_USE_MIMALLOC_MPI", jse.code.Conf.USE_MIMALLOC);
-        
-        /** 重定向 mpijni 动态库的路径，用于自定义编译这个库的过程，或者重新实现 mpijni 的接口 */
-        public static @Nullable String REDIRECT_MPIJNI_LIB = OS.env("JSE_REDIRECT_MPIJNI_LIB");
     }
     
     public static String libraryVersion() throws MPIException {return MPI.Native.MPI_Get_library_version();}
@@ -1056,7 +1053,7 @@ public class MPI {
                 .setSrc("mpi", MPIJNI_SRC_NAME)
                 .setEnvChecker(MPICore::printInfo) // 在这里输出 mpi 信息，保证只在第一次构建时输出一次；可能存在和 cmake 检测不一致的问题
                 .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
-                .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_MPIJNI_LIB)
+                .setUseMiMalloc(Conf.USE_MIMALLOC)
                 .get();
             // 设置库路径
             System.load(IO.toAbsolutePath(MPIJNI_LIB_PATH));

@@ -65,9 +65,6 @@ public class NativeLmp implements IAutoShutdown {
          */
         public static boolean USE_MIMALLOC = OS.envZ("JSE_USE_MIMALLOC_LMP", jse.code.Conf.USE_MIMALLOC);
         
-        /** 重定向 lmpjni 动态库的路径，用于自定义编译这个库的过程，或者重新实现 lmpjni 的接口 */
-        public static @Nullable String REDIRECT_LMPJNI_LIB = OS.env("JSE_REDIRECT_LMPJNI_LIB");
-        
         /**
          * 是否是旧版本的 lammps，具体来说大致为 18Sep2020 之前版本的 lammps，
          * 开启后会使用更老的 api，兼容性会更高
@@ -117,7 +114,7 @@ public class NativeLmp implements IAutoShutdown {
         LMPJNI_LIB_PATH = new JNIUtil.LibBuilder("lmpjni", "LMP_JNI", LMPJNI_LIB_DIR, rCmakeSettingLmpJNI)
             .setSrc("lmp", LMPJNI_SRC_NAME)
             .setCmakeCCompiler(LmpCore.Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(LmpCore.Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(LmpCore.Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(LmpCore.Conf.CMAKE_CXX_FLAGS)
-            .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_LMPJNI_LIB)
+            .setUseMiMalloc(Conf.USE_MIMALLOC)
             .setCmakeLineOp(line -> {
                 // 替换其中的 lammps 库路径为设置好的路径
                 line = line.replace("$ENV{JSE_LMP_INCLUDE_DIR}", LmpCore.INCLUDE_DIR.replace("\\", "\\\\"))  // 注意反斜杠的转义问题

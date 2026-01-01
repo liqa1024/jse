@@ -75,13 +75,6 @@ public class CPointer {
          * 也可使用环境变量 {@code JSE_USE_MIMALLOC_CPOINTER} 来设置
          */
         public static boolean USE_MIMALLOC = OS.envZ("JSE_USE_MIMALLOC_CPOINTER", jse.code.Conf.USE_MIMALLOC);
-        
-        /**
-         * 重定向 cpointer 动态库的路径，用于自定义编译这个库的过程，或者重新实现 cpointer 的接口
-         * <p>
-         * 也可使用环境变量 {@code JSE_REDIRECT_CPOINTER_LIB} 来设置
-         */
-        public static @Nullable String REDIRECT_CPOINTER_LIB = OS.env("JSE_REDIRECT_CPOINTER_LIB");
     }
     
     /** 当前 {@link CPointer} JNI 库所在的文件夹路径，结尾一定存在 {@code '/'} */
@@ -109,7 +102,7 @@ public class CPointer {
         LIB_PATH = new JNIUtil.LibBuilder("cpointer", "CPOINTER", LIB_DIR, Conf.CMAKE_SETTING)
             .setSrc("cpointer", SRC_NAME)
             .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
-            .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_CPOINTER_LIB)
+            .setUseMiMalloc(Conf.USE_MIMALLOC)
             .get();
         // 设置库路径
         System.load(IO.toAbsolutePath(LIB_PATH));

@@ -82,10 +82,6 @@ public class LmpCore {
          */
         public final static Map<String, String> CMAKE_SETTING_SHARE = OS.envMap("JSE_CMAKE_SETTING_LMP_SHARE");
         
-        /** 重定向 lammps 动态库的路径，主要用于作为重定向的 lmpjni 库的依赖导入 */
-        public static @Nullable String REDIRECT_LIB = OS.env("JSE_REDIRECT_LMP_LIB");
-        public static @Nullable String REDIRECT_LLIB = OS.env("JSE_REDIRECT_LMP_LLIB");
-        
         /**
          * 是否将 lammps 动态库提升到全局，这会保证一些 lammps 的模块能找到 lammps 库；
          * 一般只有在 unix 上会遇到这个问题
@@ -255,18 +251,12 @@ public class LmpCore {
                 }})
             .setCmakeInitDir("../cmake")
             .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
-            .setRedirectLibPath(Conf.REDIRECT_LIB)
             .setCmakeLineOp(null)
             .get();
-        if (Conf.REDIRECT_LIB==null) {
-            @Nullable String tLmpLLibName = LLIB_NAME_IN(LIB_DIR, "lammps");
-            LLIB_PATH = tLmpLLibName==null ? LIB_PATH : (LIB_DIR+tLmpLLibName);
-            @Nullable String tLmpExeName = findLmpExe();
-            EXE_PATH = tLmpExeName==null ? null : (LIB_DIR+tLmpExeName);
-        } else {
-            LLIB_PATH = Conf.REDIRECT_LLIB==null ? Conf.REDIRECT_LIB : Conf.REDIRECT_LLIB;
-            EXE_PATH = null;
-        }
+        @Nullable String tLmpLLibName = LLIB_NAME_IN(LIB_DIR, "lammps");
+        LLIB_PATH = tLmpLLibName==null ? LIB_PATH : (LIB_DIR+tLmpLLibName);
+        @Nullable String tLmpExeName = findLmpExe();
+        EXE_PATH = tLmpExeName==null ? null : (LIB_DIR+tLmpExeName);
         EXE_CMD = EXE_PATH==null ? null : ((IS_WINDOWS?"&\"":"\"") + EXE_PATH + "\"");
         // 设置库路径
         System.load(jse.code.IO.toAbsolutePath(LIB_PATH));

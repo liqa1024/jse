@@ -56,9 +56,6 @@ public class TorchModel extends NeuralNetwork {
          * 这对于 java 数组和 c 数组的转换很有效
          */
         public static boolean USE_MIMALLOC = OS.envZ("JSE_USE_MIMALLOC_NNAPTORCH", jse.code.Conf.USE_MIMALLOC);
-        
-        /** 重定向 nnap torch 动态库的路径 */
-        public static @Nullable String REDIRECT_NNAPTORCH_LIB = OS.env("JSE_REDIRECT_NNAPTORCH_LIB");
     }
     
     public final static String LIB_DIR = JAR_DIR+"nnap/torch/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, Torch.HOME, Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
@@ -83,7 +80,7 @@ public class TorchModel extends NeuralNetwork {
         LIB_PATH = new JNIUtil.LibBuilder("nnaptorch", "NNAP_TORCH", LIB_DIR, Conf.CMAKE_SETTING)
             .setSrc("nnap/torch", SRC_NAME)
             .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
-            .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_NNAPTORCH_LIB)
+            .setUseMiMalloc(Conf.USE_MIMALLOC)
             .setCmakeLineOp(line -> {
                 // 替换其中的 torch 库路径为设置好的路径
                 line = line.replace("$ENV{JSE_TORCH_CMAKE_DIR}", Torch.CMAKE_DIR.replace("\\", "\\\\")); // 注意反斜杠的转义问题

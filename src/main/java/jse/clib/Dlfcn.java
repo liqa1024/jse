@@ -54,13 +54,6 @@ public class Dlfcn {
          * 也可使用环境变量 {@code JSE_CMAKE_C_FLAGS_DLFCN} 来设置
          */
         public static @Nullable String CMAKE_C_FLAGS    = OS.env("JSE_CMAKE_C_FLAGS_DLFCN"   , jse.code.Conf.CMAKE_C_FLAGS);
-        
-        /**
-         * 重定向 dlfcnjni 动态库的路径，用于自定义编译这个库的过程，或者重新实现 dlfcnjni 的接口
-         * <p>
-         * 也可使用环境变量 {@code JSE_REDIRECT_DLFCN_LIB} 来设置
-         */
-        public static @Nullable String REDIRECT_DLFCN_LIB = OS.env("JSE_REDIRECT_DLFCN_LIB");
     }
     
     /** 当前 {@link Dlfcn} JNI 库所在的文件夹路径，结尾一定存在 {@code '/'} */
@@ -77,7 +70,6 @@ public class Dlfcn {
         LIB_PATH = new JNIUtil.LibBuilder("dlfcnjni", "DLFCN", LIB_DIR, Conf.CMAKE_SETTING)
             .setSrc("dlfcn", SRC_NAME)
             .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS)
-            .setRedirectLibPath(Conf.REDIRECT_DLFCN_LIB)
             .setCmakeLineOp(null)
             .get();
         // 设置库路径，这里直接使用 System.load

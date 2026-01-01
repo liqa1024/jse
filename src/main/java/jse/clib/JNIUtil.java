@@ -166,7 +166,6 @@ public class JNIUtil {
         private @Nullable Boolean mUseMiMalloc = null;
         private boolean mMT = false;
         private final Map<String, String> mCmakeSettings;
-        private @Nullable String mRedirectLibPath = null;
         private @Nullable IUnaryFullOperator<? extends CharSequence, ? super String> mCmakeLineOpt = line -> line;
         
         public LibBuilder(String aProjectName, String aInfoProjectName, String aLibDir, Map<String, String> aCmakeSettings) {
@@ -196,7 +195,6 @@ public class JNIUtil {
         public LibBuilder setCmakeCFlags(@Nullable String aCmakeCFlags) {mCmakeCFlags = aCmakeCFlags; return this;}
         public LibBuilder setCmakeCxxFlags(@Nullable String aCmakeCxxFlags) {mCmakeCxxFlags = aCmakeCxxFlags; return this;}
         public LibBuilder setUseMiMalloc(@Nullable Boolean aUseMiMalloc) {mUseMiMalloc = aUseMiMalloc; return this;}
-        public LibBuilder setRedirectLibPath(@Nullable String aRedirectLibPath) {mRedirectLibPath = aRedirectLibPath; return this;}
         public LibBuilder setCmakeLineOp(@Nullable IUnaryFullOperator<? extends CharSequence, ? super String> aCmakeLineOpt) {mCmakeLineOpt = aCmakeLineOpt; return this;}
         
         @Override public String get() {
@@ -204,22 +202,15 @@ public class JNIUtil {
             JNIUtil.InitHelper.init();
             // 如果开启了 USE_MIMALLOC 则增加 MiMalloc 依赖
             if (mUseMiMalloc!=null && mUseMiMalloc) MiMalloc.InitHelper.init();
-            String tLibPath;
-            if (mRedirectLibPath == null) {
-                @Nullable String tLibName = LIB_NAME_IN(mLibDir, mProjectName);
-                // 如果不存在 jni lib 则需要重新通过源码编译
-                if (tLibName == null) {
-                    System.out.println(mInfoProjectName +" INIT INFO: "+ mProjectName +" libraries not found. Reinstalling...");
-                    try {
-                        tLibName = initLib_();
-                    } catch (Exception e) {throw new RuntimeException(e);}
-                }
-                tLibPath = mLibDir + tLibName;
-            } else {
-                if (DEBUG) System.out.println(mInfoProjectName +" INIT INFO: "+ mProjectName +" libraries are redirected to '" + mRedirectLibPath + "'");
-                tLibPath = mRedirectLibPath;
+            @Nullable String tLibName = LIB_NAME_IN(mLibDir, mProjectName);
+            // 如果不存在 jni lib 则需要重新通过源码编译
+            if (tLibName == null) {
+                System.out.println(mInfoProjectName +" INIT INFO: "+ mProjectName +" libraries not found. Reinstalling...");
+                try {
+                    tLibName = initLib_();
+                } catch (Exception e) {throw new RuntimeException(e);}
             }
-            return tLibPath;
+            return mLibDir + tLibName;
         }
         
         
