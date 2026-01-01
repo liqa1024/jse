@@ -783,6 +783,8 @@ public class SP {
             // 现在直接使用 JNIUtil.buildLib 来统一初始化
             JEP_LIB_PATH = new JNIUtil.LibBuilder("jep", "JEP", JEP_LIB_DIR, rCmakeSetting)
                 .setEnvChecker(() -> {
+                    // 这里输出确保只在第一次构建时打印
+                    System.out.printf("JEP INIT INFO: Use python in %s\n", PYTHON_PREFIX_DIR); // 可能存在和 cmake 检测不一致的问题
                     // 在这里输出没有 numpy 的警告，保证无 numpy 情况下只会警告一次
                     if (!NUMPY_SUPPORT) {
                         System.out.println("JEP INIT INFO: No numpy in python, you can install numpy by `pip install numpy==1.26.4`,");

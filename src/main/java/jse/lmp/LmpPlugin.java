@@ -47,7 +47,7 @@ public class LmpPlugin {
         public static @Nullable String REDIRECT_LMPPLUGIN_LIB = OS.env("JSE_REDIRECT_LMPPLUGIN_LIB");
     }
     
-    public final static String LIB_DIR = JAR_DIR+"lmp/plugin/" + UT.Code.uniqueID(NativeLmp.NATIVELMP_LIB_DIR, Conf.JVM_XMX) + "/";
+    public final static String LIB_DIR;
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
           "jse_lmp_LmpPlugin_Pair.cpp"
@@ -78,9 +78,11 @@ public class LmpPlugin {
         CPointer.InitHelper.init();
         // 依赖 lmpjni
         NativeLmp.InitHelper.init();
+        // 构建 lmpplugin
+        LIB_DIR = LmpCore.ROOT+"plugin/" + UT.Code.uniqueID(LmpCore.LIB_PATH, Conf.JVM_XMX, LmpCore.Conf.CMAKE_SETTING_SHARE) + "/";
         final String[] fLmpVersion = new String[1];
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
-        LIB_PATH = new JNIUtil.LibBuilder("lmpplugin", "LMPPLUGIN", LIB_DIR, NativeLmp.Conf.CMAKE_SETTING_SHARE)
+        LIB_PATH = new JNIUtil.LibBuilder("lmpplugin", "LMPPLUGIN", LIB_DIR, LmpCore.Conf.CMAKE_SETTING_SHARE)
             .setEnvChecker(() -> {
                 // 获取 lammps 版本字符串
                 if (Conf.LMP_VERSION != null) {
@@ -93,12 +95,12 @@ public class LmpPlugin {
                 }
             })
             .setSrc("lmp/plugin", SRC_NAME)
-            .setCmakeCxxCompiler(NativeLmp.Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(NativeLmp.Conf.CMAKE_CXX_FLAGS)
+            .setCmakeCxxCompiler(LmpCore.Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(LmpCore.Conf.CMAKE_CXX_FLAGS)
             .setRedirectLibPath(Conf.REDIRECT_LMPPLUGIN_LIB)
             .setCmakeLineOp(line -> {
                 // 替换其中的 lammps 库路径为设置好的路径
-                line = line.replace("$ENV{JSE_LMP_INCLUDE_DIR}", NativeLmp.NATIVELMP_INCLUDE_DIR.replace("\\", "\\\\"))  // 注意反斜杠的转义问题
-                           .replace("$ENV{JSE_LMP_LIB_PATH}"   , NativeLmp.NATIVELMP_LLIB_PATH  .replace("\\", "\\\\")); // 注意反斜杠的转义问题
+                line = line.replace("$ENV{JSE_LMP_INCLUDE_DIR}", LmpCore.INCLUDE_DIR.replace("\\", "\\\\"))  // 注意反斜杠的转义问题
+                           .replace("$ENV{JSE_LMP_LIB_PATH}"   , LmpCore.LLIB_PATH  .replace("\\", "\\\\")); // 注意反斜杠的转义问题
                 // 替换 lammps 版本为设置值
                 line = line.replace("$ENV{JSE_LMP_VERSION}", fLmpVersion[0]);
                 // 替换其中的 jvm 库路径为自动检测到的路径

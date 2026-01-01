@@ -1054,7 +1054,7 @@ public class MPI {
             // 现在直接使用 JNIUtil.buildLib 来统一初始化
             MPIJNI_LIB_PATH = new JNIUtil.LibBuilder("mpijni", "MPI", MPIJNI_LIB_DIR, rCmakeSetting)
                 .setSrc("mpi", MPIJNI_SRC_NAME)
-                .setEnvChecker(MPICore::printInfo) // 在这里输出 mpi 信息，保证只在第一次构建时输出一次
+                .setEnvChecker(MPICore::printInfo) // 在这里输出 mpi 信息，保证只在第一次构建时输出一次；可能存在和 cmake 检测不一致的问题
                 .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
                 .setUseMiMalloc(Conf.USE_MIMALLOC).setRedirectLibPath(Conf.REDIRECT_MPIJNI_LIB)
                 .get();

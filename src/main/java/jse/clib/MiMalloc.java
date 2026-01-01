@@ -89,11 +89,11 @@ public class MiMalloc {
     public final static String VERSION = "2.2.4";
     
     /** 当前 {@link MiMalloc} 库的根目录，结尾一定存在 {@code '/'} */
-    public final static String HOME = JAR_DIR+"mimalloc/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MiMalloc.VERSION, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+    public final static String HOME;
     /** 当前 {@link MiMalloc} 库所在的文件夹路径，结尾一定存在 {@code '/'} */
-    public final static String LIB_DIR = HOME+"lib/";
+    public final static String LIB_DIR;
     /** 当前 {@link MiMalloc} 库的 include 目录路径，结尾一定存在 {@code '/'} */
-    public final static String INCLUDE_DIR = HOME+"include/";
+    public final static String INCLUDE_DIR;
     /** 当前 {@link MiMalloc} 库的动态库路径 */
     public final static @NotNull String LIB_PATH;
     /** 当前 {@link MiMalloc} 库用于链接的库的路径，对于 linux 则和 {@link #LIB_PATH} 一致 */
@@ -114,6 +114,9 @@ public class MiMalloc {
         rCmakeSetting.put("MI_OSX_ZONE",      "OFF");
         rCmakeSetting.putAll(Conf.CMAKE_SETTING);
         rCmakeSetting.put("CMAKE_BUILD_TYPE", "Release");
+        HOME = JAR_DIR+"mimalloc/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MiMalloc.VERSION, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, rCmakeSetting) + "/";
+        LIB_DIR = HOME+"lib/";
+        INCLUDE_DIR = HOME+"include/";
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
         LIB_PATH = new JNIUtil.LibBuilder("mimalloc", "MIMALLOC", LIB_DIR, rCmakeSetting)
             .setSrcDirIniter(wd -> {
