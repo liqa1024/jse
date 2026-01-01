@@ -99,6 +99,14 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsFile_1
 
 /*
  * Class:     jse_lmp_NativeLmp
+ * Method:    lammpsInputFile_
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsInputFile_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_NativeLmp
  * Method:    lammpsCommand_
  * Signature: (JLjava/lang/String;)V
  */

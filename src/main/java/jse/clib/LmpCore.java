@@ -71,9 +71,7 @@ public class LmpCore {
          * 自定义构建 lammps 时使用的编译器，
          * cmake 有时不能自动检测到希望使用的编译器
          */
-        public static @Nullable String CMAKE_C_COMPILER   = OS.env("JSE_CMAKE_C_COMPILER_LMP"  , jse.code.Conf.CMAKE_C_COMPILER);
         public static @Nullable String CMAKE_CXX_COMPILER = OS.env("JSE_CMAKE_CXX_COMPILER_LMP", jse.code.Conf.CMAKE_CXX_COMPILER);
-        public static @Nullable String CMAKE_C_FLAGS      = OS.env("JSE_CMAKE_C_FLAGS_LMP"     , jse.code.Conf.CMAKE_C_FLAGS);
         public static @Nullable String CMAKE_CXX_FLAGS    = OS.env("JSE_CMAKE_CXX_FLAGS_LMP"   , jse.code.Conf.CMAKE_CXX_FLAGS);
         
         /**
@@ -150,7 +148,7 @@ public class LmpCore {
             LIB_DIR = tLmpBuildDir + "lib/";
         } else {
             // 否则直接版本隔离，采用内部 lammps
-            String tLmpDir = ROOT+"core/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MPICore.EXE_PATH, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, rCmakeSettingLmp) + "/";
+            String tLmpDir = ROOT+"core/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MPICore.EXE_PATH, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, rCmakeSettingLmp) + "/";
             INCLUDE_DIR = tLmpDir + "includes/";
             LIB_DIR = tLmpDir + "lib/";
         }
@@ -250,7 +248,7 @@ public class LmpCore {
                     jse.code.IO.copyDir(bd + "includes/", INCLUDE_DIR);
                 }})
             .setCmakeInitDir("../cmake")
-            .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
+            .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
             .setCmakeLineOp(null)
             .get();
         @Nullable String tLmpLLibName = LLIB_NAME_IN(LIB_DIR, "lammps");

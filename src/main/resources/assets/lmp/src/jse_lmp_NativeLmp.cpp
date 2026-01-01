@@ -1,18 +1,13 @@
-#if defined(__cplusplus) && defined(__CLION_IDE__)
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
-#pragma ide diagnostic ignored "modernize-use-nullptr"
-#endif
-
 #include "lammps/library.h"
+#include "lammps/lammps.h"
+#include "lammps/input.h"
+#include "lammps/update.h"
+
 #include "jniutil.h"
 #include "jse_lmp_NativeLmp.h"
 #include "jse_lmp_NativeLmpPointer.h"
 
-
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 /** utils for lmp */
 #ifdef LAMMPS_BIGBIG
@@ -112,11 +107,7 @@ JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsVersion_1(JNIEnv *aEnv, jcla
 }
 JNIEXPORT jstring JNICALL Java_jse_lmp_NativeLmp_lammpsVersionStr_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
     char *tVersionStr = (char *)lammps_extract_global((void *)(intptr_t)aLmpPtr, "lammps_version");
-#ifdef __cplusplus
     return tVersionStr!=NULL ? aEnv->NewStringUTF(tVersionStr) : NULL;
-#else
-    return tVersionStr!=NULL ? (*aEnv)->NewStringUTF(aEnv, tVersionStr) : NULL;
-#endif
 }
 
 JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsComm_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
@@ -150,6 +141,24 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsFile_1(JNIEnv *aEnv, jclass 
     lammps_file((void *)(intptr_t)aLmpPtr, tPath);
     exceptionCheckLMP(aEnv, (void *)(intptr_t)aLmpPtr);
     FREE(tPath);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsInputFile_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
+    // i will use C++ interface here
+#ifdef LAMMPS_OLD
+    throwExceptionLMP(aEnv, "Never try to access C++ interface when LAMMPS_IS_OLD");
+    return;
+#else
+    LAMMPS_NS::LAMMPS *tLmp = (LAMMPS_NS::LAMMPS *)(void *)(intptr_t)aLmpPtr;
+    if (!tLmp || !tLmp->error || !tLmp->update || !tLmp->input) {
+        throwExceptionLMP(aEnv, "Invalid LAMMPS handle");
+        return;
+    }
+    if (tLmp->update->whichflag!=0) {
+        throwExceptionLMP(aEnv, "Issuing LAMMPS commands during a run is not allowed");
+        return;
+    }
+    tLmp->input->file();
+#endif
 }
 JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCommand_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aCmd) {
     char *tCmd = parseStr(aEnv, aCmd);
@@ -618,10 +627,4 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmpPointer_lammpsClose_1(JNIEnv *aEnv,
     exceptionCheckLMP(aEnv, NULL);
 }
 
-#ifdef __cplusplus
 }
-#endif
-
-#if defined(__cplusplus) && defined(__CLION_IDE__)
-#pragma clang diagnostic pop
-#endif

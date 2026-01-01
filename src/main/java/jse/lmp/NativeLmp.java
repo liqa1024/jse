@@ -88,7 +88,7 @@ public class NativeLmp implements IAutoShutdown {
     public final static String LMPJNI_LIB_DIR;
     public final static String LMPJNI_LIB_PATH;
     private final static String[] LMPJNI_SRC_NAME = {
-          "jse_lmp_NativeLmp.c"
+          "jse_lmp_NativeLmp.cpp"
         , "jse_lmp_NativeLmp.h"
         , "jse_lmp_NativeLmpPointer.h"
     };
@@ -113,7 +113,7 @@ public class NativeLmp implements IAutoShutdown {
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
         LMPJNI_LIB_PATH = new JNIUtil.LibBuilder("lmpjni", "LMP_JNI", LMPJNI_LIB_DIR, rCmakeSettingLmpJNI)
             .setSrc("lmp", LMPJNI_SRC_NAME)
-            .setCmakeCCompiler(LmpCore.Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(LmpCore.Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(LmpCore.Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(LmpCore.Conf.CMAKE_CXX_FLAGS)
+            .setCmakeCxxCompiler(LmpCore.Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(LmpCore.Conf.CMAKE_CXX_FLAGS)
             .setUseMiMalloc(Conf.USE_MIMALLOC)
             .setCmakeLineOp(line -> {
                 // 替换其中的 lammps 库路径为设置好的路径
@@ -188,6 +188,14 @@ public class NativeLmp implements IAutoShutdown {
     }
     
     /**
+     * 提供接口直接加载 {@link LmpPlugin}，等价于执行命令
+     * {@code command("plugin load $LmpPlugin.LIB_PATH")}
+     */
+    public void loadPlugin() throws LmpException {
+        command("plugin load "+LmpPlugin.LIB_PATH);
+    }
+    
+    /**
      * Return a numerical representation of the LAMMPS version in use.
      * <p>
      * This is a wrapper around the {@code lammps_version()} function of the C-library interface.
@@ -259,6 +267,19 @@ public class NativeLmp implements IAutoShutdown {
         lammpsFile_(mLmpPtr.mPtr, IO.toAbsolutePath(aPath));
     }
     private native static void lammpsFile_(long aLmpPtr, @NotNull String aPath) throws LmpException;
+    
+    /**
+     * 开始 lammps，实际会读取 {@code -in file} 并执行，或者读取 stdin 作为脚本执行
+     * <p>
+     * 这是 lammps 中 c++ 接口 {@code lammps->input->file()} 的直接包装，用来实现在
+     * jse 中执行 lammps 和命令执行完全等价的效果
+     */
+    public void start() throws LmpException {
+        if (mDead) throw new IllegalStateException("This NativeLmp is dead");
+        checkThread();
+        lammpsInputFile_(mLmpPtr.mPtr);
+    }
+    private native static void lammpsInputFile_(long aLmpPtr) throws LmpException;
     
     /**
      * Process a single LAMMPS input command from a string.

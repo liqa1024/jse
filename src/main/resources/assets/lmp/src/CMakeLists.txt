@@ -1,8 +1,24 @@
 cmake_minimum_required(VERSION 3.15)
-project(lmpjni C CXX)
+project(lmpjni CXX)
 
-set(CMAKE_C_STANDARD 11)
+# MSVC hacks for lammps
+if(MSVC)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        add_compile_options(/Zc:__cplusplus)
+        add_compile_options(/wd4244)
+        add_compile_options(/wd4267)
+        add_compile_options(/EHsc)
+    endif()
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+endif()
+
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Need -restrict with Intel compilers
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -restrict")
+endif()
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -10,18 +26,8 @@ endif()
 
 
 set(SOURCE_FILES
-    jse_lmp_NativeLmp.c)
+    jse_lmp_NativeLmp.cpp)
 add_library(lmpjni SHARED ${SOURCE_FILES})
-
-option(JSE_USE_CXX "Use CXX compiler" OFF)
-if(CMAKE_C_COMPILER_ID MATCHES "MSVC")
-    set(JSE_USE_CXX ON)
-endif()
-
-if(JSE_USE_CXX)
-    set_source_files_properties(${SOURCE_FILES} PROPERTIES LANGUAGE CXX)
-endif()
-
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -45,24 +51,14 @@ include_directories("$ENV{JSE_JNIUTIL_INCLUDE_DIR}")
 
 # add mpi
 find_package(MPI)
-if(JSE_USE_CXX)
-    if(MPI_CXX_FOUND)
-        add_definitions(-DLAMMPS_LIB_MPI)
-        
-        set(MPI_CXX_SKIP_MPICXX TRUE)
-        
-        target_link_libraries(lmpjni MPI::MPI_CXX)
-    else()
-        message(WARNING "No MPI development environment found, lmpjni will build without MPI support")
-    endif()
+if(MPI_CXX_FOUND)
+    add_definitions(-DLAMMPS_LIB_MPI)
+    
+    set(MPI_CXX_SKIP_MPICXX TRUE)
+    
+    target_link_libraries(lmpjni MPI::MPI_CXX)
 else()
-    if(MPI_C_FOUND)
-        add_definitions(-DLAMMPS_LIB_MPI)
-        
-        target_link_libraries(lmpjni MPI::MPI_C)
-    else()
-        message(WARNING "No MPI development environment found, lmpjni will build without MPI support")
-    endif()
+    message(WARNING "No MPI development environment found, lmpjni will build without MPI support")
 endif()
 
 
