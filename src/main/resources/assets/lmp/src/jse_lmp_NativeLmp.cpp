@@ -1,9 +1,5 @@
 #include "lammps/library.h"
-#include "lammps/lammps.h"
-#include "lammps/input.h"
-#include "lammps/update.h"
-
-#include "jniutil.h"
+#include "lmpjni_util.hpp"
 #include "jse_lmp_NativeLmp.h"
 #include "jse_lmp_NativeLmpPointer.h"
 
@@ -146,18 +142,8 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsInputFile_1(JNIEnv *aEnv, jc
     // i will use C++ interface here
 #ifdef LAMMPS_OLD
     throwExceptionLMP(aEnv, "Never try to access C++ interface when LAMMPS_IS_OLD");
-    return;
 #else
-    LAMMPS_NS::LAMMPS *tLmp = (LAMMPS_NS::LAMMPS *)(void *)(intptr_t)aLmpPtr;
-    if (!tLmp || !tLmp->error || !tLmp->update || !tLmp->input) {
-        throwExceptionLMP(aEnv, "Invalid LAMMPS handle");
-        return;
-    }
-    if (tLmp->update->whichflag!=0) {
-        throwExceptionLMP(aEnv, "Issuing LAMMPS commands during a run is not allowed");
-        return;
-    }
-    tLmp->input->file();
+    JSE_LMPJNI::lammpsInputFile(aEnv, (void *)(intptr_t)aLmpPtr);
 #endif
 }
 JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCommand_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aCmd) {

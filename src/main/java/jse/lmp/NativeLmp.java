@@ -91,6 +91,7 @@ public class NativeLmp implements IAutoShutdown {
           "jse_lmp_NativeLmp.cpp"
         , "jse_lmp_NativeLmp.h"
         , "jse_lmp_NativeLmpPointer.h"
+        , "lmpjni_util.hpp"
     };
     
     private final static String EXECUTABLE_NAME;

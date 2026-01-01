@@ -6,6 +6,7 @@ import io.github.spencerpark.jupyter.kernel.KernelConnectionProperties;
 import jse.code.IO;
 import jse.code.SP;
 import jse.code.UT;
+import jse.lmp.NativeLmp;
 import jse.system.PythonSystemExecutor;
 import org.apache.groovy.util.Maps;
 import org.codehaus.groovy.control.CompilationFailedException;
@@ -15,7 +16,9 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.BufferedReader;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -96,6 +99,18 @@ public class Main {
             case "-python": {
                 if (aArgs.length < 3) {SP.Python.runShell(); return;}
                 break;
+            }
+            case "-lmp": {
+                // 直接通过 jse 启动内嵌的 lammps，参数转发并且自动启动 LmpPlugin
+                String[] tArgs = new String[aArgs.length-2];
+                if (tArgs.length > 0) System.arraycopy(aArgs, 2, tArgs, 0, tArgs.length);
+                try (NativeLmp tLmp = new NativeLmp(tArgs)) {
+                    tLmp.loadPlugin();
+                    tLmp.start();
+                } finally {
+                    NativeLmp.shutdownMPI();
+                }
+                return;
             }
             case "-idea": {
                 // 先是项目文件
@@ -218,6 +233,63 @@ public class Main {
                 // 由于 java 中不能正常关闭 jupyter，因此不在这里运行 jupyter
                 System.out.println("The jupyter kernel for JSE has been initialized,");
                 System.out.println("now you can open the jupyter notebook through `jupyter notebook`");
+                return;
+            }
+            case "-jniclean": {
+                String[] tList = IO.list(JAR_DIR);
+                List<String> tNamesToClean = new ArrayList<>();
+                for (String tName : tList) {
+                    if (tName.contains("@")) {
+                        tNamesToClean.add(tName);
+                    } else
+                    if (tName.equals("cmake")) {
+                        tNamesToClean.add(tName);
+                    } else
+                    if (tName.equals("cpointer")) {
+                        tNamesToClean.add(tName);
+                    } else
+                    if (tName.equals("jniutil")) {
+                        tNamesToClean.add(tName);
+                    } else
+                    if (tName.equals("lmp")) {
+                        tNamesToClean.add(tName);
+                    } else
+                    if (tName.equals("mimalloc")) {
+                        tNamesToClean.add(tName);
+                    } else
+                    if (tName.equals("mpi")) {
+                        tNamesToClean.add(tName);
+                    } else
+                    if (tName.equals("nnap")) {
+                        tNamesToClean.add(tName);
+                    }
+                }
+                if (tNamesToClean.isEmpty()) {
+                    System.out.println("There is no jni library to clean");
+                    return;
+                }
+                System.out.printf("The following directories located in %s will be removed:\n", JAR_DIR);
+                System.out.println(String.join("\n", tNamesToClean));
+                System.out.println("Confirm? (y/N)");
+                BufferedReader tReader = jse.code.IO.toReader(System.in, Charset.defaultCharset());
+                String tLine = tReader.readLine();
+                while (!tLine.equalsIgnoreCase("y")) {
+                    if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
+                        return;
+                    }
+                    System.out.println("Confirm? (y/N)");
+                }
+                for (String tName : tNamesToClean) {
+                    System.out.printf("Removing: %s\n", tName);
+                    IO.removeDir(JAR_DIR + tName);
+                }
+                return;
+            }
+            case "-jnibuild": {
+                jse.parallel.MPI.InitHelper.init();
+                jse.lmp.NativeLmp.InitHelper.init();
+                jse.code.SP.Python.InitHelper.init();
+                jsex.nnap.PairNNAP.InitHelper.init();
                 return;
             }
             default: {
@@ -394,22 +466,27 @@ public class Main {
     private static void printHelp(PrintStream aPrinter) {
         printLogo(aPrinter);
         aPrinter.println();
-        aPrinter.println("Usage:    jse [-option] value [args...]");
+        aPrinter.println("Usage:    jse [-language] path/to/script [args...]");
+        aPrinter.println("          jse [-option] [args...]");
+        aPrinter.println();
         aPrinter.println("Such as:  jse path/to/script.groovy [args...]");
-        aPrinter.println("Or:       jse -t 'println(/hello world/)'");
+        aPrinter.println("          jse -t 'println(/hello world/)'");
+        aPrinter.println("          jse -lmp -in melt.in");
         aPrinter.println();
         aPrinter.println("The options can be:");
         aPrinter.println("    -t -text      Run the groovy text script");
         aPrinter.println("    -f -file      Run the groovy/python file script (default behavior when left blank)");
-        aPrinter.println("    -i -invoke    Invoke the internal java static method directly");
         aPrinter.println("    -v -version   Print version number");
         aPrinter.println("    -? -help      Print help message");
         aPrinter.println("    -idea         Initialize the current directory to Intellij IDEA project");
+        aPrinter.println("    -lmp          Run lammps bindings in jse");
         aPrinter.println("    -groovy       Run the groovy file script, or open the groovy interactive shell when no file input");
         aPrinter.println("    -python       Run the python file script, or open the python interactive shell when no file input");
         aPrinter.println("    -groovytext   Run the groovy text script");
         aPrinter.println("    -pythontext   Run the python text script");
         aPrinter.println("    -jupyter      Install current jse to the jupyter kernel");
+        aPrinter.println("    -jniclean     clean all jni libraries");
+        aPrinter.println("    -jnibuild     Build all jni libraries (MPI, LMP, JEP, NNAP)");
         aPrinter.println();
         aPrinter.println("You can also using another scripting language such as MATLAB or Python with Py4J and import jse-*.jar");
     }
