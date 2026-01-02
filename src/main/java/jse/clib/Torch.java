@@ -20,6 +20,7 @@ import static jse.code.SP.PYTHON_PKG_DIR;
  * 目前只考虑 cpu 版本，对于 python 部分应该不影响
  * @author liqa
  */
+@Deprecated
 public class Torch {
     private Torch() {}
     

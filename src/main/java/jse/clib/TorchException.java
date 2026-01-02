@@ -9,6 +9,7 @@ import java.io.IOException;
  * 这里顺便移除了编译后抹除符号导致的无效栈信息
  * @author liqa
  */
+@Deprecated
 public final class TorchException extends Exception {
     public TorchException(String aMessage) {
         super(initMsg(aMessage));

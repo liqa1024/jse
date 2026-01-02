@@ -177,7 +177,7 @@ public class LmpCore {
                 System.out.println("Auto download lammps? (Y/n)");
             }
             String tLmpUri = String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.zip", tLmpTag);
-            System.out.println("LMP_CORE INIT INFO: Downloading "+tLmpUri);
+            System.out.println("Downloading "+tLmpUri);
             System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
             jse.code.IO.copy(URI.create(tLmpUri).toURL(), tLmpCachePath);
             System.out.println("LMP_CORE INIT INFO: lammps source code downloading finished.");

@@ -74,7 +74,7 @@ public class CMake {
                 System.out.println("Auto download CMake? (Y/n)");
             }
             String tCmakeUri = String.format("https://github.com/Kitware/CMake/releases/download/v%s/%s", VERSION, tCmakePkgName);
-            System.out.println("JNI INIT INFO: Downloading "+tCmakeUri);
+            System.out.println("Downloading "+tCmakeUri);
             System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
             IO.copy(URI.create(tCmakeUri).toURL(), tCmakeCachePath);
             System.out.println("JNI INIT INFO: CMake pkg downloading finished.");

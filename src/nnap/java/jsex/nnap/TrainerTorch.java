@@ -7,7 +7,6 @@ import jse.atom.IAtomData;
 import jse.atom.AtomicParameterCalculator;
 import jse.atom.IHasSymbol;
 import jse.cache.VectorCache;
-import jse.clib.Torch;
 import jse.code.IO;
 import jse.code.SP;
 import jse.code.UT;
@@ -76,7 +75,7 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
         // 依赖 Python
         SP.Python.InitHelper.init();
         // 简单直接依赖 Torch
-        Torch.InitHelper.init();
+        jse.clib.Torch.InitHelper.init();
         // 拷贝依赖的 python 脚本
         String tPath = SP.Python.JEP_LIB_DIR+"jsexpy/nnap_trainer.py";
         if (!IO.exists(tPath)) {
