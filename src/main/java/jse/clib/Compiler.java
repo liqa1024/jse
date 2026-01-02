@@ -42,6 +42,17 @@ public class Compiler {
     /** 自动检测到编译器是否合适，包括是否有合适的 c++ 编译器 */
     public final static boolean VALID;
     
+    /**
+     * 用于指定传给 cmake 的 C/C++ 编译器符号，确保在神秘 intel
+     * 编译器环境下也能总是使用兼容的 gcc
+     * <p>
+     * {@code null} 表示不会传递
+     * <p>
+     * 对于 msvc 不会传递，对于关闭了 {@link Conf#FORCE} 时同样不会传递
+     */
+    public final static String C_COMPILER, CXX_COMPILER;
+    
+    
     private static @Nullable String getExePath_() {
         if (!Conf.FORCE) return null;
         if (!IS_WINDOWS) {
@@ -102,12 +113,16 @@ public class Compiler {
             EXE_CMD = null;
             TYPE = "unknown";
             VALID = false;
+            C_COMPILER = null;
+            CXX_COMPILER = null;
         } else {
             System.out.printf("JNI INIT INFO: C/C++ compiler detected in %s\n", EXE_PATH);
             EXE_CMD = (IS_WINDOWS?"& \"":"\"") + EXE_PATH + "\"";
             if (IS_WINDOWS) {
                 TYPE = "msvc";
                 VALID = true;
+                C_COMPILER = null;
+                CXX_COMPILER = null;
             } else {
                 if (EXE_PATH.endsWith("gcc")) {
                     TYPE = "gcc";
@@ -123,9 +138,13 @@ public class Compiler {
                         if (Conf.FORCE) throw new RuntimeException("No suitable C/C++ compiler");
                         VALID = false;
                     }
+                    C_COMPILER = "gcc";
+                    CXX_COMPILER = "g++";
                 } else {
                     TYPE = "clang";
                     VALID = true;
+                    C_COMPILER = "clang";
+                    CXX_COMPILER = "clang++";
                 }
             }
         }

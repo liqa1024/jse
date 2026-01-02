@@ -221,8 +221,10 @@ public class JNIUtil {
             List<String> rCommand = new ArrayList<>();
             rCommand.add(CMake.EXE_CMD);
             // 这里设置 C/C++ 编译器（如果有）
-            if (mCmakeCCompiler   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + mCmakeCCompiler);}
-            if (mCmakeCxxCompiler != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ mCmakeCxxCompiler);}
+            String tCmakeCCompiler = mCmakeCCompiler==null ? Compiler.C_COMPILER : mCmakeCCompiler;
+            String tCmakeCxxCompiler = mCmakeCxxCompiler==null ? Compiler.CXX_COMPILER : mCmakeCxxCompiler;
+            if (tCmakeCCompiler   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + tCmakeCCompiler);}
+            if (tCmakeCxxCompiler != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ tCmakeCxxCompiler);}
             if (mCmakeCFlags      != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS='"    + mCmakeCFlags +"'");}
             if (mCmakeCxxFlags    != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS='"  + mCmakeCxxFlags +"'");}
             // 配置其余的参数设置
