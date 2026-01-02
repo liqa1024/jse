@@ -84,23 +84,23 @@ public class Main {
             // 一般行为
             String tOption = tValue;
             switch (tOption) {
-            case "-v": case "-version": {
+            case "-v": case "-version": case "--version": {
                 printLogo();
                 return;
             }
-            case "-?": case "-help": {
+            case "-?": case "-help": case "--help": {
                 printHelp();
                 return;
             }
-            case "-groovy": {
+            case "-groovy": case "--groovy": {
                 if (aArgs.length < 3) {SP.Groovy.runShell(); return;}
                 break;
             }
-            case "-python": {
+            case "-python": case "--python": {
                 if (aArgs.length < 3) {SP.Python.runShell(); return;}
                 break;
             }
-            case "-lmp": {
+            case "-lmp": case "--lmp": {
                 // 直接通过 jse 启动内嵌的 lammps，参数转发并且自动启动 LmpPlugin
                 String[] tArgs = new String[aArgs.length-2];
                 if (tArgs.length > 0) System.arraycopy(aArgs, 2, tArgs, 0, tArgs.length);
@@ -112,7 +112,7 @@ public class Main {
                 }
                 return;
             }
-            case "-idea": {
+            case "-idea": case "--idea": {
                 // 先是项目文件
                 String tDirName = IO.toFileName(WORKING_DIR);
                 IO.write(tDirName+".iml",
@@ -203,7 +203,7 @@ public class Main {
                 System.out.println("now you can open this directory through Intellij IDEA.");
                 return;
             }
-            case "-jupyter": {
+            case "-jupyter": case "--jupyter": {
                 // 获取可选参数
                 StringBuilder rArgs = new StringBuilder();
                 for (int i = 2; i < aArgs.length; ++i) rArgs.append(", ").append(aArgs[i]);
@@ -235,7 +235,7 @@ public class Main {
                 System.out.println("now you can open the jupyter notebook through `jupyter notebook`");
                 return;
             }
-            case "-jniclean": {
+            case "-jniclean": case "--jniclean": {
                 String[] tList = IO.list(JAR_DIR);
                 List<String> tNamesToClean = new ArrayList<>();
                 for (String tName : tList) {
@@ -291,7 +291,7 @@ public class Main {
                 }
                 return;
             }
-            case "-jnibuild": {
+            case "-jnibuild": case "--jnibuild": {
                 jse.parallel.MPI.InitHelper.init();
                 jse.lmp.LmpPlugin.InitHelper.init();
                 jsex.nnap.PairNNAP.InitHelper.init();
@@ -306,27 +306,27 @@ public class Main {
             String[] tArgs = new String[aArgs.length-3];
             if (tArgs.length > 0) System.arraycopy(aArgs, 3, tArgs, 0, tArgs.length);
             switch (tOption) {
-            case "-t": case "-text": case "-groovytext": {
+            case "-t": case "-text": case "--text": case "-groovytext": case "--groovytext": {
                 SP.Groovy.runText(tValue, tArgs);
                 return;
             }
-            case "-pythontext": {
+            case "-pythontext": case "--pythontext": {
                 SP.Python.runText(tValue, tArgs);
                 return;
             }
-            case "-f": case "-file": {
+            case "-f": case "-file": case "--file": {
                 SP.runScript(tValue, tArgs);
                 return;
             }
-            case "-groovy": {
+            case "-groovy": case "--groovy": {
                 SP.Groovy.runScript(tValue, tArgs);
                 return;
             }
-            case "-python": {
+            case "-python": case "--python": {
                 SP.Python.runScript(tValue, tArgs);
                 return;
             }
-            case "-i": case "-invoke": {
+            case "-i": case "-invoke": case "--invoke": {
                 int tLastDot = tValue.lastIndexOf(".");
                 if (tLastDot < 0) {
                     System.err.println("ERROR: Invalid method name: " + tValue);
@@ -356,7 +356,7 @@ public class Main {
                 }
                 return;
             }
-            case "-jupyterkernel": {
+            case "-jupyterkernel": case "--jupyterkernel": {
                 IS_KERNEL = true;
                 JupyterSocket.JUPYTER_LOGGER.setLevel(Level.WARNING);
                 
@@ -477,22 +477,22 @@ public class Main {
         aPrinter.println();
         aPrinter.println("Such as:  jse path/to/script.groovy [args...]");
         aPrinter.println("          jse -t 'println(/hello world/)'");
-        aPrinter.println("          jse -lmp -in melt.in");
+        aPrinter.println("          jse --lmp -in melt.in");
         aPrinter.println();
         aPrinter.println("The options can be:");
-        aPrinter.println("    -t -text      Run the groovy text script");
-        aPrinter.println("    -f -file      Run the groovy/python file script (default behavior when left blank)");
-        aPrinter.println("    -v -version   Print version number");
-        aPrinter.println("    -? -help      Print help message");
-        aPrinter.println("    -idea         Initialize the current directory to Intellij IDEA project");
-        aPrinter.println("    -lmp          Run lammps bindings in jse");
-        aPrinter.println("    -groovy       Run the groovy file script, or open the groovy interactive shell when no file input");
-        aPrinter.println("    -python       Run the python file script, or open the python interactive shell when no file input");
-        aPrinter.println("    -groovytext   Run the groovy text script");
-        aPrinter.println("    -pythontext   Run the python text script");
-        aPrinter.println("    -jupyter      Install current jse to the jupyter kernel");
-        aPrinter.println("    -jniclean     clean all jni libraries");
-        aPrinter.println("    -jnibuild     Build all jni libraries (MPI, LMP, JEP, NNAP)");
+        aPrinter.println("    -t --text      Run the groovy text script");
+        aPrinter.println("    -f --file      Run the groovy/python file script (default behavior when left blank)");
+        aPrinter.println("    -v --version   Print version number");
+        aPrinter.println("    -? --help      Print help message");
+        aPrinter.println("    --idea         Initialize the current directory to Intellij IDEA project");
+        aPrinter.println("    --lmp          Run lammps bindings in jse");
+        aPrinter.println("    --groovy       Run the groovy file script, or open the groovy interactive shell when no file input");
+        aPrinter.println("    --python       Run the python file script, or open the python interactive shell when no file input");
+        aPrinter.println("    --groovytext   Run the groovy text script");
+        aPrinter.println("    --pythontext   Run the python text script");
+        aPrinter.println("    --jupyter      Install current jse to the jupyter kernel");
+        aPrinter.println("    --jniclean     clean all jni libraries");
+        aPrinter.println("    --jnibuild     Build all jni libraries (MPI, LMP, JEP, NNAP)");
         aPrinter.println();
         aPrinter.println("You can also using another scripting language such as MATLAB or Python with Py4J and import jse-*.jar");
     }
