@@ -163,6 +163,7 @@ public class JNIUtil {
         private int mParallel = 0;
         private final String mLibDir;
         private String mCmakeInitDir = "..";
+        private boolean mUsedCmakeCCompiler = false, mUsedCmakeCxxCompiler = false;
         private @Nullable String mCmakeCCompiler = null, mCmakeCxxCompiler = null, mCmakeCFlags = null, mCmakeCxxFlags = null;
         private @Nullable Boolean mUseMiMalloc = null;
         private boolean mMT = false;
@@ -192,8 +193,8 @@ public class JNIUtil {
         public LibBuilder setBuildDirIniter(IDirIniter aBuildDirIniter) {mBuildDirIniter = aBuildDirIniter; return this;}
         public LibBuilder setPostBuildDir(IDirConsumer aPostBuildDir) {mPostBuildDir = aPostBuildDir; return this;}
         public LibBuilder setCmakeInitDir(String aCmakeInitDir) {mCmakeInitDir = aCmakeInitDir; return this;}
-        public LibBuilder setCmakeCCompiler(@Nullable String aCmakeCCompiler) {mCmakeCCompiler = aCmakeCCompiler; return this;}
-        public LibBuilder setCmakeCxxCompiler(@Nullable String aCmakeCxxCompiler) {mCmakeCxxCompiler = aCmakeCxxCompiler; return this;}
+        public LibBuilder setCmakeCCompiler(@Nullable String aCmakeCCompiler) {mUsedCmakeCCompiler = true; mCmakeCCompiler = aCmakeCCompiler; return this;}
+        public LibBuilder setCmakeCxxCompiler(@Nullable String aCmakeCxxCompiler) {mUsedCmakeCxxCompiler = true; mCmakeCxxCompiler = aCmakeCxxCompiler; return this;}
         public LibBuilder setCmakeCFlags(@Nullable String aCmakeCFlags) {mCmakeCFlags = aCmakeCFlags; return this;}
         public LibBuilder setCmakeCxxFlags(@Nullable String aCmakeCxxFlags) {mCmakeCxxFlags = aCmakeCxxFlags; return this;}
         public LibBuilder setUseMiMalloc(@Nullable Boolean aUseMiMalloc) {mUseMiMalloc = aUseMiMalloc; return this;}
@@ -221,12 +222,16 @@ public class JNIUtil {
             List<String> rCommand = new ArrayList<>();
             rCommand.add(CMake.EXE_CMD);
             // 这里设置 C/C++ 编译器（如果有）
-            String tCmakeCCompiler = mCmakeCCompiler==null ? Compiler.C_COMPILER : mCmakeCCompiler;
-            String tCmakeCxxCompiler = mCmakeCxxCompiler==null ? Compiler.CXX_COMPILER : mCmakeCxxCompiler;
-            if (tCmakeCCompiler   != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="  + tCmakeCCompiler);}
-            if (tCmakeCxxCompiler != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+ tCmakeCxxCompiler);}
-            if (mCmakeCFlags      != null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS='"    + mCmakeCFlags +"'");}
-            if (mCmakeCxxFlags    != null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS='"  + mCmakeCxxFlags +"'");}
+            if (mUsedCmakeCCompiler) {
+                String tCmakeCCompiler = mCmakeCCompiler==null ? Compiler.C_COMPILER : mCmakeCCompiler;
+                if (tCmakeCCompiler!=null) {rCommand.add("-D"); rCommand.add("CMAKE_C_COMPILER="+tCmakeCCompiler);}
+            }
+            if (mUsedCmakeCxxCompiler) {
+                String tCmakeCxxCompiler = mCmakeCxxCompiler==null ? Compiler.CXX_COMPILER : mCmakeCxxCompiler;
+                if (tCmakeCxxCompiler!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+tCmakeCxxCompiler);}
+            }
+            if (mCmakeCFlags!=null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS='"+mCmakeCFlags+"'");}
+            if (mCmakeCxxFlags!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS='"+mCmakeCxxFlags+"'");}
             // 配置其余的参数设置
             if (mUseMiMalloc != null) {
                 rCommand.add("-D"); rCommand.add("JSE_USE_MIMALLOC="+(mUseMiMalloc ?"ON":"OFF"));
