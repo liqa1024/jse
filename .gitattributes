@@ -1,2 +1,4 @@
-gradlew      eol=lf
-gradlew.bat  eol=crlf
+gradlew             eol=lf
+gradlew.bat         eol=crlf
+scripts/get.sh      eol=lf
+scripts/get.ps1     eol=crlf
