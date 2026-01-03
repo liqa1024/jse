@@ -1931,7 +1931,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             int tAtomNum = tAtomType.size();
             for (int k = 0; k < tAtomNum; ++k) {
                 // 这里不特地考虑 mirror，虽然 mirror 原则上可以没有，但是这也是一种不太合适的数据集，给出警告没有问题
-                tHasData.set(tAtomType.get(k), true);
+                tHasData.set(tAtomType.get(k)-1, true);
             }
         }
         for (int i = 0; i < mTypeNum; ++i) {
