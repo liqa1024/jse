@@ -179,7 +179,9 @@ public class LmpCore {
             String tLmpUrl = String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.zip", tLmpTag);
             System.out.println("Downloading "+IO.Text.url(tLmpUrl));
             System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
-            jse.code.IO.copy(URI.create(tLmpUrl).toURL(), tLmpCachePath);
+            String tTempPath = tLmpCachePath + ".tmp_"+UT.Code.randID();
+            jse.code.IO.copy(URI.create(tLmpUrl).toURL(), tTempPath);
+            IO.move(tTempPath, tLmpCachePath);
             System.out.println("LMP_CORE INIT INFO: lammps source code downloading finished.");
             return null;
         };

@@ -76,7 +76,9 @@ public class CMake {
             String tCmakeUrl = String.format("https://github.com/Kitware/CMake/releases/download/v%s/%s", VERSION, tCmakePkgName);
             System.out.println("Downloading "+IO.Text.url(tCmakeUrl));
             System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
-            IO.copy(URI.create(tCmakeUrl).toURL(), tCmakeCachePath);
+            String tTempPath = tCmakeCachePath + ".tmp_"+UT.Code.randID();
+            IO.copy(URI.create(tCmakeUrl).toURL(), tTempPath);
+            IO.move(tTempPath, tCmakeCachePath);
             System.out.println("JNI INIT INFO: CMake pkg downloading finished.");
         }
         // 解压
