@@ -197,6 +197,25 @@ public class NativeLmp implements IAutoShutdown {
     }
     
     /**
+     * Returns whether a given style name is available in a given category.
+     * Valid categories are: atom, integrate, minimize, pair, bond, angle, dihedral,
+     * improper, kspace, compute, fix,region, dump, and command.
+     * <p>
+     * This is a wrapper around the {@code lammps_has_style()} function of the C-library interface.
+     * @param aCategory name of category,
+     * @param aName name of the style
+     * @return true if style is available in given category
+     */
+    public boolean hasStyle(String aCategory, String aName) throws LmpException {
+        if (mDead) throw new IllegalStateException("This NativeLmp is dead");
+        if (aCategory == null) throw new NullPointerException();
+        if (aName == null) throw new NullPointerException();
+        checkThread();
+        return lammpsHasStyle_(mLmpPtr.mPtr, aCategory, aName);
+    }
+    private native static boolean lammpsHasStyle_(long aLmpPtr, @NotNull String aCategory, @NotNull String aName) throws LmpException;
+    
+    /**
      * Return a numerical representation of the LAMMPS version in use.
      * <p>
      * This is a wrapper around the {@code lammps_version()} function of the C-library interface.

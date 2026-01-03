@@ -43,6 +43,14 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsOpen_1___3Ljava_lang_String
 
 /*
  * Class:     jse_lmp_NativeLmp
+ * Method:    lammpsHasStyle_
+ * Signature: (JLjava/lang/String;Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_jse_lmp_NativeLmp_lammpsHasStyle_1
+  (JNIEnv *, jclass, jlong, jstring, jstring);
+
+/*
+ * Class:     jse_lmp_NativeLmp
  * Method:    lammpsVersion_
  * Signature: (J)I
  */

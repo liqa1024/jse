@@ -98,16 +98,36 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsOpen_1___3Ljava_lang_String
     return (jlong)(intptr_t)tLmpPtr;
 }
 
+JNIEXPORT jboolean JNICALL Java_jse_lmp_NativeLmp_lammpsHasStyle_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aCategory, jstring aName) {
+#ifdef LAMMPS_OLD
+    throwExceptionLMP(aEnv, "Cannot access `lammps_has_style` when LAMMPS_IS_OLD");
+    return JNI_FALSE;
+#else
+    char *tCategory = parseStr(aEnv, aCategory);
+    char *tName = parseStr(aEnv, aName);
+    int tOut = lammps_has_style((void *)(intptr_t)aLmpPtr, tCategory, tName);
+    exceptionCheckLMP(aEnv, (void *)(intptr_t)aLmpPtr);
+    FREE(tName);
+    FREE(tCategory);
+    return tOut ? JNI_TRUE : JNI_FALSE;
+#endif
+}
+
 JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsVersion_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
-    return (jint)lammps_version((void *)(intptr_t)aLmpPtr);
+    int tOut = lammps_version((void *)(intptr_t)aLmpPtr);
+    exceptionCheckLMP(aEnv, (void *)(intptr_t)aLmpPtr);
+    return (jint)tOut;
 }
 JNIEXPORT jstring JNICALL Java_jse_lmp_NativeLmp_lammpsVersionStr_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
     char *tVersionStr = (char *)lammps_extract_global((void *)(intptr_t)aLmpPtr, "lammps_version");
+    exceptionCheckLMP(aEnv, (void *)(intptr_t)aLmpPtr);
     return tVersionStr!=NULL ? aEnv->NewStringUTF(tVersionStr) : NULL;
 }
 
 JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsComm_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
-    return lammpsGetMpiComm((void *)(intptr_t)aLmpPtr);
+    jlong tComm = lammpsGetMpiComm((void *)(intptr_t)aLmpPtr);
+    exceptionCheckLMP(aEnv, (void *)(intptr_t)aLmpPtr);
+    return tComm;
 }
 JNIEXPORT jboolean JNICALL Java_jse_lmp_NativeLmp_lammpsLibMpi_1(JNIEnv *aEnv, jclass aClazz) {
 #ifdef LAMMPS_LIB_MPI
@@ -144,6 +164,7 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsInputFile_1(JNIEnv *aEnv, jc
     throwExceptionLMP(aEnv, "Never try to access C++ interface when LAMMPS_IS_OLD");
 #else
     JSE_LMPJNI::lammpsInputFile(aEnv, (void *)(intptr_t)aLmpPtr);
+    exceptionCheckLMP(aEnv, (void *)(intptr_t)aLmpPtr);
 #endif
 }
 JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCommand_1(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aCmd) {
