@@ -105,7 +105,7 @@ public class Main {
                 String[] tArgs = new String[aArgs.length-2];
                 if (tArgs.length > 0) System.arraycopy(aArgs, 2, tArgs, 0, tArgs.length);
                 try (NativeLmp tLmp = new NativeLmp(tArgs)) {
-                    tLmp.loadPlugin();
+                    if (!tLmp.hasPlugin()) tLmp.loadPlugin();
                     tLmp.start();
                 } finally {
                     NativeLmp.shutdownMPI();

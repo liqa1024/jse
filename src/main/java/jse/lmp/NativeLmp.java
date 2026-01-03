@@ -195,6 +195,13 @@ public class NativeLmp implements IAutoShutdown {
     public void loadPlugin() throws LmpException {
         command("plugin load "+LmpPlugin.LIB_PATH);
     }
+    /**
+     * 提供接口检测是否加载了 {@link LmpPlugin}，等价于执行命令
+     * {@code hasStyle("pair", "jse")}
+     */
+    public boolean hasPlugin() throws LmpException {
+        return hasStyle("pair", "jse");
+    }
     
     /**
      * Returns whether a given style name is available in a given category.
