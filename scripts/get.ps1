@@ -132,8 +132,15 @@ param (
     if (Test-Path $installdir) {
         $items = Get-ChildItem -Path $installdir -Force -ErrorAction SilentlyContinue
         if ($items -and $items.Count -gt 0) {
-            WriteErrorTip "Install directory is not empty"
-            return
+            Write-Host "Install directory is not empty, following will be removed: " -ForegroundColor Yellow
+            $items | ForEach-Object {
+                Write-Host "  - $($_.FullName)"
+            }
+            if (-not (AskYesNo "Confirm to update?" $false)) {
+                WriteErrorTip "Update aborted."
+                return
+            }
+            Remove-Item -Path $installdir -Recurse -Force
         }
     }
     New-Item -ItemType Directory -Path $installdir -Force | Out-Null

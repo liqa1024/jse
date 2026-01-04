@@ -103,11 +103,7 @@ echo '    \____/(____/(____) getter  '
 echo '                               '
 
 echo "Install to $JSE_DIR"
-if [ -d "$JSE_DIR" ] && [ "$(ls -A "$JSE_DIR" 2>/dev/null)" ]; then
-    ask_yes_no "Directory not empty, continue anyway?" n || raise "$JSE_DIR not empty"
-else
-    mkdir -p "$JSE_DIR" || raise "cannot create $JSE_DIR"
-fi
+mkdir -p "$JSE_DIR" || raise "cannot create $JSE_DIR"
 
 # ----------------------------------------
 # detect java
@@ -166,6 +162,10 @@ fi
 # ----------------------------------------
 # install jse
 #
+
+if [ -d "${JSE_DIR}/jse-${JSE_VERSION}" ]; then
+    raise "The same jse already exists: ${JSE_DIR}/jse-${JSE_VERSION}"
+fi
 
 download_file "$JSE_URL" "$CACHE_DIR/$JSE_PKG_NAME"
 echo "Extracting..."
