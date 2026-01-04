@@ -1,4 +1,4 @@
-# jse — Java Simulation Environment
+# jse - Java Simulation Environment
 
 **jse (Java Simulation Environment)** is a high-performance, extensible simulation framework for atomistic and materials modeling.  
 It is written in Java and leverages **JIT compilation**, **modern JVM features**, and **native extensions (JNI)** to combine performance with flexibility.
@@ -52,7 +52,7 @@ jse is designed for **materials scientists, computational physicists, and chemis
 
 jse provides **one-command installation scripts** for Linux and Windows.
 
-### Using cURL (Linux / macOS)
+### Using cURL
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/CHanzyLazer/jse/main/scripts/get.sh)
 ```
