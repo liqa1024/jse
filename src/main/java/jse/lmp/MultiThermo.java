@@ -71,7 +71,7 @@ public class MultiThermo extends AbstractListWrapper<ITable, ITable, ITable> {
                 aHeads = tTable.heads();
             } else {
                 // 如果不匹配则终止合并
-                if (headMatch(aHeads, tTable.heads())) break;
+                if (!headMatch(aHeads, tTable.heads())) break;
             }
             rDataRows.addAll(tTable.rows());
         }
