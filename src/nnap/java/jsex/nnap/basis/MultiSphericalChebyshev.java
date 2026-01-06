@@ -164,10 +164,10 @@ public class MultiSphericalChebyshev extends MergeableBasis {
                 double tScale = MathEX.Adv.integral(Math.max(rcutL, 0.0), rcutR, 1000, r -> {
                     double x = (r-rcutL) / (rcutR-rcutL);
                     x = x+x - 1;
-                    x = 1 - x*x;
-                    x = x*x;
-                    double fcut = x*x;
-                    double cheby = Math.abs(MathEX.Func.chebyshev(fn, 1 - 2*(r/mRCutMax)));
+                    double x2 = 1 - x*x;
+                    x2 = x2*x2;
+                    double fcut = x2*x2;
+                    double cheby = Math.abs(MathEX.Func.chebyshev(fn, -x));
                     return r*r * fcut * cheby;
                 });
                 mRFuncScale.set(i, tBase / tScale);
@@ -206,18 +206,18 @@ public class MultiSphericalChebyshev extends MergeableBasis {
     
     
     @Override protected int forwardCacheSize_(int aNN, boolean aFullCache) {
-        return aFullCache ? (aNN*(mNMax+1 + mRCutsSize + mLMAll) + mEquFuseInDim*mLMAll)
-                          : (mNMax+1 + mRCutsSize + mLMAll + mEquFuseInDim*mLMAll);
+        return aFullCache ? (aNN*((mNMax+1)*mRCutsSize + mRCutsSize + mLMAll) + mEquFuseInDim*mLMAll)
+                          : ((mNMax+1)*mRCutsSize + mRCutsSize + mLMAll + mEquFuseInDim*mLMAll);
     }
     @Override protected int backwardCacheSize_(int aNN) {
         return aNN*(mEquFuseInDim) + mEquFuseInDim*mLMAll;
     }
     @Override protected int forwardForceCacheSize_(int aNN, boolean aFullCache) {
-        return aFullCache ? (3*aNN*(mNMax+1 + mRCutsSize + mLMAll) + 2*(mNMax+1) + mRCutsSize + 3*mLMAll + mEquFuseInDim*mLMAll)
-                          : (5*(mNMax+1) + 4*mRCutsSize + 6*mLMAll + mEquFuseInDim*mLMAll);
+        return aFullCache ? (3*aNN*((mNMax+1)*mRCutsSize + mRCutsSize + mLMAll) + (mNMax+1)*mRCutsSize + (mNMax+1) + mRCutsSize + 3*mLMAll + mEquFuseInDim*mLMAll)
+                          : (4*(mNMax+1)*mRCutsSize + (mNMax+1) + 4*mRCutsSize + 6*mLMAll + mEquFuseInDim*mLMAll);
     }
     @Override protected int backwardForceCacheSize_(int aNN) {
-        return mLMAll + mNMax+1 + mRCutsSize + mEquFuseInDim*mLMAll;
+        return mLMAll + (mNMax+1)*mRCutsSize + mRCutsSize + mEquFuseInDim*mLMAll;
     }
     
     

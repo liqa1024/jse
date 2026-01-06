@@ -12,16 +12,17 @@ static void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTyp
                     jdouble aRCutMax, jdouble *aRCutsL, jdouble *aRCutsR, jint aRCutsSize,
                     jint aNMax, jint aLMax, jdouble *aRFuncScale) noexcept {
     const jint tLMAll = (aLMax+1)*(aLMax+1);
+    const jint tSizeRFunc = (aNMax+1)*aRCutsSize;
     // init cache
-    jdouble *rRn = NULL, *rFc = NULL, *rY = NULL;
-    jdouble *rNlRn = NULL, *rNlFc = NULL, *rNlY = NULL;
+    jdouble *rRkn = NULL, *rFc = NULL, *rY = NULL;
+    jdouble *rNlRkn = NULL, *rNlFc = NULL, *rNlY = NULL;
     if (FULL_CACHE) {
-        rNlRn = rForwardCache;
-        rNlFc = rNlRn + aNN*(aNMax+1);
+        rNlRkn = rForwardCache;
+        rNlFc = rNlRkn + aNN*tSizeRFunc;
         rNlY = rNlFc + aNN*aRCutsSize;
     } else {
-        rRn = rForwardCache;
-        rFc = rRn + (aNMax+1);
+        rRkn = rForwardCache;
+        rFc = rRkn + tSizeRFunc;
         rY = rFc + aRCutsSize;
     }
     // loop for neighbor
@@ -31,15 +32,25 @@ static void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlTyp
         jdouble dis = sqrt((double)(dx*dx + dy*dy + dz*dz));
         // check rcut for merge
         if (dis >= aRCutMax) continue;
-        // cal Rn
-        if (FULL_CACHE) rRn = rNlRn + j*(aNMax+1);
-        calRn(rRn, aNMax, dis, aRCutMax);
+        // cal Rn, fc
+        if (FULL_CACHE) rRkn = rNlRkn + j*tSizeRFunc;
+        if (FULL_CACHE) rFc = rNlFc + j*aRCutsSize;
+        jdouble *rRn = rRkn;
+        for (jint k = 0; k < aRCutsSize; ++k, rRn += (aNMax+1)) {
+            const jdouble tRCutL = aRCutsL[k];
+            const jdouble tRCutR = aRCutsR[k];
+            if (dis<=tRCutL || dis>=tRCutR) continue;
+            calRn(rRn, aNMax, dis, tRCutL, tRCutR);
+            const jdouble fc = calFc(dis, tRCutL, tRCutR);
+            rFc[k] = fc;
+        }
+        // scale to Rkn, more simple
+        multiply(rRkn, aRFuncScale, tSizeRFunc);
         // cal Y
         if (FULL_CACHE) rY = rNlY + j*tLMAll;
         realSphericalHarmonicsFull4(aLMax, dx, dy, dz, dis, rY);
         // cal cnlm
-        if (FULL_CACHE) rFc = rNlFc + j*aRCutsSize;
-        mplusCnlmMulti(rCnlm, rY, rFc, rRn, aRFuncScale, dis, aRCutsL, aRCutsR, aRCutsSize, aNMax, aLMax);
+        mplusCnlmMulti(rCnlm, rY, rFc, rRkn, dis, aRCutsL, aRCutsR, aRCutsSize, aNMax, aLMax);
     }
 }
 static void calCnlm(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
@@ -84,10 +95,10 @@ static void calBackwardMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, 
                                 jdouble aRCutMax, jdouble *aRCutsL, jdouble *aRCutsR, jint aRCutsSize,
                                 jint aNMax, jint aLMax, jdouble *aRFuncScale) {
     const jint tLMAll = (aLMax+1)*(aLMax+1);
-    const jint tSizeBnlm = (aNMax+1)*tLMAll;
+    const jint tSizeRFunc = (aNMax+1)*aRCutsSize;
     // init cache
-    jdouble *tNlRn = aForwardCache;
-    jdouble *tNlFc = tNlRn + aNN*(aNMax+1);
+    jdouble *tNlRkn = aForwardCache;
+    jdouble *tNlFc = tNlRkn + aNN*tSizeRFunc;
     jdouble *tNlY = tNlFc + aNN*aRCutsSize;
     for (jint j = 0; j < aNN; ++j) {
         jint type = aNlType[j];
@@ -97,7 +108,7 @@ static void calBackwardMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, 
         if (dis >= aRCutMax) continue;
         // get fc Rn Y
         jdouble *tFc = tNlFc + j*aRCutsSize;
-        jdouble *tRn = tNlRn + j*(aNMax+1);
+        jdouble *tRkn = tNlRkn + j*tSizeRFunc;
         jdouble *tY = tNlY + j*tLMAll;
         // mplusGradParaFuse(aGradCnlm, tBnlm, rGradPara, type, aFuseSize, aNMax, aLMaxMax);
     }
@@ -136,22 +147,23 @@ static void calForceMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
                              jdouble aRCutMax, jdouble *aRCutsL, jdouble *aRCutsR, jint aRCutsSize,
                              jint aNMax, jint aLMax, jdouble *aRFuncScale) {
     const jint tLMAll = (aLMax+1)*(aLMax+1);
+    const jint tSizeRFunc = (aNMax+1)*aRCutsSize;
     // init cache
-    jdouble *tNlRn = aForwardCache;
-    jdouble *tNlFc = tNlRn + aNN*(aNMax+1);
+    jdouble *tNlRkn = aForwardCache;
+    jdouble *tNlFc = tNlRkn + aNN*tSizeRFunc;
     jdouble *tNlY = tNlFc + aNN*aRCutsSize;
-    jdouble *rRnPx = NULL, *rRnPy = NULL, *rRnPz = NULL, *rCheby2 = NULL;
+    jdouble *rRknPx = NULL, *rRknPy = NULL, *rRknPz = NULL, *rCheby2 = NULL;
     jdouble *rFcPx = NULL, *rFcPy = NULL, *rFcPz = NULL;
     jdouble *rYPx = NULL, *rYPy = NULL, *rYPz = NULL, *rYPtheta = NULL, *rYPphi = NULL;
-    jdouble *rGradRn = NULL, *rGradFc = NULL, *rGradY = NULL;
-    jdouble *rNlRnPx = NULL, *rNlRnPy = NULL, *rNlRnPz = NULL;
+    jdouble *rGradRkn = NULL, *rGradFc = NULL, *rGradY = NULL;
+    jdouble *rNlRknPx = NULL, *rNlRknPy = NULL, *rNlRknPz = NULL;
     jdouble *rNlFcPx = NULL, *rNlFcPy = NULL, *rNlFcPz = NULL;
     jdouble *rNlYPx = NULL, *rNlYPy = NULL, *rNlYPz = NULL;
     if (FULL_CACHE) {
-        rNlRnPx = rForwardForceCache;
-        rNlRnPy = rNlRnPx + aNN*(aNMax+1);
-        rNlRnPz = rNlRnPy + aNN*(aNMax+1);
-        rNlFcPx = rNlRnPz + aNN*(aNMax+1);
+        rNlRknPx = rForwardForceCache;
+        rNlRknPy = rNlRknPx + aNN*tSizeRFunc;
+        rNlRknPz = rNlRknPy + aNN*tSizeRFunc;
+        rNlFcPx = rNlRknPz + aNN*tSizeRFunc;
         rNlFcPy = rNlFcPx + aNN*aRCutsSize;
         rNlFcPz = rNlFcPy + aNN*aRCutsSize;
         rNlYPx = rNlFcPz + aNN*aRCutsSize;
@@ -160,14 +172,14 @@ static void calForceMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
         rYPtheta = rNlYPz + aNN*tLMAll;
         rYPphi = rYPtheta + tLMAll;
         rCheby2 = rYPphi + tLMAll;
-        rGradRn = rCheby2 + (aNMax+1);
-        rGradFc = rGradRn + (aNMax+1);
+        rGradRkn = rCheby2 + (aNMax+1);
+        rGradFc = rGradRkn + tSizeRFunc;
         rGradY = rGradFc + aRCutsSize;
     } else {
-        rRnPx = rForwardForceCache;
-        rRnPy = rRnPx + (aNMax+1);
-        rRnPz = rRnPy + (aNMax+1);
-        rFcPx = rRnPz + (aNMax+1);
+        rRknPx = rForwardForceCache;
+        rRknPy = rRknPx + tSizeRFunc;
+        rRknPz = rRknPy + tSizeRFunc;
+        rFcPx = rRknPz + tSizeRFunc;
         rFcPy = rFcPx + aRCutsSize;
         rFcPz = rFcPy + aRCutsSize;
         rYPx = rFcPz + aRCutsSize;
@@ -176,8 +188,8 @@ static void calForceMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
         rYPtheta = rYPz + tLMAll;
         rYPphi = rYPtheta + tLMAll;
         rCheby2 = rYPphi + tLMAll;
-        rGradRn = rCheby2 + (aNMax+1);
-        rGradFc = rGradRn + (aNMax+1);
+        rGradRkn = rCheby2 + (aNMax+1);
+        rGradFc = rGradRkn + tSizeRFunc;
         rGradY = rGradFc + aRCutsSize;
     }
     // loop for neighbor
@@ -190,22 +202,31 @@ static void calForceMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jin
         if (dis >= aRCutMax) continue;
         // get fc Rn Y
         jdouble *tFc = tNlFc + j*aRCutsSize;
-        jdouble *tRn = tNlRn + j*(aNMax+1);
+        jdouble *tRkn = tNlRkn + j*tSizeRFunc;
         jdouble *tY = tNlY + j*tLMAll;
         // gradcnlm to gradY, gradR, gradfc here
         fill(rGradY, 0.0, tLMAll);
-        fill(rGradRn, 0.0, aNMax+1);
+        fill(rGradRkn, 0.0, tSizeRFunc);
         fill(rGradFc, 0.0, aRCutsSize);
-        gradCnlm2GradYRFcMulti(aGradCnlm, rGradY, rGradRn, rGradFc, tY, tFc, tRn, aRFuncScale, dis, aRCutsL, aRCutsR, aRCutsSize, aNMax, aLMax);
+        gradCnlm2GradYRFcMulti(aGradCnlm, rGradY, rGradRkn, rGradFc, tY, tFc, tRkn, dis, aRCutsL, aRCutsR, aRCutsSize, aNMax, aLMax);
+        // scale to grad Rkn here
+        multiply(rGradRkn, aRFuncScale, tSizeRFunc);
         jdouble rFxj = 0.0, rFyj = 0.0, rFzj = 0.0;
         // RnPxyz to Fxyz
         if (FULL_CACHE) {
-            rRnPx = rNlRnPx + j*(aNMax+1);
-            rRnPy = rNlRnPy + j*(aNMax+1);
-            rRnPz = rNlRnPz + j*(aNMax+1);
+            rRknPx = rNlRknPx + j*tSizeRFunc;
+            rRknPy = rNlRknPy + j*tSizeRFunc;
+            rRknPz = rNlRknPz + j*tSizeRFunc;
         }
-        calRnPxyz(rRnPx, rRnPy, rRnPz, rCheby2, aNMax, dis, aRCutMax, dx, dy, dz);
-        gradRn2Fxyz(rGradRn, aNMax, rRnPx, rRnPy, rRnPz, rFxj, rFyj, rFzj);
+        jdouble *rRnPx = rRknPx, *rRnPy = rRknPy, *rRnPz = rRknPz;
+        jdouble *rGradRn = rGradRkn;
+        for (jint k = 0; k < aRCutsSize; ++k, rRnPx += (aNMax+1), rRnPy += (aNMax+1), rRnPz += (aNMax+1), rGradRn += (aNMax+1)) {
+            const jdouble tRCutL = aRCutsL[k];
+            const jdouble tRCutR = aRCutsR[k];
+            if (dis<=tRCutL || dis>=tRCutR) continue;
+            calRnPxyz(rRnPx, rRnPy, rRnPz, rCheby2, aNMax, dis, tRCutL, tRCutR, dx, dy, dz);
+            gradRn2Fxyz(rGradRn, aNMax, rRnPx, rRnPy, rRnPz, rFxj, rFyj, rFzj);
+        }
         // YPxyz to Fxyz
         if (FULL_CACHE) {
             rYPx = rNlYPx + j*tLMAll;
@@ -287,21 +308,22 @@ static void calBackwardForceMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aN
                                      jdouble aRCutMax, jdouble *aRCutsL, jdouble *aRCutsR, jint aRCutsSize,
                                      jint aNMax, jint aLMax, jdouble *aRFuncScale) noexcept {
     const jint tLMAll = (aLMax+1)*(aLMax+1);
+    const jint tSizeRFunc = (aNMax+1)*aRCutsSize;
     // init cache
-    jdouble *tNlRn = aForwardCache;
-    jdouble *tNlFc = tNlRn + aNN*(aNMax+1);
+    jdouble *tNlRkn = aForwardCache;
+    jdouble *tNlFc = tNlRkn + aNN*tSizeRFunc;
     jdouble *tNlY = tNlFc + aNN*aRCutsSize;
-    jdouble *tNlRnPx = aForwardForceCache;
-    jdouble *tNlRnPy = tNlRnPx + aNN*(aNMax+1);
-    jdouble *tNlRnPz = tNlRnPy + aNN*(aNMax+1);
-    jdouble *tNlFcPx = tNlRnPz + aNN*(aNMax+1);
+    jdouble *tNlRknPx = aForwardForceCache;
+    jdouble *tNlRknPy = tNlRknPx + aNN*tSizeRFunc;
+    jdouble *tNlRknPz = tNlRknPy + aNN*tSizeRFunc;
+    jdouble *tNlFcPx = tNlRknPz + aNN*tSizeRFunc;
     jdouble *tNlFcPy = tNlFcPx + aNN*aRCutsSize;
     jdouble *tNlFcPz = tNlFcPy + aNN*aRCutsSize;
     jdouble *tNlYPx = tNlFcPz + aNN*aRCutsSize;
     jdouble *tNlYPy = tNlYPx + aNN*tLMAll;
     jdouble *tNlYPz = tNlYPy + aNN*tLMAll;
-    jdouble *rGradNNGradRn = rBackwardForceCache;
-    jdouble *rGradNNGradFc = rGradNNGradRn + (aNMax+1);
+    jdouble *rGradNNGradRkn = rBackwardForceCache;
+    jdouble *rGradNNGradFc = rGradNNGradRkn + tSizeRFunc;
     jdouble *rGradNNGradY = rGradNNGradFc + aRCutsSize;
     // loop for neighbor
     for (jint j = 0; j < aNN; ++j) {
@@ -313,15 +335,24 @@ static void calBackwardForceMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aN
         if (dis >= aRCutMax) continue;
         // clear gradNNGradY, gradNNGradR, gradNNGradfc here
         fill(rGradNNGradY, 0.0, tLMAll);
-        fill(rGradNNGradRn, 0.0, aNMax+1);
+        fill(rGradNNGradRkn, 0.0, tSizeRFunc);
         fill(rGradNNGradFc, 0.0, aRCutsSize);
         // get gradFxyz
         jdouble tGradFx = aGradFx[j], tGradFy = aGradFy[j], tGradFz = aGradFz[j];
         // gradFxyz to gradNNGradRn
-        jdouble *tRnPx = tNlRnPx + j*(aNMax+1);
-        jdouble *tRnPy = tNlRnPy + j*(aNMax+1);
-        jdouble *tRnPz = tNlRnPz + j*(aNMax+1);
-        gradFxyz2GradNNGradRn(rGradNNGradRn, aNMax, tRnPx, tRnPy, tRnPz, tGradFx, tGradFy, tGradFz);
+        jdouble *tRknPx = tNlRknPx + j*tSizeRFunc;
+        jdouble *tRknPy = tNlRknPy + j*tSizeRFunc;
+        jdouble *tRknPz = tNlRknPz + j*tSizeRFunc;
+        jdouble *tRnPx = tRknPx, *tRnPy = tRknPy, *tRnPz = tRknPz;
+        jdouble *rGradNNGradRn = rGradNNGradRkn;
+        for (jint k = 0; k < aRCutsSize; ++k, tRnPx += (aNMax+1), tRnPy += (aNMax+1), tRnPz += (aNMax+1), rGradNNGradRn += (aNMax+1)) {
+            const jdouble tRCutL = aRCutsL[k];
+            const jdouble tRCutR = aRCutsR[k];
+            if (dis<=tRCutL || dis>=tRCutR) continue;
+            gradFxyz2GradNNGradRn(rGradNNGradRn, aNMax, tRnPx, tRnPy, tRnPz, tGradFx, tGradFy, tGradFz);
+        }
+        // scale to grad grad Rkn here
+        multiply(rGradNNGradRkn, aRFuncScale, tSizeRFunc);
         // gradFxyz to gradNNGradY
         jdouble *tYPx = tNlYPx + j*tLMAll;
         jdouble *tYPy = tNlYPy + j*tLMAll;
@@ -339,10 +370,10 @@ static void calBackwardForceMainLoop(jdouble *aNlDx, jdouble *aNlDy, jdouble *aN
         }
         // get fc Rn Y
         jdouble *tFc = tNlFc + j*aRCutsSize;
-        jdouble *tRn = tNlRn + j*(aNMax+1);
+        jdouble *tRkn = tNlRkn + j*tSizeRFunc;
         jdouble *tY = tNlY + j*tLMAll;
         // mplus to gradNNgrad
-        mplusGradNNGradCnlmMulti(rGradNNGradCnlm, rGradNNGradY, rGradNNGradRn, rGradNNGradFc, tY, tFc, tRn, aRFuncScale, dis, aRCutsL, aRCutsR, aRCutsSize, aNMax, aLMax);
+        mplusGradNNGradCnlmMulti(rGradNNGradCnlm, rGradNNGradY, rGradNNGradRkn, rGradNNGradFc, tY, tFc, tRkn, dis, aRCutsL, aRCutsR, aRCutsSize, aNMax, aLMax);
     }
 }
 static void calBackwardForce(jdouble *aNlDx, jdouble *aNlDy, jdouble *aNlDz, jint *aNlType, jint aNN,
