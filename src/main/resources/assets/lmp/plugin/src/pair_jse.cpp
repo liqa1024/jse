@@ -130,7 +130,7 @@ void PairJSE::unpack_reverse_comm(int n, int *list, double *buf) {
 /* ---------------------------------------------------------------------- */
 jint PairJSE::findVariable(jstring name) {
     const char *name_c = mEnv->GetStringUTFChars(name, NULL);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "parse name");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return -1;
     int ivar = input->variable->find(name_c);
     mEnv->ReleaseStringUTFChars(name, name_c);
     return (jint)ivar;
@@ -199,7 +199,7 @@ jlong PairJSE::atomMass() {
 }
 jlong PairJSE::atomExtract(jstring name) {
     const char *name_c = mEnv->GetStringUTFChars(name, NULL);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "parse name");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return NULL;
     jlong ptr = (jlong)(intptr_t) atom->extract(name_c);
     mEnv->ReleaseStringUTFChars(name, name_c);
     return ptr;

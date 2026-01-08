@@ -16,7 +16,7 @@
 #include "lammps/variable.h"
 #include "neigh_request.h"
 
-#include <stdint.h>
+#include "jniutil.h"
 
 using namespace LAMMPS_NS;
 
@@ -189,7 +189,7 @@ double FixJSE::compute_array(int i, int j) {
 /* ---------------------------------------------------------------------- */
 jint FixJSE::findVariable(jstring name) {
     const char *name_c = mEnv->GetStringUTFChars(name, NULL);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "parse name");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return -1;
     int ivar = input->variable->find(name_c);
     mEnv->ReleaseStringUTFChars(name, name_c);
     return (jint)ivar;
@@ -288,7 +288,10 @@ void FixJSE::neighborRequestOccasionalFull(jdouble rcut) {
     if (rcut > 0.0) req->set_cutoff(rcut);
 }
 void FixJSE::neighborBuildOne() {
-    if (mNL == NULL) error->all(FLERR, "No neighbor list in this fix");
+    if (mNL == NULL) {
+        throwExceptionLMP(mEnv, "No neighbor list in this fix");
+        return;
+    }
     neighbor->build_one(mNL);
 }
 jdouble FixJSE::neighborCutneighmin() {
@@ -332,7 +335,7 @@ jlong FixJSE::atomMass() {
 }
 jlong FixJSE::atomExtract(jstring name) {
     const char *name_c = mEnv->GetStringUTFChars(name, NULL);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "parse name");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return NULL;
     jlong ptr = (jlong)(intptr_t) atom->extract(name_c);
     mEnv->ReleaseStringUTFChars(name, name_c);
     return ptr;
@@ -422,23 +425,38 @@ void FixJSE::domainSetLocalBox() {
     domain->set_local_box();
 }
 jint FixJSE::listGnum() {
-    if (mNL == NULL) error->all(FLERR, "No neighbor list in this fix");
+    if (mNL == NULL) {
+        throwExceptionLMP(mEnv, "No neighbor list in this fix");
+        return -1;
+    }
     return (jint) mNL->gnum;
 }
 jint FixJSE::listInum() {
-    if (mNL == NULL) error->all(FLERR, "No neighbor list in this fix");
+    if (mNL == NULL) {
+        throwExceptionLMP(mEnv, "No neighbor list in this fix");
+        return -1;
+    }
     return (jint) mNL->inum;
 }
 jlong FixJSE::listIlist() {
-    if (mNL == NULL) error->all(FLERR, "No neighbor list in this fix");
+    if (mNL == NULL) {
+        throwExceptionLMP(mEnv, "No neighbor list in this fix");
+        return NULL;
+    }
     return (jlong)(intptr_t) mNL->ilist;
 }
 jlong FixJSE::listNumneigh() {
-    if (mNL == NULL) error->all(FLERR, "No neighbor list in this fix");
+    if (mNL == NULL) {
+        throwExceptionLMP(mEnv, "No neighbor list in this fix");
+        return NULL;
+    }
     return (jlong)(intptr_t) mNL->numneigh;
 }
 jlong FixJSE::listFirstneigh() {
-    if (mNL == NULL) error->all(FLERR, "No neighbor list in this fix");
+    if (mNL == NULL) {
+        throwExceptionLMP(mEnv, "No neighbor list in this fix");
+        return NULL;
+    }
     return (jlong)(intptr_t) mNL->firstneigh;
 }
 jdouble FixJSE::forceBoltz() {

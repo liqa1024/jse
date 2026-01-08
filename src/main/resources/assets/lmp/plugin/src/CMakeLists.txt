@@ -61,6 +61,8 @@ else()
     message(FATAL_ERROR "No java development environment found")
 endif()
 
+# add jniutil
+include_directories("$ENV{JSE_JNIUTIL_INCLUDE_DIR}")
 
 # add mpi
 find_package(MPI)
