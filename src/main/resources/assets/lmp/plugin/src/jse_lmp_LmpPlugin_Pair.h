@@ -487,10 +487,26 @@ JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commForwardComm_1
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    commForwardCommThis_
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commForwardCommThis_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
  * Method:    commReverseComm_
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commReverseComm_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    commReverseCommThis_
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commReverseCommThis_1
   (JNIEnv *, jclass, jlong);
 
 /*

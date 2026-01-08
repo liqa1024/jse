@@ -95,7 +95,9 @@ public:
     jint commNprocs();
     jlong commWorld();
     void commForwardComm();
+    void commForwardCommThis();
     void commReverseComm();
+    void commReverseCommThis();
     jstring unitStyle();
 };
 

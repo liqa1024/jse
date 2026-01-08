@@ -315,8 +315,14 @@ jlong PairJSE::commWorld() {
 void PairJSE::commForwardComm() {
     comm->forward_comm();
 }
+void PairJSE::commForwardCommThis() {
+    comm->forward_comm(this);
+}
 void PairJSE::commReverseComm() {
     comm->reverse_comm();
+}
+void PairJSE::commReverseCommThis() {
+    comm->reverse_comm(this);
 }
 jstring PairJSE::unitStyle() {
     char *tUnits = lmp->update->unit_style;

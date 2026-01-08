@@ -147,7 +147,9 @@ public:
     jlong commWorld();
     jdouble commCutghostuser();
     void commForwardComm();
+    void commForwardCommThis();
     void commReverseComm();
+    void commReverseCommThis();
     jstring unitStyle();
 };
 

@@ -2,14 +2,12 @@ package jse.lmp;
 
 import jse.clib.*;
 import jse.code.IO;
-import jse.code.OS;
 import jse.code.SP;
 import jse.code.UT;
 import jse.parallel.IAutoShutdown;
 import jse.parallel.MPI;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 
@@ -431,8 +429,14 @@ public class LmpPlugin {
         protected final void commForwardComm() {commForwardComm_(mPairPtr);}
         private native static void commForwardComm_(long aPairPtr);
         
+        protected final void commForwardCommThis() {commForwardCommThis_(mPairPtr);}
+        private native static void commForwardCommThis_(long aPairPtr);
+        
         protected final void commReverseComm() {commReverseComm_(mPairPtr);}
         private native static void commReverseComm_(long aPairPtr);
+        
+        protected final void commReverseCommThis() {commReverseCommThis_(mPairPtr);}
+        private native static void commReverseCommThis_(long aPairPtr);
         
         protected final String unitStyle() {return unitStyle_(mPairPtr);}
         private native static String unitStyle_(long aPairPtr);
@@ -876,8 +880,14 @@ public class LmpPlugin {
         protected final void commForwardComm() {commForwardComm_(mFixPtr);}
         private native static void commForwardComm_(long aFixPtr);
         
+        protected final void commForwardCommThis() {commForwardCommThis_(mFixPtr);}
+        private native static void commForwardCommThis_(long aFixPtr);
+        
         protected final void commReverseComm() {commReverseComm_(mFixPtr);}
         private native static void commReverseComm_(long aFixPtr);
+        
+        protected final void commReverseCommThis() {commReverseCommThis_(mFixPtr);}
+        private native static void commReverseCommThis_(long aFixPtr);
         
         protected final String unitStyle() {return unitStyle_(mFixPtr);}
         private native static String unitStyle_(long aFixPtr);

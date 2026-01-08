@@ -481,8 +481,14 @@ jdouble FixJSE::commCutghostuser() {
 void FixJSE::commForwardComm() {
     comm->forward_comm();
 }
+void FixJSE::commForwardCommThis() {
+    comm->forward_comm(this);
+}
 void FixJSE::commReverseComm() {
     comm->reverse_comm();
+}
+void FixJSE::commReverseCommThis() {
+    comm->reverse_comm(this);
 }
 jstring FixJSE::unitStyle() {
     char *tUnits = lmp->update->unit_style;
