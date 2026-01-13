@@ -132,7 +132,7 @@ public class LmpCore {
         // 这里先添加一个简单的环境变量设置的 lammps pkg
         @Nullable String tLmpPkgStr = OS.env("JSE_LMP_PKG");
         if (tLmpPkgStr!=null) {
-            String[] tLmpPkgs = jse.code.IO.Text.splitStr(tLmpPkgStr);
+            String[] tLmpPkgs = IO.Text.splitStr(tLmpPkgStr);
             for (String tLmpPkg : tLmpPkgs) {
                 rCmakeSettingLmp.put("PKG_"+tLmpPkg, "ON");
             }
@@ -147,7 +147,7 @@ public class LmpCore {
         String tLmpHome = null;
         String tLmpBuildDir = null;
         if (Conf.HOME != null) {
-            tLmpHome = jse.code.IO.toInternalValidDir(jse.code.IO.toAbsolutePath(Conf.HOME));
+            tLmpHome = IO.toInternalValidDir(IO.toAbsolutePath(Conf.HOME));
             tLmpBuildDir = tLmpHome + BUILD_DIR_NAME+"/";
             INCLUDE_DIR = tLmpBuildDir + "includes/";
             LIB_DIR = tLmpBuildDir + "lib/";
@@ -162,10 +162,10 @@ public class LmpCore {
         String tLmpTag = Conf.TAG==null ? Conf.DEFAULT_TAG : Conf.TAG;
         final String tLmpCachePath = JNIUtil.PKG_DIR + "lammps-"+ tLmpTag +".zip";
         final Callable<Void> tCacheValider = () -> {
-            if (jse.code.IO.exists(tLmpCachePath)) return null;
+            if (IO.exists(tLmpCachePath)) return null;
             System.out.println("LMP_CORE INIT INFO: No correct lammps source code detected");
             System.out.println("Auto download lammps? (Y/n)");
-            BufferedReader tReader = jse.code.IO.toReader(System.in, Charset.defaultCharset());
+            BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
             String tLine = tReader.readLine();
             while (true) {
                 if (tLine.equalsIgnoreCase("n")) {
@@ -180,17 +180,17 @@ public class LmpCore {
             System.out.println("Downloading "+IO.Text.url(tLmpUrl));
             System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
             String tTempPath = tLmpCachePath + ".tmp_"+UT.Code.randID();
-            jse.code.IO.copy(URI.create(tLmpUrl).toURL(), tTempPath);
+            IO.copy(URI.create(tLmpUrl).toURL(), tTempPath);
             IO.move(tTempPath, tLmpCachePath);
             System.out.println("LMP_CORE INIT INFO: lammps source code downloading finished.");
             return null;
         };
         final JNIUtil.IDirIniter tUnzipLmp = wd -> {
             // 现在直接解压到输入目录
-            jse.code.IO.zip2dir(tLmpCachePath, wd);
-            for (String tName : jse.code.IO.list(wd)) {
+            IO.zip2dir(tLmpCachePath, wd);
+            for (String tName : IO.list(wd)) {
                 String tLmpSrcDir = wd + tName + "/";
-                if (jse.code.IO.isDir(tLmpSrcDir)) {
+                if (IO.isDir(tLmpSrcDir)) {
                     return tLmpSrcDir;
                 }
             }
@@ -206,7 +206,7 @@ public class LmpCore {
                 if (!MPICore.VALID) {
                     System.out.println("LMP_CORE INIT INFO: No MPI support,");
                     System.out.println("Build lammps without MPI support? (y/N)");
-                    BufferedReader tReader = jse.code.IO.toReader(System.in, Charset.defaultCharset());
+                    BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
                     String tLine = tReader.readLine();
                     while (!tLine.equalsIgnoreCase("y")) {
                         if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
@@ -220,15 +220,15 @@ public class LmpCore {
                 // 对于是否有 fLmpHome 采用不同逻辑
                 if (fLmpHome!=null) {
                     // 如果压根没有 fLmpHome 目录，则直接从源码解压
-                    if (!jse.code.IO.isDir(fLmpHome)) {
+                    if (!IO.isDir(fLmpHome)) {
                         tCacheValider.call();
                         String tLmpSrcDir = tUnzipLmp.init(wd); // 依旧解压到工作目录，但是这里进行一次移动
                         // 移动到需要的目录
                         try {
-                            jse.code.IO.move(tLmpSrcDir, fLmpHome);
+                            IO.move(tLmpSrcDir, fLmpHome);
                         } catch (Exception e) {
                             // 移动失败则尝试直接拷贝整个目录
-                            jse.code.IO.copyDir(tLmpSrcDir, fLmpHome); // 不需要清除旧目录，因为编译完成会自动清理
+                            IO.copyDir(tLmpSrcDir, fLmpHome); // 不需要清除旧目录，因为编译完成会自动清理
                         }
                     }
                     return fLmpHome;
@@ -240,12 +240,12 @@ public class LmpCore {
             .setBuildDirIniter(sd -> {
                 // 这样重写 build 目录的初始化，保证 build 目录一定和上面定义一致
                 String tBuildDir = fLmpBuildDir==null ? (sd+BUILD_DIR_NAME+"/") : fLmpBuildDir;
-                jse.code.IO.makeDir(tBuildDir);
+                IO.makeDir(tBuildDir);
                 return tBuildDir;})
             .setPostBuildDir(bd -> {
                 // 这里拷贝一份 includes 文件夹
                 if (fLmpBuildDir==null) {
-                    jse.code.IO.copyDir(bd + "includes/", INCLUDE_DIR);
+                    IO.copyDir(bd + "includes/", INCLUDE_DIR);
                 }})
             .setCmakeInitDir("../cmake")
             .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
@@ -257,7 +257,7 @@ public class LmpCore {
         EXE_PATH = tLmpExeName==null ? null : (LIB_DIR+tLmpExeName);
         EXE_CMD = EXE_PATH==null ? null : ((IS_WINDOWS?"&\"":"\"") + EXE_PATH + "\"");
         // 设置库路径
-        System.load(jse.code.IO.toAbsolutePath(LIB_PATH));
+        System.load(IO.toAbsolutePath(LIB_PATH));
         // 部分情况需要将 lammps 库提升到全局范围，主要用于保证部分 lammps 的插件总是能找到 lammps 库本身
         if (Conf.DLOPEN) Dlfcn.dlopen(LIB_PATH);
     }

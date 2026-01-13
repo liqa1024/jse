@@ -233,7 +233,7 @@ mpiexec -np 4 jse -lmp -in melt.in
 Specify LAMMPS packages:
 
 ```bash
-export jse_LMP_PKG="EXTRA-COMPUTE EXTRA-FIX EXTRA-PAIR MANYBODY"
+export JSE_LMP_PKG="EXTRA-COMPUTE EXTRA-FIX EXTRA-PAIR MANYBODY"
 ```
 
 

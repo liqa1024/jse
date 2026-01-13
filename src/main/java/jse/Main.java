@@ -25,10 +25,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 
-import static jse.code.Conf.UNICODE_SUPPORT;
 import static jse.code.CS.VERSION;
 import static jse.code.Conf.WORKING_DIR_OF;
-import static jse.code.OS.*;
+import static jse.code.OS.JAR_DIR;
+import static jse.code.OS.JAR_PATH;
+import static jse.code.OS.WORKING_DIR;
 import static jse.code.SP.GROOVY_LIB_DIR;
 import static jse.code.SP.JAR_LIB_DIR;
 
@@ -277,7 +278,7 @@ public class Main {
                 System.out.printf("The following directories in %s will be removed:\n", JAR_DIR);
                 System.out.println(String.join("\n", tNamesToClean));
                 System.out.println("Confirm? (y/N)");
-                BufferedReader tReader = jse.code.IO.toReader(System.in, Charset.defaultCharset());
+                BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
                 String tLine = tReader.readLine();
                 while (!tLine.equalsIgnoreCase("y")) {
                     if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
