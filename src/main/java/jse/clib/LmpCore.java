@@ -160,7 +160,7 @@ public class LmpCore {
         final @Nullable String fLmpHome = tLmpHome;
         final @Nullable String fLmpBuildDir = tLmpBuildDir;
         String tLmpTag = Conf.TAG==null ? Conf.DEFAULT_TAG : Conf.TAG;
-        final String tLmpCachePath = JNIUtil.PKG_DIR + "lammps-"+ tLmpTag +".zip";
+        final String tLmpCachePath = JNIUtil.PKG_DIR + "lammps-"+ tLmpTag + (IS_WINDOWS?".zip":".tar.gz");
         final Callable<Void> tCacheValider = () -> {
             if (IO.exists(tLmpCachePath)) return null;
             System.out.println("LMP_CORE INIT INFO: No correct lammps source code detected");
@@ -176,7 +176,7 @@ public class LmpCore {
                 }
                 System.out.println("Auto download lammps? (Y/n)");
             }
-            String tLmpUrl = String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.zip", tLmpTag);
+            String tLmpUrl = String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.%s", tLmpTag, IS_WINDOWS?"zip":"tar.gz");
             System.out.println("Downloading "+IO.Text.url(tLmpUrl));
             System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
             String tTempPath = tLmpCachePath + ".tmp_"+UT.Code.randID();
@@ -186,8 +186,15 @@ public class LmpCore {
             return null;
         };
         final JNIUtil.IDirIniter tUnzipLmp = wd -> {
+            System.out.println("LMP_CORE INIT INFO: Extracting lammps...");
             // 现在直接解压到输入目录
-            IO.zip2dir(tLmpCachePath, wd);
+            if (IS_WINDOWS) {
+                IO.zip2dir(tLmpCachePath, wd);
+            } else {
+                // tar.gz 这里直接使用系统命令解压，并且可以同时自动避免神秘文件系统的 bug
+                IO.makeDir(wd);
+                EXEC.system("tar -zxf \""+tLmpCachePath+"\" -C \""+wd+"\"");
+            }
             for (String tName : IO.list(wd)) {
                 String tLmpSrcDir = wd + tName + "/";
                 if (IO.isDir(tLmpSrcDir)) {
@@ -223,12 +230,19 @@ public class LmpCore {
                     if (!IO.isDir(fLmpHome)) {
                         tCacheValider.call();
                         String tLmpSrcDir = tUnzipLmp.init(wd); // 依旧解压到工作目录，但是这里进行一次移动
-                        // 移动到需要的目录
-                        try {
-                            IO.move(tLmpSrcDir, fLmpHome);
-                        } catch (Exception e) {
-                            // 移动失败则尝试直接拷贝整个目录
-                            IO.copyDir(tLmpSrcDir, fLmpHome); // 不需要清除旧目录，因为编译完成会自动清理
+                        // 移动到需要的目录，这里需要对于神秘文件系统专门处理
+                        if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
+                            IO.makeDir(fLmpHome);
+                            IO.removeDir(fLmpHome);
+                            int tCode = EXEC.system("mv \""+tLmpSrcDir+"\" \""+fLmpHome.substring(0, fLmpHome.length()-1)+"\"");
+                            if (tCode != 0) throw new Exception("exit code: "+tCode);
+                        } else {
+                            try {
+                                IO.move(tLmpSrcDir, fLmpHome);
+                            } catch (Exception e) {
+                                // 移动失败则尝试直接拷贝整个目录
+                                IO.copyDir(tLmpSrcDir, fLmpHome); // 不需要清除旧目录，因为编译完成会自动清理
+                            }
                         }
                     }
                     return fLmpHome;

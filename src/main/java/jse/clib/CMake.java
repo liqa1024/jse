@@ -29,6 +29,11 @@ public class CMake {
         }
     }
     
+    public final static class Conf {
+        /** 是否检测使用系统的 cmake，现在默认不使用避免版本老旧带来的问题 */
+        public static boolean USE_SYSTEM = OS.envZ("JSE_USE_SYSTEM_CMAKE", false);
+    }
+    
     /** 自动下载使用的 cmake 版本 */
     public final static String VERSION = "4.2.1";
     /** 内部 cmake 会使用的路径 */
@@ -39,18 +44,20 @@ public class CMake {
     public final static String EXE_CMD;
     
     private static @NotNull String getExePath_() throws Exception {
-        // 优先检测环境变量的 cmake
-        EXEC.setNoSTDOutput().setNoERROutput();
-        boolean tHasCmake = EXEC.system("cmake --version") == 0;
-        EXEC.setNoSTDOutput(false).setNoERROutput(false);
-        if (tHasCmake) {
-            String tCmakePath;
-            if (IS_WINDOWS) {
-                tCmakePath = EXEC.system_str("(Get-Command cmake).Path").get(0);
-            } else {
-                tCmakePath = EXEC.system_str("which cmake").get(0);
+        if (Conf.USE_SYSTEM) {
+            // 优先检测环境变量的 cmake
+            EXEC.setNoSTDOutput().setNoERROutput();
+            boolean tHasCmake = EXEC.system("cmake --version") == 0;
+            EXEC.setNoSTDOutput(false).setNoERROutput(false);
+            if (tHasCmake) {
+                String tCmakePath;
+                if (IS_WINDOWS) {
+                    tCmakePath = EXEC.system_str("(Get-Command cmake).Path").get(0);
+                } else {
+                    tCmakePath = EXEC.system_str("which cmake").get(0);
+                }
+                if (IO.exists(tCmakePath)) return tCmakePath;
             }
-            if (IO.exists(tCmakePath)) return tCmakePath;
         }
         // 没有系统库则尝试使用内部库
         String tInternalCmakePath = INTERNAL_HOME + "bin/cmake";
@@ -82,11 +89,13 @@ public class CMake {
             System.out.println("JNI INIT INFO: CMake pkg downloading finished.");
         }
         // 解压
+        System.out.println("JNI INIT INFO: Extracting CMake...");
         String tWorkingDir = JAR_DIR + "build-cmake@"+UT.Code.randID() + "/";
         if (IS_WINDOWS) {
             IO.zip2dir(tCmakeCachePath, tWorkingDir);
         } else {
             // tar.gz 这里直接使用系统命令解压
+            IO.makeDir(tWorkingDir);
             EXEC.system("tar -zxf \""+tCmakeCachePath+"\" -C \""+tWorkingDir+"\"");
         }
         String tCmakeDir = null;
@@ -100,12 +109,19 @@ public class CMake {
         if (tCmakeDir == null) throw new Exception("JNI INIT ERROR: Unzip CMake fail, working dir: " + tWorkingDir);
         // mac 压缩包会多几层，这里都解除嵌套保持一致
         if (IS_MAC) tCmakeDir += "CMake.app/Contents/";
-        // 移动到需要的目录
-        try {
-            IO.move(tCmakeDir, INTERNAL_HOME);
-        } catch (Exception e) {
-            // 移动失败则尝试直接拷贝整个目录
-            IO.copyDir(tCmakeDir, INTERNAL_HOME); // 不需要清除旧目录，因为编译完成会自动清理
+        // 移动到需要的目录，这里需要对于神秘文件系统专门处理
+        if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
+            IO.makeDir(INTERNAL_HOME);
+            IO.removeDir(INTERNAL_HOME);
+            int tCode = EXEC.system("mv \""+tCmakeDir+"\" \""+INTERNAL_HOME.substring(0, INTERNAL_HOME.length()-1)+"\"");
+            if (tCode != 0) throw new Exception("exit code: "+tCode);
+        } else {
+            try {
+                IO.move(tCmakeDir, INTERNAL_HOME);
+            } catch (Exception e) {
+                // 移动失败则尝试直接拷贝整个目录
+                IO.copyDir(tCmakeDir, INTERNAL_HOME); // 不需要清除旧目录，因为编译完成会自动清理
+            }
         }
         IO.removeDir(tWorkingDir);
         return tInternalCmakePath;

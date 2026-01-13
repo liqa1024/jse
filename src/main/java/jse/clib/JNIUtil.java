@@ -120,6 +120,9 @@ public class JNIUtil {
                                 "https://learn.microsoft.com/zh-cn/java/openjdk/download");
             }
         }
+        // 总是事先合法化这个目录，让用户可以快速找到
+        try {IO.makeDir(PKG_DIR);}
+        catch (Exception e) {throw new RuntimeException(e);}
         // 如果不存在 jniutil.h 则需要重新通过源码编译
         if (!IO.isFile(HEADER_PATH)) {
             System.out.println("JNIUTIL INIT INFO: jniutil.h not found. Reinstalling...");
@@ -326,8 +329,12 @@ public class JNIUtil {
                 throw new Exception(mInfoProjectName +" BUILD ERROR: Build Failed, No "+ mProjectName +" lib in '"+ mLibDir +"'");
             }
             mPostBuildDir.apply(tBuildDir);
-            // 完事后移除临时解压得到的源码
-            IO.removeDir(tWorkingDir);
+            // 完事后移除临时解压得到的源码，这里需要对于神秘文件系统专门处理
+            if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
+                EXEC.system("rm -rf \""+tWorkingDir+"\"");
+            } else {
+                IO.removeDir(tWorkingDir);
+            }
             System.out.println(mInfoProjectName +" INIT INFO: "+ mProjectName +" successfully installed.");
             System.out.println(mInfoProjectName +" LIB DIR: " + mLibDir);
             // 输出安装完成后的库名称

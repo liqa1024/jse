@@ -1069,7 +1069,7 @@ public class IO {
             if (tName==null || tName.isEmpty() || tName.equals(".") || tName.equals("..")) continue;
             String tFileOrDir = aDir+tName;
             if (isDir(tFileOrDir)) {removeDir_(tFileOrDir+"/");}
-            else if (isFile(tFileOrDir)) {delete(tFileOrDir);}
+            else {delete(tFileOrDir);} // 注意确保链接也被删除
         }
         delete(aDir);
     }
@@ -1103,7 +1103,7 @@ public class IO {
             String tSourceFileOrDir = aSourceDir+tName;
             String tTargetFileOrDir = aTargetDir+tName;
             if (isDir(tSourceFileOrDir)) {copyDir_(tSourceFileOrDir+"/", tTargetFileOrDir+"/");}
-            else if (isFile(tSourceFileOrDir)) {copy(tSourceFileOrDir, tTargetFileOrDir);}
+            else if (isFile(tSourceFileOrDir)) {copy(tSourceFileOrDir, tTargetFileOrDir);} // 这里暂不考虑链接问题，大部分情况是合理结果
         }
     }
     

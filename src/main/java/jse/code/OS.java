@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -68,6 +69,9 @@ public class OS {
     public final static String JAR_PATH;
     /** 此 jse 核心 jar 文件所在的文件夹，已经内部合法化，可以直接拼接文件名 */
     public final static String JAR_DIR;
+    /** 检测核心 jar 文件目录文件类型，主要用于对过时系统及时警告 */
+    public final static String JAR_DIR_FILESYSTEM;
+    public final static boolean JAR_DIR_BAD_FILESYSTEM;
     /** {@code System.getProperty("user.home")} 获取到的原始值，即此用户的用户目录 */
     public final static String USER_HOME;
     /** {@link #USER_HOME} 内部合法化文件夹后的路径，可以直接拼接文件名 */
@@ -128,6 +132,35 @@ public class OS {
         String tJarDir = tJarDirPath==null ? "" : tJarDirPath.toString();
         tJarDir = IO.toInternalValidDir(tJarDir);
         JAR_DIR = tJarDir;
+        // 这里检测文件类型
+        String tJarDirFilesystem = null;
+        if (tJarDirPath != null) {
+            try {tJarDirFilesystem = Files.getFileStore(tJarDirPath).type().toLowerCase(Locale.ROOT);}
+            catch (Exception ignored) {}
+        }
+        JAR_DIR_FILESYSTEM = tJarDirFilesystem;
+        JAR_DIR_BAD_FILESYSTEM = JAR_DIR_FILESYSTEM!=null && (JAR_DIR_FILESYSTEM.contains("lustre") || JAR_DIR_FILESYSTEM.contains("panfs") || JAR_DIR_FILESYSTEM.contains("gpfs"));
+        // 对于神秘文件系统进行警告
+        if (Conf.FILESYSTEM_CHECK && JAR_DIR_BAD_FILESYSTEM) {
+            String tWarnStr =
+                "=============================== WARNING ===============================\n" +
+                "The jse install dir ("+JAR_DIR+") is detected as a\n" +
+                "legacy parallel filesystem ("+JAR_DIR_FILESYSTEM+"), which is known to be problematic\n" +
+                "for workloads involving large numbers of files.\n" +
+                "\n" +
+                "The auto-installation will be unstable, and long-running or file-intensive\n" +
+                "operations on this filesystem may experience unexpected failures.\n" +
+                "\n" +
+                "Recommendations:\n" +
+                "  - Install on node-local storage whenever possible\n" +
+                "  - Use this filesystem only for bulk data, not software trees\n" +
+                "  - Consider upgrading to a newer HPC environment\n" +
+                "========================================================================";
+            if (Conf.UNICODE_SUPPORT) {
+                tWarnStr = "\u001B[31m" + tWarnStr + "\u001B[0m";
+            }
+            System.err.println(tWarnStr);
+        }
         // 创建默认 EXE，无内部线程池，windows 下使用 powershell 而 linux 下使用 bash 统一指令；
         // 这种选择可以保证指令使用统一，即使这些终端不一定所有平台都有
         EXEC = IS_WINDOWS ? new PowerShellSystemExecutor() : new BashSystemExecutor();
