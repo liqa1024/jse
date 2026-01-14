@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * <p>
  * Modifications:
- * - Copyright (C) 2023 CHanzy/CHanzyLazer. All rights reserved.
+ * - Copyright (C) 2023 Qing'an Li. All rights reserved.
  * - Simplify for project usage and add voronoi parameter calculation
  */
 package jsex.voronoi;

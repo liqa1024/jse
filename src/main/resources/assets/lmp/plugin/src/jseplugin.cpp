@@ -22,7 +22,7 @@ JNIEXPORT void JNICALL lammpsplugin_init(void *lmp, void *handle, void *regfunc)
     plugin.style = "pair";
     plugin.name = "jse";
     plugin.info = "jse pair";
-    plugin.author = "liqa, CHanzyLazer";
+    plugin.author = "liqa";
     plugin.creator.v1 = (lammpsplugin_factory1 *) &jsepaircreator;
     plugin.handle = handle;
     (*register_plugin)(&plugin, lmp);
@@ -31,7 +31,7 @@ JNIEXPORT void JNICALL lammpsplugin_init(void *lmp, void *handle, void *regfunc)
     plugin.style = "fix";
     plugin.name = "jse";
     plugin.info = "jse fix";
-    plugin.author = "liqa, CHanzyLazer";
+    plugin.author = "liqa";
     plugin.creator.v2 = (lammpsplugin_factory2 *) &jsefixcreator;
     plugin.handle = handle;
     (*register_plugin)(&plugin, lmp);

@@ -40,9 +40,9 @@ param (
     }
     if ($IsLinux -or $IsMacOS) {
         writeErrorTip 'Install on *nix is not supported, try '
-        writeErrorTip '(Use curl) "bash <(curl -fsSL https://raw.githubusercontent.com/CHanzyLazer/jse/main/scripts/get.sh)"'
+        writeErrorTip '(Use curl) "bash <(curl -fsSL https://raw.githubusercontent.com/liqa1024/jse/main/scripts/get.sh)"'
         writeErrorTip 'or'
-        writeErrorTip '(Use wget) "bash <(wget https://raw.githubusercontent.com/CHanzyLazer/jse/main/scripts/get.sh -O -)"'
+        writeErrorTip '(Use wget) "bash <(wget https://raw.githubusercontent.com/liqa1024/jse/main/scripts/get.sh -O -)"'
         throw 'Unsupported platform'
     }
     
@@ -147,7 +147,7 @@ param (
     
     # download jse
     $zipFile = Join-Path $WorkingDir "jse-$LastRelease.zip"
-    $downloadUrl = "https://github.com/CHanzyLazer/jse/releases/download/v$LastRelease/jse-$LastRelease.zip"
+    $downloadUrl = "https://github.com/liqa1024/jse/releases/download/v$LastRelease/jse-$LastRelease.zip"
     
     Write-Host "Downloading jse..."
     Invoke-WebRequest $downloadUrl -OutFile $zipFile -UseBasicParsing

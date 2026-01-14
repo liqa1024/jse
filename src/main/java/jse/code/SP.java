@@ -189,7 +189,7 @@ public class SP {
             mBanner = "jse "+VERSION+String.format(" (java: %s, groovy: %s, jep: %s)", System.getProperty("java.version"), GroovySystem.getVersion(), Python.JEP_VERSION)+"\n"
                 +"Protocol v"+Header.PROTOCOL_VERISON+" implementation by "+KERNEL_META.getOrDefault("project", "UNKNOWN")+" "+KERNEL_META.getOrDefault("version", "UNKNOWN");
             mHelpLinks = ImmutableList.of(
-                new LanguageInfo.Help("JSE homepage", "https://github.com/CHanzyLazer/jse"),
+                new LanguageInfo.Help("JSE homepage", "https://github.com/liqa1024/jse"),
                 new LanguageInfo.Help("Groovy tutorial", "https://groovy-lang.org/learn.html"));
             mMagicParser = new MagicParser();
         }

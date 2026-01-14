@@ -460,9 +460,9 @@ public class Main {
         aPrinter.println(IO.Text.yellow("     _(  )/ ___)(  __)"));
         aPrinter.println(IO.Text.yellow("    / \\) \\\\___ \\ ) _) "));
         aPrinter.println(IO.Text.yellow("    \\____/(____/(____)"));
-        aPrinter.println(IO.Text.yellow("        by liqa, CHanzyLazer"));
+        aPrinter.println(IO.Text.yellow("               by liqa"));
         aPrinter.println();
-        aPrinter.println(IO.Text.bold("    GitHub: ")+IO.Text.underline("https://github.com/CHanzyLazer/jse"));
+        aPrinter.println(IO.Text.bold("    GitHub: ")+IO.Text.underline("https://github.com/liqa1024/jse"));
     }
     private static void printLogo() {printLogo(System.out);}
     

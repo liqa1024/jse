@@ -54,19 +54,19 @@ jse provides **one-command installation scripts** for Linux and Windows.
 
 ### Using cURL
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/CHanzyLazer/jse/main/scripts/get.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/liqa1024/jse/main/scripts/get.sh)
 ```
 
 ### Using Wget
 
 ```bash
-bash <(wget https://raw.githubusercontent.com/CHanzyLazer/jse/main/scripts/get.sh -O -)
+bash <(wget https://raw.githubusercontent.com/liqa1024/jse/main/scripts/get.sh -O -)
 ```
 
 ### Using PowerShell (Windows)
 
 ```powershell
-Invoke-Expression (Invoke-Webrequest 'https://raw.githubusercontent.com/CHanzyLazer/jse/main/scripts/get.ps1' -UseBasicParsing).Content
+Invoke-Expression (Invoke-Webrequest 'https://raw.githubusercontent.com/liqa1024/jse/main/scripts/get.ps1' -UseBasicParsing).Content
 ```
 
 
@@ -79,7 +79,7 @@ Invoke-Expression (Invoke-Webrequest 'https://raw.githubusercontent.com/CHanzyLa
      to avoid CRT conflicts.
 
 2. Download the latest release from
-   **[GitHub Releases](https://github.com/CHanzyLazer/jse/releases/latest)**
+   **[GitHub Releases](https://github.com/liqa1024/jse/releases/latest)**
 
 3. Extract the package and add the directory to your `PATH`.
 

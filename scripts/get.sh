@@ -13,7 +13,7 @@ set -o pipefail
 JSE_DIR="${1:-"${HOME}/jse"}"
 JSE_VERSION="3.13.6"
 JSE_PKG_NAME="jse-${JSE_VERSION}.tar.gz"
-JSE_URL="https://github.com/CHanzyLazer/jse/releases/download/v${JSE_VERSION}/${JSE_PKG_NAME}"
+JSE_URL="https://github.com/liqa1024/jse/releases/download/v${JSE_VERSION}/${JSE_PKG_NAME}"
 
 JAVA_REQUIRED="21"
 JDK_VENDOR="Oracle"
