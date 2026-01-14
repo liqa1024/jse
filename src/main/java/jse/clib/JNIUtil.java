@@ -331,6 +331,7 @@ public class JNIUtil {
             mPostBuildDir.apply(tBuildDir);
             // 完事后移除临时解压得到的源码，这里需要对于神秘文件系统专门处理
             if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
+                printFilesystemInfo();
                 EXEC.system("rm -rf \""+tWorkingDir+"\"");
             } else {
                 IO.removeDir(tWorkingDir);

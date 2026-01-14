@@ -111,6 +111,7 @@ public class CMake {
         if (IS_MAC) tCmakeDir += "CMake.app/Contents/";
         // 移动到需要的目录，这里需要对于神秘文件系统专门处理
         if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
+            printFilesystemInfo();
             IO.makeDir(INTERNAL_HOME);
             IO.removeDir(INTERNAL_HOME);
             int tCode = EXEC.system("mv \""+tCmakeDir+"\" \""+INTERNAL_HOME.substring(0, INTERNAL_HOME.length()-1)+"\"");

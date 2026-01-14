@@ -232,6 +232,7 @@ public class LmpCore {
                         String tLmpSrcDir = tUnzipLmp.init(wd); // 依旧解压到工作目录，但是这里进行一次移动
                         // 移动到需要的目录，这里需要对于神秘文件系统专门处理
                         if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
+                            printFilesystemInfo();
                             IO.makeDir(fLmpHome);
                             IO.removeDir(fLmpHome);
                             int tCode = EXEC.system("mv \""+tLmpSrcDir+"\" \""+fLmpHome.substring(0, fLmpHome.length()-1)+"\"");

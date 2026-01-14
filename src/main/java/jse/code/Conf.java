@@ -45,14 +45,6 @@ public class Conf {
      */
     public static boolean JDK_CHECK = OS.envZ("JDK_CHECK", true);
     /**
-     * 是否开启文件系统检测，会对过时导致 jvm 崩溃的文件系统进行警告，关闭即可抑制警告
-     * <p>
-     * 默认为 {@code true}
-     * <p>
-     * 也可使用环境变量 {@code JSE_FILESYSTEM_CHECK} 来设置
-     */
-    public static boolean FILESYSTEM_CHECK = OS.envZ("JSE_FILESYSTEM_CHECK", true);
-    /**
      * 运算是否开启边界检测，在 {@code jse 2.7.7} 以及更早的版本下不会主动检测
      * <p>
      * 默认为 {@code true}

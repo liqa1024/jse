@@ -86,6 +86,34 @@ public class OS {
     /** {@link Path} 版本的 {@link #WORKING_DIR} */
     final static Path WORKING_DIR_PATH;
     
+    
+    private static boolean FILESYSTEM_FIRST_PRINT = true;
+    /** 由于文件系统类型逻辑上来说还是只检测了安装目录，因此提供一个延迟打印接口，仅第一次安装时打印提示 */
+    public static void printFilesystemInfo() {
+        if (!FILESYSTEM_FIRST_PRINT) return;
+        FILESYSTEM_FIRST_PRINT = false;
+        // 对于神秘文件系统进行警告
+        if (JAR_DIR_BAD_FILESYSTEM) {
+            String tWarnStr =
+                "=============================== WARNING ===============================\n" +
+                "The jse install dir ("+JAR_DIR+") is detected as a\n" +
+                "legacy parallel filesystem ("+JAR_DIR_FILESYSTEM+"), which is known to be problematic\n" +
+                "for workloads involving large numbers of files.\n" +
+                "\n" +
+                "The auto-installation will be unstable, and long-running or file-intensive\n" +
+                "operations on this filesystem may experience unexpected failures.\n" +
+                "\n" +
+                "Recommendations:\n" +
+                "  - Install on node-local storage whenever possible\n" +
+                "  - Use this filesystem only for bulk data, not software trees\n" +
+                "  - Consider upgrading to a newer HPC environment\n" +
+                "========================================================================";
+            if (Conf.UNICODE_SUPPORT) {
+                tWarnStr = "\u001B[31m" + tWarnStr + "\u001B[0m";
+            }
+            System.err.println(tWarnStr);
+        }
+    }
     static {
         InitHelper.INITIALIZED = true;
         // 获取 java.home
@@ -140,27 +168,6 @@ public class OS {
         }
         JAR_DIR_FILESYSTEM = tJarDirFilesystem;
         JAR_DIR_BAD_FILESYSTEM = JAR_DIR_FILESYSTEM!=null && (JAR_DIR_FILESYSTEM.contains("lustre") || JAR_DIR_FILESYSTEM.contains("panfs") || JAR_DIR_FILESYSTEM.contains("gpfs"));
-        // 对于神秘文件系统进行警告
-        if (Conf.FILESYSTEM_CHECK && JAR_DIR_BAD_FILESYSTEM) {
-            String tWarnStr =
-                "=============================== WARNING ===============================\n" +
-                "The jse install dir ("+JAR_DIR+") is detected as a\n" +
-                "legacy parallel filesystem ("+JAR_DIR_FILESYSTEM+"), which is known to be problematic\n" +
-                "for workloads involving large numbers of files.\n" +
-                "\n" +
-                "The auto-installation will be unstable, and long-running or file-intensive\n" +
-                "operations on this filesystem may experience unexpected failures.\n" +
-                "\n" +
-                "Recommendations:\n" +
-                "  - Install on node-local storage whenever possible\n" +
-                "  - Use this filesystem only for bulk data, not software trees\n" +
-                "  - Consider upgrading to a newer HPC environment\n" +
-                "========================================================================";
-            if (Conf.UNICODE_SUPPORT) {
-                tWarnStr = "\u001B[31m" + tWarnStr + "\u001B[0m";
-            }
-            System.err.println(tWarnStr);
-        }
         // 创建默认 EXE，无内部线程池，windows 下使用 powershell 而 linux 下使用 bash 统一指令；
         // 这种选择可以保证指令使用统一，即使这些终端不一定所有平台都有
         EXEC = IS_WINDOWS ? new PowerShellSystemExecutor() : new BashSystemExecutor();
