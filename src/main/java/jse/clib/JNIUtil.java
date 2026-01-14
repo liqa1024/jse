@@ -276,7 +276,7 @@ public class JNIUtil {
                 if (!containsAnyInvalidChar_(tWorkingDir2)) {
                     tWorkingDir = tWorkingDir2;
                 } else {
-                    System.err.println(mInfoProjectName +" INIT WARNING: Build directory ("+tWorkingDir+") contains inappropriate characters, build may fail.");
+                    System.err.println(IO.Text.yellow(mInfoProjectName +" INIT WARNING:")+" Build directory ("+tWorkingDir+") contains inappropriate characters, build may fail.");
                     tWorkingDirValid = false;
                 }
             }
@@ -326,7 +326,7 @@ public class JNIUtil {
                 } else {
                     System.err.println("  You can use `export JSE_DEBUG=1` to make the build output complete information");
                 }
-                throw new Exception(mInfoProjectName +" BUILD ERROR: Build Failed, No "+ mProjectName +" lib in '"+ mLibDir +"'");
+                throw new Exception(mProjectName+" build Failed, No lib in '"+ mLibDir +"'");
             }
             mPostBuildDir.apply(tBuildDir);
             // 完事后移除临时解压得到的源码，这里需要对于神秘文件系统专门处理

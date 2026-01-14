@@ -330,7 +330,7 @@ public class Main {
             case "-i": case "-invoke": case "--invoke": {
                 int tLastDot = tValue.lastIndexOf(".");
                 if (tLastDot < 0) {
-                    System.err.println("ERROR: Invalid method name: " + tValue);
+                    System.err.println(IO.Text.red("ERROR:")+" Invalid method name: " + tValue);
                     return;
                 }
                 String tPackageName = tValue.substring(0, tLastDot);
@@ -454,42 +454,42 @@ public class Main {
     
     
     private static void printLogo(PrintStream aPrinter) {
-        aPrinter.println("jse version: "+VERSION+String.format(" (java: %s)", System.getProperty("java.version"))+", Java Simulation Environment");
+        aPrinter.println(IO.Text.bold("jse version: "+VERSION+" (java: "+System.getProperty("java.version")+"), Java Simulation Environment"));
         aPrinter.println("Copyright (C) 2023-present, Qing'an Li");
-        aPrinter.println("       __  ____  ____ ");
-        aPrinter.println("     _(  )/ ___)(  __)");
-        aPrinter.println("    / \\) \\\\___ \\ ) _) ");
-        aPrinter.println("    \\____/(____/(____)");
-        aPrinter.println("        by liqa, CHanzyLazer");
+        aPrinter.println(IO.Text.yellow("       __  ____  ____ "));
+        aPrinter.println(IO.Text.yellow("     _(  )/ ___)(  __)"));
+        aPrinter.println(IO.Text.yellow("    / \\) \\\\___ \\ ) _) "));
+        aPrinter.println(IO.Text.yellow("    \\____/(____/(____)"));
+        aPrinter.println(IO.Text.yellow("        by liqa, CHanzyLazer"));
         aPrinter.println();
-        aPrinter.println("    GitHub: "+IO.Text.url("https://github.com/CHanzyLazer/jse"));
+        aPrinter.println(IO.Text.bold("    GitHub: ")+IO.Text.underline("https://github.com/CHanzyLazer/jse"));
     }
     private static void printLogo() {printLogo(System.out);}
     
     private static void printHelp(PrintStream aPrinter) {
         printLogo(aPrinter);
         aPrinter.println();
-        aPrinter.println("Usage:    jse [-language] path/to/script [args...]");
-        aPrinter.println("          jse [-option] [args...]");
+        aPrinter.println(IO.Text.bold("Usage:    ")+IO.Text.cyan("jse [-language] path/to/script [args...]"));
+        aPrinter.println("          "+IO.Text.cyan("jse [-option] [args...]"));
         aPrinter.println();
-        aPrinter.println("Such as:  jse path/to/script.groovy [args...]");
+        aPrinter.println(IO.Text.bold("Such as:  ")+"jse path/to/script.groovy [args...]");
         aPrinter.println("          jse -t 'println(/hello world/)'");
         aPrinter.println("          jse -lmp -in melt.in");
         aPrinter.println();
-        aPrinter.println("The options can be:");
-        aPrinter.println("    -t --text      Run the groovy text script");
-        aPrinter.println("    -f --file      Run the groovy/python file script (default behavior when left blank)");
-        aPrinter.println("    -v --version   Print version number");
-        aPrinter.println("    -? --help      Print help message");
-        aPrinter.println("    -lmp --lammps  Run lammps bindings in jse");
-        aPrinter.println("    --idea         Initialize the current directory to Intellij IDEA project");
-        aPrinter.println("    --groovy       Run the groovy file script, or open the groovy interactive shell when no file input");
-        aPrinter.println("    --python       Run the python file script, or open the python interactive shell when no file input");
-        aPrinter.println("    --groovytext   Run the groovy text script");
-        aPrinter.println("    --pythontext   Run the python text script");
-        aPrinter.println("    --jupyter      Install current jse to the jupyter kernel");
-        aPrinter.println("    --jniclean     clean all jni libraries");
-        aPrinter.println("    --jnibuild     Build all jni libraries (MPI, LMP, JEP, NNAP)");
+        aPrinter.println(IO.Text.bold("The options can be:"));
+        aPrinter.println(IO.Text.green("    -t --text      ")+"Run the groovy text script");
+        aPrinter.println(IO.Text.green("    -f --file      ")+"Run the groovy/python file script (default behavior when left blank)");
+        aPrinter.println(IO.Text.green("    -v --version   ")+"Print version number");
+        aPrinter.println(IO.Text.green("    -? --help      ")+"Print help message");
+        aPrinter.println(IO.Text.green("    -lmp --lammps  ")+"Run lammps bindings in jse");
+        aPrinter.println(IO.Text.green("    --idea         ")+"Initialize the current directory to Intellij IDEA project");
+        aPrinter.println(IO.Text.green("    --groovy       ")+"Run the groovy file script, or open the groovy interactive shell when no file input");
+        aPrinter.println(IO.Text.green("    --python       ")+"Run the python file script, or open the python interactive shell when no file input");
+        aPrinter.println(IO.Text.green("    --groovytext   ")+"Run the groovy text script");
+        aPrinter.println(IO.Text.green("    --pythontext   ")+"Run the python text script");
+        aPrinter.println(IO.Text.green("    --jupyter      ")+"Install current jse to the jupyter kernel");
+        aPrinter.println(IO.Text.green("    --jniclean     ")+"clean all jni libraries");
+        aPrinter.println(IO.Text.green("    --jnibuild     ")+"Build all jni libraries (JEP, MPI, LMP, NNAP)");
         aPrinter.println();
         aPrinter.println("You can also using another scripting language such as MATLAB or Python with Py4J and import jse-*.jar");
     }

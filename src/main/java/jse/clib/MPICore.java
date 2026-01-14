@@ -34,19 +34,19 @@ public class MPICore {
     
     
     private static boolean FIRST_PRINT = true;
-    /** 由于此库是可选的，因此提供一个延迟打印接口，仅第一次构建时打印提示 */
+    /** 用于总是需要路径来确定库路径，提供一个延迟打印接口，仅第一次构建时打印提示 */
     public static void printInfo() {
         if (!FIRST_PRINT) return;
         FIRST_PRINT = false;
         if (EXE_PATH!=null) {
             System.out.printf("JNI INIT INFO: Use MPI in %s\n", EXE_PATH);
         } else {
-            System.err.println("JNI INIT WARNING: No MPI found,");
+            System.err.println(IO.Text.yellow("JNI INIT WARNING:")+" No MPI found,");
             if (IS_WINDOWS) {
-                System.err.println("  For Windows, you can use MS-MPI: "+IO.Text.url("https://www.microsoft.com/en-us/download/details.aspx?id=105289"));
+                System.err.println("  For Windows, you can use MS-MPI: "+IO.Text.underline("https://www.microsoft.com/en-us/download/details.aspx?id=105289"));
                 System.err.println("  BOTH 'msmpisetup.exe' and 'msmpisdk.msi' are needed.");
             } else {
-                System.err.println("  For Liunx/Mac, you can use OpenMPI: "+IO.Text.url("https://www.open-mpi.org/"));
+                System.err.println("  For Liunx/Mac, you can use OpenMPI: "+IO.Text.underline("https://www.open-mpi.org/"));
                 System.err.println("  For Ubuntu, you can use `sudo apt install libopenmpi-dev`");
             }
         }

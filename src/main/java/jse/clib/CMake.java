@@ -73,7 +73,7 @@ public class CMake {
             String tLine = tReader.readLine();
             while (true) {
                 if (tLine.equalsIgnoreCase("n")) {
-                    throw new Exception("JNI INIT ERROR: user interrupted");
+                    throw new Exception("user interrupted");
                 }
                 if (tLine.isEmpty() || tLine.equalsIgnoreCase("y")) {
                     break;
@@ -81,7 +81,7 @@ public class CMake {
                 System.out.println("Auto download CMake? (Y/n)");
             }
             String tCmakeUrl = String.format("https://github.com/Kitware/CMake/releases/download/v%s/%s", VERSION, tCmakePkgName);
-            System.out.println("Downloading "+IO.Text.url(tCmakeUrl));
+            System.out.println("Downloading "+IO.Text.underline(tCmakeUrl));
             System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
             String tTempPath = tCmakeCachePath + ".tmp_"+UT.Code.randID();
             IO.copy(URI.create(tCmakeUrl).toURL(), tTempPath);
@@ -106,7 +106,7 @@ public class CMake {
                 break;
             }
         }
-        if (tCmakeDir == null) throw new Exception("JNI INIT ERROR: Unzip CMake fail, working dir: " + tWorkingDir);
+        if (tCmakeDir == null) throw new Exception("Unzip CMake fail, working dir: " + tWorkingDir);
         // mac 压缩包会多几层，这里都解除嵌套保持一致
         if (IS_MAC) tCmakeDir += "CMake.app/Contents/";
         // 移动到需要的目录，这里需要对于神秘文件系统专门处理

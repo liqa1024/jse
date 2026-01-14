@@ -94,7 +94,7 @@ public class OS {
         FILESYSTEM_FIRST_PRINT = false;
         // 对于神秘文件系统进行警告
         if (JAR_DIR_BAD_FILESYSTEM) {
-            String tWarnStr =
+            System.err.println(IO.Text.red(
                 "=============================== WARNING ===============================\n" +
                 "The jse install dir ("+JAR_DIR+") is detected as a\n" +
                 "legacy parallel filesystem ("+JAR_DIR_FILESYSTEM+"), which is known to be problematic\n" +
@@ -107,11 +107,8 @@ public class OS {
                 "  - Install on node-local storage whenever possible\n" +
                 "  - Use this filesystem only for bulk data, not software trees\n" +
                 "  - Consider upgrading to a newer HPC environment\n" +
-                "========================================================================";
-            if (Conf.UNICODE_SUPPORT) {
-                tWarnStr = "\u001B[31m" + tWarnStr + "\u001B[0m";
-            }
-            System.err.println(tWarnStr);
+                "========================================================================"
+            ));
         }
     }
     static {

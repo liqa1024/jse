@@ -764,9 +764,9 @@ public class SP {
             NUMPY_SUPPORT = tNumpySupport;
             EXEC.setNoSTDOutput(false).setNoERROutput(false);
             if (tNoPython) {
-                System.err.println("No python found, you can download python from: "+IO.Text.url("https://www.python.org/downloads/"));
+                System.err.println(IO.Text.red("JEP BUILD ERROR:")+" No python found, you can download python from: "+IO.Text.underline("https://www.python.org/downloads/"));
                 System.err.println("  If you need numpy, you need to install numpy before running: `pip install numpy==1.26.4`");
-                throw new RuntimeException("JEP BUILD ERROR: No python environment.");
+                throw new RuntimeException("No python environment.");
             }
             // 获取 python 路径，不同 python 版本支持
             String tPrefix = EXEC.system_str((tUsePython3?"python3":"python") + " -c 'import sys; print(sys.prefix)'").get(0);
@@ -791,7 +791,7 @@ public class SP {
                         String tLine = tReader.readLine();
                         while (!tLine.equalsIgnoreCase("y")) {
                             if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
-                                throw new Exception("JEP INIT ERROR: No numpy in python.");
+                                throw new Exception("user interrupted");
                             }
                             System.out.println("Build jep without numpy support? (y/N)");
                         }
@@ -840,7 +840,7 @@ public class SP {
             jep.SharedInterpreter.setConfig(rConfig);
             // 把 groovy 的类路径也加进去
             if (JEP_ADD_GROOVY_HOOK) {
-                System.err.println("JEP INIT WARNING: `JEP_ADD_GROOVY_HOOK` is opened, which may cause slow jep initialization.");
+                System.err.println(IO.Text.yellow("JEP INIT WARNING:")+" `JEP_ADD_GROOVY_HOOK` is opened, which may cause slow jep initialization.");
                 if (INCLUDE_WORKING_DIR) {
                 jep.ClassList.ADDITIONAL_CLASS_PATHS.add(WORKING_DIR);
                 }

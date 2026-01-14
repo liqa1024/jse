@@ -623,6 +623,7 @@ public class UT {
         }
         
         public static ProgressBarStyle FANCY_ASCII = ProgressBarStyle.builder().block('#').fractionSymbols(" 123456789").rightSideFractionSymbol(' ').build();
+        public static ProgressBarStyle COLORFUL_UNICODE_BLOCK = ProgressBarStyle.builder().leftBracket("\u001b[32m│").rightBracket("│\u001b[0m").block('█').fractionSymbols(" ▏▎▍▌▋▊▉").rightSideFractionSymbol(' ').build();
         private static @Nullable ProgressBar sProgressBar = null;
         private static synchronized void progressBar_(String aName, long aN, ProgressBarStyle aStyle, PrintStream aConsumer, int aUpdateIntervalMillis, String aUnitName, long aUnitSize, int aMaxRenderedLength, boolean aShowSpeed, ChronoUnit aSpeedUnit) {
             if (sProgressBar != null) {
@@ -643,7 +644,7 @@ public class UT {
         public static synchronized void progressBar(Map<?, ?> aArgs) {
             progressBar_(Code.toString(Code.getWithDefault(aArgs, "", "TaskName", "taskname", "Name", "name")),
                          ((Number)Code.get(aArgs, "InitialMax", "initialmax", "Max", "max", "N", "n")).longValue(),
-                         (ProgressBarStyle)Code.getWithDefault(aArgs, UNICODE_SUPPORT ? ProgressBarStyle.COLORFUL_UNICODE_BLOCK : FANCY_ASCII, "Style", "style", "s"),
+                         (ProgressBarStyle)Code.getWithDefault(aArgs, UNICODE_SUPPORT ? COLORFUL_UNICODE_BLOCK : FANCY_ASCII, "Style", "style", "s"),
                          (PrintStream)Code.getWithDefault(aArgs, PBAR_ERR_STREAM ? System.err : System.out, "Consumer", "consumer", "c"),
                          ((Number)Code.getWithDefault(aArgs, (int)FILE_SYSTEM_SLEEP_TIME_2, "UpdateIntervalMillis", "updateintervalmills", "Update", "update")).intValue(),
                          Code.toString(Code.getWithDefault(aArgs, "", "UnitName", "unitname", "uname")),
@@ -655,7 +656,7 @@ public class UT {
         }
         public static synchronized void progressBar(String aName, long aN) {
             progressBar_(aName, aN,
-                         UNICODE_SUPPORT ? ProgressBarStyle.COLORFUL_UNICODE_BLOCK : FANCY_ASCII,
+                         UNICODE_SUPPORT ? COLORFUL_UNICODE_BLOCK : FANCY_ASCII,
                          PBAR_ERR_STREAM ? System.err : System.out, // 现在统一默认使用 err 流
                          (int)FILE_SYSTEM_SLEEP_TIME_2,
                          "", 1,
@@ -696,7 +697,7 @@ public class UT {
         public static Iterable<?> progressBarWrapper(Map<?, ?> aArgs) {
             return progressBarWrapper_(Code.toString(Code.getWithDefault(aArgs, "", "TaskName", "taskname", "Name", "name")),
                                        (Iterable<?>)Code.get(aArgs, "Underlying", "underlying", "u"),
-                                       (ProgressBarStyle)Code.getWithDefault(aArgs, UNICODE_SUPPORT ? ProgressBarStyle.COLORFUL_UNICODE_BLOCK : FANCY_ASCII, "Style", "style", "s"),
+                                       (ProgressBarStyle)Code.getWithDefault(aArgs, UNICODE_SUPPORT ? COLORFUL_UNICODE_BLOCK : FANCY_ASCII, "Style", "style", "s"),
                                        (PrintStream)Code.getWithDefault(aArgs, PBAR_ERR_STREAM ? System.err : System.out, "Consumer", "consumer", "c"),
                                        ((Number)Code.getWithDefault(aArgs, (int)FILE_SYSTEM_SLEEP_TIME_2, "UpdateIntervalMillis", "updateintervalmills", "Update", "update")).intValue(),
                                        Code.toString(Code.getWithDefault(aArgs, "", "UnitName", "unitname", "uname")),
@@ -708,7 +709,7 @@ public class UT {
         }
         public static <T> Iterable<T> progressBarWrapper(String aName, Iterable<T> aUnderlying) {
             return progressBarWrapper_(aName, aUnderlying,
-                                       UNICODE_SUPPORT ? ProgressBarStyle.COLORFUL_UNICODE_BLOCK : FANCY_ASCII,
+                                       UNICODE_SUPPORT ? COLORFUL_UNICODE_BLOCK : FANCY_ASCII,
                                        PBAR_ERR_STREAM ? System.err : System.out, // 现在统一默认使用 err 流
                                        (int)FILE_SYSTEM_SLEEP_TIME_2,
                                        "", 1,

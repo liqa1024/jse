@@ -169,7 +169,7 @@ public class LmpCore {
             String tLine = tReader.readLine();
             while (true) {
                 if (tLine.equalsIgnoreCase("n")) {
-                    throw new Exception("LMP_CORE INIT ERROR: user interrupted");
+                    throw new Exception("user interrupted");
                 }
                 if (tLine.isEmpty() || tLine.equalsIgnoreCase("y")) {
                     break;
@@ -177,7 +177,7 @@ public class LmpCore {
                 System.out.println("Auto download lammps? (Y/n)");
             }
             String tLmpUrl = String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.%s", tLmpTag, IS_WINDOWS?"zip":"tar.gz");
-            System.out.println("Downloading "+IO.Text.url(tLmpUrl));
+            System.out.println("Downloading "+IO.Text.underline(tLmpUrl));
             System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
             String tTempPath = tLmpCachePath + ".tmp_"+UT.Code.randID();
             IO.copy(URI.create(tLmpUrl).toURL(), tTempPath);
@@ -217,7 +217,7 @@ public class LmpCore {
                     String tLine = tReader.readLine();
                     while (!tLine.equalsIgnoreCase("y")) {
                         if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
-                            throw new Exception("LMP_CORE INIT ERROR: No MPI support.");
+                            throw new Exception("user interrupted");
                         }
                         System.out.println("Build lammps without MPI support? (y/N)");
                     }

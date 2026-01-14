@@ -82,7 +82,7 @@ public class Torch {
             System.out.println("TORCH INIT INFO: Installing torch from package...");
             int tExitCode = SP.Python.installPackage("torch=="+VERSION);
             if (tExitCode != 0) {
-                System.err.println("TORCH INIT WARNING: torch install Failed: " + tExitCode);
+                System.err.println(IO.Text.yellow("TORCH INIT WARNING:")+" torch install Failed: " + tExitCode);
                 System.err.println("    This may be caused by no correct version.");
             } else {
                 System.out.println("TORCH INIT INFO: torch install finished");
@@ -99,7 +99,7 @@ public class Torch {
         String tLine = tReader.readLine();
         while (true) {
             if (tLine.equalsIgnoreCase("n")) {
-                throw new Exception("TORCH INIT ERROR: No correct torch package in "+PYTHON_PKG_DIR);
+                throw new Exception("No correct torch package in "+PYTHON_PKG_DIR);
             }
             if (tLine.isEmpty() || tLine.equalsIgnoreCase("y")) {
                 break;
@@ -109,14 +109,14 @@ public class Torch {
         System.out.println("TORCH INIT INFO: Downloading torch...");
         int tExitCode = SP.Python.downloadPackage("torch=="+VERSION, null, null, Conf.INDEX_URL);
         if (tExitCode != 0) {
-            throw new Exception("TORCH INIT ERROR: torch download Failed: " + tExitCode);
+            throw new Exception("torch download Failed: " + tExitCode);
         }
         System.out.println("TORCH INIT INFO: torch package downloading finished");
         // 再次安装 torch 包
         System.out.println("TORCH INIT INFO: Re-installing torch from package...");
         tExitCode = SP.Python.installPackage("torch=="+VERSION);
         if (tExitCode != 0) {
-            throw new Exception("TORCH INIT ERROR: torch install Failed: " + tExitCode);
+            throw new Exception("torch install Failed: " + tExitCode);
         }
         System.out.println("TORCH INIT INFO: torch install finished");
     }

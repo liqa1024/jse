@@ -172,13 +172,76 @@ public class IO {
             return String.format("%.2f", aProb*100) + "%";
         }
         /**
-         * 将输入的链接字符串增加下滑线，如果没有 {@link Conf#UNICODE_SUPPORT}
+         * 将输入的字符串增加下滑线，如果没有 {@link Conf#UNICODE_SUPPORT}
          * 则不会进行任何操作
-         * @param aUrlStr 链接字符串
-         * @return 格式化的用于打印的链接
+         * @param aStr 输入字符串
+         * @return 用于打印增加下滑线的字符串
          */
-        public static String url(String aUrlStr) {
-            return UNICODE_SUPPORT ? ("\u001b[4m"+aUrlStr+"\u001b[0m") : aUrlStr;
+        public static String underline(String aStr) {
+            return UNICODE_SUPPORT ? ("\u001b[4m"+ aStr +"\u001b[0m") : aStr;
+        }
+        /**
+         * 将输入的字符串加粗，如果没有 {@link Conf#UNICODE_SUPPORT}
+         * 则不会进行任何操作
+         * @param aStr 输入字符串
+         * @return 用于打印加粗的字符串
+         */
+        public static String bold(String aStr) {
+            return UNICODE_SUPPORT ? ("\u001b[1m"+ aStr +"\u001b[0m") : aStr;
+        }
+        /**
+         * 将输入的字符串改为红色，如果没有 {@link Conf#UNICODE_SUPPORT}
+         * 则不会进行任何操作
+         * @param aStr 输入字符串
+         * @return 用于打印红色的字符串
+         */
+        public static String red(String aStr) {
+            return UNICODE_SUPPORT ? ("\u001b[31m"+ aStr +"\u001b[0m") : aStr;
+        }
+        /**
+         * 将输入的字符串改为绿色，如果没有 {@link Conf#UNICODE_SUPPORT}
+         * 则不会进行任何操作
+         * @param aStr 输入字符串
+         * @return 用于打印绿色的字符串
+         */
+        public static String green(String aStr) {
+            return UNICODE_SUPPORT ? ("\u001b[32m"+ aStr +"\u001b[0m") : aStr;
+        }
+        /**
+         * 将输入的字符串改为黄色，如果没有 {@link Conf#UNICODE_SUPPORT}
+         * 则不会进行任何操作
+         * @param aStr 输入字符串
+         * @return 用于打印黄色的字符串
+         */
+        public static String yellow(String aStr) {
+            return UNICODE_SUPPORT ? ("\u001b[33m"+ aStr +"\u001b[0m") : aStr;
+        }
+        /**
+         * 将输入的字符串改为蓝色，如果没有 {@link Conf#UNICODE_SUPPORT}
+         * 则不会进行任何操作
+         * @param aStr 输入字符串
+         * @return 用于打印蓝色的字符串
+         */
+        public static String blue(String aStr) {
+            return UNICODE_SUPPORT ? ("\u001b[34m"+ aStr +"\u001b[0m") : aStr;
+        }
+        /**
+         * 将输入的字符串改为紫色，如果没有 {@link Conf#UNICODE_SUPPORT}
+         * 则不会进行任何操作
+         * @param aStr 输入字符串
+         * @return 用于打印紫色的字符串
+         */
+        public static String purple(String aStr) {
+            return UNICODE_SUPPORT ? ("\u001b[35m"+ aStr +"\u001b[0m") : aStr;
+        }
+        /**
+         * 将输入的字符串改为青色，如果没有 {@link Conf#UNICODE_SUPPORT}
+         * 则不会进行任何操作
+         * @param aStr 输入字符串
+         * @return 用于打印青色的字符串
+         */
+        public static String cyan(String aStr) {
+            return UNICODE_SUPPORT ? ("\u001b[36m"+ aStr +"\u001b[0m") : aStr;
         }
         
         /**
