@@ -30,8 +30,8 @@ import java.util.regex.Pattern;
  */
 public class CS {
     /** version of jse */
-    public final static String VERSION = "3.13.6";
-    public final static int VERSION_NUMBER = 3_13_06_00;
+    public final static String VERSION = "3.13.7";
+    public final static int VERSION_NUMBER = 3_13_07_00;
     
     /** 内部使用的全局随机数生成器 */
     @ApiStatus.Internal public final static Random RANDOM_ = new Random();
