@@ -544,6 +544,21 @@ public class IO {
         public static String[] splitStr(String aStr) {
             return COMMA_OR_BLANKS.split(aStr.trim(), -1);
         }
+        /**
+         * Splits a string separated by dot into multiple strings
+         * <p>
+         * we have:
+         * <pre> {@code
+         * import jse.code.IO
+         *
+         * assert IO.Text.splitDot('3.10.2') == ['3', '10', '2']
+         * } </pre>
+         * @param aStr input string
+         * @return the split sting in array
+         */
+        public static String[] splitDot(String aStr) {
+            return DOT.split(aStr, -1);
+        }
         
         /**
          * 拆分 SLURM 系统中使用的环境变量 {@code SLURM_NODELIST} 成为可以直接使用的列表形式

@@ -243,7 +243,7 @@ public class Conf {
      * <p>
      * 也可使用环境变量 {@code JSE_CMAKE_C_COMPILER} 来设置
      */
-    public static @Nullable String CMAKE_C_COMPILER   = OS.env("JSE_CMAKE_C_COMPILER");
+    public static @Nullable String CMAKE_C_COMPILER = OS.env("JSE_CMAKE_C_COMPILER");
     /**
      * 设置全局 cmake 默认使用的 C/C++ 编译器以及 flag；
      * 这只控制全局的默认行为，如果子项的 JNI 库有设置 {@code CMAKE_CXX_COMPILER} 相关值将会覆盖此设置。
@@ -257,14 +257,14 @@ public class Conf {
      * <p>
      * 也可使用环境变量 {@code JSE_CMAKE_C_FLAGS} 来设置
      */
-    public static @Nullable String CMAKE_C_FLAGS      = OS.env("JSE_CMAKE_C_FLAGS");
+    public static @Nullable String CMAKE_C_FLAGS = OS.env("JSE_CMAKE_C_FLAGS");
     /**
      * 设置全局 cmake 默认使用的 C/C++ 编译器以及 flag；
      * 这只控制全局的默认行为，如果子项的 JNI 库有设置 {@code CMAKE_CXX_FLAGS} 相关值将会覆盖此设置。
      * <p>
      * 也可使用环境变量 {@code JSE_CMAKE_CXX_FLAGS} 来设置
      */
-    public static @Nullable String CMAKE_CXX_FLAGS    = OS.env("JSE_CMAKE_CXX_FLAGS");
+    public static @Nullable String CMAKE_CXX_FLAGS = OS.env("JSE_CMAKE_CXX_FLAGS");
     /**
      * 设置编译得到的 C/C++ 动态库的后缀，不同平台格式不同
      * <p>

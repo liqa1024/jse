@@ -142,6 +142,8 @@ public class CS {
     public final static Pattern COMMA = Pattern.compile("\\s*,\\s*");
     /** 匹配周围有任意空格的逗号或者空格的正则表达式，{@code \s*[,\s]\s*} */
     public final static Pattern COMMA_OR_BLANKS = Pattern.compile("\\s*[,\\s]\\s*");
+    /** 匹配版本分割点的正则表达式，{@code \.} */
+    public final static Pattern DOT = Pattern.compile("\\.");
     
     /** units from ase, use 2018 codata version */
     public final static Map<String, Double> UNITS = (new ImmutableMap.Builder<String, Double>())

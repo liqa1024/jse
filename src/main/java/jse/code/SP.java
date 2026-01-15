@@ -792,7 +792,7 @@ public class SP {
                         String tLine = tReader.readLine();
                         while (!tLine.equalsIgnoreCase("y")) {
                             if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
-                                throw new Exception("user interrupted");
+                                throw new Exception("no numpy");
                             }
                             System.out.println("Build jep without numpy support? (y/N)");
                         }

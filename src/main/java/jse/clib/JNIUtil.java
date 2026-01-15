@@ -8,7 +8,9 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -210,7 +212,7 @@ public class JNIUtil {
             // 现在总是优先依赖 jniutil 用来确保一些通用的检测总是优先执行
             JNIUtil.InitHelper.init();
             // 如果开启了 USE_MIMALLOC 则增加 MiMalloc 依赖
-            if (mUseMiMalloc!=null && mUseMiMalloc) MiMalloc.InitHelper.init();
+            if ((!Compiler.Conf.FORCE || !Compiler.GCC_OLD) && mUseMiMalloc!=null && mUseMiMalloc) MiMalloc.InitHelper.init();
             @Nullable String tLibName = LIB_NAME_IN(mLibDir, mProjectName);
             // 如果不存在 jni lib 则需要重新通过源码编译
             if (tLibName == null) {
@@ -239,8 +241,8 @@ public class JNIUtil {
             if (mCmakeCFlags!=null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS='"+mCmakeCFlags+"'");}
             if (mCmakeCxxFlags!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS='"+mCmakeCxxFlags+"'");}
             // 配置其余的参数设置
-            if (mUseMiMalloc != null) {
-                rCommand.add("-D"); rCommand.add("JSE_USE_MIMALLOC="+(mUseMiMalloc ?"ON":"OFF"));
+            if (mUseMiMalloc!=null) {
+                rCommand.add("-D"); rCommand.add("JSE_USE_MIMALLOC="+(((!Compiler.Conf.FORCE || !Compiler.GCC_OLD) && mUseMiMalloc) ? "ON" : "OFF"));
             }
             // windows 下可选开启 /MT 保证静态链接
             if (IS_WINDOWS && mMT) {
@@ -263,9 +265,9 @@ public class JNIUtil {
             return String.join(" ", rCommand);
         }
         private @NotNull String initLib_() throws Exception {
-            // 这里先输出编译器和 cmake 检测信息
+            // 这里先输出编译器信息和可能的 cmake 信息
             Compiler.printInfo();
-            CMake.printInfo();
+            CMake.printInfo(); // 目前默认不使用系统库则不会再输出
             // 自定义的环境检测
             if (!mEnvChecker.isEmpty()) for (IEnvChecker tChecker : mEnvChecker) tChecker.check();
             // 从内部资源解压到临时目录，现在编译任务统一放到 jse 安装目录
@@ -294,7 +296,7 @@ public class JNIUtil {
                     // 替换其中的 jniutil 库路径为设置好的路径
                     line = line.replace("$ENV{JSE_JNIUTIL_INCLUDE_DIR}", JNIUtil.INCLUDE_DIR.replace("\\", "\\\\")); // 注意反斜杠的转义问题
                     // 替换其中的 mimalloc 库路径为设置好的路径
-                    if (mUseMiMalloc!=null && mUseMiMalloc) {
+                    if ((!Compiler.Conf.FORCE || !Compiler.GCC_OLD) && mUseMiMalloc!=null && mUseMiMalloc) {
                         line = line.replace("$ENV{JSE_MIMALLOC_INCLUDE_DIR}", MiMalloc.INCLUDE_DIR.replace("\\", "\\\\"))  // 注意反斜杠的转义问题
                                    .replace("$ENV{JSE_MIMALLOC_LIB_PATH}"   , MiMalloc.LLIB_PATH  .replace("\\", "\\\\")); // 注意反斜杠的转义问题
                     }

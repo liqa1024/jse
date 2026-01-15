@@ -88,8 +88,8 @@ public class OS {
     
     
     private static boolean FILESYSTEM_FIRST_PRINT = true;
-    /** 由于文件系统类型逻辑上来说还是只检测了安装目录，因此提供一个延迟打印接口，仅第一次安装时打印提示 */
-    public static void printFilesystemInfo() {
+    /** 由于文件系统类型逻辑上来说还是只检测了安装目录，因此提供一个延迟打印接口，仅第一次安装时打印提示；这里顺便提供一个用户输入以防止这是误操作 */
+    public static void printFilesystemInfo() throws Exception {
         if (!FILESYSTEM_FIRST_PRINT) return;
         FILESYSTEM_FIRST_PRINT = false;
         // 对于神秘文件系统进行警告
@@ -109,6 +109,15 @@ public class OS {
                 "  - Consider upgrading to a newer HPC environment\n" +
                 "========================================================================"
             ));
+            System.out.println("Continue anyway? (y/N)");
+            BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
+            String tLine = tReader.readLine();
+            while (!tLine.equalsIgnoreCase("y")) {
+                if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
+                    throw new Exception("legacy filesystem");
+                }
+                System.out.println("Continue anyway? (y/N)");
+            }
         }
     }
     static {

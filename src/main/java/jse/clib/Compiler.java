@@ -4,7 +4,9 @@ import jse.code.IO;
 import jse.code.OS;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.List;
 
 import static jse.code.OS.EXEC;
@@ -39,8 +41,11 @@ public class Compiler {
     public final static String EXE_PATH;
     /** 拼接后可以执行的命令，对于 windows 和 linux 专门适配 */
     public final static String EXE_CMD;
-    /** 自动检测到编译器是否合适，包括是否有合适的 c++ 编译器 */
+    /** 自动检测到编译器是否合适，包括是否有合适版本的 C++ 编译器 */
     public final static boolean VALID;
+    /** 针对泛滥的老版本 gcc 专门的版本检测，对于老版本会提供警告并限制部分功能的编译 */
+    public final static String GCC_VERSION;
+    public final static boolean GCC_OLD;
     
     /**
      * 用于指定传给 cmake 的 C/C++ 编译器符号，确保在神秘 intel
@@ -54,12 +59,39 @@ public class Compiler {
     
     
     private static boolean FIRST_PRINT = true;
-    /** 由于总是需要路径来确定库路径，提供一个延迟打印接口，仅第一次构建时打印提示 */
-    public static void printInfo() {
+    /** 由于总是需要路径来确定库路径，提供一个延迟打印接口，仅第一次构建时打印提示；这里顺便提供一个用户输入以防止这是误操作 */
+    public static void printInfo() throws Exception {
         if (!FIRST_PRINT) return;
         FIRST_PRINT = false;
         if (EXE_PATH!=null) {
             System.out.printf("JNI INIT INFO: C/C++ compiler detected in %s\n", EXE_PATH);
+        }
+        // 针对老版 gcc 输出严重警告
+        if (GCC_OLD) {
+            System.err.println(IO.Text.red(
+                "=============================== WARNING ===============================\n" +
+                "Detected GCC version "+GCC_VERSION+" (REQUIRES >= 8.5)\n" +
+                "\n" +
+                "mimalloc has been DISABLED.\n" +
+                "\n" +
+                "This system is using an OBVIOUSLY OUTDATED compiler toolchain.\n" +
+                "Expect:\n" +
+                "  - Reduced JNI memory allocation performance\n" +
+                "  - Missing optimizations\n" +
+                "  - Increasing lack of future support\n" +
+                "\n" +
+                "Please upgrade your GCC (>= 8.5) as soon as possible.\n" +
+                "========================================================================"
+            ));
+            System.out.println("Compiling under the old gcc anyway? (y/N)");
+            BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
+            String tLine = tReader.readLine();
+            while (!tLine.equalsIgnoreCase("y")) {
+                if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
+                    throw new Exception("old gcc");
+                }
+                System.out.println("Compiling under the old gcc anyway? (y/N)");
+            }
         }
     }
     
@@ -125,6 +157,8 @@ public class Compiler {
             VALID = false;
             C_COMPILER = null;
             CXX_COMPILER = null;
+            GCC_VERSION = null;
+            GCC_OLD = false;
         } else {
             EXE_CMD = (IS_WINDOWS?"& \"":"\"") + EXE_PATH + "\"";
             if (IS_WINDOWS) {
@@ -132,6 +166,8 @@ public class Compiler {
                 VALID = true;
                 C_COMPILER = null;
                 CXX_COMPILER = null;
+                GCC_VERSION = null;
+                GCC_OLD = false;
             } else {
                 if (EXE_PATH.endsWith("gcc")) {
                     TYPE = "gcc";
@@ -150,11 +186,29 @@ public class Compiler {
                         CXX_COMPILER = null;
                         VALID = false;
                     }
+                    // 针对 gcc 还需要专门增加一个版本检测
+                    String tGccVersion = null;
+                    boolean tGccOld = false;
+                    try {
+                        tGccVersion = EXEC.system_str("gcc -dumpfullversion -dumpversion").get(0).trim();
+                        String[] tTokens = IO.Text.splitDot(tGccVersion);
+                        int tMajor = Integer.parseInt(tTokens[0]);
+                        if (tMajor<8 || (tMajor==8 && Integer.parseInt(tTokens[1])<5)) {
+                            tGccOld = true;
+                        }
+                    } catch (Exception ignore) {
+                        /**/
+                    } finally {
+                        GCC_VERSION = tGccVersion;
+                        GCC_OLD = tGccOld;
+                    }
                 } else {
                     TYPE = "clang";
                     VALID = true;
                     C_COMPILER = "clang";
                     CXX_COMPILER = "clang++";
+                    GCC_VERSION = null;
+                    GCC_OLD = false;
                 }
             }
         }

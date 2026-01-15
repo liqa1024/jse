@@ -88,6 +88,10 @@ public class MiMalloc {
     
     static {
         InitHelper.INITIALIZED = true;
+        
+        // 旧版 gcc 直接不支持 mimalloc 的任何初始化，简单检测
+        if (Compiler.Conf.FORCE && Compiler.GCC_OLD) throw new RuntimeException("mimalloc invalid for old gcc");
+        
         // 这样来统一增加 mimalloc 需要的默认额外设置，
         // 先添加额外设置，从而可以通过 Conf.CMAKE_SETTING 来覆盖这些设置
         Map<String, String> rCmakeSetting = new LinkedHashMap<>();

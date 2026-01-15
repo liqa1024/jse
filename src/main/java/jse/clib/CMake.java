@@ -37,6 +37,7 @@ public class CMake {
     public final static String VERSION = "4.2.1";
     /** 内部 cmake 会使用的路径 */
     public final static String INTERNAL_HOME = JAR_DIR+"cmake/core/" + UT.Code.uniqueID(OS.OS_NAME, CMake.VERSION) + "/";
+    private final static boolean USE_SYSTEM_ = Conf.USE_SYSTEM;
     /** 自动检测到的 cmake 可执行路径 */
     public final static String EXE_PATH;
     /** 拼接后可以执行的命令，对于 windows 和 linux 专门适配 */
@@ -48,13 +49,13 @@ public class CMake {
     public static void printInfo() {
         if (!FIRST_PRINT) return;
         FIRST_PRINT = false;
-        if (EXE_PATH!=null) {
+        if (USE_SYSTEM_ && EXE_PATH!=null) {
             System.out.printf("JNI INIT INFO: Use CMake in %s\n", EXE_PATH);
         }
     }
     
     private static String getExePath_() throws Exception {
-        if (Conf.USE_SYSTEM) {
+        if (USE_SYSTEM_) {
             // 优先检测环境变量的 cmake
             EXEC.setNoSTDOutput().setNoERROutput();
             boolean tHasCmake = EXEC.system("cmake --version") == 0;

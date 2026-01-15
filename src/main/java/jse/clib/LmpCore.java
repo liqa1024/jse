@@ -217,7 +217,7 @@ public class LmpCore {
                     String tLine = tReader.readLine();
                     while (!tLine.equalsIgnoreCase("y")) {
                         if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
-                            throw new Exception("user interrupted");
+                            throw new Exception("no MPI");
                         }
                         System.out.println("Build lammps without MPI support? (y/N)");
                     }
