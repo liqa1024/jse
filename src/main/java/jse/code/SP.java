@@ -21,6 +21,7 @@ import jep.JepConfig;
 import jep.JepException;
 import jep.python.PyObject;
 import jse.Main;
+import jse.clib.Compiler;
 import jse.clib.JNIUtil;
 import jse.clib.MiMalloc;
 import jse.code.collection.AbstractCollections;
@@ -772,7 +773,7 @@ public class SP {
             String tPrefix = EXEC.system_str((tUsePython3?"python3":"python") + " -c 'import sys; print(sys.prefix)'").get(0);
             PYTHON_PREFIX_DIR = IO.exists(tPrefix) ? IO.toInternalValidDir(tPrefix) : null;
             // 通过上述属性决定使用的 jep 路径
-            JEP_LIB_DIR = JAR_DIR+"jep/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, PYTHON_PREFIX_DIR, JEP_VERSION, NUMPY_SUPPORT, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_SETTING) + "/";
+            JEP_LIB_DIR = JAR_DIR+"jep/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, PYTHON_PREFIX_DIR, JEP_VERSION, NUMPY_SUPPORT, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_SETTING) + "/";
             
             // 先添加 Conf.CMAKE_SETTING，这样保证确定的优先级
             Map<String, String> rCmakeSetting = new LinkedHashMap<>(Conf.CMAKE_SETTING);

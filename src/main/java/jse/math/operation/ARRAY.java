@@ -4,6 +4,7 @@ import com.mastfrog.util.sort.Sort;
 import groovy.lang.Closure;
 import groovy.transform.stc.ClosureParams;
 import groovy.transform.stc.SimpleType;
+import jse.clib.Compiler;
 import jse.clib.JNIUtil;
 import jse.code.IO;
 import jse.code.OS;
@@ -2198,7 +2199,7 @@ public class ARRAY {
         }
         
         /** 当前 {@link ARRAY} JNI 库所在的文件夹路径，结尾一定存在 {@code '/'} */
-        public final static String LIB_DIR = JAR_DIR+"math/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, Conf.OPTIM_LEVEL, Conf.BATCH_SIZE, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+        public final static String LIB_DIR = JAR_DIR+"math/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, Conf.OPTIM_LEVEL, Conf.BATCH_SIZE, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
         /** 当前 {@link ARRAY} JNI 库的路径 */
         public final static String LIB_PATH;
         private final static String[] SRC_NAME = {

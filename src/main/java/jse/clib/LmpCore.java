@@ -153,7 +153,7 @@ public class LmpCore {
             LIB_DIR = tLmpBuildDir + "lib/";
         } else {
             // 否则直接版本隔离，采用内部 lammps
-            String tLmpDir = ROOT+"core/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MPICore.EXE_PATH, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, rCmakeSettingLmp) + "/";
+            String tLmpDir = ROOT+"core/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MPICore.EXE_PATH, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, rCmakeSettingLmp) + "/";
             INCLUDE_DIR = tLmpDir + "includes/";
             LIB_DIR = tLmpDir + "lib/";
         }

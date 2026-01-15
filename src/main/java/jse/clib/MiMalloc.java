@@ -101,7 +101,7 @@ public class MiMalloc {
         rCmakeSetting.put("MI_OSX_ZONE",      "OFF");
         rCmakeSetting.putAll(Conf.CMAKE_SETTING);
         rCmakeSetting.put("CMAKE_BUILD_TYPE", "Release");
-        HOME = JAR_DIR+"mimalloc/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MiMalloc.VERSION, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, rCmakeSetting) + "/";
+        HOME = JAR_DIR+"mimalloc/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MiMalloc.VERSION, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, rCmakeSetting) + "/";
         LIB_DIR = HOME+"lib/";
         INCLUDE_DIR = HOME+"include/";
         // 现在直接使用 JNIUtil.buildLib 来统一初始化

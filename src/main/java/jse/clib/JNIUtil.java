@@ -120,6 +120,9 @@ public class JNIUtil {
                                 "https://learn.microsoft.com/zh-cn/java/openjdk/download");
             }
         }
+        // 现在在这里检测编译器环境和 cmake
+        Compiler.InitHelper.init();
+        CMake.InitHelper.init();
         // 总是事先合法化这个目录，让用户可以快速找到
         try {IO.makeDir(PKG_DIR);}
         catch (Exception e) {throw new RuntimeException(e);}
@@ -260,12 +263,11 @@ public class JNIUtil {
             return String.join(" ", rCommand);
         }
         private @NotNull String initLib_() throws Exception {
+            // 这里先输出编译器和 cmake 检测信息
+            Compiler.printInfo();
+            CMake.printInfo();
             // 自定义的环境检测
             if (!mEnvChecker.isEmpty()) for (IEnvChecker tChecker : mEnvChecker) tChecker.check();
-            // 检测编译器环境
-            Compiler.InitHelper.init();
-            // 检测 cmake
-            CMake.InitHelper.init();
             // 从内部资源解压到临时目录，现在编译任务统一放到 jse 安装目录
             boolean tWorkingDirValid = true;
             String tWorkingDirName = "build-"+ mProjectName +"@"+UT.Code.randID() + "/";

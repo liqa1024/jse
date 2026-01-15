@@ -3,7 +3,6 @@ package jse.clib;
 import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
 import java.net.URI;
@@ -43,7 +42,18 @@ public class CMake {
     /** 拼接后可以执行的命令，对于 windows 和 linux 专门适配 */
     public final static String EXE_CMD;
     
-    private static @NotNull String getExePath_() throws Exception {
+    
+    private static boolean FIRST_PRINT = true;
+    /** 虽然不需要 cmake 路径来确定路径，但为了统一还是提供一个延迟打印接口，仅第一次构建时打印提示 */
+    public static void printInfo() {
+        if (!FIRST_PRINT) return;
+        FIRST_PRINT = false;
+        if (EXE_PATH!=null) {
+            System.out.printf("JNI INIT INFO: Use CMake in %s\n", EXE_PATH);
+        }
+    }
+    
+    private static String getExePath_() throws Exception {
         if (Conf.USE_SYSTEM) {
             // 优先检测环境变量的 cmake
             EXEC.setNoSTDOutput().setNoERROutput();
@@ -133,7 +143,6 @@ public class CMake {
         
         try {EXE_PATH = getExePath_();}
         catch (Exception e) {throw new RuntimeException(e);}
-        System.out.printf("JNI INIT INFO: Use CMake in %s\n", EXE_PATH);
         EXE_CMD = (IS_WINDOWS?"& \"":"\"") + EXE_PATH + "\"";
     }
 }

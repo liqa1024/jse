@@ -1047,7 +1047,7 @@ public class MPI {
             Map<String, String> rCmakeSetting = new LinkedHashMap<>(Conf.CMAKE_SETTING);
             rCmakeSetting.put("JSE_COPY_JARRAY", Conf.COPY_JARRAY ? "ON" : "OFF");
             // 不同 MPI 路径采用独立库
-            MPIJNI_LIB_DIR = JAR_DIR+"mpi/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MPICore.EXE_PATH, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, rCmakeSetting) + "/";
+            MPIJNI_LIB_DIR = JAR_DIR+"mpi/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MPICore.EXE_PATH, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, rCmakeSetting) + "/";
             // 现在直接使用 JNIUtil.buildLib 来统一初始化
             MPIJNI_LIB_PATH = new JNIUtil.LibBuilder("mpijni", "MPI", MPIJNI_LIB_DIR, rCmakeSetting)
                 .setSrc("mpi", MPIJNI_SRC_NAME)

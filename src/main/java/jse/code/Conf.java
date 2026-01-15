@@ -221,7 +221,7 @@ public class Conf {
     public static boolean NO_CACHE = OS.envZ("JSE_NO_CACHE", false);
     
     /**
-     * 用户自定义的版本掩码，用于对于完全不同的环境（主要是不同编译器）进行设置来达到独立的 jni 依赖。
+     * 用户自定义的版本掩码，用于对于完全不同的环境进行设置来达到独立的 jni 依赖。
      * <p>
      * 默认为 {@code 0}
      * <p>

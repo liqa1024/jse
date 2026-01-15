@@ -34,7 +34,7 @@ public class MPICore {
     
     
     private static boolean FIRST_PRINT = true;
-    /** 用于总是需要路径来确定库路径，提供一个延迟打印接口，仅第一次构建时打印提示 */
+    /** 由于总是需要路径来确定库路径，提供一个延迟打印接口，仅第一次构建时打印提示；由于是可选的，下载相关的提示也延迟输出 */
     public static void printInfo() {
         if (!FIRST_PRINT) return;
         FIRST_PRINT = false;

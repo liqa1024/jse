@@ -1,5 +1,6 @@
 package jsex.nnap.nn;
 
+import jse.clib.Compiler;
 import jse.clib.JNIUtil;
 import jse.clib.MiMalloc;
 import jse.code.OS;
@@ -56,7 +57,7 @@ public class TorchModel extends NeuralNetwork {
         public static boolean USE_MIMALLOC = OS.envZ("JSE_USE_MIMALLOC_NNAPTORCH", jse.code.Conf.USE_MIMALLOC);
     }
     
-    public final static String LIB_DIR = JAR_DIR+"nnap/torch/" + UT.Code.uniqueID(OS.OS_NAME, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, jse.clib.Torch.HOME, Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+    public final static String LIB_DIR = JAR_DIR+"nnap/torch/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, jse.clib.Torch.HOME, Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
           "jsex_nnap_nn_TorchModel.cpp"

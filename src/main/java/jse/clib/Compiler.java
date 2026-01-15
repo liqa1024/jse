@@ -53,6 +53,16 @@ public class Compiler {
     public final static String C_COMPILER, CXX_COMPILER;
     
     
+    private static boolean FIRST_PRINT = true;
+    /** 由于总是需要路径来确定库路径，提供一个延迟打印接口，仅第一次构建时打印提示 */
+    public static void printInfo() {
+        if (!FIRST_PRINT) return;
+        FIRST_PRINT = false;
+        if (EXE_PATH!=null) {
+            System.out.printf("JNI INIT INFO: C/C++ compiler detected in %s\n", EXE_PATH);
+        }
+    }
+    
     private static @Nullable String getExePath_() {
         if (!Conf.FORCE) return null;
         if (!IS_WINDOWS) {
@@ -116,7 +126,6 @@ public class Compiler {
             C_COMPILER = null;
             CXX_COMPILER = null;
         } else {
-            System.out.printf("JNI INIT INFO: C/C++ compiler detected in %s\n", EXE_PATH);
             EXE_CMD = (IS_WINDOWS?"& \"":"\"") + EXE_PATH + "\"";
             if (IS_WINDOWS) {
                 TYPE = "msvc";
@@ -126,20 +135,21 @@ public class Compiler {
             } else {
                 if (EXE_PATH.endsWith("gcc")) {
                     TYPE = "gcc";
+                    C_COMPILER = "gcc";
                     // 还需要额外检测 g++
                     EXEC.setNoSTDOutput().setNoERROutput();
                     boolean tHasGxx = EXEC.system("g++ --version") == 0;
                     EXEC.setNoSTDOutput(false).setNoERROutput(false);
                     if (tHasGxx) {
+                        CXX_COMPILER = "g++";
                         VALID = true;
                     } else {
                         System.err.println(IO.Text.red("JNI INIT ERROR:")+" No g++ for gcc,");
                         System.err.println("  For Ubuntu, you can use `sudo apt install g++`");
                         if (Conf.FORCE) throw new RuntimeException("No suitable C/C++ compiler");
+                        CXX_COMPILER = null;
                         VALID = false;
                     }
-                    C_COMPILER = "gcc";
-                    CXX_COMPILER = "g++";
                 } else {
                     TYPE = "clang";
                     VALID = true;
