@@ -2,15 +2,14 @@ package jse.clib;
 
 import jse.code.Conf;
 import jse.code.IO;
+import jse.code.OS;
 import jse.code.UT;
 import jse.code.functional.IUnaryFullOperator;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +19,6 @@ import java.util.regex.Pattern;
 import static jse.code.CS.VERSION_NUMBER;
 import static jse.code.Conf.*;
 import static jse.code.OS.*;
-import static jse.code.OS.IS_MAC;
 
 /**
  * 其他 jni 库或者此项目需要依赖的 c 库；
@@ -106,8 +104,8 @@ public class JNIUtil {
         // 直接从内部资源解压到需要目录，如果已经存在则先删除
         IO.removeDir(INCLUDE_DIR);
         IO.copy(IO.getResource("jniutil/src/"+ HEADER_NAME), HEADER_PATH);
-        System.out.println("JNIUTIL INIT INFO: jniutil successfully installed.");
-        System.out.println("JNIUTIL INCLUDE DIR: " + INCLUDE_DIR);
+        System.out.println(IO.Text.green("JNIUTIL INIT INFO:")+" jniutil successfully installed.");
+        System.out.println(IO.Text.green("JNIUTIL INCLUDE DIR: ") + INCLUDE_DIR);
     }
     
     static {
@@ -130,13 +128,12 @@ public class JNIUtil {
         catch (Exception e) {throw new RuntimeException(e);}
         // 如果不存在 jniutil.h 则需要重新通过源码编译
         if (!IO.isFile(HEADER_PATH)) {
-            System.out.println("JNIUTIL INIT INFO: jniutil.h not found. Reinstalling...");
+            System.out.println(IO.Text.green("JNIUTIL INIT INFO:")+" jniutil.h not found. Reinstalling...");
             try {initJNIUtil_();}
             catch (Exception e) {throw new RuntimeException(e);}
         }
         // header only 库不需要设置库路径
     }
-    
     
     
     private final static String BUILD_DIR_NAME = IS_WINDOWS ? "build-win" : (IS_MAC ? "build-mac" : "build");
@@ -216,7 +213,7 @@ public class JNIUtil {
             @Nullable String tLibName = LIB_NAME_IN(mLibDir, mProjectName);
             // 如果不存在 jni lib 则需要重新通过源码编译
             if (tLibName == null) {
-                System.out.println(mInfoProjectName +" INIT INFO: "+ mProjectName +" libraries not found. Reinstalling...");
+                System.out.println(IO.Text.green(mInfoProjectName +" INIT INFO: ")+ mProjectName +" libraries not found. Reinstalling...");
                 try {
                     tLibName = initLib_();
                 } catch (Exception e) {throw new RuntimeException(e);}
@@ -265,7 +262,7 @@ public class JNIUtil {
             return String.join(" ", rCommand);
         }
         private @NotNull String initLib_() throws Exception {
-            // 这里先输出编译器信息和可能的 cmake 信息
+            // 这里先输出编译器信息和可能的 cmake 信息，以及顺便的延迟环境检测
             Compiler.printInfo();
             CMake.printInfo(); // 目前默认不使用系统库则不会再输出
             // 自定义的环境检测
@@ -306,7 +303,7 @@ public class JNIUtil {
                 IO.move(tSrcDir+tCmakeListsDir+"CMakeLists1.txt", tSrcDir+tCmakeListsDir+"CMakeLists.txt");
             }
             // 开始通过 cmake 编译
-            System.out.println(mInfoProjectName +" INIT INFO: Building "+ mProjectName +" from source code...");
+            System.out.println(IO.Text.green(mInfoProjectName +" INIT INFO:")+" Building "+ mProjectName +" from source code...");
             String tBuildDir = mBuildDirIniter.init(tSrcDir);
             // 直接通过系统指令来编译库，关闭输出
             EXEC.setWorkingDir(tBuildDir);
@@ -335,13 +332,13 @@ public class JNIUtil {
             mPostBuildDir.apply(tBuildDir);
             // 完事后移除临时解压得到的源码，这里需要对于神秘文件系统专门处理
             if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
-                printFilesystemInfo();
+                OS.printFilesystemInfo();
                 EXEC.system("rm -rf \""+tWorkingDir+"\"");
             } else {
                 IO.removeDir(tWorkingDir);
             }
-            System.out.println(mInfoProjectName +" INIT INFO: "+ mProjectName +" successfully installed.");
-            System.out.println(mInfoProjectName +" LIB DIR: " + mLibDir);
+            System.out.println(IO.Text.green(mInfoProjectName +" INIT INFO: ")+ mProjectName +" successfully installed.");
+            System.out.println(IO.Text.green(mInfoProjectName +" LIB DIR: ") + mLibDir);
             // 输出安装完成后的库名称
             return tLibName;
         }

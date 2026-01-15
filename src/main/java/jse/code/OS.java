@@ -109,14 +109,14 @@ public class OS {
                 "  - Consider upgrading to a newer HPC environment\n" +
                 "========================================================================"
             ));
-            System.out.println("Continue anyway? (y/N)");
+            System.out.println(IO.Text.yellow("Continue anyway? (y/N)"));
             BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
             String tLine = tReader.readLine();
             while (!tLine.equalsIgnoreCase("y")) {
                 if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
                     throw new Exception("legacy filesystem");
                 }
-                System.out.println("Continue anyway? (y/N)");
+                System.out.println(IO.Text.yellow("Continue anyway? (y/N)"));
             }
         }
     }

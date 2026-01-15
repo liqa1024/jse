@@ -50,7 +50,7 @@ public class CMake {
         if (!FIRST_PRINT) return;
         FIRST_PRINT = false;
         if (USE_SYSTEM_ && EXE_PATH!=null) {
-            System.out.printf("JNI INIT INFO: Use CMake in %s\n", EXE_PATH);
+            System.out.printf(IO.Text.green("JNI INIT INFO:")+" Use CMake in %s\n", EXE_PATH);
         }
     }
     
@@ -78,8 +78,8 @@ public class CMake {
         String tCmakePkgName = "cmake-"+VERSION+"-" + (IS_WINDOWS ? "windows-x86_64.zip" : (IS_MAC ? "macos-universal.tar.gz" : "linux-x86_64.tar.gz"));
         String tCmakeCachePath = JNIUtil.PKG_DIR + tCmakePkgName;
         if (!IO.exists(tCmakeCachePath)) {
-            System.out.println("JNI INIT INFO: No correct CMake pkg detected");
-            System.out.println("Auto download CMake? (Y/n)");
+            System.out.println(IO.Text.green("JNI INIT INFO:")+" No correct CMake pkg detected");
+            System.out.println(IO.Text.yellow("Auto download CMake? (Y/n)"));
             BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
             String tLine = tReader.readLine();
             while (true) {
@@ -89,7 +89,7 @@ public class CMake {
                 if (tLine.isEmpty() || tLine.equalsIgnoreCase("y")) {
                     break;
                 }
-                System.out.println("Auto download CMake? (Y/n)");
+                System.out.println(IO.Text.yellow("Auto download CMake? (Y/n)"));
             }
             String tCmakeUrl = String.format("https://github.com/Kitware/CMake/releases/download/v%s/%s", VERSION, tCmakePkgName);
             System.out.println("Downloading "+IO.Text.underline(tCmakeUrl));
@@ -97,14 +97,15 @@ public class CMake {
             String tTempPath = tCmakeCachePath + ".tmp_"+UT.Code.randID();
             IO.copy(URI.create(tCmakeUrl).toURL(), tTempPath);
             IO.move(tTempPath, tCmakeCachePath);
-            System.out.println("JNI INIT INFO: CMake pkg downloading finished.");
+            System.out.println(IO.Text.green("JNI INIT INFO:")+" CMake pkg downloading finished.");
         }
         // 解压
-        System.out.println("JNI INIT INFO: Extracting CMake...");
+        System.out.println(IO.Text.green("JNI INIT INFO:")+" Extracting CMake...");
         String tWorkingDir = JAR_DIR + "build-cmake@"+UT.Code.randID() + "/";
         if (IS_WINDOWS) {
             IO.zip2dir(tCmakeCachePath, tWorkingDir);
         } else {
+            OS.printFilesystemInfo();
             // tar.gz 这里直接使用系统命令解压
             IO.makeDir(tWorkingDir);
             EXEC.system("tar -zxf \""+tCmakeCachePath+"\" -C \""+tWorkingDir+"\"");
@@ -122,7 +123,7 @@ public class CMake {
         if (IS_MAC) tCmakeDir += "CMake.app/Contents/";
         // 移动到需要的目录，这里需要对于神秘文件系统专门处理
         if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
-            printFilesystemInfo();
+            OS.printFilesystemInfo();
             IO.makeDir(INTERNAL_HOME);
             IO.removeDir(INTERNAL_HOME);
             int tCode = EXEC.system("mv \""+tCmakeDir+"\" \""+INTERNAL_HOME.substring(0, INTERNAL_HOME.length()-1)+"\"");

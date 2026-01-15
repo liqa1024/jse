@@ -782,19 +782,19 @@ public class SP {
             JEP_LIB_PATH = new JNIUtil.LibBuilder("jep", "JEP", JEP_LIB_DIR, rCmakeSetting)
                 .setEnvChecker(() -> {
                     // 这里输出确保只在第一次构建时打印
-                    System.out.printf("JEP INIT INFO: Use python in %s\n", PYTHON_PREFIX_DIR); // 可能存在和 cmake 检测不一致的问题
+                    System.out.printf(IO.Text.green("JEP INIT INFO:")+" Use python in %s\n", PYTHON_PREFIX_DIR); // 可能存在和 cmake 检测不一致的问题
                     // 在这里输出没有 numpy 的警告，保证无 numpy 情况下只会警告一次
                     if (!NUMPY_SUPPORT) {
-                        System.out.println("JEP INIT INFO: No numpy in python, you can install numpy by `pip install numpy==1.26.4`,");
+                        System.out.println(IO.Text.green("JEP INIT INFO:")+" No numpy in python, you can install numpy by `pip install numpy==1.26.4`,");
                         System.out.println("  or build jep without numpy support.");
-                        System.out.println("Build jep without numpy support? (y/N)");
+                        System.out.println(IO.Text.yellow("Build jep without numpy support? (y/N)"));
                         BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
                         String tLine = tReader.readLine();
                         while (!tLine.equalsIgnoreCase("y")) {
                             if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
                                 throw new Exception("no numpy");
                             }
-                            System.out.println("Build jep without numpy support? (y/N)");
+                            System.out.println(IO.Text.yellow("Build jep without numpy support? (y/N)"));
                         }
                     }
                 })
@@ -970,14 +970,14 @@ public class SP {
             }
             // 如果没有 ase 包则直接下载，指定版本 ASE_VERSION 避免因为更新造成的问题
             if (!tHasAsePkg) {
-                System.out.printf("ASE INIT INFO: No ase package in %s, downloading...\n", PYTHON_PKG_DIR);
+                System.out.printf(IO.Text.green("ASE INIT INFO:")+" No ase package in %s, downloading...\n", PYTHON_PKG_DIR);
                 downloadPackage("ase=="+ASE_VERSION);
-                System.out.println("ASE INIT INFO: ase package downloading finished");
+                System.out.println(IO.Text.green("ASE INIT INFO:")+" ase package downloading finished");
             }
             // 安装 ase 包
-            System.out.println("ASE INIT INFO: Installing ase from package...");
+            System.out.println(IO.Text.green("ASE INIT INFO:")+" Installing ase from package...");
             installPackage("ase=="+ASE_VERSION);
-            System.out.println("ASE INIT INFO: ase Installing finished");
+            System.out.println(IO.Text.green("ASE INIT INFO:")+" ase Installing finished");
         }
     }
 }

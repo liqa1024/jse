@@ -163,8 +163,8 @@ public class LmpCore {
         final String tLmpCachePath = JNIUtil.PKG_DIR + "lammps-"+ tLmpTag + (IS_WINDOWS?".zip":".tar.gz");
         final Callable<Void> tCacheValider = () -> {
             if (IO.exists(tLmpCachePath)) return null;
-            System.out.println("LMP_CORE INIT INFO: No correct lammps source code detected");
-            System.out.println("Auto download lammps? (Y/n)");
+            System.out.println(IO.Text.green("LMP_CORE INIT INFO:")+" No correct lammps source code detected");
+            System.out.println(IO.Text.yellow("Auto download lammps? (Y/n)"));
             BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
             String tLine = tReader.readLine();
             while (true) {
@@ -174,7 +174,7 @@ public class LmpCore {
                 if (tLine.isEmpty() || tLine.equalsIgnoreCase("y")) {
                     break;
                 }
-                System.out.println("Auto download lammps? (Y/n)");
+                System.out.println(IO.Text.yellow("Auto download lammps? (Y/n)"));
             }
             String tLmpUrl = String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.%s", tLmpTag, IS_WINDOWS?"zip":"tar.gz");
             System.out.println("Downloading "+IO.Text.underline(tLmpUrl));
@@ -182,15 +182,16 @@ public class LmpCore {
             String tTempPath = tLmpCachePath + ".tmp_"+UT.Code.randID();
             IO.copy(URI.create(tLmpUrl).toURL(), tTempPath);
             IO.move(tTempPath, tLmpCachePath);
-            System.out.println("LMP_CORE INIT INFO: lammps source code downloading finished.");
+            System.out.println(IO.Text.green("LMP_CORE INIT INFO:")+" lammps source code downloading finished.");
             return null;
         };
         final JNIUtil.IDirIniter tUnzipLmp = wd -> {
-            System.out.println("LMP_CORE INIT INFO: Extracting lammps...");
+            System.out.println(IO.Text.green("LMP_CORE INIT INFO:")+" Extracting lammps...");
             // 现在直接解压到输入目录
             if (IS_WINDOWS) {
                 IO.zip2dir(tLmpCachePath, wd);
             } else {
+                OS.printFilesystemInfo();
                 // tar.gz 这里直接使用系统命令解压，并且可以同时自动避免神秘文件系统的 bug
                 IO.makeDir(wd);
                 EXEC.system("tar -zxf \""+tLmpCachePath+"\" -C \""+wd+"\"");
@@ -211,15 +212,15 @@ public class LmpCore {
                 // 在这里输出没有 mpi 的警告，保证无 mpi 情况下只会警告一次
                 MPICore.printInfo();
                 if (!MPICore.VALID) {
-                    System.out.println("LMP_CORE INIT INFO: No MPI support,");
-                    System.out.println("Build lammps without MPI support? (y/N)");
+                    System.out.println(IO.Text.green("LMP_CORE INIT INFO:")+" No MPI support,");
+                    System.out.println(IO.Text.yellow("Build lammps without MPI support? (y/N)"));
                     BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
                     String tLine = tReader.readLine();
                     while (!tLine.equalsIgnoreCase("y")) {
                         if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
                             throw new Exception("no MPI");
                         }
-                        System.out.println("Build lammps without MPI support? (y/N)");
+                        System.out.println(IO.Text.yellow("Build lammps without MPI support? (y/N)"));
                     }
                 }
             })
@@ -232,7 +233,7 @@ public class LmpCore {
                         String tLmpSrcDir = tUnzipLmp.init(wd); // 依旧解压到工作目录，但是这里进行一次移动
                         // 移动到需要的目录，这里需要对于神秘文件系统专门处理
                         if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
-                            printFilesystemInfo();
+                            OS.printFilesystemInfo();
                             IO.makeDir(fLmpHome);
                             IO.removeDir(fLmpHome);
                             int tCode = EXEC.system("mv \""+tLmpSrcDir+"\" \""+fLmpHome.substring(0, fLmpHome.length()-1)+"\"");

@@ -277,14 +277,14 @@ public class Main {
                 }
                 System.out.printf("The following directories in %s will be removed:\n", JAR_DIR);
                 System.out.println(String.join("\n", tNamesToClean));
-                System.out.println("Confirm? (y/N)");
+                System.out.println(IO.Text.yellow("Confirm? (y/N)"));
                 BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
                 String tLine = tReader.readLine();
                 while (!tLine.equalsIgnoreCase("y")) {
                     if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
                         return;
                     }
-                    System.out.println("Confirm? (y/N)");
+                    System.out.println(IO.Text.yellow("Confirm? (y/N)"));
                 }
                 for (String tName : tNamesToClean) {
                     System.out.printf("Removing: %s\n", tName);
@@ -460,8 +460,7 @@ public class Main {
         aPrinter.println(IO.Text.yellow("     _(  )/ ___)(  __)"));
         aPrinter.println(IO.Text.yellow("    / \\) \\\\___ \\ ) _) "));
         aPrinter.println(IO.Text.yellow("    \\____/(____/(____)"));
-        aPrinter.println(IO.Text.yellow("               by liqa"));
-        aPrinter.println();
+        aPrinter.println(IO.Text.yellow("                by liqa"));
         aPrinter.println(IO.Text.bold("    GitHub: ")+IO.Text.underline("https://github.com/liqa1024/jse"));
     }
     private static void printLogo() {printLogo(System.out);}

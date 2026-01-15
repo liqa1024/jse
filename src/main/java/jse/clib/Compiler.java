@@ -64,7 +64,7 @@ public class Compiler {
         if (!FIRST_PRINT) return;
         FIRST_PRINT = false;
         if (EXE_PATH!=null) {
-            System.out.printf("JNI INIT INFO: C/C++ compiler detected in %s\n", EXE_PATH);
+            System.out.printf(IO.Text.green("JNI INIT INFO:")+" C/C++ compiler detected in %s\n", EXE_PATH);
         }
         // 针对老版 gcc 输出严重警告
         if (GCC_OLD) {
@@ -83,14 +83,14 @@ public class Compiler {
                 "Please upgrade your GCC (>= 8.5) as soon as possible.\n" +
                 "========================================================================"
             ));
-            System.out.println("Compiling under the old gcc anyway? (y/N)");
+            System.out.println(IO.Text.yellow("Compiling with old gcc anyway? (y/N)"));
             BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
             String tLine = tReader.readLine();
             while (!tLine.equalsIgnoreCase("y")) {
                 if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
                     throw new Exception("old gcc");
                 }
-                System.out.println("Compiling under the old gcc anyway? (y/N)");
+                System.out.println(IO.Text.yellow("Compiling with old gcc anyway? (y/N)"));
             }
         }
     }

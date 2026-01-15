@@ -623,7 +623,7 @@ public class UT {
         }
         
         public static ProgressBarStyle FANCY_ASCII = ProgressBarStyle.builder().block('#').fractionSymbols(" 123456789").rightSideFractionSymbol(' ').build();
-        public static ProgressBarStyle COLORFUL_UNICODE_BLOCK = ProgressBarStyle.builder().leftBracket("\u001b[32m│").rightBracket("│\u001b[0m").block('█').fractionSymbols(" ▏▎▍▌▋▊▉").rightSideFractionSymbol(' ').build();
+        public static ProgressBarStyle COLORFUL_UNICODE_BLOCK = ProgressBarStyle.builder().leftBracket("│\u001b[33m").rightBracket("\u001b[0m│").block('█').fractionSymbols(" ▏▎▍▌▋▊▉").rightSideFractionSymbol(' ').build();
         private static @Nullable ProgressBar sProgressBar = null;
         private static synchronized void progressBar_(String aName, long aN, ProgressBarStyle aStyle, PrintStream aConsumer, int aUpdateIntervalMillis, String aUnitName, long aUnitSize, int aMaxRenderedLength, boolean aShowSpeed, ChronoUnit aSpeedUnit) {
             if (sProgressBar != null) {
@@ -646,7 +646,7 @@ public class UT {
                          ((Number)Code.get(aArgs, "InitialMax", "initialmax", "Max", "max", "N", "n")).longValue(),
                          (ProgressBarStyle)Code.getWithDefault(aArgs, UNICODE_SUPPORT ? COLORFUL_UNICODE_BLOCK : FANCY_ASCII, "Style", "style", "s"),
                          (PrintStream)Code.getWithDefault(aArgs, PBAR_ERR_STREAM ? System.err : System.out, "Consumer", "consumer", "c"),
-                         ((Number)Code.getWithDefault(aArgs, (int)FILE_SYSTEM_SLEEP_TIME_2, "UpdateIntervalMillis", "updateintervalmills", "Update", "update")).intValue(),
+                         ((Number)Code.getWithDefault(aArgs, (int)SYNC_SLEEP_TIME_2, "UpdateIntervalMillis", "updateintervalmills", "Update", "update")).intValue(),
                          Code.toString(Code.getWithDefault(aArgs, "", "UnitName", "unitname", "uname")),
                          ((Number)Code.getWithDefault(aArgs, 1, "UnitSize", "unitsize", "usize")).longValue(),
                          ((Number)Code.getWithDefault(aArgs, -1, "MaxRenderedLength", "maxrenderlength", "Length", "length", "l")).intValue(),

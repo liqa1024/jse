@@ -39,7 +39,7 @@ public class MPICore {
         if (!FIRST_PRINT) return;
         FIRST_PRINT = false;
         if (EXE_PATH!=null) {
-            System.out.printf("JNI INIT INFO: Use MPI in %s\n", EXE_PATH);
+            System.out.printf(IO.Text.green("JNI INIT INFO:")+" Use MPI in %s\n", EXE_PATH);
         } else {
             System.err.println(IO.Text.yellow("JNI INIT WARNING:")+" No MPI found,");
             if (IS_WINDOWS) {
