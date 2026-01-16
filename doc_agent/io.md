@@ -104,11 +104,10 @@ Unlike standard Java `File.mkdir()`, `jse` methods work recursively.
 
 `IO` provides extensive support for common data formats, seamlessly integrating with `jse` math objects (`IVector`, `IMatrix`, `ITable`).
 
-### 4.1 CSV & Simulation Data
-Designed for scientific data (matrices, vectors, xy columns).
+### 4.1 CSV / Whitespace-Separated Data
 
-*   **Writing:** `data2csv`, `rows2csv`, `cols2csv`.
-*   **Reading:** `csv2data`, `csv2table`.
+*   **Writing:** `data2csv`, `rows2csv`, `cols2csv`, always write in standard comma separated format.
+*   **Reading:** `csv2data`, `csv2table`, can recognize comma and whitespace separation at the same time.
 
 **Writing Matrix/Vector Data:**
 ```groovy
@@ -124,7 +123,7 @@ IO.data2csv(vec, 'output.csv', 'Time') // 'Time' is the header
 def matrix = ... // Some IMatrix
 IO.data2csv(matrix, 'matrix.csv', 'x', 'y', 'z')
 
-// 3. Save raw 2D arrays by column (useful for x, y plotting data)
+// 3. Save raw 2D arrays by column
 def x = [1.0d, 2.0d, 3.0d] as double[]
 def y = [0.1d, 0.4d, 0.9d] as double[]
 // Creates file with columns: A, B
@@ -140,7 +139,7 @@ import jse.code.IO
 def matrix = IO.csv2data('data.csv')
 
 // Automatically read headers or 'C0', 'C1', ... for no head csv
-// Returns a Table (jse.math.table.Table)
+// Returns a Table (jse.math.table.Table), get the column through table[key]
 def table = IO.csv2table('table.csv')
 ```
 
@@ -245,7 +244,7 @@ Helper class for string manipulation, often useful for customize parsing simulat
 import jse.code.IO
 
 // 1. Parse space-separated numbers (handles multiple spaces better than split())
-// Useful for parsing LAMMPS data lines
+// Useful for parse loosely formatted output data line
 String line = '  1    1.00   2.05   -0.5 '
 def vec = IO.Text.str2data(line, 4) // Returns Vector of length 4
 

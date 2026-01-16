@@ -73,7 +73,7 @@ Standard LAMMPS `read_data` format. High-performance, optimized for MD initializ
     import jse.lmp.Lmpdat
     
     def lmp = Lmpdat.read('system.data')
-    lmp.setMasses(26.98, 63.55) // Set masses for types, can use internal value like CS.MASS.Cu
+    lmp.setMasses(26.98d, 63.55d) // Set masses for types, can use internal value like CS.MASS.Cu
     lmp.write('system_new.data')
     ```
 
@@ -92,10 +92,10 @@ Standard structure file.
     def poscar = POSCAR.read('POSCAR')
   
     // SAFE: Convert to Lmpdat, then shuffle type in-place
-    def lmp = Lmpdat.of(poscar).op().mapTypeRandom2this(0.5, 0.5)
+    def lmp = Lmpdat.of(poscar).op().mapTypeRandom2this(0.5d, 0.5d)
   
     // SAFE: Create new structure
-    def randomized = poscar.op().mapTypeRandom(0.5, 0.5)
+    def randomized = poscar.op().mapTypeRandom(0.5d, 0.5d)
     ```
 
 ### 3.3 Trajectories (`jse.lmp.Lammpstrj`, `jse.vasp.XDATCAR`, `jse.atom.data.DumpXYZ`)
@@ -139,7 +139,7 @@ import jse.vasp.POSCAR
 
 def poscar = POSCAR.read('POSCAR')
 // Convert to LAMMPS format effectively
-def lmp = Lmpdat.of(poscar, 1.0, 2.0) 
+def lmp = Lmpdat.of(poscar, 1.0d, 2.0d) 
 // If not specified, will auto looked up from CS.MASS based on the symbols.
 ```
 
@@ -150,13 +150,13 @@ def lmp = Lmpdat.of(poscar, 1.0, 2.0)
 `jse.ase.AseAtoms` bridges Java and the Python `ase` library.
 
 **Data Copying & Loss:**
-To ensure high performance in Java loops, `AseAtoms` **copies** the core ASE data (positions, numbers, cell, momenta) into Java primitives.
+To ensure performance, `AseAtoms` **copies** the core ASE data (positions, numbers, cell, momenta) into Java primitives.
 *   **Result:** Custom ASE arrays/properties (e.g., magnetic moments, constraints) are **lost** during this transfer.
 
 **Recommended Workflows:**
 
 1.  **Read via ASE, Process in Java:**
-    Use this when you need ASE's full file parsers (e.g., `.cif`, `.xsf`) but want Java speed for analysis.
+    Use this when you need ASE's full file parsers (e.g., `.cif`, `.xsf`) but want Java speed or jse futures for analysis.
     ```groovy
     import jse.ase.AseAtoms
     import jse.code.SP
@@ -187,7 +187,7 @@ To ensure high performance in Java loops, `AseAtoms` **copies** the core ASE dat
     import jse.code.SP
     
     // 1. Create in Java
-    def data = Structure.fcc(4.0, 2)
+    def data = Structure.fcc(4.0d, 2)
     // 2. Convert to PyObject (Copy)
     def pyAtoms = AseAtoms.of(data).toPyObject()
     // 3. Use in Python

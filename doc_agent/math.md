@@ -99,7 +99,7 @@ def a = Vectors.ones(1000)
 def b = Vectors.ones(1000)
 
 // Allocates new memory for (a+b), then allocates new memory for result * 2.0
-def c = (a + b) * 2.0 
+def c = (a + b) * 2.0d
 ```
 
 ### Tier 2: In-Place Methods (Balanced)
@@ -115,7 +115,7 @@ def b = Vectors.ones(1000)
 
 // No allocation overhead
 a.plus2this(b)      // a = a + b
-a.multiply2this(2.0) // a = a * 2.0
+a.multiply2this(2.0d) // a = a * 2.0
 ```
 
 ### Tier 3: C-Style Loops (Peak Performance)
