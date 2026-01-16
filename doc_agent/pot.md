@@ -39,7 +39,7 @@ Pure Java implementations. **Significantly faster (>50x)** and more robust than 
 *   **Input:** Scalars (same for all types) or `double[][]` matrices (for specific type pairs).
 
 #### Embedded Atom Method (`jse.atom.pot.EAM`)
-*   **Constructor:** `new EAM("path/to/potential.file")`
+*   **Constructor:** `new EAM('path/to/potential.file')`
 *   **Supported Formats:** `eam`, `alloy`, `fs`, `adp` (LAMMPS DYNAMO formats).
 
 #### Soft Potential (`jse.atom.pot.Soft`)

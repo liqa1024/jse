@@ -158,7 +158,7 @@ import jse.math.vector.Vectors
 def vec = Vectors.linspace(0, 1, 100)
 
 // Explicit conversion required to send to Python context
-SP.Python.set("py_vec", vec.numpy())
+SP.Python.set('py_vec', vec.numpy())
 ```
 
 ### 4.2 NumPy to Java
@@ -171,11 +171,11 @@ import jse.code.SP
 import jse.math.vector.Vectors
 import jse.math.vector.Vector
 
-SP.Python.exec("import numpy as np; arr = np.zeros(10)")
+SP.Python.exec('import numpy as np; arr = np.zeros(10)')
 
 // Explicit conversion required to pull from Python
 // The boolean 'true' enables unsigned warnings
-def javaVec = (Vector) Vectors.fromNumpy(SP.Python.get("arr"), true)
+def javaVec = (Vector)Vectors.fromNumpy(SP.Python.get('arr'), true)
 ```
 
 ---

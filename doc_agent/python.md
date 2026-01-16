@@ -21,7 +21,7 @@ You can execute Python scripts directly using the `jse` command. The relevant JN
 
 *   **Inline Text Code:**
     ```bash
-    jse --pythontext "print(sum([i for i in range(10)]))"
+    jse --pythontext 'print(sum([i for i in range(10)]))'
     ```
 
 ---

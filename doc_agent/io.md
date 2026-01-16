@@ -118,7 +118,7 @@ import jse.math.vector.Vectors
 
 // 1. Save a Vector as a single column
 def vec = Vectors.linspace(0.0d, 10.0d, 100)
-IO.data2csv(vec, 'output.csv', 'Time') // "Time" is the header
+IO.data2csv(vec, 'output.csv', 'Time') // 'Time' is the header
 
 // 2. Save a Matrix (default is row-based)
 def matrix = ... // Some IMatrix
@@ -246,15 +246,15 @@ import jse.code.IO
 
 // 1. Parse space-separated numbers (handles multiple spaces better than split())
 // Useful for parsing LAMMPS data lines
-String line = "  1    1.00   2.05   -0.5 "
+String line = '  1    1.00   2.05   -0.5 '
 def vec = IO.Text.str2data(line, 4) // Returns Vector of length 4
 
 // 2. Colored Terminal Output (for scripts)
-println(IO.Text.red("Error: Convergence failed"))
-println(IO.Text.green("Success"))
+println(IO.Text.red('Error: Convergence failed'))
+println(IO.Text.green('Success'))
 
 // 3. String Splitting, return String[]
-def parts = IO.Text.splitStr("a, b  c") // Splits by comma OR space
+def parts = IO.Text.splitStr('a, b  c') // Splits by comma OR space
 ```
 
 ---
