@@ -766,7 +766,7 @@ public class SP {
             EXEC.setNoSTDOutput(false).setNoERROutput(false);
             if (tNoPython) {
                 System.err.println(IO.Text.red("JEP BUILD ERROR:")+" No python found, you can download python from: "+IO.Text.underline("https://www.python.org/downloads/"));
-                System.err.println("  If you need numpy, you need to install numpy before running: `pip install numpy==1.26.4`");
+                System.err.println("  If you need numpy, you need to install numpy before running: `pip install numpy`");
                 throw new RuntimeException("No python environment.");
             }
             // 获取 python 路径，不同 python 版本支持
@@ -785,7 +785,7 @@ public class SP {
                     System.out.printf(IO.Text.green("JEP INIT INFO:")+" Use python in %s\n", PYTHON_PREFIX_DIR); // 可能存在和 cmake 检测不一致的问题
                     // 在这里输出没有 numpy 的警告，保证无 numpy 情况下只会警告一次
                     if (!NUMPY_SUPPORT) {
-                        System.out.println(IO.Text.green("JEP INIT INFO:")+" No numpy in python, you can install numpy by `pip install numpy==1.26.4`,");
+                        System.out.println(IO.Text.green("JEP INIT INFO:")+" No numpy in python, you can install numpy by `pip install numpy`,");
                         System.out.println("  or build jep without numpy support.");
                         System.out.println(IO.Text.yellow("Build jep without numpy support? (y/N)"));
                         BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
