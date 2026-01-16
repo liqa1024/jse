@@ -31,7 +31,7 @@ public class Conf {
     /**
      * 是否开启 debug 模式，一般这会有更加完整的错误信息（当然也会让阅读更加困难）
      * <p>
-     * 默认为 {@code true}
+     * 默认为 {@code false}
      * <p>
      * 也可使用环境变量 {@code JSE_DEBUG} 来设置
      */

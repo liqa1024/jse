@@ -2537,7 +2537,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
     
     
     /**
-     * 通过类似键角序参量（Ql）的算法来计算结构中每个原子的连接数目，
+     * 通过类似键角序参量（Ql-like, S6）的算法来计算结构中每个原子的连接数目，
      * 输出结果为按照输入原子顺序排列的向量，数值为连接数目；
      * <p>
      * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
@@ -2545,7 +2545,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * 为了统一接口这里同样返回 cache 的值，
      * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
      * <p>
-     * 如果需要使用对近邻平均过一次的键角序参量（ABOOP, ql），需要调用
+     * 如果需要使用对近邻平均过一次的键角序参量（ABOOP, ql-like），需要调用
      * {@link #calConnectCountABOOP(int, double, double, int)}
      * <p>
      * References:
@@ -2557,7 +2557,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * Rate of homogeneous crystal nucleation in molten NaCl</a>
      *
      * @author liqa
-     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}
+     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}，对应最终的 Sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearestY 用来计算 YlmMean 的搜索的最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @param aNnnY 用来计算 YlmMean 的最大最近邻数目（Number of Nearest Neighbor list）。默认不做限制
@@ -2612,7 +2612,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         return tConnectCount;
     }
     /**
-     * 通过类似键角序参量（BOOP, Ql）的算法来计算结构中每个原子的连接数目，
+     * 通过类似键角序参量（Ql-like, Sl）的算法来计算结构中每个原子的连接数目，
      * 输出结果为按照输入原子顺序排列的向量，数值为连接数目；
      * <p>
      * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
@@ -2620,7 +2620,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * 为了统一接口这里同样返回 cache 的值，
      * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
      * <p>
-     * 如果需要使用对近邻平均过一次的键角序参量（ABOOP, ql），需要调用
+     * 如果需要使用对近邻平均过一次的键角序参量（ABOOP, ql-like），需要调用
      * {@link #calConnectCountABOOP(int, double, double, int)}
      * <p>
      * References:
@@ -2632,7 +2632,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * Rate of homogeneous crystal nucleation in molten NaCl</a>
      *
      * @author liqa
-     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}
+     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}，对应最终的 Sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearest 最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @param aNnn 最大最近邻数目（Number of Nearest Neighbor list）。默认不做限制
@@ -2642,7 +2642,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      */
     public IVector calConnectCountBOOP(int aL, double aConnectThreshold, double aRNearest, int aNnn) {return calConnectCountBOOP(aL, aConnectThreshold, aRNearest, aNnn, aRNearest, aNnn);}
     /**
-     * 通过类似键角序参量（BOOP, Ql）的算法来计算结构中每个原子的连接数目，
+     * 通过类似键角序参量（Ql-like, Sl）的算法来计算结构中每个原子的连接数目，
      * 输出结果为按照输入原子顺序排列的向量，数值为连接数目；
      * <p>
      * 通过 {@link #calConnectCountBOOP(int, double, double, int)}
@@ -2651,7 +2651,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * 为了统一接口这里同样返回 cache 的值，
      * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
      * <p>
-     * 如果需要使用对近邻平均过一次的键角序参量（ABOOP, ql），需要调用
+     * 如果需要使用对近邻平均过一次的键角序参量（ABOOP, ql-like），需要调用
      * {@link #calConnectCountABOOP(int, double, double)}
      * <p>
      * References:
@@ -2663,7 +2663,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * Rate of homogeneous crystal nucleation in molten NaCl</a>
      *
      * @author liqa
-     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}
+     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}，对应最终的 Sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearest 最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @return 最后得到的连接数目组成的向量，按照原子数据中的原子排序
@@ -2739,7 +2739,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * @author liqa
      * @param aNoGather 是否关闭输出结果的同步，关闭可以减少进程通讯的损耗，默认不进行关闭（{@code false}）
      * @param aComm 希望使用的 MPI 通讯器，默认为 {@link MPI.Comm#WORLD}
-     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}
+     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}，对应最终的 Sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearestY 用来计算 YlmMean 的搜索的最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @param aNnnY 用来计算 YlmMean 的最大最近邻数目（Number of Nearest Neighbor list）。默认不做限制
@@ -2793,7 +2793,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
     
     
     /**
-     * 通过类似平均的键角序参量（ABOOP, ql）的算法来计算结构中每个原子的连接数目，
+     * 通过类似平均的键角序参量（ql-like, s6）的算法来计算结构中每个原子的连接数目，
      * 输出结果为按照输入原子顺序排列的向量，数值为连接数目；
      * <p>
      * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
@@ -2801,7 +2801,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * 为了统一接口这里同样返回 cache 的值，
      * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
      * <p>
-     * 如果需要使用原始的键角序参量（BOOP, Ql），需要调用
+     * 如果需要使用原始的键角序参量（BOOP, Ql-like），需要调用
      * {@link #calConnectCountBOOP(int, double, double, int)}
      * <p>
      * Reference:
@@ -2809,7 +2809,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * Accurate determination of crystal structures based on averaged local bond order parameters</a>,
      *
      * @author liqa
-     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}
+     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}，对应最终的 sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearestY 用来计算 YlmMean 的搜索的最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @param aNnnY 用来计算 YlmMean 的最大最近邻数目（Number of Nearest Neighbor list）。默认不做限制
@@ -2866,7 +2866,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         return tConnectCount;
     }
     /**
-     * 通过类似平均的键角序参量（ABOOP, ql）的算法来计算结构中每个原子的连接数目，
+     * 通过类似平均的键角序参量（ql-like）的算法来计算结构中每个原子的连接数目，
      * 输出结果为按照输入原子顺序排列的向量，数值为连接数目；
      * <p>
      * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
@@ -2874,7 +2874,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * 为了统一接口这里同样返回 cache 的值，
      * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
      * <p>
-     * 如果需要使用原始的键角序参量（BOOP, Ql），需要调用
+     * 如果需要使用原始的键角序参量（BOOP, Ql-like），需要调用
      * {@link #calConnectCountBOOP(int, double, double, int)}
      * <p>
      * Reference:
@@ -2882,7 +2882,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * Accurate determination of crystal structures based on averaged local bond order parameters</a>,
      *
      * @author liqa
-     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}
+     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}，对应最终的 sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearest 最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @param aNnn 最近邻数目（Number of Nearest Neighbor list）。默认不做限制
@@ -2892,7 +2892,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      */
     public IVector calConnectCountABOOP(int aL, double aConnectThreshold, double aRNearest, int aNnn) {return calConnectCountABOOP(aL, aConnectThreshold, aRNearest, aNnn, aRNearest, aNnn, aRNearest, aNnn);}
     /**
-     * 通过类似平均的键角序参量（ABOOP, ql）的算法来计算结构中每个原子的连接数目，
+     * 通过类似平均的键角序参量（ql-like, sl）的算法来计算结构中每个原子的连接数目，
      * 输出结果为按照输入原子顺序排列的向量，数值为连接数目；
      * <p>
      * 通过 {@link #calConnectCountABOOP(int, double, double, int)}
@@ -2901,7 +2901,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * 为了统一接口这里同样返回 cache 的值，
      * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
      * <p>
-     * 如果需要使用原始的键角序参量（BOOP, Ql），需要调用
+     * 如果需要使用原始的键角序参量（BOOP, Ql-like），需要调用
      * {@link #calConnectCountBOOP(int, double, double)}
      * <p>
      * Reference:
@@ -2909,7 +2909,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * Accurate determination of crystal structures based on averaged local bond order parameters</a>,
      *
      * @author liqa
-     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}
+     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}，对应最终的 sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearest 最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @return 最后得到的连接数目组成的向量，按照原子数据中的原子排序
@@ -2985,7 +2985,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * @author liqa
      * @param aNoGather 是否关闭输出结果的同步，关闭可以减少进程通讯的损耗，默认不进行关闭（{@code false}）
      * @param aComm 希望使用的 MPI 通讯器，默认为 {@link MPI.Comm#WORLD}
-     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}
+     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}，对应最终的 sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearestY 用来计算 YlmMean 的搜索的最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @param aNnnY 用来计算 YlmMean 的最大最近邻数目（Number of Nearest Neighbor list）。默认不做限制
@@ -3041,7 +3041,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
     
     
     /**
-     * 通过类似键角序参量（BOOP, Ql）的算法来计算结构中每个原子的连接数占所有近邻数的比例值，
+     * 通过类似键角序参量（Ql-like, Sl）的算法来计算结构中每个原子的连接数占所有近邻数的比例值，
      * 输出结果为按照输入原子顺序排列的向量，数值为 0~1 的比例值；
      * <p>
      * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
@@ -3049,7 +3049,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * 为了统一接口这里同样返回 cache 的值，
      * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
      * <p>
-     * 如果需要使用对近邻平均过一次的键角序参量（ABOOP, ql），需要调用
+     * 如果需要使用对近邻平均过一次的键角序参量（ABOOP, ql-like），需要调用
      * {@link #calConnectRatioABOOP(int, double, double, int)}
      * <p>
      * References:
@@ -3061,7 +3061,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * Rate of homogeneous crystal nucleation in molten NaCl</a>
      *
      * @author liqa
-     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}
+     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}，对应最终的 Sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearestY 用来计算 YlmMean 的搜索的最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @param aNnnY 用来计算 YlmMean 的最大最近邻数目（Number of Nearest Neighbor list）。默认不做限制
@@ -3127,7 +3127,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         return tConnectRatio;
     }
     /**
-     * 通过类似键角序参量（BOOP, Ql）的算法来计算结构中每个原子的连接数占所有近邻数的比例值，
+     * 通过类似键角序参量（Ql-like, Sl）的算法来计算结构中每个原子的连接数占所有近邻数的比例值，
      * 输出结果为按照输入原子顺序排列的向量，数值为 0~1 的比例值；
      * <p>
      * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
@@ -3135,7 +3135,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * 为了统一接口这里同样返回 cache 的值，
      * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
      * <p>
-     * 如果需要使用对近邻平均过一次的键角序参量（ABOOP, ql），需要调用
+     * 如果需要使用对近邻平均过一次的键角序参量（ABOOP, ql-like），需要调用
      * {@link #calConnectRatioABOOP(int, double, double, int)}
      * <p>
      * References:
@@ -3147,7 +3147,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * Rate of homogeneous crystal nucleation in molten NaCl</a>
      *
      * @author liqa
-     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}
+     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}，对应最终的 Sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearest 最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @param aNnn 最近邻数目（Number of Nearest Neighbor list）。默认不做限制
@@ -3157,7 +3157,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      */
     public IVector calConnectRatioBOOP(int aL, double aConnectThreshold, double aRNearest, int aNnn) {return calConnectRatioBOOP(aL, aConnectThreshold, aRNearest, aNnn, aRNearest, aNnn);}
     /**
-     * 通过类似键角序参量（BOOP, Ql）的算法来计算结构中每个原子的连接数占所有近邻数的比例值，
+     * 通过类似键角序参量（Ql-like, Sl）的算法来计算结构中每个原子的连接数占所有近邻数的比例值，
      * 输出结果为按照输入原子顺序排列的向量，数值为 0~1 的比例值；
      * <p>
      * 通过 {@link #calConnectRatioBOOP(int, double, double, int)}
@@ -3166,7 +3166,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * 为了统一接口这里同样返回 cache 的值，
      * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
      * <p>
-     * 如果需要使用对近邻平均过一次的键角序参量（ABOOP, ql），需要调用
+     * 如果需要使用对近邻平均过一次的键角序参量（ABOOP, ql-like），需要调用
      * {@link #calConnectRatioABOOP(int, double, double, int)}
      * <p>
      * References:
@@ -3178,7 +3178,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * Rate of homogeneous crystal nucleation in molten NaCl</a>
      *
      * @author liqa
-     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}
+     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}，对应最终的 Sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearest 最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @return 最后得到的连接数占所有近邻数的比例值组成的向量，按照原子数据中的原子排序
@@ -3265,7 +3265,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * @author liqa
      * @param aNoGather 是否关闭输出结果的同步，关闭可以减少进程通讯的损耗，默认不进行关闭（{@code false}）
      * @param aComm 希望使用的 MPI 通讯器，默认为 {@link MPI.Comm#WORLD}
-     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}
+     * @param aL 使用的 Ql 的下标，即 {@code Q4: l = 4, Q6: l = 6}，对应最终的 Sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearestY 用来计算 YlmMean 的搜索的最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @param aNnnY 用来计算 YlmMean 的最大最近邻数目（Number of Nearest Neighbor list）。默认不做限制
@@ -3319,7 +3319,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
     
     
     /**
-     * 通过类似平均的键角序参量（ABOOP, ql）的算法来计算结构中每个原子的连接数占所有近邻数的比例值，
+     * 通过类似平均的键角序参量（ql-like, sl）的算法来计算结构中每个原子的连接数占所有近邻数的比例值，
      * 输出结果为按照输入原子顺序排列的向量，数值为 0~1 的比例值；
      * <p>
      * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
@@ -3327,7 +3327,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * 为了统一接口这里同样返回 cache 的值，
      * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
      * <p>
-     * 如果需要使用原始的键角序参量（BOOP, Ql），需要调用
+     * 如果需要使用原始的键角序参量（BOOP, Ql-like），需要调用
      * {@link #calConnectRatioBOOP(int, double, double, int)}
      * <p>
      * Reference:
@@ -3335,7 +3335,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * Accurate determination of crystal structures based on averaged local bond order parameters</a>,
      *
      * @author liqa
-     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}
+     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}，对应最终的 sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearestY 用来计算 YlmMean 的搜索的最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @param aNnnY 用来计算 YlmMean 的最大最近邻数目（Number of Nearest Neighbor list）。默认不做限制
@@ -3403,7 +3403,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         return tConnectRatio;
     }
     /**
-     * 通过类似平均的键角序参量（ABOOP, ql）的算法来计算结构中每个原子的连接数占所有近邻数的比例值，
+     * 通过类似平均的键角序参量（ql-like, sl）的算法来计算结构中每个原子的连接数占所有近邻数的比例值，
      * 输出结果为按照输入原子顺序排列的向量，数值为 0~1 的比例值；
      * <p>
      * 考虑 aNnn 可以增加结果的稳定性，但是会增加性能开销
@@ -3411,7 +3411,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * 为了统一接口这里同样返回 cache 的值，
      * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
      * <p>
-     * 如果需要使用原始的键角序参量（BOOP, Ql），需要调用
+     * 如果需要使用原始的键角序参量（BOOP, Ql-like），需要调用
      * {@link #calConnectRatioBOOP(int, double, double, int)}
      * <p>
      * Reference:
@@ -3419,7 +3419,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * Accurate determination of crystal structures based on averaged local bond order parameters</a>,
      *
      * @author liqa
-     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}
+     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}，对应最终的 sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearest 最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @param aNnn 最近邻数目（Number of Nearest Neighbor list）。默认不做限制
@@ -3429,7 +3429,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      */
     public IVector calConnectRatioABOOP(int aL, double aConnectThreshold, double aRNearest, int aNnn) {return calConnectRatioABOOP(aL, aConnectThreshold, aRNearest, aNnn, aRNearest, aNnn, aRNearest, aNnn);}
     /**
-     * 通过类似平均的键角序参量（ABOOP, ql）的算法来计算结构中每个原子的连接数占所有近邻数的比例值，
+     * 通过类似平均的键角序参量（ql-like, sl）的算法来计算结构中每个原子的连接数占所有近邻数的比例值，
      * 输出结果为按照输入原子顺序排列的向量，数值为 0~1 的比例值；
      * <p>
      * 通过 {@link #calConnectRatioABOOP(int, double, double, int)}
@@ -3438,7 +3438,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * 为了统一接口这里同样返回 cache 的值，
      * 从而可以通过 {@link VectorCache#returnVec} 来实现对象重复利用
      * <p>
-     * 如果需要使用原始的键角序参量（BOOP, Ql），需要调用
+     * 如果需要使用原始的键角序参量（BOOP, Ql-like），需要调用
      * {@link #calConnectRatioBOOP(int, double, double)}
      * <p>
      * Reference:
@@ -3446,7 +3446,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * Accurate determination of crystal structures based on averaged local bond order parameters</a>,
      *
      * @author liqa
-     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}
+     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}，对应最终的 sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearest 最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @return 最后得到的连接数占所有近邻数的比例值组成的向量，按照原子数据中的原子排序
@@ -3533,7 +3533,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * @author liqa
      * @param aNoGather 是否关闭输出结果的同步，关闭可以减少进程通讯的损耗，默认不进行关闭（{@code false}）
      * @param aComm 希望使用的 MPI 通讯器，默认为 {@link MPI.Comm#WORLD}
-     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}
+     * @param aL 使用的 ql 的下标，即 {@code q4: l = 4, q6: l = 6}，对应最终的 sl 下标
      * @param aConnectThreshold 用来判断两个原子是否是相连接的阈值
      * @param aRNearestY 用来计算 YlmMean 的搜索的最近邻半径。默认为 {@link CS#R_NEAREST_MUL} 倍单位长度
      * @param aNnnY 用来计算 YlmMean 的最大最近邻数目（Number of Nearest Neighbor list）。默认不做限制
