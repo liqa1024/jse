@@ -111,11 +111,11 @@ def (nlx, nly, nlz, nlj) = apc.getFullNeighborList(atomIdx, rcut)
 // Center atom
 def atomc = data.atom(atomIdx)
 
-for (jj in 0..<nlj.size()>) {
+for (jj in 0..<nlj.size()) {
     // get neighbor index
     int j = nlj[jj] as int
     // utils to cal sqrt((nlx[jj]-atomc.x())^2 + (nly[jj]-atomc.y())^2 + (nlz[jj]-atomc.z())^2)
-    double dist = atomCenter.distance(nlx[jj], nly[jj], nlz[jj])
+    double dist = atomc.distance(nlx[jj], nly[jj], nlz[jj])
     println("Neighbor ${j} distance: ${dist}")
 }
 ```

@@ -222,29 +222,34 @@ print(np.mean(data))
 
 ---
 
-## 7. Recommendation: Choosing Between Groovy and Python
+## 7. Choosing Between Groovy and Python
 
-While jse supports both languages, choosing the right one for your specific task can significantly impact performance, stability, and development efficiency.
+jse supports both, but the choice strongly affects performance and stability, and development efficiency.
 
-### 7.1 When to use Groovy (Recommended Default)
-*   **Core jse Usage:** If your task relies primarily on jse's internal algorithms and does not strictly require Python libraries, **Groovy is the preferred choice**. It is the native language of the framework.
-*   **IDE Support:** Groovy offers superior development experience with explicit types, static compilation checks, and excellent auto-completion/navigation in IntelliJ IDEA (via `jse --idea`).
-*   **Parallelism & Multithreading:**
-    *   If your workflow involves heavy multi-threading (e.g., analyzing thousands of trajectory frames via `parfor`), **use Groovy**.
-    *   Java's threading model is robust and efficient.
-    *   jse's parallel syntax (`parfor { ... }`) is specifically designed for Groovy closures.
-    *   Stability: Attempting to use Python's native parallel libraries (`multiprocessing`, `threading`) inside the JEP environment can be unstable or undefined.
+### 7.1 Groovy (Recommended Default)
 
-### 7.2 When to use Python
-*   **Heavy NumPy Operations:** If your algorithm involves massive matrix manipulations or vectorization that *must* happen in NumPy, write it in Python.
-    *   **Reason:** Every transfer of data between Java (`jep.NDArray`) and Python (`numpy.ndarray`) incurs a **Deep Copy (Memcpy)** overhead via JNI. Minimizing this boundary crossing is crucial for performance.
-*   **Complex Python APIs:** If you heavily utilize libraries with complex syntax sugars (e.g., advanced Matplotlib configurations with context managers, decorators, or keyword-heavy arguments), write in Python.
-    *   **Reason:** While Groovy *can* call these via the `PyObject` wrapper, translating complex Python syntax into Groovy method calls increases cognitive load and reduces code readability.
+Use Groovy when:
 
-### 7.3 Architectural Advice
-*   **Simple/Ad-hoc Tasks:** For quick scripts or data converters, keeping everything in a single file (regardless of language) reduces maintenance overhead.
-*   **Complex Production Workflows:**
-    *   **Separation of Concerns:** It is often best to separate logic. Write the normal logical part, high-performance core or parallel scheduling in detailed **Groovy Classes**, and write the complex Python library usage or specific visualization part in independent **Python Modules**.
+* Your workflow mainly uses **jse’s own APIs** (structures, analysis, potentials, `parfor`, etc.).
+* You want **IDE support** (types, static checks, initial via `jse --idea`).
+* You need **heavy multithreading / parallel loops** (e.g. large trajectory analysis).
+  Java’s threading model and `UT.Par.parfor` are designed for this; Python’s `multiprocessing` / `threading` are **not** reliable inside JEP.
+
+### 7.2 Python
+
+Use Python when:
+
+* The core of your algorithm **must** run in NumPy / SciPy (large dense linear algebra, heavy vectorization).
+* You rely on **complex Python libraries** (Matplotlib with intricate configs, ASE workflows, etc.) where calling them via Groovy + `PyObject` would hurt readability.
+
+Keep in mind: every Java↔Python data transfer (e.g. `IVector` ↔ `numpy.ndarray`) is a **deep copy** over JNI, so you should minimize crossing the boundary.
+
+### 7.3 Structuring Larger Projects
+
+* For **small or ad-hoc** scripts: using a single language file is often simplest.
+* For **larger workflows**:
+  * put core logic, performance-critical parts and parallel scheduling in **Groovy classes**;
+  * put complex Python-library usage (plots, NumPy / SciPy, ASE calculators) into separate **Python modules**, and connect them via the Python bridge.
 
 ---
 

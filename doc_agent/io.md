@@ -1,8 +1,6 @@
 # jse - IO Utilities Documentation
 
-The `jse.code.IO` class is
-
- the comprehensive file input/output toolkit for the **jse** framework. It is designed to replace standard Java `File` and `Files` interaction with a simplified, string-path-based API optimized for scientific scripting.
+The `jse.code.IO` class is the comprehensive file input/output toolkit for the **jse** framework. It is designed to replace standard Java `File` and `Files` interaction with a simplified, string-path-based API optimized for scientific scripting.
 
 **Key Design Philosophies:**
 1.  **String Paths:** All methods accept `String` paths. You rarely need `java.io.File` or `java.nio.file.Path` objects.

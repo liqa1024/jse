@@ -18,6 +18,15 @@ import jse.ase.*
 
 ---
 
+## 0. Units & Conventions (Unit-Agnostic Design)
+
+jse is **unit-agnostic**:
+
+* jse **never assumes or enforces** units for coordinates, time, mass, or energy. All readers (LAMMPS, POSCAR, XYZ, etc.) **keep the raw numbers**; writers output the same numbers back.
+* The only structured exception is the **ASE bridge** (`jse.ase.AseAtoms`): ASE applies its own internal unit conversions (time, etc.). jse applies the **inverse** conversion so that numbers in jse match what users see in ASE.
+* All `IPotential`-based calculations (energy, force, stress) use the input numbers as-is. If your structure is in LAMMPS “metal units”, the resulting stress will naturally be in `eV/Å^3`, etc.
+* When coupling to external codes (e.g. LAMMPS), any necessary unit conversion is either handled by jse’s integration layer or must be done explicitly by the user; `CS.UNITS' may help you with this.
+
 ## 1. The Zero-Origin Coordinate Rule
 
 To simplify most usage, **all public coordinate Accessors and Setters in `jse` operate in a shifted coordinate system starting at (0, 0, 0).**
