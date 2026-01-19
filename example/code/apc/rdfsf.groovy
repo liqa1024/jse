@@ -9,14 +9,12 @@ import static jse.code.UT.Plot.*
 def data = Data.read('lmp/data/data-glass')
 
 // 根据 data 创建参数计算器 apc 并计算 gr 和 Sq
-def gr, Sq
-def grFT, SqFT
-try (def apc = APC.of(data)) {
-    gr = apc.calRDF()
-    Sq = apc.calSF()
-    SqFT = apc.RDF2SF(gr)
-    grFT = apc.SF2RDF(Sq)
-}
+def apc = APC.of(data)
+def gr = apc.calRDF_AB(1, 1)
+def Sq = apc.calSF_AB(1, 1)
+def SqFT = apc.RDF2SF(gr)
+def grFT = apc.SF2RDF(Sq)
+apc.shutdown() // optional
 
 // 绘制
 plot(gr, 'RDF').color(0)

@@ -2,14 +2,14 @@ package code.math
 
 import static jse.code.UT.Math.*
 
-def a = linsequence(0.0, 1.0, 10)
-def b = linsequence(1.0, 1.0, 10)
+def a = linsequence(0.0d, 1.0d, 10)
+def b = linsequence(1.0d, 1.0d, 10)
 println(a)
 println(b)
 
-println(a.opt().dot()) // a · a
-println(a.opt().dot(b)) // a · b
-println(a.opt().cumsum())
+println(a.op().dot()) // a · a
+println(a.op().dot(b)) // a · b
+println(a.op().cumsum())
 
 //OUTPUT:
 // 10-length Vector:

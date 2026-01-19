@@ -2,15 +2,15 @@ package code.math
 
 import static jse.code.UT.Math.*
 
-def a = linsequence(0.0, 1.0, 10)
-def b = linsequence(1.0, 1.0, 10)
+def a = linsequence(0.0d, 1.0d, 10)
+def b = linsequence(1.0d, 1.0d, 10)
 println(a)
 println(b)
 
-a.opt().map2this {v -> v / 2.0} // a.div2this(2.0)
+a.op().map2this {v -> v / 2.0d} // a.div2this(2.0d)
 println(a)
 
-a.opt().operate2this(b) {l, r -> l + r} // a.plus2this(b)
+a.op().operate2this(b) {l, r -> l + r} // a.plus2this(b)
 println(a)
 
 

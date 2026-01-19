@@ -12,26 +12,26 @@ def dataG = Data.read('lmp/data/data-glass')
 def dataC = Data.read('lmp/data/data-crystal')
 
 // 计算
-def coordinationG, atomicVolumeG, cavityRadiusG
-try (def mpcG = APC.of(dataG)) {
-    def voronois = mpcG.calVoronoi()
-    // 这样获取某个原子的 voronoi 参数
-    println('coordination    of glass atom at 10: ' + voronois[10].coordination())
-    println('atomic volume   of glass atom at 10: ' + voronois[10].atomicVolume())
-    println('cavity radius   of glass atom at 10: ' + voronois[10].cavityRadius())
-    println('voronoi indices of glass atom at 10: ' + voronois[10].index())
-    // 可以通过 `*.` 直接获取所有原子的值
-    coordinationG = voronois*.coordination()
-    atomicVolumeG = voronois*.atomicVolume()
-    cavityRadiusG = voronois*.cavityRadius()
-}
-def coordinationC, atomicVolumeC, cavityRadiusC
-try (def mpcC = APC.of(dataC)) {
-    def voronois = mpcC.calVoronoi()
-    coordinationC = voronois*.coordination()
-    atomicVolumeC = voronois*.atomicVolume()
-    cavityRadiusC = voronois*.cavityRadius()
-}
+def apcG = APC.of(dataG)
+def voronoiG = apcG.calVoronoi()
+// 这样获取某个原子的 voronoi 参数
+println('coordination    of glass atom at 10: ' + voronoiG[10].coordination())
+println('atomic volume   of glass atom at 10: ' + voronoiG[10].atomicVolume())
+println('cavity radius   of glass atom at 10: ' + voronoiG[10].cavityRadius())
+println('voronoi indices of glass atom at 10: ' + voronoiG[10].index())
+// 可以通过 `*.` 直接获取所有原子的值
+def coordinationG = voronoiG*.coordination()
+def atomicVolumeG = voronoiG*.atomicVolume()
+def cavityRadiusG = voronoiG*.cavityRadius()
+apcG.shutdown() // optional
+
+def apcC = APC.of(dataC)
+def voronoiC = apcC.calVoronoi()
+def coordinationC = voronoiC*.coordination()
+def atomicVolumeC = voronoiC*.atomicVolume()
+def cavityRadiusC = voronoiC*.cavityRadius()
+apcC.shutdown() // optional
+
 
 // 输出平均值，直接通过 `*.` 会得到 List 而不是 IVector，List 只有 sum() 方法
 println("Mean of coordination of glass:    ${coordinationG.sum()/coordinationG.size()}")

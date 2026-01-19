@@ -2,7 +2,7 @@ package code.math
 
 import static jse.code.UT.Math.*
 
-def vec = linsequence(0.0, 1.0, 3)
+def vec = linsequence(0.0d, 1.0d, 3)
 
 // 索引遍历
 for (i in 0..<vec.size()) {

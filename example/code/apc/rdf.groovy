@@ -1,7 +1,7 @@
 package code.apc
 
 import jse.atom.APC
-import jse.code.UT
+import jse.code.IO
 import jse.lmp.Data
 
 import static jse.code.UT.Plot.*
@@ -15,36 +15,33 @@ double rMax = 10.0
 def data = Data.read('lmp/data/data-glass')
 
 // 根据 data 创建参数计算器 apc 并计算 gr
-def gr = APC.withOf(data) {apc ->
-    apc.calRDF(N, rMax)
-}
+def apc = APC.of(data)
+def gr = apc.calRDF(N, rMax)
 
 // 获取 r 值和 g 值
 println('r = ' + gr.x())
 println('g = ' + gr.f())
 // 获取峰值的位置
-println('maxR = ' + gr.opt().maxX())
+println('maxR = ' + gr.op().maxX())
 // 保存到 csv
-UT.IO.data2csv(gr, '.temp/example/apc/rdf.csv')
+IO.data2csv(gr, '.temp/example/apc/rdf.csv')
 
 
 // 计算单个种类的 gr
-def grCu, grZr, grCuZr
-def grCu_G, grZr_G, grCuZr_G
-try (def mpcCu = APC.of(data.opt().filterType(1)); def mpcZr = APC.of(data.opt().filterType(2))) {
-    grCu = mpcCu.calRDF(N, rMax)
-    grZr = mpcZr.calRDF(N, rMax)
-    grCuZr = mpcCu.calRDF_AB(mpcZr, N, rMax)
-    // 计算更加光滑的结果
-    grCu_G = mpcCu.calRDF_G(N_G, rMax)
-    grZr_G = mpcZr.calRDF_G(N_G, rMax)
-    grCuZr_G = mpcCu.calRDF_AB_G(mpcZr, N_G, rMax)
-}
-// 获取峰值的位置
-println('maxR_CuCu = ' + grCu_G.opt().maxX())
-println('maxR_ZrZr = ' + grZr_G.opt().maxX())
-println('maxR_CuZr = ' + grCuZr_G.opt().maxX())
+def grCu = apc.calRDF_AB(1,1, N, rMax)
+def grZr = apc.calRDF_AB(2,2, N, rMax)
+def grCuZr = apc.calRDF_AB(1,2, N, rMax)
+// 计算更加光滑的结果
+def grCu_G = apc.calRDF_AB_G(1,1, N_G, rMax)
+def grZr_G = apc.calRDF_AB_G(2,2, N_G, rMax)
+def grCuZr_G = apc.calRDF_AB_G(1,2, N_G, rMax)
 
+// 获取峰值的位置
+println('maxR_CuCu = ' + grCu_G.op().maxX())
+println('maxR_ZrZr = ' + grZr_G.op().maxX())
+println('maxR_CuZr = ' + grCuZr_G.op().maxX())
+
+apc.shutdown() // optional
 
 // 绘制
 plot(gr, 'RDF-All')

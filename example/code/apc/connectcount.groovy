@@ -15,30 +15,29 @@ rng(123456789)
 def dataG = Data.read('lmp/data/data-glass')
 def dataC = Data.read('lmp/data/data-crystal')
 // 创建固定结构
-def dataB = Structures.BCC(2.0, 10).opt().perturbXYZ(0.1)
-def dataF = Structures.FCC(3.0,  8).opt().perturbXYZ(0.1)
+def dataB = Structures.bcc(2.0, 10).op().perturbXYZ(0.1)
+def dataF = Structures.fcc(3.0,  8).op().perturbXYZ(0.1)
 
 // 计算 ConnectCount
-def countQ6G, countq6G
-try (def mpcG = APC.of(dataG)) {
-    countQ6G = mpcG.calConnectCountBOOP(6, 0.5)
-    countq6G = mpcG.calConnectCountABOOP(6, 0.9)
-}
-def countQ6C, countq6C
-try (def mpcC = APC.of(dataC)) {
-    countQ6C = mpcC.calConnectCountBOOP(6, 0.5)
-    countq6C = mpcC.calConnectCountABOOP(6, 0.9)
-}
-def countQ6B, countq6B
-try (def mpcB = APC.of(dataB)) {
-    countQ6B = mpcB.calConnectCountBOOP(6, 0.5)
-    countq6B = mpcB.calConnectCountABOOP(6, 0.9)
-}
-def countQ6F, countq6F
-try (def mpcF = APC.of(dataF)) {
-    countQ6F = mpcF.calConnectCountBOOP(6, 0.5)
-    countq6F = mpcF.calConnectCountABOOP(6, 0.9)
-}
+def apcG = APC.of(dataG)
+def countQ6G = apcG.calConnectCountBOOP(6, 0.5)
+def countq6G = apcG.calConnectCountABOOP(6, 0.9)
+apcG.shutdown() // optional
+
+def apcC = APC.of(dataC)
+def countQ6C = apcC.calConnectCountBOOP(6, 0.5)
+def countq6C = apcC.calConnectCountABOOP(6, 0.9)
+apcC.shutdown() // optional
+
+def apcB = APC.of(dataB)
+def countQ6B = apcB.calConnectCountBOOP(6, 0.5)
+def countq6B = apcB.calConnectCountABOOP(6, 0.9)
+apcB.shutdown() // optional
+
+def apcF = APC.of(dataF)
+def countQ6F = apcF.calConnectCountBOOP(6, 0.5)
+def countq6F = apcF.calConnectCountABOOP(6, 0.9)
+apcF.shutdown() // optional
 
 // 输出平均值
 println("Mean of connect count Q6 of glass:   ${countQ6G.mean()}")

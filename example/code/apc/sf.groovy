@@ -1,7 +1,7 @@
 package code.apc
 
 import jse.atom.APC
-import jse.code.UT
+import jse.code.IO
 import jse.lmp.Data
 
 import static jse.code.UT.Plot.*
@@ -14,31 +14,30 @@ double qMax = 10.0
 def data = Data.read('lmp/data/data-glass')
 
 // 根据 data 创建参数计算器 apc 并计算 Sq
-def Sq = APC.withOf(data) {apc ->
-    apc.calSF(N, qMax)
-}
+def apc = APC.of(data)
+def Sq = apc.calSF(N, qMax)
+
 
 // 获取 q 值和 S 值
 println('q = ' + Sq.x())
 println('S = ' + Sq.f())
 // 获取峰值的位置
-println('maxQ = ' + Sq.opt().maxX())
+println('maxQ = ' + Sq.op().maxX())
 // 保存到 csv
-UT.IO.data2csv(Sq, '.temp/example/apc/sf.csv')
+IO.data2csv(Sq, '.temp/example/apc/sf.csv')
 
 
 // 计算单个种类的 Sq
-def SqCu, SqZr, SqCuZr
-try (def mpcCu = APC.of(data.opt().filterType(1)); def mpcZr = APC.of(data.opt().filterType(2))) {
-    SqCu = mpcCu.calSF(N, qMax)
-    SqZr = mpcZr.calSF(N, qMax)
-    SqCuZr = mpcCu.calSF_AB(mpcZr, N, qMax)
-}
-// 获取峰值的位置
-println('maxQ_CuCu = ' + SqCu.opt().maxX())
-println('maxQ_ZrZr = ' + SqZr.opt().maxX())
-println('maxQ_CuZr = ' + SqCuZr.opt().maxX())
+def SqCu = apc.calSF_AB(1, 1, N, qMax)
+def SqZr = apc.calSF_AB(2, 2, N, qMax)
+def SqCuZr = apc.calSF_AB(1, 2, N, qMax)
 
+// 获取峰值的位置
+println('maxQ_CuCu = ' + SqCu.op().maxX())
+println('maxQ_ZrZr = ' + SqZr.op().maxX())
+println('maxQ_CuZr = ' + SqCuZr.op().maxX())
+
+apc.shutdown() // optional
 
 // 绘制
 plot(Sq, 'SF-All')

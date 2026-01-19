@@ -2,7 +2,7 @@ package code.math
 
 import static jse.code.UT.Math.*
 
-def x = linspace(-1.0, 1.0, 10)
+def x = linspace(-1.0d, 1.0d, 10)
 def y1 = sin(x * pi)
 def y2 = x * x
 

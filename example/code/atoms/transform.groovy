@@ -6,7 +6,7 @@ import jse.lmp.Dump
 import jse.vasp.POSCAR
 
 // 创建一个 FCC 的通用数据结构
-def data = Structures.FCC(4.0, 5)
+def data = Structures.fcc(4.0, 5)
 
 // 转为 lammps 的 data
 def lmpdat = Data.of(data)

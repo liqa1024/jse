@@ -3,31 +3,31 @@ package code.math
 import static jse.code.UT.Math.*
 
 def vec = zeros(5)
-def list = [0.0] * 5
+def list = [0.0d] * 5
 println('=========INIT=========')
 println('vec:')
 println(vec)
 println('list:')
 println(list)
 
-vec[1] = 10.0
-list[1] = 10.0
+vec[1] = 10.0d
+list[1] = 10.0d
 println('=========SET=========')
 println('vec:')
 println(vec)
 println('list:')
 println(list)
 
-vec[2..<5] = 20.0
-list[2..<5] = 20.0
+vec[2..<5] = 20.0d
+list[2..<5] = 20.0d
 println('=========PUT=========')
 println('vec:')
 println(vec)
 println('list:')
 println(list)
 
-vec += 3.0
-list += 3.0
+vec += 3.0d
+list += 3.0d
 println('=========PLUS=========')
 println('vec:')
 println(vec)

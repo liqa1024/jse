@@ -1,7 +1,8 @@
 package code.system
 
-import jse.code.UT
+import jse.code.IO
 import jse.system.SSH
+
 
 /*
 FILE IN `.SECRET/SSH_INFO.json` WILL LIKE:
@@ -12,10 +13,12 @@ FILE IN `.SECRET/SSH_INFO.json` WILL LIKE:
 }
 */
 
-try (def ssh = new SSH(UT.IO.json2map('.SECRET/SSH_INFO.json'))) {
-    ssh.system('echo 123456')
-    ssh.system('hostname')
-}
+def ssh = new SSH(IO.json2map('.SECRET/SSH_INFO.json'))
+
+ssh.system('echo 123456')
+ssh.system('hostname')
+
+ssh.shutdown() // optional
 
 //OUTPUT:
 // 123456

@@ -15,34 +15,33 @@ rng(123456789)
 def dataG = Data.read('lmp/data/data-glass')
 def dataC = Data.read('lmp/data/data-crystal')
 // 创建固定结构
-def dataB = Structures.BCC(2.0, 10).opt().perturbXYZ(0.1)
-def dataF = Structures.FCC(3.0,  8).opt().perturbXYZ(0.1)
+def dataB = Structures.bcc(2.0, 10).op().perturbXYZ(0.1)
+def dataF = Structures.fcc(3.0,  8).op().perturbXYZ(0.1)
 
 // 计算 q4，q6，w4
-def q4G, q6G, w4G
-try (def mpcG = APC.of(dataG)) {
-    q4G = mpcG.calABOOP(4)
-    q6G = mpcG.calABOOP(6)
-    w4G = mpcG.calABOOP3(4)
-}
-def q4C, q6C, w4C
-try (def mpcC = APC.of(dataC)) {
-    q4C = mpcC.calABOOP(4)
-    q6C = mpcC.calABOOP(6)
-    w4C = mpcC.calABOOP3(4)
-}
-def q4B, q6B, w4B
-try (def mpcB = APC.of(dataB)) {
-    q4B = mpcB.calABOOP(4)
-    q6B = mpcB.calABOOP(6)
-    w4B = mpcB.calABOOP3(4)
-}
-def q4F, q6F, w4F
-try (def mpcF = APC.of(dataF)) {
-    q4F = mpcF.calABOOP(4)
-    q6F = mpcF.calABOOP(6)
-    w4F = mpcF.calABOOP3(4)
-}
+def apcG = APC.of(dataG)
+def q4G = apcG.calABOOP(4)
+def q6G = apcG.calABOOP(6)
+def w4G = apcG.calABOOP3(4)
+apcG.shutdown() // optional
+
+def apcC = APC.of(dataC)
+def q4C = apcC.calABOOP(4)
+def q6C = apcC.calABOOP(6)
+def w4C = apcC.calABOOP3(4)
+apcC.shutdown() // optional
+
+def apcB = APC.of(dataB)
+def q4B = apcB.calABOOP(4)
+def q6B = apcB.calABOOP(6)
+def w4B = apcB.calABOOP3(4)
+apcB.shutdown() // optional
+
+def apcF = APC.of(dataF)
+def q4F = apcF.calABOOP(4)
+def q6F = apcF.calABOOP(6)
+def w4F = apcF.calABOOP3(4)
+apcF.shutdown() // optional
 
 // 输出平均值
 println("Mean of q4 of glass:   ${q4G.mean()}")
