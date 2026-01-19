@@ -62,7 +62,7 @@ plt.plot(x, y, [label: 'Sine Wave']) // Named params become kwargs
 plt.savefig('plot.png')
 ```
 
-### 2.2 Standard Sharing Data
+### 2.2 Standard Sharing Data (Fallback compatibility)
 For standard Python-Groovy interaction, use `set()` to pass data to Python and `get()` to retrieve results.
 
 ```groovy
