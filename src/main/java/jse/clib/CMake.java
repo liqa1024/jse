@@ -50,7 +50,7 @@ public class CMake {
         if (!FIRST_PRINT) return;
         FIRST_PRINT = false;
         if (USE_SYSTEM_ && EXE_PATH!=null) {
-            System.out.printf(IO.Text.green("JNI INIT INFO:")+" Use CMake in %s\n", EXE_PATH);
+            System.out.printf(IO.Text.cyan("COMPILER INFO:")+" Use CMake in %s\n", EXE_PATH);
         }
     }
     

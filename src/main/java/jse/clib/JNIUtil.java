@@ -138,7 +138,7 @@ public class JNIUtil {
     
     private final static String BUILD_DIR_NAME = IS_WINDOWS ? "build-win" : (IS_MAC ? "build-mac" : "build");
     private final static Pattern BUILD_DIR_INVALID_NAME = Pattern.compile("[^a-zA-Z0-9_\\-./\\\\@!#$%^&*()+=]");
-    private static boolean containsAnyInvalidChar_(String aDir) {
+    static boolean containsAnyInvalidChar_(String aDir) {
         if (IS_WINDOWS && IO.isAbsolutePath(aDir)) {
             aDir = aDir.substring(2);
         }
@@ -318,7 +318,7 @@ public class JNIUtil {
             // 简单检测一下是否编译成功
             @Nullable String tLibName = LIB_NAME_IN(mLibDir, mProjectName);
             if (tLibName == null) {
-                System.err.println("Build Failed, build directory: "+tBuildDir);
+                System.err.println(IO.Text.red(mInfoProjectName+" INIT ERROR:")+" Build Failed, build directory: "+tBuildDir);
                 if (!tWorkingDirValid) {
                     System.err.println("  This may be caused by the inappropriate characters in working directory: "+tWorkingDir);
                 }
@@ -327,7 +327,7 @@ public class JNIUtil {
                 } else {
                     System.err.println("  You can use `export JSE_DEBUG=1` to make the build output complete information");
                 }
-                throw new Exception(mProjectName+" build Failed, No lib in '"+ mLibDir +"'");
+                throw new Exception("Build Failed");
             }
             mPostBuildDir.apply(tBuildDir);
             // 完事后移除临时解压得到的源码，这里需要对于神秘文件系统专门处理

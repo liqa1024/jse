@@ -64,7 +64,7 @@ public class Compiler {
         if (!FIRST_PRINT) return;
         FIRST_PRINT = false;
         if (EXE_PATH!=null) {
-            System.out.printf(IO.Text.green("JNI INIT INFO:")+" C/C++ compiler detected in %s\n", EXE_PATH);
+            System.out.printf(IO.Text.cyan("COMPILER INFO:")+" C/C++ compiler detected in %s\n", EXE_PATH);
         }
         // 针对老版 gcc 输出严重警告
         if (GCC_OLD) {
