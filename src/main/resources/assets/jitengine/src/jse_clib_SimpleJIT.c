@@ -1,4 +1,5 @@
 #include "jse_clib_SimpleJIT.h"
+#include "jse_clib_JITLibHandle.h"
 
 #if defined(WIN32) || defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
@@ -79,7 +80,7 @@ JNIEXPORT jlong JNICALL Java_jse_clib_SimpleJIT_loadLibrary0(JNIEnv *aEnv, jclas
 #endif
 }
 
-JNIEXPORT void JNICALL Java_jse_clib_SimpleJIT_freeLibrary0(JNIEnv *aEnv, jclass aClazz, jlong aLibHandle) {
+JNIEXPORT void JNICALL Java_jse_clib_JITLibHandle_freeLibrary0(JNIEnv *aEnv, jclass aClazz, jlong aLibHandle) {
 #if defined(WIN32) || defined(_WIN64) || defined(_WIN32)
     FreeLibrary((HMODULE)(intptr_t)aLibHandle);
 #else

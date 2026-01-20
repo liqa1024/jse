@@ -77,6 +77,7 @@ public class SimpleJIT {
     private final static String[] SRC_NAME = {
           "jse_clib_SimpleJIT.c"
         , "jse_clib_SimpleJIT.h"
+        , "jse_clib_JITLibHandle.h"
     };
     
     static {
@@ -128,7 +129,7 @@ public class SimpleJIT {
         /// jit engins stuffs
         private Boolean mCacheLib = null;
         private String mLibPath = null;
-        private long mLibHandle = 0;
+        private @Nullable JITLibHandle mLibHandle = null;
         private final Set<String> mMethodNames = new LinkedHashSet<>();
         private boolean mDead = false;
         
@@ -175,12 +176,9 @@ public class SimpleJIT {
         
         /// utils
         public boolean hasMethod(CharSequence aMethodName) {return mMethodNames.contains(aMethodName.toString());}
-        /** @return 内部存储的 c 指针是否是空的 */
-        public boolean isNull() {return mLibHandle==0 || mLibHandle==-1;}
-        /** @return 内部存储的 c 指针值 */
-        @ApiStatus.Internal public long ptr_() {return mLibHandle;}
+        public boolean isNull() {return mLibHandle==null || mLibHandle.isNull();}
         
-        /// workflow
+        /// workflow, comile() -> load() -> findMethod(name)
         public Engine compile() throws Exception {
             if (mDead) throw new RuntimeException("this JIT engine is dead");
             // 现在总是优先依赖 jniutil 用来确保一些通用的检测总是优先执行
@@ -203,33 +201,32 @@ public class SimpleJIT {
         public Engine load() throws JITException {
             if (mDead) throw new RuntimeException("this JIT engine is dead");
             // 不能重复 load
-            if (!isNull()) throw new IllegalStateException("Repeated load()");
+            if (mLibHandle!=null) throw new IllegalStateException("Repeated load()");
             // 库路径存在，则直接加载即可
             if (mLibPath!=null) {
-                mLibHandle = loadLibrary0(mLibPath);
+                long tPtr = loadLibrary0(mLibPath);
+                mLibHandle = new JITLibHandle(this, tPtr, mCacheLib?null:mLibDir);
                 return this;
             }
             // 否则尝试使用缓存
             validLibCache_();
             if (mLibPath==null) throw new IllegalStateException("No cache lib found, use compile() first.");
-            mLibHandle = loadLibrary0(mLibPath);
+            long tPtr = loadLibrary0(mLibPath);
+            mLibHandle = new JITLibHandle(this, tPtr, mCacheLib?null:mLibDir);
             return this;
+        }
+        public Method findMethod(CharSequence aMethodName) throws JITException {
+            if (mDead) throw new RuntimeException("this JIT engine is dead");
+            if (mLibHandle==null || mLibHandle.isNull()) throw new NullPointerException();
+            if (!hasMethod(aMethodName)) return null;
+            return new Method(findMethod0(mLibHandle.mPtr, aMethodName.toString()), this);
         }
         @Override public void shutdown() {
             if (mDead) return;
             mDead = true;
-            // free lib，并在不缓存时清理文件
-            if (!isNull()) freeLibrary0(mLibHandle);
-            try {if (!mCacheLib) IO.removeDir(mLibDir);}
-            catch (IOException ignore) {}
+            if (mLibHandle!=null) mLibHandle.dispose();
         }
         public boolean isShutdown() {return mDead;}
-        public Method findMethod(CharSequence aMethodName) throws JITException {
-            if (mDead) throw new RuntimeException("this JIT engine is dead");
-            if (isNull()) throw new NullPointerException();
-            if (!hasMethod(aMethodName)) return null;
-            return new Method(findMethod0(mLibHandle, aMethodName.toString()), this);
-        }
         
         
         private void validLibCache_() {
@@ -463,7 +460,6 @@ public class SimpleJIT {
     }
     
     private static native long loadLibrary0(String aLibPath) throws JITException;
-    private static native void freeLibrary0(long aLibHandle);
     private static native long findMethod0(long aLibHandle, String aMethodName) throws JITException;
     private static native int invokeMethod0(long aMethodPtr, long aInPtr, long rOutPtr);
 }

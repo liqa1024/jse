@@ -17,14 +17,6 @@ JNIEXPORT jlong JNICALL Java_jse_clib_SimpleJIT_loadLibrary0
 
 /*
  * Class:     jse_clib_SimpleJIT
- * Method:    freeLibrary0
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_jse_clib_SimpleJIT_freeLibrary0
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     jse_clib_SimpleJIT
  * Method:    findFunction0
  * Signature: (JLjava/lang/String;)J
  */
