@@ -64,15 +64,15 @@ public class Main {
         }
     }
     
-    @SuppressWarnings({"ThrowablePrintedToSystemOut", "UnnecessaryReturnStatement", "ExtractMethodRecommender"})
-    public static void main(String[] aArgs) throws Exception {
+    @SuppressWarnings({"ThrowablePrintedToSystemOut", "ExtractMethodRecommender"})
+    private static int main_(String[] aArgs) {
         try {
             // 完全没有输入时（双击运行）直接结束
-            if (aArgs==null || aArgs.length==0) return;
+            if (aArgs==null || aArgs.length==0) return 0;
             // 第 0 参数记录从何处运行的 jse
             RUN_FROM = aArgs[0];
             // 没有后续输入时启动 groovysh
-            if (aArgs.length == 1) {SP.Groovy.runShell(); return;}
+            if (aArgs.length == 1) {SP.Groovy.runShell(); return 0;}
             // 获取第一个值
             String tValue = aArgs[1];
             if (!tValue.startsWith("-")) {
@@ -80,25 +80,25 @@ public class Main {
                 String[] tArgs = new String[aArgs.length-2];
                 if (tArgs.length > 0) System.arraycopy(aArgs, 2, tArgs, 0, tArgs.length);
                 SP.runScript(tValue, tArgs);
-                return;
+                return 0;
             }
             // 一般行为
             String tOption = tValue;
             switch (tOption) {
             case "-v": case "-version": case "--version": {
                 printLogo();
-                return;
+                return 0;
             }
             case "-?": case "-help": case "--help": {
                 printHelp();
-                return;
+                return 0;
             }
             case "-groovy": case "--groovy": {
-                if (aArgs.length < 3) {SP.Groovy.runShell(); return;}
+                if (aArgs.length < 3) {SP.Groovy.runShell(); return 0;}
                 break;
             }
             case "-python": case "--python": {
-                if (aArgs.length < 3) {SP.Python.runShell(); return;}
+                if (aArgs.length < 3) {SP.Python.runShell(); return 0;}
                 break;
             }
             case "-lmp": case "-lammps": case "--lammps": {
@@ -111,7 +111,7 @@ public class Main {
                 } finally {
                     NativeLmp.shutdownMPI();
                 }
-                return;
+                return 0;
             }
             case "-idea": case "--idea": {
                 // 先是项目文件
@@ -202,7 +202,7 @@ public class Main {
                          "</component>");
                 System.out.println("The current directory has been initialized as an Intellij IDEA project,");
                 System.out.println("now you can open this directory through Intellij IDEA.");
-                return;
+                return 0;
             }
             case "-jupyter": case "--jupyter": {
                 // 获取可选参数
@@ -228,13 +228,13 @@ public class Main {
                             "from jupyter_client.kernelspec import KernelSpecManager\n" +
                             "KernelSpecManager().install_kernel_spec('"+tWorkingDir.replace("\\", "\\\\")+"', 'jse'"+rArgs+")"
                     );
-                    if (tExitValue != 0) {System.exit(tExitValue); return;}
+                    if (tExitValue != 0) return tExitValue;
                 }
                 IO.removeDir(tWorkingDir);
                 // 由于 java 中不能正常关闭 jupyter，因此不在这里运行 jupyter
                 System.out.println("The jupyter kernel for JSE has been initialized,");
                 System.out.println("now you can open the jupyter notebook through `jupyter notebook`");
-                return;
+                return 0;
             }
             case "-jniclean": case "--jniclean": {
                 String[] tList = IO.list(JAR_DIR);
@@ -273,7 +273,7 @@ public class Main {
                 }
                 if (tNamesToClean.isEmpty()) {
                     System.out.println("There is no jni library to clean");
-                    return;
+                    return 0;
                 }
                 System.out.printf("The following directories in %s will be removed:\n", JAR_DIR);
                 System.out.println(String.join("\n", tNamesToClean));
@@ -282,7 +282,7 @@ public class Main {
                 String tLine = tReader.readLine();
                 while (!tLine.equalsIgnoreCase("y")) {
                     if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
-                        return;
+                        return 0;
                     }
                     System.out.println(IO.Text.yellow("Confirm? (y/N)"));
                 }
@@ -290,48 +290,48 @@ public class Main {
                     System.out.printf("Removing: %s\n", tName);
                     IO.removeDir(JAR_DIR + tName);
                 }
-                return;
+                return 0;
             }
             case "-jnibuild": case "--jnibuild": {
                 jse.code.SP.Python.InitHelper.init();
                 jse.parallel.MPI.InitHelper.init();
                 jse.lmp.LmpPlugin.InitHelper.init();
                 jsex.nnap.PairNNAP.InitHelper.init();
-                return;
+                return 0;
             }
             default: {
                 break;
             }}
-            if (aArgs.length < 3) {printHelp(System.err); return;}
+            if (aArgs.length < 3) {printHelp(System.err); return 1;}
             tValue = aArgs[2];
             String[] tArgs = new String[aArgs.length-3];
             if (tArgs.length > 0) System.arraycopy(aArgs, 3, tArgs, 0, tArgs.length);
             switch (tOption) {
             case "-t": case "-text": case "--text": case "-groovytext": case "--groovytext": {
                 SP.Groovy.runText(tValue, tArgs);
-                return;
+                return 0;
             }
             case "-pythontext": case "--pythontext": {
                 SP.Python.runText(tValue, tArgs);
-                return;
+                return 0;
             }
             case "-f": case "-file": case "--file": {
                 SP.runScript(tValue, tArgs);
-                return;
+                return 0;
             }
             case "-groovy": case "--groovy": {
                 SP.Groovy.runScript(tValue, tArgs);
-                return;
+                return 0;
             }
             case "-python": case "--python": {
                 SP.Python.runScript(tValue, tArgs);
-                return;
+                return 0;
             }
             case "-i": case "-invoke": case "--invoke": {
                 int tLastDot = tValue.lastIndexOf(".");
                 if (tLastDot < 0) {
                     System.err.println(IO.Text.red("ERROR:")+" Invalid method name: " + tValue);
-                    return;
+                    return 1;
                 }
                 String tPackageName = tValue.substring(0, tLastDot);
                 String tMethodName = tValue.substring(tLastDot+1);
@@ -355,7 +355,7 @@ public class Main {
                     }
                     UT.Hack.getRunnableOfMethod(tInstance, tMethodName, (Object[])tArgs).run();
                 }
-                return;
+                return 0;
             }
             case "-jupyterkernel": case "--jupyterkernel": {
                 IS_KERNEL = true;
@@ -369,16 +369,15 @@ public class Main {
                 tKernel.becomeHandlerForConnection(tConnection);
                 tConnection.connect();
                 tConnection.waitUntilClose();
-                return;
+                return 0;
             }
             default: {
                 printHelp(System.err);
-                return;
+                return 1;
             }}
         } catch (CompilationFailedException e) {
             System.err.println(e);
-            System.exit(1);
-            return;
+            return 1;
         } catch (Throwable e) {
             Throwable ex = e;
             if (ex instanceof InvokerInvocationException) {
@@ -386,11 +385,14 @@ public class Main {
                 ex = iie.getCause();
             }
             UT.Code.printStackTrace(ex);
-            System.exit(1);
-            return;
+            return 1;
         } finally {
             closeAllAutoCloseable();
         }
+    }
+    public static void main(String[] aArgs) {
+        int tExitCode = main_(aArgs);
+        if (tExitCode!=0) System.exit(tExitCode);
     }
     
     /** stuffs from {@link StackTraceUtils} */
