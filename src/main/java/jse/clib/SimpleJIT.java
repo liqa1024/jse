@@ -178,46 +178,34 @@ public class SimpleJIT {
         public boolean hasMethod(CharSequence aMethodName) {return mMethodNames.contains(aMethodName.toString());}
         public boolean isNull() {return mLibHandle==null || mLibHandle.isNull();}
         
-        /// workflow, comile() -> load() -> findMethod(name)
-        public Engine compile() throws Exception {
+        /// workflow, comile() -> findMethod(name)
+        public void compile() throws Exception {
             if (mDead) throw new RuntimeException("this JIT engine is dead");
             // 现在总是优先依赖 jniutil 用来确保一些通用的检测总是优先执行
             JNIUtil.InitHelper.init();
-            // 不能重复编译，并且如果先 load 则不重新 compile
-            if (mLibPath!=null) throw new IllegalStateException("Repeated compile()");
+            // 不能重复编译
+            if (mLibHandle!=null) throw new IllegalStateException("Repeated compile().");
             // 合理化目录，确认是否使用缓存
             validLibCache_();
-            if (mLibPath!=null) return this;
-            if (mCacheLib) {
-                System.out.println(IO.Text.cyan("JIT INIT INFO:")+" No cache lib "+mProjectName+" found in "+mLibDir+", re-compile...");
-            } else {
-                if (DEBUG) System.out.println(IO.Text.cyan("JIT INIT INFO:")+" Compile (no-cache mode)...");
+            // 没有检测到缓存，开始编译
+            if (mLibPath==null) {
+                if (mCacheLib) {
+                    System.out.println(IO.Text.cyan("JIT INIT INFO:")+" No cache lib "+mProjectName+" found in "+mLibDir+", re-compile...");
+                } else {
+                    if (DEBUG) System.out.println(IO.Text.cyan("JIT INIT INFO:")+" Compile (no-cache mode)...");
+                }
+                // 开始运行时编译
+                String tLibName = initLib_();
+                mLibPath = mLibDir + tLibName;
             }
-            // 开始运行时编译
-            String tLibName = initLib_();
-            mLibPath = mLibDir + tLibName;
-            return this;
-        }
-        public Engine load() throws JITException {
-            if (mDead) throw new RuntimeException("this JIT engine is dead");
-            // 不能重复 load
-            if (mLibHandle!=null) throw new IllegalStateException("Repeated load()");
-            // 库路径存在，则直接加载即可
-            if (mLibPath!=null) {
-                long tPtr = loadLibrary0(mLibPath);
-                mLibHandle = new JITLibHandle(this, tPtr, mCacheLib?null:mLibDir);
-                return this;
-            }
-            // 否则尝试使用缓存
-            validLibCache_();
-            if (mLibPath==null) throw new IllegalStateException("No cache lib found, use compile() first.");
+            // 加载库
             long tPtr = loadLibrary0(mLibPath);
             mLibHandle = new JITLibHandle(this, tPtr, mCacheLib?null:mLibDir);
-            return this;
         }
         public Method findMethod(CharSequence aMethodName) throws JITException {
             if (mDead) throw new RuntimeException("this JIT engine is dead");
-            if (mLibHandle==null || mLibHandle.isNull()) throw new NullPointerException();
+            if (mLibHandle==null) throw new IllegalStateException("Require compile() first.");
+            if (mLibHandle.isNull()) throw new NullPointerException();
             if (!hasMethod(aMethodName)) return null;
             return new Method(findMethod0(mLibHandle.mPtr, aMethodName.toString()), this);
         }
