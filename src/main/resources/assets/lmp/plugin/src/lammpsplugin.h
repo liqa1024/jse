@@ -39,10 +39,19 @@ typedef struct {
 typedef void (*lammpsplugin_regfunc)(lammpsplugin_t *, void *);
 typedef void (*lammpsplugin_initfunc)(void *, void *, void *);
 
+
+#if defined(WIN32) || defined(_WIN64) || defined(_WIN32)
+#define JSE_PLUGINEXPORT extern "C" __declspec(dllexport)
+#define JSE_PLUGINCALL __cdecl
+#else
+#define JSE_PLUGINEXPORT extern "C" __attribute__((visibility("default")))
+#define JSE_PLUGINCALL
+#endif
+
 // prototype for initializer function required
 // to load a plugin; uses C bindings
 
-JNIEXPORT void JNICALL lammpsplugin_init(void *, void *, void *);
+JSE_PLUGINEXPORT void JSE_PLUGINCALL lammpsplugin_init(void *, void *, void *);
 
 #ifdef __cplusplus
 }

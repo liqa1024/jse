@@ -17,7 +17,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.SOURCE)
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
-public @interface UnsafeJNII {
+public @interface UnsafeJNI {
     /** 对不安全原因或使用的要求的简要说明段落 */
     String value() default "";
 }

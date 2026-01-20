@@ -14,7 +14,7 @@ static Fix *jsefixcreator(LAMMPS *lmp, int argc, char **argv) {
 
 extern "C" {
 
-JNIEXPORT void JNICALL lammpsplugin_init(void *lmp, void *handle, void *regfunc) {
+JSE_PLUGINEXPORT void JSE_PLUGINCALL lammpsplugin_init(void *lmp, void *handle, void *regfunc) {
     lammpsplugin_t plugin;
     lammpsplugin_regfunc register_plugin = (lammpsplugin_regfunc) regfunc;
     

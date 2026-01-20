@@ -246,7 +246,7 @@ public class LmpPlugin {
         }
         private native static int findVariable_(long aPairPtr, @NotNull String name);
         
-        @UnsafeJNII("Illegal values will directly result in JVM SIGSEGV")
+        @UnsafeJNI("Illegal values will directly result in JVM SIGSEGV")
         protected final double computeVariable(int aIdx) {
             if (aIdx < 0) throw new IndexOutOfBoundsException(String.valueOf(aIdx));
             return computeVariable_(mPairPtr, aIdx);
@@ -669,7 +669,7 @@ public class LmpPlugin {
         }
         private native static int findVariable_(long aFixPtr, @NotNull String aName);
         
-        @UnsafeJNII("Illegal values will directly result in JVM SIGSEGV")
+        @UnsafeJNI("Illegal values will directly result in JVM SIGSEGV")
         protected final double computeVariable(int aIdx) {
             if (aIdx < 0) throw new IndexOutOfBoundsException(String.valueOf(aIdx));
             return computeVariable_(mFixPtr, aIdx);
