@@ -357,6 +357,14 @@ public class SimpleJIT {
             } else {
                 IO.removeDir(tWorkingDir);
             }
+            // jit 情况下不需要 lib 库，这里直接手动清理
+            if (IS_WINDOWS && mCacheLib) {
+                for (String tName : IO.list(mLibDir)) {
+                    if (tName.contains(mProjectName) && (tName.endsWith(".lib") || tName.endsWith(".exp"))) {
+                        IO.delete(mLibDir+tName);
+                    }
+                }
+            }
             if (mCacheLib) {
                 System.out.println(IO.Text.cyan("JIT INIT INFO:")+" Successfully compiled lib to: "+mLibDir+tLibName+".");
             } else {
