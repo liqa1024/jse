@@ -5,6 +5,7 @@ import jse.Main;
 import jse.math.MathEX;
 import jse.system.BashSystemExecutor;
 import jse.system.ISystemExecutor;
+import jse.system.PWSHSystemExecutor;
 import jse.system.PowerShellSystemExecutor;
 import org.jetbrains.annotations.*;
 
@@ -176,7 +177,7 @@ public class OS {
         JAR_DIR_BAD_FILESYSTEM = JAR_DIR_FILESYSTEM!=null && (JAR_DIR_FILESYSTEM.contains("lustre") || JAR_DIR_FILESYSTEM.contains("panfs") || JAR_DIR_FILESYSTEM.contains("gpfs"));
         // 创建默认 EXE，无内部线程池，windows 下使用 powershell 而 linux 下使用 bash 统一指令；
         // 这种选择可以保证指令使用统一，即使这些终端不一定所有平台都有
-        EXEC = IS_WINDOWS ? new PowerShellSystemExecutor() : new BashSystemExecutor();
+        EXEC = IS_WINDOWS ? (Conf.USE_PWSH ? new PWSHSystemExecutor() : new PowerShellSystemExecutor()) : new BashSystemExecutor();
         // 在程序结束时关闭 EXE
         Main.addGlobalAutoCloseable(EXEC);
     }

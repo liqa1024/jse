@@ -80,6 +80,15 @@ public class Conf {
      * 也可使用环境变量 {@code JSE_INCLUDE_WORKING_DIR} 来设置
      */
     public static boolean INCLUDE_WORKING_DIR = OS.envZ("JSE_INCLUDE_WORKING_DIR", true);
+    /**
+     * 是否在 windows 上使用新版的 powershell，从而避免旧版本的一些遗留问题，以及更加现代的输出。
+     * 需要系统已经安装了新版的 powershell 并在环境变量中。
+     * <p>
+     * 默认为 {@code false}
+     * <p>
+     * 也可使用环境变量 {@code JSE_USE_PWSH} 来设置
+     */
+    public static boolean USE_PWSH = OS.envZ("JSE_USE_PWSH", false);
     
     /**
      * 是否在 kernel 模式下（jupyter 运行 groovy 脚本时）开启

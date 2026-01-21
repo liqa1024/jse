@@ -26,11 +26,13 @@ sourceSets {
             exclude(
                 'assets/cpointer/src/.*/', 'assets/cpointer/src/build/', 'assets/cpointer/src/*build*/',
                 'assets/jniutil/src/.*/', 'assets/jniutil/src/build/', 'assets/jniutil/src/*build*/',
+                'assets/jitengine/src/.*/', 'assets/jitengine/src/build/', 'assets/jitengine/src/*build*/',
                 'assets/dlfcn/src/.*/', 'assets/dlfcn/src/build/', 'assets/dlfcn/src/*build*/',
                 'assets/mpi/src/.*/', 'assets/mpi/src/build/', 'assets/mpi/src/*build*/',
                 'assets/lmp/src/.*/', 'assets/lmp/src/build/', 'assets/lmp/src/*build*/',
                 'assets/lmp/plugin/src/.*/', 'assets/lmp/plugin/src/build/', 'assets/lmp/plugin/src/*build*/',
                 'assets/nnap/src/.*/', 'assets/nnap/src/build/', 'assets/nnap/src/*build*/',
+                'assets/nnap2/src/.*/', 'assets/nnap2/src/build/', 'assets/nnap2/src/*build*/',
                 'assets/nnap/torch/src/.*/', 'assets/nnap/torch/src/build/', 'assets/nnap/torch/src/*build*/',
                 'assets/jsexpy/.*/',
                 'assets/__*'
