@@ -13,6 +13,7 @@ set(SOURCE_FILES
     jse_clib_CPointer.c
     jse_clib_IntCPointer.c
     jse_clib_DoubleCPointer.c
+    jse_clib_FloatCPointer.c
     jse_clib_NestedCPointer.c
     jse_clib_NestedIntCPointer.c
     jse_clib_NestedDoubleCPointer.c)

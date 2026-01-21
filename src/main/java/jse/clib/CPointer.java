@@ -88,6 +88,8 @@ public class CPointer {
         , "jse_clib_IntCPointer.h"
         , "jse_clib_DoubleCPointer.c"
         , "jse_clib_DoubleCPointer.h"
+        , "jse_clib_FloatCPointer.c"
+        , "jse_clib_FloatCPointer.h"
         , "jse_clib_NestedCPointer.c"
         , "jse_clib_NestedCPointer.h"
         , "jse_clib_NestedIntCPointer.c"
