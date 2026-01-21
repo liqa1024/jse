@@ -61,13 +61,13 @@ public class SimpleJIT {
     }
     
     /** 完全关闭 jit 的优化，主要用于调试或需要精确结果而不是速度 */
-    public static final int OPTIM_LEVEL_NONE = -1;
+    public static final int OPTIM_NONE = -1;
     /** 兼容性的 jit 的优化，只开启 fmath，理论上保持相同的跨机器兼容性 */
-    public static final int OPTIM_LEVEL_COMPAT = 0;
+    public static final int OPTIM_COMPAT = 0;
     /** （默认）基本的 jit 的优化，会开启一般 x86 cpu 都有的 avx2 指令集 */
-    public static final int OPTIM_LEVEL_BASE = 1;
+    public static final int OPTIM_BASE = 1;
     /** 最高的 jit 的优化，会开启 avx512 指令集，有时可能会更慢 */
-    public static final int OPTIM_LEVEL_MAX = 2;
+    public static final int OPTIM_MAX = 2;
     
     /** 当前 {@link SimpleJIT} JNI 库所在的文件夹路径，结尾一定存在 {@code '/'} */
     public final static String LIB_DIR = JAR_DIR+"jit/engine/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_SETTING) + "/";
@@ -79,6 +79,7 @@ public class SimpleJIT {
         , "jse_clib_SimpleJIT.h"
         , "jse_clib_JITLibHandle.h"
     };
+    private final static String JIT_SRC_NAME = "jitsrc.cpp", JIT_HEAD_NAME = "jitsrc.h";
     
     static {
         InitHelper.INITIALIZED = true;
@@ -121,10 +122,9 @@ public class SimpleJIT {
         private String mProjectName = null;
         private @Nullable String mSrc = null;
         private @Nullable IDirIniter mSrcDirIniter = null;
-        private boolean mUsedCmakeCxxCompiler = false;
         private @Nullable String mCmakeCxxCompiler = null, mCmakeCxxFlags = null;
         private final Map<String, String> mCmakeSettings = new LinkedHashMap<>();
-        private int mOptimLevel = OPTIM_LEVEL_BASE;
+        private int mOptimLevel = OPTIM_BASE;
         
         /// jit engins stuffs
         private Boolean mCacheLib = null;
@@ -171,7 +171,7 @@ public class SimpleJIT {
             return this;
         }
         public Engine setSrcDirIniter(IDirIniter aSrcDirIniter) {mSrcDirIniter = aSrcDirIniter; return this;}
-        public Engine setCmakeCxxCompiler(@Nullable String aCmakeCxxCompiler) {mUsedCmakeCxxCompiler = true; mCmakeCxxCompiler = aCmakeCxxCompiler; return this;}
+        public Engine setCmakeCxxCompiler(@Nullable String aCmakeCxxCompiler) {mCmakeCxxCompiler = aCmakeCxxCompiler; return this;}
         public Engine setCmakeCxxFlags(@Nullable String aCmakeCxxFlags) {mCmakeCxxFlags = aCmakeCxxFlags; return this;}
         
         /// utils
@@ -242,11 +242,9 @@ public class SimpleJIT {
             // 设置参数，这里使用 List 来构造这个长指令
             List<String> rCommand = new ArrayList<>();
             rCommand.add(CMake.EXE_CMD);
-            // 这里设置 C++ 编译器（如果有）
-            if (mUsedCmakeCxxCompiler) {
-                String tCmakeCxxCompiler = mCmakeCxxCompiler==null ? Compiler.CXX_COMPILER : mCmakeCxxCompiler;
-                if (tCmakeCxxCompiler!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+tCmakeCxxCompiler);}
-            }
+            // 这里设置 C++ 编译器
+            String tCmakeCxxCompiler = mCmakeCxxCompiler==null ? Compiler.CXX_COMPILER : mCmakeCxxCompiler;
+            if (tCmakeCxxCompiler!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+tCmakeCxxCompiler);}
             if (mCmakeCxxFlags!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS='"+mCmakeCxxFlags+"'");}
             // 设置构建输出目录为 lib
             IO.makeDir(mLibDir); // 初始化一下这个目录避免意料外的问题
@@ -258,25 +256,25 @@ public class SimpleJIT {
             rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH='"+ mLibDir +"'");
             // 添加优化等级设置参数
             switch(mOptimLevel) {
-            case OPTIM_LEVEL_MAX: {
+            case OPTIM_MAX: {
                 rCommand.add("-D"); rCommand.add("JSE_OPTIM_MAX=ON");
                 rCommand.add("-D"); rCommand.add("JSE_OPTIM_BASE=OFF");
                 rCommand.add("-D"); rCommand.add("JSE_OPTIM_COMPAT=OFF");
                 break;
             }
-            case OPTIM_LEVEL_BASE: {
+            case OPTIM_BASE: {
                 rCommand.add("-D"); rCommand.add("JSE_OPTIM_MAX=OFF");
                 rCommand.add("-D"); rCommand.add("JSE_OPTIM_BASE=ON");
                 rCommand.add("-D"); rCommand.add("JSE_OPTIM_COMPAT=OFF");
                 break;
             }
-            case OPTIM_LEVEL_COMPAT: {
+            case OPTIM_COMPAT: {
                 rCommand.add("-D"); rCommand.add("JSE_OPTIM_MAX=OFF");
                 rCommand.add("-D"); rCommand.add("JSE_OPTIM_BASE=OFF");
                 rCommand.add("-D"); rCommand.add("JSE_OPTIM_COMPAT=ON");
                 break;
             }
-            case OPTIM_LEVEL_NONE: {
+            case OPTIM_NONE: {
                 rCommand.add("-D"); rCommand.add("JSE_OPTIM_MAX=OFF");
                 rCommand.add("-D"); rCommand.add("JSE_OPTIM_BASE=OFF");
                 rCommand.add("-D"); rCommand.add("JSE_OPTIM_COMPAT=OFF");
@@ -318,9 +316,9 @@ public class SimpleJIT {
             if (mSrc!=null) {
                 // 直接从字符串源码构建，这里需要各种配套
                 tSrcDir = tWorkingDir;
-                writeCmakeFile_(tSrcDir);
-                writeHeadFile_(tSrcDir);
-                writeSrcFile_(tSrcDir);
+                writeCmakeFile(tSrcDir, JIT_SRC_NAME);
+                writeHeadFile(tSrcDir, JIT_HEAD_NAME);
+                writeSrcFile(tSrcDir, JIT_SRC_NAME, JIT_HEAD_NAME);
             } else {
                 throw new IllegalStateException("No source code");
             }
@@ -374,7 +372,8 @@ public class SimpleJIT {
             return tLibName;
         }
         
-        private void writeCmakeFile_(String aSrcDir) throws IOException {
+        @ApiStatus.Internal
+        public void writeCmakeFile(String aSrcDir, String aSrcName) throws IOException {
             IO.write(aSrcDir+"CMakeLists.txt",
                 "#####################################################",
                 "#  DO NOT EDIT THIS FILE - it is machine generated  #",
@@ -387,7 +386,7 @@ public class SimpleJIT {
                 "if(NOT CMAKE_BUILD_TYPE)",
                 "    set(CMAKE_BUILD_TYPE Release)",
                 "endif()",
-                "set(SOURCE_FILES jitsrc.cpp)",
+                "set(SOURCE_FILES "+aSrcName+")",
                 "add_library("+mProjectName+" SHARED ${SOURCE_FILES})",
                 "",
                 "if(CMAKE_SYSTEM_NAME MATCHES \"Windows\")",
@@ -422,7 +421,8 @@ public class SimpleJIT {
                 "endif()"
             );
         }
-        private void writeHeadFile_(String aSrcDir) throws IOException {
+        @ApiStatus.Internal
+        public void writeHeadFile(String aSrcDir, String aHeadName) throws IOException {
             List<String> rLines = new ArrayList<>();
             rLines.add("/* DO NOT EDIT THIS FILE - it is machine generated */");
             rLines.add("#ifndef JITSRC_H");
@@ -442,12 +442,13 @@ public class SimpleJIT {
             }
             rLines.add("}");
             rLines.add("#endif //JITSRC_H");
-            IO.write(aSrcDir+"jitsrc.h", rLines);
+            IO.write(aSrcDir+aHeadName, rLines);
         }
-        private void writeSrcFile_(String aSrcDir) throws IOException {
-            IO.write(aSrcDir+"jitsrc.cpp",
+        @ApiStatus.Internal
+        public void writeSrcFile(String aSrcDir, String aSrcName, String aHeadName) throws IOException {
+            IO.write(aSrcDir+aSrcName,
                 "/* DO NOT EDIT THIS FILE - it is machine generated */",
-                "#include \"jitsrc.h\"",
+                "#include \""+aHeadName+"\"",
                 "extern \"C\" {",
                 mSrc,
                 "}"

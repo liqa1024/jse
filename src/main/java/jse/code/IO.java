@@ -430,7 +430,9 @@ public class IO {
          * @param searchString 需要用于搜索的字符串
          * @return 是否包含给定字符串
          */
-        public static boolean containsIgnoreCase(final CharSequence self, final CharSequence searchString) {return StringGroovyMethods.containsIgnoreCase(self, searchString);}
+        public static boolean containsIgnoreCase(final CharSequence self, final CharSequence searchString) {
+            return StringGroovyMethods.containsIgnoreCase(self, searchString);
+        }
         
         /**
          * Start from aStart to find the first index containing aContainStr
@@ -458,7 +460,9 @@ public class IO {
          * @param aContainStr a string to find in aLines
          * @return the idx of aLines which contains aContainStr, or {@code -1} if not find
          */
-        public static int findLineContaining(List<String> aLines, int aStart, String aContainStr) {return findLineContaining(aLines, aStart, aContainStr, false);}
+        public static int findLineContaining(List<String> aLines, int aStart, String aContainStr) {
+            return findLineContaining(aLines, aStart, aContainStr, false);
+        }
         
         /**
          * 读取 aReader 直到包含 aContainStr 的行
@@ -484,7 +488,9 @@ public class IO {
          * @param aContainStr 需要查找的字符串
          * @return 找到的包含指定字符串的行，如果没有找到则返回 {@code null}
          */
-        public static @Nullable String findLineContaining(BufferedReader aReader, String aContainStr) throws IOException {return findLineContaining(aReader, aContainStr, false);}
+        public static @Nullable String findLineContaining(BufferedReader aReader, String aContainStr) throws IOException {
+            return findLineContaining(aReader, aContainStr, false);
+        }
         
         /**
          * 读取 aReader 直到非空行
@@ -845,7 +851,9 @@ public class IO {
      * @see IO#readAllLines(String)
      * @see IO#write(String, String[], OpenOption...)
      */
-    public static void write(String aFilePath, String... aLines) throws IOException {write(aFilePath, aLines, ZL_OO);}
+    public static void write(String aFilePath, String... aLines) throws IOException {
+        write(aFilePath, aLines, ZL_OO);
+    }
     /**
      * 向指定路径的文件写入多行字符串，默认情况下会覆盖已有文件，
      * 如果文件不存在会创建，如果目录不存在会递归创建，给定的路径有同名的目录时会抛出异常；
@@ -864,7 +872,9 @@ public class IO {
      * @see IO#readAllLines(String)
      * @see IO#write(String, Iterable, OpenOption...)
      */
-    public static void write(String aFilePath, Iterable<? extends CharSequence> aLines) throws IOException {write(aFilePath, aLines, ZL_OO);}
+    public static void write(String aFilePath, Iterable<? extends CharSequence> aLines) throws IOException {
+        write(aFilePath, aLines, ZL_OO);
+    }
     /**
      * 向指定路径的文件写入单行字符串，默认情况下会覆盖已有文件，
      * 如果文件不存在会创建，如果目录不存在会递归创建，给定的路径有同名的目录时会抛出异常；
@@ -881,7 +891,9 @@ public class IO {
      * @see IO#writeText(String, String)
      * @see IO#write(String, String, OpenOption...)
      */
-    public static void write(String aFilePath, String aLine) throws IOException {write(aFilePath, aLine, ZL_OO);}
+    public static void write(String aFilePath, String aLine) throws IOException {
+        write(aFilePath, aLine, ZL_OO);
+    }
     /**
      * 向指定路径的文件直接写入二进制数据，默认情况下会覆盖已有文件，
      * 如果文件不存在会创建，如果目录不存在会递归创建，给定的路径有同名的目录时会抛出异常；
@@ -894,7 +906,9 @@ public class IO {
      * @see IO#readAllBytes(String)
      * @see IO#write(String, byte[], OpenOption...)
      */
-    public static void write(String aFilePath, byte[] aData) throws IOException {write(aFilePath, aData, ZL_OO);}
+    public static void write(String aFilePath, byte[] aData) throws IOException {
+        write(aFilePath, aData, ZL_OO);
+    }
     /**
      * 向指定路径的文件写入多行字符串，默认情况下会覆盖已有文件，
      * 如果文件不存在会创建，如果目录不存在会递归创建，给定的路径有同名的目录时会抛出异常；
@@ -914,7 +928,9 @@ public class IO {
      * @see Files#write(Path, Iterable, OpenOption...)
      * @see IO#readAllLines(String)
      */
-    public static void write(String aFilePath, String[] aLines, OpenOption... aOptions) throws IOException {write(aFilePath, AbstractCollections.from(aLines), aOptions);}
+    public static void write(String aFilePath, String[] aLines, OpenOption... aOptions) throws IOException {
+        write(aFilePath, AbstractCollections.from(aLines), aOptions);
+    }
     /**
      * 向指定路径的文件写入多行字符串，默认情况下会覆盖已有文件，
      * 如果文件不存在会创建，如果目录不存在会递归创建，给定的路径有同名的目录时会抛出异常；
@@ -934,7 +950,9 @@ public class IO {
      * @see Files#write(Path, Iterable, OpenOption...)
      * @see IO#readAllLines(String)
      */
-    public static void write(String aFilePath, Iterable<? extends CharSequence> aLines, OpenOption... aOptions) throws IOException {write(toAbsolutePath_(aFilePath), aLines, aOptions);}
+    public static void write(String aFilePath, Iterable<? extends CharSequence> aLines, OpenOption... aOptions) throws IOException {
+        write(toAbsolutePath_(aFilePath), aLines, aOptions);
+    }
     /**
      * 向指定路径的文件写入单行字符串，默认情况下会覆盖已有文件，
      * 如果文件不存在会创建，如果目录不存在会递归创建，给定的路径有同名的目录时会抛出异常；
@@ -952,7 +970,9 @@ public class IO {
      * @see IO#readAllLines(String)
      * @see IO#writeText(String, String, OpenOption...)
      */
-    public static void write(String aFilePath, String aLine, OpenOption... aOptions) throws IOException {write(aFilePath, Collections.singletonList(aLine), aOptions);}
+    public static void write(String aFilePath, String aLine, OpenOption... aOptions) throws IOException {
+        write(aFilePath, Collections.singletonList(aLine), aOptions);
+    }
     /**
      * 向指定路径的文件直接写入二进制数据，默认情况下会覆盖已有文件，
      * 如果文件不存在会创建，如果目录不存在会递归创建，给定的路径有同名的目录时会抛出异常；
@@ -966,11 +986,17 @@ public class IO {
      * @see Files#write(Path, byte[], OpenOption...)
      * @see IO#readAllBytes(String)
      */
-    public static void write(String aFilePath, byte[] aData, OpenOption... aOptions) throws IOException {write(toAbsolutePath_(aFilePath), aData, aOptions);}
+    public static void write(String aFilePath, byte[] aData, OpenOption... aOptions) throws IOException {
+        write(toAbsolutePath_(aFilePath), aData, aOptions);
+    }
     /** {@link IO#write(String, byte[], OpenOption...)} 的 {@link Path} 形式接口，主要用于内部使用 */
-    public static void write(Path aPath, byte[] aData, OpenOption... aOptions) throws IOException {validPath(aPath); Files.write(aPath, aData, aOptions);}
+    public static void write(Path aPath, byte[] aData, OpenOption... aOptions) throws IOException {
+        validPath(aPath); Files.write(aPath, aData, aOptions);
+    }
     /** {@link IO#write(String, String, OpenOption...)} 的 {@link Path} 形式接口，主要用于内部使用 */
-    public static void write(Path aPath, String aLine, OpenOption... aOptions) throws IOException {write(aPath, Collections.singletonList(aLine), aOptions);}
+    public static void write(Path aPath, String aLine, OpenOption... aOptions) throws IOException {
+        write(aPath, Collections.singletonList(aLine), aOptions);
+    }
     /** {@link IO#write(String, Iterable, OpenOption...)} 的 {@link Path} 形式接口，主要用于内部使用 */
     public static void write(Path aPath, Iterable<? extends CharSequence> aLines, OpenOption... aOptions) throws IOException {
         validPath(aPath);
@@ -993,7 +1019,9 @@ public class IO {
      * @see IO#readAllText(String)
      * @see IO#writeText(String, String, OpenOption...)
      */
-    public static void writeText(String aFilePath, String aText) throws IOException {writeText(aFilePath, aText, ZL_OO);}
+    public static void writeText(String aFilePath, String aText) throws IOException {
+        writeText(aFilePath, aText, ZL_OO);
+    }
     /**
      * 向指定路径的文件写入字符串文本，默认情况下会覆盖已有文件，
      * 如果文件不存在会创建，如果目录不存在会递归创建，给定的路径有同名的目录时会抛出异常；
@@ -1009,7 +1037,9 @@ public class IO {
      * @see Files#writeString(Path, CharSequence, OpenOption...)
      * @see IO#readAllText(String)
      */
-    public static void writeText(String aFilePath, String aText, OpenOption... aOptions) throws IOException {writeText(toAbsolutePath_(aFilePath), aText, aOptions);}
+    public static void writeText(String aFilePath, String aText, OpenOption... aOptions) throws IOException {
+        writeText(toAbsolutePath_(aFilePath), aText, aOptions);
+    }
     /** {@link IO#writeText(String, String, OpenOption...)} 的 {@link Path} 形式接口，主要用于内部使用 */
     public static void writeText(Path aPath, String aText, OpenOption... aOptions) throws IOException {
         validPath(aPath);
@@ -1027,7 +1057,9 @@ public class IO {
      * @see Files#readAllBytes(Path)
      * @see IO#write(String, byte[])
      */
-    public static byte[] readAllBytes(String aFilePath) throws IOException {return Files.readAllBytes(toAbsolutePath_(aFilePath));}
+    public static byte[] readAllBytes(String aFilePath) throws IOException {
+        return Files.readAllBytes(toAbsolutePath_(aFilePath));
+    }
     /**
      * 读取输入路径对应文件中的所有行，得到由每行字符串组成的列表 {@code List<String>}
      * <p>
@@ -1122,7 +1154,9 @@ public class IO {
     }
     
     /** @see IO#removeDir(String) */
-    @VisibleForTesting public static void rmdir(String aDir) throws IOException {removeDir(aDir);}
+    @VisibleForTesting public static void rmdir(String aDir) throws IOException {
+        removeDir(aDir);
+    }
     /**
      * 删除指定文件夹，会递归删除嵌套的文件夹
      * <p>
@@ -1153,7 +1187,9 @@ public class IO {
     }
     
     /** @see IO#copyDir(String, String) */
-    @VisibleForTesting public static void cpdir(String aSourceDir, String aTargetDir) throws IOException {copyDir(aSourceDir, aTargetDir);}
+    @VisibleForTesting public static void cpdir(String aSourceDir, String aTargetDir) throws IOException {
+        copyDir(aSourceDir, aTargetDir);
+    }
     /**
      * 复制一个文件夹，会递归复制嵌套的子文件夹到目标文件夹；
      * 会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建
@@ -1187,15 +1223,21 @@ public class IO {
     
     
     /** @see IO#makeDir(String) */
-    @VisibleForTesting public static void mkdir(String aDir) throws IOException {makeDir(aDir);}
+    @VisibleForTesting public static void mkdir(String aDir) throws IOException {
+        makeDir(aDir);
+    }
     /**
      * 创建一个文件夹，会自动递归创建子文件夹
      * @param aDir 需要创建的文件夹路径
      * @throws IOException 已经存在同名的文件，或者触发权限不够时
      */
-    public static void makeDir(String aDir) throws IOException {makeDir(toAbsolutePath_(aDir));}
+    public static void makeDir(String aDir) throws IOException {
+        makeDir(toAbsolutePath_(aDir));
+    }
     /** @see IO#isDir(String) */
-    @VisibleForTesting public static boolean isdir(String aDir) {return isDir(aDir);}
+    @VisibleForTesting public static boolean isdir(String aDir) {
+        return isDir(aDir);
+    }
     /**
      * 判断输入路径是否是一个文件夹
      * @param aDir 需要判断的路径
@@ -1204,9 +1246,13 @@ public class IO {
      * @see IO#isFile(String)
      * @see IO#exists(String)
      */
-    public static boolean isDir(String aDir){return Files.isDirectory(toAbsolutePath_(aDir));}
+    public static boolean isDir(String aDir) {
+        return Files.isDirectory(toAbsolutePath_(aDir));
+    }
     /** @see IO#isFile(String) */
-    @VisibleForTesting public static boolean isfile(String aFilePath) {return isFile(aFilePath);}
+    @VisibleForTesting public static boolean isfile(String aFilePath) {
+        return isFile(aFilePath);
+    }
     /**
      * 判断输入路径是否是一个文件（而不是文件夹）
      * @param aFilePath 需要判断的路径
@@ -1215,7 +1261,9 @@ public class IO {
      * @see IO#isDir(String)
      * @see IO#exists(String)
      */
-    public static boolean isFile(String aFilePath) {return Files.isRegularFile(toAbsolutePath_(aFilePath));}
+    public static boolean isFile(String aFilePath) {
+        return Files.isRegularFile(toAbsolutePath_(aFilePath));
+    }
     /**
      * 判断输入路径是否存在
      * @param aPath 需要判断的路径
@@ -1224,7 +1272,9 @@ public class IO {
      * @see IO#isDir(String)
      * @see IO#isFile(String)
      */
-    public static boolean exists(String aPath) {return Files.exists(toAbsolutePath_(aPath));}
+    public static boolean exists(String aPath) {
+        return Files.exists(toAbsolutePath_(aPath));
+    }
     /**
      * 删除指定的文件或空文件夹
      * <p>
@@ -1237,7 +1287,9 @@ public class IO {
      * @see Files#deleteIfExists(Path)
      * @see IO#removeDir(String)
      */
-    public static void delete(String aPath) throws IOException {Files.deleteIfExists(toAbsolutePath_(aPath));}
+    public static void delete(String aPath) throws IOException {
+        Files.deleteIfExists(toAbsolutePath_(aPath));
+    }
     /**
      * 复制指定文件到另一个位置；
      * 会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建
@@ -1250,7 +1302,9 @@ public class IO {
      * @see Files#copy(Path, Path, CopyOption...)
      * @see IO#copyDir(String, String)
      */
-    public static void copy(String aSourcePath, String aTargetPath) throws IOException {copy(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath));}
+    public static void copy(String aSourcePath, String aTargetPath) throws IOException {
+        copy(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath));
+    }
     /**
      * 复制指定的输入流 {@link InputStream} 到目标路径；
      * 会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建
@@ -1261,7 +1315,9 @@ public class IO {
      * @see Files#copy(InputStream, Path, CopyOption...)
      * @see IO#copy(String, String)
      */
-    public static void copy(InputStream aSourceStream, String aTargetPath) throws IOException {copy(aSourceStream, toAbsolutePath_(aTargetPath));}
+    public static void copy(InputStream aSourceStream, String aTargetPath) throws IOException {
+        copy(aSourceStream, toAbsolutePath_(aTargetPath));
+    }
     /**
      * 复制指定的 {@link URL} 到目标路径；
      * 会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建
@@ -1275,7 +1331,9 @@ public class IO {
      * @see IO#getResource(String)
      * @see IO#copy(String, String)
      */
-    public static void copy(URL aSourceURL, String aTargetPath) throws IOException {copy(aSourceURL, toAbsolutePath_(aTargetPath));}
+    public static void copy(URL aSourceURL, String aTargetPath) throws IOException {
+        copy(aSourceURL, toAbsolutePath_(aTargetPath));
+    }
     /**
      * 移动指定文件或文件夹到另一个位置；
      * 会覆盖已有文件，如果目录不存在会递归创建。
@@ -1302,17 +1360,34 @@ public class IO {
      * @see IO#copyDir(String, String)
      * @see IO#removeDir(String)
      */
-    public static void move(String aSourcePath, String aTargetPath) throws IOException {move(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath));}
+    public static void move(String aSourcePath, String aTargetPath) throws IOException {
+        move(toAbsolutePath_(aSourcePath), toAbsolutePath_(aTargetPath));
+    }
     /** {@link IO#makeDir(String)} 的 {@link Path} 形式接口，主要用于内部使用 */
-    public static void makeDir(Path aDir) throws IOException {Files.createDirectories(aDir);}
+    public static void makeDir(Path aDir) throws IOException {
+        Files.createDirectories(aDir);
+    }
     /** {@link IO#copy(String, String)} 的 {@link Path} 形式接口，主要用于内部使用 */
-    public static void copy(Path aSourcePath, Path aTargetPath) throws IOException {validPath(aTargetPath); Files.copy(aSourcePath, aTargetPath, REPLACE_EXISTING);}
+    public static void copy(Path aSourcePath, Path aTargetPath) throws IOException {
+        validPath(aTargetPath);
+        Files.copy(aSourcePath, aTargetPath, REPLACE_EXISTING);
+    }
     /** {@link IO#copy(InputStream, String)} 的 {@link Path} 形式接口，主要用于内部使用 */
-    public static void copy(InputStream aSourceStream, Path aTargetPath) throws IOException {validPath(aTargetPath); Files.copy(aSourceStream, aTargetPath, REPLACE_EXISTING);}
+    public static void copy(InputStream aSourceStream, Path aTargetPath) throws IOException {
+        validPath(aTargetPath);
+        Files.copy(aSourceStream, aTargetPath, REPLACE_EXISTING);
+    }
     /** {@link IO#copy(URL, String)} 的 {@link Path} 形式接口，主要用于内部使用 */
-    public static void copy(URL aSourceURL, Path aTargetPath) throws IOException {try (InputStream tURLStream = aSourceURL.openStream()) {copy(tURLStream, aTargetPath);}}
+    public static void copy(URL aSourceURL, Path aTargetPath) throws IOException {
+        try (InputStream tURLStream = aSourceURL.openStream()) {
+            copy(tURLStream, aTargetPath);
+        }
+    }
     /** {@link IO#move(String, String)} 的 {@link Path} 形式接口，主要用于内部使用 */
-    public static void move(Path aSourcePath, Path aTargetPath) throws IOException {validPath(aTargetPath); Files.move(aSourcePath, aTargetPath, REPLACE_EXISTING);}
+    public static void move(Path aSourcePath, Path aTargetPath) throws IOException {
+        validPath(aTargetPath);
+        Files.move(aSourcePath, aTargetPath, REPLACE_EXISTING);
+    }
     /**
      * 列出输入文件夹下的所有文件或目录的名称；
      * 注意不同平台下顺序会不一样，为了避免这个问题，可以通过
@@ -1359,7 +1434,11 @@ public class IO {
      * @see IOGroovyMethods#filterLine(Reader, Writer, Closure)
      * @see IO#copy(String, String)
      */
-    public static void map(String aSourcePath, String aTargetPath, IUnaryFullOperator<? extends CharSequence, ? super String> aOpt) throws IOException  {try (BufferedReader tReader = toReader(aSourcePath); IWriteln tWriter = toWriteln(aTargetPath)) {map(tReader, tWriter, aOpt);}}
+    public static void map(String aSourcePath, String aTargetPath, IUnaryFullOperator<? extends CharSequence, ? super String> aOpt) throws IOException  {
+        try (BufferedReader tReader = toReader(aSourcePath); IWriteln tWriter = toWriteln(aTargetPath)) {
+            map(tReader, tWriter, aOpt);
+        }
+    }
     /**
      * 通过一个每行的变换操作 aOpt 来映射源 {@link URL} 到目标文件，主要用于将给定文本文件特定字符串批量替换；
      * 会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建。
@@ -1376,7 +1455,11 @@ public class IO {
      * @see IO#map(String, String, IUnaryFullOperator)
      * @see IO#copy(URL, String)
      */
-    public static void map(URL aSourceURL, String aTargetPath, IUnaryFullOperator<? extends CharSequence, ? super String> aOpt) throws IOException  {try (BufferedReader tReader = toReader(aSourceURL); IWriteln tWriter = toWriteln(aTargetPath)) {map(tReader, tWriter, aOpt);}}
+    public static void map(URL aSourceURL, String aTargetPath, IUnaryFullOperator<? extends CharSequence, ? super String> aOpt) throws IOException  {
+        try (BufferedReader tReader = toReader(aSourceURL); IWriteln tWriter = toWriteln(aTargetPath)) {
+            map(tReader, tWriter, aOpt);
+        }
+    }
     /**
      * 通过一个每行的变换操作 aOpt 来映射读取流到目标写入流，主要用于将给定文本文件特定字符串批量替换；
      * 会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建。
@@ -1394,12 +1477,18 @@ public class IO {
      *
      * @param aReader 源读取流，调用后不会关闭
      * @param aWriter 目标写入流，调用后不会关闭
-     * @param aOpt 一行源文件的字符串到一行目标文件字符串的映射
+     * @param aOpt 一行源文件的字符串到一行目标文件字符串的映射，这里约定返回 {@code null} 时跳过此行
      * @throws IOException 源文件夹不存在，目标路径有同名的文件夹或者触发权限不够时
      * @see IO#map(String, String, IUnaryFullOperator)
      * @see IOGroovyMethods#filterLine(Reader, Writer, Closure)
      */
-    public static void map(BufferedReader aReader, IWriteln aWriter, IUnaryFullOperator<? extends CharSequence, ? super String> aOpt) throws IOException {String tLine; while ((tLine = aReader.readLine()) != null) {aWriter.writeln(aOpt.apply(tLine));}}
+    public static void map(BufferedReader aReader, IWriteln aWriter, IUnaryFullOperator<? extends CharSequence, ? super String> aOpt) throws IOException {
+        String tLine;
+        while ((tLine = aReader.readLine()) != null) {
+            @Nullable CharSequence tNewLine = aOpt.apply(tLine);
+            if (tNewLine!=null) aWriter.writeln(tNewLine);
+        }
+    }
     
     
     /**
@@ -1432,7 +1521,9 @@ public class IO {
      * @see IO#toWriter(String)
      * @see IO#toWriteln(String)
      */
-    public static OutputStream toOutputStream(String aFilePath) throws IOException {return toOutputStream(aFilePath, ZL_OO);}
+    public static OutputStream toOutputStream(String aFilePath) throws IOException {
+        return toOutputStream(aFilePath, ZL_OO);
+    }
     /**
      * 写入输入路径的文件并转为输出流 {@link OutputStream}；
      * 会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建。
@@ -1450,9 +1541,13 @@ public class IO {
      * @see IO#toWriter(String, OpenOption...)
      * @see IO#toWriteln(String, OpenOption...)
      */
-    public static OutputStream toOutputStream(String aFilePath, OpenOption... aOptions) throws IOException {return toOutputStream(toAbsolutePath_(aFilePath), aOptions);}
+    public static OutputStream toOutputStream(String aFilePath, OpenOption... aOptions) throws IOException {
+        return toOutputStream(toAbsolutePath_(aFilePath), aOptions);
+    }
     /** {@link IO#toOutputStream(String, OpenOption...)} 的 {@link Path} 形式接口，主要用于内部使用 */
-    public static OutputStream toOutputStream(Path aPath, OpenOption... aOptions) throws IOException {validPath(aPath); return Files.newOutputStream(aPath, aOptions);}
+    public static OutputStream toOutputStream(Path aPath, OpenOption... aOptions) throws IOException {
+        validPath(aPath); return Files.newOutputStream(aPath, aOptions);
+    }
     /**
      * 写入输入路径的文件并转为写入流 {@link BufferedWriter}；
      * 会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建。
@@ -1469,7 +1564,9 @@ public class IO {
      * @see Files#newBufferedWriter(Path, OpenOption...)
      * @see IO#toWriteln(String)
      */
-    public static BufferedWriter toWriter(String aFilePath) throws IOException {return toWriter(aFilePath, ZL_OO);}
+    public static BufferedWriter toWriter(String aFilePath) throws IOException {
+        return toWriter(aFilePath, ZL_OO);
+    }
     /**
      * 写入输入路径的文件并转为写入流 {@link BufferedWriter}；
      * 会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建。
@@ -1488,9 +1585,18 @@ public class IO {
      * @see Files#newBufferedWriter(Path, OpenOption...)
      * @see IO#toWriteln(String, OpenOption...)
      */
-    public static BufferedWriter toWriter(String aFilePath, OpenOption... aOptions) throws IOException {return toWriter(toAbsolutePath_(aFilePath), aOptions);}
+    public static BufferedWriter toWriter(String aFilePath, OpenOption... aOptions) throws IOException {
+        return toWriter(toAbsolutePath_(aFilePath), aOptions);
+    }
     /** {@link IO#toWriter(String, OpenOption...)} 的 {@link Path} 形式接口，主要用于内部使用 */
-    public static BufferedWriter toWriter(Path aPath, OpenOption... aOptions) throws IOException {validPath(aPath); return new BufferedWriter(new OutputStreamWriter(toOutputStream(aPath, aOptions), StandardCharsets.UTF_8)) {@Override public void newLine() throws IOException {write("\n");}};}
+    public static BufferedWriter toWriter(Path aPath, OpenOption... aOptions) throws IOException {
+        validPath(aPath);
+        return new BufferedWriter(new OutputStreamWriter(toOutputStream(aPath, aOptions), StandardCharsets.UTF_8)) {
+            @Override public void newLine() throws IOException {
+                write("\n");
+            }
+        };
+    }
     /**
      * 将输出流 {@link OutputStream} 转换为写入流 {@link BufferedWriter}，并增加 buffer。
      * <p>
@@ -1499,7 +1605,9 @@ public class IO {
      * @param aOutputStream 需要转换的输出流
      * @return 转换后得到的写入流
      */
-    public static BufferedWriter toWriter(OutputStream aOutputStream) {return toWriter(aOutputStream, StandardCharsets.UTF_8);}
+    public static BufferedWriter toWriter(OutputStream aOutputStream) {
+        return toWriter(aOutputStream, StandardCharsets.UTF_8);
+    }
     /**
      * 将输出流 {@link OutputStream} 转换为写入流 {@link BufferedWriter}，并增加 buffer。
      * <p>
@@ -1510,7 +1618,13 @@ public class IO {
      * @return 转换后得到的写入流
      * @see StandardCharsets
      */
-    public static BufferedWriter toWriter(OutputStream aOutputStream, Charset aCS) {return new BufferedWriter(new OutputStreamWriter(aOutputStream, aCS)) {@Override public void newLine() throws IOException {write("\n");}};}
+    public static BufferedWriter toWriter(OutputStream aOutputStream, Charset aCS) {
+        return new BufferedWriter(new OutputStreamWriter(aOutputStream, aCS)) {
+            @Override public void newLine() throws IOException {
+                write("\n");
+            }
+        };
+    }
     /**
      * 写入输入路径的文件并转为 jse 中使用的写入接口 {@link IO.IWriteln}；
      * 会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建。
@@ -1527,7 +1641,9 @@ public class IO {
      * @throws IOException 给定的路径有同名的目录或者权限不够时
      * @see IO#toWriter(String)
      */
-    public static IWriteln toWriteln(String aFilePath) throws IOException {return toWriteln(aFilePath, ZL_OO);}
+    public static IWriteln toWriteln(String aFilePath) throws IOException {
+        return toWriteln(aFilePath, ZL_OO);
+    }
     /**
      * 写入输入路径的文件并转为 jse 中使用的写入流 {@link IO.IWriteln}；
      * 会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建。
@@ -1546,9 +1662,13 @@ public class IO {
      * @see StandardOpenOption
      * @see IO#toWriter(String, OpenOption...)
      */
-    public static IWriteln toWriteln(String aFilePath, OpenOption... aOptions) throws IOException {return toWriteln(toWriter(aFilePath, aOptions));}
+    public static IWriteln toWriteln(String aFilePath, OpenOption... aOptions) throws IOException {
+        return toWriteln(toWriter(aFilePath, aOptions));
+    }
     /** {@link IO#toWriteln(String, OpenOption...)} 的 {@link Path} 形式接口，主要用于内部使用 */
-    public static IWriteln toWriteln(Path aPath, OpenOption... aOptions) throws IOException {return toWriteln(toWriter(aPath, aOptions));}
+    public static IWriteln toWriteln(Path aPath, OpenOption... aOptions) throws IOException {
+        return toWriteln(toWriter(aPath, aOptions));
+    }
     /**
      * 将输出流 {@link OutputStream} 转换为 jse 中使用的写入流 {@link IO.IWriteln}，并增加 buffer。
      * <p>
@@ -1557,7 +1677,9 @@ public class IO {
      * @param aOutputStream 需要转换的输出流
      * @return 转换后得到的写入流
      */
-    public static IWriteln toWriteln(OutputStream aOutputStream) {return toWriteln(toWriter(aOutputStream));}
+    public static IWriteln toWriteln(OutputStream aOutputStream) {
+        return toWriteln(toWriter(aOutputStream));
+    }
     /**
      * 将输出流 {@link OutputStream} 转换为 jse 中使用的写入流 {@link IO.IWriteln}，并增加 buffer。
      * <p>
@@ -1568,7 +1690,9 @@ public class IO {
      * @return 转换后得到的写入流
      * @see StandardCharsets
      */
-    public static IWriteln toWriteln(OutputStream aOutputStream, Charset aCS) {return toWriteln(toWriter(aOutputStream, aCS));}
+    public static IWriteln toWriteln(OutputStream aOutputStream, Charset aCS) {
+        return toWriteln(toWriter(aOutputStream, aCS));
+    }
     /**
      * 将 java 写入流 {@link BufferedWriter} 转换为 jse 中使用的写入流 {@link IO.IWriteln}；
      * 主要用来提供写完一行后自动换行的操作 {@link IO.IWriteln#writeln(CharSequence)}
@@ -1598,9 +1722,13 @@ public class IO {
      * @see Files#newInputStream(Path, OpenOption...)
      * @see IO#toReader(String)
      */
-    public static InputStream toInputStream(String aFilePath) throws IOException {return toInputStream(toAbsolutePath_(aFilePath));}
+    public static InputStream toInputStream(String aFilePath) throws IOException {
+        return toInputStream(toAbsolutePath_(aFilePath));
+    }
     /** {@link IO#toInputStream(String)} 的 {@link Path} 形式接口，主要用于内部使用 */
-    public static InputStream toInputStream(Path aPath) throws IOException {return Files.newInputStream(aPath);}
+    public static InputStream toInputStream(Path aPath) throws IOException {
+        return Files.newInputStream(aPath);
+    }
     /**
      * 读取输入路径的文件并转为读取流 {@link BufferedReader}。
      * <p>
@@ -1611,9 +1739,13 @@ public class IO {
      * @throws IOException 给定路径文件不存在或者权限不够时
      * @see Files#newBufferedReader(Path)
      */
-    public static BufferedReader toReader(String aFilePath) throws IOException {return toReader(toAbsolutePath_(aFilePath));}
+    public static BufferedReader toReader(String aFilePath) throws IOException {
+        return toReader(toAbsolutePath_(aFilePath));
+    }
     /** {@link IO#toReader(String)} 的 {@link Path} 形式接口，主要用于内部使用 */
-    public static BufferedReader toReader(Path aPath) throws IOException {return toReader(toInputStream(aPath));}
+    public static BufferedReader toReader(Path aPath) throws IOException {
+        return toReader(toInputStream(aPath));
+    }
     /**
      * 将指定 {@link URL} 转为读取流 {@link BufferedReader}。
      * <p>
@@ -1627,7 +1759,9 @@ public class IO {
      * @throws IOException 给定 URL 文件不存在或者权限不够时
      * @see IO#getResource(String)
      */
-    public static BufferedReader toReader(URL aFileURL) throws IOException {return toReader(aFileURL.openStream());}
+    public static BufferedReader toReader(URL aFileURL) throws IOException {
+        return toReader(aFileURL.openStream());
+    }
     /**
      * 将输入流 {@link InputStream} 转换为读取流 {@link BufferedReader}，并增加 buffer。
      * <p>
@@ -1636,7 +1770,9 @@ public class IO {
      * @param aInputStream 需要转换的输入流
      * @return 转换后得到的读取流
      */
-    public static BufferedReader toReader(InputStream aInputStream) throws IOException {return toReader(aInputStream, StandardCharsets.UTF_8, true);}
+    public static BufferedReader toReader(InputStream aInputStream) throws IOException {
+        return toReader(aInputStream, StandardCharsets.UTF_8, true);
+    }
     /**
      * 将输入流 {@link InputStream} 转换为读取流 {@link BufferedReader}，并增加 buffer。
      * <p>
@@ -1646,7 +1782,9 @@ public class IO {
      * @param aCS 需要使用的编码格式，默认使用 UTF-8
      * @return 转换后得到的读取流
      */
-    public static BufferedReader toReader(InputStream aInputStream, Charset aCS) throws IOException {return toReader(aInputStream, aCS, false);}
+    public static BufferedReader toReader(InputStream aInputStream, Charset aCS) throws IOException {
+        return toReader(aInputStream, aCS, false);
+    }
     /**
      * 将输入流 {@link InputStream} 转换为读取流 {@link BufferedReader}，并增加 buffer。
      * <p>
@@ -1669,7 +1807,9 @@ public class IO {
      * @param aFilePath 需要转换的文件路径
      * @return 得到的对应的 {@link File}
      */
-    public static File toFile(String aFilePath) {return toAbsolutePath_(aFilePath).toFile();}
+    public static File toFile(String aFilePath) {
+        return toAbsolutePath_(aFilePath).toFile();
+    }
     /**
      * 合法化输入的文件路径，具体操作为创建文件所在的文件夹（包括可能嵌套的文件夹）；
      * 如果输入路径结尾为 {@code "/"} 或 {@code "\"} 则认为输入为文件夹，
@@ -1796,7 +1936,9 @@ public class IO {
      * @see IO#dir2zip(String, String, int)
      * @see IO#files2zip(String[], String)
      */
-    public static void dir2zip(String aDir, String aZipFilePath) throws IOException {dir2zip(aDir, aZipFilePath, Deflater.DEFAULT_COMPRESSION);}
+    public static void dir2zip(String aDir, String aZipFilePath) throws IOException {
+        dir2zip(aDir, aZipFilePath, Deflater.DEFAULT_COMPRESSION);
+    }
     
     /**
      * 压缩多个文件（或文件夹）到 zip 压缩文件；
@@ -1822,7 +1964,9 @@ public class IO {
      * @see IO#dir2zip(String, String, int)
      * @see IO#files2zip(String[], String)
      */
-    public static void files2zip(String[] aPaths, String aZipFilePath, int aCompressLevel) throws IOException {files2zip(AbstractCollections.from(aPaths), aZipFilePath, aCompressLevel);}
+    public static void files2zip(String[] aPaths, String aZipFilePath, int aCompressLevel) throws IOException {
+        files2zip(AbstractCollections.from(aPaths), aZipFilePath, aCompressLevel);
+    }
     /**
      * 压缩多个文件（或文件夹）到 zip 压缩文件；
      * 会覆盖已有文件，如果输出目录不存在会递归创建
@@ -1846,7 +1990,9 @@ public class IO {
      * @see IO#dir2zip(String, String)
      * @see IO#files2zip(String[], String, int)
      */
-    public static void files2zip(String[] aPaths, String aZipFilePath) throws IOException {files2zip(AbstractCollections.from(aPaths), aZipFilePath);}
+    public static void files2zip(String[] aPaths, String aZipFilePath) throws IOException {
+        files2zip(AbstractCollections.from(aPaths), aZipFilePath);
+    }
     /**
      * 传入列表形式文件路径的 {@code files2zip} 实现，用于方便在 groovy 中直接使用
      * @see IO#files2zip(String[], String, int)
@@ -1875,7 +2021,9 @@ public class IO {
      * @see IO#files2zip(String[], String)
      * @see Iterable
      */
-    public static void files2zip(Iterable<? extends CharSequence> aPaths, String aZipFilePath) throws IOException {files2zip(aPaths, aZipFilePath, Deflater.DEFAULT_COMPRESSION);}
+    public static void files2zip(Iterable<? extends CharSequence> aPaths, String aZipFilePath) throws IOException {
+        files2zip(aPaths, aZipFilePath, Deflater.DEFAULT_COMPRESSION);
+    }
     
     private static void addFileToZip_(String aZipDir, String aFilePath, String aFileName, ZipOutputStream aZipOutputStream, byte[] rBuffer) throws IOException {
         try (InputStream tInputStream = toInputStream(aFilePath)) {
@@ -1908,7 +2056,9 @@ public class IO {
      * @see IO#map2json(Map, String)
      */
     public static Map<?, ?> json2map(String aFilePath) throws IOException {
-        try (Reader tReader = toReader(aFilePath)) {return json2map(tReader);}
+        try (Reader tReader = toReader(aFilePath)) {
+            return json2map(tReader);
+        }
     }
     /**
      * 将一个 json 文件转换成 {@link List}，这里直接调用了
@@ -1920,7 +2070,9 @@ public class IO {
      * @see IO#list2json(List, String)
      */
     public static List<?> json2list(String aFilePath) throws IOException {
-        try (Reader tReader = toReader(aFilePath)) {return json2list(tReader);}
+        try (Reader tReader = toReader(aFilePath)) {
+            return json2list(tReader);
+        }
     }
     /**
      * 将一个 json 文件的读取流 {@link Reader} 转换成 {@link Map}，这里直接调用了
@@ -2030,7 +2182,9 @@ public class IO {
      * @see IO#map2yaml(Map, String)
      */
     public static Map<?, ?> yaml2map(String aFilePath) throws IOException {
-        try (Reader tReader = toReader(aFilePath)) {return yaml2map(tReader);}
+        try (Reader tReader = toReader(aFilePath)) {
+            return yaml2map(tReader);
+        }
     }
     /**
      * 将一个 yaml 文件转换成 {@link List}，这里直接调用了
@@ -2042,7 +2196,9 @@ public class IO {
      * @see IO#list2yaml(List, String)
      */
     public static List<?> yaml2list(String aFilePath) throws IOException {
-        try (Reader tReader = toReader(aFilePath)) {return yaml2list(tReader);}
+        try (Reader tReader = toReader(aFilePath)) {
+            return yaml2list(tReader);
+        }
     }
     /**
      * 将一个 yaml 文件的读取流 {@link Reader} 转换成 {@link Map}，这里直接调用了
@@ -2108,7 +2264,9 @@ public class IO {
      * @see IO#map2toml(Map, String)
      */
     public static Map<?, ?> toml2map(String aFilePath) throws IOException {
-        try (Reader tReader = toReader(aFilePath)) {return toml2map(tReader);}
+        try (Reader tReader = toReader(aFilePath)) {
+            return toml2map(tReader);
+        }
     }
     /**
      * 将一个 toml 文件转换成 {@link List}，这里直接调用了
@@ -2120,7 +2278,9 @@ public class IO {
      * @see IO#list2toml(List, String)
      */
     public static List<?> toml2list(String aFilePath) throws IOException {
-        try (Reader tReader = toReader(aFilePath)) {return toml2list(tReader);}
+        try (Reader tReader = toReader(aFilePath)) {
+            return toml2list(tReader);
+        }
     }
     /**
      * 将一个 toml 文件的读取流 {@link Reader} 转换成 {@link Map}，这里直接调用了
@@ -2202,7 +2362,9 @@ public class IO {
      * @see IO#cols2csv(double[][], String)
      * @see IO#csv2data(String)
      */
-    public static void data2csv(double[][] aData, String aFilePath) throws IOException {data2csv(aData, aFilePath, ZL_STR);}
+    public static void data2csv(double[][] aData, String aFilePath) throws IOException {
+        data2csv(aData, aFilePath, ZL_STR);
+    }
     /**
      * 保存输入的二维数据为 csv 格式的文件；
      * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
@@ -2231,7 +2393,9 @@ public class IO {
      * @see IO#cols2csv(double[][], String, String...)
      * @see IO#csv2table(String)
      */
-    public static void data2csv(double[][] aData, String aFilePath, String... aHeads) throws IOException {rows2csv(aData, aFilePath, aHeads);}
+    public static void data2csv(double[][] aData, String aFilePath, String... aHeads) throws IOException {
+        rows2csv(aData, aFilePath, aHeads);
+    }
     /**
      * 保存输入的按行排列的二维数据为 csv 格式的文件；
      * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
@@ -2256,7 +2420,9 @@ public class IO {
      * @see IO#cols2csv(double[][], String)
      * @see IO#csv2data(String)
      */
-    public static void rows2csv(double[][] aRows, String aFilePath) throws IOException {rows2csv(aRows, aFilePath, ZL_STR);}
+    public static void rows2csv(double[][] aRows, String aFilePath) throws IOException {
+        rows2csv(aRows, aFilePath, ZL_STR);
+    }
     /**
      * 保存输入的按行排列的二维数据为 csv 格式的文件；
      * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
@@ -2313,7 +2479,9 @@ public class IO {
      * @see IO#rows2csv(double[][], String)
      * @see IO#csv2data(String)
      */
-    public static void cols2csv(double[][] aCols, String aFilePath) throws IOException {cols2csv(aCols, aFilePath, ZL_STR);}
+    public static void cols2csv(double[][] aCols, String aFilePath) throws IOException {
+        cols2csv(aCols, aFilePath, ZL_STR);
+    }
     /**
      * 保存输入的按列排列的二维数据为 csv 格式的文件；
      * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
@@ -2436,7 +2604,9 @@ public class IO {
      * @see IO#cols2csv(Iterable, String)
      * @see IO#csv2data(String)
      */
-    public static void data2csv(Iterable<?> aData, String aFilePath) throws IOException {data2csv(aData, aFilePath, ZL_STR);}
+    public static void data2csv(Iterable<?> aData, String aFilePath) throws IOException {
+        data2csv(aData, aFilePath, ZL_STR);
+    }
     /**
      * 保存输入的一维或者二维数据为 csv 格式的文件；
      * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
@@ -2469,7 +2639,9 @@ public class IO {
      * @see IO#cols2csv(Iterable, String, String...)
      * @see IO#csv2table(String)
      */
-    public static void data2csv(Iterable<?> aData, String aFilePath, String... aHeads) throws IOException {rows2csv(aData, aFilePath, aHeads);}
+    public static void data2csv(Iterable<?> aData, String aFilePath, String... aHeads) throws IOException {
+        rows2csv(aData, aFilePath, aHeads);
+    }
     /**
      * 保存输入的按行排列的一维或者二维数据为 csv 格式的文件；
      * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
@@ -2498,7 +2670,9 @@ public class IO {
      * @see IO#cols2csv(Iterable, String)
      * @see IO#csv2data(String)
      */
-    public static void rows2csv(Iterable<?> aRows, String aFilePath) throws IOException {rows2csv(aRows, aFilePath, ZL_STR);}
+    public static void rows2csv(Iterable<?> aRows, String aFilePath) throws IOException {
+        rows2csv(aRows, aFilePath, ZL_STR);
+    }
     /**
      * 保存输入的按行排列的一维或者二维数据为 csv 格式的文件；
      * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
@@ -2578,7 +2752,9 @@ public class IO {
      * @see IO#rows2csv(Iterable, String)
      * @see IO#csv2data(String)
      */
-    public static void cols2csv(Iterable<?> aCols, String aFilePath) throws IOException {cols2csv(aCols, aFilePath, ZL_STR);}
+    public static void cols2csv(Iterable<?> aCols, String aFilePath) throws IOException {
+        cols2csv(aCols, aFilePath, ZL_STR);
+    }
     /**
      * 保存输入的按列排列的一维或者二维数据为 csv 格式的文件；
      * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
@@ -2656,7 +2832,9 @@ public class IO {
      * @see IMatrix
      * @see IO#csv2data(String)
      */
-    public static void data2csv(IMatrix aData, String aFilePath) throws IOException {data2csv(aData, aFilePath, ZL_STR);}
+    public static void data2csv(IMatrix aData, String aFilePath) throws IOException {
+        data2csv(aData, aFilePath, ZL_STR);
+    }
     /**
      * 保存输入的矩阵 {@link IMatrix} 为 csv 格式的文件；
      * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
@@ -2734,7 +2912,9 @@ public class IO {
      * @see IFunc1
      * @see IO#csv2table(String)
      */
-    public static void data2csv(IFunc1 aFunc, String aFilePath) throws IOException {data2csv(aFunc, aFilePath, ZL_STR);}
+    public static void data2csv(IFunc1 aFunc, String aFilePath) throws IOException {
+        data2csv(aFunc, aFilePath, ZL_STR);
+    }
     /**
      * 保存输入的一维数值函数 {@link IFunc1} 为 csv 格式的文件；
      * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
@@ -2956,7 +3136,9 @@ public class IO {
      * @return 拆分每后的行组成的 {@code List<String[]>}
      * @see IO#str2csv(Iterable, String)
      */
-    public static List<String[]> csv2str(String aFilePath) throws IOException {return csv2str(aFilePath, DEFAULT_CSV_FORMAT);}
+    public static List<String[]> csv2str(String aFilePath) throws IOException {
+        return csv2str(aFilePath, DEFAULT_CSV_FORMAT);
+    }
     /**
      * 将输入的按行排列的一维或二维字符串数据写入 csv 文件；
      * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
@@ -2976,7 +3158,9 @@ public class IO {
      * @param aFilePath 输出的 csv 文件的路径
      * @see IO#csv2str(String)
      */
-    public static void str2csv(Iterable<?> aLines, String aFilePath) throws IOException {str2csv(aLines, aFilePath, DEFAULT_CSV_FORMAT);}
+    public static void str2csv(Iterable<?> aLines, String aFilePath) throws IOException {
+        str2csv(aLines, aFilePath, DEFAULT_CSV_FORMAT);
+    }
     
     
     /**
@@ -3022,7 +3206,9 @@ public class IO {
         return tPath==null ? null : tPath.toString();
     }
     /** {@link IO#toParentPath(String)} 返回 {@link Path} 的接口，主要用于内部使用 */
-    public static @Nullable Path toParentPath_(String aPath) {return Paths.get(aPath).getParent();}
+    public static @Nullable Path toParentPath_(String aPath) {
+        return Paths.get(aPath).getParent();
+    }
     
     /**
      * 获取指定路径的文件（或文件夹）名称（最后一项的名称）
@@ -3032,9 +3218,13 @@ public class IO {
      * @param aPath 输入的路径
      * @return 输入路径的文件名称
      */
-    public static String toFileName(String aPath) {return toFileName_(aPath).toString();}
+    public static String toFileName(String aPath) {
+        return toFileName_(aPath).toString();
+    }
     /** {@link IO#toFileName(String)} 返回 {@link Path} 的接口，主要用于内部使用 */
-    public static Path toFileName_(String aPath) {return Paths.get(aPath).getFileName();}
+    public static Path toFileName_(String aPath) {
+        return Paths.get(aPath).getFileName();
+    }
     
     /**
      * 将输入路径转为相对路径，如果不是处于工作目录的相对路径则不会转换；
@@ -3048,9 +3238,13 @@ public class IO {
      * @return 输入路径的相对工作目录的相对路径
      * @see OS#WORKING_DIR
      */
-    public static String toRelativePath(String aPath) {return toRelativePath_(aPath).toString().replace("\\", "/");}
+    public static String toRelativePath(String aPath) {
+        return toRelativePath_(aPath).toString().replace("\\", "/");
+    }
     /** {@link IO#toRelativePath(String)} 返回 {@link Path} 的接口，主要用于内部使用 */
-    public static Path toRelativePath_(String aPath) {return WORKING_DIR_PATH.relativize(Paths.get(aPath));}
+    public static Path toRelativePath_(String aPath) {
+        return WORKING_DIR_PATH.relativize(Paths.get(aPath));
+    }
     
     /**
      * 将输入路径转换为绝对路径，如果已经是绝对路径则不会转换
@@ -3087,7 +3281,11 @@ public class IO {
      * @param aPath 输入的路径
      * @return 此路径是否是绝对路径，{@code true} 表示是绝对路径
      */
-    public static boolean isAbsolutePath(String aPath) {return isAbsolutePath(Paths.get(aPath));}
+    public static boolean isAbsolutePath(String aPath) {
+        return isAbsolutePath(Paths.get(aPath));
+    }
     /** {@link IO#isAbsolutePath(String)} 的 {@link Path} 形式接口，主要用于内部使用 */
-    public static boolean isAbsolutePath(Path aPath) {return aPath.isAbsolute();}
+    public static boolean isAbsolutePath(Path aPath) {
+        return aPath.isAbsolute();
+    }
 }
