@@ -32,6 +32,8 @@ abstract class WTypeBasis2 implements ISavable {
     final @Nullable RowMatrix mFuseWeight;
     int mSizeN;
     int mFuseSize;
+    /** @return {@inheritDoc} */
+    public int thisType() {return mThisType;}
     
     WTypeBasis2(int aThisType, int aTypeNum, int aNMax, int aWType, @Nullable RowMatrix aFuseWeight) {
         if (aTypeNum <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+aTypeNum);
@@ -141,5 +143,11 @@ abstract class WTypeBasis2 implements ISavable {
         rGenMap.put(ti+":NNAPGEN_FP_WTYPE", mWType);
         rGenMap.put(ti+":NNAPGEN_FP_NMAX", mNMax);
         rGenMap.put(ti+":NNAPGEN_FP_FSIZE", mFuseSize);
+    }
+    
+    public boolean hasSameGenMap(Object aBasis) {
+        if (!(aBasis instanceof WTypeBasis2)) return false;
+        WTypeBasis2 tBasis = (WTypeBasis2)aBasis;
+        return size()==tBasis.size() && mWType==tBasis.mWType && mNMax==tBasis.mNMax && mFuseSize==tBasis.mFuseSize;
     }
 }

@@ -1,8 +1,5 @@
 package jsex.nnap;
 
-import jse.atom.AtomicParameterCalculator;
-import jse.atom.IAtomData;
-import jse.atom.IHasSymbol;
 import jse.atom.IPairPotential;
 import jse.clib.*;
 import jse.code.IO;
@@ -10,9 +7,9 @@ import jse.code.OS;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
+import jse.code.functional.IUnaryFullOperator;
 import jse.math.vector.IVector;
 import jse.math.vector.Vectors;
-import jse.parallel.IAutoShutdown;
 import jsex.nnap.basis.Chebyshev2;
 import jsex.nnap.nn.FeedForward2;
 import org.apache.groovy.util.Maps;
@@ -22,7 +19,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
-import java.util.function.IntUnaryOperator;
 
 import static jse.code.CS.VERSION_NUMBER;
 import static jse.code.Conf.VERSION_MASK;
@@ -41,7 +37,7 @@ import static jse.code.OS.JAVA_HOME;
  * @author liqa
  */
 @ApiStatus.Experimental
-public class NNAP2 implements IAutoShutdown, IHasSymbol {
+public class NNAP2 implements IPairPotential {
     public final static class Conf {
         /**
          * 自定义构建 nnap 的 cmake 参数设置，
@@ -83,15 +79,15 @@ public class NNAP2 implements IAutoShutdown, IHasSymbol {
     @Override public String symbol(int aType) {return mSymbols[aType-1];}
     public String units() {return mUnits;}
     // jit stuffs
-    private static final String NAME_FORWARD = "jse_nnap_forward";
+    private static final String NAME_CAL_ENERGY = "jse_nnap_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nnap_calEnergyForce";
     private final SimpleJIT.Engine mEngine;
-    private final SimpleJIT.Method mMethodForward;
+    private final SimpleJIT.Method mCalEnergy, mCalEnergyForce;
     // 现在所有数据都改为 c 指针
     private final NestedCPointer mDataIn, mDataOut;
-    private final IntCPointer mNumParam;
-    private final DoubleCPointer[] mFp, mFpParam, mNnParam, mNormParam;
-    private final DoubleCPointer mOut;
-    private final GrowableDoubleCPointer mNlDx, mNlDy, mNlDz, mFpCache, mNnCache;
+    private final IntCPointer mInNums;
+    private final DoubleCPointer[] mFpParam, mNnParam, mNormParam, mNnCache;
+    private final DoubleCPointer mOutEng;
+    private final GrowableDoubleCPointer mNlDx, mNlDy, mNlDz, mFpCache, mGradNlDx, mGradNlDy, mGradNlDz;
     private final GrowableIntCPointer mNlType;
     
     @SuppressWarnings("unchecked")
@@ -113,18 +109,20 @@ public class NNAP2 implements IAutoShutdown, IHasSymbol {
             mSymbols[i] = tSymbol.toString();
         }
         // 不管怎么样先初始化数组
-        mDataIn = NestedCPointer.malloc(8);
-        mDataOut = NestedCPointer.malloc(4);
-        mNumParam = IntCPointer.malloc(2); // NeiNum, ctype
-        mDataIn.putAt(0, mNumParam);
+        mDataIn = NestedCPointer.malloc(9);
+        mDataOut = NestedCPointer.malloc(6);
+        mInNums = IntCPointer.malloc(2); // NeiNum, ctype
+        mDataIn.putAt(1, mInNums);
         mNlDx = new GrowableDoubleCPointer(16);
         mNlDy = new GrowableDoubleCPointer(16);
         mNlDz = new GrowableDoubleCPointer(16);
         mNlType = new GrowableIntCPointer(16);
-        mOut = DoubleCPointer.malloc(1);
-        mDataOut.putAt(0, mOut);
+        mGradNlDx = new GrowableDoubleCPointer(16);
+        mGradNlDy = new GrowableDoubleCPointer(16);
+        mGradNlDz = new GrowableDoubleCPointer(16);
+        mOutEng = DoubleCPointer.malloc(1);
+        mDataOut.putAt(0, mOutEng);
         mFpCache = new GrowableDoubleCPointer(128);
-        mNnCache = new GrowableDoubleCPointer(128);
         
         // 临时实现的简单加载模型
         mBasis = new Chebyshev2[tModelSize];
@@ -139,16 +137,16 @@ public class NNAP2 implements IAutoShutdown, IHasSymbol {
             mNN[i] = FeedForward2.load(i+1, tNNMap);
         }
         // 继续初始化参数数组
-        mFp = new DoubleCPointer[tModelSize];
         mFpParam = new DoubleCPointer[tModelSize];
         mNnParam = new DoubleCPointer[tModelSize];
+        mNnCache = new DoubleCPointer[tModelSize];
         for (int i = 0; i < tModelSize; ++i) {
-            mFp[i] = DoubleCPointer.malloc(mBasis[i].size());
             mFpParam[i] = DoubleCPointer.malloc(mBasis[i].parameterSize()+1);
             mFpParam[i].putAt(0, mBasis[i].rcut());
             fill_(mFpParam[i].plus(1), mBasis[i].parameters());
             mNnParam[i] = DoubleCPointer.malloc(mNN[i].parameterSize());
             fill_(mNnParam[i], mNN[i].parameters());
+            mNnCache[i] = DoubleCPointer.malloc(mNN[i].cacheSize());
         }
         // 归一化系数读取
         mNormParam = new DoubleCPointer[tModelSize];
@@ -167,22 +165,29 @@ public class NNAP2 implements IAutoShutdown, IHasSymbol {
             List<? extends Number> tNormMu = (List<? extends Number>)tModels.get(i).get("norm_mu");
             IVector aNormMu = tNormMu==null ? null : Vectors.from(tNormMu);
             mNormParam[i] = DoubleCPointer.malloc(mBasis[i].size()*2 + 2);
-            fill_(mNormParam[i], aNormMu);
-            fill_(mNormParam[i].plus(mBasis[i].size()), aNormSigma);
-            mNormParam[i].putAt(mBasis[i].size()*2, aNormMuEng+aRefEng);
-            mNormParam[i].putAt(mBasis[i].size()*2+1, aNormSigmaEng);
+            mNormParam[i].putAt(0, aNormMuEng+aRefEng);
+            mNormParam[i].putAt(1, aNormSigmaEng);
+            fill_(mNormParam[i].plus(2), aNormMu);
+            fill_(mNormParam[i].plus(mBasis[i].size()+2), aNormSigma);
         }
-        // 代码生成，先收集参数
+        // 代码生成，先针对相同系数的进行优化合并
+        List<List<Integer>> tSwitchListFp = new ArrayList<>(); // [position][type]
+        List<List<Integer>> tSwitchListNN = new ArrayList<>();
+        for (int type = 1; type <= tModelSize; ++type) {
+            final int ti = type-1;
+            updateSwitchList_(tSwitchListFp, type, caseList -> mBasis[ti].hasSameGenMap(mBasis[caseList.get(0)-1]));
+            updateSwitchList_(tSwitchListNN, type, caseList -> mNN[ti].hasSameGenMap(mNN[caseList.get(0)-1]));
+        }
         final Map<String, Object> tGenMap = new LinkedHashMap<>();
-        for (int i = 0; i < tModelSize; ++i) {
-            mBasis[i].updateGenMap(tGenMap);
-            mNN[i].updateGenMap(tGenMap);
+        tGenMap.put("[FP TYPE]", tSwitchListFp);
+        tGenMap.put("[NN TYPE]", tSwitchListNN);
+        // 只添加不同的，降低 code gen 的压力
+        for (List<Integer> tCaseList : tSwitchListFp) {
+            mBasis[tCaseList.get(0)-1].updateGenMap(tGenMap);
         }
-        // 针对种类的 switch，目前没有 share 则两个一样
-        List<List<Integer>> tSwitchList = new ArrayList<>(); // [position][type]
-        for (int i = 0; i < tModelSize; ++i) tSwitchList.add(Collections.singletonList(i+1));
-        tGenMap.put("[FP TYPE]", tSwitchList);
-        tGenMap.put("[NN TYPE]", tSwitchList);
+        for (List<Integer> tCaseList : tSwitchListNN) {
+            mNN[tCaseList.get(0)-1].updateGenMap(tGenMap);
+        }
         // 开始 jit
         String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, tGenMap, NNAP2.VERSION, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING);
         mEngine = SimpleJIT.engine().setLibDir(aLibDir).setProjectName(aProjectName+"_"+tUniqueID)
@@ -197,8 +202,9 @@ public class NNAP2 implements IAutoShutdown, IHasSymbol {
             mEngine.writeCmakeFile(wd, INTERFACE_NAME);
             return wd;
         });
-        mEngine.setMethodNames(NAME_FORWARD).compile();
-        mMethodForward = mEngine.findMethod(NAME_FORWARD);
+        mEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE).compile();
+        mCalEnergy = mEngine.findMethod(NAME_CAL_ENERGY);
+        mCalEnergyForce = mEngine.findMethod(NAME_CAL_ENERGYFORCE);
     }
     public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
         this(OS.WORKING_DIR, "nnapjit", aModelInfo, aThreadNumber);
@@ -218,13 +224,29 @@ public class NNAP2 implements IAutoShutdown, IHasSymbol {
             rPtr.putAt(i, aVec.get(i));
         }
     }
+    private static void updateSwitchList_(List<List<Integer>> rSwitchList, int aType, IUnaryFullOperator<Boolean, List<Integer>> aChecker) {
+        for (List<Integer> tCaseList : rSwitchList) {
+            if (aChecker.apply(tCaseList)) {
+                tCaseList.add(aType);
+                return;
+            }
+        }
+        // 所有现有的 case 都没有，则新增一列
+        List<Integer> tCaseList = new ArrayList<>(1);
+        tCaseList.add(aType);
+        rSwitchList.add(tCaseList);
+    }
     
     private static final String MARKER_REMOVE_START = "// >>> NNAPGEN REMOVE";
     private static final String MARKER_REMOVE_END = "// <<< NNAPGEN REMOVE";
     private static final String MARKER_REPEAT_START = "// >>> NNAPGEN REPEAT";
     private static final String MARKER_REPEAT_END = "// <<< NNAPGEN REPEAT";
+    private static final String MARKER_REPEAT_REVERSE_START = "// >>> NNAPGEN REPEAT_REVERSE";
+    private static final String MARKER_REPEAT_REVERSE_END = "// <<< NNAPGEN REPEAT_REVERSE";
     private static final String MARKER_SWITCH_START = "// >>> NNAPGEN SWITCH";
     private static final String MARKER_SWITCH_END = "// <<< NNAPGEN SWITCH";
+    
+    private static final int STATE_NORMAL = 0, STATE_REMOVE = 1, STATE_REPEAT = 2, STATE_REPEAT_REVERSE = 3, STATE_SWITCH = 4;
     
     private static void codeGen_(URL aSourceURL, String aTargetPath, Map<String, Object> aGenMap) throws IOException {
         List<String> tLines;
@@ -235,34 +257,44 @@ public class NNAP2 implements IAutoShutdown, IHasSymbol {
     }
     @SuppressWarnings("unchecked")
     private static List<String> processLines_(List<String> aLines, Map<String, Object> aGenMap) {
-        int tState = 0; // 0: line replace, 1: remove, 2: repeat, 3 switch
+        int tState = STATE_NORMAL;
         List<String> rBuf0 = new ArrayList<>(), rBuf1 = new ArrayList<>();
         List<String> rOutLines = new ArrayList<>(aLines.size());
         for (String tLine : aLines) {
             switch(tState) {
-            case 0: {
-                if (tLine.trim().equals(MARKER_REMOVE_START)) {
-                    tState = 1;
-                } else
-                if (tLine.trim().equals(MARKER_REPEAT_START)) {
-                    tState = 2;
-                } else
-                if (tLine.trim().equals(MARKER_SWITCH_START)) {
-                    tState = 3;
-                } else {
+            case STATE_NORMAL: {
+                switch(tLine.trim()) {
+                case MARKER_REMOVE_START: {
+                    tState = STATE_REMOVE;
+                    break;
+                }
+                case MARKER_REPEAT_START: {
+                    tState = STATE_REPEAT;
+                    break;
+                }
+                case MARKER_REPEAT_REVERSE_START: {
+                    tState = STATE_REPEAT_REVERSE;
+                    break;
+                }
+                case MARKER_SWITCH_START: {
+                    tState = STATE_SWITCH;
+                    break;
+                }
+                default: {
                     rOutLines.add(baseReplace_(tLine, aGenMap));
-                }
+                    break;
+                }}
                 break;
             }
-            case 1: {
+            case STATE_REMOVE: {
                 if (tLine.trim().equals(MARKER_REMOVE_END)) {
-                    tState = 0;
+                    tState = STATE_NORMAL;
                 }
                 break;
             }
-            case 2: {
+            case STATE_REPEAT: {
                 if (tLine.trim().startsWith(MARKER_REPEAT_END)) {
-                    tState = 0;
+                    tState = STATE_NORMAL;
                     String tKey = tLine.trim().substring(MARKER_REPEAT_END.length()).trim();
                     Object tValue = aGenMap.get(tKey);
                     if (tValue==null) throw new IllegalStateException("Missing repeat key: "+tKey);
@@ -282,9 +314,31 @@ public class NNAP2 implements IAutoShutdown, IHasSymbol {
                 }
                 break;
             }
-            case 3: {
+            case STATE_REPEAT_REVERSE: {
+                if (tLine.trim().startsWith(MARKER_REPEAT_REVERSE_END)) {
+                    tState = STATE_NORMAL;
+                    String tKey = tLine.trim().substring(MARKER_REPEAT_REVERSE_END.length()).trim();
+                    Object tValue = aGenMap.get(tKey);
+                    if (tValue==null) throw new IllegalStateException("Missing repeat key: "+tKey);
+                    int tLoop = ((Number)tValue).intValue();
+                    rBuf1.clear();
+                    for (int i = tLoop-1; i >= 0; --i) {
+                        for (String tBufLine : rBuf0) {
+                            // 这个方式可以简单通过 NNAPGENXXXX 的方式进行嵌套替换
+                            rBuf1.add(tBufLine.replace("NNAPGENX", i+":NNAPGEN"));
+                        }
+                    }
+                    rBuf0.clear();
+                    // 核心逻辑，repeat 内部只进行 NNAPGENX 替换，全部完成后递归处理后续
+                    rOutLines.addAll(processLines_(rBuf1, aGenMap));
+                } else {
+                    rBuf0.add(tLine);
+                }
+                break;
+            }
+            case STATE_SWITCH: {
                 if (tLine.trim().startsWith(MARKER_SWITCH_END)) {
-                    tState = 0;
+                    tState = STATE_NORMAL;
                     String[] tArgs = parseSwitchArgs_(tLine);
                     String tSwitcher = tArgs[0];
                     String tKey = tArgs[1];
@@ -323,7 +377,7 @@ public class NNAP2 implements IAutoShutdown, IHasSymbol {
                 throw new IllegalStateException();
             }}
         }
-        if (tState!=0) throw new IllegalStateException();
+        if (tState!=STATE_NORMAL) throw new IllegalStateException();
         return rOutLines;
     }
     
@@ -351,7 +405,7 @@ public class NNAP2 implements IAutoShutdown, IHasSymbol {
         if (mDead) return;
         mDead = true;
         
-        mNumParam.free();
+        mInNums.free();
         mNlDx.free(); mNlDy.free(); mNlDz.free();
         mNlType.free();
         for (DoubleCPointer tPtr : mFpParam) tPtr.free();
@@ -359,99 +413,137 @@ public class NNAP2 implements IAutoShutdown, IHasSymbol {
         for (DoubleCPointer tPtr : mNormParam) tPtr.free();
         mDataIn.free();
         
-        mOut.free();
-        for (DoubleCPointer tPtr : mFp) tPtr.free();
+        mOutEng.free();
         mFpCache.free();
-        mNnCache.free();
+        for (DoubleCPointer tPtr : mNnCache) tPtr.free();
         mDataOut.free();
         
         mEngine.shutdown();
     }
-    
+    @Override public boolean isShutdown() {return mDead;}
+    @Override public int threadNumber() {return mThreadNumber;}
+    @VisibleForTesting public int nthreads() {return threadNumber();}
+    @Override public double rcutMax() {
+        double tRCut = 0.0;
+        for (Chebyshev2 tBasis : mBasis) {
+            tRCut = Math.max(tRCut, tBasis.rcut());
+        }
+        return tRCut;
+    }
+    public double rcut(int aType) {
+        return mBasis[aType-1].rcut();
+    }
     
     private final DoubleList mNlDxBuf = new DoubleList(16), mNlDyBuf = new DoubleList(16), mNlDzBuf = new DoubleList(16);
-    private final IntList mNlTypeBuf = new IntList(16);
+    private final IntList mNlTypeBuf = new IntList(16), mNlIdxBuf = new IntList(16);
     
-    private int buildNL_(IPairPotential.IDxyzTypeIdxIterable aNL, double aRCut) {
+    
+    private int buildNL_(IDxyzTypeIdxIterable aNL, double aRCut, boolean aRequireGrad) {
         final int tTypeNum = atomTypeNumber();
         // 缓存情况需要先清空这些
         mNlDxBuf.clear(); mNlDyBuf.clear(); mNlDzBuf.clear();
-        mNlTypeBuf.clear();
+        mNlTypeBuf.clear(); mNlIdxBuf.clear();
         aNL.forEachDxyzTypeIdx(aRCut, (dx, dy, dz, type, idx) -> {
             // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查
             if (type > tTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+tTypeNum+")");
             // 简单缓存近邻列表
             mNlDxBuf.add(dx); mNlDyBuf.add(dy); mNlDzBuf.add(dz);
-            mNlTypeBuf.add(type);
+            mNlTypeBuf.add(type); mNlIdxBuf.add(idx);
         });
-        int tNeiNum = mNlTypeBuf.size();
+        int tNeiNum = mNlIdxBuf.size();
         mNlDx.ensureCapacity(tNeiNum); mNlDx.fill(mNlDxBuf);
         mNlDy.ensureCapacity(tNeiNum); mNlDy.fill(mNlDyBuf);
         mNlDz.ensureCapacity(tNeiNum); mNlDz.fill(mNlDzBuf);
         mNlType.ensureCapacity(tNeiNum); mNlType.fill(mNlTypeBuf);
+        mDataIn.putAt(2, mNlDx);
+        mDataIn.putAt(3, mNlDy);
+        mDataIn.putAt(4, mNlDz);
+        mDataIn.putAt(5, mNlType);
+        if (aRequireGrad) {
+            mGradNlDx.ensureCapacity(tNeiNum);
+            mGradNlDy.ensureCapacity(tNeiNum);
+            mGradNlDz.ensureCapacity(tNeiNum);
+            mDataOut.putAt(1, mGradNlDx);
+            mDataOut.putAt(2, mGradNlDy);
+            mDataOut.putAt(3, mGradNlDz);
+        }
         return tNeiNum;
     }
     
-    public void calEnergy(int aAtomNumber, IPairPotential.INeighborListGetter aNeighborListGetter, IPairPotential.IEnergyAccumulator rEnergyAccumulator) throws Exception {
+    /**
+     * {@inheritDoc}
+     * @param aAtomNumber {@inheritDoc}
+     * @param aNeighborListGetter {@inheritDoc}
+     * @param rEnergyAccumulator {@inheritDoc}
+     */
+    @Override public void calEnergy(int aAtomNumber, INeighborListGetter aNeighborListGetter, IEnergyAccumulator rEnergyAccumulator) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
-            // 种类独立的参数值也需要重新指定
-            mDataOut.putAt(1, mFp[cType-1]);
-            mDataIn.putAt(5, mFpParam[cType-1]);
-            mDataIn.putAt(6, mNnParam[cType-1]);
-            mDataIn.putAt(7, mNormParam[cType-1]);
             // 近邻列表构建
-            int tNeiNum = buildNL_(nl, mBasis[cType-1].rcut());
-            mNumParam.putAt(0, tNeiNum);
-            mNumParam.putAt(1, cType);
-            mFpCache.ensureCapacity(mBasis[cType-1].forwardCacheSize(tNeiNum, 0));
-            mNnCache.ensureCapacity(mNN[cType-1].forwardCacheSize(0));
-            // 对于可扩张的数组，指针是非持久的，因此每次计算要重新获取
-            mDataIn.putAt(1, mNlDx);
-            mDataIn.putAt(2, mNlDy);
-            mDataIn.putAt(3, mNlDz);
-            mDataIn.putAt(4, mNlType);
-            mDataOut.putAt(2, mFpCache);
-            mDataOut.putAt(3, mNnCache);
-            int tCode = mMethodForward.invoke(mDataIn, mDataOut);
+            int tNeiNum = buildNL_(nl, mBasis[cType-1].rcut(), false);
+            mInNums.putAt(0, tNeiNum);
+            mInNums.putAt(1, cType);
+            mFpCache.ensureCapacity(mBasis[cType-1].forwardCacheSize(tNeiNum, false));
+            mDataOut.putAt(4, mFpCache);
+            mDataOut.putAt(5, mNnCache[cType-1]);
+            mDataIn.putAt(6, mFpParam[cType-1]);
+            mDataIn.putAt(7, mNnParam[cType-1]);
+            mDataIn.putAt(8, mNormParam[cType-1]);
+            // 调用 jit 方法获取结果
+            int tCode = mCalEnergy.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
-            double tEng = mOut.get();
+            double tEng = mOutEng.get();
             rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
         });
     }
     
-    /// IPairPotential stuffs
-    public double calEnergy(IAtomData aAtomData) throws Exception {
-        IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {
-            return calEnergy(tAPC, tTypeMap);
-        }
-    }
-    public double calEnergy(AtomicParameterCalculator aAPC, IntUnaryOperator aTypeMap) throws Exception {
-        if (mDead) throw new IllegalStateException("This Potential is dead");
-        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
-        
-        final int oThreadNum = aAPC.threadNumber();
-        final int tAtomNum = aAPC.atomNumber();
-        final int tTypeNum = atomTypeNumber();
-        
-        final double[] rTotEng = {0.0};
-        aAPC.setThreadNumber(mThreadNumber);
-        calEnergy(tAtomNum, (initDo, finalDo, neighborListDo) -> {
-            aAPC.pool_().parforWithException(tAtomNum, initDo, finalDo, (i, threadID) -> {
-                final int cType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(i));
-                neighborListDo.run(threadID, i, cType, (rmax, dxyzTypeDo) -> {
-                    // 根据 neighborListHalf 来确定是否开启半数优化
-                    aAPC.nl_().forEachNeighbor(i, rmax, false, true, (dx, dy, dz, idx) -> {
-                        int tType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(idx));
-                        dxyzTypeDo.run(dx, dy, dz, tType, idx);
-                    });
-                });
-            });
-        }, (threadID, cIdx, idx, eng) -> {
-            rTotEng[0] += eng;
+    /**
+     * {@inheritDoc}
+     * @param aAtomNumber {@inheritDoc}
+     * @param aNeighborListGetter {@inheritDoc}
+     * @param rEnergyAccumulator {@inheritDoc}
+     * @param rForceAccumulator {@inheritDoc}
+     * @param rVirialAccumulator {@inheritDoc}
+     */
+    @Override public void calEnergyForceVirial(int aAtomNumber, INeighborListGetter aNeighborListGetter, @Nullable IEnergyAccumulator rEnergyAccumulator, @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) throws Exception {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
+            // 近邻列表构建
+            int tNeiNum = buildNL_(nl, mBasis[cType-1].rcut(), true);
+            mInNums.putAt(0, tNeiNum);
+            mInNums.putAt(1, cType);
+            mFpCache.ensureCapacity(mBasis[cType-1].forwardCacheSize(tNeiNum, true));
+            mDataOut.putAt(4, mFpCache);
+            mDataOut.putAt(5, mNnCache[cType-1]);
+            mDataIn.putAt(6, mFpParam[cType-1]);
+            mDataIn.putAt(7, mNnParam[cType-1]);
+            mDataIn.putAt(8, mNormParam[cType-1]);
+            // 调用 jit 方法获取结果
+            int tCode = mCalEnergyForce.invoke(mDataIn, mDataOut);
+            if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
+            double tEng = mOutEng.get();
+            if (rEnergyAccumulator != null) {
+                rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
+            }
+            // 累加交叉项到近邻
+            for (int j = 0; j < tNeiNum; ++j) {
+                double dx = mNlDxBuf.get(j);
+                double dy = mNlDyBuf.get(j);
+                double dz = mNlDzBuf.get(j);
+                int idx = mNlIdxBuf.get(j);
+                // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查；
+                // 直接遍历查询不走合并了，应该不怎么影响效率（只考虑 lammps 的专门优化）
+                double fx = mGradNlDx.getAt(j);
+                double fy = mGradNlDy.getAt(j);
+                double fz = mGradNlDz.getAt(j);
+                if (rForceAccumulator != null) {
+                    rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
+                }
+                if (rVirialAccumulator != null) {
+                    // GPUMD 给出的更具对称性的形式要求累加到近邻的 index 上
+                    rVirialAccumulator.add(threadID, -1, idx, fx, fy, fz, dx, dy, dz);
+                }
+            }
         });
-        aAPC.setThreadNumber(oThreadNum);
-        return rTotEng[0];
     }
 }

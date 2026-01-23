@@ -20,11 +20,6 @@ static constexpr int FSTYLE_EXTENSIVE = 1;
 static constexpr int TRUE = 1;
 static constexpr int FALSE = 0;
 
-// CACHE_LEVEL
-static constexpr int CL_NONE = 0;     // energy only
-static constexpr int CL_GRAD = 1;     // force, md
-static constexpr int CL_GRADGRAD = 2; // train
-
 static constexpr double JSE_DBL_MIN_NORMAL = 2.2250738585072014E-308;
 static constexpr int JSE_EPS_MUL = 8;
 static constexpr double JSE_DBL_EPSILON = 1.0e-10;

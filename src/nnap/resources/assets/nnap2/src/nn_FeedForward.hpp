@@ -20,56 +20,99 @@ static inline double siluGradGrad(double aX, double *rGrad, double *rGradGrad) n
     return aX * tSigmoid;
 }
 
-template <int IN_SIZE, int OUT_SIZE>
-static void nnForwardHiddenLayer(double *aX, double *aWeights, double *aBiases, double *rOutputs) noexcept {
-    double *tWeights = aWeights;
-    for (int j = 0; j < OUT_SIZE; ++j) {
-        const double tDot = dot<IN_SIZE>(aX, tWeights) + aBiases[j];
-        tWeights += IN_SIZE;
-        rOutputs[j] = silu(tDot);
-    }
-}
-template <int IN_SIZE, int OUT_SIZE>
-static double nnForwardOutputLayer(double *aX, double *aHiddenWeights, double *aHiddenBiases, double *aOutputWeights, double aOutputBias, double *rHiddenOutputs) noexcept {
-    double rOut = aOutputBias;
-    double *tHiddenWeights = aHiddenWeights;
-    for (int j = 0; j < OUT_SIZE; ++j) {
-        const double tDot = dot<IN_SIZE>(aX, tHiddenWeights) + aHiddenBiases[j];
-        tHiddenWeights += IN_SIZE;
-        const double tSiluDot = silu(tDot);
-        rHiddenOutputs[j] = tSiluDot; // for backward
-        rOut += tSiluDot * aOutputWeights[j];
-    }
-    return rOut;
-}
 
 // >>> NNAPGEN REMOVE
 #define NNAPGENXX_NN_IN_SIZE_H 10
 #define NNAPGENXX_NN_OUT_SIZE_H 32
-#define NNAPGENX_NN_IN_SIZE_O 32
-#define NNAPGENX_NN_OUT_SIZE_O 24
+#define NNAPGENX_NN_SIZE_IN 10
+#define NNAPGENX_NN_SIZE_HW (10*32)
+#define NNAPGENX_NN_SIZE_HB 32
+#define NNAPGENX_NN_SIZE_OW 32
 // <<< NNAPGEN REMOVE
 
-template <int CTYPE>
-static double nnForward(double *aX, double *aHiddenWeights, double *aHiddenBiases, double *aOutputWeights, double aOutputBias, double *rHiddenOutputs) noexcept {
-    double *tX = aX;
-    double *tHiddenWeights = aHiddenWeights;
-    double *tHiddenBiases = aHiddenBiases;
-    double *tHiddenOutputs = rHiddenOutputs;
+template <int IN_SIZE, int OUT_SIZE, int CACHE_GRAD>
+static void nnForwardLayer(double *aX, double *rY, double *aWeights, double *aBiases, double *rSiLUGrad) noexcept {
+    double *tWeights = aWeights;
+    for (int j = 0; j < OUT_SIZE; ++j) {
+        const double tDot = dot<IN_SIZE>(aX, tWeights) + aBiases[j];
+        tWeights += IN_SIZE;
+        if (CACHE_GRAD) {
+            double rGrad;
+            rY[j] = siluGrad(tDot, &rGrad);
+            rSiLUGrad[j] = rGrad;
+        } else {
+            rY[j] = silu(tDot);
+        }
+    }
+}
+
+template <int CTYPE, int CACHE_GRAD>
+static double nnForward(double *rLayers, double *aHiddenWeights, double *aHiddenBiases, double *aOutputWeights, double aOutputBias, double *rSiLUGrad) noexcept {
+    double *tX = rLayers;
+    double *tWeights = aHiddenWeights;
+    double *tBiases = aHiddenBiases;
+    double *tSiLUGrad = rSiLUGrad;
     
     double rOut;
 // >>> NNAPGEN SWITCH
+    double *rY = tX + NNAPGENX_NN_SIZE_IN;
+    
 // >>> NNAPGEN REPEAT
-    nnForwardHiddenLayer<NNAPGENXX_NN_IN_SIZE_H, NNAPGENXX_NN_OUT_SIZE_H>(tX, tHiddenWeights, tHiddenBiases, tHiddenOutputs);
-    tHiddenWeights += NNAPGENXX_NN_IN_SIZE_H*NNAPGENXX_NN_OUT_SIZE_H;
-    tHiddenBiases += NNAPGENXX_NN_OUT_SIZE_H;
-    tX = tHiddenOutputs;
-    tHiddenOutputs += NNAPGENXX_NN_OUT_SIZE_H;
+    nnForwardLayer<NNAPGENXX_NN_IN_SIZE_H, NNAPGENXX_NN_OUT_SIZE_H, CACHE_GRAD>(tX, rY, tWeights, tBiases, tSiLUGrad);
+    tWeights += NNAPGENXX_NN_IN_SIZE_H*NNAPGENXX_NN_OUT_SIZE_H;
+    tBiases += NNAPGENXX_NN_OUT_SIZE_H;
+    tX = rY;
+    rY += NNAPGENXX_NN_OUT_SIZE_H;
+    if (CACHE_GRAD) {
+        tSiLUGrad += NNAPGENXX_NN_OUT_SIZE_H;
+    }
 // <<< NNAPGEN REPEAT [NN HIDDEN LAYERS NNAPGENS_CTYPE]
     
-    rOut = nnForwardOutputLayer<NNAPGENX_NN_IN_SIZE_O, NNAPGENX_NN_OUT_SIZE_O>(tX, tHiddenWeights, tHiddenBiases, aOutputWeights, aOutputBias, tHiddenOutputs);
+    rOut = dot<NNAPGENX_NN_SIZE_OW>(tX, aOutputWeights) + aOutputBias;
 // <<< NNAPGEN SWITCH (CTYPE) [NN TYPE]
     return rOut;
+}
+
+
+template <int IN_SIZE, int OUT_SIZE>
+static void nnBackwardLayer(double *rGradX, double *aGradY, double *aWeights, double *aSiLUGrad) noexcept {
+    double *tWeights = aWeights;
+    for (int j = 0; j < OUT_SIZE; ++j) {
+        double tGradZ =  aSiLUGrad[j] * aGradY[j];
+        mplus<IN_SIZE>(rGradX, tGradZ, tWeights);
+        tWeights += IN_SIZE;
+    }
+}
+
+template <int CTYPE, int CLEAR_CACHE>
+static void nnBackward(double aGradY, double *rGradLayers, double *aHiddenWeights, double *aOutputWeight, double *aSiLUGrad) noexcept {
+    double *tHiddenWeights = aHiddenWeights;
+    double *tSiLUGrad = aSiLUGrad;
+    double *rGradX = rGradLayers;
+    
+// >>> NNAPGEN SWITCH
+    if (CLEAR_CACHE) {
+        fill<NNAPGENX_NN_SIZE_IN+NNAPGENX_NN_SIZE_HB>(rGradLayers, 0.0);
+    }
+    // switch to last layer
+    tHiddenWeights += NNAPGENX_NN_SIZE_HW;
+    tSiLUGrad += NNAPGENX_NN_SIZE_HB;
+    rGradX += (NNAPGENX_NN_SIZE_IN+NNAPGENX_NN_SIZE_HB);
+    
+    // begin backward
+    rGradX -= NNAPGENX_NN_SIZE_OW;
+    mplus<NNAPGENX_NN_SIZE_OW>(rGradX, aGradY, aOutputWeight);
+    double *tGradY = rGradX;
+    
+// >>> NNAPGEN REPEAT_REVERSE
+    tHiddenWeights -= NNAPGENXX_NN_IN_SIZE_H*NNAPGENXX_NN_OUT_SIZE_H;
+    tSiLUGrad -= NNAPGENXX_NN_OUT_SIZE_H;
+    rGradX -= NNAPGENXX_NN_IN_SIZE_H;
+    nnBackwardLayer<NNAPGENXX_NN_IN_SIZE_H, NNAPGENXX_NN_OUT_SIZE_H>(rGradX, tGradY, tHiddenWeights, tSiLUGrad);
+    tGradY = rGradX;
+// <<< NNAPGEN REPEAT_REVERSE [NN HIDDEN LAYERS NNAPGENS_CTYPE]
+
+// <<< NNAPGEN SWITCH (CTYPE) [NN TYPE]
 }
 
 }

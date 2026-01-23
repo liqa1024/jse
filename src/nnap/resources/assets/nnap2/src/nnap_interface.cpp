@@ -9,74 +9,166 @@
 #define NNAPGENX_FP_FSIZE 0
 #define NNAPGENX_FP_FSTYLE JSE_NNAP::FSTYLE_LIMITED
 #define NNAPGENX_FP_SIZE 10
-// #define NNAPGENX_FP_SIZE_FW 0
-// #define NNAPGENX_FP_CACHE_SIZE_F0 (5+1)
-#define NNAPGENX_NN_SIZE_HW (10*32 + 32*24)
-#define NNAPGENX_NN_SIZE_HB (32 + 24)
-#define NNAPGENX_NN_SIZE_OW 24
-#define NNAPGENS_ctype 1
+#define NNAPGENX_NN_SIZE_IN 10
+#define NNAPGENX_NN_SIZE_HW (10*32)
+#define NNAPGENX_NN_SIZE_HB 32
+#define NNAPGENX_NN_SIZE_OW 32
+#define NNAPGENS_aCType 1
 // <<< NNAPGEN REMOVE
 
-extern "C" {
 
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_forward(void *aDataIn, void *rDataOut) {
-    void **tDataIn = (void **)aDataIn;
-    void **tDataOut = (void **)rDataOut;
-    
-    int *tNums = (int *)tDataIn[0];
-    double *tNlDx = (double *)tDataIn[1];
-    double *tNlDy = (double *)tDataIn[2];
-    double *tNlDz = (double *)tDataIn[3];
-    int *tNlType = (int *)tDataIn[4];
-    double *tFpParam = (double *)tDataIn[5];
-    double *tNnParam = (double *)tDataIn[6];
-    double *tNormParam = (double *)tDataIn[7];
-    
-    double *rOut = (double *)tDataOut[0];
-    double *rFp = (double *)tDataOut[1];
-    double *rFpCache = (double *)tDataOut[2];
-    double *rNnCache = (double *)tDataOut[3];
-    
-    int tNN = tNums[0];
-    int ctype = tNums[1];
-    double tRCut = tFpParam[0];
-    
-    double tNormMuEng;
-    double tNormSigmaEng;
+namespace JSE_NNAP {
+
+template <int FP_FULL_CACHE, int NN_CACHE_GRAD>
+static int forward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNN, int aCType,
+                   double *aFpParam, double *aNnParam, double *aNormParam,
+                   double *rFpCache, double *rNnCache, double *rOutEng) noexcept {
+    double tNormMuEng = aNormParam[0];
+    double tNormSigmaEng = aNormParam[1];
     int flag = 1;
 // >>> NNAPGEN SWITCH
-    double *tNormMu = tNormParam;
+    double *tNormMu = aNormParam + 2;
     double *tNormSigma = tNormMu + NNAPGENX_FP_SIZE;
-    tNormMuEng = tNormSigma[NNAPGENX_FP_SIZE];
-    tNormSigmaEng = tNormSigma[NNAPGENX_FP_SIZE+1];
-    
-    double *tFuseWeight = tFpParam + 1;
-    JSE_NNAP::chebyForward<NNAPGENX_FP_WTYPE, NNAPGENX_FP_NMAX, NNAPGENX_FP_FSIZE, NNAPGENX_FP_FSTYLE, NNAPGENX_FP_SIZE, JSE_NNAP::CL_NONE>(
-        tNlDx, tNlDy, tNlDz, tNlType, tNN, rFp,
-        rFpCache, tRCut, tFuseWeight
+    double *rFp = rNnCache; // fp from nn cache, for smooth input
+    chebyForward<NNAPGENX_FP_WTYPE, NNAPGENX_FP_NMAX, NNAPGENX_FP_FSIZE, NNAPGENX_FP_FSTYLE, NNAPGENX_FP_SIZE, FP_FULL_CACHE>(
+        aNlDx, aNlDy, aNlDz, aNlType, aNN, rFp,
+        rFpCache, aFpParam[0], aFpParam+1
     );
     // norm fp here
     for (int i = 0; i < NNAPGENX_FP_SIZE; ++i) {
         rFp[i] = (rFp[i] - tNormMu[i]) / tNormSigma[i];
     }
     flag = 0;
-// <<< NNAPGEN SWITCH (ctype) [FP TYPE]
+// <<< NNAPGEN SWITCH (aCType) [FP TYPE]
     if (flag) return 1;
     
 // >>> NNAPGEN SWITCH
-    double *tHiddenWeights = tNnParam;
+    double *tHiddenWeights = aNnParam;
     double *tOutputWeights = tHiddenWeights + NNAPGENX_NN_SIZE_HW;
     double *tHiddenBiases = tOutputWeights + NNAPGENX_NN_SIZE_OW;
     double tOutputBias = tHiddenBiases[NNAPGENX_NN_SIZE_HB];
-    double tEng = JSE_NNAP::nnForward<NNAPGENS_ctype>(rFp, tHiddenWeights, tHiddenBiases, tOutputWeights, tOutputBias, rNnCache);
+    double *rLayers = rNnCache; // first layer is fp
+    double *rSiLUGrad = NN_CACHE_GRAD ? (rLayers+(NNAPGENX_NN_SIZE_IN+NNAPGENX_NN_SIZE_HB)) : NULL;
+    double tEng = nnForward<NNAPGENS_aCType, NN_CACHE_GRAD>(rLayers, tHiddenWeights, tHiddenBiases, tOutputWeights, tOutputBias, rSiLUGrad);
     // denorm energy here
     tEng = tEng*tNormSigmaEng + tNormMuEng;
-    *rOut = tEng;
+    *rOutEng = tEng;
     flag = 0;
-// <<< NNAPGEN SWITCH (ctype) [NN TYPE]
+// <<< NNAPGEN SWITCH (aCType) [NN TYPE]
     if (flag) return 1;
     
     return 0;
+}
+
+
+template <int FP_FULL_CACHE, int CLEAR_CACHE>
+static int backward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNN, int aCType,
+                    double *rGradNlDx, double *rGradNlDy, double *rGradNlDz,
+                    double *aFpParam, double *aNnParam, double *aNormParam,
+                    double *rFpCache, double *rNnCache, double aInGradEng) noexcept {
+    double tNormSigmaEng = aNormParam[1];
+    int flag = 1;
+// >>> NNAPGEN SWITCH
+    // denorm energy here
+    aInGradEng = aInGradEng*tNormSigmaEng;
+    double *tHiddenWeights = aNnParam;
+    double *tOutputWeights = tHiddenWeights + NNAPGENX_NN_SIZE_HW;
+    double *rGradLayers = rNnCache; // first layer is fp
+    double *tSiLUGrad = rGradLayers + (NNAPGENX_NN_SIZE_IN+NNAPGENX_NN_SIZE_HB);
+    nnBackward<NNAPGENS_aCType, CLEAR_CACHE>(aInGradEng, rGradLayers, tHiddenWeights, tOutputWeights, tSiLUGrad);
+    flag = 0;
+// <<< NNAPGEN SWITCH (aCType) [NN TYPE]
+    if (flag) return 1;
+
+// >>> NNAPGEN SWITCH
+    double *tNormMu = aNormParam + 2;
+    double *tNormSigma = tNormMu + NNAPGENX_FP_SIZE;
+    double *tGradFp = rNnCache; // fp from nn cache, for smooth input
+    // norm fp here
+    for (int i = 0; i < NNAPGENX_FP_SIZE; ++i) {
+        tGradFp[i] /= tNormSigma[i];
+    }
+    chebyBackward<NNAPGENX_FP_WTYPE, NNAPGENX_FP_NMAX, NNAPGENX_FP_FSIZE, NNAPGENX_FP_FSTYLE, FP_FULL_CACHE, CLEAR_CACHE>(
+        aNlDx, aNlDy, aNlDz, aNlType, aNN, tGradFp,
+        rGradNlDx, rGradNlDy, rGradNlDz,
+        rFpCache, aFpParam[0], aFpParam+1
+    );
+    flag = 0;
+// <<< NNAPGEN SWITCH (aCType) [FP TYPE]
+    if (flag) return 1;
+
+    return 0;
+}
+
+}
+
+
+extern "C" {
+
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergy(void *aDataIn, void *rDataOut) {
+    void **tDataIn = (void **)aDataIn;
+    void **tDataOut = (void **)rDataOut;
+    
+    int *tNums = (int *)tDataIn[1]; // 0 for eng inputs
+    double *tNlDx = (double *)tDataIn[2];
+    double *tNlDy = (double *)tDataIn[3];
+    double *tNlDz = (double *)tDataIn[4];
+    int *tNlType = (int *)tDataIn[5];
+    double *tFpParam = (double *)tDataIn[6];
+    double *tNnParam = (double *)tDataIn[7];
+    double *tNormParam = (double *)tDataIn[8];
+    
+    double *rOutEng = (double *)tDataOut[0];
+    double *rFpCache = (double *)tDataOut[4];
+    double *rNnCache = (double *)tDataOut[5];
+    
+    int tNN = tNums[0];
+    int ctype = tNums[1];
+    
+    return JSE_NNAP::forward<JSE_NNAP::FALSE, JSE_NNAP::FALSE>(
+        tNlDx, tNlDy, tNlDz, tNlType, tNN, ctype,
+        tFpParam, tNnParam, tNormParam,
+        rFpCache, rNnCache, rOutEng
+    );
+}
+
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *aDataIn, void *rDataOut) {
+    void **tDataIn = (void **)aDataIn;
+    void **tDataOut = (void **)rDataOut;
+    
+    int *tNums = (int *)tDataIn[1]; // 0 for eng inputs
+    double *tNlDx = (double *)tDataIn[2];
+    double *tNlDy = (double *)tDataIn[3];
+    double *tNlDz = (double *)tDataIn[4];
+    int *tNlType = (int *)tDataIn[5];
+    double *tFpParam = (double *)tDataIn[6];
+    double *tNnParam = (double *)tDataIn[7];
+    double *tNormParam = (double *)tDataIn[8];
+    
+    double *rOutEng = (double *)tDataOut[0];
+    double *tGradNlDx = (double *)tDataOut[1];
+    double *tGradNlDy = (double *)tDataOut[2];
+    double *tGradNlDz = (double *)tDataOut[3];
+    double *rFpCache = (double *)tDataOut[4];
+    double *rNnCache = (double *)tDataOut[5];
+    
+    int tNN = tNums[0];
+    int ctype = tNums[1];
+    
+    int code = JSE_NNAP::forward<JSE_NNAP::TRUE, JSE_NNAP::TRUE>(
+        tNlDx, tNlDy, tNlDz, tNlType, tNN, ctype,
+        tFpParam, tNnParam, tNormParam,
+        rFpCache, rNnCache, rOutEng
+    );
+    if (code!=0) return code;
+    
+    // manual clear required for backward in force
+    return JSE_NNAP::backward<JSE_NNAP::FALSE, JSE_NNAP::TRUE>(
+        tNlDx, tNlDy, tNlDz, tNlType, tNN, ctype,
+        tGradNlDx, tGradNlDy, tGradNlDz,
+        tFpParam, tNnParam, tNormParam,
+        rFpCache, rNnCache, 1.0
+    );
 }
 
 }

@@ -12,6 +12,7 @@
 extern "C" {
 
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergy(void *, void *);
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *, void *);
 
 }
 

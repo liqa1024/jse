@@ -128,16 +128,20 @@ public class Chebyshev2 extends WTypeBasis2 {
     @Override public int size() {return mSize;}
     /** @return {@inheritDoc} */
     public int atomTypeNumber() {return mTypeNum;}
-    /** @return {@inheritDoc} */
-    public int thisType() {return mThisType;}
     
-    public int forwardCacheSize(int aNN, int aCacheLevel) {
-        return aCacheLevel>0 ? aNN*(mNMax+1 + 1) : (mNMax+1);
+    public int forwardCacheSize(int aNN, boolean aFullCache) {
+        return aFullCache ? aNN*(mNMax+1 + 1) : (mNMax+1);
     }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap) {
         super.updateGenMap(rGenMap);
         int ti = mThisType-1;
         rGenMap.put(ti+":NNAPGEN_FP_FSTYLE", mFuseStyle);
+    }
+    
+    @Override public boolean hasSameGenMap(Object aBasis) {
+        if (!(aBasis instanceof Chebyshev2)) return false;
+        Chebyshev2 tBasis = (Chebyshev2)aBasis;
+        return super.hasSameGenMap(aBasis) && mFuseStyle==tBasis.mFuseStyle;
     }
 }

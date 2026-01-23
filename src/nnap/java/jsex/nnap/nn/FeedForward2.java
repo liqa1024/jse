@@ -3,13 +3,10 @@ package jsex.nnap.nn;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 import jse.code.io.ISavable;
-import jse.math.IDataShell;
 import jse.math.MathEX;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -254,30 +251,33 @@ public class FeedForward2 implements ISavable {
     public int inputSize() {
         return mInputDim;
     }
-    
-    public int forwardCacheSize(int aCacheLevel) {
-        switch(aCacheLevel) {
-        case 0: {return mHiddenBiasesSize;}
-        case 1: {return mHiddenBiasesSize + mHiddenBiasesSize;}
-        case 2: {return mHiddenBiasesSize + mHiddenBiasesSize + mHiddenBiasesSize;}
-        default: {throw new IllegalStateException();}
-        }
+    public int cacheSize() {
+        return mInputDim + mHiddenBiasesSize + mHiddenBiasesSize + mHiddenBiasesSize;
     }
     
     public void updateGenMap(Map<String, Object> rGenMap) {
         int ti = mThisType-1;
+        rGenMap.put(ti+":NNAPGEN_NN_SIZE_IN", mInputDim);
         rGenMap.put(ti+":NNAPGEN_NN_SIZE_HW", mHiddenWeightsSize);
         rGenMap.put(ti+":NNAPGEN_NN_SIZE_HB", mHiddenBiasesSize);
         rGenMap.put(ti+":NNAPGEN_NN_SIZE_OW", mOutputWeightSize);
-        rGenMap.put("[NN HIDDEN LAYERS "+mThisType+"]", mHiddenNumber-1);
+        rGenMap.put("[NN HIDDEN LAYERS "+mThisType+"]", mHiddenNumber);
         int tInSize = mInputDim;
-        for (int i = 0; i < mHiddenNumber-1; ++i) {
+        for (int i = 0; i < mHiddenNumber; ++i) {
             int tOutSize = mHiddenDims[i];
             rGenMap.put(ti+":"+i+":NNAPGEN_NN_IN_SIZE_H", tInSize);
             rGenMap.put(ti+":"+i+":NNAPGEN_NN_OUT_SIZE_H", tOutSize);
             tInSize = tOutSize;
         }
-        rGenMap.put(ti+":NNAPGEN_NN_IN_SIZE_O", tInSize);
-        rGenMap.put(ti+":NNAPGEN_NN_OUT_SIZE_O", mHiddenDims[mHiddenNumber-1]);
+    }
+    
+    public boolean hasSameGenMap(Object aNN) {
+        if (!(aNN instanceof FeedForward2)) return false;
+        FeedForward2 tNN = (FeedForward2)aNN;
+        if (mHiddenNumber!=tNN.mHiddenNumber || mInputDim!=tNN.mInputDim) return false;
+        for (int i = 0; i < mHiddenNumber; ++i) {
+            if (mHiddenDims[i]!=tNN.mHiddenDims[i]) return false;
+        }
+        return true;
     }
 }
