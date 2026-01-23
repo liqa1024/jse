@@ -44,27 +44,32 @@ static double nnForwardOutputLayer(double *aX, double *aHiddenWeights, double *a
 }
 
 // >>> NNAPGEN REMOVE
-#define NNAPGENX_NN_IN_SIZE_H 10
-#define NNAPGENX_NN_OUT_SIZE_H 32
-#define NNAPGEN_NN_IN_SIZE_O 32
-#define NNAPGEN_NN_OUT_SIZE_O 24
+#define NNAPGENXX_NN_IN_SIZE_H 10
+#define NNAPGENXX_NN_OUT_SIZE_H 32
+#define NNAPGENX_NN_IN_SIZE_O 32
+#define NNAPGENX_NN_OUT_SIZE_O 24
 // <<< NNAPGEN REMOVE
 
+template <int CTYPE>
 static double nnForward(double *aX, double *aHiddenWeights, double *aHiddenBiases, double *aOutputWeights, double aOutputBias, double *rHiddenOutputs) noexcept {
     double *tX = aX;
     double *tHiddenWeights = aHiddenWeights;
     double *tHiddenBiases = aHiddenBiases;
     double *tHiddenOutputs = rHiddenOutputs;
     
+    double rOut;
+// >>> NNAPGEN SWITCH
 // >>> NNAPGEN REPEAT
-    nnForwardHiddenLayer<NNAPGENX_NN_IN_SIZE_H, NNAPGENX_NN_OUT_SIZE_H>(tX, tHiddenWeights, tHiddenBiases, tHiddenOutputs);
-    tHiddenWeights += NNAPGENX_NN_IN_SIZE_H*NNAPGENX_NN_OUT_SIZE_H;
-    tHiddenBiases += NNAPGENX_NN_OUT_SIZE_H;
+    nnForwardHiddenLayer<NNAPGENXX_NN_IN_SIZE_H, NNAPGENXX_NN_OUT_SIZE_H>(tX, tHiddenWeights, tHiddenBiases, tHiddenOutputs);
+    tHiddenWeights += NNAPGENXX_NN_IN_SIZE_H*NNAPGENXX_NN_OUT_SIZE_H;
+    tHiddenBiases += NNAPGENXX_NN_OUT_SIZE_H;
     tX = tHiddenOutputs;
-    tHiddenOutputs += NNAPGENX_NN_OUT_SIZE_H;
-// <<< NNAPGEN REPEAT [NN HIDDEN LAYERS]
+    tHiddenOutputs += NNAPGENXX_NN_OUT_SIZE_H;
+// <<< NNAPGEN REPEAT [NN HIDDEN LAYERS NNAPGENS_CTYPE]
     
-    return nnForwardOutputLayer<NNAPGEN_NN_IN_SIZE_O, NNAPGEN_NN_OUT_SIZE_O>(tX, tHiddenWeights, tHiddenBiases, aOutputWeights, aOutputBias, tHiddenOutputs);
+    rOut = nnForwardOutputLayer<NNAPGENX_NN_IN_SIZE_O, NNAPGENX_NN_OUT_SIZE_O>(tX, tHiddenWeights, tHiddenBiases, aOutputWeights, aOutputBias, tHiddenOutputs);
+// <<< NNAPGEN SWITCH (CTYPE) [NN TYPE]
+    return rOut;
 }
 
 }

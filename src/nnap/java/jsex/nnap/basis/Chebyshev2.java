@@ -27,12 +27,11 @@ public class Chebyshev2 extends WTypeBasis2 {
         .build();
     
     final int mFuseStyle;
-    final String @Nullable[] mSymbols;
     final double mRCut;
     final int mSize;
     
-    Chebyshev2(String @Nullable[] aSymbols, int aTypeNum, int aNMax, double aRCut, int aWType, int aFuseStyle, @Nullable RowMatrix aFuseWeight) {
-        super(aTypeNum, aNMax, aWType, aFuseWeight);
+    Chebyshev2(int aThisType, int aTypeNum, int aNMax, double aRCut, int aWType, int aFuseStyle, @Nullable RowMatrix aFuseWeight) {
+        super(aThisType, aTypeNum, aNMax, aWType, aFuseWeight);
         if (!ALL_FUSE_STYLE.containsValue(aFuseStyle)) throw new IllegalArgumentException("Input fuse_style MUST be in {0, 1}, input: "+ aFuseStyle);
         mFuseStyle = aFuseStyle;
         // Chebyshev 对 extensive 保留兼容
@@ -41,7 +40,6 @@ public class Chebyshev2 extends WTypeBasis2 {
             if (mFuseWeight.columnNumber()!=mFuseSize*(aNMax+1)) throw new IllegalArgumentException("Column number of fuse weight mismatch");
             mSizeN = getSizeN_(mWType, mTypeNum, mNMax, mFuseSize);
         }
-        mSymbols = aSymbols;
         mRCut = aRCut;
         mSize = mSizeN;
     }
@@ -62,8 +60,7 @@ public class Chebyshev2 extends WTypeBasis2 {
     }
     
     @SuppressWarnings({"rawtypes"})
-    public static Chebyshev2 load(String @NotNull[] aSymbols, Map aMap) {
-        int aTypeNum = aSymbols.length;
+    public static Chebyshev2 load(int aThisType, int aTypeNum, Map aMap) {
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
         if (aMap.containsKey("rfunc_scales")) throw new IllegalArgumentException("rfunc_scales is invalid now.");
         if (aMap.containsKey("system_scales")) throw new IllegalArgumentException("system_scales is invalid now.");
@@ -71,21 +68,7 @@ public class Chebyshev2 extends WTypeBasis2 {
         int aFuseStyle = getFuseStyle_(aMap);
         RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aFuseStyle, aTypeNum, aNMax);
         return new Chebyshev2(
-            aSymbols, aTypeNum, aNMax,
-            ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
-            aWType, aFuseStyle, aFuseWeight
-        );
-    }
-    @SuppressWarnings({"rawtypes"})
-    public static Chebyshev2 load(int aTypeNum, Map aMap) {
-        int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
-        if (aMap.containsKey("rfunc_scales")) throw new IllegalArgumentException("rfunc_scales is invalid now.");
-        if (aMap.containsKey("system_scales")) throw new IllegalArgumentException("system_scales is invalid now.");
-        int aWType = getWType_(aMap);
-        int aFuseStyle = getFuseStyle_(aMap);
-        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aFuseStyle, aTypeNum, aNMax);
-        return new Chebyshev2(
-            null, aTypeNum, aNMax,
+            aThisType, aTypeNum, aNMax,
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
             aWType, aFuseStyle, aFuseWeight
         );
@@ -145,17 +128,8 @@ public class Chebyshev2 extends WTypeBasis2 {
     @Override public int size() {return mSize;}
     /** @return {@inheritDoc} */
     public int atomTypeNumber() {return mTypeNum;}
-    /**
-     * {@inheritDoc}
-     * @return {@inheritDoc}
-     */
-    public boolean hasSymbol() {return mSymbols!=null;}
-    /**
-     * {@inheritDoc}
-     * @param aType
-     * @return {@inheritDoc}
-     */
-    public @Nullable String symbol(int aType) {return mSymbols==null ? null : mSymbols[aType-1];}
+    /** @return {@inheritDoc} */
+    public int thisType() {return mThisType;}
     
     public int forwardCacheSize(int aNN, int aCacheLevel) {
         return aCacheLevel>0 ? aNN*(mNMax+1 + 1) : (mNMax+1);
@@ -163,6 +137,7 @@ public class Chebyshev2 extends WTypeBasis2 {
     
     @Override public void updateGenMap(Map<String, Object> rGenMap) {
         super.updateGenMap(rGenMap);
-        rGenMap.put("NNAPGEN_FP_FSTYLE", mFuseStyle);
+        int ti = mThisType-1;
+        rGenMap.put(ti+":NNAPGEN_FP_FSTYLE", mFuseStyle);
     }
 }

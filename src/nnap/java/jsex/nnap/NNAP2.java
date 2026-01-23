@@ -1,6 +1,8 @@
 package jsex.nnap;
 
 import jse.atom.AtomicParameterCalculator;
+import jse.atom.IAtomData;
+import jse.atom.IHasSymbol;
 import jse.atom.IPairPotential;
 import jse.clib.*;
 import jse.code.IO;
@@ -16,9 +18,11 @@ import jsex.nnap.nn.FeedForward2;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.*;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+import java.util.function.IntUnaryOperator;
 
 import static jse.code.CS.VERSION_NUMBER;
 import static jse.code.Conf.VERSION_MASK;
@@ -37,7 +41,7 @@ import static jse.code.OS.JAVA_HOME;
  * @author liqa
  */
 @ApiStatus.Experimental
-public class NNAP2 implements IAutoShutdown {
+public class NNAP2 implements IAutoShutdown, IHasSymbol {
     public final static class Conf {
         /**
          * 自定义构建 nnap 的 cmake 参数设置，
@@ -72,9 +76,12 @@ public class NNAP2 implements IAutoShutdown {
     private final @Nullable String mUnits;
     private boolean mDead = false;
     private final int mThreadNumber;
-    private final Chebyshev2 mBasis;
-    private final FeedForward2 mNN;
+    private final Chebyshev2[] mBasis;
+    private final FeedForward2[] mNN;
     public int atomTypeNumber() {return mSymbols.length;}
+    @Override public boolean hasSymbol() {return true;}
+    @Override public String symbol(int aType) {return mSymbols[aType-1];}
+    public String units() {return mUnits;}
     // jit stuffs
     private static final String NAME_FORWARD = "jse_nnap_forward";
     private final SimpleJIT.Engine mEngine;
@@ -82,7 +89,8 @@ public class NNAP2 implements IAutoShutdown {
     // 现在所有数据都改为 c 指针
     private final NestedCPointer mDataIn, mDataOut;
     private final IntCPointer mNumParam;
-    private final DoubleCPointer mOut, mFp, mFpParam, mNnParam, mNormParam;
+    private final DoubleCPointer[] mFp, mFpParam, mNnParam, mNormParam;
+    private final DoubleCPointer mOut;
     private final GrowableDoubleCPointer mNlDx, mNlDy, mNlDz, mFpCache, mNnCache;
     private final GrowableIntCPointer mNlType;
     
@@ -107,8 +115,7 @@ public class NNAP2 implements IAutoShutdown {
         // 不管怎么样先初始化数组
         mDataIn = NestedCPointer.malloc(8);
         mDataOut = NestedCPointer.malloc(4);
-        mNumParam = IntCPointer.malloc(2); // NeighNum, ntypes
-        mNumParam.putAt(1, mSymbols.length);
+        mNumParam = IntCPointer.malloc(2); // NeiNum, ctype
         mDataIn.putAt(0, mNumParam);
         mNlDx = new GrowableDoubleCPointer(16);
         mNlDy = new GrowableDoubleCPointer(16);
@@ -120,26 +127,31 @@ public class NNAP2 implements IAutoShutdown {
         mNnCache = new GrowableDoubleCPointer(128);
         
         // 临时实现的简单加载模型
-        Map<String, ?> tModel = tModels.get(0);
-        Map<?, ?> tBasisMap = (Map<?, ?>)tModel.get("basis");
-        if (tBasisMap==null) tBasisMap = Maps.of("type", "chebyshev");
-        mBasis = Chebyshev2.load(mSymbols, tBasisMap);
-        Map<?, ?> tNNMap = (Map<?, ?>)tModel.get("nn");
-        if (tNNMap ==null) throw new IllegalArgumentException("No nn in model, torch model is invalid now.");
-        mNN = FeedForward2.load(tNNMap);
+        mBasis = new Chebyshev2[tModelSize];
+        mNN = new FeedForward2[tModelSize];
+        for (int i = 0; i < tModelSize; ++i) {
+            Map<String, ?> tModel = tModels.get(i);
+            Map<?, ?> tBasisMap = (Map<?, ?>)tModel.get("basis");
+            if (tBasisMap==null) tBasisMap = Maps.of("type", "chebyshev");
+            mBasis[i] = Chebyshev2.load(i+1, tModelSize, tBasisMap);
+            Map<?, ?> tNNMap = (Map<?, ?>)tModel.get("nn");
+            if (tNNMap ==null) throw new IllegalArgumentException("No nn in model, torch model is invalid now.");
+            mNN[i] = FeedForward2.load(i+1, tNNMap);
+        }
         // 继续初始化参数数组
-        final int tFpSize = mBasis.size();
-        mFp = DoubleCPointer.malloc(tFpSize);
-        mDataOut.putAt(1, mFp);
-        mFpParam = DoubleCPointer.malloc(mBasis.parameterSize()+1);
-        mFpParam.putAt(0, mBasis.rcut());
-        fill_(mFpParam.plus(1), mBasis.parameters());
-        mDataIn.putAt(5, mFpParam);
-        mNnParam = DoubleCPointer.malloc(mNN.parameterSize());
-        fill_(mNnParam, mNN.parameters());
-        mDataIn.putAt(6, mNnParam);
+        mFp = new DoubleCPointer[tModelSize];
+        mFpParam = new DoubleCPointer[tModelSize];
+        mNnParam = new DoubleCPointer[tModelSize];
+        for (int i = 0; i < tModelSize; ++i) {
+            mFp[i] = DoubleCPointer.malloc(mBasis[i].size());
+            mFpParam[i] = DoubleCPointer.malloc(mBasis[i].parameterSize()+1);
+            mFpParam[i].putAt(0, mBasis[i].rcut());
+            fill_(mFpParam[i].plus(1), mBasis[i].parameters());
+            mNnParam[i] = DoubleCPointer.malloc(mNN[i].parameterSize());
+            fill_(mNnParam[i], mNN[i].parameters());
+        }
         // 归一化系数读取
-        mNormParam = DoubleCPointer.malloc(tFpSize+tFpSize + 2);
+        mNormParam = new DoubleCPointer[tModelSize];
         Number tNormSigmaEng = null, tNormMuEng = null;
         for (int i = 0; i < tModelSize; ++i) {
             if (tNormSigmaEng == null) tNormSigmaEng = (Number)tModels.get(i).get("norm_sigma_eng");
@@ -147,22 +159,30 @@ public class NNAP2 implements IAutoShutdown {
         }
         double aNormSigmaEng = tNormSigmaEng==null ? 1.0 : tNormSigmaEng.doubleValue();
         double aNormMuEng = tNormMuEng==null ? 0.0 : tNormMuEng.doubleValue();
-        Number tRefEng = (Number)tModel.get("ref_eng");
-        double aRefEng = tRefEng==null ? 0.0 : tRefEng.doubleValue();
-        List<? extends Number> tNormSigma = (List<? extends Number>)UT.Code.get(tModel, "norm_sigma", "norm_vec");
-        IVector aNormSigma = tNormSigma==null ? null : Vectors.from(tNormSigma);
-        List<? extends Number> tNormMu = (List<? extends Number>)tModel.get("norm_mu");
-        IVector aNormMu = tNormMu==null ? null : Vectors.from(tNormMu);
-        fill_(mNormParam, aNormMu);
-        fill_(mNormParam.plus(tFpSize), aNormSigma);
-        mNormParam.putAt(tFpSize+tFpSize, aNormMuEng+aRefEng);
-        mNormParam.putAt(tFpSize+tFpSize+1, aNormSigmaEng);
-        mDataIn.putAt(7, mNormParam);
-        
+        for (int i = 0; i < tModelSize; ++i) {
+            Number tRefEng = (Number)tModels.get(i).get("ref_eng");
+            double aRefEng = tRefEng==null ? 0.0 : tRefEng.doubleValue();
+            List<? extends Number> tNormSigma = (List<? extends Number>)UT.Code.get(tModels.get(i), "norm_sigma", "norm_vec");
+            IVector aNormSigma = tNormSigma==null ? null : Vectors.from(tNormSigma);
+            List<? extends Number> tNormMu = (List<? extends Number>)tModels.get(i).get("norm_mu");
+            IVector aNormMu = tNormMu==null ? null : Vectors.from(tNormMu);
+            mNormParam[i] = DoubleCPointer.malloc(mBasis[i].size()*2 + 2);
+            fill_(mNormParam[i], aNormMu);
+            fill_(mNormParam[i].plus(mBasis[i].size()), aNormSigma);
+            mNormParam[i].putAt(mBasis[i].size()*2, aNormMuEng+aRefEng);
+            mNormParam[i].putAt(mBasis[i].size()*2+1, aNormSigmaEng);
+        }
         // 代码生成，先收集参数
         final Map<String, Object> tGenMap = new LinkedHashMap<>();
-        mBasis.updateGenMap(tGenMap);
-        mNN.updateGenMap(tGenMap);
+        for (int i = 0; i < tModelSize; ++i) {
+            mBasis[i].updateGenMap(tGenMap);
+            mNN[i].updateGenMap(tGenMap);
+        }
+        // 针对种类的 switch，目前没有 share 则两个一样
+        List<List<Integer>> tSwitchList = new ArrayList<>(); // [position][type]
+        for (int i = 0; i < tModelSize; ++i) tSwitchList.add(Collections.singletonList(i+1));
+        tGenMap.put("[FP TYPE]", tSwitchList);
+        tGenMap.put("[NN TYPE]", tSwitchList);
         // 开始 jit
         String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, tGenMap, NNAP2.VERSION, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING);
         mEngine = SimpleJIT.engine().setLibDir(aLibDir).setProjectName(aProjectName+"_"+tUniqueID)
@@ -203,56 +223,120 @@ public class NNAP2 implements IAutoShutdown {
     private static final String MARKER_REMOVE_END = "// <<< NNAPGEN REMOVE";
     private static final String MARKER_REPEAT_START = "// >>> NNAPGEN REPEAT";
     private static final String MARKER_REPEAT_END = "// <<< NNAPGEN REPEAT";
+    private static final String MARKER_SWITCH_START = "// >>> NNAPGEN SWITCH";
+    private static final String MARKER_SWITCH_END = "// <<< NNAPGEN SWITCH";
     
     private static void codeGen_(URL aSourceURL, String aTargetPath, Map<String, Object> aGenMap) throws IOException {
-        final int[] tState = {0}; // 0: line replace, 1: remove, 2: repeat
-        final List<String> rBuf0 = new ArrayList<>(), rBuf1 = new ArrayList<>();
-        IO.map(aSourceURL, aTargetPath, line -> {
-            switch(tState[0]) {
+        List<String> tLines;
+        try (BufferedReader tReader = IO.toReader(aSourceURL)) {
+            tLines = IO.readAllLines(tReader);
+        }
+        IO.write(aTargetPath, processLines_(tLines, aGenMap));
+    }
+    @SuppressWarnings("unchecked")
+    private static List<String> processLines_(List<String> aLines, Map<String, Object> aGenMap) {
+        int tState = 0; // 0: line replace, 1: remove, 2: repeat, 3 switch
+        List<String> rBuf0 = new ArrayList<>(), rBuf1 = new ArrayList<>();
+        List<String> rOutLines = new ArrayList<>(aLines.size());
+        for (String tLine : aLines) {
+            switch(tState) {
             case 0: {
-                if (line.trim().equals(MARKER_REMOVE_START)) {
-                    tState[0] = 1;
-                    return null;
+                if (tLine.trim().equals(MARKER_REMOVE_START)) {
+                    tState = 1;
                 } else
-                if (line.trim().equals(MARKER_REPEAT_START)) {
-                    tState[0] = 2;
-                    return null;
+                if (tLine.trim().equals(MARKER_REPEAT_START)) {
+                    tState = 2;
+                } else
+                if (tLine.trim().equals(MARKER_SWITCH_START)) {
+                    tState = 3;
                 } else {
-                    return baseReplace_(line, aGenMap);
+                    rOutLines.add(baseReplace_(tLine, aGenMap));
                 }
+                break;
             }
             case 1: {
-                if (line.trim().equals(MARKER_REMOVE_END)) {
-                    tState[0] = 0;
+                if (tLine.trim().equals(MARKER_REMOVE_END)) {
+                    tState = 0;
                 }
-                return null;
+                break;
             }
             case 2: {
-                if (line.trim().startsWith(MARKER_REPEAT_END)) {
-                    tState[0] = 0;
-                    String tKey = line.trim().substring(MARKER_REPEAT_END.length()).trim();
+                if (tLine.trim().startsWith(MARKER_REPEAT_END)) {
+                    tState = 0;
+                    String tKey = tLine.trim().substring(MARKER_REPEAT_END.length()).trim();
                     Object tValue = aGenMap.get(tKey);
                     if (tValue==null) throw new IllegalStateException("Missing repeat key: "+tKey);
                     int tLoop = ((Number)tValue).intValue();
                     rBuf1.clear();
                     for (int i = 0; i < tLoop; ++i) {
                         for (String tBufLine : rBuf0) {
-                            String tLine = tBufLine.replace("NNAPGENX_", "NNAPGEN"+i+"_");
-                            rBuf1.add(baseReplace_(tLine, aGenMap));
+                            // 这个方式可以简单通过 NNAPGENXXXX 的方式进行嵌套替换
+                            rBuf1.add(tBufLine.replace("NNAPGENX", i+":NNAPGEN"));
                         }
                     }
                     rBuf0.clear();
-                    return String.join("\n", rBuf1);
+                    // 核心逻辑，repeat 内部只进行 NNAPGENX 替换，全部完成后递归处理后续
+                    rOutLines.addAll(processLines_(rBuf1, aGenMap));
                 } else {
-                    rBuf0.add(line);
-                    return null;
+                    rBuf0.add(tLine);
                 }
+                break;
+            }
+            case 3: {
+                if (tLine.trim().startsWith(MARKER_SWITCH_END)) {
+                    tState = 0;
+                    String[] tArgs = parseSwitchArgs_(tLine);
+                    String tSwitcher = tArgs[0];
+                    String tKey = tArgs[1];
+                    Object tValue = aGenMap.get(tKey);
+                    if (tValue==null) throw new IllegalStateException("Missing switch key: "+tKey);
+                    List<List<Integer>> tSwitchList = (List<List<Integer>>)tValue;
+                    final int tLoop = tSwitchList.size();
+                    rBuf1.clear();
+                    rBuf1.add("switch ("+tSwitcher+") {");
+                    for (int i = 0; i < tLoop; ++i) {
+                        List<Integer> tSubList = tSwitchList.get(i);
+                        StringBuilder tCases = new StringBuilder();
+                        for (int tCase : tSubList) {
+                            tCases.append("case ").append(tCase).append(": ");
+                        }
+                        rBuf1.add(tCases+"{");
+                        for (String tBufLine : rBuf0) {
+                            // 这个方式可以简单通过 NNAPGENXXXX 的方式进行嵌套替换
+                            rBuf1.add(tBufLine.replace("NNAPGENX", i+":NNAPGEN")
+                                              .replace("NNAPGENS_"+tSwitcher, tSubList.get(0).toString()) // 总是合并到第一个组
+                            );
+                        }
+                        rBuf1.add("break;");
+                        rBuf1.add("}");
+                    }
+                    rBuf0.clear();
+                    rBuf1.add("}");
+                    // 核心逻辑，repeat 内部只进行 NNAPGENX 替换，全部完成后递归处理后续
+                    rOutLines.addAll(processLines_(rBuf1, aGenMap));
+                } else {
+                    rBuf0.add(tLine);
+                }
+                break;
             }
             default: {
                 throw new IllegalStateException();
             }}
-        });
+        }
+        if (tState!=0) throw new IllegalStateException();
+        return rOutLines;
     }
+    
+    private static String[] parseSwitchArgs_(String aLine) {
+        String tLine = aLine.trim().substring(MARKER_SWITCH_END.length()).trim();
+        String[] tArgs = new String[2];
+        if (!tLine.startsWith("(")) throw new IllegalArgumentException("invalid switch argument: "+tLine);
+        int tSplit = tLine.indexOf(')');
+        tArgs[0] = tLine.substring(1, tSplit).trim();
+        tArgs[1] = tLine.substring(tSplit+1).trim();
+        return tArgs;
+    }
+    
     private static String baseReplace_(String aLine, Map<String, Object> aGenMap) {
         // 简单串联，在没有遇到性能问题前都就这样做好了
         for (Map.Entry<String, Object> tEntry : aGenMap.entrySet()) {
@@ -270,12 +354,15 @@ public class NNAP2 implements IAutoShutdown {
         mNumParam.free();
         mNlDx.free(); mNlDy.free(); mNlDz.free();
         mNlType.free();
-        mFpParam.free(); mNnParam.free(); mNormParam.free();
+        for (DoubleCPointer tPtr : mFpParam) tPtr.free();
+        for (DoubleCPointer tPtr : mNnParam) tPtr.free();
+        for (DoubleCPointer tPtr : mNormParam) tPtr.free();
         mDataIn.free();
         
         mOut.free();
-        mFp.free();
-        mFpCache.free(); mNnCache.free();
+        for (DoubleCPointer tPtr : mFp) tPtr.free();
+        mFpCache.free();
+        mNnCache.free();
         mDataOut.free();
         
         mEngine.shutdown();
@@ -308,10 +395,17 @@ public class NNAP2 implements IAutoShutdown {
     public void calEnergy(int aAtomNumber, IPairPotential.INeighborListGetter aNeighborListGetter, IPairPotential.IEnergyAccumulator rEnergyAccumulator) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
-            int tNeiNum = buildNL_(nl, mBasis.rcut());
+            // 种类独立的参数值也需要重新指定
+            mDataOut.putAt(1, mFp[cType-1]);
+            mDataIn.putAt(5, mFpParam[cType-1]);
+            mDataIn.putAt(6, mNnParam[cType-1]);
+            mDataIn.putAt(7, mNormParam[cType-1]);
+            // 近邻列表构建
+            int tNeiNum = buildNL_(nl, mBasis[cType-1].rcut());
             mNumParam.putAt(0, tNeiNum);
-            mFpCache.ensureCapacity(mBasis.forwardCacheSize(tNeiNum, 0));
-            mNnCache.ensureCapacity(mNN.forwardCacheSize(0));
+            mNumParam.putAt(1, cType);
+            mFpCache.ensureCapacity(mBasis[cType-1].forwardCacheSize(tNeiNum, 0));
+            mNnCache.ensureCapacity(mNN[cType-1].forwardCacheSize(0));
             // 对于可扩张的数组，指针是非持久的，因此每次计算要重新获取
             mDataIn.putAt(1, mNlDx);
             mDataIn.putAt(2, mNlDy);
@@ -319,29 +413,37 @@ public class NNAP2 implements IAutoShutdown {
             mDataIn.putAt(4, mNlType);
             mDataOut.putAt(2, mFpCache);
             mDataOut.putAt(3, mNnCache);
-            mMethodForward.invoke(mDataIn, mDataOut);
+            int tCode = mMethodForward.invoke(mDataIn, mDataOut);
+            if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
             double tEng = mOut.get();
             rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
         });
     }
     
     /// IPairPotential stuffs
-    public double calEnergy(AtomicParameterCalculator aAPC) throws Exception {
+    public double calEnergy(IAtomData aAtomData) throws Exception {
+        IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
+        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, mThreadNumber)) {
+            return calEnergy(tAPC, tTypeMap);
+        }
+    }
+    public double calEnergy(AtomicParameterCalculator aAPC, IntUnaryOperator aTypeMap) throws Exception {
         if (mDead) throw new IllegalStateException("This Potential is dead");
+        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
+        
         final int oThreadNum = aAPC.threadNumber();
         final int tAtomNum = aAPC.atomNumber();
         final int tTypeNum = atomTypeNumber();
         
         final double[] rTotEng = {0.0};
-        
         aAPC.setThreadNumber(mThreadNumber);
         calEnergy(tAtomNum, (initDo, finalDo, neighborListDo) -> {
             aAPC.pool_().parforWithException(tAtomNum, initDo, finalDo, (i, threadID) -> {
-                final int cType = tTypeNum<=0 ? 0 : aAPC.atomType_().get(i);
+                final int cType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(i));
                 neighborListDo.run(threadID, i, cType, (rmax, dxyzTypeDo) -> {
                     // 根据 neighborListHalf 来确定是否开启半数优化
                     aAPC.nl_().forEachNeighbor(i, rmax, false, true, (dx, dy, dz, idx) -> {
-                        int tType = tTypeNum<=0 ? 0 : aAPC.atomType_().get(idx);
+                        int tType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(idx));
                         dxyzTypeDo.run(dx, dy, dz, tType, idx);
                     });
                 });

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(nnap CXX)
+project(nnap2 CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,13 +10,13 @@ endif()
 
 set(SOURCE_FILES
     nnap_interface.cpp)
-add_library(nnap SHARED ${SOURCE_FILES})
+add_library(nnap2 SHARED ${SOURCE_FILES})
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     set(BUILD_SHARED_LIBS ON)
 endif()
 
-set_target_properties(nnap PROPERTIES
+set_target_properties(nnap2 PROPERTIES
     C_VISIBILITY_PRESET hidden
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN YES

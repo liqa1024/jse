@@ -25,6 +25,7 @@ abstract class WTypeBasis2 implements ISavable {
         .put("exfuse", WTYPE_EXFUSE)
         .build();
     
+    final int mThisType;
     final int mTypeNum;
     final int mNMax;
     final int mWType;
@@ -32,12 +33,14 @@ abstract class WTypeBasis2 implements ISavable {
     int mSizeN;
     int mFuseSize;
     
-    WTypeBasis2(int aTypeNum, int aNMax, int aWType, @Nullable RowMatrix aFuseWeight) {
+    WTypeBasis2(int aThisType, int aTypeNum, int aNMax, int aWType, @Nullable RowMatrix aFuseWeight) {
         if (aTypeNum <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+aTypeNum);
+        if (aThisType > aTypeNum) throw new IllegalArgumentException("This type MUST be <= ntypes, input: "+aThisType+" vs "+aTypeNum);
         if (aNMax<0 || aNMax>20) throw new IllegalArgumentException("Input nmax MUST be in [0, 20], input: "+aNMax);
         if (!ALL_WTYPE.containsValue(aWType)) throw new IllegalArgumentException("Input wtype MUST be in {-1, 0, 2, 3, 4, 6}, input: "+ aWType);
         if ((aWType==WTYPE_FUSE || aWType==WTYPE_EXFUSE) && aFuseWeight==null) throw new IllegalArgumentException("Input fuse_weight MUST NOT be null when wtype=='fuse' or 'exfuse'");
         if ((aWType!=WTYPE_FUSE && aWType!=WTYPE_EXFUSE) && aFuseWeight!=null) throw new IllegalArgumentException("Input fuse_weight MUST be null when wtype!='fuse' and 'exfuse'");
+        mThisType = aThisType;
         mTypeNum = aTypeNum;
         mNMax = aNMax;
         mWType = aWType;
@@ -133,9 +136,10 @@ abstract class WTypeBasis2 implements ISavable {
     public boolean hasParameters() {return mWType==WTYPE_FUSE || mWType==WTYPE_EXFUSE;}
     
     public void updateGenMap(Map<String, Object> rGenMap) {
-        rGenMap.put("NNAPGEN_FP_SIZE", size());
-        rGenMap.put("NNAPGEN_FP_WTYPE", mWType);
-        rGenMap.put("NNAPGEN_FP_NMAX", mNMax);
-        rGenMap.put("NNAPGEN_FP_FSIZE", mFuseSize);
+        int ti = mThisType-1;
+        rGenMap.put(ti+":NNAPGEN_FP_SIZE", size());
+        rGenMap.put(ti+":NNAPGEN_FP_WTYPE", mWType);
+        rGenMap.put(ti+":NNAPGEN_FP_NMAX", mNMax);
+        rGenMap.put(ti+":NNAPGEN_FP_FSIZE", mFuseSize);
     }
 }

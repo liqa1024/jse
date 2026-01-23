@@ -4,16 +4,17 @@
 #include "nn_FeedForward.hpp"
 
 // >>> NNAPGEN REMOVE
-#define NNAPGEN_FP_WTYPE JSE_NNAP::WTYPE_DEFAULT
-#define NNAPGEN_FP_NMAX 5
-#define NNAPGEN_FP_FSIZE 0
-#define NNAPGEN_FP_FSTYLE JSE_NNAP::FSTYLE_LIMITED
-#define NNAPGEN_FP_SIZE 10
-// #define NNAPGEN_FP_SIZE_FW 0
-// #define NNAPGEN_FP_CACHE_SIZE_F0 (5+1)
-#define NNAPGEN_NN_SIZE_HW (10*32 + 32*24)
-#define NNAPGEN_NN_SIZE_HB (32 + 24)
-#define NNAPGEN_NN_SIZE_OW 24
+#define NNAPGENX_FP_WTYPE JSE_NNAP::WTYPE_DEFAULT
+#define NNAPGENX_FP_NMAX 5
+#define NNAPGENX_FP_FSIZE 0
+#define NNAPGENX_FP_FSTYLE JSE_NNAP::FSTYLE_LIMITED
+#define NNAPGENX_FP_SIZE 10
+// #define NNAPGENX_FP_SIZE_FW 0
+// #define NNAPGENX_FP_CACHE_SIZE_F0 (5+1)
+#define NNAPGENX_NN_SIZE_HW (10*32 + 32*24)
+#define NNAPGENX_NN_SIZE_HB (32 + 24)
+#define NNAPGENX_NN_SIZE_OW 24
+#define NNAPGENS_ctype 1
 // <<< NNAPGEN REMOVE
 
 extern "C" {
@@ -36,32 +37,45 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_forward(void *aDataIn, void *rDataO
     double *rFpCache = (double *)tDataOut[2];
     double *rNnCache = (double *)tDataOut[3];
     
-    double *tNormMu = tNormParam;
-    double *tNormSigma = tNormMu + NNAPGEN_FP_SIZE;
-    double tNormMuEng = tNormSigma[NNAPGEN_FP_SIZE];
-    double tNormSigmaEng = tNormSigma[NNAPGEN_FP_SIZE+1];
-    
     int tNN = tNums[0];
+    int ctype = tNums[1];
     double tRCut = tFpParam[0];
+    
+    double tNormMuEng;
+    double tNormSigmaEng;
+    int flag = 1;
+// >>> NNAPGEN SWITCH
+    double *tNormMu = tNormParam;
+    double *tNormSigma = tNormMu + NNAPGENX_FP_SIZE;
+    tNormMuEng = tNormSigma[NNAPGENX_FP_SIZE];
+    tNormSigmaEng = tNormSigma[NNAPGENX_FP_SIZE+1];
+    
     double *tFuseWeight = tFpParam + 1;
-    JSE_NNAP::chebyForward<NNAPGEN_FP_WTYPE, NNAPGEN_FP_NMAX, NNAPGEN_FP_FSIZE, NNAPGEN_FP_FSTYLE, NNAPGEN_FP_SIZE, JSE_NNAP::CL_NONE>(
+    JSE_NNAP::chebyForward<NNAPGENX_FP_WTYPE, NNAPGENX_FP_NMAX, NNAPGENX_FP_FSIZE, NNAPGENX_FP_FSTYLE, NNAPGENX_FP_SIZE, JSE_NNAP::CL_NONE>(
         tNlDx, tNlDy, tNlDz, tNlType, tNN, rFp,
         rFpCache, tRCut, tFuseWeight
     );
     // norm fp here
-    for (int i = 0; i < NNAPGEN_FP_SIZE; ++i) {
+    for (int i = 0; i < NNAPGENX_FP_SIZE; ++i) {
         rFp[i] = (rFp[i] - tNormMu[i]) / tNormSigma[i];
     }
+    flag = 0;
+// <<< NNAPGEN SWITCH (ctype) [FP TYPE]
+    if (flag) return 1;
     
+// >>> NNAPGEN SWITCH
     double *tHiddenWeights = tNnParam;
-    double *tOutputWeights = tHiddenWeights + NNAPGEN_NN_SIZE_HW;
-    double *tHiddenBiases = tOutputWeights + NNAPGEN_NN_SIZE_OW;
-    double tOutputBias = tHiddenBiases[NNAPGEN_NN_SIZE_HB];
-    double tEng = JSE_NNAP::nnForward(rFp, tHiddenWeights, tHiddenBiases, tOutputWeights, tOutputBias, rNnCache);
+    double *tOutputWeights = tHiddenWeights + NNAPGENX_NN_SIZE_HW;
+    double *tHiddenBiases = tOutputWeights + NNAPGENX_NN_SIZE_OW;
+    double tOutputBias = tHiddenBiases[NNAPGENX_NN_SIZE_HB];
+    double tEng = JSE_NNAP::nnForward<NNAPGENS_ctype>(rFp, tHiddenWeights, tHiddenBiases, tOutputWeights, tOutputBias, rNnCache);
     // denorm energy here
     tEng = tEng*tNormSigmaEng + tNormMuEng;
-    
     *rOut = tEng;
+    flag = 0;
+// <<< NNAPGEN SWITCH (ctype) [NN TYPE]
+    if (flag) return 1;
+    
     return 0;
 }
 
