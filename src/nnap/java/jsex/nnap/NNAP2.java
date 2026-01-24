@@ -55,6 +55,8 @@ public class NNAP2 implements IPairPotential {
          * 默认会使用 BASE 优化
          */
         public static int OPTIM_LEVEL = OS.envI("JSE_NNAP_OPTIM_LEVEL", SimpleJIT.OPTIM_BASE);
+        /** 设置 lammps 会使用的近邻列表数目大小限制，默认为 2000 */
+        public static int LAMMPS_NL_MAX = OS.envI("JSE_NNAP_LAMMPS_NL_MAX", 2000);
     }
     
     public final static int VERSION = 6;
@@ -79,16 +81,16 @@ public class NNAP2 implements IPairPotential {
     @Override public String symbol(int aType) {return mSymbols[aType-1];}
     public String units() {return mUnits;}
     // jit stuffs
-    private static final String NAME_CAL_ENERGY = "jse_nnap_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nnap_calEnergyForce";
+    private static final String NAME_CAL_ENERGY = "jse_nnap_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nnap_calEnergyForce", NAME_COMPUTE_LAMMPS = "jse_nnap_computeLammps";
     private final SimpleJIT.Engine mEngine;
-    private final SimpleJIT.Method mCalEnergy, mCalEnergyForce;
+    final SimpleJIT.Method mCalEnergy, mCalEnergyForce, mComputeLammps;
     // 现在所有数据都改为 c 指针
-    private final NestedCPointer mDataIn, mDataOut;
-    private final IntCPointer mInNums;
-    private final DoubleCPointer[] mFpParam, mNnParam, mNormParam, mNnCache;
-    private final DoubleCPointer mOutEng;
-    private final GrowableDoubleCPointer mNlDx, mNlDy, mNlDz, mFpCache, mGradNlDx, mGradNlDy, mGradNlDz;
-    private final GrowableIntCPointer mNlType;
+    final NestedCPointer mDataIn, mDataOut;
+    final IntCPointer mInNums;
+    final NestedCPointer mFpParam, mNnParam, mNormParam, mNnCache;
+    final DoubleCPointer mOutEng;
+    final GrowableDoubleCPointer mNlDx, mNlDy, mNlDz, mFpCache, mGradNlDx, mGradNlDy, mGradNlDz;
+    final GrowableIntCPointer mNlType, mNlIdx;
     
     @SuppressWarnings("unchecked")
     NNAP2(String aLibDir, String aProjectName, Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
@@ -109,19 +111,18 @@ public class NNAP2 implements IPairPotential {
             mSymbols[i] = tSymbol.toString();
         }
         // 不管怎么样先初始化数组
-        mDataIn = NestedCPointer.malloc(9);
-        mDataOut = NestedCPointer.malloc(6);
-        mInNums = IntCPointer.malloc(2); // NeiNum, ctype
-        mDataIn.putAt(1, mInNums);
+        mDataIn = NestedCPointer.malloc(20);
+        mDataOut = NestedCPointer.malloc(20);
+        mInNums = IntCPointer.malloc(20);
         mNlDx = new GrowableDoubleCPointer(16);
         mNlDy = new GrowableDoubleCPointer(16);
         mNlDz = new GrowableDoubleCPointer(16);
         mNlType = new GrowableIntCPointer(16);
+        mNlIdx = new GrowableIntCPointer(16);
         mGradNlDx = new GrowableDoubleCPointer(16);
         mGradNlDy = new GrowableDoubleCPointer(16);
         mGradNlDz = new GrowableDoubleCPointer(16);
         mOutEng = DoubleCPointer.malloc(1);
-        mDataOut.putAt(0, mOutEng);
         mFpCache = new GrowableDoubleCPointer(128);
         
         // 临时实现的简单加载模型
@@ -137,19 +138,22 @@ public class NNAP2 implements IPairPotential {
             mNN[i] = FeedForward2.load(i+1, tNNMap);
         }
         // 继续初始化参数数组
-        mFpParam = new DoubleCPointer[tModelSize];
-        mNnParam = new DoubleCPointer[tModelSize];
-        mNnCache = new DoubleCPointer[tModelSize];
+        mFpParam = NestedCPointer.malloc(tModelSize);
+        mNnParam = NestedCPointer.malloc(tModelSize);
+        mNnCache = NestedCPointer.malloc(tModelSize);
         for (int i = 0; i < tModelSize; ++i) {
-            mFpParam[i] = DoubleCPointer.malloc(mBasis[i].parameterSize()+1);
-            mFpParam[i].putAt(0, mBasis[i].rcut());
-            fill_(mFpParam[i].plus(1), mBasis[i].parameters());
-            mNnParam[i] = DoubleCPointer.malloc(mNN[i].parameterSize());
-            fill_(mNnParam[i], mNN[i].parameters());
-            mNnCache[i] = DoubleCPointer.malloc(mNN[i].cacheSize());
+            DoubleCPointer tFpParam = DoubleCPointer.malloc(mBasis[i].parameterSize()+1);
+            tFpParam.putAt(0, mBasis[i].rcut());
+            fill_(tFpParam.plus(1), mBasis[i].parameters());
+            mFpParam.putAt(i, tFpParam);
+            
+            DoubleCPointer tNnParam = DoubleCPointer.malloc(mNN[i].parameterSize());
+            fill_(tNnParam, mNN[i].parameters());
+            mNnParam.putAt(i, tNnParam);
+            mNnCache.putAt(i, DoubleCPointer.malloc(mNN[i].cacheSize()));
         }
         // 归一化系数读取
-        mNormParam = new DoubleCPointer[tModelSize];
+        mNormParam = NestedCPointer.malloc(tModelSize);
         Number tNormSigmaEng = null, tNormMuEng = null;
         for (int i = 0; i < tModelSize; ++i) {
             if (tNormSigmaEng == null) tNormSigmaEng = (Number)tModels.get(i).get("norm_sigma_eng");
@@ -164,11 +168,12 @@ public class NNAP2 implements IPairPotential {
             IVector aNormSigma = tNormSigma==null ? null : Vectors.from(tNormSigma);
             List<? extends Number> tNormMu = (List<? extends Number>)tModels.get(i).get("norm_mu");
             IVector aNormMu = tNormMu==null ? null : Vectors.from(tNormMu);
-            mNormParam[i] = DoubleCPointer.malloc(mBasis[i].size()*2 + 2);
-            mNormParam[i].putAt(0, aNormMuEng+aRefEng);
-            mNormParam[i].putAt(1, aNormSigmaEng);
-            fill_(mNormParam[i].plus(2), aNormMu);
-            fill_(mNormParam[i].plus(mBasis[i].size()+2), aNormSigma);
+            DoubleCPointer tNormParam = DoubleCPointer.malloc(mBasis[i].size()*2 + 2);
+            tNormParam.putAt(0, aNormMuEng+aRefEng);
+            tNormParam.putAt(1, aNormSigmaEng);
+            fill_(tNormParam.plus(2), aNormMu);
+            fill_(tNormParam.plus(mBasis[i].size()+2), aNormSigma);
+            mNormParam.putAt(i, tNormParam);
         }
         // 代码生成，先针对相同系数的进行优化合并
         List<List<Integer>> tSwitchListFp = new ArrayList<>(); // [position][type]
@@ -202,9 +207,10 @@ public class NNAP2 implements IPairPotential {
             mEngine.writeCmakeFile(wd, INTERFACE_NAME);
             return wd;
         });
-        mEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE).compile();
+        mEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_COMPUTE_LAMMPS).compile();
         mCalEnergy = mEngine.findMethod(NAME_CAL_ENERGY);
         mCalEnergyForce = mEngine.findMethod(NAME_CAL_ENERGYFORCE);
+        mComputeLammps = mEngine.findMethod(NAME_COMPUTE_LAMMPS);
     }
     public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
         this(OS.WORKING_DIR, "nnapjit", aModelInfo, aThreadNumber);
@@ -405,17 +411,22 @@ public class NNAP2 implements IPairPotential {
         if (mDead) return;
         mDead = true;
         
+        for (int i = 0; i < mSymbols.length; ++i) {
+            mFpParam.getAt(i).free();
+            mNnParam.getAt(i).free();
+            mNormParam.getAt(i).free();
+        }
         mInNums.free();
         mNlDx.free(); mNlDy.free(); mNlDz.free();
         mNlType.free();
-        for (DoubleCPointer tPtr : mFpParam) tPtr.free();
-        for (DoubleCPointer tPtr : mNnParam) tPtr.free();
-        for (DoubleCPointer tPtr : mNormParam) tPtr.free();
+        mFpParam.free(); mNnParam.free(); mNormParam.free();
         mDataIn.free();
         
+        for (int i = 0; i < mSymbols.length; ++i) {
+            mNnCache.getAt(i).free();
+        }
         mOutEng.free();
-        mFpCache.free();
-        for (DoubleCPointer tPtr : mNnCache) tPtr.free();
+        mFpCache.free(); mNnCache.free();
         mDataOut.free();
         
         mEngine.shutdown();
@@ -455,17 +466,10 @@ public class NNAP2 implements IPairPotential {
         mNlDy.ensureCapacity(tNeiNum); mNlDy.fill(mNlDyBuf);
         mNlDz.ensureCapacity(tNeiNum); mNlDz.fill(mNlDzBuf);
         mNlType.ensureCapacity(tNeiNum); mNlType.fill(mNlTypeBuf);
-        mDataIn.putAt(2, mNlDx);
-        mDataIn.putAt(3, mNlDy);
-        mDataIn.putAt(4, mNlDz);
-        mDataIn.putAt(5, mNlType);
         if (aRequireGrad) {
             mGradNlDx.ensureCapacity(tNeiNum);
             mGradNlDy.ensureCapacity(tNeiNum);
             mGradNlDz.ensureCapacity(tNeiNum);
-            mDataOut.putAt(1, mGradNlDx);
-            mDataOut.putAt(2, mGradNlDy);
-            mDataOut.putAt(3, mGradNlDz);
         }
         return tNeiNum;
     }
@@ -479,16 +483,23 @@ public class NNAP2 implements IPairPotential {
     @Override public void calEnergy(int aAtomNumber, INeighborListGetter aNeighborListGetter, IEnergyAccumulator rEnergyAccumulator) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
-            // 近邻列表构建
+            // 近邻列表构建以及相关值设置
             int tNeiNum = buildNL_(nl, mBasis[cType-1].rcut(), false);
             mInNums.putAt(0, tNeiNum);
             mInNums.putAt(1, cType);
             mFpCache.ensureCapacity(mBasis[cType-1].forwardCacheSize(tNeiNum, false));
-            mDataOut.putAt(4, mFpCache);
-            mDataOut.putAt(5, mNnCache[cType-1]);
-            mDataIn.putAt(6, mFpParam[cType-1]);
-            mDataIn.putAt(7, mNnParam[cType-1]);
-            mDataIn.putAt(8, mNormParam[cType-1]);
+            // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
+            mDataIn.putAt(0, mInNums);
+            mDataIn.putAt(1, mNlDx);
+            mDataIn.putAt(2, mNlDy);
+            mDataIn.putAt(3, mNlDz);
+            mDataIn.putAt(4, mNlType);
+            mDataIn.putAt(5, mFpParam.getAt(cType-1));
+            mDataIn.putAt(6, mNnParam.getAt(cType-1));
+            mDataIn.putAt(7, mNormParam.getAt(cType-1));
+            mDataOut.putAt(0, mOutEng);
+            mDataOut.putAt(1, mFpCache);
+            mDataOut.putAt(2, mNnCache.getAt(cType-1));
             // 调用 jit 方法获取结果
             int tCode = mCalEnergy.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
@@ -508,16 +519,26 @@ public class NNAP2 implements IPairPotential {
     @Override public void calEnergyForceVirial(int aAtomNumber, INeighborListGetter aNeighborListGetter, @Nullable IEnergyAccumulator rEnergyAccumulator, @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
-            // 近邻列表构建
+            // 近邻列表构建以及相关值设置
             int tNeiNum = buildNL_(nl, mBasis[cType-1].rcut(), true);
             mInNums.putAt(0, tNeiNum);
             mInNums.putAt(1, cType);
             mFpCache.ensureCapacity(mBasis[cType-1].forwardCacheSize(tNeiNum, true));
+            // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
+            mDataIn.putAt(0, mInNums);
+            mDataIn.putAt(1, mNlDx);
+            mDataIn.putAt(2, mNlDy);
+            mDataIn.putAt(3, mNlDz);
+            mDataIn.putAt(4, mNlType);
+            mDataIn.putAt(5, mFpParam.getAt(cType-1));
+            mDataIn.putAt(6, mNnParam.getAt(cType-1));
+            mDataIn.putAt(7, mNormParam.getAt(cType-1));
+            mDataOut.putAt(0, mOutEng);
+            mDataOut.putAt(1, mGradNlDx);
+            mDataOut.putAt(2, mGradNlDy);
+            mDataOut.putAt(3, mGradNlDz);
             mDataOut.putAt(4, mFpCache);
-            mDataOut.putAt(5, mNnCache[cType-1]);
-            mDataIn.putAt(6, mFpParam[cType-1]);
-            mDataIn.putAt(7, mNnParam[cType-1]);
-            mDataIn.putAt(8, mNormParam[cType-1]);
+            mDataOut.putAt(5, mNnCache.getAt(cType-1));
             // 调用 jit 方法获取结果
             int tCode = mCalEnergyForce.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
@@ -532,7 +553,7 @@ public class NNAP2 implements IPairPotential {
                 double dz = mNlDzBuf.get(j);
                 int idx = mNlIdxBuf.get(j);
                 // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查；
-                // 直接遍历查询不走合并了，应该不怎么影响效率（只考虑 lammps 的专门优化）
+                // 直接遍历查询不走合并了，实测专门合并还会影响效率
                 double fx = mGradNlDx.getAt(j);
                 double fy = mGradNlDy.getAt(j);
                 double fz = mGradNlDz.getAt(j);
@@ -545,5 +566,73 @@ public class NNAP2 implements IPairPotential {
                 }
             }
         });
+    }
+    
+    private boolean mNlLammpsValid = false;
+    private void validNlLammps_() {
+        if (mNlLammpsValid) return;
+        mNlLammpsValid = true;
+        // 合法化近邻列表 size，这里采用简单固定大小（可以保证极限速度并且和 lammps 逻辑一致）
+        mNlDx.ensureCapacity(Conf.LAMMPS_NL_MAX);
+        mNlDy.ensureCapacity(Conf.LAMMPS_NL_MAX);
+        mNlDz.ensureCapacity(Conf.LAMMPS_NL_MAX);
+        mNlType.ensureCapacity(Conf.LAMMPS_NL_MAX);
+        mNlIdx.ensureCapacity(Conf.LAMMPS_NL_MAX);
+        mGradNlDx.ensureCapacity(Conf.LAMMPS_NL_MAX);
+        mGradNlDy.ensureCapacity(Conf.LAMMPS_NL_MAX);
+        mGradNlDz.ensureCapacity(Conf.LAMMPS_NL_MAX);
+        for (int i = 0; i < mSymbols.length; ++i) {
+            mFpCache.ensureCapacity(mBasis[i].forwardCacheSize(Conf.LAMMPS_NL_MAX, true));
+        }
+    }
+    
+    void computeLammps(PairNNAP2 aPair) {
+        // 虽然原则上这里依旧可以在 java 层进行 nlocal 的遍历，并实时更新 nl；
+        // 但是考虑到未来登录 cuda 不能使用这种架构，并且可以简化部分实现；
+        // TODO: 未来需要补充回来种类的缓存优化
+        validNlLammps_();
+        mInNums.putAt(0, Conf.LAMMPS_NL_MAX);
+        mInNums.putAt(1, aPair.listInum());
+        mInNums.putAt(2, aPair.eflagEither()?1:0);
+        mInNums.putAt(3, aPair.vflagEither()?1:0);
+        mInNums.putAt(4, aPair.eflagAtom()?1:0);
+        mInNums.putAt(5, aPair.vflagAtom()?1:0);
+        mInNums.putAt(6, aPair.cvflagAtom()?1:0);
+        
+        // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
+        mDataIn.putAt(0, mInNums);
+        mDataIn.putAt(1, mNlDx);
+        mDataIn.putAt(2, mNlDy);
+        mDataIn.putAt(3, mNlDz);
+        mDataIn.putAt(4, mNlType);
+        mDataIn.putAt(5, mNlIdx);
+        mDataIn.putAt(6, mFpParam);
+        mDataIn.putAt(7, mNnParam);
+        mDataIn.putAt(8, mNormParam);
+        mDataIn.putAt(9, aPair.atomX());
+        mDataIn.putAt(10, aPair.atomType());
+        mDataIn.putAt(11, aPair.listIlist());
+        mDataIn.putAt(12, aPair.listNumneigh());
+        mDataIn.putAt(13, aPair.listFirstneigh());
+        mDataIn.putAt(14, aPair.mCutsq);
+        mDataIn.putAt(15, aPair.mLmpType2NNAPType);
+        
+        mDataOut.putAt(0, aPair.atomF());
+        mDataOut.putAt(1, mGradNlDx);
+        mDataOut.putAt(2, mGradNlDy);
+        mDataOut.putAt(3, mGradNlDz);
+        mDataOut.putAt(4, mFpCache);
+        mDataOut.putAt(5, mNnCache);
+        mDataOut.putAt(6, aPair.engVdwl());
+        mDataOut.putAt(7, aPair.eatom());
+        mDataOut.putAt(8, aPair.virial());
+        mDataOut.putAt(9, aPair.vatom());
+        mDataOut.putAt(10, aPair.cvatom());
+        
+        // 调用 jit 方法计算
+        int tCode = mComputeLammps.invoke(mDataIn, mDataOut);
+        if (tCode>0) throw new IllegalStateException("Exit code: "+tCode);
+        if (tCode<0) throw new IllegalStateException("The number of neighbors ("+(-tCode)+") is greater than "+Conf.LAMMPS_NL_MAX+",\n" +
+                                                     "  adjust it through JSE_NNAP_LAMMPS_NL_MAX, like `export JSE_NNAP_LAMMPS_NL_MAX="+tCode+"`");
     }
 }

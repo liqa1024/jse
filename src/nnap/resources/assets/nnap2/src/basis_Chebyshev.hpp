@@ -6,21 +6,21 @@
 namespace JSE_NNAP {
 
 template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_FP, int FULL_CACHE>
-static void chebyForward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNN, double *rFp,
+static void chebyForward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, double *rFp,
                          double *rCache, double aRCut, double *aFuseWeight) noexcept {
     // init cache
     double *rRn = NULL;
     double *rNlRn = NULL, *rNlFc = NULL;
     if (FULL_CACHE) {
         rNlRn = rCache;
-        rNlFc = rNlRn + aNN*(NMAX+1);
+        rNlFc = rNlRn + aNeiNum*(NMAX+1);
     } else {
         rRn = rCache;
     }
     // clear fp first
     fill<SIZE_FP>(rFp, 0.0);
     // loop for neighbor
-    for (int j = 0; j < aNN; ++j) {
+    for (int j = 0; j < aNeiNum; ++j) {
         int type = aNlType[j];
         double dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
         double dis = sqrt((double)(dx*dx + dy*dy + dz*dz));
@@ -59,11 +59,11 @@ static void chebyForward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlTy
 }
 
 template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int FULL_CACHE, int CLEAR_CACHE>
-static void chebyBackward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNN, double *aGradFp,
+static void chebyBackward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, double *aGradFp,
                           double *rGradNlDx, double *rGradNlDy, double *rGradNlDz,
                           double *rCache, double aRCut, double *aFuseWeight) noexcept {
     if (CLEAR_CACHE) {
-        for (int j = 0; j < aNN; ++j) {
+        for (int j = 0; j < aNeiNum; ++j) {
             rGradNlDx[j] = 0.0;
             rGradNlDy[j] = 0.0;
             rGradNlDz[j] = 0.0;
@@ -71,26 +71,26 @@ static void chebyBackward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlT
     }
     // init cache
     double *tNlRn = rCache;
-    double *tNlFc = tNlRn + aNN*(NMAX+1);
+    double *tNlFc = tNlRn + aNeiNum*(NMAX+1);
     double *rRnPx = NULL, *rRnPy = NULL, *rRnPz = NULL, *rCheby2 = NULL;
     double *rNlRnPx = NULL, *rNlRnPy = NULL, *rNlRnPz = NULL;
     double *rNlFcPx = NULL, *rNlFcPy = NULL, *rNlFcPz = NULL;
     if (FULL_CACHE) {
-        rNlRnPx = tNlFc + aNN;
-        rNlRnPy = rNlRnPx + aNN*(NMAX+1);
-        rNlRnPz = rNlRnPy + aNN*(NMAX+1);
-        rNlFcPx = rNlRnPz + aNN*(NMAX+1);
-        rNlFcPy = rNlFcPx + aNN;
-        rNlFcPz = rNlFcPy + aNN;
-        rCheby2 = rNlFcPz + aNN;
+        rNlRnPx = tNlFc + aNeiNum;
+        rNlRnPy = rNlRnPx + aNeiNum*(NMAX+1);
+        rNlRnPz = rNlRnPy + aNeiNum*(NMAX+1);
+        rNlFcPx = rNlRnPz + aNeiNum*(NMAX+1);
+        rNlFcPy = rNlFcPx + aNeiNum;
+        rNlFcPz = rNlFcPy + aNeiNum;
+        rCheby2 = rNlFcPz + aNeiNum;
     } else {
-        rRnPx = tNlFc + aNN;
+        rRnPx = tNlFc + aNeiNum;
         rRnPy = rRnPx + (NMAX+1);
         rRnPz = rRnPy + (NMAX+1);
         rCheby2 = rRnPz + (NMAX+1);
     }
     // loop for neighbor
-    for (int j = 0; j < aNN; ++j) {
+    for (int j = 0; j < aNeiNum; ++j) {
         // init nl
         int type = aNlType[j];
         double dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
