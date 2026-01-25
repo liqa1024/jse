@@ -33,6 +33,20 @@ static constexpr double SQRT3DIV2 = 1.224744871391589;
 static constexpr double PI4 = 12.566370614359172;
 static constexpr double SQRT_PI4 = 3.5449077018110318;
 
+static constexpr int toInternalWType(int aWType, int aTypeNum) noexcept {
+    if (aTypeNum==1) {
+        switch(aWType) {
+        case WTYPE_EXFULL: case WTYPE_FULL: case WTYPE_NONE: case WTYPE_DEFAULT: {
+            return WTYPE_NONE;
+        }
+        default: {
+            return aWType;
+        }}
+    } else {
+        return aWType;
+    }
+};
+
 static inline double pow2(double value) noexcept {
     return value * value;
 }

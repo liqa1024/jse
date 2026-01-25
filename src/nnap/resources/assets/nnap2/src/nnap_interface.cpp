@@ -4,6 +4,7 @@
 #include "nn_FeedForward.hpp"
 
 // >>> NNAPGEN REMOVE
+#define NNAPGENX_FP_NTYPES 2
 #define NNAPGENX_FP_WTYPE JSE_NNAP::WTYPE_DEFAULT
 #define NNAPGENX_FP_NMAX 5
 #define NNAPGENX_FP_FSIZE 0
@@ -30,7 +31,7 @@ static int forward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, in
     double *tNormMu = aNormParam + 2;
     double *tNormSigma = tNormMu + NNAPGENX_FP_SIZE;
     double *rFp = rNnCache; // fp from nn cache, for smooth input
-    chebyForward<NNAPGENX_FP_WTYPE, NNAPGENX_FP_NMAX, NNAPGENX_FP_FSIZE, NNAPGENX_FP_FSTYLE, NNAPGENX_FP_SIZE, FP_FULL_CACHE>(
+    chebyForward<NNAPGENX_FP_WTYPE, NNAPGENX_FP_NTYPES, NNAPGENX_FP_NMAX, NNAPGENX_FP_FSIZE, NNAPGENX_FP_FSTYLE, FP_FULL_CACHE>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rFp,
         rFpCache, aFpParam[0], aFpParam+1
     );
@@ -88,7 +89,7 @@ static int backward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, i
     for (int i = 0; i < NNAPGENX_FP_SIZE; ++i) {
         tGradFp[i] /= tNormSigma[i];
     }
-    chebyBackward<NNAPGENX_FP_WTYPE, NNAPGENX_FP_NMAX, NNAPGENX_FP_FSIZE, NNAPGENX_FP_FSTYLE, FP_FULL_CACHE, CLEAR_CACHE>(
+    chebyBackward<NNAPGENX_FP_WTYPE, NNAPGENX_FP_NTYPES, NNAPGENX_FP_NMAX, NNAPGENX_FP_FSIZE, NNAPGENX_FP_FSTYLE, FP_FULL_CACHE, CLEAR_CACHE>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, tGradFp,
         rGradNlDx, rGradNlDy, rGradNlDz,
         rFpCache, aFpParam[0], aFpParam+1

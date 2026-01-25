@@ -139,6 +139,7 @@ abstract class WTypeBasis2 implements ISavable {
     
     public void updateGenMap(Map<String, Object> rGenMap) {
         int ti = mThisType-1;
+        rGenMap.put(ti+":NNAPGEN_FP_NTYPES", mTypeNum);
         rGenMap.put(ti+":NNAPGEN_FP_SIZE", size());
         rGenMap.put(ti+":NNAPGEN_FP_WTYPE", mWType);
         rGenMap.put(ti+":NNAPGEN_FP_NMAX", mNMax);
@@ -148,6 +149,6 @@ abstract class WTypeBasis2 implements ISavable {
     public boolean hasSameGenMap(Object aBasis) {
         if (!(aBasis instanceof WTypeBasis2)) return false;
         WTypeBasis2 tBasis = (WTypeBasis2)aBasis;
-        return size()==tBasis.size() && mWType==tBasis.mWType && mNMax==tBasis.mNMax && mFuseSize==tBasis.mFuseSize;
+        return mTypeNum==tBasis.mTypeNum && size()==tBasis.size() && mWType==tBasis.mWType && mNMax==tBasis.mNMax && mFuseSize==tBasis.mFuseSize;
     }
 }
