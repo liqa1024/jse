@@ -1,8 +1,6 @@
 package jsex.nnap;
 
-import jse.clib.DoubleCPointer;
-import jse.clib.IntCPointer;
-import jse.clib.SimpleJIT;
+import jse.clib.*;
 import jse.code.collection.IntList;
 import jse.lmp.LmpPlugin;
 
@@ -87,9 +85,11 @@ public class PairNNAP2 extends LmpPlugin.Pair {
             mCutoff[type] = mNNAP.rcut(tNNAPType);
             mCutsq.putAt(type, mCutoff[type]*mCutoff[type]);
         }
-        mTypeIlist = new IntList[mTypeNum];
-        for (int ti = 0; ti < mTypeNum; ++ti) {
-            mTypeIlist[ti] = new IntList(16);
+        mTypeInum = IntCPointer.calloc(tArgLen);
+        mTypeIlist = NestedCPointer.calloc(tArgLen);
+        mTypeIlistBuf = new GrowableIntCPointer[tArgLen];
+        for (int type = 1; type < tArgLen; ++type) {
+            mTypeIlistBuf[type] = new GrowableIntCPointer(128);
         }
     }
     NNAP2 mNNAP = null;
@@ -97,7 +97,9 @@ public class PairNNAP2 extends LmpPlugin.Pair {
     double[] mCutoff = null;
     DoubleCPointer mCutsq = null;
     int mTypeNum = -1;
-    private IntList[] mTypeIlist = null;
+    GrowableIntCPointer[] mTypeIlistBuf = null;
+    NestedCPointer mTypeIlist = null;
+    IntCPointer mTypeInum = null;
     
     @Override public double initOne(int i, int j) {
         return mCutoff[i];
@@ -114,6 +116,18 @@ public class PairNNAP2 extends LmpPlugin.Pair {
         if (mCutsq != null) {
             mCutsq.free();
             mCutsq = null;
+        }
+        if (mTypeIlistBuf != null) {
+            for (int type = 1; type < mTypeNum; ++type) mTypeIlistBuf[type].free();
+            mTypeIlistBuf = null;
+        }
+        if (mTypeIlist != null) {
+            mTypeIlist.free();
+            mTypeIlist = null;
+        }
+        if (mTypeInum != null) {
+            mTypeInum.free();
+            mTypeInum = null;
         }
         if (mNNAP != null) {
             mNNAP.shutdown();

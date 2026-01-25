@@ -132,9 +132,9 @@ public class NNAP2 implements IPairPotential {
             mSymbols[i] = tSymbol.toString();
         }
         // 不管怎么样先初始化数组
-        mDataIn = NestedCPointer.malloc(20);
-        mDataOut = NestedCPointer.malloc(20);
-        mInNums = IntCPointer.malloc(20);
+        mDataIn = NestedCPointer.calloc(20);
+        mDataOut = NestedCPointer.calloc(20);
+        mInNums = IntCPointer.calloc(20);
         mNlDx = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mNlDy = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mNlDz = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
@@ -705,17 +705,24 @@ public class NNAP2 implements IPairPotential {
     }
     
     void computeLammps(PairNNAP2 aPair) {
+        // 种类的缓存优化
+        final int inum = aPair.listInum();
+        for (int type = 1; type <= aPair.mTypeNum; ++type) {
+            GrowableIntCPointer tList = aPair.mTypeIlistBuf[type];
+            tList.ensureCapacity(inum);
+            aPair.mTypeIlist.putAt(type, tList);
+        }
         // 虽然原则上这里依旧可以在 java 层进行 nlocal 的遍历，并实时更新 nl；
-        // 但是考虑到未来登录 cuda 不能使用这种架构，并且可以简化部分实现；
-        // TODO: 未来需要补充回来种类的缓存优化
+        // 但是考虑到未来登录 cuda 不能使用这种架构，并且可以简化部分实现
         validNlLammps_();
         mInNums.putAt(0, Conf.LAMMPS_NL_MAX);
-        mInNums.putAt(1, aPair.listInum());
-        mInNums.putAt(2, aPair.eflagEither()?1:0);
-        mInNums.putAt(3, aPair.vflagEither()?1:0);
-        mInNums.putAt(4, aPair.eflagAtom()?1:0);
-        mInNums.putAt(5, aPair.vflagAtom()?1:0);
-        mInNums.putAt(6, aPair.cvflagAtom()?1:0);
+        mInNums.putAt(1, inum);
+        mInNums.putAt(2, aPair.mTypeNum);
+        mInNums.putAt(3, aPair.eflagEither()?1:0);
+        mInNums.putAt(4, aPair.vflagEither()?1:0);
+        mInNums.putAt(5, aPair.eflagAtom()?1:0);
+        mInNums.putAt(6, aPair.vflagAtom()?1:0);
+        mInNums.putAt(7, aPair.cvflagAtom()?1:0);
         
         // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
         mDataIn.putAt(0, mInNums);
@@ -735,6 +742,8 @@ public class NNAP2 implements IPairPotential {
         mDataIn.putAt(14, aPair.listFirstneigh());
         mDataIn.putAt(15, aPair.mCutsq);
         mDataIn.putAt(16, aPair.mLmpType2NNAPType);
+        mDataIn.putAt(17, aPair.mTypeIlist);
+        mDataIn.putAt(18, aPair.mTypeInum);
         
         mDataOut.putAt(0, aPair.atomF());
         mDataOut.putAt(1, mGradNlDx);

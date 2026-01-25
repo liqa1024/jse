@@ -237,11 +237,12 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
     
     int numneighMax = tNums[0];
     int inum = tNums[1];
-    int eflag = tNums[2];
-    int vflag = tNums[3];
-    int eflagAtom = tNums[4];
-    int vflagAtom = tNums[5];
-    int cvflagAtom = tNums[6];
+    int ntypes = tNums[2];
+    int eflag = tNums[3];
+    int vflag = tNums[4];
+    int eflagAtom = tNums[5];
+    int vflagAtom = tNums[6];
+    int cvflagAtom = tNums[7];
     
     double **x = (double **)tDataIn[10];
     double **f = (double **)tDataOut[0];
@@ -252,6 +253,8 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
     int **firstneigh = (int **)tDataIn[14];
     double *cutsq = (double *)tDataIn[15];
     int *tLmpType2NNAPType = (int *)tDataIn[16];
+    int **tTypeIlist = (int **)tDataIn[17];
+    int *tTypeInum = (int *)tDataIn[18];
     
     double *engVdwl = (double *)tDataOut[8];
     double *eatom = (double *)tDataOut[9];
@@ -259,101 +262,123 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
     double **vatom = (double **)tDataOut[11];
     double **cvatom = (double **)tDataOut[12];
     
-    /// begin compute here
+    /// reorder by types
+    for (int typei = 1; typei <= ntypes; ++typei) {
+        tTypeInum[typei] = 0;
+    }
     for (int ii = 0; ii < inum; ++ii) {
         int i = ilist[ii];
-        double xtmp = x[i][0];
-        double ytmp = x[i][1];
-        double ztmp = x[i][2];
         int typei = type[i];
-        int *jlist = firstneigh[i];
-        int jnum = numneigh[i];
-        if (jnum > numneighMax) return -jnum;
+        tTypeIlist[typei][tTypeInum[typei]] = i;
+        ++tTypeInum[typei];
+    }
+    
+    /// begin compute here
+    for (int typei = 1; typei <= ntypes; ++typei) {
+        int *subIlist = tTypeIlist[typei];
+        int subInum = tTypeInum[typei];
         
-        /// build neighbor list
-        int tNeiNum = 0;
-        for (int jj = 0; jj < jnum; ++jj) {
-            int j = jlist[jj];
-            j &= JSE_LMP_NEIGHMASK;
-            // Note that dxyz in jse and lammps are defined oppositely
-            double delx = x[j][0] - xtmp;
-            double dely = x[j][1] - ytmp;
-            double delz = x[j][2] - ztmp;
-            double rsq = delx*delx + dely*dely + delz*delz;
-            if (rsq < cutsq[typei]) {
-                tNlDx[tNeiNum] = (JSE_NNAP::flt_t)delx;
-                tNlDy[tNeiNum] = (JSE_NNAP::flt_t)dely;
-                tNlDz[tNeiNum] = (JSE_NNAP::flt_t)delz;
-                tNlType[tNeiNum] = tLmpType2NNAPType[type[j]];
-                tNlIdx[tNeiNum] = j;
-                ++tNeiNum;
-            }
-        }
-        int typeiNNAP = tLmpType2NNAPType[typei];
+        const int typeiNNAP = tLmpType2NNAPType[typei];
+        JSE_NNAP::flt_t *subFpHyperParam = tFpHyperParam[typeiNNAP-1];
+        JSE_NNAP::flt_t *subFpParam = tFpParam[typeiNNAP-1];
+        JSE_NNAP::flt_t *subNnParam = tNnParam[typeiNNAP-1];
+        JSE_NNAP::flt_t *subNormParam = tNormParam[typeiNNAP-1];
+        JSE_NNAP::flt_t *subNnForwardCache = rNnForwardCache[typeiNNAP-1];
+        JSE_NNAP::flt_t *subNnBackwardCache = rNnBackwardCache[typeiNNAP-1];
         
-        /// begin nnap here
-        JSE_NNAP::flt_t rEng;
-        int code = JSE_NNAP::forward<JSE_NNAP::TRUE, JSE_NNAP::TRUE>(
-            tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, typeiNNAP,
-            tFpHyperParam[typeiNNAP-1], tFpParam[typeiNNAP-1], tNnParam[typeiNNAP-1], tNormParam[typeiNNAP-1],
-            rFpForwardCache, rNnForwardCache[typeiNNAP-1],
-            &rEng
-        );
-        if (code!=0) return code;
-        // manual clear required for backward in force
-        code = JSE_NNAP::backward<JSE_NNAP::FALSE, JSE_NNAP::TRUE>(
-            tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, typeiNNAP,
-            tGradNlDx, tGradNlDy, tGradNlDz,
-            tFpHyperParam[typeiNNAP-1], tFpParam[typeiNNAP-1], tNnParam[typeiNNAP-1], tNormParam[typeiNNAP-1],
-            rFpForwardCache, rNnForwardCache[typeiNNAP-1], rFpBackwardCache, rNnBackwardCache[typeiNNAP-1],
-            1.0
-        );
-        if (code!=0) return code;
-        
-        /// collect results
-        if (eflag) {
-            *engVdwl += rEng;
-            if (eflagAtom) eatom[i] += rEng;
-        }
-        for (int jj = 0; jj < tNeiNum; ++jj) {
-            int j = tNlIdx[jj];
-            const JSE_NNAP::flt_t fx = tGradNlDx[jj];
-            const JSE_NNAP::flt_t fy = tGradNlDy[jj];
-            const JSE_NNAP::flt_t fz = tGradNlDz[jj];
-            f[i][0] -= fx;
-            f[i][1] -= fy;
-            f[i][2] -= fz;
-            f[j][0] += fx;
-            f[j][1] += fy;
-            f[j][2] += fz;
-            if (vflag) {
-                const JSE_NNAP::flt_t dx = tNlDx[jj];
-                const JSE_NNAP::flt_t dy = tNlDy[jj];
-                const JSE_NNAP::flt_t dz = tNlDz[jj];
-                virial[0] += dx*fx;
-                virial[1] += dy*fy;
-                virial[2] += dz*fz;
-                virial[3] += dx*fy;
-                virial[4] += dx*fz;
-                virial[5] += dy*fz;
-                if (vflagAtom) {
-                    vatom[j][0] += dx*fx;
-                    vatom[j][1] += dy*fy;
-                    vatom[j][2] += dz*fz;
-                    vatom[j][3] += dx*fy;
-                    vatom[j][4] += dx*fz;
-                    vatom[j][5] += dy*fz;
+        for (int ii = 0; ii < subInum; ++ii) {
+            int i = subIlist[ii];
+            double xtmp = x[i][0];
+            double ytmp = x[i][1];
+            double ztmp = x[i][2];
+            int *jlist = firstneigh[i];
+            int jnum = numneigh[i];
+            if (jnum > numneighMax) return -jnum;
+            
+            /// build neighbor list
+            int tNeiNum = 0;
+            for (int jj = 0; jj < jnum; ++jj) {
+                int j = jlist[jj];
+                j &= JSE_LMP_NEIGHMASK;
+                // Note that dxyz in jse and lammps are defined oppositely
+                double delx = x[j][0] - xtmp;
+                double dely = x[j][1] - ytmp;
+                double delz = x[j][2] - ztmp;
+                double rsq = delx*delx + dely*dely + delz*delz;
+                if (rsq < cutsq[typei]) {
+                    tNlDx[tNeiNum] = (JSE_NNAP::flt_t)delx;
+                    tNlDy[tNeiNum] = (JSE_NNAP::flt_t)dely;
+                    tNlDz[tNeiNum] = (JSE_NNAP::flt_t)delz;
+                    tNlType[tNeiNum] = tLmpType2NNAPType[type[j]];
+                    tNlIdx[tNeiNum] = j;
+                    ++tNeiNum;
                 }
-                if (cvflagAtom) {
-                    cvatom[j][0] += dx*fx;
-                    cvatom[j][1] += dy*fy;
-                    cvatom[j][2] += dz*fz;
-                    cvatom[j][3] += dx*fy;
-                    cvatom[j][4] += dx*fz;
-                    cvatom[j][5] += dy*fz;
-                    cvatom[j][6] += dy*fx;
-                    cvatom[j][7] += dz*fx;
-                    cvatom[j][8] += dz*fy;
+            }
+            
+            /// begin nnap here
+            JSE_NNAP::flt_t rEng;
+            int code = JSE_NNAP::forward<JSE_NNAP::TRUE, JSE_NNAP::TRUE>(
+                tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, typeiNNAP,
+                subFpHyperParam, subFpParam, subNnParam, subNormParam,
+                rFpForwardCache, subNnForwardCache,
+                &rEng
+            );
+            if (code!=0) return code;
+            // manual clear required for backward in force
+            code = JSE_NNAP::backward<JSE_NNAP::FALSE, JSE_NNAP::TRUE>(
+                tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, typeiNNAP,
+                tGradNlDx, tGradNlDy, tGradNlDz,
+                subFpHyperParam, subFpParam, subNnParam, subNormParam,
+                rFpForwardCache, subNnForwardCache, rFpBackwardCache, subNnBackwardCache,
+                1.0
+            );
+            if (code!=0) return code;
+            
+            /// collect results
+            if (eflag) {
+                *engVdwl += rEng;
+                if (eflagAtom) eatom[i] += rEng;
+            }
+            for (int jj = 0; jj < tNeiNum; ++jj) {
+                int j = tNlIdx[jj];
+                const JSE_NNAP::flt_t fx = tGradNlDx[jj];
+                const JSE_NNAP::flt_t fy = tGradNlDy[jj];
+                const JSE_NNAP::flt_t fz = tGradNlDz[jj];
+                f[i][0] -= fx;
+                f[i][1] -= fy;
+                f[i][2] -= fz;
+                f[j][0] += fx;
+                f[j][1] += fy;
+                f[j][2] += fz;
+                if (vflag) {
+                    const JSE_NNAP::flt_t dx = tNlDx[jj];
+                    const JSE_NNAP::flt_t dy = tNlDy[jj];
+                    const JSE_NNAP::flt_t dz = tNlDz[jj];
+                    virial[0] += dx*fx;
+                    virial[1] += dy*fy;
+                    virial[2] += dz*fz;
+                    virial[3] += dx*fy;
+                    virial[4] += dx*fz;
+                    virial[5] += dy*fz;
+                    if (vflagAtom) {
+                        vatom[j][0] += dx*fx;
+                        vatom[j][1] += dy*fy;
+                        vatom[j][2] += dz*fz;
+                        vatom[j][3] += dx*fy;
+                        vatom[j][4] += dx*fz;
+                        vatom[j][5] += dy*fz;
+                    }
+                    if (cvflagAtom) {
+                        cvatom[j][0] += dx*fx;
+                        cvatom[j][1] += dy*fy;
+                        cvatom[j][2] += dz*fz;
+                        cvatom[j][3] += dx*fy;
+                        cvatom[j][4] += dx*fz;
+                        cvatom[j][5] += dy*fz;
+                        cvatom[j][6] += dy*fx;
+                        cvatom[j][7] += dz*fx;
+                        cvatom[j][8] += dz*fy;
+                    }
                 }
             }
         }
