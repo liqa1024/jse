@@ -4,6 +4,7 @@ import jse.atom.IPairPotential;
 import jse.clib.*;
 import jse.code.IO;
 import jse.code.OS;
+import jse.code.SP;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
@@ -16,7 +17,6 @@ import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.*;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
@@ -247,14 +247,12 @@ public class NNAP2 implements IPairPotential {
     private static final String MARKER_REMOVE_END = "// <<< NNAPGEN REMOVE";
     private static final String MARKER_REPEAT_START = "// >>> NNAPGEN REPEAT";
     private static final String MARKER_REPEAT_END = "// <<< NNAPGEN REPEAT";
-    private static final String MARKER_REPEAT_REVERSE_START = "// >>> NNAPGEN REPEAT_REVERSE";
-    private static final String MARKER_REPEAT_REVERSE_END = "// <<< NNAPGEN REPEAT_REVERSE";
     private static final String MARKER_SWITCH_START = "// >>> NNAPGEN SWITCH";
     private static final String MARKER_SWITCH_END = "// <<< NNAPGEN SWITCH";
     
-    private static final int STATE_NORMAL = 0, STATE_REMOVE = 1, STATE_REPEAT = 2, STATE_REPEAT_REVERSE = 3, STATE_SWITCH = 4;
+    private static final int STATE_NORMAL = 0, STATE_REMOVE = 1, STATE_REPEAT = 2, STATE_SWITCH = 3;
     
-    private static void codeGen_(URL aSourceURL, String aTargetPath, Map<String, Object> aGenMap) throws IOException {
+    private static void codeGen_(URL aSourceURL, String aTargetPath, Map<String, Object> aGenMap) throws Exception {
         List<String> tLines;
         try (BufferedReader tReader = IO.toReader(aSourceURL)) {
             tLines = IO.readAllLines(tReader);
@@ -262,7 +260,7 @@ public class NNAP2 implements IPairPotential {
         IO.write(aTargetPath, processLines_(tLines, aGenMap));
     }
     @SuppressWarnings("unchecked")
-    private static List<String> processLines_(List<String> aLines, Map<String, Object> aGenMap) {
+    private static List<String> processLines_(List<String> aLines, Map<String, Object> aGenMap) throws Exception {
         int tState = STATE_NORMAL;
         List<String> rBuf0 = new ArrayList<>(), rBuf1 = new ArrayList<>();
         List<String> rOutLines = new ArrayList<>(aLines.size());
@@ -276,10 +274,6 @@ public class NNAP2 implements IPairPotential {
                 }
                 case MARKER_REPEAT_START: {
                     tState = STATE_REPEAT;
-                    break;
-                }
-                case MARKER_REPEAT_REVERSE_START: {
-                    tState = STATE_REPEAT_REVERSE;
                     break;
                 }
                 case MARKER_SWITCH_START: {
@@ -301,37 +295,16 @@ public class NNAP2 implements IPairPotential {
             case STATE_REPEAT: {
                 if (tLine.trim().startsWith(MARKER_REPEAT_END)) {
                     tState = STATE_NORMAL;
-                    String tKey = tLine.trim().substring(MARKER_REPEAT_END.length()).trim();
-                    Object tValue = aGenMap.get(tKey);
-                    if (tValue==null) throw new IllegalStateException("Missing repeat key: "+tKey);
-                    int tLoop = ((Number)tValue).intValue();
+                    String tRangeStr = tLine.trim().substring(MARKER_REPEAT_END.length()).trim();
+                    List<Integer> tRange = parseRepeatRange_(tRangeStr, aGenMap);
                     rBuf1.clear();
-                    for (int i = 0; i < tLoop; ++i) {
+                    for (int i : tRange) {
                         for (String tBufLine : rBuf0) {
                             // 这个方式可以简单通过 NNAPGENXXXX 的方式进行嵌套替换
-                            rBuf1.add(tBufLine.replace("NNAPGENX", i+":NNAPGEN"));
-                        }
-                    }
-                    rBuf0.clear();
-                    // 核心逻辑，repeat 内部只进行 NNAPGENX 替换，全部完成后递归处理后续
-                    rOutLines.addAll(processLines_(rBuf1, aGenMap));
-                } else {
-                    rBuf0.add(tLine);
-                }
-                break;
-            }
-            case STATE_REPEAT_REVERSE: {
-                if (tLine.trim().startsWith(MARKER_REPEAT_REVERSE_END)) {
-                    tState = STATE_NORMAL;
-                    String tKey = tLine.trim().substring(MARKER_REPEAT_REVERSE_END.length()).trim();
-                    Object tValue = aGenMap.get(tKey);
-                    if (tValue==null) throw new IllegalStateException("Missing repeat key: "+tKey);
-                    int tLoop = ((Number)tValue).intValue();
-                    rBuf1.clear();
-                    for (int i = tLoop-1; i >= 0; --i) {
-                        for (String tBufLine : rBuf0) {
-                            // 这个方式可以简单通过 NNAPGENXXXX 的方式进行嵌套替换
-                            rBuf1.add(tBufLine.replace("NNAPGENX", i+":NNAPGEN"));
+                            rBuf1.add(
+                                tBufLine.replace("NNAPGENX", i+":NNAPGEN")
+                                        .replace("NNAPGENS_X", String.valueOf(i))
+                            );
                         }
                     }
                     rBuf0.clear();
@@ -363,8 +336,10 @@ public class NNAP2 implements IPairPotential {
                         rBuf1.add(tCases+"{");
                         for (String tBufLine : rBuf0) {
                             // 这个方式可以简单通过 NNAPGENXXXX 的方式进行嵌套替换
-                            rBuf1.add(tBufLine.replace("NNAPGENX", i+":NNAPGEN")
-                                              .replace("NNAPGENS_"+tSwitcher, tSubList.get(0).toString()) // 总是合并到第一个组
+                            rBuf1.add(
+                                tBufLine.replace("NNAPGENX", i+":NNAPGEN")
+                                        .replace("NNAPGENS_"+tSwitcher, tSubList.get(0).toString()) // 总是合并到第一个组
+                                        .replace("NNAPGENS_X", String.valueOf(i))
                             );
                         }
                         rBuf1.add("break;");
@@ -395,6 +370,22 @@ public class NNAP2 implements IPairPotential {
         tArgs[0] = tLine.substring(1, tSplit).trim();
         tArgs[1] = tLine.substring(tSplit+1).trim();
         return tArgs;
+    }
+    @SuppressWarnings("unchecked")
+    private static List<Integer> parseRepeatRange_(String aRangeStr, Map<String, Object> aGenMap) throws Exception {
+        String tRangeStr = scriptReplace_(aRangeStr, aGenMap);
+        return (List<Integer>)SP.Groovy.runText(tRangeStr);
+    }
+    private static String scriptReplace_(String aScriptStr, Map<String, Object> aGenMap) {
+        int tStart = aScriptStr.indexOf('[');
+        if (tStart < 0) return aScriptStr;
+        int tEnd = aScriptStr.indexOf(']');
+        if (tEnd < 0) throw new IllegalArgumentException("invalid script: "+aScriptStr);
+        String tKey = aScriptStr.substring(tStart, tEnd+1);
+        Object tValue = aGenMap.get(tKey);
+        if (tValue==null) throw new IllegalStateException("Missing script key: "+tKey);
+        // 递归实现多个 key 的替换
+        return scriptReplace_(aScriptStr.replace(tKey, tValue.toString()), aGenMap);
     }
     
     private static String baseReplace_(String aLine, Map<String, Object> aGenMap) {

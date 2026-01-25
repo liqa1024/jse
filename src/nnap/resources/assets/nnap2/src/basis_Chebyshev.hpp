@@ -5,7 +5,7 @@
 
 namespace JSE_NNAP {
 
-static constexpr int chebyFpSize_(int aWType, int aTypeNum, int aNMax, int aFuseSize) noexcept {
+static constexpr int chebySizeFp_(int aWType, int aTypeNum, int aNMax, int aFuseSize) noexcept {
     switch(aWType) {
     case WTYPE_EXFULL:  {return (aTypeNum+1)*(aNMax+1);}
     case WTYPE_FULL:    {return aTypeNum*(aNMax+1);}
@@ -20,8 +20,9 @@ static constexpr int chebyFpSize_(int aWType, int aTypeNum, int aNMax, int aFuse
 template <int WTYPE, int NTYPES, int NMAX, int FSIZE, int FSTYLE, int FULL_CACHE>
 static void chebyForward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, double *rFp,
                          double *rCache, double aRCut, double *aFuseWeight) noexcept {
+    // const init
     constexpr int tWType = toInternalWType(WTYPE, NTYPES);
-    constexpr int tSizeFp = chebyFpSize_(tWType, NTYPES, NMAX, FSIZE);
+    constexpr int tSizeFp = chebySizeFp_(tWType, NTYPES, NMAX, FSIZE);
     // init cache
     double *rRn = NULL;
     double *rNlRn = NULL, *rNlFc = NULL;
@@ -76,6 +77,7 @@ template <int WTYPE, int NTYPES, int NMAX, int FSIZE, int FSTYLE, int FULL_CACHE
 static void chebyBackward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, double *aGradFp,
                           double *rGradNlDx, double *rGradNlDy, double *rGradNlDz,
                           double *rCache, double aRCut, double *aFuseWeight) noexcept {
+    // const init
     constexpr int tWType = toInternalWType(WTYPE, NTYPES);
     if (CLEAR_CACHE) {
         for (int j = 0; j < aNeiNum; ++j) {

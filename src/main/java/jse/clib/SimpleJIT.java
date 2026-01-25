@@ -115,7 +115,7 @@ public class SimpleJIT {
         @ApiStatus.Internal public long ptr_() {return mMethodPtr;}
     }
     
-    @FunctionalInterface public interface IDirIniter {String init(String aInput) throws IOException;}
+    @FunctionalInterface public interface IDirIniter {String init(String aInput) throws Exception;}
     public static class Engine implements IAutoShutdown {
         /// compiler stuffs
         private String mLibDir = null;
