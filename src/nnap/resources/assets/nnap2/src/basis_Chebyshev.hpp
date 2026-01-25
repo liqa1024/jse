@@ -19,7 +19,7 @@ static constexpr int chebySizeFp_(int aWType, int aTypeNum, int aNMax, int aFuse
 
 template <int WTYPE, int NTYPES, int NMAX, int FSIZE, int FSTYLE, int FULL_CACHE>
 static void chebyForward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, double *rFp,
-                         double *rCache, double aRCut, double *aFuseWeight) noexcept {
+                         double *rForwardCache, double aRCut, double *aFuseWeight) noexcept {
     // const init
     constexpr int tWType = toInternalWType(WTYPE, NTYPES);
     constexpr int tSizeFp = chebySizeFp_(tWType, NTYPES, NMAX, FSIZE);
@@ -27,10 +27,10 @@ static void chebyForward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlTy
     double *rRn = NULL;
     double *rNlRn = NULL, *rNlFc = NULL;
     if (FULL_CACHE) {
-        rNlRn = rCache;
+        rNlRn = rForwardCache;
         rNlFc = rNlRn + aNeiNum*(NMAX+1);
     } else {
-        rRn = rCache;
+        rRn = rForwardCache;
     }
     // clear fp first
     fill<tSizeFp>(rFp, 0.0);
@@ -76,7 +76,7 @@ static void chebyForward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlTy
 template <int WTYPE, int NTYPES, int NMAX, int FSIZE, int FSTYLE, int FULL_CACHE, int CLEAR_CACHE>
 static void chebyBackward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, double *aGradFp,
                           double *rGradNlDx, double *rGradNlDy, double *rGradNlDz,
-                          double *rCache, double aRCut, double *aFuseWeight) noexcept {
+                          double *aForwardCache, double *rBackwardCache, double aRCut, double *aFuseWeight) noexcept {
     // const init
     constexpr int tWType = toInternalWType(WTYPE, NTYPES);
     if (CLEAR_CACHE) {
@@ -87,13 +87,13 @@ static void chebyBackward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlT
         }
     }
     // init cache
-    double *tNlRn = rCache;
+    double *tNlRn = aForwardCache;
     double *tNlFc = tNlRn + aNeiNum*(NMAX+1);
     double *rRnPx = NULL, *rRnPy = NULL, *rRnPz = NULL, *rCheby2 = NULL;
     double *rNlRnPx = NULL, *rNlRnPy = NULL, *rNlRnPz = NULL;
     double *rNlFcPx = NULL, *rNlFcPy = NULL, *rNlFcPz = NULL;
     if (FULL_CACHE) {
-        rNlRnPx = tNlFc + aNeiNum;
+        rNlRnPx = rBackwardCache;
         rNlRnPy = rNlRnPx + aNeiNum*(NMAX+1);
         rNlRnPz = rNlRnPy + aNeiNum*(NMAX+1);
         rNlFcPx = rNlRnPz + aNeiNum*(NMAX+1);
@@ -101,7 +101,7 @@ static void chebyBackward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlT
         rNlFcPz = rNlFcPy + aNeiNum;
         rCheby2 = rNlFcPz + aNeiNum;
     } else {
-        rRnPx = tNlFc + aNeiNum;
+        rRnPx = rBackwardCache;
         rRnPy = rRnPx + (NMAX+1);
         rRnPz = rRnPy + (NMAX+1);
         rCheby2 = rRnPz + (NMAX+1);

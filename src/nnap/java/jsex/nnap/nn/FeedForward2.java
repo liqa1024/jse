@@ -251,9 +251,6 @@ public class FeedForward2 implements ISavable {
     public int inputSize() {
         return mInputDim;
     }
-    public int cacheSize() {
-        return mInputDim + mHiddenBiasesSize + mHiddenBiasesSize + mHiddenBiasesSize;
-    }
     
     public void updateGenMap(Map<String, Object> rGenMap) {
         int ti = mThisType-1;

@@ -132,6 +132,9 @@ public class Chebyshev2 extends WTypeBasis2 {
     public int forwardCacheSize(int aNN, boolean aFullCache) {
         return aFullCache ? aNN*(mNMax+1 + 1) : (mNMax+1);
     }
+    public int backwardCacheSize(int aNN, boolean aFullCache) {
+        return aFullCache ? (3*aNN*(mNMax+1 + 1) + (mNMax+1)) : (4*(mNMax+1));
+    }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap) {
         super.updateGenMap(rGenMap);
