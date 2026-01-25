@@ -15,7 +15,7 @@ static constexpr int chebySizeFp_(int aWType, int aTypeNum, int aNMax, int aFuse
     case WTYPE_EXFUSE:  {return (aFuseSize+1)*(aNMax+1);}
     default:            {return 0;}
     }
-};
+}
 
 template <int WTYPE, int NTYPES, int NMAX, int FSIZE, int FSTYLE, int FULL_CACHE>
 static void chebyForward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, double *rFp,
@@ -79,13 +79,6 @@ static void chebyBackward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlT
                           double *aForwardCache, double *rBackwardCache, double aRCut, double *aFuseWeight) noexcept {
     // const init
     constexpr int tWType = toInternalWType(WTYPE, NTYPES);
-    if (CLEAR_CACHE) {
-        for (int j = 0; j < aNeiNum; ++j) {
-            rGradNlDx[j] = 0.0;
-            rGradNlDy[j] = 0.0;
-            rGradNlDz[j] = 0.0;
-        }
-    }
     // init cache
     double *tNlRn = aForwardCache;
     double *tNlFc = tNlRn + aNeiNum*(NMAX+1);
@@ -105,6 +98,13 @@ static void chebyBackward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlT
         rRnPy = rRnPx + (NMAX+1);
         rRnPz = rRnPy + (NMAX+1);
         rCheby2 = rRnPz + (NMAX+1);
+    }
+    if (CLEAR_CACHE) {
+        for (int j = 0; j < aNeiNum; ++j) {
+            rGradNlDx[j] = 0.0;
+            rGradNlDy[j] = 0.0;
+            rGradNlDz[j] = 0.0;
+        }
     }
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {

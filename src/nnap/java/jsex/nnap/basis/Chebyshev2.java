@@ -5,7 +5,8 @@ import com.google.common.collect.ImmutableBiMap;
 import jse.code.UT;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
-import org.jetbrains.annotations.NotNull;
+import jse.math.vector.IVector;
+import jse.math.vector.RefVector;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -127,21 +128,21 @@ public class Chebyshev2 extends WTypeBasis2 {
      */
     @Override public int size() {return mSize;}
     /** @return {@inheritDoc} */
-    public int atomTypeNumber() {return mTypeNum;}
+    @Override public int atomTypeNumber() {return mTypeNum;}
     
-    public int forwardCacheSize(int aNN, boolean aFullCache) {
+    @Override public int forwardCacheSize(int aNN, boolean aFullCache) {
         return aFullCache ? aNN*(mNMax+1 + 1) : (mNMax+1);
     }
-    public int backwardCacheSize(int aNN, boolean aFullCache) {
+    @Override public int backwardCacheSize(int aNN, boolean aFullCache) {
         return aFullCache ? (3*aNN*(mNMax+1 + 1) + (mNMax+1)) : (4*(mNMax+1));
     }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap) {
         super.updateGenMap(rGenMap);
         int ti = mThisType-1;
+        rGenMap.put("[FP USE "+mThisType+"]", "chebyshev");
         rGenMap.put(ti+":NNAPGEN_FP_FSTYLE", mFuseStyle);
     }
-    
     @Override public boolean hasSameGenMap(Object aBasis) {
         if (!(aBasis instanceof Chebyshev2)) return false;
         Chebyshev2 tBasis = (Chebyshev2)aBasis;

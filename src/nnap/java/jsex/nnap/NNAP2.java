@@ -8,10 +8,11 @@ import jse.code.SP;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
+import jse.code.collection.NewCollections;
 import jse.code.functional.IUnaryFullOperator;
 import jse.math.vector.IVector;
 import jse.math.vector.Vectors;
-import jsex.nnap.basis.Chebyshev2;
+import jsex.nnap.basis.Basis2;
 import jsex.nnap.nn.FeedForward2;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.*;
@@ -66,6 +67,9 @@ public class NNAP2 implements IPairPotential {
         , "nn_FeedForward.hpp"
         , "basis_Chebyshev.hpp"
         , "basis_ChebyshevUtil.hpp"
+        , "basis_SphericalChebyshev.hpp"
+        , "basis_SphericalUtil.hpp"
+        , "basis_SphericalUtil0.hpp"
         , "nnap_interface.h"
         , INTERFACE_NAME
     };
@@ -74,7 +78,7 @@ public class NNAP2 implements IPairPotential {
     private final @Nullable String mUnits;
     private boolean mDead = false;
     private final int mThreadNumber;
-    private final Chebyshev2[] mBasis;
+    private final Basis2[] mBasis;
     private final FeedForward2[] mNN;
     public int atomTypeNumber() {return mSymbols.length;}
     @Override public boolean hasSymbol() {return true;}
@@ -87,7 +91,7 @@ public class NNAP2 implements IPairPotential {
     // 现在所有数据都改为 c 指针
     final NestedCPointer mDataIn, mDataOut;
     final IntCPointer mInNums;
-    final NestedCPointer mFpParam, mNnParam, mNormParam, mNnForwardCache, mNnBackwardCache;
+    final NestedCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam, mNnForwardCache, mNnBackwardCache;
     final DoubleCPointer mOutEng;
     final GrowableDoubleCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardCache;
     final GrowableIntCPointer mNlType, mNlIdx;
@@ -126,27 +130,31 @@ public class NNAP2 implements IPairPotential {
         mFpForwardCache = new GrowableDoubleCPointer(128);
         mFpBackwardCache = new GrowableDoubleCPointer(128);
         
+        mBasis = Basis2.load(NewCollections.map(tModels, info -> {
+            Object tBasisInfo = info.get("basis");
+            return tBasisInfo!=null ? tBasisInfo : Maps.of("type", "spherical_chebyshev");
+        }));
         // 临时实现的简单加载模型
-        mBasis = new Chebyshev2[tModelSize];
         mNN = new FeedForward2[tModelSize];
         for (int i = 0; i < tModelSize; ++i) {
-            Map<String, ?> tModel = tModels.get(i);
-            Map<?, ?> tBasisMap = (Map<?, ?>)tModel.get("basis");
-            if (tBasisMap==null) tBasisMap = Maps.of("type", "chebyshev");
-            mBasis[i] = Chebyshev2.load(i+1, tModelSize, tBasisMap);
-            Map<?, ?> tNNMap = (Map<?, ?>)tModel.get("nn");
+            Map<?, ?> tNNMap = (Map<?, ?>)tModels.get(i).get("nn");
             if (tNNMap ==null) throw new IllegalArgumentException("No nn in model, torch model is invalid now.");
             mNN[i] = FeedForward2.load(i+1, tNNMap);
         }
         // 继续初始化参数数组
+        mFpHyperParam = NestedCPointer.malloc(tModelSize);
         mFpParam = NestedCPointer.malloc(tModelSize);
         mNnParam = NestedCPointer.malloc(tModelSize);
         mNnForwardCache = NestedCPointer.malloc(tModelSize);
         mNnBackwardCache = NestedCPointer.malloc(tModelSize);
         for (int i = 0; i < tModelSize; ++i) {
-            DoubleCPointer tFpParam = DoubleCPointer.malloc(mBasis[i].parameterSize()+1);
-            tFpParam.putAt(0, mBasis[i].rcut());
-            fill_(tFpParam.plus(1), mBasis[i].parameters());
+            DoubleCPointer tFpHyperParam = DoubleCPointer.malloc(mBasis[i].hyperParameterSize()+1);
+            tFpHyperParam.putAt(0, mBasis[i].rcut());
+            fill_(tFpHyperParam.plus(1), mBasis[i].hyperParameters());
+            mFpHyperParam.putAt(i, tFpHyperParam);
+            
+            DoubleCPointer tFpParam = DoubleCPointer.malloc(mBasis[i].parameterSize());
+            fill_(tFpParam, mBasis[i].parameters());
             mFpParam.putAt(i, tFpParam);
             
             DoubleCPointer tNnParam = DoubleCPointer.malloc(mNN[i].parameterSize());
@@ -252,8 +260,11 @@ public class NNAP2 implements IPairPotential {
     private static final String MARKER_REPEAT_END = "// <<< NNAPGEN REPEAT";
     private static final String MARKER_SWITCH_START = "// >>> NNAPGEN SWITCH";
     private static final String MARKER_SWITCH_END = "// <<< NNAPGEN SWITCH";
+    private static final String MARKER_PICK_START = "// >>> NNAPGEN PICK";
+    private static final String MARKER_PICK_CASE = "// --- NNAPGEN PICK:";
+    private static final String MARKER_PICK_END = "// <<< NNAPGEN PICK";
     
-    private static final int STATE_NORMAL = 0, STATE_REMOVE = 1, STATE_REPEAT = 2, STATE_SWITCH = 3;
+    private static final int STATE_NORMAL = 0, STATE_REMOVE = 1, STATE_REPEAT = 2, STATE_SWITCH = 3, STATE_PICK = 4;
     
     private static void codeGen_(URL aSourceURL, String aTargetPath, Map<String, Object> aGenMap) throws Exception {
         List<String> tLines;
@@ -281,6 +292,10 @@ public class NNAP2 implements IPairPotential {
                 }
                 case MARKER_SWITCH_START: {
                     tState = STATE_SWITCH;
+                    break;
+                }
+                case MARKER_PICK_START: {
+                    tState = STATE_PICK;
                     break;
                 }
                 default: {
@@ -311,7 +326,7 @@ public class NNAP2 implements IPairPotential {
                         }
                     }
                     rBuf0.clear();
-                    // 核心逻辑，repeat 内部只进行 NNAPGENX 替换，全部完成后递归处理后续
+                    // 内部只核心逻辑，全部完成后递归处理后续
                     rOutLines.addAll(processLines_(rBuf1, aGenMap));
                 } else {
                     rBuf0.add(tLine);
@@ -350,7 +365,37 @@ public class NNAP2 implements IPairPotential {
                     }
                     rBuf0.clear();
                     rBuf1.add("}");
-                    // 核心逻辑，repeat 内部只进行 NNAPGENX 替换，全部完成后递归处理后续
+                    // 内部只核心逻辑，全部完成后递归处理后续
+                    rOutLines.addAll(processLines_(rBuf1, aGenMap));
+                } else {
+                    rBuf0.add(tLine);
+                }
+                break;
+            }
+            case STATE_PICK: {
+                if (tLine.trim().startsWith(MARKER_PICK_END)) {
+                    tState = STATE_NORMAL;
+                    String tKey = tLine.trim().substring(MARKER_PICK_END.length()).trim();
+                    Object tValue = aGenMap.get(tKey);
+                    if (tValue==null) throw new IllegalStateException("Missing pick key: "+tKey);
+                    rBuf1.clear();
+                    boolean tInCase = false;
+                    for (String tBufLine : rBuf0) {
+                        if (tInCase) {
+                            if (tBufLine.trim().startsWith(MARKER_PICK_CASE)) {
+                                break;
+                            } else {
+                                rBuf1.add(tBufLine);
+                            }
+                        } else {
+                            if (tBufLine.trim().startsWith(MARKER_PICK_CASE)) {
+                                String tCase = tBufLine.trim().substring(MARKER_PICK_CASE.length()).trim();
+                                if (tCase.equals(tValue)) tInCase = true;
+                            }
+                        }
+                    }
+                    rBuf0.clear();
+                    // 内部只核心逻辑，全部完成后递归处理后续
                     rOutLines.addAll(processLines_(rBuf1, aGenMap));
                 } else {
                     rBuf0.add(tLine);
@@ -406,6 +451,7 @@ public class NNAP2 implements IPairPotential {
         mDead = true;
         
         for (int i = 0; i < mSymbols.length; ++i) {
+            mFpHyperParam.getAt(i).free();
             mFpParam.getAt(i).free();
             mNnParam.getAt(i).free();
             mNormParam.getAt(i).free();
@@ -432,7 +478,7 @@ public class NNAP2 implements IPairPotential {
     @VisibleForTesting public int nthreads() {return threadNumber();}
     @Override public double rcutMax() {
         double tRCut = 0.0;
-        for (Chebyshev2 tBasis : mBasis) {
+        for (Basis2 tBasis : mBasis) {
             tRCut = Math.max(tRCut, tBasis.rcut());
         }
         return tRCut;
@@ -490,9 +536,10 @@ public class NNAP2 implements IPairPotential {
             mDataIn.putAt(2, mNlDy);
             mDataIn.putAt(3, mNlDz);
             mDataIn.putAt(4, mNlType);
-            mDataIn.putAt(5, mFpParam.getAt(cType-1));
-            mDataIn.putAt(6, mNnParam.getAt(cType-1));
-            mDataIn.putAt(7, mNormParam.getAt(cType-1));
+            mDataIn.putAt(5, mFpHyperParam.getAt(cType-1));
+            mDataIn.putAt(6, mFpParam.getAt(cType-1));
+            mDataIn.putAt(7, mNnParam.getAt(cType-1));
+            mDataIn.putAt(8, mNormParam.getAt(cType-1));
             mDataOut.putAt(0, mOutEng);
             mDataOut.putAt(1, mFpForwardCache);
             mDataOut.putAt(2, mNnForwardCache.getAt(cType-1));
@@ -527,9 +574,10 @@ public class NNAP2 implements IPairPotential {
             mDataIn.putAt(2, mNlDy);
             mDataIn.putAt(3, mNlDz);
             mDataIn.putAt(4, mNlType);
-            mDataIn.putAt(5, mFpParam.getAt(cType-1));
-            mDataIn.putAt(6, mNnParam.getAt(cType-1));
-            mDataIn.putAt(7, mNormParam.getAt(cType-1));
+            mDataIn.putAt(5, mFpHyperParam.getAt(cType-1));
+            mDataIn.putAt(6, mFpParam.getAt(cType-1));
+            mDataIn.putAt(7, mNnParam.getAt(cType-1));
+            mDataIn.putAt(8, mNormParam.getAt(cType-1));
             mDataOut.putAt(0, mOutEng);
             mDataOut.putAt(1, mGradNlDx);
             mDataOut.putAt(2, mGradNlDy);
@@ -606,16 +654,17 @@ public class NNAP2 implements IPairPotential {
         mDataIn.putAt(3, mNlDz);
         mDataIn.putAt(4, mNlType);
         mDataIn.putAt(5, mNlIdx);
-        mDataIn.putAt(6, mFpParam);
-        mDataIn.putAt(7, mNnParam);
-        mDataIn.putAt(8, mNormParam);
-        mDataIn.putAt(9, aPair.atomX());
-        mDataIn.putAt(10, aPair.atomType());
-        mDataIn.putAt(11, aPair.listIlist());
-        mDataIn.putAt(12, aPair.listNumneigh());
-        mDataIn.putAt(13, aPair.listFirstneigh());
-        mDataIn.putAt(14, aPair.mCutsq);
-        mDataIn.putAt(15, aPair.mLmpType2NNAPType);
+        mDataIn.putAt(6, mFpHyperParam);
+        mDataIn.putAt(7, mFpParam);
+        mDataIn.putAt(8, mNnParam);
+        mDataIn.putAt(9, mNormParam);
+        mDataIn.putAt(10, aPair.atomX());
+        mDataIn.putAt(11, aPair.atomType());
+        mDataIn.putAt(12, aPair.listIlist());
+        mDataIn.putAt(13, aPair.listNumneigh());
+        mDataIn.putAt(14, aPair.listFirstneigh());
+        mDataIn.putAt(15, aPair.mCutsq);
+        mDataIn.putAt(16, aPair.mLmpType2NNAPType);
         
         mDataOut.putAt(0, aPair.atomF());
         mDataOut.putAt(1, mGradNlDx);

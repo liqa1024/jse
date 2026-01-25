@@ -58,6 +58,13 @@ public class SimpleJIT {
          * 也可使用环境变量 {@code JSE_CMAKE_C_FLAGS_JIT} 来设置
          */
         public static @Nullable String CMAKE_C_FLAGS    = OS.env("JSE_CMAKE_C_FLAGS_JIT"   , jse.code.Conf.CMAKE_C_FLAGS);
+        
+        /**
+         * 控制是否在 jit 编译完成后自动清理工作目录，可以用于 debug
+         * <p>
+         * 也可使用环境变量 {@code JSE_JIT_CLEAN} 来设置
+         */
+        public static boolean CLEAN = OS.envZ("JSE_JIT_CLEAN", true);
     }
     
     /** 完全关闭 jit 的优化，主要用于调试或需要精确结果而不是速度 */
@@ -349,11 +356,13 @@ public class SimpleJIT {
                 throw new JITException("JIT Build Failed");
             }
             // 完事后移除临时解压得到的源码，这里需要对于神秘文件系统专门处理
-            if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
-                OS.printFilesystemInfo();
-                EXEC.system("rm -rf \""+tWorkingDir+"\"");
-            } else {
-                IO.removeDir(tWorkingDir);
+            if (Conf.CLEAN) {
+                if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
+                    OS.printFilesystemInfo();
+                    EXEC.system("rm -rf \""+tWorkingDir+"\"");
+                } else {
+                    IO.removeDir(tWorkingDir);
+                }
             }
             // jit 情况下不需要 lib 库，这里直接手动清理
             if (IS_WINDOWS && mCacheLib) {

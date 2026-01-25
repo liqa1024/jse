@@ -22,10 +22,10 @@ static inline double siluGradGrad(double aX, double *rGrad, double *rGradGrad) n
 
 
 // >>> NNAPGEN REMOVE
-#define NNAPGENXX_NN_IN_SIZE_H 10
+#define NNAPGENXX_NN_IN_SIZE_H 84
 #define NNAPGENXX_NN_OUT_SIZE_H 32
-#define NNAPGENX_NN_SIZE_IN 10
-#define NNAPGENX_NN_SIZE_HW (10*32)
+#define NNAPGENX_NN_SIZE_IN 84
+#define NNAPGENX_NN_SIZE_HW (84*32)
 #define NNAPGENX_NN_SIZE_HB 32
 #define NNAPGENX_NN_SIZE_OW 32
 // <<< NNAPGEN REMOVE

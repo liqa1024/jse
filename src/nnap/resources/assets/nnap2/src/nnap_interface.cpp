@@ -1,18 +1,25 @@
 #include "nnap_interface.h"
 
 #include "basis_Chebyshev.hpp"
-// #include "basis_SphericalChebyshev.hpp"
+#include "basis_SphericalChebyshev.hpp"
 #include "nn_FeedForward.hpp"
 
 // >>> NNAPGEN REMOVE
 #define NNAPGENX_FP_NTYPES 2
 #define NNAPGENX_FP_WTYPE JSE_NNAP::WTYPE_DEFAULT
 #define NNAPGENX_FP_NMAX 5
+#define NNAPGENX_FP_LMAX 6
+#define NNAPGENX_FP_NORADIAL 0
+#define NNAPGENX_FP_L3MAX 0
+#define NNAPGENX_FP_L4MAX 0
 #define NNAPGENX_FP_FSIZE 0
 #define NNAPGENX_FP_FSTYLE JSE_NNAP::FSTYLE_LIMITED
-#define NNAPGENX_FP_SIZE 10
-#define NNAPGENX_NN_SIZE_IN 10
-#define NNAPGENX_NN_SIZE_HW (10*32)
+#define NNAPGENX_FP_PFFLAG 0
+#define NNAPGENX_FP_PFSIZE 0
+#define NNAPGENX_FP_SIZE 84
+#define NNAPGENX_FP_SIZE_FW 0
+#define NNAPGENX_NN_SIZE_IN 84
+#define NNAPGENX_NN_SIZE_HW (84*32)
 #define NNAPGENX_NN_SIZE_HB 32
 #define NNAPGENX_NN_SIZE_OW 32
 #define NNAPGENS_aCType 1
@@ -23,7 +30,7 @@ namespace JSE_NNAP {
 
 template <int FP_FULL_CACHE, int NN_CACHE_GRAD>
 static int forward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, int aCType,
-                   double *aFpParam, double *aNnParam, double *aNormParam,
+                   double *aFpHyperParam, double *aFpParam, double *aNnParam, double *aNormParam,
                    double *rFpForwardCache, double *rNnForwardCache,
                    double *rOutEng) noexcept {
     double tNormMuEng = aNormParam[0];
@@ -33,10 +40,20 @@ static int forward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, in
     double *tNormMu = aNormParam + 2;
     double *tNormSigma = tNormMu + NNAPGENX_FP_SIZE;
     double *rFp = rNnForwardCache; // fp from nn cache, for smooth input
+// >>> NNAPGEN PICK
+// --- NNAPGEN PICK: spherical_chebyshev
+    sphForward<NNAPGENX_FP_WTYPE, NNAPGENX_FP_NTYPES, NNAPGENX_FP_NMAX, NNAPGENX_FP_LMAX, NNAPGENX_FP_NORADIAL, NNAPGENX_FP_L3MAX, NNAPGENX_FP_L4MAX,
+               NNAPGENX_FP_FSIZE, NNAPGENX_FP_PFFLAG, NNAPGENX_FP_PFSIZE, FP_FULL_CACHE>(
+        aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rFp,
+        rFpForwardCache, aFpHyperParam[0], aFpParam,
+        aFpParam+NNAPGENX_FP_SIZE_FW, aFpHyperParam[1]
+    );
+// --- NNAPGEN PICK: chebyshev
     chebyForward<NNAPGENX_FP_WTYPE, NNAPGENX_FP_NTYPES, NNAPGENX_FP_NMAX, NNAPGENX_FP_FSIZE, NNAPGENX_FP_FSTYLE, FP_FULL_CACHE>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rFp,
-        rFpForwardCache, aFpParam[0], aFpParam+1
+        rFpForwardCache, aFpHyperParam[0], aFpParam
     );
+// <<< NNAPGEN PICK [FP USE NNAPGENS_aCType]
     // norm fp here
     for (int i = 0; i < NNAPGENX_FP_SIZE; ++i) {
         rFp[i] = (rFp[i] - tNormMu[i]) / tNormSigma[i];
@@ -67,7 +84,7 @@ static int forward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, in
 template <int FP_FULL_CACHE, int CLEAR_CACHE>
 static int backward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, int aCType,
                     double *rGradNlDx, double *rGradNlDy, double *rGradNlDz,
-                    double *aFpParam, double *aNnParam, double *aNormParam,
+                    double *aFpHyperParam, double *aFpParam, double *aNnParam, double *aNormParam,
                     double *aFpForwardCache, double *aNnForwardCache, double *rFpBackwardCache, double *rNnBackwardCache,
                     double aInGradEng) noexcept {
     double tNormSigmaEng = aNormParam[1];
@@ -92,11 +109,22 @@ static int backward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, i
     for (int i = 0; i < NNAPGENX_FP_SIZE; ++i) {
         tGradFp[i] /= tNormSigma[i];
     }
+// >>> NNAPGEN PICK
+// --- NNAPGEN PICK: spherical_chebyshev
+    sphBackward<NNAPGENX_FP_WTYPE, NNAPGENX_FP_NTYPES, NNAPGENX_FP_NMAX, NNAPGENX_FP_LMAX, NNAPGENX_FP_NORADIAL, NNAPGENX_FP_L3MAX, NNAPGENX_FP_L4MAX,
+                NNAPGENX_FP_FSIZE, NNAPGENX_FP_PFFLAG, NNAPGENX_FP_PFSIZE, FP_FULL_CACHE, CLEAR_CACHE>(
+        aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, tGradFp,
+        rGradNlDx, rGradNlDy, rGradNlDz,
+        aFpForwardCache, rFpBackwardCache, aFpHyperParam[0], aFpParam,
+        aFpParam+NNAPGENX_FP_SIZE_FW, aFpHyperParam[1]
+    );
+// --- NNAPGEN PICK: chebyshev
     chebyBackward<NNAPGENX_FP_WTYPE, NNAPGENX_FP_NTYPES, NNAPGENX_FP_NMAX, NNAPGENX_FP_FSIZE, NNAPGENX_FP_FSTYLE, FP_FULL_CACHE, CLEAR_CACHE>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, tGradFp,
         rGradNlDx, rGradNlDy, rGradNlDz,
-        aFpForwardCache, rFpBackwardCache, aFpParam[0], aFpParam+1
+        aFpForwardCache, rFpBackwardCache, aFpHyperParam[0], aFpParam
     );
+// <<< NNAPGEN PICK [FP USE NNAPGENS_aCType]
     flag = 0;
 // <<< NNAPGEN SWITCH (aCType) [FP TYPE]
     if (flag) return 1;
@@ -118,9 +146,10 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergy(void *aDataIn, void *rDat
     double *tNlDy = (double *)tDataIn[2];
     double *tNlDz = (double *)tDataIn[3];
     int *tNlType = (int *)tDataIn[4];
-    double *tFpParam = (double *)tDataIn[5];
-    double *tNnParam = (double *)tDataIn[6];
-    double *tNormParam = (double *)tDataIn[7];
+    double *tFpHyperParam = (double *)tDataIn[5];
+    double *tFpParam = (double *)tDataIn[6];
+    double *tNnParam = (double *)tDataIn[7];
+    double *tNormParam = (double *)tDataIn[8];
     
     double *rOutEng = (double *)tDataOut[0];
     double *rFpForwardCache = (double *)tDataOut[1];
@@ -131,7 +160,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergy(void *aDataIn, void *rDat
     
     return JSE_NNAP::forward<JSE_NNAP::FALSE, JSE_NNAP::FALSE>(
         tNlDx, tNlDy, tNlDz, tNlType, tNN, ctype,
-        tFpParam, tNnParam, tNormParam,
+        tFpHyperParam, tFpParam, tNnParam, tNormParam,
         rFpForwardCache, rNnForwardCache,
         rOutEng
     );
@@ -146,9 +175,10 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *aDataIn, void 
     double *tNlDy = (double *)tDataIn[2];
     double *tNlDz = (double *)tDataIn[3];
     int *tNlType = (int *)tDataIn[4];
-    double *tFpParam = (double *)tDataIn[5];
-    double *tNnParam = (double *)tDataIn[6];
-    double *tNormParam = (double *)tDataIn[7];
+    double *tFpHyperParam = (double *)tDataIn[5];
+    double *tFpParam = (double *)tDataIn[6];
+    double *tNnParam = (double *)tDataIn[7];
+    double *tNormParam = (double *)tDataIn[8];
     
     double *rOutEng = (double *)tDataOut[0];
     double *tGradNlDx = (double *)tDataOut[1];
@@ -164,7 +194,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *aDataIn, void 
     
     int code = JSE_NNAP::forward<JSE_NNAP::TRUE, JSE_NNAP::TRUE>(
         tNlDx, tNlDy, tNlDz, tNlType, tNN, ctype,
-        tFpParam, tNnParam, tNormParam,
+        tFpHyperParam, tFpParam, tNnParam, tNormParam,
         rFpForwardCache, rNnForwardCache,
         rOutEng
     );
@@ -174,7 +204,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *aDataIn, void 
     return JSE_NNAP::backward<JSE_NNAP::FALSE, JSE_NNAP::TRUE>(
         tNlDx, tNlDy, tNlDz, tNlType, tNN, ctype,
         tGradNlDx, tGradNlDy, tGradNlDz,
-        tFpParam, tNnParam, tNormParam,
+        tFpHyperParam, tFpParam, tNnParam, tNormParam,
         rFpForwardCache, rNnForwardCache, rFpBackwardCache, rNnBackwardCache,
         1.0
     );
@@ -192,9 +222,10 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
     double *tNlDz = (double *)tDataIn[3];
     int *tNlType = (int *)tDataIn[4];
     int *tNlIdx = (int *)tDataIn[5];
-    double **tFpParam = (double **)tDataIn[6];
-    double **tNnParam = (double **)tDataIn[7];
-    double **tNormParam = (double **)tDataIn[8];
+    double **tFpHyperParam = (double **)tDataIn[6];
+    double **tFpParam = (double **)tDataIn[7];
+    double **tNnParam = (double **)tDataIn[8];
+    double **tNormParam = (double **)tDataIn[9];
     
     double *tGradNlDx = (double *)tDataOut[1];
     double *tGradNlDy = (double *)tDataOut[2];
@@ -212,15 +243,15 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
     int vflagAtom = tNums[5];
     int cvflagAtom = tNums[6];
     
-    double **x = (double **)tDataIn[9];
+    double **x = (double **)tDataIn[10];
     double **f = (double **)tDataOut[0];
-    int *type = (int *)tDataIn[10];
+    int *type = (int *)tDataIn[11];
     
-    int *ilist = (int *)tDataIn[11];
-    int *numneigh = (int *)tDataIn[12];
-    int **firstneigh = (int **)tDataIn[13];
-    double *cutsq = (double *)tDataIn[14];
-    int *tLmpType2NNAPType = (int *)tDataIn[15];
+    int *ilist = (int *)tDataIn[12];
+    int *numneigh = (int *)tDataIn[13];
+    int **firstneigh = (int **)tDataIn[14];
+    double *cutsq = (double *)tDataIn[15];
+    int *tLmpType2NNAPType = (int *)tDataIn[16];
     
     double *engVdwl = (double *)tDataOut[8];
     double *eatom = (double *)tDataOut[9];
@@ -264,7 +295,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
         double rEng;
         int code = JSE_NNAP::forward<JSE_NNAP::TRUE, JSE_NNAP::TRUE>(
             tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, typeiNNAP,
-            tFpParam[typeiNNAP-1], tNnParam[typeiNNAP-1], tNormParam[typeiNNAP-1],
+            tFpHyperParam[typeiNNAP-1], tFpParam[typeiNNAP-1], tNnParam[typeiNNAP-1], tNormParam[typeiNNAP-1],
             rFpForwardCache, rNnForwardCache[typeiNNAP-1],
             &rEng
         );
@@ -273,7 +304,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
         code = JSE_NNAP::backward<JSE_NNAP::FALSE, JSE_NNAP::TRUE>(
             tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, typeiNNAP,
             tGradNlDx, tGradNlDy, tGradNlDz,
-            tFpParam[typeiNNAP-1], tNnParam[typeiNNAP-1], tNormParam[typeiNNAP-1],
+            tFpHyperParam[typeiNNAP-1], tFpParam[typeiNNAP-1], tNnParam[typeiNNAP-1], tNormParam[typeiNNAP-1],
             rFpForwardCache, rNnForwardCache[typeiNNAP-1], rFpBackwardCache, rNnBackwardCache[typeiNNAP-1],
             1.0
         );

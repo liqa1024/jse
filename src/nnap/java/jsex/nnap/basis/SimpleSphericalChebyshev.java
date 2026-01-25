@@ -18,7 +18,11 @@ import static jse.math.MathEX.SQRT2_INV;
  * 这里提供一个简单的纯 java 实现，用于测试或者高兼容性的方案
  * <p>
  * 为了中间变量缓存利用效率，此类相同实例线程不安全，而不同实例之间线程安全
- * @author liqa
+ * <p>
+ * Reference:
+ * <a href="https://link.springer.com/article/10.1007/s40843-024-2953-9">
+ * Efficient and accurate simulation of vitrification in multi-component metallic liquids with neural-network potentials </a>
+ * @author Su Rui, liqa
  */
 public class SimpleSphericalChebyshev extends Basis {
     final int mTypeNum;

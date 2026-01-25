@@ -14,7 +14,7 @@ import java.util.Map;
 
 import static jse.code.CS.RANDOM;
 
-abstract class WTypeBasis2 implements ISavable {
+abstract class WTypeBasis2 extends Basis2 {
     public final static int WTYPE_DEFAULT = 0, WTYPE_NONE = -1, WTYPE_FULL = 2, WTYPE_EXFULL = 3, WTYPE_FUSE = 4, WTYPE_EXFUSE = 6;
     final static BiMap<String, Integer> ALL_WTYPE = ImmutableBiMap.<String, Integer>builder()
         .put("default", WTYPE_DEFAULT)
@@ -33,7 +33,7 @@ abstract class WTypeBasis2 implements ISavable {
     int mSizeN;
     int mFuseSize;
     /** @return {@inheritDoc} */
-    public int thisType() {return mThisType;}
+    @Override public int thisType() {return mThisType;}
     
     WTypeBasis2(int aThisType, int aTypeNum, int aNMax, int aWType, @Nullable RowMatrix aFuseWeight) {
         if (aTypeNum <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+aTypeNum);
@@ -114,9 +114,9 @@ abstract class WTypeBasis2 implements ISavable {
         return RowMatrix.zeros(aTypeNum, ((Number)tFuseSize).intValue());
     }
     
-    public abstract int size();
+    @Override public abstract int size();
     
-    public void initParameters() {
+    @Override public void initParameters() {
         if (mWType!=WTYPE_FUSE && mWType!=WTYPE_EXFUSE) return;
         assert mFuseWeight != null;
         mFuseWeight.assignRow(() -> RANDOM.nextDouble(-1, 1));
@@ -125,28 +125,29 @@ abstract class WTypeBasis2 implements ISavable {
             tCol.div2this(tCol.operation().norm1() / mTypeNum);
         }
     }
-    public IVector parameters() {
+    @Override public IVector parameters() {
         if (mWType!=WTYPE_FUSE && mWType!=WTYPE_EXFUSE) return null;
         assert mFuseWeight != null;
         return mFuseWeight.asVecRow();
     }
-    public int parameterSize() {
+    @Override public int parameterSize() {
         if (mWType!=WTYPE_FUSE && mWType!=WTYPE_EXFUSE) return 0;
         assert mFuseWeight != null;
         return mFuseWeight.internalDataSize();
     }
-    public boolean hasParameters() {return mWType==WTYPE_FUSE || mWType==WTYPE_EXFUSE;}
+    @Override public boolean hasParameters() {return mWType==WTYPE_FUSE || mWType==WTYPE_EXFUSE;}
     
-    public void updateGenMap(Map<String, Object> rGenMap) {
+    @Override public void updateGenMap(Map<String, Object> rGenMap) {
         int ti = mThisType-1;
+        rGenMap.put(ti+":NNAPGEN_FP_SIZE_FW", mFuseWeight==null?0:mFuseWeight.internalDataSize());
         rGenMap.put(ti+":NNAPGEN_FP_NTYPES", mTypeNum);
-        rGenMap.put(ti+":NNAPGEN_FP_SIZE", size());
         rGenMap.put(ti+":NNAPGEN_FP_WTYPE", mWType);
         rGenMap.put(ti+":NNAPGEN_FP_NMAX", mNMax);
         rGenMap.put(ti+":NNAPGEN_FP_FSIZE", mFuseSize);
+        rGenMap.put(ti+":NNAPGEN_FP_SIZE", size()); // 注意这个先后顺序也会影响替换结果，这里就不去改了
     }
     
-    public boolean hasSameGenMap(Object aBasis) {
+    @Override public boolean hasSameGenMap(Object aBasis) {
         if (!(aBasis instanceof WTypeBasis2)) return false;
         WTypeBasis2 tBasis = (WTypeBasis2)aBasis;
         return mTypeNum==tBasis.mTypeNum && size()==tBasis.size() && mWType==tBasis.mWType && mNMax==tBasis.mNMax && mFuseSize==tBasis.mFuseSize;
