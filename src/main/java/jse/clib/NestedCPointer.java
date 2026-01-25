@@ -122,9 +122,9 @@ public class NestedCPointer extends CPointer {
      * 设置此指针对应的值，即对应 c 中的 {@code *ptr = aValue}
      * @param aValue 需要设置的值
      */
-    public void set(@NotNull CPointer aValue) {
+    public void set(@NotNull ICPointer aValue) {
         if (isNull()) throw new NullPointerException();
-        set_(mPtr, aValue.mPtr);
+        set_(mPtr, aValue.ptr_());
     }
     native static void set_(long aPtr, long aValue);
     
@@ -133,9 +133,9 @@ public class NestedCPointer extends CPointer {
      * @param aIdx 需要设置的索引位置
      * @param aValue 需要设置的值
      */
-    public void putAt(int aIdx, @NotNull CPointer aValue) {
+    public void putAt(int aIdx, @NotNull ICPointer aValue) {
         if (isNull()) throw new NullPointerException();
-        putAt_(mPtr, aIdx, aValue.mPtr);
+        putAt_(mPtr, aIdx, aValue.ptr_());
     }
     native static void putAt_(long aPtr, int aIdx, long aValue);
     

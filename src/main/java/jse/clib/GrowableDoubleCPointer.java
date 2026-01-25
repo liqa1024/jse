@@ -10,7 +10,7 @@ import org.jetbrains.annotations.ApiStatus;
  * @author liqa
  */
 @ApiStatus.Experimental
-public class GrowableDoubleCPointer extends DoubleCPointer {
+public class GrowableDoubleCPointer extends DoubleCPointer implements IGrowableCPointer {
     protected int mCount = 0;
     public GrowableDoubleCPointer(int aInitCount) {
         super(malloc_(aInitCount, TYPE_SIZE));

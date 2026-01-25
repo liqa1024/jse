@@ -29,17 +29,17 @@
 namespace JSE_NNAP {
 
 template <int FP_FULL_CACHE, int NN_CACHE_GRAD>
-static int forward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, int aCType,
-                   double *aFpHyperParam, double *aFpParam, double *aNnParam, double *aNormParam,
-                   double *rFpForwardCache, double *rNnForwardCache,
-                   double *rOutEng) noexcept {
-    double tNormMuEng = aNormParam[0];
-    double tNormSigmaEng = aNormParam[1];
+static int forward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, int aCType,
+                   flt_t *aFpHyperParam, flt_t *aFpParam, flt_t *aNnParam, flt_t *aNormParam,
+                   flt_t *rFpForwardCache, flt_t *rNnForwardCache,
+                   flt_t *rOutEng) noexcept {
+    flt_t tNormMuEng = aNormParam[0];
+    flt_t tNormSigmaEng = aNormParam[1];
     int flag = 1;
 // >>> NNAPGEN SWITCH
-    double *tNormMu = aNormParam + 2;
-    double *tNormSigma = tNormMu + NNAPGENX_FP_SIZE;
-    double *rFp = rNnForwardCache; // fp from nn cache, for smooth input
+    flt_t *tNormMu = aNormParam + 2;
+    flt_t *tNormSigma = tNormMu + NNAPGENX_FP_SIZE;
+    flt_t *rFp = rNnForwardCache; // fp from nn cache, for smooth input
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: spherical_chebyshev
     sphForward<NNAPGENX_FP_WTYPE, NNAPGENX_FP_NTYPES, NNAPGENX_FP_NMAX, NNAPGENX_FP_LMAX, NNAPGENX_FP_NORADIAL, NNAPGENX_FP_L3MAX, NNAPGENX_FP_L4MAX,
@@ -63,13 +63,13 @@ static int forward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, in
     if (flag) return 1;
     
 // >>> NNAPGEN SWITCH
-    double *tHiddenWeights = aNnParam;
-    double *tOutputWeights = tHiddenWeights + NNAPGENX_NN_SIZE_HW;
-    double *tHiddenBiases = tOutputWeights + NNAPGENX_NN_SIZE_OW;
-    double tOutputBias = tHiddenBiases[NNAPGENX_NN_SIZE_HB];
-    double *rLayers = rNnForwardCache; // first layer is fp
-    double *rSiLUGrad = NN_CACHE_GRAD ? (rLayers+(NNAPGENX_NN_SIZE_IN+NNAPGENX_NN_SIZE_HB)) : NULL;
-    double tEng = nnForward<NNAPGENS_aCType, NN_CACHE_GRAD>(rLayers, tHiddenWeights, tHiddenBiases, tOutputWeights, tOutputBias, rSiLUGrad);
+    flt_t *tHiddenWeights = aNnParam;
+    flt_t *tOutputWeights = tHiddenWeights + NNAPGENX_NN_SIZE_HW;
+    flt_t *tHiddenBiases = tOutputWeights + NNAPGENX_NN_SIZE_OW;
+    flt_t tOutputBias = tHiddenBiases[NNAPGENX_NN_SIZE_HB];
+    flt_t *rLayers = rNnForwardCache; // first layer is fp
+    flt_t *rSiLUGrad = NN_CACHE_GRAD ? (rLayers+(NNAPGENX_NN_SIZE_IN+NNAPGENX_NN_SIZE_HB)) : NULL;
+    flt_t tEng = nnForward<NNAPGENS_aCType, NN_CACHE_GRAD>(rLayers, tHiddenWeights, tHiddenBiases, tOutputWeights, tOutputBias, rSiLUGrad);
     // denorm energy here
     tEng = tEng*tNormSigmaEng + tNormMuEng;
     *rOutEng = tEng;
@@ -82,29 +82,29 @@ static int forward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, in
 
 
 template <int FP_FULL_CACHE, int CLEAR_CACHE>
-static int backward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, int aCType,
-                    double *rGradNlDx, double *rGradNlDy, double *rGradNlDz,
-                    double *aFpHyperParam, double *aFpParam, double *aNnParam, double *aNormParam,
-                    double *aFpForwardCache, double *aNnForwardCache, double *rFpBackwardCache, double *rNnBackwardCache,
-                    double aInGradEng) noexcept {
-    double tNormSigmaEng = aNormParam[1];
+static int backward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, int aCType,
+                    flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
+                    flt_t *aFpHyperParam, flt_t *aFpParam, flt_t *aNnParam, flt_t *aNormParam,
+                    flt_t *aFpForwardCache, flt_t *aNnForwardCache, flt_t *rFpBackwardCache, flt_t *rNnBackwardCache,
+                    flt_t aInGradEng) noexcept {
+    flt_t tNormSigmaEng = aNormParam[1];
     int flag = 1;
 // >>> NNAPGEN SWITCH
     // denorm energy here
     aInGradEng = aInGradEng*tNormSigmaEng;
-    double *tHiddenWeights = aNnParam;
-    double *tOutputWeights = tHiddenWeights + NNAPGENX_NN_SIZE_HW;
-    double *rGradLayers = rNnBackwardCache; // first layer is fp
-    double *tSiLUGrad = aNnForwardCache + (NNAPGENX_NN_SIZE_IN+NNAPGENX_NN_SIZE_HB);
+    flt_t *tHiddenWeights = aNnParam;
+    flt_t *tOutputWeights = tHiddenWeights + NNAPGENX_NN_SIZE_HW;
+    flt_t *rGradLayers = rNnBackwardCache; // first layer is fp
+    flt_t *tSiLUGrad = aNnForwardCache + (NNAPGENX_NN_SIZE_IN+NNAPGENX_NN_SIZE_HB);
     nnBackward<NNAPGENS_aCType, CLEAR_CACHE>(aInGradEng, rGradLayers, tHiddenWeights, tOutputWeights, tSiLUGrad);
     flag = 0;
 // <<< NNAPGEN SWITCH (aCType) [NN TYPE]
     if (flag) return 1;
 
 // >>> NNAPGEN SWITCH
-    double *tNormMu = aNormParam + 2;
-    double *tNormSigma = tNormMu + NNAPGENX_FP_SIZE;
-    double *tGradFp = rNnBackwardCache; // fp from nn cache, for smooth input
+    flt_t *tNormMu = aNormParam + 2;
+    flt_t *tNormSigma = tNormMu + NNAPGENX_FP_SIZE;
+    flt_t *tGradFp = rNnBackwardCache; // fp from nn cache, for smooth input
     // norm fp here
     for (int i = 0; i < NNAPGENX_FP_SIZE; ++i) {
         tGradFp[i] /= tNormSigma[i];
@@ -142,18 +142,18 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergy(void *aDataIn, void *rDat
     void **tDataOut = (void **)rDataOut;
     
     int *tNums = (int *)tDataIn[0];
-    double *tNlDx = (double *)tDataIn[1];
-    double *tNlDy = (double *)tDataIn[2];
-    double *tNlDz = (double *)tDataIn[3];
+    JSE_NNAP::flt_t *tNlDx = (JSE_NNAP::flt_t *)tDataIn[1];
+    JSE_NNAP::flt_t *tNlDy = (JSE_NNAP::flt_t *)tDataIn[2];
+    JSE_NNAP::flt_t *tNlDz = (JSE_NNAP::flt_t *)tDataIn[3];
     int *tNlType = (int *)tDataIn[4];
-    double *tFpHyperParam = (double *)tDataIn[5];
-    double *tFpParam = (double *)tDataIn[6];
-    double *tNnParam = (double *)tDataIn[7];
-    double *tNormParam = (double *)tDataIn[8];
+    JSE_NNAP::flt_t *tFpHyperParam = (JSE_NNAP::flt_t *)tDataIn[5];
+    JSE_NNAP::flt_t *tFpParam = (JSE_NNAP::flt_t *)tDataIn[6];
+    JSE_NNAP::flt_t *tNnParam = (JSE_NNAP::flt_t *)tDataIn[7];
+    JSE_NNAP::flt_t *tNormParam = (JSE_NNAP::flt_t *)tDataIn[8];
     
-    double *rOutEng = (double *)tDataOut[0];
-    double *rFpForwardCache = (double *)tDataOut[1];
-    double *rNnForwardCache = (double *)tDataOut[2];
+    JSE_NNAP::flt_t *rOutEng = (JSE_NNAP::flt_t *)tDataOut[0];
+    JSE_NNAP::flt_t *rFpForwardCache = (JSE_NNAP::flt_t *)tDataOut[1];
+    JSE_NNAP::flt_t *rNnForwardCache = (JSE_NNAP::flt_t *)tDataOut[2];
     
     int tNN = tNums[0];
     int ctype = tNums[1];
@@ -171,23 +171,23 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *aDataIn, void 
     void **tDataOut = (void **)rDataOut;
     
     int *tNums = (int *)tDataIn[0];
-    double *tNlDx = (double *)tDataIn[1];
-    double *tNlDy = (double *)tDataIn[2];
-    double *tNlDz = (double *)tDataIn[3];
+    JSE_NNAP::flt_t *tNlDx = (JSE_NNAP::flt_t *)tDataIn[1];
+    JSE_NNAP::flt_t *tNlDy = (JSE_NNAP::flt_t *)tDataIn[2];
+    JSE_NNAP::flt_t *tNlDz = (JSE_NNAP::flt_t *)tDataIn[3];
     int *tNlType = (int *)tDataIn[4];
-    double *tFpHyperParam = (double *)tDataIn[5];
-    double *tFpParam = (double *)tDataIn[6];
-    double *tNnParam = (double *)tDataIn[7];
-    double *tNormParam = (double *)tDataIn[8];
+    JSE_NNAP::flt_t *tFpHyperParam = (JSE_NNAP::flt_t *)tDataIn[5];
+    JSE_NNAP::flt_t *tFpParam = (JSE_NNAP::flt_t *)tDataIn[6];
+    JSE_NNAP::flt_t *tNnParam = (JSE_NNAP::flt_t *)tDataIn[7];
+    JSE_NNAP::flt_t *tNormParam = (JSE_NNAP::flt_t *)tDataIn[8];
     
-    double *rOutEng = (double *)tDataOut[0];
-    double *tGradNlDx = (double *)tDataOut[1];
-    double *tGradNlDy = (double *)tDataOut[2];
-    double *tGradNlDz = (double *)tDataOut[3];
-    double *rFpForwardCache = (double *)tDataOut[4];
-    double *rNnForwardCache = (double *)tDataOut[5];
-    double *rFpBackwardCache = (double *)tDataOut[6];
-    double *rNnBackwardCache = (double *)tDataOut[7];
+    JSE_NNAP::flt_t *rOutEng = (JSE_NNAP::flt_t *)tDataOut[0];
+    JSE_NNAP::flt_t *tGradNlDx = (JSE_NNAP::flt_t *)tDataOut[1];
+    JSE_NNAP::flt_t *tGradNlDy = (JSE_NNAP::flt_t *)tDataOut[2];
+    JSE_NNAP::flt_t *tGradNlDz = (JSE_NNAP::flt_t *)tDataOut[3];
+    JSE_NNAP::flt_t *rFpForwardCache = (JSE_NNAP::flt_t *)tDataOut[4];
+    JSE_NNAP::flt_t *rNnForwardCache = (JSE_NNAP::flt_t *)tDataOut[5];
+    JSE_NNAP::flt_t *rFpBackwardCache = (JSE_NNAP::flt_t *)tDataOut[6];
+    JSE_NNAP::flt_t *rNnBackwardCache = (JSE_NNAP::flt_t *)tDataOut[7];
     
     int tNN = tNums[0];
     int ctype = tNums[1];
@@ -217,23 +217,23 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
     void **tDataOut = (void **)rDataOut;
     
     int *tNums = (int *)tDataIn[0];
-    double *tNlDx = (double *)tDataIn[1];
-    double *tNlDy = (double *)tDataIn[2];
-    double *tNlDz = (double *)tDataIn[3];
+    JSE_NNAP::flt_t *tNlDx = (JSE_NNAP::flt_t *)tDataIn[1];
+    JSE_NNAP::flt_t *tNlDy = (JSE_NNAP::flt_t *)tDataIn[2];
+    JSE_NNAP::flt_t *tNlDz = (JSE_NNAP::flt_t *)tDataIn[3];
     int *tNlType = (int *)tDataIn[4];
     int *tNlIdx = (int *)tDataIn[5];
-    double **tFpHyperParam = (double **)tDataIn[6];
-    double **tFpParam = (double **)tDataIn[7];
-    double **tNnParam = (double **)tDataIn[8];
-    double **tNormParam = (double **)tDataIn[9];
+    JSE_NNAP::flt_t **tFpHyperParam = (JSE_NNAP::flt_t **)tDataIn[6];
+    JSE_NNAP::flt_t **tFpParam = (JSE_NNAP::flt_t **)tDataIn[7];
+    JSE_NNAP::flt_t **tNnParam = (JSE_NNAP::flt_t **)tDataIn[8];
+    JSE_NNAP::flt_t **tNormParam = (JSE_NNAP::flt_t **)tDataIn[9];
     
-    double *tGradNlDx = (double *)tDataOut[1];
-    double *tGradNlDy = (double *)tDataOut[2];
-    double *tGradNlDz = (double *)tDataOut[3];
-    double *rFpForwardCache = (double *)tDataOut[4];
-    double **rNnForwardCache = (double **)tDataOut[5];
-    double *rFpBackwardCache = (double *)tDataOut[6];
-    double **rNnBackwardCache = (double **)tDataOut[7];
+    JSE_NNAP::flt_t *tGradNlDx = (JSE_NNAP::flt_t *)tDataOut[1];
+    JSE_NNAP::flt_t *tGradNlDy = (JSE_NNAP::flt_t *)tDataOut[2];
+    JSE_NNAP::flt_t *tGradNlDz = (JSE_NNAP::flt_t *)tDataOut[3];
+    JSE_NNAP::flt_t *rFpForwardCache = (JSE_NNAP::flt_t *)tDataOut[4];
+    JSE_NNAP::flt_t **rNnForwardCache = (JSE_NNAP::flt_t **)tDataOut[5];
+    JSE_NNAP::flt_t *rFpBackwardCache = (JSE_NNAP::flt_t *)tDataOut[6];
+    JSE_NNAP::flt_t **rNnBackwardCache = (JSE_NNAP::flt_t **)tDataOut[7];
     
     int numneighMax = tNums[0];
     int inum = tNums[1];
@@ -281,9 +281,9 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
             double delz = x[j][2] - ztmp;
             double rsq = delx*delx + dely*dely + delz*delz;
             if (rsq < cutsq[typei]) {
-                tNlDx[tNeiNum] = delx;
-                tNlDy[tNeiNum] = dely;
-                tNlDz[tNeiNum] = delz;
+                tNlDx[tNeiNum] = (JSE_NNAP::flt_t)delx;
+                tNlDy[tNeiNum] = (JSE_NNAP::flt_t)dely;
+                tNlDz[tNeiNum] = (JSE_NNAP::flt_t)delz;
                 tNlType[tNeiNum] = tLmpType2NNAPType[type[j]];
                 tNlIdx[tNeiNum] = j;
                 ++tNeiNum;
@@ -292,7 +292,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
         int typeiNNAP = tLmpType2NNAPType[typei];
         
         /// begin nnap here
-        double rEng;
+        JSE_NNAP::flt_t rEng;
         int code = JSE_NNAP::forward<JSE_NNAP::TRUE, JSE_NNAP::TRUE>(
             tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, typeiNNAP,
             tFpHyperParam[typeiNNAP-1], tFpParam[typeiNNAP-1], tNnParam[typeiNNAP-1], tNormParam[typeiNNAP-1],
@@ -317,9 +317,9 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
         }
         for (int jj = 0; jj < tNeiNum; ++jj) {
             int j = tNlIdx[jj];
-            double fx = tGradNlDx[jj];
-            double fy = tGradNlDy[jj];
-            double fz = tGradNlDz[jj];
+            const JSE_NNAP::flt_t fx = tGradNlDx[jj];
+            const JSE_NNAP::flt_t fy = tGradNlDy[jj];
+            const JSE_NNAP::flt_t fz = tGradNlDz[jj];
             f[i][0] -= fx;
             f[i][1] -= fy;
             f[i][2] -= fz;
@@ -327,9 +327,9 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
             f[j][1] += fy;
             f[j][2] += fz;
             if (vflag) {
-                double dx = tNlDx[jj];
-                double dy = tNlDy[jj];
-                double dz = tNlDz[jj];
+                const JSE_NNAP::flt_t dx = tNlDx[jj];
+                const JSE_NNAP::flt_t dy = tNlDy[jj];
+                const JSE_NNAP::flt_t dz = tNlDz[jj];
                 virial[0] += dx*fx;
                 virial[1] += dy*fy;
                 virial[2] += dz*fz;

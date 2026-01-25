@@ -56,8 +56,14 @@ public class NNAP2 implements IPairPotential {
          * 默认会使用 BASE 优化
          */
         public static int OPTIM_LEVEL = OS.envI("JSE_NNAP_OPTIM_LEVEL", SimpleJIT.OPTIM_BASE);
-        /** 设置 lammps 会使用的近邻列表数目大小限制，默认为 2000 */
+        /**
+         * 设置 lammps 会使用的近邻列表数目大小限制，默认为 2000
+         */
         public static int LAMMPS_NL_MAX = OS.envI("JSE_NNAP_LAMMPS_NL_MAX", 2000);
+        /**
+         * 设置 NNAP 内部计算的默认精度，默认为 double
+         */
+        public static String PRECISION = OS.env("JSE_NNAP_PRECISION", "double");
     }
     
     public final static int VERSION = 6;
@@ -76,6 +82,7 @@ public class NNAP2 implements IPairPotential {
     
     private final String[] mSymbols;
     private final @Nullable String mUnits;
+    private final boolean mSinglePrecision;
     private boolean mDead = false;
     private final int mThreadNumber;
     private final Basis2[] mBasis;
@@ -84,20 +91,21 @@ public class NNAP2 implements IPairPotential {
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return mSymbols[aType-1];}
     public String units() {return mUnits;}
+    public String precision() {return mSinglePrecision ? "single" : "double";}
     // jit stuffs
     private static final String NAME_CAL_ENERGY = "jse_nnap_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nnap_calEnergyForce", NAME_COMPUTE_LAMMPS = "jse_nnap_computeLammps";
     private final SimpleJIT.Engine mEngine;
-    final SimpleJIT.Method mCalEnergy, mCalEnergyForce, mComputeLammps;
+    private final SimpleJIT.Method mCalEnergy, mCalEnergyForce, mComputeLammps;
     // 现在所有数据都改为 c 指针
-    final NestedCPointer mDataIn, mDataOut;
-    final IntCPointer mInNums;
-    final NestedCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam, mNnForwardCache, mNnBackwardCache;
-    final DoubleCPointer mOutEng;
-    final GrowableDoubleCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardCache;
-    final GrowableIntCPointer mNlType, mNlIdx;
+    private final NestedCPointer mDataIn, mDataOut;
+    private final IntCPointer mInNums;
+    private final NestedCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam, mNnForwardCache, mNnBackwardCache;
+    private final CPointer mOutEng;
+    private final IGrowableCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardCache;
+    private final GrowableIntCPointer mNlType, mNlIdx;
     
     @SuppressWarnings("unchecked")
-    NNAP2(String aLibDir, String aProjectName, Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
+    NNAP2(String aLibDir, String aProjectName, Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, @Nullable String aPrecision) throws Exception {
         mThreadNumber = aThreadNumber;
         Number tVersion = (Number)aModelInfo.get("version");
         if (tVersion != null) {
@@ -105,6 +113,15 @@ public class NNAP2 implements IPairPotential {
             if (tVersionValue > VERSION) throw new IllegalArgumentException("Unsupported version: " + tVersionValue);
         }
         mUnits = UT.Code.toString(aModelInfo.get("units"));
+        String tPrecision = aPrecision!=null?aPrecision:Conf.PRECISION;
+        if (tPrecision.equals("single")) {
+            mSinglePrecision = true;
+        } else
+        if (tPrecision.equals("double")) {
+            mSinglePrecision = false;
+        } else {
+            throw new IllegalArgumentException("NNAP precision MUST be 'double' or 'single', input: " + tPrecision);
+        }
         List<? extends Map<String, ?>> tModels = (List<? extends Map<String, ?>>)aModelInfo.get("models");
         if (tModels == null) throw new IllegalArgumentException("No models in ModelInfo");
         int tModelSize = tModels.size();
@@ -118,17 +135,17 @@ public class NNAP2 implements IPairPotential {
         mDataIn = NestedCPointer.malloc(20);
         mDataOut = NestedCPointer.malloc(20);
         mInNums = IntCPointer.malloc(20);
-        mNlDx = new GrowableDoubleCPointer(16);
-        mNlDy = new GrowableDoubleCPointer(16);
-        mNlDz = new GrowableDoubleCPointer(16);
+        mNlDx = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mNlDy = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mNlDz = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mNlType = new GrowableIntCPointer(16);
         mNlIdx = new GrowableIntCPointer(16);
-        mGradNlDx = new GrowableDoubleCPointer(16);
-        mGradNlDy = new GrowableDoubleCPointer(16);
-        mGradNlDz = new GrowableDoubleCPointer(16);
-        mOutEng = DoubleCPointer.malloc(1);
-        mFpForwardCache = new GrowableDoubleCPointer(128);
-        mFpBackwardCache = new GrowableDoubleCPointer(128);
+        mGradNlDx = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mGradNlDy = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mGradNlDz = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mOutEng = mSinglePrecision ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
+        mFpForwardCache = mSinglePrecision ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
+        mFpBackwardCache = mSinglePrecision ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
         
         mBasis = Basis2.load(NewCollections.map(tModels, info -> {
             Object tBasisInfo = info.get("basis");
@@ -148,20 +165,37 @@ public class NNAP2 implements IPairPotential {
         mNnForwardCache = NestedCPointer.malloc(tModelSize);
         mNnBackwardCache = NestedCPointer.malloc(tModelSize);
         for (int i = 0; i < tModelSize; ++i) {
-            DoubleCPointer tFpHyperParam = DoubleCPointer.malloc(mBasis[i].hyperParameterSize()+1);
-            tFpHyperParam.putAt(0, mBasis[i].rcut());
-            fill_(tFpHyperParam.plus(1), mBasis[i].hyperParameters());
-            mFpHyperParam.putAt(i, tFpHyperParam);
-            
-            DoubleCPointer tFpParam = DoubleCPointer.malloc(mBasis[i].parameterSize());
-            fill_(tFpParam, mBasis[i].parameters());
-            mFpParam.putAt(i, tFpParam);
-            
-            DoubleCPointer tNnParam = DoubleCPointer.malloc(mNN[i].parameterSize());
-            fill_(tNnParam, mNN[i].parameters());
-            mNnParam.putAt(i, tNnParam);
-            mNnForwardCache.putAt(i, DoubleCPointer.malloc(mNN[i].inputSize() + mNN[i].hiddenSize()*3));
-            mNnBackwardCache.putAt(i, DoubleCPointer.malloc(mNN[i].inputSize() + mNN[i].hiddenSize()));
+            if (mSinglePrecision) {
+                FloatCPointer tFpHyperParam = FloatCPointer.malloc(mBasis[i].hyperParameterSize()+1);
+                tFpHyperParam.putAt(0, (float)mBasis[i].rcut());
+                fill_(tFpHyperParam.plus(1), mBasis[i].hyperParameters());
+                mFpHyperParam.putAt(i, tFpHyperParam);
+                
+                FloatCPointer tFpParam = FloatCPointer.malloc(mBasis[i].parameterSize());
+                fill_(tFpParam, mBasis[i].parameters());
+                mFpParam.putAt(i, tFpParam);
+                
+                FloatCPointer tNnParam = FloatCPointer.malloc(mNN[i].parameterSize());
+                fill_(tNnParam, mNN[i].parameters());
+                mNnParam.putAt(i, tNnParam);
+                mNnForwardCache.putAt(i, FloatCPointer.malloc(mNN[i].inputSize() + mNN[i].hiddenSize()*3));
+                mNnBackwardCache.putAt(i, FloatCPointer.malloc(mNN[i].inputSize() + mNN[i].hiddenSize()));
+            } else {
+                DoubleCPointer tFpHyperParam = DoubleCPointer.malloc(mBasis[i].hyperParameterSize()+1);
+                tFpHyperParam.putAt(0, mBasis[i].rcut());
+                fill_(tFpHyperParam.plus(1), mBasis[i].hyperParameters());
+                mFpHyperParam.putAt(i, tFpHyperParam);
+                
+                DoubleCPointer tFpParam = DoubleCPointer.malloc(mBasis[i].parameterSize());
+                fill_(tFpParam, mBasis[i].parameters());
+                mFpParam.putAt(i, tFpParam);
+                
+                DoubleCPointer tNnParam = DoubleCPointer.malloc(mNN[i].parameterSize());
+                fill_(tNnParam, mNN[i].parameters());
+                mNnParam.putAt(i, tNnParam);
+                mNnForwardCache.putAt(i, DoubleCPointer.malloc(mNN[i].inputSize() + mNN[i].hiddenSize()*3));
+                mNnBackwardCache.putAt(i, DoubleCPointer.malloc(mNN[i].inputSize() + mNN[i].hiddenSize()));
+            }
         }
         // 归一化系数读取
         mNormParam = NestedCPointer.malloc(tModelSize);
@@ -179,12 +213,21 @@ public class NNAP2 implements IPairPotential {
             IVector aNormSigma = tNormSigma==null ? null : Vectors.from(tNormSigma);
             List<? extends Number> tNormMu = (List<? extends Number>)tModels.get(i).get("norm_mu");
             IVector aNormMu = tNormMu==null ? null : Vectors.from(tNormMu);
-            DoubleCPointer tNormParam = DoubleCPointer.malloc(mBasis[i].size()*2 + 2);
-            tNormParam.putAt(0, aNormMuEng+aRefEng);
-            tNormParam.putAt(1, aNormSigmaEng);
-            fill_(tNormParam.plus(2), aNormMu);
-            fill_(tNormParam.plus(mBasis[i].size()+2), aNormSigma);
-            mNormParam.putAt(i, tNormParam);
+            if (mSinglePrecision) {
+                FloatCPointer tNormParam = FloatCPointer.malloc(mBasis[i].size()*2 + 2);
+                tNormParam.putAt(0, (float)(aNormMuEng+aRefEng));
+                tNormParam.putAt(1, (float)aNormSigmaEng);
+                fill_(tNormParam.plus(2), aNormMu);
+                fill_(tNormParam.plus(mBasis[i].size()+2), aNormSigma);
+                mNormParam.putAt(i, tNormParam);
+            } else {
+                DoubleCPointer tNormParam = DoubleCPointer.malloc(mBasis[i].size()*2 + 2);
+                tNormParam.putAt(0, aNormMuEng+aRefEng);
+                tNormParam.putAt(1, aNormSigmaEng);
+                fill_(tNormParam.plus(2), aNormMu);
+                fill_(tNormParam.plus(mBasis[i].size()+2), aNormSigma);
+                mNormParam.putAt(i, tNormParam);
+            }
         }
         // 代码生成，先针对相同系数的进行优化合并
         List<List<Integer>> tSwitchListFp = new ArrayList<>(); // [position][type]
@@ -195,6 +238,7 @@ public class NNAP2 implements IPairPotential {
             updateSwitchList_(tSwitchListNN, type, caseList -> mNN[ti].hasSameGenMap(mNN[caseList.get(0)-1]));
         }
         final Map<String, Object> tGenMap = new LinkedHashMap<>();
+        tGenMap.put("[PRECISION]", mSinglePrecision ? "single" : "double");
         tGenMap.put("[FP TYPE]", tSwitchListFp);
         tGenMap.put("[NN TYPE]", tSwitchListNN);
         // 只添加不同的，降低 code gen 的压力
@@ -223,13 +267,15 @@ public class NNAP2 implements IPairPotential {
         mCalEnergyForce = mEngine.findMethod(NAME_CAL_ENERGYFORCE);
         mComputeLammps = mEngine.findMethod(NAME_COMPUTE_LAMMPS);
     }
-    public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
-        this(OS.WORKING_DIR, "nnapjit", aModelInfo, aThreadNumber);
+    public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, String aPrecision) throws Exception {
+        this(OS.WORKING_DIR, "nnapjit", aModelInfo, aThreadNumber, aPrecision);
     }
-    public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
+    public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, String aPrecision) throws Exception {
         this(IO.toParentPath(aModelPath), IO.toFileName(aModelPath).replace(".yaml", "").replace(".yml", "").replace(".json", "").replace(".jnn", "").replace(".nn", ""),
-             aModelPath.endsWith(".yaml") || aModelPath.endsWith(".yml") ? IO.yaml2map(aModelPath) : IO.json2map(aModelPath), aThreadNumber);
+             aModelPath.endsWith(".yaml") || aModelPath.endsWith(".yml") ? IO.yaml2map(aModelPath) : IO.json2map(aModelPath), aThreadNumber, aPrecision);
     }
+    public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {this(aModelPath, aThreadNumber, null);}
+    public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {this(aModelInfo, aThreadNumber, null);}
     public NNAP2(Map<?, ?> aModelInfo) throws Exception {this(aModelInfo, 1);}
     public NNAP2(String aModelPath) throws Exception {this(aModelPath, 1);}
     
@@ -239,6 +285,13 @@ public class NNAP2 implements IPairPotential {
         final int tSize = aVec.size();
         for (int i = 0; i < tSize; ++i) {
             rPtr.putAt(i, aVec.get(i));
+        }
+    }
+    private static void fill_(FloatCPointer rPtr, @Nullable IVector aVec) {
+        if (aVec == null) return;
+        final int tSize = aVec.size();
+        for (int i = 0; i < tSize; ++i) {
+            rPtr.putAt(i, (float)aVec.get(i));
         }
     }
     private static void updateSwitchList_(List<List<Integer>> rSwitchList, int aType, IUnaryFullOperator<Boolean, List<Integer>> aChecker) {
@@ -457,7 +510,7 @@ public class NNAP2 implements IPairPotential {
             mNormParam.getAt(i).free();
         }
         mInNums.free();
-        mNlDx.free(); mNlDy.free(); mNlDz.free();
+        ((CPointer)mNlDx).free(); ((CPointer)mNlDy).free(); ((CPointer)mNlDz).free();
         mNlType.free();
         mFpParam.free(); mNnParam.free(); mNormParam.free();
         mDataIn.free();
@@ -467,8 +520,8 @@ public class NNAP2 implements IPairPotential {
             mNnBackwardCache.getAt(i).free();
         }
         mOutEng.free();
-        mFpForwardCache.free(); mNnForwardCache.free();
-        mFpBackwardCache.free(); mNnBackwardCache.free();
+        ((CPointer)mFpForwardCache).free(); mNnForwardCache.free();
+        ((CPointer)mFpBackwardCache).free(); mNnBackwardCache.free();
         mDataOut.free();
         
         mEngine.shutdown();
@@ -504,10 +557,20 @@ public class NNAP2 implements IPairPotential {
             mNlTypeBuf.add(type); mNlIdxBuf.add(idx);
         });
         int tNeiNum = mNlIdxBuf.size();
-        mNlDx.ensureCapacity(tNeiNum); mNlDx.fill(mNlDxBuf);
-        mNlDy.ensureCapacity(tNeiNum); mNlDy.fill(mNlDyBuf);
-        mNlDz.ensureCapacity(tNeiNum); mNlDz.fill(mNlDzBuf);
-        mNlType.ensureCapacity(tNeiNum); mNlType.fill(mNlTypeBuf);
+        mNlDx.ensureCapacity(tNeiNum);
+        mNlDy.ensureCapacity(tNeiNum);
+        mNlDz.ensureCapacity(tNeiNum);
+        if (mSinglePrecision) {
+            ((FloatCPointer)mNlDx).fillD(mNlDxBuf);
+            ((FloatCPointer)mNlDy).fillD(mNlDyBuf);
+            ((FloatCPointer)mNlDz).fillD(mNlDzBuf);
+        } else {
+            ((DoubleCPointer)mNlDx).fill(mNlDxBuf);
+            ((DoubleCPointer)mNlDy).fill(mNlDyBuf);
+            ((DoubleCPointer)mNlDz).fill(mNlDzBuf);
+        }
+        mNlType.ensureCapacity(tNeiNum);
+        mNlType.fill(mNlTypeBuf);
         if (aRequireGrad) {
             mGradNlDx.ensureCapacity(tNeiNum);
             mGradNlDy.ensureCapacity(tNeiNum);
@@ -546,7 +609,7 @@ public class NNAP2 implements IPairPotential {
             // 调用 jit 方法获取结果
             int tCode = mCalEnergy.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
-            double tEng = mOutEng.get();
+            double tEng = mSinglePrecision ? ((FloatCPointer)mOutEng).get() : ((DoubleCPointer)mOutEng).get();
             rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
         });
     }
@@ -589,7 +652,7 @@ public class NNAP2 implements IPairPotential {
             // 调用 jit 方法获取结果
             int tCode = mCalEnergyForce.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
-            double tEng = mOutEng.get();
+            double tEng = mSinglePrecision ? ((FloatCPointer)mOutEng).get() : ((DoubleCPointer)mOutEng).get();
             if (rEnergyAccumulator != null) {
                 rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
             }
@@ -601,9 +664,16 @@ public class NNAP2 implements IPairPotential {
                 int idx = mNlIdxBuf.get(j);
                 // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查；
                 // 直接遍历查询不走合并了，实测专门合并还会影响效率
-                double fx = mGradNlDx.getAt(j);
-                double fy = mGradNlDy.getAt(j);
-                double fz = mGradNlDz.getAt(j);
+                final double fx, fy, fz;
+                if (mSinglePrecision) {
+                    fx = ((FloatCPointer)mGradNlDx).getAt(j);
+                    fy = ((FloatCPointer)mGradNlDy).getAt(j);
+                    fz = ((FloatCPointer)mGradNlDz).getAt(j);
+                } else {
+                    fx = ((DoubleCPointer)mGradNlDx).getAt(j);
+                    fy = ((DoubleCPointer)mGradNlDy).getAt(j);
+                    fz = ((DoubleCPointer)mGradNlDz).getAt(j);
+                }
                 if (rForceAccumulator != null) {
                     rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
                 }

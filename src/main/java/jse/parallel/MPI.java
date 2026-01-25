@@ -280,11 +280,13 @@ public class MPI {
         public void allgather(float[]   rBuf, int aStart, int aCount) throws MPIException {Native.MPI_Allgather(rBuf, aStart, aCount, mPtr);}
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public void allgather(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int aCount) throws MPIException {Native.MPI_Allgather(aSendBuf, rRecvBuf, aCount, mPtr);}
+        public void allgather(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int aCount) throws MPIException {Native.MPI_Allgather(aSendBuf, rRecvBuf, aCount, mPtr);}
         public void allgather(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int aCount) throws MPIException {Native.MPI_Allgather(aSendBuf, rRecvBuf, aCount, mPtr);}
-        public void allgather(CPointer       aSendBuf, DoubleCPointer rRecvBuf, int aCount, Datatype aDataType) throws MPIException {Native.MPI_Allgather(aSendBuf, rRecvBuf, aCount, aDataType.mPtr, mPtr);}
+        public void allgather(ICPointer      aSendBuf, ICPointer      rRecvBuf, int aCount, Datatype aDataType) throws MPIException {Native.MPI_Allgather(aSendBuf, rRecvBuf, aCount, aDataType.mPtr, mPtr);}
         public void allgather(DoubleCPointer rBuf, int aCount) throws MPIException {Native.MPI_Allgather(rBuf, aCount, mPtr);}
+        public void allgather(FloatCPointer  rBuf, int aCount) throws MPIException {Native.MPI_Allgather(rBuf, aCount, mPtr);}
         public void allgather(IntCPointer    rBuf, int aCount) throws MPIException {Native.MPI_Allgather(rBuf, aCount, mPtr);}
-        public void allgather(CPointer       rBuf, int aCount, Datatype aDataType) throws MPIException {Native.MPI_Allgather(rBuf, aCount, aDataType.mPtr, mPtr);}
+        public void allgather(ICPointer      rBuf, int aCount, Datatype aDataType) throws MPIException {Native.MPI_Allgather(rBuf, aCount, aDataType.mPtr, mPtr);}
         
         /**
          * Gathers a variable amount of data from each member of a group and sends the data to all members of the group.
@@ -325,11 +327,13 @@ public class MPI {
         public void allgatherv(float[]   rBuf, int aStart, int[] aCounts) throws MPIException {Native.MPI_Allgatherv(rBuf, aStart, aCounts, mPtr);}
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public void allgatherv(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int[] aCounts) throws MPIException {Native.MPI_Allgatherv(aSendBuf, rRecvBuf, aCounts, mPtr);}
+        public void allgatherv(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int[] aCounts) throws MPIException {Native.MPI_Allgatherv(aSendBuf, rRecvBuf, aCounts, mPtr);}
         public void allgatherv(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int[] aCounts) throws MPIException {Native.MPI_Allgatherv(aSendBuf, rRecvBuf, aCounts, mPtr);}
-        public void allgatherv(CPointer       aSendBuf, CPointer       rRecvBuf, int[] aCounts, Datatype aDataType) throws MPIException {Native.MPI_Allgatherv(aSendBuf, rRecvBuf, aCounts, aDataType.mPtr, mPtr);}
+        public void allgatherv(ICPointer      aSendBuf, ICPointer      rRecvBuf, int[] aCounts, Datatype aDataType) throws MPIException {Native.MPI_Allgatherv(aSendBuf, rRecvBuf, aCounts, aDataType.mPtr, mPtr);}
         public void allgatherv(DoubleCPointer rBuf, int[] aCounts) throws MPIException {Native.MPI_Allgatherv(rBuf, aCounts, mPtr);}
+        public void allgatherv(FloatCPointer  rBuf, int[] aCounts) throws MPIException {Native.MPI_Allgatherv(rBuf, aCounts, mPtr);}
         public void allgatherv(IntCPointer    rBuf, int[] aCounts) throws MPIException {Native.MPI_Allgatherv(rBuf, aCounts, mPtr);}
-        public void allgatherv(CPointer       rBuf, int[] aCounts, Datatype aDataType) throws MPIException {Native.MPI_Allgatherv(rBuf, aCounts, aDataType.mPtr, mPtr);}
+        public void allgatherv(ICPointer      rBuf, int[] aCounts, Datatype aDataType) throws MPIException {Native.MPI_Allgatherv(rBuf, aCounts, aDataType.mPtr, mPtr);}
         
         /**
          * Combines values from all processes and distributes the result back to all processes.
@@ -368,11 +372,13 @@ public class MPI {
         public void allreduce(float[]   rBuf, int aStart, int aCount, Op aOp) throws MPIException {Native.MPI_Allreduce(rBuf, aStart, aCount, aOp.mPtr, mPtr);}
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public void allreduce(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int aCount, Op aOp) throws MPIException {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int aCount, Op aOp) throws MPIException {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);}
         public void allreduce(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int aCount, Op aOp) throws MPIException {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, mPtr);}
-        public void allreduce(CPointer       aSendBuf, CPointer       rRecvBuf, int aCount, Datatype aDataType, Op aOp) throws MPIException {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aDataType.mPtr, aOp.mPtr, mPtr);}
+        public void allreduce(ICPointer      aSendBuf, ICPointer      rRecvBuf, int aCount, Datatype aDataType, Op aOp) throws MPIException {Native.MPI_Allreduce(aSendBuf, rRecvBuf, aCount, aDataType.mPtr, aOp.mPtr, mPtr);}
         public void allreduce(DoubleCPointer rBuf, int aCount, Op aOp) throws MPIException {Native.MPI_Allreduce(rBuf, aCount, aOp.mPtr, mPtr);}
+        public void allreduce(FloatCPointer  rBuf, int aCount, Op aOp) throws MPIException {Native.MPI_Allreduce(rBuf, aCount, aOp.mPtr, mPtr);}
         public void allreduce(IntCPointer    rBuf, int aCount, Op aOp) throws MPIException {Native.MPI_Allreduce(rBuf, aCount, aOp.mPtr, mPtr);}
-        public void allreduce(CPointer       rBuf, int aCount, Datatype aDataType, Op aOp) throws MPIException {Native.MPI_Allreduce(rBuf, aCount, aDataType.mPtr, aOp.mPtr, mPtr);}
+        public void allreduce(ICPointer      rBuf, int aCount, Datatype aDataType, Op aOp) throws MPIException {Native.MPI_Allreduce(rBuf, aCount, aDataType.mPtr, aOp.mPtr, mPtr);}
         /** 常用操作提供一个基础类型的收发，可以避免冗余的数组创建 */
         public byte    allreduceB(byte    aB, Op aOp) throws MPIException {return Native.MPI_AllreduceB(aB, aOp.mPtr, mPtr);}
         public double  allreduceD(double  aD, Op aOp) throws MPIException {return Native.MPI_AllreduceD(aD, aOp.mPtr, mPtr);}
@@ -414,8 +420,9 @@ public class MPI {
         public void bcast(float[]   rBuf, int aStart, int aCount, int aRoot) throws MPIException {Native.MPI_Bcast(rBuf, aStart, aCount, aRoot, mPtr);}
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public void bcast(DoubleCPointer rBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
+        public void bcast(FloatCPointer  rBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
         public void bcast(IntCPointer    rBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Bcast(rBuf, aCount, aRoot, mPtr);}
-        public void bcast(CPointer       rBuf, int aCount, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Bcast(rBuf, aCount, aDataType.mPtr, aRoot, mPtr);}
+        public void bcast(ICPointer      rBuf, int aCount, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Bcast(rBuf, aCount, aDataType.mPtr, aRoot, mPtr);}
         /** 常用操作提供一个基础类型的收发，可以避免冗余的数组创建 */
         public byte    bcastB(byte    aB, int aRoot) throws MPIException {return Native.MPI_BcastB(aB, aRoot, mPtr);}
         public double  bcastD(double  aD, int aRoot) throws MPIException {return Native.MPI_BcastD(aD, aRoot, mPtr);}
@@ -478,11 +485,13 @@ public class MPI {
         public void gather(float[]   rBuf, int aStart, int aCount, int aRoot) throws MPIException {Native.MPI_Gather(rBuf, aStart, aCount, aRoot, mPtr);}
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public void gather(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Gather(aSendBuf, rRecvBuf, aCount, aRoot, mPtr);}
+        public void gather(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Gather(aSendBuf, rRecvBuf, aCount, aRoot, mPtr);}
         public void gather(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Gather(aSendBuf, rRecvBuf, aCount, aRoot, mPtr);}
-        public void gather(CPointer       aSendBuf, CPointer       rRecvBuf, int aCount, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Gather(aSendBuf, rRecvBuf, aCount, aDataType.mPtr, aRoot, mPtr);}
+        public void gather(ICPointer      aSendBuf, ICPointer      rRecvBuf, int aCount, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Gather(aSendBuf, rRecvBuf, aCount, aDataType.mPtr, aRoot, mPtr);}
         public void gather(DoubleCPointer rBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Gather(rBuf, aCount, aRoot, mPtr);}
+        public void gather(FloatCPointer  rBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Gather(rBuf, aCount, aRoot, mPtr);}
         public void gather(IntCPointer    rBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Gather(rBuf, aCount, aRoot, mPtr);}
-        public void gather(CPointer       rBuf, int aCount, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Gather(rBuf, aCount, aDataType.mPtr, aRoot, mPtr);}
+        public void gather(ICPointer      rBuf, int aCount, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Gather(rBuf, aCount, aDataType.mPtr, aRoot, mPtr);}
         
         /**
          * Gathers variable data from all members of a group to one member.
@@ -523,11 +532,13 @@ public class MPI {
         public void gatherv(float[]   rBuf, int aStart, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Gatherv(rBuf, aStart, aCounts, aRoot, mPtr);}
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public void gatherv(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Gatherv(aSendBuf, rRecvBuf, aCounts, aRoot, mPtr);}
+        public void gatherv(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Gatherv(aSendBuf, rRecvBuf, aCounts, aRoot, mPtr);}
         public void gatherv(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Gatherv(aSendBuf, rRecvBuf, aCounts, aRoot, mPtr);}
-        public void gatherv(CPointer       aSendBuf, CPointer       rRecvBuf, int[] aCounts, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Gatherv(aSendBuf, rRecvBuf, aCounts, aDataType.mPtr, aRoot, mPtr);}
+        public void gatherv(ICPointer      aSendBuf, ICPointer      rRecvBuf, int[] aCounts, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Gatherv(aSendBuf, rRecvBuf, aCounts, aDataType.mPtr, aRoot, mPtr);}
         public void gatherv(DoubleCPointer rBuf, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Gatherv(rBuf, aCounts, aRoot, mPtr);}
+        public void gatherv(FloatCPointer  rBuf, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Gatherv(rBuf, aCounts, aRoot, mPtr);}
         public void gatherv(IntCPointer    rBuf, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Gatherv(rBuf, aCounts, aRoot, mPtr);}
-        public void gatherv(CPointer       rBuf, int[] aCounts, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Gatherv(rBuf, aCounts, aDataType.mPtr, aRoot, mPtr);}
+        public void gatherv(ICPointer      rBuf, int[] aCounts, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Gatherv(rBuf, aCounts, aDataType.mPtr, aRoot, mPtr);}
         
         /**
          * Performs a global reduce operation across all members of a group. You can specify
@@ -565,11 +576,13 @@ public class MPI {
         public void reduce(float[]   rBuf, int aStart, int aCount, Op aOp, int aRoot) throws MPIException {Native.MPI_Reduce(rBuf, aStart, aCount, aOp.mPtr, aRoot, mPtr);}
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public void reduce(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int aCount, Op aOp, int aRoot) throws MPIException {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int aCount, Op aOp, int aRoot) throws MPIException {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);}
         public void reduce(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int aCount, Op aOp, int aRoot) throws MPIException {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aOp.mPtr, aRoot, mPtr);}
-        public void reduce(CPointer       aSendBuf, CPointer       rRecvBuf, int aCount, Datatype aDataType, Op aOp, int aRoot) throws MPIException {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aDataType.mPtr, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(ICPointer      aSendBuf, ICPointer      rRecvBuf, int aCount, Datatype aDataType, Op aOp, int aRoot) throws MPIException {Native.MPI_Reduce(aSendBuf, rRecvBuf, aCount, aDataType.mPtr, aOp.mPtr, aRoot, mPtr);}
         public void reduce(DoubleCPointer rBuf, int aCount, Op aOp, int aRoot) throws MPIException {Native.MPI_Reduce(rBuf, aCount, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(FloatCPointer  rBuf, int aCount, Op aOp, int aRoot) throws MPIException {Native.MPI_Reduce(rBuf, aCount, aOp.mPtr, aRoot, mPtr);}
         public void reduce(IntCPointer    rBuf, int aCount, Op aOp, int aRoot) throws MPIException {Native.MPI_Reduce(rBuf, aCount, aOp.mPtr, aRoot, mPtr);}
-        public void reduce(CPointer       rBuf, int aCount, Datatype aDataType, Op aOp, int aRoot) throws MPIException {Native.MPI_Reduce(rBuf, aCount, aDataType.mPtr, aOp.mPtr, aRoot, mPtr);}
+        public void reduce(ICPointer      rBuf, int aCount, Datatype aDataType, Op aOp, int aRoot) throws MPIException {Native.MPI_Reduce(rBuf, aCount, aDataType.mPtr, aOp.mPtr, aRoot, mPtr);}
         /** 常用操作提供一个基础类型的收发，可以避免冗余的数组创建 */
         public byte    reduceB(byte    aB, Op aOp, int aRoot) throws MPIException {return Native.MPI_ReduceB(aB, aOp.mPtr, aRoot, mPtr);}
         public double  reduceD(double  aD, Op aOp, int aRoot) throws MPIException {return Native.MPI_ReduceD(aD, aOp.mPtr, aRoot, mPtr);}
@@ -616,11 +629,13 @@ public class MPI {
         public void scatter(float[]   rBuf, int aStart, int aCount, int aRoot) throws MPIException {Native.MPI_Scatter(rBuf, aStart, aCount, aRoot, mPtr);}
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public void scatter(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Scatter(aSendBuf, rRecvBuf, aCount, aRoot, mPtr);}
+        public void scatter(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Scatter(aSendBuf, rRecvBuf, aCount, aRoot, mPtr);}
         public void scatter(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Scatter(aSendBuf, rRecvBuf, aCount, aRoot, mPtr);}
-        public void scatter(CPointer       aSendBuf, CPointer rRecvBuf, int aCount, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Scatter(aSendBuf, rRecvBuf, aCount, aDataType.mPtr, aRoot, mPtr);}
+        public void scatter(ICPointer      aSendBuf, ICPointer      rRecvBuf, int aCount, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Scatter(aSendBuf, rRecvBuf, aCount, aDataType.mPtr, aRoot, mPtr);}
         public void scatter(DoubleCPointer rBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Scatter(rBuf, aCount, aRoot, mPtr);}
+        public void scatter(FloatCPointer  rBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Scatter(rBuf, aCount, aRoot, mPtr);}
         public void scatter(IntCPointer    rBuf, int aCount, int aRoot) throws MPIException {Native.MPI_Scatter(rBuf, aCount, aRoot, mPtr);}
-        public void scatter(CPointer       rBuf, int aCount, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Scatter(rBuf, aCount, aDataType.mPtr, aRoot, mPtr);}
+        public void scatter(ICPointer      rBuf, int aCount, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Scatter(rBuf, aCount, aDataType.mPtr, aRoot, mPtr);}
         
         /**
          * Scatters data from one member across all members of a group.
@@ -661,11 +676,13 @@ public class MPI {
         public void scatterv(float[]   rBuf, int aStart, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Scatterv(rBuf, aStart, aCounts, aRoot, mPtr);}
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public void scatterv(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Scatterv(aSendBuf, rRecvBuf, aCounts, aRoot, mPtr);}
+        public void scatterv(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Scatterv(aSendBuf, rRecvBuf, aCounts, aRoot, mPtr);}
         public void scatterv(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Scatterv(aSendBuf, rRecvBuf, aCounts, aRoot, mPtr);}
-        public void scatterv(CPointer       aSendBuf, CPointer       rRecvBuf, int[] aCounts, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Scatterv(aSendBuf, rRecvBuf, aCounts, aDataType.mPtr, aRoot, mPtr);}
+        public void scatterv(ICPointer      aSendBuf, ICPointer      rRecvBuf, int[] aCounts, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Scatterv(aSendBuf, rRecvBuf, aCounts, aDataType.mPtr, aRoot, mPtr);}
         public void scatterv(DoubleCPointer rBuf, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Scatterv(rBuf, aCounts, aRoot, mPtr);}
+        public void scatterv(FloatCPointer  rBuf, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Scatterv(rBuf, aCounts, aRoot, mPtr);}
         public void scatterv(IntCPointer    rBuf, int[] aCounts, int aRoot) throws MPIException {Native.MPI_Scatterv(rBuf, aCounts, aRoot, mPtr);}
-        public void scatterv(CPointer       rBuf, int[] aCounts, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Scatterv(rBuf, aCounts, aDataType.mPtr, aRoot, mPtr);}
+        public void scatterv(ICPointer      rBuf, int[] aCounts, Datatype aDataType, int aRoot) throws MPIException {Native.MPI_Scatterv(rBuf, aCounts, aDataType.mPtr, aRoot, mPtr);}
         
         
         /// MPI Communicator Functions
@@ -737,7 +754,7 @@ public class MPI {
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public void send(DoubleCPointer aBuf, int aCount, int aDest, int aTag) throws MPIException {Native.MPI_Send(aBuf, aCount, aDest, aTag, mPtr);}
         public void send(IntCPointer    aBuf, int aCount, int aDest, int aTag) throws MPIException {Native.MPI_Send(aBuf, aCount, aDest, aTag, mPtr);}
-        public void send(CPointer       aBuf, int aCount, Datatype aDataType, int aDest, int aTag) throws MPIException {Native.MPI_Send(aBuf, aCount, aDataType.mPtr, aDest, aTag, mPtr);}
+        public void send(ICPointer      aBuf, int aCount, Datatype aDataType, int aDest, int aTag) throws MPIException {Native.MPI_Send(aBuf, aCount, aDataType.mPtr, aDest, aTag, mPtr);}
         /** 常用操作提供一个基础类型的收发，可以避免冗余的数组创建 */
         public void sendB(byte    aB, int aDest, int aTag) throws MPIException {Native.MPI_SendB(aB, aDest, aTag, mPtr);}
         public void sendD(double  aD, int aDest, int aTag) throws MPIException {Native.MPI_SendD(aD, aDest, aTag, mPtr);}
@@ -782,8 +799,9 @@ public class MPI {
         public void recv(int aSource, int aTag) throws MPIException {Native.MPI_Recv(aSource, aTag, mPtr);}
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public void recv(DoubleCPointer rBuf, int aCount, int aSource, int aTag) throws MPIException {Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);}
+        public void recv(FloatCPointer  rBuf, int aCount, int aSource, int aTag) throws MPIException {Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);}
         public void recv(IntCPointer    rBuf, int aCount, int aSource, int aTag) throws MPIException {Native.MPI_Recv(rBuf, aCount, aSource, aTag, mPtr);}
-        public void recv(CPointer       rBuf, int aCount, Datatype aDataType, int aSource, int aTag) throws MPIException {Native.MPI_Recv(rBuf, aCount, aDataType.mPtr, aSource, aTag, mPtr);}
+        public void recv(ICPointer      rBuf, int aCount, Datatype aDataType, int aSource, int aTag) throws MPIException {Native.MPI_Recv(rBuf, aCount, aDataType.mPtr, aSource, aTag, mPtr);}
         /** 常用操作提供一个基础类型的收发，可以避免冗余的数组创建 */
         public byte    recvB(int aSource, int aTag) throws MPIException {return Native.MPI_RecvB(aSource, aTag, mPtr);}
         public double  recvD(int aSource, int aTag) throws MPIException {return Native.MPI_RecvD(aSource, aTag, mPtr);}
@@ -883,10 +901,15 @@ public class MPI {
         public void sendrecv(float[]   aSendBuf, int aSendStart, int aSendCount, int aDest, int aSendTag, float[]   rRecvBuf, int aRecvStart, int aRecvCount, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendStart, aSendCount, aDest, aSendTag, rRecvBuf, aRecvStart, aRecvCount, aSource, aRecvTag, mPtr);}
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public void sendrecv(DoubleCPointer aSendBuf, int aSendCount, int aDest, int aSendTag, DoubleCPointer rRecvBuf, int aRecvCount, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendCount, aDest, aSendTag, rRecvBuf, aRecvCount, aSource, aRecvTag, mPtr);}
+        public void sendrecv(DoubleCPointer aSendBuf, int aSendCount, int aDest, int aSendTag, FloatCPointer  rRecvBuf, int aRecvCount, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendCount, aDest, aSendTag, rRecvBuf, aRecvCount, aSource, aRecvTag, mPtr);}
         public void sendrecv(DoubleCPointer aSendBuf, int aSendCount, int aDest, int aSendTag, IntCPointer    rRecvBuf, int aRecvCount, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendCount, aDest, aSendTag, rRecvBuf, aRecvCount, aSource, aRecvTag, mPtr);}
+        public void sendrecv(FloatCPointer  aSendBuf, int aSendCount, int aDest, int aSendTag, DoubleCPointer rRecvBuf, int aRecvCount, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendCount, aDest, aSendTag, rRecvBuf, aRecvCount, aSource, aRecvTag, mPtr);}
+        public void sendrecv(FloatCPointer  aSendBuf, int aSendCount, int aDest, int aSendTag, FloatCPointer  rRecvBuf, int aRecvCount, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendCount, aDest, aSendTag, rRecvBuf, aRecvCount, aSource, aRecvTag, mPtr);}
+        public void sendrecv(FloatCPointer  aSendBuf, int aSendCount, int aDest, int aSendTag, IntCPointer    rRecvBuf, int aRecvCount, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendCount, aDest, aSendTag, rRecvBuf, aRecvCount, aSource, aRecvTag, mPtr);}
         public void sendrecv(IntCPointer    aSendBuf, int aSendCount, int aDest, int aSendTag, DoubleCPointer rRecvBuf, int aRecvCount, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendCount, aDest, aSendTag, rRecvBuf, aRecvCount, aSource, aRecvTag, mPtr);}
+        public void sendrecv(IntCPointer    aSendBuf, int aSendCount, int aDest, int aSendTag, FloatCPointer  rRecvBuf, int aRecvCount, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendCount, aDest, aSendTag, rRecvBuf, aRecvCount, aSource, aRecvTag, mPtr);}
         public void sendrecv(IntCPointer    aSendBuf, int aSendCount, int aDest, int aSendTag, IntCPointer    rRecvBuf, int aRecvCount, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendCount, aDest, aSendTag, rRecvBuf, aRecvCount, aSource, aRecvTag, mPtr);}
-        public void sendrecv(CPointer       aSendBuf, int aSendCount, Datatype aSendType, int aDest, int aSendTag, CPointer rRecvBuf, int aRecvCount, Datatype aRecvType, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendCount, aSendType.mPtr, aDest, aSendTag, rRecvBuf, aRecvCount, aRecvType.mPtr, aSource, aRecvTag, mPtr);}
+        public void sendrecv(ICPointer      aSendBuf, int aSendCount, Datatype aSendType, int aDest, int aSendTag, ICPointer rRecvBuf, int aRecvCount, Datatype aRecvType, int aSource, int aRecvTag) throws MPIException {Native.MPI_Sendrecv(aSendBuf, aSendCount, aSendType.mPtr, aDest, aSendTag, rRecvBuf, aRecvCount, aRecvType.mPtr, aSource, aRecvTag, mPtr);}
     }
     
     public enum Op {
@@ -1314,11 +1337,13 @@ public class MPI {
         private native static void MPI_Allgather0(boolean aInPlace, Object aSendBuf, int aSendStart, int aSendCount, long aSendType, int aSendJType, Object rRecvBuf, int aRecvStart, int aRecvCount, long aRecvType, int aRecvJType, long aComm) throws MPIException;
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public static void MPI_Allgather(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int aCount, long aComm) throws MPIException {MPI_Allgather1(false, aSendBuf.ptr_(), aCount, MPI_DOUBLE, rRecvBuf.ptr_(), aCount, MPI_DOUBLE, aComm);}
+        public static void MPI_Allgather(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int aCount, long aComm) throws MPIException {MPI_Allgather1(false, aSendBuf.ptr_(), aCount, MPI_FLOAT , rRecvBuf.ptr_(), aCount, MPI_FLOAT , aComm);}
         public static void MPI_Allgather(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int aCount, long aComm) throws MPIException {MPI_Allgather1(false, aSendBuf.ptr_(), aCount, MPI_INT   , rRecvBuf.ptr_(), aCount, MPI_INT   , aComm);}
-        public static void MPI_Allgather(CPointer       aSendBuf, CPointer       rRecvBuf, int aCount, long aDataType, long aComm) throws MPIException {MPI_Allgather1(false, aSendBuf.ptr_(), aCount, aDataType, rRecvBuf.ptr_(), aCount, aDataType, aComm);}
+        public static void MPI_Allgather(ICPointer      aSendBuf, ICPointer      rRecvBuf, int aCount, long aDataType, long aComm) throws MPIException {MPI_Allgather1(false, aSendBuf.ptr_(), aCount, aDataType, rRecvBuf.ptr_(), aCount, aDataType, aComm);}
         public static void MPI_Allgather(DoubleCPointer rBuf, int aCount, long aComm) throws MPIException {MPI_Allgather1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, MPI_DOUBLE, aComm);}
+        public static void MPI_Allgather(FloatCPointer  rBuf, int aCount, long aComm) throws MPIException {MPI_Allgather1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, MPI_FLOAT , aComm);}
         public static void MPI_Allgather(IntCPointer    rBuf, int aCount, long aComm) throws MPIException {MPI_Allgather1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, MPI_INT   , aComm);}
-        public static void MPI_Allgather(CPointer       rBuf, int aCount, long aDataType, long aComm) throws MPIException {MPI_Allgather1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, aDataType, aComm);}
+        public static void MPI_Allgather(ICPointer      rBuf, int aCount, long aDataType, long aComm) throws MPIException {MPI_Allgather1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, aDataType, aComm);}
         private native static void MPI_Allgather1(boolean aInPlace, long aSendBuf, int aSendCount, long aSendType, long rRecvBuf, int aRecvCount, long aRecvType, long aComm) throws MPIException;
         
         /**
@@ -1376,11 +1401,13 @@ public class MPI {
         private native static void MPI_Allgatherv0(boolean aInPlace, Object aSendBuf, int aSendStart, int aSendCount, long aSendType, int aSendJType, Object rRecvBuf, int aRecvStart, int[] aRecvCounts, long aRecvType, int aRecvJType, long aComm) throws MPIException;
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public static void MPI_Allgatherv(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int[] aCounts, long aComm) throws MPIException {MPI_Allgatherv1(false, aSendBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], MPI_DOUBLE, rRecvBuf.ptr_(), aCounts, MPI_DOUBLE, aComm);}
+        public static void MPI_Allgatherv(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int[] aCounts, long aComm) throws MPIException {MPI_Allgatherv1(false, aSendBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], MPI_FLOAT , rRecvBuf.ptr_(), aCounts, MPI_FLOAT , aComm);}
         public static void MPI_Allgatherv(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int[] aCounts, long aComm) throws MPIException {MPI_Allgatherv1(false, aSendBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], MPI_INT   , rRecvBuf.ptr_(), aCounts, MPI_INT   , aComm);}
-        public static void MPI_Allgatherv(CPointer       aSendBuf, CPointer       rRecvBuf, int[] aCounts, long aDataType, long aComm) throws MPIException {MPI_Allgatherv1(false, aSendBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], aDataType, rRecvBuf.ptr_(), aCounts, aDataType, aComm);}
+        public static void MPI_Allgatherv(ICPointer      aSendBuf, ICPointer      rRecvBuf, int[] aCounts, long aDataType, long aComm) throws MPIException {MPI_Allgatherv1(false, aSendBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], aDataType, rRecvBuf.ptr_(), aCounts, aDataType, aComm);}
         public static void MPI_Allgatherv(DoubleCPointer rBuf, int[] aCounts, long aComm) throws MPIException {MPI_Allgatherv1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts, MPI_DOUBLE, aComm);}
+        public static void MPI_Allgatherv(FloatCPointer  rBuf, int[] aCounts, long aComm) throws MPIException {MPI_Allgatherv1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts, MPI_FLOAT , aComm);}
         public static void MPI_Allgatherv(IntCPointer    rBuf, int[] aCounts, long aComm) throws MPIException {MPI_Allgatherv1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts, MPI_INT   , aComm);}
-        public static void MPI_Allgatherv(CPointer       rBuf, int[] aCounts, long aDataType, long aComm) throws MPIException {MPI_Allgatherv1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts, aDataType, aComm);}
+        public static void MPI_Allgatherv(ICPointer      rBuf, int[] aCounts, long aDataType, long aComm) throws MPIException {MPI_Allgatherv1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts, aDataType, aComm);}
         private native static void MPI_Allgatherv1(boolean aInPlace, long aSendBuf, int aSendCount, long aSendType, long rRecvBuf, int[] aRecvCounts, long aRecvType, long aComm) throws MPIException;
         
         /**
@@ -1437,11 +1464,13 @@ public class MPI {
         private native static void MPI_Allreduce0(boolean aInPlace, Object aSendBuf, int aSendStart, Object rRecvBuf, int aRecvStart, int aCount, long aDataType, int aJDataType, long aOp, long aComm) throws MPIException;
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public static void MPI_Allreduce(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int aCount, long aOp, long aComm) throws MPIException {MPI_Allreduce1(false, aSendBuf.ptr_(), rRecvBuf.ptr_(), aCount, MPI_DOUBLE, aOp, aComm);}
+        public static void MPI_Allreduce(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int aCount, long aOp, long aComm) throws MPIException {MPI_Allreduce1(false, aSendBuf.ptr_(), rRecvBuf.ptr_(), aCount, MPI_FLOAT , aOp, aComm);}
         public static void MPI_Allreduce(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int aCount, long aOp, long aComm) throws MPIException {MPI_Allreduce1(false, aSendBuf.ptr_(), rRecvBuf.ptr_(), aCount, MPI_INT   , aOp, aComm);}
-        public static void MPI_Allreduce(CPointer       aSendBuf, CPointer       rRecvBuf, int aCount, long aDataType, long aOp, long aComm) throws MPIException {MPI_Allreduce1(false, aSendBuf.ptr_(), rRecvBuf.ptr_(), aCount, aDataType, aOp, aComm);}
+        public static void MPI_Allreduce(ICPointer      aSendBuf, ICPointer      rRecvBuf, int aCount, long aDataType, long aOp, long aComm) throws MPIException {MPI_Allreduce1(false, aSendBuf.ptr_(), rRecvBuf.ptr_(), aCount, aDataType, aOp, aComm);}
         public static void MPI_Allreduce(DoubleCPointer rBuf, int aCount, long aOp, long aComm) throws MPIException {MPI_Allreduce1(true, 0, rBuf.ptr_(), aCount, MPI_DOUBLE, aOp, aComm);}
+        public static void MPI_Allreduce(FloatCPointer  rBuf, int aCount, long aOp, long aComm) throws MPIException {MPI_Allreduce1(true, 0, rBuf.ptr_(), aCount, MPI_FLOAT , aOp, aComm);}
         public static void MPI_Allreduce(IntCPointer    rBuf, int aCount, long aOp, long aComm) throws MPIException {MPI_Allreduce1(true, 0, rBuf.ptr_(), aCount, MPI_INT   , aOp, aComm);}
-        public static void MPI_Allreduce(CPointer       rBuf, int aCount, long aDataType, long aOp, long aComm) throws MPIException {MPI_Allreduce1(true, 0, rBuf.ptr_(), aCount, aDataType, aOp, aComm);}
+        public static void MPI_Allreduce(ICPointer      rBuf, int aCount, long aDataType, long aOp, long aComm) throws MPIException {MPI_Allreduce1(true, 0, rBuf.ptr_(), aCount, aDataType, aOp, aComm);}
         private native static void MPI_Allreduce1(boolean aInPlace, long aSendBuf, long rRecvBuf, int aCount, long aDataType, long aOp, long aComm) throws MPIException;
         /** 常用操作提供一个基础类型的收发，可以避免冗余的数组创建 */
         public native static byte    MPI_AllreduceB(byte    aB, long aOp, long aComm) throws MPIException;
@@ -1503,8 +1532,9 @@ public class MPI {
         private native static void MPI_Bcast0(Object rBuf, int aStart, int aCount, long aDataType, int aJDataType, int aRoot, long aComm) throws MPIException;
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public static void MPI_Bcast(DoubleCPointer rBuf, int aCount, int aRoot, long aComm) throws MPIException {MPI_Bcast1(rBuf.ptr_(), aCount, MPI_DOUBLE, aRoot, aComm);}
+        public static void MPI_Bcast(FloatCPointer  rBuf, int aCount, int aRoot, long aComm) throws MPIException {MPI_Bcast1(rBuf.ptr_(), aCount, MPI_FLOAT , aRoot, aComm);}
         public static void MPI_Bcast(IntCPointer    rBuf, int aCount, int aRoot, long aComm) throws MPIException {MPI_Bcast1(rBuf.ptr_(), aCount, MPI_INT   , aRoot, aComm);}
-        public static void MPI_Bcast(CPointer       rBuf, int aCount, long aDataType, int aRoot, long aComm) throws MPIException {MPI_Bcast1(rBuf.ptr_(), aCount, aDataType, aRoot, aComm);}
+        public static void MPI_Bcast(ICPointer      rBuf, int aCount, long aDataType, int aRoot, long aComm) throws MPIException {MPI_Bcast1(rBuf.ptr_(), aCount, aDataType, aRoot, aComm);}
         private native static void MPI_Bcast1(long rBuf, int aCount, long aDataType, int aRoot, long aComm) throws MPIException;
         /** 常用操作提供一个基础类型的收发，可以避免冗余的数组创建 */
         public native static byte    MPI_BcastB(byte    aB, int aRoot, long aComm) throws MPIException;
@@ -1583,11 +1613,13 @@ public class MPI {
         private native static void MPI_Gather0(boolean aInPlace, Object aSendBuf, int aSendStart, int aSendCount, long aSendType, int aSendJType, Object rRecvBuf, int aRecvStart, int aRecvCount, long aRecvType, int aRecvJType, int aRoot, long aComm) throws MPIException;
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public static void MPI_Gather(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int aCount, int aRoot, long aComm) throws MPIException {MPI_Gather1(false, aSendBuf.ptr_(), aCount, MPI_DOUBLE, rRecvBuf.ptr_(), aCount, MPI_DOUBLE, aRoot, aComm);}
+        public static void MPI_Gather(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int aCount, int aRoot, long aComm) throws MPIException {MPI_Gather1(false, aSendBuf.ptr_(), aCount, MPI_FLOAT , rRecvBuf.ptr_(), aCount, MPI_FLOAT , aRoot, aComm);}
         public static void MPI_Gather(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int aCount, int aRoot, long aComm) throws MPIException {MPI_Gather1(false, aSendBuf.ptr_(), aCount, MPI_INT   , rRecvBuf.ptr_(), aCount, MPI_INT   , aRoot, aComm);}
-        public static void MPI_Gather(CPointer       aSendBuf, CPointer       rRecvBuf, int aCount, long aDataType, int aRoot, long aComm) throws MPIException {MPI_Gather1(false, aSendBuf.ptr_(), aCount, aDataType, rRecvBuf.ptr_(), aCount, aDataType, aRoot, aComm);}
+        public static void MPI_Gather(ICPointer      aSendBuf, ICPointer      rRecvBuf, int aCount, long aDataType, int aRoot, long aComm) throws MPIException {MPI_Gather1(false, aSendBuf.ptr_(), aCount, aDataType, rRecvBuf.ptr_(), aCount, aDataType, aRoot, aComm);}
         public static void MPI_Gather(DoubleCPointer rBuf, int aCount, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Gather1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, MPI_DOUBLE, aRoot, aComm);} else {MPI_Gather1(false, rBuf.ptr_(), aCount, MPI_DOUBLE, 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gather(FloatCPointer  rBuf, int aCount, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Gather1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, MPI_FLOAT , aRoot, aComm);} else {MPI_Gather1(false, rBuf.ptr_(), aCount, MPI_FLOAT , 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);}}
         public static void MPI_Gather(IntCPointer    rBuf, int aCount, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Gather1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, MPI_INT   , aRoot, aComm);} else {MPI_Gather1(false, rBuf.ptr_(), aCount, MPI_INT   , 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);}}
-        public static void MPI_Gather(CPointer       rBuf, int aCount, long aDataType, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Gather1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, aDataType, aRoot, aComm);} else {MPI_Gather1(false, rBuf.ptr_(), aCount, aDataType, 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gather(ICPointer      rBuf, int aCount, long aDataType, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Gather1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, aDataType, aRoot, aComm);} else {MPI_Gather1(false, rBuf.ptr_(), aCount, aDataType, 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);}}
         private native static void MPI_Gather1(boolean aInPlace, long aSendBuf, int aSendCount, long aSendType, long rRecvBuf, int aRecvCount, long aRecvType, int aRoot, long aComm) throws MPIException;
         
         /**
@@ -1659,11 +1691,13 @@ public class MPI {
         private native static void MPI_Gatherv0(boolean aInPlace, Object aSendBuf, int aSendStart, int aSendCount, long aSendType, int aSendJType, Object rRecvBuf, int aRecvStart, int[] aRecvCounts, long aRecvType, int aRecvJType, int aRoot, long aComm) throws MPIException;
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public static void MPI_Gatherv(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int[] aCounts, int aRoot, long aComm) throws MPIException {MPI_Gatherv1(false, aSendBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], MPI_DOUBLE, rRecvBuf.ptr_(), aCounts, MPI_DOUBLE, aRoot, aComm);}
+        public static void MPI_Gatherv(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int[] aCounts, int aRoot, long aComm) throws MPIException {MPI_Gatherv1(false, aSendBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], MPI_FLOAT , rRecvBuf.ptr_(), aCounts, MPI_FLOAT , aRoot, aComm);}
         public static void MPI_Gatherv(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int[] aCounts, int aRoot, long aComm) throws MPIException {MPI_Gatherv1(false, aSendBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], MPI_INT   , rRecvBuf.ptr_(), aCounts, MPI_INT   , aRoot, aComm);}
-        public static void MPI_Gatherv(CPointer       aSendBuf, CPointer       rRecvBuf, int[] aCounts, long aDataType, int aRoot, long aComm) throws MPIException {MPI_Gatherv1(false, aSendBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], aDataType, rRecvBuf.ptr_(), aCounts, aDataType, aRoot, aComm);}
+        public static void MPI_Gatherv(ICPointer      aSendBuf, ICPointer      rRecvBuf, int[] aCounts, long aDataType, int aRoot, long aComm) throws MPIException {MPI_Gatherv1(false, aSendBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], aDataType, rRecvBuf.ptr_(), aCounts, aDataType, aRoot, aComm);}
         public static void MPI_Gatherv(DoubleCPointer rBuf, int[] aCounts, int aRoot, long aComm) throws MPIException {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Gatherv1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts, MPI_DOUBLE, aRoot, aComm);} else {MPI_Gatherv1(false, rBuf.ptr_(), aCounts[tRank], MPI_DOUBLE, 0, null, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gatherv(FloatCPointer  rBuf, int[] aCounts, int aRoot, long aComm) throws MPIException {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Gatherv1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts, MPI_FLOAT , aRoot, aComm);} else {MPI_Gatherv1(false, rBuf.ptr_(), aCounts[tRank], MPI_FLOAT , 0, null, MPI_DATATYPE_NULL, aRoot, aComm);}}
         public static void MPI_Gatherv(IntCPointer    rBuf, int[] aCounts, int aRoot, long aComm) throws MPIException {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Gatherv1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts, MPI_INT   , aRoot, aComm);} else {MPI_Gatherv1(false, rBuf.ptr_(), aCounts[tRank], MPI_INT   , 0, null, MPI_DATATYPE_NULL, aRoot, aComm);}}
-        public static void MPI_Gatherv(CPointer       rBuf, int[] aCounts, long aDataType, int aRoot, long aComm) throws MPIException {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Gatherv1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts, aDataType, aRoot, aComm);} else {MPI_Gatherv1(false, rBuf.ptr_(), aCounts[tRank], aDataType, 0, null, MPI_DATATYPE_NULL, aRoot, aComm);}}
+        public static void MPI_Gatherv(ICPointer      rBuf, int[] aCounts, long aDataType, int aRoot, long aComm) throws MPIException {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Gatherv1(true, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts, aDataType, aRoot, aComm);} else {MPI_Gatherv1(false, rBuf.ptr_(), aCounts[tRank], aDataType, 0, null, MPI_DATATYPE_NULL, aRoot, aComm);}}
         private native static void MPI_Gatherv1(boolean aInPlace, long aSendBuf, int aSendCount, long aSendType, long rRecvBuf, int[] aRecvCounts, long aRecvType, int aRoot, long aComm) throws MPIException;
         
         /**
@@ -1729,11 +1763,13 @@ public class MPI {
         private native static void MPI_Reduce0(boolean aInPlace, Object aSendBuf, int aSendStart, Object rRecvBuf, int aRecvStart, int aCount, long aDataType, int aJDataType, long aOp, int aRoot, long aComm) throws MPIException;
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public static void MPI_Reduce(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws MPIException {MPI_Reduce1(false, aSendBuf.ptr_(), rRecvBuf.ptr_(), aCount, MPI_DOUBLE, aOp, aRoot, aComm);}
+        public static void MPI_Reduce(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws MPIException {MPI_Reduce1(false, aSendBuf.ptr_(), rRecvBuf.ptr_(), aCount, MPI_FLOAT , aOp, aRoot, aComm);}
         public static void MPI_Reduce(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int aCount, long aOp, int aRoot, long aComm) throws MPIException {MPI_Reduce1(false, aSendBuf.ptr_(), rRecvBuf.ptr_(), aCount, MPI_INT   , aOp, aRoot, aComm);}
-        public static void MPI_Reduce(CPointer       aSendBuf, CPointer       rRecvBuf, int aCount, long aDataType, long aOp, int aRoot, long aComm) throws MPIException {MPI_Reduce1(false, aSendBuf.ptr_(), rRecvBuf.ptr_(), aCount, aDataType, aOp, aRoot, aComm);}
+        public static void MPI_Reduce(ICPointer      aSendBuf, ICPointer      rRecvBuf, int aCount, long aDataType, long aOp, int aRoot, long aComm) throws MPIException {MPI_Reduce1(false, aSendBuf.ptr_(), rRecvBuf.ptr_(), aCount, aDataType, aOp, aRoot, aComm);}
         public static void MPI_Reduce(DoubleCPointer rBuf, int aCount, long aOp, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Reduce1(true, 0, rBuf.ptr_(), aCount, MPI_DOUBLE, aOp, aRoot, aComm);} else {MPI_Reduce1(false, rBuf.ptr_(), 0, aCount, MPI_DOUBLE, aOp, aRoot, aComm);}}
+        public static void MPI_Reduce(FloatCPointer  rBuf, int aCount, long aOp, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Reduce1(true, 0, rBuf.ptr_(), aCount, MPI_FLOAT , aOp, aRoot, aComm);} else {MPI_Reduce1(false, rBuf.ptr_(), 0, aCount, MPI_FLOAT , aOp, aRoot, aComm);}}
         public static void MPI_Reduce(IntCPointer    rBuf, int aCount, long aOp, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Reduce1(true, 0, rBuf.ptr_(), aCount, MPI_INT   , aOp, aRoot, aComm);} else {MPI_Reduce1(false, rBuf.ptr_(), 0, aCount, MPI_INT   , aOp, aRoot, aComm);}}
-        public static void MPI_Reduce(CPointer       rBuf, int aCount, long aDataType, long aOp, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Reduce1(true, 0, rBuf.ptr_(), aCount, aDataType, aOp, aRoot, aComm);} else {MPI_Reduce1(false, rBuf.ptr_(), 0, aCount, aDataType, aOp, aRoot, aComm);}}
+        public static void MPI_Reduce(ICPointer      rBuf, int aCount, long aDataType, long aOp, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Reduce1(true, 0, rBuf.ptr_(), aCount, aDataType, aOp, aRoot, aComm);} else {MPI_Reduce1(false, rBuf.ptr_(), 0, aCount, aDataType, aOp, aRoot, aComm);}}
         private native static void MPI_Reduce1(boolean aInPlace, long aSendBuf, long rRecvBuf, int aCount, long aDataType, long aOp, int aRoot, long aComm) throws MPIException;
         /** 常用操作提供一个基础类型的收发，可以避免冗余的数组创建 */
         public native static byte    MPI_ReduceB(byte    aB, long aOp, int aRoot, long aComm) throws MPIException;
@@ -1814,11 +1850,13 @@ public class MPI {
         private native static void MPI_Scatter0(boolean aInPlace, Object aSendBuf, int aSendStart, int aSendCount, long aSendType, int aSendJType, Object rRecvBuf, int aRecvStart, int aRecvCount, long aRecvType, int aRecvJType, int aRoot, long aComm) throws MPIException;
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public static void MPI_Scatter(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int aCount, int aRoot, long aComm) throws MPIException {MPI_Scatter1(false, aSendBuf.ptr_(), aCount, MPI_DOUBLE, rRecvBuf.ptr_(), aCount, MPI_DOUBLE, aRoot, aComm);}
+        public static void MPI_Scatter(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int aCount, int aRoot, long aComm) throws MPIException {MPI_Scatter1(false, aSendBuf.ptr_(), aCount, MPI_FLOAT , rRecvBuf.ptr_(), aCount, MPI_FLOAT , aRoot, aComm);}
         public static void MPI_Scatter(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int aCount, int aRoot, long aComm) throws MPIException {MPI_Scatter1(false, aSendBuf.ptr_(), aCount, MPI_INT   , rRecvBuf.ptr_(), aCount, MPI_INT   , aRoot, aComm);}
-        public static void MPI_Scatter(CPointer       aSendBuf, CPointer       rRecvBuf, int aCount, long aDataType, int aRoot, long aComm) throws MPIException {MPI_Scatter1(false, aSendBuf.ptr_(), aCount, aDataType, rRecvBuf.ptr_(), aCount, aDataType, aRoot, aComm);}
+        public static void MPI_Scatter(ICPointer      aSendBuf, ICPointer      rRecvBuf, int aCount, long aDataType, int aRoot, long aComm) throws MPIException {MPI_Scatter1(false, aSendBuf.ptr_(), aCount, aDataType, rRecvBuf.ptr_(), aCount, aDataType, aRoot, aComm);}
         public static void MPI_Scatter(DoubleCPointer rBuf, int aCount, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Scatter1(true, rBuf.ptr_(), aCount, MPI_DOUBLE, 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatter1(false, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, MPI_DOUBLE, aRoot, aComm);}}
+        public static void MPI_Scatter(FloatCPointer  rBuf, int aCount, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Scatter1(true, rBuf.ptr_(), aCount, MPI_FLOAT , 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatter1(false, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, MPI_FLOAT , aRoot, aComm);}}
         public static void MPI_Scatter(IntCPointer    rBuf, int aCount, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Scatter1(true, rBuf.ptr_(), aCount, MPI_INT   , 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatter1(false, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, MPI_INT   , aRoot, aComm);}}
-        public static void MPI_Scatter(CPointer       rBuf, int aCount, long aDataType, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Scatter1(true, rBuf.ptr_(), aCount, aDataType, 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatter1(false, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, aDataType, aRoot, aComm);}}
+        public static void MPI_Scatter(ICPointer      rBuf, int aCount, long aDataType, int aRoot, long aComm) throws MPIException {if (MPI_Comm_rank(aComm) == aRoot) {MPI_Scatter1(true, rBuf.ptr_(), aCount, aDataType, 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatter1(false, 0, 0, MPI_DATATYPE_NULL, rBuf.ptr_(), aCount, aDataType, aRoot, aComm);}}
         private native static void MPI_Scatter1(boolean aInPlace, long aSendBuf, int aSendCount, long aSendType, long rRecvBuf, int aRecvCount, long aRecvType, int aRoot, long aComm) throws MPIException;
         
         /**
@@ -1890,11 +1928,13 @@ public class MPI {
         private native static void MPI_Scatterv0(boolean aInPlace, Object aSendBuf, int aSendStart, int[] aSendCounts, long aSendType, int aSendJType, Object rRecvBuf, int aRecvStart, int aRecvCount, long aRecvType, int aRecvJType, int aRoot, long aComm) throws MPIException;
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public static void MPI_Scatterv(DoubleCPointer aSendBuf, DoubleCPointer rRecvBuf, int[] aCounts, int aRoot, long aComm) throws MPIException {MPI_Scatterv1(false, aSendBuf.ptr_(), aCounts, MPI_DOUBLE, rRecvBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], MPI_DOUBLE, aRoot, aComm);}
+        public static void MPI_Scatterv(FloatCPointer  aSendBuf, FloatCPointer  rRecvBuf, int[] aCounts, int aRoot, long aComm) throws MPIException {MPI_Scatterv1(false, aSendBuf.ptr_(), aCounts, MPI_FLOAT , rRecvBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], MPI_FLOAT , aRoot, aComm);}
         public static void MPI_Scatterv(IntCPointer    aSendBuf, IntCPointer    rRecvBuf, int[] aCounts, int aRoot, long aComm) throws MPIException {MPI_Scatterv1(false, aSendBuf.ptr_(), aCounts, MPI_INT   , rRecvBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], MPI_INT   , aRoot, aComm);}
-        public static void MPI_Scatterv(CPointer       aSendBuf, CPointer       rRecvBuf, int[] aCounts, long aDataType, int aRoot, long aComm) throws MPIException {MPI_Scatterv1(false, aSendBuf.ptr_(), aCounts, aDataType, rRecvBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], aDataType, aRoot, aComm);}
+        public static void MPI_Scatterv(ICPointer      aSendBuf, ICPointer      rRecvBuf, int[] aCounts, long aDataType, int aRoot, long aComm) throws MPIException {MPI_Scatterv1(false, aSendBuf.ptr_(), aCounts, aDataType, rRecvBuf.ptr_(), aCounts[MPI_Comm_rank(aComm)], aDataType, aRoot, aComm);}
         public static void MPI_Scatterv(DoubleCPointer rBuf, int[] aCounts, int aRoot, long aComm) throws MPIException {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Scatterv1(true, rBuf.ptr_(), aCounts, MPI_DOUBLE, 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatterv1(false, 0, null, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts[tRank], MPI_DOUBLE, aRoot, aComm);}}
+        public static void MPI_Scatterv(FloatCPointer  rBuf, int[] aCounts, int aRoot, long aComm) throws MPIException {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Scatterv1(true, rBuf.ptr_(), aCounts, MPI_FLOAT , 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatterv1(false, 0, null, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts[tRank], MPI_FLOAT , aRoot, aComm);}}
         public static void MPI_Scatterv(IntCPointer    rBuf, int[] aCounts, int aRoot, long aComm) throws MPIException {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Scatterv1(true, rBuf.ptr_(), aCounts, MPI_INT   , 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatterv1(false, 0, null, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts[tRank], MPI_INT   , aRoot, aComm);}}
-        public static void MPI_Scatterv(CPointer       rBuf, int[] aCounts, long aDataType, int aRoot, long aComm) throws MPIException {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Scatterv1(true, rBuf.ptr_(), aCounts, aDataType, 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatterv1(false, 0, null, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts[tRank], aDataType, aRoot, aComm);}}
+        public static void MPI_Scatterv(ICPointer      rBuf, int[] aCounts, long aDataType, int aRoot, long aComm) throws MPIException {int tRank = MPI_Comm_rank(aComm); if (tRank == aRoot) {MPI_Scatterv1(true, rBuf.ptr_(), aCounts, aDataType, 0, 0, MPI_DATATYPE_NULL, aRoot, aComm);} else {MPI_Scatterv1(false, 0, null, MPI_DATATYPE_NULL, rBuf.ptr_(), aCounts[tRank], aDataType, aRoot, aComm);}}
         private native static void MPI_Scatterv1(boolean aInPlace, long aSendBuf, int[] aSendCounts, long aSendType, long rRecvBuf, int aRecvCount, long aRecvType, int aRoot, long aComm) throws MPIException;
         
         
@@ -2104,8 +2144,9 @@ public class MPI {
         private native static void MPI_Send0(Object aBuf, int aStart, int aCount, long aDataType, int aJDataType, int aDest, int aTag, long aComm) throws MPIException;
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public static void MPI_Send(DoubleCPointer aBuf, int aCount, int aDest, int aTag, long aComm) throws MPIException {MPI_Send1(aBuf.ptr_(), aCount, MPI_DOUBLE, aDest, aTag, aComm);}
+        public static void MPI_Send(FloatCPointer  aBuf, int aCount, int aDest, int aTag, long aComm) throws MPIException {MPI_Send1(aBuf.ptr_(), aCount, MPI_FLOAT , aDest, aTag, aComm);}
         public static void MPI_Send(IntCPointer    aBuf, int aCount, int aDest, int aTag, long aComm) throws MPIException {MPI_Send1(aBuf.ptr_(), aCount, MPI_INT   , aDest, aTag, aComm);}
-        public static void MPI_Send(CPointer       aBuf, int aCount, long aDataType, int aDest, int aTag, long aComm) throws MPIException {MPI_Send1(aBuf.ptr_(), aCount, aDataType, aDest, aTag, aComm);}
+        public static void MPI_Send(ICPointer      aBuf, int aCount, long aDataType, int aDest, int aTag, long aComm) throws MPIException {MPI_Send1(aBuf.ptr_(), aCount, aDataType, aDest, aTag, aComm);}
         private native static void MPI_Send1(long aBuf, int aCount, long aDataType, int aDest, int aTag, long aComm) throws MPIException;
         /** 常用操作提供一个基础类型的收发，可以避免冗余的数组创建 */
         public native static void MPI_SendB(byte    aB, int aDest, int aTag, long aComm) throws MPIException;
@@ -2151,8 +2192,9 @@ public class MPI {
         private native static void MPI_Recv0(Object rBuf, int aStart, int aCount, long aDataType, int aJDataType, int aSource, int aTag, long aComm) throws MPIException;
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public static void MPI_Recv(DoubleCPointer rBuf, int aCount, int aSource, int aTag, long aComm) throws MPIException {MPI_Recv1(rBuf.ptr_(), aCount, MPI_DOUBLE, aSource, aTag, aComm);}
+        public static void MPI_Recv(FloatCPointer  rBuf, int aCount, int aSource, int aTag, long aComm) throws MPIException {MPI_Recv1(rBuf.ptr_(), aCount, MPI_FLOAT , aSource, aTag, aComm);}
         public static void MPI_Recv(IntCPointer    rBuf, int aCount, int aSource, int aTag, long aComm) throws MPIException {MPI_Recv1(rBuf.ptr_(), aCount, MPI_INT   , aSource, aTag, aComm);}
-        public static void MPI_Recv(CPointer       rBuf, int aCount, long aDataType, int aSource, int aTag, long aComm) throws MPIException {MPI_Recv1(rBuf.ptr_(), aCount, aDataType, aSource, aTag, aComm);}
+        public static void MPI_Recv(ICPointer      rBuf, int aCount, long aDataType, int aSource, int aTag, long aComm) throws MPIException {MPI_Recv1(rBuf.ptr_(), aCount, aDataType, aSource, aTag, aComm);}
         private native static void MPI_Recv1(long rBuf, int aCount, long aDataType, int aSource, int aTag, long aComm) throws MPIException;
         /** 常用操作提供一个基础类型的收发，可以避免冗余的数组创建 */
         public native static byte    MPI_RecvB(int aSource, int aTag, long aComm) throws MPIException;
@@ -2252,10 +2294,15 @@ public class MPI {
         private native static void MPI_Sendrecv0(Object aSendBuf, int aSendStart, int aSendCount, long aSendType, int aSendJType, int aDest, int aSendTag, Object rRecvBuf, int aRecvStart, int aRecvCount, long aRecvType, int aRecvJType, int aSource, int aRecvTag, long aComm) throws MPIException;
         /** 提供直接使用指针的收发，可以避免类型转换的损耗 */
         public static void MPI_Sendrecv(DoubleCPointer aSendBuf, int aSendCount, int aDest, int aSendTag, DoubleCPointer rRecvBuf, int aRecvCount, int aSource, int aRecvTag, long aComm) throws MPIException {MPI_Sendrecv1(aSendBuf.ptr_(), aSendCount, MPI_DOUBLE, aDest, aSendTag, rRecvBuf.ptr_(), aRecvCount, MPI_DOUBLE, aSource, aRecvTag, aComm);}
+        public static void MPI_Sendrecv(DoubleCPointer aSendBuf, int aSendCount, int aDest, int aSendTag, FloatCPointer  rRecvBuf, int aRecvCount, int aSource, int aRecvTag, long aComm) throws MPIException {MPI_Sendrecv1(aSendBuf.ptr_(), aSendCount, MPI_DOUBLE, aDest, aSendTag, rRecvBuf.ptr_(), aRecvCount, MPI_FLOAT , aSource, aRecvTag, aComm);}
         public static void MPI_Sendrecv(DoubleCPointer aSendBuf, int aSendCount, int aDest, int aSendTag, IntCPointer    rRecvBuf, int aRecvCount, int aSource, int aRecvTag, long aComm) throws MPIException {MPI_Sendrecv1(aSendBuf.ptr_(), aSendCount, MPI_DOUBLE, aDest, aSendTag, rRecvBuf.ptr_(), aRecvCount, MPI_INT   , aSource, aRecvTag, aComm);}
+        public static void MPI_Sendrecv(FloatCPointer  aSendBuf, int aSendCount, int aDest, int aSendTag, DoubleCPointer rRecvBuf, int aRecvCount, int aSource, int aRecvTag, long aComm) throws MPIException {MPI_Sendrecv1(aSendBuf.ptr_(), aSendCount, MPI_FLOAT , aDest, aSendTag, rRecvBuf.ptr_(), aRecvCount, MPI_DOUBLE, aSource, aRecvTag, aComm);}
+        public static void MPI_Sendrecv(FloatCPointer  aSendBuf, int aSendCount, int aDest, int aSendTag, FloatCPointer  rRecvBuf, int aRecvCount, int aSource, int aRecvTag, long aComm) throws MPIException {MPI_Sendrecv1(aSendBuf.ptr_(), aSendCount, MPI_FLOAT , aDest, aSendTag, rRecvBuf.ptr_(), aRecvCount, MPI_FLOAT , aSource, aRecvTag, aComm);}
+        public static void MPI_Sendrecv(FloatCPointer  aSendBuf, int aSendCount, int aDest, int aSendTag, IntCPointer    rRecvBuf, int aRecvCount, int aSource, int aRecvTag, long aComm) throws MPIException {MPI_Sendrecv1(aSendBuf.ptr_(), aSendCount, MPI_FLOAT , aDest, aSendTag, rRecvBuf.ptr_(), aRecvCount, MPI_INT   , aSource, aRecvTag, aComm);}
         public static void MPI_Sendrecv(IntCPointer    aSendBuf, int aSendCount, int aDest, int aSendTag, DoubleCPointer rRecvBuf, int aRecvCount, int aSource, int aRecvTag, long aComm) throws MPIException {MPI_Sendrecv1(aSendBuf.ptr_(), aSendCount, MPI_INT   , aDest, aSendTag, rRecvBuf.ptr_(), aRecvCount, MPI_DOUBLE, aSource, aRecvTag, aComm);}
+        public static void MPI_Sendrecv(IntCPointer    aSendBuf, int aSendCount, int aDest, int aSendTag, FloatCPointer  rRecvBuf, int aRecvCount, int aSource, int aRecvTag, long aComm) throws MPIException {MPI_Sendrecv1(aSendBuf.ptr_(), aSendCount, MPI_INT   , aDest, aSendTag, rRecvBuf.ptr_(), aRecvCount, MPI_FLOAT , aSource, aRecvTag, aComm);}
         public static void MPI_Sendrecv(IntCPointer    aSendBuf, int aSendCount, int aDest, int aSendTag, IntCPointer    rRecvBuf, int aRecvCount, int aSource, int aRecvTag, long aComm) throws MPIException {MPI_Sendrecv1(aSendBuf.ptr_(), aSendCount, MPI_INT   , aDest, aSendTag, rRecvBuf.ptr_(), aRecvCount, MPI_INT   , aSource, aRecvTag, aComm);}
-        public static void MPI_Sendrecv(CPointer       aSendBuf, int aSendCount, long aSendType, int aDest, int aSendTag, CPointer rRecvBuf, int aRecvCount, long aRecvType, int aSource, int aRecvTag, long aComm) throws MPIException {MPI_Sendrecv1(aSendBuf.ptr_(), aSendCount, aSendType, aDest, aSendTag, rRecvBuf.ptr_(), aRecvCount, aRecvType, aSource, aRecvTag, aComm);}
+        public static void MPI_Sendrecv(ICPointer      aSendBuf, int aSendCount, long aSendType, int aDest, int aSendTag, ICPointer rRecvBuf, int aRecvCount, long aRecvType, int aSource, int aRecvTag, long aComm) throws MPIException {MPI_Sendrecv1(aSendBuf.ptr_(), aSendCount, aSendType, aDest, aSendTag, rRecvBuf.ptr_(), aRecvCount, aRecvType, aSource, aRecvTag, aComm);}
         private native static void MPI_Sendrecv1(long aSendBuf, int aSendCount, long aSendType, int aDest, int aSendTag, long rRecvBuf, int aRecvCount, long aRecvType, int aSource, int aRecvTag, long aComm) throws MPIException;
         
         

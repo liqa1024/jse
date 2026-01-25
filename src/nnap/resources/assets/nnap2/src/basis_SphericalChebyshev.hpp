@@ -18,15 +18,15 @@ static constexpr int sphSizeN_(int aWType, int aTypeNum, int aNMax, int aFuseSiz
 }
 
 template <int WTYPE, int NMAX, int LMAXMAX, int FSIZE, int FULL_CACHE>
-static void calCnlm(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, double *rCnlm,
-                    double *rForwardCache, double aRCut, double *aFuseWeight) noexcept {
+static void calCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rCnlm,
+                    flt_t *rForwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
     constexpr int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     constexpr int tSizeBnlm = (NMAX+1)*tLMAll;
     // init cache
-    double *rRn = NULL, *rY = NULL;
-    double *rBnlm = NULL;
-    double *rNlRn = NULL, *rNlFc = NULL, *rNlY = NULL;
-    double *rNlBnlm = NULL;
+    flt_t *rRn = NULL, *rY = NULL;
+    flt_t *rBnlm = NULL;
+    flt_t *rNlRn = NULL, *rNlFc = NULL, *rNlY = NULL;
+    flt_t *rNlBnlm = NULL;
     if (FULL_CACHE) {
         rNlRn = rForwardCache;
         rNlFc = rNlRn + aNeiNum*(NMAX+1);
@@ -45,12 +45,12 @@ static void calCnlm(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, i
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
         int type = aNlType[j];
-        double dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
-        double dis = sqrt((double)(dx*dx + dy*dy + dz*dz));
+        flt_t dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
+        flt_t dis = sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
         // cal fc
-        double fc = calFc(dis, aRCut);
+        flt_t fc = calFc(dis, aRCut);
         if (FULL_CACHE) rNlFc[j] = fc;
         // cal Rn
         if (FULL_CACHE) rRn = rNlRn + j*(NMAX+1);
@@ -77,24 +77,24 @@ static void calCnlm(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, i
             mplusCnlm<NMAX, LMAXMAX>(rCnlm, rY, fc, rRn);
         } else
         if (WTYPE==WTYPE_FULL) {
-            double *tCnlm = rCnlm + tSizeBnlm*(type-1);
+            flt_t *tCnlm = rCnlm + tSizeBnlm*(type-1);
             mplusCnlm<NMAX, LMAXMAX>(tCnlm, rY, fc, rRn);
         } else
         if (WTYPE==WTYPE_EXFULL) {
-            double *tCnlmWt = rCnlm + tSizeBnlm*type;
-            mplusCnlmWt<NMAX, LMAXMAX>(rCnlm, tCnlmWt, rY, fc, rRn, 1.0);
+            flt_t *tCnlmWt = rCnlm + tSizeBnlm*type;
+            mplusCnlmWt<NMAX, LMAXMAX>(rCnlm, tCnlmWt, rY, fc, rRn, ONE);
         } else
         if (WTYPE==WTYPE_DEFAULT) {
-            double wt = ((type&1)==1) ? type : -type;
-            double *tCnlmWt = rCnlm + tSizeBnlm;
+            flt_t wt = ((type&1)==1) ? ((flt_t)type) : -((flt_t)type);
+            flt_t *tCnlmWt = rCnlm + tSizeBnlm;
             mplusCnlmWt<NMAX, LMAXMAX>(rCnlm, tCnlmWt, rY, fc, rRn, wt);
         }
     }
 }
 
 template <int WTYPE, int NTYPES, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int FSIZE, int PFFLAG, int PFSIZE, int FULL_CACHE>
-static void sphForward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, double *rFp,
-                       double *rForwardCache, double aRCut, double *aFuseWeight, double *aPostFuseWeight, double aPostFuseScale) noexcept {
+static void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
+                       flt_t *rForwardCache, flt_t aRCut, flt_t *aFuseWeight, flt_t *aPostFuseWeight, flt_t aPostFuseScale) noexcept {
     // const init
     constexpr int tSizeN = sphSizeN_(WTYPE, NTYPES, NMAX, FSIZE);
     constexpr int tWType = toInternalWType(WTYPE, NTYPES);
@@ -104,17 +104,17 @@ static void sphForward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType
     constexpr int tSizeCnlm = tSizeN*tLMAll;
     constexpr int tSizeAnlm = PFFLAG ? (PFSIZE*tLMAll) : 0;
     // init cache
-    double *rCnlm = rForwardCache;
-    double *rAnlm = rCnlm + tSizeCnlm;
-    double *rCacheElse = rAnlm + tSizeAnlm;
+    flt_t *rCnlm = rForwardCache;
+    flt_t *rAnlm = rCnlm + tSizeCnlm;
+    flt_t *rCacheElse = rAnlm + tSizeAnlm;
     // clear cnlm first
-    fill<tSizeCnlm>(rCnlm, 0.0);
+    fill<tSizeCnlm>(rCnlm, ZERO);
     // do cal
     calCnlm<tWType, NMAX, tLMaxMax, FSIZE, FULL_CACHE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rCnlm, rCacheElse, aRCut, aFuseWeight);
     // cnlm -> anlm
     if (PFFLAG) {
         // clear anlm first
-        fill<tSizeAnlm>(rAnlm, 0.0);
+        fill<tSizeAnlm>(rAnlm, ZERO);
         mplusAnlm<tSizeN, tLMaxMax, PFSIZE>(rAnlm, rCnlm, aPostFuseWeight);
         // scale anlm here
         multiply<tSizeAnlm>(rAnlm, aPostFuseScale);
@@ -132,22 +132,22 @@ static void sphForward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType
 }
 
 template <int WTYPE, int NMAX, int LMAXMAX, int FSIZE, int FULL_CACHE>
-static void backwardCnlm(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, double *aGradCnlm,
-                         double *rGradNlDx, double *rGradNlDy, double *rGradNlDz,
-                         double *aForwardCache, double *rBackwardCache, double aRCut, double *aFuseWeight) {
+static void backwardCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradCnlm,
+                         flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
+                         flt_t *aForwardCache, flt_t *rBackwardCache, flt_t aRCut, flt_t *aFuseWeight) {
     const int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     const int tSizeBnlm = (NMAX+1)*tLMAll;
     // init cache
-    double *tNlRn = aForwardCache;
-    double *tNlFc = tNlRn + aNeiNum*(NMAX+1);
-    double *tNlY = tNlFc + aNeiNum;
-    double *rRnPx = NULL, *rRnPy = NULL, *rRnPz = NULL, *rCheby2 = NULL;
-    double *rYPx = NULL, *rYPy = NULL, *rYPz = NULL, *rYPtheta = NULL, *rYPphi = NULL;
-    double *rGradBnlm = NULL;
-    double *rNlRnPx = NULL, *rNlRnPy = NULL, *rNlRnPz = NULL;
-    double *rNlFcPx = NULL, *rNlFcPy = NULL, *rNlFcPz = NULL;
-    double *rNlYPx = NULL, *rNlYPy = NULL, *rNlYPz = NULL;
-    double *rNlGradBnlm = NULL;
+    flt_t *tNlRn = aForwardCache;
+    flt_t *tNlFc = tNlRn + aNeiNum*(NMAX+1);
+    flt_t *tNlY = tNlFc + aNeiNum;
+    flt_t *rRnPx = NULL, *rRnPy = NULL, *rRnPz = NULL, *rCheby2 = NULL;
+    flt_t *rYPx = NULL, *rYPy = NULL, *rYPz = NULL, *rYPtheta = NULL, *rYPphi = NULL;
+    flt_t *rGradBnlm = NULL;
+    flt_t *rNlRnPx = NULL, *rNlRnPy = NULL, *rNlRnPz = NULL;
+    flt_t *rNlFcPx = NULL, *rNlFcPy = NULL, *rNlFcPz = NULL;
+    flt_t *rNlYPx = NULL, *rNlYPy = NULL, *rNlYPz = NULL;
+    flt_t *rNlGradBnlm = NULL;
     if (FULL_CACHE) {
         rNlRnPx = rBackwardCache;
         rNlRnPy = rNlRnPx + aNeiNum*(NMAX+1);
@@ -183,16 +183,16 @@ static void backwardCnlm(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlTy
     for (int j = 0; j < aNeiNum; ++j) {
         // init nl
         int type = aNlType[j];
-        double dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
-        double dis = sqrt((double)(dx*dx + dy*dy + dz*dz));
+        flt_t dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
+        flt_t dis = sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
         // get fc Rn Y
-        double fc = tNlFc[j];
-        double *tRn = tNlRn + j*(NMAX+1);
-        double *tY = tNlY + j*tLMAll;
+        flt_t fc = tNlFc[j];
+        flt_t *tRn = tNlRn + j*(NMAX+1);
+        flt_t *tY = tNlY + j*tLMAll;
         // cal fcPxyz
-        double fcPx, fcPy, fcPz;
+        flt_t fcPx, fcPy, fcPz;
         calFcPxyz(&fcPx, &fcPy, &fcPz, dis, aRCut, dx, dy, dz);
         if (FULL_CACHE) {
             rNlFcPx[j] = fcPx;
@@ -232,25 +232,25 @@ static void backwardCnlm(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlTy
             gradBnlm2xyz<NMAX, LMAXMAX>(j, aGradCnlm, rYPtheta, tY, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
         } else
         if (WTYPE==WTYPE_FULL) {
-            double *tGradBnlm = aGradCnlm + tSizeBnlm*(type-1);
+            flt_t *tGradBnlm = aGradCnlm + tSizeBnlm*(type-1);
             gradBnlm2xyz<NMAX, LMAXMAX>(j, tGradBnlm, rYPtheta, tY, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
         } else
         if (WTYPE==WTYPE_EXFULL) {
-            double *tGradCnlmWt = aGradCnlm + tSizeBnlm*type;
-            gradCnlmWt2xyz<NMAX, LMAXMAX>(j, aGradCnlm, tGradCnlmWt, rYPtheta, tY, fc, tRn, 1.0, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
+            flt_t *tGradCnlmWt = aGradCnlm + tSizeBnlm*type;
+            gradCnlmWt2xyz<NMAX, LMAXMAX>(j, aGradCnlm, tGradCnlmWt, rYPtheta, tY, fc, tRn, ONE, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
         } else
         if (WTYPE==WTYPE_DEFAULT) {
-            double wt = ((type&1)==1) ? type : -type;
-            double *tGradCnlmWt = aGradCnlm + tSizeBnlm;
+            flt_t wt = ((type&1)==1) ? ((flt_t)type) : -((flt_t)type);
+            flt_t *tGradCnlmWt = aGradCnlm + tSizeBnlm;
             gradCnlmWt2xyz<NMAX, LMAXMAX>(j, aGradCnlm, tGradCnlmWt, rYPtheta, tY, fc, tRn, wt, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
         }
     }
 }
 template <int WTYPE, int NTYPES, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int FSIZE, int PFFLAG, int PFSIZE, int FULL_CACHE, int CLEAR_CACHE>
-static void sphBackward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlType, int aNeiNum, double *aGradFp,
-                        double *rGradNlDx, double *rGradNlDy, double *rGradNlDz,
-                        double *aForwardCache, double *rBackwardCache, double aRCut, double *aFuseWeight,
-                        double *aPostFuseWeight, double aPostFuseScale) noexcept {
+static void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
+                        flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
+                        flt_t *aForwardCache, flt_t *rBackwardCache, flt_t aRCut, flt_t *aFuseWeight,
+                        flt_t *aPostFuseWeight, flt_t aPostFuseScale) noexcept {
     // const init
     constexpr int tSizeN = sphSizeN_(WTYPE, NTYPES, NMAX, FSIZE);
     constexpr int tWType = toInternalWType(WTYPE, NTYPES);
@@ -260,20 +260,20 @@ static void sphBackward(double *aNlDx, double *aNlDy, double *aNlDz, int *aNlTyp
     constexpr int tSizeCnlm = tSizeN*tLMAll;
     constexpr int tSizeAnlm = PFFLAG ? (PFSIZE*tLMAll) : 0;
     // init cache
-    double *tCnlm = aForwardCache;
-    double *tAnlm = tCnlm + tSizeCnlm;
-    double *tForwardCacheElse = tAnlm + tSizeAnlm;
-    double *rGradCnlm = rBackwardCache;
-    double *rGradAnlm = rGradCnlm + tSizeCnlm;
-    double *rForwardForceCacheElse = rGradAnlm + tSizeAnlm;
+    flt_t *tCnlm = aForwardCache;
+    flt_t *tAnlm = tCnlm + tSizeCnlm;
+    flt_t *tForwardCacheElse = tAnlm + tSizeAnlm;
+    flt_t *rGradCnlm = rBackwardCache;
+    flt_t *rGradAnlm = rGradCnlm + tSizeCnlm;
+    flt_t *rForwardForceCacheElse = rGradAnlm + tSizeAnlm;
     if (CLEAR_CACHE) {
         for (int j = 0; j < aNeiNum; ++j) {
-            rGradNlDx[j] = 0.0;
-            rGradNlDy[j] = 0.0;
-            rGradNlDz[j] = 0.0;
+            rGradNlDx[j] = ZERO;
+            rGradNlDy[j] = ZERO;
+            rGradNlDz[j] = ZERO;
         }
-        fill<tSizeAnlm>(rGradAnlm, 0.0);
-        fill<tSizeCnlm>(rGradCnlm, 0.0);
+        fill<tSizeAnlm>(rGradAnlm, ZERO);
+        fill<tSizeCnlm>(rGradCnlm, ZERO);
     }
     if (!PFFLAG) {
         tAnlm = tCnlm;

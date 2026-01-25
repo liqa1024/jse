@@ -20,7 +20,7 @@ import static jse.code.OS.JAVA_HOME;
  * 内部默认会统一使用 {@link MiMalloc} 来加速内存分配和释放的过程。
  * @author liqa
  */
-public class CPointer {
+public class CPointer implements ICPointer {
     public final static class InitHelper {
         private static volatile boolean INITIALIZED = false;
         /** @return {@link CPointer} 相关的 JNI 库是否已经初始化完成 */
@@ -117,11 +117,9 @@ public class CPointer {
      * @param aPtr 需要包装的 c 指针值
      */
     @ApiStatus.Internal public CPointer(long aPtr) {mPtr = aPtr;}
-    /** @return 内部存储的 c 指针值 */
-    @ApiStatus.Internal public final long ptr_() {return mPtr;}
+    /** @return {@inheritDoc} */
+    @Override @ApiStatus.Internal public final long ptr_() {return mPtr;}
     
-    /** @return 内部存储的 c 指针是否是空的 */
-    public boolean isNull() {return mPtr==0 || mPtr==-1;}
     
     /**
      * 调用 c 中的 {@code malloc} 来分配内存创建一个 c 指针

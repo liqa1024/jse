@@ -2,6 +2,7 @@ package jsex.nnap;
 
 import jse.clib.DoubleCPointer;
 import jse.clib.IntCPointer;
+import jse.clib.SimpleJIT;
 import jse.code.collection.IntList;
 import jse.lmp.LmpPlugin;
 
@@ -18,7 +19,6 @@ public class PairNNAP2 extends LmpPlugin.Pair {
     /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
     public final static class InitHelper {
         private static volatile boolean INITIALIZED = false;
-        
         public static boolean initialized() {return INITIALIZED;}
         @SuppressWarnings({"ResultOfMethodCallIgnored", "UnnecessaryCallToStringValueOf"})
         public static void init() {
@@ -29,8 +29,8 @@ public class PairNNAP2 extends LmpPlugin.Pair {
     private final static boolean _INIT_FLAG;
     static {
         InitHelper.INITIALIZED = true;
-        // 确保 NNAP 已经确实初始化
-        NNAP.InitHelper.init();
+        // 现在只需要 jit 初始化即可
+        SimpleJIT.InitHelper.init();
         _INIT_FLAG = false;
     }
     
@@ -67,7 +67,7 @@ public class PairNNAP2 extends LmpPlugin.Pair {
     @Override public void coeff(String... aArgs) throws Exception {
         if (aArgs==null || aArgs.length<4) throw new IllegalArgumentException("Not enough arguments, pair_coeff MUST be like `* * path/to/nnpot elem1 ...`");
         if (!aArgs[0].equals("*") || !aArgs[1].equals("*")) throw new IllegalArgumentException("pair_coeff MUST start with `* *`");
-        mNNAP = new NNAP2(aArgs[2]);
+        mNNAP = new NNAP2(aArgs[2], 1, precision());
         String tNNAPUnits = mNNAP.units();
         if (tNNAPUnits != null) {
             String tLmpUnits = unitStyle();
@@ -92,15 +92,18 @@ public class PairNNAP2 extends LmpPlugin.Pair {
             mTypeIlist[ti] = new IntList(16);
         }
     }
-    protected NNAP2 mNNAP = null;
-    protected IntCPointer mLmpType2NNAPType = null;
-    protected double[] mCutoff = null;
-    protected DoubleCPointer mCutsq = null;
-    protected int mTypeNum = -1;
+    NNAP2 mNNAP = null;
+    IntCPointer mLmpType2NNAPType = null;
+    double[] mCutoff = null;
+    DoubleCPointer mCutsq = null;
+    int mTypeNum = -1;
     private IntList[] mTypeIlist = null;
     
     @Override public double initOne(int i, int j) {
         return mCutoff[i];
+    }
+    protected String precision() {
+        return null;
     }
     
     @Override public void shutdown() {

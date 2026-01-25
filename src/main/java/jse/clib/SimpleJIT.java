@@ -101,7 +101,7 @@ public class SimpleJIT {
     
     public static Engine engine() {return new Engine();}
     
-    public static class Method {
+    public static class Method implements ICPointer {
         private final Engine mEngine;
         private final long mMethodPtr;
         Method(long aMethodPtr, Engine aEngine) {
@@ -110,16 +110,12 @@ public class SimpleJIT {
         }
         
         @UnsafeJNI("Inputs mismatch or invalid usage will result in JVM SIGSEGV")
-        public int invoke(CPointer aDataIn, CPointer rDataOut) {
+        public int invoke(ICPointer aDataIn, ICPointer rDataOut) {
             if (mEngine.isShutdown()) throw new RuntimeException("this JIT engine is dead");
             if (isNull()) throw new NullPointerException();
             return invokeMethod0(mMethodPtr, aDataIn.ptr_(), rDataOut.ptr_());
         }
-        
-        /** @return 内部存储的 c 指针是否是空的 */
-        public boolean isNull() {return mMethodPtr==0 || mMethodPtr==-1;}
-        /** @return 内部存储的 c 指针值 */
-        @ApiStatus.Internal public long ptr_() {return mMethodPtr;}
+        @Override public long ptr_() {return mMethodPtr;}
     }
     
     @FunctionalInterface public interface IDirIniter {String init(String aInput) throws Exception;}

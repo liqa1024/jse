@@ -6,14 +6,14 @@
 namespace JSE_NNAP {
 
 template <int NMAX, int FSIZE, int FSTYLE, int EXFLAG>
-static void mplusChebyFuse_(double *rFp, double *aFuseWeight, int aType, double aFc, double *aRn) {
-    double *tFuseWeight = aFuseWeight;
+static void mplusChebyFuse_(flt_t *rFp, flt_t *aFuseWeight, int aType, flt_t aFc, flt_t *aRn) {
+    flt_t *tFuseWeight = aFuseWeight;
     if (FSTYLE==FSTYLE_LIMITED) {
         tFuseWeight += FSIZE*(aType-1);
     } else {
         tFuseWeight += FSIZE*(NMAX+1)*(aType-1);
     }
-    double *tFp = rFp;
+    flt_t *tFp = rFp;
     if (EXFLAG) {
         mplus<NMAX+1>(tFp, aFc, aRn);
         tFp += (NMAX+1);
@@ -31,27 +31,27 @@ static void mplusChebyFuse_(double *rFp, double *aFuseWeight, int aType, double 
     }
 }
 template <int NMAX, int FSIZE, int FSTYLE>
-static inline void mplusChebyFuse(double *rFp, double *aFuseWeight, int aType, double aFc, double *aRn) {
+static inline void mplusChebyFuse(flt_t *rFp, flt_t *aFuseWeight, int aType, flt_t aFc, flt_t *aRn) {
     mplusChebyFuse_<NMAX, FSIZE, FSTYLE, FALSE>(rFp, aFuseWeight, aType, aFc, aRn);
 }
 template <int NMAX, int FSIZE, int FSTYLE>
-static inline void mplusChebyExFuse(double *rFp, double *aFuseWeight, int aType, double aFc, double *aRn) {
+static inline void mplusChebyExFuse(flt_t *rFp, flt_t *aFuseWeight, int aType, flt_t aFc, flt_t *aRn) {
     mplusChebyFuse_<NMAX, FSIZE, FSTYLE, TRUE>(rFp, aFuseWeight, aType, aFc, aRn);
 }
 
 
 template <int NMAX, int FSIZE, int FSTYLE, int EXFLAG>
-static void chebyGradRnFuse_(double *rGradRn, double *aGradFp, double *aFuseWeight, int aType) {
-    fill<NMAX+1>(rGradRn, 0.0);
-    double *tFuseWeight = aFuseWeight;
+static void chebyGradRnFuse_(flt_t *rGradRn, flt_t *aGradFp, flt_t *aFuseWeight, int aType) {
+    fill<NMAX+1>(rGradRn, ZERO);
+    flt_t *tFuseWeight = aFuseWeight;
     if (FSTYLE==FSTYLE_LIMITED) {
         tFuseWeight += FSIZE*(aType-1);
     } else {
         tFuseWeight += FSIZE*(NMAX+1)*(aType-1);
     }
-    double *tGradFp = aGradFp;
+    flt_t *tGradFp = aGradFp;
     if (EXFLAG) {
-        mplus<NMAX+1>(rGradRn, 1.0, tGradFp);
+        mplus<NMAX+1>(rGradRn, ONE, tGradFp);
         tGradFp += (NMAX+1);
     }
     for (int k = 0; k < FSIZE; ++k) {
@@ -67,24 +67,24 @@ static void chebyGradRnFuse_(double *rGradRn, double *aGradFp, double *aFuseWeig
     }
 }
 template <int NMAX, int FSIZE, int FSTYLE>
-static inline void chebyGradRnFuse(double *rGradRn, double *aGradFp, double *aFuseWeight, int aType) {
+static inline void chebyGradRnFuse(flt_t *rGradRn, flt_t *aGradFp, flt_t *aFuseWeight, int aType) {
     chebyGradRnFuse_<NMAX, FSIZE, FSTYLE, FALSE>(rGradRn, aGradFp, aFuseWeight, aType);
 }
 template <int NMAX, int FSIZE, int FSTYLE>
-static inline void chebyGradRnExFuse(double *rGradRn, double *aGradFp, double *aFuseWeight, int aType) {
+static inline void chebyGradRnExFuse(flt_t *rGradRn, flt_t *aGradFp, flt_t *aFuseWeight, int aType) {
     chebyGradRnFuse_<NMAX, FSIZE, FSTYLE, TRUE>(rGradRn, aGradFp, aFuseWeight, aType);
 }
 
 template <int NMAX, int WTFLAG>
-static void gradRn2xyz_(int j, double *aGradRn, double *aGradRnWt, double aFc, double *aRn, double aWt,
-                        double aFcPx, double aFcPy, double aFcPz, double *aRnPx, double *aRnPy, double *aRnPz,
-                        double *rGradNlDx, double *rGradNlDy, double *rGradNlDz) noexcept {
-    double tGradFc = 0.0;
-    double rGradDxj = 0.0, rGradDyj = 0.0, rGradDzj = 0.0;
+static void gradRn2xyz_(int j, flt_t *aGradRn, flt_t *aGradRnWt, flt_t aFc, flt_t *aRn, flt_t aWt,
+                        flt_t aFcPx, flt_t aFcPy, flt_t aFcPz, flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz,
+                        flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
+    flt_t tGradFc = ZERO;
+    flt_t rGradDxj = ZERO, rGradDyj = ZERO, rGradDzj = ZERO;
     for (int n = 0; n <= NMAX; ++n) {
-        double tGradRnn = aGradRn[n];
+        flt_t tGradRnn = aGradRn[n];
         if (WTFLAG) tGradRnn += aWt*aGradRnWt[n];
-        const double tRnn = aRn[n];
+        const flt_t tRnn = aRn[n];
         tGradFc += tRnn * tGradRnn;
         tGradRnn *= aFc;
         rGradDxj += tGradRnn*aRnPx[n];
@@ -97,11 +97,11 @@ static void gradRn2xyz_(int j, double *aGradRn, double *aGradRnWt, double aFc, d
     rGradNlDx[j] += rGradDxj; rGradNlDy[j] += rGradDyj; rGradNlDz[j] += rGradDzj;
 }
 template <int NMAX>
-static inline void gradRn2xyz(int j, double *aGradRn, double aFc, double *aRn, double aFcPx, double aFcPy, double aFcPz, double *aRnPx, double *aRnPy, double *aRnPz, double *rGradNlDx, double *rGradNlDy, double *rGradNlDz) noexcept {
-    gradRn2xyz_<NMAX, FALSE>(j, aGradRn, NULL, aFc, aRn, 0, aFcPx, aFcPy, aFcPz, aRnPx, aRnPy, aRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
+static inline void gradRn2xyz(int j, flt_t *aGradRn, flt_t aFc, flt_t *aRn, flt_t aFcPx, flt_t aFcPy, flt_t aFcPz, flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz, flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
+    gradRn2xyz_<NMAX, FALSE>(j, aGradRn, NULL, aFc, aRn, ZERO, aFcPx, aFcPy, aFcPz, aRnPx, aRnPy, aRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
 }
 template <int NMAX>
-static inline void gradRnWt2xyz(int j, double *aGradRn, double *aGradRnWt, double aFc, double *aRn, double aWt, double aFcPx, double aFcPy, double aFcPz, double *aRnPx, double *aRnPy, double *aRnPz, double *rGradNlDx, double *rGradNlDy, double *rGradNlDz) noexcept {
+static inline void gradRnWt2xyz(int j, flt_t *aGradRn, flt_t *aGradRnWt, flt_t aFc, flt_t *aRn, flt_t aWt, flt_t aFcPx, flt_t aFcPy, flt_t aFcPz, flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz, flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
     gradRn2xyz_<NMAX, TRUE>(j, aGradRn, aGradRnWt, aFc, aRn, aWt, aFcPx, aFcPy, aFcPz, aRnPx, aRnPy, aRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
 }
 
