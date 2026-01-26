@@ -45,7 +45,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
                 tBasisType = "spherical_chebyshev";
             }
             switch(tBasisType.toString()) {
-            case "mirror": case "share": {
+            case "mirror": case "mirror_basis": case "share": case "shared_basis": {
                 break; // mirror/share 情况延迟初始化
             }
             case "multi_spherical_chebyshev": {

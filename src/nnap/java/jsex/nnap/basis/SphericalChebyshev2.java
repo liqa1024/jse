@@ -38,9 +38,9 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
     final int mPostFuseSize;
     final double[] mPostFuseScale;
     
-    private SphericalChebyshev2(int aThisType, int aTypeNum, int aNMax, int aLMax, int aLMaxMax, boolean aNoRadial, int aL3Max, int aL4Max, double aRCut,
+    private SphericalChebyshev2(int aTypeNum, int aNMax, int aLMax, int aLMaxMax, boolean aNoRadial, int aL3Max, int aL4Max, double aRCut,
                                 int aWType, @Nullable RowMatrix aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
-        super(aThisType, aTypeNum, aNMax, aWType, aFuseWeight);
+        super(aTypeNum, aNMax, aWType, aFuseWeight);
         if (aLMaxMax<0 || aLMaxMax>12) throw new IllegalArgumentException("Input lmax MUST be in [0, 12], input: "+aLMaxMax);
         if (aL3Max<0 || aL3Max>6) throw new IllegalArgumentException("Input l3max MUST be in [0, 6], input: "+aL3Max);
         if (aL4Max<0 || aL4Max>3) throw new IllegalArgumentException("Input l4max MUST be in [0, 3], input: "+aL3Max);
@@ -68,8 +68,8 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         if (mPostFuseScale.length!=1) throw new IllegalArgumentException("Size of post fuse scale mismatch");
         mSize = mPostFuseWeight==null ? (mSizeN*mSizeL) : (mPostFuseSize*mSizeL);
     }
-    SphericalChebyshev2(int aThisType, int aTypeNum, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, int aL4Max, double aRCut, int aWType, RowMatrix aFuseWeight, Vector aPostFuseWeight, double[] aPostFuseScale) {
-        this(aThisType, aTypeNum, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aNoRadial, aL3Max, aL4Max, aRCut, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
+    SphericalChebyshev2(int aTypeNum, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, int aL4Max, double aRCut, int aWType, RowMatrix aFuseWeight, Vector aPostFuseWeight, double[] aPostFuseScale) {
+        this(aTypeNum, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aNoRadial, aL3Max, aL4Max, aRCut, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -98,7 +98,7 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
     }
     
     @SuppressWarnings({"rawtypes"})
-    public static SphericalChebyshev2 load(int aThisType, int aTypeNum, Map aMap) {
+    public static SphericalChebyshev2 load(int aTypeNum, Map aMap) {
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
         int aLMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue();
         int aL3Max = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_L3MAX, "l3max")).intValue();
@@ -119,7 +119,7 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
             aPostFuseScale[0] = tPostFuseScale==null ? 1.0 : ((Number)tPostFuseScale).doubleValue();
         }
         return new SphericalChebyshev2(
-            aThisType, aTypeNum, aNMax,
+            aTypeNum, aNMax,
             aLMax, (Boolean)UT.Code.getWithDefault(aMap, false, "noradial"),
             aL3Max, aL4Max,
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
@@ -223,8 +223,6 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
      * {@code 2(nmax+1)(lmax+1)}
      */
     @Override public int size() {return mSize;}
-    /** @return {@inheritDoc} */
-    @Override public int atomTypeNumber() {return mTypeNum;}
     
     @Override public int forwardCacheSize(int aNN, boolean aFullCache) {
         int tPostSize = mPostFuseWeight==null ? 0 : (mPostFuseSize*mLMAll);
@@ -245,21 +243,20 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
                           : (4*(mNMax+1) + 5*mLMAll + mSizeN*mLMAll + tPostSize);
     }
     
-    @Override public void updateGenMap(Map<String, Object> rGenMap) {
-        super.updateGenMap(rGenMap);
-        int ti = mThisType-1;
-        rGenMap.put("[FP USE "+mThisType+"]", "spherical_chebyshev");
-        rGenMap.put(ti+":NNAPGEN_FP_LMAX", mLMax);
-        rGenMap.put(ti+":NNAPGEN_FP_NORADIAL", mNoRadial?1:0);
-        rGenMap.put(ti+":NNAPGEN_FP_L3MAX", mL3Max);
-        rGenMap.put(ti+":NNAPGEN_FP_L4MAX", mL4Max);
-        rGenMap.put(ti+":NNAPGEN_FP_PFFLAG", mPostFuseWeight==null?0:1);
-        rGenMap.put(ti+":NNAPGEN_FP_PFSIZE", mPostFuseSize);
+    @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
+        super.updateGenMap(rGenMap, aGenIdx);
+        rGenMap.put("[FP USE "+aGenIdx+"]", "spherical_chebyshev");
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_LMAX", mLMax);
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_NORADIAL", mNoRadial?1:0);
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_L3MAX", mL3Max);
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_L4MAX", mL4Max);
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_PFFLAG", mPostFuseWeight==null?0:1);
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_PFSIZE", mPostFuseSize);
     }
-    @Override public boolean hasSameGenMap(Object aBasis) {
+    @Override protected boolean hasSameGenMap_(Basis2 aBasis) {
         if (!(aBasis instanceof SphericalChebyshev2)) return false;
         SphericalChebyshev2 tBasis = (SphericalChebyshev2)aBasis;
-        return super.hasSameGenMap(aBasis) && mLMax==tBasis.mLMax && mNoRadial==tBasis.mNoRadial && mL3Max==tBasis.mL3Max && mL4Max==tBasis.mL4Max
-                                           && (mPostFuseWeight!=null)==(tBasis.mPostFuseWeight!=null) && mPostFuseSize==tBasis.mPostFuseSize;
+        return super.hasSameGenMap_(aBasis) && mLMax==tBasis.mLMax && mNoRadial==tBasis.mNoRadial && mL3Max==tBasis.mL3Max && mL4Max==tBasis.mL4Max
+                                            && (mPostFuseWeight!=null)==(tBasis.mPostFuseWeight!=null) && mPostFuseSize==tBasis.mPostFuseSize;
     }
 }

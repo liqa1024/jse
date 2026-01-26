@@ -23,7 +23,6 @@ import static jse.code.CS.RANDOM;
  */
 public class FeedForward2 implements ISavable {
     
-    final int mThisType;
     final int mInputDim;
     final int[] mHiddenDims;
     final Vector mHiddenWeights, mHiddenWeightsBackward;
@@ -33,8 +32,7 @@ public class FeedForward2 implements ISavable {
     final double[] mOutputBias;
     final int mHiddenNumber, mHiddenWeightsSize, mHiddenBiasesSize, mOutputWeightSize;
     
-    private FeedForward2(int aThisType, int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenWeightsBackward, IntVector aIndexToBackward, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
-        mThisType = aThisType;
+    private FeedForward2(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenWeightsBackward, IntVector aIndexToBackward, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
         mInputDim = aInputDim;
         mHiddenDims = aHiddenDims;
         mHiddenNumber = aHiddenDims.length;
@@ -62,8 +60,8 @@ public class FeedForward2 implements ISavable {
         if (mOutputWeight.internalDataSize() != mOutputWeightSize) throw new IllegalArgumentException("The size of output weight mismatch");
         if (mOutputBias.length != 1) throw new IllegalArgumentException("The size of output biases mismatch");
     }
-    public FeedForward2(int aThisType, int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
-        this(aThisType, aInputDim, aHiddenDims, aHiddenWeights, null, null, aHiddenBiases, aOutputWeight, aOutputBias);
+    public FeedForward2(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
+        this(aInputDim, aHiddenDims, aHiddenWeights, null, null, aHiddenBiases, aOutputWeight, aOutputBias);
         int tColNum = mInputDim;
         int tShift = 0;
         for (int tHiddenDim : mHiddenDims) {
@@ -112,7 +110,7 @@ public class FeedForward2 implements ISavable {
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public static FeedForward2 load(int aThisType, Map aMap) {
+    public static FeedForward2 load(Map aMap) {
         int aInputDim = ((Number)UT.Code.get(aMap, "input_dim")).intValue();
         List<?> tHiddenDims = (List<?>)UT.Code.get(aMap, "hidden_dims");
         int[] aHiddenDims = new int[tHiddenDims.size()];
@@ -159,7 +157,7 @@ public class FeedForward2 implements ISavable {
         double aOutputBias = ((Number)aMap.get("output_bias")).doubleValue();
         if (aOutputWeight.size() != aHiddenDims[tHiddenNumber-1]) throw new IllegalArgumentException("Size of output weight mismatch");
         
-        return new FeedForward2(aThisType, aInputDim, aHiddenDims, aHiddenWeights, aHiddenBiases, aOutputWeight, new double[]{aOutputBias});
+        return new FeedForward2(aInputDim, aHiddenDims, aHiddenWeights, aHiddenBiases, aOutputWeight, new double[]{aOutputBias});
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -252,18 +250,17 @@ public class FeedForward2 implements ISavable {
         return mInputDim;
     }
     
-    public void updateGenMap(Map<String, Object> rGenMap) {
-        int ti = mThisType-1;
-        rGenMap.put(ti+":NNAPGEN_NN_SIZE_IN", mInputDim);
-        rGenMap.put(ti+":NNAPGEN_NN_SIZE_HW", mHiddenWeightsSize);
-        rGenMap.put(ti+":NNAPGEN_NN_SIZE_HB", mHiddenBiasesSize);
-        rGenMap.put(ti+":NNAPGEN_NN_SIZE_OW", mOutputWeightSize);
-        rGenMap.put("[NN HIDDEN LAYERS "+mThisType+"]", mHiddenNumber);
+    public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
+        rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_IN", mInputDim);
+        rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HW", mHiddenWeightsSize);
+        rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HB", mHiddenBiasesSize);
+        rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_OW", mOutputWeightSize);
+        rGenMap.put("[NN HIDDEN LAYERS "+aGenIdx+"]", mHiddenNumber);
         int tInSize = mInputDim;
         for (int i = 0; i < mHiddenNumber; ++i) {
             int tOutSize = mHiddenDims[i];
-            rGenMap.put(ti+":"+i+":NNAPGEN_NN_IN_SIZE_H", tInSize);
-            rGenMap.put(ti+":"+i+":NNAPGEN_NN_OUT_SIZE_H", tOutSize);
+            rGenMap.put(aGenIdx+":"+i+":NNAPGEN_NN_IN_SIZE_H", tInSize);
+            rGenMap.put(aGenIdx+":"+i+":NNAPGEN_NN_OUT_SIZE_H", tOutSize);
             tInSize = tOutSize;
         }
     }

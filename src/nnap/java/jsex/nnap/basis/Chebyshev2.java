@@ -5,8 +5,6 @@ import com.google.common.collect.ImmutableBiMap;
 import jse.code.UT;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
-import jse.math.vector.IVector;
-import jse.math.vector.RefVector;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -31,8 +29,8 @@ public class Chebyshev2 extends WTypeBasis2 {
     final double mRCut;
     final int mSize;
     
-    Chebyshev2(int aThisType, int aTypeNum, int aNMax, double aRCut, int aWType, int aFuseStyle, @Nullable RowMatrix aFuseWeight) {
-        super(aThisType, aTypeNum, aNMax, aWType, aFuseWeight);
+    Chebyshev2(int aTypeNum, int aNMax, double aRCut, int aWType, int aFuseStyle, @Nullable RowMatrix aFuseWeight) {
+        super(aTypeNum, aNMax, aWType, aFuseWeight);
         if (!ALL_FUSE_STYLE.containsValue(aFuseStyle)) throw new IllegalArgumentException("Input fuse_style MUST be in {0, 1}, input: "+ aFuseStyle);
         mFuseStyle = aFuseStyle;
         // Chebyshev 对 extensive 保留兼容
@@ -61,7 +59,7 @@ public class Chebyshev2 extends WTypeBasis2 {
     }
     
     @SuppressWarnings({"rawtypes"})
-    public static Chebyshev2 load(int aThisType, int aTypeNum, Map aMap) {
+    public static Chebyshev2 load(int aTypeNum, Map aMap) {
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
         if (aMap.containsKey("rfunc_scales")) throw new IllegalArgumentException("rfunc_scales is invalid now.");
         if (aMap.containsKey("system_scales")) throw new IllegalArgumentException("system_scales is invalid now.");
@@ -69,7 +67,7 @@ public class Chebyshev2 extends WTypeBasis2 {
         int aFuseStyle = getFuseStyle_(aMap);
         RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aFuseStyle, aTypeNum, aNMax);
         return new Chebyshev2(
-            aThisType, aTypeNum, aNMax,
+            aTypeNum, aNMax,
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
             aWType, aFuseStyle, aFuseWeight
         );
@@ -127,8 +125,6 @@ public class Chebyshev2 extends WTypeBasis2 {
      * {@code 2(nmax+1)(lmax+1)}
      */
     @Override public int size() {return mSize;}
-    /** @return {@inheritDoc} */
-    @Override public int atomTypeNumber() {return mTypeNum;}
     
     @Override public int forwardCacheSize(int aNN, boolean aFullCache) {
         return aFullCache ? aNN*(mNMax+1 + 1) : (mNMax+1);
@@ -137,15 +133,14 @@ public class Chebyshev2 extends WTypeBasis2 {
         return aFullCache ? (3*aNN*(mNMax+1 + 1) + (mNMax+1)) : (4*(mNMax+1));
     }
     
-    @Override public void updateGenMap(Map<String, Object> rGenMap) {
-        super.updateGenMap(rGenMap);
-        int ti = mThisType-1;
-        rGenMap.put("[FP USE "+mThisType+"]", "chebyshev");
-        rGenMap.put(ti+":NNAPGEN_FP_FSTYLE", mFuseStyle);
+    @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
+        super.updateGenMap(rGenMap, aGenIdx);
+        rGenMap.put("[FP USE "+aGenIdx+"]", "chebyshev");
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_FSTYLE", mFuseStyle);
     }
-    @Override public boolean hasSameGenMap(Object aBasis) {
+    @Override protected boolean hasSameGenMap_(Basis2 aBasis) {
         if (!(aBasis instanceof Chebyshev2)) return false;
         Chebyshev2 tBasis = (Chebyshev2)aBasis;
-        return super.hasSameGenMap(aBasis) && mFuseStyle==tBasis.mFuseStyle;
+        return super.hasSameGenMap_(aBasis) && mFuseStyle==tBasis.mFuseStyle;
     }
 }

@@ -156,7 +156,7 @@ public class NNAP2 implements IPairPotential {
         for (int i = 0; i < tModelSize; ++i) {
             Map<?, ?> tNNMap = (Map<?, ?>)tModels.get(i).get("nn");
             if (tNNMap ==null) throw new IllegalArgumentException("No nn in model, torch model is invalid now.");
-            mNN[i] = FeedForward2.load(i+1, tNNMap);
+            mNN[i] = FeedForward2.load(tNNMap);
         }
         // 继续初始化参数数组
         mFpHyperParam = NestedCPointer.malloc(tModelSize);
@@ -242,11 +242,11 @@ public class NNAP2 implements IPairPotential {
         tGenMap.put("[FP TYPE]", tSwitchListFp);
         tGenMap.put("[NN TYPE]", tSwitchListNN);
         // 只添加不同的，降低 code gen 的压力
-        for (List<Integer> tCaseList : tSwitchListFp) {
-            mBasis[tCaseList.get(0)-1].updateGenMap(tGenMap);
+        for (int i = 0; i < tSwitchListFp.size(); ++i) {
+            mBasis[tSwitchListFp.get(i).get(0)-1].updateGenMap(tGenMap, i);
         }
-        for (List<Integer> tCaseList : tSwitchListNN) {
-            mNN[tCaseList.get(0)-1].updateGenMap(tGenMap);
+        for (int i = 0; i < tSwitchListNN.size(); ++i) {
+            mNN[tSwitchListNN.get(i).get(0)-1].updateGenMap(tGenMap, i);
         }
         // 开始 jit
         String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, tGenMap, NNAP2.VERSION, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING);

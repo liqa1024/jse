@@ -66,7 +66,7 @@ static flt_t nnForward(flt_t *rLayers, flt_t *aHiddenWeights, flt_t *aHiddenBias
     if (CACHE_GRAD) {
         tSiLUGrad += NNAPGENXX_NN_OUT_SIZE_H;
     }
-// <<< NNAPGEN REPEAT 0..<[NN HIDDEN LAYERS NNAPGENS_CTYPE]
+// <<< NNAPGEN REPEAT 0..<[NN HIDDEN LAYERS NNAPGENS_X]
     
     rOut = dot<NNAPGENX_NN_SIZE_OW>(tX, aOutputWeights) + aOutputBias;
 // <<< NNAPGEN SWITCH (CTYPE) [NN TYPE]
@@ -110,7 +110,7 @@ static void nnBackward(flt_t aGradY, flt_t *rGradLayers, flt_t *aHiddenWeights, 
     rGradX -= NNAPGENXX_NN_IN_SIZE_H;
     nnBackwardLayer<NNAPGENXX_NN_IN_SIZE_H, NNAPGENXX_NN_OUT_SIZE_H>(rGradX, tGradY, tHiddenWeights, tSiLUGrad);
     tGradY = rGradX;
-// <<< NNAPGEN REPEAT [NN HIDDEN LAYERS NNAPGENS_CTYPE]<..0
+// <<< NNAPGEN REPEAT [NN HIDDEN LAYERS NNAPGENS_X]<..0
 
 // <<< NNAPGEN SWITCH (CTYPE) [NN TYPE]
 }

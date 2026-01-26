@@ -31,16 +31,31 @@ public abstract class Basis2 implements ISavable {
                 tBasisType = "spherical_chebyshev";
             }
             switch(tBasisType.toString()) {
+            case "share": case "shared_basis": {
+                break; // share 情况延迟初始化
+            }
             case "spherical_chebyshev": {
-                rBasis[i] = SphericalChebyshev2.load(i+1, tTypeNum, tBasisMap);
+                rBasis[i] = SphericalChebyshev2.load(tTypeNum, tBasisMap);
                 break;
             }
             case "chebyshev": {
-                rBasis[i] = Chebyshev2.load(i+1, tTypeNum, tBasisMap);
+                rBasis[i] = Chebyshev2.load(tTypeNum, tBasisMap);
                 break;
             }
             default: {
                 throw new IllegalArgumentException("Unsupported basis type: " + tBasisType);
+            }}
+        }
+        for (int i = 0; i < tTypeNum; ++i) {
+            Map tBasisMap = (Map)aData.get(i);
+            Object tBasisType = tBasisMap.get("type");
+            switch(tBasisType.toString()) {
+            case "share": case "shared_basis": {
+                rBasis[i] = SharedBasis2.load(rBasis, tBasisMap);
+                break;
+            }
+            default: {
+                continue;
             }}
         }
         return rBasis;
@@ -66,15 +81,14 @@ public abstract class Basis2 implements ISavable {
     /** @return 基组的长度 */
     public abstract int size();
     
-    /** @return 基组的种类数目 */
-    public int atomTypeNumber() {return 1;}
-    /** @return 本基组的种类编号 */
-    public int thisType() {return 1;}
-    
     /** 更新内部 code gen 的 map，将参数编码进 jit */
-    public abstract void updateGenMap(Map<String, Object> rGenMap);
+    public abstract void updateGenMap(Map<String, Object> rGenMap, int aGenIdx);
     /** 本基组是否和输入的基组有着相同的 code gen map，相同时则会简单合并简化最终的 jit 代码 */
-    public abstract boolean hasSameGenMap(Object aBasis);
+    public final boolean hasSameGenMap(Basis2 aBasis) {
+        if (aBasis instanceof SharedBasis2) aBasis = ((SharedBasis2)aBasis).sharedBasis();
+        return hasSameGenMap_(aBasis);
+    }
+    protected abstract boolean hasSameGenMap_(Basis2 aBasis);
     
     /** @return 前向传播中需要的缓存大小 */
     public abstract int forwardCacheSize(int aNN, boolean aFullCache);

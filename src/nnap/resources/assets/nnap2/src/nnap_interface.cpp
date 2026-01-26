@@ -53,7 +53,7 @@ static int forward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int a
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rFp,
         rFpForwardCache, aFpHyperParam[0], aFpParam
     );
-// <<< NNAPGEN PICK [FP USE NNAPGENS_aCType]
+// <<< NNAPGEN PICK [FP USE NNAPGENS_X]
     // norm fp here
     for (int i = 0; i < NNAPGENX_FP_SIZE; ++i) {
         rFp[i] = (rFp[i] - tNormMu[i]) / tNormSigma[i];
@@ -124,7 +124,7 @@ static int backward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int 
         rGradNlDx, rGradNlDy, rGradNlDz,
         aFpForwardCache, rFpBackwardCache, aFpHyperParam[0], aFpParam
     );
-// <<< NNAPGEN PICK [FP USE NNAPGENS_aCType]
+// <<< NNAPGEN PICK [FP USE NNAPGENS_X]
     flag = 0;
 // <<< NNAPGEN SWITCH (aCType) [FP TYPE]
     if (flag) return 1;

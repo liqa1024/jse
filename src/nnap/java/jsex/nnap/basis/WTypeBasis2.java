@@ -3,7 +3,6 @@ package jsex.nnap.basis;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import jse.code.UT;
-import jse.code.io.ISavable;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.IVector;
@@ -25,24 +24,19 @@ abstract class WTypeBasis2 extends Basis2 {
         .put("exfuse", WTYPE_EXFUSE)
         .build();
     
-    final int mThisType;
     final int mTypeNum;
     final int mNMax;
     final int mWType;
     final @Nullable RowMatrix mFuseWeight;
     int mSizeN;
     int mFuseSize;
-    /** @return {@inheritDoc} */
-    @Override public int thisType() {return mThisType;}
     
-    WTypeBasis2(int aThisType, int aTypeNum, int aNMax, int aWType, @Nullable RowMatrix aFuseWeight) {
+    WTypeBasis2(int aTypeNum, int aNMax, int aWType, @Nullable RowMatrix aFuseWeight) {
         if (aTypeNum <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+aTypeNum);
-        if (aThisType > aTypeNum) throw new IllegalArgumentException("This type MUST be <= ntypes, input: "+aThisType+" vs "+aTypeNum);
         if (aNMax<0 || aNMax>20) throw new IllegalArgumentException("Input nmax MUST be in [0, 20], input: "+aNMax);
         if (!ALL_WTYPE.containsValue(aWType)) throw new IllegalArgumentException("Input wtype MUST be in {-1, 0, 2, 3, 4, 6}, input: "+ aWType);
         if ((aWType==WTYPE_FUSE || aWType==WTYPE_EXFUSE) && aFuseWeight==null) throw new IllegalArgumentException("Input fuse_weight MUST NOT be null when wtype=='fuse' or 'exfuse'");
         if ((aWType!=WTYPE_FUSE && aWType!=WTYPE_EXFUSE) && aFuseWeight!=null) throw new IllegalArgumentException("Input fuse_weight MUST be null when wtype!='fuse' and 'exfuse'");
-        mThisType = aThisType;
         mTypeNum = aTypeNum;
         mNMax = aNMax;
         mWType = aWType;
@@ -115,6 +109,7 @@ abstract class WTypeBasis2 extends Basis2 {
     }
     
     @Override public abstract int size();
+    public int atomTypeNumber() {return mTypeNum;}
     
     @Override public void initParameters() {
         if (mWType!=WTYPE_FUSE && mWType!=WTYPE_EXFUSE) return;
@@ -137,17 +132,16 @@ abstract class WTypeBasis2 extends Basis2 {
     }
     @Override public boolean hasParameters() {return mWType==WTYPE_FUSE || mWType==WTYPE_EXFUSE;}
     
-    @Override public void updateGenMap(Map<String, Object> rGenMap) {
-        int ti = mThisType-1;
-        rGenMap.put(ti+":NNAPGEN_FP_SIZE_FW", mFuseWeight==null?0:mFuseWeight.internalDataSize());
-        rGenMap.put(ti+":NNAPGEN_FP_NTYPES", mTypeNum);
-        rGenMap.put(ti+":NNAPGEN_FP_WTYPE", mWType);
-        rGenMap.put(ti+":NNAPGEN_FP_NMAX", mNMax);
-        rGenMap.put(ti+":NNAPGEN_FP_FSIZE", mFuseSize);
-        rGenMap.put(ti+":NNAPGEN_FP_SIZE", size()); // 注意这个先后顺序也会影响替换结果，这里就不去改了
+    @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_SIZE_FW", mFuseWeight==null?0:mFuseWeight.internalDataSize());
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_NTYPES", mTypeNum);
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_WTYPE", mWType);
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_NMAX", mNMax);
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_FSIZE", mFuseSize);
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_SIZE", size()); // 注意这个先后顺序也会影响替换结果，这里就不去改了
     }
     
-    @Override public boolean hasSameGenMap(Object aBasis) {
+    @Override protected boolean hasSameGenMap_(Basis2 aBasis) {
         if (!(aBasis instanceof WTypeBasis2)) return false;
         WTypeBasis2 tBasis = (WTypeBasis2)aBasis;
         return mTypeNum==tBasis.mTypeNum && size()==tBasis.size() && mWType==tBasis.mWType && mNMax==tBasis.mNMax && mFuseSize==tBasis.mFuseSize;
