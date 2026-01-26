@@ -20,6 +20,7 @@ import org.jetbrains.annotations.*;
 import java.io.BufferedReader;
 import java.net.URL;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static jse.code.CS.VERSION_NUMBER;
 import static jse.code.Conf.VERSION_MASK;
@@ -67,6 +68,7 @@ public class NNAP2 implements IPairPotential {
     }
     
     public final static int VERSION = 6;
+    private static final String JIT_NAME = "nnapjit";
     private final static String INTERFACE_NAME = "nnap_interface.cpp";
     private final static String[] SRC_NAME = {
           "nnap_util.hpp"
@@ -268,16 +270,23 @@ public class NNAP2 implements IPairPotential {
         mComputeLammps = mEngine.findMethod(NAME_COMPUTE_LAMMPS);
     }
     public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, String aPrecision) throws Exception {
-        this(OS.WORKING_DIR, "nnapjit", aModelInfo, aThreadNumber, aPrecision);
+        this(OS.WORKING_DIR, JIT_NAME, aModelInfo, aThreadNumber, aPrecision);
     }
     public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, String aPrecision) throws Exception {
-        this(IO.toParentPath(aModelPath), IO.toFileName(aModelPath).replace(".yaml", "").replace(".yml", "").replace(".json", "").replace(".jnn", "").replace(".nn", ""),
+        this(IO.toParentPath(aModelPath), toValidProjectName(IO.toFileName(aModelPath)),
              aModelPath.endsWith(".yaml") || aModelPath.endsWith(".yml") ? IO.yaml2map(aModelPath) : IO.json2map(aModelPath), aThreadNumber, aPrecision);
     }
     public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {this(aModelPath, aThreadNumber, null);}
     public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {this(aModelInfo, aThreadNumber, null);}
     public NNAP2(Map<?, ?> aModelInfo) throws Exception {this(aModelInfo, 1);}
     public NNAP2(String aModelPath) throws Exception {this(aModelPath, 1);}
+    
+    private final static Pattern PROJECT_INVALID_NAME = Pattern.compile("[^a-zA-Z0-9_\\-]");
+    private static String toValidProjectName(String aProjectName) {
+        aProjectName = aProjectName.replace(".yaml", "").replace(".yml", "").replace(".json", "").replace(".jnn", "").replace(".nn", "");
+        aProjectName = PROJECT_INVALID_NAME.matcher(aProjectName).replaceAll("");
+        return aProjectName.isEmpty() ? JIT_NAME : aProjectName;
+    }
     
     
     private static void fill_(DoubleCPointer rPtr, @Nullable IVector aVec) {
