@@ -48,6 +48,6 @@ public class SharedBasis2 extends Basis2 {
         Object tShare = aMap.get("share");
         if (tShare==null) throw new IllegalArgumentException("Key `share` required for shared_basis");
         int tSharedType = ((Number)tShare).intValue();
-        return new SharedBasis2(aBasis[tSharedType], tSharedType);
+        return new SharedBasis2(aBasis[tSharedType-1], tSharedType);
     }
 }

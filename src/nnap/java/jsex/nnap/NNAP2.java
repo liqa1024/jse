@@ -307,6 +307,36 @@ public class NNAP2 implements IPairPotential {
         rSwitchList.add(tCaseList);
     }
     
+    /**
+     * NNAP GEN 语法备忘录：
+     * <p>
+     * 标记逻辑:
+     *   <p>
+     *   {@code NNAPGEN}: 通用标识，正文不出现此序列来保证不会被代码生成；替换宏以 NNAPGEN_
+     *     开头，从而避免意外的替换
+     *   <p>
+     *   {@code NNAPGENX}: 循环替换宏标识，会在带有 swich/repeat 块中替换为
+     *     i:NNAPGEN，此语法可以保证在嵌套时 NNAPGENXX 自动替换为 i:j:NNAPGEN
+     *   <p>
+     *   {@code NNAPGENS}: 循环替换变量标识，会在 swich/repeat 块中直接替换为特定变量，其中
+     *     NNAPGENS_X 会直接替换为 i，而 swich 中可以使用 NNAPGENS_{swicher}
+     *     替换为第一个 case
+     *   <p>
+     *   {@code NNAPGENO}: 循环替换保护标识，会在带有 swich/repeat 块中替换为
+     *     NNAPGEN，从而保护内层循环中的 NNAPGEN 替换为需要的变量
+     * <p>
+     * 语法逻辑：
+     *   <p>
+     *   {@code // >>> NNAPGEN}: 替换块开头标识
+     *   <p>
+     *   {@code // <<< NNAPGEN}: 替换块结尾标识
+     *   <p>
+     *   {@code // --- NNAPGEN}: 替换块中间标识
+     *   <p>
+     *   {@code []}: 替换块内特殊参数标识，会进行 gen map 查询
+     *   <p>
+     *   {@code ()}: 替换块内通用参数标识，一般不进行 gen map 查询
+     */
     private static final String MARKER_REMOVE_START = "// >>> NNAPGEN REMOVE";
     private static final String MARKER_REMOVE_END = "// <<< NNAPGEN REMOVE";
     private static final String MARKER_REPEAT_START = "// >>> NNAPGEN REPEAT";
@@ -371,9 +401,9 @@ public class NNAP2 implements IPairPotential {
                     rBuf1.clear();
                     for (int i : tRange) {
                         for (String tBufLine : rBuf0) {
-                            // 这个方式可以简单通过 NNAPGENXXXX 的方式进行嵌套替换
                             rBuf1.add(
                                 tBufLine.replace("NNAPGENX", i+":NNAPGEN")
+                                        .replace("NNAPGENO", "NNAPGEN")
                                         .replace("NNAPGENS_X", String.valueOf(i))
                             );
                         }
@@ -406,9 +436,9 @@ public class NNAP2 implements IPairPotential {
                         }
                         rBuf1.add(tCases+"{");
                         for (String tBufLine : rBuf0) {
-                            // 这个方式可以简单通过 NNAPGENXXXX 的方式进行嵌套替换
                             rBuf1.add(
                                 tBufLine.replace("NNAPGENX", i+":NNAPGEN")
+                                        .replace("NNAPGENO", "NNAPGEN")
                                         .replace("NNAPGENS_"+tSwitcher, tSubList.get(0).toString()) // 总是合并到第一个组
                                         .replace("NNAPGENS_X", String.valueOf(i))
                             );
