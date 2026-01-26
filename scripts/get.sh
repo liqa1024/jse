@@ -126,7 +126,6 @@ elif [ "$JAVA_VERSION" -lt "$JAVA_REQUIRED" ]; then
     ask_yes_no "Recommend installing $JDK_VENDOR JDK $JDK_VERSION. Install now?" y && INSTALL_JDK=1
 else
     echo "Java detected: $JAVA_VERSION"
-    ask_yes_no "Install $JDK_VENDOR JDK $JDK_VERSION anyway?" n && INSTALL_JDK=1
 fi
 
 # ----------------------------------------

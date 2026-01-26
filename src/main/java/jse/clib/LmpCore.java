@@ -159,10 +159,17 @@ public class LmpCore {
         }
         final @Nullable String fLmpHome = tLmpHome;
         final @Nullable String fLmpBuildDir = tLmpBuildDir;
-        String tLmpTag = Conf.TAG==null ? Conf.DEFAULT_TAG : Conf.TAG;
+        final String tLmpTag = Conf.TAG==null ? Conf.DEFAULT_TAG : Conf.TAG;
         final String tLmpCachePath = JNIUtil.PKG_DIR + "lammps-"+ tLmpTag + (IS_WINDOWS?".zip":".tar.gz");
         final Callable<Void> tCacheValider = () -> {
             if (IO.exists(tLmpCachePath)) return null;
+            // 增加一个宽泛匹配，避免有人修改名称/下载名称不一致问题，又要注意避开下载一半的缓存文件
+            for (String tName : IO.list(JNIUtil.PKG_DIR)) {
+                if (tName.endsWith(IS_WINDOWS?".zip":".tar.gz") && tName.contains(tLmpTag)) {
+                    IO.move(JNIUtil.PKG_DIR+tName, tLmpCachePath);
+                    return null;
+                }
+            }
             System.out.println(IO.Text.green("LMP_CORE INIT INFO:")+" No correct lammps source code detected");
             System.out.println(IO.Text.yellow("Auto download lammps? (Y/n)"));
             BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());

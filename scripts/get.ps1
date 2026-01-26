@@ -116,19 +116,24 @@ param (
             }
         } else {
             Write-Host "Microsoft OpenJDK $($javaInfo.Version) detected."
-            if (AskYesNo "Reinstall Microsoft OpenJDK 21?" $false) {
-                InstallOpenJdk
-            }
         }
     }
-    
-    # jse install dir
+
+    # jse install
     if (-not $installdir) {
         $installdir = Join-Path $HOME "jse"
     }
     $installdir = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($installdir)
-    
     Write-Host "Install to $installdir"
+
+    # download jse first
+    $zipFile = Join-Path $WorkingDir "jse-$LastRelease.zip"
+    $downloadUrl = "https://github.com/liqa1024/jse/releases/download/v$LastRelease/jse-$LastRelease.zip"
+
+    Write-Host "Downloading jse..."
+    Invoke-WebRequest $downloadUrl -OutFile $zipFile -UseBasicParsing
+
+    # remove old version later
     if (Test-Path $installdir) {
         $items = Get-ChildItem -Path $installdir -Force -ErrorAction SilentlyContinue
         if ($items -and $items.Count -gt 0) {
@@ -144,16 +149,9 @@ param (
         }
     }
     New-Item -ItemType Directory -Path $installdir -Force | Out-Null
-    
-    # download jse
-    $zipFile = Join-Path $WorkingDir "jse-$LastRelease.zip"
-    $downloadUrl = "https://github.com/liqa1024/jse/releases/download/v$LastRelease/jse-$LastRelease.zip"
-    
-    Write-Host "Downloading jse..."
-    Invoke-WebRequest $downloadUrl -OutFile $zipFile -UseBasicParsing
+
     Write-Host "Extracting..."
     Expand-Archive $zipFile -DestinationPath $WorkingDir -Force
-    
     $innerDir = Get-ChildItem -Path $WorkingDir -Directory |
         Where-Object { $_.PSIsContainer -and $_.Name -like "jse-*" } |
         Select-Object -First 1
