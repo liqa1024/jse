@@ -168,9 +168,8 @@ public class NNAP2 implements IPairPotential {
         mNnBackwardCache = NestedCPointer.malloc(tModelSize);
         for (int i = 0; i < tModelSize; ++i) {
             if (mSinglePrecision) {
-                FloatCPointer tFpHyperParam = FloatCPointer.malloc(mBasis[i].hyperParameterSize()+1);
-                tFpHyperParam.putAt(0, (float)mBasis[i].rcut());
-                fill_(tFpHyperParam.plus(1), mBasis[i].hyperParameters());
+                FloatCPointer tFpHyperParam = FloatCPointer.malloc(mBasis[i].hyperParameterSize());
+                fill_(tFpHyperParam, mBasis[i].hyperParameters());
                 mFpHyperParam.putAt(i, tFpHyperParam);
                 
                 FloatCPointer tFpParam = FloatCPointer.malloc(mBasis[i].parameterSize());
@@ -183,9 +182,8 @@ public class NNAP2 implements IPairPotential {
                 mNnForwardCache.putAt(i, FloatCPointer.malloc(mNN[i].inputSize() + mNN[i].hiddenSize()*3));
                 mNnBackwardCache.putAt(i, FloatCPointer.malloc(mNN[i].inputSize() + mNN[i].hiddenSize()));
             } else {
-                DoubleCPointer tFpHyperParam = DoubleCPointer.malloc(mBasis[i].hyperParameterSize()+1);
-                tFpHyperParam.putAt(0, mBasis[i].rcut());
-                fill_(tFpHyperParam.plus(1), mBasis[i].hyperParameters());
+                DoubleCPointer tFpHyperParam = DoubleCPointer.malloc(mBasis[i].hyperParameterSize());
+                fill_(tFpHyperParam, mBasis[i].hyperParameters());
                 mFpHyperParam.putAt(i, tFpHyperParam);
                 
                 DoubleCPointer tFpParam = DoubleCPointer.malloc(mBasis[i].parameterSize());
@@ -411,9 +409,9 @@ public class NNAP2 implements IPairPotential {
                     for (int i : tRange) {
                         for (String tBufLine : rBuf0) {
                             rBuf1.add(
-                                tBufLine.replace("NNAPGENX", i+":NNAPGEN")
+                                tBufLine.replace("__NNAPGENS_X__", String.valueOf(i))
+                                        .replace("NNAPGENX", i+":NNAPGEN")
                                         .replace("NNAPGENO", "NNAPGEN")
-                                        .replace("NNAPGENS_X", String.valueOf(i))
                             );
                         }
                     }
@@ -446,10 +444,10 @@ public class NNAP2 implements IPairPotential {
                         rBuf1.add(tCases+"{");
                         for (String tBufLine : rBuf0) {
                             rBuf1.add(
-                                tBufLine.replace("NNAPGENX", i+":NNAPGEN")
+                                tBufLine.replace("__NNAPGENS_"+tSwitcher+"__", tSubList.get(0).toString()) // 总是合并到第一个组
+                                        .replace("__NNAPGENS_X__", String.valueOf(i))
+                                        .replace("NNAPGENX", i+":NNAPGEN")
                                         .replace("NNAPGENO", "NNAPGEN")
-                                        .replace("NNAPGENS_"+tSwitcher, tSubList.get(0).toString()) // 总是合并到第一个组
-                                        .replace("NNAPGENS_X", String.valueOf(i))
                             );
                         }
                         rBuf1.add("break;");
@@ -533,7 +531,7 @@ public class NNAP2 implements IPairPotential {
         for (Map.Entry<String, Object> tEntry : aGenMap.entrySet()) {
             String tKey = tEntry.getKey();
             if (tKey.startsWith("[") && tKey.endsWith("]")) continue;
-            aLine = aLine.replace(tKey, tEntry.getValue().toString());
+            aLine = aLine.replace("__"+tKey+"__", tEntry.getValue().toString());
         }
         return aLine;
     }

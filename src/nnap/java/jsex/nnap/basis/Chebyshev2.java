@@ -133,14 +133,14 @@ public class Chebyshev2 extends WTypeBasis2 {
         return aFullCache ? (3*aNN*(mNMax+1 + 1) + (mNMax+1)) : (4*(mNMax+1));
     }
     
-    @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
-        super.updateGenMap(rGenMap, aGenIdx);
-        rGenMap.put("[FP USE "+aGenIdx+"]", "chebyshev");
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_FSTYLE", mFuseStyle);
+    @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdxType, int aGenIdxMerge) {
+        super.updateGenMap(rGenMap, aGenIdxType, aGenIdxMerge);
+        rGenMap.put("[FP USE "+aGenIdxType+":"+aGenIdxMerge+"]", "chebyshev");
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_FSTYLE", mFuseStyle);
     }
-    @Override protected boolean hasSameGenMap_(Basis2 aBasis) {
+    @Override public boolean hasSameGenMap(MergeableBasis2 aBasis) {
         if (!(aBasis instanceof Chebyshev2)) return false;
         Chebyshev2 tBasis = (Chebyshev2)aBasis;
-        return super.hasSameGenMap_(aBasis) && mFuseStyle==tBasis.mFuseStyle;
+        return super.hasSameGenMap(aBasis) && mFuseStyle==tBasis.mFuseStyle;
     }
 }

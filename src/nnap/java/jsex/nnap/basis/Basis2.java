@@ -35,11 +35,15 @@ public abstract class Basis2 implements ISavable {
                 break; // share 情况延迟初始化
             }
             case "spherical_chebyshev": {
-                rBasis[i] = SphericalChebyshev2.load(tTypeNum, tBasisMap);
+                rBasis[i] = new MergedBasis2(SphericalChebyshev2.load(tTypeNum, tBasisMap));
                 break;
             }
             case "chebyshev": {
-                rBasis[i] = Chebyshev2.load(tTypeNum, tBasisMap);
+                rBasis[i] = new MergedBasis2(Chebyshev2.load(tTypeNum, tBasisMap));
+                break;
+            }
+            case "merge": {
+                rBasis[i] = MergedBasis2.load(tTypeNum, tBasisMap);
                 break;
             }
             default: {

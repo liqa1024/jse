@@ -13,7 +13,7 @@ import java.util.Map;
 
 import static jse.code.CS.RANDOM;
 
-abstract class WTypeBasis2 extends Basis2 {
+abstract class WTypeBasis2 extends MergeableBasis2 {
     public final static int WTYPE_DEFAULT = 0, WTYPE_NONE = -1, WTYPE_FULL = 2, WTYPE_EXFULL = 3, WTYPE_FUSE = 4, WTYPE_EXFUSE = 6;
     final static BiMap<String, Integer> ALL_WTYPE = ImmutableBiMap.<String, Integer>builder()
         .put("default", WTYPE_DEFAULT)
@@ -132,16 +132,17 @@ abstract class WTypeBasis2 extends Basis2 {
     }
     @Override public boolean hasParameters() {return mWType==WTYPE_FUSE || mWType==WTYPE_EXFUSE;}
     
-    @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_SIZE_FW", mFuseWeight==null?0:mFuseWeight.internalDataSize());
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_NTYPES", mTypeNum);
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_WTYPE", mWType);
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_NMAX", mNMax);
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_FSIZE", mFuseSize);
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_SIZE", size()); // 注意这个先后顺序也会影响替换结果，这里就不去改了
+    @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdxType, int aGenIdxMerge) {
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_SIZE", size());
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_SIZE_HPARAM", hyperParameterSize());
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_SIZE_PARAM", parameterSize());
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_SIZE_FW", mFuseWeight==null?0:mFuseWeight.internalDataSize());
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_NTYPES", mTypeNum);
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_WTYPE", mWType);
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_NMAX", mNMax);
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_FSIZE", mFuseSize);
     }
-    
-    @Override protected boolean hasSameGenMap_(Basis2 aBasis) {
+    @Override public boolean hasSameGenMap(MergeableBasis2 aBasis) {
         if (!(aBasis instanceof WTypeBasis2)) return false;
         WTypeBasis2 tBasis = (WTypeBasis2)aBasis;
         return mTypeNum==tBasis.mTypeNum && size()==tBasis.size() && mWType==tBasis.mWType && mNMax==tBasis.mNMax && mFuseSize==tBasis.mFuseSize;

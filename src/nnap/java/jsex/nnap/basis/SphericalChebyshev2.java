@@ -207,13 +207,14 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
     @Override public IVector hyperParameters() {
         return new RefVector() {
             @Override public double get(int aIdx) {
-                if (aIdx==0) return mPostFuseScale[0];
+                if (aIdx==0) return mRCut;
+                if (aIdx==1) return mPostFuseScale[0];
                 throw new IndexOutOfBoundsException(String.valueOf(aIdx));
             }
-            @Override public int size() {return 1;}
+            @Override public int size() {return 2;}
         };
     }
-    @Override public int hyperParameterSize() {return 1;}
+    @Override public int hyperParameterSize() {return 2;}
     
     /** @return {@inheritDoc} */
     @Override public double rcut() {return mRCut;}
@@ -243,20 +244,20 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
                           : (4*(mNMax+1) + 5*mLMAll + mSizeN*mLMAll + tPostSize);
     }
     
-    @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
-        super.updateGenMap(rGenMap, aGenIdx);
-        rGenMap.put("[FP USE "+aGenIdx+"]", "spherical_chebyshev");
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_LMAX", mLMax);
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_NORADIAL", mNoRadial?1:0);
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_L3MAX", mL3Max);
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_L4MAX", mL4Max);
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_PFFLAG", mPostFuseWeight==null?0:1);
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_PFSIZE", mPostFuseSize);
+    @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdxType, int aGenIdxMerge) {
+        super.updateGenMap(rGenMap, aGenIdxType, aGenIdxMerge);
+        rGenMap.put("[FP USE "+aGenIdxType+":"+aGenIdxMerge+"]", "spherical_chebyshev");
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_LMAX", mLMax);
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_NORADIAL", mNoRadial?1:0);
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_L3MAX", mL3Max);
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_L4MAX", mL4Max);
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_PFFLAG", mPostFuseWeight==null?0:1);
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_PFSIZE", mPostFuseSize);
     }
-    @Override protected boolean hasSameGenMap_(Basis2 aBasis) {
+    @Override public boolean hasSameGenMap(MergeableBasis2 aBasis) {
         if (!(aBasis instanceof SphericalChebyshev2)) return false;
         SphericalChebyshev2 tBasis = (SphericalChebyshev2)aBasis;
-        return super.hasSameGenMap_(aBasis) && mLMax==tBasis.mLMax && mNoRadial==tBasis.mNoRadial && mL3Max==tBasis.mL3Max && mL4Max==tBasis.mL4Max
-                                            && (mPostFuseWeight!=null)==(tBasis.mPostFuseWeight!=null) && mPostFuseSize==tBasis.mPostFuseSize;
+        return super.hasSameGenMap(aBasis) && mLMax==tBasis.mLMax && mNoRadial==tBasis.mNoRadial && mL3Max==tBasis.mL3Max && mL4Max==tBasis.mL4Max
+                                           && (mPostFuseWeight!=null)==(tBasis.mPostFuseWeight!=null) && mPostFuseSize==tBasis.mPostFuseSize;
     }
 }

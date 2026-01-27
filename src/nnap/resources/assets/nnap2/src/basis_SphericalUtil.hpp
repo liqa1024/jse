@@ -4,7 +4,7 @@
 #include "basis_SphericalUtil0.hpp"
 
 // >>> NNAPGEN REMOVE
-#define NNAPGENS_X 0
+#define __NNAPGENS_X__ 0
 // <<< NNAPGEN REMOVE
 
 namespace JSE_NNAP {
@@ -24,7 +24,7 @@ static inline void realNormalizedLegendreInterLoopSubSub_(flt_t aX, flt_t *rDest
 template <int L>
 static inline void realNormalizedLegendreInterLoopSub_(flt_t aX, flt_t *rDest) noexcept {
 // >>> NNAPGEN REPEAT
-    if (L-1==NNAPGENS_X) {return;} realNormalizedLegendreInterLoopSubSub_<NNAPGENS_X, L>(aX, rDest);
+    if (L-1==__NNAPGENS_X__) {return;} realNormalizedLegendreInterLoopSubSub_<__NNAPGENS_X__, L>(aX, rDest);
 // <<< NNAPGEN REPEAT 0..12
 }
 template <int L>
@@ -50,7 +50,7 @@ static inline void realNormalizedLegendreFull(flt_t aX, flt_t aY, flt_t *rDest) 
     rDest[2-1] = tPll;
     if (LMAX == 1) return;
 // >>> NNAPGEN REPEAT
-    realNormalizedLegendreInterLoop_<NNAPGENS_X>(aX, aY, rDest, tPll); if (LMAX==NNAPGENS_X) return;
+    realNormalizedLegendreInterLoop_<__NNAPGENS_X__>(aX, aY, rDest, tPll); if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 2..12
 }
 
@@ -62,7 +62,7 @@ static inline void realSphericalHarmonicsFull4InterLoopSubSub_(flt_t aSqrt2CosMP
 template <int M, int LMAX>
 static inline void realSphericalHarmonicsFull4InterLoopSub_(flt_t aSqrt2CosMPhi, flt_t aSqrt2SinMPhi, flt_t *rDest) noexcept {
 // >>> NNAPGEN REPEAT
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+NNAPGENS_X>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+NNAPGENS_X) return;
+    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+__NNAPGENS_X__>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 0..12
 }
 template <int M, int LMAX>
@@ -100,7 +100,7 @@ static inline void realSphericalHarmonicsFull4(flt_t aX, flt_t aY, flt_t aZ, flt
     flt_t rCosMPhi = tCosPhi;
     const flt_t tCosPhi2 = rCosMPhi+rCosMPhi;
 // >>> NNAPGEN REPEAT
-    realSphericalHarmonicsFull4InterLoop_<NNAPGENS_X, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX==NNAPGENS_X) return;
+    realSphericalHarmonicsFull4InterLoop_<__NNAPGENS_X__, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 1..12
 }
 
@@ -149,7 +149,7 @@ static inline void calYPtheta(flt_t aCosPhi, flt_t aSinPhi, flt_t *rYPtheta, flt
 template <int LMAX>
 static void calYPphiPtheta(flt_t *rYPphi, flt_t aCosPhi, flt_t aSinPhi, flt_t *rYPtheta, flt_t *aY) noexcept {
 // >>> NNAPGEN REPEAT
-    calYPphi<NNAPGENS_X>(rYPphi, aY); calYPtheta<NNAPGENS_X>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX==NNAPGENS_X) return;
+    calYPphi<__NNAPGENS_X__>(rYPphi, aY); calYPtheta<__NNAPGENS_X__>(aCosPhi, aSinPhi, rYPtheta, aY); if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 0..12
 }
 template <int N>
@@ -234,21 +234,21 @@ template <int LMAX>
 static void mplusLM(flt_t *rAlm, flt_t *aMul, flt_t *aBlm) {
     flt_t *tAlm = rAlm, *tBlm = aBlm;
 // >>> NNAPGEN REPEAT
-    mplus<2*NNAPGENS_X+1>(tAlm, aMul[NNAPGENS_X], tBlm); if (LMAX==NNAPGENS_X) {return;} tAlm += (2*NNAPGENS_X+1); tBlm += (2*NNAPGENS_X+1);
+    mplus<2*__NNAPGENS_X__+1>(tAlm, aMul[__NNAPGENS_X__], tBlm); if (LMAX==__NNAPGENS_X__) {return;} tAlm += (2*__NNAPGENS_X__+1); tBlm += (2*__NNAPGENS_X__+1);
 // <<< NNAPGEN REPEAT 0..12
 }
 template <int LMAX>
 static void dotLM(flt_t *rDot, flt_t *aAlm, flt_t *aBlm) {
     flt_t *tAlm = aAlm, *tBlm = aBlm;
 // >>> NNAPGEN REPEAT
-    rDot[NNAPGENS_X] += dot<2*NNAPGENS_X+1>(tAlm, tBlm); if (LMAX==NNAPGENS_X) {return;} tAlm += (2*NNAPGENS_X+1); tBlm += (2*NNAPGENS_X+1);
+    rDot[__NNAPGENS_X__] += dot<2*__NNAPGENS_X__+1>(tAlm, tBlm); if (LMAX==__NNAPGENS_X__) {return;} tAlm += (2*__NNAPGENS_X__+1); tBlm += (2*__NNAPGENS_X__+1);
 // <<< NNAPGEN REPEAT 0..12
 }
 template <int LMAX>
 static void multiplyLM(flt_t *rClm, flt_t *aMul) {
     flt_t *tClm = rClm;
 // >>> NNAPGEN REPEAT
-    multiply<2*NNAPGENS_X+1>(tClm, aMul[NNAPGENS_X]); if (LMAX==NNAPGENS_X) {return;} tClm += (2*NNAPGENS_X+1);
+    multiply<2*__NNAPGENS_X__+1>(tClm, aMul[__NNAPGENS_X__]); if (LMAX==__NNAPGENS_X__) {return;} tClm += (2*__NNAPGENS_X__+1);
 // <<< NNAPGEN REPEAT 0..12
 }
 
@@ -407,7 +407,7 @@ static void calSphL2(flt_t *aCnlm, flt_t *rFp) noexcept {
     }
     if (LMAX == 0) return;
 // >>> NNAPGEN REPEAT
-    calL2Sub_<NNAPGENS_X>(aCnlm, tFp); if (LMAX==NNAPGENS_X) return;
+    calL2Sub_<__NNAPGENS_X__>(aCnlm, tFp); if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 1..12
 }
 template <int L3IDX, int SUBIDX>
@@ -423,7 +423,7 @@ static flt_t calL3Sub_(flt_t *aCnlm) noexcept {
     flt_t rFp3 = ZERO;
     constexpr int tSize = L3_SIZE[L3IDX];
 // >>> NNAPGEN REPEAT
-    if (tSize==NNAPGENS_X) {return rFp3;} rFp3 += calL3SubSub_<L3IDX, NNAPGENS_X>(aCnlm);
+    if (tSize==__NNAPGENS_X__) {return rFp3;} rFp3 += calL3SubSub_<L3IDX, __NNAPGENS_X__>(aCnlm);
 // <<< NNAPGEN REPEAT 0..<110
     return rFp3;
 }
@@ -431,23 +431,23 @@ template <int L3MAX>
 static void calSphL3(flt_t *aCnlm, flt_t *rFp) noexcept {
     if (L3MAX<=1) return;
 // >>> NNAPGEN REPEAT
-    rFp[NNAPGENS_X] = calL3Sub_<NNAPGENS_X>(aCnlm);
+    rFp[__NNAPGENS_X__] = calL3Sub_<__NNAPGENS_X__>(aCnlm);
 // <<< NNAPGEN REPEAT 0..1
     if (L3MAX==2) return;
 // >>> NNAPGEN REPEAT
-    rFp[NNAPGENS_X] = calL3Sub_<NNAPGENS_X>(aCnlm);
+    rFp[__NNAPGENS_X__] = calL3Sub_<__NNAPGENS_X__>(aCnlm);
 // <<< NNAPGEN REPEAT 2..3
     if (L3MAX==3) return;
 // >>> NNAPGEN REPEAT
-    rFp[NNAPGENS_X] = calL3Sub_<NNAPGENS_X>(aCnlm);
+    rFp[__NNAPGENS_X__] = calL3Sub_<__NNAPGENS_X__>(aCnlm);
 // <<< NNAPGEN REPEAT 4..8
     if (L3MAX==4) return;
 // >>> NNAPGEN REPEAT
-    rFp[NNAPGENS_X] = calL3Sub_<NNAPGENS_X>(aCnlm);
+    rFp[__NNAPGENS_X__] = calL3Sub_<__NNAPGENS_X__>(aCnlm);
 // <<< NNAPGEN REPEAT 9..13
     if (L3MAX==5) return;
 // >>> NNAPGEN REPEAT
-    rFp[NNAPGENS_X] = calL3Sub_<NNAPGENS_X>(aCnlm);
+    rFp[__NNAPGENS_X__] = calL3Sub_<__NNAPGENS_X__>(aCnlm);
 // <<< NNAPGEN REPEAT 14..22
 }
 template <int L4IDX, int SUBIDX>
@@ -464,7 +464,7 @@ static flt_t calL4Sub_(flt_t *aCnlm) noexcept {
     flt_t rFp4 = ZERO;
     constexpr int tSize = L4_SIZE[L4IDX];
 // >>> NNAPGEN REPEAT
-    if (tSize==NNAPGENS_X) {return rFp4;} rFp4 += calL4SubSub_<L4IDX, NNAPGENS_X>(aCnlm);
+    if (tSize==__NNAPGENS_X__) {return rFp4;} rFp4 += calL4SubSub_<L4IDX, __NNAPGENS_X__>(aCnlm);
 // <<< NNAPGEN REPEAT 0..<100
     return rFp4;
 }
@@ -474,11 +474,11 @@ static void calSphL4(flt_t *aCnlm, flt_t *rFp) noexcept {
     rFp[0] = calL4Sub_<0>(aCnlm);
     if (L4MAX==1) return;
 // >>> NNAPGEN REPEAT
-    rFp[NNAPGENS_X] = calL4Sub_<NNAPGENS_X>(aCnlm);
+    rFp[__NNAPGENS_X__] = calL4Sub_<__NNAPGENS_X__>(aCnlm);
 // <<< NNAPGEN REPEAT 1..2
     if (L4MAX==2) return;
 // >>> NNAPGEN REPEAT
-    rFp[NNAPGENS_X] = calL4Sub_<NNAPGENS_X>(aCnlm);
+    rFp[__NNAPGENS_X__] = calL4Sub_<__NNAPGENS_X__>(aCnlm);
 // <<< NNAPGEN REPEAT 3..8
 }
 
@@ -502,7 +502,7 @@ static void calGradSphL2(flt_t *aCnlm, flt_t *rGradCnlm, flt_t *aNNGrad) noexcep
     }
     if (LMAX == 0) return;
 // >>> NNAPGEN REPEAT
-    calGradL2Sub_<NNAPGENS_X>(aCnlm, rGradCnlm, tNNGrad[NNAPGENS_X-1]); if (LMAX==NNAPGENS_X) return;
+    calGradL2Sub_<__NNAPGENS_X__>(aCnlm, rGradCnlm, tNNGrad[__NNAPGENS_X__-1]); if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 1..12
 }
 template <int L3IDX, int SUBIDX>
@@ -523,30 +523,30 @@ template <int L3IDX>
 static void calGradL3Sub_(flt_t *aCnlm, flt_t *rGradCnlm, flt_t aSubNNGrad) noexcept {
     constexpr int tSize = L3_SIZE[L3IDX];
 // >>> NNAPGEN REPEAT
-    if (tSize==NNAPGENS_X) {return;} calGradL3SubSub_<L3IDX, NNAPGENS_X>(aCnlm, rGradCnlm, aSubNNGrad);
+    if (tSize==__NNAPGENS_X__) {return;} calGradL3SubSub_<L3IDX, __NNAPGENS_X__>(aCnlm, rGradCnlm, aSubNNGrad);
 // <<< NNAPGEN REPEAT 0..<110
 }
 template <int L3MAX>
 static void calGradSphL3(flt_t *aCnlm, flt_t *rGradCnlm, flt_t *aNNGrad) noexcept {
     if (L3MAX <= 1) return;
 // >>> NNAPGEN REPEAT
-    calGradL3Sub_<NNAPGENS_X>(aCnlm, rGradCnlm, aNNGrad[NNAPGENS_X]);
+    calGradL3Sub_<__NNAPGENS_X__>(aCnlm, rGradCnlm, aNNGrad[__NNAPGENS_X__]);
 // <<< NNAPGEN REPEAT 0..1
     if (L3MAX == 2) return;
 // >>> NNAPGEN REPEAT
-    calGradL3Sub_<NNAPGENS_X>(aCnlm, rGradCnlm, aNNGrad[NNAPGENS_X]);
+    calGradL3Sub_<__NNAPGENS_X__>(aCnlm, rGradCnlm, aNNGrad[__NNAPGENS_X__]);
 // <<< NNAPGEN REPEAT 2..3
     if (L3MAX == 3) return;
 // >>> NNAPGEN REPEAT
-    calGradL3Sub_<NNAPGENS_X>(aCnlm, rGradCnlm, aNNGrad[NNAPGENS_X]);
+    calGradL3Sub_<__NNAPGENS_X__>(aCnlm, rGradCnlm, aNNGrad[__NNAPGENS_X__]);
 // <<< NNAPGEN REPEAT 4..8
     if (L3MAX == 4) return;
 // >>> NNAPGEN REPEAT
-    calGradL3Sub_<NNAPGENS_X>(aCnlm, rGradCnlm, aNNGrad[NNAPGENS_X]);
+    calGradL3Sub_<__NNAPGENS_X__>(aCnlm, rGradCnlm, aNNGrad[__NNAPGENS_X__]);
 // <<< NNAPGEN REPEAT 9..13
     if (L3MAX == 5) return;
 // >>> NNAPGEN REPEAT
-    calGradL3Sub_<NNAPGENS_X>(aCnlm, rGradCnlm, aNNGrad[NNAPGENS_X]);
+    calGradL3Sub_<__NNAPGENS_X__>(aCnlm, rGradCnlm, aNNGrad[__NNAPGENS_X__]);
 // <<< NNAPGEN REPEAT 14..22
 }
 template <int L4IDX, int SUBIDX>
@@ -570,7 +570,7 @@ template <int L4IDX>
 static void calGradL4Sub_(flt_t *aCnlm, flt_t *rGradCnlm, flt_t aSubNNGrad) noexcept {
     constexpr int tSize = L4_SIZE[L4IDX];
 // >>> NNAPGEN REPEAT
-    if (tSize==NNAPGENS_X) {return;} calGradL4SubSub_<L4IDX, NNAPGENS_X>(aCnlm, rGradCnlm, aSubNNGrad);
+    if (tSize==__NNAPGENS_X__) {return;} calGradL4SubSub_<L4IDX, __NNAPGENS_X__>(aCnlm, rGradCnlm, aSubNNGrad);
 // <<< NNAPGEN REPEAT 0..<100
 }
 template <int L4MAX>
@@ -579,11 +579,11 @@ static void calGradSphL4(flt_t *aCnlm, flt_t *rGradCnlm, flt_t *aNNGrad) noexcep
     calGradL4Sub_<0>(aCnlm, rGradCnlm, aNNGrad[0]);
     if (L4MAX == 1) return;
 // >>> NNAPGEN REPEAT
-    calGradL4Sub_<NNAPGENS_X>(aCnlm, rGradCnlm, aNNGrad[NNAPGENS_X]);
+    calGradL4Sub_<__NNAPGENS_X__>(aCnlm, rGradCnlm, aNNGrad[__NNAPGENS_X__]);
 // <<< NNAPGEN REPEAT 1..2
     if (L4MAX == 2) return;
 // >>> NNAPGEN REPEAT
-    calGradL4Sub_<NNAPGENS_X>(aCnlm, rGradCnlm, aNNGrad[NNAPGENS_X]);
+    calGradL4Sub_<__NNAPGENS_X__>(aCnlm, rGradCnlm, aNNGrad[__NNAPGENS_X__]);
 // <<< NNAPGEN REPEAT 3..8
 }
 

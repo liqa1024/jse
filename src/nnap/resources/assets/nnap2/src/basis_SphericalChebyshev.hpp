@@ -19,7 +19,7 @@ static constexpr int sphSizeN_(int aWType, int aTypeNum, int aNMax, int aFuseSiz
 
 template <int WTYPE, int NMAX, int LMAXMAX, int FSIZE, int FULL_CACHE>
 static void calCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rCnlm,
-                    flt_t *rForwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
+                    flt_t **rForwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
     constexpr int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     constexpr int tSizeBnlm = (NMAX+1)*tLMAll;
     // init cache
@@ -28,18 +28,18 @@ static void calCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int 
     flt_t *rNlRn = NULL, *rNlFc = NULL, *rNlY = NULL;
     flt_t *rNlBnlm = NULL;
     if (FULL_CACHE) {
-        rNlRn = rForwardCache;
-        rNlFc = rNlRn + aNeiNum*(NMAX+1);
-        rNlY = rNlFc + aNeiNum;
+        rNlRn = *rForwardCache; *rForwardCache += aNeiNum*(NMAX+1);
+        rNlFc = *rForwardCache; *rForwardCache += aNeiNum;
+        rNlY  = *rForwardCache; *rForwardCache += aNeiNum*tLMAll;
     } else {
-        rRn = rForwardCache;
-        rY = rRn + (NMAX+1);
+        rRn = *rForwardCache; *rForwardCache += (NMAX+1);
+        rY  = *rForwardCache; *rForwardCache += tLMAll;
     }
     if (WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
         if (FULL_CACHE) {
-            rNlBnlm = rNlY + aNeiNum*tLMAll;
+            rNlBnlm = *rForwardCache; *rForwardCache += aNeiNum*tSizeBnlm;
         } else {
-            rBnlm = rY + tLMAll;
+            rBnlm = *rForwardCache; *rForwardCache += tSizeBnlm;
         }
     }
     // loop for neighbor
@@ -94,7 +94,7 @@ static void calCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int 
 
 template <int WTYPE, int NTYPES, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int FSIZE, int PFFLAG, int PFSIZE, int FULL_CACHE>
 static void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
-                       flt_t *rForwardCache, flt_t aRCut, flt_t *aFuseWeight, flt_t *aPostFuseWeight, flt_t aPostFuseScale) noexcept {
+                       flt_t **rForwardCache, flt_t aRCut, flt_t *aFuseWeight, flt_t *aPostFuseWeight, flt_t aPostFuseScale) noexcept {
     // const init
     constexpr int tSizeN = sphSizeN_(WTYPE, NTYPES, NMAX, FSIZE);
     constexpr int tWType = toInternalWType(WTYPE, NTYPES);
@@ -104,13 +104,12 @@ static void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, i
     constexpr int tSizeCnlm = tSizeN*tLMAll;
     constexpr int tSizeAnlm = PFFLAG ? (PFSIZE*tLMAll) : 0;
     // init cache
-    flt_t *rCnlm = rForwardCache;
-    flt_t *rAnlm = rCnlm + tSizeCnlm;
-    flt_t *rCacheElse = rAnlm + tSizeAnlm;
+    flt_t *rCnlm = *rForwardCache; *rForwardCache += tSizeCnlm;
+    flt_t *rAnlm = *rForwardCache; *rForwardCache += tSizeAnlm;
     // clear cnlm first
     fill<tSizeCnlm>(rCnlm, ZERO);
     // do cal
-    calCnlm<tWType, NMAX, tLMaxMax, FSIZE, FULL_CACHE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rCnlm, rCacheElse, aRCut, aFuseWeight);
+    calCnlm<tWType, NMAX, tLMaxMax, FSIZE, FULL_CACHE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rCnlm, rForwardCache, aRCut, aFuseWeight);
     // cnlm -> anlm
     if (PFFLAG) {
         // clear anlm first
@@ -134,13 +133,13 @@ static void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, i
 template <int WTYPE, int NMAX, int LMAXMAX, int FSIZE, int FULL_CACHE>
 static void backwardCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradCnlm,
                          flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                         flt_t *aForwardCache, flt_t *rBackwardCache, flt_t aRCut, flt_t *aFuseWeight) {
+                         flt_t **aForwardCache, flt_t **rBackwardCache, flt_t aRCut, flt_t *aFuseWeight) {
     const int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     const int tSizeBnlm = (NMAX+1)*tLMAll;
     // init cache
-    flt_t *tNlRn = aForwardCache;
-    flt_t *tNlFc = tNlRn + aNeiNum*(NMAX+1);
-    flt_t *tNlY = tNlFc + aNeiNum;
+    flt_t *tNlRn = *aForwardCache; *aForwardCache += aNeiNum*(NMAX+1);
+    flt_t *tNlFc = *aForwardCache; *aForwardCache += aNeiNum;
+    flt_t *tNlY  = *aForwardCache; *aForwardCache += aNeiNum*tLMAll;
     flt_t *rRnPx = NULL, *rRnPy = NULL, *rRnPz = NULL, *rCheby2 = NULL;
     flt_t *rYPx = NULL, *rYPy = NULL, *rYPz = NULL, *rYPtheta = NULL, *rYPphi = NULL;
     flt_t *rGradBnlm = NULL;
@@ -149,34 +148,34 @@ static void backwardCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType,
     flt_t *rNlYPx = NULL, *rNlYPy = NULL, *rNlYPz = NULL;
     flt_t *rNlGradBnlm = NULL;
     if (FULL_CACHE) {
-        rNlRnPx = rBackwardCache;
-        rNlRnPy = rNlRnPx + aNeiNum*(NMAX+1);
-        rNlRnPz = rNlRnPy + aNeiNum*(NMAX+1);
-        rNlFcPx = rNlRnPz + aNeiNum*(NMAX+1);
-        rNlFcPy = rNlFcPx + aNeiNum;
-        rNlFcPz = rNlFcPy + aNeiNum;
-        rNlYPx = rNlFcPz + aNeiNum;
-        rNlYPy = rNlYPx + aNeiNum*tLMAll;
-        rNlYPz = rNlYPy + aNeiNum*tLMAll;
-        rYPtheta = rNlYPz + aNeiNum*tLMAll;
-        rYPphi = rYPtheta + tLMAll;
-        rCheby2 = rYPphi + tLMAll;
+        rNlRnPx = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
+        rNlRnPy = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
+        rNlRnPz = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
+        rNlFcPx = *rBackwardCache; *rBackwardCache += aNeiNum;
+        rNlFcPy = *rBackwardCache; *rBackwardCache += aNeiNum;
+        rNlFcPz = *rBackwardCache; *rBackwardCache += aNeiNum;
+        rNlYPx  = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
+        rNlYPy  = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
+        rNlYPz  = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
+        rYPtheta = *rBackwardCache; *rBackwardCache += tLMAll;
+        rYPphi   = *rBackwardCache; *rBackwardCache += tLMAll;
+        rCheby2  = *rBackwardCache; *rBackwardCache += (NMAX+1);
     } else {
-        rRnPx = rBackwardCache;
-        rRnPy = rRnPx + (NMAX+1);
-        rRnPz = rRnPy + (NMAX+1);
-        rYPx = rRnPz + (NMAX+1);
-        rYPy = rYPx + tLMAll;
-        rYPz = rYPy + tLMAll;
-        rYPtheta = rYPz + tLMAll;
-        rYPphi = rYPtheta + tLMAll;
-        rCheby2 = rYPphi + tLMAll;
+        rRnPx = *rBackwardCache; *rBackwardCache += (NMAX+1);
+        rRnPy = *rBackwardCache; *rBackwardCache += (NMAX+1);
+        rRnPz = *rBackwardCache; *rBackwardCache += (NMAX+1);
+        rYPx  = *rBackwardCache; *rBackwardCache += tLMAll;
+        rYPy  = *rBackwardCache; *rBackwardCache += tLMAll;
+        rYPz  = *rBackwardCache; *rBackwardCache += tLMAll;
+        rYPtheta = *rBackwardCache; *rBackwardCache += tLMAll;
+        rYPphi   = *rBackwardCache; *rBackwardCache += tLMAll;
+        rCheby2  = *rBackwardCache; *rBackwardCache += (NMAX+1);
     }
     if (WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
         if (FULL_CACHE) {
-            rNlGradBnlm = rCheby2 + (NMAX+1);
+            rNlGradBnlm = *rBackwardCache; *rBackwardCache += aNeiNum*tSizeBnlm;
         } else {
-            rGradBnlm = rCheby2 + (NMAX+1);
+            rGradBnlm = *rBackwardCache; *rBackwardCache += tSizeBnlm;
         }
     }
     // loop for neighbor
@@ -249,7 +248,7 @@ static void backwardCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType,
 template <int WTYPE, int NTYPES, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int FSIZE, int PFFLAG, int PFSIZE, int FULL_CACHE, int CLEAR_CACHE>
 static void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
                         flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                        flt_t *aForwardCache, flt_t *rBackwardCache, flt_t aRCut, flt_t *aFuseWeight,
+                        flt_t **aForwardCache, flt_t **rBackwardCache, flt_t aRCut, flt_t *aFuseWeight,
                         flt_t *aPostFuseWeight, flt_t aPostFuseScale) noexcept {
     // const init
     constexpr int tSizeN = sphSizeN_(WTYPE, NTYPES, NMAX, FSIZE);
@@ -260,18 +259,11 @@ static void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, 
     constexpr int tSizeCnlm = tSizeN*tLMAll;
     constexpr int tSizeAnlm = PFFLAG ? (PFSIZE*tLMAll) : 0;
     // init cache
-    flt_t *tCnlm = aForwardCache;
-    flt_t *tAnlm = tCnlm + tSizeCnlm;
-    flt_t *tForwardCacheElse = tAnlm + tSizeAnlm;
-    flt_t *rGradCnlm = rBackwardCache;
-    flt_t *rGradAnlm = rGradCnlm + tSizeCnlm;
-    flt_t *rForwardForceCacheElse = rGradAnlm + tSizeAnlm;
+    flt_t *tCnlm = *aForwardCache; *aForwardCache += tSizeCnlm;
+    flt_t *tAnlm = *aForwardCache; *aForwardCache += tSizeAnlm;
+    flt_t *rGradCnlm = *rBackwardCache; *rBackwardCache += tSizeCnlm;
+    flt_t *rGradAnlm = *rBackwardCache; *rBackwardCache += tSizeAnlm;
     if (CLEAR_CACHE) {
-        for (int j = 0; j < aNeiNum; ++j) {
-            rGradNlDx[j] = ZERO;
-            rGradNlDy[j] = ZERO;
-            rGradNlDz[j] = ZERO;
-        }
         fill<tSizeAnlm>(rGradAnlm, ZERO);
         fill<tSizeCnlm>(rGradCnlm, ZERO);
     }
@@ -293,7 +285,7 @@ static void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, 
         // anlm -> cnlm
         mplusGradAnlm<tSizeN, tLMaxMax, PFSIZE>(rGradAnlm, rGradCnlm, aPostFuseWeight);
     }
-    backwardCnlm<tWType, NMAX, tLMaxMax, FSIZE, FULL_CACHE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rGradCnlm, rGradNlDx, rGradNlDy, rGradNlDz, tForwardCacheElse, rForwardForceCacheElse, aRCut, aFuseWeight);
+    backwardCnlm<tWType, NMAX, tLMaxMax, FSIZE, FULL_CACHE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rGradCnlm, rGradNlDx, rGradNlDy, rGradNlDz, aForwardCache, rBackwardCache, aRCut, aFuseWeight);
 }
 
 }

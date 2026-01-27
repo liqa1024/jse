@@ -19,7 +19,7 @@ static constexpr int chebySizeFp_(int aWType, int aTypeNum, int aNMax, int aFuse
 
 template <int WTYPE, int NTYPES, int NMAX, int FSIZE, int FSTYLE, int FULL_CACHE>
 static void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
-                         flt_t *rForwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
+                         flt_t **rForwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
     // const init
     constexpr int tWType = toInternalWType(WTYPE, NTYPES);
     constexpr int tSizeFp = chebySizeFp_(tWType, NTYPES, NMAX, FSIZE);
@@ -27,10 +27,10 @@ static void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType,
     flt_t *rRn = NULL;
     flt_t *rNlRn = NULL, *rNlFc = NULL;
     if (FULL_CACHE) {
-        rNlRn = rForwardCache;
-        rNlFc = rNlRn + aNeiNum*(NMAX+1);
+        rNlRn = *rForwardCache; *rForwardCache += aNeiNum*(NMAX+1);
+        rNlFc = *rForwardCache; *rForwardCache += aNeiNum;
     } else {
-        rRn = rForwardCache;
+        rRn = *rForwardCache; *rForwardCache += (NMAX+1);
     }
     // clear fp first
     fill<tSizeFp>(rFp, ZERO);
@@ -76,35 +76,28 @@ static void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType,
 template <int WTYPE, int NTYPES, int NMAX, int FSIZE, int FSTYLE, int FULL_CACHE, int CLEAR_CACHE>
 static void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
                           flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                          flt_t *aForwardCache, flt_t *rBackwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
+                          flt_t **aForwardCache, flt_t **rBackwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
     // const init
     constexpr int tWType = toInternalWType(WTYPE, NTYPES);
     // init cache
-    flt_t *tNlRn = aForwardCache;
-    flt_t *tNlFc = tNlRn + aNeiNum*(NMAX+1);
+    flt_t *tNlRn = *aForwardCache; *aForwardCache += aNeiNum*(NMAX+1);
+    flt_t *tNlFc = *aForwardCache; *aForwardCache += aNeiNum;
     flt_t *rRnPx = NULL, *rRnPy = NULL, *rRnPz = NULL, *rCheby2 = NULL;
     flt_t *rNlRnPx = NULL, *rNlRnPy = NULL, *rNlRnPz = NULL;
     flt_t *rNlFcPx = NULL, *rNlFcPy = NULL, *rNlFcPz = NULL;
     if (FULL_CACHE) {
-        rNlRnPx = rBackwardCache;
-        rNlRnPy = rNlRnPx + aNeiNum*(NMAX+1);
-        rNlRnPz = rNlRnPy + aNeiNum*(NMAX+1);
-        rNlFcPx = rNlRnPz + aNeiNum*(NMAX+1);
-        rNlFcPy = rNlFcPx + aNeiNum;
-        rNlFcPz = rNlFcPy + aNeiNum;
-        rCheby2 = rNlFcPz + aNeiNum;
+        rNlRnPx = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
+        rNlRnPy = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
+        rNlRnPz = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
+        rNlFcPx = *rBackwardCache; *rBackwardCache += aNeiNum;
+        rNlFcPy = *rBackwardCache; *rBackwardCache += aNeiNum;
+        rNlFcPz = *rBackwardCache; *rBackwardCache += aNeiNum;
+        rCheby2 = *rBackwardCache; *rBackwardCache += (NMAX+1);
     } else {
-        rRnPx = rBackwardCache;
-        rRnPy = rRnPx + (NMAX+1);
-        rRnPz = rRnPy + (NMAX+1);
-        rCheby2 = rRnPz + (NMAX+1);
-    }
-    if (CLEAR_CACHE) {
-        for (int j = 0; j < aNeiNum; ++j) {
-            rGradNlDx[j] = ZERO;
-            rGradNlDy[j] = ZERO;
-            rGradNlDz[j] = ZERO;
-        }
+        rRnPx = *rBackwardCache; *rBackwardCache += (NMAX+1);
+        rRnPy = *rBackwardCache; *rBackwardCache += (NMAX+1);
+        rRnPz = *rBackwardCache; *rBackwardCache += (NMAX+1);
+        rCheby2 = *rBackwardCache; *rBackwardCache += (NMAX+1);
     }
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
