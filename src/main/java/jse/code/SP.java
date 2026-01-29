@@ -566,7 +566,7 @@ public class SP {
     
     
     /** Python 脚本运行支持，完全基于 jep */
-    @SuppressWarnings("UnknownLanguage")
+    @SuppressWarnings({"UnknownLanguage", "RedundantSuppression"})
     public static class Python {
         
         /** 用于判断是否进行了静态初始化以及方便的手动初始化 */

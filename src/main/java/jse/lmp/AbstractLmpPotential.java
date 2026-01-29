@@ -6,6 +6,7 @@ import jse.atom.IPotential;
 import jse.atom.XYZ;
 import jse.code.collection.ISlice;
 import jse.math.MathEX;
+import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,6 +17,7 @@ import static jse.code.CS.UNITS;
  * 通用的 lammps 势函数抽象类，用于减少重复代码
  * @author liqa
  */
+@SuppressWarnings({"UnknownLanguage", "RedundantSuppression"})
 abstract class AbstractLmpPotential implements IPotential {
     final static String DEFAULT_UNITS = "metal";
     /** 将 lammps metal 单位制中的 bar 转换成 ev/Å^3 需要乘的倍数 */
@@ -65,22 +67,22 @@ abstract class AbstractLmpPotential implements IPotential {
         return this;
     }
     
-    @Nullable String mBeforeCommands = null;
+    @Language("lmpin") @Nullable String mBeforeCommands = null;
     /**
      * 设置需要在 lammps 运行最开始执行的命令，可以用来进行加载插件等初始化，通过换行符
      * {@code \n} 来输入多个命令
      * @param aCommands 需要设置的最开始执行的 lammps 命令
      * @return 自身方便链式调用
      */
-    public AbstractLmpPotential setBeforeCommands(String aCommands) {mBeforeCommands = aCommands; return this;}
-    @Nullable String mLastCommands = null;
+    public AbstractLmpPotential setBeforeCommands(@Language("lmpin") String aCommands) {mBeforeCommands = aCommands; return this;}
+    @Language("lmpin") @Nullable String mLastCommands = null;
     /**
      * 设置需要在 lammps 运行最后执行的命令，可以用来设置 {@code pair_modify}
      * 等命令，通过换行符 {@code \n} 来输入多个命令
      * @param aCommands 需要设置的最后执行的 lammps 命令
      * @return 自身方便链式调用
      */
-    public AbstractLmpPotential setLastCommands(String aCommands) {mLastCommands = aCommands; return this;}
+    public AbstractLmpPotential setLastCommands(@Language("lmpin") String aCommands) {mLastCommands = aCommands; return this;}
     
     String mUnits = DEFAULT_UNITS;
     /**

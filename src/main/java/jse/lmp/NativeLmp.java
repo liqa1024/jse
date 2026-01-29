@@ -20,6 +20,7 @@ import jse.math.vector.Vector;
 import jse.parallel.IAutoShutdown;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
+import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -40,6 +41,7 @@ import java.util.*;
  * LAMMPS Library Interfaces </a>,
  * @author liqa
  */
+@SuppressWarnings({"UnknownLanguage", "RedundantSuppression"})
 public class NativeLmp implements IAutoShutdown {
     
     /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
@@ -314,7 +316,7 @@ public class NativeLmp implements IAutoShutdown {
      * This is a wrapper around the {@code lammps_command()} function of the C-library interface.
      * @param aCmd a single lammps command
      */
-    public void command(String aCmd) throws LmpException {
+    public void command(@Language("lmpin") String aCmd) throws LmpException {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         if (aCmd == null) throw new NullPointerException();
         checkThread();
@@ -328,7 +330,7 @@ public class NativeLmp implements IAutoShutdown {
      * This is a wrapper around the {@code lammps_commands_list()} function of the C-library interface.
      * @param aCmds a list of lammps commands
      */
-    public void commands(String... aCmds) throws LmpException {
+    public void commands(@Language("lmpin") String... aCmds) throws LmpException {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         if (aCmds == null) throw new NullPointerException();
         for (String tCmd : aCmds) if (tCmd == null) throw new NullPointerException();
@@ -343,7 +345,7 @@ public class NativeLmp implements IAutoShutdown {
      * This is a wrapper around the {@code lammps_commands_string()} function of the C-library interface.
      * @param aMultiCmd text block of lammps commands
      */
-    public void commands(String aMultiCmd) throws LmpException {
+    public void commands(@Language("lmpin") String aMultiCmd) throws LmpException {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         if (aMultiCmd == null) throw new NullPointerException();
         checkThread();
