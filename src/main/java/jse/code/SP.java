@@ -38,6 +38,7 @@ import org.apache.groovy.groovysh.Groovysh;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer;
 import org.codehaus.groovy.runtime.InvokerHelper;
+import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
@@ -352,16 +353,22 @@ public class SP {
     }
     
     /** 运行任意的脚本，自动检测脚本类型（根据后缀） */
-    public static void run(String aScriptPath)                  throws Exception {run(aScriptPath, ZL_STR);}
-    public static void run(String aScriptPath, String... aArgs) throws Exception {runScript(aScriptPath, aArgs);}
-    public static void runScript(String aScriptPath)                  throws Exception {runScript(aScriptPath, ZL_STR);}
+    public static void run(String aScriptPath) throws Exception {
+        run(aScriptPath, ZL_STR);
+    }
+    public static void run(String aScriptPath, String... aArgs) throws Exception {
+        runScript(aScriptPath, aArgs);
+    }
+    public static void runScript(String aScriptPath) throws Exception {
+        runScript(aScriptPath, ZL_STR);
+    }
     public static void runScript(String aScriptPath, String... aArgs) throws Exception {
         // 有后缀的情况，直接执行
         if (aScriptPath.endsWith(".groovy")) {
             Groovy.runScript(aScriptPath, aArgs);
             return;
         } else
-        if (aScriptPath.endsWith(".py")) {
+        if (aScriptPath.endsWith(".py") || aScriptPath.endsWith(".jsepy")) {
             Python.runScript(aScriptPath, aArgs);
             return;
         }
@@ -396,10 +403,18 @@ public class SP {
         private final static AtomicInteger COUNTER = new AtomicInteger(0);
         
         /** groovy 特有的一些属性访问 */
-        public static Binding context() {return GROOVY_SHELL.getContext();}
-        public static Binding binding() {return GROOVY_SHELL.getContext();}
-        public static GroovyClassLoader classLoader() {return GROOVY_SHELL.getClassLoader();}
-        public static GroovyShell shell() {return GROOVY_SHELL;}
+        public static Binding context() {
+            return GROOVY_SHELL.getContext();
+        }
+        public static Binding binding() {
+            return GROOVY_SHELL.getContext();
+        }
+        public static GroovyClassLoader classLoader() {
+            return GROOVY_SHELL.getClassLoader();
+        }
+        public static GroovyShell shell() {
+            return GROOVY_SHELL;
+        }
         
         /** 获取 shell 的交互式运行 */
         public static void runShell() throws Exception {
@@ -429,29 +444,65 @@ public class SP {
         }
         
         /** python like stuffs，exec 不会获取返回值，eval 获取返回值 */
-        public static void exec(String aText) throws Exception {GROOVY_SHELL.evaluate(aText, "ScriptJSE"+COUNTER.incrementAndGet()+".groovy");}
-        public static void execFile(String aFilePath) throws Exception {GROOVY_SHELL.evaluate(toSourceFile(aFilePath));}
-        public static Object eval(String aText) throws Exception {return GROOVY_SHELL.evaluate(aText, "ScriptJSE"+COUNTER.incrementAndGet()+".groovy");}
-        public static Object evalFile(String aFilePath) throws Exception {return GROOVY_SHELL.evaluate(toSourceFile(aFilePath));}
+        public static void exec(@Language("Groovy") String aText) throws Exception {
+            GROOVY_SHELL.evaluate(aText, "ScriptJSE"+COUNTER.incrementAndGet()+".groovy");
+        }
+        public static void execFile(String aFilePath) throws Exception {
+            GROOVY_SHELL.evaluate(toSourceFile(aFilePath));
+        }
+        public static Object eval(@Language("Groovy") String aText) throws Exception {
+            return GROOVY_SHELL.evaluate(aText, "ScriptJSE"+COUNTER.incrementAndGet()+".groovy");
+        }
+        public static Object evalFile(String aFilePath) throws Exception {
+            return GROOVY_SHELL.evaluate(toSourceFile(aFilePath));
+        }
         
         /** 直接运行文本的脚本 */
-        public static Object runText(String aText)                  throws Exception {return runText(aText, ZL_STR);}
-        public static Object runText(String aText, String... aArgs) throws Exception {return GROOVY_SHELL.run(aText, "ScriptJSE"+COUNTER.incrementAndGet()+".groovy", aArgs);}
+        public static Object runText(@Language("Groovy") String aText) throws Exception {
+            return runText(aText, ZL_STR);
+        }
+        public static Object runText(@Language("Groovy") String aText, String... aArgs) throws Exception {
+            return GROOVY_SHELL.run(aText, "ScriptJSE"+COUNTER.incrementAndGet()+".groovy", aArgs);
+        }
         /** Groovy 现在也可以使用 getValue 来获取变量以及 setValue 设置变量（仅限于 Context 变量，这样可以保证效率） */
-        public static Object get(String aValueName) throws Exception {return getValue(aValueName);}
-        public static void set(String aValueName, Object aValue) throws Exception {setValue(aValueName, aValue);}
-        public static void remove(String aValueName) throws Exception {removeValue(aValueName);}
-        public static boolean hasValue(String aValueName) throws Exception {return GROOVY_SHELL.getContext().hasVariable(aValueName);}
-        public static Object getValue(String aValueName) throws Exception {return GROOVY_SHELL.getContext().getVariable(aValueName);}
-        public static void setValue(String aValueName, Object aValue) throws Exception {GROOVY_SHELL.getContext().setVariable(aValueName, aValue);}
-        public static void removeValue(String aValueName) throws Exception {GROOVY_SHELL.getContext().removeVariable(aValueName);}
+        public static Object get(String aValueName) throws Exception {
+            return getValue(aValueName);
+        }
+        public static void set(String aValueName, Object aValue) throws Exception {
+            setValue(aValueName, aValue);
+        }
+        public static void remove(String aValueName) throws Exception {
+            removeValue(aValueName);
+        }
+        public static boolean hasValue(String aValueName) throws Exception {
+            return GROOVY_SHELL.getContext().hasVariable(aValueName);
+        }
+        public static Object getValue(String aValueName) throws Exception {
+            return GROOVY_SHELL.getContext().getVariable(aValueName);
+        }
+        public static void setValue(String aValueName, Object aValue) throws Exception {
+            GROOVY_SHELL.getContext().setVariable(aValueName, aValue);
+        }
+        public static void removeValue(String aValueName) throws Exception {
+            GROOVY_SHELL.getContext().removeVariable(aValueName);
+        }
         /** 运行脚本文件 */
-        public static Object run(String aScriptPath)                  throws Exception {return run(aScriptPath, ZL_STR);}
-        public static Object run(String aScriptPath, String... aArgs) throws Exception {return runScript(aScriptPath, aArgs);}
-        public static Object runScript(String aScriptPath)                  throws Exception {return runScript(aScriptPath, ZL_STR);}
-        public static Object runScript(String aScriptPath, String... aArgs) throws Exception {return GROOVY_SHELL.run(toSourceFile(aScriptPath), aArgs);}
+        public static Object run(String aScriptPath) throws Exception {
+            return run(aScriptPath, ZL_STR);
+        }
+        public static Object run(String aScriptPath, String... aArgs) throws Exception {
+            return runScript(aScriptPath, aArgs);
+        }
+        public static Object runScript(String aScriptPath) throws Exception {
+            return runScript(aScriptPath, ZL_STR);
+        }
+        public static Object runScript(String aScriptPath, String... aArgs) throws Exception {
+            return GROOVY_SHELL.run(toSourceFile(aScriptPath), aArgs);
+        }
         /** 调用指定脚本中的方法，现在统一使用包名的做法 */
-        public static Object invoke(String aMethodName)                  throws Exception {return invoke(aMethodName, ZL_OBJ);}
+        public static Object invoke(String aMethodName) throws Exception {
+            return invoke(aMethodName, ZL_OBJ);
+        }
         public static Object invoke(String aMethodName, Object... aArgs) throws Exception {
             Object tObj;
             // 获取开口类名（如果存在的话）
@@ -466,8 +517,12 @@ public class SP {
             return InvokerHelper.invokeMethod(tObj, aMethodName, aArgs);
         }
         /** 创建脚本类的实例 */
-        public static Object newInstance(String aClassName)                  throws Exception {return newInstance(aClassName, ZL_OBJ);}
-        public static Object newInstance(String aClassName, Object... aArgs) throws Exception {return InvokerHelper.invokeConstructorOf(getClass(aClassName), aArgs);}
+        public static Object newInstance(String aClassName) throws Exception {
+            return newInstance(aClassName, ZL_OBJ);
+        }
+        public static Object newInstance(String aClassName, Object... aArgs) throws Exception {
+            return InvokerHelper.invokeConstructorOf(getClass(aClassName), aArgs);
+        }
         // 现在不再支持关闭 GROOVY_SHELL 了，也没有必要关闭
         
         /** 现在这里也不进行包装，如果需要更加通用的调用可以借助 {@link InvokerHelper} */
@@ -511,6 +566,7 @@ public class SP {
     
     
     /** Python 脚本运行支持，完全基于 jep */
+    @SuppressWarnings("UnknownLanguage")
     public static class Python {
         
         /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
@@ -569,14 +625,22 @@ public class SP {
         private static final ThreadLocal<jep.Interpreter> THREAD_LOCAL_JEP_INTERP = new ThreadLocal<>();
         /** python 部分不能跨线程 */
         private static Thread INIT_THREAD = null;
-        public static boolean isValidThread() {return INIT_THREAD == Thread.currentThread();}
+        public static boolean isValidThread() {
+            return INIT_THREAD == Thread.currentThread();
+        }
         
         
         /** python like stuffs，exec 不会获取返回值，eval 获取返回值 */
-        public static void exec(String aText) throws JepException {interpreter().exec(aText);}
-        public static void execFile(String aFilePath) throws JepException, IOException {interpreter().runScript(validScriptPath(aFilePath));}
+        public static void exec(@Language("jsepy") String aText) throws JepException {
+            interpreter().exec(aText);
+        }
+        public static void execFile(String aFilePath) throws JepException, IOException {
+            interpreter().runScript(validScriptPath(aFilePath));
+        }
         /** 由于 jep 的特性，这里可以直接使用 getValue 指定 eval */
-        public static Object eval(String aText) throws JepException {return interpreter().getValue(aText);}
+        public static Object eval(@Language("jsepy") String aText) throws JepException {
+            return interpreter().getValue(aText);
+        }
         // python 脚本文件不会有返回值
         
         /** 获取 shell 的交互式运行 */
@@ -587,30 +651,62 @@ public class SP {
         }
         
         /** 直接运行文本的脚本 */
-        public static void runText(String aText)                  throws JepException {runText(aText, ZL_STR);}
-        public static void runText(String aText, String... aArgs) throws JepException {setArgs_("", aArgs); interpreter().exec(aText);}
+        public static void runText(@Language("jsepy") String aText) throws JepException {
+            runText(aText, ZL_STR);
+        }
+        public static void runText(@Language("jsepy") String aText, String... aArgs) throws JepException {
+            setArgs_("", aArgs); interpreter().exec(aText);
+        }
         /** Python 还可以使用 getValue 来获取变量以及 setValue 设置变量（原则上同样仅限于 Context 变量，允许可以超出 Context 但是不保证支持） */
-        public static Object get(String aValueName) throws JepException {return getValue(aValueName);}
-        public static void set(String aValueName, Object aValue) throws JepException {setValue(aValueName, aValue);}
-        public static void remove(String aValueName) throws JepException {removeValue(aValueName);}
-        public static boolean hasValue(String aValueName) throws JepException {return (Boolean)interpreter().getValue("('"+aValueName+"' in globals()) or ('"+aValueName+"' in locals())");}
-        public static Object getValue(String aValueName) throws JepException {return interpreter().getValue(aValueName);}
-        public static <T> T getValue(String aValueName, Class<T> aClazz) throws JepException {return interpreter().getValue(aValueName, aClazz);}
-        public static void setValue(String aValueName, Object aValue) throws JepException {interpreter().set(aValueName, aValue);}
-        public static void removeValue(String aValueName) throws JepException {interpreter().exec("del "+aValueName);}
+        public static Object get(String aValueName) throws JepException {
+            return getValue(aValueName);
+        }
+        public static void set(String aValueName, Object aValue) throws JepException {
+            setValue(aValueName, aValue);
+        }
+        public static void remove(String aValueName) throws JepException {
+            removeValue(aValueName);
+        }
+        public static boolean hasValue(String aValueName) throws JepException {
+            return (Boolean)interpreter().getValue("('"+aValueName+"' in globals()) or ('"+aValueName+"' in locals())");
+        }
+        public static Object getValue(String aValueName) throws JepException {
+            return interpreter().getValue(aValueName);
+        }
+        public static <T> T getValue(String aValueName, Class<T> aClazz) throws JepException {
+            return interpreter().getValue(aValueName, aClazz);
+        }
+        public static void setValue(String aValueName, Object aValue) throws JepException {
+            interpreter().set(aValueName, aValue);
+        }
+        public static void removeValue(String aValueName) throws JepException {
+            interpreter().exec("del "+aValueName);
+        }
         /** 运行脚本文件 */
-        public static void run(String aScriptPath)                  throws JepException, IOException {run(aScriptPath, ZL_STR);}
-        public static void run(String aScriptPath, String... aArgs) throws JepException, IOException {runScript(aScriptPath, aArgs);}
-        public static void runScript(String aScriptPath)                  throws JepException, IOException {runScript(aScriptPath, ZL_STR);}
+        public static void run(String aScriptPath) throws JepException, IOException {
+            run(aScriptPath, ZL_STR);
+        }
+        public static void run(String aScriptPath, String... aArgs) throws JepException, IOException {
+            runScript(aScriptPath, aArgs);
+        }
+        public static void runScript(String aScriptPath) throws JepException, IOException {
+            runScript(aScriptPath, ZL_STR);
+        }
         public static void runScript(String aScriptPath, String... aArgs) throws JepException, IOException {
             // 现在不再保存旧的 sys.argv，如果需要可以在外部代码自行保存
             setArgs_(aScriptPath, aArgs);
             interpreter().runScript(validScriptPath(aScriptPath));
         }
         /** 调用方法，python 中需要结合 import 使用 */
-        public static Object invoke(String aMethodName)                  throws JepException {return invoke(aMethodName, ZL_OBJ);}
-        public static Object invoke(String aMethodName, Map<String, Object> aKWArgs) throws JepException {return interpreter().invoke(aMethodName, aKWArgs);}
-        public static Object invoke(String aMethodName, Object[] aArgs, Map<String, Object> aKWArgs) throws JepException {return interpreter().invoke(aMethodName, aArgs, aKWArgs);}
+        public static Object invoke(String aMethodName) throws JepException {
+            return invoke(aMethodName, ZL_OBJ);
+        }
+        public static Object invoke(String aMethodName, Map<String, Object> aKWArgs) throws JepException {
+            return interpreter().invoke(aMethodName, aKWArgs);
+        }
+        public static Object invoke(String aMethodName, Object[] aArgs, Map<String, Object> aKWArgs) throws JepException {
+            return interpreter().invoke(aMethodName, aArgs, aKWArgs);
+        }
         @SuppressWarnings("unchecked")
         public static Object invoke(String aMethodName, Object... aArgs) throws JepException {
             if (aArgs == null || aArgs.length == 0) return interpreter().invoke(aMethodName);
@@ -623,19 +719,39 @@ public class SP {
             return interpreter().invoke(aMethodName, aArgs);
         }
         /** 创建 Python 实例，这里可以直接将类名当作函数调用即可 */
-        public static Object newInstance(String aClassName)                  throws JepException {return newInstance(aClassName, ZL_OBJ);}
-        public static Object newInstance(String aClassName, Map<String, Object> aKWArgs) throws JepException {return invoke(aClassName, aKWArgs);}
-        public static Object newInstance(String aClassName, Object[] aArgs, Map<String, Object> aKWArgs) throws JepException {return invoke(aClassName, aArgs, aKWArgs);}
-        public static Object newInstance(String aClassName, Object... aArgs) throws JepException {return invoke(aClassName, aArgs);}
+        public static Object newInstance(String aClassName) throws JepException {
+            return newInstance(aClassName, ZL_OBJ);
+        }
+        public static Object newInstance(String aClassName, Map<String, Object> aKWArgs) throws JepException {
+            return invoke(aClassName, aKWArgs);
+        }
+        public static Object newInstance(String aClassName, Object[] aArgs, Map<String, Object> aKWArgs) throws JepException {
+            return invoke(aClassName, aArgs, aKWArgs);
+        }
+        public static Object newInstance(String aClassName, Object... aArgs) throws JepException {
+            return invoke(aClassName, aArgs);
+        }
         
         /** 提供一个手动关闭 JEP_INTERP 的接口 */
-        public static void close() throws JepException {if (JEP_INTERP != null) {JEP_INTERP.close(); JEP_INTERP = null;}}
-        public static boolean isClosed() {return JEP_INTERP == null;}
+        public static void close() throws JepException {
+            if (JEP_INTERP != null) {
+                JEP_INTERP.close();
+                JEP_INTERP = null;
+            }
+        }
+        public static boolean isClosed() {
+            return JEP_INTERP == null;
+        }
         /** 提供一个手动刷新 JEP_INTERP 的接口，可以将关闭的重新打开，会清空所有创建的 python 变量 */
-        public static void refresh() throws JepException {close(); initInterpreter_();}
+        public static void refresh() throws JepException {
+            close();
+            initInterpreter_();
+        }
         
         /** 似乎是不再需要这层包装了 */
-        public static PyObject getClass(String aClassName) throws JepException {return interpreter().getValue(aClassName, PyObject.class);}
+        public static PyObject getClass(String aClassName) throws JepException {
+            return interpreter().getValue(aClassName, PyObject.class);
+        }
         
         /** 现在和 Groovy 逻辑保持一致，调用任何 run 都会全局重置 args 值 */
         private static void setArgs_(String aFirst, String[] aArgs) {
@@ -646,12 +762,18 @@ public class SP {
         }
         
         /** Python 提供额外的接口，获取同时做类型检查并转换 */
-        public static <T> T getAs(Class<T> aExpectedType, String aValueName) throws JepException {return interpreter().getValue(aValueName, aExpectedType);}
+        public static <T> T getAs(Class<T> aExpectedType, String aValueName) throws JepException {
+            return interpreter().getValue(aValueName, aExpectedType);
+        }
         /** 获取当前线程合法的 Interpreter，如果没有创建则直接返回 {@code null} */
-        public static jep.Interpreter interpreter() {return isValidThread() ? JEP_INTERP : THREAD_LOCAL_JEP_INTERP.get();}
+        public static jep.Interpreter interpreter() {
+            return isValidThread() ? JEP_INTERP : THREAD_LOCAL_JEP_INTERP.get();
+        }
         
         /** Python 提供额外的接口，提供专门的 parfor 并自动初始化一个线程独立的 Interpreter，这种写法可以保证 jse 的 python 环境一定成功初始化 */
-        public static void parforWithInterpreter(int aSize, @ClosureParams(value= FromString.class, options={"int", "int,int", "int,int,jep.Interpreter"}) final Closure<?> aGroovyTask) {parforWithInterpreter(aSize, PARFOR_THREAD_NUMBER, aGroovyTask);}
+        public static void parforWithInterpreter(int aSize, @ClosureParams(value= FromString.class, options={"int", "int,int", "int,int,jep.Interpreter"}) final Closure<?> aGroovyTask) {
+            parforWithInterpreter(aSize, PARFOR_THREAD_NUMBER, aGroovyTask);
+        }
         @SuppressWarnings({"resource", "UnnecessaryReturnStatement", "Convert2MethodRef"})
         public static void parforWithInterpreter(int aSize, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value= FromString.class, options={"int", "int,int", "int,int,jep.Interpreter"}) final Closure<?> aGroovyTask) {
             if (!isValidThread()) throw new IllegalStateException("`parforWithInterpreter` can only be called through the main thread");
@@ -678,7 +800,9 @@ public class SP {
             default: {UT.Par.pool(aThreadNum).parfor(aSize, tInitDo, tFinalDo, (i, threadID) -> aGroovyTask.call(i)); return;}
             }
         }
-        public static void parwhileWithInterpreter(ParforThreadPool.IParwhileChecker aChecker, @ClosureParams(value= FromString.class, options={"int", "int,jep.Interpreter"}) final Closure<?> aGroovyTask) {parwhileWithInterpreter(aChecker, PARFOR_THREAD_NUMBER, aGroovyTask);}
+        public static void parwhileWithInterpreter(ParforThreadPool.IParwhileChecker aChecker, @ClosureParams(value= FromString.class, options={"int", "int,jep.Interpreter"}) final Closure<?> aGroovyTask) {
+            parwhileWithInterpreter(aChecker, PARFOR_THREAD_NUMBER, aGroovyTask);
+        }
         @SuppressWarnings({"resource", "UnnecessaryReturnStatement", "Convert2MethodRef"})
         public static void parwhileWithInterpreter(ParforThreadPool.IParwhileChecker aChecker, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, @ClosureParams(value= FromString.class, options={"int", "int,jep.Interpreter"}) final Closure<?> aGroovyTask) {
             if (!isValidThread()) throw new IllegalStateException("`parwhileWithInterpreter` can only be called through the main thread");
@@ -925,13 +1049,27 @@ public class SP {
             // 直接通过系统指令执行 pip 来下载
             return EXEC.system(String.join(" ", rCommand));
         }
-        public static int downloadPackage(String aRequirement, String aPlatform, String aPythonVersion, String aIndexUrl) throws IOException {return downloadPackage(aRequirement, false, aPlatform, aPythonVersion, aIndexUrl);}
-        public static int downloadPackage(String aRequirement, String aPlatform, String aPythonVersion) throws IOException {return downloadPackage(aRequirement, false, aPlatform, aPythonVersion);}
-        public static int downloadPackage(String aRequirement, String aPlatform) throws IOException {return downloadPackage(aRequirement, aPlatform, null);}
-        public static int downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform, String aPythonVersion) throws IOException {return downloadPackage(aRequirement, aIncludeDep, aPlatform, aPythonVersion, null);}
-        public static int downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform) throws IOException {return downloadPackage(aRequirement, aIncludeDep, aPlatform, null);}
-        public static int downloadPackage(String aRequirement, boolean aIncludeDep) throws IOException {return downloadPackage(aRequirement, aIncludeDep, null);}
-        public static int downloadPackage(String aRequirement) throws IOException {return downloadPackage(aRequirement, false);}
+        public static int downloadPackage(String aRequirement, String aPlatform, String aPythonVersion, String aIndexUrl) throws IOException {
+            return downloadPackage(aRequirement, false, aPlatform, aPythonVersion, aIndexUrl);
+        }
+        public static int downloadPackage(String aRequirement, String aPlatform, String aPythonVersion) throws IOException {
+            return downloadPackage(aRequirement, false, aPlatform, aPythonVersion);
+        }
+        public static int downloadPackage(String aRequirement, String aPlatform) throws IOException {
+            return downloadPackage(aRequirement, aPlatform, null);
+        }
+        public static int downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform, String aPythonVersion) throws IOException {
+            return downloadPackage(aRequirement, aIncludeDep, aPlatform, aPythonVersion, null);
+        }
+        public static int downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform) throws IOException {
+            return downloadPackage(aRequirement, aIncludeDep, aPlatform, null);
+        }
+        public static int downloadPackage(String aRequirement, boolean aIncludeDep) throws IOException {
+            return downloadPackage(aRequirement, aIncludeDep, null);
+        }
+        public static int downloadPackage(String aRequirement) throws IOException {
+            return downloadPackage(aRequirement, false);
+        }
         
         /** 基于 pip 的 python 包管理，直接安装指定包到 lib */
         public static int installPackage(String aRequirement, boolean aIncludeDep, boolean aIncludeIndex) throws IOException {
@@ -956,8 +1094,12 @@ public class SP {
             // 直接通过系统指令执行 pip 来下载
             return EXEC.system(String.join(" ", rCommand));
         }
-        public static int installPackage(String aRequirement, boolean aIncludeDep) throws IOException {return installPackage(aRequirement, aIncludeDep, false);}
-        public static int installPackage(String aRequirement) throws IOException {return installPackage(aRequirement, false);}
+        public static int installPackage(String aRequirement, boolean aIncludeDep) throws IOException {
+            return installPackage(aRequirement, aIncludeDep, false);
+        }
+        public static int installPackage(String aRequirement) throws IOException {
+            return installPackage(aRequirement, false);
+        }
         
         /** 一些内置的 python 库安装，主要用于内部使用 */
         public static void installAse() throws IOException {

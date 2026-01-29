@@ -29,6 +29,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.codehaus.groovy.runtime.IOGroovyMethods;
 import org.codehaus.groovy.runtime.StringGroovyMethods;
 import org.codehaus.groovy.util.CharSequenceReader;
+import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -642,7 +643,7 @@ public class IO {
          * @see IO#json2map(String)
          * @see IO.Text#map2json(Map)
          */
-        public static Map<?, ?> json2map(String aText) {
+        public static Map<?, ?> json2map(@Language("JSON") String aText) {
             return (Map<?, ?>) (new JsonSlurper()).parseText(aText);
         }
         /**
@@ -653,7 +654,7 @@ public class IO {
          * @see IO#json2list(String)
          * @see IO.Text#list2json(List)
          */
-        public static List<?> json2list(String aText) {
+        public static List<?> json2list(@Language("JSON") String aText) {
             return (List<?>) (new JsonSlurper()).parseText(aText);
         }
         /**
@@ -720,7 +721,7 @@ public class IO {
          * @see IO#yaml2map(String)
          * @see IO.Text#map2yaml(Map)
          */
-        public static Map<?, ?> yaml2map(String aText) {
+        public static Map<?, ?> yaml2map(@Language("YAML") String aText) {
             return (Map<?, ?>) (new YamlSlurper()).parseText(aText);
         }
         /**
@@ -731,7 +732,7 @@ public class IO {
          * @see IO#yaml2list(String)
          * @see IO.Text#list2yaml(List)
          */
-        public static List<?> yaml2list(String aText) {
+        public static List<?> yaml2list(@Language("YAML") String aText) {
             return (List<?>) (new YamlSlurper()).parseText(aText);
         }
         /**
@@ -768,7 +769,7 @@ public class IO {
          * @see IO#toml2map(String)
          * @see IO.Text#map2toml(Map)
          */
-        public static Map<?, ?> toml2map(String aText) {
+        public static Map<?, ?> toml2map(@Language("TOML") String aText) {
             return (Map<?, ?>) (new TomlSlurper()).parseText(aText);
         }
         /**
@@ -779,7 +780,7 @@ public class IO {
          * @see IO#toml2list(String)
          * @see IO.Text#list2toml(List)
          */
-        public static List<?> toml2list(String aText) {
+        public static List<?> toml2list(@Language("TOML") String aText) {
             return (List<?>) (new TomlSlurper()).parseText(aText);
         }
         /**

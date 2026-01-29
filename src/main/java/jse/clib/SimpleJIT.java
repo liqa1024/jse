@@ -5,6 +5,7 @@ import jse.code.OS;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 import jse.parallel.IAutoShutdown;
+import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -138,10 +139,22 @@ public class SimpleJIT {
         
         /// initer
         Engine() {}
-        public Engine setSrc(String aSrc) {mSrc = aSrc; return this;}
-        public Engine setProjectName(String aProjectName) {mProjectName = aProjectName; return this;}
-        public Engine setLibDir(String aLibDir) {mLibDir = aLibDir; return this;}
-        public Engine setOptimLevel(int aOptimLevel) {mOptimLevel = aOptimLevel; return this;}
+        public Engine setSrc(@Language(value="C++", prefix="extern \"C\" {", suffix="}") String aSrc) {
+            mSrc = aSrc;
+            return this;
+        }
+        public Engine setProjectName(String aProjectName) {
+            mProjectName = aProjectName;
+            return this;
+        }
+        public Engine setLibDir(String aLibDir) {
+            mLibDir = aLibDir;
+            return this;
+        }
+        public Engine setOptimLevel(int aOptimLevel) {
+            mOptimLevel = aOptimLevel;
+            return this;
+        }
         public Engine setMethodNames(String... aMethodNames) {
             mMethodNames.clear();
             mMethodNames.addAll(AbstractCollections.from(aMethodNames));
@@ -173,13 +186,26 @@ public class SimpleJIT {
             mCmakeSettings.remove(aKey.toString());
             return this;
         }
-        public Engine setSrcDirIniter(IDirIniter aSrcDirIniter) {mSrcDirIniter = aSrcDirIniter; return this;}
-        public Engine setCmakeCxxCompiler(@Nullable String aCmakeCxxCompiler) {mCmakeCxxCompiler = aCmakeCxxCompiler; return this;}
-        public Engine setCmakeCxxFlags(@Nullable String aCmakeCxxFlags) {mCmakeCxxFlags = aCmakeCxxFlags; return this;}
+        public Engine setSrcDirIniter(IDirIniter aSrcDirIniter) {
+            mSrcDirIniter = aSrcDirIniter;
+            return this;
+        }
+        public Engine setCmakeCxxCompiler(@Nullable String aCmakeCxxCompiler) {
+            mCmakeCxxCompiler = aCmakeCxxCompiler;
+            return this;
+        }
+        public Engine setCmakeCxxFlags(@Nullable String aCmakeCxxFlags) {
+            mCmakeCxxFlags = aCmakeCxxFlags;
+            return this;
+        }
         
         /// utils
-        public boolean hasMethod(CharSequence aMethodName) {return mMethodNames.contains(aMethodName.toString());}
-        public boolean isNull() {return mLibHandle==null || mLibHandle.isNull();}
+        public boolean hasMethod(CharSequence aMethodName) {
+            return mMethodNames.contains(aMethodName.toString());
+        }
+        public boolean isNull() {
+            return mLibHandle==null || mLibHandle.isNull();
+        }
         
         /// workflow, comile() -> findMethod(name)
         public void compile() throws Exception {

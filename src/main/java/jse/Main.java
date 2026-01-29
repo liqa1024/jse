@@ -309,10 +309,12 @@ public class Main {
             if (tArgs.length > 0) System.arraycopy(aArgs, 3, tArgs, 0, tArgs.length);
             switch (tOption) {
             case "-t": case "-text": case "--text": case "-groovytext": case "--groovytext": {
+                //noinspection LanguageMismatch
                 SP.Groovy.runText(tValue, tArgs);
                 return 0;
             }
             case "-pythontext": case "--pythontext": {
+                //noinspection LanguageMismatch
                 SP.Python.runText(tValue, tArgs);
                 return 0;
             }
