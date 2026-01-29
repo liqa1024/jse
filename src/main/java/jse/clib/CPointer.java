@@ -97,6 +97,11 @@ public class CPointer implements ICPointer {
         , "jse_clib_NestedDoubleCPointer.c"
         , "jse_clib_NestedDoubleCPointer.h"
     };
+    public final static ICPointer NULL = new ICPointer() {
+        @Override public long ptr_() {return 0;}
+        @Override public boolean isNull() {return true;}
+    };
+    public final static ICPointer nullptr = NULL;
     
     static {
         InitHelper.INITIALIZED = true;
