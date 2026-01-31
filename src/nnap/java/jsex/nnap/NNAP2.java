@@ -13,8 +13,9 @@ import jse.code.functional.IUnaryFullOperator;
 import jse.math.vector.IVector;
 import jse.math.vector.Vectors;
 import jsex.nnap.basis.Basis2;
-import jsex.nnap.nn.FeedForward2;
+import jsex.nnap.nn.NeuralNetwork2;
 import org.apache.groovy.util.Maps;
+import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.*;
 
 import java.io.BufferedReader;
@@ -88,7 +89,7 @@ public class NNAP2 implements IPairPotential {
     private boolean mDead = false;
     private final int mThreadNumber;
     private final Basis2[] mBasis;
-    private final FeedForward2[] mNN;
+    private final NeuralNetwork2[] mNN;
     public int atomTypeNumber() {return mSymbols.length;}
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return mSymbols[aType-1];}
@@ -153,13 +154,11 @@ public class NNAP2 implements IPairPotential {
             Object tBasisInfo = info.get("basis");
             return tBasisInfo!=null ? tBasisInfo : Maps.of("type", "spherical_chebyshev");
         }));
-        // 临时实现的简单加载模型
-        mNN = new FeedForward2[tModelSize];
-        for (int i = 0; i < tModelSize; ++i) {
-            Map<?, ?> tNNMap = (Map<?, ?>)tModels.get(i).get("nn");
-            if (tNNMap ==null) throw new IllegalArgumentException("No nn in model, torch model is invalid now.");
-            mNN[i] = FeedForward2.load(tNNMap);
-        }
+        mNN = NeuralNetwork2.load(mBasis, NewCollections.map(tModels, info -> {
+            Object tNNInfo = info.get("nn");
+            if (tNNInfo ==null) throw new IllegalArgumentException("No nn in model, torch model is invalid now.");
+            return tNNInfo;
+        }));
         // 继续初始化参数数组
         mFpHyperParam = NestedCPointer.malloc(tModelSize);
         mFpParam = NestedCPointer.malloc(tModelSize);
@@ -179,8 +178,8 @@ public class NNAP2 implements IPairPotential {
                 FloatCPointer tNnParam = FloatCPointer.malloc(mNN[i].parameterSize());
                 fill_(tNnParam, mNN[i].parameters());
                 mNnParam.putAt(i, tNnParam);
-                mNnForwardCache.putAt(i, FloatCPointer.malloc(mNN[i].inputSize() + mNN[i].hiddenSize()*3));
-                mNnBackwardCache.putAt(i, FloatCPointer.malloc(mNN[i].inputSize() + mNN[i].hiddenSize()));
+                mNnForwardCache.putAt(i, FloatCPointer.malloc(mNN[i].forwardCacheSize()));
+                mNnBackwardCache.putAt(i, FloatCPointer.malloc(mNN[i].backwardCacheSize()));
             } else {
                 DoubleCPointer tFpHyperParam = DoubleCPointer.malloc(mBasis[i].hyperParameterSize());
                 fill_(tFpHyperParam, mBasis[i].hyperParameters());
@@ -193,8 +192,8 @@ public class NNAP2 implements IPairPotential {
                 DoubleCPointer tNnParam = DoubleCPointer.malloc(mNN[i].parameterSize());
                 fill_(tNnParam, mNN[i].parameters());
                 mNnParam.putAt(i, tNnParam);
-                mNnForwardCache.putAt(i, DoubleCPointer.malloc(mNN[i].inputSize() + mNN[i].hiddenSize()*3));
-                mNnBackwardCache.putAt(i, DoubleCPointer.malloc(mNN[i].inputSize() + mNN[i].hiddenSize()));
+                mNnForwardCache.putAt(i, DoubleCPointer.malloc(mNN[i].forwardCacheSize()));
+                mNnBackwardCache.putAt(i, DoubleCPointer.malloc(mNN[i].backwardCacheSize()));
             }
         }
         // 归一化系数读取
@@ -511,7 +510,7 @@ public class NNAP2 implements IPairPotential {
     }
     @SuppressWarnings("unchecked")
     private static List<Integer> parseRepeatRange_(String aRangeStr, Map<String, Object> aGenMap) throws Exception {
-        String tRangeStr = scriptReplace_(aRangeStr, aGenMap);
+        @Language("Groovy") String tRangeStr = scriptReplace_(aRangeStr, aGenMap);
         return (List<Integer>)SP.Groovy.runText(tRangeStr);
     }
     private static String scriptReplace_(String aScriptStr, Map<String, Object> aGenMap) {
@@ -636,9 +635,9 @@ public class NNAP2 implements IPairPotential {
             mDataIn.putAt(2, mNlDy);
             mDataIn.putAt(3, mNlDz);
             mDataIn.putAt(4, mNlType);
-            mDataIn.putAt(5, mFpHyperParam.getAt(cType-1));
-            mDataIn.putAt(6, mFpParam.getAt(cType-1));
-            mDataIn.putAt(7, mNnParam.getAt(cType-1));
+            mDataIn.putAt(5, mFpHyperParam);
+            mDataIn.putAt(6, mFpParam);
+            mDataIn.putAt(7, mNnParam);
             mDataIn.putAt(8, mNormParam.getAt(cType-1));
             mDataOut.putAt(0, mOutEng);
             mDataOut.putAt(1, mFpForwardCache);
@@ -674,9 +673,9 @@ public class NNAP2 implements IPairPotential {
             mDataIn.putAt(2, mNlDy);
             mDataIn.putAt(3, mNlDz);
             mDataIn.putAt(4, mNlType);
-            mDataIn.putAt(5, mFpHyperParam.getAt(cType-1));
-            mDataIn.putAt(6, mFpParam.getAt(cType-1));
-            mDataIn.putAt(7, mNnParam.getAt(cType-1));
+            mDataIn.putAt(5, mFpHyperParam);
+            mDataIn.putAt(6, mFpParam);
+            mDataIn.putAt(7, mNnParam);
             mDataIn.putAt(8, mNormParam.getAt(cType-1));
             mDataOut.putAt(0, mOutEng);
             mDataOut.putAt(1, mGradNlDx);

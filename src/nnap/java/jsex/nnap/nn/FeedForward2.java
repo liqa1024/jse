@@ -2,7 +2,6 @@ package jsex.nnap.nn;
 
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
-import jse.code.io.ISavable;
 import jse.math.MathEX;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
@@ -21,18 +20,16 @@ import static jse.code.CS.RANDOM;
  *
  * @author liqa
  */
-public class FeedForward2 implements ISavable {
-    
+public class FeedForward2 extends NeuralNetwork2 {
     final int mInputDim;
     final int[] mHiddenDims;
-    final Vector mHiddenWeights, mHiddenWeightsBackward;
-    final IntVector mIndexToBackward;
+    final Vector mHiddenWeights;
     final Vector mHiddenBiases;
     final Vector mOutputWeight;
     final double[] mOutputBias;
     final int mHiddenNumber, mHiddenWeightsSize, mHiddenBiasesSize, mOutputWeightSize;
     
-    private FeedForward2(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenWeightsBackward, IntVector aIndexToBackward, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
+    FeedForward2(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
         mInputDim = aInputDim;
         mHiddenDims = aHiddenDims;
         mHiddenNumber = aHiddenDims.length;
@@ -48,11 +45,8 @@ public class FeedForward2 implements ISavable {
         mHiddenWeightsSize = tHiddenWeightsSize;
         mHiddenBiasesSize = tHiddenBiasesSize;
         mHiddenWeights = aHiddenWeights==null ? Vectors.zeros(mHiddenWeightsSize) : aHiddenWeights;
-        mHiddenWeightsBackward = aHiddenWeightsBackward==null ? Vectors.zeros(mHiddenWeightsSize) : aHiddenWeightsBackward;
-        mIndexToBackward = aIndexToBackward==null ? IntVector.zeros(mHiddenWeightsSize) : aIndexToBackward;
         mHiddenBiases = aHiddenBiases==null ? Vectors.zeros(mHiddenBiasesSize) : aHiddenBiases;
         if (mHiddenWeights.internalDataSize() != mHiddenWeightsSize) throw new IllegalArgumentException("The size of hidden weights mismatch");
-        if (mHiddenWeightsBackward.internalDataSize() != mHiddenWeightsSize) throw new IllegalArgumentException("The size of backward hidden weights mismatch");
         if (mHiddenBiases.internalDataSize() != mHiddenBiasesSize) throw new IllegalArgumentException("The size of hidden biases mismatch");
         mOutputWeightSize = mHiddenDims[mHiddenNumber-1];
         mOutputWeight = aOutputWeight==null ? Vectors.zeros(mOutputWeightSize) : aOutputWeight;
@@ -60,27 +54,6 @@ public class FeedForward2 implements ISavable {
         if (mOutputWeight.internalDataSize() != mOutputWeightSize) throw new IllegalArgumentException("The size of output weight mismatch");
         if (mOutputBias.length != 1) throw new IllegalArgumentException("The size of output biases mismatch");
     }
-    public FeedForward2(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
-        this(aInputDim, aHiddenDims, aHiddenWeights, null, null, aHiddenBiases, aOutputWeight, aOutputBias);
-        int tColNum = mInputDim;
-        int tShift = 0;
-        for (int tHiddenDim : mHiddenDims) {
-            int tSize = tHiddenDim*tColNum;
-            final int fColNum = tColNum;
-            final int tShiftB = mHiddenWeightsSize-tShift-tSize;
-            mIndexToBackward.subVec(tShift, tShift+tSize).fill(ii -> {
-                int row = ii / fColNum;
-                int col = ii % fColNum;
-                return col*tHiddenDim + row + tShiftB;
-            });
-            tShift += tSize;
-            tColNum = tHiddenDim;
-        }
-        for (int i = 0; i < mHiddenWeightsSize; ++i) {
-            mHiddenWeightsBackward.set(mIndexToBackward.get(i), mHiddenWeights.get(i));
-        }
-    }
-    
     
     public void initParameters() {
         int tColNum = mInputDim;
@@ -91,9 +64,6 @@ public class FeedForward2 implements ISavable {
             mHiddenWeights.subVec(tShift, tShift+tSize).assign(() -> RANDOM.nextDouble(-tBound, tBound));
             tShift += tSize;
             tColNum = tHiddenDim;
-        }
-        for (int i = 0; i < mHiddenWeightsSize; ++i) {
-            mHiddenWeightsBackward.set(mIndexToBackward.get(i), mHiddenWeights.get(i));
         }
         tShift = 0;
         tColNum = mInputDim;
@@ -191,7 +161,7 @@ public class FeedForward2 implements ISavable {
         rSaveTo.put("output_bias", mOutputBias[0]);
     }
     
-    public int parameterSize() {
+    @Override public int parameterSize() {
         return mHiddenWeightsSize+mOutputWeightSize + mHiddenBiasesSize+1;
     }
     public int parameterWeightSize() {
@@ -200,8 +170,11 @@ public class FeedForward2 implements ISavable {
     public int hiddenSize() {
         return mHiddenBiasesSize;
     }
+    public int inputSize() {
+        return mInputDim;
+    }
     
-    public IVector parameters() {
+    @Override public IVector parameters() {
         final int tEndHW = mHiddenWeightsSize;
         final int tEndOW = tEndHW + mOutputWeightSize;
         final int tEndHB = tEndOW + mHiddenBiasesSize;
@@ -226,7 +199,6 @@ public class FeedForward2 implements ISavable {
             @Override public void set(int aIdx, double aValue) {
                 if (aIdx < tEndHW) {
                     mHiddenWeights.set(aIdx, aValue);
-                    mHiddenWeightsBackward.set(mIndexToBackward.get(aIdx), aValue);
                 } else
                 if (aIdx < tEndOW) {
                     mOutputWeight.set(aIdx-tEndHW, aValue);
@@ -246,11 +218,8 @@ public class FeedForward2 implements ISavable {
         };
     }
     
-    public int inputSize() {
-        return mInputDim;
-    }
-    
-    public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
+    @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
+        rGenMap.put("[NN USE "+aGenIdx+"]", "feed_forward");
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_IN", mInputDim);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HW", mHiddenWeightsSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HB", mHiddenBiasesSize);
@@ -259,13 +228,13 @@ public class FeedForward2 implements ISavable {
         int tInSize = mInputDim;
         for (int i = 0; i < mHiddenNumber; ++i) {
             int tOutSize = mHiddenDims[i];
-            rGenMap.put(aGenIdx+":"+i+":NNAPGEN_NN_IN_SIZE_H", tInSize);
-            rGenMap.put(aGenIdx+":"+i+":NNAPGEN_NN_OUT_SIZE_H", tOutSize);
+            rGenMap.put(aGenIdx+":"+i+":NNAPGEN_NN_IN_SIZE", tInSize);
+            rGenMap.put(aGenIdx+":"+i+":NNAPGEN_NN_OUT_SIZE", tOutSize);
             tInSize = tOutSize;
         }
     }
     
-    public boolean hasSameGenMap(Object aNN) {
+    @Override public boolean hasSameGenMap(NeuralNetwork2 aNN) {
         if (!(aNN instanceof FeedForward2)) return false;
         FeedForward2 tNN = (FeedForward2)aNN;
         if (mHiddenNumber!=tNN.mHiddenNumber || mInputDim!=tNN.mInputDim) return false;
@@ -273,5 +242,12 @@ public class FeedForward2 implements ISavable {
             if (mHiddenDims[i]!=tNN.mHiddenDims[i]) return false;
         }
         return true;
+    }
+    
+    @Override public int forwardCacheSize() {
+        return mInputDim + mHiddenBiasesSize*3;
+    }
+    @Override public int backwardCacheSize() {
+        return mInputDim + mHiddenBiasesSize;
     }
 }
