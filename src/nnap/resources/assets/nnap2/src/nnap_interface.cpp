@@ -21,6 +21,7 @@
 #define __NNAPGENXX_FP_SIZE_FW__ 0
 #define __NNAPGENXX_FP_SIZE_HPARAM__ 2
 #define __NNAPGENXX_FP_SIZE_PARAM__ 0
+#define __NNAPGENX_FP_SHARED_TYPE__ 1
 #define __NNAPGENS_aCType__ 1
 // <<< NNAPGEN REMOVE
 
@@ -41,8 +42,14 @@ static int forward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int a
     flt_t *rFp = rNnForwardCache; // fp from nn cache, for smooth input
     flt_t *rSubFp = rFp;
     flt_t *rSubFpForwardCache = rFpForwardCache;
-    flt_t *tSubFpHyperParam = aFpHyperParam[aCType-1]; // TODO:
-    flt_t *tSubFpParam = aFpParam[aCType-1]; // TODO:
+// >>> NNAPGEN IF
+// --- NNAPGEN HAS: [FP SHARE __NNAPGENS_X__]
+    flt_t *tSubFpHyperParam = aFpHyperParam[__NNAPGENX_FP_SHARED_TYPE__-1];
+    flt_t *tSubFpParam = aFpParam[__NNAPGENX_FP_SHARED_TYPE__-1];
+// --- NNAPGEN ELSE:
+    flt_t *tSubFpHyperParam = aFpHyperParam[aCType-1];
+    flt_t *tSubFpParam = aFpParam[aCType-1];
+// <<< NNAPGEN IF
 // >>> NNAPGEN REPEAT
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: spherical_chebyshev
@@ -143,8 +150,14 @@ static int backward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int 
     flt_t *tSubGradFp = tGradFp;
     flt_t *aSubFpForwardCache = aFpForwardCache;
     flt_t *rSubFpBackwardCache = rFpBackwardCache;
-    flt_t *tSubFpHyperParam = aFpHyperParam[aCType-1]; // TODO:
-    flt_t *tSubFpParam = aFpParam[aCType-1]; // TODO:
+// >>> NNAPGEN IF
+// --- NNAPGEN HAS: [FP SHARE __NNAPGENS_X__]
+    flt_t *tSubFpHyperParam = aFpHyperParam[__NNAPGENX_FP_SHARED_TYPE__-1];
+    flt_t *tSubFpParam = aFpParam[__NNAPGENX_FP_SHARED_TYPE__-1];
+// --- NNAPGEN ELSE:
+    flt_t *tSubFpHyperParam = aFpHyperParam[aCType-1];
+    flt_t *tSubFpParam = aFpParam[aCType-1];
+// <<< NNAPGEN IF
 // >>> NNAPGEN REPEAT
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: spherical_chebyshev

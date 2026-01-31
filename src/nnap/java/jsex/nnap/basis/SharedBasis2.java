@@ -1,12 +1,9 @@
 package jsex.nnap.basis;
 
-import jse.math.vector.IVector;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Map;
 
 /**
- * 基于其他元素基组的共享基组，现在采用更为严格的写法，因此可以不用延迟创建
+ * 基于其他元素基组的共享基组
  * <p>
  * 现在是常用的其他种类默认基组
  * @author liqa
@@ -27,16 +24,20 @@ public class SharedBasis2 extends Basis2 {
     @Override public double rcut() {return mSharedBasis.rcut();}
     @Override public int size() {return mSharedBasis.size();}
     
-    @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {mSharedBasis.updateGenMap(rGenMap, aGenIdx);}
-    @Override protected boolean hasSameGenMap_(Basis2 aBasis) {return mSharedBasis.hasSameGenMap_(aBasis);}
+    @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
+        rGenMap.put("[FP SHARE "+aGenIdx+"]", true); // 标记此分支为 share
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_SHARED_TYPE", mSharedType);
+        // 依旧需要补充 share 的参数
+        mSharedBasis.updateGenMap(rGenMap, aGenIdx);
+    }
+    @Override public boolean hasSameGenMap(Basis2 aBasis) {
+        if (!(aBasis instanceof SharedBasis2)) return false;
+        SharedBasis2 tBasis = (SharedBasis2)aBasis;
+        return mSharedType==tBasis.mSharedType && mSharedBasis.hasSameGenMap(tBasis.mSharedBasis);
+    }
+    
     @Override public int forwardCacheSize(int aNN, boolean aFullCache) {return mSharedBasis.forwardCacheSize(aNN, aFullCache);}
     @Override public int backwardCacheSize(int aNN, boolean aFullCache) {return mSharedBasis.backwardCacheSize(aNN, aFullCache);}
-    
-    @Override public IVector hyperParameters() {return mSharedBasis.hyperParameters();}
-    @Override public int hyperParameterSize() {return mSharedBasis.hyperParameterSize();}
-    @Override public @Nullable IVector parameters() {return mSharedBasis.parameters();}
-    @Override public int parameterSize() {return mSharedBasis.parameterSize();}
-    @Override public boolean hasParameters() {return mSharedBasis.hasParameters();}
     
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override public void save(Map rSaveTo) {

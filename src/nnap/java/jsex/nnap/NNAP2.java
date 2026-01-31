@@ -352,8 +352,13 @@ public class NNAP2 implements IPairPotential {
     private static final String MARKER_PICK_START = "// >>> NNAPGEN PICK";
     private static final String MARKER_PICK_CASE = "// --- NNAPGEN PICK:";
     private static final String MARKER_PICK_END = "// <<< NNAPGEN PICK";
+    private static final String MARKER_IF_START = "// >>> NNAPGEN IF";
+    private static final String MARKER_IF_HAS = "// --- NNAPGEN HAS:";
+    private static final String MARKER_IF_ELSE = "// --- NNAPGEN ELSE:";
+    private static final String MARKER_IF_END = "// <<< NNAPGEN IF";
+    private static final String MARKER_ANY_CASE = "// --- NNAPGEN ";
     
-    private static final int STATE_NORMAL = 0, STATE_REMOVE = 1, STATE_REPEAT = 2, STATE_SWITCH = 3, STATE_PICK = 4;
+    private static final int STATE_NORMAL = 0, STATE_REMOVE = 1, STATE_REPEAT = 2, STATE_SWITCH = 3, STATE_PICK = 4, STATE_IF = 5;
     
     private static void codeGen_(URL aSourceURL, String aTargetPath, Map<String, Object> aGenMap) throws Exception {
         List<String> tLines;
@@ -385,6 +390,10 @@ public class NNAP2 implements IPairPotential {
                 }
                 case MARKER_PICK_START: {
                     tState = STATE_PICK;
+                    break;
+                }
+                case MARKER_IF_START: {
+                    tState = STATE_IF;
                     break;
                 }
                 default: {
@@ -474,12 +483,42 @@ public class NNAP2 implements IPairPotential {
                             if (tBufLine.trim().startsWith(MARKER_PICK_CASE)) {
                                 break;
                             } else {
-                                rBuf1.add(tBufLine);
+                                rBuf1.add(tBufLine.replace("NNAPGENO", "NNAPGEN"));
                             }
                         } else {
                             if (tBufLine.trim().startsWith(MARKER_PICK_CASE)) {
                                 String tCase = tBufLine.trim().substring(MARKER_PICK_CASE.length()).trim();
                                 if (tCase.equals(tValue)) tInCase = true;
+                            }
+                        }
+                    }
+                    rBuf0.clear();
+                    // 内部只核心逻辑，全部完成后递归处理后续
+                    rOutLines.addAll(processLines_(rBuf1, aGenMap));
+                } else {
+                    rBuf0.add(tLine);
+                }
+                break;
+            }
+            case STATE_IF: {
+                if (tLine.trim().equals(MARKER_IF_END)) {
+                    tState = STATE_NORMAL;
+                    rBuf1.clear();
+                    boolean tInCase = false;
+                    for (String tBufLine : rBuf0) {
+                        if (tInCase) {
+                            if (tBufLine.trim().startsWith(MARKER_ANY_CASE)) {
+                                break;
+                            } else {
+                                rBuf1.add(tBufLine.replace("NNAPGENO", "NNAPGEN"));
+                            }
+                        } else {
+                            if (tBufLine.trim().startsWith(MARKER_IF_HAS)) {
+                                String tKey = tBufLine.trim().substring(MARKER_IF_HAS.length()).trim();
+                                if (aGenMap.containsKey(tKey)) tInCase = true;
+                            } else
+                            if (tBufLine.trim().startsWith(MARKER_IF_ELSE)) {
+                                tInCase = true;
                             }
                         }
                     }

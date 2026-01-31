@@ -88,11 +88,7 @@ public abstract class Basis2 implements ISavable {
     /** 更新内部 code gen 的 map，将参数编码进 jit */
     public abstract void updateGenMap(Map<String, Object> rGenMap, int aGenIdx);
     /** 本基组是否和输入的基组有着相同的 code gen map，相同时则会简单合并简化最终的 jit 代码 */
-    public final boolean hasSameGenMap(Basis2 aBasis) {
-        if (aBasis instanceof SharedBasis2) aBasis = ((SharedBasis2)aBasis).sharedBasis();
-        return hasSameGenMap_(aBasis);
-    }
-    protected abstract boolean hasSameGenMap_(Basis2 aBasis);
+    public abstract boolean hasSameGenMap(Basis2 aBasis);
     
     /** @return 前向传播中需要的缓存大小 */
     public abstract int forwardCacheSize(int aNN, boolean aFullCache);

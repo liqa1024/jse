@@ -140,7 +140,7 @@ public class MergedBasis2 extends Basis2 {
             mMergedBasis[i].updateGenMap(rGenMap, aGenIdx, i);
         }
     }
-    @Override protected boolean hasSameGenMap_(Basis2 aBasis) {
+    @Override public boolean hasSameGenMap(Basis2 aBasis) {
         if (!(aBasis instanceof MergedBasis2)) return false;
         MergedBasis2 tBasis = (MergedBasis2)aBasis;
         if (size()!=tBasis.size()) return false;
