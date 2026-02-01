@@ -1,7 +1,6 @@
 package jsex.nnap;
 
 import jse.clib.*;
-import jse.code.collection.IntList;
 import jse.lmp.LmpPlugin;
 
 /**
@@ -61,8 +60,17 @@ public class PairNNAP2 extends LmpPlugin.Pair {
         mNNAP.computeLammps(this);
     }
     
-    
     @Override public void coeff(String... aArgs) throws Exception {
+        // 这样错位初始化，保证 me == 0 的优先单独初始化，初始化库或者任何报错都可以单独输出
+        if (commMe()==0) {
+            coeff_(aArgs);
+            commBarrier();
+        } else {
+            commBarrier();
+            coeff_(aArgs);
+        }
+    }
+    private void coeff_(String... aArgs) throws Exception {
         if (aArgs==null || aArgs.length<4) throw new IllegalArgumentException("Not enough arguments, pair_coeff MUST be like `* * path/to/nnpot elem1 ...`");
         if (!aArgs[0].equals("*") || !aArgs[1].equals("*")) throw new IllegalArgumentException("pair_coeff MUST start with `* *`");
         mNNAP = new NNAP2(aArgs[2], 1, precision());

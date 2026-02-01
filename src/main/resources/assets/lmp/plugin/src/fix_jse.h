@@ -82,6 +82,7 @@ public:
     
     jint findVariable(jstring);
     jdouble computeVariable(jint);
+    void citemeAdd(jstring);
     void neighborRequestDefault(jdouble);
     void neighborRequestFull(jdouble);
     void neighborRequestOccasional(jdouble);
@@ -144,6 +145,7 @@ public:
     jlong endstep();
     jint commMe();
     jint commNprocs();
+    void commBarrier();
     jlong commWorld();
     jdouble commCutghostuser();
     void commForwardComm();

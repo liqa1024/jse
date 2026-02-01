@@ -2,6 +2,9 @@
 
 #include "lammps/platform.h"
 
+#include "jniutil.h"
+#include <mpi.h>
+
 using namespace LAMMPS_NS;
 
 #ifdef JVM_LIB_PATH
@@ -46,6 +49,19 @@ jboolean JSE_LMPPLUGIN::exceptionCheck(JNIEnv *aEnv) {
         return JNI_TRUE;
     }
     return JNI_FALSE;
+}
+
+jboolean JSE_LMPPLUGIN::exceptionCheckMPI(JNIEnv *aEnv, int aExitCode) {
+#ifdef LAMMPS_LIB_MPI
+    if (aExitCode==MPI_SUCCESS) return JNI_FALSE;
+    char rErrStr[MPI_MAX_ERROR_STRING];
+    int rLen;
+    MPI_Error_string(aExitCode, rErrStr, &rLen);
+    throwExceptionMPI(aEnv, rErrStr, aExitCode);
+    return JNI_TRUE;
+#else
+    return JNI_FALSE;
+#endif
 }
 
 

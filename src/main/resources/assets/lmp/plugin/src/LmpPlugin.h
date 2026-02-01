@@ -6,6 +6,7 @@
 namespace JSE_LMPPLUGIN {
     jboolean initJVM(JNIEnv **);
     jboolean exceptionCheck(JNIEnv *);
+    jboolean exceptionCheckMPI(JNIEnv *, int);
 }
 
 #endif //LMPPLUGIN_LMPPLUGIN_H

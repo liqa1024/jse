@@ -5,6 +5,7 @@
 
 #include "lammps/atom.h"
 #include "lammps/comm.h"
+#include "lammps/citeme.h"
 #include "lammps/domain.h"
 #include "lammps/error.h"
 #include "lammps/force.h"
@@ -196,6 +197,12 @@ jint FixJSE::findVariable(jstring name) {
 }
 jdouble FixJSE::computeVariable(jint ivar) {
     return input->variable->compute_equal(ivar);
+}
+void FixJSE::citemeAdd(jstring cite) {
+    const char *cite_c = mEnv->GetStringUTFChars(cite, NULL);
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return;
+    lmp->citeme->add(cite_c);
+    mEnv->ReleaseStringUTFChars(cite, cite_c);
 }
 
 void FixJSE::setForceReneighbor(jboolean flag) {
@@ -489,6 +496,10 @@ jint FixJSE::commMe() {
 }
 jint FixJSE::commNprocs() {
     return (jint) comm->nprocs;
+}
+void FixJSE::commBarrier() {
+    int tExitCode = MPI_Barrier(world);
+    JSE_LMPPLUGIN::exceptionCheckMPI(mEnv, tExitCode);
 }
 jlong FixJSE::commWorld() {
     return (jlong)(intptr_t)world;

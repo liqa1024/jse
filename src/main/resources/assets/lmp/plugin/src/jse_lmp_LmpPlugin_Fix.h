@@ -273,6 +273,14 @@ JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_computeVariable_1
 
 /*
  * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    citemeAdd_
+ * Signature: (JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_citemeAdd_1
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
  * Method:    neighborRequestDefault_
  * Signature: (JD)V
  */
@@ -765,6 +773,14 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commMe_1
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commNprocs_1
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    commBarrier_
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commBarrier_1
   (JNIEnv *, jclass, jlong);
 
 /*

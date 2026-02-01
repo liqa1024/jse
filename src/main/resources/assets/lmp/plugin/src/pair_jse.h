@@ -49,6 +49,7 @@ public:
 
     jint findVariable(jstring);
     jdouble computeVariable(jint);
+    void citemeAdd(jstring);
     void neighborRequestDefault();
     void neighborRequestFull();
     jlong atomX();
@@ -93,6 +94,7 @@ public:
     void virialFdotrCompute();
     jint commMe();
     jint commNprocs();
+    void commBarrier();
     jlong commWorld();
     void commForwardComm();
     void commForwardCommThis();

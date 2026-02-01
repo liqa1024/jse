@@ -13,6 +13,9 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_findVariable_1(JNIEnv *a
 JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Pair_computeVariable_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jint aIdx) {
     return ((PairJSE *)(intptr_t)aPairPtr)->computeVariable(aIdx);
 }
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_citemeAdd_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jstring aCite) {
+    ((PairJSE *)(intptr_t)aPairPtr)->citemeAdd(aCite);
+}
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setSingleEnable_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr, jboolean aFlag) {
     ((PairJSE *)(intptr_t)aPairPtr)->setSingleEnable(aFlag);
 }
@@ -177,6 +180,9 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commMe_1(JNIEnv *aEnv, j
 }
 JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commNprocs_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     return ((PairJSE *)(intptr_t)aPairPtr)->commNprocs();
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commBarrier_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
+    return ((PairJSE *)(intptr_t)aPairPtr)->commBarrier();
 }
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commWorld_1(JNIEnv *aEnv, jclass aClazz, jlong aPairPtr) {
     return ((PairJSE *)(intptr_t)aPairPtr)->commWorld();

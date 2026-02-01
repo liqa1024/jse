@@ -6,6 +6,7 @@ import jse.code.SP;
 import jse.code.UT;
 import jse.parallel.IAutoShutdown;
 import jse.parallel.MPI;
+import jse.parallel.MPIException;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import org.jetbrains.annotations.NotNull;
 
@@ -244,7 +245,7 @@ public class LmpPlugin {
             if (aName == null) throw new NullPointerException();
             return findVariable_(mPairPtr, aName);
         }
-        private native static int findVariable_(long aPairPtr, @NotNull String name);
+        private native static int findVariable_(long aPairPtr, @NotNull String aName);
         
         @UnsafeJNI("Illegal values will directly result in JVM SIGSEGV")
         public final double computeVariable(int aIdx) {
@@ -252,6 +253,12 @@ public class LmpPlugin {
             return computeVariable_(mPairPtr, aIdx);
         }
         private native static double computeVariable_(long aPairPtr, int ivar);
+        
+        public final void citemeAdd(String aCite) {
+            if (aCite == null) throw new NullPointerException();
+            citemeAdd_(mPairPtr, aCite);
+        }
+        private native static void citemeAdd_(long aPairPtr, @NotNull String aCite);
         
         public final void setSingleEnable(boolean aFlag) {setSingleEnable_(mPairPtr, aFlag);}
         private native static void setSingleEnable_(long aPairPtr, boolean aFlag);
@@ -423,6 +430,9 @@ public class LmpPlugin {
         
         public final int commNprocs() {return commNprocs_(mPairPtr);}
         private native static int commNprocs_(long aPairPtr);
+        
+        public final void commBarrier() throws MPIException {commBarrier_(mPairPtr);}
+        private native static void commBarrier_(long aPairPtr) throws MPIException;
         
         public final MPI.Comm commWorld() {return MPI.Comm.of(commWorld_(mPairPtr));}
         private native static long commWorld_(long aPairPtr);
@@ -676,6 +686,12 @@ public class LmpPlugin {
         }
         private native static double computeVariable_(long aFixPtr, int aIdx);
         
+        public final void citemeAdd(String aCite) {
+            if (aCite == null) throw new NullPointerException();
+            citemeAdd_(mFixPtr, aCite);
+        }
+        private native static void citemeAdd_(long aFixPtr, @NotNull String aCite);
+        
         @SuppressWarnings("SameParameterValue")
         public final void neighborRequestDefault(double aRCut) {neighborRequestDefault_(mFixPtr, aRCut);}
         public final void neighborRequestDefault() {neighborRequestDefault(-1);}
@@ -696,8 +712,8 @@ public class LmpPlugin {
         public final void neighborRequestOccasionalFull() {neighborRequestOccasionalFull(-1);}
         private native static void neighborRequestOccasionalFull_(long aFixPtr, double aRCut);
         
-        public final void neighborBuildOne() {neighborBuildOne_(mFixPtr);}
-        private native static void neighborBuildOne_(long aFixPtr);
+        public final void neighborBuildOne() throws LmpException {neighborBuildOne_(mFixPtr);}
+        private native static void neighborBuildOne_(long aFixPtr) throws LmpException;
         
         public final double neighborCutneighmin() {return neighborCutneighmin_(mFixPtr);}
         private native static double neighborCutneighmin_(long aFixPtr);
@@ -828,20 +844,20 @@ public class LmpPlugin {
         public final void domainSetLocalBox() {domainSetLocalBox_(mFixPtr);}
         private native static void domainSetLocalBox_(long aFixPtr);
         
-        public final int listGnum() {return listGnum_(mFixPtr);}
-        private native static int listGnum_(long aFixPtr);
+        public final int listGnum() throws LmpException {return listGnum_(mFixPtr);}
+        private native static int listGnum_(long aFixPtr) throws LmpException;
         
-        public final int listInum() {return listInum_(mFixPtr);}
-        private native static int listInum_(long aFixPtr);
+        public final int listInum() throws LmpException {return listInum_(mFixPtr);}
+        private native static int listInum_(long aFixPtr) throws LmpException;
         
-        public final IntCPointer listIlist() {return new IntCPointer(listIlist_(mFixPtr));}
-        private native static long listIlist_(long aFixPtr);
+        public final IntCPointer listIlist() throws LmpException {return new IntCPointer(listIlist_(mFixPtr));}
+        private native static long listIlist_(long aFixPtr) throws LmpException;
         
-        public final IntCPointer listNumneigh() {return new IntCPointer(listNumneigh_(mFixPtr));}
-        private native static long listNumneigh_(long aFixPtr);
+        public final IntCPointer listNumneigh() throws LmpException {return new IntCPointer(listNumneigh_(mFixPtr));}
+        private native static long listNumneigh_(long aFixPtr) throws LmpException;
         
-        public final NestedIntCPointer listFirstneigh() {return new NestedIntCPointer(listFirstneigh_(mFixPtr));}
-        private native static long listFirstneigh_(long aFixPtr);
+        public final NestedIntCPointer listFirstneigh() throws LmpException {return new NestedIntCPointer(listFirstneigh_(mFixPtr));}
+        private native static long listFirstneigh_(long aFixPtr) throws LmpException;
         
         public final double forceBoltz() {return forceBoltz_(mFixPtr);}
         private native static double forceBoltz_(long aFixPtr);
@@ -872,6 +888,9 @@ public class LmpPlugin {
         
         public final int commNprocs() {return commNprocs_(mFixPtr);}
         private native static int commNprocs_(long aFixPtr);
+        
+        public final void commBarrier() throws MPIException {commBarrier_(mFixPtr);}
+        private native static void commBarrier_(long aFixPtr) throws MPIException;
         
         public final MPI.Comm commWorld() {return MPI.Comm.of(commWorld_(mFixPtr));}
         private native static long commWorld_(long aFixPtr);

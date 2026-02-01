@@ -85,6 +85,9 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_findVariable_1(JNIEnv *aE
 JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Fix_computeVariable_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aIdx) {
     return ((FixJSE *)(intptr_t)aFixPtr)->computeVariable(aIdx);
 }
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_citemeAdd_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jstring aCite) {
+    ((FixJSE *)(intptr_t)aFixPtr)->citemeAdd(aCite);
+}
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_neighborRequestDefault_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jdouble aRCut) {
     ((FixJSE *)(intptr_t)aFixPtr)->neighborRequestDefault(aRCut);
 }
@@ -270,6 +273,9 @@ JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commMe_1(JNIEnv *aEnv, jc
 }
 JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commNprocs_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->commNprocs();
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commBarrier_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
+    ((FixJSE *)(intptr_t)aFixPtr)->commBarrier();
 }
 JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Fix_commWorld_1(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr) {
     return ((FixJSE *)(intptr_t)aFixPtr)->commWorld();

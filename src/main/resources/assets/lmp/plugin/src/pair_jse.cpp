@@ -5,6 +5,7 @@
 
 #include "lammps/atom.h"
 #include "lammps/comm.h"
+#include "lammps/citeme.h"
 #include "lammps/error.h"
 #include "lammps/force.h"
 #include "lammps/input.h"
@@ -137,6 +138,12 @@ jint PairJSE::findVariable(jstring name) {
 }
 jdouble PairJSE::computeVariable(jint ivar) {
     return input->variable->compute_equal(ivar);
+}
+void PairJSE::citemeAdd(jstring cite) {
+    const char *cite_c = mEnv->GetStringUTFChars(cite, NULL);
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return;
+    lmp->citeme->add(cite_c);
+    mEnv->ReleaseStringUTFChars(cite, cite_c);
 }
 
 void PairJSE::setSingleEnable(jboolean flag) {
@@ -308,6 +315,10 @@ jint PairJSE::commMe() {
 }
 jint PairJSE::commNprocs() {
     return (jint) comm->nprocs;
+}
+void PairJSE::commBarrier() {
+    int tExitCode = MPI_Barrier(world);
+    JSE_LMPPLUGIN::exceptionCheckMPI(mEnv, tExitCode);
 }
 jlong PairJSE::commWorld() {
     return (jlong)(intptr_t)world;
