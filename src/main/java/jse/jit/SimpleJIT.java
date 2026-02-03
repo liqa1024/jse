@@ -1,11 +1,14 @@
-package jse.clib;
+package jse.jit;
 
+import jse.clib.CMake;
+import jse.clib.Compiler;
+import jse.clib.JNIUtil;
+import jse.clib.UnsafeJNI;
 import jse.cptr.ICPointer;
 import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
-import jse.parallel.IAutoShutdown;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -69,24 +72,15 @@ public class SimpleJIT {
         public static boolean CLEAN = OS.envZ("JSE_JIT_CLEAN", true);
     }
     
-    /** 完全关闭 jit 的优化，主要用于调试或需要精确结果而不是速度 */
-    public static final int OPTIM_NONE = -1;
-    /** 兼容性的 jit 的优化，只开启 fmath，理论上保持相同的跨机器兼容性 */
-    public static final int OPTIM_COMPAT = 0;
-    /** （默认）基本的 jit 的优化，会开启一般 x86 cpu 都有的 avx2 指令集 */
-    public static final int OPTIM_BASE = 1;
-    /** 最高的 jit 的优化，会开启 avx512 指令集，有时可能会更慢 */
-    public static final int OPTIM_MAX = 2;
-    
     /** 当前 {@link SimpleJIT} JNI 库所在的文件夹路径，结尾一定存在 {@code '/'} */
     public final static String LIB_DIR = JAR_DIR+"jit/engine/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_SETTING) + "/";
     public final static String CACHE_LIB_DIR = JAR_DIR+"jit/cache/";
     /** 当前 {@link SimpleJIT} JNI 库的路径 */
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
-          "jse_clib_SimpleJIT.c"
-        , "jse_clib_SimpleJIT.h"
-        , "jse_clib_JITLibHandle.h"
+          "jse_jit_SimpleJIT.c"
+        , "jse_jit_SimpleJIT.h"
+        , "jse_jit_JITLibHandle.h"
     };
     private final static String JIT_SRC_NAME = "jitsrc.cpp", JIT_HEAD_NAME = "jitsrc.h";
     
@@ -103,7 +97,7 @@ public class SimpleJIT {
     
     public static Engine engine() {return new Engine();}
     
-    public static class Method implements ICPointer {
+    public static class Method implements IJITMethod {
         private final Engine mEngine;
         private final long mMethodPtr;
         Method(long aMethodPtr, Engine aEngine) {
@@ -112,7 +106,7 @@ public class SimpleJIT {
         }
         
         @UnsafeJNI("Inputs mismatch or invalid usage will result in JVM SIGSEGV")
-        public int invoke(ICPointer aDataIn, ICPointer rDataOut) {
+        @Override public int invoke(ICPointer aDataIn, ICPointer rDataOut) {
             if (mEngine.isShutdown()) throw new RuntimeException("this JIT engine is dead");
             if (isNull()) throw new NullPointerException();
             return invokeMethod0(mMethodPtr, aDataIn.ptr_(), rDataOut.ptr_());
@@ -120,8 +114,8 @@ public class SimpleJIT {
         @Override public long ptr_() {return mMethodPtr;}
     }
     
-    @FunctionalInterface public interface IDirIniter {String init(String aInput) throws Exception;}
-    public static class Engine implements IAutoShutdown {
+    @FunctionalInterface public interface IDirIniter {String init(String aInputDir, Engine aEngine) throws Exception;}
+    public static class Engine implements IJITEngine {
         /// compiler stuffs
         private String mLibDir = null;
         private String mProjectName = null;
@@ -140,7 +134,7 @@ public class SimpleJIT {
         
         /// initer
         Engine() {}
-        public Engine setSrc(@Language(value="C++", prefix="extern \"C\" {", suffix="}") String aSrc) {
+        @Override public Engine setSrc(@Language(value="C++", prefix="extern \"C\" {", suffix="}") String aSrc) {
             mSrc = aSrc;
             return this;
         }
@@ -152,25 +146,25 @@ public class SimpleJIT {
             mLibDir = aLibDir;
             return this;
         }
-        public Engine setOptimLevel(int aOptimLevel) {
+        @Override public Engine setOptimLevel(int aOptimLevel) {
             mOptimLevel = aOptimLevel;
             return this;
         }
-        public Engine setMethodNames(String... aMethodNames) {
+        @Override public Engine setMethodNames(String... aMethodNames) {
             mMethodNames.clear();
             mMethodNames.addAll(AbstractCollections.from(aMethodNames));
             return this;
         }
-        public Engine setMethodNames(Collection<? extends CharSequence> aMethodNames) {
+        @Override public Engine setMethodNames(Collection<? extends CharSequence> aMethodNames) {
             mMethodNames.clear();
             mMethodNames.addAll(AbstractCollections.map(aMethodNames, Object::toString));
             return this;
         }
-        public Engine addMethodName(CharSequence aMethodName) {
+        @Override public Engine addMethodName(CharSequence aMethodName) {
             mMethodNames.add(aMethodName.toString());
             return this;
         }
-        public Engine removeMethodName(CharSequence aMethodName) {
+        @Override public Engine removeMethodName(CharSequence aMethodName) {
             mMethodNames.remove(aMethodName.toString());
             return this;
         }
@@ -201,7 +195,7 @@ public class SimpleJIT {
         }
         
         /// utils
-        public boolean hasMethod(CharSequence aMethodName) {
+        @Override public boolean hasMethod(CharSequence aMethodName) {
             return mMethodNames.contains(aMethodName.toString());
         }
         public boolean isNull() {
@@ -209,7 +203,7 @@ public class SimpleJIT {
         }
         
         /// workflow, comile() -> findMethod(name)
-        public void compile() throws Exception {
+        @Override public void compile() throws Exception {
             if (mDead) throw new RuntimeException("this JIT engine is dead");
             // 现在总是优先依赖 jniutil 用来确保一些通用的检测总是优先执行
             JNIUtil.InitHelper.init();
@@ -232,7 +226,7 @@ public class SimpleJIT {
             long tPtr = loadLibrary0(mLibPath);
             mLibHandle = new JITLibHandle(this, tPtr, mCacheLib?null:mLibDir);
         }
-        public Method findMethod(CharSequence aMethodName) throws JITException {
+        @Override public Method findMethod(CharSequence aMethodName) throws JITException {
             if (mDead) throw new RuntimeException("this JIT engine is dead");
             if (mLibHandle==null) throw new IllegalStateException("Require compile() first.");
             if (mLibHandle.isNull()) throw new NullPointerException();
@@ -244,7 +238,7 @@ public class SimpleJIT {
             mDead = true;
             if (mLibHandle!=null) mLibHandle.dispose();
         }
-        public boolean isShutdown() {return mDead;}
+        @Override public boolean isShutdown() {return mDead;}
         
         
         private void validLibCache_() {
@@ -327,9 +321,9 @@ public class SimpleJIT {
             String tWorkingDirName = "build-jit@"+UT.Code.randID() + "/";
             String tWorkingDir = JAR_DIR + tWorkingDirName;
             // 判断路径是否存在非法字符，如果存在则改为到用户目录编译
-            if (JNIUtil.containsAnyInvalidChar_(tWorkingDir)) {
+            if (JNIUtil.containsAnyInvalidChar(tWorkingDir)) {
                 String tWorkingDir2 = USER_HOME_DIR + tWorkingDirName;
-                if (!JNIUtil.containsAnyInvalidChar_(tWorkingDir2)) {
+                if (!JNIUtil.containsAnyInvalidChar(tWorkingDir2)) {
                     tWorkingDir = tWorkingDir2;
                 } else {
                     System.err.println(IO.Text.yellow("JIT INIT WARNING:")+" Build directory ("+tWorkingDir+") contains inappropriate characters, build may fail.");
@@ -341,7 +335,7 @@ public class SimpleJIT {
             // 初始化工作目录，优先尝试自定义的 mSrcDirIniter
             String tSrcDir;
             if (mSrcDirIniter!=null) {
-                tSrcDir = mSrcDirIniter.init(tWorkingDir);
+                tSrcDir = mSrcDirIniter.init(tWorkingDir, this);
             } else
             if (mSrc!=null) {
                 // 直接从字符串源码构建，这里需要各种配套

@@ -1,4 +1,4 @@
-package jse.clib;
+package jse.jit;
 
 public final class JITException extends Exception {
     public JITException(String aMessage) {

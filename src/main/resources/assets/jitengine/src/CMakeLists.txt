@@ -9,7 +9,7 @@ endif()
 
 
 set(SOURCE_FILES
-    jse_clib_SimpleJIT.c)
+    jse_jit_SimpleJIT.c)
 add_library(jitengine SHARED ${SOURCE_FILES})
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")

@@ -138,7 +138,8 @@ public class JNIUtil {
     
     private final static String BUILD_DIR_NAME = IS_WINDOWS ? "build-win" : (IS_MAC ? "build-mac" : "build");
     private final static Pattern BUILD_DIR_INVALID_NAME = Pattern.compile("[^a-zA-Z0-9_\\-./\\\\@!#$%^&*()+=]");
-    static boolean containsAnyInvalidChar_(String aDir) {
+    @ApiStatus.Internal
+    public static boolean containsAnyInvalidChar(String aDir) {
         if (IS_WINDOWS && IO.isAbsolutePath(aDir)) {
             aDir = aDir.substring(2);
         }
@@ -272,9 +273,9 @@ public class JNIUtil {
             String tWorkingDirName = "build-"+ mProjectName +"@"+UT.Code.randID() + "/";
             String tWorkingDir = JAR_DIR + tWorkingDirName;
             // 判断路径是否存在非法字符，如果存在则改为到用户目录编译
-            if (containsAnyInvalidChar_(tWorkingDir)) {
+            if (containsAnyInvalidChar(tWorkingDir)) {
                 String tWorkingDir2 = USER_HOME_DIR + tWorkingDirName;
-                if (!containsAnyInvalidChar_(tWorkingDir2)) {
+                if (!containsAnyInvalidChar(tWorkingDir2)) {
                     tWorkingDir = tWorkingDir2;
                 } else {
                     System.err.println(IO.Text.yellow(mInfoProjectName +" INIT WARNING:")+" Build directory ("+tWorkingDir+") contains inappropriate characters, build may fail.");

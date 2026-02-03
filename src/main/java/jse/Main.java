@@ -296,7 +296,7 @@ public class Main {
                 jse.code.SP.Python.InitHelper.init();
                 jse.parallel.MPI.InitHelper.init();
                 jse.lmp.LmpPlugin.InitHelper.init();
-                jse.clib.SimpleJIT.InitHelper.init();
+                jse.jit.SimpleJIT.InitHelper.init();
                 jsex.nnap.PairNNAP.InitHelper.init();
                 return 0;
             }

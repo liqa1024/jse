@@ -1,5 +1,5 @@
-#include "jse_clib_SimpleJIT.h"
-#include "jse_clib_JITLibHandle.h"
+#include "jse_jit_SimpleJIT.h"
+#include "jse_jit_JITLibHandle.h"
 
 #if defined(WIN32) || defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
@@ -12,7 +12,7 @@
 typedef int (*plugin_method_t)(void *, void *);
 
 static inline void throwExceptionJIT(JNIEnv *aEnv, const char *aErrStr) {
-    const char *tClazzName = "jse/clib/JITException";
+    const char *tClazzName = "jse/jit/JITException";
     const char *tInitSig = "(Ljava/lang/String;)V";
     // find class runtime due to asm
     jclass tClazz = (*aEnv)->FindClass(aEnv, tClazzName);
@@ -33,7 +33,7 @@ static inline void throwExceptionJIT(JNIEnv *aEnv, const char *aErrStr) {
     (*aEnv)->DeleteLocalRef(aEnv, tClazz);
 }
 static inline void throwExceptionJITCode(JNIEnv *aEnv, jint aErrCode, const char *aErrStr) {
-    const char *tClazzName = "jse/clib/JITException";
+    const char *tClazzName = "jse/jit/JITException";
     const char *tInitSig = "(ILjava/lang/String;)V";
     // find class runtime due to asm
     jclass tClazz = (*aEnv)->FindClass(aEnv, tClazzName);
@@ -55,7 +55,7 @@ static inline void throwExceptionJITCode(JNIEnv *aEnv, jint aErrCode, const char
 }
 
 
-JNIEXPORT jlong JNICALL Java_jse_clib_SimpleJIT_loadLibrary0(JNIEnv *aEnv, jclass aClazz, jstring aLibPath) {
+JNIEXPORT jlong JNICALL Java_jse_jit_SimpleJIT_loadLibrary0(JNIEnv *aEnv, jclass aClazz, jstring aLibPath) {
 #if defined(WIN32) || defined(_WIN64) || defined(_WIN32)
     const jchar *tLibPath = (*aEnv)->GetStringChars(aEnv, aLibPath, NULL);
     if (!tLibPath) return 0; // OOM
@@ -80,7 +80,7 @@ JNIEXPORT jlong JNICALL Java_jse_clib_SimpleJIT_loadLibrary0(JNIEnv *aEnv, jclas
 #endif
 }
 
-JNIEXPORT void JNICALL Java_jse_clib_JITLibHandle_freeLibrary0(JNIEnv *aEnv, jclass aClazz, jlong aLibHandle) {
+JNIEXPORT void JNICALL Java_jse_jit_JITLibHandle_freeLibrary0(JNIEnv *aEnv, jclass aClazz, jlong aLibHandle) {
 #if defined(WIN32) || defined(_WIN64) || defined(_WIN32)
     FreeLibrary((HMODULE)(intptr_t)aLibHandle);
 #else
@@ -88,7 +88,7 @@ JNIEXPORT void JNICALL Java_jse_clib_JITLibHandle_freeLibrary0(JNIEnv *aEnv, jcl
 #endif
 }
 
-JNIEXPORT jlong JNICALL Java_jse_clib_SimpleJIT_findMethod0(JNIEnv *aEnv, jclass aClazz, jlong aLibHandle, jstring aMethodName) {
+JNIEXPORT jlong JNICALL Java_jse_jit_SimpleJIT_findMethod0(JNIEnv *aEnv, jclass aClazz, jlong aLibHandle, jstring aMethodName) {
 #if defined(WIN32) || defined(_WIN64) || defined(_WIN32)
     const char *tMethodName = (*aEnv)->GetStringUTFChars(aEnv, aMethodName, NULL);
     if (!tMethodName) return 0; // OOM
@@ -113,7 +113,7 @@ JNIEXPORT jlong JNICALL Java_jse_clib_SimpleJIT_findMethod0(JNIEnv *aEnv, jclass
 #endif
 }
 
-JNIEXPORT jint JNICALL Java_jse_clib_SimpleJIT_invokeMethod0(JNIEnv *aEnv, jclass aClazz, jlong aMethodPtr, jlong aInPtr, jlong aOutPtr) {
+JNIEXPORT jint JNICALL Java_jse_jit_SimpleJIT_invokeMethod0(JNIEnv *aEnv, jclass aClazz, jlong aMethodPtr, jlong aInPtr, jlong aOutPtr) {
     plugin_method_t tMethod = (plugin_method_t)(intptr_t)aMethodPtr;
     return (jint)tMethod((void *)(intptr_t)aInPtr, (void *)(intptr_t)aOutPtr);
 }

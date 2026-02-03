@@ -10,6 +10,9 @@ import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.code.collection.NewCollections;
 import jse.code.functional.IUnaryFullOperator;
+import jse.jit.IJITEngine;
+import jse.jit.IJITMethod;
+import jse.jit.SimpleJIT;
 import jse.math.vector.IVector;
 import jse.math.vector.Vectors;
 import jse.cptr.*;
@@ -58,7 +61,7 @@ public class NNAP2 implements IPairPotential {
          * 自定义构建 nnap 时的优化等级，
          * 默认会使用 BASE 优化
          */
-        public static int OPTIM_LEVEL = OS.envI("JSE_NNAP_OPTIM_LEVEL", SimpleJIT.OPTIM_BASE);
+        public static int OPTIM_LEVEL = OS.envI("JSE_NNAP_OPTIM_LEVEL", IJITEngine.OPTIM_BASE);
         /**
          * 设置 lammps 会使用的近邻列表数目大小限制，默认为 2000
          */
@@ -98,8 +101,8 @@ public class NNAP2 implements IPairPotential {
     public String precision() {return mSinglePrecision ? "single" : "double";}
     // jit stuffs
     private static final String NAME_CAL_ENERGY = "jse_nnap_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nnap_calEnergyForce", NAME_COMPUTE_LAMMPS = "jse_nnap_computeLammps";
-    private final SimpleJIT.Engine mEngine;
-    private final SimpleJIT.Method mCalEnergy, mCalEnergyForce, mComputeLammps;
+    private final IJITEngine mEngine;
+    private final IJITMethod mCalEnergy, mCalEnergyForce, mComputeLammps;
     // 现在所有数据都改为 c 指针
     private final NestedCPointer mDataIn, mDataOut;
     private final IntCPointer mInNums;
@@ -252,16 +255,15 @@ public class NNAP2 implements IPairPotential {
         String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, tGenMap, NNAP2.VERSION, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING);
         mEngine = SimpleJIT.engine().setLibDir(aLibDir).setProjectName(aProjectName+"_"+tUniqueID)
             .setOptimLevel(Conf.OPTIM_LEVEL).setCmakeSettings(Conf.CMAKE_SETTING)
-            .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_FLAGS);
-        // 源码处理完全重写，直接使用现有项目，并进行代码生成
-        mEngine.setSrcDirIniter(wd -> {
-            for (String tName : SRC_NAME) {
-                codeGen_(IO.getResource("nnap2/src/"+tName), wd+tName, tGenMap);
-            }
-            // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
-            mEngine.writeCmakeFile(wd, INTERFACE_NAME);
-            return wd;
-        });
+            .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_FLAGS)
+            .setSrcDirIniter((wd, engine) -> {
+                for (String tName : SRC_NAME) {
+                    codeGen_(IO.getResource("nnap2/src/"+tName), wd+tName, tGenMap);
+                }
+                // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
+                engine.writeCmakeFile(wd, INTERFACE_NAME);
+                return wd;
+            });
         mEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_COMPUTE_LAMMPS).compile();
         mCalEnergy = mEngine.findMethod(NAME_CAL_ENERGY);
         mCalEnergyForce = mEngine.findMethod(NAME_CAL_ENERGYFORCE);

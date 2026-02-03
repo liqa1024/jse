@@ -1,4 +1,4 @@
-package jse.clib;
+package jse.jit;
 
 import jse.code.IO;
 import jse.code.ReferenceChecker;
