@@ -69,6 +69,15 @@ public class NestedCPointer extends CPointer {
         return new DoubleCPointer(get_(mPtr));
     }
     /**
+     * 对此指针解引用，获取内部值，并转换成 float 指针，即对应 c 中的 {@code (float *)*ptr}
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
+    public FloatCPointer getAsFloatCPointer() {
+        if (isNull()) throw new NullPointerException();
+        return new FloatCPointer(get_(mPtr));
+    }
+    /**
      * 对此指针解引用，获取内部值，并转换成 int 指针，即对应 c 中的 {@code (int *)*ptr}
      * @return 此指针对应的值
      */
@@ -107,6 +116,16 @@ public class NestedCPointer extends CPointer {
     public DoubleCPointer getAsDoubleCPointerAt(int aIdx) {
         if (isNull()) throw new NullPointerException();
         return new DoubleCPointer(getAt_(mPtr, aIdx));
+    }
+    /**
+     * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 float 指针，即对应 c 中的 {@code (float *)ptr[aIdx]}
+     * @param aIdx 需要获取的索引位置
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public FloatCPointer getAsFloatCPointerAt(int aIdx) {
+        if (isNull()) throw new NullPointerException();
+        return new FloatCPointer(getAt_(mPtr, aIdx));
     }
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 int 指针，即对应 c 中的 {@code (int *)ptr[aIdx]}

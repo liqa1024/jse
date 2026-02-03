@@ -225,6 +225,12 @@ public class CPointer implements ICPointer {
      */
     public DoubleCPointer asDoubleCPointer() {return new DoubleCPointer(mPtr);}
     /**
+     * 将此对象转换成一个单精度浮点的 c 指针 {@link FloatCPointer}，类似在 c
+     * 中使用 {@code (float *)ptr} 来进行强制类型转换
+     * @return 双精度浮点的 c 指针包装类
+     */
+    public FloatCPointer asFloatCPointer() {return new FloatCPointer(mPtr);}
+    /**
      * 将此对象转换成一个嵌套指针的 c 指针 {@link NestedCPointer}，类似在 c
      * 中使用 {@code (void **)ptr} 来进行强制类型转换
      * @return 嵌套指针的 c 指针包装类
@@ -237,11 +243,17 @@ public class CPointer implements ICPointer {
      */
     public NestedIntCPointer asNestedIntCPointer() {return new NestedIntCPointer(mPtr);}
     /**
-     * 将此对象转换成一个嵌套双精度浮点指针的 c 指针 {@link DoubleCPointer}，类似在 c
+     * 将此对象转换成一个嵌套双精度浮点指针的 c 指针 {@link NestedDoubleCPointer}，类似在 c
      * 中使用 {@code (double **)ptr} 来进行强制类型转换
      * @return 嵌套双精度浮点指针的 c 指针包装类
      */
     public NestedDoubleCPointer asNestedDoubleCPointer() {return new NestedDoubleCPointer(mPtr);}
+    /**
+     * 将此对象转换成一个嵌套单精度浮点的 c 指针 {@link NestedFloatCPointer}，类似在 c
+     * 中使用 {@code (float **)ptr} 来进行强制类型转换
+     * @return 嵌套双精度浮点的 c 指针包装类
+     */
+    public NestedFloatCPointer asNestedFloatCPointer() {return new NestedFloatCPointer(mPtr);}
     
     static void rangeCheck(int jArraySize, int aCount) {
         if (aCount > jArraySize) throw new IndexOutOfBoundsException(aCount+" > "+jArraySize);
