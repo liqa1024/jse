@@ -1,5 +1,9 @@
-package jse.clib;
+package jse.cptr;
 
+import jse.clib.Compiler;
+import jse.clib.JNIUtil;
+import jse.clib.MiMalloc;
+import jse.clib.UnsafeJNI;
 import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;
@@ -45,7 +49,7 @@ public class CPointer implements ICPointer {
          * <p>
          * 也可使用环境变量 {@code JSE_CMAKE_C_COMPILER_CPOINTER} 来设置
          */
-        public static @Nullable String CMAKE_C_COMPILER   = OS.env("JSE_CMAKE_C_COMPILER_CPOINTER"  , jse.code.Conf.CMAKE_C_COMPILER);
+        public static @Nullable String CMAKE_C_COMPILER = OS.env("JSE_CMAKE_C_COMPILER_CPOINTER", jse.code.Conf.CMAKE_C_COMPILER);
         /**
          * 自定义构建 cpointer 时使用的编译器，
          * cmake 有时不能自动检测到希望使用的编译器
@@ -59,14 +63,14 @@ public class CPointer implements ICPointer {
          * <p>
          * 也可使用环境变量 {@code JSE_CMAKE_C_FLAGS_CPOINTER} 来设置
          */
-        public static @Nullable String CMAKE_C_FLAGS      = OS.env("JSE_CMAKE_C_FLAGS_CPOINTER"     , jse.code.Conf.CMAKE_C_FLAGS);
+        public static @Nullable String CMAKE_C_FLAGS = OS.env("JSE_CMAKE_C_FLAGS_CPOINTER", jse.code.Conf.CMAKE_C_FLAGS);
         /**
          * 自定义构建 cpointer 时使用的编译器，
          * cmake 有时不能自动检测到希望使用的编译器
          * <p>
          * 也可使用环境变量 {@code JSE_CMAKE_CXX_FLAGS_CPOINTER} 来设置
          */
-        public static @Nullable String CMAKE_CXX_FLAGS    = OS.env("JSE_CMAKE_CXX_FLAGS_CPOINTER"   , jse.code.Conf.CMAKE_CXX_FLAGS);
+        public static @Nullable String CMAKE_CXX_FLAGS = OS.env("JSE_CMAKE_CXX_FLAGS_CPOINTER", jse.code.Conf.CMAKE_CXX_FLAGS);
         
         /**
          * 对于 cpointer，是否使用 {@link MiMalloc} 来加速 c 的内存分配，
@@ -82,20 +86,22 @@ public class CPointer implements ICPointer {
     /** 当前 {@link CPointer} JNI 库的路径 */
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
-          "jse_clib_CPointer.c"
-        , "jse_clib_CPointer.h"
-        , "jse_clib_IntCPointer.c"
-        , "jse_clib_IntCPointer.h"
-        , "jse_clib_DoubleCPointer.c"
-        , "jse_clib_DoubleCPointer.h"
-        , "jse_clib_FloatCPointer.c"
-        , "jse_clib_FloatCPointer.h"
-        , "jse_clib_NestedCPointer.c"
-        , "jse_clib_NestedCPointer.h"
-        , "jse_clib_NestedIntCPointer.c"
-        , "jse_clib_NestedIntCPointer.h"
-        , "jse_clib_NestedDoubleCPointer.c"
-        , "jse_clib_NestedDoubleCPointer.h"
+          "jse_cptr_CPointer.c"
+        , "jse_cptr_CPointer.h"
+        , "jse_cptr_IntCPointer.c"
+        , "jse_cptr_IntCPointer.h"
+        , "jse_cptr_DoubleCPointer.c"
+        , "jse_cptr_DoubleCPointer.h"
+        , "jse_cptr_FloatCPointer.c"
+        , "jse_cptr_FloatCPointer.h"
+        , "jse_cptr_NestedCPointer.c"
+        , "jse_cptr_NestedCPointer.h"
+        , "jse_cptr_NestedIntCPointer.c"
+        , "jse_cptr_NestedIntCPointer.h"
+        , "jse_cptr_NestedDoubleCPointer.c"
+        , "jse_cptr_NestedDoubleCPointer.h"
+        , "jse_cptr_NestedFloatCPointer.c"
+        , "jse_cptr_NestedFloatCPointer.h"
     };
     public final static ICPointer NULL = new ICPointer() {
         @Override public long ptr_() {return 0;}
@@ -134,6 +140,7 @@ public class CPointer implements ICPointer {
      * @param aCount 需要分配的内存大小
      * @return 创建的 c 指针对象
      */
+    @UnsafeJNI("Manual free required")
     public static CPointer malloc(int aCount) {
         return new CPointer(malloc_(aCount, 1));
     }
@@ -147,6 +154,7 @@ public class CPointer implements ICPointer {
      * @param aCount 需要分配的内存大小
      * @return 创建的 c 指针对象
      */
+    @UnsafeJNI("Manual free required")
     public static CPointer calloc(int aCount) {
         return new CPointer(calloc_(aCount, 1));
     }
@@ -159,6 +167,7 @@ public class CPointer implements ICPointer {
      *
      * @throws IllegalStateException 如果此 c 指针是空指针
      */
+    @UnsafeJNI("Free wild pointer will directly result in JVM SIGSEGV")
     public void free() {
         if (isNull()) throw new IllegalStateException("Cannot free a NULL pointer");
         free_(mPtr);
@@ -196,6 +205,7 @@ public class CPointer implements ICPointer {
      * @param rDest 需要拷贝的目标 c 指针
      * @param aCount 需要拷贝的数据长度
      */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void memcpy(CPointer rDest, int aCount) {
         if (isNull() || rDest.isNull()) throw new NullPointerException();
         memcpy_(mPtr, rDest.mPtr, aCount);

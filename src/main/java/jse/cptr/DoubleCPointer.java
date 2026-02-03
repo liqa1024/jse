@@ -1,5 +1,7 @@
-package jse.clib;
+package jse.cptr;
 
+import jse.clib.MiMalloc;
+import jse.clib.UnsafeJNI;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.math.IDataShell;
 import jse.math.vector.AbstractVector;
@@ -32,6 +34,7 @@ public class DoubleCPointer extends CPointer {
      * @param aCount 需要分配的数组长度，即等价于 {@code malloc(aCount*sizeof(double))}
      * @return 创建的双精度浮点 c 指针对象
      */
+    @UnsafeJNI("Manual free required")
     public static DoubleCPointer malloc(int aCount) {
         return new DoubleCPointer(malloc_(aCount, TYPE_SIZE));
     }
@@ -43,6 +46,7 @@ public class DoubleCPointer extends CPointer {
      * @param aCount 需要分配的数组长度，即等价于 {@code calloc(aCount, sizeof(double))}
      * @return 创建的双精度浮点 c 指针对象
      */
+    @UnsafeJNI("Manual free required")
     public static DoubleCPointer calloc(int aCount) {
         return new DoubleCPointer(calloc_(aCount, TYPE_SIZE));
     }
@@ -58,6 +62,7 @@ public class DoubleCPointer extends CPointer {
      * @param aData 输入的 {@code IDataShell<double[]>} 数据
      * @see IDataShell
      */
+    @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void fill(IDataShell<double[]> aData) {
         if (isNull()) throw new NullPointerException();
         fill0(mPtr, aData.internalDataWithLengthCheck(), aData.internalDataShift(), aData.internalDataSize());
@@ -71,6 +76,7 @@ public class DoubleCPointer extends CPointer {
      * @param aStart 需要读取的 aData 开始的索引
      * @param aCount 需要读取的 aData 的长度
      */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(double[] aData, int aStart, int aCount) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(aData.length, aStart+aCount);
@@ -85,6 +91,7 @@ public class DoubleCPointer extends CPointer {
      * @param aValue 需要填充的数值
      * @param aCount 需要读取的 aData 的长度
      */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(double aValue, int aCount) {
         if (isNull()) throw new NullPointerException();
         fill1(mPtr, aValue, aCount);
@@ -98,6 +105,7 @@ public class DoubleCPointer extends CPointer {
      * @param aData 输入的任意 c 指针数据
      * @param aCount 需要读取的 aData 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(CPointer aData, int aCount) {
         aData.memcpy(this, aCount*TYPE_SIZE);
     }
@@ -110,6 +118,7 @@ public class DoubleCPointer extends CPointer {
      * @param rDest 需要写入的 {@code IDataShell<double[]>}
      * @see IDataShell
      */
+    @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void parse2dest(IDataShell<double[]> rDest) {
         if (isNull()) throw new NullPointerException();
         parse2dest_(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
@@ -123,6 +132,7 @@ public class DoubleCPointer extends CPointer {
      * @param aStart 需要写入的 rDest 开始的索引
      * @param aCount 需要写入的 rDest 的长度
      */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void parse2dest(double[] rDest, int aStart, int aCount) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart+aCount);
@@ -135,6 +145,7 @@ public class DoubleCPointer extends CPointer {
      * 对此指针解引用，获取内部数值，即对应 c 中的 {@code *ptr}
      * @return 此指针对应的数值
      */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public double get() {
         if (isNull()) throw new NullPointerException();
         return get_(mPtr);
@@ -146,6 +157,7 @@ public class DoubleCPointer extends CPointer {
      * @param aIdx 需要获取的索引位置
      * @return 此索引对应的数值
      */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public double getAt(int aIdx) {
         if (isNull()) throw new NullPointerException();
         return getAt_(mPtr, aIdx);
@@ -156,6 +168,7 @@ public class DoubleCPointer extends CPointer {
      * 设置此指针对应的数值，即对应 c 中的 {@code *ptr = aValue}
      * @param aValue 需要设置的数值
      */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public void set(double aValue) {
         if (isNull()) throw new NullPointerException();
         set_(mPtr, aValue);
@@ -167,6 +180,7 @@ public class DoubleCPointer extends CPointer {
      * @param aIdx 需要设置的索引位置
      * @param aValue 需要设置的数值
      */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public void putAt(int aIdx, double aValue) {
         if (isNull()) throw new NullPointerException();
         putAt_(mPtr, aIdx, aValue);
@@ -243,6 +257,7 @@ public class DoubleCPointer extends CPointer {
      * @return 转换后的向量
      * @see IVector
      */
+    @UnsafeJNI("Invalid input size may result in JVM SIGSEGV")
     public IVector asVec(final int aSize) {
         return new RefVector() {
             @Override public double get(int aIdx) {AbstractVector.rangeCheck(aIdx, aSize); return DoubleCPointer.this.getAt(aIdx);}
@@ -256,6 +271,7 @@ public class DoubleCPointer extends CPointer {
      * @return 转换后的列表
      * @see List
      */
+    @UnsafeJNI("Invalid input size may result in JVM SIGSEGV")
     public List<Double> asList(final int aSize) {
         return new AbstractRandomAccessList<Double>() {
             @Override public Double get(int index) {

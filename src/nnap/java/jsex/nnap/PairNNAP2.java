@@ -1,6 +1,10 @@
 package jsex.nnap;
 
 import jse.clib.*;
+import jse.cptr.DoubleCPointer;
+import jse.cptr.GrowableIntCPointer;
+import jse.cptr.IntCPointer;
+import jse.cptr.NestedCPointer;
 import jse.lmp.LmpPlugin;
 
 /**

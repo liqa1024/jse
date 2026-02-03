@@ -2,6 +2,10 @@ package jse.parallel;
 
 import jse.cache.ByteArrayCache;
 import jse.clib.*;
+import jse.cptr.DoubleCPointer;
+import jse.cptr.FloatCPointer;
+import jse.cptr.ICPointer;
+import jse.cptr.IntCPointer;
 import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;

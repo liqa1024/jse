@@ -10,13 +10,14 @@ endif()
 
 
 set(SOURCE_FILES
-    jse_clib_CPointer.c
-    jse_clib_IntCPointer.c
-    jse_clib_DoubleCPointer.c
-    jse_clib_FloatCPointer.c
-    jse_clib_NestedCPointer.c
-    jse_clib_NestedIntCPointer.c
-    jse_clib_NestedDoubleCPointer.c)
+    jse_cptr_CPointer.c
+    jse_cptr_IntCPointer.c
+    jse_cptr_DoubleCPointer.c
+    jse_cptr_FloatCPointer.c
+    jse_cptr_NestedCPointer.c
+    jse_cptr_NestedIntCPointer.c
+    jse_cptr_NestedDoubleCPointer.c
+    jse_cptr_NestedFloatCPointer.c)
 add_library(cpointer SHARED ${SOURCE_FILES})
 
 option(JSE_USE_CXX "Use CXX compiler" OFF)

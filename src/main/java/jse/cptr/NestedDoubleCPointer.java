@@ -1,5 +1,7 @@
-package jse.clib;
+package jse.cptr;
 
+import jse.clib.MiMalloc;
+import jse.clib.UnsafeJNI;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.math.IDataShell;
 import jse.math.matrix.AbstractMatrix;
@@ -33,6 +35,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @param aCount 需要分配的数组长度，即等价于 {@code malloc(aCount*sizeof(double *))}
      * @return 创建的嵌套指针的 c 指针对象
      */
+    @UnsafeJNI("Manual free required")
     public static NestedDoubleCPointer malloc(int aCount) {
         return new NestedDoubleCPointer(malloc_(aCount, TYPE_SIZE));
     }
@@ -44,6 +47,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @param aCount 需要分配的数组长度，即等价于 {@code calloc(aCount, sizeof(double *))}
      * @return 创建的嵌套指针的 c 指针对象
      */
+    @UnsafeJNI("Manual free required")
     public static NestedDoubleCPointer calloc(int aCount) {
         return new NestedDoubleCPointer(calloc_(aCount, TYPE_SIZE));
     }
@@ -57,6 +61,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @param aData 输入的 {@link RowMatrix} 数据
      * @see RowMatrix
      */
+    @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void fill(RowMatrix aData) {
         fill(aData, aData.rowNumber(), aData.columnNumber());
     }
@@ -71,6 +76,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @param aColNum 需要读取的 aData 的列数
      * @see IDataShell
      */
+    @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
     public void fill(IDataShell<double[]> aData, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
         fill0(mPtr, aData.internalDataWithLengthCheck(aRowNum*aColNum), aData.internalDataShift(), aRowNum, aColNum);
@@ -86,6 +92,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @param aRowNum 需要读取的 aData 的行数
      * @param aColNum 需要读取的 aData 的列数
      */
+    @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
     public void fill(double[] aData, int aStart, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(aData.length, aStart + aRowNum*aColNum);
@@ -101,6 +108,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @param aValue 需要填充的数值
      * @param aColNum 需要读取的 aData 的列数
      */
+    @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
     public void fill(double aValue, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
         fill1(mPtr, aValue, aRowNum, aColNum);
@@ -116,7 +124,10 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @param rDest 需要写入的 {@link RowMatrix}
      * @see RowMatrix
      */
-    public void parse2dest(RowMatrix rDest) {parse2dest(rDest, rDest.rowNumber(), rDest.columnNumber());}
+    @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
+    public void parse2dest(RowMatrix rDest) {
+        parse2dest(rDest, rDest.rowNumber(), rDest.columnNumber());
+    }
     /**
      * 将此嵌套 c 指针对应的内存数值写入 jse 的 {@code IDataShell<double[]>} 中，认为数据按行排列且每个内部的
      * double 指针对应的长度一致
@@ -128,6 +139,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @param aColNum 需要写入的 rDest 的列数
      * @see IDataShell
      */
+    @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
     public void parse2dest(IDataShell<double[]> rDest, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
         parse2dest_(mPtr, rDest.internalDataWithLengthCheck(aRowNum*aColNum), rDest.internalDataShift(), aRowNum, aColNum);
@@ -143,6 +155,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @param aRowNum 需要写入的 rDest 的行数
      * @param aColNum 需要写入的 rDest 的列数
      */
+    @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
     public void parse2dest(double[] rDest, int aStart, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart + aRowNum*aColNum);
@@ -155,6 +168,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * {@inheritDoc}
      * @return {@inheritDoc}
      */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     @Override public DoubleCPointer get() {
         if (isNull()) throw new NullPointerException();
         return new DoubleCPointer(get_(mPtr));
@@ -164,6 +178,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @param aIdx {@inheritDoc}
      * @return {@inheritDoc}
      */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     @Override public DoubleCPointer getAt(int aIdx) {
         if (isNull()) throw new NullPointerException();
         return new DoubleCPointer(getAt_(mPtr, aIdx));
@@ -174,6 +189,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @param aCol 需要获取的列
      * @return 此指针对应的值
      */
+    @UnsafeJNI("Invalid input row/col may directly result in JVM SIGSEGV")
     public double getAt(int aRow, int aCol) {
         if (isNull()) throw new NullPointerException();
         return getAt_(mPtr, aRow, aCol);
@@ -186,6 +202,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @param aCol 需要设置的列
      * @param aValue 需要设置的值
      */
+    @UnsafeJNI("Invalid input row/col may directly result in JVM SIGSEGV")
     public void putAt(int aRow, int aCol, double aValue) {
         if (isNull()) throw new NullPointerException();
         putAt_(mPtr, aRow, aCol, aValue);
@@ -226,6 +243,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @return 转换后的矩阵
      * @see IMatrix
      */
+    @UnsafeJNI("Invalid input nrows/ncols may result in JVM SIGSEGV")
     public IMatrix asMat(final int aRowNum, final int aColNum) {
         return new RefMatrix() {
             @Override public double get(int aRow, int aCol) {
@@ -247,6 +265,7 @@ public class NestedDoubleCPointer extends NestedCPointer {
      * @param aSize {@inheritDoc}
      * @return {@inheritDoc}
      */
+    @UnsafeJNI("Invalid input size may result in JVM SIGSEGV")
     @Override public List<DoubleCPointer> asList(final int aSize) {
         return new AbstractRandomAccessList<DoubleCPointer>() {
             @Override public DoubleCPointer get(int index) {

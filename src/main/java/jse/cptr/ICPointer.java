@@ -1,4 +1,4 @@
-package jse.clib;
+package jse.cptr;
 
 import org.jetbrains.annotations.ApiStatus;
 

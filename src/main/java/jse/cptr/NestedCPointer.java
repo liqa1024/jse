@@ -1,5 +1,7 @@
-package jse.clib;
+package jse.cptr;
 
+import jse.clib.MiMalloc;
+import jse.clib.UnsafeJNI;
 import jse.code.collection.AbstractRandomAccessList;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -27,6 +29,7 @@ public class NestedCPointer extends CPointer {
      * @param aCount 需要分配的数组长度，即等价于 {@code malloc(aCount*sizeof(void *))}
      * @return 创建的嵌套指针的 c 指针对象
      */
+    @UnsafeJNI("Manual free required")
     public static NestedCPointer malloc(int aCount) {
         return new NestedCPointer(malloc_(aCount, TYPE_SIZE));
     }
@@ -38,6 +41,7 @@ public class NestedCPointer extends CPointer {
      * @param aCount 需要分配的数组长度，即等价于 {@code calloc(aCount, sizeof(void *))}
      * @return 创建的嵌套指针的 c 指针对象
      */
+    @UnsafeJNI("Manual free required")
     public static NestedCPointer calloc(int aCount) {
         return new NestedCPointer(calloc_(aCount, TYPE_SIZE));
     }
@@ -50,6 +54,7 @@ public class NestedCPointer extends CPointer {
      * 对此指针解引用，获取内部值，即对应 c 中的 {@code *ptr}
      * @return 此指针对应的值
      */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public CPointer get() {
         if (isNull()) throw new NullPointerException();
         return new CPointer(get_(mPtr));
@@ -58,6 +63,7 @@ public class NestedCPointer extends CPointer {
      * 对此指针解引用，获取内部值，并转换成 double 指针，即对应 c 中的 {@code (double *)*ptr}
      * @return 此指针对应的值
      */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public DoubleCPointer getAsDoubleCPointer() {
         if (isNull()) throw new NullPointerException();
         return new DoubleCPointer(get_(mPtr));
@@ -66,6 +72,7 @@ public class NestedCPointer extends CPointer {
      * 对此指针解引用，获取内部值，并转换成 int 指针，即对应 c 中的 {@code (int *)*ptr}
      * @return 此指针对应的值
      */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public IntCPointer getAsIntCPointer() {
         if (isNull()) throw new NullPointerException();
         return new IntCPointer(get_(mPtr));
@@ -74,6 +81,7 @@ public class NestedCPointer extends CPointer {
      * 对此指针解引用，获取内部值，并转换成嵌套指针，即对应 c 中的 {@code (void **)*ptr}
      * @return 此指针对应的值
      */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public NestedCPointer getAsNestedCPointer() {
         if (isNull()) throw new NullPointerException();
         return new NestedCPointer(get_(mPtr));
@@ -85,6 +93,7 @@ public class NestedCPointer extends CPointer {
      * @param aIdx 需要获取的索引位置
      * @return 此指针对应的值
      */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public CPointer getAt(int aIdx) {
         if (isNull()) throw new NullPointerException();
         return new CPointer(getAt_(mPtr, aIdx));
@@ -94,6 +103,7 @@ public class NestedCPointer extends CPointer {
      * @param aIdx 需要获取的索引位置
      * @return 此指针对应的值
      */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public DoubleCPointer getAsDoubleCPointerAt(int aIdx) {
         if (isNull()) throw new NullPointerException();
         return new DoubleCPointer(getAt_(mPtr, aIdx));
@@ -103,6 +113,7 @@ public class NestedCPointer extends CPointer {
      * @param aIdx 需要获取的索引位置
      * @return 此指针对应的值
      */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public IntCPointer getAsIntCPointerAt(int aIdx) {
         if (isNull()) throw new NullPointerException();
         return new IntCPointer(getAt_(mPtr, aIdx));
@@ -112,6 +123,7 @@ public class NestedCPointer extends CPointer {
      * @param aIdx 需要获取的索引位置
      * @return 此指针对应的值
      */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public NestedCPointer getAsNestedCPointerAt(int aIdx) {
         if (isNull()) throw new NullPointerException();
         return new NestedCPointer(getAt_(mPtr, aIdx));
@@ -122,6 +134,7 @@ public class NestedCPointer extends CPointer {
      * 设置此指针对应的值，即对应 c 中的 {@code *ptr = aValue}
      * @param aValue 需要设置的值
      */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public void set(@NotNull ICPointer aValue) {
         if (isNull()) throw new NullPointerException();
         set_(mPtr, aValue.ptr_());
@@ -133,6 +146,7 @@ public class NestedCPointer extends CPointer {
      * @param aIdx 需要设置的索引位置
      * @param aValue 需要设置的值
      */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public void putAt(int aIdx, @NotNull ICPointer aValue) {
         if (isNull()) throw new NullPointerException();
         putAt_(mPtr, aIdx, aValue.ptr_());
@@ -210,6 +224,7 @@ public class NestedCPointer extends CPointer {
      * @return 转换后的列表
      * @see List
      */
+    @UnsafeJNI("Invalid input size may result in JVM SIGSEGV")
     public List<? extends CPointer> asList(final int aSize) {
         return new AbstractRandomAccessList<CPointer>() {
             @Override public CPointer get(int index) {

@@ -1,5 +1,7 @@
-package jse.clib;
+package jse.cptr;
 
+import jse.clib.MiMalloc;
+import jse.clib.UnsafeJNI;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.math.IDataShell;
 import jse.math.matrix.AbstractMatrix;
@@ -33,6 +35,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @param aCount 需要分配的数组长度，即等价于 {@code malloc(aCount*sizeof(int *))}
      * @return 创建的嵌套指针的 c 指针对象
      */
+    @UnsafeJNI("Manual free required")
     public static NestedIntCPointer malloc(int aCount) {
         return new NestedIntCPointer(malloc_(aCount, TYPE_SIZE));
     }
@@ -44,6 +47,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @param aCount 需要分配的数组长度，即等价于 {@code calloc(aCount, sizeof(int *))}
      * @return 创建的嵌套指针的 c 指针对象
      */
+    @UnsafeJNI("Manual free required")
     public static NestedIntCPointer calloc(int aCount) {
         return new NestedIntCPointer(calloc_(aCount, TYPE_SIZE));
     }
@@ -57,6 +61,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @param aData 输入的 {@link RowIntMatrix} 数据
      * @see RowIntMatrix
      */
+    @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void fill(RowIntMatrix aData) {
         fill(aData, aData.rowNumber(), aData.columnNumber());
     }
@@ -71,6 +76,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @param aColNum 需要读取的 aData 的列数
      * @see IDataShell
      */
+    @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
     public void fill(IDataShell<int[]> aData, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
         fill0(mPtr, aData.internalDataWithLengthCheck(aRowNum*aColNum), aData.internalDataShift(), aRowNum, aColNum);
@@ -86,6 +92,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @param aRowNum 需要读取的 aData 的行数
      * @param aColNum 需要读取的 aData 的列数
      */
+    @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
     public void fill(int[] aData, int aStart, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(aData.length, aStart + aRowNum*aColNum);
@@ -101,6 +108,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @param aValue 需要填充的数值
      * @param aColNum 需要读取的 aData 的列数
      */
+    @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
     public void fill(int aValue, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
         fill1(mPtr, aValue, aRowNum, aColNum);
@@ -116,6 +124,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @param rDest 需要写入的 {@link RowIntMatrix}
      * @see RowIntMatrix
      */
+    @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void parse2dest(RowIntMatrix rDest) {parse2dest(rDest, rDest.rowNumber(), rDest.columnNumber());}
     /**
      * 将此嵌套 c 指针对应的内存数值写入 jse 的 {@code IDataShell<int[]>} 中，认为数据按行排列且每个内部的
@@ -128,6 +137,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @param aColNum 需要写入的 rDest 的列数
      * @see IDataShell
      */
+    @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
     public void parse2dest(IDataShell<int[]> rDest, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
         parse2dest_(mPtr, rDest.internalDataWithLengthCheck(aRowNum*aColNum), rDest.internalDataShift(), aRowNum, aColNum);
@@ -143,6 +153,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @param aRowNum 需要写入的 rDest 的行数
      * @param aColNum 需要写入的 rDest 的列数
      */
+    @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
     public void parse2dest(int[] rDest, int aStart, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart + aRowNum*aColNum);
@@ -155,6 +166,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * {@inheritDoc}
      * @return {@inheritDoc}
      */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     @Override public IntCPointer get() {
         if (isNull()) throw new NullPointerException();
         return new IntCPointer(get_(mPtr));
@@ -164,6 +176,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @param aIdx {@inheritDoc}
      * @return {@inheritDoc}
      */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     @Override public IntCPointer getAt(int aIdx) {
         if (isNull()) throw new NullPointerException();
         return new IntCPointer(getAt_(mPtr, aIdx));
@@ -174,6 +187,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @param aCol 需要获取的列
      * @return 此指针对应的值
      */
+    @UnsafeJNI("Invalid input row/col may directly result in JVM SIGSEGV")
     public int getAt(int aRow, int aCol) {
         if (isNull()) throw new NullPointerException();
         return getAt_(mPtr, aRow, aCol);
@@ -186,6 +200,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @param aCol 需要设置的列
      * @param aValue 需要设置的值
      */
+    @UnsafeJNI("Invalid input row/col may directly result in JVM SIGSEGV")
     public void putAt(int aRow, int aCol, int aValue) {
         if (isNull()) throw new NullPointerException();
         putAt_(mPtr, aRow, aCol, aValue);
@@ -226,6 +241,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @return 转换后的矩阵
      * @see IIntMatrix
      */
+    @UnsafeJNI("Invalid input nrows/ncols may result in JVM SIGSEGV")
     public IIntMatrix asMat(final int aRowNum, final int aColNum) {
         return new RefIntMatrix() {
             @Override public int get(int aRow, int aCol) {
@@ -247,6 +263,7 @@ public class NestedIntCPointer extends NestedCPointer {
      * @param aSize {@inheritDoc}
      * @return {@inheritDoc}
      */
+    @UnsafeJNI("Invalid input size may result in JVM SIGSEGV")
     @Override public List<IntCPointer> asList(final int aSize) {
         return new AbstractRandomAccessList<IntCPointer>() {
             @Override public IntCPointer get(int index) {

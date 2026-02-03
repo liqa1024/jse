@@ -12,6 +12,7 @@ import jse.code.collection.NewCollections;
 import jse.code.functional.IUnaryFullOperator;
 import jse.math.vector.IVector;
 import jse.math.vector.Vectors;
+import jse.cptr.*;
 import jsex.nnap.basis.Basis2;
 import jsex.nnap.nn.NeuralNetwork2;
 import org.apache.groovy.util.Maps;

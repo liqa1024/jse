@@ -9,6 +9,7 @@ import jse.cache.IntArrayCache;
 import jse.cache.IntMatrixCache;
 import jse.cache.MatrixCache;
 import jse.clib.*;
+import jse.cptr.CPointer;
 import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;

@@ -494,8 +494,6 @@ public class Main {
         aPrinter.println(IO.Text.green("    --jupyter      ")+"Install current jse to the jupyter kernel");
         aPrinter.println(IO.Text.green("    --jniclean     ")+"clean all jni libraries");
         aPrinter.println(IO.Text.green("    --jnibuild     ")+"Build all jni libraries (JEP, MPI, LMP, NNAP)");
-        aPrinter.println();
-        aPrinter.println("You can also using another scripting language such as MATLAB or Python with Py4J and import jse-*.jar");
     }
     private static void printHelp() {printHelp(System.out);}
 }

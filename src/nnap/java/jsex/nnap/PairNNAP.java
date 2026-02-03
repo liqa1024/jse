@@ -1,10 +1,10 @@
 package jsex.nnap;
 
 import jse.cache.*;
-import jse.clib.DoubleCPointer;
-import jse.clib.IntCPointer;
-import jse.clib.NestedDoubleCPointer;
-import jse.clib.NestedIntCPointer;
+import jse.cptr.DoubleCPointer;
+import jse.cptr.IntCPointer;
+import jse.cptr.NestedDoubleCPointer;
+import jse.cptr.NestedIntCPointer;
 import jse.code.collection.IntList;
 import jse.lmp.LmpPlugin;
 import jse.math.matrix.RowMatrix;

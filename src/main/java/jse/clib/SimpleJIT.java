@@ -1,5 +1,6 @@
 package jse.clib;
 
+import jse.cptr.ICPointer;
 import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;
