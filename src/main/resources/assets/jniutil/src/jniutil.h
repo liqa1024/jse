@@ -221,6 +221,7 @@ GEN_PARSE_ANY_TO_JANY(int64_t, jlong)
 GEN_PARSE_ANY_TO_JANY(double, jlong)
 GEN_PARSE_ANY_TO_JANY(int, jdouble)
 GEN_PARSE_ANY_TO_JANY(int64_t, jdouble)
+GEN_PARSE_ANY_TO_JANY(float, jdouble)
 
 static inline void parsedouble2jdoubleV(JNIEnv *aEnv, jdoubleArray rJArray, jsize aJStart, const double *aBuf, jsize aBStart, jsize aLen) {
     if (rJArray==NULL || aBuf==NULL) return;
@@ -232,8 +233,23 @@ static inline void parsedouble2jdoubleV(JNIEnv *aEnv, jdoubleArray rJArray, jsiz
     (*aEnv)->SetDoubleArrayRegion(aEnv, rJArray, aJStart, aLen, (aBuf+aBStart));
 #endif
 }
-static inline void parsedouble2jdouble(JNIEnv *aEnv, jdoubleArray rJArray, const double *aBuf, jsize aLen) {parsedouble2jdoubleV(aEnv, rJArray, 0, aBuf, 0, aLen);}
+static inline void parsedouble2jdouble(JNIEnv *aEnv, jdoubleArray rJArray, const double *aBuf, jsize aLen) {
+    parsedouble2jdoubleV(aEnv, rJArray, 0, aBuf, 0, aLen);
+}
 
+static inline void parsefloat2jfloatV(JNIEnv *aEnv, jfloatArray rJArray, jsize aJStart, const float *aBuf, jsize aBStart, jsize aLen) {
+    if (rJArray==NULL || aBuf==NULL) return;
+#ifdef __cplusplus
+    // jfloat is always float
+    aEnv->SetFloatArrayRegion(rJArray, aJStart, aLen, (aBuf+aBStart));
+#else
+    // jfloat is always float
+    (*aEnv)->SetFloatArrayRegion(aEnv, rJArray, aJStart, aLen, (aBuf+aBStart));
+#endif
+}
+static inline void parsefloat2jfloat(JNIEnv *aEnv, jfloatArray rJArray, const float *aBuf, jsize aLen) {
+    parsefloat2jfloatV(aEnv, rJArray, 0, aBuf, 0, aLen);
+}
 
 #undef GEN_PARSE_JANY_TO_ANY
 #ifdef __cplusplus
@@ -276,6 +292,7 @@ GEN_PARSE_JANY_TO_ANY(jlong, int64_t)
 GEN_PARSE_JANY_TO_ANY(jlong, double)
 GEN_PARSE_JANY_TO_ANY(jdouble, int)
 GEN_PARSE_JANY_TO_ANY(jdouble, int64_t)
+GEN_PARSE_JANY_TO_ANY(jdouble, float)
 
 static inline void parsejdouble2doubleV(JNIEnv *aEnv, jdoubleArray aJArray, jsize aJStart, double *rBuf, jsize aBStart, jsize aLen) {
     if (aJArray==NULL || rBuf==NULL) return;
@@ -287,7 +304,23 @@ static inline void parsejdouble2doubleV(JNIEnv *aEnv, jdoubleArray aJArray, jsiz
     (*aEnv)->GetDoubleArrayRegion(aEnv, aJArray, aJStart, aLen, (rBuf+aBStart));
 #endif
 }
-static inline void parsejdouble2double(JNIEnv *aEnv, jdoubleArray aJArray, double *rBuf, jsize aLen) {parsejdouble2doubleV(aEnv, aJArray, 0, rBuf, 0, aLen);}
+static inline void parsejdouble2double(JNIEnv *aEnv, jdoubleArray aJArray, double *rBuf, jsize aLen) {
+    parsejdouble2doubleV(aEnv, aJArray, 0, rBuf, 0, aLen);
+}
+
+static inline void parsejfloat2floatV(JNIEnv *aEnv, jfloatArray aJArray, jsize aJStart, float *rBuf, jsize aBStart, jsize aLen) {
+    if (aJArray==NULL || rBuf==NULL) return;
+#ifdef __cplusplus
+    // jfloat is always float
+    aEnv->GetFloatArrayRegion(aJArray, aJStart, aLen, (rBuf+aBStart));
+#else
+    // jfloat is always float
+    (*aEnv)->GetFloatArrayRegion(aEnv, aJArray, aJStart, aLen, (rBuf+aBStart));
+#endif
+}
+static inline void parsejfloat2float(JNIEnv *aEnv, jfloatArray aJArray, float *rBuf, jsize aLen) {
+    parsejfloat2floatV(aEnv, aJArray, 0, rBuf, 0, aLen);
+}
 
 
 #undef GEN_PARSE_ANY_TO_JANY_WITH_COUNT
@@ -460,8 +493,10 @@ GEN_PARSE_NESTED_ANY_TO_JANY(int64_t, jlong)
 GEN_PARSE_NESTED_ANY_TO_JANY(double, jlong)
 GEN_PARSE_NESTED_ANY_TO_JANY(int, jdouble)
 GEN_PARSE_NESTED_ANY_TO_JANY(int64_t, jdouble)
+GEN_PARSE_NESTED_ANY_TO_JANY(double, jfloat)
 GEN_PARSE_NESTED_ANY_TO_JANY(double, jdouble)
-
+GEN_PARSE_NESTED_ANY_TO_JANY(float, jfloat)
+GEN_PARSE_NESTED_ANY_TO_JANY(float, jdouble)
 
 #undef GEN_PARSE_JANY_TO_NESTED_ANY
 #ifdef __cplusplus
@@ -514,8 +549,10 @@ GEN_PARSE_JANY_TO_NESTED_ANY(jlong, int64_t)
 GEN_PARSE_JANY_TO_NESTED_ANY(jlong, double)
 GEN_PARSE_JANY_TO_NESTED_ANY(jdouble, int)
 GEN_PARSE_JANY_TO_NESTED_ANY(jdouble, int64_t)
+GEN_PARSE_JANY_TO_NESTED_ANY(jfloat, double)
 GEN_PARSE_JANY_TO_NESTED_ANY(jdouble, double)
-
+GEN_PARSE_JANY_TO_NESTED_ANY(jfloat, float)
+GEN_PARSE_JANY_TO_NESTED_ANY(jdouble, float)
 
 /** string stuffs */
 static inline char *parseStr(JNIEnv *aEnv, jstring aStr) {

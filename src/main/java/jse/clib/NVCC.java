@@ -7,17 +7,17 @@ import static jse.code.OS.EXEC;
 import static jse.code.OS.IS_WINDOWS;
 
 /**
- * 部分库需要的 MPI 支持，注意区分 {@link jse.parallel.MPI}
+ * 部分库需要的 NVCC 支持，注意区分 {@link jse.gpu.CudaCore}
  * 这里只进行系统库的检测和警告，不负责编译 jni
  * @author liqa
  */
-public class MPICore {
+public class NVCC {
     /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
     public final static class InitHelper {
         private static volatile boolean INITIALIZED = false;
-        /** @return {@link MPICore} 相关的参数是否已经初始化完成 */
+        /** @return {@link NVCC} 相关的参数是否已经初始化完成 */
         public static boolean initialized() {return INITIALIZED;}
-        /** 初始化 {@link MPICore} 相关的参数 */
+        /** 初始化 {@link NVCC} 相关的参数 */
         @SuppressWarnings({"ResultOfMethodCallIgnored", "UnnecessaryCallToStringValueOf"})
         public static void init() {
             // 手动调用此值来强制初始化
@@ -25,11 +25,11 @@ public class MPICore {
         }
     }
     
-    /** 自动检测到的 mpiexec 可执行路径 */
+    /** 自动检测到的 nvcc 可执行路径 */
     public final static String EXE_PATH;
     /** 拼接后可以执行的命令，对于 windows 和 linux 专门适配 */
     public final static String EXE_CMD;
-    /** 是否有自动检测到 mpiexec */
+    /** 是否有自动检测到 nvcc */
     public final static boolean VALID;
     
     
@@ -39,35 +39,26 @@ public class MPICore {
         if (!FIRST_PRINT) return;
         FIRST_PRINT = false;
         if (EXE_PATH!=null) {
-            System.out.printf(IO.Text.cyan("MPI INFO:")+" Use MPI in %s\n", EXE_PATH);
+            System.out.printf(IO.Text.cyan("CUDA INFO:")+" Use NVCC in %s\n", EXE_PATH);
         } else {
-            System.err.println(IO.Text.red("MPI INIT ERROR:")+" No MPI found,");
-            if (IS_WINDOWS) {
-                System.err.println("  For Windows, you can use MS-MPI: "+IO.Text.underline("https://www.microsoft.com/en-us/download/details.aspx?id=105289"));
-                System.err.println("  BOTH 'msmpisetup.exe' and 'msmpisdk.msi' are needed.");
-            } else {
-                System.err.println("  For Liunx/Mac, you can use OpenMPI: "+IO.Text.underline("https://www.open-mpi.org/"));
-                System.err.println("  For Ubuntu, you can use `sudo apt install libopenmpi-dev`");
-            }
+            System.err.println(IO.Text.red("CUDA INIT ERROR:")+" No NVCC found,");
+            System.err.println("  You can download from: "+IO.Text.underline("https://developer.nvidia.com/cuda-downloads"));
         }
     }
     
     private static @Nullable String getExePath_() {
-        // 检测环境变量的 mpiexec
+        // 检测环境变量的 nvcc
         EXEC.setNoSTDOutput().setNoERROutput();
-        boolean tNoMpi = EXEC.system("mpiexec --version") != 0;
-        if (tNoMpi) {
-            tNoMpi = EXEC.system("mpiexec -?") != 0;
-        }
+        boolean tNoCuda = EXEC.system("nvcc --version") != 0;
         EXEC.setNoSTDOutput(false).setNoERROutput(false);
-        if (tNoMpi) return null;
-        String tMpiPath;
+        if (tNoCuda) return null;
+        String tCudaPath;
         if (IS_WINDOWS) {
-            tMpiPath = EXEC.system_str("(Get-Command mpiexec).Path").get(0);
+            tCudaPath = EXEC.system_str("(Get-Command nvcc).Path").get(0);
         } else {
-            tMpiPath = EXEC.system_str("which mpiexec").get(0);
+            tCudaPath = EXEC.system_str("which nvcc").get(0);
         }
-        return IO.exists(tMpiPath) ? tMpiPath : null;
+        return IO.exists(tCudaPath) ? tCudaPath : null;
     }
     
     static {

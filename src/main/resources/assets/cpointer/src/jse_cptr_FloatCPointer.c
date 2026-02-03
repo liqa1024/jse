@@ -10,31 +10,6 @@
 extern "C" {
 #endif
 
-static inline void parsefloat2jfloatV(JNIEnv *aEnv, jfloatArray rJArray, jsize aJStart, const float *aBuf, jsize aBStart, jsize aLen) {
-    if (rJArray==NULL || aBuf==NULL) return;
-#ifdef __cplusplus
-    // jfloat is always float
-    aEnv->SetFloatArrayRegion(rJArray, aJStart, aLen, (aBuf+aBStart));
-#else
-    // jfloat is always float
-    (*aEnv)->SetFloatArrayRegion(aEnv, rJArray, aJStart, aLen, (aBuf+aBStart));
-#endif
-}
-static inline void parsejfloat2floatV(JNIEnv *aEnv, jfloatArray aJArray, jsize aJStart, float *rBuf, jsize aBStart, jsize aLen) {
-    if (aJArray==NULL || rBuf==NULL) return;
-#ifdef __cplusplus
-    // jfloat is always float
-    aEnv->GetFloatArrayRegion(aJArray, aJStart, aLen, (rBuf+aBStart));
-#else
-    // jfloat is always float
-    (*aEnv)->GetFloatArrayRegion(aEnv, aJArray, aJStart, aLen, (rBuf+aBStart));
-#endif
-}
-
-GEN_PARSE_ANY_TO_JANY(float, jdouble)
-GEN_PARSE_JANY_TO_ANY(jdouble, float)
-
-
 JNIEXPORT jint JNICALL Java_jse_cptr_FloatCPointer_typeSize_1(JNIEnv *aEnv, jclass aClazz) {
     return (jint)sizeof(float);
 }

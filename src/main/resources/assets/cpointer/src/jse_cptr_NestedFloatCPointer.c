@@ -10,11 +10,6 @@
 extern "C" {
 #endif
 
-GEN_PARSE_JANY_TO_NESTED_ANY(jfloat, float)
-GEN_PARSE_JANY_TO_NESTED_ANY(jdouble, float)
-GEN_PARSE_NESTED_ANY_TO_JANY(float, jfloat)
-GEN_PARSE_NESTED_ANY_TO_JANY(float, jdouble)
-
 JNIEXPORT void JNICALL Java_jse_cptr_NestedFloatCPointer_fill0(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jfloatArray aJArray, jint aStart, jint aRowNum, jint aColNum) {
     parsejfloat2nestedfloatV(aEnv, aJArray, aStart, (float **)(intptr_t)rPtr, 0, aRowNum, aColNum);
 }

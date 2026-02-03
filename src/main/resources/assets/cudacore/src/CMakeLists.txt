@@ -16,7 +16,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(SOURCE_FILES
-    jse_gpu_CudaCore.cpp)
+    jse_gpu_CudaCore.cpp
+    jse_gpu_FloatCudaPointer.cpp)
 add_library(cudacore SHARED ${SOURCE_FILES})
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
@@ -32,6 +33,20 @@ if(JNI_FOUND)
     target_link_libraries(cudacore ${JNI_LIBRARIES})
 else()
     message(FATAL_ERROR "No java development environment found")
+endif()
+
+
+# add jniutil
+include_directories("$ENV{JSE_JNIUTIL_INCLUDE_DIR}")
+
+
+# add mimalloc
+option(JSE_USE_MIMALLOC "Use mimalloc to accelerate `malloc` operation" ON)
+if(JSE_USE_MIMALLOC)
+    add_definitions(-DUSE_MIMALLOC)
+    
+    include_directories("$ENV{JSE_MIMALLOC_INCLUDE_DIR}")
+    target_link_libraries(cudacore "$ENV{JSE_MIMALLOC_LIB_PATH}")
 endif()
 
 

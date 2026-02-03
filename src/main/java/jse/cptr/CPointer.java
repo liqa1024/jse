@@ -255,7 +255,8 @@ public class CPointer implements ICPointer {
      */
     public NestedFloatCPointer asNestedFloatCPointer() {return new NestedFloatCPointer(mPtr);}
     
-    static void rangeCheck(int jArraySize, int aCount) {
+    @ApiStatus.Internal
+    public static void rangeCheck(int jArraySize, int aCount) {
         if (aCount > jArraySize) throw new IndexOutOfBoundsException(aCount+" > "+jArraySize);
     }
 }

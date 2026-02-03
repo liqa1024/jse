@@ -73,7 +73,7 @@ endif()
 
 
 # copy jarray
-option(JSE_COPY_JARRAY "Copy jarray when communicate" OFF)
+option(JSE_COPY_JARRAY "Copy jarray when communicate" ON)
 if(JSE_COPY_JARRAY)
     add_definitions(-DCOPY_JARRAY)
 endif()
