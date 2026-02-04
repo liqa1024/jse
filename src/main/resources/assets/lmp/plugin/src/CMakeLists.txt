@@ -15,11 +15,6 @@ endif()
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Need -restrict with Intel compilers
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -restrict")
-endif()
-
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -54,6 +49,7 @@ if(JNI_FOUND)
     target_link_libraries(lmpplugin ${JNI_LIBRARIES})
     # delay load jvm.dll on windows
     if((CMAKE_SYSTEM_NAME MATCHES "Windows") AND (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"))
+        target_link_libraries(lmpplugin delayimp)
         target_link_options(lmpplugin PRIVATE "/DELAYLOAD:jvm.dll")
         add_definitions(-DJVM_LIB_PATH="$ENV{JSE_JVM_LIB_PATH_DEF}")
     endif()

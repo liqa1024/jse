@@ -1,9 +1,6 @@
 package jse.jit;
 
-import jse.clib.CMake;
-import jse.clib.Compiler;
-import jse.clib.JNIUtil;
-import jse.clib.UnsafeJNI;
+import jse.clib.*;
 import jse.cptr.ICPointer;
 import jse.code.IO;
 import jse.code.OS;
@@ -277,6 +274,11 @@ public class SimpleJIT {
             List<String> rCommand = new ArrayList<>();
             rCommand.add(CMake.EXE_CMD);
             preInitCmakeCmd(rCommand);
+            // 总是 release 编译
+            rCommand.add("-D"); rCommand.add("CMAKE_BUILD_TYPE=Release");
+            // 设置 ninja 生成
+            rCommand.add("-D"); rCommand.add("CMAKE_MAKE_PROGRAM='"+Ninja.EXE_PATH+"'");
+            rCommand.add("-G"); rCommand.add("Ninja");
             // 这里设置 C++ 编译器
             String tCmakeCxxCompiler = mCmakeCxxCompiler==null ? Compiler.CXX_COMPILER : mCmakeCxxCompiler;
             if (tCmakeCxxCompiler!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+tCmakeCxxCompiler);}
@@ -330,6 +332,7 @@ public class SimpleJIT {
         protected void envChecker() throws Exception {
             Compiler.printInfo();
             CMake.printInfo(); // 目前默认不使用系统库则不会再输出
+            Ninja.printInfo(); // 目前默认不使用系统库则不会再输出
         }
         private @NotNull String initLib_() throws Exception {
             // 这里先输出编译器信息和可能的 cmake 信息，以及顺便的延迟环境检测
@@ -371,10 +374,24 @@ public class SimpleJIT {
             EXEC.setWorkingDir(tBuildDir);
             if (!DEBUG) EXEC.setNoSTDOutput();
             // 现在初始化 cmake 和参数设置放在一起执行
-            EXEC.system(cmakeInitCmd_());
+            String tCmakeInitCmd = cmakeInitCmd_();
             // 最后进行构造操作
-            String tCmd = CMake.EXE_CMD+" --build . --config Release";
-            EXEC.system(tCmd);
+            String tCmakeBuildCmd = CMake.EXE_CMD+" --build .";
+            // 现在 windows 构建需要附加 dev 环境，专门写入 bat 脚本来执行
+            if (IS_WINDOWS) {
+                String tBuildBat = tWorkingDir + "build_"+UT.Code.randID()+".bat";
+                // 注意使用 CRLF 换行
+                IO.write(tBuildBat,
+                    "@echo off\r",
+                    "call \""+Compiler.MSVC_DEVCMD_PATH+"\" -arch=x64\r",
+                    JNIUtil.validWinCmd(tCmakeInitCmd)+"\r",
+                    JNIUtil.validWinCmd(tCmakeBuildCmd)+"\r"
+                );
+                EXEC.system("& \""+tBuildBat+"\"");
+            } else {
+                EXEC.system(tCmakeInitCmd);
+                EXEC.system(tCmakeBuildCmd);
+            }
             EXEC.setNoSTDOutput(false).setWorkingDir(null);
             // 简单检测一下是否编译成功
             @Nullable String tLibName = LIB_NAME_IN(mLibDir, mProjectName);

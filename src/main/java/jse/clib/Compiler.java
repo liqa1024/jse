@@ -2,11 +2,15 @@ package jse.clib;
 
 import jse.code.IO;
 import jse.code.OS;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static jse.code.OS.EXEC;
@@ -41,6 +45,8 @@ public class Compiler {
     public final static String EXE_PATH;
     /** 拼接后可以执行的命令，对于 windows 和 linux 专门适配 */
     public final static String EXE_CMD;
+    /** 自动检测到的 msvc 的 VsDevCmd.bat 路径，用于编译时进入合适的开发环境；这里会保证分隔符为 {@code \} 确保 cmd 中可以使用 */
+    public final static String MSVC_DEVCMD_PATH;
     /** 自动检测到编译器是否合适，包括是否有合适版本的 C++ 编译器 */
     public final static boolean VALID;
     /** 针对泛滥的老版本 gcc 专门的版本检测，对于老版本会提供警告并限制部分功能的编译 */
@@ -122,21 +128,27 @@ public class Compiler {
         if (!IO.exists(tVswhere)) return null;
         List<String> tLines = EXEC.system_str("& \""+tVswhere+"\" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath");
         if (tLines.isEmpty()) return null;
-        String tVsPath = tLines.get(0);
-        if (tVsPath==null || !IO.exists(tVsPath)) return null;
-        String tClPath = tVsPath + "\\VC\\Tools\\MSVC\\";
-        if (!IO.exists(tClPath)) return null;
+        String tVsPath_ = tLines.get(0);
+        if (tVsPath_==null) return null;
+        Path tVsPath = Paths.get(tVsPath_);
+        if (!Files.exists(tVsPath)) return null;
+        Path tClPath = tVsPath.resolve("VC\\Tools\\MSVC\\");
+        if (!Files.exists(tClPath)) return null;
         String tVerName;
-        try {
-            String[] tList = IO.list(tClPath);
-            if (tList.length==0) return null;
-            tVerName = tList[0];
-        } catch (IOException e) {
-            return null;
-        }
-        tClPath = tClPath + tVerName + "\\bin\\Hostx64\\x64\\cl.exe";
-        if (!IO.exists(tClPath)) return null;
-        return tClPath;
+        String[] tList = tClPath.toFile().list();
+        if (tList==null || tList.length==0) return null;
+        tVerName = tList[0];
+        tClPath = tClPath.resolve(tVerName).resolve("bin\\Hostx64\\x64\\cl.exe");
+        if (!Files.exists(tClPath)) return null;
+        return tClPath.toString();
+    }
+    @SuppressWarnings("SameParameterValue")
+    private static @NotNull String getMsvcDevcmdPath(String aClPath) {
+        Path tPath = Paths.get(aClPath);
+        tPath = tPath.getParent().getParent().getParent().getParent().getParent().getParent().getParent().getParent();
+        tPath = tPath.resolve("Common7\\Tools\\VsDevCmd.bat");
+        if (!Files.exists(tPath)) throw new IllegalStateException();
+        return tPath.toString();
     }
     
     static {
@@ -153,6 +165,7 @@ public class Compiler {
             }
             if (Conf.FORCE) throw new RuntimeException("No suitable C/C++ compiler");
             EXE_CMD = null;
+            MSVC_DEVCMD_PATH = null;
             TYPE = "unknown";
             VALID = false;
             C_COMPILER = null;
@@ -163,12 +176,14 @@ public class Compiler {
             EXE_CMD = (IS_WINDOWS?"& \"":"\"") + EXE_PATH + "\"";
             if (IS_WINDOWS) {
                 TYPE = "msvc";
+                MSVC_DEVCMD_PATH = getMsvcDevcmdPath(EXE_PATH);
                 VALID = true;
                 C_COMPILER = null;
                 CXX_COMPILER = null;
                 GCC_VERSION = null;
                 GCC_OLD = false;
             } else {
+                MSVC_DEVCMD_PATH = null;
                 if (EXE_PATH.endsWith("gcc")) {
                     TYPE = "gcc";
                     C_COMPILER = "gcc";

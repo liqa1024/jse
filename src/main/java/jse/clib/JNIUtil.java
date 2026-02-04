@@ -120,9 +120,10 @@ public class JNIUtil {
                                 "https://learn.microsoft.com/zh-cn/java/openjdk/download");
             }
         }
-        // 现在在这里检测编译器环境和 cmake
+        // 现在在这里检测编译器环境和 cmake, ninja
         Compiler.InitHelper.init();
         CMake.InitHelper.init();
+        Ninja.InitHelper.init();
         // 总是事先合法化这个目录，让用户可以快速找到
         try {IO.makeDir(PKG_DIR);}
         catch (Exception e) {throw new RuntimeException(e);}
@@ -144,6 +145,11 @@ public class JNIUtil {
             aDir = aDir.substring(2);
         }
         return BUILD_DIR_INVALID_NAME.matcher(aDir).find();
+    }
+    @ApiStatus.Internal
+    public static String validWinCmd(String aWinPs) {
+        String tWinCmd = aWinPs.startsWith("& ") ? aWinPs.substring(2) : aWinPs;
+        return tWinCmd.replace("/", "\\");
     }
     
     
@@ -227,6 +233,11 @@ public class JNIUtil {
             // 设置参数，这里使用 List 来构造这个长指令
             List<String> rCommand = new ArrayList<>();
             rCommand.add(CMake.EXE_CMD);
+            // 总是 release 编译
+            rCommand.add("-D"); rCommand.add("CMAKE_BUILD_TYPE=Release");
+            // 设置 ninja 生成
+            rCommand.add("-D"); rCommand.add("CMAKE_MAKE_PROGRAM='"+Ninja.EXE_PATH+"'");
+            rCommand.add("-G"); rCommand.add("Ninja");
             // 这里设置 C/C++ 编译器（如果有）
             if (mUsedCmakeCCompiler) {
                 String tCmakeCCompiler = mCmakeCCompiler==null ? Compiler.C_COMPILER : mCmakeCCompiler;
@@ -266,6 +277,7 @@ public class JNIUtil {
             // 这里先输出编译器信息和可能的 cmake 信息，以及顺便的延迟环境检测
             Compiler.printInfo();
             CMake.printInfo(); // 目前默认不使用系统库则不会再输出
+            Ninja.printInfo(); // 目前默认不使用系统库则不会再输出
             // 自定义的环境检测
             if (!mEnvChecker.isEmpty()) for (IEnvChecker tChecker : mEnvChecker) tChecker.check();
             // 从内部资源解压到临时目录，现在编译任务统一放到 jse 安装目录
@@ -310,11 +322,25 @@ public class JNIUtil {
             EXEC.setWorkingDir(tBuildDir);
             if (!DEBUG) EXEC.setNoSTDOutput();
             // 现在初始化 cmake 和参数设置放在一起执行
-            EXEC.system(cmakeInitCmd_());
+            String tCmakeInitCmd = cmakeInitCmd_();
             // 最后进行构造操作
-            String tCmd = CMake.EXE_CMD+" --build . --config Release";
-            if (mParallel > 1) tCmd += " --parallel "+mParallel;
-            EXEC.system(tCmd);
+            String tCmakeBuildCmd = CMake.EXE_CMD+" --build .";
+            if (mParallel > 1) tCmakeBuildCmd += " --parallel "+mParallel;
+            // 现在 windows 构建需要附加 dev 环境，专门写入 bat 脚本来执行
+            if (IS_WINDOWS) {
+                String tBuildBat = tWorkingDir + "build_"+UT.Code.randID()+".bat";
+                // 注意使用 CRLF 换行
+                IO.write(tBuildBat,
+                    "@echo off\r",
+                    "call \""+Compiler.MSVC_DEVCMD_PATH+"\" -arch=x64\r",
+                    validWinCmd(tCmakeInitCmd)+"\r",
+                    validWinCmd(tCmakeBuildCmd)+"\r"
+                );
+                EXEC.system("& \""+tBuildBat+"\"");
+            } else {
+                EXEC.system(tCmakeInitCmd);
+                EXEC.system(tCmakeBuildCmd);
+            }
             EXEC.setNoSTDOutput(false).setWorkingDir(null);
             // 简单检测一下是否编译成功
             @Nullable String tLibName = LIB_NAME_IN(mLibDir, mProjectName);

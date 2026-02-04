@@ -56,7 +56,6 @@ public class CMake {
     
     private static String getExePath_() throws Exception {
         if (USE_SYSTEM_) {
-            // 优先检测环境变量的 cmake
             EXEC.setNoSTDOutput().setNoERROutput();
             boolean tHasCmake = EXEC.system("cmake --version") == 0;
             EXEC.setNoSTDOutput(false).setNoERROutput(false);
