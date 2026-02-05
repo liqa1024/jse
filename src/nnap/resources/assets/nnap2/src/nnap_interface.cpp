@@ -6,8 +6,8 @@
 
 // >>> NNAPGEN REMOVE
 #define __NNAPGENX_FP_SIZE__ 84
-#define __NNAPGENXX_FP_NTYPES__ 2
 #define __NNAPGENXX_FP_WTYPE__ JSE_NNAP::WTYPE_DEFAULT
+#define __NNAPGENXX_FP_SIZE_N__ 12
 #define __NNAPGENXX_FP_NMAX__ 5
 #define __NNAPGENXX_FP_LMAX__ 6
 #define __NNAPGENXX_FP_NORADIAL__ 0
@@ -53,14 +53,14 @@ static int forward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int a
 // >>> NNAPGEN REPEAT
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: spherical_chebyshev
-    sphForward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NTYPES__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_LMAX__, __NNAPGENXX_FP_NORADIAL__, __NNAPGENXX_FP_L3MAX__, __NNAPGENXX_FP_L4MAX__,
-               __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_PFFLAG__, __NNAPGENXX_FP_PFSIZE__, FP_FULL_CACHE>(
+    sphForward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_LMAX__, __NNAPGENXX_FP_NORADIAL__, __NNAPGENXX_FP_L3MAX__, __NNAPGENXX_FP_L4MAX__,
+               __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_SIZE_N__, __NNAPGENXX_FP_PFFLAG__, __NNAPGENXX_FP_PFSIZE__, FP_FULL_CACHE>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rSubFp,
         &rSubFpForwardCache, tSubFpHyperParam[0], tSubFpParam,
         tSubFpParam+__NNAPGENXX_FP_SIZE_FW__, tSubFpHyperParam[1]
     );
 // --- NNAPGEN PICK: chebyshev
-    chebyForward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NTYPES__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_FSTYLE__, FP_FULL_CACHE>(
+    chebyForward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_FSTYLE__, __NNAPGENXX_FP_SIZE_N__, FP_FULL_CACHE>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rSubFp,
         &rSubFpForwardCache, tSubFpHyperParam[0], tSubFpParam
     );
@@ -161,15 +161,15 @@ static int backward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int 
 // >>> NNAPGEN REPEAT
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: spherical_chebyshev
-    sphBackward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NTYPES__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_LMAX__, __NNAPGENXX_FP_NORADIAL__, __NNAPGENXX_FP_L3MAX__, __NNAPGENXX_FP_L4MAX__,
-                __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_PFFLAG__, __NNAPGENXX_FP_PFSIZE__, FP_FULL_CACHE, CLEAR_CACHE>(
+    sphBackward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_LMAX__, __NNAPGENXX_FP_NORADIAL__, __NNAPGENXX_FP_L3MAX__, __NNAPGENXX_FP_L4MAX__,
+                __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_SIZE_N__, __NNAPGENXX_FP_PFFLAG__, __NNAPGENXX_FP_PFSIZE__, FP_FULL_CACHE, CLEAR_CACHE>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, tSubGradFp,
         rGradNlDx, rGradNlDy, rGradNlDz,
         &aSubFpForwardCache, &rSubFpBackwardCache, tSubFpHyperParam[0], tSubFpParam,
         tSubFpParam+__NNAPGENXX_FP_SIZE_FW__, tSubFpHyperParam[1]
     );
 // --- NNAPGEN PICK: chebyshev
-    chebyBackward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NTYPES__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_FSTYLE__, FP_FULL_CACHE, CLEAR_CACHE>(
+    chebyBackward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_FSTYLE__, __NNAPGENXX_FP_SIZE_N__, FP_FULL_CACHE, CLEAR_CACHE>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, tSubGradFp,
         rGradNlDx, rGradNlDy, rGradNlDz,
         &aSubFpForwardCache, &rSubFpBackwardCache, tSubFpHyperParam[0], tSubFpParam

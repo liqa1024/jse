@@ -5,18 +5,6 @@
 
 namespace JSE_NNAP {
 
-static constexpr int sphSizeN_(int aWType, int aTypeNum, int aNMax, int aFuseSize) noexcept {
-    switch(aWType) {
-    case WTYPE_EXFULL:  {return (aTypeNum+1)*(aNMax+1);}
-    case WTYPE_FULL:    {return aTypeNum*(aNMax+1);}
-    case WTYPE_NONE:    {return aNMax+1;}
-    case WTYPE_DEFAULT: {return (aNMax+aNMax+2);}
-    case WTYPE_FUSE:    {return aFuseSize*(aNMax+1);}
-    case WTYPE_EXFUSE:  {return (aFuseSize+1)*(aNMax+1);}
-    default:            {return 0;}
-    }
-}
-
 template <int WTYPE, int NMAX, int LMAXMAX, int FSIZE, int FULL_CACHE>
 static void calCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rCnlm,
                     flt_t **rForwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
@@ -92,16 +80,14 @@ static void calCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int 
     }
 }
 
-template <int WTYPE, int NTYPES, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int FSIZE, int PFFLAG, int PFSIZE, int FULL_CACHE>
+template <int WTYPE, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int FSIZE, int SIZE_N, int PFFLAG, int PFSIZE, int FULL_CACHE>
 static void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
                        flt_t **rForwardCache, flt_t aRCut, flt_t *aFuseWeight, flt_t *aPostFuseWeight, flt_t aPostFuseScale) noexcept {
     // const init
-    constexpr int tSizeN = sphSizeN_(WTYPE, NTYPES, NMAX, FSIZE);
-    constexpr int tWType = toInternalWType(WTYPE, NTYPES);
     constexpr int tSizeL = (NORADIAL?LMAX:(LMAX+1)) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
     constexpr int tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
-    constexpr int tSizeCnlm = tSizeN*tLMAll;
+    constexpr int tSizeCnlm = SIZE_N*tLMAll;
     constexpr int tSizeAnlm = PFFLAG ? (PFSIZE*tLMAll) : 0;
     // init cache
     flt_t *rCnlm = *rForwardCache; *rForwardCache += tSizeCnlm;
@@ -109,12 +95,12 @@ static void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, i
     // clear cnlm first
     fill<tSizeCnlm>(rCnlm, ZERO);
     // do cal
-    calCnlm<tWType, NMAX, tLMaxMax, FSIZE, FULL_CACHE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rCnlm, rForwardCache, aRCut, aFuseWeight);
+    calCnlm<WTYPE, NMAX, tLMaxMax, FSIZE, FULL_CACHE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rCnlm, rForwardCache, aRCut, aFuseWeight);
     // cnlm -> anlm
     if (PFFLAG) {
         // clear anlm first
         fill<tSizeAnlm>(rAnlm, ZERO);
-        mplusAnlm<tSizeN, tLMaxMax, PFSIZE>(rAnlm, rCnlm, aPostFuseWeight);
+        mplusAnlm<SIZE_N, tLMaxMax, PFSIZE>(rAnlm, rCnlm, aPostFuseWeight);
         // scale anlm here
         multiply<tSizeAnlm>(rAnlm, aPostFuseScale);
     } else {
@@ -122,7 +108,7 @@ static void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, i
     }
     constexpr int tSizeL2 = NORADIAL?LMAX:(LMAX+1);
     constexpr int tSizeL3 = L3NCOLS[L3MAX];
-    constexpr int tSizeNp = PFFLAG ? PFSIZE : tSizeN;
+    constexpr int tSizeNp = PFFLAG ? PFSIZE : SIZE_N;
     for (int np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
         calSphL2<LMAX, NORADIAL>(rAnlm+tShift, rFp+tShiftFp);
         calSphL3<L3MAX>(rAnlm+tShift, rFp+tShiftFp+tSizeL2);
@@ -245,18 +231,16 @@ static void backwardCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType,
         }
     }
 }
-template <int WTYPE, int NTYPES, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int FSIZE, int PFFLAG, int PFSIZE, int FULL_CACHE, int CLEAR_CACHE>
+template <int WTYPE, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int FSIZE, int SIZE_N, int PFFLAG, int PFSIZE, int FULL_CACHE, int CLEAR_CACHE>
 static void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
                         flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
                         flt_t **aForwardCache, flt_t **rBackwardCache, flt_t aRCut, flt_t *aFuseWeight,
                         flt_t *aPostFuseWeight, flt_t aPostFuseScale) noexcept {
     // const init
-    constexpr int tSizeN = sphSizeN_(WTYPE, NTYPES, NMAX, FSIZE);
-    constexpr int tWType = toInternalWType(WTYPE, NTYPES);
     constexpr int tSizeL = (NORADIAL?LMAX:(LMAX+1)) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
     constexpr int tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
-    constexpr int tSizeCnlm = tSizeN*tLMAll;
+    constexpr int tSizeCnlm = SIZE_N*tLMAll;
     constexpr int tSizeAnlm = PFFLAG ? (PFSIZE*tLMAll) : 0;
     // init cache
     flt_t *tCnlm = *aForwardCache; *aForwardCache += tSizeCnlm;
@@ -273,7 +257,7 @@ static void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, 
     }
     constexpr int tSizeL2 = NORADIAL?LMAX:(LMAX+1);
     constexpr int tSizeL3 = L3NCOLS[L3MAX];
-    constexpr int tSizeNp = PFFLAG ? PFSIZE : tSizeN;
+    constexpr int tSizeNp = PFFLAG ? PFSIZE : SIZE_N;
     for (int np=0, tShift=0, tShiftFp=0; np<tSizeNp; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
         calGradSphL2<LMAX, NORADIAL>(tAnlm+tShift, rGradAnlm+tShift, aGradFp+tShiftFp);
         calGradSphL3<L3MAX>(tAnlm+tShift, rGradAnlm+tShift, aGradFp+tShiftFp+tSizeL2);
@@ -283,9 +267,9 @@ static void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, 
         // scale anlm here
         multiply<tSizeAnlm>(rGradAnlm, aPostFuseScale);
         // anlm -> cnlm
-        mplusGradAnlm<tSizeN, tLMaxMax, PFSIZE>(rGradAnlm, rGradCnlm, aPostFuseWeight);
+        mplusGradAnlm<SIZE_N, tLMaxMax, PFSIZE>(rGradAnlm, rGradCnlm, aPostFuseWeight);
     }
-    backwardCnlm<tWType, NMAX, tLMaxMax, FSIZE, FULL_CACHE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rGradCnlm, rGradNlDx, rGradNlDy, rGradNlDz, aForwardCache, rBackwardCache, aRCut, aFuseWeight);
+    backwardCnlm<WTYPE, NMAX, tLMaxMax, FSIZE, FULL_CACHE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rGradCnlm, rGradNlDx, rGradNlDy, rGradNlDz, aForwardCache, rBackwardCache, aRCut, aFuseWeight);
 }
 
 }

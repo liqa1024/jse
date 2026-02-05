@@ -27,6 +27,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
     final int mTypeNum;
     final int mNMax;
     final int mWType;
+    final int mInternalWType;
     final @Nullable RowMatrix mFuseWeight;
     int mSizeN;
     int mFuseSize;
@@ -47,6 +48,19 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
             if (mFuseWeight.columnNumber()==0) throw new IllegalArgumentException("Column number of fuse weight MUST be non-zero");
         }
         mSizeN = getSizeN_(mWType, mTypeNum, mNMax, mFuseSize);
+        if (mTypeNum==1) {
+            switch(mWType) {
+            case WTYPE_EXFULL: case WTYPE_FULL: case WTYPE_NONE: case WTYPE_DEFAULT: {
+                mInternalWType = WTYPE_NONE;
+                break;
+            }
+            default: {
+                mInternalWType = aWType;
+                break;
+            }}
+        } else {
+            mInternalWType = aWType;
+        }
     }
     
     static int getFuseSize(int aWType, RowMatrix aFuseWeight) {
@@ -137,14 +151,14 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_SIZE_HPARAM", hyperParameterSize());
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_SIZE_PARAM", parameterSize());
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_SIZE_FW", mFuseWeight==null?0:mFuseWeight.internalDataSize());
-        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_NTYPES", mTypeNum);
-        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_WTYPE", mWType);
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_WTYPE", mInternalWType);
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_SIZE_N", mSizeN);
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_NMAX", mNMax);
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_FSIZE", mFuseSize);
     }
     @Override public boolean hasSameGenMap(MergeableBasis2 aBasis) {
         if (!(aBasis instanceof WTypeBasis2)) return false;
         WTypeBasis2 tBasis = (WTypeBasis2)aBasis;
-        return mTypeNum==tBasis.mTypeNum && size()==tBasis.size() && mWType==tBasis.mWType && mNMax==tBasis.mNMax && mFuseSize==tBasis.mFuseSize;
+        return mTypeNum==tBasis.mTypeNum && size()==tBasis.size() && mWType==tBasis.mWType && mSizeN==tBasis.mSizeN && mNMax==tBasis.mNMax && mFuseSize==tBasis.mFuseSize;
     }
 }
