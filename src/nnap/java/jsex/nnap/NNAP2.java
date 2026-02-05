@@ -63,10 +63,6 @@ public class NNAP2 implements IPairPotential {
          */
         public static int OPTIM_LEVEL = OS.envI("JSE_NNAP_OPTIM_LEVEL", IJITEngine.OPTIM_BASE);
         /**
-         * 设置 lammps 会使用的近邻列表数目大小限制，默认为 2000
-         */
-        public static int LAMMPS_NL_MAX = OS.envI("JSE_NNAP_LAMMPS_NL_MAX", 2000);
-        /**
          * 设置 NNAP 内部计算的默认精度，默认为 double
          */
         public static String PRECISION = OS.env("JSE_NNAP_PRECISION", "double");
@@ -100,12 +96,14 @@ public class NNAP2 implements IPairPotential {
     public String units() {return mUnits;}
     public String precision() {return mSinglePrecision ? "single" : "double";}
     // jit stuffs
-    private static final String NAME_CAL_ENERGY = "jse_nnap_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nnap_calEnergyForce", NAME_COMPUTE_LAMMPS = "jse_nnap_computeLammps";
+    private static final String NAME_CAL_ENERGY = "jse_nnap_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nnap_calEnergyForce";
+    private static final String NAME_STAT_NEINUM_LAMMPS = "jse_nnap_statNeiNumLammps", NAME_COMPUTE_LAMMPS = "jse_nnap_computeLammps";
     private final IJITEngine mEngine;
-    private final IJITMethod mCalEnergy, mCalEnergyForce, mComputeLammps;
+    private final IJITMethod mCalEnergy, mCalEnergyForce;
+    private final IJITMethod mStatNeiNumLammps, mComputeLammps;
     // 现在所有数据都改为 c 指针
     private final NestedCPointer mDataIn, mDataOut;
-    private final IntCPointer mInNums;
+    private final IntCPointer mInNums, mOutNums;
     private final NestedCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam, mNnForwardCache, mNnBackwardCache;
     private final CPointer mOutEng;
     private final IGrowableCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardCache;
@@ -142,6 +140,7 @@ public class NNAP2 implements IPairPotential {
         mDataIn = NestedCPointer.calloc(20);
         mDataOut = NestedCPointer.calloc(20);
         mInNums = IntCPointer.calloc(20);
+        mOutNums = IntCPointer.calloc(20);
         mNlDx = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mNlDy = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mNlDz = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
@@ -264,9 +263,10 @@ public class NNAP2 implements IPairPotential {
                 engine.writeCmakeFile(wd, INTERFACE_NAME);
                 return wd;
             });
-        mEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_COMPUTE_LAMMPS).compile();
+        mEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS).compile();
         mCalEnergy = mEngine.findMethod(NAME_CAL_ENERGY);
         mCalEnergyForce = mEngine.findMethod(NAME_CAL_ENERGYFORCE);
+        mStatNeiNumLammps = mEngine.findMethod(NAME_STAT_NEINUM_LAMMPS);
         mComputeLammps = mEngine.findMethod(NAME_COMPUTE_LAMMPS);
     }
     public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, String aPrecision) throws Exception {
@@ -588,6 +588,7 @@ public class NNAP2 implements IPairPotential {
             mNormParam.getAt(i).free();
         }
         mInNums.free();
+        mOutNums.free();
         ((CPointer)mNlDx).free(); ((CPointer)mNlDy).free(); ((CPointer)mNlDz).free();
         mNlType.free();
         mFpParam.free(); mNnParam.free(); mNormParam.free();
@@ -763,44 +764,47 @@ public class NNAP2 implements IPairPotential {
         });
     }
     
-    private boolean mNlLammpsValid = false;
-    private void validNlLammps_() {
-        if (mNlLammpsValid) return;
-        mNlLammpsValid = true;
-        // 合法化近邻列表 size，这里采用简单固定大小（可以保证极限速度并且和 lammps 逻辑一致）
-        mNlDx.ensureCapacity(Conf.LAMMPS_NL_MAX);
-        mNlDy.ensureCapacity(Conf.LAMMPS_NL_MAX);
-        mNlDz.ensureCapacity(Conf.LAMMPS_NL_MAX);
-        mNlType.ensureCapacity(Conf.LAMMPS_NL_MAX);
-        mNlIdx.ensureCapacity(Conf.LAMMPS_NL_MAX);
-        mGradNlDx.ensureCapacity(Conf.LAMMPS_NL_MAX);
-        mGradNlDy.ensureCapacity(Conf.LAMMPS_NL_MAX);
-        mGradNlDz.ensureCapacity(Conf.LAMMPS_NL_MAX);
+    private void validNlLammps_(int aNeiNum) {
+        mNlDx.ensureCapacity(aNeiNum);
+        mNlDy.ensureCapacity(aNeiNum);
+        mNlDz.ensureCapacity(aNeiNum);
+        mNlType.ensureCapacity(aNeiNum);
+        mNlIdx.ensureCapacity(aNeiNum);
+        mGradNlDx.ensureCapacity(aNeiNum);
+        mGradNlDy.ensureCapacity(aNeiNum);
+        mGradNlDz.ensureCapacity(aNeiNum);
         for (int i = 0; i < mSymbols.length; ++i) {
-            mFpForwardCache.ensureCapacity(mBasis[i].forwardCacheSize(Conf.LAMMPS_NL_MAX, true));
-            mFpBackwardCache.ensureCapacity(mBasis[i].backwardCacheSize(Conf.LAMMPS_NL_MAX, false));
+            mFpForwardCache.ensureCapacity(mBasis[i].forwardCacheSize(aNeiNum, true));
+            mFpBackwardCache.ensureCapacity(mBasis[i].backwardCacheSize(aNeiNum, false));
         }
     }
     
     void computeLammps(PairNNAP2 aPair) {
         // 种类的缓存优化
-        final int inum = aPair.listInum();
+        int inum = aPair.listInum();
         for (int type = 1; type <= aPair.mTypeNum; ++type) {
             GrowableIntCPointer tList = aPair.mTypeIlistBuf[type];
             tList.ensureCapacity(inum);
             aPair.mTypeIlist.putAt(type, tList);
         }
-        // 虽然原则上这里依旧可以在 java 层进行 nlocal 的遍历，并实时更新 nl；
-        // 但是考虑到未来登录 cuda 不能使用这种架构，并且可以简化部分实现
-        validNlLammps_();
-        mInNums.putAt(0, Conf.LAMMPS_NL_MAX);
-        mInNums.putAt(1, inum);
-        mInNums.putAt(2, aPair.mTypeNum);
-        mInNums.putAt(3, aPair.eflagEither()?1:0);
-        mInNums.putAt(4, aPair.vflagEither()?1:0);
-        mInNums.putAt(5, aPair.eflagAtom()?1:0);
-        mInNums.putAt(6, aPair.vflagAtom()?1:0);
-        mInNums.putAt(7, aPair.cvflagAtom()?1:0);
+        // 近邻列表大小获取和缓存合理化
+        IntCPointer ilist = aPair.listIlist();
+        IntCPointer numneigh = aPair.listNumneigh();
+        mInNums.putAt(0, inum);
+        mDataIn.putAt(0, mInNums);
+        mDataIn.putAt(1, ilist);
+        mDataIn.putAt(2, numneigh);
+        mStatNeiNumLammps.invoke(mDataIn, mOutNums);
+        validNlLammps_(mOutNums.getAt(0));
+        
+        // compute 开始，参数设置
+        mInNums.putAt(0, inum);
+        mInNums.putAt(1, aPair.mTypeNum);
+        mInNums.putAt(2, aPair.eflagEither()?1:0);
+        mInNums.putAt(3, aPair.vflagEither()?1:0);
+        mInNums.putAt(4, aPair.eflagAtom()?1:0);
+        mInNums.putAt(5, aPair.vflagAtom()?1:0);
+        mInNums.putAt(6, aPair.cvflagAtom()?1:0);
         
         // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
         mDataIn.putAt(0, mInNums);
@@ -815,8 +819,8 @@ public class NNAP2 implements IPairPotential {
         mDataIn.putAt(9, mNormParam);
         mDataIn.putAt(10, aPair.atomX());
         mDataIn.putAt(11, aPair.atomType());
-        mDataIn.putAt(12, aPair.listIlist());
-        mDataIn.putAt(13, aPair.listNumneigh());
+        mDataIn.putAt(12, ilist);
+        mDataIn.putAt(13, numneigh);
         mDataIn.putAt(14, aPair.listFirstneigh());
         mDataIn.putAt(15, aPair.mCutsq);
         mDataIn.putAt(16, aPair.mLmpType2NNAPType);
@@ -840,7 +844,5 @@ public class NNAP2 implements IPairPotential {
         // 调用 jit 方法计算
         int tCode = mComputeLammps.invoke(mDataIn, mDataOut);
         if (tCode>0) throw new IllegalStateException("Exit code: "+tCode);
-        if (tCode<0) throw new IllegalStateException("The number of neighbors ("+(-tCode)+") is greater than "+Conf.LAMMPS_NL_MAX+",\n" +
-                                                     "  adjust it through JSE_NNAP_LAMMPS_NL_MAX, like `export JSE_NNAP_LAMMPS_NL_MAX="+tCode+"`");
     }
 }

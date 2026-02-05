@@ -266,6 +266,26 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *aDataIn, void 
 
 #define JSE_LMP_NEIGHMASK 0x1FFFFFFF
 
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_statNeiNumLammps(void *aDataIn, void *rDataOut) {
+    void **tDataIn = (void **)aDataIn;
+    int *tDataOut = (int *)rDataOut;
+    
+    int *tNums = (int *)tDataIn[0];
+    int *ilist = (int *)tDataIn[1];
+    int *numneigh = (int *)tDataIn[2];
+    
+    int inum = tNums[0];
+    int numneighMax = 0;
+    for (int ii = 0; ii < inum; ++ii) {
+        int i = ilist[ii];
+        int jnum = numneigh[i];
+        if (jnum > numneighMax) numneighMax = jnum;
+    }
+    tDataOut[0] = numneighMax;
+    
+    return 0;
+}
+
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *rDataOut) {
     void **tDataIn = (void **)aDataIn;
     void **tDataOut = (void **)rDataOut;
@@ -289,14 +309,13 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
     JSE_NNAP::flt_t *rFpBackwardCache = (JSE_NNAP::flt_t *)tDataOut[6];
     JSE_NNAP::flt_t **rNnBackwardCache = (JSE_NNAP::flt_t **)tDataOut[7];
     
-    int numneighMax = tNums[0];
-    int inum = tNums[1];
-    int ntypes = tNums[2];
-    int eflag = tNums[3];
-    int vflag = tNums[4];
-    int eflagAtom = tNums[5];
-    int vflagAtom = tNums[6];
-    int cvflagAtom = tNums[7];
+    int inum = tNums[0];
+    int ntypes = tNums[1];
+    int eflag = tNums[2];
+    int vflag = tNums[3];
+    int eflagAtom = tNums[4];
+    int vflagAtom = tNums[5];
+    int cvflagAtom = tNums[6];
     
     double **x = (double **)tDataIn[10];
     double **f = (double **)tDataOut[0];
@@ -344,7 +363,6 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
             double ztmp = x[i][2];
             int *jlist = firstneigh[i];
             int jnum = numneigh[i];
-            if (jnum > numneighMax) return -jnum;
             
             /// build neighbor list
             int tNeiNum = 0;
