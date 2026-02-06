@@ -103,12 +103,12 @@ public class IntCPointer extends CPointer {
      * <p>
      * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
      *
-     * @param aData 输入的任意 c 指针数据
+     * @param aData 输入的 c 指针数据
      * @param aCount 需要读取的 aData 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void fill(CPointer aData, int aCount) {
-        aData.memcpy(this, aCount*TYPE_SIZE);
+    public void fill(IntCPointer aData, int aCount) {
+        memcpy2this(aData, aCount*TYPE_SIZE);
     }
     
     /**
@@ -140,6 +140,18 @@ public class IntCPointer extends CPointer {
         parse2dest_(mPtr, rDest, aStart, aCount);
     }
     private native static void parse2dest_(long aPtr, int[] rDest, int aStart, int aCount);
+    /**
+     * 将此 c 指针的数据填充到另一个 c 指针中
+     * <p>
+     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
+     *
+     * @param rDest 输入的 c 指针数据
+     * @param aCount 需要写入 rDest 的长度，实际为 {@code aCount * TYPE_SIZE}
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    public void parse2dest(IntCPointer rDest, int aCount) {
+        memcpy2dest(rDest, aCount*TYPE_SIZE);
+    }
     
     
     /**

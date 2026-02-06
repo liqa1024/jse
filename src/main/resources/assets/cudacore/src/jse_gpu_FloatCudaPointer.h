@@ -9,6 +9,14 @@ extern "C" {
 #endif
 /*
  * Class:     jse_gpu_FloatCudaPointer
+ * Method:    typeSize_
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_jse_gpu_FloatCudaPointer_typeSize_1
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     jse_gpu_FloatCudaPointer
  * Method:    fill_
  * Signature: (J[FII)V
  */

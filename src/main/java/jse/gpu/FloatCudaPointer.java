@@ -24,14 +24,15 @@ public class FloatCudaPointer extends CudaPointer {
      * 调用 {@link CudaCore#cudaMalloc} 来分配内存创建一个 cuda 指针
      *
      * @param aCount 需要分配的数组长度，即等价于 {@code malloc(aCount*sizeof(float))}
-     * @return 创建的双精度浮点 c 指针对象
+     * @return 创建的单精度浮点 cuda 指针对象
      */
     @UnsafeJNI("Manual free required")
     public static FloatCudaPointer malloc(int aCount) throws CudaException {
         return new FloatCudaPointer(CudaCore.cudaMalloc(aCount*TYPE_SIZE));
     }
     /** {@code sizeof(float)} */
-    public final static int TYPE_SIZE = FloatCPointer.TYPE_SIZE;
+    public final static int TYPE_SIZE = typeSize_();
+    private native static int typeSize_();
     
     /**
      * 将 jse 的 {@code IDataShell<float[]>} 填充到此 cuda 指针对应的显存中
@@ -96,9 +97,8 @@ public class FloatCudaPointer extends CudaPointer {
      * @param aCount 需要读取的 aData 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void fill(CPointer aData, int aCount) throws CudaException {
-        if (isNull() || aData.isNull()) throw new NullPointerException();
-        CudaCore.cudaMemcpyH2D(aData.ptr_(), mPtr, aCount*TYPE_SIZE);
+    public void fill(FloatCPointer aData, int aCount) throws CudaException {
+        memcpy2this(aData, aCount*TYPE_SIZE);
     }
     /**
      * 调用 {@link CudaCore#cudaMemcpyD2D} 将另一个 cuda 指针的数据填充到此 cuda 指针对应的显存中
@@ -107,9 +107,8 @@ public class FloatCudaPointer extends CudaPointer {
      * @param aCount 需要读取的 aData 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void fill(CudaPointer aData, int aCount) throws CudaException {
-        if (isNull() || aData.isNull()) throw new NullPointerException();
-        CudaCore.cudaMemcpyD2D(aData.ptr_(), mPtr, aCount*TYPE_SIZE);
+    public void fill(FloatCudaPointer aData, int aCount) throws CudaException {
+        memcpy2this(aData, aCount*TYPE_SIZE);
     }
     
     /**
@@ -172,23 +171,21 @@ public class FloatCudaPointer extends CudaPointer {
      * 调用 {@link CudaCore#cudaMemcpyD2H} 将此 cuda 指针对应的显存数值写入 c 指针对应内存中
      *
      * @param rDest 需要写入的任意 c 指针
-     * @see IDataShell
+     * @param aCount 需要写入 rDest 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void parse2dest(CPointer rDest, int aCount) throws CudaException {
-        if (isNull() || rDest.isNull()) throw new NullPointerException();
-        CudaCore.cudaMemcpyD2H(mPtr, rDest.ptr_(), aCount*TYPE_SIZE);
+    public void parse2dest(FloatCPointer rDest, int aCount) throws CudaException {
+        memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     /**
      * 调用 {@link CudaCore#cudaMemcpyD2D} 将此 cuda 指针对应的显存数值写入另一个 cuda 指针
      *
      * @param rDest 需要写入的任意 cuda 指针
-     * @see IDataShell
+     * @param aCount 需要写入 rDest 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void parse2dest(CudaPointer rDest, int aCount) throws CudaException {
-        if (isNull() || rDest.isNull()) throw new NullPointerException();
-        CudaCore.cudaMemcpyD2D(mPtr, rDest.ptr_(), aCount*TYPE_SIZE);
+    public void parse2dest(FloatCudaPointer rDest, int aCount) throws CudaException {
+        memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     
     /**

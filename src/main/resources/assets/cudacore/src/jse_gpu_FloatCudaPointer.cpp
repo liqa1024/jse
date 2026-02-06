@@ -4,6 +4,9 @@
 
 extern "C" {
 
+JNIEXPORT jint JNICALL Java_jse_gpu_FloatCudaPointer_typeSize_1(JNIEnv *aEnv, jclass aClazz) {
+    return (jint)sizeof(float);
+}
 JNIEXPORT void JNICALL Java_jse_gpu_FloatCudaPointer_fill_1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jfloatArray aJArray, jint aStart, jint aCount) {
     float *tBuf = MALLOCN_TP(float, aCount);
     parsejfloat2floatV(aEnv, aJArray, aStart, tBuf, 0, aCount);

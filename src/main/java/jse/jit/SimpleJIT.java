@@ -379,7 +379,7 @@ public class SimpleJIT {
             String tCmakeBuildCmd = CMake.EXE_CMD+" --build .";
             // 现在 windows 构建需要附加 dev 环境，专门写入 bat 脚本来执行
             if (IS_WINDOWS) {
-                String tBuildBat = tWorkingDir + "build_"+UT.Code.randID()+".bat";
+                String tBuildBat = tWorkingDir + "build.bat";
                 // 注意使用 CRLF 换行
                 IO.write(tBuildBat,
                     "@echo off\r",

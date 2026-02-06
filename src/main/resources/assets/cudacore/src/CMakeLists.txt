@@ -12,7 +12,9 @@ endif()
 
 set(SOURCE_FILES
     jse_gpu_CudaCore.cpp
-    jse_gpu_FloatCudaPointer.cpp)
+    jse_gpu_FloatCudaPointer.cpp
+    jse_gpu_IntCudaPointer.cpp
+    jse_gpu_NestedCudaPointer.cpp)
 add_library(cudacore SHARED ${SOURCE_FILES})
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
