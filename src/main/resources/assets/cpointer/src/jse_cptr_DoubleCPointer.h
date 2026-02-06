@@ -25,6 +25,14 @@ JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_fill0
 
 /*
  * Class:     jse_cptr_DoubleCPointer
+ * Method:    fillF0
+ * Signature: (J[FII)V
+ */
+JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_fillF0
+  (JNIEnv *, jclass, jlong, jfloatArray, jint, jint);
+
+/*
+ * Class:     jse_cptr_DoubleCPointer
  * Method:    fill1
  * Signature: (JDI)V
  */
@@ -38,6 +46,14 @@ JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_fill1
  */
 JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_parse2dest_1
   (JNIEnv *, jclass, jlong, jdoubleArray, jint, jint);
+
+/*
+ * Class:     jse_cptr_DoubleCPointer
+ * Method:    parse2destF_
+ * Signature: (J[FII)V
+ */
+JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_parse2destF_1
+  (JNIEnv *, jclass, jlong, jfloatArray, jint, jint);
 
 /*
  * Class:     jse_cptr_DoubleCPointer

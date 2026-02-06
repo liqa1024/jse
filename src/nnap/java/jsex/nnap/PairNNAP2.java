@@ -3,7 +3,7 @@ package jsex.nnap;
 import jse.cptr.DoubleCPointer;
 import jse.cptr.GrowableIntCPointer;
 import jse.cptr.IntCPointer;
-import jse.cptr.NestedCPointer;
+import jse.cptr.AnyCPointer;
 import jse.jit.SimpleJIT;
 import jse.lmp.LmpPlugin;
 
@@ -98,7 +98,7 @@ public class PairNNAP2 extends LmpPlugin.Pair {
             mCutsq.putAt(type, mCutoff[type]*mCutoff[type]);
         }
         mTypeInum = IntCPointer.calloc(tArgLen);
-        mTypeIlist = NestedCPointer.calloc(tArgLen);
+        mTypeIlist = AnyCPointer.calloc(tArgLen);
         mTypeIlistBuf = new GrowableIntCPointer[tArgLen];
         for (int type = 1; type < tArgLen; ++type) {
             mTypeIlistBuf[type] = new GrowableIntCPointer(128);
@@ -110,7 +110,7 @@ public class PairNNAP2 extends LmpPlugin.Pair {
     DoubleCPointer mCutsq = null;
     int mTypeNum = -1;
     GrowableIntCPointer[] mTypeIlistBuf = null;
-    NestedCPointer mTypeIlist = null;
+    AnyCPointer mTypeIlist = null;
     IntCPointer mTypeInum = null;
     
     @Override public double initOne(int i, int j) {

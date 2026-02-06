@@ -1,7 +1,7 @@
 package jse.jit;
 
 import jse.clib.*;
-import jse.cptr.ICPointer;
+import jse.cptr.IPointer;
 import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;
@@ -102,7 +102,7 @@ public class SimpleJIT {
         }
         
         @UnsafeJNI("Inputs mismatch or invalid usage will result in JVM SIGSEGV")
-        @Override public int invoke(ICPointer aDataIn, ICPointer rDataOut) {
+        @Override public int invoke(IPointer aDataIn, IPointer rDataOut) {
             if (mEngine.isShutdown()) throw new RuntimeException("this JIT engine is dead");
             if (isNull()) throw new NullPointerException();
             return invokeMethod0(mMethodPtr, aDataIn.ptr_(), rDataOut.ptr_());

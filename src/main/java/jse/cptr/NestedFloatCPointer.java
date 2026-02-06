@@ -14,10 +14,10 @@ import java.util.List;
  * 当作 c 中的 {@code float **} 处理的指针，
  * 用于优化对于 {@code float **} 的访问
  * @see CPointer CPointer: 一般的 c 指针包装类
- * @see NestedCPointer NestedCPointer: 一般的嵌套指针包装类
+ * @see AnyCPointer NestedCPointer: 一般的嵌套指针包装类
  * @author liqa
  */
-public class NestedFloatCPointer extends NestedCPointer {
+public class NestedFloatCPointer extends AnyCPointer {
     /**
      * 直接从一个任意的 c 指针初始化一个 {@link NestedFloatCPointer} 对象
      * @param aPtr 需要包装的 c 指针值

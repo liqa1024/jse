@@ -1,8 +1,8 @@
 package jse.gpu;
 
 import jse.clib.UnsafeJNI;
-import jse.cptr.CPointer;
 import jse.cptr.ICPointer;
+import jse.cptr.IPointer;
 import org.jetbrains.annotations.ApiStatus;
 
 /**
@@ -10,7 +10,7 @@ import org.jetbrains.annotations.ApiStatus;
  * 此类因此是 {@code Unsafe} 的。
  * @author liqa
  */
-public class CudaPointer implements ICPointer {
+public class CudaPointer implements IPointer {
     
     static {
         // 依赖 CudaCore
@@ -85,7 +85,7 @@ public class CudaPointer implements ICPointer {
      * @param aCount 需要拷贝的数据长度
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void memcpy2dest(CPointer rDest, int aCount) throws CudaException {
+    public void memcpy2dest(ICPointer rDest, int aCount) throws CudaException {
         if (isNull() || rDest.isNull()) throw new NullPointerException();
         CudaCore.cudaMemcpyD2H(mPtr, rDest.ptr_(), aCount);
     }
@@ -105,27 +105,8 @@ public class CudaPointer implements ICPointer {
      * @param aCount 需要拷贝的数据长度
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void memcpy2this(CPointer aSrc, int aCount) throws CudaException {
+    public void memcpy2this(ICPointer aSrc, int aCount) throws CudaException {
         if (isNull() || aSrc.isNull()) throw new NullPointerException();
         CudaCore.cudaMemcpyH2D(aSrc.ptr_(), mPtr, aCount);
     }
-    
-    /**
-     * 将此对象转换成一个整数的 cuda 指针 {@link IntCudaPointer}，类似在 c
-     * 中使用 {@code (int *)ptr} 来进行强制类型转换
-     * @return 整数的 cuda 指针包装类
-     */
-    public IntCudaPointer asIntCudaPointer() {return new IntCudaPointer(mPtr);}
-    /**
-     * 将此对象转换成一个单精度浮点的 cuda 指针 {@link FloatCudaPointer}，类似在 c
-     * 中使用 {@code (float *)ptr} 来进行强制类型转换
-     * @return 双精度浮点的 cuda 指针包装类
-     */
-    public FloatCudaPointer asFloatCudaPointer() {return new FloatCudaPointer(mPtr);}
-    /**
-     * 将此对象转换成一个嵌套指针的 cuda 指针 {@link NestedCudaPointer}，类似在 c
-     * 中使用 {@code (void **)ptr} 来进行强制类型转换
-     * @return 嵌套指针的 cuda 指针包装类
-     */
-    public NestedCudaPointer asNestedCudaPointer() {return new NestedCudaPointer(mPtr);}
 }

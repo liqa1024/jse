@@ -94,8 +94,8 @@ public class CPointer implements ICPointer {
         , "jse_cptr_DoubleCPointer.h"
         , "jse_cptr_FloatCPointer.c"
         , "jse_cptr_FloatCPointer.h"
-        , "jse_cptr_NestedCPointer.c"
-        , "jse_cptr_NestedCPointer.h"
+        , "jse_cptr_AnyCPointer.c"
+        , "jse_cptr_AnyCPointer.h"
         , "jse_cptr_NestedIntCPointer.c"
         , "jse_cptr_NestedIntCPointer.h"
         , "jse_cptr_NestedDoubleCPointer.c"
@@ -103,11 +103,11 @@ public class CPointer implements ICPointer {
         , "jse_cptr_NestedFloatCPointer.c"
         , "jse_cptr_NestedFloatCPointer.h"
     };
-    public final static ICPointer NULL = new ICPointer() {
+    public final static IPointer NULL = new IPointer() {
         @Override public long ptr_() {return 0;}
         @Override public boolean isNull() {return true;}
     };
-    public final static ICPointer nullptr = NULL;
+    public final static IPointer nullptr = NULL;
     
     static {
         InitHelper.INITIALIZED = true;
@@ -161,14 +161,11 @@ public class CPointer implements ICPointer {
     protected native static long calloc_(int aCount, int aSize);
     
     /**
-     * 调用 c 中的 {@code free} 来释放一个 c 指针对应的内存
-     * <p>
-     * 实际内部默认会统一使用 {@link MiMalloc} 来加速内存释放的过程
-     *
-     * @throws IllegalStateException 如果此 c 指针是空指针
+     * {@inheritDoc}
+     * @throws IllegalStateException {@inheritDoc}
      */
     @UnsafeJNI("Free wild pointer will directly result in JVM SIGSEGV")
-    public void free() {
+    @Override public void free() {
         if (isNull()) throw new IllegalStateException("Cannot free a NULL pointer");
         free_(mPtr);
         mPtr = 0;
@@ -195,81 +192,26 @@ public class CPointer implements ICPointer {
     }
     
     /**
-     * 直接调用 c 中的 {@code memcpy} 来将此数组值拷贝到另一个 c 数组中
-     * <p>
-     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
-     * <p>
-     * 为了避免歧义，特定类型的指针直接提供对应的 {@code fill} 方法，从而这里的
-     * {@code aCount} 永远和 c 中的 {@code memcpy} 参数一致
-     *
-     * @param rDest 需要拷贝的目标 c 指针
-     * @param aCount 需要拷贝的数据长度
+     * {@inheritDoc}
+     * @param rDest {@inheritDoc}
+     * @param aCount {@inheritDoc}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void memcpy2dest(CPointer rDest, int aCount) {
+    @Override public void memcpy2dest(ICPointer rDest, int aCount) {
         if (isNull() || rDest.isNull()) throw new NullPointerException();
-        memcpy_(mPtr, rDest.mPtr, aCount);
+        memcpy_(mPtr, rDest.ptr_(), aCount);
     }
     /**
-     * 直接调用 c 中的 {@code memcpy} 来将输入 c 指针值拷贝到此数组
-     * <p>
-     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
-     * <p>
-     * 为了避免歧义，特定类型的指针直接提供对应的 {@code fill} 方法，从而这里的
-     * {@code aCount} 永远和 c 中的 {@code memcpy} 参数一致
-     *
-     * @param aSrc 需要拷贝的目标 c 指针
-     * @param aCount 需要拷贝的数据长度
+     * {@inheritDoc}
+     * @param aSrc {@inheritDoc}
+     * @param aCount {@inheritDoc}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void memcpy2this(CPointer aSrc, int aCount) {
+    @Override public void memcpy2this(ICPointer aSrc, int aCount) {
         if (isNull() || aSrc.isNull()) throw new NullPointerException();
-        memcpy_(aSrc.mPtr, mPtr, aCount);
+        memcpy_(aSrc.ptr_(), mPtr, aCount);
     }
     protected native static void memcpy_(long aSrc, long rDest, int aCount);
-    
-    /**
-     * 将此对象转换成一个整数的 c 指针 {@link IntCPointer}，类似在 c
-     * 中使用 {@code (int *)ptr} 来进行强制类型转换
-     * @return 整数的 c 指针包装类
-     */
-    public IntCPointer asIntCPointer() {return new IntCPointer(mPtr);}
-    /**
-     * 将此对象转换成一个双精度浮点的 c 指针 {@link DoubleCPointer}，类似在 c
-     * 中使用 {@code (double *)ptr} 来进行强制类型转换
-     * @return 双精度浮点的 c 指针包装类
-     */
-    public DoubleCPointer asDoubleCPointer() {return new DoubleCPointer(mPtr);}
-    /**
-     * 将此对象转换成一个单精度浮点的 c 指针 {@link FloatCPointer}，类似在 c
-     * 中使用 {@code (float *)ptr} 来进行强制类型转换
-     * @return 双精度浮点的 c 指针包装类
-     */
-    public FloatCPointer asFloatCPointer() {return new FloatCPointer(mPtr);}
-    /**
-     * 将此对象转换成一个嵌套指针的 c 指针 {@link NestedCPointer}，类似在 c
-     * 中使用 {@code (void **)ptr} 来进行强制类型转换
-     * @return 嵌套指针的 c 指针包装类
-     */
-    public NestedCPointer asNestedCPointer() {return new NestedCPointer(mPtr);}
-    /**
-     * 将此对象转换成一个嵌套整数指针的 c 指针 {@link NestedCPointer}，类似在 c
-     * 中使用 {@code (int **)ptr} 来进行强制类型转换
-     * @return 嵌套整数指针的 c 指针包装类
-     */
-    public NestedIntCPointer asNestedIntCPointer() {return new NestedIntCPointer(mPtr);}
-    /**
-     * 将此对象转换成一个嵌套双精度浮点指针的 c 指针 {@link NestedDoubleCPointer}，类似在 c
-     * 中使用 {@code (double **)ptr} 来进行强制类型转换
-     * @return 嵌套双精度浮点指针的 c 指针包装类
-     */
-    public NestedDoubleCPointer asNestedDoubleCPointer() {return new NestedDoubleCPointer(mPtr);}
-    /**
-     * 将此对象转换成一个嵌套单精度浮点的 c 指针 {@link NestedFloatCPointer}，类似在 c
-     * 中使用 {@code (float **)ptr} 来进行强制类型转换
-     * @return 嵌套双精度浮点的 c 指针包装类
-     */
-    public NestedFloatCPointer asNestedFloatCPointer() {return new NestedFloatCPointer(mPtr);}
     
     @ApiStatus.Internal
     public static void rangeCheck(int jArraySize, int aCount) {

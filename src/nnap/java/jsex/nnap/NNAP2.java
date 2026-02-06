@@ -102,11 +102,11 @@ public class NNAP2 implements IPairPotential {
     private final IJITMethod mCalEnergy, mCalEnergyForce;
     private final IJITMethod mStatNeiNumLammps, mComputeLammps;
     // 现在所有数据都改为 c 指针
-    private final NestedCPointer mDataIn, mDataOut;
+    private final AnyCPointer mDataIn, mDataOut;
     private final IntCPointer mInNums, mOutNums;
-    private final NestedCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam, mNnForwardCache, mNnBackwardCache;
-    private final CPointer mOutEng;
-    private final IGrowableCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardCache;
+    private final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam, mNnForwardCache, mNnBackwardCache;
+    private final IDoubleOrFloatCPointer mOutEng;
+    private final IGrowableDoubleOrFloatCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardCache;
     private final GrowableIntCPointer mNlType, mNlIdx;
     
     @SuppressWarnings("unchecked")
@@ -137,8 +137,8 @@ public class NNAP2 implements IPairPotential {
             mSymbols[i] = tSymbol.toString();
         }
         // 不管怎么样先初始化数组
-        mDataIn = NestedCPointer.calloc(20);
-        mDataOut = NestedCPointer.calloc(20);
+        mDataIn = AnyCPointer.calloc(20);
+        mDataOut = AnyCPointer.calloc(20);
         mInNums = IntCPointer.calloc(20);
         mOutNums = IntCPointer.calloc(20);
         mNlDx = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
@@ -163,44 +163,33 @@ public class NNAP2 implements IPairPotential {
             return tNNInfo;
         }));
         // 继续初始化参数数组
-        mFpHyperParam = NestedCPointer.malloc(tModelSize);
-        mFpParam = NestedCPointer.malloc(tModelSize);
-        mNnParam = NestedCPointer.malloc(tModelSize);
-        mNnForwardCache = NestedCPointer.malloc(tModelSize);
-        mNnBackwardCache = NestedCPointer.malloc(tModelSize);
+        mFpHyperParam = AnyCPointer.malloc(tModelSize);
+        mFpParam = AnyCPointer.malloc(tModelSize);
+        mNnParam = AnyCPointer.malloc(tModelSize);
+        mNnForwardCache = AnyCPointer.malloc(tModelSize);
+        mNnBackwardCache = AnyCPointer.malloc(tModelSize);
         for (int i = 0; i < tModelSize; ++i) {
-            if (mSinglePrecision) {
-                FloatCPointer tFpHyperParam = FloatCPointer.malloc(mBasis[i].hyperParameterSize());
-                fill_(tFpHyperParam, mBasis[i].hyperParameters());
-                mFpHyperParam.putAt(i, tFpHyperParam);
-                
-                FloatCPointer tFpParam = FloatCPointer.malloc(mBasis[i].parameterSize());
-                fill_(tFpParam, mBasis[i].parameters());
-                mFpParam.putAt(i, tFpParam);
-                
-                FloatCPointer tNnParam = FloatCPointer.malloc(mNN[i].parameterSize());
-                fill_(tNnParam, mNN[i].parameters());
-                mNnParam.putAt(i, tNnParam);
-                mNnForwardCache.putAt(i, FloatCPointer.malloc(mNN[i].forwardCacheSize()));
-                mNnBackwardCache.putAt(i, FloatCPointer.malloc(mNN[i].backwardCacheSize()));
-            } else {
-                DoubleCPointer tFpHyperParam = DoubleCPointer.malloc(mBasis[i].hyperParameterSize());
-                fill_(tFpHyperParam, mBasis[i].hyperParameters());
-                mFpHyperParam.putAt(i, tFpHyperParam);
-                
-                DoubleCPointer tFpParam = DoubleCPointer.malloc(mBasis[i].parameterSize());
-                fill_(tFpParam, mBasis[i].parameters());
-                mFpParam.putAt(i, tFpParam);
-                
-                DoubleCPointer tNnParam = DoubleCPointer.malloc(mNN[i].parameterSize());
-                fill_(tNnParam, mNN[i].parameters());
-                mNnParam.putAt(i, tNnParam);
-                mNnForwardCache.putAt(i, DoubleCPointer.malloc(mNN[i].forwardCacheSize()));
-                mNnBackwardCache.putAt(i, DoubleCPointer.malloc(mNN[i].backwardCacheSize()));
-            }
+            int tSize = mBasis[i].hyperParameterSize();
+            IDoubleOrFloatCPointer tFpHyperParam = mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize);
+            fill_(tFpHyperParam, mBasis[i].hyperParameters());
+            mFpHyperParam.putAt(i, tFpHyperParam);
+            
+            tSize = mBasis[i].parameterSize();
+            IDoubleOrFloatCPointer tFpParam = mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize);
+            fill_(tFpParam, mBasis[i].parameters());
+            mFpParam.putAt(i, tFpParam);
+            
+            tSize = mNN[i].parameterSize();
+            IDoubleOrFloatCPointer tNnParam = mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize);
+            fill_(tNnParam, mNN[i].parameters());
+            mNnParam.putAt(i, tNnParam);
+            tSize = mNN[i].forwardCacheSize();
+            mNnForwardCache.putAt(i, mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize));
+            tSize = mNN[i].backwardCacheSize();
+            mNnBackwardCache.putAt(i, mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize));
         }
         // 归一化系数读取
-        mNormParam = NestedCPointer.malloc(tModelSize);
+        mNormParam = AnyCPointer.malloc(tModelSize);
         Number tNormSigmaEng = null, tNormMuEng = null;
         for (int i = 0; i < tModelSize; ++i) {
             if (tNormSigmaEng == null) tNormSigmaEng = (Number)tModels.get(i).get("norm_sigma_eng");
@@ -215,21 +204,14 @@ public class NNAP2 implements IPairPotential {
             IVector aNormSigma = tNormSigma==null ? null : Vectors.from(tNormSigma);
             List<? extends Number> tNormMu = (List<? extends Number>)tModels.get(i).get("norm_mu");
             IVector aNormMu = tNormMu==null ? null : Vectors.from(tNormMu);
-            if (mSinglePrecision) {
-                FloatCPointer tNormParam = FloatCPointer.malloc(mBasis[i].size()*2 + 2);
-                tNormParam.putAt(0, (float)(aNormMuEng+aRefEng));
-                tNormParam.putAt(1, (float)aNormSigmaEng);
-                fill_(tNormParam.plus(2), aNormMu);
-                fill_(tNormParam.plus(mBasis[i].size()+2), aNormSigma);
-                mNormParam.putAt(i, tNormParam);
-            } else {
-                DoubleCPointer tNormParam = DoubleCPointer.malloc(mBasis[i].size()*2 + 2);
-                tNormParam.putAt(0, aNormMuEng+aRefEng);
-                tNormParam.putAt(1, aNormSigmaEng);
-                fill_(tNormParam.plus(2), aNormMu);
-                fill_(tNormParam.plus(mBasis[i].size()+2), aNormSigma);
-                mNormParam.putAt(i, tNormParam);
-            }
+            
+            int tSize = mBasis[i].size()*2 + 2;
+            IDoubleOrFloatCPointer tNormParam = mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize);
+            tNormParam.putAtD(0, (aNormMuEng+aRefEng));
+            tNormParam.putAtD(1, aNormSigmaEng);
+            fill_(tNormParam.plus(2), aNormMu);
+            fill_(tNormParam.plus(mBasis[i].size()+2), aNormSigma);
+            mNormParam.putAt(i, tNormParam);
         }
         // 代码生成，先针对相同系数的进行优化合并
         List<List<Integer>> tSwitchListFp = new ArrayList<>(); // [position][type]
@@ -289,18 +271,11 @@ public class NNAP2 implements IPairPotential {
     }
     
     
-    private static void fill_(DoubleCPointer rPtr, @Nullable IVector aVec) {
+    private static void fill_(IDoubleOrFloatCPointer rPtr, @Nullable IVector aVec) {
         if (aVec == null) return;
         final int tSize = aVec.size();
         for (int i = 0; i < tSize; ++i) {
-            rPtr.putAt(i, aVec.get(i));
-        }
-    }
-    private static void fill_(FloatCPointer rPtr, @Nullable IVector aVec) {
-        if (aVec == null) return;
-        final int tSize = aVec.size();
-        for (int i = 0; i < tSize; ++i) {
-            rPtr.putAt(i, (float)aVec.get(i));
+            rPtr.putAtD(i, aVec.get(i));
         }
     }
     private static void updateSwitchList_(List<List<Integer>> rSwitchList, int aType, IUnaryFullOperator<Boolean, List<Integer>> aChecker) {
@@ -582,25 +557,25 @@ public class NNAP2 implements IPairPotential {
         mDead = true;
         
         for (int i = 0; i < mSymbols.length; ++i) {
-            mFpHyperParam.getAt(i).free();
-            mFpParam.getAt(i).free();
-            mNnParam.getAt(i).free();
-            mNormParam.getAt(i).free();
+            mFpHyperParam.getAsCPointerAt(i).free();
+            mFpParam.getAsCPointerAt(i).free();
+            mNnParam.getAsCPointerAt(i).free();
+            mNormParam.getAsCPointerAt(i).free();
         }
         mInNums.free();
         mOutNums.free();
-        ((CPointer)mNlDx).free(); ((CPointer)mNlDy).free(); ((CPointer)mNlDz).free();
+        mNlDx.free(); mNlDy.free(); mNlDz.free();
         mNlType.free();
         mFpParam.free(); mNnParam.free(); mNormParam.free();
         mDataIn.free();
         
         for (int i = 0; i < mSymbols.length; ++i) {
-            mNnForwardCache.getAt(i).free();
-            mNnBackwardCache.getAt(i).free();
+            mNnForwardCache.getAsCPointerAt(i).free();
+            mNnBackwardCache.getAsCPointerAt(i).free();
         }
         mOutEng.free();
-        ((CPointer)mFpForwardCache).free(); mNnForwardCache.free();
-        ((CPointer)mFpBackwardCache).free(); mNnBackwardCache.free();
+        mFpForwardCache.free(); mNnForwardCache.free();
+        mFpBackwardCache.free(); mNnBackwardCache.free();
         mDataOut.free();
         
         mEngine.shutdown();
@@ -636,18 +611,9 @@ public class NNAP2 implements IPairPotential {
             mNlTypeBuf.add(type); mNlIdxBuf.add(idx);
         });
         int tNeiNum = mNlIdxBuf.size();
-        mNlDx.ensureCapacity(tNeiNum);
-        mNlDy.ensureCapacity(tNeiNum);
-        mNlDz.ensureCapacity(tNeiNum);
-        if (mSinglePrecision) {
-            ((FloatCPointer)mNlDx).fillD(mNlDxBuf);
-            ((FloatCPointer)mNlDy).fillD(mNlDyBuf);
-            ((FloatCPointer)mNlDz).fillD(mNlDzBuf);
-        } else {
-            ((DoubleCPointer)mNlDx).fill(mNlDxBuf);
-            ((DoubleCPointer)mNlDy).fill(mNlDyBuf);
-            ((DoubleCPointer)mNlDz).fill(mNlDzBuf);
-        }
+        mNlDx.ensureCapacity(tNeiNum); mNlDx.fillD(mNlDxBuf);
+        mNlDy.ensureCapacity(tNeiNum); mNlDy.fillD(mNlDyBuf);
+        mNlDz.ensureCapacity(tNeiNum); mNlDz.fillD(mNlDzBuf);
         mNlType.ensureCapacity(tNeiNum);
         mNlType.fill(mNlTypeBuf);
         if (aRequireGrad) {
@@ -688,7 +654,7 @@ public class NNAP2 implements IPairPotential {
             // 调用 jit 方法获取结果
             int tCode = mCalEnergy.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
-            double tEng = mSinglePrecision ? ((FloatCPointer)mOutEng).get() : ((DoubleCPointer)mOutEng).get();
+            double tEng = mOutEng.getD();
             rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
         });
     }
@@ -731,7 +697,7 @@ public class NNAP2 implements IPairPotential {
             // 调用 jit 方法获取结果
             int tCode = mCalEnergyForce.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
-            double tEng = mSinglePrecision ? ((FloatCPointer)mOutEng).get() : ((DoubleCPointer)mOutEng).get();
+            double tEng = mOutEng.getD();
             if (rEnergyAccumulator != null) {
                 rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
             }
@@ -743,16 +709,9 @@ public class NNAP2 implements IPairPotential {
                 int idx = mNlIdxBuf.get(j);
                 // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查；
                 // 直接遍历查询不走合并了，实测专门合并还会影响效率
-                final double fx, fy, fz;
-                if (mSinglePrecision) {
-                    fx = ((FloatCPointer)mGradNlDx).getAt(j);
-                    fy = ((FloatCPointer)mGradNlDy).getAt(j);
-                    fz = ((FloatCPointer)mGradNlDz).getAt(j);
-                } else {
-                    fx = ((DoubleCPointer)mGradNlDx).getAt(j);
-                    fy = ((DoubleCPointer)mGradNlDy).getAt(j);
-                    fz = ((DoubleCPointer)mGradNlDz).getAt(j);
-                }
+                double fx = mGradNlDx.getAtD(j);
+                double fy = mGradNlDy.getAtD(j);
+                double fz = mGradNlDz.getAtD(j);
                 if (rForceAccumulator != null) {
                     rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
                 }

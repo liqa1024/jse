@@ -222,6 +222,7 @@ GEN_PARSE_ANY_TO_JANY(double, jlong)
 GEN_PARSE_ANY_TO_JANY(int, jdouble)
 GEN_PARSE_ANY_TO_JANY(int64_t, jdouble)
 GEN_PARSE_ANY_TO_JANY(float, jdouble)
+GEN_PARSE_ANY_TO_JANY(double, jfloat)
 
 static inline void parsedouble2jdoubleV(JNIEnv *aEnv, jdoubleArray rJArray, jsize aJStart, const double *aBuf, jsize aBStart, jsize aLen) {
     if (rJArray==NULL || aBuf==NULL) return;
@@ -293,6 +294,7 @@ GEN_PARSE_JANY_TO_ANY(jlong, double)
 GEN_PARSE_JANY_TO_ANY(jdouble, int)
 GEN_PARSE_JANY_TO_ANY(jdouble, int64_t)
 GEN_PARSE_JANY_TO_ANY(jdouble, float)
+GEN_PARSE_JANY_TO_ANY(jfloat, double)
 
 static inline void parsejdouble2doubleV(JNIEnv *aEnv, jdoubleArray aJArray, jsize aJStart, double *rBuf, jsize aBStart, jsize aLen) {
     if (aJArray==NULL || rBuf==NULL) return;

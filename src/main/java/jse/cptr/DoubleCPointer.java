@@ -19,7 +19,7 @@ import java.util.List;
  * @see CPointer CPointer: 一般的 c 指针包装类
  * @author liqa
  */
-public class DoubleCPointer extends CPointer {
+public class DoubleCPointer extends CPointer implements IDoubleOrFloatCPointer {
     /**
      * 直接从一个任意的 c 指针初始化一个 {@link DoubleCPointer} 对象
      * @param aPtr 需要包装的 c 指针值
@@ -83,6 +83,48 @@ public class DoubleCPointer extends CPointer {
         fill0(mPtr, aData, aStart, aCount);
     }
     private native static void fill0(long rPtr, double[] aData, int aStart, int aCount);
+    
+    /**
+     * {@inheritDoc}
+     * @param aData {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
+    @Override public void fillD(IDataShell<double[]> aData) {
+        fill(aData);
+    }
+    /**
+     * {@inheritDoc}
+     * @param aData {@inheritDoc}
+     * @param aStart {@inheritDoc}
+     * @param aCount {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    @Override public void fillD(double[] aData, int aStart, int aCount) {
+        fill(aData, aStart, aCount);
+    }
+    /**
+     * {@inheritDoc}
+     * @param aData {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
+    @Override public void fillF(IDataShell<float[]> aData) {
+        if (isNull()) throw new NullPointerException();
+        fillF0(mPtr, aData.internalDataWithLengthCheck(), aData.internalDataShift(), aData.internalDataSize());
+    }
+    /**
+     * {@inheritDoc}
+     * @param aData {@inheritDoc}
+     * @param aStart {@inheritDoc}
+     * @param aCount {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    @Override public void fillF(float[] aData, int aStart, int aCount) {
+        if (isNull()) throw new NullPointerException();
+        rangeCheck(aData.length, aStart+aCount);
+        fillF0(mPtr, aData, aStart, aCount);
+    }
+    private native static void fillF0(long rPtr, float[] aData, int aStart, int aCount);
+    
     /**
      * 将给定输入数值填充到此 c 指针对应的内存中
      * <p>
@@ -139,6 +181,49 @@ public class DoubleCPointer extends CPointer {
         parse2dest_(mPtr, rDest, aStart, aCount);
     }
     private native static void parse2dest_(long aPtr, double[] rDest, int aStart, int aCount);
+    
+    /**
+     * {@inheritDoc}
+     * @param rDest {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
+    @Override public void parse2destD(IDataShell<double[]> rDest) {
+        parse2dest(rDest);
+    }
+    /**
+     * {@inheritDoc}
+     * @param rDest {@inheritDoc}
+     * @param aStart {@inheritDoc}
+     * @param aCount {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    @Override public void parse2destD(double[] rDest, int aStart, int aCount) {
+        parse2dest(rDest, aStart, aCount);
+    }
+    /**
+     * {@inheritDoc}
+     * @param rDest {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
+    @Override public void parse2destF(IDataShell<float[]> rDest) {
+        if (isNull()) throw new NullPointerException();
+        parse2destF_(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
+    }
+    /**
+     * {@inheritDoc}
+     * @param rDest {@inheritDoc}
+     * @param aStart {@inheritDoc}
+     * @param aCount {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    @Override public void parse2destF(float[] rDest, int aStart, int aCount) {
+        if (isNull()) throw new NullPointerException();
+        rangeCheck(rDest.length, aStart+aCount);
+        parse2destF_(mPtr, rDest, aStart, aCount);
+    }
+    private native static void parse2destF_(long aPtr, float[] rDest, int aStart, int aCount);
+    
+    
     /**
      * 将此 c 指针的数据填充到另一个 c 指针中
      * <p>
@@ -163,6 +248,22 @@ public class DoubleCPointer extends CPointer {
         return get_(mPtr);
     }
     private native static double get_(long aPtr);
+    /**
+     * {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
+    @Override public double getD() {
+        return get();
+    }
+    /**
+     * {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
+    @Override public float getF() {
+        return (float)get();
+    }
     
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，即对应 c 中的 {@code ptr[aIdx]}
@@ -175,6 +276,24 @@ public class DoubleCPointer extends CPointer {
         return getAt_(mPtr, aIdx);
     }
     private native static double getAt_(long aPtr, int aIdx);
+    /**
+     * {@inheritDoc}
+     * @param aIdx {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    @Override public double getAtD(int aIdx) {
+        return getAt(aIdx);
+    }
+    /**
+     * {@inheritDoc}
+     * @param aIdx {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    @Override public float getAtF(int aIdx) {
+        return (float)getAt(aIdx);
+    }
     
     /**
      * 设置此指针对应的数值，即对应 c 中的 {@code *ptr = aValue}
@@ -186,6 +305,22 @@ public class DoubleCPointer extends CPointer {
         set_(mPtr, aValue);
     }
     private native static void set_(long aPtr, double aValue);
+    /**
+     * {@inheritDoc}
+     * @param aValue {@inheritDoc}
+     */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
+    @Override public void setD(double aValue) {
+        set(aValue);
+    }
+    /**
+     * {@inheritDoc}
+     * @param aValue {@inheritDoc}
+     */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
+    @Override public void setF(float aValue) {
+        set((double)aValue);
+    }
     
     /**
      * 将此指针当作一个 c 的数组，设置内部指定位置的数值，即对应 c 中的 {@code ptr[aIdx] = aValue}
@@ -198,11 +333,29 @@ public class DoubleCPointer extends CPointer {
         putAt_(mPtr, aIdx, aValue);
     }
     private native static void putAt_(long aPtr, int aIdx, double aValue);
+    /**
+     * {@inheritDoc}
+     * @param aIdx {@inheritDoc}
+     * @param aValue {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    @Override public void putAtD(int aIdx, double aValue) {
+        putAt(aIdx, aValue);
+    }
+    /**
+     * {@inheritDoc}
+     * @param aIdx {@inheritDoc}
+     * @param aValue {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    @Override public void putAtF(int aIdx, float aValue) {
+        putAt(aIdx, (double)aValue);
+    }
     
     /**
      * 向后移动指针，即对应 c 中的 {@code ++ptr}
      */
-    public void next() {
+    @Override public void next() {
         if (isNull()) throw new NullPointerException();
         mPtr = next_(mPtr);
     }
@@ -212,7 +365,7 @@ public class DoubleCPointer extends CPointer {
      * 指针向后移动指定步数，即对应 c 中的 {@code ptr += aCount}
      * @param aCount 需要移动的步数
      */
-    public void rightShift(int aCount) {
+    @Override public void rightShift(int aCount) {
         if (isNull()) throw new NullPointerException();
         mPtr = rightShift_(mPtr, aCount);
     }
@@ -222,7 +375,7 @@ public class DoubleCPointer extends CPointer {
      * @param aCount 需要移动的步数
      * @return 移动后的指针对象
      */
-    public DoubleCPointer plus(int aCount) {
+    @Override public DoubleCPointer plus(int aCount) {
         if (isNull()) throw new NullPointerException();
         return new DoubleCPointer(rightShift_(mPtr, aCount));
     }
@@ -230,7 +383,7 @@ public class DoubleCPointer extends CPointer {
     /**
      * 向前移动指针，即对应 c 中的 {@code --ptr}
      */
-    public void previous() {
+    @Override public void previous() {
         if (isNull()) throw new NullPointerException();
         mPtr = previous_(mPtr);
     }
@@ -240,7 +393,7 @@ public class DoubleCPointer extends CPointer {
      * 指针向前移动指定步数，即对应 c 中的 {@code ptr -= aCount}
      * @param aCount 需要移动的步数
      */
-    public void leftShift(int aCount) {
+    @Override public void leftShift(int aCount) {
         if (isNull()) throw new NullPointerException();
         mPtr = leftShift_(mPtr, aCount);
     }
@@ -250,7 +403,7 @@ public class DoubleCPointer extends CPointer {
      * @param aCount 需要移动的步数
      * @return 移动后的指针对象
      */
-    public DoubleCPointer minus(int aCount) {
+    @Override public DoubleCPointer minus(int aCount) {
         if (isNull()) throw new NullPointerException();
         return new DoubleCPointer(leftShift_(mPtr, aCount));
     }

@@ -3,6 +3,9 @@ package jse.cptr;
 import jse.clib.MiMalloc;
 import jse.clib.UnsafeJNI;
 import jse.code.collection.AbstractRandomAccessList;
+import jse.gpu.CudaPointer;
+import jse.gpu.FloatCudaPointer;
+import jse.gpu.IntCudaPointer;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
@@ -10,16 +13,16 @@ import java.util.List;
 
 /**
  * 当作 c 中的 {@code void **} 处理的指针，
- * 用于处理一般的 c 数组
+ * 用于处理任意的指针数组
  * @see CPointer CPointer: 一般的 c 指针包装类
  * @author liqa
  */
-public class NestedCPointer extends CPointer {
+public class AnyCPointer extends CPointer {
     /**
-     * 直接从一个任意的 c 指针初始化一个 {@link NestedCPointer} 对象
+     * 直接从一个任意的 c 指针初始化一个 {@link AnyCPointer} 对象
      * @param aPtr 需要包装的 c 指针值
      */
-    @ApiStatus.Internal public NestedCPointer(long aPtr) {super(aPtr);}
+    @ApiStatus.Internal public AnyCPointer(long aPtr) {super(aPtr);}
     
     /**
      * 调用 c 中的 {@code malloc} 来分配内存创建一个 c 指针
@@ -30,8 +33,8 @@ public class NestedCPointer extends CPointer {
      * @return 创建的嵌套指针的 c 指针对象
      */
     @UnsafeJNI("Manual free required")
-    public static NestedCPointer malloc(int aCount) {
-        return new NestedCPointer(malloc_(aCount, TYPE_SIZE));
+    public static AnyCPointer malloc(int aCount) {
+        return new AnyCPointer(malloc_(aCount, TYPE_SIZE));
     }
     /**
      * 调用 c 中的 {@code calloc} 来分配全零内存创建一个 c 指针
@@ -42,8 +45,8 @@ public class NestedCPointer extends CPointer {
      * @return 创建的嵌套指针的 c 指针对象
      */
     @UnsafeJNI("Manual free required")
-    public static NestedCPointer calloc(int aCount) {
-        return new NestedCPointer(calloc_(aCount, TYPE_SIZE));
+    public static AnyCPointer calloc(int aCount) {
+        return new AnyCPointer(calloc_(aCount, TYPE_SIZE));
     }
     /** {@code sizeof(void *)} */
     public final static int TYPE_SIZE = typeSize_();
@@ -58,7 +61,7 @@ public class NestedCPointer extends CPointer {
      * @param aCount 需要读取的 aData 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void fill(NestedCPointer aData, int aCount) {
+    public void fill(AnyCPointer aData, int aCount) {
         memcpy2this(aData, aCount*TYPE_SIZE);
     }
     /**
@@ -70,7 +73,7 @@ public class NestedCPointer extends CPointer {
      * @param aCount 需要写入 rDest 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void parse2dest(NestedCPointer rDest, int aCount) {
+    public void parse2dest(AnyCPointer rDest, int aCount) {
         memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     
@@ -79,7 +82,16 @@ public class NestedCPointer extends CPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
-    public CPointer get() {
+    public IPointer get() {
+        if (isNull()) throw new NullPointerException();
+        return new Pointer(get_(mPtr));
+    }
+    /**
+     * 对此指针解引用，获取内部值，并转换成标准 c 指针，即对应 c 中的 {@code (void *)*ptr}
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
+    public CPointer getAsCPointer() {
         if (isNull()) throw new NullPointerException();
         return new CPointer(get_(mPtr));
     }
@@ -115,9 +127,36 @@ public class NestedCPointer extends CPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
-    public NestedCPointer getAsNestedCPointer() {
+    public AnyCPointer getAsAnyCPointer() {
         if (isNull()) throw new NullPointerException();
-        return new NestedCPointer(get_(mPtr));
+        return new AnyCPointer(get_(mPtr));
+    }
+    /**
+     * 对此指针解引用，获取内部值，并转换成 cuda 指针，即对应 c 中的 {@code (void *)*ptr}
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
+    public CudaPointer getAsCudaPointer() {
+        if (isNull()) throw new NullPointerException();
+        return new CudaPointer(get_(mPtr));
+    }
+    /**
+     * 对此指针解引用，获取内部值，并转换成 cuda int 指针，即对应 c 中的 {@code (int *)*ptr}
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
+    public IntCudaPointer getAsIntCudaPointer() {
+        if (isNull()) throw new NullPointerException();
+        return new IntCudaPointer(get_(mPtr));
+    }
+    /**
+     * 对此指针解引用，获取内部值，并转换成 cuda float 指针，即对应 c 中的 {@code (float *)*ptr}
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
+    public FloatCudaPointer getAsFloatCudaPointer() {
+        if (isNull()) throw new NullPointerException();
+        return new FloatCudaPointer(get_(mPtr));
     }
     native static long get_(long aPtr);
     
@@ -127,7 +166,17 @@ public class NestedCPointer extends CPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public CPointer getAt(int aIdx) {
+    public IPointer getAt(int aIdx) {
+        if (isNull()) throw new NullPointerException();
+        return new Pointer(getAt_(mPtr, aIdx));
+    }
+    /**
+     * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成标准 c 指针，即对应 c 中的 {@code (void *)ptr[aIdx]}
+     * @param aIdx 需要获取的索引位置
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public CPointer getAsCPointerAt(int aIdx) {
         if (isNull()) throw new NullPointerException();
         return new CPointer(getAt_(mPtr, aIdx));
     }
@@ -167,9 +216,39 @@ public class NestedCPointer extends CPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public NestedCPointer getAsNestedCPointerAt(int aIdx) {
+    public AnyCPointer getAsAnyCPointerAt(int aIdx) {
         if (isNull()) throw new NullPointerException();
-        return new NestedCPointer(getAt_(mPtr, aIdx));
+        return new AnyCPointer(getAt_(mPtr, aIdx));
+    }
+    /**
+     * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 cuda 指针，即对应 c 中的 {@code (void *)ptr[aIdx]}
+     * @param aIdx 需要获取的索引位置
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public CudaPointer getAsCudaPointerAt(int aIdx) {
+        if (isNull()) throw new NullPointerException();
+        return new CudaPointer(getAt_(mPtr, aIdx));
+    }
+    /**
+     * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 cuda int 指针，即对应 c 中的 {@code (int *)ptr[aIdx]}
+     * @param aIdx 需要获取的索引位置
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public IntCudaPointer getAsIntCudaPointerAt(int aIdx) {
+        if (isNull()) throw new NullPointerException();
+        return new IntCudaPointer(getAt_(mPtr, aIdx));
+    }
+    /**
+     * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 cuda float 指针，即对应 c 中的 {@code (float *)ptr[aIdx]}
+     * @param aIdx 需要获取的索引位置
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public FloatCudaPointer getAsFloatCudaPointerAt(int aIdx) {
+        if (isNull()) throw new NullPointerException();
+        return new FloatCudaPointer(getAt_(mPtr, aIdx));
     }
     native static long getAt_(long aPtr, int aIdx);
     
@@ -178,7 +257,7 @@ public class NestedCPointer extends CPointer {
      * @param aValue 需要设置的值
      */
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
-    public void set(@NotNull ICPointer aValue) {
+    public void set(@NotNull IPointer aValue) {
         if (isNull()) throw new NullPointerException();
         set_(mPtr, aValue.ptr_());
     }
@@ -190,7 +269,7 @@ public class NestedCPointer extends CPointer {
      * @param aValue 需要设置的值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public void putAt(int aIdx, @NotNull ICPointer aValue) {
+    public void putAt(int aIdx, @NotNull IPointer aValue) {
         if (isNull()) throw new NullPointerException();
         putAt_(mPtr, aIdx, aValue.ptr_());
     }
@@ -220,9 +299,9 @@ public class NestedCPointer extends CPointer {
      * @param aCount 需要移动的步数
      * @return 移动后的指针对象
      */
-    public NestedCPointer plus(int aCount) {
+    public AnyCPointer plus(int aCount) {
         if (isNull()) throw new NullPointerException();
-        return new NestedCPointer(rightShift_(mPtr, aCount));
+        return new AnyCPointer(rightShift_(mPtr, aCount));
     }
     
     /**
@@ -248,17 +327,17 @@ public class NestedCPointer extends CPointer {
      * @param aCount 需要移动的步数
      * @return 移动后的指针对象
      */
-    public NestedCPointer minus(int aCount) {
+    public AnyCPointer minus(int aCount) {
         if (isNull()) throw new NullPointerException();
-        return new NestedCPointer(leftShift_(mPtr, aCount));
+        return new AnyCPointer(leftShift_(mPtr, aCount));
     }
     
     /**
      * {@inheritDoc}
      * @return {@inheritDoc}
      */
-    @Override public NestedCPointer copy() {
-        return new NestedCPointer(mPtr);
+    @Override public AnyCPointer copy() {
+        return new AnyCPointer(mPtr);
     }
     
     /**
@@ -268,15 +347,15 @@ public class NestedCPointer extends CPointer {
      * @see List
      */
     @UnsafeJNI("Invalid input size may result in JVM SIGSEGV")
-    public List<? extends CPointer> asList(final int aSize) {
-        return new AbstractRandomAccessList<CPointer>() {
-            @Override public CPointer get(int index) {
+    public List<? extends IPointer> asList(final int aSize) {
+        return new AbstractRandomAccessList<IPointer>() {
+            @Override public IPointer get(int index) {
                 if (index >= aSize) throw new IndexOutOfBoundsException("Index: "+index+", Size: "+aSize);
                 return getAt(index);
             }
-            @Override public CPointer set(int index, @NotNull CPointer element) {
+            @Override public IPointer set(int index, @NotNull IPointer element) {
                 if (index >= aSize) throw new IndexOutOfBoundsException("Index: "+index+", Size: "+aSize);
-                CPointer oValue = getAt(index);
+                IPointer oValue = getAt(index);
                 putAt(index, element);
                 return oValue;
             }

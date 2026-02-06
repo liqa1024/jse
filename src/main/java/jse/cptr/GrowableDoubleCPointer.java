@@ -11,7 +11,7 @@ import org.jetbrains.annotations.ApiStatus;
  * @author liqa
  */
 @ApiStatus.Experimental
-public class GrowableDoubleCPointer extends DoubleCPointer implements IGrowableCPointer {
+public class GrowableDoubleCPointer extends DoubleCPointer implements IGrowableDoubleOrFloatCPointer {
     protected int mCount = 0;
     @UnsafeJNI("Manual free required")
     public GrowableDoubleCPointer(int aInitCount) {
