@@ -5,32 +5,23 @@
 
 namespace JSE_NNAP {
 
-template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N, int FULL_CACHE>
+template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N>
 static void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
-                         flt_t **rForwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
+                         flt_t aRCut, flt_t *aFuseWeight) noexcept {
     // init cache
-    flt_t *rRn = NULL;
-    flt_t *rNlRn = NULL, *rNlFc = NULL;
-    if (FULL_CACHE) {
-        rNlRn = *rForwardCache; *rForwardCache += aNeiNum*(NMAX+1);
-        rNlFc = *rForwardCache; *rForwardCache += aNeiNum;
-    } else {
-        rRn = *rForwardCache; *rForwardCache += (NMAX+1);
-    }
+    flt_t rRn[NMAX+1];
     // clear fp first
     fill<SIZE_N>(rFp, ZERO);
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
         int type = aNlType[j];
         flt_t dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
-        flt_t dis = sqrt(dx*dx + dy*dy + dz*dz);
+        flt_t dis = std::sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
         // cal fc
         flt_t fc = calFc(dis, aRCut);
-        if (FULL_CACHE) rNlFc[j] = fc;
         // cal Rn
-        if (FULL_CACHE) rRn = rNlRn + j*(NMAX+1);
         calRn<NMAX>(rRn, dis, aRCut);
         // cal fp
         if (WTYPE==WTYPE_FUSE) {
@@ -58,81 +49,54 @@ static void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType,
     }
 }
 
-template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N, int FULL_CACHE, int CLEAR_CACHE>
+template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N>
 static void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
                           flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                          flt_t **aForwardCache, flt_t **rBackwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
+                          flt_t aRCut, flt_t *aFuseWeight) noexcept {
     // init cache
-    flt_t *tNlRn = *aForwardCache; *aForwardCache += aNeiNum*(NMAX+1);
-    flt_t *tNlFc = *aForwardCache; *aForwardCache += aNeiNum;
-    flt_t *rRnPx = NULL, *rRnPy = NULL, *rRnPz = NULL, *rCheby2 = NULL;
-    flt_t *rNlRnPx = NULL, *rNlRnPy = NULL, *rNlRnPz = NULL;
-    flt_t *rNlFcPx = NULL, *rNlFcPy = NULL, *rNlFcPz = NULL;
-    if (FULL_CACHE) {
-        rNlRnPx = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
-        rNlRnPy = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
-        rNlRnPz = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
-        rNlFcPx = *rBackwardCache; *rBackwardCache += aNeiNum;
-        rNlFcPy = *rBackwardCache; *rBackwardCache += aNeiNum;
-        rNlFcPz = *rBackwardCache; *rBackwardCache += aNeiNum;
-        rCheby2 = *rBackwardCache; *rBackwardCache += (NMAX+1);
-    } else {
-        rRnPx = *rBackwardCache; *rBackwardCache += (NMAX+1);
-        rRnPy = *rBackwardCache; *rBackwardCache += (NMAX+1);
-        rRnPz = *rBackwardCache; *rBackwardCache += (NMAX+1);
-        rCheby2 = *rBackwardCache; *rBackwardCache += (NMAX+1);
-    }
+    flt_t rRn[NMAX+1];
+    flt_t rRnPx[NMAX+1], rRnPy[NMAX+1], rRnPz[NMAX+1], rCheby2[NMAX+1];
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
         // init nl
         int type = aNlType[j];
         flt_t dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
-        flt_t dis = sqrt(dx*dx + dy*dy + dz*dz);
+        flt_t dis = std::sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
-        // get fc Rn
-        flt_t fc = tNlFc[j];
-        flt_t *tRn = tNlRn + j*(NMAX+1);
+        // cal fc Rn
+        flt_t fc = calFc(dis, aRCut);
+        calRn<NMAX>(rRn, dis, aRCut);
         // cal fcPxyz
         flt_t fcPx, fcPy, fcPz;
         calFcPxyz(&fcPx, &fcPy, &fcPz, dis, aRCut, dx, dy, dz);
-        if (FULL_CACHE) {
-            rNlFcPx[j] = fcPx;
-            rNlFcPy[j] = fcPy;
-            rNlFcPz[j] = fcPz;
-        }
         // cal RnPxyz
-        if (FULL_CACHE) {
-            rRnPx = rNlRnPx + j*(NMAX+1);
-            rRnPy = rNlRnPy + j*(NMAX+1);
-            rRnPz = rNlRnPz + j*(NMAX+1);
-        }
         calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, dx, dy, dz);
         if (WTYPE==WTYPE_FUSE) {
             flt_t *tGradRn = rCheby2;
             chebyGradRnFuse<NMAX, FSIZE, FSTYLE>(tGradRn, aGradFp, aFuseWeight, type);
-            gradRn2xyz<NMAX>(j, tGradRn, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
+            gradRn2xyz<NMAX>(j, tGradRn, fc, rRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
         } else
         if (WTYPE==WTYPE_EXFUSE) {
             flt_t *tGradRn = rCheby2;
             chebyGradRnExFuse<NMAX, FSIZE, FSTYLE>(tGradRn, aGradFp, aFuseWeight, type);
-            gradRn2xyz<NMAX>(j, tGradRn, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
+            gradRn2xyz<NMAX>(j, tGradRn, fc, rRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
         } else
         if (WTYPE==WTYPE_NONE) {
-            gradRn2xyz<NMAX>(j, aGradFp, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
+            gradRn2xyz<NMAX>(j, aGradFp, fc, rRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
         } else
         if (WTYPE==WTYPE_FULL) {
             flt_t *tGradRn = aGradFp + (NMAX+1)*(type-1);
-            gradRn2xyz<NMAX>(j, tGradRn, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
+            gradRn2xyz<NMAX>(j, tGradRn, fc, rRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
         } else
         if (WTYPE==WTYPE_EXFULL) {
             flt_t *tNNGradWt = aGradFp + (NMAX+1)*type;
-            gradRnWt2xyz<NMAX>(j, aGradFp, tNNGradWt, fc, tRn, ONE, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
+            gradRnWt2xyz<NMAX>(j, aGradFp, tNNGradWt, fc, rRn, ONE, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
         } else
         if (WTYPE==WTYPE_DEFAULT) {
             flt_t wt = ((type&1)==1) ? ((flt_t)type) : -((flt_t)type);
             flt_t *tNNGradWt = aGradFp + (NMAX+1);
-            gradRnWt2xyz<NMAX>(j, aGradFp, tNNGradWt, fc, tRn, wt, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
+            gradRnWt2xyz<NMAX>(j, aGradFp, tNNGradWt, fc, rRn, wt, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
         }
     }
 }

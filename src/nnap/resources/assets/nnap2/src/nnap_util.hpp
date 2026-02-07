@@ -62,15 +62,15 @@ static inline flt_t pow4(flt_t value) noexcept {
     return value2 * value2;
 }
 static inline int numericEqual(double aLHS, double aRHS) noexcept {
-    double tNorm = fabs(aLHS) + fabs(aRHS);
+    double tNorm = std::fabs(aLHS) + std::fabs(aRHS);
     if (tNorm < JSE_DBL_MIN_NORMAL * JSE_EPS_MUL) return 1;
-    double tDiff = fabs(aLHS - aRHS);
+    double tDiff = std::fabs(aLHS - aRHS);
     return (tDiff <= tNorm * JSE_DBL_EPSILON) ? TRUE : FALSE;
 }
 static inline int numericEqual(float aLHS, float aRHS) noexcept {
-    float tNorm = fabs(aLHS) + fabs(aRHS);
+    float tNorm = std::fabs(aLHS) + std::fabs(aRHS);
     if (tNorm < JSE_FLT_MIN_NORMAL * JSE_EPS_MUL) return 1;
-    float tDiff = fabs(aLHS - aRHS);
+    float tDiff = std::fabs(aLHS - aRHS);
     return (tDiff <= tNorm * JSE_FLT_EPSILON) ? TRUE : FALSE;
 }
 

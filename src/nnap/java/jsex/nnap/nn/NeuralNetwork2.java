@@ -75,9 +75,4 @@ public abstract class NeuralNetwork2 implements ISavable {
     public abstract void updateGenMap(Map<String, Object> rGenMap, int aGenIdx);
     /** 本基组是否和输入的基组有着相同的 code gen map，相同时则会简单合并简化最终的 jit 代码 */
     public abstract boolean hasSameGenMap(NeuralNetwork2 aBasis);
-    
-    /** @return 前向传播中需要的缓存大小 */
-    public abstract int forwardCacheSize();
-    /** @return 反向传播中需要的缓存大小 */
-    public abstract int backwardCacheSize();
 }

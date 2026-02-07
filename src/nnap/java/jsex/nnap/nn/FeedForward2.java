@@ -221,6 +221,7 @@ public class FeedForward2 extends NeuralNetwork2 {
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
         rGenMap.put("[NN USE "+aGenIdx+"]", "feed_forward");
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_IN", mInputDim);
+        rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_CACHE", mHiddenBiasesSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HW", mHiddenWeightsSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HB", mHiddenBiasesSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_OW", mOutputWeightSize);
@@ -242,12 +243,5 @@ public class FeedForward2 extends NeuralNetwork2 {
             if (mHiddenDims[i]!=tNN.mHiddenDims[i]) return false;
         }
         return true;
-    }
-    
-    @Override public int forwardCacheSize() {
-        return mInputDim + mHiddenBiasesSize*3;
-    }
-    @Override public int backwardCacheSize() {
-        return mInputDim + mHiddenBiasesSize;
     }
 }

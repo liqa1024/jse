@@ -77,7 +77,7 @@ static inline void realSphericalHarmonicsFull4InterLoop_(flt_t aCosPhi2, flt_t &
 }
 template <int LMAX>
 static inline void realSphericalHarmonicsFull4(flt_t aX, flt_t aY, flt_t aZ, flt_t aDis, flt_t *rDest) noexcept {
-    const flt_t tXY = hypot(aX, aY);
+    const flt_t tXY = std::hypot(aX, aY);
     const flt_t tCosTheta = aZ / aDis;
     const flt_t tSinTheta = tXY / aDis;
     flt_t tCosPhi;
@@ -172,7 +172,7 @@ template <int LMAX>
 static void calYPxyz(flt_t *aY, flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis,
                      flt_t *rYPx, flt_t *rYPy, flt_t *rYPz, flt_t *rYPtheta, flt_t *rYPphi) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
-    const flt_t dxy = hypot(aDx, aDy);
+    const flt_t dxy = std::hypot(aDx, aDy);
     const flt_t cosTheta = aDz / aDis;
     const flt_t sinTheta = dxy / aDis;
     flt_t cosPhi;

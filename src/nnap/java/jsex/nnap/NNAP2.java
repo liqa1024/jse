@@ -104,9 +104,9 @@ public class NNAP2 implements IPairPotential {
     // 现在所有数据都改为 c 指针
     private final AnyCPointer mDataIn, mDataOut;
     private final IntCPointer mInNums, mOutNums;
-    private final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam, mNnForwardCache, mNnBackwardCache;
+    private final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam;
     private final IDoubleOrFloatCPointer mOutEng;
-    private final IGrowableDoubleOrFloatCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardCache;
+    private final IGrowableDoubleOrFloatCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz;
     private final GrowableIntCPointer mNlType, mNlIdx;
     
     @SuppressWarnings("unchecked")
@@ -150,8 +150,6 @@ public class NNAP2 implements IPairPotential {
         mGradNlDy = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mGradNlDz = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mOutEng = mSinglePrecision ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
-        mFpForwardCache = mSinglePrecision ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
-        mFpBackwardCache = mSinglePrecision ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
         
         mBasis = Basis2.load(NewCollections.map(tModels, info -> {
             Object tBasisInfo = info.get("basis");
@@ -166,8 +164,6 @@ public class NNAP2 implements IPairPotential {
         mFpHyperParam = AnyCPointer.malloc(tModelSize);
         mFpParam = AnyCPointer.malloc(tModelSize);
         mNnParam = AnyCPointer.malloc(tModelSize);
-        mNnForwardCache = AnyCPointer.malloc(tModelSize);
-        mNnBackwardCache = AnyCPointer.malloc(tModelSize);
         for (int i = 0; i < tModelSize; ++i) {
             int tSize = mBasis[i].hyperParameterSize();
             IDoubleOrFloatCPointer tFpHyperParam = mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize);
@@ -183,10 +179,6 @@ public class NNAP2 implements IPairPotential {
             IDoubleOrFloatCPointer tNnParam = mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize);
             fill_(tNnParam, mNN[i].parameters());
             mNnParam.putAt(i, tNnParam);
-            tSize = mNN[i].forwardCacheSize();
-            mNnForwardCache.putAt(i, mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize));
-            tSize = mNN[i].backwardCacheSize();
-            mNnBackwardCache.putAt(i, mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize));
         }
         // 归一化系数读取
         mNormParam = AnyCPointer.malloc(tModelSize);
@@ -216,21 +208,24 @@ public class NNAP2 implements IPairPotential {
         // 代码生成，先针对相同系数的进行优化合并
         List<List<Integer>> tSwitchListFp = new ArrayList<>(); // [position][type]
         List<List<Integer>> tSwitchListNN = new ArrayList<>();
+        List<List<Integer>> tSwitchListFpNN = new ArrayList<>();
         for (int type = 1; type <= tModelSize; ++type) {
             final int ti = type-1;
             updateSwitchList_(tSwitchListFp, type, caseList -> mBasis[ti].hasSameGenMap(mBasis[caseList.get(0)-1]));
             updateSwitchList_(tSwitchListNN, type, caseList -> mNN[ti].hasSameGenMap(mNN[caseList.get(0)-1]));
+            updateSwitchList_(tSwitchListFpNN, type, caseList -> mBasis[ti].hasSameGenMap(mBasis[caseList.get(0)-1]) && mNN[ti].hasSameGenMap(mNN[caseList.get(0)-1]));
         }
         final Map<String, Object> tGenMap = new LinkedHashMap<>();
         tGenMap.put("[PRECISION]", mSinglePrecision ? "single" : "double");
         tGenMap.put("[FP TYPE]", tSwitchListFp);
         tGenMap.put("[NN TYPE]", tSwitchListNN);
+        tGenMap.put("[FP NN TYPE]", tSwitchListFpNN);
         // 只添加不同的，降低 code gen 的压力
-        for (int i = 0; i < tSwitchListFp.size(); ++i) {
-            mBasis[tSwitchListFp.get(i).get(0)-1].updateGenMap(tGenMap, i);
-        }
-        for (int i = 0; i < tSwitchListNN.size(); ++i) {
-            mNN[tSwitchListNN.get(i).get(0)-1].updateGenMap(tGenMap, i);
+        int tGenIdx = 0;
+        for (List<Integer> tSubList : tSwitchListFpNN) {
+            mBasis[tSubList.get(0)-1].updateGenMap(tGenMap, tGenIdx);
+            mNN[tSubList.get(0)-1].updateGenMap(tGenMap, tGenIdx);
+            tGenIdx += tSubList.size();
         }
         // 开始 jit
         String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, tGenMap, NNAP2.VERSION, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING);
@@ -418,11 +413,10 @@ public class NNAP2 implements IPairPotential {
                     Object tValue = aGenMap.get(tKey);
                     if (tValue==null) throw new IllegalStateException("Missing switch key: "+tKey);
                     List<List<Integer>> tSwitchList = (List<List<Integer>>)tValue;
-                    final int tLoop = tSwitchList.size();
                     rBuf1.clear();
                     rBuf1.add("switch ("+tSwitcher+") {");
-                    for (int i = 0; i < tLoop; ++i) {
-                        List<Integer> tSubList = tSwitchList.get(i);
+                    int tGenIdx = 0;
+                    for (List<Integer> tSubList : tSwitchList) {
                         StringBuilder tCases = new StringBuilder();
                         for (int tCase : tSubList) {
                             tCases.append("case ").append(tCase).append(": ");
@@ -431,13 +425,14 @@ public class NNAP2 implements IPairPotential {
                         for (String tBufLine : rBuf0) {
                             rBuf1.add(
                                 tBufLine.replace("__NNAPGENS_"+tSwitcher+"__", tSubList.get(0).toString()) // 总是合并到第一个组
-                                        .replace("__NNAPGENS_X__", String.valueOf(i))
-                                        .replace("NNAPGENX", i+":NNAPGEN")
+                                        .replace("__NNAPGENS_X__", String.valueOf(tGenIdx))
+                                        .replace("NNAPGENX", tGenIdx+":NNAPGEN")
                                         .replace("NNAPGENO", "NNAPGEN")
                             );
                         }
                         rBuf1.add("break;");
                         rBuf1.add("}");
+                        tGenIdx += tSubList.size();
                     }
                     rBuf0.clear();
                     rBuf1.add("}");
@@ -569,13 +564,7 @@ public class NNAP2 implements IPairPotential {
         mFpParam.free(); mNnParam.free(); mNormParam.free();
         mDataIn.free();
         
-        for (int i = 0; i < mSymbols.length; ++i) {
-            mNnForwardCache.getAsCPointerAt(i).free();
-            mNnBackwardCache.getAsCPointerAt(i).free();
-        }
         mOutEng.free();
-        mFpForwardCache.free(); mNnForwardCache.free();
-        mFpBackwardCache.free(); mNnBackwardCache.free();
         mDataOut.free();
         
         mEngine.shutdown();
@@ -637,7 +626,6 @@ public class NNAP2 implements IPairPotential {
             int tNeiNum = buildNL_(nl, mBasis[cType-1].rcut(), false);
             mInNums.putAt(0, tNeiNum);
             mInNums.putAt(1, cType);
-            mFpForwardCache.ensureCapacity(mBasis[cType-1].forwardCacheSize(tNeiNum, false));
             // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
             mDataIn.putAt(0, mInNums);
             mDataIn.putAt(1, mNlDx);
@@ -649,8 +637,6 @@ public class NNAP2 implements IPairPotential {
             mDataIn.putAt(7, mNnParam);
             mDataIn.putAt(8, mNormParam.getAt(cType-1));
             mDataOut.putAt(0, mOutEng);
-            mDataOut.putAt(1, mFpForwardCache);
-            mDataOut.putAt(2, mNnForwardCache.getAt(cType-1));
             // 调用 jit 方法获取结果
             int tCode = mCalEnergy.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
@@ -674,8 +660,6 @@ public class NNAP2 implements IPairPotential {
             int tNeiNum = buildNL_(nl, mBasis[cType-1].rcut(), true);
             mInNums.putAt(0, tNeiNum);
             mInNums.putAt(1, cType);
-            mFpForwardCache.ensureCapacity(mBasis[cType-1].forwardCacheSize(tNeiNum, true));
-            mFpBackwardCache.ensureCapacity(mBasis[cType-1].backwardCacheSize(tNeiNum, false));
             // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
             mDataIn.putAt(0, mInNums);
             mDataIn.putAt(1, mNlDx);
@@ -690,10 +674,6 @@ public class NNAP2 implements IPairPotential {
             mDataOut.putAt(1, mGradNlDx);
             mDataOut.putAt(2, mGradNlDy);
             mDataOut.putAt(3, mGradNlDz);
-            mDataOut.putAt(4, mFpForwardCache);
-            mDataOut.putAt(5, mNnForwardCache.getAt(cType-1));
-            mDataOut.putAt(6, mFpBackwardCache);
-            mDataOut.putAt(7, mNnBackwardCache.getAt(cType-1));
             // 调用 jit 方法获取结果
             int tCode = mCalEnergyForce.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
@@ -732,10 +712,6 @@ public class NNAP2 implements IPairPotential {
         mGradNlDx.ensureCapacity(aNeiNum);
         mGradNlDy.ensureCapacity(aNeiNum);
         mGradNlDz.ensureCapacity(aNeiNum);
-        for (int i = 0; i < mSymbols.length; ++i) {
-            mFpForwardCache.ensureCapacity(mBasis[i].forwardCacheSize(aNeiNum, true));
-            mFpBackwardCache.ensureCapacity(mBasis[i].backwardCacheSize(aNeiNum, false));
-        }
     }
     
     void computeLammps(PairNNAP2 aPair) {
@@ -790,15 +766,11 @@ public class NNAP2 implements IPairPotential {
         mDataOut.putAt(1, mGradNlDx);
         mDataOut.putAt(2, mGradNlDy);
         mDataOut.putAt(3, mGradNlDz);
-        mDataOut.putAt(4, mFpForwardCache);
-        mDataOut.putAt(5, mNnForwardCache);
-        mDataOut.putAt(6, mFpBackwardCache);
-        mDataOut.putAt(7, mNnBackwardCache);
-        mDataOut.putAt(8, aPair.engVdwl());
-        mDataOut.putAt(9, aPair.eatom());
-        mDataOut.putAt(10, aPair.virial());
-        mDataOut.putAt(11, aPair.vatom());
-        mDataOut.putAt(12, aPair.cvatom());
+        mDataOut.putAt(4, aPair.engVdwl());
+        mDataOut.putAt(5, aPair.eatom());
+        mDataOut.putAt(6, aPair.virial());
+        mDataOut.putAt(7, aPair.vatom());
+        mDataOut.putAt(8, aPair.cvatom());
         
         // 调用 jit 方法计算
         int tCode = mComputeLammps.invoke(mDataIn, mDataOut);

@@ -344,6 +344,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         rGenMap.put("[NN USE "+aGenIdx+"]", "shared_feed_forward");
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SHARED_TYPE", mSharedType);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_IN", mInputDim);
+        rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_CACHE", mHiddenBiasesSize+mSharedHiddenBiasesSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HW", mHiddenWeightsSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_SHW", mSharedHiddenWeightsSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HB", mHiddenBiasesSize);
@@ -368,12 +369,5 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
             if (mSharedHiddenDims[i]!=tNN.mSharedHiddenDims[i]) return false;
         }
         return mShare.hasSameGenMap(tNN.mShare);
-    }
-    
-    @Override public int forwardCacheSize() {
-        return mInputDim + (mHiddenBiasesSize+mSharedHiddenBiasesSize)*3;
-    }
-    @Override public int backwardCacheSize() {
-        return mInputDim + (mHiddenBiasesSize+mSharedHiddenBiasesSize);
     }
 }
