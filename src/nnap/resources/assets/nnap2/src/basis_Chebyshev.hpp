@@ -64,14 +64,11 @@ static void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType
         flt_t dis = std::sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
-        // cal fc Rn
-        flt_t fc = calFc(dis, aRCut);
-        calRn<NMAX>(rRn, dis, aRCut);
         // cal fcPxyz
         flt_t fcPx, fcPy, fcPz;
-        calFcPxyz(&fcPx, &fcPy, &fcPz, dis, aRCut, dx, dy, dz);
+        flt_t fc = calFcPxyz(&fcPx, &fcPy, &fcPz, dis, aRCut, dx, dy, dz);
         // cal RnPxyz
-        calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, dx, dy, dz);
+        calRnPxyz<NMAX>(rRn, rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, dx, dy, dz);
         if (WTYPE==WTYPE_FUSE) {
             flt_t *tGradRn = rCheby2;
             chebyGradRnFuse<NMAX, FSIZE, FSTYLE>(tGradRn, aGradFp, aFuseWeight, type);

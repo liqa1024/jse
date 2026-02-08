@@ -25,7 +25,7 @@ static void calCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int 
         // cal Rn
         calRn<NMAX>(rRn, dis, aRCut);
         // cal Y
-        realSphericalHarmonicsFull4<LMAXMAX>(dx, dy, dz, dis, rY);
+        calY<LMAXMAX>(dx, dy, dz, dis, rY);
         // cal cnlm
         if (WTYPE==WTYPE_FUSE) {
             // cal bnlm
@@ -111,17 +111,13 @@ static void backwardCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType,
         flt_t dis = std::sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
-        // cal fc Rn Y
-        flt_t fc = calFc(dis, aRCut);
-        calRn<NMAX>(rRn, dis, aRCut);
-        realSphericalHarmonicsFull4<LMAXMAX>(dx, dy, dz, dis, rY);
         // cal fcPxyz
         flt_t fcPx, fcPy, fcPz;
-        calFcPxyz(&fcPx, &fcPy, &fcPz, dis, aRCut, dx, dy, dz);
+        flt_t fc = calFcPxyz(&fcPx, &fcPy, &fcPz, dis, aRCut, dx, dy, dz);
         // cal RnPxyz
-        calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, dx, dy, dz);
+        calRnPxyz<NMAX>(rRn, rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, dx, dy, dz);
         // cal YlmPxyz
-        calYPxyz<LMAXMAX>(rY, dx, dy, dz, dis, rYPx, rYPy, rYPz, rYPtheta, rYPphi);
+        calYPxyz<LMAXMAX>(dx, dy, dz, dis, rY, rYPx, rYPy, rYPz, rYPtheta, rYPphi);
         // cal fxyz
         if (WTYPE==WTYPE_FUSE) {
             calGradBnlmFuse<NMAX, LMAXMAX, FSIZE>(aGradCnlm, rGradBnlm, aFuseWeight, type);

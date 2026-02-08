@@ -76,32 +76,36 @@ static inline void realSphericalHarmonicsFull4InterLoop_(flt_t aCosPhi2, flt_t &
     rSinMPhi = tSinMppPhi; rCosMPhi = tCosMppPhi;
 }
 template <int LMAX>
-static inline void realSphericalHarmonicsFull4(flt_t aX, flt_t aY, flt_t aZ, flt_t aDis, flt_t *rDest) noexcept {
-    const flt_t tXY = std::hypot(aX, aY);
-    const flt_t tCosTheta = aZ / aDis;
-    const flt_t tSinTheta = tXY / aDis;
-    flt_t tCosPhi;
-    flt_t tSinPhi;
-    // avoid nan
-    if (numericEqual(tXY, ZERO)) {
-        tCosPhi = ONE;
-        tSinPhi = ZERO;
-    } else {
-        tCosPhi = aX / tXY;
-        tSinPhi = aY / tXY;
-    }
+static inline void realSphericalHarmonicsFull4_(flt_t aCosTheta, flt_t aSinTheta, flt_t aCosPhi, flt_t aSinPhi, flt_t *rDest) noexcept {
     // cal real Legendre
-    realNormalizedLegendreFull<LMAX>(tCosTheta, tSinTheta, rDest);
+    realNormalizedLegendreFull<LMAX>(aCosTheta, aSinTheta, rDest);
     if (LMAX == 0) return;
     // cal sinMPhi & conMPhi
     flt_t rSinMmmPhi = ZERO;
     flt_t rCosMmmPhi = ONE;
-    flt_t rSinMPhi = tSinPhi;
-    flt_t rCosMPhi = tCosPhi;
+    flt_t rSinMPhi = aSinPhi;
+    flt_t rCosMPhi = aCosPhi;
     const flt_t tCosPhi2 = rCosMPhi+rCosMPhi;
 // >>> NNAPGEN REPEAT
     realSphericalHarmonicsFull4InterLoop_<__NNAPGENS_X__, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 1..12
+}
+template <int LMAX>
+static inline void calY(flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis, flt_t *rY) noexcept {
+    const flt_t dxy = std::hypot(aDx, aDy);
+    const flt_t cosTheta = aDz / aDis;
+    const flt_t sinTheta = dxy / aDis;
+    flt_t cosPhi;
+    flt_t sinPhi;
+    // avoid nan
+    if (numericEqual(dxy, ZERO)) {
+        cosPhi = ONE;
+        sinPhi = ZERO;
+    } else {
+        cosPhi = aDx / dxy;
+        sinPhi = aDy / dxy;
+    }
+    realSphericalHarmonicsFull4_<LMAX>(cosTheta, sinTheta, cosPhi, sinPhi, rY);
 }
 
 template <int L>
@@ -169,7 +173,7 @@ static inline void convertYPPhiPtheta2YPxyz(flt_t aCosTheta, flt_t aSinTheta, fl
     }
 }
 template <int LMAX>
-static void calYPxyz(flt_t *aY, flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis,
+static void calYPxyz(flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis, flt_t *rY,
                      flt_t *rYPx, flt_t *rYPy, flt_t *rYPz, flt_t *rYPtheta, flt_t *rYPphi) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
     const flt_t dxy = std::hypot(aDx, aDy);
@@ -185,7 +189,8 @@ static void calYPxyz(flt_t *aY, flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis,
         cosPhi = aDx / dxy;
         sinPhi = aDy / dxy;
     }
-    calYPphiPtheta<LMAX>(rYPphi, cosPhi, sinPhi, rYPtheta, aY);
+    realSphericalHarmonicsFull4_<LMAX>(cosTheta, sinTheta, cosPhi, sinPhi, rY);
+    calYPphiPtheta<LMAX>(rYPphi, cosPhi, sinPhi, rYPtheta, rY);
     if (dxyCloseZero) {
         // fix singularity
         for (int k = 0; k < tLMAll; ++k) rYPphi[k] = ZERO;

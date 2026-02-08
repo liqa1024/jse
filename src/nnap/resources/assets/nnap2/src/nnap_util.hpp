@@ -180,29 +180,34 @@ static inline void calRn(flt_t *rRn, flt_t aDis, flt_t aRCutL, flt_t aRCutR) noe
     chebyshevFull<N>(tRnX, rRn);
 }
 
-static inline void calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFcPz,
+static inline flt_t calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFcPz,
                              flt_t aDis, flt_t aRCut, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
-    flt_t fcMul = ONE - pow2(aDis/aRCut);
-    flt_t fcPMul = ((flt_t)8.0) * pow3(fcMul) / (aRCut*aRCut);
+    const flt_t fcMul = ONE - pow2(aDis/aRCut);
+    const flt_t fcMul3 = pow3(fcMul);
+    const flt_t fcPMul = ((flt_t)8.0) * fcMul3 / (aRCut*aRCut);
     *rFcPx = aDx * fcPMul;
     *rFcPy = aDy * fcPMul;
     *rFcPz = aDz * fcPMul;
+    return fcMul*fcMul3;
 }
-static inline void calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFcPz,
+static inline flt_t calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFcPz,
                              flt_t aDis, flt_t aRCutL, flt_t aRCutR, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
     const flt_t tRCutRL = aRCutR-aRCutL;
     const flt_t tX = (aDis-aRCutL)/tRCutRL;
-    flt_t fcMul = ONE - pow2(tX+tX - ONE);
-    flt_t fcPMul = ((flt_t)16.0) * pow3(fcMul) * (TWO - (aRCutL+aRCutR)/aDis) / (tRCutRL*tRCutRL);
+    const flt_t fcMul = ONE - pow2(tX+tX - ONE);
+    const flt_t fcMul3 = pow3(fcMul);
+    const flt_t fcPMul = ((flt_t)16.0) * fcMul3 * (TWO - (aRCutL+aRCutR)/aDis) / (tRCutRL*tRCutRL);
     *rFcPx = aDx * fcPMul;
     *rFcPy = aDy * fcPMul;
     *rFcPz = aDz * fcPMul;
+    return fcMul*fcMul3;
 }
 template <int N>
-static inline void calRnPxyz(flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
+static inline void calRnPxyz(flt_t *rRn, flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
                              flt_t aDis, flt_t aRCut, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
     flt_t tRnX = aDis/aRCut;
     tRnX = ONE - (tRnX+tRnX);
+    chebyshevFull<N>(tRnX, rRn);
     chebyshev2Full<N-1>(tRnX, rCheby2);
     const flt_t tRnPMul = TWO / (aDis*aRCut);
     rRnPx[0] = ZERO; rRnPy[0] = ZERO; rRnPz[0] = ZERO;
@@ -214,11 +219,12 @@ static inline void calRnPxyz(flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rC
     }
 }
 template <int N>
-static inline void calRnPxyz(flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
+static inline void calRnPxyz(flt_t *rRn, flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
                              flt_t aDis, flt_t aRCutL, flt_t aRCutR, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
     const flt_t tRCutRL = aRCutR-aRCutL;
     flt_t tRnX = (aDis-aRCutL)/tRCutRL;
     tRnX = ONE - (tRnX+tRnX);
+    chebyshevFull<N>(tRnX, rRn);
     chebyshev2Full<N-1>(tRnX, rCheby2);
     const flt_t tRnPMul = TWO / (aDis*tRCutRL);
     rRnPx[0] = ZERO; rRnPy[0] = ZERO; rRnPz[0] = ZERO;
