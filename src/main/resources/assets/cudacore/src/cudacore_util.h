@@ -2,7 +2,7 @@
 #define CUDACORE_UTIL_H
 
 #include <cuda_runtime.h>
-#include <stdint.h>
+#include <cstdint>
 
 namespace JSE_CUDACORE {
 

@@ -103,6 +103,7 @@ public class CudaCore {
         Main.addGlobalAutoCloseable(CudaCore::cudaDeviceSynchronize);
     }
     public static native void cudaDeviceSynchronize() throws CudaException;
+    public static native void cudaExceptionCheck(int aCudaErrorCode) throws CudaException;
     
     static native long cudaMalloc(int aCount) throws CudaException;
     static native void cudaFree(long aPtr) throws CudaException;

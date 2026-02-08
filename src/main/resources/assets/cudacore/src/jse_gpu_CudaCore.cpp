@@ -9,6 +9,12 @@ JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaDeviceSynchronize(JNIEnv *aEnv,
         JSE_CUDACORE::throwExceptionCuda(aEnv, cudaGetErrorString(tErr));
     }
 }
+JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaExceptionCheck(JNIEnv *aEnv, jclass aClazz, jint aCudaErrorCode) {
+    const cudaError_t tErr = (cudaError_t)aCudaErrorCode;
+    if (tErr != cudaSuccess) {
+        JSE_CUDACORE::throwExceptionCuda(aEnv, cudaGetErrorString(tErr));
+    }
+}
 
 JNIEXPORT jlong JNICALL Java_jse_gpu_CudaCore_cudaMalloc(JNIEnv *aEnv, jclass aClazz, jint aCount) {
     void *tPtr = NULL;

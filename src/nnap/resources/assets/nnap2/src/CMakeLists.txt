@@ -1,15 +1,18 @@
-cmake_minimum_required(VERSION 3.15)
-project(nnap2 CXX)
+cmake_minimum_required(VERSION 3.24)
+project(nnap2 LANGUAGES CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CUDA_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
 set(SOURCE_FILES
-    nnap_interface.cpp)
+    nnap_interface.cpp
+    nnap_interface_gpu.cu)
 add_library(nnap2 SHARED ${SOURCE_FILES})
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")

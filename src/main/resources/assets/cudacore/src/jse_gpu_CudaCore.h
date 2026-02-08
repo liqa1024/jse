@@ -17,6 +17,14 @@ JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaDeviceSynchronize
 
 /*
  * Class:     jse_gpu_CudaCore
+ * Method:    cudaExceptionCheck
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaExceptionCheck
+  (JNIEnv *, jclass, jint);
+
+/*
+ * Class:     jse_gpu_CudaCore
  * Method:    cudaMalloc
  * Signature: (I)J
  */

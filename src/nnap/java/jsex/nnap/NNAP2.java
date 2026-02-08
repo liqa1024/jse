@@ -4,32 +4,21 @@ import jse.atom.IPairPotential;
 import jse.clib.*;
 import jse.code.IO;
 import jse.code.OS;
-import jse.code.SP;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.code.collection.NewCollections;
-import jse.code.functional.IUnaryFullOperator;
 import jse.jit.IJITEngine;
-import jse.jit.IJITMethod;
-import jse.jit.SimpleJIT;
 import jse.math.vector.IVector;
 import jse.math.vector.Vectors;
 import jse.cptr.*;
 import jsex.nnap.basis.Basis2;
 import jsex.nnap.nn.NeuralNetwork2;
 import org.apache.groovy.util.Maps;
-import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.*;
 
-import java.io.BufferedReader;
-import java.net.URL;
 import java.util.*;
 import java.util.regex.Pattern;
-
-import static jse.code.CS.VERSION_NUMBER;
-import static jse.code.Conf.VERSION_MASK;
-import static jse.code.OS.JAVA_HOME;
 
 /**
  * jse 实现的 nnap，所有 nnap 相关能量和力的计算都在此实现，
@@ -67,21 +56,7 @@ public class NNAP2 implements IPairPotential {
          */
         public static String PRECISION = OS.env("JSE_NNAP_PRECISION", "double");
     }
-    
     public final static int VERSION = 6;
-    private static final String JIT_NAME = "nnapjit";
-    private final static String INTERFACE_NAME = "nnap_interface.cpp";
-    private final static String[] SRC_NAME = {
-          "nnap_util.hpp"
-        , "nn_FeedForward.hpp"
-        , "basis_Chebyshev.hpp"
-        , "basis_ChebyshevUtil.hpp"
-        , "basis_SphericalChebyshev.hpp"
-        , "basis_SphericalUtil.hpp"
-        , "basis_SphericalUtil0.hpp"
-        , "nnap_interface.h"
-        , INTERFACE_NAME
-    };
     
     private final String[] mSymbols;
     private final @Nullable String mUnits;
@@ -96,11 +71,7 @@ public class NNAP2 implements IPairPotential {
     public String units() {return mUnits;}
     public String precision() {return mSinglePrecision ? "single" : "double";}
     // jit stuffs
-    private static final String NAME_CAL_ENERGY = "jse_nnap_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nnap_calEnergyForce";
-    private static final String NAME_STAT_NEINUM_LAMMPS = "jse_nnap_statNeiNumLammps", NAME_COMPUTE_LAMMPS = "jse_nnap_computeLammps";
-    private final IJITEngine mEngine;
-    private final IJITMethod mCalEnergy, mCalEnergyForce;
-    private final IJITMethod mStatNeiNumLammps, mComputeLammps;
+    private final NNAPGEN mNNAPGEN;
     // 现在所有数据都改为 c 指针
     private final AnyCPointer mDataIn, mDataOut;
     private final IntCPointer mInNums, mOutNums;
@@ -110,7 +81,7 @@ public class NNAP2 implements IPairPotential {
     private final GrowableIntCPointer mNlType, mNlIdx;
     
     @SuppressWarnings("unchecked")
-    NNAP2(String aLibDir, String aProjectName, Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, @Nullable String aPrecision) throws Exception {
+    NNAP2(@Nullable String aLibDir, @Nullable String aProjectName, Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, @Nullable String aPrecision) throws Exception {
         mThreadNumber = aThreadNumber;
         Number tVersion = (Number)aModelInfo.get("version");
         if (tVersion != null) {
@@ -136,7 +107,17 @@ public class NNAP2 implements IPairPotential {
             if (tSymbol == null) throw new IllegalArgumentException("No symbol in model");
             mSymbols[i] = tSymbol.toString();
         }
-        // 不管怎么样先初始化数组
+        mBasis = Basis2.load(NewCollections.map(tModels, info -> {
+            Object tBasisInfo = info.get("basis");
+            return tBasisInfo!=null ? tBasisInfo : Maps.of("type", "spherical_chebyshev");
+        }));
+        mNN = NeuralNetwork2.load(mBasis, NewCollections.map(tModels, info -> {
+            Object tNNInfo = info.get("nn");
+            if (tNNInfo ==null) throw new IllegalArgumentException("No nn in model, torch model is invalid now.");
+            return tNNInfo;
+        }));
+        mNNAPGEN = new NNAPGEN(aLibDir, aProjectName, mBasis, mNN, mSinglePrecision);
+        // 初始化数组
         mDataIn = AnyCPointer.calloc(20);
         mDataOut = AnyCPointer.calloc(20);
         mInNums = IntCPointer.calloc(20);
@@ -150,17 +131,7 @@ public class NNAP2 implements IPairPotential {
         mGradNlDy = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mGradNlDz = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mOutEng = mSinglePrecision ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
-        
-        mBasis = Basis2.load(NewCollections.map(tModels, info -> {
-            Object tBasisInfo = info.get("basis");
-            return tBasisInfo!=null ? tBasisInfo : Maps.of("type", "spherical_chebyshev");
-        }));
-        mNN = NeuralNetwork2.load(mBasis, NewCollections.map(tModels, info -> {
-            Object tNNInfo = info.get("nn");
-            if (tNNInfo ==null) throw new IllegalArgumentException("No nn in model, torch model is invalid now.");
-            return tNNInfo;
-        }));
-        // 继续初始化参数数组
+        // 初始化参数数组
         mFpHyperParam = AnyCPointer.malloc(tModelSize);
         mFpParam = AnyCPointer.malloc(tModelSize);
         mNnParam = AnyCPointer.malloc(tModelSize);
@@ -205,49 +176,13 @@ public class NNAP2 implements IPairPotential {
             fill_(tNormParam.plus(mBasis[i].size()+2), aNormSigma);
             mNormParam.putAt(i, tNormParam);
         }
-        // 代码生成，先针对相同系数的进行优化合并
-        List<List<Integer>> tSwitchListFp = new ArrayList<>(); // [position][type]
-        List<List<Integer>> tSwitchListNN = new ArrayList<>();
-        List<List<Integer>> tSwitchListFpNN = new ArrayList<>();
-        for (int type = 1; type <= tModelSize; ++type) {
-            final int ti = type-1;
-            updateSwitchList_(tSwitchListFp, type, caseList -> mBasis[ti].hasSameGenMap(mBasis[caseList.get(0)-1]));
-            updateSwitchList_(tSwitchListNN, type, caseList -> mNN[ti].hasSameGenMap(mNN[caseList.get(0)-1]));
-            updateSwitchList_(tSwitchListFpNN, type, caseList -> mBasis[ti].hasSameGenMap(mBasis[caseList.get(0)-1]) && mNN[ti].hasSameGenMap(mNN[caseList.get(0)-1]));
-        }
-        final Map<String, Object> tGenMap = new LinkedHashMap<>();
-        tGenMap.put("[PRECISION]", mSinglePrecision ? "single" : "double");
-        tGenMap.put("[FP TYPE]", tSwitchListFp);
-        tGenMap.put("[NN TYPE]", tSwitchListNN);
-        tGenMap.put("[FP NN TYPE]", tSwitchListFpNN);
-        // 只添加不同的，降低 code gen 的压力
-        int tGenIdx = 0;
-        for (List<Integer> tSubList : tSwitchListFpNN) {
-            mBasis[tSubList.get(0)-1].updateGenMap(tGenMap, tGenIdx);
-            mNN[tSubList.get(0)-1].updateGenMap(tGenMap, tGenIdx);
-            tGenIdx += tSubList.size();
-        }
-        // 开始 jit
-        String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, tGenMap, NNAP2.VERSION, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING);
-        mEngine = SimpleJIT.engine().setLibDir(aLibDir).setProjectName(aProjectName+"_"+tUniqueID)
-            .setOptimLevel(Conf.OPTIM_LEVEL).setCmakeSettings(Conf.CMAKE_SETTING)
-            .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_FLAGS)
-            .setSrcDirIniter((wd, engine) -> {
-                for (String tName : SRC_NAME) {
-                    codeGen_(IO.getResource("nnap2/src/"+tName), wd+tName, tGenMap);
-                }
-                // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
-                engine.writeCmakeFile(wd, INTERFACE_NAME);
-                return wd;
-            });
-        mEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS).compile();
-        mCalEnergy = mEngine.findMethod(NAME_CAL_ENERGY);
-        mCalEnergyForce = mEngine.findMethod(NAME_CAL_ENERGYFORCE);
-        mStatNeiNumLammps = mEngine.findMethod(NAME_STAT_NEINUM_LAMMPS);
-        mComputeLammps = mEngine.findMethod(NAME_COMPUTE_LAMMPS);
+        // 开始 jit 编译
+        mNNAPGEN.setOptimLevel(Conf.OPTIM_LEVEL).setCmakeSetting(Conf.CMAKE_SETTING)
+            .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
+            .compile();
     }
     public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, String aPrecision) throws Exception {
-        this(OS.WORKING_DIR, JIT_NAME, aModelInfo, aThreadNumber, aPrecision);
+        this(null, null, aModelInfo, aThreadNumber, aPrecision);
     }
     public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, String aPrecision) throws Exception {
         this(IO.toParentPath(aModelPath), toValidProjectName(IO.toFileName(aModelPath)),
@@ -262,9 +197,8 @@ public class NNAP2 implements IPairPotential {
     private static String toValidProjectName(String aProjectName) {
         aProjectName = aProjectName.replace(".yaml", "").replace(".yml", "").replace(".json", "").replace(".jnn", "").replace(".nn", "");
         aProjectName = PROJECT_INVALID_NAME.matcher(aProjectName).replaceAll("");
-        return aProjectName.isEmpty() ? JIT_NAME : aProjectName;
+        return aProjectName.isEmpty() ? null : aProjectName;
     }
-    
     
     private static void fill_(IDoubleOrFloatCPointer rPtr, @Nullable IVector aVec) {
         if (aVec == null) return;
@@ -272,279 +206,6 @@ public class NNAP2 implements IPairPotential {
         for (int i = 0; i < tSize; ++i) {
             rPtr.putAtD(i, aVec.get(i));
         }
-    }
-    private static void updateSwitchList_(List<List<Integer>> rSwitchList, int aType, IUnaryFullOperator<Boolean, List<Integer>> aChecker) {
-        for (List<Integer> tCaseList : rSwitchList) {
-            if (aChecker.apply(tCaseList)) {
-                tCaseList.add(aType);
-                return;
-            }
-        }
-        // 所有现有的 case 都没有，则新增一列
-        List<Integer> tCaseList = new ArrayList<>(1);
-        tCaseList.add(aType);
-        rSwitchList.add(tCaseList);
-    }
-    
-    /**
-     * NNAP GEN 语法备忘录：
-     * <p>
-     * 标记逻辑:
-     *   <p>
-     *   {@code NNAPGEN}: 通用标识，正文不出现此序列来保证不会被代码生成；替换宏以 NNAPGEN_
-     *     开头，从而避免意外的替换
-     *   <p>
-     *   {@code NNAPGENX}: 循环替换宏标识，会在带有 swich/repeat 块中替换为
-     *     i:NNAPGEN，此语法可以保证在嵌套时 NNAPGENXX 自动替换为 i:j:NNAPGEN
-     *   <p>
-     *   {@code NNAPGENS}: 循环替换变量标识，会在 swich/repeat 块中直接替换为特定变量，其中
-     *     NNAPGENS_X 会直接替换为 i，而 swich 中可以使用 NNAPGENS_{swicher}
-     *     替换为第一个 case
-     *   <p>
-     *   {@code NNAPGENO}: 循环替换保护标识，会在带有 swich/repeat 块中替换为
-     *     NNAPGEN，从而保护内层循环中的 NNAPGEN 替换为需要的变量
-     * <p>
-     * 语法逻辑：
-     *   <p>
-     *   {@code // >>> NNAPGEN}: 替换块开头标识
-     *   <p>
-     *   {@code // <<< NNAPGEN}: 替换块结尾标识
-     *   <p>
-     *   {@code // --- NNAPGEN}: 替换块中间标识
-     *   <p>
-     *   {@code []}: 替换块内特殊参数标识，会进行 gen map 查询
-     *   <p>
-     *   {@code ()}: 替换块内通用参数标识，一般不进行 gen map 查询
-     */
-    private static final String MARKER_REMOVE_START = "// >>> NNAPGEN REMOVE";
-    private static final String MARKER_REMOVE_END = "// <<< NNAPGEN REMOVE";
-    private static final String MARKER_REPEAT_START = "// >>> NNAPGEN REPEAT";
-    private static final String MARKER_REPEAT_END = "// <<< NNAPGEN REPEAT";
-    private static final String MARKER_SWITCH_START = "// >>> NNAPGEN SWITCH";
-    private static final String MARKER_SWITCH_END = "// <<< NNAPGEN SWITCH";
-    private static final String MARKER_PICK_START = "// >>> NNAPGEN PICK";
-    private static final String MARKER_PICK_CASE = "// --- NNAPGEN PICK:";
-    private static final String MARKER_PICK_END = "// <<< NNAPGEN PICK";
-    private static final String MARKER_IF_START = "// >>> NNAPGEN IF";
-    private static final String MARKER_IF_HAS = "// --- NNAPGEN HAS:";
-    private static final String MARKER_IF_ELSE = "// --- NNAPGEN ELSE:";
-    private static final String MARKER_IF_END = "// <<< NNAPGEN IF";
-    private static final String MARKER_ANY_CASE = "// --- NNAPGEN ";
-    
-    private static final int STATE_NORMAL = 0, STATE_REMOVE = 1, STATE_REPEAT = 2, STATE_SWITCH = 3, STATE_PICK = 4, STATE_IF = 5;
-    
-    private static void codeGen_(URL aSourceURL, String aTargetPath, Map<String, Object> aGenMap) throws Exception {
-        List<String> tLines;
-        try (BufferedReader tReader = IO.toReader(aSourceURL)) {
-            tLines = IO.readAllLines(tReader);
-        }
-        IO.write(aTargetPath, processLines_(tLines, aGenMap));
-    }
-    @SuppressWarnings("unchecked")
-    private static List<String> processLines_(List<String> aLines, Map<String, Object> aGenMap) throws Exception {
-        int tState = STATE_NORMAL;
-        List<String> rBuf0 = new ArrayList<>(), rBuf1 = new ArrayList<>();
-        List<String> rOutLines = new ArrayList<>(aLines.size());
-        for (String tLine : aLines) {
-            switch(tState) {
-            case STATE_NORMAL: {
-                switch(tLine.trim()) {
-                case MARKER_REMOVE_START: {
-                    tState = STATE_REMOVE;
-                    break;
-                }
-                case MARKER_REPEAT_START: {
-                    tState = STATE_REPEAT;
-                    break;
-                }
-                case MARKER_SWITCH_START: {
-                    tState = STATE_SWITCH;
-                    break;
-                }
-                case MARKER_PICK_START: {
-                    tState = STATE_PICK;
-                    break;
-                }
-                case MARKER_IF_START: {
-                    tState = STATE_IF;
-                    break;
-                }
-                default: {
-                    rOutLines.add(baseReplace_(tLine, aGenMap));
-                    break;
-                }}
-                break;
-            }
-            case STATE_REMOVE: {
-                if (tLine.trim().equals(MARKER_REMOVE_END)) {
-                    tState = STATE_NORMAL;
-                }
-                break;
-            }
-            case STATE_REPEAT: {
-                if (tLine.trim().startsWith(MARKER_REPEAT_END)) {
-                    tState = STATE_NORMAL;
-                    String tRangeStr = tLine.trim().substring(MARKER_REPEAT_END.length()).trim();
-                    List<Integer> tRange = parseRepeatRange_(tRangeStr, aGenMap);
-                    rBuf1.clear();
-                    for (int i : tRange) {
-                        for (String tBufLine : rBuf0) {
-                            rBuf1.add(
-                                tBufLine.replace("__NNAPGENS_X__", String.valueOf(i))
-                                        .replace("NNAPGENX", i+":NNAPGEN")
-                                        .replace("NNAPGENO", "NNAPGEN")
-                            );
-                        }
-                    }
-                    rBuf0.clear();
-                    // 内部只核心逻辑，全部完成后递归处理后续
-                    rOutLines.addAll(processLines_(rBuf1, aGenMap));
-                } else {
-                    rBuf0.add(tLine);
-                }
-                break;
-            }
-            case STATE_SWITCH: {
-                if (tLine.trim().startsWith(MARKER_SWITCH_END)) {
-                    tState = STATE_NORMAL;
-                    String[] tArgs = parseSwitchArgs_(tLine);
-                    String tSwitcher = tArgs[0];
-                    String tKey = tArgs[1];
-                    Object tValue = aGenMap.get(tKey);
-                    if (tValue==null) throw new IllegalStateException("Missing switch key: "+tKey);
-                    List<List<Integer>> tSwitchList = (List<List<Integer>>)tValue;
-                    rBuf1.clear();
-                    rBuf1.add("switch ("+tSwitcher+") {");
-                    int tGenIdx = 0;
-                    for (List<Integer> tSubList : tSwitchList) {
-                        StringBuilder tCases = new StringBuilder();
-                        for (int tCase : tSubList) {
-                            tCases.append("case ").append(tCase).append(": ");
-                        }
-                        rBuf1.add(tCases+"{");
-                        for (String tBufLine : rBuf0) {
-                            rBuf1.add(
-                                tBufLine.replace("__NNAPGENS_"+tSwitcher+"__", tSubList.get(0).toString()) // 总是合并到第一个组
-                                        .replace("__NNAPGENS_X__", String.valueOf(tGenIdx))
-                                        .replace("NNAPGENX", tGenIdx+":NNAPGEN")
-                                        .replace("NNAPGENO", "NNAPGEN")
-                            );
-                        }
-                        rBuf1.add("break;");
-                        rBuf1.add("}");
-                        tGenIdx += tSubList.size();
-                    }
-                    rBuf0.clear();
-                    rBuf1.add("}");
-                    // 内部只核心逻辑，全部完成后递归处理后续
-                    rOutLines.addAll(processLines_(rBuf1, aGenMap));
-                } else {
-                    rBuf0.add(tLine);
-                }
-                break;
-            }
-            case STATE_PICK: {
-                if (tLine.trim().startsWith(MARKER_PICK_END)) {
-                    tState = STATE_NORMAL;
-                    String tKey = tLine.trim().substring(MARKER_PICK_END.length()).trim();
-                    Object tValue = aGenMap.get(tKey);
-                    if (tValue==null) throw new IllegalStateException("Missing pick key: "+tKey);
-                    rBuf1.clear();
-                    boolean tInCase = false;
-                    for (String tBufLine : rBuf0) {
-                        if (tInCase) {
-                            if (tBufLine.trim().startsWith(MARKER_PICK_CASE)) {
-                                break;
-                            } else {
-                                rBuf1.add(tBufLine.replace("NNAPGENO", "NNAPGEN"));
-                            }
-                        } else {
-                            if (tBufLine.trim().startsWith(MARKER_PICK_CASE)) {
-                                String tCase = tBufLine.trim().substring(MARKER_PICK_CASE.length()).trim();
-                                if (tCase.equals(tValue)) tInCase = true;
-                            }
-                        }
-                    }
-                    rBuf0.clear();
-                    // 内部只核心逻辑，全部完成后递归处理后续
-                    rOutLines.addAll(processLines_(rBuf1, aGenMap));
-                } else {
-                    rBuf0.add(tLine);
-                }
-                break;
-            }
-            case STATE_IF: {
-                if (tLine.trim().equals(MARKER_IF_END)) {
-                    tState = STATE_NORMAL;
-                    rBuf1.clear();
-                    boolean tInCase = false;
-                    for (String tBufLine : rBuf0) {
-                        if (tInCase) {
-                            if (tBufLine.trim().startsWith(MARKER_ANY_CASE)) {
-                                break;
-                            } else {
-                                rBuf1.add(tBufLine.replace("NNAPGENO", "NNAPGEN"));
-                            }
-                        } else {
-                            if (tBufLine.trim().startsWith(MARKER_IF_HAS)) {
-                                String tKey = tBufLine.trim().substring(MARKER_IF_HAS.length()).trim();
-                                if (aGenMap.containsKey(tKey)) tInCase = true;
-                            } else
-                            if (tBufLine.trim().startsWith(MARKER_IF_ELSE)) {
-                                tInCase = true;
-                            }
-                        }
-                    }
-                    rBuf0.clear();
-                    // 内部只核心逻辑，全部完成后递归处理后续
-                    rOutLines.addAll(processLines_(rBuf1, aGenMap));
-                } else {
-                    rBuf0.add(tLine);
-                }
-                break;
-            }
-            default: {
-                throw new IllegalStateException();
-            }}
-        }
-        if (tState!=STATE_NORMAL) throw new IllegalStateException();
-        return rOutLines;
-    }
-    
-    private static String[] parseSwitchArgs_(String aLine) {
-        String tLine = aLine.trim().substring(MARKER_SWITCH_END.length()).trim();
-        String[] tArgs = new String[2];
-        if (!tLine.startsWith("(")) throw new IllegalArgumentException("invalid switch argument: "+tLine);
-        int tSplit = tLine.indexOf(')');
-        tArgs[0] = tLine.substring(1, tSplit).trim();
-        tArgs[1] = tLine.substring(tSplit+1).trim();
-        return tArgs;
-    }
-    @SuppressWarnings("unchecked")
-    private static List<Integer> parseRepeatRange_(String aRangeStr, Map<String, Object> aGenMap) throws Exception {
-        @Language("Groovy") String tRangeStr = scriptReplace_(aRangeStr, aGenMap);
-        return (List<Integer>)SP.Groovy.runText(tRangeStr);
-    }
-    private static String scriptReplace_(String aScriptStr, Map<String, Object> aGenMap) {
-        int tStart = aScriptStr.indexOf('[');
-        if (tStart < 0) return aScriptStr;
-        int tEnd = aScriptStr.indexOf(']');
-        if (tEnd < 0) throw new IllegalArgumentException("invalid script: "+aScriptStr);
-        String tKey = aScriptStr.substring(tStart, tEnd+1);
-        Object tValue = aGenMap.get(tKey);
-        if (tValue==null) throw new IllegalStateException("Missing script key: "+tKey);
-        // 递归实现多个 key 的替换
-        return scriptReplace_(aScriptStr.replace(tKey, tValue.toString()), aGenMap);
-    }
-    
-    private static String baseReplace_(String aLine, Map<String, Object> aGenMap) {
-        // 简单串联，在没有遇到性能问题前都就这样做好了
-        for (Map.Entry<String, Object> tEntry : aGenMap.entrySet()) {
-            String tKey = tEntry.getKey();
-            if (tKey.startsWith("[") && tKey.endsWith("]")) continue;
-            aLine = aLine.replace("__"+tKey+"__", tEntry.getValue().toString());
-        }
-        return aLine;
     }
     
     @Override public void shutdown() {
@@ -567,7 +228,7 @@ public class NNAP2 implements IPairPotential {
         mOutEng.free();
         mDataOut.free();
         
-        mEngine.shutdown();
+        mNNAPGEN.shutdown();
     }
     @Override public boolean isShutdown() {return mDead;}
     @Override public int threadNumber() {return mThreadNumber;}
@@ -638,7 +299,7 @@ public class NNAP2 implements IPairPotential {
             mDataIn.putAt(8, mNormParam.getAt(cType-1));
             mDataOut.putAt(0, mOutEng);
             // 调用 jit 方法获取结果
-            int tCode = mCalEnergy.invoke(mDataIn, mDataOut);
+            int tCode = mNNAPGEN.mCalEnergy.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
             double tEng = mOutEng.getD();
             rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
@@ -675,7 +336,7 @@ public class NNAP2 implements IPairPotential {
             mDataOut.putAt(2, mGradNlDy);
             mDataOut.putAt(3, mGradNlDz);
             // 调用 jit 方法获取结果
-            int tCode = mCalEnergyForce.invoke(mDataIn, mDataOut);
+            int tCode = mNNAPGEN.mCalEnergyForce.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
             double tEng = mOutEng.getD();
             if (rEnergyAccumulator != null) {
@@ -729,7 +390,7 @@ public class NNAP2 implements IPairPotential {
         mDataIn.putAt(0, mInNums);
         mDataIn.putAt(1, ilist);
         mDataIn.putAt(2, numneigh);
-        mStatNeiNumLammps.invoke(mDataIn, mOutNums);
+        mNNAPGEN.mStatNeiNumLammps.invoke(mDataIn, mOutNums);
         validNlLammps_(mOutNums.getAt(0));
         
         // compute 开始，参数设置
@@ -773,7 +434,7 @@ public class NNAP2 implements IPairPotential {
         mDataOut.putAt(8, aPair.cvatom());
         
         // 调用 jit 方法计算
-        int tCode = mComputeLammps.invoke(mDataIn, mDataOut);
+        int tCode = mNNAPGEN.mComputeLammps.invoke(mDataIn, mDataOut);
         if (tCode>0) throw new IllegalStateException("Exit code: "+tCode);
     }
 }
