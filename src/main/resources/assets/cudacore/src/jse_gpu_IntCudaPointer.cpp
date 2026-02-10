@@ -4,9 +4,6 @@
 
 extern "C" {
 
-JNIEXPORT jint JNICALL Java_jse_gpu_IntCudaPointer_typeSize_1(JNIEnv *aEnv, jclass aClazz) {
-    return (jint)sizeof(int);
-}
 JNIEXPORT void JNICALL Java_jse_gpu_IntCudaPointer_fill_1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jintArray aJArray, jint aStart, jint aCount) {
     int *tBuf = MALLOCN_TP(int, aCount);
     parsejint2intV(aEnv, aJArray, aStart, tBuf, 0, aCount);

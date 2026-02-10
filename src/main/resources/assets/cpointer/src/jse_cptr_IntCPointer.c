@@ -1,26 +1,20 @@
-#if defined(__cplusplus) && defined(__CLION_IDE__)
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
-#endif
-
-#include "jniutil.h"
 #include "jse_cptr_IntCPointer.h"
+#include "jniutil.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-JNIEXPORT jint JNICALL Java_jse_cptr_IntCPointer_typeSize_1(JNIEnv *aEnv, jclass aClazz) {
-    return (jint)sizeof(int);
+JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_typeSize_1(JNIEnv *aEnv, jclass aClazz) {
+    return (jlong)sizeof(int);
 }
 JNIEXPORT void JNICALL Java_jse_cptr_IntCPointer_fill0(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jintArray aJArray, jint aStart, jint aCount) {
     parsejint2intV(aEnv, aJArray, aStart, (int *)(intptr_t)rPtr, 0, aCount);
 }
-JNIEXPORT void JNICALL Java_jse_cptr_IntCPointer_fill1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jint aValue, jint aCount) {
-    int *it = (int *)(intptr_t)rPtr;
-    for (jsize i = 0; i < aCount; ++i) {
-        *it = (int)aValue;
-        ++it;
+JNIEXPORT void JNICALL Java_jse_cptr_IntCPointer_fill1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jint aValue, jlong aCount) {
+    int *tPtr = (int *)(intptr_t)rPtr;
+    for (jlong i = 0; i < aCount; ++i) {
+        tPtr[i] = (int)aValue;
     }
 }
 JNIEXPORT void JNICALL Java_jse_cptr_IntCPointer_parse2dest_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jintArray rJArray, jint aStart, jint aCount) {
@@ -29,13 +23,13 @@ JNIEXPORT void JNICALL Java_jse_cptr_IntCPointer_parse2dest_1(JNIEnv *aEnv, jcla
 JNIEXPORT jint JNICALL Java_jse_cptr_IntCPointer_get_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr) {
     return (jint) *(int *)(intptr_t)aPtr;
 }
-JNIEXPORT jint JNICALL Java_jse_cptr_IntCPointer_getAt_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jint aIdx) {
+JNIEXPORT jint JNICALL Java_jse_cptr_IntCPointer_getAt_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aIdx) {
     return (jint) ((int *)(intptr_t)aPtr)[aIdx];
 }
 JNIEXPORT void JNICALL Java_jse_cptr_IntCPointer_set_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jint aValue) {
     *(int *)(intptr_t)aPtr = aValue;
 }
-JNIEXPORT void JNICALL Java_jse_cptr_IntCPointer_putAt_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jint aIdx, jint aValue) {
+JNIEXPORT void JNICALL Java_jse_cptr_IntCPointer_putAt_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aIdx, jint aValue) {
     ((int *)(intptr_t)aPtr)[aIdx] = aValue;
 }
 JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_next_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr) {
@@ -43,7 +37,7 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_next_1(JNIEnv *aEnv, jclass aC
     ++tPtr;
     return (jlong)(intptr_t)tPtr;
 }
-JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_rightShift_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jint aCount) {
+JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_rightShift_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aCount) {
     int *tPtr = (int *)(intptr_t)aPtr;
     tPtr += aCount;
     return (jlong)(intptr_t)tPtr;
@@ -53,7 +47,7 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_previous_1(JNIEnv *aEnv, jclas
     --tPtr;
     return (jlong)(intptr_t)tPtr;
 }
-JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_leftShift_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jint aCount) {
+JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_leftShift_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aCount) {
     int *tPtr = (int *)(intptr_t)aPtr;
     tPtr -= aCount;
     return (jlong)(intptr_t)tPtr;
@@ -61,8 +55,4 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_leftShift_1(JNIEnv *aEnv, jcla
 
 #ifdef __cplusplus
 }
-#endif
-
-#if defined(__cplusplus) && defined(__CLION_IDE__)
-#pragma clang diagnostic pop
 #endif

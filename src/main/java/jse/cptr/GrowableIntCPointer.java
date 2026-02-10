@@ -1,7 +1,6 @@
 package jse.cptr;
 
 import jse.clib.UnsafeJNI;
-import org.jetbrains.annotations.ApiStatus;
 
 /**
  * 可以增长的 {@link IntCPointer}，在增长时会自动释放旧的内存，并自动额外申请内存来加速；
@@ -10,26 +9,26 @@ import org.jetbrains.annotations.ApiStatus;
  * 仅仅进行内存管理，不会有任何初始值，并且扩容时不保留旧值
  * @author liqa
  */
-@ApiStatus.Experimental
 public class GrowableIntCPointer extends IntCPointer implements IGrowableCPointer {
-    protected int mCount = 0;
+    protected long mCount;
     @UnsafeJNI("Manual free required")
-    public GrowableIntCPointer(int aInitCount) {
+    public GrowableIntCPointer(long aInitCount) {
         super(CPointer.malloc_(aInitCount, TYPE_SIZE));
         mCount = aInitCount;
     }
     public GrowableIntCPointer() {
         super(0);
+        mCount = 0;
     }
-    public int count() {return mCount;}
+    @Override public long count() {return mCount;}
     
-    private void grow_(int aMinCount) {
-        final int oCount = mCount;
+    private void grow_(long aMinCount) {
+        final long oCount = mCount;
         if (mPtr != 0) CPointer.free_(mPtr);
         mCount = Math.max(aMinCount, oCount + (oCount>>1));
         mPtr = CPointer.malloc_(mCount, TYPE_SIZE);
     }
-    public void ensureCapacity(int aMinCount) {
+    @Override public void ensureCapacity(long aMinCount) {
         if (aMinCount > mCount) grow_(aMinCount);
     }
 }

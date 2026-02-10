@@ -7,12 +7,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef jse_cptr_AnyCPointer_TYPE_SIZE
+#define jse_cptr_AnyCPointer_TYPE_SIZE 1i64
 /*
  * Class:     jse_cptr_AnyCPointer
  * Method:    typeSize_
- * Signature: ()I
+ * Signature: ()J
  */
-JNIEXPORT jint JNICALL Java_jse_cptr_AnyCPointer_typeSize_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_typeSize_1
   (JNIEnv *, jclass);
 
 /*
@@ -26,10 +28,10 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_get_1
 /*
  * Class:     jse_cptr_AnyCPointer
  * Method:    getAt_
- * Signature: (JI)J
+ * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_getAt_1
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_AnyCPointer
@@ -42,10 +44,10 @@ JNIEXPORT void JNICALL Java_jse_cptr_AnyCPointer_set_1
 /*
  * Class:     jse_cptr_AnyCPointer
  * Method:    putAt_
- * Signature: (JIJ)V
+ * Signature: (JJJ)V
  */
 JNIEXPORT void JNICALL Java_jse_cptr_AnyCPointer_putAt_1
-  (JNIEnv *, jclass, jlong, jint, jlong);
+  (JNIEnv *, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     jse_cptr_AnyCPointer
@@ -58,10 +60,10 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_next_1
 /*
  * Class:     jse_cptr_AnyCPointer
  * Method:    rightShift_
- * Signature: (JI)J
+ * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_rightShift_1
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_AnyCPointer
@@ -74,10 +76,10 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_previous_1
 /*
  * Class:     jse_cptr_AnyCPointer
  * Method:    leftShift_
- * Signature: (JI)J
+ * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_leftShift_1
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong);
 
 #ifdef __cplusplus
 }

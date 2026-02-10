@@ -32,7 +32,7 @@ public interface ICPointer extends IPointer {
      * @param aCount 需要拷贝的数据长度
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    void memcpy2dest(ICPointer rDest, int aCount);
+    void memcpy2dest(ICPointer rDest, long aCount);
     
     /**
      * 直接调用 c 中的 {@code memcpy} 来将输入 c 指针值拷贝到此数组
@@ -46,5 +46,43 @@ public interface ICPointer extends IPointer {
      * @param aCount 需要拷贝的数据长度
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    void memcpy2this(ICPointer aSrc, int aCount);
+    void memcpy2this(ICPointer aSrc, long aCount);
+    
+    /**
+     * 获取此指针对应类型的长度
+     * @return {@code sizeof(xxx)}
+     */
+    long typeSize();
+    
+    /**
+     * 向后移动指针，即对应 c 中的 {@code ++ptr}
+     */
+    void next();
+    /**
+     * 指针向后移动指定步数，即对应 c 中的 {@code ptr += aCount}
+     * @param aCount 需要移动的步数
+     */
+    void rightShift(long aCount);
+    /**
+     * 计算并返回向后移动指定步数的指针，即对应 c 中的 {@code ptr + aCount}
+     * @param aCount 需要移动的步数
+     * @return 移动后的指针对象
+     */
+    ICPointer plus(long aCount);
+    
+    /**
+     * 向前移动指针，即对应 c 中的 {@code --ptr}
+     */
+    void previous();
+    /**
+     * 指针向前移动指定步数，即对应 c 中的 {@code ptr -= aCount}
+     * @param aCount 需要移动的步数
+     */
+    void leftShift(long aCount);
+    /**
+     * 计算并返回向前移动指定步数的指针，即对应 c 中的 {@code ptr - aCount}
+     * @param aCount 需要移动的步数
+     * @return 移动后的指针对象
+     */
+    ICPointer minus(long aCount);
 }

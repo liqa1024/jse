@@ -7,12 +7,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef jse_cptr_IntCPointer_TYPE_SIZE
+#define jse_cptr_IntCPointer_TYPE_SIZE 1i64
 /*
  * Class:     jse_cptr_IntCPointer
  * Method:    typeSize_
- * Signature: ()I
+ * Signature: ()J
  */
-JNIEXPORT jint JNICALL Java_jse_cptr_IntCPointer_typeSize_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_typeSize_1
   (JNIEnv *, jclass);
 
 /*
@@ -26,10 +28,10 @@ JNIEXPORT void JNICALL Java_jse_cptr_IntCPointer_fill0
 /*
  * Class:     jse_cptr_IntCPointer
  * Method:    fill1
- * Signature: (JII)V
+ * Signature: (JIJ)V
  */
 JNIEXPORT void JNICALL Java_jse_cptr_IntCPointer_fill1
-  (JNIEnv *, jclass, jlong, jint, jint);
+  (JNIEnv *, jclass, jlong, jint, jlong);
 
 /*
  * Class:     jse_cptr_IntCPointer
@@ -50,10 +52,10 @@ JNIEXPORT jint JNICALL Java_jse_cptr_IntCPointer_get_1
 /*
  * Class:     jse_cptr_IntCPointer
  * Method:    getAt_
- * Signature: (JI)I
+ * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_jse_cptr_IntCPointer_getAt_1
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_IntCPointer
@@ -66,10 +68,10 @@ JNIEXPORT void JNICALL Java_jse_cptr_IntCPointer_set_1
 /*
  * Class:     jse_cptr_IntCPointer
  * Method:    putAt_
- * Signature: (JII)V
+ * Signature: (JJI)V
  */
 JNIEXPORT void JNICALL Java_jse_cptr_IntCPointer_putAt_1
-  (JNIEnv *, jclass, jlong, jint, jint);
+  (JNIEnv *, jclass, jlong, jlong, jint);
 
 /*
  * Class:     jse_cptr_IntCPointer
@@ -82,10 +84,10 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_next_1
 /*
  * Class:     jse_cptr_IntCPointer
  * Method:    rightShift_
- * Signature: (JI)J
+ * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_rightShift_1
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_IntCPointer
@@ -98,10 +100,10 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_previous_1
 /*
  * Class:     jse_cptr_IntCPointer
  * Method:    leftShift_
- * Signature: (JI)J
+ * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_jse_cptr_IntCPointer_leftShift_1
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong);
 
 #ifdef __cplusplus
 }

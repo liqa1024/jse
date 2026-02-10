@@ -4,91 +4,87 @@ import jse.clib.MiMalloc;
 import jse.clib.UnsafeJNI;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.math.IDataShell;
-import jse.math.vector.AbstractVector;
-import jse.math.vector.IIntVector;
-import jse.math.vector.RefIntVector;
+import jse.math.vector.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 /**
- * 当作 c 中的 {@code int *} 处理的指针，
- * 注意 c 中的 {@code int} 并不一定总是 32 位的，
- * 但这里统一获取时转换为 java 的 {@code int}。
- * 即使超过了 32 位，实际程序中为了保持一般性，依旧也不会用到超出的部分。
+ * 当作 c 中的 {@code int64_t *} 处理的指针
+ * 这里统一获取时转换为 java 的 {@code long}。
  * @see CPointer CPointer: 一般的 c 指针包装类
  * @author liqa
  */
-public class IntCPointer extends CPointer {
+public class Int64CPointer extends CPointer {
     /**
-     * 直接从一个任意的 c 指针初始化一个 {@link IntCPointer} 对象
+     * 直接从一个任意的 c 指针初始化一个 {@link Int64CPointer} 对象
      * @param aPtr 需要包装的 c 指针值
      */
-    @ApiStatus.Internal public IntCPointer(long aPtr) {super(aPtr);}
+    @ApiStatus.Internal public Int64CPointer(long aPtr) {super(aPtr);}
     
     /**
      * 调用 c 中的 {@code malloc} 来分配内存创建一个 c 指针
      * <p>
      * 实际内部默认会统一使用 {@link MiMalloc} 来加速内存分配的过程
      *
-     * @param aCount 需要分配的数组长度，即等价于 {@code malloc(aCount*sizeof(int))}
+     * @param aCount 需要分配的数组长度，即等价于 {@code malloc(aCount*sizeof(int64_t))}
      * @return 创建的整数 c 指针对象
      */
     @UnsafeJNI("Manual free required")
-    public static IntCPointer malloc(long aCount) {
-        return new IntCPointer(malloc_(aCount, TYPE_SIZE));
+    public static Int64CPointer malloc(long aCount) {
+        return new Int64CPointer(malloc_(aCount, TYPE_SIZE));
     }
     /**
      * 调用 c 中的 {@code calloc} 来分配全零内存创建一个 c 指针
      * <p>
      * 实际内部默认会统一使用 {@link MiMalloc} 来加速内存分配的过程
      *
-     * @param aCount 需要分配的数组长度，即等价于 {@code calloc(aCount, sizeof(int))}
+     * @param aCount 需要分配的数组长度，即等价于 {@code calloc(aCount, sizeof(int64_t))}
      * @return 创建的整数 c 指针对象
      */
     @UnsafeJNI("Manual free required")
-    public static IntCPointer calloc(long aCount) {
-        return new IntCPointer(calloc_(aCount, TYPE_SIZE));
+    public static Int64CPointer calloc(long aCount) {
+        return new Int64CPointer(calloc_(aCount, TYPE_SIZE));
     }
     
     /**
      * {@inheritDoc}
-     * @return {@code sizeof(int)}
+     * @return {@code sizeof(int64_t)}
      */
     @Override public long typeSize() {return TYPE_SIZE;}
     public final static long TYPE_SIZE = typeSize_();
     private native static long typeSize_();
     
     /**
-     * 将 jse 的 {@code IDataShell<int[]>} 填充到此 c 指针对应的内存中
+     * 将 jse 的 {@code IDataShell<long[]>} 填充到此 c 指针对应的内存中
      * <p>
      * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
      *
-     * @param aData 输入的 {@code IDataShell<int[]>} 数据
+     * @param aData 输入的 {@code IDataShell<long[]>} 数据
      * @see IDataShell
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
-    public void fill(IDataShell<int[]> aData) {
+    public void fill(IDataShell<long[]> aData) {
         if (isNull()) throw new NullPointerException();
         fill0(mPtr, aData.internalDataWithLengthCheck(), aData.internalDataShift(), aData.internalDataSize());
     }
     /**
-     * 将 java 的 {@code int[]} 填充到此 c 指针对应的内存中
+     * 将 java 的 {@code long[]} 填充到此 c 指针对应的内存中
      * <p>
      * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
      *
-     * @param aData 输入的 {@code int[]} 数据
+     * @param aData 输入的 {@code long[]} 数据
      * @param aStart 需要读取的 aData 开始的索引
      * @param aCount 需要读取的 aData 的长度
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void fill(int[] aData, int aStart, int aCount) {
+    public void fill(long[] aData, int aStart, int aCount) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(aData.length, aStart+aCount);
         fill0(mPtr, aData, aStart, aCount);
     }
-    private native static void fill0(long rPtr, int[] aData, int aStart, int aCount);
+    private native static void fill0(long rPtr, long[] aData, int aStart, int aCount);
     /**
      * 将给定输入数值填充到此 c 指针对应的内存中
      * <p>
@@ -98,11 +94,11 @@ public class IntCPointer extends CPointer {
      * @param aCount 需要读取的 aData 的长度
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void fill(int aValue, long aCount) {
+    public void fill(long aValue, long aCount) {
         if (isNull()) throw new NullPointerException();
         fill1(mPtr, aValue, aCount);
     }
-    private native static void fill1(long rPtr, int aValue, long aCount);
+    private native static void fill1(long rPtr, long aValue, long aCount);
     /**
      * 将另一个 c 指针的数据填充到此 c 指针对应的内存中
      * <p>
@@ -112,39 +108,39 @@ public class IntCPointer extends CPointer {
      * @param aCount 需要读取的 aData 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void fill(IntCPointer aData, long aCount) {
+    public void fill(Int64CPointer aData, long aCount) {
         memcpy2this(aData, aCount*TYPE_SIZE);
     }
     
     /**
-     * 将此 c 指针对应的内存数值写入 jse 的 {@code IDataShell<int[]>} 中
+     * 将此 c 指针对应的内存数值写入 jse 的 {@code IDataShell<long[]>} 中
      * <p>
      * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
      *
-     * @param rDest 需要写入的 {@code IDataShell<int[]>}
+     * @param rDest 需要写入的 {@code IDataShell<long[]>}
      * @see IDataShell
      */
     @UnsafeJNI("Invalid input size directly result in JVM SIGSEGV")
-    public void parse2dest(IDataShell<int[]> rDest) {
+    public void parse2dest(IDataShell<long[]> rDest) {
         if (isNull()) throw new NullPointerException();
         parse2dest_(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
     }
     /**
-     * 将此 c 指针对应的内存数值写入 java 的 {@code int[]} 中
+     * 将此 c 指针对应的内存数值写入 java 的 {@code long[]} 中
      * <p>
      * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
      *
-     * @param rDest 需要写入的 {@code int[]}
+     * @param rDest 需要写入的 {@code long[]}
      * @param aStart 需要写入的 rDest 开始的索引
      * @param aCount 需要写入的 rDest 的长度
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void parse2dest(int[] rDest, int aStart, int aCount) {
+    public void parse2dest(long[] rDest, int aStart, int aCount) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart+aCount);
         parse2dest_(mPtr, rDest, aStart, aCount);
     }
-    private native static void parse2dest_(long aPtr, int[] rDest, int aStart, int aCount);
+    private native static void parse2dest_(long aPtr, long[] rDest, int aStart, int aCount);
     /**
      * 将此 c 指针的数据填充到另一个 c 指针中
      * <p>
@@ -154,7 +150,7 @@ public class IntCPointer extends CPointer {
      * @param aCount 需要写入 rDest 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void parse2dest(IntCPointer rDest, long aCount) {
+    public void parse2dest(Int64CPointer rDest, long aCount) {
         memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     
@@ -164,11 +160,11 @@ public class IntCPointer extends CPointer {
      * @return 此指针对应的数值
      */
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
-    public int get() {
+    public long get() {
         if (isNull()) throw new NullPointerException();
         return get_(mPtr);
     }
-    private native static int get_(long aPtr);
+    private native static long get_(long aPtr);
     
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，即对应 c 中的 {@code ptr[aIdx]}
@@ -176,22 +172,22 @@ public class IntCPointer extends CPointer {
      * @return 此索引对应的数值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public int getAt(long aIdx) {
+    public long getAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
         return getAt_(mPtr, aIdx);
     }
-    private native static int getAt_(long aPtr, long aIdx);
+    private native static long getAt_(long aPtr, long aIdx);
     
     /**
      * 设置此指针对应的数值，即对应 c 中的 {@code *ptr = aValue}
      * @param aValue 需要设置的数值
      */
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
-    public void set(int aValue) {
+    public void set(long aValue) {
         if (isNull()) throw new NullPointerException();
         set_(mPtr, aValue);
     }
-    private native static void set_(long aPtr, int aValue);
+    private native static void set_(long aPtr, long aValue);
     
     /**
      * 将此指针当作一个 c 的数组，设置内部指定位置的数值，即对应 c 中的 {@code ptr[aIdx] = aValue}
@@ -199,11 +195,11 @@ public class IntCPointer extends CPointer {
      * @param aValue 需要设置的数值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public void putAt(long aIdx, int aValue) {
+    public void putAt(long aIdx, long aValue) {
         if (isNull()) throw new NullPointerException();
         putAt_(mPtr, aIdx, aValue);
     }
-    private native static void putAt_(long aPtr, long aIdx, int aValue);
+    private native static void putAt_(long aPtr, long aIdx, long aValue);
     
     
     /**
@@ -229,9 +225,9 @@ public class IntCPointer extends CPointer {
      * @param aCount {@inheritDoc}
      * @return {@inheritDoc}
      */
-    public IntCPointer plus(long aCount) {
+    public Int64CPointer plus(long aCount) {
         if (isNull()) throw new NullPointerException();
-        return new IntCPointer(rightShift_(mPtr, aCount));
+        return new Int64CPointer(rightShift_(mPtr, aCount));
     }
     
     /**
@@ -257,30 +253,30 @@ public class IntCPointer extends CPointer {
      * @param aCount {@inheritDoc}
      * @return {@inheritDoc}
      */
-    public IntCPointer minus(long aCount) {
+    public Int64CPointer minus(long aCount) {
         if (isNull()) throw new NullPointerException();
-        return new IntCPointer(leftShift_(mPtr, aCount));
+        return new Int64CPointer(leftShift_(mPtr, aCount));
     }
     
     /**
      * {@inheritDoc}
      * @return {@inheritDoc}
      */
-    @Override public IntCPointer copy() {
-        return new IntCPointer(mPtr);
+    @Override public Int64CPointer copy() {
+        return new Int64CPointer(mPtr);
     }
     
     /**
-     * 将此 int 指针转换成 jse 的整数向量 {@link IIntVector}，为这个指针对应数组的引用
+     * 将此 int 指针转换成 jse 的整数向量 {@link ILongVector}，为这个指针对应数组的引用
      * @param aSize 此指针的对应数组的长度
      * @return 转换后的向量
-     * @see IIntVector
+     * @see ILongVector
      */
     @UnsafeJNI("Invalid input size may result in JVM SIGSEGV")
-    public IIntVector asVec(final int aSize) {
-        return new RefIntVector() {
-            @Override public int get(int aIdx) {AbstractVector.rangeCheck(aIdx, aSize); return IntCPointer.this.getAt(aIdx);}
-            @Override public void set(int aIdx, int aValue) {AbstractVector.rangeCheck(aIdx, aSize); IntCPointer.this.putAt(aIdx, aValue);}
+    public ILongVector asVec(final int aSize) {
+        return new RefLongVector() {
+            @Override public long get(int aIdx) {AbstractVector.rangeCheck(aIdx, aSize); return Int64CPointer.this.getAt(aIdx);}
+            @Override public void set(int aIdx, long aValue) {AbstractVector.rangeCheck(aIdx, aSize); Int64CPointer.this.putAt(aIdx, aValue);}
             @Override public int size() {return aSize;}
         };
     }
@@ -291,15 +287,15 @@ public class IntCPointer extends CPointer {
      * @see List
      */
     @UnsafeJNI("Invalid input size may result in JVM SIGSEGV")
-    public List<Integer> asList(final int aSize) {
-        return new AbstractRandomAccessList<Integer>() {
-            @Override public Integer get(int index) {
+    public List<Long> asList(final int aSize) {
+        return new AbstractRandomAccessList<Long>() {
+            @Override public Long get(int index) {
                 if (index >= aSize) throw new IndexOutOfBoundsException("Index: "+index+", Size: "+aSize);
                 return getAt(index);
             }
-            @Override public Integer set(int index, @NotNull Integer element) {
+            @Override public Long set(int index, @NotNull Long element) {
                 if (index >= aSize) throw new IndexOutOfBoundsException("Index: "+index+", Size: "+aSize);
-                int oValue = getAt(index);
+                long oValue = getAt(index);
                 putAt(index, element);
                 return oValue;
             }

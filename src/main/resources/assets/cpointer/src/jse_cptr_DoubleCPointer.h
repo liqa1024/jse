@@ -7,12 +7,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef jse_cptr_DoubleCPointer_TYPE_SIZE
+#define jse_cptr_DoubleCPointer_TYPE_SIZE 1i64
 /*
  * Class:     jse_cptr_DoubleCPointer
  * Method:    typeSize_
- * Signature: ()I
+ * Signature: ()J
  */
-JNIEXPORT jint JNICALL Java_jse_cptr_DoubleCPointer_typeSize_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_typeSize_1
   (JNIEnv *, jclass);
 
 /*
@@ -34,10 +36,10 @@ JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_fillF0
 /*
  * Class:     jse_cptr_DoubleCPointer
  * Method:    fill1
- * Signature: (JDI)V
+ * Signature: (JDJ)V
  */
 JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_fill1
-  (JNIEnv *, jclass, jlong, jdouble, jint);
+  (JNIEnv *, jclass, jlong, jdouble, jlong);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
@@ -66,10 +68,10 @@ JNIEXPORT jdouble JNICALL Java_jse_cptr_DoubleCPointer_get_1
 /*
  * Class:     jse_cptr_DoubleCPointer
  * Method:    getAt_
- * Signature: (JI)D
+ * Signature: (JJ)D
  */
 JNIEXPORT jdouble JNICALL Java_jse_cptr_DoubleCPointer_getAt_1
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
@@ -82,10 +84,10 @@ JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_set_1
 /*
  * Class:     jse_cptr_DoubleCPointer
  * Method:    putAt_
- * Signature: (JID)V
+ * Signature: (JJD)V
  */
 JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_putAt_1
-  (JNIEnv *, jclass, jlong, jint, jdouble);
+  (JNIEnv *, jclass, jlong, jlong, jdouble);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
@@ -98,10 +100,10 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_next_1
 /*
  * Class:     jse_cptr_DoubleCPointer
  * Method:    rightShift_
- * Signature: (JI)J
+ * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_rightShift_1
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
@@ -114,10 +116,10 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_previous_1
 /*
  * Class:     jse_cptr_DoubleCPointer
  * Method:    leftShift_
- * Signature: (JI)J
+ * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_leftShift_1
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong);
 
 #ifdef __cplusplus
 }

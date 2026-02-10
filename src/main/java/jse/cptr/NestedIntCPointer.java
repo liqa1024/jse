@@ -36,7 +36,7 @@ public class NestedIntCPointer extends AnyCPointer {
      * @return 创建的嵌套指针的 c 指针对象
      */
     @UnsafeJNI("Manual free required")
-    public static NestedIntCPointer malloc(int aCount) {
+    public static NestedIntCPointer malloc(long aCount) {
         return new NestedIntCPointer(malloc_(aCount, TYPE_SIZE));
     }
     /**
@@ -48,7 +48,7 @@ public class NestedIntCPointer extends AnyCPointer {
      * @return 创建的嵌套指针的 c 指针对象
      */
     @UnsafeJNI("Manual free required")
-    public static NestedIntCPointer calloc(int aCount) {
+    public static NestedIntCPointer calloc(long aCount) {
         return new NestedIntCPointer(calloc_(aCount, TYPE_SIZE));
     }
     
@@ -109,11 +109,11 @@ public class NestedIntCPointer extends AnyCPointer {
      * @param aColNum 需要读取的 aData 的列数
      */
     @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
-    public void fill(int aValue, int aRowNum, int aColNum) {
+    public void fill(int aValue, long aRowNum, long aColNum) {
         if (isNull()) throw new NullPointerException();
         fill1(mPtr, aValue, aRowNum, aColNum);
     }
-    private native static void fill1(long rPtr, int aValue, int aRowNum, int aColNum);
+    private native static void fill1(long rPtr, int aValue, long aRowNum, long aColNum);
     
     /**
      * 将此嵌套 c 指针对应的内存数值写入 jse 的 {@link RowIntMatrix} 中，认为数据按行排列且每个内部的
@@ -177,7 +177,7 @@ public class NestedIntCPointer extends AnyCPointer {
      * @return {@inheritDoc}
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    @Override public IntCPointer getAt(int aIdx) {
+    @Override public IntCPointer getAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
         return new IntCPointer(getAt_(mPtr, aIdx));
     }
@@ -188,11 +188,11 @@ public class NestedIntCPointer extends AnyCPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Invalid input row/col may directly result in JVM SIGSEGV")
-    public int getAt(int aRow, int aCol) {
+    public int getAt(long aRow, long aCol) {
         if (isNull()) throw new NullPointerException();
         return getAt_(mPtr, aRow, aCol);
     }
-    private native static int getAt_(long aPtr, int aRow, int aCol);
+    private native static int getAt_(long aPtr, long aRow, long aCol);
     
     /**
      * 将此嵌套指针当作一个 c 的矩阵，设置内部指定行列的值，即对应 c 中的 {@code ptr[aRow][aCol] = aValue}
@@ -201,18 +201,18 @@ public class NestedIntCPointer extends AnyCPointer {
      * @param aValue 需要设置的值
      */
     @UnsafeJNI("Invalid input row/col may directly result in JVM SIGSEGV")
-    public void putAt(int aRow, int aCol, int aValue) {
+    public void putAt(long aRow, long aCol, int aValue) {
         if (isNull()) throw new NullPointerException();
         putAt_(mPtr, aRow, aCol, aValue);
     }
-    native static void putAt_(long aPtr, int aRow, int aCol, int aValue);
+    native static void putAt_(long aPtr, long aRow, long aCol, int aValue);
     
     /**
      * {@inheritDoc}
      * @param aCount {@inheritDoc}
      * @return {@inheritDoc}
      */
-    @Override public NestedIntCPointer plus(int aCount) {
+    @Override public NestedIntCPointer plus(long aCount) {
         if (isNull()) throw new NullPointerException();
         return new NestedIntCPointer(rightShift_(mPtr, aCount));
     }
@@ -221,7 +221,7 @@ public class NestedIntCPointer extends AnyCPointer {
      * @param aCount {@inheritDoc}
      * @return {@inheritDoc}
      */
-    @Override public NestedIntCPointer minus(int aCount) {
+    @Override public NestedIntCPointer minus(long aCount) {
         if (isNull()) throw new NullPointerException();
         return new NestedIntCPointer(leftShift_(mPtr, aCount));
     }

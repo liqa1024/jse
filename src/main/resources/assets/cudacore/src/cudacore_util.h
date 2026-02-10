@@ -28,24 +28,24 @@ static inline void throwExceptionCuda(JNIEnv *aEnv, const char *aErrStr) {
     aEnv->DeleteLocalRef(tClazz);
 }
 
-static inline jboolean cudaMemcpyH2D(JNIEnv *aEnv, void *aSrc, void *rDest, jint aCount) {
-    const cudaError_t tErr = cudaMemcpy(rDest, aSrc, aCount, cudaMemcpyHostToDevice);
+static inline jboolean cudaMemcpyH2D(JNIEnv *aEnv, void *aSrc, void *rDest, jlong aCount) {
+    const cudaError_t tErr = cudaMemcpy(rDest, aSrc, (size_t)aCount, cudaMemcpyHostToDevice);
     if (tErr != cudaSuccess) {
         throwExceptionCuda(aEnv, cudaGetErrorString(tErr));
         return JNI_TRUE;
     }
     return JNI_FALSE;
 }
-static inline jboolean cudaMemcpyD2H(JNIEnv *aEnv, void *aSrc, void *rDest, jint aCount) {
-    const cudaError_t tErr = cudaMemcpy(rDest, aSrc, aCount, cudaMemcpyDeviceToHost);
+static inline jboolean cudaMemcpyD2H(JNIEnv *aEnv, void *aSrc, void *rDest, jlong aCount) {
+    const cudaError_t tErr = cudaMemcpy(rDest, aSrc, (size_t)aCount, cudaMemcpyDeviceToHost);
     if (tErr != cudaSuccess) {
         throwExceptionCuda(aEnv, cudaGetErrorString(tErr));
         return JNI_TRUE;
     }
     return JNI_FALSE;
 }
-static inline jboolean cudaMemcpyD2D(JNIEnv *aEnv, void *aSrc, void *rDest, jint aCount) {
-    const cudaError_t tErr = cudaMemcpy(rDest, aSrc, aCount, cudaMemcpyDeviceToDevice);
+static inline jboolean cudaMemcpyD2D(JNIEnv *aEnv, void *aSrc, void *rDest, jlong aCount) {
+    const cudaError_t tErr = cudaMemcpy(rDest, aSrc, (size_t)aCount, cudaMemcpyDeviceToDevice);
     if (tErr != cudaSuccess) {
         throwExceptionCuda(aEnv, cudaGetErrorString(tErr));
         return JNI_TRUE;

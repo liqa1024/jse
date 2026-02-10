@@ -80,6 +80,8 @@ public class CudaCore {
         , "jse_gpu_FloatCudaPointer.h"
         , "jse_gpu_IntCudaPointer.cpp"
         , "jse_gpu_IntCudaPointer.h"
+        , "jse_gpu_Int64CudaPointer.cpp"
+        , "jse_gpu_Int64CudaPointer.h"
         , "cudacore_util.h"
     };
     
@@ -105,9 +107,9 @@ public class CudaCore {
     public static native void cudaDeviceSynchronize() throws CudaException;
     public static native void cudaExceptionCheck(int aCudaErrorCode) throws CudaException;
     
-    static native long cudaMalloc(int aCount) throws CudaException;
+    static native long cudaMalloc(long aCount) throws CudaException;
     static native void cudaFree(long aPtr) throws CudaException;
-    static native void cudaMemcpyH2D(long aSrc, long rDest, int aCount) throws CudaException;
-    static native void cudaMemcpyD2H(long aSrc, long rDest, int aCount) throws CudaException;
-    static native void cudaMemcpyD2D(long aSrc, long rDest, int aCount) throws CudaException;
+    static native void cudaMemcpyH2D(long aSrc, long rDest, long aCount) throws CudaException;
+    static native void cudaMemcpyD2H(long aSrc, long rDest, long aCount) throws CudaException;
+    static native void cudaMemcpyD2D(long aSrc, long rDest, long aCount) throws CudaException;
 }

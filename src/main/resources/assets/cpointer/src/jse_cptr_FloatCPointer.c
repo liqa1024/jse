@@ -1,17 +1,12 @@
-#if defined(__cplusplus) && defined(__CLION_IDE__)
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
-#endif
-
-#include "jniutil.h"
 #include "jse_cptr_FloatCPointer.h"
+#include "jniutil.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-JNIEXPORT jint JNICALL Java_jse_cptr_FloatCPointer_typeSize_1(JNIEnv *aEnv, jclass aClazz) {
-    return (jint)sizeof(float);
+JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_typeSize_1(JNIEnv *aEnv, jclass aClazz) {
+    return (jlong)sizeof(float);
 }
 JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_fill0(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jfloatArray aJArray, jint aStart, jint aCount) {
     parsejfloat2floatV(aEnv, aJArray, aStart, (float *)(intptr_t)rPtr, 0, aCount);
@@ -19,11 +14,10 @@ JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_fill0(JNIEnv *aEnv, jclass aC
 JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_fillD0(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jdoubleArray aJArray, jint aStart, jint aCount) {
     parsejdouble2floatV(aEnv, aJArray, aStart, (float *)(intptr_t)rPtr, 0, aCount);
 }
-JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_fill1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jfloat aValue, jint aCount) {
-    float *it = (float *)(intptr_t)rPtr;
-    for (jsize i = 0; i < aCount; ++i) {
-        *it = (float)aValue;
-        ++it;
+JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_fill1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jfloat aValue, jlong aCount) {
+    float *tPtr = (float *)(intptr_t)rPtr;
+    for (jlong i = 0; i < aCount; ++i) {
+        tPtr[i] = (float)aValue;
     }
 }
 JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_parse2dest_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jfloatArray rJArray, jint aStart, jint aCount) {
@@ -35,13 +29,13 @@ JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_parse2destD_1(JNIEnv *aEnv, j
 JNIEXPORT jfloat JNICALL Java_jse_cptr_FloatCPointer_get_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr) {
     return (jfloat) *(float *)(intptr_t)aPtr;
 }
-JNIEXPORT jfloat JNICALL Java_jse_cptr_FloatCPointer_getAt_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jint aIdx) {
+JNIEXPORT jfloat JNICALL Java_jse_cptr_FloatCPointer_getAt_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aIdx) {
     return (jfloat) ((float *)(intptr_t)aPtr)[aIdx];
 }
 JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_set_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jfloat aValue) {
     *(float *)(intptr_t)aPtr = aValue;
 }
-JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_putAt_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jint aIdx, jfloat aValue) {
+JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_putAt_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aIdx, jfloat aValue) {
     ((float *)(intptr_t)aPtr)[aIdx] = aValue;
 }
 JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_next_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr) {
@@ -49,7 +43,7 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_next_1(JNIEnv *aEnv, jclass 
     ++tPtr;
     return (jlong)(intptr_t)tPtr;
 }
-JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_rightShift_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jint aCount) {
+JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_rightShift_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aCount) {
     float *tPtr = (float *)(intptr_t)aPtr;
     tPtr += aCount;
     return (jlong)(intptr_t)tPtr;
@@ -59,7 +53,7 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_previous_1(JNIEnv *aEnv, jcl
     --tPtr;
     return (jlong)(intptr_t)tPtr;
 }
-JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_leftShift_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jint aCount) {
+JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_leftShift_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aCount) {
     float *tPtr = (float *)(intptr_t)aPtr;
     tPtr -= aCount;
     return (jlong)(intptr_t)tPtr;
@@ -67,8 +61,4 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_leftShift_1(JNIEnv *aEnv, jc
 
 #ifdef __cplusplus
 }
-#endif
-
-#if defined(__cplusplus) && defined(__CLION_IDE__)
-#pragma clang diagnostic pop
 #endif

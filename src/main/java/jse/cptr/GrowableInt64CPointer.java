@@ -3,20 +3,20 @@ package jse.cptr;
 import jse.clib.UnsafeJNI;
 
 /**
- * 可以增长的 {@link DoubleCPointer}，在增长时会自动释放旧的内存，并自动额外申请内存来加速；
+ * 可以增长的 {@link Int64CPointer}，在增长时会自动释放旧的内存，并自动额外申请内存来加速；
  * 此外会记录当前的长度来判断是否需要增长
  * <p>
  * 仅仅进行内存管理，不会有任何初始值，并且扩容时不保留旧值
  * @author liqa
  */
-public class GrowableDoubleCPointer extends DoubleCPointer implements IGrowableDoubleOrFloatCPointer {
+public class GrowableInt64CPointer extends Int64CPointer implements IGrowableCPointer {
     protected long mCount;
     @UnsafeJNI("Manual free required")
-    public GrowableDoubleCPointer(long aInitCount) {
-        super(malloc_(aInitCount, TYPE_SIZE));
+    public GrowableInt64CPointer(long aInitCount) {
+        super(CPointer.malloc_(aInitCount, TYPE_SIZE));
         mCount = aInitCount;
     }
-    public GrowableDoubleCPointer() {
+    public GrowableInt64CPointer() {
         super(0);
         mCount = 0;
     }
@@ -24,9 +24,9 @@ public class GrowableDoubleCPointer extends DoubleCPointer implements IGrowableD
     
     private void grow_(long aMinCount) {
         final long oCount = mCount;
-        if (mPtr != 0) free_(mPtr);
+        if (mPtr != 0) CPointer.free_(mPtr);
         mCount = Math.max(aMinCount, oCount + (oCount>>1));
-        mPtr = malloc_(mCount, TYPE_SIZE);
+        mPtr = CPointer.malloc_(mCount, TYPE_SIZE);
     }
     @Override public void ensureCapacity(long aMinCount) {
         if (aMinCount > mCount) grow_(aMinCount);

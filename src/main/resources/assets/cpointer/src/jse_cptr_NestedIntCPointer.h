@@ -7,6 +7,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef jse_cptr_NestedIntCPointer_TYPE_SIZE
+#define jse_cptr_NestedIntCPointer_TYPE_SIZE 1i64
 /*
  * Class:     jse_cptr_NestedIntCPointer
  * Method:    fill0
@@ -18,10 +20,10 @@ JNIEXPORT void JNICALL Java_jse_cptr_NestedIntCPointer_fill0
 /*
  * Class:     jse_cptr_NestedIntCPointer
  * Method:    fill1
- * Signature: (JIII)V
+ * Signature: (JIJJ)V
  */
 JNIEXPORT void JNICALL Java_jse_cptr_NestedIntCPointer_fill1
-  (JNIEnv *, jclass, jlong, jint, jint, jint);
+  (JNIEnv *, jclass, jlong, jint, jlong, jlong);
 
 /*
  * Class:     jse_cptr_NestedIntCPointer
@@ -34,18 +36,18 @@ JNIEXPORT void JNICALL Java_jse_cptr_NestedIntCPointer_parse2dest_1
 /*
  * Class:     jse_cptr_NestedIntCPointer
  * Method:    getAt_
- * Signature: (JII)I
+ * Signature: (JJJ)I
  */
 JNIEXPORT jint JNICALL Java_jse_cptr_NestedIntCPointer_getAt_1
-  (JNIEnv *, jclass, jlong, jint, jint);
+  (JNIEnv *, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     jse_cptr_NestedIntCPointer
  * Method:    putAt_
- * Signature: (JIII)V
+ * Signature: (JJJI)V
  */
 JNIEXPORT void JNICALL Java_jse_cptr_NestedIntCPointer_putAt_1
-  (JNIEnv *, jclass, jlong, jint, jint, jint);
+  (JNIEnv *, jclass, jlong, jlong, jlong, jint);
 
 #ifdef __cplusplus
 }

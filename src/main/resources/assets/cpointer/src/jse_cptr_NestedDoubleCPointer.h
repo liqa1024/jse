@@ -7,6 +7,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef jse_cptr_NestedDoubleCPointer_TYPE_SIZE
+#define jse_cptr_NestedDoubleCPointer_TYPE_SIZE 1i64
 /*
  * Class:     jse_cptr_NestedDoubleCPointer
  * Method:    fill0
@@ -18,10 +20,10 @@ JNIEXPORT void JNICALL Java_jse_cptr_NestedDoubleCPointer_fill0
 /*
  * Class:     jse_cptr_NestedDoubleCPointer
  * Method:    fill1
- * Signature: (JDII)V
+ * Signature: (JDJJ)V
  */
 JNIEXPORT void JNICALL Java_jse_cptr_NestedDoubleCPointer_fill1
-  (JNIEnv *, jclass, jlong, jdouble, jint, jint);
+  (JNIEnv *, jclass, jlong, jdouble, jlong, jlong);
 
 /*
  * Class:     jse_cptr_NestedDoubleCPointer
@@ -34,18 +36,18 @@ JNIEXPORT void JNICALL Java_jse_cptr_NestedDoubleCPointer_parse2dest_1
 /*
  * Class:     jse_cptr_NestedDoubleCPointer
  * Method:    getAt_
- * Signature: (JII)D
+ * Signature: (JJJ)D
  */
 JNIEXPORT jdouble JNICALL Java_jse_cptr_NestedDoubleCPointer_getAt_1
-  (JNIEnv *, jclass, jlong, jint, jint);
+  (JNIEnv *, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     jse_cptr_NestedDoubleCPointer
  * Method:    putAt_
- * Signature: (JIID)V
+ * Signature: (JJJD)V
  */
 JNIEXPORT void JNICALL Java_jse_cptr_NestedDoubleCPointer_putAt_1
-  (JNIEnv *, jclass, jlong, jint, jint, jdouble);
+  (JNIEnv *, jclass, jlong, jlong, jlong, jdouble);
 
 #ifdef __cplusplus
 }

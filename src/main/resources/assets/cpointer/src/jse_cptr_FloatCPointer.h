@@ -7,12 +7,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef jse_cptr_FloatCPointer_TYPE_SIZE
+#define jse_cptr_FloatCPointer_TYPE_SIZE 1i64
 /*
  * Class:     jse_cptr_FloatCPointer
  * Method:    typeSize_
- * Signature: ()I
+ * Signature: ()J
  */
-JNIEXPORT jint JNICALL Java_jse_cptr_FloatCPointer_typeSize_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_typeSize_1
   (JNIEnv *, jclass);
 
 /*
@@ -34,10 +36,10 @@ JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_fillD0
 /*
  * Class:     jse_cptr_FloatCPointer
  * Method:    fill1
- * Signature: (JFI)V
+ * Signature: (JFJ)V
  */
 JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_fill1
-  (JNIEnv *, jclass, jlong, jfloat, jint);
+  (JNIEnv *, jclass, jlong, jfloat, jlong);
 
 /*
  * Class:     jse_cptr_FloatCPointer
@@ -66,10 +68,10 @@ JNIEXPORT jfloat JNICALL Java_jse_cptr_FloatCPointer_get_1
 /*
  * Class:     jse_cptr_FloatCPointer
  * Method:    getAt_
- * Signature: (JI)F
+ * Signature: (JJ)F
  */
 JNIEXPORT jfloat JNICALL Java_jse_cptr_FloatCPointer_getAt_1
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_FloatCPointer
@@ -82,10 +84,10 @@ JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_set_1
 /*
  * Class:     jse_cptr_FloatCPointer
  * Method:    putAt_
- * Signature: (JIF)V
+ * Signature: (JJF)V
  */
 JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_putAt_1
-  (JNIEnv *, jclass, jlong, jint, jfloat);
+  (JNIEnv *, jclass, jlong, jlong, jfloat);
 
 /*
  * Class:     jse_cptr_FloatCPointer
@@ -98,10 +100,10 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_next_1
 /*
  * Class:     jse_cptr_FloatCPointer
  * Method:    rightShift_
- * Signature: (JI)J
+ * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_rightShift_1
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_FloatCPointer
@@ -114,10 +116,10 @@ JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_previous_1
 /*
  * Class:     jse_cptr_FloatCPointer
  * Method:    leftShift_
- * Signature: (JI)J
+ * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_leftShift_1
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong);
 
 #ifdef __cplusplus
 }

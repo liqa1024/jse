@@ -33,7 +33,7 @@ public class AnyCPointer extends CPointer {
      * @return 创建的嵌套指针的 c 指针对象
      */
     @UnsafeJNI("Manual free required")
-    public static AnyCPointer malloc(int aCount) {
+    public static AnyCPointer malloc(long aCount) {
         return new AnyCPointer(malloc_(aCount, TYPE_SIZE));
     }
     /**
@@ -45,12 +45,12 @@ public class AnyCPointer extends CPointer {
      * @return 创建的嵌套指针的 c 指针对象
      */
     @UnsafeJNI("Manual free required")
-    public static AnyCPointer calloc(int aCount) {
+    public static AnyCPointer calloc(long aCount) {
         return new AnyCPointer(calloc_(aCount, TYPE_SIZE));
     }
     /** {@code sizeof(void *)} */
-    public final static int TYPE_SIZE = typeSize_();
-    private native static int typeSize_();
+    public final static long TYPE_SIZE = typeSize_();
+    private native static long typeSize_();
     
     /**
      * 将另一个 c 指针的数据填充到此 c 指针对应的内存中
@@ -61,7 +61,7 @@ public class AnyCPointer extends CPointer {
      * @param aCount 需要读取的 aData 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void fill(AnyCPointer aData, int aCount) {
+    public void fill(AnyCPointer aData, long aCount) {
         memcpy2this(aData, aCount*TYPE_SIZE);
     }
     /**
@@ -73,7 +73,7 @@ public class AnyCPointer extends CPointer {
      * @param aCount 需要写入 rDest 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void parse2dest(AnyCPointer rDest, int aCount) {
+    public void parse2dest(AnyCPointer rDest, long aCount) {
         memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     
@@ -166,7 +166,7 @@ public class AnyCPointer extends CPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public IPointer getAt(int aIdx) {
+    public IPointer getAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
         return new Pointer(getAt_(mPtr, aIdx));
     }
@@ -176,7 +176,7 @@ public class AnyCPointer extends CPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public CPointer getAsCPointerAt(int aIdx) {
+    public CPointer getAsCPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
         return new CPointer(getAt_(mPtr, aIdx));
     }
@@ -186,7 +186,7 @@ public class AnyCPointer extends CPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public DoubleCPointer getAsDoubleCPointerAt(int aIdx) {
+    public DoubleCPointer getAsDoubleCPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
         return new DoubleCPointer(getAt_(mPtr, aIdx));
     }
@@ -196,7 +196,7 @@ public class AnyCPointer extends CPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public FloatCPointer getAsFloatCPointerAt(int aIdx) {
+    public FloatCPointer getAsFloatCPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
         return new FloatCPointer(getAt_(mPtr, aIdx));
     }
@@ -206,7 +206,7 @@ public class AnyCPointer extends CPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public IntCPointer getAsIntCPointerAt(int aIdx) {
+    public IntCPointer getAsIntCPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
         return new IntCPointer(getAt_(mPtr, aIdx));
     }
@@ -216,7 +216,7 @@ public class AnyCPointer extends CPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public AnyCPointer getAsAnyCPointerAt(int aIdx) {
+    public AnyCPointer getAsAnyCPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
         return new AnyCPointer(getAt_(mPtr, aIdx));
     }
@@ -226,7 +226,7 @@ public class AnyCPointer extends CPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public CudaPointer getAsCudaPointerAt(int aIdx) {
+    public CudaPointer getAsCudaPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
         return new CudaPointer(getAt_(mPtr, aIdx));
     }
@@ -236,7 +236,7 @@ public class AnyCPointer extends CPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public IntCudaPointer getAsIntCudaPointerAt(int aIdx) {
+    public IntCudaPointer getAsIntCudaPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
         return new IntCudaPointer(getAt_(mPtr, aIdx));
     }
@@ -246,11 +246,11 @@ public class AnyCPointer extends CPointer {
      * @return 此指针对应的值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public FloatCudaPointer getAsFloatCudaPointerAt(int aIdx) {
+    public FloatCudaPointer getAsFloatCudaPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
         return new FloatCudaPointer(getAt_(mPtr, aIdx));
     }
-    native static long getAt_(long aPtr, int aIdx);
+    native static long getAt_(long aPtr, long aIdx);
     
     /**
      * 设置此指针对应的值，即对应 c 中的 {@code *ptr = aValue}
@@ -269,11 +269,11 @@ public class AnyCPointer extends CPointer {
      * @param aValue 需要设置的值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    public void putAt(int aIdx, @NotNull IPointer aValue) {
+    public void putAt(long aIdx, @NotNull IPointer aValue) {
         if (isNull()) throw new NullPointerException();
         putAt_(mPtr, aIdx, aValue.ptr_());
     }
-    native static void putAt_(long aPtr, int aIdx, long aValue);
+    native static void putAt_(long aPtr, long aIdx, long aValue);
     
     
     /**
@@ -289,17 +289,17 @@ public class AnyCPointer extends CPointer {
      * 指针向后移动指定步数，即对应 c 中的 {@code ptr += aCount}
      * @param aCount 需要移动的步数
      */
-    public void rightShift(int aCount) {
+    public void rightShift(long aCount) {
         if (isNull()) throw new NullPointerException();
         mPtr = rightShift_(mPtr, aCount);
     }
-    native static long rightShift_(long aPtr, int aCount);
+    native static long rightShift_(long aPtr, long aCount);
     /**
      * 计算并返回向后移动指定步数的指针，即对应 c 中的 {@code ptr + aCount}
      * @param aCount 需要移动的步数
      * @return 移动后的指针对象
      */
-    public AnyCPointer plus(int aCount) {
+    public AnyCPointer plus(long aCount) {
         if (isNull()) throw new NullPointerException();
         return new AnyCPointer(rightShift_(mPtr, aCount));
     }
@@ -317,17 +317,17 @@ public class AnyCPointer extends CPointer {
      * 指针向前移动指定步数，即对应 c 中的 {@code ptr -= aCount}
      * @param aCount 需要移动的步数
      */
-    public void leftShift(int aCount) {
+    public void leftShift(long aCount) {
         if (isNull()) throw new NullPointerException();
         mPtr = leftShift_(mPtr, aCount);
     }
-    native static long leftShift_(long aPtr, int aCount);
+    native static long leftShift_(long aPtr, long aCount);
     /**
      * 计算并返回向前移动指定步数的指针，即对应 c 中的 {@code ptr - aCount}
      * @param aCount 需要移动的步数
      * @return 移动后的指针对象
      */
-    public AnyCPointer minus(int aCount) {
+    public AnyCPointer minus(long aCount) {
         if (isNull()) throw new NullPointerException();
         return new AnyCPointer(leftShift_(mPtr, aCount));
     }

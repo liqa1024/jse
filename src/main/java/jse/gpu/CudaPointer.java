@@ -34,9 +34,16 @@ public class CudaPointer implements IPointer {
      * @return 创建的 cuda 指针对象
      */
     @UnsafeJNI("Manual free required")
-    public static CudaPointer malloc(int aCount) throws CudaException {
+    public static CudaPointer malloc(long aCount) throws CudaException {
         return new CudaPointer(CudaCore.cudaMalloc(aCount));
     }
+    
+    /**
+     * {@inheritDoc}
+     * @return {@code sizeof(char)}, 1
+     */
+    public long typeSize() {return TYPE_SIZE;}
+    public final static long TYPE_SIZE = 1;
     
     /**
      * 调用 {@link CudaCore#cudaFree} 来释放一个 cuda 指针对应的内存
@@ -75,7 +82,7 @@ public class CudaPointer implements IPointer {
      * @param aCount 需要拷贝的数据长度
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void memcpy2dest(CudaPointer rDest, int aCount) throws CudaException {
+    public void memcpy2dest(CudaPointer rDest, long aCount) throws CudaException {
         if (isNull() || rDest.isNull()) throw new NullPointerException();
         CudaCore.cudaMemcpyD2D(mPtr, rDest.mPtr, aCount);
     }
@@ -85,7 +92,7 @@ public class CudaPointer implements IPointer {
      * @param aCount 需要拷贝的数据长度
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void memcpy2dest(ICPointer rDest, int aCount) throws CudaException {
+    public void memcpy2dest(ICPointer rDest, long aCount) throws CudaException {
         if (isNull() || rDest.isNull()) throw new NullPointerException();
         CudaCore.cudaMemcpyD2H(mPtr, rDest.ptr_(), aCount);
     }
@@ -95,7 +102,7 @@ public class CudaPointer implements IPointer {
      * @param aCount 需要拷贝的数据长度
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void memcpy2this(CudaPointer aSrc, int aCount) throws CudaException {
+    public void memcpy2this(CudaPointer aSrc, long aCount) throws CudaException {
         if (isNull() || aSrc.isNull()) throw new NullPointerException();
         CudaCore.cudaMemcpyD2D(aSrc.mPtr, mPtr, aCount);
     }
@@ -105,7 +112,7 @@ public class CudaPointer implements IPointer {
      * @param aCount 需要拷贝的数据长度
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void memcpy2this(ICPointer aSrc, int aCount) throws CudaException {
+    public void memcpy2this(ICPointer aSrc, long aCount) throws CudaException {
         if (isNull() || aSrc.isNull()) throw new NullPointerException();
         CudaCore.cudaMemcpyH2D(aSrc.ptr_(), mPtr, aCount);
     }

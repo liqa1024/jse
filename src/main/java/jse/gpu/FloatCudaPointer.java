@@ -27,12 +27,16 @@ public class FloatCudaPointer extends CudaPointer {
      * @return 创建的单精度浮点 cuda 指针对象
      */
     @UnsafeJNI("Manual free required")
-    public static FloatCudaPointer malloc(int aCount) throws CudaException {
+    public static FloatCudaPointer malloc(long aCount) throws CudaException {
         return new FloatCudaPointer(CudaCore.cudaMalloc(aCount*TYPE_SIZE));
     }
-    /** {@code sizeof(float)} */
-    public final static int TYPE_SIZE = typeSize_();
-    private native static int typeSize_();
+    
+    /**
+     * {@inheritDoc}
+     * @return {@code sizeof(float)}
+     */
+    @Override public long typeSize() {return TYPE_SIZE;}
+    public final static long TYPE_SIZE = FloatCPointer.TYPE_SIZE;
     
     /**
      * 将 jse 的 {@code IDataShell<float[]>} 填充到此 cuda 指针对应的显存中
@@ -97,7 +101,7 @@ public class FloatCudaPointer extends CudaPointer {
      * @param aCount 需要读取的 aData 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void fill(FloatCPointer aData, int aCount) throws CudaException {
+    public void fill(FloatCPointer aData, long aCount) throws CudaException {
         memcpy2this(aData, aCount*TYPE_SIZE);
     }
     /**
@@ -107,7 +111,7 @@ public class FloatCudaPointer extends CudaPointer {
      * @param aCount 需要读取的 aData 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void fill(FloatCudaPointer aData, int aCount) throws CudaException {
+    public void fill(FloatCudaPointer aData, long aCount) throws CudaException {
         memcpy2this(aData, aCount*TYPE_SIZE);
     }
     
@@ -174,7 +178,7 @@ public class FloatCudaPointer extends CudaPointer {
      * @param aCount 需要写入 rDest 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void parse2dest(FloatCPointer rDest, int aCount) throws CudaException {
+    public void parse2dest(FloatCPointer rDest, long aCount) throws CudaException {
         memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     /**
@@ -184,7 +188,7 @@ public class FloatCudaPointer extends CudaPointer {
      * @param aCount 需要写入 rDest 的长度，实际为 {@code aCount * TYPE_SIZE}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void parse2dest(FloatCudaPointer rDest, int aCount) throws CudaException {
+    public void parse2dest(FloatCudaPointer rDest, long aCount) throws CudaException {
         memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     

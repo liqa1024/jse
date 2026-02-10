@@ -139,7 +139,7 @@ public interface IDoubleOrFloatCPointer extends ICPointer {
      * @return 此索引对应的数值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    double getAtD(int aIdx);
+    double getAtD(long aIdx);
     /**
      * 方便使用的兼容接口
      * <p>
@@ -148,7 +148,7 @@ public interface IDoubleOrFloatCPointer extends ICPointer {
      * @return 此索引对应的数值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    float getAtF(int aIdx);
+    float getAtF(long aIdx);
     
     /**
      * 方便使用的兼容接口
@@ -175,7 +175,7 @@ public interface IDoubleOrFloatCPointer extends ICPointer {
      * @param aValue 需要设置的数值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    void putAtD(int aIdx, double aValue);
+    void putAtD(long aIdx, double aValue);
     /**
      * 方便使用的兼容接口
      * <p>
@@ -184,12 +184,12 @@ public interface IDoubleOrFloatCPointer extends ICPointer {
      * @param aValue 需要设置的数值
      */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
-    void putAtF(int aIdx, float aValue);
+    void putAtF(long aIdx, float aValue);
     
-    void next();
-    void rightShift(int aCount);
-    IDoubleOrFloatCPointer plus(int aCount);
-    void previous();
-    void leftShift(int aCount);
-    IDoubleOrFloatCPointer minus(int aCount);
+    @Override void next();
+    @Override void rightShift(long aCount);
+    @Override IDoubleOrFloatCPointer plus(long aCount);
+    @Override void previous();
+    @Override void leftShift(long aCount);
+    @Override IDoubleOrFloatCPointer minus(long aCount);
 }

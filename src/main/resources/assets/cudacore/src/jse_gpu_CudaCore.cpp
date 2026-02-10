@@ -16,9 +16,9 @@ JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaExceptionCheck(JNIEnv *aEnv, jc
     }
 }
 
-JNIEXPORT jlong JNICALL Java_jse_gpu_CudaCore_cudaMalloc(JNIEnv *aEnv, jclass aClazz, jint aCount) {
+JNIEXPORT jlong JNICALL Java_jse_gpu_CudaCore_cudaMalloc(JNIEnv *aEnv, jclass aClazz, jlong aCount) {
     void *tPtr = NULL;
-    const cudaError_t tErr = cudaMalloc(&tPtr, aCount);
+    const cudaError_t tErr = cudaMalloc(&tPtr, (size_t)aCount);
     if (tErr != cudaSuccess) {
         JSE_CUDACORE::throwExceptionCuda(aEnv, cudaGetErrorString(tErr));
         return 0;
@@ -31,13 +31,13 @@ JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaFree(JNIEnv *aEnv, jclass aClaz
         JSE_CUDACORE::throwExceptionCuda(aEnv, cudaGetErrorString(tErr));
     }
 }
-JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemcpyH2D(JNIEnv *aEnv, jclass aClazz, jlong aSrc, jlong rDest, jint aCount) {
+JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemcpyH2D(JNIEnv *aEnv, jclass aClazz, jlong aSrc, jlong rDest, jlong aCount) {
     JSE_CUDACORE::cudaMemcpyH2D(aEnv, (void *)(intptr_t)aSrc, (void *)(intptr_t)rDest, aCount);
 }
-JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemcpyD2H(JNIEnv *aEnv, jclass aClazz, jlong aSrc, jlong rDest, jint aCount) {
+JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemcpyD2H(JNIEnv *aEnv, jclass aClazz, jlong aSrc, jlong rDest, jlong aCount) {
     JSE_CUDACORE::cudaMemcpyD2H(aEnv, (void *)(intptr_t)aSrc, (void *)(intptr_t)rDest, aCount);
 }
-JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemcpyD2D(JNIEnv *aEnv, jclass aClazz, jlong aSrc, jlong rDest, jint aCount) {
+JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemcpyD2D(JNIEnv *aEnv, jclass aClazz, jlong aSrc, jlong rDest, jlong aCount) {
     JSE_CUDACORE::cudaMemcpyD2D(aEnv, (void *)(intptr_t)aSrc, (void *)(intptr_t)rDest, aCount);
 }
 

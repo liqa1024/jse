@@ -2,6 +2,7 @@ package jse.cptr;
 
 import jse.gpu.CudaPointer;
 import jse.gpu.FloatCudaPointer;
+import jse.gpu.Int64CudaPointer;
 import jse.gpu.IntCudaPointer;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -27,6 +28,12 @@ public interface IPointer {
      * @return 整数的 c 指针包装类
      */
     default IntCPointer asIntCPointer() {return new IntCPointer(ptr_());}
+    /**
+     * 将此接口转换成一个整数的 c 指针 {@link Int64CPointer}，类似在 c
+     * 中使用 {@code (int64_t *)ptr} 来进行强制类型转换
+     * @return 整数的 c 指针包装类
+     */
+    default Int64CPointer asInt64CPointer() {return new Int64CPointer(ptr_());}
     /**
      * 将此接口转换成一个双精度浮点的 c 指针 {@link DoubleCPointer}，类似在 c
      * 中使用 {@code (double *)ptr} 来进行强制类型转换
@@ -57,12 +64,6 @@ public interface IPointer {
      * @return 嵌套双精度浮点指针的 c 指针包装类
      */
     default NestedDoubleCPointer asNestedDoubleCPointer() {return new NestedDoubleCPointer(ptr_());}
-    /**
-     * 将此接口转换成一个嵌套单精度浮点的 c 指针 {@link NestedFloatCPointer}，类似在 c
-     * 中使用 {@code (float **)ptr} 来进行强制类型转换
-     * @return 嵌套双精度浮点的 c 指针包装类
-     */
-    default NestedFloatCPointer asNestedFloatCPointer() {return new NestedFloatCPointer(ptr_());}
     
     /**
      * 将此接口转换成标准的 cuda 指针 {@link CudaPointer} 包装类，方便一些场景使用
@@ -75,6 +76,12 @@ public interface IPointer {
      * @return 整数的 cuda 指针包装类
      */
     default IntCudaPointer asIntCudaPointer() {return new IntCudaPointer(ptr_());}
+    /**
+     * 将此接口转换成一个整数的 cuda 指针 {@link IntCudaPointer}，类似在 c
+     * 中使用 {@code (int64 *)ptr} 来进行强制类型转换
+     * @return 整数的 cuda 指针包装类
+     */
+    default Int64CudaPointer asInt64CudaPointer() {return new Int64CudaPointer(ptr_());}
     /**
      * 将此接口转换成一个单精度浮点的 cuda 指针 {@link FloatCudaPointer}，类似在 c
      * 中使用 {@code (float *)ptr} 来进行强制类型转换

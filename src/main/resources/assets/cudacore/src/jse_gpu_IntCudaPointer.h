@@ -9,14 +9,6 @@ extern "C" {
 #endif
 /*
  * Class:     jse_gpu_IntCudaPointer
- * Method:    typeSize_
- * Signature: ()I
- */
-JNIEXPORT jint JNICALL Java_jse_gpu_IntCudaPointer_typeSize_1
-  (JNIEnv *, jclass);
-
-/*
- * Class:     jse_gpu_IntCudaPointer
  * Method:    fill_
  * Signature: (J[III)V
  */

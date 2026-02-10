@@ -26,10 +26,10 @@ JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaExceptionCheck
 /*
  * Class:     jse_gpu_CudaCore
  * Method:    cudaMalloc
- * Signature: (I)J
+ * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_jse_gpu_CudaCore_cudaMalloc
-  (JNIEnv *, jclass, jint);
+  (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_gpu_CudaCore
@@ -42,26 +42,26 @@ JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaFree
 /*
  * Class:     jse_gpu_CudaCore
  * Method:    cudaMemcpyH2D
- * Signature: (JJI)V
+ * Signature: (JJJ)V
  */
 JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemcpyH2D
-  (JNIEnv *, jclass, jlong, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     jse_gpu_CudaCore
  * Method:    cudaMemcpyD2H
- * Signature: (JJI)V
+ * Signature: (JJJ)V
  */
 JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemcpyD2H
-  (JNIEnv *, jclass, jlong, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     jse_gpu_CudaCore
  * Method:    cudaMemcpyD2D
- * Signature: (JJI)V
+ * Signature: (JJJ)V
  */
 JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemcpyD2D
-  (JNIEnv *, jclass, jlong, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong, jlong);
 
 #ifdef __cplusplus
 }

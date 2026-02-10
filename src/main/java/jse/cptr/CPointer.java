@@ -90,6 +90,8 @@ public class CPointer implements ICPointer {
         , "jse_cptr_CPointer.h"
         , "jse_cptr_IntCPointer.c"
         , "jse_cptr_IntCPointer.h"
+        , "jse_cptr_Int64CPointer.c"
+        , "jse_cptr_Int64CPointer.h"
         , "jse_cptr_DoubleCPointer.c"
         , "jse_cptr_DoubleCPointer.h"
         , "jse_cptr_FloatCPointer.c"
@@ -100,8 +102,6 @@ public class CPointer implements ICPointer {
         , "jse_cptr_NestedIntCPointer.h"
         , "jse_cptr_NestedDoubleCPointer.c"
         , "jse_cptr_NestedDoubleCPointer.h"
-        , "jse_cptr_NestedFloatCPointer.c"
-        , "jse_cptr_NestedFloatCPointer.h"
     };
     public final static IPointer NULL = new IPointer() {
         @Override public long ptr_() {return 0;}
@@ -141,10 +141,10 @@ public class CPointer implements ICPointer {
      * @return 创建的 c 指针对象
      */
     @UnsafeJNI("Manual free required")
-    public static CPointer malloc(int aCount) {
-        return new CPointer(malloc_(aCount, 1));
+    public static CPointer malloc(long aCount) {
+        return new CPointer(malloc_(aCount, TYPE_SIZE));
     }
-    protected native static long malloc_(int aCount, int aSize);
+    protected native static long malloc_(long aCount, long aSize);
     
     /**
      * 调用 c 中的 {@code calloc} 来分配全零内存创建一个 c 指针
@@ -155,10 +155,17 @@ public class CPointer implements ICPointer {
      * @return 创建的 c 指针对象
      */
     @UnsafeJNI("Manual free required")
-    public static CPointer calloc(int aCount) {
-        return new CPointer(calloc_(aCount, 1));
+    public static CPointer calloc(long aCount) {
+        return new CPointer(calloc_(aCount, TYPE_SIZE));
     }
-    protected native static long calloc_(int aCount, int aSize);
+    protected native static long calloc_(long aCount, long aSize);
+    
+    /**
+     * {@inheritDoc}
+     * @return {@code sizeof(char)}, 1
+     */
+    @Override public long typeSize() {return TYPE_SIZE;}
+    public final static long TYPE_SIZE = 1;
     
     /**
      * {@inheritDoc}
@@ -197,7 +204,7 @@ public class CPointer implements ICPointer {
      * @param aCount {@inheritDoc}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    @Override public void memcpy2dest(ICPointer rDest, int aCount) {
+    @Override public void memcpy2dest(ICPointer rDest, long aCount) {
         if (isNull() || rDest.isNull()) throw new NullPointerException();
         memcpy_(mPtr, rDest.ptr_(), aCount);
     }
@@ -207,11 +214,18 @@ public class CPointer implements ICPointer {
      * @param aCount {@inheritDoc}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    @Override public void memcpy2this(ICPointer aSrc, int aCount) {
+    @Override public void memcpy2this(ICPointer aSrc, long aCount) {
         if (isNull() || aSrc.isNull()) throw new NullPointerException();
         memcpy_(aSrc.ptr_(), mPtr, aCount);
     }
-    protected native static void memcpy_(long aSrc, long rDest, int aCount);
+    protected native static void memcpy_(long aSrc, long rDest, long aCount);
+    
+    @Override public void next() {throw new UnsupportedOperationException();}
+    @Override public void rightShift(long aCount) {throw new UnsupportedOperationException();}
+    @Override public CPointer plus(long aCount) {throw new UnsupportedOperationException();}
+    @Override public void previous() {throw new UnsupportedOperationException();}
+    @Override public void leftShift(long aCount) {throw new UnsupportedOperationException();}
+    @Override public CPointer minus(long aCount) {throw new UnsupportedOperationException();}
     
     @ApiStatus.Internal
     public static void rangeCheck(int jArraySize, int aCount) {
