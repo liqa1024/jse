@@ -15,7 +15,7 @@ public class PairNNAP_single extends PairNNAP2 {
     protected PairNNAP_single(long aPairPtr) {
         super(aPairPtr);
     }
-    @Override protected String precision() {
-        return "single";
+    @Override protected NNAP2 initNNAP(String aPath) throws Exception {
+        return new NNAP2(aPath, 1, "single");
     }
 }

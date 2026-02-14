@@ -6,10 +6,8 @@ import jse.code.OS;
 import jse.code.SP;
 import jse.code.UT;
 import jse.code.functional.IUnaryFullOperator;
-import jse.jit.IJITEngine;
-import jse.jit.IJITMethod;
+import jse.gpu.CudaJIT;
 import jse.jit.SimpleJIT;
-import jse.parallel.IAutoShutdown;
 import jsex.nnap.basis.Basis2;
 import jsex.nnap.nn.NeuralNetwork2;
 import org.intellij.lang.annotations.Language;
@@ -60,10 +58,11 @@ import static jse.code.OS.JAVA_HOME;
  *
  * @author liqa
  */
-class NNAPGEN implements IAutoShutdown {
+class NNAPGEN {
     
     private static final String JIT_NAME = "nnapjit";
     private final static String INTERFACE_NAME = "nnap_interface.cpp";
+    private final static String INTERFACE_HEAD_NAME = "nnap_interface.h";
     private final static String[] SRC_NAME = {
           "nnap_util.hpp"
         , "nnap_main.hpp"
@@ -73,23 +72,10 @@ class NNAPGEN implements IAutoShutdown {
         , "basis_SphericalChebyshev.hpp"
         , "basis_SphericalUtil.hpp"
         , "basis_SphericalUtil0.hpp"
-        , "nnap_interface.h"
-        , INTERFACE_NAME
     };
     
     private final Map<String, Object> mGenMap;
     private final String mLibDir, mProjectName;
-    // compile setting
-    private Map<String, String> mCmakeSetting = new LinkedHashMap<>();
-    private @Nullable String mCmakeCxxCompiler = null;
-    private @Nullable String mCmakeCxxFlags = null;
-    private Integer mOptimLevel = null;
-    // jit stuffs
-    private static final String NAME_CAL_ENERGY = "jse_nnap_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nnap_calEnergyForce";
-    private static final String NAME_STAT_NEINUM_LAMMPS = "jse_nnap_statNeiNumLammps", NAME_COMPUTE_LAMMPS = "jse_nnap_computeLammps";
-    private IJITEngine mEngine = null;
-    IJITMethod mCalEnergy = null, mCalEnergyForce = null;
-    IJITMethod mStatNeiNumLammps = null, mComputeLammps = null;
     
     NNAPGEN(@Nullable String aLibDir, @Nullable String aProjectName, Basis2[] aBasis, NeuralNetwork2[] aNN, boolean aSinglePrecision) {
         mLibDir = aLibDir!=null ? aLibDir : OS.WORKING_DIR;
@@ -118,51 +104,38 @@ class NNAPGEN implements IAutoShutdown {
             tGenIdx += tSubList.size();
         }
     }
-    void compile() throws Exception {
-        if (mDead) throw new IllegalStateException("This NNAP is dead");
-        if (mEngine!=null) throw new IllegalStateException("compile() has already been called");
-        // 开始 jit
-        String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, mGenMap, NNAP2.VERSION, mOptimLevel, mCmakeCxxCompiler, mCmakeCxxFlags, mCmakeSetting);
-        mEngine = SimpleJIT.engine().setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
-            .setCmakeCxxCompiler(mCmakeCxxCompiler).setCmakeCxxCompiler(mCmakeCxxFlags).setCmakeSettings(mCmakeSetting)
-            .setSrcDirIniter((wd, engine) -> {
+    SimpleJIT.Engine initEngine(Object... aIdObjs) {
+        String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, mGenMap, aIdObjs);
+        SimpleJIT.Engine tEngine = SimpleJIT.engine();
+        tEngine.setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID);
+        tEngine.setSrcDirIniter((wd, engine) -> {
                 for (String tName : SRC_NAME) {
                     codeGen_(IO.getResource("nnap2/src/"+tName), wd+tName, mGenMap);
                 }
+                codeGen_(IO.getResource("nnap2/src/"+INTERFACE_NAME), wd+INTERFACE_NAME, mGenMap);
+                codeGen_(IO.getResource("nnap2/src/"+INTERFACE_HEAD_NAME), wd+INTERFACE_HEAD_NAME, mGenMap);
                 // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
                 engine.writeCmakeFile(wd, INTERFACE_NAME);
                 return wd;
             });
-        if (mOptimLevel!=null) mEngine.setOptimLevel(mOptimLevel);
-        mEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS).compile();
-        mCalEnergy = mEngine.findMethod(NAME_CAL_ENERGY);
-        mCalEnergyForce = mEngine.findMethod(NAME_CAL_ENERGYFORCE);
-        mStatNeiNumLammps = mEngine.findMethod(NAME_STAT_NEINUM_LAMMPS);
-        mComputeLammps = mEngine.findMethod(NAME_COMPUTE_LAMMPS);
+        return tEngine;
     }
-    
-    NNAPGEN setOptimLevel(int aOptimLevel) {
-        mOptimLevel = aOptimLevel;
-        return this;
-    }
-    NNAPGEN setCmakeSetting(Map<String, String> aCmakeSetting) {
-        mCmakeSetting = aCmakeSetting;
-        return this;
-    }
-    NNAPGEN setCmakeCxxCompiler(@Nullable String aCmakeCxxCompiler) {
-        mCmakeCxxCompiler = aCmakeCxxCompiler;
-        return this;
-    }
-    NNAPGEN setCmakeCxxFlags(@Nullable String aCmakeCxxFlags) {
-        mCmakeCxxFlags = aCmakeCxxFlags;
-        return this;
-    }
-    
-    private boolean mDead = false;
-    @Override public void shutdown() {
-        if (mDead) return;
-        mDead = true;
-        if (mEngine!=null) mEngine.shutdown();
+    CudaJIT.Engine initEngineCuda(Object... aIdObjs) {
+        // 开始 jit
+        String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, mGenMap, aIdObjs);
+        CudaJIT.Engine tEngine = CudaJIT.engine();
+        tEngine.setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID);
+        tEngine.setSrcDirIniter((wd, engine) -> {
+                for (String tName : SRC_NAME) {
+                    codeGen_(IO.getResource("nnap2/src/"+tName), wd+tName, mGenMap);
+                }
+                codeGen_(IO.getResource("nnap2/src/nnap_interface_gpu.cu"), wd+"nnap_interface_gpu.cu", mGenMap);
+                codeGen_(IO.getResource("nnap2/src/nnap_interface_gpu.h"), wd+"nnap_interface_gpu.h", mGenMap);
+                // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
+                engine.writeCmakeFile(wd, "nnap_interface_gpu.cu");
+                return wd;
+            });
+        return tEngine;
     }
     
     

@@ -1,7 +1,6 @@
 package jsex.nnap;
 
 import jse.atom.IPairPotential;
-import jse.clib.*;
 import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;
@@ -9,6 +8,7 @@ import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.code.collection.NewCollections;
 import jse.jit.IJITEngine;
+import jse.jit.IJITMethod;
 import jse.math.vector.IVector;
 import jse.math.vector.Vectors;
 import jse.cptr.*;
@@ -58,27 +58,25 @@ public class NNAP2 implements IPairPotential {
     }
     public final static int VERSION = 6;
     
-    private final String[] mSymbols;
-    private final @Nullable String mUnits;
-    private final boolean mSinglePrecision;
-    private boolean mDead = false;
-    private final int mThreadNumber;
-    private final Basis2[] mBasis;
-    private final NeuralNetwork2[] mNN;
+    final String[] mSymbols;
+    final @Nullable String mUnits;
+    final boolean mSinglePrecision;
+    boolean mDead = false;
+    final int mThreadNumber;
+    final Basis2[] mBasis;
+    final NeuralNetwork2[] mNN;
     public int atomTypeNumber() {return mSymbols.length;}
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return mSymbols[aType-1];}
     public String units() {return mUnits;}
     public String precision() {return mSinglePrecision ? "single" : "double";}
-    // jit stuffs
-    private final NNAPGEN mNNAPGEN;
     // 现在所有数据都改为 c 指针
-    private final AnyCPointer mDataIn, mDataOut;
-    private final IntCPointer mInNums, mOutNums;
-    private final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam;
-    private final IDoubleOrFloatCPointer mOutEng;
-    private final IGrowableDoubleOrFloatCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz;
-    private final GrowableIntCPointer mNlType, mNlIdx;
+    final AnyCPointer mDataIn, mDataOut;
+    final IntCPointer mInNums, mOutNums;
+    final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam;
+    final IDoubleOrFloatCPointer mOutEng;
+    final IGrowableDoubleOrFloatCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz;
+    final GrowableIntCPointer mNlType, mNlIdx;
     
     @SuppressWarnings("unchecked")
     NNAP2(@Nullable String aLibDir, @Nullable String aProjectName, Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, @Nullable String aPrecision) throws Exception {
@@ -176,17 +174,17 @@ public class NNAP2 implements IPairPotential {
             fill_(tNormParam.plus(mBasis[i].size()+2), aNormSigma);
             mNormParam.putAt(i, tNormParam);
         }
-        // 开始 jit 编译
-        mNNAPGEN.setOptimLevel(Conf.OPTIM_LEVEL).setCmakeSetting(Conf.CMAKE_SETTING)
-            .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
-            .compile();
     }
     public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, String aPrecision) throws Exception {
         this(null, null, aModelInfo, aThreadNumber, aPrecision);
+        // 直接开始 jit 编译
+        compileJIT_();
     }
     public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, String aPrecision) throws Exception {
         this(IO.toParentPath(aModelPath), toValidProjectName(IO.toFileName(aModelPath)),
              aModelPath.endsWith(".yaml") || aModelPath.endsWith(".yml") ? IO.yaml2map(aModelPath) : IO.json2map(aModelPath), aThreadNumber, aPrecision);
+        // 直接开始 jit 编译
+        compileJIT_();
     }
     public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {this(aModelPath, aThreadNumber, null);}
     public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {this(aModelInfo, aThreadNumber, null);}
@@ -194,7 +192,7 @@ public class NNAP2 implements IPairPotential {
     public NNAP2(String aModelPath) throws Exception {this(aModelPath, 1);}
     
     private final static Pattern PROJECT_INVALID_NAME = Pattern.compile("[^a-zA-Z0-9_\\-]");
-    private static String toValidProjectName(String aProjectName) {
+    static String toValidProjectName(String aProjectName) {
         aProjectName = aProjectName.replace(".yaml", "").replace(".yml", "").replace(".json", "").replace(".jnn", "").replace(".nn", "");
         aProjectName = PROJECT_INVALID_NAME.matcher(aProjectName).replaceAll("");
         return aProjectName.isEmpty() ? null : aProjectName;
@@ -208,10 +206,33 @@ public class NNAP2 implements IPairPotential {
         }
     }
     
+    // jit stuffs
+    final NNAPGEN mNNAPGEN;
+    IJITEngine mJITEngine = null;
+    private static final String NAME_CAL_ENERGY = "jse_nnap_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nnap_calEnergyForce";
+    private static final String NAME_STAT_NEINUM_LAMMPS = "jse_nnap_statNeiNumLammps", NAME_COMPUTE_LAMMPS = "jse_nnap_computeLammps";
+    private IJITMethod mCalEnergy = null, mCalEnergyForce = null;
+    private IJITMethod mStatNeiNumLammps = null, mComputeLammps = null;
+    private void compileJIT_() throws Exception {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        if (mJITEngine!=null) throw new IllegalStateException("compileJIT() has already been called");
+        // 开始 jit
+        mJITEngine = mNNAPGEN.initEngine(NNAP2.VERSION, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING)
+            .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
+            .setCmakeSettings(Conf.CMAKE_SETTING).setOptimLevel(Conf.OPTIM_LEVEL);
+        mJITEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS).compile();
+        mCalEnergy = mJITEngine.findMethod(NAME_CAL_ENERGY);
+        mCalEnergyForce = mJITEngine.findMethod(NAME_CAL_ENERGYFORCE);
+        mStatNeiNumLammps = mJITEngine.findMethod(NAME_STAT_NEINUM_LAMMPS);
+        mComputeLammps = mJITEngine.findMethod(NAME_COMPUTE_LAMMPS);
+    }
+    
     @Override public void shutdown() {
         if (mDead) return;
         mDead = true;
-        
+        shutdown_();
+    }
+    void shutdown_() {
         for (int i = 0; i < mSymbols.length; ++i) {
             mFpHyperParam.getAsCPointerAt(i).free();
             mFpParam.getAsCPointerAt(i).free();
@@ -228,8 +249,9 @@ public class NNAP2 implements IPairPotential {
         mOutEng.free();
         mDataOut.free();
         
-        mNNAPGEN.shutdown();
+        if (mJITEngine!=null) mJITEngine.shutdown();
     }
+    
     @Override public boolean isShutdown() {return mDead;}
     @Override public int threadNumber() {return mThreadNumber;}
     @VisibleForTesting public int nthreads() {return threadNumber();}
@@ -299,7 +321,7 @@ public class NNAP2 implements IPairPotential {
             mDataIn.putAt(8, mNormParam.getAt(cType-1));
             mDataOut.putAt(0, mOutEng);
             // 调用 jit 方法获取结果
-            int tCode = mNNAPGEN.mCalEnergy.invoke(mDataIn, mDataOut);
+            int tCode = mCalEnergy.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
             double tEng = mOutEng.getD();
             rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
@@ -336,7 +358,7 @@ public class NNAP2 implements IPairPotential {
             mDataOut.putAt(2, mGradNlDy);
             mDataOut.putAt(3, mGradNlDz);
             // 调用 jit 方法获取结果
-            int tCode = mNNAPGEN.mCalEnergyForce.invoke(mDataIn, mDataOut);
+            int tCode = mCalEnergyForce.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
             double tEng = mOutEng.getD();
             if (rEnergyAccumulator != null) {
@@ -375,7 +397,7 @@ public class NNAP2 implements IPairPotential {
         mGradNlDz.ensureCapacity(aNeiNum);
     }
     
-    void computeLammps(PairNNAP2 aPair) {
+    void computeLammps(PairNNAP2 aPair) throws Exception {
         // 种类的缓存优化
         int inum = aPair.listInum();
         for (int type = 1; type <= aPair.mTypeNum; ++type) {
@@ -390,7 +412,7 @@ public class NNAP2 implements IPairPotential {
         mDataIn.putAt(0, mInNums);
         mDataIn.putAt(1, ilist);
         mDataIn.putAt(2, numneigh);
-        mNNAPGEN.mStatNeiNumLammps.invoke(mDataIn, mOutNums);
+        mStatNeiNumLammps.invoke(mDataIn, mOutNums);
         validNlLammps_(mOutNums.getAt(0));
         
         // compute 开始，参数设置
@@ -434,7 +456,7 @@ public class NNAP2 implements IPairPotential {
         mDataOut.putAt(8, aPair.cvatom());
         
         // 调用 jit 方法计算
-        int tCode = mNNAPGEN.mComputeLammps.invoke(mDataIn, mDataOut);
+        int tCode = mComputeLammps.invoke(mDataIn, mDataOut);
         if (tCode>0) throw new IllegalStateException("Exit code: "+tCode);
     }
 }

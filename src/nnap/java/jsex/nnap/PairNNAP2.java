@@ -77,7 +77,7 @@ public class PairNNAP2 extends LmpPlugin.Pair {
     private void coeff_(String... aArgs) throws Exception {
         if (aArgs==null || aArgs.length<4) throw new IllegalArgumentException("Not enough arguments, pair_coeff MUST be like `* * path/to/nnpot elem1 ...`");
         if (!aArgs[0].equals("*") || !aArgs[1].equals("*")) throw new IllegalArgumentException("pair_coeff MUST start with `* *`");
-        mNNAP = new NNAP2(aArgs[2], 1, precision());
+        mNNAP = initNNAP(aArgs[2]);
         String tNNAPUnits = mNNAP.units();
         if (tNNAPUnits != null) {
             String tLmpUnits = unitStyle();
@@ -104,6 +104,10 @@ public class PairNNAP2 extends LmpPlugin.Pair {
             mTypeIlistBuf[type] = new GrowableIntCPointer(128);
         }
     }
+    protected NNAP2 initNNAP(String aPath) throws Exception {
+        return new NNAP2(aPath, 1);
+    }
+    
     NNAP2 mNNAP = null;
     IntCPointer mLmpType2NNAPType = null;
     double[] mCutoff = null;
@@ -115,9 +119,6 @@ public class PairNNAP2 extends LmpPlugin.Pair {
     
     @Override public double initOne(int i, int j) {
         return mCutoff[i];
-    }
-    protected String precision() {
-        return null;
     }
     
     @Override public void shutdown() {
