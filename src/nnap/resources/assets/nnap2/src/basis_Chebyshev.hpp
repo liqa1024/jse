@@ -6,8 +6,8 @@
 namespace JSE_NNAP {
 
 template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N>
-static void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
-                         flt_t aRCut, flt_t *aFuseWeight) noexcept {
+static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
+                                     flt_t aRCut, flt_t *aFuseWeight) noexcept {
     // init cache
     flt_t rRn[NMAX+1];
     // clear fp first
@@ -16,7 +16,7 @@ static void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType,
     for (int j = 0; j < aNeiNum; ++j) {
         int type = aNlType[j];
         flt_t dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
-        flt_t dis = std::sqrt(dx*dx + dy*dy + dz*dz);
+        flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
         // cal fc
@@ -50,9 +50,9 @@ static void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType,
 }
 
 template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N>
-static void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
-                          flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                          flt_t aRCut, flt_t *aFuseWeight) noexcept {
+static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
+                                      flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
+                                      flt_t aRCut, flt_t *aFuseWeight) noexcept {
     // init cache
     flt_t rRn[NMAX+1];
     flt_t rRnPx[NMAX+1], rRnPy[NMAX+1], rRnPz[NMAX+1], rCheby2[NMAX+1];
@@ -61,7 +61,7 @@ static void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType
         // init nl
         int type = aNlType[j];
         flt_t dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
-        flt_t dis = std::sqrt(dx*dx + dy*dy + dz*dz);
+        flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
         // cal fcPxyz

@@ -1,7 +1,23 @@
 #ifndef NNAP_UTIL_H
 #define NNAP_UTIL_H
 
+// >>> NNAPGEN PICK
+// --- NNAPGEN PICK: cpu
+// >>> NNAPGEN REMOVE
+/*
+// <<< NNAPGEN REMOVE
 #include <cmath>
+#define NNAP_ARCH_CPU
+#define NNAP_DEVICE
+#define NNAP_HOST
+// >>> NNAPGEN REMOVE
+*/
+// <<< NNAPGEN REMOVE
+// --- NNAPGEN PICK: cuda
+#define NNAP_ARCH_CUDA
+#define NNAP_DEVICE __device__
+#define NNAP_HOST __host__
+// <<< NNAPGEN PICK [ARCH]
 
 namespace JSE_NNAP {
 
@@ -10,11 +26,13 @@ namespace JSE_NNAP {
 // >>> NNAPGEN REMOVE
 /*
 // <<< NNAPGEN REMOVE
+#define NNAP_PRECISION_DOUBLE
 typedef double flt_t;
 // >>> NNAPGEN REMOVE
 */
 // <<< NNAPGEN REMOVE
 // --- NNAPGEN PICK: single
+#define NNAP_PRECISION_SINGLE
 typedef float flt_t;
 // <<< NNAPGEN PICK [PRECISION]
 
@@ -51,57 +69,119 @@ static constexpr flt_t SQRT3DIV2 = 1.224744871391589;
 static constexpr flt_t PI4 = 12.566370614359172;
 static constexpr flt_t SQRT_PI4 = 3.5449077018110318;
 
-static inline flt_t pow2(flt_t value) noexcept {
+
+static inline NNAP_DEVICE double nnap_abs(double value) noexcept {
+#ifdef NNAP_ARCH_CUDA
+    return abs(value);
+#else
+    return std::abs(value);
+#endif
+}
+static inline NNAP_DEVICE float nnap_abs(float value) noexcept {
+#ifdef NNAP_ARCH_CUDA
+    return abs(value);
+#else
+    return std::abs(value);
+#endif
+}
+
+static inline NNAP_DEVICE double nnap_sqrt(double value) noexcept {
+#ifdef NNAP_ARCH_CUDA
+    return sqrt(value);
+#else
+    return std::sqrt(value);
+#endif
+}
+static inline NNAP_DEVICE float nnap_sqrt(float value) noexcept {
+#ifdef NNAP_ARCH_CUDA
+    return sqrt(value);
+#else
+    return std::sqrt(value);
+#endif
+}
+
+static inline NNAP_DEVICE double nnap_hypot(double x, double y) noexcept {
+#ifdef NNAP_ARCH_CUDA
+    return hypot(x, y);
+#else
+    return std::hypot(x, y);
+#endif
+}
+static inline NNAP_DEVICE float nnap_hypot(float x, float y) noexcept {
+#ifdef NNAP_ARCH_CUDA
+    return hypot(x, y);
+#else
+    return std::hypot(x, y);
+#endif
+}
+
+static inline NNAP_DEVICE double nnap_exp(double value) noexcept {
+#ifdef NNAP_ARCH_CUDA
+    return exp(value);
+#else
+    return std::exp(value);
+#endif
+}
+static inline NNAP_DEVICE float nnap_exp(float value) noexcept {
+#ifdef NNAP_ARCH_CUDA
+    return exp(value);
+#else
+    return std::exp(value);
+#endif
+}
+
+
+static inline NNAP_DEVICE flt_t pow2(flt_t value) noexcept {
     return value * value;
 }
-static inline flt_t pow3(flt_t value) noexcept {
+static inline NNAP_DEVICE flt_t pow3(flt_t value) noexcept {
     return value * value * value;
 }
-static inline flt_t pow4(flt_t value) noexcept {
+static inline NNAP_DEVICE flt_t pow4(flt_t value) noexcept {
     const flt_t value2 = value * value;
     return value2 * value2;
 }
-static inline int numericEqual(double aLHS, double aRHS) noexcept {
-    double tNorm = std::fabs(aLHS) + std::fabs(aRHS);
-    if (tNorm < JSE_DBL_MIN_NORMAL * JSE_EPS_MUL) return 1;
-    double tDiff = std::fabs(aLHS - aRHS);
+static inline NNAP_DEVICE int numericEqual(double aLHS, double aRHS) noexcept {
+    double tNorm = nnap_abs(aLHS) + nnap_abs(aRHS);
+    if (tNorm < JSE_DBL_MIN_NORMAL * JSE_EPS_MUL) return TRUE;
+    double tDiff = nnap_abs(aLHS - aRHS);
     return (tDiff <= tNorm * JSE_DBL_EPSILON) ? TRUE : FALSE;
 }
-static inline int numericEqual(float aLHS, float aRHS) noexcept {
-    float tNorm = std::fabs(aLHS) + std::fabs(aRHS);
-    if (tNorm < JSE_FLT_MIN_NORMAL * JSE_EPS_MUL) return 1;
-    float tDiff = std::fabs(aLHS - aRHS);
+static inline NNAP_DEVICE int numericEqual(float aLHS, float aRHS) noexcept {
+    float tNorm = nnap_abs(aLHS) + nnap_abs(aRHS);
+    if (tNorm < JSE_FLT_MIN_NORMAL * JSE_EPS_MUL) return TRUE;
+    float tDiff = nnap_abs(aLHS - aRHS);
     return (tDiff <= tNorm * JSE_FLT_EPSILON) ? TRUE : FALSE;
 }
 
 template <int N>
-static inline void fill(flt_t *rArray, flt_t aValue) noexcept {
+static inline NNAP_DEVICE void fill(flt_t *rArray, flt_t aValue) noexcept {
     for (int i = 0; i < N; ++i) {
         rArray[i] = aValue;
     }
 }
 template <int N>
-static inline void fill(flt_t *rArrayL, flt_t *aArrayR) noexcept {
+static inline NNAP_DEVICE void fill(flt_t *rArrayL, flt_t *aArrayR) noexcept {
     for (int i = 0; i < N; ++i) {
         rArrayL[i] = aArrayR[i];
     }
 }
 
 template <int N>
-static inline void multiply(flt_t *rArray, flt_t aValue) noexcept {
+static inline NNAP_DEVICE void multiply(flt_t *rArray, flt_t aValue) noexcept {
     for (int i = 0; i < N; ++i) {
         rArray[i] *= aValue;
     }
 }
 template <int N>
-static inline void multiply(flt_t *rArrayL, flt_t *aArrayR) noexcept {
+static inline NNAP_DEVICE void multiply(flt_t *rArrayL, flt_t *aArrayR) noexcept {
     for (int i = 0; i < N; ++i) {
         rArrayL[i] *= aArrayR[i];
     }
 }
 
 template <int N>
-static inline flt_t dot(flt_t *aArray) noexcept {
+static inline NNAP_DEVICE flt_t dot(flt_t *aArray) noexcept {
     flt_t rDot = 0.0;
     for (int i = 0; i < N; ++i) {
         rDot += aArray[i]*aArray[i];
@@ -109,7 +189,7 @@ static inline flt_t dot(flt_t *aArray) noexcept {
     return rDot;
 }
 template <int N>
-static inline flt_t dot(flt_t *aArrayL, flt_t *aArrayR) noexcept {
+static inline NNAP_DEVICE flt_t dot(flt_t *aArrayL, flt_t *aArrayR) noexcept {
     flt_t rDot = 0.0;
     for (int i = 0; i < N; ++i) {
         rDot += aArrayL[i]*aArrayR[i];
@@ -118,20 +198,20 @@ static inline flt_t dot(flt_t *aArrayL, flt_t *aArrayR) noexcept {
 }
 
 template <int N>
-static inline void mplus(flt_t *rArrayL, flt_t aMul, flt_t *aArrayR) noexcept {
+static inline NNAP_DEVICE void mplus(flt_t *rArrayL, flt_t aMul, flt_t *aArrayR) noexcept {
     for (int i = 0; i < N; ++i) {
         rArrayL[i] += aMul*aArrayR[i];
     }
 }
 template <int N>
-static inline void mplus(flt_t *rArrayL, flt_t *aArrayMul1, flt_t *aArrayMul2) noexcept {
+static inline NNAP_DEVICE void mplus(flt_t *rArrayL, flt_t *aArrayMul1, flt_t *aArrayMul2) noexcept {
     for (int i = 0; i < N; ++i) {
         rArrayL[i] += aArrayMul1[i]*aArrayMul2[i];
     }
 }
 
 template <int N>
-static inline void mplus2(flt_t *rArrayL1, flt_t *rArrayL2, flt_t aMul1, flt_t aMul2, flt_t *aArrayR) noexcept {
+static inline NNAP_DEVICE void mplus2(flt_t *rArrayL1, flt_t *rArrayL2, flt_t aMul1, flt_t aMul2, flt_t *aArrayR) noexcept {
     for (int i = 0; i < N; ++i) {
         const flt_t tRHS = aArrayR[i];
         rArrayL1[i] += aMul1*tRHS;
@@ -140,7 +220,7 @@ static inline void mplus2(flt_t *rArrayL1, flt_t *rArrayL2, flt_t aMul1, flt_t a
 }
 
 template <int N>
-static inline void chebyshevFull(flt_t aX, flt_t *rDest) noexcept {
+static inline NNAP_DEVICE void chebyshevFull(flt_t aX, flt_t *rDest) noexcept {
     if (N < 0) return;
     rDest[0] = ONE;
     if (N == 0) return;
@@ -150,7 +230,7 @@ static inline void chebyshevFull(flt_t aX, flt_t *rDest) noexcept {
     }
 }
 template <int N>
-static inline void chebyshev2Full(flt_t aX, flt_t *rDest) noexcept {
+static inline NNAP_DEVICE void chebyshev2Full(flt_t aX, flt_t *rDest) noexcept {
     if (N < 0) return;
     rDest[0] = ONE;
     if (N == 0) return;
@@ -160,28 +240,28 @@ static inline void chebyshev2Full(flt_t aX, flt_t *rDest) noexcept {
     }
 }
 
-static inline flt_t calFc(flt_t aDis, flt_t aRCut) noexcept {
+static inline NNAP_DEVICE flt_t calFc(flt_t aDis, flt_t aRCut) noexcept {
     return pow4(ONE - pow2(aDis/aRCut));
 }
-static inline flt_t calFc(flt_t aDis, flt_t aRCutL, flt_t aRCutR) noexcept {
+static inline NNAP_DEVICE flt_t calFc(flt_t aDis, flt_t aRCutL, flt_t aRCutR) noexcept {
     const flt_t tX = (aDis-aRCutL)/(aRCutR-aRCutL);
     return pow4(ONE - pow2(tX+tX - ONE));
 }
 template <int N>
-static inline void calRn(flt_t *rRn, flt_t aDis, flt_t aRCut) noexcept {
+static inline NNAP_DEVICE void calRn(flt_t *rRn, flt_t aDis, flt_t aRCut) noexcept {
     flt_t tRnX = aDis/aRCut;
     tRnX = ONE - (tRnX+tRnX);
     chebyshevFull<N>(tRnX, rRn);
 }
 template <int N>
-static inline void calRn(flt_t *rRn, flt_t aDis, flt_t aRCutL, flt_t aRCutR) noexcept {
+static inline NNAP_DEVICE void calRn(flt_t *rRn, flt_t aDis, flt_t aRCutL, flt_t aRCutR) noexcept {
     flt_t tRnX = (aDis-aRCutL)/(aRCutR-aRCutL);
     tRnX = ONE - (tRnX+tRnX);
     chebyshevFull<N>(tRnX, rRn);
 }
 
-static inline flt_t calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFcPz,
-                             flt_t aDis, flt_t aRCut, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
+static inline NNAP_DEVICE flt_t calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFcPz,
+                                          flt_t aDis, flt_t aRCut, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
     const flt_t fcMul = ONE - pow2(aDis/aRCut);
     const flt_t fcMul3 = pow3(fcMul);
     const flt_t fcPMul = ((flt_t)8.0) * fcMul3 / (aRCut*aRCut);
@@ -190,8 +270,8 @@ static inline flt_t calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFcPz,
     *rFcPz = aDz * fcPMul;
     return fcMul*fcMul3;
 }
-static inline flt_t calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFcPz,
-                             flt_t aDis, flt_t aRCutL, flt_t aRCutR, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
+static inline NNAP_DEVICE flt_t calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFcPz,
+                                          flt_t aDis, flt_t aRCutL, flt_t aRCutR, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
     const flt_t tRCutRL = aRCutR-aRCutL;
     const flt_t tX = (aDis-aRCutL)/tRCutRL;
     const flt_t fcMul = ONE - pow2(tX+tX - ONE);
@@ -203,8 +283,8 @@ static inline flt_t calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFcPz,
     return fcMul*fcMul3;
 }
 template <int N>
-static inline void calRnPxyz(flt_t *rRn, flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
-                             flt_t aDis, flt_t aRCut, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
+static inline NNAP_DEVICE void calRnPxyz(flt_t *rRn, flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
+                                         flt_t aDis, flt_t aRCut, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
     flt_t tRnX = aDis/aRCut;
     tRnX = ONE - (tRnX+tRnX);
     chebyshevFull<N>(tRnX, rRn);
@@ -219,8 +299,8 @@ static inline void calRnPxyz(flt_t *rRn, flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnP
     }
 }
 template <int N>
-static inline void calRnPxyz(flt_t *rRn, flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
-                             flt_t aDis, flt_t aRCutL, flt_t aRCutR, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
+static inline NNAP_DEVICE void calRnPxyz(flt_t *rRn, flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
+                                         flt_t aDis, flt_t aRCutL, flt_t aRCutR, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
     const flt_t tRCutRL = aRCutR-aRCutL;
     flt_t tRnX = (aDis-aRCutL)/tRCutRL;
     tRnX = ONE - (tRnX+tRnX);

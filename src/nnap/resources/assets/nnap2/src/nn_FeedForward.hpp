@@ -5,16 +5,16 @@
 
 namespace JSE_NNAP {
 
-static inline flt_t silu(flt_t aX) noexcept {
-    return aX / (ONE + exp(-aX));
+static inline NNAP_DEVICE flt_t silu(flt_t aX) noexcept {
+    return aX / (ONE + nnap_exp(-aX));
 }
-static inline flt_t siluGrad(flt_t aX, flt_t *rGrad) noexcept {
-    flt_t tSigmoid = ONE / (ONE + exp(-aX));
+static inline NNAP_DEVICE flt_t siluGrad(flt_t aX, flt_t *rGrad) noexcept {
+    flt_t tSigmoid = ONE / (ONE + nnap_exp(-aX));
     *rGrad = tSigmoid * (ONE + aX * (ONE - tSigmoid));
     return aX * tSigmoid;
 }
-static inline flt_t siluGradGrad(flt_t aX, flt_t *rGrad, flt_t *rGradGrad) noexcept {
-    flt_t tSigmoid = ONE / (ONE + exp(-aX));
+static inline NNAP_DEVICE flt_t siluGradGrad(flt_t aX, flt_t *rGrad, flt_t *rGradGrad) noexcept {
+    flt_t tSigmoid = ONE / (ONE + nnap_exp(-aX));
     *rGrad = tSigmoid * (ONE + aX * (ONE - tSigmoid));
     *rGradGrad = tSigmoid * (ONE - tSigmoid) * (TWO + aX * (ONE - tSigmoid - tSigmoid));
     return aX * tSigmoid;
@@ -36,7 +36,7 @@ static inline flt_t siluGradGrad(flt_t aX, flt_t *rGrad, flt_t *rGradGrad) noexc
 // <<< NNAPGEN REMOVE
 
 template <int IN_SIZE, int OUT_SIZE, int CACHE_GRAD>
-static void nnForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeights, flt_t *aBiases, flt_t *rSiLUGrad) noexcept {
+static NNAP_DEVICE void nnForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeights, flt_t *aBiases, flt_t *rSiLUGrad) noexcept {
     flt_t *tWeights = aWeights;
     for (int j = 0; j < OUT_SIZE; ++j) {
         const flt_t tDot = dot<IN_SIZE>(aX, tWeights) + aBiases[j];
@@ -51,7 +51,7 @@ static void nnForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeights, flt_t *aBiases
     }
 }
 template <int IN_SIZE, int OUT_SIZE, int SHARE_SIZE, int CACHE_GRAD>
-static void nnShareForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeights, flt_t *aSharedWeights, flt_t *aBiases, flt_t *aSharedBiases, flt_t *rSiLUGrad) noexcept {
+static NNAP_DEVICE void nnShareForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeights, flt_t *aSharedWeights, flt_t *aBiases, flt_t *aSharedBiases, flt_t *rSiLUGrad) noexcept {
     constexpr int tNoShareSize = OUT_SIZE - SHARE_SIZE;
     flt_t *tWeights = aWeights;
     for (int j = 0; j < tNoShareSize; ++j) {
@@ -81,8 +81,8 @@ static void nnShareForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeights, flt_t *aS
 }
 
 template <int CTYPE_GEN, int CACHE_GRAD>
-static flt_t nnForward(flt_t *aX, flt_t *aHiddenWeights, flt_t *aSharedHiddenWeights, flt_t *aHiddenBiases, flt_t *aSharedHiddenBiases,
-                       flt_t *aOutputWeights, flt_t aOutputBias, flt_t *rGradCache) noexcept {
+static NNAP_DEVICE flt_t nnForward(flt_t *aX, flt_t *aHiddenWeights, flt_t *aSharedHiddenWeights, flt_t *aHiddenBiases, flt_t *aSharedHiddenBiases,
+                                   flt_t *aOutputWeights, flt_t aOutputBias, flt_t *rGradCache) noexcept {
     flt_t *tSubX = aX;
     flt_t *tWeights = aHiddenWeights;
     flt_t *tBiases = aHiddenBiases;
@@ -128,7 +128,7 @@ static flt_t nnForward(flt_t *aX, flt_t *aHiddenWeights, flt_t *aSharedHiddenWei
 
 
 template <int IN_SIZE, int OUT_SIZE>
-static void nnBackwardLayer(flt_t *rGradX, flt_t *aGradY, flt_t *aWeights, flt_t *aSiLUGrad) noexcept {
+static NNAP_DEVICE void nnBackwardLayer(flt_t *rGradX, flt_t *aGradY, flt_t *aWeights, flt_t *aSiLUGrad) noexcept {
     flt_t *tWeights = aWeights;
     for (int j = 0; j < OUT_SIZE; ++j) {
         flt_t tGradZ =  aSiLUGrad[j] * aGradY[j];
@@ -137,7 +137,7 @@ static void nnBackwardLayer(flt_t *rGradX, flt_t *aGradY, flt_t *aWeights, flt_t
     }
 }
 template <int IN_SIZE, int OUT_SIZE, int SHARE_SIZE>
-static void nnShareBackwardLayer(flt_t *rGradX, flt_t *aGradY, flt_t *aWeights, flt_t *aSharedWeights, flt_t *aSiLUGrad) noexcept {
+static NNAP_DEVICE void nnShareBackwardLayer(flt_t *rGradX, flt_t *aGradY, flt_t *aWeights, flt_t *aSharedWeights, flt_t *aSiLUGrad) noexcept {
     constexpr int tNoShareSize = OUT_SIZE - SHARE_SIZE;
     flt_t *tWeights = aWeights;
     for (int j = 0; j < tNoShareSize; ++j) {
@@ -155,7 +155,7 @@ static void nnShareBackwardLayer(flt_t *rGradX, flt_t *aGradY, flt_t *aWeights, 
 }
 
 template <int CTYPE_GEN>
-static void nnBackward(flt_t aGradY, flt_t *rGradX, flt_t *aHiddenWeights, flt_t *aSharedHiddenWeights, flt_t *aOutputWeight, flt_t *aGradCache) noexcept {
+static NNAP_DEVICE void nnBackward(flt_t aGradY, flt_t *rGradX, flt_t *aHiddenWeights, flt_t *aSharedHiddenWeights, flt_t *aOutputWeight, flt_t *aGradCache) noexcept {
     flt_t *tWeights = aHiddenWeights;
     flt_t *tSiLUGrad = aGradCache;
     

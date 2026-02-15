@@ -7,6 +7,7 @@ import jse.code.SP;
 import jse.code.UT;
 import jse.code.functional.IUnaryFullOperator;
 import jse.gpu.CudaJIT;
+import jse.jit.IJITEngine;
 import jse.jit.SimpleJIT;
 import jsex.nnap.basis.Basis2;
 import jsex.nnap.nn.NeuralNetwork2;
@@ -74,68 +75,89 @@ class NNAPGEN {
         , "basis_SphericalUtil0.hpp"
     };
     
-    private final Map<String, Object> mGenMap;
+    private final Basis2[] mBasis;
+    private final NeuralNetwork2[] mNN;
     private final String mLibDir, mProjectName;
     
-    NNAPGEN(@Nullable String aLibDir, @Nullable String aProjectName, Basis2[] aBasis, NeuralNetwork2[] aNN, boolean aSinglePrecision) {
+    NNAPGEN(@Nullable String aLibDir, @Nullable String aProjectName, Basis2[] aBasis, NeuralNetwork2[] aNN) {
         mLibDir = aLibDir!=null ? aLibDir : OS.WORKING_DIR;
         mProjectName = aProjectName!=null ? aProjectName : JIT_NAME;
-        final int tTypeNum = aBasis.length;
+        mBasis = aBasis;
+        mNN = aNN;
+    }
+    
+    private Map<String, Object> initGenMap_() {
+        final int tTypeNum = mBasis.length;
         // 代码生成，先针对相同系数的进行优化合并
         List<List<Integer>> tSwitchListFp = new ArrayList<>(); // [position][type]
         List<List<Integer>> tSwitchListNN = new ArrayList<>();
         List<List<Integer>> tSwitchListFpNN = new ArrayList<>();
         for (int type = 1; type <= tTypeNum; ++type) {
             final int ti = type-1;
-            updateSwitchList_(tSwitchListFp, type, caseList -> aBasis[ti].hasSameGenMap(aBasis[caseList.get(0)-1]));
-            updateSwitchList_(tSwitchListNN, type, caseList -> aNN[ti].hasSameGenMap(aNN[caseList.get(0)-1]));
-            updateSwitchList_(tSwitchListFpNN, type, caseList -> aBasis[ti].hasSameGenMap(aBasis[caseList.get(0)-1]) && aNN[ti].hasSameGenMap(aNN[caseList.get(0)-1]));
+            updateSwitchList_(tSwitchListFp, type, caseList -> mBasis[ti].hasSameGenMap(mBasis[caseList.get(0)-1]));
+            updateSwitchList_(tSwitchListNN, type, caseList -> mNN[ti].hasSameGenMap(mNN[caseList.get(0)-1]));
+            updateSwitchList_(tSwitchListFpNN, type, caseList -> mBasis[ti].hasSameGenMap(mBasis[caseList.get(0)-1]) && mNN[ti].hasSameGenMap(mNN[caseList.get(0)-1]));
         }
-        mGenMap = new LinkedHashMap<>();
-        mGenMap.put("[PRECISION]", aSinglePrecision ? "single" : "double");
-        mGenMap.put("[FP TYPE]", tSwitchListFp);
-        mGenMap.put("[NN TYPE]", tSwitchListNN);
-        mGenMap.put("[FP NN TYPE]", tSwitchListFpNN);
+        Map<String, Object> rGenMap = new LinkedHashMap<>();
+        rGenMap.put("[FP TYPE]", tSwitchListFp);
+        rGenMap.put("[NN TYPE]", tSwitchListNN);
+        rGenMap.put("[FP NN TYPE]", tSwitchListFpNN);
         // 只添加不同的，降低 code gen 的压力
         int tGenIdx = 0;
         for (List<Integer> tSubList : tSwitchListFpNN) {
-            aBasis[tSubList.get(0)-1].updateGenMap(mGenMap, tGenIdx);
-            aNN[tSubList.get(0)-1].updateGenMap(mGenMap, tGenIdx);
+            mBasis[tSubList.get(0)-1].updateGenMap(rGenMap, tGenIdx);
+            mNN[tSubList.get(0)-1].updateGenMap(rGenMap, tGenIdx);
             tGenIdx += tSubList.size();
         }
+        return rGenMap;
     }
-    SimpleJIT.Engine initEngine(Object... aIdObjs) {
-        String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, mGenMap, aIdObjs);
-        SimpleJIT.Engine tEngine = SimpleJIT.engine();
-        tEngine.setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID);
-        tEngine.setSrcDirIniter((wd, engine) -> {
+    
+    @SuppressWarnings("SameParameterValue")
+    IJITEngine initEngine(boolean aSinglePrecision, int aOptimLevel, String aCmakeCxxCompiler, String aCmakeCxxFlags, Map<String, String> aCmakeSetting) {
+        Map<String, Object> rGenMap = initGenMap_();
+        rGenMap.put("[PRECISION]", aSinglePrecision ? "single" : "double");
+        rGenMap.put("[ARCH]", "cpu");
+        String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, NNAP2.VERSION,
+                                            rGenMap, aOptimLevel, aCmakeCxxCompiler, aCmakeCxxFlags, aCmakeSetting);
+        return SimpleJIT.engine()
+            .setCmakeCxxCompiler(aCmakeCxxCompiler).setCmakeCxxFlags(aCmakeCxxFlags)
+            .setCmakeSettings(aCmakeSetting).setOptimLevel(aOptimLevel)
+            .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
+            .setSrcDirIniter((wd, engine) -> {
                 for (String tName : SRC_NAME) {
-                    codeGen_(IO.getResource("nnap2/src/"+tName), wd+tName, mGenMap);
+                    codeGen_(IO.getResource("nnap2/src/"+tName), wd+tName, rGenMap);
                 }
-                codeGen_(IO.getResource("nnap2/src/"+INTERFACE_NAME), wd+INTERFACE_NAME, mGenMap);
-                codeGen_(IO.getResource("nnap2/src/"+INTERFACE_HEAD_NAME), wd+INTERFACE_HEAD_NAME, mGenMap);
+                codeGen_(IO.getResource("nnap2/src/"+INTERFACE_NAME), wd+INTERFACE_NAME, rGenMap);
+                codeGen_(IO.getResource("nnap2/src/"+INTERFACE_HEAD_NAME), wd+INTERFACE_HEAD_NAME, rGenMap);
                 // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
                 engine.writeCmakeFile(wd, INTERFACE_NAME);
                 return wd;
             });
-        return tEngine;
     }
-    CudaJIT.Engine initEngineCuda(Object... aIdObjs) {
-        // 开始 jit
-        String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, mGenMap, aIdObjs);
-        CudaJIT.Engine tEngine = CudaJIT.engine();
-        tEngine.setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID);
-        tEngine.setSrcDirIniter((wd, engine) -> {
+    @SuppressWarnings("SameParameterValue")
+    IJITEngine initEngineCuda(int aNlSize, int aBlockSize, int aOptimLevel, String aCmakeCxxCompiler, String aCmakeCxxFlags, String aCmakeCudaCompiler, String aCmakeCudaFlags, Map<String, String> aCmakeSetting) {
+        Map<String, Object> rGenMap = initGenMap_();
+        rGenMap.put("NNAPGEN_CUDA_NLSIZE", aNlSize);
+        rGenMap.put("NNAPGEN_CUDA_BLOCKSIZE", aBlockSize);
+        rGenMap.put("[PRECISION]", "single");
+        rGenMap.put("[ARCH]", "cuda");
+        String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, NNAP2.VERSION,
+                                            rGenMap, aOptimLevel, aCmakeCxxCompiler, aCmakeCxxFlags, aCmakeSetting);
+        return CudaJIT.engine()
+            .setCmakeCudaCompiler(aCmakeCudaCompiler).setCmakeCudaFlags(aCmakeCudaFlags)
+            .setCmakeCxxCompiler(aCmakeCxxCompiler).setCmakeCxxFlags(aCmakeCxxFlags)
+            .setCmakeSettings(aCmakeSetting).setOptimLevel(aOptimLevel)
+            .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
+            .setSrcDirIniter((wd, engine) -> {
                 for (String tName : SRC_NAME) {
-                    codeGen_(IO.getResource("nnap2/src/"+tName), wd+tName, mGenMap);
+                    codeGen_(IO.getResource("nnap2/src/"+tName), wd+tName, rGenMap);
                 }
-                codeGen_(IO.getResource("nnap2/src/nnap_interface_gpu.cu"), wd+"nnap_interface_gpu.cu", mGenMap);
-                codeGen_(IO.getResource("nnap2/src/nnap_interface_gpu.h"), wd+"nnap_interface_gpu.h", mGenMap);
+                codeGen_(IO.getResource("nnap2/src/nnap_interface_cuda.cu"), wd+"nnap_interface_cuda.cu", rGenMap);
+                codeGen_(IO.getResource("nnap2/src/nnap_interface_cuda.h"), wd+"nnap_interface_cuda.h", rGenMap);
                 // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
-                engine.writeCmakeFile(wd, "nnap_interface_gpu.cu");
+                engine.writeCmakeFile(wd, "nnap_interface_cuda.cu");
                 return wd;
             });
-        return tEngine;
     }
     
     

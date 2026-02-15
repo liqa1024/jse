@@ -114,7 +114,7 @@ public class NNAP2 implements IPairPotential {
             if (tNNInfo ==null) throw new IllegalArgumentException("No nn in model, torch model is invalid now.");
             return tNNInfo;
         }));
-        mNNAPGEN = new NNAPGEN(aLibDir, aProjectName, mBasis, mNN, mSinglePrecision);
+        mNNAPGEN = new NNAPGEN(aLibDir, aProjectName, mBasis, mNN);
         // 初始化数组
         mDataIn = AnyCPointer.calloc(20);
         mDataOut = AnyCPointer.calloc(20);
@@ -217,9 +217,7 @@ public class NNAP2 implements IPairPotential {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (mJITEngine!=null) throw new IllegalStateException("compileJIT() has already been called");
         // 开始 jit
-        mJITEngine = mNNAPGEN.initEngine(NNAP2.VERSION, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING)
-            .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
-            .setCmakeSettings(Conf.CMAKE_SETTING).setOptimLevel(Conf.OPTIM_LEVEL);
+        mJITEngine = mNNAPGEN.initEngine(mSinglePrecision, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING);
         mJITEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS).compile();
         mCalEnergy = mJITEngine.findMethod(NAME_CAL_ENERGY);
         mCalEnergyForce = mJITEngine.findMethod(NAME_CAL_ENERGYFORCE);

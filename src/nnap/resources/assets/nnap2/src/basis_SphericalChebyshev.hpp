@@ -6,8 +6,8 @@
 namespace JSE_NNAP {
 
 template <int WTYPE, int NMAX, int LMAXMAX, int FSIZE>
-static void calCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rCnlm,
-                    flt_t aRCut, flt_t *aFuseWeight) noexcept {
+static NNAP_DEVICE void calCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rCnlm,
+                                flt_t aRCut, flt_t *aFuseWeight) noexcept {
     constexpr int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     constexpr int tSizeBnlm = (NMAX+1)*tLMAll;
     // init cache
@@ -17,7 +17,7 @@ static void calCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int 
     for (int j = 0; j < aNeiNum; ++j) {
         int type = aNlType[j];
         flt_t dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
-        flt_t dis = std::sqrt(dx*dx + dy*dy + dz*dz);
+        flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
         // cal fc
@@ -59,8 +59,8 @@ static void calCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int 
 }
 
 template <int WTYPE, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int FSIZE, int SIZE_N, int PFFLAG, int PFSIZE>
-static void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
-                       flt_t **rForwardCache, flt_t aRCut, flt_t *aFuseWeight, flt_t *aPostFuseWeight, flt_t aPostFuseScale) noexcept {
+static NNAP_DEVICE void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
+                                   flt_t **rForwardCache, flt_t aRCut, flt_t *aFuseWeight, flt_t *aPostFuseWeight, flt_t aPostFuseScale) noexcept {
     // const init
     constexpr int tSizeL = (NORADIAL?LMAX:(LMAX+1)) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
@@ -93,9 +93,9 @@ static void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, i
 }
 
 template <int WTYPE, int NMAX, int LMAXMAX, int FSIZE>
-static void backwardCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradCnlm,
-                         flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                         flt_t aRCut, flt_t *aFuseWeight) {
+static NNAP_DEVICE void backwardCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradCnlm,
+                                     flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
+                                     flt_t aRCut, flt_t *aFuseWeight) {
     const int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     const int tSizeBnlm = (NMAX+1)*tLMAll;
     // init cache
@@ -108,7 +108,7 @@ static void backwardCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType,
         // init nl
         int type = aNlType[j];
         flt_t dx = aNlDx[j], dy = aNlDy[j], dz = aNlDz[j];
-        flt_t dis = std::sqrt(dx*dx + dy*dy + dz*dz);
+        flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
         // cal fcPxyz
@@ -146,10 +146,10 @@ static void backwardCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType,
     }
 }
 template <int WTYPE, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int FSIZE, int SIZE_N, int PFFLAG, int PFSIZE>
-static void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
-                        flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                        flt_t **aForwardCache, flt_t aRCut, flt_t *aFuseWeight,
-                        flt_t *aPostFuseWeight, flt_t aPostFuseScale) noexcept {
+static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
+                                    flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
+                                    flt_t **aForwardCache, flt_t aRCut, flt_t *aFuseWeight,
+                                    flt_t *aPostFuseWeight, flt_t aPostFuseScale) noexcept {
     // const init
     constexpr int tSizeL = (NORADIAL?LMAX:(LMAX+1)) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);

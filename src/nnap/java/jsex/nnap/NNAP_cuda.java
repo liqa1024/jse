@@ -18,6 +18,18 @@ import java.util.Map;
 class NNAP_cuda extends NNAP2 {
     public final static class Conf {
         /**
+         * 自定义 nnap cuda 版本使用的缓存近邻列表大小，超出此大小将会截断，
+         * 且默认会抛出错误提示增加更高的大小。更大的值会占用更高的显存并可能会降低速度；
+         * 默认为 {@code 256}
+         */
+        public static int CUDA_NLSIZE = OS.envI("JSE_NNAP_CUDA_NLSIZE", 256);
+        /**
+         * 自定义 nnap cuda 中使用的 block_size 值，这可能会影响速度；
+         * 默认为 {@code 256}
+         */
+        public static int CUDA_BLOCKSIZE = OS.envI("JSE_NNAP_CUDA_BLOCKSIZE", 256);
+        
+        /**
          * 自定义构建 nnap 的 cmake 参数设置，
          * 会在构建时使用 -D ${key}=${value} 传入
          */
@@ -42,7 +54,7 @@ class NNAP_cuda extends NNAP2 {
     private final GrowableFloatCPointer mFltBuf;
     private final GrowableIntCPointer mIntBuf;
     // cuda 数据
-    private final GrowableFloatCudaPointer mCudaX;
+    private final GrowableFloatCudaPointer mCudaX, mCudaF0, mCudaF1, mCudaEatom, mCudaVatom0, mCudaVatom1;
     private final GrowableIntCudaPointer mCudaType, mCudaIlist, mCudaNumneigh;
     private final GrowableInt64CudaPointer mCudaDisplsneigh;
     private final GrowableIntCudaPointer mCudaFirstneigh;
@@ -53,6 +65,11 @@ class NNAP_cuda extends NNAP2 {
         mFltBuf = new GrowableFloatCPointer(128);
         mIntBuf = new GrowableIntCPointer(1024);
         mCudaX = new GrowableFloatCudaPointer(128);
+        mCudaF0 = new GrowableFloatCudaPointer(128);
+        mCudaF1 = new GrowableFloatCudaPointer(128);
+        mCudaEatom = new GrowableFloatCudaPointer(128);
+        mCudaVatom0 = new GrowableFloatCudaPointer(128);
+        mCudaVatom1 = new GrowableFloatCudaPointer(128);
         mCudaType = new GrowableIntCudaPointer(128);
         mCudaIlist = new GrowableIntCudaPointer(128);
         mCudaNumneigh = new GrowableIntCudaPointer(128);
@@ -73,19 +90,17 @@ class NNAP_cuda extends NNAP2 {
     
     // jit stuffs
     IJITMethod mStatDisplsneighLammps = null;
-    IJITMethod mLammps2Cuda = null, mCuda2Lammps = null;
+    IJITMethod mLammps2Cuda = null, mCuda2Lammps = null, mComputeLammpsCuda = null;
     private void compileCuda_() throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (mJITEngine!=null) throw new IllegalStateException("compileCuda() has already been called");
         // 开始 jit
-        mJITEngine = mNNAPGEN.initEngineCuda("cuda", NNAP2.VERSION, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING)
-            .setCmakeCudaCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCudaFlags(Conf.CMAKE_CXX_FLAGS)
-            .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
-            .setCmakeSettings(Conf.CMAKE_SETTING).setOptimLevel(Conf.OPTIM_LEVEL);
-        mJITEngine.setMethodNames("jse_nnap_statDisplsneighLammps", "jse_nnap_lammps2cuda", "jse_nnap_cuda2lammps").compile();
+        mJITEngine = mNNAPGEN.initEngineCuda(Conf.CUDA_NLSIZE, Conf.CUDA_BLOCKSIZE, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_CUDA_COMPILER, Conf.CMAKE_CUDA_FLAGS, Conf.CMAKE_SETTING);
+        mJITEngine.setMethodNames("jse_nnap_statDisplsneighLammps", "jse_nnap_lammps2cuda", "jse_nnap_cuda2lammps", "jse_nnap_computeLammpsCuda").compile();
         mStatDisplsneighLammps = mJITEngine.findMethod("jse_nnap_statDisplsneighLammps");
         mLammps2Cuda = mJITEngine.findMethod("jse_nnap_lammps2cuda");
         mCuda2Lammps = mJITEngine.findMethod("jse_nnap_cuda2lammps");
+        mComputeLammpsCuda = mJITEngine.findMethod("jse_nnap_computeLammpsCuda");
     }
     
     @Override void shutdown_() {
@@ -95,6 +110,11 @@ class NNAP_cuda extends NNAP2 {
         mIntBuf.free();
         try {
             mCudaX.free();
+            mCudaF0.free();
+            mCudaF1.free();
+            mCudaEatom.free();
+            mCudaVatom0.free();
+            mCudaVatom1.free();
             mCudaType.free();
             mCudaIlist.free();
             mCudaNumneigh.free();
@@ -113,6 +133,7 @@ class NNAP_cuda extends NNAP2 {
     }
     @Override void computeLammps(PairNNAP2 aPair) throws CudaException {
         // 常规缓存向量长度规范
+        boolean cvflagAtom = aPair.cvflagAtom();
         int inum = aPair.listInum();
         final int nlocal = aPair.atomNlocal();
         final int nghost = aPair.atomNghost();
@@ -120,6 +141,11 @@ class NNAP_cuda extends NNAP2 {
         mFltBuf.ensureCapacity((long)ntot*9);
         mDisplsneigh.ensureCapacity(nlocal+1);
         mCudaX.ensureCapacity((long)ntot*3);
+        mCudaF0.ensureCapacity((long)nlocal*3);
+        mCudaF1.ensureCapacity((long)ntot*3);
+        mCudaEatom.ensureCapacity((long)nlocal);
+        mCudaVatom0.ensureCapacity((long)nlocal*6);
+        mCudaVatom1.ensureCapacity((long)ntot*(cvflagAtom?9:6));
         mCudaType.ensureCapacity(ntot);
         mCudaIlist.ensureCapacity(inum);
         mCudaNumneigh.ensureCapacity(nlocal);
@@ -160,6 +186,58 @@ class NNAP_cuda extends NNAP2 {
         int tCode = mLammps2Cuda.invoke(mDataIn, mDataOut);
         CudaCore.cudaExceptionCheck(tCode);
         
+        // cuda compute
+        mInNums.putAt(0, inum);
+        mInNums.putAt(1, nlocal);
+        mInNums.putAt(2, nghost);
+        mInNums.putAt(3, aPair.eflagEither()?1:0);
+        mInNums.putAt(4, aPair.vflagEither()?1:0);
+        mInNums.putAt(5, aPair.eflagAtom()?1:0);
+        mInNums.putAt(6, aPair.vflagAtom()?1:0);
+        mInNums.putAt(7, cvflagAtom?1:0);
+        
+        mDataIn.putAt(0, mInNums);
+        mDataIn.putAt(1, mCudaX);
+        mDataIn.putAt(2, mCudaType);
+        mDataIn.putAt(3, mCudaIlist);
+        mDataIn.putAt(4, mCudaNumneigh);
+        mDataIn.putAt(5, mCudaDisplsneigh);
+        mDataIn.putAt(6, mCudaFirstneigh);
+        
+        mDataOut.putAt(0, mCudaF0);
+        mDataOut.putAt(1, mCudaF1);
+        mDataOut.putAt(2, mCudaEatom);
+        mDataOut.putAt(3, mCudaVatom0);
+        mDataOut.putAt(3, mCudaVatom1);
+        
+        tCode = mComputeLammpsCuda.invoke(mDataIn, mDataOut);
+        CudaCore.cudaExceptionCheck(tCode);
+        
         // cuda -> lammps
+        mInNums.putAt(0, nlocal);
+        mInNums.putAt(1, nghost);
+        mInNums.putAt(2, aPair.eflagEither()?1:0);
+        mInNums.putAt(3, aPair.vflagEither()?1:0);
+        mInNums.putAt(4, aPair.eflagAtom()?1:0);
+        mInNums.putAt(5, aPair.vflagAtom()?1:0);
+        mInNums.putAt(6, cvflagAtom?1:0);
+        
+        mDataIn.putAt(0, mInNums);
+        mDataIn.putAt(1, mFltBuf);
+        mDataIn.putAt(2, mCudaF0);
+        mDataIn.putAt(3, mCudaF1);
+        mDataIn.putAt(4, mCudaEatom);
+        mDataIn.putAt(5, mCudaVatom0);
+        mDataIn.putAt(6, mCudaVatom1);
+        
+        mDataOut.putAt(0, aPair.atomF());
+        mDataOut.putAt(1, aPair.engVdwl());
+        mDataOut.putAt(2, aPair.eatom());
+        mDataOut.putAt(3, aPair.virial());
+        mDataOut.putAt(4, aPair.vatom());
+        mDataOut.putAt(5, aPair.cvatom());
+        
+        tCode = mCuda2Lammps.invoke(mDataIn, mDataOut);
+        CudaCore.cudaExceptionCheck(tCode);
     }
 }

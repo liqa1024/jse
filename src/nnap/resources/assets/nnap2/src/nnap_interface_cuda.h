@@ -1,5 +1,5 @@
-#ifndef NNAP_INTERFACE_H
-#define NNAP_INTERFACE_H
+#ifndef NNAP_INTERFACE_CUDA_H
+#define NNAP_INTERFACE_CUDA_H
 
 #if defined(WIN32) || defined(_WIN64) || defined(_WIN32)
 #define JSE_PLUGINEXPORT __declspec(dllexport)
@@ -14,8 +14,8 @@ extern "C" {
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_statDisplsneighLammps(void *, void *);
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_lammps2cuda(void *, void *);
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_cuda2lammps(void *, void *);
-// JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammpsGPU(void *, void *);
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammpsCuda(void *, void *);
 
 }
 
-#endif //NNAP_INTERFACE_H
+#endif //NNAP_INTERFACE_CUDA_H

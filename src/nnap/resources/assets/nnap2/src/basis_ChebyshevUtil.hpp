@@ -6,7 +6,7 @@
 namespace JSE_NNAP {
 
 template <int NMAX, int FSIZE, int FSTYLE, int EXFLAG>
-static void mplusChebyFuse_(flt_t *rFp, flt_t *aFuseWeight, int aType, flt_t aFc, flt_t *aRn) {
+static NNAP_DEVICE void mplusChebyFuse_(flt_t *rFp, flt_t *aFuseWeight, int aType, flt_t aFc, flt_t *aRn) {
     flt_t *tFuseWeight = aFuseWeight;
     if (FSTYLE==FSTYLE_LIMITED) {
         tFuseWeight += FSIZE*(aType-1);
@@ -31,17 +31,17 @@ static void mplusChebyFuse_(flt_t *rFp, flt_t *aFuseWeight, int aType, flt_t aFc
     }
 }
 template <int NMAX, int FSIZE, int FSTYLE>
-static inline void mplusChebyFuse(flt_t *rFp, flt_t *aFuseWeight, int aType, flt_t aFc, flt_t *aRn) {
+static inline NNAP_DEVICE void mplusChebyFuse(flt_t *rFp, flt_t *aFuseWeight, int aType, flt_t aFc, flt_t *aRn) {
     mplusChebyFuse_<NMAX, FSIZE, FSTYLE, FALSE>(rFp, aFuseWeight, aType, aFc, aRn);
 }
 template <int NMAX, int FSIZE, int FSTYLE>
-static inline void mplusChebyExFuse(flt_t *rFp, flt_t *aFuseWeight, int aType, flt_t aFc, flt_t *aRn) {
+static inline NNAP_DEVICE void mplusChebyExFuse(flt_t *rFp, flt_t *aFuseWeight, int aType, flt_t aFc, flt_t *aRn) {
     mplusChebyFuse_<NMAX, FSIZE, FSTYLE, TRUE>(rFp, aFuseWeight, aType, aFc, aRn);
 }
 
 
 template <int NMAX, int FSIZE, int FSTYLE, int EXFLAG>
-static void chebyGradRnFuse_(flt_t *rGradRn, flt_t *aGradFp, flt_t *aFuseWeight, int aType) {
+static NNAP_DEVICE void chebyGradRnFuse_(flt_t *rGradRn, flt_t *aGradFp, flt_t *aFuseWeight, int aType) {
     fill<NMAX+1>(rGradRn, ZERO);
     flt_t *tFuseWeight = aFuseWeight;
     if (FSTYLE==FSTYLE_LIMITED) {
@@ -67,18 +67,18 @@ static void chebyGradRnFuse_(flt_t *rGradRn, flt_t *aGradFp, flt_t *aFuseWeight,
     }
 }
 template <int NMAX, int FSIZE, int FSTYLE>
-static inline void chebyGradRnFuse(flt_t *rGradRn, flt_t *aGradFp, flt_t *aFuseWeight, int aType) {
+static inline NNAP_DEVICE void chebyGradRnFuse(flt_t *rGradRn, flt_t *aGradFp, flt_t *aFuseWeight, int aType) {
     chebyGradRnFuse_<NMAX, FSIZE, FSTYLE, FALSE>(rGradRn, aGradFp, aFuseWeight, aType);
 }
 template <int NMAX, int FSIZE, int FSTYLE>
-static inline void chebyGradRnExFuse(flt_t *rGradRn, flt_t *aGradFp, flt_t *aFuseWeight, int aType) {
+static inline NNAP_DEVICE void chebyGradRnExFuse(flt_t *rGradRn, flt_t *aGradFp, flt_t *aFuseWeight, int aType) {
     chebyGradRnFuse_<NMAX, FSIZE, FSTYLE, TRUE>(rGradRn, aGradFp, aFuseWeight, aType);
 }
 
 template <int NMAX, int WTFLAG>
-static void gradRn2xyz_(int j, flt_t *aGradRn, flt_t *aGradRnWt, flt_t aFc, flt_t *aRn, flt_t aWt,
-                        flt_t aFcPx, flt_t aFcPy, flt_t aFcPz, flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz,
-                        flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
+static NNAP_DEVICE void gradRn2xyz_(int j, flt_t *aGradRn, flt_t *aGradRnWt, flt_t aFc, flt_t *aRn, flt_t aWt,
+                                    flt_t aFcPx, flt_t aFcPy, flt_t aFcPz, flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz,
+                                    flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
     flt_t tGradFc = ZERO;
     flt_t rGradDxj = ZERO, rGradDyj = ZERO, rGradDzj = ZERO;
     for (int n = 0; n <= NMAX; ++n) {
@@ -97,11 +97,11 @@ static void gradRn2xyz_(int j, flt_t *aGradRn, flt_t *aGradRnWt, flt_t aFc, flt_
     rGradNlDx[j] += rGradDxj; rGradNlDy[j] += rGradDyj; rGradNlDz[j] += rGradDzj;
 }
 template <int NMAX>
-static inline void gradRn2xyz(int j, flt_t *aGradRn, flt_t aFc, flt_t *aRn, flt_t aFcPx, flt_t aFcPy, flt_t aFcPz, flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz, flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
+static inline NNAP_DEVICE void gradRn2xyz(int j, flt_t *aGradRn, flt_t aFc, flt_t *aRn, flt_t aFcPx, flt_t aFcPy, flt_t aFcPz, flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz, flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
     gradRn2xyz_<NMAX, FALSE>(j, aGradRn, NULL, aFc, aRn, ZERO, aFcPx, aFcPy, aFcPz, aRnPx, aRnPy, aRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
 }
 template <int NMAX>
-static inline void gradRnWt2xyz(int j, flt_t *aGradRn, flt_t *aGradRnWt, flt_t aFc, flt_t *aRn, flt_t aWt, flt_t aFcPx, flt_t aFcPy, flt_t aFcPz, flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz, flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
+static inline NNAP_DEVICE void gradRnWt2xyz(int j, flt_t *aGradRn, flt_t *aGradRnWt, flt_t aFc, flt_t *aRn, flt_t aWt, flt_t aFcPx, flt_t aFcPy, flt_t aFcPz, flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz, flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
     gradRn2xyz_<NMAX, TRUE>(j, aGradRn, aGradRnWt, aFc, aRn, aWt, aFcPx, aFcPy, aFcPz, aRnPx, aRnPy, aRnPz, rGradNlDx, rGradNlDy, rGradNlDz);
 }
 

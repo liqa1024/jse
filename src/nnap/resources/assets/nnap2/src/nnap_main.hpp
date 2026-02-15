@@ -34,8 +34,8 @@
 namespace JSE_NNAP {
 
 template <int CTYPE_GEN>
-static int fpForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, int cType, flt_t *rFp,
-                     flt_t **aFpHyperParam, flt_t **aFpParam, flt_t *rFpForwardCache) noexcept {
+static NNAP_DEVICE int fpForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, int cType, flt_t *rFp,
+                                 flt_t **aFpHyperParam, flt_t **aFpParam, flt_t *rFpForwardCache) noexcept {
     int flag = 1;
 // >>> NNAPGEN SWITCH
     flt_t *rSubFp = rFp;
@@ -73,7 +73,7 @@ static int fpForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int
     return 0;
 }
 template <int CTYPE_GEN, int NN_CACHE_GRAD>
-static int normedNnForward(int cType, flt_t *rFp, flt_t *aNormParam, flt_t **aNnParam, flt_t *rNnGradCache, flt_t *rOutEng) noexcept {
+static NNAP_DEVICE int normedNnForward(int cType, flt_t *rFp, flt_t *aNormParam, flt_t **aNnParam, flt_t *rNnGradCache, flt_t *rOutEng) noexcept {
     flt_t tNormMuEng = aNormParam[0];
     flt_t tNormSigmaEng = aNormParam[1];
     int flag = 1;
@@ -107,9 +107,9 @@ static int normedNnForward(int cType, flt_t *rFp, flt_t *aNormParam, flt_t **aNn
 }
 
 template <int CTYPE_GEN>
-static int fpBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, int cType, flt_t *aGradFp,
-                      flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                      flt_t **aFpHyperParam, flt_t **aFpParam, flt_t *aFpForwardCache, flt_t *rFpBackwardCache) noexcept {
+static NNAP_DEVICE int fpBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, int cType, flt_t *aGradFp,
+                                  flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
+                                  flt_t **aFpHyperParam, flt_t **aFpParam, flt_t *aFpForwardCache, flt_t *rFpBackwardCache) noexcept {
     int flag = 1;
 // >>> NNAPGEN SWITCH
     flt_t *tSubGradFp = aGradFp;
@@ -151,7 +151,7 @@ static int fpBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, in
 }
 
 template <int CTYPE_GEN>
-static int normedNnBackward(int cType, flt_t *rGradFp, flt_t *aNormParam, flt_t **aNnParam, flt_t *aNnGradCache, flt_t aInGradEng) noexcept {
+static NNAP_DEVICE int normedNnBackward(int cType, flt_t *rGradFp, flt_t *aNormParam, flt_t **aNnParam, flt_t *aNnGradCache, flt_t aInGradEng) noexcept {
     flt_t tNormSigmaEng = aNormParam[1];
     int flag = 1;
 // >>> NNAPGEN SWITCH
