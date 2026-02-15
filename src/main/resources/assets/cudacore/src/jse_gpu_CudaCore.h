@@ -63,6 +63,14 @@ JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemcpyD2H
 JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemcpyD2D
   (JNIEnv *, jclass, jlong, jlong, jlong);
 
+/*
+ * Class:     jse_gpu_CudaCore
+ * Method:    cudaMemset
+ * Signature: (JIJ)V
+ */
+JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemset
+  (JNIEnv *, jclass, jlong, jint, jlong);
+
 #ifdef __cplusplus
 }
 #endif

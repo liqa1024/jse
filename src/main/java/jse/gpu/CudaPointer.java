@@ -116,4 +116,15 @@ public class CudaPointer implements IPointer {
         if (isNull() || aSrc.isNull()) throw new NullPointerException();
         CudaCore.cudaMemcpyH2D(aSrc.ptr_(), mPtr, aCount);
     }
+    
+    /**
+     * 直接调用 {@link CudaCore#cudaMemset} 来将指定字节值设置到整个 cuda 内存中
+     * @param aValue 需要设置的字节值
+     * @param aCount 需要设置的数据长度
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    public void memset(int aValue, long aCount) throws CudaException {
+        if (isNull()) throw new NullPointerException();
+        CudaCore.cudaMemset(mPtr, aValue, aCount);
+    }
 }

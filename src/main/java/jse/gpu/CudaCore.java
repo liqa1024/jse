@@ -112,4 +112,5 @@ public class CudaCore {
     static native void cudaMemcpyH2D(long aSrc, long rDest, long aCount) throws CudaException;
     static native void cudaMemcpyD2H(long aSrc, long rDest, long aCount) throws CudaException;
     static native void cudaMemcpyD2D(long aSrc, long rDest, long aCount) throws CudaException;
+    static native void cudaMemset(long aPtr, int aValue, long aCount) throws CudaException;
 }

@@ -40,5 +40,11 @@ JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemcpyD2H(JNIEnv *aEnv, jclass 
 JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemcpyD2D(JNIEnv *aEnv, jclass aClazz, jlong aSrc, jlong rDest, jlong aCount) {
     JSE_CUDACORE::cudaMemcpyD2D(aEnv, (void *)(intptr_t)aSrc, (void *)(intptr_t)rDest, aCount);
 }
+JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaMemset(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jint aValue, jlong aCount) {
+    const cudaError_t tErr = cudaMemset((void *)(intptr_t)aPtr, (int)aValue, (size_t)aCount);
+    if (tErr != cudaSuccess) {
+        JSE_CUDACORE::throwExceptionCuda(aEnv, cudaGetErrorString(tErr));
+    }
+}
 
 }
