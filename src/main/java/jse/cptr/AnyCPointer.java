@@ -34,7 +34,7 @@ public class AnyCPointer extends CPointer {
      */
     @UnsafeJNI("Manual free required")
     public static AnyCPointer malloc(long aCount) {
-        return new AnyCPointer(malloc_(aCount, TYPE_SIZE));
+        return new AnyCPointer(malloc0(aCount, TYPE_SIZE));
     }
     /**
      * 调用 c 中的 {@code calloc} 来分配全零内存创建一个 c 指针
@@ -46,11 +46,11 @@ public class AnyCPointer extends CPointer {
      */
     @UnsafeJNI("Manual free required")
     public static AnyCPointer calloc(long aCount) {
-        return new AnyCPointer(calloc_(aCount, TYPE_SIZE));
+        return new AnyCPointer(calloc0(aCount, TYPE_SIZE));
     }
     /** {@code sizeof(void *)} */
-    public final static long TYPE_SIZE = typeSize_();
-    private native static long typeSize_();
+    public final static long TYPE_SIZE = typeSize0();
+    private native static long typeSize0();
     
     /**
      * 将另一个 c 指针的数据填充到此 c 指针对应的内存中
@@ -84,7 +84,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public IPointer get() {
         if (isNull()) throw new NullPointerException();
-        return new Pointer(get_(mPtr));
+        return new Pointer(get0(mPtr));
     }
     /**
      * 对此指针解引用，获取内部值，并转换成标准 c 指针，即对应 c 中的 {@code (void *)*ptr}
@@ -93,7 +93,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public CPointer getAsCPointer() {
         if (isNull()) throw new NullPointerException();
-        return new CPointer(get_(mPtr));
+        return new CPointer(get0(mPtr));
     }
     /**
      * 对此指针解引用，获取内部值，并转换成 double 指针，即对应 c 中的 {@code (double *)*ptr}
@@ -102,7 +102,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public DoubleCPointer getAsDoubleCPointer() {
         if (isNull()) throw new NullPointerException();
-        return new DoubleCPointer(get_(mPtr));
+        return new DoubleCPointer(get0(mPtr));
     }
     /**
      * 对此指针解引用，获取内部值，并转换成 float 指针，即对应 c 中的 {@code (float *)*ptr}
@@ -111,7 +111,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public FloatCPointer getAsFloatCPointer() {
         if (isNull()) throw new NullPointerException();
-        return new FloatCPointer(get_(mPtr));
+        return new FloatCPointer(get0(mPtr));
     }
     /**
      * 对此指针解引用，获取内部值，并转换成 int 指针，即对应 c 中的 {@code (int *)*ptr}
@@ -120,7 +120,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public IntCPointer getAsIntCPointer() {
         if (isNull()) throw new NullPointerException();
-        return new IntCPointer(get_(mPtr));
+        return new IntCPointer(get0(mPtr));
     }
     /**
      * 对此指针解引用，获取内部值，并转换成嵌套指针，即对应 c 中的 {@code (void **)*ptr}
@@ -129,7 +129,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public AnyCPointer getAsAnyCPointer() {
         if (isNull()) throw new NullPointerException();
-        return new AnyCPointer(get_(mPtr));
+        return new AnyCPointer(get0(mPtr));
     }
     /**
      * 对此指针解引用，获取内部值，并转换成 cuda 指针，即对应 c 中的 {@code (void *)*ptr}
@@ -138,7 +138,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public CudaPointer getAsCudaPointer() {
         if (isNull()) throw new NullPointerException();
-        return new CudaPointer(get_(mPtr));
+        return new CudaPointer(get0(mPtr));
     }
     /**
      * 对此指针解引用，获取内部值，并转换成 cuda int 指针，即对应 c 中的 {@code (int *)*ptr}
@@ -147,7 +147,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public IntCudaPointer getAsIntCudaPointer() {
         if (isNull()) throw new NullPointerException();
-        return new IntCudaPointer(get_(mPtr));
+        return new IntCudaPointer(get0(mPtr));
     }
     /**
      * 对此指针解引用，获取内部值，并转换成 cuda float 指针，即对应 c 中的 {@code (float *)*ptr}
@@ -156,9 +156,9 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public FloatCudaPointer getAsFloatCudaPointer() {
         if (isNull()) throw new NullPointerException();
-        return new FloatCudaPointer(get_(mPtr));
+        return new FloatCudaPointer(get0(mPtr));
     }
-    native static long get_(long aPtr);
+    native static long get0(long aPtr);
     
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的值，即对应 c 中的 {@code ptr[aIdx]}
@@ -168,7 +168,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public IPointer getAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
-        return new Pointer(getAt_(mPtr, aIdx));
+        return new Pointer(getAt0(mPtr, aIdx));
     }
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成标准 c 指针，即对应 c 中的 {@code (void *)ptr[aIdx]}
@@ -178,7 +178,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public CPointer getAsCPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
-        return new CPointer(getAt_(mPtr, aIdx));
+        return new CPointer(getAt0(mPtr, aIdx));
     }
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 double 指针，即对应 c 中的 {@code (double *)ptr[aIdx]}
@@ -188,7 +188,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public DoubleCPointer getAsDoubleCPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
-        return new DoubleCPointer(getAt_(mPtr, aIdx));
+        return new DoubleCPointer(getAt0(mPtr, aIdx));
     }
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 float 指针，即对应 c 中的 {@code (float *)ptr[aIdx]}
@@ -198,7 +198,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public FloatCPointer getAsFloatCPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
-        return new FloatCPointer(getAt_(mPtr, aIdx));
+        return new FloatCPointer(getAt0(mPtr, aIdx));
     }
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 int 指针，即对应 c 中的 {@code (int *)ptr[aIdx]}
@@ -208,7 +208,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public IntCPointer getAsIntCPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
-        return new IntCPointer(getAt_(mPtr, aIdx));
+        return new IntCPointer(getAt0(mPtr, aIdx));
     }
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成嵌套指针，即对应 c 中的 {@code (void **)ptr[aIdx]}
@@ -218,7 +218,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public AnyCPointer getAsAnyCPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
-        return new AnyCPointer(getAt_(mPtr, aIdx));
+        return new AnyCPointer(getAt0(mPtr, aIdx));
     }
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 cuda 指针，即对应 c 中的 {@code (void *)ptr[aIdx]}
@@ -228,7 +228,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public CudaPointer getAsCudaPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
-        return new CudaPointer(getAt_(mPtr, aIdx));
+        return new CudaPointer(getAt0(mPtr, aIdx));
     }
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 cuda int 指针，即对应 c 中的 {@code (int *)ptr[aIdx]}
@@ -238,7 +238,7 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public IntCudaPointer getAsIntCudaPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
-        return new IntCudaPointer(getAt_(mPtr, aIdx));
+        return new IntCudaPointer(getAt0(mPtr, aIdx));
     }
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 cuda float 指针，即对应 c 中的 {@code (float *)ptr[aIdx]}
@@ -248,9 +248,9 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public FloatCudaPointer getAsFloatCudaPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
-        return new FloatCudaPointer(getAt_(mPtr, aIdx));
+        return new FloatCudaPointer(getAt0(mPtr, aIdx));
     }
-    native static long getAt_(long aPtr, long aIdx);
+    native static long getAt0(long aPtr, long aIdx);
     
     /**
      * 设置此指针对应的值，即对应 c 中的 {@code *ptr = aValue}
@@ -259,9 +259,9 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public void set(@NotNull IPointer aValue) {
         if (isNull()) throw new NullPointerException();
-        set_(mPtr, aValue.ptr_());
+        set0(mPtr, aValue.ptr_());
     }
-    native static void set_(long aPtr, long aValue);
+    native static void set0(long aPtr, long aValue);
     
     /**
      * 将此指针当作一个 c 的数组，设置内部指定位置的值，即对应 c 中的 {@code ptr[aIdx] = aValue}
@@ -271,9 +271,9 @@ public class AnyCPointer extends CPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public void putAt(long aIdx, @NotNull IPointer aValue) {
         if (isNull()) throw new NullPointerException();
-        putAt_(mPtr, aIdx, aValue.ptr_());
+        putAt0(mPtr, aIdx, aValue.ptr_());
     }
-    native static void putAt_(long aPtr, long aIdx, long aValue);
+    native static void putAt0(long aPtr, long aIdx, long aValue);
     
     
     /**
@@ -281,9 +281,9 @@ public class AnyCPointer extends CPointer {
      */
     public void next() {
         if (isNull()) throw new NullPointerException();
-        mPtr = next_(mPtr);
+        mPtr = next0(mPtr);
     }
-    native static long next_(long aPtr);
+    native static long next0(long aPtr);
     
     /**
      * 指针向后移动指定步数，即对应 c 中的 {@code ptr += aCount}
@@ -291,9 +291,9 @@ public class AnyCPointer extends CPointer {
      */
     public void rightShift(long aCount) {
         if (isNull()) throw new NullPointerException();
-        mPtr = rightShift_(mPtr, aCount);
+        mPtr = rightShift0(mPtr, aCount);
     }
-    native static long rightShift_(long aPtr, long aCount);
+    native static long rightShift0(long aPtr, long aCount);
     /**
      * 计算并返回向后移动指定步数的指针，即对应 c 中的 {@code ptr + aCount}
      * @param aCount 需要移动的步数
@@ -301,7 +301,7 @@ public class AnyCPointer extends CPointer {
      */
     public AnyCPointer plus(long aCount) {
         if (isNull()) throw new NullPointerException();
-        return new AnyCPointer(rightShift_(mPtr, aCount));
+        return new AnyCPointer(rightShift0(mPtr, aCount));
     }
     
     /**
@@ -309,9 +309,9 @@ public class AnyCPointer extends CPointer {
      */
     public void previous() {
         if (isNull()) throw new NullPointerException();
-        mPtr = previous_(mPtr);
+        mPtr = previous0(mPtr);
     }
-    native static long previous_(long aPtr);
+    native static long previous0(long aPtr);
     
     /**
      * 指针向前移动指定步数，即对应 c 中的 {@code ptr -= aCount}
@@ -319,9 +319,9 @@ public class AnyCPointer extends CPointer {
      */
     public void leftShift(long aCount) {
         if (isNull()) throw new NullPointerException();
-        mPtr = leftShift_(mPtr, aCount);
+        mPtr = leftShift0(mPtr, aCount);
     }
-    native static long leftShift_(long aPtr, long aCount);
+    native static long leftShift0(long aPtr, long aCount);
     /**
      * 计算并返回向前移动指定步数的指针，即对应 c 中的 {@code ptr - aCount}
      * @param aCount 需要移动的步数
@@ -329,7 +329,7 @@ public class AnyCPointer extends CPointer {
      */
     public AnyCPointer minus(long aCount) {
         if (isNull()) throw new NullPointerException();
-        return new AnyCPointer(leftShift_(mPtr, aCount));
+        return new AnyCPointer(leftShift0(mPtr, aCount));
     }
     
     /**

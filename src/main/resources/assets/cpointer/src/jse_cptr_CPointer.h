@@ -11,34 +11,34 @@ extern "C" {
 #define jse_cptr_CPointer_TYPE_SIZE 1i64
 /*
  * Class:     jse_cptr_CPointer
- * Method:    malloc_
+ * Method:    malloc0
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_CPointer_malloc_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_CPointer_malloc0
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_CPointer
- * Method:    calloc_
+ * Method:    calloc0
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_CPointer_calloc_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_CPointer_calloc0
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_CPointer
- * Method:    free_
+ * Method:    free0
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_CPointer_free_1
+JNIEXPORT void JNICALL Java_jse_cptr_CPointer_free0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_cptr_CPointer
- * Method:    memcpy_
+ * Method:    memcpy0
  * Signature: (JJJ)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_CPointer_memcpy_1
+JNIEXPORT void JNICALL Java_jse_cptr_CPointer_memcpy0
   (JNIEnv *, jclass, jlong, jlong, jlong);
 
 #ifdef __cplusplus

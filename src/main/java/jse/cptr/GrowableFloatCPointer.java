@@ -13,7 +13,7 @@ public class GrowableFloatCPointer extends FloatCPointer implements IGrowableDou
     protected long mCount;
     @UnsafeJNI("Manual free required")
     public GrowableFloatCPointer(long aInitCount) {
-        super(malloc_(aInitCount, TYPE_SIZE));
+        super(malloc0(aInitCount, TYPE_SIZE));
         mCount = aInitCount;
     }
     public GrowableFloatCPointer() {
@@ -24,9 +24,9 @@ public class GrowableFloatCPointer extends FloatCPointer implements IGrowableDou
     
     private void grow_(long aMinCount) {
         final long oCount = mCount;
-        if (mPtr != 0) free_(mPtr);
+        if (mPtr != 0) free0(mPtr);
         mCount = Math.max(aMinCount, oCount + (oCount>>1));
-        mPtr = malloc_(mCount, TYPE_SIZE);
+        mPtr = malloc0(mCount, TYPE_SIZE);
     }
     @Override public void ensureCapacity(long aMinCount) {
         if (aMinCount > mCount) grow_(aMinCount);

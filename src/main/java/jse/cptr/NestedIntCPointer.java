@@ -37,7 +37,7 @@ public class NestedIntCPointer extends AnyCPointer {
      */
     @UnsafeJNI("Manual free required")
     public static NestedIntCPointer malloc(long aCount) {
-        return new NestedIntCPointer(malloc_(aCount, TYPE_SIZE));
+        return new NestedIntCPointer(malloc0(aCount, TYPE_SIZE));
     }
     /**
      * 调用 c 中的 {@code calloc} 来分配全零内存创建一个 c 指针
@@ -49,7 +49,7 @@ public class NestedIntCPointer extends AnyCPointer {
      */
     @UnsafeJNI("Manual free required")
     public static NestedIntCPointer calloc(long aCount) {
-        return new NestedIntCPointer(calloc_(aCount, TYPE_SIZE));
+        return new NestedIntCPointer(calloc0(aCount, TYPE_SIZE));
     }
     
     /**
@@ -111,9 +111,9 @@ public class NestedIntCPointer extends AnyCPointer {
     @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
     public void fill(int aValue, long aRowNum, long aColNum) {
         if (isNull()) throw new NullPointerException();
-        fill1(mPtr, aValue, aRowNum, aColNum);
+        fill2(mPtr, aValue, aRowNum, aColNum);
     }
-    private native static void fill1(long rPtr, int aValue, long aRowNum, long aColNum);
+    private native static void fill2(long rPtr, int aValue, long aRowNum, long aColNum);
     
     /**
      * 将此嵌套 c 指针对应的内存数值写入 jse 的 {@link RowIntMatrix} 中，认为数据按行排列且每个内部的
@@ -140,7 +140,7 @@ public class NestedIntCPointer extends AnyCPointer {
     @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
     public void parse2dest(IDataShell<int[]> rDest, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
-        parse2dest_(mPtr, rDest.internalDataWithLengthCheck(aRowNum*aColNum), rDest.internalDataShift(), aRowNum, aColNum);
+        parse2dest0(mPtr, rDest.internalDataWithLengthCheck(aRowNum*aColNum), rDest.internalDataShift(), aRowNum, aColNum);
     }
     /**
      * 将此嵌套 c 指针对应的内存数值写入 java 的 {@code int[]} 中，认为数据按行排列且每个内部的
@@ -157,9 +157,9 @@ public class NestedIntCPointer extends AnyCPointer {
     public void parse2dest(int[] rDest, int aStart, int aRowNum, int aColNum) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart + aRowNum*aColNum);
-        parse2dest_(mPtr, rDest, aStart, aRowNum, aColNum);
+        parse2dest0(mPtr, rDest, aStart, aRowNum, aColNum);
     }
-    private native static void parse2dest_(long aPtr, int[] rDest, int aStart, int aRowNum, int aColNum);
+    private native static void parse2dest0(long aPtr, int[] rDest, int aStart, int aRowNum, int aColNum);
     
     
     /**
@@ -169,7 +169,7 @@ public class NestedIntCPointer extends AnyCPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     @Override public IntCPointer get() {
         if (isNull()) throw new NullPointerException();
-        return new IntCPointer(get_(mPtr));
+        return new IntCPointer(get0(mPtr));
     }
     /**
      * {@inheritDoc}
@@ -179,7 +179,7 @@ public class NestedIntCPointer extends AnyCPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     @Override public IntCPointer getAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
-        return new IntCPointer(getAt_(mPtr, aIdx));
+        return new IntCPointer(getAt0(mPtr, aIdx));
     }
     /**
      * 将此嵌套指针当作一个 c 的矩阵，获取内部指定行列的值，即对应 c 中的 {@code ptr[aRow][aCol]}
@@ -190,9 +190,9 @@ public class NestedIntCPointer extends AnyCPointer {
     @UnsafeJNI("Invalid input row/col may directly result in JVM SIGSEGV")
     public int getAt(long aRow, long aCol) {
         if (isNull()) throw new NullPointerException();
-        return getAt_(mPtr, aRow, aCol);
+        return getAt0(mPtr, aRow, aCol);
     }
-    private native static int getAt_(long aPtr, long aRow, long aCol);
+    private native static int getAt0(long aPtr, long aRow, long aCol);
     
     /**
      * 将此嵌套指针当作一个 c 的矩阵，设置内部指定行列的值，即对应 c 中的 {@code ptr[aRow][aCol] = aValue}
@@ -203,9 +203,9 @@ public class NestedIntCPointer extends AnyCPointer {
     @UnsafeJNI("Invalid input row/col may directly result in JVM SIGSEGV")
     public void putAt(long aRow, long aCol, int aValue) {
         if (isNull()) throw new NullPointerException();
-        putAt_(mPtr, aRow, aCol, aValue);
+        putAt0(mPtr, aRow, aCol, aValue);
     }
-    native static void putAt_(long aPtr, long aRow, long aCol, int aValue);
+    native static void putAt0(long aPtr, long aRow, long aCol, int aValue);
     
     /**
      * {@inheritDoc}
@@ -214,7 +214,7 @@ public class NestedIntCPointer extends AnyCPointer {
      */
     @Override public NestedIntCPointer plus(long aCount) {
         if (isNull()) throw new NullPointerException();
-        return new NestedIntCPointer(rightShift_(mPtr, aCount));
+        return new NestedIntCPointer(rightShift0(mPtr, aCount));
     }
     /**
      * {@inheritDoc}
@@ -223,7 +223,7 @@ public class NestedIntCPointer extends AnyCPointer {
      */
     @Override public NestedIntCPointer minus(long aCount) {
         if (isNull()) throw new NullPointerException();
-        return new NestedIntCPointer(leftShift_(mPtr, aCount));
+        return new NestedIntCPointer(leftShift0(mPtr, aCount));
     }
     
     /**

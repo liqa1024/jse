@@ -13,7 +13,7 @@ public class GrowableIntCPointer extends IntCPointer implements IGrowableCPointe
     protected long mCount;
     @UnsafeJNI("Manual free required")
     public GrowableIntCPointer(long aInitCount) {
-        super(CPointer.malloc_(aInitCount, TYPE_SIZE));
+        super(CPointer.malloc0(aInitCount, TYPE_SIZE));
         mCount = aInitCount;
     }
     public GrowableIntCPointer() {
@@ -24,9 +24,9 @@ public class GrowableIntCPointer extends IntCPointer implements IGrowableCPointe
     
     private void grow_(long aMinCount) {
         final long oCount = mCount;
-        if (mPtr != 0) CPointer.free_(mPtr);
+        if (mPtr != 0) CPointer.free0(mPtr);
         mCount = Math.max(aMinCount, oCount + (oCount>>1));
-        mPtr = CPointer.malloc_(mCount, TYPE_SIZE);
+        mPtr = CPointer.malloc0(mCount, TYPE_SIZE);
     }
     @Override public void ensureCapacity(long aMinCount) {
         if (aMinCount > mCount) grow_(aMinCount);

@@ -11,10 +11,10 @@ extern "C" {
 #define jse_cptr_Int64CPointer_TYPE_SIZE 1i64
 /*
  * Class:     jse_cptr_Int64CPointer
- * Method:    typeSize_
+ * Method:    typeSize0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_typeSize_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_typeSize0
   (JNIEnv *, jclass);
 
 /*
@@ -27,82 +27,82 @@ JNIEXPORT void JNICALL Java_jse_cptr_Int64CPointer_fill0
 
 /*
  * Class:     jse_cptr_Int64CPointer
- * Method:    fill1
+ * Method:    fill2
  * Signature: (JJJ)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_Int64CPointer_fill1
+JNIEXPORT void JNICALL Java_jse_cptr_Int64CPointer_fill2
   (JNIEnv *, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     jse_cptr_Int64CPointer
- * Method:    parse2dest_
+ * Method:    parse2dest0
  * Signature: (J[JII)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_Int64CPointer_parse2dest_1
+JNIEXPORT void JNICALL Java_jse_cptr_Int64CPointer_parse2dest0
   (JNIEnv *, jclass, jlong, jlongArray, jint, jint);
 
 /*
  * Class:     jse_cptr_Int64CPointer
- * Method:    get_
+ * Method:    get0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_get_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_get0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_cptr_Int64CPointer
- * Method:    getAt_
+ * Method:    getAt0
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_getAt_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_getAt0
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_Int64CPointer
- * Method:    set_
+ * Method:    set0
  * Signature: (JJ)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_Int64CPointer_set_1
+JNIEXPORT void JNICALL Java_jse_cptr_Int64CPointer_set0
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_Int64CPointer
- * Method:    putAt_
+ * Method:    putAt0
  * Signature: (JJJ)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_Int64CPointer_putAt_1
+JNIEXPORT void JNICALL Java_jse_cptr_Int64CPointer_putAt0
   (JNIEnv *, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     jse_cptr_Int64CPointer
- * Method:    next_
+ * Method:    next0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_next_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_next0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_cptr_Int64CPointer
- * Method:    rightShift_
+ * Method:    rightShift0
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_rightShift_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_rightShift0
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_Int64CPointer
- * Method:    previous_
+ * Method:    previous0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_previous_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_previous0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_cptr_Int64CPointer
- * Method:    leftShift_
+ * Method:    leftShift0
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_leftShift_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_Int64CPointer_leftShift0
   (JNIEnv *, jclass, jlong, jlong);
 
 #ifdef __cplusplus

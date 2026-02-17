@@ -8,7 +8,7 @@ extern "C" {
 JNIEXPORT void JNICALL Java_jse_cptr_NestedIntCPointer_fill0(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jintArray aJArray, jint aStart, jint aRowNum, jint aColNum) {
     parsejint2nestedintV(aEnv, aJArray, aStart, (int **)(intptr_t)rPtr, 0, aRowNum, aColNum);
 }
-JNIEXPORT void JNICALL Java_jse_cptr_NestedIntCPointer_fill1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jint aValue, jlong aRowNum, jlong aColNum) {
+JNIEXPORT void JNICALL Java_jse_cptr_NestedIntCPointer_fill2(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jint aValue, jlong aRowNum, jlong aColNum) {
     int **tPtr = (int **)(intptr_t)rPtr;
     for (jlong i = 0; i < aRowNum; ++i) {
         int *tRow = tPtr[i];
@@ -18,13 +18,13 @@ JNIEXPORT void JNICALL Java_jse_cptr_NestedIntCPointer_fill1(JNIEnv *aEnv, jclas
         }
     }
 }
-JNIEXPORT void JNICALL Java_jse_cptr_NestedIntCPointer_parse2dest_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jintArray rJArray, jint aStart, jint aRowNum, jint aColNum) {
+JNIEXPORT void JNICALL Java_jse_cptr_NestedIntCPointer_parse2dest0(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jintArray rJArray, jint aStart, jint aRowNum, jint aColNum) {
     parsenestedint2jintV(aEnv, rJArray, aStart, (const int **)(intptr_t)aPtr, 0, aRowNum, aColNum);
 }
-JNIEXPORT jint JNICALL Java_jse_cptr_NestedIntCPointer_getAt_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aRowNum, jlong aColNum) {
+JNIEXPORT jint JNICALL Java_jse_cptr_NestedIntCPointer_getAt0(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aRowNum, jlong aColNum) {
     return (jint) ((int **)(intptr_t)aPtr)[aRowNum][aColNum];
 }
-JNIEXPORT void JNICALL Java_jse_cptr_NestedIntCPointer_putAt_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aRowNum, jlong aColNum, jint aValue) {
+JNIEXPORT void JNICALL Java_jse_cptr_NestedIntCPointer_putAt0(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aRowNum, jlong aColNum, jint aValue) {
     ((int **)(intptr_t)aPtr)[aRowNum][aColNum] = aValue;
 }
 

@@ -7,20 +7,22 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef jse_gpu_Int64CudaPointer_TYPE_SIZE
+#define jse_gpu_Int64CudaPointer_TYPE_SIZE 1i64
 /*
  * Class:     jse_gpu_Int64CudaPointer
- * Method:    fill_
+ * Method:    fill0
  * Signature: (J[JII)V
  */
-JNIEXPORT void JNICALL Java_jse_gpu_Int64CudaPointer_fill_1
+JNIEXPORT void JNICALL Java_jse_gpu_Int64CudaPointer_fill0
   (JNIEnv *, jclass, jlong, jlongArray, jint, jint);
 
 /*
  * Class:     jse_gpu_Int64CudaPointer
- * Method:    parse2dest_
+ * Method:    parse2dest0
  * Signature: (J[JII)V
  */
-JNIEXPORT void JNICALL Java_jse_gpu_Int64CudaPointer_parse2dest_1
+JNIEXPORT void JNICALL Java_jse_gpu_Int64CudaPointer_parse2dest0
   (JNIEnv *, jclass, jlong, jlongArray, jint, jint);
 
 #ifdef __cplusplus

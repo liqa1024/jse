@@ -33,7 +33,7 @@ public class Int64CPointer extends CPointer {
      */
     @UnsafeJNI("Manual free required")
     public static Int64CPointer malloc(long aCount) {
-        return new Int64CPointer(malloc_(aCount, TYPE_SIZE));
+        return new Int64CPointer(malloc0(aCount, TYPE_SIZE));
     }
     /**
      * 调用 c 中的 {@code calloc} 来分配全零内存创建一个 c 指针
@@ -45,7 +45,7 @@ public class Int64CPointer extends CPointer {
      */
     @UnsafeJNI("Manual free required")
     public static Int64CPointer calloc(long aCount) {
-        return new Int64CPointer(calloc_(aCount, TYPE_SIZE));
+        return new Int64CPointer(calloc0(aCount, TYPE_SIZE));
     }
     
     /**
@@ -53,8 +53,8 @@ public class Int64CPointer extends CPointer {
      * @return {@code sizeof(int64_t)}
      */
     @Override public long typeSize() {return TYPE_SIZE;}
-    public final static long TYPE_SIZE = typeSize_();
-    private native static long typeSize_();
+    public final static long TYPE_SIZE = typeSize0();
+    private native static long typeSize0();
     
     /**
      * 将 jse 的 {@code IDataShell<long[]>} 填充到此 c 指针对应的内存中
@@ -86,20 +86,6 @@ public class Int64CPointer extends CPointer {
     }
     private native static void fill0(long rPtr, long[] aData, int aStart, int aCount);
     /**
-     * 将给定输入数值填充到此 c 指针对应的内存中
-     * <p>
-     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
-     *
-     * @param aValue 需要填充的数值
-     * @param aCount 需要读取的 aData 的长度
-     */
-    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void fill(long aValue, long aCount) {
-        if (isNull()) throw new NullPointerException();
-        fill1(mPtr, aValue, aCount);
-    }
-    private native static void fill1(long rPtr, long aValue, long aCount);
-    /**
      * 将另一个 c 指针的数据填充到此 c 指针对应的内存中
      * <p>
      * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
@@ -111,6 +97,20 @@ public class Int64CPointer extends CPointer {
     public void fill(Int64CPointer aData, long aCount) {
         memcpy2this(aData, aCount*TYPE_SIZE);
     }
+    /**
+     * 将给定输入数值填充到此 c 指针对应的内存中
+     * <p>
+     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
+     *
+     * @param aValue 需要填充的数值
+     * @param aCount 需要读取的 aData 的长度
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    public void fill(long aValue, long aCount) {
+        if (isNull()) throw new NullPointerException();
+        fill2(mPtr, aValue, aCount);
+    }
+    private native static void fill2(long rPtr, long aValue, long aCount);
     
     /**
      * 将此 c 指针对应的内存数值写入 jse 的 {@code IDataShell<long[]>} 中
@@ -123,7 +123,7 @@ public class Int64CPointer extends CPointer {
     @UnsafeJNI("Invalid input size directly result in JVM SIGSEGV")
     public void parse2dest(IDataShell<long[]> rDest) {
         if (isNull()) throw new NullPointerException();
-        parse2dest_(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
+        parse2dest0(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
     }
     /**
      * 将此 c 指针对应的内存数值写入 java 的 {@code long[]} 中
@@ -138,9 +138,9 @@ public class Int64CPointer extends CPointer {
     public void parse2dest(long[] rDest, int aStart, int aCount) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart+aCount);
-        parse2dest_(mPtr, rDest, aStart, aCount);
+        parse2dest0(mPtr, rDest, aStart, aCount);
     }
-    private native static void parse2dest_(long aPtr, long[] rDest, int aStart, int aCount);
+    private native static void parse2dest0(long aPtr, long[] rDest, int aStart, int aCount);
     /**
      * 将此 c 指针的数据填充到另一个 c 指针中
      * <p>
@@ -162,9 +162,9 @@ public class Int64CPointer extends CPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public long get() {
         if (isNull()) throw new NullPointerException();
-        return get_(mPtr);
+        return get0(mPtr);
     }
-    private native static long get_(long aPtr);
+    private native static long get0(long aPtr);
     
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，即对应 c 中的 {@code ptr[aIdx]}
@@ -174,9 +174,9 @@ public class Int64CPointer extends CPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public long getAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
-        return getAt_(mPtr, aIdx);
+        return getAt0(mPtr, aIdx);
     }
-    private native static long getAt_(long aPtr, long aIdx);
+    private native static long getAt0(long aPtr, long aIdx);
     
     /**
      * 设置此指针对应的数值，即对应 c 中的 {@code *ptr = aValue}
@@ -185,9 +185,9 @@ public class Int64CPointer extends CPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public void set(long aValue) {
         if (isNull()) throw new NullPointerException();
-        set_(mPtr, aValue);
+        set0(mPtr, aValue);
     }
-    private native static void set_(long aPtr, long aValue);
+    private native static void set0(long aPtr, long aValue);
     
     /**
      * 将此指针当作一个 c 的数组，设置内部指定位置的数值，即对应 c 中的 {@code ptr[aIdx] = aValue}
@@ -197,9 +197,9 @@ public class Int64CPointer extends CPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public void putAt(long aIdx, long aValue) {
         if (isNull()) throw new NullPointerException();
-        putAt_(mPtr, aIdx, aValue);
+        putAt0(mPtr, aIdx, aValue);
     }
-    private native static void putAt_(long aPtr, long aIdx, long aValue);
+    private native static void putAt0(long aPtr, long aIdx, long aValue);
     
     
     /**
@@ -207,9 +207,9 @@ public class Int64CPointer extends CPointer {
      */
     public void next() {
         if (isNull()) throw new NullPointerException();
-        mPtr = next_(mPtr);
+        mPtr = next0(mPtr);
     }
-    private native static long next_(long aPtr);
+    private native static long next0(long aPtr);
     
     /**
      * {@inheritDoc}
@@ -217,9 +217,9 @@ public class Int64CPointer extends CPointer {
      */
     public void rightShift(long aCount) {
         if (isNull()) throw new NullPointerException();
-        mPtr = rightShift_(mPtr, aCount);
+        mPtr = rightShift0(mPtr, aCount);
     }
-    private native static long rightShift_(long aPtr, long aCount);
+    private native static long rightShift0(long aPtr, long aCount);
     /**
      * {@inheritDoc}
      * @param aCount {@inheritDoc}
@@ -227,7 +227,7 @@ public class Int64CPointer extends CPointer {
      */
     public Int64CPointer plus(long aCount) {
         if (isNull()) throw new NullPointerException();
-        return new Int64CPointer(rightShift_(mPtr, aCount));
+        return new Int64CPointer(rightShift0(mPtr, aCount));
     }
     
     /**
@@ -235,9 +235,9 @@ public class Int64CPointer extends CPointer {
      */
     public void previous() {
         if (isNull()) throw new NullPointerException();
-        mPtr = previous_(mPtr);
+        mPtr = previous0(mPtr);
     }
-    private native static long previous_(long aPtr);
+    private native static long previous0(long aPtr);
     
     /**
      * {@inheritDoc}
@@ -245,9 +245,9 @@ public class Int64CPointer extends CPointer {
      */
     public void leftShift(long aCount) {
         if (isNull()) throw new NullPointerException();
-        mPtr = leftShift_(mPtr, aCount);
+        mPtr = leftShift0(mPtr, aCount);
     }
-    private native static long leftShift_(long aPtr, long aCount);
+    private native static long leftShift0(long aPtr, long aCount);
     /**
      * {@inheritDoc}
      * @param aCount {@inheritDoc}
@@ -255,7 +255,7 @@ public class Int64CPointer extends CPointer {
      */
     public Int64CPointer minus(long aCount) {
         if (isNull()) throw new NullPointerException();
-        return new Int64CPointer(leftShift_(mPtr, aCount));
+        return new Int64CPointer(leftShift0(mPtr, aCount));
     }
     
     /**

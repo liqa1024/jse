@@ -33,7 +33,7 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @UnsafeJNI("Manual free required")
     public static FloatCPointer malloc(long aCount) {
-        return new FloatCPointer(malloc_(aCount, TYPE_SIZE));
+        return new FloatCPointer(malloc0(aCount, TYPE_SIZE));
     }
     /**
      * 调用 c 中的 {@code calloc} 来分配全零内存创建一个 c 指针
@@ -45,15 +45,15 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @UnsafeJNI("Manual free required")
     public static FloatCPointer calloc(long aCount) {
-        return new FloatCPointer(calloc_(aCount, TYPE_SIZE));
+        return new FloatCPointer(calloc0(aCount, TYPE_SIZE));
     }
     /**
      * {@inheritDoc}
      * @return {@code sizeof(float)}
      */
     @Override public long typeSize() {return TYPE_SIZE;}
-    public final static long TYPE_SIZE = typeSize_();
-    private native static long typeSize_();
+    public final static long TYPE_SIZE = typeSize0();
+    private native static long typeSize0();
     
     /**
      * 将 jse 的 {@code IDataShell<float[]>} 填充到此 c 指针对应的内存中
@@ -127,20 +127,6 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
     private native static void fillD0(long rPtr, double[] aData, int aStart, int aCount);
     
     /**
-     * 将给定输入数值填充到此 c 指针对应的内存中
-     * <p>
-     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
-     *
-     * @param aValue 需要填充的数值
-     * @param aCount 需要读取的 aData 的长度
-     */
-    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void fill(float aValue, long aCount) {
-        if (isNull()) throw new NullPointerException();
-        fill1(mPtr, aValue, aCount);
-    }
-    private native static void fill1(long rPtr, float aValue, long aCount);
-    /**
      * 将另一个 c 指针的数据填充到此 c 指针对应的内存中
      * <p>
      * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
@@ -154,6 +140,43 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
     }
     
     /**
+     * {@inheritDoc}
+     * @param aData {@inheritDoc}
+     * @param aCount {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    @Override public void fillF(FloatCPointer aData, long aCount) {
+        fill(aData, aCount);
+    }
+    /**
+     * {@inheritDoc}
+     * @param aData {@inheritDoc}
+     * @param aCount {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    @Override public void fillD(DoubleCPointer aData, long aCount) {
+        if (isNull() || aData.isNull()) throw new NullPointerException();
+        fillD1(mPtr, aData.mPtr, aCount);
+    }
+    private native static void fillD1(long rPtr, long aData, long aCount);
+    
+    /**
+     * 将给定输入数值填充到此 c 指针对应的内存中
+     * <p>
+     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
+     *
+     * @param aValue 需要填充的数值
+     * @param aCount 需要读取的 aData 的长度
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    public void fill(float aValue, long aCount) {
+        if (isNull()) throw new NullPointerException();
+        fill2(mPtr, aValue, aCount);
+    }
+    private native static void fill2(long rPtr, float aValue, long aCount);
+    
+    
+    /**
      * 将此 c 指针对应的内存数值写入 jse 的 {@code IDataShell<float[]>} 中
      * <p>
      * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
@@ -164,7 +187,7 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void parse2dest(IDataShell<float[]> rDest) {
         if (isNull()) throw new NullPointerException();
-        parse2dest_(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
+        parse2dest0(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
     }
     /**
      * 将此 c 指针对应的内存数值写入 java 的 {@code float[]} 中
@@ -179,22 +202,9 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
     public void parse2dest(float[] rDest, int aStart, int aCount) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart+aCount);
-        parse2dest_(mPtr, rDest, aStart, aCount);
+        parse2dest0(mPtr, rDest, aStart, aCount);
     }
-    private native static void parse2dest_(long aPtr, float[] rDest, int aStart, int aCount);
-    /**
-     * 将此 c 指针的数据填充到另一个 c 指针中
-     * <p>
-     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
-     *
-     * @param rDest 输入的 c 指针数据
-     * @param aCount 需要写入 rDest 的长度，实际为 {@code aCount * TYPE_SIZE}
-     */
-    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void parse2dest(FloatCPointer rDest, long aCount) {
-        memcpy2dest(rDest, aCount*TYPE_SIZE);
-    }
-    
+    private native static void parse2dest0(long aPtr, float[] rDest, int aStart, int aCount);
     /**
      * {@inheritDoc}
      * @param rDest {@inheritDoc}
@@ -220,7 +230,7 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     @Override public void parse2destD(IDataShell<double[]> rDest) {
         if (isNull()) throw new NullPointerException();
-        parse2destD_(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
+        parse2destD0(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
     }
     /**
      * {@inheritDoc}
@@ -232,9 +242,43 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
     @Override public void parse2destD(double[] rDest, int aStart, int aCount) {
         if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart+aCount);
-        parse2destD_(mPtr, rDest, aStart, aCount);
+        parse2destD0(mPtr, rDest, aStart, aCount);
     }
-    private native static void parse2destD_(long aPtr, double[] rDest, int aStart, int aCount);
+    private native static void parse2destD0(long aPtr, double[] rDest, int aStart, int aCount);
+    
+    /**
+     * 将此 c 指针的数据填充到另一个 c 指针中
+     * <p>
+     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
+     *
+     * @param rDest 输入的 c 指针数据
+     * @param aCount 需要写入 rDest 的长度，实际为 {@code aCount * TYPE_SIZE}
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    public void parse2dest(FloatCPointer rDest, long aCount) {
+        memcpy2dest(rDest, aCount*TYPE_SIZE);
+    }
+    /**
+     * {@inheritDoc}
+     * @param rDest {@inheritDoc}
+     * @param aCount {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    @Override public void parse2destF(FloatCPointer rDest, long aCount) {
+        parse2dest(rDest, aCount);
+    }
+    /**
+     * {@inheritDoc}
+     * @param rDest {@inheritDoc}
+     * @param aCount {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    @Override public void parse2destD(DoubleCPointer rDest, long aCount) {
+        if (isNull() || rDest.isNull()) throw new NullPointerException();
+        parse2destD1(mPtr, rDest.mPtr, aCount);
+    }
+    private native static void parse2destD1(long aPtr, long rDest, long aCount);
+    
     
     /**
      * 对此指针解引用，获取内部数值，即对应 c 中的 {@code *ptr}
@@ -243,9 +287,9 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public float get() {
         if (isNull()) throw new NullPointerException();
-        return get_(mPtr);
+        return get0(mPtr);
     }
-    private native static float get_(long aPtr);
+    private native static float get0(long aPtr);
     /**
      * {@inheritDoc}
      * @return {@inheritDoc}
@@ -271,9 +315,9 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public float getAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
-        return getAt_(mPtr, aIdx);
+        return getAt0(mPtr, aIdx);
     }
-    private native static float getAt_(long aPtr, long aIdx);
+    private native static float getAt0(long aPtr, long aIdx);
     /**
      * {@inheritDoc}
      * @param aIdx {@inheritDoc}
@@ -300,9 +344,9 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
     @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
     public void set(float aValue) {
         if (isNull()) throw new NullPointerException();
-        set_(mPtr, aValue);
+        set0(mPtr, aValue);
     }
-    private native static void set_(long aPtr, float aValue);
+    private native static void set0(long aPtr, float aValue);
     /**
      * {@inheritDoc}
      * @param aValue {@inheritDoc}
@@ -328,9 +372,9 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public void putAt(long aIdx, float aValue) {
         if (isNull()) throw new NullPointerException();
-        putAt_(mPtr, aIdx, aValue);
+        putAt0(mPtr, aIdx, aValue);
     }
-    private native static void putAt_(long aPtr, long aIdx, float aValue);
+    private native static void putAt0(long aPtr, long aIdx, float aValue);
     /**
      * {@inheritDoc}
      * @param aIdx {@inheritDoc}
@@ -355,9 +399,9 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @Override public void next() {
         if (isNull()) throw new NullPointerException();
-        mPtr = next_(mPtr);
+        mPtr = next0(mPtr);
     }
-    private native static long next_(long aPtr);
+    private native static long next0(long aPtr);
     
     /**
      * {@inheritDoc}
@@ -365,9 +409,9 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @Override public void rightShift(long aCount) {
         if (isNull()) throw new NullPointerException();
-        mPtr = rightShift_(mPtr, aCount);
+        mPtr = rightShift0(mPtr, aCount);
     }
-    private native static long rightShift_(long aPtr, long aCount);
+    private native static long rightShift0(long aPtr, long aCount);
     /**
      * {@inheritDoc}
      * @param aCount {@inheritDoc}
@@ -375,7 +419,7 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @Override public FloatCPointer plus(long aCount) {
         if (isNull()) throw new NullPointerException();
-        return new FloatCPointer(rightShift_(mPtr, aCount));
+        return new FloatCPointer(rightShift0(mPtr, aCount));
     }
     
     /**
@@ -383,9 +427,9 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @Override public void previous() {
         if (isNull()) throw new NullPointerException();
-        mPtr = previous_(mPtr);
+        mPtr = previous0(mPtr);
     }
-    private native static long previous_(long aPtr);
+    private native static long previous0(long aPtr);
     
     /**
      * {@inheritDoc}
@@ -393,9 +437,9 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @Override public void leftShift(long aCount) {
         if (isNull()) throw new NullPointerException();
-        mPtr = leftShift_(mPtr, aCount);
+        mPtr = leftShift0(mPtr, aCount);
     }
-    private native static long leftShift_(long aPtr, long aCount);
+    private native static long leftShift0(long aPtr, long aCount);
     /**
      * {@inheritDoc}
      * @param aCount {@inheritDoc}
@@ -403,7 +447,7 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @Override public FloatCPointer minus(long aCount) {
         if (isNull()) throw new NullPointerException();
-        return new FloatCPointer(leftShift_(mPtr, aCount));
+        return new FloatCPointer(leftShift0(mPtr, aCount));
     }
     
     /**

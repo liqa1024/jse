@@ -8,7 +8,7 @@ extern "C" {
 JNIEXPORT void JNICALL Java_jse_cptr_NestedDoubleCPointer_fill0(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jdoubleArray aJArray, jint aStart, jint aRowNum, jint aColNum) {
     parsejdouble2nesteddoubleV(aEnv, aJArray, aStart, (double **)(intptr_t)rPtr, 0, aRowNum, aColNum);
 }
-JNIEXPORT void JNICALL Java_jse_cptr_NestedDoubleCPointer_fill1(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jdouble aValue, jlong aRowNum, jlong aColNum) {
+JNIEXPORT void JNICALL Java_jse_cptr_NestedDoubleCPointer_fill2(JNIEnv *aEnv, jclass aClazz, jlong rPtr, jdouble aValue, jlong aRowNum, jlong aColNum) {
     double **tPtr = (double **)(intptr_t)rPtr;
     for (jlong i = 0; i < aRowNum; ++i) {
         double *tRow = tPtr[i];
@@ -18,13 +18,13 @@ JNIEXPORT void JNICALL Java_jse_cptr_NestedDoubleCPointer_fill1(JNIEnv *aEnv, jc
         }
     }
 }
-JNIEXPORT void JNICALL Java_jse_cptr_NestedDoubleCPointer_parse2dest_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jdoubleArray rJArray, jint aStart, jint aRowNum, jint aColNum) {
+JNIEXPORT void JNICALL Java_jse_cptr_NestedDoubleCPointer_parse2dest0(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jdoubleArray rJArray, jint aStart, jint aRowNum, jint aColNum) {
     parsenesteddouble2jdoubleV(aEnv, rJArray, aStart, (const double **)(intptr_t)aPtr, 0, aRowNum, aColNum);
 }
-JNIEXPORT jdouble JNICALL Java_jse_cptr_NestedDoubleCPointer_getAt_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aRowNum, jlong aColNum) {
+JNIEXPORT jdouble JNICALL Java_jse_cptr_NestedDoubleCPointer_getAt0(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aRowNum, jlong aColNum) {
     return (jdouble) ((double **)(intptr_t)aPtr)[aRowNum][aColNum];
 }
-JNIEXPORT void JNICALL Java_jse_cptr_NestedDoubleCPointer_putAt_1(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aRowNum, jlong aColNum, jdouble aValue) {
+JNIEXPORT void JNICALL Java_jse_cptr_NestedDoubleCPointer_putAt0(JNIEnv *aEnv, jclass aClazz, jlong aPtr, jlong aRowNum, jlong aColNum, jdouble aValue) {
     ((double **)(intptr_t)aPtr)[aRowNum][aColNum] = aValue;
 }
 

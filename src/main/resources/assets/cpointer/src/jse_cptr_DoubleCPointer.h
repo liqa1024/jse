@@ -11,10 +11,10 @@ extern "C" {
 #define jse_cptr_DoubleCPointer_TYPE_SIZE 1i64
 /*
  * Class:     jse_cptr_DoubleCPointer
- * Method:    typeSize_
+ * Method:    typeSize0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_typeSize_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_typeSize0
   (JNIEnv *, jclass);
 
 /*
@@ -35,90 +35,106 @@ JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_fillF0
 
 /*
  * Class:     jse_cptr_DoubleCPointer
- * Method:    fill1
+ * Method:    fillF1
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_fillF1
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     jse_cptr_DoubleCPointer
+ * Method:    fill2
  * Signature: (JDJ)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_fill1
+JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_fill2
   (JNIEnv *, jclass, jlong, jdouble, jlong);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
- * Method:    parse2dest_
+ * Method:    parse2dest0
  * Signature: (J[DII)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_parse2dest_1
+JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_parse2dest0
   (JNIEnv *, jclass, jlong, jdoubleArray, jint, jint);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
- * Method:    parse2destF_
+ * Method:    parse2destF0
  * Signature: (J[FII)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_parse2destF_1
+JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_parse2destF0
   (JNIEnv *, jclass, jlong, jfloatArray, jint, jint);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
- * Method:    get_
+ * Method:    parse2destF1
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_parse2destF1
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     jse_cptr_DoubleCPointer
+ * Method:    get0
  * Signature: (J)D
  */
-JNIEXPORT jdouble JNICALL Java_jse_cptr_DoubleCPointer_get_1
+JNIEXPORT jdouble JNICALL Java_jse_cptr_DoubleCPointer_get0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
- * Method:    getAt_
+ * Method:    getAt0
  * Signature: (JJ)D
  */
-JNIEXPORT jdouble JNICALL Java_jse_cptr_DoubleCPointer_getAt_1
+JNIEXPORT jdouble JNICALL Java_jse_cptr_DoubleCPointer_getAt0
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
- * Method:    set_
+ * Method:    set0
  * Signature: (JD)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_set_1
+JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_set0
   (JNIEnv *, jclass, jlong, jdouble);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
- * Method:    putAt_
+ * Method:    putAt0
  * Signature: (JJD)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_putAt_1
+JNIEXPORT void JNICALL Java_jse_cptr_DoubleCPointer_putAt0
   (JNIEnv *, jclass, jlong, jlong, jdouble);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
- * Method:    next_
+ * Method:    next0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_next_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_next0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
- * Method:    rightShift_
+ * Method:    rightShift0
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_rightShift_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_rightShift0
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
- * Method:    previous_
+ * Method:    previous0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_previous_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_previous0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_cptr_DoubleCPointer
- * Method:    leftShift_
+ * Method:    leftShift0
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_leftShift_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_DoubleCPointer_leftShift0
   (JNIEnv *, jclass, jlong, jlong);
 
 #ifdef __cplusplus

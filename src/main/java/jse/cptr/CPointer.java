@@ -142,9 +142,9 @@ public class CPointer implements ICPointer {
      */
     @UnsafeJNI("Manual free required")
     public static CPointer malloc(long aCount) {
-        return new CPointer(malloc_(aCount, TYPE_SIZE));
+        return new CPointer(malloc0(aCount, TYPE_SIZE));
     }
-    protected native static long malloc_(long aCount, long aSize);
+    protected native static long malloc0(long aCount, long aSize);
     
     /**
      * 调用 c 中的 {@code calloc} 来分配全零内存创建一个 c 指针
@@ -156,9 +156,9 @@ public class CPointer implements ICPointer {
      */
     @UnsafeJNI("Manual free required")
     public static CPointer calloc(long aCount) {
-        return new CPointer(calloc_(aCount, TYPE_SIZE));
+        return new CPointer(calloc0(aCount, TYPE_SIZE));
     }
-    protected native static long calloc_(long aCount, long aSize);
+    protected native static long calloc0(long aCount, long aSize);
     
     /**
      * {@inheritDoc}
@@ -174,10 +174,10 @@ public class CPointer implements ICPointer {
     @UnsafeJNI("Free wild pointer will directly result in JVM SIGSEGV")
     @Override public void free() {
         if (isNull()) throw new IllegalStateException("Cannot free a NULL pointer");
-        free_(mPtr);
+        free0(mPtr);
         mPtr = 0;
     }
-    protected native static void free_(long aPtr);
+    protected native static void free0(long aPtr);
     
     /**
      * 拷贝一份 c 指针包装类，注意此方法不会实际拷贝内部
@@ -206,7 +206,7 @@ public class CPointer implements ICPointer {
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     @Override public void memcpy2dest(ICPointer rDest, long aCount) {
         if (isNull() || rDest.isNull()) throw new NullPointerException();
-        memcpy_(mPtr, rDest.ptr_(), aCount);
+        memcpy0(mPtr, rDest.ptr_(), aCount);
     }
     /**
      * {@inheritDoc}
@@ -216,9 +216,9 @@ public class CPointer implements ICPointer {
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     @Override public void memcpy2this(ICPointer aSrc, long aCount) {
         if (isNull() || aSrc.isNull()) throw new NullPointerException();
-        memcpy_(aSrc.ptr_(), mPtr, aCount);
+        memcpy0(aSrc.ptr_(), mPtr, aCount);
     }
-    protected native static void memcpy_(long aSrc, long rDest, long aCount);
+    protected native static void memcpy0(long aSrc, long rDest, long aCount);
     
     @Override public void next() {throw new UnsupportedOperationException();}
     @Override public void rightShift(long aCount) {throw new UnsupportedOperationException();}

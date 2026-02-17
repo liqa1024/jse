@@ -7,37 +7,55 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef jse_gpu_FloatCudaPointer_TYPE_SIZE
+#define jse_gpu_FloatCudaPointer_TYPE_SIZE 1i64
 /*
  * Class:     jse_gpu_FloatCudaPointer
- * Method:    fill_
+ * Method:    fill0
  * Signature: (J[FII)V
  */
-JNIEXPORT void JNICALL Java_jse_gpu_FloatCudaPointer_fill_1
+JNIEXPORT void JNICALL Java_jse_gpu_FloatCudaPointer_fill0
   (JNIEnv *, jclass, jlong, jfloatArray, jint, jint);
 
 /*
  * Class:     jse_gpu_FloatCudaPointer
- * Method:    fillD_
+ * Method:    fillD0
  * Signature: (J[DII)V
  */
-JNIEXPORT void JNICALL Java_jse_gpu_FloatCudaPointer_fillD_1
+JNIEXPORT void JNICALL Java_jse_gpu_FloatCudaPointer_fillD0
   (JNIEnv *, jclass, jlong, jdoubleArray, jint, jint);
 
 /*
  * Class:     jse_gpu_FloatCudaPointer
- * Method:    parse2dest_
+ * Method:    fillD1
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_jse_gpu_FloatCudaPointer_fillD1
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     jse_gpu_FloatCudaPointer
+ * Method:    parse2dest0
  * Signature: (J[FII)V
  */
-JNIEXPORT void JNICALL Java_jse_gpu_FloatCudaPointer_parse2dest_1
+JNIEXPORT void JNICALL Java_jse_gpu_FloatCudaPointer_parse2dest0
   (JNIEnv *, jclass, jlong, jfloatArray, jint, jint);
 
 /*
  * Class:     jse_gpu_FloatCudaPointer
- * Method:    parse2destD_
+ * Method:    parse2destD0
  * Signature: (J[DII)V
  */
-JNIEXPORT void JNICALL Java_jse_gpu_FloatCudaPointer_parse2destD_1
+JNIEXPORT void JNICALL Java_jse_gpu_FloatCudaPointer_parse2destD0
   (JNIEnv *, jclass, jlong, jdoubleArray, jint, jint);
+
+/*
+ * Class:     jse_gpu_FloatCudaPointer
+ * Method:    parse2destD1
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_jse_gpu_FloatCudaPointer_parse2destD1
+  (JNIEnv *, jclass, jlong, jlong, jlong);
 
 #ifdef __cplusplus
 }

@@ -48,7 +48,7 @@ public class IntCudaPointer extends CudaPointer {
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void fill(IDataShell<int[]> aData) throws CudaException {
         if (isNull()) throw new NullPointerException();
-        fill_(mPtr, aData.internalDataWithLengthCheck(), aData.internalDataShift(), aData.internalDataSize());
+        fill0(mPtr, aData.internalDataWithLengthCheck(), aData.internalDataShift(), aData.internalDataSize());
     }
     /**
      * 将 java 的 {@code int[]} 填充到此 cuda 指针对应的显存中
@@ -61,9 +61,9 @@ public class IntCudaPointer extends CudaPointer {
     public void fill(int[] aData, int aStart, int aCount) throws CudaException {
         if (isNull()) throw new NullPointerException();
         CPointer.rangeCheck(aData.length, aStart+aCount);
-        fill_(mPtr, aData, aStart, aCount);
+        fill0(mPtr, aData, aStart, aCount);
     }
-    private native static void fill_(long rPtr, int[] aData, int aStart, int aCount) throws CudaException;
+    private native static void fill0(long rPtr, int[] aData, int aStart, int aCount) throws CudaException;
     
     /**
      * 调用 {@link CudaCore#cudaMemcpyH2D} 将另一个 c 指针的数据填充到此 cuda 指针对应的显存中
@@ -95,7 +95,7 @@ public class IntCudaPointer extends CudaPointer {
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void parse2dest(IDataShell<int[]> rDest) {
         if (isNull()) throw new NullPointerException();
-        parse2dest_(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
+        parse2dest0(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
     }
     /**
      * 将此 cuda 指针对应的显存数值写入 java 的 {@code int[]} 中
@@ -108,9 +108,9 @@ public class IntCudaPointer extends CudaPointer {
     public void parse2dest(int[] rDest, int aStart, int aCount) {
         if (isNull()) throw new NullPointerException();
         CPointer.rangeCheck(rDest.length, aStart+aCount);
-        parse2dest_(mPtr, rDest, aStart, aCount);
+        parse2dest0(mPtr, rDest, aStart, aCount);
     }
-    private native static void parse2dest_(long aPtr, int[] rDest, int aStart, int aCount);
+    private native static void parse2dest0(long aPtr, int[] rDest, int aStart, int aCount);
     
     /**
      * 调用 {@link CudaCore#cudaMemcpyD2H} 将此 cuda 指针对应的显存数值写入 c 指针对应内存中

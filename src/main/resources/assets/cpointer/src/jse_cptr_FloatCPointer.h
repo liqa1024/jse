@@ -11,10 +11,10 @@ extern "C" {
 #define jse_cptr_FloatCPointer_TYPE_SIZE 1i64
 /*
  * Class:     jse_cptr_FloatCPointer
- * Method:    typeSize_
+ * Method:    typeSize0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_typeSize_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_typeSize0
   (JNIEnv *, jclass);
 
 /*
@@ -35,90 +35,106 @@ JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_fillD0
 
 /*
  * Class:     jse_cptr_FloatCPointer
- * Method:    fill1
+ * Method:    fillD1
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_fillD1
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     jse_cptr_FloatCPointer
+ * Method:    fill2
  * Signature: (JFJ)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_fill1
+JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_fill2
   (JNIEnv *, jclass, jlong, jfloat, jlong);
 
 /*
  * Class:     jse_cptr_FloatCPointer
- * Method:    parse2dest_
+ * Method:    parse2dest0
  * Signature: (J[FII)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_parse2dest_1
+JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_parse2dest0
   (JNIEnv *, jclass, jlong, jfloatArray, jint, jint);
 
 /*
  * Class:     jse_cptr_FloatCPointer
- * Method:    parse2destD_
+ * Method:    parse2destD0
  * Signature: (J[DII)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_parse2destD_1
+JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_parse2destD0
   (JNIEnv *, jclass, jlong, jdoubleArray, jint, jint);
 
 /*
  * Class:     jse_cptr_FloatCPointer
- * Method:    get_
+ * Method:    parse2destD1
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_parse2destD1
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     jse_cptr_FloatCPointer
+ * Method:    get0
  * Signature: (J)F
  */
-JNIEXPORT jfloat JNICALL Java_jse_cptr_FloatCPointer_get_1
+JNIEXPORT jfloat JNICALL Java_jse_cptr_FloatCPointer_get0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_cptr_FloatCPointer
- * Method:    getAt_
+ * Method:    getAt0
  * Signature: (JJ)F
  */
-JNIEXPORT jfloat JNICALL Java_jse_cptr_FloatCPointer_getAt_1
+JNIEXPORT jfloat JNICALL Java_jse_cptr_FloatCPointer_getAt0
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_FloatCPointer
- * Method:    set_
+ * Method:    set0
  * Signature: (JF)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_set_1
+JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_set0
   (JNIEnv *, jclass, jlong, jfloat);
 
 /*
  * Class:     jse_cptr_FloatCPointer
- * Method:    putAt_
+ * Method:    putAt0
  * Signature: (JJF)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_putAt_1
+JNIEXPORT void JNICALL Java_jse_cptr_FloatCPointer_putAt0
   (JNIEnv *, jclass, jlong, jlong, jfloat);
 
 /*
  * Class:     jse_cptr_FloatCPointer
- * Method:    next_
+ * Method:    next0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_next_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_next0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_cptr_FloatCPointer
- * Method:    rightShift_
+ * Method:    rightShift0
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_rightShift_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_rightShift0
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_FloatCPointer
- * Method:    previous_
+ * Method:    previous0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_previous_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_previous0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_cptr_FloatCPointer
- * Method:    leftShift_
+ * Method:    leftShift0
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_leftShift_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_FloatCPointer_leftShift0
   (JNIEnv *, jclass, jlong, jlong);
 
 #ifdef __cplusplus

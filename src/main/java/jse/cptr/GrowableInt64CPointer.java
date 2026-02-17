@@ -13,7 +13,7 @@ public class GrowableInt64CPointer extends Int64CPointer implements IGrowableCPo
     protected long mCount;
     @UnsafeJNI("Manual free required")
     public GrowableInt64CPointer(long aInitCount) {
-        super(CPointer.malloc_(aInitCount, TYPE_SIZE));
+        super(CPointer.malloc0(aInitCount, TYPE_SIZE));
         mCount = aInitCount;
     }
     public GrowableInt64CPointer() {
@@ -24,9 +24,9 @@ public class GrowableInt64CPointer extends Int64CPointer implements IGrowableCPo
     
     private void grow_(long aMinCount) {
         final long oCount = mCount;
-        if (mPtr != 0) CPointer.free_(mPtr);
+        if (mPtr != 0) CPointer.free0(mPtr);
         mCount = Math.max(aMinCount, oCount + (oCount>>1));
-        mPtr = CPointer.malloc_(mCount, TYPE_SIZE);
+        mPtr = CPointer.malloc0(mCount, TYPE_SIZE);
     }
     @Override public void ensureCapacity(long aMinCount) {
         if (aMinCount > mCount) grow_(aMinCount);

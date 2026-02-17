@@ -11,74 +11,74 @@ extern "C" {
 #define jse_cptr_AnyCPointer_TYPE_SIZE 1i64
 /*
  * Class:     jse_cptr_AnyCPointer
- * Method:    typeSize_
+ * Method:    typeSize0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_typeSize_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_typeSize0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_cptr_AnyCPointer
- * Method:    get_
+ * Method:    get0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_get_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_get0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_cptr_AnyCPointer
- * Method:    getAt_
+ * Method:    getAt0
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_getAt_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_getAt0
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_AnyCPointer
- * Method:    set_
+ * Method:    set0
  * Signature: (JJ)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_AnyCPointer_set_1
+JNIEXPORT void JNICALL Java_jse_cptr_AnyCPointer_set0
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_AnyCPointer
- * Method:    putAt_
+ * Method:    putAt0
  * Signature: (JJJ)V
  */
-JNIEXPORT void JNICALL Java_jse_cptr_AnyCPointer_putAt_1
+JNIEXPORT void JNICALL Java_jse_cptr_AnyCPointer_putAt0
   (JNIEnv *, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     jse_cptr_AnyCPointer
- * Method:    next_
+ * Method:    next0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_next_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_next0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_cptr_AnyCPointer
- * Method:    rightShift_
+ * Method:    rightShift0
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_rightShift_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_rightShift0
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jse_cptr_AnyCPointer
- * Method:    previous_
+ * Method:    previous0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_previous_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_previous0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_cptr_AnyCPointer
- * Method:    leftShift_
+ * Method:    leftShift0
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_leftShift_1
+JNIEXPORT jlong JNICALL Java_jse_cptr_AnyCPointer_leftShift0
   (JNIEnv *, jclass, jlong, jlong);
 
 #ifdef __cplusplus
