@@ -19,7 +19,7 @@ static __global__ void computeLammpsCudaKernel(
         flt_t *f0, flt_t *f1, flt_t *eatom, flt_t *vatom0, flt_t *vatom1, int *rNlInvalid,
         int *aLmpType2NNAPType, flt_t **aFpHyperParam, flt_t **aFpParam, flt_t **aNormParam, flt_t **aNnParam) {
     const unsigned int ii = (blockIdx.x * blockDim.x + threadIdx.x);
-    if (ii > inum) return;
+    if (ii >= inum) return;
     
     const int i = ilist[ii];
     const int i3 = i+i+i;
@@ -350,19 +350,26 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammpsCuda(void *aDataIn, vo
     int *numneigh = (int *)tDataIn[4];
     int64_t *displsneigh = (int64_t *)tDataIn[5];
     int *firstneigh = (int *)tDataIn[6];
+    JSE_NNAP::flt_t *cutsq = (JSE_NNAP::flt_t *)tDataIn[7];
+    int *tLmpType2NNAPType = (int *)tDataIn[8];
+    JSE_NNAP::flt_t **tFpHyperParam = (JSE_NNAP::flt_t **)tDataIn[9];
+    JSE_NNAP::flt_t **tFpParam = (JSE_NNAP::flt_t **)tDataIn[10];
+    JSE_NNAP::flt_t **tNnParam = (JSE_NNAP::flt_t **)tDataIn[11];
+    JSE_NNAP::flt_t **tNormParam = (JSE_NNAP::flt_t **)tDataIn[12];
     
     JSE_NNAP::flt_t *f0 = (JSE_NNAP::flt_t *)tDataOut[0];
     JSE_NNAP::flt_t *f1 = (JSE_NNAP::flt_t *)tDataOut[1];
     JSE_NNAP::flt_t *eatom = (JSE_NNAP::flt_t *)tDataOut[2];
     JSE_NNAP::flt_t *vatom0 = (JSE_NNAP::flt_t *)tDataOut[3];
     JSE_NNAP::flt_t *vatom1 = (JSE_NNAP::flt_t *)tDataOut[4];
+    int *rNlInvalid = (int *)tDataOut[5];
     
     cudaError_t tErr;
     tErr = cudaMemset(f0, 0, nlocal*3*sizeof(JSE_NNAP::flt_t));
     if (tErr!=cudaSuccess) return (int)tErr;
     tErr = cudaMemset(f1, 0, ntot*3*sizeof(JSE_NNAP::flt_t));
     if (tErr!=cudaSuccess) return (int)tErr;
-    if (eflag) {
+    if (eflag||eflagAtom) {
         tErr = cudaMemset(eatom, 0, nlocal*sizeof(JSE_NNAP::flt_t));
         if (tErr!=cudaSuccess) return (int)tErr;
     }
@@ -377,14 +384,21 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammpsCuda(void *aDataIn, vo
         tErr = cudaMemset(vatom1, 0, ntot*6*sizeof(JSE_NNAP::flt_t));
         if (tErr!=cudaSuccess) return (int)tErr;
     }
+    tErr = cudaMemset(rNlInvalid, 0, nlocal*sizeof(int));
+    if (tErr!=cudaSuccess) return (int)tErr;
     
-    // /// begin compute here
-    // constexpr int tBlockSize = __NNAPGEN_CUDA_BLOCKSIZE__;
-    // constexpr int tGridSize = (inum + tBlockSize-1) / tBlockSize;
-    // JSE_NNAP::computeLammpsCudaKernel<<<tGridSize, tBlockSize>>>(inum);
+    /// begin compute here
+    constexpr int tBlockSize = __NNAPGEN_CUDA_BLOCKSIZE__;
+    const int tGridSize = (inum + tBlockSize-1) / tBlockSize;
+    JSE_NNAP::computeLammpsCudaKernel<<<tGridSize, tBlockSize>>>(
+        inum, eflag||eflagAtom, vflag, vflagAtom, cvflagAtom,
+        ilist, x, type, cutsq,
+        numneigh, displsneigh, firstneigh,
+        f0, f1, eatom, vatom0, vatom1, rNlInvalid,
+        tLmpType2NNAPType, tFpHyperParam, tFpParam, tNormParam, tNnParam
+    );
     
-    return (int)cudaSuccess;
+    return (int)cudaDeviceSynchronize();
 }
 
 }
-

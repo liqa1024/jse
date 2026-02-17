@@ -55,9 +55,13 @@ class NNAP_cuda extends NNAP2 {
     private final GrowableIntCPointer mIntBuf;
     // cuda 数据
     private final GrowableFloatCudaPointer mCudaX, mCudaF0, mCudaF1, mCudaEatom, mCudaVatom0, mCudaVatom1;
-    private final GrowableIntCudaPointer mCudaType, mCudaIlist, mCudaNumneigh;
+    private final GrowableIntCudaPointer mCudaType, mCudaIlist, mCudaNumneigh, mCudaNlInvalid;
     private final GrowableInt64CudaPointer mCudaDisplsneigh;
     private final GrowableIntCudaPointer mCudaFirstneigh;
+    private FloatCudaPointer mCudaCutsq = null;
+    private IntCudaPointer mCudaLmpType2NNAPType = null;
+    private final AnyCPointer mCudaFpHyperParam, mCudaFpParam, mCudaNnParam, mCudaNormParam;
+    private final CudaPointer mCudaCudaFpHyperParam, mCudaCudaFpParam, mCudaCudaNnParam, mCudaCudaNormParam;
     
     NNAP_cuda(@Nullable String aLibDir, @Nullable String aProjectName, Map<?, ?> aModelInfo) throws Exception {
         super(aLibDir, aProjectName, aModelInfo, 1, "single");
@@ -75,6 +79,46 @@ class NNAP_cuda extends NNAP2 {
         mCudaNumneigh = new GrowableIntCudaPointer(128);
         mCudaDisplsneigh = new GrowableInt64CudaPointer(128);
         mCudaFirstneigh = new GrowableIntCudaPointer(1024);
+        mCudaNlInvalid = new GrowableIntCudaPointer(128);
+        
+        int tTypeNum = mSymbols.length;
+        mCudaFpHyperParam = AnyCPointer.malloc(tTypeNum);
+        mCudaFpParam = AnyCPointer.malloc(tTypeNum);
+        mCudaNnParam = AnyCPointer.malloc(tTypeNum);
+        mCudaNormParam = AnyCPointer.malloc(tTypeNum);
+        mCudaCudaFpHyperParam = CudaPointer.malloc(tTypeNum*AnyCPointer.TYPE_SIZE);
+        mCudaCudaFpParam = CudaPointer.malloc(tTypeNum*AnyCPointer.TYPE_SIZE);
+        mCudaCudaNnParam = CudaPointer.malloc(tTypeNum*AnyCPointer.TYPE_SIZE);
+        mCudaCudaNormParam = CudaPointer.malloc(tTypeNum*AnyCPointer.TYPE_SIZE);
+        for (int i = 0; i < tTypeNum; ++i) {
+            int tSize = mBasis[i].hyperParameterSize();
+            FloatCPointer tSubParam = mFpHyperParam.getAsFloatCPointerAt(i);
+            FloatCudaPointer tSubCudaParam = FloatCudaPointer.malloc(Math.max(1, tSize));
+            tSubCudaParam.fill(tSubParam, tSize);
+            mCudaFpHyperParam.putAt(i, tSubCudaParam);
+            
+            tSize = mBasis[i].parameterSize();
+            tSubParam = mFpParam.getAsFloatCPointerAt(i);
+            tSubCudaParam = FloatCudaPointer.malloc(Math.max(1, tSize));
+            tSubCudaParam.fill(tSubParam, tSize);
+            mCudaFpParam.putAt(i, tSubCudaParam);
+            
+            tSize = mNN[i].parameterSize();
+            tSubParam = mNnParam.getAsFloatCPointerAt(i);
+            tSubCudaParam = FloatCudaPointer.malloc(Math.max(1, tSize));
+            tSubCudaParam.fill(tSubParam, tSize);
+            mCudaNnParam.putAt(i, tSubCudaParam);
+            
+            tSize = mBasis[i].size()*2 + 2;
+            tSubParam = mNormParam.getAsFloatCPointerAt(i);
+            tSubCudaParam = FloatCudaPointer.malloc(Math.max(1, tSize));
+            tSubCudaParam.fill(tSubParam, tSize);
+            mCudaNormParam.putAt(i, tSubCudaParam);
+        }
+        mCudaCudaFpHyperParam.memcpy2this(mCudaFpHyperParam, tTypeNum*AnyCPointer.TYPE_SIZE);
+        mCudaCudaFpParam.memcpy2this(mCudaFpParam, tTypeNum*AnyCPointer.TYPE_SIZE);
+        mCudaCudaNnParam.memcpy2this(mCudaNnParam, tTypeNum*AnyCPointer.TYPE_SIZE);
+        mCudaCudaNormParam.memcpy2this(mCudaNormParam, tTypeNum*AnyCPointer.TYPE_SIZE);
     }
     public NNAP_cuda(Map<?, ?> aModelInfo) throws Exception {
         this(null, null, aModelInfo);
@@ -120,6 +164,29 @@ class NNAP_cuda extends NNAP2 {
             mCudaNumneigh.free();
             mCudaDisplsneigh.free();
             mCudaFirstneigh.free();
+            mCudaNlInvalid.free();
+            if (mCudaCutsq != null) {
+                mCudaCutsq.free();
+                mCudaCutsq = null;
+            }
+            if (mCudaLmpType2NNAPType != null) {
+                mCudaLmpType2NNAPType.free();
+                mCudaLmpType2NNAPType = null;
+            }
+            for (int i = 0; i < mSymbols.length; ++i) {
+                mCudaFpHyperParam.getAsCudaPointerAt(i).free();
+                mCudaFpParam.getAsCudaPointerAt(i).free();
+                mCudaNnParam.getAsCudaPointerAt(i).free();
+                mCudaNormParam.getAsCudaPointerAt(i).free();
+            }
+            mCudaFpHyperParam.free();
+            mCudaFpParam.free();
+            mCudaNnParam.free();
+            mCudaNormParam.free();
+            mCudaCudaFpHyperParam.free();
+            mCudaCudaFpParam.free();
+            mCudaCudaNnParam.free();
+            mCudaCudaNormParam.free();
         } catch (CudaException e) {
             throw new RuntimeException(e);
         }
@@ -131,7 +198,18 @@ class NNAP_cuda extends NNAP2 {
     @Override public void calEnergyForceVirial(int aAtomNumber, INeighborListGetter aNeighborListGetter, @Nullable IEnergyAccumulator rEnergyAccumulator, @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) throws Exception {
         throw new UnsupportedOperationException();
     }
+    
+    private boolean mCudaParaInited = false;
+    private void initLmpParamCuda_(PairNNAP2 aPair) throws CudaException {
+        if (mCudaParaInited) return;
+        mCudaParaInited = true;
+        mCudaLmpType2NNAPType = IntCudaPointer.malloc(aPair.mTypeNum+1);
+        mCudaLmpType2NNAPType.fill(aPair.mLmpType2NNAPType, aPair.mTypeNum+1);
+        mCudaCutsq = FloatCudaPointer.malloc(aPair.mTypeNum+1);
+        mCudaCutsq.fillD(aPair.mCutsq, aPair.mTypeNum+1);
+    }
     @Override void computeLammps(PairNNAP2 aPair) throws CudaException {
+        initLmpParamCuda_(aPair);
         // 常规缓存向量长度规范
         boolean cvflagAtom = aPair.cvflagAtom();
         int inum = aPair.listInum();
@@ -150,6 +228,7 @@ class NNAP_cuda extends NNAP2 {
         mCudaIlist.ensureCapacity(inum);
         mCudaNumneigh.ensureCapacity(nlocal);
         mCudaDisplsneigh.ensureCapacity(nlocal+1);
+        mCudaNlInvalid.ensureCapacity(nlocal);
         // 近邻列表大小位置标识获取
         IntCPointer numneigh = aPair.listNumneigh();
         mInNums.putAt(0, nlocal);
@@ -203,12 +282,19 @@ class NNAP_cuda extends NNAP2 {
         mDataIn.putAt(4, mCudaNumneigh);
         mDataIn.putAt(5, mCudaDisplsneigh);
         mDataIn.putAt(6, mCudaFirstneigh);
+        mDataIn.putAt(7, mCudaCutsq);
+        mDataIn.putAt(8, mCudaLmpType2NNAPType);
+        mDataIn.putAt(9, mCudaCudaFpHyperParam);
+        mDataIn.putAt(10, mCudaCudaFpParam);
+        mDataIn.putAt(11, mCudaCudaNnParam);
+        mDataIn.putAt(12, mCudaCudaNormParam);
         
         mDataOut.putAt(0, mCudaF0);
         mDataOut.putAt(1, mCudaF1);
         mDataOut.putAt(2, mCudaEatom);
         mDataOut.putAt(3, mCudaVatom0);
-        mDataOut.putAt(3, mCudaVatom1);
+        mDataOut.putAt(4, mCudaVatom1);
+        mDataOut.putAt(5, mCudaNlInvalid);
         
         tCode = mComputeLammpsCuda.invoke(mDataIn, mDataOut);
         CudaCore.cudaExceptionCheck(tCode);

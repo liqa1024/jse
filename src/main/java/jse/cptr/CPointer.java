@@ -144,7 +144,11 @@ public class CPointer implements ICPointer {
     public static CPointer malloc(long aCount) {
         return new CPointer(malloc0(aCount, TYPE_SIZE));
     }
-    protected native static long malloc0(long aCount, long aSize);
+    protected static long malloc0(long aCount, long aSize) {
+        if (aCount<=0) throw new IllegalArgumentException("Input count must be positive");
+        return malloc1(aCount, aSize);
+    }
+    private native static long malloc1(long aCount, long aSize);
     
     /**
      * 调用 c 中的 {@code calloc} 来分配全零内存创建一个 c 指针
@@ -158,7 +162,11 @@ public class CPointer implements ICPointer {
     public static CPointer calloc(long aCount) {
         return new CPointer(calloc0(aCount, TYPE_SIZE));
     }
-    protected native static long calloc0(long aCount, long aSize);
+    protected static long calloc0(long aCount, long aSize) {
+        if (aCount<=0) throw new IllegalArgumentException("Input count must be positive");
+        return calloc1(aCount, aSize);
+    }
+    private native static long calloc1(long aCount, long aSize);
     
     /**
      * {@inheritDoc}

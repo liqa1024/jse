@@ -107,7 +107,11 @@ public class CudaCore {
     public static native void cudaDeviceSynchronize() throws CudaException;
     public static native void cudaExceptionCheck(int aCudaErrorCode) throws CudaException;
     
-    static native long cudaMalloc(long aCount) throws CudaException;
+    static long cudaMalloc(long aCount) throws CudaException {
+        if (aCount<=0) throw new IllegalArgumentException("Input count must be positive");
+        return cudaMalloc0(aCount);
+    }
+    private static native long cudaMalloc0(long aCount) throws CudaException;
     static native void cudaFree(long aPtr) throws CudaException;
     static native void cudaMemcpyH2D(long aSrc, long rDest, long aCount) throws CudaException;
     static native void cudaMemcpyD2H(long aSrc, long rDest, long aCount) throws CudaException;

@@ -16,7 +16,7 @@ JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaExceptionCheck(JNIEnv *aEnv, jc
     }
 }
 
-JNIEXPORT jlong JNICALL Java_jse_gpu_CudaCore_cudaMalloc(JNIEnv *aEnv, jclass aClazz, jlong aCount) {
+JNIEXPORT jlong JNICALL Java_jse_gpu_CudaCore_cudaMalloc0(JNIEnv *aEnv, jclass aClazz, jlong aCount) {
     void *tPtr = NULL;
     const cudaError_t tErr = cudaMalloc(&tPtr, (size_t)aCount);
     if (tErr != cudaSuccess) {

@@ -25,10 +25,10 @@ JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaExceptionCheck
 
 /*
  * Class:     jse_gpu_CudaCore
- * Method:    cudaMalloc
+ * Method:    cudaMalloc0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_gpu_CudaCore_cudaMalloc
+JNIEXPORT jlong JNICALL Java_jse_gpu_CudaCore_cudaMalloc0
   (JNIEnv *, jclass, jlong);
 
 /*

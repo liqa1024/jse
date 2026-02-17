@@ -135,17 +135,17 @@ public class NNAP2 implements IPairPotential {
         mNnParam = AnyCPointer.malloc(tModelSize);
         for (int i = 0; i < tModelSize; ++i) {
             int tSize = mBasis[i].hyperParameterSize();
-            IDoubleOrFloatCPointer tFpHyperParam = mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize);
+            IDoubleOrFloatCPointer tFpHyperParam = mSinglePrecision ? FloatCPointer.malloc(Math.max(1, tSize)) : DoubleCPointer.malloc(Math.max(1, tSize));
             fill_(tFpHyperParam, mBasis[i].hyperParameters());
             mFpHyperParam.putAt(i, tFpHyperParam);
             
             tSize = mBasis[i].parameterSize();
-            IDoubleOrFloatCPointer tFpParam = mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize);
+            IDoubleOrFloatCPointer tFpParam = mSinglePrecision ? FloatCPointer.malloc(Math.max(1, tSize)) : DoubleCPointer.malloc(Math.max(1, tSize));
             fill_(tFpParam, mBasis[i].parameters());
             mFpParam.putAt(i, tFpParam);
             
             tSize = mNN[i].parameterSize();
-            IDoubleOrFloatCPointer tNnParam = mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize);
+            IDoubleOrFloatCPointer tNnParam = mSinglePrecision ? FloatCPointer.malloc(Math.max(1, tSize)) : DoubleCPointer.malloc(Math.max(1, tSize));
             fill_(tNnParam, mNN[i].parameters());
             mNnParam.putAt(i, tNnParam);
         }

@@ -7,10 +7,10 @@
 extern "C" {
 #endif
 
-JNIEXPORT jlong JNICALL Java_jse_cptr_CPointer_malloc0(JNIEnv *aEnv, jclass aClazz, jlong aCount, jlong aSize) {
+JNIEXPORT jlong JNICALL Java_jse_cptr_CPointer_malloc1(JNIEnv *aEnv, jclass aClazz, jlong aCount, jlong aSize) {
     return (jlong)(intptr_t)MALLOCN((size_t)aCount, (size_t)aSize);
 }
-JNIEXPORT jlong JNICALL Java_jse_cptr_CPointer_calloc0(JNIEnv *aEnv, jclass aClazz, jlong aCount, jlong aSize) {
+JNIEXPORT jlong JNICALL Java_jse_cptr_CPointer_calloc1(JNIEnv *aEnv, jclass aClazz, jlong aCount, jlong aSize) {
     return (jlong)(intptr_t)CALLOC((size_t)aCount, (size_t)aSize);
 }
 JNIEXPORT void JNICALL Java_jse_cptr_CPointer_free0(JNIEnv *aEnv, jclass aClazz, jlong aPtr) {
