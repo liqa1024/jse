@@ -37,6 +37,23 @@ static inline NNAP_DEVICE flt_t siluGradGrad(flt_t aX, flt_t *rGrad, flt_t *rGra
 #define __NNAPGENOS_X__ 1
 // <<< NNAPGEN REMOVE
 
+
+template <int IN_SIZE, int OUT_SIZE, int CACHE_GRAD>
+static NNAP_DEVICE void nnForwardLayerBatch(int bi, int nb,
+        flt_t *aBatchX, flt_t *rBatchY, flt_t *aWeights, flt_t *aBiases, flt_t *rBatchSiLUGrad) noexcept {
+    flt_t *tWeights = aWeights;
+    for (int j = 0; j < OUT_SIZE; ++j) {
+        const flt_t tDot = dotBatchL<IN_SIZE>(bi, nb, aBatchX, tWeights) + aBiases[j];
+        tWeights += IN_SIZE;
+        if (CACHE_GRAD) {
+            flt_t rGrad;
+            rBatchY[j*nb + bi] = siluGrad(tDot, &rGrad);
+            rBatchSiLUGrad[j*nb + bi] = rGrad;
+        } else {
+            rBatchY[j*nb + bi] = silu(tDot);
+        }
+    }
+}
 template <int IN_SIZE, int OUT_SIZE, int CACHE_GRAD>
 static NNAP_DEVICE void nnForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeights, flt_t *aBiases, flt_t *rSiLUGrad) noexcept {
     flt_t *tWeights = aWeights;
@@ -82,6 +99,41 @@ static NNAP_DEVICE void nnShareForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeight
     }
 }
 
+
+template <int CTYPE_GEN, int CACHE_GRAD>
+static NNAP_DEVICE flt_t nnForwardBatch(int bi, int nb,
+        flt_t *aBatchX, flt_t *aHiddenWeights, flt_t *aSharedHiddenWeights, flt_t *aHiddenBiases, flt_t *aSharedHiddenBiases,
+        flt_t *aOutputWeights, flt_t aOutputBias, flt_t *rBatchGradCache, flt_t *rBatchHiddenCache) noexcept {
+    flt_t *tSubBatchX = aBatchX;
+    flt_t *rSubBatchY = rBatchHiddenCache;
+    flt_t *tWeights = aHiddenWeights;
+    flt_t *tBiases = aHiddenBiases;
+    flt_t *rBatchSiLUGrad = rBatchGradCache;
+    
+    flt_t rOut;
+// >>> NNAPGEN SWITCH
+// >>> NNAPGEN PICK
+// --- NNAPGEN PICK: feed_forward
+// >>> NNAPGEN REPEAT
+    nnForwardLayerBatch<__NNAPGENXX_NN_IN_SIZE__, __NNAPGENXX_NN_OUT_SIZE__, CACHE_GRAD>(bi, nb,
+        tSubBatchX, rSubBatchY, tWeights, tBiases, rBatchSiLUGrad
+    );
+    tWeights += __NNAPGENXX_NN_IN_SIZE__*__NNAPGENXX_NN_OUT_SIZE__;
+    tBiases += __NNAPGENXX_NN_OUT_SIZE__;
+    tSubBatchX = rSubBatchY;
+    rSubBatchY += __NNAPGENXX_NN_OUT_SIZE__*nb;
+    if (CACHE_GRAD) {
+        rBatchSiLUGrad += __NNAPGENXX_NN_OUT_SIZE__*nb;
+    }
+// <<< NNAPGEN REPEAT 0..<[NN HIDDEN LAYERS __NNAPGENS_X__]
+// --- NNAPGEN PICK: shared_feed_forward
+    // TODO:
+// <<< NNAPGEN PICK [NN USE __NNAPGENS_X__]
+    
+    rOut = dotBatchL<__NNAPGENX_NN_SIZE_OW__>(bi, nb, tSubBatchX, aOutputWeights) + aOutputBias;
+// <<< NNAPGEN SWITCH (CTYPE_GEN) [NN TYPE]
+    return rOut;
+}
 template <int CTYPE_GEN, int CACHE_GRAD>
 static NNAP_DEVICE flt_t nnForward(flt_t *aX, flt_t *aHiddenWeights, flt_t *aSharedHiddenWeights, flt_t *aHiddenBiases, flt_t *aSharedHiddenBiases,
                                    flt_t *aOutputWeights, flt_t aOutputBias, flt_t *rGradCache, flt_t *rHiddenCache) noexcept {
@@ -129,6 +181,16 @@ static NNAP_DEVICE flt_t nnForward(flt_t *aX, flt_t *aHiddenWeights, flt_t *aSha
 
 
 template <int IN_SIZE, int OUT_SIZE>
+static NNAP_DEVICE void nnBackwardLayerBatch(int bi, int nb,
+        flt_t *rBatchGradX, flt_t *aBatchGradY, flt_t *aWeights, flt_t *aBatchSiLUGrad) noexcept {
+    flt_t *tWeights = aWeights;
+    for (int j = 0; j < OUT_SIZE; ++j) {
+        flt_t tGradZ =  aBatchSiLUGrad[j*nb + bi] * aBatchGradY[j*nb + bi];
+        mplusBatchL<IN_SIZE>(bi, nb, rBatchGradX, tGradZ, tWeights);
+        tWeights += IN_SIZE;
+    }
+}
+template <int IN_SIZE, int OUT_SIZE>
 static NNAP_DEVICE void nnBackwardLayer(flt_t *rGradX, flt_t *aGradY, flt_t *aWeights, flt_t *aSiLUGrad) noexcept {
     flt_t *tWeights = aWeights;
     for (int j = 0; j < OUT_SIZE; ++j) {
@@ -156,7 +218,49 @@ static NNAP_DEVICE void nnShareBackwardLayer(flt_t *rGradX, flt_t *aGradY, flt_t
 }
 
 template <int CTYPE_GEN>
-static NNAP_DEVICE void nnBackward(flt_t aGradY, flt_t *rGradX, flt_t *aHiddenWeights, flt_t *aSharedHiddenWeights, flt_t *aOutputWeight, flt_t *aGradCache, flt_t *rHiddenCache) noexcept {
+static NNAP_DEVICE void nnBackwardBatch(int bi, int nb,
+        flt_t aGradY, flt_t *rBatchGradX, flt_t *aHiddenWeights, flt_t *aSharedHiddenWeights, flt_t *aOutputWeight,
+        flt_t *aBatchGradCache, flt_t *rBatchHiddenCache) noexcept {
+    flt_t *rSubBatchGradX = rBatchHiddenCache;
+    flt_t *tWeights = aHiddenWeights;
+    flt_t *tBatchSiLUGrad = aBatchGradCache;
+    
+// >>> NNAPGEN SWITCH
+    fillBatch<__NNAPGENX_NN_SIZE_CACHEH__>(bi, nb, rSubBatchGradX, ZERO);
+// >>> NNAPGEN PICK
+// --- NNAPGEN PICK: feed_forward
+    // switch to last layer
+    tWeights += __NNAPGENX_NN_SIZE_HW__;
+    tBatchSiLUGrad += __NNAPGENX_NN_SIZE_CACHEG__*nb;
+    rSubBatchGradX += __NNAPGENX_NN_SIZE_CACHEH__*nb;
+    
+    // begin backward
+    rSubBatchGradX -= __NNAPGENX_NN_SIZE_OW__*nb;
+    mplusBatchL<__NNAPGENX_NN_SIZE_OW__>(bi, nb, rSubBatchGradX, aGradY, aOutputWeight);
+    flt_t *tSubBatchGradY = rSubBatchGradX;
+    
+// >>> NNAPGEN REPEAT
+    tWeights -= __NNAPGENXX_NN_IN_SIZE__*__NNAPGENXX_NN_OUT_SIZE__;
+    tBatchSiLUGrad -= __NNAPGENXX_NN_OUT_SIZE__*nb;
+    if (__NNAPGENOS_X__==0) {
+        rSubBatchGradX = rBatchGradX;
+    } else {
+        rSubBatchGradX -= __NNAPGENXX_NN_IN_SIZE__*nb;
+    }
+    nnBackwardLayerBatch<__NNAPGENXX_NN_IN_SIZE__, __NNAPGENXX_NN_OUT_SIZE__>(bi, nb,
+        rSubBatchGradX, tSubBatchGradY, tWeights, tBatchSiLUGrad
+    );
+    tSubBatchGradY = rSubBatchGradX;
+// <<< NNAPGEN REPEAT [NN HIDDEN LAYERS __NNAPGENS_X__]<..0
+// --- NNAPGEN PICK: shared_feed_forward
+    // TODO:
+// <<< NNAPGEN PICK [NN USE __NNAPGENS_X__]
+// <<< NNAPGEN SWITCH (CTYPE_GEN) [NN TYPE]
+}
+template <int CTYPE_GEN>
+static NNAP_DEVICE void nnBackward(
+        flt_t aGradY, flt_t *rGradX, flt_t *aHiddenWeights, flt_t *aSharedHiddenWeights, flt_t *aOutputWeight,
+        flt_t *aGradCache, flt_t *rHiddenCache) noexcept {
     flt_t *rSubGradX = rHiddenCache;
     flt_t *tWeights = aHiddenWeights;
     flt_t *tSiLUGrad = aGradCache;

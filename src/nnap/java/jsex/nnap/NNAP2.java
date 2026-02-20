@@ -116,10 +116,10 @@ public class NNAP2 implements IPairPotential {
         }));
         mNNAPGEN = new NNAPGEN(aLibDir, aProjectName, mBasis, mNN);
         // 初始化数组
-        mDataIn = AnyCPointer.calloc(20);
-        mDataOut = AnyCPointer.calloc(20);
-        mInNums = IntCPointer.calloc(20);
-        mOutNums = IntCPointer.calloc(20);
+        mDataIn = AnyCPointer.calloc(32);
+        mDataOut = AnyCPointer.calloc(32);
+        mInNums = IntCPointer.calloc(32);
+        mOutNums = IntCPointer.calloc(32);
         mNlDx = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mNlDy = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mNlDz = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);

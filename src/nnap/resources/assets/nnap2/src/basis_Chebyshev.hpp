@@ -6,6 +6,53 @@
 namespace JSE_NNAP {
 
 template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N>
+static NNAP_DEVICE void chebyForwardBatch(int bi, int nb,
+        flt_t *aBatchNlDx, flt_t *aBatchNlDy, flt_t *aBatchNlDz, int *aBatchNlType, int aNeiNum, flt_t *rBatchFp,
+        flt_t **rBatchForwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
+    // init cache
+    flt_t *rBatchRn = *rBatchForwardCache; *rBatchForwardCache += (NMAX+1)*nb;
+    // clear fp first
+    fillBatch<SIZE_N>(bi, nb, rBatchFp, ZERO);
+    // loop for neighbor
+    for (int j = 0; j < aNeiNum; ++j) {
+        int type = aBatchNlType[j*nb + bi];
+        flt_t dx = aBatchNlDx[j*nb + bi];
+        flt_t dy = aBatchNlDy[j*nb + bi];
+        flt_t dz = aBatchNlDz[j*nb + bi];
+        flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
+        // check rcut for merge
+        if (dis >= aRCut) continue;
+        // cal fc
+        flt_t fc = calFc(dis, aRCut);
+        // cal Rn
+        calRnBatch<NMAX>(bi, nb, rBatchRn, dis, aRCut);
+        // cal fp
+        if (WTYPE==WTYPE_FUSE) {
+            mplusChebyFuseBatch<NMAX, FSIZE, FSTYLE>(bi, nb, rBatchFp, aFuseWeight, type, fc, rBatchRn);
+        } else
+        if (WTYPE==WTYPE_EXFUSE) {
+            mplusChebyExFuseBatch<NMAX, FSIZE, FSTYLE>(bi, nb, rBatchFp, aFuseWeight, type, fc, rBatchRn);
+        } else
+        if (WTYPE==WTYPE_NONE) {
+            mplusBatch<NMAX+1>(bi, nb, rBatchFp, fc, rBatchRn);
+        } else
+        if (WTYPE==WTYPE_FULL) {
+            flt_t *tBatchFp = rBatchFp + (NMAX+1)*(type-1)*nb;
+            mplusBatch<NMAX+1>(bi, nb, tBatchFp, fc, rBatchRn);
+        } else
+        if (WTYPE==WTYPE_EXFULL) {
+            flt_t *tBatchFpWt = rBatchFp + (NMAX+1)*type*nb;
+            mplus2Batch<NMAX+1>(bi, nb, rBatchFp, tBatchFpWt, fc, fc, rBatchRn);
+        } else
+        if (WTYPE==WTYPE_DEFAULT) {
+            flt_t wt = ((type&1)==1) ? ((flt_t)type) : -((flt_t)type);
+            flt_t *tBatchFpWt = rBatchFp + (NMAX+1)*nb;
+            mplus2Batch<NMAX+1>(bi, nb, rBatchFp, tBatchFpWt, fc, fc*wt, rBatchRn);
+        }
+    }
+}
+
+template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N>
 static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
                                      flt_t **rForwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
     // init cache
@@ -49,6 +96,78 @@ static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
     }
 }
 
+template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N>
+static NNAP_DEVICE void chebyBackwardBatch(int bi, int nb,
+        flt_t *aBatchNlDx, flt_t *aBatchNlDy, flt_t *aBatchNlDz, int *aBatchNlType, int aNeiNum, flt_t *aBatchGradFp,
+        flt_t *rBatchGradNlDx, flt_t *rBatchGradNlDy, flt_t *rBatchGradNlDz,
+        flt_t **rBatchForwardCache, flt_t **rBatchBackwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
+    // init cache
+    flt_t *rBatchRn = *rBatchForwardCache; *rBatchForwardCache += (NMAX+1)*nb;
+    flt_t *rBatchRnPx = *rBatchBackwardCache; *rBatchBackwardCache += (NMAX+1)*nb;
+    flt_t *rBatchRnPy = *rBatchBackwardCache; *rBatchBackwardCache += (NMAX+1)*nb;
+    flt_t *rBatchRnPz = *rBatchBackwardCache; *rBatchBackwardCache += (NMAX+1)*nb;
+    flt_t *rBatchCheby2 = *rBatchBackwardCache; *rBatchBackwardCache += (NMAX+1)*nb;
+    // loop for neighbor
+    for (int j = 0; j < aNeiNum; ++j) {
+        // init nl
+        int type = aBatchNlType[j*nb + bi];
+        flt_t dx = aBatchNlDx[j*nb + bi];
+        flt_t dy = aBatchNlDy[j*nb + bi];
+        flt_t dz = aBatchNlDz[j*nb + bi];
+        flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
+        // check rcut for merge
+        if (dis >= aRCut) continue;
+        // cal fcPxyz
+        flt_t fcPx, fcPy, fcPz;
+        flt_t fc = calFcPxyz(&fcPx, &fcPy, &fcPz, dis, aRCut, dx, dy, dz);
+        // cal RnPxyz
+        calRnPxyzBatch<NMAX>(bi, nb, rBatchRn, rBatchRnPx, rBatchRnPy, rBatchRnPz, rBatchCheby2, dis, aRCut, dx, dy, dz);
+        if (WTYPE==WTYPE_FUSE) {
+            flt_t *tBatchGradRn = rBatchCheby2;
+            chebyGradRnFuseBatch<NMAX, FSIZE, FSTYLE>(bi, nb, tBatchGradRn, aBatchGradFp, aFuseWeight, type);
+            gradRn2xyzBatch<NMAX>(bi, nb,
+                j, tBatchGradRn, fc, rBatchRn, fcPx, fcPy, fcPz, rBatchRnPx, rBatchRnPy, rBatchRnPz,
+                rBatchGradNlDx, rBatchGradNlDy, rBatchGradNlDz
+            );
+        } else
+        if (WTYPE==WTYPE_EXFUSE) {
+            flt_t *tBatchGradRn = rBatchCheby2;
+            chebyGradRnExFuseBatch<NMAX, FSIZE, FSTYLE>(bi, nb, tBatchGradRn, aBatchGradFp, aFuseWeight, type);
+            gradRn2xyzBatch<NMAX>(bi, nb,
+                j, tBatchGradRn, fc, rBatchRn, fcPx, fcPy, fcPz, rBatchRnPx, rBatchRnPy, rBatchRnPz,
+                rBatchGradNlDx, rBatchGradNlDy, rBatchGradNlDz
+            );
+        } else
+        if (WTYPE==WTYPE_NONE) {
+            gradRn2xyzBatch<NMAX>(bi, nb,
+                j, aBatchGradFp, fc, rBatchRn, fcPx, fcPy, fcPz, rBatchRnPx, rBatchRnPy, rBatchRnPz,
+                rBatchGradNlDx, rBatchGradNlDy, rBatchGradNlDz
+            );
+        } else
+        if (WTYPE==WTYPE_FULL) {
+            flt_t *tBatchGradRn = aBatchGradFp + (NMAX+1)*(type-1)*nb;
+            gradRn2xyzBatch<NMAX>(bi, nb,
+                j, tBatchGradRn, fc, rBatchRn, fcPx, fcPy, fcPz, rBatchRnPx, rBatchRnPy, rBatchRnPz,
+                rBatchGradNlDx, rBatchGradNlDy, rBatchGradNlDz
+            );
+        } else
+        if (WTYPE==WTYPE_EXFULL) {
+            flt_t *tBatchGradRnWt = aBatchGradFp + (NMAX+1)*type*nb;
+            gradRnWt2xyzBatch<NMAX>(bi, nb,
+                j, aBatchGradFp, tBatchGradRnWt, fc, rBatchRn, ONE, fcPx, fcPy, fcPz, rBatchRnPx, rBatchRnPy, rBatchRnPz,
+                rBatchGradNlDx, rBatchGradNlDy, rBatchGradNlDz
+            );
+        } else
+        if (WTYPE==WTYPE_DEFAULT) {
+            flt_t wt = ((type&1)==1) ? ((flt_t)type) : -((flt_t)type);
+            flt_t *tBatchGradRnWt = aBatchGradFp + (NMAX+1)*nb;
+            gradRnWt2xyzBatch<NMAX>(bi, nb,
+                j, aBatchGradFp, tBatchGradRnWt, fc, rBatchRn, wt, fcPx, fcPy, fcPz, rBatchRnPx, rBatchRnPy, rBatchRnPz,
+                rBatchGradNlDx, rBatchGradNlDy, rBatchGradNlDz
+            );
+        }
+    }
+}
 template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N>
 static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
                                       flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,

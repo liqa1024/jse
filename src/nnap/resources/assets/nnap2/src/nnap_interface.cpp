@@ -1,6 +1,10 @@
 #include "nnap_interface.h"
 #include "nnap_main.hpp"
 
+// >>> NNAPGEN REMOVE
+#define __NNAPGENS_typeiNNAP__ 1
+// <<< NNAPGEN REMOVE
+
 extern "C" {
 
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergy(void *aDataIn, void *rDataOut) {

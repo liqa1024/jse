@@ -11,7 +11,7 @@
 
 extern "C" {
 
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_statDisplsneighLammps(void *, void *);
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_statNeiNumLammps(void *, void *);
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_lammps2cuda(void *, void *);
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_cuda2lammps(void *, void *);
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammpsCuda(void *, void *);
