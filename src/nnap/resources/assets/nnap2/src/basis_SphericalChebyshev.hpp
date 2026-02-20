@@ -7,12 +7,16 @@ namespace JSE_NNAP {
 
 template <int WTYPE, int NMAX, int LMAXMAX, int FSIZE>
 static NNAP_DEVICE void calCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rCnlm,
-                                flt_t aRCut, flt_t *aFuseWeight) noexcept {
+                                flt_t **rForwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
     constexpr int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     constexpr int tSizeBnlm = (NMAX+1)*tLMAll;
     // init cache
-    flt_t rRn[NMAX+1], rY[tLMAll];
-    flt_t rBnlm[(WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) ? tSizeBnlm : 1];
+    flt_t *rRn = *rForwardCache; *rForwardCache += (NMAX+1);
+    flt_t *rY = *rForwardCache; *rForwardCache += tLMAll;
+    flt_t *rBnlm = NULL;
+    if (WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
+        rBnlm = *rForwardCache; *rForwardCache += tSizeBnlm;
+    }
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
         int type = aNlType[j];
@@ -66,20 +70,24 @@ static NNAP_DEVICE void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
     constexpr int tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
     constexpr int tSizeCnlm = SIZE_N*tLMAll;
-    constexpr int tSizeAnlm = PFFLAG ? (PFSIZE*tLMAll) : tSizeCnlm;
+    constexpr int tSizeAnlm = PFSIZE*tLMAll;
     // init cache
-    flt_t rCnlm[tSizeCnlm] = {};
-    flt_t *rAnlm = *rForwardCache; *rForwardCache += tSizeAnlm;
+    flt_t *rCnlm = *rForwardCache; *rForwardCache += tSizeCnlm;
+    fill<tSizeCnlm>(rCnlm, ZERO);
+    flt_t *rAnlm = NULL;
+    if (PFFLAG) {
+        rAnlm = *rForwardCache; *rForwardCache += tSizeAnlm;
+        fill<tSizeAnlm>(rAnlm, ZERO);
+    } else {
+        rAnlm = rCnlm;
+    }
     // do cal
-    calCnlm<WTYPE, NMAX, tLMaxMax, FSIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rCnlm, aRCut, aFuseWeight);
+    calCnlm<WTYPE, NMAX, tLMaxMax, FSIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rCnlm, rForwardCache, aRCut, aFuseWeight);
     // cnlm -> anlm
     if (PFFLAG) {
-        fill<tSizeAnlm>(rAnlm, ZERO);
         mplusAnlm<SIZE_N, tLMaxMax, PFSIZE>(rAnlm, rCnlm, aPostFuseWeight);
         // scale anlm here
         multiply<tSizeAnlm>(rAnlm, aPostFuseScale);
-    } else {
-        fill<tSizeCnlm>(rAnlm, rCnlm);
     }
     // anlm -> fp
     constexpr int tSizeL2 = NORADIAL?LMAX:(LMAX+1);
@@ -95,14 +103,25 @@ static NNAP_DEVICE void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int
 template <int WTYPE, int NMAX, int LMAXMAX, int FSIZE>
 static NNAP_DEVICE void backwardCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradCnlm,
                                      flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                                     flt_t aRCut, flt_t *aFuseWeight) {
+                                     flt_t **rForwardCache, flt_t **rBackwardCache, flt_t aRCut, flt_t *aFuseWeight) {
     const int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     const int tSizeBnlm = (NMAX+1)*tLMAll;
     // init cache
-    flt_t rRn[NMAX+1], rY[tLMAll];
-    flt_t rRnPx[NMAX+1], rRnPy[NMAX+1], rRnPz[NMAX+1], rCheby2[NMAX+1];
-    flt_t rYPx[tLMAll], rYPy[tLMAll], rYPz[tLMAll], rYPtheta[tLMAll], rYPphi[tLMAll];
-    flt_t rGradBnlm[(WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) ? tSizeBnlm : 1];
+    flt_t *rRn = *rForwardCache; *rForwardCache += (NMAX+1);
+    flt_t *rY = *rForwardCache; *rForwardCache += tLMAll;
+    flt_t *rRnPx = *rBackwardCache; *rBackwardCache += (NMAX+1);
+    flt_t *rRnPy = *rBackwardCache; *rBackwardCache += (NMAX+1);
+    flt_t *rRnPz = *rBackwardCache; *rBackwardCache += (NMAX+1);
+    flt_t *rCheby2 = *rBackwardCache; *rBackwardCache += (NMAX+1);
+    flt_t *rYPx = *rBackwardCache; *rBackwardCache += tLMAll;
+    flt_t *rYPy = *rBackwardCache; *rBackwardCache += tLMAll;
+    flt_t *rYPz = *rBackwardCache; *rBackwardCache += tLMAll;
+    flt_t *rYPtheta = *rBackwardCache; *rBackwardCache += tLMAll;
+    flt_t *rYPphi = *rBackwardCache; *rBackwardCache += tLMAll;
+    flt_t *rGradBnlm = NULL;
+    if (WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
+        rGradBnlm = *rForwardCache; *rForwardCache += tSizeBnlm;
+    }
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
         // init nl
@@ -148,18 +167,28 @@ static NNAP_DEVICE void backwardCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
 template <int WTYPE, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int FSIZE, int SIZE_N, int PFFLAG, int PFSIZE>
 static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
                                     flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                                    flt_t **aForwardCache, flt_t aRCut, flt_t *aFuseWeight,
+                                    flt_t **rForwardCache, flt_t **rBackwardCache, flt_t aRCut, flt_t *aFuseWeight,
                                     flt_t *aPostFuseWeight, flt_t aPostFuseScale) noexcept {
     // const init
     constexpr int tSizeL = (NORADIAL?LMAX:(LMAX+1)) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
     constexpr int tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
     constexpr int tSizeCnlm = SIZE_N*tLMAll;
-    constexpr int tSizeAnlm = PFFLAG ? (PFSIZE*tLMAll) : tSizeCnlm;
+    constexpr int tSizeAnlm = PFSIZE*tLMAll;
     // init cache
-    flt_t *tAnlm = *aForwardCache; *aForwardCache += tSizeAnlm;
-    flt_t rGradCnlm[tSizeCnlm] = {};
-    flt_t rGradAnlm[tSizeAnlm] = {};
+    flt_t *tCnlm = *rForwardCache; *rForwardCache += tSizeCnlm;
+    flt_t *rGradCnlm = *rBackwardCache; *rBackwardCache += tSizeCnlm;
+    fill<tSizeCnlm>(rGradCnlm, ZERO);
+    flt_t *tAnlm = NULL;
+    flt_t *rGradAnlm = NULL;
+    if (PFFLAG) {
+        tAnlm = *rForwardCache; *rForwardCache += tSizeAnlm;
+        rGradAnlm = *rBackwardCache; *rBackwardCache += tSizeAnlm;
+        fill<tSizeAnlm>(rGradAnlm, ZERO);
+    } else {
+        tAnlm = tCnlm;
+        rGradAnlm = rGradCnlm;
+    }
     // fp -> anlm
     constexpr int tSizeL2 = NORADIAL?LMAX:(LMAX+1);
     constexpr int tSizeL3 = L3NCOLS[L3MAX];
@@ -174,10 +203,8 @@ static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, in
         multiply<tSizeAnlm>(rGradAnlm, aPostFuseScale);
         // anlm -> cnlm
         mplusGradAnlm<SIZE_N, tLMaxMax, PFSIZE>(rGradAnlm, rGradCnlm, aPostFuseWeight);
-    } else {
-        fill<tSizeCnlm>(rGradCnlm, rGradAnlm);
     }
-    backwardCnlm<WTYPE, NMAX, tLMaxMax, FSIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rGradCnlm, rGradNlDx, rGradNlDy, rGradNlDz, aRCut, aFuseWeight);
+    backwardCnlm<WTYPE, NMAX, tLMaxMax, FSIZE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rGradCnlm, rGradNlDx, rGradNlDy, rGradNlDz, rForwardCache, rBackwardCache, aRCut, aFuseWeight);
 }
 
 }

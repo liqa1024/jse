@@ -7,9 +7,9 @@ namespace JSE_NNAP {
 
 template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N>
 static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
-                                     flt_t aRCut, flt_t *aFuseWeight) noexcept {
+                                     flt_t **rForwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
     // init cache
-    flt_t rRn[NMAX+1];
+    flt_t *rRn = *rForwardCache; *rForwardCache += (NMAX+1);
     // clear fp first
     fill<SIZE_N>(rFp, ZERO);
     // loop for neighbor
@@ -52,10 +52,13 @@ static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
 template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N>
 static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
                                       flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                                      flt_t aRCut, flt_t *aFuseWeight) noexcept {
+                                      flt_t **rForwardCache, flt_t **rBackwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
     // init cache
-    flt_t rRn[NMAX+1];
-    flt_t rRnPx[NMAX+1], rRnPy[NMAX+1], rRnPz[NMAX+1], rCheby2[NMAX+1];
+    flt_t *rRn = *rForwardCache; *rForwardCache += (NMAX+1);
+    flt_t *rRnPx = *rBackwardCache; *rBackwardCache += (NMAX+1);
+    flt_t *rRnPy = *rBackwardCache; *rBackwardCache += (NMAX+1);
+    flt_t *rRnPz = *rBackwardCache; *rBackwardCache += (NMAX+1);
+    flt_t *rCheby2 = *rBackwardCache; *rBackwardCache += (NMAX+1);
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
         // init nl

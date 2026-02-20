@@ -121,16 +121,16 @@ public class Chebyshev2 extends WTypeBasis2 {
     public double rcut() {return mRCut;}
     /**
      * @return {@inheritDoc}；如果只有一个种类则为
-     * {@code (nmax+1)(lmax+1)}，如果超过一个种类则为
-     * {@code 2(nmax+1)(lmax+1)}
+     * {@code (nmax+1)}，如果超过一个种类则为
+     * {@code 2(nmax+1)}
      */
     @Override public int size() {return mSize;}
     
     @Override public int forwardCacheSize() {
-        return 0;
+        return mNMax+1;
     }
     @Override public int backwardCacheSize() {
-        return 0;
+        return 4*(mNMax+1);
     }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdxType, int aGenIdxMerge) {

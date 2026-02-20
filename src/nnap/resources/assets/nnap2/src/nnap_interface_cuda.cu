@@ -4,7 +4,6 @@
 #include <cstdint>
 
 // >>> NNAPGEN REMOVE
-#define __NNAPGEN_CUDA_NLSIZE__ 256
 #define __NNAPGEN_CUDA_BLOCKSIZE__ 256
 // <<< NNAPGEN REMOVE
 
@@ -16,8 +15,11 @@ static __global__ void computeLammpsCudaKernel(
         int inum, int eflag, int vflag, int vflagAtom, int cvflagAtom,
         int *ilist, flt_t *x, int *type, flt_t *cutsq,
         int *numneigh, int64_t *displsneigh, int *firstneigh,
-        flt_t *f0, flt_t *f1, flt_t *eatom, flt_t *vatom0, flt_t *vatom1, int *rNlInvalid,
-        int *aLmpType2NNAPType, flt_t **aFpHyperParam, flt_t **aFpParam, flt_t **aNormParam, flt_t **aNnParam) {
+        flt_t *f0, flt_t *f1, flt_t *eatom, flt_t *vatom0, flt_t *vatom1,
+        int *aLmpType2NNAPType, flt_t **aFpHyperParam, flt_t **aFpParam, flt_t **aNormParam, flt_t **aNnParam,
+        flt_t *rBufNlDx, flt_t *rBufNlDy, flt_t *rBufNlDz, int *rBufNlType, int *rBufNlIdx,
+        flt_t *rBufGradNlDx, flt_t *rBufGradNlDy, flt_t *rBufGradNlDz,
+        flt_t *rBufFpOrGradFp, flt_t *rBufFpForwardCache, flt_t *rBufFpBackwardCache, flt_t *rBufNnGradCache, flt_t *rBufNnHiddenCache) {
     const unsigned int ii = (blockIdx.x * blockDim.x + threadIdx.x);
     if (ii >= inum) return;
     
@@ -30,14 +32,15 @@ static __global__ void computeLammpsCudaKernel(
     const int typei = type[i];
     const int typeiNNAP = aLmpType2NNAPType[typei];
     const int jnum = numneigh[i];
-    int *jlist = firstneigh + displsneigh[i];
+    const int64_t nlshift = displsneigh[i];
+    int *jlist = firstneigh + nlshift;
     
     /// build neighbor list
-    flt_t tNlDx[__NNAPGEN_CUDA_NLSIZE__];
-    flt_t tNlDy[__NNAPGEN_CUDA_NLSIZE__];
-    flt_t tNlDz[__NNAPGEN_CUDA_NLSIZE__];
-    int tNlType[__NNAPGEN_CUDA_NLSIZE__];
-    int tNlIdx[__NNAPGEN_CUDA_NLSIZE__];
+    flt_t *tNlDx = rBufNlDx + nlshift;
+    flt_t *tNlDy = rBufNlDy + nlshift;
+    flt_t *tNlDz = rBufNlDz + nlshift;
+    int *tNlType = rBufNlType + nlshift;
+    int *tNlIdx = rBufNlIdx + nlshift;
     int tNeiNum = 0;
     for (int jj = 0; jj < jnum; ++jj) {
         int j = jlist[jj];
@@ -49,10 +52,6 @@ static __global__ void computeLammpsCudaKernel(
         const flt_t delz = x[j3+2] - ztmp;
         const flt_t rsq = delx*delx + dely*dely + delz*delz;
         if (rsq < cutsq[typei]) {
-            if (tNeiNum==__NNAPGEN_CUDA_NLSIZE__) {
-                rNlInvalid[i] = TRUE;
-                break;
-            }
             tNlDx[tNeiNum] = delx;
             tNlDy[tNeiNum] = dely;
             tNlDz[tNeiNum] = delz;
@@ -64,29 +63,36 @@ static __global__ void computeLammpsCudaKernel(
     
     /// begin nnap here
     flt_t rEng;
+    flt_t *rGradNlDx = rBufGradNlDx + nlshift;
+    flt_t *rGradNlDy = rBufGradNlDy + nlshift;
+    flt_t *rGradNlDz = rBufGradNlDz + nlshift;
+    flt_t *rFpOrGradFp = rBufFpOrGradFp + (__NNAPGEN_MAX_FP_SIZE__*i);
+    flt_t *rFpForwardCache = rBufFpForwardCache + (__NNAPGEN_MAX_FP_SIZE_CACHEF__*i);
+    flt_t *rFpBackwardCache = rBufFpBackwardCache + (__NNAPGEN_MAX_FP_SIZE_CACHEB__*i);
+    flt_t *rNnGradCache = rBufNnGradCache + (__NNAPGEN_MAX_NN_SIZE_CACHEG__*i);
+    flt_t *rNnHiddenCache = rBufNnHiddenCache + (__NNAPGEN_MAX_NN_SIZE_CACHEH__*i);
     // manual clear required for backward in force
-    flt_t tGradNlDx[__NNAPGEN_CUDA_NLSIZE__] = {};
-    flt_t tGradNlDy[__NNAPGEN_CUDA_NLSIZE__] = {};
-    flt_t tGradNlDz[__NNAPGEN_CUDA_NLSIZE__] = {};
+    for (int j = 0; j < tNeiNum; ++j) {
+        rGradNlDx[j] = ZERO;
+        rGradNlDy[j] = ZERO;
+        rGradNlDz[j] = ZERO;
+    }
 // >>> NNAPGEN SWITCH
-    flt_t rFp[__NNAPGENX_FP_SIZE__];
-    flt_t rGradFp[__NNAPGENX_FP_SIZE__] = {};
-    flt_t rFpForwardCache[__NNAPGENX_FP_SIZE_CACHEF__];
     fpForward<__NNAPGENS_typeiNNAP__>(
-        tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, typeiNNAP, rFp,
+        tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, typeiNNAP, rFpOrGradFp,
         aFpHyperParam, aFpParam, rFpForwardCache
     );
-    flt_t rNnGradCache[__NNAPGENX_NN_SIZE_CACHE__];
     normedNnForward<__NNAPGENS_typeiNNAP__, TRUE>(
-        typeiNNAP, rFp, aNormParam[typeiNNAP-1], aNnParam, rNnGradCache, &rEng
+        typeiNNAP, rFpOrGradFp, aNormParam[typeiNNAP-1], aNnParam, rNnGradCache, rNnHiddenCache, &rEng
     );
+    // manual clear required for backward in force
+    fill<__NNAPGENX_FP_SIZE__>(rFpOrGradFp, ZERO);
     normedNnBackward<__NNAPGENS_typeiNNAP__>(
-        typeiNNAP, rGradFp, aNormParam[typeiNNAP-1], aNnParam, rNnGradCache, ONE
+        typeiNNAP, rFpOrGradFp, aNormParam[typeiNNAP-1], aNnParam, rNnGradCache, rNnHiddenCache, ONE
     );
-    flt_t rFpBackwardCache[__NNAPGENX_FP_SIZE_CACHEB__] = {};
     fpBackward<__NNAPGENS_typeiNNAP__>(
-        tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, typeiNNAP, rGradFp,
-        tGradNlDx, tGradNlDy, tGradNlDz,
+        tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, typeiNNAP, rFpOrGradFp,
+        rGradNlDx, rGradNlDy, rGradNlDz,
         aFpHyperParam, aFpParam, rFpForwardCache, rFpBackwardCache
     );
 // <<< NNAPGEN SWITCH (typeiNNAP) [FP NN TYPE]
@@ -98,9 +104,9 @@ static __global__ void computeLammpsCudaKernel(
     for (int jj = 0; jj < tNeiNum; ++jj) {
         const int j = tNlIdx[jj];
         const int j3 = j+j+j;
-        const flt_t fx = tGradNlDx[jj];
-        const flt_t fy = tGradNlDy[jj];
-        const flt_t fz = tGradNlDz[jj];
+        const flt_t fx = rGradNlDx[jj];
+        const flt_t fy = rGradNlDy[jj];
+        const flt_t fz = rGradNlDz[jj];
         f0[i3+0] -= fx;
         f0[i3+1] -= fy;
         f0[i3+2] -= fz;
@@ -362,7 +368,19 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammpsCuda(void *aDataIn, vo
     JSE_NNAP::flt_t *eatom = (JSE_NNAP::flt_t *)tDataOut[2];
     JSE_NNAP::flt_t *vatom0 = (JSE_NNAP::flt_t *)tDataOut[3];
     JSE_NNAP::flt_t *vatom1 = (JSE_NNAP::flt_t *)tDataOut[4];
-    int *rNlInvalid = (int *)tDataOut[5];
+    JSE_NNAP::flt_t *rBufNlDx = (JSE_NNAP::flt_t *)tDataOut[5];
+    JSE_NNAP::flt_t *rBufNlDy = (JSE_NNAP::flt_t *)tDataOut[6];
+    JSE_NNAP::flt_t *rBufNlDz = (JSE_NNAP::flt_t *)tDataOut[7];
+    int *rBufNlType = (int *)tDataOut[8];
+    int *rBufNlIdx = (int *)tDataOut[9];
+    JSE_NNAP::flt_t *rBufGradNlDx = (JSE_NNAP::flt_t *)tDataOut[10];
+    JSE_NNAP::flt_t *rBufGradNlDy = (JSE_NNAP::flt_t *)tDataOut[11];
+    JSE_NNAP::flt_t *rBufGradNlDz = (JSE_NNAP::flt_t *)tDataOut[12];
+    JSE_NNAP::flt_t *rBufFpOrGradFp = (JSE_NNAP::flt_t *)tDataOut[13];
+    JSE_NNAP::flt_t *rBufFpForwardCache = (JSE_NNAP::flt_t *)tDataOut[14];
+    JSE_NNAP::flt_t *rBufFpBackwardCache = (JSE_NNAP::flt_t *)tDataOut[15];
+    JSE_NNAP::flt_t *rBufNnGradCache = (JSE_NNAP::flt_t *)tDataOut[16];
+    JSE_NNAP::flt_t *rBufNnHiddenCache = (JSE_NNAP::flt_t *)tDataOut[17];
     
     cudaError_t tErr;
     tErr = cudaMemset(f0, 0, nlocal*3*sizeof(JSE_NNAP::flt_t));
@@ -384,8 +402,6 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammpsCuda(void *aDataIn, vo
         tErr = cudaMemset(vatom1, 0, ntot*6*sizeof(JSE_NNAP::flt_t));
         if (tErr!=cudaSuccess) return (int)tErr;
     }
-    tErr = cudaMemset(rNlInvalid, 0, nlocal*sizeof(int));
-    if (tErr!=cudaSuccess) return (int)tErr;
     
     /// begin compute here
     constexpr int tBlockSize = __NNAPGEN_CUDA_BLOCKSIZE__;
@@ -394,8 +410,11 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammpsCuda(void *aDataIn, vo
         inum, eflag||eflagAtom, vflag, vflagAtom, cvflagAtom,
         ilist, x, type, cutsq,
         numneigh, displsneigh, firstneigh,
-        f0, f1, eatom, vatom0, vatom1, rNlInvalid,
-        tLmpType2NNAPType, tFpHyperParam, tFpParam, tNormParam, tNnParam
+        f0, f1, eatom, vatom0, vatom1,
+        tLmpType2NNAPType, tFpHyperParam, tFpParam, tNormParam, tNnParam,
+        rBufNlDx, rBufNlDy, rBufNlDz, rBufNlType, rBufNlIdx,
+        rBufGradNlDx, rBufGradNlDy, rBufGradNlDz,
+        rBufFpOrGradFp, rBufFpForwardCache, rBufFpBackwardCache, rBufNnGradCache, rBufNnHiddenCache
     );
     
     return (int)cudaDeviceSynchronize();

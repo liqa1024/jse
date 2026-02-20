@@ -88,6 +88,20 @@ class NNAPGEN {
     
     private Map<String, Object> initGenMap_() {
         final int tTypeNum = mBasis.length;
+        Map<String, Object> rGenMap = new LinkedHashMap<>();
+        int rMaxFpSize = 0, rMaxFpFCacheSize = 0, rMaxFpBCacheSize = 0, rMaxNnGCacheSize = 0, rMaxNnHCacheSize = 0;
+        for (int i = 0; i < tTypeNum; ++i) {
+            rMaxFpSize = Math.max(rMaxFpSize, mBasis[i].size());
+            rMaxFpFCacheSize = Math.max(rMaxFpFCacheSize, mBasis[i].forwardCacheSize());
+            rMaxFpBCacheSize = Math.max(rMaxFpBCacheSize, mBasis[i].backwardCacheSize());
+            rMaxNnGCacheSize = Math.max(rMaxNnGCacheSize, mNN[i].gradCacheSize());
+            rMaxNnHCacheSize = Math.max(rMaxNnHCacheSize, mNN[i].hiddenCacheSize());
+        }
+        rGenMap.put("NNAPGEN_MAX_FP_SIZE", rMaxFpSize);
+        rGenMap.put("NNAPGEN_MAX_FP_SIZE_CACHEF", rMaxFpFCacheSize);
+        rGenMap.put("NNAPGEN_MAX_FP_SIZE_CACHEB", rMaxFpBCacheSize);
+        rGenMap.put("NNAPGEN_MAX_NN_SIZE_CACHEG", rMaxNnGCacheSize);
+        rGenMap.put("NNAPGEN_MAX_NN_SIZE_CACHEH", rMaxNnHCacheSize);
         // 代码生成，先针对相同系数的进行优化合并
         List<List<Integer>> tSwitchListFp = new ArrayList<>(); // [position][type]
         List<List<Integer>> tSwitchListNN = new ArrayList<>();
@@ -98,7 +112,6 @@ class NNAPGEN {
             updateSwitchList_(tSwitchListNN, type, caseList -> mNN[ti].hasSameGenMap(mNN[caseList.get(0)-1]));
             updateSwitchList_(tSwitchListFpNN, type, caseList -> mBasis[ti].hasSameGenMap(mBasis[caseList.get(0)-1]) && mNN[ti].hasSameGenMap(mNN[caseList.get(0)-1]));
         }
-        Map<String, Object> rGenMap = new LinkedHashMap<>();
         rGenMap.put("[FP TYPE]", tSwitchListFp);
         rGenMap.put("[NN TYPE]", tSwitchListNN);
         rGenMap.put("[FP NN TYPE]", tSwitchListFpNN);
@@ -135,9 +148,8 @@ class NNAPGEN {
             });
     }
     @SuppressWarnings("SameParameterValue")
-    IJITEngine initEngineCuda(int aNlSize, int aBlockSize, int aOptimLevel, String aCmakeCxxCompiler, String aCmakeCxxFlags, String aCmakeCudaCompiler, String aCmakeCudaFlags, Map<String, String> aCmakeSetting) {
+    IJITEngine initEngineCuda(int aBlockSize, int aOptimLevel, String aCmakeCxxCompiler, String aCmakeCxxFlags, String aCmakeCudaCompiler, String aCmakeCudaFlags, Map<String, String> aCmakeSetting) {
         Map<String, Object> rGenMap = initGenMap_();
-        rGenMap.put("NNAPGEN_CUDA_NLSIZE", aNlSize);
         rGenMap.put("NNAPGEN_CUDA_BLOCKSIZE", aBlockSize);
         rGenMap.put("[PRECISION]", "single");
         rGenMap.put("[ARCH]", "cuda");
