@@ -244,214 +244,217 @@ public class LmpPlugin {
         /// lammps pair 提供的接口
         public final int findVariable(String aName) {
             if (aName == null) throw new NullPointerException();
-            return findVariable_(mPairPtr, aName);
+            return findVariable0(mPairPtr, aName);
         }
-        private native static int findVariable_(long aPairPtr, @NotNull String aName);
+        private native static int findVariable0(long aPairPtr, @NotNull String aName);
         
         @UnsafeJNI("Illegal values will directly result in JVM SIGSEGV")
         public final double computeVariable(int aIdx) {
             if (aIdx < 0) throw new IndexOutOfBoundsException(String.valueOf(aIdx));
-            return computeVariable_(mPairPtr, aIdx);
+            return computeVariable0(mPairPtr, aIdx);
         }
-        private native static double computeVariable_(long aPairPtr, int ivar);
+        private native static double computeVariable0(long aPairPtr, int ivar);
         
         public final void citemeAdd(String aCite) {
             if (aCite == null) throw new NullPointerException();
-            citemeAdd_(mPairPtr, aCite);
+            citemeAdd0(mPairPtr, aCite);
         }
-        private native static void citemeAdd_(long aPairPtr, @NotNull String aCite);
+        private native static void citemeAdd0(long aPairPtr, @NotNull String aCite);
         
-        public final void setSingleEnable(boolean aFlag) {setSingleEnable_(mPairPtr, aFlag);}
-        private native static void setSingleEnable_(long aPairPtr, boolean aFlag);
+        public final void setSingleEnable(boolean aFlag) {setSingleEnable0(mPairPtr, aFlag);}
+        private native static void setSingleEnable0(long aPairPtr, boolean aFlag);
         
-        public final void setOneCoeff(boolean aFlag) {setOneCoeff_(mPairPtr, aFlag);}
-        private native static void setOneCoeff_(long aPairPtr, boolean aFlag);
+        public final void setOneCoeff(boolean aFlag) {setOneCoeff0(mPairPtr, aFlag);}
+        private native static void setOneCoeff0(long aPairPtr, boolean aFlag);
         
-        public final void setManybodyFlag(boolean aFlag) {setManybodyFlag_(mPairPtr, aFlag);}
-        private native static void setManybodyFlag_(long aPairPtr, boolean aFlag);
+        public final void setManybodyFlag(boolean aFlag) {setManybodyFlag0(mPairPtr, aFlag);}
+        private native static void setManybodyFlag0(long aPairPtr, boolean aFlag);
         
-        public final void setUnitConvertFlag(int aFlag) {setUnitConvertFlag_(mPairPtr, aFlag);}
-        private native static void setUnitConvertFlag_(long aPairPtr, int aFlag);
+        public final void setUnitConvertFlag(int aFlag) {setUnitConvertFlag0(mPairPtr, aFlag);}
+        private native static void setUnitConvertFlag0(long aPairPtr, int aFlag);
         
-        public final void setNoVirialFdotrCompute(boolean aFlag) {setNoVirialFdotrCompute_(mPairPtr, aFlag);}
-        public final void noVirialFdotrCompute() {setNoVirialFdotrCompute_(mPairPtr, true);}
-        private native static void setNoVirialFdotrCompute_(long aPairPtr, boolean aFlag);
+        public final void setNoVirialFdotrCompute(boolean aFlag) {setNoVirialFdotrCompute0(mPairPtr, aFlag);}
+        public final void noVirialFdotrCompute() {setNoVirialFdotrCompute0(mPairPtr, true);}
+        private native static void setNoVirialFdotrCompute0(long aPairPtr, boolean aFlag);
         
-        public final void setFinitecutflag(boolean aFlag) {setFinitecutflag_(mPairPtr, aFlag);}
-        private native static void setFinitecutflag_(long aPairPtr, boolean aFlag);
+        public final void setFinitecutflag(boolean aFlag) {setFinitecutflag0(mPairPtr, aFlag);}
+        private native static void setFinitecutflag0(long aPairPtr, boolean aFlag);
         
-        public final void setGhostneigh(boolean aFlag) {setGhostneigh_(mPairPtr, aFlag);}
-        private native static void setGhostneigh_(long aPairPtr, boolean aFlag);
+        public final void setGhostneigh(boolean aFlag) {setGhostneigh0(mPairPtr, aFlag);}
+        private native static void setGhostneigh0(long aPairPtr, boolean aFlag);
         
-        public final void setCentroidstressflag(int aFlag) {setCentroidstressflag_(mPairPtr, aFlag);}
-        private native static void setCentroidstressflag_(long aPairPtr, int aFlag);
+        public final void setCentroidstressflag(int aFlag) {setCentroidstressflag0(mPairPtr, aFlag);}
+        private native static void setCentroidstressflag0(long aPairPtr, int aFlag);
         
-        public final void setCommForward(int aSize) {setCommForward_(mPairPtr, aSize);}
-        private native static void setCommForward_(long aPairPtr, int aSize);
+        public final void setCommForward(int aSize) {setCommForward0(mPairPtr, aSize);}
+        private native static void setCommForward0(long aPairPtr, int aSize);
         
-        public final void setCommReverse(int aSize) {setCommReverse_(mPairPtr, aSize);}
-        private native static void setCommReverse_(long aPairPtr, int aSize);
+        public final void setCommReverse(int aSize) {setCommReverse0(mPairPtr, aSize);}
+        private native static void setCommReverse0(long aPairPtr, int aSize);
         
-        public final void setCommReverseOff(int aSize) {setCommReverseOff_(mPairPtr, aSize);}
-        private native static void setCommReverseOff_(long aPairPtr, int aSize);
+        public final void setCommReverseOff(int aSize) {setCommReverseOff0(mPairPtr, aSize);}
+        private native static void setCommReverseOff0(long aPairPtr, int aSize);
         
-        public final void neighborRequestDefault() {neighborRequestDefault_(mPairPtr);}
-        private native static void neighborRequestDefault_(long aPairPtr);
+        public final void neighborRequestDefault() {neighborRequestDefault0(mPairPtr);}
+        private native static void neighborRequestDefault0(long aPairPtr);
         
-        public final void neighborRequestFull() {neighborRequestFull_(mPairPtr);}
-        private native static void neighborRequestFull_(long aPairPtr);
+        public final void neighborRequestFull() {neighborRequestFull0(mPairPtr);}
+        private native static void neighborRequestFull0(long aPairPtr);
         
-        public final NestedDoubleCPointer atomX() {return new NestedDoubleCPointer(atomX_(mPairPtr));}
-        private native static long atomX_(long aPairPtr);
+        public final int neighborAgo() {return neighborAgo0(mPairPtr);}
+        private native static int neighborAgo0(long aPairPtr);
         
-        public final NestedDoubleCPointer atomV() {return new NestedDoubleCPointer(atomV_(mPairPtr));}
-        private native static long atomV_(long aPairPtr);
+        public final NestedDoubleCPointer atomX() {return new NestedDoubleCPointer(atomX0(mPairPtr));}
+        private native static long atomX0(long aPairPtr);
         
-        public final NestedDoubleCPointer atomF() {return new NestedDoubleCPointer(atomF_(mPairPtr));}
-        private native static long atomF_(long aPairPtr);
+        public final NestedDoubleCPointer atomV() {return new NestedDoubleCPointer(atomV0(mPairPtr));}
+        private native static long atomV0(long aPairPtr);
+        
+        public final NestedDoubleCPointer atomF() {return new NestedDoubleCPointer(atomF0(mPairPtr));}
+        private native static long atomF0(long aPairPtr);
         
         public final IntCPointer atomTag() {
             if (NativeLmp.LAMMPS_BIGBIG) throw new UnsupportedOperationException("atomTag for LAMMPS_BIGBIG");
-            return new IntCPointer(atomTag_(mPairPtr));
+            return new IntCPointer(atomTag0(mPairPtr));
         }
-        private native static long atomTag_(long aPairPtr);
+        private native static long atomTag0(long aPairPtr);
         
-        public final IntCPointer atomType() {return new IntCPointer(atomType_(mPairPtr));}
-        private native static long atomType_(long aPairPtr);
+        public final IntCPointer atomType() {return new IntCPointer(atomType0(mPairPtr));}
+        private native static long atomType0(long aPairPtr);
         
-        public final DoubleCPointer atomMass() {return new DoubleCPointer(atomMass_(mPairPtr));}
-        private native static long atomMass_(long aPairPtr);
+        public final DoubleCPointer atomMass() {return new DoubleCPointer(atomMass0(mPairPtr));}
+        private native static long atomMass0(long aPairPtr);
         
-        public final CPointer atomExtract(String aName) {return new CPointer(atomExtract_(mPairPtr, aName));}
-        private native static long atomExtract_(long aPairPtr, String aName);
+        public final CPointer atomExtract(String aName) {return new CPointer(atomExtract0(mPairPtr, aName));}
+        private native static long atomExtract0(long aPairPtr, String aName);
         
-        public final long atomNatoms() {return atomNatoms_(mPairPtr);}
-        private native static long atomNatoms_(long aPairPtr);
+        public final long atomNatoms() {return atomNatoms0(mPairPtr);}
+        private native static long atomNatoms0(long aPairPtr);
         
-        public final int atomNtypes() {return atomNtypes_(mPairPtr);}
-        private native static int atomNtypes_(long aPairPtr);
+        public final int atomNtypes() {return atomNtypes0(mPairPtr);}
+        private native static int atomNtypes0(long aPairPtr);
         
-        public final int atomNlocal() {return atomNlocal_(mPairPtr);}
-        private native static int atomNlocal_(long aPairPtr);
+        public final int atomNlocal() {return atomNlocal0(mPairPtr);}
+        private native static int atomNlocal0(long aPairPtr);
         
-        public final int atomNghost() {return atomNghost_(mPairPtr);}
-        private native static int atomNghost_(long aPairPtr);
+        public final int atomNghost() {return atomNghost0(mPairPtr);}
+        private native static int atomNghost0(long aPairPtr);
         
-        public final int atomNmax() {return atomNmax_(mPairPtr);}
-        private native static int atomNmax_(long aPairPtr);
+        public final int atomNmax() {return atomNmax0(mPairPtr);}
+        private native static int atomNmax0(long aPairPtr);
         
-        public final DoubleCPointer forceSpecialLj() {return new DoubleCPointer(forceSpecialLj_(mPairPtr));}
-        private native static long forceSpecialLj_(long aPairPtr);
+        public final DoubleCPointer forceSpecialLj() {return new DoubleCPointer(forceSpecialLj0(mPairPtr));}
+        private native static long forceSpecialLj0(long aPairPtr);
         
-        public final boolean forceNewtonPair() {return forceNewtonPair_(mPairPtr);}
-        private native static boolean forceNewtonPair_(long aPairPtr);
+        public final boolean forceNewtonPair() {return forceNewtonPair0(mPairPtr);}
+        private native static boolean forceNewtonPair0(long aPairPtr);
         
-        public final int listGnum() {return listGnum_(mPairPtr);}
-        private native static int listGnum_(long aPairPtr);
+        public final int listGnum() {return listGnum0(mPairPtr);}
+        private native static int listGnum0(long aPairPtr);
         
-        public final int listInum() {return listInum_(mPairPtr);}
-        private native static int listInum_(long aPairPtr);
+        public final int listInum() {return listInum0(mPairPtr);}
+        private native static int listInum0(long aPairPtr);
         
-        public final IntCPointer listIlist() {return new IntCPointer(listIlist_(mPairPtr));}
-        private native static long listIlist_(long aPairPtr);
+        public final IntCPointer listIlist() {return new IntCPointer(listIlist0(mPairPtr));}
+        private native static long listIlist0(long aPairPtr);
         
-        public final IntCPointer listNumneigh() {return new IntCPointer(listNumneigh_(mPairPtr));}
-        private native static long listNumneigh_(long aPairPtr);
+        public final IntCPointer listNumneigh() {return new IntCPointer(listNumneigh0(mPairPtr));}
+        private native static long listNumneigh0(long aPairPtr);
         
-        public final NestedIntCPointer listFirstneigh() {return new NestedIntCPointer(listFirstneigh_(mPairPtr));}
-        private native static long listFirstneigh_(long aPairPtr);
+        public final NestedIntCPointer listFirstneigh() {return new NestedIntCPointer(listFirstneigh0(mPairPtr));}
+        private native static long listFirstneigh0(long aPairPtr);
         
         public static int sbmask(int j) {return (j >> SBBITS) & 3;}
         
-        public final double cutsq(int i, int j) {return cutsq_(mPairPtr, i, j);}
-        private native static double cutsq_(long aPairPtr, int i, int j);
+        public final double cutsq(int i, int j) {return cutsq0(mPairPtr, i, j);}
+        private native static double cutsq0(long aPairPtr, int i, int j);
         
-        public final DoubleCPointer engVdwl() {return new DoubleCPointer(engVdwl_(mPairPtr));}
-        private native static long engVdwl_(long aPairPtr);
+        public final DoubleCPointer engVdwl() {return new DoubleCPointer(engVdwl0(mPairPtr));}
+        private native static long engVdwl0(long aPairPtr);
         
-        public final DoubleCPointer engCoul() {return new DoubleCPointer(engCoul_(mPairPtr));}
-        private native static long engCoul_(long aPairPtr);
+        public final DoubleCPointer engCoul() {return new DoubleCPointer(engCoul0(mPairPtr));}
+        private native static long engCoul0(long aPairPtr);
         
-        public final DoubleCPointer eatom() {return new DoubleCPointer(eatom_(mPairPtr));}
-        private native static long eatom_(long aPairPtr);
+        public final DoubleCPointer eatom() {return new DoubleCPointer(eatom0(mPairPtr));}
+        private native static long eatom0(long aPairPtr);
         
-        public final DoubleCPointer virial() {return new DoubleCPointer(virial_(mPairPtr));}
-        private native static long virial_(long aPairPtr);
+        public final DoubleCPointer virial() {return new DoubleCPointer(virial0(mPairPtr));}
+        private native static long virial0(long aPairPtr);
         
-        public final NestedDoubleCPointer vatom() {return new NestedDoubleCPointer(vatom_(mPairPtr));}
-        private native static long vatom_(long aPairPtr);
+        public final NestedDoubleCPointer vatom() {return new NestedDoubleCPointer(vatom0(mPairPtr));}
+        private native static long vatom0(long aPairPtr);
         
-        public final NestedDoubleCPointer cvatom() {return new NestedDoubleCPointer(cvatom_(mPairPtr));}
-        private native static long cvatom_(long aPairPtr);
+        public final NestedDoubleCPointer cvatom() {return new NestedDoubleCPointer(cvatom0(mPairPtr));}
+        private native static long cvatom0(long aPairPtr);
         
-        public final void evTally(int i, int j, int nlocal, boolean newtonPair, double evdwl, double ecoul, double fpair, double delx, double dely, double delz) {evTally_(mPairPtr, i, j, nlocal, newtonPair, evdwl, ecoul, fpair, delx, dely, delz);}
-        private native static void evTally_(long aPairPtr, int i, int j, int nlocal, boolean newtonPair, double evdwl, double ecoul, double fpair, double delx, double dely, double delz);
+        public final void evTally(int i, int j, int nlocal, boolean newtonPair, double evdwl, double ecoul, double fpair, double delx, double dely, double delz) {evTally0(mPairPtr, i, j, nlocal, newtonPair, evdwl, ecoul, fpair, delx, dely, delz);}
+        private native static void evTally0(long aPairPtr, int i, int j, int nlocal, boolean newtonPair, double evdwl, double ecoul, double fpair, double delx, double dely, double delz);
         
-        public final void evTallyFull(int i, double evdwl, double ecoul, double fpair, double delx, double dely, double delz) {evTallyFull_(mPairPtr, i, evdwl, ecoul, fpair, delx, dely, delz);}
-        private native static void evTallyFull_(long aPairPtr, int i, double evdwl, double ecoul, double fpair, double delx, double dely, double delz);
+        public final void evTallyFull(int i, double evdwl, double ecoul, double fpair, double delx, double dely, double delz) {evTallyFull0(mPairPtr, i, evdwl, ecoul, fpair, delx, dely, delz);}
+        private native static void evTallyFull0(long aPairPtr, int i, double evdwl, double ecoul, double fpair, double delx, double dely, double delz);
         
-        public final void evTallyXYZ(int i, int j, int nlocal, boolean newtonPair, double evdwl, double ecoul, double fx, double fy, double fz, double delx, double dely, double delz) {evTallyXYZ_(mPairPtr, i, j, nlocal, newtonPair, evdwl, ecoul, fx, fy, fz, delx, dely, delz);}
-        private native static void evTallyXYZ_(long aPairPtr, int i, int j, int nlocal, boolean newtonPair, double evdwl, double ecoul, double fx, double fy, double fz, double delx, double dely, double delz);
+        public final void evTallyXYZ(int i, int j, int nlocal, boolean newtonPair, double evdwl, double ecoul, double fx, double fy, double fz, double delx, double dely, double delz) {evTallyXYZ0(mPairPtr, i, j, nlocal, newtonPair, evdwl, ecoul, fx, fy, fz, delx, dely, delz);}
+        private native static void evTallyXYZ0(long aPairPtr, int i, int j, int nlocal, boolean newtonPair, double evdwl, double ecoul, double fx, double fy, double fz, double delx, double dely, double delz);
         
-        public final void evTallyXYZFull(int i, double evdwl, double ecoul, double fx, double fy, double fz, double delx, double dely, double delz) {evTallyXYZFull_(mPairPtr, i, evdwl, ecoul, fx, fy, fz, delx, dely, delz);}
-        private native static void evTallyXYZFull_(long aPairPtr, int i, double evdwl, double ecoul, double fx, double fy, double fz, double delx, double dely, double delz);
+        public final void evTallyXYZFull(int i, double evdwl, double ecoul, double fx, double fy, double fz, double delx, double dely, double delz) {evTallyXYZFull0(mPairPtr, i, evdwl, ecoul, fx, fy, fz, delx, dely, delz);}
+        private native static void evTallyXYZFull0(long aPairPtr, int i, double evdwl, double ecoul, double fx, double fy, double fz, double delx, double dely, double delz);
         
-        public final boolean evflag() {return evflag_(mPairPtr);}
-        private native static boolean evflag_(long aPairPtr);
+        public final boolean evflag() {return evflag0(mPairPtr);}
+        private native static boolean evflag0(long aPairPtr);
         
-        public final boolean vflagEither() {return vflagEither_(mPairPtr);}
-        private native static boolean vflagEither_(long aPairPtr);
+        public final boolean vflagEither() {return vflagEither0(mPairPtr);}
+        private native static boolean vflagEither0(long aPairPtr);
         
-        public final boolean vflagGlobal() {return vflagGlobal_(mPairPtr);}
-        private native static boolean vflagGlobal_(long aPairPtr);
+        public final boolean vflagGlobal() {return vflagGlobal0(mPairPtr);}
+        private native static boolean vflagGlobal0(long aPairPtr);
         
-        public final boolean vflagAtom() {return vflagAtom_(mPairPtr);}
-        private native static boolean vflagAtom_(long aPairPtr);
+        public final boolean vflagAtom() {return vflagAtom0(mPairPtr);}
+        private native static boolean vflagAtom0(long aPairPtr);
         
-        public final boolean cvflagAtom() {return cvflagAtom_(mPairPtr);}
-        private native static boolean cvflagAtom_(long aPairPtr);
+        public final boolean cvflagAtom() {return cvflagAtom0(mPairPtr);}
+        private native static boolean cvflagAtom0(long aPairPtr);
         
-        public final boolean eflagEither() {return eflagEither_(mPairPtr);}
-        private native static boolean eflagEither_(long aPairPtr);
+        public final boolean eflagEither() {return eflagEither0(mPairPtr);}
+        private native static boolean eflagEither0(long aPairPtr);
         
-        public final boolean eflagGlobal() {return eflagGlobal_(mPairPtr);}
-        private native static boolean eflagGlobal_(long aPairPtr);
+        public final boolean eflagGlobal() {return eflagGlobal0(mPairPtr);}
+        private native static boolean eflagGlobal0(long aPairPtr);
         
-        public final boolean eflagAtom() {return eflagAtom_(mPairPtr);}
-        private native static boolean eflagAtom_(long aPairPtr);
+        public final boolean eflagAtom() {return eflagAtom0(mPairPtr);}
+        private native static boolean eflagAtom0(long aPairPtr);
         
-        public final boolean vflagFdotr() {return vflagFdotr_(mPairPtr);}
-        private native static boolean vflagFdotr_(long aPairPtr);
+        public final boolean vflagFdotr() {return vflagFdotr0(mPairPtr);}
+        private native static boolean vflagFdotr0(long aPairPtr);
         
-        public final void virialFdotrCompute() {virialFdotrCompute_(mPairPtr);}
-        private native static void virialFdotrCompute_(long aPairPtr);
+        public final void virialFdotrCompute() {virialFdotrCompute0(mPairPtr);}
+        private native static void virialFdotrCompute0(long aPairPtr);
         
-        public final int commMe() {return commMe_(mPairPtr);}
-        private native static int commMe_(long aPairPtr);
+        public final int commMe() {return commMe0(mPairPtr);}
+        private native static int commMe0(long aPairPtr);
         
-        public final int commNprocs() {return commNprocs_(mPairPtr);}
-        private native static int commNprocs_(long aPairPtr);
+        public final int commNprocs() {return commNprocs0(mPairPtr);}
+        private native static int commNprocs0(long aPairPtr);
         
-        public final void commBarrier() throws MPIException {commBarrier_(mPairPtr);}
-        private native static void commBarrier_(long aPairPtr) throws MPIException;
+        public final void commBarrier() throws MPIException {commBarrier0(mPairPtr);}
+        private native static void commBarrier0(long aPairPtr) throws MPIException;
         
-        public final MPI.Comm commWorld() {return MPI.Comm.of(commWorld_(mPairPtr));}
-        private native static long commWorld_(long aPairPtr);
+        public final MPI.Comm commWorld() {return MPI.Comm.of(commWorld0(mPairPtr));}
+        private native static long commWorld0(long aPairPtr);
         
-        public final void commForwardComm() {commForwardComm_(mPairPtr);}
-        private native static void commForwardComm_(long aPairPtr);
+        public final void commForwardComm() {commForwardComm0(mPairPtr);}
+        private native static void commForwardComm0(long aPairPtr);
         
-        public final void commForwardCommThis() {commForwardCommThis_(mPairPtr);}
-        private native static void commForwardCommThis_(long aPairPtr);
+        public final void commForwardCommThis() {commForwardCommThis0(mPairPtr);}
+        private native static void commForwardCommThis0(long aPairPtr);
         
-        public final void commReverseComm() {commReverseComm_(mPairPtr);}
-        private native static void commReverseComm_(long aPairPtr);
+        public final void commReverseComm() {commReverseComm0(mPairPtr);}
+        private native static void commReverseComm0(long aPairPtr);
         
-        public final void commReverseCommThis() {commReverseCommThis_(mPairPtr);}
-        private native static void commReverseCommThis_(long aPairPtr);
+        public final void commReverseCommThis() {commReverseCommThis0(mPairPtr);}
+        private native static void commReverseCommThis0(long aPairPtr);
         
-        public final String unitStyle() {return unitStyle_(mPairPtr);}
-        private native static String unitStyle_(long aPairPtr);
+        public final String unitStyle() {return unitStyle0(mPairPtr);}
+        private native static String unitStyle0(long aPairPtr);
     }
     
     
@@ -602,316 +605,319 @@ public class LmpPlugin {
         
         
         /// lammps fix 提供的接口
-        public final void setBoxChange(int aFlag) {setBoxChange_(mFixPtr, aFlag);}
-        private native static void setBoxChange_(long aFixPtr, int aFlag);
+        public final void setBoxChange(int aFlag) {setBoxChange0(mFixPtr, aFlag);}
+        private native static void setBoxChange0(long aFixPtr, int aFlag);
         
-        public final void setNoChangeBox(boolean aFlag) {setNoChangeBox_(mFixPtr, aFlag);}
-        private native static void setNoChangeBox_(long aFixPtr, boolean aFlag);
+        public final void setNoChangeBox(boolean aFlag) {setNoChangeBox0(mFixPtr, aFlag);}
+        private native static void setNoChangeBox0(long aFixPtr, boolean aFlag);
         
-        public final void setForceReneighbor(boolean aFlag) {setForceReneighbor_(mFixPtr, aFlag);}
-        private native static void setForceReneighbor_(long aFixPtr, boolean aFlag);
+        public final void setForceReneighbor(boolean aFlag) {setForceReneighbor0(mFixPtr, aFlag);}
+        private native static void setForceReneighbor0(long aFixPtr, boolean aFlag);
         
-        public final void setNextReneighbor(long aTimestep) {setNextReneighbor_(mFixPtr, aTimestep);}
-        private native static void setNextReneighbor_(long aFixPtr, long aTimestep);
+        public final void setNextReneighbor(long aTimestep) {setNextReneighbor0(mFixPtr, aTimestep);}
+        private native static void setNextReneighbor0(long aFixPtr, long aTimestep);
         
-        public final long nextReneighbor() {return nextReneighbor_(mFixPtr);}
-        private native static long nextReneighbor_(long aFixPtr);
+        public final long nextReneighbor() {return nextReneighbor0(mFixPtr);}
+        private native static long nextReneighbor0(long aFixPtr);
         
-        public final void setNevery(int aNevery) {setNevery_(mFixPtr, aNevery);}
-        private native static void setNevery_(long aFixPtr, int aNevery);
+        public final void setNevery(int aNevery) {setNevery0(mFixPtr, aNevery);}
+        private native static void setNevery0(long aFixPtr, int aNevery);
         
-        public final void setEnergyGlobalFlag(boolean aFlag) {setEnergyGlobalFlag_(mFixPtr, aFlag);}
-        private native static void setEnergyGlobalFlag_(long aFixPtr, boolean aFlag);
+        public final void setEnergyGlobalFlag(boolean aFlag) {setEnergyGlobalFlag0(mFixPtr, aFlag);}
+        private native static void setEnergyGlobalFlag0(long aFixPtr, boolean aFlag);
         
-        public final void setEnergyPeratomFlag(boolean aFlag) {setEnergyPeratomFlag_(mFixPtr, aFlag);}
-        private native static void setEnergyPeratomFlag_(long aFixPtr, boolean aFlag);
+        public final void setEnergyPeratomFlag(boolean aFlag) {setEnergyPeratomFlag0(mFixPtr, aFlag);}
+        private native static void setEnergyPeratomFlag0(long aFixPtr, boolean aFlag);
         
-        public final void setVirialGlobalFlag(boolean aFlag) {setVirialGlobalFlag_(mFixPtr, aFlag);}
-        private native static void setVirialGlobalFlag_(long aFixPtr, boolean aFlag);
+        public final void setVirialGlobalFlag(boolean aFlag) {setVirialGlobalFlag0(mFixPtr, aFlag);}
+        private native static void setVirialGlobalFlag0(long aFixPtr, boolean aFlag);
         
-        public final void setVirialPeratomFlag(boolean aFlag) {setVirialPeratomFlag_(mFixPtr, aFlag);}
-        private native static void setVirialPeratomFlag_(long aFixPtr, boolean aFlag);
+        public final void setVirialPeratomFlag(boolean aFlag) {setVirialPeratomFlag0(mFixPtr, aFlag);}
+        private native static void setVirialPeratomFlag0(long aFixPtr, boolean aFlag);
         
-        public final void setTimeDepend(boolean aFlag) {setTimeDepend_(mFixPtr, aFlag);}
-        private native static void setTimeDepend_(long aFixPtr, boolean aFlag);
+        public final void setTimeDepend(boolean aFlag) {setTimeDepend0(mFixPtr, aFlag);}
+        private native static void setTimeDepend0(long aFixPtr, boolean aFlag);
         
-        public final void setDynamicGroupAllow(boolean aFlag) {setDynamicGroupAllow_(mFixPtr, aFlag);}
-        private native static void setDynamicGroupAllow_(long aFixPtr, boolean aFlag);
+        public final void setDynamicGroupAllow(boolean aFlag) {setDynamicGroupAllow0(mFixPtr, aFlag);}
+        private native static void setDynamicGroupAllow0(long aFixPtr, boolean aFlag);
         
-        public final void setScalarFlag(boolean aFlag) {setScalarFlag_(mFixPtr, aFlag);}
-        private native static void setScalarFlag_(long aFixPtr, boolean aFlag);
+        public final void setScalarFlag(boolean aFlag) {setScalarFlag0(mFixPtr, aFlag);}
+        private native static void setScalarFlag0(long aFixPtr, boolean aFlag);
         
-        public final void setVectorFlag(boolean aFlag) {setVectorFlag_(mFixPtr, aFlag);}
-        private native static void setVectorFlag_(long aFixPtr, boolean aFlag);
+        public final void setVectorFlag(boolean aFlag) {setVectorFlag0(mFixPtr, aFlag);}
+        private native static void setVectorFlag0(long aFixPtr, boolean aFlag);
         
-        public final void setArrayFlag(boolean aFlag) {setArrayFlag_(mFixPtr, aFlag);}
-        private native static void setArrayFlag_(long aFixPtr, boolean aFlag);
+        public final void setArrayFlag(boolean aFlag) {setArrayFlag0(mFixPtr, aFlag);}
+        private native static void setArrayFlag0(long aFixPtr, boolean aFlag);
         
-        public final void setSizeVector(int aSize) {setSizeVector_(mFixPtr, aSize);}
-        private native static void setSizeVector_(long aFixPtr, int aSize);
+        public final void setSizeVector(int aSize) {setSizeVector0(mFixPtr, aSize);}
+        private native static void setSizeVector0(long aFixPtr, int aSize);
         
-        public final void setSizeArrayRows(int aRowNum) {setSizeArrayRows_(mFixPtr, aRowNum);}
-        private native static void setSizeArrayRows_(long aFixPtr, int aRowNum);
+        public final void setSizeArrayRows(int aRowNum) {setSizeArrayRows0(mFixPtr, aRowNum);}
+        private native static void setSizeArrayRows0(long aFixPtr, int aRowNum);
         
-        public final void setSizeArrayCols(int aColNum) {setSizeArrayCols_(mFixPtr, aColNum);}
-        private native static void setSizeArrayCols_(long aFixPtr, int aColNum);
+        public final void setSizeArrayCols(int aColNum) {setSizeArrayCols0(mFixPtr, aColNum);}
+        private native static void setSizeArrayCols0(long aFixPtr, int aColNum);
         
-        public final void setGlobalFreq(int aFreq) {setGlobalFreq_(mFixPtr, aFreq);}
-        private native static void setGlobalFreq_(long aFixPtr, int aFreq);
+        public final void setGlobalFreq(int aFreq) {setGlobalFreq0(mFixPtr, aFreq);}
+        private native static void setGlobalFreq0(long aFixPtr, int aFreq);
         
-        public final void setExtscalar(boolean aFlag) {setExtscalar_(mFixPtr, aFlag);}
-        private native static void setExtscalar_(long aFixPtr, boolean aFlag);
+        public final void setExtscalar(boolean aFlag) {setExtscalar0(mFixPtr, aFlag);}
+        private native static void setExtscalar0(long aFixPtr, boolean aFlag);
         
-        public final void setExtvector(boolean aFlag) {setExtvector_(mFixPtr, aFlag);}
-        private native static void setExtvector_(long aFixPtr, boolean aFlag);
+        public final void setExtvector(boolean aFlag) {setExtvector0(mFixPtr, aFlag);}
+        private native static void setExtvector0(long aFixPtr, boolean aFlag);
         
-        public final void setExtarray(boolean aFlag) {setExtarray_(mFixPtr, aFlag);}
-        private native static void setExtarray_(long aFixPtr, boolean aFlag);
+        public final void setExtarray(boolean aFlag) {setExtarray0(mFixPtr, aFlag);}
+        private native static void setExtarray0(long aFixPtr, boolean aFlag);
         
-        public final void setCommForward(int aSize) {setCommForward_(mFixPtr, aSize);}
-        private native static void setCommForward_(long aFixPtr, int aSize);
+        public final void setCommForward(int aSize) {setCommForward0(mFixPtr, aSize);}
+        private native static void setCommForward0(long aFixPtr, int aSize);
         
-        public final void setCommReverse(int aSize) {setCommReverse_(mFixPtr, aSize);}
-        private native static void setCommReverse_(long aFixPtr, int aSize);
+        public final void setCommReverse(int aSize) {setCommReverse0(mFixPtr, aSize);}
+        private native static void setCommReverse0(long aFixPtr, int aSize);
         
         public final int findVariable(String aName) {
             if (aName == null) throw new NullPointerException();
-            return findVariable_(mFixPtr, aName);
+            return findVariable0(mFixPtr, aName);
         }
-        private native static int findVariable_(long aFixPtr, @NotNull String aName);
+        private native static int findVariable0(long aFixPtr, @NotNull String aName);
         
         @UnsafeJNI("Illegal values will directly result in JVM SIGSEGV")
         public final double computeVariable(int aIdx) {
             if (aIdx < 0) throw new IndexOutOfBoundsException(String.valueOf(aIdx));
-            return computeVariable_(mFixPtr, aIdx);
+            return computeVariable0(mFixPtr, aIdx);
         }
-        private native static double computeVariable_(long aFixPtr, int aIdx);
+        private native static double computeVariable0(long aFixPtr, int aIdx);
         
         public final void citemeAdd(String aCite) {
             if (aCite == null) throw new NullPointerException();
-            citemeAdd_(mFixPtr, aCite);
+            citemeAdd0(mFixPtr, aCite);
         }
-        private native static void citemeAdd_(long aFixPtr, @NotNull String aCite);
+        private native static void citemeAdd0(long aFixPtr, @NotNull String aCite);
         
         @SuppressWarnings("SameParameterValue")
-        public final void neighborRequestDefault(double aRCut) {neighborRequestDefault_(mFixPtr, aRCut);}
+        public final void neighborRequestDefault(double aRCut) {neighborRequestDefault0(mFixPtr, aRCut);}
         public final void neighborRequestDefault() {neighborRequestDefault(-1);}
-        private native static void neighborRequestDefault_(long aFixPtr, double aRCut);
+        private native static void neighborRequestDefault0(long aFixPtr, double aRCut);
         
         @SuppressWarnings("SameParameterValue")
-        public final void neighborRequestFull(double aRCut) {neighborRequestFull_(mFixPtr, aRCut);}
+        public final void neighborRequestFull(double aRCut) {neighborRequestFull0(mFixPtr, aRCut);}
         public final void neighborRequestFull() {neighborRequestFull(-1);}
-        private native static void neighborRequestFull_(long aFixPtr, double aRCut);
+        private native static void neighborRequestFull0(long aFixPtr, double aRCut);
         
         @SuppressWarnings("SameParameterValue")
-        public final void neighborRequestOccasional(double aRCut) {neighborRequestOccasional_(mFixPtr, aRCut);}
+        public final void neighborRequestOccasional(double aRCut) {neighborRequestOccasional0(mFixPtr, aRCut);}
         public final void neighborRequestOccasional() {neighborRequestOccasional(-1);}
-        private native static void neighborRequestOccasional_(long aFixPtr, double aRCut);
+        private native static void neighborRequestOccasional0(long aFixPtr, double aRCut);
         
         @SuppressWarnings("SameParameterValue")
-        public final void neighborRequestOccasionalFull(double aRCut) {neighborRequestOccasionalFull_(mFixPtr, aRCut);}
+        public final void neighborRequestOccasionalFull(double aRCut) {neighborRequestOccasionalFull0(mFixPtr, aRCut);}
         public final void neighborRequestOccasionalFull() {neighborRequestOccasionalFull(-1);}
-        private native static void neighborRequestOccasionalFull_(long aFixPtr, double aRCut);
+        private native static void neighborRequestOccasionalFull0(long aFixPtr, double aRCut);
         
-        public final void neighborBuildOne() throws LmpException {neighborBuildOne_(mFixPtr);}
-        private native static void neighborBuildOne_(long aFixPtr) throws LmpException;
+        public final void neighborBuildOne() throws LmpException {neighborBuildOne0(mFixPtr);}
+        private native static void neighborBuildOne0(long aFixPtr) throws LmpException;
         
-        public final double neighborCutneighmin() {return neighborCutneighmin_(mFixPtr);}
-        private native static double neighborCutneighmin_(long aFixPtr);
+        public final int neighborAgo() {return neighborAgo0(mFixPtr);}
+        private native static int neighborAgo0(long aFixPtr);
         
-        public final double neighborCutneighmax() {return neighborCutneighmax_(mFixPtr);}
-        private native static double neighborCutneighmax_(long aFixPtr);
+        public final double neighborCutneighmin() {return neighborCutneighmin0(mFixPtr);}
+        private native static double neighborCutneighmin0(long aFixPtr);
         
-        public final double neighborCuttype(int aType) {return neighborCuttype_(mFixPtr, aType);}
-        private native static double neighborCuttype_(long aFixPtr, int aType);
+        public final double neighborCutneighmax() {return neighborCutneighmax0(mFixPtr);}
+        private native static double neighborCutneighmax0(long aFixPtr);
         
-        public final double neighborSkin() {return neighborSkin_(mFixPtr);}
-        private native static double neighborSkin_(long aFixPtr);
+        public final double neighborCuttype(int aType) {return neighborCuttype0(mFixPtr, aType);}
+        private native static double neighborCuttype0(long aFixPtr, int aType);
         
-        public final int igroup() {return igroup_(mFixPtr);}
-        private native static int igroup_(long aFixPtr);
+        public final double neighborSkin() {return neighborSkin0(mFixPtr);}
+        private native static double neighborSkin0(long aFixPtr);
         
-        public final int groupbit() {return groupbit_(mFixPtr);}
-        private native static int groupbit_(long aFixPtr);
+        public final int igroup() {return igroup0(mFixPtr);}
+        private native static int igroup0(long aFixPtr);
         
-        public final NestedDoubleCPointer atomX() {return new NestedDoubleCPointer(atomX_(mFixPtr));}
-        private native static long atomX_(long aFixPtr);
+        public final int groupbit() {return groupbit0(mFixPtr);}
+        private native static int groupbit0(long aFixPtr);
         
-        public final NestedDoubleCPointer atomV() {return new NestedDoubleCPointer(atomV_(mFixPtr));}
-        private native static long atomV_(long aFixPtr);
+        public final NestedDoubleCPointer atomX() {return new NestedDoubleCPointer(atomX0(mFixPtr));}
+        private native static long atomX0(long aFixPtr);
         
-        public final NestedDoubleCPointer atomF() {return new NestedDoubleCPointer(atomF_(mFixPtr));}
-        private native static long atomF_(long aFixPtr);
+        public final NestedDoubleCPointer atomV() {return new NestedDoubleCPointer(atomV0(mFixPtr));}
+        private native static long atomV0(long aFixPtr);
         
-        public final IntCPointer atomMask() {return new IntCPointer(atomMask_(mFixPtr));}
-        private native static long atomMask_(long aFixPtr);
+        public final NestedDoubleCPointer atomF() {return new NestedDoubleCPointer(atomF0(mFixPtr));}
+        private native static long atomF0(long aFixPtr);
+        
+        public final IntCPointer atomMask() {return new IntCPointer(atomMask0(mFixPtr));}
+        private native static long atomMask0(long aFixPtr);
         
         public final IntCPointer atomTag() {
             if (NativeLmp.LAMMPS_BIGBIG) throw new UnsupportedOperationException("atomTag for LAMMPS_BIGBIG");
-            return new IntCPointer(atomTag_(mFixPtr));
+            return new IntCPointer(atomTag0(mFixPtr));
         }
-        private native static long atomTag_(long aFixPtr);
+        private native static long atomTag0(long aFixPtr);
         
-        public final IntCPointer atomType() {return new IntCPointer(atomType_(mFixPtr));}
-        private native static long atomType_(long aFixPtr);
+        public final IntCPointer atomType() {return new IntCPointer(atomType0(mFixPtr));}
+        private native static long atomType0(long aFixPtr);
         
-        public final DoubleCPointer atomMass() {return new DoubleCPointer(atomMass_(mFixPtr));}
-        private native static long atomMass_(long aFixPtr);
+        public final DoubleCPointer atomMass() {return new DoubleCPointer(atomMass0(mFixPtr));}
+        private native static long atomMass0(long aFixPtr);
         
-        public final CPointer atomExtract(String aName) {return new CPointer(atomExtract_(mFixPtr, aName));}
-        private native static long atomExtract_(long aFixPtr, String aName);
+        public final CPointer atomExtract(String aName) {return new CPointer(atomExtract0(mFixPtr, aName));}
+        private native static long atomExtract0(long aFixPtr, String aName);
         
-        public final long atomNatoms() {return atomNatoms_(mFixPtr);}
-        private native static long atomNatoms_(long aFixPtr);
+        public final long atomNatoms() {return atomNatoms0(mFixPtr);}
+        private native static long atomNatoms0(long aFixPtr);
         
-        public final int atomNtypes() {return atomNtypes_(mFixPtr);}
-        private native static int atomNtypes_(long aFixPtr);
+        public final int atomNtypes() {return atomNtypes0(mFixPtr);}
+        private native static int atomNtypes0(long aFixPtr);
         
-        public final int atomNlocal() {return atomNlocal_(mFixPtr);}
-        private native static int atomNlocal_(long aFixPtr);
+        public final int atomNlocal() {return atomNlocal0(mFixPtr);}
+        private native static int atomNlocal0(long aFixPtr);
         
-        public final int atomNmax() {return atomNmax_(mFixPtr);}
-        private native static int atomNmax_(long aFixPtr);
+        public final int atomNmax() {return atomNmax0(mFixPtr);}
+        private native static int atomNmax0(long aFixPtr);
         
-        public final int atomNghost() {return atomNghost_(mFixPtr);}
-        private native static int atomNghost_(long aFixPtr);
+        public final int atomNghost() {return atomNghost0(mFixPtr);}
+        private native static int atomNghost0(long aFixPtr);
         
-        public final boolean domainTriclinic() {return domainTriclinic_(mFixPtr);}
-        private native static boolean domainTriclinic_(long aFixPtr);
+        public final boolean domainTriclinic() {return domainTriclinic0(mFixPtr);}
+        private native static boolean domainTriclinic0(long aFixPtr);
         
-        public final DoubleCPointer domainXy() {return new DoubleCPointer(domainXy_(mFixPtr));}
-        private native static long domainXy_(long aFixPtr);
+        public final DoubleCPointer domainXy() {return new DoubleCPointer(domainXy0(mFixPtr));}
+        private native static long domainXy0(long aFixPtr);
         
-        public final DoubleCPointer domainXz() {return new DoubleCPointer(domainXz_(mFixPtr));}
-        private native static long domainXz_(long aFixPtr);
+        public final DoubleCPointer domainXz() {return new DoubleCPointer(domainXz0(mFixPtr));}
+        private native static long domainXz0(long aFixPtr);
         
-        public final DoubleCPointer domainYz() {return new DoubleCPointer(domainYz_(mFixPtr));}
-        private native static long domainYz_(long aFixPtr);
+        public final DoubleCPointer domainYz() {return new DoubleCPointer(domainYz0(mFixPtr));}
+        private native static long domainYz0(long aFixPtr);
         
-        public final double domainXprd() {return domainXprd_(mFixPtr);}
-        private native static double domainXprd_(long aFixPtr);
+        public final double domainXprd() {return domainXprd0(mFixPtr);}
+        private native static double domainXprd0(long aFixPtr);
         
-        public final double domainYprd() {return domainYprd_(mFixPtr);}
-        private native static double domainYprd_(long aFixPtr);
+        public final double domainYprd() {return domainYprd0(mFixPtr);}
+        private native static double domainYprd0(long aFixPtr);
         
-        public final double domainZprd() {return domainZprd_(mFixPtr);}
-        private native static double domainZprd_(long aFixPtr);
+        public final double domainZprd() {return domainZprd0(mFixPtr);}
+        private native static double domainZprd0(long aFixPtr);
         
-        public final DoubleCPointer domainH() {return new DoubleCPointer(domainH_(mFixPtr));}
-        private native static long domainH_(long aFixPtr);
+        public final DoubleCPointer domainH() {return new DoubleCPointer(domainH0(mFixPtr));}
+        private native static long domainH0(long aFixPtr);
         
-        public final DoubleCPointer domainHInv() {return new DoubleCPointer(domainHInv_(mFixPtr));}
-        private native static long domainHInv_(long aFixPtr);
+        public final DoubleCPointer domainHInv() {return new DoubleCPointer(domainHInv0(mFixPtr));}
+        private native static long domainHInv0(long aFixPtr);
         
-        public final DoubleCPointer domainBoxlo() {return new DoubleCPointer(domainBoxlo_(mFixPtr));}
-        private native static long domainBoxlo_(long aFixPtr);
+        public final DoubleCPointer domainBoxlo() {return new DoubleCPointer(domainBoxlo0(mFixPtr));}
+        private native static long domainBoxlo0(long aFixPtr);
         
-        public final DoubleCPointer domainBoxhi() {return new DoubleCPointer(domainBoxhi_(mFixPtr));}
-        private native static long domainBoxhi_(long aFixPtr);
+        public final DoubleCPointer domainBoxhi() {return new DoubleCPointer(domainBoxhi0(mFixPtr));}
+        private native static long domainBoxhi0(long aFixPtr);
         
-        public final DoubleCPointer domainBoxloLamda() {return new DoubleCPointer(domainBoxloLamda_(mFixPtr));}
-        private native static long domainBoxloLamda_(long aFixPtr);
+        public final DoubleCPointer domainBoxloLamda() {return new DoubleCPointer(domainBoxloLamda0(mFixPtr));}
+        private native static long domainBoxloLamda0(long aFixPtr);
         
-        public final DoubleCPointer domainBoxhiLamda() {return new DoubleCPointer(domainBoxhiLamda_(mFixPtr));}
-        private native static long domainBoxhiLamda_(long aFixPtr);
+        public final DoubleCPointer domainBoxhiLamda() {return new DoubleCPointer(domainBoxhiLamda0(mFixPtr));}
+        private native static long domainBoxhiLamda0(long aFixPtr);
         
-        public final DoubleCPointer domainSublo() {return new DoubleCPointer(domainSublo_(mFixPtr));}
-        private native static long domainSublo_(long aFixPtr);
+        public final DoubleCPointer domainSublo() {return new DoubleCPointer(domainSublo0(mFixPtr));}
+        private native static long domainSublo0(long aFixPtr);
         
-        public final DoubleCPointer domainSubhi() {return new DoubleCPointer(domainSubhi_(mFixPtr));}
-        private native static long domainSubhi_(long aFixPtr);
+        public final DoubleCPointer domainSubhi() {return new DoubleCPointer(domainSubhi0(mFixPtr));}
+        private native static long domainSubhi0(long aFixPtr);
         
-        public final DoubleCPointer domainSubloLamda() {return new DoubleCPointer(domainSubloLamda_(mFixPtr));}
-        private native static long domainSubloLamda_(long aFixPtr);
+        public final DoubleCPointer domainSubloLamda() {return new DoubleCPointer(domainSubloLamda0(mFixPtr));}
+        private native static long domainSubloLamda0(long aFixPtr);
         
-        public final DoubleCPointer domainSubhiLamda() {return new DoubleCPointer(domainSubhiLamda_(mFixPtr));}
-        private native static long domainSubhiLamda_(long aFixPtr);
+        public final DoubleCPointer domainSubhiLamda() {return new DoubleCPointer(domainSubhiLamda0(mFixPtr));}
+        private native static long domainSubhiLamda0(long aFixPtr);
         
-        public final void domainX2lamda(int aN) {domainX2lamda_(mFixPtr, aN);}
-        private native static void domainX2lamda_(long aFixPtr, int aN);
+        public final void domainX2lamda(int aN) {domainX2lamda0(mFixPtr, aN);}
+        private native static void domainX2lamda0(long aFixPtr, int aN);
         
-        public final void domainX2lamda(DoubleCPointer aX, DoubleCPointer rLamda) {domainX2lamda_(mFixPtr, aX.ptr_(), rLamda.ptr_());}
-        private native static void domainX2lamda_(long aFixPtr, long aX, long rLamda);
+        public final void domainX2lamda(DoubleCPointer aX, DoubleCPointer rLamda) {domainX2lamda0(mFixPtr, aX.ptr_(), rLamda.ptr_());}
+        private native static void domainX2lamda0(long aFixPtr, long aX, long rLamda);
         
-        public final void domainLamda2x(int aN) {domainLamda2x_(mFixPtr, aN);}
-        private native static void domainLamda2x_(long aFixPtr, int aN);
+        public final void domainLamda2x(int aN) {domainLamda2x0(mFixPtr, aN);}
+        private native static void domainLamda2x0(long aFixPtr, int aN);
         
-        public final void domainLamda2x(DoubleCPointer aLamda, DoubleCPointer rX) {domainLamda2x_(mFixPtr, aLamda.ptr_(), rX.ptr_());}
-        private native static void domainLamda2x_(long aFixPtr, long aLamda, long rX);
+        public final void domainLamda2x(DoubleCPointer aLamda, DoubleCPointer rX) {domainLamda2x0(mFixPtr, aLamda.ptr_(), rX.ptr_());}
+        private native static void domainLamda2x0(long aFixPtr, long aLamda, long rX);
         
-        public final void domainSetGlobalBox() {domainSetGlobalBox_(mFixPtr);}
-        private native static void domainSetGlobalBox_(long aFixPtr);
+        public final void domainSetGlobalBox() {domainSetGlobalBox0(mFixPtr);}
+        private native static void domainSetGlobalBox0(long aFixPtr);
         
-        public final void domainSetLocalBox() {domainSetLocalBox_(mFixPtr);}
-        private native static void domainSetLocalBox_(long aFixPtr);
+        public final void domainSetLocalBox() {domainSetLocalBox0(mFixPtr);}
+        private native static void domainSetLocalBox0(long aFixPtr);
         
-        public final int listGnum() throws LmpException {return listGnum_(mFixPtr);}
-        private native static int listGnum_(long aFixPtr) throws LmpException;
+        public final int listGnum() throws LmpException {return listGnum0(mFixPtr);}
+        private native static int listGnum0(long aFixPtr) throws LmpException;
         
-        public final int listInum() throws LmpException {return listInum_(mFixPtr);}
-        private native static int listInum_(long aFixPtr) throws LmpException;
+        public final int listInum() throws LmpException {return listInum0(mFixPtr);}
+        private native static int listInum0(long aFixPtr) throws LmpException;
         
-        public final IntCPointer listIlist() throws LmpException {return new IntCPointer(listIlist_(mFixPtr));}
-        private native static long listIlist_(long aFixPtr) throws LmpException;
+        public final IntCPointer listIlist() throws LmpException {return new IntCPointer(listIlist0(mFixPtr));}
+        private native static long listIlist0(long aFixPtr) throws LmpException;
         
-        public final IntCPointer listNumneigh() throws LmpException {return new IntCPointer(listNumneigh_(mFixPtr));}
-        private native static long listNumneigh_(long aFixPtr) throws LmpException;
+        public final IntCPointer listNumneigh() throws LmpException {return new IntCPointer(listNumneigh0(mFixPtr));}
+        private native static long listNumneigh0(long aFixPtr) throws LmpException;
         
-        public final NestedIntCPointer listFirstneigh() throws LmpException {return new NestedIntCPointer(listFirstneigh_(mFixPtr));}
-        private native static long listFirstneigh_(long aFixPtr) throws LmpException;
+        public final NestedIntCPointer listFirstneigh() throws LmpException {return new NestedIntCPointer(listFirstneigh0(mFixPtr));}
+        private native static long listFirstneigh0(long aFixPtr) throws LmpException;
         
-        public final double forceBoltz() {return forceBoltz_(mFixPtr);}
-        private native static double forceBoltz_(long aFixPtr);
+        public final double forceBoltz() {return forceBoltz0(mFixPtr);}
+        private native static double forceBoltz0(long aFixPtr);
         
-        public final double forcePairCutforce() {return forcePairCutforce_(mFixPtr);}
-        private native static double forcePairCutforce_(long aFixPtr);
+        public final double forcePairCutforce() {return forcePairCutforce0(mFixPtr);}
+        private native static double forcePairCutforce0(long aFixPtr);
         
-        public final double dt() {return dt_(mFixPtr);}
-        private native static double dt_(long aFixPtr);
+        public final double dt() {return dt0(mFixPtr);}
+        private native static double dt0(long aFixPtr);
         
-        public final long ntimestep() {return ntimestep_(mFixPtr);}
-        private native static long ntimestep_(long aFixPtr);
+        public final long ntimestep() {return ntimestep0(mFixPtr);}
+        private native static long ntimestep0(long aFixPtr);
         
-        public final long firststep() {return firststep_(mFixPtr);}
-        private native static long firststep_(long aFixPtr);
+        public final long firststep() {return firststep0(mFixPtr);}
+        private native static long firststep0(long aFixPtr);
         
-        public final long laststep() {return laststep_(mFixPtr);}
-        private native static long laststep_(long aFixPtr);
+        public final long laststep() {return laststep0(mFixPtr);}
+        private native static long laststep0(long aFixPtr);
         
-        public final long beginstep() {return beginstep_(mFixPtr);}
-        private native static long beginstep_(long aFixPtr);
+        public final long beginstep() {return beginstep0(mFixPtr);}
+        private native static long beginstep0(long aFixPtr);
         
-        public final long endstep() {return endstep_(mFixPtr);}
-        private native static long endstep_(long aFixPtr);
+        public final long endstep() {return endstep0(mFixPtr);}
+        private native static long endstep0(long aFixPtr);
         
-        public final int commMe() {return commMe_(mFixPtr);}
-        private native static int commMe_(long aFixPtr);
+        public final int commMe() {return commMe0(mFixPtr);}
+        private native static int commMe0(long aFixPtr);
         
-        public final int commNprocs() {return commNprocs_(mFixPtr);}
-        private native static int commNprocs_(long aFixPtr);
+        public final int commNprocs() {return commNprocs0(mFixPtr);}
+        private native static int commNprocs0(long aFixPtr);
         
-        public final void commBarrier() throws MPIException {commBarrier_(mFixPtr);}
-        private native static void commBarrier_(long aFixPtr) throws MPIException;
+        public final void commBarrier() throws MPIException {commBarrier0(mFixPtr);}
+        private native static void commBarrier0(long aFixPtr) throws MPIException;
         
-        public final MPI.Comm commWorld() {return MPI.Comm.of(commWorld_(mFixPtr));}
-        private native static long commWorld_(long aFixPtr);
+        public final MPI.Comm commWorld() {return MPI.Comm.of(commWorld0(mFixPtr));}
+        private native static long commWorld0(long aFixPtr);
         
-        public final double commCutghostuser() {return commCutghostuser_(mFixPtr);}
-        private native static double commCutghostuser_(long aFixPtr);
+        public final double commCutghostuser() {return commCutghostuser0(mFixPtr);}
+        private native static double commCutghostuser0(long aFixPtr);
         
-        public final void commForwardComm() {commForwardComm_(mFixPtr);}
-        private native static void commForwardComm_(long aFixPtr);
+        public final void commForwardComm() {commForwardComm0(mFixPtr);}
+        private native static void commForwardComm0(long aFixPtr);
         
-        public final void commForwardCommThis() {commForwardCommThis_(mFixPtr);}
-        private native static void commForwardCommThis_(long aFixPtr);
+        public final void commForwardCommThis() {commForwardCommThis0(mFixPtr);}
+        private native static void commForwardCommThis0(long aFixPtr);
         
-        public final void commReverseComm() {commReverseComm_(mFixPtr);}
-        private native static void commReverseComm_(long aFixPtr);
+        public final void commReverseComm() {commReverseComm0(mFixPtr);}
+        private native static void commReverseComm0(long aFixPtr);
         
-        public final void commReverseCommThis() {commReverseCommThis_(mFixPtr);}
-        private native static void commReverseCommThis_(long aFixPtr);
+        public final void commReverseCommThis() {commReverseCommThis0(mFixPtr);}
+        private native static void commReverseCommThis0(long aFixPtr);
         
-        public final String unitStyle() {return unitStyle_(mFixPtr);}
-        private native static String unitStyle_(long aFixPtr);
+        public final String unitStyle() {return unitStyle0(mFixPtr);}
+        private native static String unitStyle0(long aFixPtr);
     }
 }

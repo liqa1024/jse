@@ -301,6 +301,9 @@ void FixJSE::neighborBuildOne() {
     }
     neighbor->build_one(mNL);
 }
+jint FixJSE::neighborAgo() {
+    return (jint) neighbor->ago;
+}
 jdouble FixJSE::neighborCutneighmin() {
     return neighbor->cutneighmin;
 }

@@ -88,6 +88,7 @@ public:
     void neighborRequestOccasional(jdouble);
     void neighborRequestOccasionalFull(jdouble);
     void neighborBuildOne();
+    jint neighborAgo();
     jdouble neighborCutneighmin();
     jdouble neighborCutneighmax();
     jdouble neighborCuttype(jint);

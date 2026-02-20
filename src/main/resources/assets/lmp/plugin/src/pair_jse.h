@@ -52,6 +52,7 @@ public:
     void citemeAdd(jstring);
     void neighborRequestDefault();
     void neighborRequestFull();
+    jint neighborAgo();
     jlong atomX();
     jlong atomV();
     jlong atomF();

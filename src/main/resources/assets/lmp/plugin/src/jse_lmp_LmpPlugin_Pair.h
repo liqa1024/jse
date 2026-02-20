@@ -15,522 +15,530 @@ extern "C" {
 #define jse_lmp_LmpPlugin_Pair_CENTROID_NOTAVAIL 2L
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    findVariable_
+ * Method:    findVariable0
  * Signature: (JLjava/lang/String;)I
  */
-JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_findVariable_1
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_findVariable0
   (JNIEnv *, jclass, jlong, jstring);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    computeVariable_
+ * Method:    computeVariable0
  * Signature: (JI)D
  */
-JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Pair_computeVariable_1
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Pair_computeVariable0
   (JNIEnv *, jclass, jlong, jint);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    citemeAdd_
+ * Method:    citemeAdd0
  * Signature: (JLjava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_citemeAdd_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_citemeAdd0
   (JNIEnv *, jclass, jlong, jstring);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    setSingleEnable_
+ * Method:    setSingleEnable0
  * Signature: (JZ)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setSingleEnable_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setSingleEnable0
   (JNIEnv *, jclass, jlong, jboolean);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    setOneCoeff_
+ * Method:    setOneCoeff0
  * Signature: (JZ)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setOneCoeff_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setOneCoeff0
   (JNIEnv *, jclass, jlong, jboolean);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    setManybodyFlag_
+ * Method:    setManybodyFlag0
  * Signature: (JZ)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setManybodyFlag_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setManybodyFlag0
   (JNIEnv *, jclass, jlong, jboolean);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    setUnitConvertFlag_
+ * Method:    setUnitConvertFlag0
  * Signature: (JI)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setUnitConvertFlag_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setUnitConvertFlag0
   (JNIEnv *, jclass, jlong, jint);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    setNoVirialFdotrCompute_
+ * Method:    setNoVirialFdotrCompute0
  * Signature: (JZ)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setNoVirialFdotrCompute_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setNoVirialFdotrCompute0
   (JNIEnv *, jclass, jlong, jboolean);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    setFinitecutflag_
+ * Method:    setFinitecutflag0
  * Signature: (JZ)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setFinitecutflag_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setFinitecutflag0
   (JNIEnv *, jclass, jlong, jboolean);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    setGhostneigh_
+ * Method:    setGhostneigh0
  * Signature: (JZ)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setGhostneigh_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setGhostneigh0
   (JNIEnv *, jclass, jlong, jboolean);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    setCentroidstressflag_
+ * Method:    setCentroidstressflag0
  * Signature: (JI)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setCentroidstressflag_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setCentroidstressflag0
   (JNIEnv *, jclass, jlong, jint);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    setCommForward_
+ * Method:    setCommForward0
  * Signature: (JI)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setCommForward_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setCommForward0
   (JNIEnv *, jclass, jlong, jint);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    setCommReverse_
+ * Method:    setCommReverse0
  * Signature: (JI)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setCommReverse_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setCommReverse0
   (JNIEnv *, jclass, jlong, jint);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    setCommReverseOff_
+ * Method:    setCommReverseOff0
  * Signature: (JI)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setCommReverseOff_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_setCommReverseOff0
   (JNIEnv *, jclass, jlong, jint);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    neighborRequestDefault_
+ * Method:    neighborRequestDefault0
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_neighborRequestDefault_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_neighborRequestDefault0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    neighborRequestFull_
+ * Method:    neighborRequestFull0
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_neighborRequestFull_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_neighborRequestFull0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    atomX_
+ * Method:    neighborAgo0
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_neighborAgo0
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Pair
+ * Method:    atomX0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomX_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomX0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    atomV_
+ * Method:    atomV0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomV_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomV0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    atomF_
+ * Method:    atomF0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomF_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomF0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    atomTag_
+ * Method:    atomTag0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomTag_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomTag0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    atomType_
+ * Method:    atomType0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomType_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomType0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    atomMass_
+ * Method:    atomMass0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomMass_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomMass0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    atomExtract_
+ * Method:    atomExtract0
  * Signature: (JLjava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomExtract_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomExtract0
   (JNIEnv *, jclass, jlong, jstring);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    atomNatoms_
+ * Method:    atomNatoms0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomNatoms_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomNatoms0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    atomNtypes_
+ * Method:    atomNtypes0
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomNtypes_1
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomNtypes0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    atomNlocal_
+ * Method:    atomNlocal0
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomNlocal_1
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomNlocal0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    atomNghost_
+ * Method:    atomNghost0
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomNghost_1
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomNghost0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    atomNmax_
+ * Method:    atomNmax0
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomNmax_1
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_atomNmax0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    forceSpecialLj_
+ * Method:    forceSpecialLj0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_forceSpecialLj_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_forceSpecialLj0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    forceNewtonPair_
+ * Method:    forceNewtonPair0
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_forceNewtonPair_1
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_forceNewtonPair0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    listGnum_
+ * Method:    listGnum0
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_listGnum_1
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_listGnum0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    listInum_
+ * Method:    listInum0
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_listInum_1
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_listInum0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    listIlist_
+ * Method:    listIlist0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_listIlist_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_listIlist0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    listNumneigh_
+ * Method:    listNumneigh0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_listNumneigh_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_listNumneigh0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    listFirstneigh_
+ * Method:    listFirstneigh0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_listFirstneigh_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_listFirstneigh0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    cutsq_
+ * Method:    cutsq0
  * Signature: (JII)D
  */
-JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Pair_cutsq_1
+JNIEXPORT jdouble JNICALL Java_jse_lmp_LmpPlugin_00024Pair_cutsq0
   (JNIEnv *, jclass, jlong, jint, jint);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    engVdwl_
+ * Method:    engVdwl0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_engVdwl_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_engVdwl0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    engCoul_
+ * Method:    engCoul0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_engCoul_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_engCoul0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    eatom_
+ * Method:    eatom0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_eatom_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_eatom0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    virial_
+ * Method:    virial0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_virial_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_virial0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    vatom_
+ * Method:    vatom0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vatom_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vatom0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    cvatom_
+ * Method:    cvatom0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_cvatom_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_cvatom0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    evTally_
+ * Method:    evTally0
  * Signature: (JIIIZDDDDDD)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evTally_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evTally0
   (JNIEnv *, jclass, jlong, jint, jint, jint, jboolean, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    evTallyFull_
+ * Method:    evTallyFull0
  * Signature: (JIDDDDDD)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evTallyFull_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evTallyFull0
   (JNIEnv *, jclass, jlong, jint, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    evTallyXYZ_
+ * Method:    evTallyXYZ0
  * Signature: (JIIIZDDDDDDDD)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evTallyXYZ_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evTallyXYZ0
   (JNIEnv *, jclass, jlong, jint, jint, jint, jboolean, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    evTallyXYZFull_
+ * Method:    evTallyXYZFull0
  * Signature: (JIDDDDDDDD)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evTallyXYZFull_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evTallyXYZFull0
   (JNIEnv *, jclass, jlong, jint, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    evflag_
+ * Method:    evflag0
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evflag_1
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_evflag0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    vflagEither_
+ * Method:    vflagEither0
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagEither_1
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagEither0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    vflagGlobal_
+ * Method:    vflagGlobal0
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagGlobal_1
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagGlobal0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    vflagAtom_
+ * Method:    vflagAtom0
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagAtom_1
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagAtom0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    cvflagAtom_
+ * Method:    cvflagAtom0
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_cvflagAtom_1
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_cvflagAtom0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    eflagEither_
+ * Method:    eflagEither0
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_eflagEither_1
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_eflagEither0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    eflagGlobal_
+ * Method:    eflagGlobal0
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_eflagGlobal_1
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_eflagGlobal0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    eflagAtom_
+ * Method:    eflagAtom0
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_eflagAtom_1
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_eflagAtom0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    vflagFdotr_
+ * Method:    vflagFdotr0
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagFdotr_1
+JNIEXPORT jboolean JNICALL Java_jse_lmp_LmpPlugin_00024Pair_vflagFdotr0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    virialFdotrCompute_
+ * Method:    virialFdotrCompute0
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_virialFdotrCompute_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_virialFdotrCompute0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    commMe_
+ * Method:    commMe0
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commMe_1
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commMe0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    commNprocs_
+ * Method:    commNprocs0
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commNprocs_1
+JNIEXPORT jint JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commNprocs0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    commBarrier_
+ * Method:    commBarrier0
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commBarrier_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commBarrier0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    commWorld_
+ * Method:    commWorld0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commWorld_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commWorld0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    commForwardComm_
+ * Method:    commForwardComm0
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commForwardComm_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commForwardComm0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    commForwardCommThis_
+ * Method:    commForwardCommThis0
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commForwardCommThis_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commForwardCommThis0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    commReverseComm_
+ * Method:    commReverseComm0
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commReverseComm_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commReverseComm0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    commReverseCommThis_
+ * Method:    commReverseCommThis0
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commReverseCommThis_1
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Pair_commReverseCommThis0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_LmpPlugin_Pair
- * Method:    unitStyle_
+ * Method:    unitStyle0
  * Signature: (J)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_jse_lmp_LmpPlugin_00024Pair_unitStyle_1
+JNIEXPORT jstring JNICALL Java_jse_lmp_LmpPlugin_00024Pair_unitStyle0
   (JNIEnv *, jclass, jlong);
 
 #ifdef __cplusplus

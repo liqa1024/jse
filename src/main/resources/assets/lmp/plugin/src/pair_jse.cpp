@@ -186,6 +186,9 @@ void PairJSE::neighborRequestDefault() {
 void PairJSE::neighborRequestFull() {
     neighbor->add_request(this, NeighConst::REQ_FULL);
 }
+jint PairJSE::neighborAgo() {
+    return (jint) neighbor->ago;
+}
 jlong PairJSE::atomX() {
     return (jlong)(intptr_t) atom->x;
 }
