@@ -154,7 +154,7 @@ class NNAPGEN {
         rGenMap.put("[PRECISION]", "single");
         rGenMap.put("[ARCH]", "cuda");
         String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, NNAP2.VERSION,
-                                            rGenMap, aOptimLevel, aCmakeCxxCompiler, aCmakeCxxFlags, aCmakeSetting);
+                                            rGenMap, aOptimLevel, aCmakeCxxCompiler, aCmakeCxxFlags, aCmakeCudaCompiler, aCmakeCudaFlags, aCmakeSetting);
         return CudaJIT.engine()
             .setCmakeCudaCompiler(aCmakeCudaCompiler).setCmakeCudaFlags(aCmakeCudaFlags)
             .setCmakeCxxCompiler(aCmakeCxxCompiler).setCmakeCxxFlags(aCmakeCxxFlags)

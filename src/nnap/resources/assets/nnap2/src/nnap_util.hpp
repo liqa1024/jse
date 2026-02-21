@@ -298,43 +298,23 @@ template <int N>
 static inline NNAP_DEVICE void chebyshevFullBatch(int bi, int nb,
         flt_t aX, flt_t *rBatchDest) noexcept {
     if (N < 0) return;
-    flt_t tCheby = ONE;
-    rBatchDest[0*nb + bi] = tCheby;
-    flt_t tChebyP = tCheby;
+    rBatchDest[0*nb + bi] = ONE;
     if (N == 0) return;
-    tCheby = aX;
-    rBatchDest[1*nb + bi] = tCheby;
-    flt_t tChebyPP = tChebyP;
-    tChebyP = tCheby;
-    if (N == 1) return;
-// >>> NNAPGEN REPEAT
-    tCheby = TWO*aX*tChebyP - tChebyPP;
-    rBatchDest[__NNAPGENS_X__*nb + bi] = tCheby;
-    tChebyPP = tChebyP;
-    tChebyP = tCheby;
-    if (N == __NNAPGENS_X__) return;
-// <<< NNAPGEN REPEAT 2..20
+    rBatchDest[1*nb + bi] = aX;
+    for (int n = 2; n <= N; ++n) {
+        rBatchDest[n*nb + bi] = TWO*aX*rBatchDest[(n-1)*nb + bi] - rBatchDest[(n-2)*nb + bi];
+    }
 }
 template <int N>
 static inline NNAP_DEVICE void chebyshev2FullBatch(int bi, int nb,
         flt_t aX, flt_t *rBatchDest) noexcept {
     if (N < 0) return;
-    flt_t tCheby = ONE;
-    rBatchDest[0*nb + bi] = tCheby;
-    flt_t tChebyP = tCheby;
+    rBatchDest[0*nb + bi] = ONE;
     if (N == 0) return;
-    tCheby = TWO*aX;
-    rBatchDest[1*nb + bi] = tCheby;
-    flt_t tChebyPP = tChebyP;
-    tChebyP = tCheby;
-    if (N == 1) return;
-// >>> NNAPGEN REPEAT
-    tCheby = TWO*aX*tChebyP - tChebyPP;
-    rBatchDest[__NNAPGENS_X__*nb + bi] = tCheby;
-    tChebyPP = tChebyP;
-    tChebyP = tCheby;
-    if (N == __NNAPGENS_X__) return;
-// <<< NNAPGEN REPEAT 2..20
+    rBatchDest[1*nb + bi] = TWO*aX;
+    for (int n = 2; n <= N; ++n) {
+        rBatchDest[n*nb + bi] = TWO*aX*rBatchDest[(n-1)*nb + bi] - rBatchDest[(n-2)*nb + bi];
+    }
 }
 template <int N>
 static inline NNAP_DEVICE void chebyshevFull(flt_t aX, flt_t *rDest) noexcept {

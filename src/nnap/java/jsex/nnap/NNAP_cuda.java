@@ -21,9 +21,9 @@ class NNAP_cuda extends NNAP2 {
     public final static class Conf {
         /**
          * 自定义 nnap cuda 中使用的 block_size 值，这可能会影响速度；
-         * 默认为 {@code 256}
+         * 默认为 {@code 192}
          */
-        public static int CUDA_BLOCKSIZE = OS.envI("JSE_NNAP_CUDA_BLOCKSIZE", 256);
+        public static int CUDA_BLOCKSIZE = OS.envI("JSE_NNAP_CUDA_BLOCKSIZE", 192);
         
         /**
          * 自定义构建 nnap 的 cmake 参数设置，

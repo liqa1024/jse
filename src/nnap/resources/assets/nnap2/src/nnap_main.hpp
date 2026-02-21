@@ -90,7 +90,7 @@ static NNAP_DEVICE int fpForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *
         tSubFpParam+__NNAPGENXX_FP_SIZE_FW__, tSubFpHyperParam[1]
     );
 // --- NNAPGEN PICK: chebyshev
-    chebyForwardBatch<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_FSTYLE__, __NNAPGENXX_FP_SIZE_N__>(0, 1,
+    chebyForward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_FSTYLE__, __NNAPGENXX_FP_SIZE_N__>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rSubFp,
         &rSubFpForwardCache, tSubFpHyperParam[0], tSubFpParam
     );
@@ -161,7 +161,7 @@ static NNAP_DEVICE int normedNnForward(int cType, flt_t *rFp, flt_t *aNormParam,
     flt_t tOutputBias = tHiddenBiases[__NNAPGENX_NN_SIZE_HB__];
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: feed_forward
-    flt_t tEng = nnForwardBatch<__NNAPGENS_CTYPE_GEN__, CACHE_GRAD>(0, 1,
+    flt_t tEng = nnForward<__NNAPGENS_CTYPE_GEN__, CACHE_GRAD>(
         rFp, tHiddenWeights, NULL, tHiddenBiases, NULL, tOutputWeights, tOutputBias,
         rNnGradCache, rNnHiddenCache
     );
@@ -245,7 +245,7 @@ static NNAP_DEVICE int fpBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int 
         tSubFpParam+__NNAPGENXX_FP_SIZE_FW__, tSubFpHyperParam[1]
     );
 // --- NNAPGEN PICK: chebyshev
-    chebyBackwardBatch<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_FSTYLE__, __NNAPGENXX_FP_SIZE_N__>(0, 1,
+    chebyBackward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_FSTYLE__, __NNAPGENXX_FP_SIZE_N__>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, tSubGradFp,
         rGradNlDx, rGradNlDy, rGradNlDz,
         &aSubFpForwardCache, &rSubFpBackwardCache, tSubFpHyperParam[0], tSubFpParam
@@ -302,7 +302,7 @@ static NNAP_DEVICE int normedNnBackward(int cType, flt_t *rGradFp, flt_t *aNormP
     flt_t *tOutputWeights = tHiddenWeights + __NNAPGENX_NN_SIZE_HW__;
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: feed_forward
-    nnBackwardBatch<__NNAPGENS_CTYPE_GEN__>(0, 1,
+    nnBackward<__NNAPGENS_CTYPE_GEN__>(
         aInGradEng, rGradFp, tHiddenWeights, NULL, tOutputWeights,
         aNnGradCache, rNnHiddenCache
     );
