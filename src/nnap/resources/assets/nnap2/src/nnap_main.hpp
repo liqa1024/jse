@@ -23,6 +23,8 @@
 #define __NNAPGENXX_FP_SIZE_HPARAM__ 2
 #define __NNAPGENXX_FP_SIZE_PARAM__ 0
 #define __NNAPGENX_FP_SHARED_TYPE__ 1
+#define __NNAPGENX_FP_SIZE_CACHEF__ 294
+#define __NNAPGENX_FP_SIZE_CACHEB__ 1
 #define __NNAPGENS_CTYPE_GEN__ 1
 #define __NNAPGENS_ctype__ 1
 // <<< NNAPGEN REMOVE
@@ -30,41 +32,6 @@
 
 namespace JSE_NNAP {
 
-template <int CTYPE_GEN>
-static NNAP_DEVICE int fpForwardBatch(int bi, int nb,
-        flt_t *aBatchNlDx, flt_t *aBatchNlDy, flt_t *aBatchNlDz, int *aBatchNlType, int aNeiNum, int cType, flt_t *rBatchFp,
-        flt_t **aFpHyperParam, flt_t **aFpParam, flt_t *rBatchFpForwardCache) noexcept {
-    int flag = 1;
-// >>> NNAPGEN SWITCH
-    flt_t *rSubBatchFp = rBatchFp;
-    flt_t *rSubBatchFpForwardCache = rBatchFpForwardCache;
-// >>> NNAPGEN IF
-// --- NNAPGEN HAS: [FP SHARE __NNAPGENS_X__]
-    flt_t *tSubFpHyperParam = aFpHyperParam[__NNAPGENX_FP_SHARED_TYPE__-1];
-    flt_t *tSubFpParam = aFpParam[__NNAPGENX_FP_SHARED_TYPE__-1];
-// --- NNAPGEN ELSE:
-    flt_t *tSubFpHyperParam = aFpHyperParam[cType-1];
-    flt_t *tSubFpParam = aFpParam[cType-1];
-// <<< NNAPGEN IF
-// >>> NNAPGEN REPEAT
-// >>> NNAPGEN PICK
-// --- NNAPGEN PICK: spherical_chebyshev
-    // TODO:
-// --- NNAPGEN PICK: chebyshev
-    chebyForwardBatch<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_FSTYLE__, __NNAPGENXX_FP_SIZE_N__>(bi, nb,
-        aBatchNlDx, aBatchNlDy, aBatchNlDz, aBatchNlType, aNeiNum, rSubBatchFp,
-        &rSubBatchFpForwardCache, tSubFpHyperParam[0], tSubFpParam
-    );
-// <<< NNAPGEN PICK [FP USE __NNAPGENS_X__:__NNAPGENOS_X__]
-    rSubBatchFp += __NNAPGENXX_FP_SIZE__*nb;
-    tSubFpHyperParam += __NNAPGENXX_FP_SIZE_HPARAM__;
-    tSubFpParam += __NNAPGENXX_FP_SIZE_PARAM__;
-// <<< NNAPGEN REPEAT 0..<[FP MERGE __NNAPGENS_X__]
-    flag = 0;
-// <<< NNAPGEN SWITCH (CTYPE_GEN) [FP TYPE]
-    if (flag) return 1;
-    return 0;
-}
 template <int CTYPE_GEN>
 static NNAP_DEVICE int fpForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, int cType, flt_t *rFp,
                                  flt_t **aFpHyperParam, flt_t **aFpParam, flt_t *rFpForwardCache) noexcept {
@@ -106,42 +73,6 @@ static NNAP_DEVICE int fpForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *
 }
 
 template <int CTYPE_GEN, int CACHE_GRAD>
-static NNAP_DEVICE int normedNnForwardBatch(int bi, int nb,
-        int cType, flt_t *rBatchFp, flt_t *aNormParam, flt_t **aNnParam,
-        flt_t *rBatchNnGradCache, flt_t *rBatchNnHiddenCache, flt_t *rOutEng) noexcept {
-    flt_t tNormMuEng = aNormParam[0];
-    flt_t tNormSigmaEng = aNormParam[1];
-    int flag = 1;
-    
-// >>> NNAPGEN SWITCH
-    flt_t *tNormMu = aNormParam + 2;
-    flt_t *tNormSigma = tNormMu + __NNAPGENX_NN_SIZE_IN__;
-    // norm fp here
-    for (int i = 0; i < __NNAPGENX_NN_SIZE_IN__; ++i) {
-        rBatchFp[i*nb + bi] = (rBatchFp[i*nb + bi] - tNormMu[i]) / tNormSigma[i];
-    }
-    flt_t *tHiddenWeights = aNnParam[cType-1];
-    flt_t *tOutputWeights = tHiddenWeights + __NNAPGENX_NN_SIZE_HW__;
-    flt_t *tHiddenBiases = tOutputWeights + __NNAPGENX_NN_SIZE_OW__;
-    flt_t tOutputBias = tHiddenBiases[__NNAPGENX_NN_SIZE_HB__];
-// >>> NNAPGEN PICK
-// --- NNAPGEN PICK: feed_forward
-    flt_t tEng = nnForwardBatch<__NNAPGENS_CTYPE_GEN__, CACHE_GRAD>(bi, nb,
-        rBatchFp, tHiddenWeights, NULL, tHiddenBiases, NULL, tOutputWeights, tOutputBias,
-        rBatchNnGradCache, rBatchNnHiddenCache
-    );
-// --- NNAPGEN PICK: shared_feed_forward
-    // TODO:
-// <<< NNAPGEN PICK [NN USE __NNAPGENS_X__]
-    // denorm energy here
-    tEng = tEng*tNormSigmaEng + tNormMuEng;
-    *rOutEng = tEng;
-    flag = 0;
-// <<< NNAPGEN SWITCH (CTYPE_GEN) [NN TYPE]
-    if (flag) return 1;
-    return 0;
-}
-template <int CTYPE_GEN, int CACHE_GRAD>
 static NNAP_DEVICE int normedNnForward(int cType, flt_t *rFp, flt_t *aNormParam, flt_t **aNnParam,
                                        flt_t *rNnGradCache, flt_t *rNnHiddenCache, flt_t *rOutEng) noexcept {
     flt_t tNormMuEng = aNormParam[0];
@@ -179,44 +110,6 @@ static NNAP_DEVICE int normedNnForward(int cType, flt_t *rFp, flt_t *aNormParam,
     return 0;
 }
 
-template <int CTYPE_GEN>
-static NNAP_DEVICE int fpBackwardBatch(int bi, int nb,
-        flt_t *aBatchNlDx, flt_t *aBatchNlDy, flt_t *aBatchNlDz, int *aBatchNlType, int aNeiNum, int cType, flt_t *aBatchGradFp,
-        flt_t *rBatchGradNlDx, flt_t *rBatchGradNlDy, flt_t *rBatchGradNlDz,
-        flt_t **aFpHyperParam, flt_t **aFpParam, flt_t *aBatchFpForwardCache, flt_t *rBatchFpBackwardCache) noexcept {
-    int flag = 1;
-// >>> NNAPGEN SWITCH
-    flt_t *tSubBatchGradFp = aBatchGradFp;
-    flt_t *aSubBatchFpForwardCache = aBatchFpForwardCache;
-    flt_t *rSubBatchFpBackwardCache = rBatchFpBackwardCache;
-// >>> NNAPGEN IF
-// --- NNAPGEN HAS: [FP SHARE __NNAPGENS_X__]
-    flt_t *tSubFpHyperParam = aFpHyperParam[__NNAPGENX_FP_SHARED_TYPE__-1];
-    flt_t *tSubFpParam = aFpParam[__NNAPGENX_FP_SHARED_TYPE__-1];
-// --- NNAPGEN ELSE:
-    flt_t *tSubFpHyperParam = aFpHyperParam[cType-1];
-    flt_t *tSubFpParam = aFpParam[cType-1];
-// <<< NNAPGEN IF
-// >>> NNAPGEN REPEAT
-// >>> NNAPGEN PICK
-// --- NNAPGEN PICK: spherical_chebyshev
-    // TODO:
-// --- NNAPGEN PICK: chebyshev
-    chebyBackwardBatch<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_FSTYLE__, __NNAPGENXX_FP_SIZE_N__>(bi, nb,
-        aBatchNlDx, aBatchNlDy, aBatchNlDz, aBatchNlType, aNeiNum, tSubBatchGradFp,
-        rBatchGradNlDx, rBatchGradNlDy, rBatchGradNlDz,
-        &aSubBatchFpForwardCache, &rSubBatchFpBackwardCache, tSubFpHyperParam[0], tSubFpParam
-    );
-// <<< NNAPGEN PICK [FP USE __NNAPGENS_X__:__NNAPGENOS_X__]
-    tSubBatchGradFp += __NNAPGENXX_FP_SIZE__*nb;
-    tSubFpHyperParam += __NNAPGENXX_FP_SIZE_HPARAM__;
-    tSubFpParam += __NNAPGENXX_FP_SIZE_PARAM__;
-// <<< NNAPGEN REPEAT 0..<[FP MERGE __NNAPGENS_X__]
-    flag = 0;
-// <<< NNAPGEN SWITCH (CTYPE_GEN) [FP TYPE]
-    if (flag) return 1;
-    return 0;
-}
 template <int CTYPE_GEN>
 static NNAP_DEVICE int fpBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, int cType, flt_t *aGradFp,
                                   flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
@@ -261,36 +154,6 @@ static NNAP_DEVICE int fpBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int 
     return 0;
 }
 
-template <int CTYPE_GEN>
-static NNAP_DEVICE int normedNnBackwardBatch(int bi, int nb,
-        int cType, flt_t *rBatchGradFp, flt_t *aNormParam, flt_t **aNnParam,
-        flt_t *aBatchNnGradCache, flt_t *rBatchNnHiddenCache, flt_t aInGradEng) noexcept {
-    flt_t tNormSigmaEng = aNormParam[1];
-    int flag = 1;
-// >>> NNAPGEN SWITCH
-    // denorm energy here
-    aInGradEng = aInGradEng*tNormSigmaEng;
-    flt_t *tHiddenWeights = aNnParam[cType-1];
-    flt_t *tOutputWeights = tHiddenWeights + __NNAPGENX_NN_SIZE_HW__;
-// >>> NNAPGEN PICK
-// --- NNAPGEN PICK: feed_forward
-    nnBackwardBatch<__NNAPGENS_CTYPE_GEN__>(bi, nb,
-        aInGradEng, rBatchGradFp, tHiddenWeights, NULL, tOutputWeights,
-        aBatchNnGradCache, rBatchNnHiddenCache
-    );
-// --- NNAPGEN PICK: shared_feed_forward
-    // TODO:
-// <<< NNAPGEN PICK [NN USE __NNAPGENS_X__]
-    flt_t *tNormSigma = aNormParam + (2+__NNAPGENX_NN_SIZE_IN__);
-    // denorm fp here
-    for (int i = 0; i < __NNAPGENX_NN_SIZE_IN__; ++i) {
-        rBatchGradFp[i*nb + bi] /= tNormSigma[i];
-    }
-    flag = 0;
-// <<< NNAPGEN SWITCH (CTYPE_GEN) [NN TYPE]
-    if (flag) return 1;
-    return 0;
-}
 template <int CTYPE_GEN>
 static NNAP_DEVICE int normedNnBackward(int cType, flt_t *rGradFp, flt_t *aNormParam, flt_t **aNnParam, flt_t *aNnGradCache, flt_t *rNnHiddenCache, flt_t aInGradEng) noexcept {
     flt_t tNormSigmaEng = aNormParam[1];

@@ -136,6 +136,8 @@ public class MergedBasis2 extends Basis2 {
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
         rGenMap.put("[FP MERGE "+aGenIdx+"]", mMergedBasis.length);
         rGenMap.put(aGenIdx+":NNAPGEN_FP_SIZE", size());
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_SIZE_CACHEF", Math.max(1, forwardCacheSize()));
+        rGenMap.put(aGenIdx+":NNAPGEN_FP_SIZE_CACHEB", Math.max(1, backwardCacheSize()));
         for (int i = 0; i < mMergedBasis.length; ++i) {
             mMergedBasis[i].updateGenMap(rGenMap, aGenIdx, i);
         }

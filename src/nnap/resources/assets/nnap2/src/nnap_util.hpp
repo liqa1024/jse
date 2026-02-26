@@ -224,6 +224,14 @@ static inline NNAP_DEVICE flt_t dotBatchL(int bi, int nb,
     }
     return rDot;
 }
+static inline NNAP_DEVICE flt_t dotBatchL(int bi, int nb,
+        flt_t *aBatchArrayL, flt_t *aArrayR, int aSize) noexcept {
+    flt_t rDot = ZERO;
+    for (int i = 0; i < aSize; ++i) {
+        rDot += aBatchArrayL[i*nb + bi]*aArrayR[i];
+    }
+    return rDot;
+}
 template <int N>
 static inline NNAP_DEVICE flt_t dot(flt_t *aArrayL, flt_t *aArrayR) noexcept {
     flt_t rDot = ZERO;

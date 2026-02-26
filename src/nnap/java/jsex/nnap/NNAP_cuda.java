@@ -45,7 +45,6 @@ class NNAP_cuda extends NNAP2 {
         public static int OPTIM_LEVEL = OS.envI("JSE_NNAP_OPTIM_LEVEL_CUDA", NNAP2.Conf.OPTIM_LEVEL);
     }
     
-    private final int mMaxFpSize, mMaxFpFCacheSize, mMaxFpBCacheSize, mMaxNnGCacheSize, mMaxNnHCacheSize;
     private int mNeighnumMax = -1;
     // cpu 数据
     private final GrowableFloatCPointer mFltBuf;
@@ -55,7 +54,6 @@ class NNAP_cuda extends NNAP2 {
     private final GrowableIntCudaPointer mCudaType, mCudaIlist, mCudaNumneigh, mCudaBufNeiNum, mCudaBufCType;
     private final GrowableIntCudaPointer mCudaFirstneigh, mCudaBufNlType, mCudaBufNlIdx;
     private final GrowableFloatCudaPointer mCudaBufNlDx, mCudaBufNlDy, mCudaBufNlDz, mCudaBufGradNlDx, mCudaBufGradNlDy, mCudaBufGradNlDz;
-    private final GrowableFloatCudaPointer mCudaBufFpOrGradFp, mCudaBufFpForwardCache, mCudaBufFpBackwardCache, mCudaBufNnGradCache, mCudaBufNnHiddenCache;
     private FloatCudaPointer mCudaCutsq = null;
     private IntCudaPointer mCudaLmpType2NNAPType = null;
     private final AnyCPointer mCudaFpHyperParam, mCudaFpParam, mCudaNnParam, mCudaNormParam;
@@ -85,27 +83,8 @@ class NNAP_cuda extends NNAP2 {
         mCudaBufGradNlDx = new GrowableFloatCudaPointer(1024);
         mCudaBufGradNlDy = new GrowableFloatCudaPointer(1024);
         mCudaBufGradNlDz = new GrowableFloatCudaPointer(1024);
-        mCudaBufFpOrGradFp = new GrowableFloatCudaPointer(256);
-        mCudaBufFpForwardCache = new GrowableFloatCudaPointer(256);
-        mCudaBufFpBackwardCache = new GrowableFloatCudaPointer(256);
-        mCudaBufNnGradCache = new GrowableFloatCudaPointer(256);
-        mCudaBufNnHiddenCache = new GrowableFloatCudaPointer(256);
         
         int tTypeNum = mSymbols.length;
-        int rMaxFpSize = 0, rMaxFpFCacheSize = 0, rMaxFpBCacheSize = 0, rMaxNnGCacheSize = 0, rMaxNnHCacheSize = 0;
-        for (int i = 0; i < tTypeNum; ++i) {
-            rMaxFpSize = Math.max(rMaxFpSize, mBasis[i].size());
-            rMaxFpFCacheSize = Math.max(rMaxFpFCacheSize, mBasis[i].forwardCacheSize());
-            rMaxFpBCacheSize = Math.max(rMaxFpBCacheSize, mBasis[i].backwardCacheSize());
-            rMaxNnGCacheSize = Math.max(rMaxNnGCacheSize, mNN[i].gradCacheSize());
-            rMaxNnHCacheSize = Math.max(rMaxNnHCacheSize, mNN[i].hiddenCacheSize());
-        }
-        mMaxFpSize = rMaxFpSize;
-        mMaxFpFCacheSize = rMaxFpFCacheSize;
-        mMaxFpBCacheSize = rMaxFpBCacheSize;
-        mMaxNnGCacheSize = rMaxNnGCacheSize;
-        mMaxNnHCacheSize = rMaxNnHCacheSize;
-        
         mCudaFpHyperParam = AnyCPointer.malloc(tTypeNum);
         mCudaFpParam = AnyCPointer.malloc(tTypeNum);
         mCudaNnParam = AnyCPointer.malloc(tTypeNum);
@@ -196,11 +175,6 @@ class NNAP_cuda extends NNAP2 {
             mCudaBufGradNlDx.free();
             mCudaBufGradNlDy.free();
             mCudaBufGradNlDz.free();
-            mCudaBufFpOrGradFp.free();
-            mCudaBufFpForwardCache.free();
-            mCudaBufFpBackwardCache.free();
-            mCudaBufNnGradCache.free();
-            mCudaBufNnHiddenCache.free();
             if (mCudaCutsq != null) {
                 mCudaCutsq.free();
                 mCudaCutsq = null;
@@ -267,11 +241,6 @@ class NNAP_cuda extends NNAP2 {
         }
         mCudaBufNeiNum.ensureCapacity(inum);
         mCudaBufCType.ensureCapacity(inum);
-        mCudaBufFpOrGradFp.ensureCapacity(Math.max(1L, (long)inum*mMaxFpSize));
-        mCudaBufFpForwardCache.ensureCapacity(Math.max(1L, (long)inum*mMaxFpFCacheSize));
-        mCudaBufFpBackwardCache.ensureCapacity(Math.max(1L, (long)inum*mMaxFpBCacheSize));
-        mCudaBufNnGradCache.ensureCapacity(Math.max(1L, (long)inum*mMaxNnGCacheSize));
-        mCudaBufNnHiddenCache.ensureCapacity(Math.max(1L, (long)inum*mMaxNnHCacheSize));
         // 近邻列表大小获取和缓存合理化
         IPointer ilist = NULL;
         IPointer numneigh = NULL;
@@ -333,11 +302,12 @@ class NNAP_cuda extends NNAP2 {
         // cuda compute
         mInNums.putAt(0, inum);
         mInNums.putAt(1, nlocalghost);
-        mInNums.putAt(2, aPair.eflagEither()?1:0);
-        mInNums.putAt(3, aPair.vflagEither()?1:0);
-        mInNums.putAt(4, aPair.eflagAtom()?1:0);
-        mInNums.putAt(5, aPair.vflagAtom()?1:0);
-        mInNums.putAt(6, cvflagAtom?1:0);
+        mInNums.putAt(2, mNeighnumMax);
+        mInNums.putAt(3, aPair.eflagEither()?1:0);
+        mInNums.putAt(4, aPair.vflagEither()?1:0);
+        mInNums.putAt(5, aPair.eflagAtom()?1:0);
+        mInNums.putAt(6, aPair.vflagAtom()?1:0);
+        mInNums.putAt(7, cvflagAtom?1:0);
         
         mDataIn.putAt(0, mInNums);
         mDataIn.putAt(1, mCudaX);
@@ -367,11 +337,6 @@ class NNAP_cuda extends NNAP2 {
         mDataOut.putAt(12, mCudaBufGradNlDx);
         mDataOut.putAt(13, mCudaBufGradNlDy);
         mDataOut.putAt(14, mCudaBufGradNlDz);
-        mDataOut.putAt(15, mCudaBufFpOrGradFp);
-        mDataOut.putAt(16, mCudaBufFpForwardCache);
-        mDataOut.putAt(17, mCudaBufFpBackwardCache);
-        mDataOut.putAt(18, mCudaBufNnGradCache);
-        mDataOut.putAt(19, mCudaBufNnHiddenCache);
         
         tCode = mComputeLammpsCuda.invoke(mDataIn, mDataOut);
         CudaCore.cudaExceptionCheck(tCode);

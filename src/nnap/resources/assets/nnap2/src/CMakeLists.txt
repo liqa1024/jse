@@ -11,7 +11,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(SOURCE_FILES
-#    nnap_interface.cpp
+    nnap_interface.cpp
     nnap_interface_cuda.cu
 )
 add_library(nnap2 SHARED ${SOURCE_FILES})
