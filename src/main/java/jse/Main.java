@@ -246,6 +246,9 @@ public class Main {
                     if (tName.equals("cmake")) {
                         tNamesToClean.add(tName);
                     } else
+                    if (tName.equals("ninja")) {
+                        tNamesToClean.add(tName);
+                    } else
                     if (tName.equals("cpointer")) {
                         tNamesToClean.add(tName);
                     } else

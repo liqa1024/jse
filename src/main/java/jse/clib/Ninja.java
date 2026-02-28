@@ -101,6 +101,8 @@ public class Ninja {
         // 解压
         System.out.println(IO.Text.green("JNI INIT INFO:")+" Extracting Ninja...");
         IO.zip2dir(tNinjaCachePath, INTERNAL_HOME);
+        // 非 windows 需要手动设置权限，这个主要是 ninja 的分发有些随意了
+        IO.setExecutable(tInternalNinjaPath);
         return tInternalNinjaPath;
     }
     

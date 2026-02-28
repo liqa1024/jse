@@ -1389,6 +1389,7 @@ public class IO {
         validPath(aTargetPath);
         Files.move(aSourcePath, aTargetPath, REPLACE_EXISTING);
     }
+    
     /**
      * 列出输入文件夹下的所有文件或目录的名称；
      * 注意不同平台下顺序会不一样，为了避免这个问题，可以通过
@@ -1410,6 +1411,45 @@ public class IO {
         if (tList==null) throw new IOException("Fail to det list of \""+aDir+"\"");
         return tList;
     }
+    /**
+     * 设置文件是否可执行
+     * <p>
+     * 内部直接使用了 {@link File#setExecutable(boolean)} 而非 {@link Files#setPosixFilePermissions(Path, Set)}
+     * 来简单设置；注意这里设置失败会直接抛出错误而不是返回 {@code false}。
+     *
+     * @param aPath 需要设置的文件路径
+     * @param aExecutable 是否可执行
+     * @throws IOException 任何原因导致权限设置失败
+     */
+    public static void setExecutable(String aPath, boolean aExecutable) throws IOException {
+        boolean tSuc = toFile(aPath).setExecutable(aExecutable);
+        if (!tSuc) throw new IOException("Fail to set executable of \""+aPath+"\"");
+    }
+    /**
+     * 设置文件可执行
+     * <p>
+     * 内部直接使用了 {@link File#setExecutable(boolean)} 而非 {@link Files#setPosixFilePermissions(Path, Set)}
+     * 来简单设置；注意这里设置失败会直接抛出错误而不是返回 {@code false}。
+     *
+     * @param aPath 需要设置的文件路径
+     * @throws IOException 任何原因导致权限设置失败
+     */
+    public static void setExecutable(String aPath) throws IOException {
+        setExecutable(aPath, true);
+    }
+    /**
+     * 检测文件是否可执行
+     * @param aPath 需要检测的路径
+     * @return 路径存在可访问且可执行
+     */
+    public static boolean isExecutable(String aPath) {
+        return isExecutable(toAbsolutePath_(aPath));
+    }
+    /** {@link IO#isExecutable(String)} 的 {@link Path} 形式接口，主要用于内部使用 */
+    public static boolean isExecutable(Path aPath) {
+        return Files.isExecutable(aPath);
+    }
+    
     /**
      * 通过一个每行的变换操作 aOpt 来映射源文件到目标文件，主要用于将给定文本文件特定字符串批量替换；
      * 会覆盖已有文件，如果文件不存在会创建，如果目录不存在会递归创建。
