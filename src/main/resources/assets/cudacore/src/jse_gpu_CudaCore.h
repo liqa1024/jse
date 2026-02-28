@@ -25,6 +25,30 @@ JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaExceptionCheck
 
 /*
  * Class:     jse_gpu_CudaCore
+ * Method:    cudaGetDeviceCount
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_jse_gpu_CudaCore_cudaGetDeviceCount
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     jse_gpu_CudaCore
+ * Method:    cudaSetDevice
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaSetDevice
+  (JNIEnv *, jclass, jint);
+
+/*
+ * Class:     jse_gpu_CudaCore
+ * Method:    cudaGetDevice
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_jse_gpu_CudaCore_cudaGetDevice
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     jse_gpu_CudaCore
  * Method:    cudaMalloc0
  * Signature: (J)J
  */

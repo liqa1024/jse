@@ -16,6 +16,29 @@ JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaExceptionCheck(JNIEnv *aEnv, jc
     }
 }
 
+JNIEXPORT jint JNICALL Java_jse_gpu_CudaCore_cudaGetDeviceCount(JNIEnv *aEnv, jclass aClazz) {
+    int rDeviceCount = 0;
+    const cudaError_t tErr = cudaGetDeviceCount(&rDeviceCount);
+    if (tErr != cudaSuccess) {
+        JSE_CUDACORE::throwExceptionCuda(aEnv, cudaGetErrorString(tErr));
+    }
+    return (jint)rDeviceCount;
+}
+JNIEXPORT void JNICALL Java_jse_gpu_CudaCore_cudaSetDevice(JNIEnv *aEnv, jclass aClazz, jint aDevice) {
+    const cudaError_t tErr = cudaSetDevice((int)aDevice);
+    if (tErr != cudaSuccess) {
+        JSE_CUDACORE::throwExceptionCuda(aEnv, cudaGetErrorString(tErr));
+    }
+}
+JNIEXPORT jint JNICALL Java_jse_gpu_CudaCore_cudaGetDevice(JNIEnv *aEnv, jclass aClazz) {
+    int rDevice = 0;
+    const cudaError_t tErr = cudaGetDevice(&rDevice);
+    if (tErr != cudaSuccess) {
+        JSE_CUDACORE::throwExceptionCuda(aEnv, cudaGetErrorString(tErr));
+    }
+    return (jint)rDevice;
+}
+
 JNIEXPORT jlong JNICALL Java_jse_gpu_CudaCore_cudaMalloc0(JNIEnv *aEnv, jclass aClazz, jlong aCount) {
     void *tPtr = NULL;
     const cudaError_t tErr = cudaMalloc(&tPtr, (size_t)aCount);
