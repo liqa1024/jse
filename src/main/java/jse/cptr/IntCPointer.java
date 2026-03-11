@@ -181,6 +181,9 @@ public class IntCPointer extends CPointer {
         return getAt0(mPtr, aIdx);
     }
     private native static int getAt0(long aPtr, long aIdx);
+    /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public int getAt(int aIdx) {return getAt((long)aIdx);}
     
     /**
      * 设置此指针对应的数值，即对应 c 中的 {@code *ptr = aValue}
@@ -204,6 +207,9 @@ public class IntCPointer extends CPointer {
         putAt0(mPtr, aIdx, aValue);
     }
     private native static void putAt0(long aPtr, long aIdx, int aValue);
+    /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public void putAt(int aIdx, int aValue) {putAt((long)aIdx, aValue);}
     
     
     /**

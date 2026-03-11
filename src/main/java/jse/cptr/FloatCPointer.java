@@ -318,6 +318,10 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         return getAt0(mPtr, aIdx);
     }
     private native static float getAt0(long aPtr, long aIdx);
+    /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public float getAt(int aIdx) {return getAt((long)aIdx);}
+    
     /**
      * {@inheritDoc}
      * @param aIdx {@inheritDoc}
@@ -375,6 +379,10 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         putAt0(mPtr, aIdx, aValue);
     }
     private native static void putAt0(long aPtr, long aIdx, float aValue);
+    /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public void putAt(int aIdx, float aValue) {putAt((long)aIdx, aValue);}
+    
     /**
      * {@inheritDoc}
      * @param aIdx {@inheritDoc}

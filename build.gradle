@@ -91,12 +91,12 @@ dependencies {
     implementation(sourceSets.progressbar.output)
     
     // groovy
-    implementation('org.apache.groovy:groovy:4.0.27')               // 用于直接执行 groovy 脚本而不需要安装 groovy
-    implementation('org.apache.groovy:groovy-groovysh:4.0.27')      // 用于直接通过命令行交互试的操作
-    implementation('org.apache.groovy:groovy-json:4.0.27')          // 直接使用 groovy 的 json 包来支持 json，可以让 groovy 脚本使用原生的 json 功能
-    implementation('org.apache.groovy:groovy-xml:4.0.27')           // groovy 的 xml
-    implementation('org.apache.groovy:groovy-yaml:4.0.27')          // groovy 的 yaml
-    implementation('org.apache.groovy:groovy-toml:4.0.27')          // groovy 的 toml
+    implementation('org.apache.groovy:groovy:4.0.30')               // 用于直接执行 groovy 脚本而不需要安装 groovy
+    implementation('org.apache.groovy:groovy-groovysh:4.0.30')      // 用于直接通过命令行交互试的操作
+    implementation('org.apache.groovy:groovy-json:4.0.30')          // 直接使用 groovy 的 json 包来支持 json，可以让 groovy 脚本使用原生的 json 功能
+    implementation('org.apache.groovy:groovy-xml:4.0.30')           // groovy 的 xml
+    implementation('org.apache.groovy:groovy-yaml:4.0.30')          // groovy 的 yaml
+    implementation('org.apache.groovy:groovy-toml:4.0.30')          // groovy 的 toml
     implementation('jline:jline:2.14.6')                            // groovysh 前置，用来重写 sh 相关方法；现在需要手动包含此包才能让 groovy 版的 SP 通过编译
     
     // 跨语言编程
@@ -128,7 +128,7 @@ dependencies {
     
     // jep 依赖
     jepImplementation('org.jetbrains:annotations:26.0.2')           // idea 调试支持
-    jepImplementation('org.apache.groovy:groovy:4.0.27')            // jep 增加 groovy 支持
+    jepImplementation('org.apache.groovy:groovy:4.0.30')            // jep 增加 groovy 支持
     
     // progressbar 依赖
     progressbarImplementation('org.jetbrains:annotations:26.0.2')   // idea 调试支持
@@ -175,7 +175,7 @@ tasks.register('sourceJar', Jar) {
 tasks.register('downloadSource') {
     mkdir('./release/src')
     // 直接硬编码下载第三方库的源码文件
-    if (!file('./release/src/groovy-4.0.27-sources.jar').exists()) ant.get(src: 'https://repo1.maven.org/maven2/org/apache/groovy/groovy/4.0.27/groovy-4.0.27-sources.jar', dest: './release/src')
+    if (!file('./release/src/groovy-4.0.30-sources.jar').exists()) ant.get(src: 'https://repo1.maven.org/maven2/org/apache/groovy/groovy/4.0.30/groovy-4.0.30-sources.jar', dest: './release/src')
 //    if (!file('./release/src/api-0.30.0-sources.jar').exists()) ant.get(src: 'https://repo1.maven.org/maven2/ai/djl/api/0.30.0/api-0.30.0-sources.jar', dest: './release/src')
 }
 

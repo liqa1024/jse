@@ -170,6 +170,10 @@ public class AnyCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         return new Pointer(getAt0(mPtr, aIdx));
     }
+    /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public IPointer getAt(int aIdx) {return getAt((long)aIdx);}
+    
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成标准 c 指针，即对应 c 中的 {@code (void *)ptr[aIdx]}
      * @param aIdx 需要获取的索引位置
@@ -274,7 +278,9 @@ public class AnyCPointer extends CPointer {
         putAt0(mPtr, aIdx, aValue.ptr_());
     }
     native static void putAt0(long aPtr, long aIdx, long aValue);
-    
+    /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public void putAt(int aIdx, @NotNull IPointer aValue) {putAt((long)aIdx, aValue);}
     
     /**
      * 向后移动指针，即对应 c 中的 {@code ++ptr}

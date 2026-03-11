@@ -181,6 +181,10 @@ public class NestedIntCPointer extends AnyCPointer {
         if (isNull()) throw new NullPointerException();
         return new IntCPointer(getAt0(mPtr, aIdx));
     }
+    /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    @Override public IntCPointer getAt(int aIdx) {return getAt((long)aIdx);}
+    
     /**
      * 将此嵌套指针当作一个 c 的矩阵，获取内部指定行列的值，即对应 c 中的 {@code ptr[aRow][aCol]}
      * @param aRow 需要获取的行
