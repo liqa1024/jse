@@ -893,7 +893,7 @@ static void construct_table_radial_or_angular(
         }
     }
 }
-static void construct_table(double *parameters,
+static void construct_table(const double *parameters,
     const int version,
     const int num_types,
     const int n_max_radial, const int n_max_angular,
@@ -906,7 +906,7 @@ static void construct_table(double *parameters,
     const double rcinv_radial = 1.0 / rc_radial;
     const double rcinv_angular = 1.0 / rc_angular;
     
-    double* c_pointer = parameters + num_para_ann;
+    const double *c_pointer = parameters + num_para_ann;
     construct_table_radial_or_angular(
         version, num_types, num_types_sq, n_max_radial,
         basis_size_radial, rc_radial, rcinv_radial, c_pointer,

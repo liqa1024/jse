@@ -833,10 +833,10 @@ public class NEP implements IPairPotential {
         }
         parametersPtr.free();
     }
-    void update_potential(DoubleCPointer ptr) {
+    void update_potential(DoubleCPointer aPtr) {
         annmb.clear();
         int count;
-        DoubleCPointer buf;
+        DoubleCPointer buf, ptr = aPtr.copy();
         for (int t = 0; t < paramb.num_types; ++t) {
             if (t > 0 && paramb.version == 3) { // Use the same set of NN parameters for NEP3
                 ptr.leftShift((long) (annmb.dim + 2) * annmb.num_neurons1);

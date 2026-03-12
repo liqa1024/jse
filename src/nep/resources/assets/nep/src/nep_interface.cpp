@@ -40,7 +40,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_constructTable(void *aDataIn, void *
     auto gnp_radial = (double *)tDataOut[2];
     auto gnp_angular = (double *)tDataOut[3];
     
-    JSE_NEP::construct_table((double *)aDataIn,
+    JSE_NEP::construct_table((const double *)aDataIn,
         __NEPGEN_VERSION__,
         __NEPGEN_NTYPES__,
         __NEPGEN_NMAX_R__, __NEPGEN_NMAX_A__,
