@@ -83,7 +83,7 @@ public class PairNEP extends LmpPlugin.Pair {
         int tArgLen = aArgs.length-2;
         if (tArgLen-1 != tTypeNum) throw new IllegalArgumentException("Elements number in pair_coeff not match ntypes ("+tTypeNum+").");
         mTypeMap = IntCPointer.calloc(tArgLen);
-        mNEP.init_from_file(aArgs[2]);
+        mNEP.init_from_file(aArgs[2], "cpu");
         for (int type = 1; type < tArgLen; ++type) {
             String tElem = aArgs[2+type];
             int tNEPType = mNEP.typeOf(tElem)-1;

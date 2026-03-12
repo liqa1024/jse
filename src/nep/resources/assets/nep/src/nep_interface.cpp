@@ -35,15 +35,15 @@ extern "C" {
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_constructTable(void *aDataIn, void *rDataOut) {
     auto tDataOut = (void **)rDataOut;
     
-    auto gn_radial = (double *)tDataOut[0];
-    auto gn_angular = (double *)tDataOut[1];
-    auto gnp_radial = (double *)tDataOut[2];
-    auto gnp_angular = (double *)tDataOut[3];
+    auto gn_radial = (JSE_NEP::flt_t *)tDataOut[0];
+    auto gn_angular = (JSE_NEP::flt_t *)tDataOut[1];
+    auto gnp_radial = (JSE_NEP::flt_t *)tDataOut[2];
+    auto gnp_angular = (JSE_NEP::flt_t *)tDataOut[3];
     
     JSE_NEP::construct_table<__NEPGEN_VERSION__, __NEPGEN_NTYPES__, __NEPGEN_NMAX_R__, __NEPGEN_NMAX_A__,
                              __NEPGEN_BSIZE_R__, __NEPGEN_BSIZE_A__, __NEPGEN_NUMC_R__, __NEPGEN_NUM_PARA_ANN__>(
         (const double *)aDataIn,
-        (double)__NEPGEN_RCUT_R__, (double)__NEPGEN_RCUT_A__,
+        __NEPGEN_RCUT_R__, __NEPGEN_RCUT_A__,
         gn_radial, gn_angular,
         gnp_radial, gnp_angular
     );
@@ -55,47 +55,47 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_calEnergy(void *aDataIn, void *rData
     auto tDataOut = (void **)rDataOut;
     
     auto nums = (const int *)tDataIn[0];
-    auto nl_dx = (const double *)tDataIn[1];
-    auto nl_dy = (const double *)tDataIn[2];
-    auto nl_dz = (const double *)tDataIn[3];
+    auto nl_dx = (const JSE_NEP::flt_t *)tDataIn[1];
+    auto nl_dy = (const JSE_NEP::flt_t *)tDataIn[2];
+    auto nl_dz = (const JSE_NEP::flt_t *)tDataIn[3];
     auto nl_type = (const int *)tDataIn[4];
     auto atomic_numbers = (const int *)tDataIn[5];
-    auto q_scaler = (const double *)tDataIn[6];
-    auto ann_w0 = (const double **)tDataIn[7];
-    auto ann_b0 = (const double **)tDataIn[8];
-    auto ann_w1 = (const double **)tDataIn[9];
-    auto ann_b1 = (const double *)tDataIn[10];
-    auto ann_c = (const double *)tDataIn[11];
-    auto zbl_para = (const double *)tDataIn[12];
-    auto gn_radial = (const double *)tDataIn[13];
-    auto gn_angular = (const double *)tDataIn[14];
+    auto q_scaler = (const JSE_NEP::flt_t *)tDataIn[6];
+    auto ann_w0 = (const JSE_NEP::flt_t **)tDataIn[7];
+    auto ann_b0 = (const JSE_NEP::flt_t **)tDataIn[8];
+    auto ann_w1 = (const JSE_NEP::flt_t **)tDataIn[9];
+    auto ann_b1 = (const JSE_NEP::flt_t *)tDataIn[10];
+    auto ann_c = (const JSE_NEP::flt_t *)tDataIn[11];
+    auto zbl_para = (const JSE_NEP::flt_t *)tDataIn[12];
+    auto gn_radial = (const JSE_NEP::flt_t *)tDataIn[13];
+    auto gn_angular = (const JSE_NEP::flt_t *)tDataIn[14];
     
-    auto eng = (double *)tDataOut[0];
-    auto nl_fx = (double *)tDataOut[1];
-    auto nl_fy = (double *)tDataOut[2];
-    auto nl_fz = (double *)tDataOut[3];
-    auto fp = (double *)tDataOut[4];
-    auto sum_fxyz = (double *)tDataOut[5];
+    auto eng = (JSE_NEP::flt_t *)tDataOut[0];
+    auto nl_fx = (JSE_NEP::flt_t *)tDataOut[1];
+    auto nl_fy = (JSE_NEP::flt_t *)tDataOut[2];
+    auto nl_fz = (JSE_NEP::flt_t *)tDataOut[3];
+    auto fp = (JSE_NEP::flt_t *)tDataOut[4];
+    auto sum_fxyz = (JSE_NEP::flt_t *)tDataOut[5];
     
     int num_neigh = nums[0];
     int ctype = nums[1];
     
     // manual clear required
-    eng[0] = 0.0;
+    eng[0] = (JSE_NEP::flt_t)0.0;
     for (int i = 0; i < __NEPGEN_ANN_DIM__; ++i) {
-        fp[i] = 0.0;
+        fp[i] = (JSE_NEP::flt_t)0.0;
     }
     constexpr int size_sum_fxyz = (__NEPGEN_NMAX_A__+1) * JSE_NEP::NUM_OF_ABC;
     for (int i = 0; i < size_sum_fxyz; ++i) {
-        sum_fxyz[i] = 0.0;
+        sum_fxyz[i] = (JSE_NEP::flt_t)0.0;
     }
     JSE_NEP::find_descriptor<__NEPGEN_USE_TABLE__, __NEPGEN_VERSION__, __NEPGEN_NTYPES__, __NEPGEN_USE_TYPEWISE_CUTOFF__,
                              __NEPGEN_NMAX_R__, __NEPGEN_BSIZE_R__, __NEPGEN_NUMC_R__,
                              __NEPGEN_NMAX_A__, __NEPGEN_BSIZE_A__, __NEPGEN_LMAX__, __NEPGEN_NUML__,
                              __NEPGEN_ANN_DIM__, __NEPGEN_NUM_NEURONS1__>(
         atomic_numbers,
-        (double)__NEPGEN_TYPEWISE_CUTOFF_FACTOR_R__, (double)__NEPGEN_TYPEWISE_CUTOFF_FACTOR_A__,
-        (double)__NEPGEN_RCUT_R__, (double)__NEPGEN_RCUT_A__,
+        __NEPGEN_TYPEWISE_CUTOFF_FACTOR_R__, __NEPGEN_TYPEWISE_CUTOFF_FACTOR_A__,
+        __NEPGEN_RCUT_R__, __NEPGEN_RCUT_A__,
         q_scaler,
         ann_w0, ann_b0, ann_w1, ann_b1,
         ann_c,
@@ -112,15 +112,15 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_calEnergy(void *aDataIn, void *rData
     if (__NEPGEN_ZBL__) {
         // manual clear required
         for (int j = 0; j < num_neigh; ++j) {
-            nl_fx[j] = 0.0;
-            nl_fy[j] = 0.0;
-            nl_fz[j] = 0.0;
+            nl_fx[j] = (JSE_NEP::flt_t)0.0;
+            nl_fy[j] = (JSE_NEP::flt_t)0.0;
+            nl_fz[j] = (JSE_NEP::flt_t)0.0;
         }
         JSE_NEP::find_force_ZBL<__NEPGEN_NTYPES__, __NEPGEN_USE_TYPEWISE_CUTOFF_ZBL__, __NEPGEN_ZBL_FLEXIBLED__>(
             atomic_numbers,
-            (double)__NEPGEN_TYPEWISE_CUTOFF_FACTOR_ZBL__,
+            __NEPGEN_TYPEWISE_CUTOFF_FACTOR_ZBL__,
             __NEPGEN_ZBL_FLEXIBLED__?zbl_para:nullptr,
-            (double)__NEPGEN_RCUT_INNER_ZBL__, (double)__NEPGEN_RCUT_OUTER_ZBL__,
+            __NEPGEN_RCUT_INNER_ZBL__, __NEPGEN_RCUT_OUTER_ZBL__,
             0, ctype,
             num_neigh,
             nl_type,
@@ -138,54 +138,54 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_calEnergyForce(void *aDataIn, void *
     auto tDataOut = (void **)rDataOut;
     
     auto nums = (const int *)tDataIn[0];
-    auto nl_dx = (const double *)tDataIn[1];
-    auto nl_dy = (const double *)tDataIn[2];
-    auto nl_dz = (const double *)tDataIn[3];
+    auto nl_dx = (const JSE_NEP::flt_t *)tDataIn[1];
+    auto nl_dy = (const JSE_NEP::flt_t *)tDataIn[2];
+    auto nl_dz = (const JSE_NEP::flt_t *)tDataIn[3];
     auto nl_type = (const int *)tDataIn[4];
     auto atomic_numbers = (const int *)tDataIn[5];
-    auto q_scaler = (const double *)tDataIn[6];
-    auto ann_w0 = (const double **)tDataIn[7];
-    auto ann_b0 = (const double **)tDataIn[8];
-    auto ann_w1 = (const double **)tDataIn[9];
-    auto ann_b1 = (const double *)tDataIn[10];
-    auto ann_c = (const double *)tDataIn[11];
-    auto zbl_para = (const double *)tDataIn[12];
-    auto gn_radial = (const double *)tDataIn[13];
-    auto gn_angular = (const double *)tDataIn[14];
-    auto gnp_radial = (const double *)tDataIn[15];
-    auto gnp_angular = (const double *)tDataIn[16];
+    auto q_scaler = (const JSE_NEP::flt_t *)tDataIn[6];
+    auto ann_w0 = (const JSE_NEP::flt_t **)tDataIn[7];
+    auto ann_b0 = (const JSE_NEP::flt_t **)tDataIn[8];
+    auto ann_w1 = (const JSE_NEP::flt_t **)tDataIn[9];
+    auto ann_b1 = (const JSE_NEP::flt_t *)tDataIn[10];
+    auto ann_c = (const JSE_NEP::flt_t *)tDataIn[11];
+    auto zbl_para = (const JSE_NEP::flt_t *)tDataIn[12];
+    auto gn_radial = (const JSE_NEP::flt_t *)tDataIn[13];
+    auto gn_angular = (const JSE_NEP::flt_t *)tDataIn[14];
+    auto gnp_radial = (const JSE_NEP::flt_t *)tDataIn[15];
+    auto gnp_angular = (const JSE_NEP::flt_t *)tDataIn[16];
     
-    auto eng = (double *)tDataOut[0];
-    auto nl_fx = (double *)tDataOut[1];
-    auto nl_fy = (double *)tDataOut[2];
-    auto nl_fz = (double *)tDataOut[3];
-    auto fp = (double *)tDataOut[4];
-    auto sum_fxyz = (double *)tDataOut[5];
+    auto eng = (JSE_NEP::flt_t *)tDataOut[0];
+    auto nl_fx = (JSE_NEP::flt_t *)tDataOut[1];
+    auto nl_fy = (JSE_NEP::flt_t *)tDataOut[2];
+    auto nl_fz = (JSE_NEP::flt_t *)tDataOut[3];
+    auto fp = (JSE_NEP::flt_t *)tDataOut[4];
+    auto sum_fxyz = (JSE_NEP::flt_t *)tDataOut[5];
     
     int num_neigh = nums[0];
     int ctype = nums[1];
     
     // manual clear required
-    eng[0] = 0.0;
+    eng[0] = (JSE_NEP::flt_t)0.0;
     for (int i = 0; i < __NEPGEN_ANN_DIM__; ++i) {
-        fp[i] = 0.0;
+        fp[i] = (JSE_NEP::flt_t)0.0;
     }
     constexpr int size_sum_fxyz = (__NEPGEN_NMAX_A__+1) * JSE_NEP::NUM_OF_ABC;
     for (int i = 0; i < size_sum_fxyz; ++i) {
-        sum_fxyz[i] = 0.0;
+        sum_fxyz[i] = (JSE_NEP::flt_t)0.0;
     }
     for (int j = 0; j < num_neigh; ++j) {
-        nl_fx[j] = 0.0;
-        nl_fy[j] = 0.0;
-        nl_fz[j] = 0.0;
+        nl_fx[j] = (JSE_NEP::flt_t)0.0;
+        nl_fy[j] = (JSE_NEP::flt_t)0.0;
+        nl_fz[j] = (JSE_NEP::flt_t)0.0;
     }
     JSE_NEP::find_descriptor<__NEPGEN_USE_TABLE__, __NEPGEN_VERSION__, __NEPGEN_NTYPES__, __NEPGEN_USE_TYPEWISE_CUTOFF__,
                              __NEPGEN_NMAX_R__, __NEPGEN_BSIZE_R__, __NEPGEN_NUMC_R__,
                              __NEPGEN_NMAX_A__, __NEPGEN_BSIZE_A__, __NEPGEN_LMAX__, __NEPGEN_NUML__,
                              __NEPGEN_ANN_DIM__, __NEPGEN_NUM_NEURONS1__>(
         atomic_numbers,
-        (double)__NEPGEN_TYPEWISE_CUTOFF_FACTOR_R__, (double)__NEPGEN_TYPEWISE_CUTOFF_FACTOR_A__,
-        (double)__NEPGEN_RCUT_R__, (double)__NEPGEN_RCUT_A__,
+        __NEPGEN_TYPEWISE_CUTOFF_FACTOR_R__, __NEPGEN_TYPEWISE_CUTOFF_FACTOR_A__,
+        __NEPGEN_RCUT_R__, __NEPGEN_RCUT_A__,
         q_scaler,
         ann_w0, ann_b0, ann_w1, ann_b1,
         ann_c,
@@ -202,8 +202,8 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_calEnergyForce(void *aDataIn, void *
     JSE_NEP::find_force_radial<__NEPGEN_USE_TABLE__, __NEPGEN_NTYPES__, __NEPGEN_USE_TYPEWISE_CUTOFF__,
                                __NEPGEN_NMAX_R__, __NEPGEN_BSIZE_R__>(
         atomic_numbers,
-        (double)__NEPGEN_TYPEWISE_CUTOFF_FACTOR_R__,
-        (double)__NEPGEN_RCUT_R__,
+        __NEPGEN_TYPEWISE_CUTOFF_FACTOR_R__,
+        __NEPGEN_RCUT_R__,
         ann_c,
         1,
         0, ctype,
@@ -218,8 +218,8 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_calEnergyForce(void *aDataIn, void *
                                __NEPGEN_NMAX_R__, __NEPGEN_NUMC_R__,
                                __NEPGEN_NMAX_A__, __NEPGEN_BSIZE_A__, __NEPGEN_LMAX__, __NEPGEN_NUML__, __NEPGEN_ANN_DIM_A__>(
         atomic_numbers,
-        (double)__NEPGEN_TYPEWISE_CUTOFF_FACTOR_A__,
-        (double)__NEPGEN_RCUT_A__,
+        __NEPGEN_TYPEWISE_CUTOFF_FACTOR_A__,
+        __NEPGEN_RCUT_A__,
         ann_c,
         1,
         0, ctype,
@@ -233,9 +233,9 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_calEnergyForce(void *aDataIn, void *
     if (__NEPGEN_ZBL__) {
         JSE_NEP::find_force_ZBL<__NEPGEN_NTYPES__, __NEPGEN_USE_TYPEWISE_CUTOFF_ZBL__, __NEPGEN_ZBL_FLEXIBLED__>(
             atomic_numbers,
-            (double)__NEPGEN_TYPEWISE_CUTOFF_FACTOR_ZBL__,
+            __NEPGEN_TYPEWISE_CUTOFF_FACTOR_ZBL__,
             __NEPGEN_ZBL_FLEXIBLED__?zbl_para:nullptr,
-            (double)__NEPGEN_RCUT_INNER_ZBL__, (double)__NEPGEN_RCUT_OUTER_ZBL__,
+            __NEPGEN_RCUT_INNER_ZBL__, __NEPGEN_RCUT_OUTER_ZBL__,
             0, ctype,
             num_neigh,
             nl_type,
@@ -274,29 +274,29 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_computeLammps(void *aDataIn, void *r
     void **tDataOut = (void **)rDataOut;
     
     auto nums = (const int *)tDataIn[0];
-    auto nl_dx = (double *)tDataIn[1];
-    auto nl_dy = (double *)tDataIn[2];
-    auto nl_dz = (double *)tDataIn[3];
+    auto nl_dx = (JSE_NEP::flt_t *)tDataIn[1];
+    auto nl_dy = (JSE_NEP::flt_t *)tDataIn[2];
+    auto nl_dz = (JSE_NEP::flt_t *)tDataIn[3];
     auto nl_type = (int *)tDataIn[4];
     auto nl_idx = (int *)tDataIn[5];
     auto atomic_numbers = (const int *)tDataIn[6];
-    auto q_scaler = (const double *)tDataIn[7];
-    auto ann_w0 = (const double **)tDataIn[8];
-    auto ann_b0 = (const double **)tDataIn[9];
-    auto ann_w1 = (const double **)tDataIn[10];
-    auto ann_b1 = (const double *)tDataIn[11];
-    auto ann_c = (const double *)tDataIn[12];
-    auto zbl_para = (const double *)tDataIn[13];
-    auto gn_radial = (const double *)tDataIn[14];
-    auto gn_angular = (const double *)tDataIn[15];
-    auto gnp_radial = (const double *)tDataIn[16];
-    auto gnp_angular = (const double *)tDataIn[17];
+    auto q_scaler = (const JSE_NEP::flt_t *)tDataIn[7];
+    auto ann_w0 = (const JSE_NEP::flt_t **)tDataIn[8];
+    auto ann_b0 = (const JSE_NEP::flt_t **)tDataIn[9];
+    auto ann_w1 = (const JSE_NEP::flt_t **)tDataIn[10];
+    auto ann_b1 = (const JSE_NEP::flt_t *)tDataIn[11];
+    auto ann_c = (const JSE_NEP::flt_t *)tDataIn[12];
+    auto zbl_para = (const JSE_NEP::flt_t *)tDataIn[13];
+    auto gn_radial = (const JSE_NEP::flt_t *)tDataIn[14];
+    auto gn_angular = (const JSE_NEP::flt_t *)tDataIn[15];
+    auto gnp_radial = (const JSE_NEP::flt_t *)tDataIn[16];
+    auto gnp_angular = (const JSE_NEP::flt_t *)tDataIn[17];
     
-    auto nl_fx = (double *)tDataOut[1];
-    auto nl_fy = (double *)tDataOut[2];
-    auto nl_fz = (double *)tDataOut[3];
-    auto fp = (double *)tDataOut[4];
-    auto sum_fxyz = (double *)tDataOut[5];
+    auto nl_fx = (JSE_NEP::flt_t *)tDataOut[1];
+    auto nl_fy = (JSE_NEP::flt_t *)tDataOut[2];
+    auto nl_fz = (JSE_NEP::flt_t *)tDataOut[3];
+    auto fp = (JSE_NEP::flt_t *)tDataOut[4];
+    auto sum_fxyz = (JSE_NEP::flt_t *)tDataOut[5];
     
     int inum = nums[0];
     int eflag = nums[1];
@@ -344,9 +344,9 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_computeLammps(void *aDataIn, void *r
             double delz = x[j][2] - ztmp;
             double rsq = delx*delx + dely*dely + delz*delz;
             if (rsq < cutsq) {
-                nl_dx[num_neigh] = (double)delx;
-                nl_dy[num_neigh] = (double)dely;
-                nl_dz[num_neigh] = (double)delz;
+                nl_dx[num_neigh] = (JSE_NEP::flt_t)delx;
+                nl_dy[num_neigh] = (JSE_NEP::flt_t)dely;
+                nl_dz[num_neigh] = (JSE_NEP::flt_t)delz;
                 nl_type[num_neigh] = type_map[type[j]];
                 nl_idx[num_neigh] = j;
                 ++num_neigh;
@@ -354,27 +354,27 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_computeLammps(void *aDataIn, void *r
         }
         
         /// begin nnap here
-        double eng = 0.0;
+        JSE_NEP::flt_t eng = 0.0;
         // manual clear required
         for (int k = 0; k < __NEPGEN_ANN_DIM__; ++k) {
-            fp[k] = 0.0;
+            fp[k] = (JSE_NEP::flt_t)0.0;
         }
         constexpr int size_sum_fxyz = (__NEPGEN_NMAX_A__+1) * JSE_NEP::NUM_OF_ABC;
         for (int k = 0; k < size_sum_fxyz; ++k) {
-            sum_fxyz[k] = 0.0;
+            sum_fxyz[k] = (JSE_NEP::flt_t)0.0;
         }
         for (int j = 0; j < num_neigh; ++j) {
-            nl_fx[j] = 0.0;
-            nl_fy[j] = 0.0;
-            nl_fz[j] = 0.0;
+            nl_fx[j] = (JSE_NEP::flt_t)0.0;
+            nl_fy[j] = (JSE_NEP::flt_t)0.0;
+            nl_fz[j] = (JSE_NEP::flt_t)0.0;
         }
         JSE_NEP::find_descriptor<__NEPGEN_USE_TABLE__, __NEPGEN_VERSION__, __NEPGEN_NTYPES__, __NEPGEN_USE_TYPEWISE_CUTOFF__,
                                  __NEPGEN_NMAX_R__, __NEPGEN_BSIZE_R__, __NEPGEN_NUMC_R__,
                                  __NEPGEN_NMAX_A__, __NEPGEN_BSIZE_A__, __NEPGEN_LMAX__, __NEPGEN_NUML__,
                                  __NEPGEN_ANN_DIM__, __NEPGEN_NUM_NEURONS1__>(
             atomic_numbers,
-            (double)__NEPGEN_TYPEWISE_CUTOFF_FACTOR_R__, (double)__NEPGEN_TYPEWISE_CUTOFF_FACTOR_A__,
-            (double)__NEPGEN_RCUT_R__, (double)__NEPGEN_RCUT_A__,
+            __NEPGEN_TYPEWISE_CUTOFF_FACTOR_R__, __NEPGEN_TYPEWISE_CUTOFF_FACTOR_A__,
+            __NEPGEN_RCUT_R__, __NEPGEN_RCUT_A__,
             q_scaler,
             ann_w0, ann_b0, ann_w1, ann_b1,
             ann_c,
@@ -391,8 +391,8 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_computeLammps(void *aDataIn, void *r
         JSE_NEP::find_force_radial<__NEPGEN_USE_TABLE__, __NEPGEN_NTYPES__, __NEPGEN_USE_TYPEWISE_CUTOFF__,
                                    __NEPGEN_NMAX_R__, __NEPGEN_BSIZE_R__>(
             atomic_numbers,
-            (double)__NEPGEN_TYPEWISE_CUTOFF_FACTOR_R__,
-            (double)__NEPGEN_RCUT_R__,
+            __NEPGEN_TYPEWISE_CUTOFF_FACTOR_R__,
+            __NEPGEN_RCUT_R__,
             ann_c,
             1,
             0, typeiNEP,
@@ -407,8 +407,8 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_computeLammps(void *aDataIn, void *r
                                    __NEPGEN_NMAX_R__, __NEPGEN_NUMC_R__,
                                    __NEPGEN_NMAX_A__, __NEPGEN_BSIZE_A__, __NEPGEN_LMAX__, __NEPGEN_NUML__, __NEPGEN_ANN_DIM_A__>(
             atomic_numbers,
-            (double)__NEPGEN_TYPEWISE_CUTOFF_FACTOR_A__,
-            (double)__NEPGEN_RCUT_A__,
+            __NEPGEN_TYPEWISE_CUTOFF_FACTOR_A__,
+            __NEPGEN_RCUT_A__,
             ann_c,
             1,
             0, typeiNEP,
@@ -422,9 +422,9 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_computeLammps(void *aDataIn, void *r
         if (__NEPGEN_ZBL__) {
             JSE_NEP::find_force_ZBL<__NEPGEN_NTYPES__, __NEPGEN_USE_TYPEWISE_CUTOFF_ZBL__, __NEPGEN_ZBL_FLEXIBLED__>(
                 atomic_numbers,
-                (double)__NEPGEN_TYPEWISE_CUTOFF_FACTOR_ZBL__,
+                __NEPGEN_TYPEWISE_CUTOFF_FACTOR_ZBL__,
                 __NEPGEN_ZBL_FLEXIBLED__?zbl_para:nullptr,
-                (double)__NEPGEN_RCUT_INNER_ZBL__, (double)__NEPGEN_RCUT_OUTER_ZBL__,
+                __NEPGEN_RCUT_INNER_ZBL__, __NEPGEN_RCUT_OUTER_ZBL__,
                 0, typeiNEP,
                 num_neigh,
                 nl_type,
@@ -441,9 +441,9 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_computeLammps(void *aDataIn, void *r
         }
         for (int jj = 0; jj < num_neigh; ++jj) {
             const int j = nl_idx[jj];
-            const double fx = nl_fx[jj];
-            const double fy = nl_fy[jj];
-            const double fz = nl_fz[jj];
+            const JSE_NEP::flt_t fx = nl_fx[jj];
+            const JSE_NEP::flt_t fy = nl_fy[jj];
+            const JSE_NEP::flt_t fz = nl_fz[jj];
             f[i][0] -= fx;
             f[i][1] -= fy;
             f[i][2] -= fz;
@@ -451,9 +451,9 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_computeLammps(void *aDataIn, void *r
             f[j][1] += fy;
             f[j][2] += fz;
             if (vflag) {
-                const double dx = nl_dx[jj];
-                const double dy = nl_dy[jj];
-                const double dz = nl_dz[jj];
+                const JSE_NEP::flt_t dx = nl_dx[jj];
+                const JSE_NEP::flt_t dy = nl_dy[jj];
+                const JSE_NEP::flt_t dz = nl_dz[jj];
                 virial[0] += dx*fx;
                 virial[1] += dy*fy;
                 virial[2] += dz*fz;

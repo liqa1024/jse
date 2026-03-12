@@ -86,7 +86,7 @@ public class NEP implements IPairPotential {
     
     NEP() {}
     public NEP(String aPotentialFileName) throws Exception {
-        init_from_file(aPotentialFileName);
+        init_from_file(aPotentialFileName, "cpu");
     }
     
     @Override public int atomTypeNumber() {return element_list.size();}
@@ -349,8 +349,11 @@ public class NEP implements IPairPotential {
         int num_types_sq = 0;
         int num_c_radial = 0;
         int num_types = 0;
-        DoubleCPointer q_scaler = DoubleCPointer.malloc(140);
-        IntCPointer atomic_numbers = IntCPointer.malloc(NUM_ELEMENTS);
+        final IDoubleOrFloatCPointer q_scaler;
+        final IntCPointer atomic_numbers = IntCPointer.malloc(NUM_ELEMENTS);
+        ParaMB(boolean single) {
+            q_scaler = single ? FloatCPointer.malloc(140) : DoubleCPointer.malloc(140);
+        }
         
         private boolean mFree = false;
         void free() {
@@ -366,16 +369,17 @@ public class NEP implements IPairPotential {
         int num_neurons1 = 0;
         int num_para = 0;
         int num_para_ann = 0;
-        NestedDoubleCPointer w0 = NestedDoubleCPointer.calloc(NUM_ELEMENTS);
-        NestedDoubleCPointer b0 = NestedDoubleCPointer.calloc(NUM_ELEMENTS);
-        NestedDoubleCPointer w1 = NestedDoubleCPointer.calloc(NUM_ELEMENTS);
-        DoubleCPointer b1 = null;
-        DoubleCPointer c = null;
+        final AnyCPointer w0 = AnyCPointer.calloc(NUM_ELEMENTS);
+        final AnyCPointer b0 = AnyCPointer.calloc(NUM_ELEMENTS);
+        final AnyCPointer w1 = AnyCPointer.calloc(NUM_ELEMENTS);
+        IDoubleOrFloatCPointer b1 = null;
+        IDoubleOrFloatCPointer c = null;
         // for the scalar part of polarizability
-        NestedDoubleCPointer w0_pol = NestedDoubleCPointer.calloc(NUM_ELEMENTS);
-        NestedDoubleCPointer b0_pol = NestedDoubleCPointer.calloc(NUM_ELEMENTS);
-        NestedDoubleCPointer w1_pol = NestedDoubleCPointer.calloc(NUM_ELEMENTS);
-        DoubleCPointer b1_pol = null;
+        final AnyCPointer w0_pol = AnyCPointer.calloc(NUM_ELEMENTS);
+        final AnyCPointer b0_pol = AnyCPointer.calloc(NUM_ELEMENTS);
+        final AnyCPointer w1_pol = AnyCPointer.calloc(NUM_ELEMENTS);
+        IDoubleOrFloatCPointer b1_pol = null;
+        ANN(boolean single) {}
         
         void clear() {
             if (!inited) return;
@@ -392,8 +396,8 @@ public class NEP implements IPairPotential {
             c.free();
             b1_pol.free();
         }
-        private void getAndFree_(int i, NestedDoubleCPointer aNestedPtr) {
-            DoubleCPointer tPtr = aNestedPtr.getAt(i);
+        private void getAndFree_(int i, AnyCPointer aNestedPtr) {
+            CPointer tPtr = aNestedPtr.getAsCPointerAt(i);
             if (!tPtr.isNull()) {
                 tPtr.free();
                 aNestedPtr.putAt(i, NULL);
@@ -415,7 +419,10 @@ public class NEP implements IPairPotential {
         int num_types;
         double rc_inner = 1.0;
         double rc_outer = 2.0;
-        DoubleCPointer para = DoubleCPointer.calloc(550);
+        final IDoubleOrFloatCPointer para;
+        ZBL(boolean single) {
+            para = single ? FloatCPointer.malloc(550) : DoubleCPointer.calloc(550);
+        }
         
         private boolean mFree = false;
         void free() {
@@ -425,28 +432,23 @@ public class NEP implements IPairPotential {
         }
     }
     
-    ParaMB paramb = new ParaMB();
-    ANN annmb = new ANN();
-    ZBL zbl = new ZBL();
-    GrowableDoubleCPointer Fp = new GrowableDoubleCPointer(1);
-    GrowableDoubleCPointer sum_fxyz = new GrowableDoubleCPointer(1);
+    ParaMB paramb = null;
+    ANN annmb = null;
+    ZBL zbl = null;
+    IGrowableDoubleOrFloatCPointer Fp = null, sum_fxyz = null;
     ArrayList<String> element_list = new ArrayList<>();
     
-    GrowableDoubleCPointer gn_radial = new GrowableDoubleCPointer(1);   // tabulated gn_radial functions
-    GrowableDoubleCPointer gnp_radial = new GrowableDoubleCPointer(1);  // tabulated gnp_radial functions
-    GrowableDoubleCPointer gn_angular = new GrowableDoubleCPointer(1);  // tabulated gn_angular functions
-    GrowableDoubleCPointer gnp_angular = new GrowableDoubleCPointer(1); // tabulated gnp_angular functions
+    IGrowableDoubleOrFloatCPointer gn_radial = null;   // tabulated gn_radial functions
+    IGrowableDoubleOrFloatCPointer gnp_radial = null;  // tabulated gnp_radial functions
+    IGrowableDoubleOrFloatCPointer gn_angular = null;  // tabulated gn_angular functions
+    IGrowableDoubleOrFloatCPointer gnp_angular = null; // tabulated gnp_angular functions
     
-    boolean mSinglePrecision = false;
+    boolean mSinglePrecision = false, mArchCuda = true;
     AnyCPointer mDataIn = AnyCPointer.calloc(32), mDataOut = AnyCPointer.calloc(32);
     IntCPointer mInNums = IntCPointer.malloc(32), mOutNums = IntCPointer.malloc(32);
-    DoubleCPointer mOutEng = DoubleCPointer.malloc(1);
-    GrowableDoubleCPointer mNlDx = new GrowableDoubleCPointer(16);
-    GrowableDoubleCPointer mNlDy = new GrowableDoubleCPointer(16);
-    GrowableDoubleCPointer mNlDz = new GrowableDoubleCPointer(16);
-    GrowableDoubleCPointer mGradNlDx = new GrowableDoubleCPointer(16);
-    GrowableDoubleCPointer mGradNlDy = new GrowableDoubleCPointer(16);
-    GrowableDoubleCPointer mGradNlDz = new GrowableDoubleCPointer(16);
+    IDoubleOrFloatCPointer mOutEng = null;
+    IGrowableDoubleOrFloatCPointer mNlDx = null, mNlDy = null, mNlDz = null;
+    IGrowableDoubleOrFloatCPointer mGradNlDx = null, mGradNlDy = null, mGradNlDz = null;
     GrowableIntCPointer mNlType = new GrowableIntCPointer(16), mNlIdx = new GrowableIntCPointer(16);
     /// jit stuffs
     IJITEngine mJITEngine = null;
@@ -462,7 +464,10 @@ public class NEP implements IPairPotential {
     
     private static final String MARKER_REMOVE_START = "// >>> NEPGEN REMOVE";
     private static final String MARKER_REMOVE_END = "// <<< NEPGEN REMOVE";
-    private static final int STATE_NORMAL = 0, STATE_REMOVE = 1;
+    private static final String MARKER_PICK_START = "// >>> NEPGEN PICK";
+    private static final String MARKER_PICK_CASE = "// --- NEPGEN PICK:";
+    private static final String MARKER_PICK_END = "// <<< NEPGEN PICK";
+    private static final int STATE_NORMAL = 0, STATE_REMOVE = 1, STATE_PICK = 4;
     
     boolean mDead = false;
     @Override public void shutdown() {
@@ -471,19 +476,25 @@ public class NEP implements IPairPotential {
         
         mDataIn.free(); mDataOut.free();
         mInNums.free();
-        mOutEng.free();
-        Fp.free(); sum_fxyz.free();
-        gn_radial.free(); gnp_radial.free();
-        gn_angular.free(); gnp_angular.free();
-        mNlDx.free(); mNlDy.free(); mNlDz.free();
-        mGradNlDx.free(); mGradNlDy.free(); mGradNlDz.free();
-        mNlType.free(); mNlIdx.free();
-        if (mJITEngine!=null) {
-            mJITEngine.shutdown();
-        }
-        paramb.free();
-        annmb.free();
-        zbl.free();
+        if (mOutEng!=null) mOutEng.free();
+        if (Fp!=null) Fp.free();
+        if (sum_fxyz!=null) sum_fxyz.free();
+        if (gn_radial!=null) gn_radial.free();
+        if (gnp_radial!=null) gnp_radial.free();
+        if (gn_angular!=null) gn_angular.free();
+        if (gnp_angular!=null) gnp_angular.free();
+        if (mNlDx!=null) mNlDx.free();
+        if (mNlDy!=null) mNlDy.free();
+        if (mNlDz!=null) mNlDz.free();
+        if (mGradNlDx!=null) mGradNlDx.free();
+        if (mGradNlDy!=null) mGradNlDy.free();
+        if (mGradNlDz!=null) mGradNlDz.free();
+        mNlType.free();
+        mNlIdx.free();
+        if (mJITEngine!=null) mJITEngine.shutdown();
+        if (paramb!=null) paramb.free();
+        if (annmb!=null) annmb.free();
+        if (zbl!=null) zbl.free();
     }
     
     void compileJIT() throws Exception {
@@ -548,9 +559,9 @@ public class NEP implements IPairPotential {
         }
         IO.write(aTargetPath, processLines_(tLines, aGenMap));
     }
-    @SuppressWarnings({"SwitchStatementWithTooFewBranches"})
     private static List<String> processLines_(List<String> aLines, Map<String, Object> aGenMap) {
         int tState = STATE_NORMAL;
+        List<String> rBuf0 = new ArrayList<>(), rBuf1 = new ArrayList<>();
         List<String> rOutLines = new ArrayList<>(aLines.size());
         for (String tLine : aLines) {
             switch(tState) {
@@ -558,6 +569,10 @@ public class NEP implements IPairPotential {
                 switch(tLine.trim()) {
                 case MARKER_REMOVE_START: {
                     tState = STATE_REMOVE;
+                    break;
+                }
+                case MARKER_PICK_START: {
+                    tState = STATE_PICK;
                     break;
                 }
                 default: {
@@ -569,6 +584,36 @@ public class NEP implements IPairPotential {
             case STATE_REMOVE: {
                 if (tLine.trim().equals(MARKER_REMOVE_END)) {
                     tState = STATE_NORMAL;
+                }
+                break;
+            }
+            case STATE_PICK: {
+                if (tLine.trim().startsWith(MARKER_PICK_END)) {
+                    tState = STATE_NORMAL;
+                    String tKey = tLine.trim().substring(MARKER_PICK_END.length()).trim();
+                    Object tValue = aGenMap.get(tKey);
+                    if (tValue==null) throw new IllegalStateException("Missing pick key: "+tKey);
+                    rBuf1.clear();
+                    boolean tInCase = false;
+                    for (String tBufLine : rBuf0) {
+                        if (tInCase) {
+                            if (tBufLine.trim().startsWith(MARKER_PICK_CASE)) {
+                                break;
+                            } else {
+                                rBuf1.add(tBufLine.replace("NEPGENO", "NEPGEN"));
+                            }
+                        } else {
+                            if (tBufLine.trim().startsWith(MARKER_PICK_CASE)) {
+                                String tCase = tBufLine.trim().substring(MARKER_PICK_CASE.length()).trim();
+                                if (tCase.equals(tValue)) tInCase = true;
+                            }
+                        }
+                    }
+                    rBuf0.clear();
+                    // 内部只核心逻辑，全部完成后递归处理后续
+                    rOutLines.addAll(processLines_(rBuf1, aGenMap));
+                } else {
+                    rBuf0.add(tLine);
                 }
                 break;
             }
@@ -589,7 +634,31 @@ public class NEP implements IPairPotential {
         return aLine;
     }
     
-    void init_from_file(String potential_filename) throws Exception {
+    void init_from_file(String potential_filename, String architecture) throws Exception {
+        if (architecture.equals("cpu")) {
+            mArchCuda = false;
+        } else
+        if (architecture.equals("cuda")) {
+            mArchCuda = true;
+        } else {
+            throw new IllegalArgumentException("NEP architecture MUST be 'cpu' or 'cuda', input: " + architecture);
+        }
+        if (mArchCuda) {
+            mSinglePrecision = true;
+        } else {
+            if (Conf.PRECISION.equals("single")) {
+                mSinglePrecision = true;
+            } else
+            if (Conf.PRECISION.equals("double")) {
+                mSinglePrecision = false;
+            } else {
+                throw new IllegalArgumentException("NEP precision MUST be 'double' or 'single', input: " + Conf.PRECISION);
+            }
+        }
+        paramb = new ParaMB(mSinglePrecision);
+        annmb = new ANN(mSinglePrecision);
+        zbl = new ZBL(mSinglePrecision);
+        
         DoubleList parameters = new DoubleList();
         int num_para_descriptor;
         try (BufferedReader input = IO.toReader(potential_filename)) {
@@ -792,7 +861,7 @@ public class NEP implements IPairPotential {
             }
             for (int d = 0; d < annmb.dim; ++d) {
                 tokens = get_tokens(input);
-                paramb.q_scaler.putAt(d, Double.parseDouble(tokens[0]));
+                paramb.q_scaler.putAtD(d, Double.parseDouble(tokens[0]));
             }
             
             // flexible zbl potential parameters if (zbl.flexibled)
@@ -800,11 +869,28 @@ public class NEP implements IPairPotential {
                 int num_type_zbl = (paramb.num_types * (paramb.num_types + 1)) / 2;
                 for (int d = 0; d < 10 * num_type_zbl; ++d) {
                     tokens = get_tokens(input);
-                    zbl.para.putAt(d, Double.parseDouble(tokens[0]));
+                    zbl.para.putAtD(d, Double.parseDouble(tokens[0]));
                 }
                 zbl.num_types = paramb.num_types;
             }
         }
+        // init cpointer here
+        Fp = mSinglePrecision ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        sum_fxyz = mSinglePrecision ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        
+        gn_radial = mSinglePrecision ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        gnp_radial = mSinglePrecision ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        gn_angular = mSinglePrecision ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        gnp_angular = mSinglePrecision ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        
+        mOutEng = mSinglePrecision ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
+        mNlDx = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mNlDy = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mNlDz = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mGradNlDx = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mGradNlDy = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mGradNlDz = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        
         // compile nep here
         String tLibDir = IO.toParentPath(potential_filename);
         if (tLibDir!=null) mLibDir = tLibDir;
@@ -836,22 +922,23 @@ public class NEP implements IPairPotential {
     void update_potential(DoubleCPointer aPtr) {
         annmb.clear();
         int count;
-        DoubleCPointer buf, ptr = aPtr.copy();
+        IDoubleOrFloatCPointer buf;
+        DoubleCPointer ptr = aPtr.copy();
         for (int t = 0; t < paramb.num_types; ++t) {
             if (t > 0 && paramb.version == 3) { // Use the same set of NN parameters for NEP3
                 ptr.leftShift((long) (annmb.dim + 2) * annmb.num_neurons1);
             }
             count = annmb.num_neurons1 * annmb.dim;
-            buf = DoubleCPointer.malloc(count); buf.fill(ptr, count); ptr.rightShift(count);
+            buf = mSinglePrecision?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
             annmb.w0.putAt(t, buf);
             count = annmb.num_neurons1;
-            buf = DoubleCPointer.malloc(count); buf.fill(ptr, count); ptr.rightShift(count);
+            buf = mSinglePrecision?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
             annmb.b0.putAt(t, buf);
             count = paramb.version==5 ? annmb.num_neurons1+1 : annmb.num_neurons1; // one extra bias for NEP5 stored in ann.w1[t]
-            buf = DoubleCPointer.malloc(count); buf.fill(ptr, count); ptr.rightShift(count);
+            buf = mSinglePrecision?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
             annmb.w1.putAt(t, buf);
         }
-        buf = DoubleCPointer.malloc(1); buf.set(ptr.get()); ptr.next();
+        buf = mSinglePrecision?FloatCPointer.malloc(1):DoubleCPointer.malloc(1); buf.setD(ptr.get()); ptr.next();
         annmb.b1 = buf;
         
         if (paramb.model_type == 2) {
@@ -860,20 +947,20 @@ public class NEP implements IPairPotential {
                     ptr.leftShift((long) (annmb.dim + 2) * annmb.num_neurons1);
                 }
                 count = annmb.num_neurons1 * annmb.dim;
-                buf = DoubleCPointer.malloc(count); buf.fill(ptr, count); ptr.rightShift(count);
+                buf = mSinglePrecision?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
                 annmb.w0_pol.putAt(t, buf);
                 count = annmb.num_neurons1;
-                buf = DoubleCPointer.malloc(count); buf.fill(ptr, count); ptr.rightShift(count);
+                buf = mSinglePrecision?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
                 annmb.b0_pol.putAt(t, buf);
                 count = annmb.num_neurons1;
-                buf = DoubleCPointer.malloc(count); buf.fill(ptr, count); ptr.rightShift(count);
+                buf = mSinglePrecision?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
                 annmb.w1_pol.putAt(t, buf);
             }
-            buf = DoubleCPointer.malloc(1); buf.set(ptr.get()); ptr.next();
+            buf = mSinglePrecision?FloatCPointer.malloc(1):DoubleCPointer.malloc(1); buf.setD(ptr.get()); ptr.next();
             annmb.b1_pol = buf;
         }
         count = annmb.num_para - annmb.num_para_ann;
-        buf = DoubleCPointer.malloc(count); buf.fill(ptr, count);
+        buf = mSinglePrecision?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count);
         annmb.c = buf;
     }
     
