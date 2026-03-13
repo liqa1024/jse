@@ -11,7 +11,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(SOURCE_FILES
-    nep_interface.cpp
+#    nep_interface.cpp
+    nep_interface_cuda.cu
 )
 add_library(nep SHARED ${SOURCE_FILES})
 

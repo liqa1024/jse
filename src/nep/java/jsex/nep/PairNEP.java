@@ -79,11 +79,11 @@ public class PairNEP extends LmpPlugin.Pair {
         if (aArgs==null || aArgs.length<4) throw new IllegalArgumentException("Not enough arguments, pair_coeff MUST be like `* * path/to/nnpot elem1 ...`");
         if (!aArgs[0].equals("*") || !aArgs[1].equals("*")) throw new IllegalArgumentException("pair_coeff MUST start with `* *`");
         
-        int tTypeNum = atomNtypes();
+        mTypeNum = atomNtypes();
         int tArgLen = aArgs.length-2;
-        if (tArgLen-1 != tTypeNum) throw new IllegalArgumentException("Elements number in pair_coeff not match ntypes ("+tTypeNum+").");
+        if (tArgLen-1 != mTypeNum) throw new IllegalArgumentException("Elements number in pair_coeff not match ntypes ("+mTypeNum+").");
         mTypeMap = IntCPointer.calloc(tArgLen);
-        mNEP.init_from_file(aArgs[2], "cpu");
+        initNEP(aArgs[2]);
         for (int type = 1; type < tArgLen; ++type) {
             String tElem = aArgs[2+type];
             int tNEPType = mNEP.typeOf(tElem)-1;
@@ -95,8 +95,13 @@ public class PairNEP extends LmpPlugin.Pair {
         mCutoffsq = DoubleCPointer.malloc(1);
         mCutoffsq.set(mCutoff * mCutoff);
     }
+    protected void initNEP(String aPath) throws Exception {
+        mNEP.init_from_file(aPath, "cpu");
+    }
+    
     protected double mCutoff = Double.NaN;
     protected DoubleCPointer mCutoffsq = null;
+    protected int mTypeNum = -1;
     protected NEP mNEP = new NEP();
     protected IntCPointer mTypeMap = null;
     
