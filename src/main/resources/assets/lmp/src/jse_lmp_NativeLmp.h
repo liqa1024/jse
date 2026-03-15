@@ -27,250 +27,282 @@ extern "C" {
 #define jse_lmp_NativeLmp_LMP_SIZE_COLS 5L
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsOpen_
+ * Method:    lammpsOpen0
  * Signature: ([Ljava/lang/String;J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsOpen_1___3Ljava_lang_String_2J
+JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsOpen0
   (JNIEnv *, jclass, jobjectArray, jlong);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsOpen_
+ * Method:    lammpsOpen1
  * Signature: ([Ljava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsOpen_1___3Ljava_lang_String_2
+JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsOpen1
   (JNIEnv *, jclass, jobjectArray);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsHasStyle_
+ * Method:    lammpsHasStyle0
  * Signature: (JLjava/lang/String;Ljava/lang/String;)Z
  */
-JNIEXPORT jboolean JNICALL Java_jse_lmp_NativeLmp_lammpsHasStyle_1
+JNIEXPORT jboolean JNICALL Java_jse_lmp_NativeLmp_lammpsHasStyle0
   (JNIEnv *, jclass, jlong, jstring, jstring);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsVersion_
+ * Method:    lammpsVersion0
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsVersion_1
+JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsVersion0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsVersionStr_
+ * Method:    lammpsVersionStr0
  * Signature: (J)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_jse_lmp_NativeLmp_lammpsVersionStr_1
+JNIEXPORT jstring JNICALL Java_jse_lmp_NativeLmp_lammpsVersionStr0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsComm_
+ * Method:    lammpsComm0
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsComm_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsComm0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsLibMpi_
+ * Method:    lammpsLibMpi0
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_jse_lmp_NativeLmp_lammpsLibMpi_1
+JNIEXPORT jboolean JNICALL Java_jse_lmp_NativeLmp_lammpsLibMpi0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsBigbig_
+ * Method:    lammpsBigbig0
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_jse_lmp_NativeLmp_lammpsBigbig_1
+JNIEXPORT jboolean JNICALL Java_jse_lmp_NativeLmp_lammpsBigbig0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsMpiFinalize_
+ * Method:    lammpsMpiInit0
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsMpiFinalize_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsMpiInit0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsFile_
+ * Method:    lammpsMpiFinalize0
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsMpiFinalize0
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     jse_lmp_NativeLmp
+ * Method:    lammpsKokkosFinalize0
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsKokkosFinalize0
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     jse_lmp_NativeLmp
+ * Method:    lammpsPluginFinalize0
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsPluginFinalize0
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     jse_lmp_NativeLmp
+ * Method:    lammpsPythonFinalize0
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsPythonFinalize0
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     jse_lmp_NativeLmp
+ * Method:    lammpsFile0
  * Signature: (JLjava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsFile_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsFile0
   (JNIEnv *, jclass, jlong, jstring);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsInputFile_
+ * Method:    lammpsInputFile0
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsInputFile_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsInputFile0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsCommand_
+ * Method:    lammpsCommand0
  * Signature: (JLjava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCommand_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCommand0
   (JNIEnv *, jclass, jlong, jstring);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsCommandsList_
+ * Method:    lammpsCommandsList0
  * Signature: (J[Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCommandsList_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCommandsList0
   (JNIEnv *, jclass, jlong, jobjectArray);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsCommandsString_
+ * Method:    lammpsCommandsString0
  * Signature: (JLjava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCommandsString_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCommandsString0
   (JNIEnv *, jclass, jlong, jstring);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsGetNatoms_
+ * Method:    lammpsGetNatoms0
  * Signature: (J)D
  */
-JNIEXPORT jdouble JNICALL Java_jse_lmp_NativeLmp_lammpsGetNatoms_1
+JNIEXPORT jdouble JNICALL Java_jse_lmp_NativeLmp_lammpsGetNatoms0
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsExtractBox_
+ * Method:    lammpsExtractBox0
  * Signature: (J[D)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractBox_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractBox0
   (JNIEnv *, jclass, jlong, jdoubleArray);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsResetBox_
+ * Method:    lammpsResetBox0
  * Signature: (JDDDDDDDDD)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsResetBox_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsResetBox0
   (JNIEnv *, jclass, jlong, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble, jdouble);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsGetThermo_
+ * Method:    lammpsGetThermo0
  * Signature: (JLjava/lang/String;)D
  */
-JNIEXPORT jdouble JNICALL Java_jse_lmp_NativeLmp_lammpsGetThermo_1
+JNIEXPORT jdouble JNICALL Java_jse_lmp_NativeLmp_lammpsGetThermo0
   (JNIEnv *, jclass, jlong, jstring);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsExtractSetting_
+ * Method:    lammpsExtractSetting0
  * Signature: (JLjava/lang/String;)I
  */
-JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsExtractSetting_1
+JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsExtractSetting0
   (JNIEnv *, jclass, jlong, jstring);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsGatherConcat_
+ * Method:    lammpsGatherConcat0
  * Signature: (JLjava/lang/String;ZI[D)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsGatherConcat_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsGatherConcat0
   (JNIEnv *, jclass, jlong, jstring, jboolean, jint, jdoubleArray);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsGatherConcatInt_
+ * Method:    lammpsGatherConcatInt0
  * Signature: (JLjava/lang/String;I[I)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsGatherConcatInt_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsGatherConcatInt0
   (JNIEnv *, jclass, jlong, jstring, jint, jintArray);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsExtractAtom_
+ * Method:    lammpsExtractAtom0
  * Signature: (JLjava/lang/String;III[D)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractAtom_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractAtom0
   (JNIEnv *, jclass, jlong, jstring, jint, jint, jint, jdoubleArray);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsExtractAtomInt_
+ * Method:    lammpsExtractAtomInt0
  * Signature: (JLjava/lang/String;III[I)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractAtomInt_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractAtomInt0
   (JNIEnv *, jclass, jlong, jstring, jint, jint, jint, jintArray);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsExtractAtomLong_
+ * Method:    lammpsExtractAtomLong0
  * Signature: (JLjava/lang/String;III[J)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractAtomLong_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractAtomLong0
   (JNIEnv *, jclass, jlong, jstring, jint, jint, jint, jlongArray);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsExtractAtomCPointer_
+ * Method:    lammpsExtractAtomCPointer0
  * Signature: (JLjava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsExtractAtomCPointer_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsExtractAtomCPointer0
   (JNIEnv *, jclass, jlong, jstring);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsGatherCompute_
+ * Method:    lammpsGatherCompute0
  * Signature: (JLjava/lang/String;I[D)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsGatherCompute_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsGatherCompute0
   (JNIEnv *, jclass, jlong, jstring, jint, jdoubleArray);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsExtractCompute_
+ * Method:    lammpsExtractCompute0
  * Signature: (JLjava/lang/String;IIII[D)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractCompute_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractCompute0
   (JNIEnv *, jclass, jlong, jstring, jint, jint, jint, jint, jdoubleArray);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsExtractComputeSize_
+ * Method:    lammpsExtractComputeSize0
  * Signature: (JLjava/lang/String;II)I
  */
-JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsExtractComputeSize_1
+JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsExtractComputeSize0
   (JNIEnv *, jclass, jlong, jstring, jint, jint);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsExtractComputeCPointer_
+ * Method:    lammpsExtractComputeCPointer0
  * Signature: (JLjava/lang/String;II)J
  */
-JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsExtractComputeCPointer_1
+JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsExtractComputeCPointer0
   (JNIEnv *, jclass, jlong, jstring, jint, jint);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsScatter_
+ * Method:    lammpsScatter0
  * Signature: (JLjava/lang/String;ZII[D)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsScatter_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsScatter0
   (JNIEnv *, jclass, jlong, jstring, jboolean, jint, jint, jdoubleArray);
 
 /*
  * Class:     jse_lmp_NativeLmp
- * Method:    lammpsCreateAtoms_
+ * Method:    lammpsCreateAtoms0
  * Signature: (JI[I[I[D[D[IZ)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCreateAtoms_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCreateAtoms0
   (JNIEnv *, jclass, jlong, jint, jintArray, jintArray, jdoubleArray, jdoubleArray, jintArray, jboolean);
 
 #ifdef __cplusplus

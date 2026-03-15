@@ -109,7 +109,7 @@ public class Main {
                     if (!tLmp.hasPlugin()) tLmp.loadPlugin();
                     tLmp.start();
                 } finally {
-                    NativeLmp.shutdownMPI();
+                    NativeLmp.shutdownAll();
                 }
                 return 0;
             }

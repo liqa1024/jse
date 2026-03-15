@@ -35,8 +35,7 @@ static void lammpsInputFile(JNIEnv *aEnv, void *aLmpPtr) {
         throwExceptionLMP(aEnv, "Invalid LAMMPS handle");
         return;
     }
-    BEGIN_CAPTURE
-    {
+    BEGIN_CAPTURE {
         if (tLmp->update->whichflag!=0) {
             throwExceptionLMP(aEnv, "Issuing LAMMPS commands during a run is not allowed");
         } else {
