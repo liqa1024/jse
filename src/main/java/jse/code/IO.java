@@ -5,6 +5,10 @@ import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
 import groovy.toml.TomlBuilder;
 import groovy.toml.TomlSlurper;
+import groovy.xml.MarkupBuilder;
+import groovy.xml.XmlSlurper;
+import groovy.xml.slurpersupport.GPathResult;
+import groovy.xml.slurpersupport.NodeChild;
 import groovy.yaml.YamlBuilder;
 import groovy.yaml.YamlSlurper;
 import jse.cache.ByteArrayCache;
@@ -26,6 +30,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.groovy.util.Maps;
 import org.codehaus.groovy.runtime.IOGroovyMethods;
 import org.codehaus.groovy.runtime.StringGroovyMethods;
 import org.codehaus.groovy.util.CharSequenceReader;
@@ -808,6 +813,124 @@ public class IO {
             TomlBuilder tBuilder = new TomlBuilder();
             tBuilder.call(aList);
             return tBuilder.toString();
+        }
+        
+        /**
+         * 将一个 xml 字符串转换成 {@link Map}，这里直接调用了 {@link XmlSlurper#parse(Reader)}
+         * 实现读取部分。按照 Jackson 的标准进行 Map 转换，虽然某些情况会有信息损失但基本够用并且可以有效返向转换。
+         * <p>
+         * 如果希望无损转换则应该直接使用 {@link XmlSlurper#parse(Reader)}
+         *
+         * @param aText 需要解析的 xml 字符串
+         * @return 解析得到的 {@link Map}
+         * @see IO#xml2map(String)
+         * @see IO.Text#map2xml(Map)
+         */
+        public static Map<?, ?> xml2map(@Language("XML") String aText) throws Exception {
+            return Text.parseXmlRoot((new XmlSlurper()).parseText(aText));
+        }
+        /**
+         * 将一个 {@link Map} 保存成 xml 格式的字符串，这里调用了 {@link MarkupBuilder}
+         * 来实现构造和写入部分。按照 Jackson 的标准进行 Map 转换来保证内置约定的简洁表示。
+         * @param aMap 需要编码成 xml 的 {@link Map}
+         * @return 编码得到的 xml 字符串
+         * @see IO#map2xml(Map, String)
+         * @see IO.Text#xml2map(String)
+         */
+        public static String map2xml(Map<?, ?> aMap) {
+            Writer tWriter = new StringWriter();
+            MarkupBuilder rBuilder = new MarkupBuilder(tWriter);
+            Text.buildXmlRoot(rBuilder, aMap);
+            return tWriter.toString();
+        }
+        
+        static void buildXmlRoot(MarkupBuilder rBuilder, Map<?, ?> aMap) {
+            if (aMap.size() != 1) {
+                aMap = Maps.of("root", aMap);
+            }
+            buildNode_(rBuilder, aMap);
+        }
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        private static void buildNode_(final MarkupBuilder rBuilder, Map<?, ?> aMap) {
+            for (Map.Entry<?, ?> tEntry : aMap.entrySet()) {
+                String tKey = tEntry.getKey().toString();
+                Object tValue = tEntry.getValue();
+                if (tValue instanceof Map) {
+                    final Map tAttrs = new LinkedHashMap();
+                    final Map tChildren = new LinkedHashMap();
+                    for (Map.Entry<?, ?> tSubEntry : ((Map<?, ?>)tValue).entrySet()) {
+                        String tSubKey = tSubEntry.getKey().toString();
+                        Object tSubValue = tSubEntry.getValue();
+                        if (tSubKey.startsWith("@")) {
+                            tAttrs.put(tSubKey.substring(1), tSubValue);
+                        } else {
+                            tChildren.put(tSubKey, tSubValue);
+                        }
+                    }
+                    rBuilder.invokeMethod(tKey, new Object[]{tAttrs, new Closure<Void>(null) {
+                        public Void call() {
+                            buildNode_(rBuilder, tChildren);
+                            return null;
+                        }
+                    }});
+                } else
+                if (tValue instanceof List) {
+                    for (Object tSubValue : (List<?>)tValue) {
+                        buildNode_(rBuilder, Maps.of(tKey, tSubValue));
+                    }
+                } else {
+                    rBuilder.invokeMethod(tKey, tValue);
+                }
+            }
+        }
+        /**
+         * 按照 Jackson 的标准将 {@link GPathResult} 转换成
+         * Map，虽然某些情况会有信息损失但基本够用并且可以有效返向转换。
+         */
+        static Map<?, ?> parseXmlRoot(GPathResult aRoot) {
+            if (aRoot.size()!=1) throw new IllegalArgumentException("root node size MUST be 1");
+            if (!(aRoot instanceof NodeChild)) throw new IllegalArgumentException("root node MUST be NodeChild");
+            return Maps.of(aRoot.name(), parseNode_((NodeChild)aRoot));
+        }
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        private static Object parseNode_(NodeChild aNode) {
+            Map rMap = new LinkedHashMap();
+            // 属性
+            Map<?, ?> tAttr = (aNode).attributes();
+            for (Map.Entry<?, ?> tEntry : tAttr.entrySet()) {
+                rMap.put("@"+tEntry.getKey(), tEntry.getValue());
+            }
+            // 子节点
+            for (Object tObj : aNode.children()) {
+                if (tObj instanceof NodeChild) {
+                    NodeChild tChild = (NodeChild)tObj;
+                    String tName = tChild.name();
+                    Object tValue = parseNode_(tChild);
+                    
+                    Object oValue = rMap.get(tName);
+                    if (oValue == null) {
+                        rMap.put(tName, tValue);
+                    } else
+                    if (oValue instanceof Map) {
+                        List tList = new ArrayList(2);
+                        tList.add(oValue);
+                        tList.add(tValue);
+                        rMap.put(tName, tList);
+                    } else
+                    if (oValue instanceof List) {
+                        ((List)oValue).add(tValue);
+                    }
+                }
+            }
+            // 文本
+            String tText = aNode.text();
+            if (rMap.isEmpty()) {
+                return tText;
+            } else
+            if (!tText.isEmpty()) {
+                rMap.put("#text", tText);
+            }
+            return rMap;
         }
     }
     
@@ -2375,6 +2498,53 @@ public class IO {
             TomlBuilder tBuilder = new TomlBuilder();
             tBuilder.call(aList);
             tBuilder.writeTo(tWriter);
+        }
+    }
+    
+    /**
+     * 将一个 xml 文件转换成 {@link Map}，这里直接调用了 {@link XmlSlurper#parse(Reader)}
+     * 实现读取部分。按照 Jackson 的标准进行 Map 转换，虽然某些情况会有信息损失但基本够用并且可以有效返向转换。
+     * <p>
+     * 如果希望无损转换则应该直接使用 {@link XmlSlurper#parse(Reader)}
+     *
+     * @param aFilePath 需要读取并解析的 xml 文件
+     * @return 解析得到的 {@link Map}
+     * @see IO.Text#xml2map(String)
+     * @see IO#map2xml(Map, String)
+     */
+    public static Map<?, ?> xml2map(String aFilePath) throws Exception {
+        try (Reader tReader = toReader(aFilePath)) {
+            return xml2map(tReader);
+        }
+    }
+    /**
+     * 将一个 xml 文件转换成 {@link Map}，这里直接调用了 {@link XmlSlurper#parse(Reader)}
+     * 实现读取部分。按照 Jackson 的标准进行 Map 转换，虽然某些情况会有信息损失但基本够用并且可以有效返向转换。
+     * <p>
+     * 如果希望无损转换则应该直接使用 {@link XmlSlurper#parse(Reader)}
+     *
+     * @param aReader 需要解析的 xml 文件读取流，不会自动关闭
+     * @return 解析得到的 {@link Map}
+     * @see IO#xml2map(String)
+     */
+    public static Map<?, ?> xml2map(Reader aReader) throws Exception {
+        return Text.parseXmlRoot((new XmlSlurper()).parse(aReader));
+    }
+    /**
+     * 将一个 {@link Map} 保存成 xml 格式的文本文件，这里调用了 {@link MarkupBuilder}
+     * 来实现构造和写入部分。按照 Jackson 的标准进行 Map 转换来保证内置约定的简洁表示。
+     * <p>
+     * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
+     *
+     * @param aMap 需要编码成 xml 的 {@link Map}
+     * @param aFilePath 需要保存的 xml 文件路径
+     * @see IO.Text#map2xml(Map)
+     * @see IO#xml2map(String)
+     */
+    public static void map2xml(Map<?, ?> aMap, String aFilePath) throws Exception {
+        try (Writer tWriter = toWriter(aFilePath)) {
+            MarkupBuilder rBuilder = new MarkupBuilder(tWriter);
+            Text.buildXmlRoot(rBuilder, aMap);
         }
     }
     
