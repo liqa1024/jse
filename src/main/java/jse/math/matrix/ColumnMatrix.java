@@ -84,8 +84,8 @@ public class ColumnMatrix extends DoubleArrayMatrix {
         mData[tIdx] = aValue;
         return oValue;
     }
-    @Override public final int rowNumber() {return mRowNum;}
-    @Override public final int columnNumber() {return mColNum;}
+    @Override public final int nrows() {return mRowNum;}
+    @Override public final int ncols() {return mColNum;}
     
     @Override protected ColumnMatrix newZeros_(int aRowNum, int aColNum) {return ColumnMatrix.zeros(aRowNum, aColNum);}
     @Override public ColumnMatrix copy() {return (ColumnMatrix)super.copy();}

@@ -90,8 +90,8 @@ public class RowIntMatrix extends IntArrayMatrix {
         mData[tIdx] = aValue;
         return oValue;
     }
-    @Override public final int rowNumber() {return mRowNum;}
-    @Override public final int columnNumber() {return mColNum;}
+    @Override public final int nrows() {return mRowNum;}
+    @Override public final int ncols() {return mColNum;}
     
     @Override protected RowIntMatrix newZeros_(int aRowNum, int aColNum) {return RowIntMatrix.zeros(aRowNum, aColNum);}
     @Override public RowIntMatrix copy() {return (RowIntMatrix)super.copy();}

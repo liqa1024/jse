@@ -16,7 +16,7 @@ public abstract class IntArrayMatrix extends AbstractIntMatrix implements IDataS
     /** DataShell stuffs */
     @Override public void setInternalData(int[] aData) {mData = aData;}
     @Override public int[] internalData() {return mData;}
-    @Override public int internalDataSize() {return columnNumber()*rowNumber();}
+    @Override public int internalDataSize() {return ncols()* nrows();}
     
     
     protected class IntArrayMatrixOperation_ extends IntArrayMatrixOperation {

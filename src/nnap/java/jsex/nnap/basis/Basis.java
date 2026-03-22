@@ -117,7 +117,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     public abstract int size();
     
     /** @return {@inheritDoc} */
-    @Override public int atomTypeNumber() {return 1;}
+    @Override public int ntypes() {return 1;}
     /** @return {@inheritDoc}；如果存在则会自动根据元素符号重新映射种类 */
     @Override public boolean hasSymbol() {return false;}
     /**
@@ -246,10 +246,10 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      */
     public final void eval(final AtomicParameterCalculator aAPC, final int aIdx, final IntUnaryOperator aTypeMap, DoubleArrayVector rFp) {
         if (mDead) throw new IllegalStateException("This Basis is dead");
-        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
+        typeMapCheck(aAPC.ntypes(), aTypeMap);
         // 构造近邻列表缓存
         initCacheNl_();
-        final int tTypeNum = atomTypeNumber();
+        final int tTypeNum = ntypes();
         // 缓存情况需要先清空这些
         mNlDx.clear(); mNlDy.clear(); mNlDz.clear();
         mNlType.clear();
@@ -273,7 +273,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     public final List<Vector> evalAll(IAtomData aAtomData) {
         if (isShutdown()) throw new IllegalStateException("This Basis is dead");
         IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
-        int tAtomNum = aAtomData.atomNumber();
+        int tAtomNum = aAtomData.natoms();
         List<Vector> rFps = VectorCache.getVec(size(), tAtomNum);
         try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData)) {
             for (int i = 0; i < tAtomNum; ++i) {

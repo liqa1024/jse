@@ -93,8 +93,6 @@ public interface ILongVector extends ISwapper, IHasLongIterator, IHasLongSetIter
     /** 向量的运算操作，默认返回新的向量 */
     ILongVectorOperation operation();
     @VisibleForTesting default ILongVectorOperation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated default ILongVectorOperation opt() {return operation();}
     
     /** 增加向量基本的运算操作，现在也归入内部使用 */
     long   sum  ();

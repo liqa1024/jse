@@ -20,7 +20,7 @@ import java.util.List;
 public class Thermo extends Table {
     
     Thermo(Table aTable) {
-        super(aTable.rowNumber(), aTable.internalData(), aTable.internalHeads());
+        super(aTable.nrows(), aTable.internalData(), aTable.internalHeads());
     }
     
     @Override public Thermo copy() {

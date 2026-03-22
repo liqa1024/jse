@@ -98,7 +98,7 @@ public class NEP implements IPairPotential {
         init_from_file(aPotentialFileName, "cpu");
     }
     
-    @Override public int atomTypeNumber() {return element_list.size();}
+    @Override public int ntypes() {return element_list.size();}
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return element_list.get(aType-1);}
     @Override public double rcutMax() {return Math.max(paramb.rc_radial, paramb.rc_angular);}
@@ -108,7 +108,7 @@ public class NEP implements IPairPotential {
     private final IntList mNlTypeBuf = new IntList(16), mNlIdxBuf = new IntList(16);
     
     private int buildNL_(IDxyzTypeIdxIterable aNL, double aRCut) {
-        final int tTypeNum = atomTypeNumber();
+        final int tTypeNum = this.ntypes();
         // 缓存情况需要先清空这些
         mNlDxBuf.clear(); mNlDyBuf.clear(); mNlDzBuf.clear();
         mNlTypeBuf.clear(); mNlIdxBuf.clear();

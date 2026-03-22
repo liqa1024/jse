@@ -88,7 +88,7 @@ public class Matrices {
         return rMatrix;
     }
     public static RowMatrix fromDouble(IMatrix aMatrix) {
-        RowMatrix rMatrix = zeros(aMatrix.rowNumber(), aMatrix.columnNumber());
+        RowMatrix rMatrix = zeros(aMatrix.nrows(), aMatrix.ncols());
         rMatrix.fill(aMatrix);
         return rMatrix;
     }
@@ -152,7 +152,7 @@ public class Matrices {
         return rMatrix;
     }
     public static RowIntMatrix fromInt(IIntMatrix aMatrix) {
-        RowIntMatrix rMatrix = RowIntMatrix.zeros(aMatrix.rowNumber(), aMatrix.columnNumber());
+        RowIntMatrix rMatrix = RowIntMatrix.zeros(aMatrix.nrows(), aMatrix.ncols());
         rMatrix.fill(aMatrix);
         return rMatrix;
     }

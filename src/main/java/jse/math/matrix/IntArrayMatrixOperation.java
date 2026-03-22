@@ -14,7 +14,7 @@ public abstract class IntArrayMatrixOperation extends AbstractIntMatrixOperation
     @Override public void fill          (int aRHS) {IntArrayMatrix rMatrix = thisMatrix_(); ARRAY.mapFill2This(rMatrix.internalData(), rMatrix.internalDataShift(), aRHS, rMatrix.internalDataSize());}
     @Override public void fill          (IIntMatrix aRHS) {
         IntArrayMatrix rThis = thisMatrix_();
-        ebeCheck(rThis.rowNumber(), rThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber());
+        ebeCheck(rThis.nrows(), rThis.ncols(), aRHS.nrows(), aRHS.ncols());
         int[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeFill2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         else DATA.ebeFill2This(rThis::setIteratorCol, aRHS::iteratorCol);
@@ -23,7 +23,7 @@ public abstract class IntArrayMatrixOperation extends AbstractIntMatrixOperation
     /** 方便内部使用，减少一些重复代码 */
     private IntArrayMatrix newMatrix_() {
         final IntArrayMatrix tThis = thisMatrix_();
-        return newMatrix_(tThis.rowNumber(), tThis.columnNumber());
+        return newMatrix_(tThis.nrows(), tThis.ncols());
     }
     
     /** stuff to override */

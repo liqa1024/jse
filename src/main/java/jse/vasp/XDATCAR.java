@@ -148,7 +148,7 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
         if (!hasSymbol()) return null;
         return new AbstractRandomAccessList<@Nullable String>() {
             @Override public @Nullable String get(int index) {return symbol(index+1);}
-            @Override public int size() {return atomTypeNumber();}
+            @Override public int size() {return ntypes();}
         };
     }
     public boolean hasMasse() {return hasSymbol();}
@@ -158,17 +158,12 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     }
     /** @deprecated use {@link #symbol(int)} */
     @Deprecated public @Nullable String typeName(int aType) {return symbol(aType);}
-    public int atomNumber(String aKey) {
+    public int natoms(String aKey) {
         int rAtomNum = 0;
-        for (int tType : mKey2Type.get(aKey)) rAtomNum += atomNumber(tType);
+        for (int tType : mKey2Type.get(aKey)) rAtomNum += natoms(tType);
         return rAtomNum;
     }
-    public int atomNumber(int aType) {return mAtomNumbers.get(aType-1);}
-    /** @deprecated use {@link #atomNumber(String)} or {@link #natoms(String)} */ @Deprecated public final int atomNum(String aType) {return atomNumber(aType);}
-    /** @deprecated use {@link #atomNumber(int)} or {@link #natoms(int)} */ @Deprecated public final int atomNum(int aType) {return atomNumber(aType);}
-    /** 提供简写版本 */
-    @VisibleForTesting public final int natoms(String aType) {return atomNumber(aType);}
-    @VisibleForTesting public final int natoms(int aType) {return atomNumber(aType);}
+    public int natoms(int aType) {return mAtomNumbers.get(aType-1);}
     
     public @Override @Nullable String comment() {return mComment;}
     public @Override String @Nullable[] typeNames() {return mTypeNames;}
@@ -185,13 +180,8 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     public double volume() {return mBox.volume();}
     public boolean isPrism() {return mBox.isPrism();}
     public boolean isLmpStyle() {return mBox.isLmpStyle();}
-    public int atomNumber() {return mAtomNumbers.sum();}
-    public int atomTypeNumber() {return mAtomNumbers.size();}
-    /** @deprecated use {@link #atomNumber()} or {@link #natoms()} */ @Deprecated public final int atomNum() {return atomNumber();}
-    /** @deprecated use {@link #atomNumber()} or {@link #natoms()} */ @Deprecated public final int atomTypeNum() {return atomTypeNumber();}
-    /** 提供简写版本 */
-    @VisibleForTesting public final int natoms() {return atomNumber();}
-    @VisibleForTesting public final int ntypes() {return atomTypeNumber();}
+    public int natoms() {return mAtomNumbers.sum();}
+    public int ntypes() {return mAtomNumbers.size();}
     
     /** XDATCAR 提供简单的修改模拟盒支持 */
     public XDATCAR setBox(double aX, double aY, double aZ) {return setBox(false, aX, aY, aZ);}
@@ -232,7 +222,7 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     }
     private void validAtomPosition_(boolean aKeepAtomPosition, IBox aOldBox) {
         // 对于 Cartesian 和 Direct 要分开讨论
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         XYZ tBuf = new XYZ();
         if (mIsCartesian) {
             if (aKeepAtomPosition) return;
@@ -298,24 +288,24 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
     }
     public XDATCAR setNoSymbol() {return setSymbols(ZL_STR);}
     /** 设置原子种类数目 */
-    public XDATCAR setAtomTypeNumber(int aAtomTypeNum) {
+    public XDATCAR setNtypes(int aNumTypes) {
         int oTypeNum = mAtomNumbers.size();
-        if (aAtomTypeNum == oTypeNum) return this;
-        if (aAtomTypeNum < oTypeNum) {
+        if (aNumTypes == oTypeNum) return this;
+        if (aNumTypes < oTypeNum) {
             // 现在支持设置更小的值，更大的种类会直接截断
-            mAtomNumbers.set(aAtomTypeNum-1, mAtomNumbers.subVec(aAtomTypeNum-1, mAtomNumbers.size()).sum());
-            mAtomNumbers = mAtomNumbers.subVec(0, aAtomTypeNum).copy();
+            mAtomNumbers.set(aNumTypes-1, mAtomNumbers.subVec(aNumTypes-1, mAtomNumbers.size()).sum());
+            mAtomNumbers = mAtomNumbers.subVec(0, aNumTypes).copy();
             validKey2Type_();
             return this;
         }
-        if (mTypeNames!=null && mTypeNames.length<aAtomTypeNum) {
-            String[] rTypeNames = new String[aAtomTypeNum];
+        if (mTypeNames!=null && mTypeNames.length< aNumTypes) {
+            String[] rTypeNames = new String[aNumTypes];
             System.arraycopy(mTypeNames, 0, rTypeNames, 0, mTypeNames.length);
-            for (int tType = mTypeNames.length+1; tType <= aAtomTypeNum; ++tType) rTypeNames[tType-1] = "T" + tType;
+            for (int tType = mTypeNames.length+1; tType <= aNumTypes; ++tType) rTypeNames[tType-1] = "T" + tType;
             mTypeNames = rTypeNames;
         }
         IIntVector oAtomNumbers = mAtomNumbers;
-        mAtomNumbers = IntVector.zeros(aAtomTypeNum);
+        mAtomNumbers = IntVector.zeros(aNumTypes);
         mAtomNumbers.subVec(0, oTypeNum).fill(oAtomNumbers);
         validKey2Type_();
         return this;
@@ -431,9 +421,9 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
             return new XDATCAR(tPOSCAR.comment(), tPOSCAR.box().copy(), POSCAR.copyTypeNames(tPOSCAR.typeNames()), tPOSCAR.atomNumbers().copy(), tPOSCAR.direct().copy(), aInitSize, tPOSCAR.isCartesian()).setSymbols(aTypeNames);
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
-            int tAtomTypeNum = Math.max(aAtomData.atomTypeNumber(), aTypeNames.length);
+            int tAtomTypeNum = Math.max(aAtomData.ntypes(), aTypeNames.length);
             IIntVector rAtomNumbers = IntVector.zeros(tAtomTypeNum);
-            IMatrix rDirect = Matrices.zeros(aAtomData.atomNumber(), 3);
+            IMatrix rDirect = Matrices.zeros(aAtomData.natoms(), 3);
             int tIdx = 0;
             for (int tTypeMM = 0; tTypeMM < tAtomTypeNum; ++tTypeMM) {
                 for (IAtom tAtom : aAtomData.atoms()) if (tAtom.type() == tTypeMM+1) {
@@ -477,9 +467,9 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
         // 这里只考虑一般的情况，这里直接遍历 atoms 来创建，
         // 现在不再考虑 id 顺序（因为可能存在 type 发生改变的问题）
         IBox tBox = aAtomData.box();
-        int tAtomNum = atomNumber();
-        if (tAtomNum != aAtomData.atomNumber()) throw new IllegalArgumentException("Invalid atom number of AtomData: " + aAtomData.atomNumber() + ", target: " + tAtomNum);
-        int tAtomTypeNum = atomTypeNumber();
+        int tAtomNum = natoms();
+        if (tAtomNum != aAtomData.natoms()) throw new IllegalArgumentException("Invalid atom number of AtomData: " + aAtomData.natoms() + ", target: " + tAtomNum);
+        int tAtomTypeNum = ntypes();
         // 这里还是统一按照 type 进行排序；还需要检测 type 的 symbol 是否是一一对应的
         IntUnaryOperator tTypeMap = (mTypeNames==null || !aAtomData.hasSymbol()) ? t->t : IHasSymbol.typeMap_(AbstractCollections.from(mTypeNames), aAtomData);
         IMatrix rDirect = Matrices.zeros(tAtomNum, 3);
@@ -487,7 +477,7 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, IMatrix> imp
         int tIdx = 0;
         int tMaxIdx = 0;
         for (int type = 1; type <= tAtomTypeNum; ++type) {
-            tMaxIdx += atomNumber(type);
+            tMaxIdx += natoms(type);
             for (IAtom tAtom : aAtomData.atoms()) if (tTypeMap.applyAsInt(tAtom.type()) == type) {
                 // 简单检测原子数是否一致
                 if (tIdx >= tMaxIdx) throw new IllegalArgumentException("Invalid atom number of type "+type);

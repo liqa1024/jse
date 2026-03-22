@@ -39,18 +39,18 @@ public class Tables {
     }
     public static Table from(IMatrix aData, String... aHeads) {
         if (aHeads==null || aHeads.length==0) return from(aData);
-        Table rTable = zeros(aData.rowNumber(), aHeads);
+        Table rTable = zeros(aData.nrows(), aHeads);
         rTable.asMatrix().fill(aData);
         return rTable;
     }
     public static Table from(IMatrix aData) {
-        Table rTable = zeros(aData.rowNumber(), aData.columnNumber());
+        Table rTable = zeros(aData.nrows(), aData.ncols());
         rTable.asMatrix().fill(aData);
         return rTable;
     }
     public static Table from(ITable aTable) {
         if (aTable instanceof Table) return ((Table)aTable).copy();
-        Table rTable = zeros(aTable.rowNumber(), aTable.heads().toArray(ZL_STR));
+        Table rTable = zeros(aTable.nrows(), aTable.heads().toArray(ZL_STR));
         rTable.asMatrix().fill(aTable.asMatrix());
         return rTable;
     }

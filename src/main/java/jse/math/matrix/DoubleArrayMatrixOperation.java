@@ -16,63 +16,63 @@ public abstract class DoubleArrayMatrixOperation extends AbstractMatrixOperation
     /** 通用的一些运算 */
     @Override public void plus2this(IMatrix aRHS) {
         DoubleArrayMatrix rThis = thisMatrix_();
-        ebeCheck(rThis.rowNumber(), rThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber());
+        ebeCheck(rThis.nrows(), rThis.ncols(), aRHS.nrows(), aRHS.ncols());
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebePlus2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         else DATA.ebePlus2This(rThis::setIteratorCol, aRHS::iteratorCol);
     }
     @Override public void minus2this(IMatrix aRHS) {
         DoubleArrayMatrix rThis = thisMatrix_();
-        ebeCheck(rThis.rowNumber(), rThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber());
+        ebeCheck(rThis.nrows(), rThis.ncols(), aRHS.nrows(), aRHS.ncols());
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeMinus2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         else DATA.ebeMinus2This(rThis::setIteratorCol, aRHS::iteratorCol);
     }
     @Override public void lminus2this(IMatrix aRHS) {
         DoubleArrayMatrix rThis = thisMatrix_();
-        ebeCheck(rThis.rowNumber(), rThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber());
+        ebeCheck(rThis.nrows(), rThis.ncols(), aRHS.nrows(), aRHS.ncols());
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeLMinus2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         else DATA.ebeLMinus2This(rThis::setIteratorCol, aRHS::iteratorCol);
     }
     @Override public void multiply2this(IMatrix aRHS) {
         DoubleArrayMatrix rThis = thisMatrix_();
-        ebeCheck(rThis.rowNumber(), rThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber());
+        ebeCheck(rThis.nrows(), rThis.ncols(), aRHS.nrows(), aRHS.ncols());
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeMultiply2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         else DATA.ebeMultiply2This(rThis::setIteratorCol, aRHS::iteratorCol);
     }
     @Override public void div2this(IMatrix aRHS) {
         DoubleArrayMatrix rThis = thisMatrix_();
-        ebeCheck(rThis.rowNumber(), rThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber());
+        ebeCheck(rThis.nrows(), rThis.ncols(), aRHS.nrows(), aRHS.ncols());
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeDiv2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         else DATA.ebeDiv2This(rThis::setIteratorCol, aRHS::iteratorCol);
     }
     @Override public void ldiv2this(IMatrix aRHS) {
         DoubleArrayMatrix rThis = thisMatrix_();
-        ebeCheck(rThis.rowNumber(), rThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber());
+        ebeCheck(rThis.nrows(), rThis.ncols(), aRHS.nrows(), aRHS.ncols());
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeLDiv2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         else DATA.ebeLDiv2This(rThis::setIteratorCol, aRHS::iteratorCol);
     }
     @Override public void mod2this(IMatrix aRHS) {
         DoubleArrayMatrix rThis = thisMatrix_();
-        ebeCheck(rThis.rowNumber(), rThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber());
+        ebeCheck(rThis.nrows(), rThis.ncols(), aRHS.nrows(), aRHS.ncols());
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeMod2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         else DATA.ebeMod2This(rThis::setIteratorCol, aRHS::iteratorCol);
     }
     @Override public void lmod2this(IMatrix aRHS) {
         DoubleArrayMatrix rThis = thisMatrix_();
-        ebeCheck(rThis.rowNumber(), rThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber());
+        ebeCheck(rThis.nrows(), rThis.ncols(), aRHS.nrows(), aRHS.ncols());
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeLMod2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         else DATA.ebeLMod2This(rThis::setIteratorCol, aRHS::iteratorCol);
     }
     @Override public void operate2this(IMatrix aRHS, DoubleBinaryOperator aOpt) {
         DoubleArrayMatrix rThis = thisMatrix_();
-        ebeCheck(rThis.rowNumber(), rThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber());
+        ebeCheck(rThis.nrows(), rThis.ncols(), aRHS.nrows(), aRHS.ncols());
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeDo2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize(), aOpt);
         else DATA.ebeDo2This(rThis::setIteratorCol, aRHS::iteratorCol, aOpt);
@@ -110,7 +110,7 @@ public abstract class DoubleArrayMatrixOperation extends AbstractMatrixOperation
     /** 补充的一些运算 */
     @Override public void plus2dest(IMatrix aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        ebeCheck(tThis.rowNumber(), tThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        ebeCheck(tThis.nrows(), tThis.ncols(), aRHS.nrows(), aRHS.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
         if (rData != null && tDataR != null) ARRAY.ebePlus2Dest(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
@@ -118,7 +118,7 @@ public abstract class DoubleArrayMatrixOperation extends AbstractMatrixOperation
     }
     @Override public void minus2dest(IMatrix aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        ebeCheck(tThis.rowNumber(), tThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        ebeCheck(tThis.nrows(), tThis.ncols(), aRHS.nrows(), aRHS.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
         if (rData != null && tDataR != null) ARRAY.ebeMinus2Dest(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
@@ -126,7 +126,7 @@ public abstract class DoubleArrayMatrixOperation extends AbstractMatrixOperation
     }
     @Override public void lminus2dest(IMatrix aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        ebeCheck(tThis.rowNumber(), tThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        ebeCheck(tThis.nrows(), tThis.ncols(), aRHS.nrows(), aRHS.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
         if (rData != null && tDataR != null) ARRAY.ebeMinus2Dest(tDataR, IDataShell.internalDataShift(aRHS), tThis.internalData(), tThis.internalDataShift(), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
@@ -134,7 +134,7 @@ public abstract class DoubleArrayMatrixOperation extends AbstractMatrixOperation
     }
     @Override public void multiply2dest(IMatrix aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        ebeCheck(tThis.rowNumber(), tThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        ebeCheck(tThis.nrows(), tThis.ncols(), aRHS.nrows(), aRHS.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
         if (rData != null && tDataR != null) ARRAY.ebeMultiply2Dest(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
@@ -142,7 +142,7 @@ public abstract class DoubleArrayMatrixOperation extends AbstractMatrixOperation
     }
     @Override public void div2dest(IMatrix aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        ebeCheck(tThis.rowNumber(), tThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        ebeCheck(tThis.nrows(), tThis.ncols(), aRHS.nrows(), aRHS.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
         if (rData != null && tDataR != null) ARRAY.ebeDiv2Dest(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
@@ -150,7 +150,7 @@ public abstract class DoubleArrayMatrixOperation extends AbstractMatrixOperation
     }
     @Override public void ldiv2dest(IMatrix aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        ebeCheck(tThis.rowNumber(), tThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        ebeCheck(tThis.nrows(), tThis.ncols(), aRHS.nrows(), aRHS.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
         if (rData != null && tDataR != null) ARRAY.ebeDiv2Dest(tDataR, IDataShell.internalDataShift(aRHS), tThis.internalData(), tThis.internalDataShift(), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
@@ -158,7 +158,7 @@ public abstract class DoubleArrayMatrixOperation extends AbstractMatrixOperation
     }
     @Override public void mod2dest(IMatrix aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        ebeCheck(tThis.rowNumber(), tThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        ebeCheck(tThis.nrows(), tThis.ncols(), aRHS.nrows(), aRHS.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
         if (rData != null && tDataR != null) ARRAY.ebeMod2Dest(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
@@ -166,7 +166,7 @@ public abstract class DoubleArrayMatrixOperation extends AbstractMatrixOperation
     }
     @Override public void lmod2dest(IMatrix aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        ebeCheck(tThis.rowNumber(), tThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        ebeCheck(tThis.nrows(), tThis.ncols(), aRHS.nrows(), aRHS.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
         if (rData != null && tDataR != null) ARRAY.ebeMod2Dest(tDataR, IDataShell.internalDataShift(aRHS), tThis.internalData(), tThis.internalDataShift(), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
@@ -174,7 +174,7 @@ public abstract class DoubleArrayMatrixOperation extends AbstractMatrixOperation
     }
     @Override public void operate2dest(IMatrix aRHS, IMatrix rDest, DoubleBinaryOperator aOpt) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        ebeCheck(tThis.rowNumber(), tThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        ebeCheck(tThis.nrows(), tThis.ncols(), aRHS.nrows(), aRHS.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         double[] tDataR = getIfHasSameOrderData_(rDest, aRHS);
         if (rData != null && tDataR != null) ARRAY.ebeDo2Dest(tThis.internalData(), tThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize(), aOpt);
@@ -183,63 +183,63 @@ public abstract class DoubleArrayMatrixOperation extends AbstractMatrixOperation
     
     @Override public void plus2dest(double aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        mapCheck(tThis.rowNumber(), tThis.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        mapCheck(tThis.nrows(), tThis.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         if (rData != null) ARRAY.mapPlus2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
         else DATA.mapPlus2Dest(tThis::iteratorCol, aRHS, rDest::setIteratorCol);
     }
     @Override public void minus2dest(double aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        mapCheck(tThis.rowNumber(), tThis.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        mapCheck(tThis.nrows(), tThis.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         if (rData != null) ARRAY.mapMinus2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
         else DATA.mapMinus2Dest(tThis::iteratorCol, aRHS, rDest::setIteratorCol);
     }
     @Override public void lminus2dest(double aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        mapCheck(tThis.rowNumber(), tThis.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        mapCheck(tThis.nrows(), tThis.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         if (rData != null) ARRAY.mapLMinus2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
         else DATA.mapLMinus2Dest(tThis::iteratorCol, aRHS, rDest::setIteratorCol);
     }
     @Override public void multiply2dest(double aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        mapCheck(tThis.rowNumber(), tThis.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        mapCheck(tThis.nrows(), tThis.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         if (rData != null) ARRAY.mapMultiply2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
         else DATA.mapMultiply2Dest(tThis::iteratorCol, aRHS, rDest::setIteratorCol);
     }
     @Override public void div2dest(double aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        mapCheck(tThis.rowNumber(), tThis.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        mapCheck(tThis.nrows(), tThis.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         if (rData != null) ARRAY.mapDiv2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
         else DATA.mapDiv2Dest(tThis::iteratorCol, aRHS, rDest::setIteratorCol);
     }
     @Override public void ldiv2dest(double aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        mapCheck(tThis.rowNumber(), tThis.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        mapCheck(tThis.nrows(), tThis.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         if (rData != null) ARRAY.mapLDiv2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
         else DATA.mapLDiv2Dest(tThis::iteratorCol, aRHS, rDest::setIteratorCol);
     }
     @Override public void mod2dest(double aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        mapCheck(tThis.rowNumber(), tThis.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        mapCheck(tThis.nrows(), tThis.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         if (rData != null) ARRAY.mapMod2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
         else DATA.mapMod2Dest(tThis::iteratorCol, aRHS, rDest::setIteratorCol);
     }
     @Override public void lmod2dest(double aRHS, IMatrix rDest) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        mapCheck(tThis.rowNumber(), tThis.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        mapCheck(tThis.nrows(), tThis.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         if (rData != null) ARRAY.mapLMod2Dest(tThis.internalData(), tThis.internalDataShift(), aRHS, rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize());
         else DATA.mapLMod2Dest(tThis::iteratorCol, aRHS, rDest::setIteratorCol);
     }
     @Override public void map2dest(IMatrix rDest, DoubleUnaryOperator aOpt) {
         DoubleArrayMatrix tThis = thisMatrix_();
-        mapCheck(tThis.rowNumber(), tThis.columnNumber(), rDest.rowNumber(), rDest.columnNumber());
+        mapCheck(tThis.nrows(), tThis.ncols(), rDest.nrows(), rDest.ncols());
         double[] rData = tThis.getIfHasSameOrderData(rDest);
         if (rData != null) ARRAY.mapDo2Dest(tThis.internalData(), tThis.internalDataShift(), rData, IDataShell.internalDataShift(rDest), tThis.internalDataSize(), aOpt);
         else DATA.mapDo2Dest(tThis::iteratorCol, rDest::setIteratorCol, aOpt);
@@ -249,7 +249,7 @@ public abstract class DoubleArrayMatrixOperation extends AbstractMatrixOperation
     @Override public void fill          (double aRHS) {DoubleArrayMatrix rMatrix = thisMatrix_(); ARRAY.mapFill2This(rMatrix.internalData(), rMatrix.internalDataShift(), aRHS, rMatrix.internalDataSize());}
     @Override public void fill          (IMatrix aRHS) {
         DoubleArrayMatrix rThis = thisMatrix_();
-        ebeCheck(rThis.rowNumber(), rThis.columnNumber(), aRHS.rowNumber(), aRHS.columnNumber());
+        ebeCheck(rThis.nrows(), rThis.ncols(), aRHS.nrows(), aRHS.ncols());
         double[] tDataR = rThis.getIfHasSameOrderData(aRHS);
         if (tDataR != null) ARRAY.ebeFill2This(rThis.internalData(), rThis.internalDataShift(), tDataR, IDataShell.internalDataShift(aRHS), rThis.internalDataSize());
         else DATA.ebeFill2This(rThis::setIteratorCol, aRHS::iteratorCol);
@@ -264,7 +264,7 @@ public abstract class DoubleArrayMatrixOperation extends AbstractMatrixOperation
     /** 方便内部使用，减少一些重复代码 */
     private DoubleArrayMatrix newMatrix_() {
         final DoubleArrayMatrix tThis = thisMatrix_();
-        return newMatrix_(tThis.rowNumber(), tThis.columnNumber());
+        return newMatrix_(tThis.nrows(), tThis.ncols());
     }
     private static double @Nullable [] getIfHasSameOrderData_(IMatrix aThis, IMatrix aData) {
         if (aThis instanceof IDataShell) {

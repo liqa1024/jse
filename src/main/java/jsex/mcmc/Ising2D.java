@@ -63,8 +63,8 @@ public class Ising2D extends AbstractThreadPool<ParforThreadPool> {
     
     /** 统计能量，注意自旋相互作用只需要考虑一半 */
     public double statE(IMatrix aSpins) {
-        int tRowNum = aSpins.rowNumber();
-        int tColNum = aSpins.columnNumber();
+        int tRowNum = aSpins.nrows();
+        int tColNum = aSpins.ncols();
         double rE = 0.0;
         for (int i = 0; i < tRowNum; ++i) for (int j = 0; j < tColNum; ++j)  {
             // 先考虑周期边界条件
@@ -105,7 +105,7 @@ public class Ising2D extends AbstractThreadPool<ParforThreadPool> {
         // 注意虽然 parfor 支持写入不同位置的数组时的线程安全，并且也是无锁的操作，
         // 但频繁写入依旧会严重影响性能，因此这里使用这样的写法
         // （虽然不同对象会比同一个 double[] 中不同位置性能更好，但依旧不如原生）
-        int tThreadNum = threadNumber();
+        int tThreadNum = nthreads();
         final IVector rSumE  = aStat ? Vectors.zeros(tThreadNum) : null;
         final IVector rSumM  = aStat ? Vectors.zeros(tThreadNum) : null;
         final IVector rSumE2 = aStat ? Vectors.zeros(tThreadNum) : null;
@@ -133,8 +133,8 @@ public class Ising2D extends AbstractThreadPool<ParforThreadPool> {
                 subSumE2 = rSumE2.get(threadID);
                 subSumM2 = rSumM2.get(threadID);
             }
-            int tRowNum = tSpins.rowNumber();
-            int tColNum = tSpins.columnNumber();
+            int tRowNum = tSpins.nrows();
+            int tColNum = tSpins.ncols();
             // 开始蒙特卡洛模拟
             for (long k = 0; k < aN; ++k) {
                 int i = tRNG.nextInt(tRowNum);

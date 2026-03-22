@@ -52,7 +52,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         mBox = aBox;
         mAtomData = aAtomData;
         
-        for (int i = 0; i < aAtomData.columnNumber(); ++i) {
+        for (int i = 0; i < aAtomData.ncols(); ++i) {
             String tKey = aAtomData.getHead(i);
             if (mKeyX == null) {
                 if (tKey.equalsIgnoreCase("x")) {
@@ -127,7 +127,6 @@ public class SubLammpstrj extends AbstractSettableAtomData {
     // dump 额外的属性
     public long timeStep() {return mTimeStep;}
     public String[] boxBounds() {return mBoxBounds;}
-    /** @deprecated use {@link #box} */ @Deprecated public LmpBox lmpBox() {return box();}
     
     public SubLammpstrj setTimeStep(long aTimeStep) {mTimeStep = aTimeStep; return this;}
     /** Groovy stuffs */
@@ -244,7 +243,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         boolean tIsUnscaled = (mXType==XYZType.NORMAL || mXType==XYZType.UNWRAPPED) && (mYType==XYZType.NORMAL || mYType==XYZType.UNWRAPPED) && (mZType==XYZType.NORMAL || mZType==XYZType.UNWRAPPED);
         if (!tIsScaled && !tIsUnscaled) throw new UnsupportedOperationException("`setBox` with valid atom position for mix scaled/unscaled xyz data");
         
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = this.natoms();
         XYZ tBuf = new XYZ();
         // 先统一调整速度，速度总是没有 scaled
         if (!aKeepAtomPosition && mHasVelocities) {
@@ -317,7 +316,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         if (mKeyY == null) throw new UnsupportedOperationException("`setDenseNormalized` for Lammpstrj without y data");
         if (mKeyZ == null) throw new UnsupportedOperationException("`setDenseNormalized` for Lammpstrj without z data");
         
-        double tScale = MathEX.Fast.cbrt(volume() / atomNumber());
+        double tScale = MathEX.Fast.cbrt(volume() / this.natoms());
         tScale = 1.0 / tScale;
         return (SubLammpstrj)setBoxScale(tScale);
     }
@@ -533,15 +532,15 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         };
     }
     @Override public LmpBox box() {return mBox;}
-    @Override public int atomNumber() {return mAtomData.rowNumber();}
-    @Override public int atomTypeNumber() {return mAtomTypeNum;}
-    @Override public SubLammpstrj setAtomTypeNumber(int aAtomTypeNum) {
+    @Override public int natoms() {return mAtomData.nrows();}
+    @Override public int ntypes() {return mAtomTypeNum;}
+    @Override public SubLammpstrj setNtypes(int aNumTypes) {
         int oTypeNum = mAtomTypeNum;
-        if (aAtomTypeNum == oTypeNum) return this;
-        mAtomTypeNum = aAtomTypeNum;
-        if (aAtomTypeNum<oTypeNum && mKeyType!=null) {
+        if (aNumTypes == oTypeNum) return this;
+        mAtomTypeNum = aNumTypes;
+        if (aNumTypes <oTypeNum && mKeyType!=null) {
             // 现在支持设置更小的值，更大的种类会直接截断
-            mAtomData.col(mKeyType).op().map2this(v -> Math.min(v, aAtomTypeNum));
+            mAtomData.col(mKeyType).op().map2this(v -> Math.min(v, aNumTypes));
             return this;
         }
         return this;
@@ -562,7 +561,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             SubLammpstrj tSubLammpstrj = (SubLammpstrj)aAtomData;
             return new SubLammpstrj(aTimeStep, Arrays.copyOf(tSubLammpstrj.mBoxBounds, tSubLammpstrj.mBoxBounds.length), tSubLammpstrj.mBox.copy(), tSubLammpstrj.mAtomData.copy());
         } else {
-            final int tAtomNum = aAtomData.atomNumber();
+            final int tAtomNum = aAtomData.natoms();
             Table rAtomData;
             // 一般的情况，需要考虑斜方的模拟盒的情况
             IBox tBox = aAtomData.box();
@@ -740,7 +739,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         aWriteln.writeln("ITEM: TIMESTEP");
         aWriteln.writeln(String.valueOf(mTimeStep));
         aWriteln.writeln("ITEM: NUMBER OF ATOMS");
-        aWriteln.writeln(String.valueOf(atomNumber()));
+        aWriteln.writeln(String.valueOf(this.natoms()));
         if (!isPrism()) {
         aWriteln.writeln("ITEM: BOX BOUNDS "+String.join(" ", boxBounds()));
         aWriteln.writeln(mBox.xlo()+" "+mBox.xhi());
@@ -788,7 +787,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         // 先发送 SubLammpstrj 的必要信息，[AtomNum | AtomDataKeyNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, TimeStep]
         // 为了使用简单并且避免 double 转 long 造成的信息损耗，这里统一用 long[] 来传输信息
         aComm.send(new long[] {
-              UT.Serial.combineI(aSubLammpstrj.atomNumber(), aSubLammpstrj.mAtomData.columnNumber())
+              UT.Serial.combineI(aSubLammpstrj.natoms(), aSubLammpstrj.mAtomData.ncols())
             , Double.doubleToLongBits(aSubLammpstrj.mBox.xlo())
             , Double.doubleToLongBits(aSubLammpstrj.mBox.xhi())
             , Double.doubleToLongBits(aSubLammpstrj.mBox.ylo())
@@ -833,7 +832,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             }
             // 先发送 SubLammpstrj 的必要信息，[AtomNum | AtomDataKeyNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, TimeStep]
             aComm.bcast(new long[] {
-                  UT.Serial.combineI(aSubLammpstrj.atomNumber(), aSubLammpstrj.mAtomData.columnNumber())
+                  UT.Serial.combineI(aSubLammpstrj.natoms(), aSubLammpstrj.mAtomData.ncols())
                 , Double.doubleToLongBits(aSubLammpstrj.mBox.xlo())
                 , Double.doubleToLongBits(aSubLammpstrj.mBox.xhi())
                 , Double.doubleToLongBits(aSubLammpstrj.mBox.ylo())

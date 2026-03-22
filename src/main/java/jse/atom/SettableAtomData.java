@@ -178,31 +178,31 @@ public final class SettableAtomData extends AbstractSettableAtomData {
      */
     @Override public IBox box() {return mBox;}
     /** @return {@inheritDoc} */
-    @Override public int atomNumber() {return mAtoms.size();}
+    @Override public int natoms() {return mAtoms.size();}
     /** @return {@inheritDoc} */
-    @Override public int atomTypeNumber() {return mAtomTypeNum;}
+    @Override public int ntypes() {return mAtomTypeNum;}
     /**
      * {@inheritDoc}
-     * @param aAtomTypeNum {@inheritDoc}
+     * @param aNumTypes {@inheritDoc}
      * @return {@inheritDoc}
-     * @see #atomTypeNumber()
+     * @see #ntypes()
      * @see IAtom#type()
      */
-    @Override public SettableAtomData setAtomTypeNumber(int aAtomTypeNum) {
+    @Override public SettableAtomData setNtypes(int aNumTypes) {
         int oTypeNum = mAtomTypeNum;
-        if (aAtomTypeNum == oTypeNum) return this;
-        mAtomTypeNum = aAtomTypeNum;
-        if (aAtomTypeNum < oTypeNum) {
+        if (aNumTypes == oTypeNum) return this;
+        mAtomTypeNum = aNumTypes;
+        if (aNumTypes < oTypeNum) {
             // 现在支持设置更小的值，更大的种类会直接截断
-            for (ISettableAtom tAtom : mAtoms) if (tAtom.type() > aAtomTypeNum){
-                tAtom.setType(aAtomTypeNum);
+            for (ISettableAtom tAtom : mAtoms) if (tAtom.type() > aNumTypes){
+                tAtom.setType(aNumTypes);
             }
             return this;
         }
-        if (mSymbols!=null && mSymbols.length<aAtomTypeNum) {
-            String[] rSymbols = new String[aAtomTypeNum];
+        if (mSymbols!=null && mSymbols.length< aNumTypes) {
+            String[] rSymbols = new String[aNumTypes];
             System.arraycopy(mSymbols, 0, rSymbols, 0, mSymbols.length);
-            for (int tType = mSymbols.length+1; tType <= aAtomTypeNum; ++tType) rSymbols[tType-1] = "T" + tType;
+            for (int tType = mSymbols.length+1; tType <= aNumTypes; ++tType) rSymbols[tType-1] = "T" + tType;
             mSymbols = rSymbols;
         }
         return this;

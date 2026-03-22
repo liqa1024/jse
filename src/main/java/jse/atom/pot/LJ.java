@@ -113,7 +113,7 @@ public class LJ implements IPairPotential {
     public LJ setShift(boolean aShift) {mShift = aShift; return this;}
     
     /** @return {@inheritDoc} */
-    @Override public int atomTypeNumber() {return mTypeNum;}
+    @Override public int ntypes() {return mTypeNum;}
     /** @return {@inheritDoc} */
     @Override public boolean hasSymbol() {return mSymbols!=null;}
     /**
@@ -149,13 +149,13 @@ public class LJ implements IPairPotential {
      * {@inheritDoc}
      * @return {@inheritDoc}
      */
-    @Override public int threadNumber() {return mThreadNum;}
+    @Override public int nthreads() {return mThreadNum;}
     /**
      * 设置传入原子数据后计算使用的默认线程数
-     * @param aThreadNum 需要设置的线程数，默认为 {@code 1}
+     * @param aNumThreads 需要设置的线程数，默认为 {@code 1}
      * @return 自身方便链式调用
      */
-    public LJ setThreadNum(int aThreadNum) {mThreadNum = aThreadNum; return this;}
+    public LJ setNthreads(int aNumThreads) {mThreadNum = aNumThreads; return this;}
     
     /**
      * {@inheritDoc}

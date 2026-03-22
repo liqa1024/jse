@@ -127,7 +127,7 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
     
     /** 所有训练相关的数据放在这里，同来减少训练集和测试集使用时的重复代码 */
     protected class DataSet {
-        public final int mAtomTypeNumber;
+        public final int mNumTypes;
         /** 按照种类排序，内部是可扩展的具体数据；现在使用这种 DoubleList 展开的形式存 */
         public final DoubleList[] mFp;
         /** mFp 的实际值（按行排列），这个只是缓存结果 */
@@ -155,16 +155,16 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
         /** 每个原子数据结构对应的体积大小，目前主要用来计算应力 */
         public final DoubleList mVolume = new DoubleList(64);
         
-        protected DataSet(int aAtomTypeNum) {
-            mAtomTypeNumber = aAtomTypeNum;
-            mFp = new DoubleList[aAtomTypeNum];
-            mEngIndices = new IntList[aAtomTypeNum];
-            mFpPartial = new ArrayList<>(aAtomTypeNum);
-            mForceIndices = new ArrayList<>(aAtomTypeNum);
-            mStressIndices = new ArrayList<>(aAtomTypeNum);
-            mStressDxyz = new ArrayList<>(aAtomTypeNum);
-            mNN = new IntList[aAtomTypeNum];
-            for (int i = 0; i < aAtomTypeNum; ++i) {
+        protected DataSet(int aNumTypes) {
+            mNumTypes = aNumTypes;
+            mFp = new DoubleList[aNumTypes];
+            mEngIndices = new IntList[aNumTypes];
+            mFpPartial = new ArrayList<>(aNumTypes);
+            mForceIndices = new ArrayList<>(aNumTypes);
+            mStressIndices = new ArrayList<>(aNumTypes);
+            mStressDxyz = new ArrayList<>(aNumTypes);
+            mNN = new IntList[aNumTypes];
+            for (int i = 0; i < aNumTypes; ++i) {
                 mFp[i] = new DoubleList(64);
                 mEngIndices[i] = new IntList(64);
                 mFpPartial.add(new ArrayList<>(64));
@@ -173,7 +173,7 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
                 mStressDxyz.add(new ArrayList<>(64));
                 mNN[i] = new IntList(64);
             }
-            mFpMat = new RowMatrix[aAtomTypeNum];
+            mFpMat = new RowMatrix[aNumTypes];
         }
         protected DataSet() {this(mSymbols.length);}
         
@@ -193,7 +193,7 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
                     fInitEngPart.call(this);
                 }
                 if (aClearData) {
-                    for (int i = 0; i < mAtomTypeNumber; ++i) {
+                    for (int i = 0; i < mNumTypes; ++i) {
                         mFp[i].clear();
                         mEngIndices[i].clear();
                         mFp[i].clear();
@@ -211,7 +211,7 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
                     if (mHasForce) {mForce.clear();}
                     if (mHasStress) {mStress.clear(); mVolume.clear();}
                 }
-                for (int i = 0; i < mAtomTypeNumber; ++i) {
+                for (int i = 0; i < mNumTypes; ++i) {
                     // 先根据近邻数排序 FpPartial 和 Indices，拆分成两份来减少内存占用
                     final List<PyObject> tSubFpPartial = mFpPartial.get(i);
                     final List<PyObject> tSubForceIndices = mHasForce ? mForceIndices.get(i) : null;
@@ -318,7 +318,7 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
         return rOut;
     }
     
-    @Override public int atomTypeNumber() {return mSymbols.length;}
+    @Override public int ntypes() {return mSymbols.length;}
     public PyObject model(int aType) {
         try (PyCallable fModel = mTrainer.getAttr("model_at", PyCallable.class)) {
             return fModel.callAs(PyObject.class, aType-1);
@@ -375,7 +375,7 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
                 mNormMu[j].plus2this(tRow);
                 mNormSigma[j].operation().operate2this(tRow, (lhs, rhs) -> lhs + rhs*rhs);
             }
-            tDiv.add(j, mTrainData.mFpMat[i].rowNumber());
+            tDiv.add(j, mTrainData.mFpMat[i].nrows());
         }
         for (int i = 0; i < mSymbols.length; ++i) if (!(mBasis[i] instanceof MirrorBasis)) {
             mNormMu[i].div2this(tDiv.get(i));
@@ -574,7 +574,7 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
     protected void calRefEngFpAndAdd_(IAtomData aAtomData, double aEnergy, DataSet rData) {
         IntUnaryOperator tTypeMap = typeMap(aAtomData);
         // 由于数据集不完整因此这里不去做归一化
-        final int tAtomNum = aAtomData.atomNumber();
+        final int tAtomNum = aAtomData.natoms();
         try (final AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData)) {
             for (int i = 0; i < tAtomNum; ++i) {
                 int tType = tTypeMap.applyAsInt(aAtomData.atom(i).type());
@@ -621,7 +621,7 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
         } else {
             calRefEngFpAndAdd_(aAtomData, aEnergy, mTrainData);
         }
-        mTrainData.mAtomNum.add(aAtomData.atomNumber());
+        mTrainData.mAtomNum.add(aAtomData.natoms());
         mTrainData.mVolume.add(aAtomData.volume());
     }
     /**
@@ -662,7 +662,7 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
         } else {
             calRefEngFpAndAdd_(aAtomData, aEnergy, mTestData);
         }
-        mTestData.mAtomNum.add(aAtomData.atomNumber());
+        mTestData.mAtomNum.add(aAtomData.natoms());
         mTestData.mVolume.add(aAtomData.volume());
         if (!mHasTest) mHasTest = true;
     }

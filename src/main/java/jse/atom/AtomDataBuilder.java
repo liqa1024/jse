@@ -20,7 +20,7 @@ import java.util.*;
  */
 public abstract class AtomDataBuilder<R> {
     private ArrayList<ISettableAtom> mAtoms;
-    private int mAtomTypeNum = 1;
+    private int mNumTypes = 1;
     private IBox mBox = null;
     private boolean mHasID = false;
     private boolean mHasVelocity = false;
@@ -73,7 +73,7 @@ public abstract class AtomDataBuilder<R> {
             }
         }
         // 构造 AtomData
-        return newAtomData(aAtoms, mAtomTypeNum, aBox, mHasID, mHasVelocity, aSymbols);
+        return newAtomData(aAtoms, mNumTypes, aBox, mHasID, mHasVelocity, aSymbols);
     }
     
     /**
@@ -91,7 +91,7 @@ public abstract class AtomDataBuilder<R> {
     public AtomDataBuilder<R> addAtom(double aX, double aY, double aZ, int aID, int aType, double aVx, double aVy, double aVz) {
         if (aID > 0) mHasID = true;
         mHasVelocity = true;
-        if (mAtomTypeNum < aType) mAtomTypeNum = aType;
+        if (mNumTypes < aType) mNumTypes = aType;
         mAtoms.add(new AtomFull(aX, aY, aZ, aID, aType, aVx, aVy, aVz));
         return this;
     }
@@ -106,7 +106,7 @@ public abstract class AtomDataBuilder<R> {
      */
     public AtomDataBuilder<R> addAtom(double aX, double aY, double aZ, int aID, int aType) {
         if (aID > 0) mHasID = true;
-        if (mAtomTypeNum < aType) mAtomTypeNum = aType;
+        if (mNumTypes < aType) mNumTypes = aType;
         mAtoms.add(new AtomID(aX, aY, aZ, aID, aType));
         return this;
     }
@@ -119,7 +119,7 @@ public abstract class AtomDataBuilder<R> {
      * @return 自身方便链式调用
      */
     public AtomDataBuilder<R> addAtom(double aX, double aY, double aZ, int aType) {
-        if (mAtomTypeNum < aType) mAtomTypeNum = aType;
+        if (mNumTypes < aType) mNumTypes = aType;
         mAtoms.add(new Atom(aX, aY, aZ, aType));
         return this;
     }
@@ -192,13 +192,13 @@ public abstract class AtomDataBuilder<R> {
     private int validSymbolAndGetType(String aSymbol) {return validSymbolAndGetType(aSymbol, 1);}
     private int validSymbolAndGetType(String aSymbol, int aExpectedType) {
         if (mSymbols == null) {
-            if (mAtomTypeNum < aExpectedType) mAtomTypeNum = aExpectedType;
-            mSymbols = new String[mAtomTypeNum];
+            if (mNumTypes < aExpectedType) mNumTypes = aExpectedType;
+            mSymbols = new String[mNumTypes];
             mSymbols[aExpectedType-1] = aSymbol;
             return aExpectedType;
         }
         // 如果 aExpectedType 部分为 null 或者相同则优先设置 symbol
-        if (aExpectedType <= mAtomTypeNum) {
+        if (aExpectedType <= mNumTypes) {
             if (mSymbols[aExpectedType-1]==null || mSymbols[aExpectedType-1].equals(aSymbol)) {
                 mSymbols[aExpectedType-1] = aSymbol;
                 return aExpectedType;
@@ -206,19 +206,19 @@ public abstract class AtomDataBuilder<R> {
         }
         // 此时位置已经被占，优先考虑有相同元素的情况；
         // 注意需要考虑 mSymbols 比 mAtomTypeNum 还要长的情况
-        int tType = IHasSymbol.typeOf_(AbstractCollections.from(mAtomTypeNum, i->mSymbols[i]), aSymbol);
+        int tType = IHasSymbol.typeOf_(AbstractCollections.from(mNumTypes, i->mSymbols[i]), aSymbol);
         if (tType > 0) {
             return tType;
         }
         // 此时无论如何也不能塞进去了，直接扩容
-        mAtomTypeNum = Math.max(mAtomTypeNum+1, aExpectedType);
-        if (mSymbols.length < mAtomTypeNum) {
+        mNumTypes = Math.max(mNumTypes +1, aExpectedType);
+        if (mSymbols.length < mNumTypes) {
             String[] oSymbols = mSymbols;
-            mSymbols = new String[mAtomTypeNum];
+            mSymbols = new String[mNumTypes];
             System.arraycopy(oSymbols, 0, mSymbols, 0, oSymbols.length);
         }
-        mSymbols[mAtomTypeNum-1] = aSymbol;
-        return mAtomTypeNum;
+        mSymbols[mNumTypes -1] = aSymbol;
+        return mNumTypes;
     }
     
     /**
@@ -392,14 +392,14 @@ public abstract class AtomDataBuilder<R> {
     
     /**
      * 设置原子数据的种类数目，会自动合法化内部元素列表的长度（如果存在）
-     * @param aAtomTypeNum 需要的元素种类数目
+     * @param aNumTypes 需要的元素种类数目
      * @return 自身方便链式调用
      */
-    public AtomDataBuilder<R> setAtomTypeNumber(int aAtomTypeNum) {
-        mAtomTypeNum = aAtomTypeNum;
-        if (mSymbols!=null && mAtomTypeNum>mSymbols.length) {
+    public AtomDataBuilder<R> setNtypes(int aNumTypes) {
+        mNumTypes = aNumTypes;
+        if (mSymbols!=null && mNumTypes>mSymbols.length) {
             String[] oSymbols = mSymbols;
-            mSymbols = new String[mAtomTypeNum];
+            mSymbols = new String[mNumTypes];
             System.arraycopy(oSymbols, 0, mSymbols, 0, oSymbols.length);
         }
         return this;
@@ -414,12 +414,12 @@ public abstract class AtomDataBuilder<R> {
      * @return 自身方便链式调用
      */
     public AtomDataBuilder<R> setSymbols(String... aSymbols) {
-        if (aSymbols.length > mAtomTypeNum) {
-            mAtomTypeNum = aSymbols.length;
-            mSymbols = Arrays.copyOf(aSymbols, mAtomTypeNum);
+        if (aSymbols.length > mNumTypes) {
+            mNumTypes = aSymbols.length;
+            mSymbols = Arrays.copyOf(aSymbols, mNumTypes);
             return this;
         }
-        if (mSymbols == null) mSymbols = new String[mAtomTypeNum];
+        if (mSymbols == null) mSymbols = new String[mNumTypes];
         System.arraycopy(aSymbols, 0, mSymbols, 0, aSymbols.length);
         return this;
     }
@@ -428,12 +428,12 @@ public abstract class AtomDataBuilder<R> {
      * @see #setSymbols(String...)
      */
     public AtomDataBuilder<R> setSymbols(Collection<? extends CharSequence> aSymbols) {
-        if (aSymbols.size() > mAtomTypeNum) {
-            mAtomTypeNum = aSymbols.size();
+        if (aSymbols.size() > mNumTypes) {
+            mNumTypes = aSymbols.size();
             mSymbols = IO.Text.toArray(aSymbols);
             return this;
         }
-        if (mSymbols == null) mSymbols = new String[mAtomTypeNum];
+        if (mSymbols == null) mSymbols = new String[mNumTypes];
         int tIdx = 0;
         for (CharSequence tSymbol : aSymbols) {
             mSymbols[tIdx] = tSymbol.toString();

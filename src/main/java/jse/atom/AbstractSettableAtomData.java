@@ -19,8 +19,8 @@ import java.util.List;
  * <pre>
  *    {@link #atom(int)}: 获取指定索引的可以设置的原子引用 {@link ISettableAtom}
  *    {@link #box()}: 获取模拟盒对象
- *    {@link #atomNumber()}: 获取原子总数
- *    {@link #atomTypeNumber()}: 获取总原子种类数目
+ *    {@link #natoms()}: 获取原子总数
+ *    {@link #ntypes()}: 获取总原子种类数目
  * </pre>
  * @see IAtomData IAtomData: 通用的原子数据接口
  * @see ISettableAtomData ISettableAtomData: 可以修改的原子数据接口
@@ -81,14 +81,14 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
     
     /**
      * {@inheritDoc}
-     * @param aAtomTypeNum {@inheritDoc}
+     * @param aNumTypes {@inheritDoc}
      * @return {@inheritDoc}
      * @throws UnsupportedOperationException {@inheritDoc}
-     * @see #atomTypeNumber()
+     * @see #ntypes()
      * @see IAtom#type()
      * @see SettableAtomData SettableAtomData: 关于具体实现的例子
      */
-    @Override public AbstractSettableAtomData setAtomTypeNumber(int aAtomTypeNum) {throw new UnsupportedOperationException("setAtomTypeNumber");}
+    @Override public AbstractSettableAtomData setNtypes(int aNumTypes) {throw new UnsupportedOperationException("setAtomTypeNumber");}
     /**
      * {@inheritDoc}
      * @param aKeepAtomPosition {@inheritDoc}
@@ -315,7 +315,7 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      */
     protected void scaleAtomPosition_(boolean aKeepAtomPosition, double aScale) {
         if (aKeepAtomPosition) return;
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         for (int i = 0; i < tAtomNum; ++i) {
             ISettableAtom tAtom = atom(i);
             tAtom.multiply2this(aScale);
@@ -332,7 +332,7 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      */
     protected void validAtomPosition_(boolean aKeepAtomPosition, IBox aOldBox) {
         if (aKeepAtomPosition) return;
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         IBox tBox = box();
         XYZ tBuf = new XYZ();
         if (tBox.isPrism() || aOldBox.isPrism()) {
@@ -474,9 +474,9 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
         }
         /**
          * 为内部 type {@link #type_()} 包装一层检测 type
-         * 是否会超过 {@link #atomTypeNumber()}，如果超过了则自动截断
+         * 是否会超过 {@link #ntypes()}，如果超过了则自动截断
          */
-        @Override public int type() {return Math.min(type_(), atomTypeNumber());}
+        @Override public int type() {return Math.min(type_(), ntypes());}
         
         /**
          * 为内部 vx {@link #vx_()} 包装一层检测是否存在确实速度
@@ -511,12 +511,12 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
         }
         /**
          * 为内部修改 type 值 {@link #setType_(int)} 包装一层返回自身，
-         * 并且自动检测 aType 过大后调用 {@link #setAtomTypeNumber(int)}
+         * 并且自动检测 aType 过大后调用 {@link #setNtypes(int)}
          * 自动调整原子种类数目
          */
         @Override public ISettableAtom setType(int aType) {
             // 对于设置种类需要特殊处理，设置种类同时需要更新内部的原子种类计数
-            if (aType > atomTypeNumber()) setAtomTypeNumber(aType);
+            if (aType > ntypes()) setNtypes(aType);
             setType_(aType);
             return this;
         }
@@ -617,7 +617,7 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
                 setAtom(index, element);
                 return oAtom;
             }
-            @Override public int size() {return atomNumber();}
+            @Override public int size() {return natoms();}
         };
     }
     // 需要这里重新实现一下两者共有的接口避免冲突
@@ -639,6 +639,4 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
     // 需要这里重新实现一下两者共有的接口避免冲突
     /** @see #operation() */
     @VisibleForTesting @Override public ISettableAtomDataOperation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated @SuppressWarnings("deprecation") @Override public ISettableAtomDataOperation opt() {return operation();}
 }

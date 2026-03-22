@@ -63,7 +63,7 @@ public class NestedIntCPointer extends AnyCPointer {
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void fill(RowIntMatrix aData) {
-        fill(aData, aData.rowNumber(), aData.columnNumber());
+        fill(aData, aData.nrows(), aData.ncols());
     }
     /**
      * 将 jse 的 {@code IDataShell<int[]>} 填充到此嵌套 c 指针对应的内存中，认为数据按行排列且每个内部的
@@ -125,7 +125,7 @@ public class NestedIntCPointer extends AnyCPointer {
      * @see RowIntMatrix
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
-    public void parse2dest(RowIntMatrix rDest) {parse2dest(rDest, rDest.rowNumber(), rDest.columnNumber());}
+    public void parse2dest(RowIntMatrix rDest) {parse2dest(rDest, rDest.nrows(), rDest.ncols());}
     /**
      * 将此嵌套 c 指针对应的内存数值写入 jse 的 {@code IDataShell<int[]>} 中，认为数据按行排列且每个内部的
      * double 指针对应的长度一致
@@ -258,8 +258,8 @@ public class NestedIntCPointer extends AnyCPointer {
                 AbstractMatrix.rangeCheckCol(aCol, aColNum);
                 NestedIntCPointer.this.putAt(aRow, aCol, aValue);
             }
-            @Override public int rowNumber() {return aRowNum;}
-            @Override public int columnNumber() {return aColNum;}
+            @Override public int nrows() {return aRowNum;}
+            @Override public int ncols() {return aColNum;}
         };
     }
     /**

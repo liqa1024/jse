@@ -153,8 +153,8 @@ public class FeedForward extends NeuralNetwork {
             int tHiddenDim = aHiddenDims[i];
             int tSize = tHiddenDim*tColNum;
             RowMatrix tWeight = Matrices.fromRows((List<?>)tHiddenWeights.get(i));
-            if (tWeight.columnNumber() != tColNum) throw new IllegalArgumentException("Column number of hidden weight '"+i+"' mismatch");
-            if (tWeight.rowNumber() != tHiddenDim) throw new IllegalArgumentException("Row number of hidden weight '"+i+"' mismatch");
+            if (tWeight.ncols() != tColNum) throw new IllegalArgumentException("Column number of hidden weight '"+i+"' mismatch");
+            if (tWeight.nrows() != tHiddenDim) throw new IllegalArgumentException("Row number of hidden weight '"+i+"' mismatch");
             aHiddenWeights.subVec(tShift, tShift+tSize).fill(tWeight.asVecRow());
             tShift += tSize;
             tColNum = tHiddenDim;

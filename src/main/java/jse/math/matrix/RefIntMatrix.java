@@ -16,12 +16,12 @@ public abstract class RefIntMatrix extends AbstractIntMatrix {
     public abstract int get(int aRow, int aCol);
     public void set(int aRow, int aCol, int aValue) {throw new UnsupportedOperationException("set");}
     public int getAndSet(int aRow, int aCol, int aValue) {
-        rangeCheckRow(aRow, rowNumber());
-        rangeCheckCol(aCol, columnNumber());
+        rangeCheckRow(aRow, nrows());
+        rangeCheckCol(aCol, this.ncols());
         int oValue = get(aRow, aCol);
         set(aRow, aCol, aValue);
         return oValue;
     }
-    public abstract int rowNumber();
-    public abstract int columnNumber();
+    public abstract int nrows();
+    public abstract int ncols();
 }

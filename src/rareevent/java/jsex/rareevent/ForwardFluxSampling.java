@@ -11,7 +11,6 @@ import jse.math.MathEX;
 import jse.math.vector.*;
 import jse.parallel.*;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
@@ -714,7 +713,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         if (mStep < 0) {
             mStepFinished = false;
             
-            int tThreadNum = pool().threadNumber();
+            int tThreadNum = pool().nthreads();
             // 为了并行使用随机数生成器，这里统一采用 UT.Par.splitRandoms
             final IRandom[] tRNGs = UT.Par.splitRandoms(tThreadNum, mRNG.nextLong());
             // 每个线程独立的返回值
@@ -799,13 +798,13 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             mPointsOnLambda.clear();
             // 这里保证 mMovedPoints 长度永远合法
             if (oPointsOnLambda.size() > mMovedPoints.size()) {
-                mMovedPoints = LogicalVector.zeros(oPointsOnLambda.size()+ threadNumber());
+                mMovedPoints = LogicalVector.zeros(oPointsOnLambda.size()+ nthreads());
             }
             mMovedPoints.fill(false);
             // 目前界面的点数目可能小于 mN0，为了避免死循环，下一个界面需要的点的数目也要相应调整
             final int tNipp = Math.min(mN0, oPointsOnLambda.size());
             
-            int tThreadNum = pool().threadNumber();
+            int tThreadNum = pool().nthreads();
             // 为了并行使用随机数生成器，这里统一采用 UT.Par.splitRandoms
             final IRandom[] tRNGs = UT.Par.splitRandoms(tThreadNum, mRNG.nextLong());
             // 每个线程独立的返回值

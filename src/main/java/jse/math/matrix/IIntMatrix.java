@@ -89,14 +89,12 @@ public interface IIntMatrix extends IIntMatrixGetter {
     default void assignRow(final Closure<? extends Number> aGroovyTask) {assignRow(() -> aGroovyTask.call().intValue());}
     
     /** 访问和修改部分，自带的接口 */
-    int rowNumber();
-    int columnNumber();
+    int nrows();
+    int ncols();
     int get(int aRow, int aCol);
     int getAndSet(int aRow, int aCol, int aValue); // 返回修改前的值
     void set(int aRow, int aCol, int aValue);
     IMatrix.ISize size();
-    default @VisibleForTesting int nrows() {return rowNumber();}
-    default @VisibleForTesting int ncols() {return columnNumber();}
     
     /** 附加一些额外的单元素操作，对于一般的只提供一个 update 的接口 */
     void update(int aRow, int aCol, IntUnaryOperator aOpt);
@@ -113,6 +111,4 @@ public interface IIntMatrix extends IIntMatrixGetter {
     /** 矩阵的运算操作，默认返回新的矩阵 */
     IIntMatrixOperation operation();
     @VisibleForTesting default IIntMatrixOperation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated default IIntMatrixOperation opt() {return operation();}
 }

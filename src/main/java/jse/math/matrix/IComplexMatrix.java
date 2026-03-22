@@ -76,8 +76,8 @@ public interface IComplexMatrix extends IComplexMatrixGetter {
     void forEachRow(@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask);
     
     /** 访问和修改部分，自带的接口 */
-    int rowNumber();
-    int columnNumber();
+    int nrows();
+    int ncols();
     ComplexDouble get(int aRow, int aCol);
     double getReal(int aRow, int aCol);
     double getImag(int aRow, int aCol);
@@ -94,8 +94,6 @@ public interface IComplexMatrix extends IComplexMatrixGetter {
     double getAndSetReal(int aRow, int aCol, double aReal);
     double getAndSetImag(int aRow, int aCol, double aImag);
     IMatrix.ISize size();
-    default @VisibleForTesting int nrows() {return rowNumber();}
-    default @VisibleForTesting int ncols() {return columnNumber();}
     
     /** 附加一些额外的单元素操作，对于一般的只提供一个 update 的接口 */
     void update(int aRow, int aCol, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt);
@@ -116,8 +114,6 @@ public interface IComplexMatrix extends IComplexMatrixGetter {
     /** 矩阵的运算操作，默认返回新的矩阵 */
     IComplexMatrixOperation operation();
     @VisibleForTesting default IComplexMatrixOperation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated default IComplexMatrixOperation opt() {return operation();}
     
     /** Groovy 的部分，增加矩阵基本的运算操作，现在也归入内部使用 */
     IComplexMatrix plus     (IComplexDouble aRHS);

@@ -95,17 +95,17 @@ public abstract class AbstractSystemExecutor implements ISystemExecutor {
         shutdown();
     }
     @Override public final boolean isShutdown() {return mDead;}
-    @Override public final synchronized int jobNumber() {
+    @Override public final synchronized int njobs() {
         mRunningSystem.removeIf(Future::isDone);
         return mRunningSystem.size();
     }
-    @Override public final int threadNumber() {return 1;}
+    @Override public final int nthreads() {return 1;}
     @SuppressWarnings("BusyWait")
     @Override public void waitUntilDone() throws InterruptedException {
-        while (this.jobNumber() > 0) Thread.sleep(sleepTime());
+        while (this.njobs() > 0) Thread.sleep(sleepTime());
     }
     @Override public boolean isTerminated() {
-        return isShutdown() && jobNumber()==0;
+        return isShutdown() && njobs()==0;
     }
     @SuppressWarnings("BusyWait")
     @Override public void awaitTermination() throws InterruptedException {

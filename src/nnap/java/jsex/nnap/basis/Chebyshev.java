@@ -45,8 +45,8 @@ public class Chebyshev extends WTypeBasis {
         mFuseStyle = aFuseStyle;
         // Chebyshev 对 extensive 保留兼容
         if (mFuseWeight!=null && mFuseStyle==FUSE_STYLE_EXTENSIVE) {
-            mFuseSize = mFuseWeight.columnNumber()/(aNMax+1);
-            if (mFuseWeight.columnNumber()!=mFuseSize*(aNMax+1)) throw new IllegalArgumentException("Column number of fuse weight mismatch");
+            mFuseSize = mFuseWeight.ncols()/(aNMax+1);
+            if (mFuseWeight.ncols()!=mFuseSize*(aNMax+1)) throw new IllegalArgumentException("Column number of fuse weight mismatch");
             mSizeN = getSizeN_(mWType, mTypeNum, mNMax, mFuseSize);
         }
         mSymbols = aSymbols;
@@ -124,10 +124,10 @@ public class Chebyshev extends WTypeBasis {
             // 否则按行读取
             RowMatrix tMat = Matrices.fromRows((List<?>)tFuseWeight);
             if (aFuseStyle==FUSE_STYLE_LIMITED) {
-                if (tMat.columnNumber()!=((Number)tFuseSize).intValue()) throw new IllegalArgumentException("Column number of fuse weight mismatch");
+                if (tMat.ncols()!=((Number)tFuseSize).intValue()) throw new IllegalArgumentException("Column number of fuse weight mismatch");
             } else
             if (aFuseStyle==FUSE_STYLE_EXTENSIVE) {
-                if (tMat.columnNumber()!=((Number)tFuseSize).intValue()*(aNMax+1)) throw new IllegalArgumentException("Column number of fuse weight mismatch");
+                if (tMat.ncols()!=((Number)tFuseSize).intValue()*(aNMax+1)) throw new IllegalArgumentException("Column number of fuse weight mismatch");
             } else {
                 throw new IllegalStateException();
             }
@@ -155,7 +155,7 @@ public class Chebyshev extends WTypeBasis {
      */
     @Override public int size() {return mSize;}
     /** @return {@inheritDoc} */
-    @Override public int atomTypeNumber() {return mTypeNum;}
+    @Override public int ntypes() {return mTypeNum;}
     /**
      * {@inheritDoc}
      * @return {@inheritDoc}

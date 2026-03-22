@@ -78,13 +78,13 @@ public class DataXYZ extends AbstractSettableAtomData {
         Object tSymbols = mProperties.get("species");
         if (tSymbols instanceof String[]) mSpecies = (String[])tSymbols;
         Object tPositions = mProperties.get("pos");
-        if (tPositions instanceof IMatrix && ((IMatrix)tPositions).columnNumber()==3) mPositions = (IMatrix)tPositions;
+        if (tPositions instanceof IMatrix && ((IMatrix)tPositions).ncols()==3) mPositions = (IMatrix)tPositions;
         Object tVelocities = mProperties.get("velo");
-        if (tVelocities instanceof IMatrix && ((IMatrix)tVelocities).columnNumber()==3) {
+        if (tVelocities instanceof IMatrix && ((IMatrix)tVelocities).ncols()==3) {
             mVelocities = (IMatrix)tVelocities;
         } else {
             tVelocities = mProperties.get("vel");
-            if (tVelocities instanceof IMatrix && ((IMatrix)tVelocities).columnNumber()==3) mVelocities = (IMatrix)tVelocities;
+            if (tVelocities instanceof IMatrix && ((IMatrix)tVelocities).ncols()==3) mVelocities = (IMatrix)tVelocities;
         }
         if (aBox==null && mPositions!=null) {
             double tMaxX = mPositions.col(0).max(); double tMinX = Math.min(0.0, mPositions.col(0).min());
@@ -302,8 +302,8 @@ public class DataXYZ extends AbstractSettableAtomData {
         case "pos": {
             if (!(aValue instanceof IMatrix)) throw new IllegalArgumentException("Value type MUST be Matrix for pos, input: "+aValue.getClass().getName());
             IMatrix tValue = (IMatrix)aValue;
-            if (tValue.rowNumber() < mAtomNum) throw new IndexOutOfBoundsException("Need: "+mAtomNum+", Size: "+tValue.rowNumber());
-            if (tValue.columnNumber() < ATOM_DATA_KEYS_XYZ.length) throw new IndexOutOfBoundsException("Need: "+ATOM_DATA_KEYS_XYZ.length+", Size: "+tValue.columnNumber());
+            if (tValue.nrows() < mAtomNum) throw new IndexOutOfBoundsException("Need: "+mAtomNum+", Size: "+tValue.nrows());
+            if (tValue.ncols() < ATOM_DATA_KEYS_XYZ.length) throw new IndexOutOfBoundsException("Need: "+ATOM_DATA_KEYS_XYZ.length+", Size: "+tValue.ncols());
             mPositions = tValue;
             mProperties.put("pos", tValue);
             return this;
@@ -331,8 +331,8 @@ public class DataXYZ extends AbstractSettableAtomData {
         case "velo": {
             if (!(aValue instanceof IMatrix)) throw new IllegalArgumentException("Value type MUST be Matrix for velo, input: "+aValue.getClass().getName());
             IMatrix tValue = (IMatrix)aValue;
-            if (tValue.rowNumber() < mAtomNum) throw new IndexOutOfBoundsException("Need: "+mAtomNum+", Size: "+tValue.rowNumber());
-            if (tValue.columnNumber() < ATOM_DATA_KEYS_VELOCITY.length) throw new IndexOutOfBoundsException("Need: "+ATOM_DATA_KEYS_VELOCITY.length+", Size: "+tValue.columnNumber());
+            if (tValue.nrows() < mAtomNum) throw new IndexOutOfBoundsException("Need: "+mAtomNum+", Size: "+tValue.nrows());
+            if (tValue.ncols() < ATOM_DATA_KEYS_VELOCITY.length) throw new IndexOutOfBoundsException("Need: "+ATOM_DATA_KEYS_VELOCITY.length+", Size: "+tValue.ncols());
             mVelocities = tValue;
             mProperties.put("velo", tValue);
             return this;
@@ -340,10 +340,10 @@ public class DataXYZ extends AbstractSettableAtomData {
         case "vel": {
             if (!(aValue instanceof IMatrix)) throw new IllegalArgumentException("Value type MUST be Matrix for vel, input: "+aValue.getClass().getName());
             IMatrix tValue = (IMatrix)aValue;
-            if (tValue.rowNumber() < mAtomNum) throw new IndexOutOfBoundsException("Need: "+mAtomNum+", Size: "+tValue.rowNumber());
-            if (tValue.columnNumber() < ATOM_DATA_KEYS_VELOCITY.length) throw new IndexOutOfBoundsException("Need: "+ATOM_DATA_KEYS_VELOCITY.length+", Size: "+tValue.columnNumber());
+            if (tValue.nrows() < mAtomNum) throw new IndexOutOfBoundsException("Need: "+mAtomNum+", Size: "+tValue.nrows());
+            if (tValue.ncols() < ATOM_DATA_KEYS_VELOCITY.length) throw new IndexOutOfBoundsException("Need: "+ATOM_DATA_KEYS_VELOCITY.length+", Size: "+tValue.ncols());
             Object tVelo = mProperties.remove("velo");
-            if (!(tVelo instanceof IMatrix) || ((IMatrix) tVelo).columnNumber()!=3) {
+            if (!(tVelo instanceof IMatrix) || ((IMatrix) tVelo).ncols()!=3) {
                 mVelocities = tValue;
             }
             mProperties.put("vel", tValue);
@@ -376,7 +376,7 @@ public class DataXYZ extends AbstractSettableAtomData {
         }
         case "velo": {
             Object tVel = mProperties.remove("vel");
-            if (tVel instanceof IMatrix && ((IMatrix)tVel).columnNumber()==3) {
+            if (tVel instanceof IMatrix && ((IMatrix)tVel).ncols()==3) {
                 mVelocities = (IMatrix)tVel;
             } else {
                 mVelocities = null;
@@ -385,7 +385,7 @@ public class DataXYZ extends AbstractSettableAtomData {
         }
         case "vel": {
             Object tVelo = mProperties.remove("velo");
-            if (!(tVelo instanceof IMatrix) || ((IMatrix) tVelo).columnNumber()!=3) {
+            if (!(tVelo instanceof IMatrix) || ((IMatrix) tVelo).ncols()!=3) {
                 mVelocities = null;
             }
             return mProperties.remove("vel");
@@ -406,7 +406,7 @@ public class DataXYZ extends AbstractSettableAtomData {
         if (mSpecies == null) throw new UnsupportedOperationException("`setSymbolOrder` for DataXYZ without species data");
         assert mType2Symbol != null;
         if (aSymbolOrder == null) aSymbolOrder = ZL_STR;
-        if (aSymbolOrder.length > atomTypeNumber()) {
+        if (aSymbolOrder.length > this.ntypes()) {
             mType2Symbol = new String[aSymbolOrder.length+1];
         }
         System.arraycopy(aSymbolOrder, 0, mType2Symbol, 1, aSymbolOrder.length);
@@ -442,7 +442,7 @@ public class DataXYZ extends AbstractSettableAtomData {
         if (mSpecies == null) throw new UnsupportedOperationException("`setSymbols` for DataXYZ without species data");
         assert mType2Symbol != null;
         if (aSymbols==null || aSymbols.length==0) return this;
-        if (aSymbols.length > atomTypeNumber()) {
+        if (aSymbols.length > this.ntypes()) {
             mType2Symbol = new String[aSymbols.length+1];
         }
         System.arraycopy(aSymbols, 0, mType2Symbol, 1, aSymbols.length);
@@ -455,35 +455,35 @@ public class DataXYZ extends AbstractSettableAtomData {
     }
     /**
      * {@inheritDoc}
-     * @param aAtomTypeNum {@inheritDoc}
+     * @param aNumTypes {@inheritDoc}
      * @return {@inheritDoc}
      * @throws UnsupportedOperationException 如果不包含元素符号信息
-     * @see #atomTypeNumber()
+     * @see #ntypes()
      * @see IAtom#type()
      */
-    @Override public DataXYZ setAtomTypeNumber(int aAtomTypeNum) {
+    @Override public DataXYZ setNtypes(int aNumTypes) {
         if (mSpecies == null) throw new UnsupportedOperationException("`setAtomTypeNumber` for DataXYZ without species data");
         assert mType2Symbol != null;
-        int oTypeNum = atomTypeNumber();
-        if (aAtomTypeNum == oTypeNum) return this;
-        if (aAtomTypeNum < oTypeNum) {
+        int oTypeNum = this.ntypes();
+        if (aNumTypes == oTypeNum) return this;
+        if (aNumTypes < oTypeNum) {
             // 现在支持设置更小的值，更大的种类会直接截断
             for (int i = 0; i < mSpecies.length; ++i) {
                 int tType = mSymbol2Type.get(mSpecies[i]);
-                if (tType > aAtomTypeNum) {
-                    mSpecies[i] = mType2Symbol[aAtomTypeNum];
+                if (tType > aNumTypes) {
+                    mSpecies[i] = mType2Symbol[aNumTypes];
                 }
             }
             String[] oType2Symbol = mType2Symbol;
-            mType2Symbol = new String[aAtomTypeNum+1];
+            mType2Symbol = new String[aNumTypes +1];
             System.arraycopy(oType2Symbol, 0, mType2Symbol, 0, mType2Symbol.length);
             validSymbol2Type_();
             return this;
         }
         String[] oType2Symbol = mType2Symbol;
-        mType2Symbol = new String[aAtomTypeNum+1];
+        mType2Symbol = new String[aNumTypes +1];
         System.arraycopy(oType2Symbol, 0, mType2Symbol, 0, oType2Symbol.length);
-        for (int tType = oType2Symbol.length; tType <= aAtomTypeNum; ++tType) {
+        for (int tType = oType2Symbol.length; tType <= aNumTypes; ++tType) {
             mType2Symbol[tType] = "T"+tType;
         }
         validSymbol2Type_();
@@ -492,7 +492,7 @@ public class DataXYZ extends AbstractSettableAtomData {
     void validSymbol2Type_() {
         assert mType2Symbol != null;
         mSymbol2Type.clear();
-        int tAtomTypeNumber = atomTypeNumber();
+        int tAtomTypeNumber = this.ntypes();
         for (int tType = 1; tType <= tAtomTypeNumber; ++tType) {
             mSymbol2Type.put(mType2Symbol[tType], tType);
         }
@@ -518,7 +518,7 @@ public class DataXYZ extends AbstractSettableAtomData {
     @Override public DataXYZ setHasVelocity() {
         validComment_();
         if (mVelocities == null) {
-            mVelocities = RowMatrix.zeros(atomNumber(), ATOM_DATA_KEYS_VELOCITY.length);
+            mVelocities = RowMatrix.zeros(this.natoms(), ATOM_DATA_KEYS_VELOCITY.length);
             mProperties.put("velo", mVelocities);
         }
         return this;
@@ -544,7 +544,7 @@ public class DataXYZ extends AbstractSettableAtomData {
     }
     @Override protected void validAtomPosition_(boolean aKeepAtomPosition, IBox aOldBox) {
         if (aKeepAtomPosition) return;
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = this.natoms();
         XYZ tBuf = new XYZ();
         assert mBox != null;
         if (mBox.isPrism() || aOldBox.isPrism()) {
@@ -653,9 +653,9 @@ public class DataXYZ extends AbstractSettableAtomData {
      */
     @Override public IBox box() {return mBox;}
     /** @return {@inheritDoc} */
-    @Override public int atomNumber() {return mAtomNum;}
+    @Override public int natoms() {return mAtomNum;}
     /** @return {@inheritDoc} */
-    @Override public int atomTypeNumber() {return mType2Symbol==null ? 1 : mType2Symbol.length-1;}
+    @Override public int ntypes() {return mType2Symbol==null ? 1 : mType2Symbol.length-1;}
     
     /** @return {@inheritDoc} */
     @Override public DataXYZ copy() {
@@ -734,7 +734,7 @@ public class DataXYZ extends AbstractSettableAtomData {
             return ((DataXYZ)aAtomData).copy().setSymbols(aSymbols);
         } else {
             // 直接遍历拷贝数据
-            int tAtomNum = aAtomData.atomNumber();
+            int tAtomNum = aAtomData.natoms();
             String[] rSpecies = new String[tAtomNum];
             RowMatrix rPositions = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
             @Nullable RowMatrix rVelocities = aAtomData.hasVelocity() ? RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : null;
@@ -1025,7 +1025,7 @@ public class DataXYZ extends AbstractSettableAtomData {
                 if (tValue instanceof IMatrix) {
                     rLine.append(tEntry.getKey());
                     rLine.append(":R:");
-                    rLine.append(((IMatrix)tValue).columnNumber());
+                    rLine.append(((IMatrix)tValue).ncols());
                 } else
                 if (tValue instanceof IIntVector) {
                     rLine.append(tEntry.getKey());
@@ -1034,7 +1034,7 @@ public class DataXYZ extends AbstractSettableAtomData {
                 if (tValue instanceof IIntMatrix) {
                     rLine.append(tEntry.getKey());
                     rLine.append(":I:");
-                    rLine.append(((IIntMatrix)tValue).columnNumber());
+                    rLine.append(((IIntMatrix)tValue).ncols());
                 }
             }
             // 如果不存在 pbc 参数，则自动写入一个 T T T

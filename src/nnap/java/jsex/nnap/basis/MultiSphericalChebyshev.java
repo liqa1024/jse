@@ -191,7 +191,7 @@ public class MultiSphericalChebyshev extends MergeableBasis {
      */
     @Override public int size() {return mSize;}
     /** @return {@inheritDoc} */
-    @Override public int atomTypeNumber() {return mTypeNum;}
+    @Override public int ntypes() {return mTypeNum;}
     /**
      * {@inheritDoc}
      * @return {@inheritDoc}

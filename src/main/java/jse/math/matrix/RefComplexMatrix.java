@@ -24,19 +24,19 @@ public abstract class RefComplexMatrix extends AbstractComplexMatrix {
         return new ComplexDouble(getAndSetReal(aRow, aCol, aReal), getAndSetImag(aRow, aCol, aImag));
     }
     public double getAndSetReal(int aRow, int aCol, double aReal) {
-        rangeCheckRow(aRow, rowNumber());
-        rangeCheckCol(aCol, columnNumber());
+        rangeCheckRow(aRow, this.nrows());
+        rangeCheckCol(aCol, ncols());
         double oReal = getReal(aRow, aCol);
         setReal(aRow, aCol, aReal);
         return oReal;
     }
     public double getAndSetImag(int aRow, int aCol, double aImag) {
-        rangeCheckRow(aRow, rowNumber());
-        rangeCheckCol(aCol, columnNumber());
+        rangeCheckRow(aRow, this.nrows());
+        rangeCheckCol(aCol, ncols());
         double oImag = getImag(aRow, aCol);
         setImag(aRow, aCol, aImag);
         return oImag;
     }
-    public abstract int rowNumber();
-    public abstract int columnNumber();
+    public abstract int nrows();
+    public abstract int ncols();
 }

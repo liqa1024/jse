@@ -33,7 +33,7 @@ public interface ITable {
         // 这样防止被外部修改
         return new AbstractRandomAccessList<String>() {
             @Override public String get(int index) {return getHead(index);}
-            @Override public int size() {return columnNumber();}
+            @Override public int size() {return ncols();}
         };
     }
     
@@ -56,10 +56,8 @@ public interface ITable {
     IVector row(int aRow);
     List<? extends IVector> cols();
     IVector col(String aHead);
-    int rowNumber();
-    int columnNumber();
-    default @VisibleForTesting int nrows() {return rowNumber();}
-    default @VisibleForTesting int ncols() {return columnNumber();}
+    int nrows();
+    int ncols();
     
     /** 切片操作，默认返回新的列表，refSlicer 则会返回引用的切片结果 */
     ITableSlicer slicer();

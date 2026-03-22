@@ -119,8 +119,6 @@ public interface IVector extends ISwapper, IHasDoubleIterator, IHasDoubleSetIter
     /** 向量的运算操作，默认返回新的向量 */
     IVectorOperation operation();
     @VisibleForTesting default IVectorOperation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated default IVectorOperation opt() {return operation();}
     
     /** {@link Double} stuffs，不做特殊优化 */
     ILogicalVector isNaN();

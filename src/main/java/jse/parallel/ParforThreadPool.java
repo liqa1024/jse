@@ -66,14 +66,14 @@ public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
         if (mDead) throw new RuntimeException("This ParforThreadPool is dead");
         if (aSize <= 0) return;
         // 串行的情况
-        if (threadNumber() <= 1) {
+        if (nthreads() <= 1) {
             if (aInitDo != null) aInitDo.run(0);
             for (int i = 0; i < aSize; ++i) aTaskWithIDAndException.run(i, 0);
             if (aFinalDo != null) aFinalDo.run(0);
         }
         // 并行的情况，现在默认不进行分组，使用竞争获取任务的思路来获取任务，保证实际创建的线程在 parfor 任务中不会提前结束，并且可控
         else synchronized (this) {
-            int tThreadNum = threadNumber();
+            int tThreadNum = nthreads();
             // 获取错误，保留执行中的错误，并在任意一个线程发生错误时中断
             final AtomicReference<Exception> tException = new AtomicReference<>(null);
             final CountDownLatch tLatch = new CountDownLatch(tThreadNum);
@@ -151,14 +151,14 @@ public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
         // 特殊情况直接退出
         if (!aChecker.noBreak()) return;
         // 串行的情况
-        if (threadNumber() <= 1) {
+        if (nthreads() <= 1) {
             if (aInitDo != null) aInitDo.run(0);
             while (aChecker.noBreak()) aTaskWithID.run(0);
             if (aFinalDo != null) aFinalDo.run(0);
         }
         // 并行的情况，现在默认不进行分组，使用竞争获取任务的思路来获取任务，保证实际创建的线程在 parwhile 任务中不会提前结束，并且可控
         else synchronized (this) {
-            int tThreadNum = threadNumber();
+            int tThreadNum = nthreads();
             // 获取错误，保留执行中的错误，并在任意一个线程发生错误时中断
             final AtomicReference<Throwable> tThrowable = new AtomicReference<>(null);
             final CountDownLatch tLatch = new CountDownLatch(tThreadNum);

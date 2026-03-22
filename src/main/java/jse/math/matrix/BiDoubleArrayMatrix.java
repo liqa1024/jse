@@ -12,7 +12,7 @@ public abstract class BiDoubleArrayMatrix extends AbstractComplexMatrix implemen
     /** DataShell stuffs */
     @Override public void setInternalData(double[][] aData) {mData = aData;}
     @Override public double[][] internalData() {return mData;}
-    @Override public int internalDataSize() {return columnNumber()*rowNumber();}
+    @Override public int internalDataSize() {return ncols()* nrows();}
     
     protected class BiDoubleArrayMatrixOperation_ extends BiDoubleArrayMatrixOperation {
         @Override protected BiDoubleArrayMatrix thisMatrix_() {return BiDoubleArrayMatrix.this;}

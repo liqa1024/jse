@@ -82,8 +82,6 @@ public interface ILogicalVector extends ISwapper, IHasBooleanIterator, IHasBoole
     /** 向量的运算操作，默认返回新的向量 */
     ILogicalVectorOperation operation();
     @VisibleForTesting default ILogicalVectorOperation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated default ILogicalVectorOperation opt() {return operation();}
     
     /** 提供一个调用过滤的方法简化使用 */
     default IIntVector where() {return NewCollections.filterInt(size(), this);}

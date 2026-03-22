@@ -105,11 +105,11 @@ public abstract class AbstractVector implements IVector {
     
     @Override public IMatrix asMatCol() {
         return new RefMatrix() {
-            @Override public double get(int aRow, int aCol) {AbstractMatrix.rangeCheckRow(aRow, rowNumber()); AbstractMatrix.rangeCheckCol(aCol, 1); return AbstractVector.this.get(aRow);}
-            @Override public void set(int aRow, int aCol, double aValue) {AbstractMatrix.rangeCheckRow(aRow, rowNumber()); AbstractMatrix.rangeCheckCol(aCol, 1); AbstractVector.this.set(aRow, aValue);}
-            @Override public double getAndSet(int aRow, int aCol, double aValue) {AbstractMatrix.rangeCheckRow(aRow, rowNumber()); AbstractMatrix.rangeCheckCol(aCol, 1); return AbstractVector.this.getAndSet(aRow, aValue);}
-            @Override public int rowNumber() {return AbstractVector.this.size();}
-            @Override public int columnNumber() {return 1;}
+            @Override public double get(int aRow, int aCol) {AbstractMatrix.rangeCheckRow(aRow, nrows()); AbstractMatrix.rangeCheckCol(aCol, 1); return AbstractVector.this.get(aRow);}
+            @Override public void set(int aRow, int aCol, double aValue) {AbstractMatrix.rangeCheckRow(aRow, nrows()); AbstractMatrix.rangeCheckCol(aCol, 1); AbstractVector.this.set(aRow, aValue);}
+            @Override public double getAndSet(int aRow, int aCol, double aValue) {AbstractMatrix.rangeCheckRow(aRow, nrows()); AbstractMatrix.rangeCheckCol(aCol, 1); return AbstractVector.this.getAndSet(aRow, aValue);}
+            @Override public int nrows() {return AbstractVector.this.size();}
+            @Override public int ncols() {return 1;}
             @Override public IDoubleIterator iteratorCol() {return AbstractVector.this.iterator();}
             @Override public IDoubleIterator iteratorColAt(int aCol) {AbstractMatrix.rangeCheckCol(aCol, 1); return AbstractVector.this.iterator();}
             @Override public IDoubleSetIterator setIteratorCol() {return AbstractVector.this.setIterator();}
@@ -118,11 +118,11 @@ public abstract class AbstractVector implements IVector {
     }
     @Override public IMatrix asMatRow() {
         return new RefMatrix() {
-            @Override public double get(int aRow, int aCol) {AbstractMatrix.rangeCheckRow(aRow, 1); AbstractMatrix.rangeCheckCol(aCol, columnNumber()); return AbstractVector.this.get(aCol);}
-            @Override public void set(int aRow, int aCol, double aValue) {AbstractMatrix.rangeCheckRow(aRow, 1); AbstractMatrix.rangeCheckCol(aCol, columnNumber()); AbstractVector.this.set(aCol, aValue);}
-            @Override public double getAndSet(int aRow, int aCol, double aValue) {AbstractMatrix.rangeCheckRow(aRow, 1); AbstractMatrix.rangeCheckCol(aCol, columnNumber()); return AbstractVector.this.getAndSet(aCol, aValue);}
-            @Override public int rowNumber() {return 1;}
-            @Override public int columnNumber() {return AbstractVector.this.size();}
+            @Override public double get(int aRow, int aCol) {AbstractMatrix.rangeCheckRow(aRow, 1); AbstractMatrix.rangeCheckCol(aCol, this.ncols()); return AbstractVector.this.get(aCol);}
+            @Override public void set(int aRow, int aCol, double aValue) {AbstractMatrix.rangeCheckRow(aRow, 1); AbstractMatrix.rangeCheckCol(aCol, this.ncols()); AbstractVector.this.set(aCol, aValue);}
+            @Override public double getAndSet(int aRow, int aCol, double aValue) {AbstractMatrix.rangeCheckRow(aRow, 1); AbstractMatrix.rangeCheckCol(aCol, this.ncols()); return AbstractVector.this.getAndSet(aCol, aValue);}
+            @Override public int nrows() {return 1;}
+            @Override public int ncols() {return AbstractVector.this.size();}
             @Override public IDoubleIterator iteratorRow() {return AbstractVector.this.iterator();}
             @Override public IDoubleIterator iteratorRowAt(int aRow) {AbstractMatrix.rangeCheckRow(aRow, 1); return AbstractVector.this.iterator();}
             @Override public IDoubleSetIterator setIteratorRow() {return AbstractVector.this.setIterator();}

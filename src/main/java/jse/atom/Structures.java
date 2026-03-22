@@ -263,7 +263,7 @@ public class Structures {
             aBox.bx()*aRepeatY, aBox.by()*aRepeatY, aBox.bz()*aRepeatY,
             aBox.cx()*aRepeatZ, aBox.cy()*aRepeatZ, aBox.cz()*aRepeatZ
             ) : new Box(aBox.x()*aRepeatX, aBox.y()*aRepeatY, aBox.z()*aRepeatZ);
-        final int tLatticeNum = aLattice.atomNumber();
+        final int tLatticeNum = aLattice.natoms();
         @Nullable List<@Nullable String> tSymbols = aLattice.symbols();
         return new AtomData(new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(final int index) {
@@ -296,7 +296,7 @@ public class Structures {
             @Override public int size() {
                 return tLatticeNum*aRepeatX*aRepeatY*aRepeatZ;
             }
-        }, aLattice.atomTypeNumber(), tBox, aLattice.hasID(), aLattice.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
+        }, aLattice.ntypes(), tBox, aLattice.hasID(), aLattice.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
     /**
      * 根据给定数据创建输入晶胞的 {@link IAtomData}

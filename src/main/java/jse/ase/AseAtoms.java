@@ -171,7 +171,7 @@ public class AseAtoms extends AbstractSettableAtomData {
      */
     public AseAtoms setSymbolOrder(String... aSymbolOrder) {
         if (aSymbolOrder == null) aSymbolOrder = ZL_STR;
-        if (aSymbolOrder.length > atomTypeNumber()) {
+        if (aSymbolOrder.length > ntypes()) {
             IIntVector oType2AtomicNumber = mType2AtomicNumber;
             mType2AtomicNumber = Vectors.range(aSymbolOrder.length+1);
             mType2AtomicNumber.subVec(0, oType2AtomicNumber.size()).fill(oType2AtomicNumber);
@@ -212,7 +212,7 @@ public class AseAtoms extends AbstractSettableAtomData {
      */
     @Override public AseAtoms setSymbols(String... aSymbols) {
         if (aSymbols==null || aSymbols.length==0) return this;
-        if (aSymbols.length > atomTypeNumber()) {
+        if (aSymbols.length > ntypes()) {
             IIntVector oType2AtomicNumber = mType2AtomicNumber;
             mType2AtomicNumber = Vectors.range(aSymbols.length+1);
             mType2AtomicNumber.subVec(0, oType2AtomicNumber.size()).fill(oType2AtomicNumber);
@@ -230,34 +230,34 @@ public class AseAtoms extends AbstractSettableAtomData {
     }
     /**
      * {@inheritDoc}
-     * @param aAtomTypeNum {@inheritDoc}
+     * @param aNumTypes {@inheritDoc}
      * @return {@inheritDoc}
      * @throws UnsupportedOperationException 如果不包含元素符号信息
-     * @see #atomTypeNumber()
+     * @see #ntypes()
      * @see IAtom#type()
      */
-    @Override public AseAtoms setAtomTypeNumber(int aAtomTypeNum) {
-        int oTypeNum = atomTypeNumber();
-        if (aAtomTypeNum == oTypeNum) return this;
-        if (aAtomTypeNum < oTypeNum) {
+    @Override public AseAtoms setNtypes(int aNumTypes) {
+        int oTypeNum = ntypes();
+        if (aNumTypes == oTypeNum) return this;
+        if (aNumTypes < oTypeNum) {
             // 现在支持设置更小的值，更大的种类会直接截断
             mAtomicNumbers.op().map2this(i -> {
                 int tType = mAtomicNumber2Type.get(i);
-                return tType>aAtomTypeNum ? mType2AtomicNumber.get(aAtomTypeNum) : i;
+                return tType> aNumTypes ? mType2AtomicNumber.get(aNumTypes) : i;
             });
-            mType2AtomicNumber = mType2AtomicNumber.subVec(0, aAtomTypeNum+1).copy();
+            mType2AtomicNumber = mType2AtomicNumber.subVec(0, aNumTypes +1).copy();
             validAtomicNumber2Type_();
             return this;
         }
         IIntVector oType2AtomicNumber = mType2AtomicNumber;
-        mType2AtomicNumber = Vectors.range(aAtomTypeNum+1);
+        mType2AtomicNumber = Vectors.range(aNumTypes +1);
         mType2AtomicNumber.subVec(0, oTypeNum).fill(oType2AtomicNumber);
         validAtomicNumber2Type_();
         return this;
     }
     void validAtomicNumber2Type_() {
         mAtomicNumber2Type.clear();
-        int tAtomTypeNumber = atomTypeNumber();
+        int tAtomTypeNumber = ntypes();
         for (int tType = 1; tType <= tAtomTypeNumber; ++tType) {
             mAtomicNumber2Type.put(mType2AtomicNumber.get(tType), tType);
         }
@@ -275,7 +275,7 @@ public class AseAtoms extends AbstractSettableAtomData {
      * @see #hasVelocity()
      * @see #setNoVelocity()
      */
-    @Override public AseAtoms setHasVelocity() {if (mMomenta == null) {mMomenta = RowMatrix.zeros(atomNumber(), ATOM_DATA_KEYS_VELOCITY.length);} return this;}
+    @Override public AseAtoms setHasVelocity() {if (mMomenta == null) {mMomenta = RowMatrix.zeros(this.natoms(), ATOM_DATA_KEYS_VELOCITY.length);} return this;}
     
     /// set box stuff
     @Override protected void setBox_(double aX, double aY, double aZ) {
@@ -293,7 +293,7 @@ public class AseAtoms extends AbstractSettableAtomData {
     }
     @Override protected void validAtomPosition_(boolean aKeepAtomPosition, IBox aOldBox) {
         if (aKeepAtomPosition) return;
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = this.natoms();
         XYZ tBuf = new XYZ();
         if (mBox.isPrism() || aOldBox.isPrism()) {
             for (int i = 0; i < tAtomNum; ++i) {
@@ -383,9 +383,9 @@ public class AseAtoms extends AbstractSettableAtomData {
      */
     @Override public IBox box() {return mBox;}
     /** @return {@inheritDoc} */
-    @Override public int atomNumber() {return mAtomicNumbers.size();}
+    @Override public int natoms() {return mAtomicNumbers.size();}
     /** @return {@inheritDoc} */
-    @Override public int atomTypeNumber() {return mType2AtomicNumber.size()-1;}
+    @Override public int ntypes() {return mType2AtomicNumber.size()-1;}
     
     /**
      * 转换为 python 中的 ase 的 Atoms，这里直接统一开启 pbc
@@ -518,7 +518,7 @@ public class AseAtoms extends AbstractSettableAtomData {
             // AseAtoms 则直接获取即可（专门优化，保留完整模拟盒信息）
             return ((AseAtoms)aAtomData).copy().setSymbols(aSymbols);
         } else {
-            IIntVector rType2AtomicNumber = Vectors.range(Math.max(aSymbols.length, aAtomData.atomTypeNumber())+1);
+            IIntVector rType2AtomicNumber = Vectors.range(Math.max(aSymbols.length, aAtomData.ntypes())+1);
             for (int tType = 1; tType <= aSymbols.length; ++tType) {
                 String tSymbol = aSymbols[tType-1];
                 @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(tSymbol);
@@ -526,7 +526,7 @@ public class AseAtoms extends AbstractSettableAtomData {
                 rType2AtomicNumber.set(tType, tAtomicNumber);
             }
             // 直接遍历拷贝数据
-            int tAtomNum = aAtomData.atomNumber();
+            int tAtomNum = aAtomData.natoms();
             IntVector rAtomicNumbers = IntVector.zeros(tAtomNum);
             RowMatrix rPositions = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
             @Nullable RowMatrix rMomenta = aAtomData.hasVelocity() ? RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : null;

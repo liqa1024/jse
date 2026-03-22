@@ -73,20 +73,20 @@ public class Table extends AbstractTable implements IDataShell<DoubleList> {
                             @Override public ShiftVector setValue(ShiftVector value) {throw new UnsupportedOperationException("setValue");}
                         });
                     }
-                    @Override public int size() {return columnNumber();}
+                    @Override public int size() {return ncols();}
                 };
             }
             @Override public ShiftVector get(Object key) {return asMatrix().col(mHead2Idx.get(key));}
             @Override public boolean containsKey(Object key) {return mHead2Idx.containsKey(key);}
             @Override public ShiftVector remove(Object key) {throw new UnsupportedOperationException("remove");}
-            @Override public int size() {return columnNumber();}
+            @Override public int size() {return ncols();}
             @Override public void clear() {throw new UnsupportedOperationException("clear");}
             @Override public ShiftVector put(String key, ShiftVector value) {throw new UnsupportedOperationException("put");}
         };
     }
     @Override public final List<? extends ShiftVector> cols() {return asMatrix().cols();}
     @Override public final ShiftVector col(String aHead) {return asMatrix().col(mHead2Idx.get(aHead));}
-    @Override public final int rowNumber() {return mRowNum;}
+    @Override public final int nrows() {return mRowNum;}
     
     @Override public Table copy() {
         return new Table(mRowNum, mData.copy(), NewCollections.from(mHeads));
@@ -94,7 +94,7 @@ public class Table extends AbstractTable implements IDataShell<DoubleList> {
     
     /** AbstractTable stuffs */
     @Override public final ColumnMatrix asMatrix() {
-        if (mMatrix == null) mMatrix = new ColumnMatrix(mRowNum, columnNumber(), mData.internalData());
+        if (mMatrix == null) mMatrix = new ColumnMatrix(mRowNum, ncols(), mData.internalData());
         return mMatrix;
     }
     @Override protected final ShiftVector newColumn_(String aHead) {
@@ -105,7 +105,7 @@ public class Table extends AbstractTable implements IDataShell<DoubleList> {
         mHeads.add(aHead);
         // 然后扩展数据
         mData.addZeros(mRowNum);
-        return asMatrix().col(columnNumber()-1);
+        return asMatrix().col(ncols()-1);
     }
     
     /** DataShell stuffs */

@@ -65,7 +65,7 @@ public class NNAP2 implements IPairPotential {
     final int mThreadNumber;
     final Basis2[] mBasis;
     final NeuralNetwork2[] mNN;
-    public int atomTypeNumber() {return mSymbols.length;}
+    public int ntypes() {return mSymbols.length;}
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return mSymbols[aType-1];}
     public String units() {return mUnits;}
@@ -251,8 +251,7 @@ public class NNAP2 implements IPairPotential {
     }
     
     @Override public boolean isShutdown() {return mDead;}
-    @Override public int threadNumber() {return mThreadNumber;}
-    @VisibleForTesting public int nthreads() {return threadNumber();}
+    @Override public int nthreads() {return mThreadNumber;}
     @Override public double rcutMax() {
         double tRCut = 0.0;
         for (Basis2 tBasis : mBasis) {
@@ -269,7 +268,7 @@ public class NNAP2 implements IPairPotential {
     
     
     private int buildNL_(IDxyzTypeIdxIterable aNL, double aRCut, boolean aRequireGrad) {
-        final int tTypeNum = atomTypeNumber();
+        final int tTypeNum = ntypes();
         // 缓存情况需要先清空这些
         mNlDxBuf.clear(); mNlDyBuf.clear(); mNlDzBuf.clear();
         mNlTypeBuf.clear(); mNlIdxBuf.clear();

@@ -91,8 +91,8 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     @Override public final ComplexDouble getAndSet(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aReal; mData[1][tIdx] = aImag; return oValue;}
     @Override public final double getAndSetReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; double oReal = mData[0][tIdx]; mData[0][tIdx] = aReal; return oReal;}
     @Override public final double getAndSetImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, mRowNum); rangeCheckCol(aCol, mColNum); int tIdx = aRow + aCol*mRowNum; double oImag = mData[1][tIdx]; mData[1][tIdx] = aImag; return oImag;}
-    @Override public final int rowNumber() {return mRowNum;}
-    @Override public final int columnNumber() {return mColNum;}
+    @Override public final int nrows() {return mRowNum;}
+    @Override public final int ncols() {return mColNum;}
     
     @Override protected ColumnComplexMatrix newZeros_(int aRowNum, int aColNum) {return ColumnComplexMatrix.zeros(aRowNum, aColNum);}
     @Override public ColumnComplexMatrix copy() {return (ColumnComplexMatrix)super.copy();}
@@ -109,7 +109,7 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     /** Optimize stuffs，重写这个提高列向的索引速度 */
     @Override public List<? extends ShiftComplexVector> cols() {
         return new AbstractRandomAccessList<ShiftComplexVector>() {
-            @Override public int size() {return columnNumber();}
+            @Override public int size() {return ncols();}
             @Override public ShiftComplexVector get(int aCol) {return col(aCol);}
         };
     }

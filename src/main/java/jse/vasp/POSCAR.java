@@ -94,17 +94,12 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     }
     /** @deprecated use {@link #symbol(int)} */
     @Deprecated public @Nullable String typeName(int aType) {return symbol(aType);}
-    public int atomNumber(String aType) {
+    public int natoms(String aType) {
         int rAtomNum = 0;
-        for (int tType : mKey2Type.get(aType)) rAtomNum += atomNumber(tType);
+        for (int tType : mKey2Type.get(aType)) rAtomNum += natoms(tType);
         return rAtomNum;
     }
-    public int atomNumber(int aType) {return mAtomNumbers.get(aType-1);}
-    /** @deprecated use {@link #atomNumber(String)} or {@link #natoms(String)} */ @Deprecated public final int atomNum(String aType) {return atomNumber(aType);}
-    /** @deprecated use {@link #atomNumber(int)} or {@link #natoms(int)} */ @Deprecated public final int atomNum(int aType) {return atomNumber(aType);}
-    /** 提供简写版本 */
-    @VisibleForTesting public final int natoms(String aType) {return atomNumber(aType);}
-    @VisibleForTesting public final int natoms(int aType) {return atomNumber(aType);}
+    public int natoms(int aType) {return mAtomNumbers.get(aType-1);}
     
     public @Override @Nullable String comment() {return mComment;}
     public @Override String @Nullable[] typeNames() {return mTypeNames;}
@@ -139,25 +134,25 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     }
     @Override public POSCAR setNoSymbol() {return setSymbols(ZL_STR);}
     /** 设置原子种类数目 */
-    @Override public POSCAR setAtomTypeNumber(int aAtomTypeNum) {
+    @Override public POSCAR setNtypes(int aNumTypes) {
         if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
         int oTypeNum = mAtomNumbers.size();
-        if (aAtomTypeNum == oTypeNum) return this;
-        if (aAtomTypeNum < oTypeNum) {
+        if (aNumTypes == oTypeNum) return this;
+        if (aNumTypes < oTypeNum) {
             // 现在支持设置更小的值，更大的种类会直接截断
-            mAtomNumbers.set(aAtomTypeNum-1, mAtomNumbers.subVec(aAtomTypeNum-1, mAtomNumbers.size()).sum());
-            mAtomNumbers = mAtomNumbers.subVec(0, aAtomTypeNum).copy();
+            mAtomNumbers.set(aNumTypes -1, mAtomNumbers.subVec(aNumTypes -1, mAtomNumbers.size()).sum());
+            mAtomNumbers = mAtomNumbers.subVec(0, aNumTypes).copy();
             validKey2Type_();
             return this;
         }
-        if (mTypeNames!=null && mTypeNames.length<aAtomTypeNum) {
-            String[] rTypeNames = new String[aAtomTypeNum];
+        if (mTypeNames!=null && mTypeNames.length< aNumTypes) {
+            String[] rTypeNames = new String[aNumTypes];
             System.arraycopy(mTypeNames, 0, rTypeNames, 0, mTypeNames.length);
-            for (int tType = mTypeNames.length+1; tType <= aAtomTypeNum; ++tType) rTypeNames[tType-1] = "T" + tType;
+            for (int tType = mTypeNames.length+1; tType <= aNumTypes; ++tType) rTypeNames[tType-1] = "T" + tType;
             mTypeNames = rTypeNames;
         }
         IIntVector oAtomNumbers = mAtomNumbers;
-        mAtomNumbers = IntVector.zeros(aAtomTypeNum);
+        mAtomNumbers = IntVector.zeros(aNumTypes);
         mAtomNumbers.subVec(0, oTypeNum).fill(oAtomNumbers);
         validKey2Type_();
         return this;
@@ -254,7 +249,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     @Override protected void validAtomPosition_(boolean aKeepAtomPosition, IBox aOldBox) {
         if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
         // 对于 Cartesian 和 Direct 要分开讨论
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = this.natoms();
         XYZ tBuf = new XYZ();
         if (mIsCartesian) {
             if (aKeepAtomPosition) return;
@@ -304,7 +299,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
     @ApiStatus.Obsolete
     public POSCAR setDenseNormalized() {
         if (mIsRef) throw new UnsupportedOperationException("This POSCAR is reference from XDATCAR, use copy() to modify it.");
-        double tScale = MathEX.Fast.cbrt(volume() / atomNumber());
+        double tScale = MathEX.Fast.cbrt(volume() / this.natoms());
         // 直接通过调整 boxScale 来实现
         mBox.setScale(mBox.scale() / tScale);
         return this;
@@ -465,7 +460,7 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
                     double tX = mDirect.get(mIdx, 0);
                     double tY = mDirect.get(mIdx, 1);
                     double tZ = mDirect.get(mIdx, 2);
-                    int from = atomNumber();
+                    int from = POSCAR.this.natoms();
                     for (int typeMM = mAtomNumbers.size()-1; typeMM >= oType; --typeMM) {
                         from -= mAtomNumbers.get(typeMM);
                     }
@@ -490,8 +485,8 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
         };
     }
     @Override public VaspBox box() {return mBox;}
-    @Override public int atomNumber() {return mDirect.rowNumber();}
-    @Override public int atomTypeNumber() {return mAtomNumbers.size();}
+    @Override public int natoms() {return mDirect.nrows();}
+    @Override public int ntypes() {return mAtomNumbers.size();}
     
     
     /** 拷贝一份 POSCAR */
@@ -512,9 +507,9 @@ public class POSCAR extends AbstractSettableAtomData implements IVaspCommonData 
             return ((POSCAR)aAtomData).copy().setSelectiveDynamics(aSelectiveDynamics).setSymbols(aTypeNames);
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
-            int tAtomTypeNum = Math.max(aAtomData.atomTypeNumber(), aTypeNames.length);
+            int tAtomTypeNum = Math.max(aAtomData.ntypes(), aTypeNames.length);
             IIntVector rAtomNumbers = IntVector.zeros(tAtomTypeNum);
-            IMatrix rDirect = Matrices.zeros(aAtomData.atomNumber(), 3);
+            IMatrix rDirect = Matrices.zeros(aAtomData.natoms(), 3);
             int tIdx = 0;
             for (int tTypeMM = 0; tTypeMM < tAtomTypeNum; ++tTypeMM) {
                 for (IAtom tAtom : aAtomData.atoms()) if (tAtom.type() == tTypeMM+1) {

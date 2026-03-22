@@ -35,7 +35,7 @@ public abstract class AbstractMatrix implements IMatrix {
     /** print */
     @Override public String toString() {
         StringBuilder rStr  = new StringBuilder();
-        rStr.append(String.format("%d x %d Matrix:", rowNumber(), columnNumber()));
+        rStr.append(String.format("%d x %d Matrix:", nrows(), ncols()));
         for (IVector tRow : rows()) {
             rStr.append("\n");
             for (double tValue : tRow.iterable()) rStr.append(toString_(tValue));
@@ -46,8 +46,8 @@ public abstract class AbstractMatrix implements IMatrix {
     /** Iterator stuffs */
     @Override public IDoubleIterator iteratorCol() {
         return new IDoubleIterator() {
-            private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
+            private final int mColNum = ncols();
+            private final int mRowNum = nrows();
             private int mCol = 0;
             private int mRow = 0;
             @Override public boolean hasNext() {return mCol < mColNum;}
@@ -65,8 +65,8 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     @Override public IDoubleIterator iteratorRow() {
         return new IDoubleIterator() {
-            private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
+            private final int mColNum = ncols();
+            private final int mRowNum = nrows();
             private int mCol = 0;
             private int mRow = 0;
             @Override public boolean hasNext() {return mRow < mRowNum;}
@@ -83,9 +83,9 @@ public abstract class AbstractMatrix implements IMatrix {
         };
     }
     @Override public IDoubleIterator iteratorColAt(final int aCol) {
-        rangeCheckCol(aCol, columnNumber());
+        rangeCheckCol(aCol, ncols());
         return new IDoubleIterator() {
-            private final int mRowNum = rowNumber();
+            private final int mRowNum = nrows();
             private int mRow = 0;
             @Override public boolean hasNext() {return mRow < mRowNum;}
             @Override public double next() {
@@ -100,9 +100,9 @@ public abstract class AbstractMatrix implements IMatrix {
         };
     }
     @Override public IDoubleIterator iteratorRowAt(final int aRow) {
-        rangeCheckRow(aRow, rowNumber());
+        rangeCheckRow(aRow, nrows());
         return new IDoubleIterator() {
-            private final int mColNum = columnNumber();
+            private final int mColNum = ncols();
             private int mCol = 0;
             @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public double next() {
@@ -118,8 +118,8 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     @Override public IDoubleSetIterator setIteratorCol() {
         return new IDoubleSetIterator() {
-            private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
+            private final int mColNum = ncols();
+            private final int mRowNum = nrows();
             private int mCol = 0, oCol = -1;
             private int mRow = 0, oRow = -1;
             @Override public boolean hasNext() {return mCol < mColNum;}
@@ -161,8 +161,8 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     @Override public IDoubleSetIterator setIteratorRow() {
         return new IDoubleSetIterator() {
-            private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
+            private final int mColNum = ncols();
+            private final int mRowNum = nrows();
             private int mCol = 0, oCol = -1;
             private int mRow = 0, oRow = -1;
             @Override public boolean hasNext() {return mRow < mRowNum;}
@@ -203,9 +203,9 @@ public abstract class AbstractMatrix implements IMatrix {
         };
     }
     @Override public IDoubleSetIterator setIteratorColAt(final int aCol) {
-        rangeCheckCol(aCol, columnNumber());
+        rangeCheckCol(aCol, ncols());
         return new IDoubleSetIterator() {
-            private final int mRowNum = rowNumber();
+            private final int mRowNum = nrows();
             private int mRow = 0, oRow = -1;
             @Override public boolean hasNext() {return mRow < mRowNum;}
             @Override public void set(double aValue) {
@@ -239,9 +239,9 @@ public abstract class AbstractMatrix implements IMatrix {
         };
     }
     @Override public IDoubleSetIterator setIteratorRowAt(final int aRow) {
-        rangeCheckRow(aRow, rowNumber());
+        rangeCheckRow(aRow, nrows());
         return new IDoubleSetIterator() {
-            private final int mColNum = columnNumber();
+            private final int mColNum = ncols();
             private int mCol = 0, oCol = -1;
             @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public void set(double aValue) {
@@ -281,7 +281,7 @@ public abstract class AbstractMatrix implements IMatrix {
     @Override public List<List<Double>> asListRows() {return AbstractCollections.map(rows(), IVector::asList);}
     @Override public IVector asVecCol() {
         return new RefVector() {
-            private final int mRowNum = rowNumber(), mColNum = columnNumber();
+            private final int mRowNum = nrows(), mColNum = ncols();
             @Override public double get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.get(aIdx%mRowNum, aIdx/mRowNum);}
             @Override public void set(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractMatrix.this.set(aIdx%mRowNum, aIdx/mRowNum, aValue);}
             @Override public double getAndSet(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.getAndSet(aIdx%mRowNum, aIdx/mRowNum, aValue);}
@@ -292,7 +292,7 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     @Override public IVector asVecRow() {
         return new RefVector() {
-            private final int mRowNum = rowNumber(), mColNum = columnNumber();
+            private final int mRowNum = nrows(), mColNum = ncols();
             @Override public double get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.get(aIdx/mColNum, aIdx%mColNum);}
             @Override public void set(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractMatrix.this.set(aIdx/mColNum, aIdx%mColNum, aValue);}
             @Override public double getAndSet(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.getAndSet(aIdx/mColNum, aIdx%mColNum, aValue);}
@@ -308,8 +308,8 @@ public abstract class AbstractMatrix implements IMatrix {
      * @return {@inheritDoc}
      */
     @Override public NDArray<double[]> numpy() {
-        final int tRowNum = rowNumber();
-        final int tColNum = columnNumber();
+        final int tRowNum = nrows();
+        final int tColNum = ncols();
         final int tSize = tRowNum*tColNum;
         double[] rData = new double[tSize];
         final IDoubleIterator it = iteratorRow();
@@ -320,8 +320,8 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     /** {@inheritDoc} */
     @Override public double[][] data() {
-        final int tRowNum = rowNumber();
-        final int tColNum = columnNumber();
+        final int tRowNum = nrows();
+        final int tColNum = ncols();
         double[][] rMat = new double[tRowNum][tColNum];
         final IDoubleIterator it = iteratorRow();
         for (int row = 0; row < tRowNum; ++row) {
@@ -331,13 +331,13 @@ public abstract class AbstractMatrix implements IMatrix {
         return rMat;
     }
     @Override public ColumnMatrix toBufCol(boolean aAbort) {
-        ColumnMatrix rBuf = MatrixCache.getMatCol(rowNumber(), columnNumber());
+        ColumnMatrix rBuf = MatrixCache.getMatCol(nrows(), ncols());
         if (aAbort) return rBuf;
         rBuf.fill(this);
         return rBuf;
     }
     @Override public RowMatrix toBufRow(boolean aAbort) {
-        RowMatrix rBuf = MatrixCache.getMatRow(rowNumber(), columnNumber());
+        RowMatrix rBuf = MatrixCache.getMatRow(nrows(), ncols());
         if (aAbort) return rBuf;
         rBuf.fill(this);
         return rBuf;
@@ -355,8 +355,8 @@ public abstract class AbstractMatrix implements IMatrix {
     /** 同样这里改为直接用迭代器遍历实现而不去调用对应向量的运算，中等的优化程度 */
     @Override public void fill(final double[][] aData) {
         final IDoubleSetOnlyIterator si = setIteratorRow();
-        final int tRowNum = rowNumber();
-        final int tColNum = columnNumber();
+        final int tRowNum = nrows();
+        final int tColNum = ncols();
         for (int row = 0; row < tRowNum; ++row) {
             final double[] tRow = aData[row];
             for (int col = 0; col < tColNum; ++col) si.nextAndSet(tRow[col]);
@@ -411,8 +411,8 @@ public abstract class AbstractMatrix implements IMatrix {
     }
     @Override public ISize size() {
         return new AbstractSize() {
-            @Override public int row() {return rowNumber();}
-            @Override public int col() {return columnNumber();}
+            @Override public int row() {return nrows();}
+            @Override public int col() {return ncols();}
         };
     }
     
@@ -426,49 +426,49 @@ public abstract class AbstractMatrix implements IMatrix {
     
     @Override public List<? extends IVector> rows() {
         return new AbstractRandomAccessList<IVector>() {
-            @Override public int size() {return rowNumber();}
+            @Override public int size() {return nrows();}
             @Override public IVector get(int aRow) {return row(aRow);}
         };
     }
     @Override public IVector row(final int aRow) {
-        rangeCheckRow(aRow, rowNumber());
+        rangeCheckRow(aRow, nrows());
         return new RefVector() {
             @Override public double get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.get(aRow, aIdx);}
             @Override public void set(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractMatrix.this.set(aRow, aIdx, aValue);}
             @Override public double getAndSet(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.getAndSet(aRow, aIdx, aValue);}
-            @Override public int size() {return columnNumber();}
+            @Override public int size() {return ncols();}
             @Override public IDoubleIterator iterator() {return iteratorRowAt(aRow);}
             @Override public IDoubleSetIterator setIterator() {return setIteratorRowAt(aRow);}
         };
     }
     @Override public List<? extends IVector> cols() {
         return new AbstractRandomAccessList<IVector>() {
-            @Override public int size() {return columnNumber();}
+            @Override public int size() {return ncols();}
             @Override public IVector get(int aCol) {return col(aCol);}
         };
     }
     @Override public IVector col(final int aCol) {
-        rangeCheckCol(aCol, columnNumber());
+        rangeCheckCol(aCol, ncols());
         return new RefVector() {
             @Override public double get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.get(aIdx, aCol);}
             @Override public void set(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractMatrix.this.set(aIdx, aCol, aValue);}
             @Override public double getAndSet(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.getAndSet(aIdx, aCol, aValue);}
-            @Override public int size() {return rowNumber();}
+            @Override public int size() {return nrows();}
             @Override public IDoubleIterator iterator() {return iteratorColAt(aCol);}
             @Override public IDoubleSetIterator setIterator() {return setIteratorColAt(aCol);}
         };
     }
     
     @Override public void update(int aRow, int aCol, DoubleUnaryOperator aOpt) {
-        rangeCheckRow(aRow, rowNumber());
-        rangeCheckCol(aCol, columnNumber());
+        rangeCheckRow(aRow, nrows());
+        rangeCheckCol(aCol, ncols());
         double tValue = get(aRow, aCol);
         tValue = aOpt.applyAsDouble(tValue);
         set(aRow, aCol, tValue);
     }
     @Override public double getAndUpdate(int aRow, int aCol, DoubleUnaryOperator aOpt) {
-        rangeCheckRow(aRow, rowNumber());
-        rangeCheckCol(aCol, columnNumber());
+        rangeCheckRow(aRow, nrows());
+        rangeCheckCol(aCol, ncols());
         double tValue = get(aRow, aCol);
         set(aRow, aCol, aOpt.applyAsDouble(tValue));
         return tValue;
@@ -476,7 +476,7 @@ public abstract class AbstractMatrix implements IMatrix {
     
     
     @Override public IMatrix copy() {
-        IMatrix rMatrix = newZeros_(rowNumber(), columnNumber());
+        IMatrix rMatrix = newZeros_(nrows(), ncols());
         rMatrix.fill(this);
         return rMatrix;
     }
@@ -487,38 +487,38 @@ public abstract class AbstractMatrix implements IMatrix {
         return new AbstractMatrixSlicer() {
             @Override protected IVector getIL(final int aSelectedRow, final ISlice aSelectedCols) {IVector rVector = newZerosVec_(aSelectedCols.size()); rVector.fill(refSlicer().get(aSelectedRow, aSelectedCols)); return rVector;}
             @Override protected IVector getLI(final ISlice aSelectedRows, final int aSelectedCol) {IVector rVector = newZerosVec_(aSelectedRows.size()); rVector.fill(refSlicer().get(aSelectedRows, aSelectedCol)); return rVector;}
-            @Override protected IVector getIA(final int aSelectedRow) {IVector rVector = newZerosVec_(columnNumber()); rVector.fill(refSlicer().get(aSelectedRow, ALL)); return rVector;}
-            @Override protected IVector getAI(final int aSelectedCol) {IVector rVector = newZerosVec_(rowNumber()); rVector.fill(refSlicer().get(ALL, aSelectedCol)); return rVector;}
+            @Override protected IVector getIA(final int aSelectedRow) {IVector rVector = newZerosVec_(ncols()); rVector.fill(refSlicer().get(aSelectedRow, ALL)); return rVector;}
+            @Override protected IVector getAI(final int aSelectedCol) {IVector rVector = newZerosVec_(nrows()); rVector.fill(refSlicer().get(ALL, aSelectedCol)); return rVector;}
             
             @Override protected IMatrix getLL(final ISlice aSelectedRows, final ISlice aSelectedCols) {IMatrix rMatrix = newZeros_(aSelectedRows.size(), aSelectedCols.size()); rMatrix.fill(refSlicer().get(aSelectedRows, aSelectedCols)); return rMatrix;}
-            @Override protected IMatrix getLA(final ISlice aSelectedRows) {IMatrix rMatrix = newZeros_(aSelectedRows.size(), columnNumber()); rMatrix.fill(refSlicer().get(aSelectedRows, ALL)); return rMatrix;}
-            @Override protected IMatrix getAL(final ISlice aSelectedCols) {IMatrix rMatrix = newZeros_(rowNumber()         , aSelectedCols.size()); rMatrix.fill(refSlicer().get(ALL, aSelectedCols)); return rMatrix;}
+            @Override protected IMatrix getLA(final ISlice aSelectedRows) {IMatrix rMatrix = newZeros_(aSelectedRows.size(), ncols()); rMatrix.fill(refSlicer().get(aSelectedRows, ALL)); return rMatrix;}
+            @Override protected IMatrix getAL(final ISlice aSelectedCols) {IMatrix rMatrix = newZeros_(nrows()         , aSelectedCols.size()); rMatrix.fill(refSlicer().get(ALL, aSelectedCols)); return rMatrix;}
             @Override protected IMatrix getAA() {return copy();}
             
             @Override public IVector diag(final int aShift) {
                 IVector rVector;
                 if (aShift > 0) {
-                    rVector = newZerosVec_(Math.min(rowNumber(), columnNumber()-aShift));
+                    rVector = newZerosVec_(Math.min(nrows(), ncols()-aShift));
                     rVector.fill(i -> AbstractMatrix.this.get(i, i+aShift));
                 } else
                 if (aShift < 0) {
-                    rVector = newZerosVec_(Math.min(rowNumber()+aShift, columnNumber()));
+                    rVector = newZerosVec_(Math.min(nrows()+aShift, ncols()));
                     rVector.fill(i -> AbstractMatrix.this.get(i-aShift, i));
                 } else {
-                    rVector = newZerosVec_(Math.min(rowNumber(), columnNumber()));
+                    rVector = newZerosVec_(Math.min(nrows(), ncols()));
                     rVector.fill(i -> AbstractMatrix.this.get(i, i));
                 }
                 return rVector;
             }
             
-            @Override protected int thisRowNum_() {return rowNumber();}
-            @Override protected int thisColNum_() {return columnNumber();}
+            @Override protected int thisRowNum_() {return nrows();}
+            @Override protected int thisColNum_() {return ncols();}
         };
     }
     @Override public IMatrixSlicer refSlicer() {
         return new AbstractMatrixSlicer() {
             @Override protected IVector getIL(final int aSelectedRow, final ISlice aSelectedCols) {
-                rangeCheckRow(aSelectedRow, rowNumber());
+                rangeCheckRow(aSelectedRow, nrows());
                 return new RefVector() {
                     @Override public double get(int aIdx) {return AbstractMatrix.this.get(aSelectedRow, aSelectedCols.get(aIdx));}
                     @Override public void set(int aIdx, double aValue) {AbstractMatrix.this.set(aSelectedRow, aSelectedCols.get(aIdx), aValue);}
@@ -527,7 +527,7 @@ public abstract class AbstractMatrix implements IMatrix {
                 };
             }
             @Override protected IVector getLI(final ISlice aSelectedRows, final int aSelectedCol) {
-                rangeCheckCol(aSelectedCol, columnNumber());
+                rangeCheckCol(aSelectedCol, ncols());
                 return new RefVector() {
                     @Override public double get(int aIdx) {return AbstractMatrix.this.get(aSelectedRows.get(aIdx), aSelectedCol);}
                     @Override public void set(int aIdx, double aValue) {AbstractMatrix.this.set(aSelectedRows.get(aIdx), aSelectedCol, aValue);}
@@ -543,8 +543,8 @@ public abstract class AbstractMatrix implements IMatrix {
                     @Override public double get(int aRow, int aCol) {return AbstractMatrix.this.get(aSelectedRows.get(aRow), aSelectedCols.get(aCol));}
                     @Override public void set(int aRow, int aCol, double aValue) {AbstractMatrix.this.set(aSelectedRows.get(aRow), aSelectedCols.get(aCol), aValue);}
                     @Override public double getAndSet(int aRow, int aCol, double aValue) {return AbstractMatrix.this.getAndSet(aSelectedRows.get(aRow), aSelectedCols.get(aCol), aValue);}
-                    @Override public int rowNumber() {return aSelectedRows.size();}
-                    @Override public int columnNumber() {return aSelectedCols.size();}
+                    @Override public int nrows() {return aSelectedRows.size();}
+                    @Override public int ncols() {return aSelectedCols.size();}
                 };
             }
             @Override protected IMatrix getLA(final ISlice aSelectedRows) {
@@ -552,8 +552,8 @@ public abstract class AbstractMatrix implements IMatrix {
                     @Override public double get(int aRow, int aCol) {return AbstractMatrix.this.get(aSelectedRows.get(aRow), aCol);}
                     @Override public void set(int aRow, int aCol, double aValue) {AbstractMatrix.this.set(aSelectedRows.get(aRow), aCol, aValue);}
                     @Override public double getAndSet(int aRow, int aCol, double aValue) {return AbstractMatrix.this.getAndSet(aSelectedRows.get(aRow), aCol, aValue);}
-                    @Override public int rowNumber() {return aSelectedRows.size();}
-                    @Override public int columnNumber() {return AbstractMatrix.this.columnNumber();}
+                    @Override public int nrows() {return aSelectedRows.size();}
+                    @Override public int ncols() {return AbstractMatrix.this.ncols();}
                 };
             }
             @Override protected IMatrix getAL(final ISlice aSelectedCols) {
@@ -561,8 +561,8 @@ public abstract class AbstractMatrix implements IMatrix {
                     @Override public double get(int aRow, int aCol) {return AbstractMatrix.this.get(aRow, aSelectedCols.get(aCol));}
                     @Override public void set(int aRow, int aCol, double aValue) {AbstractMatrix.this.set(aRow, aSelectedCols.get(aCol), aValue);}
                     @Override public double getAndSet(int aRow, int aCol, double aValue) {return AbstractMatrix.this.getAndSet(aRow, aSelectedCols.get(aCol), aValue);}
-                    @Override public int rowNumber() {return AbstractMatrix.this.rowNumber();}
-                    @Override public int columnNumber() {return aSelectedCols.size();}
+                    @Override public int nrows() {return AbstractMatrix.this.nrows();}
+                    @Override public int ncols() {return aSelectedCols.size();}
                 };
             }
             @Override protected IMatrix getAA() {
@@ -570,8 +570,8 @@ public abstract class AbstractMatrix implements IMatrix {
                     @Override public double get(int aRow, int aCol) {return AbstractMatrix.this.get(aRow, aCol);}
                     @Override public void set(int aRow, int aCol, double aValue) {AbstractMatrix.this.set(aRow, aCol, aValue);}
                     @Override public double getAndSet(int aRow, int aCol, double aValue) {return AbstractMatrix.this.getAndSet(aRow, aCol, aValue);}
-                    @Override public int rowNumber() {return AbstractMatrix.this.rowNumber();}
-                    @Override public int columnNumber() {return AbstractMatrix.this.columnNumber();}
+                    @Override public int nrows() {return AbstractMatrix.this.nrows();}
+                    @Override public int ncols() {return AbstractMatrix.this.ncols();}
                 };
             }
             
@@ -581,7 +581,7 @@ public abstract class AbstractMatrix implements IMatrix {
                         @Override public double get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.get(aIdx, aIdx+aShift);}
                         @Override public void set(int aIdx, double aValue)  {AbstractVector.rangeCheck(aIdx, size()); AbstractMatrix.this.set(aIdx, aIdx+aShift, aValue);}
                         @Override public double getAndSet(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.getAndSet(aIdx, aIdx+aShift, aValue);}
-                        @Override public int size() {return Math.min(rowNumber(), columnNumber()-aShift);}
+                        @Override public int size() {return Math.min(nrows(), ncols()-aShift);}
                     };
                 } else
                 if (aShift < 0) {
@@ -589,20 +589,20 @@ public abstract class AbstractMatrix implements IMatrix {
                         @Override public double get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.get(aIdx-aShift, aIdx);}
                         @Override public void set(int aIdx, double aValue)  {AbstractVector.rangeCheck(aIdx, size()); AbstractMatrix.this.set(aIdx-aShift, aIdx, aValue);}
                         @Override public double getAndSet(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.getAndSet(aIdx-aShift, aIdx, aValue);}
-                        @Override public int size() {return Math.min(rowNumber()+aShift, columnNumber());}
+                        @Override public int size() {return Math.min(nrows()+aShift, ncols());}
                     };
                 } else {
                     return new RefVector() {
                         @Override public double get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.get(aIdx, aIdx);}
                         @Override public void set(int aIdx, double aValue)  {AbstractVector.rangeCheck(aIdx, size()); AbstractMatrix.this.set(aIdx, aIdx, aValue);}
                         @Override public double getAndSet(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractMatrix.this.getAndSet(aIdx, aIdx, aValue);}
-                        @Override public int size() {return Math.min(rowNumber(), columnNumber());}
+                        @Override public int size() {return Math.min(nrows(), ncols());}
                     };
                 }
             }
             
-            @Override protected int thisRowNum_() {return rowNumber();}
-            @Override protected int thisColNum_() {return columnNumber();}
+            @Override protected int thisRowNum_() {return nrows();}
+            @Override protected int thisColNum_() {return ncols();}
         };
     }
     
@@ -679,7 +679,7 @@ public abstract class AbstractMatrix implements IMatrix {
     @VisibleForTesting @Override public final IMatrixRows_ getAt(IIndexFilter aSelectedRows) {return new MatrixRowsF_(aSelectedRows);}
     
     /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
-    @VisibleForTesting @Override public final IMatrixRow_ getAt(int aRow) {return new MatrixRow_((aRow < 0) ? (rowNumber()+aRow) : aRow);}
+    @VisibleForTesting @Override public final IMatrixRow_ getAt(int aRow) {return new MatrixRow_((aRow < 0) ? (nrows()+aRow) : aRow);}
     
     private class MatrixRow_ implements IMatrixRow_ {
         private final int mRow;
@@ -704,8 +704,8 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public void putAt(IIndexFilter aSelectedCols, IVector aVector) {refSlicer().get(mRow, aSelectedCols).fill(aVector);}
         
         /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
-        @Override public double getAt(int aCol) {return get(mRow, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
-        @Override public void putAt(int aCol, double aValue) {set(mRow, (aCol < 0) ? (columnNumber()+aCol) : aCol, aValue);}
+        @Override public double getAt(int aCol) {return get(mRow, (aCol < 0) ? (ncols()+aCol) : aCol);}
+        @Override public void putAt(int aCol, double aValue) {set(mRow, (aCol < 0) ? (ncols()+aCol) : aCol, aValue);}
     }
     private class MatrixRowsA_ implements IMatrixRows_ {
         private final SliceType mSelectedRows;
@@ -732,8 +732,8 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         
         /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
-        @Override public IVector getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
-        @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol).fill(aValue);}
+        @Override public IVector getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (ncols()+aCol) : aCol);}
+        @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, (aCol < 0) ? (ncols()+aCol) : aCol).fill(aValue);}
     }
     private class MatrixRowsL_ implements IMatrixRows_ {
         private final List<Integer> mSelectedRows;
@@ -760,8 +760,8 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         
         /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
-        @Override public IVector getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
-        @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol).fill(aValue);}
+        @Override public IVector getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (ncols()+aCol) : aCol);}
+        @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, (aCol < 0) ? (ncols()+aCol) : aCol).fill(aValue);}
     }
     private class MatrixRowsS_ implements IMatrixRows_ {
         private final ISlice mSelectedRows;
@@ -788,8 +788,8 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         
         /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
-        @Override public IVector getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
-        @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol).fill(aValue);}
+        @Override public IVector getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (ncols()+aCol) : aCol);}
+        @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, (aCol < 0) ? (ncols()+aCol) : aCol).fill(aValue);}
     }
     private class MatrixRowsF_ implements IMatrixRows_ {
         private final IIndexFilter mSelectedRows;
@@ -816,16 +816,16 @@ public abstract class AbstractMatrix implements IMatrix {
         @Override public void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix) {refSlicer().get(mSelectedRows, aSelectedCols).fill(aMatrix);}
         
         /** 对于 groovy 的单个数的方括号索引（python like），提供负数索引支持，注意对于数组索引不提供这个支持 */
-        @Override public IVector getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol);}
-        @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, (aCol < 0) ? (columnNumber()+aCol) : aCol).fill(aValue);}
+        @Override public IVector getAt(int aCol) {return slicer().get(mSelectedRows, (aCol < 0) ? (ncols()+aCol) : aCol);}
+        @Override public void putAt(int aCol, double aValue) {refSlicer().get(mSelectedRows, (aCol < 0) ? (ncols()+aCol) : aCol).fill(aValue);}
     }
     
     /** stuff to override */
     public abstract double get(int aRow, int aCol);
     public abstract void set(int aRow, int aCol, double aValue);
     public abstract double getAndSet(int aRow, int aCol, double aValue); // 返回修改前的值
-    public abstract int rowNumber();
-    public abstract int columnNumber();
+    public abstract int nrows();
+    public abstract int ncols();
     protected abstract IMatrix newZeros_(int aRowNum, int aColNum);
     protected IVector newZerosVec_(int aSize) {return Vector.zeros(aSize);}
     

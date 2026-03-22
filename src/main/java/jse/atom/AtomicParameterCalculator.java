@@ -122,8 +122,8 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         mBox = aAtomData.box().copy(); // 最大限度防止外部修改
         
         // 获取合适的 XYZ 数据和原子种类信息
-        mAtomNum = aAtomData.atomNumber();
-        mAtomTypeNum = aAtomData.atomTypeNumber();
+        mAtomNum = aAtomData.natoms();
+        mAtomTypeNum = aAtomData.ntypes();
         mAtomDataXYZ = MatrixCache.getMatRow(mAtomNum, 3);
         mTypeVec = IntVectorCache.getVec(mAtomNum);
         mAtomNumType = IntVectorCache.getZeros(mAtomTypeNum);
@@ -213,42 +213,33 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
     /// 参数设置
     /**
      * 修改线程数，如果相同则不会进行任何操作
-     * @param aThreadNum 线程数目
+     * @param aNumThreads 线程数目
      * @return 返回自身用于链式调用
      */
-    public AtomicParameterCalculator setThreadNumber(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum)  {if (aThreadNum != threadNumber()) setPool(new ParforThreadPool(aThreadNum)); return this;}
+    public AtomicParameterCalculator setNthreads(@Range(from=1, to=Integer.MAX_VALUE) int aNumThreads)  {
+        if (aNumThreads != nthreads()) setPool(new ParforThreadPool(aNumThreads));
+        return this;
+    }
     
     
     /// 获取信息
     /**
      * @return 原子数目信息
-     * @see IAtomData#atomNumber()
+     * @see IAtomData#natoms()
      */
-    public int atomNumber() {return mAtomNum;}
-    /** @deprecated use {@link #atomNumber()} or {@link #natoms()} */
-    @Deprecated public final int atomNum() {return atomNumber();}
-    /** @see #atomNumber() */
-    public final int natoms() {return atomNumber();}
+    public int natoms() {return mAtomNum;}
     /**
      * 指定种类的原子数
      * @param aType 种类编号，从 1 开始
      * @return 原子数目信息值
      */
-    public int atomNumber(int aType) {return mAtomNumType.get(aType-1);}
-    /** @deprecated use {@link #atomNumber(int)} or {@link #natoms(int)} */
-    @Deprecated public final int atomNum(int aType) {return atomNumber(aType);}
-    /** @see #atomNumber(int) */
-    public final int natoms(int aType) {return atomNumber(aType);}
+    public int natoms(int aType) {return mAtomNumType.get(aType-1);}
     
     /**
      * @return 原子种类数目
-     * @see IAtomData#atomTypeNumber()
+     * @see IAtomData#ntypes()
      */
-    public int atomTypeNumber() {return mAtomTypeNum;}
-    /** @deprecated use {@link #atomTypeNumber()} or {@link #ntypes()} */
-    @Deprecated public final int atomTypeNum() {return atomTypeNumber();}
-    /** @see #atomTypeNumber() */
-    public final int ntypes() {return atomTypeNumber();}
+    public int ntypes() {return mAtomTypeNum;}
     
     /**
      * 单位长度，平均单个原子的距离，即 {@code cbrt(volume()/natoms())}
@@ -268,16 +259,12 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * @return 原子数密度值
      */
     public double rho() {return mRho;}
-    /** @deprecated use {@link #rho()} */
-    @Deprecated public final double rou() {return rho();}
     /**
      * 指定种类的原子数密度，即 {@code natoms(aType)/volume()}
      * @param aType 种类编号，从 1 开始
      * @return 原子数密度值
      */
     public double rho(int aType) {return mAtomNumType.get(aType-1) / mVolume;}
-    /** @deprecated use {@link #rho(int)} */
-    @Deprecated public final double rou(int aType) {return rho(aType);}
     /**
      * 两个种类的混合原子数密度，即 {@code sqrt(rho(aTypeA)*rho(aTypeB))}
      * @param aTypeA 第一个种类的编号，从 1 开始
@@ -285,16 +272,12 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * @return 混合原子数密度值
      */
     public double birho(int aTypeA, int aTypeB) {return Fast.sqrt(rho(aTypeA)*rho(aTypeB));}
-    /** @deprecated use {@link #birho(int, int)} */
-    @Deprecated public final double birou(int aTypeA, int aTypeB) {return birho(aTypeA, aTypeB);}
     /**
      * 和另一个 APC 的混合原子数密度，即 {@code sqrt(rho()*aAPC.rho())}
      * @param aAPC 另一个参数计算器
      * @return 混合原子数密度值
      */
     public double birho(AtomicParameterCalculator aAPC) {return Fast.sqrt(mRho*aAPC.mRho);}
-    /** @deprecated use {@link #birho(AtomicParameterCalculator)} */
-    @Deprecated public final double birou(AtomicParameterCalculator aAPC) {return birho(aAPC);}
 
     /// 现在支持合法修改 APC 中的原子位置和种类
     /**
@@ -381,7 +364,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         
         final double dr = aRMax/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
-        final IFunc1[] dnPar = new IFunc1[threadNumber()];
+        final IFunc1[] dnPar = new IFunc1[nthreads()];
         for (int i = 0; i < dnPar.length; ++i) dnPar[i] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
         
         // 使用 mNL 的专门获取近邻距离的方法
@@ -432,7 +415,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         
         final double dr = aRMax/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
-        final IFunc1[] dnPar = new IFunc1[threadNumber()];
+        final IFunc1[] dnPar = new IFunc1[nthreads()];
         for (int i = 0; i < dnPar.length; ++i) dnPar[i] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
         
         // 使用 mNL 的专门获取近邻距离的方法
@@ -506,7 +489,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         
         final double dr = aRMax/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
-        final List<IFunc1[]> dnAllPar = NewCollections.from(threadNumber(), i -> {
+        final List<IFunc1[]> dnAllPar = NewCollections.from(nthreads(), i -> {
             IFunc1[] dnAll = new IFunc1[(mAtomTypeNum*(mAtomTypeNum+1))/2 + 1];
             for (int j = 0; j < dnAll.length; ++j) {
                 dnAll[j] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
@@ -577,11 +560,11 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         
         final double dr = aRMax/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
-        final IFunc1[] dnPar = new IFunc1[threadNumber()];
+        final IFunc1[] dnPar = new IFunc1[nthreads()];
         for (int i = 0; i < dnPar.length; ++i) dnPar[i] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
         
         // 并行需要线程数个独立的 DeltaG
-        final IZeroBoundFunc1[] tDeltaGPar = new IZeroBoundFunc1[threadNumber()];
+        final IZeroBoundFunc1[] tDeltaGPar = new IZeroBoundFunc1[nthreads()];
         for (int i = 0; i < tDeltaGPar.length; ++i) tDeltaGPar[i] = Func1.deltaG(dr*aSigmaMul, 0.0, aSigmaMul);
         // 需要增加一个额外的偏移保证外部边界的统计正确性
         final double tRShift = -tDeltaGPar[0].zeroBoundL();
@@ -641,11 +624,11 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         
         final double dr = aRMax/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
-        final IFunc1[] dnPar = new IFunc1[threadNumber()];
+        final IFunc1[] dnPar = new IFunc1[nthreads()];
         for (int i = 0; i < dnPar.length; ++i) dnPar[i] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
         
         // 并行需要线程数个独立的 DeltaG
-        final IZeroBoundFunc1[] tDeltaGPar = new IZeroBoundFunc1[threadNumber()];
+        final IZeroBoundFunc1[] tDeltaGPar = new IZeroBoundFunc1[nthreads()];
         for (int i = 0; i < tDeltaGPar.length; ++i) tDeltaGPar[i] = Func1.deltaG(dr*aSigmaMul, 0.0, aSigmaMul);
         // 需要增加一个额外的偏移保证外部边界的统计正确性
         final double tRShift = -tDeltaGPar[0].zeroBoundL();
@@ -729,7 +712,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         
         final double dr = aRMax/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
-        final List<IFunc1[]> dnAllPar = NewCollections.from(threadNumber(), i -> {
+        final List<IFunc1[]> dnAllPar = NewCollections.from(nthreads(), i -> {
             IFunc1[] dnAll = new IFunc1[(mAtomTypeNum*(mAtomTypeNum+1))/2 + 1];
             for (int j = 0; j < dnAll.length; ++j) {
                 dnAll[j] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
@@ -738,7 +721,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         });
         
         // 并行需要线程数个独立的 DeltaG
-        final IZeroBoundFunc1[] tDeltaGPar = new IZeroBoundFunc1[threadNumber()];
+        final IZeroBoundFunc1[] tDeltaGPar = new IZeroBoundFunc1[nthreads()];
         for (int i = 0; i < tDeltaGPar.length; ++i) tDeltaGPar[i] = Func1.deltaG(dr*aSigmaMul, 0.0, aSigmaMul);
         // 需要增加一个额外的偏移保证外部边界的统计正确性
         final double tRShift = -tDeltaGPar[0].zeroBoundL();
@@ -813,7 +796,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         
         final double dq = (aQMax-aQMin)/aN;
         // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
-        final IFunc1[] HqPar = new IFunc1[threadNumber()];
+        final IFunc1[] HqPar = new IFunc1[nthreads()];
         for (int i = 0; i < HqPar.length; ++i) HqPar[i] = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
         
         // 需要这样遍历才能得到正确结果
@@ -870,7 +853,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         
         final double dq = (aQMax-aQMin)/aN;
         // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
-        final IFunc1[] HqPar = new IFunc1[threadNumber()];
+        final IFunc1[] HqPar = new IFunc1[nthreads()];
         for (int i = 0; i < HqPar.length; ++i) HqPar[i] = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
         
         // 需要这样遍历才能得到正确结果
@@ -949,7 +932,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         
         final double dq = (aQMax-aQMin)/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
-        final List<IFunc1[]> HqAllPar = NewCollections.from(threadNumber(), i -> {
+        final List<IFunc1[]> HqAllPar = NewCollections.from(nthreads(), i -> {
             IFunc1[] HqAll = new IFunc1[(mAtomTypeNum*(mAtomTypeNum+1))/2 + 1];
             for (int j = 0; j < HqAll.length; ++j) {
                 HqAll[j] = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
@@ -957,7 +940,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             return HqAll;
         });
         // 累加量缓存，可以避免重复计算
-        final List<? extends IVector> tDeltaPar = VectorCache.getVec(aN+1, threadNumber());
+        final List<? extends IVector> tDeltaPar = VectorCache.getVec(aN+1, nthreads());
         
         // 需要这样遍历才能得到正确结果
         pool().parfor(mAtomNum, (i, threadID) -> {
@@ -1516,7 +1499,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             if (Double.isNaN(aRMax) || aRMax+aRMax>=mCellSize.min()) initCountsAll_();
             else initCountsEdge_(aRMax);
             
-            final int tMul = rData.columnNumber();
+            final int tMul = rData.ncols();
             // 先创建临时的同步数组
             RowComplexMatrix rBuf = ComplexMatrixCache.getMatRow(mBufSize, tMul);
             try {
@@ -1602,14 +1585,14 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
         
         // 构造用于并行的暂存数组，注意需要初始值为 0.0
-        final List<? extends IComplexMatrix> rDestPar = ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1, threadNumber());
+        final List<? extends IComplexMatrix> rDestPar = ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1, nthreads());
         // 统计近邻数用于求平均，同样也需要为并行使用数组
-        final List<? extends IVector> tNNPar = VectorCache.getZeros(mAtomNum, threadNumber());
+        final List<? extends IVector> tNNPar = VectorCache.getZeros(mAtomNum, nthreads());
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnn<=0;
         
         // 全局暂存 Y 的数组，这样可以用来防止重复获取来提高效率
-        final List<? extends IComplexVector> tYPar = ComplexVectorCache.getVec(aL+aL+1, threadNumber());
+        final List<? extends IComplexVector> tYPar = ComplexVectorCache.getVec(aL+aL+1, nthreads());
         
         // 遍历计算 Qlm，只对这个最耗时的部分进行并行优化
         pool().parfor(mAtomNum, (i, threadID) -> {
@@ -3643,15 +3626,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      */
     public ILogicalVector checkSolidConnectCount6() {return checkSolidConnectCount6(0.5, 7);}
     
-    /**@deprecated use {@link #checkSolidConnectCount6(double, int, double, int)} */
-    @Deprecated public ILogicalVector checkSolidQ6(double aConnectThreshold, int aSolidThreshold, double aRNearest, int aNnn) {return checkSolidConnectCount6(aConnectThreshold, aSolidThreshold, aRNearest, aNnn);}
-    /**@deprecated use {@link #checkSolidConnectCount6(double, int, double)} */
-    @Deprecated public ILogicalVector checkSolidQ6(double aConnectThreshold, int aSolidThreshold, double aRNearest) {return checkSolidConnectCount6(aConnectThreshold, aSolidThreshold, aRNearest);}
-    /**@deprecated use {@link #checkSolidConnectCount6(double, int)} */
-    @Deprecated public ILogicalVector checkSolidQ6(double aConnectThreshold, int aSolidThreshold) {return checkSolidConnectCount6(aConnectThreshold, aSolidThreshold);}
-    /**@deprecated use {@link #checkSolidConnectCount6()} */
-    @Deprecated public ILogicalVector checkSolidQ6() {return checkSolidConnectCount6();}
-    
     /**
      * 具体通过 {@link #calConnectRatioBOOP(int, double, double)}
      * 且 {@code l = 6} 来检测结构中类似固体的部分，
@@ -3761,15 +3735,6 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * @see CS#R_NEAREST_MUL
      */
     public ILogicalVector checkSolidConnectCount4() {return checkSolidConnectCount4(0.35, 6);}
-    
-    /**@deprecated use {@link #checkSolidConnectCount4(double, int, double, int)} */
-    @Deprecated public ILogicalVector checkSolidQ4(double aConnectThreshold, int aSolidThreshold, double aRNearest, int aNnn) {return checkSolidConnectCount4(aConnectThreshold, aSolidThreshold, aRNearest, aNnn);}
-    /**@deprecated use {@link #checkSolidConnectCount4(double, int, double)} */
-    @Deprecated public ILogicalVector checkSolidQ4(double aConnectThreshold, int aSolidThreshold, double aRNearest) {return checkSolidConnectCount4(aConnectThreshold, aSolidThreshold, aRNearest);}
-    /**@deprecated use {@link #checkSolidConnectCount4(double, int)} */
-    @Deprecated public ILogicalVector checkSolidQ4(double aConnectThreshold, int aSolidThreshold) {return checkSolidConnectCount4(aConnectThreshold, aSolidThreshold);}
-    /**@deprecated use {@link #checkSolidConnectCount4()} */
-    @Deprecated public ILogicalVector checkSolidQ4() {return checkSolidConnectCount4();}
     
     /**
      * 具体通过 {@link #calConnectRatioBOOP(int, double, double)}

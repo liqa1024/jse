@@ -116,8 +116,6 @@ public interface IIntVector extends ISwapper, ISlice, IHasIntIterator, IHasIntSe
     /** 向量的运算操作，默认返回新的向量 */
     IIntVectorOperation operation();
     @VisibleForTesting default IIntVectorOperation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated default IIntVectorOperation opt() {return operation();}
     
     
     /** Groovy 的部分，增加向量基本的运算操作，现在也归入内部使用 */

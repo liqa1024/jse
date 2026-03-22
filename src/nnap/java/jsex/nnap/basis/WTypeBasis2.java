@@ -44,8 +44,8 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         mFuseWeight = aFuseWeight;
         mFuseSize = getFuseSize(mWType, mFuseWeight);
         if (mFuseWeight!=null) {
-            if (mFuseWeight.rowNumber()!=mTypeNum) throw new IllegalArgumentException("Row number of fuse weight mismatch");
-            if (mFuseWeight.columnNumber()==0) throw new IllegalArgumentException("Column number of fuse weight MUST be non-zero");
+            if (mFuseWeight.nrows()!=mTypeNum) throw new IllegalArgumentException("Row number of fuse weight mismatch");
+            if (mFuseWeight.ncols()==0) throw new IllegalArgumentException("Column number of fuse weight MUST be non-zero");
         }
         mSizeN = getSizeN_(mWType, mTypeNum, mNMax, mFuseSize);
         if (mTypeNum==1) {
@@ -67,7 +67,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         if (aWType!=WTYPE_FUSE && aWType!=WTYPE_EXFUSE) {
             return 0;
         } else {
-            return aFuseWeight.columnNumber();
+            return aFuseWeight.ncols();
         }
     }
     static int getSizeN_(int aWType, int aTypeNum, int aNMax, int aFuseSize) {
@@ -115,7 +115,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
             }
             // 否则按行读取
             RowMatrix tMat = Matrices.fromRows((List<?>)tFuseWeight);
-            if (tMat.columnNumber()!=((Number)tFuseSize).intValue()) throw new IllegalArgumentException("Column number of fuse weight mismatch");
+            if (tMat.ncols()!=((Number)tFuseSize).intValue()) throw new IllegalArgumentException("Column number of fuse weight mismatch");
             return tMat;
         }
         if (tFuseSize==null) throw new IllegalArgumentException("Key `fuse_weight` or `fuse_size` required for fuse wtype");
@@ -123,7 +123,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
     }
     
     @Override public abstract int size();
-    public int atomTypeNumber() {return mTypeNum;}
+    public int ntypes() {return mTypeNum;}
     
     @Override public void initParameters() {
         if (mWType!=WTYPE_FUSE && mWType!=WTYPE_EXFUSE) return;

@@ -400,29 +400,29 @@ public class NativeLmp implements IAutoShutdown {
      * This is a wrapper around the {@code lammps_get_natoms()} function of the C-library interface.
      * @return number of atoms
      */
-    public long atomNumber() throws LmpException {
+    public long natoms() throws LmpException {
         checkThread();
         return (long)lammpsGetNatoms0(mLmpPtr.mPtr);
     }
-    /** @deprecated use {@link #atomNumber} or {@link #natoms} */ @Deprecated public final long atomNum() throws LmpException {return atomNumber();}
-    @VisibleForTesting public long natoms() throws LmpException {return atomNumber();}
     private native static double lammpsGetNatoms0(long aLmpPtr) throws LmpException;
     
     /**
      * Get the total number of atoms types in the LAMMPS instance.
      * @return number of atom types
      */
-    public int atomTypeNumber() throws LmpException {return settingOf("ntypes");}
-    /** @deprecated use {@link #atomTypeNumber} or {@link #ntypes} */ @Deprecated public final int atomTypeNum() throws LmpException {return atomTypeNumber();}
-    @VisibleForTesting public int ntypes() throws LmpException {return atomTypeNumber();}
+    public int ntypes() throws LmpException {return settingOf("ntypes");}
     
     /**
      * Get the local number of atoms in the LAMMPS instance.
-     * @return number of “owned” atoms of the current MPI rank.
+     * @return number of "ghost" atoms of the current MPI rank.
      */
-    public int localAtomNumber() throws LmpException {return settingOf("nlocal");}
-    /** @deprecated use {@link #localAtomNumber} or {@link #nlocal} */ @Deprecated public final int localAtomNum() throws LmpException {return localAtomNumber();}
-    @VisibleForTesting public int nlocal() throws LmpException {return localAtomNumber();}
+    public int nlocal() throws LmpException {return settingOf("nlocal");}
+    
+    /**
+     * Get the ghost number of atoms in the LAMMPS instance.
+     * @return number of "ghost" atoms of the current MPI rank.
+     */
+    public int nghost() throws LmpException {return settingOf("nghost");}
     
     /**
      * Extract simulation box parameters
@@ -538,7 +538,7 @@ public class NativeLmp implements IAutoShutdown {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         if (aName == null) throw new NullPointerException();
         switch(aName) {
-        case "mass":        {return localAtomDataOf(aName, 1, atomTypeNumber()+1, 1);}
+        case "mass":        {return localAtomDataOf(aName, 1, ntypes()+1, 1);}
         case "id":          {return fullAtomDataOf(aName, false, 1);}
         case "type":        {return fullAtomDataOf(aName, false, 1);}
         case "mask":        {return fullAtomDataOf(aName, false, 1);}
@@ -625,7 +625,7 @@ public class NativeLmp implements IAutoShutdown {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         if (aName == null) throw new NullPointerException();
         checkThread();
-        RowMatrix rData = MatrixCache.getMatRow((int)atomNumber(), aColNum);
+        RowMatrix rData = MatrixCache.getMatRow((int) natoms(), aColNum);
         lammpsGatherConcat0(mLmpPtr.mPtr, aName, aIsDouble, aColNum, rData.internalData());
         return rData;
     }
@@ -633,7 +633,7 @@ public class NativeLmp implements IAutoShutdown {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         if (aName == null) throw new NullPointerException();
         checkThread();
-        RowIntMatrix rData = IntMatrixCache.getMatRow((int)atomNumber(), aColNum);
+        RowIntMatrix rData = IntMatrixCache.getMatRow((int) natoms(), aColNum);
         lammpsGatherConcatInt0(mLmpPtr.mPtr, aName, aColNum, rData.internalData());
         return rData;
     }
@@ -716,7 +716,7 @@ public class NativeLmp implements IAutoShutdown {
             }
             default: throw new IllegalArgumentException("Invalid DataType: " + aDataType);
             }
-            lammpsExtractCompute0(mLmpPtr.mPtr, aName, aDataStyle, aDataType, rData.rowNumber(), rData.columnNumber(), rData.internalData());
+            lammpsExtractCompute0(mLmpPtr.mPtr, aName, aDataStyle, aDataType, rData.nrows(), rData.ncols(), rData.internalData());
             return rData;
         }
         case LMP_STYLE_LOCAL: {
@@ -732,7 +732,7 @@ public class NativeLmp implements IAutoShutdown {
             }
             default: throw new IllegalArgumentException("Invalid DataType: " + aDataType);
             }
-            lammpsExtractCompute0(mLmpPtr.mPtr, aName, aDataStyle, aDataType, rData.rowNumber(), rData.columnNumber(), rData.internalData());
+            lammpsExtractCompute0(mLmpPtr.mPtr, aName, aDataStyle, aDataType, rData.nrows(), rData.ncols(), rData.internalData());
             return rData;
         }
         case LMP_STYLE_ATOM: {
@@ -748,7 +748,7 @@ public class NativeLmp implements IAutoShutdown {
             }
             default: throw new IllegalArgumentException("Invalid DataType: " + aDataType);
             }
-            RowMatrix rData = MatrixCache.getMatRow((int)atomNumber(), tColNum==0?1:tColNum);
+            RowMatrix rData = MatrixCache.getMatRow((int) natoms(), tColNum==0?1:tColNum);
             lammpsGatherCompute0(mLmpPtr.mPtr, aName, tColNum, rData.internalData());
             return rData;
         }
@@ -862,10 +862,10 @@ public class NativeLmp implements IAutoShutdown {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         if (aName == null) throw new NullPointerException();
         checkThread();
-        if ((aData instanceof RowMatrix) || ((aData instanceof ColumnMatrix) && aData.columnNumber()==1)) {
-            lammpsScatter0(mLmpPtr.mPtr, aName, aIsDouble, aData.rowNumber(), aData.columnNumber(), ((DoubleArrayMatrix)aData).internalData());
+        if ((aData instanceof RowMatrix) || ((aData instanceof ColumnMatrix) && aData.ncols()==1)) {
+            lammpsScatter0(mLmpPtr.mPtr, aName, aIsDouble, aData.nrows(), aData.ncols(), ((DoubleArrayMatrix)aData).internalData());
         } else {
-            lammpsScatter0(mLmpPtr.mPtr, aName, aIsDouble, aData.rowNumber(), aData.columnNumber(), aData.asVecRow().data());
+            lammpsScatter0(mLmpPtr.mPtr, aName, aIsDouble, aData.nrows(), aData.ncols(), aData.asVecRow().data());
         }
     }
     private native static void lammpsScatter0(long aLmpPtr, @NotNull String aName, boolean aIsDouble, int aAtomNum, int aCount, double @NotNull[] aData) throws LmpException;
@@ -873,10 +873,10 @@ public class NativeLmp implements IAutoShutdown {
     /** 提供 {@link Lmpdat} 格式的获取质量 */
     public IVector masses() throws LmpException {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
-        IVector tMasses = localAtomDataOf("mass", 1, atomTypeNumber()+1, 1).asVecRow();
+        IVector tMasses = localAtomDataOf("mass", 1, ntypes()+1, 1).asVecRow();
         return tMasses.subVec(1, tMasses.size());
     }
-    public double mass(int aType) throws LmpException {return localAtomDataOf("mass", 1, atomTypeNumber()+1, 1).get(aType, 1);}
+    public double mass(int aType) throws LmpException {return localAtomDataOf("mass", 1, ntypes()+1, 1).get(aType, 1);}
     
     /**
      * 通过 {@link #atomDataOf} 直接构造一个 {@link Lmpdat}，
@@ -917,7 +917,7 @@ public class NativeLmp implements IAutoShutdown {
         } else {
         command("region          box block "+tBox.xlo()+" "+tBox.xhi()+" "+tBox.ylo()+" "+tBox.yhi()+" "+tBox.zlo()+" "+tBox.zhi());
         }
-        int tAtomTypeNum = aLmpdat.atomTypeNumber();
+        int tAtomTypeNum = aLmpdat.ntypes();
         command("create_box      "+tAtomTypeNum+" box");
         if (aLmpdat.hasMass()) for (int tType = 1; tType <= tAtomTypeNum; ++tType) {
         double tMass = aLmpdat.mass(tType);
@@ -932,7 +932,7 @@ public class NativeLmp implements IAutoShutdown {
         @Nullable IVector tVelocitiesVec = tVelocities==null ? null : tVelocities.asVecRow();
         @Nullable Vector tBufVelocitiesVec = tVelocitiesVec==null ? null : tVelocitiesVec.toBuf();
         try {
-            lammpsCreateAtoms0(mLmpPtr.mPtr, aLmpdat.atomNumber(), tBufIDs==null ? null : tBufIDs.internalData(), tBufTypes.internalData(), tBufPositionsVec.internalData(), tBufVelocitiesVec==null ? null : tBufVelocitiesVec.internalData(), null, false);
+            lammpsCreateAtoms0(mLmpPtr.mPtr, aLmpdat.natoms(), tBufIDs==null ? null : tBufIDs.internalData(), tBufTypes.internalData(), tBufPositionsVec.internalData(), tBufVelocitiesVec==null ? null : tBufVelocitiesVec.internalData(), null, false);
         } finally {
             if (tBufIDs!=null) tIDs.releaseBuf(tBufIDs, true);
             tTypes.releaseBuf(tBufTypes, true);
@@ -953,7 +953,7 @@ public class NativeLmp implements IAutoShutdown {
         } else {
         command("region          box block 0 "+tBox.x()+" 0 "+tBox.y()+" 0 "+tBox.z());
         }
-        int tAtomTypeNum = aAtomData.atomTypeNumber();
+        int tAtomTypeNum = aAtomData.ntypes();
         command("create_box      "+tAtomTypeNum+" box");
         if (aAtomData.hasMass()) for (int tType = 1; tType <= tAtomTypeNum; ++tType) {
         double tMass = aAtomData.mass(tType);

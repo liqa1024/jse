@@ -44,7 +44,7 @@ public class MirrorBasis extends Basis {
     
     @Override public double rcut() {return mMirrorBasis.rcut();}
     @Override public int size() {return mMirrorBasis.size();}
-    @Override public int atomTypeNumber() {return mMirrorBasis.atomTypeNumber();}
+    @Override public int ntypes() {return mMirrorBasis.ntypes();}
     @Override public boolean hasSymbol() {return mMirrorBasis.hasSymbol();}
     @Override public String symbol(int aType) {return mMirrorBasis.symbol(aType);}
     
