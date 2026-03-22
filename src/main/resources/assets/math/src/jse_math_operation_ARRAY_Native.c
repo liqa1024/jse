@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_sumOfThis_1(JNIEnv *aEnv, jclass aClazz,
+JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_sumOfThis0(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aThis, jint aShift, jint aLength) {
     // java array init
     jdouble *tThis = (jdouble *)getJArrayBuf(aEnv, aThis);
@@ -17,7 +17,7 @@ JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_sumOfThis_1(
     return tOut;
 }
 
-JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_prodOfThis_1(JNIEnv *aEnv, jclass aClazz,
+JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_prodOfThis0(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aThis, jint aShift, jint aLength) {
     // java array init
     jdouble *tThis = (jdouble *)getJArrayBuf(aEnv, aThis);
@@ -29,7 +29,7 @@ JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_prodOfThis_1
     return tOut;
 }
 
-JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_dot_1(JNIEnv *aEnv, jclass aClazz,
+JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_dot0(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aDataL, jint aShiftL, jdoubleArray aDataR, jint aShiftR, jint aLength) {
     // java array init
     jdouble *tDataL = (jdouble *)getJArrayBuf(aEnv, aDataL);
@@ -43,7 +43,7 @@ JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_dot_1(JNIEnv
     return tOut;
 }
 
-JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_dotOfThis_1(JNIEnv *aEnv, jclass aClazz,
+JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_dotOfThis0(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aThis, jint aShift, jint aLength) {
     // java array init
     jdouble *tThis = (jdouble *)getJArrayBuf(aEnv, aThis);
@@ -55,7 +55,7 @@ JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_dotOfThis_1(
     return tOut;
 }
 
-JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_norm1OfThis_1(JNIEnv *aEnv, jclass aClazz,
+JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_norm1OfThis0(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aThis, jint aShift, jint aLength) {
     // java array init
     jdouble *tThis = (jdouble *)getJArrayBuf(aEnv, aThis);
@@ -67,7 +67,7 @@ JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_norm1OfThis_
     return tOut;
 }
 
-JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRC2This_1(JNIEnv *aEnv, jclass aClazz,
+JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRC2This0(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray rThisRowL, jint aShiftL, jdoubleArray aDataColR, jint aShiftR, jdoubleArray rBufRow, jint aRowNum, jint aColNum) {
     // java array init
     jdouble *tThisRowL = (jdouble *)getJArrayBuf(aEnv, rThisRowL);
@@ -81,7 +81,7 @@ JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRC2This_1
     releaseJArrayBuf(aEnv, aDataColR, tDataColR, JNI_ABORT);
     releaseJArrayBuf(aEnv, rBufRow, tBufRow, JNI_ABORT);
 }
-JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_lmatmulCR2This_1(JNIEnv *aEnv, jclass aClazz,
+JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_lmatmulCR2This0(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray rThisColL, jint aShiftL, jdoubleArray aDataRowR, jint aShiftR, jdoubleArray rBufCol, jint aRowNum, jint aColNum) {
     // java array init
     jdouble *tThisColL = (jdouble *)getJArrayBuf(aEnv, rThisColL);
@@ -96,7 +96,7 @@ JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_lmatmulCR2This_
     releaseJArrayBuf(aEnv, rBufCol, tBufCol, JNI_ABORT);
 }
 
-JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRCR2Dest_1(JNIEnv *aEnv, jclass aClazz,
+JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRCR2Dest0(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aDataRowL, jint aShiftL, jdoubleArray aDataColR, jint aShiftR,
         jdoubleArray rDestRow, jint rShiftD, jint aRowNum, jint aColNum, jint aMidNum) {
     // java array init
@@ -111,7 +111,7 @@ JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRCR2Dest_
     releaseJArrayBuf(aEnv, aDataColR, tDataColR, JNI_ABORT);
     releaseJArrayBuf(aEnv, rDestRow, tDestRow, 0);
 }
-JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRCC2Dest_1(JNIEnv *aEnv, jclass aClazz,
+JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRCC2Dest0(JNIEnv *aEnv, jclass aClazz,
         jdoubleArray aDataRowL, jint aShiftL, jdoubleArray aDataColR, jint aShiftR,
         jdoubleArray rDestCol, jint rShiftD, jint aRowNum, jint aColNum, jint aMidNum) {
     // java array init

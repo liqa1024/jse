@@ -9,410 +9,410 @@ extern "C" {
 #endif
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiGroupNull_
+ * Method:    getMpiGroupNull0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiGroupNull_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiGroupNull0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiGroupEmpty_
+ * Method:    getMpiGroupEmpty0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiGroupEmpty_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiGroupEmpty0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiCommNull_
+ * Method:    getMpiCommNull0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiCommNull_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiCommNull0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiCommWorld_
+ * Method:    getMpiCommWorld0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiCommWorld_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiCommWorld0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiCommSelf_
+ * Method:    getMpiCommSelf0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiCommSelf_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiCommSelf0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiOpNull_
+ * Method:    getMpiOpNull0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiOpNull_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiOpNull0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiMax_
+ * Method:    getMpiMax0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiMax_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiMax0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiMin_
+ * Method:    getMpiMin0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiMin_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiMin0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiSum_
+ * Method:    getMpiSum0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiSum_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiSum0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiProd_
+ * Method:    getMpiProd0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiProd_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiProd0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiLand_
+ * Method:    getMpiLand0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiLand_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiLand0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiBand_
+ * Method:    getMpiBand0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiBand_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiBand0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiLor_
+ * Method:    getMpiLor0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiLor_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiLor0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiBor_
+ * Method:    getMpiBor0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiBor_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiBor0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiLxor_
+ * Method:    getMpiLxor0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiLxor_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiLxor0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiBxor_
+ * Method:    getMpiBxor0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiBxor_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiBxor0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiMinloc_
+ * Method:    getMpiMinloc0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiMinloc_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiMinloc0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiMaxloc_
+ * Method:    getMpiMaxloc0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiMaxloc_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiMaxloc0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiReplace_
+ * Method:    getMpiReplace0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiReplace_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiReplace0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiDatatypeNull_
+ * Method:    getMpiDatatypeNull0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiDatatypeNull_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiDatatypeNull0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiChar_
+ * Method:    getMpiChar0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiChar_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiChar0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiUnsignedChar_
+ * Method:    getMpiUnsignedChar0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUnsignedChar_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUnsignedChar0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiShort_
+ * Method:    getMpiShort0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiShort_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiShort0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiUnsignedShort_
+ * Method:    getMpiUnsignedShort0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUnsignedShort_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUnsignedShort0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiInt_
+ * Method:    getMpiInt0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiInt_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiInt0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiUnsigned_
+ * Method:    getMpiUnsigned0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUnsigned_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUnsigned0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiLong_
+ * Method:    getMpiLong0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiLong_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiLong0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiUnsignedLong_
+ * Method:    getMpiUnsignedLong0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUnsignedLong_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUnsignedLong0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiLongLong_
+ * Method:    getMpiLongLong0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiLongLong_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiLongLong0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiFloat_
+ * Method:    getMpiFloat0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiFloat_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiFloat0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiDouble_
+ * Method:    getMpiDouble0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiDouble_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiDouble0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiByte_
+ * Method:    getMpiByte0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiByte_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiByte0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiSignedChar_
+ * Method:    getMpiSignedChar0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiSignedChar_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiSignedChar0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiUnsignedLongLong_
+ * Method:    getMpiUnsignedLongLong0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUnsignedLongLong_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUnsignedLongLong0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiInt8T_
+ * Method:    getMpiInt8T0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiInt8T_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiInt8T0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiInt16T_
+ * Method:    getMpiInt16T0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiInt16T_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiInt16T0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiInt32T_
+ * Method:    getMpiInt32T0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiInt32T_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiInt32T0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiInt64T_
+ * Method:    getMpiInt64T0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiInt64T_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiInt64T0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiUint8T_
+ * Method:    getMpiUint8T0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUint8T_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUint8T0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiUint16T_
+ * Method:    getMpiUint16T0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUint16T_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUint16T0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiUint32T_
+ * Method:    getMpiUint32T0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUint32T_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUint32T0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiUint64T_
+ * Method:    getMpiUint64T0
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUint64T_1
+JNIEXPORT jlong JNICALL Java_jse_parallel_MPI_00024Native_getMpiUint64T0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiThreadSingle_
+ * Method:    getMpiThreadSingle0
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiThreadSingle_1
+JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiThreadSingle0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiThreadFunneled_
+ * Method:    getMpiThreadFunneled0
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiThreadFunneled_1
+JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiThreadFunneled0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiThreadSerialized_
+ * Method:    getMpiThreadSerialized0
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiThreadSerialized_1
+JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiThreadSerialized0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiThreadMultiple_
+ * Method:    getMpiThreadMultiple0
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiThreadMultiple_1
+JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiThreadMultiple0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiProcNull_
+ * Method:    getMpiProcNull0
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiProcNull_1
+JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiProcNull0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiAnySource_
+ * Method:    getMpiAnySource0
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiAnySource_1
+JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiAnySource0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiRoot_
+ * Method:    getMpiRoot0
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiRoot_1
+JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiRoot0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiAnyTag_
+ * Method:    getMpiAnyTag0
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiAnyTag_1
+JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiAnyTag0
   (JNIEnv *, jclass);
 
 /*
  * Class:     jse_parallel_MPI_Native
- * Method:    getMpiUndefined_
+ * Method:    getMpiUndefined0
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiUndefined_1
+JNIEXPORT jint JNICALL Java_jse_parallel_MPI_00024Native_getMpiUndefined0
   (JNIEnv *, jclass);
 
 /*

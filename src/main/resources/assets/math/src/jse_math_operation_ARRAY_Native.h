@@ -9,74 +9,74 @@ extern "C" {
 #endif
 /*
  * Class:     jse_math_operation_ARRAY_Native
- * Method:    sumOfThis_
+ * Method:    sumOfThis0
  * Signature: ([DII)D
  */
-JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_sumOfThis_1
+JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_sumOfThis0
   (JNIEnv *, jclass, jdoubleArray, jint, jint);
 
 /*
  * Class:     jse_math_operation_ARRAY_Native
- * Method:    prodOfThis_
+ * Method:    prodOfThis0
  * Signature: ([DII)D
  */
-JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_prodOfThis_1
+JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_prodOfThis0
   (JNIEnv *, jclass, jdoubleArray, jint, jint);
 
 /*
  * Class:     jse_math_operation_ARRAY_Native
- * Method:    dot_
+ * Method:    dot0
  * Signature: ([DI[DII)D
  */
-JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_dot_1
+JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_dot0
   (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jint);
 
 /*
  * Class:     jse_math_operation_ARRAY_Native
- * Method:    dotOfThis_
+ * Method:    dotOfThis0
  * Signature: ([DII)D
  */
-JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_dotOfThis_1
+JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_dotOfThis0
   (JNIEnv *, jclass, jdoubleArray, jint, jint);
 
 /*
  * Class:     jse_math_operation_ARRAY_Native
- * Method:    norm1OfThis_
+ * Method:    norm1OfThis0
  * Signature: ([DII)D
  */
-JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_norm1OfThis_1
+JNIEXPORT jdouble JNICALL Java_jse_math_operation_ARRAY_00024Native_norm1OfThis0
   (JNIEnv *, jclass, jdoubleArray, jint, jint);
 
 /*
  * Class:     jse_math_operation_ARRAY_Native
- * Method:    matmulRC2This_
+ * Method:    matmulRC2This0
  * Signature: ([DI[DI[DII)V
  */
-JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRC2This_1
+JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRC2This0
   (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint);
 
 /*
  * Class:     jse_math_operation_ARRAY_Native
- * Method:    lmatmulCR2This_
+ * Method:    lmatmulCR2This0
  * Signature: ([DI[DI[DII)V
  */
-JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_lmatmulCR2This_1
+JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_lmatmulCR2This0
   (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint);
 
 /*
  * Class:     jse_math_operation_ARRAY_Native
- * Method:    matmulRCR2Dest_
+ * Method:    matmulRCR2Dest0
  * Signature: ([DI[DI[DIIII)V
  */
-JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRCR2Dest_1
+JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRCR2Dest0
   (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jint, jint);
 
 /*
  * Class:     jse_math_operation_ARRAY_Native
- * Method:    matmulRCC2Dest_
+ * Method:    matmulRCC2Dest0
  * Signature: ([DI[DI[DIIII)V
  */
-JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRCC2Dest_1
+JNIEXPORT void JNICALL Java_jse_math_operation_ARRAY_00024Native_matmulRCC2Dest0
   (JNIEnv *, jclass, jdoubleArray, jint, jdoubleArray, jint, jdoubleArray, jint, jint, jint, jint);
 
 #ifdef __cplusplus

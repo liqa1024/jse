@@ -2255,59 +2255,59 @@ public class ARRAY {
         
         public static double sumOfThis(double[] aThis, int aShift, int aLength) {
             lengthCheck(aLength+aShift, aThis.length);
-            return sumOfThis_(aThis, aShift, aLength);
+            return sumOfThis0(aThis, aShift, aLength);
         }
-        private native static double sumOfThis_(double[] aThis, int aShift, int aLength);
+        private native static double sumOfThis0(double[] aThis, int aShift, int aLength);
         
         public static double prodOfThis(double[] aThis, int aShift, int aLength) {
             lengthCheck(aLength+aShift, aThis.length);
-            return prodOfThis_(aThis, aShift, aLength);
+            return prodOfThis0(aThis, aShift, aLength);
         }
-        private native static double prodOfThis_(double[] aThis, int aShift, int aLength);
+        private native static double prodOfThis0(double[] aThis, int aShift, int aLength);
         
         public static double dot(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, int aLength) {
             lengthCheck(aLength+aShiftL, aDataL.length);
             lengthCheck(aLength+aShiftR, aDataR.length);
-            return dot_(aDataL, aShiftL, aDataR, aShiftR, aLength);
+            return dot0(aDataL, aShiftL, aDataR, aShiftR, aLength);
         }
-        private native static double dot_(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, int aLength);
+        private native static double dot0(double[] aDataL, int aShiftL, double[] aDataR, int aShiftR, int aLength);
         
         public static double dotOfThis(double[] aThis, int aShift, int aLength) {
             lengthCheck(aLength+aShift, aThis.length);
-            return dotOfThis_(aThis, aShift, aLength);
+            return dotOfThis0(aThis, aShift, aLength);
         }
-        private native static double dotOfThis_(double[] aThis, int aShift, int aLength);
+        private native static double dotOfThis0(double[] aThis, int aShift, int aLength);
         
         public static double norm1OfThis(double[] aThis, int aShift, int aLength) {
             lengthCheck(aLength+aShift, aThis.length);
-            return norm1OfThis_(aThis, aShift, aLength);
+            return norm1OfThis0(aThis, aShift, aLength);
         }
-        private native static double norm1OfThis_(double[] aThis, int aShift, int aLength);
+        private native static double norm1OfThis0(double[] aThis, int aShift, int aLength);
         
         public static void matmulRC2This(double[] rThisRowL, int aShiftL, double[] aDataColR, int aShiftR, double[] rBufRow, int aRowNum, int aColNum) {
             lengthCheck(aRowNum*aColNum + aShiftL, rThisRowL.length);
             lengthCheck(aColNum*aColNum + aShiftR, aDataColR.length);
             lengthCheck(aColNum, rBufRow.length);
-            matmulRC2This_(rThisRowL, aShiftL, aDataColR, aShiftR, rBufRow, aRowNum, aColNum);
+            matmulRC2This0(rThisRowL, aShiftL, aDataColR, aShiftR, rBufRow, aRowNum, aColNum);
         }
-        private native static void matmulRC2This_(double[] rThisRowL, int aShiftL, double[] aDataColR, int aShiftR, double[] rBufRow, int aRowNum, int aColNum);
+        private native static void matmulRC2This0(double[] rThisRowL, int aShiftL, double[] aDataColR, int aShiftR, double[] rBufRow, int aRowNum, int aColNum);
         
         public static void lmatmulCR2This(double[] rThisColL, int aShiftL, double[] aDataRowR, int aShiftR, double[] rBufCol, int aRowNum, int aColNum) {
             lengthCheck(aRowNum*aColNum + aShiftL, rThisColL.length);
             lengthCheck(aRowNum*aRowNum + aShiftR, aDataRowR.length);
             lengthCheck(aRowNum, rBufCol.length);
-            lmatmulCR2This_(rThisColL, aShiftL, aDataRowR, aShiftR, rBufCol, aRowNum, aColNum);
+            lmatmulCR2This0(rThisColL, aShiftL, aDataRowR, aShiftR, rBufCol, aRowNum, aColNum);
         }
-        private native static void lmatmulCR2This_(double[] rThisColL, int aShiftL, double[] aDataRowR, int aShiftR, double[] rBufCol, int aRowNum, int aColNum);
+        private native static void lmatmulCR2This0(double[] rThisColL, int aShiftL, double[] aDataRowR, int aShiftR, double[] rBufCol, int aRowNum, int aColNum);
         
         public static void matmulRCR2Dest(double[] aDataRowL, int aShiftL, double[] aDataColR, int aShiftR,
                                           double[] rDestRow, int rShiftD, int aRowNum, int aColNum, int aMidNum) {
             lengthCheck(aRowNum*aMidNum + aShiftL, aDataRowL.length);
             lengthCheck(aMidNum*aColNum + aShiftR, aDataColR.length);
             lengthCheck(aRowNum*aColNum + rShiftD, rDestRow.length);
-            matmulRCR2Dest_(aDataRowL, aShiftL, aDataColR, aShiftR, rDestRow, rShiftD, aRowNum, aColNum, aMidNum);
+            matmulRCR2Dest0(aDataRowL, aShiftL, aDataColR, aShiftR, rDestRow, rShiftD, aRowNum, aColNum, aMidNum);
         }
-        private native static void matmulRCR2Dest_(double[] aDataRowL, int aShiftL, double[] aDataColR, int aShiftR,
+        private native static void matmulRCR2Dest0(double[] aDataRowL, int aShiftL, double[] aDataColR, int aShiftR,
                                                    double[] rDestRow, int rShiftD, int aRowNum, int aColNum, int aMidNum);
         
         public static void matmulRCC2Dest(double[] aDataRowL, int aShiftL, double[] aDataColR, int aShiftR,
@@ -2315,9 +2315,9 @@ public class ARRAY {
             lengthCheck(aRowNum*aMidNum + aShiftL, aDataRowL.length);
             lengthCheck(aMidNum*aColNum + aShiftR, aDataColR.length);
             lengthCheck(aRowNum*aColNum + rShiftD, rDestCol.length);
-            matmulRCC2Dest_(aDataRowL, aShiftL, aDataColR, aShiftR, rDestCol, rShiftD, aRowNum, aColNum, aMidNum);
+            matmulRCC2Dest0(aDataRowL, aShiftL, aDataColR, aShiftR, rDestCol, rShiftD, aRowNum, aColNum, aMidNum);
         }
-        private native static void matmulRCC2Dest_(double[] aDataRowL, int aShiftL, double[] aDataColR, int aShiftR,
+        private native static void matmulRCC2Dest0(double[] aDataRowL, int aShiftL, double[] aDataColR, int aShiftR,
                                                    double[] rDestCol, int rShiftD, int aRowNum, int aColNum, int aMidNum);
     }
 }
