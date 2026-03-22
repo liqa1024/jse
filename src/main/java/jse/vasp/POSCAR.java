@@ -580,9 +580,14 @@ public class POSCAR extends AbstractSettableAtomData {
      * @throws IOException 如果读取失败
      */
     public static POSCAR read(String aFilePath) throws IOException {
-        try (BufferedReader tReader = IO.toReader(aFilePath)) {return read_(tReader);}
+        try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
     }
-    static POSCAR read_(BufferedReader aReader) throws IOException {
+    /**
+     * 提供使用 {@link BufferedReader} 的流式接口
+     * @param aReader 需要的读取流
+     * @throws IOException 如果写入文件失败
+     */
+    public static POSCAR read(BufferedReader aReader) throws IOException {
         return read_(aReader, new Header());
     }
     static @Nullable Header readHeader_(BufferedReader aReader) throws IOException {
@@ -701,9 +706,14 @@ public class POSCAR extends AbstractSettableAtomData {
      * @throws IOException 如果写入文件失败
      */
     public void write(String aFilePath) throws IOException {
-        try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write_(tWriteln);}
+        try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write(tWriteln);}
     }
-    void write_(IO.IWriteln aWriteln) throws IOException {
+    /**
+     * 提供使用 {@link IO.IWriteln} 的流式接口
+     * @param aWriteln 需要写入的流
+     * @throws IOException 如果写入文件失败
+     */
+    public void write(IO.IWriteln aWriteln) throws IOException {
         write_(aWriteln, -1, DEFAULT_COMMENT);
     }
     void write_(IO.IWriteln aWriteln, int aConf, String aDefaultComment) throws IOException {

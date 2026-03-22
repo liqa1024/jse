@@ -802,8 +802,15 @@ public class DataXYZ extends AbstractSettableAtomData {
      * @throws IOException 如果读取失败
      * @see #write(String)
      */
-    public static DataXYZ read(String aFilePath) throws IOException {try (BufferedReader tReader = IO.toReader(aFilePath)) {return read_(tReader);}}
-    static DataXYZ read_(BufferedReader aReader) throws IOException {
+    public static DataXYZ read(String aFilePath) throws IOException {
+        try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
+    }
+    /**
+     * 提供使用 {@link BufferedReader} 的流式接口
+     * @param aReader 需要的读取流
+     * @throws IOException 如果写入文件失败
+     */
+    public static DataXYZ read(BufferedReader aReader) throws IOException {
         String tLine;
         String[] tTokens;
         
@@ -981,9 +988,13 @@ public class DataXYZ extends AbstractSettableAtomData {
      * @throws IOException 如果写入文件失败
      * @see #read(String)
      */
-    public void write(String aFilePath) throws IOException {try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write_(tWriteln);}}
-    /** 改为 {@link IO.IWriteln} 而不是 {@code List<String>} 来避免过多内存占用 */
-    void write_(IO.IWriteln aWriteln) throws IOException {
+    public void write(String aFilePath) throws IOException {try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write(tWriteln);}}
+    /**
+     * 提供使用 {@link IO.IWriteln} 的流式接口
+     * @param aWriteln 需要写入的流
+     * @throws IOException 如果写入文件失败
+     */
+    public void write(IO.IWriteln aWriteln) throws IOException {
         aWriteln.writeln(String.valueOf(mAtomNum));
         if (mComment != null) {
             aWriteln.writeln(mComment);

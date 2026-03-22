@@ -20,14 +20,12 @@ import java.util.List;
 
 
 /**
+ * 多帧的 {@link SubLammpstrj}，lammps 使用 {@code dump}
+ * 命令写出的数据格式
+ * <p>
+ * 别称为 {@link Dump}
+ *
  * @author liqa
- * <p> lammps 使用 dump 输出的数据格式 </p>
- * <p> 包含读取写出的文本文件的格式 </p>
- * <p> 支持拥有多个时间帧的输出（可以当作 List 来使用），
- * 也可直接获取结果（则会直接获取第一个时间帧的结果） </p>
- * <p> 所有成员都是只读的，即使目前没有硬性限制 </p>
- * <p> 现在不再继承 {@link List}，因为 List 的接口太脏了 </p>
- * <p> 并且现在不再继承 {@link IAtomData}，如果需要使用单个 dump 直接使用 {@link SubLammpstrj} </p>
  */
 public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubLammpstrj> {
     Lammpstrj() {super(NewCollections.zl());}
@@ -170,12 +168,18 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
      * @return 读取得到的 Lammpstrj 对象，如果文件不完整的帧会跳过
      * @throws IOException 如果读取失败
      */
-    public static Lammpstrj read(String aFilePath) throws IOException {try (BufferedReader tReader = IO.toReader(aFilePath)) {return read_(tReader);}}
-    /** 改为 {@link BufferedReader} 而不是 {@code List<String>} 来避免过多内存占用 */
-    static Lammpstrj read_(BufferedReader aReader) throws IOException {
+    public static Lammpstrj read(String aFilePath) throws IOException {
+        try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
+    }
+    /**
+     * 提供使用 {@link BufferedReader} 的流式接口
+     * @param aReader 需要的读取流
+     * @throws IOException 如果写入文件失败
+     */
+    public static Lammpstrj read(BufferedReader aReader) throws IOException {
         List<SubLammpstrj> rLammpstrj = new ArrayList<>();
         SubLammpstrj tSubLammpstrj;
-        while ((tSubLammpstrj = SubLammpstrj.read_(aReader)) != null) {
+        while ((tSubLammpstrj = SubLammpstrj.read(aReader)) != null) {
             rLammpstrj.add(tSubLammpstrj);
         }
         return new Lammpstrj(rLammpstrj);
@@ -187,10 +191,16 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
      * @param aFilePath 需要输出的路径
      * @throws IOException 如果写入文件失败
      */
-    public void write(String aFilePath) throws IOException {try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write_(tWriteln);}}
-    /** 改为 {@link IO.IWriteln} 而不是 {@code List<String>} 来避免过多内存占用 */
-    void write_(IO.IWriteln aWriteln) throws IOException {
-        for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.write_(aWriteln);
+    public void write(String aFilePath) throws IOException {
+        try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write(tWriteln);}
+    }
+    /**
+     * 提供使用 {@link IO.IWriteln} 的流式接口
+     * @param aWriteln 需要写入的流
+     * @throws IOException 如果写入文件失败
+     */
+    public void write(IO.IWriteln aWriteln) throws IOException {
+        for (SubLammpstrj tSubLammpstrj : mList) tSubLammpstrj.write(aWriteln);
     }
     
     

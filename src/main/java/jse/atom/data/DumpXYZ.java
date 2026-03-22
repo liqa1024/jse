@@ -518,12 +518,17 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @see DataXYZ#read(String)
      */
     public static DumpXYZ read(String aFilePath) throws IOException {
-        try (BufferedReader tReader = IO.toReader(aFilePath)) {return read_(tReader);}
+        try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
     }
-    static DumpXYZ read_(BufferedReader aReader) throws IOException {
+    /**
+     * 提供使用 {@link BufferedReader} 的流式接口
+     * @param aReader 需要的读取流
+     * @throws IOException 如果写入文件失败
+     */
+    public static DumpXYZ read(BufferedReader aReader) throws IOException {
         List<DataXYZ> rDumpXYZ = new ArrayList<>();
         DataXYZ tDataXYZ;
-        while ((tDataXYZ = DataXYZ.read_(aReader)) != null) {
+        while ((tDataXYZ = DataXYZ.read(aReader)) != null) {
             rDumpXYZ.add(tDataXYZ);
         }
         return new DumpXYZ(rDumpXYZ);
@@ -538,9 +543,14 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @see DataXYZ#write(String)
      */
     public void write(String aFilePath) throws IOException {
-        try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write_(tWriteln);}
+        try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write(tWriteln);}
     }
-    void write_(IO.IWriteln aWriteln) throws IOException {
-        for (DataXYZ tDataXYZ : mList) tDataXYZ.write_(aWriteln);
+    /**
+     * 提供使用 {@link IO.IWriteln} 的流式接口
+     * @param aWriteln 需要写入的流
+     * @throws IOException 如果写入文件失败
+     */
+    public void write(IO.IWriteln aWriteln) throws IOException {
+        for (DataXYZ tDataXYZ : mList) tDataXYZ.write(aWriteln);
     }
 }

@@ -23,7 +23,14 @@ import java.util.Arrays;
 import static jse.code.CS.*;
 import static jse.lmp.Lammpstrj.*;
 
-/** 每个帧的子 Lammpstrj */
+/**
+ * {@link Lammpstrj} 的每帧结果，可以通过 {@link SubLammpstrj#asTable()}
+ * 转为 {@link ITable} 从而实现自定义列的读写
+ * <p>
+ * 别称为 {@link SubDump}
+ *
+ * @author liqa
+ */
 public class SubLammpstrj extends AbstractSettableAtomData {
     final static String[] BOX_BOUND = {"pp", "pp", "pp"};
     
@@ -654,9 +661,15 @@ public class SubLammpstrj extends AbstractSettableAtomData {
      * @return 读取得到的 SubLammpstrj 对象，只会读取第一帧，如果文件不完整会直接返回 null
      * @throws IOException 如果读取失败
      */
-    public static SubLammpstrj read(String aFilePath) throws IOException {try (BufferedReader tReader = IO.toReader(aFilePath)) {return read_(tReader);}}
-    /** 改为 {@link BufferedReader} 而不是 {@code List<String>} 来避免过多内存占用；不会自动关闭流，只读取一帧的数据然后停止读取 */
-    static SubLammpstrj read_(BufferedReader aReader) throws IOException {
+    public static SubLammpstrj read(String aFilePath) throws IOException {
+        try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
+    }
+    /**
+     * 提供使用 {@link BufferedReader} 的流式接口
+     * @param aReader 需要的读取流
+     * @throws IOException 如果写入文件失败
+     */
+    public static SubLammpstrj read(BufferedReader aReader) throws IOException {
         String tLine;
         String[] tTokens;
         
@@ -733,9 +746,15 @@ public class SubLammpstrj extends AbstractSettableAtomData {
      * @param aFilePath 需要输出的路径
      * @throws IOException 如果写入文件失败
      */
-    public void write(String aFilePath) throws IOException {try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write_(tWriteln);}}
-    /** 改为 {@link IO.IWriteln} 而不是 {@code List<String>} 来避免过多内存占用；不会自动关闭流，只写入一帧的数据然后停止写入 */
-    void write_(IO.IWriteln aWriteln) throws IOException {
+    public void write(String aFilePath) throws IOException {
+        try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write(tWriteln);}
+    }
+    /**
+     * 提供使用 {@link IO.IWriteln} 的流式接口
+     * @param aWriteln 需要写入的流
+     * @throws IOException 如果写入文件失败
+     */
+    public void write(IO.IWriteln aWriteln) throws IOException {
         aWriteln.writeln("ITEM: TIMESTEP");
         aWriteln.writeln(String.valueOf(mTimeStep));
         aWriteln.writeln("ITEM: NUMBER OF ATOMS");

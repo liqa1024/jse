@@ -498,9 +498,14 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
      * @throws IOException 如果读取失败
      */
     public static XDATCAR read(String aFilePath) throws IOException {
-        try (BufferedReader tReader = IO.toReader(aFilePath)) {return read_(tReader);}
+        try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
     }
-    static XDATCAR read_(BufferedReader aReader) throws IOException {
+    /**
+     * 提供使用 {@link BufferedReader} 的流式接口
+     * @param aReader 需要的读取流
+     * @throws IOException 如果写入文件失败
+     */
+    public static XDATCAR read(BufferedReader aReader) throws IOException {
         List<POSCAR> rXDATCAR = new ArrayList<>();
         // 针对旧版的共享 box 头的读取兼容
         POSCAR.Header tHeader = new POSCAR.Header();
@@ -518,9 +523,14 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
      * @throws IOException 如果写入文件失败
      */
     public void write(String aFilePath) throws IOException {
-        try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write_(tWriteln);}
+        try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write(tWriteln);}
     }
-    void write_(IO.IWriteln aWriteln) throws IOException {
+    /**
+     * 提供使用 {@link IO.IWriteln} 的流式接口
+     * @param aWriteln 需要写入的流
+     * @throws IOException 如果写入文件失败
+     */
+    public void write(IO.IWriteln aWriteln) throws IOException {
         int tConf = 1;
         for (POSCAR tPOSCAR : mList) {
             tPOSCAR.write_(aWriteln, tConf, DEFAULT_COMMENT);
