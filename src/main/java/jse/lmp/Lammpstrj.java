@@ -73,6 +73,17 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
         for (int i = 0; i < aLength; ++i) removeLast();
         return this;
     }
+    /** 等间距截取，返回自身来支持链式调用 */
+    public Lammpstrj step(@Range(from=1, to=Integer.MAX_VALUE) int aStep) {
+        if (aStep == 1) return this;
+        List<SubLammpstrj> oList = mList;
+        final int tSize = oList.size();
+        mList = new ArrayList<>(tSize / aStep);
+        for (int i = 0; i < tSize; i+=aStep) {
+            mList.add(oList.get(i));
+        }
+        return this;
+    }
     
     /** 拷贝一份 Lammpstrj */
     public Lammpstrj copy() {

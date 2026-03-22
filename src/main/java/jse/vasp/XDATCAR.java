@@ -6,6 +6,7 @@ import jse.code.UT;
 import jse.code.collection.AbstractListWrapper;
 import jse.code.collection.IListGetter;
 import jse.code.collection.NewCollections;
+import org.jetbrains.annotations.Range;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -89,6 +90,21 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
         if (aLength <= 0) return this;
         if (aLength > mList.size()) throw new IndexOutOfBoundsException(String.format("Index: %d", aLength));
         for (int i = 0; i < aLength; ++i) UT.Code.removeLast(mList);
+        return this;
+    }
+    /**
+     * 等间距截取 XDATCAR，主要用于针对大 dump 减少内存和计算压力
+     * @param aStep 需要选取的间隔
+     * @return 自身方便链式调用
+     */
+    public XDATCAR step(@Range(from=1, to=Integer.MAX_VALUE) int aStep) {
+        if (aStep == 1) return this;
+        List<POSCAR> oList = mList;
+        final int tSize = oList.size();
+        mList = new ArrayList<>(tSize / aStep);
+        for (int i = 0; i < tSize; i+=aStep) {
+            mList.add(oList.get(i));
+        }
         return this;
     }
     

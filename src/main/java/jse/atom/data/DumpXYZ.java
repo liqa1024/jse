@@ -109,6 +109,21 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
         for (int i = 0; i < aLength; ++i) removeLast();
         return this;
     }
+    /**
+     * 等间距截取多帧 XYZ，主要用于针对大 dump 减少内存和计算压力
+     * @param aStep 需要选取的间隔
+     * @return 自身方便链式调用
+     */
+    public DumpXYZ step(@Range(from=1, to=Integer.MAX_VALUE) int aStep) {
+        if (aStep == 1) return this;
+        List<DataXYZ> oList = mList;
+        final int tSize = oList.size();
+        mList = new ArrayList<>(tSize / aStep);
+        for (int i = 0; i < tSize; i+=aStep) {
+            mList.add(oList.get(i));
+        }
+        return this;
+    }
     
     /** @return 自身的拷贝 */
     public DumpXYZ copy() {
