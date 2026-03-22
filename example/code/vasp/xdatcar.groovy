@@ -22,5 +22,5 @@ xdatcar.write('.temp/example/vasp/xdatcarFCC')
 // frame number: 21
 // atom number: 108
 // type names: [Cu, Zr]
-// atom at 10: {id: 11, type: 1, xyz: (5.211, 8.424, 1.354)}
+// atom at 10: {type: 1, xyz: (5.211, 8.424, 1.354)}
 

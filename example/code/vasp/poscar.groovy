@@ -17,5 +17,5 @@ poscar.write('.temp/example/vasp/poscarFCC')
 //OUTPUT:
 // atom number: 108
 // type names: [Cu, Zr]
-// atom at 10: {id: 11, type: 1, xyz: (9.025, 0.000, 1.805)}
+// atom at 10: {type: 1, xyz: (9.025, 0.000, 1.805)}
 
