@@ -1,13 +1,11 @@
 package jse.atom.data;
 
+import jse.ase.AseAtoms;
 import jse.atom.*;
 import jse.code.IO;
 import jse.code.collection.AbstractCollections;
 import jse.math.MathEX;
-import jse.math.matrix.IIntMatrix;
-import jse.math.matrix.IMatrix;
-import jse.math.matrix.RowIntMatrix;
-import jse.math.matrix.RowMatrix;
+import jse.math.matrix.*;
 import jse.math.vector.*;
 import jse.math.vector.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -764,40 +762,191 @@ public class DataXYZ extends AbstractSettableAtomData {
      * @see #of(IAtomData, String...)
      * @see #fromAtomData(IAtomData)
      */
+    @SuppressWarnings("unchecked")
     public static DataXYZ fromAtomData(IAtomData aAtomData, String... aSymbols) {
         if (aSymbols == null) aSymbols = ZL_STR;
         // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
         if (aAtomData instanceof DataXYZ) {
             // DataXYZ 则直接获取即可（专门优化，保留完整模拟盒信息）
             return ((DataXYZ)aAtomData).copy().setSymbols(aSymbols);
-        } else {
-            // 直接遍历拷贝数据
-            int tNumAtoms = aAtomData.natoms();
-            String[] rSpecies = new String[tNumAtoms];
-            RowMatrix rPositions = RowMatrix.zeros(tNumAtoms, ATOM_DATA_KEYS_XYZ.length);
-            @Nullable RowMatrix rVelocities = aAtomData.hasVelocity() ? RowMatrix.zeros(tNumAtoms, ATOM_DATA_KEYS_VELOCITY.length) : null;
-            for (int i = 0; i < tNumAtoms; ++i) {
-                IAtom tAtom = aAtomData.atom(i);
-                int tType = tAtom.type();
-                rSpecies[i] = tType>aSymbols.length ? ("T"+tType) : aSymbols[tType-1];
-                rPositions.set(i, XYZ_X_COL, tAtom.x());
-                rPositions.set(i, XYZ_Y_COL, tAtom.y());
-                rPositions.set(i, XYZ_Z_COL, tAtom.z());
-                if (rVelocities != null) {
-                    rVelocities.set(i, STD_VX_COL, tAtom.vx());
-                    rVelocities.set(i, STD_VY_COL, tAtom.vy());
-                    rVelocities.set(i, STD_VZ_COL, tAtom.vz());
+        }
+        // 直接遍历拷贝数据
+        int tNumAtoms = aAtomData.natoms();
+        String[] rSpecies = new String[tNumAtoms];
+        RowMatrix rPositions = RowMatrix.zeros(tNumAtoms, ATOM_DATA_KEYS_XYZ.length);
+        @Nullable RowMatrix rVelocities = aAtomData.hasVelocity() ? RowMatrix.zeros(tNumAtoms, ATOM_DATA_KEYS_VELOCITY.length) : null;
+        for (int i = 0; i < tNumAtoms; ++i) {
+            IAtom tAtom = aAtomData.atom(i);
+            int tType = tAtom.type();
+            rSpecies[i] = tType>aSymbols.length ? ("T"+tType) : aSymbols[tType-1];
+            rPositions.set(i, XYZ_X_COL, tAtom.x());
+            rPositions.set(i, XYZ_Y_COL, tAtom.y());
+            rPositions.set(i, XYZ_Z_COL, tAtom.z());
+            if (rVelocities != null) {
+                rVelocities.set(i, STD_VX_COL, tAtom.vx());
+                rVelocities.set(i, STD_VY_COL, tAtom.vy());
+                rVelocities.set(i, STD_VZ_COL, tAtom.vz());
+            }
+        }
+        Map<String, Object> rProperties = new LinkedHashMap<>();
+        rProperties.put("species", rSpecies);
+        rProperties.put("pos", rPositions);
+        if (rVelocities != null) rProperties.put("velo", rVelocities);
+        // 转换时默认增加 T T T 的 pbc
+        Map<String, Object> rParameters = new LinkedHashMap<>();
+        rParameters.put("pbc", "T T T");
+        DataXYZ rDataXYZ = new DataXYZ(tNumAtoms, null,
+                                       rParameters, rProperties, aAtomData.box().copy()).setSymbolOrder(aSymbols);
+        // 针对 AseAtoms 特殊处理，这里简单直接补充添加额外属性
+        if (aAtomData instanceof AseAtoms) {
+            AseAtoms tAtoms = (AseAtoms)aAtomData;
+            // 遍历添加，对于 calc results 的属性只考虑特殊已知名称，这里主要保证 xyz 的格式合法
+            for (Map.Entry<String, Object> tEntry : tAtoms.calcResults().entrySet()) {
+                String tKey = tEntry.getKey();
+                Object tValue = tEntry.getValue();
+                switch(tKey) {
+                case "energy": case "free_energy": {
+                    if (tValue instanceof Number) {
+                        rDataXYZ.setParameter(tKey, ((Number)tValue).doubleValue());
+                    }
+                    break;
+                }
+                case "magmom": {
+                    if (tValue instanceof IVector) {
+                        rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map((IVector)tValue, Object::toString)));
+                    } else
+                    if (tValue instanceof Number) {
+                        rDataXYZ.setParameter(tKey, ((Number)tValue).doubleValue());
+                    }
+                    break;
+                }
+                case "stress": case "dipole": {
+                    if (tValue instanceof IVector) {
+                        rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map((IVector)tValue, Object::toString)));
+                    }
+                    break;
+                }
+                case "forces": case "stresses": {
+                    if (tValue instanceof IMatrix) {
+                        rDataXYZ.setProperty(tKey, ((IMatrix)tValue).copy());
+                    }
+                    break;
+                }
+                case "energies": case "charges": {
+                    if (tValue instanceof IVector) {
+                        rDataXYZ.setProperty(tKey, ((IVector)tValue).copy());
+                    }
+                    break;
+                }
+                case "magmoms": {
+                    if (tValue instanceof IVector) {
+                        rDataXYZ.setProperty(tKey, ((IVector)tValue).copy());
+                    } else
+                    if (tValue instanceof IMatrix) {
+                        rDataXYZ.setProperty(tKey, ((IMatrix)tValue).copy());
+                    }
+                    break;
+                }}
+            }
+            for (Map.Entry<String, Object> tEntry : tAtoms.infos().entrySet()) {
+                String tKey = tEntry.getKey();
+                Object tValue = tEntry.getValue();
+                if (tValue instanceof CharSequence) {
+                    rDataXYZ.setParameter(tKey, ((CharSequence)tValue).toString());
+                } else
+                if (tValue instanceof Number) {
+                    rDataXYZ.setParameter(tKey, ((Number)tValue).doubleValue());
+                } else
+                if (tValue instanceof IVector) {
+                    rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map((IVector)tValue, Object::toString)));
+                } else
+                if (tValue instanceof IIntVector) {
+                    rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map((IIntVector)tValue, Object::toString)));
+                } else
+                if (tValue instanceof ILogicalVector) {
+                    // 此类型不支持完美的反向转换，但目前 jse 协议下的 ext-xyz 不认为此类型合法，因此是额外扩充兼容
+                    rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map(((ILogicalVector)tValue).asList(), v->(v?"T":"F"))));
+                } else
+                if (tValue instanceof List) {
+                    // 此类型不支持完美的反向转换，但目前 jse 协议下的 ext-xyz 不认为此类型合法，因此是额外扩充兼容
+                    rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map((List<?>)tValue, v -> {
+                        if (v instanceof Boolean) {
+                            return (Boolean)v ? "T" : "F";
+                        }
+                        return v.toString();
+                    })));
                 }
             }
-            Map<String, Object> rProperties = new LinkedHashMap<>();
-            rProperties.put("species", rSpecies);
-            rProperties.put("pos", rPositions);
-            if (rVelocities != null) rProperties.put("velo", rVelocities);
-            // 转换时默认增加 T T T 的 pbc
-            Map<String, Object> rParameters = new LinkedHashMap<>();
-            rParameters.put("pbc", "T T T");
-            return new DataXYZ(tNumAtoms, null, rParameters, rProperties, aAtomData.box().copy()).setSymbolOrder(aSymbols);
+            for (Map.Entry<String, Object> tEntry : tAtoms.arrays().entrySet()) {
+                String tKey = tEntry.getKey();
+                Object tValue = tEntry.getValue();
+                if (tValue instanceof IVector) {
+                    rDataXYZ.setProperty(tKey, ((IVector)tValue).copy());
+                } else
+                if (tValue instanceof IMatrix) {
+                    rDataXYZ.setProperty(tKey, ((IMatrix)tValue).copy());
+                } else
+                if (tValue instanceof IIntVector) {
+                    rDataXYZ.setProperty(tKey, ((IIntVector)tValue).copy());
+                } else
+                if (tValue instanceof IIntMatrix) {
+                    rDataXYZ.setProperty(tKey, ((IIntMatrix)tValue).copy());
+                } else
+                if (tValue instanceof ILogicalVector) {
+                    rDataXYZ.setProperty(tKey, ((ILogicalVector)tValue).copy());
+                } else
+                if (tValue instanceof String[]) {
+                    String[] tValue2 = new String[((String[])tValue).length];
+                    System.arraycopy((String[])tValue, 0, tValue2, 0, tValue2.length);
+                    rDataXYZ.setProperty(tKey, tValue2);
+                } else
+                if (tValue instanceof String[][]) {
+                    int nrows = ((String[][])tValue).length;
+                    int ncols = ((String[][])tValue)[0].length;
+                    String[][] tValue2 = new String[nrows][ncols];
+                    for (int i = 0; i < nrows; ++i) {
+                        System.arraycopy(((String[][])tValue)[i], 0, tValue2[i], 0, ncols);
+                    }
+                    rDataXYZ.setProperty(tKey, tValue2);
+                } else
+                if (tValue instanceof List) {
+                    int nrows = ((List<?>)tValue).size();
+                    if (nrows == 0) {
+                        rDataXYZ.setProperty(tKey, ZL_STR);
+                    }
+                    Object tObj = ((List<?>)tValue).get(0);
+                    if (tObj instanceof List) {
+                        int ncols = ((List<?>)tObj).size();
+                        Object tObj2 = ((List<?>)tObj).get(0);
+                        if (tObj2 instanceof Number) {
+                            rDataXYZ.setProperty(tKey, Matrices.from((List<?>)tValue));
+                        } else {
+                            String[][] tValue2 = new String[nrows][ncols];
+                            for (int i = 0; i < nrows; ++i) {
+                                List<?> tRow = (List<?>)((List<?>)tValue).get(i);
+                                for (int j = 0; j < ncols; ++j) {
+                                    tValue2[i][j] = tRow.get(j).toString();
+                                }
+                            }
+                            rDataXYZ.setProperty(tKey, tValue2);
+                        }
+                    } else
+                    if (tObj instanceof Boolean) {
+                        rDataXYZ.setProperty(tKey, Vectors.fromBoolean((List<Boolean>)tValue));
+                    } else
+                    if (tObj instanceof Number) {
+                        rDataXYZ.setProperty(tKey, Vectors.from((List<? extends Number>)tValue));
+                    } else {
+                        String[] tValue2 = new String[nrows];
+                        for (int i = 0; i < nrows; ++i) {
+                            tValue2[i] = ((List<?>)tValue).get(i).toString();
+                        }
+                        rDataXYZ.setProperty(tKey, tValue2);
+                    }
+                }
+            }
         }
+        return rDataXYZ;
     }
     /**
      * 传入列表形式元素符号的创建

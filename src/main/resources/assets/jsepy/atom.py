@@ -25,9 +25,13 @@ def _ase2jse(aseobj):
         if np.issubdtype(aseobj.dtype, np.integer):
             # convert to int32 anyway
             aseobj = aseobj.astype(np.int32, casting='unsafe', copy=False)
+            if aseobj.ndim == 0:
+                return int(aseobj)
         elif np.issubdtype(aseobj.dtype, np.floating):
             # convert to float64 anyway
             aseobj = aseobj.astype(np.float64, casting='unsafe', copy=False)
+            if aseobj.ndim == 0:
+                return float(aseobj)
         else:
             return aseobj.tolist()
         if aseobj.ndim == 1:

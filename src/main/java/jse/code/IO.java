@@ -416,6 +416,61 @@ public class IO {
             }
             return rData;
         }
+        /**
+         * 将字符串转换成 jse 的向量数据 {@link Vector}，认为这个字符串是按照逗号
+         * {@code ","} 或者空格 {@code " "} 分割的数字组成的，会忽略每个数据开头和结尾的任意数量空格，
+         * 任何读取失败的数字都会存为 {@link Double#NaN} 而不是抛出错误。
+         * <p>
+         * 这样设计主要确保支持 lammps 或其他软件的输出文件中使用的空格分割的数据，并也能兼容一般的逗号分割的 csv 文件。
+         * <p>
+         * 此操作进行了专门优化，使用了 groovy-json 中的 {@link CharScanner#parseDouble(char[], int, int)}
+         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble(String)} 快一倍以上。
+         *
+         * @param aStr 需要进行转换的字符串
+         * @return 转换得到的向量 {@link Vector}
+         */
+        public static Vector str2data(String aStr) {
+            Vector.Builder rData = Vector.builder();
+            // 先直接转 char[]，适配 groovy-json 的 CharScanner
+            char[] tChar = aStr.toCharArray();
+            // 直接遍历忽略空格，获取开始和末尾，然后 parseDouble
+            int tFrom = CharScanner.skipWhiteSpace(tChar, 0, tChar.length);
+            boolean tHasComma = false;
+            for (int i = tFrom; i < tChar.length; ++i) {
+                int tCharCode = tChar[i];
+                if (tFrom < 0) {
+                    if (tCharCode > 32) {
+                        if (tCharCode == 44) {
+                            if (tHasComma) {
+                                rData.add(Double.NaN);
+                            } else {
+                                tHasComma = true;
+                            }
+                        } else {
+                            tHasComma = false;
+                            tFrom = i;
+                        }
+                    }
+                } else {
+                    if (tCharCode<=32 || tCharCode==44) {
+                        if (tCharCode == 44) tHasComma = true;
+                        double tValue = Double.NaN;
+                        try {tValue = CharScanner.parseDouble(tChar, tFrom, i);}
+                        catch (Exception ignored) {}
+                        rData.add(tValue);
+                        tFrom = -1;
+                    }
+                }
+            }
+            // 最后一个数据
+            if (tFrom >= 0 && tFrom < tChar.length) {
+                double tValue = Double.NaN;
+                try {tValue = CharScanner.parseDouble(tChar, tFrom, tChar.length);}
+                catch (Exception ignored) {}
+                rData.add(tValue);
+            }
+            return rData.build();
+        }
         
         /**
          * 判断输入字符串是否为空或者是空格，此方法等效

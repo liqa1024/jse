@@ -5,6 +5,7 @@ import jep.NDArray;
 import jep.python.PyCallable;
 import jep.python.PyObject;
 import jse.atom.*;
+import jse.atom.data.DataXYZ;
 import jse.code.IO;
 import jse.code.SP;
 import jse.code.UT;
@@ -956,6 +957,7 @@ public class AseAtoms extends AbstractSettableAtomData {
         @Nullable List<@Nullable String> tSymbols = aAtomData.symbols();
         return fromAtomData(aAtomData, tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
+    
     /**
      * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 jse 版 {@link AseAtoms}
      * <p>
@@ -974,34 +976,163 @@ public class AseAtoms extends AbstractSettableAtomData {
         if (aAtomData instanceof AseAtoms) {
             // AseAtoms 则直接获取即可（专门优化，保留完整模拟盒信息）
             return ((AseAtoms)aAtomData).copy().setSymbols(aSymbols);
-        } else {
-            // 直接遍历拷贝数据
-            int tNumAtoms = aAtomData.natoms();
-            IntVector rAtomicNumbers = IntVector.zeros(tNumAtoms);
-            RowMatrix rPositions = RowMatrix.zeros(tNumAtoms, ATOM_DATA_KEYS_XYZ.length);
-            @Nullable RowMatrix rMomenta = aAtomData.hasVelocity() ? RowMatrix.zeros(tNumAtoms, ATOM_DATA_KEYS_VELOCITY.length) : null;
-            for (int i = 0; i < tNumAtoms; ++i) {
-                IAtom tAtom = aAtomData.atom(i);
-                int tType = tAtom.type();
-                rAtomicNumbers.set(i, tType>aSymbols.length ? tType : SYMBOL_TO_ATOMIC_NUMBER.get(aSymbols[tType-1]));
-                rPositions.set(i, XYZ_X_COL, tAtom.x());
-                rPositions.set(i, XYZ_Y_COL, tAtom.y());
-                rPositions.set(i, XYZ_Z_COL, tAtom.z());
-                if (rMomenta != null) {
-                    @Nullable String tSymbol = ATOMIC_NUMBER_TO_SYMBOL.get(rAtomicNumbers.get(i));
-                    double tMass = tSymbol==null ? Double.NaN : MASS.getOrDefault(tSymbol, Double.NaN);
-                    rMomenta.set(i, STD_VX_COL, tAtom.vx()*tMass);
-                    rMomenta.set(i, STD_VY_COL, tAtom.vy()*tMass);
-                    rMomenta.set(i, STD_VZ_COL, tAtom.vz()*tMass);
+        }
+        // 直接遍历拷贝数据
+        int tNumAtoms = aAtomData.natoms();
+        IntVector rAtomicNumbers = IntVector.zeros(tNumAtoms);
+        RowMatrix rPositions = RowMatrix.zeros(tNumAtoms, ATOM_DATA_KEYS_XYZ.length);
+        @Nullable RowMatrix rMomenta = aAtomData.hasVelocity() ? RowMatrix.zeros(tNumAtoms, ATOM_DATA_KEYS_VELOCITY.length) : null;
+        for (int i = 0; i < tNumAtoms; ++i) {
+            IAtom tAtom = aAtomData.atom(i);
+            int tType = tAtom.type();
+            Integer tAtomicNumber = tType>aSymbols.length ? (Integer)tType : SYMBOL_TO_ATOMIC_NUMBER.get(aSymbols[tType-1]);
+            if (tAtomicNumber==null) throw new IllegalArgumentException("symbol: " + aSymbols[tType-1]);
+            rAtomicNumbers.set(i, tAtomicNumber);
+            rPositions.set(i, XYZ_X_COL, tAtom.x());
+            rPositions.set(i, XYZ_Y_COL, tAtom.y());
+            rPositions.set(i, XYZ_Z_COL, tAtom.z());
+            if (rMomenta != null) {
+                @Nullable String tSymbol = ATOMIC_NUMBER_TO_SYMBOL.get(tAtomicNumber);
+                double tMass = tSymbol==null ? Double.NaN : MASS.getOrDefault(tSymbol, Double.NaN);
+                rMomenta.set(i, STD_VX_COL, tAtom.vx()*tMass);
+                rMomenta.set(i, STD_VY_COL, tAtom.vy()*tMass);
+                rMomenta.set(i, STD_VZ_COL, tAtom.vz()*tMass);
+            }
+        }
+        if (rMomenta != null) rMomenta.multiply2this(ASE_VEL_MUL);
+        Map<String, Object> rArrays = new LinkedHashMap<>();
+        rArrays.put("numbers", rAtomicNumbers);
+        rArrays.put("positions", rPositions);
+        if (rMomenta != null) rArrays.put("momenta", rMomenta);
+        AseAtoms rAtoms = new AseAtoms(tNumAtoms, aAtomData.box().copy(),
+                                       new LinkedHashMap<>(), rArrays, new LinkedHashMap<>()).setSymbolOrder(aSymbols);
+        // 针对 DataXYZ 特殊处理，这里简单直接补充添加额外属性
+        if (aAtomData instanceof DataXYZ) {
+            DataXYZ tDataXYZ = (DataXYZ)aAtomData;
+            // 遍历添加，特殊名称需要添加到 calc results
+            // 这里采用严格的 ase 命名标准，不对特殊情况进行额外处理，简化代码并且保证结果可预期
+            for (Map.Entry<String, Object> tEntry : tDataXYZ.parameters().entrySet()) {
+                String tKey = tEntry.getKey();
+                Object tValue = tEntry.getValue();
+                switch(tKey) {
+                case "energy": case "free_energy": {
+                    if (tValue instanceof Number) {
+                        rAtoms.setCalcResult(tKey, ((Number)tValue).doubleValue());
+                        continue;
+                    }
+                    break;
+                }
+                case "magmom": {
+                    if (tValue instanceof CharSequence) {
+                        rAtoms.setCalcResult(tKey, IO.Text.str2data(tValue.toString()));
+                        continue;
+                    } else
+                    if (tValue instanceof IVector) {
+                        rAtoms.setCalcResult(tKey, ((IVector)tValue).copy());
+                        continue;
+                    } else
+                    if (tValue instanceof Number) {
+                        rAtoms.setCalcResult(tKey, ((Number)tValue).doubleValue());
+                        continue;
+                    }
+                    break;
+                }
+                case "stress": case "dipole": {
+                    if (tValue instanceof CharSequence) {
+                        rAtoms.setCalcResult(tKey, IO.Text.str2data(tValue.toString()));
+                        continue;
+                    } else
+                    if (tValue instanceof IVector) {
+                        rAtoms.setCalcResult(tKey, ((IVector)tValue).copy());
+                        continue;
+                    }
+                    break;
+                }
+                case "pbc": {
+                    continue;
+                }}
+                // 对于一般的 parameter 并不尝试进行解析，保留原始的 string 格式
+                if (tValue instanceof CharSequence) {
+                    rAtoms.setInfo(tKey, tValue.toString());
+                } else
+                if (tValue instanceof IVector) {
+                    rAtoms.setInfo(tKey, ((IVector)tValue).copy());
+                } else
+                if (tValue instanceof IIntVector) {
+                    rAtoms.setInfo(tKey, ((IIntVector)tValue).copy());
+                } else
+                if (tValue instanceof ILogicalVector) {
+                    rAtoms.setInfo(tKey, ((ILogicalVector)tValue).copy());
+                } else {
+                    rAtoms.setInfo(tKey, tValue);
                 }
             }
-            if (rMomenta != null) rMomenta.multiply2this(ASE_VEL_MUL);
-            Map<String, Object> rArrays = new LinkedHashMap<>();
-            rArrays.put("numbers", rAtomicNumbers);
-            rArrays.put("positions", rPositions);
-            if (rMomenta != null) rArrays.put("momenta", rMomenta);
-            return new AseAtoms(tNumAtoms, aAtomData.box().copy(), new LinkedHashMap<>(), rArrays, new LinkedHashMap<>()).setSymbolOrder(aSymbols);
+            for (Map.Entry<String, Object> tEntry : tDataXYZ.properties().entrySet()) {
+                String tKey = tEntry.getKey();
+                Object tValue = tEntry.getValue();
+                switch(tKey) {
+                case "forces": case "stresses": {
+                    if (tValue instanceof IMatrix) {
+                        rAtoms.setCalcResult(tKey, ((IMatrix)tValue).copy());
+                        continue;
+                    }
+                    break;
+                }
+                case "energies": case "charges": {
+                    if (tValue instanceof IVector) {
+                        rAtoms.setCalcResult(tKey, ((IVector)tValue).copy());
+                        continue;
+                    }
+                    break;
+                }
+                case "magmoms": {
+                    if (tValue instanceof IVector) {
+                        rAtoms.setCalcResult(tKey, ((IVector)tValue).copy());
+                        continue;
+                    } else
+                    if (tValue instanceof IMatrix) {
+                        rAtoms.setCalcResult(tKey, ((IMatrix)tValue).copy());
+                        continue;
+                    }
+                    break;
+                }
+                case "pos": case "species": case "vel": case "velo": {
+                    continue;
+                }}
+                if (tValue instanceof IVector) {
+                    rAtoms.setArray(tKey, ((IVector)tValue).copy());
+                } else
+                if (tValue instanceof IMatrix) {
+                    rAtoms.setArray(tKey, ((IMatrix)tValue).copy());
+                } else
+                if (tValue instanceof IIntVector) {
+                    rAtoms.setArray(tKey, ((IIntVector)tValue).copy());
+                } else
+                if (tValue instanceof IIntMatrix) {
+                    rAtoms.setArray(tKey, ((IIntMatrix)tValue).copy());
+                } else
+                if (tValue instanceof ILogicalVector) {
+                    rAtoms.setArray(tKey, ((ILogicalVector)tValue).copy());
+                } else
+                if (tValue instanceof String[]) {
+                    String[] tValue2 = new String[((String[])tValue).length];
+                    System.arraycopy((String[])tValue, 0, tValue2, 0, tValue2.length);
+                    rAtoms.setArray(tKey, tValue2);
+                } else
+                if (tValue instanceof String[][]) {
+                    int nrows = ((String[][])tValue).length;
+                    int ncols = ((String[][])tValue)[0].length;
+                    String[][] tValue2 = new String[nrows][ncols];
+                    for (int i = 0; i < nrows; ++i) {
+                        System.arraycopy(((String[][])tValue)[i], 0, tValue2[i], 0, ncols);
+                    }
+                    rAtoms.setArray(tKey, tValue2);
+                } else {
+                    rAtoms.setArray(tKey, tValue);
+                }
+            }
         }
+        return rAtoms;
     }
     /**
      * 传入列表形式元素符号的创建
