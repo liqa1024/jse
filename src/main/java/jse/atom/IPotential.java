@@ -73,7 +73,7 @@ public interface IPotential extends IAutoShutdown {
             }
         }
         if (!aSystemChanges && tAllInResults) return rResults;
-        IAtomData tAtoms = AseAtoms.of(aPyAseAtoms);
+        IAtomData tAtoms = AseAtoms.fromPyObject(aPyAseAtoms, true);
         // 遍历统计需要的量
         boolean tRequireEnergy = false, tRequirePreAtomEnergy = false;
         boolean tRequireForces = false;
