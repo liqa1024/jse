@@ -880,6 +880,10 @@ public class DataXYZ extends AbstractSettableAtomData {
             for (Map.Entry<String, Object> tEntry : tAtoms.arrays().entrySet()) {
                 String tKey = tEntry.getKey();
                 Object tValue = tEntry.getValue();
+                switch(tKey) {
+                case "numbers": case "positions": case "momenta": {
+                    continue;
+                }}
                 if (tValue instanceof IVector) {
                     rDataXYZ.setProperty(tKey, ((IVector)tValue).copy());
                 } else
@@ -1009,7 +1013,7 @@ public class DataXYZ extends AbstractSettableAtomData {
         String tLine;
         String[] tTokens;
         
-        int aAtomNum;
+        int aNumAtoms;
         String aComment;
         Map<String, Object> aParameters = new LinkedHashMap<>();
         IBox aBox = null;
@@ -1017,7 +1021,7 @@ public class DataXYZ extends AbstractSettableAtomData {
         
         // 第一行为原子数
         tLine = aReader.readLine(); if (tLine == null) return null;
-        aAtomNum = Integer.parseInt(tLine.trim());
+        aNumAtoms = Integer.parseInt(tLine.trim());
         // 第二行为 comment
         tLine = aReader.readLine(); if (tLine == null) return null;
         aComment = tLine;
@@ -1072,15 +1076,20 @@ public class DataXYZ extends AbstractSettableAtomData {
                     int tCols = Integer.parseInt(tPropertiesArr[i+2]);
                     switch (tType) {
                     case "S": {
-                        aProperties.put(tKey, tCols==1 ? new String[aAtomNum] : new String[aAtomNum][tCols]);
+                        aProperties.put(tKey, tCols==1 ? new String[aNumAtoms] : new String[aNumAtoms][tCols]);
                         break;
                     }
                     case "R": {
-                        aProperties.put(tKey, tCols==1 ? Vectors.zeros(aAtomNum) : RowMatrix.zeros(aAtomNum, tCols));
+                        aProperties.put(tKey, tCols==1 ? Vectors.zeros(aNumAtoms) : RowMatrix.zeros(aNumAtoms, tCols));
                         break;
                     }
                     case "I": {
-                        aProperties.put(tKey, tCols==1 ? IntVector.zeros(aAtomNum) : RowIntMatrix.zeros(aAtomNum, tCols));
+                        aProperties.put(tKey, tCols==1 ? IntVector.zeros(aNumAtoms) : RowIntMatrix.zeros(aNumAtoms, tCols));
+                        break;
+                    }
+                    case "L": {
+                        if (tCols != 1) throw new IllegalArgumentException("L of ncols > 1 (LogicalMatrix invalid for jse)");
+                        aProperties.put(tKey, LogicalVector.zeros(aNumAtoms));
                         break;
                     }}
                 }
@@ -1089,11 +1098,11 @@ public class DataXYZ extends AbstractSettableAtomData {
         if (aProperties == null) {
             // 即使是非 Extended，也需要有 Properties 以及 Box
             aProperties = new LinkedHashMap<>();
-            aProperties.put("species", new String[aAtomNum]);
-            aProperties.put("pos", RowMatrix.zeros(aAtomNum, ATOM_DATA_KEYS_XYZ.length));
+            aProperties.put("species", new String[aNumAtoms]);
+            aProperties.put("pos", RowMatrix.zeros(aNumAtoms, ATOM_DATA_KEYS_XYZ.length));
         }
         // 简单遍历后续数据
-        for (int i = 0; i < aAtomNum; ++i) {
+        for (int i = 0; i < aNumAtoms; ++i) {
             tLine = aReader.readLine(); if (tLine == null) return null; tTokens = IO.Text.splitBlank(tLine);
             // 基于 aProperties 的顺序解析，现在可以统一解析语法
             int j = 0;
@@ -1130,11 +1139,24 @@ public class DataXYZ extends AbstractSettableAtomData {
                         tRow.set(k, Integer.parseInt(tTokens[j]));
                         ++j;
                     }
+                } else
+                if (tValue instanceof ILogicalVector) {
+                    boolean tSub;
+                    if (tTokens[j].equals("T")) {
+                        tSub = true;
+                    } else
+                    if (tTokens[j].equals("F")) {
+                        tSub = false;
+                    } else {
+                        throw new IllegalArgumentException("Illegal L token: " + tTokens[j]);
+                    }
+                    ((ILogicalVector)tValue).set(i, tSub);
+                    ++j;
                 }
             }
         }
         // 返回 XYZ
-        return new DataXYZ(aAtomNum, aComment, aParameters, aProperties, aBox);
+        return new DataXYZ(aNumAtoms, aComment, aParameters, aProperties, aBox);
     }
     static boolean parseParameters_(String aComment, Map<String, Object> rParameters) {
         aComment = aComment.trim();
