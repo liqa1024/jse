@@ -356,6 +356,11 @@ public class AseAtoms extends AbstractSettableAtomData {
             if (tValue.size() != mNumAtoms) throw new IllegalArgumentException("Data size mismatch, need: "+mNumAtoms+", input: "+tValue.size());
             mArrays.put(aKey, tValue);
         } else
+        if (aValue instanceof ILogicalVector) {
+            ILogicalVector tValue = (ILogicalVector)aValue;
+            if (tValue.size() != mNumAtoms) throw new IllegalArgumentException("Data size mismatch, need: "+mNumAtoms+", input: "+tValue.size());
+            mArrays.put(aKey, tValue);
+        } else
         if (aValue instanceof IMatrix) {
             IMatrix tValue = (IMatrix)aValue;
             if (tValue.nrows() != mNumAtoms) throw new IllegalArgumentException("Data nrows mismatch, need: "+mNumAtoms+", input: "+tValue.nrows());
@@ -363,6 +368,11 @@ public class AseAtoms extends AbstractSettableAtomData {
         } else
         if (aValue instanceof IIntMatrix) {
             IIntMatrix tValue = (IIntMatrix)aValue;
+            if (tValue.nrows() != mNumAtoms) throw new IllegalArgumentException("Data nrows mismatch, need: "+mNumAtoms+", input: "+tValue.nrows());
+            mArrays.put(aKey, tValue);
+        } else
+        if (aValue instanceof ILogicalMatrix) {
+            ILogicalMatrix tValue = (ILogicalMatrix)aValue;
             if (tValue.nrows() != mNumAtoms) throw new IllegalArgumentException("Data nrows mismatch, need: "+mNumAtoms+", input: "+tValue.nrows());
             mArrays.put(aKey, tValue);
         } else
@@ -1041,7 +1051,32 @@ public class AseAtoms extends AbstractSettableAtomData {
                     }
                     break;
                 }
-                case "stress": case "dipole": {
+                case "stress": {
+                    //  0,  1,  2,  3,  4,  5,  6,  7,  8
+                    // xx, xy, xz, yx, yy, yz, zx, zy, zz
+                    IVector tStressXYZ = null;
+                    if (tValue instanceof CharSequence) {
+                        tStressXYZ = IO.Text.str2data(tValue.toString());
+                    } else
+                    if (tValue instanceof IVector) {
+                        tStressXYZ = (IVector)tValue;
+                    }
+                    if (tStressXYZ!=null && tStressXYZ.size()==9) {
+                        //  0,  1,  2,  3,  4,  5
+                        // xx, yy, zz, yz, xz, xy
+                        IVector tStressAse = Vectors.zeros(6);
+                        tStressAse.set(0, tStressXYZ.get(0));
+                        tStressAse.set(1, tStressXYZ.get(4));
+                        tStressAse.set(2, tStressXYZ.get(8));
+                        tStressAse.set(3, tStressXYZ.get(5));
+                        tStressAse.set(4, tStressXYZ.get(2));
+                        tStressAse.set(5, tStressXYZ.get(1));
+                        rAtoms.setCalcResult(tKey, tStressAse);
+                        continue;
+                    }
+                    break;
+                }
+                case "dipole": {
                     if (tValue instanceof CharSequence) {
                         rAtoms.setCalcResult(tKey, IO.Text.str2data(tValue.toString()));
                         continue;

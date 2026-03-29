@@ -357,6 +357,11 @@ public class DataXYZ extends AbstractSettableAtomData {
             if (tValue.size() != mNumAtoms) throw new IllegalArgumentException("Data size mismatch, need: "+mNumAtoms+", input: "+tValue.size());
             mProperties.put(aKey, tValue);
         } else
+        if (aValue instanceof ILogicalVector) {
+            ILogicalVector tValue = (ILogicalVector)aValue;
+            if (tValue.size() != mNumAtoms) throw new IllegalArgumentException("Data size mismatch, need: "+mNumAtoms+", input: "+tValue.size());
+            mProperties.put(aKey, tValue);
+        } else
         if (aValue instanceof IMatrix) {
             IMatrix tValue = (IMatrix)aValue;
             if (tValue.nrows() != mNumAtoms) throw new IllegalArgumentException("Data nrows mismatch, need: "+mNumAtoms+", input: "+tValue.nrows());
@@ -364,6 +369,11 @@ public class DataXYZ extends AbstractSettableAtomData {
         } else
         if (aValue instanceof IIntMatrix) {
             IIntMatrix tValue = (IIntMatrix)aValue;
+            if (tValue.nrows() != mNumAtoms) throw new IllegalArgumentException("Data nrows mismatch, need: "+mNumAtoms+", input: "+tValue.nrows());
+            mProperties.put(aKey, tValue);
+        } else
+        if (aValue instanceof ILogicalMatrix) {
+            ILogicalMatrix tValue = (ILogicalMatrix)aValue;
             if (tValue.nrows() != mNumAtoms) throw new IllegalArgumentException("Data nrows mismatch, need: "+mNumAtoms+", input: "+tValue.nrows());
             mProperties.put(aKey, tValue);
         } else
@@ -823,7 +833,22 @@ public class DataXYZ extends AbstractSettableAtomData {
                     }
                     break;
                 }
-                case "stress": case "dipole": {
+                case "stress": {
+                    if (tValue instanceof IVector) {
+                        //  0,  1,  2,  3,  4,  5
+                        // xx, yy, zz, yz, xz, xy
+                        IVector tStressAse = (IVector)tValue;
+                        //  0,  1,  2,  3,  4,  5,  6,  7,  8
+                        // xx, xy, xz, yx, yy, yz, zx, zy, zz
+                        IVector tStressXYZ = Vectors.zeros(9);
+                        tStressXYZ.set(0, tStressAse.get(0)); tStressXYZ.set(1, tStressAse.get(5)); tStressXYZ.set(2, tStressAse.get(4));
+                        tStressXYZ.set(3, tStressAse.get(5)); tStressXYZ.set(4, tStressAse.get(1)); tStressXYZ.set(5, tStressAse.get(3));
+                        tStressXYZ.set(6, tStressAse.get(4)); tStressXYZ.set(7, tStressAse.get(3)); tStressXYZ.set(8, tStressAse.get(2));
+                        rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map(tStressXYZ, Object::toString)));
+                    }
+                    break;
+                }
+                case "dipole": {
                     if (tValue instanceof IVector) {
                         rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map((IVector)tValue, Object::toString)));
                     }
