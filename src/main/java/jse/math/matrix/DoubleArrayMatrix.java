@@ -34,7 +34,7 @@ public abstract class DoubleArrayMatrix extends AbstractMatrix implements IDataS
     @Override public DoubleArrayMatrix copy() {return (DoubleArrayMatrix)super.copy();}
     
     /** stuff to override */
-    protected abstract DoubleArrayMatrix newZeros_(int aRowNum, int aColNum);
+    @Override protected abstract DoubleArrayMatrix newZeros_(int aRowNum, int aColNum);
     
-    public abstract double @Nullable[] getIfHasSameOrderData(Object aObj);
+    @Override public abstract double @Nullable[] getIfHasSameOrderData(Object aObj);
 }

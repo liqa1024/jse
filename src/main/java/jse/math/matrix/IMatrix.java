@@ -96,7 +96,7 @@ public interface IMatrix extends IMatrixGetter {
     /** 访问和修改部分，自带的接口 */
     int nrows();
     int ncols();
-    double get(int aRow, int aCol);
+    @Override double get(int aRow, int aCol);
     double getAndSet(int aRow, int aCol, double aValue); // 返回修改前的值
     void set(int aRow, int aCol, double aValue);
     ISize size();

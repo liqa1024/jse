@@ -19,10 +19,10 @@ import java.util.function.BooleanSupplier;
  */
 public interface ILogicalVector extends ISwapper, IHasBooleanIterator, IHasBooleanSetIterator, ILogicalVectorGetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
-    IBooleanIterator iterator();
-    IBooleanSetIterator setIterator();
+    @Override IBooleanIterator iterator();
+    @Override IBooleanSetIterator setIterator();
     
-    default Iterable<Boolean> iterable() {return () -> iterator().toIterator();}
+    @Override default Iterable<Boolean> iterable() {return () -> iterator().toIterator();}
     List<Boolean> asList();
     IVector asVec();
     IIntVector asIntVec();
@@ -37,7 +37,7 @@ public interface ILogicalVector extends ISwapper, IHasBooleanIterator, IHasBoole
     boolean[] data();
     
     /** ISwapper stuffs */
-    void swap(int aIdx1, int aIdx2);
+    @Override void swap(int aIdx1, int aIdx2);
     
     /** 批量修改的接口 */
     void fill(boolean aValue);
@@ -45,12 +45,12 @@ public interface ILogicalVector extends ISwapper, IHasBooleanIterator, IHasBoole
     void fill(ILogicalVectorGetter aVectorGetter);
     void fill(boolean[] aData);
     void fill(Iterable<Boolean> aList);
-    void assign(BooleanSupplier aSup);
-    void forEach(IBooleanConsumer aCon);
+    @Override void assign(BooleanSupplier aSup);
+    @Override void forEach(IBooleanConsumer aCon);
     
     /** 访问和修改部分，自带的接口 */
     int size();
-    boolean get(int aIdx);
+    @Override boolean get(int aIdx);
     boolean getAndSet(int aIdx, boolean aValue); // 返回修改前的值
     void set(int aIdx, boolean aValue);
     

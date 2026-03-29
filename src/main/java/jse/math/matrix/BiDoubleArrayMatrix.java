@@ -29,8 +29,8 @@ public abstract class BiDoubleArrayMatrix extends AbstractComplexMatrix implemen
     @Override public BiDoubleArrayMatrix copy() {return (BiDoubleArrayMatrix)super.copy();}
     
     /** stuff to override */
-    protected abstract BiDoubleArrayMatrix newZeros_(int aRowNum, int aColNum);
+    @Override protected abstract BiDoubleArrayMatrix newZeros_(int aRowNum, int aColNum);
     
-    public abstract double @Nullable[][] getIfHasSameOrderData(Object aObj);
+    @Override public abstract double @Nullable[][] getIfHasSameOrderData(Object aObj);
 }
 

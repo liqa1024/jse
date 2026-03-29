@@ -478,11 +478,11 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
     
     
     /** stuff to override */
-    public abstract boolean get(int aRow, int aCol);
-    public abstract void set(int aRow, int aCol, boolean aValue);
-    public abstract boolean getAndSet(int aRow, int aCol, boolean aValue); // 返回修改前的值
-    public abstract int nrows();
-    public abstract int ncols();
+    @Override public abstract boolean get(int aRow, int aCol);
+    @Override public abstract void set(int aRow, int aCol, boolean aValue);
+    @Override public abstract boolean getAndSet(int aRow, int aCol, boolean aValue); // 返回修改前的值
+    @Override public abstract int nrows();
+    @Override public abstract int ncols();
     protected abstract ILogicalMatrix newZeros_(int aRowNum, int aColNum);
     protected ILogicalVector newZerosVec_(int aSize) {return LogicalVector.zeros(aSize);}
     

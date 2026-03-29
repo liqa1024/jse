@@ -31,7 +31,7 @@ public abstract class BooleanArrayMatrix extends AbstractLogicalMatrix implement
     @Override public BooleanArrayMatrix copy() {return (BooleanArrayMatrix)super.copy();}
     
     /** stuff to override */
-    protected abstract BooleanArrayMatrix newZeros_(int aRowNum, int aColNum);
+    @Override protected abstract BooleanArrayMatrix newZeros_(int aRowNum, int aColNum);
     
-    public abstract boolean @Nullable[] getIfHasSameOrderData(Object aObj);
+    @Override public abstract boolean @Nullable[] getIfHasSameOrderData(Object aObj);
 }

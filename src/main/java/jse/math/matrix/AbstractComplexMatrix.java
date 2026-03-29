@@ -701,23 +701,23 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     
     
     /** stuff to override */
-    public ComplexDouble get(int aRow, int aCol) {return new ComplexDouble(getReal(aRow, aCol), getImag(aRow, aCol));}
-    public abstract double getReal(int aRow, int aCol);
-    public abstract double getImag(int aRow, int aCol);
-    public void set(int aRow, int aCol, IComplexDouble aValue) {set(aRow, aCol, aValue.real(), aValue.imag());}
-    public void set(int aRow, int aCol, ComplexDouble aValue) {set(aRow, aCol, aValue.mReal, aValue.mImag);}
-    public void set(int aRow, int aCol, double aValue) {set(aRow, aCol, aValue, 0.0);}
-    public abstract void set(int aRow, int aCol, double aReal, double aImag);
-    public abstract void setReal(int aRow, int aCol, double aReal);
-    public abstract void setImag(int aRow, int aCol, double aImag);
-    public ComplexDouble getAndSet(int aRow, int aCol, IComplexDouble aValue) {return getAndSet(aRow, aCol, aValue.real(), aValue.imag());}
-    public ComplexDouble getAndSet(int aRow, int aCol, ComplexDouble aValue) {return getAndSet(aRow, aCol, aValue.mReal, aValue.mImag);}
-    public ComplexDouble getAndSet(int aRow, int aCol, double aValue) {return getAndSet(aRow, aCol, aValue, 0.0);}
-    public abstract ComplexDouble getAndSet(int aRow, int aCol, double aReal, double aImag);
-    public abstract double getAndSetReal(int aRow, int aCol, double aReal);
-    public abstract double getAndSetImag(int aRow, int aCol, double aImag);
-    public abstract int nrows();
-    public abstract int ncols();
+    @Override public ComplexDouble get(int aRow, int aCol) {return new ComplexDouble(getReal(aRow, aCol), getImag(aRow, aCol));}
+    @Override public abstract double getReal(int aRow, int aCol);
+    @Override public abstract double getImag(int aRow, int aCol);
+    @Override public void set(int aRow, int aCol, IComplexDouble aValue) {set(aRow, aCol, aValue.real(), aValue.imag());}
+    @Override public void set(int aRow, int aCol, ComplexDouble aValue) {set(aRow, aCol, aValue.mReal, aValue.mImag);}
+    @Override public void set(int aRow, int aCol, double aValue) {set(aRow, aCol, aValue, 0.0);}
+    @Override public abstract void set(int aRow, int aCol, double aReal, double aImag);
+    @Override public abstract void setReal(int aRow, int aCol, double aReal);
+    @Override public abstract void setImag(int aRow, int aCol, double aImag);
+    @Override public ComplexDouble getAndSet(int aRow, int aCol, IComplexDouble aValue) {return getAndSet(aRow, aCol, aValue.real(), aValue.imag());}
+    @Override public ComplexDouble getAndSet(int aRow, int aCol, ComplexDouble aValue) {return getAndSet(aRow, aCol, aValue.mReal, aValue.mImag);}
+    @Override public ComplexDouble getAndSet(int aRow, int aCol, double aValue) {return getAndSet(aRow, aCol, aValue, 0.0);}
+    @Override public abstract ComplexDouble getAndSet(int aRow, int aCol, double aReal, double aImag);
+    @Override public abstract double getAndSetReal(int aRow, int aCol, double aReal);
+    @Override public abstract double getAndSetImag(int aRow, int aCol, double aImag);
+    @Override public abstract int nrows();
+    @Override public abstract int ncols();
     protected abstract IComplexMatrix newZeros_(int aRowNum, int aColNum);
     protected IComplexVector newZerosVec_(int aSize) {return ComplexVector.zeros(aSize);}
     

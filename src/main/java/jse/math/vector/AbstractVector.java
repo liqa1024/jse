@@ -24,10 +24,6 @@ import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.DoubleUnaryOperator;
 
-/**
- * @author liqa
- * <p> 通用的向量类，由于默认实现比较复杂，并且涉及到重写 Object 的成员，因此部分方法放入抽象类中 </p>
- */
 public abstract class AbstractVector implements IVector {
     /** print */
     @Override public String toString() {
@@ -387,10 +383,10 @@ public abstract class AbstractVector implements IVector {
     
     
     /** stuff to override */
-    public abstract double get(int aIdx);
-    public abstract void set(int aIdx, double aValue);
-    public abstract double getAndSet(int aIdx, double aValue);
-    public abstract int size();
+    @Override public abstract double get(int aIdx);
+    @Override public abstract void set(int aIdx, double aValue);
+    @Override public abstract double getAndSet(int aIdx, double aValue);
+    @Override public abstract int size();
     protected abstract IVector newZeros_(int aSize);
     
     protected String toString_(double aValue) {return String.format("   %.4g", aValue);}

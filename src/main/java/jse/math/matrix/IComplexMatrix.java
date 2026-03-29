@@ -16,10 +16,8 @@ import java.util.List;
 import java.util.function.*;
 
 /**
+ * 复数矩阵，返回类型 {@link ComplexDouble}
  * @author liqa
- * <p> 专用的复数矩阵 </p>
- * <p> 由于完全实现工作量较大，这里暂只实现用到的接口 </p>
- * <p> 当然为了后续完善的方便，结构依旧保持一致 </p>
  */
 public interface IComplexMatrix extends IComplexMatrixGetter {
     /** Iterable stuffs，现在指定具体行列会仅遍历此行或者列，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便使用 */
@@ -78,9 +76,9 @@ public interface IComplexMatrix extends IComplexMatrixGetter {
     /** 访问和修改部分，自带的接口 */
     int nrows();
     int ncols();
-    ComplexDouble get(int aRow, int aCol);
-    double getReal(int aRow, int aCol);
-    double getImag(int aRow, int aCol);
+    @Override ComplexDouble get(int aRow, int aCol);
+    @Override double getReal(int aRow, int aCol);
+    @Override double getImag(int aRow, int aCol);
     void set(int aRow, int aCol, IComplexDouble aValue);
     void set(int aRow, int aCol, ComplexDouble aValue);
     void set(int aRow, int aCol, double aValue);

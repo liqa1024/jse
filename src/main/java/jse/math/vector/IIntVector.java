@@ -29,10 +29,10 @@ import java.util.function.IntUnaryOperator;
  */
 public interface IIntVector extends ISwapper, ISlice, IHasIntIterator, IHasIntSetIterator, IIntVectorGetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
-    IIntIterator iterator();
-    IIntSetIterator setIterator();
+    @Override IIntIterator iterator();
+    @Override IIntSetIterator setIterator();
     
-    default Iterable<Integer> iterable() {return () -> iterator().toIterator();}
+    @Override default Iterable<Integer> iterable() {return () -> iterator().toIterator();}
     List<Integer> asList();
     IVector asVec();
     
@@ -65,7 +65,7 @@ public interface IIntVector extends ISwapper, ISlice, IHasIntIterator, IHasIntSe
     @ApiStatus.Experimental default void releaseBuf(@NotNull IIntVector aBuf) {releaseBuf(aBuf, false);}
     
     /** ISwapper stuffs */
-    void swap(int aIdx1, int aIdx2);
+    @Override void swap(int aIdx1, int aIdx2);
     
     /** 批量修改的接口 */
     void fill(int aValue);
@@ -73,15 +73,15 @@ public interface IIntVector extends ISwapper, ISlice, IHasIntIterator, IHasIntSe
     void fill(IIntVectorGetter aVectorGetter);
     void fill(int[] aData);
     void fill(Iterable<? extends Number> aList);
-    void assign(IntSupplier aSup);
-    void forEach(IntConsumer aCon);
+    @Override void assign(IntSupplier aSup);
+    @Override void forEach(IntConsumer aCon);
     /** Groovy stuff */
     default void fill(@ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {fill(i -> aGroovyTask.call(i).intValue());}
     default void assign(final Closure<? extends Number> aGroovyTask) {assign(() -> aGroovyTask.call().intValue());}
     
     /** 访问和修改部分，自带的接口 */
-    int size();
-    int get(int aIdx);
+    @Override int size();
+    @Override int get(int aIdx);
     int getAndSet(int aIdx, int aValue); // 返回修改前的值
     void set(int aIdx, int aValue);
     

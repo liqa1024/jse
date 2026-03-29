@@ -14,9 +14,10 @@ import java.util.function.DoubleUnaryOperator;
 import static jse.math.vector.AbstractVector.*;
 
 /**
+ * 支持将内部的 double[][] 进行平移访问的 ComplexVector，理论拥有和 {@link ComplexVector} 几乎一样的性能
+ * <p>
+ * 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link ComplexVector}
  * @author liqa
- * <p> 支持将内部的 double[] 进行平移访问的 Vector，理论拥有和 {@link Vector} 几乎一样的性能 </p>
- * <p> 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link Vector} </p>
  */
 public final class ShiftComplexVector extends BiDoubleArrayVector {
     private int mSize;

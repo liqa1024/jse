@@ -91,7 +91,7 @@ public interface IIntMatrix extends IIntMatrixGetter {
     /** 访问和修改部分，自带的接口 */
     int nrows();
     int ncols();
-    int get(int aRow, int aCol);
+    @Override int get(int aRow, int aCol);
     int getAndSet(int aRow, int aCol, int aValue); // 返回修改前的值
     void set(int aRow, int aCol, int aValue);
     IMatrix.ISize size();

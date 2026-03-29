@@ -13,15 +13,15 @@ public abstract class RefLogicalMatrix extends AbstractLogicalMatrix {
     @Override protected final ILogicalMatrix newZeros_(int aRowNum, int aColNum) {return RowLogicalMatrix.zeros(aRowNum, aColNum);}
     
     /** stuff to override */
-    public abstract boolean get(int aRow, int aCol);
-    public void set(int aRow, int aCol, boolean aValue) {throw new UnsupportedOperationException("set");}
-    public boolean getAndSet(int aRow, int aCol, boolean aValue) {
+    @Override public abstract boolean get(int aRow, int aCol);
+    @Override public void set(int aRow, int aCol, boolean aValue) {throw new UnsupportedOperationException("set");}
+    @Override public boolean getAndSet(int aRow, int aCol, boolean aValue) {
         rangeCheckRow(aRow, nrows());
         rangeCheckCol(aCol, ncols());
         boolean oValue = get(aRow, aCol);
         set(aRow, aCol, aValue);
         return oValue;
     }
-    public abstract int nrows();
-    public abstract int ncols();
+    @Override public abstract int nrows();
+    @Override public abstract int ncols();
 }

@@ -17,8 +17,8 @@ import java.util.function.DoubleUnaryOperator;
 import static jse.math.vector.AbstractVector.*;
 
 /**
+ * 复向量的一般实现
  * @author liqa
- * <p> 复向量的一般实现 </p>
  */
 public class ComplexVector extends BiDoubleArrayVector {
     /** 提供默认的创建 */
@@ -44,10 +44,10 @@ public class ComplexVector extends BiDoubleArrayVector {
         }
         
         /** Groovy stuffs */
-        public Builder append(IComplexDouble aValue) {return (Builder)super.append(aValue);}
-        public Builder appendAll(IComplexVector aVector) {return (Builder)super.appendAll(aVector);}
-        @VisibleForTesting public Builder leftShift(IComplexDouble aValue) {return (Builder)super.leftShift(aValue);}
-        @VisibleForTesting public Builder leftShift(IComplexVector aVector) {return (Builder)super.leftShift(aVector);}
+        @Override public Builder append(IComplexDouble aValue) {return (Builder)super.append(aValue);}
+        @Override public Builder appendAll(IComplexVector aVector) {return (Builder)super.appendAll(aVector);}
+        @Override @VisibleForTesting public Builder leftShift(IComplexDouble aValue) {return (Builder)super.leftShift(aValue);}
+        @Override @VisibleForTesting public Builder leftShift(IComplexVector aVector) {return (Builder)super.leftShift(aVector);}
     }
     
     

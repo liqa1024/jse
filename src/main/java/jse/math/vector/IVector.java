@@ -30,10 +30,10 @@ import java.util.function.DoubleUnaryOperator;
  */
 public interface IVector extends ISwapper, IHasDoubleIterator, IHasDoubleSetIterator, IVectorGetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
-    IDoubleIterator iterator();
-    IDoubleSetIterator setIterator();
+    @Override IDoubleIterator iterator();
+    @Override IDoubleSetIterator setIterator();
     
-    default Iterable<Double> iterable() {return () -> iterator().toIterator();}
+    @Override default Iterable<Double> iterable() {return () -> iterator().toIterator();}
     List<Double> asList();
     IIntVector asIntVec();
     
@@ -68,7 +68,7 @@ public interface IVector extends ISwapper, IHasDoubleIterator, IHasDoubleSetIter
     @ApiStatus.Experimental default void releaseBuf(@NotNull IVector aBuf) {releaseBuf(aBuf, false);}
     
     /** ISwapper stuffs */
-    void swap(int aIdx1, int aIdx2);
+    @Override void swap(int aIdx1, int aIdx2);
     
     /** 批量修改的接口 */
     void fill(double aValue);
@@ -76,15 +76,15 @@ public interface IVector extends ISwapper, IHasDoubleIterator, IHasDoubleSetIter
     void fill(IVectorGetter aVectorGetter);
     void fill(double[] aData);
     void fill(Iterable<? extends Number> aList);
-    void assign(DoubleSupplier aSup);
-    void forEach(DoubleConsumer aCon);
+    @Override void assign(DoubleSupplier aSup);
+    @Override void forEach(DoubleConsumer aCon);
     /** Groovy stuff */
     default void fill(@ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {fill(i -> UT.Code.doubleValue(aGroovyTask.call(i)));}
     default void assign(final Closure<? extends Number> aGroovyTask) {assign(() -> UT.Code.doubleValue(aGroovyTask.call()));}
     
     /** 访问和修改部分，自带的接口 */
     int size();
-    double get(int aIdx);
+    @Override double get(int aIdx);
     double getAndSet(int aIdx, double aValue); // 返回修改前的值
     void set(int aIdx, double aValue);
     

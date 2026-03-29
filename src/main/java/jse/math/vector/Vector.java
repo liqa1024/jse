@@ -16,8 +16,8 @@ import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
 
 /**
+ * 向量的一般实现
  * @author liqa
- * <p> 向量的一般实现 </p>
  */
 public class Vector extends DoubleArrayVector {
     /** 提供默认的创建 */
@@ -43,10 +43,10 @@ public class Vector extends DoubleArrayVector {
         }
         
         /** Groovy stuffs */
-        public Builder append(double aValue) {return (Builder)super.append(aValue);}
-        public Builder appendAll(IVector aVector) {return (Builder)super.appendAll(aVector);}
-        @VisibleForTesting public Builder leftShift(double aValue) {return (Builder)super.leftShift(aValue);}
-        @VisibleForTesting public Builder leftShift(IVector aVector) {return (Builder)super.leftShift(aVector);}
+        @Override public Builder append(double aValue) {return (Builder)super.append(aValue);}
+        @Override public Builder appendAll(IVector aVector) {return (Builder)super.appendAll(aVector);}
+        @Override @VisibleForTesting public Builder leftShift(double aValue) {return (Builder)super.leftShift(aValue);}
+        @Override @VisibleForTesting public Builder leftShift(IVector aVector) {return (Builder)super.leftShift(aVector);}
     }
     
     

@@ -23,7 +23,6 @@ import java.util.function.DoubleUnaryOperator;
 
 import static jse.code.CS.ALL;
 
-
 public abstract class AbstractMatrix implements IMatrix {
     /** print */
     @Override public String toString() {
@@ -640,11 +639,11 @@ public abstract class AbstractMatrix implements IMatrix {
     @Override public final void negative2this() {operation().negative2this();}
     
     /** stuff to override */
-    public abstract double get(int aRow, int aCol);
-    public abstract void set(int aRow, int aCol, double aValue);
-    public abstract double getAndSet(int aRow, int aCol, double aValue); // 返回修改前的值
-    public abstract int nrows();
-    public abstract int ncols();
+    @Override public abstract double get(int aRow, int aCol);
+    @Override public abstract void set(int aRow, int aCol, double aValue);
+    @Override public abstract double getAndSet(int aRow, int aCol, double aValue); // 返回修改前的值
+    @Override public abstract int nrows();
+    @Override public abstract int ncols();
     protected abstract IMatrix newZeros_(int aRowNum, int aColNum);
     protected IVector newZerosVec_(int aSize) {return Vector.zeros(aSize);}
     

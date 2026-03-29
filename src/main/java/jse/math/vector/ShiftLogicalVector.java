@@ -11,9 +11,10 @@ import java.util.NoSuchElementException;
 import static jse.math.vector.AbstractVector.*;
 
 /**
+ * 支持将内部的 boolean[] 进行平移访问的 LogicalVector，理论拥有和 {@link LogicalVector} 几乎一样的性能
+ * <p>
+ * 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link LogicalVector}
  * @author liqa
- * <p> 支持将内部的 boolean[] 进行平移访问的 LogicalVector，理论拥有和 {@link LogicalVector} 几乎一样的性能 </p>
- * <p> 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link LogicalVector} </p>
  */
 public final class ShiftLogicalVector extends BooleanArrayVector {
     private int mSize;

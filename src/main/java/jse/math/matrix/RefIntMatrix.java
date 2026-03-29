@@ -13,15 +13,15 @@ public abstract class RefIntMatrix extends AbstractIntMatrix {
     @Override protected final IIntMatrix newZeros_(int aRowNum, int aColNum) {return RowIntMatrix.zeros(aRowNum, aColNum);}
     
     /** stuff to override */
-    public abstract int get(int aRow, int aCol);
-    public void set(int aRow, int aCol, int aValue) {throw new UnsupportedOperationException("set");}
-    public int getAndSet(int aRow, int aCol, int aValue) {
+    @Override public abstract int get(int aRow, int aCol);
+    @Override public void set(int aRow, int aCol, int aValue) {throw new UnsupportedOperationException("set");}
+    @Override public int getAndSet(int aRow, int aCol, int aValue) {
         rangeCheckRow(aRow, nrows());
         rangeCheckCol(aCol, ncols());
         int oValue = get(aRow, aCol);
         set(aRow, aCol, aValue);
         return oValue;
     }
-    public abstract int nrows();
-    public abstract int ncols();
+    @Override public abstract int nrows();
+    @Override public abstract int ncols();
 }

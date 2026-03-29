@@ -28,10 +28,6 @@ import java.util.function.Supplier;
 
 import static jse.math.vector.AbstractVector.*;
 
-/**
- * @author liqa
- * <p> 通用的向量类，由于默认实现比较复杂，并且涉及到重写 Object 的成员，因此部分方法放入抽象类中 </p>
- */
 public abstract class AbstractComplexVector implements IComplexVector {
     /** print */
     @Override public String toString() {
@@ -440,23 +436,23 @@ public abstract class AbstractComplexVector implements IComplexVector {
     
     
     /** stuff to override */
-    public ComplexDouble get(int aIdx) {return new ComplexDouble(getReal(aIdx), getImag(aIdx));}
-    public abstract double getReal(int aIdx);
-    public abstract double getImag(int aIdx);
-    public void set(int aIdx, IComplexDouble aValue) {set(aIdx, aValue.real(), aValue.imag());}
-    public void set(int aIdx, ComplexDouble aValue) {set(aIdx, aValue.mReal, aValue.mImag);}
-    public void set(int aIdx, double aValue) {set(aIdx, aValue, 0.0);}
-    public abstract void set(int aIdx, double aReal, double aImag);
-    public abstract void setReal(int aIdx, double aReal);
-    public abstract void setImag(int aIdx, double aImag);
-    public ComplexDouble getAndSet(int aIdx, IComplexDouble aValue) {return getAndSet(aIdx, aValue.real(), aValue.imag());}
-    public ComplexDouble getAndSet(int aIdx, ComplexDouble aValue) {return getAndSet(aIdx, aValue.mReal, aValue.mImag);}
-    public ComplexDouble getAndSet(int aIdx, double aValue) {return getAndSet(aIdx, aValue, 0.0);}
-    public abstract ComplexDouble getAndSet(int aIdx, double aReal, double aImag);
-    public abstract double getAndSetReal(int aIdx, double aReal);
-    public abstract double getAndSetImag(int aIdx, double aImag);
+    @Override public ComplexDouble get(int aIdx) {return new ComplexDouble(getReal(aIdx), getImag(aIdx));}
+    @Override public abstract double getReal(int aIdx);
+    @Override public abstract double getImag(int aIdx);
+    @Override public void set(int aIdx, IComplexDouble aValue) {set(aIdx, aValue.real(), aValue.imag());}
+    @Override public void set(int aIdx, ComplexDouble aValue) {set(aIdx, aValue.mReal, aValue.mImag);}
+    @Override public void set(int aIdx, double aValue) {set(aIdx, aValue, 0.0);}
+    @Override public abstract void set(int aIdx, double aReal, double aImag);
+    @Override public abstract void setReal(int aIdx, double aReal);
+    @Override public abstract void setImag(int aIdx, double aImag);
+    @Override public ComplexDouble getAndSet(int aIdx, IComplexDouble aValue) {return getAndSet(aIdx, aValue.real(), aValue.imag());}
+    @Override public ComplexDouble getAndSet(int aIdx, ComplexDouble aValue) {return getAndSet(aIdx, aValue.mReal, aValue.mImag);}
+    @Override public ComplexDouble getAndSet(int aIdx, double aValue) {return getAndSet(aIdx, aValue, 0.0);}
+    @Override public abstract ComplexDouble getAndSet(int aIdx, double aReal, double aImag);
+    @Override public abstract double getAndSetReal(int aIdx, double aReal);
+    @Override public abstract double getAndSetImag(int aIdx, double aImag);
     
-    public abstract int size();
+    @Override public abstract int size();
     protected abstract IComplexVector newZeros_(int aSize);
     
     protected String toString_(double aReal, double aImag) {return Double.compare(aImag, 0.0)>=0 ? String.format("   %.4g + %.4gi", aReal, aImag) : String.format("   %.4g - %.4gi", aReal, -aImag);}

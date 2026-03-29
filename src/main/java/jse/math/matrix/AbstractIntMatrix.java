@@ -488,11 +488,11 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     
     
     /** stuff to override */
-    public abstract int get(int aRow, int aCol);
-    public abstract void set(int aRow, int aCol, int aValue);
-    public abstract int getAndSet(int aRow, int aCol, int aValue); // 返回修改前的值
-    public abstract int nrows();
-    public abstract int ncols();
+    @Override public abstract int get(int aRow, int aCol);
+    @Override public abstract void set(int aRow, int aCol, int aValue);
+    @Override public abstract int getAndSet(int aRow, int aCol, int aValue); // 返回修改前的值
+    @Override public abstract int nrows();
+    @Override public abstract int ncols();
     protected abstract IIntMatrix newZeros_(int aRowNum, int aColNum);
     protected IIntVector newZerosVec_(int aSize) {return IntVector.zeros(aSize);}
     

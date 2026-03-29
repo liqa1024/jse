@@ -4,8 +4,8 @@ import jse.math.IDataShell;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * 内部存储 boolean[] 的逻辑向量，会加速相关的运算
  * @author liqa
- * <p> 内部存储 boolean[] 的逻辑向量，会加速相关的运算 </p>
  */
 public abstract class BooleanArrayVector extends AbstractLogicalVector implements IDataShell<boolean[]> {
     protected boolean[] mData;
@@ -39,7 +39,7 @@ public abstract class BooleanArrayVector extends AbstractLogicalVector implement
     }
     
     /** stuff to override */
-    protected abstract BooleanArrayVector newZeros_(int aSize);
+    @Override protected abstract BooleanArrayVector newZeros_(int aSize);
     
-    public abstract boolean @Nullable[] getIfHasSameOrderData(Object aObj);
+    @Override public abstract boolean @Nullable[] getIfHasSameOrderData(Object aObj);
 }

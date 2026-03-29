@@ -11,9 +11,10 @@ import java.util.function.LongUnaryOperator;
 import static jse.math.vector.AbstractVector.*;
 
 /**
+ * 支持将内部的 long[] 进行平移访问的 LongVector，理论拥有和 {@link LongVector} 几乎一样的性能
+ * <p>
+ * 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link LongVector}
  * @author liqa
- * <p> 支持将内部的 long[] 进行平移访问的 LongVector，理论拥有和 {@link LongVector} 几乎一样的性能 </p>
- * <p> 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link LongVector} </p>
  */
 public final class ShiftLongVector extends LongArrayVector {
     private int mSize;

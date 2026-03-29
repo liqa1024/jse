@@ -9,9 +9,10 @@ import java.util.NoSuchElementException;
 import java.util.function.*;
 
 /**
+ * 支持将内部的 double[] 进行平移访问的 Vector，理论拥有和 {@link Vector} 几乎一样的性能
+ * <p>
+ * 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link Vector}
  * @author liqa
- * <p> 支持将内部的 double[] 进行平移访问的 Vector，理论拥有和 {@link Vector} 几乎一样的性能 </p>
- * <p> 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link Vector} </p>
  */
 public final class ShiftVector extends DoubleArrayVector {
     private int mSize;

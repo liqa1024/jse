@@ -285,10 +285,10 @@ public abstract class AbstractLongVector implements ILongVector {
     
     
     /** stuff to override */
-    public abstract long get(int aIdx);
-    public abstract void set(int aIdx, long aValue);
-    public abstract long getAndSet(int aIdx, long aValue);
-    public abstract int size();
+    @Override public abstract long get(int aIdx);
+    @Override public abstract void set(int aIdx, long aValue);
+    @Override public abstract long getAndSet(int aIdx, long aValue);
+    @Override public abstract int size();
     protected abstract ILongVector newZeros_(int aSize);
     
     protected String toString_(long aValue) {return " "+aValue;}
