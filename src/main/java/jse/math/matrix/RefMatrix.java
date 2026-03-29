@@ -3,11 +3,11 @@ package jse.math.matrix;
 import jse.math.vector.Vector;
 
 /**
- * 一般矩阵的接口的默认实现，实际返回矩阵类型为 {@link ColumnMatrix}，向量为 {@link Vector}，用来方便实现抽象的矩阵
+ * 一般矩阵的接口的默认实现，实际返回矩阵类型为 {@link RowMatrix}，向量为 {@link Vector}，用来方便实现抽象的矩阵
  * @author liqa
  */
 public abstract class RefMatrix extends AbstractMatrix {
-    @Override protected final IMatrix newZeros_(int aRowNum, int aColNum) {return ColumnMatrix.zeros(aRowNum, aColNum);}
+    @Override protected final IMatrix newZeros_(int aRowNum, int aColNum) {return RowMatrix.zeros(aRowNum, aColNum);}
     
     /** stuff to override */
     public abstract double get(int aRow, int aCol);

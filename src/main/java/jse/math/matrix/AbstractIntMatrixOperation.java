@@ -59,8 +59,8 @@ public abstract class AbstractIntMatrixOperation implements IIntMatrixOperation 
         final int tRowNum = tThis.nrows();
         final int tColNum = tThis.ncols();
         for (int col = 0; col < tColNum; ++col) for (int row = 0; row < tRowNum; ++row) {
-            double tValue = it.next();
-            if (col != row) if (tValue != 0.0) return false;
+            int tValue = it.next();
+            if (col != row) if (tValue != 0) return false;
         }
         return true;
     }

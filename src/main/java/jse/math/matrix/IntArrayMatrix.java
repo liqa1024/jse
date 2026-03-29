@@ -6,8 +6,8 @@ import jse.math.vector.IntVector;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * 内部存储 int[] 的矩阵，会加速相关的运算
  * @author liqa
- * <p> 内部存储 int[] 的矩阵，会加速相关的运算 </p>
  */
 public abstract class IntArrayMatrix extends AbstractIntMatrix implements IDataShell<int[]> {
     protected int[] mData;

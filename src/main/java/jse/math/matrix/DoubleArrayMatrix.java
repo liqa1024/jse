@@ -6,8 +6,8 @@ import jse.math.vector.Vector;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * 内部存储 double[] 的矩阵，会加速相关的运算
  * @author liqa
- * <p> 内部存储 double[] 的矩阵，会加速相关的运算 </p>
  */
 public abstract class DoubleArrayMatrix extends AbstractMatrix implements IDataShell<double[]> {
     protected double[] mData;

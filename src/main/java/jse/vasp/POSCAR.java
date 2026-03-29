@@ -625,11 +625,11 @@ public class POSCAR extends AbstractSettableAtomData {
         tLine = aReader.readLine(); if (tLine == null) return null; tTokens = IO.Text.splitBlank(tLine);
         try {
             final String[] fTokens = tTokens;
-            rHeader.numAtomsVec = Vectors.fromInteger(fTokens.length, i -> Integer.parseInt(fTokens[i]));
+            rHeader.numAtomsVec = Vectors.fromInt(fTokens.length, i -> Integer.parseInt(fTokens[i]));
         } catch (Exception e) {
             tNoAtomType = true;
             final String[] fTokens = rHeader.typeNames;
-            rHeader.numAtomsVec = Vectors.fromInteger(fTokens.length, i -> Integer.parseInt(fTokens[i]));
+            rHeader.numAtomsVec = Vectors.fromInt(fTokens.length, i -> Integer.parseInt(fTokens[i]));
             rHeader.typeNames = null;
         }
         if (!tNoAtomType) {

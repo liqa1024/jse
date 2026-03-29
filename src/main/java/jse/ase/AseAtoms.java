@@ -11,6 +11,7 @@ import jse.code.SP;
 import jse.code.UT;
 import jse.math.MathEX;
 import jse.math.matrix.IIntMatrix;
+import jse.math.matrix.ILogicalMatrix;
 import jse.math.matrix.IMatrix;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
@@ -878,6 +879,9 @@ public class AseAtoms extends AbstractSettableAtomData {
             if (oValue instanceof ILogicalVector) {
                 rData.put(oEntry.getKey(), ((ILogicalVector)oValue).copy());
             } else
+            if (oValue instanceof ILogicalMatrix) {
+                rData.put(oEntry.getKey(), ((ILogicalMatrix)oValue).copy());
+            } else
             if ((oValue instanceof NDArray) || (oValue instanceof PyObject)) {
                 String oKey = oEntry.getKey();
                 UT.Code.warning("NDArray or PyObject data ("+oKey+") will not copy");
@@ -1063,6 +1067,9 @@ public class AseAtoms extends AbstractSettableAtomData {
                 } else
                 if (tValue instanceof ILogicalVector) {
                     rAtoms.setInfo(tKey, ((ILogicalVector)tValue).copy());
+                } else
+                if (tValue instanceof ILogicalMatrix) {
+                    rAtoms.setInfo(tKey, ((ILogicalMatrix)tValue).copy());
                 } else {
                     rAtoms.setInfo(tKey, tValue);
                 }
@@ -1113,6 +1120,9 @@ public class AseAtoms extends AbstractSettableAtomData {
                 } else
                 if (tValue instanceof ILogicalVector) {
                     rAtoms.setArray(tKey, ((ILogicalVector)tValue).copy());
+                } else
+                if (tValue instanceof ILogicalMatrix) {
+                    rAtoms.setArray(tKey, ((ILogicalMatrix)tValue).copy());
                 } else
                 if (tValue instanceof String[]) {
                     String[] tValue2 = new String[((String[])tValue).length];

@@ -1,177 +1,169 @@
 package jse.math.matrix;
 
 import jse.code.collection.AbstractRandomAccessList;
-import jse.code.collection.IntList;
-import jse.code.iterator.IIntIterator;
-import jse.code.iterator.IIntSetIterator;
-import jse.math.vector.IIntVector;
-import jse.math.vector.IIntVectorGetter;
-import jse.math.vector.IntVector;
-import jse.math.vector.ShiftIntVector;
-import org.jetbrains.annotations.NotNull;
+import jse.code.collection.BooleanList;
+import jse.code.functional.IBooleanConsumer;
+import jse.code.functional.IBooleanUnaryOperator;
+import jse.code.iterator.IBooleanIterator;
+import jse.code.iterator.IBooleanSetIterator;
+import jse.math.vector.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.function.IntConsumer;
-import java.util.function.IntSupplier;
-import java.util.function.IntUnaryOperator;
+import java.util.function.BooleanSupplier;
 
 import static jse.math.matrix.AbstractMatrix.rangeCheckCol;
 import static jse.math.matrix.AbstractMatrix.rangeCheckRow;
 
 
 /**
- * 整数矩阵一般实现，按照列排序
+ * 逻辑矩阵一般实现，按照列排序
  * @author liqa
  */
-public class ColumnIntMatrix extends IntArrayMatrix {
+public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     /** 提供默认的创建 */
-    public static ColumnIntMatrix ones(int aSize) {return ones(aSize, aSize);}
-    public static ColumnIntMatrix ones(int aRowNum, int aColNum) {
-        int[] tData = new int[aRowNum*aColNum];
-        Arrays.fill(tData, 1);
-        return new ColumnIntMatrix(aRowNum, aColNum, tData);
+    public static ColumnLogicalMatrix ones(int aSize) {return ones(aSize, aSize);}
+    public static ColumnLogicalMatrix ones(int aRowNum, int aColNum) {
+        boolean[] tData = new boolean[aRowNum*aColNum];
+        Arrays.fill(tData, true);
+        return new ColumnLogicalMatrix(aRowNum, aColNum, tData);
     }
-    public static ColumnIntMatrix zeros(int aSize) {return zeros(aSize, aSize);}
-    public static ColumnIntMatrix zeros(int aRowNum, int aColNum) {return new ColumnIntMatrix(aRowNum, aColNum, new int[aRowNum*aColNum]);}
+    public static ColumnLogicalMatrix zeros(int aSize) {return zeros(aSize, aSize);}
+    public static ColumnLogicalMatrix zeros(int aRowNum, int aColNum) {return new ColumnLogicalMatrix(aRowNum, aColNum, new boolean[aRowNum*aColNum]);}
     
     /** 也提供 builder 方式的构建 */
     public static Builder builder(int aRowNum) {return new Builder(aRowNum);}
     public static Builder builder(int aRowNum, int aInitSize) {return new Builder(aRowNum, aInitSize);}
     public final static class Builder {
         private final static int DEFAULT_INIT_SIZE = 8;
-        private IntList mData;
+        private BooleanList mData;
         private final int mRowNum;
-        private Builder(int aRowNum) {mRowNum = aRowNum; mData = new IntList(Math.max(aRowNum, DEFAULT_INIT_SIZE));}
-        private Builder(int aRowNum, int aInitSize) {mRowNum = aRowNum; mData = new IntList(Math.max(aRowNum, aInitSize));}
+        private Builder(int aRowNum) {mRowNum = aRowNum; mData = new BooleanList(Math.max(aRowNum, DEFAULT_INIT_SIZE));}
+        private Builder(int aRowNum, int aInitSize) {mRowNum = aRowNum; mData = new BooleanList(Math.max(aRowNum, aInitSize));}
         
-        public void addCol(IIntVector aCol) {mData.addAll(aCol);}
-        public void addCol(IIntVectorGetter aColGetter) {mData.addAll(mRowNum, aColGetter);}
+        public void addCol(ILogicalVector aCol) {mData.addAll(aCol);}
+        public void addCol(ILogicalVectorGetter aColGetter) {mData.addAll(mRowNum, aColGetter);}
         public void trimToSize() {mData.trimToSize();}
         
-        public ColumnIntMatrix build() {
-            IntList tData = Objects.requireNonNull(mData);
+        public ColumnLogicalMatrix build() {
+            BooleanList tData = Objects.requireNonNull(mData);
             mData = null; // 设为 null 防止再通过 Builder 来修改此数据
-            return new ColumnIntMatrix(mRowNum, tData.size()/mRowNum, tData.internalData());
+            return new ColumnLogicalMatrix(mRowNum, tData.size()/mRowNum, tData.internalData());
         }
     }
     
     private final int mRowNum;
     private final int mColNum;
     
-    public ColumnIntMatrix(int aRowNum, int aColNum, int[] aData) {
+    public ColumnLogicalMatrix(int aRowNum, int aColNum, boolean[] aData) {
         super(aData);
         mRowNum = aRowNum;
         mColNum = aColNum;
     }
-    public ColumnIntMatrix(int aRowNum, int[] aData) {this(aRowNum, aData.length/aRowNum, aData);}
+    public ColumnLogicalMatrix(int aRowNum, boolean[] aData) {this(aRowNum, aData.length/aRowNum, aData);}
     
     
     /** IMatrix stuffs */
-    @Override public final int get(int aRow, int aCol) {
+    @Override public final boolean get(int aRow, int aCol) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         return mData[aRow + aCol*mRowNum];
     }
-    @Override public final void set(int aRow, int aCol, int aValue) {
+    @Override public final void set(int aRow, int aCol, boolean aValue) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         mData[aRow + aCol*mRowNum] = aValue;
     }
-    @Override public final int getAndSet(int aRow, int aCol, int aValue) {
+    @Override public final boolean getAndSet(int aRow, int aCol, boolean aValue) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
-        int oValue = mData[tIdx];
+        boolean oValue = mData[tIdx];
         mData[tIdx] = aValue;
         return oValue;
     }
     @Override public final int nrows() {return mRowNum;}
     @Override public final int ncols() {return mColNum;}
     
-    @Override protected ColumnIntMatrix newZeros_(int aRowNum, int aColNum) {return ColumnIntMatrix.zeros(aRowNum, aColNum);}
-    @Override public ColumnIntMatrix copy() {return (ColumnIntMatrix)super.copy();}
+    @Override protected ColumnLogicalMatrix newZeros_(int aRowNum, int aColNum) {return ColumnLogicalMatrix.zeros(aRowNum, aColNum);}
+    @Override public ColumnLogicalMatrix copy() {return (ColumnLogicalMatrix)super.copy();}
     
     @Override public int internalDataSize() {return mRowNum*mColNum;}
     
-    @Override public int @Nullable[] getIfHasSameOrderData(Object aObj) {
+    @Override public boolean @Nullable[] getIfHasSameOrderData(Object aObj) {
         // 只有同样是 ColumnMatrix 并且行数相同才会返回 mData
-        if (aObj instanceof ColumnIntMatrix && ((ColumnIntMatrix)aObj).mRowNum == mRowNum) return ((ColumnIntMatrix)aObj).mData;
+        if ((aObj instanceof ColumnLogicalMatrix) && ((ColumnLogicalMatrix)aObj).mRowNum == mRowNum) return ((ColumnLogicalMatrix)aObj).mData;
         return null;
     }
     
-    @Override public final ColumnIntMatrix toBufCol(boolean aAbort) {return this;}
-    @Override public final void releaseBuf(@NotNull IIntMatrix aBuf, boolean aAbort) {if (aBuf != this) super.releaseBuf(aBuf, aAbort);}
-    
-    
     /** Optimize stuffs，重写这个提高列向的索引速度 */
-    @Override public List<? extends ShiftIntVector> cols() {
-        return new AbstractRandomAccessList<ShiftIntVector>() {
+    @Override public List<? extends ShiftLogicalVector> cols() {
+        return new AbstractRandomAccessList<ShiftLogicalVector>() {
             @Override public int size() {return mColNum;}
-            @Override public ShiftIntVector get(int aCol) {return col(aCol);}
+            @Override public ShiftLogicalVector get(int aCol) {return col(aCol);}
         };
     }
-    @Override public ShiftIntVector col(final int aCol) {
+    @Override public ShiftLogicalVector col(final int aCol) {
         rangeCheckCol(aCol, mColNum);
-        return new ShiftIntVector(mRowNum, aCol*mRowNum, mData);
+        return new ShiftLogicalVector(mRowNum, aCol*mRowNum, mData);
     }
     
     /** Optimize stuffs，列向展开的向量直接返回 */
-    @Override public IntVector asVecCol() {return new IntVector(mRowNum*mColNum, mData);}
+    @Override public LogicalVector asVecCol() {return new LogicalVector(mRowNum*mColNum, mData);}
     
-    /** Optimize stuffs，引用转置直接返回 {@link RowIntMatrix} */
-    @Override public final IIntMatrixOperation operation() {
-        return new IntArrayMatrixOperation_() {
-            @Override public void fill(IIntMatrixGetter aRHS) {
+    /** Optimize stuffs，引用转置直接返回 {@link RowLogicalMatrix} */
+    @Override public final ILogicalMatrixOperation operation() {
+        return new BooleanArrayMatrixOperation_() {
+            @Override public void fill(ILogicalMatrixGetter aRHS) {
                 int idx = 0;
                 for (int col = 0; col < mColNum; ++col) for (int row = 0; row < mRowNum; ++row) {
                     mData[idx] = aRHS.get(row, col);
                     ++idx;
                 }
             }
-            @Override public void assignCol(IntSupplier aSup) {
+            @Override public void assignCol(BooleanSupplier aSup) {
                 int rEnd = mRowNum*mColNum;
-                for (int i = 0; i < rEnd; ++i) mData[i] = aSup.getAsInt();
+                for (int i = 0; i < rEnd; ++i) mData[i] = aSup.getAsBoolean();
             }
-            @Override public void forEachCol(IntConsumer aCon) {
+            @Override public void forEachCol(IBooleanConsumer aCon) {
                 int rEnd = mRowNum*mColNum;
                 for (int i = 0; i < rEnd; ++i) aCon.accept(mData[i]);
             }
-            @Override public RowIntMatrix refTranspose() {
-                return new RowIntMatrix(mRowNum, mColNum, mData);
+            @Override public RowLogicalMatrix refTranspose() {
+                return new RowLogicalMatrix(mRowNum, mColNum, mData);
             }
         };
     }
     
     /** Optimize stuffs，重写加速这些操作 */
-    @Override public final void update(int aRow, int aCol, IntUnaryOperator aOpt) {
+    @Override public final void update(int aRow, int aCol, IBooleanUnaryOperator aOpt) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
-        mData[tIdx] = aOpt.applyAsInt(mData[tIdx]);
+        mData[tIdx] = aOpt.applyAsBoolean(mData[tIdx]);
     }
-    @Override public final int getAndUpdate(int aRow, int aCol, IntUnaryOperator aOpt) {
+    @Override public final boolean getAndUpdate(int aRow, int aCol, IBooleanUnaryOperator aOpt) {
         rangeCheckRow(aRow, mRowNum);
         rangeCheckCol(aCol, mColNum);
         int tIdx = aRow + aCol*mRowNum;
-        int tValue = mData[tIdx];
-        mData[tIdx] = aOpt.applyAsInt(tValue);
+        boolean tValue = mData[tIdx];
+        mData[tIdx] = aOpt.applyAsBoolean(tValue);
         return tValue;
     }
     
     
     /** Optimize stuffs，重写迭代器来提高遍历速度 */
-    @Override public final IIntIterator iteratorCol() {
-        return new IIntIterator() {
+    @Override public final IBooleanIterator iteratorCol() {
+        return new IBooleanIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = 0;
             @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public int next() {
+            @Override public boolean next() {
                 if (hasNext()) {
-                    int tNext = mData[mIdx];
+                    boolean tNext = mData[mIdx];
                     ++mIdx;
                     return tNext;
                 } else {
@@ -180,15 +172,15 @@ public class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public final IIntIterator iteratorRow() {
-        return new IIntIterator() {
+    @Override public final IBooleanIterator iteratorRow() {
+        return new IBooleanIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mRow = 0;
             private int mIdx = mRow;
             @Override public boolean hasNext() {return mRow < mRowNum;}
-            @Override public int next() {
+            @Override public boolean next() {
                 if (hasNext()) {
-                    int tNext = mData[mIdx];
+                    boolean tNext = mData[mIdx];
                     mIdx += mRowNum;
                     if (mIdx >= mSize) {++mRow; mIdx = mRow;}
                     return tNext;
@@ -198,15 +190,15 @@ public class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public final IIntIterator iteratorColAt(final int aCol) {
+    @Override public final IBooleanIterator iteratorColAt(final int aCol) {
         rangeCheckCol(aCol, mColNum);
-        return new IIntIterator() {
+        return new IBooleanIterator() {
             private final int mEnd = (aCol+1)*mRowNum;
             private int mIdx = aCol*mRowNum;
             @Override public boolean hasNext() {return mIdx < mEnd;}
-            @Override public int next() {
+            @Override public boolean next() {
                 if (hasNext()) {
-                    int tNext = mData[mIdx];
+                    boolean tNext = mData[mIdx];
                     ++mIdx;
                     return tNext;
                 } else {
@@ -215,15 +207,15 @@ public class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public final IIntIterator iteratorRowAt(final int aRow) {
+    @Override public final IBooleanIterator iteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mRowNum);
-        return new IIntIterator() {
+        return new IBooleanIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = aRow;
             @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public int next() {
+            @Override public boolean next() {
                 if (hasNext()) {
-                    int tNext = mData[mIdx];
+                    boolean tNext = mData[mIdx];
                     mIdx += mRowNum;
                     return tNext;
                 } else {
@@ -232,16 +224,16 @@ public class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public final IIntSetIterator setIteratorCol() {
-        return new IIntSetIterator() {
+    @Override public final IBooleanSetIterator setIteratorCol() {
+        return new IBooleanSetIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = 0, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public void set(int aValue) {
+            @Override public void set(boolean aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;
             }
-            @Override public int next() {
+            @Override public boolean next() {
                 if (hasNext()) {
                     oIdx = mIdx; ++mIdx;
                     return mData[oIdx];
@@ -257,7 +249,7 @@ public class ColumnIntMatrix extends IntArrayMatrix {
                 }
             }
             /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(int aValue) {
+            @Override public void nextAndSet(boolean aValue) {
                 if (hasNext()) {
                     oIdx = mIdx; ++mIdx;
                     mData[oIdx] = aValue;
@@ -267,17 +259,17 @@ public class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public final IIntSetIterator setIteratorRow() {
-        return new IIntSetIterator() {
+    @Override public final IBooleanSetIterator setIteratorRow() {
+        return new IBooleanSetIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mRow = 0;
             private int mIdx = mRow, oIdx = -1;
             @Override public boolean hasNext() {return mRow < mRowNum;}
-            @Override public void set(int aValue) {
+            @Override public void set(boolean aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;
             }
-            @Override public int next() {
+            @Override public boolean next() {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mRowNum;
                     if (mIdx >= mSize) {++mRow; mIdx = mRow;}
@@ -295,7 +287,7 @@ public class ColumnIntMatrix extends IntArrayMatrix {
                 }
             }
             /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(int aValue) {
+            @Override public void nextAndSet(boolean aValue) {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mRowNum;
                     if (mIdx >= mSize) {++mRow; mIdx = mRow;}
@@ -306,17 +298,17 @@ public class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public final IIntSetIterator setIteratorColAt(final int aCol) {
+    @Override public final IBooleanSetIterator setIteratorColAt(final int aCol) {
         rangeCheckCol(aCol, mColNum);
-        return new IIntSetIterator() {
+        return new IBooleanSetIterator() {
             private final int mEnd = (aCol+1)*mRowNum;
             private int mIdx = aCol*mRowNum, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mEnd;}
-            @Override public void set(int aValue) {
+            @Override public void set(boolean aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;
             }
-            @Override public int next() {
+            @Override public boolean next() {
                 if (hasNext()) {
                     oIdx = mIdx; ++mIdx;
                     return mData[oIdx];
@@ -332,7 +324,7 @@ public class ColumnIntMatrix extends IntArrayMatrix {
                 }
             }
             /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(int aValue) {
+            @Override public void nextAndSet(boolean aValue) {
                 if (hasNext()) {
                     oIdx = mIdx; ++mIdx;
                     mData[oIdx] = aValue;
@@ -342,17 +334,17 @@ public class ColumnIntMatrix extends IntArrayMatrix {
             }
         };
     }
-    @Override public final IIntSetIterator setIteratorRowAt(final int aRow) {
+    @Override public final IBooleanSetIterator setIteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mRowNum);
-        return new IIntSetIterator() {
+        return new IBooleanSetIterator() {
             private final int mSize = mRowNum * mColNum;
             private int mIdx = aRow, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public void set(int aValue) {
+            @Override public void set(boolean aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;
             }
-            @Override public int next() {
+            @Override public boolean next() {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mRowNum;
                     return mData[oIdx];
@@ -368,7 +360,7 @@ public class ColumnIntMatrix extends IntArrayMatrix {
                 }
             }
             /** 高性能接口重写来进行专门优化 */
-            @Override public void nextAndSet(int aValue) {
+            @Override public void nextAndSet(boolean aValue) {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mRowNum;
                     mData[oIdx] = aValue;

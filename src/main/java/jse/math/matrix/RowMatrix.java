@@ -20,8 +20,8 @@ import java.util.function.DoubleSupplier;
 import java.util.function.DoubleUnaryOperator;
 
 /**
+ * 按照行排序的矩阵，{@link ColumnMatrix} 的对称实现
  * @author liqa
- * <p> 按照行排序的矩阵，{@link ColumnMatrix} 的对称实现 </p>
  */
 public class RowMatrix extends DoubleArrayMatrix {
     /** 提供默认的创建 */

@@ -20,8 +20,8 @@ import java.util.function.DoubleUnaryOperator;
 
 
 /**
+ * 矩阵一般实现，按照列排序
  * @author liqa
- * <p> 矩阵一般实现，按照列排序 </p>
  */
 public class ColumnMatrix extends DoubleArrayMatrix {
     /** 提供默认的创建 */

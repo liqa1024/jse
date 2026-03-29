@@ -27,8 +27,8 @@ import static jse.math.matrix.AbstractMatrix.rangeCheckRow;
 
 
 /**
+ * 按照行排序的复数矩阵
  * @author liqa
- * <p> 按照行排序的复数矩阵 </p>
  */
 public class RowComplexMatrix extends BiDoubleArrayMatrix {
     /** 提供默认的创建 */

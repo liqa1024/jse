@@ -723,6 +723,9 @@ public class DataXYZ extends AbstractSettableAtomData {
             } else
             if (oValue instanceof ILogicalVector) {
                 tProperties.put(oEntry.getKey(), ((ILogicalVector)oValue).copy());
+            } else
+            if (oValue instanceof ILogicalMatrix) {
+                tProperties.put(oEntry.getKey(), ((ILogicalMatrix)oValue).copy());
             }
         }
         DataXYZ tOut = new DataXYZ(mNumAtoms, mComment, tParameter, tProperties, mBox==null?null:mBox.copy());
@@ -899,6 +902,9 @@ public class DataXYZ extends AbstractSettableAtomData {
                 if (tValue instanceof ILogicalVector) {
                     rDataXYZ.setProperty(tKey, ((ILogicalVector)tValue).copy());
                 } else
+                if (tValue instanceof ILogicalMatrix) {
+                    rDataXYZ.setProperty(tKey, ((ILogicalMatrix)tValue).copy());
+                } else
                 if (tValue instanceof String[]) {
                     String[] tValue2 = new String[((String[])tValue).length];
                     System.arraycopy((String[])tValue, 0, tValue2, 0, tValue2.length);
@@ -922,6 +928,9 @@ public class DataXYZ extends AbstractSettableAtomData {
                     if (tObj instanceof List) {
                         int ncols = ((List<?>)tObj).size();
                         Object tObj2 = ((List<?>)tObj).get(0);
+                        if (tObj2 instanceof Boolean) {
+                            rDataXYZ.setProperty(tKey, Matrices.fromBoolean((List<?>)tValue));
+                        } else
                         if (tObj2 instanceof Number) {
                             rDataXYZ.setProperty(tKey, Matrices.from((List<?>)tValue));
                         } else {
@@ -1088,8 +1097,7 @@ public class DataXYZ extends AbstractSettableAtomData {
                         break;
                     }
                     case "L": {
-                        if (tCols != 1) throw new IllegalArgumentException("L of ncols > 1 (LogicalMatrix invalid for jse)");
-                        aProperties.put(tKey, LogicalVector.zeros(aNumAtoms));
+                        aProperties.put(tKey, tCols==1 ? LogicalVector.zeros(aNumAtoms) : RowLogicalMatrix.zeros(aNumAtoms, tCols));
                         break;
                     }}
                 }
@@ -1152,6 +1160,22 @@ public class DataXYZ extends AbstractSettableAtomData {
                     }
                     ((ILogicalVector)tValue).set(i, tSub);
                     ++j;
+                } else
+                if (tValue instanceof ILogicalMatrix) {
+                    ILogicalVector tRow = ((ILogicalMatrix)tValue).row(i);
+                    for (int k = 0; k < tRow.size(); ++k) {
+                        boolean tSub;
+                        if (tTokens[j].equals("T")) {
+                            tSub = true;
+                        } else
+                        if (tTokens[j].equals("F")) {
+                            tSub = false;
+                        } else {
+                            throw new IllegalArgumentException("Illegal L token: " + tTokens[j]);
+                        }
+                        tRow.set(k, tSub);
+                        ++j;
+                    }
                 }
             }
         }
@@ -1267,6 +1291,11 @@ public class DataXYZ extends AbstractSettableAtomData {
                 if (tValue instanceof ILogicalVector) {
                     rLine.append(tEntry.getKey());
                     rLine.append(":L:1");
+                } else
+                if (tValue instanceof ILogicalMatrix) {
+                    rLine.append(tEntry.getKey());
+                    rLine.append(":L:");
+                    rLine.append(((ILogicalMatrix)tValue).ncols());
                 }
             }
             // 如果不存在 pbc 参数，则自动写入一个 T T T
@@ -1317,6 +1346,10 @@ public class DataXYZ extends AbstractSettableAtomData {
                 } else
                 if (tValue instanceof ILogicalVector) {
                     rLine.add(((ILogicalVector)tValue).get(i) ? "T" : "F");
+                } else
+                if (tValue instanceof ILogicalMatrix) {
+                    ILogicalVector tRow = ((ILogicalMatrix)tValue).row(i);
+                    rLine.addAll(AbstractCollections.map(tRow.asList(), v -> v ? "T" : "F"));
                 }
             }
             aWriteln.writeln(String.join(" ", rLine));

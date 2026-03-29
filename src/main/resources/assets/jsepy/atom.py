@@ -32,6 +32,9 @@ def _ase2jse(aseobj):
             aseobj = aseobj.astype(np.float64, casting='unsafe', copy=False)
             if aseobj.ndim == 0:
                 return float(aseobj)
+        elif np.isdtype(aseobj.dtype, np.bool):
+            if aseobj.ndim == 0:
+                return bool(aseobj)
         else:
             return aseobj.tolist()
         if aseobj.ndim == 1:
