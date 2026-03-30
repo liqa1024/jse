@@ -20,11 +20,29 @@ import java.util.List;
 
 
 /**
- * 多帧的 {@link SubLammpstrj}，lammps 使用 {@code dump}
- * 命令写出的数据格式
+ * <a href="https://docs.lammps.org/dump.html">
+ * LAMMPS dump </a> 格式支持，此类为专门针对其多帧数据的支持。
+ * <p>
+ * 多帧的 {@link SubLammpstrj}，通过：
+ * <pre> {@code
+ * def data = dump[i]
+ * } </pre>
+ * 来直接获取某一帧的 {@link SubLammpstrj} 数据，从而可以进行原子数据的相关操作，
+ * 或者通过：
+ * <pre> {@code
+ * for (data in dump.asList()) {
+ *     //...
+ * }
+ * } </pre>
+ * 来将多帧数据转成 {@link List} 后进行遍历
  * <p>
  * 别称为 {@link Dump}
  *
+ * @see IAtomData IAtomData: 原子数据类型通用接口
+ * @see SubLammpstrj SubLammpstrj: 内部存储的单帧 LAMMPS dump 原子数据类型
+ * @see #read(String) read(String): 读取指定路径的 LAMMPS dump 的所有帧的数据
+ * @see #write(String) write(String): 将此 LAMMPS dump 原子数据写入指定路径
+ * @see #of(IAtomData) of(IAtomData): 将任意的原子数据转换成多帧 LAMMPS dump 原子数据
  * @author liqa
  */
 public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubLammpstrj> {

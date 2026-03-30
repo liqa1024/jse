@@ -4,6 +4,7 @@ import jse.atom.*;
 import jse.code.IO;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
+import jse.code.collection.AbstractListWrapper;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
 import jse.math.table.ITable;
@@ -24,11 +25,21 @@ import static jse.code.CS.*;
 import static jse.lmp.Lammpstrj.*;
 
 /**
- * {@link Lammpstrj} 的每帧结果，可以通过 {@link SubLammpstrj#asTable()}
- * 转为 {@link ITable} 从而实现自定义列的读写
+ * <a href="https://docs.lammps.org/dump.html">
+ * LAMMPS dump </a> 格式支持，一般来说 LAMMPS dump
+ * 对应多帧的原子数据结构，此类对应其中的单帧数据。
+ * <p>
+ * 使用 {@link Lammpstrj} 来对整个 dump 文件进行多帧的读写以及其他操作
+ * <p>
+ * 通过 {@link #asTable()} 转为 {@link ITable} 从而实现自定义列的读写
  * <p>
  * 别称为 {@link SubDump}
  *
+ * @see IAtomData IAtomData: 原子数据类型通用接口
+ * @see Lammpstrj Lammpstrj: 多帧的 LAMMPS dump 类型
+ * @see #read(String) read(String): 读取指定路径的 LAMMPS dump 原子数据（单帧）
+ * @see #write(String) write(String): 将此 LAMMPS dump 原子数据写入指定路径（单帧）
+ * @see #of(IAtomData) of(IAtomData): 将任意的原子数据转换成 LAMMPS dump 类型（单帧）
  * @author liqa
  */
 public class SubLammpstrj extends AbstractSettableAtomData {
@@ -667,7 +678,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
     /**
      * 提供使用 {@link BufferedReader} 的流式接口
      * @param aReader 需要的读取流
-     * @throws IOException 如果写入文件失败
+     * @throws IOException 如果读取失败
      */
     public static SubLammpstrj read(BufferedReader aReader) throws IOException {
         String tLine;
@@ -681,17 +692,17 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         
         // 读取时间步数
         IO.Text.findLineContaining(aReader, "ITEM: TIMESTEP", true); tLine=aReader.readLine();
-        if (tLine == null) return null;
+        if (tLine == null) {IO.fail("Fail to find `ITEM: TIMESTEP`"); return null;}
         tTokens = IO.Text.splitBlank(tLine);
         aTimeStep = Long.parseLong(tTokens[0]);
         // 读取原子总数
         IO.Text.findLineContaining(aReader, "ITEM: NUMBER OF ATOMS", true); tLine=aReader.readLine();
-        if (tLine == null) return null;
+        if (tLine == null) {IO.fail("Fail to find `ITEM: NUMBER OF ATOMS`"); return null;}
         tTokens = IO.Text.splitBlank(tLine);
         tAtomNum = Integer.parseInt(tTokens[0]);
         // 读取模拟盒信息
         tLine = IO.Text.findLineContaining(aReader, "ITEM: BOX BOUNDS", true);
-        if (tLine == null) return null;
+        if (tLine == null) {IO.fail("Fail to find `ITEM: BOX BOUNDS`"); return null;}
         tTokens = IO.Text.splitBlank(tLine);
         // 斜方支持
         if (tTokens[3].equalsIgnoreCase("xy")) {
@@ -721,18 +732,16 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         
         // 读取原子信息
         tLine = IO.Text.findLineContaining(aReader, "ITEM: ATOMS", true);
-        if (tLine == null) return null;
+        if (tLine == null) {IO.fail("Fail to find `ITEM: ATOMS`"); return null;}
         tTokens = IO.Text.splitBlank(tLine);
         String[] tAtomDataKeys = new String[tTokens.length-2];
         System.arraycopy(tTokens, 2, tAtomDataKeys, 0, tAtomDataKeys.length);
-        boolean tIsAtomDataReadFull = true;
         aAtomData = Tables.zeros(tAtomNum, tAtomDataKeys);
         for (IVector tRow : aAtomData.rows()) {
             tLine = aReader.readLine();
-            if (tLine == null) {tIsAtomDataReadFull = false; break;}
+            if (tLine == null) {IO.fail("file end"); return null;}
             tRow.fill(IO.Text.str2data(tLine, tAtomDataKeys.length));
         }
-        if (!tIsAtomDataReadFull) return null;
         
         // 创建 SubLammpstrj 并返回
         return new SubLammpstrj(aTimeStep, aBoxBounds, aBox, aAtomData);

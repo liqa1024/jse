@@ -53,6 +53,15 @@ public class Conf {
      */
     public static boolean OPERATION_CHECK = OS.envZ("JSE_OPERATION_CHECK", true);
     /**
+     * IO 读取是否使用严格模式，在遇到任何格式错误时会抛出错误而不是返回 {@code null}，在
+     * {@code jse 4.0.0} 之后会默认开启来避免不必要的排查问题
+     * <p>
+     * 默认为 {@code true}
+     * <p>
+     * 也可使用环境变量 {@code JSE_STRICT_IO} 来设置
+     */
+    public static boolean STRICT_IO = OS.envZ("JSE_STRICT_IO", true);
+    /**
      * 部分运算是否开启 native 优化来尽可能提高速度，开启后需要有编译器环境保证实时编译，
      * 并且为了保证速度计算结果不再符合 ieee 标准（不同机器结果不完全一致）
      * <p>

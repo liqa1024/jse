@@ -2,6 +2,7 @@ package jse.atom.data;
 
 import jse.ase.AseAtoms;
 import jse.atom.*;
+import jse.code.Conf;
 import jse.code.IO;
 import jse.code.collection.AbstractCollections;
 import jse.math.MathEX;
@@ -107,6 +108,13 @@ public class DataXYZ extends AbstractSettableAtomData {
                 mType2Symbol[tEntry.getValue()] = tEntry.getKey();
             }
         }
+    }
+    
+    public static boolean isInvalidKey(String aKey) {
+        return aKey.contains("\"") || IO.Text.findBlankIndex(aKey, 0)>=0;
+    }
+    public static boolean isInvalidPropertyKey(String aKey) {
+        return aKey.contains(":") || isInvalidKey(aKey);
     }
     
     /**
@@ -220,6 +228,7 @@ public class DataXYZ extends AbstractSettableAtomData {
     public DataXYZ setParameter(String aKey, Object aValue) {
         if (aKey.equals("Lattice")) throw new IllegalArgumentException("Lattice for DataXYZ parameter");
         if (aKey.equals("Properties")) throw new IllegalArgumentException("Properties for DataXYZ parameter");
+        if (isInvalidKey(aKey)) throw new IllegalArgumentException("Invalid key '"+aKey+"'");
         validComment_();
         if (aValue == null) {
             mParameters.remove(aKey);
@@ -290,6 +299,7 @@ public class DataXYZ extends AbstractSettableAtomData {
      * @see #removeProperty(String)
      */
     public DataXYZ setProperty(String aKey, Object aValue) {
+        if (isInvalidPropertyKey(aKey)) throw new IllegalArgumentException("Invalid key '"+aKey+"'");
         validComment_();
         if (aValue == null) {
             removeProperty(aKey);
@@ -1054,14 +1064,19 @@ public class DataXYZ extends AbstractSettableAtomData {
         Map<String, Object> aProperties = null;
         
         // 第一行为原子数
-        tLine = aReader.readLine(); if (tLine == null) return null;
+        tLine = aReader.readLine(); if (tLine==null) {IO.fail("file end"); return null;}
         aNumAtoms = Integer.parseInt(tLine.trim());
         // 第二行为 comment
-        tLine = aReader.readLine(); if (tLine == null) return null;
+        tLine = aReader.readLine(); if (tLine==null) {IO.fail("file end"); return null;}
         aComment = tLine;
         // 对于扩展的 XYZ 格式，comment 会包含其余重要信息，需要解析 comment
-        boolean tIsExtended = parseParameters_(aComment, aParameters);
-        if (!tIsExtended) {
+        @Nullable String tParseErr = parseParameters_(aComment, aParameters);
+        // 只要有 Properties 属性就认为是扩展的 XYZ，此时有任何解析错误就抛出错误
+        if ((aParameters.containsKey("Properties") || aParameters.containsKey("properties")) && tParseErr!=null) {
+            if (Conf.STRICT_IO) throw new IllegalArgumentException(tParseErr);
+        }
+        // 非严格默认或者没有 Properties 还是简单回退到传统 xyz
+        if (tParseErr!=null) {
             aParameters.clear();
         } else {
             aComment = null;
@@ -1136,7 +1151,7 @@ public class DataXYZ extends AbstractSettableAtomData {
         }
         // 简单遍历后续数据
         for (int i = 0; i < aNumAtoms; ++i) {
-            tLine = aReader.readLine(); if (tLine == null) return null; tTokens = IO.Text.splitBlank(tLine);
+            tLine = aReader.readLine(); if (tLine == null) {IO.fail("file end"); return null;} tTokens = IO.Text.splitBlank(tLine);
             // 基于 aProperties 的顺序解析，现在可以统一解析语法
             int j = 0;
             for (Object tValue : aProperties.values()) {
@@ -1207,21 +1222,32 @@ public class DataXYZ extends AbstractSettableAtomData {
         // 返回 XYZ
         return new DataXYZ(aNumAtoms, aComment, aParameters, aProperties, aBox);
     }
-    static boolean parseParameters_(String aComment, Map<String, Object> rParameters) {
+    private static String subStringLimit_(String aStr, int aBegin) {
+        int tSize = aStr.length();
+        if (tSize-aBegin > 16) {
+            return aStr.substring(aBegin, aBegin+12) + "...";
+        }
+        return aStr.substring(aBegin, tSize);
+    }
+    static @Nullable String parseParameters_(String aComment, Map<String, Object> rParameters) {
         aComment = aComment.trim();
         // 这个操作比较复杂，还需要处理双引号的情况
         final int tLen = aComment.length();
         int tKeyBegin = 0;
         while (tKeyBegin < tLen) {
             int tKeyEnd = aComment.indexOf('=', tKeyBegin);
-            if (tKeyEnd < 0) return false;
+            if (tKeyEnd < 0) {
+                return "Miss `=` from: "+subStringLimit_(aComment, tKeyBegin);
+            }
             int tValueBegin = tKeyEnd+1;
             boolean tHasQuote = aComment.charAt(tValueBegin)=='"';
             int tValueEnd;
             if (tHasQuote) {
                 ++tValueBegin;
                 tValueEnd = aComment.indexOf('"', tValueBegin);
-                if (tValueEnd < 0) return false;
+                if (tValueEnd < 0) {
+                    return "Miss `\"` from: "+subStringLimit_(aComment, tValueBegin-1);
+                }
             } else {
                 tValueEnd = IO.Text.findBlankIndex(aComment, tValueBegin);
                 if (tValueEnd < 0) tValueEnd = tLen;
@@ -1234,17 +1260,20 @@ public class DataXYZ extends AbstractSettableAtomData {
                 if (tValue.equals("F")) {
                     tValue = false;
                 } else {
-                    Number tNumberValue = IO.Text.str2number((String)tValue);
+                    Number tNumberValue = IO.Text.str2number(true, (String)tValue);
                     if (tNumberValue != null) tValue = tNumberValue;
                 }
             }
-            rParameters.put(aComment.substring(tKeyBegin, tKeyEnd), tValue);
+            String tKey = aComment.substring(tKeyBegin, tKeyEnd);
+            if (isInvalidKey(tKey)) return "Invalid key: "+tKey;
+            rParameters.put(tKey, tValue);
             if (tHasQuote) ++tValueEnd;
             tKeyBegin = IO.Text.findNoBlankIndex(aComment, tValueEnd);
             if (tKeyBegin < 0) break; // 注意这种情况是已经结束了
         }
         // 这里削弱要求，不一定需要特定的参数名称
-        return true;
+        // null 期间没有任何解析错误
+        return null;
     }
     
     
@@ -1254,7 +1283,9 @@ public class DataXYZ extends AbstractSettableAtomData {
      * @throws IOException 如果写入文件失败
      * @see #read(String)
      */
-    public void write(String aFilePath) throws IOException {try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write(tWriteln);}}
+    public void write(String aFilePath) throws IOException {
+        try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write(tWriteln);}
+    }
     /**
      * 提供使用 {@link IO.IWriteln} 的流式接口
      * @param aWriteln 需要写入的流
@@ -1337,9 +1368,14 @@ public class DataXYZ extends AbstractSettableAtomData {
                 } else {
                     String tValueStr = tValue.toString();
                     boolean tHasBlank = IO.Text.findBlankIndex(tValueStr, 0)>=0;
-                    if (tHasBlank) rLine.append("\"");
+                    if (tHasBlank) {
+                        tValueStr = tValueStr.replace("\"", "");
+                        rLine.append("\"");
+                    }
                     rLine.append(tValueStr);
-                    if (tHasBlank) rLine.append("\"");
+                    if (tHasBlank) {
+                        rLine.append("\"");
+                    }
                 }
             }
             aWriteln.writeln(rLine.toString());

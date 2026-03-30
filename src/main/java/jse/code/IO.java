@@ -95,6 +95,17 @@ public class IO {
     private final static int BUFFER_SIZE = 8192;
     
     /**
+     * 在 io 失败时尝试抛出一个 {@link IOException}，只在 {@link Conf#STRICT_IO}
+     * 开启时才会抛出
+     * @param aMsg 异常信息
+     * @throws IOException 在 {@link Conf#STRICT_IO} 开启时
+     */
+    @ApiStatus.Experimental
+    public static void fail(String aMsg) throws IOException {
+        if (Conf.STRICT_IO) throw new IOException(aMsg);
+    }
+    
+    /**
      * 文本操作的工具类，这里包含只进行文本操作，但不进行文件读写的一些方法
      * <p>
      * 例如常见的字符串按照空格或者逗号切分（切分后忽略空格）{@link Text#splitStr(String)}，
@@ -290,22 +301,55 @@ public class IO {
                 return CharScanner.isDigit(aChar);
             }}
         }
+        private static Number parseNumber_(boolean aIgnoreErr, char[] buffer, int from, int to) {
+            if (aIgnoreErr) {
+                // 但一般还是使用 try，这样避免意外的情况
+                try {return CharScanner.parseNumber(buffer, from, to);}
+                catch (Exception ignored) {}
+                return null;
+            } else {
+                return CharScanner.parseNumber(buffer, from, to);
+            }
+        }
+        private static double parseDouble_(boolean aIgnoreErr, char[] buffer, int from, int to) {
+            if (aIgnoreErr) {
+                // 但一般还是使用 try，这样避免意外的情况
+                try {return CharScanner.parseDouble(buffer, from, to);}
+                catch (Exception ignored) {}
+                return Double.NaN;
+            } else {
+                return CharScanner.parseDouble(buffer, from, to);
+            }
+        }
+        
         /**
          * 将单个字符串转为 Number 值，要求前后不能含有任何空格；
          * 自动检测整数类型和小数类型，对于小数会返回{@link Double}，整数会根据大小返回
          * {@link Integer} 或 {@link Long}
          * @param aStr 需要进行转换的字符串
-         * @return 转换得到的数字，如果转换失败则返回 {@code null}
+         * @return 转换得到的数字
          */
-        public static @Nullable Number str2number(String aStr) {
+        public static Number str2number(String aStr) {
+            return str2number(!Conf.STRICT_IO, aStr);
+        }
+        /**
+         * 将单个字符串转为 Number 值，要求前后不能含有任何空格；
+         * 自动检测整数类型和小数类型，对于小数会返回{@link Double}，整数会根据大小返回
+         * {@link Integer} 或 {@link Long}
+         * @param aIgnoreErr 在转换失败时是否忽略错误，如果忽略错误则返回 {@code null}，默认在
+         *        {@link Conf#STRICT_IO} 开启时则不会忽略
+         * @param aStr 需要进行转换的字符串
+         * @return 转换得到的数字
+         */
+        public static Number str2number(boolean aIgnoreErr, String aStr) {
             // 先直接转 char[]，适配 groovy-json 的 CharScanner
             char[] tChar = aStr.toCharArray();
             // 先判断开头，这样可以避免抛出错误带来的性能损失
-            if (!charIsDigitDecimal_(tChar[0])) return null;
-            // 但一般还是使用 try，这样避免意外的情况
-            try {return CharScanner.parseNumber(tChar, 0, tChar.length);}
-            catch (Exception ignored) {}
-            return null;
+            if (!charIsDigitDecimal_(tChar[0])) {
+                if (aIgnoreErr) return null;
+                throw new NumberFormatException("Invalid number start char: "+tChar[0]);
+            }
+            return parseNumber_(aIgnoreErr, tChar, 0, tChar.length);
         }
         
         /**
@@ -361,8 +405,7 @@ public class IO {
         
         /**
          * 将字符串转换成 jse 的向量数据 {@link Vector}，认为这个字符串是按照逗号
-         * {@code ","} 或者空格 {@code " "} 分割的数字组成的，会忽略每个数据开头和结尾的任意数量空格，
-         * 任何读取失败的数字都会存为 {@link Double#NaN} 而不是抛出错误。
+         * {@code ","} 或者空格 {@code " "} 分割的数字组成的，会忽略每个数据开头和结尾的任意数量空格。
          * <p>
          * 这样设计主要确保支持 lammps 或其他软件的输出文件中使用的空格分割的数据，并也能兼容一般的逗号分割的 csv 文件。
          * <p>
@@ -374,6 +417,39 @@ public class IO {
          * @return 转换得到的向量 {@link Vector}
          */
         public static Vector str2data(String aStr, int aLength) {
+            return str2data(!Conf.STRICT_IO, aStr, aLength);
+        }
+        /**
+         * 将字符串转换成 jse 的向量数据 {@link Vector}，认为这个字符串是按照逗号
+         * {@code ","} 或者空格 {@code " "} 分割的数字组成的，会忽略每个数据开头和结尾的任意数量空格。
+         * <p>
+         * 这样设计主要确保支持 lammps 或其他软件的输出文件中使用的空格分割的数据，并也能兼容一般的逗号分割的 csv 文件。
+         * <p>
+         * 此操作进行了专门优化，使用了 groovy-json 中的 {@link CharScanner#parseDouble(char[], int, int)}
+         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble(String)} 快一倍以上。
+         *
+         * @param aStr 需要进行转换的字符串
+         * @return 转换得到的向量 {@link Vector}
+         */
+        public static Vector str2data(String aStr) {
+            return str2data(!Conf.STRICT_IO, aStr);
+        }
+        /**
+         * 将字符串转换成 jse 的向量数据 {@link Vector}，认为这个字符串是按照逗号
+         * {@code ","} 或者空格 {@code " "} 分割的数字组成的，会忽略每个数据开头和结尾的任意数量空格。
+         * <p>
+         * 这样设计主要确保支持 lammps 或其他软件的输出文件中使用的空格分割的数据，并也能兼容一般的逗号分割的 csv 文件。
+         * <p>
+         * 此操作进行了专门优化，使用了 groovy-json 中的 {@link CharScanner#parseDouble(char[], int, int)}
+         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble(String)} 快一倍以上。
+         *
+         * @param aIgnoreErr 在任何读取失败时是否忽略错误，如果忽略错误则统一读取为 {@link Double#NaN}，默认在
+         *        {@link Conf#STRICT_IO} 开启时则不会忽略
+         * @param aStr 需要进行转换的字符串
+         * @param aLength 期望的向量长度，字符串超出的数据会忽略，不足的会填充 {@link Double#NaN}
+         * @return 转换得到的向量 {@link Vector}
+         */
+        public static Vector str2data(boolean aIgnoreErr, String aStr, int aLength) {
             // 不足的数据现在默认为 NaN
             Vector rData = Vectors.NaN(aLength);
             // 先直接转 char[]，适配 groovy-json 的 CharScanner
@@ -401,8 +477,7 @@ public class IO {
                 } else {
                     if (tCharCode<=32 || tCharCode==44) {
                         if (tCharCode == 44) tHasComma = true;
-                        try {rData.set(tIdx, CharScanner.parseDouble(tChar, tFrom, i));}
-                        catch (Exception ignored) {}
+                        rData.set(tIdx, parseDouble_(aIgnoreErr, tChar, tFrom, i));
                         tFrom = -1;
                         ++tIdx;
                         if (tIdx == aLength) return rData;
@@ -411,25 +486,25 @@ public class IO {
             }
             // 最后一个数据
             if (tFrom >= 0 && tFrom < tChar.length) {
-                try {rData.set(tIdx, CharScanner.parseDouble(tChar, tFrom, tChar.length));}
-                catch (Exception ignored) {}
+                rData.set(tIdx, parseDouble_(aIgnoreErr, tChar, tFrom, tChar.length));
             }
             return rData;
         }
         /**
          * 将字符串转换成 jse 的向量数据 {@link Vector}，认为这个字符串是按照逗号
-         * {@code ","} 或者空格 {@code " "} 分割的数字组成的，会忽略每个数据开头和结尾的任意数量空格，
-         * 任何读取失败的数字都会存为 {@link Double#NaN} 而不是抛出错误。
+         * {@code ","} 或者空格 {@code " "} 分割的数字组成的，会忽略每个数据开头和结尾的任意数量空格。
          * <p>
          * 这样设计主要确保支持 lammps 或其他软件的输出文件中使用的空格分割的数据，并也能兼容一般的逗号分割的 csv 文件。
          * <p>
          * 此操作进行了专门优化，使用了 groovy-json 中的 {@link CharScanner#parseDouble(char[], int, int)}
          * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble(String)} 快一倍以上。
          *
+         * @param aIgnoreErr 在任何读取失败时是否忽略错误，如果忽略错误则统一读取为 {@link Double#NaN}，默认在
+         *        {@link Conf#STRICT_IO} 开启时则不会忽略
          * @param aStr 需要进行转换的字符串
          * @return 转换得到的向量 {@link Vector}
          */
-        public static Vector str2data(String aStr) {
+        public static Vector str2data(boolean aIgnoreErr, String aStr) {
             Vector.Builder rData = Vector.builder();
             // 先直接转 char[]，适配 groovy-json 的 CharScanner
             char[] tChar = aStr.toCharArray();
@@ -454,20 +529,18 @@ public class IO {
                 } else {
                     if (tCharCode<=32 || tCharCode==44) {
                         if (tCharCode == 44) tHasComma = true;
-                        double tValue = Double.NaN;
-                        try {tValue = CharScanner.parseDouble(tChar, tFrom, i);}
-                        catch (Exception ignored) {}
-                        rData.add(tValue);
+                        rData.add(parseDouble_(aIgnoreErr, tChar, tFrom, i));
                         tFrom = -1;
                     }
                 }
             }
             // 最后一个数据
             if (tFrom >= 0 && tFrom < tChar.length) {
-                double tValue = Double.NaN;
-                try {tValue = CharScanner.parseDouble(tChar, tFrom, tChar.length);}
-                catch (Exception ignored) {}
-                rData.add(tValue);
+                rData.add(parseDouble_(aIgnoreErr, tChar, tFrom, tChar.length));
+            } else
+            if (tHasComma) {
+                // 分号结尾补充 nan
+                rData.add(Double.NaN);
             }
             return rData.build();
         }
