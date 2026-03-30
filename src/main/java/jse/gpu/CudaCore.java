@@ -78,6 +78,8 @@ public class CudaCore {
         , "jse_gpu_CudaCore.h"
         , "jse_gpu_FloatCudaPointer.cpp"
         , "jse_gpu_FloatCudaPointer.h"
+        , "jse_gpu_DoubleCudaPointer.cpp"
+        , "jse_gpu_DoubleCudaPointer.h"
         , "jse_gpu_IntCudaPointer.cpp"
         , "jse_gpu_IntCudaPointer.h"
         , "jse_gpu_Int64CudaPointer.cpp"

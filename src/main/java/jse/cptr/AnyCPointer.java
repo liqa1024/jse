@@ -4,6 +4,7 @@ import jse.clib.MiMalloc;
 import jse.clib.UnsafeJNI;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.gpu.CudaPointer;
+import jse.gpu.DoubleCudaPointer;
 import jse.gpu.FloatCudaPointer;
 import jse.gpu.IntCudaPointer;
 import org.jetbrains.annotations.ApiStatus;
@@ -158,6 +159,15 @@ public class AnyCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         return new FloatCudaPointer(get0(mPtr));
     }
+    /**
+     * 对此指针解引用，获取内部值，并转换成 cuda double 指针，即对应 c 中的 {@code (double *)*ptr}
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
+    public DoubleCudaPointer getAsDoubleCudaPointer() {
+        if (isNull()) throw new NullPointerException();
+        return new DoubleCudaPointer(get0(mPtr));
+    }
     native static long get0(long aPtr);
     
     /**
@@ -253,6 +263,16 @@ public class AnyCPointer extends CPointer {
     public FloatCudaPointer getAsFloatCudaPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
         return new FloatCudaPointer(getAt0(mPtr, aIdx));
+    }
+    /**
+     * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 cuda double 指针，即对应 c 中的 {@code (double *)ptr[aIdx]}
+     * @param aIdx 需要获取的索引位置
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public DoubleCudaPointer getAsDoubleCudaPointerAt(long aIdx) {
+        if (isNull()) throw new NullPointerException();
+        return new DoubleCudaPointer(getAt0(mPtr, aIdx));
     }
     native static long getAt0(long aPtr, long aIdx);
     
