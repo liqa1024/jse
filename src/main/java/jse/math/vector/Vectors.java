@@ -56,6 +56,9 @@ public class Vectors {
         if (tData instanceof double[]) {
             return new Vector(tSize, (double[])tData);
         } else
+        if (tData instanceof float[]) {
+            return new FloatVector(tSize, (float[])tData);
+        } else
         if (tData instanceof int[]) {
             return new IntVector(tSize, (int[])tData);
         } else

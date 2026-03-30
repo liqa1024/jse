@@ -1140,6 +1140,27 @@ public class ARRAY {
         for (int i = aShift; i < tEnd; ++i) aCon.accept(aThis[i]);
     }
     
+    public static void mapFill2This(float[] rThis, int rShift, float aRHS, int aLength) {
+        final int rEnd = aLength + rShift;
+        for (int i = rShift; i < rEnd; ++i) rThis[i] = aRHS; // 注意在指定区域外不能填充，因此不能使用 Arrays.fill
+    }
+    public static void ebeFill2This(float[] rThis, int rShift, float[] aDataR, int aShiftR, int aLength) {
+        System.arraycopy(aDataR, aShiftR, rThis, rShift, aLength);
+    }
+    public static void vecFill2This(float[] rThis, int rShift, int aLength, IFloatVectorGetter aVec) {
+        final int tEnd = aLength + rShift;
+        if (rShift == 0) {for (int i = rShift; i < tEnd; ++i) rThis[i] = aVec.get(i);}
+        else {for (int i = rShift, j = 0; i < tEnd; ++i, ++j) rThis[i] = aVec.get(j);}
+    }
+    public static void assign2This(float[] rThis, int rShift, int aLength, IFloatSupplier aSup) {
+        final int tEnd = aLength + rShift;
+        for (int i = rShift; i < tEnd; ++i) rThis[i] = aSup.getAsFloat();
+    }
+    public static void forEachOfThis(float[] aThis, int aShift, int aLength, IFloatConsumer aCon) {
+        final int tEnd = aLength + aShift;
+        for (int i = aShift; i < tEnd; ++i) aCon.accept(aThis[i]);
+    }
+    
     public static void mapFill2This(boolean[] rThis, int rShift, boolean aRHS, int aLength) {
         final int rEnd = aLength + rShift;
         for (int i = rShift; i < rEnd; ++i) rThis[i] = aRHS; // 注意在指定区域外不能填充，因此不能使用 Arrays.fill
@@ -1565,6 +1586,12 @@ public class ARRAY {
         reverse2Dest(aData[1], aShift, rDest[1], rShift, aLength);
     }
     public static void reverse2Dest(double[] aData, int aShift, double[] rDest, int rShift, int aLength) {
+        final int tEnd = aShift + aLength;
+        for (int i = aShift, j = rShift+aLength-1; i < tEnd; ++i, --j) {
+            rDest[j] = aData[i];
+        }
+    }
+    public static void reverse2Dest(float[] aData, int aShift, float[] rDest, int rShift, int aLength) {
         final int tEnd = aShift + aLength;
         for (int i = aShift, j = rShift+aLength-1; i < tEnd; ++i, --j) {
             rDest[j] = aData[i];

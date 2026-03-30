@@ -919,6 +919,27 @@ public class DATA {
         while (it.hasNext()) aCon.accept(it.next());
     }
     
+    public static void mapFill2This(IHasFloatSetOnlyIterator rThis, final float aRHS) {
+        rThis.assign(() -> aRHS);
+    }
+    public static void ebeFill2This(IHasFloatSetOnlyIterator rThis, IHasFloatIterator aRHS) {
+        final IFloatIterator it = aRHS.iterator();
+        rThis.assign(it::next);
+    }
+    /** 注意这几个方法不能替换成通用遍历方法，会造成无限递归 */
+    public static void vecFill2This(IHasFloatSetOnlyIterator rThis, IFloatVectorGetter aVec) {
+        final IFloatSetOnlyIterator si = rThis.setIterator();
+        for (int i = 0; si.hasNext(); ++i) si.nextAndSet(aVec.get(i));
+    }
+    public static void assign2This(IHasFloatSetOnlyIterator rThis, IFloatSupplier aSup) {
+        final IFloatSetOnlyIterator si = rThis.setIterator();
+        while (si.hasNext()) si.nextAndSet(aSup.getAsFloat());
+    }
+    public static void forEachOfThis(IHasFloatIterator aThis, IFloatConsumer aCon) {
+        final IFloatIterator it = aThis.iterator();
+        while (it.hasNext()) aCon.accept(it.next());
+    }
+    
     public static void mapFill2This(IHasBooleanSetOnlyIterator rThis, final boolean aRHS) {
         rThis.assign(() -> aRHS);
     }
@@ -1234,6 +1255,13 @@ public class DATA {
             rDest.set(i, it.next());
         }
     }
+    public static void reverse2Dest(IHasFloatIterator aThis, IFloatVector rDest) {
+        final int tSize = rDest.size();
+        final IFloatIterator it = aThis.iterator();
+        for (int i = tSize-1; i >= 0; --i) {
+            rDest.set(i, it.next());
+        }
+    }
     public static void reverse2Dest(IHasComplexDoubleIterator aThis, IComplexVector rDest) {
         final int tSize = rDest.size();
         final IComplexDoubleIterator it = aThis.iterator();
@@ -1264,6 +1292,9 @@ public class DATA {
         }
     }
     public static void reverse2This(IVector rThis) {
+        reverse2This(rThis, rThis.size());
+    }
+    public static void reverse2This(IFloatVector rThis) {
         reverse2This(rThis, rThis.size());
     }
     public static void reverse2This(IComplexVector rThis) {

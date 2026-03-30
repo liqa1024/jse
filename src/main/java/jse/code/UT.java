@@ -109,6 +109,13 @@ public class UT {
         public static double doubleValue(@Nullable Number aNumber) {
             return aNumber==null ? Double.NaN : aNumber.doubleValue();
         }
+        /**
+         * 考虑 null 的转为 float
+         * @author liqa
+         */
+        public static float floatValue(@Nullable Number aNumber) {
+            return aNumber==null ? Float.NaN : aNumber.floatValue();
+        }
         
         /**
          * Get the random seed for lammps usage

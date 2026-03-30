@@ -1,5 +1,7 @@
 package jse.code.iterator;
 
+import jse.code.UT;
+import jse.code.collection.AbstractCollections;
 import jse.code.functional.IFloatConsumer;
 
 import java.util.Iterator;
@@ -32,10 +34,21 @@ public interface IFloatIterator {
         };
     }
     
-    default IIntIterator asInt() {
-        return new IIntIterator() {
+    default IDoubleIterator asDouble() {
+        return new IDoubleIterator() {
             @Override public boolean hasNext() {return IFloatIterator.this.hasNext();}
-            @Override public int next() {return (int) IFloatIterator.this.next();}
+            @Override public double next() {return IFloatIterator.this.next();}
+        };
+    }
+    
+    /** 通过 {@code Iterator<? extends Number>} 得到 */
+    static IFloatIterator of(final Iterator<? extends Number> aIterator) {
+        return new IFloatIterator() {
+            @Override public boolean hasNext() {return aIterator.hasNext();}
+            @Override public float next() {return UT.Code.floatValue(aIterator.next());}
+            @Override public void remove() {aIterator.remove();}
+            @Override public void forEachRemaining(IFloatConsumer aCon) {aIterator.forEachRemaining(v->aCon.accept(UT.Code.floatValue(v)));}
+            @Override public Iterator<Float> toIterator() {return AbstractCollections.map(aIterator, UT.Code::floatValue);}
         };
     }
 }
