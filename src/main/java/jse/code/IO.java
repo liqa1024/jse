@@ -301,26 +301,6 @@ public class IO {
                 return CharScanner.isDigit(aChar);
             }}
         }
-        private static Number parseNumber_(boolean aIgnoreErr, char[] buffer, int from, int to) {
-            if (aIgnoreErr) {
-                // 但一般还是使用 try，这样避免意外的情况
-                try {return CharScanner.parseNumber(buffer, from, to);}
-                catch (Exception ignored) {}
-                return null;
-            } else {
-                return CharScanner.parseNumber(buffer, from, to);
-            }
-        }
-        private static double parseDouble_(boolean aIgnoreErr, char[] buffer, int from, int to) {
-            if (aIgnoreErr) {
-                // 但一般还是使用 try，这样避免意外的情况
-                try {return CharScanner.parseDouble(buffer, from, to);}
-                catch (Exception ignored) {}
-                return Double.NaN;
-            } else {
-                return CharScanner.parseDouble(buffer, from, to);
-            }
-        }
         
         /**
          * 将单个字符串转为 Number 值，要求前后不能含有任何空格；
@@ -342,6 +322,7 @@ public class IO {
          * @return 转换得到的数字
          */
         public static Number str2number(boolean aIgnoreErr, String aStr) {
+            boolean[] rAnyErr = {false};
             // 先直接转 char[]，适配 groovy-json 的 CharScanner
             char[] tChar = aStr.toCharArray();
             // 先判断开头，这样可以避免抛出错误带来的性能损失
@@ -349,7 +330,7 @@ public class IO {
                 if (aIgnoreErr) return null;
                 throw new NumberFormatException("Invalid number start char: "+tChar[0]);
             }
-            return parseNumber_(aIgnoreErr, tChar, 0, tChar.length);
+            return CharScanner.parseNumber(aIgnoreErr, rAnyErr, tChar, 0, tChar.length);
         }
         
         /**
@@ -409,8 +390,8 @@ public class IO {
          * <p>
          * 这样设计主要确保支持 lammps 或其他软件的输出文件中使用的空格分割的数据，并也能兼容一般的逗号分割的 csv 文件。
          * <p>
-         * 此操作进行了专门优化，使用了 groovy-json 中的 {@link CharScanner#parseDouble(char[], int, int)}
-         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble(String)} 快一倍以上。
+         * 此操作进行了专门优化，使用了类似 groovy-json 中的 {@link CharScanner#parseDouble}
+         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble} 快一倍以上。
          *
          * @param aStr 需要进行转换的字符串
          * @param aLength 期望的向量长度，字符串超出的数据会忽略，不足的会填充 {@link Double#NaN}
@@ -425,8 +406,8 @@ public class IO {
          * <p>
          * 这样设计主要确保支持 lammps 或其他软件的输出文件中使用的空格分割的数据，并也能兼容一般的逗号分割的 csv 文件。
          * <p>
-         * 此操作进行了专门优化，使用了 groovy-json 中的 {@link CharScanner#parseDouble(char[], int, int)}
-         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble(String)} 快一倍以上。
+         * 此操作进行了专门优化，使用了类似 groovy-json 中的 {@link CharScanner#parseDouble}
+         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble} 快一倍以上。
          *
          * @param aStr 需要进行转换的字符串
          * @return 转换得到的向量 {@link Vector}
@@ -440,8 +421,8 @@ public class IO {
          * <p>
          * 这样设计主要确保支持 lammps 或其他软件的输出文件中使用的空格分割的数据，并也能兼容一般的逗号分割的 csv 文件。
          * <p>
-         * 此操作进行了专门优化，使用了 groovy-json 中的 {@link CharScanner#parseDouble(char[], int, int)}
-         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble(String)} 快一倍以上。
+         * 此操作进行了专门优化，使用了类似 groovy-json 中的 {@link CharScanner#parseDouble}
+         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble} 快一倍以上。
          *
          * @param aIgnoreErr 在任何读取失败时是否忽略错误，如果忽略错误则统一读取为 {@link Double#NaN}，默认在
          *        {@link Conf#STRICT_IO} 开启时则不会忽略
@@ -450,6 +431,7 @@ public class IO {
          * @return 转换得到的向量 {@link Vector}
          */
         public static Vector str2data(boolean aIgnoreErr, String aStr, int aLength) {
+            boolean[] rAnyErr = {false};
             // 不足的数据现在默认为 NaN
             Vector rData = Vectors.NaN(aLength);
             // 先直接转 char[]，适配 groovy-json 的 CharScanner
@@ -477,7 +459,7 @@ public class IO {
                 } else {
                     if (tCharCode<=32 || tCharCode==44) {
                         if (tCharCode == 44) tHasComma = true;
-                        rData.set(tIdx, parseDouble_(aIgnoreErr, tChar, tFrom, i));
+                        rData.set(tIdx, CharScanner.parseDouble(aIgnoreErr, rAnyErr, tChar, tFrom, i));
                         tFrom = -1;
                         ++tIdx;
                         if (tIdx == aLength) return rData;
@@ -486,7 +468,7 @@ public class IO {
             }
             // 最后一个数据
             if (tFrom >= 0 && tFrom < tChar.length) {
-                rData.set(tIdx, parseDouble_(aIgnoreErr, tChar, tFrom, tChar.length));
+                rData.set(tIdx, CharScanner.parseDouble(aIgnoreErr, rAnyErr, tChar, tFrom, tChar.length));
             }
             return rData;
         }
@@ -496,8 +478,8 @@ public class IO {
          * <p>
          * 这样设计主要确保支持 lammps 或其他软件的输出文件中使用的空格分割的数据，并也能兼容一般的逗号分割的 csv 文件。
          * <p>
-         * 此操作进行了专门优化，使用了 groovy-json 中的 {@link CharScanner#parseDouble(char[], int, int)}
-         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble(String)} 快一倍以上。
+         * 此操作进行了专门优化，使用了类似 groovy-json 中的 {@link CharScanner#parseDouble}
+         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble} 快一倍以上。
          *
          * @param aIgnoreErr 在任何读取失败时是否忽略错误，如果忽略错误则统一读取为 {@link Double#NaN}，默认在
          *        {@link Conf#STRICT_IO} 开启时则不会忽略
@@ -505,6 +487,7 @@ public class IO {
          * @return 转换得到的向量 {@link Vector}
          */
         public static Vector str2data(boolean aIgnoreErr, String aStr) {
+            boolean[] rAnyErr = {false};
             Vector.Builder rData = Vector.builder();
             // 先直接转 char[]，适配 groovy-json 的 CharScanner
             char[] tChar = aStr.toCharArray();
@@ -529,14 +512,14 @@ public class IO {
                 } else {
                     if (tCharCode<=32 || tCharCode==44) {
                         if (tCharCode == 44) tHasComma = true;
-                        rData.add(parseDouble_(aIgnoreErr, tChar, tFrom, i));
+                        rData.add(CharScanner.parseDouble(aIgnoreErr, rAnyErr, tChar, tFrom, i));
                         tFrom = -1;
                     }
                 }
             }
             // 最后一个数据
             if (tFrom >= 0 && tFrom < tChar.length) {
-                rData.add(parseDouble_(aIgnoreErr, tChar, tFrom, tChar.length));
+                rData.add(CharScanner.parseDouble(aIgnoreErr, rAnyErr, tChar, tFrom, tChar.length));
             } else
             if (tHasComma) {
                 // 分号结尾补充 nan
