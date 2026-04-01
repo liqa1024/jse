@@ -1,6 +1,7 @@
 package jse.atom.data;
 
 import jse.atom.IAtomData;
+import jse.code.FileEndException;
 import jse.code.IO;
 import jse.code.collection.AbstractListWrapper;
 import jse.code.collection.IListGetter;
@@ -534,7 +535,6 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @throws IOException 如果读取失败
      * @see #write(String)
      * @see DataXYZ#read(String)
-     * @author liqa
      */
     public static DumpXYZ read(String aFilePath) throws IOException {
         try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
@@ -547,16 +547,19 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      */
     public static DumpXYZ read(BufferedReader aReader) throws IOException {
         List<DataXYZ> rDumpXYZ = new ArrayList<>();
-        DataXYZ tDataXYZ;
-        while ((tDataXYZ = DataXYZ.read(aReader)) != null) {
-            rDumpXYZ.add(tDataXYZ);
+        while (true) {
+            try {
+                DataXYZ tDataXYZ = DataXYZ.read(aReader);
+                rDumpXYZ.add(tDataXYZ);
+            } catch (FileEndException any) {
+                break;
+            }
         }
         return new DumpXYZ(rDumpXYZ);
     }
     
     /**
      * 输出成标准的多帧的 XYZ 文件，会根据需要自动选择原始的 XYZ 格式或者扩展的 XYZ 格式
-     * @author liqa
      * @param aFilePath 需要输出的路径
      * @throws IOException 如果写入文件失败
      * @see #read(String)

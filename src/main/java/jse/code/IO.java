@@ -95,14 +95,23 @@ public class IO {
     private final static int BUFFER_SIZE = 8192;
     
     /**
-     * 在 io 失败时尝试抛出一个 {@link IOException}，只在 {@link Conf#STRICT_IO}
+     * 在读取文件到结束时尝试抛出一个 {@link IOException}，只在 {@link Conf#STRICT_IO}
      * 开启时才会抛出
      * @param aMsg 异常信息
-     * @throws IOException 在 {@link Conf#STRICT_IO} 开启时
+     * @throws FileEndException 在 {@link Conf#STRICT_IO} 开启时
      */
     @ApiStatus.Experimental
-    public static void fail(String aMsg) throws IOException {
-        if (Conf.STRICT_IO) throw new IOException(aMsg);
+    public static void fileEnd(String aMsg) throws FileEndException {
+        if (Conf.STRICT_IO) throw new FileEndException(aMsg);
+    }
+    /**
+     * 在读取文件到结束时尝试抛出一个 {@link IOException}，只在 {@link Conf#STRICT_IO}
+     * 开启时才会抛出
+     * @throws FileEndException 在 {@link Conf#STRICT_IO} 开启时
+     */
+    @ApiStatus.Experimental
+    public static void fileEnd() throws FileEndException {
+        if (Conf.STRICT_IO) throw new FileEndException();
     }
     
     /**

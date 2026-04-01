@@ -4,6 +4,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import jse.atom.*;
 import jse.code.Conf;
+import jse.code.FileEndException;
 import jse.code.IO;
 import jse.code.collection.AbstractCollections;
 import jse.math.MathEX;
@@ -582,20 +583,15 @@ public class POSCAR extends AbstractSettableAtomData {
      */
     public static POSCAR read(String aFilePath) throws IOException {
         try (BufferedReader tReader = IO.toReader(aFilePath)) {
-            POSCAR tData = read(tReader);
-            if (tData == null) IO.fail("file end");
-            return tData;
+            return read(tReader);
         }
     }
     /**
      * 提供使用 {@link BufferedReader} 的流式接口
-     * <p>
-     * 为了方便使用此方法会在类似文件读取耗尽时总是会返回 {@code null}，
-     * 从而在循环读取到文件结尾时可以正确结束，并对于一般正在输出的 dump
-     * 可以直接读取
      * @param aReader 需要的读取流
-     * @return 读取得到的 {@link POSCAR} 对象；在发现文件似乎不完整时返回 {@code null}
+     * @return 读取得到的 {@link POSCAR} 对象
      * @throws IOException 如果读取失败
+     * @throws FileEndException 在发现文件似乎不完整时
      */
     public static POSCAR read(BufferedReader aReader) throws IOException {
         return read_(aReader, new Header());
@@ -609,7 +605,7 @@ public class POSCAR extends AbstractSettableAtomData {
         tLine = aReader.readLine();
         rHeader.comment = tLine;
         // 此行只能是读取模拟盒信息或者是 Direct 矩阵，通过长度来判断是否有头
-        tLine = aReader.readLine(); if (tLine == null) return null; // 返回 null 表示文件结束
+        tLine = aReader.readLine(); if (tLine == null) {IO.fileEnd(); return null;}
         tTokens = IO.Text.splitBlank(tLine);
         if (tTokens.length >= 3) {
             // 记录预读取值，并读取能读取的
@@ -624,19 +620,17 @@ public class POSCAR extends AbstractSettableAtomData {
             return rHeader;
         }
         rHeader.boxScale = Double.parseDouble(tTokens[0]);
-        tLine = aReader.readLine(); if (tLine == null) return null; // 返回 null 表示文件结束
+        tLine = aReader.readLine(); if (tLine == null) {IO.fileEnd(); return null;}
         rHeader.boxA = IO.Text.str2data(tLine, 3);
-        tLine = aReader.readLine(); if (tLine == null) return null; // 返回 null 表示文件结束
+        tLine = aReader.readLine(); if (tLine == null) {IO.fileEnd(); return null;}
         rHeader.boxB = IO.Text.str2data(tLine, 3);
-        tLine = aReader.readLine(); if (tLine == null) return null; // 返回 null 表示文件结束
+        tLine = aReader.readLine(); if (tLine == null) {IO.fileEnd(); return null;}
         rHeader.boxC = IO.Text.str2data(tLine, 3);
         // 读取原子种类（可选）和对应数目的信息
         boolean tNoAtomType = false;
-        tLine = aReader.readLine(); if (tLine == null) return null; // 返回 null 表示文件结束
-        tTokens = IO.Text.splitBlank(tLine);
+        tLine = aReader.readLine(); if (tLine == null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
         rHeader.typeNames = tTokens;
-        tLine = aReader.readLine(); if (tLine == null) return null; // 返回 null 表示文件结束
-        tTokens = IO.Text.splitBlank(tLine);
+        tLine = aReader.readLine(); if (tLine == null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
         try {
             final String[] fTokens = tTokens;
             rHeader.numAtomsVec = Vectors.fromInt(fTokens.length, i -> Integer.parseInt(fTokens[i]));
@@ -647,11 +641,11 @@ public class POSCAR extends AbstractSettableAtomData {
             rHeader.typeNames = null;
         }
         if (!tNoAtomType) {
-            tLine = aReader.readLine(); if (tLine == null) return null; // 返回 null 表示文件结束
+            tLine = aReader.readLine(); if (tLine == null) {IO.fileEnd(); return null;}
         }
         // 可选的注释行
         if (tLine.equalsIgnoreCase("Selective dynamics")) {
-            rHeader.selectiveDynamics = true; tLine = aReader.readLine(); if (tLine == null) return null; // 返回 null 表示文件结束
+            rHeader.selectiveDynamics = true; tLine = aReader.readLine(); if (tLine == null) {IO.fileEnd(); return null;}
         }
         // 只支持 Direct 和 Cartesian，改为 contains 从而可以支持直接读取 XDATCAR
         rHeader.isCartesian = IO.Text.containsIgnoreCase(tLine, "Cartesian");
@@ -671,8 +665,8 @@ public class POSCAR extends AbstractSettableAtomData {
         if (tHeader!=null && tHeader.full) {
             rHeader.fill(tHeader);
         }
-        // 至少要有一个头，否则直接 null
-        if (!rHeader.full) return null; // 这里获取 header 失败总是由于文件结束（否则会在上面直接抛出错误）
+        // 至少要有一个头
+        if (!rHeader.full) {IO.fileEnd(); return null;} // 这里获取 header 失败总是由于文件结束（否则会在上面直接抛出错误）
         
         // 特殊情况，尝试读取头存储了一个旧的 line
         if (tHeader!=null && tHeader.lastLine!=null) {
@@ -690,7 +684,7 @@ public class POSCAR extends AbstractSettableAtomData {
                 tLine = tLastLine;
                 tLastLine = null;
             }
-            if (tLine == null) return null; // 文件似乎不完整时总是返回 null
+            if (tLine == null) {IO.fileEnd(); return null;}
             tRow.fill(IO.Text.str2data(tLine, 3));
         }
         

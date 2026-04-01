@@ -1,7 +1,7 @@
 package jse.lmp;
 
 import jse.atom.IAtomData;
-import jse.atom.data.DataXYZ;
+import jse.code.FileEndException;
 import jse.code.IO;
 import jse.code.collection.AbstractCollections;
 import jse.code.collection.AbstractListWrapper;
@@ -200,7 +200,6 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
      * @param aFilePath lammps 输出的 dump 文件路径
      * @return 读取得到的 {@link Lammpstrj} 对象
      * @throws IOException 如果读取失败
-     * @author liqa
      */
     public static Lammpstrj read(String aFilePath) throws IOException {
         try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
@@ -213,9 +212,13 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
      */
     public static Lammpstrj read(BufferedReader aReader) throws IOException {
         List<SubLammpstrj> rLammpstrj = new ArrayList<>();
-        SubLammpstrj tSubLammpstrj;
-        while ((tSubLammpstrj = SubLammpstrj.read(aReader)) != null) {
-            rLammpstrj.add(tSubLammpstrj);
+        while (true) {
+            try {
+                SubLammpstrj tSubLammpstrj = SubLammpstrj.read(aReader);
+                rLammpstrj.add(tSubLammpstrj);
+            } catch (FileEndException any) {
+                break;
+            }
         }
         return new Lammpstrj(rLammpstrj);
     }

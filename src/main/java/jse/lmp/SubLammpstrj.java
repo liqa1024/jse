@@ -2,6 +2,7 @@ package jse.lmp;
 
 import jse.atom.*;
 import jse.atom.data.DataXYZ;
+import jse.code.FileEndException;
 import jse.code.IO;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
@@ -674,20 +675,15 @@ public class SubLammpstrj extends AbstractSettableAtomData {
      */
     public static SubLammpstrj read(String aFilePath) throws IOException {
         try (BufferedReader tReader = IO.toReader(aFilePath)) {
-            SubLammpstrj tData = read(tReader);
-            if (tData == null) IO.fail("file end");
-            return tData;
+            return read(tReader);
         }
     }
     /**
      * 提供使用 {@link BufferedReader} 的流式接口
-     * <p>
-     * 为了方便使用此方法会在类似文件读取耗尽时总是会返回 {@code null}，
-     * 从而在循环读取到文件结尾时可以正确结束，并对于一般正在输出的 dump
-     * 可以直接读取
      * @param aReader 需要的读取流
-     * @return 读取得到的 {@link SubLammpstrj} 对象，只会读取一帧；在发现文件似乎不完整时返回 {@code null}
+     * @return 读取得到的 {@link SubLammpstrj} 对象，只会读取一帧
      * @throws IOException 如果读取失败
+     * @throws FileEndException 在发现文件似乎不完整时
      * @author liqa
      */
     public static SubLammpstrj read(BufferedReader aReader) throws IOException {
@@ -701,27 +697,24 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         final Table aAtomData;
         
         // 读取时间步数
-        IO.Text.findLineContaining(aReader, "ITEM: TIMESTEP", true); tLine=aReader.readLine();
-        if (tLine == null) return null; // 文件似乎不完整时总是返回 null
-        tTokens = IO.Text.splitBlank(tLine);
+        IO.Text.findLineContaining(aReader, "ITEM: TIMESTEP", true); tLine = aReader.readLine();
+        if (tLine == null) {IO.fileEnd("Fail to find `ITEM: TIMESTEP`"); return null;} tTokens = IO.Text.splitBlank(tLine);
         aTimeStep = Long.parseLong(tTokens[0]);
         // 读取原子总数
-        IO.Text.findLineContaining(aReader, "ITEM: NUMBER OF ATOMS", true); tLine=aReader.readLine();
-        if (tLine == null) return null; // 文件似乎不完整时总是返回 null
-        tTokens = IO.Text.splitBlank(tLine);
+        IO.Text.findLineContaining(aReader, "ITEM: NUMBER OF ATOMS", true); tLine = aReader.readLine();
+        if (tLine == null) {IO.fileEnd("Fail to find `ITEM: NUMBER OF ATOMS`"); return null;} tTokens = IO.Text.splitBlank(tLine);
         tAtomNum = Integer.parseInt(tTokens[0]);
         // 读取模拟盒信息
         tLine = IO.Text.findLineContaining(aReader, "ITEM: BOX BOUNDS", true);
-        if (tLine == null) return null; // 文件似乎不完整时总是返回 null
-        tTokens = IO.Text.splitBlank(tLine);
+        if (tLine == null) {IO.fileEnd("Fail to find `ITEM: BOX BOUNDS`"); return null;} tTokens = IO.Text.splitBlank(tLine);
         // 斜方支持
         if (tTokens[3].equalsIgnoreCase("xy")) {
             aBoxBounds = new String[] {tTokens[6], tTokens[7], tTokens[8]};
-            tLine=aReader.readLine(); tTokens = IO.Text.splitBlank(tLine);
+            tLine=aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
             double aXlo = Double.parseDouble(tTokens[0]); double aXhi = Double.parseDouble(tTokens[1]); double aXY = Double.parseDouble(tTokens[2]);
-            tLine=aReader.readLine(); tTokens = IO.Text.splitBlank(tLine);
+            tLine=aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
             double aYlo = Double.parseDouble(tTokens[0]); double aYhi = Double.parseDouble(tTokens[1]); double aXZ = Double.parseDouble(tTokens[2]);
-            tLine=aReader.readLine(); tTokens = IO.Text.splitBlank(tLine);
+            tLine=aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
             double aZlo = Double.parseDouble(tTokens[0]); double aZhi = Double.parseDouble(tTokens[1]); double aYZ = Double.parseDouble(tTokens[2]);
             // 注意 dump 和 data 斜方格式不同，需要转换
             aXlo -= Math.min(Math.min(0.0, aXY), Math.min(aXZ, aXY+aXZ));
@@ -731,25 +724,24 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             aBox = new LmpBoxPrism(aXlo, aXhi, aYlo, aYhi, aZlo, aZhi, aXY, aXZ, aYZ);
         } else {
             aBoxBounds = new String[] {tTokens[3], tTokens[4], tTokens[5]};
-            tLine=aReader.readLine(); tTokens = IO.Text.splitBlank(tLine);
+            tLine=aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
             double aXlo = Double.parseDouble(tTokens[0]); double aXhi = Double.parseDouble(tTokens[1]);
-            tLine=aReader.readLine(); tTokens = IO.Text.splitBlank(tLine);
+            tLine=aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
             double aYlo = Double.parseDouble(tTokens[0]); double aYhi = Double.parseDouble(tTokens[1]);
-            tLine=aReader.readLine(); tTokens = IO.Text.splitBlank(tLine);
+            tLine=aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
             double aZlo = Double.parseDouble(tTokens[0]); double aZhi = Double.parseDouble(tTokens[1]);
             aBox = new LmpBox(aXlo, aXhi, aYlo, aYhi, aZlo, aZhi);
         }
         
         // 读取原子信息
         tLine = IO.Text.findLineContaining(aReader, "ITEM: ATOMS", true);
-        if (tLine == null) return null; // 文件似乎不完整时总是返回 null
-        tTokens = IO.Text.splitBlank(tLine);
+        if (tLine == null) {IO.fileEnd("Fail to find `ITEM: ATOMS`"); return null;} tTokens = IO.Text.splitBlank(tLine);
         String[] tAtomDataKeys = new String[tTokens.length-2];
         System.arraycopy(tTokens, 2, tAtomDataKeys, 0, tAtomDataKeys.length);
         aAtomData = Tables.zeros(tAtomNum, tAtomDataKeys);
         for (IVector tRow : aAtomData.rows()) {
             tLine = aReader.readLine();
-            if (tLine == null) return null; // 文件似乎不完整时总是返回 null
+            if (tLine == null) {IO.fileEnd(); return null;}
             tRow.fill(IO.Text.str2data(tLine, tAtomDataKeys.length));
         }
         

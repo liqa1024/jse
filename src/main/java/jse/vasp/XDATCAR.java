@@ -1,6 +1,7 @@
 package jse.vasp;
 
 import jse.atom.IAtomData;
+import jse.code.FileEndException;
 import jse.code.IO;
 import jse.code.UT;
 import jse.code.collection.AbstractListWrapper;
@@ -529,9 +530,13 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
         List<POSCAR> rXDATCAR = new ArrayList<>();
         // 针对旧版的共享 box 头的读取兼容
         POSCAR.Header tHeader = new POSCAR.Header();
-        POSCAR tPOSCAR;
-        while ((tPOSCAR = POSCAR.read_(aReader, tHeader)) != null) {
-            rXDATCAR.add(tPOSCAR);
+        while (true) {
+            try {
+                POSCAR tPOSCAR = POSCAR.read_(aReader, tHeader);
+                rXDATCAR.add(tPOSCAR);
+            } catch (FileEndException any) {
+                break;
+            }
         }
         return new XDATCAR(rXDATCAR);
     }
