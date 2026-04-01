@@ -4,7 +4,6 @@ import jep.NDArray;
 import jse.code.CS;
 import jse.math.vector.IVector;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Range;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
@@ -26,7 +25,13 @@ import java.util.List;
  * jse 的原子数据统一在一个从原点开始的模拟盒内，因此一般来说不会出现坐标为负值的原子；
  * 对于存在下边界模拟盒的原子数据（例如 lammps 的 data），这里获取到的坐标会自动减去这个下边界。
  * <p>
- * 一般情况下，jse 的原子数据不会进行单位转换，也就是会统一保留读取的数据的原始值
+ * jse 的原子数据不会进行单位转换，也就是会统一保留读取的数据的原始值
+ * <p>
+ * 可以通过 {@link #op()} 来获取原子数据的运算器 {@link IAtomDataOperation}，来进行高级操作，例如：
+ * <pre> {@code
+ * def data1 = data0.op().wrapPBC()
+ * } </pre>
+ * 来将原子数据中超出模拟盒原子根据周期边界条件移动到模拟盒内（不修改 {@code data0}，而创建一个修改后的拷贝数据到 {@code data1}）
  *
  * @see ISettableAtomData ISettableAtomData: 对于可以修改的原子数据
  * @see AtomData AtomData: 对于原子数据的默认实现

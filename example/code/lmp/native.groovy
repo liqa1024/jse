@@ -6,7 +6,7 @@ def lmp = new NativeLmp()
 
 println('VERSION: ' + lmp.version())
 // 直接运行 in 文件
-lmp.file('lmp/in/CuMelt')
+lmp.file('data/lmp/in/CuMelt')
 // 获取原子数目
 println('ATOM NUMBER: ' + lmp.natoms())
 println('ATOM TYPE NUMBER: ' + lmp.ntypes())

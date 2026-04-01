@@ -525,12 +525,16 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
     /// 文件读写
     /**
      * 从包含多帧的 XYZ 原子数据格式或者扩展的 XYZ 格式文件读取来初始化
-     * @author liqa
+     * <p>
+     * 注意和 {@link DataXYZ#read(String)} 不同的是，
+     * 在遇到文件不完整的情况不会报错而是直接截断最后不完整的帧
+     *
      * @param aFilePath 多帧的 XYZ 文件路径
-     * @return 读取得到的 {@link DumpXYZ} 对象，如果文件不完整的帧会跳过
+     * @return 读取得到的 {@link DumpXYZ} 对象
      * @throws IOException 如果读取失败
      * @see #write(String)
      * @see DataXYZ#read(String)
+     * @author liqa
      */
     public static DumpXYZ read(String aFilePath) throws IOException {
         try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
@@ -538,7 +542,8 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
     /**
      * 提供使用 {@link BufferedReader} 的流式接口
      * @param aReader 需要的读取流
-     * @throws IOException 如果写入文件失败
+     * @return 读取得到的 {@link DumpXYZ} 对象
+     * @throws IOException 如果读取失败
      */
     public static DumpXYZ read(BufferedReader aReader) throws IOException {
         List<DataXYZ> rDumpXYZ = new ArrayList<>();

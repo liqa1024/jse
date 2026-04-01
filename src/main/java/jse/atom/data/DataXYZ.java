@@ -1041,17 +1041,26 @@ public class DataXYZ extends AbstractSettableAtomData {
     /**
      * 从 XYZ 原子数据格式或者扩展的 XYZ 格式文件读取来初始化
      * @param aFilePath XYZ 文件路径
-     * @return 读取得到的 {@link DataXYZ} 对象，如果文件不完整会直接返回 {@code null}
+     * @return 读取得到的 {@link DataXYZ} 对象
      * @throws IOException 如果读取失败
      * @see #write(String)
      */
     public static DataXYZ read(String aFilePath) throws IOException {
-        try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
+        try (BufferedReader tReader = IO.toReader(aFilePath)) {
+            DataXYZ tData = read(tReader);
+            if (tData == null) IO.fail("file end");
+            return tData;
+        }
     }
     /**
      * 提供使用 {@link BufferedReader} 的流式接口
+     * <p>
+     * 为了方便使用此方法会在类似文件读取耗尽时总是会返回 {@code null}，
+     * 从而在循环读取到文件结尾时可以正确结束，并对于一般正在输出的 dump
+     * 可以直接读取
      * @param aReader 需要的读取流
-     * @throws IOException 如果写入文件失败
+     * @return 读取得到的 {@link DataXYZ} 对象；在发现文件似乎不完整时返回 {@code null}
+     * @throws IOException 如果读取失败
      */
     public static DataXYZ read(BufferedReader aReader) throws IOException {
         String tLine;
@@ -1064,18 +1073,20 @@ public class DataXYZ extends AbstractSettableAtomData {
         Map<String, Object> aProperties = null;
         
         // 第一行为原子数
-        tLine = aReader.readLine(); if (tLine==null) {IO.fail("file end"); return null;}
+        tLine = aReader.readLine(); if (tLine==null) return null; // 文件似乎不完整时总是返回 null
         aNumAtoms = Integer.parseInt(tLine.trim());
         // 第二行为 comment
-        tLine = aReader.readLine(); if (tLine==null) {IO.fail("file end"); return null;}
+        tLine = aReader.readLine(); if (tLine==null) return null; // 文件似乎不完整时总是返回 null
         aComment = tLine;
         // 对于扩展的 XYZ 格式，comment 会包含其余重要信息，需要解析 comment
         @Nullable String tParseErr = parseParameters_(aComment, aParameters);
         // 只要有 Properties 属性就认为是扩展的 XYZ，此时有任何解析错误就抛出错误
         if ((aParameters.containsKey("Properties") || aParameters.containsKey("properties")) && tParseErr!=null) {
             if (Conf.STRICT_IO) throw new IllegalArgumentException(tParseErr);
+            // 为了避免意外的转换，这里还是返回 null，毕竟传统 xyz 格式是基本弃用的，只提供最低程度支持
+            return null;
         }
-        // 非严格默认或者没有 Properties 还是简单回退到传统 xyz
+        // 有任何错误回退到传统 xyz
         if (tParseErr!=null) {
             aParameters.clear();
         } else {
@@ -1151,7 +1162,8 @@ public class DataXYZ extends AbstractSettableAtomData {
         }
         // 简单遍历后续数据
         for (int i = 0; i < aNumAtoms; ++i) {
-            tLine = aReader.readLine(); if (tLine == null) {IO.fail("file end"); return null;} tTokens = IO.Text.splitBlank(tLine);
+            tLine = aReader.readLine(); if (tLine == null) return null; // 文件似乎不完整时总是返回 null
+            tTokens = IO.Text.splitBlank(tLine);
             // 基于 aProperties 的顺序解析，现在可以统一解析语法
             int j = 0;
             for (Object tValue : aProperties.values()) {
@@ -1272,7 +1284,7 @@ public class DataXYZ extends AbstractSettableAtomData {
             if (tKeyBegin < 0) break; // 注意这种情况是已经结束了
         }
         // 这里削弱要求，不一定需要特定的参数名称
-        // null 期间没有任何解析错误
+        // null 表示没有任何解析错误
         return null;
     }
     

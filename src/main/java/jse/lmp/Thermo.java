@@ -12,10 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * lammps 使用 {@code thermo} 写出到 log 的数据格式支持
+ * <p>
+ * 本身是一个 {@link Table} 从而方便外部使用
+ * <p>
+ * 别称为 {@link Log}
+ *
  * @author liqa
- * <p> lammps 使用 thermo 写出到 log 的数据格式 </p>
- * <p> 包含读取写出的文本文件的格式 </p>
- * <p> 本身是一个 {@link Table} 从而方便外部使用 </p>
  */
 public class Thermo extends Table {
     
@@ -61,14 +64,21 @@ public class Thermo extends Table {
     /**
      * 从文件 lammps 输出的 log 文件中读取来实现初始化，
      * 对于 log 只实现其的读取，而输出则会使用通用方法输出成 csv 文件
-     * @author liqa
      * @param aFilePath lammps 输出的 log 文件路径
-     * @return 读取得到的 Thermo 对象，如果有多个 thermo 会尝试自动合并，理论上文件不完整的帧会尝试读取已有的部分
+     * @return 读取得到的 {@link Thermo} 对象，如果有多个 thermo 会尝试自动合并，对于一般文件不完整的帧会尝试读取已有的部分
+     * @throws IOException 如果读取失败
+     * @author liqa
+     */
+    public static Thermo read(String aFilePath) throws IOException {
+        try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
+    }
+    /**
+     * 提供使用 {@link BufferedReader} 的流式接口
+     * @param aReader 需要的读取流
+     * @return 读取得到的 {@link Thermo} 对象，如果有多个 thermo 会尝试自动合并，对于一般文件不完整的帧会尝试读取已有的部分
      * @throws IOException 如果读取失败
      */
-    public static Thermo read(String aFilePath) throws IOException {try (BufferedReader tReader = IO.toReader(aFilePath)) {return read_(tReader);}}
-    /** 改为 {@link BufferedReader} 而不是 {@code List<String>} 来避免过多内存占用 */
-    static Thermo read_(BufferedReader aReader) throws IOException {
+    public static Thermo read(BufferedReader aReader) throws IOException {
         String tLine;
         String[] aHeads = null;
         List<IVector> rDataRows = new ArrayList<>();

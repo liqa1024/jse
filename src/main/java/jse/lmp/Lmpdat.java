@@ -449,16 +449,25 @@ public class Lmpdat extends AbstractSettableAtomData {
      * <p>
      * 目前只支持单原子数据
      * @param aFilePath lammps 输出的 data 文件路径
-     * @return 读取得到的 Lmpdat 对象，如果文件不完整会直接返回 null
+     * @return 读取得到的 {@link Lmpdat} 对象
      * @throws IOException 如果读取失败
      */
     public static Lmpdat read(String aFilePath) throws IOException {
-        try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
+        try (BufferedReader tReader = IO.toReader(aFilePath)) {
+            Lmpdat tData = read(tReader);
+            if (tData == null) IO.fail("file end");
+            return tData;
+        }
     }
     /**
      * 提供使用 {@link BufferedReader} 的流式接口
+     * <p>
+     * 为了方便使用此方法会在类似文件读取耗尽时总是会返回 {@code null}，
+     * 从而在循环读取到文件结尾时可以正确结束，并对于一般正在输出的 dump
+     * 可以直接读取
      * @param aReader 需要的读取流
-     * @throws IOException 如果写入文件失败
+     * @return 读取得到的 {@link Lmpdat} 对象；在发现文件似乎不完整时返回 {@code null}
+     * @throws IOException 如果读取失败
      */
     public static Lmpdat read(BufferedReader aReader) throws IOException {
         String tLine;
@@ -483,35 +492,43 @@ public class Lmpdat extends AbstractSettableAtomData {
         // 跳过第一行描述
         aReader.readLine();
         // 读取原子数目（中间存在空行以及可能存在的不支持的信息）
-        tLine = IO.Text.findLineContaining(aReader, "atoms", true); if (tLine == null) return null; tTokens = IO.Text.splitBlank(tLine);
+        tLine = IO.Text.findLineContaining(aReader, "atoms", true);
+        if (tLine == null) return null; // 文件似乎不完整时总是返回 null
+        tTokens = IO.Text.splitBlank(tLine);
         tAtomNum = Integer.parseInt(tTokens[0]);
         // 读取可选键数目
-        tLine = IO.Text.findLineNoBlank(aReader); if (tLine == null) return null;
+        tLine = IO.Text.findLineNoBlank(aReader); if (tLine == null) return null; // 文件似乎不完整时总是返回 null
         if (IO.Text.containsIgnoreCase(tLine, "bonds")) {
             tTokens = IO.Text.splitBlank(tLine);
             aBondNum = Integer.parseInt(tTokens[0]);
         }
         // 读取原子种类数目（中间存在可选空行以及可能存在的不支持的信息）
         if (!IO.Text.containsIgnoreCase(tLine, "atom types")) {
-            tLine = IO.Text.findLineContaining(aReader, "atom types", true); if (tLine == null) return null;
+            tLine = IO.Text.findLineContaining(aReader, "atom types", true);
+            if (tLine == null) return null; // 文件似乎不完整时总是返回 null
         }
         tTokens = IO.Text.splitBlank(tLine);
         aAtomTypeNum = Integer.parseInt(tTokens[0]);
         // 读取可选键种类数
-        tLine = IO.Text.findLineNoBlank(aReader); if (tLine == null) return null;
+        tLine = IO.Text.findLineNoBlank(aReader); if (tLine == null) return null; // 文件似乎不完整时总是返回 null
         if (IO.Text.containsIgnoreCase(tLine, "bond types")) {
             tTokens = IO.Text.splitBlank(tLine);
             aBondTypeNum = Integer.parseInt(tTokens[0]);
         }
         // 读取模拟盒信息（中间存在空行以及可能存在的不支持的信息）
         if (!IO.Text.containsIgnoreCase(tLine, "xlo xhi")) {
-            tLine = IO.Text.findLineContaining(aReader, "xlo xhi", true); if (tLine == null) return null;
+            tLine = IO.Text.findLineContaining(aReader, "xlo xhi", true);
+            if (tLine == null) return null; // 文件似乎不完整时总是返回 null
         }
         tTokens = IO.Text.splitBlank(tLine);
         double aXlo = Double.parseDouble(tTokens[0]); double aXhi = Double.parseDouble(tTokens[1]);
-        tLine = IO.Text.findLineContaining(aReader, "ylo yhi", true); if (tLine == null) return null; tTokens = IO.Text.splitBlank(tLine);
+        tLine = IO.Text.findLineContaining(aReader, "ylo yhi", true);
+        if (tLine == null) return null; // 文件似乎不完整时总是返回 null
+        tTokens = IO.Text.splitBlank(tLine);
         double aYlo = Double.parseDouble(tTokens[0]); double aYhi = Double.parseDouble(tTokens[1]);
-        tLine = IO.Text.findLineContaining(aReader, "zlo zhi", true); if (tLine == null) return null; tTokens = IO.Text.splitBlank(tLine);
+        tLine = IO.Text.findLineContaining(aReader, "zlo zhi", true);
+        if (tLine == null) return null; // 文件似乎不完整时总是返回 null
+        tTokens = IO.Text.splitBlank(tLine);
         double aZlo = Double.parseDouble(tTokens[0]); double aZhi = Double.parseDouble(tTokens[1]);
         // 兼容可能的斜方模拟盒，直接在下一行
         tLine = aReader.readLine();
@@ -526,21 +543,24 @@ public class Lmpdat extends AbstractSettableAtomData {
             // 各种情况分别处理
             if (aMasses==null && IO.Text.containsIgnoreCase(tLine, "Masses")) {
                 aMasses = Vectors.zeros(aAtomTypeNum);
-                readMasses_(aReader, aMasses);
+                boolean tFileEnd = readMasses_(aReader, aMasses);
+                if (tFileEnd) return null; // 文件似乎不完整时总是返回 null
             } else
             if (aAtomID==null && IO.Text.containsIgnoreCase(tLine, "Atoms")) {
                 boolean aIsFull = IO.Text.containsIgnoreCase(tLine, "# full");
                 aAtomID = IntVector.zeros(tAtomNum);
                 aAtomType = IntVector.zeros(tAtomNum);
                 aAtomXYZ = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
-                readAtoms_(aReader, aAtomID, aAtomType, aAtomXYZ, aIsFull);
+                boolean tFileEnd = readAtoms_(aReader, aAtomID, aAtomType, aAtomXYZ, aIsFull);
+                if (tFileEnd) return null; // 文件似乎不完整时总是返回 null
                 // 统计 id 到对应行号的映射，用于其余属性的快速赋值
                 tId2Row = new HashMap<>(tAtomNum);
                 for (int i = 0; i < tAtomNum; ++i) tId2Row.put(aAtomID.get(i), i);
             } else
             if (tId2Row!=null && aVelocities==null && IO.Text.containsIgnoreCase(tLine, "Velocities")) {
                 aVelocities = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length);
-                readVelocities_(aReader, tId2Row, aVelocities);
+                boolean tFileEnd = readVelocities_(aReader, tId2Row, aVelocities);
+                if (tFileEnd) return null; // 文件似乎不完整时总是返回 null
             } else
             if (tId2Row!=null && aBondNum >=0 && aBondID==null && IO.Text.containsIgnoreCase(tLine, "Bonds")) {
                 aBondID = new IntList[tAtomNum];
@@ -551,12 +571,14 @@ public class Lmpdat extends AbstractSettableAtomData {
                     aBondType[i] = new IntList();
                     aBondIndex[i] = new IntList();
                 }
-                readBonds_(aReader, tId2Row, aBondNum, aBondID, aBondType, aBondIndex);
+                boolean tFileEnd = readBonds_(aReader, tId2Row, aBondNum, aBondID, aBondType, aBondIndex);
+                if (tFileEnd) return null; // 文件似乎不完整时总是返回 null
             } else {
-                readElse_(aReader);
+                boolean tFileEnd = readElse_(aReader);
+                if (tFileEnd) return null; // 文件似乎不完整时总是返回 null
             }
         }
-        if (aAtomID == null) return null;
+        if (aAtomID == null) return null; // 文件似乎不完整时总是返回 null
         // 返回 lmpdat
         return new Lmpdat(aAtomTypeNum, aBondTypeNum, aBondNum, aBox, aMasses, aAtomID, aAtomType, aAtomXYZ, aVelocities, aBondID, aBondType, aBondIndex);
     }
@@ -573,46 +595,53 @@ public class Lmpdat extends AbstractSettableAtomData {
      * 读取特定信息，此时的 aReader 应该在最开头，也就是 {@code aReader.readLine()} 会得到一个空行，并且下一行是数据；
      * 读取完成后会跳过末尾的空行，也就是 {@code aReader.readLine()} 会得到下一个属性的字符串
      */
-    private static void readMasses_(BufferedReader aReader, IVector rMasses) throws IOException {
-        String tLine = findLineNonBlank_(aReader); if (tLine == null) return; // 跳过开头空行
+    private static boolean readMasses_(BufferedReader aReader, IVector rMasses) throws IOException {
+        String tLine = findLineNonBlank_(aReader); // 跳过开头空行
         final int tAtomTypeNum = rMasses.size();
         for (int i = 0; i < tAtomTypeNum; ++i) {
+            if (tLine == null) return true;
             String[] tTokens = IO.Text.splitBlank(tLine);
             rMasses.set(Integer.parseInt(tTokens[0])-1, Double.parseDouble(tTokens[1]));
-            tLine = aReader.readLine(); if (tLine == null) return;
+            tLine = aReader.readLine();
         }
+        return false;
     }
-    private static void readAtoms_(BufferedReader aReader, IIntVector rAtomID, IIntVector rAtomType, IMatrix rAtomXYZ, boolean aIsFull) throws IOException {
-        String tLine = findLineNonBlank_(aReader); if (tLine == null) return; // 跳过开头空行
+    private static boolean readAtoms_(BufferedReader aReader, IIntVector rAtomID, IIntVector rAtomType, IMatrix rAtomXYZ, boolean aIsFull) throws IOException {
+        String tLine = findLineNonBlank_(aReader); // 跳过开头空行
         final int tAtomNum = rAtomID.size();
         // 和坐标排序一致的顺序来存储，暂不存储 molecule-tag，q，nx，ny，nz
         for (int i = 0; i < tAtomNum; ++i) {
+            if (tLine == null) return true;
             IVector tIDTypeXYZ = IO.Text.str2data(tLine, aIsFull ? ATOM_DATA_KEYS_ID_TYPE_MOL_CHARGE_XYZ.length : ATOM_DATA_KEYS_ID_TYPE_XYZ.length);
             rAtomID.set(i, (int)tIDTypeXYZ.get(aIsFull ? LMPDAT_FULL_ID_COL : LMPDAT_ID_COL));
             rAtomType.set(i, (int)tIDTypeXYZ.get(aIsFull ? LMPDAT_FULL_TYPE_COL : LMPDAT_TYPE_COL));
             rAtomXYZ.set(i, XYZ_X_COL, tIDTypeXYZ.get(aIsFull ? LMPDAT_FULL_X_COL : LMPDAT_X_COL));
             rAtomXYZ.set(i, XYZ_Y_COL, tIDTypeXYZ.get(aIsFull ? LMPDAT_FULL_Y_COL : LMPDAT_Y_COL));
             rAtomXYZ.set(i, XYZ_Z_COL, tIDTypeXYZ.get(aIsFull ? LMPDAT_FULL_Z_COL : LMPDAT_Z_COL));
-            tLine = aReader.readLine(); if (tLine == null) return;
+            tLine = aReader.readLine();
         }
+        return false;
     }
-    private static void readVelocities_(BufferedReader aReader, Map<Integer, Integer> aId2Row, IMatrix rVelocities) throws IOException {
-        String tLine = findLineNonBlank_(aReader); if (tLine == null) return; // 跳过开头空行
+    private static boolean readVelocities_(BufferedReader aReader, Map<Integer, Integer> aId2Row, IMatrix rVelocities) throws IOException {
+        String tLine = findLineNonBlank_(aReader); // 跳过开头空行
         final int tAtomNum = rVelocities.nrows();
         // 和坐标排序一致的顺序来存储
         for (int i = 0; i < tAtomNum; ++i) {
+            if (tLine == null) return true;
             IVector tVelocity = IO.Text.str2data(tLine, LMPDAT_VELOCITY_LENGTH);
             int tRow = aId2Row.get((int)tVelocity.get(LMPDAT_ID_COL));
             rVelocities.set(tRow, STD_VX_COL, tVelocity.get(LMPDAT_VX_COL));
             rVelocities.set(tRow, STD_VY_COL, tVelocity.get(LMPDAT_VY_COL));
             rVelocities.set(tRow, STD_VZ_COL, tVelocity.get(LMPDAT_VZ_COL));
-            tLine = aReader.readLine(); if (tLine == null) return;
+            tLine = aReader.readLine();
         }
+        return false;
     }
-    private static void readBonds_(BufferedReader aReader, Map<Integer, Integer> aId2Row, int aBondNum, IntList[] rBondID, IntList[] rBondType, IntList[] rBondIndex) throws IOException {
-        String tLine = findLineNonBlank_(aReader); if (tLine == null) return; // 跳过开头空行
+    private static boolean readBonds_(BufferedReader aReader, Map<Integer, Integer> aId2Row, int aBondNum, IntList[] rBondID, IntList[] rBondType, IntList[] rBondIndex) throws IOException {
+        String tLine = findLineNonBlank_(aReader); // 跳过开头空行
         // 和坐标排序一致的顺序来存储
         for (int i = 0; i < aBondNum; ++i) {
+            if (tLine == null) return true;
             IVector tIdTypeId1Id2 = IO.Text.str2data(tLine, LMPDAT_BOND_LENGTH);
             int tId = (int)tIdTypeId1Id2.get(LMPDAT_BOND_ID_COL);
             int tType = (int)tIdTypeId1Id2.get(LMPDAT_BOND_TYPE_COL);
@@ -621,15 +650,17 @@ public class Lmpdat extends AbstractSettableAtomData {
             rBondID[tRow1].add(tId); rBondID[tRow2].add(tId);
             rBondType[tRow1].add(tType); rBondType[tRow2].add(tType);
             rBondIndex[tRow1].add(tRow2); rBondIndex[tRow2].add(tRow1);
-            tLine = aReader.readLine(); if (tLine == null) return;
+            tLine = aReader.readLine();
         }
+        return false;
     }
-    private static void readElse_(BufferedReader aReader) throws IOException {
-        String tLine = findLineNonBlank_(aReader); if (tLine == null) return; // 跳过开头空行
+    private static boolean readElse_(BufferedReader aReader) throws IOException {
+        String tLine = findLineNonBlank_(aReader); if (tLine == null) return true; // 跳过开头空行
         // 其余不支持的情况直接跳过中间的非空行即可
         while ((tLine = aReader.readLine()) != null) {
-            if (IO.Text.isBlank(tLine)) return;
+            if (IO.Text.isBlank(tLine)) return false;
         }
+        return false; // 可能是文件不完整，也可能是正常作为最后一行结束了，这里不做判断
     }
     
     

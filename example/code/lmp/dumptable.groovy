@@ -5,7 +5,7 @@ import jse.lmp.Dump
 import static jse.code.UT.Math.*
 
 // 读取现有的 lammps dump 文件
-def dump = Dump.read('lmp/dump/CuFCC108.lammpstrj')
+def dump = Dump.read('data/lmp/dump/CuFCC108.lammpstrj')
 
 // 获取某一帧并转为表格
 def table = dump[4].asTable();

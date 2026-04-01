@@ -1,6 +1,7 @@
 package jse.lmp;
 
 import jse.atom.IAtomData;
+import jse.atom.data.DataXYZ;
 import jse.code.IO;
 import jse.code.collection.AbstractCollections;
 import jse.code.collection.AbstractListWrapper;
@@ -21,7 +22,7 @@ import java.util.List;
 
 /**
  * <a href="https://docs.lammps.org/dump.html">
- * LAMMPS dump </a> 格式支持，此类为专门针对其多帧数据的支持。
+ * lammps dump </a> 格式支持，此类为专门针对其多帧数据的支持。
  * <p>
  * 多帧的 {@link SubLammpstrj}，通过：
  * <pre> {@code
@@ -39,10 +40,10 @@ import java.util.List;
  * 别称为 {@link Dump}
  *
  * @see IAtomData IAtomData: 原子数据类型通用接口
- * @see SubLammpstrj SubLammpstrj: 内部存储的单帧 LAMMPS dump 原子数据类型
- * @see #read(String) read(String): 读取指定路径的 LAMMPS dump 的所有帧的数据
- * @see #write(String) write(String): 将此 LAMMPS dump 原子数据写入指定路径
- * @see #of(IAtomData) of(IAtomData): 将任意的原子数据转换成多帧 LAMMPS dump 原子数据
+ * @see SubLammpstrj SubLammpstrj: 内部存储的单帧 lammps dump 原子数据类型
+ * @see #read(String) read(String): 读取指定路径的 lammps dump 的所有帧的数据
+ * @see #write(String) write(String): 将此 lammps dump 原子数据写入指定路径
+ * @see #of(IAtomData) of(IAtomData): 将任意的原子数据转换成多帧 lammps dump 原子数据
  * @author liqa
  */
 public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubLammpstrj> {
@@ -192,10 +193,14 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
     /// 文件读写
     /**
      * 从文件 lammps 输出的 dump 文件中读取来实现初始化
-     * @author liqa
+     * <p>
+     * 注意和 {@link SubLammpstrj#read(String)} 不同的是，
+     * 在遇到文件不完整的情况不会报错而是直接截断最后不完整的帧
+     *
      * @param aFilePath lammps 输出的 dump 文件路径
-     * @return 读取得到的 Lammpstrj 对象，如果文件不完整的帧会跳过
+     * @return 读取得到的 {@link Lammpstrj} 对象
      * @throws IOException 如果读取失败
+     * @author liqa
      */
     public static Lammpstrj read(String aFilePath) throws IOException {
         try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
@@ -203,7 +208,8 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
     /**
      * 提供使用 {@link BufferedReader} 的流式接口
      * @param aReader 需要的读取流
-     * @throws IOException 如果写入文件失败
+     * @return 读取得到的 {@link Lammpstrj} 对象
+     * @throws IOException 如果读取失败
      */
     public static Lammpstrj read(BufferedReader aReader) throws IOException {
         List<SubLammpstrj> rLammpstrj = new ArrayList<>();

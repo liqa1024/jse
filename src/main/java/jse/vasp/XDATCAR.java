@@ -508,9 +508,12 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
     /// 文件读写
     /**
      * 从文件 vasp 输出的 XDATCAR 文件中读取来实现初始化
-     * @author liqa
+     * <p>
+     * 注意和 {@link POSCAR#read(String)} 不同的是，
+     * 在遇到文件不完整的情况不会报错而是直接截断最后不完整的帧
+     *
      * @param aFilePath vasp 输出的 XDATCAR 文件路径
-     * @return 读取得到的 XDATCAR 对象，如果文件不完整的帧会跳过
+     * @return 读取得到的 {@link XDATCAR} 对象
      * @throws IOException 如果读取失败
      */
     public static XDATCAR read(String aFilePath) throws IOException {
@@ -519,7 +522,8 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
     /**
      * 提供使用 {@link BufferedReader} 的流式接口
      * @param aReader 需要的读取流
-     * @throws IOException 如果写入文件失败
+     * @return 读取得到的 {@link XDATCAR} 对象
+     * @throws IOException 如果读取失败
      */
     public static XDATCAR read(BufferedReader aReader) throws IOException {
         List<POSCAR> rXDATCAR = new ArrayList<>();
@@ -534,7 +538,6 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
     
     /**
      * 输出成 vasp 格式的 XDATCAR 文件，可以供 OVITO 等软件读取
-     * @author liqa
      * @param aFilePath 需要输出的路径
      * @throws IOException 如果写入文件失败
      */

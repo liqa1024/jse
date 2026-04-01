@@ -12,8 +12,8 @@ import static jse.code.UT.Plot.*
 rng(123456789)
 
 // 导入 data 文件
-def dataG = Data.read('lmp/data/data-glass')
-def dataC = Data.read('lmp/data/data-crystal')
+def dataG = Data.read('data/lmp/data/data-glass')
+def dataC = Data.read('data/lmp/data/data-crystal')
 // 创建固定结构
 def dataB = Structures.bcc(2.0, 10).op().perturbXYZ(0.1)
 def dataF = Structures.fcc(3.0,  8).op().perturbXYZ(0.1)

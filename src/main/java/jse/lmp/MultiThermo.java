@@ -17,10 +17,26 @@ import java.util.List;
 import static jse.code.CS.ZL_STR;
 
 /**
+ * lammps 使用 {@code thermo} 写出到 log 的数据格式支持
+ * <p>
+ * 最为一般情况下会包含多个 {@link Thermo} 信息，因此需要此类
+ * <p>
+ * 通过：
+ * <pre> {@code
+ * def thermo = multiThermo[i]
+ * } </pre>
+ * 来直接获取某一帧的 {@link Thermo} 数据，从而可以进行相关操作，
+ * 或者通过：
+ * <pre> {@code
+ * for (thermo in multiThermo.asList()) {
+ *     //...
+ * }
+ * } </pre>
+ * 来将多帧数据转成 {@link List} 后进行遍历
+ * <p>
+ * 别称为 {@link MultiLog}
+ *
  * @author liqa
- * <p> lammps 使用 thermo 写出到 log 的数据格式 </p>
- * <p> 最为一般情况下会包含多个 Thermo 信息，因此需要此类 </p>
- * <p> 现在不再继承 {@link List}，因为 List 的接口太脏了 </p>
  */
 public class MultiThermo extends AbstractListWrapper<ITable, ITable, ITable> {
     
@@ -132,14 +148,21 @@ public class MultiThermo extends AbstractListWrapper<ITable, ITable, ITable> {
     /**
      * 从文件 lammps 输出的 log 文件中读取来实现初始化，
      * 对于 log 只实现其的读取，而输出则会使用通用方法输出成 csv 文件
-     * @author liqa
      * @param aFilePath lammps 输出的 log 文件路径
-     * @return 读取得到的 Thermo 对象，理论上文件不完整的帧会尝试读取已有的部分
+     * @return 读取得到的 {@link MultiThermo} 对象，理论上文件不完整的帧会尝试读取已有的部分
+     * @throws IOException 如果读取失败
+     * @author liqa
+     */
+    public static MultiThermo read(String aFilePath) throws IOException {
+        try (BufferedReader tReader = IO.toReader(aFilePath)) {return read(tReader);}
+    }
+    /**
+     * 提供使用 {@link BufferedReader} 的流式接口
+     * @param aReader 需要的读取流
+     * @return 读取得到的 {@link MultiThermo} 对象，理论上文件不完整的帧会尝试读取已有的部分
      * @throws IOException 如果读取失败
      */
-    public static MultiThermo read(String aFilePath) throws IOException {try (BufferedReader tReader = IO.toReader(aFilePath)) {return read_(tReader);}}
-    /** 改为 {@link BufferedReader} 而不是 {@code List<String>} 来避免过多内存占用 */
-    static MultiThermo read_(BufferedReader aReader) throws IOException {
+    public static MultiThermo read(BufferedReader aReader) throws IOException {
         String tLine;
         List<ITable> rThermo = new ArrayList<>();
         

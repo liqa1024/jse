@@ -3,7 +3,7 @@ package code.vasp
 import jse.vasp.POSCAR
 
 // 读取现有的 vasp POSCAR 文件
-def poscar = POSCAR.read('vasp/poscar/CuFCC108.poscar')
+def poscar = POSCAR.read('data/poscar/CuFCC108.poscar')
 
 // 获取属性
 println('atom number: ' + poscar.natoms())

@@ -3,7 +3,7 @@ package code.lmp
 import jse.lmp.Data
 
 // 读取现有的 lammps data 文件
-def data = Data.read('lmp/data/CuFCC108.lmpdat')
+def data = Data.read('data/lmp/data/CuFCC108.lmpdat')
 
 // 获取属性
 println('atom number: ' + data.natoms())

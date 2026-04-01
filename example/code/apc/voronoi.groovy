@@ -8,8 +8,8 @@ import static jse.code.UT.Plot.*
 
 
 // 导入 data 文件
-def dataG = Data.read('lmp/data/data-glass')
-def dataC = Data.read('lmp/data/data-crystal')
+def dataG = Data.read('data/lmp/data/data-glass')
+def dataC = Data.read('data/lmp/data/data-crystal')
 
 // 计算
 def apcG = APC.of(dataG)
