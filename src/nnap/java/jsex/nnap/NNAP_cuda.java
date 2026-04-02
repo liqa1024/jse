@@ -138,6 +138,7 @@ class NNAP_cuda extends NNAP2 {
     // jit stuffs
     IJITMethod mStatNeiNumLammps = null;
     IJITMethod mLammps2Cuda = null, mCuda2Lammps = null, mComputeLammpsCuda = null;
+    IJITMethod mComputeGPUMD = null;
     private void compileCuda_() throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (mJITEngine!=null) throw new IllegalStateException("compileCuda() has already been called");
@@ -148,6 +149,7 @@ class NNAP_cuda extends NNAP2 {
         mLammps2Cuda = mJITEngine.findMethod("jse_nnap_lammps2cuda");
         mCuda2Lammps = mJITEngine.findMethod("jse_nnap_cuda2lammps");
         mComputeLammpsCuda = mJITEngine.findMethod("jse_nnap_computeLammpsCuda");
+        mComputeGPUMD = mJITEngine.findMethod("jse_nnap_computeGPUMD");
     }
     
     @Override void shutdown_() {
@@ -366,6 +368,59 @@ class NNAP_cuda extends NNAP2 {
         mDataOut.putAt(5, aPair.cvatom());
         
         tCode = mCuda2Lammps.invoke(mDataIn, mDataOut);
+        CudaCore.cudaExceptionCheck(tCode);
+    }
+    
+    void computeGPUMD(int number_of_particles, int N1, int N2, int neighnumMax,
+                      long g_neighbor_number, long g_neighbor_list,
+                      long nl_dx, long nl_dy, long nl_dz,
+                      long g_type,
+                      long g_fx, long g_fy, long g_fz,
+                      long g_virial, long g_potential) throws CudaException {
+        // 近邻列表缓存向量长度规范
+        int tTotNeiNum = number_of_particles*neighnumMax;
+        mCudaBufNlType.ensureCapacity(tTotNeiNum);
+        mCudaBufNlIdx.ensureCapacity(tTotNeiNum);
+        mCudaBufNlDx.ensureCapacity(tTotNeiNum);
+        mCudaBufNlDy.ensureCapacity(tTotNeiNum);
+        mCudaBufNlDz.ensureCapacity(tTotNeiNum);
+        mCudaBufGradNlDx.ensureCapacity(tTotNeiNum);
+        mCudaBufGradNlDy.ensureCapacity(tTotNeiNum);
+        mCudaBufGradNlDz.ensureCapacity(tTotNeiNum);
+        
+        // 数据打包
+        mInNums.putAt(0, number_of_particles);
+        mInNums.putAt(1, N1);
+        mInNums.putAt(2, N2);
+        mInNums.putAt(3, neighnumMax);
+        
+        mDataIn.putAt(0, mInNums);
+        mDataIn.putAt(1, new CudaPointer(g_neighbor_number));
+        mDataIn.putAt(2, new CudaPointer(g_neighbor_list));
+        mDataIn.putAt(3, new CudaPointer(nl_dx));
+        mDataIn.putAt(4, new CudaPointer(nl_dy));
+        mDataIn.putAt(5, new CudaPointer(nl_dz));
+        mDataIn.putAt(6, new CudaPointer(g_type));
+        mDataIn.putAt(7, mCudaCudaFpHyperParam);
+        mDataIn.putAt(8, mCudaCudaFpParam);
+        mDataIn.putAt(9, mCudaCudaNnParam);
+        mDataIn.putAt(10, mCudaCudaNormParam);
+        
+        mDataOut.putAt(0, new CudaPointer(g_fx));
+        mDataOut.putAt(1, new CudaPointer(g_fy));
+        mDataOut.putAt(2, new CudaPointer(g_fz));
+        mDataOut.putAt(3, new CudaPointer(g_virial));
+        mDataOut.putAt(4, new CudaPointer(g_potential));
+        mDataOut.putAt(5, mCudaBufNlDx);
+        mDataOut.putAt(6, mCudaBufNlDy);
+        mDataOut.putAt(7, mCudaBufNlDz);
+        mDataOut.putAt(8, mCudaBufNlType);
+        mDataOut.putAt(9, mCudaBufNlIdx);
+        mDataOut.putAt(10, mCudaBufGradNlDx);
+        mDataOut.putAt(11, mCudaBufGradNlDy);
+        mDataOut.putAt(12, mCudaBufGradNlDz);
+        
+        int tCode = mComputeGPUMD.invoke(mDataIn, mDataOut);
         CudaCore.cudaExceptionCheck(tCode);
     }
 }
